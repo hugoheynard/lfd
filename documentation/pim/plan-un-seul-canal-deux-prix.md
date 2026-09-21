@@ -22,33 +22,39 @@ boutiques**. Le croissant est à 2,00 € TTC au comptoir, 1,71 € HT au pro �
 
 ## 2. Ce qui reste
 
-| #   | Quoi                                   | Coût                    | Ce qui le retient                |
-| --- | -------------------------------------- | ----------------------- | -------------------------------- |
-| R1  | 🔴 **Désinstaller l'app Shopify**      | dix minutes             | **hors dépôt** — un geste humain |
-| R2  | Le **panier public** en TTC            | une passe front         | rien                             |
-| R3  | Le **bon de commande public** en TTC   | une passe               | rien                             |
-| R4  | L'**export CSV** ignore le prix public | une passe               | rien                             |
-| R5  | Le **masquage par audience**           | migration de données    | soudé à l'œil-par-colonne        |
-| R6  | Le **schéma** — les tables Shopify     | une migration           | le **prochain déploiement**      |
-| R7  | Les **écrans de doc internes**         | une passe               | une décision de forme (§ 3.7)    |
-| R8  | Les **94 déclarations d'allergènes**   | de la saisie            | humain, pas du code              |
-| R9  | Trois **questions techniques**         | à trancher en bâtissant | rien                             |
+| #      | Quoi                                   | Coût                    | Ce qui le retient             |
+| ------ | -------------------------------------- | ----------------------- | ----------------------------- |
+| ~~R1~~ | ✅ **Désinstaller l'app Shopify**      | fait le 2026-09-21      | —                             |
+| R2     | Le **panier public** en TTC            | une passe front         | rien                          |
+| R3     | Le **bon de commande public** en TTC   | une passe               | rien                          |
+| R4     | L'**export CSV** ignore le prix public | une passe               | rien                          |
+| R5     | Le **masquage par audience**           | migration de données    | soudé à l'œil-par-colonne     |
+| R6     | Le **schéma** — les tables Shopify     | une migration           | le **prochain déploiement**   |
+| R7     | Les **écrans de doc internes**         | une passe               | une décision de forme (§ 3.7) |
+| R8     | Les **94 déclarations d'allergènes**   | de la saisie            | humain, pas du code           |
+| R9     | Trois **questions techniques**         | à trancher en bâtissant | rien                          |
 
-⚠️ **R1 est le seul qui coupe un accès réel.** Tout le reste est du confort ou
-de la dette ; celui-là est un jeton qui vit encore.
+✅ **R1 est fait, et c'était le seul qui coupait un accès réel.** Tout ce qui
+reste est du confort ou de la dette.
 
 ## 3. Le détail
 
-### 3.1 🔴 R1 — désinstaller l'app Shopify
+### 3.1 ✅ R1 — l'app Shopify est désinstallée (2026-09-21)
 
-Le code est parti ; **le jeton ne l'est pas**. Il reste valide tant que l'app
-n'est pas désinstallée depuis le **Dev Dashboard Shopify** — c'est ce geste-là
-qui le révoque, pas la suppression du code qui l'utilisait.
+Le code était parti depuis le matin ; **le jeton, non**. C'est la
+désinstallation depuis le **Dev Dashboard Shopify** qui le révoque — un jeton
+vit chez le fournisseur, pas chez nous.
 
-Ensuite seulement, retirer les **trois secrets** de GitHub et de Cloudflare.
+⚠️ **Et les « trois secrets à retirer de GitHub et Cloudflare » n'existaient
+pas.** Vérifié le jour même : aucun `SHOPIFY_*` parmi les vingt-deux secrets du
+dépôt, donc la boucle de synchronisation du workflow — qui ne pousse un nom que
+s'il est **non vide** — les a toujours sautés. Ils vivaient dans le `.env` du
+poste, et lui seul.
 
-🔴 **Ce geste est celui d'Hugo, et il ne passe pas par une ligne de commande** :
-un secret qu'on tape dans un terminal entre dans un historique.
+🔴 **C'est la leçon de ce reste, et elle survit à sa clôture** : on a cherché
+une clé à trois endroits en supposant qu'elle y était, alors qu'elle n'était
+qu'à un. Chercher au mauvais endroit et n'y rien trouver fait conclure qu'il n'y
+a rien — c'est exactement le raisonnement qui laisse un identifiant en vie.
 
 ### 3.2 R2 — le panier public en TTC
 

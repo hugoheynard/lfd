@@ -103,6 +103,19 @@ la production.
 
 ## 3. Les secrets, par destination
 
+> 🔴 **`SHOPIFY_ADMIN_TOKEN`, `SHOPIFY_CLIENT_ID` et `SHOPIFY_CLIENT_SECRET` ont
+> quitté cette table le 2026-09-21**, avec le canal qu'ils ouvraient.
+>
+> Ce qui les révoque est la **désinstallation de l'app depuis le Dev Dashboard
+> Shopify**, pas la suppression du code ni celle des secrets : un jeton vit chez
+> le fournisseur, pas chez nous. Elle a été faite.
+>
+> ⚠️ **Ils n'ont jamais été des secrets GitHub** (vérifié ce jour-là) — la
+> boucle de synchronisation du workflow ne pousse un nom que s'il est non vide,
+> donc elle les a toujours sautés. Ils vivaient dans le `.env` du poste, et lui
+> seul. C'est le genre de clé qu'on croit partout et qui n'est qu'à un endroit ;
+> chercher au mauvais endroit fait conclure trop vite qu'il n'y a rien.
+
 | Secret                                                                            | Va vers                             | Notes                                                                                                             |
 | --------------------------------------------------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `DATABASE_LFD_URL`                                                                | backend B2B                         | `prisma+postgres://` (Accelerate) — relayé au container jusqu'à la bascule, puis gardé pour le retour arrière     |
@@ -113,7 +126,6 @@ la production.
 | `AUTH0_M2M_CLIENT_ID` · `_SECRET`                                                 | backend B2B                         | Management API                                                                                                    |
 | `R2_KBIS_ACCESS_KEY_ID` · `R2_KBIS_SECRET_ACCESS_KEY`                             | backend B2B                         | pièces (KBIS) — bucket et endpoint sont des Variables                                                             |
 | `R2_MEDIA_ACCESS_KEY_ID` · `R2_MEDIA_SECRET_ACCESS_KEY`                           | backend B2B                         | visuels du catalogue — **jeton restreint au seul bucket média** (cf. ci-dessous)                                  |
-| `SHOPIFY_ADMIN_TOKEN` · `SHOPIFY_CLIENT_*`                                        | backend PIM                         | le PIM **appelle** Shopify ; il ne reçoit aucun webhook                                                           |
 | `B2B_CATALOG_PUSH_SECRET`                                                         | backend PIM **et** backend B2B      | prouve l'identité du pousseur de catalogue — **la même valeur des deux côtés**                                    |
 | `RECOMPUTE_TOKEN`                                                                 | Worker B2B **et** container         | comparé par `RecomputeGuard`                                                                                      |
 | `CLOUDFLARE_ACCOUNT_ID`                                                           | tous les déploiements               | injecté dans l'image au deploy                                                                                    |
