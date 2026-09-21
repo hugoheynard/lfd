@@ -411,6 +411,17 @@ model CatalogItemOverride {
   /// mercuriale, dégressif et promotions viendront par-dessus.
   priceMillicents Int? @map("price_millicents")
 
+  /// Prix **public** décidé ici, en centimes **TTC**. `NULL` = on garde l'étiquette du PIM.
+  ///
+  /// En centimes parce qu'un humain le POSE — les millicentimes sont réservés aux prix
+  /// dérivés (`millicents.ts`). Il est converti en hors taxe **à la lecture**, au taux du
+  /// contexte public de l'article, exactement comme l'étiquette du référentiel.
+  ///
+  /// Comme son voisin professionnel, c'est une ENTRÉE du pipeline : promotions et paliers
+  /// ouverts à tous s'appliquent ensuite par-dessus, et le prix affiché au rayon est le TTC
+  /// qui en RESSORT — pas ce nombre-ci (plan un-seul-canal-deux-prix, D12).
+  decidedPublicTtcCents Int? @map("decided_public_ttc_cents")
+
   /// Retiré du catalogue B2B sans être retiré du PIM.
   isHidden   Boolean @default(false) @map("is_hidden")
   /// Mis en avant dans la boutique.

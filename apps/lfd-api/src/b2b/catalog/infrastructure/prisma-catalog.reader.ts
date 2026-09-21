@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import type { OrderLineAllergens } from "@lfd/contracts";
+import { htMillicentsOf } from "@lfd/money";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
@@ -52,6 +53,7 @@ interface ItemRow {
   };
   readonly override: {
     readonly priceMillicents: number | null;
+    readonly decidedPublicTtcCents: number | null;
     readonly isHidden: boolean;
     readonly isFeatured: boolean;
   } | null;
@@ -196,10 +198,21 @@ interface ServedPrice {
  * que le prix final ne pourrait pas dire « prix PIM 2,40 € · prix B2B 2,10 € »,
  * et un prix sans provenance ne se défend pas devant un client qui le conteste.
  *
- * Au `public` : **l'étiquette**, mise hors taxe au taux de son contexte. Et
- * surtout **PAS la décision locale** : le prix posé par la plateforme est le
- * tarif du canal professionnel, et le servir à un particulier lui appliquerait
- * une négociation qui n'est pas la sienne.
+ * Au `public` : **l'étiquette**, mise hors taxe au taux de son contexte — celle
+ * décidée ici quand il y en a une, celle du référentiel sinon. Et surtout **pas
+ * le prix PRO** : il naît d'une négociation, et le servir à un particulier lui
+ * appliquerait une décision qui n'est pas la sienne.
+ *
+ * 🔴 **Les deux audiences ont chacune leur décision, et elles ne se touchent
+ * pas.** `priceMillicents` est l'entrée du canal professionnel,
+ * `decidedPublicTtcCents` celle du public. Lire l'une pour l'autre est
+ * exactement le défaut que ce chantier ferme.
+ *
+ * ⚠️ **La conversion a lieu ICI, à la lecture, et pas à la pose.** Le taux
+ * appliqué est donc celui que le miroir porte AU MOMENT DE SERVIR — un push qui
+ * change le taux d'un contexte change le hors taxe servi, sans qu'on ait à
+ * retoucher le prix posé. C'est ce qu'on veut : le prix posé est un TTC, et un
+ * TTC ne bouge pas quand la taxe bouge.
  *
  * 🔴 **`null` = pas vendable à cette audience, et on n'invente rien.** Un
  * article sans taux ne se facture pas ; un article dont le référentiel n'a pas
@@ -220,15 +233,22 @@ function servedPriceOf(row: ItemRow, audience: ShopAudience): ServedPrice | null
         };
   }
   const price = publicByContextOf(row.publicByContext)?.[PUBLIC_CONTEXT_KEY];
-  return price === undefined
-    ? null
-    : {
-        unitPriceMillicents: price.htMillicents,
-        // Le tarif de référence de CETTE audience : l'étiquette elle-même. Le
-        // prix pro n'a rien à faire dans un « prix barré » montré au public.
-        pimPriceMillicents: price.htMillicents,
-        vatRate: price.vatRatePercent,
-      };
+  if (price === undefined) {
+    return null;
+  }
+  const decided = row.override?.decidedPublicTtcCents ?? null;
+  const decidedMillicents = decided === null ? null : htMillicentsOf(decided, price.vatRatePercent);
+  return {
+    unitPriceMillicents: decidedMillicents ?? price.htMillicents,
+    // 🔴 **Le tarif de référence suit le prix servi, il ne reste pas en
+    // arrière.** Si seul `unitPriceMillicents` devenait la décision, la vitrine
+    // publique barrerait l'étiquette du PIM — c'est-à-dire annoncerait une
+    // remise que personne n'a accordée, sur une page servie sans jeton. Le
+    // « prix barré » n'apparaît que lorsque la RÉSOLUTION baisse le prix, et
+    // c'est son seul cas légitime.
+    pimPriceMillicents: decidedMillicents ?? price.htMillicents,
+    vatRate: price.vatRatePercent,
+  };
 }
 
 /**

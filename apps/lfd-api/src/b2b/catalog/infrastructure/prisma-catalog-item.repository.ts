@@ -39,6 +39,7 @@ interface ItemRow {
   readonly withdrawnAt: Date | null;
   readonly override: {
     readonly priceMillicents: number | null;
+    readonly decidedPublicTtcCents: number | null;
     readonly isHidden: boolean;
     readonly isFeatured: boolean;
     readonly decidedBy: string | null;
@@ -124,12 +125,19 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
           continue;
         }
 
-        const decision = {
-          priceMillicents: state.decision.priceMillicents,
-          isHidden: state.decision.isHidden,
-          isFeatured: state.decision.isFeatured,
-          decidedBy: state.decision.decidedBy,
-        };
+        // 🔴 **Cet objet est le seul endroit du dépôt où un champ oublié
+        // COMPILE et perd une donnée en silence.** Les champs d'un
+        // `create`/`update` Prisma sont tous optionnels : une décision absente
+        // d'ici n'est simplement jamais écrite, et rien — ni `tsc`, ni ESLint,
+        // ni une porte — ne peut le dire. Seul un test le dit.
+        //
+        // Il est donc l'agrégat ÉTALÉ, plutôt qu'une énumération champ par champ :
+        // une décision ajoutée à `LocalDecision` part automatiquement en base,
+        // au lieu d'attendre qu'on pense à l'ajouter. Et si elle n'a pas de
+        // colonne, Prisma refuse la clé inconnue — donc la compilation échoue
+        // au lieu de perdre la donnée. Les deux sens sont couverts, ce qu'une
+        // énumération manuelle ne faisait ni dans un sens ni dans l'autre.
+        const decision = { ...state.decision };
         await tx.catalogItemOverride.upsert({
           where: { sku: state.facts.sku },
           create: { sku: state.facts.sku, ...decision },
@@ -270,6 +278,7 @@ function toDomain(row: ItemRow): CatalogItem {
         ? null
         : {
             priceMillicents: row.override.priceMillicents,
+            decidedPublicTtcCents: row.override.decidedPublicTtcCents,
             isHidden: row.override.isHidden,
             isFeatured: row.override.isFeatured,
             decidedBy: row.override.decidedBy,

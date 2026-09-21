@@ -1,6 +1,9 @@
 import {
   CannotFeatureHiddenItemError,
   InvalidB2bPriceError,
+  InvalidPublicPriceError,
+  PublicPriceWithoutContextError,
+  RedundantPublicPriceError,
   RedundantB2bPriceError,
 } from "../errors/catalog-errors.js";
 
@@ -185,6 +188,15 @@ export interface PimContextPrice {
 /** La décision de la plateforme. `null` partout = aucune décision prise. */
 export interface LocalDecision {
   readonly priceMillicents: number | null;
+  /**
+   * Le prix **public** décidé ici, en centimes **TTC**. `null` = on garde
+   * l'étiquette du PIM.
+   *
+   * ⚠️ **Une unité différente de sa voisine**, et c'est voulu : celui-ci est un
+   * prix qu'un humain POSE, l'autre un hors taxe DÉRIVÉ. `millicents.ts` tient
+   * la règle.
+   */
+  readonly decidedPublicTtcCents: number | null;
   readonly isHidden: boolean;
   readonly isFeatured: boolean;
   readonly decidedBy: string | null;
@@ -193,6 +205,7 @@ export interface LocalDecision {
 /** Aucune décision : l'état d'un article que personne n'a encore touché. */
 const NO_DECISION: LocalDecision = {
   priceMillicents: null,
+  decidedPublicTtcCents: null,
   isHidden: false,
   isFeatured: false,
   decidedBy: null,
@@ -430,6 +443,52 @@ export class CatalogItem {
     this.decision = { ...this.decision, priceMillicents: null };
   }
 
+  /** Le prix public décidé ici, en centimes TTC. `null` = on suit l'étiquette. */
+  get decidedPublicTtcCents(): number | null {
+    return this.decision.decidedPublicTtcCents;
+  }
+
+  /**
+   * Pose le **prix public**, en centimes TTC — l'étiquette que la maison
+   * substitue à celle du référentiel.
+   *
+   * 🔴 **Ce nombre est une ENTRÉE, pas un affichage.** Il est mis hors taxe à la
+   * lecture, au taux du contexte public, puis traverse le même pipeline que le
+   * prix professionnel — promotions et paliers ouverts à tous s'appliquent
+   * par-dessus. Ce que le rayon montre est le TTC qui en RESSORT, et il peut
+   * différer d'un centime de celui-ci : l'aller-retour hors taxe ne revient pas
+   * toujours sur lui-même (mesuré, `ancrage-du-ttc-pose.mjs`, et assumé —
+   * Hugo, 2026-09-21).
+   *
+   * @throws {InvalidPublicPriceError} prix nul, négatif ou non entier.
+   * @throws {RedundantPublicPriceError} prix identique à l'étiquette du PIM —
+   *   le geste voulu est alors {@link alignPublicOnPim}.
+   * @throws {PublicPriceWithoutContextError} le miroir ne porte aucune entrée
+   *   pour ce contexte : la vitrine n'expose pas l'article, et le prix serait
+   *   écrit sans jamais être servi.
+   */
+  setPublicPrice(ttcCents: number, publicContext: string, decidedBy: string | null): void {
+    if (!Number.isInteger(ttcCents) || ttcCents <= 0) {
+      throw new InvalidPublicPriceError(ttcCents);
+    }
+    if (this.facts.publicByContext?.[publicContext] === undefined) {
+      throw new PublicPriceWithoutContextError(this.facts.sku, publicContext);
+    }
+    if (ttcCents === this.facts.publicTtcCents) {
+      throw new RedundantPublicPriceError(ttcCents);
+    }
+    this.decision = { ...this.decision, decidedPublicTtcCents: ttcCents, decidedBy };
+  }
+
+  /**
+   * Retire le prix public : l'article **repasse à l'étiquette du PIM**.
+   * L'inverse de {@link setPublicPrice}, et sans effet sur le prix
+   * professionnel — les deux audiences se décident séparément.
+   */
+  alignPublicOnPim(): void {
+    this.decision = { ...this.decision, decidedPublicTtcCents: null };
+  }
+
   /**
    * **Retire l'article de la vitrine B2B**, sans le retirer du PIM.
    *
@@ -474,8 +533,14 @@ export class CatalogItem {
    * plus.
    */
   toPersistence(): CatalogItemState {
+    // 🔴 **Toute décision doit figurer ici.** Un champ oublié rendrait
+    // `untouched` vrai alors qu'une décision existe : l'adaptateur supprimerait
+    // la ligne, et le prix disparaîtrait AU PROCHAIN PUSH du PIM — loin du
+    // geste, donc loin de sa cause. C'est le mode de panne le plus coûteux de
+    // cet agrégat, et aucun type ne le voit.
     const untouched =
       this.decision.priceMillicents === null &&
+      this.decision.decidedPublicTtcCents === null &&
       !this.decision.isHidden &&
       !this.decision.isFeatured;
     return {
