@@ -731,6 +731,83 @@ Tant que le push n'a pas tourné, l'écran admin lit `allergenLabels: null` sur 
 articles anciens : il affiche « sans fiche », ce qui est faux mais **prudent** —
 jamais « sans allergène ».
 
+### D7 — La contamination croisée d'atelier se déclare UNE FOIS, et elle **AJOUTE**
+
+> **Demandé le 2026-09-21** par Hugo : « une case déclarer la contamination
+> croisée globale en haut de page, qui permettrait d'overrider les réglages
+> d'allergène pour le push du catalogue ». 📐 **Décidé, pas implémenté.**
+
+**L'intention est juste, et le besoin est réel.** Un fournil qui pétrit du
+gluten, casse des œufs et concasse des fruits à coque dans la même pièce ne peut
+pas promettre l'absence de traces, article par article. Le dire 94 fois n'est pas
+plus vrai que le dire une fois : c'est **la même affirmation**, et elle porte sur
+l'atelier, pas sur la recette.
+
+D'où la case, en tête de l'écran des allergènes.
+
+#### 🔴 Mais « overrider » ne peut pas vouloir dire « remplacer »
+
+Ce ne sont pas deux réglages du même champ. Ce sont **deux affirmations de
+nature différente**, et le droit les sépare :
+
+|               | Allergène **ingrédient**          | **Trace** / contamination croisée         |
+| ------------- | --------------------------------- | ----------------------------------------- |
+| Ce qu'on dit  | « **contient** »                  | « **peut contenir** »                     |
+| D'où ça vient | la **recette**                    | l'**atelier**                             |
+| Statut        | **obligatoire** — INCO, annexe II | **volontaire** — étiquetage de précaution |
+| Qui le sait   | celui qui a écrit la fiche        | celui qui connaît le lieu                 |
+
+⚠️ **Rétrograder un « contient » en « peut contenir » n'est pas une
+simplification, c'est une affirmation fausse** — et la personne qu'elle trompe
+est exactement celle pour qui la règle existe. Un allergique aux œufs peut
+décider d'acheter un produit « pouvant contenir des œufs » ; il n'achètera jamais
+un produit qui **en contient**. La distinction est tout ce qui lui reste.
+
+**Donc la déclaration globale AJOUTE un ensemble de traces. Elle ne retire rien,
+ne remplace rien, et ne remplit aucun `null`.**
+
+#### 🔴 Et elle ne satisfait PAS l'invariant 7
+
+C'est le point qui justifie d'écrire cette décision plutôt que de la bâtir tout
+de suite, parce que le raccourci est tentant : **94 fiches attendent leur
+déclaration** (cf. [`plan-un-seul-canal-deux-prix.md`](../plan-un-seul-canal-deux-prix.md),
+chantier C), et une case à cocher règlerait la journée.
+
+Elle ne la règle pas. `publish()` refuse une fiche dont une déclinaison active
+n'a pas de fiche réglementaire, et « on ne met pas en vente ce qu'on ne peut pas
+étiqueter » reste vrai : **la contamination croisée ne dit rien de la recette.**
+Une déclinaison à `allergens: null` reste impubliable, case cochée ou non.
+
+Si la case ouvrait cette porte, on publierait 94 articles dont personne ne sait
+ce qu'ils contiennent, sous une couverture qui affirme seulement qu'ils _peuvent_
+contenir. C'est le contraire de ce que l'invariant protège.
+
+#### La forme
+
+- **Un singleton du référentiel**, pas un champ sur le produit : l'atelier est un
+  lieu, pas un article. Même forme que les autres réglages du référentiel.
+- **Il porte des codes GS1**, comme tout le reste — la projection INCO s'y
+  applique à l'identique, avec sa déduplication n:1 et son drapeau `incomplete`.
+- **Daté et signé.** C'est une affirmation de sécurité alimentaire : la question
+  posée six mois plus tard est « qui a déclaré ça, et quand ». Journalisé comme
+  le reste du référentiel.
+- **Sur le fil, un champ SÉPARÉ** — `traces` à côté d'`allergens`, jamais fondu
+  dedans. Les fondre retirerait au récepteur la seule chose qui compte : savoir
+  lequel des deux il lit. C'est la même raison qui a fait naître
+  `allergenLabels` à CÔTÉ d'`allergens` (D6).
+
+#### Ce qui reste à trancher
+
+| #     | Question                                                                                                                                                                                       |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **a** | Une fiche peut-elle **s'y soustraire** ? Un produit scellé, conditionné ailleurs, ne subit pas l'atelier. C'est le seul « override » légitime — et il va dans l'autre sens.                    |
+| **b** | S'applique-t-elle aux **deux audiences** ? Un bon de commande pro et une étiquette grand public n'ont pas le même lecteur.                                                                     |
+| **c** | **Où s'affiche-t-elle** côté boutique — sur chaque article, ou une fois en pied de page ? Une mention d'atelier répétée 94 fois est du bruit ; une mention absente de l'article est invisible. |
+
+⚠️ **(a) est la vraie question**, et elle inverse le vocabulaire de la demande :
+ce n'est pas la case qui écrase les fiches, ce sont certaines fiches qui
+échappent à la case.
+
 ## Le modèle de données
 
 ```prisma
