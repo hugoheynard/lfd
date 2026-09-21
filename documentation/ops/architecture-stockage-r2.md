@@ -200,17 +200,61 @@ précisément ce qu'on cherche quand on se demande d'où vient un bucket.
 | ------------ | ------------------------------------------------------------------------ |
 | `kbis`       | `R2_KBIS_BUCKET` · `R2_KBIS_ACCESS_KEY_ID` · `R2_KBIS_SECRET_ACCESS_KEY` |
 | `media`      | `R2_MEDIA_*` + **`R2_MEDIA_PUBLIC_BASE_URL`**                            |
-| `customers`  | `R2_CUSTOMERS_*`                                                         |
+| `customers`  | `R2_CUSTOMERS_EU_*`                                                      |
 | `production` | `R2_PRODUCTION_*`                                                        |
 
 Deux réglages communs, et une exception qui compte :
 
 - **La région est un fait du compte** (`auto` partout) — `R2_REGION`.
 - **L'endpoint ne l'est PAS** : il dépend de la **juridiction** du bucket, qui se
-  choisit à sa création. `lfc-b2b-kbis` est en juridiction EU
-  (`…eu.r2.cloudflarestorage.com`), `lfc-media` n'en a aucune. Chaque usage a
-  donc son `R2_*_ENDPOINT`, avec repli sur `R2_ENDPOINT` — une seule variable
-  tant que tout partage une juridiction, correcte dès que ça diverge.
+  choisit à sa création et **ne se change jamais après**. Chaque usage a donc son
+  `R2_*_ENDPOINT`, avec repli sur `R2_ENDPOINT` — une seule variable tant que
+  tout partage une juridiction, correcte dès que ça diverge.
+
+  | Bucket             | Usage        | Juridiction | Endpoint                   |
+  | ------------------ | ------------ | ----------- | -------------------------- |
+  | `lfc-b2b-kbis`     | `kbis`       | **EU**      | `R2_KBIS_ENDPOINT`         |
+  | `lfc-customers-eu` | `customers`  | **EU**      | `R2_CUSTOMERS_EU_ENDPOINT` |
+  | `lfc-media`        | `media`      | aucune      | `R2_MEDIA_ENDPOINT`        |
+  | `lfc-production`   | `production` | aucune      | repli sur `R2_ENDPOINT`    |
+
+  🔴 **Le `_EU_` est dans les NOMS de variables, pas dans la clé d'usage** — et
+  la dissymétrie est voulue (décidé le 2026-09-21). La juridiction n'est pas une
+  propriété du bucket qu'on décrirait au passage : c'est une **dimension**, parce
+  que le jour où les États-Unis existent il y aura un second bucket de pièces
+  client. Les variables le disent donc, et c'est ce qui rend la paire
+  bucket/endpoint évidente au moment de la configurer.
+
+  ⚠️ **L'usage, lui, reste `customers`.** C'est un **rôle** — « les pièces d'un
+  client » —, et un rôle ne se dédouble pas quand une région s'ajoute : il se
+  régionalise. Le baptiser `customersEu` aujourd'hui figerait une région dans un
+  rôle et rendrait le jour « US » plus difficile, pas moins.
+
+  🔴 **Ce que le jour « US » demande vraiment, et qu'AUCUN nommage ne prépare** :
+  il faut que quelque chose décide, **document par document**, de quelle
+  juridiction relève ce client. Rien ne le porte aujourd'hui — ni la commande, ni
+  la société. Un bon rangé dans le mauvais bucket est exactement ce que la
+  juridiction sert à empêcher, donc ce choix ne peut pas être un défaut.
+
+  🔴 **Les deux buckets EU sont ceux qui portent de la donnée de personnes** :
+  les pièces d'identité d'une entreprise, et les bons de commande — nom, adresse,
+  et ce que quelqu'un a acheté. Les deux autres portent des visuels de catalogue
+  et des papiers de fournil, qui ne désignent personne.
+
+  ⚠️ **Le nom porte la juridiction (`-eu`), et c'est délibéré** : elle est
+  invisible dans le tableau de bord une fois le bucket créé, irréversible, et
+  c'est elle qui décide quel endpoint fonctionne. Un bucket mal placé ne se
+  répare qu'en le recréant et en recopiant son contenu.
+
+  ⚠️ **Les deux usages EU ne peuvent PAS se replier sur `R2_ENDPOINT`**, qui
+  pointe hors juridiction : leur `R2_*_ENDPOINT` est obligatoire, et son absence
+  rend une erreur S3 opaque au premier dépôt — pas un message de configuration.
+
+  ⚠️ **Aucun n'est en accès peu fréquent**, et c'est un choix : un bon de
+  commande pèse ~2,5 Ko et se télécharge à la demande. L'IA facture la
+  récupération et impose une durée minimale de stockage — elle coûterait plus
+  qu'elle n'économise (décidé le 2026-09-21).
+
 - **`R2_MEDIA_PUBLIC_BASE_URL` n'est pas un secret** : elle finit dans le HTML de
   chaque fiche. Sans elle, le dépôt d'image est **refusé** plutôt que d'écrire en
   base des URL mortes — une image sur une adresse morte ne se voit qu'à

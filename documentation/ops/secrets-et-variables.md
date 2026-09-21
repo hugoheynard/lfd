@@ -126,6 +126,8 @@ la production.
 | `AUTH0_M2M_CLIENT_ID` · `_SECRET`                                                 | backend B2B                         | Management API                                                                                                    |
 | `R2_KBIS_ACCESS_KEY_ID` · `R2_KBIS_SECRET_ACCESS_KEY`                             | backend B2B                         | pièces (KBIS) — bucket et endpoint sont des Variables                                                             |
 | `R2_MEDIA_ACCESS_KEY_ID` · `R2_MEDIA_SECRET_ACCESS_KEY`                           | backend B2B                         | visuels du catalogue — **jeton restreint au seul bucket média** (cf. ci-dessous)                                  |
+| `R2_CUSTOMERS_EU_ACCESS_KEY_ID` · `R2_CUSTOMERS_EU_SECRET_ACCESS_KEY`             | backend B2B                         | bons de commande (`lfc-customers-eu`) — **posés le 2026-09-21** ; ils n'existaient pas, et rien ne le disait      |
+| `R2_PRODUCTION_ACCESS_KEY_ID` · `R2_PRODUCTION_SECRET_ACCESS_KEY`                 | backend B2B                         | papiers du fournil (`lfc-production`) — **posés le 2026-09-21** ; absents ET non audités jusque-là                |
 | `B2B_CATALOG_PUSH_SECRET`                                                         | backend PIM **et** backend B2B      | prouve l'identité du pousseur de catalogue — **la même valeur des deux côtés**                                    |
 | `RECOMPUTE_TOKEN`                                                                 | Worker B2B **et** container         | comparé par `RecomputeGuard`                                                                                      |
 | `CLOUDFLARE_ACCOUNT_ID`                                                           | tous les déploiements               | injecté dans l'image au deploy                                                                                    |
@@ -264,12 +266,21 @@ des trois états : les octets partent, la base enregistre une adresse que
 personne ne résout, et rien ne le dit avant l'affichage — longtemps après.
 
 ⚠️ **`R2_ENDPOINT` n'est pas un fait du compte.** Il dépend de la
-**juridiction** du bucket, choisie à sa création : `lfc-b2b-kbis` est en
-juridiction EU (`…{compte}.eu.r2.cloudflarestorage.com`), `lfc-media` n'a aucune
-juridiction (`…{compte}.r2.cloudflarestorage.com`). D'où `R2_KBIS_ENDPOINT` et
-`R2_MEDIA_ENDPOINT`, deux Variables, avec repli sur `R2_ENDPOINT` quand tous les
-buckets partagent une juridiction. Une seule valeur pour les deux rend une
-erreur S3 opaque au premier dépôt.
+**juridiction** du bucket, choisie à sa création et jamais modifiable ensuite.
+Deux buckets sont en juridiction EU — `lfc-b2b-kbis` et `lfc-customers-eu`
+(`…{compte}.eu.r2.cloudflarestorage.com`) —, deux n'en ont aucune —
+`lfc-media` et `lfc-production` (`…{compte}.r2.cloudflarestorage.com`). D'où un
+`R2_*_ENDPOINT` par usage, avec repli sur `R2_ENDPOINT` quand tous partagent une
+juridiction. Une seule valeur pour tous rend une erreur S3 opaque au premier
+dépôt.
+
+🔴 **`R2_CUSTOMERS_EU_ENDPOINT` est donc OBLIGATOIRE**, et sa valeur est celle de
+`R2_KBIS_ENDPOINT` — même compte, même juridiction. `R2_PRODUCTION_ENDPOINT`,
+lui, peut être omis : le repli sur `R2_ENDPOINT` est correct.
+
+🔴 **Les deux buckets EU sont ceux qui portent de la donnée de personnes** : les
+pièces d'identité d'une entreprise, et les bons de commande — nom, adresse, et ce
+que quelqu'un a acheté. C'est le critère, pas l'ancienneté du bucket.
 
 Le jeton doit être **restreint au bucket média**. C'est tout l'intérêt d'avoir
 séparé les usages : les visuels sont publics par construction, les KBIS sont des

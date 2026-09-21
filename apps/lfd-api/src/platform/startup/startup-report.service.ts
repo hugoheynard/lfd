@@ -103,6 +103,7 @@ export class StartupReport implements OnApplicationBootstrap {
     const kbis = this.config.r2StorageState("kbis");
     const media = this.config.r2StorageState("media");
     const customers = this.config.r2StorageState("customers");
+    const fournil = this.config.r2StorageState("production");
     return {
       hasManagementCredentials: this.config.auth0ManagementCredentials() !== null,
       hasAdminAudience: this.config.auth0AdminAudience() !== null,
@@ -113,6 +114,7 @@ export class StartupReport implements OnApplicationBootstrap {
       hasStorage: kbis.config !== null,
       hasMediaStorage: media.config !== null && this.config.mediaPublicBaseUrl() !== null,
       hasCustomerStorage: customers.config !== null,
+      hasProductionStorage: fournil.config !== null,
       hasStripe: this.config.stripeConfig() !== null,
       hasClientBaseUrl: this.config.clientBaseUrl() !== null,
       hasAdminBaseUrl: this.config.adminBaseUrl() !== null,

@@ -77,12 +77,19 @@ export class OrderSheetArchive {
    * L'archive si elle existe, `null` si elle n'existe pas **ou si le stockage
    * est en panne** — et la différence entre les deux est dans le journal.
    *
-   * ⚠️ Le `catch` est INDISPENSABLE et ne doit pas être retiré au nom de la
-   * propreté : `R2_CUSTOMERS_*` peut être absent — c'est le cas en production à
-   * ce jour — et `readIfPresent` lève alors. Sans lui, chaque téléchargement de
-   * bon rendrait 500 pour un défaut de configuration qui ne regarde pas le
-   * client. Il est étroit — il ne rattrape QUE l'indisponibilité du stockage, et
-   * l'adaptateur l'a déjà journalisée en ERREUR avant de lever.
+   * ⚠️ **Le `catch` est INDISPENSABLE et ne doit pas être retiré au nom de la
+   * propreté** : `R2_CUSTOMERS_EU_*` peut être absent, et `readIfPresent` lève
+   * alors. Sans lui, chaque téléchargement de bon rendrait 500 pour un défaut
+   * de configuration qui ne regarde pas le client. Il est étroit — il ne
+   * rattrape QUE l'indisponibilité du stockage, et l'adaptateur l'a déjà
+   * journalisée en ERREUR avant de lever.
+   *
+   * 🔴 **Ce n'était pas une hypothèse : les quatre noms étaient ABSENTS de la
+   * production** — ni secrets, ni variables — jusqu'au 2026-09-21, où la
+   * vérification les a nommés un par un. Aucun bon n'a donc jamais été archivé,
+   * et chaque téléchargement le refabriquait. Le bucket `lfc-customers-eu` a
+   * été créé dans la foulée ; le `catch` reste, parce que l'absence redevient
+   * possible au prochain déploiement mal configuré.
    */
   private async readArchived(key: string): Promise<Buffer | null> {
     try {

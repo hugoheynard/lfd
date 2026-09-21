@@ -33,6 +33,8 @@ export interface CapabilitySnapshot {
   readonly hasMediaStorage: boolean;
   /** Le stockage des pièces attachées aux commandes d'un client. */
   readonly hasCustomerStorage: boolean;
+  /** Le stockage des papiers du fournil — fiches atelier, compte à produire. */
+  readonly hasProductionStorage: boolean;
   readonly hasStripe: boolean;
   readonly hasClientBaseUrl: boolean;
   readonly hasAdminBaseUrl: boolean;
@@ -158,7 +160,8 @@ const CHECKS: readonly Check[] = [
   },
   {
     capability: "Stockage des pièces client",
-    setting: "R2_CUSTOMERS_BUCKET / R2_CUSTOMERS_ACCESS_KEY_ID / R2_CUSTOMERS_SECRET_ACCESS_KEY",
+    setting:
+      "R2_CUSTOMERS_EU_BUCKET / R2_CUSTOMERS_EU_ACCESS_KEY_ID / R2_CUSTOMERS_EU_SECRET_ACCESS_KEY",
     // Le bon de commande se REFABRIQUE à l'identique tant que la commande n'a
     // pas bougé — le rendu est déterministe. Un stockage absent ne perd donc
     // rien : il fait seulement refabriquer à chaque téléchargement. Ce qu'on
@@ -167,6 +170,24 @@ const CHECKS: readonly Check[] = [
       "les bons de commande sont refabriqués à chaque téléchargement, et aucune révision n'est archivée",
     severity: "degraded",
     present: (s) => s.hasCustomerStorage,
+  },
+  {
+    capability: "Stockage des papiers du fournil",
+    setting: "R2_PRODUCTION_BUCKET / R2_PRODUCTION_ACCESS_KEY_ID / R2_PRODUCTION_SECRET_ACCESS_KEY",
+    // 🔴 **Ce quatrième usage n'était annoncé NULLE PART** avant le 2026-09-21,
+    // alors que les trois autres l'étaient. Et c'est celui dont l'absence a duré
+    // le plus longtemps sans que personne le voie — précisément parce que ce
+    // rapport ne savait pas le nommer. Un audit qui couvre trois buckets sur
+    // quatre apprend à faire confiance à son silence.
+    //
+    // Même conduite que les pièces client : le rendu est déterministe, donc
+    // l'absence ne perd rien tant que le CODE ne bouge pas. Un tirage après un
+    // déploiement qui touche le rendu ne rend plus le même papier que celui qui
+    // est affiché au four.
+    consequence:
+      "les fiches atelier et le compte à produire sont refabriqués à chaque tirage, et rien n'est archivé",
+    severity: "degraded",
+    present: (s) => s.hasProductionStorage,
   },
   {
     capability: "Stockage des visuels",

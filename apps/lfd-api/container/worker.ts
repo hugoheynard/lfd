@@ -83,10 +83,10 @@ const RUNTIME_KEYS = [
   // son propre bucket et son propre jeton. Aucune adresse publique ici, et c'est
   // la différence qui compte avec les médias : ces pièces ne sont servies que
   // par l'API, derrière le mur de la société.
-  "R2_CUSTOMERS_ENDPOINT",
-  "R2_CUSTOMERS_BUCKET",
-  "R2_CUSTOMERS_ACCESS_KEY_ID",
-  "R2_CUSTOMERS_SECRET_ACCESS_KEY",
+  "R2_CUSTOMERS_EU_ENDPOINT",
+  "R2_CUSTOMERS_EU_BUCKET",
+  "R2_CUSTOMERS_EU_ACCESS_KEY_ID",
+  "R2_CUSTOMERS_EU_SECRET_ACCESS_KEY",
   "R2_PRODUCTION_ENDPOINT",
   "R2_PRODUCTION_BUCKET",
   "R2_PRODUCTION_ACCESS_KEY_ID",

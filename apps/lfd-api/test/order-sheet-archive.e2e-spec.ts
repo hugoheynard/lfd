@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
  *
  * Le rangement du bon est **best-effort** : un stockage muet ne doit pas priver
  * un client de son document. C'est la bonne conduite, et c'est aussi ce qui
- * rendait le chemin INVISIBLE — `R2_CUSTOMERS_*` n'était posé nulle part dans
+ * rendait le chemin INVISIBLE — `R2_CUSTOMERS_EU_*` n'était posé nulle part dans
  * les tests, le `save` échouait en silence, et aucune suite ne rougissait. On
  * avait un handler dont personne n'avait jamais exécuté la moitié utile.
  *
@@ -182,7 +182,7 @@ describe("le bon de commande s'archive", () => {
     // un stockage cassé indiscernable d'une pièce pas encore archivée. Le
     // rattrapage est désormais étroit — l'indisponibilité seulement, journalisée
     // en ERREUR par l'adaptateur avant d'arriver ici — mais il doit RESTER : en
-    // production `R2_CUSTOMERS_*` peut être absent, et un défaut de
+    // production `R2_CUSTOMERS_EU_*` peut être absent, et un défaut de
     // configuration ne regarde pas le client.
     const placed = await placeOrder();
     const usable = await downloadBon(placed.id);

@@ -216,10 +216,10 @@ const R2_SETTINGS: Readonly<
     endpoint: "R2_MEDIA_ENDPOINT",
   },
   customers: {
-    bucket: "R2_CUSTOMERS_BUCKET",
-    accessKeyId: "R2_CUSTOMERS_ACCESS_KEY_ID",
-    secretAccessKey: "R2_CUSTOMERS_SECRET_ACCESS_KEY",
-    endpoint: "R2_CUSTOMERS_ENDPOINT",
+    bucket: "R2_CUSTOMERS_EU_BUCKET",
+    accessKeyId: "R2_CUSTOMERS_EU_ACCESS_KEY_ID",
+    secretAccessKey: "R2_CUSTOMERS_EU_SECRET_ACCESS_KEY",
+    endpoint: "R2_CUSTOMERS_EU_ENDPOINT",
   },
   production: {
     bucket: "R2_PRODUCTION_BUCKET",
