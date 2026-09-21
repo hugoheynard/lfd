@@ -18,6 +18,11 @@ indépendants**, plus un troisième qui ne dépend d'aucun code.
 **Ils ne s'attendent pas.** A et B peuvent partir en parallèle ; C est du travail
 de saisie que ni l'un ni l'autre ne débloque — et c'est le chemin critique réel.
 
+🛑 **Mais le chantier A ne commence pas.** La mesure du § A.4 a renversé la
+recommandation qu'il portait, et ouvert **dix questions** (§ A.5) dont deux se
+tranchent avec un comptable. **Approfondir d'abord** — c'est un lot en soi, et
+il n'est pas écrit. Le chantier B, lui, ne dépend d'aucune de ces questions.
+
 ⚠️ **La mort de Shopify n'oblige à rien.** Shopify portait bien le prix public
 (`channels/shopify/products/projection.ts:22`), mais vers une vitrine qui ne vend
 pas : il ne le servait à personne. Sa mort **rend visible** une absence, elle ne
@@ -154,6 +159,7 @@ pas (D5 le porte déjà), la commande ne bouge pas, la facture ne bouge pas.
 
 | Lot    | Contenu                                                                                                                              | Ce qu'il casse en chemin                                                   |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| **A0** | 🛑 **Approfondir** — les dix questions du § A.5, et écrire C dans `@lfd/money`                                                       | rien : c'est ce lot qui dit ce que les suivants cassent                    |
 | **A1** | **v9 du fil** — HT public, TTC public, taux par contexte                                                                             | les empreintes de projection ; un aperçu pris avant le déploiement         |
 | **A2** | **L'audience et le contexte à la lecture** — `ShopItemView` sert le prix de qui regarde ; le contexte se dérive du chemin de service | ⚠️ un e2e **énumère les clés** de cette vue                                |
 | **A3** | 🔴 **L'audience sur la commande** — la ligne écrit le taux de son audience                                                           | `quote-order-parity` : les deux chemins apprennent l'audience **ensemble** |
@@ -162,33 +168,94 @@ pas (D5 le porte déjà), la commande ne bouge pas, la facture ne bouge pas.
 « 🔴 Un ÉLARGISSEMENT de cette vue est une décision de sécurité. Elle est servie
 sans jeton. »
 
-## A.4 🔴 La question que D1 laisse ouverte, et qu'il faut trancher (D6)
+## A.4 🔴 D6 — l'étiquette survit-elle à la chaîne ? (mesuré le 2026-09-21)
 
-Les deux prix voyagent. **Lequel fait foi pour le total ?**
+**🛑 A1 ne commence pas avant que cette section soit refermée.** Elle a déjà
+renversé une recommandation ; elle en ouvre d'autres, listées en A.5.
 
-Ce n'est pas une subtilité. Mesuré par `vitruve` sur la chaîne réelle
-(`htMillicentsOf` → total de ligne arrondi au centime → ventilation de TVA), aux
-taux 5,5 / 10 / 20 %, prix 0,50 à 30 €, quantités 1 à 24 :
+### La question
 
-> **19 429 combinaisons sur ~212 000 encaissent un montant différent de
-> `étiquette × quantité`** — ±1 centime, **dès la quantité 1**.
-> À 5,5 % : étiquette 0,67 € → encaissé **0,68 €**.
+Les deux prix voyagent (D1). Le client lit une étiquette TTC et additionne dans
+sa tête. **Le total qu'on lui facture retombe-t-il sur cette addition ?**
 
-⚠️ Ce n'est **pas** la conversion qui perd : l'aller-retour TTC → HT → TTC est
-exact (0 écart sur 200 000 valeurs). C'est l'arrondi au centime du **total de
-ligne**, avant la ventilation.
+⚠️ Et il n'y a **qu'un seul calcul** : `shop-quote.service.ts` — _« le décompte
+du panier, tel que le SERVEUR le rend »_, _« ce qu'il ne décide pas : rien »_.
+Le front ne multiplie jamais, `architecture-prix-boutique.md` §6 le lui interdit.
+Donc l'écart n'est **pas** « affiché contre payé » : c'est **la vignette contre
+le total**, deux nombres justes qui ne s'accordent pas.
 
-Pour un professionnel, sans objet : le HT **est** le prix contractuel. Pour un
-particulier, l'étiquette est ce qui est dû — et l'écart se produirait sur la
-surface la plus exposée du dépôt.
+### La mesure
 
-> `packages/pim-contracts/src/tax.ts` : « **Le TTC fait foi.** C'est le nombre
-> qu'un client lit sur l'étiquette et que la caisse encaisse ; le HT en est la
-> conséquence comptable. »
+Elle se rejoue — le chiffre porte une décision d'argent, il ne reste pas en
+prose :
+[`dev-toolbox/analyses/arrondi-ttc-vs-ht.mjs`](../../dev-toolbox/analyses/arrondi-ttc-vs-ht.mjs).
+Elle importe le **code réel** (`htMillicentsOf`, `htFromTtc`, `lineTotalCents`,
+`ventilateVat`), jamais une réimplémentation.
 
-**Deux options, et c'est une décision d'argent, pas de code** — voir **D4**.
+| Option                                                    | Une ligne            | Panier mélangé       | Avec remise 5 %      |
+| --------------------------------------------------------- | -------------------- | -------------------- | -------------------- |
+| **A** — le HT fait foi _(le code d'aujourd'hui)_          | **19 429** / 212 472 | **41 669** / 200 000 | **69 709** / 200 000 |
+| **B** — le TTC fait foi **au départ**                     | **19 429**           | **41 668**           | **69 557**           |
+| **C** — le TTC est **porté**, la TVA par **soustraction** | **0**                | **0**                | **0**                |
 
----
+### 🔴 Ce que la mesure a renversé
+
+**A et B rendent exactement les mêmes écarts.** Le point de départ n'y change
+**rien** — et c'est l'option B que ce plan s'apprêtait à recommander.
+
+La raison : `ventilateVat` termine toujours par
+
+```
+total TTC = HT + arrondi(HT × taux)
+```
+
+**Tant que la dernière opération est une multiplication arrondie, l'étiquette ne
+peut pas être tenue.** Partir du TTC pour y revenir par une multiplication, c'est
+repasser par le même arrondi.
+
+Seule **C** inverse la dernière étape :
+
+```
+total TTC = Σ (étiquette × quantité)     exact, centimes entiers
+HT        = htFromTtc(total, taux)
+TVA       = total − HT                    ← soustraction, pas multiplication
+```
+
+`HT + TVA = total`, par construction. **612 472 cas, zéro écart.**
+
+⚠️ **C est MODÉLISÉE dans le script, pas implémentée.** Ce qui est démontré, c'est
+que l'**approche** est exacte. En faire une jumelle de `ventilateVat` dans
+`@lfd/money`, tenue par ses propres tests, reste entier.
+
+⚠️ Et le groupement **par taux** n'est pas un détail : `ventilateVat` promet « un
+seul arrondi par taux » — une jumelle qui arrondirait ligne par ligne perdrait la
+propriété qui fait qu'une facture de trente lignes retombe sur elle-même.
+
+**Le pro n'est pas concerné.** Il n'a pas d'étiquette : son prix contractuel
+**est** le HT, et la chaîne actuelle reste juste pour lui. Deux entrées pour deux
+relations — pas un compromis.
+
+## A.5 🔴 Ce que la mesure a OUVERT, et qu'il faut approfondir
+
+**Aucune de ces questions n'a de réponse aujourd'hui, et C ne se décide pas sans
+elles.** C'est le sens de « approfondir avant de faire quoi que ce soit » (Hugo,
+2026-09-21).
+
+| #       | Question ouverte                                                                                                                                                                                                                     |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Q1**  | 🔴 **La remise doit-elle s'annoncer en TTC ?** C ne tombe à zéro qu'à cette condition (cas 3). Elle est aujourd'hui posée sur le HT, et les deux bases ne peuvent pas tomber juste en même temps.                                    |
+| **Q2**  | Et pour le **pro** ? La remise devient-elle TTC pour tout le monde, ou la base suit-elle l'audience — donc deux règles de remise ?                                                                                                   |
+| **Q3**  | Les **frais de livraison** sont des `extras` HT au taux `DELIVERY_VAT_RATE = 20`. Même question, et ils ne sont pas dans le même groupe de taux que les marchandises.                                                                |
+| **Q4**  | 🔴 **Que STOCKE la ligne de commande ?** `orders.prisma` porte `unitPriceMillicents`, `lineTotalCents`, `subtotalCents` — tous HT. Si le TTC fait foi, il faut l'y écrire, ou accepter de le recalculer à chaque lecture de facture. |
+| **Q5**  | 🔴 L'agrégat `Order` **revérifie la remise contre le sous-total HT** (`ensureDiscountMatches`). Cet invariant doit apprendre quelle base l'audience utilise — sinon il refuse une commande publique juste.                           |
+| **Q6**  | **Où vit la branche** HT-pro / TTC-public ? Une seule porte nommée, comme `proPriceOf` l'est pour le prix — ou elle se dupliquera entre le devis et la commande.                                                                     |
+| **Q7**  | `quote-order-parity` doit tenir **pour les deux audiences**. Aujourd'hui il compare devis et commande : il resterait vert sur deux erreurs identiques (§A.2).                                                                        |
+| **Q8**  | Une **promotion** est `PriceAudience = all \| segment \| company`, et une promotion `all` touche pros **et** public. Un pourcentage sur deux bases différentes donne deux montants — lequel est annoncé ?                            |
+| **Q9**  | La **TVA déduite par soustraction** est-elle recevable comptablement et fiscalement ? C'est la pratique du commerce de détail, mais ce plan ne l'a pas vérifié, et `documentation/comptabilite/` n'a pas été ouverte.                |
+| **Q10** | La **facture** : `architecture-facturation.md` décide « une facture pour toute vente ». Une facture TTC-first porte une TVA par soustraction — sa présentation change-t-elle ?                                                       |
+
+⚠️ **Q9 et Q10 sortent du code.** Elles se tranchent avec un comptable, pas dans
+le dépôt — et elles gouvernent les huit autres.
 
 # Chantier B — Shopify sort ✅
 
@@ -299,13 +366,13 @@ réel.**
 
 # Décisions ouvertes
 
-| #       | Décision                                                                                                                          | Poids      |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| **D6**  | 🔴 **Lequel des deux prix fait foi pour le total ?** (A.4 — 19 429 écarts d'un centime)                                           | argent     |
-| **D7**  | 🔴 Le successeur de `shopifyProjected` : quels contextes la boutique publique expose-t-elle ? (B.4, lot A1)                       | contrat    |
-| **D8**  | ⏳ Les 94 déclarations : préalable à l'ouverture, ou on ouvre sur ce qui est déclaré ?                                            | calendrier |
-| **D9**  | La boutique Shopify a-t-elle été publique assez longtemps pour être indexée ? Si oui, des redirections.                           | SEO        |
-| **D10** | `analyse-boutique-publique.md` §1, toujours ouverte : « une facture pour toute vente » contre « pas de factures pour le public ». | métier     |
+| #       | Décision                                                                                                                                              | Poids      |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **D6**  | 🔴 **Lequel des deux prix fait foi ?** Mesuré (§ A.4) : seule l'option **C** tombe juste — mais elle ouvre les dix questions du § A.5, non tranchées. | argent     |
+| **D7**  | 🔴 Le successeur de `shopifyProjected` : quels contextes la boutique publique expose-t-elle ? (B.4, lot A1)                                           | contrat    |
+| **D8**  | ⏳ Les 94 déclarations : préalable à l'ouverture, ou on ouvre sur ce qui est déclaré ?                                                                | calendrier |
+| **D9**  | La boutique Shopify a-t-elle été publique assez longtemps pour être indexée ? Si oui, des redirections.                                               | SEO        |
+| **D10** | `analyse-boutique-publique.md` §1, toujours ouverte : « une facture pour toute vente » contre « pas de factures pour le public ».                     | métier     |
 
 ✅ **Les clés des contextes sont `takeaway`, `eatIn` et `b2b`** (Hugo, et
 vérifié le 2026-09-21 : semis, entités, contrats et tests, aucune occurrence des
