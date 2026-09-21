@@ -123,8 +123,16 @@ export class CataloguePage {
     () => this.items().filter((item) => item.b2bPriceMillicents !== null).length,
   );
 
+  /**
+   * Combien sont masqués **d'au moins une** des deux boutiques.
+   *
+   * ⚠️ **Un mot pour deux drapeaux**, et c'est un choix : le segment sert à
+   * retrouver ce qui ne se vend pas quelque part, pas à distinguer où. Compter
+   * les deux séparément donnerait deux segments pour une question qu'on se pose
+   * rarement, et la ligne, elle, dit laquelle des deux (2026-09-21).
+   */
   protected readonly hiddenCount = computed(
-    () => this.items().filter((item) => item.isHidden).length,
+    () => this.items().filter((item) => item.isHidden || item.isHiddenPublic).length,
   );
 
   /**
@@ -204,6 +212,26 @@ export class CataloguePage {
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+  }
+
+  /**
+   * Masque de la vitrine **publique**, ou l'y remet.
+   *
+   * Geste distinct de son homologue professionnelle : ce sont deux décisions,
+   * et le journal les raconte séparément.
+   */
+  protected async togglePublicVisibility(item: CatalogAdminItemView): Promise<void> {
+    try {
+      await this.catalogue.setPublicVisibility(item.sku, !item.isHiddenPublic);
+      this.notify.success(
+        item.isHiddenPublic
+          ? `${item.name} revient en vitrine publique.`
+          : `${item.name} est masqué de la vitrine publique.`,
+      );
+      await this.load();
+    } catch (error) {
+      this.notify.error(error, "La visibilité publique n'a pas pu être changée.");
     }
   }
 
@@ -302,7 +330,9 @@ function kept(item: CatalogAdminItemView, filter: string): boolean {
     case UNTAXED:
       return item.vatRatePercent === null;
     case HIDDEN:
-      return item.isHidden;
+      // D'au moins une des deux boutiques — le même critère que le compteur du
+      // segment, sans quoi « Masqués (3) » en afficherait deux.
+      return item.isHidden || item.isHiddenPublic;
     default:
       return true;
   }

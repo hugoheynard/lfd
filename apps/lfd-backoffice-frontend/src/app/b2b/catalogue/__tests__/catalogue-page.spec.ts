@@ -45,6 +45,7 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     allergens: [],
     allergensIncomplete: false,
     isHidden: false,
+    isHiddenPublic: false,
     isFeatured: false,
     decidedBy: null,
     decidedByName: null,
@@ -78,6 +79,12 @@ class FakeCatalogue {
   readonly publicAligned: string[] = [];
   alignPublicOnPim(sku: string): Promise<void> {
     this.publicAligned.push(sku);
+    return Promise.resolve();
+  }
+
+  readonly publicVisibility: { sku: string; hidden: boolean }[] = [];
+  setPublicVisibility(sku: string, hidden: boolean): Promise<void> {
+    this.publicVisibility.push({ sku, hidden });
     return Promise.resolve();
   }
 
@@ -242,19 +249,23 @@ describe('CataloguePage — retirer de la vente', () => {
     const api = new FakeCatalogue();
     const fixture = await render(api);
 
-    button(fixture, 'Masquer Croissant dans la boutique').click();
+    button(fixture, 'Masquer Croissant pour les pros').click();
     await fixture.whenStable();
     fixture.detectChanges();
 
     expect(api.visibility).toEqual([]);
-    expect(text(fixture)).toContain('plus aucun client ne pourra le commander');
+    // 🔴 La phrase nomme l'audience TOUCHÉE et celle qui ne l'est pas. Un geste
+    // dont la portée surprend coûte une vente, et c'est justement la portée qui
+    // vient de changer (2026-09-21).
+    expect(text(fixture)).toContain('boutique PROFESSIONNELLE');
+    expect(text(fixture)).toContain('vitrine publique n’est pas touchée');
   });
 
   it('masque une fois la confirmation donnée', async () => {
     const api = new FakeCatalogue();
     const fixture = await render(api);
 
-    button(fixture, 'Masquer Croissant dans la boutique').click();
+    button(fixture, 'Masquer Croissant pour les pros').click();
     fixture.detectChanges();
     confirmNamed(fixture, 'Masquer');
     await fixture.whenStable();
@@ -268,14 +279,37 @@ describe('CataloguePage — retirer de la vente', () => {
     api.items = [item({ isHidden: true })];
     const fixture = await render(api);
 
-    button(fixture, 'Réafficher Croissant dans la boutique').click();
+    button(fixture, 'Réafficher Croissant pour les pros').click();
     fixture.detectChanges();
 
-    expect(text(fixture)).toContain('pourront de nouveau le commander');
+    expect(text(fixture)).toContain('revient dans la boutique PROFESSIONNELLE');
     confirmNamed(fixture, 'Réafficher');
     await fixture.whenStable();
 
     expect(api.visibility).toEqual([{ sku: 'VIE-001-1', hidden: false }]);
+  });
+
+  /**
+   * 🔴 **Les deux boutons ne touchent pas le même drapeau**, et c'est tout
+   * l'objet du lot. Sans ce cas, brancher les deux sur la même route passerait
+   * au vert : les trois cas d'à côté ne regardent que le canal pro, et c'est
+   * exactement la demi-couverture qui laisse un geste mentir.
+   */
+  it('🔴 masque au PUBLIC par un geste distinct, sur une autre route', async () => {
+    const api = new FakeCatalogue();
+    const fixture = await render(api);
+
+    button(fixture, 'Masquer Croissant au public').click();
+    fixture.detectChanges();
+    expect(text(fixture)).toContain('vitrine PUBLIQUE');
+    expect(text(fixture)).toContain('professionnelle n’est pas touchée');
+
+    confirmNamed(fixture, 'Masquer');
+    await fixture.whenStable();
+
+    expect(api.publicVisibility).toEqual([{ sku: 'VIE-001-1', hidden: true }]);
+    // Le canal pro n'a rien reçu : deux audiences, deux décisions.
+    expect(api.visibility).toEqual([]);
   });
 });
 

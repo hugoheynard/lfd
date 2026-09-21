@@ -7,6 +7,7 @@ import { AlignOnPimPriceHandler } from "./application/commands/align-on-pim-pric
 import { AlignPublicOnPimHandler } from "./application/commands/align-public-on-pim.handler.js";
 import { SetB2bPriceHandler } from "./application/commands/set-b2b-price.handler.js";
 import { SetPublicPriceHandler } from "./application/commands/set-public-price.handler.js";
+import { SetPublicVisibilityHandler } from "./application/commands/set-public-visibility.handler.js";
 import { SetCatalogFeaturedHandler } from "./application/commands/set-catalog-featured.handler.js";
 import { SetCatalogVisibilityHandler } from "./application/commands/set-catalog-visibility.handler.js";
 import { IngestCatalogService } from "./application/ingest-catalog.service.js";
@@ -115,6 +116,7 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     AlignOnPimPriceHandler,
     SetPublicPriceHandler,
     AlignPublicOnPimHandler,
+    SetPublicVisibilityHandler,
     SetCatalogVisibilityHandler,
     SetCatalogFeaturedHandler,
     { provide: CatalogItemRepository, useClass: PrismaCatalogItemRepository },

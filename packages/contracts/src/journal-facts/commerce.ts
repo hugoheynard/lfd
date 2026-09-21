@@ -64,6 +64,8 @@ export const COMMERCE_FACTS = {
   "catalog_item.public_price_cleared": labelled({ sku: z.string(), before: publicPrice() }),
   "catalog_item.hidden": labelled(skuOnly().shape),
   "catalog_item.shown": labelled(skuOnly().shape),
+  "catalog_item.hidden_public": labelled(skuOnly().shape),
+  "catalog_item.shown_public": labelled(skuOnly().shape),
   "catalog_item.featured": labelled(skuOnly().shape),
   "catalog_item.unfeatured": labelled(skuOnly().shape),
   /**

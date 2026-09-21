@@ -87,6 +87,7 @@ export class ShelfCatalogue {
   readonly publicPriceSet = output<{ item: CatalogAdminItemView; ttcCents: number }>();
   readonly publicPriceAligned = output<CatalogAdminItemView>();
   readonly visibilityToggled = output<CatalogAdminItemView>();
+  readonly publicVisibilityToggled = output<CatalogAdminItemView>();
 
   protected readonly euros = formatEuros;
 
@@ -119,7 +120,7 @@ export class ShelfCatalogue {
     { key: 'public', label: 'Prix public TTC', width: '15rem' },
     // Assez large pour tenir la confirmation qui s'y ouvre. À `9rem`, la
     // phrase qui dit ce que « Masquer » va faire tombait sur cinq lignes.
-    { key: 'shop', label: 'Boutique', width: '18rem' },
+    { key: 'shop', label: 'Affichage boutique', width: '15rem' },
   ];
 
   protected readonly empty: FoldTableEmpty = {

@@ -56,6 +56,7 @@ interface ItemRow {
     readonly priceMillicents: number | null;
     readonly decidedPublicTtcCents: number | null;
     readonly isHidden: boolean;
+    readonly isHiddenPublic: boolean;
     readonly isFeatured: boolean;
   } | null;
 }
@@ -78,7 +79,7 @@ export class PrismaCatalogReader extends CatalogReader {
       where: { sku, ...STILL_SOLD },
       include: { category: true, override: true },
     });
-    if (row === null || row.override?.isHidden === true) {
+    if (row === null || hiddenFrom(row, "pro")) {
       return null;
     }
     const served = servedPriceOf(row, "pro");
@@ -94,7 +95,7 @@ export class PrismaCatalogReader extends CatalogReader {
       where: { productSku, isDefault: true, ...STILL_SOLD },
       include: { category: true, override: true },
     });
-    if (row === null || row.override?.isHidden === true) {
+    if (row === null || hiddenFrom(row, audience)) {
       return null;
     }
     const served = servedPriceOf(row, audience);
@@ -115,7 +116,7 @@ export class PrismaCatalogReader extends CatalogReader {
     const resolved = new Map<string, ResolvedCatalogItem>();
     for (const row of rows) {
       const served = servedPriceOf(row, audience);
-      if (row.override?.isHidden === true || served === null) {
+      if (hiddenFrom(row, audience) || served === null) {
         continue;
       }
       resolved.set(row.productSku, resolve(row, served));
@@ -130,7 +131,19 @@ export class PrismaCatalogReader extends CatalogReader {
         // Deux conditions indépendantes, donc un `AND` explicite : deux clés
         // `OR` dans le même objet se seraient écrasées en silence.
         AND: [
-          { OR: [{ override: null }, { override: { isHidden: false } }] },
+          // 🔴 **Le masquage de CETTE audience.** La condition lisait `isHidden`
+          // quel que soit le demandeur, donc masquer un article le retirait des
+          // deux boutiques — le défaut que ce lot ferme (2026-09-21).
+          {
+            OR: [
+              { override: null },
+              audience === "pro"
+                ? { override: { isHidden: false } }
+                : {
+                    override: { isHiddenPublic: false },
+                  },
+            ],
+          },
           // Le mur : sans taux de TVA, on ne sait pas facturer. L'article reste
           // au catalogue et se voit dans le paramétrage ; il ne se vend pas.
           //
@@ -156,6 +169,27 @@ export class PrismaCatalogReader extends CatalogReader {
       return served === null ? [] : [resolve(row, served)];
     });
   }
+}
+
+/**
+ * **L'article est-il masqué POUR CETTE AUDIENCE ?**
+ *
+ * 🔴 **Quatre sites posaient cette question, et aucun ne la posait ainsi.** Ils
+ * lisaient `isHidden` quel que soit le demandeur — le rayon, la fiche, le lot de
+ * SKU, la commande. Rendre le seul `listSellable` conscient de l'audience aurait
+ * fait diverger le rayon et la caisse : un article masqué au pro se serait
+ * affiché au public et aurait échoué au panier ; un article masqué au public
+ * serait resté achetable. Deux bugs de vente, dans les deux sens (relevé par
+ * `vitruve` le 2026-09-21, avant qu'une ligne soit écrite).
+ *
+ * Elle est donc UNE fonction, et les quatre l'appellent.
+ */
+function hiddenFrom(row: ItemRow, audience: ShopAudience): boolean {
+  const override = row.override;
+  if (override === null || override === undefined) {
+    return false;
+  }
+  return audience === "pro" ? override.isHidden : override.isHiddenPublic;
 }
 
 /** L'entrée du pipeline de prix, et le taux qui l'accompagne. */

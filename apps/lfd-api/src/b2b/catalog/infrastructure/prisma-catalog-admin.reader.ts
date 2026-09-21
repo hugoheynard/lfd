@@ -35,6 +35,7 @@ interface AdminRow {
     readonly priceMillicents: number | null;
     readonly decidedPublicTtcCents: number | null;
     readonly isHidden: boolean;
+    readonly isHiddenPublic: boolean;
     readonly isFeatured: boolean;
     readonly decidedBy: string | null;
     readonly decidedAt: Date;
@@ -121,6 +122,7 @@ function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
     decidedPublicTtcCents: row.override?.decidedPublicTtcCents ?? null,
     ...allergensOf(row.allergens, row.allergenLabels),
     isHidden: row.override?.isHidden ?? false,
+    isHiddenPublic: row.override?.isHiddenPublic ?? false,
     isFeatured: row.override?.isFeatured ?? false,
     decidedBy: row.override?.decidedBy ?? null,
     decidedByName: authors.nameOf(row.override?.decidedBy ?? null),

@@ -102,7 +102,16 @@ export interface CatalogAdminItemView {
    */
   readonly allergensIncomplete: boolean;
 
+  /** Masqué de la boutique **professionnelle**. */
   readonly isHidden: boolean;
+  /**
+   * Masqué de la boutique **publique** — une décision distincte.
+   *
+   * ⚠️ `isHidden` valait pour les deux jusqu'au 2026-09-21. Son nom ne dit
+   * toujours pas « pro » : la colonne est citée par du code servi, et la
+   * renommer coûterait un déploiement pour un gain de lecture seule.
+   */
+  readonly isHiddenPublic: boolean;
   readonly isFeatured: boolean;
 
   /**
@@ -154,10 +163,22 @@ export const setPublicPricePayloadSchema = z.object({
 });
 export type SetPublicPricePayload = z.infer<typeof setPublicPricePayloadSchema>;
 
-/** Masquer ou réafficher un article dans la boutique B2B. */
+/** Masquer ou réafficher un article dans la boutique **professionnelle**. */
 export const setCatalogVisibilityPayloadSchema = z.object({
   hidden: z.boolean(),
 });
+
+/**
+ * Masquer ou réafficher un article dans la boutique **publique**.
+ *
+ * ⚠️ Une route et un schéma à part, plutôt qu'une audience ajoutée au payload
+ * voisin : celui-ci est **déjà servi** à un back-office en service, et lui
+ * ajouter un champ obligatoire casserait l'écran d'avant le déploiement.
+ */
+export const setPublicVisibilityPayloadSchema = z.object({
+  hidden: z.boolean(),
+});
+export type SetPublicVisibilityPayload = z.infer<typeof setPublicVisibilityPayloadSchema>;
 export type SetCatalogVisibilityPayload = z.infer<typeof setCatalogVisibilityPayloadSchema>;
 
 /**

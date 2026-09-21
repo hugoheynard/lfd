@@ -34,6 +34,8 @@ export const CATALOG_ITEM_FACTS = {
   publicPriceCleared: "catalog_item.public_price_cleared",
   hidden: "catalog_item.hidden",
   shown: "catalog_item.shown",
+  hiddenPublic: "catalog_item.hidden_public",
+  shownPublic: "catalog_item.shown_public",
   featured: "catalog_item.featured",
   unfeatured: "catalog_item.unfeatured",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
@@ -176,6 +178,15 @@ abstract class CatalogItemFlagEvent implements JournaledEvent {
  * Fait : **l'article sort de la vitrine B2B**. Masquer éteint aussi la mise en
  * avant (`CatalogItem.hide`) : ce fait-là la dit, sans second fait.
  */
+/**
+ * ⚠️ **`catalog_item.hidden` a changé de portée le 2026-09-21**, et les faits
+ * déjà écrits ne le savent pas : ils masquaient des DEUX boutiques, faute d'en
+ * avoir deux. Sa phrase disait pourtant déjà « du catalogue professionnel ».
+ *
+ * Le type n'est pas renommé — un fait est immuable, et un renommage de valeur
+ * est une migration de données, pas un geste de confort. Ce qui est ajouté est
+ * son jumeau PUBLIC ; l'ancien devient ce que sa phrase disait déjà.
+ */
 export class CatalogItemHiddenEvent extends CatalogItemFlagEvent {
   protected readonly type = CATALOG_ITEM_FACTS.hidden;
 }
@@ -186,6 +197,14 @@ export class CatalogItemShownEvent extends CatalogItemFlagEvent {
 }
 
 /** Fait : **l'article est mis en avant** dans la boutique. */
+export class CatalogItemHiddenPublicEvent extends CatalogItemFlagEvent {
+  protected readonly type = CATALOG_ITEM_FACTS.hiddenPublic;
+}
+
+export class CatalogItemShownPublicEvent extends CatalogItemFlagEvent {
+  protected readonly type = CATALOG_ITEM_FACTS.shownPublic;
+}
+
 export class CatalogItemFeaturedEvent extends CatalogItemFlagEvent {
   protected readonly type = CATALOG_ITEM_FACTS.featured;
 }

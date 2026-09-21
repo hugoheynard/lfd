@@ -51,7 +51,11 @@
 
 .shop {
   display: flex;
-  align-items: center;
+  /* Une audience par LIGNE, pas côte à côte : deux boutons alignés se lisent
+     comme deux moitiés d'un même geste, et c'est exactement ce qu'ils ne sont
+     pas. Empilés, chacun porte sa pastille d'état au-dessus de lui. */
+  flex-direction: column;
+  align-items: start;
   gap: var(--fold-space-sm);
   /* 🔴 La table pose `white-space: nowrap` sur ses cellules — juste pour un
      montant ou une pastille, faux pour une phrase. La confirmation qui s'ouvre
@@ -98,4 +102,11 @@
    centime d'écart n'appelle aucun geste, il appelle à être su. */
 .charged {
   font-style: italic;
+}
+
+.audience {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  white-space: normal;
 }

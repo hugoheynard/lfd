@@ -1,12 +1,14 @@
 import {
   setB2bPricePayloadSchema,
   setPublicPricePayloadSchema,
+  setPublicVisibilityPayloadSchema,
   setCatalogFeaturedPayloadSchema,
   setCatalogVisibilityPayloadSchema,
   type CatalogAdminItemView,
   type CatalogSummaryView,
   type SetB2bPricePayload,
   type SetPublicPricePayload,
+  type SetPublicVisibilityPayload,
   type SetCatalogFeaturedPayload,
   type SetCatalogVisibilityPayload,
 } from "@lfd/contracts";
@@ -30,6 +32,7 @@ import { AlignOnPimPriceCommand } from "../application/commands/align-on-pim-pri
 import { AlignPublicOnPimCommand } from "../application/commands/align-public-on-pim.command.js";
 import { SetB2bPriceCommand } from "../application/commands/set-b2b-price.command.js";
 import { SetPublicPriceCommand } from "../application/commands/set-public-price.command.js";
+import { SetPublicVisibilityCommand } from "../application/commands/set-public-visibility.command.js";
 import { SetCatalogFeaturedCommand } from "../application/commands/set-catalog-featured.command.js";
 import { SetCatalogVisibilityCommand } from "../application/commands/set-catalog-visibility.command.js";
 import { ExportCatalogCsvQuery } from "../application/queries/export-catalog-csv.query.js";
@@ -154,6 +157,25 @@ export class AdminCatalogController {
   ): Promise<void> {
     await this.commands.execute<SetCatalogVisibilityCommand, void>(
       new SetCatalogVisibilityCommand(sku, payload.hidden, staffUserId),
+    );
+  }
+
+  /**
+   * Masquer de la vitrine **publique**, ou l'y remettre.
+   *
+   * Route distincte de `:sku/visibility`, et non une audience ajoutée à son
+   * payload : celui-ci est servi à un back-office en service, et un champ
+   * obligatoire de plus casserait l'écran d'avant le déploiement.
+   */
+  @Put(":sku/public-visibility")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setPublicVisibility(
+    @Param("sku") sku: string,
+    @Body(new ZodBody(setPublicVisibilityPayloadSchema)) payload: SetPublicVisibilityPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<SetPublicVisibilityCommand, void>(
+      new SetPublicVisibilityCommand(sku, payload.hidden, staffUserId),
     );
   }
 

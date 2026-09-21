@@ -41,6 +41,7 @@ interface ItemRow {
     readonly priceMillicents: number | null;
     readonly decidedPublicTtcCents: number | null;
     readonly isHidden: boolean;
+    readonly isHiddenPublic: boolean;
     readonly isFeatured: boolean;
     readonly decidedBy: string | null;
   } | null;
@@ -280,6 +281,7 @@ function toDomain(row: ItemRow): CatalogItem {
             priceMillicents: row.override.priceMillicents,
             decidedPublicTtcCents: row.override.decidedPublicTtcCents,
             isHidden: row.override.isHidden,
+            isHiddenPublic: row.override.isHiddenPublic,
             isFeatured: row.override.isFeatured,
             decidedBy: row.override.decidedBy,
           },

@@ -92,7 +92,17 @@ export class CatalogueService {
     );
   }
 
-  /** Masque ou réaffiche l'article dans la boutique B2B. */
+  /** Masque ou réaffiche l'article dans la vitrine **publique**. */
+  async setPublicVisibility(sku: string, hidden: boolean): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(
+        `${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/public-visibility`,
+        { hidden },
+      ),
+    );
+  }
+
+  /** Masque ou réaffiche l'article dans la boutique **professionnelle**. */
   async setVisibility(sku: string, hidden: boolean): Promise<void> {
     await firstValueFrom(
       this.http.put<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/visibility`, {

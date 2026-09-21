@@ -161,7 +161,28 @@ describe("la vitrine publique", () => {
     expect(JSON.stringify(body)).not.toContain("140000");
   });
 
-  it("ne montre pas un article masqué", async () => {
+  it("ne montre pas un article masqué AU PUBLIC", async () => {
+    await push([
+      { sku: "VIE-001", priceMillicents: 140_000 },
+      { sku: "VIE-002", priceMillicents: 160_000 },
+    ]);
+    await ctx.prisma.catalogItemOverride.create({
+      data: { sku: "VIE-002-1", isHiddenPublic: true },
+    });
+
+    expect((await catalogue()).items.map((item) => item.sku)).toEqual(["VIE-001"]);
+  });
+
+  /**
+   * 🔴 **Le pendant, et c'est lui qui prouve le découpage** (2026-09-21).
+   *
+   * Ce cas lisait `isHidden` et attendait la même chose : masquer retirait des
+   * DEUX boutiques, faute d'en avoir deux. Sans ce second cas, remettre les deux
+   * drapeaux sur une seule colonne repasserait au vert — et le conditionnement
+   * de quarante pièces qu'on retire de la vitrine publique disparaîtrait aussi
+   * du catalogue des pros, qui est le seul à qui il s'adresse.
+   */
+  it("🔴 montre encore un article masqué au PRO — ce sont deux décisions", async () => {
     await push([
       { sku: "VIE-001", priceMillicents: 140_000 },
       { sku: "VIE-002", priceMillicents: 160_000 },
@@ -170,7 +191,7 @@ describe("la vitrine publique", () => {
       data: { sku: "VIE-002-1", isHidden: true },
     });
 
-    expect((await catalogue()).items.map((item) => item.sku)).toEqual(["VIE-001"]);
+    expect((await catalogue()).items.map((item) => item.sku)).toEqual(["VIE-001", "VIE-002"]);
   });
 
   /**

@@ -141,53 +141,80 @@
     </ng-template>
 
     <!--
-      **La visibilité se confirme sur place**, exactement comme la pose d'un
-      prix : le contrôle s'ouvre DANS la cellule, dit ce qu'il va faire, et se
-      referme. Rien ne saute, rien ne recouvre l'écran, et on ne perd pas de vue
-      la ligne dont il est question.
+      **L'affichage en boutique, une audience à la fois.**
 
-      Les DEUX sens se confirment, et pas seulement le retrait. Masquer coupe la
-      commande ; réafficher la rouvre — donc remet en vente un article que
-      quelqu'un avait retiré pour une raison qui ne se lit pas ici. Les deux se
-      voient depuis la boutique par un client.
+      🔴 Deux boutons parce qu'il y a deux décisions (2026-09-21). Un seul
+      valait pour les deux vitrines : un conditionnement de quarante pièces
+      n'avait rien à faire en vitrine publique, une pièce à l'unité
+      n'intéressait pas un pro, et il n'y avait qu'un geste pour les deux.
 
-      🔴 **Et ce bouton vaut pour les DEUX audiences à la fois** (constaté le
-      2026-09-21) : `listSellable` lit `isHidden` sans regarder qui demande. Un
-      conditionnement de quarante pièces n'a rien à faire en vitrine publique, et
-      une pièce à l'unité n'intéresse pas un pro — ce sont deux décisions, et il
-      n'y a qu'un bouton. La phrase de confirmation le DIT, faute de pouvoir
-      encore le corriger : un geste dont la portée surprend coûte une vente.
-      Le découpage est écrit dans `plan-un-seul-canal-deux-prix.md`, D11.
+      La confirmation s'ouvre DANS la cellule, comme la pose d'un prix : rien ne
+      saute, rien ne recouvre l'écran, et on ne perd pas de vue la ligne dont il
+      est question. Les DEUX sens se confirment — masquer coupe la commande,
+      réafficher la rouvre, et les deux se voient depuis la boutique par un
+      client.
     -->
     <ng-template foldCell="shop" let-row>
       <div class="shop">
-        @if (row.isHidden) {
-          <fold-badge content="masqué" variant="neutral" />
-        }
-        <fold-inline-confirm
-          size="sm"
-          [intent]="row.isHidden ? 'primary' : 'warning'"
-          [message]="
-            row.isHidden
-              ? 'L’article revient dans les DEUX boutiques : les clients pourront de nouveau le commander, au prix de leur audience.'
-              : 'L’article disparaît des DEUX boutiques — pro et publique — et plus aucun client ne pourra le commander. Son prix pro est conservé.'
-          "
-          [labels]="{ confirm: row.isHidden ? 'Réafficher' : 'Masquer' }"
-          (confirmed)="visibilityToggled.emit(row)"
-        >
-          <button
-            foldButton
+        <div class="audience">
+          @if (row.isHidden) {
+            <fold-badge content="pro masqué" variant="neutral" />
+          }
+          <fold-inline-confirm
             size="sm"
-            type="button"
-            emphasis="outline"
-            intent="neutral"
-            [attr.aria-label]="
-              (row.isHidden ? 'Réafficher ' : 'Masquer ') + row.name + ' dans la boutique'
+            [intent]="row.isHidden ? 'primary' : 'warning'"
+            [message]="
+              row.isHidden
+                ? 'L’article revient dans la boutique PROFESSIONNELLE, au prix pro de cette ligne. La vitrine publique n’est pas touchée.'
+                : 'L’article disparaît de la boutique PROFESSIONNELLE. La vitrine publique n’est pas touchée, et son prix pro est conservé.'
             "
+            [labels]="{ confirm: row.isHidden ? 'Réafficher' : 'Masquer' }"
+            (confirmed)="visibilityToggled.emit(row)"
           >
-            {{ row.isHidden ? 'Réafficher' : 'Masquer' }}
-          </button>
-        </fold-inline-confirm>
+            <button
+              foldButton
+              size="sm"
+              type="button"
+              emphasis="outline"
+              intent="neutral"
+              [attr.aria-label]="
+                (row.isHidden ? 'Réafficher ' : 'Masquer ') + row.name + ' pour les pros'
+              "
+            >
+              {{ row.isHidden ? 'Réafficher pro' : 'Masquer pro' }}
+            </button>
+          </fold-inline-confirm>
+        </div>
+
+        <div class="audience">
+          @if (row.isHiddenPublic) {
+            <fold-badge content="public masqué" variant="neutral" />
+          }
+          <fold-inline-confirm
+            size="sm"
+            [intent]="row.isHiddenPublic ? 'primary' : 'warning'"
+            [message]="
+              row.isHiddenPublic
+                ? 'L’article revient en vitrine PUBLIQUE, au prix public de cette ligne. La boutique professionnelle n’est pas touchée.'
+                : 'L’article disparaît de la vitrine PUBLIQUE. La boutique professionnelle n’est pas touchée.'
+            "
+            [labels]="{ confirm: row.isHiddenPublic ? 'Réafficher' : 'Masquer' }"
+            (confirmed)="publicVisibilityToggled.emit(row)"
+          >
+            <button
+              foldButton
+              size="sm"
+              type="button"
+              emphasis="outline"
+              intent="neutral"
+              [attr.aria-label]="
+                (row.isHiddenPublic ? 'Réafficher ' : 'Masquer ') + row.name + ' au public'
+              "
+            >
+              {{ row.isHiddenPublic ? 'Réafficher public' : 'Masquer public' }}
+            </button>
+          </fold-inline-confirm>
+        </div>
       </div>
     </ng-template>
   </fold-data-table>

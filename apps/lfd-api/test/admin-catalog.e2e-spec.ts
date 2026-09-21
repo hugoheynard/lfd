@@ -411,6 +411,84 @@ describe("DELETE /admin/catalog/:sku/public-price", () => {
   });
 });
 
+/**
+ * **Le masquage par audience**, et la divergence qu'il ferme.
+ *
+ * 🔴 Ces cas traversent le vrai SQL parce que le filtre de visibilité vivait à
+ * QUATRE endroits — le rayon, la fiche, le lot de SKU, la commande — et qu'un
+ * seul rendu conscient de l'audience aurait fait diverger le rayon et la
+ * caisse : un article masqué au pro se serait affiché au public et aurait
+ * échoué au panier, un article masqué au public serait resté achetable. Un
+ * test de handler n'aurait vu ni l'un ni l'autre.
+ */
+describe("masquage par audience", () => {
+  it("🔴 masquer au PRO laisse l'article en vitrine publique", async () => {
+    await asStaff().put(`/admin/catalog/${SKU}/visibility`).send({ hidden: true }).expect(204);
+
+    const item = await listOne();
+    expect(item?.isHidden).toBe(true);
+    expect(item?.isHiddenPublic).toBe(false);
+
+    // La vitrine publique, servie sans jeton : elle le montre encore.
+    const shop = jsonBody<{ items: { sku: string }[] }>(
+      await ctx.http().get("/shop/catalogue").expect(200),
+    );
+    expect(shop.items.map((entry) => entry.sku)).toContain("VIE-001");
+  });
+
+  it("🔴 masquer au PUBLIC le retire de la vitrine, sans toucher au pro", async () => {
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/public-visibility`)
+      .send({ hidden: true })
+      .expect(204);
+
+    const item = await listOne();
+    expect(item?.isHiddenPublic).toBe(true);
+    expect(item?.isHidden).toBe(false);
+
+    const shop = jsonBody<{ items: { sku: string }[] }>(
+      await ctx.http().get("/shop/catalogue").expect(200),
+    );
+    expect(shop.items.map((entry) => entry.sku)).not.toContain("VIE-001");
+  });
+
+  /**
+   * 🔴 **Le devis est le second des quatre sites.** Un article masqué au public
+   * ne doit pas seulement disparaître du rayon : il doit cesser d'être
+   * achetable. C'est là que la divergence se serait vue, en caisse.
+   */
+  it("🔴 masqué au public, il n'est plus achetable par la route publique", async () => {
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/public-visibility`)
+      .send({ hidden: true })
+      .expect(204);
+
+    const response = await ctx
+      .http()
+      .post("/shop/quote")
+      .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null });
+
+    expect(response.status).toBe(400);
+  });
+
+  it("revient en vitrine publique sans rien changer au canal pro", async () => {
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/public-visibility`)
+      .send({ hidden: true })
+      .expect(204);
+
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/public-visibility`)
+      .send({ hidden: false })
+      .expect(204);
+
+    const item = await listOne();
+    expect(item?.isHiddenPublic).toBe(false);
+    // Plus aucune décision : la ligne d'override est retirée, pas neutralisée.
+    expect(await ctx.prisma.catalogItemOverride.findUnique({ where: { sku: SKU } })).toBeNull();
+  });
+});
+
 describe("visibilité et mise en avant", () => {
   it("masque puis réaffiche", async () => {
     await asStaff().put(`/admin/catalog/${SKU}/visibility`).send({ hidden: true }).expect(204);

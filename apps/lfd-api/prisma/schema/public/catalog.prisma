@@ -422,8 +422,19 @@ model CatalogItemOverride {
   /// qui en RESSORT — pas ce nombre-ci (plan un-seul-canal-deux-prix, D12).
   decidedPublicTtcCents Int? @map("decided_public_ttc_cents")
 
-  /// Retiré du catalogue B2B sans être retiré du PIM.
+  /// Retiré de la boutique **PROFESSIONNELLE** sans être retiré du PIM.
+  ///
+  /// ⚠️ Le nom ne dit pas « pro », et c'est un reste : la colonne a masqué des DEUX
+  /// boutiques jusqu'au 2026-09-21, faute d'en avoir deux. La renommer coûterait un
+  /// déploiement de plus pour un gain de lecture seule.
   isHidden   Boolean @default(false) @map("is_hidden")
+
+  /// Retiré de la boutique **PUBLIQUE**, indépendamment de la précédente.
+  ///
+  /// Deux décisions et non une : un conditionnement de quarante pièces n'a rien à
+  /// faire en vitrine publique, une pièce à l'unité n'intéresse pas un pro. Le
+  /// backfill a recopié `is_hidden` pour que rien ne change au passage.
+  isHiddenPublic Boolean @default(false) @map("is_hidden_public")
   /// Mis en avant dans la boutique.
   isFeatured Boolean @default(false) @map("is_featured")
 

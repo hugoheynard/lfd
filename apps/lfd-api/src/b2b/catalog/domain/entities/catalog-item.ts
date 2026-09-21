@@ -197,7 +197,17 @@ export interface LocalDecision {
    * la règle.
    */
   readonly decidedPublicTtcCents: number | null;
+  /** Masqué de la boutique **professionnelle**. */
   readonly isHidden: boolean;
+  /**
+   * Masqué de la boutique **publique** — une décision distincte de la
+   * précédente.
+   *
+   * ⚠️ Jusqu'au 2026-09-21, `isHidden` valait pour les deux : masquer un article
+   * le retirait de partout. Le backfill a recopié la valeur, de sorte que ce qui
+   * était masqué le reste des deux côtés.
+   */
+  readonly isHiddenPublic: boolean;
   readonly isFeatured: boolean;
   readonly decidedBy: string | null;
 }
@@ -207,6 +217,7 @@ const NO_DECISION: LocalDecision = {
   priceMillicents: null,
   decidedPublicTtcCents: null,
   isHidden: false,
+  isHiddenPublic: false,
   isFeatured: false,
   decidedBy: null,
 };
@@ -364,6 +375,11 @@ export class CatalogItem {
     return this.decision.isHidden;
   }
 
+  /** Masqué de la boutique publique. Indépendant de {@link isHidden}. */
+  get isHiddenPublic(): boolean {
+    return this.decision.isHiddenPublic;
+  }
+
   get isFeatured(): boolean {
     return this.decision.isFeatured;
   }
@@ -501,9 +517,27 @@ export class CatalogItem {
     this.decision = { ...this.decision, isHidden: true, isFeatured: false, decidedBy };
   }
 
-  /** Remet l'article en vente. */
+  /** Remet l'article en vente **chez les pros**. */
   show(decidedBy: string | null): void {
     this.decision = { ...this.decision, isHidden: false, decidedBy };
+  }
+
+  /**
+   * **Retire l'article de la vitrine PUBLIQUE**, sans toucher au canal pro.
+   *
+   * ⚠️ **Il n'éteint PAS la mise en avant**, à la différence de son voisin, et
+   * ce n'est pas un oubli : `isFeatured` n'a plus d'écran de réglage et son
+   * audience n'est pas tranchée. L'éteindre ici trancherait par effet de bord
+   * une question que personne n'a posée. Son voisin garde le couplage parce
+   * qu'il l'avait déjà — on ne l'étend pas, on ne le retire pas.
+   */
+  hidePublic(decidedBy: string | null): void {
+    this.decision = { ...this.decision, isHiddenPublic: true, decidedBy };
+  }
+
+  /** Remet l'article en vitrine publique. */
+  showPublic(decidedBy: string | null): void {
+    this.decision = { ...this.decision, isHiddenPublic: false, decidedBy };
   }
 
   /**
@@ -542,6 +576,7 @@ export class CatalogItem {
       this.decision.priceMillicents === null &&
       this.decision.decidedPublicTtcCents === null &&
       !this.decision.isHidden &&
+      !this.decision.isHiddenPublic &&
       !this.decision.isFeatured;
     return {
       facts: this.facts,
