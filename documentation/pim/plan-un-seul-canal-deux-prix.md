@@ -25,10 +25,10 @@ boutiques**. Le croissant est à 2,00 € TTC au comptoir, 1,71 € HT au pro �
 | #      | Quoi                                   | Coût                    | Ce qui le retient             |
 | ------ | -------------------------------------- | ----------------------- | ----------------------------- |
 | ~~R1~~ | ✅ **Désinstaller l'app Shopify**      | fait le 2026-09-21      | —                             |
-| R2     | Le **panier public** en TTC            | une passe front         | rien                          |
+| ~~R2~~ | ✅ **Le panier public en TTC**         | fait le 2026-09-21      | —                             |
 | R3     | Le **bon de commande public** en TTC   | une passe               | rien                          |
 | R4     | L'**export CSV** ignore le prix public | une passe               | rien                          |
-| R5     | Le **masquage par audience**           | migration de données    | soudé à l'œil-par-colonne     |
+| ~~R5~~ | ✅ **Le masquage par audience**        | fait le 2026-09-21      | —                             |
 | R6     | Le **schéma** — les tables Shopify     | une migration           | le **prochain déploiement**   |
 | R7     | Les **écrans de doc internes**         | une passe               | une décision de forme (§ 3.7) |
 | R8     | Les **94 déclarations d'allergènes**   | de la saisie            | humain, pas du code           |
@@ -36,6 +36,12 @@ boutiques**. Le croissant est à 2,00 € TTC au comptoir, 1,71 € HT au pro �
 
 ✅ **R1 est fait, et c'était le seul qui coupait un accès réel.** Tout ce qui
 reste est du confort ou de la dette.
+
+⚠️ **R5 était fait depuis `c5a94e1a8` et cette table disait encore le
+contraire** (corrigé le 2026-09-21, en rayant R2). Une ligne « ce qui reste »
+qui nomme un chantier livré coûte plus qu'une ligne manquante : elle fait
+rouvrir un sujet clos, et elle jette le doute sur les autres lignes du même
+tableau.
 
 ## 3. Le détail
 
@@ -56,16 +62,49 @@ une clé à trois endroits en supposant qu'elle y était, alors qu'elle n'était
 qu'à un. Chercher au mauvais endroit et n'y rien trouver fait conclure qu'il n'y
 a rien — c'est exactement le raisonnement qui laisse un identifiant en vie.
 
-### 3.2 R2 — le panier public en TTC
+### 3.2 ~~R2~~ — le panier public en TTC ✅ _(2026-09-21)_
 
-Le rayon annonce 2,00 € TTC ; la ligne du panier dit encore 1,90 € HT. Le client
-lit donc deux prix différents pour le même article entre la vignette et son
-panier, et conclut que le prix a changé.
+Le rayon annonçait 2,00 € TTC ; la ligne du panier disait encore 1,90 € HT. Le
+client lisait deux prix pour le même article entre la vignette et son panier, et
+en concluait que le prix avait changé.
 
-⚠️ **La ventilation, elle, reste en l'état** (Hugo, 2026-09-21 : « la
-ventilation marche super comme ça »). C'est le décompte d'une facture — hors
-taxe puis TVA par taux — et il se lit ainsi même pour un particulier. Ce qui
-bascule est **la ligne**, pas le pied.
+**Ce qui a été fait**, et l'ordre compte :
+
+1. `ttcCentsOf` a quitté `b2b/catalog/application/shop-catalogue-view.ts` pour
+   `@lfd/money`, parce que le devis en est devenu le **second** appelant. Deux
+   définitions de « combien ça coûte taxe comprise » auraient divergé d'un
+   centime entre le rayon et le panier — l'écart exact qu'on réparait.
+2. `ShopQuoteLineView` porte `lineTotalTtcCents`, **rendu par le serveur**. Le
+   front ne le dérive pas : la conversion est une ventilation, pas une
+   multiplication, et `HT × (1 + taux)` à l'écran aurait reposé la seconde règle
+   d'arrondi que ce contrat existe pour supprimer.
+3. La ligne du panier lit `ShopPriceBasis` **elle-même** — le service du rayon,
+   donc le même fait : sans société, on achète en particulier. Elle reçoit les
+   **deux** montants et n'en choisit qu'un ; un parent qui trancherait pourrait
+   lui passer un hors taxe sous une mention « TTC » sans que rien ne le dise.
+
+L'unité affichée est `unitPriceTtcCents`, **le champ même que la vignette
+imprime** — pas un recalcul qui lui ressemble. Un e2e l'atteste (« dit la pièce
+au MÊME centime que le rayon »), parce que rien dans les types ne relie les deux
+champs.
+
+⚠️ **La ventilation reste en l'état** (Hugo : « la ventilation marche super comme
+ça »). C'est le décompte d'une facture — hors taxe puis TVA par taux — et il se
+lit ainsi même pour un particulier. Ce qui a basculé est **la ligne**, pas le
+pied.
+
+🔴 **Conséquence assumée : les lignes ne s'additionnent plus en rien de visible.**
+`ventilateVat` arrondit **une fois par taux** sur l'assiette entière, donc la
+somme des lignes TTC ne fait pas le total TTC — trois lignes à 3,33 € en portent
+un centime de moins que leur assiette. Le pied reste hors taxe, les lignes sont
+taxe comprise, et aucune addition à l'écran ne retombe sur ses pieds. Un test de
+`@lfd/money` fixe cette propriété (« ne s'additionne PAS en le total d'un
+panier »), pour que personne ne « répare » un jour le panier en sommant ses
+lignes.
+
+⚠️ **C'est le point à regarder si un client se plaint.** Le compromis est
+délibéré : le client compare sa ligne à l'étiquette qu'il vient de lire, pas au
+sous-total qui est en dessous.
 
 ### 3.3 R3 — le bon de commande public en TTC
 
@@ -83,7 +122,7 @@ remis.
 huit colonnes, **toutes professionnelles**. Le fichier qu'on ouvre pour relire
 une grille de prix tait donc celui que la vitrine applique.
 
-### 3.5 R5 — le masquage par audience
+### 3.5 ~~R5~~ — le masquage par audience ✅ _(2026-09-21)_
 
 > « Masquer dans chaque colonne, avec un œil barré. » — Hugo, 2026-09-21.
 
@@ -91,15 +130,22 @@ une grille de prix tait donc celui que la vitrine applique.
 contrôles basculeraient le même booléen : deux yeux, un seul état, et l'un
 mentirait quoi qu'on fasse. Les deux moitiés ne sont pas séquençables.
 
-Le défaut est **déjà là** : `listSellable` lit `isHidden` sans regarder qui
-demande, donc masquer un article le retire des **deux** boutiques. Un
+Le défaut était **déjà là** : `listSellable` lisait `isHidden` sans regarder qui
+demande, donc masquer un article le retirait des **deux** boutiques. Un
 conditionnement de quarante pièces n'a rien à faire en vitrine publique, une
-pièce à l'unité n'intéresse pas un pro — deux décisions, un seul bouton. En
-attendant, la phrase de confirmation le **dit**.
+pièce à l'unité n'intéresse pas un pro — deux décisions, un seul bouton.
 
-Ce que ça demande : une migration de **données** sur une base en service — la
-valeur actuelle doit se répartir sur deux colonnes sans qu'un article change de
-visibilité au passage. Trois déploiements (CLAUDE.md § 0), et `vitruve` d'office.
+**Fait** par `c5a94e1a8` : la migration `20260921200000_masquage_par_audience`
+ajoute `is_hidden_public` et **recopie** `is_hidden` dedans, donc aucun article
+ne change de visibilité au passage. La colonne du back-office s'appelle
+« Affichage boutique » et porte deux boutons, « Masquer pro » et
+« Masquer public ».
+
+🔴 **La visibilité se filtre à QUATRE endroits**, pas un — `findSku`,
+`findDefaultByProductSku`, `listDefaultsByProductSkus` et le `where` de
+`listSellable`. `vitruve` l'a relevé sur le plan : n'en rendre qu'un seul
+conscient de l'audience aurait fait diverger le rayon et la caisse, **dans les
+deux sens**. Ils passent désormais tous par `hiddenFrom(row, audience)`.
 
 ⚠️ **`isFeatured` sort du découpage** : sa colonne a quitté le catalogue, et
 l'écran qui la réglera n'existe pas encore. Le segment « En avant » reste en

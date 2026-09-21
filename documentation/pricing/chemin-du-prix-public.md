@@ -132,6 +132,53 @@ défaut de signature —
 | `catalog-workshop-shelves`             | l'atelier, qui produit pour le canal pro                                     |
 | `findSku`                              | le SKU d'une **déclinaison** ; aucun chemin public ne l'atteint (2026-09-21) |
 
+## 5 bis. Ce que le PANIER dit — et pourquoi ses lignes ne s'additionnent pas
+
+_(R2, 2026-09-21.)_ La vignette annonçait 2,00 € TTC, la ligne du panier
+répondait 1,90 € HT. Le client lisait deux prix pour le même croissant et en
+concluait que le prix avait changé entre le rayon et le panier.
+
+Trois pièces, et l'ordre compte :
+
+| Ce qui s'affiche                 | D'où ça vient                                                         |
+| -------------------------------- | --------------------------------------------------------------------- |
+| le prix d'UNE pièce              | `ShopItemView.unitPriceTtcCents` — le champ du rayon, au centime près |
+| le total de la ligne             | `ShopQuoteLineView.lineTotalTtcCents` — rendu par le serveur          |
+| le pied (sous-total, TVA, total) | **inchangé**, hors taxe puis TVA par taux                             |
+
+🔴 **Le front ne convertit rien.** La conversion est une **ventilation**, pas une
+multiplication : `HT × (1 + taux)` à l'écran aurait reposé la seconde règle
+d'arrondi que `POST /shop/quote` existe pour supprimer. `ttcCentsOf` a donc
+quitté `b2b/catalog/application/shop-catalogue-view.ts` pour
+[`packages/money/src/vat.ts`](../../packages/money/src/vat.ts) le jour où le
+devis en est devenu le second appelant — pas par rangement, mais parce que deux
+définitions de « combien ça coûte taxe comprise » divergent toujours d'un
+centime, et que ce centime est précisément l'écart qu'on réparait.
+
+**La ligne choisit son assiette elle-même**, par `ShopPriceBasis` — le service du
+rayon, donc le même fait : sans société, on achète en particulier. Elle reçoit
+les **deux** montants et n'en retient qu'un. Un parent qui trancherait pourrait
+lui passer un hors taxe sous une mention « TTC », et rien ne le lui dirait —
+c'est la raison même pour laquelle ce composant formate ses propres montants.
+
+### 🔴 Les lignes TTC ne font pas le total TTC, et c'est la loi
+
+`ventilateVat` arrondit **une fois par taux** sur l'assiette entière : c'est ce
+qu'une facture exige, et ce n'est pas la somme d'arrondis article par article.
+Trois lignes à 3,33 € portent chacune 18 centimes de taxe, soit 54 ; leur
+assiette de 9,99 € en porte 55.
+
+Conséquence à connaître **avant** de toucher au panier : additionner les lignes
+affichées ne retombe sur aucun nombre du pied. Un test de `@lfd/money` fixe la
+propriété (« ne s'additionne PAS en le total d'un panier »), pour que personne ne
+« répare » un jour l'écran en sommant ses lignes — il afficherait alors un total
+que la caisse contredirait.
+
+⚠️ **Le compromis est assumé, et c'est le point à regarder si un client se
+plaint** : il compare sa ligne à l'étiquette qu'il vient de lire, pas au
+sous-total qui est en dessous. Le pied reste le décompte d'une facture (Hugo,
+2026-09-21 : « la ventilation marche super comme ça »).
+
 ## 6. Ce qui n'est pas fini
 
 - 🔴 **La ligne de commande RÉSOUT, puis SCELLE.** `OrderLine.vatRate` porte la

@@ -14,12 +14,29 @@ passent **systématiquement** quand on les relance seules :
 | `client-notes.e2e-spec.ts`     | « deux écritures simultanées › gardent les trois notes »               |
 | `appointments.e2e-spec.ts`     | « les créneaux › ne propose rien tant que rien n'est déclaré »         |
 | `app.spec.ts` (boutique)       | « reconnaît TOUS les écrans clients » — **dépassement de délai à 5 s** |
+| `shop-page.spec.ts` (boutique) | **aucun test ne rougit** — `EnvironmentTeardownError` après coup       |
 
-⚠️ **Le quatrième n'est pas de la même famille**, et la distinction compte : il
-ne rougit pas sur une assertion, il **dépasse les 5 s** de Vitest. Il ne partage
-donc rien avec les trois autres qu'un symptôme — « rouge en suite complète, vert
-seul » — et sa cause est la CHARGE, pas l'ordre. Le chercher avec eux ferait
-perdre du temps sur les deux.
+⚠️ **Les deux derniers ne sont pas de la même famille**, et la distinction
+compte : ils ne rougissent pas sur une assertion. `app.spec.ts` **dépasse les
+5 s** de Vitest ; `shop-page.spec.ts` ne fait rougir **aucun test** — les 984
+passent — mais le process sort en 1 sur un rejet arrivé APRÈS le démontage de
+l'environnement :
+
+```
+EnvironmentTeardownError: Cannot load '/chunk-H7CFZMFQ.js' … after the
+environment was torn down.
+```
+
+Ils ne partagent donc rien avec les trois premiers qu'un symptôme — « rouge en
+suite complète, vert seul » — et leur cause est la CHARGE, pas l'ordre. Les
+chercher ensemble ferait perdre du temps sur les deux familles.
+
+🔴 **Le cinquième est le plus traître des cinq**, et c'est pour ça qu'il est
+inscrit : le rapport dit « 984 passed », et le shell dit `exit 1`. Qui lit le
+texte conclut vert ; seul le code de sortie dit l'inverse. Constaté le
+2026-09-21 sous `pnpm test` à la racine (14 paquets), **non reproduit** ni en
+lançant la boutique seule, ni à quatre paquets en parallèle — vérifié deux fois
+le même jour.
 
 ## Pourquoi ça compte plus qu'un agacement
 
