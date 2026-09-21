@@ -13,9 +13,9 @@ import { DeliveryAddressDialog } from './delivery-address-dialog';
 const ZONE: DeliveryZoneView = {
   id: 'z1',
   label: 'Val d’Isère',
-  prefixes: ['73150'],
+  postalPrefixes: ['73150'],
   fee: { mode: 'amount', cents: 690 },
-} as DeliveryZoneView;
+};
 
 function address(over: Partial<DeliveryAddressView> & { id: string }): DeliveryAddressView {
   return {
@@ -26,7 +26,13 @@ function address(over: Partial<DeliveryAddressView> & { id: string }): DeliveryA
     ville: "Val d'Isère",
     pays: 'France',
     isDefault: false,
-    specs: { note: '', slots: { mode: 'everyday', slot: null }, contact: null, gps: null },
+    specs: {
+      note: '',
+      slots: { mode: 'everyday', slot: null },
+      deliveryContact: null,
+      gps: null,
+      signatureRequired: null,
+    },
     ...over,
   } as DeliveryAddressView;
 }
@@ -131,8 +137,9 @@ describe('DeliveryAddressDialog', () => {
         specs: {
           note: '',
           slots: { mode: 'everyday', slot: { start: '09:00', end: '11:00' } },
-          contact: null,
+          deliveryContact: null,
           gps: null,
+          signatureRequired: null,
         },
       } as Partial<DeliveryAddressView> & { id: string }),
     ]);

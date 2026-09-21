@@ -5,7 +5,6 @@ import { provideRouter } from '@angular/router';
 import { AuthFacade, type PendingProfile } from '../../auth/auth.facade';
 
 import { ClientChrome } from '../../client/client-chrome.service';
-import { fill } from '../../client/copy/client-copy.service';
 import { FR } from '../../client/copy/fr';
 import { AccueilPage } from './accueil-page';
 

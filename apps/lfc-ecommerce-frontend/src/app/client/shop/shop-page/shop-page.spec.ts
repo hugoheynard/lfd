@@ -218,7 +218,9 @@ describe('ShopPage — la barre du bas, sans compte', () => {
           useValue: {
             isLoading: (): boolean => false,
             isAuthenticated: (): boolean => false,
-            login: (target: string): void => asked.push(`login:${target}`),
+            login: (target: string): void => {
+              asked.push(`login:${target}`);
+            },
           },
         },
       ],

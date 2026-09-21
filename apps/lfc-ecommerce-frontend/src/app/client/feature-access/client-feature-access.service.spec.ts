@@ -100,6 +100,10 @@ describe('ClientFeatureAccess', () => {
         invoices: 'visible',
         desktopMenu: 'visible',
         customerMandate: 'open',
+        // Fermée, comme son défaut : ce cas parle du mandat, pas de la
+        // livraison. La clé est là parce que la vue les porte TOUTES — et
+        // qu'elle a manqué ici le jour où elle est née (2026-09-21).
+        publicDelivery: 'closed',
       });
       expect(access.customerMandate()).toBe('open');
       expect(access.levelOf('customerMandate')).toBe('open');

@@ -83,7 +83,14 @@ function boot({
       { provide: AuthFacade, useValue: auth },
       // Le panier est un DIALOGUE : sa référence de panneau existe toujours
       // quand il est monté, et `close()` est ce qu'il appelle pour partir.
-      { provide: FoldPanelRef, useValue: { close: (): void => fermetures.push(true) } },
+      {
+        provide: FoldPanelRef,
+        useValue: {
+          close: (): void => {
+            fermetures.push(true);
+          },
+        },
+      },
       {
         provide: ClientCompany,
         useValue: { company: signal(granted.length === 0 ? null : { grantedTerms: granted }) },
