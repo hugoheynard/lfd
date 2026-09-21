@@ -603,14 +603,27 @@ bouton.
 
 > « Cette vue ne reflète plus la réalité. » — Hugo, 2026-09-21.
 
-`b2b/catalogue` décrit un monde à un seul prix. Ce qui suit est du vocabulaire,
-et tient en une passe :
+`b2b/catalogue` décrit un monde à un seul prix. Le vocabulaire est **fait**
+(2026-09-21, `c3cdea02`) ; la colonne reste :
 
-- **« Prix B2B » → « prix pro »** — colonne, phrase d'aide, filtre « À prix B2B » ;
-- une colonne **« prix public »** à côté, avec « modifier » et « revenir au PIM » ;
-- **le menu : « Catalogue » → « Catalogue actuel en ligne ».** Mieux que
-  cosmétique : l'entrée juste au-dessus s'appelle « Réception », et la paire
-  dirait enfin ce qu'elle est — _ce qui attend_ contre _ce qui est en ligne_.
+- ✅ **« Prix B2B » → « prix pro »** — colonne, phrase d'aide, filtre, titre de
+  page, l'éditeur partagé de `@lfd/catalog-ui`. Les **clés** ne bougent pas
+  (`'b2b'` reste la valeur du segment et de la colonne) : une valeur n'est pas
+  un nom, et la renommer serait une migration ;
+- ✅ **le menu : « Catalogue » → « Catalogue actuel en ligne »** — et la paire
+  avec « Réception » dit enfin ce qu'elle est : _ce qui attend_ contre _ce qui
+  est en ligne_ ;
+- ✅ **la confirmation de « Masquer » énonce le défaut** plutôt que de le taire :
+  « l'article disparaît des DEUX boutiques ». Le corriger demande le découpage
+  par audience ci-dessus ; le dire coûtait une phrase, et un geste dont la
+  portée surprend coûte une vente ;
+- ⏳ une colonne **« prix public »** à côté, avec « modifier » et « revenir au
+  PIM » — bloquée par la question **a** ci-dessous, et par le fait que
+  `CatalogItemOverride` n'a pas de colonne où le ranger.
+
+⚠️ **`@lfd/catalog-ui` porte le mot en dur.** `PriceEditor` dit « prix pro »
+dans son gabarit ; le jour où la colonne publique arrive, c'est un **paramètre**
+qu'il lui faudra, pas un second composant.
 
 ## Ce qui reste à trancher
 
