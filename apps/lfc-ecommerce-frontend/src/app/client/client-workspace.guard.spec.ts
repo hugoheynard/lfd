@@ -130,15 +130,21 @@ describe('workspaceHomeGuard — la cible de la connexion', () => {
   });
 
   /**
-   * ⚠️ LE REPLI N'A PAS SUIVI, ET C'EST VOULU. Sa raison n'a jamais été « c'est
-   * l'accueil d'une société » mais « cet écran-là sait dire qu'il n'a pas pu
-   * lire le compte ». Les deux valeurs étaient égales par accident ; ce test
-   * existe pour qu'elles ne se remettent pas à l'être en silence.
+   * 🔴 LE REPLI POINTAIT AILLEURS, POUR UNE RAISON FAUSSE. Il menait à
+   * `/nouvelle-commande` au motif que « cet écran-là sait dire qu'il n'a pas pu
+   * lire le compte ». Il ne le disait pas : c'est le SHELL qui rend cet avis,
+   * sur tous les écrans à la fois, et son propre commentaire explique pourquoi.
+   * L'écran a disparu le 2026-09-21 ; le repli rejoint donc les deux accueils.
+   *
+   * ⚠️ Ce que ce test garde n'est plus une adresse DIFFÉRENTE, c'est la
+   * troisième QUESTION : « on ne sait pas encore » n'est ni « perso » ni
+   * « société ». La constante reste distincte pour cette raison-là, et ce cas
+   * doit continuer d'avoir sa réponse même le jour où les trois divergent.
    */
   it(
-    'envoie sur la prise de commande quand /me n’a pas dit l’espace',
+    'répond quand même quand /me n’a pas dit l’espace',
     async () => {
-      expect(await land({ current: null, companies: true })).toBe('/nouvelle-commande');
+      expect(await land({ current: null, companies: true })).toBe('/bienvenue');
     },
     // La garde ATTEND `/me` — c'est tout son objet. Ce cas paie donc l'attente
     // complète, et lui seul : le délai par défaut de la suite est plus court.

@@ -201,7 +201,7 @@ function isPlaced(value: unknown): value is PlacedOrder {
  * `payment` ; `place()` n'en prenait que le numéro. Chaque commande client
  * partait donc en `pending` derrière une intention que rien ne présentait, et
  * l'écran suivant annonçait « c'est réglé ». Le règlement est désormais une
- * ÉTAPE — `/commande/reglement/:id` — et la commande dit lequel des
+ * ÉTAPE — `/reglement/:id` — et la commande dit lequel des
  * trois états elle porte.
  */
 @Injectable({ providedIn: 'root' })

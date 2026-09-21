@@ -188,6 +188,6 @@ export class ReglementPage {
   }
 
   private toConfirmation(): Promise<boolean> {
-    return this.router.navigate(['/commande/confirmee']);
+    return this.router.navigate(['/confirmation-de-commande']);
   }
 }

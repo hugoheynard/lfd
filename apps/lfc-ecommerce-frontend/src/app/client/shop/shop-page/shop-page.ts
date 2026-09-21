@@ -196,8 +196,15 @@ export class ShopPage {
     void this.catalogue.hydrate();
   }
 
+  /**
+   * La flèche de retour : **l'accueil**.
+   *
+   * 🔴 Elle menait à l'écran du mode de service, qui n'existe plus : ses deux
+   * questions se posent en dialogues, depuis l'accueil comme depuis ici. Revenir
+   * en arrière depuis le rayon, c'est donc revenir là d'où l'on y est entré.
+   */
   protected backToService(): void {
-    void this.router.navigate(['/nouvelle-commande']);
+    void this.router.navigate(['/bienvenue']);
   }
 
   /**
@@ -298,7 +305,7 @@ export class ShopPage {
     // Une carte à présenter mène au règlement ; tout le reste — compte, total
     // nul — à la confirmation. La décision vient du serveur, pas de l'écran.
     void this.router.navigate(
-      placed.settlement === 'due' ? ['/commande/reglement', placed.id] : ['/commande/confirmee'],
+      placed.settlement === 'due' ? ['/reglement', placed.id] : ['/confirmation-de-commande'],
     );
   }
 }

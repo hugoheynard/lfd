@@ -140,8 +140,11 @@ export class ConfirmationPage {
     effect(() => {
       // Rien à confirmer : personne n'est passé par le paiement. On renvoie au
       // rayon plutôt que d'afficher une commande vide.
+      //
+      // ⚠️ Au RAYON pour de bon depuis le 2026-09-21 : ce commentaire disait
+      // déjà « le rayon » et l'adresse menait à l'écran du mode de service.
       if (this.orders.latest() === null) {
-        void this.router.navigate(['/nouvelle-commande']);
+        void this.router.navigate(['/boutique']);
       }
     });
   }
@@ -163,7 +166,7 @@ export class ConfirmationPage {
   protected settle(): void {
     const order = this.order();
     if (order !== null) {
-      void this.router.navigate(['/commande/reglement', order.id]);
+      void this.router.navigate(['/reglement', order.id]);
     }
   }
 

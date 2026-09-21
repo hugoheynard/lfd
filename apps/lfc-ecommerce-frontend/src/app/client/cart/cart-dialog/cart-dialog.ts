@@ -1,46 +1,100 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { Router } from '@angular/router';
 import { instantToLocal } from '@lfd/contracts';
-import { FoldPanelHostService } from 'fold-ng';
+import {
+  FoldPanelBodyComponent,
+  type FoldPanelDefaults,
+  FoldPanelFooterComponent,
+  FoldPanelHeaderComponent,
+  FoldPanelHostService,
+  FoldPanelRef,
+} from 'fold-ng';
 
 import { GuestIdentityDialog } from '../guest-identity-dialog/guest-identity-dialog';
 
 import { AuthFacade } from '../../../auth/auth.facade';
 import { formatCents } from '../../format-money';
 import { ClientCart } from '../client-cart.service';
-import { ClientChrome } from '../../client-chrome.service';
 import { ClientLocale } from '../../client-locale.service';
 import { serviceDayLabel } from '../../format-day';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientOrders } from '../../client-orders.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
+import { dialogSide } from '../../panel-side';
 import { CartSummary } from '../cart-summary/cart-summary';
 import { OrderDoors } from '../../shop/order-doors';
 
 /**
- * Où Auth0 ramène, une fois l'identité obtenue : **ici**.
+ * Où Auth0 ramène, une fois l'identité obtenue : **le rayon**.
  *
- * Le panier vit dans le stockage local et survit à la redirection — on revient
- * donc sur la commande composée, pas sur un rayon vide.
+ * 🔴 C'était le panier, tant qu'il avait une adresse. Il n'en a plus : un
+ * dialogue ne se restaure pas au retour d'une redirection. Le panier, lui,
+ * survit — il vit dans le stockage local — et se rouvre d'un geste depuis la
+ * barre, où sa pastille porte déjà son compte.
  */
-const CART = '/commande/panier';
+const AFTER_SIGN_IN = '/boutique';
 
 /**
- * Le panier, en pile — ce que le bureau montre dans sa colonne de droite.
+ * **Le panier, en dialogue** (Hugo, 2026-09-21 : « le panier devient un dialog
+ * comme le reste »).
+ *
+ * 🔴 Il était un ÉCRAN, et c'est ce qui coûtait : on quittait le rayon pour
+ * relire ce qu'on venait d'y mettre, puis il fallait y revenir. Trois surfaces
+ * disaient la même chose — la page, le popover de la barre au bureau, et le
+ * lien de la pastille en pile. Il n'en reste qu'une, et elle s'ouvre par-dessus
+ * ce qu'on était en train de faire.
  *
  * Il ne redemande rien : le lieu et le créneau sont déjà pris, ils se rappellent
- * en tête de page — et « Modifier » les rouvre sans perdre le panier. Le seul geste qui reste est de régler, et le bouton porte le
- * montant plutôt que de le laisser deviner.
+ * en tête — et « Modifier » les rouvre sans fermer le panier. Le seul geste qui
+ * reste est de régler, et le bouton porte le montant plutôt que de le laisser
+ * deviner.
+ *
+ * ⚠️ **Ce qui sort d'ici NAVIGUE, et referme donc le dialogue** : le règlement
+ * et la confirmation sont des écrans, parce qu'une commande existe déjà quand
+ * on y arrive et que leur adresse doit survivre à un rechargement.
  */
 @Component({
-  selector: 'app-panier-page',
+  selector: 'app-cart-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CartSummary],
-  templateUrl: './panier-page.html',
-  styleUrl: './panier-page.scss',
+  imports: [
+    CartSummary,
+    FoldPanelBodyComponent,
+    FoldPanelFooterComponent,
+    FoldPanelHeaderComponent,
+  ],
+  templateUrl: './cart-dialog.html',
+  styleUrl: './cart-dialog.scss',
 })
-export class PanierPage {
-  private readonly chrome = inject(ClientChrome);
+export class CartDialog {
+  static readonly foldPanel: FoldPanelDefaults = {
+    side: 'center',
+    // `lg` : des lignes de produit avec quantité, prix unitaire et total
+    // doivent tenir sans se replier — c'est la contrainte la plus forte de ce
+    // dialogue, et la seule qui décide de sa largeur.
+    width: 'lg',
+    surface: 'solid',
+  };
+
+  /** Ouvre le panier. Il ne rend rien : ce qu'on y décide part par le routeur. */
+  static open(panels: FoldPanelHostService): FoldPanelRef<void> {
+    return panels.open<undefined, void>(CartDialog, {
+      side: dialogSide(),
+      stack: true,
+      data: undefined,
+    });
+  }
+
+  /**
+   * ⚠️ Déclarée sans jamais être lue, et c'est le CONTRAT DE FOLD qui l'exige :
+   * `FoldPanelContent` n'a que des membres facultatifs, et TypeScript refuse un
+   * type « faible » auquel une classe n'apporte aucune propriété commune. Ce
+   * panneau n'a rien à recevoir — le panier vit dans son magasin, et c'est tout
+   * l'intérêt : on l'ouvre d'où l'on veut sans rien lui passer.
+   */
+  readonly data = input<undefined>();
+
+  private readonly ref = inject(FoldPanelRef);
+
   private readonly router = inject(Router);
   private readonly order = inject(OrderContextStore);
   private readonly orders = inject(ClientOrders);
@@ -124,11 +178,6 @@ export class PanierPage {
     return fill(this.t().cart.pay, { total: formatCents(this.cart.totals().totalCents) });
   });
 
-  constructor() {
-    this.chrome.kicker.set(this.t().chrome.kickerCart);
-    this.chrome.back.set((): void => this.backToShop());
-  }
-
   /**
    * **Le mode de service se choisit ICI, en dialogues** (2026-09-21).
    *
@@ -197,22 +246,21 @@ export class PanierPage {
       // Le refus a déjà été dit, et le panier est intact.
       return;
     }
-    void this.router.navigate(
-      placed.settlement === 'due' ? ['/commande/reglement', placed.id] : ['/commande/confirmee'],
-    );
+    this.leaveFor(placed);
   }
 
   /** La porte de qui a déjà un compte. Elle ramène ICI, panier compris. */
   protected signInFirst(): void {
-    this.auth.login(CART);
+    this.auth.login(AFTER_SIGN_IN);
   }
 
   protected signIn(): void {
-    this.auth.login(CART);
+    this.auth.login(AFTER_SIGN_IN);
   }
 
+  /** Rouvrir le rayon, c'est simplement refermer le panier : on y était. */
   protected backToShop(): void {
-    void this.router.navigate(['/boutique']);
+    this.ref.close();
   }
 
   /**
@@ -247,8 +295,18 @@ export class PanierPage {
       // l'écran où la correction est possible.
       return;
     }
+    this.leaveFor(placed);
+  }
+
+  /**
+   * La suite dépend de ce que le SERVEUR a décidé du règlement : une carte à
+   * présenter mène au règlement, tout le reste à la confirmation. Les deux sont
+   * des écrans, donc le dialogue se ferme.
+   */
+  private leaveFor(placed: { readonly id: string; readonly settlement: string }): void {
+    this.ref.close();
     void this.router.navigate(
-      placed.settlement === 'due' ? ['/commande/reglement', placed.id] : ['/commande/confirmee'],
+      placed.settlement === 'due' ? ['/reglement', placed.id] : ['/confirmation-de-commande'],
     );
   }
 }

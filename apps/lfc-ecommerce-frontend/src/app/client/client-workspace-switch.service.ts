@@ -28,13 +28,21 @@ export const PERSONAL_HOME = '/bienvenue';
 /**
  * Où aller quand `/me` n'a pas dit l'espace À TEMPS.
  *
- * ⚠️ Ce n'est PAS `COMPANY_HOME`, et ça l'a été tant que les deux coïncidaient.
- * La raison de ce repli n'a jamais été « c'est l'accueil d'une société » mais
- * « cet écran-là SAIT DIRE qu'il n'a pas pu lire le compte ». Les deux valeurs
- * étaient égales par accident ; les laisser confondues aurait fait perdre ce
- * message le jour où l'une a bougé — c'est-à-dire aujourd'hui.
+ * 🔴 **LA RAISON ÉCRITE ICI ÉTAIT FAUSSE** (corrigé le 2026-09-21). Elle
+ * disait : « cet écran-là SAIT DIRE qu'il n'a pas pu lire le compte », et
+ * pointait `/nouvelle-commande`. Cet écran ne dit rien de tel — c'est le SHELL
+ * qui rend l'avis d'échec (`client-shell.html`, sous `access.state() ===
+ * 'failed'`), et son propre commentaire explique pourquoi : « dans le shell et
+ * pas dans un écran, la garde a pu renvoyer ailleurs que là où l'on allait,
+ * c'est partout que des pages manquent, un seul endroit le dit ».
+ *
+ * Le repli n'avait donc aucune raison d'être ailleurs que les deux accueils, et
+ * `/nouvelle-commande` n'existe plus. Le nom RESTE distinct de
+ * {@link COMPANY_HOME} : c'est bien une troisième question — « on ne sait pas
+ * encore » n'est ni « perso » ni « société » — et les confondre parce qu'elles
+ * ont la même valeur ferait de cette égalité une hypothèse silencieuse.
  */
-export const WORKSPACE_UNKNOWN_HOME = '/nouvelle-commande';
+export const WORKSPACE_UNKNOWN_HOME = '/bienvenue';
 
 /**
  * **L'entrée** : une adresse sans écran, que `workspaceHomeGuard` redirige vers

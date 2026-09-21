@@ -55,7 +55,7 @@ describe('Le chrome de l’app', () => {
       '/nouvelle-commande',
       '/boutique',
       '/commande/panier',
-      '/commande/confirmee',
+      '/confirmation-de-commande',
     ]) {
       expect(await at(url), url).toBe(true);
     }
@@ -63,17 +63,43 @@ describe('Le chrome de l’app', () => {
 
   /**
    * 🔴 UNE ADRESSE SERVIE UNE FOIS EST SERVIE POUR TOUJOURS. La boutique a
-   * changé de place deux fois — `nouvelle-commande/boutique`, puis
+   * changé de place deux fois — `commande/boutique`, puis
    * `commande/boutique`, puis la racine le 2026-09-21. Les deux premières ont
    * été distribuées : un signet, un lien partagé, un e-mail de confirmation.
    *
    * ⚠️ Le test vise la CIBLE, pas seulement le fait que ça passe : une
    * redirection vers le mauvais écran répond `true` aussi.
    */
-  it('🔴 sert encore les deux anciennes adresses de la boutique', async () => {
-    for (const old of ['/nouvelle-commande/boutique', '/commande/boutique']) {
-      expect(await at(old), old).toBe(true);
-      expect(router.url, old).toBe('/boutique');
+
+  /**
+   * 🔴 UNE ADRESSE SERVIE UNE FOIS EST SERVIE POUR TOUJOURS. Le tunnel a changé
+   * de forme deux fois en une semaine, et ces adresses sont parties dans des
+   * signets, des liens partagés et des e-mails de confirmation.
+   *
+   * ⚠️ Le test vise la CIBLE, pas seulement le fait que ça passe : sans
+   * redirection, une adresse périmée n'échoue PAS — elle tombe sur `**`, donc
+   * sur l'accueil, en silence. C'est la panne que personne ne signale.
+   */
+  it('🔴 sert encore toutes les anciennes adresses du tunnel', async () => {
+    const anciennes: readonly (readonly [string, string])[] = [
+      ['/nouvelle-commande/boutique', '/boutique'],
+      ['/commande/boutique', '/boutique'],
+      // Le panier n'est plus un écran : ses adresses mènent au rayon, d'où il
+      // s'ouvre d'un geste.
+      ['/nouvelle-commande/panier', '/boutique'],
+      ['/commande/panier', '/boutique'],
+      // L'écran du mode de service a disparu : ses questions sont des dialogues.
+      ['/nouvelle-commande', '/bienvenue'],
+      // « Mon espace » s'est fondu dans l'accueil.
+      ['/mon-espace', '/bienvenue'],
+      ['/nouvelle-commande/confirmee', '/confirmation-de-commande'],
+      ['/commande/confirmee', '/confirmation-de-commande'],
+      ['/nouvelle-commande/reglement/cmd_1', '/reglement/cmd_1'],
+      ['/commande/reglement/cmd_1', '/reglement/cmd_1'],
+    ];
+    for (const [ancienne, cible] of anciennes) {
+      expect(await at(ancienne), ancienne).toBe(true);
+      expect(router.url, ancienne).toBe(cible);
     }
   });
 

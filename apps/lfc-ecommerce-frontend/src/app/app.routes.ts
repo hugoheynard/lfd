@@ -221,18 +221,6 @@ export const routes: Routes = [
           import('./client/mon-compte/compte-page/compte-page').then((m) => m.ComptePage),
       },
       {
-        // Le client reconnu : « On vous sert comment ? ». C'est la PREMIÈRE
-        // question du parcours, avant le catalogue — ce qui est en stock, à
-        // quelle heure et à quel prix dépend du mode de service.
-        path: 'nouvelle-commande',
-        canActivate: [featureAccessGuard('shop', 'order')],
-        title: 'Commander — La Folie Coffee',
-        loadComponent: () =>
-          import('./client/nouvelle-commande/commande-page/commande-page').then(
-            (m) => m.CommandePage,
-          ),
-      },
-      {
         // LA BOUTIQUE CLIENTE et ses rayons.
         //
         // 🔴 À LA RACINE depuis le 2026-09-21 (Hugo : « pourquoi passer par
@@ -260,23 +248,14 @@ export const routes: Routes = [
         loadComponent: () => import('./client/shop/shop-page/shop-page').then((m) => m.ShopPage),
       },
       {
-        path: 'commande/panier',
-        canActivate: [featureAccessGuard('shop', 'order')],
-        title: 'Mon panier — La Folie Coffee',
-        loadComponent: () =>
-          import('./client/cart/panier-page/panier-page').then((m) => m.PanierPage),
-      },
-      {
         // LE RÈGLEMENT, et il porte l'identifiant de la commande. Elle EXISTE
         // déjà quand on arrive ici : l'adresse doit donc survivre à un
         // rechargement, et se rouvrir plus tard sur une commande restée à payer.
         // Un panneau dans le panier n'aurait tenu ni l'un ni l'autre.
-        path: 'commande/reglement/:id',
+        path: 'reglement/:id',
         title: 'Régler ma commande — La Folie Coffee',
         loadComponent: () =>
-          import('./client/nouvelle-commande/reglement-page/reglement-page').then(
-            (m) => m.ReglementPage,
-          ),
+          import('./client/commande/reglement-page/reglement-page').then((m) => m.ReglementPage),
       },
       {
         // LE QR DE RETRAIT, par son identifiant de commande. Il vit sous
@@ -289,10 +268,10 @@ export const routes: Routes = [
           import('./client/mes-commandes/retrait-page/retrait-page').then((m) => m.RetraitPage),
       },
       {
-        path: 'commande/confirmee',
+        path: 'confirmation-de-commande',
         title: 'Commande confirmée — La Folie Coffee',
         loadComponent: () =>
-          import('./client/nouvelle-commande/confirmation-page/confirmation-page').then(
+          import('./client/commande/confirmation-page/confirmation-page').then(
             (m) => m.ConfirmationPage,
           ),
       },
@@ -341,9 +320,23 @@ export const routes: Routes = [
       // pour un champ de contrat.
       { path: 'nouvelle-commande/boutique', redirectTo: 'boutique' },
       { path: 'commande/boutique', redirectTo: 'boutique' },
-      { path: 'nouvelle-commande/panier', redirectTo: 'commande/panier' },
-      { path: 'nouvelle-commande/reglement/:id', redirectTo: 'commande/reglement/:id' },
-      { path: 'nouvelle-commande/confirmee', redirectTo: 'commande/confirmee' },
+      // 🔴 LE PANIER N'EST PLUS UN ÉCRAN (2026-09-21) : c'est un dialogue, qui
+      // s'ouvre par-dessus le rayon depuis la pastille de la barre. Ses deux
+      // adresses mènent donc au RAYON — de là, le panier est à un geste, et sa
+      // pastille porte déjà son compte. Un dialogue ne se restaure pas depuis
+      // une URL : l'y renvoyer aurait demandé de rouvrir un panneau au
+      // chargement, c'est-à-dire de réinventer une page.
+      // 🔴 L'ÉCRAN DU MODE DE SERVICE A DISPARU le 2026-09-21. Ses deux
+      // questions — où, et quand — se posent en DIALOGUES, depuis l'accueil
+      // comme depuis le panier : on ne quitte plus ce qu'on fait pour y
+      // répondre. L'adresse mène donc à l'accueil, qui porte les portes.
+      { path: 'nouvelle-commande', pathMatch: 'full', redirectTo: 'bienvenue' },
+      { path: 'nouvelle-commande/panier', redirectTo: 'boutique' },
+      { path: 'commande/panier', redirectTo: 'boutique' },
+      { path: 'nouvelle-commande/reglement/:id', redirectTo: 'reglement/:id' },
+      { path: 'commande/reglement/:id', redirectTo: 'reglement/:id' },
+      { path: 'nouvelle-commande/confirmee', redirectTo: 'confirmation-de-commande' },
+      { path: 'commande/confirmee', redirectTo: 'confirmation-de-commande' },
     ],
   },
   ...proRoutes,

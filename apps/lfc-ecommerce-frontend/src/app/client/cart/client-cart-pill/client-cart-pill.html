@@ -1,46 +1,25 @@
-<!-- Ce que les deux formes montrent, déclaré une fois. -->
-<ng-template #guts>
-  <!-- `shopping-cart` et non `basket` (Hugo, 2026-09-20). Le panier à anse de
-       fold est le glyphe des boutiques en ligne génériques ; la maquette dessine
-       un CADDIE — corbeille sur deux roues, exactement le tracé de fold sous ce
-       nom-là. Deux icônes possibles pour un seul mot français : c'est le dessin
-       qu'on choisit, pas le nom. -->
+<!-- 🔴 UNE SEULE FORME depuis le 2026-09-21 (Hugo : « le panier devient un
+     dialog comme le reste »). Il y en avait trois pour la même chose : un lien
+     vers la page en pile, un popover au bureau, et la page elle-même. Le
+     dialogue les remplace — il s'ouvre par-dessus le rayon aux deux largeurs,
+     centré au bureau, en feuille du bas en pile, et c'est `dialogSide()` qui
+     tranche au moment du geste.
+
+     ⚠️ Ce qui est perdu, et assumé : le popover se lisait sans rien ouvrir de
+     modal. Mais il ne montrait qu'un extrait — ni le mode de service, ni
+     l'invite d'identité, ni le bouton qui porte le montant — et son pied
+     menait de toute façon au panier entier. Une surface qui renvoie toujours
+     vers une autre n'est pas une surface, c'est un détour.
+
+     `shopping-cart` et non `basket` (Hugo, 2026-09-20). Le panier à anse de
+     fold est le glyphe des boutiques en ligne génériques ; la maquette dessine
+     un CADDIE — corbeille sur deux roues, exactement le tracé de fold sous ce
+     nom-là. Deux icônes possibles pour un seul mot français : c'est le dessin
+     qu'on choisit, pas le nom. -->
+<button class="pill" type="button" [attr.aria-label]="label()" (click)="void openCart()">
   <fold-icon class="glyph" name="shopping-cart" />
   @if (!cart.isEmpty()) {
     <span class="count" aria-hidden="true">{{ cart.count() }}</span>
     <span class="total wide-only" aria-hidden="true">{{ total() }}</span>
   }
-</ng-template>
-
-<!-- EN PILE : le lien vers la page panier, tel qu'il a toujours été. -->
-<a class="pill in-pocket" routerLink="/commande/panier" [attr.aria-label]="label()">
-  <ng-container [ngTemplateOutlet]="guts" />
-</a>
-
-<!-- AU BUREAU : le popover — on relit son panier sans quitter le rayon. -->
-<fold-popover class="pop at-desk" placement="bottom-end" [(open)]="open">
-  <button class="pill" type="button" foldPopoverTrigger="dialog" [attr.aria-label]="label()">
-    <ng-container [ngTemplateOutlet]="guts" />
-  </button>
-
-  <div foldPopoverPanel class="panel">
-    <div class="head">
-      <span class="head-titles">
-        <span class="head-title">{{ t().nav.cart }}</span>
-        <span class="head-note">{{ t().cart.intro }}</span>
-      </span>
-    </div>
-
-    <!-- Le décompte est celui de la page panier, au caractère près : un second
-         calcul serait une seconde occasion de dire un autre total. -->
-    <div class="scroller">
-      <app-cart-summary />
-    </div>
-
-    <div class="foot">
-      <a class="foot-cta" routerLink="/commande/panier" (click)="close()">
-        {{ t().chrome.cartOpen }}
-      </a>
-    </div>
-  </div>
-</fold-popover>
+</button>

@@ -399,14 +399,17 @@ est cité au §1.1, et la distinction machine-à-machine des routes publiques qu
 
 C'est par là que la demande est arrivée, et l'état est établi :
 
-- `client/cart/panier-page/panier-page.ts` — `proceed()` (l. ~117) vérifie
-  **deux** choses : panier vide → retour au rayon ; pas de mode de service →
-  `/nouvelle-commande`. Il ne vérifie **pas** l'authentification.
+- `client/cart/cart-dialog/cart-dialog.ts` — ⚠️ **c'était `panier-page/`, un
+  écran, jusqu'au 2026-09-21 : le panier est devenu un dialogue.** `proceed()` vérifie
+  **deux** choses : panier vide → retour au rayon ; pas de mode de service → la
+  question, posée sur place en dialogue depuis le 2026-09-21 (elle menait à
+  l'écran `/nouvelle-commande`, supprimé). Il ne vérifie **pas**
+  l'authentification.
 - `ClientOrders.place()` (l. 265-274) exige `service`, des lignes **et un
   `workspace` non nul**. `ClientWorkspace.current()` vaut `null` tant que `/me`
   n'a pas répondu — donc pour un visiteur, `place()` rend `null` **en silence**.
   L'écran ne dit rien : c'est le défaut que la demande a fait remonter.
-- `.pay:disabled` **existe déjà** dans `panier-page.scss` : le bouton sait se
+- `.pay:disabled` **existe déjà** dans la feuille du panier : le bouton sait se
   griser, il n'a jamais eu de condition pour le faire.
 - Le motif d'invite existe aussi : `.ask` / `.ask-title` / `.ask-hint`, utilisé
   par « Où êtes-vous servi ? ». C'est la forme à reprendre pour « Qui

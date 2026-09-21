@@ -12,7 +12,9 @@ import { OrderContextStore, type ServiceChoice } from '../../order-context.store
 import { OrderDoors } from '../../shop/order-doors';
 import { hydrateWith, TEST_CATALOGUE } from '../../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
-import { PanierPage } from './panier-page';
+import { FoldPanelRef } from 'fold-ng';
+
+import { CartDialog } from './cart-dialog';
 
 const AU_LABO: ServiceChoice = {
   mode: 'pickup',
@@ -49,25 +51,29 @@ interface Monde {
   readonly panier?: boolean;
 }
 
-/** Ce que l'écran a demandé aux portes, et où il est allé. */
+/** Ce que l'écran a demandé aux portes, où il est allé, et s'il s'est fermé. */
 let ouvertes: string[] = [];
 let visitees: string[] = [];
+let fermetures: boolean[] = [];
 
 function boot({
   auth = VISITEUR,
   service = AU_LABO,
   panier = true,
-}: Monde = {}): ComponentFixture<PanierPage> {
+}: Monde = {}): ComponentFixture<CartDialog> {
   localStorage.clear();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
-    imports: [PanierPage],
+    imports: [CartDialog],
     providers: [
       provideHttpClient(),
       provideHttpClientTesting(),
       provideRouter([]),
       provideWorkspace(workspaceDouble()),
       { provide: AuthFacade, useValue: auth },
+      // Le panier est un DIALOGUE : sa référence de panneau existe toujours
+      // quand il est monté, et `close()` est ce qu'il appelle pour partir.
+      { provide: FoldPanelRef, useValue: { close: (): void => fermetures.push(true) } },
       // Les portes sont des DIALOGUES : on n'en monte pas le contenu ici, on
       // observe que l'écran les ouvre — et qu'il ne va nulle part pour ça.
       {
@@ -87,6 +93,7 @@ function boot({
   });
   ouvertes = [];
   visitees = [];
+  fermetures = [];
   hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   TestBed.inject(OrderContextStore).choice.set(service);
   const cart = TestBed.inject(ClientCart);
@@ -99,18 +106,18 @@ function boot({
     visitees.push(Array.isArray(commands) ? commands.join('/') : String(commands));
     return Promise.resolve(true);
   };
-  const fixture = TestBed.createComponent(PanierPage);
+  const fixture = TestBed.createComponent(CartDialog);
   fixture.detectChanges();
   return fixture;
 }
 
-const el = (fixture: ComponentFixture<PanierPage>): HTMLElement =>
+const el = (fixture: ComponentFixture<CartDialog>): HTMLElement =>
   fixture.nativeElement as HTMLElement;
 
-const invite = (fixture: ComponentFixture<PanierPage>): Element | null =>
+const invite = (fixture: ComponentFixture<CartDialog>): Element | null =>
   el(fixture).querySelector('.who');
 
-const bouton = (fixture: ComponentFixture<PanierPage>): HTMLButtonElement | null =>
+const bouton = (fixture: ComponentFixture<CartDialog>): HTMLButtonElement | null =>
   el(fixture).querySelector('.pay');
 
 describe('le panier demande qui commande', () => {
@@ -182,7 +189,7 @@ describe('le panier demande qui commande', () => {
  * question est un panier qu'on risque de perdre de vue.
  */
 describe('le panier pose la question du lieu SUR PLACE', () => {
-  const clic = (fixture: ComponentFixture<PanierPage>, selector: string): void => {
+  const clic = (fixture: ComponentFixture<CartDialog>, selector: string): void => {
     el(fixture).querySelector<HTMLButtonElement>(selector)?.click();
   };
 

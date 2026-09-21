@@ -41,7 +41,7 @@
     <!-- Ouvrir une commande n'a de sens que si la boutique la permet : la tuile
          mènerait sinon à une garde qui renvoie au dossier. -->
     @if (access.atLeast('order')) {
-      <a class="new-order" routerLink="/nouvelle-commande" (click)="closed.emit()">
+      <a class="new-order" routerLink="/bienvenue" (click)="closed.emit()">
         <span class="new-order-tile" aria-hidden="true"><fold-icon name="plus" /></span>
         <span class="new-order-titles">
           <span class="new-order-title">{{ t().nav.newOrder }}</span>

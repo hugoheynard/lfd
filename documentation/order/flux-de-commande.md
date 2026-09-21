@@ -28,12 +28,15 @@
 | `/mon-espace`, l'accueil du reconnu    | **supprimé**, redirige vers `/bienvenue` | `app.routes.ts:320`              |
 | `/bienvenue` menait au mode de service | il **pose les deux questions sur place** | `accueil-public.ts:59, 560, 662` |
 
-🔴 **`/nouvelle-commande` L'ÉCRAN n'a PAS disparu.** Seul le TUNNEL a changé de
-préfixe. L'écran du mode de service vit toujours (`app.routes.ts:227`) et reste
-la destination de six navigations — le panier quand aucun mode n'est choisi, le
-rayon, la confirmation, et le repli d'espace inconnu. Le démontage est commencé,
-pas fini : confondre les deux ferait croire à un écran mort, alors qu'il est
-encore sur le chemin de tout le monde.
+🔴 **IL NE RESTE QUE TROIS ADRESSES** (Hugo, 2026-09-21) : `/boutique`,
+`/reglement/:id`, `/confirmation-de-commande`. Le panier est devenu un dialogue
+— il s'ouvre par-dessus le rayon, depuis la pastille de la barre — et l'écran du
+mode de service a disparu : ses deux questions sont des dialogues, servis par
+`OrderDoors`, appelé par l'accueil comme par le panier.
+
+Les deux qui restent des écrans le sont pour la MÊME raison, écrite dans les
+routes : une commande **existe déjà** quand on y arrive, leur adresse doit
+survivre à un rechargement, et la confirmation part dans des e-mails.
 
 🔴 **Et la boutique a quitté le préfixe de commande le même jour.** Le rayon se
 VISITE sans avoir rien choisi — c'est ce que promet « je visite la boutique », et
@@ -184,7 +187,7 @@ service de commandes du navigateur.
 flowchart TD
     C["Clic « Régler ma commande »"] --> P["panier-page.proceed()"]
     P --> E{"panier vide ?"} -->|oui| RB["retour boutique"]
-    P --> M{"mode de service ?"} -->|absent| NC["/nouvelle-commande"]
+    P --> M{"mode de service ?"} -->|absent| NC["dialogue : où je la prends"]
     P --> PL["ClientOrders.place()"]
     PL --> W{"workspace ≠ null ?"}
     W -->|"null — VISITEUR"| N1["return null"]
@@ -199,13 +202,14 @@ Deux sorties `null`, dans
 `apps/lfc-ecommerce-frontend/src/app/client/client-orders.service.ts` :
 l'absence d'espace de travail, puis l'absence de jeton.
 
-⚠️ **Le renvoi vers `/nouvelle-commande` de ce schéma est TOUJOURS d'actualité**
-(revérifié le 2026-09-21 : `panier-page.ts:215`). C'est le seul endroit de ce
-document où l'ancienne adresse n'est pas une coquille — l'écran du mode de
-service existe encore, et le panier y envoie quand aucun mode n'est choisi.
+🔴 **CE SCHÉMA A VIEILLI D'UNE JOURNÉE** : `/nouvelle-commande` n'existe plus,
+et le panier n'est plus un écran. Sans mode de service, le panier **ouvre la
+porte sur place** au lieu d'y envoyer, et si elle se referme sans choix il ne va
+nulle part. Le reste du schéma — les deux sorties `null` et leur silence — est
+inchangé, et c'est lui qui compte ici.
 
 Et le commentaire de `proceed()`
-(`apps/lfc-ecommerce-frontend/src/app/client/cart/panier-page/panier-page.ts`)
+(`apps/lfc-ecommerce-frontend/src/app/client/cart/cart-dialog/cart-dialog.ts`)
 affirme : « Le refus a déjà été dit, et le panier est intact ». **C'est vrai
 d'un refus serveur, et faux de ces deux-là** — personne ne les a dits. Le
 visiteur clique, et rien ne bouge.
