@@ -41,6 +41,7 @@ la crée pas.
 | **D8**  | La boutique Shopify **n'a pas été indexée** : aucune redirection à poser.                                                          |
 | **D9**  | 🔴 **Pas de facture pour le public** — un **bon de commande chiffré**.                                                             |
 | **D10** | **On ouvre sur ce qui est déclaré** — les 94 déclarations ne sont pas un préalable.                                                |
+| **D11** | 🔴 **Le prix public est modifiable sur la plateforme**, comme le pro. Et « masquer » devient une décision PAR AUDIENCE.            |
 
 _(Hugo, 2026-09-21.)_
 
@@ -494,7 +495,8 @@ c'est la première chose à vérifier avant de se fier à « un article ».
 
 # Décisions ouvertes
 
-✅ **Aucune.** Les dix sont tranchées.
+✅ **Aucune des onze.** Mais **D11 en ouvre trois de forme** (a, b, c dans sa
+section), et elles se tranchent au moment de bâtir, pas avant.
 
 Restent **trois questions de portée technique** (§ A.5), dont une seule pèse :
 `quote-order-parity` doit tenir pour les deux audiences — une parité verte ne
@@ -521,6 +523,92 @@ même titre et pour la même raison.
 
 Ce lot appartient au chantier A, il n'existait pas, et il est daté :
 **bon de commande public en TTC** (lot A4).
+
+---
+
+# D11 — le prix public se pose aussi sur la plateforme
+
+> « La résolution de prix se fait sur le miroir B2B — elle ne doit pas voir le
+> rapport pro/public. Ce rapport n'est qu'une facilité de définition de prix
+> avant d'envoyer au B2B. » — Hugo, 2026-09-21.
+
+## Le fait, vérifié
+
+Le rapport pro/public **ne traverse rien** :
+
+- **absent du fil** — aucun `ratioBp`, aucun `ProPricePolicy` dans
+  `packages/catalog-sync/src/snapshot.ts` ;
+- **absent de la résolution** — `b2b/pricing` n'en connaît aucun. ⚠️ Il y porte
+  bien un `ratioBp`, mais c'est `isoRevenueRatioBp`, un rapport d'**élasticité**.
+  Même mot, sujet différent, sur de l'argent.
+
+Il est appliqué **une fois**, à la projection, et ce qui part est déjà le prix
+pro (vérifié le 2026-09-21).
+
+## Ce que ça change, et c'est une objection qui tombe
+
+Ce plan a soutenu que le prix public ne devait **pas** être modifiable sur la
+plateforme, au motif que « l'étiquette est l'ancre — en poser une seconde ici
+ferait deux TTC publics qui divergeraient ».
+
+🔴 **C'est faux, et c'est la remarque ci-dessus qui le montre.** Si le rapport
+n'est qu'une commodité de saisie, alors sur le miroir les deux prix sont
+**symétriques** :
+
+|        | Ce que le miroir reçoit                   | Ce que c'est                           |
+| ------ | ----------------------------------------- | -------------------------------------- |
+| pro    | `priceMillicents`                         | l'étiquette **dérivée** par un rapport |
+| public | `publicByContext.<contexte>.htMillicents` | l'étiquette **dérivée** par un taux    |
+
+**Ni l'un ni l'autre n'est l'ancre.** L'ancre reste dans le référentiel — le TTC
+qu'un humain tape. Les deux qui arrivent ici sont déjà des prix de canal,
+calculés une fois. La plateforme est donc aussi légitime à poser le sien pour le
+public qu'elle l'est pour le pro.
+
+L'objection reposait sur une asymétrie qui n'existe pas.
+
+⚠️ Et ça nomme enfin ce qu'est le rapport : **un outil de saisie**, qui évite de
+taper 94 prix deux fois. Pas une règle de tarification. Poser un prix public à
+la main sur la plateforme ne contredit donc rien — c'est faire pour le public ce
+qu'on fait déjà pour le pro.
+
+## Ce que ça entraîne
+
+`CatalogItemOverride` porte aujourd'hui **une** décision de prix et **un**
+masquage, dans un monde qui a désormais deux audiences.
+
+| Sur l'override | Aujourd'hui                                              | Après                        |
+| -------------- | -------------------------------------------------------- | ---------------------------- |
+| le prix décidé | `priceMillicents` — le pro                               | + un prix **public**         |
+| `isHidden`     | masque des **deux** boutiques                            | un masquage **par audience** |
+| `isFeatured`   | ⚠️ même question, jamais posée — « en avant » pour qui ? | à trancher                   |
+
+⚠️ **Le masquage est le plus urgent des trois**, et il est déjà faux
+aujourd'hui : `listSellable` lit `isHidden` quelle que soit l'audience. Un
+conditionnement de 40 pièces n'a rien à faire en vitrine publique, et une pièce
+à l'unité n'intéresse pas un pro — ce sont deux décisions, et il n'y a qu'un
+bouton.
+
+## L'écran qui les porte
+
+> « Cette vue ne reflète plus la réalité. » — Hugo, 2026-09-21.
+
+`b2b/catalogue` décrit un monde à un seul prix. Ce qui suit est du vocabulaire,
+et tient en une passe :
+
+- **« Prix B2B » → « prix pro »** — colonne, phrase d'aide, filtre « À prix B2B » ;
+- une colonne **« prix public »** à côté, avec « modifier » et « revenir au PIM » ;
+- **le menu : « Catalogue » → « Catalogue actuel en ligne ».** Mieux que
+  cosmétique : l'entrée juste au-dessus s'appelle « Réception », et la paire
+  dirait enfin ce qu'elle est — _ce qui attend_ contre _ce qui est en ligne_.
+
+## Ce qui reste à trancher
+
+| #     | Question                                                                                                                                                                                                       |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **a** | Le prix public posé ici est-il un **TTC** ? D1 dit que l'étiquette est un TTC en centimes, et `@lfd/money` réserve les millicentimes aux dérivés — un prix qu'un humain pose ici devrait suivre la même règle. |
+| **b** | `isFeatured` suit-il le même découpage que `isHidden` ?                                                                                                                                                        |
+| **c** | Le masquage par audience arrive-t-il **avant** le prix public ? Il est déjà faux aujourd'hui, l'autre ne l'est pas encore.                                                                                     |
 
 ---
 
