@@ -30,13 +30,14 @@ la crée pas.
 
 ## 2. Décisions déjà prises
 
-| #      | Décision                                                                                                    |
-| ------ | ----------------------------------------------------------------------------------------------------------- |
-| **D1** | 🔴 Le fil porte **les deux prix** : le **HT** pour calculer, le **TTC** pour afficher.                      |
-| **D2** | Les contextes de vente **restent** — ils portent les règles fiscales.                                       |
-| **D3** | Rien ne vend sur Shopify aujourd'hui.                                                                       |
-| **D4** | La e-boutique ne vend **que de l'à-emporter** aujourd'hui. Le sur place **viendra, par son propre chemin**. |
-| **D5** | 🔴 Le fil porte **tous** les taux réglés, en **carte** `{contextKey: percent}` — pas des champs nommés.     |
+| #      | Décision                                                                                                                           |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **D1** | 🔴 Le fil porte **les deux prix** : le **HT** pour calculer, le **TTC** pour afficher.                                             |
+| **D2** | Les contextes de vente **restent** — ils portent les règles fiscales.                                                              |
+| **D3** | Rien ne vend sur Shopify aujourd'hui.                                                                                              |
+| **D4** | La e-boutique ne vend **que de l'à-emporter** aujourd'hui. Le sur place **viendra, par son propre chemin**.                        |
+| **D5** | 🔴 Le fil porte **tous** les taux réglés, en **carte** `{contextKey: percent}` — pas des champs nommés.                            |
+| **D6** | 🔴 **Le HT fait foi pour le total.** Pas de TVA par soustraction : on accepte la dérive au centime, **rattrapée en comptabilité**. |
 
 _(Hugo, 2026-09-21.)_
 
@@ -168,127 +169,119 @@ pas (D5 le porte déjà), la commande ne bouge pas, la facture ne bouge pas.
 « 🔴 Un ÉLARGISSEMENT de cette vue est une décision de sécurité. Elle est servie
 sans jeton. »
 
-## A.4 🔴 D6 — l'étiquette survit-elle à la chaîne ? (mesuré le 2026-09-21)
+## A.4 ✅ D6 — tranchée : le HT fait foi, la dérive est acceptée
 
-**🛑 A1 ne commence pas avant que cette section soit refermée.** Elle a déjà
-renversé une recommandation ; elle en ouvre d'autres, listées en A.5.
+> « on ne peut pas le faire en soustraction, on accepte un drift minime qui sera
+> rattrapé par le comptable » — Hugo, 2026-09-21.
 
-### La question
+### Ce qui a été mesuré avant de trancher
 
-Les deux prix voyagent (D1). Le client lit une étiquette TTC et additionne dans
-sa tête. **Le total qu'on lui facture retombe-t-il sur cette addition ?**
+Trois formes, comparées sur le **code réel** —
+[`dev-toolbox/analyses/arrondi-ttc-vs-ht.mjs`](../../dev-toolbox/analyses/arrondi-ttc-vs-ht.mjs) :
 
-⚠️ Et il n'y a **qu'un seul calcul** : `shop-quote.service.ts` — _« le décompte
-du panier, tel que le SERVEUR le rend »_, _« ce qu'il ne décide pas : rien »_.
-Le front ne multiplie jamais, `architecture-prix-boutique.md` §6 le lui interdit.
-Donc l'écart n'est **pas** « affiché contre payé » : c'est **la vignette contre
-le total**, deux nombres justes qui ne s'accordent pas.
+| Option                                                | Une ligne            | Panier mélangé       | Avec remise 5 %      |
+| ----------------------------------------------------- | -------------------- | -------------------- | -------------------- |
+| **A** — le HT fait foi _(le code d'aujourd'hui)_      | **19 429** / 212 472 | **41 669** / 200 000 | **69 709** / 200 000 |
+| **B** — le TTC fait foi **au départ**                 | **19 429**           | **41 668**           | **69 557**           |
+| **C** — le TTC **porté**, la TVA par **soustraction** | **0**                | **0**                | **0**                |
 
-### La mesure
+🔴 **A et B rendent exactement les mêmes écarts.** Le point de départ n'y change
+rien : `ventilateVat` termine toujours par `HT + arrondi(HT × taux)`, et tant que
+la dernière opération est une multiplication arrondie, l'étiquette ne peut pas
+être tenue. **Ce plan s'apprêtait à recommander B** — la mesure a montré qu'elle
+ne corrigeait rien du tout.
 
-Elle se rejoue — le chiffre porte une décision d'argent, il ne reste pas en
-prose :
-[`dev-toolbox/analyses/arrondi-ttc-vs-ht.mjs`](../../dev-toolbox/analyses/arrondi-ttc-vs-ht.mjs).
-Elle importe le **code réel** (`htMillicentsOf`, `htFromTtc`, `lineTotalCents`,
-`ventilateVat`), jamais une réimplémentation.
+### Ce qui a été décidé, et c'est A
 
-| Option                                                    | Une ligne            | Panier mélangé       | Avec remise 5 %      |
-| --------------------------------------------------------- | -------------------- | -------------------- | -------------------- |
-| **A** — le HT fait foi _(le code d'aujourd'hui)_          | **19 429** / 212 472 | **41 669** / 200 000 | **69 709** / 200 000 |
-| **B** — le TTC fait foi **au départ**                     | **19 429**           | **41 668**           | **69 557**           |
-| **C** — le TTC est **porté**, la TVA par **soustraction** | **0**                | **0**                | **0**                |
+**C n'est pas retenue.** La TVA se calcule ; elle ne se déduit pas d'une
+soustraction. L'écart résiduel se rattrape là où on rattrape les écarts de
+centimes : en comptabilité.
 
-### 🔴 Ce que la mesure a renversé
+Conséquence assumée, écrite ici pour qu'elle ne surprenne personne :
 
-**A et B rendent exactement les mêmes écarts.** Le point de départ n'y change
-**rien** — et c'est l'option B que ce plan s'apprêtait à recommander.
+> Sur **environ 9 % des lignes**, le total encaissé diffère d'**un centime** de
+> `étiquette × quantité`. À 5,5 % : étiquette 0,67 €, encaissé 0,68 €.
 
-La raison : `ventilateVat` termine toujours par
+⚠️ **Ce n'est PAS « affiché ≠ payé ».** Tous les montants du panier viennent du
+serveur — `shop-quote.service.ts` : « le décompte du panier, tel que le SERVEUR
+le rend », « ce qu'il ne décide pas : rien ». Le front **ne multiplie jamais**,
+`architecture-prix-boutique.md` §6 le lui interdit. Le client paie ce qu'on lui
+montre. L'écart est entre **la vignette et le total** — deux nombres justes que
+l'arithmétique mentale ne réconcilie pas, visible à la quantité 1, invisible à
+la quantité 12.
 
-```
-total TTC = HT + arrondi(HT × taux)
-```
+### Ce que ça épargne
 
-**Tant que la dernière opération est une multiplication arrondie, l'étiquette ne
-peut pas être tenue.** Partir du TTC pour y revenir par une multiplication, c'est
-repasser par le même arrondi.
+**Rien ne change dans la chaîne de calcul.** Remise de retrait, frais,
+ventilation, invariant `ensureDiscountMatches` : tous restent en HT, tels quels.
+Le TTC voyage (D1) pour être **affiché** — une boutique grand public doit montrer
+un prix TTC — et pour rien d'autre.
 
-Seule **C** inverse la dernière étape :
+C'est ce qui fait de A1 un lot de plomberie, et non une refonte de l'argent.
 
-```
-total TTC = Σ (étiquette × quantité)     exact, centimes entiers
-HT        = htFromTtc(total, taux)
-TVA       = total − HT                    ← soustraction, pas multiplication
-```
+## A.5 Ce que D6 laisse ouvert
 
-`HT + TVA = total`, par construction. **612 472 cas, zéro écart.**
+**Sept des dix questions que la mesure avait ouvertes tombent avec D6** : la base
+de la remise, celle des frais, ce que revérifie l'agrégat, le sens d'une promotion
+en pourcentage, la recevabilité comptable d'une TVA par soustraction et la forme
+de la facture. Toutes supposaient qu'on change de base. On n'en change pas.
 
-⚠️ **C est MODÉLISÉE dans le script, pas implémentée.** Ce qui est démontré, c'est
-que l'**approche** est exacte. En faire une jumelle de `ventilateVat` dans
-`@lfd/money`, tenue par ses propres tests, reste entier.
+**Il en reste trois, et elles sont petites :**
 
-⚠️ Et le groupement **par taux** n'est pas un détail : `ventilateVat` promet « un
-seul arrondi par taux » — une jumelle qui arrondirait ligne par ligne perdrait la
-propriété qui fait qu'une facture de trente lignes retombe sur elle-même.
+| #      | Question                                                                                                                                                                             |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Q1** | La ligne de commande **stocke-t-elle** le TTC public, ou le recalcule-t-on à chaque relecture d'une commande passée ? (`orders.prisma` est tout HT.)                                 |
+| **Q2** | **Où vit la branche** « quel prix, quel taux pour cette audience » ? Une porte nommée, comme `proPriceOf` l'est pour le prix — sinon elle se duplique entre le devis et la commande. |
+| **Q3** | `quote-order-parity` doit tenir **pour les deux audiences**.                                                                                                                         |
 
-**Le pro n'est pas concerné.** Il n'a pas d'étiquette : son prix contractuel
-**est** le HT, et la chaîne actuelle reste juste pour lui. Deux entrées pour deux
-relations — pas un compromis.
+⚠️ **Q3 est la seule qui puisse coûter cher**, et pour une raison qui n'a pas
+changé : une parité verte ne prouve pas qu'un montant est juste, seulement que
+**deux chemins s'accordent**. Ils s'accorderaient tout aussi bien sur un taux faux.
 
-## A.5 🔴 Ce que la mesure a OUVERT, et qu'il faut approfondir
+---
 
-**Aucune de ces questions n'a de réponse aujourd'hui, et C ne se décide pas sans
-elles.** C'est le sens de « approfondir avant de faire quoi que ce soit » (Hugo,
-2026-09-21).
+# Chantier B — Shopify sort ✅ **FAIT, sauf le schéma**
 
-| #       | Question ouverte                                                                                                                                                                                                                     |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Q1**  | 🔴 **La remise doit-elle s'annoncer en TTC ?** C ne tombe à zéro qu'à cette condition (cas 3). Elle est aujourd'hui posée sur le HT, et les deux bases ne peuvent pas tomber juste en même temps.                                    |
-| **Q2**  | Et pour le **pro** ? La remise devient-elle TTC pour tout le monde, ou la base suit-elle l'audience — donc deux règles de remise ?                                                                                                   |
-| **Q3**  | Les **frais de livraison** sont des `extras` HT au taux `DELIVERY_VAT_RATE = 20`. Même question, et ils ne sont pas dans le même groupe de taux que les marchandises.                                                                |
-| **Q4**  | 🔴 **Que STOCKE la ligne de commande ?** `orders.prisma` porte `unitPriceMillicents`, `lineTotalCents`, `subtotalCents` — tous HT. Si le TTC fait foi, il faut l'y écrire, ou accepter de le recalculer à chaque lecture de facture. |
-| **Q5**  | 🔴 L'agrégat `Order` **revérifie la remise contre le sous-total HT** (`ensureDiscountMatches`). Cet invariant doit apprendre quelle base l'audience utilise — sinon il refuse une commande publique juste.                           |
-| **Q6**  | **Où vit la branche** HT-pro / TTC-public ? Une seule porte nommée, comme `proPriceOf` l'est pour le prix — ou elle se dupliquera entre le devis et la commande.                                                                     |
-| **Q7**  | `quote-order-parity` doit tenir **pour les deux audiences**. Aujourd'hui il compare devis et commande : il resterait vert sur deux erreurs identiques (§A.2).                                                                        |
-| **Q8**  | Une **promotion** est `PriceAudience = all \| segment \| company`, et une promotion `all` touche pros **et** public. Un pourcentage sur deux bases différentes donne deux montants — lequel est annoncé ?                            |
-| **Q9**  | La **TVA déduite par soustraction** est-elle recevable comptablement et fiscalement ? C'est la pratique du commerce de détail, mais ce plan ne l'a pas vérifié, et `documentation/comptabilite/` n'a pas été ouverte.                |
-| **Q10** | La **facture** : `architecture-facturation.md` décide « une facture pour toute vente ». Une facture TTC-first porte une TVA par soustraction — sa présentation change-t-elle ?                                                       |
+> **Exécuté le 2026-09-21.** Six commits, de `00f5891d4` à `a5662c8c4`. Ce qui
+> reste tient en deux lignes et est isolé en **B.5**.
 
-⚠️ **Q9 et Q10 sortent du code.** Elles se tranchent avec un comptable, pas dans
-le dépôt — et elles gouvernent les huit autres.
+## B.1 Ce que ça pesait, et ce qui est parti
 
-# Chantier B — Shopify sort ✅
+| Zone                                     | Lignes      | État                    |
+| ---------------------------------------- | ----------- | ----------------------- |
+| `.../pim/publication/` (back-office)     | 2 475       | ✅ `e626f50a3`          |
+| `.../pim/integration/` (back-office)     | 1 996       | ✅ `e626f50a3`          |
+| `.../pim/channels/` (clients HTTP)       | 747         | ✅ `e626f50a3`          |
+| `apps/lfd-api/src/pim/channels/shopify/` | 4 154       | ✅ `a5662c8c4`          |
+| `packages/shopify-admin/src/`            | 805         | ✅ `a5662c8c4`          |
+| `documentation/pim/shopify-publication/` | 1 081       | ✅ archivé, `a5662c8c4` |
+| **Total**                                | **~11 250** |                         |
 
-## B.1 Ce que ça pèse
+Sont partis avec : les 2 contrats, les 3 clés d'environnement, le nœud de
+topologie et sa sonde, la valeur `"shopify"` de `probeKindSchema`, l'entrée
+d'audit de démarrage, le relais du container, les 3 secrets du workflow, l'entrée
+de rail, l'icône et 2 routes.
 
-| Zone                                     | Lignes      |
-| ---------------------------------------- | ----------- |
-| `apps/lfd-api/src/pim/channels/shopify/` | 4 154       |
-| `.../pim/publication/` (back-office)     | 2 475       |
-| `.../pim/integration/` (back-office)     | 1 996       |
-| `.../pim/channels/` (clients HTTP)       | 747         |
-| `packages/shopify-admin/src/`            | 805         |
-| `documentation/pim/shopify-publication/` | 1 081       |
-| **Total**                                | **~11 250** |
-
-Plus : 4 modèles + 3 enums Prisma, 3 clés d'environnement, 1 nœud de topologie et
-sa sonde, 1 entrée d'audit de démarrage, 1 onglet de rail.
+⚠️ **Restent : les 4 modèles et 3 enums Prisma** — ils se resserrent au
+déploiement SUIVANT, pas dans celui qui cesse de les lire (B.5).
 
 ## B.2 🔴 Cinq choses qu'un inventaire naïf ne voit pas
 
 Toutes rouvertes et confirmées le 2026-09-21.
 
-| #   | Le piège                                                                                                                                                                                                                                                                                                  |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | ✅ **Le contrat du canal ne se supprimait pas tel quel.** `FieldDiffView` y était **défini**, et `catalog-revision.ts` l'importait — comme le domaine des révisions et l'écran qui les compare. Le type a déménagé d'abord (`00f5891d4`), le contrat est parti ensuite.                                   |
-| 2   | **`products-page.ts:29` importe `ShopifyApi`** — un écran du catalogue qui **reste**. Seul import hors des dossiers condamnés.                                                                                                                                                                            |
-| 3   | **Le fait de journal `sales_context.*` est VIVANT** et exige `shopifyProjected` (`referential-settings.ts:110,117`). → annexe A.1.                                                                                                                                                                        |
-| 4   | **`lint:doc-references` est bidirectionnel, zéro tolérance** sur `documentation/`. **Le lot documentaire part dans le MÊME commit**, pas après.                                                                                                                                                           |
-| 5   | **Dispersés, jamais nommés** : `container/worker.ts:103-105`, `packages/ops-contract/src/node.ts:41` (`probeKindSchema` porte `"shopify"`), la section « Intégrations » du formulaire produit, `documentation/pim/shopify-page/` + sa route, `pim/data/models.ts` (`ShopifySettings`), six specs d'`ops`. |
+| #   | Le piège                                                                                                                                                                                                                                                                               |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | ✅ **Le contrat du canal ne se supprimait pas tel quel.** `FieldDiffView` y était **défini**, et `catalog-revision.ts` l'importait — comme le domaine des révisions et l'écran qui les compare. Le type a déménagé d'abord (`00f5891d4`), le contrat est parti ensuite.                |
+| 2   | ✅ **`products-page` importait `ShopifyApi`** — un écran du catalogue qui **reste**, et le seul import hors des dossiers condamnés. Traité à part (`a339a1617`) : la colonne, la pastille de santé et le ton `alert` d'une ligne sont partis avec.                                     |
+| 3   | ⏳ **Le fait de journal `sales_context.*` est VIVANT** et exige `shopifyProjected` (`referential-settings.ts:110,117`). Intact, et il le reste tant que D7 n'est pas tranchée. → annexe A.1.                                                                                           |
+| 4   | 🔴 **`lint:doc-references` est bidirectionnel, zéro tolérance.** **Et le piège s'est refermé** : `e626f50a3` est parti sans que cette porte soit lancée, l'arbre est resté rouge jusqu'à `1c1e28ea2`. Le second lot a corrigé la méthode — 18 références réparées dans le même commit. |
+| 5   | ✅ **Dispersés, jamais nommés** : le relais du container, `probeKindSchema`, `documentation/pim/shopify-page/` + sa route, six specs d'`ops`. ⏳ Restent `pim/data/models.ts` (`ShopifySettings`) et la section « Intégrations » du formulaire produit → B.5.                          |
 
 ## B.3 L'ordre, et il est contraint
 
-**Écrans → API → contrats → schéma**, chacun au déploiement suivant.
+**Écrans → API → contrats → schéma**, chacun au déploiement suivant. ✅ Tenu :
+`e626f50a3` (écrans), puis `a5662c8c4` (API + contrats dans le même commit — ils
+se déploient ensemble côté serveur).
 
 - Les **écrans avant l'API** : les deux se déploient séparément. Un écran qui
   appelle une route disparue est une erreur devant quelqu'un.
@@ -297,10 +290,12 @@ Toutes rouvertes et confirmées le 2026-09-21.
 - **Le schéma au déploiement suivant** (CLAUDE.md §0), sinon un retour arrière du
   code rencontre une base déjà amputée.
 
-**Hors dépôt** : désinstaller l'application depuis le Dev Dashboard Shopify —
-c'est **ce geste** qui révoque l'accès, pas la suppression de nos variables —
-puis retirer les trois secrets de GitHub et de Cloudflare.
-🔴 **Les secrets ne traversent jamais une ligne de commande.**
+🔴 **Hors dépôt — PAS FAIT, et c'est le seul geste qui coupe vraiment l'accès** :
+désinstaller l'application depuis le Dev Dashboard Shopify. Retirer nos variables
+n'éteint que l'appel de notre côté ; le jeton, lui, reste valide tant que l'app
+est installée. Puis retirer les trois secrets de GitHub et de Cloudflare.
+⚠️ **Les secrets ne traversent jamais une ligne de commande** — ce geste est
+celui de Hugo, pas le mien.
 
 ## B.4 D2 — les contextes restent, et deux colonnes ne sont pas les contextes
 
@@ -332,7 +327,7 @@ y répondait par un produit par contexte. Avec un récepteur unique, elle devien
 **quels contextes la boutique publique expose-t-elle, donc quels taux voyagent ?**
 
 **La colonne n'est donc pas supprimée. Son successeur se définit au lot A1, et
-l'ancienne ne tombe qu'après** (→ **D5**).
+l'ancienne ne tombe qu'après** (→ **D7**).
 
 ⚠️ Et son retrait ne sera **pas un `DROP`** : les deux champs sont **obligatoires**
 dans `createSalesContextPayloadSchema` / `updateSalesContextPayloadSchema`
@@ -340,6 +335,41 @@ dans `createSalesContextPayloadSchema` / `updateSalesContextPayloadSchema`
 2026-08-17**. Trois déploiements, ~20 fichiers, **les semis compris**
 (`seed-pim/corpus.ts:40`, `catalogue.ts:44,51,58`, `registry.ts:95` — qui passent
 par le bus, donc par le contrat).
+
+## B.5 ⏳ Ce qui reste du chantier B
+
+Deux choses, et elles ne bloquent rien.
+
+### Le schéma — au déploiement SUIVANT
+
+`DROP` de `ShopifySettings`, `ShopifyProductBinding`, `ShopifyVariantBinding`,
+`ShopifyPushSnapshot`, et des enums `ShopifySyncStatus`, `ShopifyChannelMode`,
+`ShopifyPushOutcome`.
+
+⚠️ **Trois registres tenus à la main suivront, dans le MÊME commit que la
+migration** — sans quoi `schema-parity.spec.ts`, qui asserte l'égalité exacte
+entre les modèles déclarés et les `@@schema` lus dans les sources Prisma,
+devient rouge :
+
+- `platform/database/schema-ops.counter.ts` — les quatre modèles ;
+- `pim/infra/database/pim-prisma.service.ts` — les quatre délégués abstraits ;
+- `prisma/schema/pim/product.prisma` — les deux back-relations `shopifyBinding`.
+
+⚠️ Et **ni `handle_suffix` ni `shopify_projected` ne tombent avec eux** : ce sont
+des champs **obligatoires** d'un contrat servi à un back-office en service (B.4).
+Trois déploiements, et pas avant que **D7** ait nommé leur successeur.
+
+### Les pages de documentation internes
+
+Une dizaine de gabarits du back-office décrivent encore l'architecture avec
+Shopify dedans : les trois diagrammes (`system-diagram`, `upsert-diagram`,
+`catalogue-to-tool-diagram`), trois pages PIM (`overview`, `bricks`,
+`general-settings`), la section « Intégrations » de la fiche produit, la page des
+taux de TVA, et `pim/data/models.ts` qui déclare encore `ShopifySettings`.
+
+Ce sont des écrans **lus par le personnel**, pas du code exécuté : ils ne cassent
+rien, mais ils décrivent un système qui n'existe plus. C'est le genre de dette
+qui ne fait jamais mal assez pour être payée — d'où sa ligne ici.
 
 ---
 
@@ -366,19 +396,17 @@ réel.**
 
 # Décisions ouvertes
 
-| #       | Décision                                                                                                                                              | Poids      |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| **D6**  | 🔴 **Lequel des deux prix fait foi ?** Mesuré (§ A.4) : seule l'option **C** tombe juste — mais elle ouvre les dix questions du § A.5, non tranchées. | argent     |
-| **D7**  | 🔴 Le successeur de `shopifyProjected` : quels contextes la boutique publique expose-t-elle ? (B.4, lot A1)                                           | contrat    |
-| **D8**  | ⏳ Les 94 déclarations : préalable à l'ouverture, ou on ouvre sur ce qui est déclaré ?                                                                | calendrier |
-| **D9**  | La boutique Shopify a-t-elle été publique assez longtemps pour être indexée ? Si oui, des redirections.                                               | SEO        |
-| **D10** | `analyse-boutique-publique.md` §1, toujours ouverte : « une facture pour toute vente » contre « pas de factures pour le public ».                     | métier     |
+| #       | Décision                                                                                                        | Poids      |
+| ------- | --------------------------------------------------------------------------------------------------------------- | ---------- |
+| **D7**  | 🔴 Le successeur de `shopifyProjected` : quels contextes la boutique publique expose-t-elle ? (B.4, lot A1)     | contrat    |
+| **D8**  | ⏳ Les 94 déclarations : préalable à l'ouverture, ou on ouvre sur ce qui est déclaré ?                          | calendrier |
+| **D9**  | La boutique Shopify a-t-elle été publique assez longtemps pour être indexée ? Si oui, des redirections.         | SEO        |
+| **D10** | `analyse-boutique-publique.md` §1 : « une facture pour toute vente » contre « pas de factures pour le public ». | métier     |
 
-✅ **Les clés des contextes sont `takeaway`, `eatIn` et `b2b`** (Hugo, et
-vérifié le 2026-09-21 : semis, entités, contrats et tests, aucune occurrence des
-formes françaises comme clé). Le JSDoc de `bootstrap-contexts.ts` annonçait leur
-traduction « à venir avec la tranche d-3 » alors qu'elle avait déjà eu lieu — il
-a été corrigé le même jour.
+Plus les trois questions de portée technique du § A.5.
+
+✅ **Les clés des contextes sont `takeaway`, `eatIn` et `b2b`** (vérifié le
+2026-09-21 : semis, entités, contrats et tests).
 
 ---
 
