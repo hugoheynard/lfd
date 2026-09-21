@@ -90,19 +90,59 @@ dossier d'entreprise à l'écran.
 
 ## 2. Le tunnel, et où chaque branche s'arrête
 
-Les six écrans sont les mêmes pour tout le monde. Ce qui change est **le point
-où l'on bute**.
+**TROIS adresses, et QUATRE dialogues** (2026-09-21) — où, quand, on livre où,
+et le panier. Le parcours est le même
+pour tout le monde ; ce qui change est **le point où l'on bute**.
+
+La distinction qui porte tout le reste : une ADRESSE se partage, se met en
+signet, survit à un rechargement — un DIALOGUE non. Ce qui est un écran l'est
+donc pour une raison, et elle est écrite dans `app.routes.ts` : une commande
+**existe déjà** quand on arrive au règlement ou à la confirmation, et cette
+dernière part dans des e-mails.
 
 ```mermaid
 flowchart LR
-    B["/bienvenue<br/>accueil public"] -->|"porte + heure,<br/>en dialogues"| K["/boutique"]
-    B -.->|"repli : aucun mode"| S["/nouvelle-commande<br/>mode de service"]
-    S --> K
-    K --> PA["/commande/panier"]
-    PA -->|"place()"| R["/commande/reglement/:id"]
-    PA -->|"rien à régler"| CF["/commande/confirmee"]
+    B["/bienvenue<br/>accueil"]
+    K["/boutique"]
+    R["/reglement/:id"]
+    CF["/confirmation-de-commande"]
+
+    OU(["où je la prends ?"])
+    QD(["à quelle heure ?"])
+    LI(["on livre où ?"])
+    PA(["le panier"])
+
+    B -->|"retrait"| OU --> QD --> K
+    B -->|"coursier"| LI --> K
+    K -->|"pastille de la barre"| PA
+    PA -.->|"aucun mode : on redemande ici"| OU
+    PA -->|"place()"| R
+    PA -->|"rien à régler"| CF
     R --> CF
+
+    classDef ecran fill:#12307f,color:#faf5ec,stroke:#081842;
+    classDef dialogue fill:#f6e8cd,color:#23201a,stroke:#e5dcc9;
+    class B,K,R,CF ecran;
+    class OU,QD,LI,PA dialogue;
 ```
+
+En bleu les ADRESSES, en beige les DIALOGUES — ils s'ouvrent par-dessus l'écran
+où l'on est, et le referment en partant.
+
+🔴 **Le panier ne quitte plus le rayon**, et la question du lieu non plus. On
+composait un panier, on partait répondre à « où », et il fallait un paramètre
+d'URL pour revenir — ce paramètre était la preuve que le détour n'avait pas
+lieu d'être.
+
+⚠️ **La porte du coursier n'est pas ouverte à tout le monde.** Un PRO l'a par son
+contrat ; pour un particulier ou un visiteur, elle dépend de la clé d'admin
+`publicDelivery`, **fermée par défaut**, et `POST /shop/orders` refuse la même
+chose en 409 (`client/shop/order-doors.ts`,
+`b2b/feature-access/domain/public-delivery-closed.error.ts`).
+
+⚠️ **Et l'accueil ne montre ses deux portes qu'aux pros** (`@if (pro())`) :
+ouvrir la clé ne donne pas encore au visiteur une porte sur l'accueil — il
+passe par le panier. Dit ici plutôt que tu.
 
 | Écran                      | Visiteur            | Particulier | Pro          |
 | -------------------------- | ------------------- | ----------- | ------------ |
