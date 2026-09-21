@@ -28,6 +28,8 @@ function facts(over: Partial<PimFacts> = {}): PimFacts {
     isDefault: true,
     position: 0,
     vatRatePercent: 5.5,
+    publicTtcCents: 250,
+    publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
     receivedAt: new Date("2026-08-17T08:00:00.000Z"),
     ...over,
   };

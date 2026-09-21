@@ -4,6 +4,7 @@ import { Clock } from "../../../platform/time/clock.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Prisma } from "../../../platform/database/client/client.js";
 import { allergenLabelsOf } from "./allergen-labels.js";
+import { publicByContextOf } from "./public-by-context.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { CatalogItem, type CatalogItemState } from "../domain/entities/catalog-item.js";
 import { CatalogItemRepository } from "../domain/ports/catalog-item.repository.js";
@@ -22,6 +23,8 @@ interface ItemRow {
   readonly isDefault: boolean;
   readonly position: number;
   readonly vatRatePercent: { toNumber(): number } | null;
+  readonly publicTtcCents: number | null;
+  readonly publicByContext: unknown;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
   readonly note: string | null;
@@ -252,6 +255,8 @@ function toDomain(row: ItemRow): CatalogItem {
       position: row.position,
       // `Decimal` → `number` : le domaine ne connaît pas le type de l'ORM.
       vatRatePercent: row.vatRatePercent === null ? null : row.vatRatePercent.toNumber(),
+      publicTtcCents: row.publicTtcCents,
+      publicByContext: publicByContextOf(row.publicByContext),
       allergens: allergensOf(row.allergens),
       allergenLabels: allergenLabelsOf(row.allergenLabels),
       orderTimeLimit: orderTimeLimitOf(row),
@@ -301,6 +306,21 @@ function factsRow(state: CatalogItemState) {
     orderLimitDaysBefore: facts.orderTimeLimit?.daysBefore ?? null,
     orderLimitTime: facts.orderTimeLimit?.time ?? null,
     orderLimitGraceMinutes: facts.orderTimeLimit?.graceMinutes ?? null,
+    publicTtcCents: facts.publicTtcCents,
+    // `DbNull` et non `JsonNull` : c'est l'ABSENCE de la donnée, pas un `null`
+    // JSON stocké — la même distinction que pour les mentions d'étiquette.
+    publicByContext:
+      facts.publicByContext === null
+        ? Prisma.DbNull
+        : Object.fromEntries(
+            // Recopié champ par champ plutôt qu'étalé : le document écrit doit
+            // être exactement celui que le mapper de lecture sait relire, et
+            // un objet du domaine porte des `readonly` que l'ORM refuse.
+            Object.entries(facts.publicByContext).map(([key, price]) => [
+              key,
+              { vatRatePercent: price.vatRatePercent, htMillicents: price.htMillicents },
+            ]),
+          ),
     allergenLabels:
       facts.allergenLabels === null
         ? Prisma.DbNull

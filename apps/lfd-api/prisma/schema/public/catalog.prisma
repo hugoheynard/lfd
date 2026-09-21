@@ -148,6 +148,32 @@ model CatalogItem {
   /// `CatalogReader` l'écarte plutôt que d'inventer 5,5 %.
   vatRatePercent Decimal? @map("vat_rate_percent") @db.Decimal(5, 2)
 
+  /// **L'étiquette** en centimes — ce qu'un particulier paie, taxe comprise,
+  /// tel que le référentiel le saisit.
+  ///
+  /// `NULL` sur une ligne d'avant le fil **v9** : le prix public ne traversait
+  /// pas, seul son dérivé professionnel arrivait. ⚠️ `NULL` ne dit donc PAS
+  /// « gratuit » ni « sans prix » — il dit « on ne sait pas encore ce qu'un
+  /// particulier paierait », et un push complet le remplit.
+  publicTtcCents Int? @map("public_ttc_cents")
+
+  /// **Le prix public par contexte de vente**, résolu par le PIM :
+  /// `{ "takeaway": { "vatRatePercent": 5.5, "htMillicents": 189573 }, … }`.
+  ///
+  /// 🔴 **Ce n'est PAS `price_millicents`.** Celui-ci porte le prix
+  /// PROFESSIONNEL — l'étiquette diminuée du rapport ; les entrées d'ici
+  /// portent l'étiquette ELLE-MÊME, mise hors taxe au taux de chaque contexte.
+  /// Les confondre facturerait un particulier au tarif pro.
+  ///
+  /// `Json` et non une table liée, et la raison est dure : une table voudrait
+  /// une clé étrangère vers `pim.sales_context`, et une FK inter-schémas est
+  /// **interdite** (CLAUDE.md § 1). La clé de contexte est donc rangée telle
+  /// que reçue, comme `allergens` juste en dessous — le miroir range ce qu'on
+  /// lui envoie, il ne possède pas ce vocabulaire.
+  ///
+  /// `NULL` avant la v9, même lecture que ci-dessus.
+  publicByContext Json? @map("public_by_context")
+
   /// Les **codes allergènes GS1** déclarés par le PIM pour cet article.
   ///
   /// `Json` et non `String[]`, pour une raison précise : une liste scalaire

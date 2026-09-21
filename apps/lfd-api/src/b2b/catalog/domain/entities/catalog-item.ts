@@ -61,6 +61,34 @@ export interface PimFacts {
    */
   readonly vatRatePercent: number | null;
   /**
+   * **L'étiquette**, en centimes — ce qu'un particulier lit et paie, taxe
+   * comprise, tel que le référentiel le saisit.
+   *
+   * `null` sur une ligne d'avant le fil **v9** : le prix public ne traversait
+   * pas, et seul son dérivé professionnel arrivait. ⚠️ `null` ne veut donc pas
+   * dire « gratuit » ni « pas de prix » — il veut dire **on ne sait pas encore
+   * ce qu'un particulier paierait**, et un push complet le remplit.
+   */
+  readonly publicTtcCents: number | null;
+  /**
+   * **Le prix public par contexte de vente**, tel que le PIM l'a résolu — une
+   * entrée par contexte réglé, indexée par sa clé (`takeaway`, `eatIn`, `b2b`).
+   *
+   * 🔴 **Ce n'est PAS `priceMillicents`.** Celui-ci porte le prix
+   * PROFESSIONNEL — l'étiquette diminuée du rapport, puis mise hors taxe ; les
+   * entrées d'ici portent l'étiquette ELLE-MÊME mise hors taxe au taux de
+   * chaque contexte. Les deux sont des hors taxe et c'est tout ce qu'ils
+   * partagent ; les confondre facturerait un particulier au tarif pro.
+   *
+   * Une CARTE et non des champs nommés : ajouter un contexte est une ligne de
+   * données côté référentiel, et la plateforme n'a pas à connaître les clés
+   * pour les ranger. Elle ne les invente pas non plus — un contexte sans taux
+   * réglé n'a pas d'entrée.
+   *
+   * `null` sur une ligne d'avant la v9, pour la même raison que ci-dessus.
+   */
+  readonly publicByContext: Readonly<Record<string, PimContextPrice>> | null;
+  /**
    * Les codes allergènes GS1 déclarés par le PIM. **Trois états**, tous
    * significatifs : `null` = aucune fiche réglementaire, `[]` = fiche déclarée
    * sans allergène, une liste = les codes.
@@ -137,6 +165,21 @@ export interface PimAllergenLabel {
 export interface PimAllergenLabels {
   readonly labels: readonly PimAllergenLabel[];
   readonly incomplete: boolean;
+}
+
+/**
+ * **Ce que le public paie dans UN contexte de vente**, et à quel taux.
+ *
+ * Déclaré ICI plutôt qu'importé du contrat de fil, comme {@link
+ * PimAllergenLabels} juste au-dessus : le domaine décrit ce qu'il SAIT, il
+ * n'emprunte pas la forme de celui qui le lui a dit. Le jour où le fil change
+ * de forme, c'est le mapper qui traduit — pas l'agrégat qui suit.
+ */
+export interface PimContextPrice {
+  /** Le taux de CE contexte, en pourcentage. */
+  readonly vatRatePercent: number;
+  /** L'étiquette mise hors taxe à ce taux, en millicentimes (10⁻⁵ €). */
+  readonly htMillicents: number;
 }
 
 /** La décision de la plateforme. `null` partout = aucune décision prise. */

@@ -31,6 +31,22 @@ const archivedFactsSchema = z.object({
   isDefault: z.boolean(),
   position: z.number().int(),
   vatRatePercent: z.number().nullable(),
+  /**
+   * `.nullish()`, même raison que `orderTimeLimit` plus bas : les versions
+   * archivées AVANT le fil **v9** n'ont pas ces champs du tout. Un
+   * `.nullable()` nu les rendrait illisibles — et une version de catalogue
+   * qu'on ne peut plus relire est une commande dont on ne sait plus d'où
+   * venaient les articles.
+   */
+  publicTtcCents: z
+    .number()
+    .int()
+    .nullish()
+    .transform((value) => value ?? null),
+  publicByContext: z
+    .record(z.string(), z.object({ vatRatePercent: z.number(), htMillicents: z.number().int() }))
+    .nullish()
+    .transform((value) => value ?? null),
   allergens: z.array(z.string()).nullable(),
   allergenLabels: z
     .object({
@@ -118,6 +134,18 @@ function toJson(facts: PimFacts): Prisma.InputJsonObject {
     isDefault: facts.isDefault,
     position: facts.position,
     vatRatePercent: facts.vatRatePercent,
+    // Figés dans l'archive comme le reste : une version doit pouvoir dire ce
+    // qu'un PARTICULIER payait ce jour-là, pas seulement un professionnel.
+    publicTtcCents: facts.publicTtcCents,
+    publicByContext:
+      facts.publicByContext === null
+        ? null
+        : Object.fromEntries(
+            Object.entries(facts.publicByContext).map(([key, price]) => [
+              key,
+              { vatRatePercent: price.vatRatePercent, htMillicents: price.htMillicents },
+            ]),
+          ),
     allergens: facts.allergens === null ? null : [...facts.allergens],
     allergenLabels:
       facts.allergenLabels === null
