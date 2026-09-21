@@ -30,10 +30,19 @@ export interface CatalogueShelf {
  * publique TTC —, ce que la maison en a décidé, puis ce qui conditionne la
  * vente.
  *
- * ⚠️ **La fiche réglementaire et la mise en avant ont quitté cette table le
- * 2026-09-21** (Hugo). Ni l'une ni l'autre ne parle de prix, et elles prenaient
- * trente et un `rem` au milieu de colonnes qui, elles, se comparent d'une ligne
- * à l'autre. Les allergènes restent au contrat : c'est l'écran qui ne les
+ * ⚠️ **Trois colonnes ont quitté cette table le 2026-09-21** (Hugo) : la fiche
+ * réglementaire, la mise en avant et le taux de TVA. Aucune ne parle du prix
+ * qu'on décide ici, et elles prenaient trente-sept `rem` au milieu de colonnes
+ * qui, elles, se comparent d'une ligne à l'autre.
+ *
+ * 🔴 **Le taux part pour une raison de plus, et c'est la bonne** : il y en a
+ * désormais DEUX — celui du canal professionnel et celui du contexte public —
+ * et une colonne « TVA » au singulier montrait le premier en laissant croire
+ * qu'il valait pour les deux. Ce qu'elle portait d'irremplaçable, l'aveu
+ * « sans taux, donc invendable », a emménagé dans la colonne Article : la
+ * teinte de ligne ne doit jamais rester seule à dire quelque chose.
+ *
+ * Les allergènes et le taux restent au contrat : c'est l'écran qui ne les
  * montre plus, pas le serveur qui ne les envoie plus.
  *
  * ## Pourquoi une table, et pas la ligne d'avant
@@ -104,7 +113,6 @@ export class ShelfCatalogue {
     // ⚠️ La CLÉ reste `b2b` : elle relie la colonne à son `ng-template`, et
     // c'est du code, pas un libellé. Seul le mot affiché devient « pro ».
     { key: 'b2b', label: 'Prix pro HT', width: '15rem' },
-    { key: 'vat', label: 'TVA', width: '6rem', numeric: true },
     // Assez large pour tenir la confirmation qui s'y ouvre. À `9rem`, la
     // phrase qui dit ce que « Masquer » va faire tombait sur cinq lignes.
     { key: 'shop', label: 'Boutique', width: '18rem' },

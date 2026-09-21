@@ -7,7 +7,12 @@
 .identity {
   display: flex;
   flex-direction: column;
+  align-items: start;
+  gap: var(--fold-space-xs);
   min-width: 0;
+  /* La table pose `nowrap` sur ses cellules ; la pastille « sans taux —
+     invendable » tient trois mots et en sortait. */
+  white-space: normal;
 }
 
 /* Un article retiré de la vente reste LISIBLE, seulement en retrait : le masquer

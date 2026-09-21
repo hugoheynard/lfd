@@ -18,10 +18,21 @@
     [rowTone]="rowTone"
     [empty]="empty"
   >
+    <!--
+      🔴 **« Sans taux » a emménagé ici le 2026-09-21**, quand la colonne TVA
+      est partie. Ce n'est pas un déplacement décoratif : la ligne d'un article
+      invendable est TEINTÉE, et une couleur ne dit jamais rien seule — c'est la
+      règle que `rowTone` énonce et qui s'appuyait sur la cellule du taux.
+      Retirer la colonne sans rapatrier le mot aurait laissé quarante lignes
+      orangées sans une phrase pour dire pourquoi.
+    -->
     <ng-template foldCell="article" let-row>
       <span class="identity" [class.is-hidden]="row.isHidden">
         <span class="name">{{ row.name }}</span>
         <span class="sku">{{ row.sku }}</span>
+        @if (row.vatRatePercent === null) {
+          <fold-badge content="sans taux — invendable" variant="warning" />
+        }
       </span>
     </ng-template>
 
@@ -84,16 +95,6 @@
           (reset)="priceAligned.emit(row)"
         />
       </div>
-    </ng-template>
-
-    <!-- Sans taux, la boutique ne sait pas facturer : l'article est reçu et
-         invendable. Le dire par un mot, pas seulement par la teinte de ligne. -->
-    <ng-template foldCell="vat" let-row>
-      @if (row.vatRatePercent !== null) {
-        {{ row.vatRatePercent }} %
-      } @else {
-        <fold-badge content="sans taux" variant="warning" />
-      }
     </ng-template>
 
     <!--

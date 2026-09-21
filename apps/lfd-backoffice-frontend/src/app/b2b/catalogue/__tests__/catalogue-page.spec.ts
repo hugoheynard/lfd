@@ -198,6 +198,24 @@ describe('CataloguePage — les quatre lectures', () => {
 
     expect(text(fixture)).toContain('ne sont pas vendables');
   });
+
+  /**
+   * 🔴 **Régression du déménagement du 2026-09-21.** L'aveu « sans taux » vivait
+   * dans la colonne TVA, qui a été retirée — elle montrait le taux PRO en
+   * laissant croire qu'il valait pour les deux audiences.
+   *
+   * Le mot devait suivre, et pas disparaître avec elle : la ligne d'un article
+   * invendable est TEINTÉE, et une couleur ne dit jamais rien seule. Sans cette
+   * assertion, la colonne suivante qu'on retire emporte le mot en silence, et
+   * il reste quarante lignes orangées que rien n'explique.
+   */
+  it("garde l'aveu « invendable » SUR LA LIGNE, pas seulement dans l'encart", async () => {
+    const api = new FakeCatalogue();
+    api.items = [item({ vatRatePercent: null })];
+    const fixture = await render(api);
+
+    expect(cell(fixture, '.identity')).toContain('invendable');
+  });
 });
 
 describe('CataloguePage — retirer de la vente', () => {
