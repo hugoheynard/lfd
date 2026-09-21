@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
@@ -9,6 +9,7 @@ import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientCart } from '../client-cart.service';
 import { provideWorkspace, workspaceDouble } from '../../client-workspace.fixture';
 import { OrderContextStore, type ServiceChoice } from '../../order-context.store';
+import { OrderDoors } from '../../shop/order-doors';
 import { hydrateWith, TEST_CATALOGUE } from '../../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
 import { PanierPage } from './panier-page';
@@ -48,6 +49,10 @@ interface Monde {
   readonly panier?: boolean;
 }
 
+/** Ce que l'écran a demandé aux portes, et où il est allé. */
+let ouvertes: string[] = [];
+let visitees: string[] = [];
+
 function boot({
   auth = VISITEUR,
   service = AU_LABO,
@@ -63,8 +68,25 @@ function boot({
       provideRouter([]),
       provideWorkspace(workspaceDouble()),
       { provide: AuthFacade, useValue: auth },
+      // Les portes sont des DIALOGUES : on n'en monte pas le contenu ici, on
+      // observe que l'écran les ouvre — et qu'il ne va nulle part pour ça.
+      {
+        provide: OrderDoors,
+        useValue: {
+          pickup: (): Promise<boolean> => {
+            ouvertes.push('pickup');
+            return Promise.resolve(false);
+          },
+          delivery: (): Promise<boolean> => {
+            ouvertes.push('delivery');
+            return Promise.resolve(false);
+          },
+        },
+      },
     ],
   });
+  ouvertes = [];
+  visitees = [];
   hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   TestBed.inject(OrderContextStore).choice.set(service);
   const cart = TestBed.inject(ClientCart);
@@ -72,6 +94,11 @@ function boot({
   if (panier) {
     cart.add('VIE-001');
   }
+  const router = TestBed.inject(Router);
+  router.navigate = (commands): Promise<boolean> => {
+    visitees.push(Array.isArray(commands) ? commands.join('/') : String(commands));
+    return Promise.resolve(true);
+  };
   const fixture = TestBed.createComponent(PanierPage);
   fixture.detectChanges();
   return fixture;
@@ -142,5 +169,53 @@ describe('le panier demande qui commande', () => {
 
     expect(invite(fixture)).toBeNull();
     expect(bouton(fixture)?.disabled).toBe(false);
+  });
+});
+
+/**
+ * 🔴 LE PANIER NE QUITTE PLUS L'ÉCRAN POUR DEMANDER OÙ (2026-09-21, Hugo :
+ * « le panier devient un dialog comme le reste »).
+ *
+ * Les trois gestes partaient sur `/nouvelle-commande`, et « Modifier » devait
+ * emporter un paramètre de retour pour revenir — la preuve que le détour
+ * n'avait pas lieu d'être. Un panier composé qu'on quitte pour répondre à une
+ * question est un panier qu'on risque de perdre de vue.
+ */
+describe('le panier pose la question du lieu SUR PLACE', () => {
+  const clic = (fixture: ComponentFixture<PanierPage>, selector: string): void => {
+    el(fixture).querySelector<HTMLButtonElement>(selector)?.click();
+  };
+
+  it('🔴 ouvre la porte du retrait sans naviguer, quand aucun mode n’est pris', () => {
+    const fixture = boot({ auth: RECONNU, service: null });
+
+    clic(fixture, '.ask');
+
+    expect(ouvertes).toEqual(['pickup']);
+    expect(visitees).toEqual([]);
+  });
+
+  it('🔴 « Modifier » rouvre le mode déjà pris, sans naviguer', () => {
+    const fixture = boot({ auth: RECONNU, service: AU_LABO });
+
+    clic(fixture, '.change');
+
+    expect(ouvertes).toEqual(['pickup']);
+    expect(visitees).toEqual([]);
+  });
+
+  /**
+   * ⚠️ Et une porte refermée sans choisir ne mène NULLE PART. Le règlement
+   * exige le mode : sans lui, partir vers le paiement facturerait un panier
+   * sans destination.
+   */
+  it('🔴 ne règle rien quand la porte se referme sans choix', async () => {
+    const fixture = boot({ auth: RECONNU, service: null });
+
+    clic(fixture, '.pay');
+    await Promise.resolve();
+
+    expect(ouvertes).toEqual(['pickup']);
+    expect(visitees).toEqual([]);
   });
 });

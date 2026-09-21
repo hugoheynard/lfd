@@ -15,7 +15,7 @@ import { OrderContextStore } from '../../order-context.store';
 import { ClientOrders } from '../../client-orders.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { CartSummary } from '../cart-summary/cart-summary';
-import { RETURN_TO_CART } from '../../nouvelle-commande/commande-page/return-to-cart';
+import { OrderDoors } from '../../shop/order-doors';
 
 /**
  * Où Auth0 ramène, une fois l'identité obtenue : **ici**.
@@ -46,6 +46,9 @@ export class PanierPage {
   private readonly orders = inject(ClientOrders);
   /** L'hôte des panneaux fold : c'est lui qui ouvre la saisie du visiteur. */
   private readonly panels = inject(FoldPanelHostService);
+
+  /** Les portes du mode de service — les mêmes que l'accueil ouvre. */
+  private readonly doors = inject(OrderDoors);
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
@@ -126,18 +129,38 @@ export class PanierPage {
     this.chrome.back.set((): void => this.backToShop());
   }
 
-  protected pickService(): void {
-    void this.router.navigate(['/nouvelle-commande']);
+  /**
+   * **Le mode de service se choisit ICI, en dialogues** (2026-09-21).
+   *
+   * 🔴 Les deux gestes menaient à `/nouvelle-commande`, et le second devait
+   * emporter un `RETURN_TO_CART` pour revenir : sans lui, l'écran de commande
+   * enchaînait sur le rayon, et on avait changé d'heure pour se retrouver à
+   * recomposer un panier qui était déjà fait. Ce paramètre de retour était la
+   * preuve que le détour n'avait pas lieu d'être — on ne fabrique pas un
+   * chemin de retour vers l'endroit qu'on n'aurait pas dû quitter.
+   *
+   * ⚠️ Le retrait seulement : la porte du coursier demande un carnet
+   * d'adresses, que seul un compte possède. Un visiteur n'en a pas, et c'est
+   * l'accueil qui tranche entre les deux portes — le panier, lui, n'a qu'à
+   * rouvrir celle qu'on a déjà prise.
+   */
+  protected async pickService(): Promise<void> {
+    await this.doors.pickup(null);
   }
 
-  /**
-   * Rouvre le mode et l'heure, et **revient ici** une fois choisis.
-   *
-   * Sans le retour, l'écran de commande enchaîne sur le rayon : on aurait changé
-   * d'heure pour se retrouver à recomposer un panier qui était déjà fait.
-   */
-  protected changeService(): void {
-    void this.router.navigate(['/nouvelle-commande'], { queryParams: RETURN_TO_CART });
+  /** Rouvre le choix déjà fait, sans quitter le panier. */
+  protected async changeService(): Promise<void> {
+    const service = this.choice();
+    if (service === null) {
+      await this.doors.pickup(null);
+      return;
+    }
+    if (service.mode === 'delivery') {
+      await this.doors.delivery(null);
+      return;
+    }
+    // Changer de maison périme l'heure : on rouvre les deux, dans l'ordre.
+    await this.doors.pickup(service.pickupAddressId);
   }
 
   /**
@@ -209,11 +232,14 @@ export class PanierPage {
       this.backToShop();
       return;
     }
-    // Régler exige le mode : c'est lui qui porte la remise et les frais. On mène
-    // à la question plutôt que de facturer un panier sans destination.
+    // Régler exige le mode : c'est lui qui porte la remise et les frais. On
+    // POSE la question plutôt que de facturer un panier sans destination — et
+    // si elle reste sans réponse, on ne va nulle part.
     if (this.choice() === null) {
-      void this.router.navigate(['/nouvelle-commande']);
-      return;
+      await this.pickService();
+      if (this.choice() === null) {
+        return;
+      }
     }
     const placed = await this.orders.place();
     if (placed === null) {
