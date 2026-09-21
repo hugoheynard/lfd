@@ -617,21 +617,54 @@ bouton.
   « l'article disparaît des DEUX boutiques ». Le corriger demande le découpage
   par audience ci-dessus ; le dire coûtait une phrase, et un geste dont la
   portée surprend coûte une vente ;
-- ⏳ une colonne **« prix public »** à côté, avec « modifier » et « revenir au
-  PIM » — bloquée par la question **a** ci-dessous, et par le fait que
-  `CatalogItemOverride` n'a pas de colonne où le ranger.
+- ✅ **le tarif PIM montre ses DEUX prix** (2026-09-21, `430d4383`) — « pro
+  1,70616 € HT » puis « public 2,25 € TTC », les unités écrites. Une LECTURE
+  seule : `publicTtcCents` et `publicVatRatePercent` sur la vue
+  d'administration, aucune migration. Un article sans étiquette dit « non
+  poussé » plutôt qu'un tiret : c'est un article que la vitrine publique
+  ÉCARTE, pas une donnée manquante ;
+- ✅ **la fiche réglementaire et la mise en avant ont quitté la table** — ni
+  l'une ni l'autre ne parle de prix. Le SEGMENT « En avant » reste sans son
+  contrôle, faute d'écran où le régler : retirer aussi le compte laisserait un
+  état de la boutique que plus rien ne montre ;
+- ⏳ une colonne **« prix public TTC » MODIFIABLE** à côté, avec « poser un
+  prix », « suit le PIM » et son propre masquage — voir le lot ci-dessous.
 
 ⚠️ **`@lfd/catalog-ui` porte le mot en dur.** `PriceEditor` dit « prix pro »
 dans son gabarit ; le jour où la colonne publique arrive, c'est un **paramètre**
 qu'il lui faudra, pas un second composant.
 
-## Ce qui reste à trancher
+## Les trois questions, tranchées le 2026-09-21
 
-| #     | Question                                                                                                                                                                                                       |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **a** | Le prix public posé ici est-il un **TTC** ? D1 dit que l'étiquette est un TTC en centimes, et `@lfd/money` réserve les millicentimes aux dérivés — un prix qu'un humain pose ici devrait suivre la même règle. |
-| **b** | `isFeatured` suit-il le même découpage que `isHidden` ?                                                                                                                                                        |
-| **c** | Le masquage par audience arrive-t-il **avant** le prix public ? Il est déjà faux aujourd'hui, l'autre ne l'est pas encore.                                                                                     |
+| #     | Question                              | Réponse                                                                                                                                                |
+| ----- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **a** | Le prix public posé ici est-il un TTC | **Oui** — « mettre à côté prix public TTC ». Donc `cents`, comme tout prix qu'un humain POSE (`millicents.ts`), et jamais des millicentimes.           |
+| **b** | `isFeatured` suit-il le découpage     | **Non, il sort** — « on enlève aussi la colonne mise en avant, ça sera ailleurs ». Il reste un seul drapeau, et la question se reposera sur son écran. |
+| **c** | Le masquage avant le prix public      | **Ensemble, et c'est forcé** — voir ci-dessous.                                                                                                        |
+
+## ⏳ Le lot qui reste — poser un prix public, et masquer par audience
+
+> « Garder poser un prix, suit le PIM, et masquer dans chaque colonne — masquer
+> avec un œil barré. » — Hugo, 2026-09-21.
+
+🔴 **Un œil par colonne EXIGE le masquage par audience.** Sans lui, deux
+contrôles bascule­raient le même booléen : deux yeux, un seul état, et l'un
+mentirait quoi qu'on fasse. C'est ce qui soude **c** — les deux moitiés du lot
+ne sont pas séquençables, elles sont la même.
+
+Ce qu'il demande, et pourquoi il n'est pas fait dans la foulée :
+
+| Ce qu'il faut                                   | Pourquoi ce n'est pas une passe de front                                                                                                                                     |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `public_ttc_cents` sur `catalog_item_overrides` | une migration sur une base **en service** (§ 0) — additive, réversible, trois déploiements                                                                                   |
+| `is_hidden` → un masquage par audience          | une migration de **données** : la valeur actuelle doit se répartir sur deux colonnes sans qu'un article change de visibilité au passage                                      |
+| convertir le TTC posé en HT servi               | `servedPriceOf` rend un `htMillicents` ; un TTC posé doit donc être converti — **au taux du contexte public**, et refusé quand il n'y en a pas                               |
+| où vit la conversion                            | `htMillicentsOf` est dans `pim-contracts`, et la plateforme n'a pas à lire le vocabulaire du PIM (§ 7 de `chemin-du-prix-public.md`). Candidat : la déplacer en `@lfd/money` |
+| `PriceEditor` dit « prix pro » en dur           | il lui faut un **paramètre**, pas un second composant                                                                                                                        |
+
+⚠️ Ce lot touche **l'argent** ET porte une **migration de données** : deux des
+quatre critères du § 9 bis du CLAUDE.md. `vitruve` est obligatoire avant la
+première ligne.
 
 ---
 
