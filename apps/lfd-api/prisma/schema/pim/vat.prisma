@@ -30,7 +30,7 @@ model VatRate {
 /// catalogue.
 ///
 /// Singleton (une constante fixe en `id` garantit l'unicité), comme
-/// `ShopifySettings` et `BookingPolicySettings`. Elle ne porte qu'une règle
+/// `BookingPolicySettings`. Elle ne porte qu'une règle
 /// aujourd'hui, et elle est là pour en accueillir d'autres : les décisions de
 /// ce genre sont peu nombreuses, globales, et n'ont pas de porteur naturel dans
 /// le catalogue.
