@@ -3,10 +3,12 @@
 > **2026-09-21.** Décrit le code des lots **A1** et **A2** de
 > [`plan-un-seul-canal-deux-prix.md`](../pim/plan-un-seul-canal-deux-prix.md).
 >
-> ✅ **A3 est là depuis le 2026-09-21** : le devis et la passation déduisent
-> l'audience comme le rayon, et les e2e le tiennent. Le § 6 garde ce qui reste
-> ouvert — au premier rang, ce que la ligne de commande fige et que **plus rien
-> ne rafraîchit ensuite**.
+> ✅ **À jour au 2026-09-21, fin de journée.** La chaîne est complète : le
+> référentiel pose une étiquette, la plateforme peut en poser une autre, le
+> rayon d'un particulier l'affiche en TTC et la caisse encaisse ce qu'il a lu.
+>
+> Le § 6 garde ce qui reste ouvert — au premier rang, ce que la ligne de
+> commande fige et que **plus rien ne rafraîchit ensuite**.
 
 ## 1. La question à laquelle ce document répond
 
@@ -14,13 +16,16 @@
 
 Trois choses à ne pas confondre, et c'est toute la difficulté :
 
-|                     | Quoi                                          | Où            |
-| ------------------- | --------------------------------------------- | ------------- |
-| **Ce qu'on saisit** | UNE étiquette TTC, et des taux par contexte   | référentiel   |
-| **Ce qu'on stocke** | DEUX prix — le pro, et le public par contexte | miroir        |
-| **Ce qu'on sert**   | UN prix, UN taux                              | rayon, panier |
+|                      | Quoi                                              | Où            |
+| -------------------- | ------------------------------------------------- | ------------- |
+| **Ce qu'on saisit**  | UNE étiquette TTC, et des taux par contexte       | référentiel   |
+| **Ce qu'on stocke**  | DEUX prix reçus, et DEUX décisions possibles      | miroir        |
+| **Ce qu'on sert**    | UN prix hors taxe, UN taux, et le TTC d'une pièce | rayon, panier |
+| **Ce qu'on affiche** | le hors taxe à un pro, le TTC à un particulier    | boutique      |
 
-Le passage de deux à un se fait **à la lecture**, en un seul endroit.
+Le passage de deux à un se fait **à la lecture**, en un seul endroit. Le choix
+de l'unité affichée se fait **au front**, sur le même critère — et sans jamais
+recalculer un montant.
 
 ## 2. La chaîne entière
 
@@ -99,9 +104,14 @@ flowchart LR
   class C un
 ```
 
-**La carte ne sort jamais du miroir.** `ShopItemView` n'a jamais porté qu'un
-prix et qu'un taux, et ça n'a pas changé — la vue publique est servie **sans
-jeton**, et l'élargir est une décision de sécurité.
+**La carte ne sort jamais du miroir.** Ce qui franchit est un prix hors taxe,
+un taux, et le **TTC d'une pièce** — jamais la carte des contextes.
+
+⚠️ **`unitPriceTtcCents` a élargi cette vue le 2026-09-21** (D13), et le
+contrat dit que l'élargir est une décision de sécurité. Elle a été prise
+plutôt que subie : ce qui franchit n'est pas un secret — c'est le prix de
+l'étiquette — et le calculer au front l'aurait fait diverger du panier d'un
+centime. C'est l'e2e qui énumère les clés qui a rendu la décision visible.
 
 La carte existe pour **une seule raison** : le miroir est poussé une fois et lu
 par deux audiences. Il doit donc détenir de quoi répondre aux deux — sinon il
@@ -110,7 +120,8 @@ retirer.
 
 ## 5. Les chemins qui restent en `"pro"`, écrits en dur
 
-Cinq, et chacun porte l'argument dans le code plutôt qu'un défaut de signature —
+Cinq, inchangés depuis A2, et chacun porte l'argument dans le code plutôt qu'un
+défaut de signature —
 **un défaut est un oubli en devenir, et sur un prix un oubli se facture** :
 
 | Chemin                                 | Pourquoi                                                                     |
@@ -166,13 +177,23 @@ Cinq, et chacun porte l'argument dans le code plutôt qu'un défaut de signature
   qu'on sache pourquoi. Le cas n'existe pas aujourd'hui (le référentiel pousse
   les deux ou aucun), mais la condition dit une chose qu'elle ne veut pas dire
   (constaté le 2026-09-21).
-- **Aucun article n'a de prix public** tant que le référentiel n'a pas
-  republié : `public_by_context` est `NULL` sur les 94 lignes de la base de dev
-  (mesuré le 2026-09-21). Un article sans prix public est **écarté** de la
-  boutique publique plutôt que servi au tarif pro — le même refus que pour un
-  article sans taux de TVA.
+- ✅ **La base de dev est garnie** (2026-09-21, mesuré après rejeu) : **93
+  articles**, 93 étiquettes publiques, 93 cartes portant `takeaway`, 93 taux
+  pro. Ce paragraphe disait « aucun article n'a de prix public » et « 94 lignes
+  à `NULL` » — c'était vrai le matin.
 
-## 7. Une question de conception restée ouverte
+  ⚠️ **Et la cause n'était pas le code.** Trois familles du corpus de semis
+  n'étaient ouvertes qu'au canal pro ; sans taux pour « à emporter », la
+  projection n'écrit aucun prix public. La vitrine n'en montrait que 37 sur 92,
+  et l'échec était **silencieux des deux côtés** — comme l'ouverture aux pros de
+  2026-09-13 l'avait été avant lui.
+
+- ⏳ **L'export CSV ignore le prix public.** `catalog-csv.ts` promet « les
+  trois prix, côte à côte » dans son JSDoc et porte huit colonnes, toutes pro.
+  Le fichier qu'on ouvre « pour relire une grille de prix » tait donc celui que
+  la vitrine applique (constaté le 2026-09-21).
+
+## 7. Une question de conception restée ouverte — et ce qui l'a déplacée
 
 > « Le serveur connaît le prix juste en fonction du contexte — du coup ce qui
 > arrive en rayon, c'est un prix et un taux, non ? » — Hugo, 2026-09-21.
@@ -180,20 +201,67 @@ Cinq, et chacun porte l'argument dans le code plutôt qu'un défaut de signature
 Oui pour le rayon (§ 4). Mais la question porte plus loin : **le fil doit-il
 porter le hors taxe, ou seulement le taux ?**
 
-|                            | Carte avec le HT _(actuel)_ | Carte de taux seuls                                                                                     |
-| -------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Le fil                     | 2 nombres par contexte      | 1 nombre par contexte                                                                                   |
-| L'arrondi                  | **une fois**, à l'émission  | **une fois**, à la lecture                                                                              |
-| Qui dérive                 | le référentiel              | la plateforme                                                                                           |
-| Ce qu'il faudrait déplacer | rien                        | `htMillicentsOf`, aujourd'hui dans `pim-contracts` — la plateforme n'a pas à lire le vocabulaire du PIM |
+|            | Carte avec le HT _(actuel)_ | Carte de taux seuls        |
+| ---------- | --------------------------- | -------------------------- |
+| Le fil     | 2 nombres par contexte      | 1 nombre par contexte      |
+| L'arrondi  | **une fois**, à l'émission  | **une fois**, à la lecture |
+| Qui dérive | le référentiel              | la plateforme              |
 
 ⚠️ **Un seul arrondi dans les deux cas.** L'argument « c'est le dernier endroit
 qui connaît l'assiette » a été écrit pour le prix PRO, où un rapport s'applique ;
 pour le public il n'y a qu'une division, et le récepteur a les deux bouts.
+
+### 🔴 Ce que le 2026-09-21 a retiré de la balance
+
+Ce tableau portait une quatrième ligne — « ce qu'il faudrait déplacer :
+`htMillicentsOf`, aujourd'hui dans `pim-contracts`, et **la plateforme n'a pas
+à lire le vocabulaire du PIM** ». Elle a disparu, parce qu'elle était fausse
+deux fois :
+
+- **la frontière n'existait pas.** `lint:context-boundaries` exclut
+  explicitement les imports `@lfd/…` — « la frontière qu'on tient ici est
+  interne à l'application » — et `src/b2b/catalog` importait déjà
+  `@lfd/catalog-sync`. Rien n'a jamais interdit cet appel ;
+- **le déplacement a eu lieu**, pour une tout autre raison : D12 a donné à la
+  déduction un **second site** — la plateforme, qui convertit en hors taxe un
+  prix public posé à la main. Deux sites qui arrondissent de l'argent ne sont
+  tolérables que s'ils appellent la même fonction, donc `tax.ts` a rejoint
+  `@lfd/money`.
+
+**La plateforme DÉRIVE déjà**, depuis D12. Ce qui distinguait les deux colonnes
+n'est donc plus « qui a le droit », mais « qui fait autorité ».
 
 Ce qui reste en faveur de l'actuel : le référentiel est **l'autorité du prix**,
 et lui faire rendre un montant plutôt qu'une recette évite que deux récepteurs
 dérivent un jour différemment. Il n'y a qu'un récepteur aujourd'hui — l'argument
 est réel, pas décisif.
 
-**Non tranché.**
+**Non tranché.** Mais la question a changé de nature : elle ne coûte plus un
+déplacement de code, seulement un choix d'autorité.
+
+## 8. Ce qu'un prix POSÉ ici devient, et ce qu'il ne redevient pas
+
+Depuis D12, la plateforme peut poser sa propre étiquette publique, en centimes
+TTC. Elle n'est pas servie telle quelle :
+
+```
+étiquette posée (TTC, centimes)
+   → hors taxe au taux du contexte, à la LECTURE
+   → resolvePrice — promotions et paliers ouverts à tous
+   → TTC d'une pièce, par la chaîne de la caisse
+```
+
+🔴 **Le TTC qui ressort n'est pas toujours celui qu'on a posé.** L'aller-retour
+hors taxe ne revient pas toujours sur lui-même : un centime, jamais plus, mais
+**systématiquement vers le haut** à 10 % et à 20 % — 182 et 333 prix sur 2 000
+(mesuré, [`ancrage-du-ttc-pose.mjs`](../../dev-toolbox/analyses/ancrage-du-ttc-pose.mjs)).
+
+La décision (Hugo, 2026-09-21) est d'**assumer** l'écart plutôt que de
+construire une TVA par soustraction. Sa contrepartie est qu'on le **dit** : la
+colonne d'administration affiche « encaissé 1,06 € » à côté d'un prix posé à
+1,05 €, et le rayon public montre le même nombre que la caisse prendra.
+
+⚠️ **Poser l'étiquette telle quelle au rayon aurait été exact pour le client et
+faux pour la maison** : le panier, lui, part du hors taxe. Les deux auraient
+divergé d'un centime, et c'est l'e2e « annonce au rayon le prix que le devis
+chiffre » qui serait tombé.

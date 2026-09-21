@@ -1,26 +1,51 @@
 # Plan — un seul canal, deux prix
 
-> **2026-09-21.** 📐 Plan, rien n'est bâti. L'existant cité a été **ouvert et
-> lu ce jour-là**. Contredit deux fois par `vitruve` ; ce que les versions
-> précédentes affirmaient de faux est en **annexe B**.
+> **2026-09-21.** 📐 Écrit comme un plan, **bâti dans la journée**. L'existant
+> cité a été ouvert et lu ce jour-là ; contredit trois fois par `vitruve`. Ce
+> que les versions précédentes affirmaient de faux est en **annexe B**, et ce
+> que la construction a démenti est noté sur place.
+>
+> ⚠️ **Il se lit donc à deux niveaux** : la conception, qui vaut encore, et les
+> prédictions, dont plusieurs se sont révélées fausses — le compte des e2e, le
+> nombre de points de contact, la raison d'un déplacement de code. Elles sont
+> gardées avec leur démenti plutôt que réécrites : un plan corrigé après coup
+> donne l'illusion qu'on avait vu juste.
 
 ## 1. En une page
 
 **On sort de Shopify, et on câble le prix public.** Ce sont **deux chantiers
 indépendants**, plus un troisième qui ne dépend d'aucun code.
 
-| Chantier                 | Ce que c'est                                                                                                    | État                        |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| **B — Shopify sort**     | ~11 250 lignes, 2 contrats, 3 secrets, la sonde et le nœud d'OPS                                                | ✅ **fait**, sauf le schéma |
-| **A — le prix public**   | le fil transporte le prix du particulier, et la TVA de **son** contexte                                         | 🔴 argent — prêt à bâtir    |
-| **C — les déclarations** | 94 jeux d'allergènes à saisir. **Ne bloque rien** (D10), mais tant qu'ils manquent la boutique montre 1 article | ⏳ humain                   |
+| Chantier                 | Ce que c'est                                                                                                    | État                             |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **B — Shopify sort**     | ~11 250 lignes, 2 contrats, 3 secrets, la sonde et le nœud d'OPS                                                | ✅ **fait**, sauf le schéma      |
+| **A — le prix public**   | le fil transporte le prix du particulier, et la TVA de **son** contexte                                         | ✅ **fait** — A1 à A3, D11 à D13 |
+| **C — les déclarations** | 94 jeux d'allergènes à saisir. **Ne bloque rien** (D10), mais tant qu'ils manquent la boutique montre 1 article | ⏳ humain                        |
 
-**Ils ne s'attendent pas.** B est derrière nous ; A et C avancent en parallèle,
-et C n'est pas du code.
+**Ils ne s'attendent pas.** B et A sont derrière nous ; C n'est pas du code.
 
-✅ **Les dix décisions sont tranchées**, D6 comprise — celle qui avait arrêté le
-chantier A le temps d'une mesure. Il reste trois questions de portée technique
-(§ A.5), dont une seule pèse.
+### ✅ Ce qui marche, bout en bout (2026-09-21, soir)
+
+Le référentiel pose **une** étiquette TTC. Un seul push la porte, avec le prix
+pro dérivé et la TVA de chaque contexte. Le miroir range les deux ; la
+plateforme peut décider les deux ; la lecture en sert **un** selon qui regarde ;
+le rayon d'un particulier l'affiche en TTC, celui d'un pro en hors taxe.
+
+Mesuré sur la base de dev après semis : **93 articles vendables sur les deux
+boutiques**. Le croissant est à 2,00 € TTC au comptoir, 1,71 € HT au pro — et
+son étiquette, refacturée par la chaîne de la caisse, redonne exactement 2,00 €.
+
+### ⏳ Ce qui reste
+
+| Quoi                              | Pourquoi ce n'est pas fait                                           |
+| --------------------------------- | -------------------------------------------------------------------- |
+| l'**export CSV** ignore le public | une passe, sans difficulté — juste pas faite                         |
+| le **masquage par audience**      | soudé à l'œil-par-colonne, et c'est une migration de données         |
+| le **schéma** (chantier B, lot 3) | au prochain déploiement, avec ses trois fichiers dans le même commit |
+| la **désinstallation Shopify**    | 🔴 hors dépôt, et c'est le seul geste qui coupe vraiment l'accès     |
+
+✅ **Les décisions sont tranchées**, D6 comprise — celle qui avait arrêté le
+chantier A le temps d'une mesure — et D12 avec elle, sur une seconde mesure.
 
 ⚠️ **La mort de Shopify n'oblige à rien.** Sa projection portait bien le prix
 public — elle sérialisait le TTC tel quel — mais vers une vitrine qui ne vend
@@ -668,7 +693,12 @@ première ligne.
 
 ---
 
-# D12 — poser un prix public TTC sur la plateforme
+# D12 — poser un prix public TTC sur la plateforme ✅
+
+> ✅ **Livrée le 2026-09-21** — `d878ce0d` (le domaine et la lecture),
+> `dac6fedb` (les gestes, les routes, le journal), `b6bf5afb` (l'écran). Ce qui
+> suit est le plan tel qu'il a été écrit **et contredit** ; ce que la
+> construction a appris est noté au fil du texte.
 
 > « Maintenant fais le prix public TTC, colonne modifiable. » — Hugo,
 > 2026-09-21.
@@ -721,7 +751,10 @@ exacte par construction ; elle coûte une jumelle de `ventilateVat`, et la
 décision ci-dessus rend son gain nul — ce que le client voit est déjà ce qu'il
 paie.
 
-## D13 — le rayon public affiche le TTC
+## D13 — le rayon public affiche le TTC ✅
+
+> ✅ **Livrée le 2026-09-21** — `eb57bf1e`. Le rayon d'un particulier est en
+> TTC, celui d'un professionnel reste en hors taxe.
 
 > « Je veux que la boutique publique affiche le TTC en rayon. » — Hugo,
 > 2026-09-21.
@@ -759,16 +792,16 @@ deux sites », et elle suffit.
 
 ## Les points de contact, corrigés après contradiction
 
-| #   | Où                                      | Quoi                                                                               |
-| --- | --------------------------------------- | ---------------------------------------------------------------------------------- |
-| 1   | migration                               | une colonne **additive** et réversible sur `catalog_item_overrides`                |
-| 2   | `CatalogItem`                           | `LocalDecision`, `setPublicPrice()`, `alignPublicOnPim()`, test `untouched` élargi |
-| 3   | **`prisma-catalog-item.repository.ts`** | `ItemRow.override`, `toDomain`, et **l'objet de `saveMany`**                       |
-| 4   | `servedPriceOf`                         | branche publique : l'override l'emporte, converti au taux du contexte              |
-| 5   | commandes + routes                      | sur le modèle exact des quatre gestes existants                                    |
-| 6   | journal                                 | `commerce.ts`, `commerce-phrases.ts`, leurs specs, l'e2e du journal                |
-| 7   | contrat + écran                         | une colonne, et `PriceEditor` **paramétré** plutôt qu'un second composant          |
-| 8   | export CSV                              | `catalog-csv.ts` promet « les trois prix » et n'en porte que des pro               |
+| #   | Où                                      | Quoi                                                                                   |
+| --- | --------------------------------------- | -------------------------------------------------------------------------------------- |
+| 1   | migration                               | une colonne **additive** et réversible sur `catalog_item_overrides`                    |
+| 2   | `CatalogItem`                           | `LocalDecision`, `setPublicPrice()`, `alignPublicOnPim()`, test `untouched` élargi     |
+| 3   | **`prisma-catalog-item.repository.ts`** | `ItemRow.override`, `toDomain`, et **l'objet de `saveMany`**                           |
+| 4   | `servedPriceOf`                         | branche publique : l'override l'emporte, converti au taux du contexte                  |
+| 5   | commandes + routes                      | sur le modèle exact des quatre gestes existants                                        |
+| 6   | journal                                 | `commerce.ts`, `commerce-phrases.ts`, leurs specs, l'e2e du journal                    |
+| 7   | contrat + écran                         | une colonne, et `PriceEditor` **paramétré** plutôt qu'un second composant              |
+| 8   | export CSV                              | ⏳ **PAS FAIT** — `catalog-csv.ts` promet « les trois prix » et n'en porte que des pro |
 
 🔴 **Le point 3 est le plus dangereux, et il manquait.** Un champ oublié dans
 l'objet littéral de `saveMany` **compile** — les champs d'un `create`/`update`
@@ -809,12 +842,22 @@ aujourd'hui `pimPriceMillicents = price.htMillicents`. Si seul
 `unitPriceMillicents` devient l'override, la vitrine publique affichera un
 **prix barré que personne n'a décidé**. Les deux doivent bouger ensemble.
 
-## Ce qu'une première démonstration montrera
+## ✅ Ce qu'une démonstration montre, après le semis
 
-Rien. `public_by_context` est **nul sur les 94 lignes** de la base de dev
-(mesuré le 2026-09-21) : tant que le référentiel n'a pas republié, l'écran
-refusera tout le catalogue. À dire avant la démo, sinon elle passe pour une
-panne.
+Ce paragraphe annonçait « **rien** » : `public_by_context` était nul sur les 94
+lignes de la base de dev, et l'écran aurait refusé tout le catalogue. C'était
+vrai, et insuffisant — il attribuait au seul défaut de republication ce qui
+tenait aussi au **corpus**.
+
+Après rejeu (`78a47b91`, mesuré le 2026-09-21) : **93 articles vendables, 93
+étiquettes publiques, 93 cartes portant `takeaway`, 93 taux pro.**
+
+🔴 **La republication ne suffisait pas.** Trois familles du corpus de semis
+n'étaient ouvertes qu'au canal pro — elles l'avaient été le 2026-09-13, et ce
+geste-là n'avait ouvert qu'un canal. Sans taux pour « à emporter », la
+projection n'écrit aucun prix public : la vitrine n'en montrait que 37 sur 92,
+et l'échec était silencieux **des deux côtés**, exactement comme celui qu'il
+répétait.
 
 ---
 
