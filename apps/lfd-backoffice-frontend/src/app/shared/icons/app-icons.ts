@@ -24,14 +24,6 @@ import { provideFoldIcons } from 'fold-ng';
  * sinon l'icône ignore le thème et les tons sémantiques.
  */
 
-// Glyphe « sac » générique enregistré sous `shopify` — on évite de reproduire le
-// logo Shopify (marque déposée). Rendu en currentColor comme les icônes fold.
-const SHOPIFY_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-  'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-  '<path d="M6 8h12l-.8 11.2A2 2 0 0 1 15.2 21H8.8a2 2 0 0 1-2-1.8L6 8Z"/>' +
-  '<path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>';
-
 // Déconnexion : porte + flèche sortante. ÉCRASE le `logout` de fold — même nom,
 // notre dessin. Un override ne se déclare pas : le nom est déjà connu.
 const LOGOUT_ICON =
@@ -224,8 +216,9 @@ const PLACES_ICON =
 
 /**
  * Les intégrations — deux maillons de chaîne. Source : SVG Repo (domaine
- * public). Remplace le `shopify` que portait l'onglet : Shopify est UNE
- * intégration, pas la catégorie, et l'onglet en accueillera d'autres.
+ * public). Elle a remplacé un glyphe `shopify` que portait l'onglet, au motif
+ * que Shopify était UNE intégration et pas la catégorie. Ce glyphe est parti
+ * avec son canal le 2026-09-21 ; le raisonnement, lui, vaut pour le suivant.
  *
  * Anneaux pleins de 64 unités sur 1024, soit 6,25 % — la graisse d'IBM Carbon,
  * pas celle de fold. Un trait de 21 la porte à 8,3 % sans coût : l'ouverture
@@ -520,7 +513,6 @@ export const APP_ICONS = {
   print: PRINT_ICON,
   product: PRODUCT_ICON,
   production: PRODUCTION_ICON,
-  shopify: SHOPIFY_ICON,
   publish: PUBLISH_ICON,
   tax: TAX_ICON,
   today: TODAY_ICON,

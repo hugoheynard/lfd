@@ -1,32 +1,8 @@
 <fold-page-layout icon="integrations" title="Intégrations">
   <p description>
-    Les canaux branchés sur le catalogue. La <strong>boutique B2B</strong> d'abord — c'est elle qui
-    facture — puis Shopify. Chaque intégration a sa page ; le catalogue descend vers elles, rien ne
-    remonte.
+    Les canaux branchés sur le catalogue. La <strong>boutique B2B</strong> — c'est elle qui facture.
+    Le catalogue descend vers elle, rien ne remonte.
   </p>
 
-  <fold-nav-layout>
-    <fold-tabs
-      tabNav
-      [tabs]="tabs"
-      [(activeKey)]="activeTab"
-      direction="horizontal"
-      size="compact"
-      justify="stretch"
-      background="surface"
-      activeStyle="fill"
-      #ref="foldTabs"
-    />
-
-    <fold-tab-panel [tabs]="ref" key="b2b">
-      <app-b2b-integration />
-    </fold-tab-panel>
-
-    <fold-tab-panel [tabs]="ref" key="shopify">
-      <div class="shopify-stack">
-        <app-shopify-integration />
-        <app-shopify-catalogue />
-      </div>
-    </fold-tab-panel>
-  </fold-nav-layout>
+  <app-b2b-integration />
 </fold-page-layout>

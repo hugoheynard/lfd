@@ -168,7 +168,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Le diff vivant : même mur que les ancres elles-mêmes — c'est une LECTURE du
   // catalogue, elle ne pose rien et ne publie rien.
   'pim/revisions/en-attente': null,
-  'pim/collections': null,
   'pim/publication': null,
   // La famille se règle sur SA page depuis c-0 : même droit que la liste, elle
   // n'ouvre rien de plus — le référentiel garde chaque écriture de son côté.
@@ -230,7 +229,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'documentation/briques': OPEN,
   'documentation/flux-des-collections': OPEN,
   'documentation/segmentation-web': OPEN,
-  'documentation/integration-shopify': OPEN,
 
   commercial: 'b2b_companies:read',
   'commercial/cockpit': 'b2b_growth:read',

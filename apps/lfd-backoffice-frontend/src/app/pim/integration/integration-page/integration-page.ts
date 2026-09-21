@@ -1,48 +1,28 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 
-import {
-  FoldNavLayoutComponent,
-  FoldPageLayoutComponent,
-  FoldTabPanelComponent,
-  FoldTabsComponent,
-  type FoldTabItem,
-} from 'fold-ng';
+import { FoldPageLayoutComponent } from 'fold-ng';
 
 import { B2bIntegration } from '../b2b-integration/b2b-integration';
-import { ShopifyCatalogue } from '../shopify-catalogue/shopify-catalogue';
-import { ShopifyIntegration } from '../shopify-integration/shopify-integration';
 
 /**
  * Hub des **intégrations** — les canaux branchés sur le catalogue.
  *
- * La **boutique B2B en premier**, et c'est un ordre de vérité : c'est elle qui
- * facture. Elle manquait entièrement à cet écran, dont l'état vide affirmait que
- * « Shopify est le seul canal branché » — faux depuis que le catalogue et les
- * taux descendent vers la plateforme.
+ * ⚠️ **Il n'y a plus d'onglets, parce qu'il n'y a plus qu'un canal.** Cet écran
+ * en a porté deux, Shopify et la boutique B2B, et son en-tête défendait l'ordre :
+ * « la boutique B2B en premier, et c'est un ordre de vérité : c'est elle qui
+ * facture ». Shopify est sorti le 2026-09-21
+ * ([`plan-un-seul-canal-deux-prix.md`](../../../../../../documentation/pim/plan-un-seul-canal-deux-prix.md)),
+ * et une barre d'onglets à un onglet est un choix qu'on n'offre pas.
  *
- * L'onglet « Autres » part avec : un inventaire des canaux tenu à la main est un
- * inventaire qui ment dès qu'un canal arrive, et c'est exactement ce qui s'est
- * produit. Un nouveau canal s'ajoute en onglet, pas en promesse.
+ * L'autre moitié de cet en-tête reste vraie et vaut d'être gardée : **un
+ * nouveau canal s'ajoute en onglet, pas en promesse.** L'écran a porté un
+ * onglet « Autres » qui inventoriait des canaux à la main — il mentait dès
+ * qu'un canal arrivait. La barre revient avec le deuxième canal, pas avant.
  */
 @Component({
   selector: 'app-integration-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldPageLayoutComponent,
-    FoldNavLayoutComponent,
-    FoldTabsComponent,
-    FoldTabPanelComponent,
-    B2bIntegration,
-    ShopifyIntegration,
-    ShopifyCatalogue,
-  ],
+  imports: [FoldPageLayoutComponent, B2bIntegration],
   templateUrl: './integration-page.html',
-  styleUrl: './integration-page.scss',
 })
-export class IntegrationPage {
-  protected readonly tabs: FoldTabItem[] = [
-    { key: 'b2b', label: 'Boutique B2B', icon: 'shopping-bag' },
-    { key: 'shopify', label: 'Shopify', icon: 'shopify' },
-  ];
-  protected readonly activeTab = signal('b2b');
-}
+export class IntegrationPage {}

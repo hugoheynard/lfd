@@ -154,17 +154,6 @@ export const pimRoutes: Routes = [
           ),
       },
       {
-        path: 'collections',
-        // Fermé quand le déploiement ne publie pas — ce n'est pas un droit,
-        // c'est une capacité de l'installation (cf. `publication.guard.ts`).
-        canActivate: [publicationEnabledGuard],
-        title: 'Collections — LFC B2B admin',
-        loadComponent: () =>
-          import('./integration/shopify-collections/collections-page/collections-page').then(
-            (m) => m.CollectionsPage,
-          ),
-      },
-      {
         path: 'publication',
         // Fermé quand le déploiement ne publie pas — ce n'est pas un droit,
         // c'est une capacité de l'installation (cf. `publication.guard.ts`).

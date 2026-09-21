@@ -567,13 +567,6 @@ export const DOCUMENTATION_VIEWS: readonly WorkspaceView[] = [
     icon: 'globe',
     section: 'PIM',
   },
-  {
-    key: 'shopify',
-    label: 'Intégration Shopify',
-    link: '/documentation/integration-shopify',
-    icon: 'shopify',
-    section: 'PIM',
-  },
 ];
 
 /** Le catalogue, par clé. */

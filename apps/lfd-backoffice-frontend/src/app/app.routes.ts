@@ -231,12 +231,6 @@ export const routes: Routes = [
             (m) => m.DocWebSegmentationPage,
           ),
       },
-      {
-        path: 'integration-shopify',
-        title: 'Intégration Shopify — LFC B2B admin',
-        loadComponent: () =>
-          import('./documentation/pim/shopify-page/shopify-page').then((m) => m.DocShopifyPage),
-      },
     ],
   },
   {
