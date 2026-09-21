@@ -26,13 +26,30 @@ type LoadState = 'loading' | 'ready' | 'error';
  * alors que le même chiffre sur un segment se clique.
  */
 const ALL = 'all';
-const WITH_B2B_PRICE = 'b2b';
+/**
+ * ⚠️ La VALEUR reste `'b2b'` — c'est une clé de segment, pas un libellé, et le
+ * lexique du dépôt distingue les deux (CLAUDE.md § 8, troisième exception).
+ * Seul le mot affiché devient « pro ».
+ */
+const WITH_PRO_PRICE = 'b2b';
 const FEATURED = 'featured';
 const UNTAXED = 'untaxed';
 const HIDDEN = 'hidden';
 
 /**
- * **Catalogue B2B** — ce que la plateforme vend, et à quel prix.
+ * **Catalogue actuel en ligne** — ce que la plateforme vend, et à quel prix.
+ *
+ * 🔴 **Le prix qu'on pose ici est celui du canal PROFESSIONNEL**, et l'écran le
+ * dit depuis le 2026-09-21. Il s'appelait « prix B2B », ce qui était vrai tant
+ * que la plateforme n'avait qu'une audience ; elle en a deux, et la vitrine
+ * publique ne lit jamais ce nombre — elle sert l'étiquette reçue du
+ * référentiel. Un nom qui désigne la plateforme là où il désigne un canal fait
+ * croire qu'un prix posé ici vaut pour tout ce qu'elle vend.
+ *
+ * ⚠️ **Cette vue ne montre donc qu'une moitié de la réalité** (Hugo,
+ * 2026-09-21). Il lui manque la colonne du prix public, et son bouton
+ * « Masquer » retire des DEUX boutiques à la fois — cf.
+ * `documentation/pim/plan-un-seul-canal-deux-prix.md`, D11.
  *
  * L'écran montre ce que le référentiel a poussé — le **tarif du PIM** — et ce
  * que la maison en a fait. Le prix décidé ici n'est pas un étage de la
@@ -51,8 +68,8 @@ const HIDDEN = 'hidden';
  * 🔴 **Le deuxième point a été FAUX du premier jour au 2026-09-10.** Le contrôle
  * existait, il répondait au clic, et il était peint en blanc sur la carte
  * blanche (cf. `PriceEditor`) — au milieu de quatre autres choses entassées dans
- * la même cellule. Personne n'a jamais posé un prix B2B depuis cet écran, et le
- * compteur « 0 à prix B2B » l'annonçait sans que personne ne fasse le lien.
+ * la même cellule. Personne n'a jamais posé un prix pro depuis cet écran, et le
+ * compteur « 0 à prix pro » l'annonçait sans que personne ne fasse le lien.
  *
  * 🔴 **Ce compteur de non-vendables était aveugle jusqu'au 2026-09-06.** Le
  * serveur repliait sur le taux de la FAMILLE quand l'article n'en portait pas :
@@ -121,13 +138,13 @@ export class CataloguePage {
    * Les segments, avec leur compte.
    *
    * Un segment vide reste **affiché et cliquable** plutôt que masqué : « 0 à
-   * prix B2B » est exactement le genre de zéro qu'on a besoin de voir, et un
+   * prix pro » est exactement le genre de zéro qu'on a besoin de voir, et un
    * contrôle dont les segments apparaissent et disparaissent au fil des données
    * ne se mémorise pas.
    */
   protected readonly filters = computed<readonly FoldViewToggleOption[]>(() => [
     { value: ALL, label: `Tous (${String(this.total())})` },
-    { value: WITH_B2B_PRICE, label: `À prix B2B (${String(this.alteredCount())})` },
+    { value: WITH_PRO_PRICE, label: `À prix pro (${String(this.alteredCount())})` },
     { value: FEATURED, label: `En avant (${String(this.featuredCount())})` },
     { value: UNTAXED, label: `Sans TVA (${String(this.untaxedCount())})` },
     { value: HIDDEN, label: `Masqués (${String(this.hiddenCount())})` },
@@ -181,14 +198,14 @@ export class CataloguePage {
     }
   }
 
-  /** Pose le prix B2B. Le serveur refuse un montant égal à celui du PIM. */
+  /** Pose le prix pro. Le serveur refuse un montant égal à celui du PIM. */
   protected async setPrice(change: {
     item: CatalogAdminItemView;
     priceMillicents: number;
   }): Promise<void> {
     try {
       await this.catalogue.setPrice(change.item.sku, change.priceMillicents);
-      this.notify.success(`Prix B2B posé sur ${change.item.name}.`);
+      this.notify.success(`Prix pro posé sur ${change.item.name}.`);
       await this.load();
     } catch (error) {
       // `refused` et non `error` : le refus le plus fréquent est « ce prix est
@@ -263,7 +280,7 @@ function named(item: CatalogAdminItemView, needle: string): boolean {
 /** L'article entre-t-il dans la lecture choisie ? `all` garde tout. */
 function kept(item: CatalogAdminItemView, filter: string): boolean {
   switch (filter) {
-    case WITH_B2B_PRICE:
+    case WITH_PRO_PRICE:
       return item.b2bPriceMillicents !== null;
     case FEATURED:
       return item.isFeatured;

@@ -11,7 +11,7 @@
     @if (total() === 0) {
       <fold-empty-state
         title="Aucun article reçu"
-        subtitle="Le catalogue arrive du PIM. Publiez-y des produits sur le canal B2B, puis lancez un push."
+        subtitle="Le catalogue arrive du PIM. Publiez-y des produits sur le canal professionnel, puis lancez un push."
       />
     } @else {
       <!--
@@ -37,22 +37,30 @@
         <fold-page-section bleed stack class="masthead" foldSurface="chrome">
           <div class="masthead-head">
             <div class="masthead-identity">
-              <h1 class="masthead-title">Catalogue B2B</h1>
+              <h1 class="masthead-title">Catalogue actuel en ligne</h1>
               <fold-badge [content]="total() + ' articles'" variant="neutral" />
             </div>
           </div>
 
           <!--
-            La phrase dit ce que la colonne « Prix B2B » FAIT, parce que rien
+            La phrase dit ce que la colonne « Prix pro » FAIT, parce que rien
             d'autre sur l'écran ne peut le dire : un prix posé ici ne s'ajoute
             pas aux altérations de la tarification, il remplace le nombre sur
             lequel elles s'appliquent. C'est la seule chose qu'un commercial doit
             savoir avant de taper un montant, et elle ne se devine pas.
           -->
+          <!--
+            🔴 **« pro » et non plus « B2B » depuis le 2026-09-21.** La même
+            plateforme sert désormais DEUX audiences : ce prix-là est celui du
+            canal professionnel, pas celui de la plateforme. Dire « B2B »
+            laissait croire qu'il valait pour tout ce qu'elle vend — et la
+            vitrine publique, elle, ne le voit jamais.
+          -->
           <p class="masthead-lead">
-            Le tarif du PIM est le socle. Un <strong>prix B2B</strong> le
+            Le tarif du PIM est le socle. Un <strong>prix pro</strong> le
             <strong>remplace</strong> — mercuriale, paliers et promotions s'appliqueront ensuite sur
-            lui, et il survit à tous les pushs suivants.
+            lui, et il survit à tous les pushs suivants. La <strong>vitrine publique</strong> ne le
+            voit pas : elle sert l'étiquette reçue du référentiel.
           </p>
 
           <div class="masthead-tools">

@@ -25,7 +25,7 @@ export class CatalogueService {
     );
   }
 
-  /** Pose le tarif de vente B2B. Le serveur refuse un prix égal à celui du PIM. */
+  /** Pose le tarif de vente PRO. Le serveur refuse un prix égal à celui du PIM. */
   async setPrice(sku: string, priceMillicents: number): Promise<void> {
     await firstValueFrom(
       this.http.put<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/price`, {
@@ -35,7 +35,7 @@ export class CatalogueService {
   }
 
   /**
-   * Retire le tarif B2B : l'article repasse au prix du PIM et suivra ses hausses.
+   * Retire le tarif PRO : l'article repasse au prix du PIM et suivra ses hausses.
    *
    * Un `DELETE`, pas un `PUT { priceMillicents: null }` — on supprime une décision, on
    * n'en pose pas une qui vaudrait « rien ».

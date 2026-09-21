@@ -39,7 +39,7 @@ export interface CatalogueShelf {
  * d'une ligne à l'autre. Sur quarante articles, rien ne se compare en colonne,
  * et le seul élément qui ressortait était le bouton le plus criard.
  *
- * 🔴 **C'est là que le prix B2B se perdait.** « Poser un prix » était le
+ * 🔴 **C'est là que le prix pro se perdait.** « Poser un prix » était le
  * quatrième enfant d'une boîte qui en portait cinq, écrit en blanc sur blanc
  * (cf. `PriceEditor`). Lui donner sa **propre colonne**, à côté du tarif reçu
  * qu'il remplace, est la moitié de la réparation ; l'autre moitié est la
@@ -82,14 +82,16 @@ export class ShelfCatalogue {
    * ferait perdre le seul repère qu'un lecteur ait pour retrouver un article
    * deux minutes plus tard.
    *
-   * `Prix B2B` est la plus large de toutes, et c'est délibéré : c'est la seule
+   * `Prix pro` est la plus large de toutes, et c'est délibéré : c'est la seule
    * colonne où l'on **écrit**, et elle doit tenir un champ ouvert sans faire
    * sauter la mise en page des voisines.
    */
   protected readonly columns: readonly FoldTableColumn<CatalogAdminItemView>[] = [
     { key: 'article', label: 'Article' },
     { key: 'pim', label: 'Tarif PIM', width: '8rem', numeric: true },
-    { key: 'b2b', label: 'Prix B2B', width: '15rem' },
+    // ⚠️ La CLÉ reste `b2b` : elle relie la colonne à son `ng-template`, et
+    // c'est du code, pas un libellé. Seul le mot affiché devient « pro ».
+    { key: 'b2b', label: 'Prix pro', width: '15rem' },
     { key: 'vat', label: 'TVA', width: '6rem', numeric: true },
     { key: 'sheet', label: 'Fiche', width: '13rem' },
     // Assez large pour tenir la confirmation qui s'y ouvre. À `9rem`, la
@@ -99,7 +101,8 @@ export class ShelfCatalogue {
 
   protected readonly empty: FoldTableEmpty = {
     title: 'Aucun article dans ce rayon',
-    subtitle: 'Publiez des produits de cette famille sur le canal B2B, puis lancez un push.',
+    subtitle:
+      'Publiez des produits de cette famille sur le canal professionnel, puis lancez un push.',
   };
 
   protected readonly rowKey = (item: CatalogAdminItemView): string => item.sku;

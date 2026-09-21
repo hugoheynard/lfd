@@ -143,7 +143,7 @@ export const b2bRoutes: Routes = [
       },
       {
         path: 'catalogue',
-        title: 'Catalogue B2B — LFC B2B admin',
+        title: 'Catalogue actuel en ligne — LFC B2B admin',
         loadComponent: () => import('./catalogue/catalogue-page').then((m) => m.CataloguePage),
       },
       {

@@ -111,11 +111,11 @@ function button(fixture: ComponentFixture<CataloguePage>, label: string): HTMLBu
   return found;
 }
 
-describe('CataloguePage — poser un prix B2B', () => {
+describe('CataloguePage — poser un prix pro', () => {
   it('offre le geste sur un article qui suit encore le PIM', async () => {
     const fixture = await render(new FakeCatalogue());
 
-    expect(button(fixture, 'Poser un prix B2B sur Croissant')).toBeDefined();
+    expect(button(fixture, 'Poser un prix pro sur Croissant')).toBeDefined();
     expect(text(fixture)).toContain('suit le PIM');
   });
 
@@ -123,7 +123,7 @@ describe('CataloguePage — poser un prix B2B', () => {
     const api = new FakeCatalogue();
     const fixture = await render(api);
 
-    button(fixture, 'Poser un prix B2B sur Croissant').click();
+    button(fixture, 'Poser un prix pro sur Croissant').click();
     fixture.detectChanges();
 
     const input = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
@@ -137,7 +137,7 @@ describe('CataloguePage — poser un prix B2B', () => {
     input.dispatchEvent(new Event('change'));
     fixture.detectChanges();
 
-    button(fixture, 'Enregistrer le prix B2B de Croissant').click();
+    button(fixture, 'Enregistrer le prix pro de Croissant').click();
     await fixture.whenStable();
 
     expect(api.prices).toEqual([{ sku: 'VIE-001-1', priceMillicents: 145_000 }]);
@@ -150,10 +150,10 @@ describe('CataloguePage — poser un prix B2B', () => {
   it('laisse « Enregistrer » inerte tant que le montant est celui du PIM', async () => {
     const fixture = await render(new FakeCatalogue());
 
-    button(fixture, 'Poser un prix B2B sur Croissant').click();
+    button(fixture, 'Poser un prix pro sur Croissant').click();
     fixture.detectChanges();
 
-    expect(button(fixture, 'Enregistrer le prix B2B de Croissant').disabled).toBe(true);
+    expect(button(fixture, 'Enregistrer le prix pro de Croissant').disabled).toBe(true);
   });
 
   it('propose de revenir au PIM sur un article déjà négocié, et pas sur les autres', async () => {
@@ -181,7 +181,7 @@ describe('CataloguePage — les quatre lectures', () => {
 
     const shown = text(fixture);
     expect(shown).toContain('Tous (4)');
-    expect(shown).toContain('À prix B2B (1)');
+    expect(shown).toContain('À prix pro (1)');
     expect(shown).toContain('En avant (1)');
     expect(shown).toContain('Sans TVA (1)');
     expect(shown).toContain('Masqués (1)');

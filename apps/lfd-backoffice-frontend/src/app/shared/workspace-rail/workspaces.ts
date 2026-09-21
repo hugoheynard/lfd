@@ -367,8 +367,12 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     needs: 'b2b_catalog:read',
   },
   {
+    // 🔴 « Catalogue » tout court ne disait plus rien de vrai (2026-09-21) :
+    // l'entrée juste au-dessus s'appelle « Réception », et les deux montrent le
+    // MÊME catalogue à deux instants. La paire dit enfin ce qu'elle est — ce
+    // qui attend une décision, puis ce qui est déjà en vente.
     key: 'catalogue',
-    label: 'Catalogue',
+    label: 'Catalogue actuel en ligne',
     link: '/b2b/catalogue',
     icon: 'package',
     section: 'Catalogue',

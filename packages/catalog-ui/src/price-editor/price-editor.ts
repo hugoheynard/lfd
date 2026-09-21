@@ -20,7 +20,7 @@ import { formatEuros } from "../price-origin/format-euros";
  *
  * 🔴 **Le contrôle était INVISIBLE.** Ses deux boutons portaient
  * `--fold-color-on-primary` — l'encre qu'on pose sur un aplat de marque, donc
- * du blanc — sur la carte blanche du catalogue. « Prix B2B » existait dans le
+ * du blanc — sur la carte blanche du catalogue. « Prix pro » existait dans le
  * DOM, mesurait 61 px, répondait au clic, et personne ne pouvait le voir. Un
  * token existant vaut toujours une couleur valide : ni `tsc`, ni ESLint, ni les
  * tests ne pouvaient le dire. Seul le rendu le disait.
@@ -44,7 +44,7 @@ import { formatEuros } from "../price-origin/format-euros";
              quoi ? », et la réponse doit être sous les yeux. -->
         <fold-number-input
           size="sm"
-          label="Prix B2B (€)"
+          label="Prix pro (€)"
           [hint]="originHint()"
           [min]="0.01"
           [step]="0.01"
@@ -57,7 +57,7 @@ import { formatEuros } from "../price-origin/format-euros";
             size="sm"
             type="button"
             [disabled]="!isValid()"
-            [attr.aria-label]="'Enregistrer le prix B2B de ' + label()"
+            [attr.aria-label]="'Enregistrer le prix pro de ' + label()"
             (click)="submit()"
           >
             Enregistrer
@@ -83,7 +83,7 @@ import { formatEuros } from "../price-origin/format-euros";
           emphasis="outline"
           [intent]="hasDecision() ? 'neutral' : 'primary'"
           [attr.aria-label]="
-            (hasDecision() ? 'Modifier le prix B2B de ' : 'Poser un prix B2B sur ') + label()
+            (hasDecision() ? 'Modifier le prix pro de ' : 'Poser un prix pro sur ') + label()
           "
           (click)="open()"
         >

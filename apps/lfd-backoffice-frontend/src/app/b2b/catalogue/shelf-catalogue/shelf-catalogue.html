@@ -7,7 +7,7 @@
   </div>
 
   <fold-data-table
-    [caption]="'Catalogue B2B — ' + shelf().name"
+    [caption]="'Catalogue actuel en ligne — ' + shelf().name"
     hover
     stickyFirst
     density="compact"
@@ -99,6 +99,14 @@
       commande ; réafficher la rouvre — donc remet en vente un article que
       quelqu'un avait retiré pour une raison qui ne se lit pas ici. Les deux se
       voient depuis la boutique par un client.
+
+      🔴 **Et ce bouton vaut pour les DEUX audiences à la fois** (constaté le
+      2026-09-21) : `listSellable` lit `isHidden` sans regarder qui demande. Un
+      conditionnement de quarante pièces n'a rien à faire en vitrine publique, et
+      une pièce à l'unité n'intéresse pas un pro — ce sont deux décisions, et il
+      n'y a qu'un bouton. La phrase de confirmation le DIT, faute de pouvoir
+      encore le corriger : un geste dont la portée surprend coûte une vente.
+      Le découpage est écrit dans `plan-un-seul-canal-deux-prix.md`, D11.
     -->
     <ng-template foldCell="shop" let-row>
       <div class="shop">
@@ -130,8 +138,8 @@
           [intent]="row.isHidden ? 'primary' : 'warning'"
           [message]="
             row.isHidden
-              ? 'L’article revient dans la boutique : les clients pourront de nouveau le commander, au prix de cette ligne.'
-              : 'L’article disparaît de la boutique et plus aucun client ne pourra le commander. Son prix B2B est conservé.'
+              ? 'L’article revient dans les DEUX boutiques : les clients pourront de nouveau le commander, au prix de leur audience.'
+              : 'L’article disparaît des DEUX boutiques — pro et publique — et plus aucun client ne pourra le commander. Son prix pro est conservé.'
           "
           [labels]="{ confirm: row.isHidden ? 'Réafficher' : 'Masquer' }"
           (confirmed)="visibilityToggled.emit(row)"
