@@ -129,6 +129,7 @@ async function mount(
   who: Regard = 'visiteur',
   orders: readonly CustomerOrderView[] = [],
   sold: readonly string[] = [],
+  publicDelivery: 'closed' | 'open' = 'closed',
 ): Promise<ComponentFixture<AccueilPublic>> {
   const store = new FakePoints();
   store.pickups.set(points);
@@ -139,7 +140,14 @@ async function mount(
       provideRouter([]),
       { provide: ServicePoints, useValue: store },
       { provide: ClientAudience, useValue: { shown: signal('b2c' as const) } },
-      { provide: ClientFeatureAccess, useValue: { shop: signal(shop) } },
+      {
+        provide: ClientFeatureAccess,
+        // ⚠️ `publicDelivery` FERMÉE, comme le catalogue : la porte du coursier
+        // d'un b2c dépend d'elle depuis le 2026-09-21, et un doublé qui
+        // l'ouvrirait ferait passer ces cas pour une règle qu'ils n'éprouvent
+        // pas. Le cas qui l'éprouve la pose lui-même.
+        useValue: { shop: signal(shop), publicDelivery: signal(publicDelivery) },
+      },
       { provide: ClientOrderHistory, useValue: { orders: signal(orders) } },
       { provide: ShopCatalogue, useValue: boutique },
       { provide: ClientCart, useValue: boutique },

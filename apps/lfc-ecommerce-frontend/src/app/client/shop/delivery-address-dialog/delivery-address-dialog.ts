@@ -14,6 +14,8 @@ import {
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
   FoldPanelFooterComponent,
+  FoldCalloutComponent,
+  FoldInputComponent,
   FoldPanelHeaderComponent,
   FoldPanelHostService,
   FoldPanelRef,
@@ -33,6 +35,18 @@ import { ServicePoints } from '../pickup-points.store';
 /** Ce qu'il faut pour ouvrir la porte : l'adresse déjà retenue, s'il y en a une. */
 export interface DeliveryAddressData {
   readonly currentId: string | null;
+
+  /**
+   * **La saisie libre est-elle permise ?** (Hugo, 2026-09-21)
+   *
+   * 🔴 C'est l'APPELANT qui tranche, parce que c'est lui qui sait à qui il
+   * parle : un visiteur n'a pas de carnet et doit pouvoir taper son adresse ;
+   * un pro en a un, et une adresse tapée hors carnet créerait une livraison que
+   * personne ne retrouverait au bon de livraison suivant. Le dialogue ne
+   * devinerait pas — un carnet vide peut être celui d'un pro dont `GET /me`
+   * n'a pas encore répondu.
+   */
+  readonly allowFreeEntry?: boolean;
 }
 
 /** Une adresse du carnet, telle que la rangée l'affiche. */
@@ -89,7 +103,9 @@ interface Entry {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldEmptyStateComponent,
+    FoldInputComponent,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
@@ -132,6 +148,45 @@ export class DeliveryAddressDialog {
 
   protected readonly picked = signal<string | null>(null);
 
+  /** Les quatre champs de la saisie libre. Ils ne servent QUE cette commande. */
+  protected readonly ligne1 = signal('');
+  protected readonly ligne2 = signal('');
+  protected readonly codePostal = signal('');
+  protected readonly ville = signal('');
+
+  /** Vrai quand l'écran montre le formulaire plutôt que le carnet. */
+  protected readonly freeEntry = computed(
+    () => this.data().allowFreeEntry === true && this.book().length === 0,
+  );
+
+  /** La zone du code postal tapé, `null` tant qu'il n'en touche aucune. */
+  private readonly typedZone = computed(() => {
+    const code = this.codePostal().trim();
+    return code === '' ? null : this.points.zoneFor(code);
+  });
+
+  /** Le tarif de la zone tapée, pour l'action. */
+  protected readonly typedFee = computed(() => {
+    const zone = this.typedZone();
+    return zone === null ? '' : feeOf(zone.fee);
+  });
+
+  /**
+   * Le refus de la saisie libre : un code postal tapé ENTIER qu'aucune zone ne
+   * dessert.
+   *
+   * ⚠️ On attend qu'il soit complet — cinq chiffres — au lieu de refuser dès la
+   * première frappe : un « 7 » n'est pas hors zone, il est inachevé, et le dire
+   * ferait lire un refus à chaque caractère.
+   */
+  protected readonly typedOutOfZone = computed(
+    () => this.codePostal().trim().length >= POSTAL_CODE_LENGTH && this.typedZone() === null,
+  );
+
+  private readonly freeReady = computed(
+    () => this.ligne1().trim() !== '' && this.ville().trim() !== '' && this.typedZone() !== null,
+  );
+
   constructor() {
     // Idempotent : la boutique a souvent déjà lu les zones.
     void this.points.hydrate();
@@ -169,7 +224,16 @@ export class DeliveryAddressDialog {
     return entry === null || entry.outOfZone ? null : entry;
   });
 
+  /** L'action est-elle ouverte ? Les deux modes répondent, chacun pour soi. */
+  protected readonly ready = computed(() =>
+    this.freeEntry() ? this.freeReady() : this.chosen() !== null,
+  );
+
   protected readonly ctaLabel = computed(() => {
+    if (this.freeEntry()) {
+      const fee = this.typedFee();
+      return this.freeReady() ? fill(this.c().cta, { fee }) : this.c().ctaIdle;
+    }
     const entry = this.chosen();
     if (entry === null) {
       return this.c().ctaIdle;
@@ -195,9 +259,16 @@ export class DeliveryAddressDialog {
    * applique alors le même barème que la facture.
    */
   protected confirm(): void {
-    const entry = this.chosen();
     const date = this.points.nextDayFor(null);
-    if (entry === null || date === null) {
+    if (date === null) {
+      return;
+    }
+    if (this.freeEntry()) {
+      this.confirmTyped(date);
+      return;
+    }
+    const entry = this.chosen();
+    if (entry === null) {
       return;
     }
     const address = entry.address;
@@ -222,7 +293,55 @@ export class DeliveryAddressDialog {
       },
     });
   }
+
+  /**
+   * L'adresse TAPÉE, rendue au même format que celle du carnet.
+   *
+   * 🔴 Ni identifiant ni fenêtre : elle n'existe dans aucun carnet, donc elle
+   * ne promet aucune heure. Le serveur en déduit la zone depuis le code postal,
+   * et applique le barème de la facture — c'est pourquoi rien ici ne porte de
+   * montant.
+   *
+   * ⚠️ Le libellé est l'ADRESSE elle-même : il n'y a pas de nom d'usage à
+   * afficher, et en inventer un (« Mon adresse ») ferait figurer sur la
+   * commande un mot que personne n'a tapé.
+   */
+  private confirmTyped(date: string): void {
+    const ligne1 = this.ligne1().trim();
+    const ville = this.ville().trim();
+    const codePostal = this.codePostal().trim();
+    this.ref.close({
+      mode: 'delivery',
+      window: null,
+      place: ligne1,
+      at: addressAt(ligne1),
+      address: `${ligne1}, ${codePostal}`,
+      codePostal,
+      slot: '',
+      date,
+      deliveryAddress: {
+        label: ligne1,
+        ligne1,
+        ligne2: this.ligne2().trim(),
+        codePostal,
+        ville,
+        pays: PAYS,
+      },
+    });
+  }
 }
+
+/**
+ * Le pays de la saisie libre.
+ *
+ * ⚠️ En dur, et c'est assumé : la maison livre en station, et aucun champ
+ * d'écran ne demande le pays. Le jour où une zone franchit la frontière, c'est
+ * un champ de plus — pas une valeur à deviner ici.
+ */
+const PAYS = 'France';
+
+/** Un code postal français en compte cinq — ce qui rend « complet » vérifiable. */
+const POSTAL_CODE_LENGTH = 5;
 
 /** Le tarif d'une zone, dans sa forme — un montant, ou un pourcentage du panier. */
 function feeOf(fee: {

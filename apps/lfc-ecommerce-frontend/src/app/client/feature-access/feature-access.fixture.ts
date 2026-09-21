@@ -26,5 +26,9 @@ export const DEFAULT_SURFACES = {
   orders: 'visible',
   invoices: 'visible',
   desktopMenu: 'visible',
+  // 🔴 FERMÉE, comme le catalogue (2026-09-21). Une suite qui l'exige ouverte
+  // le dit chez elle — le défaut d'une fixture ne décide pas d'une règle
+  // commerciale à la place du catalogue.
+  publicDelivery: 'closed',
   customerMandate: 'closed',
 } as const;

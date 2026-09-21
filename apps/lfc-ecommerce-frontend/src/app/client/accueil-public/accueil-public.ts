@@ -32,6 +32,7 @@ import { OrderContextStore } from '../order-context.store';
 import { formatHour } from '../format-hour';
 import { MOCK_EVENT } from '../mock-event';
 import { bestPickupDiscount, discountLabel, pickupOffer } from '../shop/pickup-discount';
+import { OrderDoors } from '../shop/order-doors';
 import { ServicePoints } from '../shop/pickup-points.store';
 import { PublicHousePickerDialog } from '../shop/public-house-picker-dialog/public-house-picker-dialog';
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
@@ -39,7 +40,6 @@ import { LiveOrdersWell } from '../mes-commandes/live-orders-well/live-orders-we
 import { isLive, rowCopyOf, trackedOf } from '../mes-commandes/order-rows';
 import { ClientCart } from '../cart/client-cart.service';
 import { ContactBand } from '../shop/contact-band/contact-band';
-import { DeliveryAddressDialog } from '../shop/delivery-address-dialog/delivery-address-dialog';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { ShopShortcuts, type ShortcutCard } from '../shop/shop-shortcuts/shop-shortcuts';
 import { orderLinesSummary, orderPlaceLabel, orderWeekday } from '../shop/last-order-summary';
@@ -112,6 +112,7 @@ interface House {
 })
 export class AccueilPublic {
   private readonly points = inject(ServicePoints);
+  private readonly doors = inject(OrderDoors);
   private readonly router = inject(Router);
   /** Là où le choix VOYAGE : c'est le store que la boutique et le panier lisent. */
   private readonly order = inject(OrderContextStore);
@@ -189,8 +190,19 @@ export class AccueilPublic {
       : { ...door, note: fill(this.c().doors.pickupUpTo, { value: best }) };
   });
 
+  /**
+   * La porte du coursier : ouverte, ou « bientôt ».
+   *
+   * 🔴 Elle ne dépendait que de la clientèle — `b2b` ouvert, tout le reste en
+   * attente. Elle lit maintenant {@link OrderDoors.deliveryOpen}, qui ajoute la
+   * clé d'admin `publicDelivery` : un pro livre par son CONTRAT et n'en dépend
+   * pas, un particulier ou un visiteur livre si la maison a ouvert la tournée.
+   *
+   * ⚠️ Cacher n'est pas fermer : `POST /shop/orders` refuse la même chose en
+   * 409. Cet état-ci évite de montrer une porte qui mène à un refus.
+   */
   protected readonly courierState = computed<'open' | 'pending'>(() =>
-    this.audience() === 'b2b' && this.canOrder() ? 'open' : 'pending',
+    this.doors.deliveryOpen() && this.canOrder() ? 'open' : 'pending',
   );
 
   /** Le salut nomme, ou ne nomme pas — jamais le prénom de quelqu'un d'autre. */
@@ -603,12 +615,12 @@ export class AccueilPublic {
     if (!this.canOrder()) {
       return;
     }
-    const choice = await DeliveryAddressDialog.open(this.panels, { currentId: null }).closed;
-    if (choice === undefined) {
-      return;
+    // La porte, son garde et la saisie libre vivent dans `OrderDoors` : le
+    // panier ouvre exactement la même, et deux copies finiraient par ne plus
+    // ouvrir à la même personne.
+    if (await this.doors.delivery(null)) {
+      void this.router.navigate([SHOP]);
     }
-    this.order.choice.set(choice);
-    void this.router.navigate([SHOP]);
   }
 
   protected browse(): void {

@@ -7,6 +7,9 @@ import {
   type PlaceShopOrderPayload,
 } from "@lfd/contracts";
 
+import { FeatureLevelResolver } from "../../../../feature-access/application/feature-level.resolver.js";
+import { FeatureLevelLookup } from "../../../../feature-access/domain/ports/feature-level.lookup.js";
+import { PublicDeliveryClosedError } from "../../../../feature-access/domain/public-delivery-closed.error.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -359,8 +362,39 @@ function payload(over: Partial<PlaceShopOrderPayload> = {}): PlaceShopOrderPaylo
   };
 }
 
+/**
+ * Le VRAI résolveur, sur un faux port de lecture.
+ *
+ * ⚠️ Et non un doublé du résolveur : c'est lui qui décide si une dérogation
+ * l'emporte sur le défaut du catalogue, et le doubler ferait passer ce test à
+ * côté de la seule chose qu'il y ait à éprouver — que le niveau LU est bien
+ * celui qui ferme.
+ *
+ * Ouvert par défaut : les cas de ce fichier éprouvent la passation, pas la
+ * porte. Celui qui l'éprouve la ferme explicitement.
+ */
+class FakeLevels extends FeatureLevelLookup {
+  constructor(private readonly level: "closed" | "open") {
+    super();
+  }
+
+  storedOverride(): Promise<string | null> {
+    return Promise.resolve(this.level);
+  }
+
+  isExempt(): Promise<boolean> {
+    return Promise.resolve(false);
+  }
+}
+
+function features(publicDelivery: "closed" | "open" = "open"): FeatureLevelResolver {
+  return new FeatureLevelResolver(new FakeLevels(publicDelivery));
+}
+
 /** Le handler et tout ce qu'il a touché, monté d'un coup. */
-function scene(options: { readonly claim?: IdempotencyClaim } = {}) {
+function scene(
+  options: { readonly claim?: IdempotencyClaim; readonly publicDelivery?: "closed" | "open" } = {},
+) {
   const sink = { placed: null as OrderToPlace | null };
   const paid: PaymentCalls = { intent: null, retrieved: 0 };
   const keys = new FakeKeys(options.claim ?? { kind: "claimed" });
@@ -376,6 +410,7 @@ function scene(options: { readonly claim?: IdempotencyClaim } = {}) {
     keys,
     noReader,
     new DirectUnitOfWork(),
+    features(options.publicDelivery),
   );
   return { handler, sink, paid, keys, buyers, published };
 }
@@ -559,5 +594,77 @@ describe("PlaceShopOrderHandler — ce qui échoue avant l'écriture", () => {
 
     await expect(handler.execute(new PlaceShopOrderCommand(payload()))).rejects.toThrow();
     expect(paid.intent).toBeNull();
+  });
+});
+
+/**
+ * 🔴 **LA LIVRAISON SANS COMPTE EST UNE DÉCISION D'ADMIN** (Hugo, 2026-09-21).
+ *
+ * Le front cache la porte du coursier quand la clé est fermée — mais masquer
+ * n'est pas fermer, et le dépôt écrit la différence dans son catalogue de clés :
+ * `hidden` ne ferme rien, `closed` si. Sans ce refus, une requête recopiée
+ * depuis l'onglet réseau ferait livrer quand même, et l'admin qui a « fermé »
+ * la livraison croirait l'avoir fermée.
+ */
+describe("PlaceShopOrderHandler — la porte de la livraison publique", () => {
+  const LIVRAISON = payload({
+    fulfillmentMethod: "delivery",
+    pickupAddressId: null,
+    deliveryAddress: {
+      label: "Chalet",
+      ligne1: "12 chemin des Barmettes",
+      ligne2: "",
+      codePostal: "73150",
+      ville: "Val d'Isère",
+      pays: "France",
+    },
+  });
+
+  it("🔴 refuse une livraison quand la clé est fermée", async () => {
+    const { handler } = scene({ publicDelivery: "closed" });
+
+    await expect(handler.execute(new PlaceShopOrderCommand(LIVRAISON))).rejects.toBeInstanceOf(
+      PublicDeliveryClosedError,
+    );
+  });
+
+  /**
+   * ⚠️ **ET LA CLÉ D'IDEMPOTENCE N'EST PAS RÉCLAMÉE.** Le refus se prononce sur
+   * le seul contenu du corps, avant toute écriture : une clé réclamée puis
+   * relâchée laisserait une trace et ferait porter au client un rejeu qui
+   * n'aurait jamais dû commencer.
+   */
+  it("🔴 refuse SANS réclamer la clé d'idempotence", async () => {
+    const { handler, keys } = scene({ publicDelivery: "closed" });
+
+    await expect(handler.execute(new PlaceShopOrderCommand(LIVRAISON))).rejects.toThrow();
+
+    expect(keys.claimed).toEqual([]);
+    expect(keys.released).toEqual([]);
+  });
+
+  /** Le RETRAIT ne dépend pas de cette clé : elle ne parle que de livraison. */
+  it("laisse passer un retrait, clé fermée", async () => {
+    const { handler, sink } = scene({ publicDelivery: "closed" });
+
+    await handler.execute(new PlaceShopOrderCommand(payload()));
+
+    expect(sink.placed).not.toBeNull();
+  });
+
+  /**
+   * ⚠️ **Ce test s'arrête à la PORTE, pas à la commande.** La scène de ce
+   * fichier ne sert aucune zone de livraison — la passation échoue donc plus
+   * bas, sur « aucune zone ne dessert ce code postal ». C'est exactement ce
+   * qu'on veut montrer : clé ouverte, le refus qui survient n'est plus le
+   * NÔTRE. Monter une zone ici ferait de ce cas un test de tarification, qui a
+   * déjà le sien.
+   */
+  it("laisse passer la porte quand la clé est ouverte", async () => {
+    const { handler } = scene({ publicDelivery: "open" });
+
+    await expect(handler.execute(new PlaceShopOrderCommand(LIVRAISON))).rejects.not.toBeInstanceOf(
+      PublicDeliveryClosedError,
+    );
   });
 });

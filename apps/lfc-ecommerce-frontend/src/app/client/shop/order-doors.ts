@@ -1,7 +1,9 @@
-import { inject, Injectable } from '@angular/core';
+import { computed, inject, Injectable } from '@angular/core';
 import { instantToLocal } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 
+import { ClientAudience } from '../client-audience.service';
+import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 import { formatHour } from '../format-hour';
 import { OrderContextStore } from '../order-context.store';
 import { DeliveryAddressDialog } from './delivery-address-dialog/delivery-address-dialog';
@@ -34,6 +36,27 @@ export class OrderDoors {
   private readonly panels = inject(FoldPanelHostService);
   private readonly points = inject(ServicePoints);
   private readonly order = inject(OrderContextStore);
+  private readonly access = inject(ClientFeatureAccess);
+
+  /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
+  private readonly audience = inject(ClientAudience).shown;
+
+  /**
+   * **La porte du coursier est-elle ouverte à qui regarde ?**
+   *
+   * 🔴 Un PRO livre par son CONTRAT : sa porte ne lit pas la clé, et la fermer
+   * lui retirerait un service qu'il a négocié. Pour tout le monde d'autre, la
+   * livraison est une décision d'admin (`publicDelivery`), fermée par défaut —
+   * ouvrir une tournée à qui n'a pas de compte n'est pas un réglage d'écran.
+   *
+   * ⚠️ **Cacher n'est pas fermer, et les deux existent.** `POST /shop/orders`
+   * refuse la même chose en 409 : sans ce refus, une requête recopiée depuis
+   * l'onglet réseau ferait livrer quand même. Ce signal-ci évite seulement de
+   * montrer une porte qui mène à un refus.
+   */
+  readonly deliveryOpen = computed(
+    () => this.audience() === 'b2b' || this.access.publicDelivery() === 'open',
+  );
 
   /**
    * **La porte du RETRAIT** : où, puis quand.
@@ -71,9 +94,23 @@ export class OrderDoors {
    * Aucune grille d'heures : le dialogue d'adresse rend un mode de service
    * COMPLET, fenêtre comprise (c'est-à-dire `null`, et son composant dit
    * pourquoi). Il n'y a donc pas de second volet à enchaîner.
+   *
+   * ⚠️ Elle ne s'ouvre PAS quand {@link deliveryOpen} est faux — elle rend
+   * `false` sans rien montrer. L'appelant qui cache déjà sa porte n'y arrive
+   * jamais ; celui qui l'aurait oubliée ne fait pas de dégât.
    */
   async delivery(currentId: string | null = null): Promise<boolean> {
-    const choice = await DeliveryAddressDialog.open(this.panels, { currentId }).closed;
+    if (!this.deliveryOpen()) {
+      return false;
+    }
+    const choice = await DeliveryAddressDialog.open(this.panels, {
+      currentId,
+      // 🔴 LA SAISIE LIBRE EST POUR LE B2C, et elle lui est réservée. Un pro
+      // tape une adresse hors de son carnet, et c'est une livraison que
+      // personne ne retrouve au bon de livraison suivant ; un visiteur n'a pas
+      // de carnet du tout, et sans elle il ne peut pas se faire livrer.
+      allowFreeEntry: this.audience() !== 'b2b',
+    }).closed;
     if (choice === undefined) {
       return false;
     }

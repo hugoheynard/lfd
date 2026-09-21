@@ -95,6 +95,22 @@ export class ClientFeatureAccess {
     () => this.levels()?.customerMandate ?? UNKNOWN_MANDATE_LEVEL,
   );
 
+  /**
+   * Le niveau **appliqué** de la livraison aux particuliers (`publicDelivery`).
+   *
+   * `closed` tant qu'on ne sait pas — lecture en vol, échec, ou serveur qui ne
+   * connaît pas la clé. C'est le défaut du catalogue, et le sens prudent : la
+   * porte du coursier montrée à tort mènerait à une commande que
+   * `POST /shop/orders` refuse en 409, après la saisie d'une adresse.
+   *
+   * ⚠️ Elle ne concerne QUE le b2c. Un pro livre par son contrat, et sa porte
+   * ne lit pas cette clé — c'est l'écran qui fait la différence, parce que
+   * c'est lui qui sait à qui il parle.
+   */
+  readonly publicDelivery = computed<GateLevel>(
+    () => this.levels()?.publicDelivery ?? UNKNOWN_MANDATE_LEVEL,
+  );
+
   /** « Au moins tel niveau » — le seul test qu'un écran écrit, par la règle du contrat. */
   atLeast(required: ShopLevel): boolean {
     return isAtLeast('shop', this.shop(), required);

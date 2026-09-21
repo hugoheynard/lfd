@@ -6,9 +6,55 @@
     <p class="lead">{{ c().lead }}</p>
   </div>
 
-  @if (entries().length === 0) {
-    <!-- Carnet vide : on dit OÙ il se remplit, on n'ouvre pas un formulaire.
-         Les adresses appartiennent à la société, pas à la commande. -->
+  @if (freeEntry()) {
+    <!-- 🔴 LA SAISIE LIBRE, pour qui n'a PAS de carnet (Hugo, 2026-09-21).
+         Rien n'est enregistré : ces champs servent cette commande-là, et un
+         visiteur n'a pas de compte où ranger une adresse. -->
+    <div class="free">
+      <p class="free-lead">{{ c().free.lead }}</p>
+      <div class="free-fields">
+        <fold-input
+          class="wide"
+          size="lg"
+          [label]="c().free.ligne1"
+          autocomplete="address-line1"
+          [placeholder]="c().free.ligne1Placeholder"
+          [(value)]="ligne1"
+        />
+        <fold-input
+          class="wide"
+          size="lg"
+          [label]="c().free.ligne2"
+          autocomplete="address-line2"
+          [placeholder]="c().free.ligne2Placeholder"
+          [(value)]="ligne2"
+        />
+        <fold-input
+          size="lg"
+          inputmode="numeric"
+          [label]="c().free.codePostal"
+          autocomplete="postal-code"
+          [placeholder]="c().free.codePostalPlaceholder"
+          [(value)]="codePostal"
+        />
+        <fold-input
+          size="lg"
+          [label]="c().free.ville"
+          autocomplete="address-level2"
+          [placeholder]="c().free.villePlaceholder"
+          [(value)]="ville"
+        />
+      </div>
+      <!-- Le refus NOMME la sortie plutôt que de griser en silence — et il
+           attend un code postal complet, parce qu'un code inachevé n'est pas
+           hors zone. -->
+      @if (typedOutOfZone()) {
+        <fold-callout variant="alert">{{ c().free.noZone }}</fold-callout>
+      }
+    </div>
+  } @else if (entries().length === 0) {
+    <!-- Carnet vide et saisie fermée : on dit OÙ il se remplit. Les adresses
+         d'un PRO appartiennent à sa société, pas à la commande. -->
     <fold-empty-state [title]="c().empty.title" [subtitle]="c().empty.subtitle" />
   } @else {
     <ul class="entries" role="radiogroup" [attr.aria-label]="c().title">
@@ -64,7 +110,7 @@
     intent="primary"
     size="lg"
     type="button"
-    [disabled]="chosen() === null"
+    [disabled]="!ready()"
     (click)="confirm()"
   >
     {{ ctaLabel() }}

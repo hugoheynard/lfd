@@ -49,6 +49,33 @@ export interface DeliveryAddressCopy {
     readonly subtitle: string;
   };
 
+  /**
+   * **La saisie LIBRE** — pour qui n'a pas de carnet (Hugo, 2026-09-21 : « le
+   * visiteur doit pouvoir taper son adresse »).
+   *
+   * 🔴 Elle ne s'ouvre qu'à qui n'a PAS de société. Un pro qui taperait une
+   * adresse ici créerait une livraison que son carnet ne retrouverait pas au
+   * bon de livraison suivant — c'est la raison qui fermait cette porte, et elle
+   * reste vraie pour lui.
+   *
+   * ⚠️ Rien n'est ENREGISTRÉ : ces champs servent cette commande-là. Le
+   * visiteur n'a pas de compte où ranger une adresse.
+   */
+  readonly free: {
+    readonly title: string;
+    readonly lead: string;
+    readonly ligne1: string;
+    readonly ligne1Placeholder: string;
+    readonly ligne2: string;
+    readonly ligne2Placeholder: string;
+    readonly codePostal: string;
+    readonly codePostalPlaceholder: string;
+    readonly ville: string;
+    readonly villePlaceholder: string;
+    /** Le code postal ne tombe dans aucune zone — dit sous le champ. */
+    readonly noZone: string;
+  };
+
   /** `{fee}` — le tarif de la zone retenue. L'action PORTE le montant. */
   readonly cta: string;
   readonly ctaIdle: string;
@@ -67,6 +94,19 @@ export const DELIVERY_ADDRESS_FR: DeliveryAddressCopy = {
     title: 'Aucune adresse au carnet',
     subtitle: 'Les adresses de livraison se règlent dans « Mon compte ».',
   },
+  free: {
+    title: 'Votre adresse',
+    lead: 'Elle sert à cette commande. Les frais dépendent de la zone, jamais du contenu du panier.',
+    ligne1: 'Adresse',
+    ligne1Placeholder: 'Numéro et rue',
+    ligne2: 'Complément',
+    ligne2Placeholder: 'Bâtiment, étage, digicode',
+    codePostal: 'Code postal',
+    codePostalPlaceholder: '73150',
+    ville: 'Ville',
+    villePlaceholder: 'Val d’Isère',
+    noZone: 'Nous ne livrons pas encore ce code postal — le retrait, lui, reste ouvert.',
+  },
   cta: 'Composer mon panier · {fee} €',
   ctaIdle: 'Choisissez une adresse',
   close: 'Fermer',
@@ -84,6 +124,19 @@ export const DELIVERY_ADDRESS_EN: DeliveryAddressCopy = {
     title: 'No address in the book',
     subtitle: 'Delivery addresses are managed in “My account”.',
   },
+  free: {
+    title: 'Your address',
+    lead: 'It is used for this order. Fees depend on the zone, never on what is in the basket.',
+    ligne1: 'Address',
+    ligne1Placeholder: 'Number and street',
+    ligne2: 'Extra details',
+    ligne2Placeholder: 'Building, floor, door code',
+    codePostal: 'Postcode',
+    codePostalPlaceholder: '73150',
+    ville: 'Town',
+    villePlaceholder: 'Val d’Isère',
+    noZone: 'We do not deliver to this postcode yet — pickup is still open.',
+  },
   cta: 'Fill my basket · {fee} €',
   ctaIdle: 'Pick an address',
   close: 'Close',
@@ -100,6 +153,19 @@ export const DELIVERY_ADDRESS_IT: DeliveryAddressCopy = {
   empty: {
     title: 'Nessun indirizzo in rubrica',
     subtitle: 'Gli indirizzi di consegna si impostano in « Il mio account ».',
+  },
+  free: {
+    title: 'Il vostro indirizzo',
+    lead: 'Serve per questo ordine. Le spese dipendono dalla zona, mai dal contenuto del carrello.',
+    ligne1: 'Indirizzo',
+    ligne1Placeholder: 'Numero e via',
+    ligne2: 'Dettagli',
+    ligne2Placeholder: 'Edificio, piano, codice',
+    codePostal: 'CAP',
+    codePostalPlaceholder: '73150',
+    ville: 'Città',
+    villePlaceholder: 'Val d’Isère',
+    noZone: 'Non consegniamo ancora a questo CAP — il ritiro resta aperto.',
   },
   cta: 'Comporre il carrello · {fee} €',
   ctaIdle: 'Scegliete un indirizzo',
