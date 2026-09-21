@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import type { CatalogAdminItemView } from '@lfd/contracts';
 import { formatEuros, PriceEditor, PriceOrigin } from '@lfd/catalog-ui';
+import { htMillicentsOf, lineTotalCents, MILLICENTS_PER_CENT, ventilateVat } from '@lfd/money';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -83,6 +84,8 @@ export class ShelfCatalogue {
 
   readonly priceSet = output<{ item: CatalogAdminItemView; priceMillicents: number }>();
   readonly priceAligned = output<CatalogAdminItemView>();
+  readonly publicPriceSet = output<{ item: CatalogAdminItemView; ttcCents: number }>();
+  readonly publicPriceAligned = output<CatalogAdminItemView>();
   readonly visibilityToggled = output<CatalogAdminItemView>();
 
   protected readonly euros = formatEuros;
@@ -113,6 +116,7 @@ export class ShelfCatalogue {
     // ⚠️ La CLÉ reste `b2b` : elle relie la colonne à son `ng-template`, et
     // c'est du code, pas un libellé. Seul le mot affiché devient « pro ».
     { key: 'b2b', label: 'Prix pro HT', width: '15rem' },
+    { key: 'public', label: 'Prix public TTC', width: '15rem' },
     // Assez large pour tenir la confirmation qui s'y ouvre. À `9rem`, la
     // phrase qui dit ce que « Masquer » va faire tombait sur cinq lignes.
     { key: 'shop', label: 'Boutique', width: '18rem' },
@@ -139,6 +143,44 @@ export class ShelfCatalogue {
    */
   protected readonly rowTone = (item: CatalogAdminItemView): FoldTableTone =>
     item.vatRatePercent === null ? 'warning' : null;
+
+  /**
+   * **Ce que le rayon public affichera vraiment**, en euros TTC.
+   *
+   * 🔴 **Ce n'est PAS le prix posé, et c'est tout l'objet de cette méthode.**
+   * Le prix posé est une ENTRÉE : il est mis hors taxe, traverse la résolution,
+   * et le TTC qui en ressort peut valoir un centime de plus — l'aller-retour ne
+   * revient pas toujours sur lui-même, et jamais vers le bas à 10 % ou 20 %
+   * (mesuré, `dev-toolbox/analyses/ancrage-du-ttc-pose.mjs`).
+   *
+   * Le montrer ici est la contrepartie de la décision d'ancre (Hugo,
+   * 2026-09-21) : on assume l'écart, donc on le DIT — à celui qui pose le prix
+   * comme au client qui le paiera. Sans cette ligne, un commercial taperait
+   * 1,05 € et découvrirait 1,06 € en caisse.
+   */
+  protected chargedEuros(item: CatalogAdminItemView): string | null {
+    const posed = item.decidedPublicTtcCents ?? item.publicTtcCents;
+    const rate = item.publicVatRatePercent;
+    if (posed === null || rate === null) {
+      return null;
+    }
+    const ht = htMillicentsOf(posed, rate);
+    if (ht === null) {
+      return null;
+    }
+    // 🔴 **La chaîne RÉELLE, pas une approximation plus fine.** Le premier jet
+    // multipliait le hors taxe par le taux et arrondissait au millicentime : un
+    // chemin plus précis que la caisse, donc un nombre qui coïncidait presque
+    // toujours avec le prix posé — et qui taisait exactement les cas que cette
+    // colonne existe pour montrer. L'arrondi au CENTIME du total de ligne fait
+    // partie de l'écart ; le sauter, c'est ne pas le mesurer.
+    const cents = ventilateVat({
+      lines: [{ htCents: lineTotalCents(ht, 1), vatRate: rate }],
+      discountCents: 0,
+      extras: [],
+    }).totalCents;
+    return formatEuros(cents * MILLICENTS_PER_CENT);
+  }
 
   /**
    * **L'étiquette publique, en euros TTC** — ou `null` quand le référentiel n'en
@@ -169,6 +211,3 @@ export class ShelfCatalogue {
         );
   }
 }
-
-/** Un centime vaut mille millicentimes — `@lfd/money`, la seule conversion d'ici. */
-const MILLICENTS_PER_CENT = 1_000;

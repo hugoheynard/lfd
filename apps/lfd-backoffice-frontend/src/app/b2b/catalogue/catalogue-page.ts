@@ -207,6 +207,35 @@ export class CataloguePage {
     }
   }
 
+  /**
+   * Pose l'étiquette publique. Le serveur oppose trois refus — montant nul,
+   * étiquette du PIM recopiée, article hors vitrine publique — et les trois se
+   * comprennent en une lecture, d'où `refused` plutôt qu'`error`.
+   */
+  protected async setPublicPrice(change: {
+    item: CatalogAdminItemView;
+    ttcCents: number;
+  }): Promise<void> {
+    try {
+      await this.catalogue.setPublicPrice(change.item.sku, change.ttcCents);
+      this.notify.success(`Prix public posé sur ${change.item.name}.`);
+      await this.load();
+    } catch (error) {
+      this.notify.refused(error, "Le prix public n'a pas pu être enregistré.");
+    }
+  }
+
+  /** Retire l'étiquette publique décidée ici : l'article repasse à celle du PIM. */
+  protected async alignPublicOnPim(item: CatalogAdminItemView): Promise<void> {
+    try {
+      await this.catalogue.alignPublicOnPim(item.sku);
+      this.notify.success(`${item.name} repasse à l'étiquette du PIM.`);
+      await this.load();
+    } catch (error) {
+      this.notify.error(error, "La décision n'a pas pu être retirée.");
+    }
+  }
+
   /** Pose le prix pro. Le serveur refuse un montant égal à celui du PIM. */
   protected async setPrice(change: {
     item: CatalogAdminItemView;

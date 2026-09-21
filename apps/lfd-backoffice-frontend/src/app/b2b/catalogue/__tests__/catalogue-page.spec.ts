@@ -70,6 +70,17 @@ class FakeCatalogue {
     this.aligned.push(sku);
     return Promise.resolve();
   }
+  readonly publicPrices: { sku: string; ttcCents: number }[] = [];
+  setPublicPrice(sku: string, ttcCents: number): Promise<void> {
+    this.publicPrices.push({ sku, ttcCents });
+    return Promise.resolve();
+  }
+  readonly publicAligned: string[] = [];
+  alignPublicOnPim(sku: string): Promise<void> {
+    this.publicAligned.push(sku);
+    return Promise.resolve();
+  }
+
   readonly visibility: { sku: string; hidden: boolean }[] = [];
   setVisibility(sku: string, hidden: boolean): Promise<void> {
     this.visibility.push({ sku, hidden });
@@ -339,3 +350,76 @@ function cell(fixture: ComponentFixture<CataloguePage>, selector: string): strin
   }
   return (found.textContent ?? '').replace(/\s/gu, ' ');
 }
+
+/**
+ * **La colonne du prix public**, et le nombre qu'elle ajoute.
+ *
+ * 🔴 Ce que ces cas tiennent et qui n'existe nulle part ailleurs : l'écart
+ * entre le prix POSÉ et le prix ENCAISSÉ est écrit à l'écran. C'est la
+ * contrepartie de la décision d'ancre — on assume qu'un TTC posé puisse
+ * revenir un centime plus haut, donc on le dit à celui qui le pose. Sans cette
+ * ligne, le commercial tape 1,05 € et découvre 1,06 € en caisse.
+ */
+describe('CataloguePage — le prix public', () => {
+  it('pose une étiquette en CENTIMES TTC, pas en millicentimes', async () => {
+    const api = new FakeCatalogue();
+    const fixture = await render(api);
+
+    button(fixture, 'Poser un prix public sur Croissant').click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const input = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
+      'input[type="number"]',
+    );
+    if (input === null) {
+      throw new Error("le champ de saisie ne s'est pas ouvert");
+    }
+    input.value = '2.99';
+    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    button(fixture, 'Enregistrer le prix public de Croissant').click();
+    await fixture.whenStable();
+
+    // 299 centimes, pas 299 000 millicentimes : l'unité suit l'audience.
+    expect(api.publicPrices).toEqual([{ sku: 'VIE-001-1', ttcCents: 299 }]);
+  });
+
+  /**
+   * 🔴 **Le nombre qui dit la vérité sur l'arrondi.** 2,25 € TTC à 5,5 % font
+   * 213 270 millicentimes hors taxe, qui refacturés rendent 2,25 € : les deux
+   * coïncident, donc la ligne ne s'affiche pas. Répéter le même montant
+   * apprendrait à ne plus le lire.
+   */
+  it("ne répète pas l'encaissé quand il vaut le prix posé", async () => {
+    const api = new FakeCatalogue();
+    const fixture = await render(api);
+
+    expect(text(fixture)).not.toContain('encaissé');
+  });
+
+  /**
+   * 🔴 **Et il s'affiche dès que les deux divergent.** 1,05 € à 5,5 % revient à
+   * 1,06 € — mesuré dans `ancrage-du-ttc-pose.mjs`, et c'est précisément le cas
+   * que cette colonne existe pour ne pas laisser découvrir en caisse.
+   */
+  it('🔴 annonce l’encaissé quand l’aller-retour ajoute un centime', async () => {
+    const api = new FakeCatalogue();
+    api.items = [item({ publicTtcCents: 105, publicVatRatePercent: 5.5 })];
+    const fixture = await render(api);
+
+    expect(text(fixture)).toContain('encaissé');
+    expect(text(fixture)).toContain('1,06');
+  });
+
+  it('dit qu’aucune étiquette n’est arrivée, plutôt que de proposer d’en poser une', async () => {
+    const api = new FakeCatalogue();
+    api.items = [item({ publicTtcCents: null, publicVatRatePercent: null })];
+    const fixture = await render(api);
+
+    expect(text(fixture)).toContain('pas d’étiquette reçue');
+    expect(() => button(fixture, 'Poser un prix public sur Croissant')).toThrow();
+  });
+});

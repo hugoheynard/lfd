@@ -98,6 +98,49 @@
     </ng-template>
 
     <!--
+      **L'étiquette publique, et ce qu'elle produit vraiment.**
+
+      🔴 Deux nombres, et le second n'est pas décoratif : le prix posé est une
+      ENTRÉE, le prix encaissé est ce que le client paiera. L'aller-retour hors
+      taxe peut ajouter un centime — jamais en retirer à 10 % ou 20 %. On assume
+      l'écart (Hugo, 2026-09-21), donc on le DIT ici plutôt que de le laisser
+      découvrir en caisse.
+
+      Quand les deux coïncident, la seconde ligne ne s'affiche pas : répéter le
+      même montant apprendrait à ne plus le lire, et c'est exactement le jour où
+      il diffère qu'on a besoin qu'il saute aux yeux.
+    -->
+    <ng-template foldCell="public" let-row>
+      <div class="decision">
+        @if (row.publicTtcCents === null) {
+          <fold-badge content="pas d’étiquette reçue" variant="warning" />
+        } @else {
+          @if (row.decidedPublicTtcCents !== null) {
+            <lfd-price-origin
+              [originMillicents]="row.publicTtcCents * 1000"
+              [alteredMillicents]="row.decidedPublicTtcCents * 1000"
+            />
+          } @else {
+            <span class="follows">suit le PIM</span>
+          }
+          @if (chargedEuros(row); as charged) {
+            @if (charged !== publicEuros(row)) {
+              <span class="charged">encaissé {{ charged }}</span>
+            }
+          }
+          <lfd-price-editor
+            kind="public"
+            [originMillicents]="row.publicTtcCents"
+            [alteredMillicents]="row.decidedPublicTtcCents"
+            [label]="row.name"
+            (save)="publicPriceSet.emit({ item: row, ttcCents: $event })"
+            (reset)="publicPriceAligned.emit(row)"
+          />
+        }
+      </div>
+    </ng-template>
+
+    <!--
       **La visibilité se confirme sur place**, exactement comme la pose d'un
       prix : le contrôle s'ouvre DANS la cellule, dit ce qu'il va faire, et se
       referme. Rien ne saute, rien ne recouvre l'écran, et on ne perd pas de vue

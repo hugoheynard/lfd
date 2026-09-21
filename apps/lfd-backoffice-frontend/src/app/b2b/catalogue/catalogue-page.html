@@ -126,6 +126,8 @@
             [shelf]="shelf"
             (priceSet)="setPrice($event)"
             (priceAligned)="alignOnPim($event)"
+            (publicPriceSet)="setPublicPrice($event)"
+            (publicPriceAligned)="alignPublicOnPim($event)"
             (visibilityToggled)="toggleVisibility($event)"
           />
         }

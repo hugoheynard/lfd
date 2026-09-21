@@ -68,6 +68,30 @@ export class CatalogueService {
     );
   }
 
+  /**
+   * Pose l'étiquette **publique**, en centimes TTC.
+   *
+   * Route distincte de celle du prix pro : deux intentions, deux audiences,
+   * deux refus. Le serveur en oppose un que le pro ne connaît pas — un article
+   * que la vitrine publique n'expose pas.
+   */
+  async setPublicPrice(sku: string, ttcCents: number): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/public-price`, {
+        ttcCents,
+      }),
+    );
+  }
+
+  /** Retire l'étiquette publique : l'article repasse à celle du PIM. */
+  async alignPublicOnPim(sku: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(
+        `${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/public-price`,
+      ),
+    );
+  }
+
   /** Masque ou réaffiche l'article dans la boutique B2B. */
   async setVisibility(sku: string, hidden: boolean): Promise<void> {
     await firstValueFrom(

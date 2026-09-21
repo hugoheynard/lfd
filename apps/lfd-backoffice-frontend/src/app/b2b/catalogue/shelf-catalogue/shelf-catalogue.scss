@@ -29,6 +29,7 @@
 .sku,
 .decided,
 .follows,
+.charged,
 .pim-audience {
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
@@ -90,4 +91,11 @@
    soustraient pas, mais ils se LISENT en colonne. */
 .pim-amount {
   font-variant-numeric: tabular-nums;
+}
+
+/* « encaissé 1,06 € » — la contrepartie assumée de l'ancre TTC. En gris comme
+   les autres notes de cellule : c'est une information, pas une alerte. Un
+   centime d'écart n'appelle aucun geste, il appelle à être su. */
+.charged {
+  font-style: italic;
 }

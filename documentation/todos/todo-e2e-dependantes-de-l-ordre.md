@@ -8,11 +8,18 @@
 Sous `pnpm test` à la racine, trois suites échouent **par intermittence** et
 passent **systématiquement** quand on les relance seules :
 
-| Suite                          | Le cas qui tombe                                               |
-| ------------------------------ | -------------------------------------------------------------- |
-| `production-batch.e2e-spec.ts` | un **compte de mails**                                         |
-| `client-notes.e2e-spec.ts`     | « deux écritures simultanées › gardent les trois notes »       |
-| `appointments.e2e-spec.ts`     | « les créneaux › ne propose rien tant que rien n'est déclaré » |
+| Suite                          | Le cas qui tombe                                                       |
+| ------------------------------ | ---------------------------------------------------------------------- |
+| `production-batch.e2e-spec.ts` | un **compte de mails**                                                 |
+| `client-notes.e2e-spec.ts`     | « deux écritures simultanées › gardent les trois notes »               |
+| `appointments.e2e-spec.ts`     | « les créneaux › ne propose rien tant que rien n'est déclaré »         |
+| `app.spec.ts` (boutique)       | « reconnaît TOUS les écrans clients » — **dépassement de délai à 5 s** |
+
+⚠️ **Le quatrième n'est pas de la même famille**, et la distinction compte : il
+ne rougit pas sur une assertion, il **dépasse les 5 s** de Vitest. Il ne partage
+donc rien avec les trois autres qu'un symptôme — « rouge en suite complète, vert
+seul » — et sa cause est la CHARGE, pas l'ordre. Le chercher avec eux ferait
+perdre du temps sur les deux.
 
 ## Pourquoi ça compte plus qu'un agacement
 
@@ -46,6 +53,11 @@ Ne pas les marquer `skip`, et ne pas les « stabiliser » en élargissant une
 attente. Ce qui rend une de ces suites verte sans en comprendre la cause enlève
 le seul signal qui reste.
 
-**Le geste utile** : lancer la suite complète en boucle jusqu'à reproduire, puis
-relancer la seule suite qui précède immédiatement celle qui tombe. C'est
-l'ordre, donc le coupable est devant.
+**Le geste utile** pour les trois premières : lancer la suite complète en boucle
+jusqu'à reproduire, puis relancer la seule suite qui précède immédiatement celle
+qui tombe. C'est l'ordre, donc le coupable est devant.
+
+Pour la quatrième, la question est autre : ce cas monte l'app ENTIÈRE et la
+route sur chaque écran client. Cinq secondes lui suffisent à froid et plus
+toujours quand turbo fait tourner quatre paquets à côté. Soit il mérite son
+propre délai — assumé, écrit —, soit il en fait trop pour un test de chrome.
