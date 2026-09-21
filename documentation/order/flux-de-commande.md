@@ -1,12 +1,42 @@
 # Les parcours de commande — schéma de l'existant
 
-> **État : description du code au 2026-09-17.** Ce document ne propose rien et
-> ne décide rien. Il dessine ce qui EXISTE, pour que le plan
+> **État : description du code au 2026-09-17, ADRESSES rouvertes le
+> 2026-09-21.** Ce document ne propose rien et ne décide rien. Il dessine ce qui
+> EXISTE, pour que le plan
 > [`plan-commande-sans-compte.md`](plan-commande-sans-compte.md) se décide sur
 > une carte plutôt que de mémoire.
 >
 > Chaque affirmation porte le fichier qui la prouve. Ce qui n'a pas été ouvert est
 > dit comme tel, au §7.
+>
+> ⚠️ **Deux dates, et il faut les distinguer.** Le 2026-09-21, les pages du
+> front ont été réorganisées ; j'ai rouvert **les adresses et les entrées**
+> (§1 bis, §2, §3, §5) et rien d'autre. Ce qui décrit le SERVEUR — les routes
+> publiques du §4, le mur du §5 côté API, la résolution de prix du §6 — date
+> toujours du 2026-09-17 et n'a pas été revérifié. Dire « la doc est à jour »
+> serait faux de la moitié.
+
+---
+
+## 1 bis. Ce qui a changé le 2026-09-21
+
+| Avant                                  | Maintenant                               | Preuve                           |
+| -------------------------------------- | ---------------------------------------- | -------------------------------- |
+| tunnel sous `/nouvelle-commande/*`     | tunnel sous **`/commande/*`**            | `app.routes.ts:246-281`          |
+| —                                      | les anciennes adresses **redirigent**    | `app.routes.ts:331-334`          |
+| inscription perso et pro à deux URLs   | **une page, deux portes**                | `app.routes.ts:165` et `:184`    |
+| `/mon-espace`, l'accueil du reconnu    | **supprimé**, redirige vers `/bienvenue` | `app.routes.ts:320`              |
+| `/bienvenue` menait au mode de service | il **pose les deux questions sur place** | `accueil-public.ts:59, 560, 662` |
+
+🔴 **`/nouvelle-commande` L'ÉCRAN n'a PAS disparu.** Seul le TUNNEL a changé de
+préfixe. L'écran du mode de service vit toujours (`app.routes.ts:227`) et reste
+la destination de six navigations — le panier quand aucun mode n'est choisi, le
+rayon, la confirmation, et le repli d'espace inconnu. Le démontage est commencé,
+pas fini : confondre les deux ferait croire à un écran mort, alors qu'il est
+encore sur le chemin de tout le monde.
+
+⚠️ Ce que ça ne change pas : **les guards, les niveaux et le mur sont les
+mêmes**. Une adresse qui change ne déplace aucune frontière.
 
 ---
 
@@ -51,12 +81,12 @@ où l'on bute**.
 
 ```mermaid
 flowchart LR
-    B["/bienvenue<br/>accueil public"] --> S["/nouvelle-commande<br/>mode de service"]
-    B -.->|"choix d'un créneau"| K["/nouvelle-commande/boutique"]
+    B["/bienvenue<br/>accueil public"] -->|"porte + heure,<br/>en dialogues"| K["/commande/boutique"]
+    B -.->|"repli : aucun mode"| S["/nouvelle-commande<br/>mode de service"]
     S --> K
-    K --> PA["/nouvelle-commande/panier"]
-    PA -->|"place()"| R["/nouvelle-commande/reglement/:id"]
-    PA -->|"rien à régler"| CF["/nouvelle-commande/confirmee"]
+    K --> PA["/commande/panier"]
+    PA -->|"place()"| R["/commande/reglement/:id"]
+    PA -->|"rien à régler"| CF["/commande/confirmee"]
     R --> CF
 ```
 
@@ -77,8 +107,8 @@ fonctionne déjà pour un visiteur.
 
 C'est contre-intuitif : les deux routes portent un garde.
 
-- `/nouvelle-commande/boutique` → `featureAccessGuard('shop', 'browse')`
-- `/nouvelle-commande/panier` → `featureAccessGuard('shop', 'order')`
+- `/commande/boutique` → `featureAccessGuard('shop', 'browse')`
+- `/commande/panier` → `featureAccessGuard('shop', 'order')`
 
 Le garde (`apps/lfc-ecommerce-frontend/src/app/client/feature-access/feature-access.guard.ts`)
 n'est pas une protection — son propre JSDoc le dit : « Ce n'est pas une
@@ -102,7 +132,7 @@ sequenceDiagram
     participant N as Navigateur (anonyme)
     participant G as featureAccessGuard
     participant API as GET /feature-access (@Public)
-    N->>G: /nouvelle-commande/boutique
+    N->>G: /commande/boutique
     G->>API: lecture des niveaux globaux
     API-->>G: { shop: "order", ... }
     G-->>N: autorisé
@@ -157,6 +187,11 @@ flowchart TD
 Deux sorties `null`, dans
 `apps/lfc-ecommerce-frontend/src/app/client/client-orders.service.ts` :
 l'absence d'espace de travail, puis l'absence de jeton.
+
+⚠️ **Le renvoi vers `/nouvelle-commande` de ce schéma est TOUJOURS d'actualité**
+(revérifié le 2026-09-21 : `panier-page.ts:215`). C'est le seul endroit de ce
+document où l'ancienne adresse n'est pas une coquille — l'écran du mode de
+service existe encore, et le panier y envoie quand aucun mode n'est choisi.
 
 Et le commentaire de `proceed()`
 (`apps/lfc-ecommerce-frontend/src/app/client/cart/panier-page/panier-page.ts`)
