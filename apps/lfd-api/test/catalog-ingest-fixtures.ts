@@ -89,6 +89,12 @@ export function snapshotOf(
             isDefault: true,
             position: 0,
             vatRatePercent,
+            // ⚠️ Volontairement SANS rapport arithmétique avec `priceMillicents` :
+            // celui-ci est le prix PRO, celui-là l'étiquette publique. Une
+            // fixture où les deux se déduiraient l'un de l'autre laisserait
+            // passer une confusion entre les deux.
+            publicTtcCents: 250,
+            publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
             allergens: allergens === null ? null : [...allergens],
             allergenLabels,
           },

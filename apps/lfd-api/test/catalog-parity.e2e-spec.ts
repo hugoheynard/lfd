@@ -62,6 +62,11 @@ class StubFeed extends B2bCatalogFeedPreview {
             isDefault: true,
             position: 0,
             vatRatePercent: variant.vatRatePercent,
+            publicTtcCents: 250,
+            publicByContext:
+              variant.vatRatePercent === null
+                ? {}
+                : { takeaway: { vatRatePercent: variant.vatRatePercent, htMillicents: 236_967 } },
             allergens: null,
             allergenLabels: null,
           },

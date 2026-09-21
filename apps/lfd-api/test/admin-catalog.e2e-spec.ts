@@ -81,6 +81,8 @@ function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): Catal
             isDefault: true,
             position: 0,
             vatRatePercent: 5.5,
+            publicTtcCents: 250,
+            publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
           },
         ],
         note: null,
@@ -493,6 +495,8 @@ describe("GET /admin/catalog — l'ordre du rayon", () => {
               sku: `${sku}-1`,
               name: sku,
               priceMillicents: millicentsFromCents(200 + index),
+              publicTtcCents: 250,
+              publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
               weightGrams: null,
               isDefault: true,
               // Le point du test : tous à la MÊME position, comme en vrai.

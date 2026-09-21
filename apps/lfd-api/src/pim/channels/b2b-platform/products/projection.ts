@@ -5,10 +5,16 @@ import type {
   SyncMedia,
   SyncProduct,
   SyncOrderTimeLimitRule,
+  SyncContextPrice,
   SyncVariant,
 } from "@lfd/catalog-sync";
 import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
-import { proPriceOf, type B2bExclusionReason, type ProPricePolicy } from "@lfd/pim-contracts";
+import {
+  htMillicentsOf,
+  proPriceOf,
+  type B2bExclusionReason,
+  type ProPricePolicy,
+} from "@lfd/pim-contracts";
 
 import type {
   IncoProjection,
@@ -107,6 +113,8 @@ function projectVariant(
   variant: VariantRecord,
   htPriceMillicents: number,
   vatRatePercent: number | null,
+  publicTtcCents: number,
+  percents: CategoryVatPercents,
   inco: IncoProjector,
 ): SyncVariant {
   // Le `null` est transmis TEL QUEL : c'est la différence entre « rien n'a été
@@ -122,6 +130,8 @@ function projectVariant(
     sku: variant.sku,
     name: frenchOf(variant.name),
     priceMillicents: htPriceMillicents,
+    publicTtcCents,
+    publicByContext: publicPricesOf(publicTtcCents, percents),
     weightGrams: variant.weightGrams,
     isDefault: variant.isDefault,
     position: variant.position,
@@ -129,6 +139,39 @@ function projectVariant(
     allergens: declared === null ? null : [...declared],
     allergenLabels: declared === null ? null : labelsOf(inco.project(declared)),
   };
+}
+
+/**
+ * **Le prix public, contexte par contexte** — l'étiquette mise hors taxe à
+ * chacun des taux réglés.
+ *
+ * 🔴 La conversion se fait ICI, comme celle du prix professionnel, et pour la
+ * raison que ce fichier donne déjà plus bas : **c'est le dernier endroit qui
+ * connaît encore l'assiette.** Le récepteur choisit une entrée ; il ne dérive
+ * rien, et deux arrondis ne peuvent donc pas diverger entre les deux bouts.
+ *
+ * ⚠️ **Un contexte sans taux n'a pas d'entrée.** On n'invente jamais un taux —
+ * c'est le même refus que `variant_sans_taux` un cran plus haut, et il vaut
+ * aussi pour le public : un montant plausible qui n'a été décidé par personne
+ * est exactement ce qu'on ne veut pas facturer.
+ *
+ * ⚠️ **Le contexte `b2b` y figure comme les autres**, et son hors taxe n'est PAS
+ * `priceMillicents` : celui-ci porte le prix PRO (l'étiquette diminuée du
+ * rapport), celui-là l'étiquette elle-même au taux b2b. Les deux sont des hors
+ * taxe et c'est tout ce qu'ils partagent.
+ */
+function publicPricesOf(
+  publicTtcCents: number,
+  percents: CategoryVatPercents,
+): Record<string, SyncContextPrice> {
+  const byContext: Record<string, SyncContextPrice> = {};
+  for (const [key, vatRatePercent] of Object.entries(percents)) {
+    const htMillicents = htMillicentsOf(publicTtcCents, vatRatePercent);
+    if (htMillicents !== null) {
+      byContext[key] = { vatRatePercent, htMillicents };
+    }
+  }
+  return byContext;
 }
 
 /** Du domaine au fil : seul le `readonly` tombe, surtout pas `incomplete`. */
@@ -156,7 +199,7 @@ function labelsOf(projection: IncoProjection): SyncAllergenLabels {
  */
 function sortVariants(
   product: ProductRecord,
-  vatRatePercent: number | null,
+  percents: CategoryVatPercents,
   policy: ProPricePolicy,
   inco: IncoProjector,
 ): {
@@ -165,6 +208,7 @@ function sortVariants(
 } {
   const sellable: SyncVariant[] = [];
   const excluded: Exclusion[] = [];
+  const vatRatePercent = vatOf(percents);
 
   for (const variant of product.variants) {
     if (variant.isDiscontinued) {
@@ -200,7 +244,9 @@ function sortVariants(
     // Absence dans la carte = aucune limite. Une carte plutôt qu'un `null`
     // explicite par déclinaison : l'immense majorité des articles n'en a pas, et
     // une entrée par article ne dirait rien de plus.
-    sellable.push(projectVariant(variant, htMillicents, vatRatePercent, inco));
+    sellable.push(
+      projectVariant(variant, htMillicents, vatRatePercent, priceCents, percents, inco),
+    );
   }
 
   return { sellable, excluded };
@@ -301,7 +347,7 @@ export function projectCatalog(
     // et le récepteur n'a plus à rejoindre une famille pour savoir facturer.
     const { sellable, excluded: rejected } = sortVariants(
       product,
-      vatOf(vatByProduct.get(product.id) ?? {}),
+      vatByProduct.get(product.id) ?? {},
       policy,
       inco,
     );

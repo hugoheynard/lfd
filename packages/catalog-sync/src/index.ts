@@ -18,6 +18,7 @@ export type {
   SyncMedia,
   SyncOrderTimeLimit,
   SyncOrderTimeLimitRule,
+  SyncContextPrice,
   SyncVariant,
   SyncProduct,
   CatalogSnapshot,

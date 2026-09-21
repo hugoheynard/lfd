@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 8;
+export const CATALOG_SNAPSHOT_VERSION = 9;
 
 /**
  * Une famille de produits, **à plat**.
@@ -107,6 +107,22 @@ export type SyncAllergenLabels = z.infer<typeof syncAllergenLabelsSchema>;
  * `VIE-001-1`). Le seed B2B actuel vend les SKU **produit** : la bascule devra
  * traiter cet écart, pas le découvrir.
  */
+/**
+ * **Ce que le public paie dans UN contexte de vente**, et à quel taux.
+ *
+ * Les deux vont ensemble et ne se séparent jamais : un hors taxe sans son taux
+ * ne se facture pas, et un taux sans son hors taxe oblige le récepteur à
+ * refaire une conversion que l'émetteur a déjà faite — avec le risque que les
+ * deux arrondis divergent.
+ */
+export const syncContextPriceSchema = z.object({
+  /** Le taux de CE contexte, en pourcentage. */
+  vatRatePercent: z.number().nonnegative(),
+  /** L'étiquette mise hors taxe à ce taux, en millicentimes (10⁻⁵ €). */
+  htMillicents: z.number().int().nonnegative(),
+});
+export type SyncContextPrice = z.infer<typeof syncContextPriceSchema>;
+
 export const syncVariantSchema = z.object({
   /**
    * L'identifiant de la déclinaison **chez l'émetteur**.
@@ -137,8 +153,16 @@ export const syncVariantSchema = z.object({
   isDefault: z.boolean(),
   position: z.number().int().nonnegative(),
   /**
-   * **Le taux qui sera facturé sur cet article**, en pourcentage, résolu à
-   * l'émission depuis le taux « à emporter » de sa famille.
+   * **Le taux qui sera facturé sur cet article AU PROFESSIONNEL**, en
+   * pourcentage, résolu à l'émission depuis le taux du contexte **`b2b`** de sa
+   * famille.
+   *
+   * ⚠️ Cette phrase a dit « depuis le taux **à emporter** » jusqu'au
+   * 2026-09-21, et c'était vrai — la projection lisait ce taux « faute de
+   * mieux », un emprunt qu'aucun écran ne permettait de corriger. Elle lit le
+   * contexte `b2b` depuis qu'il existe. Un JSDoc de contrat qui nomme le
+   * mauvais contexte de TVA est la pire espèce : il se lit sans ouvrir le
+   * code, et il parle d'argent.
    *
    * Porté par l'ARTICLE et non par la famille depuis la v2. La raison n'est pas
    * cosmétique : le récepteur vendait en rejoignant la famille pour retrouver
@@ -152,6 +176,49 @@ export const syncVariantSchema = z.object({
    * taux.
    */
   vatRatePercent: z.number().nonnegative().nullable(),
+  /**
+   * **L'étiquette** — ce qu'un particulier lit et ce qu'il paie, taxe comprise,
+   * en **centimes** entiers.
+   *
+   * En centimes et non en millicentimes, et ce n'est pas une inattention : c'est
+   * un prix qu'un HUMAIN POSE, pas un dérivé. `@lfd/money` le dit — « seuls les
+   * prix unitaires DÉRIVÉS » vont en millicentimes, « un tarif de catalogue
+   * reste en centimes ».
+   *
+   * C'est aussi la valeur d'ENTRÉE dont `priceMillicents` est déjà le
+   * descendant : le prix professionnel s'en dérive par le rapport des règles
+   * comptables. Elle arrivait jusqu'à la projection et s'y arrêtait ; depuis la
+   * v9 elle traverse, parce qu'une boutique grand public doit AFFICHER un TTC.
+   *
+   * `null` avant la v9 (cf. {@link storedCatalogSnapshotSchema}).
+   */
+  publicTtcCents: z.number().int().nonnegative(),
+  /**
+   * **Le prix public, par contexte de vente** — une entrée par contexte RÉGLÉ
+   * sur la famille, indexée par sa clé (`takeaway`, `eatIn`, …).
+   *
+   * 🔴 **Ce n'est PAS un doublon de `priceMillicents`.** Les deux sont des hors
+   * taxe et c'est tout ce qu'ils partagent :
+   *
+   * - `priceMillicents` est le prix **PROFESSIONNEL** — l'étiquette diminuée du
+   *   rapport pro, puis mise hors taxe ;
+   * - `htMillicents` ici est le prix **PUBLIC** — l'étiquette elle-même, mise
+   *   hors taxe au taux de CE contexte.
+   *
+   * Les confondre ferait facturer un particulier au tarif pro, ou l'inverse.
+   *
+   * **Une carte plutôt que des champs nommés**, et pour la raison que le contrat
+   * des catégories donne déjà : ajouter un contexte (borne libre-service,
+   * marché) doit être une ligne de données, pas une version de fil. Le récepteur
+   * n'a pas à connaître les clés pour les transporter.
+   *
+   * ⚠️ **Le hors taxe est calculé ICI**, à l'émission, comme le prix pro et pour
+   * la même raison : c'est le dernier endroit qui connaît encore l'assiette. Le
+   * récepteur CHOISIT une entrée, il ne dérive rien.
+   *
+   * Un contexte sans taux réglé n'a **pas d'entrée** — on ne suppose pas un taux.
+   */
+  publicByContext: z.record(z.string().min(1), syncContextPriceSchema),
   /**
    * Les **codes allergènes GS1** déclarés pour cet article — le stockage
    * canonique, pas des libellés.
@@ -352,7 +419,7 @@ export type CatalogSnapshot = z.infer<typeof catalogSnapshotSchema>;
  * échouer à l'émission, pas produire une arrivée dégradée.
  */
 export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
-  version: z.union([z.literal(5), z.literal(6), z.literal(7), z.literal(8)]),
+  version: z.union([z.literal(5), z.literal(6), z.literal(7), z.literal(8), z.literal(9)]),
   products: z.array(
     syncProductSchema.extend({
       // Absents avant la v8 : l'éditorial et le visuel ne traversaient pas. Une
@@ -366,6 +433,15 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
             // Absent avant la v7 : le fil n'y portait pas l'identifiant de la
             // déclinaison, faute d'en avoir eu besoin.
             id: z.string().min(1).optional(),
+            // Absents avant la v9 : le prix PUBLIC ne traversait pas — seul son
+            // dérivé professionnel le faisait. Une arrivée d'avant la bascule se
+            // lit donc « on ne sait pas ce qu'un particulier paierait », ce qui
+            // est exact : elle ne le portait pas. ⚠️ Le repli n'est PAS un prix
+            // à zéro et ne peut pas l'être : un prix manquant qui se lit
+            // « gratuit » est la faute que `priceMillicents` refuse déjà en
+            // étant requis.
+            publicTtcCents: z.number().int().nonnegative().optional(),
+            publicByContext: z.record(z.string().min(1), syncContextPriceSchema).optional(),
             // La limite RÉSOLUE, telle que la v6 la portait sur l'article. Elle
             // n'est plus émise, et reste lisible : une arrivée mise en file un
             // mardi peut être relue le jeudi, sur un code qui a changé.
