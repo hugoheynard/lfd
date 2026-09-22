@@ -116,7 +116,7 @@ prétend être : l'absence de ligne, une ligne à tableau vide, une ligne rempli
 
 ---
 
-## 5. 🔴 Un bug vivant, à fermer AVANT le chantier
+## 5. ✅ Le bug des traces — fermé le 2026-09-22 (lot 0)
 
 L'écran de la fiche produit n'a **aucune interface pour les traces**. Sa charge
 utile n'envoie donc jamais `mayContain`, et le serveur applique
@@ -127,9 +127,22 @@ les traces possibles** — celles que le semis pose, celles que l'outil WebMCP
 prend soin de réécrire. Le journal porte le libellé « Traces possibles » pour
 l'annoncer ; personne ne l'a lu.
 
-⚠️ **Ce bug ne dépend pas de ce plan et ne doit pas l'attendre.** Il se ferme
-seul, en deux gestes : l'écran renvoie ce qu'il a lu (comme le fait déjà l'outil
-WebMCP), ou le serveur cesse de traiter l'absence comme un effacement.
+✅ **Corrigé** (`c7d9034ad`) : le brouillon garde les traces lues et la
+sauvegarde les renvoie, comme l'outil WebMCP le fait déjà. Le contrat de la
+route ne bouge pas. Le test échoue sans le correctif — trois cas sur quatre,
+vérifié en retirant la ligne.
+
+🔴 **Ce que le correctif NE ferme pas, et que ce plan doit fermer.** La règle
+dangereuse reste côté serveur : `input.mayContain ?? []` fait toujours dire
+« efface tout » à un champ absent. L'appelant fautif est réparé ; **le piège ne
+l'est pas**. Le prochain appel qui oublie le champ effacera les traces en
+silence, avec un `200`.
+
+On est donc au dernier rang de la hiérarchie — « ça tient parce que quelqu'un se
+souvient ». ➡️ **Le lot 3 doit rendre l'oubli inexprimable** : la route
+`allergens` porte `allergens` ET `mayContain`, les deux obligatoires. Les rendre
+obligatoires sur la route ACTUELLE casserait un contrat déjà servi — un onglet
+non rechargé recevrait un 400 et le staff ne pourrait plus rien enregistrer.
 
 ---
 
@@ -174,16 +187,16 @@ le bus.
 
 ## 8. Les lots
 
-| Lot | Contenu                                                                               | Bloque par |
-| --- | ------------------------------------------------------------------------------------- | ---------- |
-| 0   | 🔴 **Le bug des traces** (§5) — indépendant, à prendre d'abord                        | —          |
-| 1   | **Étendre** : les deux tables, écrites en parallèle de l'ancienne                     | —          |
-| 2   | L'écriture revient dans l'agrégat : `product.declareAllergens` / `declareNutrition`   | 1          |
-| 3   | Les deux routes, les deux commandes, les **deux faits** (§7)                          | 2          |
-| 4   | Les deux drapeaux d'alignement (D1) — ⚠️ colonne **et** valeur de journal (`aspect`)  | 2          |
-| 5   | **Basculer** : les lectures passent aux nouvelles tables ; l'invariant 7 s'écrit (D2) | 3, 4       |
-| 6   | L'écran : deux sections, deux enregistrements, **et les traces**                      | 5          |
-| 7   | **Resserrer** : l'ancienne table part, l'ancienne route aussi                         | 6          |
+| Lot   | Contenu                                                                                                                                                      | Bloque par |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| ~~0~~ | ✅ **Le bug des traces** (§5) — **fait** (`c7d9034ad`)                                                                                                       | —          |
+| 1     | **Étendre** : les deux tables, écrites en parallèle de l'ancienne                                                                                            | —          |
+| 2     | L'écriture revient dans l'agrégat : `product.declareAllergens` / `declareNutrition`                                                                          | 1          |
+| 3     | Les deux routes, les deux commandes, les **deux faits** (§7). ⚠️ `mayContain` **obligatoire** sur la route `allergens` — c'est ce qui referme le piège du §5 | 2          |
+| 4     | Les deux drapeaux d'alignement (D1) — ⚠️ colonne **et** valeur de journal (`aspect`)                                                                         | 2          |
+| 5     | **Basculer** : les lectures passent aux nouvelles tables ; l'invariant 7 s'écrit (D2)                                                                        | 3, 4       |
+| 6     | L'écran : deux sections, deux enregistrements, **et les traces**                                                                                             | 5          |
+| 7     | **Resserrer** : l'ancienne table part, l'ancienne route aussi                                                                                                | 6          |
 
 🔴 **Trois déploiements, pas un** (CLAUDE.md §0) : étendre, basculer, resserrer.
 
