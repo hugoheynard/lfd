@@ -32,11 +32,18 @@ const config: CapacitorConfig = {
   // chemin existe — et c'est elle qui servira au basculement en mode embarqué.
   webDir: 'dist/lfc-ecommerce-frontend/browser',
   server: {
-    // ⚠️ `lfc-b2b-eu7`, PAS `lfc-b2b` : Cloudflare a suffixé le sous-domaine du
-    // projet Pages en silence, et `lfc-b2b.pages.dev` rend une build PLUS
-    // ANCIENNE qu'aucun déploiement ne met à jour. Vérifié le 2026-08-27 : les
-    // deux répondent 200, avec des bundles différents.
-    url: 'https://lfc-b2b-eu7.pages.dev',
+    // 🔴 **Cette URL EST l'application** : la WebView ne sert rien en local tant
+    // qu'elle est définie, donc une adresse périmée livre une app figée à qui
+    // l'a installée — sans qu'aucun déploiement ne rougisse.
+    //
+    // `lfc-ecommerce.pages.dev` depuis le 2026-09-22, en remplacement de
+    // `lfc-b2b-eu7.pages.dev`. Adresse LUE — annoncée par Cloudflare à la
+    // création du projet, puis confirmée par le log du déploiement et par le
+    // bundle réellement servi. Le nom court était libre, donc aucun suffixe :
+    // c'est précisément le suffixe silencieux (`lfc-b2b` → `lfc-b2b-eu7`) qui
+    // avait déjà coûté une panne CORS muette et, le 2026-09-21, un déploiement
+    // entier parti dans un projet vide.
+    url: 'https://lfc-ecommerce.pages.dev',
     // Pas de HTTP en clair : la WebView doit refuser un downgrade, comme le
     // ferait Safari. C'est le défaut, on l'écrit pour que ça reste vrai.
     cleartext: false,
