@@ -2,13 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { RouterLink } from '@angular/router';
 import {
   FoldIconComponent,
-  FoldPanelHostService,
   FoldPopoverComponent,
   FoldPopoverTriggerDirective,
   type FoldIconName,
 } from 'fold-ng';
 
-import { AccountService } from '../../../account/account.service';
 import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientIdentity } from '../../client-identity.service';
 import {
@@ -20,7 +18,6 @@ import {
 import { ClientWorkspaceSwitch } from '../../client-workspace-switch.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientNav, type NavItem } from '../../nav/client-nav.service';
-import { ProfilePanel } from '../../profile/profile-panel/profile-panel';
 
 /** Une carte d'espace, telle que le panneau la dessine. */
 interface SpaceCard {
@@ -95,8 +92,6 @@ export class AccountMenu {
   protected readonly nav = inject(ClientNav);
   private readonly switcher = inject(ClientWorkspaceSwitch);
   private readonly auth = inject(AuthFacade);
-  private readonly account = inject(AccountService);
-  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly recognised = computed(() => this.auth.isAuthenticated());
   protected readonly open = signal(false);
@@ -167,9 +162,6 @@ export class AccountMenu {
       : label;
   });
 
-  /** Le profil n'est pas encore relu : l'entrée attend plutôt que d'ouvrir un dialogue vide. */
-  protected readonly hasProfile = computed(() => this.account.profile() !== null);
-
   /** Le glyphe d'une destination — `list` pour celle qu'on n'aurait pas prévue. */
   protected icon(item: NavItem): FoldIconName {
     return DESTINATION_ICONS[item.id] ?? 'list';
@@ -184,14 +176,6 @@ export class AccountMenu {
   /** Partir quelque part referme le panneau : le lien a fait son travail. */
   protected close(): void {
     this.open.set(false);
-  }
-
-  protected openProfile(): void {
-    const profile = this.account.profile();
-    if (profile !== null) {
-      this.open.set(false);
-      ProfilePanel.open(this.panels, profile);
-    }
   }
 
   /** La même sortie que le menu de poche. */

@@ -1,0 +1,43 @@
+/* La section est une colonne : l'écart vient du `gap`, jamais d'une marge. */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* Les fournisseurs proposés : une colonne, l'écart vient du `gap` — jamais d'une marge. */
+.providers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Le corps d'une carte de méthode : son titre, et la ligne d'adresse quand
+   elle en a une. Colonne, pour que l'écart soit un `gap`. */
+.method {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* La ligne « E-mail » : l'adresse et ses deux gestes, sous le titre de la
+   carte. Colonne, l'écart vient du `gap` — jamais d'une marge. */
+.email {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* L'adresse et son geste sur une ligne, qui se replie quand la place manque. */
+.address {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+/* Le geste du mot de passe garde sa largeur de texte, aligné à gauche. */
+.password {
+  align-self: flex-start;
+}

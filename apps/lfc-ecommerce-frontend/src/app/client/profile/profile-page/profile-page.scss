@@ -1,0 +1,12 @@
+:host {
+  display: block;
+  background: var(--fold-color-bg-page);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xl);
+  /* Pas de rembourrage en haut : la LÈVRE du shell le porte déjà. */
+  padding: 0 var(--lfc-inset) var(--fold-space-4xl);
+}

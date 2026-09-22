@@ -1,0 +1,148 @@
+@switch (status()) {
+  @case ('loading') {
+    <fold-loading [message]="t().account.loginMethodsLoading" />
+  }
+  @case ('error') {
+    <fold-empty-state tone="alert" [title]="t().account.loginMethodsFailed">
+      <button foldButton type="button" (click)="load()">
+        {{ t().account.loginMethodsRetry }}
+      </button>
+    </fold-empty-state>
+  }
+  @default {
+    <!-- UN REFUS RESTE SOUS LES YEUX : la section garde ce qu'elle montre. -->
+    @if (refusal(); as refused) {
+      <fold-callout variant="alert" announce>
+        {{ refused.message ?? t().account.loginMethodAuthFailed }}
+        <!-- Une preuve périmée se REFAIT ; un conflit, non (plan §10.2). -->
+        @if (refused.again) {
+          <button
+            foldButton
+            actions
+            size="sm"
+            emphasis="outline"
+            intent="neutral"
+            type="button"
+            [disabled]="busy() !== null"
+            (click)="retry()"
+          >
+            {{ t().account.loginMethodRetry }}
+          </button>
+        }
+      </fold-callout>
+    }
+
+    @if (methods().length === 0) {
+      <fold-empty-state
+        [title]="t().account.loginMethodsEmpty"
+        [subtitle]="t().account.loginMethodsEmptyHint"
+      >
+        <fold-icon empty-icon name="lock" size="xl" />
+      </fold-empty-state>
+    } @else {
+      @for (method of methods(); track method.provider) {
+        <fold-card>
+          <!-- Le corps de la carte est une COLONNE : sans elle, l'écart entre
+               le titre et la ligne d'adresse serait une marge. -->
+          <div class="method">
+            <fold-element-title
+              variant="title"
+              [icon]="iconOf(method.provider)"
+              [title]="labelOf(method.provider)"
+              [subtitle]="method.isPrimary ? t().account.loginMethodPrimary : undefined"
+            >
+              <!-- La principale ne se détache pas : rien à retirer, donc rien à cliquer. -->
+              @if (!method.isPrimary) {
+                <fold-inline-confirm
+                  titleAction
+                  intent="danger"
+                  [message]="t().account.loginMethodRemoveMessage"
+                  (confirmed)="revoke(method.provider)"
+                >
+                  <button
+                    foldButton
+                    emphasis="outline"
+                    intent="danger"
+                    size="sm"
+                    type="button"
+                    [disabled]="busy() !== null"
+                  >
+                    {{ t().account.loginMethodRemove }}
+                  </button>
+                </fold-inline-confirm>
+              }
+            </fold-element-title>
+
+            <!-- LA LIGNE « E-MAIL » porte l'adresse de connexion et ses deux
+                 gestes : elle n'est pas une coordonnée, c'est la clé d'accès. -->
+            @if (method.provider === emailProvider) {
+              <div class="email">
+                @if (profile(); as person) {
+                  <div class="address">
+                    <span>{{ person.email }}</span>
+                    <button
+                      foldButton
+                      emphasis="outline"
+                      intent="neutral"
+                      size="sm"
+                      type="button"
+                      [disabled]="busy() !== null || sendingPassword()"
+                      (click)="changeEmail(person)"
+                    >
+                      {{ t().account.loginMethodEmailChange }}
+                    </button>
+                  </div>
+                }
+
+                <!-- Le mot de passe : un lien part, et on ne promet rien de plus. -->
+                <button
+                  foldButton
+                  class="password"
+                  emphasis="outline"
+                  intent="neutral"
+                  size="sm"
+                  type="button"
+                  [loading]="sendingPassword()"
+                  [disabled]="busy() !== null"
+                  (click)="sendPasswordLink()"
+                >
+                  {{ t().account.loginMethodPasswordChange }}
+                </button>
+
+                @if (passwordSent()) {
+                  <fold-callout variant="success" announce>
+                    {{ t().account.loginMethodPasswordSent }}
+                  </fold-callout>
+                }
+                @if (passwordRefusal(); as refused) {
+                  <fold-callout variant="alert" announce>{{ refused }}</fold-callout>
+                }
+              </div>
+            }
+          </div>
+        </fold-card>
+      }
+    }
+
+    <!-- UNE LISTE, même à un seul fournisseur : Facebook suit. -->
+    <fold-element-title variant="eyebrow" [title]="t().account.loginMethodsAdd" />
+    <div class="providers">
+      @for (offer of offers(); track offer.connection) {
+        <button
+          foldButton
+          emphasis="outline"
+          intent="neutral"
+          type="button"
+          block
+          [loading]="busy() === offer.connection"
+          [disabled]="offer.linked || busy() !== null"
+          (click)="add(offer.connection)"
+        >
+          {{ offer.label }}
+        </button>
+      }
+    </div>
+    <!-- La phrase que personne ne devine, et qui est toute la question. -->
+    <fold-callout variant="info">{{ t().account.loginMethodsPromise }}</fold-callout>
+  }
+}

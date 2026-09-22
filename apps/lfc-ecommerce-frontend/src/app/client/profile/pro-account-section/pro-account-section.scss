@@ -1,0 +1,47 @@
+:host {
+  display: block;
+}
+
+/* Le corps de la carte est une colonne : l'écart vient du `gap`, jamais d'une marge. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.lead {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* Le lien garde sa largeur de texte : une proposition, pas une barre d'action. */
+.body a {
+  align-self: flex-start;
+}
+
+/* La liste de ses entreprises : une colonne, l'écart par le `gap` du parent. */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+/* Le nom hérite de la couleur du texte : fold n'a **aucun** token
+   `--fold-color-text-primary` ni de graisse — ses tokens de texte sont
+   `secondary`, `muted`, `faded` (vérifié le 2026-09-22 dans `fold-ng/tokens/`).
+   La hiérarchie vient donc du recul de `.item-note`, pas d'une emphase du nom. */
+
+/* Ce qui identifie au téléphone, et où en est le dossier — second plan. */
+.item-note {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}

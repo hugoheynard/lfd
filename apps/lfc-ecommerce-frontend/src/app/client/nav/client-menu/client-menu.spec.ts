@@ -1,6 +1,6 @@
 import { signal, type WritableSignal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { PERSONAL_WORKSPACE, type CompanyView, type ProfileView } from '@lfd/contracts';
 import { afterEach, vi } from 'vitest';
 
@@ -15,7 +15,6 @@ import { ClientWorkspaceSwitch } from '../../client-workspace-switch.service';
 import { FR } from '../../copy/fr';
 import { openShopAt } from '../../feature-access/feature-access.fixture';
 import { PROFILE, TOMMEUSES } from '../../mon-compte/account.fixture';
-import { ProfilePanel } from '../../profile/profile-panel/profile-panel';
 import { ClientNav } from '../client-nav.service';
 import { ClientMenu } from './client-menu';
 
@@ -94,30 +93,21 @@ afterEach(() => {
 
 describe('ClientMenu', () => {
   /**
-   * Le menu est un `<dialog>` modal : un dialogue fold ouvert pendant qu'il est
-   * encore là resterait DESSOUS. Il se ferme donc d'abord.
+   * 🔴 « Mon profil » EST UNE DESTINATION depuis le 2026-09-22 : il n'ouvre plus
+   * de dialogue par-dessus un `<dialog>` modal, donc il n'y a plus d'ordre à
+   * orchestrer — `go` ferme le menu puis navigue, comme toute autre entrée
+   * (plan `plan-page-mon-profil.md` §1).
    */
-  it('« Mon profil » ferme le menu, PUIS ouvre le dialogue du profil', () => {
+  it('« Mon profil » ferme le menu et mène à `/mon-profil`', async () => {
     const fixture = boot();
-    const open = vi.spyOn(ProfilePanel, 'open').mockImplementation((_panels, profile) => {
-      wire.events.push(`profile:${profile.email}`);
-    });
+    const router = TestBed.inject(Router);
+    const go = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
 
     button(fixture, FR.chrome.myProfile).click();
+    await fixture.whenStable();
 
-    expect(open).toHaveBeenCalledTimes(1);
-    expect(wire.events).toEqual(['closed', `profile:${PROFILE.email}`]);
-  });
-
-  it('« Mon profil » attend le profil : désactivé, et rien ne part, tant que `/me` n’a pas répondu', () => {
-    const fixture = boot(null);
-    const open = vi.spyOn(ProfilePanel, 'open').mockReturnValue(undefined);
-
-    const item = button(fixture, FR.chrome.myProfile);
-    expect(item.disabled).toBe(true);
-    item.click();
-
-    expect(open).not.toHaveBeenCalled();
+    expect(wire.events).toEqual(['closed']);
+    expect(go.mock.calls[0]?.[0]).toBe('/mon-profil');
   });
 
   it('« Se déconnecter » ferme le menu et appelle la sortie', () => {

@@ -94,14 +94,12 @@
       </nav>
 
       <div class="foot">
-        <button
-          class="foot-action"
-          type="button"
-          [disabled]="!hasProfile()"
-          (click)="openProfile()"
-        >
+        <!-- UNE DESTINATION, plus un dialogue : la personne a sa page, et le
+             menu ne fait que l'ouvrir. Plus rien à attendre de `/me` — la page
+             porte elle-même son chargement. -->
+        <a class="foot-action" routerLink="/mon-profil" (click)="close()">
           {{ t().chrome.myProfile }}
-        </button>
+        </a>
         <button class="foot-action is-exit" type="button" (click)="logout()">
           {{ t().nav.logout }}
         </button>

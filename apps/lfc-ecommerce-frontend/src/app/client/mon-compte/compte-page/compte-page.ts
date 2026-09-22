@@ -72,7 +72,7 @@ import { UsersMobileCard } from '../users/users-mobile-card/users-mobile-card';
  * qu'il autorise à débiter.
  *
  * « Mes informations » n'en est plus (2026-09-14) : Mon compte est le dossier
- * de la SOCIÉTÉ, et la personne s'ouvre depuis l'en-tête (`ProfilePanel`).
+ * de la SOCIÉTÉ, et la personne a sa propre page, `/mon-profil` (2026-09-22).
  */
 const SECTIONS = [
   'identity',

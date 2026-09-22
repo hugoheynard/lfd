@@ -1,0 +1,46 @@
+<!-- LE REFUS reste sous les yeux : une adresse déjà prise se corrige ici. -->
+@if (refusal(); as message) {
+  <fold-callout variant="alert" announce>
+    {{ t().account.profileSaveFailed }} {{ message }}
+  </fold-callout>
+}
+
+<!-- Prénom et nom vont ensemble : on les lit d'un seul coup, et les séparer
+     sur deux lignes faisait un formulaire plus long que ce qu'il demande.
+     En pile, la paire se replie d'elle-même (Hugo, 2026-09-22). -->
+<div class="pair">
+  <fold-input
+    [label]="t().account.profileFirstName"
+    required
+    [value]="draft().firstName"
+    (valueChange)="set('firstName', $event)"
+  />
+  <fold-input
+    [label]="t().account.profileLastName"
+    required
+    [value]="draft().lastName"
+    (valueChange)="set('lastName', $event)"
+  />
+</div>
+<fold-input
+  [label]="t().account.panelPhone"
+  type="tel"
+  optional
+  [value]="draft().phone"
+  (valueChange)="set('phone', $event)"
+/>
+
+<!-- L'UNIQUE geste de la section, et il est au bout du formulaire : c'est ce
+     qui dit qu'ici rien n'est parti tant qu'on n'a pas cliqué. -->
+<div class="actions">
+  <button
+    foldButton
+    intent="primary"
+    type="button"
+    [loading]="saving()"
+    [disabled]="!canSave()"
+    (click)="save()"
+  >
+    {{ t().account.save }}
+  </button>
+</div>

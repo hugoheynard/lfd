@@ -344,10 +344,9 @@
 .foot-action {
   @include pop.foot-action;
 
-  &:disabled {
-    color: var(--fold-color-text-faded);
-    cursor: not-allowed;
-  }
+  /* « Mon profil » est un `<a>` depuis qu'il mène à une page : le soulignement
+     d'un lien n'a pas sa place dans une rangée de pied déjà en capitales. */
+  text-decoration: none;
 }
 
 /* Sortir n'est pas naviguer : la seule couleur d'alerte du panneau. */

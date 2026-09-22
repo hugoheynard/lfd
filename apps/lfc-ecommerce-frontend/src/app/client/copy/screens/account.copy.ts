@@ -142,15 +142,96 @@ export interface AccountCopy {
   readonly contactRemoveFailed: string;
   /** Le titre de la zone de danger d'un dialogue — là, et seulement là, qu'on supprime. */
   readonly dangerZone: string;
+  /**
+   * La page `/mon-profil` : le sujet de la PERSONNE, pas la société. Son titre
+   * est `chrome.myProfile` — la page et l'entrée de menu qui y mène disent le
+   * même mot, et il n'y a qu'un endroit où le changer.
+   */
+  readonly profilePageLead: string;
   /** « Mes informations » : la personne connectée, pas la société. */
+  readonly profileIdentityTitle: string;
   readonly profileFirstName: string;
   readonly profileLastName: string;
   readonly profileEmail: string;
-  readonly profilePanelSubtitle: string;
-  readonly profileEmailHint: string;
+  readonly profileIdentitySubtitle: string;
   /** Dit AVANT l'enregistrement ce qu'un changement d'adresse emporte chez Auth0. */
   readonly profileEmailChange: string;
   readonly profileSaveFailed: string;
+  /**
+   * « Méthodes de connexion » — la seconde section de `/mon-profil`. Elle AGIT
+   * tout de suite, là où l'identité au-dessus est un brouillon qu'on
+   * enregistre : c'est pour que les deux puissent le dire sans mentir qu'elles
+   * vivent sur une page et non dans un dialogue (plan `plan-page-mon-profil.md`
+   * §0).
+   */
+  readonly loginMethodsTitle: string;
+  readonly loginMethodsSubtitle: string;
+  readonly loginMethodsLoading: string;
+  readonly loginMethodsFailed: string;
+  readonly loginMethodsRetry: string;
+  readonly loginMethodsEmpty: string;
+  readonly loginMethodsEmptyHint: string;
+  /** L'identité qui PORTE le compte : elle n'a pas de geste de retrait (plan §9.6). */
+  readonly loginMethodPrimary: string;
+  readonly loginMethodsAdd: string;
+  /** `{provider}` le nom du fournisseur — « Ajouter Google ». */
+  readonly loginMethodAdd: string;
+  /** La phrase que personne ne devine, sous les boutons d'ajout. */
+  readonly loginMethodsPromise: string;
+  /** Le retrait, confirmé en place (`fold-inline-confirm`), et sa conséquence. */
+  readonly loginMethodRemove: string;
+  readonly loginMethodRemoveMessage: string;
+  readonly loginMethodRemoveConfirm: string;
+  readonly loginMethodRemoveBusy: string;
+  readonly loginMethodRemoveGroup: string;
+  /** L'autorisation n'a pas abouti : aucun serveur n'a parlé, donc aucun message à citer. */
+  readonly loginMethodAuthFailed: string;
+  /** Le geste d'un refus qu'on répare en refaisant le geste (400, plan §10.2). */
+  readonly loginMethodRetry: string;
+  /** Les noms des fournisseurs, tels qu'on les nomme à l'écran. */
+  readonly loginMethodEmail: string;
+  readonly loginMethodGoogle: string;
+  readonly loginMethodFacebook: string;
+  /**
+   * L'adresse de connexion, sur la ligne « E-mail » des méthodes — plus dans
+   * l'identité (Hugo, 2026-09-22) : un prénom se corrige, une adresse de
+   * connexion se CHANGE, et le geste part chez Auth0 avant d'être écrit chez
+   * nous. Le dialogue porte l'avertissement `profileEmailChange`.
+   */
+  readonly loginMethodEmailChange: string;
+  readonly loginMethodEmailChangeTitle: string;
+  /** L'adresse de connexion actuelle, rappelée au-dessus des champs. */
+  readonly loginMethodEmailCurrent: string;
+  readonly loginMethodEmailNew: string;
+  /** La saisie de contrôle : une adresse mal tapée ferme le compte. */
+  readonly loginMethodEmailConfirm: string;
+  readonly loginMethodEmailMismatch: string;
+  readonly loginMethodEmailSame: string;
+  /**
+   * Le mot de passe, sur la même ligne. On ne dit RIEN de ce qu'il advient du
+   * mot de passe actuel ni des sessions ouvertes : le comportement d'Auth0
+   * n'est vérifié nulle part, et un de nos courriels l'affirme déjà sans
+   * preuve (Hugo, 2026-09-22).
+   */
+  readonly loginMethodPasswordChange: string;
+  readonly loginMethodPasswordSent: string;
+  /** Le serveur n'a rendu aucun message : l'écran met le sien. */
+  readonly loginMethodPasswordFailed: string;
+  /**
+   * La proposition du bas de `/mon-profil` — ouvrir un compte professionnel
+   * (Hugo, 2026-09-22). Montrée à qui n'a AUCUNE société : la même phrase
+   * ferait douter quelqu'un qui en a déjà une de ce qu'il possède.
+   */
+  readonly proAccountTitle: string;
+  readonly proAccountLead: string;
+  /** Le titre quand la personne a DÉJÀ au moins un compte pro. */
+  readonly proAccountsTitle: string;
+  /** Ce qu'on dit au-dessus de la liste de ses comptes. */
+  readonly proAccountsLead: string;
+  /** Le libellé du lien quand il s'agit d'en ouvrir un DE PLUS. */
+  readonly proAccountAnother: string;
+  /** Le libellé du LIEN, pas d'un bouton : il mène à `/ouverture-compte-pro`. */
+  readonly proAccountLink: string;
   readonly kbisHead: string;
   /** `{date}` la date de vérification, `{who}` la personne qui a certifié. */
   /** Deux états, et pas un de plus : le staff a validé ce fichier, ou pas. */

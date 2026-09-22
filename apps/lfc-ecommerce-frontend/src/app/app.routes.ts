@@ -221,6 +221,19 @@ export const routes: Routes = [
           import('./client/mon-compte/compte-page/compte-page').then((m) => m.ComptePage),
       },
       {
+        // LA PAGE DE LA PERSONNE. `authenticatedGuard` et RIEN D'AUTRE : aucune
+        // garde de société, parce que ce sujet — qui je suis, comment j'entre —
+        // existe pour tout le monde, avec ou sans entreprise (plan
+        // `plan-page-mon-profil.md` §1). Lui poser `companyWorkspaceGuard`
+        // reproduirait le défaut qu'elle corrige : « Mon compte » répondait par
+        // un formulaire de SIRET à qui demandait son compte.
+        path: 'mon-profil',
+        canActivate: [authenticatedGuard],
+        title: 'Mon profil — La Folie Coffee',
+        loadComponent: () =>
+          import('./client/profile/profile-page/profile-page').then((m) => m.ProfilePage),
+      },
+      {
         // LA BOUTIQUE CLIENTE et ses rayons.
         //
         // 🔴 À LA RACINE depuis le 2026-09-21 (Hugo : « pourquoi passer par

@@ -96,6 +96,15 @@ catalog:
   # les trois fronts parlent au MÊME tenant, un décalage de SDK entre eux
   # produirait des sessions qui ne se comprennent pas.
   "@auth0/auth0-angular": 2.11.0
+  # Le SDK que `@auth0/auth0-angular` embarque (il le déclare en `^2.21.0`).
+  # Déclaré EXPLICITEMENT bien qu'un seul paquet le consomme, au titre de la
+  # seconde clause de la règle : un décalage se paierait au DÉMARRAGE, pas à la
+  # compilation. Le front en a besoin en direct pour la seconde instance
+  # `Auth0Client` du rattachement d'une méthode de connexion ; à une version
+  # différente, deux copies du SDK entreraient au bundle — deux classes, deux
+  # caches, et le budget Cloudflare de la boutique par-dessus. Épinglé sur ce
+  # que pnpm résout déjà pour auth0-angular (vérifié le 2026-09-22).
+  "@auth0/auth0-spa-js": 2.24.1
   "@stripe/stripe-js": 9.13.0
   qrcode-generator: 2.0.4
   # Observabilité des fronts. Déclarées ICI parce que `@lfd/front-ops` est
