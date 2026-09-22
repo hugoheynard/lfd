@@ -138,6 +138,20 @@ allergens.save(variantId, declaration)   ← un port qui n'écrit QUE cette tabl
 L'agrégat reste le seul à voir la déclinaison **et** son défaut, donc le seul à
 dire « couverte ». Il n'emporte pas la fiche dans chaque enregistrement.
 
+🔴 **Ce que ça fait, en une phrase** (Hugo, 2026-09-22) : **une unité d'écriture
+plus courte.** Douze gestes pouvaient toucher la fiche ; un seul le peut.
+
+⚠️ **Et ce que ça ne fait pas.** La concurrence ne disparaît pas, sa SURFACE se
+réduit. Deux personnes qui éditent la même section allergènes s'écrasent
+toujours — l'écriture reste un `upsert` nu, sans version ni `If-Match`.
+
+> Le port dédié ne rend pas l'écriture sûre. Il fait qu'une écriture ne peut plus
+> en détruire une autre **qu'elle ne visait pas**.
+
+La v1 promettait « le _lost update_ disparaît » ; il ne disparaît pas, il cesse
+d'être **atteignable par accident**. Le reste demanderait un verrou optimiste,
+qui n'existe nulle part dans le dépôt.
+
 ⚠️ Et quand il écrira, ce sera depuis `persistenceSnapshot()` — jamais
 `snapshot()`, qui résout. C'est la faute 0b/0d.
 
