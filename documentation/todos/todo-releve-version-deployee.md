@@ -49,16 +49,22 @@ dans **Mon profil**, et y gagne trois choses :
    **staff**, par `admin-access-pending.controller.ts`. Le client ne peut pas le
    déclencher pour lui-même.
 
-**⚠️ Ce qui n'est pas encore tranché**, et qu'un plan devra dire avant toute
-ligne :
+**✅ Les trois questions ouvertes sont tranchées** (2026-09-22), dans
+[`auth-inscription/plan-page-mon-profil.md`](../auth-inscription/plan-page-mon-profil.md) §4 :
 
-- `/mon-compte` reste-t-elle l'atterrissage du retour d'Auth0 pro ? Si oui, elle
-  garde son cas `incomplete` **pour ce seul retour** (déclaration en vol), et
-  cesse d'être une porte ouverte à qui passe par le menu ;
-- que devient l'entrée de menu « Mon compte » en perso — retirée, ou renommée ;
-- « ajouter une méthode d'authentification » est un chantier **Auth0** (liaison
-  de comptes) avec une frontière de sécurité : `vitruve` sera obligatoire sur
-  son plan, au même titre que pour le changement de mot de passe côté client.
+- **`/mon-compte` sans société** redirige vers `/mon-profil` au lieu de servir
+  la porte pro. Une adresse servie reste servie ; elle change de destination ;
+- **l'entrée de menu « Mon compte »** disparaît pour qui n'a **aucune** société.
+  La condition actuelle (`isPersonal() && hasChoice()`) ne la retire que pour
+  qui en a une et a basculé en perso : elle est **incomplète**, pas fausse ;
+- **l'atterrissage du retour d'Auth0 pro** devient `/mon-profil`, sans risque —
+  `ProOnboarding` est injecté par le **shell**, pas par l'écran, donc la
+  déclaration part quel que soit l'écran d'arrivée.
+
+🔴 **La racine du défaut est nommée** : la personne n'avait aucun écran à elle.
+Tant que c'était vrai, `/mon-compte` devait servir deux sujets — la société ET
+la personne sans société — et ne pouvait que mal répondre à l'un des deux. La
+page ne déplace pas le problème, elle lui retire sa cause.
 
 **Suite donnée le 2026-09-22** (Hugo : « on va commencer par le mon profil
 dialog ») :
@@ -122,3 +128,36 @@ aucun dépassement de budget.
 **deux applications Auth0 distinctes**, et la rotation des jetons de
 rafraîchissement se règle par application. À vérifier sur celle de la boutique —
 sans elle, on vient de poser une mémoire qui n'expire pas.
+
+---
+
+## 4. La suite de la boutique rend 997/997 et sort en `1`
+
+**Ce qu'on voit.** `npx ng test` sur `lfc-ecommerce-frontend` affiche
+**128 fichiers, 997/997 tests passés** — et le processus sort en **1**. En CI,
+c'est un échec : le déploiement s'arrête. C'est déjà arrivé, et ça a bloqué une
+mise en production alors qu'aucun test ne rougissait.
+
+**Ce qui le produit** (diagnostiqué le 2026-09-22) :
+
+```
+EnvironmentTeardownError: Cannot load '/chunk-BWWXXA45.js' … after the
+environment was torn down
+  ❯ _ShopPage.openCart  src/app/client/shop/shop-page/shop-page.ts:291
+  originated in "src/app/client/shop/shop-page/shop-page.spec.ts"
+```
+
+`openCart` charge le dialogue du panier par un **import dynamique**. Le test
+déclenche l'ouverture, se termine, l'environnement est démonté — puis l'import
+se résout dans le vide. Vitest compte ça comme une **erreur non gérée**, hors
+du décompte des tests : d'où « tout vert » et sortie `1`.
+
+**La direction** : le spec doit **attendre** l'ouverture du dialogue avant de
+finir (le `whenStable` ne suffit pas, l'import n'est pas une tâche Angular),
+ou le composant doit exposer de quoi l'attendre.
+
+⚠️ **Ce n'est pas un caprice de confort.** Il a été noté une fois comme un
+tremblement sans conséquence, puis il a arrêté un déploiement le lendemain.
+C'est la troisième forme du même piège que la mémoire du dépôt liste déjà :
+le code de sortie, la liste des commandes lancées, et l'effet réel — ici, un
+décompte vert qui cache une erreur qui n'y figure pas.

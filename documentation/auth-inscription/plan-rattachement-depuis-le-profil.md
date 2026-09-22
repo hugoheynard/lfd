@@ -68,21 +68,143 @@ le second.
 
 ---
 
+## 1 bis. Les quatre schémas
+
+### A. Pourquoi ce geste-ci est sûr, et pas l'autre
+
+La différence tient en une phrase : **à la porte d'entrée, on ne prouve qu'UNE
+chose ; depuis le profil, on en prouve DEUX.**
+
+```mermaid
+flowchart TB
+    subgraph porte["🚫 À LA PORTE — refusé, et ça ne change pas"]
+        direction TB
+        A1["Quelqu'un clique « Continuer avec Google »"]
+        A2["Auth0 prouve UNE chose :<br/>cette personne tient ce compte Google"]
+        A3{"Un compte existe<br/>sous la même adresse ?"}
+        A4["REFUS — rien ne dit que c'est le titulaire.<br/>Une faute de frappe dans son adresse<br/>offrirait son compte à un inconnu."]
+        A5["Création normale"]
+        A1 --> A2 --> A3
+        A3 -->|oui| A4
+        A3 -->|non| A5
+    end
+
+    subgraph profil["✅ DEPUIS LE PROFIL — accepté"]
+        direction TB
+        B1["La personne est DÉJÀ dans son compte"]
+        B2["Elle demande « Ajouter Google »"]
+        B3["Auth0 prouve la SECONDE chose :<br/>elle tient aussi ce compte Google"]
+        B4["RATTACHEMENT — les deux sessions<br/>sont tenues par la même personne.<br/>Aucune adresse n'est lue ni comparée."]
+        B1 --> B2 --> B3 --> B4
+    end
+```
+
+⚠️ **L'adresse ne sert à rien dans la voie de droite**, et c'est exactement ce
+qui la rend sûre : on ne peut pas s'approprier un compte en écrivant son adresse
+quelque part.
+
+### B. Le rattachement, de bout en bout
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor C as Client déjà connecté
+    participant P as Profil (boutique)
+    participant A as Auth0
+    participant API as Notre API
+    participant M as Management API
+
+    C->>P: « Ajouter Google »
+    P->>P: prend le jeton de la session EN COURS
+    Note right of P: AVANT la popup : après, un<br/>rafraîchissement rendrait le mauvais compte
+    P->>A: popup — connexion google-oauth2, prompt=login
+    Note right of P: seconde instance du SDK, cache isolé :<br/>sinon elle REMPLACE la session principale
+    A-->>P: id_token du compte Google
+    P->>API: POST /me/identities
+    Note right of P: en-tête = jeton de la session en cours<br/>corps = id_token Google
+    API->>API: vérifie le second jeton — émetteur, audience, fraîcheur
+    API->>API: ce compte Google en ouvre-t-il un autre chez nous ?
+    API->>M: absorber l'identité Google dans le compte
+    API->>API: relire — une ligne est-elle apparue ?
+    API-->>C: la liste relue des méthodes de connexion
+```
+
+### C. Pourquoi notre base ne bouge pas d'une ligne
+
+C'est la décision qui rend le chantier petit : **on relie chez Auth0, pas chez
+nous**. L'identité Google est absorbée, et le compte garde son identifiant.
+
+```mermaid
+flowchart LR
+    subgraph avant["AVANT"]
+        direction TB
+        U1["Notre compte<br/>auth0_sub = celui de l'e-mail"]
+        I1["Identité Auth0 : e-mail"]
+        I2["Identité Auth0 : Google<br/>(séparée, inconnue de nous)"]
+        U1 --- I1
+    end
+
+    subgraph apres["APRÈS"]
+        direction TB
+        U2["Notre compte<br/>auth0_sub = celui de l'e-mail<br/><b>INCHANGÉ</b>"]
+        I3["Identité Auth0 : e-mail<br/>+ Google absorbée"]
+        U2 --- I3
+    end
+
+    avant ==>|"rattachement"| apres
+```
+
+Se connecter par Google produit désormais un jeton portant **le sujet du compte
+principal**. D'où : aucune migration, aucune table, rien à changer dans la
+résolution d'accès.
+
+### D. La course, et pourquoi on ne peut que la détecter
+
+Le refus « ce compte Google en ouvre déjà un autre » se lit **chez nous**, et le
+rattachement s'écrit **chez Auth0**. Rien ne tient la fenêtre entre les deux — et
+ce qui la peuple est **automatique** : une première requête d'un compte inconnu
+lui crée sa ligne.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant API as Notre API
+    participant DB as Notre base
+    participant A as Auth0
+
+    API->>DB: ce compte Google en ouvre-t-il un autre ?
+    DB-->>API: non
+    Note over DB: ⚠️ LA FENÊTRE — une requête de ce même compte Google<br/>lui crée sa ligne, sans que personne l'ait demandé
+    API->>A: absorber
+    A-->>API: fait
+    API->>DB: et maintenant ?
+    DB-->>API: une ligne est apparue
+    API->>A: DÉFAIRE le rattachement
+    API-->>API: refuser, et dire pourquoi
+```
+
+🔴 **C'est une détection avec compensation, pas un verrou.** La fenêtre existe
+toujours. Ce qui change : on ne la traverse plus en silence. Sans la relecture,
+la ligne apparue serait devenue **inatteignable** — son identifiant ne
+produirait plus jamais de jeton — et personne ne l'aurait su.
+
+---
+
 ## 2. L'existant (ouvert et vérifié le 2026-09-22)
 
-| Fait                                                                                                                                                                                                                                   | Où                                                                                                   |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `GOOGLE_CONNECTION = 'google-oauth2'` et `FACEBOOK_CONNECTION = 'facebook'` existent déjà, et servent la porte d'ENTRÉE                                                                                                                | `apps/lfc-ecommerce-frontend/src/app/auth/auth.config.ts`                                            |
-| ⚠️ Facebook n'est peut-être pas activé dans le tenant — le JSDoc de `FACEBOOK_CONNECTION` le signale comme un réglage de console jamais confirmé                                                                                       | idem                                                                                                 |
-| `Auth0ManagementClient.call(method, path, body)` est **générique** : `DELETE` passe sans rien ajouter                                                                                                                                  | `platform/identity/auth0-management.client.ts`                                                       |
-| `update:users` est **déjà** dans `REQUIRED_MANAGEMENT_SCOPES` — link et unlink n'en demandent pas d'autre                                                                                                                              | `platform/identity/identity-diagnosis.ts:30`                                                         |
-| ⚠️ `Auth0IdentityGateway` lit le tableau `identities`, mais par une fonction **privée de module** qui ne rend que des **noms de connexion** (`connectionsOf`). R6 a besoin de `provider` + `user_id` : **rien ne les lit aujourd'hui** | `platform/identity/auth0-identity.gateway.ts`                                                        |
-| `Principal.subject` existe et est **déjà** lu par une commande de `/me` (`UpdateMyProfileCommand`)                                                                                                                                     | `platform/auth/principal.ts:50`, `b2b/account/http/me.controller.ts:64`                              |
-| 🔴 Un lecteur de plus de `Principal.subject` **fait échouer `lint:subject-readers`** tant qu'il n'est pas inscrit dans sa liste admise **avec sa raison**                                                                              | `dev-toolbox/gates/subject-readers.mjs`                                                              |
-| `@auth0/auth0-spa-js` **2.24.1** accepte un `cache` custom (`ICache`) — une seconde instance `Auth0Client` avec `new InMemoryCache()` est **isolée** du cache de l'instance Angular                                                    | paquet `@auth0/auth0-spa-js` 2.24.1, ses déclarations de types — `ICache` l. 166 et son export l. 24 |
-| La clé de transaction est `a0.spajs.txs.<clientId>`, partagée — mais **inoffensive ici** : `loginWithPopup` n'appelle jamais `transactionManager.create`, seul `loginWithRedirect` le fait (corrigé le 2026-09-22)                     | même paquet, bundle de développement, l. 1926-1932                                                   |
-| Un id_token décodé expose son jeton brut en `claims.__raw`                                                                                                                                                                             | même paquet, bundle de développement, `decode$1`                                                     |
-| Le profil est un dialogue centré (`ProfilePanel`), hors de `/mon-compte` — quatre champs, `PATCH /me/profile`                                                                                                                          | `client/profile/profile-panel/profile-panel.ts`                                                      |
+| Fait                                                                                                                                                                                                                                                                                                         | Où                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `GOOGLE_CONNECTION = 'google-oauth2'` et `FACEBOOK_CONNECTION = 'facebook'` existent déjà, et servent la porte d'ENTRÉE                                                                                                                                                                                      | `apps/lfc-ecommerce-frontend/src/app/auth/auth.config.ts`                                            |
+| ⚠️ Facebook n'est peut-être pas activé dans le tenant — le JSDoc de `FACEBOOK_CONNECTION` le signale comme un réglage de console jamais confirmé                                                                                                                                                             | idem                                                                                                 |
+| `Auth0ManagementClient.call(method, path, body)` est **générique** : `DELETE` passe sans rien ajouter                                                                                                                                                                                                        | `platform/identity/auth0-management.client.ts`                                                       |
+| `update:users` est **déjà** dans `REQUIRED_MANAGEMENT_SCOPES` — link et unlink n'en demandent pas d'autre                                                                                                                                                                                                    | `platform/identity/identity-diagnosis.ts:30`                                                         |
+| ⚠️ `Auth0IdentityGateway` lit le tableau `identities`, mais par une fonction **privée de module** qui ne rend que des **noms de connexion** (`connectionsOf`). R6 a besoin de `provider` + `user_id` : **rien ne les lit aujourd'hui**                                                                       | `platform/identity/auth0-identity.gateway.ts`                                                        |
+| `Principal.subject` existe et est **déjà** lu par une commande de `/me` (`UpdateMyProfileCommand`)                                                                                                                                                                                                           | `platform/auth/principal.ts:50`, `b2b/account/http/me.controller.ts:64`                              |
+| 🔴 Un lecteur de plus de `Principal.subject` **fait échouer `lint:subject-readers`** tant qu'il n'est pas inscrit dans sa liste admise **avec sa raison**                                                                                                                                                    | `dev-toolbox/gates/subject-readers.mjs`                                                              |
+| `@auth0/auth0-spa-js` **2.24.1** accepte un `cache` custom (`ICache`) — une seconde instance `Auth0Client` avec `new InMemoryCache()` est **isolée** du cache de l'instance Angular                                                                                                                          | paquet `@auth0/auth0-spa-js` 2.24.1, ses déclarations de types — `ICache` l. 166 et son export l. 24 |
+| La clé de transaction est `a0.spajs.txs.<clientId>`, partagée — mais **inoffensive ici** : `loginWithPopup` n'appelle jamais `transactionManager.create`, seul `loginWithRedirect` le fait (corrigé le 2026-09-22)                                                                                           | même paquet, bundle de développement, l. 1926-1932                                                   |
+| Un id_token décodé expose son jeton brut en `claims.__raw`                                                                                                                                                                                                                                                   | même paquet, bundle de développement, `decode$1`                                                     |
+| ⚠️ Le profil ÉTAIT un dialogue centré (`ProfilePanel`), hors de `/mon-compte` — quatre champs, `PATCH /me/profile`. **Il est devenu une PAGE le 2026-09-22** et le dialogue a été supprimé, ce qui a déplacé le lot C : les méthodes de connexion sont une section de `/mon-profil`, plus un dialogue empilé | `plan-page-mon-profil.md`                                                                            |
 
 **Ce qui n'existe pas** : aucune table `user_identities`, aucune route
 `/me/identities`, aucun geste de rattachement nulle part (vérifié le

@@ -100,6 +100,9 @@ class Identity extends CustomerIdentityPort {
   issuePasswordLink(): never {
     throw new Error("hors sujet");
   }
+  sendPasswordResetLink(): never {
+    throw new Error("hors sujet");
+  }
   listLoginMethods(): Promise<readonly LoginMethod[]> {
     return Promise.resolve(this.methods);
   }
