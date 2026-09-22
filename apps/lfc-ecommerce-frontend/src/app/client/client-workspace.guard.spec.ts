@@ -9,6 +9,7 @@ import {
 import { PERSONAL_WORKSPACE, type ShopLevel } from '@lfd/contracts';
 import { of } from 'rxjs';
 
+import { AccountService } from '../account/account.service';
 import { AuthFacade } from '../auth/auth.facade';
 import {
   companyWorkspaceGuard,
@@ -29,16 +30,54 @@ interface Case {
   readonly current: string | null;
   readonly companies: boolean;
   readonly shop?: ShopLevel;
+  /** Une déclaration pro rapportée d'Auth0 attend d'être envoyée. */
+  readonly declaring?: boolean;
 }
 
+/**
+ * Ce qu'Auth0 rend au retour de la porte pro. Le contenu n'est pas lu par la
+ * garde — seule sa PRÉSENCE compte — mais l'inventer vide ferait croire qu'elle
+ * le regarde.
+ */
+const PRO_DECLARATION = {
+  raisonSociale: 'Tommeuses SAS',
+  siret: '12345678901234',
+  email: 'pierre@brasserie-marchand.fr',
+};
+
 /** Où la garde envoie : `true`, ou l'adresse de renvoi. */
-async function run({ signedIn = true, current, companies, shop = 'order' }: Case) {
+async function run({
+  signedIn = true,
+  current,
+  companies,
+  shop = 'order',
+  declaring = false,
+}: Case) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
-      { provide: AuthFacade, useValue: { authGate$: () => of(signedIn) } },
+      {
+        provide: AuthFacade,
+        // `pendingProRegistration` : lu par `ProOnboarding`, que la garde
+        // consulte pour sa RÉSERVE — une déclaration pro en vol rouvre les
+        // écrans de société. `null` = personne n'est en train d'en ouvrir un.
+        useValue: {
+          authGate$: () => of(signedIn),
+          pendingProRegistration: () => (declaring ? PRO_DECLARATION : null),
+        },
+      },
       provideWorkspace(workspaceDouble(current, companies ? [TOMMEUSES] : [])),
+      // 🔴 Doublé pour que le cas « aucune société » s'éprouve VRAIMENT : le
+      // vrai service n'est `ready` qu'après `/me`, donc `hasNoCompany()`
+      // resterait faux et la règle ne s'appliquerait jamais.
+      {
+        provide: AccountService,
+        useValue: {
+          companies: () => (companies ? [TOMMEUSES] : []),
+          hasNoCompany: () => !companies,
+        },
+      },
       {
         provide: ClientFeatureAccess,
         useFactory: () => {
@@ -63,9 +102,30 @@ describe('companyWorkspaceGuard', () => {
     expect(await run({ current: TOMMEUSES.id, companies: true })).toBe(true);
   });
 
-  /** Sans société, Mon compte est la porte pro : le retour d'inscription y atterrit. */
-  it('les laisse ouverts à qui n’a aucune société', async () => {
-    expect(await run({ current: PERSONAL_WORKSPACE, companies: false })).toBe(true);
+  /**
+   * 🔴 **Fermés AUSSI sans société** (Hugo, 2026-09-22 : « mon compte n'a pas
+   * d'entreprise et avait quand même accès à mon compte »).
+   *
+   * Ils restaient ouverts parce que `/mon-compte` était la porte pro. Elle vit
+   * maintenant sur `/mon-profil` : l'adresse proposait donc l'ouverture d'un
+   * compte professionnel à qui n'avait rien demandé.
+   */
+  it('les ferme aussi à qui n’a aucune société', async () => {
+    expect(await run({ current: PERSONAL_WORKSPACE, companies: false })).toBe('/bienvenue');
+  });
+
+  /**
+   * ⚠️ **LA RÉSERVE, et c'est elle qui rend la fermeture praticable.**
+   *
+   * Qui s'inscrit par la porte pro revient d'Auth0 avec une déclaration à
+   * envoyer ; la carte « Compléter mon dossier » de `/mon-compte` est son SEUL
+   * rattrapage quand cet envoi échoue. Fermer sans exception le laisserait
+   * dehors, avec un dossier commencé et nulle part où le reprendre.
+   */
+  it('les rouvre tant qu’une déclaration pro est en vol', async () => {
+    expect(await run({ current: PERSONAL_WORKSPACE, companies: false, declaring: true })).toBe(
+      true,
+    );
   });
 
   it('laisse passer qui n’est pas connecté — l’écran sait l’accueillir', async () => {

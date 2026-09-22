@@ -14,6 +14,7 @@ import { ClientSubscriptions } from '../client-subscriptions.service';
 import { hydrateWith, TEST_CATALOGUE } from '../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { ClientCart } from '../cart/client-cart.service';
+import { AccountService } from '../../account/account.service';
 import { provideRecognised } from '../client-orders.fixture';
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
 import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
@@ -254,6 +255,17 @@ describe('Les destinations du menu, selon l’espace', () => {
         provideHttpClientTesting(),
         provideRecognised(),
         provideWorkspace(workspaceDouble(current, companies)),
+        // 🔴 `AccountService` doit être DOUBLÉ ici, sinon le cas « aucune
+        // société » se testerait tout seul : le vrai service n'est `ready`
+        // qu'après `/me`, donc `hasNoCompany()` resterait faux et la règle ne
+        // s'appliquerait jamais. Le test passait — sans rien éprouver.
+        {
+          provide: AccountService,
+          useValue: {
+            companies: () => companies,
+            hasNoCompany: () => companies.length === 0,
+          },
+        },
       ],
     });
     openShopAt('order');
@@ -270,7 +282,16 @@ describe('Les destinations du menu, selon l’espace', () => {
     expect(idsIn(TOMMEUSES.id, [TOMMEUSES])).toEqual(ORDER);
   });
 
-  it('les garde à qui n’a aucune société', () => {
-    expect(idsIn(PERSONAL_WORKSPACE, [])).toEqual(ORDER);
+  /**
+   * 🔴 **Ils se ferment AUSSI sans société** (Hugo, 2026-09-22 : « mon compte
+   * n'a pas d'entreprise et avait quand même accès à mon compte »).
+   *
+   * Ils restaient ouverts parce que `/mon-compte` portait la porte pro — la
+   * carte « Compléter mon dossier ». Elle vit désormais sur `/mon-profil` ;
+   * laisser le menu les proposer revenait à offrir l'ouverture d'un compte
+   * professionnel à qui n'a rien demandé.
+   */
+  it('les ferme aussi à qui n’a aucune société', () => {
+    expect(idsIn(PERSONAL_WORKSPACE, [])).toEqual(['shop', 'orders']);
   });
 });

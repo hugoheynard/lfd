@@ -4,7 +4,10 @@ import { Router, type CanActivateFn } from '@angular/router';
 import { filter, firstValueFrom, of, timeout, catchError } from 'rxjs';
 
 import { AuthFacade } from '../auth/auth.facade';
+import { AccountService } from '../account/account.service';
 import { ClientWorkspace } from './client-workspace.service';
+import { companyScreensClosed } from './company-screens';
+import { ProOnboarding } from './pro-onboarding.service';
 import {
   COMPANY_HOME,
   PERSONAL_HOME,
@@ -41,9 +44,20 @@ export const WORKSPACE_WAIT_MS = 8_000;
  * 2026-09-15). Le menu les retire ; cette garde ferme l'adresse tapée ou gardée
  * en favori.
  *
- * Seulement pour qui **a** une société et a basculé en perso. Sans aucune
- * société, `/mon-compte` reste ouvert : c'est là que revient la porte pro
- * (`ProOnboarding`, cf. `client-shell.ts`), avant que la société existe.
+ * 🔴 **Sans aucune société, c'est fermé AUSSI depuis le 2026-09-22** (Hugo :
+ * « mon compte n'a pas d'entreprise et avait quand même accès à mon compte »).
+ *
+ * Ça ne l'était pas, et la raison était bonne : `/mon-compte` portait la porte
+ * pro — la carte « Compléter mon dossier » — avant que la société existe. Elle
+ * a déménagé sur `/mon-profil`, qui porte le lien d'ouverture et la liste des
+ * comptes pro. Laisser l'adresse ouverte revenait alors à proposer l'ouverture
+ * d'un compte professionnel à qui n'a rien demandé — le constat qui a ouvert
+ * tout ce chantier.
+ *
+ * ⚠️ **La réserve** : une déclaration pro en vol ou en échec rouvre l'adresse,
+ * parce que la carte est le seul rattrapage d'un envoi raté. La condition
+ * entière vit dans `company-screens.ts`, lue ici ET par le menu — elle était
+ * recopiée des deux côtés, et les deux copies portaient le même trou.
  *
  * ⚠️ **Le renvoi est INCONDITIONNEL depuis le 2026-09-21.** Il attendait que
  * la boutique soit au moins visitable, pour une seule raison : le repli était
@@ -57,6 +71,8 @@ export const WORKSPACE_WAIT_MS = 8_000;
 export const companyWorkspaceGuard: CanActivateFn = async () => {
   // Tout ce qui s'injecte l'est AVANT le premier `await`.
   const workspace = inject(ClientWorkspace);
+  const account = inject(AccountService);
+  const onboarding = inject(ProOnboarding);
   const auth = inject(AuthFacade);
   const router = inject(Router);
   const injector = inject(Injector);
@@ -65,7 +81,19 @@ export const companyWorkspaceGuard: CanActivateFn = async () => {
     return true;
   }
   await workspaceKnown(workspace, injector);
-  if (!workspace.isPersonal() || !workspace.hasChoice()) {
+  // 🔴 La règle est celle du MENU, lue au même endroit (Hugo, 2026-09-22) : la
+  // garde en portait sa propre copie, et les deux laissaient passer le cas de
+  // qui n'a aucune société. Une adresse que le menu ne propose plus mais que la
+  // garde ouvre encore est un écran qu'on n'atteint qu'en le sachant — c'est-à-
+  // dire précisément ce qu'un favori ou un lien fait.
+  if (
+    !companyScreensClosed({
+      isPersonal: workspace.isPersonal(),
+      hasChoice: workspace.hasChoice(),
+      hasNoCompany: account.hasNoCompany(),
+      declarationUnderway: onboarding.declarationUnderway(),
+    })
+  ) {
     return true;
   }
   return router.parseUrl(PERSONAL_FALLBACK);

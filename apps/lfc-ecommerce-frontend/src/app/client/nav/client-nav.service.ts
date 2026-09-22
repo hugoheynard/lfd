@@ -9,6 +9,9 @@ import { ClientSubscriptions } from '../client-subscriptions.service';
 import { ClientCopyService } from '../copy/client-copy.service';
 import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
 import { ClientWorkspace } from '../client-workspace.service';
+import { AccountService } from '../../account/account.service';
+import { companyScreensClosed } from '../company-screens';
+import { ProOnboarding } from '../pro-onboarding.service';
 
 /** Une destination du menu, telle qu'elle est DÉCLARÉE — sans compteur ni libellé. */
 interface Destination {
@@ -131,6 +134,8 @@ export class ClientNav {
   private readonly orders = inject(ClientOrderHistory);
   private readonly access = inject(ClientFeatureAccess);
   private readonly workspace = inject(ClientWorkspace);
+  private readonly account = inject(AccountService);
+  private readonly onboarding = inject(ProOnboarding);
   private readonly injector = inject(Injector);
   private readonly t = inject(ClientCopyService).t;
   private readonly router = inject(Router);
@@ -175,8 +180,19 @@ export class ClientNav {
    * En perso, pour qui a une société : ses écrans de société n'ont rien à
    * montrer. Sans aucune société, Mon compte reste — c'est la porte pro.
    */
-  private readonly companyScreensClosed = computed(
-    () => this.workspace.isPersonal() && this.workspace.hasChoice(),
+  /**
+   * 🔴 La RÈGLE vit dans `company-screens.ts`, elle n'est plus écrite ici
+   * (Hugo, 2026-09-22). Le menu et `companyWorkspaceGuard` en portaient chacun
+   * une version — identiques par chance et non par construction — et toutes
+   * deux laissaient passer le cas de qui n'a AUCUNE société.
+   */
+  private readonly companyScreensClosed = computed(() =>
+    companyScreensClosed({
+      isPersonal: this.workspace.isPersonal(),
+      hasChoice: this.workspace.hasChoice(),
+      hasNoCompany: this.account.hasNoCompany(),
+      declarationUnderway: this.onboarding.declarationUnderway(),
+    }),
   );
 
   readonly pending = computed(() => this.items().filter((i) => i.countShort !== '').length);
