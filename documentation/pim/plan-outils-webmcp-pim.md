@@ -229,6 +229,32 @@ puis en naviguant côté client :
   affirmer « aucun allergène » sur une fiche où personne ne s'est prononcé.
   C'est le cas des trois états, rencontré une fois de plus.
 
-**Ce qui reste ouvert :** le comportement du serveur sur un tableau d'allergènes
-en doublon (§6) n'est toujours pas constaté — aucun outil ne les écrit, donc rien
-ne presse, et c'est la condition pour en ajouter un.
+## 12. La condition du §6 est levée (mesuré le 2026-09-22)
+
+Le plan réservait l'écriture des allergènes à une mesure : « le comportement du
+serveur sur un tableau en doublon n'est pas constaté ». Elle est faite, en
+ouvrant `pim/catalogue/product/domain/value-objects/nutrition-declaration.ts`.
+
+| Ce qu'un outil enverrait               | Ce que le serveur en fait                                        |
+| -------------------------------------- | ---------------------------------------------------------------- |
+| Le même code **deux fois**             | **dédoublonné en silence**, dans l'ordre d'arrivée               |
+| Un code **inconnu** du référentiel     | **refusé** — `catalogue.allergen.unknown`                        |
+| Un code **présent ET en trace**        | **refusé** — `catalogue.allergen.overlap`                        |
+| Un code **archivé**, sur une relecture | **accepté** (D2 bis) — le refus d'AJOUT est une règle du handler |
+
+🔴 **Et la garde est au bon endroit** : dans le value object, pas dans un DTO
+HTTP. Son propre commentaire dit pourquoi — « un import ou un seed la
+contournerait ; elle est ici, sur le chemin unique ». Un outil WebMCP est un
+appelant de plus sur ce chemin : il **ne peut pas** la contourner.
+
+⚠️ Ce que la mesure ne dit pas, et qui reste à trancher : le dédoublonnement est
+**silencieux**. Un outil qui enverrait deux fois « lait » recevrait un succès
+sans savoir qu'il a été corrigé. Pour un humain au clavier c'est sans
+conséquence ; pour un agent qui relit ce qu'il a écrit pour se vérifier, c'est un
+écart entre ce qu'il a demandé et ce qu'il constate. **L'outil doit donc relire
+et rendre l'état réel**, comme `pim_variant_set_nutrition` le fait déjà pour ne
+pas effacer les allergènes.
+
+➡️ **La tranche 2 est donc bâtissable.** Restent exclus, et chacun pour sa
+raison écrite : **l'argent** (`vitruve` d'office), et le **cycle de vie** —
+publier est une décision, elle reste à Hugo.
