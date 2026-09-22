@@ -13,6 +13,7 @@ import {
   Variant,
   type VariantAspect,
   type VariantPricing,
+  type VariantRegulatorySheet,
   type VariantSnapshot,
 } from "./variant.js";
 import {
@@ -352,6 +353,21 @@ export class Product {
   /** Tarif et poids d'une déclinaison **du produit**. */
   priceVariant(variantId: string, pricing: VariantPricing): void {
     this.variant(variantId).price(pricing);
+  }
+
+  /**
+   * **La fiche réglementaire d'une déclinaison du produit.**
+   *
+   * Refuse si la déclinaison n'est pas la sienne — c'est l'agrégat qui dit ce
+   * qui lui appartient, pas une requête sur l'id seul.
+   *
+   * 🔴 Ce verbe ne PERSISTE rien : l'écriture reste au port dédié
+   * (`plan-separer-allergenes-et-nutrition.md`, §6a). Il existe pour que
+   * l'agrégat porte l'état qu'il est seul à savoir juger — `isCovered` compare
+   * la déclinaison à son défaut, et il le fera sur l'état d'APRÈS.
+   */
+  declareRegulatorySheet(variantId: string, declaration: VariantRegulatorySheet): void {
+    this.variant(variantId).declareRegulatorySheet(declaration);
   }
 
   /**

@@ -1,6 +1,7 @@
 import {
   DefaultVariantCannotFollowItselfError,
   ProductNotPublishableError,
+  VariantNotFoundError,
   VariantNotInProductError,
 } from "../../errors/product-errors.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
@@ -54,6 +55,46 @@ function addVariant(product: Product, sku = "CHO-001-2"): string {
     options: { poids: "220 g" },
   }).id;
 }
+
+describe("déclarer une fiche met l'agrégat à jour", () => {
+  /**
+   * 🔴 Régression structurelle. La fiche s'écrivait par un port SANS jamais
+   * repasser par l'agrégat : `hasOwnRegulatorySheet` continuait donc de
+   * répondre sur l'état d'AVANT, et `isCovered` avec lui.
+   *
+   * Rien n'en dépendait dans le même geste — mais l'invariant 7 se juge sur cet
+   * état, et le lot 5 le lira juste après avoir déclaré
+   * (`plan-separer-allergenes-et-nutrition.md`).
+   */
+  it("la déclinaison est couverte AUSSITÔT, sans relecture", () => {
+    const product = aProduct();
+    const [variant] = product.snapshot().variants;
+
+    expect(() => product.publish()).toThrow(ProductNotPublishableError);
+
+    product.declareRegulatorySheet(variant!.id, { allergens: ["AM"], nutrition: null });
+
+    expect(() => product.publish()).not.toThrow();
+  });
+
+  /** `[]` compte comme déclaré — c'est une affirmation, pas un silence. */
+  it("« aucun allergène » couvre aussi", () => {
+    const product = aProduct();
+    const [variant] = product.snapshot().variants;
+
+    product.declareRegulatorySheet(variant!.id, { allergens: [], nutrition: null });
+
+    expect(() => product.publish()).not.toThrow();
+  });
+
+  it("refuse une déclinaison qui n’est pas du produit", () => {
+    const product = aProduct();
+
+    expect(() =>
+      product.declareRegulatorySheet("var_etranger", { allergens: ["AM"], nutrition: null }),
+    ).toThrow(VariantNotFoundError);
+  });
+});
 
 describe("une déclinaison ajoutée naît alignée", () => {
   it("prend le rang suivant, sans tarif", () => {

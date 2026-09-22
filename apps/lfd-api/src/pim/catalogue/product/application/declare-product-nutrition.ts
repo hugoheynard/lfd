@@ -48,6 +48,33 @@ export class DeclareProductNutritionHandler implements ICommandHandler<
       ...(variant?.nutrition?.mayContain ?? []),
     ];
     const declaration = await validatedDeclaration(this.allergens, input, alreadyDeclared);
+    // L'agrégat porte la fiche AVANT qu'on l'écrive : sans ça, il répond encore
+    // sur l'état d'avant, et `isCovered` — que le lot 5 lira juste après —
+    // jugerait la déclinaison non couverte alors qu'on vient de la déclarer.
+    //
+    // 🔴 Il ne PERSISTE pas pour autant : l'écriture reste au port dédié, qui
+    // n'écrit que cette table (§6a du plan). La confier à `products.save` ferait
+    // qu'un renommage ou une publication écrase une déclaration faite entre
+    // temps, par les douze appelants qu'il a.
+    //
+    // Les champs sont écrits EN CLAIR plutôt qu'étalés depuis `nutritionOf` :
+    // celui-ci rend un `Record<string, unknown>` pour le diff du journal, et
+    // l'étaler ferait perdre l'inférence — le compilateur ne verrait plus
+    // qu'un champ manque.
+    product.declareRegulatorySheet(variantId, {
+      allergens: declaration.allergens,
+      nutrition: {
+        mayContain: declaration.mayContain,
+        energyKcal: declaration.energyKcal ?? null,
+        fatG: declaration.fatG ?? null,
+        saturatedFatG: declaration.saturatedFatG ?? null,
+        carbsG: declaration.carbsG ?? null,
+        sugarsG: declaration.sugarsG ?? null,
+        proteinG: declaration.proteinG ?? null,
+        saltG: declaration.saltG ?? null,
+        glycemicIndex: declaration.glycemicIndex ?? null,
+      },
+    });
     const changes = changesBetween(
       {
         // `null` (fiche jamais renseignée) et `[]` (« aucun allergène »

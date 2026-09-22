@@ -6,6 +6,18 @@ import type { LocalizedText } from "../../../shared/domain/value-objects/localiz
 import type { Sku } from "../value-objects/sku.value-object.js";
 
 /** Valeurs nutritionnelles pour 100 g ; chaque champ `null` = non renseigné. */
+/**
+ * Ce qu'une déclaration pose sur une déclinaison — les deux moitiés de la fiche.
+ *
+ * Elles voyagent ensemble tant que la route et la table sont uniques. Le lot 3
+ * les sépare, et ce type est l'endroit où la séparation se verra.
+ */
+export interface VariantRegulatorySheet {
+  /** `[]` = « aucun allergène », affirmation. `null` n'est pas déclarable. */
+  readonly allergens: readonly string[];
+  readonly nutrition: VariantNutritionSnapshot | null;
+}
+
 export interface VariantNutritionSnapshot {
   readonly mayContain: readonly string[];
   readonly energyKcal: number | null;
@@ -97,8 +109,8 @@ export class Variant {
   private positionValue: number;
   private priceCentsValue: number | null;
   private weightGramsValue: number | null;
-  private readonly allergensValue: readonly string[] | null;
-  private readonly nutritionValue: VariantNutritionSnapshot | null;
+  private allergensValue: readonly string[] | null;
+  private nutritionValue: VariantNutritionSnapshot | null;
   private readonly followsDefault: Record<VariantAspect, boolean>;
 
   /**
@@ -240,6 +252,31 @@ export class Variant {
    */
   get hasOwnRegulatorySheet(): boolean {
     return this.allergensValue !== null;
+  }
+
+  /**
+   * **Déclare la fiche réglementaire de CETTE déclinaison.**
+   *
+   * Le verbe existe pour que l'agrégat cesse d'être périmé après une écriture :
+   * la fiche s'écrivait par un port sans jamais repasser par lui, si bien que
+   * `hasOwnRegulatorySheet` continuait de répondre sur l'état d'AVANT. Rien
+   * n'en dépendait dans le même geste — mais l'invariant 7 se juge sur cet
+   * état, et le lot 5 le lira juste après avoir déclaré.
+   *
+   * 🔴 **L'écriture reste au port dédié**, et ce n'est pas un oubli
+   * (`plan-separer-allergenes-et-nutrition.md`, §6a). La confier à `save()`
+   * — qui réécrit TOUTES les déclinaisons et compte douze appelants — ferait
+   * qu'un renommage ou une publication écraserait une déclaration faite entre
+   * temps. Le port dédié ne rend pas l'écriture sûre ; il fait qu'une écriture
+   * ne peut plus en détruire une autre qu'elle ne visait pas.
+   *
+   * ⚠️ La validation, elle, n'est PAS ici : elle demande le référentiel des
+   * allergènes, qui vit en base. Le domaine reçoit une déclaration déjà
+   * construite par `nutritionDeclaration()` — valide ou rien.
+   */
+  declareRegulatorySheet(declaration: VariantRegulatorySheet): void {
+    this.allergensValue = declaration.allergens;
+    this.nutritionValue = declaration.nutrition;
   }
 
   /**
