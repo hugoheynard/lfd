@@ -350,6 +350,16 @@ interface VariantDraft {
   readonly weightGrams: number | null;
   readonly declaresNone: boolean;
   readonly selected: readonly string[];
+  /**
+   * Les traces « peut contenir », **portées sans être éditables**.
+   *
+   * 🔴 Aucun écran ne les saisit, et c'est exactement pourquoi il faut les
+   * garder : la route remplace la déclaration ENTIÈRE, et le serveur lit une
+   * absence comme un effacement (`input.mayContain ?? []`). Ne pas les
+   * transporter faisait effacer, à chaque enregistrement de la section, les
+   * traces posées par le semis ou par un outil agent.
+   */
+  readonly mayContain: readonly string[];
   readonly nutrition: NutritionValues;
   readonly regulatoryAligned: boolean;
   readonly pricingAligned: boolean;
@@ -484,6 +494,12 @@ export class ProductFormStore {
   readonly weightGrams = signal<number | null>(null);
   readonly selected = signal<string[]>([]);
   readonly declaresNone = signal(false);
+
+  /**
+   * Les traces déclarées, en transit : lues au chargement, renvoyées telles
+   * quelles à l'enregistrement. Voir {@link VariantDraft.mayContain}.
+   */
+  readonly mayContain = signal<readonly string[]>([]);
 
   /**
    * Ce que la **composition** de la fiche mentionne comme allergènes.
@@ -1362,6 +1378,10 @@ export class ProductFormStore {
       if (!this.regulatoryAligned()) {
         await this.products.saveNutrition(this.productId(), this.variantId(), {
           allergens: this.declaresNone() ? [] : this.selected(),
+          // 🔴 Renvoyées à l'identique, faute d'écran qui les saisisse. Les
+          // omettre les EFFACE : le serveur lit `input.mayContain ?? []`, et la
+          // route remplace la déclaration entière.
+          mayContain: this.mayContain(),
           nutrition: this.nutrition(),
         });
       }
@@ -1792,6 +1812,7 @@ export class ProductFormStore {
       weightGrams: this.weightGrams(),
       declaresNone: this.declaresNone(),
       selected: [...this.selected()],
+      mayContain: [...this.mayContain()],
       nutrition: this.nutrition(),
       regulatoryAligned: this.regulatoryAligned(),
       pricingAligned: this.pricingAligned(),
@@ -1812,6 +1833,7 @@ export class ProductFormStore {
       // réponse. Les confondre transformerait un oubli de saisie en promesse.
       declaresNone: allergens !== null && allergens.length === 0,
       selected: allergens === null ? [] : [...allergens],
+      mayContain: [...(variant?.mayContain ?? [])],
       nutrition: variant?.nutrition ?? EMPTY_NUTRITION,
       regulatoryAligned: variant?.regulatoryFollowsDefault ?? false,
       pricingAligned: variant?.pricingFollowsDefault ?? false,
@@ -1823,6 +1845,7 @@ export class ProductFormStore {
     this.weightGrams.set(draft.weightGrams);
     this.declaresNone.set(draft.declaresNone);
     this.selected.set([...draft.selected]);
+    this.mayContain.set([...draft.mayContain]);
     this.nutrition.set(draft.nutrition);
     this.regulatoryAligned.set(draft.regulatoryAligned);
     this.pricingAligned.set(draft.pricingAligned);
