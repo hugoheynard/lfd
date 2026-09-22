@@ -22,17 +22,17 @@ boutiques**. Le croissant est à 2,00 € TTC au comptoir, 1,71 € HT au pro �
 
 ## 2. Ce qui reste
 
-| #      | Quoi                                   | Coût                    | Ce qui le retient             |
-| ------ | -------------------------------------- | ----------------------- | ----------------------------- |
-| ~~R1~~ | ✅ **Désinstaller l'app Shopify**      | fait le 2026-09-21      | —                             |
-| ~~R2~~ | ✅ **Le panier public en TTC**         | fait le 2026-09-21      | —                             |
-| R3     | Le **bon de commande public** en TTC   | une passe               | rien                          |
-| R4     | L'**export CSV** ignore le prix public | une passe               | rien                          |
-| ~~R5~~ | ✅ **Le masquage par audience**        | fait le 2026-09-21      | —                             |
-| R6     | Le **schéma** — les tables Shopify     | une migration           | le **prochain déploiement**   |
-| R7     | Les **écrans de doc internes**         | une passe               | une décision de forme (§ 3.7) |
-| R8     | Les **94 déclarations d'allergènes**   | de la saisie            | humain, pas du code           |
-| R9     | Trois **questions techniques**         | à trancher en bâtissant | rien                          |
+| #      | Quoi                                   | Coût                      | Ce qui le retient                                                         |
+| ------ | -------------------------------------- | ------------------------- | ------------------------------------------------------------------------- |
+| ~~R1~~ | ✅ **Désinstaller l'app Shopify**      | fait le 2026-09-21        | —                                                                         |
+| ~~R2~~ | ✅ **Le panier public en TTC**         | fait le 2026-09-21        | —                                                                         |
+| R3     | Le **bon de commande public** en TTC   | une passe                 | rien                                                                      |
+| R4     | L'**export CSV** ignore le prix public | une passe                 | rien                                                                      |
+| ~~R5~~ | ✅ **Le masquage par audience**        | fait le 2026-09-21        | —                                                                         |
+| ~~R6~~ | ~~Le **schéma** — les tables Shopify~~ | ✅ **fait le 2026-09-21** | commit `4e006f97b`, migration `20260921220000_retrait_des_tables_shopify` |
+| R7     | Les **écrans de doc internes**         | une passe                 | une décision de forme (§ 3.7)                                             |
+| R8     | Les **94 déclarations d'allergènes**   | de la saisie              | humain, pas du code                                                       |
+| R9     | Trois **questions techniques**         | à trancher en bâtissant   | rien                                                                      |
 
 ✅ **R1 est fait, et c'était le seul qui coupait un accès réel.** Tout ce qui
 reste est du confort ou de la dette.

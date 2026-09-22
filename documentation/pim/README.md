@@ -2,7 +2,7 @@
 
 PIM (Product Information Management) **source de vérité unique** du catalogue de la boulangerie
 Chevallot (Val d'Isère, avec labo de production). Le catalogue **descend** vers les canaux de vente
-(caisse **PI / Helios**, **B2B**) ; les commandes **remontent** vers le
+(**B2B**) ; les commandes **remontent** vers le
 plan de production du labo.
 
 > 🔴 **Le canal Shopify est sorti du dépôt le 2026-09-21**, et les sept documents

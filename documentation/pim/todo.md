@@ -15,22 +15,23 @@
 
 ## Décisions à trancher (produit / métier)
 
-| #      | Sujet                                          | Enjeu                                                                                                                                                                                                                                                                                                                                                                                                                      | Statut         |
-| ------ | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| D1     | **Nature exacte du B2B**                       | Revente pros (cafés, restaurants, collectivités) confirmée ? Paliers de volume + tarifs négociés par client → conditionne le modèle pricing (couche 02)                                                                                                                                                                                                                                                                    | 🔴 ouvert      |
-| D2     | **Plan de production labo : auto ou manuel ?** | Consolidation auto de la demande multi-canal → plan, ou planification manuelle assistée ? Conditionne la couche 03                                                                                                                                                                                                                                                                                                         | 🔴 ouvert      |
-| D3     | **Périmètre recettes / BOM**                   | Nomenclatures matières dans le scope v1 (calcul besoins farine…) ou plus tard ?                                                                                                                                                                                                                                                                                                                                            | 🔴 ouvert      |
-| D4     | **Accès PI Electronique / Helios**             | API contractuelle **ou** export fichier (CSV/XML) ? **Principal inconnu technique** — conditionne l'adaptateur PI, le régime anti-drift, **et** la validité d'[ADR-15](./adr.md#adr-15--construire-un-pim-minimal-plutôt-quen-acheter-un). ➡️ **action : envoyer le questionnaire à PI** (8 questions, dont la n°4 — « peut-on déposer notre propre identifiant ? » — qui décide si le drift est accidentel ou structurel) | 🔴 ouvert      |
-| D7     | **Résolution des prix**                        | Par **spécificité** (la règle la plus précise gagne) ou par **priorité numérotée explicite** ? La 1ʳᵉ est plus élégante, la 2ᵈᵉ plus prévisible pour un commercial qui débogue seul                                                                                                                                                                                                                                        | 🔴 ouvert      |
-| D5     | **TVA**                                        | Taux paramétrables + distinction emporter / sur place — à confirmer avec le comptable                                                                                                                                                                                                                                                                                                                                      | 🟠 à confirmer |
-| ~~D6~~ | ~~**Frontières d'agrégat**~~                   | **Clos le 2026-07-21** → `Product` racine (possède déclinaisons + fiches réglementaires), `Category`, `Collection`, `MediaAsset`                                                                                                                                                                                                                                                                                           | ✅ fermé       |
+| #      | Sujet                                          | Enjeu                                                                                                                                                                                                                                                                                                                                                                                  | Statut         |
+| ------ | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| D1     | **Nature exacte du B2B**                       | Revente pros (cafés, restaurants, collectivités) confirmée ? Paliers de volume + tarifs négociés par client → conditionne le modèle pricing (couche 02)                                                                                                                                                                                                                                | 🔴 ouvert      |
+| D2     | **Plan de production labo : auto ou manuel ?** | Consolidation auto de la demande multi-canal → plan, ou planification manuelle assistée ? Conditionne la couche 03                                                                                                                                                                                                                                                                     | 🔴 ouvert      |
+| D3     | **Périmètre recettes / BOM**                   | Nomenclatures matières dans le scope v1 (calcul besoins farine…) ou plus tard ?                                                                                                                                                                                                                                                                                                        | 🔴 ouvert      |
+| ~~D4~~ | ~~**Accès PI Electronique / Helios**~~         | **Clos le 2026-09-22** — Hugo : « PI disparaît de notre vie ». La caisse n'est plus un canal du référentiel. ⚠️ Ce qui dépendait de D4 tombe avec elle : le questionnaire, le régime anti-drift, les tables `helios_*_binding` (qui n'ont jamais existé) et le déclencheur de révision d'ADR-15. Le code n'en portait **aucune ligne** — l'intégration était entièrement documentaire. | ✅ fermé       |
+| D7     | **Résolution des prix**                        | Par **spécificité** (la règle la plus précise gagne) ou par **priorité numérotée explicite** ? La 1ʳᵉ est plus élégante, la 2ᵈᵉ plus prévisible pour un commercial qui débogue seul                                                                                                                                                                                                    | 🔴 ouvert      |
+| D5     | **TVA**                                        | Taux paramétrables + distinction emporter / sur place — à confirmer avec le comptable                                                                                                                                                                                                                                                                                                  | 🟠 à confirmer |
+| ~~D6~~ | ~~**Frontières d'agrégat**~~                   | **Clos le 2026-07-21** → `Product` racine (possède déclinaisons + fiches réglementaires), `Category`, `Collection`, `MediaAsset`                                                                                                                                                                                                                                                       | ✅ fermé       |
 
 ## Actions de cadrage (hors code — ce qui débloque le plus vite)
 
-- [ ] **Questionnaire PI Helios** (8 questions) → lève D4, et avec lui le pricing, l'anti-drift et
-      la validité d'ADR-15
-- [ ] **Matrice de propriété** champ × système (`W` / `R` / `—`), **un seul `W` par ligne** — le
-      document anti-drift de référence
+- ~~**Matrice de propriété** champ × système~~ — **caduque le 2026-09-22** : elle
+  n'existait que pour arbitrer qui écrit quoi entre le référentiel, la caisse et
+  la boutique. Les deux autres systèmes sont partis (Shopify le 2026-09-21, PI le
+  2026-09-22). ⚠️ Un seul écrivain ne se dispute rien — mais la matrice redeviendra
+  nécessaire au **deuxième** système, quel qu'il soit.
 
 ## Décisions fermées récemment
 
@@ -53,14 +54,14 @@
 - [x] Repo distant privé `hugoheynard/lfd`, branche `dev`
 - [x] **Prisma** + Postgres local Docker (`pnpm dev:infra`, port 5433) — infra dans `src/infra/database/`
 - [x] **Auth0 côté API** — guard global `jose`, `@Public()` / `@CurrentUser()` (ADR-12)
-- [ ] **Créer le tenant Auth0** + une _API_ (son Identifier = l'audience), puis renseigner
+- [x] **Créer le tenant Auth0** + une _API_ (son Identifier = l'audience), puis renseigner _(fait — `apps/lfd-api/.env` porte un domaine et une audience réels)_
       `AUTH0_DOMAIN` / `AUTH0_AUDIENCE` — sans ça, aucun jeton n'est validé
-- [ ] Table `User` interne (notre id ↔ `sub` Auth0) — découple le domaine de l'IdP
-- [ ] Câblage **front Angular** : `@auth0/auth0-angular` (PKCE) + interceptor qui porte le token
+- [x] Table `User` interne (notre id ↔ `sub` Auth0) — découple le domaine de l'IdP _(fait — `prisma/schema/public/account.prisma`, `model User`)_
+- [x] Câblage **front Angular** : `@auth0/auth0-angular` (PKCE) + interceptor qui porte le token _(fait — `auth/auth.providers.ts`, `provideAuth0` + interceptor)_
 - [ ] Passerelle de configuration **côté front** — permettrait de retirer la dérogation
       src/server.ts du gate `no-direct-env`
-- [ ] Lib `packages/shared-types` (DTOs partagés front/back, source de vérité TS)
-- [ ] Lib UI `packages/ui` (design system, à venir)
+- ~~Lib `packages/shared-types`~~ — **caduc** : le dépôt range par CONTEXTE (`@lfd/contracts`, `@lfd/pim-contracts`), et `CLAUDE.md` §1 interdit nommément un `shared-types` global. ⚠️ Le besoin derrière — partager le format du SKU — reste ouvert, voir la ligne dédiée.
+- ~~Lib UI `packages/ui`~~ — **caduc** : le système de composants du dépôt est **fold-ng**, et aucun `packages/ui` n'a jamais existé.
 - [x] **Le nom d'une famille se saisit en FR/EN/IT** _(2026-08-27)_ — le contrat le
       portait déjà (`LocalizedText`, colonnes `Json`), l'écran n'en montrait que le
       français : `CategorySettingsDraft.nameFr` a été remplacé par le texte complet,
@@ -136,19 +137,19 @@
       `point_of_sale.{created,updated,deleted,table_qr_generated,table_qr_removed}` — nommés
       `location.*` à l'époque, traduits en base par la fusion des emplacements dans les points de
       vente
-- [ ] Garde `PublishProduct` : refuser la publication si une déclinaison active n'a pas de fiche
-- [ ] Envelopper le domaine allergènes en provider Nest (ou extraire `libs/allergen-mapping`)
+- [x] Garde `PublishProduct` : refuser la publication si une déclinaison active n'a pas de fiche _(fait — `product.ts` `publish()` lève `ProductNotPublishableError`)_
+- [x] Envelopper le domaine allergènes en provider Nest (ou extraire `libs/allergen-mapping`) _(fait — `pim/allergens/allergens.module.ts`)_
 - [ ] Porter dans le repo les docs de cadrage restantes : pricing, disponibilité, `05-allergenes`
 - [x] Couche **éditoriale** : `product_editorial` (PK=FK, optionnelle) + `media_asset` /
       `product_media` (liaison dédiée, pas de FK polymorphe) ; fiche en 3 cartes côté front
-- [ ] **Envoi de fichiers** (R2/S3) — aujourd'hui on saisit une URL. Décision d'infra à prendre :
+- [x] **Envoi de fichiers** (R2/S3) — aujourd'hui on saisit une URL. Décision d'infra à prendre : _(fait — `media.controller.ts` + `upload-product-image.ts`, dépôt R2 adressé par hachage)_
       fournisseur, nommage, dérivés de taille, ADR à écrire
 - [ ] `product_certification` (labels : bio, IGP, AOP…) — `certifications` fait foi, pas de booléen
 
 ### Intégrations (adaptateurs `ChannelAdapter`)
 
-- [ ] Contrat d'intégration **PI Helios** (bloqué par D4) → `helios_*_binding`, dont le
-      `pos_family_code` et le **code-barres** (sortis du socle, ADR-13/14)
+- ~~Contrat d'intégration **PI Helios**~~ — **caduc le 2026-09-22** (Hugo : « PI disparaît de notre vie »). Aucun fichier `helios*` n'a jamais existé dans `apps/lfd-api/src` : l'intégration était entièrement documentaire.
+  `pos_family_code` et le **code-barres** (sortis du socle, ADR-13/14)
 - [x] **Seam Shopify** : écran Réglages, projection pure + empreinte, bindings produit/déclinaison,
       bouton Pousser (ligne + global), pilote `dry-run` par défaut ([ADR-17](./adr.md#adr-17--secrets-dintégration-hors-base--pilote-de-canal-derrière-un-port))
 - ~~**Réconciliation à trois voies**~~ — **caduque** : S1 à S4 ont été livrées
@@ -160,7 +161,7 @@
   - [x] **C3** — push (live) range le produit dans sa collection `tva-*` ; échec non-bloquant ; **vérifié live** (baguette-artisane → tva-5-5, productCount 1) _(+5 tests)_
   - [x] **C0-a — étendre** _(2026-08-24)_ : tables `sales_context` (registre, 3 lignes) + `category_context_tva` (jointure), reprise des taux déjà réglés. Colonnes conservées.
   - [x] **C0-b — basculer** _(2026-08-24)_ : agrégat, dépôt, lecteur, projections Shopify/B2B et les deux écrans lisent la jointure et itèrent le registre ; `GET /sales-contexts/active` (alors `/reference/sales-contexts`) ; `ACTIVE_SALES_CONTEXTS` supprimée. Les 3 colonnes restent ÉCRITES (`legacyTvaColumns`) pour le binaire précédent.
-  - [ ] **C0-bis — Handle publié = write-once (SEO)** : figer le handle au 1er push (binding/snapshot) ; **bloquer** le changement de `slug.fr` d'un produit publié (ou flux renommage+301) — sinon la réconciliation par handle orpheline l'ancien produit + casse le référencement ; réconciliation distingue **renommage** de **retrait+création** via `productId` ; `handleSuffix` d'un contexte figé **avant** son 1er push.
+  - ~~**C0-bis — Handle publié = write-once (SEO)**~~ — **caduc** : tout le mécanisme reposait sur le push et la réconciliation par handle, sortis avec le canal le 2026-09-21. ⚠️ La protection des **URL indexées** redeviendra une question le jour d'un canal public — mais pas sous cette forme.
   - ~~**C4** — projection Shopify multi-contexte~~ — **caduque** (canal sorti le
     2026-09-21). ⚠️ Le besoin, lui, reste entier : le contexte « sur place » est
     actif et vendu, et **aucun canal n'en fait une seconde fiche**. C'est une
@@ -176,8 +177,8 @@
   - [x] Vestige `Product.channelsOverride` : il vaut enfin ce que le serveur dit, au lieu de `null` en dur
   - [x] **La matrice est EFFECTIVE** _(2026-08-24)_ — B2B : fiche écartée du snapshot (`canal_ferme`), donc supprimée par l'ingestion au push suivant. Shopify : poussée en **brouillon** (hors vitrine, rien de détruit) ; la réconciliation pose la même question, sinon elle annoncerait une dérive éternelle
   - [ ] À trancher : le retrait B2B doit-il aussi retirer le _binding_ de canal, ou rester une conséquence de la matrice ? (aujourd'hui : conséquence — le binding reste, la fiche revient si on rouvre le canal)
-- [ ] Port de lecture `CatalogueReader` — les adaptateurs ne lisent **jamais** les tables du socle
-- [ ] Adaptateur **B2B** (export fiches, pass-through GS1) — sans hiérarchie GDSN (ADR-14)
+- [x] Port de lecture `CatalogueReader` — les adaptateurs ne lisent **jamais** les tables du socle _(fait — `catalogue/shared/domain/ports/catalogue-reader.ts`)_
+- [x] Adaptateur **B2B** (export fiches, pass-through GS1) — sans hiérarchie GDSN (ADR-14) _(fait — `channels/b2b-platform/products/feed-projection.service.ts`)_
 
 ## Révisions du catalogue — la suite
 
@@ -207,32 +208,32 @@ Les deux référentiels et la section de fiche sont livrés (cf.
 [`ingredients-et-appellations.md`](./ingredients-et-appellations.md)).
 Ce qui reste :
 
-- [ ] **Déclarer les allergènes SUR l'ingrédient**, et les remonter
+- [x] **Déclarer les allergènes SUR l'ingrédient**, et les remonter _(fait — `IngredientAllergen` + `set-ingredient-allergens.ts` ; les trois questions sont tranchées DANS le schéma : recopié et non hérité)_
       automatiquement dans la fiche qui le cite. Le beurre porte `AM` une fois,
       et toute fiche qui cite du beurre l'hérite — au lieu de le re-cocher à
       chaque produit, avec l'oubli qui va avec.
 
       ⚠️ **Trois questions à trancher avant d'écrire**, et aucune n'est
-                                      technique :
+                                          technique :
 
-                                      1. **Hérité ou recopié ?** Hérité, corriger le beurre corrige cent fiches
-                                         — y compris celles qu'on n'a pas relues. Recopié, chaque fiche garde ce
-                                         qu'elle a affirmé le jour où elle l'a affirmé. Une déclaration
-                                         d'allergène ENGAGE : la première est plus juste, la seconde plus
-                                         défendable six mois plus tard.
-                                      2. **Que devient la saisie manuelle ?** Aujourd'hui les allergènes se
-                                         cochent sur la DÉCLINAISON (`NutritionDeclaration`), qui distingue trois
-                                         états — `null` (rien déclaré), `[]` (déclaré sans allergène), une liste.
-                                         Un héritage doit dire ce qu'il fait de ces trois-là, et notamment si le
-                                         `[]` d'une fiche l'emporte sur le `AM` de son beurre.
-                                      3. **Le grain ne correspond pas.** L'ingrédient est porté par le PRODUIT,
-                                         l'allergène par la DÉCLINAISON — c'est elle qui est mise sur le marché.
-                                         Deux déclinaisons d'un même produit peuvent avoir des recettes
-                                         différentes ; faire descendre l'ingrédient sur chacune est un choix, pas
-                                         une évidence.
+                                          1. **Hérité ou recopié ?** Hérité, corriger le beurre corrige cent fiches
+                                             — y compris celles qu'on n'a pas relues. Recopié, chaque fiche garde ce
+                                             qu'elle a affirmé le jour où elle l'a affirmé. Une déclaration
+                                             d'allergène ENGAGE : la première est plus juste, la seconde plus
+                                             défendable six mois plus tard.
+                                          2. **Que devient la saisie manuelle ?** Aujourd'hui les allergènes se
+                                             cochent sur la DÉCLINAISON (`NutritionDeclaration`), qui distingue trois
+                                             états — `null` (rien déclaré), `[]` (déclaré sans allergène), une liste.
+                                             Un héritage doit dire ce qu'il fait de ces trois-là, et notamment si le
+                                             `[]` d'une fiche l'emporte sur le `AM` de son beurre.
+                                          3. **Le grain ne correspond pas.** L'ingrédient est porté par le PRODUIT,
+                                             l'allergène par la DÉCLINAISON — c'est elle qui est mise sur le marché.
+                                             Deux déclinaisons d'un même produit peuvent avoir des recettes
+                                             différentes ; faire descendre l'ingrédient sur chacune est un choix, pas
+                                             une évidence.
 
-                                      Tant que ce n'est pas tranché, la section Ingrédients reste éditoriale et
-                                      n'affirme rien de réglementaire — cf. l'avertissement en tête de sa note.
+                                          Tant que ce n'est pas tranché, la section Ingrédients reste éditoriale et
+                                          n'affirme rien de réglementaire — cf. l'avertissement en tête de sa note.
 
 ## Paramétrage produit — deux écrans posés, vides
 
@@ -241,32 +242,32 @@ dans lequel une fiche se remplit) de **Général** (ce qui se règle trois fois 
 an). Deux entrées y ont été posées avec une page vide : l'entrée dit où la chose
 ira, la page dit qu'elle n'y est pas encore.
 
-- [ ] **Allergènes → `/pim/allergenes`.** Déménager le **référentiel** GS1, en
+- [x] **Allergènes → `/pim/allergenes`.** Déménager le **référentiel** GS1, en _(fait — `allergens-page.ts` 215 lignes, panneaux entrée et catégorie)_
       dur aujourd'hui dans `allergens/allergen-reference.ts` et servi par
       `GET /pim/reference/allergens`.
 
       ⚠️ **Ne pas déménager la déclaration.** Ce qu'une fiche déclare se coche
-                              sur la **déclinaison** (`NutritionDeclaration`), et doit y rester : c'est
-                              elle qui est mise sur le marché, et une déclaration réglementaire se prend
-                              en regardant le produit, pas une table de réglages. Ce qui monte ici,
-                              c'est la LISTE ; ce qui reste en bas, c'est l'AFFIRMATION.
+                                  sur la **déclinaison** (`NutritionDeclaration`), et doit y rester : c'est
+                                  elle qui est mise sur le marché, et une déclaration réglementaire se prend
+                                  en regardant le produit, pas une table de réglages. Ce qui monte ici,
+                                  c'est la LISTE ; ce qui reste en bas, c'est l'AFFIRMATION.
 
-                              À trancher avant d'écrire : un référentiel modifiable veut dire qu'on peut
-                              retirer un code que des fiches déclarent déjà. Même question que les
-                              appellations, avec un enjeu plus lourd — cf. le `RESTRICT` qui les
-                              protège.
+                                  À trancher avant d'écrire : un référentiel modifiable veut dire qu'on peut
+                                  retirer un code que des fiches déclarent déjà. Même question que les
+                                  appellations, avec un enjeu plus lourd — cf. le `RESTRICT` qui les
+                                  protège.
 
 - [ ] **Conditionnements → `/pim/conditionnements`.** La table existe
       (`product_packaging` : référence propre, quantité, poids brut, prix,
       canaux) ; **rien ne la saisit**, ni ici ni sur la fiche.
 
       Ce qui vient ici est le **vocabulaire** — les types de conditionnement et
-                              ce qu'ils nomment. Combien d'unités dans le carton d'un produit donné
-                              reste sur la fiche : c'est une propriété de ce produit.
+                                  ce qu'ils nomment. Combien d'unités dans le carton d'un produit donné
+                                  reste sur la fiche : c'est une propriété de ce produit.
 
-                              Le point qui justifie l'écran : un conditionnement porte sa **propre
-                              référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
-                              l'article » — c'est ce qui en fait autre chose qu'une quantité.
+                                  Le point qui justifie l'écran : un conditionnement porte sa **propre
+                                  référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
+                                  l'article » — c'est ce qui en fait autre chose qu'une quantité.
 
 ## Prochaine étape en cours
 

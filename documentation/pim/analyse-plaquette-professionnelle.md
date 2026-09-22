@@ -72,9 +72,15 @@ membre est le prix — très bas — de cette option.
 ## Ce qu'il faut faire de la plaquette
 
 **C'est une grille de prix négociés, pas un calcul.** La plateforme sait déjà
-la porter : `localPrice`, le prix B2B négocié par article, que le moteur
-tarifaire préfère au prix poussé par le référentiel (`prisma-catalog.reader.ts`,
-`unitPriceMillicents: localPrice ?? row.priceMillicents`).
+la porter : le prix négocié par article vit dans `catalog_item_overrides`, et le
+lecteur le préfère au prix poussé par le référentiel —
+`unitPriceMillicents: row.override?.priceMillicents ?? pimPriceMillicents`
+(`b2b/catalog/infrastructure/prisma-catalog.reader.ts`).
+
+> ⚠️ **Ce paragraphe citait un champ `localPrice` qui n'a jamais existé** (aucun
+> commit du dépôt ne le porte, vérifié le 2026-09-22). Le mécanisme décrit était
+> juste ; le nom donné pour le retrouver était inventé — et un nom inventé coûte
+> plus qu'une absence de nom, parce qu'on le cherche.
 
 La voie recommandée est donc d'**importer les 89 prix tels quels**. Le
 référentiel continue de calculer son propre prix professionnel en dessous ; la

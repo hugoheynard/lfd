@@ -28,7 +28,7 @@ flowchart TB
 
 > **Descopé v1** : la couche ⚖️ _physique / logistique_ (poids, dimensions, unités logistiques,
 > hiérarchie GTIN colis/palette pour le GDSN). Aucune table, aucun champ. Le code-barres caisse
-> reviendra par la couche 📡 quand **D4** (accès PI Helios) sera tranché — c'est le canal qui en a
+> devait revenir par la couche 📡 quand D4 (accès PI Helios) serait tranché. ⚠️ **D4 est close le 2026-09-22** : PI est sorti, et rien ne le ramène — c'est le canal qui en avait
 > besoin, pas le catalogue.
 
 ## Le socle, en relationnel
@@ -89,16 +89,16 @@ erDiagram
 
 ## Entité : `Product` — l'identité, rien d'autre
 
-| Champ         | Type            | Rôle                                                                                                                                |
-| ------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `id`          | UUID v7         | Identité interne stable — **assignée par la commande** (R1), ne change **jamais**                                                   |
-| `sku`         | string          | Référence **opaque**, unique globalement — `P-K7M3QT` (doc 06 §4). Figée à la création : le verbe `ChangeProductSku` reste à écrire |
-| `slug` 🌐     | LocalizedText   | Identifiant URL **par locale** — unique par locale                                                                                  |
-| `kind`        | enum            | Nature : `daily` · `made_to_order` · `resale`                                                                                       |
-| `name` 🌐     | LocalizedText   | Désignation commerciale                                                                                                             |
-| `category_id` | UUID → Category | Famille de rattachement (**une seule**)                                                                                             |
-| `status`      | enum            | `draft` · `published` · `archived` — **conséquence des verbes**, jamais écrit directement                                           |
-| `attributes`  | jsonb           | Échappatoire gouvernée (voir conventions)                                                                                           |
+| Champ         | Type            | Rôle                                                                                                                                                                                                                            |
+| ------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`          | UUID v7         | Identité interne stable — **assignée par la commande** (R1), ne change **jamais**                                                                                                                                               |
+| `sku`         | string          | Référence **opaque**, unique globalement — `P-K7M3QT` (doc 06 §4). Figée à la création : le verbe `ChangeProductSku` reste à écrire                                                                                             |
+| `slug` 🌐     | LocalizedText   | Identifiant URL **par locale** — unique par locale                                                                                                                                                                              |
+| `kind`        | enum            | Nature : `daily` · `made_to_order` · `resale`                                                                                                                                                                                   |
+| `name` 🌐     | LocalizedText   | Désignation commerciale                                                                                                                                                                                                         |
+| `category_id` | UUID → Category | Famille de rattachement (**une seule**)                                                                                                                                                                                         |
+| `status`      | enum            | `draft` · `published` · `archived` — **conséquence des verbes**, jamais écrit directement                                                                                                                                       |
+| `attributes`  | jsonb           | 🔴 **Aucun lecteur, aucun écrivain** — vaut `{}` partout depuis sa création (le schéma le dit lui-même, `product.prisma`). Décrit ici comme « échappatoire gouvernée » : la gouvernance existe, l'échappatoire n'a jamais servi |
 
 `kind` (boulangerie) : `daily` = frais du jour · `made_to_order` = sur commande · `resale` = revendu
 tel quel. Il reste ici car il définit _ce qu'est_ le produit.
@@ -139,7 +139,7 @@ Arbre à **parent unique**. C'est le classement _structurel_ (« Viennoiseries �
 | `position`    | int              | Ordre             |
 | `is_archived` | bool             |                   |
 
-> Le **code famille caisse** n'est **pas** ici. C'est du vocabulaire PI Helios : il vit dans le
+> Le **code famille caisse** n'est **pas** ici. C'était du vocabulaire PI Helios — un fournisseur sorti le 2026-09-22, dont aucune table n'a jamais été bâtie. La place qui lui était prévue était le
 > binding canal ([`04-composition-et-canaux.md`](./04-composition-et-canaux.md)). Le laisser sur
 > `Category` faisait entrer un système tiers dans le cœur du domaine.
 

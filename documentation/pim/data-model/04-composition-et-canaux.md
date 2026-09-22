@@ -3,13 +3,27 @@
 > Comment on **étend** un objet sans le diluer : quelles tables on a le droit de créer, qui les
 > possède, et dans quel sens pointent les clés étrangères.
 
+> 🔴 **Tous les exemples de canal de ce document sont morts — le principe, lui, a
+> été éprouvé pour de vrai.** `shopify_*` est supprimé (2026-09-21), et les
+> `helios_*` n'ont **jamais** été créées (PI sorti le 2026-09-22). Le seul
+> binding de canal du dépôt s'appelle **`b2b_channel_binding`**
+> (`prisma/schema/pim/channels.prisma`) : c'est lui qu'il faut lire pour voir la
+> forme, et lui qu'il faut imiter pour en ajouter un.
+>
+> ✅ **Ce document a prédit son propre cas d'usage, et la prédiction a tenu.** Il
+> écrit plus bas : « C'est ce qui garantit qu'on peut supprimer l'adaptateur
+> Shopify sans toucher au cœur. » Cet adaptateur a été supprimé le 2026-09-21 —
+> le socle n'a pas bougé, et la migration n'a touché aucune table de `product`.
+> Le test posé ici en hypothèse a été **passé en conditions réelles**. C'est la
+> meilleure raison de garder ce document malgré ses exemples périmés.
+
 ## Le principe : trois natures de table, jamais mélangées
 
 | Nature                  | Exemple                                                | Propriétaire   | Clé                       | Sens de la FK  |
 | ----------------------- | ------------------------------------------------------ | -------------- | ------------------------- | -------------- |
 | **🧩 Socle**            | `product`, `product_variant`, `category`, `collection` | domaine        | `id`                      | —              |
 | **🧱 Couche canonique** | `nutrition_declaration`, `product_editorial`           | domaine        | **PK = FK** vers le socle | couche → socle |
-| **📡 Contexte canal**   | `shopify_variant_binding`, `helios_variant_binding`    | **adaptateur** | **PK = FK** vers le socle | canal → socle  |
+| **📡 Contexte canal**   | `b2b_channel_binding` (le seul vivant)                 | **adaptateur** | **PK = FK** vers le socle | canal → socle  |
 
 La distinction qui compte : une **couche canonique** décrit ce que le produit **est** ; un
 **contexte canal** décrit **ce qu'un système tiers en sait**.
@@ -53,24 +67,23 @@ Deux choses distinctes, à **ne pas mélanger dans la même table** :
 
 ### a. Le binding + l'état de synchro (mécanique, écrit par l'adaptateur)
 
-`shopify_variant_binding` — PK/FK `variant_id`
-: `shopify_product_gid`, `shopify_variant_gid`, `last_pushed_hash`, `last_pushed_at`,
-`sync_status`, `last_error`
+⚠️ **Les trois blocs qui suivaient ici décrivaient des tables qui n'existent
+plus ou n'ont jamais existé** (`shopify_variant_binding`,
+`helios_variant_binding`, `helios_category_binding`). Ils ont été retirés le
+2026-09-22 : une forme « provisoire, bloquée par D4 » n'a plus de sens une fois
+D4 close et le fournisseur parti.
 
-`helios_variant_binding` — PK/FK `variant_id`
-: `plu`, `barcode`, `tax_code`, `last_pushed_at` — **forme provisoire, bloquée par D4**
-(API contractuelle vs. export fichier)
-
-`helios_category_binding` — PK/FK `category_id`
-: `pos_family_code` — _c'est ici, et nulle part ailleurs, que vit le vocabulaire PI Helios_
+`b2b_channel_binding` — le seul binding de canal du dépôt
+: sa forme se lit dans `apps/lfd-api/prisma/schema/pim/channels.prisma`, et non
+ici — une description recopiée diverge, une référence ne diverge pas.
 
 ### b. Les overrides éditoriaux par canal (métier, saisis à la main)
 
-`shopify_product_override` — PK/FK `product_id`
-: `title`, `handle`, `tags[]`, `seo_title`, `seo_description`
-
-`helios_variant_override` — PK/FK `variant_id`
-: `pos_label` (libellé court contraint par la largeur de l'écran caisse)
+⚠️ **Aucun override éditorial par canal n'existe aujourd'hui.** Les deux exemples
+qui vivaient ici (`shopify_product_override`, `helios_variant_override`)
+visaient des canaux partis. La **nature** de table reste légitime — un titre
+saisi à la main pour un canal ne se laisse jamais écraser par un push — mais
+elle n'a plus d'instance dans le dépôt.
 
 Le premier bloc est **dérivable et jetable** (on peut le vider et re-pousser). Le second est une
 **vraie saisie utilisateur** qu'on ne doit jamais écraser lors d'une resynchro. Les séparer rend

@@ -450,12 +450,30 @@ référentiel, injecter `PimJournal` + `UnitOfWork` ; côté comptes, **appeler*
 agit sur le dossier d'un tiers (`…ByStaff`, plus les cinq gestes sans jumeau
 client) ne peut plus être livré muet.
 
-Deux dispenses, déclarées et greppables :
+Des dispenses déclarées et greppables. **Il y en avait deux** quand ce
+paragraphe a été écrit ; le grep en rend **quinze** le 2026-09-22 :
+
+```bash
+grep -rn "@hors-transaction\|@sans-journal" apps/lfd-api/src/b2b/account --include="*.ts" | grep -v __tests__
+```
+
+🔴 **Le tableau nominatif a été retiré plutôt que rallongé, et c'est le fond du
+sujet.** Sa valeur n'était pas d'énumérer : c'était de tenir un nombre assez
+petit pour qu'une dispense de plus se remarque. À quinze, il ne remarque plus
+rien — et un lecteur qui s'y fie croit la zone `account` tracée à deux
+exceptions près, alors qu'un tiers de ses handlers en déclare une.
+
+Les deux originelles restent les mieux justifiées, et elles disent la forme que
+devrait avoir une bonne dispense :
 
 | Handler                       | Marque              | Pourquoi                                                                                                 |
 | ----------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------- |
 | `UploadKbisByStaffHandler`    | `@hors-transaction` | Le fichier part d'abord au stockage objet ; y enfermer un aller-retour réseau coûterait plus que le trou |
 | `CreateCompanyByStaffHandler` | `@sans-journal`     | `company.declared` existe déjà avec `via: "staff"` ; le tracer ici lui donnerait deux écrivains          |
+
+⚠️ **Ce qui manque est un compte, pas une liste** : une porte qui afficherait le
+nombre de dispenses ferait ce que ce tableau faisait, sans périmer. Le dépôt le
+fait déjà ailleurs (`lint:code-language`, `lint:no-type-escapes`).
 
 ---
 
@@ -520,7 +538,15 @@ objet tarifaire sans acte — donc le seul que le compilateur ne gardait pas.
 
 ### La porte, et un trou qu'elle avait
 
-`lint:journal-tracked` couvre désormais quatre zones. Les trois modules de
+`lint:journal-tracked` couvrait quatre zones quand ceci a été écrit. Elle en
+déclare **onze** le 2026-09-22 — `account`, les trois modules de réglages, les
+engagements tarifaires, `feature-access`, `client-notes`, `staff`, les deux
+modules d'argent, `catalog`, `subscriptions` et `production` — dont cinq
+ajoutées le **2026-09-19**, c'est-à-dire le lendemain du bandeau « mis à jour le
+2026-09-18 » de ce document.
+
+⚠️ **Un compte de zones se périme en un jour** ; la liste qui fait foi est
+`ZONES` dans `dev-toolbox/gates/journal-tracked.mjs`. Les trois modules de
 réglages n'ont **aucune exception de nom** : un client ne pose pas une zone de
 livraison, tout y est staff. La tarification, elle, n'est gardée que sur les
 engagements — le reste est tenu par le compilateur, ce qui est plus fort.

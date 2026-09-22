@@ -100,12 +100,17 @@ Shopify, le catalogue compilerait-il encore ?_
 **Conséquences** :
 
 - L'absence de donnée se représente par **absence de ligne**, pas par colonnes `NULL`.
-- Le code famille caisse PI Helios **sort de `Category`** → `helios_category_binding`.
-  ⚠️ **Cette table n'existe pas** (vérifié le 2026-09-13), ni `helios_variant_binding`.
-  La caisse n'a jamais été branchée ; le motif, lui, est appliqué — c'est
-  `shopify_variant_binding` qui le porte, et c'est la seule table de canal du
-  dépôt. Une ADR qui nomme une table absente fait chercher un couplage qui
-  n'existe pas.
+- Le code famille caisse **sort de `Category`** → un binding de canal.
+  ⚠️ **Aucune des tables nommées par cette ADR n'existe** : ni
+  `helios_category_binding`, ni `helios_variant_binding` (la caisse n'a jamais
+  été branchée, et PI est sorti le 2026-09-22), ni `shopify_variant_binding`
+  (supprimée le 2026-09-21).
+
+  🔴 Le **motif** reste appliqué, et il a aujourd'hui un seul porteur :
+  **`b2b_channel_binding`** (`prisma/schema/pim/channels.prisma`). C'est lui
+  qu'il faut lire pour voir la forme — corrigé le 2026-09-22, parce qu'une ADR
+  qui nomme trois tables absentes fait chercher un couplage qui n'existe pas.
+
 - Binding mécanique et overrides éditoriaux par canal sont **deux tables séparées** : le premier est
   jetable et re-poussable, le second est une saisie utilisateur à ne jamais écraser.
 - `attributes` (jsonb) est soumis à une **règle de promotion** : lu par un adaptateur ou utilisé par
@@ -126,8 +131,11 @@ logistique » et il **part sur le fil** vers la plateforme professionnelle
 logistiques (colis, palette), hiérarchie GTIN/GDSN. Le poids est entré par le
 besoin réel qu'attendait cette ADR : vendre au format et à la pièce.
 
-**Conséquences** : le **code-barres** n'est pas un attribut du catalogue — il reviendra par le
-**binding caisse** (`helios_variant_binding`) quand **D4** sera tranché. La projection GDSN reste un
+**Conséquences** : le **code-barres** n'est pas un attribut du catalogue — il
+devait revenir par le **binding caisse** quand D4 serait tranchée. ⚠️ **D4 est
+close le 2026-09-22** par le retrait de PI : il n'y a plus de caisse à brancher,
+donc plus rien qui ramène le code-barres. S'il redevient un besoin, il repart
+d'une page blanche. La projection GDSN reste un
 objectif d'`AllergenMapping.toGdsn()` (ADR-07), pas une structure de données.
 
 ## ADR-15 — Construire un PIM minimal plutôt qu'en acheter un
@@ -139,6 +147,23 @@ marché (Akeneo CE, Plytix, Sales Layer, Pimcore) ou faire de **Shopify le maît
 référentiel commun qui fait tenir ensemble la caisse (PI Helios), le web (Shopify) et le **labo de
 production**. Le catalogue en est la première vertèbre, pas la finalité. Cette distinction n'est pas
 rhétorique : elle est le critère d'arbitrage de tout le reste (voir « Test permanent »).
+
+> 🔴 **Deux des trois systèmes de cette phrase sont partis** — Shopify le
+> 2026-09-21, PI Helios le 2026-09-22. La jonction qui justifiait de CONSTRUIRE
+> plutôt que d'acheter relie aujourd'hui **la plateforme professionnelle et le
+> fournil**, et rien d'autre.
+>
+> Cette ADR portait déjà son propre déclencheur de révision : « testable —
+> révision à D4 et D1 ». **D4 vient d'être close**, non par une réponse mais par
+> la disparition de la question. Le déclencheur a donc joué, et personne ne l'a
+> vu jouer.
+>
+> ⚠️ **Ce bandeau ne renverse pas la décision, et c'est délibéré.** Le PIM est
+> bâti, en service, et le refaire coûterait plus que tout ce qu'on économiserait.
+> Mais sa raison écrite ne décrit plus le dépôt : la relire telle quelle donne
+> des arguments qui ne portent plus. ➡️ **À reposer par Hugo** : la jonction à
+> deux arms justifie-t-elle encore le périmètre qu'on maintient, ou faut-il
+> descoper le référentiel vers ce que le seul canal restant consomme ?
 
 **Raison** :
 
@@ -254,9 +279,22 @@ le produit ; suffixe numérique lisible pour la déclinaison, jamais un hash.
 **Conséquences** :
 
 - Le `sku` reste **modifiable** par un verbe explicite ; les canaux bindent sur l'**`id`** (R1).
-- Le partage front/back du format se fait **à la compilation** via `packages/shared-types` — un
-  registre runtime contenant `RegExp` et fonctions ne traverse pas JSON, contrairement à ce
-  qu'affirmait la proposition d'origine.
+- Un registre runtime contenant `RegExp` et fonctions ne traverse pas JSON,
+  contrairement à ce qu'affirmait la proposition d'origine : le partage du format
+  doit donc se faire **à la compilation**.
+
+  🔴 **Cette phrase désignait `packages/shared-types`, au présent. Ce paquet n'a
+  jamais existé** (constaté le 2026-09-22), et le `CLAUDE.md` du dépôt l'interdit
+  explicitement — « pas de `packages/shared-types` global qui mélangerait les deux
+  langages ». L'ADR présentait donc comme acquis quelque chose que les
+  conventions refusent.
+
+  **Ce qui est vrai** : `SKU_PATTERN` et `SKU_MIN_LENGTH` ne vivent qu'au
+  backend (`pim/catalogue/product/domain/value-objects/sku.value-object.ts`), le
+  front ne les a pas, et le partage reste **à faire**. Le véhicule légitime
+  existe déjà et s'appelle `packages/pim-contracts` — un contrat du référentiel,
+  pas un sac de types transverse.
+
 - **GTIN/EAN-13 descopé** (ADR-14) : la plupart des articles sont vendus non préemballés, les codes
   valides s'achètent auprès de GS1, et le code-barres est un besoin de **caisse** → binding, à D4.
 - Détail : [`data-model/06-identifiants-et-sku.md`](../pim/data-model/06-identifiants-et-sku.md).
