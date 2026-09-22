@@ -4,6 +4,14 @@
 > posée en premier (« les appellations, est-ce que ce n'est pas
 > sur-dimensionné ? ») soit tranchée avec un argument plutôt qu'avec une envie.
 
+> 🔴 **Le modèle décrit ici est remis en cause depuis le 2026-09-22** par
+> [`ingredients-et-approvisionnement.md`](ingredients-et-approvisionnement.md) :
+> `origin` et l'appellation y sont des colonnes de l'**ingrédient**, donc du
+> genre — or « beurre » n'a ni origine ni appellation, ce sont les beurres qu'on
+> achète qui en ont. Ce qui suit reste vrai de la **table des appellations** et
+> de la limite éditorial / réglementaire du §2 ; ce qui décrit où vivent
+> l'origine et les allergènes est à relire là-bas.
+
 ## 1. Ce qu'on ajoute, en une phrase
 
 Deux **référentiels** réglés dans _Paramétrage_ — les **ingrédients** et les
