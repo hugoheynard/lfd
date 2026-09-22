@@ -170,6 +170,10 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   ProductVariant: "pim",
   ProductPackaging: "pim",
   NutritionDeclaration: "pim",
+  // Les deux tables qui la remplaceront — vides jusqu'au lot 3
+  // (`plan-separer-allergenes-et-nutrition.md`).
+  VariantAllergens: "pim",
+  NutritionValues: "pim",
   OrderTimeLimit: "pim",
   ProductEditorial: "pim",
   ProductReadiness: "pim",

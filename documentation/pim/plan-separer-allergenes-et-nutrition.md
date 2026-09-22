@@ -141,7 +141,24 @@ dire « couverte ». Il n'emporte pas la fiche dans chaque enregistrement.
 ⚠️ Et quand il écrira, ce sera depuis `persistenceSnapshot()` — jamais
 `snapshot()`, qui résout. C'est la faute 0b/0d.
 
-### b. Le nom des faits décide de la couverture des gardes
+### b. Les tables exhaustives — il y en a TROIS, pas deux
+
+Le lot 1 en a rencontré une que les cinq versions du plan ignoraient :
+`schema-parity.spec.ts` tient la liste de **tous** les modèles hors du schéma
+`public`, et refuse dès qu'un modèle apparaît sans y être déclaré
+(`schema-ops.counter.ts`). Elle a attrapé les deux tables neuves — sur le lot le
+plus simple du chantier, celui qui ne fait que créer deux tables vides.
+
+| Garde                   | Ce qu'elle tient                                  |
+| ----------------------- | ------------------------------------------------- |
+| `schema-parity.spec.ts` | tout modèle Prisma hors `public`                  |
+| `content-facts.ts`      | tout fait de produit, et s'il périme la signature |
+| `attribution.ts`        | à quel champ de révision un fait s'attribue       |
+
+⚠️ **Ce sont des tests, pas des compilations.** Le seul vrai refus de compiler
+est `phrase-registry.ts`, un `Record<JournalFactType, Phrase>` complet.
+
+### c. Le nom des faits décide de la couverture des gardes
 
 `attribution.ts` filtre `startsWith("product.")`, et le test de `content-facts`
 **interdit** un préfixe autre. Or le nommage naturel serait `variant.*` — le
@@ -167,7 +184,7 @@ peu sur le sujet ; il dit vrai sur ce qui protège.
 SHA-256 de l'article entier) : le catalogue apparaîtrait modifié de bout en bout.
 ➡️ `[]` d'abord, le champ de révision dans un chantier séparé.
 
-### c. Les contrats servis au back-office
+### d. Les contrats servis au back-office
 
 Le catalogue est vide, **le front ne l'est pas** — il est déployé et appelle ces
 routes.
@@ -190,8 +207,8 @@ naît à la **même valeur** que celui qu'il dédouble.
 | ~~0~~ | ✅ Les quatre correctifs (§2)                                              | —          |
 | 1     | Les deux tables — **vides**, aucune reprise (§3)                           | —          |
 | 2     | La règle dans l'agrégat, l'écriture dans un port dédié (§6a)               | 1          |
-| 3     | Les deux routes, les deux faits `product.*`, l'ancien en `retired` (§6b)   | 2          |
-| 4     | Les deux drapeaux — colonne, `CHECK`, valeur d'enum **ajoutée** (§6c)      | 2          |
+| 3     | Les deux routes, les deux faits `product.*`, l'ancien en `retired` (§6c)   | 2          |
+| 4     | Les deux drapeaux — colonne, `CHECK`, valeur d'enum **ajoutée** (§6d)      | 2          |
 | 5     | Les lectures basculent ; l'invariant 7 s'écrit (D2)                        | 3, 4       |
 | 6     | L'écran : deux sections, deux enregistrements, **et les traces**           | 5          |
 | 7     | L'ancienne table et l'ancienne route partent ; `mayContain` sort de la vue | 6          |
@@ -202,7 +219,7 @@ pire que le refus.
 
 ### Irréversible au premier merge dans `main`
 
-- le **nom des deux faits** — et il décide de la couverture (§6b) ;
+- le **nom des deux faits** — et il décide de la couverture (§6c) ;
 - le **nom des deux tables** et de leurs colonnes ;
 - les **valeurs ajoutées** à l'enum `aspect` ;
 - la forme de `VariantNutritionView`.

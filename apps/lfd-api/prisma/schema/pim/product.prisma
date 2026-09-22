@@ -222,6 +222,10 @@ model ProductVariant {
   /// création, donc affirmerait « aucun allergène » sans vérification. La garde
   /// est ailleurs : pas de publication sans fiche (doc 03).
   nutrition NutritionDeclaration?
+  /// Les deux tables qui remplacent `nutrition_declaration` — vides tant que le
+  /// lot 3 n'écrit pas dedans (`plan-separer-allergenes-et-nutrition.md`).
+  allergenSheet   VariantAllergens?
+  nutritionValues NutritionValues?
 
   @@index([productId])
   @@map("product_variant")
