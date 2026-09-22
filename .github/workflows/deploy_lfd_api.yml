@@ -41,8 +41,6 @@ permissions:
   contents: read
   actions: read # lire le verdict des autres workflows
 
-env:
-
 jobs:
   deploy_lfd_api:
     runs-on: ubuntu-latest
