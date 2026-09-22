@@ -1,0 +1,412 @@
+# Plan — ajouter Google ou Facebook à son compte, depuis son profil
+
+**Statut** : 📐 plan, **version 1 du 2026-09-22**. Rien n'est bâti.
+Déplace une **frontière de sécurité** (qui peut ouvrir quel compte) → `vitruve`
+obligatoire avant soumission (CLAUDE.md §9 bis).
+
+**Portée décidée par Hugo le 2026-09-22** : **le profil SEUL**, en **popup**,
+et **Google d'abord** (« fais google pour l'instant »).
+
+🔴 **Facebook est REPORTÉ, pas abandonné.** Ce que ça change, et ce que ça ne
+change pas :
+
+- **Rien dans la mécanique.** La connexion est un **paramètre** partout — c'est
+  déjà la règle d'`Auth0IdentityGateway` (« la connexion est un paramètre […]
+  en faire un paramètre plutôt que deux classes jumelles garantit qu'une
+  correction faite pour l'un profite à l'autre »). Aucune route, aucune
+  commande, aucun refus n'est écrit « pour Google » : ajouter Facebook sera une
+  **entrée de liste**, pas une branche.
+- **Ce que ça retire vraiment** : le geste de tenant n° 1 du §6 — savoir si
+  Facebook est activé — et le démarchage Meta du n° 3. Google est déjà servi à
+  la porte d'entrée aujourd'hui, donc la connexion existe et fonctionne.
+- ⚠️ **Le piège à éviter** : écrire l'écran pour UN bouton. La section « Méthodes
+  de connexion » se dessine sur une **liste** de fournisseurs qui n'en compte
+  qu'un ; une section écrite au singulier se réécrit entièrement au second.
+
+---
+
+## 0. La demande
+
+> « je pense qu'on va commencer par le mon profil dialog, commence par faire le
+> truc pour ajouter les méthodes de connexion google facebook » · « pour
+> l'instant on fait seulement depuis mon profil » · « tout le monde fait ça en
+> popup » — Hugo, 2026-09-22.
+
+Issu du §1 de
+[`todos/todo-releve-version-deployee.md`](../todos/todo-releve-version-deployee.md) :
+le compte de la **personne** n'a nulle part où vivre — ouverture pro, méthodes
+de connexion, mot de passe. Celui-ci ne traite que les **méthodes de connexion**.
+
+---
+
+## 1. Ce que ce plan NE fait pas, et pourquoi c'est ce qui le rend petit
+
+🔴 **La porte d'entrée ne bouge pas.** Cliquer « Continuer avec Google » sous
+l'adresse d'un compte existant continue de **refuser**
+(`SocialSignInAccountExistsError`, message inchangé). Le rattachement
+**automatique par adresse** — D5 et D6 de
+[`plan-connexion-sociale.md`](plan-connexion-sociale.md) — reste **non bâti et
+non planifié ici**.
+
+C'est délibéré, et ça évite **deux** de ses quatre bloquants : B1
+(une faute de frappe dans son adresse offre son compte au titulaire de la boîte
+fautive), B2 (perte définitive du mot de passe), S1 et S3 en découlent. **Tous
+supposent qu'on rattache sans preuve de possession du compte cible.** Ici la
+preuve est structurelle : pour ajouter Google à un compte, il faut **déjà être
+dedans**.
+
+⚠️ **Corrigé le 2026-09-22** : ce paragraphe disait « les quatre ». B3 n'est pas
+évité mais _prétendu corrigé_ — et `vitruve` a montré que la correction était
+incomplète (§8.1). Et **B4, le trou d'accès staff, est indépendant** du
+rattachement par adresse : ni évité, ni traité, ni mentionné. Compter quatre
+là où il y en a deux, c'est exactement ce qu'un plan ne doit pas faire.
+
+⚠️ Conséquence assumée, à dire à l'écran (§5) : quelqu'un qui a **déjà** ouvert
+un compte par Google sous une autre adresse a **deux comptes**, et ce plan ne
+les fusionne pas. Il le **refuse** explicitement (§3, R3) plutôt que d'orpheliner
+le second.
+
+---
+
+## 2. L'existant (ouvert et vérifié le 2026-09-22)
+
+| Fait                                                                                                                                                                                                                                   | Où                                                                                                   |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `GOOGLE_CONNECTION = 'google-oauth2'` et `FACEBOOK_CONNECTION = 'facebook'` existent déjà, et servent la porte d'ENTRÉE                                                                                                                | `apps/lfc-ecommerce-frontend/src/app/auth/auth.config.ts`                                            |
+| ⚠️ Facebook n'est peut-être pas activé dans le tenant — le JSDoc de `FACEBOOK_CONNECTION` le signale comme un réglage de console jamais confirmé                                                                                       | idem                                                                                                 |
+| `Auth0ManagementClient.call(method, path, body)` est **générique** : `DELETE` passe sans rien ajouter                                                                                                                                  | `platform/identity/auth0-management.client.ts`                                                       |
+| `update:users` est **déjà** dans `REQUIRED_MANAGEMENT_SCOPES` — link et unlink n'en demandent pas d'autre                                                                                                                              | `platform/identity/identity-diagnosis.ts:30`                                                         |
+| ⚠️ `Auth0IdentityGateway` lit le tableau `identities`, mais par une fonction **privée de module** qui ne rend que des **noms de connexion** (`connectionsOf`). R6 a besoin de `provider` + `user_id` : **rien ne les lit aujourd'hui** | `platform/identity/auth0-identity.gateway.ts`                                                        |
+| `Principal.subject` existe et est **déjà** lu par une commande de `/me` (`UpdateMyProfileCommand`)                                                                                                                                     | `platform/auth/principal.ts:50`, `b2b/account/http/me.controller.ts:64`                              |
+| 🔴 Un lecteur de plus de `Principal.subject` **fait échouer `lint:subject-readers`** tant qu'il n'est pas inscrit dans sa liste admise **avec sa raison**                                                                              | `dev-toolbox/gates/subject-readers.mjs`                                                              |
+| `@auth0/auth0-spa-js` **2.24.1** accepte un `cache` custom (`ICache`) — une seconde instance `Auth0Client` avec `new InMemoryCache()` est **isolée** du cache de l'instance Angular                                                    | paquet `@auth0/auth0-spa-js` 2.24.1, ses déclarations de types — `ICache` l. 166 et son export l. 24 |
+| La clé de transaction est `a0.spajs.txs.<clientId>`, partagée — mais **inoffensive ici** : `loginWithPopup` n'appelle jamais `transactionManager.create`, seul `loginWithRedirect` le fait (corrigé le 2026-09-22)                     | même paquet, bundle de développement, l. 1926-1932                                                   |
+| Un id_token décodé expose son jeton brut en `claims.__raw`                                                                                                                                                                             | même paquet, bundle de développement, `decode$1`                                                     |
+| Le profil est un dialogue centré (`ProfilePanel`), hors de `/mon-compte` — quatre champs, `PATCH /me/profile`                                                                                                                          | `client/profile/profile-panel/profile-panel.ts`                                                      |
+
+**Ce qui n'existe pas** : aucune table `user_identities`, aucune route
+`/me/identities`, aucun geste de rattachement nulle part (vérifié le
+2026-09-22).
+
+---
+
+## 3. Les décisions
+
+### R1 — On relie **chez Auth0**, pas chez nous. Notre base ne change pas.
+
+Le rattachement se fait par la Management API :
+`POST /api/v2/users/{principal}/identities` avec `{ link_with: <id_token secondaire> }`.
+L'identité secondaire est **absorbée** dans l'utilisateur principal.
+
+**Conséquence, et c'est tout l'intérêt** : après rattachement, se connecter par
+Google produit un jeton dont le `sub` est **celui du compte principal**.
+`users.auth0_sub` ne bouge pas, `CustomerPrincipalResolver` ne bouge pas, le mur
+tenant ne bouge pas.
+
+> **Aucune migration Prisma. Aucun registre. Aucune ligne dans `b2b/account/domain`.**
+
+Le plan complet prévoyait `user_identities` parce qu'il visait la porte
+d'entrée, où il faut décider AVANT de connaître la personne. Ici on la connaît.
+
+⚠️ **Le prix de R1** : la liste des méthodes de connexion est chez Auth0, donc
+`GET /me/identities` est un appel réseau sortant. Il ne doit pas être sur le
+chemin de `/me` — voir R6.
+
+### R2 — La preuve est « la même personne tient les deux sessions »
+
+L'adresse du fournisseur n'est **ni lue, ni comparée, ni recopiée**. C'est ce
+qui rend le scénario B1 impossible : une adresse ne rattache rien.
+
+### R3 — Quatre refus, chacun avec son geste de sortie
+
+| Refus                          | Quand                                                                    | Ce qu'on dit                                                                                          |
+| ------------------------------ | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `identity.already_linked_here` | ce `sub` secondaire est déjà l'`auth0_sub` d'un **autre** de nos comptes | « Ce compte Google ouvre déjà un autre compte chez nous. Connectez-vous avec lui pour le retrouver. » |
+| `identity.already_linked`      | cette connexion est déjà rattachée à CE compte                           | l'écran ne propose pas le bouton ; le refus est le filet                                              |
+| `identity.last_method`         | retirer la dernière méthode, ou la principale                            | « C'est votre seule façon de vous connecter. »                                                        |
+| `identity.proof_expired`       | l'id_token secondaire a plus de **5 minutes**                            | « La vérification a expiré, recommencez. »                                                            |
+
+🔴 **`already_linked_here` est le refus qui compte.** Sans lui, rattacher
+orphelinerait le second compte — ses commandes, son historique — sans que rien
+ne le dise. C'est une **lecture en base** (`users.auth0_sub = <sub secondaire>`),
+donc elle échappe à Auth0.
+
+### R4 — Ce qu'on vérifie du second jeton, nous-mêmes
+
+L'API ne se contente **pas** de relayer à Auth0 :
+
+- signature et `iss` = notre tenant ;
+- `aud` = le `clientId` de la **SPA cliente**, et `azp` aussi **quand il est
+  présent**.
+
+  ⚠️ **Corrigé le 2026-09-22, avant toute ligne.** La v1 de ce paragraphe
+  exigeait `aud` **et** `azp`. C'est faux : sur un id_token d'OIDC, `azp` n'est
+  posé que lorsqu'il y a plusieurs audiences, donc l'exiger aurait refusé le cas
+  NORMAL — tous les rattachements auraient échoué. Le contrôle porteur est
+  `aud` ; `azp` n'est qu'une vérification de plus quand le jeton le porte.
+
+  🔴 **Ce contrôle demande une variable d'environnement que l'API n'a pas.**
+  `AuthConfig` ne connaît que `issuer` et `audience` (l'identifiant de l'**API**),
+  jamais le `clientId` de la SPA (vérifié le 2026-09-22,
+  `platform/auth/auth.config.ts`, `platform/config/app-config.ts`). Il faut
+  l'ajouter — valeur **publique**, donc une variable GitHub, pas un secret : le
+  `clientId` d'une SPA voyage déjà en clair dans chaque URL `/authorize` et dans
+  le bundle. Sans elle, `aud` n'est comparé à rien et R4 ne tient plus.
+
+- `exp` valide **et** `iat` de moins de 5 minutes (R3) ;
+- `sub` ≠ `Principal.subject` (on ne se relie pas à soi-même) ;
+- `sub` n'est l'`auth0_sub` d'aucun autre compte (R3).
+
+⚠️ **Le `nonce` n'est pas vérifiable côté API** : il est posé et contrôlé par le
+SDK dans le navigateur. La fraîcheur (`iat` < 5 min) et l'`azp` sont ce qui
+remplace l'anti-rejeu — un jeton volé reste rejouable pendant 5 minutes **par
+qui tient aussi une session du compte cible**. Assumé : c'est la même personne,
+par construction.
+
+### R5 — La popup, et les trois précautions que Hugo a demandées sans les nommer
+
+Voie retenue : seconde instance `Auth0Client`, `loginWithPopup`.
+
+1. **Cache isolé** — `new Auth0Client({ …, cache: new InMemoryCache() })`. Sans
+   lui, l'échange de code **vide le cache** de la session principale et la
+   remplace (constaté par `vitruve` le 2026-09-17 sur le même SDK, B3). C'est
+   la correction exacte de cette objection : elle visait l'instance **unique**.
+2. **Le jeton principal est pris AVANT d'ouvrir la popup**, et c'est CE jeton
+   qui porte le `POST /me/identities`. Sans ça : si le jeton principal expire
+   entre la popup et l'appel, le rafraîchissement silencieux repart chez Auth0,
+   dont la session SSO est maintenant celle de Google, et rend le **mauvais**
+   `sub`.
+3. **Aucune autorisation concurrente** — la clé de transaction est partagée
+   (§2). Le bouton n'est cliquable que depuis un état authentifié et posé ; il
+   se verrouille pendant l'aller-retour.
+
+⚠️ **À vérifier en tenant réel, pas à déduire** : ce que rend
+`getAccessTokenSilently()` sur la session principale **juste après** un
+rattachement réussi. L'utilisateur secondaire est absorbé — sa session SSO
+devrait se résoudre sur le principal, mais ce plan ne l'affirme pas. Le lot C
+le mesure, et la parade si elle manque est de relire `/me` et de demander une
+reconnexion sur échec.
+
+### R6 — Trois routes, et la liste n'est pas dans `/me`
+
+- `GET /me/identities` — les méthodes de connexion actuelles.
+- `POST /me/identities` — corps `{ idToken }`.
+- `DELETE /me/identities/:provider/:userId` — retire.
+
+Elles ne passent pas par `/me` : ce serait un appel Auth0 sortant sur le chemin
+d'amorçage de **toutes** les pages, pour une information que seul le profil
+affiche.
+
+⚠️ **`DELETE` chez Auth0 ne supprime pas l'identité** : il en **refait un
+utilisateur autonome**. Conséquence à dire (§5) : retirer Google puis cliquer
+« Continuer avec Google » rouvre un compte **vide** — que `SocialSignInAccountExistsError`
+refusera si l'adresse est la même. C'est cohérent, mais ce n'est pas ce qu'on
+devine.
+
+### R7 — Ce qui se voit
+
+- 📓 `account.identity_linked` / `account.identity_revoked` — charge : le
+  fournisseur, la voie (`profile`), le `sub` secondaire. Clé d'idempotence.
+- 📧 à l'adresse du compte : « Une connexion Google a été ajoutée à votre
+  compte. » **C'est la seule alerte** si un jour la preuve de R4 était
+  contournée.
+
+⚠️ `lint:journal-tracked` et `lint:events-tracked` exigent que tout fait
+nouveau soit déclaré — à faire dans le même lot, pas après.
+
+---
+
+## 4. Les lots
+
+| Lot                   | Contenu                                                                                                                                                                  | Dépend de |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| **A — la passerelle** | `listIdentities`, `linkIdentity`, `unlinkIdentity` sur `Auth0IdentityGateway` ; la vérification R4 ; tests unitaires sur les refus                                       | —         |
+| **B — l'API**         | les trois routes de R6, commandes `LinkIdentity` / `RevokeIdentity` + query, les quatre refus de R3, l'inscription dans `lint:subject-readers`, journal et courriel (R7) | A         |
+| **C — le front**      | section « Comptes connectés » dans `ProfilePanel`, seconde instance SDK (R5), la mesure de l'avertissement de R5                                                         | B         |
+| **D — la doc**        | ce plan marqué bâti, le JSDoc de `CUSTOMER_CONNECTION` (qui affirme « aucun rattachement de comptes »), l'index                                                          | C         |
+
+**Tests e2e minimum** : rattachement nominal ; `sub` déjà pris par un autre
+compte ; jeton périmé ; `azp` étranger ; retrait de la dernière méthode ; le mur
+tenant tient après rattachement.
+
+---
+
+## 5. Ce que l'écran dit
+
+Dans le dialogue **Mon profil**, sous les quatre champs : « Méthodes de
+connexion ».
+
+- La méthode actuelle, nommée, non retirable si elle est seule.
+- « Ajouter Google », « Ajouter Facebook » — grisés si déjà rattachés.
+- Sous les boutons, une phrase : **« Vous vous connecterez au même compte, avec
+  les mêmes commandes. »** C'est ce que personne ne devine, et c'est la question
+  que pose le refus actuel de la porte d'entrée.
+- Au retrait, une confirmation qui dit la conséquence de R6.
+
+---
+
+## 6. Réglages hors du code — gestes de Hugo
+
+1. **Vérifier que Facebook est activé** dans le tenant et branché à
+   l'application cliente — le JSDoc de `FACEBOOK_CONNECTION` dit que ça n'a
+   jamais été confirmé. Sans ça, Auth0 répond « connection not found ».
+2. **Vérifier que le M2M a bien `update:users`** — il est dans la liste
+   attendue, mais c'est le tenant qui l'accorde. Le contrôle existe déjà :
+   `ops-identity-check.controller.ts` le rapporte.
+3. **Meta** (si Facebook part en production) : application en production,
+   politique de confidentialité en ligne, URL de suppression des données.
+
+---
+
+## 7. Ce qui reste ouvert
+
+- **Apple** n'est pas dans ce plan. Si l'app cliente part un jour sur l'App
+  Store, Apple exige « Se connecter avec Apple » dès qu'on propose Google ou
+  Facebook (règle 4.8, telle que connue au 2026-09-17 — à revérifier).
+- **Le compte Facebook sans adresse** (§12 de
+  [`plan-connexion-sociale.md`](plan-connexion-sociale.md)) : trou **existant**,
+  indépendant de ce plan — un compte à l'adresse vide ne reçoit pas le courriel
+  qui porte son QR de retrait. Ce plan ne l'ouvre pas et ne le referme pas.
+- **Fusionner deux comptes déjà séparés** : hors périmètre (§1).
+
+---
+
+## 8. La contradiction de `vitruve` (2026-09-22) — **5 BLOQUANT, 10 SÉRIEUX**
+
+**Ne pas bâtir en l'état.** Une version 2 attend ce que liste le §8.4.
+
+✅ Le bloquant principal (B-1) est **refermé depuis le 2026-09-22** — voir §8.1.
+
+### 8.1 B-1 + B-5 — la popup emporte la session du tenant, et il n'y a pas de
+
+### route qui l'évite
+
+C'est le bloquant qui change la forme du chantier, et il naît de deux faits
+vérifiés qui ne se voient qu'ensemble :
+
+- **L'app n'a pas de jeton de rafraîchissement.** `provideAuth0` ne déclare ni
+  `useRefreshTokens` ni `cacheLocation`
+  (`apps/lfc-ecommerce-frontend/src/app/auth/auth.providers.ts:28-34`). Donc
+  `checkSession()` à chaque amorçage et **tout** `getAccessTokenSilently()`
+  sont une iframe `prompt=none` **contre le cookie de session du tenant**.
+- **La popup s'authentifie chez ce même tenant.** Le cookie appartient ensuite
+  à l'identité Google.
+
+Au premier rechargement qui suit, le front obtient donc un jeton du `sub`
+**secondaire**. Ce qui arrive alors est écrit dans notre code :
+
+| Cas                  | Ce qui se passe                                                                                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| adresses différentes | `provision()` crée une **ligne `users` neuve** et publie `UserRegisteredEvent` — la personne se retrouve dans un compte vide, et `growth` enregistre un faux signal |
+| adresses identiques  | `refuseSecondAccount` lève, et `identity-conflict.ts:74` appelle `auth.logout()` — **la personne est éjectée de son propre compte**                                 |
+
+🔴 **Mon plan ne traitait que le cas de SUCCÈS**, et le renvoyait au lot C
+comme « à mesurer ». Or le chemin d'échec est **fréquent par construction** :
+R3 prévoit quatre refus, et la popup peut simplement être annulée. Sur tous ces
+chemins le rattachement n'a pas eu lieu, l'absorption non plus, et la session
+reste celle de Google **jusqu'à une déconnexion explicite**.
+
+⚠️ **Sur le chemin de succès, le défaut se soigne tout seul** — l'identité
+Google EST devenue le compte principal, donc la session résout sur lui. C'est
+l'échec qui blesse.
+
+**B-5 ferme la porte de sortie facile.** Le plan ne posait aucun `prompt`, et le
+SDK n'en pose pas non plus (vérifié dans `_prepareAuthorizeUrl`). Une personne
+qui clique « Ajouter Google » a **par définition** une session ouverte sur son
+compte principal : sans `prompt`, le tenant peut honorer cette session et rendre
+un jeton du **principal**, que R4 refuserait par « on ne se relie pas à
+soi-même » — un message qui décrit le contraire de ce qu'elle a fait. Il faut
+donc `prompt: 'login'` — **ce qui garantit le remplacement de session de B-1**.
+
+> Les deux objections sont donc **une seule** : forcer la ré-authentification est
+> nécessaire pour que le rattachement soit juste, et c'est exactement ce qui
+> casse la session principale.
+
+⚠️ **Changer de voie n'y change rien.** La voie « menée par l'API » que j'avais
+recommandée subit le même sort : toute autorisation interactive, quel que soit
+le client qui la demande, réécrit le cookie de session du tenant.
+
+**La seule parade connue** : **découpler la session principale du cookie du
+tenant**, c'est-à-dire passer l'app en `useRefreshTokens: true` (+
+`cacheLocation: 'localstorage'` pour que le jeton survive au rechargement). Le
+renouvellement silencieux cesse alors de dépendre du cookie.
+
+✅ **FAIT le 2026-09-22**, et ce n'était pas une décision : le **back-office
+les portait déjà**, avec sa raison écrite (« sans repasser par une iframe
+`checkSession` que les navigateurs bloquent désormais »). La boutique ne les
+avait jamais reçus. B-1 se referme donc par un **alignement**, pas par un
+arbitrage — et il refermait au passage un défaut de production qui n'avait rien
+à voir avec ce chantier : les déconnexions silencieuses au bout de sept jours
+sur Safari.
+
+⚠️ `offline_access` a dû être ajouté au `scope` : sans lui, `useRefreshTokens`
+retombe **en silence** sur l'iframe qu'on voulait quitter.
+
+⚠️ Reste à vérifier en console : la rotation des jetons de rafraîchissement sur
+l'application Auth0 **de la boutique** — c'en est une autre que celle du
+back-office, et le réglage est par application.
+
+### 8.2 Les trois autres bloquants, et leur sort
+
+- **B-2 — `azp` obligatoire refusait TOUS les rattachements.** ✅ **Déjà
+  corrigé** le 2026-09-22 avant le retour de `vitruve`, qui le confirme
+  indépendamment : `azp` n'est émis que si `aud` porte plusieurs valeurs. Le
+  contrôle porteur est `aud`.
+- **B-3 — `@auth0/auth0-spa-js` n'est pas une dépendance du front.** Il n'est
+  que **transitif** de `@auth0/auth0-angular`, et pnpm est strict : l'import du
+  lot C ne se résoudrait pas. À déclarer — au **catalogue**, à la version exacte
+  qu'épingle `auth0-angular`, sinon deux copies du SDK entrent au bundle, sous
+  le budget Cloudflare de la boutique.
+- **B-4 — les refus d'Auth0 sortent en `500`.** `Auth0ManagementClient.call`
+  ne distingue que `409` et `404` ; tout le reste devient
+  `IdentityProviderUnavailableError`, qui **est un `TechnicalError`** (vérifié :
+  `platform/shared/errors/identity-errors.ts:16`). Or Auth0 refuse un
+  `link_with` invalide ou déjà lié par un **400**. Deux des quatre refus promis
+  par R3 seraient donc des 500 anonymes — contre le CLAUDE.md §0 (« un refus
+  doit nommer le cas réel et le geste de sortie »).
+
+### 8.3 Les dix sérieux — ce qu'ils imposent
+
+| #    | À faire en v2                                                                                                                                                                                                                                                                                                     |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S-1  | `already_linked_here` n'a **aucune parade contre la course**, alors que le plan le désigne comme « le refus qui compte » ; et le peupleur de la fenêtre est automatique (`provision()` crée la ligne à la première requête d'un `sub` inconnu). Verrou, ou relecture après écriture, ou compensation par `DELETE` |
+| S-2  | `lint:auth0-id-readers` **aussi**, pas seulement `lint:subject-readers` : R3 lit `users.auth0_sub` dans un fichier neuf                                                                                                                                                                                           |
+| S-3  | 🔴 R7 remettait le **`sub` dans la charge du journal**, trois jours après l'en avoir sorti en six déploiements. À remplacer par `provider` + un identifiant **à nous**                                                                                                                                            |
+| S-4  | `DELETE …/:provider/:userId` met un identifiant tiers **dans une URL**, donc dans tous les journaux d'accès — la panne du 2026-09-18 sous une autre forme. Passer par le corps, ou un identifiant opaque                                                                                                          |
+| S-5  | La variable d'environnement du `clientId` SPA — ✅ déjà relevée par moi, mais absente des lots et du §6                                                                                                                                                                                                           |
+| S-6  | `identity.last_method` **ne peut jamais se déclencher** : la Management API ne délie que des identités secondaires. La personne réellement en danger (compte dont la seule méthode est sociale) n'est protégée par rien                                                                                           |
+| S-7  | §6 ne liste pas les réglages que la popup exige : **Allowed Web Origins** (l'origine nue, pour le `web_message`) en plus des callbacks — alors que l'app configure `redirect_uri` en origine **+ chemin**                                                                                                         |
+| S-8  | Ce que R6 dit du `DELETE` est faux des deux côtés : adresse identique → **déconnexion** de toute l'app, pas « un compte rouvert » ; adresse différente → compte vide **et** `UserRegisteredEvent`, donc un faux lead dans `growth`                                                                                |
+| S-9  | L'irréversibilité de R1 n'est pas chiffrée : Auth0 devient le **seul** registre. Gratuit à défaire tant que personne n'a rattaché ; plus après                                                                                                                                                                    |
+| S-10 | La fraîcheur `iat` **ne mesure pas** l'authentification (`auth_time` le ferait), et rien n'est à usage unique. À écrire comme « pas d'anti-rejeu, et voici pourquoi on l'accepte »                                                                                                                                |
+
+**Mineurs** : quatre numéros de ligne faux dans le tableau du §2 (corrigés
+ci-dessous) ; `connectionsOf` est privée et ne rend que des **noms**, pas les
+`provider` + `user_id` dont R6 a besoin ; la clé de transaction partagée est
+inoffensive — `loginWithPopup` n'appelle jamais `transactionManager.create` —,
+donc le verrou de R5.3 gardait contre un risque inexistant ; et le §1 disait
+« les quatre bloquants », alors que **deux** sont évités (B1, B2), un est
+prétendu corrigé (B3 → §8.1) et le quatrième (le trou d'accès **staff**) est
+indépendant et reste ouvert.
+
+### 8.4 Ce qu'il reste à faire pour une version 2
+
+B-1 est refermé (§8.1). Restent, avant de bâtir :
+
+1. **B-3** — déclarer `@auth0/auth0-spa-js` au front, **au catalogue**, à la
+   version exacte qu'épingle `@auth0/auth0-angular`, et vérifier qu'une seule
+   copie entre au bundle.
+2. **B-4** — nommer les refus d'Auth0 : `Auth0ManagementClient.call` ne
+   distingue que `409` et `404`, et le `400` d'un `link_with` refusé devient un
+   `500` anonyme.
+3. **B-5** — décider `prompt: 'login'` ici, et non au lot C. ⚠️ Il **faut**
+   désormais mesurer contre le tenant ce que rend `/authorize?connection=…`
+   quand une session existe : c'est la seule inconnue que le dépôt ne peut pas
+   trancher, et elle décide du chemin nominal.
+4. Les dix **sérieux** du §8.3, dont les trois qui touchent une règle déjà
+   tenue par une porte : S-2 (`lint:auth0-id-readers`), S-3 (le `sub` hors du
+   journal), S-4 (le `sub` hors des URL).
+
+⚠️ **S-1 reste le plus sérieux des sérieux** : `already_linked_here` est
+désigné comme « le refus qui compte » et n'a aucune parade contre la course,
+alors que le peupleur de la fenêtre est **automatique**.
