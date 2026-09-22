@@ -147,12 +147,17 @@
              traductions, et changer de langue ne déplace plus la rangée.
              Les doublures sont `aria-hidden` — il n'y a qu'un seul bouton, et
              il ne dit qu'une chose. -->
-        <a class="sign-cta" routerLink="/inscription">
+        <!-- 🔴 IL OUVRE LE DIALOGUE, il ne mène plus à `/inscription` (Hugo,
+             2026-09-22). Un bouton qui dit « Se connecter » et qui dépose sur
+             la page de création de compte ment sur sa destination — c'est le
+             constat qui a ouvert tout ce chantier. La PHRASE, elle, y mène
+             toujours : c'est son travail. -->
+        <button class="sign-cta" type="button" (click)="signIn()">
           @for (label of signInLabels; track label) {
             <span class="sign-ghost" aria-hidden="true">{{ label }}</span>
           }
           <span class="sign-word">{{ t().chrome.signIn }}</span>
-        </a>
+        </button>
         <a class="sign-link" routerLink="/inscription">
           {{ t().chrome.createAccount }}
           <span aria-hidden="true">→</span>
