@@ -88,15 +88,28 @@ await this.api.call("POST", `/api/v2/users/${primarySubject}/identities`, {
 });
 ```
 
-Auth0 accepte une **seconde forme** — `{ provider, user_id, connection_id }` —
-qui ne demande aucune session. Elle exige en revanche l'**identifiant** de la
-connexion, alors que nous n'en connaissons que le **nom**
-(`AUTH0_CUSTOMER_CONNECTION`).
+Auth0 accepte une **seconde forme**, qui ne demande aucune session. Vérifié
+dans la documentation de l'API Management le 2026-09-22 :
 
-⚠️ **Non vérifié** : cette seconde forme est écrite de mémoire de l'API Auth0.
-Elle doit être confrontée à la documentation de la version utilisée **avant**
-d'être inscrite dans un plan — c'est exactement la faute que `vitruve` a
-relevée le 2026-09-22 sur `paymentIntents.cancel`.
+| Paramètre       | Statut                                                                        |
+| --------------- | ----------------------------------------------------------------------------- |
+| `provider`      | **requis** — le type de fournisseur de l'identité secondaire                  |
+| `user_id`       | **requis** — l'identifiant de l'identité secondaire                           |
+| `connection_id` | **optionnel**, « quand plus d'un fournisseur base de données `auth0` existe » |
+
+Les deux formes sont **exclusives** : avec `link_with`, on n'envoie pas les
+trois autres.
+
+🔴 **Et chez nous, `connection_id` est requis.** Le tenant porte DEUX connexions
+base de données — `AUTH0_CUSTOMER_CONNECTION` et `AUTH0_STAFF_CONNECTION` —,
+donc on tombe exactement dans le cas que la documentation réserve. Or nous n'en
+connaissons que le **nom**, pas l'identifiant : il faudra le résoudre, ou le
+poser en configuration.
+
+⚠️ Une phrase précédente de ce document disait que la seconde forme « exige »
+l'identifiant de connexion. C'était trop fort dans le cas général — elle ne
+l'exige que sous condition — et juste par accident dans le nôtre. Corrigé après
+lecture de la source.
 
 ---
 
