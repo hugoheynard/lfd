@@ -127,6 +127,8 @@ export const FR: ClientCopy = {
     alreadySub: 'Mot de passe, ou votre appareil',
     firstTitle: 'Première visite ?',
     firstSub: 'Prénom, e-mail, téléphone',
+    signInLead: 'Reprenez par le chemin que vous avez choisi en ouvrant votre compte.',
+    signInSubmit: 'Continuer',
     switchLabel: 'Type de compte',
     persoLabel: 'Particulier',
     persoSub: 'Je commande pour moi',

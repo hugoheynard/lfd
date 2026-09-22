@@ -210,6 +210,25 @@ export interface ClientCopy {
     readonly firstSub: string;
 
     /**
+     * **Le dialogue « Se connecter »** (Hugo, 2026-09-22 : « fais-moi un dialog
+     * de connexion avec les méthodes »).
+     *
+     * 🔴 Il existe parce que se connecter n'avait PAS d'écran à soi : le geste
+     * partait droit chez Auth0, et la porte « Déjà client ? » n'apparaissait
+     * qu'en pile (`only-narrow` sur `welcome-step`). Au bureau, on ne voyait
+     * donc que l'inscription — « là je n'ai que créer mon compte ».
+     *
+     * ⚠️ La phrase ne PROMET rien sur les méthodes disponibles : elles
+     * dépendent de ce que la personne a rattaché à son compte, et le dialogue
+     * les propose toutes sans savoir lesquelles la concernent. Annoncer
+     * « connectez-vous avec Google » à qui ne l'a jamais rattaché enverrait
+     * vers un refus.
+     */
+    readonly signInLead: string;
+    /** L'action du dialogue — elle mène à l'écran d'Auth0, elle ne connecte pas. */
+    readonly signInSubmit: string;
+
+    /**
      * **Le segmenté des deux portes** — particulier / professionnel, en tête de
      * l'inscription (handoff `handoff-inscription`, §1).
      *

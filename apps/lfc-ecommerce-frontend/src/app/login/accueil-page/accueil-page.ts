@@ -20,6 +20,8 @@ import { proAccountCopy } from '../../client/copy/screens/pro-account.copy';
 import { ClientFeatureAccess } from '../../client/feature-access/client-feature-access.service';
 import { WORKSPACE_HOME_ROUTE } from '../../client/client-workspace-switch.service';
 
+import { SignInDialog } from '../sign-in-dialog/sign-in-dialog';
+
 import { DoorSwitch, type SignupDoor } from './door-switch/door-switch';
 import { ProStep } from './pro-step/pro-step';
 import { RappelDialog } from './rappel-dialog/rappel-dialog';
@@ -212,9 +214,21 @@ export class AccueilPage {
     this.auth.registerPro(AFTER_ENTRY_PRO, registration);
   }
 
-  /** Déjà client : l'écran d'Auth0 reconnaîtra la passkey, ou le mot de passe. */
+  /**
+   * Déjà client : le **dialogue des méthodes**, pas la redirection directe.
+   *
+   * 🔴 Ce geste partait droit chez Auth0 (Hugo, 2026-09-22 : « quand je fais me
+   * connecter j'arrive sur la page inscription »). Deux conséquences, et la
+   * seconde est la pire : l'écran d'arrivée n'était pas celui qu'on attendait,
+   * et **rien n'avait annoncé que Google était un chemin possible**. Qui a
+   * ouvert son compte par un fournisseur se retrouvait devant un mot de passe
+   * qu'il n'a jamais posé.
+   *
+   * L'adresse déjà tapée sur la carte est transmise : elle préremplira l'écran
+   * d'Auth0 si la personne prend le chemin de l'e-mail.
+   */
   protected signIn(email: string): void {
-    this.auth.login(this.door() === 'pro' ? AFTER_ENTRY_PRO : AFTER_ENTRY, email);
+    SignInDialog.open(this.panels, this.door() === 'pro' ? AFTER_ENTRY_PRO : AFTER_ENTRY, email);
   }
 
   /** Les deux fournisseurs, et la même destination que la saisie à la main. */

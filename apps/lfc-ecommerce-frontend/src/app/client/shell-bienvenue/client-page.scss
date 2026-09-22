@@ -105,6 +105,16 @@
   }
 }
 
+/* La marque et le logo sont des LIENS vers `/bienvenue` (2026-09-22) : ils
+   héritent la couleur et perdent le soulignement, pour que rien ne change à
+   l'œil. Le curseur dit qu'on peut cliquer. */
+.mark,
+.brand {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
 .brand {
   flex: 1;
   display: flex;

@@ -16,6 +16,16 @@ import { ClientOrders, type PlacedOrder } from './client-orders.service';
 export const RECOGNISED = {
   isAuthenticated: () => true,
   accessToken$: () => of('jeton-de-test'),
+  /**
+   * Aucune déclaration pro rapportée d'Auth0 — l'état de quelqu'un qui n'est
+   * pas en train d'ouvrir un compte d'établissement.
+   *
+   * ⚠️ Il est lu par `ProOnboarding`, que la NAVIGATION consulte désormais pour
+   * savoir si les écrans de société se ferment (`company-screens.ts`). Un
+   * double qui ne le porte pas fait tomber des suites qui ne parlent ni
+   * d'Auth0 ni d'ouverture de compte — c'est ce qui est arrivé le 2026-09-22.
+   */
+  pendingProRegistration: () => null,
 };
 
 /** Le fournisseur à poser dans le `TestBed` des suites qui commandent. */

@@ -29,6 +29,8 @@ describe('AccueilPage · porte pro', () => {
   let navigated: string[];
   /** Ce que l'écran a demandé d'ouvrir, et ce que le dialogue lui a rendu. */
   let opened: unknown[];
+  /** La charge passée au dialogue ouvert — vide pour ceux qui n'en prennent pas. */
+  let openedWith: unknown[];
   let slotFromDialog: string | undefined;
 
   const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
@@ -113,6 +115,7 @@ describe('AccueilPage · porte pro', () => {
       },
     };
     opened = [];
+    openedWith = [];
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       imports: [AccueilPage],
@@ -124,9 +127,15 @@ describe('AccueilPage · porte pro', () => {
         {
           provide: FoldPanelHostService,
           useValue: {
-            open: (component: unknown): { closed: Promise<string | undefined> } => {
+            open: (
+              component: unknown,
+              options: { data?: unknown },
+            ): { closed: Promise<string | undefined>; close: () => void } => {
               opened.push(component);
-              return { closed: Promise.resolve(slotFromDialog) };
+              // La charge N'EST PAS la même selon le dialogue : le créneau n'en
+              // transmet aucune, la connexion y met sa destination et l'adresse.
+              openedWith.push(options.data);
+              return { closed: Promise.resolve(slotFromDialog), close: (): void => undefined };
             },
           },
         },
@@ -229,7 +238,13 @@ describe('AccueilPage · porte pro', () => {
    * le bandeau au bureau, le formulaire en pile — mais le DOM porte les deux,
    * et un `querySelector` global prendrait le premier venu.
    */
-  it('« Déjà client ? » du formulaire connecte vers Mon compte, e-mail soufflé', () => {
+  /**
+   * 🔴 Le geste OUVRE LE DIALOGUE des méthodes depuis le 2026-09-22 ; il ne
+   * redirige plus vers Auth0. Ce qui reste propre à la porte PRO est la
+   * DESTINATION — `/mon-compte`, où le dossier attend sa vérification — et
+   * c'est elle que le dialogue reçoit.
+   */
+  it('« Déjà client ? » du formulaire ouvre les méthodes vers Mon compte, e-mail soufflé', () => {
     boot();
     type(MAIL, 'pierre@brasserie-marchand.fr');
 
@@ -239,9 +254,8 @@ describe('AccueilPage · porte pro', () => {
     );
     link?.click();
 
-    expect(asked).toEqual([
-      { kind: 'login', target: '/mon-compte', payload: 'pierre@brasserie-marchand.fr' },
-    ]);
+    expect(openedWith).toEqual([{ target: '/mon-compte', email: 'pierre@brasserie-marchand.fr' }]);
+    expect(asked).toEqual([]);
   });
 
   it('envoie qui est déjà connecté sur Mon compte', () => {

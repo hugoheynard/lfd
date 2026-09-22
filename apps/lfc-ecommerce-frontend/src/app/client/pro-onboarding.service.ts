@@ -51,6 +51,28 @@ export class ProOnboarding {
   readonly returnedDraft = this._returnedDraft.asReadonly();
 
   /**
+   * **Une déclaration pro est en cours, ou vient d'échouer.**
+   *
+   * 🔴 C'est la RÉSERVE qui garde `/mon-compte` ouvert à qui n'a pas encore de
+   * société (Hugo, 2026-09-22). Depuis que la porte pro vit sur `/mon-profil`,
+   * les écrans de société se ferment sans entreprise — mais quelqu'un qui
+   * s'est inscrit par la porte pro revient d'Auth0 avec une déclaration à
+   * envoyer, et la carte « Compléter mon dossier » est son SEUL rattrapage
+   * quand cet envoi échoue. Fermer sans cette réserve le laisserait dehors,
+   * avec un dossier commencé et nulle part où le reprendre.
+   *
+   * ⚠️ Les trois termes sont nécessaires : l'envoi en vol, celui qui n'est pas
+   * encore parti, et celui qui a été refusé. Il manquerait le dernier — le seul
+   * qui dure — qu'on fermerait la porte au moment précis où elle sert.
+   */
+  readonly declarationUnderway = computed(
+    () =>
+      this._declaring() ||
+      this.auth.pendingProRegistration() !== null ||
+      this._lastError() !== null,
+  );
+
+  /**
    * La carte « Compléter mon dossier » a-t-elle lieu d'être ?
    *
    * Quand on SAIT que la personne n'a aucune société, et qu'aucune déclaration

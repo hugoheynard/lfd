@@ -102,6 +102,16 @@
   background: linear-gradient(to bottom, var(--lfc-ink-700), var(--lfc-ink-800));
 }
 
+/* 🔴 La marque et le logo sont des LIENS vers `/bienvenue` depuis le
+   2026-09-22 : ils héritent donc la couleur et perdent le soulignement, pour
+   que rien ne change à l'œil. Le curseur, lui, dit qu'on peut cliquer. */
+.mark,
+.brand {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
 .brand {
   flex: 1;
 }

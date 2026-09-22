@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
+
 import { FoldSurfaceDirective } from 'fold-ng';
 
 import { ClientChrome } from '../client-chrome.service';
@@ -28,7 +30,7 @@ import { LangSwitch } from '../lang-switch/lang-switch';
 @Component({
   selector: 'app-client-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldSurfaceDirective, LangSwitch],
+  imports: [FoldSurfaceDirective, LangSwitch, RouterLink],
   templateUrl: './client-page.html',
   styleUrl: './client-page.scss',
 })

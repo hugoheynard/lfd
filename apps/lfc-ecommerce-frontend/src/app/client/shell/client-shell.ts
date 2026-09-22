@@ -1,14 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import {
   FoldAppShellComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldIconComponent,
   FoldPanelHostComponent,
+  FoldPanelHostService,
 } from 'fold-ng';
 
 import { AuthFacade } from '../../auth/auth.facade';
+import { SignInDialog } from '../../login/sign-in-dialog/sign-in-dialog';
 import { IdentityConflictNotice } from '../../auth/identity-conflict';
 import { ClientChrome } from '../client-chrome.service';
 import { AccountMenu } from './account-menu/account-menu';
@@ -79,6 +81,26 @@ export class ClientShell {
   protected readonly access = inject(ClientFeatureAccess);
   protected readonly identityConflict = inject(IdentityConflictNotice);
   private readonly auth = inject(AuthFacade);
+  private readonly router = inject(Router);
+  private readonly panels = inject(FoldPanelHostService);
+
+  /**
+   * Le bouton « Se connecter » de la barre — il **ouvre les méthodes**.
+   *
+   * 🔴 C'était un lien vers `/inscription` (Hugo, 2026-09-22 : « quand je fais
+   * me connecter j'arrive sur la page inscription »). Un bouton qui nomme un
+   * geste et dépose ailleurs ment sur sa destination ; et la page d'arrivée
+   * montre d'abord la CRÉATION de compte, ce qui laisse croire qu'il n'y a pas
+   * d'autre chemin.
+   *
+   * ⚠️ La destination est la page COURANTE, pas un accueil : on se connecte en
+   * passant — depuis le rayon, depuis le panier — et renvoyer ailleurs ferait
+   * perdre ce qu'on regardait. La phrase « Créer mon compte » garde, elle, son
+   * lien vers `/inscription`.
+   */
+  protected signIn(): void {
+    SignInDialog.open(this.panels, this.router.url);
+  }
 
   /** Reconnu = la barre sert son menu de personne ; sinon, elle sert l'entrée. */
   protected readonly recognised = computed(() => this.auth.isAuthenticated());
