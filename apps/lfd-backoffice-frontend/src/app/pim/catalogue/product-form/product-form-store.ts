@@ -1362,6 +1362,24 @@ export class ProductFormStore {
   }
 
   saveFiche(): Promise<void> {
+    // 🔴 `[]` est une AFFIRMATION — « aucun allergène ». L'envoyer quand personne
+    // n'a coché la case ni rien sélectionné la FABRIQUE : enregistrer une
+    // calorie sur une fiche vierge déclarerait qu'elle ne contient rien, et
+    // l'invariant 7 la rendrait publiable. La création porte cette garde depuis
+    // toujours (`declares`) ; la section l'avait perdue.
+    //
+    // On refuse plutôt qu'on omet : `allergens` est requis par le contrat, et
+    // l'omettre vaudrait un 400 muet. Et le refus se pose ICI plutôt qu'en
+    // exception, parce que `messageOf` ne sait lire qu'une erreur HTTP — une
+    // `Error` nue y devient « Erreur inattendue. », qui ne dit pas le geste.
+    if (!this.regulatoryAligned() && !this.declaresNone() && this.selected().length === 0) {
+      this.statusMap.update((current) => ({ ...current, fiche: 'error' }));
+      this.error.set(
+        'Déclarez les allergènes avant d’enregistrer : cochez « aucun allergène » ou ' +
+          'sélectionnez-en. Enregistrer sans rien affirmerait que la fiche n’en contient aucun.',
+      );
+      return Promise.resolve();
+    }
     return this.save('fiche', async () => {
       // L'alignement PART EN PREMIER, et il décide du reste. Aligner puis
       // déclarer écrirait une fiche propre sur une déclinaison qui n'en porte

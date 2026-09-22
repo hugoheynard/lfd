@@ -253,14 +253,23 @@ export function declarePimAgentTools(): readonly string[] {
         if (detail === null) {
           return `Aucune fiche pour l'identifiant ${args.productId}.`;
         }
-        if (detail.allergens === null) {
+        // 🔴 La fiche de CETTE déclinaison, pas celle du détail.
+        // `detail.allergens` vient de la déclinaison par DÉFAUT, résolue : la
+        // réécrire ici recopierait la fiche du défaut chez la déclinaison
+        // visée. C'est la classe de bug corrigée pour le tarif (`85eb56359`),
+        // et elle coûte plus cher sur du réglementaire.
+        const target = detail.product.variants.find((row) => row.id === args.variantId);
+        if (target === undefined) {
+          return `La déclinaison ${args.variantId} n'appartient pas à cette fiche.`;
+        }
+        if (target.allergens === null) {
           return (
-            "Refusé ici : la fiche réglementaire n'est pas renseignée, et écrire la " +
-            'nutrition la remplacerait par une affirmation « aucun allergène ». ' +
-            "À renseigner à l'écran d'abord."
+            "Refusé ici : la fiche réglementaire de cette déclinaison n'est pas " +
+            'renseignée, et écrire la nutrition la remplacerait par une affirmation ' +
+            "« aucun allergène ». À renseigner à l'écran d'abord."
           );
         }
-        const kept = detail.nutrition;
+        const kept = target.nutrition;
         const nutrition: NutritionValues = {
           energyKcal: args.energyKcal ?? kept.energyKcal,
           fatG: args.fatG ?? kept.fatG,
@@ -272,8 +281,8 @@ export function declarePimAgentTools(): readonly string[] {
           glycemicIndex: args.glycemicIndex ?? kept.glycemicIndex,
         };
         await products.saveNutrition(args.productId, args.variantId, {
-          allergens: detail.allergens,
-          mayContain: detail.mayContain,
+          allergens: target.allergens,
+          mayContain: target.mayContain,
           nutrition,
         });
         return `Nutrition écrite sur ${args.variantId}.`;

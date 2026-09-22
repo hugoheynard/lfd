@@ -173,6 +173,40 @@ function lastDeclaration(api: FakeApi): { allergens?: unknown; mayContain?: unkn
   return payload;
 }
 
+describe('enregistrer sans rien déclarer n’affirme pas « aucun allergène »', () => {
+  /**
+   * 🔴 Régression. `[]` est une AFFIRMATION positive, et l'écran l'envoyait dès
+   * qu'on enregistrait la section sans rien cocher : taper une calorie sur une
+   * fiche vierge déclarait qu'elle ne contient aucun allergène — et l'invariant
+   * 7 la rendait publiable.
+   *
+   * La création portait la garde (`declares`) ; la section l'avait perdue, à
+   * dix lignes de là.
+   */
+  it('refuse, et dit le geste qui manque', async () => {
+    const api = new FakeApi();
+    api.variants = [variant({ allergens: null, mayContain: [] })];
+    const { store } = await setup(api);
+
+    await store.saveOne('fiche');
+
+    expect(store.error()).toContain('Déclarez les allergènes');
+    expect(api.calls.some((call) => call.name === 'saveNutrition')).toBe(false);
+  });
+
+  it('laisse passer « aucun allergène » quand c’est COCHÉ', async () => {
+    const api = new FakeApi();
+    api.variants = [variant({ allergens: null, mayContain: [] })];
+    const { store } = await setup(api);
+
+    store.declareNoAllergen(true);
+    await store.saveOne('fiche');
+
+    expect(store.error()).toBeNull();
+    expect(lastDeclaration(api).allergens).toEqual([]);
+  });
+});
+
 describe('les traces « peut contenir » survivent à un enregistrement', () => {
   it('les charge depuis la déclinaison', async () => {
     const { store } = await setup();
