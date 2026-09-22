@@ -21,13 +21,32 @@
 
 ## 1. Décisions à trancher (produit / métier)
 
-| #   | Sujet                                          | Enjeu                                                                                                                                                                           | Statut         |
-| --- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| D1  | **Nature exacte du B2B**                       | Revente pros confirmée ? Paliers de volume + tarifs négociés par client. ⚠️ Le code a **déjà bâti** les deux (mercuriale par société) : la décision est peut-être prise de fait | 🟠 à confirmer |
-| D2  | **Plan de production labo : auto ou manuel ?** | Consolidation auto de la demande multi-canal → plan, ou planification manuelle assistée ? ⚠️ `PrismaProductionPlanReader` consolide déjà par journée arrêtée — à relire         | 🟠 à confirmer |
-| D3  | **Périmètre recettes / BOM**                   | Nomenclatures matières dans le scope v1 (calcul besoins farine…) ou plus tard ? Aucune table `Recipe` n'existe                                                                  | 🔴 ouvert      |
-| D5  | **TVA**                                        | Taux paramétrables + distinction emporter / sur place — à confirmer avec le comptable. Le mécanisme technique, lui, **est bâti**                                                | 🟠 à confirmer |
-| D7  | **Résolution des prix**                        | Par **spécificité** (la règle la plus précise gagne) ou par **priorité numérotée** ? La 1ʳᵉ est plus élégante, la 2ᵈᵉ plus prévisible pour un commercial qui débogue seul       | 🔴 ouvert      |
+| #   | Sujet                        | Enjeu                                                                                                                                                                         | Statut    |
+| --- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| D3  | **Périmètre recettes / BOM** | Nomenclatures matières dans le scope v1 (calcul besoins farine…) ou plus tard ? Aucune table `Recipe` n'existe — c'est la **seule** décision qu'aucune ligne de code n'entame | 🔴 ouvert |
+
+> 🔵 **D7 (résolution des prix) semble close par le code, et par une réponse
+> meilleure que la question.** Elle demandait « par spécificité **ou** par
+> priorité numérotée ? ». Le dépôt fait **les deux, sur deux axes** :
+>
+> - les **étages** sont un ordre déclaré — `mercuriale | volume | promotion | geste` ;
+> - **dans** un étage, la **spécificité** tranche (`global | category | product | variant`),
+>   et une contrainte SQL (`price_rules_no_overlap`) rend deux règles également
+>   spécifiques **impossibles à insérer** — « sans elle, le prix dépendrait de
+>   l'ordre de tri, donc du hasard ».
+>
+> ➡️ **À confirmer par Hugo**, comme D1, D2 et D5 l'ont été. Si oui, elle rejoint
+> les ADR et cette table ne garde que D3.
+
+> ✅ **D1, D2, D5 closes le 2026-09-22** — Hugo : « on peut les fermer, le code a
+> tranché ». Enregistrées dans [`adr.md`](./adr.md) : **ADR-18** (deux clientèles,
+> tarif négocié par client), **ADR-19** (plan consolidé tout seul, arrêté à la
+> main par journée), **ADR-20** (TVA paramétrable, à l'intersection article ×
+> contexte).
+>
+> ⚠️ Une correction au passage : `CatalogItemOverride` est clé par **SKU**, pas
+> par société — c'est le prix de liste du canal B2B, **pas** le prix négocié d'un
+> client, qui vit dans `CompanyMercuriale`.
 
 > ✅ **D4 (accès PI Electronique / Helios) est close le 2026-09-22** — Hugo : « PI
 > disparaît de notre vie ». Elle était « l'inconnue n°1 » et ne bloque plus rien.
@@ -108,11 +127,11 @@ deux colonnes du contexte de vente ont survécu au canal, et une garde peut
       le filtre est alors une facette d'écran, sans aller-retour de plus.
 
       La quatrième demande une décision : une **publication** est aujourd'hui une
-          `modification` comme une autre. La sortir en catégorie propre veut dire
-          qu'un article qui change de statut ET de prix apparaît dans **deux**
-          facettes, ou qu'on choisit laquelle l'emporte. ⚠️ Trancher avant d'écrire :
-          un article qui disparaît d'un filtre parce qu'il a aussi changé de prix est
-          le genre d'absence qu'on ne remarque pas.
+              `modification` comme une autre. La sortir en catégorie propre veut dire
+              qu'un article qui change de statut ET de prix apparaît dans **deux**
+              facettes, ou qu'on choisit laquelle l'emporte. ⚠️ Trancher avant d'écrire :
+              un article qui disparaît d'un filtre parce qu'il a aussi changé de prix est
+              le genre d'absence qu'on ne remarque pas.
 
 - [ ] **Purger les contenus orphelins** — un `catalog_content` que plus aucune
       révision ne référence ne disparaît pas (clé étrangère `RESTRICT`, à dessein).
@@ -133,12 +152,12 @@ rejouable ni retour arrière de publication depuis le retrait du canal Shopify
       `fold-empty-state` « Écran à venir ».
 
       Ce qui vient ici est le **vocabulaire** — les types de conditionnement et ce
-          qu'ils nomment. Combien d'unités dans le carton d'un produit donné reste sur
-          la fiche : c'est une propriété de ce produit.
+              qu'ils nomment. Combien d'unités dans le carton d'un produit donné reste sur
+              la fiche : c'est une propriété de ce produit.
 
-          Le point qui justifie l'écran : un conditionnement porte sa **propre
-          référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
-          l'article » — c'est ce qui en fait autre chose qu'une quantité.
+              Le point qui justifie l'écran : un conditionnement porte sa **propre
+              référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
+              l'article » — c'est ce qui en fait autre chose qu'une quantité.
 
 ---
 

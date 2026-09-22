@@ -356,3 +356,78 @@ l'implémentation par défaut est un pilote **`dry-run`** qui n'émet aucun appe
 - Les pushs sont **séquentiels** : une rafale parallèle se ferait étrangler par les quotas.
 - L'adaptateur lit le catalogue par le seul port exporté, `CatalogueReader` (ADR-13). Le module
   `catalogue` n'exporte **ni ses dépôts ni ses commandes** — supprimer le canal ne casserait rien.
+
+## ADR-18 — Deux clientèles, et un tarif négocié par client (clôt D1)
+
+**Décision** : la plateforme sert **deux clientèles** — les professionnels et les
+particuliers (`OrderClientele = pro | public`) — et le tarif d'un professionnel
+est **négocié par client**, pas dérivé d'une grille unique.
+
+> ⚠️ **Décision constatée, pas prise.** D1 demandait « revente pros confirmée ?
+> paliers de volume + tarifs négociés par client ? ». Le code a répondu aux deux
+> en les construisant, et Hugo l'a confirmé le 2026-09-22 : « on peut les fermer,
+> le code a tranché ». Cette ADR **enregistre** ce que le dépôt fait déjà.
+
+**Ce qui l'atteste** (mesuré le 2026-09-22) :
+
+| Question de D1               | Ce que le code porte                                                     |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| Revente aux pros ?           | `OrderClientele` vaut `pro` **ou** `public` — les deux sont servies      |
+| Tarifs négociés par client ? | `CompanyMercuriale` — « le tarif négocié d'un client, en un seul objet » |
+| Paliers de volume ?          | `VolumeLadder` et `VolumeCommitment`                                     |
+
+**Conséquence** : le référentiel ne décide **pas** du prix d'un professionnel. Il
+pose un prix de liste ; la mercuriale, le dégressif et les promotions viennent
+par-dessus, dans la plateforme. ⚠️ `CatalogItemOverride` est clé par **SKU** et
+non par société : c'est le prix de liste du canal B2B, **pas** un prix négocié.
+Les confondre ferait chercher le tarif d'un client au mauvais endroit.
+
+## ADR-19 — Le plan de production est consolidé tout seul, mais arrêté à la main (clôt D2)
+
+**Décision** : la demande multi-canal est consolidée **automatiquement** en
+compte à produire ; le moment où ce compte est **figé** est un geste humain, pris
+**par journée** et jamais par commande.
+
+> ⚠️ D2 posait « auto ou manuel ? ». La réponse du code est **plus précise que la
+> question** : les deux, sur deux axes différents.
+
+**Raison**, telle que le handler de clôture l'écrit lui-même :
+
+- Les deux façons d'arriver à une bascule sans geste humain sont **fermées** :
+  l'API n'a aucun planificateur, et écrire depuis une lecture est interdit
+  (« une requête de lecture n'écrit rien, pas même un compteur »).
+- Ce qu'on refuse est une décision **par commande** — c'est-à-dire un tri, un
+  jugement. Une bascule **par journée** ne demande à personne de juger : elle
+  acte une heure.
+- Le geste existe déjà dans la vraie vie : l'équipe arrête de prendre pour
+  demain.
+
+**Conséquences** :
+
+- Le compte à produire est un **instantané**. Rejouer la clôture ne recalcule
+  rien — l'agrégat refuse, parce que les commandes bougent après.
+- Seules les journées **closes** sortent du lecteur de plan : rendre une journée
+  ouverte la ferait passer pour arrêtée, et la colonne afficherait un zéro qu'on
+  croirait mesuré.
+
+## ADR-20 — La TVA est paramétrable, et vit à l'intersection article × contexte (clôt D5)
+
+**Décision** : les taux de TVA sont une **donnée** (`VatRate`), pas une
+énumération du code, et le taux applicable se lit à l'intersection d'un article
+et d'un **contexte de vente** — `category_context_tva`, avec une dérogation par
+fiche dans `product_context_tva`.
+
+> ⚠️ D5 était « à confirmer avec le comptable ». Hugo a confirmé le 2026-09-22.
+> Le mécanisme, lui, était bâti depuis le 2026-08-24.
+
+**Raison** : reconnaître un taux de plus, ou une manière de vendre de plus, doit
+être **une ligne en base**, jamais un déploiement. C'est le même motif que les
+contextes de vente et les appellations — la dimension qui grandit est pilotée par
+la donnée.
+
+**Conséquences** :
+
+- Deux taux au même pourcentage sont **impossibles** : l'unicité porte sur le
+  taux, et c'est un invariant fiscal.
+- La distinction emporter / sur place n'est pas un champ : c'est **un contexte de
+  vente**, donc une ligne, et elle se règle sans toucher au code.
