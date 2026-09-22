@@ -69,16 +69,56 @@ Le référentiel n'est pas bloqué par du code, il est bloqué par de la **saisi
 | #      | Question                                   | Réponse                                                      |
 | ------ | ------------------------------------------ | ------------------------------------------------------------ |
 | **D1** | Un drapeau d'alignement, ou deux ?         | **Deux** — un allergènes, un nutrition                       |
-| **D2** | La publication n'exige que les allergènes  | **On l'écrit** — la nutrition est facultative                |
+| **D2** | La publication n'exige que les allergènes  | **Confirmée** — art. 44 §1 et annexe V pt 19 (ci-dessous)    |
 | **D3** | « Nutrition sans déclaration d'allergène » | **On le dit** — état nommé, non publiable                    |
 | **D4** | Un fait de journal, ou deux ?              | **Deux**                                                     |
 | **D5** | Séparer la table ?                         | **Oui** — a survécu à trois alternatives (§5)                |
 | **D6** | Où vit « aucun allergène » ?               | **Avec les allergènes** — « pas de nutrition, si on sépare » |
 
-🔵 **D2 reste à confirmer, mais ne bloque plus.** « La nutrition est facultative
-à la publication » engage l'étiquette ; il faut nommer l'exemption (1169/2011,
-vente non préemballée). Rien n'étant publié, la question peut se régler pendant
-le chantier — pas après le lot 5.
+### 🟢 D2 — confirmée le 2026-09-22, et l'exemption est DOUBLE
+
+Vérifié sur le texte consolidé du règlement (UE) n° 1169/2011 (EUR-Lex,
+02011R1169 — 01.01.2018), pas de mémoire. Deux bases couvrent La Folie Coffee, et
+**pas la même selon le produit** :
+
+| Ce qu'on vend                                       | Base                | Ce qu'elle exempte                    |
+| --------------------------------------------------- | ------------------- | ------------------------------------- |
+| Le **frais**, en boutique (non préemballé)          | **art. 44 §1**      | tout l'art. 9 §1 **sauf le point c)** |
+| Les **confiseries**, stock propre, vendues par nous | **annexe V, pt 19** | la déclaration nutritionnelle         |
+
+🔴 **L'asymétrie est dans le texte, pas dans notre découpe.** L'article 9 §1 trie
+exactement comme ce plan : le point **c)** est _« tout ingrédient […] énuméré à
+l'annexe II provoquant des allergies ou des intolérances »_, le point **l)** est
+_« une déclaration nutritionnelle »_. L'article 44 §1 rend le **c) obligatoire**
+et dit des autres qu'ils **ne le sont pas**. Les allergènes ne sont exemptés par
+aucune des deux bases ; la nutrition l'est par les deux.
+
+➡️ L'invariant 7 ne **desserre** donc rien : il cesse d'exiger ce que le
+règlement n'exige pas. C'est un redressement, pas une dérogation — et c'est la
+raison pour laquelle il peut s'écrire.
+
+**Côté français**, le décret n° 2015-447 du 17 avril 2015 est la mesure nationale
+prise au titre de l'art. 44 §1 b). Il ajoute des **modalités** d'information sur
+les allergènes (sur la denrée ou à proximité, document d'accompagnement des
+livraisons aux collectivités) — il **n'ajoute pas** la déclaration
+nutritionnelle. L'exemption tient donc en France.
+
+⚠️ **Les deux bases n'ont pas la même fragilité, et c'est ce qu'il faut
+retenir** :
+
+- L'article 44 ne dépend **d'aucun volume**. Tant que le frais se vend non
+  préemballé en boutique, rien ne peut le périmer.
+- Le point 19 porte **trois conditions que le PIM ne modélise pas** — _faibles
+  quantités_, _directement par le fabricant_, _établissements de détail
+  **locaux**_ — et le règlement ne chiffre pas « faibles quantités ». Ce sont
+  des faits d'entreprise, pas des faits de donnée : ils peuvent cesser d'être
+  vrais **sans qu'une ligne de code bouge**.
+
+➡️ Le jour où une confiserie préemballée part chez un revendeur non local, elle
+sort des deux exemptions et la nutrition redevient obligatoire **pour elle
+seule**. D2 deviendrait alors conditionnelle au canal, et l'invariant 7 avec.
+Rien à bâtir aujourd'hui — mais c'est le seul événement qui rouvre ce
+paragraphe, et il ne s'annoncera pas depuis le code.
 
 ---
 
@@ -193,10 +233,51 @@ peu sur le sujet ; il dit vrai sur ce qui protège.
 | Le fait nutrition s'attribue à `[]`                     | voir ci-dessous                               |
 | **Deux phrases françaises** dans `phrase-registry.ts`   | c'est le seul vrai refus de compiler          |
 
-🔵 **La nutrition n'a nulle part où s'attribuer.** `revision.ts` ne porte que
-`allergens`, et lui ajouter un champ changerait **toutes les empreintes** (un
-SHA-256 de l'article entier) : le catalogue apparaîtrait modifié de bout en bout.
-➡️ `[]` d'abord, le champ de révision dans un chantier séparé.
+🟢 **La nutrition s'attribue à `nutrition`** — le champ entre dans la révision
+dès ce lot (Hugo, 2026-09-22 : « j'accepte la bascule d'empreintes »).
+
+Les v1 à v5 le reportaient à un chantier séparé, au motif qu'ajouter un champ
+change **toutes** les empreintes — un SHA-256 de l'article entier — et ferait
+apparaître le catalogue modifié de bout en bout. **C'était supposé, pas mesuré.**
+
+La production porte **zéro révision**. Il n'y a donc aucune empreinte à
+rebasculer, et rien à quoi comparer : le faux diff redouté n'a pas de lecteur.
+Reporter aurait coûté un second chantier pour épargner un coût nul — et laissé
+entre temps un fait de nutrition attribué à `[]`, c'est-à-dire un écran qui dit
+« personne n'a touché à ce champ » d'un champ que quelqu'un vient d'écrire.
+
+⚠️ Ce qui reste vrai : le jour où des révisions existeront, ajouter un champ
+d'article sera une bascule d'empreintes, et elle se paiera. La fenêtre est
+**maintenant**, et c'est la seule raison de la prendre maintenant.
+
+### c bis. La lecture bascule dans le MÊME lot
+
+Le plan mettait la bascule des lectures au lot 5, derrière les deux drapeaux et
+D2. Mesuré le 2026-09-22, c'était une découpe faite de mémoire : la fiche
+réglementaire est lue à **deux endroits** — `toVariant` de
+`prisma-product.repository.ts`, vingt lignes, et
+`pim/ingredients/infrastructure/prisma-variant-declaration.reader.ts`, qui
+alimente l'écran de composition — et écrite dans **un seul fichier**.
+
+🔴 **Ce paragraphe a dit « un seul endroit » jusqu'au lot 3.** Le second lecteur
+a été trouvé en bâtissant, par deux e2e de `pim-ingredients` qui ont rougi. La
+mesure qui a redressé la découpe des lots était elle-même incomplète : j'avais
+cherché les lecteurs de `toVariant`, pas ceux de la table. Compter en partant du
+code qu'on connaît trouve ce qu'on connaît.
+
+Ça ne change pas la conclusion — ça l'appuie. Deux lecteurs, c'est une fenêtre
+deux fois plus large, et le second est précisément l'écran où une déclaration
+d'allergène se relit.
+
+Les séparer coûtait plus que les joindre : entre le lot 3 et le lot 5, les
+écritures seraient parties dans les tables neuves pendant que la lecture
+interrogeait encore l'ancienne. Toute déclaration faite dans cette fenêtre aurait
+été **invisible de l'écran qui vient de l'enregistrer**.
+
+➡️ Le lot 3 emporte la lecture. Le lot 5 garde ce qui dépend vraiment des
+drapeaux : l'invariant 7 et la couverture.
+
+---
 
 ### d. Les contrats servis au back-office
 
@@ -212,20 +293,59 @@ routes.
 l'envoie ; les valeurs s'**ajoutent**, on ne renomme pas. Et le drapeau nutrition
 naît à la **même valeur** que celui qu'il dédouble.
 
+#### Quelle colonne hérite de quel drapeau (tranché le 2026-09-22)
+
+**UNE seule colonne neuve : `nutrition_follows_default`.** L'existante,
+`regulatory_follows_default`, devient **le drapeau des allergènes** sans changer
+de nom.
+
+Le dédoublement se lit en trois lignes, et la dernière est le gabarit exact de
+`20260903140000_alignement_par_section` :
+
+```sql
+ALTER TABLE "pim"."product_variant"
+  ADD COLUMN "nutrition_follows_default" BOOLEAN NOT NULL DEFAULT false;
+
+-- Le drapeau naît à la valeur de celui qu'il dédouble : une déclinaison
+-- alignée l'était sur la fiche ENTIÈRE. Partir à `false` la désalignerait
+-- silencieusement côté nutrition, ce que personne n'a décidé.
+UPDATE "pim"."product_variant"
+  SET "nutrition_follows_default" = "regulatory_follows_default";
+
+-- Même raison que les deux autres : le défaut ne peut pas se suivre lui-même.
+ALTER TABLE "pim"."product_variant"
+  ADD CONSTRAINT "product_variant_default_feeds_itself"
+  CHECK (NOT ("is_default" AND "nutrition_follows_default"));
+```
+
+🔴 **Pourquoi pas deux colonnes neuves et l'ancienne dépréciée**, ce que le
+« étendre, basculer, resserrer » du `CLAUDE.md` §0 prescrirait : ce protocole
+protège un **déplacement de données**, c'est-à-dire le cas où une lecture en vol
+trouverait la colonne vidée. Ici la colonne n'est ni vidée, ni déplacée, ni
+resserrée — elle **garde sa valeur et ses lecteurs**, et n'en perd qu'une moitié
+de sens. Ajouter `allergens_follows_default` aurait fait vivre trois colonnes
+pour deux drapeaux, avec une fenêtre où deux d'entre elles se prétendent
+autoritaires sur le même fait.
+
+⚠️ Ce qui se paie : **le nom de la colonne ment un peu sur son sujet**, comme le
+préfixe `product.` des deux faits. Il dit vrai sur ce qu'il protège — le `CHECK`
+et les lecteurs existants — et il dira faux sur ce qu'il décrit jusqu'au lot 7,
+qui peut le renommer d'une migration additive si quelqu'un la juge rentable.
+
 ---
 
 ## 7. Les lots
 
-| Lot   | Contenu                                                                    | Bloque par |
-| ----- | -------------------------------------------------------------------------- | ---------- |
-| ~~0~~ | ✅ Les quatre correctifs (§2)                                              | —          |
-| 1     | Les deux tables — **vides**, aucune reprise (§3)                           | —          |
-| 2     | La règle dans l'agrégat, l'écriture dans un port dédié (§6a)               | 1          |
-| 3     | Les deux routes, les deux faits `product.*`, l'ancien en `retired` (§6c)   | 2          |
-| 4     | Les deux drapeaux — colonne, `CHECK`, valeur d'enum **ajoutée** (§6d)      | 2          |
-| 5     | Les lectures basculent ; l'invariant 7 s'écrit (D2)                        | 3, 4       |
-| 6     | L'écran : deux sections, deux enregistrements, **et les traces**           | 5          |
-| 7     | L'ancienne table et l'ancienne route partent ; `mayContain` sort de la vue | 6          |
+| Lot   | Contenu                                                                      | Bloque par |
+| ----- | ---------------------------------------------------------------------------- | ---------- |
+| ~~0~~ | ✅ Les quatre correctifs (§2)                                                | —          |
+| 1     | Les deux tables — **vides**, aucune reprise (§3)                             | —          |
+| 2     | La règle dans l'agrégat, l'écriture dans un port dédié (§6a)                 | 1          |
+| 3     | Les deux routes, les deux faits, l'ancien en `retired`, **la lecture** (§6c) | 2          |
+| 4     | Les deux drapeaux — colonne, `CHECK`, valeur d'enum **ajoutée** (§6d)        | 2          |
+| 5     | L'invariant 7 s'écrit sur les allergènes seuls ; la couverture (D2)          | 3, 4       |
+| 6     | L'écran : deux sections, deux enregistrements, **et les traces**             | 5          |
+| 7     | L'ancienne table et l'ancienne route partent ; `mayContain` sort de la vue   | 6          |
 
 ⚠️ **Le resserrage choisit et le dit** : l'ancienne route qui reçoit encore
 `allergens` **refuse** (400). Sur du réglementaire, un `200` qui n'écrit rien est
@@ -236,7 +356,45 @@ pire que le refus.
 - le **nom des deux faits** — et il décide de la couverture (§6c) ;
 - le **nom des deux tables** et de leurs colonnes ;
 - les **valeurs ajoutées** à l'enum `aspect` ;
-- la forme de `VariantNutritionView`.
+- la forme de `VariantNutritionView` ;
+- le champ **`nutrition`** d'un article de révision — il change toutes les
+  empreintes, et la fenêtre où ça ne coûte rien est celle où il n'y a aucune
+  révision. Elle se referme à la première ancre posée.
+
+### 🔴 Le seul geste destructeur, et il n'est PAS dans le dépôt
+
+`pim.nutrition_declaration` n'est plus ni lue ni écrite depuis le lot 3, et le
+lot 7 l'a rendue **inatteignable** depuis `src/pim/`. Elle n'est pas supprimée,
+et sa suppression **n'existe volontairement pas en migration**.
+
+La raison est mécanique, vérifiée le 2026-09-22 dans
+`.github/workflows/deploy_lfd_api.yml:340` : le déploiement lance
+`prisma migrate deploy`. **Toute migration présente dans le dépôt s'applique
+seule au merge.** Écrire le `DROP` ici, même sans l'appliquer en local, l'aurait
+envoyé en production sans que personne le décide — exactement ce que le
+`CLAUDE.md` §0 interdit : _« proposer le geste et laisser Hugo décider, ne pas
+l'exécuter d'autorité »_.
+
+Le modèle Prisma reste donc déclaré. Il décrit une table que plus aucun code
+n'ouvre, et ce désaccord entre le schéma et l'usage est **le signal**, pas un
+oubli.
+
+**Le jour où on la supprime — d'abord compter, ensuite seulement supprimer :**
+
+```sql
+-- 1. À LANCER D'ABORD, en production. Le chantier a été bâti sur la mesure
+--    « zéro ligne » du 2026-09-22 ; elle se re-mesure, elle ne se suppose pas.
+SELECT count(*) FROM "pim"."nutrition_declaration";
+
+-- 2. Seulement si le compte est 0. Sinon, s'arrêter : une ligne signifie
+--    qu'un chemin d'écriture a survécu au lot 3, et c'est LUI le sujet.
+DROP TABLE "pim"."nutrition_declaration";
+```
+
+Et dans le même déploiement, mais pas avant : retirer le modèle
+`NutritionDeclaration` de `prisma/schema/pim/regulatory-sheet.prisma`, le dos de
+relation `nutrition` sur `ProductVariant`, et l'entrée de
+`platform/database/schema-ops.counter.ts` — que la porte `schema-parity` tient.
 
 ---
 

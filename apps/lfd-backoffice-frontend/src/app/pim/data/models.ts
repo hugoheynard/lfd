@@ -123,12 +123,20 @@ export interface Variant {
   priceCents: number | null;
   weightGrams: number | null;
   /**
-   * Elle **suit la fiche réglementaire de celle par défaut**.
+   * Elle **suit les ALLERGÈNES de celle par défaut** — traces comprises,
+   * puisqu'une trace est un allergène.
    *
    * Toujours `false` sur le défaut, qui ne peut pas se suivre lui-même. C'est ce
-   * drapeau que la case « aligner sur le défaut » pilote.
+   * drapeau que la case « aligner sur le défaut » de la carte Allergènes pilote.
+   *
+   * ⚠️ Le nom dit encore « réglementaire » parce que la COLONNE le dit : la
+   * fiche s'aligne par moitié depuis le 2026-09-22, et renommer un champ servi
+   * à un front déployé se paierait en trois déploiements pour zéro sens de plus
+   * (`plan-separer-allergenes-et-nutrition.md`, §6d).
    */
   regulatoryFollowsDefault: boolean;
+  /** Elle **suit les VALEURS NUTRITIONNELLES de celle par défaut**. */
+  nutritionFollowsDefault: boolean;
   /**
    * Elle **suit le tarif de celle par défaut** — prix ET poids.
    *
@@ -144,6 +152,7 @@ export interface Variant {
    * {@link Variant.regulatoryFollowsDefault}.
    */
   allergens: string[] | null;
+  /** Les traces « peut contenir » — elles suivent le drapeau des ALLERGÈNES. */
   mayContain: string[];
   nutrition: NutritionValues;
 }

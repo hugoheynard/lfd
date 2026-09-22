@@ -58,6 +58,7 @@ function product(over: Partial<ProductRecord> = {}): ProductRecord {
         priceCents: 200,
         weightGrams: null,
         regulatoryFollowsDefault: false,
+        nutritionFollowsDefault: false,
         pricingFollowsDefault: false,
         allergens: null,
         nutrition: null,
@@ -304,6 +305,7 @@ describe("l’empreinte relie la relecture à l’envoi", () => {
           // Le SEUL champ qui bouge, et il n'apparaît nulle part à l'écran.
           weightGrams: 65,
           regulatoryFollowsDefault: false,
+          nutritionFollowsDefault: false,
           pricingFollowsDefault: false,
           allergens: null,
           nutrition: null,
@@ -420,6 +422,7 @@ describe("B2bCatalogPushService", () => {
           priceCents: null,
           weightGrams: null,
           regulatoryFollowsDefault: false,
+          nutritionFollowsDefault: false,
           pricingFollowsDefault: false,
           allergens: null,
           nutrition: null,

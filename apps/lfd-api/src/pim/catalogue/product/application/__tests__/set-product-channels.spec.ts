@@ -126,7 +126,12 @@ class OneProduct extends ProductRepository {
     return this.save(product);
   }
   save(product: Product): Promise<void> {
-    this.current = product.snapshot();
+    // L'instantané NON résolu, exactement comme l'adaptateur Prisma. `snapshot()`
+    // résout l'héritage : l'écrire ici recopierait la fiche et le tarif du défaut
+    // dans les colonnes PROPRES d'une déclinaison alignée — la faute 0b/0d du plan
+    // `plan-separer-allergenes-et-nutrition.md`, rejouée par le double, qui rendait
+    // vert ce que la vraie base refuse de faire (constaté le 2026-09-22).
+    this.current = product.persistenceSnapshot();
     return Promise.resolve();
   }
 }
@@ -155,6 +160,7 @@ function tart(
         priceCents: null,
         weightGrams: null,
         regulatoryFollowsDefault: false,
+        nutritionFollowsDefault: false,
         pricingFollowsDefault: false,
         allergens: null,
         nutrition: null,

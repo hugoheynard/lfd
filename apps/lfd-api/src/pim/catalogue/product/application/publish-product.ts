@@ -10,9 +10,13 @@ export class PublishProductCommand {
 }
 
 /**
- * Met le produit en vente. Le refus — fiche réglementaire manquante, produit
- * archivé — appartient à l'agrégat : il est le seul à voir ses déclinaisons
- * et l'état de leurs fiches.
+ * Met le produit en vente. Le refus — déclaration d'**allergènes** manquante,
+ * produit archivé — appartient à l'agrégat : il est le seul à voir ses
+ * déclinaisons, l'état de leurs déclarations et le défaut qu'elles suivent.
+ *
+ * ⚠️ Les valeurs nutritionnelles n'entrent pas dans ce refus : le règlement
+ * (UE) n° 1169/2011 les exempte dans les deux cas de vente de La Folie Coffee
+ * (`plan-separer-allergenes-et-nutrition.md`, D2).
  */
 @CommandHandler(PublishProductCommand)
 export class PublishProductHandler implements ICommandHandler<PublishProductCommand, void> {

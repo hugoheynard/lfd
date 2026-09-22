@@ -20,9 +20,14 @@ import {
 } from "../../shared/infrastructure/json-readers.js";
 import { normalizeSalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
 
-interface NutritionRow {
+/** La moitié « sécurité » : ce que la déclinaison contient, et ses traces. */
+interface AllergensRow {
   allergens: unknown;
   mayContain: unknown;
+}
+
+/** La moitié « valeurs » : les mentions de l'annexe XV, plus l'indice. */
+interface NutritionRow {
   energyKcal: number | null;
   fatG: number | null;
   saturatedFatG: number | null;
@@ -45,7 +50,9 @@ interface VariantRow {
   weightGrams: number | null;
   regulatoryFollowsDefault: boolean;
   pricingFollowsDefault: boolean;
-  nutrition: NutritionRow | null;
+  nutritionFollowsDefault: boolean;
+  allergenSheet: AllergensRow | null;
+  nutritionValues: NutritionRow | null;
 }
 
 interface ProductRow {
@@ -71,7 +78,13 @@ interface ProductRow {
  * présente, zéro cellule) de « hérite de sa famille » (pas de parente).
  */
 const PRODUCT_INCLUDE = {
-  variants: { orderBy: { position: "asc" }, include: { nutrition: true } },
+  // Les DEUX tables de la fiche réglementaire depuis le 2026-09-22, et plus
+  // `nutrition_declaration`, qui n'est plus ni lue ni écrite nulle part.
+  // Leur absence est une information : personne ne s'est prononcé.
+  variants: {
+    orderBy: { position: "asc" },
+    include: { allergenSheet: true, nutritionValues: true },
+  },
   contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
   channelOverrideRows: { select: { cells: { select: { pointOfSaleId: true, contextKey: true } } } },
 } as const;
@@ -89,24 +102,43 @@ function toVariant(row: VariantRow): VariantSnapshot {
     weightGrams: row.weightGrams,
     regulatoryFollowsDefault: row.regulatoryFollowsDefault,
     pricingFollowsDefault: row.pricingFollowsDefault,
+    nutritionFollowsDefault: row.nutritionFollowsDefault,
+    // 🔴 Pas de ligne = personne n'a déclaré (`null`) ; une ligne, même à
+    // tableau vide, est une AFFIRMATION (« aucun allergène »). C'est tout
+    // l'intérêt d'une table séparée : le tri-état est structurel.
     allergens:
-      row.nutrition === null
+      row.allergenSheet === null
         ? null
-        : readStringArrayColumn(row.nutrition.allergens, "nutrition.allergens"),
-    nutrition:
-      row.nutrition === null
-        ? null
-        : {
-            mayContain: readStringArrayColumn(row.nutrition.mayContain, "nutrition.mayContain"),
-            energyKcal: row.nutrition.energyKcal,
-            fatG: row.nutrition.fatG,
-            saturatedFatG: row.nutrition.saturatedFatG,
-            carbsG: row.nutrition.carbsG,
-            sugarsG: row.nutrition.sugarsG,
-            proteinG: row.nutrition.proteinG,
-            saltG: row.nutrition.saltG,
-            glycemicIndex: row.nutrition.glycemicIndex,
-          },
+        : readStringArrayColumn(row.allergenSheet.allergens, "variant_allergens.allergens"),
+    nutrition: toNutrition(row),
+  };
+}
+
+/**
+ * L'instantané nutritionnel, recollé depuis **deux** tables.
+ *
+ * `mayContain` vient désormais de la table des allergènes — une trace EST un
+ * allergène — mais reste porté ici : la vue servie au back-office ne change pas
+ * dans ce lot (§6d du plan). `null` quand aucune des deux lignes n'existe :
+ * personne ne s'est prononcé, ni sur l'une ni sur l'autre moitié.
+ */
+function toNutrition(row: VariantRow): VariantSnapshot["nutrition"] {
+  if (row.allergenSheet === null && row.nutritionValues === null) {
+    return null;
+  }
+  return {
+    mayContain:
+      row.allergenSheet === null
+        ? []
+        : readStringArrayColumn(row.allergenSheet.mayContain, "variant_allergens.may_contain"),
+    energyKcal: row.nutritionValues?.energyKcal ?? null,
+    fatG: row.nutritionValues?.fatG ?? null,
+    saturatedFatG: row.nutritionValues?.saturatedFatG ?? null,
+    carbsG: row.nutritionValues?.carbsG ?? null,
+    sugarsG: row.nutritionValues?.sugarsG ?? null,
+    proteinG: row.nutritionValues?.proteinG ?? null,
+    saltG: row.nutritionValues?.saltG ?? null,
+    glycemicIndex: row.nutritionValues?.glycemicIndex ?? null,
   };
 }
 
@@ -295,6 +327,7 @@ export class PrismaProductRepository extends ProductRepository {
             weightGrams: variant.weightGrams,
             regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
             pricingFollowsDefault: variant.pricingFollowsDefault,
+            nutritionFollowsDefault: variant.nutritionFollowsDefault,
           },
           update: {
             name: localizedColumn(variant.name),
@@ -305,6 +338,7 @@ export class PrismaProductRepository extends ProductRepository {
             weightGrams: variant.weightGrams,
             regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
             pricingFollowsDefault: variant.pricingFollowsDefault,
+            nutritionFollowsDefault: variant.nutritionFollowsDefault,
           },
         }),
       ),

@@ -25,19 +25,19 @@ export type ProductStatus = "draft" | "published" | "archived";
  * « dont » sont des PARTS de la ligne qui les précède — le domaine refuse
  * qu'elles la dépassent.
  */
-const nutritionInputShape = z
-  .object({
-    energyKcal: z.number().optional(),
-    fatG: z.number().optional(),
-    saturatedFatG: z.number().optional(),
-    carbsG: z.number().optional(),
-    sugarsG: z.number().optional(),
-    proteinG: z.number().optional(),
-    saltG: z.number().optional(),
-    /** Hors annexe XV : un renseignement produit, pas une mention obligatoire. */
-    glycemicIndex: z.number().optional(),
-  })
-  .optional();
+const nutritionValuesShape = {
+  energyKcal: z.number().optional(),
+  fatG: z.number().optional(),
+  saturatedFatG: z.number().optional(),
+  carbsG: z.number().optional(),
+  sugarsG: z.number().optional(),
+  proteinG: z.number().optional(),
+  saltG: z.number().optional(),
+  /** Hors annexe XV : un renseignement produit, pas une mention obligatoire. */
+  glycemicIndex: z.number().optional(),
+};
+
+const nutritionInputShape = z.object(nutritionValuesShape).optional();
 
 /**
  * La couche éditoriale. Tout est TRADUISIBLE sauf `brand` : une marque est un
@@ -96,12 +96,65 @@ export type UpdateVariantPricingPayload = z.infer<typeof updateVariantPricingPay
 export const productEditorialPayloadSchema = z.object(editorialShape);
 export type ProductEditorialPayload = z.infer<typeof productEditorialPayloadSchema>;
 
-export const declareNutritionPayloadSchema = z.object({
+/** Section « Allergènes » : ce que la déclinaison contient, et ses traces. */
+export const saveVariantAllergensPayloadSchema = z.object({
+  /** `[]` est une AFFIRMATION — « aucun allergène » — pas une absence de réponse. */
   allergens: z.array(z.string()),
   mayContain: z.array(z.string()).optional(),
-  nutrition: nutritionInputShape,
 });
-export type DeclareNutritionPayload = z.infer<typeof declareNutritionPayloadSchema>;
+export type SaveVariantAllergensPayload = z.infer<typeof saveVariantAllergensPayloadSchema>;
+
+/**
+ * Les codes que la section « Nutrition » n'a pas le droit de porter.
+ *
+ * L'ancienne route `/nutrition` recevait la fiche entière, allergènes compris.
+ * Les accepter en silence pour ne pas les écrire serait le pire des deux
+ * mondes : un `200` sur de la donnée réglementaire que personne n'a
+ * enregistrée. Le refus nomme donc la route de sortie (§7 du plan).
+ */
+const REGULATORY_KEYS = ["allergens", "mayContain"] as const;
+
+/** Section « Nutrition » : les valeurs pour 100 g, et RIEN d'autre. */
+export const saveVariantNutritionPayloadSchema = z
+  .looseObject(nutritionValuesShape)
+  .superRefine((body, ctx) => {
+    for (const key of REGULATORY_KEYS) {
+      if (key in body) {
+        ctx.addIssue({
+          code: "custom",
+          path: [key],
+          message:
+            "les allergènes ne s'enregistrent plus ici — utiliser PUT " +
+            ".../variants/{variantId}/allergens",
+        });
+      }
+    }
+  })
+  .transform((body): SaveVariantNutritionPayload => ({
+    energyKcal: body.energyKcal,
+    fatG: body.fatG,
+    saturatedFatG: body.saturatedFatG,
+    carbsG: body.carbsG,
+    sugarsG: body.sugarsG,
+    proteinG: body.proteinG,
+    saltG: body.saltG,
+    glycemicIndex: body.glycemicIndex,
+  }));
+
+/**
+ * Les huit valeurs, chacune facultative. Écrite à la main plutôt qu'inférée du
+ * schéma : celui-ci se TRANSFORME, et son entrée porte les clés interdites.
+ */
+export interface SaveVariantNutritionPayload {
+  readonly energyKcal?: number | undefined;
+  readonly fatG?: number | undefined;
+  readonly saturatedFatG?: number | undefined;
+  readonly carbsG?: number | undefined;
+  readonly sugarsG?: number | undefined;
+  readonly proteinG?: number | undefined;
+  readonly saltG?: number | undefined;
+  readonly glycemicIndex?: number | undefined;
+}
 
 // ── Vues (formes rendues) ──────────────────────────────────────────────────
 
@@ -135,13 +188,29 @@ export interface VariantView {
   readonly priceCents: number | null;
   readonly weightGrams: number | null;
   /**
-   * Cette déclinaison **suit la fiche réglementaire de celle par défaut**.
+   * Cette déclinaison **suit les ALLERGÈNES de celle par défaut** — traces
+   * comprises, puisqu'une trace est un allergène.
    *
    * Toujours `false` sur le défaut, qui ne peut pas se suivre lui-même. L'écran
-   * en fait une case « aligner sur le défaut » : cochée, la carte réglementaire
-   * se lit sans se saisir.
+   * en fait une case « aligner sur le défaut » : cochée, la carte des
+   * allergènes se lit sans se saisir.
+   *
+   * ⚠️ Le nom dit encore « réglementaire » parce que la COLONNE le dit : la
+   * fiche s'aligne par moitié depuis le 2026-09-22, et renommer un champ servi
+   * à un front déployé se paierait en trois déploiements pour zéro sens de plus
+   * (`plan-separer-allergenes-et-nutrition.md`, §6d).
    */
   readonly regulatoryFollowsDefault: boolean;
+  /**
+   * Cette déclinaison **suit les VALEURS nutritionnelles de celle par défaut**.
+   *
+   * Séparé du précédent parce que les deux moitiés s'enregistrent séparément :
+   * saisir un tableau nutritionnel propre à une déclinaison ne doit pas
+   * l'obliger à retaper les allergènes du défaut, ni l'inverse.
+   *
+   * ⚠️ `nutrition.mayContain` ne suit PAS ce drapeau mais celui des allergènes.
+   */
+  readonly nutritionFollowsDefault: boolean;
   /**
    * Cette déclinaison **suit le tarif de celle par défaut** — prix ET poids.
    *
@@ -364,11 +433,25 @@ export type AddProductVariantPayload = z.infer<typeof addProductVariantPayloadSc
 /**
  * Ce qu'une déclinaison peut suivre du défaut.
  *
- * Deux valeurs, et c'est le MODÈLE qui le décide : l'identité, la communication
- * et les visuels sont portés par la fiche, donc une déclinaison ne peut pas en
- * diverger — il n'y a rien à aligner sur ce qu'on ne possède pas.
+ * Trois sections, et c'est le MODÈLE qui le décide : l'identité, la
+ * communication et les visuels sont portés par la fiche, donc une déclinaison
+ * ne peut pas en diverger — il n'y a rien à aligner sur ce qu'on ne possède
+ * pas. La fiche réglementaire, elle, en fait DEUX depuis le 2026-09-22 : ses
+ * moitiés s'enregistrent séparément, et un drapeau unique aurait fait suivre le
+ * défaut sur une moitié qu'on venait de saisir à la main.
+ *
+ * ⚠️ **Quatre valeurs pour trois sections.** `"regulatory"` désigne exactement
+ * la même chose que `"allergens"` : les valeurs s'AJOUTENT, on ne renomme pas
+ * (`plan-separer-allergenes-et-nutrition.md`, §6d). Plus aucun écran ne
+ * l'envoie depuis le 2026-09-22, et elle reste pourtant ACCEPTÉE : le
+ * back-office n'est pas déployé en même temps que l'API, et refuser pendant
+ * cette fenêtre casserait l'alignement depuis la version encore en ligne. La
+ * retirer est un geste à part, une fois la bascule du front en production.
+ *
+ * La correspondance vit à **un seul endroit**, côté domaine — `ASPECT_FLAG` de
+ * `variant.ts`.
  */
-export const variantAspectSchema = z.enum(["regulatory", "pricing"]);
+export const variantAspectSchema = z.enum(["regulatory", "allergens", "pricing", "nutrition"]);
 export type VariantAspect = z.infer<typeof variantAspectSchema>;
 
 export const alignVariantPayloadSchema = z.object({

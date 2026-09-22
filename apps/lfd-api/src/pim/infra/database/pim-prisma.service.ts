@@ -47,7 +47,15 @@ export abstract class PimPrismaService {
   abstract readonly productContextVat: PrismaService["productContextVat"];
   abstract readonly product: PrismaService["product"];
   abstract readonly productVariant: PrismaService["productVariant"];
-  abstract readonly nutritionDeclaration: PrismaService["nutritionDeclaration"];
+  /**
+   * Les deux moitiés de la fiche réglementaire. Elles ont remplacé
+   * `nutrition_declaration` le 2026-09-22 — laquelle n'est plus atteignable
+   * d'ici, précisément parce que cette surface ne la déclare plus. La TABLE,
+   * elle, reste en base : sa suppression est un déploiement à part, décidé à la
+   * main (plan `plan-separer-allergenes-et-nutrition.md`, lot 7).
+   */
+  abstract readonly variantAllergens: PrismaService["variantAllergens"];
+  abstract readonly nutritionValues: PrismaService["nutritionValues"];
   abstract readonly productEditorial: PrismaService["productEditorial"];
   abstract readonly productReadiness: PrismaService["productReadiness"];
   abstract readonly catalogContent: PrismaService["catalogContent"];

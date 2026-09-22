@@ -2,12 +2,10 @@ import { Body, Controller, Get, Param, Post, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   createProductPayloadSchema,
-  declareNutritionPayloadSchema,
   productEditorialPayloadSchema,
   updateProductIdentityPayloadSchema,
   updateVariantPricingPayloadSchema,
   type CreateProductPayload,
-  type DeclareNutritionPayload,
   type ProductDetailView,
   type ProductEditorialPayload,
   type ProductReadinessView,
@@ -26,6 +24,10 @@ import {
   renameProductVariantPayloadSchema,
   type RenameProductVariantPayload,
   type AlignVariantPayload,
+  saveVariantAllergensPayloadSchema,
+  saveVariantNutritionPayloadSchema,
+  type SaveVariantAllergensPayload,
+  type SaveVariantNutritionPayload,
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
@@ -36,7 +38,8 @@ import { AlignVariantOnDefaultCommand } from "../application/align-variant-on-de
 import { ArchiveProductCommand } from "../application/archive-product.js";
 import { CreateProductCommand } from "../application/create-product.js";
 import { DeclareProductReadyCommand } from "../application/declare-product-ready.js";
-import { DeclareProductNutritionCommand } from "../application/declare-product-nutrition.js";
+import { SaveVariantAllergensCommand } from "../application/save-variant-allergens.js";
+import { SaveVariantNutritionCommand } from "../application/save-variant-nutrition.js";
 import { GetProductDetailQuery } from "../application/get-product-detail.js";
 import { GetProductReadinessQuery } from "../application/get-product-readiness.js";
 import { ListProductsQuery } from "../application/list-products.js";
@@ -240,16 +243,43 @@ export class ProductController {
     return { id, variantId };
   }
 
-  /** Section Allergènes (fiche réglementaire de la déclinaison). */
-  @Put(":id/variants/:variantId/nutrition")
-  async declareVariantNutrition(
+  /**
+   * Section **Allergènes** : ce que la déclinaison contient, et ses traces.
+   *
+   * Séparée de la nutrition depuis le 2026-09-22 : une seule requête remplaçait
+   * les deux moitiés, donc celui qui écrivait l'une devait renvoyer l'autre — et
+   * l'oublier l'effaçait, sur de la donnée d'étiquette.
+   */
+  @Put(":id/variants/:variantId/allergens")
+  async saveVariantAllergens(
     @Param("id") id: string,
     @Param("variantId") variantId: string,
-    @Body(new ZodBody(declareNutritionPayloadSchema))
-    body: DeclareNutritionPayload,
+    @Body(new ZodBody(saveVariantAllergensPayloadSchema))
+    body: SaveVariantAllergensPayload,
   ) {
-    await this.commands.execute<DeclareProductNutritionCommand, void>(
-      new DeclareProductNutritionCommand(id, variantId, body),
+    await this.commands.execute<SaveVariantAllergensCommand, void>(
+      new SaveVariantAllergensCommand(id, variantId, body),
+    );
+    return { id, variantId };
+  }
+
+  /**
+   * Section **Nutrition** : les valeurs pour 100 g.
+   *
+   * ⚠️ **Refuse (400) un corps qui porte `allergens` ou `mayContain`.** Cette
+   * adresse recevait la fiche entière ; les accepter sans les écrire rendrait un
+   * `200` sur une déclaration de sécurité que personne n'a enregistrée, ce qui
+   * est pire qu'un refus (§7 du plan). Le message nomme la route de sortie.
+   */
+  @Put(":id/variants/:variantId/nutrition")
+  async saveVariantNutrition(
+    @Param("id") id: string,
+    @Param("variantId") variantId: string,
+    @Body(new ZodBody(saveVariantNutritionPayloadSchema))
+    body: SaveVariantNutritionPayload,
+  ) {
+    await this.commands.execute<SaveVariantNutritionCommand, void>(
+      new SaveVariantNutritionCommand(id, variantId, body),
     );
     return { id, variantId };
   }

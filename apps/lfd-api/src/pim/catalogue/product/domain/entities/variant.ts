@@ -3,21 +3,14 @@ import {
   InvalidVariantPricingError,
 } from "../errors/product-errors.js";
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
+import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 
-/** Valeurs nutritionnelles pour 100 g ; chaque champ `null` = non renseigné. */
 /**
- * Ce qu'une déclaration pose sur une déclinaison — les deux moitiés de la fiche.
- *
- * Elles voyagent ensemble tant que la route et la table sont uniques. Le lot 3
- * les sépare, et ce type est l'endroit où la séparation se verra.
+ * Ce que l'instantané rend sous `nutrition` : les valeurs pour 100 g — chaque
+ * champ `null` = non renseigné — **et** les traces, qui n'y sont plus que par
+ * le contrat servi au front (§6d du plan `plan-separer-allergenes-et-nutrition.md`).
  */
-export interface VariantRegulatorySheet {
-  /** `[]` = « aucun allergène », affirmation. `null` n'est pas déclarable. */
-  readonly allergens: readonly string[];
-  readonly nutrition: VariantNutritionSnapshot | null;
-}
-
 export interface VariantNutritionSnapshot {
   readonly mayContain: readonly string[];
   readonly energyKcal: number | null;
@@ -31,17 +24,69 @@ export interface VariantNutritionSnapshot {
 }
 
 /**
- * Ce qu'une déclinaison peut **suivre** de celle par défaut.
+ * **Les valeurs seules**, sans une trace ni un allergène — ce que la moitié
+ * nutrition pose. Dérivée de l'instantané plutôt que recopiée : les deux ne
+ * peuvent pas diverger, et le jour où `mayContain` sortira de la vue (§6d du
+ * plan), les deux formes se rejoindront sans qu'on y touche.
+ */
+export type VariantNutritionValues = Omit<VariantNutritionSnapshot, "mayContain">;
+
+/** Les valeurs quand personne n'en a saisi aucune — huit `null`, pas un zéro. */
+const BLANK_NUTRITION: VariantNutritionSnapshot = {
+  mayContain: [],
+  energyKcal: null,
+  fatG: null,
+  saturatedFatG: null,
+  carbsG: null,
+  sugarsG: null,
+  proteinG: null,
+  saltG: null,
+  glycemicIndex: null,
+};
+
+/**
+ * Ce qu'une déclinaison peut **suivre** de celle par défaut, tel qu'on le
+ * DEMANDE — la surface acceptée en écriture.
  *
- * Une union nommée et non deux méthodes jumelles : le jour où une troisième
+ * Une union nommée et non des méthodes jumelles : le jour où une quatrième
  * section devient alignable, c'est une valeur de plus ici et une colonne de
- * plus en base — pas un troisième chemin à tenir d'accord avec les deux autres.
+ * plus en base — pas un chemin de plus à tenir d'accord avec les autres.
  *
- * Il n'y en a que deux, et c'est le MODÈLE qui le décide : l'identité, la
+ * Trois sections seulement, et c'est le MODÈLE qui le décide : l'identité, la
  * communication et les visuels sont portés par la fiche, donc une déclinaison
  * ne peut pas en diverger — il n'y a rien à aligner sur ce qu'on ne possède pas.
  */
-export type VariantAspect = "regulatory" | "pricing";
+export type VariantAspect = "regulatory" | "allergens" | "pricing" | "nutrition";
+
+/**
+ * Les drapeaux réellement PORTÉS — un par colonne, et trois pour quatre mots.
+ *
+ * `regulatory_follows_default` est devenue celle des allergènes le 2026-09-22
+ * sans changer de nom : elle garde sa valeur et ses lecteurs, et n'en perd
+ * qu'une moitié de sens (`plan-separer-allergenes-et-nutrition.md`, §6d).
+ */
+type VariantFlag = "regulatory" | "pricing" | "nutrition";
+
+/**
+ * 🔴 **Le seul endroit où `"regulatory"` et `"allergens"` se rejoignent.**
+ *
+ * Les valeurs de l'énumération s'AJOUTENT, on ne renomme pas : `"regulatory"`
+ * est déjà posée dans des faits de journal que personne ne réécrira. Elle
+ * désigne donc le drapeau des allergènes, exactement comme `"allergens"`.
+ *
+ * Plus aucun écran ne l'émet depuis le 2026-09-22 ; elle reste acceptée le
+ * temps que la bascule du back-office soit en production, puisque les deux ne
+ * se déploient pas ensemble. Le jour où elle se retire, cette table perd une
+ * ligne et rien d'autre — résoudre la correspondance ailleurs (un `if` dans le
+ * handler, un autre dans l'adaptateur) l'aurait rendue impossible à retirer
+ * sans les retrouver tous.
+ */
+const ASPECT_FLAG: Readonly<Record<VariantAspect, VariantFlag>> = {
+  regulatory: "regulatory",
+  allergens: "regulatory",
+  pricing: "pricing",
+  nutrition: "nutrition",
+};
 
 export interface VariantSnapshot {
   readonly id: string;
@@ -52,17 +97,30 @@ export interface VariantSnapshot {
   readonly isDiscontinued: boolean;
   readonly position: number;
   /**
-   * Cette déclinaison **suit la fiche réglementaire de celle par défaut**.
+   * Cette déclinaison **suit les ALLERGÈNES de celle par défaut** — traces
+   * comprises, puisqu'une trace est un allergène.
    *
    * Un drapeau, et non l'absence de `allergens` : cette absence dit déjà « rien
    * n'a été déclaré », l'état que l'invariant 7 refuse de mettre en vente. Lui
    * faire dire aussi « hérite » ferait dire deux choses au même silence, dont
    * l'une autoriserait la vente d'un article non étiqueté.
    *
+   * Le nom reste celui de la COLONNE, qui ne bouge pas (§6d du plan).
+   *
    * Toujours `false` sur la déclinaison par défaut : elle ne peut pas se suivre
    * elle-même.
    */
   readonly regulatoryFollowsDefault: boolean;
+  /**
+   * Cette déclinaison **suit les VALEURS nutritionnelles de celle par défaut**.
+   *
+   * Séparé du précédent parce que les deux moitiés de la fiche s'enregistrent
+   * séparément depuis le lot 3 : un drapeau unique aurait fait suivre le défaut
+   * sur une moitié qu'on venait de saisir à la main.
+   *
+   * Toujours `false` sur la déclinaison par défaut.
+   */
+  readonly nutritionFollowsDefault: boolean;
   /**
    * Cette déclinaison **suit le tarif de celle par défaut** — prix ET poids
    * ensemble, jamais l'un sans l'autre : un prix hérité au-dessus d'un poids
@@ -86,12 +144,15 @@ export interface VariantSnapshot {
  * Elle ne vit jamais seule : on ne la charge pas, on ne la sauve pas, on
  * l'atteint par son produit. C'est ce qui rend tenables les invariants qui
  * traversent les deux (« exactement une par défaut », « pas de publication
- * sans fiche sur chaque déclinaison active »).
+ * sans déclaration d'ALLERGÈNES sur chaque déclinaison active » — les valeurs
+ * nutritionnelles n'entrent pas dans ce compte, voir
+ * {@link declaresOwnAllergens}).
  *
- * La fiche réglementaire (`allergens` / `nutrition`) est ici en **lecture
- * seule** : elle s'écrit par son propre verbe, à travers `NutritionRepository`.
- * La déclinaison la porte pour que le produit puisse répondre « suis-je
- * publiable ? » sans aller la rechercher ailleurs.
+ * La fiche réglementaire (`allergens` / `nutrition`) ne s'écrit ici que par ses
+ * verbes, et elle se PERSISTE par deux ports dédiés — un par table
+ * (`VariantAllergensRepository`, `NutritionValuesRepository`). La déclinaison la
+ * porte pour que le produit puisse répondre « suis-je publiable ? » sans aller
+ * la rechercher ailleurs.
  */
 /** Ce que la section « Tarif & TVA » possède, pour une déclinaison. */
 export interface VariantPricing {
@@ -111,7 +172,7 @@ export class Variant {
   private weightGramsValue: number | null;
   private allergensValue: readonly string[] | null;
   private nutritionValue: VariantNutritionSnapshot | null;
-  private readonly followsDefault: Record<VariantAspect, boolean>;
+  private readonly followsDefault: Record<VariantFlag, boolean>;
 
   /**
    * L'instantané, et non onze arguments positionnels.
@@ -136,6 +197,7 @@ export class Variant {
     this.followsDefault = {
       regulatory: snapshot.regulatoryFollowsDefault,
       pricing: snapshot.pricingFollowsDefault,
+      nutrition: snapshot.nutritionFollowsDefault,
     };
   }
 
@@ -160,6 +222,7 @@ export class Variant {
       // Elle ne peut pas se suivre elle-même : c'est ELLE, le défaut.
       regulatoryFollowsDefault: false,
       pricingFollowsDefault: false,
+      nutritionFollowsDefault: false,
       allergens: null,
       nutrition: null,
     });
@@ -197,6 +260,10 @@ export class Variant {
       priceCents: null,
       weightGrams: null,
       regulatoryFollowsDefault: true,
+      // Les VALEURS naissent alignées pour la même raison que les allergènes :
+      // née nue, la déclinaison afficherait un tableau vide là où celui du
+      // défaut décrit la même pâte. Se désaligner est ensuite un geste.
+      nutritionFollowsDefault: true,
       // Le TARIF, lui, ne s'aligne pas d'office : une seconde déclinaison
       // existe le plus souvent parce qu'elle se vend autrement, et un prix
       // hérité par défaut se facturerait sans que personne l'ait décidé.
@@ -230,9 +297,14 @@ export class Variant {
     return this.positionValue;
   }
 
-  /** Suit-elle la fiche du défaut plutôt que d'en porter une ? */
+  /** Suit-elle les allergènes du défaut plutôt que d'en déclarer ? */
   get regulatoryFollowsDefault(): boolean {
     return this.followsDefault.regulatory;
+  }
+
+  /** Suit-elle les valeurs nutritionnelles du défaut plutôt que les siennes ? */
+  get nutritionFollowsDefault(): boolean {
+    return this.followsDefault.nutrition;
   }
 
   /** Suit-elle le tarif du défaut — prix et poids — plutôt que le sien ? */
@@ -241,27 +313,45 @@ export class Variant {
   }
 
   follows(aspect: VariantAspect): boolean {
-    return this.followsDefault[aspect];
+    return this.followsDefault[ASPECT_FLAG[aspect]];
   }
 
   /**
-   * Invariant 7 : `[]` compte comme déclaré — c'est une affirmation positive.
+   * **Cette déclinaison déclare-t-elle SES allergènes ?** — et rien d'autre.
+   *
+   * `[]` compte comme déclaré : « aucun allergène » est une affirmation
+   * positive, `null` est un silence. C'est le seul fait que l'invariant 7
+   * regarde.
+   *
+   * 🔴 Le verbe s'appelait `hasOwnRegulatorySheet` et lisait déjà cette
+   * colonne-ci : depuis que la fiche s'enregistre en deux moitiés, « fiche
+   * réglementaire » désigne aussi les valeurs nutritionnelles, et le nom
+   * laissait croire qu'elles comptaient. Elles ne comptent pas, et le
+   * règlement (UE) n° 1169/2011 dit pourquoi — art. 9 §1 c) obligatoire, point
+   * l) exempté par l'art. 44 §1 comme par l'annexe V pt 19
+   * (`plan-separer-allergenes-et-nutrition.md`, D2).
    *
    * ⚠️ Ne répond que pour ELLE. Une déclinaison alignée n'en porte aucune, et
    * c'est l'agrégat — seul à voir le défaut — qui décide si elle est couverte.
    */
-  get hasOwnRegulatorySheet(): boolean {
+  get declaresOwnAllergens(): boolean {
     return this.allergensValue !== null;
   }
 
   /**
-   * **Déclare la fiche réglementaire de CETTE déclinaison.**
+   * **La moitié « sécurité » seule** — ce que la déclinaison contient, et ses
+   * traces. Les valeurs nutritionnelles restent ce qu'elles étaient.
    *
-   * Le verbe existe pour que l'agrégat cesse d'être périmé après une écriture :
-   * la fiche s'écrivait par un port sans jamais repasser par lui, si bien que
-   * `hasOwnRegulatorySheet` continuait de répondre sur l'état d'AVANT. Rien
-   * n'en dépendait dans le même geste — mais l'invariant 7 se juge sur cet
-   * état, et le lot 5 le lira juste après avoir déclaré.
+   * Deux verbes plutôt qu'un depuis le 2026-09-22 : la fiche s'enregistre par
+   * deux gestes, et le verbe unique qui écrivait les deux moitiés obligeait
+   * celui qui en écrivait une à fournir l'autre — c'est-à-dire à l'effacer s'il
+   * l'oubliait. Sur les allergènes, l'oublier revenait à affirmer « aucun »
+   * (plan `plan-separer-allergenes-et-nutrition.md`, bug 0c).
+   *
+   * Le verbe existe aussi pour que l'agrégat cesse d'être périmé après une
+   * écriture : la fiche s'écrivait par un port sans jamais repasser par lui, si
+   * bien que `declaresOwnAllergens` répondait sur l'état d'AVANT — or
+   * l'invariant 7 se juge sur cet état, et il le lit juste après avoir déclaré.
    *
    * 🔴 **L'écriture reste au port dédié**, et ce n'est pas un oubli
    * (`plan-separer-allergenes-et-nutrition.md`, §6a). La confier à `save()`
@@ -272,11 +362,32 @@ export class Variant {
    *
    * ⚠️ La validation, elle, n'est PAS ici : elle demande le référentiel des
    * allergènes, qui vit en base. Le domaine reçoit une déclaration déjà
-   * construite par `nutritionDeclaration()` — valide ou rien.
+   * construite par `allergenDeclaration()` — valide ou rien.
+   *
+   * ⚠️ Les traces atterrissent dans `nutritionValue` parce que l'instantané les
+   * y porte encore — le contrat servi au front ne bouge pas dans ce lot (§6d).
+   * En base, elles sont dans la table des allergènes depuis le lot 1.
    */
-  declareRegulatorySheet(declaration: VariantRegulatorySheet): void {
+  declareAllergens(declaration: AllergenDeclaration): void {
     this.allergensValue = declaration.allergens;
-    this.nutritionValue = declaration.nutrition;
+    this.nutritionValue = {
+      ...(this.nutritionValue ?? BLANK_NUTRITION),
+      mayContain: declaration.mayContain,
+    };
+  }
+
+  /**
+   * **La moitié « valeurs » seule.** Les allergènes et les traces restent ce
+   * qu'ils étaient — y compris `null`, qui veut dire « personne n'a déclaré ».
+   *
+   * C'est la garantie que ce chantier existe pour donner : enregistrer un
+   * tableau nutritionnel ne peut pas fabriquer une affirmation d'allergène.
+   */
+  declareNutritionValues(values: VariantNutritionValues): void {
+    this.nutritionValue = {
+      mayContain: this.nutritionValue?.mayContain ?? [],
+      ...values,
+    };
   }
 
   /**
@@ -297,7 +408,7 @@ export class Variant {
     if (aligned && this.defaultFlag) {
       throw new DefaultVariantCannotFollowItselfError(this.skuValue);
     }
-    this.followsDefault[aspect] = aligned;
+    this.followsDefault[ASPECT_FLAG[aspect]] = aligned;
   }
 
   /**
@@ -345,6 +456,7 @@ export class Variant {
       weightGrams: this.weightGramsValue,
       regulatoryFollowsDefault: this.followsDefault.regulatory,
       pricingFollowsDefault: this.followsDefault.pricing,
+      nutritionFollowsDefault: this.followsDefault.nutrition,
       allergens: this.allergensValue,
       nutrition: this.nutritionValue,
     };
@@ -360,4 +472,43 @@ function requireCountOrNull(field: string, value: number | null): number | null 
     throw new InvalidVariantPricingError(field, value);
   }
   return value;
+}
+
+/**
+ * Le drapeau d'une section, **lu sur un instantané** plutôt que sur l'entité.
+ *
+ * Pour l'appelant qui a relevé l'état d'AVANT et veut savoir si le geste change
+ * quelque chose : l'entité, elle, porte déjà la nouvelle valeur. Exporté pour
+ * que la correspondance `"regulatory"` → allergènes n'existe qu'ici.
+ */
+export function followsDefaultIn(snapshot: VariantSnapshot, aspect: VariantAspect): boolean {
+  const flags: Record<VariantFlag, boolean> = {
+    regulatory: snapshot.regulatoryFollowsDefault,
+    pricing: snapshot.pricingFollowsDefault,
+    nutrition: snapshot.nutritionFollowsDefault,
+  };
+  return flags[ASPECT_FLAG[aspect]];
+}
+
+/**
+ * Recolle une moitié de fiche à l'autre — **les traces d'un côté, les valeurs
+ * de l'autre**.
+ *
+ * Les deux moitiés s'alignent séparément, et `mayContain` est une déclaration
+ * d'ALLERGÈNE : elle suit le drapeau des allergènes, jamais celui de la
+ * nutrition. Sans ce recollage, une déclinaison qui suit le défaut sur ses
+ * traces et porte ses propres valeurs aurait rendu l'un des deux à la place de
+ * l'autre — c'est-à-dire une trace du mauvais article sur une étiquette.
+ *
+ * `null` des deux côtés = personne ne s'est prononcé ; c'est le seul cas où
+ * l'instantané nutritionnel n'existe pas.
+ */
+export function composeNutrition(
+  traces: VariantNutritionSnapshot | null,
+  values: VariantNutritionSnapshot | null,
+): VariantNutritionSnapshot | null {
+  if (traces === null && values === null) {
+    return null;
+  }
+  return { ...(values ?? BLANK_NUTRITION), mayContain: traces?.mayContain ?? [] };
 }

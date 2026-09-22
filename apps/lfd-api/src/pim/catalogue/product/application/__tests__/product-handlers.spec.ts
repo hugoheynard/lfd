@@ -4,6 +4,7 @@ import {
   InMemoryAllergenCatalogueReader,
 } from "../../../../allergens/application/__tests__/in-memory-allergens.js";
 import { ArchivedAllergenDeclaredError } from "../../../../allergens/domain/errors/allergen-errors.js";
+import { NutritionPartExceedsWholeError } from "../../domain/value-objects/nutrition-declaration.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import {
   ArchivedProductNotWithdrawableError,
@@ -25,15 +26,21 @@ import {
 } from "../../domain/ports/editorial-reader.js";
 import { EditorialRepository } from "../../domain/ports/editorial.repository.js";
 import { SetProductMediaCommand, SetProductMediaHandler } from "../set-product-media.js";
-import { NutritionRepository } from "../../domain/ports/nutrition.repository.js";
+import { NutritionValuesRepository } from "../../domain/ports/nutrition-values.repository.js";
+import { VariantAllergensRepository } from "../../domain/ports/variant-allergens.repository.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
 import type { Editorial, MediaItem } from "../../domain/value-objects/editorial.js";
-import type { NutritionDeclaration } from "../../domain/value-objects/nutrition-declaration.js";
+import type {
+  AllergenDeclaration,
+  NutritionValues,
+} from "../../domain/value-objects/nutrition-declaration.js";
 import { ArchiveProductHandler } from "../archive-product.js";
 import { ArchiveProductCommand } from "../archive-product.js";
-import { DeclareProductNutritionHandler } from "../declare-product-nutrition.js";
-import { DeclareProductNutritionCommand } from "../declare-product-nutrition.js";
+import { SaveVariantAllergensHandler } from "../save-variant-allergens.js";
+import { SaveVariantAllergensCommand } from "../save-variant-allergens.js";
+import { SaveVariantNutritionHandler } from "../save-variant-nutrition.js";
+import { SaveVariantNutritionCommand } from "../save-variant-nutrition.js";
 import { ProductNotPublishableError } from "../../domain/errors/product-errors.js";
 import { PublishProductCommand, PublishProductHandler } from "../publish-product.js";
 import { RestoreProductHandler } from "../restore-product.js";
@@ -72,6 +79,7 @@ function seedProduct(): ProductSnapshot {
         priceCents: null,
         weightGrams: null,
         regulatoryFollowsDefault: false,
+        nutritionFollowsDefault: false,
         pricingFollowsDefault: false,
         allergens: null,
         nutrition: null,
@@ -101,7 +109,12 @@ class FakeProductRepository extends ProductRepository {
     return this.save(product);
   }
   save(product: Product): Promise<void> {
-    this.stored = product.snapshot();
+    // L'instantané NON résolu, exactement comme l'adaptateur Prisma. `snapshot()`
+    // résout l'héritage : l'écrire ici recopierait la fiche et le tarif du défaut
+    // dans les colonnes PROPRES d'une déclinaison alignée — la faute 0b/0d du plan
+    // `plan-separer-allergenes-et-nutrition.md`, rejouée par le double, qui rendait
+    // vert ce que la vraie base refuse de faire (constaté le 2026-09-22).
+    this.stored = product.persistenceSnapshot();
     return Promise.resolve();
   }
 
@@ -164,10 +177,18 @@ class FakeCategoryRepository extends CategoryRepository {
   }
 }
 
-class RecordingNutritionRepository extends NutritionRepository {
-  readonly calls: { variantId: string; declaration: NutritionDeclaration }[] = [];
-  declare(variantId: string, declaration: NutritionDeclaration): Promise<void> {
+class RecordingAllergensRepository extends VariantAllergensRepository {
+  readonly calls: { variantId: string; declaration: AllergenDeclaration }[] = [];
+  save(variantId: string, declaration: AllergenDeclaration): Promise<void> {
     this.calls.push({ variantId, declaration });
+    return Promise.resolve();
+  }
+}
+
+class RecordingNutritionRepository extends NutritionValuesRepository {
+  readonly calls: { variantId: string; values: NutritionValues }[] = [];
+  save(variantId: string, values: NutritionValues): Promise<void> {
+    this.calls.push({ variantId, values });
     return Promise.resolve();
   }
 }
@@ -453,39 +474,120 @@ function reference(): InMemoryAllergenCatalogueReader {
   return new InMemoryAllergenCatalogueReader(store);
 }
 
-function declareHandler(
+function allergensHandler(
   products: FakeProductRepository,
-  nutrition: RecordingNutritionRepository,
-): DeclareProductNutritionHandler {
-  return new DeclareProductNutritionHandler(
+  allergens: RecordingAllergensRepository,
+): SaveVariantAllergensHandler {
+  return new SaveVariantAllergensHandler(
     products,
-    nutrition,
+    allergens,
     reference(),
     new RecordingJournal(),
     new DirectUnitOfWork(),
   );
 }
 
-describe("DeclareProductNutritionHandler", () => {
-  it("déclare la fiche réglementaire de la déclinaison", async () => {
+function nutritionHandler(
+  products: FakeProductRepository,
+  values: RecordingNutritionRepository,
+): SaveVariantNutritionHandler {
+  return new SaveVariantNutritionHandler(
+    products,
+    values,
+    new RecordingJournal(),
+    new DirectUnitOfWork(),
+  );
+}
+
+describe("SaveVariantAllergensHandler", () => {
+  it("déclare les allergènes de la déclinaison", async () => {
     const products = new FakeProductRepository(seedProduct());
-    const nutrition = new RecordingNutritionRepository();
-    await declareHandler(products, nutrition).execute(
-      new DeclareProductNutritionCommand(PRODUCT_ID, VARIANT_ID, {
-        allergens: ["GB"],
-      }),
+    const allergens = new RecordingAllergensRepository();
+
+    await allergensHandler(products, allergens).execute(
+      new SaveVariantAllergensCommand(PRODUCT_ID, VARIANT_ID, { allergens: ["GB"] }),
     );
-    expect(nutrition.calls).toHaveLength(1);
-    expect(nutrition.calls[0]?.variantId).toBe(VARIANT_ID);
+
+    expect(allergens.calls).toHaveLength(1);
+    expect(allergens.calls[0]?.variantId).toBe(VARIANT_ID);
+    expect(allergens.calls[0]?.declaration).toEqual({ allergens: ["GB"], mayContain: [] });
   });
 
   it("refuse une déclaration sur une déclinaison étrangère", async () => {
     const products = new FakeProductRepository(seedProduct());
+
     await expect(
-      declareHandler(products, new RecordingNutritionRepository()).execute(
-        new DeclareProductNutritionCommand(PRODUCT_ID, "variant_etranger", {
-          allergens: [],
-        }),
+      allergensHandler(products, new RecordingAllergensRepository()).execute(
+        new SaveVariantAllergensCommand(PRODUCT_ID, "variant_etranger", { allergens: [] }),
+      ),
+    ).rejects.toBeInstanceOf(VariantNotFoundError);
+  });
+
+  /**
+   * 🔴 **Ce pour quoi le chantier existe.** Enregistrer les allergènes n'écrit
+   * pas une valeur nutritionnelle — il ne peut donc plus effacer un tableau que
+   * personne n'a rouvert (plan `plan-separer-allergenes-et-nutrition.md`, §1).
+   */
+  it("n'écrit AUCUNE valeur nutritionnelle", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const values = new RecordingNutritionRepository();
+
+    await allergensHandler(products, new RecordingAllergensRepository()).execute(
+      new SaveVariantAllergensCommand(PRODUCT_ID, VARIANT_ID, { allergens: ["GB"] }),
+    );
+
+    expect(values.calls).toEqual([]);
+  });
+});
+
+describe("SaveVariantNutritionHandler", () => {
+  it("enregistre les valeurs de la déclinaison", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const values = new RecordingNutritionRepository();
+
+    await nutritionHandler(products, values).execute(
+      new SaveVariantNutritionCommand(PRODUCT_ID, VARIANT_ID, { saltG: 2 }),
+    );
+
+    expect(values.calls).toHaveLength(1);
+    expect(values.calls[0]).toEqual({ variantId: VARIANT_ID, values: { saltG: 2 } });
+  });
+
+  /**
+   * 🔴 **L'autre moitié de la promesse.** Le bug 0c fabriquait « aucun
+   * allergène » depuis l'écran normal : enregistrer la fiche sans rien cocher
+   * écrivait une affirmation. Ici, la commande n'a même pas de port par lequel
+   * la fabriquer.
+   */
+  it("n'écrit AUCUN allergène", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const allergens = new RecordingAllergensRepository();
+
+    await nutritionHandler(products, new RecordingNutritionRepository()).execute(
+      new SaveVariantNutritionCommand(PRODUCT_ID, VARIANT_ID, { saltG: 2 }),
+    );
+
+    expect(allergens.calls).toEqual([]);
+  });
+
+  it("refuse un « dont » qui dépasse sa ligne", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const values = new RecordingNutritionRepository();
+
+    await expect(
+      nutritionHandler(products, values).execute(
+        new SaveVariantNutritionCommand(PRODUCT_ID, VARIANT_ID, { carbsG: 4, sugarsG: 12 }),
+      ),
+    ).rejects.toBeInstanceOf(NutritionPartExceedsWholeError);
+    expect(values.calls).toEqual([]);
+  });
+
+  it("refuse une déclaration sur une déclinaison étrangère", async () => {
+    const products = new FakeProductRepository(seedProduct());
+
+    await expect(
+      nutritionHandler(products, new RecordingNutritionRepository()).execute(
+        new SaveVariantNutritionCommand(PRODUCT_ID, "variant_etranger", { saltG: 2 }),
       ),
     ).rejects.toBeInstanceOf(VariantNotFoundError);
   });
@@ -494,11 +596,11 @@ describe("DeclareProductNutritionHandler", () => {
 /**
  * **D2 bis, le revers.** L'archivage retire un allergène de ce qu'on PROPOSE,
  * pas de ce qu'on reconnaît. Comme cette commande revalide la déclaration
- * ENTIÈRE à chaque enregistrement, un refus sec ferait échouer un changement de
- * valeur nutritionnelle sur un code que personne n'a touché — d'où la
- * distinction entre rééditer et ajouter.
+ * ENTIÈRE à chaque enregistrement, un refus sec ferait échouer le retrait d'un
+ * autre code sur un code archivé que personne n'a touché — d'où la distinction
+ * entre rééditer et ajouter.
  */
-describe("DeclareProductNutritionHandler — un code archivé", () => {
+describe("SaveVariantAllergensHandler — un code archivé", () => {
   /** La fiche cite déjà `OLD` : elle a été enregistrée avant l'archivage. */
   function alreadyCiting(
     codes: readonly string[],
@@ -530,43 +632,43 @@ describe("DeclareProductNutritionHandler — un code archivé", () => {
 
   it("refuse de l'AJOUTER à une fiche qui ne le citait pas", async () => {
     const products = new FakeProductRepository(seedProduct());
-    const nutrition = new RecordingNutritionRepository();
+    const allergens = new RecordingAllergensRepository();
 
     await expect(
-      declareHandler(products, nutrition).execute(
-        new DeclareProductNutritionCommand(PRODUCT_ID, VARIANT_ID, { allergens: ["GB", "OLD"] }),
+      allergensHandler(products, allergens).execute(
+        new SaveVariantAllergensCommand(PRODUCT_ID, VARIANT_ID, { allergens: ["GB", "OLD"] }),
       ),
     ).rejects.toBeInstanceOf(ArchivedAllergenDeclaredError);
-    expect(nutrition.calls).toHaveLength(0);
+    expect(allergens.calls).toHaveLength(0);
   });
 
   it("laisse RÉENREGISTRER une fiche qui le citait déjà", async () => {
     const products = new FakeProductRepository(alreadyCiting(["OLD"]));
-    const nutrition = new RecordingNutritionRepository();
+    const allergens = new RecordingAllergensRepository();
 
-    await declareHandler(products, nutrition).execute(
-      // Seule la valeur nutritionnelle change ; l'allergène archivé traverse.
-      new DeclareProductNutritionCommand(PRODUCT_ID, VARIANT_ID, {
+    await allergensHandler(products, allergens).execute(
+      // Seule la trace change ; l'allergène archivé traverse.
+      new SaveVariantAllergensCommand(PRODUCT_ID, VARIANT_ID, {
         allergens: ["OLD"],
-        nutrition: { saltG: 2 },
+        mayContain: ["GB"],
       }),
     );
 
-    expect(nutrition.calls[0]?.declaration.allergens).toEqual(["OLD"]);
+    expect(allergens.calls[0]?.declaration.allergens).toEqual(["OLD"]);
   });
 
   it("compte aussi les TRACES dans ce qui était déjà déclaré", async () => {
     const products = new FakeProductRepository(alreadyCiting([], ["OLD"]));
-    const nutrition = new RecordingNutritionRepository();
+    const allergens = new RecordingAllergensRepository();
 
-    await declareHandler(products, nutrition).execute(
-      new DeclareProductNutritionCommand(PRODUCT_ID, VARIANT_ID, {
+    await allergensHandler(products, allergens).execute(
+      new SaveVariantAllergensCommand(PRODUCT_ID, VARIANT_ID, {
         allergens: [],
         mayContain: ["OLD"],
       }),
     );
 
-    expect(nutrition.calls[0]?.declaration.mayContain).toEqual(["OLD"]);
+    expect(allergens.calls[0]?.declaration.mayContain).toEqual(["OLD"]);
   });
 });
 
@@ -634,6 +736,80 @@ describe("PublishProductHandler", () => {
         new DirectUnitOfWork(),
       ).execute(new PublishProductCommand(PRODUCT_ID)),
     ).rejects.toBeInstanceOf(ProductNotFoundError);
+  });
+});
+
+/**
+ * 🔴 **L'invariant 7 s'écrit sur les allergènes seuls** — lot 5 du plan
+ * `plan-separer-allergenes-et-nutrition.md` (D2, D3).
+ *
+ * Vu du handler : ce qui décide d'un `409` est la moitié **allergènes** de la
+ * fiche, jamais la moitié valeurs. Le règlement (UE) n° 1169/2011 trie
+ * exactement comme ça — art. 9 §1 point c) obligatoire, point l) exempté par
+ * l'art. 44 §1 comme par l'annexe V pt 19 — donc l'invariant cesse d'exiger ce
+ * que le règlement n'exige pas. C'est un redressement, pas une dérogation.
+ *
+ * ⚠️ Les deux gestes d'écriture n'écrivent PAS dans le dépôt produit : ils ont
+ * chacun leur port de table (§6a). L'état est donc semé ici tel que
+ * l'adaptateur le recollerait à la lecture — et c'est l'e2e qui éprouve le
+ * recollage lui-même, faute de join dans un double.
+ */
+describe("publier ne regarde que les allergènes", () => {
+  function publishing(repo: FakeProductRepository): Promise<void> {
+    return new PublishProductHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
+      new PublishProductCommand(PRODUCT_ID),
+    );
+  }
+
+  /** L'état d'une déclinaison, moitié par moitié. */
+  function variantWith(over: Partial<ProductSnapshot["variants"][number]>): FakeProductRepository {
+    const seeded = seedProduct();
+    const [variant] = seeded.variants;
+    return new FakeProductRepository({ ...seeded, variants: [{ ...variant!, ...over }] });
+  }
+
+  /** Sept valeurs de l'annexe XV plus l'indice : seule l'énergie est saisie. */
+  const ENERGY_ONLY = {
+    mayContain: [],
+    energyKcal: 410,
+    fatG: null,
+    saturatedFatG: null,
+    carbsG: null,
+    sugarsG: null,
+    proteinG: null,
+    saltG: null,
+    glycemicIndex: null,
+  } as const;
+
+  /**
+   * 🔴 Cas 1. Des allergènes, aucune valeur — le cas NORMAL en boutique, celui
+   * que l'ancienne règle refusait et qui laissait 92 fiches en brouillon.
+   */
+  it("publie des allergènes déclarés sans la moindre valeur nutritionnelle", async () => {
+    const repo = variantWith({ allergens: ["UW"], nutrition: null });
+
+    await publishing(repo);
+
+    expect(repo.snapshot()?.status).toBe("published");
+  });
+
+  /**
+   * 🔴 Cas 2. Des valeurs, aucune déclaration — l'état nommé de D3. Le refus
+   * doit NOMMER la référence : le back-office ne lit que ce message.
+   */
+  it("refuse des valeurs nutritionnelles sans déclaration d’allergène", async () => {
+    const repo = variantWith({ allergens: null, nutrition: ENERGY_ONLY });
+
+    await expect(publishing(repo)).rejects.toBeInstanceOf(ProductNotPublishableError);
+    await expect(publishing(repo)).rejects.toThrow("CAFE-1-1");
+    expect(repo.snapshot()?.status).toBe("draft");
+  });
+
+  /** Et il dit le geste de sortie, pas seulement le refus. */
+  it("nomme la section à ouvrir plutôt que de dire « non »", async () => {
+    const repo = variantWith({ allergens: null, nutrition: ENERGY_ONLY });
+
+    await expect(publishing(repo)).rejects.toThrow(/Allergènes/);
   });
 });
 

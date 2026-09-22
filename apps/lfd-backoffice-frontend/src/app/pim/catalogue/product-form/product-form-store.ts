@@ -1,4 +1,11 @@
-import { Injectable, computed, inject, signal, type Signal } from '@angular/core';
+import {
+  Injectable,
+  computed,
+  inject,
+  signal,
+  type Signal,
+  type WritableSignal,
+} from '@angular/core';
 
 import {
   htFromTtc,
@@ -10,11 +17,30 @@ import {
   type Locale,
   type LocalizedText,
   type ProductReadinessView,
+  type VariantAspect,
 } from '@lfd/pim-contracts';
 
 import { MILLICENTS_PER_CENT } from '@lfd/money';
 
 import { variantTabLabel } from './variant-label';
+import {
+  bucketsOf,
+  citedNotDeclaredIn,
+  groupsOf,
+  singlesOf,
+  traceOptionsOf,
+} from './allergen-choices';
+import {
+  NO_DECLARATION,
+  declaresNone,
+  hasDeclared,
+  selectedAllergens,
+  withAllergen,
+  withCitedAdopted,
+  withNoAllergen,
+  withTraces,
+  type AllergenDeclaration,
+} from './allergen-declaration';
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
@@ -53,22 +79,17 @@ export interface KindOption {
   readonly label: string;
 }
 
-export interface AllergenGroup {
-  readonly incoLabel: string;
-  readonly entries: readonly AllergenEntry[];
-}
-
 /**
- * Une catégorie INCO qui ne contient **qu'une** substance — son nom EST la
- * substance. « Céleri » ne groupe rien ; « Fruits à coque » groupe quatre
- * fruits. Les premières se cochent à plat, les secondes seules méritent une
- * boîte.
+ * Le regroupement du registre INCO et ses libellés vivent dans
+ * `allergen-choices.ts` — des règles de présentation du référentiel, pures et
+ * éprouvables sans formulaire. Réexportés ici : les panneaux les tenaient du
+ * magasin.
+ *
+ * `AllergenGroup` garde son nom d'usage à l'écran ; c'est le même objet que
+ * `AllergenBucket`.
  */
-export interface AllergenChoice {
-  readonly code: string;
-  /** Le libellé d'ÉTIQUETTE, celui qui fait foi — « Anhydride sulfureux et sulfites ». */
-  readonly label: string;
-}
+export type { AllergenChoice } from './allergen-choices';
+export type { AllergenBucket as AllergenGroup } from './allergen-choices';
 
 /**
  * Un taux, en DEUX faits plutôt qu'en une phrase : « Réduit » nomme le régime,
@@ -198,11 +219,26 @@ export interface CategoryInheritanceView {
   readonly channels: readonly ChannelInheritance[];
 }
 
-/** Les sections **enregistrables** — la seule source des clés de section. */
-export type FormSection = 'identite' | 'tarif' | 'fiche' | 'communication' | 'visuels';
+/**
+ * Les sections **enregistrables** — la seule source des clés de section.
+ *
+ * `fiche` s'est scindée en `allergenes` et `nutrition` le 2026-09-22 : les deux
+ * moitiés ont chacune leur route, leur fait de journal et son drapeau
+ * d'alignement, et enregistrer l'une ne doit RIEN envoyer de l'autre.
+ */
+export type FormSection =
+  'identite' | 'tarif' | 'allergenes' | 'nutrition' | 'communication' | 'visuels';
 
-/** Ce qu'une déclinaison peut suivre du défaut — le vocabulaire du serveur. */
-export type VariantAspect = 'regulatory' | 'pricing';
+/**
+ * Ce qu'une déclinaison peut suivre du défaut — le vocabulaire du **serveur**.
+ *
+ * 🔴 Il vient de `@lfd/pim-contracts` et n'est plus redéclaré ici. La copie
+ * locale valait `'regulatory' | 'pricing'` : elle a survécu au dédoublement du
+ * drapeau réglementaire, et cet écran envoyait donc encore `"regulatory"` là où
+ * le serveur attend `"allergens"` ou `"nutrition"`. Un type recopié ne périme
+ * pas quand l'original bouge — c'est tout ce qu'on lui reproche.
+ */
+export type { VariantAspect };
 
 /**
  * **Ce que la ligne sous l'en-tête d'une carte doit dire.**
@@ -223,10 +259,17 @@ export type SectionAlignment =
   /** Rien à dire : on édite la déclinaison par défaut. */
   | { readonly kind: 'none' };
 
-/** Quelle section suit quoi. Les absentes sont portées par la FICHE. */
+/**
+ * Quelle section suit quoi. Les absentes sont portées par la FICHE.
+ *
+ * 🔴 Plus rien n'envoie `"regulatory"` depuis cet écran. La valeur reste
+ * acceptée en écriture par le serveur le temps que les autres appelants
+ * basculent (§6d du plan) ; ici elle est libérée.
+ */
 const ALIGNABLE: Partial<Record<FormSection, VariantAspect>> = {
   tarif: 'pricing',
-  fiche: 'regulatory',
+  allergenes: 'allergens',
+  nutrition: 'nutrition',
 };
 
 /**
@@ -260,7 +303,8 @@ const KINDS: readonly KindOption[] = [
 const SAVEABLE: readonly SectionRef[] = [
   { key: 'identite', label: 'Identité' },
   { key: 'tarif', label: 'Tarif & logistique' },
-  { key: 'fiche', label: 'Allergènes & nutrition' },
+  { key: 'allergenes', label: 'Allergènes' },
+  { key: 'nutrition', label: 'Valeurs nutritionnelles' },
   { key: 'communication', label: 'Communication' },
   // Les visuels s'enregistraient... nulle part. Le panneau ajoutait, retirait et
   // réordonnait dans le vide, et le garde « modifications non enregistrées » ne
@@ -348,20 +392,18 @@ function writeText(
 interface VariantDraft {
   readonly priceEur: number | null;
   readonly weightGrams: number | null;
-  readonly declaresNone: boolean;
-  readonly selected: readonly string[];
   /**
-   * Les traces « peut contenir », **portées sans être éditables**.
+   * Allergènes **et** traces, en un seul état tri-étatique.
    *
-   * 🔴 Aucun écran ne les saisit, et c'est exactement pourquoi il faut les
-   * garder : la route remplace la déclaration ENTIÈRE, et le serveur lit une
-   * absence comme un effacement (`input.mayContain ?? []`). Ne pas les
-   * transporter faisait effacer, à chaque enregistrement de la section, les
-   * traces posées par le semis ou par un outil agent.
+   * Les traces sont ici et non avec la nutrition : une trace est un allergène
+   * (§5 du plan). Elles partent donc avec la section qui les montre, et aucune
+   * écriture de nutrition ne peut plus les effacer — le bug 0a devient
+   * inatteignable, il n'est plus rattrapé par un transport.
    */
-  readonly mayContain: readonly string[];
+  readonly declaration: AllergenDeclaration;
   readonly nutrition: NutritionValues;
-  readonly regulatoryAligned: boolean;
+  readonly allergensAligned: boolean;
+  readonly nutritionAligned: boolean;
   readonly pricingAligned: boolean;
 }
 
@@ -492,14 +534,24 @@ export class ProductFormStore {
    */
   readonly channelsOverride = signal<SalesChannels | null>(null);
   readonly weightGrams = signal<number | null>(null);
-  readonly selected = signal<string[]>([]);
-  readonly declaresNone = signal(false);
-
   /**
-   * Les traces déclarées, en transit : lues au chargement, renvoyées telles
-   * quelles à l'enregistrement. Voir {@link VariantDraft.mayContain}.
+   * **La déclaration d'allergènes — un seul signal, et c'est le sujet.**
+   *
+   * Elle portait un booléen « aucun allergène » à côté d'une liste de codes,
+   * et à l'enregistrement le booléen gagnait en jetant la liste (bug 0c vu de
+   * l'écran). Le tri-état supprime la divergence au lieu de la valider ; les
+   * trois lectures ci-dessous sont DÉRIVÉES, jamais posées.
    */
-  readonly mayContain = signal<readonly string[]>([]);
+  readonly declaration = signal<AllergenDeclaration>(NO_DECLARATION);
+
+  /** Les codes cochés — `[]` aussi bien pour le silence que pour l'affirmation. */
+  readonly selected = computed(() => selectedAllergens(this.declaration()));
+
+  /** « Aucun allergène » est-il AFFIRMÉ ? */
+  readonly declaresNone = computed(() => declaresNone(this.declaration()));
+
+  /** Les traces « peut contenir » — saisies ici depuis le 2026-09-22. */
+  readonly mayContain = computed(() => this.declaration().mayContain);
 
   /**
    * Ce que la **composition** de la fiche mentionne comme allergènes.
@@ -873,49 +925,13 @@ export class ProductFormStore {
   );
 
   /** Le référentiel rangé par catégorie d'étiquette, dans l'ordre du registre. */
-  private readonly allergenBuckets = computed<AllergenGroup[]>(() => {
-    const byLabel = new Map<string, AllergenEntry[]>();
-    for (const entry of this.entries()) {
-      const key = entry.incoLabel ?? 'Hors obligation UE';
-      const bucket = byLabel.get(key);
-      if (bucket === undefined) {
-        byLabel.set(key, [entry]);
-      } else {
-        bucket.push(entry);
-      }
-    }
-    return [...byLabel.entries()].map(([incoLabel, group]) => ({
-      incoLabel,
-      entries: group,
-    }));
-  });
+  private readonly allergenBuckets = computed(() => bucketsOf(this.entries()));
 
-  /**
-   * Les catégories qui groupent VRAIMENT — le gluten et ses quatre céréales,
-   * les fruits à coque et leurs quatre fruits. Il n'y en a que deux.
-   */
-  readonly groups = computed<AllergenGroup[]>(() =>
-    this.allergenBuckets().filter((group) => group.entries.length > 1),
-  );
+  /** Les catégories qui groupent vraiment — elles seules méritent une boîte. */
+  readonly groups = computed(() => groupsOf(this.allergenBuckets()));
 
-  /**
-   * Les douze autres, à plat.
-   *
-   * Chacune n'a qu'une substance, et son libellé d'étiquette la nomme : une
-   * boîte encadrée intitulée « Lait » contenant une seule case « Lait » était
-   * douze fois du chrome pour douze cases — l'écran disait deux fois la même
-   * chose et prenait la place de la déclaration entière. C'est le libellé
-   * RÉGLEMENTAIRE qu'on garde ici, pas le granulaire : « Anhydride sulfureux
-   * et sulfites » est ce qui doit figurer sur l'étiquette, « Sulfites » n'est
-   * que la façon dont notre référentiel l'abrège.
-   */
-  readonly singleAllergens = computed<AllergenChoice[]>(() =>
-    this.allergenBuckets()
-      .filter((group) => group.entries.length === 1)
-      .flatMap((group) =>
-        group.entries.map((entry) => ({ code: entry.code, label: entry.incoLabel ?? entry.label })),
-      ),
-  );
+  /** Les autres, à plat, sous leur libellé d'étiquette. */
+  readonly singleAllergens = computed(() => singlesOf(this.allergenBuckets()));
 
   /**
    * Les allergènes cités par la composition et **absents de la déclaration en
@@ -929,16 +945,9 @@ export class ProductFormStore {
    * la portée « UE » n'expose pas tout, et proposer un code sans libellé
    * afficherait `en:e220` à un opérateur.
    */
-  readonly citedNotDeclared = computed<AllergenChoice[]>(() => {
-    const declared = new Set(this.selected());
-    const byCode = new Map(this.entries().map((entry) => [entry.code, entry]));
-    return this.citedAllergens()
-      .filter((code) => !declared.has(code))
-      .flatMap((code) => {
-        const entry = byCode.get(code);
-        return entry === undefined ? [] : [{ code, label: entry.incoLabel ?? entry.label }];
-      });
-  });
+  readonly citedNotDeclared = computed(() =>
+    citedNotDeclaredIn(this.citedAllergens(), new Set(this.selected()), this.entries()),
+  );
 
   /**
    * La composition contredit-elle un « aucun allergène » ?
@@ -968,11 +977,13 @@ export class ProductFormStore {
     if (missing.length === 0 && !this.citedContradictsNone()) {
       return;
     }
-    this.declaresNone.set(false);
-    this.selected.update((current) => [
-      ...current,
-      ...missing.filter((code) => !current.includes(code)),
-    ]);
+    const contradicts = this.citedContradictsNone();
+    this.declaration.update((current) =>
+      // La contradiction se lève même quand rien n'est reprenable : la
+      // composition peut citer un code que la portée courante n'expose pas, et
+      // laisser « aucun allergène » coché le démentirait quand même.
+      withCitedAdopted(contradicts ? withNoAllergen(current, false) : current, missing),
+    );
   }
 
   readonly dirtySections = computed<SectionRef[]>(() => {
@@ -1027,11 +1038,17 @@ export class ProductFormStore {
         this.vatOverride.set(value[1] as Readonly<Record<string, string>>);
         this.channelsOverride.set(value[2] as SalesChannels | null);
         return;
-      case 'fiche':
-        this.declaresNone.set(Boolean(value[0]));
-        this.selected.set([...(value[1] as string[])]);
-        this.nutrition.set(value[2] as NutritionValues);
-        this.weightGrams.set(value[3] as number | null);
+      case 'allergenes':
+        this.declaration.set({
+          allergens: value[0] as readonly string[] | null,
+          mayContain: value[1] as readonly string[],
+        });
+        this.allergensAligned.set(Boolean(value[2]));
+        return;
+      case 'nutrition':
+        this.nutrition.set(value[0] as NutritionValues);
+        this.weightGrams.set(value[1] as number | null);
+        this.nutritionAligned.set(Boolean(value[2]));
         return;
       case 'visuels':
         this.media.set(value as MediaSlot[]);
@@ -1088,16 +1105,31 @@ export class ProductFormStore {
   }
 
   toggleAllergen(code: string, on: boolean): void {
-    this.selected.update((current) =>
-      on ? [...current, code] : current.filter((entry) => entry !== code),
-    );
+    this.declaration.update((current) => withAllergen(current, code, on));
   }
 
+  /**
+   * Pose les **traces** — « peut contenir », la liste entière.
+   *
+   * Le même référentiel que la présence, et exclusif d'elle : le serveur refuse
+   * un code déclaré des deux côtés (`OverlappingAllergensError`). Le contrôle
+   * ne propose donc que ce qui n'est pas déjà présent, et le modèle retire ce
+   * qui le deviendrait — le 400 n'est pas traduit, il est rendu inatteignable.
+   */
+  setTraces(codes: readonly string[]): void {
+    this.declaration.update((current) => withTraces(current, codes));
+  }
+
+  /**
+   * Ce qu'on peut déclarer en **trace** : le référentiel, moins ce qui est déjà
+   * déclaré présent. La règle et son pourquoi vivent dans `allergen-choices.ts`.
+   */
+  readonly traceChoices = computed(() =>
+    traceOptionsOf(this.allergenBuckets(), new Set(this.selected())),
+  );
+
   declareNoAllergen(on: boolean): void {
-    this.declaresNone.set(on);
-    if (on) {
-      this.selected.set([]);
-    }
+    this.declaration.update((current) => withNoAllergen(current, on));
   }
 
   /**
@@ -1282,12 +1314,16 @@ export class ProductFormStore {
       const price = this.priceEur();
       const weight = this.weightGrams();
       const description = (this.editorial().descriptionShort?.[SOURCE_LOCALE] ?? '').trim();
-      const declares = this.declaresNone() || this.selected().length > 0;
+      const declaration = this.declaration();
+      const declares = hasDeclared(declaration);
       const created = await this.api.createProduct({
         name: this.nameText(),
         kind: this.kind(),
         categoryId: this.categoryId(),
-        ...(declares ? { allergens: this.selected() } : {}),
+        ...(declares ? { allergens: [...this.selected()] } : {}),
+        // Les traces partent AVEC, même quand personne n'a déclaré de présence :
+        // les taire à la création serait le bug 0a déplacé d'un écran.
+        ...(declaration.mayContain.length === 0 ? {} : { mayContain: [...declaration.mayContain] }),
         ...(price === null ? {} : { priceEur: price }),
         ...(weight === null ? {} : { weightGrams: weight }),
         ...(description === '' ? {} : { descriptionFr: description }),
@@ -1361,26 +1397,33 @@ export class ProductFormStore {
     });
   }
 
-  saveFiche(): Promise<void> {
+  /**
+   * Section **Allergènes** — les codes présents et les traces, rien d'autre.
+   *
+   * Elle n'envoie plus une valeur nutritionnelle, et c'est tout l'objet du
+   * chantier : une requête qui remplaçait la fiche entière effaçait ce qu'elle
+   * ne renvoyait pas (bugs 0a et 0c). Les traces partent d'ici parce qu'elles
+   * sont des allergènes.
+   */
+  saveAllergens(): Promise<void> {
     // 🔴 `[]` est une AFFIRMATION — « aucun allergène ». L'envoyer quand personne
-    // n'a coché la case ni rien sélectionné la FABRIQUE : enregistrer une
-    // calorie sur une fiche vierge déclarerait qu'elle ne contient rien, et
-    // l'invariant 7 la rendrait publiable. La création porte cette garde depuis
-    // toujours (`declares`) ; la section l'avait perdue.
+    // ne s'est prononcé la FABRIQUE : la fiche deviendrait publiable sur un
+    // silence. Le tri-état rend cette confusion inexprimable dans l'état ; il
+    // reste à refuser l'ENVOI, parce que `allergens` est requis par le contrat
+    // et que l'omettre vaudrait un 400 muet.
     //
-    // On refuse plutôt qu'on omet : `allergens` est requis par le contrat, et
-    // l'omettre vaudrait un 400 muet. Et le refus se pose ICI plutôt qu'en
-    // exception, parce que `messageOf` ne sait lire qu'une erreur HTTP — une
-    // `Error` nue y devient « Erreur inattendue. », qui ne dit pas le geste.
-    if (!this.regulatoryAligned() && !this.declaresNone() && this.selected().length === 0) {
-      this.statusMap.update((current) => ({ ...current, fiche: 'error' }));
+    // Le refus se pose ICI plutôt qu'en exception : `messageOf` ne sait lire
+    // qu'une erreur HTTP, et une `Error` nue y devient « Erreur inattendue. »,
+    // qui ne dit pas le geste.
+    if (!this.allergensAligned() && !hasDeclared(this.declaration())) {
+      this.statusMap.update((current) => ({ ...current, allergenes: 'error' }));
       this.error.set(
         'Déclarez les allergènes avant d’enregistrer : cochez « aucun allergène » ou ' +
           'sélectionnez-en. Enregistrer sans rien affirmerait que la fiche n’en contient aucun.',
       );
       return Promise.resolve();
     }
-    return this.save('fiche', async () => {
+    return this.save('allergenes', async () => {
       // L'alignement PART EN PREMIER, et il décide du reste. Aligner puis
       // déclarer écrirait une fiche propre sur une déclinaison qui n'en porte
       // plus — une donnée réglementaire orpheline, que le prochain
@@ -1389,32 +1432,62 @@ export class ProductFormStore {
         await this.products.alignVariant(
           this.productId(),
           this.variantId(),
-          'regulatory',
-          this.regulatoryAligned(),
+          'allergens',
+          this.allergensAligned(),
         );
       }
-      if (!this.regulatoryAligned()) {
-        await this.products.saveNutrition(this.productId(), this.variantId(), {
-          allergens: this.declaresNone() ? [] : this.selected(),
-          // 🔴 Renvoyées à l'identique, faute d'écran qui les saisisse. Les
-          // omettre les EFFACE : le serveur lit `input.mayContain ?? []`, et la
-          // route remplace la déclaration entière.
-          mayContain: this.mayContain(),
-          nutrition: this.nutrition(),
+      if (!this.allergensAligned()) {
+        const declaration = this.declaration();
+        await this.products.saveVariantAllergens(this.productId(), this.variantId(), {
+          allergens: declaration.allergens ?? [],
+          mayContain: declaration.mayContain,
         });
       }
+      // Corriger la déclaration du DÉFAUT change ce que voient toutes celles qui
+      // le suivent. On relit donc la liste — et seulement elle : c'est le
+      // serveur qui résout l'héritage, et le refaire ici en donnerait une
+      // seconde version, qui finirait par diverger.
+      if (this.editingDefault()) {
+        await this.reloadVariants();
+      }
+    });
+  }
+
+  /**
+   * Section **Valeurs nutritionnelles** — les sept valeurs de l'annexe XV,
+   * l'indice glycémique, et le poids net qui les rend lisibles.
+   *
+   * ⚠️ Aucun code d'allergène ne part d'ici, et la route le REFUSE (400) : sur
+   * du réglementaire, un `200` qui n'écrit rien est pire qu'un refus (§7 du
+   * plan). Rien à enregistrer côté allergènes n'empêche d'enregistrer ici —
+   * c'est le sens de la scission.
+   */
+  saveNutrition(): Promise<void> {
+    return this.save('nutrition', async () => {
+      if (!this.editingDefault()) {
+        await this.products.alignVariant(
+          this.productId(),
+          this.variantId(),
+          'nutrition',
+          this.nutritionAligned(),
+        );
+      }
+      if (!this.nutritionAligned()) {
+        await this.products.saveVariantNutrition(
+          this.productId(),
+          this.variantId(),
+          this.nutrition(),
+        );
+      }
       // Le poids voyage par la route du TARIF, qui porte prix ET poids sur la
-      // déclinaison. Les deux valeurs partent à chaque fois : la section qui
+      // déclinaison — c'est donc le drapeau du TARIF qui décide, pas celui de
+      // la nutrition. Les deux valeurs partent à chaque fois : la section qui
       // n'a pas bougé renvoie ce qu'elle avait, rien ne se perd. Sauf quand le
       // tarif est HÉRITÉ — écrire alors poserait un prix propre que personne
       // n'a saisi, et détacherait la déclinaison sans qu'on l'ait demandé.
       if (!this.pricingAligned()) {
         await this.saveVariantFacts();
       }
-      // Corriger la fiche du DÉFAUT change ce que voient toutes celles qui le
-      // suivent. On relit donc la liste — et seulement elle : c'est le serveur
-      // qui résout l'héritage, et le refaire ici en donnerait une seconde
-      // version, qui finirait par diverger.
       if (this.editingDefault()) {
         await this.reloadVariants();
       }
@@ -1620,13 +1693,26 @@ export class ProductFormStore {
   );
 
   /**
-   * La case « aligner sur le défaut » de la carte réglementaire.
+   * La case « aligner sur le défaut » de la carte **Allergènes**.
    *
    * Elle fait partie du brouillon de la déclinaison, pas d'un réglage à part :
    * décocher ouvre la saisie, et ce qu'on tape ensuite part avec elle au même
    * enregistrement.
+   *
+   * ⚠️ Côté serveur, c'est toujours la colonne `regulatory_follows_default` qui
+   * la porte : elle garde son nom et devient le drapeau des allergènes (§6d du
+   * plan). Le nom ment un peu, l'aspect envoyé ne ment pas.
    */
-  readonly regulatoryAligned = signal(false);
+  readonly allergensAligned = signal(false);
+
+  /**
+   * La même case, sur la carte **Valeurs nutritionnelles**.
+   *
+   * Deux cases et pas une, parce que les deux moitiés s'enregistrent
+   * séparément : saisir un tableau nutritionnel propre à une déclinaison ne
+   * doit pas l'obliger à retaper les allergènes du défaut, ni l'inverse (D1).
+   */
+  readonly nutritionAligned = signal(false);
 
   /** La même case, sur la carte « Tarif & TVA » — prix ET poids ensemble. */
   readonly pricingAligned = signal(false);
@@ -1648,11 +1734,26 @@ export class ProductFormStore {
 
   /** Bascule la case d'une carte — l'écran ne connaît que sa section. */
   setAlignment(section: FormSection, aligned: boolean): void {
-    if (ALIGNABLE[section] === 'pricing') {
-      this.pricingAligned.set(aligned);
+    const aspect = ALIGNABLE[section];
+    if (aspect !== undefined) {
+      this.alignedSignal(aspect).set(aligned);
     }
-    if (ALIGNABLE[section] === 'regulatory') {
-      this.regulatoryAligned.set(aligned);
+  }
+
+  /**
+   * Le drapeau d'un aspect. Un `switch` exhaustif et non un ternaire : trois
+   * aspects se lisent mal en cascade, et la valeur `"regulatory"` — que plus
+   * rien n'envoie — doit échouer à la compilation le jour où elle reviendrait.
+   */
+  private alignedSignal(aspect: VariantAspect): WritableSignal<boolean> {
+    switch (aspect) {
+      case 'pricing':
+        return this.pricingAligned;
+      case 'nutrition':
+        return this.nutritionAligned;
+      case 'allergens':
+      case 'regulatory':
+        return this.allergensAligned;
     }
   }
 
@@ -1664,11 +1765,7 @@ export class ProductFormStore {
     if (aspect === undefined) {
       return { kind: 'product' };
     }
-    return {
-      kind: 'alignable',
-      aspect,
-      aligned: aspect === 'pricing' ? this.pricingAligned() : this.regulatoryAligned(),
-    };
+    return { kind: 'alignable', aspect, aligned: this.alignedSignal(aspect)() };
   }
 
   /**
@@ -1746,8 +1843,10 @@ export class ProductFormStore {
         return this.saveIdentity();
       case 'tarif':
         return this.savePricing();
-      case 'fiche':
-        return this.saveFiche();
+      case 'allergenes':
+        return this.saveAllergens();
+      case 'nutrition':
+        return this.saveNutrition();
       case 'communication':
         return this.saveCommunication();
       case 'visuels':
@@ -1801,19 +1900,24 @@ export class ProductFormStore {
           this.channelsOverride(),
           this.pricingAligned(),
         ]);
-      case 'fiche':
-        // Le poids net est de CETTE section : la grille est « pour 100 g », et
-        // sans lui elle ne dit rien de ce qu'on vend.
+      case 'allergenes': {
+        const declaration = this.declaration();
+        // `null` et `[]` ne se confondent pas ici non plus : passer du silence à
+        // « aucun allergène » EST une modification, et c'est la plus lourde de
+        // la section.
         return JSON.stringify([
-          this.declaresNone(),
-          [...this.selected()].sort(),
-          this.nutrition(),
-          this.weightGrams(),
+          declaration.allergens === null ? null : [...declaration.allergens].sort(),
+          [...declaration.mayContain].sort(),
           // Cocher « aligner sur le défaut » EST une modification de la section :
           // sans lui, la case bascule et le bouton d'enregistrement n'apparaît
           // pas — donc la case ne fait rien, et rien ne le dit.
-          this.regulatoryAligned(),
+          this.allergensAligned(),
         ]);
+      }
+      case 'nutrition':
+        // Le poids net est de CETTE section : la grille est « pour 100 g », et
+        // sans lui elle ne dit rien de ce qu'on vend.
+        return JSON.stringify([this.nutrition(), this.weightGrams(), this.nutritionAligned()]);
       case 'communication':
         return JSON.stringify(this.editorial());
       case 'visuels':
@@ -1828,11 +1932,10 @@ export class ProductFormStore {
     return {
       priceEur: this.priceEur(),
       weightGrams: this.weightGrams(),
-      declaresNone: this.declaresNone(),
-      selected: [...this.selected()],
-      mayContain: [...this.mayContain()],
+      declaration: this.declaration(),
       nutrition: this.nutrition(),
-      regulatoryAligned: this.regulatoryAligned(),
+      allergensAligned: this.allergensAligned(),
+      nutritionAligned: this.nutritionAligned(),
       pricingAligned: this.pricingAligned(),
     };
   }
@@ -1848,12 +1951,15 @@ export class ProductFormStore {
           : variant.priceCents / 100,
       weightGrams: variant?.weightGrams ?? null,
       // `[]` est une AFFIRMATION (« aucun allergène »), `null` une absence de
-      // réponse. Les confondre transformerait un oubli de saisie en promesse.
-      declaresNone: allergens !== null && allergens.length === 0,
-      selected: allergens === null ? [] : [...allergens],
-      mayContain: [...(variant?.mayContain ?? [])],
+      // réponse. Les confondre transformerait un oubli de saisie en promesse —
+      // et le serveur rend déjà les deux, c'est l'écran qui les aplatissait.
+      declaration: {
+        allergens: allergens === null ? null : [...allergens],
+        mayContain: [...(variant?.mayContain ?? [])],
+      },
       nutrition: variant?.nutrition ?? EMPTY_NUTRITION,
-      regulatoryAligned: variant?.regulatoryFollowsDefault ?? false,
+      allergensAligned: variant?.regulatoryFollowsDefault ?? false,
+      nutritionAligned: variant?.nutritionFollowsDefault ?? false,
       pricingAligned: variant?.pricingFollowsDefault ?? false,
     };
   }
@@ -1861,11 +1967,10 @@ export class ProductFormStore {
   private applyDraft(draft: VariantDraft): void {
     this.priceEur.set(draft.priceEur);
     this.weightGrams.set(draft.weightGrams);
-    this.declaresNone.set(draft.declaresNone);
-    this.selected.set([...draft.selected]);
-    this.mayContain.set([...draft.mayContain]);
+    this.declaration.set(draft.declaration);
     this.nutrition.set(draft.nutrition);
-    this.regulatoryAligned.set(draft.regulatoryAligned);
+    this.allergensAligned.set(draft.allergensAligned);
+    this.nutritionAligned.set(draft.nutritionAligned);
     this.pricingAligned.set(draft.pricingAligned);
   }
 
@@ -1880,7 +1985,8 @@ export class ProductFormStore {
     this.baseline.update((base) => ({
       ...base,
       tarif: this.snapshot('tarif'),
-      fiche: this.snapshot('fiche'),
+      allergenes: this.snapshot('allergenes'),
+      nutrition: this.snapshot('nutrition'),
     }));
   }
 
@@ -1924,12 +2030,13 @@ export class ProductFormStore {
       kept ?? product.variants.find((entry) => entry.isDefault) ?? product.variants[0];
     this.variantId.set(variant?.id ?? '');
     this.drafts.clear();
-    // Les six champs éditables de la déclinaison sont posés ENSEMBLE, par le
-    // même chemin que la bascule d'onglet. Ils ne l'étaient pas : `[]` ne
-    // remettait que `declaresNone`, une liste non vide ne remettait que
-    // `selected`. Une seconde hydratation pouvait donc laisser `declaresNone` à
-    // `true` au-dessus d'une sélection non vide — et `saveFiche()` aurait envoyé
-    // `[]`, effaçant les allergènes déclarés sans un mot (audit 2026-09-01, §13).
+    // Les champs éditables de la déclinaison sont posés ENSEMBLE, par le même
+    // chemin que la bascule d'onglet. Ils ne l'étaient pas : `[]` ne remettait
+    // que `declaresNone`, une liste non vide ne remettait que `selected`. Une
+    // seconde hydratation pouvait donc laisser « aucun allergène » coché
+    // au-dessus d'une sélection non vide — et l'enregistrement aurait envoyé
+    // `[]`, effaçant les allergènes déclarés sans un mot (audit 2026-09-01,
+    // §13). Cette panne-là n'est plus exprimable : la déclaration est UN champ.
     this.applyDraft(this.draftOf(this.variantId()));
     this.captureBaseline();
     await this.loadCitedAllergens(id);

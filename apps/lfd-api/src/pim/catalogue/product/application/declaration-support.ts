@@ -1,24 +1,32 @@
 import { ArchivedAllergenDeclaredError } from "../../../allergens/domain/errors/allergen-errors.js";
 import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
 import {
-  nutritionDeclaration,
+  allergenDeclaration,
+  nutritionValues,
+  type AllergenDeclaration,
   type NutritionDeclaration,
   type NutritionValues,
 } from "../domain/value-objects/nutrition-declaration.js";
 
-/**
- * Ce qu'un formulaire envoie pour une fiche réglementaire. Partagé par les deux
- * verbes qui en écrivent une — l'ouverture d'un produit et la (re)déclaration
- * d'une déclinaison — parce que c'est la **même** fiche, saisie au même endroit.
- */
-export interface DeclarationInput {
+/** Les codes qu'un formulaire envoie — présents et traces. */
+export interface AllergensInput {
   readonly allergens: readonly string[];
   readonly mayContain?: readonly string[] | undefined;
+}
+
+/**
+ * Ce qu'un formulaire envoie pour une fiche réglementaire **entière**.
+ *
+ * Il n'en reste qu'un seul émetteur : l'ouverture d'un produit, qui pose les
+ * deux moitiés d'un même geste. La (re)déclaration d'une déclinaison, elle, est
+ * passée à deux verbes — un par moitié — le 2026-09-22.
+ */
+export interface DeclarationInput extends AllergensInput {
   readonly nutrition?: NutritionValues | undefined;
 }
 
 /**
- * Confronte une fiche au **référentiel en base**, puis la construit.
+ * Confronte des codes au **référentiel en base**, puis les construit.
  *
  * Deux questions, deux réponses, et les confondre casse la fonctionnalité
  * (D2 bis) :
@@ -29,9 +37,9 @@ export interface DeclarationInput {
  *   invalider l'étiquette d'un produit déjà servi ;
  * - « peut-on l'ajouter ? » — non s'il est archivé. Le refus est **ici** et pas
  *   dans le value object, parce qu'il dépend de ce que la fiche déclarait
- *   **déjà** : `DeclareProductNutrition` revalide la déclaration entière à
- *   chaque enregistrement, si bien qu'un refus sec ferait échouer un changement
- *   de valeur nutritionnelle sur un code que personne n'a touché.
+ *   **déjà** : `SaveVariantAllergens` revalide la déclaration entière à chaque
+ *   enregistrement, si bien qu'un refus sec ferait échouer le retrait d'un
+ *   autre code sur un code archivé que personne n'a touché.
  *
  * Les codes archivés se lisent sur `catalogue()` et non sur un troisième port :
  * une entrée sous une catégorie archivée est forcément archivée elle-même —
@@ -43,21 +51,16 @@ export interface DeclarationInput {
  * @throws {UnknownAllergenError} un code que le référentiel ne connaît pas.
  * @throws {ArchivedAllergenDeclaredError} un code archivé ajouté à neuf.
  */
-export async function validatedDeclaration(
+export async function validatedAllergens(
   reference: AllergenCatalogueReader,
-  input: DeclarationInput,
+  input: AllergensInput,
   alreadyDeclared: readonly string[],
-): Promise<NutritionDeclaration> {
+): Promise<AllergenDeclaration> {
   const [knownCodes, catalogue] = await Promise.all([
     reference.knownCodes(),
     reference.catalogue(),
   ]);
-  const declaration = nutritionDeclaration(
-    input.allergens,
-    input.mayContain ?? [],
-    input.nutrition ?? {},
-    knownCodes,
-  );
+  const declaration = allergenDeclaration(input.allergens, input.mayContain ?? [], knownCodes);
 
   const archived = new Set(
     catalogue.flatMap((category) =>
@@ -71,4 +74,17 @@ export async function validatedDeclaration(
     }
   }
   return declaration;
+}
+
+/**
+ * La fiche **entière**, validée — les codes contre le référentiel, les valeurs
+ * contre elles-mêmes. Réservée au geste qui pose les deux moitiés à la fois.
+ */
+export async function validatedDeclaration(
+  reference: AllergenCatalogueReader,
+  input: DeclarationInput,
+  alreadyDeclared: readonly string[],
+): Promise<NutritionDeclaration> {
+  const declaration = await validatedAllergens(reference, input, alreadyDeclared);
+  return { ...declaration, ...nutritionValues(input.nutrition ?? {}) };
 }

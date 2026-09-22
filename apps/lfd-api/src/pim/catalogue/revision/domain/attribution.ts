@@ -37,6 +37,12 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   // quatrième déclaration à tenir d'accord.
   [PIM_EVENTS.productIdentitySaved]: "changes",
   [PIM_EVENTS.productPricingSaved]: "changes",
+  // Les deux moitiés de la fiche, chacune sur SON champ d'article. Leur ancêtre
+  // garde son `["allergens"]` : retiré de l'écriture, il reste l'auteur des
+  // changements qu'il a écrits, et le lui retirer rendrait anonymes des lignes
+  // déjà posées.
+  [PIM_EVENTS.productAllergensSaved]: ["allergens"],
+  [PIM_EVENTS.productNutritionSaved]: ["nutrition"],
   [PIM_EVENTS.productDeclarationSaved]: ["allergens"],
   [PIM_EVENTS.productEditorialSaved]: ["editorial"],
   [PIM_EVENTS.productMediaSaved]: ["media"],

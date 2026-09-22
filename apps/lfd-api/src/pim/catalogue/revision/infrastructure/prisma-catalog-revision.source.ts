@@ -4,6 +4,7 @@ import { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
 import { EditorialReader } from "../../product/domain/ports/editorial-reader.js";
 import { ReadinessRepository } from "../../product/domain/ports/readiness.repository.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
+import type { VariantNutritionView } from "../../product/domain/ports/product.repository.js";
 import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.js";
 import type { RevisionItemInput, RevisionMedia } from "../domain/revision.js";
 
@@ -73,6 +74,7 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
         isDefault: variant.isDefault,
         isDiscontinued: variant.isDiscontinued,
         allergens: variant.allergens === null ? null : [...variant.allergens],
+        nutrition: nutritionOf(variant.nutrition),
         vatByContext: { ...vat },
         soldContexts: sold,
         editorial: editorial === null ? null : { ...editorial },
@@ -104,6 +106,34 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
     }
     return byProduct;
   }
+}
+
+/**
+ * Les valeurs nutritionnelles d'une ancre, **dans l'ordre de l'annexe XV**.
+ *
+ * `null` quand AUCUNE n'est renseignée, et pas un objet de huit `null` : la
+ * moitié allergènes et la moitié nutrition vivent désormais dans deux tables,
+ * et l'instantané porte un bloc dès que l'une des deux existe. Sans cette
+ * réduction, déclarer un allergène changerait l'empreinte nutritionnelle d'un
+ * article dont personne n'a saisi une valeur.
+ */
+function nutritionOf(
+  values: VariantNutritionView | null,
+): Readonly<Record<string, number | null>> | null {
+  if (values === null) {
+    return null;
+  }
+  const declared = {
+    energyKcal: values.energyKcal,
+    fatG: values.fatG,
+    saturatedFatG: values.saturatedFatG,
+    carbsG: values.carbsG,
+    sugarsG: values.sugarsG,
+    proteinG: values.proteinG,
+    saltG: values.saltG,
+    glycemicIndex: values.glycemicIndex,
+  };
+  return Object.values(declared).every((value) => value === null) ? null : declared;
 }
 
 /**

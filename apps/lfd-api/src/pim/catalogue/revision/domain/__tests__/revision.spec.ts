@@ -23,6 +23,7 @@ function item(over: Partial<RevisionItemInput> = {}): RevisionItemInput {
     isDefault: true,
     isDiscontinued: false,
     allergens: ["AW"],
+    nutrition: null,
     vatByContext: { takeaway: 5.5, b2b: 20 },
     soldContexts: ["takeaway", "b2b"],
     editorial: { descriptionShort: { fr: "Pur beurre" } },

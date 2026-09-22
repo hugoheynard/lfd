@@ -195,19 +195,31 @@ function pricingSaved(fact: PhraseFact): Said {
   );
 }
 
-/** « a modifié la fiche réglementaire de « Tarte citron », déclinaison « 6 parts » : allergènes ». */
-function declarationSaved(fact: PhraseFact): Said {
-  const variant = variantOf(fact.payload);
-  return byActor(
-    fact,
-    [
-      text('a modifié la fiche réglementaire '),
-      ...theSubject(fact, OF_PRODUCT),
-      ...variant.segments,
-      ...whatChanged(fact.payload['changes'], fact.type),
-    ],
-    ['subjectLabel', variant.key],
-  );
+/**
+ * Une section de la fiche réglementaire — « a modifié les allergènes de
+ * « Tarte citron », déclinaison « 6 parts » : … ».
+ *
+ * 🔴 **Trois types passent ici, et c'est le point.** `product.declaration_saved`
+ * est en retraite depuis la séparation des allergènes et de la nutrition
+ * (2026-09-22) : plus rien ne l'écrit, mais les lignes déjà posées se lisent
+ * encore, et elles parlaient des DEUX. Sa phrase garde donc son libellé
+ * d'origine — le réécrire en « les allergènes » ferait dire à une ligne du
+ * passé quelque chose qu'elle n'a pas dit.
+ */
+function sheetSaved(what: string): Phrase {
+  return (fact: PhraseFact): Said => {
+    const variant = variantOf(fact.payload);
+    return byActor(
+      fact,
+      [
+        text(`a modifié ${what} `),
+        ...theSubject(fact, OF_PRODUCT),
+        ...variant.segments,
+        ...whatChanged(fact.payload['changes'], fact.type),
+      ],
+      ['subjectLabel', variant.key],
+    );
+  };
 }
 
 /**
@@ -261,7 +273,9 @@ export const REFERENTIAL_PHRASES = {
   'product.identity_saved': sectionSaved('l’identité', OF_PRODUCT, 'names'),
   'product.reclassified': productReclassified,
   'product.pricing_saved': pricingSaved,
-  'product.declaration_saved': declarationSaved,
+  'product.declaration_saved': sheetSaved('la fiche réglementaire'),
+  'product.allergens_saved': sheetSaved('les allergènes'),
+  'product.nutrition_saved': sheetSaved('les valeurs nutritionnelles'),
   'product.editorial_saved': sectionSaved('les textes', OF_PRODUCT, 'names'),
   'product.media_saved': sectionSaved('les visuels', OF_PRODUCT, 'none'),
   'product.channels_changed': channelsChanged,

@@ -57,11 +57,20 @@ export interface NutritionValues {
   readonly glycemicIndex?: number | undefined;
 }
 
-export interface NutritionDeclaration extends NutritionValues {
+/**
+ * **Ce que la déclinaison contient** — la moitié « sécurité » de la fiche.
+ *
+ * Nommée à part de {@link NutritionDeclaration} depuis que les deux moitiés
+ * s'enregistrent par deux gestes distincts : c'est cette forme-là, et elle
+ * seule, qui voyage vers la table des allergènes.
+ */
+export interface AllergenDeclaration {
   /** `[]` = déclaration positive « aucun allergène », pas « non renseigné ». */
   readonly allergens: readonly string[];
   readonly mayContain: readonly string[];
 }
+
+export interface NutritionDeclaration extends NutritionValues, AllergenDeclaration {}
 
 /**
  * Construit une fiche **valide ou rien**.
@@ -84,6 +93,24 @@ export function nutritionDeclaration(
   values: NutritionValues,
   knownCodes: ReadonlySet<string>,
 ): NutritionDeclaration {
+  return { ...allergenDeclaration(allergens, mayContain, knownCodes), ...nutritionValues(values) };
+}
+
+/**
+ * Les **allergènes** seuls, valides ou rien — sans une valeur nutritionnelle.
+ *
+ * Même contrat que {@link nutritionDeclaration} sur les codes : `knownCodes`
+ * porte les archivés, et c'est le handler — seul à savoir ce que la fiche
+ * déclarait déjà — qui refuse d'en AJOUTER un (D2 bis).
+ *
+ * @throws {UnknownAllergenError} un code que le référentiel ne connaît pas.
+ * @throws {OverlappingAllergensError} un code à la fois présent et en trace.
+ */
+export function allergenDeclaration(
+  allergens: readonly string[],
+  mayContain: readonly string[],
+  knownCodes: ReadonlySet<string>,
+): AllergenDeclaration {
   // `may_contain` suit exactement le même référentiel et la même garde : une
   // trace est un allergène, déclaré à un autre titre.
   const present = dedupeAndValidate(allergens, knownCodes);
@@ -94,6 +121,21 @@ export function nutritionDeclaration(
     throw new OverlappingAllergensError(overlap);
   }
 
+  return { allergens: present, mayContain: traces };
+}
+
+/**
+ * Les valeurs pour 100 g, **valides ou rien** — sans un seul code d'allergène.
+ *
+ * Extraite de {@link nutritionDeclaration} plutôt que recopiée : depuis que les
+ * deux moitiés de la fiche s'enregistrent séparément, la moitié nutrition n'a
+ * plus aucun code à confronter au référentiel, et lui faire traverser la
+ * fabrique complète l'obligerait à charger un référentiel qu'elle ne lit pas.
+ *
+ * @throws {NegativeNutritionValueError} une valeur négative.
+ * @throws {NutritionPartExceedsWholeError} un « dont » qui dépasse sa ligne.
+ */
+export function nutritionValues(values: NutritionValues): NutritionValues {
   assertNonNegative("énergie", values.energyKcal);
   assertNonNegative("matières grasses", values.fatG);
   assertNonNegative("acides gras saturés", values.saturatedFatG);
@@ -109,7 +151,7 @@ export function nutritionDeclaration(
   assertPartOfWhole("acides gras saturés", values.saturatedFatG, "matières grasses", values.fatG);
   assertPartOfWhole("sucres", values.sugarsG, "glucides", values.carbsG);
 
-  return { allergens: present, mayContain: traces, ...values };
+  return values;
 }
 
 function dedupeAndValidate(codes: readonly string[], knownCodes: ReadonlySet<string>): string[] {

@@ -37,7 +37,10 @@ export const PRODUCT_KIND = domain('sorte de produit', {
 
 /** La section qu'une déclinaison aligne sur le défaut (`variant.aligned`). */
 export const VARIANT_ASPECT = domain('section d’une déclinaison', {
+  /** L'ancienne section entière — elle vaut `allergens` depuis le 2026-09-22. */
   regulatory: 'Fiche réglementaire',
+  allergens: 'Allergènes',
+  nutrition: 'Valeurs nutritionnelles',
   pricing: 'Tarif',
 });
 

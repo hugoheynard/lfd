@@ -1,7 +1,14 @@
-/// Fiche réglementaire d'une **déclinaison** — c'est elle qui est mise sur le
-/// marché (doc 03). `variant_id` est PK **et** FK (*shared primary key*) : pas
-/// d'identifiant de substitution, donc deux fiches sont structurellement
-/// impossibles pour une même déclinaison.
+/// 🔴 **HORS SERVICE depuis le 2026-09-22** — plus aucun code ne l'ouvre.
+///
+/// C'était la fiche réglementaire d'une déclinaison, les deux moitiés dans une
+/// seule ligne. `variant_allergens` et `nutrition_values` l'ont remplacée,
+/// parce qu'un enregistrement de l'une effaçait l'autre quand il l'oubliait —
+/// sur de la donnée d'étiquette (`plan-separer-allergenes-et-nutrition.md`).
+///
+/// Elle reste **déclarée** parce qu'elle reste **en base** : elle n'a jamais
+/// porté la moindre ligne en production (§3 du plan), mais la supprimer est un
+/// `DROP TABLE`, et le déploiement applique les migrations tout seul. Le geste
+/// se décide donc à la main, à part. Ce modèle n'est pas un oubli.
 model NutritionDeclaration {
   variantId String         @id @map("variant_id")
   variant   ProductVariant @relation(fields: [variantId], references: [id])
@@ -135,7 +142,7 @@ model Appellation {
 /// ⚠️ Ce n'est PAS la liste réglementaire d'ingrédients (règlement UE
 /// 1169/2011). Celle-là est ordonnée par masse décroissante, porte des
 /// quantités, décrit une recette — elle appartient donc à la DÉCLINAISON, avec
-/// les allergènes (`NutritionDeclaration`). Ce référentiel-ci est une matière
+/// les allergènes (`VariantAllergens`). Ce référentiel-ci est une matière
 /// éditoriale et commerciale : il nourrit un badge et un argument de vente, et
 /// rien ici ne garantit ni l'exhaustivité ni l'ordre. Le jour où une mention
 /// obligatoire serait tirée d'ici, elle serait fausse.

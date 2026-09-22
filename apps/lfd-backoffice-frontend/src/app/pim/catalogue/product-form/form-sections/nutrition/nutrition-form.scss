@@ -1,0 +1,23 @@
+// Ce qui n'appartient qu'à la section « Valeurs nutritionnelles ».
+// La trame — `:host`, `.grid` — vient de `form-section.scss`, chargée avant.
+
+/* Deux blocs : le poids, puis la grille. L'écart est une règle explicite
+   plutôt qu'une conséquence de leurs marges internes — deux blocs qui se
+   suivent sans gap déclaré se lisent comme un seul. */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2xl);
+}
+
+/* Le poids est UN nombre, pas une grille : sur un large écran, une ligne pleine
+   largeur pour trois chiffres se lit comme un champ oublié au milieu du vide. */
+.field-weight {
+  max-width: 16rem;
+}
+
+/* HÉRITÉE : la grille montre ce qui s'applique et refuse la saisie. */
+.is-inherited {
+  opacity: 0.55;
+  pointer-events: none;
+}

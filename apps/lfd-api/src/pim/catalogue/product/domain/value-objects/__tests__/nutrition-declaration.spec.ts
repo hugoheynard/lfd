@@ -1,7 +1,9 @@
 import {
+  allergenDeclaration,
   NegativeNutritionValueError,
   NutritionPartExceedsWholeError,
   nutritionDeclaration,
+  nutritionValues,
   OverlappingAllergensError,
   UnknownAllergenError,
 } from "../nutrition-declaration.js";
@@ -91,5 +93,41 @@ describe("nutritionDeclaration", () => {
       // moitié remplie, qui est l'état normal d'une saisie en cours.
       expect(() => nutritionDeclaration([], [], { sugarsG: 12 }, KNOWN)).not.toThrow();
     });
+  });
+});
+
+/**
+ * **Les deux moitiés, prises séparément.** Depuis que la fiche s'enregistre par
+ * deux gestes, chacune doit pouvoir être construite seule — et surtout : la
+ * moitié « valeurs » n'a plus un seul code à confronter au référentiel, donc
+ * elle ne le charge pas (plan `plan-separer-allergenes-et-nutrition.md`, §6a).
+ */
+describe("les deux moitiés se construisent séparément", () => {
+  it("les allergènes seuls, sans une valeur nutritionnelle", () => {
+    expect(allergenDeclaration(["AM"], ["GB"], KNOWN)).toEqual({
+      allergens: ["AM"],
+      mayContain: ["GB"],
+    });
+  });
+
+  it("refuse un code inconnu, un doublon et un chevauchement, comme la fiche entière", () => {
+    expect(() => allergenDeclaration(["ZZ"], [], KNOWN)).toThrow(UnknownAllergenError);
+    expect(() => allergenDeclaration(["AM"], ["AM"], KNOWN)).toThrow(OverlappingAllergensError);
+    expect(allergenDeclaration(["AM", "AM"], [], KNOWN).allergens).toEqual(["AM"]);
+  });
+
+  it("les valeurs seules, SANS référentiel — il n'y a aucun code à valider", () => {
+    expect(nutritionValues({ saltG: 2, carbsG: 30, sugarsG: 12 })).toEqual({
+      saltG: 2,
+      carbsG: 30,
+      sugarsG: 12,
+    });
+  });
+
+  it("garde les deux refus qui portent sur l'étiquette imprimée", () => {
+    expect(() => nutritionValues({ saltG: -1 })).toThrow(NegativeNutritionValueError);
+    expect(() => nutritionValues({ carbsG: 4, sugarsG: 12 })).toThrow(
+      NutritionPartExceedsWholeError,
+    );
   });
 });

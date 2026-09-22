@@ -53,6 +53,7 @@ function snapshot(status: ProductSnapshot["status"]): ProductSnapshot {
         priceCents: null,
         weightGrams: null,
         regulatoryFollowsDefault: false,
+        nutritionFollowsDefault: false,
         pricingFollowsDefault: false,
         allergens: null,
         nutrition: null,

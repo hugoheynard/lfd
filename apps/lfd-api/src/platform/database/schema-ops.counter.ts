@@ -169,9 +169,11 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   Product: "pim",
   ProductVariant: "pim",
   ProductPackaging: "pim",
+  // Hors service depuis le 2026-09-22 : plus aucun code ne l'ouvre, et la table
+  // reste en base le temps qu'un déploiement à part la supprime. Elle reste donc
+  // ici — cette liste décrit le SCHÉMA, pas ce que le code lit.
   NutritionDeclaration: "pim",
-  // Les deux tables qui la remplaceront — vides jusqu'au lot 3
-  // (`plan-separer-allergenes-et-nutrition.md`).
+  // Les deux tables qui l'ont remplacée (`plan-separer-allergenes-et-nutrition.md`).
   VariantAllergens: "pim",
   NutritionValues: "pim",
   OrderTimeLimit: "pim",

@@ -70,6 +70,7 @@ export class CatalogueApi {
     kind: ProductKind;
     categoryId: string;
     allergens?: string[];
+    mayContain?: string[];
     channelsOverride?: SalesChannels | null;
     priceEur?: number;
     weightGrams?: number;
@@ -83,6 +84,7 @@ export class CatalogueApi {
       kind: payload.kind,
       categoryId: payload.categoryId,
       allergens: payload.allergens,
+      mayContain: payload.mayContain,
       descriptionFr: payload.descriptionFr,
       priceEur: payload.priceEur,
       weightGrams: payload.weightGrams,

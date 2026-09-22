@@ -11,7 +11,8 @@ import {
 } from "../../category/domain/errors/category-errors.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { EditorialRepository } from "../domain/ports/editorial.repository.js";
-import { NutritionRepository } from "../domain/ports/nutrition.repository.js";
+import { NutritionValuesRepository } from "../domain/ports/nutrition-values.repository.js";
+import { VariantAllergensRepository } from "../domain/ports/variant-allergens.repository.js";
 import { ProductRepository, type ProductKind } from "../domain/ports/product.repository.js";
 import {
   proposeProductSku,
@@ -73,7 +74,8 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
   constructor(
     private readonly products: ProductRepository,
     private readonly categories: CategoryRepository,
-    private readonly nutrition: NutritionRepository,
+    private readonly allergenSheets: VariantAllergensRepository,
+    private readonly nutritionValues: NutritionValuesRepository,
     private readonly allergens: AllergenCatalogueReader,
     private readonly editorials: EditorialRepository,
     private readonly journal: PimJournal,
@@ -153,7 +155,14 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
       await this.products.add(product, ticket);
 
       if (declaration !== null) {
-        await this.nutrition.declare(variantId, declaration, ticket);
+        // Deux tables, deux écritures — la fiche naît d'un seul geste, mais ses
+        // deux moitiés ne se touchent plus (§6a du plan). Les valeurs ne
+        // s'écrivent que si le formulaire en portait : une ligne de huit `null`
+        // dirait « quelqu'un a saisi », ce qui n'est pas vrai.
+        await this.allergenSheets.save(variantId, declaration, ticket);
+        if (input.nutrition !== undefined) {
+          await this.nutritionValues.save(variantId, declaration, ticket);
+        }
       }
       if (!isEmptyEditorial(story) || visuals.length > 0) {
         await this.editorials.save(productId, story, visuals, ticket);

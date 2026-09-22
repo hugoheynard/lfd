@@ -2,7 +2,8 @@ import type { CommandBus } from "@nestjs/cqrs";
 
 import { ArchiveProductCommand } from "../../src/pim/catalogue/product/application/archive-product.js";
 import { CreateProductCommand } from "../../src/pim/catalogue/product/application/create-product.js";
-import { DeclareProductNutritionCommand } from "../../src/pim/catalogue/product/application/declare-product-nutrition.js";
+import { SaveVariantAllergensCommand } from "../../src/pim/catalogue/product/application/save-variant-allergens.js";
+import { SaveVariantNutritionCommand } from "../../src/pim/catalogue/product/application/save-variant-nutrition.js";
 import { DeclareProductReadyCommand } from "../../src/pim/catalogue/product/application/declare-product-ready.js";
 import { PublishProductCommand } from "../../src/pim/catalogue/product/application/publish-product.js";
 import { SetProductChannelsCommand } from "../../src/pim/catalogue/product/application/set-product-channels.js";
@@ -143,7 +144,7 @@ async function fillVariant(
   const variant = await prisma.productVariant.findFirst({
     where: { productId },
     orderBy: [{ isDefault: "desc" }, { position: "asc" }],
-    include: { nutrition: true },
+    include: { allergenSheet: true },
   });
   if (variant === null) {
     return;
@@ -154,13 +155,21 @@ async function fillVariant(
       weightGrams: product.weightGrams,
     }),
   );
-  if (declaration !== null && variant.nutrition === null) {
-    await bus.execute<DeclareProductNutritionCommand, void>(
-      new DeclareProductNutritionCommand(productId, variant.id, {
+  if (declaration !== null && variant.allergenSheet === null) {
+    // Deux gestes depuis que la fiche a deux sections : le semis rejoue les
+    // VRAIS handlers, donc il rejoue aussi leur découpe.
+    await bus.execute<SaveVariantAllergensCommand, void>(
+      new SaveVariantAllergensCommand(productId, variant.id, {
         allergens: declaration.allergens,
         mayContain: declaration.mayContain,
-        nutrition: nutritionValues(declaration.nutrition),
       }),
+    );
+    await bus.execute<SaveVariantNutritionCommand, void>(
+      new SaveVariantNutritionCommand(
+        productId,
+        variant.id,
+        nutritionValues(declaration.nutrition),
+      ),
     );
   }
 }

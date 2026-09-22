@@ -10,19 +10,18 @@ import type { Variant } from '../../../data/models';
 import { ProductFormStore } from '../product-form-store';
 
 /**
- * 🔴 **Régression réglementaire : enregistrer la fiche EFFAÇAIT les traces.**
+ * 🔴 **Les deux moitiés de la fiche, et ce que chacune n'envoie PAS.**
  *
- * L'écran n'a aucune interface pour « peut contenir ». Sa charge utile ne
- * portait donc jamais `mayContain`, et le serveur lit une absence comme un
- * effacement (`declaration-support.ts` : `input.mayContain ?? []`), parce que la
- * route remplace la déclaration ENTIÈRE.
+ * Trois régressions tiennent ici, toutes de la même famille — une écriture qui
+ * détruit ce qu'elle ne visait pas :
  *
- * Conséquence en production : chaque enregistrement de la section depuis le
- * back-office effaçait les traces posées par le semis ou par un outil agent —
- * sur une donnée qui s'imprime sur une étiquette (trouvé le 2026-09-22).
- *
- * Ces cas tiennent le transport. Ils ne disent RIEN de la saisie : tant que
- * l'écran ne montre pas les traces, elles ne font que passer.
+ * - **0a** : enregistrer la fiche effaçait les traces « peut contenir ». La
+ *   requête remplaçait la déclaration ENTIÈRE et l'écran ne renvoyait pas ce
+ *   qu'il ne montrait pas. Les traces sont maintenant DANS la section
+ *   allergènes : aucune écriture de nutrition ne peut plus les atteindre.
+ * - **0c** : enregistrer sans rien cocher affirmait « aucun allergène ».
+ * - Le 400 muet : la route nutrition REFUSE un corps qui porte des codes
+ *   d'allergène. L'écran déployé envoyait encore l'ancien format.
  */
 
 const EMPTY_NUTRITION = {
@@ -50,6 +49,7 @@ function variant(over: Partial<Variant> = {}): Variant {
     priceCents: 250,
     weightGrams: 100,
     regulatoryFollowsDefault: false,
+    nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
     allergens: ['AM'],
     mayContain: [...TRACES],
@@ -106,8 +106,12 @@ class FakeApi {
     this.calls.push({ name: 'alignVariant', args });
     return Promise.resolve();
   }
-  saveNutrition(...args: unknown[]) {
-    this.calls.push({ name: 'saveNutrition', args });
+  saveVariantAllergens(...args: unknown[]) {
+    this.calls.push({ name: 'saveVariantAllergens', args });
+    return Promise.resolve();
+  }
+  saveVariantNutrition(...args: unknown[]) {
+    this.calls.push({ name: 'saveVariantNutrition', args });
     return Promise.resolve();
   }
   savePricing(...args: unknown[]) {
@@ -160,9 +164,9 @@ async function setup(api = new FakeApi()): Promise<{ store: ProductFormStore; ap
   return { store, api };
 }
 
-/** La charge utile du dernier `saveNutrition`, quelle qu'en soit la forme. */
+/** La charge utile du dernier enregistrement d'allergènes. */
 function lastDeclaration(api: FakeApi): { allergens?: unknown; mayContain?: unknown } {
-  const call = [...api.calls].reverse().find((entry) => entry.name === 'saveNutrition');
+  const call = [...api.calls].reverse().find((entry) => entry.name === 'saveVariantAllergens');
   if (call === undefined) {
     throw new Error("La section n'a pas été enregistrée.");
   }
@@ -188,10 +192,10 @@ describe('enregistrer sans rien déclarer n’affirme pas « aucun allergène »
     api.variants = [variant({ allergens: null, mayContain: [] })];
     const { store } = await setup(api);
 
-    await store.saveOne('fiche');
+    await store.saveOne('allergenes');
 
     expect(store.error()).toContain('Déclarez les allergènes');
-    expect(api.calls.some((call) => call.name === 'saveNutrition')).toBe(false);
+    expect(api.calls.some((call) => call.name === 'saveVariantAllergens')).toBe(false);
   });
 
   it('laisse passer « aucun allergène » quand c’est COCHÉ', async () => {
@@ -200,14 +204,14 @@ describe('enregistrer sans rien déclarer n’affirme pas « aucun allergène »
     const { store } = await setup(api);
 
     store.declareNoAllergen(true);
-    await store.saveOne('fiche');
+    await store.saveOne('allergenes');
 
     expect(store.error()).toBeNull();
     expect(lastDeclaration(api).allergens).toEqual([]);
   });
 });
 
-describe('les traces « peut contenir » survivent à un enregistrement', () => {
+describe('les traces « peut contenir » sont des ALLERGÈNES', () => {
   it('les charge depuis la déclinaison', async () => {
     const { store } = await setup();
 
@@ -218,10 +222,10 @@ describe('les traces « peut contenir » survivent à un enregistrement', () => 
    * 🔴 Le cas qui échouait. La charge utile ne portait que `allergens` et
    * `nutrition` ; le serveur en déduisait « aucune trace » et les effaçait.
    */
-  it('les renvoie telles quelles quand on enregistre la section', async () => {
+  it('les envoie avec la section allergènes', async () => {
     const { store, api } = await setup();
 
-    await store.saveOne('fiche');
+    await store.saveOne('allergenes');
 
     expect(lastDeclaration(api).mayContain).toEqual(TRACES);
   });
@@ -229,7 +233,7 @@ describe('les traces « peut contenir » survivent à un enregistrement', () => 
   it('ne les confond pas avec les allergènes déclarés', async () => {
     const { store, api } = await setup();
 
-    await store.saveOne('fiche');
+    await store.saveOne('allergenes');
 
     const declaration = lastDeclaration(api);
     expect(declaration.allergens).not.toContain('AN');
@@ -246,8 +250,127 @@ describe('les traces « peut contenir » survivent à un enregistrement', () => 
     api.variants = [variant({ mayContain: [] })];
     const { store } = await setup(api);
 
-    await store.saveOne('fiche');
+    await store.saveOne('allergenes');
 
     expect(lastDeclaration(api).mayContain).toEqual([]);
+  });
+});
+
+describe('enregistrer une moitié n’envoie RIEN de l’autre', () => {
+  /**
+   * 🔴 Le bug 0a, rendu inatteignable. Les traces ne voyagent plus avec la
+   * nutrition : la route les REFUSE (400), et l'écran ne les lui propose plus.
+   */
+  it('la nutrition ne porte aucun code d’allergène', async () => {
+    const { store, api } = await setup();
+
+    store.setNutrition('energyKcal', 310);
+    await store.saveOne('nutrition');
+
+    const call = api.calls.find((entry) => entry.name === 'saveVariantNutrition');
+    expect(call).toBeDefined();
+    expect(JSON.stringify(call?.args)).not.toContain('mayContain');
+    expect(JSON.stringify(call?.args)).not.toContain('allergens');
+    expect(api.calls.map((entry) => entry.name)).not.toContain('saveVariantAllergens');
+  });
+
+  /**
+   * Et la réciproque : la section allergènes n'envoie pas une calorie. Une
+   * valeur tapée d'un côté ne doit pas partir par l'autre route, sans quoi
+   * « deux enregistrements » n'en ferait qu'un déguisé.
+   */
+  it('les allergènes ne portent aucune valeur nutritionnelle', async () => {
+    const { store, api } = await setup();
+
+    store.setNutrition('energyKcal', 310);
+    await store.saveOne('allergenes');
+
+    expect(JSON.stringify(lastDeclaration(api))).not.toContain('310');
+    expect(api.calls.map((entry) => entry.name)).not.toContain('saveVariantNutrition');
+  });
+
+  /**
+   * 🔴 D2. Le règlement exige les allergènes, pas les valeurs nutritionnelles :
+   * une fiche dont personne n'a déclaré les allergènes enregistre quand même sa
+   * nutrition. Le refus de la section allergènes ne déborde pas sur l'autre.
+   */
+  it('la nutrition s’enregistre même sans déclaration d’allergène', async () => {
+    const api = new FakeApi();
+    api.variants = [variant({ allergens: null, mayContain: [] })];
+    const { store } = await setup(api);
+
+    store.setNutrition('saltG', 1.2);
+    await store.saveOne('nutrition');
+
+    expect(store.error()).toBeNull();
+    expect(api.calls.map((entry) => entry.name)).toContain('saveVariantNutrition');
+  });
+});
+
+describe('le tri-état ne peut pas se contredire', () => {
+  /**
+   * 🔴 Bug 0c vu de l'écran : `declaresNone` vivait À CÔTÉ de la liste, et à
+   * l'enregistrement le booléen gagnait en jetant la liste. Il n'y a plus qu'un
+   * champ — la contradiction n'est pas détectée, elle est inexprimable.
+   */
+  it('cocher « aucun allergène » vide la liste, et la décocher ne l’affirme pas', async () => {
+    const { store } = await setup();
+
+    store.declareNoAllergen(true);
+    expect(store.selected()).toEqual([]);
+    expect(store.declaresNone()).toBe(true);
+
+    store.declareNoAllergen(false);
+    expect(store.declaresNone()).toBe(false);
+    expect(store.declaration().allergens).toBeNull();
+  });
+
+  /**
+   * Décocher la DERNIÈRE case n'affirme rien : la section refuse alors de
+   * partir, au lieu d'envoyer le `[]` que personne n'a coché.
+   */
+  it('décocher le dernier allergène retombe au silence, pas sur l’affirmation', async () => {
+    const { store, api } = await setup();
+
+    store.toggleAllergen('AM', false);
+
+    expect(store.declaresNone()).toBe(false);
+    await store.saveOne('allergenes');
+    expect(store.error()).toContain('Déclarez les allergènes');
+    expect(api.calls.some((call) => call.name === 'saveVariantAllergens')).toBe(false);
+  });
+
+  /**
+   * Présent et « peut contenir » sont exclusifs — le serveur refuse le
+   * chevauchement. Déclarer une trace sur un code présent le retire de la
+   * présence, plutôt que de partir chercher un 400.
+   */
+  it('un code ne peut pas être présent ET en trace', async () => {
+    const { store } = await setup();
+
+    store.setTraces(['AM']);
+
+    expect(store.mayContain()).toEqual(['AM']);
+    expect(store.selected()).not.toContain('AM');
+  });
+
+  /** Et dans l'autre sens : cocher une présence retire la trace. */
+  it('cocher un code déclaré en trace le fait quitter les traces', async () => {
+    const { store } = await setup();
+
+    store.toggleAllergen('AN', true);
+
+    expect(store.mayContain()).toEqual([]);
+    expect(store.selected()).toContain('AN');
+  });
+
+  /** « Aucun allergène » + une trace d'atelier : les deux tiennent ensemble. */
+  it('garde les traces sous « aucun allergène »', async () => {
+    const { store, api } = await setup();
+
+    store.declareNoAllergen(true);
+    await store.saveOne('allergenes');
+
+    expect(lastDeclaration(api)).toEqual({ allergens: [], mayContain: ['AN'] });
   });
 });

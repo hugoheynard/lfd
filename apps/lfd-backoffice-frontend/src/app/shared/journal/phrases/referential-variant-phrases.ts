@@ -36,7 +36,14 @@ const VARIANT: Noun = { the: 'la déclinaison', a: 'une déclinaison' };
  * mot du dictionnaire (`VARIANT_ASPECT`), entre guillemets.
  */
 const ASPECTS: Readonly<Record<string, { readonly aligned: string; readonly own: string }>> = {
+  // `regulatory` est l'ANCIENNE section entière, et elle reste : des faits la
+  // portent déjà. Elle vaut `allergens` depuis le 2026-09-22 — la fiche
+  // s'aligne par moitié —, mais les phrases passées disaient bien « la fiche
+  // réglementaire », et les relire autrement serait leur faire dire ce qu'on
+  // n'a pas écrit ce jour-là.
   regulatory: { aligned: 'la fiche réglementaire', own: 'sa propre fiche réglementaire' },
+  allergens: { aligned: 'les allergènes', own: 'ses propres allergènes' },
+  nutrition: { aligned: 'les valeurs nutritionnelles', own: 'ses propres valeurs nutritionnelles' },
   pricing: { aligned: 'le tarif', own: 'son propre tarif' },
 };
 

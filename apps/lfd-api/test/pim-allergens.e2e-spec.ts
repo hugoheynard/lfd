@@ -630,7 +630,7 @@ describe("la fiche réglementaire se valide contre le référentiel EN BASE (D3)
     variantId: string,
     body: Record<string, unknown>,
   ): ReturnType<ReturnType<typeof staff>["put"]> {
-    return staff().put(`${PRODUCTS}/${productId}/variants/${variantId}/nutrition`).send(body);
+    return staff().put(`${PRODUCTS}/${productId}/variants/${variantId}/allergens`).send(body);
   }
 
   it("accepte un code GS1 semé par la migration", async () => {
@@ -662,9 +662,9 @@ describe("la fiche réglementaire se valide contre le référentiel EN BASE (D3)
 
   /**
    * Le cœur de D2 bis : la déclaration est revalidée **entière** à chaque
-   * enregistrement. Un refus sec ferait échouer un changement de valeur
-   * nutritionnelle sur un allergène que personne n'a touché — et invaliderait
-   * l'étiquette d'un produit déjà servi sans que quiconque l'ait décidé.
+   * enregistrement. Un refus sec ferait échouer l'ajout d'une trace sur un
+   * allergène que personne n'a touché — et invaliderait l'étiquette d'un
+   * produit déjà servi sans que quiconque l'ait décidé.
    */
   it("laisse réenregistrer une fiche qui citait déjà l'allergène avant son archivage", async () => {
     const categoryId = await createCategory("fruits-coque-exotiques");
@@ -676,7 +676,7 @@ describe("la fiche réglementaire se valide contre le référentiel EN BASE (D3)
 
     await declare(productId, variantId, {
       allergens: ["X-SOUCHET"],
-      nutrition: { saltG: 2 },
+      mayContain: ["UW"],
     }).expect(200);
   });
 });

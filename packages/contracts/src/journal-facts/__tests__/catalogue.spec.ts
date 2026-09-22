@@ -34,6 +34,10 @@ describe("le catalogue des faits", () => {
     expect(retired.sort()).toEqual([
       "company.delivery_procedure_edited_by_staff",
       "company.kbis_uploaded_by_staff",
+      // Remplacé le 2026-09-22 par `product.allergens_saved` et
+      // `product.nutrition_saved` : les deux moitiés de la fiche réglementaire
+      // s'enregistrent séparément. Ses lignes restent lisibles, charge entière.
+      "product.declaration_saved",
       "staff_user.deleted",
       "tax_regime.created",
       "tax_regime.deleted",

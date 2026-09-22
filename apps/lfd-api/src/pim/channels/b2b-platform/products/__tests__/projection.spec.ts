@@ -24,6 +24,7 @@ function variant(over: Partial<VariantRecord> = {}): VariantRecord {
     priceCents: 200,
     weightGrams: null,
     regulatoryFollowsDefault: false,
+    nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
     allergens: null,
     nutrition: null,
