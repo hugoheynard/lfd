@@ -111,8 +111,42 @@ soumise au même référentiel et à la même garde de chevauchement.
 | `nutrition_values`  | les 8 valeurs de l'annexe XV                           |
 
 Les deux en `PK = FK` sur la déclinaison, chacune **absente tant que personne
-n'a rien dit**. Le tri-état (`null` / `[]` / une liste) devient alors ce qu'il
-prétend être : l'absence de ligne, une ligne à tableau vide, une ligne remplie.
+n'a rien dit**.
+
+### 🔴 D6 — « aucun allergène » appartient aux ALLERGÈNES (Hugo, 2026-09-22)
+
+> « aucun allergène devrait faire partie d'allergène, pas de nutrition, si on
+> sépare »
+
+C'est ce qui **dissout le bloquant 1**, et il faut le dire à cet endroit plutôt
+que de le laisser se déduire.
+
+Le tri-état devient alors littéral, et il n'appartient qu'à une table :
+
+| État                       | Dans `variant_allergens`    | Ce que ça dit            |
+| -------------------------- | --------------------------- | ------------------------ |
+| personne ne s'est prononcé | **pas de ligne**            | silence                  |
+| « aucun allergène »        | une ligne, tableau **vide** | affirmation **positive** |
+| des allergènes             | une ligne, tableau rempli   | déclaration              |
+
+➡️ **Écrire des valeurs nutritionnelles ne peut alors PLUS créer d'affirmation
+d'allergène** : les deux tables ne se touchent pas, et la route nutrition n'a
+aucun moyen d'écrire dans l'autre. La chaîne du §1 — saisir une calorie, obtenir
+`allergens: []`, devenir publiable — cesse d'être **exprimable**, au lieu d'être
+empêchée par une garde qu'il faut se rappeler d'écrire.
+
+⚠️ **Ce que ça ne rend pas inexprimable pour autant**, et `vitruve` a eu raison
+de le relever : ce qui refuse la publication reste un getter d'agrégat
+(`hasOwnRegulatorySheet`). D6 ferme le chemin par lequel une affirmation naît
+toute seule ; il ne transforme pas la garde de publication en contrainte de base.
+La v2 revendiquait le premier rang de la hiérarchie pour les deux — c'était
+surjoué, et seul le premier le mérite.
+
+### Ce que D6 entraîne à l'écran
+
+`declaresNone` — la case « cette fiche ne déclare aucun allergène » — est un
+**geste de la section allergènes**, et d'elle seule. Enregistrer la nutrition ne
+doit ni la lire, ni l'écrire, ni la supposer.
 
 ---
 
