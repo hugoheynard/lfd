@@ -195,7 +195,10 @@ export class PrismaProductRepository extends ProductRepository {
    * en erreur métier : ni le handler ni le contrôleur ne connaissent le code `P2002`.
    */
   async add(product: Product): Promise<void> {
-    const snapshot = product.snapshot();
+    // Non résolu, comme `save` — inoffensif ici (la déclinaison par défaut ne
+    // peut pas se suivre elle-même), mais laisser deux règles d'écriture serait
+    // inviter la prochaine à choisir la mauvaise.
+    const snapshot = product.persistenceSnapshot();
     const [defaultVariant] = snapshot.variants;
     if (defaultVariant === undefined) {
       // Inatteignable : l'agrégat refuse de naître sans déclinaison par défaut.
@@ -243,7 +246,11 @@ export class PrismaProductRepository extends ProductRepository {
    * le domaine à la main.
    */
   async save(product: Product): Promise<void> {
-    const snapshot = product.snapshot();
+    // 🔴 L'instantané NON résolu. `snapshot()` substitue le prix et la fiche du
+    // défaut aux déclinaisons alignées : l'écrire ici recopierait le défaut dans
+    // leurs colonnes propres et détruirait ce qu'elles portaient, contre la
+    // promesse de `Variant.follows`. Les lecteurs résolvent à la lecture.
+    const snapshot = product.persistenceSnapshot();
     await this.prisma.$transaction([
       this.prisma.product.update({ where: { id: snapshot.id }, data: toColumns(snapshot) }),
       // Les dérogations se REMPLACENT d'un bloc : un `upsert` par contexte

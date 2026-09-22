@@ -68,6 +68,7 @@
   "test/password-link.e2e-spec.ts": 2295,
   "test/payments-journal.e2e-spec.ts": 3872,
   "test/pickup-addresses.e2e-spec.ts": 3686,
+  "test/pim-alignment-keeps-own.e2e-spec.ts": 4562,
   "test/pim-allergens.e2e-spec.ts": 11420,
   "test/pim-catalog-revision.e2e-spec.ts": 17228,
   "test/pim-categories.e2e-spec.ts": 8444,

@@ -475,6 +475,29 @@ export class Product {
    * finirait par donner trois réponses.
    */
   snapshot(): ProductSnapshot {
+    return { ...this.head(), variants: this.variantList.map((v) => this.resolvedSnapshot(v)) };
+  }
+
+  /**
+   * L'instantané **non résolu** — chaque déclinaison avec ce qu'elle PORTE.
+   *
+   * 🔴 C'est celui qu'on PERSISTE, et la distinction n'est pas cosmétique.
+   * {@link snapshot} résout l'héritage : une déclinaison alignée en sort avec le
+   * prix et la fiche du défaut. Écrire CE tableau-là dans ses colonnes propres
+   * recopierait le défaut chez elle, et détruirait ce qu'elle avait — alors que
+   * {@link Variant.follows} promet l'inverse : « s'aligner puis se désaligner
+   * rend ce qu'on avait écrit ».
+   *
+   * Les lecteurs n'y perdent rien : ils passent tous par l'agrégat
+   * (`CatalogueReader.publishable` fait `listAll().map(p => p.snapshot())`) et
+   * reçoivent donc la résolution **à la lecture**, là où elle doit vivre.
+   */
+  persistenceSnapshot(): ProductSnapshot {
+    return { ...this.head(), variants: this.variantList.map((variant) => variant.snapshot()) };
+  }
+
+  /** Ce que les deux instantanés partagent — tout sauf les déclinaisons. */
+  private head(): Omit<ProductSnapshot, "variants"> {
     return {
       id: this.identity,
       sku: this.skuValue,
@@ -483,7 +506,6 @@ export class Product {
       kind: this.kindValue,
       categoryId: this.categoryIdValue,
       status: this.statusValue,
-      variants: this.variantList.map((variant) => this.resolvedSnapshot(variant)),
       vatByContext: this.vatByContextValue,
       channelOverride: this.channelOverrideValue,
     };
