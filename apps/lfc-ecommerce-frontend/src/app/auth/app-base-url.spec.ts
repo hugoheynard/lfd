@@ -4,7 +4,7 @@ describe('appBaseUrl', () => {
   it("rend l'origine nue quand l'app est à la racine", () => {
     // Valeur INCHANGÉE par rapport à `window.location.origin` : les URL déjà
     // déclarées côté Auth0 restent valides, il n'y a rien à migrer.
-    expect(appBaseUrl('https://lfc-b2b-eu7.pages.dev/')).toBe('https://lfc-b2b-eu7.pages.dev');
+    expect(appBaseUrl('https://lfc-ecommerce.pages.dev/')).toBe('https://lfc-ecommerce.pages.dev');
     expect(appBaseUrl('http://localhost:7316/')).toBe('http://localhost:7316');
   });
 

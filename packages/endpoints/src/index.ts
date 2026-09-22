@@ -131,18 +131,24 @@ export const DEV_CORS_ORIGINS: string[] = [
  * envoie l'`Origin` du domaine réellement visité.
  */
 export const PROD_FRONT_ORIGINS = {
-  // ⚠️ `lfc-b2b-eu7`, PAS `lfc-b2b` : Cloudflare a suffixé le sous-domaine du
-  // projet Pages (le nom court était déjà pris). Vérifié le 2026-08-13 par
-  // l'API Cloudflare, puis en comparant les bundles servis — `lfc-b2b.pages.dev`
-  // rend une build DIFFÉRENTE et plus ancienne, qu'aucun de nos déploiements
-  // ne met à jour.
+  // ✅ **`lfc-ecommerce.pages.dev` — LUE, pas prédite** (2026-09-22). Le projet
+  // Pages a été créé à la main pour que Cloudflare annonce son adresse AVANT
+  // qu'on la câble, puis l'adresse a été confirmée deux fois : le log du
+  // déploiement (« already exists », puis l'URL rendue) et un appel qui compare
+  // le bundle servi. Elle remplace `lfc-b2b-eu7.pages.dev`.
   //
-  // La conséquence était une panne complète et silencieuse : la boutique
-  // déployée émettait ses appels depuis `lfc-b2b-eu7…`, origine absente de la
-  // liste ci-dessous, donc refusée par le CORS. Mesuré : préflight sans aucun
-  // en-tête `access-control-allow-origin`. Personne ne l'avait vu parce que
-  // personne ne s'était encore connecté à la boutique cliente.
-  b2bFront: "https://lfc-b2b-eu7.pages.dev",
+  // 🔴 **Le suffixe est le piège de cette ligne, et il a coûté deux fois.**
+  // Quand le nom court est déjà pris, Cloudflare suffixe le sous-domaine EN
+  // SILENCE : `lfc-b2b` avait ainsi donné `lfc-b2b-eu7`, et la valeur écrite
+  // ici était une PRÉDICTION. Conséquence, une panne complète et muette — la
+  // boutique émettait depuis une origine absente de cette liste, préflight sans
+  // aucun `access-control-allow-origin`, et personne ne l'avait vu parce que
+  // personne ne s'était encore connecté. Le 2026-09-21, le même mécanisme a
+  // envoyé un déploiement entier dans un projet vide.
+  //
+  // ⚠️ La règle qui en sort : cette valeur ne s'écrit JAMAIS avant d'avoir lu
+  // l'adresse que Cloudflare a réellement attribuée.
+  b2bFront: "https://lfc-ecommerce.pages.dev",
   // 🔴 BASCULE EN COURS (2026-08-20) : le projet Pages passe de `lfc-b2b-admin`
   // à `lfd-backoffice`. Cloudflare ne RENOMME pas un projet — le workflow en
   // crée un neuf et l'ancien continue de servir — d'où une période où les DEUX

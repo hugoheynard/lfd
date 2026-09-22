@@ -1,6 +1,6 @@
 import { entryScriptOf, FrontendProbe, type HttpGet } from "../frontend.probe.js";
 
-const ORIGIN = "https://lfc-b2b-eu7.pages.dev";
+const ORIGIN = "https://lfc-ecommerce.pages.dev";
 
 /** Un shell Angular tel que Pages le rend, empreinte de build comprise. */
 const SHELL = `<!doctype html><html><head>
