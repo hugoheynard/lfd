@@ -10,8 +10,28 @@ name: deploy_lfc_boutique
 #     token so they rotate/revoke independently).
 #   CLOUDFLARE_ACCOUNT_ID — the Cloudflare account id (shared across every app —
 #     one account, one id).
-# and a Pages project named `lfc-b2b` (create it once: `npx wrangler pages
-# project create lfc-b2b`, or the first manual `wrangler pages deploy`).
+# and a Pages project named `lfc-ecommerce-frontend` (create it once: `npx
+# wrangler pages project create lfc-ecommerce-frontend`, or the first manual
+# `wrangler pages deploy`).
+#
+# 🔴 LE NOM DU PROJET N'EST PAS DÉCORATIF — il décide où le site atterrit.
+# Le 2026-09-21, le projet a été renommé `lfc-b2b` → `lfc-ecommerce-frontend`
+# dans Cloudflare, pour suivre le renommage de l'app. Ce fichier est resté sur
+# l'ancien nom : `pages project create` a donc RÉUSSI au lieu d'échouer sur
+# « already exists », Cloudflare a fabriqué un projet VIDE avec l'ancien nom, et
+# la boutique du jour est partie sur une adresse neuve (`lfc-b2b-7e8`) que
+# personne n'ouvre. L'adresse réelle, `lfc-b2b-eu7.pages.dev`, a continué de
+# servir la build de l'avant-veille — déploiement vert, site inchangé.
+#
+# ⚠️ `|| true` sur la création est ce qui rend la faute SILENCIEUSE : il avale
+# aussi bien le « already exists » attendu qu'une création qui n'aurait jamais
+# dû avoir lieu. Le seul signe est dans le log, à la ligne « Successfully
+# created » — à lire quand un déploiement vert ne change rien à l'écran.
+#
+# ⚠️ Le renommage n'a PAS changé l'adresse : `lfc-b2b-eu7.pages.dev` reste la
+# bonne (vérifié le 2026-09-21). Ne pas toucher à `LFC_BOUTIQUE_URL` ni aux
+# adresses de retour Auth0 — c'est une bascule d'adresse qui avait cassé la
+# connexion en production une première fois (`documentation/ops/secrets-et-variables.md`).
 #
 # Plus four repo VARIABLES (Settings → Secrets and variables → Actions →
 # *Variables* tab — NOT secrets: it's the SPA's PUBLIC Auth0 config, it ships in
@@ -134,7 +154,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFC_B2B_PLATFORM_PAGES }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: >-
-          pnpm dlx wrangler pages project create lfc-b2b
+          pnpm dlx wrangler pages project create lfc-ecommerce-frontend
           --production-branch=main || true
 
       # `cloudflare/wrangler-action` tente d'installer wrangler via `pnpm add` à
@@ -148,5 +168,5 @@ jobs:
         run: >-
           pnpm dlx wrangler pages deploy
           apps/lfc-ecommerce-frontend/dist/lfc-ecommerce-frontend/browser
-          --project-name=lfc-b2b
+          --project-name=lfc-ecommerce-frontend
           --branch=main
