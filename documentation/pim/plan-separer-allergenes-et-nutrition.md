@@ -1,15 +1,21 @@
-# Plan — séparer les allergènes de la nutrition (v5)
+# Séparer les allergènes de la nutrition
 
-> **État : 📐 conception, bâtissable.** Rien n'est bâti sauf les quatre
-> correctifs du §2.
+> **État : ✅ BÂTI ET FUSIONNÉ**, le 2026-09-22 — `427f21912` (les lots 3 à 7)
+> et `1a2908ea` (la vue). Les lots 1 et 2 l'étaient déjà (`3661c71a1`,
+> `4bee4c160`). Ce document décrit désormais **ce qui existe**, au présent.
 >
-> **Ouvert le 2026-09-22**, réécrit **quatre fois** le même jour. `vitruve` a
-> rendu 3, 4 puis 5 BLOQUANT sur les v1 à v3 ; la v5 les absorbe, et **une mesure
-> en a fait tomber la moitié d'un coup** (§3). Le §9 dit ce que chaque version
-> affirmait de faux.
+> Il reste écrit comme un plan parce qu'il l'a été : ouvert le 2026-09-22 et
+> réécrit **quatre fois** le même jour, `vitruve` ayant rendu 3, 4 puis 5
+> BLOQUANT sur les v1 à v3. Ce qu'il raconte de sa propre fabrication — le §3,
+> le §9 — n'est pas de la nostalgie : c'est la partie qui empêche de refaire les
+> mêmes fautes, et elle disparaîtrait d'une description propre.
 >
-> 🔴 **Donnée RÉGLEMENTAIRE** — une erreur finit sur une étiquette. Ce qui suit
-> reste vrai même si rien n'est publié aujourd'hui.
+> 🔴 **Donnée RÉGLEMENTAIRE** — une erreur finit sur une étiquette.
+>
+> **Un seul geste reste à faire, et il est destructeur** : supprimer la table
+> `pim.nutrition_declaration`, hors service depuis le lot 3. Le SQL est au §7,
+> il n'existe **volontairement pas** en migration, et il se compte avant de
+> s'exécuter.
 
 ---
 
@@ -34,10 +40,13 @@ validation, la publication) ; quatre les soudent (route, port, table, écran).
 | 0d  | L'outil agent **recopiait la fiche du défaut** sur n'importe quelle déclinaison | `35a8ad60e` |
 
 🔴 **Aucun n'était prévu**, et **0c** fabriquait depuis l'écran normal
-l'affirmation même que ce plan veut rendre impossible.
+l'affirmation même que ce chantier a rendue impossible.
 
 ⚠️ **0b et 0d sont la même faute** : écrire une valeur **résolue** dans une
-colonne **propre**. Elle se rejouerait à l'identique au lot 2 (§6).
+colonne **propre**. Elle s'est rejouée à l'identique — non dans le code du lot 2, mais dans
+**six doubles de test** qui persistaient l'instantané résolu là où l'adaptateur
+persiste l'instantané propre (§6a). Une régression de cette forme y restait
+verte ; le lot 5 les a corrigés.
 
 ---
 
@@ -61,6 +70,10 @@ premier bloquant de `vitruve` (les `[]` indistinguables — il n'y en a aucun).
 ⚠️ **Et ça dit autre chose, hors sujet mais vrai** : aucune fiche n'est
 publiable, parce que l'invariant 7 exige une déclaration par déclinaison active.
 Le référentiel n'est pas bloqué par du code, il est bloqué par de la **saisie**.
+
+➡️ Depuis le lot 5, ce qu'il exige est **la déclaration d'allergènes seule** —
+pas les valeurs nutritionnelles (D2). Le blocage reste entier, mais il ne
+demande plus que la moitié du travail de saisie.
 
 ---
 
@@ -192,8 +205,16 @@ La v1 promettait « le _lost update_ disparaît » ; il ne disparaît pas, il ce
 d'être **atteignable par accident**. Le reste demanderait un verrou optimiste,
 qui n'existe nulle part dans le dépôt.
 
-⚠️ Et quand il écrira, ce sera depuis `persistenceSnapshot()` — jamais
-`snapshot()`, qui résout. C'est la faute 0b/0d.
+⚠️ Il écrit depuis `persistenceSnapshot()` — jamais `snapshot()`, qui résout.
+C'est la faute 0b/0d.
+
+🔴 **Et c'est là que le chantier a failli se faire avoir.** Six doubles de
+`ProductRepository`, dans les specs d'application, persistaient `snapshot()` —
+le RÉSOLU. Le code de production était juste ; les tests censés le protéger
+jouaient la faute. Une régression écrivant la fiche du défaut dans la colonne
+propre d'une déclinaison alignée serait passée **au vert**. Un doublé qui
+diverge du port qu'il prétend jouer ne protège rien, et rien ne rougit pour le
+dire.
 
 ### b. Les tables exhaustives — il y en a TROIS, pas deux
 
@@ -224,14 +245,14 @@ les allergènes cesserait de périmer la signature « publiable ».
 ➡️ **`product.allergens_saved` et `product.nutrition_saved`.** Le préfixe ment un
 peu sur le sujet ; il dit vrai sur ce qui protège.
 
-| Aussi                                                   | Pourquoi                                      |
-| ------------------------------------------------------- | --------------------------------------------- |
-| L'ancien fait passe en `retired(...)`                   | ses lignes doivent rester lisibles            |
-| …et **reste à `true`** dans `CONTENT_FACTS`             | sinon les faits passés cessent de périmer     |
-| …et **garde** son `["allergens"]` dans `attribution.ts` | sinon les changements passés perdent l'auteur |
-| Le fait allergènes **hérite** `["allergens"]`           | la révision n'a que ce champ                  |
-| Le fait nutrition s'attribue à `[]`                     | voir ci-dessous                               |
-| **Deux phrases françaises** dans `phrase-registry.ts`   | c'est le seul vrai refus de compiler          |
+| Aussi                                                   | Pourquoi                                        |
+| ------------------------------------------------------- | ----------------------------------------------- |
+| L'ancien fait passe en `retired(...)`                   | ses lignes doivent rester lisibles              |
+| …et **reste à `true`** dans `CONTENT_FACTS`             | sinon les faits passés cessent de périmer       |
+| …et **garde** son `["allergens"]` dans `attribution.ts` | sinon les changements passés perdent l'auteur   |
+| Le fait allergènes **hérite** `["allergens"]`           | la révision n'a que ce champ                    |
+| Le fait nutrition s'attribue à **`["nutrition"]`**      | le champ est entré dans la révision, ci-dessous |
+| **Deux phrases françaises** dans `phrase-registry.ts`   | c'est le seul vrai refus de compiler            |
 
 🟢 **La nutrition s'attribue à `nutrition`** — le champ entre dans la révision
 dès ce lot (Hugo, 2026-09-22 : « j'accepte la bascule d'empreintes »).
@@ -284,10 +305,10 @@ drapeaux : l'invariant 7 et la couverture.
 Le catalogue est vide, **le front ne l'est pas** — il est déployé et appelle ces
 routes.
 
-| Quoi                                         | Ce qu'il faut                                        |
-| -------------------------------------------- | ---------------------------------------------------- |
-| `VariantNutritionView` perd `mayContain`     | déprécier, puis retirer                              |
-| L'enum `aspect` — **trois** endroits, pas un | `contracts`, `pim-contracts` (la requête), l'agrégat |
+| Quoi                                           | Ce qu'il faut                                                                                |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `VariantNutritionView` perd `mayContain`       | **fait** — `allergenSheet: { declared, mayContain }`                                         |
+| L'enum `aspect` — **cinq** endroits, pas trois | `contracts`, `pim-contracts`, l'agrégat, et **deux dictionnaires du journal** au back-office |
 
 ➡️ `"regulatory"` reste **acceptée en écriture** jusqu'au retrait du front qui
 l'envoie ; les valeurs s'**ajoutent**, on ne renomme pas. Et le drapeau nutrition
@@ -329,37 +350,56 @@ autoritaires sur le même fait.
 
 ⚠️ Ce qui se paie : **le nom de la colonne ment un peu sur son sujet**, comme le
 préfixe `product.` des deux faits. Il dit vrai sur ce qu'il protège — le `CHECK`
-et les lecteurs existants — et il dira faux sur ce qu'il décrit jusqu'au lot 7,
-qui peut le renommer d'une migration additive si quelqu'un la juge rentable.
+et les lecteurs existants — et il dit faux sur ce qu'il décrit. Le lot 7 ne l'a
+**pas** renommé : une migration de colonne pour un demi-mot de justesse ne se
+paie pas d'elle-même. `ASPECT_FLAG`, dans `variant.ts`, est le seul endroit où
+`"regulatory"` et `"allergens"` se rejoignent — c'est là qu'un renommage
+commencerait.
 
 ---
 
 ## 7. Les lots
 
-| Lot   | Contenu                                                                      | Bloque par |
-| ----- | ---------------------------------------------------------------------------- | ---------- |
-| ~~0~~ | ✅ Les quatre correctifs (§2)                                                | —          |
-| 1     | Les deux tables — **vides**, aucune reprise (§3)                             | —          |
-| 2     | La règle dans l'agrégat, l'écriture dans un port dédié (§6a)                 | 1          |
-| 3     | Les deux routes, les deux faits, l'ancien en `retired`, **la lecture** (§6c) | 2          |
-| 4     | Les deux drapeaux — colonne, `CHECK`, valeur d'enum **ajoutée** (§6d)        | 2          |
-| 5     | L'invariant 7 s'écrit sur les allergènes seuls ; la couverture (D2)          | 3, 4       |
-| 6     | L'écran : deux sections, deux enregistrements, **et les traces**             | 5          |
-| 7     | L'ancienne table et l'ancienne route partent ; `mayContain` sort de la vue   | 6          |
+| Lot   | Contenu                                                                      | Commit      |
+| ----- | ---------------------------------------------------------------------------- | ----------- |
+| ~~0~~ | Les quatre correctifs (§2)                                                   | voir §2     |
+| ~~1~~ | Les deux tables — **vides**, aucune reprise (§3)                             | `3661c71a1` |
+| ~~2~~ | La règle dans l'agrégat, l'écriture dans un port dédié (§6a)                 | `4bee4c160` |
+| ~~3~~ | Les deux routes, les deux faits, l'ancien en `retired`, **la lecture** (§6c) | `427f21912` |
+| ~~4~~ | Les deux drapeaux — colonne, `CHECK`, valeur d'enum **ajoutée** (§6d)        | `427f21912` |
+| ~~5~~ | L'invariant 7 s'écrit sur les allergènes seuls ; la couverture (D2)          | `427f21912` |
+| ~~6~~ | L'écran : deux sections, deux enregistrements, **et les traces**             | `427f21912` |
+| ~~7~~ | Le code mort part ; `mayContain` sort de la vue                              | `1a2908ea`  |
+
+⚠️ **Les lots 3 à 6 partagent un commit, et ce n'est pas un raccourci.** Ils ont
+réécrit tour à tour **les mêmes fichiers** — `variant.ts` quatre fois. L'arbre
+porte leur état cumulé, pas sept états séparables : les découper aurait demandé
+un tri par hunks dont aucun état intermédiaire n'aurait compilé, donc n'aurait
+été testé. Sept commits dont six faux valent moins qu'un commit vrai.
+
+🔴 **Le lot 7 ne supprime PAS la table.** Voir plus bas : le seul geste
+destructeur n'existe pas en migration, exprès.
 
 ⚠️ **Le resserrage choisit et le dit** : l'ancienne route qui reçoit encore
 `allergens` **refuse** (400). Sur du réglementaire, un `200` qui n'écrit rien est
 pire que le refus.
 
-### Irréversible au premier merge dans `main`
+### Ce que le merge a rendu irréversible
+
+Cette liste était un avertissement ; elle est maintenant un **constat**. Ces
+formes sont servies, et les changer demanderait désormais de déprécier avant de
+retirer :
 
 - le **nom des deux faits** — et il décide de la couverture (§6c) ;
 - le **nom des deux tables** et de leurs colonnes ;
 - les **valeurs ajoutées** à l'enum `aspect` ;
-- la forme de `VariantNutritionView` ;
-- le champ **`nutrition`** d'un article de révision — il change toutes les
-  empreintes, et la fenêtre où ça ne coûte rien est celle où il n'y a aucune
-  révision. Elle se referme à la première ancre posée.
+- la forme de `VariantView.allergenSheet` et de `VariantNutritionView` — c'est
+  pour la tenir dans cette fenêtre que `mayContain` a changé de côté **avant** le
+  merge, et pas au chantier suivant ;
+- le champ **`nutrition`** d'un article de révision. Il change toutes les
+  empreintes, et la fenêtre où ça ne coûtait rien était celle où il n'existait
+  **aucune** révision. Elle s'est refermée avec ce merge : la prochaine ancre
+  posée fige les empreintes de la nouvelle forme.
 
 ### 🔴 Le seul geste destructeur, et il n'est PAS dans le dépôt
 
@@ -398,15 +438,22 @@ relation `nutrition` sur `ProductVariant`, et l'entrée de
 
 ---
 
-## 8. Ce qu'on ne fait PAS
+## 8. Ce qu'on ne fait PAS — et ce que le chantier a fini par faire
 
-| ❌                                                | Pourquoi                                                  |
-| ------------------------------------------------- | --------------------------------------------------------- |
-| Ajouter un champ `nutrition` à la révision        | Change **toutes** les empreintes — chantier séparé        |
-| Renommer la valeur `regulatory`                   | Valeur servie, déjà dans des faits posés                  |
-| Ramener l'écriture de la fiche dans `save()`      | Étendrait le _lost update_ à douze gestes                 |
-| Nommer les faits `variant.*`                      | Les rendrait invisibles des deux gardes                   |
-| Toucher l'invariant 7 autrement que pour l'écrire | C'est une garde de sécurité ; la déplacer se décide seule |
+| ❌                                                | Pourquoi                                                                                   |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| ~~Ajouter un champ `nutrition` à la révision~~    | 🔴 **Fait.** L'interdit reposait sur un coût supposé ; la prod portait zéro révision (§6c) |
+| Renommer la valeur `regulatory`                   | Valeur servie, déjà dans des faits posés — **tient toujours**                              |
+| Ramener l'écriture de la fiche dans `save()`      | Étendrait le _lost update_ à douze gestes                                                  |
+| Nommer les faits `variant.*`                      | Les rendrait invisibles des deux gardes                                                    |
+| Toucher l'invariant 7 autrement que pour l'écrire | C'est une garde de sécurité ; la déplacer se décide seule                                  |
+
+🔴 **La première ligne est la leçon du tableau.** Un « on ne fait pas » qui
+repose sur un coût **supposé** n'est pas une règle, c'est une mesure qu'on n'a
+pas faite. Celui-ci a survécu à cinq versions du plan ; il est tombé en une
+requête. Les quatre autres tiennent parce qu'ils reposent sur une propriété du
+code — un contrat servi, un préfixe qui filtre, douze appelants, une garde de
+sécurité — et pas sur une estimation.
 
 ---
 
@@ -427,3 +474,42 @@ relation `nutrition` sur `ProductVariant`, et l'entrée de
 🔴 **La même faute, cinq fois : décrire l'existant sans l'ouvrir.** La mesure du
 §3 tient en quatre chiffres et aurait dû précéder la v1 — elle a été demandée à
 la v3. Les quatre correctifs du §2, eux, sont tous sortis d'une lecture.
+
+### Et ce que la v5 — celle-ci — a affirmé de faux pendant qu'on la bâtissait
+
+Le tableau ci-dessus s'arrêtait aux versions mortes. Celle qui a été bâtie s'est
+trompée **huit fois de plus**, et les huit ont été trouvées par des agents qui
+ouvraient le code au lieu de le croire :
+
+| Affirmation de la v5                             | Ce qui l'a démentie                                                                            |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| La fiche est lue à **un seul** endroit (§6c bis) | Deux — l'écran de composition aussi. Deux e2e l'ont dit                                        |
+| Chaque commande appelle `declareRegulatorySheet` | Impossible côté nutrition : forcerait `allergens: []`, c'est-à-dire le bug 0c                  |
+| L'enum `aspect` vit à **trois** endroits         | Cinq — deux dictionnaires du journal en plus                                                   |
+| L'écran laisse croire que la nutrition bloque    | Non : `completeness.ts` n'a jamais exigé qu'elle. D2 ne demandait qu'un **mot**                |
+| « Le booléen gagne en jetant la liste » (§5)     | Vrai du transport, pas du geste : la divergence naissait à l'hydratation                       |
+| `mayContain` « change de côté » à l'écran        | Il n'était **nulle part** : aucun écran ne le saisissait                                       |
+| L'ancienne route reste à retirer au lot 7        | Elle était déjà partie au lot 3                                                                |
+| L'inventaire des lecteurs de `mayContain`        | Faux sur quatre fichiers, et il en **oubliait trois**, dont un e2e qui déclare son propre type |
+
+⚠️ **Deux de ces huit se seraient vues à l'exécution seulement.** L'e2e qui
+déclare sa propre interface aurait cassé au runtime sans un mot du typecheck ;
+et une spec du back-office redéclarait `VariantView` champ pour champ — rattrapée
+par la seule racine, ni par `tsc -p tsconfig.app.json` (qui ne voit pas les
+specs), ni par les portes de chaque périmètre.
+
+➡️ **La leçon n'est pas « mesurer ».** La v5 mesurait. C'est le POINT DE DÉPART
+de la mesure qui décide de ce qu'elle peut trouver : compter les appelants d'une
+fonction qu'on vient de lire ne trouve que ce qu'on connaît déjà. Pour compter
+les lecteurs de quelque chose, on part de la **ressource** — le nom de la table,
+de la colonne, de la relation — jamais du mapper qu'on a sous les yeux.
+
+### Ce qui reste ouvert
+
+| Sujet                                                             | Pourquoi ce n'est pas tranché                                                                                                 |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Le **poids net** voyage par le tarif, s'affiche avec la nutrition | Le déplacer touche le prix — décision d'Hugo. L'écran, lui, est honnête : le champ se ferme quand il ne s'écrira pas          |
+| La **création** n'accepte pas les valeurs nutritionnelles         | La grille est fermée à la création plutôt que menteuse. L'ouvrir est un chantier, pas un correctif                            |
+| **D3** n'est nommée qu'au serveur                                 | Le refus de publier nomme le cas ; l'écran ne le dit pas encore                                                               |
+| `"regulatory"` encore **acceptée en écriture**                    | Le front qui l'envoyait est retiré mais pas déployé ; refuser maintenant casserait la version en ligne                        |
+| `product-form-store.ts` à **2113 lignes**                         | Plafond ≲300. La découpe évidente est la machinerie de brouillon par déclinaison, qui n'a rien à faire avec les appels réseau |
