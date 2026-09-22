@@ -26,9 +26,12 @@ export type ProductKind = 'daily' | 'made_to_order' | 'resale';
 export type ProductStatus = 'draft' | 'published' | 'archived';
 
 /**
- * Un **taux de TVA** = un taux, = une collection Shopify (Famille A du doc :
- * `tva-5-5`, `tva-10`, `tva-20`). Donnée créable — la base qui porte les
+ * Un **taux de TVA** = un taux. Donnée créable — la base qui porte les
  * dérogations. Une catégorie référence un taux à emporter et un sur place.
+ *
+ * ⚠️ Ce commentaire l'assimilait à une collection Shopify (`tva-5-5`, `tva-10`).
+ * C'était déjà le vocabulaire d'un consommateur plutôt que la donnée elle-même,
+ * et ce consommateur a disparu le 2026-09-21.
  */
 export interface VatRate {
   id: string;
@@ -161,7 +164,7 @@ export interface Product {
    * pour pouvoir dire d'où vient chaque taux.
    */
   vatByContext: Readonly<Record<string, string>>;
-  /** Handle Shopify — pilote l'URL, jamais changé après création (SEO). */
+  /** Pilote l'URL publique — jamais changé après création (SEO). */
   slug?: LocalizedText;
   /** Prix de vente TTC, en euros. */
   priceEur?: number;
@@ -198,19 +201,6 @@ export interface Category {
    * de laisser le refus du backend l'apprendre après.
    */
   activeProductCount: number;
-}
-
-// Types de synchro Shopify (SyncStatus, PushOutcome, ProductBinding, PushReport,
-// PushSummary) migrés vers `@lfd/pim-contracts` — ré-exportés par `shopify-api`.
-
-export interface ShopifySettings {
-  shopDomain: string;
-  apiVersion: string;
-  isEnabled: boolean;
-  /** Présence du secret — jamais sa valeur. En POC navigateur : toujours `false`. */
-  hasToken: boolean;
-  mode: 'live' | 'dry-run';
-  updatedAt: string | null;
 }
 
 /**
