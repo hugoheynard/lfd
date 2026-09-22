@@ -10,7 +10,6 @@ import {
   VariantNotInProductError,
 } from "../errors/product-errors.js";
 import {
-  composeNutrition,
   Variant,
   type VariantAspect,
   type VariantPricing,
@@ -506,10 +505,12 @@ export class Product {
   private resolvedSnapshot(variant: Variant): VariantSnapshot {
     const own = variant.snapshot();
     const source = this.defaultVariant.snapshot();
-    // Chaque moitié vient de celui que SON drapeau désigne. Les traces
-    // « peut contenir » suivent les allergènes et non les valeurs : ce sont des
-    // allergènes, et les faire suivre le mauvais drapeau mettrait sur une
-    // étiquette la trace d'un autre article (plan §5).
+    // Chaque moitié vient EN ENTIER de celui que SON drapeau désigne. Les
+    // traces « peut contenir » voyagent avec les allergènes et non avec les
+    // valeurs : ce sont des allergènes, et les faire suivre le mauvais drapeau
+    // mettrait sur une étiquette la trace d'un autre article (plan §5). Depuis
+    // le lot 7, rien ne se recolle plus ici — les deux moitiés sont deux
+    // champs, et prendre l'un pour l'autre demanderait de le vouloir.
     const allergensFrom = variant.follows("allergens") ? source : own;
     const valuesFrom = variant.follows("nutrition") ? source : own;
     const pricing = variant.follows("pricing")
@@ -517,8 +518,8 @@ export class Product {
       : {};
     return {
       ...own,
-      allergens: allergensFrom.allergens,
-      nutrition: composeNutrition(allergensFrom.nutrition, valuesFrom.nutrition),
+      allergenSheet: allergensFrom.allergenSheet,
+      nutrition: valuesFrom.nutrition,
       ...pricing,
     };
   }

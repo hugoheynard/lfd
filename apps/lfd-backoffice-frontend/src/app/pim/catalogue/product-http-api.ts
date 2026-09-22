@@ -148,8 +148,12 @@ function toVariant(variant: VariantView): Variant {
     regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
     nutritionFollowsDefault: variant.nutritionFollowsDefault,
     pricingFollowsDefault: variant.pricingFollowsDefault,
-    allergens: variant.allergens === null ? null : [...variant.allergens],
-    mayContain: [...(variant.nutrition?.mayContain ?? [])],
+    // Les deux moitiés de la déclaration viennent d'UNE ligne : `allergenSheet`
+    // absent = personne ne s'est prononcé, et il n'y a alors pas non plus de
+    // traces. Les lire séparément rouvrirait la divergence que la séparation
+    // des allergènes et de la nutrition a fermée (2026-09-22).
+    allergens: variant.allergenSheet === null ? null : [...variant.allergenSheet.declared],
+    mayContain: [...(variant.allergenSheet?.mayContain ?? [])],
     nutrition: toNutritionValues(variant.nutrition),
   };
 }
@@ -235,8 +239,8 @@ export class ProductHttpApi {
     return {
       product: backendToProduct(row, row.editorial),
       editorial: toEditorialFields(row.editorial),
-      allergens: base?.allergens ?? null,
-      mayContain: base?.nutrition?.mayContain ?? [],
+      allergens: base?.allergenSheet?.declared ?? null,
+      mayContain: base?.allergenSheet?.mayContain ?? [],
       nutrition: toNutritionValues(base?.nutrition ?? null),
       media: row.media.map((item) => ({
         role: item.role,

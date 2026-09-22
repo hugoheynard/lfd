@@ -58,7 +58,7 @@ interface VariantDetail {
   readonly id: string;
   readonly sku: string;
   readonly isDefault: boolean;
-  readonly allergens: readonly string[] | null;
+  readonly allergenSheet: { readonly declared: readonly string[] } | null;
 }
 
 interface ProductDetail {
@@ -187,7 +187,9 @@ describe("les allergènes suffisent, la nutrition ne remplace rien", () => {
     await saveAllergens(productId, variantId, { allergens: [DEFAULT_ALLERGEN] }).expect(200);
 
     expect((await publish(productId)).status).toBe(200);
-    expect((await detailOf(productId)).variants[0]?.allergens).toEqual([DEFAULT_ALLERGEN]);
+    expect((await detailOf(productId)).variants[0]?.allergenSheet?.declared).toEqual([
+      DEFAULT_ALLERGEN,
+    ]);
   });
 });
 
@@ -243,7 +245,9 @@ describe("la couverture lit le drapeau des allergènes, pas celui des valeurs", 
     expect(detail.status).toBe("published");
     // Elle part au canal avec les allergènes du défaut, jamais avec `null` —
     // que le récepteur ne doit surtout pas lire « sans allergène ».
-    expect(detail.variants.find((v) => v.id === secondId)?.allergens).toEqual([DEFAULT_ALLERGEN]);
+    expect(detail.variants.find((v) => v.id === secondId)?.allergenSheet?.declared).toEqual([
+      DEFAULT_ALLERGEN,
+    ]);
   });
 
   /**
@@ -284,6 +288,6 @@ describe("la couverture lit le drapeau des allergènes, pas celui des valeurs", 
     // Et le désalignement lui rend donc « rien déclaré », pas la fiche d'autrui.
     expect([200, 204]).toContain((await align(productId, secondId, "allergens", false)).status);
     const detail = await detailOf(productId);
-    expect(detail.variants.find((v) => v.id === secondId)?.allergens).toBeNull();
+    expect(detail.variants.find((v) => v.id === secondId)?.allergenSheet).toBeNull();
   });
 });

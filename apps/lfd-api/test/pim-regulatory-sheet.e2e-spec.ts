@@ -43,11 +43,15 @@ const staff = (): ReturnType<E2eContext["http"]> =>
 
 interface VariantDetail {
   readonly id: string;
-  readonly allergens: readonly string[] | null;
-  readonly nutrition: {
+  readonly allergenSheet: {
+    readonly declared: readonly string[];
     readonly mayContain: readonly string[];
+  } | null;
+  readonly nutrition: {
     readonly saltG: number | null;
     readonly energyKcal: number | null;
+    readonly carbsG: number | null;
+    readonly sugarsG: number | null;
   } | null;
 }
 
@@ -110,12 +114,8 @@ describe("les deux sections ne se touchent pas", () => {
     await saveNutrition(productId, variantId, { saltG: 2, energyKcal: 410 }).expect(200);
 
     const variant = await variantOf(productId);
-    expect(variant.allergens).toEqual(["UW"]);
-    expect(variant.nutrition).toMatchObject({
-      mayContain: ["AM"],
-      saltG: 2,
-      energyKcal: 410,
-    });
+    expect(variant.allergenSheet).toEqual({ declared: ["UW"], mayContain: ["AM"] });
+    expect(variant.nutrition).toMatchObject({ saltG: 2, energyKcal: 410 });
   });
 
   /** Et l'inverse : déclarer ne remet pas un tableau nutritionnel à zéro. */
@@ -126,7 +126,7 @@ describe("les deux sections ne se touchent pas", () => {
     await saveAllergens(productId, variantId, { allergens: ["UW"] }).expect(200);
 
     const variant = await variantOf(productId);
-    expect(variant.allergens).toEqual(["UW"]);
+    expect(variant.allergenSheet?.declared).toEqual(["UW"]);
     expect(variant.nutrition).toMatchObject({ saltG: 2, energyKcal: 410 });
   });
 
@@ -140,7 +140,7 @@ describe("les deux sections ne se touchent pas", () => {
     await saveNutrition(productId, variantId, { saltG: 2 }).expect(200);
 
     const variant = await variantOf(productId);
-    expect(variant.allergens).toBeNull();
+    expect(variant.allergenSheet).toBeNull();
     // Pas publiable : une déclinaison active sans déclaration ne se vend pas.
     expect((await staff().put(`${PRODUCTS}/${productId}/publish`).send({})).status).toBe(409);
   });
@@ -151,17 +151,23 @@ describe("les deux sections ne se touchent pas", () => {
 
     await saveAllergens(productId, variantId, { allergens: [] }).expect(200);
 
-    expect((await variantOf(productId)).allergens).toEqual([]);
+    expect((await variantOf(productId)).allergenSheet).toEqual({ declared: [], mayContain: [] });
     expect((await staff().put(`${PRODUCTS}/${productId}/publish`).send({})).status).toBe(200);
   });
 
-  /** Les valeurs seules ne fabriquent pas de ligne d'allergènes, même vide. */
-  it("les valeurs se relisent sans qu'aucune trace n'apparaisse", async () => {
+  /**
+   * Les valeurs seules ne fabriquent pas de ligne d'allergènes, même vide — et
+   * depuis le lot 7 ça se LIT : la déclaration est un objet à part, et son
+   * absence est `null`, pas un tableau de traces vide posé dans la nutrition.
+   */
+  it("les valeurs se relisent sans qu'aucune déclaration n'apparaisse", async () => {
     const { productId, variantId } = await aProduct();
 
     await saveNutrition(productId, variantId, { carbsG: 30, sugarsG: 12 }).expect(200);
 
-    expect((await variantOf(productId)).nutrition).toMatchObject({ mayContain: [] });
+    const variant = await variantOf(productId);
+    expect(variant.allergenSheet).toBeNull();
+    expect(variant.nutrition).toMatchObject({ carbsG: 30, sugarsG: 12 });
   });
 });
 

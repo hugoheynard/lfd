@@ -57,9 +57,11 @@ interface VariantDetail {
   readonly isDefault: boolean;
   readonly regulatoryFollowsDefault: boolean;
   readonly nutritionFollowsDefault: boolean;
-  readonly allergens: readonly string[] | null;
-  readonly nutrition: {
+  readonly allergenSheet: {
+    readonly declared: readonly string[];
     readonly mayContain: readonly string[];
+  } | null;
+  readonly nutrition: {
     readonly saltG: number | null;
   } | null;
 }
@@ -140,12 +142,9 @@ describe("les deux moitiés se détachent séparément", () => {
     expect(second).toMatchObject({
       regulatoryFollowsDefault: true,
       nutritionFollowsDefault: true,
-      allergens: [DEFAULT_ALLERGEN],
+      allergenSheet: { declared: [DEFAULT_ALLERGEN], mayContain: [DEFAULT_TRACE] },
     });
-    expect(second.nutrition).toMatchObject({
-      mayContain: [DEFAULT_TRACE],
-      saltG: DEFAULT_SALT,
-    });
+    expect(second.nutrition).toMatchObject({ saltG: DEFAULT_SALT });
   });
 
   /**
@@ -165,12 +164,13 @@ describe("les deux moitiés se détachent séparément", () => {
     expect(second).toMatchObject({
       regulatoryFollowsDefault: true,
       nutritionFollowsDefault: false,
-      allergens: [DEFAULT_ALLERGEN],
+      allergenSheet: { declared: [DEFAULT_ALLERGEN] },
     });
     expect(second.nutrition).toMatchObject({ saltG: OWN_SALT });
     // 🔴 Les traces suivent les ALLERGÈNES, jamais les valeurs : une trace est
-    // une déclaration de sécurité (plan §5).
-    expect(second.nutrition?.mayContain).toEqual([DEFAULT_TRACE]);
+    // une déclaration de sécurité (plan §5). Depuis le lot 7 elles voyagent
+    // dans le même objet qu'eux, et ne peuvent plus partir du mauvais côté.
+    expect(second.allergenSheet?.mayContain).toEqual([DEFAULT_TRACE]);
   });
 
   it("déclarer ses propres allergènes ne détache pas les valeurs", async () => {
@@ -186,10 +186,10 @@ describe("les deux moitiés se détachent séparément", () => {
     expect(second).toMatchObject({
       regulatoryFollowsDefault: false,
       nutritionFollowsDefault: true,
-      allergens: [OWN_ALLERGEN],
+      allergenSheet: { declared: [OWN_ALLERGEN], mayContain: [] },
     });
     // Les valeurs restent celles du défaut : l'autre drapeau n'a pas bougé.
-    expect(second.nutrition).toMatchObject({ saltG: DEFAULT_SALT, mayContain: [] });
+    expect(second.nutrition).toMatchObject({ saltG: DEFAULT_SALT });
   });
 
   /**

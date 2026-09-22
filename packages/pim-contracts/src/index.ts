@@ -149,6 +149,7 @@ export type {
   ProductEditorialPayload,
   SaveVariantAllergensPayload,
   SaveVariantNutritionPayload,
+  VariantAllergenSheet,
   VariantNutritionView,
   VariantView,
   ProductView,

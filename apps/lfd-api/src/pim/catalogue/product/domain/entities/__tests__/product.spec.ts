@@ -49,7 +49,10 @@ function declared(
         sku: `PATI-TARTE-${String(index + 1)}`,
         isDefault: index === 0,
         isDiscontinued: variant.isDiscontinued ?? false,
-        allergens: variant.allergens,
+        // Le DSL du test parle encore en codes ; l'instantané, lui, porte la
+        // déclaration entière depuis le lot 7 — traces comprises.
+        allergenSheet:
+          variant.allergens === null ? null : { declared: variant.allergens, mayContain: [] },
         nutrition: variant.nutrition ?? null,
       })),
     ),
@@ -214,7 +217,6 @@ describe("l’agrégat Product", () => {
   describe("invariant 7 : les allergènes seuls, jamais les valeurs", () => {
     /** Les sept valeurs de l'annexe XV et l'indice, toutes à `null`. */
     const NO_VALUES = {
-      mayContain: [],
       energyKcal: null,
       fatG: null,
       saturatedFatG: null,

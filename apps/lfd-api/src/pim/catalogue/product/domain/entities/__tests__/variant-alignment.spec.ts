@@ -56,7 +56,10 @@ function withDefaultDeclared(product: Product): Product {
   const [first, ...rest] = snapshot.variants;
   return Product.reconstitute({
     ...snapshot,
-    variants: [{ ...first!, allergens: ["AM"], nutrition: null }, ...rest],
+    variants: [
+      { ...first!, allergenSheet: { declared: ["AM"], mayContain: [] }, nutrition: null },
+      ...rest,
+    ],
   });
 }
 
@@ -118,7 +121,7 @@ describe("déclarer une moitié laisse l’autre intacte", () => {
 
     const after = product.snapshot().variants[0];
     // `null` et non `[]` : personne ne s'est prononcé, et l'invariant 7 le voit.
-    expect(after?.allergens).toBeNull();
+    expect(after?.allergenSheet).toBeNull();
     expect(after?.nutrition?.saltG).toBe(2);
     expect(() => product.publish()).toThrow(ProductNotPublishableError);
   });
@@ -131,8 +134,8 @@ describe("déclarer une moitié laisse l’autre intacte", () => {
     product.declareAllergens(variant!.id, { allergens: ["AM"], mayContain: ["GB"] });
 
     const after = product.snapshot().variants[0];
-    expect(after?.allergens).toEqual(["AM"]);
-    expect(after?.nutrition).toMatchObject({ saltG: 2, energyKcal: 410, mayContain: ["GB"] });
+    expect(after?.allergenSheet).toEqual({ declared: ["AM"], mayContain: ["GB"] });
+    expect(after?.nutrition).toMatchObject({ saltG: 2, energyKcal: 410 });
   });
 
   it("enregistrer les valeurs n’efface pas les traces", () => {
@@ -143,8 +146,7 @@ describe("déclarer une moitié laisse l’autre intacte", () => {
     product.declareNutritionValues(variant!.id, { ...BLANK, saltG: 2 });
 
     const after = product.snapshot().variants[0];
-    expect(after?.allergens).toEqual([]);
-    expect(after?.nutrition?.mayContain).toEqual(["GB"]);
+    expect(after?.allergenSheet).toEqual({ declared: [], mayContain: ["GB"] });
   });
 
   it("refuse une déclinaison qui n’est pas du produit", () => {
@@ -279,7 +281,7 @@ describe("l’instantané résout l’héritage", () => {
     const product = withDefaultDeclared(aProduct());
     addVariant(product);
 
-    expect(product.snapshot().variants[1]?.allergens).toEqual(["AM"]);
+    expect(product.snapshot().variants[1]?.allergenSheet?.declared).toEqual(["AM"]);
   });
 
   it("laisse une déclinaison détachée à ce qu’elle porte — c’est-à-dire rien", () => {
@@ -288,7 +290,7 @@ describe("l’instantané résout l’héritage", () => {
 
     product.alignVariant(variantId, "regulatory", false);
 
-    expect(product.snapshot().variants[1]?.allergens).toBeNull();
+    expect(product.snapshot().variants[1]?.allergenSheet).toBeNull();
   });
 });
 
@@ -330,8 +332,8 @@ describe("les allergènes et la nutrition s’alignent séparément", () => {
       variants: [
         {
           ...first!,
-          allergens: ["AM"],
-          nutrition: { ...BLANK, mayContain: ["GB"], saltG: 2 },
+          allergenSheet: { declared: ["AM"], mayContain: ["GB"] },
+          nutrition: { ...BLANK, saltG: 2 },
         },
         ...rest,
       ],
@@ -357,9 +359,11 @@ describe("les allergènes et la nutrition s’alignent séparément", () => {
 
     const after = product.snapshot().variants[1];
     // Les allergènes du défaut sont toujours ceux de l'étiquette…
-    expect(after?.allergens).toEqual(["AM"]);
-    // …et les valeurs sont redevenues les siennes, c'est-à-dire aucune.
-    expect(after?.nutrition?.saltG).toBeNull();
+    expect(after?.allergenSheet?.declared).toEqual(["AM"]);
+    // …et les valeurs sont redevenues les siennes, c'est-à-dire AUCUNE — donc
+    // `null`, et non un bloc de huit `null` : depuis le lot 7, un tableau
+    // nutritionnel n'existe que si quelqu'un l'a saisi.
+    expect(after?.nutrition).toBeNull();
   });
 
   /**
@@ -374,7 +378,7 @@ describe("les allergènes et la nutrition s’alignent séparément", () => {
 
     product.alignVariant(variantId, "nutrition", false);
 
-    expect(product.snapshot().variants[1]?.nutrition?.mayContain).toEqual(["GB"]);
+    expect(product.snapshot().variants[1]?.allergenSheet?.mayContain).toEqual(["GB"]);
   });
 
   it("rend les traces à la déclinaison quand ce sont les allergènes qui se détachent", () => {
@@ -384,8 +388,9 @@ describe("les allergènes et la nutrition s’alignent séparément", () => {
     product.alignVariant(variantId, "allergens", false);
 
     const after = product.snapshot().variants[1];
-    expect(after?.allergens).toBeNull();
-    expect(after?.nutrition?.mayContain).toEqual([]);
+    // Les traces partent AVEC les allergènes, et le même `null` les dit toutes
+    // les deux : depuis le lot 7, elles vivent dans le même objet.
+    expect(after?.allergenSheet).toBeNull();
     // Les VALEURS, elles, restent celles du défaut : l'autre drapeau n'a pas bougé.
     expect(after?.nutrition?.saltG).toBe(2);
   });
@@ -456,6 +461,6 @@ describe("les allergènes et la nutrition s’alignent séparément", () => {
 
     expect(() => product.publish()).not.toThrow();
     // Les allergènes viennent toujours du défaut, et ce sont eux qui couvrent.
-    expect(product.snapshot().variants[1]?.allergens).toEqual(["AM"]);
+    expect(product.snapshot().variants[1]?.allergenSheet?.declared).toEqual(["AM"]);
   });
 });

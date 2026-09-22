@@ -122,7 +122,7 @@ function projectVariant(
   // Les mentions le suivent — « aucune fiche » ne se lit jamais « aucun
   // allergène ». Les codes, eux, restent le stockage canonique ; leur copie
   // n'est que le passage du `readonly` du domaine au tableau du schéma de fil.
-  const declared = variant.allergens;
+  const declared = variant.allergenSheet === null ? null : variant.allergenSheet.declared;
   return {
     // L'identifiant traverse depuis la v7 : une règle de rang « déclinaison »
     // vise celui-ci, et le récepteur ne pourrait pas la rattacher au SKU seul.

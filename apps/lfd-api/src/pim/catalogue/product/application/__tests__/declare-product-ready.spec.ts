@@ -55,7 +55,7 @@ function snapshot(status: ProductSnapshot["status"]): ProductSnapshot {
         regulatoryFollowsDefault: false,
         nutritionFollowsDefault: false,
         pricingFollowsDefault: false,
-        allergens: null,
+        allergenSheet: null,
         nutrition: null,
       },
     ],

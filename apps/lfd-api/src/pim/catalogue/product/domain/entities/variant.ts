@@ -7,12 +7,30 @@ import type { AllergenDeclaration } from "../value-objects/nutrition-declaration
 import type { Sku } from "../value-objects/sku.value-object.js";
 
 /**
- * Ce que l'instantané rend sous `nutrition` : les valeurs pour 100 g — chaque
- * champ `null` = non renseigné — **et** les traces, qui n'y sont plus que par
- * le contrat servi au front (§6d du plan `plan-separer-allergenes-et-nutrition.md`).
+ * **La déclaration d'allergènes** — ce que la déclinaison contient, et ses
+ * traces. `null` = personne ne s'est prononcé ; `declared: []` = « aucun
+ * allergène », une affirmation.
+ *
+ * Les deux tableaux voyagent ENSEMBLE parce qu'ils viennent d'une seule ligne
+ * de `variant_allergens` : l'absence devient indivisible, et on ne peut pas
+ * lire les traces sans avoir traité le silence
+ * (`plan-separer-allergenes-et-nutrition.md`, §5 et §7).
+ */
+export interface VariantAllergenSheetSnapshot {
+  readonly declared: readonly string[];
+  readonly mayContain: readonly string[];
+}
+
+/**
+ * Ce que l'instantané rend sous `nutrition` : les valeurs pour 100 g, chaque
+ * champ `null` quand elle n'est pas renseignée — **et rien d'autre**.
+ *
+ * Les traces en sont sorties le 2026-09-22 (lot 7 du plan
+ * `plan-separer-allergenes-et-nutrition.md`) : une trace est une déclaration
+ * d'allergène, elle suit le drapeau des allergènes, et la laisser ici obligeait
+ * à recoller les deux moitiés à chaque lecture.
  */
 export interface VariantNutritionSnapshot {
-  readonly mayContain: readonly string[];
   readonly energyKcal: number | null;
   readonly fatG: number | null;
   readonly saturatedFatG: number | null;
@@ -24,25 +42,13 @@ export interface VariantNutritionSnapshot {
 }
 
 /**
- * **Les valeurs seules**, sans une trace ni un allergène — ce que la moitié
- * nutrition pose. Dérivée de l'instantané plutôt que recopiée : les deux ne
- * peuvent pas diverger, et le jour où `mayContain` sortira de la vue (§6d du
- * plan), les deux formes se rejoindront sans qu'on y touche.
+ * **Ce que la moitié nutrition pose** — exactement ce que l'instantané rend.
+ *
+ * Un alias et non une forme dérivée : depuis que les traces ont quitté la
+ * nutrition, ce qu'on écrit et ce qu'on lit sont la même chose, et un `Omit`
+ * laisserait croire qu'il reste un champ à retrancher.
  */
-export type VariantNutritionValues = Omit<VariantNutritionSnapshot, "mayContain">;
-
-/** Les valeurs quand personne n'en a saisi aucune — huit `null`, pas un zéro. */
-const BLANK_NUTRITION: VariantNutritionSnapshot = {
-  mayContain: [],
-  energyKcal: null,
-  fatG: null,
-  saturatedFatG: null,
-  carbsG: null,
-  sugarsG: null,
-  proteinG: null,
-  saltG: null,
-  glycemicIndex: null,
-};
+export type VariantNutritionValues = VariantNutritionSnapshot;
 
 /**
  * Ce qu'une déclinaison peut **suivre** de celle par défaut, tel qu'on le
@@ -133,8 +139,12 @@ export interface VariantSnapshot {
   readonly priceCents: number | null;
   /** Poids net de l'unité vendue, en grammes ; `null` = non renseigné. */
   readonly weightGrams: number | null;
-  /** `null` = fiche **non renseignée** ; `[]` = « aucun allergène » déclaré. */
-  readonly allergens: readonly string[] | null;
+  /**
+   * La déclaration d'allergènes, traces comprises. `null` = **non
+   * renseignée** ; `declared: []` = « aucun allergène » déclaré.
+   */
+  readonly allergenSheet: VariantAllergenSheetSnapshot | null;
+  /** Les valeurs pour 100 g ; `null` = personne n'en a saisi aucune. */
   readonly nutrition: VariantNutritionSnapshot | null;
 }
 
@@ -170,7 +180,7 @@ export class Variant {
   private positionValue: number;
   private priceCentsValue: number | null;
   private weightGramsValue: number | null;
-  private allergensValue: readonly string[] | null;
+  private allergenSheetValue: VariantAllergenSheetSnapshot | null;
   private nutritionValue: VariantNutritionSnapshot | null;
   private readonly followsDefault: Record<VariantFlag, boolean>;
 
@@ -192,7 +202,7 @@ export class Variant {
     this.positionValue = snapshot.position;
     this.priceCentsValue = snapshot.priceCents;
     this.weightGramsValue = snapshot.weightGrams;
-    this.allergensValue = snapshot.allergens;
+    this.allergenSheetValue = snapshot.allergenSheet;
     this.nutritionValue = snapshot.nutrition;
     this.followsDefault = {
       regulatory: snapshot.regulatoryFollowsDefault,
@@ -223,7 +233,7 @@ export class Variant {
       regulatoryFollowsDefault: false,
       pricingFollowsDefault: false,
       nutritionFollowsDefault: false,
-      allergens: null,
+      allergenSheet: null,
       nutrition: null,
     });
   }
@@ -268,7 +278,7 @@ export class Variant {
       // existe le plus souvent parce qu'elle se vend autrement, et un prix
       // hérité par défaut se facturerait sans que personne l'ait décidé.
       pricingFollowsDefault: false,
-      allergens: null,
+      allergenSheet: null,
       nutrition: null,
     });
   }
@@ -335,7 +345,7 @@ export class Variant {
    * c'est l'agrégat — seul à voir le défaut — qui décide si elle est couverte.
    */
   get declaresOwnAllergens(): boolean {
-    return this.allergensValue !== null;
+    return this.allergenSheetValue !== null;
   }
 
   /**
@@ -364,14 +374,13 @@ export class Variant {
    * allergènes, qui vit en base. Le domaine reçoit une déclaration déjà
    * construite par `allergenDeclaration()` — valide ou rien.
    *
-   * ⚠️ Les traces atterrissent dans `nutritionValue` parce que l'instantané les
-   * y porte encore — le contrat servi au front ne bouge pas dans ce lot (§6d).
-   * En base, elles sont dans la table des allergènes depuis le lot 1.
+   * ⚠️ Les traces atterrissent ICI, avec les allergènes, et non dans la
+   * nutrition : une trace EST un allergène, en base comme dans l'instantané
+   * depuis le lot 7 du plan.
    */
   declareAllergens(declaration: AllergenDeclaration): void {
-    this.allergensValue = declaration.allergens;
-    this.nutritionValue = {
-      ...(this.nutritionValue ?? BLANK_NUTRITION),
+    this.allergenSheetValue = {
+      declared: declaration.allergens,
       mayContain: declaration.mayContain,
     };
   }
@@ -382,12 +391,11 @@ export class Variant {
    *
    * C'est la garantie que ce chantier existe pour donner : enregistrer un
    * tableau nutritionnel ne peut pas fabriquer une affirmation d'allergène.
+   * Depuis le lot 7, elle est STRUCTURELLE — les deux moitiés ne se touchent
+   * plus, il n'y a donc plus rien à préserver au passage.
    */
   declareNutritionValues(values: VariantNutritionValues): void {
-    this.nutritionValue = {
-      mayContain: this.nutritionValue?.mayContain ?? [],
-      ...values,
-    };
+    this.nutritionValue = values;
   }
 
   /**
@@ -457,7 +465,7 @@ export class Variant {
       regulatoryFollowsDefault: this.followsDefault.regulatory,
       pricingFollowsDefault: this.followsDefault.pricing,
       nutritionFollowsDefault: this.followsDefault.nutrition,
-      allergens: this.allergensValue,
+      allergenSheet: this.allergenSheetValue,
       nutrition: this.nutritionValue,
     };
   }
@@ -488,27 +496,4 @@ export function followsDefaultIn(snapshot: VariantSnapshot, aspect: VariantAspec
     nutrition: snapshot.nutritionFollowsDefault,
   };
   return flags[ASPECT_FLAG[aspect]];
-}
-
-/**
- * Recolle une moitié de fiche à l'autre — **les traces d'un côté, les valeurs
- * de l'autre**.
- *
- * Les deux moitiés s'alignent séparément, et `mayContain` est une déclaration
- * d'ALLERGÈNE : elle suit le drapeau des allergènes, jamais celui de la
- * nutrition. Sans ce recollage, une déclinaison qui suit le défaut sur ses
- * traces et porte ses propres valeurs aurait rendu l'un des deux à la place de
- * l'autre — c'est-à-dire une trace du mauvais article sur une étiquette.
- *
- * `null` des deux côtés = personne ne s'est prononcé ; c'est le seul cas où
- * l'instantané nutritionnel n'existe pas.
- */
-export function composeNutrition(
-  traces: VariantNutritionSnapshot | null,
-  values: VariantNutritionSnapshot | null,
-): VariantNutritionSnapshot | null {
-  if (traces === null && values === null) {
-    return null;
-  }
-  return { ...(values ?? BLANK_NUTRITION), mayContain: traces?.mayContain ?? [] };
 }

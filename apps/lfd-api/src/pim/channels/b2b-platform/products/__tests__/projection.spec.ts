@@ -26,7 +26,7 @@ function variant(over: Partial<VariantRecord> = {}): VariantRecord {
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
-    allergens: null,
+    allergenSheet: null,
     nutrition: null,
     ...over,
   };
@@ -608,7 +608,15 @@ describe("projectCatalog — la matrice DÉCIDE", () => {
 describe("projectCatalog — les allergènes", () => {
   function labelsOf(codes: readonly string[] | null) {
     const { snapshot } = projectCatalog(
-      [product({ variants: [variant({ allergens: codes })] })],
+      [
+        product({
+          variants: [
+            variant({
+              allergenSheet: codes === null ? null : { declared: codes, mayContain: [] },
+            }),
+          ],
+        }),
+      ],
       [category()],
       vat(),
       sold(),

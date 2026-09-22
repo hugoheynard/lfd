@@ -51,8 +51,8 @@ export class SaveVariantAllergensHandler implements ICommandHandler<
     // ajouterait (D2 bis). Sans elle, retirer un code de la liste échouerait sur
     // un autre code que personne n'a touché.
     const alreadyDeclared = [
-      ...(variant?.allergens ?? []),
-      ...(variant?.nutrition?.mayContain ?? []),
+      ...(variant?.allergenSheet?.declared ?? []),
+      ...(variant?.allergenSheet?.mayContain ?? []),
     ];
     const declaration = await validatedAllergens(this.reference, input, alreadyDeclared);
     // L'agrégat porte la déclaration AVANT qu'on l'écrive : sans ça, il répond
@@ -70,8 +70,8 @@ export class SaveVariantAllergensHandler implements ICommandHandler<
         // `null` (jamais renseigné) et `[]` (« aucun allergène » déclaré) ne
         // sont PAS la même chose — le diff doit les distinguer, c'est même le
         // premier fait qu'on veut pouvoir retrouver.
-        allergens: variant?.allergens ?? null,
-        mayContain: variant?.nutrition?.mayContain ?? null,
+        allergens: variant?.allergenSheet?.declared ?? null,
+        mayContain: variant?.allergenSheet?.mayContain ?? null,
       },
       { allergens: declaration.allergens, mayContain: declaration.mayContain },
     );

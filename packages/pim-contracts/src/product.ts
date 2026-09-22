@@ -158,9 +158,31 @@ export interface SaveVariantNutritionPayload {
 
 // ── Vues (formes rendues) ──────────────────────────────────────────────────
 
-/** Fiche nutritionnelle rendue ; chaque champ `null` = non renseigné. */
-export interface VariantNutritionView {
+/**
+ * La déclaration d'allergènes d'une déclinaison. `null` = personne ne s'est
+ * prononcé ; `declared: []` = « aucun allergène », une affirmation positive.
+ *
+ * Un objet nullable et non deux champs plats : les deux tableaux viennent
+ * d'**une seule ligne** de `variant_allergens`, et l'absence de ligne est donc
+ * indivisible — on ne peut pas lire les traces sans avoir traité le cas
+ * « personne n'a déclaré ». Deux champs à plat rouvriraient la divergence que
+ * ce chantier ferme (`plan-separer-allergenes-et-nutrition.md`, §5 et §7).
+ */
+export interface VariantAllergenSheet {
+  /** Ce que la déclinaison CONTIENT — codes du référentiel INCO. */
+  readonly declared: readonly string[];
+  /** Les traces « peut contenir » — des allergènes, soumis au même référentiel. */
   readonly mayContain: readonly string[];
+}
+
+/**
+ * Les VALEURS pour 100 g, et rien d'autre ; chaque champ `null` = non renseigné.
+ *
+ * ⚠️ Les traces « peut contenir » n'y sont plus depuis le 2026-09-22 : une
+ * trace est une déclaration d'allergène, elle vit dans
+ * {@link VariantAllergenSheet} et suit le drapeau des allergènes.
+ */
+export interface VariantNutritionView {
   readonly energyKcal: number | null;
   readonly fatG: number | null;
   readonly saturatedFatG: number | null;
@@ -208,7 +230,8 @@ export interface VariantView {
    * saisir un tableau nutritionnel propre à une déclinaison ne doit pas
    * l'obliger à retaper les allergènes du défaut, ni l'inverse.
    *
-   * ⚠️ `nutrition.mayContain` ne suit PAS ce drapeau mais celui des allergènes.
+   * ⚠️ Les traces ne suivent PAS ce drapeau mais celui des allergènes — elles
+   * sont dans {@link VariantView.allergenSheet}, pas dans `nutrition`.
    */
   readonly nutritionFollowsDefault: boolean;
   /**
@@ -220,15 +243,16 @@ export interface VariantView {
    */
   readonly pricingFollowsDefault: boolean;
   /**
-   * `null` = fiche non renseignée ; `[]` = « aucun allergène » déclaré.
+   * La déclaration d'allergènes, traces comprises ; `null` = non renseignée.
    *
-   * ⚠️ **Résolue.** Une déclinaison alignée rend ici les allergènes du défaut,
+   * ⚠️ **Résolue.** Une déclinaison alignée rend ici la déclaration du défaut,
    * pas `null` : c'est ce qu'elle porte réellement sur l'étiquette et ce qui
-   * part aux canaux. Pour savoir si elle les possède ou les suit, lire
+   * part aux canaux. Pour savoir si elle la possède ou la suit, lire
    * {@link VariantView.regulatoryFollowsDefault} — c'est la seule question à
    * laquelle ce champ ne répond pas.
    */
-  readonly allergens: readonly string[] | null;
+  readonly allergenSheet: VariantAllergenSheet | null;
+  /** Les valeurs pour 100 g ; `null` = personne n'en a saisi aucune. */
   readonly nutrition: VariantNutritionView | null;
 }
 

@@ -81,7 +81,7 @@ function seedProduct(): ProductSnapshot {
         regulatoryFollowsDefault: false,
         nutritionFollowsDefault: false,
         pricingFollowsDefault: false,
-        allergens: null,
+        allergenSheet: null,
         nutrition: null,
       },
     ],
@@ -613,18 +613,8 @@ describe("SaveVariantAllergensHandler — un code archivé", () => {
       variants: [
         {
           ...variant!,
-          allergens: [...codes],
-          nutrition: {
-            mayContain: [...traces],
-            energyKcal: null,
-            fatG: null,
-            saturatedFatG: null,
-            carbsG: null,
-            sugarsG: null,
-            proteinG: null,
-            saltG: null,
-            glycemicIndex: null,
-          },
+          allergenSheet: { declared: [...codes], mayContain: [...traces] },
+          nutrition: null,
         },
       ],
     };
@@ -718,7 +708,7 @@ describe("PublishProductHandler", () => {
     const [variant] = seeded.variants;
     const repo = new FakeProductRepository({
       ...seeded,
-      variants: [{ ...variant!, allergens: ["gluten"] }],
+      variants: [{ ...variant!, allergenSheet: { declared: ["gluten"], mayContain: [] } }],
     });
 
     await new PublishProductHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
@@ -770,7 +760,6 @@ describe("publier ne regarde que les allergènes", () => {
 
   /** Sept valeurs de l'annexe XV plus l'indice : seule l'énergie est saisie. */
   const ENERGY_ONLY = {
-    mayContain: [],
     energyKcal: 410,
     fatG: null,
     saturatedFatG: null,
@@ -786,7 +775,10 @@ describe("publier ne regarde que les allergènes", () => {
    * que l'ancienne règle refusait et qui laissait 92 fiches en brouillon.
    */
   it("publie des allergènes déclarés sans la moindre valeur nutritionnelle", async () => {
-    const repo = variantWith({ allergens: ["UW"], nutrition: null });
+    const repo = variantWith({
+      allergenSheet: { declared: ["UW"], mayContain: [] },
+      nutrition: null,
+    });
 
     await publishing(repo);
 
@@ -798,7 +790,7 @@ describe("publier ne regarde que les allergènes", () => {
    * doit NOMMER la référence : le back-office ne lit que ce message.
    */
   it("refuse des valeurs nutritionnelles sans déclaration d’allergène", async () => {
-    const repo = variantWith({ allergens: null, nutrition: ENERGY_ONLY });
+    const repo = variantWith({ allergenSheet: null, nutrition: ENERGY_ONLY });
 
     await expect(publishing(repo)).rejects.toBeInstanceOf(ProductNotPublishableError);
     await expect(publishing(repo)).rejects.toThrow("CAFE-1-1");
@@ -807,7 +799,7 @@ describe("publier ne regarde que les allergènes", () => {
 
   /** Et il dit le geste de sortie, pas seulement le refus. */
   it("nomme la section à ouvrir plutôt que de dire « non »", async () => {
-    const repo = variantWith({ allergens: null, nutrition: ENERGY_ONLY });
+    const repo = variantWith({ allergenSheet: null, nutrition: ENERGY_ONLY });
 
     await expect(publishing(repo)).rejects.toThrow(/Allergènes/);
   });
@@ -820,7 +812,7 @@ describe("UnpublishProductHandler", () => {
     const repo = new FakeProductRepository({
       ...seeded,
       status: "published",
-      variants: [{ ...variant!, allergens: [] }],
+      variants: [{ ...variant!, allergenSheet: { declared: [], mayContain: [] } }],
     });
 
     await new UnpublishProductHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(

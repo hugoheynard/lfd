@@ -73,7 +73,10 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
         weightGrams: variant.weightGrams,
         isDefault: variant.isDefault,
         isDiscontinued: variant.isDiscontinued,
-        allergens: variant.allergens === null ? null : [...variant.allergens],
+        // La moitié « sécurité » est un objet depuis le lot 7 ; l'ancre, elle,
+        // ne photographie que les codes DÉCLARÉS — sa forme ne bouge pas, et
+        // toucher au tableau d'un article rebasculerait son empreinte.
+        allergens: variant.allergenSheet === null ? null : [...variant.allergenSheet.declared],
         nutrition: nutritionOf(variant.nutrition),
         vatByContext: { ...vat },
         soldContexts: sold,

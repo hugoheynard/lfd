@@ -26,7 +26,7 @@ function aVariant(over: Partial<VariantSnapshot> = {}): VariantSnapshot {
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
-    allergens: null,
+    allergenSheet: null,
     nutrition: null,
     ...over,
   };
@@ -207,7 +207,15 @@ describe("une écriture ne recopie pas le défaut dans les colonnes propres", ()
     const [first, ...rest] = base.variants;
     return new FakeProducts({
       ...base,
-      variants: [{ ...first!, allergens: ["AM"], priceCents: 250, weightGrams: 100 }, ...rest],
+      variants: [
+        {
+          ...first!,
+          allergenSheet: { declared: ["AM"], mayContain: [] },
+          priceCents: 250,
+          weightGrams: 100,
+        },
+        ...rest,
+      ],
     });
   }
 
@@ -228,7 +236,7 @@ describe("une écriture ne recopie pas le défaut dans les colonnes propres", ()
 
     // Elle hérite à la LECTURE ; en base elle ne porte rien, et c'est ce qui
     // rend le désalignement réversible.
-    expect(products.variant(SECOND_ID)?.allergens).toBeNull();
+    expect(products.variant(SECOND_ID)?.allergenSheet).toBeNull();
   });
 
   it("laisse son tarif propre vide quand elle suit celui du défaut", async () => {

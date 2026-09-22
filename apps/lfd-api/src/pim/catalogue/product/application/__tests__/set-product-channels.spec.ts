@@ -162,7 +162,7 @@ function tart(
         regulatoryFollowsDefault: false,
         nutritionFollowsDefault: false,
         pricingFollowsDefault: false,
-        allergens: null,
+        allergenSheet: null,
         nutrition: null,
       },
     ],

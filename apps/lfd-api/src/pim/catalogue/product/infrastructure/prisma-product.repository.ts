@@ -106,39 +106,48 @@ function toVariant(row: VariantRow): VariantSnapshot {
     // 🔴 Pas de ligne = personne n'a déclaré (`null`) ; une ligne, même à
     // tableau vide, est une AFFIRMATION (« aucun allergène »). C'est tout
     // l'intérêt d'une table séparée : le tri-état est structurel.
-    allergens:
-      row.allergenSheet === null
-        ? null
-        : readStringArrayColumn(row.allergenSheet.allergens, "variant_allergens.allergens"),
-    nutrition: toNutrition(row),
+    allergenSheet: toAllergenSheet(row.allergenSheet),
+    nutrition: toNutrition(row.nutritionValues),
   };
 }
 
 /**
- * L'instantané nutritionnel, recollé depuis **deux** tables.
+ * La déclaration d'allergènes, **une ligne ou rien**.
  *
- * `mayContain` vient désormais de la table des allergènes — une trace EST un
- * allergène — mais reste porté ici : la vue servie au back-office ne change pas
- * dans ce lot (§6d du plan). `null` quand aucune des deux lignes n'existe :
- * personne ne s'est prononcé, ni sur l'une ni sur l'autre moitié.
+ * Les traces sortent d'ici et non de la nutrition : une trace EST un allergène,
+ * elle vient de la même ligne, et l'absence de cette ligne est le seul silence
+ * (lot 7 du plan `plan-separer-allergenes-et-nutrition.md`).
  */
-function toNutrition(row: VariantRow): VariantSnapshot["nutrition"] {
-  if (row.allergenSheet === null && row.nutritionValues === null) {
+function toAllergenSheet(row: AllergensRow | null): VariantSnapshot["allergenSheet"] {
+  if (row === null) {
     return null;
   }
   return {
-    mayContain:
-      row.allergenSheet === null
-        ? []
-        : readStringArrayColumn(row.allergenSheet.mayContain, "variant_allergens.may_contain"),
-    energyKcal: row.nutritionValues?.energyKcal ?? null,
-    fatG: row.nutritionValues?.fatG ?? null,
-    saturatedFatG: row.nutritionValues?.saturatedFatG ?? null,
-    carbsG: row.nutritionValues?.carbsG ?? null,
-    sugarsG: row.nutritionValues?.sugarsG ?? null,
-    proteinG: row.nutritionValues?.proteinG ?? null,
-    saltG: row.nutritionValues?.saltG ?? null,
-    glycemicIndex: row.nutritionValues?.glycemicIndex ?? null,
+    declared: readStringArrayColumn(row.allergens, "variant_allergens.allergens"),
+    mayContain: readStringArrayColumn(row.mayContain, "variant_allergens.may_contain"),
+  };
+}
+
+/**
+ * Les valeurs pour 100 g, **une ligne ou rien**.
+ *
+ * `null` quand personne n'en a saisi aucune — et non un bloc de huit `null`,
+ * qui laisserait croire qu'une fiche existe. Déclarer un allergène ne fabrique
+ * donc plus de tableau nutritionnel vide.
+ */
+function toNutrition(row: NutritionRow | null): VariantSnapshot["nutrition"] {
+  if (row === null) {
+    return null;
+  }
+  return {
+    energyKcal: row.energyKcal,
+    fatG: row.fatG,
+    saturatedFatG: row.saturatedFatG,
+    carbsG: row.carbsG,
+    sugarsG: row.sugarsG,
+    proteinG: row.proteinG,
+    saltG: row.saltG,
+    glycemicIndex: row.glycemicIndex,
   };
 }
 
