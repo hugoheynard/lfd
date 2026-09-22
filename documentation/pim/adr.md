@@ -431,3 +431,55 @@ la donnée.
   taux, et c'est un invariant fiscal.
 - La distinction emporter / sur place n'est pas un champ : c'est **un contexte de
   vente**, donc une ligne, et elle se règle sans toucher au code.
+
+## ADR-21 — Le prix se résout par étages déclarés, et par spécificité dans chaque étage (clôt D7)
+
+**Décision** : la résolution d'un prix combine **deux mécanismes**, à deux
+niveaux différents — et non l'un _ou_ l'autre.
+
+1. **Entre étages, un ordre déclaré.** `PRICE_STAGES = ["mercuriale", "volume",
+"promotion", "geste"]`, écrit **dans le domaine**
+   (`b2b/pricing/domain/price-rule.ts`) et jamais dans le schéma, que son propre
+   commentaire renvoie au domaine. La résolution les parcourt dans cet ordre.
+2. **Dans un étage, la spécificité tranche.** `compareSpecificity` désigne **une
+   gagnante par étage** — « elles ne s'additionnent pas, l'une gagne ».
+
+> ⚠️ **D7 posait un choix — « par spécificité **ou** par priorité numérotée ? » —
+> et la question était mal posée.** Les deux répondent à des besoins différents :
+> l'ordre des étages dit dans quel SENS on empile, la spécificité dit QUI gagne
+> à empilement égal. Close le 2026-09-22 sur constat, comme D1, D2 et D5.
+
+**La spécificité porte sur DEUX dimensions**, et c'est ce que la formulation
+d'origine ne voyait pas :
+
+| Dimension                      | Du plus large au plus précis                  |
+| ------------------------------ | --------------------------------------------- |
+| Ce que la règle vise (`scope`) | `global` · `category` · `product` · `variant` |
+| Qui elle vise (`audience`)     | `all` · `segment` · `company`                 |
+
+**Raison** : l'argument qui a tranché est écrit au-dessus de la contrainte SQL,
+et c'est le bon.
+
+> Deux règles également spécifiques valides au même instant deviennent
+> **impossibles à insérer** — sans elle, le prix dépendrait de l'ordre de tri,
+> donc du hasard.
+
+🔴 L'égalité n'est donc pas arbitrée : elle est **rendue inexprimable**
+(`price_rules_no_overlap`, posée en SQL par migration). C'est la hiérarchie des
+garde-fous du dépôt appliquée à l'endroit où se tromper coûte le plus — un prix.
+
+**Conséquences** :
+
+- **Le gagnant d'un étage se désigne AVANT que le scellement décide s'il agit.**
+  L'ordre inverse laisserait une règle moins spécifique gagner un étage qu'elle
+  avait perdu, donc appliquerait une décision que l'éviction avait écartée.
+- **Une mercuriale scelle la chaîne** : les étages suivants sont transparents,
+  sauf règle portant `stacksOverMercuriale`.
+- **L'étage `volume` ne s'écrit plus à la main** (`AuthoredPriceStage` l'exclut).
+  Il appartient au **barème**, une échelle entière dont l'agrégat garantit
+  qu'elle progresse ; une règle volume libre entrait dans le même étage sans
+  passer par aucun de ces refus et l'emportait par spécificité contre le barème
+  de la même cible.
+- Les perdants d'un étage sont **conservés avec leur cause**, pour que l'écran de
+  tarification dise quelle règle a évincé laquelle sans refaire l'arbitrage
+  ailleurs — au risque que les deux réponses divergent.

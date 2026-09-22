@@ -25,24 +25,16 @@
 | --- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | D3  | **Périmètre recettes / BOM** | Nomenclatures matières dans le scope v1 (calcul besoins farine…) ou plus tard ? Aucune table `Recipe` n'existe — c'est la **seule** décision qu'aucune ligne de code n'entame | 🔴 ouvert |
 
-> 🔵 **D7 (résolution des prix) semble close par le code, et par une réponse
-> meilleure que la question.** Elle demandait « par spécificité **ou** par
-> priorité numérotée ? ». Le dépôt fait **les deux, sur deux axes** :
+> ✅ **D1, D2, D5 et D7 closes le 2026-09-22** — Hugo : « on peut les fermer, le
+> code a tranché ». Enregistrées dans [`adr.md`](./adr.md) : **ADR-18** (deux
+> clientèles, tarif négocié par client), **ADR-19** (plan consolidé tout seul,
+> arrêté à la main par journée), **ADR-20** (TVA paramétrable, à l'intersection
+> article × contexte), **ADR-21** (prix par étages déclarés, spécificité dans
+> chaque étage, égalité rendue inexprimable en SQL).
 >
-> - les **étages** sont un ordre déclaré — `mercuriale | volume | promotion | geste` ;
-> - **dans** un étage, la **spécificité** tranche (`global | category | product | variant`),
->   et une contrainte SQL (`price_rules_no_overlap`) rend deux règles également
->   spécifiques **impossibles à insérer** — « sans elle, le prix dépendrait de
->   l'ordre de tri, donc du hasard ».
->
-> ➡️ **À confirmer par Hugo**, comme D1, D2 et D5 l'ont été. Si oui, elle rejoint
-> les ADR et cette table ne garde que D3.
-
-> ✅ **D1, D2, D5 closes le 2026-09-22** — Hugo : « on peut les fermer, le code a
-> tranché ». Enregistrées dans [`adr.md`](./adr.md) : **ADR-18** (deux clientèles,
-> tarif négocié par client), **ADR-19** (plan consolidé tout seul, arrêté à la
-> main par journée), **ADR-20** (TVA paramétrable, à l'intersection article ×
-> contexte).
+> ⚠️ **D7 était mal posée** : elle opposait spécificité et priorité numérotée. Les
+> deux répondent à des besoins différents et cohabitent — l'ordre des étages dit
+> dans quel sens on empile, la spécificité dit qui gagne à empilement égal.
 >
 > ⚠️ Une correction au passage : `CatalogItemOverride` est clé par **SKU**, pas
 > par société — c'est le prix de liste du canal B2B, **pas** le prix négocié d'un
@@ -127,11 +119,11 @@ deux colonnes du contexte de vente ont survécu au canal, et une garde peut
       le filtre est alors une facette d'écran, sans aller-retour de plus.
 
       La quatrième demande une décision : une **publication** est aujourd'hui une
-              `modification` comme une autre. La sortir en catégorie propre veut dire
-              qu'un article qui change de statut ET de prix apparaît dans **deux**
-              facettes, ou qu'on choisit laquelle l'emporte. ⚠️ Trancher avant d'écrire :
-              un article qui disparaît d'un filtre parce qu'il a aussi changé de prix est
-              le genre d'absence qu'on ne remarque pas.
+                  `modification` comme une autre. La sortir en catégorie propre veut dire
+                  qu'un article qui change de statut ET de prix apparaît dans **deux**
+                  facettes, ou qu'on choisit laquelle l'emporte. ⚠️ Trancher avant d'écrire :
+                  un article qui disparaît d'un filtre parce qu'il a aussi changé de prix est
+                  le genre d'absence qu'on ne remarque pas.
 
 - [ ] **Purger les contenus orphelins** — un `catalog_content` que plus aucune
       révision ne référence ne disparaît pas (clé étrangère `RESTRICT`, à dessein).
@@ -152,12 +144,12 @@ rejouable ni retour arrière de publication depuis le retrait du canal Shopify
       `fold-empty-state` « Écran à venir ».
 
       Ce qui vient ici est le **vocabulaire** — les types de conditionnement et ce
-              qu'ils nomment. Combien d'unités dans le carton d'un produit donné reste sur
-              la fiche : c'est une propriété de ce produit.
+                  qu'ils nomment. Combien d'unités dans le carton d'un produit donné reste sur
+                  la fiche : c'est une propriété de ce produit.
 
-              Le point qui justifie l'écran : un conditionnement porte sa **propre
-              référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
-              l'article » — c'est ce qui en fait autre chose qu'une quantité.
+                  Le point qui justifie l'écran : un conditionnement porte sa **propre
+                  référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
+                  l'article » — c'est ce qui en fait autre chose qu'une quantité.
 
 ---
 
