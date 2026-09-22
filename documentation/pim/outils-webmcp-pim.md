@@ -18,7 +18,7 @@
    ces outils écrivent.
 2. L'écran dit s'il y a un agent branché. **Il n'y en a aucun par défaut** :
    aucun navigateur ne fournit `modelContext` aujourd'hui, et l'assistant doit
-   poser le pont lui-même dans la page (§5).
+   poser le pont lui-même dans la page (annexe A.3).
 3. Les outils n'existent **que pendant que cette page est ouverte**. En sortir
    les retire.
 
