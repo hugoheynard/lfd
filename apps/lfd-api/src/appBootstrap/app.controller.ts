@@ -2,7 +2,7 @@ import { Controller, Get } from "@nestjs/common";
 import { SkipThrottle } from "@nestjs/throttler";
 import { AppService } from "./app.service.js";
 import { Public } from "../platform/auth/public.decorator.js";
-import { AppConfig, type DatabaseTransport } from "../platform/config/app-config.js";
+import { AppConfig } from "../platform/config/app-config.js";
 import { StartupReport } from "../platform/startup/startup-report.service.js";
 
 /**
@@ -52,26 +52,28 @@ export class AppController {
    *
    * Elle répond au passage à la question qu'on se pose à 7 h du matin quand
    * quelque chose cloche : qu'est-ce qui tourne, là, maintenant ? — et depuis le
-   * 2026-08-16, **avec quels canaux éteints**, en compteurs ; depuis la sortie
-   * d'Accelerate, **par quel transport** la base est jointe. Le détail se
+   * 2026-08-16, **avec quels canaux éteints**, en compteurs. Le détail se
    * demande à `GET /admin/ops/capabilities`, derrière le jeton d'exploitation.
+   *
+   * 🔴 **Le champ `database` a disparu le 2026-09-22** (geste 8). Il publiait le
+   * transport, et c'est ce qui a PROUVÉ la sortie d'Accelerate au déploiement —
+   * là où une URL changée dans un secret ne se relit pas. Le transport n'étant
+   * plus qu'un, il serait devenu une constante : la pire forme de contrôle,
+   * celle qui a l'air d'en être un. Ce qui le remplace est plus fort —
+   * `AppConfig` **refuse de démarrer** sur une URL qui n'est pas un Postgres
+   * direct, donc le seul fait que ce process réponde le prouve.
    */
   @Public()
   @Get("health")
   health(): {
     status: "ok";
     revision: string;
-    database: DatabaseTransport;
     capabilities: HealthCapabilities;
   } {
     const missing = this.startup.missing();
     return {
       status: "ok",
       revision: this.config.revision(),
-      // Le TRANSPORT, un mot — ni hôte, ni utilisateur. Le déploiement échoue
-      // s'il ne lit pas celui qu'il attend : c'est ce qui prouve la sortie
-      // d'Accelerate, qu'un secret changé ne permet pas de relire.
-      database: this.config.databaseTransport(),
       // `status` reste `"ok"` même avec des canaux éteints, et c'est voulu : la
       // sonde de liveness répond à « ce process tourne-t-il ? ». Passer au rouge
       // parce que Stripe n'est pas configuré ferait redémarrer en boucle une

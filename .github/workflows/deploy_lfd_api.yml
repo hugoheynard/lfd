@@ -42,12 +42,6 @@ permissions:
   actions: read # lire le verdict des autres workflows
 
 env:
-  # Le transport vers la base que l'image neuve DOIT servir (`/health` →
-  # `database`). C'est lui qui prouve la sortie d'Accelerate : un secret
-  # changé ne se relit pas, un transport servi si. On le passe à `pg` dans le
-  # commit qui accompagne la bascule de `DATABASE_LFD_URL` — jamais autrement
-  # (documentation/ops/plan-sortie-d-accelerate.md, gestes 6 et 7′).
-  EXPECTED_DATABASE_TRANSPORT: pg
 
 jobs:
   deploy_lfd_api:
@@ -391,7 +385,7 @@ jobs:
         run: |
           set -uo pipefail
           expected="${GITHUB_SHA:0:7}"
-          echo "Révision attendue : ${expected} — transport attendu : ${EXPECTED_DATABASE_TRANSPORT}"
+          echo "Révision attendue : ${expected}"
 
           for attempt in $(seq 1 40); do
             health=$(curl --silent --max-time 20 "${API_BASE_URL}/health" || echo "")
@@ -399,16 +393,12 @@ jobs:
                      | python3 -c "import json,sys; print(json.load(sys.stdin).get('revision',''))" 2>/dev/null || echo "")
 
             if [ "${served}" = "${expected}" ]; then
+              # Le transport ne se contrôle plus ici : il n'y en a qu'un, et
+              # l'application REFUSE DE DÉMARRER sur une URL qui n'est pas un
+              # Postgres direct. Que cette image réponde le prouve donc mieux
+              # qu'un mot qu'elle se serait publiée à elle-même
+              # (geste 8, 2026-09-22).
               echo "L'image ${expected} répond (tentative ${attempt})."
-              # La bonne image sert : son transport est désormais un FAIT, pas
-              # une attente. Un écart ne se rattrape pas en réessayant.
-              transport=$(printf '%s' "${health}" \
-                          | python3 -c "import json,sys; print(json.load(sys.stdin).get('database',''))" 2>/dev/null || echo "")
-              if [ "${transport}" != "${EXPECTED_DATABASE_TRANSPORT}" ]; then
-                echo "::error::L'image ${expected} joint la base par « ${transport:-inconnu} », « ${EXPECTED_DATABASE_TRANSPORT} » attendu. Vérifier DATABASE_LFD_URL, ou EXPECTED_DATABASE_TRANSPORT dans ce workflow."
-                exit 1
-              fi
-              echo "Transport vers la base : ${transport}."
               exit 0
             fi
             echo "Tentative ${attempt}/40 — révision servie : « ${served:-aucune réponse} »."

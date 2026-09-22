@@ -5,23 +5,24 @@ import { normalizeBootstrapEmail } from "./bootstrap-admin-email.js";
 
 import {
   optionalAdminDevBypass,
+  optionalAnalyticsConfig,
+  optionalDeliveryInboxEnabled,
   optionalDevImpersonation,
   optionalFieldEncryptionKey,
+  optionalJournalStrictFacts,
   optionalMailerConfig,
   optionalManagementCredentials,
+  optionalMediaPublicBaseUrl,
   optionalPort,
   optionalPublicationEnabled,
-  optionalDeliveryInboxEnabled,
-  optionalJournalStrictFacts,
-  optionalMediaPublicBaseUrl,
   optionalR2Storage,
   optionalString,
-  optionalAnalyticsConfig,
   optionalStripeConfig,
   optionalWebPushConfig,
+  postgresUrl,
+  required,
   type R2StorageState,
   type R2StorageUsage,
-  required,
 } from "./env-readers.js";
 
 /**
@@ -52,9 +53,6 @@ const DEFAULT_AUTH0_CUSTOMER_CONNECTION = "lfc-b2b-customers";
  * clients chez le fournisseur d'identité.
  */
 const DEFAULT_AUTH0_STAFF_CONNECTION = "lfc-staff";
-
-/** Le transport vers la base — cf. {@link AppConfig.databaseTransport}. */
-export type DatabaseTransport = "pg" | "accelerate";
 
 @Injectable()
 export class AppConfig {
@@ -87,7 +85,7 @@ export class AppConfig {
   private readonly fieldKeyIsConfigured: boolean;
 
   constructor() {
-    this.database = required("DATABASE_LFD_URL");
+    this.database = postgresUrl(required("DATABASE_LFD_URL"));
     this.auth0DomainValue = required("AUTH0_DOMAIN");
     this.auth0AudienceValue = required("AUTH0_AUDIENCE");
     this.auth0ConnectionValue =
@@ -171,25 +169,6 @@ export class AppConfig {
    */
   databaseUrl(): string {
     return this.database;
-  }
-
-  /**
-   * Le transport vers la base, lu au schéma de l'URL :
-   *
-   * - `pg` — `postgres(ql)://…`, un Postgres joint en TCP par l'adaptateur
-   *   `pg` : les e2e, le poste, et la production une fois sortie d'Accelerate
-   *   (le pooler `pooled.db.prisma.io`) ;
-   * - `accelerate` — `prisma+postgres://…`, le proxy que Prisma retire le
-   *   1er décembre 2026 (`documentation/ops/plan-sortie-d-accelerate.md`).
-   *
-   * Un seul endroit décide, et `/health` publie ce qu'il a décidé : c'est ce
-   * qui PROUVE la bascule au déploiement, là où une URL changée dans un secret
-   * ne se relit pas.
-   */
-  databaseTransport(): DatabaseTransport {
-    return this.database.startsWith("postgresql://") || this.database.startsWith("postgres://")
-      ? "pg"
-      : "accelerate";
   }
 
   /** Tenant Auth0, sans schéma ni slash — ex. `lfc.eu.auth0.com`. */

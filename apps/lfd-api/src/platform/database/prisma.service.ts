@@ -6,17 +6,19 @@ import { PrismaClient } from "./client/client.js";
 /**
  * Client Prisma exposé comme provider Nest (couche infrastructure).
  *
- * Le **schéma de l'URL** choisit le transport (`AppConfig.databaseTransport`),
- * parce que Prisma 7 expose une union discriminée (`adapter` XOR
- * `accelerateUrl`) et qu'aucune des deux branches ne sait faire le travail de
- * l'autre :
+ * **Un seul transport : l'adaptateur `pg`.** Le pooler mutualisé de Prisma
+ * Postgres (`pooled.db.prisma.io`) joint en TCP depuis le container, et le même
+ * chemin pour les e2e et le poste.
  *
- * - `postgresql://…` → **adapter `pg`**. Le mode des **tests e2e** et du poste,
- *   et celui de la **production** une fois sortie d'Accelerate : le pooler
- *   mutualisé de Prisma Postgres (`pooled.db.prisma.io`), joint en TCP depuis
- *   le container (`documentation/ops/plan-sortie-d-accelerate.md`).
- * - `prisma+postgres://…` → **Accelerate**, que Prisma retire le 1er décembre
- *   2026. Branche gardée pour le retour arrière, jusqu'au resserrement.
+ * 🔴 **Il y en avait deux jusqu'au 2026-09-22** : le schéma de l'URL choisissait
+ * entre l'adaptateur et `accelerateUrl`. Accelerate a été quitté en production
+ * le 2026-09-19 — `/health` l'a prouvé — et la branche a survécu le temps du
+ * retour arrière. Elle est retirée (geste 8 du plan de sortie).
+ *
+ * Ce qui la remplace n'est pas rien : `AppConfig` **refuse au démarrage** une
+ * URL qui ne serait pas un Postgres direct. Sans ce refus, une URL
+ * `prisma+postgres://` serait passée telle quelle à l'adaptateur `pg`, qui
+ * échouerait à la première requête par un message de pilote, loin de sa cause.
  *
  * 🔴 **Le pool `pg` est réglé, pas laissé aux défauts.** Ceux de `pg-pool`
  * sont faits pour un poste : dix connexions et **aucun délai d'acquisition**.
@@ -33,19 +35,11 @@ import { PrismaClient } from "./client/client.js";
  * endroit qui appelle `$connect`. Porter les crochets sur cette classe les
  * ferait jouer deux fois sur le même client, une fois par jeton.
  *
- * ⚠️ En mode Accelerate la connexion est **paresseuse** : `$connect()` n'ouvre
- * pas de session physique, il ne prouve donc PAS que la base est joignable.
- * Seule une configuration manquante est détectée au boot (par `AppConfig`).
  */
 @Injectable()
 export class PrismaService extends PrismaClient {
   constructor(config: AppConfig) {
-    const url = config.databaseUrl();
-    super(
-      config.databaseTransport() === "pg"
-        ? { adapter: new PrismaPg({ connectionString: url, ...POOL }) }
-        : { accelerateUrl: url },
-    );
+    super({ adapter: new PrismaPg({ connectionString: config.databaseUrl(), ...POOL }) });
   }
 }
 

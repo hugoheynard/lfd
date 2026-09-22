@@ -15,9 +15,7 @@ import { runInTransaction, currentTransaction } from "./transaction.store.js";
  * lire, parce qu'elle fait du journal un point de panne du métier.
  *
  * **Garder la transaction COURTE.** Une transaction interactive a un délai
- * maximal, quel que soit le transport : la production passe par Accelerate
- * jusqu'à sa bascule vers le pooler mutualisé
- * (`documentation/ops/plan-sortie-d-accelerate.md`), et derrière le pooler une
+ * maximal, et derrière le pooler mutualisé une
  * transaction tient en plus, tout le temps qu'elle dure, l'une des cinq
  * connexions du pool de l'instance (`prisma.service.ts`, vérifié le
  * 2026-09-19). On n'enveloppe donc que l'écriture et sa trace — jamais un appel
