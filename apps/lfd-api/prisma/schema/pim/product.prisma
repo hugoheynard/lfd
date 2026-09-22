@@ -187,15 +187,36 @@ model ProductVariant {
   /// Poids net de l'unité vendue, en grammes. Fait physique de la déclinaison.
   weightGrams Int? @map("weight_grams")
 
-  /// Cette déclinaison **suit la fiche réglementaire de celle par défaut**.
+  /// Cette déclinaison **suit les ALLERGÈNES de celle par défaut**.
   ///
-  /// Une colonne plutôt que l'absence de `nutrition` : cette absence dit déjà
+  /// Une colonne plutôt que l'absence de déclaration : cette absence dit déjà
   /// « rien n'a été déclaré », l'état qui bloque la mise en vente (invariant 7).
   /// Lui faire dire aussi « hérite » ferait dire deux choses au même silence,
   /// dont l'une autoriserait la vente d'un article non étiqueté.
   ///
+  /// ⚠️ **Le nom ment un peu sur son sujet depuis le 2026-09-22** : la fiche
+  /// s'aligne désormais par MOITIÉ (`nutritionFollowsDefault` ci-dessous), et
+  /// celle-ci ne porte plus que les allergènes. Elle garde son nom parce
+  /// qu'elle garde sa valeur et ses lecteurs — la renommer aurait été une
+  /// bascule de données pour zéro changement de sens en base
+  /// (`plan-separer-allergenes-et-nutrition.md`, §6d).
+  ///
   /// Un `CHECK` interdit à la déclinaison par défaut de se suivre elle-même.
   regulatoryFollowsDefault Boolean @default(false) @map("regulatory_follows_default")
+
+  /// Cette déclinaison **suit les VALEURS nutritionnelles de celle par défaut**.
+  ///
+  /// Née à la valeur de `regulatoryFollowsDefault`, en base comme dans le
+  /// domaine : une déclinaison alignée l'était sur la fiche ENTIÈRE, et la
+  /// faire naître à `false` l'aurait désalignée côté nutrition sans que
+  /// personne le décide.
+  ///
+  /// ⚠️ Les traces « peut contenir » NE suivent PAS ce drapeau : ce sont des
+  /// allergènes, et elles se résolvent avec eux. C'est pourquoi elles vivent
+  /// dans `variant_allergens` depuis le lot 1.
+  ///
+  /// Son `CHECK` est celui des deux autres : le défaut ne se suit pas lui-même.
+  nutritionFollowsDefault Boolean @default(false) @map("nutrition_follows_default")
 
   /// Cette déclinaison **suit le tarif de celle par défaut** — prix ET poids.
   ///
@@ -217,11 +238,16 @@ model ProductVariant {
   /// renverse le choix initial de les modéliser en déclinaisons plates.
   packagings ProductPackaging[]
 
-  /// Fiche réglementaire — **optionnelle** (`o|`) : son absence signifie
-  /// « pas encore renseigné ». Un 1:1 obligatoire forcerait une ligne vide à la
-  /// création, donc affirmerait « aucun allergène » sans vérification. La garde
-  /// est ailleurs : pas de publication sans fiche (doc 03).
+  /// ⚠️ **Le dos de relation d'une table que plus aucun code n'ouvre.** Prisma
+  /// exige les deux côtés ; il est donc déclaré, et rien ne le lit. La table
+  /// `nutrition_declaration` n'est plus ni lue ni écrite depuis le 2026-09-22
+  /// (`plan-separer-allergenes-et-nutrition.md`).
   nutrition NutritionDeclaration?
+  /// Les deux moitiés de la fiche réglementaire, qui l'ont remplacée : ce que
+  /// la déclinaison CONTIENT d'un côté, ce qu'elle VAUT de l'autre. L'absence
+  /// de ligne est un état — personne ne s'est prononcé.
+  allergenSheet   VariantAllergens?
+  nutritionValues NutritionValues?
 
   @@index([productId])
   @@map("product_variant")

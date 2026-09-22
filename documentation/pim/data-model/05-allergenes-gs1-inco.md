@@ -428,7 +428,9 @@ entendre.** Une rédaction antérieure affirmait que « les quatre gestes marqu�
 n'appelle `PublishProductCommand` — ce décorateur marque l'interrupteur de
 déploiement, pas le statut. Seul le fil B2B filtre sur les produits publiés
 (`feed-projection.service.ts`) ; une **révision de catalogue** fige encore une
-fiche contredite, et la projection Shopify ne transporte aucun allergène. Ce
+fiche contredite. ⚠️ Ce passage opposait ici **la projection Shopify, qui ne
+transportait aucun allergène** ; ce canal est sorti le 2026-09-21, et l'objection
+tombe avec lui. Ce
 qu'il faut trancher — `take-catalog-revision` entre-t-il dans le périmètre, ou
 une ancre photographie-t-elle sans juger — est noté au TODO et **n'est pas
 tranché ici**.

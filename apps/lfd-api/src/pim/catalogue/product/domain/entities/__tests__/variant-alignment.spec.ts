@@ -1,10 +1,24 @@
 import {
   DefaultVariantCannotFollowItselfError,
   ProductNotPublishableError,
+  VariantNotFoundError,
   VariantNotInProductError,
 } from "../../errors/product-errors.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product } from "../product.js";
+import type { VariantNutritionValues } from "../variant.js";
+
+/** Les huit valeurs à vide — `null` = non renseigné, jamais zéro. */
+const BLANK: VariantNutritionValues = {
+  energyKcal: null,
+  fatG: null,
+  saturatedFatG: null,
+  carbsG: null,
+  sugarsG: null,
+  proteinG: null,
+  saltG: null,
+  glycemicIndex: null,
+};
 
 /**
  * Ce que ces cas tiennent : **une déclinaison alignée est étiquetable**.
@@ -42,7 +56,10 @@ function withDefaultDeclared(product: Product): Product {
   const [first, ...rest] = snapshot.variants;
   return Product.reconstitute({
     ...snapshot,
-    variants: [{ ...first!, allergens: ["AM"], nutrition: null }, ...rest],
+    variants: [
+      { ...first!, allergenSheet: { declared: ["AM"], mayContain: [] }, nutrition: null },
+      ...rest,
+    ],
   });
 }
 
@@ -54,6 +71,95 @@ function addVariant(product: Product, sku = "CHO-001-2"): string {
     options: { poids: "220 g" },
   }).id;
 }
+
+describe("déclarer les allergènes met l'agrégat à jour", () => {
+  /**
+   * 🔴 Régression structurelle. La fiche s'écrivait par un port SANS jamais
+   * repasser par l'agrégat : `hasOwnRegulatorySheet` continuait donc de
+   * répondre sur l'état d'AVANT, et `isCovered` avec lui.
+   *
+   * Rien n'en dépendait dans le même geste — mais l'invariant 7 se juge sur cet
+   * état, et il le lit juste après avoir déclaré
+   * (`plan-separer-allergenes-et-nutrition.md`).
+   */
+  it("la déclinaison est couverte AUSSITÔT, sans relecture", () => {
+    const product = aProduct();
+    const [variant] = product.snapshot().variants;
+
+    expect(() => product.publish()).toThrow(ProductNotPublishableError);
+
+    product.declareAllergens(variant!.id, { allergens: ["AM"], mayContain: [] });
+
+    expect(() => product.publish()).not.toThrow();
+  });
+
+  /** `[]` compte comme déclaré — c'est une affirmation, pas un silence. */
+  it("« aucun allergène » couvre aussi", () => {
+    const product = aProduct();
+    const [variant] = product.snapshot().variants;
+
+    product.declareAllergens(variant!.id, { allergens: [], mayContain: [] });
+
+    expect(() => product.publish()).not.toThrow();
+  });
+});
+
+/**
+ * 🔴 **Les deux moitiés ne se touchent plus** — la promesse entière du plan
+ * `plan-separer-allergenes-et-nutrition.md`, vue de l'agrégat.
+ *
+ * Une seule requête remplaçait les deux : celui qui écrivait l'une devait
+ * renvoyer l'autre, et l'oublier l'effaçait. Sur les allergènes, l'oublier
+ * revenait à affirmer « aucun » (bug 0c), sur de la donnée d'étiquette.
+ */
+describe("déclarer une moitié laisse l’autre intacte", () => {
+  it("enregistrer les valeurs ne fabrique AUCUNE affirmation d’allergène", () => {
+    const product = aProduct();
+    const [variant] = product.snapshot().variants;
+
+    product.declareNutritionValues(variant!.id, { ...BLANK, saltG: 2 });
+
+    const after = product.snapshot().variants[0];
+    // `null` et non `[]` : personne ne s'est prononcé, et l'invariant 7 le voit.
+    expect(after?.allergenSheet).toBeNull();
+    expect(after?.nutrition?.saltG).toBe(2);
+    expect(() => product.publish()).toThrow(ProductNotPublishableError);
+  });
+
+  it("enregistrer les allergènes n’efface pas les valeurs", () => {
+    const product = aProduct();
+    const [variant] = product.snapshot().variants;
+    product.declareNutritionValues(variant!.id, { ...BLANK, saltG: 2, energyKcal: 410 });
+
+    product.declareAllergens(variant!.id, { allergens: ["AM"], mayContain: ["GB"] });
+
+    const after = product.snapshot().variants[0];
+    expect(after?.allergenSheet).toEqual({ declared: ["AM"], mayContain: ["GB"] });
+    expect(after?.nutrition).toMatchObject({ saltG: 2, energyKcal: 410 });
+  });
+
+  it("enregistrer les valeurs n’efface pas les traces", () => {
+    const product = aProduct();
+    const [variant] = product.snapshot().variants;
+    product.declareAllergens(variant!.id, { allergens: [], mayContain: ["GB"] });
+
+    product.declareNutritionValues(variant!.id, { ...BLANK, saltG: 2 });
+
+    const after = product.snapshot().variants[0];
+    expect(after?.allergenSheet).toEqual({ declared: [], mayContain: ["GB"] });
+  });
+
+  it("refuse une déclinaison qui n’est pas du produit", () => {
+    const product = aProduct();
+
+    expect(() =>
+      product.declareAllergens("var_etranger", { allergens: [], mayContain: [] }),
+    ).toThrow(VariantNotFoundError);
+    expect(() => product.declareNutritionValues("var_etranger", BLANK)).toThrow(
+      VariantNotFoundError,
+    );
+  });
+});
 
 describe("une déclinaison ajoutée naît alignée", () => {
   it("prend le rang suivant, sans tarif", () => {
@@ -175,7 +281,7 @@ describe("l’instantané résout l’héritage", () => {
     const product = withDefaultDeclared(aProduct());
     addVariant(product);
 
-    expect(product.snapshot().variants[1]?.allergens).toEqual(["AM"]);
+    expect(product.snapshot().variants[1]?.allergenSheet?.declared).toEqual(["AM"]);
   });
 
   it("laisse une déclinaison détachée à ce qu’elle porte — c’est-à-dire rien", () => {
@@ -184,7 +290,7 @@ describe("l’instantané résout l’héritage", () => {
 
     product.alignVariant(variantId, "regulatory", false);
 
-    expect(product.snapshot().variants[1]?.allergens).toBeNull();
+    expect(product.snapshot().variants[1]?.allergenSheet).toBeNull();
   });
 });
 
@@ -203,5 +309,158 @@ describe("les refus de l’alignement", () => {
     expect(() => product.alignVariant("var_ailleurs", "regulatory", true)).toThrow(
       VariantNotInProductError,
     );
+  });
+});
+
+/**
+ * 🔴 **Les deux moitiés s'alignent séparément** — lot 4 du plan
+ * `plan-separer-allergenes-et-nutrition.md` (D1).
+ *
+ * Un drapeau unique faisait payer un désalignement sur l'autre moitié : se
+ * détacher pour saisir ses propres valeurs nutritionnelles rendait du même
+ * geste la déclinaison muette sur ses allergènes — donc impubliable, et pire,
+ * projetée aux canaux avec `allergens: null` que personne ne doit lire
+ * « sans allergène ».
+ */
+describe("les allergènes et la nutrition s’alignent séparément", () => {
+  /** Déclare les DEUX moitiés du défaut, avec une trace et une valeur. */
+  function withDefaultSheet(product: Product): Product {
+    const snapshot = product.snapshot();
+    const [first, ...rest] = snapshot.variants;
+    return Product.reconstitute({
+      ...snapshot,
+      variants: [
+        {
+          ...first!,
+          allergenSheet: { declared: ["AM"], mayContain: ["GB"] },
+          nutrition: { ...BLANK, saltG: 2 },
+        },
+        ...rest,
+      ],
+    });
+  }
+
+  it("une déclinaison ajoutée naît alignée sur les deux", () => {
+    const product = withDefaultSheet(aProduct());
+
+    addVariant(product);
+
+    expect(product.snapshot().variants[1]).toMatchObject({
+      regulatoryFollowsDefault: true,
+      nutritionFollowsDefault: true,
+    });
+  });
+
+  it("se détacher des valeurs ne détache pas les allergènes", () => {
+    const product = withDefaultSheet(aProduct());
+    const variantId = addVariant(product);
+
+    product.alignVariant(variantId, "nutrition", false);
+
+    const after = product.snapshot().variants[1];
+    // Les allergènes du défaut sont toujours ceux de l'étiquette…
+    expect(after?.allergenSheet?.declared).toEqual(["AM"]);
+    // …et les valeurs sont redevenues les siennes, c'est-à-dire AUCUNE — donc
+    // `null`, et non un bloc de huit `null` : depuis le lot 7, un tableau
+    // nutritionnel n'existe que si quelqu'un l'a saisi.
+    expect(after?.nutrition).toBeNull();
+  });
+
+  /**
+   * 🔴 Les traces suivent les ALLERGÈNES, jamais les valeurs (plan §5) : une
+   * trace est une déclaration de sécurité, soumise au même référentiel. Les
+   * faire suivre le drapeau nutritionnel mettrait la trace d'un autre article
+   * sur une étiquette.
+   */
+  it("garde les traces du défaut quand seules les valeurs se détachent", () => {
+    const product = withDefaultSheet(aProduct());
+    const variantId = addVariant(product);
+
+    product.alignVariant(variantId, "nutrition", false);
+
+    expect(product.snapshot().variants[1]?.allergenSheet?.mayContain).toEqual(["GB"]);
+  });
+
+  it("rend les traces à la déclinaison quand ce sont les allergènes qui se détachent", () => {
+    const product = withDefaultSheet(aProduct());
+    const variantId = addVariant(product);
+
+    product.alignVariant(variantId, "allergens", false);
+
+    const after = product.snapshot().variants[1];
+    // Les traces partent AVEC les allergènes, et le même `null` les dit toutes
+    // les deux : depuis le lot 7, elles vivent dans le même objet.
+    expect(after?.allergenSheet).toBeNull();
+    // Les VALEURS, elles, restent celles du défaut : l'autre drapeau n'a pas bougé.
+    expect(after?.nutrition?.saltG).toBe(2);
+  });
+
+  /** L'ancienne valeur reste acceptée et vise le drapeau des allergènes (§6d). */
+  it("« regulatory » vise exactement le même drapeau que « allergens »", () => {
+    const product = withDefaultSheet(aProduct());
+    const variantId = addVariant(product);
+
+    product.alignVariant(variantId, "regulatory", false);
+
+    expect(product.snapshot().variants[1]).toMatchObject({
+      regulatoryFollowsDefault: false,
+      nutritionFollowsDefault: true,
+    });
+  });
+
+  it("refuse que le défaut suive ses propres valeurs", () => {
+    const product = aProduct();
+
+    expect(() => product.alignVariant("var_1", "nutrition", true)).toThrow(
+      DefaultVariantCannotFollowItselfError,
+    );
+  });
+
+  /**
+   * L'invariant 7 lit les ALLERGÈNES : suivre les valeurs du défaut ne couvre
+   * personne, et ne doit surtout pas laisser publier une fiche muette.
+   */
+  it("suivre les valeurs seules ne rend pas la déclinaison étiquetable", () => {
+    const product = withDefaultSheet(aProduct());
+    const variantId = addVariant(product);
+
+    product.alignVariant(variantId, "allergens", false);
+
+    expect(() => product.publish()).toThrow(ProductNotPublishableError);
+  });
+
+  /**
+   * 🔴 **Le symétrique, et c'est le cas qui motive le lot 5** : se détacher des
+   * VALEURS ne retire rien à l'étiquetage.
+   *
+   * C'est le cas courant d'un format différent de la même pâte — mêmes
+   * allergènes, portion différente, donc valeurs propres. Juger la couverture
+   * sur le mauvais drapeau l'aurait rendu impubliable sur un geste qui ne
+   * touche pas à la sécurité du mangeur.
+   */
+  it("se détacher des valeurs laisse la déclinaison publiable", () => {
+    const product = withDefaultSheet(aProduct());
+    const variantId = addVariant(product);
+
+    product.alignVariant(variantId, "nutrition", false);
+
+    expect(() => product.publish()).not.toThrow();
+    expect(product.status).toBe("published");
+  });
+
+  /**
+   * Et elle reste publiable **après** avoir saisi ses propres valeurs : rien
+   * dans ce geste ne peut toucher la déclaration qu'elle hérite du défaut.
+   */
+  it("saisir ses propres valeurs ne la rend pas impubliable", () => {
+    const product = withDefaultSheet(aProduct());
+    const variantId = addVariant(product);
+    product.alignVariant(variantId, "nutrition", false);
+
+    product.declareNutritionValues(variantId, { ...BLANK, energyKcal: 410 });
+
+    expect(() => product.publish()).not.toThrow();
+    // Les allergènes viennent toujours du défaut, et ce sont eux qui couvrent.
+    expect(product.snapshot().variants[1]?.allergenSheet?.declared).toEqual(["AM"]);
   });
 });

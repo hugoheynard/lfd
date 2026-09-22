@@ -1,22 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
+import type { VariantView } from '@lfd/pim-contracts';
+
 import { backendToProduct } from './product-http-api';
 
-interface BackendVariantLike {
-  id: string;
-  sku: string;
-  name: { fr: string };
-  options: Record<string, string>;
-  position: number;
-  isDefault: boolean;
-  isDiscontinued: boolean;
-  priceCents: number | null;
-  weightGrams: number | null;
-  regulatoryFollowsDefault: boolean;
-  pricingFollowsDefault: boolean;
-  allergens: readonly string[] | null;
-  nutrition: null;
-}
+/**
+ * La déclinaison telle que l'API la rend — le TYPE DU CONTRAT, pas une copie.
+ *
+ * Cette spec redéclarait sa propre interface, champ pour champ. Elle a dérivé
+ * en silence jusqu'à ce que `allergens` devienne `allergenSheet` (séparation
+ * des allergènes et de la nutrition, 2026-09-22) : un doublé qui décrit le
+ * contrat de mémoire finit par éprouver une forme que le serveur ne sert plus.
+ * Prendre `VariantView` rend la dérive impossible.
+ */
+type BackendVariantLike = VariantView;
 
 function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
   const variant: BackendVariantLike = {
@@ -30,8 +27,9 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     priceCents: 450,
     weightGrams: 250,
     regulatoryFollowsDefault: false,
+    nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
-    allergens: null,
+    allergenSheet: null,
     nutrition: null,
     ...overrides,
   };
@@ -85,7 +83,9 @@ describe('backendToProduct', () => {
   });
 
   it('mappe les déclinaisons (allergènes copiés)', () => {
-    const product = backendToProduct(backendProduct({ allergens: ['GB'] }));
+    const product = backendToProduct(
+      backendProduct({ allergenSheet: { declared: ['GB'], mayContain: [] } }),
+    );
     expect(product.variants).toHaveLength(1);
     expect(product.variants[0]?.allergens).toEqual(['GB']);
     expect(product.variants[0]?.isDefault).toBe(true);

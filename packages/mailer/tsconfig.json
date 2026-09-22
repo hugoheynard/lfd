@@ -3,7 +3,7 @@
   // le paquet ignore les gabarits, qui sont fournis par l'app en paramètre de
   // type. Feuille du graphe. Émet ses déclarations pour que les consommateurs
   // prennent leurs types depuis `dist`, tandis que `exports.types` pointe la
-  // source in-workspace (comme @lfd/shopify-admin).
+  // source in-workspace.
   "extends": "../../tsconfig/tsflags.backend.json",
   "compilerOptions": {
     "rootDir": "./src",

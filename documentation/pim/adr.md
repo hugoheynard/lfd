@@ -100,12 +100,17 @@ Shopify, le catalogue compilerait-il encore ?_
 **Conséquences** :
 
 - L'absence de donnée se représente par **absence de ligne**, pas par colonnes `NULL`.
-- Le code famille caisse PI Helios **sort de `Category`** → `helios_category_binding`.
-  ⚠️ **Cette table n'existe pas** (vérifié le 2026-09-13), ni `helios_variant_binding`.
-  La caisse n'a jamais été branchée ; le motif, lui, est appliqué — c'est
-  `shopify_variant_binding` qui le porte, et c'est la seule table de canal du
-  dépôt. Une ADR qui nomme une table absente fait chercher un couplage qui
-  n'existe pas.
+- Le code famille caisse **sort de `Category`** → un binding de canal.
+  ⚠️ **Aucune des tables nommées par cette ADR n'existe** : ni
+  `helios_category_binding`, ni `helios_variant_binding` (la caisse n'a jamais
+  été branchée, et PI est sorti le 2026-09-22), ni `shopify_variant_binding`
+  (supprimée le 2026-09-21).
+
+  🔴 Le **motif** reste appliqué, et il a aujourd'hui un seul porteur :
+  **`b2b_channel_binding`** (`prisma/schema/pim/channels.prisma`). C'est lui
+  qu'il faut lire pour voir la forme — corrigé le 2026-09-22, parce qu'une ADR
+  qui nomme trois tables absentes fait chercher un couplage qui n'existe pas.
+
 - Binding mécanique et overrides éditoriaux par canal sont **deux tables séparées** : le premier est
   jetable et re-poussable, le second est une saisie utilisateur à ne jamais écraser.
 - `attributes` (jsonb) est soumis à une **règle de promotion** : lu par un adaptateur ou utilisé par
@@ -126,8 +131,11 @@ logistique » et il **part sur le fil** vers la plateforme professionnelle
 logistiques (colis, palette), hiérarchie GTIN/GDSN. Le poids est entré par le
 besoin réel qu'attendait cette ADR : vendre au format et à la pièce.
 
-**Conséquences** : le **code-barres** n'est pas un attribut du catalogue — il reviendra par le
-**binding caisse** (`helios_variant_binding`) quand **D4** sera tranché. La projection GDSN reste un
+**Conséquences** : le **code-barres** n'est pas un attribut du catalogue — il
+devait revenir par le **binding caisse** quand D4 serait tranchée. ⚠️ **D4 est
+close le 2026-09-22** par le retrait de PI : il n'y a plus de caisse à brancher,
+donc plus rien qui ramène le code-barres. S'il redevient un besoin, il repart
+d'une page blanche. La projection GDSN reste un
 objectif d'`AllergenMapping.toGdsn()` (ADR-07), pas une structure de données.
 
 ## ADR-15 — Construire un PIM minimal plutôt qu'en acheter un
@@ -139,6 +147,23 @@ marché (Akeneo CE, Plytix, Sales Layer, Pimcore) ou faire de **Shopify le maît
 référentiel commun qui fait tenir ensemble la caisse (PI Helios), le web (Shopify) et le **labo de
 production**. Le catalogue en est la première vertèbre, pas la finalité. Cette distinction n'est pas
 rhétorique : elle est le critère d'arbitrage de tout le reste (voir « Test permanent »).
+
+> 🔴 **Deux des trois systèmes de cette phrase sont partis** — Shopify le
+> 2026-09-21, PI Helios le 2026-09-22. La jonction qui justifiait de CONSTRUIRE
+> plutôt que d'acheter relie aujourd'hui **la plateforme professionnelle et le
+> fournil**, et rien d'autre.
+>
+> Cette ADR portait déjà son propre déclencheur de révision : « testable —
+> révision à D4 et D1 ». **D4 vient d'être close**, non par une réponse mais par
+> la disparition de la question. Le déclencheur a donc joué, et personne ne l'a
+> vu jouer.
+>
+> ⚠️ **Ce bandeau ne renverse pas la décision, et c'est délibéré.** Le PIM est
+> bâti, en service, et le refaire coûterait plus que tout ce qu'on économiserait.
+> Mais sa raison écrite ne décrit plus le dépôt : la relire telle quelle donne
+> des arguments qui ne portent plus. ➡️ **À reposer par Hugo** : la jonction à
+> deux arms justifie-t-elle encore le périmètre qu'on maintient, ou faut-il
+> descoper le référentiel vers ce que le seul canal restant consomme ?
 
 **Raison** :
 
@@ -254,15 +279,38 @@ le produit ; suffixe numérique lisible pour la déclinaison, jamais un hash.
 **Conséquences** :
 
 - Le `sku` reste **modifiable** par un verbe explicite ; les canaux bindent sur l'**`id`** (R1).
-- Le partage front/back du format se fait **à la compilation** via `packages/shared-types` — un
-  registre runtime contenant `RegExp` et fonctions ne traverse pas JSON, contrairement à ce
-  qu'affirmait la proposition d'origine.
+- Un registre runtime contenant `RegExp` et fonctions ne traverse pas JSON,
+  contrairement à ce qu'affirmait la proposition d'origine : le partage du format
+  doit donc se faire **à la compilation**.
+
+  🔴 **Cette phrase désignait `packages/shared-types`, au présent. Ce paquet n'a
+  jamais existé** (constaté le 2026-09-22), et le `CLAUDE.md` du dépôt l'interdit
+  explicitement — « pas de `packages/shared-types` global qui mélangerait les deux
+  langages ». L'ADR présentait donc comme acquis quelque chose que les
+  conventions refusent.
+
+  **Ce qui est vrai** : `SKU_PATTERN` et `SKU_MIN_LENGTH` ne vivent qu'au
+  backend (`pim/catalogue/product/domain/value-objects/sku.value-object.ts`), le
+  front ne les a pas, et le partage reste **à faire**. Le véhicule légitime
+  existe déjà et s'appelle `packages/pim-contracts` — un contrat du référentiel,
+  pas un sac de types transverse.
+
 - **GTIN/EAN-13 descopé** (ADR-14) : la plupart des articles sont vendus non préemballés, les codes
   valides s'achètent auprès de GS1, et le code-barres est un besoin de **caisse** → binding, à D4.
 - Détail : [`data-model/06-identifiants-et-sku.md`](../pim/data-model/06-identifiants-et-sku.md).
   Proposition d'origine archivée (non normative) sous `data-model/_sources/`.
 
 ## ADR-17 — Secrets d'intégration hors base ; pilote de canal derrière un port
+
+> 🔴 **Partiellement caduque depuis le 2026-09-21.** Le canal Shopify est sorti
+> du dépôt, avec son port `ShopifyDriver`, son pilote `dry-run` et son écran de
+> réglages ; sa documentation a été retirée le 2026-09-22.
+>
+> **Ce qui SURVIT, et c'est l'essentiel** : un jeton d'API ne vit jamais en base,
+> et un écran n'affiche que sa PRÉSENCE. C'est une frontière de sécurité, vraie
+> de toute intégration — elle ne dépendait pas de Shopify et s'applique à la
+> prochaine. **Ce qui est mort** : tout ce que cet ADR dit du pilote, du port et
+> du `dry-run`.
 
 **Décision** : les **réglages** d'un canal (domaine de boutique, version d'API, activation)
 vivent en base et se pilotent depuis l'écran Réglages ; le **jeton d'API** vit dans
@@ -280,13 +328,17 @@ l'implémentation par défaut est un pilote **`dry-run`** qui n'émet aucun appe
   n'avions ni boutique ni jeton. Écrire des mutations invérifiables aurait
   produit du code _plausible et faux_.
 
-  ⚠️ **Cette prémisse est tombée.** La connexion est établie depuis le
-  2026-08-04 (`shopify-publication/shopify-connexion-setup.md`), la forme exacte
-  de `productSet` a été relevée en direct
-  (`shopify-publication/shopify-productset-findings.md`), et
-  `SHOPIFY_ADMIN_TOKEN` est posé par le déploiement. Le `dry-run` n'est donc
-  plus une nécessité mais un **choix de mode**, et la phrase « le spike
-  tranchera » décrit un travail déjà fait.
+  ⚠️ **Cette prémisse est tombée deux fois.** D'abord en sa faveur : la
+  connexion a été établie le 2026-08-04, la forme exacte de `productSet` relevée
+  en direct, et `SHOPIFY_ADMIN_TOKEN` posé par le déploiement — le `dry-run`
+  cessait d'être une nécessité pour devenir un choix de mode. Puis contre elle :
+  le canal est sorti du dépôt le 2026-09-21, et il n'y a plus rien à piloter.
+
+  Les deux documents qui portaient ces relevés ont été retirés le 2026-09-22 ;
+  ce qu'ils attestaient vit dans l'histoire git. **Ne pas les rechercher pour
+  écrire une nouvelle intégration** : l'API Admin de Shopify est versionnée
+  trimestriellement, et un relevé d'août 2026 serait exactement le « plausible
+  et faux » que cet ADR dit d'éviter.
 
 - Le mode `dry-run` n'est pas un bouchon : il exerce toute la chaîne — lecture par le port,
   projection, empreinte, écriture du binding — et rend le comportement observable **maintenant**.
@@ -304,3 +356,130 @@ l'implémentation par défaut est un pilote **`dry-run`** qui n'émet aucun appe
 - Les pushs sont **séquentiels** : une rafale parallèle se ferait étrangler par les quotas.
 - L'adaptateur lit le catalogue par le seul port exporté, `CatalogueReader` (ADR-13). Le module
   `catalogue` n'exporte **ni ses dépôts ni ses commandes** — supprimer le canal ne casserait rien.
+
+## ADR-18 — Deux clientèles, et un tarif négocié par client (clôt D1)
+
+**Décision** : la plateforme sert **deux clientèles** — les professionnels et les
+particuliers (`OrderClientele = pro | public`) — et le tarif d'un professionnel
+est **négocié par client**, pas dérivé d'une grille unique.
+
+> ⚠️ **Décision constatée, pas prise.** D1 demandait « revente pros confirmée ?
+> paliers de volume + tarifs négociés par client ? ». Le code a répondu aux deux
+> en les construisant, et Hugo l'a confirmé le 2026-09-22 : « on peut les fermer,
+> le code a tranché ». Cette ADR **enregistre** ce que le dépôt fait déjà.
+
+**Ce qui l'atteste** (mesuré le 2026-09-22) :
+
+| Question de D1               | Ce que le code porte                                                     |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| Revente aux pros ?           | `OrderClientele` vaut `pro` **ou** `public` — les deux sont servies      |
+| Tarifs négociés par client ? | `CompanyMercuriale` — « le tarif négocié d'un client, en un seul objet » |
+| Paliers de volume ?          | `VolumeLadder` et `VolumeCommitment`                                     |
+
+**Conséquence** : le référentiel ne décide **pas** du prix d'un professionnel. Il
+pose un prix de liste ; la mercuriale, le dégressif et les promotions viennent
+par-dessus, dans la plateforme. ⚠️ `CatalogItemOverride` est clé par **SKU** et
+non par société : c'est le prix de liste du canal B2B, **pas** un prix négocié.
+Les confondre ferait chercher le tarif d'un client au mauvais endroit.
+
+## ADR-19 — Le plan de production est consolidé tout seul, mais arrêté à la main (clôt D2)
+
+**Décision** : la demande multi-canal est consolidée **automatiquement** en
+compte à produire ; le moment où ce compte est **figé** est un geste humain, pris
+**par journée** et jamais par commande.
+
+> ⚠️ D2 posait « auto ou manuel ? ». La réponse du code est **plus précise que la
+> question** : les deux, sur deux axes différents.
+
+**Raison**, telle que le handler de clôture l'écrit lui-même :
+
+- Les deux façons d'arriver à une bascule sans geste humain sont **fermées** :
+  l'API n'a aucun planificateur, et écrire depuis une lecture est interdit
+  (« une requête de lecture n'écrit rien, pas même un compteur »).
+- Ce qu'on refuse est une décision **par commande** — c'est-à-dire un tri, un
+  jugement. Une bascule **par journée** ne demande à personne de juger : elle
+  acte une heure.
+- Le geste existe déjà dans la vraie vie : l'équipe arrête de prendre pour
+  demain.
+
+**Conséquences** :
+
+- Le compte à produire est un **instantané**. Rejouer la clôture ne recalcule
+  rien — l'agrégat refuse, parce que les commandes bougent après.
+- Seules les journées **closes** sortent du lecteur de plan : rendre une journée
+  ouverte la ferait passer pour arrêtée, et la colonne afficherait un zéro qu'on
+  croirait mesuré.
+
+## ADR-20 — La TVA est paramétrable, et vit à l'intersection article × contexte (clôt D5)
+
+**Décision** : les taux de TVA sont une **donnée** (`VatRate`), pas une
+énumération du code, et le taux applicable se lit à l'intersection d'un article
+et d'un **contexte de vente** — `category_context_tva`, avec une dérogation par
+fiche dans `product_context_tva`.
+
+> ⚠️ D5 était « à confirmer avec le comptable ». Hugo a confirmé le 2026-09-22.
+> Le mécanisme, lui, était bâti depuis le 2026-08-24.
+
+**Raison** : reconnaître un taux de plus, ou une manière de vendre de plus, doit
+être **une ligne en base**, jamais un déploiement. C'est le même motif que les
+contextes de vente et les appellations — la dimension qui grandit est pilotée par
+la donnée.
+
+**Conséquences** :
+
+- Deux taux au même pourcentage sont **impossibles** : l'unicité porte sur le
+  taux, et c'est un invariant fiscal.
+- La distinction emporter / sur place n'est pas un champ : c'est **un contexte de
+  vente**, donc une ligne, et elle se règle sans toucher au code.
+
+## ADR-21 — Le prix se résout par étages déclarés, et par spécificité dans chaque étage (clôt D7)
+
+**Décision** : la résolution d'un prix combine **deux mécanismes**, à deux
+niveaux différents — et non l'un _ou_ l'autre.
+
+1. **Entre étages, un ordre déclaré.** `PRICE_STAGES = ["mercuriale", "volume",
+"promotion", "geste"]`, écrit **dans le domaine**
+   (`b2b/pricing/domain/price-rule.ts`) et jamais dans le schéma, que son propre
+   commentaire renvoie au domaine. La résolution les parcourt dans cet ordre.
+2. **Dans un étage, la spécificité tranche.** `compareSpecificity` désigne **une
+   gagnante par étage** — « elles ne s'additionnent pas, l'une gagne ».
+
+> ⚠️ **D7 posait un choix — « par spécificité **ou** par priorité numérotée ? » —
+> et la question était mal posée.** Les deux répondent à des besoins différents :
+> l'ordre des étages dit dans quel SENS on empile, la spécificité dit QUI gagne
+> à empilement égal. Close le 2026-09-22 sur constat, comme D1, D2 et D5.
+
+**La spécificité porte sur DEUX dimensions**, et c'est ce que la formulation
+d'origine ne voyait pas :
+
+| Dimension                      | Du plus large au plus précis                  |
+| ------------------------------ | --------------------------------------------- |
+| Ce que la règle vise (`scope`) | `global` · `category` · `product` · `variant` |
+| Qui elle vise (`audience`)     | `all` · `segment` · `company`                 |
+
+**Raison** : l'argument qui a tranché est écrit au-dessus de la contrainte SQL,
+et c'est le bon.
+
+> Deux règles également spécifiques valides au même instant deviennent
+> **impossibles à insérer** — sans elle, le prix dépendrait de l'ordre de tri,
+> donc du hasard.
+
+🔴 L'égalité n'est donc pas arbitrée : elle est **rendue inexprimable**
+(`price_rules_no_overlap`, posée en SQL par migration). C'est la hiérarchie des
+garde-fous du dépôt appliquée à l'endroit où se tromper coûte le plus — un prix.
+
+**Conséquences** :
+
+- **Le gagnant d'un étage se désigne AVANT que le scellement décide s'il agit.**
+  L'ordre inverse laisserait une règle moins spécifique gagner un étage qu'elle
+  avait perdu, donc appliquerait une décision que l'éviction avait écartée.
+- **Une mercuriale scelle la chaîne** : les étages suivants sont transparents,
+  sauf règle portant `stacksOverMercuriale`.
+- **L'étage `volume` ne s'écrit plus à la main** (`AuthoredPriceStage` l'exclut).
+  Il appartient au **barème**, une échelle entière dont l'agrégat garantit
+  qu'elle progresse ; une règle volume libre entrait dans le même étage sans
+  passer par aucun de ces refus et l'emportait par spécificité contre le barème
+  de la même cible.
+- Les perdants d'un étage sont **conservés avec leur cause**, pour que l'écran de
+  tarification dise quelle règle a évincé laquelle sans refaire l'arbitrage
+  ailleurs — au risque que les deux réponses divergent.

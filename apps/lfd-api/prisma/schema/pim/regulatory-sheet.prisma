@@ -1,7 +1,14 @@
-/// Fiche réglementaire d'une **déclinaison** — c'est elle qui est mise sur le
-/// marché (doc 03). `variant_id` est PK **et** FK (*shared primary key*) : pas
-/// d'identifiant de substitution, donc deux fiches sont structurellement
-/// impossibles pour une même déclinaison.
+/// 🔴 **HORS SERVICE depuis le 2026-09-22** — plus aucun code ne l'ouvre.
+///
+/// C'était la fiche réglementaire d'une déclinaison, les deux moitiés dans une
+/// seule ligne. `variant_allergens` et `nutrition_values` l'ont remplacée,
+/// parce qu'un enregistrement de l'une effaçait l'autre quand il l'oubliait —
+/// sur de la donnée d'étiquette (`plan-separer-allergenes-et-nutrition.md`).
+///
+/// Elle reste **déclarée** parce qu'elle reste **en base** : elle n'a jamais
+/// porté la moindre ligne en production (§3 du plan), mais la supprimer est un
+/// `DROP TABLE`, et le déploiement applique les migrations tout seul. Le geste
+/// se décide donc à la main, à part. Ce modèle n'est pas un oubli.
 model NutritionDeclaration {
   variantId String         @id @map("variant_id")
   variant   ProductVariant @relation(fields: [variantId], references: [id])
@@ -26,6 +33,73 @@ model NutritionDeclaration {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("nutrition_declaration")
+  @@schema("pim")
+}
+
+/// **Ce que la déclinaison CONTIENT** — la déclaration de sécurité.
+///
+/// Séparée de `nutrition_values` parce que ce sont deux sujets : ce qu'un
+/// produit contient engage la sécurité du mangeur, ce qu'il vaut le renseigne.
+/// Aucun invariant ne traverse les deux (plan `plan-separer-allergenes-et-nutrition.md`).
+///
+/// 🔴 **L'absence de ligne est un état, et c'est tout le sujet.** Trois états, et
+/// aucun booléen pour les porter :
+///
+/// - **pas de ligne** — personne ne s'est prononcé ;
+/// - **`allergens = []`** — « aucun allergène », une affirmation POSITIVE ;
+/// - **`allergens` rempli** — une déclaration.
+///
+/// C'est pour ça que la table est séparée plutôt que le tri-état porté par une
+/// colonne nullable ou un drapeau : écrire une valeur nutritionnelle ne peut
+/// alors PAS créer d'affirmation d'allergène, parce qu'il n'y a pas de colonne à
+/// remplir. Une donnée peut être fausse, une structure non.
+model VariantAllergens {
+  variantId String         @id @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  /// Codes GS1 canoniques. `[]` = « aucun allergène », affirmation positive.
+  allergens Json
+  /// Les traces — « peut contenir ». Même référentiel, même garde de
+  /// chevauchement : une trace EST un allergène, déclaré à un autre titre.
+  /// Elle vit ici et non avec la nutrition, où elle serait résolue par le
+  /// mauvais drapeau d'alignement.
+  mayContain Json @default("[]") @map("may_contain")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("variant_allergens")
+  @@schema("pim")
+}
+
+/// **Ce que la déclinaison VAUT** — les mentions de l'annexe XV.
+///
+/// `null` par champ = non renseigné, jamais zéro. L'absence de LIGNE dit la même
+/// chose que dans `variant_allergens` : personne n'a rien saisi.
+///
+/// ⚠️ Sept valeurs sont de l'annexe XV. L'indice glycémique n'en est pas — c'est
+/// un renseignement produit, rangé ici faute de meilleur foyer, et non parce
+/// qu'il serait obligatoire.
+model NutritionValues {
+  variantId String         @id @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  /// Ordre de l'annexe XV : énergie, matières grasses (dont saturés), glucides
+  /// (dont sucres), protéines, sel. C'est l'ordre LÉGAL de présentation.
+  energyKcal    Float? @map("energy_kcal")
+  fatG          Float? @map("fat_g")
+  saturatedFatG Float? @map("saturated_fat_g")
+  carbsG        Float? @map("carbs_g")
+  sugarsG       Float? @map("sugars_g")
+  proteinG      Float? @map("protein_g")
+  saltG         Float? @map("salt_g")
+  /// Hors annexe XV.
+  glycemicIndex Float? @map("glycemic_index")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("nutrition_values")
   @@schema("pim")
 }
 
@@ -68,7 +142,7 @@ model Appellation {
 /// ⚠️ Ce n'est PAS la liste réglementaire d'ingrédients (règlement UE
 /// 1169/2011). Celle-là est ordonnée par masse décroissante, porte des
 /// quantités, décrit une recette — elle appartient donc à la DÉCLINAISON, avec
-/// les allergènes (`NutritionDeclaration`). Ce référentiel-ci est une matière
+/// les allergènes (`VariantAllergens`). Ce référentiel-ci est une matière
 /// éditoriale et commerciale : il nourrit un badge et un argument de vente, et
 /// rien ici ne garantit ni l'exhaustivité ni l'ordre. Le jour où une mention
 /// obligatoire serait tirée d'ici, elle serait fausse.

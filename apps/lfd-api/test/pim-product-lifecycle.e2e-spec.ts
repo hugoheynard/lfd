@@ -77,7 +77,7 @@ async function aPublishableProduct(): Promise<string> {
   const detail = jsonBody<Detail>(await staff().get(`${PRODUCTS}/${id}`));
   const variant = detail.variants.find((entry) => entry.isDefault);
   const declared = await staff()
-    .put(`${PRODUCTS}/${id}/variants/${variant?.id ?? ""}/nutrition`)
+    .put(`${PRODUCTS}/${id}/variants/${variant?.id ?? ""}/allergens`)
     // `[]` est une AFFIRMATION — « aucun allergène » — pas une absence de réponse.
     .send({ allergens: [] });
   expect(declared.status).toBe(200);

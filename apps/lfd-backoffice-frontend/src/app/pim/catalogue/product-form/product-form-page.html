@@ -135,8 +135,11 @@
                 @case ('tarif') {
                   <app-pricing-form />
                 }
-                @case ('fiche') {
-                  <app-regulatory-form />
+                @case ('allergenes') {
+                  <app-allergens-form />
+                }
+                @case ('nutrition') {
+                  <app-nutrition-form />
                 }
                 @case ('communication') {
                   <app-communication-form />
@@ -182,8 +185,11 @@
               </fold-page-section>
             </fold-card>
           }
-          @if (section.key === 'fiche') {
-            <!-- INGRÉDIENTS — sous les allergènes, et pas avec eux. Ce que la fiche
+          @if (section.key === 'nutrition') {
+            <!-- INGRÉDIENTS — sous les deux sections réglementaires, et pas avec
+             elles. Il ferme le bloc « ce qu'il y a dedans » plutôt que de
+             s'insérer entre les allergènes et la nutrition, qui sont les deux
+             moitiés d'une même déclaration et se lisent à la suite. Ce que la fiche
              revendique sur la PROVENANCE : un badge, un argument de vente. La
              liste réglementaire (ordonnée par masse, avec quantités) appartient
              à la déclinaison, avec ses allergènes ; cf.

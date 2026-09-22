@@ -94,6 +94,24 @@ export interface RevisionItemInput {
   readonly isDiscontinued: boolean;
   /** `null` = aucune fiche réglementaire ; `[]` = fiche déclarée, sans allergène. */
   readonly allergens: readonly string[] | null;
+  /**
+   * **Les valeurs nutritionnelles pour 100 g**, `null` par champ quand la valeur
+   * n'est pas renseignée ; `null` tout court quand aucune ne l'est.
+   *
+   * ⚠️ **Ce champ change TOUTES les empreintes** — un article est haché en
+   * entier, donc l'ajouter ferait apparaître le catalogue modifié de bout en
+   * bout. Il entre pourtant maintenant, et c'est mesuré : la production porte
+   * **zéro révision** au 2026-09-22 (Hugo : « j'accepte la bascule
+   * d'empreintes »). Il n'y a donc aucune empreinte à rebasculer et rien à quoi
+   * comparer — le faux diff redouté n'a pas de lecteur. La fenêtre se referme à
+   * la première ancre posée, et reporter aurait coûté un second chantier pour
+   * épargner un coût nul.
+   *
+   * Sans lui, `product.nutrition_saved` s'attribuerait à aucun champ : l'écran
+   * dirait « personne n'a touché à ça » d'une valeur que quelqu'un vient
+   * d'écrire.
+   */
+  readonly nutrition: Readonly<Record<string, number | null>> | null;
   /** Le taux EFFECTIF par clé de contexte, héritage appliqué. */
   readonly vatByContext: Readonly<Record<string, number>>;
   /** Où la déclinaison se vend RÉELLEMENT, matrice résolue. */

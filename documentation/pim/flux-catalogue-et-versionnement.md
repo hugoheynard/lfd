@@ -8,8 +8,12 @@
 > Voisins : [`contextes-et-points-de-vente.md`](contextes-et-points-de-vente.md)
 > (où vit le taux) · [`architecture-prix-ancre-ttc.md`](../pricing/architecture-prix-ancre-ttc.md)
 > (comment se fabrique un prix) · [`journalisation-et-tracabilite.md`](journalisation-et-tracabilite.md)
-> (l'anatomie d'une trace) · [`publication-reconciliation-3way.md`](shopify-publication/publication-reconciliation-3way.md)
-> (la réconciliation Shopify, qui est déjà la moitié de la réponse).
+> (l'anatomie d'une trace).
+>
+> ⚠️ Ce document citait la **réconciliation Shopify** comme « déjà la moitié
+> de la réponse ». Ce canal est sorti du dépôt le 2026-09-21 et sa
+> documentation a été retirée le 2026-09-22 : la moitié de réponse n'existe
+> plus, et les points d'ancrage sont à poser sans elle.
 
 ---
 
@@ -125,17 +129,7 @@ flowchart LR
         ING --> CPH
     end
 
-    subgraph SHO["Canal Shopify"]
-        SPJ["projection + fingerprint"]
-        REC["réconciliation 3 voies<br/>BASE / OURS / THEIRS"]
-        PUSH["productSet"]
-        SPS[("shopify_push_snapshot<br/><i>version, hash, payload</i>")]
-        SPJ --> REC --> PUSH --> SPS
-        SPS -.->|BASE du prochain diff| REC
-    end
-
     PIM --> MB
-    PIM --> SPJ
     ACCR["accounting_rules<br/><i>rapport pro</i>"] --> PJ
 ```
 
@@ -152,14 +146,19 @@ qu'émis au plein tarif. Un snapshot vide serait ingéré et viderait la boutiqu
 
 ## 5. Ce qui est versionné aujourd'hui — l'inventaire honnête
 
-| Ce qui est gardé                | Où                             | Forme                                                                    | Permet de…                                            |
-| ------------------------------- | ------------------------------ | ------------------------------------------------------------------------ | ----------------------------------------------------- |
-| **Le payload poussé à Shopify** | `pim.shopify_push_snapshot`    | version monotone par `handle`, `hash`, payload **rejouable**             | rejouer, comparer, revenir en arrière — **par canal** |
-| **Le tarif canonique B2B**      | `public.catalog_price_history` | append-only, à chaque changement du couple (prix, taux)                  | relire un prix ET son taux à une date                 |
-| **Les faits**                   | `growth.activity_events`       | type, acteur, `occurred_at`, payload contenant un **diff champ à champ** | dire qui a changé quoi, quand                         |
+| Ce qui est gardé           | Où                             | Forme                                                                    | Permet de…                            |
+| -------------------------- | ------------------------------ | ------------------------------------------------------------------------ | ------------------------------------- |
+| **Le tarif canonique B2B** | `public.catalog_price_history` | append-only, à chaque changement du couple (prix, taux)                  | relire un prix ET son taux à une date |
+| **Les faits**              | `growth.activity_events`       | type, acteur, `occurred_at`, payload contenant un **diff champ à champ** | dire qui a changé quoi, quand         |
 
-Trois choses, trois portées, et une seule d'entre elles est un vrai point
-d'ancrage — celle de Shopify.
+🔴 **Il y avait une troisième ligne, et c'était la plus importante** : le payload
+poussé à Shopify (`pim.shopify_push_snapshot`), versionné par `handle`, rejouable,
+et que ce document appelait « le seul vrai point d'ancrage ». La table est
+supprimée depuis le 2026-09-21 (migration `20260921220000_retrait_des_tables_shopify`).
+
+**Le dépôt n'a donc plus AUCUN point d'ancrage rejouable, ni aucun retour
+arrière de publication.** Ce n'est pas une ligne à retirer en silence : c'est une
+capacité perdue, qu'il faut rebâtir ou assumer.
 
 ### Ce que le journal ne peut PAS faire
 
@@ -555,9 +554,9 @@ il doit se taire.
 
 | Fermé                                             | Ouvert                            |
 | ------------------------------------------------- | --------------------------------- |
-| `POST /pim/channels/shopify/products/push`        | Créer, éditer, traduire une fiche |
-| `POST /pim/channels/shopify/products/rollback`    | Déclarer une fiche publiable      |
-| `POST /pim/channels/b2b/push`                     | La mettre en vente au référentiel |
+| `POST /pim/channels/b2b/push`                     | Créer, éditer, traduire une fiche |
+|                                                   | Déclarer une fiche publiable      |
+|                                                   | La mettre en vente au référentiel |
 | `POST /pim/catalogue/revisions` (poser une ancre) | **Lire** et comparer les ancres   |
 
 L'ancre est fermée parce qu'elle n'existe que pour précéder un envoi : un

@@ -1,0 +1,59 @@
+<!-- Le poids d'abord, et ce n'est pas une préférence d'affichage : la grille est
+     « pour 100 g », donc sans lui elle ne dit rien de ce qu'on vend, et qui la
+     remplit d'abord la remplit à l'aveugle.
+
+     Il reste HORS du bloc hérité de la nutrition : le poids voyage par la route
+     du tarif et suit le drapeau du TARIF, pas celui de la nutrition. C'est donc
+     `pricingAligned` qui le ferme — et il le ferme pour de bon, parce que
+     `saveNutrition` saute l'écriture quand le tarif est aligné. Un champ qui
+     accepte la frappe et jette la valeur est le no-op silencieux que tout ce
+     chantier combat. -->
+<fold-number-input
+  class="field-weight"
+  label="Poids net de l’unité (g)"
+  [min]="0"
+  [step]="1"
+  [disabled]="store.pricingAligned()"
+  [hint]="weightHint()"
+  [(value)]="store.weightGrams"
+/>
+
+@if (store.isEdit()) {
+  <!-- HÉRITÉ : on montre ce qui s'applique, on empêche d'y toucher. Masquer
+       serait pire — la question qu'on se pose devant une déclinaison alignée est
+       « et elle porte quoi, alors ? », pas « où est passée la grille ». -->
+  <fold-fieldset
+    legend="Valeurs nutritionnelles"
+    legendVariant="heading"
+    appearance="border"
+    hint="pour 100 g"
+    hintPosition="inline"
+    [class.is-inherited]="store.nutritionAligned()"
+  >
+    @for (row of nutritionRows; track row.key) {
+      <div class="grid">
+        @for (field of row.fields; track field.key) {
+          <fold-number-input
+            [label]="field.label"
+            [min]="0"
+            [step]="0.1"
+            [value]="store.nutrition()[field.key] ?? null"
+            (valueChange)="store.setNutrition(field.key, $event)"
+          />
+        }
+      </div>
+    }
+  </fold-fieldset>
+} @else {
+  <!-- 🔴 CRÉATION : la route de création ne porte aucune valeur nutritionnelle.
+       La grille rendue ici aurait accepté huit nombres et les aurait jetés sans
+       un mot. On la retire et on dit quand elle revient — le mot compte plus que
+       le mécanisme, et il évite de chercher un champ qu'on croit avoir perdu.
+
+       Les allergènes, eux, restent saisissables : la création les porte, traces
+       comprises, et ce sont eux qui engagent la sécurité. -->
+  <fold-callout appearance="inset" variant="info">
+    Les valeurs nutritionnelles s'ouvrent une fois le brouillon créé : la création ne les enregistre
+    pas encore. Le poids net ci-dessus, lui, part avec.
+  </fold-callout>
+}

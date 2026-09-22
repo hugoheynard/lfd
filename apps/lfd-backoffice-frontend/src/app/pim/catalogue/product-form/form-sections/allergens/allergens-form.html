@@ -1,43 +1,7 @@
-<!-- L'ordre de la fiche suit celui de la SAISIE, et il n'est pas indifférent :
-     le poids de l'unité conditionne la lecture de tout ce qui suit. La grille
-     est « pour 100 g » — sans lui, elle ne dit rien de ce qu'on vend, et qui la
-     remplit d'abord la remplit à l'aveugle. Les allergènes ferment la fiche :
-     ce sont des cases à cocher, pas des nombres, et ils n'ont besoin de rien de
-     ce qui précède. -->
-<fold-number-input
-  class="field-weight"
-  label="Poids net de l’unité (g)"
-  [min]="0"
-  [step]="1"
-  [(value)]="store.weightGrams"
-/>
-
-<fold-fieldset
-  legend="Valeurs nutritionnelles"
-  legendVariant="heading"
-  appearance="border"
-  hint="pour 100 g"
-  hintPosition="inline"
->
-  @for (row of nutritionRows; track row.key) {
-    <div class="grid">
-      @for (field of row.fields; track field.key) {
-        <fold-number-input
-          [label]="field.label"
-          [min]="0"
-          [step]="0.1"
-          [value]="store.nutrition()[field.key] ?? null"
-          (valueChange)="store.setNutrition(field.key, $event)"
-        />
-      }
-    </div>
-  }
-</fold-fieldset>
-
-<hr class="rule" />
-
-<div class="stack" [class.is-inherited]="store.regulatoryAligned()">
-  <span class="block-label">Allergènes</span>
+<!-- L'affirmation d'abord : « aucun allergène » ferme la question, et la poser
+     après la liste des cases la ferait lire comme une case de plus. L'héritage
+     grise le bloc entier — on montre ce qui s'applique, on empêche d'y toucher. -->
+<div class="stack" [class.is-inherited]="store.allergensAligned()">
   <fold-callout
     appearance="inset"
     [variant]="store.declaresNone() || store.selected().length > 0 ? 'success' : 'warning'"
@@ -144,4 +108,25 @@
       </div>
     </div>
   }
+
+  <!-- LES TRACES — « peut contenir ».
+       Elles restent visibles même sous « aucun allergène » : ne rien contenir
+       et pouvoir porter une trace d'atelier sont deux faits différents, et
+       c'est le second qui s'imprime en petit sur l'étiquette.
+
+       Une liste à cocher repliée plutôt qu'une seconde grille de trente cases :
+       le référentiel est le même que ci-dessus, et le dérouler deux fois ferait
+       lire deux fois la même chose pour deux questions différentes. Ce qui est
+       déjà déclaré PRÉSENT n'y figure pas — le serveur refuse un code des deux
+       côtés, et le contrôle ne le propose donc pas. -->
+  <fold-multiselect
+    label="Peut contenir (traces)"
+    hint="Ce qui n’est pas dans la recette mais peut s’y trouver — contamination d’atelier, fournisseur partagé."
+    placeholder="Aucune trace déclarée"
+    allowClear
+    clearLabel="Tout retirer"
+    [options]="store.traceChoices()"
+    [value]="store.mayContain()"
+    (valueChange)="store.setTraces($event)"
+  />
 </div>

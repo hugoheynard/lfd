@@ -88,20 +88,37 @@ const productReclassifiedV1 = payload({
 const pricingChanges = () =>
   changes({ priceCents: cents().nullable(), weightGrams: grams().nullable() });
 const productPricingV1 = payload({ variantId: ref("variant"), changes: pricingChanges() });
-const declarationChanges = () =>
-  changes({
-    /** Des codes d'allergènes ; `null` = fiche jamais renseignée, `[]` = « aucun ». */
-    allergens: z.array(z.string()).nullable(),
-    mayContain: z.array(z.string()).nullable(),
-    energyKcal: kcal().nullable(),
-    fatG: grams().nullable(),
-    saturatedFatG: grams().nullable(),
-    carbsG: grams().nullable(),
-    sugarsG: grams().nullable(),
-    proteinG: grams().nullable(),
-    saltG: grams().nullable(),
-    glycemicIndex: z.number().nullable(),
-  });
+/**
+ * **Ce que la déclinaison CONTIENT** — la déclaration de sécurité.
+ *
+ * `null` = fiche jamais renseignée, `[]` = « aucun allergène », qui est une
+ * affirmation positive. Les traces sont ici et non avec les valeurs : une trace
+ * EST un allergène, déclaré à un autre titre.
+ */
+const allergenFields = () => ({
+  allergens: z.array(z.string()).nullable(),
+  mayContain: z.array(z.string()).nullable(),
+});
+
+/** **Ce que la déclinaison VAUT** — les mentions de l'annexe XV, plus l'indice. */
+const nutritionFields = () => ({
+  energyKcal: kcal().nullable(),
+  fatG: grams().nullable(),
+  saturatedFatG: grams().nullable(),
+  carbsG: grams().nullable(),
+  sugarsG: grams().nullable(),
+  proteinG: grams().nullable(),
+  saltG: grams().nullable(),
+  glycemicIndex: z.number().nullable(),
+});
+
+const allergenChanges = () => changes(allergenFields());
+const nutritionChanges = () => changes(nutritionFields());
+/**
+ * Les deux moitiés dans un seul diff — la forme de `product.declaration_saved`,
+ * qui les enregistrait ensemble. Elle ne s'écrit plus ; elle se lit toujours.
+ */
+const declarationChanges = () => changes({ ...allergenFields(), ...nutritionFields() });
 const productDeclarationV1 = payload({
   variantId: ref("variant"),
   changes: declarationChanges(),
@@ -128,9 +145,24 @@ const variantAdded = payload({
   name: localizedText(),
   options: z.record(z.string(), z.string()),
 });
+/**
+ * Les sections qu'une déclinaison peut suivre du défaut.
+ *
+ * 🔴 `"regulatory"` NE PART PAS de cette liste, et c'est une décision.
+ *
+ * Elle est **déjà posée dans des faits** que personne ne réécrira. Ce schéma-ci
+ * est celui par lequel on les RELIT : l'en retirer ferait échouer la lecture
+ * d'un fait passé, c'est-à-dire de l'historique qu'on vient consulter le jour
+ * où une étiquette est fausse. Une valeur de donnée n'est pas un nom
+ * (`CLAUDE.md` §8).
+ *
+ * Elle vaut exactement `"allergens"` — la fiche s'aligne par moitié depuis le
+ * 2026-09-22 (`plan-separer-allergenes-et-nutrition.md`, §6d), et le drapeau
+ * qu'elle désignait est devenu celui des allergènes.
+ */
 const variantAligned = payload({
   sku: z.string(),
-  aspect: z.enum(["regulatory", "pricing"]),
+  aspect: z.enum(["regulatory", "allergens", "pricing", "nutrition"]),
   aligned: z.boolean(),
 });
 const variantRenameChanges = () => changes({ name: localizedText().nullable() });
@@ -252,7 +284,40 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
     }),
     [productPricingV1],
   ),
-  "product.declaration_saved": fact(
+  /**
+   * **Les allergènes d'une déclinaison** — ce qu'elle contient, et ses traces.
+   *
+   * Préfixé `product.` et non `variant.`, alors que le sujet EST la déclinaison :
+   * `attribution.ts` filtre sur `startsWith("product.")` et le test
+   * d'exhaustivité de `content-facts.ts` interdit un autre préfixe. Un
+   * `variant.allergens_saved` serait invisible des deux gardes, donc sauver les
+   * allergènes cesserait de périmer la signature « publiable » (plan
+   * `plan-separer-allergenes-et-nutrition.md`, §6c). Le préfixe ment un peu sur
+   * le sujet ; il dit vrai sur ce qui protège.
+   */
+  "product.allergens_saved": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      variant: named("variant"),
+      changes: allergenChanges(),
+    }),
+  ),
+  /** **Les valeurs nutritionnelles d'une déclinaison** — jamais un allergène. */
+  "product.nutrition_saved": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      variant: named("variant"),
+      changes: nutritionChanges(),
+    }),
+  ),
+  /**
+   * Remplacé par `product.allergens_saved` et `product.nutrition_saved` le
+   * 2026-09-22, sans migration : les deux moitiés de la fiche réglementaire
+   * s'enregistrent désormais séparément (lot 3 du plan). Sa charge reste ici
+   * **entière** — ses lignes doivent rester lisibles, et elles portent des
+   * valeurs que ni l'un ni l'autre de ses deux successeurs ne décrit seul.
+   */
+  "product.declaration_saved": retired(
     payload({
       subjectLabel: subjectLabel(),
       variant: named("variant"),

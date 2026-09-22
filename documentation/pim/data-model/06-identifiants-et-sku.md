@@ -46,9 +46,14 @@ Une énumération de canaux au cœur du catalogue, c'est le vocabulaire des syst
 domaine. Test d'ADR-13 : _si on supprimait le module Shopify, le catalogue compilerait-il encore ?_
 Ici — **non**, l'enum ne compile plus.
 
-**d. Ça duplique les tables de binding déjà conçues.** `helios_variant_binding.plu` et
-`shopify_variant_binding` existent déjà en [`04`](./04-composition-et-canaux.md) et font ce travail,
-**du bon côté de la frontière**.
+**d. Ça duplique le motif de binding déjà conçu.** Une table de canal porte
+l'identifiant du tiers, **du bon côté de la frontière** — voir
+[`04`](./04-composition-et-canaux.md).
+
+> ⚠️ Cet argument citait `helios_variant_binding.plu` et
+> `shopify_variant_binding` comme « existant déjà ». **Ni l'une ni l'autre
+> n'existe** : la première n'a jamais été créée, la seconde est supprimée depuis
+> le 2026-09-21. Le seul porteur vivant du motif est `b2b_channel_binding`.
 
 ### Et pourtant l'exigence « unicité par canal » est légitime
 
@@ -252,10 +257,10 @@ HTTP, qui décide que ça vaut un **409**.
 
 C'est ton exigence, et elle est satisfaite — mais du bon côté de la frontière.
 
-| Canal     | Table (possédée par l'adaptateur) | Colonne       | Contrainte |
-| --------- | --------------------------------- | ------------- | ---------- |
-| Shopify   | `shopify_variant_binding`         | `shopify_sku` | `UNIQUE`   |
-| Caisse PI | `helios_variant_binding`          | `plu`         | `UNIQUE`   |
+| Canal         | Table (possédée par l'adaptateur) | Colonne       | Contrainte                                                         |
+| ------------- | --------------------------------- | ------------- | ------------------------------------------------------------------ |
+| Shopify       | `shopify_variant_binding`         | `shopify_sku` | `UNIQUE`                                                           |
+| ~~Caisse PI~~ | ~~`helios_variant_binding`~~      | ~~`plu`~~     | **caduc le 2026-09-22** — PI est sorti, la table n'a jamais existé |
 
 **Chaque table _est_ un canal** — un index unique sur sa colonne **est** une unicité par canal. Aucun
 enum de canal, aucune colonne discriminante, aucune ligne de code du domaine à toucher pour en
@@ -284,8 +289,9 @@ Trois raisons, dans l'ordre :
 2. Les codes EAN-13 valides **s'achètent** auprès de GS1 : on ne les invente pas. Le seul usage
    légitime hors adhésion est la plage **réservée à l'usage interne** (préfixes `02` / `20`–`29`), qui
    ne sort pas du magasin — c'est un besoin de **caisse**, pas de catalogue.
-3. Le code-barres est une contrainte de la caisse : sa place est dans `helios_variant_binding`, quand
-   **D4** aura tranché.
+3. ~~Le code-barres est une contrainte de la caisse~~ — **caduc le 2026-09-22** :
+   D4 est close par le retrait de PI, et il n'y a plus de caisse où le ranger.
+   S'il redevient un besoin, il repart d'une page blanche.
 
 La fonction de contrôle du **checksum EAN-13** de la proposition d'origine est correcte et vaut
 d'être reprise **telle quelle** le jour venu — c'est le seul de ses formats objectivement fondé.
@@ -301,12 +307,23 @@ La proposition affirmait « une source unique alimente la validation back **et**
 front ». C'est faux dès que le front est une app séparée qui parle à l'API : le registre contient une
 `RegExp` et des **fonctions** (`normalize`, `extraCheck`) — **rien de tout ça ne traverse JSON**.
 
-Le partage réel se fait à la **compilation**, pas au runtime :
+Le partage réel se ferait à la **compilation**, pas au runtime :
 
-| Quoi                                 | Où                      | Pourquoi                                                                        |
-| ------------------------------------ | ----------------------- | ------------------------------------------------------------------------------- |
-| Motif, longueurs, `normalize`        | `packages/shared-types` | Importé _littéralement_ par les deux — une seule définition, vérifiée par `tsc` |
-| Libellés, exemples, aide à la saisie | **front**               | Ce sont des **textes d'interface**, ils n'ont rien à faire dans le domaine      |
+| Quoi                                 | Où                       | Pourquoi                                                                        |
+| ------------------------------------ | ------------------------ | ------------------------------------------------------------------------------- |
+| Motif, longueurs, `normalize`        | `packages/pim-contracts` | Importé _littéralement_ par les deux — une seule définition, vérifiée par `tsc` |
+| Libellés, exemples, aide à la saisie | **front**                | Ce sont des **textes d'interface**, ils n'ont rien à faire dans le domaine      |
+
+> 🔴 **Ce tableau était au présent, et désignait `packages/shared-types`.** Ce
+> paquet n'a jamais existé (constaté le 2026-09-22), et le `CLAUDE.md` du dépôt
+> l'interdit nommément. `SKU_PATTERN` et `SKU_MIN_LENGTH` ne vivent aujourd'hui
+> **qu'au backend**, dans
+> `apps/lfd-api/src/pim/catalogue/product/domain/value-objects/sku.value-object.ts` :
+> le front ne les a pas, et le partage reste **à faire**.
+>
+> Le véhicule corrigé ci-dessus est `packages/pim-contracts`, qui existe et porte
+> déjà les contrats du référentiel. ⚠️ Mais **la ligne décrit désormais une
+> intention, pas un état** — ne pas la relire comme un constat.
 
 Le front **guide**, le back **valide**, la base **garantit** — la règle d'or de la proposition était
 juste ; c'est son implémentation qui ne tenait pas.

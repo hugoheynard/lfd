@@ -62,19 +62,33 @@ export class InvalidVariantPricingError extends DomainError {
 
 /**
  * Invariant 7 du socle : `PublishProduct` est **refusée** si une déclinaison
- * active n'a pas de fiche réglementaire.
+ * active ne déclare pas ses **allergènes**.
  *
- * Le message nomme les références en cause : « ce produit n'est pas
- * publiable » n'aide personne devant un produit à six déclinaisons.
+ * 🔴 **C'est l'état nommé de D3** (`plan-separer-allergenes-et-nutrition.md`).
+ * Saisir un tableau nutritionnel sans déclarer d'allergène est le cas courant —
+ * les valeurs se copient d'un document, la déclaration demande de regarder la
+ * recette — et il ne doit surtout pas se refuser en silence : il se refuse par
+ * un message qui dit lequel des deux gestes manque.
+ *
+ * Le message nomme les références en cause ET le geste de sortie, parce qu'il
+ * est lu au back-office par du personnel qui n'a pas le code sous les yeux :
+ * « ce produit n'est pas publiable » n'aide personne devant un produit à six
+ * déclinaisons, et « fiche réglementaire manquante » envoyait remplir le
+ * tableau nutritionnel — qui n'y change rien.
  */
 export class ProductNotPublishableError extends BusinessError {
   constructor(
     readonly productId: string,
-    readonly missingSheetSkus: readonly string[],
+    readonly undeclaredAllergenSkus: readonly string[],
   ) {
     super(
       "catalogue.product.not_publishable",
-      `Publication refusée : fiche réglementaire manquante sur ${missingSheetSkus.join(", ")}.`,
+      `Publication refusée : aucune déclaration d'allergènes sur ` +
+        `${undeclaredAllergenSkus.join(", ")}. Ouvrir la section « Allergènes » de ` +
+        `chacune de ces déclinaisons et déclarer ce qu'elle contient — ou cocher ` +
+        `« aucun allergène », qui est une réponse — puis republier. Aligner la ` +
+        `déclinaison sur celle par défaut convient aussi, à condition que le défaut ` +
+        `ait lui-même déclaré. Le tableau nutritionnel, lui, n'est pas demandé ici.`,
     );
   }
 }

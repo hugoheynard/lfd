@@ -20,6 +20,7 @@ import {
   FoldSearchComponent,
   type FoldBadgeVariant,
   type FoldTableColumn,
+  type FoldTableSort,
   type FoldTableTone,
 } from 'fold-ng';
 
@@ -45,6 +46,7 @@ import {
 } from '../catalogue-api';
 import { productStatusLabel, productStatusVariant } from '../product-status';
 import type { ProductStatus } from '../../data/models';
+import { nextSort, sortRows } from './products-sort';
 
 /**
  * **Où en est une fiche sur la boutique professionnelle**, vue de la liste.
@@ -175,16 +177,74 @@ export class ProductsPage {
   protected readonly selectedCount = computed(() => this.selection().size);
   private readonly selectedIds = computed(() => [...this.selection()].map((key) => String(key)));
 
-  /** Filtre du tableau : par nom ou par référence. */
+  /**
+   * Filtre du tableau : par nom, par référence **ou par famille**.
+   *
+   * La famille se cherche sur son NOM et non sur son identifiant, pour la même
+   * raison que le tri : c'est ce que la colonne affiche. Taper « viennoiserie »
+   * doit ramener la ligne qu'on voit, pas rien.
+   *
+   * ⚠️ `categoryName` rend `—` pour une famille inconnue. Ce tiret est écarté
+   * plutôt que comparé : sinon une recherche contenant « — » ramasserait tous
+   * les produits orphelins, ce qui n'est ni cherché ni compréhensible.
+   */
   protected readonly visibleProducts = computed<Product[]>(() => {
     const q = this.query().trim().toLowerCase();
     const products = this.products();
     if (q === '') {
       return products;
     }
-    return products.filter(
-      (p) => p.name.fr.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q),
-    );
+    return products.filter((p) => {
+      const family = this.categoryName(p.categoryId);
+      return (
+        p.name.fr.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q) ||
+        (family !== '—' && family.toLowerCase().includes(q))
+      );
+    });
+  });
+
+  /**
+   * Le tri courant, ou `null` quand la liste garde l'ordre du serveur.
+   *
+   * ⚠️ La table `fold-data-table` **n'trie rien** : elle rend l'en-tête, émet la
+   * colonne cliquée et affiche la flèche. C'est le parent qui possède l'ordre,
+   * et c'est ce qui permet de trier la liste ENTIÈRE avant de la paginer —
+   * trier la page affichée ne trierait que vingt-cinq lignes sur deux cents.
+   */
+  protected readonly sort = signal<FoldTableSort | null>(null);
+
+  /**
+   * Les valeurs sur lesquelles une colonne triable se compare.
+   *
+   * Le tri porte sur ce que la personne LIT, pas sur ce que la ligne porte : la
+   * colonne Famille affiche le nom de la famille et non son identifiant, donc
+   * trier par `categoryId` rangerait des ULID sous une en-tête qui promet des
+   * noms.
+   */
+  private readonly sortValues: Readonly<Record<string, (product: Product) => string>> = {
+    name: (product) => product.name.fr,
+    category: (product) => this.categoryName(product.categoryId),
+  };
+
+  /**
+   * La liste filtrée, puis ordonnée.
+   *
+   * `localeCompare` en français plutôt qu'une comparaison de chaînes : `<` range
+   * « Éclair » après « Zeste », parce qu'il compare des points de code. Une
+   * boulangerie dont la moitié des noms portent un accent en aurait souffert à
+   * la première page.
+   */
+  private readonly sortedProducts = computed<readonly Product[]>(() => {
+    const active = this.sort();
+    const valueOf = active === null ? undefined : this.sortValues[active.key];
+    // Une colonne sans lecteur déclaré ne trie pas — elle ne se plante pas non
+    // plus. `sortable` et `sortValues` se posent à deux endroits ; le jour où
+    // l'un gagne une colonne sans l'autre, la liste garde son ordre.
+    if (active === null || valueOf === undefined) {
+      return this.visibleProducts();
+    }
+    return sortRows(this.visibleProducts(), active, valueOf);
   });
 
   /** Nombre de pages, page courante bornée, et la tranche affichée. */
@@ -196,13 +256,13 @@ export class ProductsPage {
 
   protected readonly pagedProducts = computed<Product[]>(() => {
     const start = (this.currentPage() - 1) * this.pageSize();
-    return this.visibleProducts().slice(start, start + this.pageSize());
+    return this.sortedProducts().slice(start, start + this.pageSize());
   });
 
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'sku', label: 'Référence', width: '9rem' },
-    { key: 'name', label: 'Nom' },
-    { key: 'category', label: 'Famille' },
+    { key: 'name', label: 'Nom', sortable: true },
+    { key: 'category', label: 'Famille', sortable: true },
     { key: 'channels', label: 'Canaux', width: '12rem' },
     { key: 'status', label: 'État' },
     // Deux canaux, deux colonnes. Celui qui FACTURE n'en avait aucune : la seule
@@ -281,6 +341,23 @@ export class ProductsPage {
    */
   protected openProduct(product: Product): void {
     void this.router.navigate(['/pim/produits', product.id]);
+  }
+
+  /**
+   * Un clic sur une en-tête triable : croissant, puis décroissant, puis plus de
+   * tri du tout.
+   *
+   * Le troisième état n'est pas une coquetterie — sans lui, l'ordre d'origine
+   * du serveur devient **inatteignable** une fois qu'on a trié, et il n'y a plus
+   * de retour en arrière qu'en rechargeant la page.
+   *
+   * ⚠️ On revient à la première page. Trier en restant à la page trois
+   * afficherait une tranche du milieu d'un ordre neuf, ce qui se lit comme une
+   * liste qui a perdu des lignes.
+   */
+  protected onSortChange(key: string): void {
+    this.sort.set(nextSort(this.sort(), key));
+    this.page.set(1);
   }
 
   /** Filtrer remet en page 1 pour ne pas rester sur une page vide. */

@@ -13,6 +13,7 @@ import {
   Variant,
   type VariantAspect,
   type VariantPricing,
+  type VariantNutritionValues,
   type VariantSnapshot,
 } from "./variant.js";
 import {
@@ -28,6 +29,7 @@ import {
   contextIsSold,
   type ContextVat,
 } from "../../../shared/domain/value-objects/context-vat.js";
+import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 
 export type ProductKind = "daily" | "made_to_order" | "resale";
@@ -263,10 +265,23 @@ export class Product {
   /**
    * **Invariant 7** : on ne met pas en vente ce qu'on ne peut pas étiqueter.
    *
-   * Toute déclinaison **active** doit porter une fiche réglementaire. `[]`
-   * compte comme déclarée — « aucun allergène » est une affirmation, pas une
-   * absence de réponse. Les déclinaisons arrêtées ne comptent pas : elles ne
-   * partiront chez aucun canal.
+   * Toute déclinaison **active** doit porter une déclaration d'**allergènes** —
+   * la sienne, ou celle du défaut qu'elle suit. `[]` compte comme déclarée :
+   * « aucun allergène » est une affirmation, pas une absence de réponse. Les
+   * déclinaisons arrêtées ne comptent pas : elles ne partiront chez aucun canal.
+   *
+   * 🔴 **Les valeurs nutritionnelles n'entrent PAS dans ce compte**, et ce n'est
+   * pas un desserrage : le règlement (UE) n° 1169/2011 rend les allergènes
+   * obligatoires (art. 9 §1 point c) et exempte la déclaration nutritionnelle
+   * (point l) dans les deux cas de vente de La Folie Coffee — le frais non
+   * préemballé en boutique par l'art. 44 §1, les confiseries par l'annexe V
+   * pt 19. Exiger ce que le règlement n'exige pas était le redressement, pas
+   * l'inverse (`plan-separer-allergenes-et-nutrition.md`, D2, vérifié le
+   * 2026-09-22 sur le texte consolidé).
+   *
+   * ⚠️ Ce qui rouvrirait la question ne s'annoncera pas depuis le code : une
+   * confiserie **préemballée** partie chez un revendeur **non local** sort des
+   * deux exemptions, et la nutrition redevient obligatoire pour elle seule.
    *
    * Un produit archivé se restaure d'abord : passer d'« retiré de la vente » à
    * « en ligne » d'un seul geste ferait sauter l'étape où quelqu'un regarde.
@@ -279,7 +294,7 @@ export class Product {
       return false;
     }
     const missing = this.variantList
-      .filter((variant) => !variant.isDiscontinued && !this.isCovered(variant))
+      .filter((variant) => !variant.isDiscontinued && !this.declaresAllergens(variant))
       .map((variant) => variant.sku);
     if (missing.length > 0) {
       throw new ProductNotPublishableError(this.identity, missing);
@@ -355,6 +370,28 @@ export class Product {
   }
 
   /**
+   * **Les allergènes d'une déclinaison**, sans toucher à ses valeurs.
+   *
+   * La moitié qui engage la sécurité du mangeur.
+   *
+   * Refuse si la déclinaison n'est pas la sienne — c'est l'agrégat qui dit ce
+   * qui lui appartient, pas une requête sur l'id seul.
+   *
+   * 🔴 Ce verbe ne PERSISTE rien : l'écriture reste au port dédié
+   * (`plan-separer-allergenes-et-nutrition.md`, §6a). Il existe pour que
+   * l'agrégat porte l'état qu'il est seul à savoir juger — `declaresAllergens`
+   * compare la déclinaison à son défaut, et il le fait sur l'état d'APRÈS.
+   */
+  declareAllergens(variantId: string, declaration: AllergenDeclaration): void {
+    this.variant(variantId).declareAllergens(declaration);
+  }
+
+  /** **Les valeurs d'une déclinaison**, sans toucher à ses allergènes. */
+  declareNutritionValues(variantId: string, values: VariantNutritionValues): void {
+    this.variant(variantId).declareNutritionValues(values);
+  }
+
+  /**
    * Refuse si la déclinaison n'est pas du produit. Utile aux verbes dont
    * l'écriture passe par un satellite (la fiche réglementaire) : c'est
    * l'agrégat qui dit ce qui lui appartient, pas une requête sur l'id seul.
@@ -383,18 +420,24 @@ export class Product {
   }
 
   /**
-   * Cette déclinaison est-elle **étiquetable** — par sa propre fiche, ou par
-   * celle du défaut qu'elle suit ?
+   * Cette déclinaison est-elle **étiquetable** — par ses propres allergènes, ou
+   * par ceux du défaut qu'elle suit ?
+   *
+   * Le drapeau lu est celui des **allergènes**, jamais celui de la nutrition :
+   * les deux moitiés s'alignent séparément depuis le lot 4, et une déclinaison
+   * qui saisit ses propres valeurs tout en suivant les allergènes du défaut est
+   * parfaitement étiquetable. Lire le mauvais drapeau ici l'aurait rendue
+   * impubliable sur un geste qui ne touche pas à la sécurité.
    *
    * La question ne peut pas vivre sur la déclinaison : elle seule ne voit pas le
    * défaut, et un objet ne garantit que ce qu'il voit. C'est le même partage que
    * pour les taux, où la fiche ne juge sa dérogation qu'une fois qu'on lui
    * montre les canaux de sa famille.
    */
-  private isCovered(variant: Variant): boolean {
-    return variant.follows("regulatory")
-      ? this.defaultVariant.hasOwnRegulatorySheet
-      : variant.hasOwnRegulatorySheet;
+  private declaresAllergens(variant: Variant): boolean {
+    return variant.follows("allergens")
+      ? this.defaultVariant.declaresOwnAllergens
+      : variant.declaresOwnAllergens;
   }
 
   /**
@@ -449,6 +492,12 @@ export class Product {
   /**
    * Ce que le défaut prête à une déclinaison alignée, section par section.
    *
+   * Trois sections depuis le 2026-09-22, et la fiche réglementaire en fait deux
+   * à elle seule : ses moitiés s'enregistrent séparément, donc elles s'héritent
+   * séparément. Une déclinaison peut porter ses propres valeurs nutritionnelles
+   * tout en suivant les allergènes du défaut — c'est le cas courant d'un format
+   * différent de la même pâte.
+   *
    * Le prix et le poids voyagent ENSEMBLE, jamais l'un sans l'autre : un prix
    * hérité au-dessus d'un poids propre décrirait un article que personne ne
    * vend, et c'est le couple que la section « Tarif » enregistre.
@@ -456,13 +505,23 @@ export class Product {
   private resolvedSnapshot(variant: Variant): VariantSnapshot {
     const own = variant.snapshot();
     const source = this.defaultVariant.snapshot();
-    const regulatory = variant.follows("regulatory")
-      ? { allergens: source.allergens, nutrition: source.nutrition }
-      : {};
+    // Chaque moitié vient EN ENTIER de celui que SON drapeau désigne. Les
+    // traces « peut contenir » voyagent avec les allergènes et non avec les
+    // valeurs : ce sont des allergènes, et les faire suivre le mauvais drapeau
+    // mettrait sur une étiquette la trace d'un autre article (plan §5). Depuis
+    // le lot 7, rien ne se recolle plus ici — les deux moitiés sont deux
+    // champs, et prendre l'un pour l'autre demanderait de le vouloir.
+    const allergensFrom = variant.follows("allergens") ? source : own;
+    const valuesFrom = variant.follows("nutrition") ? source : own;
     const pricing = variant.follows("pricing")
       ? { priceCents: source.priceCents, weightGrams: source.weightGrams }
       : {};
-    return { ...own, ...regulatory, ...pricing };
+    return {
+      ...own,
+      allergenSheet: allergensFrom.allergenSheet,
+      nutrition: valuesFrom.nutrition,
+      ...pricing,
+    };
   }
 
   /**
@@ -475,6 +534,29 @@ export class Product {
    * finirait par donner trois réponses.
    */
   snapshot(): ProductSnapshot {
+    return { ...this.head(), variants: this.variantList.map((v) => this.resolvedSnapshot(v)) };
+  }
+
+  /**
+   * L'instantané **non résolu** — chaque déclinaison avec ce qu'elle PORTE.
+   *
+   * 🔴 C'est celui qu'on PERSISTE, et la distinction n'est pas cosmétique.
+   * {@link snapshot} résout l'héritage : une déclinaison alignée en sort avec le
+   * prix et la fiche du défaut. Écrire CE tableau-là dans ses colonnes propres
+   * recopierait le défaut chez elle, et détruirait ce qu'elle avait — alors que
+   * {@link Variant.follows} promet l'inverse : « s'aligner puis se désaligner
+   * rend ce qu'on avait écrit ».
+   *
+   * Les lecteurs n'y perdent rien : ils passent tous par l'agrégat
+   * (`CatalogueReader.publishable` fait `listAll().map(p => p.snapshot())`) et
+   * reçoivent donc la résolution **à la lecture**, là où elle doit vivre.
+   */
+  persistenceSnapshot(): ProductSnapshot {
+    return { ...this.head(), variants: this.variantList.map((variant) => variant.snapshot()) };
+  }
+
+  /** Ce que les deux instantanés partagent — tout sauf les déclinaisons. */
+  private head(): Omit<ProductSnapshot, "variants"> {
     return {
       id: this.identity,
       sku: this.skuValue,
@@ -483,7 +565,6 @@ export class Product {
       kind: this.kindValue,
       categoryId: this.categoryIdValue,
       status: this.statusValue,
-      variants: this.variantList.map((variant) => this.resolvedSnapshot(variant)),
       vatByContext: this.vatByContextValue,
       channelOverride: this.channelOverrideValue,
     };

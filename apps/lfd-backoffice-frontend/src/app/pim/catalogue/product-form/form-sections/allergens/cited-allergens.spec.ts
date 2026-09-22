@@ -22,6 +22,11 @@ describe('la composition en regard de la déclaration', () => {
     { code: 'gluten', label: 'Blé', incoCategory: 'GLUTEN', incoLabel: 'Gluten' },
   ];
 
+  /** La déclaration est un SEUL état : on la pose, on ne la compose pas. */
+  function declare(codes: readonly string[]): void {
+    store.declaration.set({ allergens: [...codes], mayContain: [] });
+  }
+
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [ProductFormStore, provideHttpClient()] });
     store = TestBed.inject(ProductFormStore);
@@ -39,7 +44,7 @@ describe('la composition en regard de la déclaration', () => {
    */
   it('crie quand la composition contredit un « aucun allergène »', () => {
     store['citedAllergensValue'].set(['milk']);
-    store.declaresNone.set(true);
+    store.declareNoAllergen(true);
 
     expect(store.citedContradictsNone()).toBe(true);
     expect(store.citedNotDeclared().map((choice) => choice.label)).toEqual(['Lait']);
@@ -47,14 +52,14 @@ describe('la composition en regard de la déclaration', () => {
 
   it('propose ce que la déclaration ne porte pas encore', () => {
     store['citedAllergensValue'].set(['milk', 'gluten']);
-    store.selected.set(['gluten']);
+    declare(['gluten']);
 
     expect(store.citedNotDeclared().map((choice) => choice.code)).toEqual(['milk']);
   });
 
   it('se tait sur ce qui est déjà déclaré', () => {
     store['citedAllergensValue'].set(['milk']);
-    store.selected.set(['milk']);
+    declare(['milk']);
 
     expect(store.citedNotDeclared()).toEqual([]);
   });
@@ -72,7 +77,7 @@ describe('la composition en regard de la déclaration', () => {
   describe('la reprise', () => {
     it('lève « aucun allergène » et coche ce qui est cité', () => {
       store['citedAllergensValue'].set(['milk']);
-      store.declaresNone.set(true);
+      store.declareNoAllergen(true);
 
       store.adoptCitedAllergens();
 
@@ -87,7 +92,7 @@ describe('la composition en regard de la déclaration', () => {
      */
     it('n’enlève jamais un allergène que la composition ne mentionne pas', () => {
       store['citedAllergensValue'].set(['milk']);
-      store.selected.set(['gluten']);
+      declare(['gluten']);
 
       store.adoptCitedAllergens();
 
@@ -96,7 +101,7 @@ describe('la composition en regard de la déclaration', () => {
 
     it('ne double pas un code déjà coché', () => {
       store['citedAllergensValue'].set(['milk', 'gluten']);
-      store.selected.set(['milk']);
+      declare(['milk']);
 
       store.adoptCitedAllergens();
 
@@ -104,7 +109,7 @@ describe('la composition en regard de la déclaration', () => {
     });
 
     it('ne fait rien quand il n’y a rien à reprendre', () => {
-      store.selected.set(['gluten']);
+      declare(['gluten']);
 
       store.adoptCitedAllergens();
 
@@ -129,7 +134,7 @@ describe('la composition en regard de la déclaration', () => {
       });
       store['readinessStaleValue'].set(false);
 
-      await store['save']('fiche', () => Promise.resolve());
+      await store['save']('allergenes', () => Promise.resolve());
 
       expect(store.readinessStale()).toBe(true);
     });
@@ -142,13 +147,13 @@ describe('la composition en regard de la déclaration', () => {
       });
       store['readinessStaleValue'].set(false);
 
-      await store['save']('fiche', () => Promise.reject(new Error('boum')));
+      await store['save']('allergenes', () => Promise.reject(new Error('boum')));
 
       expect(store.readinessStale()).toBe(false);
     });
 
     it('ne parle pas de péremption quand personne n’a signé', async () => {
-      await store['save']('fiche', () => Promise.resolve());
+      await store['save']('allergenes', () => Promise.resolve());
 
       expect(store.readinessStale()).toBe(false);
     });

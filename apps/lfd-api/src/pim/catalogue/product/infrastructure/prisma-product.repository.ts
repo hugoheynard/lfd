@@ -20,9 +20,14 @@ import {
 } from "../../shared/infrastructure/json-readers.js";
 import { normalizeSalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
 
-interface NutritionRow {
+/** La moitié « sécurité » : ce que la déclinaison contient, et ses traces. */
+interface AllergensRow {
   allergens: unknown;
   mayContain: unknown;
+}
+
+/** La moitié « valeurs » : les mentions de l'annexe XV, plus l'indice. */
+interface NutritionRow {
   energyKcal: number | null;
   fatG: number | null;
   saturatedFatG: number | null;
@@ -45,7 +50,9 @@ interface VariantRow {
   weightGrams: number | null;
   regulatoryFollowsDefault: boolean;
   pricingFollowsDefault: boolean;
-  nutrition: NutritionRow | null;
+  nutritionFollowsDefault: boolean;
+  allergenSheet: AllergensRow | null;
+  nutritionValues: NutritionRow | null;
 }
 
 interface ProductRow {
@@ -71,7 +78,13 @@ interface ProductRow {
  * présente, zéro cellule) de « hérite de sa famille » (pas de parente).
  */
 const PRODUCT_INCLUDE = {
-  variants: { orderBy: { position: "asc" }, include: { nutrition: true } },
+  // Les DEUX tables de la fiche réglementaire depuis le 2026-09-22, et plus
+  // `nutrition_declaration`, qui n'est plus ni lue ni écrite nulle part.
+  // Leur absence est une information : personne ne s'est prononcé.
+  variants: {
+    orderBy: { position: "asc" },
+    include: { allergenSheet: true, nutritionValues: true },
+  },
   contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
   channelOverrideRows: { select: { cells: { select: { pointOfSaleId: true, contextKey: true } } } },
 } as const;
@@ -89,24 +102,52 @@ function toVariant(row: VariantRow): VariantSnapshot {
     weightGrams: row.weightGrams,
     regulatoryFollowsDefault: row.regulatoryFollowsDefault,
     pricingFollowsDefault: row.pricingFollowsDefault,
-    allergens:
-      row.nutrition === null
-        ? null
-        : readStringArrayColumn(row.nutrition.allergens, "nutrition.allergens"),
-    nutrition:
-      row.nutrition === null
-        ? null
-        : {
-            mayContain: readStringArrayColumn(row.nutrition.mayContain, "nutrition.mayContain"),
-            energyKcal: row.nutrition.energyKcal,
-            fatG: row.nutrition.fatG,
-            saturatedFatG: row.nutrition.saturatedFatG,
-            carbsG: row.nutrition.carbsG,
-            sugarsG: row.nutrition.sugarsG,
-            proteinG: row.nutrition.proteinG,
-            saltG: row.nutrition.saltG,
-            glycemicIndex: row.nutrition.glycemicIndex,
-          },
+    nutritionFollowsDefault: row.nutritionFollowsDefault,
+    // 🔴 Pas de ligne = personne n'a déclaré (`null`) ; une ligne, même à
+    // tableau vide, est une AFFIRMATION (« aucun allergène »). C'est tout
+    // l'intérêt d'une table séparée : le tri-état est structurel.
+    allergenSheet: toAllergenSheet(row.allergenSheet),
+    nutrition: toNutrition(row.nutritionValues),
+  };
+}
+
+/**
+ * La déclaration d'allergènes, **une ligne ou rien**.
+ *
+ * Les traces sortent d'ici et non de la nutrition : une trace EST un allergène,
+ * elle vient de la même ligne, et l'absence de cette ligne est le seul silence
+ * (lot 7 du plan `plan-separer-allergenes-et-nutrition.md`).
+ */
+function toAllergenSheet(row: AllergensRow | null): VariantSnapshot["allergenSheet"] {
+  if (row === null) {
+    return null;
+  }
+  return {
+    declared: readStringArrayColumn(row.allergens, "variant_allergens.allergens"),
+    mayContain: readStringArrayColumn(row.mayContain, "variant_allergens.may_contain"),
+  };
+}
+
+/**
+ * Les valeurs pour 100 g, **une ligne ou rien**.
+ *
+ * `null` quand personne n'en a saisi aucune — et non un bloc de huit `null`,
+ * qui laisserait croire qu'une fiche existe. Déclarer un allergène ne fabrique
+ * donc plus de tableau nutritionnel vide.
+ */
+function toNutrition(row: NutritionRow | null): VariantSnapshot["nutrition"] {
+  if (row === null) {
+    return null;
+  }
+  return {
+    energyKcal: row.energyKcal,
+    fatG: row.fatG,
+    saturatedFatG: row.saturatedFatG,
+    carbsG: row.carbsG,
+    sugarsG: row.sugarsG,
+    proteinG: row.proteinG,
+    saltG: row.saltG,
+    glycemicIndex: row.glycemicIndex,
   };
 }
 
@@ -195,7 +236,10 @@ export class PrismaProductRepository extends ProductRepository {
    * en erreur métier : ni le handler ni le contrôleur ne connaissent le code `P2002`.
    */
   async add(product: Product): Promise<void> {
-    const snapshot = product.snapshot();
+    // Non résolu, comme `save` — inoffensif ici (la déclinaison par défaut ne
+    // peut pas se suivre elle-même), mais laisser deux règles d'écriture serait
+    // inviter la prochaine à choisir la mauvaise.
+    const snapshot = product.persistenceSnapshot();
     const [defaultVariant] = snapshot.variants;
     if (defaultVariant === undefined) {
       // Inatteignable : l'agrégat refuse de naître sans déclinaison par défaut.
@@ -243,7 +287,11 @@ export class PrismaProductRepository extends ProductRepository {
    * le domaine à la main.
    */
   async save(product: Product): Promise<void> {
-    const snapshot = product.snapshot();
+    // 🔴 L'instantané NON résolu. `snapshot()` substitue le prix et la fiche du
+    // défaut aux déclinaisons alignées : l'écrire ici recopierait le défaut dans
+    // leurs colonnes propres et détruirait ce qu'elles portaient, contre la
+    // promesse de `Variant.follows`. Les lecteurs résolvent à la lecture.
+    const snapshot = product.persistenceSnapshot();
     await this.prisma.$transaction([
       this.prisma.product.update({ where: { id: snapshot.id }, data: toColumns(snapshot) }),
       // Les dérogations se REMPLACENT d'un bloc : un `upsert` par contexte
@@ -288,6 +336,7 @@ export class PrismaProductRepository extends ProductRepository {
             weightGrams: variant.weightGrams,
             regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
             pricingFollowsDefault: variant.pricingFollowsDefault,
+            nutritionFollowsDefault: variant.nutritionFollowsDefault,
           },
           update: {
             name: localizedColumn(variant.name),
@@ -298,6 +347,7 @@ export class PrismaProductRepository extends ProductRepository {
             weightGrams: variant.weightGrams,
             regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
             pricingFollowsDefault: variant.pricingFollowsDefault,
+            nutritionFollowsDefault: variant.nutritionFollowsDefault,
           },
         }),
       ),

@@ -264,17 +264,25 @@ où l'on vient demander ce qu'on avait tenté d'envoyer. Le tri est la charge du
 **lecteur** (`mode = 'live' AND outcome = 'sent'`), pas de l'écrivain, qui
 perdrait l'information au lieu de la qualifier.
 
-### 4.6 Shopify — le même mécanisme, au grain du produit
+### 4.6 ~~Shopify — le même mécanisme, au grain du produit~~
 
-Shopify pousse un **sous-ensemble** (`productIds` au contrôleur). Une empreinte
-globale y ferait refuser un push de trois fiches parce qu'une quatrième a bougé.
-Le grain y est donc le **produit** : `push()` prend une carte
-`productId → empreinte`, et une fiche qui a bougé ressort en `outcome:
-"drifted"` — **elle seule**. Faire tomber tout le lot punirait les autres.
-
-Shopify porte aussi le seul **retour arrière** réel du dépôt :
-`rollback(handle, version)` re-pousse exactement le payload figé d'une version
-antérieure, ce qui crée une nouvelle version — l'historique ne se réécrit jamais.
+> 🔴 **Cette section décrivait un mécanisme disparu, et son retrait laisse un
+> trou qu'il faut nommer** (2026-09-22).
+>
+> Shopify poussait au grain du **produit** — une carte `productId → empreinte`,
+> une fiche qui a bougé ressortant en `drifted` **elle seule** — là où la
+> plateforme professionnelle pousse tout le lot sous une empreinte globale. Cette
+> finesse-là n'existe plus.
+>
+> 🔴 **Et il portait le seul retour arrière réel du dépôt** :
+> `rollback(handle, version)` re-poussait le payload figé d'une version
+> antérieure. **Plus aucune route de retour arrière n'existe** (grep vide sur
+> `apps/lfd-api/src/pim`), et la table qui gardait les payloads rejouables est
+> supprimée.
+>
+> ⚠️ Ce n'est donc pas « une section à retirer » : c'est une **capacité perdue**.
+> Défaire une publication vers la plateforme professionnelle se fait aujourd'hui
+> en republiant, pas en revenant.
 
 ---
 
@@ -769,7 +777,5 @@ serait tenté.
 Docs liés : [`flux-catalogue-et-versionnement.md`](flux-catalogue-et-versionnement.md)
 (la couche PIM et son versionnement),
 [`audit-fiche-produit-2026-09-01.md`](audit-fiche-produit-2026-09-01.md),
-[`publication-reconciliation-3way.md`](shopify-publication/publication-reconciliation-3way.md),
-[`projection-shopify.md`](shopify-publication/projection-shopify.md),
 [`../pricing/architecture-resolution-de-prix.md`](../pricing/architecture-resolution-de-prix.md),
 [`../ops/runbook.md`](../ops/runbook.md).

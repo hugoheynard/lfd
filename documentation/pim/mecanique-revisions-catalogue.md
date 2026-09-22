@@ -92,7 +92,7 @@ sequenceDiagram
     U->>PS: « Publier vers la plateforme »
     PS->>PS: projette, compte les candidats
     PS->>TK: TakeCatalogRevisionCommand(null)
-    note right of TK: label = null, TOUJOURS
+    note right of TK: label = celui de l'appelant
     TK->>DB: pose l'ancre (ou retrouve la même empreinte)
     PS->>PS: envoie, puis inscrit la publication
     end
@@ -104,10 +104,17 @@ sequenceDiagram
     end
 ```
 
-🔴 **`push.service.ts:143` passe `null`.** C'est la seule raison des révisions
-sans nom : personne n'est jamais interrogé. Le seul endroit où l'on peut nommer
-est le bouton « Préparer une publication » de l'écran Révisions — facultatif, et
-qu'un push rend inutile puisqu'il fige tout seul.
+> 🔴 **Ce paragraphe affirmait le contraire jusqu'au 2026-09-22**, et le §8 du
+> même document disait déjà qu'il était périmé — un document qui se contredit
+> d'une section à l'autre trompe le lecteur qui s'arrête à la première.
+
+**Le nom vient de l'APPELANT.** `push.service.ts` prend `label: string | null` en
+paramètre, et `push.controller.ts` le lit dans le corps de la requête. Le `null`
+en dur qui vivait là **a produit** les révisions sans nom existantes ; il ne
+survient plus.
+
+Le bouton « Préparer une publication » de l'écran Révisions reste l'autre chemin
+— facultatif, et qu'un push ne rend plus inutile puisqu'il peut nommer lui-même.
 
 **Compté en développement le 2026-09-10 : 9 révisions, 5 sans nom, dont 3 déjà
 publiées.**
@@ -245,8 +252,9 @@ peut donc être dans une révision et n'être jamais parti :
 | `variant_arretee`                | déclinaison arrêtée                               |
 | `produit_sans_variante_vendable` | aucune déclinaison ne passe les filtres           |
 
-Et **Shopify ne pose aucune ancre** : seul le canal `b2b` en crée. Une
-publication Shopify n'a donc pas de révision à citer.
+Et **un seul canal pose des ancres**, parce qu'il n'en reste qu'un : `b2b`.
+⚠️ Cette phrase opposait deux canaux jusqu'au 2026-09-22 ; sa conclusion n'a pas
+changé, mais elle ne décrit plus un partage — elle décrit une solitude.
 
 Côté plateforme, un envoi ne met rien en vente : il dépose une **livraison** que
 quelqu'un doit relire et accepter, SKU par SKU s'il le faut.

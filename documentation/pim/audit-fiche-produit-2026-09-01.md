@@ -14,21 +14,21 @@
 > corps du document — un audit qu'on réécrit après coup perd la trace de ce qui
 > a été vu, et c'est cette trace qui justifie les tests de non-régression.
 >
-> | §   | Défaut                                         | État                                                                                                                                         |
-> | --- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-> | 1   | « Restaurer » ne restaure rien, journal faussé | ✅ corrigé                                                                                                                                   |
-> | 2   | Multi-déclinaisons impubliable                 | ⏳ ouvert — attend §15.4                                                                                                                     |
-> | 3   | Dérivation allergènes non branchée             | ✅ corrigé                                                                                                                                   |
-> | 4   | « Mettre en vente » ne met rien en vente       | ⏳ ouvert — attend §15.2                                                                                                                     |
-> | 5   | Bouton non désarmé                             | ⏳ ouvert — attend §15.4                                                                                                                     |
-> | 6   | Signature périmée par la publication           | ✅ corrigé                                                                                                                                   |
-> | 7   | Signature jamais périmée en session            | ✅ corrigé                                                                                                                                   |
-> | 8   | Publication n'exige pas la signature           | ⏳ ouvert — attend §15.1                                                                                                                     |
-> | 9   | Statut brut, brouillon en vert                 | ✅ corrigé                                                                                                                                   |
-> | 10  | Deux vocabulaires, deux boutons                | ⏳ ouvert — attend §15.2                                                                                                                     |
-> | 11  | Complétude incomplète                          | ⏳ ouvert                                                                                                                                    |
-> | 12  | Compteur de sections                           | ⏳ ouvert                                                                                                                                    |
-> | 13  | Réutilisation du composant (latent)            | ⚠️ moitié corrigée — l'hydratation asymétrique des allergènes ne peut plus effacer une déclaration ; la lecture du `snapshot` de route reste |
+> | §   | Défaut                                         | État                                                                                                                                            |
+> | --- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+> | 1   | « Restaurer » ne restaure rien, journal faussé | ✅ corrigé                                                                                                                                      |
+> | 2   | Multi-déclinaisons impubliable                 | ✅ **corrigé le 2026-09-20** (`f319dbb14`) — `variant-bar` donne les onglets, `selectVariant` bascule, et la fiche enregistre par `variantId()` |
+> | 3   | Dérivation allergènes non branchée             | ✅ corrigé                                                                                                                                      |
+> | 4   | « Mettre en vente » ne met rien en vente       | ⏳ ouvert — attend §15.2                                                                                                                        |
+> | 5   | Bouton non désarmé                             | ⏳ ouvert — attend §15.4                                                                                                                        |
+> | 6   | Signature périmée par la publication           | ✅ corrigé                                                                                                                                      |
+> | 7   | Signature jamais périmée en session            | ✅ corrigé                                                                                                                                      |
+> | 8   | Publication n'exige pas la signature           | ⏳ ouvert — attend §15.1                                                                                                                        |
+> | 9   | Statut brut, brouillon en vert                 | ✅ corrigé                                                                                                                                      |
+> | 10  | Deux vocabulaires, deux boutons                | ✅ **corrigé** — « Publier au catalogue » / « Dépublier » dans les DEUX écrans, et le doublon « Supprimer » a disparu de la liste               |
+> | 11  | Complétude incomplète                          | ⏳ ouvert                                                                                                                                       |
+> | 12  | Compteur de sections                           | ⏳ ouvert                                                                                                                                       |
+> | 13  | Réutilisation du composant (latent)            | ⚠️ moitié corrigée — l'hydratation asymétrique des allergènes ne peut plus effacer une déclaration ; la lecture du `snapshot` de route reste    |
 >
 > **Ce que la réparation a ajouté au constat**, et qui n'était pas dans l'audit :
 >
@@ -164,8 +164,16 @@ Le backend fait pourtant exactement ce qu'il faut :
 (`ingredient-allergens`, `ingredientAllergens`, `ProductIngredientAllergensView`)
 dans tout `apps/lfd-backoffice-frontend/src`. Le store des ingrédients
 (`product-ingredients.store.ts`) ne contient pas une fois la chaîne `allergen` ;
-la section réglementaire (`regulatory-form.html`, 103 lignes) ne contient pas une
-fois la chaîne `ingredient`.
+la section réglementaire (103 lignes) ne contient pas une fois la chaîne
+`ingredient`.
+
+> ⚠️ Le fichier s'appelait alors « regulatory-form.html ». Il a été scindé le
+> 2026-09-22 en
+> `apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/form-sections/allergens/allergens-form.html`
+> et
+> `apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/form-sections/nutrition/nutrition-form.html`
+> (lot 6 du plan `plan-separer-allergenes-et-nutrition.md`) ; le constat
+> ci-dessus vaut pour l'état du 2026-09-01, il n'a pas été réécrit.
 
 Deux sections voisines sur le même écran, aveugles l'une à l'autre, avec le pont
 déjà construit entre les deux.

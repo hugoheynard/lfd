@@ -118,7 +118,7 @@ describe('PublishRail — la déclaration « publiable »', () => {
     store.nameText.set({ fr: 'Baguette', en: 'Baguette', it: 'Baguette' });
     store.categoryId.set('cat_1');
     store.priceEur.set(2.1);
-    store.declaresNone.set(true);
+    store.declareNoAllergen(true);
     store.editorial.update((fields) => ({
       ...fields,
       descriptionShort: { fr: 'Tradition', en: 'Tradition', it: 'Tradizione' },
@@ -275,8 +275,7 @@ describe('PublishRail — la déclaration « publiable »', () => {
     it('ne bloque PAS sur une simple proposition — la composition ne décide rien', () => {
       const store = setup();
       fill(store);
-      store.declaresNone.set(false);
-      store.selected.set(['gluten']);
+      store.declaration.set({ allergens: ['gluten'], mayContain: [] });
       contradict(store);
 
       const host = render();

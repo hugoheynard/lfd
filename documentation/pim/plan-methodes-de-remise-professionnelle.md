@@ -214,12 +214,20 @@ lui-même — il faut un geste pour basculer.
 
 ## 9. Ce qui a été bâti, et ce qui s'en écarte
 
+> 🔴 **Ce paragraphe décrit un état vieux de quelques heures** : la seconde
+> méthode (`remise_apres_tva_max`) a été retirée **le jour même**, par la
+> migration `20260913140000_retrait_methode_plaquette`. Corrigé le 2026-09-22.
+
 Livré en un commit : le calcul dans `@lfd/pim-contracts` (`proPriceOf`, l'unique
 porte pour les quatre appelants), le value object qui lie la méthode à son taux
 figé, une migration additive avec sa contrainte `CHECK`, la route
 `PUT /pim/accounting-rules/pro-price-method`, la projection qui **reçoit** la
-politique, l'en-tête de révision, et l'écran avec son sélecteur et son
-comparateur.
+politique, et l'en-tête de révision.
+
+⚠️ **Il n'y a plus de sélecteur ni de comparateur** : `PRO_PRICE_METHODS` ne
+contient plus qu'`["ratio_ttc"]` (`packages/pim-contracts/src/accounting-rules.ts`),
+et le code le dit de lui-même — `choose-pro-price-method.ts` porte « Sans objet
+tant qu'il n'y a qu'une méthode ». La route survit à son choix.
 
 Trois écarts au plan, assumés :
 

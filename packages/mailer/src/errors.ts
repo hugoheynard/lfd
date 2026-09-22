@@ -1,7 +1,12 @@
 /**
- * Erreurs du mailer — **sans dépendance au framework** ni à une app. Même forme
- * que `@lfd/shopify-admin` : une `category` et un `code` stable, que l'app mappe
- * vers HTTP dans son filtre d'exceptions (le seul endroit qui connaît HTTP).
+ * Erreurs du mailer — **sans dépendance au framework** ni à une app : une
+ * `category` et un `code` stable, que l'app mappe vers HTTP dans son filtre
+ * d'exceptions (le seul endroit qui connaît HTTP).
+ *
+ * ⚠️ Cette forme était justifiée par sa ressemblance avec `@lfd/shopify-admin`,
+ * paquet supprimé le 2026-09-21. Elle tient toute seule — un paquet qui lèverait
+ * une `HttpException` imposerait Nest à ses consommateurs — et la comparaison a
+ * été retirée le 2026-09-22 plutôt que laissée à pointer dans le vide.
  */
 export type MailerErrorCategory = "business" | "technical";
 

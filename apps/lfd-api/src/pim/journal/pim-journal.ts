@@ -100,6 +100,28 @@ export const PIM_EVENTS = {
    */
   productIdentitySaved: "product.identity_saved",
   productPricingSaved: "product.pricing_saved",
+  /**
+   * **Les deux moitiés de la fiche réglementaire**, une par geste.
+   *
+   * Elles s'écrivaient ensemble sous `productDeclarationSaved` : enregistrer
+   * l'une renvoyait donc l'autre, et en oublier un bout l'effaçait. Deux faits
+   * plutôt qu'un parce que ce sont deux sujets — ce qu'un produit CONTIENT
+   * engage la sécurité du mangeur, ce qu'il VAUT le renseigne — et parce qu'un
+   * fait unique ne dirait pas laquelle des deux a bougé (plan
+   * `plan-separer-allergenes-et-nutrition.md`, D4).
+   *
+   * Préfixés `product.` bien que leur sujet soit la DÉCLINAISON : les deux
+   * gardes exhaustives (`content-facts.ts`, `attribution.ts`) ne voient que ce
+   * préfixe, et un `variant.*` leur échapperait en silence (§6c).
+   */
+  productAllergensSaved: "product.allergens_saved",
+  productNutritionSaved: "product.nutrition_saved",
+  /**
+   * ⚠️ **Retiré le 2026-09-22** — plus aucun code ne l'écrit, et le catalogue
+   * des faits le refuse à l'écriture. Il reste nommé ici parce que les gardes
+   * le citent encore : ses lignes doivent continuer à périmer une signature et
+   * à attribuer leurs changements (§6c du plan).
+   */
   productDeclarationSaved: "product.declaration_saved",
   productEditorialSaved: "product.editorial_saved",
   productMediaSaved: "product.media_saved",

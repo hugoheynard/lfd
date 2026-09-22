@@ -10,7 +10,7 @@ import type { NutritionValues } from '../pim/data/models';
  * sans passer par le clic.
  *
  * Chaque outil vise une **route HTTP**, jamais un store d'écran. C'est la
- * décision centrale du plan (`documentation/pim/plan-outils-webmcp-pim.md`, §3)
+ * décision centrale du plan (`documentation/pim/outils-webmcp-pim.md`, annexe A.1)
  * et elle vient d'une contradiction : branché sur `ProductFormStore`, un outil
  * fabrique des états que l'écran ne peut pas produire — allergènes en doublon,
  * « aucun allergène » avec une liste non vide, nom écrit dans la langue que le
@@ -246,21 +246,26 @@ export function declarePimAgentTools(): readonly string[] {
     },
     execute: (args) =>
       said('Écriture de la nutrition', async () => {
-        // Le backend remplace la déclaration ENTIÈRE : allergènes et nutrition
-        // partent ensemble. On relit donc les allergènes pour les réécrire tels
-        // quels — sans quoi poser une valeur nutritionnelle les effacerait.
+        // La route n'écrit QUE les valeurs : elle REFUSE (400) un corps qui
+        // porte `allergens` ou `mayContain` depuis le 2026-09-22. Il n'y a donc
+        // plus rien à relire pour ne pas l'effacer — c'est tout l'objet de la
+        // scission (plan `plan-separer-allergenes-et-nutrition.md`).
+        //
+        // Ce qui reste d'une lecture, c'est le REPORT : l'outil ne pose que les
+        // valeurs qu'on lui donne, et les autres doivent survivre.
         const detail = await products.getDetail(args.productId);
         if (detail === null) {
           return `Aucune fiche pour l'identifiant ${args.productId}.`;
         }
-        if (detail.allergens === null) {
-          return (
-            "Refusé ici : la fiche réglementaire n'est pas renseignée, et écrire la " +
-            'nutrition la remplacerait par une affirmation « aucun allergène ». ' +
-            "À renseigner à l'écran d'abord."
-          );
+        // 🔴 La fiche de CETTE déclinaison, pas celle du détail : `detail.nutrition`
+        // vient de la déclinaison par DÉFAUT, résolue, et la recopier ici
+        // poserait les valeurs du défaut sur la déclinaison visée. C'est la
+        // classe de bug corrigée pour le tarif (`85eb56359`).
+        const target = detail.product.variants.find((row) => row.id === args.variantId);
+        if (target === undefined) {
+          return `La déclinaison ${args.variantId} n'appartient pas à cette fiche.`;
         }
-        const kept = detail.nutrition;
+        const kept = target.nutrition;
         const nutrition: NutritionValues = {
           energyKcal: args.energyKcal ?? kept.energyKcal,
           fatG: args.fatG ?? kept.fatG,
@@ -271,11 +276,7 @@ export function declarePimAgentTools(): readonly string[] {
           saltG: args.saltG ?? kept.saltG,
           glycemicIndex: args.glycemicIndex ?? kept.glycemicIndex,
         };
-        await products.saveNutrition(args.productId, args.variantId, {
-          allergens: detail.allergens,
-          mayContain: detail.mayContain,
-          nutrition,
-        });
+        await products.saveVariantNutrition(args.productId, args.variantId, nutrition);
         return `Nutrition écrite sur ${args.variantId}.`;
       }),
   });

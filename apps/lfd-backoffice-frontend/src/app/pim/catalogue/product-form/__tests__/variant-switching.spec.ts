@@ -40,6 +40,7 @@ function variant(over: Partial<Variant> = {}): Variant {
     priceCents: 250,
     weightGrams: 100,
     regulatoryFollowsDefault: false,
+    nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
     allergens: ['AM'],
     mayContain: [],
@@ -57,6 +58,7 @@ const SECOND = variant({
   priceCents: null,
   weightGrams: 220,
   regulatoryFollowsDefault: true,
+  nutritionFollowsDefault: true,
 });
 
 class FakeApi {
@@ -105,8 +107,12 @@ class FakeApi {
     this.calls.push({ name: 'alignVariant', args });
     return Promise.resolve();
   }
-  saveNutrition(...args: unknown[]) {
-    this.calls.push({ name: 'saveNutrition', args });
+  saveVariantAllergens(...args: unknown[]) {
+    this.calls.push({ name: 'saveVariantAllergens', args });
+    return Promise.resolve();
+  }
+  saveVariantNutrition(...args: unknown[]) {
+    this.calls.push({ name: 'saveVariantNutrition', args });
     return Promise.resolve();
   }
   savePricing(...args: unknown[]) {
@@ -208,7 +214,8 @@ describe('basculer ne perd rien', () => {
     store.selectVariant('var_2');
 
     expect(store.weightGrams()).toBe(220);
-    expect(store.regulatoryAligned()).toBe(true);
+    expect(store.allergensAligned()).toBe(true);
+    expect(store.nutritionAligned()).toBe(true);
   });
 
   /**
@@ -222,7 +229,8 @@ describe('basculer ne perd rien', () => {
     store.selectVariant('var_2');
 
     expect(store.isDirty('tarif')).toBe(false);
-    expect(store.isDirty('fiche')).toBe(false);
+    expect(store.isDirty('allergenes')).toBe(false);
+    expect(store.isDirty('nutrition')).toBe(false);
   });
 });
 
@@ -257,17 +265,22 @@ describe('la ligne sous l’en-tête de chaque carte', () => {
       'none',
       'none',
       'none',
+      'none',
     ]);
   });
 
-  it('offre une case au tarif et à la fiche, une mention aux autres', async () => {
+  it('offre une case au tarif et aux DEUX moitiés de la fiche, une mention aux autres', async () => {
     const { store } = await setup();
 
     store.selectVariant('var_2');
 
     const rows = store.alignments();
     expect(rows.get('tarif')).toMatchObject({ kind: 'alignable', aspect: 'pricing' });
-    expect(rows.get('fiche')).toMatchObject({ kind: 'alignable', aspect: 'regulatory' });
+    // 🔴 Deux cases et deux aspects : l'écran envoyait encore `"regulatory"`,
+    // que le serveur n'associe plus à aucune des deux moitiés depuis le
+    // dédoublement du drapeau (D1).
+    expect(rows.get('allergenes')).toMatchObject({ kind: 'alignable', aspect: 'allergens' });
+    expect(rows.get('nutrition')).toMatchObject({ kind: 'alignable', aspect: 'nutrition' });
     expect(rows.get('identite')?.kind).toBe('product');
     expect(rows.get('communication')?.kind).toBe('product');
     expect(rows.get('visuels')?.kind).toBe('product');
@@ -278,12 +291,12 @@ describe('la ligne sous l’en-tête de chaque carte', () => {
     store.selectVariant('var_2');
     // On part d'un état où les deux DIFFÈRENT : sinon « l'autre n'a pas bougé »
     // se vérifierait tout seul, et le cas ne prouverait rien.
-    store.setAlignment('fiche', false);
+    store.setAlignment('allergenes', false);
 
     store.setAlignment('tarif', true);
 
     expect(store.pricingAligned()).toBe(true);
-    expect(store.regulatoryAligned()).toBe(false);
+    expect(store.allergensAligned()).toBe(false);
   });
 });
 
@@ -320,26 +333,26 @@ describe('la case « aligner sur le défaut »', () => {
     const { store, api } = await setup();
     store.selectVariant('var_2');
 
-    await store.saveOne('fiche');
+    await store.saveOne('allergenes');
 
     expect(api.calls.map((call) => call.name)).toContain('alignVariant');
-    expect(api.calls.map((call) => call.name)).not.toContain('saveNutrition');
+    expect(api.calls.map((call) => call.name)).not.toContain('saveVariantAllergens');
   });
 
   it('déclare pour de bon dès qu’on la décoche', async () => {
     const { store, api } = await setup();
     store.selectVariant('var_2');
-    store.regulatoryAligned.set(false);
+    store.allergensAligned.set(false);
 
-    await store.saveOne('fiche');
+    await store.saveOne('allergenes');
 
     expect(api.calls.filter((call) => call.name === 'alignVariant')[0]?.args).toEqual([
       'prd_1',
       'var_2',
-      'regulatory',
+      'allergens',
       false,
     ]);
-    expect(api.calls.map((call) => call.name)).toContain('saveNutrition');
+    expect(api.calls.map((call) => call.name)).toContain('saveVariantAllergens');
   });
 
   /** Cocher est une modification : sinon la case bascule et rien ne s'enregistre. */
@@ -347,8 +360,32 @@ describe('la case « aligner sur le défaut »', () => {
     const { store } = await setup();
     store.selectVariant('var_2');
 
-    store.regulatoryAligned.set(false);
+    store.allergensAligned.set(false);
 
-    expect(store.isDirty('fiche')).toBe(true);
+    expect(store.isDirty('allergenes')).toBe(true);
+  });
+
+  /**
+   * 🔴 Les deux moitiés ne partagent plus leur drapeau : aligner la nutrition
+   * envoie `"nutrition"`, et la section allergènes ne bouge pas. Une seule
+   * valeur pour les deux ferait retomber le bug que D1 supprime — saisir un
+   * tableau propre obligerait à retaper les allergènes du défaut.
+   */
+  it('envoie l’aspect « nutrition » pour l’autre moitié, sans toucher aux allergènes', async () => {
+    const { store, api } = await setup();
+    store.selectVariant('var_2');
+    store.nutritionAligned.set(false);
+
+    await store.saveOne('nutrition');
+
+    expect(api.calls.filter((call) => call.name === 'alignVariant')[0]?.args).toEqual([
+      'prd_1',
+      'var_2',
+      'nutrition',
+      false,
+    ]);
+    expect(api.calls.map((call) => call.name)).toContain('saveVariantNutrition');
+    expect(api.calls.map((call) => call.name)).not.toContain('saveVariantAllergens');
+    expect(store.allergensAligned()).toBe(true);
   });
 });

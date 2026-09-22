@@ -10,16 +10,16 @@
 
 Un mot = une chose. Ces termes sont les seuls autorisés, dans le code comme dans les docs.
 
-| Terme                   | Anglais (code)         | Définition                                                                             | À ne PAS dire                |
-| ----------------------- | ---------------------- | -------------------------------------------------------------------------------------- | ---------------------------- |
-| **Produit**             | `Product`              | Ce que la boulangerie _conçoit_ — une recette commercialisée. **Pas vendable en soi.** | article, item, référence     |
-| **Déclinaison**         | `ProductVariant`       | L'**unité réellement vendue**. Porte prix, dispo, code caisse.                         | variante produit, SKU        |
-| **Référence**           | `sku`                  | Chaîne lisible par un humain qui désigne une déclinaison ou un produit                 | code, ref, EAN               |
-| **Famille**             | `Category`             | Classement **structurel**, arbre à parent unique. Un produit a **une** famille.        | catégorie, rayon, collection |
-| **Collection**          | `Collection`           | Regroupement **libre** et n:n (« Noël », « Signature »). Marketing.                    | catégorie, tag               |
-| **Fiche réglementaire** | `NutritionDeclaration` | Allergènes + valeurs nutritionnelles d'une **déclinaison**                             | nutrition, INCO              |
-| **Canal**               | `Channel`              | Un débouché : `pos_helios`, `shopify`, `b2b`                                           | plateforme, intégration      |
-| **Publication**         | —                      | Le fait de rendre un produit visible **sur un canal**                                  | mise en ligne, push          |
+| Terme                   | Anglais (code)         | Définition                                                                                             | À ne PAS dire                |
+| ----------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------- |
+| **Produit**             | `Product`              | Ce que la boulangerie _conçoit_ — une recette commercialisée. **Pas vendable en soi.**                 | article, item, référence     |
+| **Déclinaison**         | `ProductVariant`       | L'**unité réellement vendue**. Porte prix, dispo, code caisse.                                         | variante produit, SKU        |
+| **Référence**           | `sku`                  | Chaîne lisible par un humain qui désigne une déclinaison ou un produit                                 | code, ref, EAN               |
+| **Famille**             | `Category`             | Classement **structurel**, arbre à parent unique. Un produit a **une** famille.                        | catégorie, rayon, collection |
+| **Collection**          | `Collection`           | Regroupement **libre** et n:n (« Noël », « Signature »). Marketing.                                    | catégorie, tag               |
+| **Fiche réglementaire** | `NutritionDeclaration` | Allergènes + valeurs nutritionnelles d'une **déclinaison**                                             | nutrition, INCO              |
+| **Canal**               | `Channel`              | Un débouché. Il n'en reste qu'**un** : `b2b` (Shopify sorti le 2026-09-21, la caisse PI le 2026-09-22) | plateforme, intégration      |
+| **Publication**         | —                      | Le fait de rendre un produit visible **sur un canal**                                                  | mise en ligne, push          |
 
 > **Règle** : « produit » ne désigne **jamais** ce qu'un client achète. Un client achète une
 > **déclinaison**. Ce glissement de vocabulaire est la première cause de modèle bancal en PIM.

@@ -24,7 +24,8 @@ import { ReorderCategoriesHandler } from "./category/application/reorder-categor
 import { RenameCategoryHandler } from "./category/application/rename-category.js";
 import { SetCategoryChannelsHandler } from "./category/application/set-category-channels.js";
 import { SetCategoryVatHandler } from "./category/application/set-category-vat.js";
-import { DeclareProductNutritionHandler } from "./product/application/declare-product-nutrition.js";
+import { SaveVariantAllergensHandler } from "./product/application/save-variant-allergens.js";
+import { SaveVariantNutritionHandler } from "./product/application/save-variant-nutrition.js";
 import { GetProductDetailHandler } from "./product/application/get-product-detail.js";
 import { ListProductsHandler } from "./product/application/list-products.js";
 import { DeclareProductReadyHandler } from "./product/application/declare-product-ready.js";
@@ -62,7 +63,8 @@ import { EditorialReader } from "./product/domain/ports/editorial-reader.js";
 import { ReadinessRepository } from "./product/domain/ports/readiness.repository.js";
 import { EditorialRepository } from "./product/domain/ports/editorial.repository.js";
 import { MediaLibrary } from "./product/domain/ports/media-library.js";
-import { NutritionRepository } from "./product/domain/ports/nutrition.repository.js";
+import { NutritionValuesRepository } from "./product/domain/ports/nutrition-values.repository.js";
+import { VariantAllergensRepository } from "./product/domain/ports/variant-allergens.repository.js";
 import { ProductRepository } from "./product/domain/ports/product.repository.js";
 import { CategoryController } from "./category/http/category.controller.js";
 import { MediaController } from "./product/http/media.controller.js";
@@ -77,7 +79,8 @@ import { PrismaEditorialReader } from "./product/infrastructure/prisma-editorial
 import { PrismaReadinessRepository } from "./product/infrastructure/prisma-readiness.repository.js";
 import { PrismaEditorialRepository } from "./product/infrastructure/prisma-editorial.repository.js";
 import { PrismaMediaLibrary } from "./product/infrastructure/prisma-media-library.js";
-import { PrismaNutritionRepository } from "./product/infrastructure/prisma-nutrition.repository.js";
+import { PrismaNutritionValuesRepository } from "./product/infrastructure/prisma-nutrition-values.repository.js";
+import { PrismaVariantAllergensRepository } from "./product/infrastructure/prisma-variant-allergens.repository.js";
 import { PrismaProductRepository } from "./product/infrastructure/prisma-product.repository.js";
 import { GetProductHistoryHandler } from "./history/application/get-product-history.js";
 import { ProductLineageReader } from "./history/domain/ports/product-lineage.reader.js";
@@ -142,7 +145,8 @@ import {
     UploadProductImageHandler,
     SweepOrphanMediaHandler,
     UpdateProductEditorialHandler,
-    DeclareProductNutritionHandler,
+    SaveVariantAllergensHandler,
+    SaveVariantNutritionHandler,
     ArchiveProductHandler,
     RestoreProductHandler,
     ListProductsHandler,
@@ -165,7 +169,8 @@ import {
     { provide: ProductRepository, useClass: PrismaProductRepository },
     { provide: SKU_AVAILABILITY, useClass: PrismaSkuAvailability },
     { provide: CatalogueReader, useClass: PrismaCatalogueReader },
-    { provide: NutritionRepository, useClass: PrismaNutritionRepository },
+    { provide: VariantAllergensRepository, useClass: PrismaVariantAllergensRepository },
+    { provide: NutritionValuesRepository, useClass: PrismaNutritionValuesRepository },
     { provide: EditorialRepository, useClass: PrismaEditorialRepository },
     { provide: EditorialReader, useClass: PrismaEditorialReader },
     { provide: CatalogRevisionRepository, useClass: PrismaCatalogRevisionRepository },

@@ -31,9 +31,12 @@ erDiagram
         json allergens
         json may_contain
         number energy_kcal
-        number carbs_g
         number fat_g
+        number saturated_fat_g
+        number carbs_g
+        number sugars_g
         number protein_g
+        number salt_g
         number glycemic_index
     }
 ```
@@ -49,16 +52,29 @@ Deux choix structurels tiennent dans ce diagramme :
 
 ## Entité : `NutritionDeclaration`
 
-| Champ            | Type                       |     Requis     | Rôle                                                                         |
-| ---------------- | -------------------------- | :------------: | ---------------------------------------------------------------------------- |
-| `variant_id`     | UUID → ProductVariant      | ✅ **PK + FK** | La déclinaison décrite                                                       |
-| `allergens`      | `AllergenCode[]` (**GS1**) |       ✅       | Allergènes présents. `[]` = **déclaré « aucun »** — une affirmation positive |
-| `may_contain`    | `AllergenCode[]` (**GS1**) |   optionnel    | Traces — « peut contenir »                                                   |
-| `energy_kcal`    | number?                    |   optionnel    | **Calories** (pour 100 g)                                                    |
-| `carbs_g`        | number?                    |   optionnel    | **Glucides** (g / 100 g)                                                     |
-| `fat_g`          | number?                    |   optionnel    | **Lipides** (g / 100 g)                                                      |
-| `protein_g`      | number?                    |   optionnel    | **Protéines** (g / 100 g)                                                    |
-| `glycemic_index` | number?                    |   optionnel    | **Indice glycémique** (0–100+)                                               |
+| Champ             | Type                       |     Requis     | Rôle                                                                         |
+| ----------------- | -------------------------- | :------------: | ---------------------------------------------------------------------------- |
+| `variant_id`      | UUID → ProductVariant      | ✅ **PK + FK** | La déclinaison décrite                                                       |
+| `allergens`       | `AllergenCode[]` (**GS1**) |       ✅       | Allergènes présents. `[]` = **déclaré « aucun »** — une affirmation positive |
+| `may_contain`     | `AllergenCode[]` (**GS1**) |   optionnel    | Traces — « peut contenir »                                                   |
+| `energy_kcal`     | number?                    |   optionnel    | **Énergie** (pour 100 g)                                                     |
+| `fat_g`           | number?                    |   optionnel    | **Lipides** (g / 100 g)                                                      |
+| `saturated_fat_g` | number?                    |   optionnel    | **dont acides gras saturés** (g / 100 g)                                     |
+| `carbs_g`         | number?                    |   optionnel    | **Glucides** (g / 100 g)                                                     |
+| `sugars_g`        | number?                    |   optionnel    | **dont sucres** (g / 100 g)                                                  |
+| `protein_g`       | number?                    |   optionnel    | **Protéines** (g / 100 g)                                                    |
+| `salt_g`          | number?                    |   optionnel    | **Sel** (g / 100 g)                                                          |
+| `glycemic_index`  | number?                    |   optionnel    | **Indice glycémique** (0–100+) — **hors** annexe XV                          |
+
+⚠️ **L'ordre de ce tableau est l'ordre légal de l'annexe XV**, et le schéma le
+respecte déjà. Ce n'est pas une préférence de lecture : la mention doit être
+présentée dans cet ordre.
+
+> 🔴 **Ce tableau et le diagramme ci-dessus ont omis `saturated_fat_g`, `sugars_g`
+> et `salt_g` jusqu'au 2026-09-22.** Les trois existent en base depuis la
+> migration `20260825140000_declaration_nutritionnelle_inco` (2026-08-25), et ce
+> sont des mentions **obligatoires**. Un mapper ou une fixture écrits d'après ce
+> document en oubliait trois.
 
 **Base de référence** : valeurs **pour 100 g** (standard INCO). Une base « par portion » pourra
 s'ajouter plus tard sans casser celle-ci.
@@ -91,8 +107,11 @@ référentiel devient administrable : voir le doc dédié.
 
 ## Questions ouvertes
 
-1. **Fiche complète INCO** : ajoute-t-on les champs légaux (énergie en **kJ**, **acides gras
-   saturés**, **sucres**, **sel/sodium**, **fibres**) ? Volontairement **lean** aujourd'hui.
+1. ~~**Fiche complète INCO**~~ — **tranchée et bâtie le 2026-08-25**
+   (`20260825140000_declaration_nutritionnelle_inco`) : `saturated_fat_g`,
+   `sugars_g` et `salt_g` sont en base. Restent **hors** modèle, et c'est
+   toujours une question : l'énergie en **kJ** (l'annexe XV la veut à côté des
+   kcal) et les **fibres** (facultatives).
 2. **`ingredients_text`** (liste d'ingrédients réglementaire) : légalement du réglementaire → sa
    place est **ici**, pas dans l'éditorial. À ajouter au moment où on saura s'il est obligatoire
    pour de la vente non préemballée.

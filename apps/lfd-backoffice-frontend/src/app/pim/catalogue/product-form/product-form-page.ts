@@ -35,7 +35,8 @@ import { IntegrationsForm } from './form-sections/integrations/integrations-form
 import { PricingForm } from './form-sections/pricing/pricing-form';
 import { OrderLimitForm } from './form-sections/order-limit/order-limit-form';
 import { IngredientsForm } from './form-sections/ingredients/ingredients-form';
-import { RegulatoryForm } from './form-sections/regulatory/regulatory-form';
+import { AllergensForm } from './form-sections/allergens/allergens-form';
+import { NutritionForm } from './form-sections/nutrition/nutrition-form';
 import { VisualsForm } from './form-sections/visuals/visuals-form';
 import type { HasPendingChanges } from './pending-changes.guard';
 import { ProductFormStore, type FormSection } from './product-form-store';
@@ -100,7 +101,8 @@ interface PageSection {
     IdentityForm,
     PricingForm,
     OrderLimitForm,
-    RegulatoryForm,
+    AllergensForm,
+    NutritionForm,
     IngredientsForm,
     CommunicationForm,
     VisualsForm,
@@ -198,10 +200,25 @@ export class ProductFormPage implements HasPendingChanges {
       description: 'Prix public TTC, canaux de vente et taux — hérités, ou redéfinis ici.',
     },
     {
-      key: 'fiche',
-      label: 'Fiche réglementaire',
+      key: 'allergenes',
+      label: 'Allergènes',
+      // Ce que la loi exige, et la seule des deux moitiés qui bloque la
+      // publication (D2). Les traces sont ici parce qu'une trace est un
+      // allergène, déclarée à un autre titre.
       description:
-        'Allergènes obligatoires avant publication, déclaration nutritionnelle et poids net.',
+        'Obligatoires avant publication, traces comprises. « Aucun allergène » est une affirmation, pas un champ vide.',
+    },
+    {
+      key: 'nutrition',
+      label: 'Valeurs nutritionnelles',
+      // 🔴 D2, confirmée sur le texte consolidé du règlement (UE) 1169/2011 :
+      // la déclaration nutritionnelle est exemptée pour ce qu'on vend — art. 44
+      // §1 (frais non préemballé en boutique) et annexe V pt 19 (confiseries de
+      // notre fabrication vendues en détail local). Les allergènes, eux, ne le
+      // sont par aucune des deux. L'écran le DIT : laisser croire la nutrition
+      // obligatoire ferait bloquer des fiches sur une exigence qui n'existe pas.
+      description:
+        'Facultatives pour publier : le règlement en exempte ce que nous vendons. Elles s’enregistrent à part des allergènes.',
     },
     {
       key: 'communication',

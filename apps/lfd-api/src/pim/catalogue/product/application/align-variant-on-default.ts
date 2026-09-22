@@ -2,7 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
-import type { VariantAspect } from "../domain/entities/variant.js";
+import { followsDefaultIn, type VariantAspect } from "../domain/entities/variant.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
 
@@ -57,10 +57,12 @@ export class AlignVariantOnDefaultHandler implements ICommandHandler<
     // Rien n'a changé : ne rien journaliser. Un fait « alignée » sur une
     // déclinaison qui l'était déjà est un fait qui n'a pas eu lieu, et c'est
     // l'historique qu'on vient relire le jour où une étiquette est fausse.
-    const wasAligned =
-      command.aspect === "regulatory"
-        ? before?.regulatoryFollowsDefault
-        : before?.pricingFollowsDefault;
+    // Quel drapeau la section vise est une question du DOMAINE — `"regulatory"`
+    // et `"allergens"` désignent le même (`ASPECT_FLAG`). Le trancher ici par
+    // un ternaire aurait fait une seconde correspondance à tenir d'accord avec
+    // la première, et c'est exactement ce qui se retire d'un seul endroit le
+    // jour où `"regulatory"` cessera d'être acceptée en écriture.
+    const wasAligned = before === undefined ? undefined : followsDefaultIn(before, command.aspect);
     if (wasAligned === command.aligned) {
       return;
     }

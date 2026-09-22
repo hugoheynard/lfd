@@ -14,7 +14,8 @@ import { CategoryRepository } from "../../../category/domain/ports/category.repo
 import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { EditorialRepository } from "../../domain/ports/editorial.repository.js";
-import { NutritionRepository } from "../../domain/ports/nutrition.repository.js";
+import { NutritionValuesRepository } from "../../domain/ports/nutrition-values.repository.js";
+import { VariantAllergensRepository } from "../../domain/ports/variant-allergens.repository.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
 import type { SkuAvailability } from "../../domain/services/sku-generator.js";
 import { Sku } from "../../domain/value-objects/sku.value-object.js";
@@ -36,7 +37,12 @@ class FakeProductRepository extends ProductRepository {
     return Promise.resolve([]);
   }
   add(product: Product): Promise<void> {
-    this.written.push(product.snapshot());
+    // L'instantané NON résolu, exactement comme l'adaptateur Prisma. `snapshot()`
+    // résout l'héritage : l'écrire ici recopierait la fiche et le tarif du défaut
+    // dans les colonnes PROPRES d'une déclinaison alignée — la faute 0b/0d du plan
+    // `plan-separer-allergenes-et-nutrition.md`, rejouée par le double, qui rendait
+    // vert ce que la vraie base refuse de faire (constaté le 2026-09-22).
+    this.written.push(product.persistenceSnapshot());
     return Promise.resolve();
   }
   save(product: Product): Promise<void> {
@@ -98,8 +104,14 @@ class FakeCategoryRepository extends CategoryRepository {
   }
 }
 
-class SilentNutrition extends NutritionRepository {
-  declare(): Promise<void> {
+class SilentAllergens extends VariantAllergensRepository {
+  save(): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
+class SilentNutrition extends NutritionValuesRepository {
+  save(): Promise<void> {
     return Promise.resolve();
   }
 }
@@ -154,6 +166,7 @@ function setup(taken: readonly string[] = []): {
     handler: new CreateProductHandler(
       products,
       new FakeCategoryRepository(),
+      new SilentAllergens(),
       new SilentNutrition(),
       reference(),
       new SilentEditorial(),

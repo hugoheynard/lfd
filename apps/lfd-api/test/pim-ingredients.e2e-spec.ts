@@ -440,7 +440,7 @@ describe("ce que la composition d'une fiche mentionne", () => {
       .send({ keys: [praline] })
       .expect(200);
     await staff()
-      .put(`${PRODUCTS}/${productId}/variants/${variantId}/nutrition`)
+      .put(`${PRODUCTS}/${productId}/variants/${variantId}/allergens`)
       .send({ allergens: ["UW"] })
       .expect(200);
 
@@ -464,7 +464,7 @@ describe("ce que la composition d'une fiche mentionne", () => {
       .send({ keys: [praline] })
       .expect(200);
     await staff()
-      .put(`${PRODUCTS}/${productId}/variants/${variantId}/nutrition`)
+      .put(`${PRODUCTS}/${productId}/variants/${variantId}/allergens`)
       .send({ allergens: ["SH", "BWD"] })
       .expect(200);
 

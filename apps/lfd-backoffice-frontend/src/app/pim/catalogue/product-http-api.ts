@@ -146,9 +146,14 @@ function toVariant(variant: VariantView): Variant {
     priceCents: variant.priceCents,
     weightGrams: variant.weightGrams,
     regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
+    nutritionFollowsDefault: variant.nutritionFollowsDefault,
     pricingFollowsDefault: variant.pricingFollowsDefault,
-    allergens: variant.allergens === null ? null : [...variant.allergens],
-    mayContain: [...(variant.nutrition?.mayContain ?? [])],
+    // Les deux moitiés de la déclaration viennent d'UNE ligne : `allergenSheet`
+    // absent = personne ne s'est prononcé, et il n'y a alors pas non plus de
+    // traces. Les lire séparément rouvrirait la divergence que la séparation
+    // des allergènes et de la nutrition a fermée (2026-09-22).
+    allergens: variant.allergenSheet === null ? null : [...variant.allergenSheet.declared],
+    mayContain: [...(variant.allergenSheet?.mayContain ?? [])],
     nutrition: toNutritionValues(variant.nutrition),
   };
 }
@@ -193,6 +198,8 @@ export interface CreateProductInput {
   readonly kind: ProductKind;
   readonly categoryId: string;
   readonly allergens?: readonly string[] | undefined;
+  /** Les traces « peut contenir » — des allergènes, déclarés à un autre titre. */
+  readonly mayContain?: readonly string[] | undefined;
   readonly descriptionFr?: string | undefined;
   readonly priceEur?: number | undefined;
   readonly weightGrams?: number | undefined;
@@ -232,8 +239,8 @@ export class ProductHttpApi {
     return {
       product: backendToProduct(row, row.editorial),
       editorial: toEditorialFields(row.editorial),
-      allergens: base?.allergens ?? null,
-      mayContain: base?.nutrition?.mayContain ?? [],
+      allergens: base?.allergenSheet?.declared ?? null,
+      mayContain: base?.allergenSheet?.mayContain ?? [],
       nutrition: toNutritionValues(base?.nutrition ?? null),
       media: row.media.map((item) => ({
         role: item.role,
@@ -276,6 +283,9 @@ export class ProductHttpApi {
         kind: input.kind,
         categoryId: input.categoryId,
         ...(input.allergens === undefined ? {} : { allergens: input.allergens }),
+        ...(input.mayContain === undefined || input.mayContain.length === 0
+          ? {}
+          : { mayContain: input.mayContain }),
         ...(input.descriptionFr === undefined || input.descriptionFr === ''
           ? {}
           : { editorial: { descriptionShort: { fr: input.descriptionFr } } }),
@@ -394,32 +404,45 @@ export class ProductHttpApi {
   }
 
   /**
-   * Section Fiche réglementaire — allergènes + valeurs nutritionnelles en une
-   * requête (le backend remplace la déclaration entière ; les deux vont ensemble).
+   * Section **Allergènes** — les codes présents et les traces.
+   *
+   * Une route à elle, depuis le 2026-09-22 : la précédente remplaçait la fiche
+   * ENTIÈRE, donc enregistrer une calorie effaçait ce qu'on ne renvoyait pas
+   * (plan `plan-separer-allergenes-et-nutrition.md`, §1).
+   *
+   * `mayContain` part TOUJOURS, vide compris : le serveur lit une absence comme
+   * un effacement, et une fiche sans trace est un fait, pas une omission.
    */
-  saveNutrition(
+  saveVariantAllergens(
     id: string,
     variantId: string,
-    input: {
-      allergens: readonly string[];
-      mayContain?: readonly string[];
-      nutrition?: NutritionValues;
-    },
+    input: { allergens: readonly string[]; mayContain: readonly string[] },
   ): Promise<void> {
-    // Le backend n'accepte que des nombres (optionnels) : on omet les `null`.
+    return this.put(`products/${id}/variants/${variantId}/allergens`, {
+      allergens: input.allergens,
+      mayContain: input.mayContain,
+    });
+  }
+
+  /**
+   * Section **Valeurs nutritionnelles** — les sept valeurs de l'annexe XV et
+   * l'indice glycémique, à plat. Aucun code d'allergène.
+   *
+   * ⚠️ La route **refuse (400)** un corps qui porte `allergens` ou
+   * `mayContain` : sur du réglementaire, un `200` qui n'écrit rien est pire
+   * qu'un refus (§7 du plan). Ne rien y ajouter « au cas où ».
+   *
+   * Les `null` sont omis, pas envoyés : le contrat n'accepte que des nombres,
+   * et « inconnu » n'est pas « zéro ».
+   */
+  saveVariantNutrition(id: string, variantId: string, values: NutritionValues): Promise<void> {
     const nutrition: Record<string, number> = {};
-    if (input.nutrition !== undefined) {
-      for (const [key, value] of Object.entries(input.nutrition)) {
-        if (value !== null) {
-          nutrition[key] = value;
-        }
+    for (const [key, value] of Object.entries(values)) {
+      if (value !== null) {
+        nutrition[key] = value;
       }
     }
-    return this.put(`products/${id}/variants/${variantId}/nutrition`, {
-      allergens: input.allergens,
-      ...(input.mayContain === undefined ? {} : { mayContain: input.mayContain }),
-      ...(Object.keys(nutrition).length === 0 ? {} : { nutrition }),
-    });
+    return this.put(`products/${id}/variants/${variantId}/nutrition`, nutrition);
   }
 
   /** Mise en vente. Le back refuse si une déclinaison active n'a pas de fiche. */

@@ -228,7 +228,7 @@ describe("Déclaration publiable", () => {
       // Invariant 7 : pas de mise en vente sans fiche réglementaire. `[]` est
       // une affirmation — « aucun allergène » — pas une absence de réponse.
       const declared = await staff()
-        .put(`${PRODUCTS}/${id}/variants/${variant?.id ?? ""}/nutrition`)
+        .put(`${PRODUCTS}/${id}/variants/${variant?.id ?? ""}/allergens`)
         .send({ allergens: [] });
       expect(declared.status).toBe(200);
       return id;

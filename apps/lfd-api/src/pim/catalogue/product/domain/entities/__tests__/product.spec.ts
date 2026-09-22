@@ -9,6 +9,7 @@ import {
 } from "../../errors/product-errors.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product, type ProductSnapshot } from "../product.js";
+import type { VariantNutritionSnapshot } from "../variant.js";
 
 const open = (): Product =>
   Product.open({
@@ -32,7 +33,12 @@ const snapshotWith = (variants: ProductSnapshot["variants"]): ProductSnapshot =>
  * l'instantané, seul chemin possible tant qu'`AddVariant` n'existe pas.
  */
 function declared(
-  variants: readonly { allergens: readonly string[] | null; isDiscontinued?: boolean }[],
+  variants: readonly {
+    allergens: readonly string[] | null;
+    /** Les valeurs de la déclinaison — indépendantes des allergènes (D2). */
+    nutrition?: VariantNutritionSnapshot | null;
+    isDiscontinued?: boolean;
+  }[],
 ): Product {
   const [template] = open().snapshot().variants;
   return Product.reconstitute(
@@ -43,7 +49,11 @@ function declared(
         sku: `PATI-TARTE-${String(index + 1)}`,
         isDefault: index === 0,
         isDiscontinued: variant.isDiscontinued ?? false,
-        allergens: variant.allergens,
+        // Le DSL du test parle encore en codes ; l'instantané, lui, porte la
+        // déclaration entière depuis le lot 7 — traces comprises.
+        allergenSheet:
+          variant.allergens === null ? null : { declared: variant.allergens, mayContain: [] },
+        nutrition: variant.nutrition ?? null,
       })),
     ),
   );
@@ -188,6 +198,94 @@ describe("l’agrégat Product", () => {
       const product = declared([{ allergens: ["gluten"] }]);
       product.archive();
       expect(() => product.publish()).toThrow(ArchivedProductNotPublishableError);
+    });
+  });
+
+  /**
+   * 🔴 **L'invariant 7 s'écrit sur les ALLERGÈNES seuls** — lot 5 du plan
+   * `plan-separer-allergenes-et-nutrition.md` (D2, D3).
+   *
+   * Ce n'est pas un desserrage. Le règlement (UE) n° 1169/2011 rend les
+   * allergènes obligatoires (art. 9 §1 point c) et exempte la déclaration
+   * nutritionnelle (point l) dans les deux cas de vente de La Folie Coffee : le
+   * frais non préemballé en boutique par l'art. 44 §1, les confiseries par
+   * l'annexe V pt 19. Exiger les deux revenait à exiger ce que le règlement
+   * n'exige pas — et à bloquer en saisie un catalogue entier.
+   *
+   * Les deux cas qui portent tout le lot sont ici, et ils sont symétriques.
+   */
+  describe("invariant 7 : les allergènes seuls, jamais les valeurs", () => {
+    /** Les sept valeurs de l'annexe XV et l'indice, toutes à `null`. */
+    const NO_VALUES = {
+      energyKcal: null,
+      fatG: null,
+      saturatedFatG: null,
+      carbsG: null,
+      sugarsG: null,
+      proteinG: null,
+      saltG: null,
+      glycemicIndex: null,
+    } as const;
+
+    /**
+     * 🔴 Cas 1 — **des allergènes, aucune valeur nutritionnelle : ça se
+     * publie.** C'est le cas NORMAL en boutique, et c'est celui que l'ancienne
+     * règle refusait.
+     */
+    it("publie une déclinaison qui déclare ses allergènes et AUCUNE valeur", () => {
+      const product = declared([{ allergens: ["gluten"], nutrition: null }]);
+
+      product.publish();
+
+      expect(product.status).toBe("published");
+    });
+
+    /** Même chose avec l'affirmation « aucun allergène » : elle suffit seule. */
+    it("publie sur « aucun allergène » sans le moindre tableau nutritionnel", () => {
+      const product = declared([{ allergens: [], nutrition: null }]);
+
+      product.publish();
+
+      expect(product.status).toBe("published");
+    });
+
+    /**
+     * 🔴 Cas 2 — **des valeurs, aucune déclaration d'allergène : refusé**, et
+     * c'est l'état nommé de D3. Un tableau nutritionnel se copie d'un document ;
+     * la déclaration d'allergène demande de regarder la recette. Laisser publier
+     * ce cas-là mettrait en vente un article non étiqueté qui a pourtant l'air
+     * renseigné.
+     */
+    it("refuse des valeurs nutritionnelles sans déclaration d’allergène", () => {
+      const product = declared([
+        { allergens: null, nutrition: { ...NO_VALUES, energyKcal: 410, saltG: 2 } },
+      ]);
+
+      expect(() => product.publish()).toThrow(ProductNotPublishableError);
+      expect(product.status).toBe("draft");
+    });
+
+    /** Et le refus NOMME la référence : le back-office lit ce message seul. */
+    it("nomme la référence en cause et le geste de sortie", () => {
+      const product = declared([{ allergens: null, nutrition: { ...NO_VALUES, energyKcal: 410 } }]);
+
+      expect(() => product.publish()).toThrow("PATI-TARTE-1");
+      expect(() => product.publish()).toThrow(/Allergènes/);
+    });
+
+    /**
+     * Une seule déclinaison muette suffit à refuser, et c'est elle qu'on nomme
+     * — pas celle qui est en règle. Un produit à six déclinaisons se corrige
+     * autrement.
+     */
+    it("ne nomme que les déclinaisons réellement muettes", () => {
+      const product = declared([
+        { allergens: ["gluten"] },
+        { allergens: null, nutrition: { ...NO_VALUES, saltG: 2 } },
+      ]);
+
+      expect(() => product.publish()).toThrow("PATI-TARTE-2");
+      expect(() => product.publish()).not.toThrow(/PATI-TARTE-1/);
     });
   });
 
