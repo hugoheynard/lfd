@@ -11,13 +11,17 @@
     <!-- La marque n'apparaît ici qu'au-delà du pli : en deçà, c'est la barre du
          shell qui la porte, et la répéter ferait doublon. -->
     <div class="brand-row">
-      <span class="mark" aria-hidden="true">
+      <!-- 🔴 La marque ramène à `/bienvenue` (Hugo, 2026-09-22). Le logo est
+           cliquable mais muet — `aria-hidden` et hors tabulation : le nom juste
+           à côté porte le même lien et s'annonce, deux liens voisins vers la
+           même adresse se liraient deux fois. -->
+      <a class="mark" routerLink="/bienvenue" aria-hidden="true" tabindex="-1">
         <img src="brand/lfc-mark.png" alt="" />
-      </span>
-      <span class="brand">
+      </a>
+      <a class="brand" routerLink="/bienvenue">
         <span class="brand-name">La Folie Coffee</span>
         <span class="brand-kicker">{{ t().chrome.deskKicker }}</span>
-      </span>
+      </a>
       <app-lang-switch size="md" />
     </div>
 

@@ -30,9 +30,21 @@
           <span aria-hidden="true"></span>
         </button>
       }
-      <span class="mark" [class.wide-only]="!!chrome.menu()" aria-hidden="true">
+      <!-- 🔴 CLIQUABLE, et muet pour les lecteurs d'écran (Hugo, 2026-09-22 :
+           « tout le La Folie Coffee avec le logo fait revenir à bienvenue »).
+           La marque juste à côté porte le MÊME lien et, elle, s'annonce : deux
+           liens voisins vers la même adresse se liraient deux fois. D'où
+           `aria-hidden` conservé et `tabindex="-1"` — un lien caché mais
+           atteignable au clavier serait un piège. -->
+      <a
+        class="mark"
+        [class.wide-only]="!!chrome.menu()"
+        routerLink="/bienvenue"
+        aria-hidden="true"
+        tabindex="-1"
+      >
         <img src="brand/lfc-mark.png" alt="" />
-      </span>
+      </a>
     }
     <!-- 🔴 LA LIGNE SOUS LA MARQUE DIT LA MAISON, PAS L'ÉCRAN (Hugo,
          2026-09-20 : « sous la folie coffee on devrait marquer Boulangerie ·
@@ -49,10 +61,10 @@
          écrans continuent de l'alimenter pour personne. Signalé à Hugo le
          2026-09-20 ; le retrait des onze appels est un geste à part, pas un
          dommage collatéral de celui-ci. -->
-    <span class="brand">
+    <a class="brand" routerLink="/bienvenue">
       <span class="brand-name">La Folie Coffee</span>
       <span class="brand-kicker">{{ t().chrome.brandLine }}</span>
-    </span>
+    </a>
     <!-- 🔴 PLUS AUCUNE CONDITION : le sélecteur choisit sa forme sur la seule
          LARGEUR, dans son propre CSS (Hugo, 2026-09-20 : « en desktop le switch
          de langue devrait être complet »).
