@@ -84,6 +84,42 @@ La route nutrition n'a alors **aucun moyen** d'écrire dans l'autre table.
 getter d'agrégat. La v2 revendiquait le premier rang de la hiérarchie pour les
 deux ; seul D6 le mérite.
 
+### D5 a survécu à trois alternatives (2026-09-22)
+
+Hugo : « c'est quoi le plus pur ? » — puis « deux tables go ». Les alternatives
+sont écrites ici pour qu'on ne les rejoue pas.
+
+| Option                                 | Rang | Ce qui cloche                                                                   |
+| -------------------------------------- | ---- | ------------------------------------------------------------------------------- |
+| Règle d'agrégat seule                  | 3    | ne garde que ce qui passe par lui — or l'écriture le CONTOURNE                  |
+| Booléen `allergens_declared` + `CHECK` | 1    | **redondance** : la contrainte est l'aveu que deux choses peuvent se contredire |
+| Colonne `allergens` **nullable**       | 1    | deux façons de dire « personne n'a parlé » : pas de ligne, ou `NULL`            |
+| **Deux tables**                        | 1    | coûteux — recopie, trois déploiements, double écriture                          |
+
+🔴 **L'argument qui tranche** : un booléen encode « quelqu'un a-t-il parlé ? »
+comme une **donnée**, posée à côté de la donnée dont elle parle. L'absence de
+ligne l'encode comme une **structure**. Une donnée peut être fausse ; une
+structure, non.
+
+Et les cycles de vie sont réellement indépendants : les allergènes se déclarent
+quand on connaît la recette, la nutrition quand une analyse revient. Deux tables
+laissent chacune naître seule ; une table les force à partager une naissance.
+
+C'est aussi la règle que `data-model/04-composition-et-canaux.md` énonce déjà :
+une couche canonique est `PK = FK`, présente **seulement quand elle a quelque
+chose à dire**. Deux sujets, deux couches.
+
+⚠️ **Le booléen nu, sans contrainte, était le piège.** Le front porte déjà ce
+motif — `declaresNone` à côté de `selected`, que rien ne tient d'accord : à
+l'enregistrement, le booléen gagne et la liste est **jetée en silence**. On
+n'aurait pas supprimé l'état faux, on l'aurait déplacé.
+
+⚠️ **Ce que la colonne nullable avait pour elle**, et qu'on paie en la refusant :
+80 % du résultat pour 10 % du prix. Le schéma actuel **contredit son domaine** —
+`allergens` est `NOT NULL` là où le domaine dit `string[] | null`. Deux tables
+corrigent ça aussi, mais plus cher. Si le chantier devait être abandonné en
+cours de route, c'est le repli à prendre.
+
 ### D2 appelle une ligne que ce plan ne peut pas écrire
 
 « La nutrition est facultative à la publication » **engage l'étiquette**. Le
