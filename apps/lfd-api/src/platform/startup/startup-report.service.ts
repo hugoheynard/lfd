@@ -107,6 +107,7 @@ export class StartupReport implements OnApplicationBootstrap {
     return {
       hasManagementCredentials: this.config.auth0ManagementCredentials() !== null,
       hasAdminAudience: this.config.auth0AdminAudience() !== null,
+      hasCustomerClientId: this.config.auth0CustomerClientId() !== null,
       hasMailerKey: this.config.mailerConfig().apiKey !== null,
       hasMailerWebhookSecret: this.config.mailerConfig().webhookSecret !== null,
       hasWebPushKeys: this.config.webPushConfig() !== null,

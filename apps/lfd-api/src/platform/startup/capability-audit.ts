@@ -23,6 +23,8 @@
 export interface CapabilitySnapshot {
   readonly hasManagementCredentials: boolean;
   readonly hasAdminAudience: boolean;
+  /** Le `client_id` de la SPA boutique — l'audience d'un id_token de preuve. */
+  readonly hasCustomerClientId: boolean;
   readonly hasMailerKey: boolean;
   readonly hasMailerWebhookSecret: boolean;
   readonly hasWebPushKeys: boolean;
@@ -88,6 +90,18 @@ const CHECKS: readonly Check[] = [
       "aucun jeton staff n'est accepté : tout /admin/* refuse, y compris à un administrateur",
     severity: "blocking",
     present: (s) => s.hasAdminAudience,
+  },
+  {
+    capability: "Rattachement d'une méthode de connexion",
+    setting: "AUTH0_CUSTOMER_CLIENT_ID",
+    // Dégradé, pas bloquant : personne ne perd l'accès à son compte, et aucune
+    // porte d'entrée ne se ferme. Ce qui est éteint, c'est d'AJOUTER Google ou
+    // Facebook à un compte existant — sans ce `client_id`, l'audience d'un
+    // id_token ne se compare à rien, et la vérification refuse (fail-closed).
+    consequence:
+      "personne ne peut ajouter Google ou Facebook à son compte depuis son profil ; se connecter reste possible par la méthode déjà en place",
+    severity: "degraded",
+    present: (s) => s.hasCustomerClientId,
   },
   {
     capability: "Fournisseur d'identité (Auth0 Management)",

@@ -75,6 +75,7 @@ export class AppConfig {
   private readonly portValue: number;
   private readonly impersonation: DevImpersonationConfig | null;
   private readonly adminAudienceValue: string | null;
+  private readonly customerClientIdValue: string | null;
   private readonly bootstrapAdminEmailValue: string;
   private readonly revisionValue: string;
   private readonly adminBypass: boolean;
@@ -102,6 +103,7 @@ export class AppConfig {
     this.portValue = optionalPort("PORT", 3200);
     this.impersonation = optionalDevImpersonation();
     this.adminAudienceValue = optionalString("AUTH0_ADMIN_AUDIENCE");
+    this.customerClientIdValue = optionalString("AUTH0_CUSTOMER_CLIENT_ID");
     this.bootstrapAdminEmailValue = normalizeBootstrapEmail(
       optionalString("BOOTSTRAP_ADMIN_EMAIL") ?? "",
     );
@@ -351,6 +353,25 @@ export class AppConfig {
    */
   auth0AdminAudience(): string | null {
     return this.adminAudienceValue;
+  }
+
+  /**
+   * `client_id` de la **SPA boutique** chez Auth0, ou `null` si non configuré.
+   *
+   * Ce n'est pas un secret : le `client_id` d'une application publique voyage
+   * déjà en clair dans chaque URL `/authorize` et dans le bundle servi au
+   * navigateur. Il est ici parce que l'API en a besoin comme **audience
+   * attendue** d'un id_token émis à cette SPA — sans lui, `aud` ne se compare à
+   * rien.
+   *
+   * **Optionnel, délibérément.** La production tourne aujourd'hui sans cette
+   * variable : la rendre obligatoire ferait échouer le démarrage au premier
+   * déploiement qui embarque ce code, avant qu'elle ait été posée. C'est
+   * `IdTokenVerifier` qui **refuse** la vérification quand elle est `null`
+   * (fail-closed), exactement comme `AdminTokenVerifier` sur l'audience staff.
+   */
+  auth0CustomerClientId(): string | null {
+    return this.customerClientIdValue;
   }
 
   /**

@@ -3,15 +3,31 @@ import { randomBytes } from "node:crypto";
 import { Injectable, Logger } from "@nestjs/common";
 
 import {
+  IdentityLinkRefusedError,
   IdentityProviderUnavailableError,
   IdentitySubjectUnknownError,
+  IdentityUnlinkRefusedError,
 } from "../shared/errors/identity-errors.js";
 import type {
   IdentityToProvision,
   ProvisionedIdentity,
 } from "../shared/identity/provisioned-identity.js";
-import { Auth0ManagementClient, CONFLICT, NOT_FOUND } from "./auth0-management.client.js";
+import {
+  Auth0ManagementClient,
+  BAD_REQUEST,
+  CONFLICT,
+  NOT_FOUND,
+} from "./auth0-management.client.js";
 import { isProviderSubject } from "./identity-diagnosis.js";
+import {
+  connectionsOf,
+  identitiesFromArray,
+  linkedIdentitiesOf,
+  readString,
+  readUserId,
+  usesConnection,
+  type LinkedIdentity,
+} from "./auth0-user-shape.js";
 
 /**
  * Durée de vie du lien de mot de passe : **7 jours**.
@@ -129,6 +145,10 @@ export class Auth0IdentityGateway {
     if (ticket === NOT_FOUND) {
       throw new IdentitySubjectUnknownError(subject);
     }
+    refuseUnexpectedRefusal(
+      ticket,
+      "Le fournisseur d'identité a refusé d'émettre un lien de mot de passe.",
+    );
     const url = readString(ticket, "ticket");
     if (url === null) {
       throw new IdentityProviderUnavailableError(
@@ -156,6 +176,11 @@ export class Auth0IdentityGateway {
     if (patched === NOT_FOUND) {
       throw new IdentitySubjectUnknownError(subject);
     }
+    // Un `400` est désormais une valeur (`BAD_REQUEST`) et non plus une
+    // exception : sans cette ligne, une adresse refusée par le tenant passerait
+    // pour propagée, et la personne se connecterait avec l'ancienne en en
+    // voyant une autre à l'écran.
+    refuseUnexpectedRefusal(patched, "Le fournisseur d'identité a refusé cette adresse.");
   }
 
   /**
@@ -186,6 +211,97 @@ export class Auth0IdentityGateway {
   }
 
   /**
+   * Les **méthodes de connexion** d'un compte, telles qu'Auth0 les tient.
+   *
+   * C'est le prix du rattachement chez le fournisseur : la liste n'est pas chez
+   * nous, donc la lire est un appel réseau sortant. Elle ne doit pas se trouver
+   * sur un chemin d'amorçage.
+   *
+   * Contrairement à `describeEmail`, on publie ici `provider` et `userId` :
+   * détacher les exige, et cette lecture-là porte sur le compte de la personne
+   * qui la demande, pas sur une adresse qu'on sonde.
+   *
+   * @throws {IdentitySubjectUnknownError} le fournisseur ne connaît pas ce sujet.
+   */
+  async listIdentities(subject: string): Promise<readonly LinkedIdentity[]> {
+    if (!isProviderSubject(subject)) {
+      throw new IdentitySubjectUnknownError(subject);
+    }
+    const user = await this.api.call("GET", `/api/v2/users/${encodeURIComponent(subject)}`);
+    if (user === NOT_FOUND) {
+      throw new IdentitySubjectUnknownError(subject);
+    }
+    refuseUnexpectedRefusal(user, "Le fournisseur d'identité a refusé de lire ce compte.");
+    return linkedIdentitiesOf(user);
+  }
+
+  /**
+   * **Absorbe** une identité secondaire dans le compte principal.
+   *
+   * `idToken` est la preuve que la même personne tient les deux sessions : Auth0
+   * en extrait le sujet secondaire lui-même. Aucune adresse n'est lue, ni
+   * comparée, ni recopiée — c'est ce qui rend impossible de s'approprier un
+   * compte en écrivant son adresse quelque part.
+   *
+   * Après absorption, se connecter par la méthode ajoutée produit un jeton dont
+   * le `sub` est celui du **principal** : rien ne bouge chez nous.
+   *
+   * @throws {IdentityLinkRefusedError} le fournisseur refuse (jeton inutilisable
+   *   pour lui, ou identité déjà rattachée ailleurs).
+   * @throws {IdentitySubjectUnknownError} le compte principal lui est inconnu.
+   */
+  async linkIdentity(primarySubject: string, idToken: string): Promise<readonly LinkedIdentity[]> {
+    if (!isProviderSubject(primarySubject)) {
+      throw new IdentitySubjectUnknownError(primarySubject);
+    }
+    const linked = await this.api.call(
+      "POST",
+      `/api/v2/users/${encodeURIComponent(primarySubject)}/identities`,
+      { link_with: idToken },
+    );
+    if (linked === NOT_FOUND) {
+      throw new IdentitySubjectUnknownError(primarySubject);
+    }
+    if (linked === BAD_REQUEST) {
+      throw new IdentityLinkRefusedError();
+    }
+    return identitiesFromArray(linked, primarySubject);
+  }
+
+  /**
+   * Détache une identité secondaire. Rend la liste restante.
+   *
+   * ⚠️ Chez Auth0, détacher ne **supprime** rien : l'identité redevient un
+   * utilisateur autonome. C'est la raison pour laquelle l'appelant doit dire la
+   * conséquence à l'écran plutôt que la deviner.
+   *
+   * @throws {IdentityUnlinkRefusedError} ce n'est pas une identité secondaire
+   *   de ce compte.
+   * @throws {IdentitySubjectUnknownError} le compte principal lui est inconnu.
+   */
+  async unlinkIdentity(
+    primarySubject: string,
+    provider: string,
+    secondaryUserId: string,
+  ): Promise<readonly LinkedIdentity[]> {
+    if (!isProviderSubject(primarySubject)) {
+      throw new IdentitySubjectUnknownError(primarySubject);
+    }
+    const remaining = await this.api.call(
+      "DELETE",
+      `/api/v2/users/${encodeURIComponent(primarySubject)}/identities/` +
+        `${encodeURIComponent(provider)}/${encodeURIComponent(secondaryUserId)}`,
+    );
+    if (remaining === NOT_FOUND) {
+      throw new IdentitySubjectUnknownError(primarySubject);
+    }
+    if (remaining === BAD_REQUEST) {
+      throw new IdentityUnlinkRefusedError();
+    }
+    return identitiesFromArray(remaining, primarySubject);
+  }
+
+  /**
    * Crée l'utilisateur ; rend `null` si l'adresse est **déjà prise** (409).
    *
    * Le mot de passe posé ici est jeté : il n'est ni conservé, ni transmis, ni
@@ -212,6 +328,10 @@ export class Auth0IdentityGateway {
       email_verified: false,
       verify_email: false,
     });
+    refuseUnexpectedRefusal(
+      created,
+      "Le fournisseur d'identité a refusé la création de cette identité.",
+    );
     return created === CONFLICT ? null : readUserId(created);
   }
 
@@ -245,47 +365,16 @@ function throwawayPassword(): string {
   return `Aa1!${randomBytes(32).toString("base64url")}`;
 }
 
-/** Les connexions d'une identité, telles qu'Auth0 les nomme. */
-function connectionsOf(raw: unknown): readonly string[] {
-  const identities: unknown = readProperty(raw, "identities");
-  if (!Array.isArray(identities)) {
-    return [];
-  }
-  return identities
-    .map((identity) => readString(identity, "connection"))
-    .filter((name): name is string => name !== null);
-}
-
 /**
- * Cet utilisateur Auth0 a-t-il une identité sur **cette** connexion ?
+ * Refuse un `400` là où l'appelant n'en attend pas.
  *
- * Forme lue de façon défensive : elle vient du réseau, et une réponse qui
- * surprend doit exclure l'utilisateur plutôt que de le retenir à tort.
+ * Depuis que `Auth0ManagementClient` rend une **valeur** sur un `400`, un refus
+ * non traité se lirait comme un succès : ce garde-fou remet l'échec là où il
+ * était avant la sentinelle, pour tous les gestes qui ne savent pas quoi en
+ * faire (vérifié le 2026-09-22 : ce sont les seuls appels qui ne le testent pas).
  */
-function usesConnection(raw: unknown, connection: string): boolean {
-  const identities: unknown = readProperty(raw, "identities");
-  if (!Array.isArray(identities)) {
-    return false;
+function refuseUnexpectedRefusal(result: unknown, reason: string): void {
+  if (result === BAD_REQUEST) {
+    throw new IdentityProviderUnavailableError(reason, 400);
   }
-  return identities.some((identity) => readString(identity, "connection") === connection);
-}
-
-/** `user_id` d'un objet utilisateur Auth0, ou `null` si la forme surprend. */
-function readUserId(raw: unknown): string | null {
-  return readString(raw, "user_id");
-}
-
-/** Une propriété chaîne non vide d'un objet venu du réseau. */
-function readString(raw: unknown, key: string): string | null {
-  const value = readProperty(raw, key);
-  return typeof value === "string" && value !== "" ? value : null;
-}
-
-/** Une propriété quelconque d'un objet venu du réseau — `undefined` sinon. */
-function readProperty(raw: unknown, key: string): unknown {
-  if (typeof raw !== "object" || raw === null) {
-    return undefined;
-  }
-  const record: Record<string, unknown> = { ...raw };
-  return record[key];
 }

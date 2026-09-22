@@ -76,6 +76,18 @@ process.env["DATABASE_LFD_URL"] = slotDatabaseUrl(process.env["DATABASE_LFD_URL"
 process.env["AUTH0_DOMAIN"] ??= "test-tenant.eu.auth0.com";
 process.env["AUTH0_AUDIENCE"] ??= "https://api.test.local";
 
+/**
+ * `client_id` de la SPA boutique — **écrasement dur**, comme les bypass.
+ *
+ * C'est l'audience attendue d'un id_token quand quelqu'un rattache une méthode
+ * de connexion. Le réglage est OPTIONNEL en production, donc un `.env` local
+ * qui le renseignerait ferait vérifier les jetons contre une autre application
+ * que la CI — exactement la panne Stripe décrite en tête de ce fichier, dans
+ * les deux sens. La valeur est factice : aucune suite ne présente de jeton
+ * réellement émis par le tenant.
+ */
+process.env["AUTH0_CUSTOMER_CLIENT_ID"] = "spa-boutique-de-test";
+
 // Neutralise les **bypass d'auth de dev** qui traînent dans le `.env` local
 // (impersonation client, bypass staff). Contrairement au reste, c'est un
 // **écrasement dur**, pas un `??=` : les e2e doivent éprouver les VRAIS guards

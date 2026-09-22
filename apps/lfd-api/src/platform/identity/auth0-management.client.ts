@@ -56,6 +56,12 @@ export class Auth0ManagementClient {
    * existe déjà » est une réponse utile, pas une panne, et l'appelant en fait
    * quelque chose d'utile (réutiliser l'identité plutôt qu'en créer une seconde).
    *
+   * Un `400` rend `BAD_REQUEST`, et c'est la même idée poussée un cran plus
+   * loin : « le fournisseur refuse ce geste » est un **fait**, pas un incident.
+   * Sans cette sentinelle, un `link_with` invalide ou déjà lié — qu'Auth0 refuse
+   * précisément par un `400` — devenait un `IdentityProviderUnavailableError`,
+   * donc un `500` anonyme pour quelqu'un à qui il n'y avait rien à réparer.
+   *
    * Un `404` rend `NOT_FOUND`, pour la même raison : « je ne connais pas cette
    * identité » est un **fait**, pas un incident. Seules les routes portant un
    * `user_id` peuvent le produire ici, et c'est justement là qu'il faut le
@@ -82,6 +88,15 @@ export class Auth0ManagementClient {
     }
     if (response.status === 404) {
       return NOT_FOUND;
+    }
+    if (response.status === 400) {
+      // Le corps dit POURQUOI, et il ne sort pas d'ici : il peut porter des
+      // détails du tenant. Il est tracé comme n'importe quel échec ; c'est
+      // l'appelant qui nomme le refus, en français, pour la personne.
+      this.logger.warn(
+        `${method} ${path} refusé par le fournisseur (400) : ${await response.text()}`,
+      );
+      return BAD_REQUEST;
     }
     if (!response.ok) {
       // Le corps Auth0 peut porter des détails de tenant : il est TRACÉ, jamais
@@ -208,6 +223,15 @@ export class Auth0ManagementClient {
 
 /** Sentinelle de `409` — une valeur, pas une exception : le conflit est une réponse. */
 export const CONFLICT = Symbol("auth0.conflict");
+
+/**
+ * Sentinelle de `400` — le fournisseur **refuse** ce geste.
+ *
+ * Le corps qui l'explique reste au journal (il peut porter des détails du
+ * tenant) : la sentinelle dit « refusé », et c'est l'appelant qui nomme le refus
+ * dans les mots de la personne.
+ */
+export const BAD_REQUEST = Symbol("auth0.bad_request");
 
 /** Sentinelle de `404` — l'identité visée n'existe pas chez le fournisseur. */
 export const NOT_FOUND = Symbol("auth0.not_found");

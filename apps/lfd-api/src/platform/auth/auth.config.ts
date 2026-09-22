@@ -18,9 +18,20 @@ export class AuthConfig {
   /** Audience : l'identifiant de l'API déclarée dans Auth0. */
   readonly audience: string;
 
+  /**
+   * `client_id` de la **SPA boutique**, ou `null` s'il n'est pas configuré.
+   *
+   * Distinct de {@link audience} : celle-ci identifie notre **API**, celui-là
+   * l'**application** à qui le tenant émet un id_token. Les deux se comparent à
+   * des jetons de natures différentes — un access token pour l'API, un id_token
+   * pour la SPA — et les confondre reviendrait à accepter l'un pour l'autre.
+   */
+  readonly customerClientId: string | null;
+
   constructor(config: AppConfig) {
     this.issuer = `https://${config.auth0Domain()}/`;
     this.audience = config.auth0Audience();
+    this.customerClientId = config.auth0CustomerClientId();
   }
 
   /** Endpoint JWKS public du tenant (clés de signature). */

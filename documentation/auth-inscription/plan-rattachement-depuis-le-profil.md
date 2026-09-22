@@ -410,3 +410,124 @@ B-1 est refermé (§8.1). Restent, avant de bâtir :
 ⚠️ **S-1 reste le plus sérieux des sérieux** : `already_linked_here` est
 désigné comme « le refus qui compte » et n'a aucune parade contre la course,
 alors que le peupleur de la fenêtre est **automatique**.
+
+---
+
+## 9. Version 2 (2026-09-22) — ce qui est tranché, et on bâtit
+
+### 9.1 B-5 — `prompt: 'login'`, toujours. La mesure devient sans objet.
+
+`vitruve` demandait de mesurer ce que rend `/authorize?connection=google-oauth2`
+quand une session existe déjà. **La mesure ne servait qu'à savoir si on pouvait
+s'en passer.** On ne s'en passe pas : la seconde autorisation porte
+**toujours** `prompt: 'login'`, donc Auth0 ne peut jamais honorer la session
+courante et rendre le compte principal. L'inconnue disparaît par décision plutôt
+que par expérience — et c'est moins cher qu'une session de console dont le
+résultat n'aurait rien changé à ce qu'on écrit.
+
+Ce que ça garantissait de dangereux (le remplacement de session SSO) est
+**refermé** depuis le 2026-09-22 : la boutique tient sa session par jeton de
+rafraîchissement, et le tenant a bien la rotation active, expiration absolue
+30 jours, inactivité 15 jours (lu en console le 2026-09-22).
+
+### 9.2 B-3 — `@auth0/auth0-spa-js` au catalogue, en `2.24.1`
+
+`@auth0/auth0-angular` 2.11.0 le déclare en `^2.21.0` et pnpm le résout
+aujourd'hui en **2.24.1** (vérifié le 2026-09-22). Déclarer exactement cette
+version **dédoublonne** au lieu d'ajouter une copie.
+
+Au **catalogue**, bien qu'il n'ait qu'un consommateur : c'est la seconde clause
+de la règle du CLAUDE.md — « ou dont un décalage se paierait au démarrage
+plutôt qu'à la compilation ». Deux copies du SDK, ce sont deux classes
+`Auth0Client` et deux caches, c'est-à-dire un défaut d'exécution muet.
+
+⚠️ À vérifier après installation : **une seule** copie dans le bundle, et
+`pnpm install --frozen-lockfile` vert avant tout push (un manifeste change).
+
+### 9.3 B-4 — une troisième sentinelle, `BAD_REQUEST`
+
+`Auth0ManagementClient.call` ne distingue que `409` et `404` ; tout le reste
+devient `IdentityProviderUnavailableError`, **qui est un `TechnicalError`**,
+donc un `500` anonyme. Or Auth0 refuse un `link_with` invalide, expiré ou déjà
+lié par un **400**.
+
+On ajoute `BAD_REQUEST`, exactement comme les deux autres et pour la même
+raison : « le fournisseur refuse ce geste » est un **fait**, pas un incident.
+
+🔴 **Le corps de la réponse ne remonte pas.** Il reste au journal, comme
+aujourd'hui — il peut porter des détails du tenant. La sentinelle dit « refusé »,
+et c'est **nous** qui nommons le refus en français.
+
+### 9.4 S-1 — détecter et défaire, à défaut d'empêcher
+
+`already_linked_here` se lit en base et le rattachement s'écrit chez un tiers :
+rien ne tient la fenêtre, et **le peupleur est automatique** (`provision()` crée
+une ligne à la première requête d'un `sub` inconnu).
+
+Le geste, en trois temps, et il est **écrit comme tel** plutôt que promis
+atomique :
+
+1. **avant** — refus immédiat si le `sub` secondaire est déjà l'`auth0_sub`
+   d'un autre compte. Ferme le cas courant, sans coût ;
+2. **le rattachement** chez Auth0 ;
+3. **après** — on relit. Si une ligne est apparue entre les deux, on **défait le
+   rattachement** (`DELETE`) et on refuse. La ligne serait devenue inatteignable
+   — son `auth0_sub` ne produirait plus jamais de jeton — et personne ne l'aurait
+   su.
+
+⚠️ Ce n'est pas une prévention, c'est une **détection avec compensation**. La
+fenêtre existe toujours ; ce qui change, c'est qu'on ne la traverse plus en
+silence. L'écrire ainsi vaut mieux que de laisser croire à un verrou.
+
+### 9.5 S-3 et S-4 — le `sub` ne sort pas, ni au journal ni dans une URL
+
+- **Journal** : la charge porte `provider`, `connection` et `linkedVia`
+  (`"profile"`). **Pas le `sub`.** Il n'y en a pas besoin : un compte n'a qu'une
+  identité par fournisseur chez nous. Remettre le `sub` dans le journal serait
+  rouvrir en un plan la dette que six déploiements ont fermée
+  (`architecture-journalisation.md` §12).
+- **URL** : la révocation devient **`DELETE /me/identities/:provider`** —
+  `google-oauth2`, un **nom de connexion**, déjà public dans le code du front.
+  L'API retrouve elle-même l'identifiant secondaire chez Auth0. Aucun
+  identifiant tiers ne traverse une URL, donc aucun journal d'accès ne
+  l'écrit.
+
+### 9.6 S-6 — `identity.last_method` est supprimé, et voici pourquoi
+
+Il ne pouvait **jamais** se déclencher : la Management API ne délie que des
+identités **secondaires**, et la principale reste toujours. Un refus qui ne peut
+pas partir est pire qu'absent — il fait croire à une protection.
+
+La personne réellement exposée est celle dont la **seule** méthode est sociale
+(compte ouvert au vol par `provision()` avec un `sub` `google-oauth2|…`). Elle
+n'a aucune secondaire, donc rien à retirer : l'écran lui montre **une** méthode
+et aucun geste de retrait. Cohérent, et sans promesse en trop.
+
+### 9.7 S-10 — il n'y a pas d'anti-rejeu, et on l'accepte
+
+`iat` date l'**émission** du jeton, pas l'authentification — un jeton réémis sur
+une vieille session a un `iat` de la seconde. Et rien n'est à usage unique : le
+même jeton rattache autant de fois qu'on veut pendant cinq minutes.
+
+**On l'accepte**, parce que le rejeu demande de tenir **en plus** une session
+vivante du compte cible — c'est-à-dire d'être déjà dedans, ce qui est
+précisément ce que le rattachement prouve. `prompt: 'login'` (9.1) rend par
+ailleurs le jeton frais **au sens de l'authentification**, pas seulement de
+l'émission.
+
+C'est écrit comme une acceptation, pas comme une parade : la v1 disait que la
+fraîcheur « remplace l'anti-rejeu », ce qui était faux.
+
+### 9.8 Les lots, à jour
+
+| Lot   | Contenu                                                                                                                                                                            | État    |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| **A** | `IdTokenVerifier` dans `platform/auth/` (à côté d'`AccessTokenVerifier`, même JWKS) ; `BAD_REQUEST` (9.3) ; `listIdentities` / `linkIdentity` / `unlinkIdentity` sur la passerelle | à bâtir |
+| **B** | `GET`/`POST /me/identities`, `DELETE /me/identities/:provider` ; commandes ; les refus ; les deux portes (`subject-readers`, `auth0-id-readers`) ; journal et courriel             | après A |
+| **C** | La section « Méthodes de connexion » du profil, seconde instance SDK à cache isolé, `prompt: 'login'`                                                                              | après B |
+| **D** | Doc : ce plan marqué bâti, le JSDoc de `CUSTOMER_CONNECTION` qui affirme « aucun rattachement de comptes », l'index                                                                | après C |
+
+🔴 **S-5 est dans le lot A** : la variable d'environnement du `clientId` SPA.
+Sans elle, `IdTokenVerifier` n'a rien à quoi comparer `aud`. Valeur **publique**
+(variable GitHub, pas secret) : le `clientId` voyage déjà en clair dans chaque
+URL d'autorisation et dans le bundle.
