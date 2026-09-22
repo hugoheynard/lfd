@@ -51,6 +51,14 @@ import { UpdateCompanyIdentityHandler } from "./application/commands/update-comp
 import { UpdateDeliveryAddressHandler } from "./application/commands/update-delivery-address.handler.js";
 import { RequestPaymentTermHandler } from "./application/commands/request-payment-term.handler.js";
 import { UpdateMyProfileHandler } from "./application/commands/update-my-profile.handler.js";
+import { LinkLoginMethodHandler } from "./application/commands/link-login-method.handler.js";
+import { RevokeLoginMethodHandler } from "./application/commands/revoke-login-method.handler.js";
+import { ListMyLoginMethodsHandler } from "./application/queries/list-my-login-methods.handler.js";
+import { SendLoginMethodLinkedMail } from "./application/handlers/send-login-method-linked-mail.handler.js";
+import { IdentityProofVerifier } from "./domain/ports/identity-proof.verifier.js";
+import { LoginSubjectReader } from "./domain/ports/login-subject.reader.js";
+import { Auth0IdentityProofVerifier } from "./infrastructure/auth0-identity-proof.verifier.js";
+import { PrismaLoginSubjectReader } from "./infrastructure/prisma-login-subject.reader.js";
 import { UpdateNavPreferencesHandler } from "./application/commands/update-nav-preferences.handler.js";
 import { UpdatePrimaryContactHandler } from "./application/commands/update-primary-contact.handler.js";
 import { UploadKbisHandler } from "./application/commands/upload-kbis.handler.js";
@@ -169,6 +177,19 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
   ],
   providers: [
     UpdateMyProfileHandler,
+    // Les méthodes de connexion (plan `plan-rattachement-depuis-le-profil.md`,
+    // lot B) : la liste et les deux gestes, plus l'alerte à l'adresse du compte.
+    ListMyLoginMethodsHandler,
+    LinkLoginMethodHandler,
+    RevokeLoginMethodHandler,
+    SendLoginMethodLinkedMail,
+    // La preuve de possession d'un compte tiers : un port du contexte, servi
+    // par le vérificateur d'id_token de `platform/auth/` — le handler ne sait
+    // pas qu'il existe un JWKS.
+    { provide: IdentityProofVerifier, useClass: Auth0IdentityProofVerifier },
+    // « Ce sujet ouvre-t-il déjà un autre compte ? » — la lecture qui échappe
+    // au fournisseur, et le seul garde-fou contre un compte orphelin.
+    { provide: LoginSubjectReader, useClass: PrismaLoginSubjectReader },
     DeclareMyEstablishmentHandler,
     // Le verrou de la porte pro : il ne vit que sous l'unité de travail du handler.
     { provide: PersonAttachmentLock, useClass: PrismaPersonAttachmentLock },

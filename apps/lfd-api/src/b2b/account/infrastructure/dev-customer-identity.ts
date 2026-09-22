@@ -3,8 +3,12 @@ import { Injectable, Logger } from "@nestjs/common";
 import {
   CustomerIdentityPort,
   type IdentityToProvision,
+  type LoginMethod,
   type ProvisionedIdentity,
 } from "../domain/ports/customer-identity.port.js";
+
+/** La stratégie que porte un sujet fabriqué ici (`dev|…`). */
+const DEV_PROVIDER = "dev";
 
 /**
  * Fournisseur d'identité de **DÉVELOPPEMENT** — aucun appel réseau.
@@ -30,6 +34,18 @@ import {
 export class DevCustomerIdentity extends CustomerIdentityPort {
   private readonly logger = new Logger(DevCustomerIdentity.name);
 
+  /**
+   * Les méthodes **secondaires** rattachées, par sujet. En mémoire, donc
+   * perdues au redémarrage : elles n'existent que le temps de rejouer le
+   * parcours.
+   *
+   * ⚠️ Le sujet secondaire est ici le **jeton lui-même** : cet adaptateur ne
+   * voit pas la preuve, qui a été vérifiée en amont par son propre port. Avec
+   * un vrai `id_token` sous la main, l'entrée fabriquée est donc cosmétique —
+   * ce qui est jouable en local reste le cycle « ajouter, voir, retirer ».
+   */
+  private readonly linked = new Map<string, readonly LoginMethod[]>();
+
   changeEmail(subject: string, email: string): Promise<void> {
     this.logger.warn(`[dev] changement d'adresse non propagé : ${subject} → ${email}`);
     return Promise.resolve();
@@ -45,6 +61,66 @@ export class DevCustomerIdentity extends CustomerIdentityPort {
     this.logger.warn(`[dev] lien de mot de passe factice pour ${subject}`);
     return Promise.resolve(devPasswordUrl(subject));
   }
+
+  listLoginMethods(subject: string): Promise<readonly LoginMethod[]> {
+    return Promise.resolve([primaryOf(subject), ...(this.linked.get(subject) ?? [])]);
+  }
+
+  /**
+   * Rattache **en mémoire**, sans rien vérifier : la preuve a déjà été vérifiée
+   * en amont par le port de preuve, et il n'y a pas de tenant ici pour absorber
+   * quoi que ce soit.
+   *
+   * La mémoire n'est pas une coquetterie : sans elle, la liste ne bougerait
+   * jamais et le parcours « ajouter, voir apparaître, retirer » serait injouable
+   * en local — précisément le parcours que cet adaptateur existe pour rendre
+   * jouable. Elle meurt avec le processus, comme tout ce que le dev fabrique.
+   */
+  linkLoginMethod(subject: string, idToken: string): Promise<readonly LoginMethod[]> {
+    const added = devSecondary(idToken);
+    const current = this.linked.get(subject) ?? [];
+    const kept = current.filter((method) => method.secondaryUserId !== added.secondaryUserId);
+    this.linked.set(subject, [...kept, added]);
+    this.logger.warn(`[dev] méthode de connexion « ${added.provider} » rattachée localement`);
+    return this.listLoginMethods(subject);
+  }
+
+  unlinkLoginMethod(
+    subject: string,
+    provider: string,
+    secondaryUserId: string,
+  ): Promise<readonly LoginMethod[]> {
+    const current = this.linked.get(subject) ?? [];
+    this.linked.set(
+      subject,
+      current.filter(
+        (method) => method.provider !== provider || method.secondaryUserId !== secondaryUserId,
+      ),
+    );
+    return this.listLoginMethods(subject);
+  }
+}
+
+/**
+ * L'identité **porteuse** du compte, déduite du sujet : c'est ce que le
+ * fournisseur rend toujours en premier, et elle ne se détache jamais.
+ */
+function primaryOf(subject: string): LoginMethod {
+  const cut = subject.indexOf("|");
+  return {
+    provider: cut < 0 ? DEV_PROVIDER : subject.slice(0, cut),
+    secondaryUserId: cut < 0 ? subject : subject.slice(cut + 1),
+    connection: null,
+    isPrimary: true,
+  };
+}
+
+/**
+ * Ce qu'un jeton de preuve « rattache » en développement : le port de preuve
+ * doublé rend un sujet, et c'est ce sujet-là qu'on ajoute.
+ */
+function devSecondary(provenSubject: string): LoginMethod {
+  return { ...primaryOf(provenSubject), isPrimary: false };
 }
 
 /**

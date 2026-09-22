@@ -183,6 +183,24 @@ export interface B2bMails {
     readonly firstName: string;
   };
   /**
+   * **Une méthode de connexion a été ajoutée au compte.** Destinataire : le
+   * client, à l'adresse de son compte.
+   *
+   * 🔴 **C'est la seule alerte** si la preuve exigée au rattachement était un
+   * jour contournée : rien d'autre ne dit à quelqu'un qu'une porte de plus
+   * ouvre désormais chez lui. Il part donc même quand le geste est parfaitement
+   * normal — un message de trop se lit, un message manquant ne se remarque
+   * qu'après.
+   *
+   * ⚠️ Aucun identifiant du fournisseur : le nom de la méthode suffit à
+   * reconnaître ce qu'on vient de faire, et c'est ce qu'on lit à l'écran.
+   */
+  "customer.login-method-linked": {
+    readonly firstName: string;
+    /** « Google », « Facebook » — le mot de l'écran, pas le nom de connexion. */
+    readonly methodLabel: string;
+  };
+  /**
    * Un accès au **back-office** vient d'être ouvert. Destinataire : **le membre
    * de l'équipe**.
    *
@@ -520,6 +538,19 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
           "Si ce n'est pas vous, quelqu'un a sans doute tapé votre adresse par erreur. " +
           "Aucun accès à votre compte n'a été ouvert, et rien n'a été modifié. " +
           "Répondez à cet e-mail si vous voulez qu'on regarde.",
+      }),
+    }),
+    "customer.login-method-linked": (data) => ({
+      subject: sanitiseSubject(`Une connexion ${data.methodLabel} a été ajoutée à votre compte`),
+      html: person({
+        title: `Bonjour${data.firstName === "" ? "" : `, ${data.firstName}`}`,
+        body:
+          `Vous pouvez désormais vous connecter à votre compte La Folie Douce avec ` +
+          `${data.methodLabel}, en plus de votre méthode habituelle.\n\n` +
+          "C'est le même compte : mêmes commandes, mêmes informations.",
+        footer:
+          "Vous n'avez pas fait cette manipulation ? Répondez à cet e-mail : " +
+          "nous retirerons cette méthode de connexion et regarderons ce qui s'est passé.",
       }),
     }),
     "customer.company-attached": (data) => ({

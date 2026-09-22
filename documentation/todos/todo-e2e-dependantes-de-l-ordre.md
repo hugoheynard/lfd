@@ -78,3 +78,34 @@ Pour la quatrième, la question est autre : ce cas monte l'app ENTIÈRE et la
 route sur chaque écran client. Cinq secondes lui suffisent à froid et plus
 toujours quand turbo fait tourner quatre paquets à côté. Soit il mérite son
 propre délai — assumé, écrit —, soit il en fait trop pour un test de chrome.
+
+---
+
+## Une quatrième suite, et le déclencheur est identifié (2026-09-22)
+
+`admin-company-pieces.e2e-spec.ts` rejoint la liste : « refuse l'activation si
+des pièces requises manquent » attend `409` et reçoit `500` **sous la suite
+complète**, et la suite passe **23/23 lancée seule** (vérifié le 2026-09-22).
+
+🔴 **Ce qui l'a fait apparaître est connu, et c'est la nouveauté** :
+`apps/lfd-api/test/e2e-durations.json` a été **entièrement remesuré** ce jour-là
+(`e2e:rebalance`, exigé par `lint:e2e-durations` dès qu'une suite neuve entre) —
+121 lignes sur 121. Or `dev-toolbox/ci/e2e-shard.mjs` **lit ce fichier pour
+répartir les suites entre les shards**.
+
+Autrement dit : **rééquilibrer change qui tourne à côté de qui**, donc réveille
+une fuite inter-suites qui dormait. Le même code, les mêmes tests, un autre
+voisinage.
+
+Deux conséquences pratiques :
+
+- **Un rééquilibrage n'est pas neutre.** Après un `e2e:rebalance`, une suite
+  rouge n'est pas forcément une régression du code — c'est le premier réflexe à
+  avoir, et le geste qui tranche est de **rejouer la suite seule**.
+- **Le nombre de suites atteintes n'est pas stable** : il dépend du tirage. Les
+  trois d'origine (`production-batch`, `client-notes`, `appointments`) et
+  celle-ci sont des symptômes du même défaut, pas quatre défauts.
+
+⚠️ La cause racine reste **non diagnostiquée** : une suite laisse derrière elle
+un état que la suivante voit. Le geste qui trouverait le coupable est toujours
+celui décrit plus haut.

@@ -191,7 +191,9 @@ reconnexion sur échec.
 
 - `GET /me/identities` — les méthodes de connexion actuelles.
 - `POST /me/identities` — corps `{ idToken }`.
-- `DELETE /me/identities/:provider/:userId` — retire.
+- `DELETE /me/identities/:provider` — retire. ⚠️ **Corrigé** : la v1 écrivait
+  `:provider/:userId`, ce que §9.5 a défait — un identifiant tiers dans une URL
+  finit dans tous les journaux d'accès.
 
 Elles ne passent pas par `/me` : ce serait un appel Auth0 sortant sur le chemin
 d'amorçage de **toutes** les pages, pour une information que seul le profil
@@ -531,3 +533,87 @@ fraîcheur « remplace l'anti-rejeu », ce qui était faux.
 Sans elle, `IdTokenVerifier` n'a rien à quoi comparer `aud`. Valeur **publique**
 (variable GitHub, pas secret) : le `clientId` voyage déjà en clair dans chaque
 URL d'autorisation et dans le bundle.
+
+### 9.9 Une seule variable pour le `client_id`, pas deux (Hugo, 2026-09-22)
+
+> « mais j'avais déjà `AUTH0_LFC_BOUTIQUE_CLIENT_ID` »
+
+Il l'avait, et elle alimente déjà le **build du front** de la boutique
+(`deploy_lfc_boutique.yml`, vérifié le 2026-09-22), exactement comme sa jumelle
+`AUTH0_LFD_BACKOFFICE_CLIENT_ID` alimente le back-office. Le lot A en avait
+créé une seconde sous un autre nom — un doublon que rien n'aurait tenu
+d'accord.
+
+**Le workflow de l'API lit donc la MÊME variable** : le `client_id` que la
+boutique MET dans ses jetons et celui que l'API ATTEND d'eux viennent d'une
+source unique. C'est de l'« interdire plutôt que vérifier » : deux variables
+auraient pu dériver, et la panne aurait été **muette** — l'API comparant `aud`
+à un `client_id` périmé et refusant chaque rattachement sans rien pour
+l'expliquer.
+
+⚠️ Le nom diffère des deux côtés (`AUTH0_CUSTOMER_CLIENT_ID` dans l'API), et
+c'est la convention déjà en place : une variable **GitHub** est nommée d'après
+l'**application Auth0** qu'elle désigne, une variable d'**app** d'après
+l'**usage** qu'elle en fait. Le back-office fait de même
+(`B2B_ADMIN_AUTH0_CLIENT_ID` ← `AUTH0_LFD_BACKOFFICE_CLIENT_ID`). Le
+rapprochement tient en une ligne de workflow, et elle est commentée.
+
+✅ **Doublon supprimé par Hugo le 2026-09-22.** La variable GitHub
+`AUTH0_CUSTOMER_CLIENT_ID` n'existe plus ; `AUTH0_LFC_BOUTIQUE_CLIENT_ID` est
+la source unique, lue par le build du front **et** par le déploiement de l'API.
+Rien à poser : la valeur était déjà au bon endroit avant ce chantier.
+
+---
+
+## 10. Le lot B est bâti (2026-09-22) — trois corrections au plan
+
+Le lot B a été bâti et vérifié vert. Trois endroits où **le plan avait tort**, et
+la correction est celle du code, pas l'inverse.
+
+### 10.1 🔴 Le fait se nomme `user.identity_linked`, pas `account.identity_linked`
+
+§3 R7 écrivait `account.*`. **Le journal range un fait par son PRÉFIXE** —
+`activity-module.ts` en tient la table, et un test confronte chaque type du
+catalogue à cette table, donc un orphelin ne passe pas (vérifié le 2026-09-22).
+Or `account.` n'est **aucun** module : la ligne aurait été invisible dans le
+filtre « comptes » du back-office.
+
+Le sujet est la **personne**, et `user.` existe déjà sous le module `comptes`
+(`user.profile_updated`). D'où `user.identity_linked` / `user.identity_revoked`.
+
+C'est exactement le genre d'erreur qu'un plan produit : nommer un fait d'après
+le **dossier du code** (`b2b/account/`) plutôt que d'après ce que la **donnée**
+dit. Le dossier n'est pas le module.
+
+### 10.2 `proof_expired` reste en 400, pas en 409
+
+Le plan mettait les quatre refus en `BusinessError` (409). Pour celui-là c'est
+faux, et le lot A avait déjà raison : une preuve périmée n'est pas un **conflit
+d'état**, c'est une **entrée invalide**. `IdentityProofExpiredError` est un
+`DomainError` (400), et la redéclarer en 409 aurait donné deux erreurs pour un
+seul cas.
+
+⚠️ Le lot C doit donc distinguer **400** (recommencer) de **409** (ce compte
+ouvre autre chose) — deux gestes différents à l'écran.
+
+### 10.3 `lint:subject-readers` n'avait rien à inscrire
+
+§9.8 annonçait une entrée dans cette porte. Elle est inutile : le handler ne lit
+pas `Principal` — le **contrôleur** lui passe le `subject` dans la commande,
+exactement comme `UpdateMyProfileCommand`, et `me.controller.ts` est déjà admis.
+Inscrire un fichier qui ne lit pas aurait fait **échouer** la porte, qui refuse
+aussi les lecteurs admis devenus muets.
+
+Seule `lint:auth0-id-readers` a gagné une entrée : le lecteur de
+`users.auth0_sub` qui sert le refus « ce compte ouvre déjà un autre compte ».
+
+### 10.4 Ce que le plan ne disait pas, et qui a été tranché
+
+- **Ce que rendent les routes** : `POST` et `DELETE` renvoient la liste relue,
+  comme `PATCH /me/profile` renvoie le compte relu.
+- **Si la compensation de §9.4 échoue** : on journalise l'écart (sans le `sub`)
+  et on lève quand même le refus — la personne doit lire pourquoi rien n'a été
+  rattaché.
+- Un **port de preuve** à part (`IdentityProofVerifier`) plutôt que d'injecter
+  le vérificateur de `platform/` dans un handler : ISP, et le domaine ne connaît
+  pas Auth0.

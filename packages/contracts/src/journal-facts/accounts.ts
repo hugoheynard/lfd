@@ -48,6 +48,17 @@ function labelled<S extends z.ZodRawShape>(shape: S) {
 const person = (target: string) =>
   z.strictObject({ id: ref(target), name: z.string().min(1).optional() });
 
+/**
+ * Une **méthode de connexion** citée, réduite à ce qui la reconnaît : la
+ * stratégie du fournisseur et la base d'utilisateurs visée. Jamais
+ * l'identifiant de la personne chez lui — c'est une coordonnée d'authentification.
+ */
+const loginMethod = {
+  provider: z.string(),
+  /** Absente sur les connexions sociales qui n'en déclarent pas. */
+  connection: z.string().nullable(),
+};
+
 /** Une adresse, réduite à ce qui la reconnaît sans ses coordonnées. */
 const place = { ville: z.string(), codePostal: z.string() };
 
@@ -301,6 +312,33 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
   "user.password_link_issued": fact(payload({ subjectLabel: subjectLabel().optional() }), [
     empty(),
   ]),
+
+  /**
+   * Une méthode de connexion de plus ouvre le même compte — Google, demain
+   * Facebook (plan `plan-rattachement-depuis-le-profil.md`, R7 amendé §9.5).
+   *
+   * 🔴 **Pas le `sub`.** L'identifiant de la personne chez le fournisseur est
+   * exactement ce que six déploiements ont sorti du journal
+   * (`architecture-journalisation.md` §12) : le remettre ici pour une
+   * commodité de lecture rouvrirait la dette en un plan. Il n'en faut pas —
+   * un compte n'a qu'une identité par fournisseur chez nous, donc `provider`
+   * désigne la méthode sans ambiguïté.
+   */
+  "user.identity_linked": fact(
+    payload({
+      subjectLabel: subjectLabel().optional(),
+      ...loginMethod,
+      /** Par où le rattachement a été demandé. Un seul chemin aujourd'hui. */
+      linkedVia: z.literal("profile"),
+    }),
+  ),
+  /**
+   * Une méthode de connexion a été détachée. Seule une identité **secondaire**
+   * peut l'être : la principale porte le compte et ne se délie jamais.
+   */
+  "user.identity_revoked": fact(
+    payload({ subjectLabel: subjectLabel().optional(), ...loginMethod }),
+  ),
 
   /**
    * Le sujet est la PERSONNE qui ouvre le panier. `subjectLabel` : son nom,

@@ -1,3 +1,4 @@
+import { IdentityWithoutLoginMethods } from "../../../domain/ports/__tests__/login-method-doubles.js";
 import type { B2bMailer } from "../../../../../platform/mailer/mailer.module.js";
 import {
   AccountDisabledError,
@@ -13,10 +14,9 @@ import {
   type MemberStatus,
   type MemberToCreate,
 } from "../../../domain/ports/company-member.repository.js";
-import {
-  CustomerIdentityPort,
-  type IdentityToProvision,
-  type ProvisionedIdentity,
+import type {
+  IdentityToProvision,
+  ProvisionedIdentity,
 } from "../../../domain/ports/customer-identity.port.js";
 import {
   IdentityProviderUnavailableError,
@@ -80,7 +80,7 @@ class FakeMembers extends CompanyMemberRepository {
   }
 }
 
-class FakeIdentity extends CustomerIdentityPort {
+class FakeIdentity extends IdentityWithoutLoginMethods {
   readonly provisioned: IdentityToProvision[] = [];
   readonly reissuedFor: string[] = [];
 

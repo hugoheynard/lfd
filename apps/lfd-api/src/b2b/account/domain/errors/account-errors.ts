@@ -425,4 +425,48 @@ export class SocialSignInAccountExistsError extends BusinessError {
   }
 }
 
+/**
+ * **Le compte tiers présenté ouvre déjà un AUTRE compte chez nous.**
+ *
+ * 🔴 Le refus qui compte (plan `plan-rattachement-depuis-le-profil.md`, R3).
+ * Sans lui, rattacher absorberait l'identité secondaire dans ce compte-ci : le
+ * `sub` de l'autre compte ne produirait plus jamais de jeton, sa ligne
+ * deviendrait inatteignable — avec ses commandes et son historique — et
+ * personne ne le saurait.
+ *
+ * Il se pose deux fois, avant et après le rattachement : la lecture est chez
+ * nous, l'écriture chez un tiers, et rien ne tient la fenêtre entre les deux.
+ * Le second contrôle défait le rattachement avant de lever (§9.4).
+ *
+ * Le message ne cite aucun identifiant — ni le nôtre, ni celui du fournisseur :
+ * il nomme le cas et le geste de sortie, qui est de se connecter avec.
+ */
+export class LoginMethodClaimedElsewhereError extends BusinessError {
+  constructor() {
+    super(
+      "identity.already_linked_here",
+      "Ce compte de connexion ouvre déjà un autre compte chez nous. " +
+        "Connectez-vous avec lui pour retrouver ce second compte, ou utilisez-en un autre.",
+    );
+  }
+}
+
+/**
+ * **Cette méthode de connexion ouvre déjà CE compte** — il n'y a rien à faire.
+ *
+ * L'écran ne propose normalement pas le geste : une méthode déjà rattachée y
+ * est affichée, pas offerte. Ce refus est le filet de la vue périmée (deux
+ * onglets, un double clic), et il couvre aussi la preuve qui désigne le compte
+ * courant lui-même — on ne se relie pas à soi-même.
+ */
+export class LoginMethodAlreadyLinkedError extends BusinessError {
+  constructor() {
+    super(
+      "identity.already_linked",
+      "Cette méthode de connexion ouvre déjà votre compte. " +
+        "Rechargez la page pour voir la liste à jour.",
+    );
+  }
+}
+
 // ─── Panne technique (500) ───────────────────────────────────────────────────

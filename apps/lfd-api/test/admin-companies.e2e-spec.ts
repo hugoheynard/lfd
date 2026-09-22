@@ -12,6 +12,7 @@
  * double **déclare** le porteur staff sans vérifier ; le reste (guard, bus,
  * domaine, SQL) est réel.
  */
+import { NO_LOGIN_METHODS } from "../src/b2b/account/domain/ports/__tests__/login-method-doubles.js";
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
 import type { CreatedCompanyResponse } from "../src/b2b/account/http/companies.controller.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -31,6 +32,8 @@ const stubAdminVerifier = {
  * Tout le reste (guard, bus, domaine, SQL, membership) est réel.
  */
 const identityDouble: CustomerIdentityPort = {
+  // Ce double n'éprouve pas les méthodes de connexion.
+  ...NO_LOGIN_METHODS,
   changeEmail: (): Promise<void> => Promise.resolve(),
   provision: (): Promise<ProvisionedIdentity> =>
     Promise.resolve({ subject: "auth0|milo", passwordSetupUrl: "https://exemple.test/mdp" }),

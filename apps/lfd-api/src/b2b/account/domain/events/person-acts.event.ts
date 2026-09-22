@@ -16,6 +16,12 @@ import type { NamedRef, PersonRef } from "./journal-names.js";
  * tient jamais lieu.
  */
 
+/**
+ * La seule voie de rattachement ouverte : le profil. La porte d'entrée, elle,
+ * refuse toujours (`SocialSignInAccountExistsError`) et n'écrit donc aucun fait.
+ */
+const LINKED_VIA_PROFILE = "profile";
+
 /** Le libellé du sujet, omis plutôt qu'inventé quand la personne n'a pas de nom. */
 function labelOf(name: string | null): Record<string, unknown> {
   return name === null ? {} : { subjectLabel: name };
@@ -90,6 +96,71 @@ export class CompanyAccessOpenedEvent implements JournaledEvent {
       subjectType: "company",
       subjectId: this.company.id,
       payload: { subjectLabel: this.company.name, person: { ...this.person }, role: this.role },
+    };
+  }
+}
+
+/**
+ * **Une méthode de connexion de plus ouvre le compte** — la personne l'a
+ * ajoutée depuis son profil, en prouvant qu'elle tient les deux sessions.
+ *
+ * 🔴 La charge porte le **fournisseur** et la **connexion**, jamais le `sub`
+ * secondaire : un identifiant chez un tiers n'entre pas au journal
+ * (`documentation/journalisation/architecture-journalisation.md` §12). Il n'en
+ * faut pas — un compte n'a qu'une identité par fournisseur chez nous, donc
+ * `provider` la désigne sans ambiguïté.
+ *
+ * `linkedVia` dit par où le geste est passé. Une seule voie aujourd'hui, le
+ * profil ; l'écrire maintenant évite d'avoir à deviner plus tard ce qu'une
+ * ligne sans champ voulait dire.
+ */
+export class LoginMethodLinkedEvent implements JournaledEvent {
+  constructor(
+    readonly userId: string,
+    /** Le nom de la personne, ou `null` si son profil n'en porte pas. */
+    readonly name: string | null,
+    readonly provider: string,
+    readonly connection: string | null,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: ACCOUNT_FACTS.identityLinked,
+      subjectType: "user",
+      subjectId: this.userId,
+      payload: {
+        ...labelOf(this.name),
+        provider: this.provider,
+        connection: this.connection,
+        linkedVia: LINKED_VIA_PROFILE,
+      },
+    };
+  }
+}
+
+/**
+ * **Une méthode de connexion secondaire a été détachée.** Même charge que le
+ * rattachement, sans la voie : on retire d'où l'on voit, il n'y a rien à
+ * distinguer.
+ */
+export class LoginMethodRevokedEvent implements JournaledEvent {
+  constructor(
+    readonly userId: string,
+    readonly name: string | null,
+    readonly provider: string,
+    readonly connection: string | null,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: ACCOUNT_FACTS.identityRevoked,
+      subjectType: "user",
+      subjectId: this.userId,
+      payload: {
+        ...labelOf(this.name),
+        provider: this.provider,
+        connection: this.connection,
+      },
     };
   }
 }

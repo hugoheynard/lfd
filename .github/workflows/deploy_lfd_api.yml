@@ -140,7 +140,21 @@ jobs:
           # est l'audience attendue d'un id_token quand quelqu'un rattache une
           # méthode de connexion à son compte ; absent, ce geste-là refuse, et le
           # bulletin de démarrage le dit.
-          AUTH0_CUSTOMER_CLIENT_ID: ${{ vars.AUTH0_CUSTOMER_CLIENT_ID }}
+          #
+          # 🔴 LA MÊME VARIABLE QUE LE BUILD DU FRONT (Hugo, 2026-09-22) :
+          # `deploy_lfc_boutique.yml` la lit déjà pour fabriquer
+          # `auth.env.generated.ts`, donc le `client_id` que la boutique MET dans
+          # ses jetons et celui que l'API ATTEND d'eux viennent d'une seule
+          # source. En créer une seconde les aurait laissés dériver — et la
+          # panne serait muette : l'API comparerait `aud` à un client_id périmé
+          # et refuserait chaque rattachement sans rien pour l'expliquer.
+          #
+          # Le nom diffère des deux côtés, et c'est la convention du dépôt : une
+          # variable GitHub est nommée d'après l'APPLICATION Auth0 qu'elle
+          # désigne, une variable d'app d'après l'usage qu'elle en fait. Le
+          # back-office fait pareil, une ligne plus bas dans son propre workflow
+          # (`B2B_ADMIN_AUTH0_CLIENT_ID` ← `AUTH0_LFD_BACKOFFICE_CLIENT_ID`).
+          AUTH0_CUSTOMER_CLIENT_ID: ${{ vars.AUTH0_LFC_BOUTIQUE_CLIENT_ID }}
           # L'adresse de l'admin RACINE — une adresse, pas un secret. Sans elle,
           # le code retombe sur son défaut, et la porte de secours ne pointe pas
           # vers la boîte qu'on relève.

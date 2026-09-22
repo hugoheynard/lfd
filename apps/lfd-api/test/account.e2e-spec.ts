@@ -11,6 +11,7 @@
  * permet de vérifier la seule chose qui compte ici — que le changement d'e-mail
  * passe par lui, et dans le bon ordre.
  */
+import { NO_LOGIN_METHODS } from "../src/b2b/account/domain/ports/__tests__/login-method-doubles.js";
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
 import type { AccountView } from "../src/b2b/account/domain/ports/account.reader.js";
 import { PrincipalResolver } from "../src/platform/auth/principal.resolver.js";
@@ -28,6 +29,8 @@ const emailChanges: { subject: string; email: string }[] = [];
 let identityFails = false;
 
 const identityDouble: CustomerIdentityPort = {
+  // Ce double n'éprouve pas les méthodes de connexion.
+  ...NO_LOGIN_METHODS,
   provision: (): Promise<ProvisionedIdentity> =>
     Promise.resolve({ subject: "auth0|double", passwordSetupUrl: "https://exemple.test/mdp" }),
   issuePasswordLink: (): Promise<string> => Promise.resolve("https://exemple.test/mdp"),
