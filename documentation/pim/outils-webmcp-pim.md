@@ -16,6 +16,13 @@
 1. Ouvrir **`/outils-agent`** dans le back-office. La route est gardée par
    `permissionGuard('pim_catalog:write')` — l'écriture, pas la lecture, puisque
    ces outils écrivent.
+
+   🔴 **Il faut taper l'adresse : aucune entrée de menu n'y mène** (constaté le
+   2026-09-22, ni dans le rail ni dans les tuiles). La route existe, l'écran
+   fonctionne, et rien dans l'application ne dit qu'il est là. Ce n'est pas une
+   protection — un écran qu'on ne trouve pas n'est pas un écran fermé, c'est un
+   écran oublié.
+
 2. L'écran dit s'il y a un agent branché. **Il n'y en a aucun par défaut** :
    aucun navigateur ne fournit `modelContext` aujourd'hui, et l'assistant doit
    poser le pont lui-même dans la page (annexe A.3).
