@@ -1,0 +1,66 @@
+<fold-panel-header [title]="t().chrome.signIn" [closeLabel]="t().dialog.close" />
+
+<fold-panel-body>
+  <!-- La phrase n'ANNONCE pas les méthodes : on ne sait pas lesquelles sont
+       rattachées à ce compte avant d'être connecté. Elle invite donc à
+       reprendre celle qu'on a choisie, ce qui est vrai pour tout le monde. -->
+  <p class="lead">{{ t().doors.signInLead }}</p>
+
+  <!-- Les fournisseurs d'abord, l'e-mail ensuite — le même ordre que la carte
+       d'inscription de l'accueil, et pour la même raison : un clic suffit à qui
+       en a un, le champ reste là pour les autres.
+       Les libellés sont ceux qu'imposent les règles de marque : on ne les
+       raccourcit pas en « Google ». -->
+  <div class="social">
+    <button
+      foldButton
+      class="social-button"
+      emphasis="outline"
+      intent="neutral"
+      size="lg"
+      type="button"
+      [block]="true"
+      (click)="withGoogle()"
+    >
+      <img class="social-logo" src="brand/google-g.svg" alt="" width="20" height="20" />
+      {{ t().signup.google }}
+    </button>
+    <button
+      foldButton
+      class="social-button"
+      emphasis="outline"
+      intent="neutral"
+      size="lg"
+      type="button"
+      [block]="true"
+      (click)="withFacebook()"
+    >
+      <img class="social-logo" src="brand/facebook-f.svg" alt="" width="20" height="20" />
+      {{ t().signup.facebook }}
+    </button>
+  </div>
+
+  <app-rule-ou [label]="t().signup.orEmail" />
+
+  <!-- FACULTATIF : il ne sert qu'à préremplir l'écran d'Auth0 (`login_hint`).
+       Le laisser vide mène au même endroit, donc aucun `required` ici — et le
+       bouton du pied ne se désarme jamais. -->
+  <fold-input
+    size="lg"
+    type="email"
+    [label]="t().signup.email"
+    autocomplete="email"
+    [placeholder]="t().signup.emailPlaceholder"
+    [value]="email()"
+    (valueChange)="setEmail($event)"
+  />
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ t().account.cancel }}
+  </button>
+  <button foldButton intent="primary" type="button" (click)="withEmail()">
+    {{ t().doors.signInSubmit }}
+  </button>
+</fold-panel-footer>

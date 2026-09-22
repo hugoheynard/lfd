@@ -134,6 +134,8 @@ export const IT: ClientCopy = {
     alreadySub: 'Password, o il suo dispositivo',
     firstTitle: 'Prima volta ?',
     firstSub: 'Nome, e-mail, telefono',
+    signInLead: 'Riprendi dal metodo che hai scelto aprendo il tuo account.',
+    signInSubmit: 'Continua',
     switchLabel: 'Tipo di account',
     persoLabel: 'Privato',
     persoSub: 'Ordino per me',

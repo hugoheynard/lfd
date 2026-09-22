@@ -1,8 +1,13 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { vi } from 'vitest';
+
+import { FoldPanelHostService } from 'fold-ng';
 
 import { AuthFacade, type PendingProfile } from '../../auth/auth.facade';
+import { matchMediaAt } from '../../client/mon-compte/account.fixture';
+import { SignInDialog } from '../sign-in-dialog/sign-in-dialog';
 
 import { ClientChrome } from '../../client/client-chrome.service';
 import { FR } from '../../client/copy/fr';
@@ -58,8 +63,22 @@ describe('AccueilPage', () => {
   /** Ce que l'écran demande à Auth0 — la seule chose qu'on veuille observer. */
   let asked: { kind: 'register' | 'login' | 'google'; target: string; payload: unknown }[];
 
+  /**
+   * Les dialogues ouverts par l'écran.
+   *
+   * ⚠️ « Déjà client ? » n'appelle plus Auth0 : il ouvre le dialogue des
+   * méthodes, qui redirige ensuite. Ce qu'on observe ici est donc l'OUVERTURE
+   * et ce qu'elle transmet — la destination, et l'adresse déjà tapée.
+   */
+  let opened: { component: unknown; data: unknown }[];
+
   beforeEach(() => {
     asked = [];
+    opened = [];
+    // `dialogSide()` lit `matchMedia` pour choisir entre le dialogue centré et
+    // la feuille du bas. Absent du harnais, il fait échouer l'OUVERTURE — pas
+    // l'assertion, ce qui rend la panne illisible.
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
     const auth = {
       isAuthenticated: signal(false),
       pendingProfile: signal<PendingProfile | null>(null),
@@ -75,7 +94,19 @@ describe('AccueilPage', () => {
     };
     TestBed.configureTestingModule({
       imports: [AccueilPage],
-      providers: [provideRouter([]), { provide: AuthFacade, useValue: auth }],
+      providers: [
+        provideRouter([]),
+        { provide: AuthFacade, useValue: auth },
+        {
+          provide: FoldPanelHostService,
+          useValue: {
+            open: (component: unknown, options: { data?: unknown }): { close: () => void } => {
+              opened.push({ component, data: options.data });
+              return { close: (): void => undefined };
+            },
+          },
+        },
+      ],
     });
     fixture = TestBed.createComponent(AccueilPage);
     chrome = TestBed.inject(ClientChrome);
@@ -166,15 +197,27 @@ describe('AccueilPage', () => {
     expect(google).toBeLessThan(signup);
   });
 
-  it("« Déjà client ? » souffle l'e-mail déjà tapé à l'écran de connexion", () => {
-    // Ce n'est plus un lien à attendre : Auth0 reconnaît la passkey. Mais qui
-    // vient de taper son adresse chez nous n'a pas à la retaper chez lui.
+  /**
+   * 🔴 Le geste OUVRE LE DIALOGUE, il ne redirige plus (Hugo, 2026-09-22 :
+   * « quand je fais me connecter j'arrive sur la page inscription »). Partir
+   * droit chez Auth0 n'annonçait aucune des méthodes possibles — Google le
+   * premier — et envoyait sur un mot de passe que beaucoup n'ont jamais posé.
+   *
+   * L'adresse déjà tapée suit : c'est elle qui préremplira l'écran d'Auth0 si
+   * la personne prend le chemin de l'e-mail.
+   */
+  it("« Déjà client ? » ouvre les méthodes, l'e-mail déjà tapé en main", () => {
     type(MAIL, 'pierre@brasserie-marchand.fr');
     click(FR.doors.alreadyTitle);
 
-    expect(asked).toEqual([
-      { kind: 'login', target: '/accueil', payload: 'pierre@brasserie-marchand.fr' },
+    expect(opened).toEqual([
+      {
+        component: SignInDialog,
+        data: { target: '/accueil', email: 'pierre@brasserie-marchand.fr' },
+      },
     ]);
+    // …et RIEN n'est parti chez Auth0 : c'est le dialogue qui décidera.
+    expect(asked).toEqual([]);
   });
 
   /**

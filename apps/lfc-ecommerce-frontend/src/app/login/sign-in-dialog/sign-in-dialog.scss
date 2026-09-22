@@ -1,0 +1,34 @@
+/* Le corps du dialogue empile ses blocs ; l'espacement vient d'ici, jamais des
+   marges des enfants (règle « Un composant ne pose JAMAIS sa marge »). */
+:host {
+  display: contents;
+}
+
+.lead {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  line-height: var(--fold-leading-normal);
+}
+
+.social {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* 🔴 EN POGONIA, pas en Chunk — la règle posée le 2026-09-21 sur la carte
+   d'inscription vaut ici pour la même raison : `--fold-button-font` est la voix
+   des ACTIONS de la maison, et entrer par un fournisseur n'en est pas une.
+   C'est un chemin d'accès ; le mettre au volume de « Continuer » rangerait les
+   deux au même rang. */
+.social-button {
+  font-family: var(--fold-font-sans);
+  text-transform: none;
+}
+
+/* Le logo garde ses proportions et sa taille : la charte du fournisseur les impose. */
+.social-logo {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+}

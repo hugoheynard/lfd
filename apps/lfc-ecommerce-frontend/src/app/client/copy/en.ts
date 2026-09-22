@@ -131,6 +131,8 @@ export const EN: ClientCopy = {
     alreadySub: 'Password, or your device',
     firstTitle: 'First time ?',
     firstSub: 'First name, email, phone',
+    signInLead: 'Continue the way you chose when you opened your account.',
+    signInSubmit: 'Continue',
     switchLabel: 'Account type',
     persoLabel: 'Individual',
     persoSub: 'I order for myself',
