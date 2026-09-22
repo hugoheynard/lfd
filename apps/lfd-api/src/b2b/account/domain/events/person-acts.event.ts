@@ -78,6 +78,36 @@ export class PasswordLinkIssuedEvent implements JournaledEvent {
 }
 
 /**
+ * **La personne a demandé à changer son mot de passe**, depuis son profil, et un
+ * lien est parti à l'adresse de son compte.
+ *
+ * Comme pour {@link PasswordLinkIssuedEvent}, **le lien n'entre pas au
+ * journal** : c'est un porteur de droits. Le geste, lui, oui — c'est la seule
+ * trace qu'un lien a été demandé pour ce compte, et la seule façon de voir une
+ * rafale de demandes après coup.
+ *
+ * Il n'atteste pas qu'un e-mail est arrivé : il dit qu'on l'a demandé
+ * (CLAUDE.md §0, « un e-mail parti est parti » — et un e-mail accepté n'est pas
+ * un e-mail lu).
+ */
+export class PasswordResetRequestedEvent implements JournaledEvent {
+  constructor(
+    readonly userId: string,
+    /** Le nom de la personne, ou `null` si son profil n'en porte pas. */
+    readonly name: string | null,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: ACCOUNT_FACTS.passwordResetRequested,
+      subjectType: "user",
+      subjectId: this.userId,
+      payload: labelOf(this.name),
+    };
+  }
+}
+
+/**
  * Un accès à l'espace d'une société est ouvert à une personne — invitation d'un
  * membre, ou rattachement du détenteur d'un compte ouvert sans lui. La personne
  * est désignée par son id `users`, son nom saisi s'il y en a un, et son rôle —

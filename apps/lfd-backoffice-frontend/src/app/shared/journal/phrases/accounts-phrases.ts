@@ -671,6 +671,11 @@ export const ACCOUNTS_PHRASES = {
   'user.profile_updated': profileUpdated,
   'user.identity_linked': loginMethod('a ajouté'),
   'user.identity_revoked': loginMethod('a retiré'),
+  // La personne agit sur elle-même : la phrase ne nomme donc pas de tiers, et
+  // ne dit RIEN de ce qu'il advient de son mot de passe actuel — rien ne
+  // l'atteste chez nous (plan `plan-page-mon-profil.md`, §7.2).
+  'user.password_reset_requested': (fact) =>
+    byActor(fact, [text('a demandé à changer son mot de passe')], selfLabel(fact)),
   'user.password_link_issued': (fact) =>
     byActor(
       fact,

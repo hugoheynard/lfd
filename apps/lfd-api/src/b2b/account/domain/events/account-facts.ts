@@ -102,6 +102,14 @@ export const ACCOUNT_FACTS = {
   /** Un agent fabrique un lien de mot de passe à remettre — le geste, pas le lien. */
   passwordLinkIssued: "user.password_link_issued",
   /**
+   * La personne demande elle-même à changer son mot de passe, depuis son profil.
+   *
+   * 🔴 **Pas `passwordLinkIssued` réutilisé** : sa phrase dit « à lui remettre
+   * en personne », ce qui serait faux ici — personne ne remet rien, le lien
+   * part à la boîte et l'acteur est le sujet lui-même.
+   */
+  passwordResetRequested: "user.password_reset_requested",
+  /**
    * Une méthode de connexion de plus ouvre le compte (Google, demain Facebook).
    *
    * Préfixé `user.` et non `account.` comme l'écrivait le plan : le journal

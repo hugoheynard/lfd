@@ -441,6 +441,34 @@ export class SocialSignInAccountExistsError extends BusinessError {
  * Le message ne cite aucun identifiant — ni le nôtre, ni celui du fournisseur :
  * il nomme le cas et le geste de sortie, qui est de se connecter avec.
  */
+/**
+ * **Notre identifiant de connexion ne dit plus rien au fournisseur.**
+ *
+ * Nos deux bases ont divergé : l'identité enregistrée pour ce compte n'existe
+ * plus chez Auth0 — supprimée là-bas, ouverte contre un autre tenant, ou semée
+ * en développement.
+ *
+ * 🔴 **Pourquoi elle existe, alors qu'une erreur le disait déjà.**
+ * `IdentitySubjectUnknownError` est un `TechnicalError`, donc un **500**, et
+ * c'est juste pour le chemin qui l'a fait naître : un geste staff qui peut
+ * RÉPARER en repartant de l'adresse e-mail. Sur les méthodes de connexion, il
+ * n'y a personne pour réparer et rien à réessayer — la personne regardait
+ * simplement son écran. Un 500 y affiche « une panne est survenue » et
+ * remplit le journal de production d'alarmes pour un fait qui n'en est pas une.
+ *
+ * Le message nomme le cas et le geste de sortie. Il ne cite aucun identifiant :
+ * celui du fournisseur n'a rien à faire dans un message (`lint:auth0-id-readers`).
+ */
+export class LoginMethodsUnknownAccountError extends BusinessError {
+  constructor() {
+    super(
+      "identity.account_unknown_at_provider",
+      "Votre compte n'est plus reconnu par notre service de connexion : nous ne " +
+        "pouvons ni lire ni modifier vos méthodes de connexion. Écrivez-nous, cela se répare.",
+    );
+  }
+}
+
 export class LoginMethodClaimedElsewhereError extends BusinessError {
   constructor() {
     super(
@@ -459,6 +487,34 @@ export class LoginMethodClaimedElsewhereError extends BusinessError {
  * onglets, un double clic), et il couvre aussi la preuve qui désigne le compte
  * courant lui-même — on ne se relie pas à soi-même.
  */
+/**
+ * **Ce compte n'a pas de connexion par mot de passe** — il s'ouvre par un
+ * service tiers, et il n'y a donc rien à réinitialiser.
+ *
+ * 🔴 Le refus est posé **avant** d'appeler le fournisseur, et c'est là tout son
+ * intérêt. `issuePasswordLink` ne filtre pas la connexion : il ne vérifie que
+ * la forme du sujet. Sur un compte entré par Google, Auth0 refuse d'émettre et
+ * la chaîne rendait un **500 « une panne est survenue »** à quelqu'un dont le
+ * compte va parfaitement bien — un incident dans le journal de production pour
+ * un fait qui n'en est pas un, et aucune indication de ce qu'il fallait faire.
+ *
+ * Le message ne cite aucun identifiant : ni le nôtre, ni celui du fournisseur
+ * (`lint:auth0-id-readers`). Il ne promet pas non plus d'ouvrir une connexion
+ * par mot de passe depuis le profil — ce geste n'existe pas, et un refus qui
+ * envoie vers une porte fermée ne vaut pas mieux que pas de refus.
+ */
+export class NoPasswordLoginMethodError extends BusinessError {
+  constructor() {
+    super(
+      "identity.no_password_login",
+      "Votre compte n'utilise pas de mot de passe : vous vous connectez par un service " +
+        "tiers (Google, par exemple). Il n'y a donc rien à réinitialiser — continuez à " +
+        "vous connecter de cette façon, ou écrivez-nous si vous souhaitez ouvrir une " +
+        "connexion par mot de passe.",
+    );
+  }
+}
+
 export class LoginMethodAlreadyLinkedError extends BusinessError {
   constructor() {
     super(

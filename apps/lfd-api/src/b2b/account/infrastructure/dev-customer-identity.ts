@@ -1,5 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 
+import { AppConfig } from "../../../platform/config/app-config.js";
+import { MAILER, type B2bMailer } from "../../../platform/mailer/mailer.tokens.js";
 import {
   CustomerIdentityPort,
   type IdentityToProvision,
@@ -9,6 +11,13 @@ import {
 
 /** La stratégie que porte un sujet fabriqué ici (`dev|…`). */
 const DEV_PROVIDER = "dev";
+
+/**
+ * La stratégie d'une identité à MOT DE PASSE chez Auth0 — ce que l'écran sait
+ * nommer « E-mail ». L'adaptateur de développement l'emprunte pour ses propres
+ * sujets, cf. {@link primaryOf}.
+ */
+const DATABASE_PROVIDER = "auth0";
 
 /**
  * Fournisseur d'identité de **DÉVELOPPEMENT** — aucun appel réseau.
@@ -33,6 +42,13 @@ const DEV_PROVIDER = "dev";
 @Injectable()
 export class DevCustomerIdentity extends CustomerIdentityPort {
   private readonly logger = new Logger(DevCustomerIdentity.name);
+
+  constructor(
+    private readonly config: AppConfig,
+    @Inject(MAILER) private readonly mailer: B2bMailer,
+  ) {
+    super();
+  }
 
   /**
    * Les méthodes **secondaires** rattachées, par sujet. En mémoire, donc
@@ -62,8 +78,37 @@ export class DevCustomerIdentity extends CustomerIdentityPort {
     return Promise.resolve(devPasswordUrl(subject));
   }
 
+  /**
+   * **Le courriel passe quand même par le mailer**, et c'est le sujet.
+   *
+   * 🔴 Cette méthode se contentait de journaliser (relevé par Hugo le
+   * 2026-09-22 : l'écran disait « Un lien vous a été envoyé » alors que RIEN
+   * n'était parti, ni même rendu). Elle court-circuitait une pièce qui existe :
+   * sans clé Resend, le mailer est le `DryRunMailer`, qui **rend** le gabarit,
+   * le journalise, et n'envoie pas. Le chemin local a donc désormais la même
+   * FORME que la production — et une faute dans le gabarit se voit ici, au lieu
+   * d'attendre le jour où la clé arrive.
+   *
+   * ⚠️ Le mailer à blanc journalise l'en-tête, pas le corps : le lien n'y
+   * figure pas. On le journalise donc à part, parce que c'est la seule façon de
+   * suivre le parcours en local. Il ne mène nulle part (`dev.invalid`) — c'est
+   * ce qui rend l'exception à « le lien ne sort que par la boîte » acceptable.
+   */
+  async sendPasswordResetLink(subject: string, email: string): Promise<void> {
+    const passwordSetupUrl = devPasswordUrl(subject);
+    await this.mailer.send({
+      to: email,
+      template: "customer.password-reset",
+      data: { passwordSetupUrl },
+    });
+    this.logger.warn(`[dev] lien de mot de passe factice pour ${email} : ${passwordSetupUrl}`);
+  }
+
   listLoginMethods(subject: string): Promise<readonly LoginMethod[]> {
-    return Promise.resolve([primaryOf(subject), ...(this.linked.get(subject) ?? [])]);
+    return Promise.resolve([
+      primaryOf(subject, this.config.auth0DatabaseConnection()),
+      ...(this.linked.get(subject) ?? []),
+    ]);
   }
 
   /**
@@ -104,13 +149,30 @@ export class DevCustomerIdentity extends CustomerIdentityPort {
 /**
  * L'identité **porteuse** du compte, déduite du sujet : c'est ce que le
  * fournisseur rend toujours en premier, et elle ne se détache jamais.
+ *
+ * 🔴 **Elle déclare la connexion CLIENT, et c'est ce qui rend le parcours
+ * jouable** (2026-09-22). Elle rendait `connection: null` — techniquement
+ * honnête, puisqu'aucun tenant n'est derrière — mais le serveur refuse le lien
+ * de mot de passe à qui n'a aucune identité sur la connexion à mot de passe
+ * (`request-password-reset.handler.ts`). En local, le refus tombait donc
+ * TOUJOURS, et le seul geste qu'on voulait essayer était le seul injouable.
+ *
+ * Le `provider` suit la même logique : un sujet `dev|…` annoncerait `dev`, que
+ * l'écran ne sait pas nommer — il afficherait le mot technique au lieu de
+ * « E-mail », et la ligne perdrait ses gestes. On émule donc ce que le vrai
+ * fournisseur rendrait, ce qui est exactement le métier de cet adaptateur.
+ *
+ * ⚠️ Un sujet qui vient VRAIMENT d'un fournisseur (`google-oauth2|…`) garde sa
+ * stratégie : on n'émule que ce qu'on a fabriqué.
  */
-function primaryOf(subject: string): LoginMethod {
+function primaryOf(subject: string, customerConnection: string): LoginMethod {
   const cut = subject.indexOf("|");
+  const strategy = cut < 0 ? DEV_PROVIDER : subject.slice(0, cut);
+  const fabricated = strategy === DEV_PROVIDER;
   return {
-    provider: cut < 0 ? DEV_PROVIDER : subject.slice(0, cut),
+    provider: fabricated ? DATABASE_PROVIDER : strategy,
     secondaryUserId: cut < 0 ? subject : subject.slice(cut + 1),
-    connection: null,
+    connection: fabricated ? customerConnection : null,
     isPrimary: true,
   };
 }
@@ -118,9 +180,20 @@ function primaryOf(subject: string): LoginMethod {
 /**
  * Ce qu'un jeton de preuve « rattache » en développement : le port de preuve
  * doublé rend un sujet, et c'est ce sujet-là qu'on ajoute.
+ *
+ * ⚠️ Elle ne passe **plus** par {@link primaryOf} : celle-ci emprunte la
+ * connexion à mot de passe pour les sujets fabriqués ici, ce qui ferait passer
+ * une méthode SECONDAIRE pour une identité à mot de passe — et le lien de
+ * réinitialisation serait alors offert à un compte qui n'en a pas.
  */
 function devSecondary(provenSubject: string): LoginMethod {
-  return { ...primaryOf(provenSubject), isPrimary: false };
+  const cut = provenSubject.indexOf("|");
+  return {
+    provider: cut < 0 ? DEV_PROVIDER : provenSubject.slice(0, cut),
+    secondaryUserId: cut < 0 ? provenSubject : provenSubject.slice(cut + 1),
+    connection: null,
+    isPrimary: false,
+  };
 }
 
 /**

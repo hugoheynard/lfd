@@ -13,6 +13,9 @@
  * Le double de preuve est trivial et suit celui du harnais : **le jeton EST le
  * sujet prouvé**.
  */
+import type { MailReceipt } from "@lfd/mailer";
+
+import { AppConfig } from "../src/platform/config/app-config.js";
 import { DevCustomerIdentity } from "../src/b2b/account/infrastructure/dev-customer-identity.js";
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
 import {
@@ -41,7 +44,13 @@ beforeAll(async () => {
       // L'adaptateur de développement plutôt que celui d'Auth0, quoi que
       // l'environnement porte : un e2e ne doit pas dépendre de la présence
       // d'un secret M2M pour choisir ce qu'il éprouve.
-      { token: CustomerIdentityPort, value: new DevCustomerIdentity() },
+      {
+        token: CustomerIdentityPort,
+        value: new DevCustomerIdentity(new AppConfig(), {
+          enabled: false,
+          send: (): Promise<MailReceipt> => Promise.resolve({ providerId: null }),
+        }),
+      },
     ],
   });
 });

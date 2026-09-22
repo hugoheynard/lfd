@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
@@ -17,6 +18,7 @@ import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { DeclareMyEstablishmentCommand } from "../application/commands/declare-my-establishment.command.js";
 import { LinkLoginMethodCommand } from "../application/commands/link-login-method.command.js";
+import { RequestPasswordResetCommand } from "../application/commands/request-password-reset.command.js";
 import { RevokeLoginMethodCommand } from "../application/commands/revoke-login-method.command.js";
 import { ListMyLoginMethodsQuery } from "../application/queries/list-my-login-methods.query.js";
 import { UpdateMyProfileCommand } from "../application/commands/update-my-profile.command.js";
@@ -24,6 +26,7 @@ import { UpdateNavPreferencesCommand } from "../application/commands/update-nav-
 import { GetMyAccountQuery } from "../application/queries/get-my-account.query.js";
 import type { AccountView } from "../domain/ports/account.reader.js";
 import type { NavPreferencesPatch } from "../domain/value-objects/nav-preferences.js";
+import { PasswordLinkThrottleGuard } from "./password-link-throttle.guard.js";
 import {
   declareEstablishmentPayload,
   type DeclareEstablishmentPayload,
@@ -169,6 +172,36 @@ export class MeController {
     );
     return this.queries.execute<ListMyLoginMethodsQuery, LoginMethodsView>(
       new ListMyLoginMethodsQuery(user.subject),
+    );
+  }
+
+  /**
+   * **Demande un lien pour changer son mot de passe.** Sans corps, 204.
+   *
+   * 🔴 **Le lien n'est jamais rendu** — ni ici, ni dans un log, ni ailleurs que
+   * dans le courriel qui part à l'adresse du compte. Le ticket porte
+   * `mark_email_as_verified` : le suivre PROUVE l'accès à la boîte, donc
+   * l'afficher marquerait prouvée une adresse que personne n'a ouverte. D'où le
+   * 204 — il n'y a littéralement rien à renvoyer —, et d'où le fait que cette
+   * route n'emprunte PAS `IssuePasswordLinkHandler`, qui rend `{ url,
+   * expiresAt }` au staff.
+   *
+   * Rien n'est lu du corps ni de l'URL : l'identité, l'adresse et le sujet
+   * viennent tous du `Principal`, donc de la base.
+   *
+   * Le garde de débit est posé **sur la route** et non en global : le limiteur
+   * du dépôt s'exécute avant l'authentification et ne connaît que l'IP, alors
+   * que ce qu'il faut borner ici est le nombre de courriels par **compte**.
+   *
+   * 409 si le compte n'a pas de connexion par mot de passe (il entre par
+   * Google) ; 429 au-delà du débit.
+   */
+  @Post("password-link")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(PasswordLinkThrottleGuard)
+  async requestPasswordLink(@CurrentUser() user: Principal): Promise<void> {
+    await this.commands.execute<RequestPasswordResetCommand, void>(
+      new RequestPasswordResetCommand(user.userId, user.subject, user.email),
     );
   }
 

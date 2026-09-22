@@ -312,6 +312,21 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
   "user.password_link_issued": fact(payload({ subjectLabel: subjectLabel().optional() }), [
     empty(),
   ]),
+  /**
+   * **La personne a demandé elle-même à changer son mot de passe**, depuis son
+   * profil — et un lien est parti à l'adresse de son compte.
+   *
+   * 🔴 Un fait à part, et pas `user.password_link_issued` réutilisé : celui-ci
+   * dit qu'un agent a fabriqué un lien « à lui remettre en personne ». Ici
+   * personne ne remet rien, et l'acteur est le sujet lui-même. Deux gestes
+   * différents sous un même nom rendraient la question « qui a donné de quoi
+   * ouvrir ce compte » sans réponse — c'est précisément à elle que le journal
+   * sert.
+   *
+   * ⚠️ Il nomme la **demande**, pas l'arrivée du message : un e-mail accepté
+   * par le fournisseur n'est pas un e-mail lu (CLAUDE.md §0).
+   */
+  "user.password_reset_requested": fact(payload({ subjectLabel: subjectLabel().optional() })),
 
   /**
    * Une méthode de connexion de plus ouvre le même compte — Google, demain

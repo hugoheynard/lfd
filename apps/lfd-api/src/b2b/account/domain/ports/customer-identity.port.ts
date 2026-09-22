@@ -82,6 +82,27 @@ export abstract class CustomerIdentityPort {
   abstract issuePasswordLink(subject: string): Promise<string>;
 
   /**
+   * **Émet un lien de mot de passe ET l'envoie**, à l'adresse du compte.
+   *
+   * 🔴 Elle ne rend rien, et c'est tout son objet. {@link issuePasswordLink}
+   * rend le lien à son appelant parce qu'un commercial doit pouvoir le remettre
+   * en personne ; ici la personne se sert elle-même, et le lien ne doit
+   * atteindre que **sa boîte**. Le ticket porte `mark_email_as_verified` : le
+   * suivre PROUVE l'accès à la boîte, donc l'afficher à l'écran marquerait
+   * prouvée une adresse que personne n'a ouverte. Un port qui rendrait l'URL
+   * laisserait cette faute à un appelant près.
+   *
+   * L'émission et l'envoi sont donc **un seul geste**, tenu par l'adaptateur :
+   * le lien n'existe qu'entre ces deux lignes-là.
+   *
+   * @param subject `sub` du fournisseur — l'identité visée.
+   * @param email l'adresse du compte, celle de notre base : c'est à elle que le
+   *   message part, jamais à une adresse reçue d'un appelant.
+   * @throws {IdentityProviderUnavailableError} canal non configuré ou en échec.
+   */
+  abstract sendPasswordResetLink(subject: string, email: string): Promise<void>;
+
+  /**
    * Les **méthodes de connexion** du compte, telles que le fournisseur les tient.
    *
    * C'est le prix du rattachement chez lui : la liste n'est pas chez nous, donc

@@ -38,6 +38,22 @@ import {
  */
 export const PASSWORD_TICKET_TTL_SECONDS = 7 * 24 * 60 * 60;
 
+/**
+ * Durée de vie d'un lien que la personne **a demandé elle-même** : **une heure**.
+ *
+ * Les sept jours ci-dessus sont ceux d'une **invitation** — on ouvre une porte à
+ * quelqu'un qui n'a rien demandé, et qui lira peut-être la semaine suivante. Ici
+ * la personne est devant son écran : elle ouvre sa boîte tout de suite, et le
+ * lien n'a aucune raison de survivre à sa journée. Plus il vit, plus longtemps
+ * une boîte compromise ou une session laissée ouverte sur un poste partagé
+ * ouvre le compte.
+ *
+ * Elle est **passée** au fournisseur plutôt que lue par lui, pour que les deux
+ * durées ne puissent pas dériver l'une vers l'autre : baisser celle des
+ * invitations casserait les congés, monter celle-ci rouvrirait la fenêtre.
+ */
+export const SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS = 60 * 60;
+
 /** L'empreinte d'une adresse chez le fournisseur — assez pour trancher, pas plus. */
 export interface IdentityFootprint {
   readonly connections: readonly string[];
@@ -116,11 +132,18 @@ export class Auth0IdentityGateway {
    * traînait dans une boîte partagée.
    *
    * @param resultUrl où atterrir une fois le mot de passe posé, si on le sait.
+   * @param ttlSeconds combien de temps le lien ouvre. Par défaut celui d'une
+   *   invitation ({@link PASSWORD_TICKET_TTL_SECONDS}) ; un geste de
+   *   libre-service passe le sien, plus court.
    * @throws {IdentitySubjectUnknownError} le fournisseur ne connaît pas ce
    *   sujet. Distinct d'une panne : l'appelant qui dispose de l'e-mail peut
    *   repasser par `provision` et réaligner nos deux bases.
    */
-  async issuePasswordLink(subject: string, resultUrl?: string): Promise<string> {
+  async issuePasswordLink(
+    subject: string,
+    resultUrl?: string,
+    ttlSeconds: number = PASSWORD_TICKET_TTL_SECONDS,
+  ): Promise<string> {
     // Un sujet que le fournisseur ne peut PAS connaître ne se demande pas : on
     // le déclare inconnu tout de suite, ce que l'appelant sait rattraper.
     //
@@ -135,7 +158,7 @@ export class Auth0IdentityGateway {
     }
     const ticket = await this.api.call("POST", "/api/v2/tickets/password-change", {
       user_id: subject,
-      ttl_sec: PASSWORD_TICKET_TTL_SECONDS,
+      ttl_sec: ttlSeconds,
       // Suivre ce lien **prouve** l'accès à la boîte, ce qu'un e-mail de
       // vérification demanderait ensuite. En envoyer un second serait redondant,
       // et le premier réflexe serait de le prendre pour un doublon suspect.
