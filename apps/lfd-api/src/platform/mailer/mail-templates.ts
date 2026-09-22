@@ -7,6 +7,7 @@ import {
   type TemplateRegistry,
 } from "@lfd/mailer";
 
+import { SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS } from "../identity/auth0-identity.gateway.js";
 import { fill, mailCopyOf } from "./copy/mail-copy.js";
 import { MANDATE_TO_SIGN_WORDING, type MandateMailScheme } from "./mandate-to-sign-wording.js";
 import { qrPng } from "./qr-image.js";
@@ -140,10 +141,15 @@ export interface B2bMails {
   /**
    * Un accès à l'espace vient d'être ouvert. Destinataire : **le client**.
    *
-   * Le premier e-mail de cette carte qui ne s'adresse pas à l'équipe — et le
-   * seul endroit du système où le lien de création de mot de passe a le droit
-   * d'apparaître. Ce lien vaut prise de contrôle du compte : sa seule
+   * Le premier e-mail de cette carte qui ne s'adresse pas à l'équipe — et l'un
+   * des **quatre** endroits du système où un lien de mot de passe a le droit
+   * d'apparaître (avec `customer.password-reset`, `staff.invited` et
+   * `staff.password-reset`). Ce lien vaut prise de contrôle du compte : sa seule
    * destination légitime est la boîte de la personne concernée.
+   *
+   * ⚠️ La phrase disait « le seul endroit » jusqu'au 2026-09-22, alors qu'ils
+   * étaient déjà trois : `staff.password-reset` existe depuis l'ouverture du
+   * back-office, et la phrase avait survécu à sa propre péremption.
    */
   "customer.access-opened": {
     readonly firstName: string;
@@ -201,13 +207,41 @@ export interface B2bMails {
     readonly methodLabel: string;
   };
   /**
+   * **La personne a demandé à changer son mot de passe** depuis son profil.
+   * Destinataire : elle, à l'adresse de son compte.
+   *
+   * Distinct de `customer.access-opened` : personne ne lui ouvre quoi que ce
+   * soit, elle est déjà entrée. Et distinct de `staff.password-reset`, qui
+   * parle du back-office et s'adresse à l'équipe.
+   *
+   * 🔴 **Il ne dit rien du mot de passe actuel ni des sessions en cours.** Trois
+   * comportements d'Auth0 ne sont vérifiés nulle part chez nous : un ticket
+   * émis invalide-t-il le mot de passe courant avant d'être suivi, révoque-t-il
+   * les sessions, que rend-il sur une identité sociale (plan
+   * `documentation/auth-inscription/plan-page-mon-profil.md`, §7.2). Un e-mail
+   * parti est parti — on n'y écrit pas une rassurance qu'on n'a pas vérifiée.
+   *
+   * ⚠️ `staff.password-reset` en porte une, lui : « votre mot de passe actuel
+   * reste valable ». Elle est **déjà partie chez des humains** et n'a jamais
+   * été vérifiée ; elle se tranche pour les deux surfaces à la fois, et ce
+   * gabarit-ci ne la recopie pas en attendant.
+   */
+  "customer.password-reset": {
+    /** Le lien à usage unique, valable une heure. */
+    readonly passwordSetupUrl: string;
+  };
+  /**
    * Un accès au **back-office** vient d'être ouvert. Destinataire : **le membre
    * de l'équipe**.
    *
-   * Le second endroit du système — avec `customer.access-opened` — où un lien de
-   * mot de passe a le droit d'apparaître, et pour la même raison : sa seule
-   * destination légitime est la boîte de la personne concernée. Qui lit ce lien
-   * devient elle.
+   * Un des quatre endroits du système où un lien de mot de passe a le droit
+   * d'apparaître, et pour la même raison que les trois autres
+   * (`customer.access-opened`, `customer.password-reset`,
+   * `staff.password-reset`) : sa seule destination légitime est la boîte de la
+   * personne concernée. Qui lit ce lien devient elle.
+   *
+   * ⚠️ La phrase disait « le second endroit » jusqu'au 2026-09-22 — elle avait
+   * survécu à l'arrivée de `staff.password-reset`.
    */
   "staff.invited": {
     readonly firstName: string;
@@ -342,12 +376,43 @@ function settlementOf(sheet: ClientSheet): "paid" | "due" | "account" {
  * image par message, et un identifiant tiré au sort rendrait le rendu
  * non-déterministe pour rien.
  */
+/**
+ * « 1 heure », dérivé du TTL réellement demandé au fournisseur plutôt qu'écrit
+ * à la main : une durée annoncée qui ne serait plus celle du ticket ferait
+ * chercher un lien encore valable qui ne l'est plus, ou l'inverse.
+ */
+const SELF_SERVICE_LINK_VALIDITY = `${Math.round(SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS / 3600)} heure${
+  SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS >= 2 * 3600 ? "s" : ""
+}`;
+
 const QR_CONTENT_ID = "qr-retrait";
 
+/**
+ * **Deux marques, deux publics** (Hugo, 2026-09-22 : « remplacer La Folie Douce
+ * par La Folie Coffee dans ce contexte-là »).
+ *
+ * `La Folie Coffee` est l'enseigne que le CLIENT connaît — le nom de la
+ * boutique, du domaine, et de ce qu'il a commandé. `La Folie Douce` est la
+ * maison, celle que l'ÉQUIPE voit dans son back-office. Un courriel qui se
+ * présente sous l'autre nom se lit comme une tentative d'hameçonnage : le
+ * destinataire ne reconnaît pas l'expéditeur.
+ *
+ * 🔴 **Une seule coquille servait les deux jusqu'au 2026-09-22**, et elle posait
+ * « La Folie Douce » pour tout le monde. Ce n'était pas une inattention : rien,
+ * au point d'appel, ne rappelait à qui on écrivait. D'où deux coquilles dont le
+ * NOM dit le public — se tromper demande désormais de l'écrire.
+ */
+const CUSTOMER_BRAND = "La Folie Coffee";
+const STAFF_BRAND = "La Folie Douce";
+
 export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails> {
-  /** La coquille des e-mails adressés à une PERSONNE : marque + recours. */
-  const person = (input: Omit<LayoutInput, "brand" | "supportEmail">): string =>
-    renderLayout({ ...input, brand: "La Folie Douce", supportEmail: brand.supportEmail });
+  /** La coquille d'un courriel adressé à un CLIENT — l'enseigne qu'il connaît. */
+  const customerMail = (input: Omit<LayoutInput, "brand" | "supportEmail">): string =>
+    renderLayout({ ...input, brand: CUSTOMER_BRAND, supportEmail: brand.supportEmail });
+
+  /** La coquille d'un courriel adressé à l'ÉQUIPE — la maison. */
+  const staffMail = (input: Omit<LayoutInput, "brand" | "supportEmail">): string =>
+    renderLayout({ ...input, brand: STAFF_BRAND, supportEmail: brand.supportEmail });
 
   return {
     "customer.order-ready": (data) => {
@@ -357,7 +422,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       const pieces = data.sheet.lines.reduce((sum, line) => sum + line.quantity, 0);
       return {
         subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
-        html: person({
+        html: customerMail({
           title: pickup ? copy.titlePickup : copy.titleDelivery,
           body: `${pickup ? copy.introPickup : copy.introDelivery}\n\n${data.sheet.reference}`,
           // Deux lignes et pas un décompte : où, et combien de pièces. Ce
@@ -407,7 +472,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       const showQr = data.handoverToken !== null && data.handoverUrl !== "";
       return {
         subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
-        html: person({
+        html: customerMail({
           title: copy.title[settlement],
           body: `${copy.intro}\n\n${data.sheet.reference}`,
           rows: recapRows(data.sheet, data.locale, settlement),
@@ -482,7 +547,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       const copy = mailCopyOf(data.locale).paymentFailed;
       return {
         subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
-        html: person({
+        html: customerMail({
           title: copy.title,
           // La conséquence SUIT la cause, dans le corps et pas dans un encadré :
           // c'est la phrase qui dit quoi faire, et un client qui ne lit qu'un
@@ -500,11 +565,11 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     },
     "customer.access-opened": (data) => ({
       subject: sanitiseSubject(`Votre accès à l'espace pro ${data.companyName}`),
-      html: person({
+      html: customerMail({
         title: `Bienvenue${data.firstName === "" ? "" : `, ${data.firstName}`}`,
         body:
           `Un accès à l'espace professionnel de ${data.companyName} vient d'être ouvert à votre nom ` +
-          "par l'équipe La Folie Douce.\n\n" +
+          "par l'équipe La Folie Coffee.\n\n" +
           "Il ne reste qu'à choisir votre mot de passe. Le lien ci-dessous est valable 7 jours ; " +
           "passé ce délai, demandez-nous simplement de vous en renvoyer un.",
         cta: { label: "Choisir mon mot de passe", url: data.passwordSetupUrl },
@@ -514,7 +579,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     }),
     "staff.invited": (data) => ({
       subject: sanitiseSubject("Votre accès au back-office La Folie Douce"),
-      html: person({
+      html: staffMail({
         title: `Bienvenue dans l'équipe${data.firstName === "" ? "" : `, ${data.firstName}`}`,
         body:
           "Un accès au back-office vient d'être ouvert à votre nom.\n\n" +
@@ -527,7 +592,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     }),
     "customer.order-placed-with-your-email": (data) => ({
       subject: sanitiseSubject("Une commande vient d'être passée avec votre adresse"),
-      html: person({
+      html: customerMail({
         title: `Bonjour${data.firstName === "" ? "" : `, ${data.firstName}`}`,
         body:
           "Une commande vient d'être passée sur notre boutique en indiquant votre adresse " +
@@ -542,10 +607,10 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     }),
     "customer.login-method-linked": (data) => ({
       subject: sanitiseSubject(`Une connexion ${data.methodLabel} a été ajoutée à votre compte`),
-      html: person({
+      html: customerMail({
         title: `Bonjour${data.firstName === "" ? "" : `, ${data.firstName}`}`,
         body:
-          `Vous pouvez désormais vous connecter à votre compte La Folie Douce avec ` +
+          `Vous pouvez désormais vous connecter à votre compte La Folie Coffee avec ` +
           `${data.methodLabel}, en plus de votre méthode habituelle.\n\n` +
           "C'est le même compte : mêmes commandes, mêmes informations.",
         footer:
@@ -553,13 +618,31 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
           "nous retirerons cette méthode de connexion et regarderons ce qui s'est passé.",
       }),
     }),
+    "customer.password-reset": (data) => ({
+      subject: sanitiseSubject("Votre lien pour changer de mot de passe"),
+      html: customerMail({
+        title: "Changer votre mot de passe",
+        // Ce qu'on SAIT, et rien de plus : un lien est parti, il expire, il
+        // faut le suivre pour choisir. Ce qu'il advient du mot de passe actuel
+        // et des sessions ouvertes n'est vérifié nulle part — cf. le JSDoc du
+        // gabarit dans la carte, plus haut.
+        body:
+          "Vous venez de demander à changer le mot de passe de votre compte La Folie Coffee.\n\n" +
+          `Le lien ci-dessous est à usage unique et expire dans ${SELF_SERVICE_LINK_VALIDITY}. ` +
+          "Il faut le suivre pour choisir votre nouveau mot de passe.",
+        cta: { label: "Choisir un nouveau mot de passe", url: data.passwordSetupUrl },
+        footer:
+          "Vous n'avez pas fait cette demande ? Ne suivez pas ce lien et répondez à cet " +
+          "e-mail : nous regarderons ce qui s'est passé.",
+      }),
+    }),
     "customer.company-attached": (data) => ({
       subject: sanitiseSubject(`${data.companyName} a été ajoutée à votre espace pro`),
-      html: person({
+      html: customerMail({
         title: `Bonjour${data.firstName === "" ? "" : `, ${data.firstName}`}`,
         body:
           `L'établissement ${data.companyName} vient d'être rattaché à votre espace professionnel ` +
-          "par l'équipe La Folie Douce.\n\n" +
+          "par l'équipe La Folie Coffee.\n\n" +
           "Vous le retrouverez à votre prochaine connexion, avec vos identifiants habituels — " +
           "rien de nouveau à créer.",
         footer: "Vous n'attendiez pas ce rattachement ? Répondez à cet e-mail, nous le retirerons.",
@@ -570,7 +653,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       const wording = MANDATE_TO_SIGN_WORDING[data.scheme];
       return {
         subject: sanitiseSubject(`Votre ${wording.documentName} — ${data.reference}`),
-        html: person({
+        html: customerMail({
           title: `Votre ${wording.documentName} à signer`,
           body:
             `Bonjour,\n\nVous trouverez en pièce jointe le ${wording.documentName} ` +
@@ -628,7 +711,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     }),
     "staff.password-reset": (data) => ({
       subject: sanitiseSubject("Votre lien de mot de passe — back-office La Folie Douce"),
-      html: person({
+      html: staffMail({
         title: `Nouveau mot de passe${data.firstName === "" ? "" : `, ${data.firstName}`}`,
         body:
           "Un lien de changement de mot de passe vient d'être émis pour votre accès au " +
@@ -640,7 +723,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     }),
     "staff.access-suspended": (data) => ({
       subject: sanitiseSubject("Votre accès au back-office est suspendu"),
-      html: person({
+      html: staffMail({
         title: `Accès suspendu${data.firstName === "" ? "" : `, ${data.firstName}`}`,
         body:
           "Votre accès au back-office La Folie Douce a été suspendu.\n\n" +
@@ -653,7 +736,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     }),
     "staff.access-restored": (data) => ({
       subject: sanitiseSubject("Votre accès au back-office est rétabli"),
-      html: person({
+      html: staffMail({
         title: `Accès rétabli${data.firstName === "" ? "" : `, ${data.firstName}`}`,
         body:
           "Votre accès au back-office La Folie Douce est de nouveau ouvert.\n\n" +
