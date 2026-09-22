@@ -3,6 +3,16 @@
 > Ce qui reste à trancher (produit/métier) et à faire (technique). Les décisions **fermées** migrent
 > vers [`adr.md`](./adr.md).
 
+> 🔴 **Nettoyé le 2026-09-22 de son travail Shopify.** Le canal est sorti du dépôt
+> le 2026-09-21 : sept actions ouvertes qui le visaient ont été retirées (spike,
+> coût du B2B natif, disponibilité, pilote réel, réconciliation S5, projection
+> multi-contexte, `shopify_product_override`). Les lignes `[x]` restent — elles
+> disent ce qui a été fait, et le journal ne se réécrit pas.
+>
+> ⚠️ **Un seul besoin a survécu à son canal** et est signalé sur place : personne
+> ne fabrique de seconde fiche pour le contexte « sur place », qui est pourtant
+> vendu. C'est une question du modèle.
+
 ## Décisions à trancher (produit / métier)
 
 | #      | Sujet                                          | Enjeu                                                                                                                                                                                                                                                                                                                                                                                                                      | Statut         |
@@ -19,15 +29,8 @@
 
 - [ ] **Questionnaire PI Helios** (8 questions) → lève D4, et avec lui le pricing, l'anti-drift et
       la validité d'ADR-15
-- [ ] **Spike Shopify — 1 journée, 0 €** : boutique de développement + app personnalisée → pousser
-      **un** produit à 2 déclinaisons avec un metafield allergène, le modifier dans l'admin, vérifier
-      qu'un **webhook** revient. Passe de « je crois » à « je sais », et prouve le régime _surveillé_
-      côté Shopify
 - [ ] **Matrice de propriété** champ × système (`W` / `R` / `—`), **un seul `W` par ligne** — le
       document anti-drift de référence
-- [ ] Vérifier le **coût du B2B natif Shopify** (offre Plus) — conditionne D1
-- [ ] Trancher le modèle de **disponibilité côté Shopify** : capacité de production projetée en stock
-      quotidien remis à zéro, **ou** créneaux de retrait (touche le paramétrage de la boutique)
 
 ## Décisions fermées récemment
 
@@ -148,15 +151,9 @@
       `pos_family_code` et le **code-barres** (sortis du socle, ADR-13/14)
 - [x] **Seam Shopify** : écran Réglages, projection pure + empreinte, bindings produit/déclinaison,
       bouton Pousser (ligne + global), pilote `dry-run` par défaut ([ADR-17](./adr.md#adr-17--secrets-dintégration-hors-base--pilote-de-canal-derrière-un-port))
-- [ ] **Pilote Shopify réel** — à écrire **après le spike** (boutique de dev + jeton). Ne touche que
-      shopify-driver.ts. Y compris : metafield allergènes, et l'`id` de déclinaison déposé côté
-      Shopify comme clé de jointure
-- [ ] **Réconciliation à trois voies** ([`publication-reconciliation-3way.md`](./shopify-publication/publication-reconciliation-3way.md)) — 5 slices :
-  - [x] **S1** — `ShopifyPushSnapshot` (payload rejouable) + `headSnapshotId` sur binding + écriture au push + `GET /history` + `POST /rollback` _(29 tests, commits `623d6fa`/`be718cb`)_
-  - [x] **S2** — dry-run **réel sans effet de bord** (`pushPayloadSchema.dryRun`, `previewOne`) _(commit `4f28738`)_ ; bouton pré-push front reporté à S4
-  - [x] **S3** — projection inverse THEIRS + `GET /reconciliation`(+`:handle`) + statuts (`local_ahead`/`remote_drift`/`conflict`/`to_remove`) _(dérive locale=empreinte pleine, distante=comparable ; commits `c01273f`/`841e967`, +20 tests)_
-  - [x] **S4** — refonte écran `publication-shopify` (orienté handle, statut ⚠️, diff par paire, pré-push, publier, historique/rollback) _(commit `edac08a`, 37 tests front ; POC LocalDb publication supprimé)_
-  - [ ] **S5** _(diff → post-boucle)_ — webhook `products/update` → marque `remote_drift` sans poll
+- ~~**Réconciliation à trois voies**~~ — **caduque** : S1 à S4 ont été livrées
+  (snapshots, dry-run réel, projection inverse, écran), S5 (webhook `products/update`)
+  ne le sera jamais. Le canal est sorti le 2026-09-21 et le code avec lui.
 - [ ] **Appartenance TVA — projection par contexte de vente** ([`contextes-et-points-de-vente.md`](./contextes-et-points-de-vente.md)) :
   - [x] **C1** — registre `ACTIVE_SALES_CONTEXTS` + `CatalogueReader.tvaTags` (catégorie→régime→tag, ADR-13) _(commit `8a72f9e`, +3 tests)_
   - [x] **C2** — `collectionAddProductsV2` (`@lfd/shopify-admin`) + `ShopifyMembershipService` (résout tag→GID, **rapporte** l'absence, ne crée pas) _(commits `f363dfb`/`d8e9d6f`)_
@@ -164,10 +161,11 @@
   - [x] **C0-a — étendre** _(2026-08-24)_ : tables `sales_context` (registre, 3 lignes) + `category_context_tva` (jointure), reprise des taux déjà réglés. Colonnes conservées.
   - [x] **C0-b — basculer** _(2026-08-24)_ : agrégat, dépôt, lecteur, projections Shopify/B2B et les deux écrans lisent la jointure et itèrent le registre ; `GET /sales-contexts/active` (alors `/reference/sales-contexts`) ; `ACTIVE_SALES_CONTEXTS` supprimée. Les 3 colonnes restent ÉCRITES (`legacyTvaColumns`) pour le binaire précédent.
   - [ ] **C0-bis — Handle publié = write-once (SEO)** : figer le handle au 1er push (binding/snapshot) ; **bloquer** le changement de `slug.fr` d'un produit publié (ou flux renommage+301) — sinon la réconciliation par handle orpheline l'ancien produit + casse le référencement ; réconciliation distingue **renommage** de **retrait+création** via `productId` ; `handleSuffix` d'un contexte figé **avant** son 1er push.
-  - [ ] **C4** — projection Shopify **multi-contexte** : handles suffixés (`handleSuffix`) et
-        réconciliation par contexte. Le contexte « sur place » est actif et vendu depuis longtemps ;
-        ce qui manque, c'est que Shopify en fasse un second produit. Aucun canal ne lit
-        `handleSuffix` à ce jour, et l'unicité des suffixes projetés devra vivre là
+  - ~~**C4** — projection Shopify multi-contexte~~ — **caduque** (canal sorti le
+    2026-09-21). ⚠️ Le besoin, lui, reste entier : le contexte « sur place » est
+    actif et vendu, et **aucun canal n'en fait une seconde fiche**. C'est une
+    question du modèle, pas de Shopify — elle se repose telle quelle au prochain
+    canal public.
 - [ ] **Override local au produit — disponibilité + TVA** ([`contextes-et-points-de-vente.md`](./contextes-et-points-de-vente.md), 🟡 moitié faite) :
   - [x] **O0 (TVA)** _(2026-08-24)_ — `product_context_tva` + `effectiveTva` (résolveur pur, produit → famille → rien) appelé par les DEUX projections ; le port rend le taux **par produit**
   - [x] **O1 (TVA)** _(2026-08-24)_ — `PUT /catalogue/products/:id/tva`, `ProductView.tvaByContext`, journal `product.vat_changed` ; carte vide = retour à l'héritage
@@ -178,8 +176,6 @@
   - [x] Vestige `Product.channelsOverride` : il vaut enfin ce que le serveur dit, au lieu de `null` en dur
   - [x] **La matrice est EFFECTIVE** _(2026-08-24)_ — B2B : fiche écartée du snapshot (`canal_ferme`), donc supprimée par l'ingestion au push suivant. Shopify : poussée en **brouillon** (hors vitrine, rien de détruit) ; la réconciliation pose la même question, sinon elle annoncerait une dérive éternelle
   - [ ] À trancher : le retrait B2B doit-il aussi retirer le _binding_ de canal, ou rester une conséquence de la matrice ? (aujourd'hui : conséquence — le binding reste, la fiche revient si on rouvre le canal)
-- [ ] `shopify_product_override` (titre, handle, tags saisis à la main) — à ne jamais écraser au re-push
-- [ ] Modèle de **disponibilité** côté Shopify (capacité de production ≠ stock) — le vrai point dur
 - [ ] Port de lecture `CatalogueReader` — les adaptateurs ne lisent **jamais** les tables du socle
 - [ ] Adaptateur **B2B** (export fiches, pass-through GS1) — sans hiérarchie GDSN (ADR-14)
 
@@ -217,26 +213,26 @@ Ce qui reste :
       chaque produit, avec l'oubli qui va avec.
 
       ⚠️ **Trois questions à trancher avant d'écrire**, et aucune n'est
-                                  technique :
+                                      technique :
 
-                                  1. **Hérité ou recopié ?** Hérité, corriger le beurre corrige cent fiches
-                                     — y compris celles qu'on n'a pas relues. Recopié, chaque fiche garde ce
-                                     qu'elle a affirmé le jour où elle l'a affirmé. Une déclaration
-                                     d'allergène ENGAGE : la première est plus juste, la seconde plus
-                                     défendable six mois plus tard.
-                                  2. **Que devient la saisie manuelle ?** Aujourd'hui les allergènes se
-                                     cochent sur la DÉCLINAISON (`NutritionDeclaration`), qui distingue trois
-                                     états — `null` (rien déclaré), `[]` (déclaré sans allergène), une liste.
-                                     Un héritage doit dire ce qu'il fait de ces trois-là, et notamment si le
-                                     `[]` d'une fiche l'emporte sur le `AM` de son beurre.
-                                  3. **Le grain ne correspond pas.** L'ingrédient est porté par le PRODUIT,
-                                     l'allergène par la DÉCLINAISON — c'est elle qui est mise sur le marché.
-                                     Deux déclinaisons d'un même produit peuvent avoir des recettes
-                                     différentes ; faire descendre l'ingrédient sur chacune est un choix, pas
-                                     une évidence.
+                                      1. **Hérité ou recopié ?** Hérité, corriger le beurre corrige cent fiches
+                                         — y compris celles qu'on n'a pas relues. Recopié, chaque fiche garde ce
+                                         qu'elle a affirmé le jour où elle l'a affirmé. Une déclaration
+                                         d'allergène ENGAGE : la première est plus juste, la seconde plus
+                                         défendable six mois plus tard.
+                                      2. **Que devient la saisie manuelle ?** Aujourd'hui les allergènes se
+                                         cochent sur la DÉCLINAISON (`NutritionDeclaration`), qui distingue trois
+                                         états — `null` (rien déclaré), `[]` (déclaré sans allergène), une liste.
+                                         Un héritage doit dire ce qu'il fait de ces trois-là, et notamment si le
+                                         `[]` d'une fiche l'emporte sur le `AM` de son beurre.
+                                      3. **Le grain ne correspond pas.** L'ingrédient est porté par le PRODUIT,
+                                         l'allergène par la DÉCLINAISON — c'est elle qui est mise sur le marché.
+                                         Deux déclinaisons d'un même produit peuvent avoir des recettes
+                                         différentes ; faire descendre l'ingrédient sur chacune est un choix, pas
+                                         une évidence.
 
-                                  Tant que ce n'est pas tranché, la section Ingrédients reste éditoriale et
-                                  n'affirme rien de réglementaire — cf. l'avertissement en tête de sa note.
+                                      Tant que ce n'est pas tranché, la section Ingrédients reste éditoriale et
+                                      n'affirme rien de réglementaire — cf. l'avertissement en tête de sa note.
 
 ## Paramétrage produit — deux écrans posés, vides
 
@@ -250,27 +246,27 @@ ira, la page dit qu'elle n'y est pas encore.
       `GET /pim/reference/allergens`.
 
       ⚠️ **Ne pas déménager la déclaration.** Ce qu'une fiche déclare se coche
-                          sur la **déclinaison** (`NutritionDeclaration`), et doit y rester : c'est
-                          elle qui est mise sur le marché, et une déclaration réglementaire se prend
-                          en regardant le produit, pas une table de réglages. Ce qui monte ici,
-                          c'est la LISTE ; ce qui reste en bas, c'est l'AFFIRMATION.
+                              sur la **déclinaison** (`NutritionDeclaration`), et doit y rester : c'est
+                              elle qui est mise sur le marché, et une déclaration réglementaire se prend
+                              en regardant le produit, pas une table de réglages. Ce qui monte ici,
+                              c'est la LISTE ; ce qui reste en bas, c'est l'AFFIRMATION.
 
-                          À trancher avant d'écrire : un référentiel modifiable veut dire qu'on peut
-                          retirer un code que des fiches déclarent déjà. Même question que les
-                          appellations, avec un enjeu plus lourd — cf. le `RESTRICT` qui les
-                          protège.
+                              À trancher avant d'écrire : un référentiel modifiable veut dire qu'on peut
+                              retirer un code que des fiches déclarent déjà. Même question que les
+                              appellations, avec un enjeu plus lourd — cf. le `RESTRICT` qui les
+                              protège.
 
 - [ ] **Conditionnements → `/pim/conditionnements`.** La table existe
       (`product_packaging` : référence propre, quantité, poids brut, prix,
       canaux) ; **rien ne la saisit**, ni ici ni sur la fiche.
 
       Ce qui vient ici est le **vocabulaire** — les types de conditionnement et
-                          ce qu'ils nomment. Combien d'unités dans le carton d'un produit donné
-                          reste sur la fiche : c'est une propriété de ce produit.
+                              ce qu'ils nomment. Combien d'unités dans le carton d'un produit donné
+                              reste sur la fiche : c'est une propriété de ce produit.
 
-                          Le point qui justifie l'écran : un conditionnement porte sa **propre
-                          référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
-                          l'article » — c'est ce qui en fait autre chose qu'une quantité.
+                              Le point qui justifie l'écran : un conditionnement porte sa **propre
+                              référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
+                              l'article » — c'est ce qui en fait autre chose qu'une quantité.
 
 ## Prochaine étape en cours
 

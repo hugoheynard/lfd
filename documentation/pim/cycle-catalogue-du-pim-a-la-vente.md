@@ -769,7 +769,5 @@ serait tenté.
 Docs liés : [`flux-catalogue-et-versionnement.md`](flux-catalogue-et-versionnement.md)
 (la couche PIM et son versionnement),
 [`audit-fiche-produit-2026-09-01.md`](audit-fiche-produit-2026-09-01.md),
-[`publication-reconciliation-3way.md`](shopify-publication/publication-reconciliation-3way.md),
-[`projection-shopify.md`](shopify-publication/projection-shopify.md),
 [`../pricing/architecture-resolution-de-prix.md`](../pricing/architecture-resolution-de-prix.md),
 [`../ops/runbook.md`](../ops/runbook.md).

@@ -264,6 +264,16 @@ le produit ; suffixe numérique lisible pour la déclinaison, jamais un hash.
 
 ## ADR-17 — Secrets d'intégration hors base ; pilote de canal derrière un port
 
+> 🔴 **Partiellement caduque depuis le 2026-09-21.** Le canal Shopify est sorti
+> du dépôt, avec son port `ShopifyDriver`, son pilote `dry-run` et son écran de
+> réglages ; sa documentation a été retirée le 2026-09-22.
+>
+> **Ce qui SURVIT, et c'est l'essentiel** : un jeton d'API ne vit jamais en base,
+> et un écran n'affiche que sa PRÉSENCE. C'est une frontière de sécurité, vraie
+> de toute intégration — elle ne dépendait pas de Shopify et s'applique à la
+> prochaine. **Ce qui est mort** : tout ce que cet ADR dit du pilote, du port et
+> du `dry-run`.
+
 **Décision** : les **réglages** d'un canal (domaine de boutique, version d'API, activation)
 vivent en base et se pilotent depuis l'écran Réglages ; le **jeton d'API** vit dans
 l'environnement (`AppConfig`) et **jamais en base**. L'écran affiche seulement sa _présence_, jamais
@@ -280,13 +290,17 @@ l'implémentation par défaut est un pilote **`dry-run`** qui n'émet aucun appe
   n'avions ni boutique ni jeton. Écrire des mutations invérifiables aurait
   produit du code _plausible et faux_.
 
-  ⚠️ **Cette prémisse est tombée.** La connexion est établie depuis le
-  2026-08-04 (`shopify-publication/shopify-connexion-setup.md`), la forme exacte
-  de `productSet` a été relevée en direct
-  (`shopify-publication/shopify-productset-findings.md`), et
-  `SHOPIFY_ADMIN_TOKEN` est posé par le déploiement. Le `dry-run` n'est donc
-  plus une nécessité mais un **choix de mode**, et la phrase « le spike
-  tranchera » décrit un travail déjà fait.
+  ⚠️ **Cette prémisse est tombée deux fois.** D'abord en sa faveur : la
+  connexion a été établie le 2026-08-04, la forme exacte de `productSet` relevée
+  en direct, et `SHOPIFY_ADMIN_TOKEN` posé par le déploiement — le `dry-run`
+  cessait d'être une nécessité pour devenir un choix de mode. Puis contre elle :
+  le canal est sorti du dépôt le 2026-09-21, et il n'y a plus rien à piloter.
+
+  Les deux documents qui portaient ces relevés ont été retirés le 2026-09-22 ;
+  ce qu'ils attestaient vit dans l'histoire git. **Ne pas les rechercher pour
+  écrire une nouvelle intégration** : l'API Admin de Shopify est versionnée
+  trimestriellement, et un relevé d'août 2026 serait exactement le « plausible
+  et faux » que cet ADR dit d'éviter.
 
 - Le mode `dry-run` n'est pas un bouchon : il exerce toute la chaîne — lecture par le port,
   projection, empreinte, écriture du binding — et rend le comportement observable **maintenant**.
