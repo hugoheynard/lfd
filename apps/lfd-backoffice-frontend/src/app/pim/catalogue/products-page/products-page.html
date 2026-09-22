@@ -48,6 +48,8 @@
     [rowKey]="rowKey"
     [rowTone]="rowTone"
     [rowNote]="hasFaults"
+    [sort]="sort()"
+    (sortChange)="onSortChange($event)"
     clickable
     (rowClick)="openProduct($event)"
     hover
@@ -61,7 +63,7 @@
 
       <fold-search
         class="toolbar-search"
-        placeholder="Filtrer par nom ou référence…"
+        placeholder="Filtrer par nom, référence ou famille…"
         (searchChange)="onSearch($event)"
       />
 
