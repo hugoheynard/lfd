@@ -1,127 +1,76 @@
-# Plan — séparer les allergènes de la nutrition (v2)
+# Plan — séparer les allergènes de la nutrition (v3)
 
-> **État : 📐 conception. Rien n'est bâti.**
+> **État : 📐 conception. Rien n'est bâti**, sauf les deux correctifs du §2.
 >
-> **Ouvert le 2026-09-22** sur une question de Hugo, **réécrit le même jour**
-> après `vitruve` : 3 BLOQUANT, 9 SÉRIEUX. La v1 est tombée entière, et le §9
-> dit ce qu'elle affirmait de faux.
+> **Ouvert le 2026-09-22**, réécrit deux fois le même jour après `vitruve` :
+> 3 BLOQUANT sur la v1, 4 sur la v2. Le §11 dit ce que chacune affirmait de faux.
 >
-> 🔴 **Ce plan porte une migration de données et touche une donnée
-> RÉGLEMENTAIRE** — une erreur s'imprime sur une étiquette. `vitruve` a tourné
-> sur la v1 ; il repasse sur celle-ci avant toute construction.
->
-> **Les quatre questions de la v1 sont tranchées** (Hugo, 2026-09-22) et leurs
-> réponses sont au §3.
+> 🔴 **Migration de données sur une donnée RÉGLEMENTAIRE** — une erreur
+> s'imprime sur une étiquette. `vitruve` repasse avant toute construction.
 
 ---
 
-## 1. Ce que la v1 avait mal vu, et qui renverse la conception
+## 1. Pourquoi séparer
 
-La v1 proposait **deux routes sur la même table**, en renvoyant la séparation de
-la table à un lot optionnel « si un besoin le demande ». C'était l'inverse de ce
-qu'il faut faire, pour une raison qu'elle n'avait pas mesurée.
+La fiche réglementaire d'une déclinaison est **une route, un handler, une
+table**. Deux sujets y sont soudés : ce que le produit **contient** (sécurité) et
+ce qu'il **vaut** (nutrition). Trois couches les traitent pourtant déjà comme
+deux :
 
-🔴 **`allergens` est `NOT NULL` en base.** Le `null` du domaine — « personne ne
-s'est prononcé » — n'est pas une colonne : c'est **l'absence de ligne**. Et
-l'écriture est un `upsert`.
+| Couche                       | Déjà séparés ?                                              |
+| ---------------------------- | ----------------------------------------------------------- |
+| Le domaine                   | ✅ deux champs nullables indépendants sur `VariantSnapshot` |
+| La validation                | ✅ aucun invariant ne traverse les deux groupes             |
+| La publication               | ✅ `hasOwnRegulatorySheet` ne lit **que** les allergènes    |
+| Route · port · table · écran | 🔴 soudés                                                   |
 
-Donc une route « les valeurs nutritionnelles, et rien d'autre » sur une
-déclinaison sans fiche **crée la ligne**, donc écrit `allergens: []` — qui est
-une **affirmation positive** : « aucun allergène ».
+**Les trois couches qui décident les traitent comme deux sujets ; les quatre qui
+écrivent les traitent comme un seul.**
 
-```mermaid
-graph LR
-    A["saisir une calorie"] --> B["upsert crée la ligne<br/>allergens = []"]
-    B --> C["hasOwnRegulatorySheet<br/>= vrai"]
-    C --> D["invariant 7 satisfait"]
-    D --> E["le produit devient<br/>PUBLIABLE"]
-    B --> F["[] part au canal B2B"]
-```
-
-**Un produit publiable sans que personne n'ait déclaré quoi que ce soit.** Et le
-refus que l'outil WebMCP oppose déjà à ce cas — que la v1 rangeait en
-« contournement à supprimer » — est **la seule garde qui existe contre lui**.
+Le vocabulaire le dit : la route s'appelle `nutrition`, son commentaire dit
+« Section **Allergènes** », l'écran dit « Allergènes **&** nutrition ».
 
 ---
 
-## 2. La vraie racine : l'écriture contourne l'agrégat
+## 2. Ce qui est déjà fait, et qui a servi de preuve
 
-`declare-product-nutrition.ts` charge le produit, s'en sert pour **lire**
-(`requireVariant`, le libellé, le diff)… puis écrit par
-`NutritionRepository.declare(variantId, …)`, **sans repasser par l'agrégat**.
+| Lot | Correctif                                                    | Commit      |
+| --- | ------------------------------------------------------------ | ----------- |
+| 0a  | L'enregistrement de la fiche n'efface plus les **traces**    | `c7d9034ad` |
+| 0b  | S'aligner sur le défaut ne détruit plus son **tarif propre** | `85eb56359` |
 
-> `variant.ts` le dit déjà, en le présentant comme un choix : « La fiche
-> réglementaire est ici en **lecture seule** : elle s'écrit par son propre verbe,
-> à travers `NutritionRepository`. »
+Le second n'était pas prévu : `vitruve` l'a trouvé en contredisant la v2, qui
+s'apprêtait à **étendre ce défaut à la donnée réglementaire**. `save()`
+persistait l'instantané RÉSOLU ; une déclinaison alignée recevait le prix du
+défaut dans sa colonne propre. L'agrégat expose désormais deux instantanés —
+`snapshot()` pour ce qui lit, `persistenceSnapshot()` pour ce qui écrit.
 
-🔴 **C'est ce contournement qui rend B1 possible.** L'agrégat est le seul objet
-qui voit la différence entre « une fiche existe » et « quelqu'un a déclaré » —
-et on lui retire l'écriture, donc le droit de refuser.
-
-### Non, la nutrition ne devient pas un agrégat
-
-Hugo a posé la question, et la règle de tri du dépôt y répond
-(CLAUDE.md §3.1) : _« existe-t-il une règle qui peut refuser cette écriture ? »_
-
-| Règle                                                      | À qui appartient-elle ?                      |
-| ---------------------------------------------------------- | -------------------------------------------- |
-| valeurs ≥ 0, « dont saturés ≤ gras », pas de chevauchement | au **value object** — et elles marchent déjà |
-| « publiable ⇒ chaque déclinaison active est couverte »     | au **produit** — invariant 7                 |
-| « une fiche existe ⇒ quelqu'un a déclaré »                 | au **produit**, seul à voir les deux         |
-
-**Aucune règle n'appartient à la nutrition elle-même.** Elle n'a ni état ni
-transition — pas de brouillon, pas de validation, pas de cycle. En faire un
-agrégat serait la « cérémonie » que le `CLAUDE.md` nomme.
-
-➡️ **Ce qu'il faut, c'est rendre l'écriture à l'agrégat qui existe** :
-`product.declareAllergens(variantId, …)` et `product.declareNutrition(…)`, puis
-`products.save(product)`.
+🔴 **À retenir pour le lot 2** : le jour où `save` persistera les deux nouvelles
+tables, il devra le faire depuis `persistenceSnapshot()`. Le faire depuis l'autre
+recopierait la fiche du défaut chez chaque déclinaison alignée, et
+`hasOwnRegulatorySheet` passerait à vrai **pour toujours**.
 
 ---
 
-## 3. Les cinq décisions, tranchées
+## 3. Les six décisions (Hugo, 2026-09-22)
 
-| #      | Question                                   | Réponse de Hugo (2026-09-22)                                   |
-| ------ | ------------------------------------------ | -------------------------------------------------------------- |
-| **D1** | Un drapeau d'alignement, ou deux ?         | **Deux** — un pour les allergènes, un pour la nutrition        |
-| **D2** | La publication n'exige que les allergènes  | **On l'écrit** — la nutrition est facultative à la publication |
-| **D3** | « Nutrition sans déclaration d'allergène » | **On le dit** — c'est un état nommé, et il n'est pas publiable |
-| **D4** | Un fait de journal, ou deux ?              | **Deux**                                                       |
-| **D5** | Séparer la table ?                         | **Oui** — « on va finir par séparer la table »                 |
+| #      | Question                                   | Réponse                                                      |
+| ------ | ------------------------------------------ | ------------------------------------------------------------ |
+| **D1** | Un drapeau d'alignement, ou deux ?         | **Deux** — un allergènes, un nutrition                       |
+| **D2** | La publication n'exige que les allergènes  | **On l'écrit** — la nutrition est facultative                |
+| **D3** | « Nutrition sans déclaration d'allergène » | **On le dit** — état nommé, non publiable                    |
+| **D4** | Un fait de journal, ou deux ?              | **Deux**                                                     |
+| **D5** | Séparer la table ?                         | **Oui**                                                      |
+| **D6** | Où vit « aucun allergène » ?               | **Avec les allergènes** — « pas de nutrition, si on sépare » |
 
-🔴 **D5 n'est plus un lot optionnel : c'est ce qui rend B1 inexprimable.** Deux
-tables font de « nutrition renseignée, allergènes non déclarés » une **ligne
-honnête et sans danger**, au lieu d'un état qu'on empêche à force de vigilance.
+### 🔴 D6 est ce qui rend le danger inexprimable
 
-C'est la hiérarchie des garde-fous du dépôt, appliquée dans le bon ordre :
-**inexprimable** > refusé en base > refusé par l'agrégat > porte CI > relecture.
-La v1 s'arrêtait à « refusé par l'agrégat », et encore, sans l'agrégat.
+`allergens` est `NOT NULL` : le `null` du domaine est **l'absence de ligne**, et
+l'écriture est un `upsert`. Dans la table unique, une route « nutrition seule »
+créerait la ligne avec `allergens: []` — une affirmation **positive**, qui rend
+le produit publiable sans que personne n'ait déclaré.
 
----
-
-## 4. Où va `mayContain` — la ligne de coupe corrigée
-
-🔴 **La v1 se trompait de pivot.** `mayContain` est aujourd'hui un champ de
-l'instantané **nutrition**, alors que c'est une **déclaration d'allergène**,
-soumise au même référentiel et à la même garde de chevauchement.
-
-| Table               | Colonnes                                               |
-| ------------------- | ------------------------------------------------------ |
-| `variant_allergens` | `allergens`, `mayContain` — la déclaration de sécurité |
-| `nutrition_values`  | les 8 valeurs de l'annexe XV                           |
-
-Les deux en `PK = FK` sur la déclinaison, chacune **absente tant que personne
-n'a rien dit**.
-
-### 🔴 D6 — « aucun allergène » appartient aux ALLERGÈNES (Hugo, 2026-09-22)
-
-> « aucun allergène devrait faire partie d'allergène, pas de nutrition, si on
-> sépare »
-
-C'est ce qui **dissout le bloquant 1**, et il faut le dire à cet endroit plutôt
-que de le laisser se déduire.
-
-Le tri-état devient alors littéral, et il n'appartient qu'à une table :
+Deux tables, et le tri-état devient littéral :
 
 | État                       | Dans `variant_allergens`    | Ce que ça dit            |
 | -------------------------- | --------------------------- | ------------------------ |
@@ -129,128 +78,235 @@ Le tri-état devient alors littéral, et il n'appartient qu'à une table :
 | « aucun allergène »        | une ligne, tableau **vide** | affirmation **positive** |
 | des allergènes             | une ligne, tableau rempli   | déclaration              |
 
-➡️ **Écrire des valeurs nutritionnelles ne peut alors PLUS créer d'affirmation
-d'allergène** : les deux tables ne se touchent pas, et la route nutrition n'a
-aucun moyen d'écrire dans l'autre. La chaîne du §1 — saisir une calorie, obtenir
-`allergens: []`, devenir publiable — cesse d'être **exprimable**, au lieu d'être
-empêchée par une garde qu'il faut se rappeler d'écrire.
+La route nutrition n'a alors **aucun moyen** d'écrire dans l'autre table.
 
-⚠️ **Ce que ça ne rend pas inexprimable pour autant**, et `vitruve` a eu raison
-de le relever : ce qui refuse la publication reste un getter d'agrégat
-(`hasOwnRegulatorySheet`). D6 ferme le chemin par lequel une affirmation naît
-toute seule ; il ne transforme pas la garde de publication en contrainte de base.
-La v2 revendiquait le premier rang de la hiérarchie pour les deux — c'était
-surjoué, et seul le premier le mérite.
+⚠️ **Ce que ça ne rend pas inexprimable** : ce qui refuse la publication reste un
+getter d'agrégat. La v2 revendiquait le premier rang de la hiérarchie pour les
+deux ; seul D6 le mérite.
 
-### Ce que D6 entraîne à l'écran
+### D2 appelle une ligne que ce plan ne peut pas écrire
 
-`declaresNone` — la case « cette fiche ne déclare aucun allergène » — est un
-**geste de la section allergènes**, et d'elle seule. Enregistrer la nutrition ne
-doit ni la lire, ni l'écrire, ni la supposer.
+« La nutrition est facultative à la publication » **engage l'étiquette**. Le
+règlement 1169/2011 prévoit des exemptions, et le dépôt vend majoritairement
+**non préemballé** — c'est déjà l'argument d'ADR-14 pour descoper le GTIN.
+
+➡️ 🔵 **À confirmer par Hugo, avec son comptable ou son conseil** : sur quelle
+exemption repose D2 ? Tant que la phrase n'est pas là, D2 est une préférence
+technique déguisée en décision réglementaire.
 
 ---
 
-## 5. ✅ Le bug des traces — fermé le 2026-09-22 (lot 0)
+## 4. Le modèle cible
 
-L'écran de la fiche produit n'a **aucune interface pour les traces**. Sa charge
-utile n'envoie donc jamais `mayContain`, et le serveur applique
-`input.mayContain ?? []`.
+| Table               | Colonnes                                               | Absente quand        |
+| ------------------- | ------------------------------------------------------ | -------------------- |
+| `variant_allergens` | `allergens`, `mayContain` — la déclaration de sécurité | personne n'a déclaré |
+| `nutrition_values`  | les 8 valeurs de l'annexe XV                           | rien n'est renseigné |
 
-**Chaque enregistrement de la section réglementaire depuis le back-office efface
-les traces possibles** — celles que le semis pose, celles que l'outil WebMCP
-prend soin de réécrire. Le journal porte le libellé « Traces possibles » pour
-l'annoncer ; personne ne l'a lu.
+Les deux en `PK = FK` sur la déclinaison.
 
-✅ **Corrigé** (`c7d9034ad`) : le brouillon garde les traces lues et la
-sauvegarde les renvoie, comme l'outil WebMCP le fait déjà. Le contrat de la
-route ne bouge pas. Le test échoue sans le correctif — trois cas sur quatre,
-vérifié en retirant la ligne.
+🔴 **`mayContain` change de côté**, et la v2 l'avait sous-estimé. Il vit
+aujourd'hui dans `VariantNutritionView` (`packages/pim-contracts`), lu par le
+front. Le laisser sous `nutrition` avec **deux drapeaux** le ferait résoudre par
+le drapeau NUTRITION alors que c'est un fait d'allergène : une déclinaison
+alignée sur les allergènes mais pas sur la nutrition imprimerait des traces
+venues de la mauvaise source.
 
-🔴 **Ce que le correctif NE ferme pas, et que ce plan doit fermer.** La règle
-dangereuse reste côté serveur : `input.mayContain ?? []` fait toujours dire
-« efface tout » à un champ absent. L'appelant fautif est réparé ; **le piège ne
-l'est pas**. Le prochain appel qui oublie le champ effacera les traces en
-silence, avec un `200`.
-
-On est donc au dernier rang de la hiérarchie — « ça tient parce que quelqu'un se
-souvient ». ➡️ **Le lot 3 doit rendre l'oubli inexprimable** : la route
-`allergens` porte `allergens` ET `mayContain`, les deux obligatoires. Les rendre
-obligatoires sur la route ACTUELLE casserait un contrat déjà servi — un onglet
-non rechargé recevrait un 400 et le staff ne pourrait plus rien enregistrer.
+⚠️ La vue publique bouge donc aussi, et avec elle une combinaison **neuve** :
+`allergens: null` + `nutrition: {…}`, impossible aujourd'hui (une seule table),
+rendue possible par D3. Le lot 5 doit recenser les consommateurs qui supposaient
+le couplage.
 
 ---
 
-## 6. Ce que le plan NE promet pas
+## 5. 🔴 La reprise — ce que la v2 ne disait pas du tout
 
-⚠️ **Le _lost update_ ne disparaît pas.** La v1 le promettait ; c'est faux. Deux
-personnes qui éditent les **mêmes** valeurs s'écrasent toujours : le port est un
-`upsert` nu, sans version ni `If-Match`. Séparer réduit la **surface** (une
-écriture nutrition ne peut plus effacer une déclaration d'allergène), elle
-n'introduit aucun mécanisme de concurrence.
+La v2 écrivait « les deux tables, écrites **en parallèle** », donc les nouvelles
+écritures seulement, puis basculait les lectures. **Toute fiche non re-déclarée
+entre les deux aurait lu `allergens = null`** — l'invariant 7 tombe, et
+`projection.ts` transmet ce `null` **tel quel** au canal B2B, avec le commentaire
+« rien n'a été déclaré ». Des fiches en vente seraient parties sans allergènes.
 
-⚠️ **`alreadyDeclared` reste nécessaire.** La v1 y voyait un contournement de la
-soudure ; c'est faux. Il sert aux **codes archivés** (D2 bis) : « peut-on
-l'ajouter ? » dépend de ce que la fiche déclarait déjà. La route `allergens` en
-aura besoin à l'identique.
+### La bascule, en trois déploiements
 
----
+```mermaid
+graph TD
+    DEP1["ÉTENDRE — créer les 2 tables,<br/>RECOPIER l'existant, double écriture"]
+    V1{"relecture : autant de<br/>lignes qu'à la source ?"}
+    DEP2["BASCULER — les lectures passent<br/>aux 2 tables, la double écriture CONTINUE"]
+    V2{"le canal reçoit-il les<br/>mêmes allergènes qu'avant ?"}
+    DEP3["RESSERRER — arrêter la double écriture,<br/>retirer l'ancienne table"]
+    STOP["on ne bascule pas"]
+    BACK["retour arrière : les lectures<br/>reviennent à l'ancienne table"]
+    DEP1 --> V1
+    V1 -->|non| STOP
+    V1 -->|oui| DEP2
+    DEP2 --> V2
+    V2 -->|non| BACK
+    V2 -->|oui| DEP3
+```
 
-## 7. Le périmètre réel
+**Ce que chaque étape garantit :**
 
-La v1 comptait « une route, une commande, un handler, une méthode de port ».
-`vitruve` a montré que le compte est faux. Ce que **deux faits de journal**
-entraînent :
+- **La recopie est dans le déploiement 1**, pas plus tard. Une migration additive,
+  `nutrition_declaration → variant_allergens + nutrition_values`, ligne à ligne.
+  `allergens: []` y reste `[]` — c'est une affirmation, elle se recopie telle
+  quelle.
+- **Le retour arrière du déploiement 2 est gratuit** : la double écriture
+  continue, donc l'ancienne table est encore juste. C'est ce qui rend la bascule
+  réversible, et pourquoi elle ne s'arrête qu'au déploiement 3.
+- **La relecture est une condition, pas une formalité.** Compter les lignes de
+  part et d'autre, et comparer ce que le canal reçoit **avant** et **après**.
 
-| Où                                                              | Pourquoi                                                 |
-| --------------------------------------------------------------- | -------------------------------------------------------- |
-| `product/domain/content-facts.ts`                               | table **exhaustive tenue par un test**                   |
-| `catalogue/revision/domain/attribution.ts`                      | idem — « un fait ajouté sans entrée ici ne compile pas » |
-| `packages/contracts/src/journal-facts/referential-catalogue.ts` | le baril `@lfd/contracts`, **pas** `pim-contracts`       |
-| `shared/journal/phrases/referential-phrases.ts`                 | la phrase lue par le staff                               |
-
-🔴 **Le piège de fond** : un fait oublié dans `content-facts` **ne périme plus
-la signature « publiable »**, et le silence s'y lit « rien n'a changé ».
-
-Deux autres écrivains que la v1 ne nommait pas : `create-product.ts` écrit une
-déclaration complète par le même `DeclarationInput`, et le semis la rejoue par
-le bus.
-
-⚠️ **La racine dès que `packages` bouge** — et ça bouge deux fois.
-
----
-
-## 8. Les lots
-
-| Lot   | Contenu                                                                                                                                                      | Bloque par |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
-| ~~0~~ | ✅ **Le bug des traces** (§5) — **fait** (`c7d9034ad`)                                                                                                       | —          |
-| 1     | **Étendre** : les deux tables, écrites en parallèle de l'ancienne                                                                                            | —          |
-| 2     | L'écriture revient dans l'agrégat : `product.declareAllergens` / `declareNutrition`                                                                          | 1          |
-| 3     | Les deux routes, les deux commandes, les **deux faits** (§7). ⚠️ `mayContain` **obligatoire** sur la route `allergens` — c'est ce qui referme le piège du §5 | 2          |
-| 4     | Les deux drapeaux d'alignement (D1) — ⚠️ colonne **et** valeur de journal (`aspect`)                                                                         | 2          |
-| 5     | **Basculer** : les lectures passent aux nouvelles tables ; l'invariant 7 s'écrit (D2)                                                                        | 3, 4       |
-| 6     | L'écran : deux sections, deux enregistrements, **et les traces**                                                                                             | 5          |
-| 7     | **Resserrer** : l'ancienne table part, l'ancienne route aussi                                                                                                | 6          |
-
-🔴 **Trois déploiements, pas un** (CLAUDE.md §0) : étendre, basculer, resserrer.
-
-⚠️ **Le resserrage doit choisir, et le dire** : une ancienne route qui reçoit
-encore `allergens` doit **refuser** (400), jamais l'ignorer en silence. Sur du
-réglementaire, un 200 qui n'écrit rien est le pire des deux.
-
-⚠️ **Les noms des deux faits sont gratuits jusqu'au premier merge dans `main`**,
-et coûtent une migration de valeurs ensuite. Les arrêter au lot 3.
+⚠️ 🔵 **À mesurer avant d'écrire la migration** : combien de déclinaisons portent
+une `nutrition_declaration` en production, et combien sont alignées. Ça décide si
+une reprise ratée est une gêne ou un retrait de catalogue.
 
 ---
 
-## 9. Ce que la v1 affirmait, et qui était faux
+## 6. 🔴 Le journal — et un piège que la v2 ne voyait pas
 
-| Affirmation de la v1                                             | Ce que `vitruve` a montré                                             |
-| ---------------------------------------------------------------- | --------------------------------------------------------------------- |
-| « Deux routes, la même table » suffit                            | Crée un produit publiable sans déclaration (§1)                       |
-| « Le domaine sépare déjà les deux »                              | Vrai pour `allergens`, faux pour le SUJET : `mayContain` est ailleurs |
-| « Le handler perd son contournement »                            | `alreadyDeclared` sert aux codes archivés, pas à la soudure           |
-| « Le _lost update_ disparaît »                                   | Non : l'`upsert` reste nu                                             |
-| « Nutrition sans allergènes : rien à inventer, juste à le dire » | Il n'y a pas de place dans le modèle — il fallait la faire            |
-| Périmètre : « une route, une commande, un handler »              | Deux tables exhaustives, deux barils, l'écran du journal              |
-| Séparer la table : optionnel                                     | C'est ce qui rend le danger **inexprimable**                          |
+`product.declaration_saved` est **déjà posé en production**. Quatre lecteurs en
+dépendent : `content-facts.ts` (table exhaustive tenue par un test),
+`attribution.ts` (idem), le baril `packages/contracts`, et la phrase du
+back-office.
+
+**Le précédent existe et s'utilise** — `variant.regulatory_aligned` a été remplacé
+le 2026-09-03 sans migration, et reste au catalogue en `retired(...)` : « le type
+existe en base mais plus aucun code ne l'écrit. Il reste au catalogue pour que ses
+lignes se lisent toujours ; l'écrire aujourd'hui est une faute. »
+
+➡️ **Même geste ici** : l'ancien fait passe en `retired`, **et reste à `true` dans
+`CONTENT_FACTS`**. Sans ça, les faits passés cessent d'être « de contenu », et une
+signature « publiable » posée avant la bascule cesserait d'être périmée par les
+déclarations qui l'ont précédée — le piège que ce plan nomme au §8.
+
+### 🔴 Le fait nutrition n'a nulle part où s'attribuer
+
+`attribution.ts` associe chaque fait aux champs de révision qu'il touche.
+`productDeclarationSaved` y vaut `["allergens"]` — et `revision.ts` ne porte
+**que** `allergens`. **Il n'y a pas de champ nutrition dans une révision.**
+
+Trois sorties, aucune gratuite :
+
+| Sortie                                     | Ce qu'elle coûte                                                             |
+| ------------------------------------------ | ---------------------------------------------------------------------------- |
+| Attribuer la nutrition à `["allergens"]`   | **ment** : l'historique dirait qu'un allergène a changé                      |
+| Attribuer à `[]`                           | la nutrition devient **invisible** de l'historique d'une fiche réglementaire |
+| Ajouter un champ `nutrition` à la révision | 🔴 **change TOUTES les empreintes**                                          |
+
+🔴 **La troisième est un piège sérieux.** L'empreinte d'un article de révision est
+un SHA-256 de sa **forme canonique entière** (`fingerprint.ts`). Ajouter un champ
+change l'empreinte de **chaque** article : à la comparaison suivante, le catalogue
+entier apparaîtrait **modifié**, sans qu'une seule fiche ait bougé.
+
+➡️ 🔵 **À trancher par Hugo.** Ma recommandation : **`[]` d'abord**, et le champ de
+révision dans un chantier séparé qui assume le rebasculement d'empreintes — il en
+vaut peut-être la peine, mais pas en passager de celui-ci.
+
+---
+
+## 7. 🔴 Les deux drapeaux (D1) — une migration, pas une case
+
+La v2 le décrivait en une demi-ligne. Ce que ça touche vraiment :
+
+| Où                                              | Quoi                                                           |
+| ----------------------------------------------- | -------------------------------------------------------------- |
+| `product_variant`                               | une colonne de plus, et **la valeur des lignes existantes**    |
+| La migration du 2026-09-03                      | un `CHECK` à dédoubler (le défaut ne se suit pas lui-même)     |
+| `packages/contracts` · `journal-facts`          | l'enum `aspect: "regulatory" \| "pricing"` — **valeur servie** |
+| `packages/pim-contracts`, le front, les phrases | six fichiers de plus                                           |
+
+🔴 **La valeur initiale décide d'une perte silencieuse.** Si le drapeau nutrition
+naît à `false` là où `regulatory_follows_default` valait `true`, chaque
+déclinaison alignée **perd le tableau nutritionnel du défaut**. Il naît donc à la
+**même valeur** que celui qu'il dédouble.
+
+⚠️ **L'enum `aspect` est déjà posée dans des faits.** Dédoubler rend ambigus tous
+les `variant.aligned` passés : « aligné sur regulatory » ne dira plus lequel des
+deux. Le même champ a **déjà coûté un retrait de fait** le 2026-09-03.
+
+➡️ La nouvelle valeur s'**ajoute** (`"allergens"`, `"nutrition"`), l'ancienne passe
+en lecture seule. On ne renomme pas une valeur servie.
+
+---
+
+## 8. Le périmètre réel
+
+- **Deux tables exhaustives refusent de compiler** sur un fait neuf :
+  `content-facts.ts` et `attribution.ts`. Ce sont elles qui arrêtent, pas la
+  relecture.
+- **Deux barils** : `packages/contracts` (les faits) **et**
+  `packages/pim-contracts` (les vues). ⚠️ « La racine dès que `packages` bouge »
+  s'applique deux fois.
+- **Deux écrivains que la v1 ignorait** : `create-product.ts` écrit une
+  déclaration complète par le même `DeclarationInput`, et le semis la rejoue par
+  le bus.
+- 🔴 **L'outil WebMCP** (`pim-agent-tools.ts`) appelle la route que le lot 7
+  supprime, et c'est **le seul écrivain qui préserve `mayContain`**. Sa garde — le
+  refus d'écrire quand les allergènes valent `null` — devient caduque avec D6 et
+  doit être **re-décidée**, pas laissée.
+- **L'atomicité n'est pas acquise** : aujourd'hui le ticket de journal est créé
+  dans `uow.run` puis passé à `nutrition.declare`. `PrismaProductRepository.save`
+  **ignore** son ticket. Faire écrire l'agrégat demande de dire comment le fait et
+  l'écriture restent dans la même transaction.
+
+---
+
+## 9. Les lots
+
+| Lot   | Contenu                                                                            | Bloque par |
+| ----- | ---------------------------------------------------------------------------------- | ---------- |
+| ~~0~~ | ✅ Les traces, et l'alignement destructeur (§2)                                    | —          |
+| 1     | **ÉTENDRE** : les deux tables + **la recopie** + la double écriture + la relecture | mesure §5  |
+| 2     | L'écriture revient dans l'agrégat, depuis `persistenceSnapshot()`                  | 1          |
+| 3     | Les deux routes, les deux commandes, les deux faits + l'ancien en `retired`        | 2, §6      |
+| 4     | Les deux drapeaux — colonne, `CHECK`, valeur d'enum **ajoutée**                    | 2, §7      |
+| 5     | **BASCULER** : les lectures, l'invariant 7 écrit (D2), la vue publique             | 3, 4       |
+| 6     | L'écran : deux sections, deux enregistrements, **et les traces**                   | 5          |
+| 7     | **RESSERRER** : arrêter la double écriture, retirer l'ancienne table et la route   | 6          |
+
+⚠️ **Le resserrage doit choisir et le dire** : une ancienne route qui reçoit encore
+`allergens` **refuse** (400). Sur du réglementaire, un `200` qui n'écrit rien est
+pire que le refus.
+
+### Ce qui devient irréversible au premier merge dans `main`
+
+Gratuit à changer jusque-là, coûteux ensuite — à arrêter au lot 3 :
+
+- le **nom des deux faits** et la forme de leur `changes` ;
+- le **nom des deux tables** et de leurs colonnes ;
+- les **valeurs ajoutées** à l'enum `aspect` ;
+- la forme de `VariantNutritionView`.
+
+---
+
+## 10. Ce qu'on ne fait PAS
+
+| ❌                                                | Pourquoi                                                     |
+| ------------------------------------------------- | ------------------------------------------------------------ |
+| Ajouter un champ `nutrition` à la révision        | Change **toutes** les empreintes (§6) — chantier séparé      |
+| Renommer la valeur `regulatory` de l'enum         | Valeur servie, déjà dans des faits posés                     |
+| Retirer la garde du WebMCP sans la re-décider     | C'est encore une garde tant que le lot 5 n'est pas déployé   |
+| Exiger `mayContain` sur la route ACTUELLE         | Casse un contrat servi ; c'est le lot 3 qui referme le piège |
+| Toucher l'invariant 7 autrement que pour l'écrire | C'est une garde de sécurité ; la déplacer se décide seule    |
+
+---
+
+## 11. Ce que les versions précédentes affirmaient de faux
+
+| Version | Affirmation                                   | Ce que `vitruve` a montré                                          |
+| ------- | --------------------------------------------- | ------------------------------------------------------------------ |
+| v1      | « Deux routes, la même table » suffit         | Crée un produit publiable sans déclaration                         |
+| v1      | « Le handler perd son contournement »         | `alreadyDeclared` sert aux codes archivés, pas à la soudure        |
+| v1      | « Le _lost update_ disparaît »                | Non : l'`upsert` reste nu, sans version ni `If-Match`              |
+| v1      | Séparer la table : optionnel                  | C'est ce qui rend le danger inexprimable                           |
+| v2      | `products.save()` n'existe peut-être pas      | Il existe — et persistait l'instantané résolu (corrigé, §2)        |
+| v2      | « les deux tables, écrites en parallèle »     | **Aucune reprise** : le catalogue partait au canal sans allergènes |
+| v2      | Deux faits, sans un mot de l'ancien           | Déclenche le piège que le plan nomme lui-même                      |
+| v2      | Le dédoublement du drapeau, en une demi-ligne | Colonne + `CHECK` + **valeur d'enum servie**                       |
+| v2      | « inexprimable » pour tout                    | Vrai pour D6 seul ; la publication reste un getter                 |
+
+⚠️ **Le motif se répète** : les deux fois, la faute venait d'avoir décrit
+l'existant **de mémoire** plutôt qu'en l'ouvrant. Les deux correctifs du §2 sont
+sortis d'une lecture, pas d'une intuition.
