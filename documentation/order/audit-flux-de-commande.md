@@ -147,6 +147,12 @@ le QR de retrait. Le client n'a plus que l'écran de son espace.
 La direction (demander l'adresse au panier, la même règle côté API) est au §12
 du plan. Rien n'est construit.
 
+🔴 **Et il manquait une moitié** (Hugo, 2026-09-22) : demander l'adresse ne
+suffit pas, la commande doit la **porter**. Elle se lit aujourd'hui dans
+l'annuaire au moment de l'envoi — changer son adresse réécrit donc le
+destinataire d'une commande passée. Détail, et ce qu'il reste à trancher :
+[`todo-adresse-de-la-commande.md`](todo-adresse-de-la-commande.md).
+
 ### T4 — 🟡 Quatre états écrits sur sept
 
 [`public/orders.prisma`](../../apps/lfd-api/prisma/schema/public/orders.prisma)

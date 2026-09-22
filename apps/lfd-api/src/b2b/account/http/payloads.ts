@@ -20,6 +20,28 @@ export const updateProfilePayload = z.object({
 
 export type UpdateProfilePayload = z.infer<typeof updateProfilePayload>;
 
+/**
+ * Borne d'un jeton d'identité. Un JWT signé RS256 avec les claims d'Auth0 tient
+ * très largement dedans ; au-delà, on refuse avant de faire vérifier une
+ * signature sur un corps que personne n'a pu émettre.
+ */
+const ID_TOKEN_MAX_LENGTH = 8192;
+
+/**
+ * La **preuve** qu'on tient la session du compte à rattacher — un `id_token`
+ * émis à la SPA boutique.
+ *
+ * Ici on ne vérifie que la FORME : qu'il y ait une chaîne, et qu'elle ne soit
+ * pas absurde. Ce que le jeton prouve — signature, émetteur, audience de
+ * l'application cliente, fraîcheur — est vérifié par le port de preuve, et rien
+ * de tout cela ne se revalide au contrôleur.
+ */
+export const linkLoginMethodPayload = z.object({
+  idToken: z.string().trim().min(1).max(ID_TOKEN_MAX_LENGTH),
+});
+
+export type LinkLoginMethodPayload = z.infer<typeof linkLoginMethodPayload>;
+
 /** Un identifiant de société est un `cuid()` ; la borne ne refuse que l'absurde. */
 const WORKSPACE_MAX_LENGTH = 64;
 

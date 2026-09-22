@@ -56,10 +56,15 @@ describe("AppController", () => {
       expect(appController.health()).toMatchObject({ status: "ok", revision: "abc1234" });
     });
 
-    it("publie le transport vers la base, en un mot", () => {
-      // C'est sur ce mot que le déploiement attend la sortie d'Accelerate : un
-      // secret changé ne se relit pas, le transport servi si.
-      expect(appController.health().database).toBe("pg");
+    /**
+     * Régression : `/health` publiait un champ `database` — le transport, en un
+     * mot. Il a PROUVÉ la sortie d'Accelerate au déploiement, puis le transport
+     * est devenu unique : le champ serait resté une constante, c'est-à-dire un
+     * contrôle qui n'en est plus un mais y ressemble. Retiré le 2026-09-22 ;
+     * `AppConfig` refuse désormais de démarrer sur une autre URL.
+     */
+    it("ne publie plus de transport — il n'y en a qu'un, et le boot le refuse sinon", () => {
+      expect(appController.health()).not.toHaveProperty("database");
     });
 
     it("compte les canaux éteints par gravité", () => {

@@ -16,7 +16,6 @@ import { ClientWorkspaceSwitch } from '../../client-workspace-switch.service';
 import { FR } from '../../copy/fr';
 import { PROFILE, TOMMEUSES } from '../../mon-compte/account.fixture';
 import { ClientNav, type NavItem } from '../../nav/client-nav.service';
-import { ProfilePanel } from '../../profile/profile-panel/profile-panel';
 import { AccountMenu } from './account-menu';
 
 interface Wire {
@@ -71,7 +70,9 @@ function boot(
   TestBed.configureTestingModule({
     imports: [AccountMenu],
     providers: [
-      provideRouter([]),
+      // `/mon-profil` doit EXISTER ici : le pied porte un `routerLink`, et un
+      // clic navigue pour de bon — sans route, le routeur rejette en NG04002.
+      provideRouter([{ path: 'mon-profil', children: [] }]),
       {
         provide: AuthFacade,
         useValue: {
@@ -276,27 +277,26 @@ describe('AccountMenu — les destinations', () => {
 });
 
 describe('AccountMenu — le pied', () => {
-  it('« Mon profil » ouvre le dialogue du profil, sur le profil relu', () => {
+  /**
+   * 🔴 « Mon profil » MÈNE À UNE PAGE, et n'ouvre plus de dialogue : deux façons
+   * d'éditer la même chose, ce sont deux vérités à tenir d'accord (plan
+   * `plan-page-mon-profil.md` §1). Plus rien à attendre de `/me` non plus — la
+   * page porte son propre chargement, donc l'entrée n'est jamais désactivée.
+   */
+  it('« Mon profil » est un lien vers `/mon-profil`, qui referme le menu', async () => {
     const fixture = boot();
-    const open = vi.spyOn(ProfilePanel, 'open').mockReturnValue(undefined);
     const panel = openPanel(fixture);
+    const profile = panel.querySelector<HTMLAnchorElement>('a.foot-action');
 
-    panel.querySelectorAll<HTMLButtonElement>('.foot-action')[0]?.click();
+    expect(profile?.textContent?.trim()).toBe(FR.chrome.myProfile);
+    expect(profile?.getAttribute('href')).toBe('/mon-profil');
 
-    expect(open).toHaveBeenCalledTimes(1);
-    expect(open.mock.calls[0]?.[1]).toEqual(PROFILE);
-  });
-
-  it('« Mon profil » attend le profil : désactivé tant que `/me` n’a pas répondu', () => {
-    const fixture = boot(true, null);
-    const open = vi.spyOn(ProfilePanel, 'open').mockReturnValue(undefined);
-    const panel = openPanel(fixture);
-    const profile = panel.querySelectorAll<HTMLButtonElement>('.foot-action')[0];
-
-    expect(profile?.disabled).toBe(true);
     profile?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
 
-    expect(open).not.toHaveBeenCalled();
+    // Le panneau est toujours dans le DOM : son état se lit sur `aria-expanded`.
+    expect(expanded(fixture)).toBe('false');
   });
 
   it('« Se déconnecter » appelle la même sortie que le menu de poche', () => {

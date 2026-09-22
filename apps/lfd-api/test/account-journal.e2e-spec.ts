@@ -18,6 +18,7 @@
  * personne au moment du geste, et cite l'adresse ou le contact avec son nom du
  * moment — un renommage après coup ne réécrit pas la ligne.
  */
+import { IdentityWithoutLoginMethods } from "../src/b2b/account/domain/ports/__tests__/login-method-doubles.js";
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole, UserStatus } from "../src/platform/database/client/client.js";
@@ -42,7 +43,7 @@ const PDF = Buffer.from("%PDF-1.4\nfake kbis", "latin1");
 const COMPANY_NAME = "Café de Test SAS";
 
 /** Le fournisseur d'identité : il accepte tout, sauf quand un test l'arme pour refuser. */
-class IdentityDouble extends CustomerIdentityPort {
+class IdentityDouble extends IdentityWithoutLoginMethods {
   refuses = false;
   changeEmail(): Promise<void> {
     return this.refuses

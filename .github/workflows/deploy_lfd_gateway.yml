@@ -23,6 +23,19 @@ on:
     branches: [main]
     paths:
       - "gateway/**"
+      # 🔴 **La passerelle DÉPEND de `packages/`, et ne le surveillait pas.**
+      # Elle lit `PROD_FRONT_ORIGINS` de `@lfd/endpoints` — la même constante
+      # que le CORS de l'API, partagée exprès pour que l'adresse du front ne
+      # s'écrive qu'à un endroit. Le 2026-09-22, cette adresse a changé dans
+      # `packages/endpoints` : les trois autres déploiements ont suivi (ils
+      # surveillent `packages/**`), la passerelle non. Résultat, quatre
+      # workflows VERTS et un site qui servait encore la build de l'avant-veille,
+      # parce que le seul composant qui route vers le front n'avait pas bougé.
+      #
+      # ⚠️ Un filtre de chemins doit couvrir ce que le binaire EMBARQUE, pas le
+      # dossier où l'on croit que le code vit.
+      - "packages/**"
+      - "pnpm-workspace.yaml"
       - ".github/workflows/deploy_lfd_gateway.yml"
   workflow_dispatch:
 

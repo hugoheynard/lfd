@@ -1,3 +1,4 @@
+import { IdentityWithoutLoginMethods } from "../../../domain/ports/__tests__/login-method-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -7,10 +8,7 @@ import {
   CompanyMemberReader,
   type CompanyMemberRecord,
 } from "../../../domain/ports/company-member.repository.js";
-import {
-  CustomerIdentityPort,
-  type ProvisionedIdentity,
-} from "../../../domain/ports/customer-identity.port.js";
+import type { ProvisionedIdentity } from "../../../domain/ports/customer-identity.port.js";
 import {
   PendingAccessReader,
   type PendingAccessView,
@@ -67,7 +65,7 @@ class StoredProfile extends UserProfileRepository {
 }
 
 /** Le fournisseur d'identité, qui peut refuser le changement d'adresse. */
-class Identity extends CustomerIdentityPort {
+class Identity extends IdentityWithoutLoginMethods {
   constructor(private readonly refuses = false) {
     super();
   }

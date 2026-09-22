@@ -1,4 +1,4 @@
-import { TechnicalError, type PublicErrorFacts } from "./app-error.js";
+import { BusinessError, DomainError, TechnicalError, type PublicErrorFacts } from "./app-error.js";
 
 /**
  * Le **fournisseur d'identité** a refusé, ou son canal n'est pas configuré.
@@ -57,6 +57,102 @@ export class IdentitySubjectUnknownError extends TechnicalError {
       "identity_provider.subject_unknown",
       "Le fournisseur d'identité ne connaît plus l'identité de connexion enregistrée pour ce compte : " +
         "elle a divergé de la nôtre (compte supprimé chez lui, ou ouvert en développement).",
+    );
+  }
+}
+
+/**
+ * La **preuve de possession** d'un compte tiers ne tient pas : signature,
+ * émetteur, audience ou sujet du jeton d'identité ne sont pas les nôtres.
+ *
+ * `DomainError` (400) et non `IdentityProviderUnavailableError` (500) : rien
+ * n'est en panne, c'est le jeton présenté qui ne prouve pas ce qu'il prétend.
+ * Le détail du refus reste **au journal** — le dire à l'appelant lui
+ * apprendrait quelle de nos vérifications contourner.
+ */
+export class IdentityProofInvalidError extends DomainError {
+  constructor(cause?: unknown) {
+    super(
+      "identity.proof_invalid",
+      "La vérification de ce compte n'a pas abouti. Recommencez depuis votre profil.",
+      cause,
+    );
+  }
+}
+
+/**
+ * La preuve a **plus de cinq minutes**.
+ *
+ * Distincte de {@link IdentityProofInvalidError} parce que le geste de sortie
+ * n'est pas le même : ici rien n'est suspect, il suffit de refaire la
+ * manipulation. Un message unique ferait chercher un problème là où il n'y a
+ * qu'un délai.
+ */
+export class IdentityProofExpiredError extends DomainError {
+  constructor() {
+    super(
+      "identity.proof_expired",
+      "La vérification a expiré. Recommencez pour rattacher ce compte.",
+    );
+  }
+}
+
+/**
+ * On ne **peut pas** vérifier une preuve : l'application cliente n'est pas
+ * déclarée dans l'environnement (`AUTH0_CUSTOMER_CLIENT_ID`).
+ *
+ * `TechnicalError` parce que personne n'a rien fait de mal — c'est notre
+ * configuration qui manque. Elle existe pour que l'absence de variable
+ * **refuse** au lieu de comparer `aud` à `undefined`, ce qui reviendrait à
+ * accepter n'importe quel jeton du tenant, y compris celui d'une autre
+ * application.
+ */
+export class IdentityProofUnverifiableError extends TechnicalError {
+  constructor() {
+    super(
+      "identity.proof_unverifiable",
+      "La vérification des comptes tiers n'est pas configurée sur ce serveur " +
+        "(AUTH0_CUSTOMER_CLIENT_ID) : aucun rattachement n'est accepté.",
+    );
+  }
+}
+
+/**
+ * Le fournisseur d'identité **refuse** le rattachement — il répond `400`.
+ *
+ * Un refus, pas un incident : `IdentityProviderUnavailableError` est un
+ * `TechnicalError`, donc un `500` anonyme, et il ne convient pas ici. Le corps
+ * de la réponse d'Auth0 reste au journal ; c'est **nous** qui nommons le refus.
+ *
+ * `BusinessError` (409) plutôt que 400 : un jeton malformé ou périmé est déjà
+ * refusé en amont par `IdTokenVerifier` (signature, `aud`, `iat` < 5 min,
+ * vérifié le 2026-09-22), si bien qu'un `400` qui survit à ce contrôle désigne
+ * presque toujours une identité **déjà rattachée** ailleurs.
+ */
+export class IdentityLinkRefusedError extends BusinessError {
+  constructor() {
+    super(
+      "identity.link_refused",
+      "Le fournisseur d'identité a refusé de rattacher ce compte : il est " +
+        "probablement déjà lié à un autre compte. Connectez-vous avec lui pour le retrouver.",
+    );
+  }
+}
+
+/**
+ * Le fournisseur **refuse le détachement** — il répond `400`.
+ *
+ * Le cas réel derrière ce refus est presque toujours le même : l'identité
+ * visée n'est pas une identité **secondaire** de ce compte (elle a déjà été
+ * détachée, ou c'est la principale, que la Management API ne délie jamais).
+ * L'écran a donc une vue périmée, et le geste de sortie est de la rafraîchir.
+ */
+export class IdentityUnlinkRefusedError extends BusinessError {
+  constructor() {
+    super(
+      "identity.unlink_refused",
+      "Cette méthode de connexion n'est plus rattachée à ce compte, ou en est la méthode principale. " +
+        "Rechargez la page pour voir l'état réel.",
     );
   }
 }

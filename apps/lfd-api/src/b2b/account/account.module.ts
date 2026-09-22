@@ -51,6 +51,15 @@ import { UpdateCompanyIdentityHandler } from "./application/commands/update-comp
 import { UpdateDeliveryAddressHandler } from "./application/commands/update-delivery-address.handler.js";
 import { RequestPaymentTermHandler } from "./application/commands/request-payment-term.handler.js";
 import { UpdateMyProfileHandler } from "./application/commands/update-my-profile.handler.js";
+import { LinkLoginMethodHandler } from "./application/commands/link-login-method.handler.js";
+import { RequestPasswordResetHandler } from "./application/commands/request-password-reset.handler.js";
+import { RevokeLoginMethodHandler } from "./application/commands/revoke-login-method.handler.js";
+import { ListMyLoginMethodsHandler } from "./application/queries/list-my-login-methods.handler.js";
+import { SendLoginMethodLinkedMail } from "./application/handlers/send-login-method-linked-mail.handler.js";
+import { IdentityProofVerifier } from "./domain/ports/identity-proof.verifier.js";
+import { LoginSubjectReader } from "./domain/ports/login-subject.reader.js";
+import { Auth0IdentityProofVerifier } from "./infrastructure/auth0-identity-proof.verifier.js";
+import { PrismaLoginSubjectReader } from "./infrastructure/prisma-login-subject.reader.js";
 import { UpdateNavPreferencesHandler } from "./application/commands/update-nav-preferences.handler.js";
 import { UpdatePrimaryContactHandler } from "./application/commands/update-primary-contact.handler.js";
 import { UploadKbisHandler } from "./application/commands/upload-kbis.handler.js";
@@ -96,6 +105,7 @@ import { UserProfileRepository } from "./domain/ports/user-profile.repository.js
 import { AppConfig } from "../../platform/config/app-config.js";
 import { Auth0CustomerIdentity } from "./infrastructure/auth0-customer-identity.js";
 import { DevCustomerIdentity } from "./infrastructure/dev-customer-identity.js";
+import { SubjectRoutedCustomerIdentity } from "./infrastructure/subject-routed-customer-identity.js";
 import {
   PrismaCompanyMemberReader,
   PrismaCompanyMemberRepository,
@@ -169,6 +179,24 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
   ],
   providers: [
     UpdateMyProfileHandler,
+    // Les méthodes de connexion (plan `plan-rattachement-depuis-le-profil.md`,
+    // lot B) : la liste et les deux gestes, plus l'alerte à l'adresse du compte.
+    ListMyLoginMethodsHandler,
+    LinkLoginMethodHandler,
+    RevokeLoginMethodHandler,
+    SendLoginMethodLinkedMail,
+    // « Changer mon mot de passe », depuis son profil (plan
+    // `plan-page-mon-profil.md`, §3) : chemin NEUF, et pas le geste staff
+    // rebranché — celui-ci rend le lien à son appelant, ce qui est exactement
+    // ce qu'il ne faut pas ici.
+    RequestPasswordResetHandler,
+    // La preuve de possession d'un compte tiers : un port du contexte, servi
+    // par le vérificateur d'id_token de `platform/auth/` — le handler ne sait
+    // pas qu'il existe un JWKS.
+    { provide: IdentityProofVerifier, useClass: Auth0IdentityProofVerifier },
+    // « Ce sujet ouvre-t-il déjà un autre compte ? » — la lecture qui échappe
+    // au fournisseur, et le seul garde-fou contre un compte orphelin.
+    { provide: LoginSubjectReader, useClass: PrismaLoginSubjectReader },
     DeclareMyEstablishmentHandler,
     // Le verrou de la porte pro : il ne vit que sous l'unité de travail du handler.
     { provide: PersonAttachmentLock, useClass: PrismaPersonAttachmentLock },
@@ -263,24 +291,40 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     { provide: MembershipReader, useClass: PrismaMembershipReader },
     { provide: AccountReader, useClass: PrismaAccountReader },
     {
-      // Le fournisseur d'identité **réel**, sauf en développement sans M2M — là
-      // où l'alternative est un parcours détenteur totalement injouable. Deux
-      // conditions, et pas une : en production sans M2M, l'adaptateur Auth0 reste
-      // en place et refuse clairement, plutôt que de fabriquer des identités
-      // fantômes chez un vrai client (fail-closed).
+      // 🔴 **En production, l'adaptateur Auth0 et lui seul** — avec ou sans M2M.
+      // Sans M2M il refuse clairement, plutôt que de fabriquer des identités
+      // fantômes chez un vrai client (fail-closed). C'est la règle qui ne bouge
+      // pas, et ce provider commence par elle.
+      //
+      // Hors production, le choix se fait sur le SUJET et non sur la
+      // configuration (`SubjectRoutedCustomerIdentity`, 2026-09-22). Il se
+      // faisait sur « le M2M est-il renseigné ? », alors que l'incompatibilité
+      // est par compte : renseigner un secret rendait définitivement
+      // inutilisables les comptes déjà ouverts en `dev|…`, sans rien pour
+      // l'expliquer. Sans M2M, il n'y a rien à router — l'adaptateur de
+      // développement est le seul qui puisse répondre.
       provide: CustomerIdentityPort,
-      inject: [AppConfig, Auth0CustomerIdentity, DevCustomerIdentity],
+      inject: [
+        AppConfig,
+        Auth0CustomerIdentity,
+        DevCustomerIdentity,
+        SubjectRoutedCustomerIdentity,
+      ],
       useFactory: (
         config: AppConfig,
         auth0: Auth0CustomerIdentity,
         dev: DevCustomerIdentity,
+        routed: SubjectRoutedCustomerIdentity,
       ): CustomerIdentityPort => {
-        const configured = config.auth0ManagementCredentials() !== null;
-        return configured || config.isProduction() ? auth0 : dev;
+        if (config.isProduction()) {
+          return auth0;
+        }
+        return config.auth0ManagementCredentials() !== null ? routed : dev;
       },
     },
     Auth0CustomerIdentity,
     DevCustomerIdentity,
+    SubjectRoutedCustomerIdentity,
     { provide: SupportRequestRepository, useClass: PrismaSupportRequestRepository },
     OnCompanyDeclaredResolveNaf,
     { provide: EstablishmentDirectory, useClass: RechercheEntreprisesEstablishmentDirectory },

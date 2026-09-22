@@ -5,23 +5,24 @@ import { normalizeBootstrapEmail } from "./bootstrap-admin-email.js";
 
 import {
   optionalAdminDevBypass,
+  optionalAnalyticsConfig,
+  optionalDeliveryInboxEnabled,
   optionalDevImpersonation,
   optionalFieldEncryptionKey,
+  optionalJournalStrictFacts,
   optionalMailerConfig,
   optionalManagementCredentials,
+  optionalMediaPublicBaseUrl,
   optionalPort,
   optionalPublicationEnabled,
-  optionalDeliveryInboxEnabled,
-  optionalJournalStrictFacts,
-  optionalMediaPublicBaseUrl,
   optionalR2Storage,
   optionalString,
-  optionalAnalyticsConfig,
   optionalStripeConfig,
   optionalWebPushConfig,
+  postgresUrl,
+  required,
   type R2StorageState,
   type R2StorageUsage,
-  required,
 } from "./env-readers.js";
 
 /**
@@ -53,9 +54,6 @@ const DEFAULT_AUTH0_CUSTOMER_CONNECTION = "lfc-b2b-customers";
  */
 const DEFAULT_AUTH0_STAFF_CONNECTION = "lfc-staff";
 
-/** Le transport vers la base — cf. {@link AppConfig.databaseTransport}. */
-export type DatabaseTransport = "pg" | "accelerate";
-
 @Injectable()
 export class AppConfig {
   private readonly database: string;
@@ -75,6 +73,7 @@ export class AppConfig {
   private readonly portValue: number;
   private readonly impersonation: DevImpersonationConfig | null;
   private readonly adminAudienceValue: string | null;
+  private readonly customerClientIdValue: string | null;
   private readonly bootstrapAdminEmailValue: string;
   private readonly revisionValue: string;
   private readonly adminBypass: boolean;
@@ -86,7 +85,7 @@ export class AppConfig {
   private readonly fieldKeyIsConfigured: boolean;
 
   constructor() {
-    this.database = required("DATABASE_LFD_URL");
+    this.database = postgresUrl(required("DATABASE_LFD_URL"));
     this.auth0DomainValue = required("AUTH0_DOMAIN");
     this.auth0AudienceValue = required("AUTH0_AUDIENCE");
     this.auth0ConnectionValue =
@@ -102,6 +101,7 @@ export class AppConfig {
     this.portValue = optionalPort("PORT", 3200);
     this.impersonation = optionalDevImpersonation();
     this.adminAudienceValue = optionalString("AUTH0_ADMIN_AUDIENCE");
+    this.customerClientIdValue = optionalString("AUTH0_CUSTOMER_CLIENT_ID");
     this.bootstrapAdminEmailValue = normalizeBootstrapEmail(
       optionalString("BOOTSTRAP_ADMIN_EMAIL") ?? "",
     );
@@ -169,25 +169,6 @@ export class AppConfig {
    */
   databaseUrl(): string {
     return this.database;
-  }
-
-  /**
-   * Le transport vers la base, lu au schéma de l'URL :
-   *
-   * - `pg` — `postgres(ql)://…`, un Postgres joint en TCP par l'adaptateur
-   *   `pg` : les e2e, le poste, et la production une fois sortie d'Accelerate
-   *   (le pooler `pooled.db.prisma.io`) ;
-   * - `accelerate` — `prisma+postgres://…`, le proxy que Prisma retire le
-   *   1er décembre 2026 (`documentation/ops/plan-sortie-d-accelerate.md`).
-   *
-   * Un seul endroit décide, et `/health` publie ce qu'il a décidé : c'est ce
-   * qui PROUVE la bascule au déploiement, là où une URL changée dans un secret
-   * ne se relit pas.
-   */
-  databaseTransport(): DatabaseTransport {
-    return this.database.startsWith("postgresql://") || this.database.startsWith("postgres://")
-      ? "pg"
-      : "accelerate";
   }
 
   /** Tenant Auth0, sans schéma ni slash — ex. `lfc.eu.auth0.com`. */
@@ -351,6 +332,25 @@ export class AppConfig {
    */
   auth0AdminAudience(): string | null {
     return this.adminAudienceValue;
+  }
+
+  /**
+   * `client_id` de la **SPA boutique** chez Auth0, ou `null` si non configuré.
+   *
+   * Ce n'est pas un secret : le `client_id` d'une application publique voyage
+   * déjà en clair dans chaque URL `/authorize` et dans le bundle servi au
+   * navigateur. Il est ici parce que l'API en a besoin comme **audience
+   * attendue** d'un id_token émis à cette SPA — sans lui, `aud` ne se compare à
+   * rien.
+   *
+   * **Optionnel, délibérément.** La production tourne aujourd'hui sans cette
+   * variable : la rendre obligatoire ferait échouer le démarrage au premier
+   * déploiement qui embarque ce code, avant qu'elle ait été posée. C'est
+   * `IdTokenVerifier` qui **refuse** la vérification quand elle est `null`
+   * (fail-closed), exactement comme `AdminTokenVerifier` sur l'audience staff.
+   */
+  auth0CustomerClientId(): string | null {
+    return this.customerClientIdValue;
   }
 
   /**

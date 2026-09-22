@@ -10,9 +10,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { FoldIconComponent, FoldPanelHostService } from 'fold-ng';
+import { FoldIconComponent } from 'fold-ng';
 
-import { AccountService } from '../../../account/account.service';
 import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientIdentity } from '../../client-identity.service';
 import {
@@ -24,7 +23,6 @@ import { ClientWorkspaceSwitch } from '../../client-workspace-switch.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { LangSwitch } from '../../lang-switch/lang-switch';
-import { ProfilePanel } from '../../profile/profile-panel/profile-panel';
 import { ClientNav } from '../client-nav.service';
 
 /**
@@ -69,12 +67,7 @@ export class ClientMenu {
   protected readonly workspace = inject(ClientWorkspace);
   private readonly switcher = inject(ClientWorkspaceSwitch);
   private readonly auth = inject(AuthFacade);
-  private readonly account = inject(AccountService);
-  private readonly panels = inject(FoldPanelHostService);
   private readonly router = inject(Router);
-
-  /** Le profil n'est pas encore relu : l'entrée attend plutôt que d'ouvrir un dialogue vide. */
-  protected readonly hasProfile = computed(() => this.account.profile() !== null);
 
   /** Les espaces proposés, le courant marqué — les mêmes que le menu du bureau. */
   protected readonly spaces = computed(() =>
@@ -112,24 +105,6 @@ export class ClientMenu {
   protected go(route: string): void {
     this.closed.emit();
     void this.router.navigateByUrl(route);
-  }
-
-  /**
-   * « Mon profil » : le menu se FERME d'abord, puis le dialogue s'ouvre. Le menu
-   * est un `<dialog>` modal, dans la couche supérieure du navigateur : un
-   * panneau fold ouvert pendant qu'il est encore là resterait dessous.
-   */
-  protected openProfile(): void {
-    const profile = this.account.profile();
-    if (profile === null) {
-      return;
-    }
-    const el = this.host().nativeElement;
-    if (typeof el.close === 'function' && el.open) {
-      el.close();
-    }
-    this.closed.emit();
-    ProfilePanel.open(this.panels, profile);
   }
 
   protected logout(): void {

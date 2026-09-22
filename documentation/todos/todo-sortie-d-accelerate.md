@@ -57,5 +57,25 @@ retour arrière (Hugo, 2026-09-19 : la bascule passe par un secret à part,
 
 - [ ] **Révoquer la clé Accelerate** (Hugo) — après avoir vérifié que les
       nouveaux identifiants n'en dépendent pas ; ferme aussi la fuite de clé.
-- [ ] **Resserrer** (Claude, geste 8) : retirer la branche `accelerateUrl` du
-      service et des scripts, et la valeur `accelerate` du contrôle.
+- [x] **Resserrer** (Claude, geste 8) — fait le **2026-09-22**, après avoir
+      constaté sur la production que `/health` publiait bien
+      `{"database":"pg"}` (révision `b4c0ad9`) :
+
+  - `PrismaService` n'a plus qu'un transport — l'adaptateur `pg` ;
+  - `AppConfig.databaseTransport()` et le type `DatabaseTransport` sont
+    supprimés ;
+  - 🔴 **ce qui les remplace n'est pas rien** : `postgresUrl()` **refuse au
+    démarrage** une URL qui n'est pas un Postgres direct, en nommant
+    Accelerate. Sans ce refus, une URL `prisma+postgres://` serait passée telle
+    quelle à l'adaptateur `pg`, qui aurait échoué **à la première requête** par
+    un message de pilote, loin de sa cause ;
+  - `/health` **ne publie plus** `database`, et le workflow ne l'attend plus.
+    Le transport étant unique, le champ serait devenu une constante — la pire
+    forme de contrôle, celle qui n'en est plus un mais y ressemble. Que l'image
+    réponde prouve désormais davantage, puisqu'elle ne peut pas démarrer
+    autrement.
+
+  ⚠️ **Le retour arrière est donc fermé** : `DATABASE_LFD_URL` peut encore
+  porter la valeur Accelerate, mais l'application la refusera au boot. C'était
+  la contrepartie explicite du resserrement, et elle est assumée — la bascule
+  tient depuis le 2026-09-19.

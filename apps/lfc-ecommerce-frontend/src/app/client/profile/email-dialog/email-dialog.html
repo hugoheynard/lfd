@@ -1,0 +1,59 @@
+<fold-panel-header
+  [title]="t().account.loginMethodEmailChangeTitle"
+  [closeLabel]="t().dialog.close"
+/>
+
+<fold-panel-body>
+  <!-- LE REFUS reste sous les yeux : une adresse déjà prise se corrige ici. -->
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce>
+      {{ t().account.profileSaveFailed }} {{ message }}
+    </fold-callout>
+  }
+
+  <!-- Ce que ce changement emporte, dit AVANT d'enregistrer : c'est le sujet
+       du dialogue, il ne se déclenche donc pas à la première frappe. -->
+  <fold-callout variant="warning">{{ t().account.profileEmailChange }}</fold-callout>
+
+  <!-- L'adresse actuelle est RAPPELÉE, pas pré-remplie : la confirmation n'a de
+       sens que si les deux champs partent vides. -->
+  <p class="current">
+    <span class="current-label">{{ t().account.loginMethodEmailCurrent }}</span>
+    <span class="current-value">{{ data().email }}</span>
+  </p>
+
+  <fold-input
+    [label]="t().account.loginMethodEmailNew"
+    type="email"
+    required
+    [value]="next()"
+    [errors]="nextErrors()"
+    (valueChange)="setNext($event)"
+  />
+  <!-- Le second champ n'est pas une politesse : une adresse de connexion mal
+       tapée ferme le compte, et personne ne peut revenir par lui-même. -->
+  <fold-input
+    [label]="t().account.loginMethodEmailConfirm"
+    type="email"
+    required
+    [value]="confirmation()"
+    [errors]="confirmErrors()"
+    (valueChange)="setConfirmation($event)"
+  />
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    {{ t().account.cancel }}
+  </button>
+  <button
+    foldButton
+    intent="primary"
+    type="button"
+    [loading]="saving()"
+    [disabled]="!canSave()"
+    (click)="save()"
+  >
+    {{ t().account.save }}
+  </button>
+</fold-panel-footer>

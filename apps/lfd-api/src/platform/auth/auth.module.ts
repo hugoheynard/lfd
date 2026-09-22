@@ -3,6 +3,7 @@ import { AccessTokenVerifier } from "./access-token.verifier.js";
 import { AdminAuthGuard } from "./admin-auth.guard.js";
 import { AdminTokenVerifier } from "./admin-token.verifier.js";
 import { AuthConfig } from "./auth.config.js";
+import { IdTokenVerifier } from "./id-token.verifier.js";
 import { StaffAccessGuard } from "./staff-access.guard.js";
 
 /**
@@ -31,6 +32,11 @@ import { StaffAccessGuard } from "./staff-access.guard.js";
  * s'attachent ensemble par `@AdminSurface(...)` sur les contrôleurs `/admin/*`,
  * et sont exportés ici pour qu'ils s'y résolvent.
  *
+ * `IdTokenVerifier` vérifie un jeton d'une autre nature : l'**id_token** émis à
+ * la SPA boutique quand quelqu'un rattache une méthode de connexion à son
+ * compte. Il est ici parce qu'il partage le JWKS et l'émetteur des deux autres
+ * — pas le domaine, qu'il ignore complètement.
+ *
  * Le **port** `StaffAccessResolver` est déclaré ici, jamais implémenté :
  * répondre suppose de lire l'annuaire, et cette couche n'a pas à le connaître.
  * C'est la racine de composition qui relie le port à son adaptateur — même
@@ -42,9 +48,16 @@ import { StaffAccessGuard } from "./staff-access.guard.js";
     AuthConfig,
     AccessTokenVerifier,
     AdminTokenVerifier,
+    IdTokenVerifier,
     AdminAuthGuard,
     StaffAccessGuard,
   ],
-  exports: [AccessTokenVerifier, AdminTokenVerifier, AdminAuthGuard, StaffAccessGuard],
+  exports: [
+    AccessTokenVerifier,
+    AdminTokenVerifier,
+    IdTokenVerifier,
+    AdminAuthGuard,
+    StaffAccessGuard,
+  ],
 })
 export class AuthModule {}

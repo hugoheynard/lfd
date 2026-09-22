@@ -1,18 +1,37 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post } from "@nestjs/common";
+import type { LoginMethodsView } from "@lfd/contracts";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { DeclareMyEstablishmentCommand } from "../application/commands/declare-my-establishment.command.js";
+import { LinkLoginMethodCommand } from "../application/commands/link-login-method.command.js";
+import { RequestPasswordResetCommand } from "../application/commands/request-password-reset.command.js";
+import { RevokeLoginMethodCommand } from "../application/commands/revoke-login-method.command.js";
+import { ListMyLoginMethodsQuery } from "../application/queries/list-my-login-methods.query.js";
 import { UpdateMyProfileCommand } from "../application/commands/update-my-profile.command.js";
 import { UpdateNavPreferencesCommand } from "../application/commands/update-nav-preferences.command.js";
 import { GetMyAccountQuery } from "../application/queries/get-my-account.query.js";
 import type { AccountView } from "../domain/ports/account.reader.js";
 import type { NavPreferencesPatch } from "../domain/value-objects/nav-preferences.js";
+import { PasswordLinkThrottleGuard } from "./password-link-throttle.guard.js";
 import {
   declareEstablishmentPayload,
   type DeclareEstablishmentPayload,
+  linkLoginMethodPayload,
+  type LinkLoginMethodPayload,
   updateNavPrefsPayload,
   type UpdateNavPrefsPayload,
   updateProfilePayload,
@@ -113,6 +132,103 @@ export class MeController {
       ),
     );
     return this.queries.execute<GetMyAccountQuery, AccountView>(new GetMyAccountQuery(user.userId));
+  }
+
+  /**
+   * Les méthodes de connexion actuelles.
+   *
+   * ⚠️ **Elle ne passe pas par `/me`**, et c'est une décision : la liste est
+   * tenue par le fournisseur d'identité, donc la servir à l'amorçage mettrait un
+   * appel réseau sortant sur le chemin de **toutes** les pages, pour une
+   * information que seul le profil affiche (plan
+   * `documentation/auth-inscription/plan-rattachement-depuis-le-profil.md`, R6).
+   */
+  @Get("identities")
+  identities(@CurrentUser() user: Principal): Promise<LoginMethodsView> {
+    return this.queries.execute<ListMyLoginMethodsQuery, LoginMethodsView>(
+      new ListMyLoginMethodsQuery(user.subject),
+    );
+  }
+
+  /**
+   * Rattache une méthode de connexion de plus au même compte, sur preuve.
+   *
+   * Le corps porte un `id_token` : la preuve que la même personne tient les deux
+   * sessions. L'adresse du compte tiers n'est ni lue, ni comparée, ni recopiée —
+   * une adresse ne rattache rien, et c'est ce qui rend impossible de s'approprier
+   * un compte en écrivant son adresse quelque part (R2).
+   *
+   * Renvoie la liste relue, comme les autres écritures de `/me` : l'appelant
+   * garde une seule source de vérité après l'écriture.
+   */
+  @Post("identities")
+  @HttpCode(HttpStatus.OK)
+  async linkIdentity(
+    @CurrentUser() user: Principal,
+    @Body(new ZodBody(linkLoginMethodPayload)) payload: LinkLoginMethodPayload,
+  ): Promise<LoginMethodsView> {
+    await this.commands.execute<LinkLoginMethodCommand, void>(
+      new LinkLoginMethodCommand(user.userId, user.subject, payload.idToken),
+    );
+    return this.queries.execute<ListMyLoginMethodsQuery, LoginMethodsView>(
+      new ListMyLoginMethodsQuery(user.subject),
+    );
+  }
+
+  /**
+   * **Demande un lien pour changer son mot de passe.** Sans corps, 204.
+   *
+   * 🔴 **Le lien n'est jamais rendu** — ni ici, ni dans un log, ni ailleurs que
+   * dans le courriel qui part à l'adresse du compte. Le ticket porte
+   * `mark_email_as_verified` : le suivre PROUVE l'accès à la boîte, donc
+   * l'afficher marquerait prouvée une adresse que personne n'a ouverte. D'où le
+   * 204 — il n'y a littéralement rien à renvoyer —, et d'où le fait que cette
+   * route n'emprunte PAS `IssuePasswordLinkHandler`, qui rend `{ url,
+   * expiresAt }` au staff.
+   *
+   * Rien n'est lu du corps ni de l'URL : l'identité, l'adresse et le sujet
+   * viennent tous du `Principal`, donc de la base.
+   *
+   * Le garde de débit est posé **sur la route** et non en global : le limiteur
+   * du dépôt s'exécute avant l'authentification et ne connaît que l'IP, alors
+   * que ce qu'il faut borner ici est le nombre de courriels par **compte**.
+   *
+   * 409 si le compte n'a pas de connexion par mot de passe (il entre par
+   * Google) ; 429 au-delà du débit.
+   */
+  @Post("password-link")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(PasswordLinkThrottleGuard)
+  async requestPasswordLink(@CurrentUser() user: Principal): Promise<void> {
+    await this.commands.execute<RequestPasswordResetCommand, void>(
+      new RequestPasswordResetCommand(user.userId, user.subject, user.email),
+    );
+  }
+
+  /**
+   * Retire une méthode de connexion, **désignée par son nom de connexion**.
+   *
+   * 🔴 `google-oauth2`, jamais un identifiant Auth0. C'est la raison d'être de
+   * cette forme d'URL : un identifiant chez un tiers dans un chemin s'écrit dans
+   * tous les journaux d'accès, et c'est la panne du 2026-09-18 sous une autre
+   * forme (plan cité, §9.5). L'API retrouve elle-même l'identifiant secondaire en
+   * relisant les méthodes du compte ; le nom de connexion, lui, est déjà public —
+   * il voyage dans chaque URL d'autorisation et dans le bundle du front.
+   *
+   * ⚠️ Détacher ne supprime rien chez le fournisseur : l'identité redevient un
+   * compte autonome. L'écran doit le dire, pas le laisser deviner.
+   */
+  @Delete("identities/:provider")
+  async revokeIdentity(
+    @CurrentUser() user: Principal,
+    @Param("provider") provider: string,
+  ): Promise<LoginMethodsView> {
+    await this.commands.execute<RevokeLoginMethodCommand, void>(
+      new RevokeLoginMethodCommand(user.userId, user.subject, provider),
+    );
+    return this.queries.execute<ListMyLoginMethodsQuery, LoginMethodsView>(
+      new ListMyLoginMethodsQuery(user.subject),
+    );
   }
 }
 

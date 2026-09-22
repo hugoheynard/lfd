@@ -1,0 +1,20 @@
+/* Même montage que les dialogues de `/mon-compte` : l'hôte se borne à la
+   hauteur que fold lui laisse, et `fold-panel-body` défile. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+/* L'adresse actuelle : un rappel, en second plan, pas un champ. */
+.current {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.current-label {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}

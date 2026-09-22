@@ -1,0 +1,68 @@
+<!--
+  LE MÊME CHÂSSIS QUE SES VOISINES, et ce n'est pas un détail de style : sous
+  `ClientShell`, une page porte son titre dans le BANDEAU bleu du shell
+  (`clientBanner`) et son contenu dans un `.page` qui prend la gouttière
+  `--lfc-inset`. Aucune des pages du shell client n'utilise `fold-page-layout`
+  — `accueil-public` l'écrit même en tête de son template. La consigne initiale
+  de ce lot disait le contraire ; corrigé le 2026-09-22, avant que les deux
+  sections suivantes s'y ajoutent.
+-->
+<ng-template clientBanner>
+  <!--
+    `align-start` : le bandeau CENTRE son titre quand il n'a rien d'autre
+    (`.titles:only-child`). Aucune autre page du shell ne l'a jamais montré —
+    toutes projettent une action, qui suffit à décentrer. Celle-ci n'en a pas,
+    et héritait donc d'un centrage que le reste de l'app ne porte nulle part
+    (Hugo, 2026-09-22 : « on devrait s'aligner sur les autres pages »).
+  -->
+  <app-client-banner-block
+    class="align-start"
+    [title]="t().chrome.myProfile"
+    [lead]="t().account.profilePageLead"
+  />
+</ng-template>
+
+<div class="page">
+  @switch (view()) {
+    @case ('loading') {
+      <fold-loading [message]="t().account.loading" />
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        [title]="t().account.loadFailedTitle"
+        [subtitle]="t().account.loadFailedBody"
+      >
+        <button foldButton type="button" (click)="retry()">
+          {{ t().account.loadRetry }}
+        </button>
+      </fold-empty-state>
+    }
+    @default {
+      <!-- L'IDENTITÉ : un brouillon, que son seul bouton enregistre. -->
+      @if (identity(); as profile) {
+        <fold-page-section
+          [title]="t().account.profileIdentityTitle"
+          [description]="t().account.profileIdentitySubtitle"
+        >
+          <app-identity-section [data]="profile" />
+        </fold-page-section>
+      }
+
+      <!-- LES MÉTHODES DE CONNEXION : ici, chaque geste agit tout de suite.
+           Elles ne dépendent pas de `/me` — la liste vient d'Auth0, et la
+           section porte ses propres états. -->
+      <fold-page-section
+        [title]="t().account.loginMethodsTitle"
+        [description]="t().account.loginMethodsSubtitle"
+      >
+        <app-login-methods-section />
+      </fold-page-section>
+
+      <!-- LA PROPOSITION, en bas et après ce qu'on est venu faire : elle ne
+           s'affiche qu'à qui n'a aucune société, et la section le décide
+           elle-même (elle ne rend rien sinon). -->
+      <app-pro-account-section />
+    }
+  }
+</div>

@@ -28,6 +28,7 @@
     "@angular/platform-browser": "catalog:",
     "@angular/router": "catalog:",
     "@auth0/auth0-angular": "catalog:",
+    "@auth0/auth0-spa-js": "catalog:",
     "@capacitor/core": "catalog:",
     "@capacitor/ios": "catalog:",
     "@lfd/b2b-ui": "workspace:*",

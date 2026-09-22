@@ -1,0 +1,44 @@
+<!-- Rien tant que `/me` n'a pas répondu : un bloc qui apparaît puis change de
+     contenu à la réponse vaut moins que pas de bloc du tout. -->
+@if (ready()) {
+  <fold-card>
+    <div class="body">
+      <fold-element-title
+        variant="title"
+        icon="company"
+        [title]="mine().length > 0 ? t().account.proAccountsTitle : t().account.proAccountTitle"
+      />
+
+      @if (mine().length > 0) {
+        <p class="lead">{{ t().account.proAccountsLead }}</p>
+        <!-- La LISTE de ses comptes : le nom qu'on lit, puis ce qui l'identifie
+             au téléphone et où il en est. Pas de lien par ligne — on bascule
+             d'espace depuis le menu du compte, et deux chemins pour le même
+             geste, ce sont deux vérités à tenir d'accord. -->
+        <ul class="list">
+          @for (company of mine(); track company.id) {
+            <li class="item">
+              <span class="item-name">{{ name(company) }}</span>
+              <span class="item-note">
+                {{ company.reference }} · {{ t().account.states[company.status] }}
+              </span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="lead">{{ t().account.proAccountLead }}</p>
+      }
+
+      <!-- UN LIEN : la barre d'état l'annonce, et il s'ouvre dans un onglet. -->
+      <a
+        foldButton
+        emphasis="outline"
+        intent="neutral"
+        size="sm"
+        routerLink="/ouverture-compte-pro"
+      >
+        {{ mine().length > 0 ? t().account.proAccountAnother : t().account.proAccountLink }}
+      </a>
+    </div>
+  </fold-card>
+}

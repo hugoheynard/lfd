@@ -25,6 +25,7 @@ export type {
   CompanyView,
   AccountView,
 } from "./account.js";
+export type { LoginMethodView, LoginMethodsView } from "./login-method.js";
 export type {
   CreatedIdResponse,
   InvitationSentResponse,

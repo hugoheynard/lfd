@@ -1,0 +1,20 @@
+/* Le formulaire est une colonne : l'écart vient du `gap`, jamais d'une marge. */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* Prénom et nom côte à côte, chacun la moitié — et qui se replie tout seul
+   quand la place manque, sans point de rupture à tenir à jour. */
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--fold-space-md);
+}
+
+/* Le geste au bout de la colonne, poussé à droite comme un pied de formulaire. */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}

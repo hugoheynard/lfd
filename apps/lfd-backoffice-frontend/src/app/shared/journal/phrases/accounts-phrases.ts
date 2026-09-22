@@ -27,6 +27,7 @@ import {
   COMPANY_STATUS_ACTION,
   DEFERRED_TERM,
   FULFILLMENT_METHOD,
+  LOGIN_PROVIDER,
   PROCEDURE_ACTION,
   RECURRENCE,
   SUPPORT_CHANNEL,
@@ -512,6 +513,24 @@ const profileUpdated: Phrase = (fact) => {
   );
 };
 
+/**
+ * « … a ajouté Google à ses méthodes de connexion » — jamais le `sub` : la
+ * charge n'en porte pas, et c'est ce qui la distingue de ce que six
+ * déploiements ont sorti du journal.
+ */
+function loginMethod(verb: string): Phrase {
+  return (fact) =>
+    byActor(
+      fact,
+      [
+        text(`${verb} `),
+        valueIn(LOGIN_PROVIDER, fact.payload['provider'], { inSentence: true }),
+        text(' à ses méthodes de connexion'),
+      ],
+      ['provider', 'connection', 'linkedVia', ...selfLabel(fact)],
+    );
+}
+
 // ─── Les paniers récurrents ─────────────────────────────────────────────────
 
 /** « … a mis en pause un panier récurrent », « … a réactivé un panier récurrent ». */
@@ -650,6 +669,13 @@ export const ACCOUNTS_PHRASES = {
 
   'user.registered': (fact) => byActor(fact, [text('a créé son compte')], selfLabel(fact)),
   'user.profile_updated': profileUpdated,
+  'user.identity_linked': loginMethod('a ajouté'),
+  'user.identity_revoked': loginMethod('a retiré'),
+  // La personne agit sur elle-même : la phrase ne nomme donc pas de tiers, et
+  // ne dit RIEN de ce qu'il advient de son mot de passe actuel — rien ne
+  // l'atteste chez nous (plan `plan-page-mon-profil.md`, §7.2).
+  'user.password_reset_requested': (fact) =>
+    byActor(fact, [text('a demandé à changer son mot de passe')], selfLabel(fact)),
   'user.password_link_issued': (fact) =>
     byActor(
       fact,

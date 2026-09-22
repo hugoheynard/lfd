@@ -101,4 +101,24 @@ export const ACCOUNT_FACTS = {
   profileUpdated: "user.profile_updated",
   /** Un agent fabrique un lien de mot de passe à remettre — le geste, pas le lien. */
   passwordLinkIssued: "user.password_link_issued",
+  /**
+   * La personne demande elle-même à changer son mot de passe, depuis son profil.
+   *
+   * 🔴 **Pas `passwordLinkIssued` réutilisé** : sa phrase dit « à lui remettre
+   * en personne », ce qui serait faux ici — personne ne remet rien, le lien
+   * part à la boîte et l'acteur est le sujet lui-même.
+   */
+  passwordResetRequested: "user.password_reset_requested",
+  /**
+   * Une méthode de connexion de plus ouvre le compte (Google, demain Facebook).
+   *
+   * Préfixé `user.` et non `account.` comme l'écrivait le plan : le journal
+   * range un fait dans son module PAR SON PRÉFIXE
+   * (`growth/domain/activity-module.ts`), et `account.` n'appartiendrait à
+   * aucun — invisible dans le filtre « comptes », exactement le piège décrit
+   * plus haut pour `delivery_procedure.` (vérifié le 2026-09-22).
+   */
+  identityLinked: "user.identity_linked",
+  /** Une méthode de connexion secondaire a été détachée. */
+  identityRevoked: "user.identity_revoked",
 } as const satisfies Readonly<Record<string, JournalFactType>>;

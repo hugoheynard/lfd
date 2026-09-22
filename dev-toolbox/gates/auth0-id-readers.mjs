@@ -70,6 +70,12 @@ const ADMITTED = new Map([
     "le `sub` d'un accès en attente, pour lui fabriquer un lien de mot de passe",
   ],
   [
+    `${ACCOUNT_DIR}infrastructure/prisma-login-subject.reader.ts`,
+    "dit si un sujet de connexion ouvre DÉJÀ un autre compte — le seul garde-fou " +
+      "contre un compte rendu inatteignable par un rattachement (2026-09-22) ; " +
+      "seul notre identifiant en sort, le sujet n'est ni rendu ni journalisé",
+  ],
+  [
     `${ACCOUNT_DIR}infrastructure/prisma-impersonation-subjects.ts`,
     "l'impersonation de développement, inerte en production",
   ],

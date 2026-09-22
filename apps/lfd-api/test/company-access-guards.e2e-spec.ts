@@ -12,6 +12,7 @@
  * Frontières doublées : la signature du jeton staff et le fournisseur d'identité
  * (tenants distants). Le reste — guard, bus, domaine, SQL — est réel.
  */
+import { NO_LOGIN_METHODS } from "../src/b2b/account/domain/ports/__tests__/login-method-doubles.js";
 import { CompanyMemberRepository } from "../src/b2b/account/domain/ports/company-member.repository.js";
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -27,6 +28,8 @@ const stubAdminVerifier = {
 
 let provisionSeq = 0;
 const identityDouble: CustomerIdentityPort = {
+  // Ce double n'éprouve pas les méthodes de connexion.
+  ...NO_LOGIN_METHODS,
   changeEmail: (): Promise<void> => Promise.resolve(),
   provision: (): Promise<ProvisionedIdentity> => {
     provisionSeq += 1;

@@ -58,11 +58,16 @@ describe("AppConfig — impersonation de dev", () => {
 });
 
 /**
- * Le transport se lit au schéma de l'URL — et `/health` le publie, ce qui en
- * fait la preuve de la sortie d'Accelerate au déploiement.
- * La clé touchée est restaurée après chaque cas.
+ * **L'URL de la base est refusée au démarrage si ce n'est pas un Postgres
+ * direct** (geste 8 de la sortie d'Accelerate, 2026-09-22).
+ *
+ * Ces cas ont d'abord éprouvé un TRANSPORT — le schéma de l'URL choisissait
+ * entre l'adaptateur `pg` et `accelerateUrl`, et `/health` publiait le choix.
+ * La branche Accelerate a été retirée ; ce qui la remplace est un refus, et
+ * c'est lui qu'on éprouve maintenant. La clé touchée est restaurée après
+ * chaque cas.
  */
-describe("AppConfig — transport vers la base", () => {
+describe("AppConfig — l'URL de la base", () => {
   let saved: string | undefined;
 
   beforeEach(() => {
@@ -77,22 +82,34 @@ describe("AppConfig — transport vers la base", () => {
     }
   });
 
-  function transportOf(url: string): string {
+  function urlOf(url: string): string {
     process.env["DATABASE_LFD_URL"] = url;
-    return new AppConfig().databaseTransport();
+    return new AppConfig().databaseUrl();
   }
 
-  it("le pooler mutualisé de Prisma Postgres passe par `pg`", () => {
-    expect(transportOf("postgres://u:p@pooled.db.prisma.io:5432/postgres")).toBe("pg");
+  it("accepte le pooler mutualisé de Prisma Postgres", () => {
+    const url = "postgres://u:p@pooled.db.prisma.io:5432/postgres";
+    expect(urlOf(url)).toBe(url);
   });
 
-  it("un Postgres local (`postgresql://`) passe par `pg`", () => {
-    expect(transportOf("postgresql://lfc:lfc@localhost:5433/lfc_b2b_test")).toBe("pg");
+  it("accepte un Postgres local (`postgresql://`)", () => {
+    const url = "postgresql://lfc:lfc@localhost:5433/lfc_b2b_test";
+    expect(urlOf(url)).toBe(url);
   });
 
-  it("l'URL Accelerate reste `accelerate`, pour le retour arrière", () => {
-    expect(transportOf("prisma+postgres://accelerate.prisma-data.net/?api_key=x")).toBe(
-      "accelerate",
+  /**
+   * Régression : une URL Accelerate était **acceptée** et choisissait l'autre
+   * branche. La branche partie, la laisser passer l'aurait donnée telle quelle
+   * à l'adaptateur `pg`, qui aurait échoué à la PREMIÈRE REQUÊTE par un message
+   * de pilote — loin de sa cause, et en production.
+   */
+  it("refuse une URL Accelerate, au démarrage et en le nommant", () => {
+    expect(() => urlOf("prisma+postgres://accelerate.prisma-data.net/?api_key=x")).toThrow(
+      /Accelerate/,
     );
+  });
+
+  it("refuse une URL qui n'est pas du Postgres", () => {
+    expect(() => urlOf("mysql://u:p@localhost:3306/db")).toThrow(/DATABASE_LFD_URL/);
   });
 });

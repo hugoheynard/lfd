@@ -131,6 +131,18 @@ export const SUPPORT_CHANNEL = domain('canal d’une demande de contact', {
   email: 'E-mail',
 });
 
+/**
+ * Les méthodes de connexion, sous le mot de l'écran. Le catalogue type
+ * `provider` en `z.string()` — la liste des stratégies appartient au
+ * fournisseur, pas à nous — donc une méthode inconnue s'affiche telle quelle,
+ * et c'est juste : une ligne ancienne peut en porter une qu'on n'ouvre plus.
+ */
+export const LOGIN_PROVIDER = domain('méthode de connexion', {
+  auth0: 'Mot de passe',
+  'google-oauth2': 'Google',
+  facebook: 'Facebook',
+});
+
 /** Les mots de quelques valeurs d'un ensemble déjà nommé. */
 function pick(
   set: { readonly labels: Readonly<Record<string, string>> },
@@ -155,5 +167,12 @@ export const ACCOUNTS_VALUES: ValueFamily = {
     COMPANY_ROLE,
     SUPPORT_CHANNEL,
   ],
-  strings: { fields: CHANGED_FIELD, role: COMPANY_ROLE, channel: SUPPORT_CHANNEL },
+  strings: {
+    fields: CHANGED_FIELD,
+    role: COMPANY_ROLE,
+    channel: SUPPORT_CHANNEL,
+    provider: LOGIN_PROVIDER,
+  },
+  /** Par où un rattachement de méthode de connexion a été demandé. */
+  literals: { profile: 'Depuis son profil' },
 };

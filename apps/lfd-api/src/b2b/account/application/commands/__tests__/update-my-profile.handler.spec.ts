@@ -1,3 +1,4 @@
+import { NO_LOGIN_METHODS } from "../../../domain/ports/__tests__/login-method-doubles.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import type { UserProfile } from "../../../domain/entities/user-profile.js";
@@ -54,6 +55,8 @@ function doubles(
   };
 
   const identity: CustomerIdentityPort = {
+    // Ce double n'éprouve pas les méthodes de connexion.
+    ...NO_LOGIN_METHODS,
     provision: (): Promise<ProvisionedIdentity> =>
       Promise.resolve({ subject: "auth0|double", passwordSetupUrl: "https://exemple.test/mdp" }),
     issuePasswordLink: (): Promise<string> => Promise.resolve("https://exemple.test/mdp"),

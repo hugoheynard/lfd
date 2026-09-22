@@ -562,3 +562,33 @@ export function optionalFieldEncryptionKey(): Buffer | null {
   }
   return key;
 }
+
+/**
+ * L'URL de la base, **refusée au démarrage** si ce n'est pas un Postgres direct.
+ *
+ * 🔴 **Ce contrôle a remplacé une branche** (geste 8 de la sortie d'Accelerate,
+ * 2026-09-22). Le service portait deux transports — l'adaptateur `pg` et
+ * `accelerateUrl` — et le schéma de l'URL choisissait. La branche Accelerate a
+ * été gardée le temps du retour arrière ; la production est passée à `pg` le
+ * 2026-09-19 et l'a prouvé par `/health` (`{"database":"pg"}`, révision
+ * `07fff0c`).
+ *
+ * La retirer sans rien mettre à la place aurait été le pire des deux mondes :
+ * une URL `prisma+postgres://` aurait été passée telle quelle à l'adaptateur
+ * `pg`, qui aurait échoué **à la première requête** par un message de pilote,
+ * loin de sa cause. On REFUSE donc au démarrage, en nommant le cas — c'est la
+ * seule chose qu'un exploitant puisse lire à 7 h du matin.
+ *
+ * ⚠️ Prisma retire Accelerate le **1er décembre 2026** : après cette date,
+ * l'ancienne URL ne joint plus rien de toute façon.
+ */
+export function postgresUrl(value: string): string {
+  if (value.startsWith("postgresql://") || value.startsWith("postgres://")) {
+    return value;
+  }
+  throw new Error(
+    "DATABASE_LFD_URL ne pointe pas vers un Postgres direct (`postgresql://…`). " +
+      "Une URL `prisma+postgres://…` vise Accelerate, que cette application ne sait " +
+      "plus joindre depuis le 2026-09-22 (voir documentation/ops/plan-sortie-d-accelerate.md).",
+  );
+}

@@ -1,6 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import { vi } from 'vitest';
+
+import { matchMediaAt } from '../../mon-compte/account.fixture';
 
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop-catalogue.store';
@@ -242,10 +245,28 @@ describe('ShopPage — la barre du bas, sans compte', () => {
     fixture.detectChanges();
   });
 
+  /**
+   * ⚠️ **Le panier se charge à la demande**, par un `import()` dynamique dans
+   * `pay()`. Un `await Promise.resolve()` ne suffit pas à le laisser arriver :
+   * le test finissait, Vitest démontait l'environnement, et le module se
+   * résolvait dans le vide — `EnvironmentTeardownError`, comptée HORS du
+   * décompte des tests. La suite affichait donc « tout vert » et sortait en
+   * **1**, ce qui a bloqué un déploiement (relevé le 2026-09-22,
+   * `todo-releve-version-deployee.md` §4).
+   *
+   * On le précharge : l'`import()` du composant retombe alors sur le cache de
+   * modules et se résout tout de suite, sans rien laisser en vol.
+   */
   it('🔴 ne pousse PLUS vers Auth0 quand personne n’est connecté', async () => {
+    // Le panier s'ouvre en dialogue, et `dialogSide()` lit `matchMedia` pour
+    // choisir son côté : sans lui, l'ouverture rejette. L'erreur restait
+    // INVISIBLE tant que le module n'arrivait même pas.
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
+    await import('../../cart/cart-dialog/cart-dialog');
     const el = fixture.nativeElement as HTMLElement;
 
     el.querySelector<HTMLButtonElement>('app-cart-bar button')?.click();
+    await Promise.resolve();
     await Promise.resolve();
 
     expect(asked).toEqual([]);

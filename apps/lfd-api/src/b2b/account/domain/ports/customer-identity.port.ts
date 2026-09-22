@@ -20,6 +20,27 @@ import type {
 // reste celui-ci.
 export type { IdentityToProvision, ProvisionedIdentity };
 
+/**
+ * Une **méthode de connexion** rattachée à un compte, dans le vocabulaire du
+ * domaine.
+ *
+ * `secondaryUserId` n'en sort **pas** : il ne sert qu'à l'adaptateur, pour
+ * adresser le détachement chez le fournisseur. La vue servie au front n'en
+ * porte pas (cf. `LoginMethodView` de `@lfd/contracts`), et aucune URL ne
+ * l'écrit — un identifiant tiers dans un chemin finit dans tous les journaux
+ * d'accès.
+ */
+export interface LoginMethod {
+  /** La stratégie — `auth0`, `google-oauth2`, `facebook`. */
+  readonly provider: string;
+  /** L'identifiant **chez le fournisseur**, sans le préfixe de stratégie. */
+  readonly secondaryUserId: string;
+  /** La base d'utilisateurs visée ; absente sur certaines connexions sociales. */
+  readonly connection: string | null;
+  /** Vrai pour l'identité qui porte le compte — elle ne se détache jamais. */
+  readonly isPrimary: boolean;
+}
+
 export abstract class CustomerIdentityPort {
   /**
    * Propage la nouvelle adresse au fournisseur d'identité.
@@ -59,4 +80,65 @@ export abstract class CustomerIdentityPort {
    * @throws {IdentityProviderUnavailableError} canal non configuré ou en échec.
    */
   abstract issuePasswordLink(subject: string): Promise<string>;
+
+  /**
+   * **Émet un lien de mot de passe ET l'envoie**, à l'adresse du compte.
+   *
+   * 🔴 Elle ne rend rien, et c'est tout son objet. {@link issuePasswordLink}
+   * rend le lien à son appelant parce qu'un commercial doit pouvoir le remettre
+   * en personne ; ici la personne se sert elle-même, et le lien ne doit
+   * atteindre que **sa boîte**. Le ticket porte `mark_email_as_verified` : le
+   * suivre PROUVE l'accès à la boîte, donc l'afficher à l'écran marquerait
+   * prouvée une adresse que personne n'a ouverte. Un port qui rendrait l'URL
+   * laisserait cette faute à un appelant près.
+   *
+   * L'émission et l'envoi sont donc **un seul geste**, tenu par l'adaptateur :
+   * le lien n'existe qu'entre ces deux lignes-là.
+   *
+   * @param subject `sub` du fournisseur — l'identité visée.
+   * @param email l'adresse du compte, celle de notre base : c'est à elle que le
+   *   message part, jamais à une adresse reçue d'un appelant.
+   * @throws {IdentityProviderUnavailableError} canal non configuré ou en échec.
+   */
+  abstract sendPasswordResetLink(subject: string, email: string): Promise<void>;
+
+  /**
+   * Les **méthodes de connexion** du compte, telles que le fournisseur les tient.
+   *
+   * C'est le prix du rattachement chez lui : la liste n'est pas chez nous, donc
+   * la lire est un appel réseau sortant. Elle ne se sert jamais sur un chemin
+   * d'amorçage.
+   *
+   * @throws {IdentitySubjectUnknownError} le fournisseur ne connaît pas ce sujet.
+   */
+  abstract listLoginMethods(subject: string): Promise<readonly LoginMethod[]>;
+
+  /**
+   * **Absorbe** une identité secondaire dans ce compte, sur preuve.
+   *
+   * `idToken` est la preuve que la même personne tient les deux sessions ; le
+   * fournisseur en extrait lui-même le sujet secondaire. Aucune adresse n'est
+   * lue, ni comparée, ni recopiée — c'est ce qui rend impossible de s'approprier
+   * un compte en écrivant son adresse quelque part.
+   *
+   * @returns les méthodes du compte APRÈS rattachement.
+   * @throws {IdentityLinkRefusedError} le fournisseur refuse (jeton inutilisable
+   *   pour lui, identité déjà rattachée ailleurs).
+   */
+  abstract linkLoginMethod(subject: string, idToken: string): Promise<readonly LoginMethod[]>;
+
+  /**
+   * Détache une identité **secondaire**. Rend les méthodes restantes.
+   *
+   * ⚠️ Détacher ne supprime rien chez le fournisseur : l'identité redevient un
+   * utilisateur autonome. C'est l'appelant qui doit le dire à l'écran.
+   *
+   * @throws {IdentityUnlinkRefusedError} ce n'est pas une identité secondaire
+   *   de ce compte (déjà détachée, ou principale).
+   */
+  abstract unlinkLoginMethod(
+    subject: string,
+    provider: string,
+    secondaryUserId: string,
+  ): Promise<readonly LoginMethod[]>;
 }

@@ -11,6 +11,7 @@ import {
 const ALL_PRESENT: CapabilitySnapshot = {
   hasManagementCredentials: true,
   hasAdminAudience: true,
+  hasCustomerClientId: true,
   hasMailerKey: true,
   hasMailerWebhookSecret: true,
   hasWebPushKeys: true,
@@ -78,6 +79,18 @@ describe("auditCapabilities", () => {
     const [missing] = auditCapabilities(without("hasAdminAudience"));
 
     expect(missing?.severity).toBe("blocking");
+  });
+
+  /**
+   * Le réglage est OPTIONNEL et le restera : le rendre obligatoire ferait
+   * échouer le démarrage avant qu'il soit posé. C'est donc le bulletin qui doit
+   * le dire — et le dire comme un dégradé, parce qu'aucun accès n'est perdu.
+   */
+  it("tient le client_id de la boutique pour un dégradé, pas un bloquant", () => {
+    const [missing] = auditCapabilities(without("hasCustomerClientId"));
+
+    expect(missing?.setting).toBe("AUTH0_CUSTOMER_CLIENT_ID");
+    expect(missing?.severity).toBe("degraded");
   });
 
   it("liste chaque canal manquant, sans en fondre deux en un", () => {

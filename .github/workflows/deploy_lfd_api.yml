@@ -42,12 +42,6 @@ permissions:
   actions: read # lire le verdict des autres workflows
 
 env:
-  # Le transport vers la base que l'image neuve DOIT servir (`/health` →
-  # `database`). C'est lui qui prouve la sortie d'Accelerate : un secret
-  # changé ne se relit pas, un transport servi si. On le passe à `pg` dans le
-  # commit qui accompagne la bascule de `DATABASE_LFD_URL` — jamais autrement
-  # (documentation/ops/plan-sortie-d-accelerate.md, gestes 6 et 7′).
-  EXPECTED_DATABASE_TRANSPORT: pg
 
 jobs:
   deploy_lfd_api:
@@ -135,6 +129,26 @@ jobs:
           # empêche un client de s'authentifier contre le back-office.
           AUTH0_STAFF_CONNECTION: ${{ vars.AUTH0_STAFF_CONNECTION }}
           AUTH0_CUSTOMER_CONNECTION: ${{ vars.AUTH0_CUSTOMER_CONNECTION }}
+          # `client_id` de la SPA boutique — VARIABLE, jamais secret : il voyage
+          # déjà en clair dans chaque URL /authorize et dans le bundle servi. Il
+          # est l'audience attendue d'un id_token quand quelqu'un rattache une
+          # méthode de connexion à son compte ; absent, ce geste-là refuse, et le
+          # bulletin de démarrage le dit.
+          #
+          # 🔴 LA MÊME VARIABLE QUE LE BUILD DU FRONT (Hugo, 2026-09-22) :
+          # `deploy_lfc_boutique.yml` la lit déjà pour fabriquer
+          # `auth.env.generated.ts`, donc le `client_id` que la boutique MET dans
+          # ses jetons et celui que l'API ATTEND d'eux viennent d'une seule
+          # source. En créer une seconde les aurait laissés dériver — et la
+          # panne serait muette : l'API comparerait `aud` à un client_id périmé
+          # et refuserait chaque rattachement sans rien pour l'expliquer.
+          #
+          # Le nom diffère des deux côtés, et c'est la convention du dépôt : une
+          # variable GitHub est nommée d'après l'APPLICATION Auth0 qu'elle
+          # désigne, une variable d'app d'après l'usage qu'elle en fait. Le
+          # back-office fait pareil, une ligne plus bas dans son propre workflow
+          # (`B2B_ADMIN_AUTH0_CLIENT_ID` ← `AUTH0_LFD_BACKOFFICE_CLIENT_ID`).
+          AUTH0_CUSTOMER_CLIENT_ID: ${{ vars.AUTH0_LFC_BOUTIQUE_CLIENT_ID }}
           # L'adresse de l'admin RACINE — une adresse, pas un secret. Sans elle,
           # le code retombe sur son défaut, et la porte de secours ne pointe pas
           # vers la boîte qu'on relève.
@@ -259,6 +273,7 @@ jobs:
                       AUTH0_DOMAIN AUTH0_AUDIENCE AUTH0_ADMIN_AUDIENCE \
                       AUTH0_M2M_CLIENT_ID AUTH0_M2M_CLIENT_SECRET \
                       AUTH0_STAFF_CONNECTION AUTH0_CUSTOMER_CONNECTION \
+                      AUTH0_CUSTOMER_CLIENT_ID \
                       BOOTSTRAP_ADMIN_EMAIL CLIENT_BASE_URL ADMIN_BASE_URL \
                       RESEND_MAILER_B2B_API_KEY RESEND_WEBHOOK_SECRET \
                       MAILER_FROM_ADDRESS MAILER_REPLY_TO MAILER_STAFF_INBOX \
@@ -370,7 +385,7 @@ jobs:
         run: |
           set -uo pipefail
           expected="${GITHUB_SHA:0:7}"
-          echo "Révision attendue : ${expected} — transport attendu : ${EXPECTED_DATABASE_TRANSPORT}"
+          echo "Révision attendue : ${expected}"
 
           for attempt in $(seq 1 40); do
             health=$(curl --silent --max-time 20 "${API_BASE_URL}/health" || echo "")
@@ -378,16 +393,12 @@ jobs:
                      | python3 -c "import json,sys; print(json.load(sys.stdin).get('revision',''))" 2>/dev/null || echo "")
 
             if [ "${served}" = "${expected}" ]; then
+              # Le transport ne se contrôle plus ici : il n'y en a qu'un, et
+              # l'application REFUSE DE DÉMARRER sur une URL qui n'est pas un
+              # Postgres direct. Que cette image réponde le prouve donc mieux
+              # qu'un mot qu'elle se serait publiée à elle-même
+              # (geste 8, 2026-09-22).
               echo "L'image ${expected} répond (tentative ${attempt})."
-              # La bonne image sert : son transport est désormais un FAIT, pas
-              # une attente. Un écart ne se rattrape pas en réessayant.
-              transport=$(printf '%s' "${health}" \
-                          | python3 -c "import json,sys; print(json.load(sys.stdin).get('database',''))" 2>/dev/null || echo "")
-              if [ "${transport}" != "${EXPECTED_DATABASE_TRANSPORT}" ]; then
-                echo "::error::L'image ${expected} joint la base par « ${transport:-inconnu} », « ${EXPECTED_DATABASE_TRANSPORT} » attendu. Vérifier DATABASE_LFD_URL, ou EXPECTED_DATABASE_TRANSPORT dans ce workflow."
-                exit 1
-              fi
-              echo "Transport vers la base : ${transport}."
               exit 0
             fi
             echo "Tentative ${attempt}/40 — révision servie : « ${served:-aucune réponse} »."
