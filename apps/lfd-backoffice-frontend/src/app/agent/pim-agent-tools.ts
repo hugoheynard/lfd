@@ -10,7 +10,7 @@ import type { NutritionValues } from '../pim/data/models';
  * sans passer par le clic.
  *
  * Chaque outil vise une **route HTTP**, jamais un store d'écran. C'est la
- * décision centrale du plan (`documentation/pim/plan-outils-webmcp-pim.md`, §3)
+ * décision centrale du plan (`documentation/pim/outils-webmcp-pim.md`, annexe A.1)
  * et elle vient d'une contradiction : branché sur `ProductFormStore`, un outil
  * fabrique des états que l'écran ne peut pas produire — allergènes en doublon,
  * « aucun allergène » avec une liste non vide, nom écrit dans la langue que le
