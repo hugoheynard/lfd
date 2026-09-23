@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { ImageCatalogue, type CatalogueImage } from "../../pim/channels/media/image-catalogue.js";
-import { PimPrismaService } from "../../pim/infra/database/pim-prisma.service.js";
+import { MediaPrismaService } from "../infra/database/media-prisma.service.js";
 import { SOURCE_LOCALE } from "../../pim/catalogue/shared/domain/value-objects/localized-text.js";
 import { optionalLocalizedColumn as localizedOf } from "../../pim/catalogue/shared/infrastructure/json-readers.js";
 
@@ -14,7 +14,7 @@ import { optionalLocalizedColumn as localizedOf } from "../../pim/catalogue/shar
  */
 @Injectable()
 export class PrismaImageCatalogue extends ImageCatalogue {
-  constructor(private readonly prisma: PimPrismaService) {
+  constructor(private readonly prisma: MediaPrismaService) {
     super();
   }
 

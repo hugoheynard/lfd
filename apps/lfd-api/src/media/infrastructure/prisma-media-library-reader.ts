@@ -4,7 +4,7 @@ import { SOURCE_LOCALE } from "../../pim/catalogue/shared/domain/value-objects/l
 import { optionalLocalizedColumn as localizedOf } from "../../pim/catalogue/shared/infrastructure/json-readers.js";
 
 import { MediaCarriers } from "../channels/carriers/media-carriers.js";
-import { PimPrismaService } from "../../pim/infra/database/pim-prisma.service.js";
+import { MediaPrismaService } from "../infra/database/media-prisma.service.js";
 import {
   MediaLibraryReader,
   type LibraryMediaPage,
@@ -36,7 +36,7 @@ interface AssetRow {
  * fiches qui la portent. L'URL est l'identité (cf. {@link MediaLibraryReader}).
  *
  * ⚠️ **Sans une ligne de SQL écrite à la main, et c'est imposé** :
- * `PimPrismaService` n'expose pas `$queryRaw`, délibérément — une requête brute
+ * `MediaPrismaService` n'expose pas `$queryRaw`, délibérément — une requête brute
  * atteindrait n'importe quelle table de n'importe quel schéma, et annulerait en
  * une ligne la surface énumérée qui tient le référentiel dans ses propres
  * tables. Le groupement se fait donc en quatre requêtes bornées plutôt qu'en
@@ -45,7 +45,7 @@ interface AssetRow {
 @Injectable()
 export class PrismaMediaLibraryReader extends MediaLibraryReader {
   constructor(
-    private readonly prisma: PimPrismaService,
+    private readonly prisma: MediaPrismaService,
     private readonly carriers: MediaCarriers,
   ) {
     super();

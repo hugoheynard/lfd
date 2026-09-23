@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
-import { PimDatabaseModule } from "../pim/infra/database/pim-database.module.js";
-import { PimIdGenerator, UuidV7Generator } from "../pim/infra/id/pim-id-generator.js";
+import { MediaDatabaseModule } from "./infra/database/media-database.module.js";
+import { MediaIdGenerator, UuidV7MediaIds } from "./infra/id/media-id-generator.js";
 
 import { BrowseMediaLibraryHandler } from "./application/browse-media-library.js";
 import { DepositImageHandler } from "./application/deposit-image.js";
@@ -33,13 +33,20 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
  * le référentiel ÉCRIVAIT la bibliothèque, `lint:prisma-model-ownership` lui
  * en donnait la propriété, et le dossier ne pouvait pas bouger.
  *
- * ⚠️ Il emprunte encore `PimDatabaseModule` : la table vit dans le schéma
- * `pim`, et l'y déplacer est le déploiement ③
- * (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md`). Le schéma
- * ne tenait pas la propriété — c'est l'écriture qui la tenait.
+ * ✅ **Schéma, surface de base et générateur d'identifiants lui appartiennent**
+ * depuis le 2026-09-23. Sa surface Prisma tient en UNE ligne — elle ne connaît
+ * que ses images — là où celle du référentiel en déclare 47. Ce n'était pas un
+ * détail de câblage : tant qu'elle passait par celle du PIM, elle pouvait
+ * atteindre tout ce que celle-ci déclare.
+ *
+ * ⚠️ Ce qu'elle emprunte ENCORE, et pourquoi : le journal du référentiel
+ * (`PimJournal`), le value object du texte localisé et les lecteurs de colonnes
+ * JSON. Les trois sont transverses et devraient vivre dans `platform/` — le
+ * `CLAUDE.md` le dit déjà du journal, « au troisième bloc émetteur », et nous y
+ * sommes. Cf. `documentation/todos/todo-mediatheque.md`.
  */
 @Module({
-  imports: [PimDatabaseModule],
+  imports: [MediaDatabaseModule],
   controllers: [MediaLibraryController, MediaSweepController],
   providers: [
     BrowseMediaLibraryHandler,
@@ -47,10 +54,7 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
     DiscardMediaHandler,
     DepositImageHandler,
     SweepOrphanMediaHandler,
-    // ⚠️ Le générateur d'identifiants est encore emprunté au référentiel : la
-    // bibliothèque range ses lignes dans le schéma `pim`, et son inscription
-    // porte un ULID du même atelier. Il déménagera avec le schéma (③).
-    { provide: PimIdGenerator, useClass: UuidV7Generator },
+    { provide: MediaIdGenerator, useClass: UuidV7MediaIds },
     { provide: MediaLibrary, useClass: PrismaMediaLibrary },
     { provide: MediaLibraryReader, useClass: PrismaMediaLibraryReader },
     { provide: MediaLibraryWriter, useClass: PrismaMediaLibraryWriter },

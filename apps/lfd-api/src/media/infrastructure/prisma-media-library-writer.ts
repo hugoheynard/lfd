@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
 
 import { localizedColumn } from "../../pim/catalogue/shared/infrastructure/json-readers.js";
-import { PimPrismaService } from "../../pim/infra/database/pim-prisma.service.js";
+import { MediaPrismaService } from "../infra/database/media-prisma.service.js";
 import { MediaLibraryWriter, type MediaDetails } from "../domain/ports/media-library-writer.js";
 
 @Injectable()
 export class PrismaMediaLibraryWriter extends MediaLibraryWriter {
-  constructor(private readonly prisma: PimPrismaService) {
+  constructor(private readonly prisma: MediaPrismaService) {
     super();
   }
 
