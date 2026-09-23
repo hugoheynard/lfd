@@ -222,7 +222,7 @@ export function declarePimAgentTools(): readonly string[] {
   void declareExperimentalWebMcpTool({
     name: 'pim_variant_set_nutrition',
     description:
-      "Pose les valeurs nutritionnelles d'une déclinaison. `variantId` vient de pim_product_read. Une valeur omise LAISSE celle déjà en place. N'écrit pas les allergènes : ils sont relus et réécrits à l'identique.",
+      "Pose les valeurs nutritionnelles d'une déclinaison. `variantId` vient de pim_product_read. Une valeur omise LAISSE celle déjà en place. N'écrit pas les allergènes. REFUSE une déclinaison qui suit les valeurs du défaut : ce qu'on lit sur elle appartient au défaut, il faut viser la déclinaison par défaut.",
     // Les huit clés sont écrites en clair, et pas dérivées d'une liste : le
     // paramètre de type est `const`, donc un schéma construit par
     // `Object.fromEntries` perd l'inférence et `args` n'aurait que les deux
@@ -257,14 +257,45 @@ export function declarePimAgentTools(): readonly string[] {
         if (detail === null) {
           return `Aucune fiche pour l'identifiant ${args.productId}.`;
         }
-        // 🔴 La fiche de CETTE déclinaison, pas celle du détail : `detail.nutrition`
-        // vient de la déclinaison par DÉFAUT, résolue, et la recopier ici
-        // poserait les valeurs du défaut sur la déclinaison visée. C'est la
-        // classe de bug corrigée pour le tarif (`85eb56359`).
         const target = detail.product.variants.find((row) => row.id === args.variantId);
         if (target === undefined) {
           return `La déclinaison ${args.variantId} n'appartient pas à cette fiche.`;
         }
+        // 🔴 REFUS, pas de report : ce que le serveur sert dans `nutrition` est
+        // RÉSOLU (`product.ts` : `variant.follows('nutrition') ? source : own`).
+        // Sur une déclinaison alignée, ces valeurs sont celles du DÉFAUT, et
+        // les reporter les graverait dans les colonnes propres de la
+        // déclinaison visée. Le front ne reçoit jamais les valeurs propres
+        // d'une déclinaison alignée : il n'y a donc rien de juste à reporter.
+        //
+        // La corruption serait MUETTE — le serveur compare l'avant et l'après
+        // sur l'instantané résolu, les trouve identiques, et journalise
+        // « section enregistrée sans modification ». Elle n'apparaîtrait qu'au
+        // désalignement, des jours plus tard, à quelqu'un qui croira avoir mal
+        // tapé.
+        //
+        // ⚠️ Le commentaire ci-dessous avait déjà évité ce piège au niveau du
+        // PRODUIT (ne pas recopier `detail.nutrition`, la fiche du défaut) et
+        // était tombé dedans au niveau de la DÉCLINAISON. Résolu ne veut pas
+        // dire « d'un autre objet » : ça veut dire « d'une autre source », et
+        // la déclinaison visée en est une.
+        //
+        // L'écran, lui, ne fait pas la faute parce qu'il SAUTE l'appel
+        // (`product-form-store.ts` : `if (!this.nutritionAligned())`). Un outil
+        // n'a pas de case à cocher : il refuse et nomme la sortie.
+        if (target.nutritionFollowsDefault) {
+          return (
+            `La déclinaison ${args.variantId} suit les valeurs nutritionnelles de celle par défaut : ` +
+            `ce qu'elle affiche appartient au défaut, et l'écrire ici graverait ces valeurs sur elle. ` +
+            `Deux sorties : poser les valeurs sur la déclinaison PAR DÉFAUT (elles descendront sur ` +
+            `celle-ci), ou décocher « suit les valeurs du défaut » dans la section Nutrition de ` +
+            `l'écran de la fiche, puis rappeler cet outil.`
+          );
+        }
+        // 🔴 La fiche de CETTE déclinaison, pas celle du détail : `detail.nutrition`
+        // vient de la déclinaison par DÉFAUT, résolue, et la recopier ici
+        // poserait les valeurs du défaut sur la déclinaison visée. C'est la
+        // classe de bug corrigée pour le tarif (`85eb56359`).
         const kept = target.nutrition;
         const nutrition: NutritionValues = {
           energyKcal: args.energyKcal ?? kept.energyKcal,

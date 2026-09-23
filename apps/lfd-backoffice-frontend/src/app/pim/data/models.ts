@@ -154,6 +154,17 @@ export interface Variant {
   allergens: string[] | null;
   /** Les traces « peut contenir » — elles suivent le drapeau des ALLERGÈNES. */
   mayContain: string[];
+  /**
+   * ⚠️ **Résolues**, exactement comme les allergènes : une déclinaison alignée
+   * porte ici les valeurs du défaut, et ses colonnes PROPRES ne sont servies
+   * nulle part. Pour savoir si elle les possède ou les suit, lire
+   * {@link Variant.nutritionFollowsDefault}.
+   *
+   * Ce champ était le SEUL des quatre à ne pas le dire — les allergènes, le
+   * prix et le poids portent l'avertissement depuis le début. Un outil agent
+   * est passé par ce trou et a recopié les valeurs du défaut dans les colonnes
+   * propres d'une déclinaison alignée (corrigé le 2026-09-23).
+   */
   nutrition: NutritionValues;
 }
 
