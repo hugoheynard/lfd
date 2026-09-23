@@ -21,12 +21,13 @@
 
 ## 1. Le problème, en une phrase
 
-**Enregistrer la fiche enregistre les allergènes ET la nutrition ensemble.** La
-requête remplace tout, donc celui qui écrit doit renvoyer ce qu'il ne modifie
-pas — et s'il en oublie un bout, ce bout est effacé.
+**Enregistrer la fiche enregistrait les allergènes ET la nutrition ensemble.**
+La requête remplaçait tout, donc celui qui écrivait devait renvoyer ce qu'il ne
+modifiait pas — et s'il en oubliait un bout, ce bout était effacé.
 
-Trois couches traitent déjà les deux comme des sujets distincts (le domaine, la
-validation, la publication) ; quatre les soudent (route, port, table, écran).
+Trois couches traitaient déjà les deux comme des sujets distincts (le domaine,
+la validation, la publication) ; quatre les soudaient — route, port, table,
+écran. **Les quatre sont défaites.**
 
 ---
 
@@ -142,7 +143,7 @@ paragraphe, et il ne s'annoncera pas depuis le code.
 | `variant_allergens` | `allergens`, `mayContain` — la déclaration de sécurité | personne n'a déclaré |
 | `nutrition_values`  | les **7** valeurs de l'annexe XV + l'indice glycémique | aucune valeur saisie |
 
-Les deux en `PK = FK` sur la déclinaison. Le tri-état devient littéral : **pas de
+Les deux en `PK = FK` sur la déclinaison. Le tri-état **est** littéral : **pas de
 ligne** = silence · **ligne à tableau vide** = « aucun allergène », affirmation ·
 **ligne remplie** = déclaration.
 
@@ -159,9 +160,16 @@ comme une **donnée**, posée à côté de la donnée dont elle parle. L'absence
 ligne l'encode comme une **structure**. Une donnée peut être fausse ; une
 structure, non.
 
-⚠️ Le front porte la preuve du piège : `declaresNone` vit à côté de `selected`,
-rien ne les tient d'accord, et à l'enregistrement **le booléen gagne en jetant la
-liste**.
+⚠️ Le front **portait** la preuve du piège : `declaresNone` vivait à côté de
+`selected`, rien ne les tenait d'accord, et le booléen l'emportait en jetant la
+liste. Le lot 6 l'a remplacé par le même tri-état que la base
+(`product-form/allergen-declaration.ts`) : `[]` ne naît plus que d'un geste
+explicite, et décocher la dernière case retombe au silence.
+
+🔵 **Une nuance trouvée en le réparant** : la divergence ne naissait pas du
+geste — `declareNoAllergen(true)` vidait déjà la liste — mais de
+**l'hydratation**. La conclusion tient, sa démonstration était plus faible que
+sa formulation.
 
 ⚠️ **Sept valeurs, pas huit** : l'indice glycémique est explicitement **hors**
 annexe XV. Il suit les valeurs faute de meilleur foyer.
@@ -267,9 +275,10 @@ Reporter aurait coûté un second chantier pour épargner un coût nul — et la
 entre temps un fait de nutrition attribué à `[]`, c'est-à-dire un écran qui dit
 « personne n'a touché à ce champ » d'un champ que quelqu'un vient d'écrire.
 
-⚠️ Ce qui reste vrai : le jour où des révisions existeront, ajouter un champ
-d'article sera une bascule d'empreintes, et elle se paiera. La fenêtre est
-**maintenant**, et c'est la seule raison de la prendre maintenant.
+⚠️ **La fenêtre s'est refermée avec le merge du 2026-09-22.** Le champ est
+entré pendant qu'il n'existait aucune révision : coût nul, aucun lecteur pour
+voir un faux diff. La prochaine ancre posée fige les empreintes de la nouvelle
+forme — à partir de là, ajouter un champ d'article se paiera.
 
 ### c bis. La lecture bascule dans le MÊME lot
 
@@ -302,10 +311,11 @@ drapeaux : l'invariant 7 et la couverture.
 
 ### d. Les contrats servis au back-office
 
-Le catalogue est vide, **le front ne l'est pas** — il est déployé et appelle ces
-routes.
+Le catalogue était vide, **le front ne l'était pas** — déployé, il appelait ces
+routes. C'est ce qui a imposé d'ajouter les valeurs d'enum plutôt que de les
+renommer, et de déployer les deux côtés dans le même merge.
 
-| Quoi                                           | Ce qu'il faut                                                                                |
+| Quoi                                           | Ce qui a été fait                                                                            |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | `VariantNutritionView` perd `mayContain`       | **fait** — `allergenSheet: { declared, mayContain }`                                         |
 | L'enum `aspect` — **cinq** endroits, pas trois | `contracts`, `pim-contracts`, l'agrégat, et **deux dictionnaires du journal** au back-office |
@@ -503,6 +513,55 @@ de la mesure qui décide de ce qu'elle peut trouver : compter les appelants d'un
 fonction qu'on vient de lire ne trouve que ce qu'on connaît déjà. Pour compter
 les lecteurs de quelque chose, on part de la **ressource** — le nom de la table,
 de la colonne, de la relation — jamais du mapper qu'on a sous les yeux.
+
+### Ce que la PROMOTION a appris (2026-09-22, après le merge)
+
+Quatre choses que ni la conception ni la construction ne pouvaient dire, parce
+qu'elles ne se voient qu'en poussant.
+
+**1. Une migration présente dans le dépôt part toute seule.**
+`deploy_lfd_api.yml:340` lance `prisma migrate deploy` à chaque push sur `main`.
+Un `DROP TABLE` écrit « pour plus tard » se serait exécuté sans que personne le
+décide. C'est la raison pour laquelle le §7 porte du SQL et pas un dossier de
+migration — et la raison est **mécanique**, pas prudentielle.
+
+**2. La fenêtre entre les deux déploiements existe, et elle se mesure.**
+Un seul merge déclenche les deux workflows en parallèle, mais ils ne durent pas
+pareil. Mesuré : API **11 min 39**, back-office **12 min 49**. Pendant
+**70 secondes**, l'API neuve servait un front ancien qui appelait les anciennes
+routes. Un merge unique ne supprime pas la fenêtre — il la réduit à l'écart des
+deux durées.
+
+➡️ Le corollaire tient pour tout chantier qui touche les deux côtés : on ne
+promet pas « aucune fenêtre », on promet « la plus courte possible », et on dit
+laquelle.
+
+**3. Le `CHECK` de la migration ne pouvait pas échouer, et c'est structurel.**
+Le backfill remplit `nutrition_follows_default` avec la valeur de
+`regulatory_follows_default`, dont l'invariant est **déjà prouvé vrai en base**
+par le `CHECK` de septembre. Une ligne qui satisfaisait l'ancien satisfait le
+nouveau par construction. Les trois instructions étant dans une seule
+transaction, une interruption n'aurait rien laissé à moitié écrit — le risque
+n'était pas la donnée, mais l'opérationnel (Prisma marque la migration en échec
+et bloque le déploiement suivant).
+
+**4. `main` a reçu 32 commits, pas 3.** Le chantier dépendait des lots 1 et 2,
+jamais fusionnés, et l'historique de `dev` enchâsse le reste avec eux — le
+retrait de la chaîne Shopify, le tri de la liste des produits, des docs d'auth.
+Promouvoir `dev` promeut **tout** `dev` : le périmètre d'un merge n'est pas le
+périmètre du chantier, et ça se vérifie avant de pousser, pas après.
+
+### Ce que les deux gardiens ont ajouté
+
+| Gardien                 | Ce qu'il a apporté que je n'avais pas                                       |
+| ----------------------- | --------------------------------------------------------------------------- |
+| `lecteur-de-migrations` | **Deux** migrations non déployées, pas une — celle du lot 1 attendait aussi |
+| `cerberus-le-portier`   | A **rejoué de force** hors cache les trois paquets que turbo donnait verts  |
+
+⚠️ Le lecteur de migrations a lui-même affirmé une chose fausse — que
+`nutrition_follows_default` « fait le travail des allergènes ». C'est l'inverse.
+Sa conclusion ne reposait pas dessus, mais un contradicteur se relit comme le
+reste : **il n'est pas une autorité, il est un second regard.**
 
 ### Ce qui reste ouvert
 
