@@ -94,6 +94,64 @@ la bibliothèque — ce que le domaine dit déjà être faux :
 
 ---
 
+## 3 bis. 🔴 En base : `pim` aujourd'hui, un bloc à elle à terme
+
+> Hugo, 2026-09-23 : « mais si on a une médiathèque elle va sûrement aussi
+> contenir les contenus du site vitrine sur les cartes et tout » — puis, sur les
+> trois issues : « B plus long terme ».
+
+**Les tables sont dans `pim`** (`media_asset`, `product_media`,
+`category_media`, toutes en `@@schema("pim")`), et elles y restent pour ce
+chantier.
+
+### Pourquoi ça ne peut pas durer
+
+Le contenu de la vitrine n'est **pas** dans `pim` : `PlatformContent` est en
+schéma `public`, servi par `b2b/content/` (vérifié le 2026-09-23). Dès qu'un
+visuel de carte ou de page entre dans la bibliothèque, **deux blocs l'écrivent**
+— et la matrice du `CLAUDE.md` ne laisse `b2b` atteindre `pim` que par un canal.
+
+Faire lire la bibliothèque du référentiel à la vitrine pour ses propres photos
+serait à l'envers : une photo de devanture n'est pas une donnée de catalogue.
+
+### ⚠️ L'argument qui semblait tenir, et qui ne tient pas
+
+« Sortir la bibliothèque casserait `lint:cross-schema-join`, puisque le comptage
+des emplois joint `media_asset` à `product_media`. »
+
+C'est **circulaire** : ça défend le schéma par une requête qu'on est en train
+d'écrire. L'en-tête de la porte donne elle-même la sortie — « le franchissement
+passe par un port ». Chaque bloc répond « combien des miens portent cette
+URL », et il n'y a plus une seule jointure.
+
+### La cible (B), et ce qu'elle coûte
+
+Un bloc `media/`, son schéma, et le lien par **identifiant opaque** — l'URL,
+adressée par contenu, qui est déjà la seule identité survivant à un
+enregistrement (§1). C'est le motif que le dépôt applique partout entre blocs.
+
+🔴 **Le prix est la règle de suppression.** Elle est aujourd'hui tenue par
+Postgres (`ON DELETE RESTRICT`, §2). Sans clé étrangère, la base ne peut plus
+refuser : la règle descend d'un barreau, du « refusé en base » au « refusé par
+le code ». Ce n'est pas un détail — c'est la seule chose que ce déménagement
+dégrade.
+
+### Le déclencheur, écrit pour ne pas devenir un « à voir »
+
+➡️ **B devient dû le jour où le PREMIER visuel de vitrine entre dans la
+bibliothèque.** Pas « quand on aura le temps ».
+
+La raison de ne pas le faire maintenant est mesurable et non pas prudente : la
+bibliothèque n'a **aucun** écran, aucune route de lecture, aucun tag. Déménager
+maintenant, c'est payer une migration pour un fonds vide ; déménager après le
+contenu vitrine, c'est la payer pleine. Le créneau est entre les deux, et le
+déclencheur le nomme.
+
+⚠️ B est une **migration de données** : `vitruve` d'office avant de soumettre
+son plan (`CLAUDE.md` §9 bis).
+
+---
+
 ## 4. Le renversement : taguer à la source, attribuer à l'usage
 
 | Aujourd'hui                                         | Avec la médiathèque                    |

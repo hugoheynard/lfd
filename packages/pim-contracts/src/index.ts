@@ -23,6 +23,9 @@ export type {
   MediaFactsView,
   SetMediaPayload,
   UploadedMediaView,
+  FocalPoint,
+  LibraryMediaView,
+  MediaLibraryPageView,
 } from "./media.js";
 
 export type { AllergenEntry, AllergenReference, AllergenScope } from "./allergen.js";

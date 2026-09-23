@@ -24,6 +24,53 @@ export interface MediaFactsView {
   readonly contentType: string | null;
 }
 
+/**
+ * Le point à garder au centre quand le cadre n'a pas la forme de l'image.
+ * Fractions de 0 à 1, depuis le coin haut-gauche.
+ *
+ * 🔴 **DÉCIDÉ, pas mesuré** — d'où sa place HORS de {@link MediaFactsView},
+ * dont le contrat dit que `null` veut dire « pas mesuré ». Ici, `null` veut
+ * dire « personne ne s'est prononcé », et le cadrage retombe au centre. Le
+ * centre choisi et le centre par défaut sont deux états distincts : les
+ * confondre obligerait à deviner lequel on lit.
+ */
+export interface FocalPoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * Une image de la **bibliothèque**, telle que la médiathèque la montre.
+ *
+ * 🔴 Pas d'identifiant, et ce n'est pas un oubli : l'identité d'une image est
+ * son URL. La table des actifs est en réalité un journal de lignes — chaque
+ * enregistrement d'une section Visuels en recrée une par image — et seule
+ * l'adresse, calculée sur le contenu, traverse deux sauvegardes.
+ */
+export interface LibraryMediaView extends MediaFactsView {
+  readonly url: string;
+  /** L'étiquette de bibliothèque ; `''` = personne ne l'a nommée. */
+  readonly name: string;
+  readonly focal: FocalPoint | null;
+  /**
+   * Combien de porteurs l'affichent — fiches et familles confondues.
+   *
+   * Sert à DIRE avant de refuser : on ne supprime pas une image qui sert, et
+   * les clés étrangères le tiennent en base. Sans ce compte, l'écran
+   * proposerait une suppression que Postgres rejetterait, et la règle
+   * s'apprendrait par un échec.
+   */
+  readonly uses: number;
+  /** L'entrée dans la bibliothèque — le PREMIER dépôt de ces octets. */
+  readonly depositedAt: string;
+}
+
+/** Une page de la bibliothèque, et le total pour la pagination. */
+export interface MediaLibraryPageView {
+  readonly items: readonly LibraryMediaView[];
+  readonly total: number;
+}
+
 /** Un visuel attaché, tel qu'un écran le lit et le renvoie. */
 export interface AttachedMediaView extends MediaFactsView {
   /** `hero`, `gallery`, `lifestyle`, `thumbnail`, `print`. */

@@ -1,7 +1,7 @@
-import { Controller, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { Controller, Get, Post, Query, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { CommandBus } from "@nestjs/cqrs";
-import type { UploadedMediaView } from "@lfd/pim-contracts";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
+import type { MediaLibraryPageView, UploadedMediaView } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import {
@@ -9,6 +9,7 @@ import {
   type UploadProductImageResult,
 } from "../application/upload-product-image.js";
 import { UnsupportedImageError } from "../domain/value-objects/product-image.js";
+import { BrowseMediaLibraryQuery } from "../../shared/application/browse-media-library.js";
 
 /**
  * Garde-fou DoS du multipart, **très au-dessus** de la limite métier (le
@@ -38,7 +39,31 @@ interface UploadedFilePart {
 @AdminSurface("pim_catalog")
 @Controller("catalogue/media")
 export class MediaController {
-  constructor(private readonly commands: CommandBus) {}
+  constructor(
+    private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
+  ) {}
+
+  /**
+   * Parcourt la bibliothèque, une page à la fois.
+   *
+   * 🔴 Une image y apparaît **une seule fois**, quel qu'ait été son nombre
+   * d'inscriptions : l'identité est l'URL, et la lecture groupe par elle (cf.
+   * `MediaLibraryReader`). Sans ce groupement, la liste montrerait la même
+   * photo autant de fois qu'on a enregistré les fiches qui la portent.
+   *
+   * Le bornage réel est dans le handler, pas ici : un contrôleur peut se
+   * tromper, et « toute la bibliothèque » n'est pas une intention qu'on sert.
+   */
+  @Get()
+  async browse(
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ): Promise<MediaLibraryPageView> {
+    return this.queries.execute<BrowseMediaLibraryQuery, MediaLibraryPageView>(
+      new BrowseMediaLibraryQuery(numberOr(limit, DEFAULT_PAGE), numberOr(offset, 0)),
+    );
+  }
 
   /**
    * Dépose une image et rend son entrée de bibliothèque.
@@ -58,4 +83,13 @@ export class MediaController {
     );
     return media;
   }
+}
+
+/** Le repli quand le paramètre manque ou n'est pas un nombre. Le handler
+ *  reborne de toute façon — ceci évite juste de lui passer un `NaN`. */
+const DEFAULT_PAGE = 60;
+
+function numberOr(raw: string | undefined, fallback: number): number {
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }

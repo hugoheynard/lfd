@@ -63,6 +63,9 @@ import { EditorialReader } from "./product/domain/ports/editorial-reader.js";
 import { ReadinessRepository } from "./product/domain/ports/readiness.repository.js";
 import { EditorialRepository } from "./product/domain/ports/editorial.repository.js";
 import { MediaLibrary } from "./product/domain/ports/media-library.js";
+import { MediaLibraryReader } from "./shared/domain/ports/media-library-reader.js";
+import { BrowseMediaLibraryHandler } from "./shared/application/browse-media-library.js";
+import { PrismaMediaLibraryReader } from "./shared/infrastructure/prisma-media-library-reader.js";
 import { NutritionValuesRepository } from "./product/domain/ports/nutrition-values.repository.js";
 import { VariantAllergensRepository } from "./product/domain/ports/variant-allergens.repository.js";
 import { ProductRepository } from "./product/domain/ports/product.repository.js";
@@ -155,6 +158,7 @@ import {
     PublishProductHandler,
     UnpublishProductHandler,
     GetProductDetailHandler,
+    BrowseMediaLibraryHandler,
     // L'onglet « Historique » : la lignée ici, le journal par le port global.
     GetProductHistoryHandler,
     { provide: ProductLineageReader, useClass: PrismaProductLineageReader },
@@ -166,6 +170,9 @@ import {
     { provide: ProductCountReader, useClass: PrismaProductCountReader },
     { provide: PointOfSaleOfferReader, useClass: PrismaPointOfSaleOfferReader },
     { provide: MediaLibrary, useClass: PrismaMediaLibrary },
+    // La LECTURE de la bibliothèque est un port à part de son écriture : l'écran
+    // de la médiathèque parcourt, il ne ramasse pas d'orphelins.
+    { provide: MediaLibraryReader, useClass: PrismaMediaLibraryReader },
     { provide: ProductRepository, useClass: PrismaProductRepository },
     { provide: SKU_AVAILABILITY, useClass: PrismaSkuAvailability },
     { provide: CatalogueReader, useClass: PrismaCatalogueReader },
