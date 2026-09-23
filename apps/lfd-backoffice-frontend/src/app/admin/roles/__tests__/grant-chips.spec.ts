@@ -49,8 +49,14 @@ describe('grantGroups', () => {
    * couper la vente en ligne pèse plus que corriger une zone de livraison.
    * `b2b_client_notes` l'a fait passer à 23 le 2026-09-15 : les notes de la
    * commerciale ne suivent pas la lecture de la fiche client.
+   *
+   * 🔴 `media_library` l'a fait passer à 24 le 2026-09-23, et c'est le seul
+   * ajout de la liste qui RETIRE un accès : la médiathèque était murée par
+   * `pim_catalog`, donc qui lisait le catalogue pouvait supprimer du fonds.
+   * Alimenter et taguer n'est pas rédiger une fiche — seuls `admin` et
+   * `communication` l'obtiennent.
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(23);
+    expect(RESOURCE_COUNT).toBe(24);
   });
 });

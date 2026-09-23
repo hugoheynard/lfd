@@ -79,6 +79,24 @@ export const staffResourceSchema = z.enum([
    */
   "pim_tax",
 
+  // ── LE FONDS D'IMAGES ───────────────────────────────────────────────────
+  /**
+   * **La médiathèque** — déposer, taguer, décrire, retirer du fonds.
+   *
+   * 🔴 Détachée de `pim_catalog` le 2026-09-23, et pas pour ranger : c'est une
+   * séparation de MÉTIER. Celui qui alimente et tague le fonds n'est pas celui
+   * qui rédige les fiches, et la bibliothèque n'appartient à aucun
+   * référentiel — les fiches en portent, les familles aussi, la vitrine en
+   * portera.
+   *
+   * ⚠️ **Ce détachement RETIRE un accès**, et c'est voulu (Hugo, 2026-09-23) :
+   * seuls `admin` et `communication` l'obtiennent. Un commercial qui édite une
+   * fiche ne peut donc plus y choisir d'image — illustrer est le travail de la
+   * communication. C'est la seule ligne de ce fichier qui referme quelque
+   * chose, et elle est délibérée.
+   */
+  "media_library",
+
   // ── `b2b.` — LA PLATEFORME MARCHANDE ────────────────────────────────────
   "b2b_companies",
   "b2b_orders",
@@ -211,7 +229,24 @@ export function staffPermission(resource: StaffResource, action: StaffAction): S
  * Les rôles. `admin` porte tous les pouvoirs ; les quatre autres découpent le
  * back-office par métier.
  */
-export const staffRoleSchema = z.enum(["admin", "commercial", "comptabilite", "support", "dev"]);
+export const staffRoleSchema = z.enum([
+  "admin",
+  "commercial",
+  "comptabilite",
+  /**
+   * **La communication** — celle qui alimente et tague le fonds d'images.
+   *
+   * 🔴 Ouvert le 2026-09-23 pour un métier qu'aucun rôle ne portait. La
+   * médiathèque a été bâtie sur ce constat : « la personne qui va alimenter et
+   * tagger la médiathèque n'est pas forcément celle qui va faire les fiches »
+   * (Hugo). Un vocabulaire de mots-clés ne vaut que si quelqu'un en a la
+   * charge ; sans rôle pour le porter, le fonds se remplit d'images que
+   * personne ne retrouve.
+   */
+  "communication",
+  "support",
+  "dev",
+]);
 export type StaffRole = z.infer<typeof staffRoleSchema>;
 
 /** Libellés d'écran — le code parle anglais, l'interface parle français. */
@@ -219,6 +254,7 @@ export const STAFF_ROLE_LABELS: Readonly<Record<StaffRole, string>> = {
   admin: "Administrateur",
   commercial: "Commercial",
   comptabilite: "Comptabilité",
+  communication: "Communication",
   support: "Support",
   dev: "Technique",
 };
@@ -228,6 +264,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   pim_channels: "Référentiel — Diffusion",
   pim_settings: "Référentiel — Points et contextes de vente",
   pim_tax: "Référentiel — Fiscalité",
+  media_library: "Médiathèque",
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
   b2b_subscriptions: "Paniers récurrents",
@@ -319,6 +356,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_feature_access: "write",
     b2b_client_notes: "write",
     b2b_settings: "write",
+    media_library: "write",
     staff_access: "write",
     staff_notifications: "write",
     ops_health: "write",
@@ -393,6 +431,29 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // droit d'être approximatif : c'est ce qu'on relit pour savoir si un rôle
     // est trop large.
     pim_tax: "write",
+    staff_notifications: "write",
+  },
+  /**
+   * **La communication** — le fonds d'images, et rien d'autre à écrire.
+   *
+   * 🔴 `media_library: "write"` est sa raison d'être : déposer, taguer,
+   * décrire, retirer. C'est le métier que la médiathèque a rendu visible —
+   * alimenter et taguer n'est pas rédiger une fiche.
+   *
+   * ⚠️ `pim_catalog: "read"` **n'est pas une largesse**, c'est ce qui rend le
+   * fonds utilisable : le panneau « voir où sert cette image » liste les
+   * fiches et les familles qui la portent, et ses liens y mènent. Sans ce
+   * droit, on saurait qu'une image sert sans pouvoir aller voir — donc sans
+   * pouvoir décider de la remplacer. En LECTURE seule : la communication ne
+   * modifie aucune fiche.
+   *
+   * ⚠️ Et il n'a **pas** `pim_channels` : voir le référentiel n'est pas le
+   * diffuser. C'est la découpe qui compte le plus de toutes, et elle vaut
+   * aussi ici.
+   */
+  communication: {
+    media_library: "write",
+    pim_catalog: "read",
     staff_notifications: "write",
   },
   support: {

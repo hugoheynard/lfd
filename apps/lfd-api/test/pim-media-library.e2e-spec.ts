@@ -22,9 +22,21 @@ import { MediaStore } from "../src/platform/storage/media-store.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { InMemoryMediaStore } from "./in-memory-media-store.js";
 
+/**
+ * La seule frontière doublée : la vérification de signature Auth0.
+ *
+ * 🔴 **Il HONORE le jeton** depuis le 2026-09-23. Il rendait le sujet admin
+ * quel qu'il soit, ce qui était sans conséquence tant que toutes les suites
+ * jouaient la même personne — et rendait **inexprimable** le cas qui compte
+ * maintenant : le mur du fonds refuse-t-il un commercial ? Un doublé qui
+ * ignore ce qu'on lui passe rend vert tout ce qu'on lui demande.
+ *
+ * `staff-e2e` reste l'opérateur semé par le harnais ; tout autre jeton EST son
+ * propre sujet, comme dans `activity-tax-journal`.
+ */
 const stubAdminVerifier = {
-  verify: (): Promise<{ subject: string; scopes: string[] }> =>
-    Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
+  verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
+    Promise.resolve({ subject: token === "staff-e2e" ? E2E_STAFF_SUB : token, scopes: [] }),
 };
 
 const CATEGORIES = "/pim/catalogue/categories";
@@ -504,6 +516,74 @@ describe("qui affiche cette image", () => {
   it("refuse un anonyme — c'est une donnée de catalogue", async () => {
     const response = await ctx.http().get(`${MEDIA}/carriers`).query({ url: CROISSANT });
     expect(response.status).toBe(401);
+  });
+});
+
+/**
+ * **Le mur du fonds** — `media_library`, et plus `pim_catalog`.
+ *
+ * 🔴 Ces cas gardent une décision qui RETIRE un accès (Hugo, 2026-09-23), et
+ * c'est le seul endroit où elle se vérifie de bout en bout : le décorateur, le
+ * guard, l'annuaire et les préréglages de rôle ensemble. Si l'un d'eux
+ * rouvrait le fonds au commercial, seul ce niveau le dirait.
+ */
+describe("le mur de la médiathèque", () => {
+  const SALES = { sub: "staff-commercial", role: "commercial", id: "fiche-commercial" } as const;
+  const COMMS = {
+    sub: "staff-communication",
+    role: "communication",
+    id: "fiche-communication",
+  } as const;
+
+  async function asPerson(person: {
+    sub: string;
+    // Le rôle TYPÉ, et non une chaîne : un rôle qui n'existe pas doit refuser
+    // de compiler, pas produire un 500 à l'insertion.
+    role: (typeof SALES | typeof COMMS)["role"];
+    id: string;
+  }): Promise<void> {
+    await ctx.prisma.staffUser.create({
+      data: {
+        id: person.id,
+        firstName: "Fiche",
+        lastName: person.role,
+        email: `${person.role}@lfc.test`,
+        role: person.role,
+        status: "active",
+        auth0Id: person.sub,
+      },
+    });
+  }
+
+  it("refuse le fonds au COMMERCIAL, lecture comprise", async () => {
+    // ⚠️ Conséquence assumée : sur une fiche produit, le bouton « Choisir dans
+    // la médiathèque » lui rendra 403. Illustrer devient le travail de la
+    // communication, comme alimenter et taguer.
+    await asPerson(SALES);
+
+    const response = await ctx.http().set("Authorization", `Bearer ${SALES.sub}`).get(MEDIA);
+
+    expect(response.status).toBe(403);
+  });
+
+  it("ouvre le fonds à la COMMUNICATION", async () => {
+    await asPerson(COMMS);
+
+    const response = await ctx.http().set("Authorization", `Bearer ${COMMS.sub}`).get(MEDIA);
+
+    expect(response.status).toBe(200);
+  });
+
+  it("laisse la communication ÉCRIRE — décrire une image est son métier", async () => {
+    await asPerson(COMMS);
+
+    const response = await ctx
+      .http()
+      .set("Authorization", `Bearer ${COMMS.sub}`)
+      .put(MEDIA)
+      .send({ url: CROISSANT, name: "croissant de face", tags: ["viennoiserie"], focal: null });
+
+    expect(response.status).toBe(200);
   });
 });
 

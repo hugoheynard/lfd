@@ -58,10 +58,23 @@ describe("resolveStaffPermissions — le rôle seul", () => {
   it("ne retire la lecture des taux à personne en détachant `pim_tax` de `pim_catalog`", () => {
     // Les régimes se lisaient sous le droit du référentiel. La ressource change,
     // pas l'audience — sinon le découpage coûte un accès à quelqu'un, en silence.
-    const readers = staffRoleSchema.options.filter((role) =>
+    //
+    // 🔴 **Les rôles du 2026-09-01, et eux seuls.** Ce cas itérait tout
+    // `staffRoleSchema.options`, ce qui en faisait une règle permanente : « qui
+    // lit le catalogue lit les taux ». Ce n'est pas ce qu'il garde. Il garde
+    // une garantie de BASCULE — personne n'a perdu ce jour-là ce qu'il avait la
+    // veille — et un rôle ouvert après coup n'avait rien à perdre.
+    //
+    // La preuve par l'usage : `communication`, ouvert le 2026-09-23, lit le
+    // référentiel pour suivre une image jusqu'à son porteur. Lui donner la
+    // fiscalité pour satisfaire ce cas aurait été accorder un droit à un test,
+    // ce qui est exactement l'inverse de ce qu'un test sert à faire.
+    const atDetachment = ["admin", "commercial", "comptabilite", "dev"] as const;
+    const readers = atDetachment.filter((role) =>
       hasStaffPermission(resolveStaffPermissions(role), "pim_catalog:read"),
     );
 
+    expect(readers.length).toBeGreaterThan(0);
     for (const role of readers) {
       expect(hasStaffPermission(resolveStaffPermissions(role), "pim_tax:read")).toBe(true);
     }
@@ -222,5 +235,48 @@ describe("dedupeStaffOverrides", () => {
     const distinct = [allow("b2b_orders"), allow("b2b_growth")];
 
     expect(dedupeStaffOverrides(distinct)).toHaveLength(2);
+  });
+});
+
+describe("la médiathèque", () => {
+  /**
+   * 🔴 Ce cas garde une décision qui RETIRE un accès, et c'est le seul du
+   * fichier dans ce sens. `media_library` a été détachée de `pim_catalog` le
+   * 2026-09-23 : la bibliothèque n'appartient à aucun référentiel, et
+   * alimenter le fonds n'est pas rédiger une fiche.
+   *
+   * ⚠️ Conséquence assumée (Hugo) : un commercial qui édite une fiche ne peut
+   * plus y choisir d'image. Si ce cas rougit parce qu'on a rouvert le droit à
+   * un autre rôle, ce n'est pas le test qu'il faut corriger — c'est la
+   * décision qu'il faut reprendre.
+   */
+  it("n'ouvre le fonds qu'à l'administration et à la communication", () => {
+    const readers = staffRoleSchema.options.filter((role) =>
+      hasStaffPermission(resolveStaffPermissions(role), "media_library:read"),
+    );
+
+    expect(readers).toEqual(["admin", "communication"]);
+  });
+
+  it("laisse la communication ÉCRIRE — c'est sa raison d'être", () => {
+    // Déposer, taguer, décrire, retirer. Un rôle qui ne ferait que lire le
+    // fonds ne porterait pas le métier que la médiathèque a rendu visible.
+    expect(
+      hasStaffPermission(resolveStaffPermissions("communication"), "media_library:write"),
+    ).toBe(true);
+  });
+
+  it("donne à la communication de quoi SUIVRE une image jusqu'à son porteur", () => {
+    // Le panneau « voir où sert cette image » liste les fiches qui la portent,
+    // et ses liens y mènent. Sans `pim_catalog:read`, on saurait qu'une image
+    // sert sans pouvoir aller voir — donc sans pouvoir décider de la
+    // remplacer.
+    const granted = resolveStaffPermissions("communication");
+
+    expect(hasStaffPermission(granted, "pim_catalog:read")).toBe(true);
+    // Mais elle ne MODIFIE aucune fiche, et ne diffuse rien : voir le
+    // référentiel n'est pas le publier.
+    expect(hasStaffPermission(granted, "pim_catalog:write")).toBe(false);
+    expect(hasStaffPermission(granted, "pim_channels:read")).toBe(false);
   });
 });

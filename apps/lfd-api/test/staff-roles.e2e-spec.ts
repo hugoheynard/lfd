@@ -46,6 +46,18 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
   { resource: "b2b_support", path: "/admin/support-requests" },
   { resource: "b2b_settings", path: "/admin/order-cutoffs" },
   { resource: "staff_access", path: "/admin/staff-users" },
+  /**
+   * 🔴 La MÉDIATHÈQUE, ajoutée le 2026-09-23 — et la matrice l'a réclamée
+   * d'elle-même : `communication` n'ouvrait aucune des sept surfaces
+   * précédentes, donc « éprouve, pour chaque rôle, au moins une ouverture »
+   * a rougi. Un rôle neuf sans surface éprouvée est un rôle dont on n'a
+   * mesuré aucun périmètre.
+   *
+   * ⚠️ Elle porte aussi le seul RESSERREMENT de ce fichier : `commercial`,
+   * `comptabilite` et `dev` s'y voient refuser la lecture, alors qu'ils
+   * l'avaient sous `pim_catalog` jusqu'à ce jour-là.
+   */
+  { resource: "media_library", path: "/media" },
 ];
 
 /** Le produit cartésien rôle × surface : tout ce qu'il y a à vérifier. */

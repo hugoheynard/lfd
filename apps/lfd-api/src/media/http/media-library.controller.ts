@@ -69,16 +69,26 @@ interface UploadedFilePart {
  * la vitrine en porteront. Le domaine le dit depuis que les value-objects sont
  * sortis de `product/` : « ni l'un ni l'autre ne possède la bibliothèque ».
  *
- * ⚠️ **Le préfixe `/pim` reste**, et il reste pour exactement la même raison
- * que le schéma Postgres : il est monté par le BLOC (`pim.module.ts`), et le
- * code vit encore dans ce bloc. Les deux tomberont ensemble, au même
- * déclencheur — le jour où le premier visuel de vitrine entre dans la
- * bibliothèque (cf. `documentation/mediatheque/plan-la-mediatheque.md` §3 bis).
+ * ✅ **Le préfixe `/pim` est tombé** le 2026-09-23, avec le schéma et le bloc.
+ * Cette note disait qu'il « reste » et que les deux tomberaient ensemble, au
+ * déclencheur du premier visuel de vitrine : c'est arrivé plus tôt, par le
+ * déménagement lui-même.
  *
- * Même mur que le catalogue (`@AdminSurface("pim_catalog")`) : identité
- * vérifiée contre l'annuaire, puis périmètre.
+ * 🔴 **Son propre droit depuis le 2026-09-23** — `media_library`, et non plus
+ * `pim_catalog`. L'emprunt décrivait la réalité tant que la bibliothèque
+ * vivait dans le référentiel ; elle en est sortie, et « qui lit le catalogue
+ * peut supprimer du fonds » ne dit plus rien de vrai.
+ *
+ * ⚠️ **Ce détachement RETIRE un accès**, et c'est la décision (Hugo,
+ * 2026-09-23) : seuls `admin` et `communication` l'obtiennent. `commercial`,
+ * `comptabilite` et `dev` perdent le fonds, **y compris en lecture** — donc le
+ * bouton « Choisir dans la médiathèque » d'une fiche leur rendra 403.
+ * Illustrer devient le travail de la communication, comme alimenter et taguer.
+ *
+ * L'action se déduit du verbe : `GET` demande `media_library:read`, tout le
+ * reste `media_library:write`.
  */
-@AdminSurface("pim_catalog")
+@AdminSurface("media_library")
 @Controller("media")
 export class MediaLibraryController {
   constructor(
