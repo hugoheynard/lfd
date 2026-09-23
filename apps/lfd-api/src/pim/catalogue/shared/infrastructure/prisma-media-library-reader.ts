@@ -19,6 +19,7 @@ interface AssetRow {
   readonly bytes: number | null;
   readonly focalX: number | null;
   readonly focalY: number | null;
+  readonly tags: string[];
 }
 
 /**
@@ -78,6 +79,7 @@ export class PrismaMediaLibraryReader extends MediaLibraryReader {
         bytes: true,
         focalX: true,
         focalY: true,
+        tags: true,
       },
     });
 
@@ -174,10 +176,15 @@ function recordOf(
   const latest = rows[0];
   const named = rows.find((row) => row.name !== "");
   const pointed = rows.find((row) => row.focalX !== null);
+  // Même lecture que le nom et le point : la dernière inscription QUI EN PORTE.
+  // Un enregistrement de fiche recrée des lignes, et les siennes reprennent ce
+  // que le report a retrouvé — mais rien ne garantit qu'il ait trouvé.
+  const tagged = rows.find((row) => row.tags.length > 0);
 
   return {
     url,
     name: named?.name ?? "",
+    tags: tagged?.tags ?? [],
     storageKey: latest?.storageKey ?? null,
     contentType: latest?.contentType ?? null,
     width: latest?.width ?? null,

@@ -18,6 +18,8 @@ export interface LibraryMediaRecord {
   readonly url: string;
   /** L'étiquette de la bibliothèque ; `''` = personne ne l'a nommée. */
   readonly name: string;
+  /** Les mots par lesquels on la retrouve. Normalisés à l'écriture. */
+  readonly tags: readonly string[];
   readonly storageKey: string | null;
   readonly contentType: string | null;
   readonly width: number | null;

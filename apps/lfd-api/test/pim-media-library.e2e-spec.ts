@@ -31,7 +31,16 @@ const CHOCOLATINE = "https://cdn.test/products/bbb.png";
 interface LibraryItem {
   readonly url: string;
   readonly name: string;
+  readonly tags: readonly string[];
   readonly uses: number;
+  readonly focal: { readonly x: number; readonly y: number } | null;
+}
+
+/** Ce qu'un écran décide d'une image — la forme du corps envoyé au `PUT`. */
+interface DetailsBody {
+  readonly url: string;
+  readonly name: string;
+  readonly tags: readonly string[];
   readonly focal: { readonly x: number; readonly y: number } | null;
 }
 
@@ -165,5 +174,85 @@ describe("la médiathèque", () => {
     // `null` et non « au centre » : personne ne s'est prononcé, et les deux
     // états doivent rester distincts.
     expect(image?.focal).toBeNull();
+  });
+});
+
+describe("nommer, taguer, pointer", () => {
+  async function describeMedia(body: DetailsBody): Promise<number> {
+    const response = await staff().put(MEDIA).send(body);
+    return response.status;
+  }
+
+  it("normalise les mots-clés : découpés, minuscules, dédoublonnés", async () => {
+    const product = await aProduct(await aCategory(), "Croissant");
+    await setMedia(product, [{ role: "gallery", url: CROISSANT }]);
+
+    expect(
+      await describeMedia({
+        url: CROISSANT,
+        name: "croissant de face",
+        tags: [" Croissant ", "croissant", "BEURRE", "  "],
+        focal: null,
+      }),
+    ).toBe(200);
+
+    const [image] = (await library()).filter((item) => item.url === CROISSANT);
+    expect(image?.tags).toEqual(["croissant", "beurre"]);
+  });
+
+  /**
+   * 🔴 Le cœur du cas : plusieurs inscriptions portent la même URL, et l'écriture
+   * doit toutes les atteindre. N'en corriger qu'une laisserait les autres dire
+   * le contraire, et la lecture groupée choisirait au hasard de la date.
+   */
+  it("écrit sur TOUTES les inscriptions de la même image", async () => {
+    const famille = await aCategory();
+    const croissant = await aProduct(famille, "Croissant");
+    const pain = await aProduct(famille, "Pain au chocolat");
+    await setMedia(croissant, [{ role: "gallery", url: CROISSANT }]);
+    await setMedia(pain, [{ role: "gallery", url: CROISSANT }]);
+
+    await describeMedia({ url: CROISSANT, name: "viennoiserie", tags: ["four"], focal: null });
+
+    const [image] = (await library()).filter((item) => item.url === CROISSANT);
+    expect(image?.name).toBe("viennoiserie");
+    expect(image?.tags).toEqual(["four"]);
+  });
+
+  /**
+   * Régression attendue : `replaceMedia` recrée un actif par visuel. Sans report,
+   * enregistrer la section Visuels effacerait les mots-clés — la fonctionnalité
+   * marcherait à l'écran et disparaîtrait à la sauvegarde suivante.
+   */
+  it("garde les mots-clés après un enregistrement de la section", async () => {
+    const product = await aProduct(await aCategory(), "Croissant");
+    await setMedia(product, [{ role: "gallery", url: CROISSANT }]);
+    await describeMedia({ url: CROISSANT, name: "", tags: ["four"], focal: { x: 0.25, y: 0.5 } });
+
+    await setMedia(product, [{ role: "hero", url: CROISSANT }]);
+
+    const [image] = (await library()).filter((item) => item.url === CROISSANT);
+    expect(image?.tags).toEqual(["four"]);
+    expect(image?.focal).toEqual({ x: 0.25, y: 0.5 });
+  });
+
+  it("refuse un point focal hors de [0, 1]", async () => {
+    const product = await aProduct(await aCategory(), "Croissant");
+    await setMedia(product, [{ role: "gallery", url: CROISSANT }]);
+
+    expect(
+      await describeMedia({ url: CROISSANT, name: "", tags: [], focal: { x: 1.4, y: 0 } }),
+    ).toBe(400);
+  });
+
+  it("refuse en 404 une image absente de la bibliothèque", async () => {
+    expect(
+      await describeMedia({
+        url: "https://cdn.test/inconnue.png",
+        name: "",
+        tags: [],
+        focal: null,
+      }),
+    ).toBe(404);
   });
 });

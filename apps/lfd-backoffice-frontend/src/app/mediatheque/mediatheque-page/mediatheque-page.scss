@@ -133,3 +133,76 @@
   flex-basis: 100%;
   color: var(--fold-color-text-muted);
 }
+
+.band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin-bottom: var(--fold-space-lg);
+  padding: var(--fold-space-sm);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-sunken);
+}
+
+.coin,
+.sift {
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: inherit;
+  font: inherit;
+}
+
+.tags,
+.worn {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  padding: 2px var(--fold-space-xs);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-card);
+  color: inherit;
+  font: inherit;
+  font-size: var(--fold-text-xs);
+  cursor: grab;
+}
+
+/* Le tag armé se voit franchement : tant qu'il l'est, chaque clic sur une image
+   écrit. Une nuance discrète ferait poser des mots-clés par surprise. */
+.tag-armed {
+  border-color: var(--fold-color-primary);
+  background: var(--fold-color-primary-surface);
+}
+
+.tag-worn {
+  cursor: pointer;
+}
+
+.hint {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* La cible de dépôt ne s'annonce QUE lorsqu'il y a quelque chose à déposer :
+   un liseré permanent inviterait à un geste qui ne ferait rien. */
+.card-target .frame {
+  outline: 2px dashed var(--fold-color-primary);
+  outline-offset: 2px;
+}
+
+.card .frame {
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+}

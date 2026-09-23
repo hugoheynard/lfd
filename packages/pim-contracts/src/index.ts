@@ -17,7 +17,11 @@ export {
 
 export { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
 
-export { mediaItemPayloadSchema, setMediaPayloadSchema } from "./media.js";
+export {
+  mediaDetailsPayloadSchema,
+  mediaItemPayloadSchema,
+  setMediaPayloadSchema,
+} from "./media.js";
 export type {
   AttachedMediaView,
   MediaFactsView,
@@ -26,6 +30,7 @@ export type {
   FocalPoint,
   LibraryMediaView,
   MediaLibraryPageView,
+  MediaDetailsPayload,
 } from "./media.js";
 
 export type { AllergenEntry, AllergenReference, AllergenScope } from "./allergen.js";

@@ -54,6 +54,54 @@
     }
   </div>
 
+  <!-- LA BANDE DE TAGS. Le vocabulaire est DÉRIVÉ de ce que les images portent,
+       plus ce qu'on vient d'écrire : il n'y a pas de table de tags, parce qu'un
+       tag n'a rien à porter d'autre que son mot. -->
+  <div class="band">
+    <input
+      class="coin"
+      type="text"
+      placeholder="Nouveau mot-clé"
+      (keydown.enter)="coin($event.target)"
+    />
+    @if (palette.all().length > 6) {
+      <!-- La recherche n'apparaît qu'une fois la bande assez fournie pour
+           qu'on s'y perde : avant, elle serait un champ de plus à ignorer. -->
+      <input
+        class="sift"
+        type="search"
+        placeholder="Chercher un mot-clé"
+        [value]="palette.search()"
+        (input)="palette.search.set($any($event.target).value)"
+      />
+    }
+
+    <ul class="tags">
+      @for (tag of palette.shown(); track tag) {
+        <li>
+          <!-- Cliquable ET déplaçable : on ne glisse pas au clavier, et une
+               bande utilisable à la seule souris fermerait l'écran à qui
+               navigue autrement. Le clic ARME, le clic suivant sur une image
+               pose. -->
+          <button
+            type="button"
+            class="tag"
+            draggable="true"
+            [class.tag-armed]="palette.armed() === tag"
+            (dragstart)="carry($event, tag)"
+            (click)="palette.toggle(tag)"
+          >
+            {{ tag }}
+          </button>
+        </li>
+      }
+    </ul>
+
+    @if (palette.armed(); as tag) {
+      <p class="hint">« {{ tag }} » est armé : cliquez une image pour le poser.</p>
+    }
+  </div>
+
   @if (loading() && items().length === 0) {
     <fold-loading message="Lecture de la bibliothèque…" />
   } @else if (failure(); as message) {
@@ -75,11 +123,30 @@
 
     <ul class="grid">
       @for (item of items(); track item.url) {
-        <li class="card">
-          <span class="frame">
+        <li
+          class="card"
+          [class.card-target]="palette.armed() !== null"
+          (dragover)="$event.preventDefault()"
+          (drop)="drop($event, item)"
+        >
+          <!-- L'aperçu est le point de dépôt ET le bouton de pose : les deux
+               gestes visent la même chose, ils ne peuvent pas viser deux
+               surfaces différentes. -->
+          <button type="button" class="frame" (click)="apply(item, palette.armed())">
             <img [src]="item.url" [alt]="label(item)" loading="lazy" />
-          </span>
+          </button>
           <span class="name" [title]="fileOf(item)">{{ label(item) }}</span>
+          @if (item.tags.length > 0) {
+            <ul class="worn">
+              @for (tag of item.tags; track tag) {
+                <li>
+                  <button type="button" class="tag tag-worn" (click)="strip(item, tag)">
+                    {{ tag }} ×
+                  </button>
+                </li>
+              }
+            </ul>
+          }
           <!-- Le compte d'emplois, toujours visible : c'est lui qui dira
                pourquoi une suppression est refusée, avant qu'on l'essaie. -->
           <span class="uses" [class.uses-free]="item.uses === 0">{{ usesLabel(item) }}</span>

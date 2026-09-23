@@ -80,6 +80,20 @@ model MediaAsset {
   focalX Float? @map("focal_x")
   focalY Float? @map("focal_y")
 
+  /// Les mots par lesquels on RETROUVE cette image. Vocabulaire libre et à
+  /// plat : pas d'arbre, pas de racine, pas de mot imposé au dépôt.
+  ///
+  /// Un tableau plutôt qu'une table : sans hiérarchie ni propriétés, une table
+  /// n'apporterait qu'une jointure. La contrepartie est assumée — rien ne
+  /// rapprochera « croissant » de « viennoiserie », et une image mal taguée
+  /// reste introuvable jusqu'à ce qu'on la retague. C'est le prix d'un champ
+  /// que les gens remplissent.
+  ///
+  /// 🔴 NORMALISÉS à l'écriture — découpés, minuscules, dédoublonnés. Sans
+  /// cela, « Croissant » et « croissant » sont deux fonds distincts, et le
+  /// vocabulaire libre devient le vocabulaire à doublons qu'on lui reproche.
+  tags String[] @default([])
+
   /// La clé dans le bucket média — `products/{sha256}.{ext}`. `null` ⇒ l'octet
   /// n'est pas chez nous. C'est par elle qu'un ramassage d'orphelins saura un
   /// jour quel objet R2 plus aucune fiche ne référence.

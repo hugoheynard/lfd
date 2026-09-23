@@ -1,6 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { MediaLibraryPageView, UploadedMediaView } from '@lfd/pim-contracts';
+import type {
+  MediaDetailsPayload,
+  MediaLibraryPageView,
+  UploadedMediaView,
+} from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../pim/data/api';
@@ -52,5 +56,20 @@ export class MediaLibraryHttpApi {
     const body = new FormData();
     body.append('file', file);
     return firstValueFrom(this.http.post<UploadedMediaView>(`${this.base}/mediatheque`, body));
+  }
+
+  /**
+   * Écrit ce qu'on a décidé d'une image : son étiquette, ses tags, son point.
+   *
+   * 🔴 Les trois partent ENSEMBLE, parce que le serveur écrit les trois. Poser
+   * un tag en laissant `name` ou `focal` de côté les effacerait — c'est un
+   * remplacement, pas une retouche. L'appelant renvoie donc ce qu'il a lu.
+   *
+   * ⚠️ Lecture-modification-écriture : deux personnes qui taguent la même image
+   * en même temps, c'est la dernière qui gagne. Acceptable pour un mot-clé ; ça
+   * ne le serait pas pour une donnée réglementaire.
+   */
+  async describe(details: MediaDetailsPayload): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${this.base}/mediatheque`, details));
   }
 }

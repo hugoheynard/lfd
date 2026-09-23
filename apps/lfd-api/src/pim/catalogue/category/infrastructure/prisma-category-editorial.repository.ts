@@ -102,6 +102,7 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
     bytes: number | null;
     focalX: number | null;
     focalY: number | null;
+    tags: string[];
   }> {
     const measured = await this.prisma.mediaAsset.findFirst({
       where: { url, storageKey: { not: null } },
@@ -119,6 +120,13 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
       orderBy: { createdAt: "desc" },
       select: { focalX: true, focalY: true },
     });
+    // Les tags se cherchent à part : une image peut être taguée sans être
+    // pointée, et l'inverse.
+    const tagged = await this.prisma.mediaAsset.findFirst({
+      where: { url, NOT: { tags: { isEmpty: true } } },
+      orderBy: { createdAt: "desc" },
+      select: { tags: true },
+    });
     return {
       ...(measured ?? {
         storageKey: null,
@@ -128,6 +136,7 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
         bytes: null,
       }),
       ...(chosen ?? { focalX: null, focalY: null }),
+      tags: tagged?.tags ?? [],
     };
   }
 }

@@ -52,6 +52,7 @@ function viewOf(record: LibraryMediaRecord): MediaLibraryPageView["items"][numbe
   return {
     url: record.url,
     name: record.name,
+    tags: record.tags,
     // La CLÉ DE BUCKET ne sort pas : elle dit où l'octet est rangé chez nous,
     // ce qu'aucun écran n'a à savoir pour afficher une image dont il a l'URL.
     contentType: record.contentType,

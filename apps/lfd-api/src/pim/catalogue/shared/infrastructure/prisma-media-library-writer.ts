@@ -1,0 +1,28 @@
+import { Injectable } from "@nestjs/common";
+
+import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
+import { MediaLibraryWriter, type MediaDetails } from "../domain/ports/media-library-writer.js";
+
+@Injectable()
+export class PrismaMediaLibraryWriter extends MediaLibraryWriter {
+  constructor(private readonly prisma: PimPrismaService) {
+    super();
+  }
+
+  async describe(url: string, details: MediaDetails): Promise<boolean> {
+    // 🔴 `updateMany` et non `update` : plusieurs inscriptions portent la même
+    // URL, et n'en corriger qu'une laisserait les autres dire le contraire. La
+    // lecture groupe par URL et prend « la plus récente qui en porte » — elle
+    // choisirait alors au hasard de la date.
+    const written = await this.prisma.mediaAsset.updateMany({
+      where: { url },
+      data: {
+        name: details.name,
+        tags: [...details.tags],
+        focalX: details.focal?.x ?? null,
+        focalY: details.focal?.y ?? null,
+      },
+    });
+    return written.count > 0;
+  }
+}

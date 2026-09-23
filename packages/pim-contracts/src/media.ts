@@ -51,6 +51,11 @@ export interface LibraryMediaView extends MediaFactsView {
   readonly url: string;
   /** L'étiquette de bibliothèque ; `''` = personne ne l'a nommée. */
   readonly name: string;
+  /**
+   * Les mots par lesquels on la retrouve — libres, à plat, normalisés
+   * (découpés, minuscules, dédoublonnés) à l'écriture. `[]` = pas taguée.
+   */
+  readonly tags: readonly string[];
   readonly focal: FocalPoint | null;
   /**
    * Combien de porteurs l'affichent — fiches et familles confondues.
@@ -114,3 +119,24 @@ export const setMediaPayloadSchema = z.object({
   media: z.array(mediaItemPayloadSchema),
 });
 export type SetMediaPayload = z.infer<typeof setMediaPayloadSchema>;
+
+/**
+ * Ce qu'un écran DÉCIDE d'une image — par opposition à ce qu'on en a mesuré.
+ *
+ * Clé = l'**URL**, parce que c'est la seule identité qui traverse deux
+ * enregistrements de fiche : la table des actifs est un journal de lignes.
+ */
+export const mediaDetailsPayloadSchema = z.object({
+  url: z.string().min(1),
+  /** `''` efface l'étiquette — c'est un geste, pas une absence de champ. */
+  name: z.string().max(120),
+  tags: z.array(z.string()).max(60),
+  /**
+   * `null` veut dire « personne ne s'est prononcé », jamais « au centre ».
+   * Les bornes réelles (0 à 1) sont tenues par le domaine ; le schéma ne dit
+   * que la forme.
+   */
+  focal: z.object({ x: z.number(), y: z.number() }).nullable(),
+});
+
+export type MediaDetailsPayload = z.infer<typeof mediaDetailsPayloadSchema>;

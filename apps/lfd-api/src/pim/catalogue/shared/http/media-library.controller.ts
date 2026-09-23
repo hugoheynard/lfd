@@ -1,7 +1,20 @@
-import { Controller, Get, Post, Query, UploadedFile, UseInterceptors } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Query,
+  UploadedFile,
+  UseInterceptors,
+} from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
-import type { MediaLibraryPageView, UploadedMediaView } from "@lfd/pim-contracts";
+import {
+  mediaDetailsPayloadSchema,
+  type MediaLibraryPageView,
+  type UploadedMediaView,
+} from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import {
@@ -10,6 +23,7 @@ import {
 } from "../../product/application/upload-product-image.js";
 import { UnsupportedImageError } from "../../product/domain/value-objects/product-image.js";
 import { BrowseMediaLibraryQuery } from "../application/browse-media-library.js";
+import { SaveMediaDetailsCommand } from "../application/save-media-details.js";
 
 /**
  * Garde-fou DoS du multipart, **très au-dessus** de la limite métier (le
@@ -74,6 +88,25 @@ export class MediaLibraryController {
   ): Promise<MediaLibraryPageView> {
     return this.queries.execute<BrowseMediaLibraryQuery, MediaLibraryPageView>(
       new BrowseMediaLibraryQuery(numberOr(limit, DEFAULT_PAGE), numberOr(offset, 0)),
+    );
+  }
+
+  /**
+   * Nomme, tague et pointe une image.
+   *
+   * 🔴 La clé est l'**URL** dans le corps, et non un identifiant dans le
+   * chemin : les inscriptions sont recréées à chaque enregistrement de fiche,
+   * donc un identifiant d'actif ne désigne rien de durable.
+   *
+   * Le contrôleur ne valide que la FORME (Zod). Ce qu'est un tag acceptable —
+   * découpé, en minuscules, dédoublonné, borné — est une règle du domaine, et
+   * elle vit dans `mediaTags`.
+   */
+  @Put()
+  async describe(@Body() body: unknown): Promise<void> {
+    const payload = mediaDetailsPayloadSchema.parse(body);
+    await this.commands.execute<SaveMediaDetailsCommand, void>(
+      new SaveMediaDetailsCommand(payload.url, payload.name, payload.tags, payload.focal),
     );
   }
 

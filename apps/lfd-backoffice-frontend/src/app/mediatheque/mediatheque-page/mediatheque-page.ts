@@ -9,6 +9,7 @@ import {
 } from 'fold-ng';
 
 import { BatchUploadStore } from '../batch-upload';
+import { TagPaletteStore } from '../tag-palette';
 import { MediaLibraryHttpApi } from '../media-library-http-api';
 
 /** Une page d'aperçus. Le serveur reborne de toute façon à 100. */
@@ -39,12 +40,13 @@ const PAGE_SIZE = 60;
   styleUrl: './mediatheque-page.scss',
   // Fourni par la PAGE et non à la racine : un compte rendu de dépôt appartient
   // à l'écran qui l'a lancé, et le quitter doit l'oublier.
-  providers: [BatchUploadStore],
+  providers: [BatchUploadStore, TagPaletteStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MediathequePage {
   private readonly api = inject(MediaLibraryHttpApi);
   protected readonly batch = inject(BatchUploadStore);
+  protected readonly palette = inject(TagPaletteStore);
 
   protected readonly items = signal<readonly LibraryMediaView[]>([]);
   protected readonly total = signal(0);
@@ -73,6 +75,9 @@ export class MediathequePage {
     try {
       const page = await this.api.page(PAGE_SIZE, this.offset());
       this.items.update((current) => [...current, ...page.items]);
+      // La bande se recense sur ce qui est chargé : le vocabulaire est DÉRIVÉ
+      // de l'usage, il n'a pas de table à lui.
+      this.palette.observe(this.items().map((item) => item.tags));
       this.total.set(page.total);
       this.offset.update((current) => current + page.items.length);
     } catch {
@@ -146,5 +151,70 @@ export class MediathequePage {
     this.items.set([]);
     this.offset.set(0);
     await this.load();
+  }
+
+  /** Le tag saisi dans la bande rejoint le vocabulaire et s'arme. */
+  protected coin(input: EventTarget | null): void {
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+    if (this.palette.draft(input.value) !== null) {
+      input.value = '';
+    }
+  }
+
+  /**
+   * Pose sur une image le tag qu'on lui amène.
+   *
+   * 🔴 On renvoie `name` et `focal` INCHANGÉS : l'écriture est un
+   * remplacement, pas une retouche. Ne poster que les tags les effacerait.
+   *
+   * Le geste est idempotent — une image qui porte déjà le mot n'appelle pas le
+   * serveur. Sans cette garde, glisser deux fois de suite écrirait deux fois la
+   * même chose, et chaque relâché coûterait un aller-retour.
+   */
+  protected async apply(item: LibraryMediaView, tag: string | null): Promise<void> {
+    if (tag === null || item.tags.includes(tag)) {
+      return;
+    }
+    const tags = [...item.tags, tag];
+    // L'écran bascule d'abord : reposer un mot-clé ne mérite pas d'attendre le
+    // réseau, et l'échec se rattrape en le reposant.
+    this.replace({ ...item, tags });
+    try {
+      await this.api.describe({ url: item.url, name: item.name, tags, focal: item.focal });
+      this.palette.observe(this.items().map((entry) => entry.tags));
+    } catch {
+      this.replace(item);
+      this.failure.set("Le mot-clé n'a pas pu être posé.");
+    }
+  }
+
+  /** Retire un mot d'une image. Même remplacement, même repli. */
+  protected async strip(item: LibraryMediaView, tag: string): Promise<void> {
+    const tags = item.tags.filter((kept) => kept !== tag);
+    this.replace({ ...item, tags });
+    try {
+      await this.api.describe({ url: item.url, name: item.name, tags, focal: item.focal });
+      this.palette.observe(this.items().map((entry) => entry.tags));
+    } catch {
+      this.replace(item);
+      this.failure.set("Le mot-clé n'a pas pu être retiré.");
+    }
+  }
+
+  /** Le glisser-déposer transporte le MOT, pas un index : la bande peut être
+   *  refiltrée entre la prise et le relâché. */
+  protected carry(event: DragEvent, tag: string): void {
+    event.dataTransfer?.setData('text/plain', tag);
+  }
+
+  protected async drop(event: DragEvent, item: LibraryMediaView): Promise<void> {
+    event.preventDefault();
+    await this.apply(item, event.dataTransfer?.getData('text/plain') ?? null);
+  }
+
+  private replace(item: LibraryMediaView): void {
+    this.items.update((current) => current.map((entry) => (entry.url === item.url ? item : entry)));
   }
 }

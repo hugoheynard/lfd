@@ -64,6 +64,9 @@ import { ReadinessRepository } from "./product/domain/ports/readiness.repository
 import { EditorialRepository } from "./product/domain/ports/editorial.repository.js";
 import { MediaLibrary } from "./product/domain/ports/media-library.js";
 import { MediaLibraryReader } from "./shared/domain/ports/media-library-reader.js";
+import { MediaLibraryWriter } from "./shared/domain/ports/media-library-writer.js";
+import { SaveMediaDetailsHandler } from "./shared/application/save-media-details.js";
+import { PrismaMediaLibraryWriter } from "./shared/infrastructure/prisma-media-library-writer.js";
 import { BrowseMediaLibraryHandler } from "./shared/application/browse-media-library.js";
 import { PrismaMediaLibraryReader } from "./shared/infrastructure/prisma-media-library-reader.js";
 import { NutritionValuesRepository } from "./product/domain/ports/nutrition-values.repository.js";
@@ -161,6 +164,7 @@ import {
     UnpublishProductHandler,
     GetProductDetailHandler,
     BrowseMediaLibraryHandler,
+    SaveMediaDetailsHandler,
     // L'onglet « Historique » : la lignée ici, le journal par le port global.
     GetProductHistoryHandler,
     { provide: ProductLineageReader, useClass: PrismaProductLineageReader },
@@ -175,6 +179,7 @@ import {
     // La LECTURE de la bibliothèque est un port à part de son écriture : l'écran
     // de la médiathèque parcourt, il ne ramasse pas d'orphelins.
     { provide: MediaLibraryReader, useClass: PrismaMediaLibraryReader },
+    { provide: MediaLibraryWriter, useClass: PrismaMediaLibraryWriter },
     { provide: ProductRepository, useClass: PrismaProductRepository },
     { provide: SKU_AVAILABILITY, useClass: PrismaSkuAvailability },
     { provide: CatalogueReader, useClass: PrismaCatalogueReader },

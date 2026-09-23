@@ -260,6 +260,54 @@ devient un vocabulaire à doublons, ce qu'on lui reproche à juste titre.
 une table de tags n'apporterait qu'une jointure. Le jour où un tag devra porter
 autre chose que son nom, ce sera une décision à prendre, pas un regret.
 
+#### La BANDE, et pourquoi ce n'est pas un panneau par image
+
+> Hugo, 2026-09-23 : « sur médiathèque faire une bande pour ajouter des tags en
+> mémoire, on devra drag and drop les tags, avec une recherche de tag pour quand
+> il y en aura trop ».
+
+Un panneau par image ferait ouvrir, saisir, fermer — **trois gestes par
+photo**. La bande inverse : le mot se fabrique une fois, puis se **pose** sur
+autant d'images qu'on veut. C'est le geste d'un fonds, pas celui d'une fiche.
+
+🔴 **Le vocabulaire est DÉRIVÉ, il n'a pas de table.** La bande montre ce que
+les images chargées portent déjà, plus ce que quelqu'un vient d'écrire. Un tag
+créé mais jamais posé **ne survit pas** au rechargement — c'est cohérent avec
+le modèle (un mot que rien ne porte n'existe pas) et ça évite un second endroit
+où un vocabulaire pourrait diverger de son usage.
+
+⚠️ **Le glisser-déposer est doublé d'un clic**, et ce n'est pas du confort : on
+ne glisse pas au clavier. Cliquer un tag l'**arme**, cliquer une image le pose.
+Une bande utilisable à la seule souris fermerait l'écran à qui navigue
+autrement.
+
+La **recherche** n'apparaît qu'au-delà de six mots — avant, elle serait un champ
+de plus à ignorer — et cherche **n'importe où** dans le mot : savoir comment un
+tag commence est précisément ce qu'on ignore quand on le cherche.
+
+#### 🔴 Les trois écritures partent ENSEMBLE
+
+Le serveur écrit `name`, `tags` et `focal` d'un bloc : c'est un remplacement,
+pas une retouche. Poser un mot-clé renvoie donc l'étiquette et le point
+**inchangés**, sinon les poser les effacerait.
+
+⚠️ Lecture-modification-écriture : deux personnes qui taguent la même image en
+même temps, c'est la dernière qui gagne. Acceptable pour un mot-clé ; ça ne le
+serait pas pour une donnée réglementaire.
+
+#### Ce que le report a dû apprendre
+
+Les tags se reportent d'une inscription à la suivante **comme le point focal**,
+et par une lecture qui leur est propre : une image peut être taguée sans être
+pointée, et l'inverse. Les chercher sur la même ligne ferait perdre celui des
+deux qui n'a pas été décidé en dernier. Un e2e le tient — « garde les mots-clés
+après un enregistrement de la section ».
+
+⚠️ **Ce qui reste en double écriture** : l'étiquette (`name`) se saisit AUSSI
+depuis le panneau de la fiche produit. Deux écrans écrivent donc la même
+propriété de bibliothèque, et le dernier gagne. Ça se résout au plan B, quand le
+référentiel deviendra un mappeur et cessera d'écrire des propriétés d'image.
+
 ### Lot 5 — la recherche et l'attribution, côté fiche
 
 La section Visuels gagne « choisir dans la médiathèque » à côté de « déposer »,

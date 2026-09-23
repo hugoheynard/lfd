@@ -111,9 +111,9 @@ export class PrismaEditorialRepository extends EditorialRepository {
    *
    * - ce qu'on a **mesuré** n'existe que pour ce qu'on héberge, d'où le
    *   `storageKey: { not: null }` ;
-   * - le **point focal** est une DÉCISION, et quelqu'un peut très bien l'avoir
-   *   prise sur une image saisie par son URL. Le chercher sous la même
-   *   condition l'aurait perdu précisément là.
+   * - le **point focal** et les **tags** sont des DÉCISIONS, et quelqu'un peut
+   *   très bien les avoir prises sur une image saisie par son URL. Les chercher
+   *   sous la même condition les aurait perdus précisément là.
    */
   private async factsFor(url: string): Promise<{
     storageKey: string | null;
@@ -123,6 +123,7 @@ export class PrismaEditorialRepository extends EditorialRepository {
     bytes: number | null;
     focalX: number | null;
     focalY: number | null;
+    tags: string[];
   }> {
     const measured = await this.prisma.mediaAsset.findFirst({
       where: { url, storageKey: { not: null } },
@@ -137,7 +138,7 @@ export class PrismaEditorialRepository extends EditorialRepository {
         height: null,
         bytes: null,
       }),
-      ...(await this.focalFor(url)),
+      ...(await this.decidedFor(url)),
     };
   }
 
@@ -156,12 +157,24 @@ export class PrismaEditorialRepository extends EditorialRepository {
    * centre est un choix comme un autre, et les confondre obligerait à deviner
    * lequel on lit.
    */
-  private async focalFor(url: string): Promise<{ focalX: number | null; focalY: number | null }> {
-    const chosen = await this.prisma.mediaAsset.findFirst({
-      where: { url, focalX: { not: null } },
-      orderBy: { createdAt: "desc" },
-      select: { focalX: true, focalY: true },
-    });
-    return chosen ?? { focalX: null, focalY: null };
+  private async decidedFor(
+    url: string,
+  ): Promise<{ focalX: number | null; focalY: number | null; tags: string[] }> {
+    const [pointed, tagged] = await Promise.all([
+      this.prisma.mediaAsset.findFirst({
+        where: { url, focalX: { not: null } },
+        orderBy: { createdAt: "desc" },
+        select: { focalX: true, focalY: true },
+      }),
+      // Les TAGS se cherchent SÉPARÉMENT du point : une image peut être taguée
+      // sans être pointée, et l'inverse. Les lire sur la même ligne ferait
+      // perdre l'un des deux selon lequel a été décidé en dernier.
+      this.prisma.mediaAsset.findFirst({
+        where: { url, NOT: { tags: { isEmpty: true } } },
+        orderBy: { createdAt: "desc" },
+        select: { tags: true },
+      }),
+    ]);
+    return { ...(pointed ?? { focalX: null, focalY: null }), tags: tagged?.tags ?? [] };
   }
 }
