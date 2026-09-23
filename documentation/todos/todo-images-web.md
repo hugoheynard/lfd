@@ -118,6 +118,10 @@ lui-même déclaré accepter.
 | 1 250 images        | 5 000 — le plafond exact       | **0 $**      |
 | 5 000 images        | 20 000                         | ~**7,50 $**  |
 
+### 🔴 À VÉRIFIER — et on y va au culot en attendant
+
+**Décision de Hugo, le 2026-09-23 : on déploie sans avoir levé ce point.**
+
 ⚠️ **NON VÉRIFIÉ, et ça compte** : le dépassement s'ajoute-t-il tout seul à la
 facture, ou faut-il avoir souscrit l'offre « Images & Stream » (affichée « à
 partir de 0 $/mois », avec un bouton _Purchase_) ? Si c'est la seconde, les
@@ -126,6 +130,28 @@ les images cassent au lieu que la facture monte. C'est la plus désagréable des
 deux hypothèses, et c'est celle qu'il faut écarter avant de se reposer sur le
 quota. À l'échelle actuelle — **une** image dans le fonds — la question ne se
 pose pas avant longtemps, mais elle se posera en silence.
+
+**Ce qui rend le culot tenable** — et ce n'était pas acquis quand la décision a
+été prise : les URL portent `onerror=redirect`. Si le serveur d'images ne peut
+pas transformer, quelle qu'en soit la raison — quota épuisé, réglage défait,
+panne — il renvoie un **307 vers l'original**. Vérifié en vrai le même jour.
+
+La boutique redevient alors **lourde**. Elle ne casse pas. « Les photos ont
+disparu » et « les photos pèsent à nouveau 3,64 Mo » ne sont pas la même panne,
+et seule la seconde est acceptable sans surveillance.
+
+⚠️ **Le revers, qu'il faut connaître : ce repli est SILENCIEUX.** Le jour où
+les transformations s'arrêtent, rien ne le dira — ni une erreur, ni un test,
+ni une alerte. Seul le **poids servi** le dirait. C'est la raison pour laquelle
+la mesure du poids ne se remplace pas par une suite verte.
+
+**Les trois façons de lever le doute, par ordre de coût :**
+
+1. cliquer « Purchase » sur l'offre à 0 $/mois — souvent une simple activation,
+   et on saurait tout de suite si une carte est demandée ;
+2. demander au support ;
+3. attendre d'approcher les 5 000 et surveiller le poids servi — le moins cher,
+   le plus tardif, et celui qui suppose qu'on regardera.
 
 ### 🔴 « Et le stockage des dérivées, alors ? » — il n'y en a pas
 
@@ -360,6 +386,28 @@ pire cas est quelques kilooctets de plus.
 Pour des photos de viennoiseries à petite taille, l'AVIF pèse nettement moins
 que le WebP à qualité égale. C'est là qu'est le gain, et il va à ceux qui
 peuvent le recevoir, sans priver les autres.
+
+---
+
+## Ce qu'on ne gère PLUS
+
+Une fois ① en place, il ne reste **aucune conversion** de notre côté :
+
+|                                                |                                                            |
+| ---------------------------------------------- | ---------------------------------------------------------- |
+| Encodage                                       | aucun — pas de `sharp`, pas de binaire natif dans le dépôt |
+| Stockage des dérivées                          | aucun — R2 garde **un** fichier par image                  |
+| Matrice de formats                             | aucune — le navigateur négocie                             |
+| Régénération quand la grille change de largeur | aucune — on change un nombre dans l'URL                    |
+
+⚠️ **Ce qui reste, et qui n'est pas de la conversion** : accepter le master
+(formats, 10 Mo, 200 × 200 minimum) et **décider des largeurs** qu'on demande.
+Ce sont des décisions, pas du travail.
+
+🔴 **Et une limite entière : le serveur d'images sait rétrécir, il ne sait pas
+inventer des pixels.** Un master de 400 px déposé pour une ouverture de fiche à
+1800 px restera flou. La qualité du dépôt compte toujours — c'est le POIDS qui
+a cessé d'être notre affaire, pas la définition.
 
 ---
 

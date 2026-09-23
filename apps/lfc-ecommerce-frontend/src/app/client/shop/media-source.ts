@@ -18,6 +18,18 @@
  * | WebP seulement               | WebP, 29,2 ko            |
  * | rien de moderne              | JPEG, 31,7 ko            |
  *
+ * 🔴 **`onerror=redirect` est l'assurance du dispositif.** Si le serveur
+ * d'images ne peut pas transformer — quota épuisé, réglage défait, panne — il
+ * renvoie un **307 vers l'original** au lieu d'une erreur. La boutique
+ * redevient alors lourde ; elle ne casse pas. C'est la différence entre « les
+ * photos ont disparu » et « les photos sont revenues à leur poids d'avant », et
+ * elle vaut le paramètre.
+ *
+ * ⚠️ Le revers, qu'il faut connaître : un repli SILENCIEUX. Le jour où les
+ * transformations s'arrêtent, rien ne le dira — seul le poids servi le dirait.
+ * C'est pour ça que la mesure du poids ne se remplace pas par un test vert
+ * (`documentation/todos/todo-images-web.md`).
+ *
  * ⚠️ **`format=auto` plutôt qu'un format choisi.** Dans l'URL, `auto` et `webp`
  * coûtent le même effort et le même stockage — c'est-à-dire aucun. Écrire
  * `webp` se priverait de 20 à 30 % d'octets sans rien simplifier : le serveur
@@ -84,7 +96,7 @@ export function sizedMedia(url: string, width: number): string {
   if (parsed === null) {
     return url;
   }
-  return `${parsed.origin}/cdn-cgi/image/width=${String(width)},format=auto,fit=scale-down${parsed.pathname}`;
+  return `${parsed.origin}/cdn-cgi/image/width=${String(width)},format=auto,fit=scale-down,onerror=redirect${parsed.pathname}`;
 }
 
 /**

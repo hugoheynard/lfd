@@ -9,7 +9,7 @@ describe('sizedMedia — demander la taille où on affiche', () => {
     // Mesuré le 2026-09-23 sur la photo de production : 3,64 Mo pour le
     // master, 21,5 ko à 720 px en AVIF. C'est 165 fois moins.
     expect(sizedMedia(PHOTO, 720)).toBe(
-      'https://media.lafoliecoffee.info/cdn-cgi/image/width=720,format=auto,fit=scale-down/products/abc123.jpg',
+      'https://media.lafoliecoffee.info/cdn-cgi/image/width=720,format=auto,fit=scale-down,onerror=redirect/products/abc123.jpg',
     );
   });
 
@@ -50,6 +50,21 @@ describe('sizedMedia — ce qu’il ne touche PAS', () => {
     const local = 'http://localhost:9100/lfc-media-dev/products/abc.jpg';
 
     expect(sizedMedia(local, 720)).toBe(local);
+  });
+});
+
+describe('sizedMedia — le filet', () => {
+  /**
+   * 🔴 Vérifié en vrai le 2026-09-23 : sur une image qui échoue, le serveur
+   * d'images rend un **307 vers l'original** au lieu d'une erreur.
+   *
+   * C'est ce qui rend le dispositif sûr à déployer sans avoir levé toutes les
+   * questions de quota : si les transformations s'arrêtent, la boutique
+   * redevient LOURDE — elle ne casse pas. « Les photos ont disparu » et « les
+   * photos pèsent à nouveau 3,64 Mo » ne sont pas la même panne.
+   */
+  it("demande le repli sur l'ORIGINAL en cas d'échec", () => {
+    expect(sizedMedia(PHOTO, 720)).toContain('onerror=redirect');
   });
 });
 
