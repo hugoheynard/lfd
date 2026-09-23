@@ -90,6 +90,10 @@ export class PrismaEditorialRepository extends EditorialRepository {
       });
       await this.prisma.productMedia.create({
         data: {
+          // DOUBLE ÉCRITURE — déploiement ① du plan de la médiathèque. Personne
+          // ne la lit encore ; elle existe pour que la bascule (②) trouve des
+          // lignes déjà justes plutôt qu'à reconstruire sous la charge.
+          mediaUrl: item.url,
           productId,
           mediaId,
           role: item.role,

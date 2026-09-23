@@ -125,6 +125,15 @@ model MediaAsset {
 model ProductMedia {
   productId String     @map("product_id")
   mediaId   String     @map("media_id")
+
+  /// L'image désignée par son **URL** — la seule identité qui traverse deux
+  /// enregistrements de fiche.
+  ///
+  /// 🔴 Nullable et **pas encore lue** : c'est le déploiement ① du plan
+  /// `documentation/pim/plan-la-mediatheque-bloc-a-part.md`. Elle est écrite en
+  /// double de `mediaId`, le temps que les lectures basculent (②) puis que
+  /// `mediaId` tombe (③).
+  mediaUrl  String?    @map("media_url")
   product   Product    @relation(fields: [productId], references: [id])
   media     MediaAsset @relation(fields: [mediaId], references: [id])
   role      MediaRole
@@ -138,6 +147,7 @@ model ProductMedia {
 
   @@id([productId, mediaId])
   @@index([productId])
+  @@index([mediaUrl])
   @@map("product_media")
   @@schema("pim")
 }

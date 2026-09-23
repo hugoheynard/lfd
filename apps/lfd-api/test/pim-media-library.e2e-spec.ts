@@ -302,3 +302,33 @@ describe("retirer une image de la bibliothèque", () => {
     expect(await discard("https://cdn.test/jamais-vue.png")).toBe(404);
   });
 });
+
+/**
+ * Déploiement ① du plan `plan-la-mediatheque-bloc-a-part.md` : la colonne
+ * existe, elle est écrite, **personne ne la lit**.
+ *
+ * 🔴 Ce cas est le seul garde-fou de la double écriture. Rien d'autre ne la
+ * traverse : aucune lecture n'en dépend encore, donc une colonne qui resterait
+ * vide passerait tous les autres tests — et la bascule (②) se ferait sur des
+ * lignes creuses, en production, sans prévenir.
+ */
+describe("déploiement ① — l’URL est écrite sur le rattachement", () => {
+  it("pose `media_url` en enregistrant les visuels d’une fiche", async () => {
+    const product = await aProduct(await aCategory(), "Croissant");
+    await setMedia(product, [{ role: "gallery", url: CROISSANT }]);
+
+    const rows = await ctx.prisma.productMedia.findMany({ where: { productId: product } });
+    expect(rows.map((row) => row.mediaUrl)).toEqual([CROISSANT]);
+  });
+
+  it("la pose aussi sur une FAMILLE", async () => {
+    const category = await aCategory();
+    const response = await staff()
+      .put(`/pim/catalogue/categories/${category}/media`)
+      .send({ media: [{ role: "gallery", url: CHOCOLATINE }] });
+    expect(response.status).toBe(200);
+
+    const rows = await ctx.prisma.categoryMedia.findMany({ where: { categoryId: category } });
+    expect(rows.map((row) => row.mediaUrl)).toEqual([CHOCOLATINE]);
+  });
+});
