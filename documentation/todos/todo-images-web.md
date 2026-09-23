@@ -21,13 +21,32 @@ Le navigateur télécharge les 8 Mo, puis les réduit à 180 px pour les affiche
 sans plus, et aucune transformation n'existe nulle part entre le bucket et
 l'écran.
 
-Deux conséquences, et la seconde est visible à l'œil :
+**Une seule conséquence, et elle suffit : on sert des mégaoctets pour afficher
+des kilooctets.**
 
-1. On sert des mégaoctets pour afficher des kilooctets.
-2. **La page saute au chargement.** La balise ne porte ni `width` ni `height`,
-   donc le navigateur ne sait pas quelle place réserver : il l'apprend quand
-   l'image arrive, et tout ce qui est dessous se décale. Les dimensions sont
-   pourtant **déjà** dans le fil du catalogue — elles ne servent à rien.
+🔴 **Ce document a affirmé une seconde conséquence qui n'existe pas.** Il
+disait : « la page saute au chargement, la balise ne porte ni `width` ni
+`height` ». La prémisse est vraie, la conclusion est fausse — et elle a été
+écrite sans ouvrir le CSS.
+
+Les deux emplacements **réservent déjà leur place** (vérifié le 2026-09-23) :
+`product-tile.scss` pose `aspect-ratio: var(--lfc-product-tile-ratio)` sur
+`.media`, `product-sheet.scss` pose `aspect-ratio: 3 / 2` sur `.photo`, et
+l'image y est en `width`/`height: 100%` avec `object-fit: cover`. La boîte est
+dimensionnée AVANT que l'image arrive.
+
+Poser `width`/`height` sur la balise ne changerait donc rien : le CSS gagne, et
+le ratio intrinsèque ne sert à rien quand la boîte impose le sien.
+
+⚠️ La déduction « pas de `width`/`height` ⇒ la page saute » est juste dans la
+plupart des pages, et c'est ce qui la rend dangereuse : elle se vérifie en
+ouvrant un fichier, et on ne l'ouvre pas puisqu'on croit déjà savoir. Le
+commentaire de `product-tile.scss` montre d'ailleurs que ce terrain a été
+mesuré au pixel — « 192,31 px en ligne, 188,81 en bloc ».
+
+⚠️ **Les dimensions du fil restent donc sans lecteur**, mais pour une autre
+raison que celle annoncée : elles serviront au `srcset`, pas à réserver une
+place qui l'est déjà.
 
 ---
 
@@ -92,10 +111,14 @@ Une fois ① en place, l'écran annonce plusieurs largeurs et le navigateur choi
 celle qui convient à l'appareil — un écran Retina prend le double, un téléphone
 prend le petit.
 
-Et surtout : `width` / `height` sur la balise, **qui se font indépendamment de
-①**. Les dimensions voyagent déjà jusqu'à la boutique. Les poser supprime le
-décalage de mise en page, ce qui est la seule des trois corrections qu'un
-visiteur remarque immédiatement.
+⚠️ **Et ② ne se fait PAS avant ①**, contrairement à ce que ce document a dit.
+Un `srcset` annonce des largeurs ; sans serveur d'images pour les fabriquer, il
+n'y a qu'un fichier à annoncer, et la liste se réduit à une ligne. Il n'y a donc
+rien à gagner ici tant que ① n'est pas tranché.
+
+**Ce qui reste vrai** : une fois ① en place, l'écran annonce plusieurs largeurs
+et le navigateur choisit celle qui convient — un écran Retina prend le double,
+un téléphone prend le petit.
 
 ### ③ Prévenir au dépôt — un pansement
 
@@ -244,8 +267,10 @@ peuvent le recevoir, sans priver les autres.
 
 1. **Le domaine média est-il dans notre zone Cloudflare ?** C'est la seule
    question qui décide si ① est un réglage ou une facture.
-2. **Le décalage de mise en page se corrige-t-il tout de suite ?** Il ne dépend
-   de rien et se voit à l'œil.
+2. ~~Le décalage de mise en page se corrige-t-il tout de suite ?~~ **Il n'y en
+   a pas** — vérifié le 2026-09-23, les deux conteneurs portent déjà un
+   `aspect-ratio`. Cette ligne est gardée rayée parce que l'erreur est
+   instructive : elle a failli faire livrer un correctif à un défaut inexistant.
 3. Et une question de fond, ouverte le même jour : **changer une image ne
    devrait pas demander de republier le catalogue.** La boutique garde une copie
    de l'URL par instantané — voir
