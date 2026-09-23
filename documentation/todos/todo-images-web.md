@@ -180,6 +180,57 @@ ORDER BY sum(bytes) DESC;
 
 ---
 
+## Quel poids viser ?
+
+🔴 **Il n'y a pas UN chiffre, et c'est la première chose à dire.** Un poids n'a
+de sens que rapporté à la **taille d'affichage**. La règle est en pixels ; les
+octets suivent.
+
+### La règle qui compte : jamais plus de 2× la largeur affichée
+
+Un écran Retina affiche deux pixels physiques par pixel CSS. Au-delà de 2×,
+chaque pixel supplémentaire est **invisible et payé**.
+
+Aujourd'hui : un master de 4808 px servi dans une tuile de 180 px, soit **26×**.
+On paie cent-soixante-dix fois la surface utile.
+
+### Les cibles, par rôle
+
+En WebP à qualité ~80, une photo coûte grossièrement **0,1 à 0,15 octet par
+pixel**. D'où :
+
+| Rôle                         | Largeur affichée | Source à 2×    | Poids visé                         |
+| ---------------------------- | ---------------- | -------------- | ---------------------------------- |
+| `thumbnail` — tuile de rayon | ~180-360 px      | 720 px         | **20 – 50 ko**                     |
+| `hero` — ouverture de fiche  | ~600-900 px      | 1800 px        | **80 – 200 ko**                    |
+| `lifestyle` — bandeau        | pleine largeur   | 2400 px        | **150 – 300 ko**                   |
+| `print` — tirage papier      | —                | **l'original** | aucune : il n'est pas servi au web |
+
+⚠️ En AVIF, diviser par deux environ.
+
+### Le chiffre qui décide vraiment : le budget de la PAGE
+
+Une image seule ne dit rien. Ce qui compte, c'est ce qu'un rayon de douze
+tuiles envoie :
+
+- **≤ 500 ko d'images** pour une page de rayon sur mobile — confortable ;
+- **≤ 1 Mo** — acceptable ;
+- au-delà, la page se sent sur une connexion mobile.
+
+Douze tuiles à 40 ko font 480 ko : ça tient. Douze tuiles à 1,9 Mo font
+**23 Mo**, et c'est ce qui part aujourd'hui.
+
+### 🔴 Ce qui en découle : pas de plafond de poids au dépôt
+
+Un poids juste pour une tuile est absurde pour un tirage papier. **Le master
+reste gros, c'est son rôle.** La cible s'applique à ce qui est SERVI — donc au
+serveur d'images, donc au paramètre `width=`, pas à la validation du dépôt.
+
+Le seul plafond utile au dépôt reste celui qui existe (10 Mo), et il n'optimise
+rien : il empêche qu'une vidéo renommée entre dans le fonds.
+
+---
+
 ## 🔴 Ce qu'on ne fait PAS : convertir au dépôt
 
 Remplacer le fichier déposé par une version WebP, c'est perdre la source. Et ça
