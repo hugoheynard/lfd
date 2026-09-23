@@ -1,3 +1,4 @@
+import type { WriteTicket } from "../../../../journal/pim-journal.js";
 import type { FocalPoint } from "../value-objects/media.js";
 
 /** Ce qu'on décide d'une image, par opposition à ce qu'on en a mesuré. */
@@ -18,6 +19,12 @@ export interface MediaDetails {
  * L'écran de la médiathèque nomme et tague ; il ne ramasse pas d'orphelins.
  */
 export abstract class MediaLibraryWriter {
+  /*
+   * 🔴 Les deux méthodes exigent un `WriteTicket`, qu'on ne peut obtenir qu'en
+   * traçant ou en dérogeant explicitement. Écrire sans avoir rien affirmé
+   * devient donc **inexprimable**, et non pas interdit par une relecture : la
+   * même mécanique que les ports d'écriture du reste du référentiel.
+   */
   /**
    * Écrit ce qu'on a décidé de CETTE image.
    *
@@ -31,7 +38,7 @@ export abstract class MediaLibraryWriter {
    * @returns `false` si aucune inscription ne porte cette URL — la route en
    *   fait un 404 plutôt qu'un succès silencieux.
    */
-  abstract describe(url: string, details: MediaDetails): Promise<boolean>;
+  abstract describe(url: string, details: MediaDetails, ticket: WriteTicket): Promise<boolean>;
 
   /**
    * Oublie **toutes** les inscriptions portant cette URL.
@@ -47,5 +54,5 @@ export abstract class MediaLibraryWriter {
    *
    * @returns le nombre de lignes oubliées.
    */
-  abstract discard(url: string): Promise<number>;
+  abstract discard(url: string, ticket: WriteTicket): Promise<number>;
 }

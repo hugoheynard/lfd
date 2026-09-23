@@ -1,3 +1,5 @@
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import {
   MediaStore,
   type PublicAsset,
@@ -63,7 +65,8 @@ describe("UploadProductImageHandler", () => {
   it("range les octets puis inscrit ce qu'il en a MESURÉ", async () => {
     const store = new FakeStore();
     const library = new FakeLibrary();
-    const handler = new UploadProductImageHandler(store, library);
+    const journal = new RecordingJournal();
+    const handler = new UploadProductImageHandler(store, library, journal, new DirectUnitOfWork());
 
     const result = await handler.execute(new UploadProductImageCommand(png(1200, 800)));
 
@@ -78,6 +81,17 @@ describe("UploadProductImageHandler", () => {
       height: 800,
       bytes: 24,
     });
+    // 🔴 Un dépôt AFFIRME quelque chose : une image est entrée dans la
+    // bibliothèque. Sans ce fait, rien ne dira jamais qui l'a mise là — et une
+    // lacune de journal ne se rattrape pas.
+    expect(journal.entries).toMatchObject([
+      {
+        type: "media_asset.deposited",
+        subjectType: "media_asset",
+        subjectId: "https://media.example/products/deadbeef.png",
+        payload: { subjectLabel: "deadbeef.png", contentType: "image/png" },
+      },
+    ]);
     expect(result.id).toBe("media_1");
   });
 
@@ -86,7 +100,12 @@ describe("UploadProductImageHandler", () => {
     // elle, ni dans le bucket ni en base.
     const store = new FakeStore();
     const library = new FakeLibrary();
-    const handler = new UploadProductImageHandler(store, library);
+    const handler = new UploadProductImageHandler(
+      store,
+      library,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    );
 
     await expect(
       handler.execute(new UploadProductImageCommand(Buffer.from("pas une image"))),
@@ -106,7 +125,12 @@ describe("UploadProductImageHandler", () => {
       }
     }
     const library = new FakeLibrary();
-    const handler = new UploadProductImageHandler(new FailingStore(), library);
+    const handler = new UploadProductImageHandler(
+      new FailingStore(),
+      library,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    );
 
     await expect(handler.execute(new UploadProductImageCommand(png(400, 400)))).rejects.toThrow(
       "R2 refuse",

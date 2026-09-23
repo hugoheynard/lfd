@@ -150,6 +150,34 @@ const productEditorialV1 = payload({
   }),
 });
 const mediaSaved = () => payload({ changes: changes({ media: mediaList() }) });
+
+/**
+ * Ce qu'on décide d'une image de la BIBLIOTHÈQUE — par opposition à l'emploi
+ * qu'une fiche en fait.
+ *
+ * Le sujet de ces faits est l'image elle-même, identifiée par son **URL** :
+ * adressée par contenu, c'est la seule identité qui traverse deux
+ * enregistrements de fiche (la table des actifs recrée une ligne par visuel à
+ * chaque sauvegarde). Un identifiant d'actif ne désignerait rien de durable.
+ */
+const mediaDescribed = () =>
+  payload({
+    subjectLabel: subjectLabel(),
+    changes: changes({
+      name: z.string(),
+      tags: z.array(z.string()),
+      focal: z.object({ x: z.number(), y: z.number() }).nullable(),
+    }),
+  });
+
+const mediaDeposited = () =>
+  payload({
+    subjectLabel: subjectLabel(),
+    contentType: z.string().nullable(),
+    bytes: z.number().nullable(),
+    width: z.number().nullable(),
+    height: z.number().nullable(),
+  });
 /** La même charge avant que le rôle n'entre dans le diff (2026-09-23). */
 const mediaSavedV1 = () => payload({ changes: changes({ media: mediaListV1() }) });
 const productChannelsV1 = fromTo(z.union([z.literal("inherited"), salesChannelsV1()]));
@@ -445,4 +473,21 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
     revisionPushed.extend({ subjectLabel: subjectLabel(), reference: z.string().min(1) }),
     [revisionPushed],
   ),
+  /**
+   * Une image entre dans la **bibliothèque**. Distinct de `product.media_saved`,
+   * qui dit qu'une fiche s'en sert : déposer ne touche aucune fiche, et c'est
+   * précisément ce qui permet d'illustrer un produit qu'on est en train de
+   * créer.
+   */
+  "media_asset.deposited": fact(mediaDeposited()),
+  /** Son étiquette, ses mots-clés ou son point focal changent. */
+  "media_asset.described": fact(mediaDescribed()),
+  /**
+   * Elle quitte la bibliothèque, octets compris.
+   *
+   * ⚠️ Le fait ne porte **aucun emploi** : la suppression est refusée dès qu'un
+   * porteur l'affiche, donc un `discarded` dit toujours « plus personne ne
+   * l'avait ». Écrire `uses: 0` serait une colonne pour une constante.
+   */
+  "media_asset.discarded": fact(payload({ subjectLabel: subjectLabel() })),
 } as const satisfies JournalFactFamily;

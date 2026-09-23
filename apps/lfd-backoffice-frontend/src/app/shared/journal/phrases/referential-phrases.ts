@@ -103,6 +103,44 @@ function sectionSaved(section: string, noun: Noun, fields: 'names' | 'none'): Ph
     );
 }
 
+/**
+ * La MÉDIATHÈQUE — le sujet est une image, nommée par son étiquette ou son nom
+ * de fichier.
+ *
+ * Trois phrases plutôt qu'une : « a modifié une image » ne dirait pas si
+ * quelqu'un l'a **déposée**, **décrite** ou **retirée**, et c'est exactement la
+ * question qu'on pose au journal d'une bibliothèque.
+ */
+const IMAGE: Noun = { the: 'l’image', a: 'une image' };
+
+function mediaDeposited(fact: PhraseFact): Said {
+  return byActor(
+    fact,
+    [text('a déposé '), ...theSubject(fact, IMAGE), text(' dans la médiathèque')],
+    ['subjectLabel'],
+  );
+}
+
+function mediaDescribed(fact: PhraseFact): Said {
+  return byActor(
+    fact,
+    [
+      text('a décrit '),
+      ...theSubject(fact, IMAGE),
+      ...whatChanged(fact.payload['changes'], fact.type),
+    ],
+    ['subjectLabel'],
+  );
+}
+
+function mediaDiscarded(fact: PhraseFact): Said {
+  return byActor(
+    fact,
+    [text('a retiré '), ...theSubject(fact, IMAGE), text(' de la médiathèque')],
+    ['subjectLabel'],
+  );
+}
+
 function productCreated(fact: PhraseFact): Said {
   const p = fact.payload;
   const categoryKey = p['category'] === undefined ? 'categoryId' : 'category';
@@ -285,6 +323,13 @@ export const REFERENTIAL_PHRASES = {
   'product.archived': onProduct('a archivé'),
   'product.restored': onProduct('a restauré'),
   'product.ingredients_saved': ingredientsSaved,
+
+  // La MÉDIATHÈQUE. Rangée ici parce que la bibliothèque vit encore dans le
+  // bloc `pim` ; elle déménagera avec lui
+  // (`documentation/pim/plan-la-mediatheque-bloc-a-part.md`).
+  'media_asset.deposited': mediaDeposited,
+  'media_asset.described': mediaDescribed,
+  'media_asset.discarded': mediaDiscarded,
 
   ...REFERENTIAL_VARIANT_PHRASES,
   ...REFERENTIAL_CATEGORY_PHRASES,

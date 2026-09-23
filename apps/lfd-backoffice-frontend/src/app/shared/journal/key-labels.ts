@@ -48,6 +48,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   bp: 'Taux',
   brand: 'Marque',
   businessName: 'Enseigne',
+  bytes: 'Poids',
   candidates: 'Articles candidats',
   carbsG: 'Glucides',
   category: 'Catégorie',
@@ -68,6 +69,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   configured: 'Configuré',
   contact: 'Contact',
   contactId: 'Contact',
+  contentType: 'Type de fichier',
   context: 'Contexte de vente',
   contexts: 'Contextes de vente',
   contractNumber: 'Numéro de contrat',
@@ -103,6 +105,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   fields: 'Champs modifiés',
   fileName: 'Fichier',
   firstName: 'Prénom',
+  focal: 'Point focal',
   formeJuridique: 'Forme juridique',
   fr: 'Français',
   from: 'Avant',
@@ -118,6 +121,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   handedOverBy: 'Retrait validé par',
   handleSuffix: 'Suffixe de collection',
   hash: 'Empreinte',
+  height: 'Hauteur',
   holder: 'Titulaire',
   ics: 'Identifiant créancier (ICS)',
   id: 'Identifiant',
@@ -219,6 +223,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   // (`tva-5-5`) : `tax_regime.*`, 2026-08-21 seulement.
   tag: 'Collection Shopify',
   tableCount: 'Tables',
+  tags: 'Mots-clés',
   terms: 'Conditions de règlement',
   time: 'Heure',
   to: 'Après',
@@ -240,6 +245,9 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   ville: 'Ville',
   weekday: 'Jour de la semaine',
   weightGrams: 'Poids',
+  width: 'Largeur',
+  x: 'X',
+  y: 'Y',
 };
 
 /**

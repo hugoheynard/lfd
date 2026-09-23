@@ -41,6 +41,12 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "ingredient.",
     "allergen_category.",
     "allergen_entry.",
+    // La MÉDIATHÈQUE : le fonds d'images n'appartient à aucun référentiel — les
+    // fiches en portent, les familles aussi — mais son code vit dans le bloc
+    // `pim` et s'écrit sous ses droits. Le jour où elle devient un bloc à elle
+    // (`documentation/pim/plan-la-mediatheque-bloc-a-part.md`), cette ligne
+    // sera le premier endroit à relire.
+    "media_asset.",
   ],
   // La tarification négociée est du COMMERCIAL : c'est le même métier que le
   // lead et le rendez-vous — ce qu'on consent à un client pour qu'il achète.

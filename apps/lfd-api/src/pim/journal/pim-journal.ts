@@ -17,7 +17,7 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
  * tient plus.
  */
 
-/** La chose dont l'événement parle — douze sujets, énumérés plutôt que comptés. */
+/** La chose dont l'événement parle — treize sujets, énumérés plutôt que comptés. */
 export type PimSubjectType =
   | "vat_rate"
   | "product"
@@ -30,7 +30,14 @@ export type PimSubjectType =
   | "appellation"
   | "allergen_category"
   | "allergen_entry"
-  | "order_time_limit";
+  | "order_time_limit"
+  /**
+   * Une image de la bibliothèque. Son `subjectId` est son **URL** : adressée
+   * par contenu, c'est la seule identité qui traverse deux enregistrements de
+   * fiche. Un identifiant d'actif ne désignerait rien de durable, puisque
+   * `replaceMedia` en recrée un par visuel à chaque sauvegarde.
+   */
+  | "media_asset";
 
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
@@ -60,6 +67,12 @@ export type PimSubjectType =
  * sur les faits à aval.
  */
 export const PIM_EVENTS = {
+  /** Une image entre dans la bibliothèque — aucune fiche n'est touchée. */
+  mediaDeposited: "media_asset.deposited",
+  /** Son étiquette, ses mots-clés ou son point focal changent. */
+  mediaDescribed: "media_asset.described",
+  /** Elle quitte la bibliothèque, octets compris. */
+  mediaDiscarded: "media_asset.discarded",
   vatRateCreated: "vat_rate.created",
   /** Le taux a bougé — le seul changement de taux qui ait un aval. */
   vatRateRateChanged: "vat_rate.rate_changed",

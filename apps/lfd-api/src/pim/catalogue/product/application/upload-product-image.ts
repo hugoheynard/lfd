@@ -1,6 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { MediaStore } from "../../../../platform/storage/media-store.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { MediaLibrary, type RegisteredMedia } from "../domain/ports/media-library.js";
 import { productImage } from "../domain/value-objects/product-image.js";
 
@@ -36,6 +38,8 @@ export class UploadProductImageHandler implements ICommandHandler<
   constructor(
     private readonly store: MediaStore,
     private readonly library: MediaLibrary,
+    private readonly journal: PimJournal,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: UploadProductImageCommand): Promise<RegisteredMedia> {
@@ -44,13 +48,38 @@ export class UploadProductImageHandler implements ICommandHandler<
       bytes: image.bytes,
       contentType: image.contentType,
     });
-    return this.library.register({
-      url: stored.url,
-      storageKey: stored.storageKey,
-      contentType: image.contentType,
-      width: image.width,
-      height: image.height,
-      bytes: image.byteLength,
+    // 🔴 Le fait est posé DANS la transaction de l'inscription : un dépôt dont
+    // la trace échouerait laisserait une image dans la bibliothèque que rien
+    // n'explique, et une lacune de journal ne se rattrape pas.
+    //
+    // L'objet R2, lui, est déjà rangé — et c'est sans conséquence : il est
+    // adressé par son contenu, donc un second dépôt du même fichier le réécrit
+    // à l'identique. Le ramassage prendra celui-ci si personne ne l'attache.
+    return this.uow.run(async () => {
+      await this.journal.trace({
+        type: PIM_EVENTS.mediaDeposited,
+        subjectType: "media_asset",
+        // L'URL : c'est l'identité de l'image, et elle survivra aux
+        // inscriptions que les enregistrements de fiche recréeront.
+        subjectId: stored.url,
+        payload: {
+          // Le nom de fichier du bucket, pas l'URL entière : une ligne de
+          // journal se lit par quelqu'un qui n'a pas le code sous les yeux.
+          subjectLabel: stored.storageKey.split("/").at(-1) ?? stored.storageKey,
+          contentType: image.contentType,
+          bytes: image.byteLength,
+          width: image.width,
+          height: image.height,
+        },
+      });
+      return this.library.register({
+        url: stored.url,
+        storageKey: stored.storageKey,
+        contentType: image.contentType,
+        width: image.width,
+        height: image.height,
+        bytes: image.byteLength,
+      });
     });
   }
 }

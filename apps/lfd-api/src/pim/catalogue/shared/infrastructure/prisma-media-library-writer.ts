@@ -10,6 +10,8 @@ export class PrismaMediaLibraryWriter extends MediaLibraryWriter {
   }
 
   async describe(url: string, details: MediaDetails): Promise<boolean> {
+    // Le laissez-passer n'est pas lu : sa seule existence prouve qu'un fait a
+    // été posé (ou une dérogation nommée) avant qu'on arrive ici.
     // 🔴 `updateMany` et non `update` : plusieurs inscriptions portent la même
     // URL, et n'en corriger qu'une laisserait les autres dire le contraire. La
     // lecture groupe par URL et prend « la plus récente qui en porte » — elle
