@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { LibraryMediaView } from '@lfd/pim-contracts';
+import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
   FoldEmptyStateComponent,
@@ -216,5 +217,36 @@ export class MediathequePage {
 
   private replace(item: LibraryMediaView): void {
     this.items.update((current) => current.map((entry) => (entry.url === item.url ? item : entry)));
+  }
+
+  /**
+   * Retire une image du fonds, après confirmation.
+   *
+   * 🔴 **L'écran ne décide pas** : il demande, le serveur refuse s'il faut, et
+   * le refus s'affiche tel quel — il nomme le nombre de fiches. Recopier la
+   * règle ici ferait deux sources pour un seul fait, et celle de l'écran
+   * vieillirait la première.
+   *
+   * ⚠️ La confirmation ne porte PAS sur la réversibilité : redéposer le même
+   * fichier retombe sur la même URL, donc l'image revient. Ce qui ne revient
+   * pas, ce sont ses mots-clés, son étiquette et son point — et c'est ça que
+   * le message annonce.
+   */
+  protected async discard(item: LibraryMediaView): Promise<void> {
+    const kept = this.label(item);
+    if (!confirm(`Retirer « ${kept} » ? Ses mots-clés et son point focal seront perdus.`)) {
+      return;
+    }
+    this.failure.set(null);
+    try {
+      await this.api.discard(item.url);
+      this.items.update((current) => current.filter((entry) => entry.url !== item.url));
+      this.total.update((current) => Math.max(current - 1, 0));
+      this.offset.update((current) => Math.max(current - 1, 0));
+    } catch (caught) {
+      // Le refus du serveur porte le NOMBRE de fiches ; `message` vaudrait
+      // « Http failure response … : 409 » et ferait chercher lesquelles.
+      this.failure.set(httpErrorMessage(caught, "L'image n'a pas pu être retirée."));
+    }
   }
 }

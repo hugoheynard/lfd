@@ -206,3 +206,21 @@
   border: 0;
   cursor: pointer;
 }
+
+/* Discret : retirer est rare, et un bouton franc sur chaque vignette ferait de
+   la grille un champ de mines. */
+.discard {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-text-muted);
+  font: inherit;
+  font-size: var(--fold-text-xs);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.discard:hover {
+  color: var(--fold-color-alert-text);
+}

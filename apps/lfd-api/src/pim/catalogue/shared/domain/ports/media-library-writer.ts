@@ -32,4 +32,20 @@ export abstract class MediaLibraryWriter {
    *   fait un 404 plutôt qu'un succès silencieux.
    */
   abstract describe(url: string, details: MediaDetails): Promise<boolean>;
+
+  /**
+   * Oublie **toutes** les inscriptions portant cette URL.
+   *
+   * Par l'URL et non par la clé de stockage : les deux sont équivalentes pour
+   * ce qu'on héberge — la clé est le hachage du contenu et l'URL en dérive —
+   * mais l'URL couvre AUSSI les visuels saisis à la main, qui n'ont pas de clé.
+   * Une seule notion d'identité, celle qui vaut partout.
+   *
+   * ⚠️ Appelé **après** la suppression de l'objet, jamais avant : l'ordre
+   * inverse perdrait la seule trace de ce qu'il reste à supprimer, et l'octet
+   * resterait dans le bucket sans que rien ne puisse le désigner.
+   *
+   * @returns le nombre de lignes oubliées.
+   */
+  abstract discard(url: string): Promise<number>;
 }

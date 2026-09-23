@@ -256,3 +256,49 @@ describe("nommer, taguer, pointer", () => {
     ).toBe(404);
   });
 });
+
+describe("retirer une image de la bibliothèque", () => {
+  async function discard(url: string): Promise<number> {
+    const response = await staff().delete(`${MEDIA}?url=${encodeURIComponent(url)}`);
+    return response.status;
+  }
+
+  it("retire une image que personne n’affiche", async () => {
+    const product = await aProduct(await aCategory(), "Croissant");
+    await setMedia(product, [{ role: "gallery", url: CROISSANT }]);
+    // Détachée : les inscriptions restent, plus aucun porteur.
+    await setMedia(product, []);
+
+    expect(await discard(CROISSANT)).toBe(204);
+    expect((await library()).filter((item) => item.url === CROISSANT)).toHaveLength(0);
+  });
+
+  /**
+   * 🔴 La règle de Hugo : « on ne peut pas supprimer une image qui a été mappée
+   * quelque part ». La base la tient en `ON DELETE RESTRICT` ; ce refus-ci
+   * arrive AVANT, et il dit combien de fiches la portent.
+   */
+  it("REFUSE de retirer une image qu’une fiche affiche", async () => {
+    const product = await aProduct(await aCategory(), "Croissant");
+    await setMedia(product, [{ role: "gallery", url: CROISSANT }]);
+
+    expect(await discard(CROISSANT)).toBe(409);
+    expect((await library()).filter((item) => item.url === CROISSANT)).toHaveLength(1);
+  });
+
+  it("refuse aussi quand c’est une FAMILLE qui l’affiche", async () => {
+    const category = await aCategory();
+    const response = await staff()
+      .put(`/pim/catalogue/categories/${category}/media`)
+      .send({ media: [{ role: "gallery", url: CHOCOLATINE }] });
+    expect(response.status).toBe(200);
+
+    // L'oubli du second porteur ne se verrait qu'en production : l'écran
+    // proposerait de supprimer une image qu'une famille affiche.
+    expect(await discard(CHOCOLATINE)).toBe(409);
+  });
+
+  it("refuse en 404 une image absente de la bibliothèque", async () => {
+    expect(await discard("https://cdn.test/jamais-vue.png")).toBe(404);
+  });
+});

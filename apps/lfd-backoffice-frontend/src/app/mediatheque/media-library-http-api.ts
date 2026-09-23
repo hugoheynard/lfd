@@ -72,4 +72,16 @@ export class MediaLibraryHttpApi {
   async describe(details: MediaDetailsPayload): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${this.base}/mediatheque`, details));
   }
+
+  /**
+   * Retire une image de la bibliothèque — octets compris.
+   *
+   * 🔴 Le serveur REFUSE (409) si un porteur l'affiche, et son message dit
+   * combien. L'écran n'a donc pas à décider : il propose, et rapporte le refus.
+   * Décider ici ferait deux règles pour un seul fait, et celle de l'écran
+   * vieillirait la première.
+   */
+  async discard(url: string): Promise<void> {
+    await firstValueFrom(this.http.delete<void>(`${this.base}/mediatheque`, { params: { url } }));
+  }
 }

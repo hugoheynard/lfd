@@ -66,6 +66,7 @@ import { MediaLibrary } from "./product/domain/ports/media-library.js";
 import { MediaLibraryReader } from "./shared/domain/ports/media-library-reader.js";
 import { MediaLibraryWriter } from "./shared/domain/ports/media-library-writer.js";
 import { SaveMediaDetailsHandler } from "./shared/application/save-media-details.js";
+import { DiscardMediaHandler } from "./shared/application/discard-media.js";
 import { PrismaMediaLibraryWriter } from "./shared/infrastructure/prisma-media-library-writer.js";
 import { BrowseMediaLibraryHandler } from "./shared/application/browse-media-library.js";
 import { PrismaMediaLibraryReader } from "./shared/infrastructure/prisma-media-library-reader.js";
@@ -165,6 +166,7 @@ import {
     GetProductDetailHandler,
     BrowseMediaLibraryHandler,
     SaveMediaDetailsHandler,
+    DiscardMediaHandler,
     // L'onglet « Historique » : la lignée ici, le journal par le port global.
     GetProductHistoryHandler,
     { provide: ProductLineageReader, useClass: PrismaProductLineageReader },

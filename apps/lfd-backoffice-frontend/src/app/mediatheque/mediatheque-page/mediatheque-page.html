@@ -150,6 +150,13 @@
           <!-- Le compte d'emplois, toujours visible : c'est lui qui dira
                pourquoi une suppression est refusée, avant qu'on l'essaie. -->
           <span class="uses" [class.uses-free]="item.uses === 0">{{ usesLabel(item) }}</span>
+          @if (item.uses === 0) {
+            <!-- Proposé SEULEMENT quand rien ne la porte : offrir le geste sur
+                 une image affichée ferait apprendre la règle par un refus. Le
+                 serveur refuse quand même — c'est lui qui a le dernier mot,
+                 et la base derrière lui. -->
+            <button type="button" class="discard" (click)="discard(item)">Retirer</button>
+          }
         </li>
       }
     </ul>

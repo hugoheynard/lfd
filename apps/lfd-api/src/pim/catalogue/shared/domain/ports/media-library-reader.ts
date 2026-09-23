@@ -71,4 +71,13 @@ export abstract class MediaLibraryReader {
    * porte.
    */
   abstract page(limit: number, offset: number): Promise<LibraryMediaPage>;
+
+  /**
+   * UNE image, par son URL — ou `null` si rien ne la porte.
+   *
+   * Sert à la suppression, qui doit connaître deux choses avant d'agir : le
+   * nombre d'emplois, et la clé de stockage. Les relire par la page serait
+   * faux — l'image visée peut être hors de la page affichée.
+   */
+  abstract find(url: string): Promise<LibraryMediaRecord | null>;
 }

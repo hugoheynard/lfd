@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Post,
   Put,
   Query,
@@ -23,6 +25,7 @@ import {
 } from "../../product/application/upload-product-image.js";
 import { UnsupportedImageError } from "../../product/domain/value-objects/product-image.js";
 import { BrowseMediaLibraryQuery } from "../application/browse-media-library.js";
+import { DiscardMediaCommand } from "../application/discard-media.js";
 import { SaveMediaDetailsCommand } from "../application/save-media-details.js";
 
 /**
@@ -108,6 +111,23 @@ export class MediaLibraryController {
     await this.commands.execute<SaveMediaDetailsCommand, void>(
       new SaveMediaDetailsCommand(payload.url, payload.name, payload.tags, payload.focal),
     );
+  }
+
+  /**
+   * Retire une image de la bibliothèque — octets compris.
+   *
+   * 🔴 **Refusé en 409 si un porteur l'affiche**, avec leur NOMBRE dans le
+   * message. La base le refuserait de toute façon (`ON DELETE RESTRICT`) ; ce
+   * refus-ci arrive avant, et il dit combien.
+   *
+   * L'URL en paramètre de requête et non dans le chemin : elle contient des
+   * `/`, et l'encoder dans un segment la rendrait illisible dans les journaux
+   * comme dans une barre d'adresse.
+   */
+  @Delete()
+  @HttpCode(204)
+  async discard(@Query("url") url?: string): Promise<void> {
+    await this.commands.execute<DiscardMediaCommand, void>(new DiscardMediaCommand(url ?? ""));
   }
 
   /**

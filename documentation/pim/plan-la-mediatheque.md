@@ -347,10 +347,42 @@ deux moitiés étaient fausses** — la vitrine B2B cherche précisément le `he
 et Shopify est sorti du dépôt le 2026-09-21. C'est le même mensonge que celui
 qui gardait `DEFAULT_MEDIA_ROLE`, recopié dans un second fichier. Corrigé.
 
-### Lot 6 — la suppression
+### Lot 6 — la suppression ✅ 2026-09-23
 
-Selon §2 : décidée sur l'URL, refusée en entier dès un emploi, avec le compte
-dans le message.
+`DELETE /pim/mediatheque?url=…`. L'URL en paramètre de requête et non dans le
+chemin : elle contient des `/`, et l'encoder dans un segment la rendrait
+illisible dans les journaux comme dans une barre d'adresse.
+
+#### 🔴 Où la règle est vraiment tenue
+
+> « On ne peut pas supprimer une image qui a été mappée quelque part. »
+
+Elle est tenue par **Postgres** — `ON DELETE RESTRICT` sur les deux tables de
+rattachement. Le handler ne la remplace pas : il la fait arriver **avant** la
+tentative, et surtout il la fait **parler**. Un « suppression impossible » sans
+chiffre laisse chercher quelles fiches portent l'image ; le refus dit combien.
+
+⚠️ Le comptage n'est donc pas une autorisation. Il vaut à l'instant de la
+lecture ; si une fiche attrape l'image entre le compte et la suppression, la
+contrainte refuse — et c'est très bien, elle est le dernier mot.
+
+Un e2e tient le cas que l'oubli aurait rendu invisible : **une image qu'une
+FAMILLE affiche** est refusée comme celle d'une fiche.
+
+#### L'objet d'abord, les lignes ensuite
+
+Même ordre que le ramassage d'orphelins, et pour la même raison : supprimer les
+lignes puis échouer sur R2 effacerait la seule trace de ce qu'il reste à
+supprimer, et l'octet resterait dans le bucket sans que rien ne puisse le
+désigner. À l'endroit, l'échec laisse des lignes qui pointent un objet disparu,
+sans porteur pour les afficher — le ramassage suivant les prend.
+
+#### Ce que la confirmation annonce, et ce qu'elle tait
+
+Elle ne parle **pas** de réversibilité : l'adressage par contenu fait que
+redéposer le même fichier retombe sur la même URL, donc l'image revient. Ce qui
+ne revient pas, ce sont ses **mots-clés, son étiquette et son point focal** — et
+c'est cela que le message nomme.
 
 ---
 

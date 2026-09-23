@@ -101,6 +101,37 @@ export class PrismaMediaLibraryReader extends MediaLibraryReader {
     };
   }
 
+  async find(url: string): Promise<LibraryMediaRecord | null> {
+    const rows = await this.prisma.mediaAsset.findMany({
+      where: { url },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        url: true,
+        name: true,
+        storageKey: true,
+        contentType: true,
+        width: true,
+        height: true,
+        bytes: true,
+        focalX: true,
+        focalY: true,
+        tags: true,
+      },
+    });
+    if (rows.length === 0) {
+      return null;
+    }
+    const uses = await this.usesByUrl(rows);
+    // La dernière inscription date le premier dépôt au pire par excès : on
+    // prend la plus ANCIENNE, comme la liste, pour que les deux s'accordent.
+    const deposited = await this.prisma.mediaAsset.aggregate({
+      where: { url },
+      _min: { createdAt: true },
+    });
+    return recordOf(url, rows, uses.get(url) ?? 0, deposited._min.createdAt ?? new Date(0));
+  }
+
   /**
    * Combien d'URL distinctes porte la bibliothèque.
    *

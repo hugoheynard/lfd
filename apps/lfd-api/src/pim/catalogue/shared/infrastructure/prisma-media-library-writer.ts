@@ -25,4 +25,9 @@ export class PrismaMediaLibraryWriter extends MediaLibraryWriter {
     });
     return written.count > 0;
   }
+
+  async discard(url: string): Promise<number> {
+    const { count } = await this.prisma.mediaAsset.deleteMany({ where: { url } });
+    return count;
+  }
 }
