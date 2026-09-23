@@ -10,8 +10,10 @@ import {
 } from 'fold-ng';
 
 import { BatchUploadStore } from '../batch-upload';
+import { ImagePanel, type ImagePanelData, type ImagePanelResult } from '../image-panel/image-panel';
 import { TagPaletteStore } from '../tag-palette';
 import { MediaLibraryHttpApi } from '../media-library-http-api';
+import { FoldPanelHostService } from 'fold-ng';
 
 /** Une page d'aperçus. Le serveur reborne de toute façon à 100. */
 const PAGE_SIZE = 60;
@@ -48,6 +50,7 @@ export class MediathequePage {
   private readonly api = inject(MediaLibraryHttpApi);
   protected readonly batch = inject(BatchUploadStore);
   protected readonly palette = inject(TagPaletteStore);
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly items = signal<readonly LibraryMediaView[]>([]);
   protected readonly total = signal(0);
@@ -248,5 +251,46 @@ export class MediathequePage {
       // « Http failure response … : 409 » et ferait chercher lesquelles.
       this.failure.set(httpErrorMessage(caught, "L'image n'a pas pu être retirée."));
     }
+  }
+
+  /**
+   * Ouvre le panneau qui DÉCRIT l'image — étiquette, alternatives, point focal.
+   *
+   * 🔴 C'est le seul point où ces trois champs s'écrivent. Ils se saisissaient
+   * depuis la fiche produit jusqu'au 2026-09-23 ; une image étant partagée, une
+   * correction faite là-bas changeait silencieusement ce qu'une autre fiche
+   * affichait.
+   *
+   * Les mots-clés ne sont PAS dans ce panneau : ils se posent à la bande, sur
+   * autant d'images qu'on veut. Un geste de fonds et un geste d'unité ne se
+   * mélangent pas.
+   */
+  protected describe(item: LibraryMediaView): void {
+    void this.panels
+      .open<ImagePanelData, ImagePanelResult>(ImagePanel, {
+        data: { url: item.url, name: item.name, alt: item.alt, focal: item.focal },
+      })
+      .closed.then(async (result) => {
+        if (result === undefined) {
+          return;
+        }
+        const written = { ...item, name: result.name, alt: result.alt, focal: result.focal };
+        this.replace(written);
+        try {
+          await this.api.describe({
+            url: item.url,
+            name: result.name,
+            tags: [...item.tags],
+            // Une source vide veut dire « pas d'alternative » : le contrat la
+            // refuserait, et le serveur retombe sur l'URL quand elle est
+            // absente. On l'omet plutôt que d'envoyer un texte sans sa langue.
+            ...(result.alt.fr.trim() === '' ? {} : { alt: result.alt }),
+            focal: result.focal,
+          });
+        } catch (caught) {
+          this.replace(item);
+          this.failure.set(httpErrorMessage(caught, "L'image n'a pas pu être décrite."));
+        }
+      });
   }
 }

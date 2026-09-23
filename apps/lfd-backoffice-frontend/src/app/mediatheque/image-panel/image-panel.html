@@ -1,0 +1,41 @@
+<fold-panel-header title="Décrire l’image" subtitle="Ce qui vaut partout où elle apparaît." />
+
+<div class="body">
+  <!-- L'image en grand, et CLIQUABLE : poser le point focal demande de viser
+       le sujet, donc de le voir. -->
+  <span class="preview" (click)="point($event)">
+    <img [src]="data().url" alt="" />
+    @if (focal(); as point) {
+      <span class="dot" [style.left.%]="point.x * 100" [style.top.%]="point.y * 100"></span>
+    }
+  </span>
+  <p class="focal">
+    {{ focalLabel() }}
+    @if (focal() !== null) {
+      <button type="button" class="clear" (click)="unpoint()">Retirer le point</button>
+    }
+  </p>
+
+  <fold-input
+    label="Étiquette"
+    hint="Pour la retrouver dans la médiathèque. Elle ne se traduit pas."
+    [value]="label()"
+    (valueChange)="label.set($event)"
+  />
+
+  <!-- Les TROIS langues ensemble : une traduction se juge à côté de sa source,
+       pas de mémoire. -->
+  @for (locale of locales; track locale) {
+    <fold-input
+      [label]="names[locale]"
+      [hint]="locale === sourceLocale ? 'Le français fait foi.' : 'Vide : retombe sur le français.'"
+      [value]="valueOf(locale)"
+      (valueChange)="write(locale, $event)"
+    />
+  }
+</div>
+
+<div class="foot">
+  <button foldButton emphasis="outline" (click)="cancel()">Annuler</button>
+  <button foldButton (click)="submit()">Enregistrer</button>
+</div>
