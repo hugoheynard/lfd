@@ -1,8 +1,8 @@
 import { Controller, HttpCode, Post, UseGuards } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { Public } from "../../../../platform/auth/public.decorator.js";
-import { RecomputeGuard } from "../../../../platform/auth/recompute.guard.js";
+import { Public } from "../../platform/auth/public.decorator.js";
+import { RecomputeGuard } from "../../platform/auth/recompute.guard.js";
 import {
   SweepOrphanMediaCommand,
   type OrphanSweepReport,

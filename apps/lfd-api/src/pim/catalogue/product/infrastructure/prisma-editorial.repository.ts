@@ -1,13 +1,12 @@
 import { Injectable } from "@nestjs/common";
 
 import { Prisma } from "../../../../platform/database/client/client.js";
-import { ImageCatalogue } from "../../../channels/media/image-catalogue.js";
+import { ImageCatalogue, UnknownImageError } from "../../../channels/media/image-catalogue.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import { EditorialRepository } from "../domain/ports/editorial.repository.js";
 import type { Editorial, MediaItem } from "../domain/value-objects/editorial.js";
 import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 import { localizedColumn } from "../../shared/infrastructure/json-readers.js";
-import { MediaNotInLibraryError } from "../../shared/domain/value-objects/media.js";
 
 /**
  * Un champ vidé doit **effacer** la colonne, pas la laisser telle quelle : d'où
@@ -119,7 +118,7 @@ export class PrismaEditorialRepository extends EditorialRepository {
       // copier l'octet. Ce qu'on gagne : toute image du catalogue est chez
       // nous, mesurée, et ne disparaît pas parce qu'un tiers a rangé son
       // serveur.
-      throw new MediaNotInLibraryError(item.url);
+      throw new UnknownImageError(item.url);
     }
     return reference;
   }

@@ -22,7 +22,7 @@ function setup(): ProductFormStore {
 function refusal(message: string): HttpErrorResponse {
   return new HttpErrorResponse({
     status: 400,
-    url: 'http://localhost:3200/pim/media',
+    url: 'http://localhost:3200/media',
     error: { code: 'catalogue.media.unsupported_image', message },
   });
 }

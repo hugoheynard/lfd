@@ -1,4 +1,4 @@
-import type { LocalizedText } from "../value-objects/localized-text.js";
+import type { LocalizedText } from "../../../pim/catalogue/shared/domain/value-objects/localized-text.js";
 
 /**
  * Une image de la bibliothèque, **une seule fois**, quel qu'ait été son nombre

@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { AllergensModule } from "../allergens/allergens.module.js";
 import { VatRatesModule } from "../vat-rates/vat-rates.module.js";
+import { PrismaMediaCarriers } from "./shared/infrastructure/prisma-media-carriers.js";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { PimIdGenerator, UuidV7Generator } from "../infra/id/pim-id-generator.js";
 import { ArchiveCategoryHandler } from "./category/application/archive-category.js";
@@ -36,8 +37,6 @@ import { RestoreProductHandler } from "./product/application/restore-product.js"
 import { SetProductMediaHandler } from "./product/application/set-product-media.js";
 import { SetProductChannelsHandler } from "./product/application/set-product-channels.js";
 import { SetProductVatHandler } from "./product/application/set-product-vat.js";
-import { SweepOrphanMediaHandler } from "./product/application/sweep-orphan-media.js";
-import { UploadProductImageHandler } from "./product/application/upload-product-image.js";
 import { UpdateProductEditorialHandler } from "./product/application/update-product-editorial.js";
 import { UpdateProductIdentityHandler } from "./product/application/update-product-identity.js";
 import { UpdateVariantPricingHandler } from "./product/application/update-variant-pricing.js";
@@ -62,23 +61,10 @@ import { PrismaCatalogRevisionSource } from "./revision/infrastructure/prisma-ca
 import { EditorialReader } from "./product/domain/ports/editorial-reader.js";
 import { ReadinessRepository } from "./product/domain/ports/readiness.repository.js";
 import { EditorialRepository } from "./product/domain/ports/editorial.repository.js";
-import { MediaLibrary } from "./product/domain/ports/media-library.js";
-import { ImageCatalogue } from "../channels/media/image-catalogue.js";
-import { PrismaImageCatalogue } from "./shared/infrastructure/prisma-image-catalogue.js";
-import { MediaLibraryReader } from "./shared/domain/ports/media-library-reader.js";
-import { MediaLibraryWriter } from "./shared/domain/ports/media-library-writer.js";
-import { SaveMediaDetailsHandler } from "./shared/application/save-media-details.js";
-import { DiscardMediaHandler } from "./shared/application/discard-media.js";
-import { PrismaMediaLibraryWriter } from "./shared/infrastructure/prisma-media-library-writer.js";
-import { BrowseMediaLibraryHandler } from "./shared/application/browse-media-library.js";
-import { PrismaMediaLibraryReader } from "./shared/infrastructure/prisma-media-library-reader.js";
 import { NutritionValuesRepository } from "./product/domain/ports/nutrition-values.repository.js";
 import { VariantAllergensRepository } from "./product/domain/ports/variant-allergens.repository.js";
 import { ProductRepository } from "./product/domain/ports/product.repository.js";
 import { CategoryController } from "./category/http/category.controller.js";
-import { MediaController } from "./product/http/media.controller.js";
-import { MediaLibraryController } from "./shared/http/media-library.controller.js";
-import { MediaSweepController } from "./product/http/media-sweep.controller.js";
 import { ProductController } from "./product/http/product.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
 import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
@@ -88,7 +74,6 @@ import { PrismaProductCountReader } from "./category/infrastructure/prisma-produ
 import { PrismaEditorialReader } from "./product/infrastructure/prisma-editorial-reader.js";
 import { PrismaReadinessRepository } from "./product/infrastructure/prisma-readiness.repository.js";
 import { PrismaEditorialRepository } from "./product/infrastructure/prisma-editorial.repository.js";
-import { PrismaMediaLibrary } from "./product/infrastructure/prisma-media-library.js";
 import { PrismaNutritionValuesRepository } from "./product/infrastructure/prisma-nutrition-values.repository.js";
 import { PrismaVariantAllergensRepository } from "./product/infrastructure/prisma-variant-allergens.repository.js";
 import { PrismaProductRepository } from "./product/infrastructure/prisma-product.repository.js";
@@ -123,14 +108,14 @@ import {
   controllers: [
     CatalogRevisionController,
     CategoryController,
-    MediaController,
-    MediaLibraryController,
-    MediaSweepController,
     ProductController,
     ProductHistoryController,
     ReferenceController,
   ],
   providers: [
+    // L'adaptateur du canal que la MÉDIATHÈQUE déclare. Exporté, pas fourni
+    // sous son token : c'est la racine qui relie les deux côtés.
+    PrismaMediaCarriers,
     // Familles (CQRS) — un handler par cas.
     CreateCategoryHandler,
     RenameCategoryHandler,
@@ -153,8 +138,6 @@ import {
     SetProductMediaHandler,
     SetProductChannelsHandler,
     SetProductVatHandler,
-    UploadProductImageHandler,
-    SweepOrphanMediaHandler,
     UpdateProductEditorialHandler,
     SaveVariantAllergensHandler,
     SaveVariantNutritionHandler,
@@ -166,9 +149,6 @@ import {
     PublishProductHandler,
     UnpublishProductHandler,
     GetProductDetailHandler,
-    BrowseMediaLibraryHandler,
-    SaveMediaDetailsHandler,
-    DiscardMediaHandler,
     // L'onglet « Historique » : la lignée ici, le journal par le port global.
     GetProductHistoryHandler,
     { provide: ProductLineageReader, useClass: PrismaProductLineageReader },
@@ -179,15 +159,8 @@ import {
     // emplacements. Ni l'un ni l'autre n'est la persistance d'une famille.
     { provide: ProductCountReader, useClass: PrismaProductCountReader },
     { provide: PointOfSaleOfferReader, useClass: PrismaPointOfSaleOfferReader },
-    { provide: MediaLibrary, useClass: PrismaMediaLibrary },
     // La LECTURE de la bibliothèque est un port à part de son écriture : l'écran
     // de la médiathèque parcourt, il ne ramasse pas d'orphelins.
-    // Le canal que la BIBLIOTHÈQUE sert aux porteurs. Déclaré sous
-    // `pim/channels/media/` : le bloc qui a besoin déclare, celui qui sait
-    // implémente, et la racine de composition les relie.
-    { provide: ImageCatalogue, useClass: PrismaImageCatalogue },
-    { provide: MediaLibraryReader, useClass: PrismaMediaLibraryReader },
-    { provide: MediaLibraryWriter, useClass: PrismaMediaLibraryWriter },
     { provide: ProductRepository, useClass: PrismaProductRepository },
     { provide: SKU_AVAILABILITY, useClass: PrismaSkuAvailability },
     { provide: CatalogueReader, useClass: PrismaCatalogueReader },
@@ -219,6 +192,6 @@ import {
   // `EditorialReader` sort depuis la v8 du fil : le canal B2B emporte la ligne
   // de vitrine et le packshot, et les lit en LOT pour tout le catalogue. Il
   // sort en lecture seule — l'écriture reste ici.
-  exports: [CatalogueReader, CatalogRevisionRepository, EditorialReader],
+  exports: [PrismaMediaCarriers, CatalogueReader, CatalogRevisionRepository, EditorialReader],
 })
 export class CatalogueModule {}

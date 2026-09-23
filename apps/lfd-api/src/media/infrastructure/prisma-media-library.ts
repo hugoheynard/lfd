@@ -1,14 +1,17 @@
 import { Injectable } from "@nestjs/common";
 
-import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
+import { PimPrismaService } from "../../pim/infra/database/pim-prisma.service.js";
+import { PimIdGenerator } from "../../pim/infra/id/pim-id-generator.js";
 import {
   MediaLibrary,
   type MediaFacts,
   type RegisteredMedia,
 } from "../domain/ports/media-library.js";
-import { localizedColumn } from "../../shared/infrastructure/json-readers.js";
-import { localizedText, SOURCE_LOCALE } from "../../shared/domain/value-objects/localized-text.js";
+import { localizedColumn } from "../../pim/catalogue/shared/infrastructure/json-readers.js";
+import {
+  localizedText,
+  SOURCE_LOCALE,
+} from "../../pim/catalogue/shared/domain/value-objects/localized-text.js";
 
 /**
  * Combien de lignes, en moyenne, partagent une clé — sert seulement à demander

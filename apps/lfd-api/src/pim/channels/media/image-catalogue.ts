@@ -1,3 +1,4 @@
+import { ResourceNotFoundError } from "../../../platform/shared/errors/app-error.js";
 import type { LocalizedText } from "../../catalogue/shared/domain/value-objects/localized-text.js";
 
 /** Une image de la bibliothèque, telle qu'un PORTEUR a besoin de la connaître. */
@@ -68,4 +69,19 @@ export abstract class ImageCatalogue {
    * raison de ne pas se presser.
    */
   abstract reference(url: string): Promise<string | null>;
+}
+
+/**
+ * Le porteur refuse de rattacher une image que la bibliothèque ne connaît pas
+ * (→ 404).
+ *
+ * 🔴 Déclarée **avec le port**, et pas empruntée à la médiathèque : c'est le
+ * RÉFÉRENTIEL qui refuse ici, sur son propre geste. La médiathèque a sa propre
+ * erreur pour ses propres routes, et les deux disent des choses différentes —
+ * « je ne peux pas l'attacher » n'est pas « je ne peux pas la décrire ».
+ */
+export class UnknownImageError extends ResourceNotFoundError {
+  constructor(url: string) {
+    super("catalogue.media.unknown_image", `Image absente de la bibliothèque : ${url}`);
+  }
 }

@@ -1,23 +1,27 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import { MediaStore } from "../../../../platform/storage/media-store.js";
-import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
+import { UnitOfWork } from "../../platform/database/unit-of-work.js";
+import { MediaStore } from "../../platform/storage/media-store.js";
+import { PIM_EVENTS, PimJournal } from "../../pim/journal/pim-journal.js";
 import { MediaLibrary, type RegisteredMedia } from "../domain/ports/media-library.js";
-import { productImage } from "../domain/value-objects/product-image.js";
+import { productImage } from "../domain/value-objects/image-bytes.js";
 
 /** Le préfixe d'usage dans le bucket. Il nomme l'emploi, pas un propriétaire. */
 const PREFIX = "products";
 
 /** Ce que rend un dépôt : l'entrée de bibliothèque créée. */
-export type UploadProductImageResult = RegisteredMedia;
+export type DepositImageResult = RegisteredMedia;
 
-export class UploadProductImageCommand {
+export class DepositImageCommand {
   constructor(readonly bytes: Buffer) {}
 }
 
 /**
  * Dépose une image dans la bibliothèque de visuels.
+ *
+ * ⚠️ Il s'appelait `UploadProductImage` jusqu'au 2026-09-23, et le mot
+ * « produit » y était faux depuis longtemps : une famille dépose aussi, et la
+ * vitrine déposera. Un dépôt ne touche AUCUN porteur.
  *
  * **Pas attachée à un produit** — délibérément. Le modèle a toujours séparé le
  * fichier (`MediaAsset`) de son emploi (`ProductMedia`), et déposer est un
@@ -30,11 +34,8 @@ export class UploadProductImageCommand {
  * conséquence, puisque l'objet est adressé par son contenu et sera réécrit à
  * l'identique au prochain dépôt.
  */
-@CommandHandler(UploadProductImageCommand)
-export class UploadProductImageHandler implements ICommandHandler<
-  UploadProductImageCommand,
-  RegisteredMedia
-> {
+@CommandHandler(DepositImageCommand)
+export class DepositImageHandler implements ICommandHandler<DepositImageCommand, RegisteredMedia> {
   constructor(
     private readonly store: MediaStore,
     private readonly library: MediaLibrary,
@@ -42,7 +43,7 @@ export class UploadProductImageHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
   ) {}
 
-  async execute(command: UploadProductImageCommand): Promise<RegisteredMedia> {
+  async execute(command: DepositImageCommand): Promise<RegisteredMedia> {
     const image = productImage(command.bytes);
     const stored = await this.store.put(PREFIX, {
       bytes: image.bytes,

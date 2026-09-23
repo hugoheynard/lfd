@@ -1,11 +1,11 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import { MediaStore } from "../../../../platform/storage/media-store.js";
-import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
+import { UnitOfWork } from "../../platform/database/unit-of-work.js";
+import { MediaStore } from "../../platform/storage/media-store.js";
+import { PIM_EVENTS, PimJournal } from "../../pim/journal/pim-journal.js";
 import { MediaLibraryReader } from "../domain/ports/media-library-reader.js";
 import { MediaLibraryWriter } from "../domain/ports/media-library-writer.js";
-import { MediaNotInLibraryError, MediaStillInUseError } from "../domain/value-objects/media.js";
+import { MediaNotInLibraryError, MediaStillInUseError } from "../domain/value-objects/image.js";
 
 /** Retire une image de la bibliothèque — octets compris. */
 export class DiscardMediaCommand {

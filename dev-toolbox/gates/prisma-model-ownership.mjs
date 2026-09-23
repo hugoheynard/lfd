@@ -60,7 +60,19 @@ const SKIP_DIRS = new Set([
  * sur eux, et cette porte aussi : deux contextes d'un même bloc qui partagent
  * une table sont un sujet de découpe interne, pas de frontière.
  */
-const BLOCKS = new Set(["staff", "pim", "b2b", "production", "handover", "platform"]);
+const BLOCKS = new Set([
+  "staff",
+  "pim",
+  "b2b",
+  "production",
+  "handover",
+  "platform",
+  // ▸ LA MÉDIATHÈQUE, sortie du référentiel le 2026-09-23. Sans cette ligne, la
+  //   porte IGNORAIT `src/media/` — ni écrivain, ni lecteur — et le
+  //   déménagement l'aurait DÉSARMÉE au lieu de l'invoquer. C'est `vitruve` qui
+  //   l'a relevé sur le plan, avant qu'une ligne soit écrite.
+  "media",
+]);
 
 /**
  * **Ce qui n'est pas un bloc**, et pourquoi chacun est hors sujet.

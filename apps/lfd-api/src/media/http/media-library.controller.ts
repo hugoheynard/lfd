@@ -18,12 +18,9 @@ import {
   type UploadedMediaView,
 } from "@lfd/pim-contracts";
 
-import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
-import {
-  UploadProductImageCommand,
-  type UploadProductImageResult,
-} from "../../product/application/upload-product-image.js";
-import { UnsupportedImageError } from "../../product/domain/value-objects/product-image.js";
+import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import { DepositImageCommand, type DepositImageResult } from "../application/deposit-image.js";
+import { UnsupportedImageError } from "../domain/value-objects/image-bytes.js";
 import { BrowseMediaLibraryQuery } from "../application/browse-media-library.js";
 import { DiscardMediaCommand } from "../application/discard-media.js";
 import { SaveMediaDetailsCommand } from "../application/save-media-details.js";
@@ -149,8 +146,8 @@ export class MediaLibraryController {
     if (file === undefined) {
       throw new UnsupportedImageError("aucun fichier reçu.");
     }
-    return this.commands.execute<UploadProductImageCommand, UploadProductImageResult>(
-      new UploadProductImageCommand(file.buffer),
+    return this.commands.execute<DepositImageCommand, DepositImageResult>(
+      new DepositImageCommand(file.buffer),
     );
   }
 }

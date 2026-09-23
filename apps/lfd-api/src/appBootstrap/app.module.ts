@@ -28,6 +28,8 @@ import { HandoverFeedModule } from "./handover-feed.module.js";
 import { DebtorMandateModule } from "./debtor-mandate.module.js";
 import { IssuedMandatesModule } from "./issued-mandates.module.js";
 import { ProductionFeedModule } from "./production-feed.module.js";
+import { ImageCatalogueModule } from "./image-catalogue.module.js";
+import { MediaCarriersModule } from "./media-carriers.module.js";
 import { CatalogFeedModule } from "./catalog-feed.module.js";
 import { JournalModule } from "./journal.module.js";
 import { StaffAccessModule } from "./staff-access.module.js";
@@ -115,6 +117,10 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     // Le fil entre les deux, relié ici : le port est au PIM, l'adaptateur à la
     // plateforme, et seule la racine a le droit de les voir tous les deux.
     CatalogFeedModule,
+    // Le fil des images : le port que le référentiel déclare, branché sur
+    // l'adaptateur de la médiathèque.
+    ImageCatalogueModule,
+    MediaCarriersModule,
     JournalModule,
     // Contextes métier.
     AccountModule,

@@ -280,7 +280,10 @@ function handlerBody(source, index) {
 
 /** Zone 1 — le référentiel : injecter le journal et l'unité de travail. */
 function auditPim(source, index, params, handler) {
-  if (!/\b\w*Repository\b/.test(params)) {
+  // `*Repository` — et `MediaLibraryWriter`, qui EST un dépôt sans en porter
+  // le nom. La porte ne le voyait pas : c'est Hugo qui a réclamé le journal de
+  // la médiathèque, pas elle (2026-09-23).
+  if (!/\b(\w*Repository|MediaLibraryWriter|MediaLibrary)\b/.test(params)) {
     return null;
   }
   checked += 1;
@@ -370,6 +373,11 @@ function auditMoney(source, index, params, handler) {
 const ZONES = [
   { root: join(SRC, STAFF_ZONE), audit: auditStaff },
   { root: join(SRC, "pim"), audit: auditPim },
+  // ▸ LA MÉDIATHÈQUE, sortie du référentiel le 2026-09-23. Sans cette ligne,
+  //   ses écritures sortaient du périmètre en silence — et le journal qu'on
+  //   venait de lui donner (Hugo : « le journal de la médiathèque, on le
+  //   fait ») n'aurait plus rien garanti pour le geste suivant.
+  { root: join(SRC, "media"), audit: auditPim },
   {
     root: join(SRC, "b2b", ACCOUNT_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),

@@ -1,8 +1,8 @@
 import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { Clock } from "../../../../platform/time/clock.js";
-import { MediaStore } from "../../../../platform/storage/media-store.js";
+import { Clock } from "../../platform/time/clock.js";
+import { MediaStore } from "../../platform/storage/media-store.js";
 import { MediaLibrary } from "../domain/ports/media-library.js";
 
 /**
@@ -69,6 +69,22 @@ export class SweepOrphanMediaCommand {}
  * fermer — seul un verrou la fermerait, pour un risque qui ne le mérite pas.
  * Le pire cas est un visuel cassé sur une fiche, réparable en redéposant le
  * même fichier : l'adressage par contenu rend le remède identique à la cause.
+ */
+/**
+ * `@sans-journal` — **un ramassage n'a pas d'auteur.**
+ *
+ * Le journal répond à « qui a changé ça, et quand ». Ici, personne : une passe
+ * automatique, sans `Principal`, sur des objets que plus aucun porteur
+ * n'affiche. Un fait sans acteur donnerait une ligne à laquelle la question ne
+ * s'applique pas, et noierait celles auxquelles elle s'applique.
+ *
+ * Ce qui le remplace, et qui est le bon outil pour un automate : le rapport en
+ * sortie. Il dit ce qui a été supprimé, ce qui a été épargné, et **toujours**
+ * quand le plafond a mordu.
+ *
+ * ⚠️ La dérogation deviendrait fausse le jour où un humain déclencherait le
+ * ramassage depuis un écran : il aurait un nom, et la question redeviendrait
+ * la bonne.
  */
 @CommandHandler(SweepOrphanMediaCommand)
 export class SweepOrphanMediaHandler implements ICommandHandler<

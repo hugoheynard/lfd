@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
-import { ImageCatalogue, type CatalogueImage } from "../../../channels/media/image-catalogue.js";
-import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { SOURCE_LOCALE } from "../domain/value-objects/localized-text.js";
-import { optionalLocalizedColumn as localizedOf } from "./json-readers.js";
+import { ImageCatalogue, type CatalogueImage } from "../../pim/channels/media/image-catalogue.js";
+import { PimPrismaService } from "../../pim/infra/database/pim-prisma.service.js";
+import { SOURCE_LOCALE } from "../../pim/catalogue/shared/domain/value-objects/localized-text.js";
+import { optionalLocalizedColumn as localizedOf } from "../../pim/catalogue/shared/infrastructure/json-readers.js";
 
 /**
  * Ce que la **bibliothèque** répond aux porteurs.

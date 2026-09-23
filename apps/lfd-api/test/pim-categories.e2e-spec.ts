@@ -9,7 +9,7 @@
  * d'erreurs traduit — et c'est un **409** qui sort, avec son code.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { MediaLibrary } from "../src/pim/catalogue/product/domain/ports/media-library.js";
+import { MediaLibrary } from "../src/media/domain/ports/media-library.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -19,7 +19,7 @@ const stubAdminVerifier = {
 };
 
 const CATEGORIES = "/pim/catalogue/categories";
-const MEDIA = "/pim/media";
+const MEDIA = "/media";
 
 /** Un PNG minimal et valide — signature, largeur, hauteur à leur place. */
 function png(width: number, height: number): Buffer {

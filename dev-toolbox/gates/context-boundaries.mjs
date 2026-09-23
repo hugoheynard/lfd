@@ -43,6 +43,13 @@ const BLOCK_OF = {
   // ▸ LE RÉFÉRENTIEL — arrivé en B2c, avec sa base et ses canaux.
   pim: "pim",
 
+  // ▸ LA MÉDIATHÈQUE — le fonds d'images, sorti du référentiel le 2026-09-23.
+  //   Les fiches en portent, les familles aussi, la vitrine en portera : aucun
+  //   d'eux ne la possède. Elle implémente `pim/channels/media/` — ce dont le
+  //   référentiel a besoin pour décrire les images qu'il affiche — et
+  //   n'atteint rien d'autre du référentiel.
+  media: "media",
+
   // ▸ LE FOURNIL — ce qu'on fabrique, dans son schéma à lui. Il ne connaît une
   //   commande que par un identifiant opaque et un snapshot ; le commerce le
   //   sert par le canal que la production publie (`channels/commerce/`).
@@ -106,13 +113,25 @@ const BLOCK_OF = {
  */
 const ALLOWED = {
   staff: new Set(["platform"]),
-  pim: new Set(["staff", "platform"]),
+  // 🔴 `pim → media` n'est autorisé que par le CANAL que la médiathèque
+  // déclare : le référentiel implémente « qui affiche cette image » pour ses
+  // fiches et ses familles. Il ne voit rien d'autre d'elle — ni ses tables, ni
+  // ses règles. Les deux blocs sont donc des DEUX CÔTÉS d'un canal, comme
+  // `handover` l'était seul à l'être.
+  pim: new Set(["staff", "platform", "media"]),
+  // 🔴 `media → pim` est autorisé pour UNE raison : la bibliothèque implémente
+  // le canal que le référentiel déclare. Le sens de la flèche est celui de
+  // l'IMPORT, pas celui de la donnée — c'est le PIM qui a besoin d'images.
+  //
+  // ⚠️ Le référentiel, lui, n'atteint PAS `media` : il déclare son port et ne
+  // sait pas qui le branche. C'est `appBootstrap` qui relie.
+  media: new Set(["staff", "platform", "pim"]),
   b2b: new Set(["staff", "pim", "platform", "production", "handover"]),
   production: new Set(["staff", "platform"]),
   handover: new Set(["staff", "platform", "production"]),
   platform: new Set([]),
   ops: new Set(["platform"]),
-  root: new Set(["staff", "pim", "b2b", "platform", "ops", "production", "handover"]),
+  root: new Set(["staff", "pim", "b2b", "platform", "ops", "production", "handover", "media"]),
 };
 
 /**
@@ -161,6 +180,22 @@ const PORT_SURFACE = {
   // ⚠️ `production → handover` reste INTERDIT : le fournil ne sait pas que la
   // remise existe, et c'est ce qui l'empêche de se mettre à en dépendre.
   "handover→production": "production/channels/handover/",
+  // La MÉDIATHÈQUE implémente ce que le référentiel déclare : « décris-moi ces
+  // URL », « cette image existe-t-elle ». Elle ne voit rien d'autre de lui —
+  // ni ses tables, ni ses règles, ni son vocabulaire.
+  //
+  // ⚠️ Elle emprunte encore `pim/infra/database` et `pim/journal` : sa table
+  // vit dans le schéma `pim` et ses faits passent par le journal du
+  // référentiel. Les deux tombent au déploiement ③
+  // (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md`), et ce
+  // sont les deux seules raisons pour lesquelles cette ligne n'est pas encore
+  // bornée à la seule surface du canal.
+  "media→pim": "pim/",
+  // L'autre sens : le RÉFÉRENTIEL implémente ce que la bibliothèque déclare.
+  // Elle ne peut pas lire `product_media` ni `category_media` — ce sont les
+  // tables des porteurs, et `lint:prisma-model-ownership` dit qu'un modèle
+  // n'est lu que par son propriétaire. Elle pose la question, ils répondent.
+  "pim→media": "media/channels/carriers/",
 };
 
 /**

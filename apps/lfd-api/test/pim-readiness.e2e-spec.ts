@@ -23,7 +23,7 @@ const stubAdminVerifier = {
 };
 
 const CATEGORIES = "/pim/catalogue/categories";
-const MEDIA = "/pim/media";
+const MEDIA = "/media";
 
 /** Un PNG minimal et valide — signature, largeur, hauteur à leur place. */
 function png(width: number, height: number): Buffer {

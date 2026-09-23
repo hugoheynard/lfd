@@ -25,7 +25,7 @@ const stubAdminVerifier = {
 
 const CATEGORIES = "/pim/catalogue/categories";
 const PRODUCTS = "/pim/catalogue/products";
-const MEDIA = "/pim/media";
+const MEDIA = "/media";
 
 /**
  * 🔴 Les URL ne sont plus INVENTÉES : depuis le 2026-09-23, une fiche ne peut

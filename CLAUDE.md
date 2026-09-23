@@ -231,6 +231,10 @@ src/
 │   ├── invitations/    ouverture d'accès, péremption, première entrée
 │   └── notifications/  la cloche du back-office
 ├── pim/          ▸ LE RÉFÉRENTIEL — sa base, ses canaux, routes sous `/pim`
+├── media/        ▸ LA MÉDIATHÈQUE — le fonds d'images, routes sous `/media`
+│                   Sortie du référentiel le 2026-09-23 : les fiches en
+│                   portent, les familles aussi, la vitrine en portera — aucun
+│                   d'eux ne la possède. DEUX canaux, un par sens (cf. plus bas)
 ├── b2b/          ▸ LA PLATEFORME MARCHANDE — account, orders, pricing, catalog…
 ├── production/   ▸ LE FOURNIL — schéma `production`, ses tables, son agrégat
 │                   channels/commerce/ = la porte que le commerce implémente
@@ -249,17 +253,31 @@ src/
 └── main.ts
 ```
 
-| Depuis ↓ vers →    | `staff`          | `pim`               | `b2b` | `production`        | `handover`          | `ops` | `platform` |
-| ------------------ | ---------------- | ------------------- | ----- | ------------------- | ------------------- | ----- | ---------- |
-| **`staff`**        | —                | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✓          |
-| **`pim`**          | ✓ (autorisation) | —                   | ✗     | ✗                   | ✗                   | ✗     | ✓          |
-| **`b2b`**          | ✓ (autorisation) | **port uniquement** | —     | **port uniquement** | **port uniquement** | ✗     | ✓          |
-| **`production`**   | ✓ (autorisation) | ✗                   | **✗** | —                   | ✗                   | ✗     | ✓          |
-| **`handover`**     | ✓ (autorisation) | ✗                   | **✗** | **port uniquement** | —                   | ✗     | ✓          |
-| **`ops`**          | ✗                | ✗                   | ✗     | ✗                   | ✗                   | —     | ✓          |
-| **`platform`**     | ✗                | ✗                   | ✗     | ✗                   | ✗                   | ✗     | —          |
-| **`appBootstrap`** | ✓                | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓          |
-| **`dev`**          | ✓                | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓          |
+| Depuis ↓ vers →    | `staff`          | `pim`               | `media`             | `b2b` | `production`        | `handover`          | `ops` | `platform` |
+| ------------------ | ---------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ----- | ---------- |
+| **`staff`**        | —                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✓          |
+| **`pim`**          | ✓ (autorisation) | —                   | **port uniquement** | ✗     | ✗                   | ✗                   | ✗     | ✓          |
+| **`media`**        | ✓ (autorisation) | **port uniquement** | —                   | ✗     | ✗                   | ✗                   | ✗     | ✓          |
+| **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | ✓          |
+| **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✓          |
+| **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | ✓          |
+| **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✓          |
+| **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | —          |
+| **`appBootstrap`** | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓          |
+| **`dev`**          | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓          |
+
+🔴 **`pim` et `media` sont les deux aux DEUX CÔTÉS d'un canal** — le cas que
+`handover` était seul à connaître. Chacun déclare ce dont il a besoin et
+implémente ce que l'autre demande :
+
+| Canal                      | Déclaré par    | Implémenté par | Ce qu'il porte                |
+| -------------------------- | -------------- | -------------- | ----------------------------- |
+| `pim/channels/media/`      | le référentiel | la médiathèque | « décris-moi ces images »     |
+| `media/channels/carriers/` | la médiathèque | le référentiel | « qui affiche cette image ? » |
+
+C'est la forme normale de deux contextes qui ont besoin l'un de l'autre sans
+que l'un possède l'autre. La bibliothèque n'appartient à personne : les fiches
+en portent, les familles aussi, la vitrine en portera.
 
 **`ops` a la ligne la plus stricte de la matrice, et c'est voulu** : il observe,
 il ne possède rien. N'ayant aucun métier, il n'a rien à lire chez les autres

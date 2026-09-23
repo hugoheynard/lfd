@@ -1,6 +1,6 @@
-import type { WriteTicket } from "../../../../journal/pim-journal.js";
-import type { LocalizedText } from "../value-objects/localized-text.js";
-import type { FocalPoint } from "../value-objects/media.js";
+import type { WriteTicket } from "../../../pim/journal/pim-journal.js";
+import type { LocalizedText } from "../../../pim/catalogue/shared/domain/value-objects/localized-text.js";
+import type { FocalPoint } from "../value-objects/image.js";
 
 /** Ce qu'on décide d'une image, par opposition à ce qu'on en a mesuré. */
 export interface MediaDetails {

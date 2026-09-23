@@ -16,6 +16,7 @@ import { SOURCE_LOCALE, type VariantAspect } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
+import { B2B_API_BASE as API_ROOT } from '../../api/api-config';
 import { EMPTY_NUTRITION, type NutritionValues } from '../data/models';
 import type { Product, ProductKind, Variant } from '../data/models';
 import type { CreatedIdResponse } from '@lfd/contracts';
@@ -327,10 +328,10 @@ export class ProductHttpApi {
   async uploadMedia(file: File): Promise<UploadedMediaView> {
     const body = new FormData();
     body.append('file', file);
-    // La bibliothèque a quitté `catalogue/` le 2026-09-23 : son adresse est
-    // `media`, parce que le référentiel produit ne la possède pas. D'où
-    // cette URL construite à part, sans `this.url()` qui préfixe `catalogue/`.
-    return firstValueFrom(this.http.post<UploadedMediaView>(`${this.base}/media`, body));
+    // 🔴 La bibliothèque est un BLOC à elle depuis le 2026-09-23 : son adresse
+    // est `/media`, à la racine, et non sous le préfixe du référentiel. D'où
+    // cette URL construite à part — `this.url()` préfixerait `/pim/catalogue/`.
+    return firstValueFrom(this.http.post<UploadedMediaView>(`${API_ROOT}/media`, body));
   }
 
   /**

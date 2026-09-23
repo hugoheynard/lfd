@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
-import { localizedColumn } from "./json-readers.js";
-import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
+import { localizedColumn } from "../../pim/catalogue/shared/infrastructure/json-readers.js";
+import { PimPrismaService } from "../../pim/infra/database/pim-prisma.service.js";
 import { MediaLibraryWriter, type MediaDetails } from "../domain/ports/media-library-writer.js";
 
 @Injectable()

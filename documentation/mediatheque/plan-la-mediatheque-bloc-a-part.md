@@ -66,13 +66,13 @@ nom, donc aucun grep sur le modèle ne les voit.
 | -------------------------------------------------------------------- | -------------------------------------------------------------- |
 | `product/infrastructure/prisma-editorial.repository.ts:82`           | **crée** un actif par visuel, à chaque enregistrement de fiche |
 | `category/infrastructure/prisma-category-editorial.repository.ts:75` | idem, pour une famille                                         |
-| `product/infrastructure/prisma-media-library.ts`                     | inscrit un dépôt, compte, **supprime** (`forget`)              |
+| `media/infrastructure/prisma-media-library.ts`                       | inscrit un dépôt, compte, **supprime** (`forget`)              |
 
 ### Ceux qui LISENT — dont quatre par la relation
 
 | Fichier                                                          | Ce qu'il lit                                             |
 | ---------------------------------------------------------------- | -------------------------------------------------------- |
-| `shared/infrastructure/prisma-media-library-reader.ts`           | la bibliothèque, groupée par URL (lot 1)                 |
+| `media/infrastructure/prisma-media-library-reader.ts`            | la bibliothèque, groupée par URL (lot 1)                 |
 | `product/infrastructure/prisma-editorial-reader.ts:71`           | `alt`, `name`, dimensions — **par `include`**            |
 | `category/infrastructure/prisma-category-editorial.reader.ts:43` | idem — **par `include`**                                 |
 | `revision/infrastructure/prisma-catalog-revision.source.ts:106`  | `alt`, qui entre dans le **payload figé d'une révision** |

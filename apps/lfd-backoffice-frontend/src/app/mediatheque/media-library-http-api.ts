@@ -7,7 +7,7 @@ import type {
 } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
-import { API_BASE_URL } from '../pim/data/api';
+import { B2B_API_BASE } from '../api/api-config';
 
 /**
  * La **bibliothèque de visuels**, lue par la médiathèque.
@@ -21,16 +21,18 @@ import { API_BASE_URL } from '../pim/data/api';
  * Client posé hors de `pim/`, comme l'écran : la bibliothèque n'appartient à
  * aucun référentiel.
  *
- * ⚠️ La BASE d'URL reste celle du référentiel, et son `/pim` avec : ce préfixe
- * est monté par le BLOC, et le code de la bibliothèque y vit encore. Il tombera
- * au même déclencheur que le schéma Postgres — le premier visuel de vitrine
- * (cf. `plan-la-mediatheque.md` §3 bis). Le segment `catalogue/`, lui, est
- * déjà parti : il affirmait une propriété que le référentiel produit n'a pas.
+ * ✅ Le préfixe `/pim` est tombé le 2026-09-23 : la bibliothèque est un bloc à
+ * elle, et le préfixe disait dans quel bloc son code vivait.
  */
 @Injectable({ providedIn: 'root' })
 export class MediaLibraryHttpApi {
   private readonly http = inject(HttpClient);
-  private readonly base = inject(API_BASE_URL);
+  /**
+   * 🔴 La RACINE, et plus le préfixe du référentiel. La médiathèque est un bloc
+   * à elle depuis le 2026-09-23 : ses routes sont `/media`, pas `/pim/media`.
+   * Le `/pim` disait dans quel bloc le code vivait ; il n'y vit plus.
+   */
+  private readonly base = B2B_API_BASE;
 
   async page(limit: number, offset: number): Promise<MediaLibraryPageView> {
     return firstValueFrom(

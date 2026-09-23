@@ -1,9 +1,10 @@
 import { Injectable } from "@nestjs/common";
 
-import { SOURCE_LOCALE } from "../domain/value-objects/localized-text.js";
-import { optionalLocalizedColumn as localizedOf } from "./json-readers.js";
+import { SOURCE_LOCALE } from "../../pim/catalogue/shared/domain/value-objects/localized-text.js";
+import { optionalLocalizedColumn as localizedOf } from "../../pim/catalogue/shared/infrastructure/json-readers.js";
 
-import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
+import { MediaCarriers } from "../channels/carriers/media-carriers.js";
+import { PimPrismaService } from "../../pim/infra/database/pim-prisma.service.js";
 import {
   MediaLibraryReader,
   type LibraryMediaPage,
@@ -43,7 +44,10 @@ interface AssetRow {
  */
 @Injectable()
 export class PrismaMediaLibraryReader extends MediaLibraryReader {
-  constructor(private readonly prisma: PimPrismaService) {
+  constructor(
+    private readonly prisma: PimPrismaService,
+    private readonly carriers: MediaCarriers,
+  ) {
     super();
   }
 
@@ -88,7 +92,7 @@ export class PrismaMediaLibraryReader extends MediaLibraryReader {
       },
     });
 
-    const uses = await this.usesByUrl(rows);
+    const uses = await this.usesByUrl(urls);
     const depositedAt = new Map(
       pageOf.map((group) => [group.url, group._min.createdAt ?? new Date(0)]),
     );
@@ -128,7 +132,7 @@ export class PrismaMediaLibraryReader extends MediaLibraryReader {
     if (rows.length === 0) {
       return null;
     }
-    const uses = await this.usesByUrl(rows);
+    const uses = await this.usesByUrl([url]);
     // La dernière inscription date le premier dépôt au pire par excès : on
     // prend la plus ANCIENNE, comme la liste, pour que les deux s'accordent.
     const deposited = await this.prisma.mediaAsset.aggregate({
@@ -160,32 +164,19 @@ export class PrismaMediaLibraryReader extends MediaLibraryReader {
    * l'écran proposerait de supprimer une image qu'une famille affiche, et
    * Postgres refuserait après coup.
    */
-  private async usesByUrl(rows: readonly AssetRow[]): Promise<ReadonlyMap<string, number>> {
-    const ids = rows.map((row) => row.id);
-    const urlOf = new Map(rows.map((row) => [row.id, row.url]));
-
-    const [byProduct, byCategory] = await Promise.all([
-      this.prisma.productMedia.groupBy({
-        by: ["mediaId"],
-        where: { mediaId: { in: ids } },
-        _count: { _all: true },
-      }),
-      this.prisma.categoryMedia.groupBy({
-        by: ["mediaId"],
-        where: { mediaId: { in: ids } },
-        _count: { _all: true },
-      }),
-    ]);
-
-    const counts = new Map<string, number>();
-    for (const group of [...byProduct, ...byCategory]) {
-      const url = urlOf.get(group.mediaId);
-      if (url === undefined) {
-        continue;
-      }
-      counts.set(url, (counts.get(url) ?? 0) + group._count._all);
-    }
-    return counts;
+  /**
+   * Les PORTEURS de chaque URL — fiches et familles confondues.
+   *
+   * 🔴 Par le PORT, et pas par une lecture des tables de rattachement : elles
+   * appartiennent au référentiel, et `lint:prisma-model-ownership` dit qu'« un
+   * modèle a UN propriétaire, et lui seul le lit ». La bibliothèque pose une
+   * question ; chaque porteur y répond pour les siens.
+   *
+   * ⚠️ On compte les RATTACHEMENTS, jamais les lignes d'actif — il n'y en a de
+   * toute façon plus qu'une par image depuis le 2026-09-23.
+   */
+  private async usesByUrl(urls: readonly string[]): Promise<ReadonlyMap<string, number>> {
+    return this.carriers.usesOf(urls);
   }
 }
 

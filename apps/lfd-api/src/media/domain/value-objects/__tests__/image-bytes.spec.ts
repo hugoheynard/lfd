@@ -1,4 +1,4 @@
-import { productImage, UnsupportedImageError } from "../product-image.js";
+import { productImage, UnsupportedImageError } from "../image-bytes.js";
 
 /** Un PNG minimal : signature + IHDR. Seuls les 24 premiers octets sont lus. */
 function png(width: number, height: number, padding = 0): Buffer {

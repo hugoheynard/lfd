@@ -1,6 +1,6 @@
 import { imageDimensions, sniffContentType } from "@lfd/storage";
 
-import { DomainError } from "../../../../../platform/shared/errors/app-error.js";
+import { DomainError } from "../../../platform/shared/errors/app-error.js";
 
 /**
  * Les types acceptés pour un visuel de catalogue.

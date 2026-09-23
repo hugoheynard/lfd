@@ -1,5 +1,5 @@
-import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { MediaStore, type StoredAsset } from "../../../../../platform/storage/media-store.js";
+import { FixedClock } from "../../../platform/time/fixed-clock.js";
+import { MediaStore, type StoredAsset } from "../../../platform/storage/media-store.js";
 import {
   MediaLibrary,
   type MediaFacts,

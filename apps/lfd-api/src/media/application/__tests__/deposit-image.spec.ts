@@ -1,17 +1,17 @@
-import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
+import { DirectUnitOfWork } from "../../../platform/database/__tests__/direct-unit-of-work.js";
+import { RecordingJournal } from "../../../pim/journal/__tests__/recording-journal.js";
 import {
   MediaStore,
   type PublicAsset,
   type StoredAsset,
-} from "../../../../../platform/storage/media-store.js";
+} from "../../../platform/storage/media-store.js";
 import {
   MediaLibrary,
   type MediaFacts,
   type RegisteredMedia,
 } from "../../domain/ports/media-library.js";
-import { UnsupportedImageError } from "../../domain/value-objects/product-image.js";
-import { UploadProductImageCommand, UploadProductImageHandler } from "../upload-product-image.js";
+import { UnsupportedImageError } from "../../domain/value-objects/image-bytes.js";
+import { DepositImageCommand, DepositImageHandler } from "../deposit-image.js";
 
 function png(width: number, height: number): Buffer {
   const buffer = Buffer.alloc(24);
@@ -61,14 +61,14 @@ class FakeLibrary extends MediaLibrary {
   }
 }
 
-describe("UploadProductImageHandler", () => {
+describe("DepositImageHandler", () => {
   it("range les octets puis inscrit ce qu'il en a MESURÉ", async () => {
     const store = new FakeStore();
     const library = new FakeLibrary();
     const journal = new RecordingJournal();
-    const handler = new UploadProductImageHandler(store, library, journal, new DirectUnitOfWork());
+    const handler = new DepositImageHandler(store, library, journal, new DirectUnitOfWork());
 
-    const result = await handler.execute(new UploadProductImageCommand(png(1200, 800)));
+    const result = await handler.execute(new DepositImageCommand(png(1200, 800)));
 
     expect(store.puts).toEqual([
       { prefix: "products", asset: { bytes: png(1200, 800), contentType: "image/png" } },
@@ -100,7 +100,7 @@ describe("UploadProductImageHandler", () => {
     // elle, ni dans le bucket ni en base.
     const store = new FakeStore();
     const library = new FakeLibrary();
-    const handler = new UploadProductImageHandler(
+    const handler = new DepositImageHandler(
       store,
       library,
       new RecordingJournal(),
@@ -108,7 +108,7 @@ describe("UploadProductImageHandler", () => {
     );
 
     await expect(
-      handler.execute(new UploadProductImageCommand(Buffer.from("pas une image"))),
+      handler.execute(new DepositImageCommand(Buffer.from("pas une image"))),
     ).rejects.toThrow(UnsupportedImageError);
 
     expect(store.puts).toEqual([]);
@@ -125,14 +125,14 @@ describe("UploadProductImageHandler", () => {
       }
     }
     const library = new FakeLibrary();
-    const handler = new UploadProductImageHandler(
+    const handler = new DepositImageHandler(
       new FailingStore(),
       library,
       new RecordingJournal(),
       new DirectUnitOfWork(),
     );
 
-    await expect(handler.execute(new UploadProductImageCommand(png(400, 400)))).rejects.toThrow(
+    await expect(handler.execute(new DepositImageCommand(png(400, 400)))).rejects.toThrow(
       "R2 refuse",
     );
     expect(library.registered).toEqual([]);
