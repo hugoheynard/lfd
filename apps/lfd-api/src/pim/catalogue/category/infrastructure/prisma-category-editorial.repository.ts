@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { Prisma } from "../../../../platform/database/client/client.js";
+import { ImageCatalogue } from "../../../channels/media/image-catalogue.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 import type { MediaItem } from "../../shared/domain/value-objects/media.js";
@@ -25,7 +26,13 @@ function optionalColumn(
 
 @Injectable()
 export class PrismaCategoryEditorialRepository extends CategoryEditorialRepository {
-  constructor(private readonly prisma: PimPrismaService) {
+  constructor(
+    private readonly prisma: PimPrismaService,
+    // 🔴 La bibliothèque répond par un PORT : le référentiel ne lit plus sa
+    // table. Il lui demande une référence opaque et la range, exactement comme
+    // une ligne de commande B2B range un SKU du référentiel.
+    private readonly images: ImageCatalogue,
+  ) {
     super();
   }
 
@@ -81,7 +88,7 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
   }
 
   /**
-   * L'identifiant de l'actif qui porte CES octets — **retrouvé**, jamais écrit.
+   * La **référence opaque** de l'image, obtenue de la bibliothèque.
    *
    * 🔴 Il n'en existe plus qu'UN par URL (contrainte d'unicité, 2026-09-23).
    * Même mécanique et mêmes raisons que la fiche produit
@@ -89,25 +96,16 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
    * elle redevient une bibliothèque.
    */
   private async assetFor(item: MediaItem): Promise<string> {
-    const known = await this.prisma.mediaAsset.findUnique({
-      where: { url: item.url },
-      select: { id: true },
-    });
-    if (known === null) {
+    const reference = await this.images.reference(item.url);
+    if (reference === null) {
       // 🔴 **Plus de visuel par simple URL** (Hugo, 2026-09-23). C'était le
-      // dernier chemin par lequel une image entrait sans passer par un dépôt,
-      // donc le dernier qui obligeait le référentiel à INSCRIRE dans la
-      // bibliothèque — et donc à en être propriétaire au sens de
-      // `lint:prisma-model-ownership`. Le fermer est ce qui libère le
-      // déménagement en bloc `media/`
-      // (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md` §2).
-      //
+      // dernier chemin par lequel une image entrait sans passer par un dépôt.
       // Ce qu'on perd : illustrer depuis une banque d'images distante sans
       // copier l'octet. Ce qu'on gagne : toute image du catalogue est chez
       // nous, mesurée, et ne disparaît pas parce qu'un tiers a rangé son
       // serveur.
       throw new MediaNotInLibraryError(item.url);
     }
-    return known.id;
+    return reference;
   }
 }

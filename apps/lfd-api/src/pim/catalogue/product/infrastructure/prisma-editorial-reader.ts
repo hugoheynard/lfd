@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
-import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { SOURCE_LOCALE } from "../../shared/domain/value-objects/localized-text.js";
 import { optionalLocalizedColumn as localizedOf } from "../../shared/infrastructure/json-readers.js";
+import { ImageCatalogue } from "../../../channels/media/image-catalogue.js";
+import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import {
   EditorialReader,
   type ProductEditorialView,
@@ -32,7 +32,12 @@ function viewOf(row: {
 
 @Injectable()
 export class PrismaEditorialReader extends EditorialReader {
-  constructor(private readonly prisma: PimPrismaService) {
+  constructor(
+    private readonly prisma: PimPrismaService,
+    // 🔴 La bibliothèque répond par un PORT : le référentiel ne possède pas la
+    // table des images, il en cite des URL et demande qu'on les lui décrive.
+    private readonly images: ImageCatalogue,
+  ) {
     super();
   }
 
@@ -71,7 +76,9 @@ export class PrismaEditorialReader extends EditorialReader {
       select: { productId: true, role: true, mediaUrl: true },
     });
 
-    const images = await this.imagesByUrl(rows);
+    const images = await this.images.describe(
+      rows.flatMap((row) => (row.mediaUrl === null ? [] : [row.mediaUrl])),
+    );
     const byProduct = new Map<string, ProductMediaRecord[]>();
     for (const row of rows) {
       const image = row.mediaUrl === null ? undefined : images.get(row.mediaUrl);
@@ -89,56 +96,5 @@ export class PrismaEditorialReader extends EditorialReader {
       }
     }
     return byProduct;
-  }
-
-  /**
-   * Les images citées, indexées par URL.
-   *
-   * 🔴 Une seconde requête plutôt qu'un `include`, et c'est le sujet : le
-   * rattachement ne désigne plus une LIGNE d'actif mais une image, par son
-   * URL. La relation Prisma disparaîtra au déploiement ③ avec la clé
-   * étrangère, et un `include` cesserait alors de compiler — ici, il n'y en a
-   * plus (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md` §7).
-   *
-   * C'est aussi la forme que prendra le PORT, le jour où la bibliothèque sera
-   * un bloc à elle : « donne-moi ces URL », et rien de plus.
-   */
-  private async imagesByUrl(
-    rows: readonly { readonly mediaUrl: string | null }[],
-  ): Promise<ReadonlyMap<string, Omit<ProductMediaRecord, "role">>> {
-    const urls = [...new Set(rows.flatMap((row) => (row.mediaUrl === null ? [] : [row.mediaUrl])))];
-    if (urls.length === 0) {
-      return new Map();
-    }
-    const assets = await this.prisma.mediaAsset.findMany({
-      where: { url: { in: urls } },
-      select: {
-        url: true,
-        name: true,
-        alt: true,
-        width: true,
-        height: true,
-        bytes: true,
-        contentType: true,
-      },
-    });
-    return new Map(
-      assets.map((asset) => [
-        asset.url,
-        {
-          url: asset.url,
-          name: asset.name,
-          // L'alternative est stockée localisée, et relue telle quelle. Le repli
-          // sur l'URL vaut mieux que la chaîne vide qu'on rendait : une
-          // alternative absente doit se voir, pas se confondre avec une
-          // alternative écrite.
-          alt: localizedOf(asset.alt) ?? { [SOURCE_LOCALE]: asset.url },
-          width: asset.width,
-          height: asset.height,
-          bytes: asset.bytes,
-          contentType: asset.contentType,
-        },
-      ]),
-    );
   }
 }

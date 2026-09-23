@@ -63,6 +63,8 @@ import { EditorialReader } from "./product/domain/ports/editorial-reader.js";
 import { ReadinessRepository } from "./product/domain/ports/readiness.repository.js";
 import { EditorialRepository } from "./product/domain/ports/editorial.repository.js";
 import { MediaLibrary } from "./product/domain/ports/media-library.js";
+import { ImageCatalogue } from "../channels/media/image-catalogue.js";
+import { PrismaImageCatalogue } from "./shared/infrastructure/prisma-image-catalogue.js";
 import { MediaLibraryReader } from "./shared/domain/ports/media-library-reader.js";
 import { MediaLibraryWriter } from "./shared/domain/ports/media-library-writer.js";
 import { SaveMediaDetailsHandler } from "./shared/application/save-media-details.js";
@@ -180,6 +182,10 @@ import {
     { provide: MediaLibrary, useClass: PrismaMediaLibrary },
     // La LECTURE de la bibliothèque est un port à part de son écriture : l'écran
     // de la médiathèque parcourt, il ne ramasse pas d'orphelins.
+    // Le canal que la BIBLIOTHÈQUE sert aux porteurs. Déclaré sous
+    // `pim/channels/media/` : le bloc qui a besoin déclare, celui qui sait
+    // implémente, et la racine de composition les relie.
+    { provide: ImageCatalogue, useClass: PrismaImageCatalogue },
     { provide: MediaLibraryReader, useClass: PrismaMediaLibraryReader },
     { provide: MediaLibraryWriter, useClass: PrismaMediaLibraryWriter },
     { provide: ProductRepository, useClass: PrismaProductRepository },

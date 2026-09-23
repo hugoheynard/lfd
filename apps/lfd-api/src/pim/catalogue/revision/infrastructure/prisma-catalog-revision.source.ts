@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
 import { EditorialReader } from "../../product/domain/ports/editorial-reader.js";
 import { ReadinessRepository } from "../../product/domain/ports/readiness.repository.js";
+import { ImageCatalogue } from "../../../channels/media/image-catalogue.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import type { VariantNutritionView } from "../../product/domain/ports/product.repository.js";
 import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.js";
@@ -26,6 +27,7 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
     private readonly editorials: EditorialReader,
     private readonly readiness: ReadinessRepository,
     private readonly prisma: PimPrismaService,
+    private readonly images: ImageCatalogue,
   ) {
     super();
   }
@@ -107,19 +109,23 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
       orderBy: [{ productId: "asc" }, { position: "asc" }],
       select: { productId: true, role: true, mediaUrl: true },
     });
-    const urls = [...new Set(rows.flatMap((row) => (row.mediaUrl === null ? [] : [row.mediaUrl])))];
-    const assets =
-      urls.length === 0
-        ? []
-        : await this.prisma.mediaAsset.findMany({
-            where: { url: { in: urls } },
-            select: { url: true, alt: true },
-          });
-    const byUrl = new Map(assets.map((asset) => [asset.url, asset]));
+    // 🔴 Par le PORT : une ancre cite des URL, elle ne lit pas la table des
+    // images. C'est ce qui permettra à la bibliothèque de devenir un bloc sans
+    // que la révision ait à le savoir.
+    //
+    // ⚠️ L'alternative est prise TELLE QU'ELLE EST ÉCRITE. Ici on PHOTOGRAPHIE :
+    // une alternative absente doit rester absente dans l'ancre, et la
+    // remplacer ferait croire, dans six mois, qu'elle avait été rédigée. Le
+    // port ne retombe sur l'URL que si la colonne est illisible — jamais pour
+    // embellir un vide (ce raisonnement portait un helper `altOf`, supprimé
+    // le 2026-09-23 avec la lecture directe qu'il servait).
+    const images = await this.images.describe(
+      rows.flatMap((row) => (row.mediaUrl === null ? [] : [row.mediaUrl])),
+    );
 
     const byProduct = new Map<string, RevisionMedia[]>();
     for (const row of rows) {
-      const asset = row.mediaUrl === null ? undefined : byUrl.get(row.mediaUrl);
+      const asset = row.mediaUrl === null ? undefined : images.get(row.mediaUrl);
       if (asset === undefined) {
         // Une ancre ne fige QUE ce qu'elle a pu lire. Un rattachement sans
         // image — une ligne antérieure au report de l'URL — n'entre pas dans
@@ -132,7 +138,7 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
         // L'ADRESSE, jamais les octets : ils vivent dans le bucket, et un visuel
         // remplacé est une AUTRE image, pas la même écrasée.
         url: asset.url,
-        alt: altOf(asset.alt),
+        alt: asset.alt,
       });
       byProduct.set(row.productId, media);
     }
@@ -166,24 +172,4 @@ function nutritionOf(
     glycemicIndex: values.glycemicIndex,
   };
   return Object.values(declared).every((value) => value === null) ? null : declared;
-}
-
-/**
- * L'alternative textuelle, relue sans repli.
- *
- * Pas de retour sur l'URL comme le fait le lecteur éditorial : ici on
- * PHOTOGRAPHIE, et une alternative absente doit rester absente dans l'ancre —
- * la remplacer ferait croire, dans six mois, qu'elle avait été écrite.
- */
-function altOf(value: unknown): Readonly<Record<string, string>> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return {};
-  }
-  const alt: Record<string, string> = {};
-  for (const [locale, text] of Object.entries(value)) {
-    if (typeof text === "string") {
-      alt[locale] = text;
-    }
-  }
-  return alt;
 }
