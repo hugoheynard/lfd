@@ -208,6 +208,17 @@ export class App {
   protected readonly canSeePim = computed(() => this.permissions.can('pim_catalog:read'));
 
   /**
+   * **Outils agent** — l'ÉCRITURE du catalogue, pas sa lecture, et c'est la
+   * seule entrée du rail gardée plus serré que l'écran qu'elle surplombe.
+   *
+   * Ouvrir cet écran ARME les outils WebMCP : ils écrivent. Le montrer à qui
+   * n'a que `pim_catalog:read` lui promettrait un atelier dont chaque appel
+   * rendrait 403 — et la route, elle, le refuserait de toute façon
+   * (`app.routes.ts`, `permissionGuard('pim_catalog:write')`).
+   */
+  protected readonly canUseAgentTools = computed(() => this.permissions.can('pim_catalog:write'));
+
+  /**
    * **Admin** — deux vues, deux murs : les accès à remettre demandent
    * `companies:read`, l'annuaire de l'équipe `staff:read`. L'entrée s'ouvre sur
    * le PLUS FAIBLE des deux, et la coquille filtre ses onglets ensuite : la

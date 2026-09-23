@@ -106,6 +106,28 @@
         ></a>
       }
 
+      @if (canUseAgentTools()) {
+        <!-- OUTILS AGENT — l'atelier qui PILOTE le référentiel, pas un écran du
+             référentiel : sa route est de premier niveau, il a donc sa propre
+             entrée plutôt qu'une vue du PIM. Juste après lui, parce que c'est
+             sur lui qu'il agit.
+
+             Son droit est l'ÉCRITURE du catalogue, comme sa route : ouvrir
+             l'écran ARME les outils, et un lecteur n'y récolterait que des 403.
+
+             Rien n'y menait jusqu'ici — l'URL se devinait. -->
+        <a
+          fold-menu-item
+          icon="wrench"
+          label="Outils agent"
+          routerLink="/outils-agent"
+          routerLinkActive
+          #agentRla="routerLinkActive"
+          [active]="agentRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeeSettings()) {
         <!-- B2B — ce que la plateforme client VEND, et à quel prix. Ses deux
              écrans vivaient dans les Réglages, entre les heures de retrait et
@@ -499,6 +521,21 @@
           }
         </fold-nav-group>
       }
+      @if (canUseAgentTools()) {
+        <!-- La MÊME entrée qu'au rail, et il faut la poser deux fois : les deux
+             arbres ne partagent pas leur modèle. -->
+        <a
+          fold-nav-tile
+          icon="wrench"
+          label="Outils agent"
+          routerLink="/outils-agent"
+          routerLinkActive
+          #agentTile="routerLinkActive"
+          [active]="agentTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeeSettings()) {
         <!-- LE B2B, qui n'avait AUCUNE tuile : ses vues n'existaient qu'au rail
              secondaire, donc nulle part sous 768px. Les deux arbres ne partagent
