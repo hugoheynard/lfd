@@ -59,6 +59,33 @@ une fonction qui réécrit l'URL côté écran.
 zone Cloudflare ? Si oui, le redimensionnement est un réglage. Sinon il faut
 passer par Cloudflare Images, qui est **facturé à l'image servie**. Non vérifié.
 
+### 🔴 « Et le stockage des dérivées, alors ? » — il n'y en a pas
+
+La question vient naturellement, et la réponse est le cœur du procédé :
+**transformer à la lecture ne range rien chez nous.**
+
+```
+R2 (chez nous)              1 fichier — le master. Point.
+Cache du serveur d'images   les dérivées, fabriquées à la PREMIÈRE demande,
+                            expirées quand plus personne ne les demande
+Cache du navigateur         ce que ce visiteur-là a reçu
+```
+
+Le cache de périphérie est **partagé** : la première personne qui demande la
+tuile à 360 px la fabrique pour toutes les suivantes. Un cache de navigateur,
+lui, ne sert qu'une personne.
+
+⚠️ **Et le navigateur ne peut PAS convertir lui-même**, contrairement à ce qu'on
+espère en y pensant. Il décode ce qu'il reçoit, il ne ré-encode pas. Et même
+s'il le pouvait, il faudrait **d'abord télécharger** les 1,9 Mo — c'est-à-dire
+exactement le coût qu'on cherche à éviter. On aurait optimisé le disque du
+visiteur, pas sa connexion. La même objection vaut pour un _service worker_ qui
+intercepterait : il s'exécute après le téléchargement.
+
+⚠️ `<picture>` avec plusieurs `<source>` ne résout rien non plus : le navigateur
+**choisit** parmi des fichiers qui existent, il n'en **crée** aucun. Quelqu'un
+doit les avoir produits.
+
 ### ② `srcset` et les dimensions — presque gratuit
 
 Une fois ① en place, l'écran annonce plusieurs largeurs et le navigateur choisit
@@ -76,6 +103,57 @@ Afficher « cette image fait 8 Mo, c'est beaucoup » au moment du dépôt.
 
 ⚠️ **Ça ne répare rien de ce qui est déjà déposé**, et ça demande à un humain de
 faire ce qu'une machine fait mieux. À garder pour la fin, si tant est.
+
+---
+
+## 🔴 Le format est la DERNIÈRE optimisation, pas la première
+
+Mesuré sur la base de dev le 2026-09-23 :
+
+| Format | Images | Poids moyen | Largeur max |
+| ------ | ------ | ----------- | ----------- |
+| JPEG   | 3      | **1,9 Mo**  | **4808 px** |
+| PNG    | 2      | 450 ko      | 1179 px     |
+
+Un original de 4808 px servi dans une tuile de 180 px. Ce qu'on gagne selon ce
+qu'on change :
+
+| Ce qu'on change               | Ce que ça rapporte           |
+| ----------------------------- | ---------------------------- |
+| JPEG → WebP, taille inchangée | 1,9 Mo → ~1,3 Mo (**−30 %**) |
+| Redimensionner à 360 px       | 1,9 Mo → ~30 ko (**−98 %**)  |
+| Les deux                      | ~20 ko                       |
+
+**Redimensionner rapporte cinquante fois plus que reformater.** C'est
+contre-intuitif — on pense au format d'abord, parce que c'est le choix qui se
+discute — et c'est pour ça que l'effort doit aller au serveur d'images plutôt
+qu'à un choix de format : il fait les deux, et le gros du gain vient de la
+largeur.
+
+⚠️ Ces chiffres viennent de la base de DEV, sur cinq images. Assez pour voir la
+forme du problème, pas pour en tirer une moyenne. La requête à lancer en
+production :
+
+```sql
+SELECT content_type, count(*) AS images,
+       pg_size_pretty(sum(bytes)::bigint) AS total,
+       pg_size_pretty(avg(bytes)::bigint) AS moyen,
+       max(width) AS largeur_max
+FROM media.media_asset
+WHERE bytes IS NOT NULL
+GROUP BY content_type
+ORDER BY sum(bytes) DESC;
+```
+
+### WebP contre JPEG, pour mémoire
+
+- **~25-30 % de moins** sur une photo, à qualité visuelle égale.
+- WebP sait faire la **transparence avec perte**, ce que JPEG ne sait pas du
+  tout. C'est là que se cachent les mégaoctets : un packshot détouré doit
+  aujourd'hui être un PNG, donc sans perte, donc énorme.
+- Le seul vrai avantage du JPEG : le **rendu progressif**. Sur une connexion
+  lente, on voit une version floue qui s'affine, là où un WebP apparaît d'un
+  coup. À poids égal, le JPEG progressif _paraît_ parfois plus rapide.
 
 ---
 
