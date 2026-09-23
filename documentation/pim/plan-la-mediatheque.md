@@ -308,10 +308,44 @@ depuis le panneau de la fiche produit. Deux écrans écrivent donc la même
 propriété de bibliothèque, et le dernier gagne. Ça se résout au plan B, quand le
 référentiel deviendra un mappeur et cessera d'écrire des propriétés d'image.
 
-### Lot 5 — la recherche et l'attribution, côté fiche
+### Lot 5 — la recherche et l'attribution, côté fiche ✅ 2026-09-23
 
-La section Visuels gagne « choisir dans la médiathèque » à côté de « déposer »,
-et c'est là que le **rôle** se choisit — les cinq, pas seulement `hero`.
+Le renversement, enfin visible : la section Visuels gagne « **Choisir dans la
+médiathèque** » à côté du dépôt — et non à sa place. Une image neuve entre
+toujours par le dépôt ; une image qui existe n'a aucune raison d'être renvoyée.
+
+La recherche du panneau vise **l'étiquette et les mots-clés**, jamais le nom de
+fichier : personne ne se souvient de `a3f9….png`, et c'est précisément pour ça
+que les tags existent.
+
+⚠️ Les images **déjà portées par la fiche** s'affichent grisées et hors
+d'atteinte plutôt que masquées : les cacher ferait chercher une photo qu'on
+croit absente alors qu'elle est là.
+
+#### 🔴 Les cinq usages deviennent atteignables
+
+Jusqu'ici, un seul des cinq rôles avait un écran — `hero`, par une case
+« Principal ». Le panneau propose désormais les cinq, **avec leur ratio dans le
+libellé** : c'est au moment de choisir qu'on a besoin de savoir quelle forme le
+canal attend, pas dans une documentation qu'on ira lire un autre jour.
+
+#### ⚠️ Le geste d'unicité était trop large, et ça ne se voyait pas
+
+`setMainVisual` rendait **tous** les autres visuels à `gallery`. C'était sans
+conséquence tant qu'aucun écran ne proposait les quatre autres usages — et
+aurait effacé une mise en situation et un tirage papier dès qu'on les a ouverts.
+
+`setMediaRole` ne déloge désormais que **le porteur du même rôle unique**
+(`hero`, `thumbnail`). Un rôle pluriel ne déloge personne : une fiche peut
+porter dix images de galerie et trois mises en situation.
+
+#### 🔴 Un troisième commentaire dangereux, dans le même fichier
+
+Le JSDoc de `VisualsForm` affirmait : « il n'y a ni "principale" ni rôle à
+choisir ici […] ni la projection Shopify ni le B2B ne lisent le rôle ». **Les
+deux moitiés étaient fausses** — la vitrine B2B cherche précisément le `hero`,
+et Shopify est sorti du dépôt le 2026-09-21. C'est le même mensonge que celui
+qui gardait `DEFAULT_MEDIA_ROLE`, recopié dans un second fichier. Corrigé.
 
 ### Lot 6 — la suppression
 

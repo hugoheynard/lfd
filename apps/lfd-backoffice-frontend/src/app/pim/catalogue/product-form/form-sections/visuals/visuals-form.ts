@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
-import { FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
+import { FoldButtonComponent, FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
 
 import { MediaGallery } from '../../../media-gallery/media-gallery';
 
@@ -13,6 +13,11 @@ import {
   type AltTextPanelData,
   type AltTextPanelResult,
 } from './alt-text-panel/alt-text-panel';
+import {
+  LibraryPicker,
+  type LibraryPickerData,
+  type PickedMedia,
+} from './library-picker/library-picker';
 import { ProductFormStore } from '../../product-form-store';
 
 /**
@@ -22,17 +27,24 @@ import { ProductFormStore } from '../../product-form-store';
  * Les deux gestes sont volontairement distincts : déposer crée un fichier et ne
  * touche à aucune fiche ; enregistrer remplace la liste entière du produit.
  *
- * **Cette section AGRÈGE des ressources, elle ne les classe pas.** Il n'y a donc
- * ni « principale » ni rôle à choisir ici : quelle image une boutique prend pour
- * vignette est une décision du CANAL, comme le handle Shopify, et elle vivra
- * dans « Diffusion par canal ». La notion de principale n'avait d'ailleurs
- * aucun consommateur — ni la projection Shopify ni le B2B ne lisent le rôle ;
- * elle affirmait une hiérarchie que rien ne consommait.
+ * 🔴 **Ce JSDoc a affirmé le contraire jusqu'au 2026-09-23**, et ses deux
+ * moitiés étaient fausses. Il disait : « il n'y a ni "principale" ni rôle à
+ * choisir ici […] ni la projection Shopify ni le B2B ne lisent le rôle ».
+ *
+ * La vitrine du canal B2B cherche **précisément** le `hero`
+ * (`channels/b2b-platform/products/showcase.ts`), et Shopify est sorti du dépôt
+ * le 2026-09-21. Conséquence mesurée : aucun produit ne portait de `hero`, donc
+ * la vitrine n'a jamais montré la moindre image. Une phrase qui justifiait de
+ * ne rien construire, par l'état d'un fichier que personne n'a rouvert.
+ *
+ * **On choisit donc ici l'USAGE d'un visuel** — les cinq, depuis le lot 5 — et
+ * on peut prendre une image déjà déposée dans la médiathèque plutôt que d'en
+ * redéposer une : on tague à la source, on attribue à l'usage.
  */
 @Component({
   selector: 'app-visuals-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LangSwitch, FoldCalloutComponent, MediaGallery],
+  imports: [LangSwitch, FoldButtonComponent, FoldCalloutComponent, MediaGallery],
   templateUrl: './visuals-form.html',
   styleUrls: ['../form-section.scss'],
 })
@@ -91,7 +103,7 @@ export class VisualsForm {
           url: slot.url,
           name: slot.name,
           alt: slot.alt,
-          isMain: this.store.mainVisualIndex() === index,
+          role: slot.role,
         },
       })
       .closed.then((result) => {
@@ -106,9 +118,33 @@ export class VisualsForm {
         }
         this.store.setMediaName(index, result.name);
         this.store.setMediaAltText(index, result.alt);
-        if (result.isMain !== undefined) {
-          this.store.setMainVisual(index, result.isMain);
+        if (result.role !== undefined) {
+          this.store.setMediaRole(index, result.role);
         }
+      });
+  }
+
+  /**
+   * Ouvre la médiathèque et ajoute ce qu'on y retient.
+   *
+   * 🔴 Aucun dépôt : ces octets sont déjà chez nous. C'est le renversement du
+   * modèle — une image entrait jusqu'ici dans le catalogue PAR une fiche, et la
+   * retrouver demandait de se souvenir de laquelle.
+   *
+   * Renoncer (`dismiss`) rend `undefined` et n'ajoute rien ; une liste vide ne
+   * peut pas arriver, le panneau gardant son bouton fermé tant que rien n'est
+   * retenu.
+   */
+  protected pickFromLibrary(): void {
+    void this.panels
+      .open<LibraryPickerData, readonly PickedMedia[]>(LibraryPicker, {
+        data: { already: this.store.media().map((slot) => slot.url) },
+      })
+      .closed.then((picked) => {
+        if (picked === undefined || picked.length === 0) {
+          return;
+        }
+        this.store.addFromLibrary(picked);
       });
   }
 }

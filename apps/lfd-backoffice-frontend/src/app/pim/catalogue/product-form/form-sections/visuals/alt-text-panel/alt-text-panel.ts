@@ -1,16 +1,19 @@
+import { KeyValuePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 
 import { LOCALES, SOURCE_LOCALE, writeLocalized, type LocalizedText } from '@lfd/pim-contracts';
 import {
   FoldButtonComponent,
-  FoldCheckboxComponent,
   FoldInputComponent,
+  FoldListboxComponent,
+  FoldOptionComponent,
   type FoldPanelDefaults,
   FoldPanelHeaderComponent,
   FoldPanelRef,
 } from 'fold-ng';
 
 import { LOCALE_NAMES } from '../../../../../../shared/lang-switch/locale-names';
+import { MEDIA_ROLE_LABELS } from '../../../product-form-store';
 
 /** Charge d'ouverture : l'image qu'on décrit, et ce qui en est déjà écrit. */
 export interface AltTextPanelData {
@@ -18,16 +21,19 @@ export interface AltTextPanelData {
   readonly name: string;
   readonly alt: LocalizedText | undefined;
   /**
-   * Ce visuel est-il LE packshot ? **`undefined` = ce porteur n'a pas la
-   * notion**, et le panneau ne propose alors rien.
+   * L'USAGE de ce visuel. **`undefined` = ce porteur n'a pas la notion**, et le
+   * panneau ne propose alors rien.
    *
-   * 🔴 La notion n'existe que là où quelqu'un la LIT. Une fiche produit en a
-   * un consommateur — la vitrine du canal B2B cherche le `hero`. Une famille
-   * n'en a aucun (vérifié le 2026-09-23 : rien sous `pim/channels/` ne consulte
-   * le rôle d'un visuel de famille). Offrir la case là-bas ferait décider pour
+   * 🔴 La notion n'existe que là où quelqu'un la LIT. Une fiche produit en a un
+   * consommateur — la vitrine du canal B2B cherche le `hero`. Une famille n'en
+   * a aucun (vérifié le 2026-09-23 : rien sous `pim/channels/` ne consulte le
+   * rôle d'un visuel de famille). Offrir le choix là-bas ferait décider pour
    * rien, et cette décision-là finirait par se croire lue.
+   *
+   * ⚠️ C'était un booléen « principal » jusqu'au 2026-09-23 : un seul des cinq
+   * usages était atteignable, les quatre autres n'avaient aucun écran.
    */
-  readonly isMain?: boolean | undefined;
+  readonly role?: string | undefined;
 }
 
 /**
@@ -40,15 +46,15 @@ export interface AltTextPanelResult {
   readonly name: string;
   readonly alt: LocalizedText | undefined;
   /**
-   * Ce visuel devient-il LE packshot ? `undefined` quand le porteur n'a pas la
-   * notion (cf. {@link AltTextPanelData.isMain}).
+   * L'usage retenu. `undefined` quand le porteur n'a pas la notion (cf.
+   * {@link AltTextPanelData.role}).
    *
    * Le panneau ne voit qu'une image : il **déclare une intention**, il ne
-   * range pas la liste. C'est le magasin qui rend les autres à `gallery`, en
-   * une seule mise à jour — sans quoi deux principaux deviendraient
-   * exprimables le temps d'un aller-retour.
+   * range pas la liste. C'est le magasin qui déloge celui qui portait le même
+   * rôle unique, en une seule mise à jour — sans quoi deux ouvertures
+   * deviendraient exprimables le temps d'un aller-retour.
    */
-  readonly isMain?: boolean | undefined;
+  readonly role?: string | undefined;
   /** Le visuel a-t-il été RETIRÉ ? Le retrait vit ici parce que c'est ici qu'on
    *  regarde l'image en grand — décider de la jeter demande de la voir. */
   readonly removed?: boolean;
@@ -71,7 +77,9 @@ export interface AltTextPanelResult {
   imports: [
     FoldPanelHeaderComponent,
     FoldInputComponent,
-    FoldCheckboxComponent,
+    FoldListboxComponent,
+    FoldOptionComponent,
+    KeyValuePipe,
     FoldButtonComponent,
   ],
   templateUrl: './alt-text-panel.html',
@@ -91,14 +99,15 @@ export class AltTextPanel {
   protected readonly draft = signal<LocalizedText>({ fr: '' });
   protected readonly name = signal('');
   /** `undefined` tant que le porteur n'a pas la notion — voir la donnée. */
-  protected readonly isMain = signal<boolean | undefined>(undefined);
+  protected readonly role = signal<string | undefined>(undefined);
+  protected readonly roles = MEDIA_ROLE_LABELS;
 
   constructor() {
     effect(() => {
       const data = this.data();
       this.draft.set(data.alt ?? { fr: '' });
       this.name.set(data.name);
-      this.isMain.set(data.isMain);
+      this.role.set(data.role);
     });
   }
 
@@ -117,7 +126,7 @@ export class AltTextPanel {
     this.ref.close({
       name: this.name().trim(),
       alt: text[SOURCE_LOCALE].trim() === '' ? undefined : text,
-      ...(this.isMain() === undefined ? {} : { isMain: this.isMain() }),
+      ...(this.role() === undefined ? {} : { role: this.role() }),
     });
   }
 

@@ -1,0 +1,83 @@
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.sift {
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: inherit;
+  font: inherit;
+}
+
+.state {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  width: 100%;
+  padding: var(--fold-space-xs);
+  border: 2px solid transparent;
+  border-radius: var(--fold-radius-md);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  img {
+    /* Le ratio du rôle `thumbnail` : on choisit ici ce qu'un rayon montrera,
+       autant le regarder dans la forme qu'il aura. */
+    aspect-ratio: 4 / 3;
+    width: 100%;
+    object-fit: cover;
+    border-radius: var(--fold-radius-md);
+    background: var(--fold-color-surface-sunken);
+  }
+}
+
+.tile-picked {
+  border-color: var(--fold-color-primary);
+}
+
+.caption {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fold-text-xs);
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  margin-top: var(--fold-space-lg);
+}
+
+/* Déjà sur la fiche : visible mais hors d'atteinte. La masquer ferait chercher
+   une image qu'on croit absente alors qu'elle est là. */
+.tile-already {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.already {
+  display: block;
+  color: var(--fold-color-text-muted);
+}

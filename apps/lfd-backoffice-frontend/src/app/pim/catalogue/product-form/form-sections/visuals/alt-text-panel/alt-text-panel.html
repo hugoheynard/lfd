@@ -33,13 +33,15 @@
   <!-- La désignation vit ICI, à côté du nom et de l'alternative : c'est le seul
        endroit où l'on voit l'image en grand, et choisir le packshot demande de
        la regarder — même raison que le retrait, juste en dessous. -->
-  @if (isMain() !== undefined) {
-    <fold-checkbox
-      label="Visuel principal"
-      hint="Celui que les canaux montrent quand ils n'en montrent qu'un. Un seul par fiche : le désigner rend les autres à la galerie."
-      [checked]="isMain() === true"
-      (checkedChange)="isMain.set($event)"
-    />
+  @if (role(); as chosen) {
+    <!-- Les cinq USAGES, et leur ratio dit dans le libellé : c'est au moment
+         de choisir qu'on a besoin de savoir quelle forme le canal attend, pas
+         dans une documentation qu'on ira lire un autre jour. -->
+    <fold-listbox label="Usage" [value]="chosen" (selectionChange)="role.set($event)">
+      @for (entry of roles | keyvalue; track entry.key) {
+        <fold-option [value]="entry.key">{{ entry.value }}</fold-option>
+      }
+    </fold-listbox>
   }
 
   <p class="note">

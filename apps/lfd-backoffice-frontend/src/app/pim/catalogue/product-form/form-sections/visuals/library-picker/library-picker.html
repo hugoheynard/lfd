@@ -1,0 +1,52 @@
+<fold-panel-header title="Choisir dans la médiathèque" />
+
+<div class="picker">
+  <input
+    class="sift"
+    type="search"
+    placeholder="Chercher par étiquette ou mot-clé"
+    [value]="search()"
+    (input)="search.set($any($event.target).value)"
+  />
+
+  @if (loading()) {
+    <p class="state">Lecture de la médiathèque…</p>
+  } @else if (failure(); as message) {
+    <p class="state">{{ message }}</p>
+  } @else if (shown().length === 0) {
+    <p class="state">Aucune image ne correspond.</p>
+  } @else {
+    <ul class="grid">
+      @for (image of shown(); track image.url) {
+        <li>
+          <button
+            type="button"
+            class="tile"
+            [class.tile-picked]="isPicked(image.url)"
+            [class.tile-already]="isAlready(image.url)"
+            [disabled]="isAlready(image.url)"
+            [attr.aria-pressed]="isPicked(image.url)"
+            (click)="toggle(image.url)"
+          >
+            <img [src]="image.url" [alt]="label(image)" loading="lazy" />
+            <span class="caption">
+              {{ label(image) }}
+              @if (isAlready(image.url)) {
+                <span class="already">déjà sur la fiche</span>
+              }
+            </span>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>
+
+<div class="foot">
+  <button foldButton emphasis="outline" (click)="dismiss()">Annuler</button>
+  <!-- Fermé tant que rien n'est retenu : un « Ajouter » qui n'ajoute rien
+       laisse croire que le geste a échoué. -->
+  <button foldButton [disabled]="picked().length === 0" (click)="confirm()">
+    Ajouter {{ picked().length > 0 ? '(' + picked().length + ')' : '' }}
+  </button>
+</div>

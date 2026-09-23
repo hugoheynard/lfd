@@ -24,3 +24,12 @@
   (edit)="editMedia($event)"
   (picked)="store.uploadMedia($event)"
 />
+
+<!-- CHOISIR plutôt que redéposer. Le geste est à côté du dépôt et non à sa
+     place : une image neuve entre toujours par le dépôt, et une image qui
+     existe n'a aucune raison d'être renvoyée. -->
+<p class="from-library">
+  <button foldButton emphasis="outline" (click)="pickFromLibrary()">
+    Choisir dans la médiathèque
+  </button>
+</p>

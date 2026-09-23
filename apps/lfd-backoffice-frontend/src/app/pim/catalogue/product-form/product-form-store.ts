@@ -392,6 +392,30 @@ const DEFAULT_MEDIA_ROLE = 'gallery';
  */
 const MAIN_MEDIA_ROLE = 'hero';
 
+/**
+ * Les cinq usages d'un visuel, et leur libellé.
+ *
+ * Ils existent dans le domaine depuis l'origine (`MEDIA_ROLES`) ; aucun écran
+ * n'en proposait plus d'un jusqu'au 2026-09-23. Les ratios attendus de chacun
+ * sont dans `documentation/pim/images-du-catalogue.md` §2.
+ */
+export const MEDIA_ROLE_LABELS: Readonly<Record<string, string>> = {
+  hero: 'Ouverture (3/2)',
+  thumbnail: 'Vignette de rayon (4/3)',
+  gallery: 'Galerie',
+  lifestyle: 'Mise en situation (16/9)',
+  print: 'Tirage papier (1/1)',
+};
+
+/**
+ * Les rôles dont il ne peut exister **qu'un seul par fiche**.
+ *
+ * Même liste que `SINGLE_ROLES` du domaine, et le serveur refuse le second
+ * (`DuplicateMediaRoleError`). L'écran ne se contente pas d'éviter le refus :
+ * il rend le doublon **inexprimable**, en dégradant celui qui portait le rôle.
+ */
+const SINGLE_MEDIA_ROLES: readonly string[] = [MAIN_MEDIA_ROLE, 'thumbnail'];
+
 const EMPTY_NUTRITION: NutritionValues = {
   energyKcal: null,
   fatG: null,
@@ -1256,12 +1280,57 @@ export class ProductFormStore {
    * préfère à montrer n'importe laquelle.
    */
   setMainVisual(index: number, isMain: boolean): void {
+    this.setMediaRole(index, isMain ? MAIN_MEDIA_ROLE : DEFAULT_MEDIA_ROLE);
+  }
+
+  /**
+   * Donne son USAGE à un visuel.
+   *
+   * 🔴 **L'unicité appartient au verbe.** Poser un rôle à titulaire unique
+   * (`hero`, `thumbnail`) rend à la galerie celui qui le portait, en une seule
+   * mise à jour : deux ouvertures sont inexprimables, pas interdites.
+   *
+   * ⚠️ **Seul le PORTEUR DU MÊME RÔLE est dégradé**, et c'est une correction du
+   * 2026-09-23 : `setMainVisual` rendait TOUS les autres à `gallery`, ce qui
+   * était sans conséquence tant qu'aucun écran ne proposait les trois autres
+   * usages. Désigner une ouverture aurait désormais effacé une mise en
+   * situation et un tirage papier au passage.
+   */
+  setMediaRole(index: number, role: string): void {
     this.media.update((current) =>
       current.map((slot, position) => {
-        const role = position === index && isMain ? MAIN_MEDIA_ROLE : DEFAULT_MEDIA_ROLE;
-        return slot.role === role ? slot : { ...slot, role };
+        if (position === index) {
+          return slot.role === role ? slot : { ...slot, role };
+        }
+        // Un rôle pluriel ne déloge personne : une fiche peut porter dix
+        // images de galerie et trois mises en situation.
+        if (!SINGLE_MEDIA_ROLES.includes(role) || slot.role !== role) {
+          return slot;
+        }
+        return { ...slot, role: DEFAULT_MEDIA_ROLE };
       }),
     );
+  }
+
+  /**
+   * Ajoute des images de la **bibliothèque** à la liste de la fiche.
+   *
+   * Aucun dépôt : ces octets sont déjà chez nous. C'est le renversement du
+   * modèle — on tague à la source, on attribue à l'usage.
+   *
+   * 🔴 Les URL **déjà présentes sont ignorées**, silencieusement. Une même image
+   * deux fois dans la même fiche n'a pas de sens, et le serveur refuserait de
+   * toute façon un second `hero` — mais l'écran ne doit pas laisser produire la
+   * situation pour la voir refusée ensuite.
+   */
+  addFromLibrary(picked: readonly { url: string; name: string }[]): void {
+    this.media.update((current) => {
+      const known = new Set(current.map((slot) => slot.url));
+      const added = picked
+        .filter((image) => !known.has(image.url))
+        .map((image) => ({ role: DEFAULT_MEDIA_ROLE, name: image.name, url: image.url }));
+      return [...current, ...added];
+    });
   }
 
   /**
