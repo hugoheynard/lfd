@@ -164,6 +164,48 @@ signale.
 
 ---
 
+## 5 bis. 🟢 Ce qu'on peut remonter — et pourquoi les visuels s'en tirent mieux
+
+Le journal écrit `from` / `to` sur chaque changement. Mais il **abrège les
+textes** au-delà de 120 caractères, et c'est délibéré (`journal/changes.ts`) :
+
+> Un journal n'est pas une copie de la base : recopier une histoire produit de
+> trois paragraphes à chaque virgule corrigée gonflerait la table sans rien
+> apprendre — on veut savoir **que** le texte a changé, et le reconnaître d'un
+> coup d'œil, **pas le relire ici**.
+
+Cette borne crée une asymétrie **en faveur des visuels** :
+
+|                                      | Remontable depuis le journal ?                                                                                                                                                                                                 |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Un visuel**                        | ✅ **totalement** — le journal garde l'`url`, qui est courte et **adressée par contenu**. Elle désigne un objet qui ne peut pas changer : on ne remonte pas une description de l'image, on remonte **l'image**, à l'octet près |
+| Un texte court                       | ✅ sous 120 caractères                                                                                                                                                                                                         |
+| Une description longue, une histoire | ❌ tronquée                                                                                                                                                                                                                    |
+
+➡️ **L'adressage par contenu paie une troisième fois** (après la déduplication
+et la réparation par redépôt, §3) : il rend l'historique visuel exact sans que
+le journal grossisse d'un octet.
+
+⚠️ Ne vaut **que pour ce que nous hébergeons.** Une URL saisie à la main n'est
+pas adressée par contenu : ce qu'elle sert peut changer sans nous, et le journal
+n'en garde alors qu'un pointeur vers quelque chose d'instable.
+
+### 🔵 La piste, pour le jour où les textes longs devront se remonter
+
+Gonfler le journal serait la mauvaise réponse — c'est précisément ce que la
+borne refuse. Le dépôt porte déjà le bon outil ailleurs : **`CatalogContent`**,
+_« un contenu, adressé par son empreinte »_, le magasin partagé des révisions.
+Deux révisions qui partagent quatre-vingt-dix articles inchangés y partagent
+quatre-vingt-dix lignes.
+
+Le même motif servirait un historique éditorial sans rien gonfler : une virgule
+corrigée écrirait **une ligne**, pas un paragraphe recopié.
+
+Noté comme piste, pas comme manque (Hugo, 2026-09-23) : rien ne l'exige
+aujourd'hui.
+
+---
+
 ## 6. Ce qui sort
 
 - **Vitrine B2B** — le `hero` du produit (§2).
