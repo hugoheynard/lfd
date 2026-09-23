@@ -105,6 +105,15 @@ export class PrismaEditorialRepository extends EditorialRepository {
    * Vide est le cas normal d'un visuel saisi à la main : on n'héberge pas cet
    * octet, on ne l'a pas mesuré, et aller le télécharger pour le mesurer serait
    * une requête sortante par visuel à chaque enregistrement de fiche.
+   *
+   * 🔴 **DEUX lectures, et pas une**, parce que les deux familles de faits
+   * n'ont pas la même condition d'existence :
+   *
+   * - ce qu'on a **mesuré** n'existe que pour ce qu'on héberge, d'où le
+   *   `storageKey: { not: null }` ;
+   * - le **point focal** est une DÉCISION, et quelqu'un peut très bien l'avoir
+   *   prise sur une image saisie par son URL. Le chercher sous la même
+   *   condition l'aurait perdu précisément là.
    */
   private async factsFor(url: string): Promise<{
     storageKey: string | null;
@@ -112,12 +121,47 @@ export class PrismaEditorialRepository extends EditorialRepository {
     width: number | null;
     height: number | null;
     bytes: number | null;
+    focalX: number | null;
+    focalY: number | null;
   }> {
-    const known = await this.prisma.mediaAsset.findFirst({
+    const measured = await this.prisma.mediaAsset.findFirst({
       where: { url, storageKey: { not: null } },
       orderBy: { createdAt: "desc" },
       select: { storageKey: true, contentType: true, width: true, height: true, bytes: true },
     });
-    return known ?? { storageKey: null, contentType: null, width: null, height: null, bytes: null };
+    return {
+      ...(measured ?? {
+        storageKey: null,
+        contentType: null,
+        width: null,
+        height: null,
+        bytes: null,
+      }),
+      ...(await this.focalFor(url)),
+    };
+  }
+
+  /**
+   * Le point focal déjà choisi pour ces octets, ou deux colonnes vides.
+   *
+   * 🔴 **Il doit être RELU et reporté, sinon il ne survit pas.**
+   * {@link replaceMedia} détache tout puis recrée un `MediaAsset` NEUF par
+   * visuel : un identifiant d'actif ne traverse pas un enregistrement de
+   * section. Ce qui traverse, c'est l'URL — adressée par contenu, donc stable
+   * pour des octets donnés. Sans ce report, le point serait effacé au premier
+   * enregistrement suivant, c'est-à-dire qu'il marcherait à l'écran et
+   * disparaîtrait ensuite.
+   *
+   * `null` veut dire « personne ne s'est prononcé », jamais « au centre » : le
+   * centre est un choix comme un autre, et les confondre obligerait à deviner
+   * lequel on lit.
+   */
+  private async focalFor(url: string): Promise<{ focalX: number | null; focalY: number | null }> {
+    const chosen = await this.prisma.mediaAsset.findFirst({
+      where: { url, focalX: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: { focalX: true, focalY: true },
+    });
+    return chosen ?? { focalX: null, focalY: null };
   }
 }

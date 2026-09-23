@@ -100,12 +100,34 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
     width: number | null;
     height: number | null;
     bytes: number | null;
+    focalX: number | null;
+    focalY: number | null;
   }> {
-    const known = await this.prisma.mediaAsset.findFirst({
+    const measured = await this.prisma.mediaAsset.findFirst({
       where: { url, storageKey: { not: null } },
       orderBy: { createdAt: "desc" },
       select: { storageKey: true, contentType: true, width: true, height: true, bytes: true },
     });
-    return known ?? { storageKey: null, contentType: null, width: null, height: null, bytes: null };
+    // 🔴 Le point focal se cherche SÉPARÉMENT, et sans la condition
+    // d'hébergement : c'est une décision, pas une mesure, et quelqu'un peut
+    // l'avoir prise sur une image saisie par son URL. Sans ce report, il serait
+    // effacé au premier enregistrement suivant — `replaceMedia` recrée un actif
+    // neuf par visuel, et seule l'URL traverse. Même mécanique que la fiche
+    // produit (`prisma-editorial.repository.ts`, 2026-09-23).
+    const chosen = await this.prisma.mediaAsset.findFirst({
+      where: { url, focalX: { not: null } },
+      orderBy: { createdAt: "desc" },
+      select: { focalX: true, focalY: true },
+    });
+    return {
+      ...(measured ?? {
+        storageKey: null,
+        contentType: null,
+        width: null,
+        height: null,
+        bytes: null,
+      }),
+      ...(chosen ?? { focalX: null, focalY: null }),
+    };
   }
 }
