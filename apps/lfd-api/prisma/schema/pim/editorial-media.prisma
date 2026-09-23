@@ -57,95 +57,23 @@ model CatalogContent {
   @@schema("pim")
 }
 
-/// Agrégat propre : un visuel a son cycle de vie (upload, CDN) et peut servir
-/// plusieurs produits. On stocke le **master** + un point focal ; les tailles
-/// dérivées sont calculées par chaque canal, jamais ressaisies.
-/// Un visuel. `url` est ce que consomment le front et les canaux ; le reste
-/// décrit l'objet, et n'est renseigné que pour ce que NOUS hébergeons.
-///
-/// Les colonnes techniques sont toutes nullables, et c'est le modèle : une URL
-/// saisie à la main (tout ce qui existait avant le stockage média) n'a ni clé,
-/// ni type constaté, ni dimensions. `null` veut dire « pas mesuré », jamais
-/// « zéro » — un consommateur ne doit pas le coercer en taille.
-model MediaAsset {
-  id  String @id
-
-  /// 🔴 **UNIQUE depuis le 2026-09-23** — c'est ce qui fait de cette table une
-  /// bibliothèque plutôt qu'un journal de lignes.
-  ///
-  /// Jusque-là, `replaceMedia` recréait un actif NEUF par visuel à chaque
-  /// enregistrement de fiche : une même image y figurait autant de fois qu'on
-  /// avait sauvé les fiches qui la portent, et aucune identité ne traversait
-  /// deux sauvegardes. L'URL, elle, est stable — la clé de stockage est le
-  /// SHA-256 du contenu, donc les mêmes octets donnent toujours la même
-  /// adresse. La contrainte rend le doublon **inexprimable**.
-  url String @unique
-  alt Json
-
-  /// L'étiquette de la bibliothèque — courte, non traduite, faite pour
-  /// RETROUVER. Distincte du texte alternatif, qui décrit l'image à qui ne la
-  /// voit pas : deux informations, deux publics. Vide tant que personne n'a
-  /// nommé le fichier.
-  name   String @default("")
-  focalX Float? @map("focal_x")
-  focalY Float? @map("focal_y")
-
-  /// Les mots par lesquels on RETROUVE cette image. Vocabulaire libre et à
-  /// plat : pas d'arbre, pas de racine, pas de mot imposé au dépôt.
-  ///
-  /// Un tableau plutôt qu'une table : sans hiérarchie ni propriétés, une table
-  /// n'apporterait qu'une jointure. La contrepartie est assumée — rien ne
-  /// rapprochera « croissant » de « viennoiserie », et une image mal taguée
-  /// reste introuvable jusqu'à ce qu'on la retague. C'est le prix d'un champ
-  /// que les gens remplissent.
-  ///
-  /// 🔴 NORMALISÉS à l'écriture — découpés, minuscules, dédoublonnés. Sans
-  /// cela, « Croissant » et « croissant » sont deux fonds distincts, et le
-  /// vocabulaire libre devient le vocabulaire à doublons qu'on lui reproche.
-  tags String[] @default([])
-
-  /// La clé dans le bucket média — `products/{sha256}.{ext}`. `null` ⇒ l'octet
-  /// n'est pas chez nous. C'est par elle qu'un ramassage d'orphelins saura un
-  /// jour quel objet R2 plus aucune fiche ne référence.
-  storageKey  String? @map("storage_key")
-  /// Type MIME **constaté dans les octets** au dépôt, jamais annoncé.
-  contentType String? @map("content_type")
-  /// Taille intrinsèque, lue dans l'en-tête au dépôt. Sans elle, une galerie ne
-  /// peut pas réserver sa place et la fiche saute au chargement des images.
-  width       Int?
-  height      Int?
-  bytes       Int?
-
-  products ProductMedia[]
-
-  /// Les FAMILLES qui portent ce visuel. Sa présence change une règle
-  /// d'exploitation : le ramassage d'orphelins ne peut plus conclure d'un
-  /// `products: none` qu'un objet ne sert plus — il servirait encore ici.
-  categories CategoryMedia[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([url])
-  @@map("media_asset")
-  @@schema("pim")
-}
-
-/// Table de liaison dédiée — **pas** de FK polymorphe (`owner_type`/`owner_id`),
-/// qui priverait Postgres de toute intégrité référentielle (doc 01).
 model ProductMedia {
-  productId String     @map("product_id")
-  mediaId   String     @map("media_id")
+  productId String  @map("product_id")
 
-  /// L'image désignée par son **URL** — la seule identité qui traverse deux
-  /// enregistrements de fiche.
+  /// L'image désignée par son **URL**, et par rien d'autre.
   ///
-  /// 🔴 Nullable et **pas encore lue** : c'est le déploiement ① du plan
-  /// `documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md`. Elle est écrite en
-  /// double de `mediaId`, le temps que les lectures basculent (②) puis que
-  /// `mediaId` tombe (③).
-  mediaUrl  String?    @map("media_url")
-  product   Product    @relation(fields: [productId], references: [id])
-  media     MediaAsset @relation(fields: [mediaId], references: [id])
+  /// 🔴 Aucune clé étrangère, et c'est le sujet : la bibliothèque est un BLOC à
+  /// part depuis le 2026-09-23, dans son propre schéma. Entre deux blocs, ce
+  /// dépôt référence par identifiant opaque — exactement comme une ligne de
+  /// commande B2B porte un SKU du référentiel. L'URL fait un bon identifiant :
+  /// elle est le SHA-256 du contenu, donc stable pour des octets donnés.
+  ///
+  /// ⚠️ Ce qu'on a perdu au passage : le `ON DELETE RESTRICT` qui empêchait de
+  /// supprimer une image affichée. Cette règle vit désormais dans le code —
+  /// `DiscardMediaHandler` compte les emplois et refuse, le ramassage
+  /// interroge les porteurs et s'abstient si l'un d'eux se tait.
+  mediaUrl  String  @map("media_url")
+  product   Product @relation(fields: [productId], references: [id])
   role      MediaRole
   position  Int        @default(0)
 
@@ -155,7 +83,7 @@ model ProductMedia {
   /// ignorerait les visuels se dirait à jour après un changement de photo.
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
-  @@id([productId, mediaId])
+  @@id([productId, mediaUrl, role])
   @@index([productId])
   @@index([mediaUrl])
   @@map("product_media")

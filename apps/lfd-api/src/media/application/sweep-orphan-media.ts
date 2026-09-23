@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../platform/time/clock.js";
 import { MediaStore } from "../../platform/storage/media-store.js";
+import { MediaCarriers } from "../channels/carriers/media-carriers.js";
 import { MediaLibrary } from "../domain/ports/media-library.js";
 
 /**
@@ -96,24 +97,44 @@ export class SweepOrphanMediaHandler implements ICommandHandler<
   constructor(
     private readonly library: MediaLibrary,
     private readonly store: MediaStore,
+    private readonly carriers: MediaCarriers,
     private readonly clock: Clock,
   ) {}
 
   async execute(): Promise<OrphanSweepReport> {
     const before = this.graceCutoff();
-    const candidates = await this.library.findOrphanKeys(before, MAX_PER_RUN);
+    const candidates = await this.library.findCandidates(before, MAX_PER_RUN);
 
     let removed = 0;
     let forgotten = 0;
     let spared = 0;
 
-    for (const storageKey of candidates) {
-      if (!(await this.library.isStillOrphan(storageKey, before))) {
+    // 🔴 **Qui affiche quoi, c'est aux PORTEURS de le dire.** La bibliothèque
+    // ne lit pas leurs tables (`lint:prisma-model-ownership`), et depuis que la
+    // clé étrangère est tombée, plus rien en base ne refuse la suppression d'une
+    // image affichée. Ce comptage EST la règle de Hugo — « on ne supprime pas
+    // une image qui a été mappée quelque part ».
+    //
+    // ⚠️ Un porteur qui ne répond pas fait ÉCHOUER le passage, et c'est
+    // délibéré : le silence ne vaut pas « zéro emploi ». Sans cette
+    // propagation, une panne de port deviendrait un effacement de masse — le
+    // pire mode de défaillance imaginable pour ce handler.
+    const uses = await this.carriers.usesOf(candidates.map((candidate) => candidate.url));
+
+    for (const candidate of candidates) {
+      if ((uses.get(candidate.url) ?? 0) > 0) {
         spared += 1;
         continue;
       }
-      await this.store.remove(storageKey);
-      forgotten += await this.library.forget(storageKey);
+      // Rejoué juste avant la suppression : entre le recensement et ce
+      // moment-ci, quelqu'un peut avoir redéposé la même image.
+      const url = await this.library.stillOld(candidate.storageKey, before);
+      if (url === null || (await this.carriers.usesOf([url])).get(url) !== undefined) {
+        spared += 1;
+        continue;
+      }
+      await this.store.remove(candidate.storageKey);
+      forgotten += await this.library.forget(candidate.storageKey);
       removed += 1;
     }
 

@@ -5,7 +5,33 @@ import {
   type MediaFacts,
   type RegisteredMedia,
 } from "../../domain/ports/media-library.js";
+import { MediaCarriers } from "../../channels/carriers/media-carriers.js";
 import { SweepOrphanMediaHandler } from "../sweep-orphan-media.js";
+
+/**
+ * Ce que les PORTEURS répondent. Muet par défaut — personne n'affiche rien —
+ * parce que c'est l'état qu'un ramassage vise.
+ *
+ * 🔴 Depuis que la clé étrangère est tombée, ce comptage EST la règle de Hugo :
+ * « on ne supprime pas une image qui a été mappée quelque part ». Plus rien en
+ * base ne la tient.
+ */
+class FakeCarriers extends MediaCarriers {
+  constructor(private readonly counts: ReadonlyMap<string, number> = new Map()) {
+    super();
+  }
+
+  usesOf(urls: readonly string[]): Promise<ReadonlyMap<string, number>> {
+    return Promise.resolve(
+      new Map(
+        urls.flatMap((url) => {
+          const count = this.counts.get(url);
+          return count === undefined ? [] : [[url, count] as const];
+        }),
+      ),
+    );
+  }
+}
 
 const NOW = new Date("2026-08-22T04:00:00Z");
 
@@ -24,15 +50,22 @@ class FakeLibrary extends MediaLibrary {
     super();
   }
 
-  findOrphanKeys(before: Date): Promise<readonly string[]> {
+  findCandidates(before: Date): Promise<readonly { storageKey: string; url: string }[]> {
     this.cutoff = before;
-    return Promise.resolve(this.candidates);
+    return Promise.resolve(
+      this.candidates.map((storageKey) => ({
+        storageKey,
+        url: `https://media.test/${storageKey}`,
+      })),
+    );
   }
 
-  isStillOrphan(storageKey: string, before: Date): Promise<boolean> {
+  stillOld(storageKey: string, before: Date): Promise<string | null> {
     this.cutoff = before;
     this.steps.push(`check:${storageKey}`);
-    return Promise.resolve(this.stillOrphan(storageKey));
+    return Promise.resolve(
+      this.stillOrphan(storageKey) ? `https://media.test/${storageKey}` : null,
+    );
   }
 
   forget(storageKey: string): Promise<number> {
@@ -71,11 +104,17 @@ function handler(
   candidates: readonly string[],
   stillOrphan: (key: string) => boolean = () => true,
   failOn: string | null = null,
+  carried: ReadonlyMap<string, number> = new Map(),
 ): { run: SweepOrphanMediaHandler; steps: Step[]; library: FakeLibrary } {
   const steps: Step[] = [];
   const library = new FakeLibrary(candidates, stillOrphan, steps);
   return {
-    run: new SweepOrphanMediaHandler(library, new FakeStore(steps, failOn), new FixedClock(NOW)),
+    run: new SweepOrphanMediaHandler(
+      library,
+      new FakeStore(steps, failOn),
+      new FakeCarriers(carried),
+      new FixedClock(NOW),
+    ),
     steps,
     library,
   };

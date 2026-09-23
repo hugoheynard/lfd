@@ -13,13 +13,6 @@ import {
   SOURCE_LOCALE,
 } from "../../pim/catalogue/shared/domain/value-objects/localized-text.js";
 
-/**
- * Combien de lignes, en moyenne, partagent une clé — sert seulement à demander
- * assez de lignes pour espérer `limit` clés distinctes. Un dédoublonnage plus
- * maigre que prévu rend juste une passe plus courte, jamais un résultat faux.
- */
-const ROWS_PER_KEY_ESTIMATE = 4;
-
 @Injectable()
 export class PrismaMediaLibrary extends MediaLibrary {
   constructor(
@@ -50,50 +43,43 @@ export class PrismaMediaLibrary extends MediaLibrary {
     return { id, ...entry };
   }
 
-  async findOrphanKeys(before: Date, limit: number): Promise<readonly string[]> {
-    // Les LIGNES délaissées : hébergées, sans AUCUN porteur, et posées avant le
-    // délai. Elles ne prouvent encore rien sur l'objet — plusieurs lignes
-    // partagent une clé, et il suffit qu'UNE seule soit rattachée pour que
-    // l'objet serve.
+  async findCandidates(
+    before: Date,
+    limit: number,
+  ): Promise<readonly { readonly storageKey: string; readonly url: string }[]> {
+    // Ce que la bibliothèque SAIT : hébergé, et posé avant le délai de grâce.
+    // Elle ne sait pas si une image sert — les tables de rattachement ne sont
+    // pas les siennes. C'est le handler qui interroge les porteurs.
     //
-    // DEUX porteurs depuis que les familles ont des visuels, et l'oubli du
-    // second ne se serait vu qu'en production : la requête aurait déclaré
-    // orphelin un objet qu'une famille affiche, et le ramassage l'aurait
-    // supprimé de R2. Un `none` par relation, jamais un seul.
+    // ⚠️ Cette requête portait `products: { none: {} }` et
+    // `categories: { none: {} }` jusqu'au 2026-09-23. Ces relations ont disparu
+    // avec la clé étrangère : les laisser aurait fait déclarer ORPHELIN tout le
+    // fonds, et supprimer de R2 des images affichées.
     const rows = await this.prisma.mediaAsset.findMany({
-      where: {
-        storageKey: { not: null },
-        createdAt: { lt: before },
-        products: { none: {} },
-        categories: { none: {} },
-      },
-      select: { storageKey: true },
+      where: { storageKey: { not: null }, createdAt: { lt: before } },
+      select: { storageKey: true, url: true },
       orderBy: { createdAt: "asc" },
-      // On dédoublonne après coup : `distinct` sur une colonne nullable
-      // interdirait le tri par date, qui fait passer les plus anciens d'abord.
-      take: limit * ROWS_PER_KEY_ESTIMATE,
+      take: limit,
     });
-    const keys = [
-      ...new Set(rows.flatMap((row) => (row.storageKey === null ? [] : [row.storageKey]))),
-    ];
-    return keys.slice(0, limit);
+    return rows.flatMap((row) =>
+      row.storageKey === null ? [] : [{ storageKey: row.storageKey, url: row.url }],
+    );
   }
 
-  async isStillOrphan(storageKey: string, before: Date): Promise<boolean> {
-    // UNE requête pour les disqualifications : un PORTEUR quelconque — fiche ou
-    // famille — ou une inscription trop fraîche (quelqu'un vient de déposer ce
-    // fichier et n'a pas encore enregistré sa section).
-    const readers = await this.prisma.mediaAsset.count({
-      where: {
-        storageKey,
-        OR: [
-          { products: { some: {} } },
-          { categories: { some: {} } },
-          { createdAt: { gte: before } },
-        ],
-      },
+  async stillOld(storageKey: string, before: Date): Promise<string | null> {
+    // Une inscription FRAÎCHE disqualifie : quelqu'un vient de déposer ce
+    // fichier et n'a pas encore enregistré sa section.
+    const row = await this.prisma.mediaAsset.findFirst({
+      where: { storageKey, createdAt: { lt: before } },
+      select: { url: true },
     });
-    return readers === 0;
+    if (row === null) {
+      return null;
+    }
+    const fresh = await this.prisma.mediaAsset.count({
+      where: { storageKey, createdAt: { gte: before } },
+    });
+    return fresh === 0 ? row.url : null;
   }
 
   async forget(storageKey: string): Promise<number> {

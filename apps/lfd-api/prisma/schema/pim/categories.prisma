@@ -93,19 +93,17 @@ model CategoryEditorial {
 /// bibliothèque `media_asset` est la même, et un même fichier peut donc servir
 /// une famille et une fiche sans être déposé deux fois.
 model CategoryMedia {
-  categoryId String     @map("category_id")
-  mediaId    String     @map("media_id")
+  categoryId String   @map("category_id")
 
-  /// Voir `ProductMedia.mediaUrl` : même bascule, même déploiement ①. Les
-  /// familles portent des visuels comme les fiches, et une bascule qui n'en
+  /// Voir `ProductMedia.mediaUrl` : l'URL et rien d'autre, sans clé étrangère.
+  /// Les familles portent des visuels comme les fiches, et une bascule qui n'en
   /// couvrirait qu'un des deux ne se verrait qu'en production.
-  mediaUrl   String?    @map("media_url")
-  category   Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  media      MediaAsset @relation(fields: [mediaId], references: [id])
+  mediaUrl   String   @map("media_url")
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   role       MediaRole
   position   Int        @default(0)
 
-  @@id([categoryId, mediaId])
+  @@id([categoryId, mediaUrl, role])
   @@index([categoryId])
   @@index([mediaUrl])
   @@map("category_media")

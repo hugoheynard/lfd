@@ -50,25 +50,6 @@ export abstract class ImageCatalogue {
    * (Hugo, 2026-09-23), et c'est cette question-là qui le tient.
    */
   abstract has(url: string): Promise<boolean>;
-
-  /**
-   * La **référence opaque** de cette image, ou `null` si elle n'existe pas.
-   *
-   * 🔴 Opaque veut dire : le porteur la RANGE, il ne l'interprète pas. C'est le
-   * motif que le dépôt applique partout entre blocs — une `OrderLine` du B2B
-   * porte un SKU du référentiel sans rien savoir de ses tables.
-   *
-   * ⚠️ Elle n'existe que le temps que `product_media.media_id` soit une colonne
-   * OBLIGATOIRE et une clé primaire. La rendre facultative demande d'abord de
-   * refondre la clé en `(porteur, url, rôle)` — c'est le déploiement ③, il est
-   * IRRÉVERSIBLE, et il emporte avec lui le `ON DELETE RESTRICT` qui tient
-   * aujourd'hui la règle « on ne supprime pas une image qu'un porteur
-   * affiche ». Cette méthode disparaît avec la colonne.
-   *
-   * ➡️ Tant qu'elle est là, la clé étrangère protège encore, et c'est une bonne
-   * raison de ne pas se presser.
-   */
-  abstract reference(url: string): Promise<string | null>;
 }
 
 /**

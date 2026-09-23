@@ -67,5 +67,5 @@ generator client {
 // cette base, et ses tables sont dans le schéma `pim` — cf. `pim/`.
 datasource db {
   provider = "postgresql"
-  schemas  = ["public", "growth", "ops", "pim", "production"]
+  schemas  = ["public", "growth", "ops", "pim", "production", "media"]
 }

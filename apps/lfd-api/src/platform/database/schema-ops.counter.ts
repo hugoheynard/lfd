@@ -194,7 +194,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   AllergenCategory: "pim",
   AllergenEntry: "pim",
   IngredientAllergen: "pim",
-  MediaAsset: "pim",
+  // La MÉDIATHÈQUE a son schéma depuis le 2026-09-23 : la table n'a pas été
+  // recopiée, elle a changé de schéma d'un `SET SCHEMA` instantané.
+  MediaAsset: "media",
   ProductMedia: "pim",
   B2bChannelBinding: "pim",
 

@@ -50,11 +50,11 @@ class FakeLibrary extends MediaLibrary {
   factsFor(): Promise<MediaFacts | null> {
     return Promise.resolve(null);
   }
-  findOrphanKeys(): Promise<readonly string[]> {
+  findCandidates(): Promise<readonly { storageKey: string; url: string }[]> {
     return Promise.resolve([]);
   }
-  isStillOrphan(): Promise<boolean> {
-    return Promise.resolve(false);
+  stillOld(): Promise<string | null> {
+    return Promise.resolve(null);
   }
   forget(): Promise<number> {
     return Promise.resolve(0);

@@ -36,30 +36,41 @@ export abstract class MediaLibrary {
   abstract factsFor(url: string): Promise<MediaFacts | null>;
 
   /**
-   * Les clés d'objets **candidates** au ramassage : plus aucune fiche ne les
-   * porte, et la plus récente inscription qui les mentionne est antérieure à
-   * `before`.
+   * Les images **hébergées et anciennes** — celles qu'un ramassage pourrait
+   * viser, sans rien savoir encore de qui les affiche.
    *
-   * « Candidates » et non « supprimables », et le mot compte : entre ce
-   * recensement et la suppression, quelqu'un peut redéposer la même image —
-   * mêmes octets, donc **même clé** — et l'attacher. D'où
-   * {@link MediaLibrary.isStillOrphan}, rejoué juste avant chaque suppression.
+   * 🔴 La bibliothèque ne sait PAS si une image sert : les tables de
+   * rattachement appartiennent aux porteurs, et `lint:prisma-model-ownership`
+   * dit qu'un modèle n'est lu que par son propriétaire. Elle rend donc des
+   * candidates au sens faible — « voici ce qui est chez nous depuis assez
+   * longtemps » — et c'est le HANDLER qui interroge les porteurs.
+   *
+   * ⚠️ Ce port répondait autrefois « plus aucune fiche ne les porte », par un
+   * `products: { none: {} }`. Cette phrase est devenue impossible à tenir le
+   * jour où la clé étrangère est tombée : la relation n'existait plus, la
+   * requête n'avait plus de sens, et elle aurait déclaré ORPHELIN tout le
+   * fonds. La réécriture est venue avant la migration, pas après.
    *
    * @param limit plafond par passage : un premier ramassage sur un arriéré ne
    *   doit pas tourner une heure ni saturer R2 d'appels.
    */
-  abstract findOrphanKeys(before: Date, limit: number): Promise<readonly string[]>;
+  abstract findCandidates(
+    before: Date,
+    limit: number,
+  ): Promise<readonly { readonly storageKey: string; readonly url: string }[]>;
 
   /**
-   * Cette clé est-elle **encore** sans lecteur et hors délai de grâce ?
+   * Cette clé de stockage est-elle **encore** hors du délai de grâce ?
    *
-   * Relue au dernier moment. Elle ne ferme pas la fenêtre — rien ne peut la
-   * fermer sans verrou — mais la réduit de plusieurs minutes à quelques
-   * millisecondes. Le pire cas restant est un objet supprimé alors qu'il vient
-   * d'être rattaché ; l'adressage par contenu le rend réparable en redéposant
-   * le même fichier.
+   * Relue au dernier moment, avec le comptage des porteurs. Elle ne ferme pas
+   * la fenêtre — rien ne peut la fermer sans verrou — mais la réduit de
+   * plusieurs minutes à quelques millisecondes. Le pire cas restant est un
+   * objet supprimé alors qu'il vient d'être rattaché ; l'adressage par contenu
+   * le rend réparable en redéposant le même fichier.
+   *
+   * @returns l'URL de l'image si elle est encore hors délai, `null` sinon.
    */
-  abstract isStillOrphan(storageKey: string, before: Date): Promise<boolean>;
+  abstract stillOld(storageKey: string, before: Date): Promise<string | null>;
 
   /**
    * Oublie **toutes** les inscriptions portant cette clé.

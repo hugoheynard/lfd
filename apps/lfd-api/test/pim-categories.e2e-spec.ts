@@ -9,6 +9,7 @@
  * d'erreurs traduit — et c'est un **409** qui sort, avec son code.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { MediaCarriers } from "../src/media/channels/carriers/media-carriers.js";
 import { MediaLibrary } from "../src/media/domain/ports/media-library.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
@@ -546,33 +547,58 @@ describe("le ramassage d'orphelins connaît les DEUX porteurs", () => {
   const CUTOFF = new Date("2030-01-01T00:00:00Z");
 
   /** Une image hébergée, assez ancienne pour être hors délai de grâce. */
-  async function hostedAsset(id: string, key: string): Promise<void> {
+  async function hostedAsset(id: string, key: string): Promise<string> {
+    const url = `https://cdn/${key}`;
     await ctx.prisma.mediaAsset.create({
-      data: { id, url: `https://cdn/${key}`, alt: { fr: "x" }, storageKey: key, createdAt: OLD },
+      data: { id, url, alt: { fr: "x" }, storageKey: key, createdAt: OLD },
     });
+    return url;
   }
 
-  it("ne réclame pas une image qu'une famille affiche", async () => {
+  /**
+   * 🔴 Ce que ce cas garde a changé de nature le 2026-09-23. La bibliothèque ne
+   * LIT plus les tables de rattachement — elles appartiennent aux porteurs — et
+   * ne peut donc plus dire elle-même qu'une image sert. C'est le port
+   * `MediaCarriers` qui répond, et c'est lui qu'on éprouve ici : contre le VRAI
+   * dépôt Prisma, parce qu'un double en mémoire remplacerait précisément la
+   * requête en cause.
+   *
+   * ⚠️ L'enjeu a grandi : depuis que la clé étrangère est tombée, plus rien en
+   * base ne refuse la suppression d'une image affichée. Ce comptage EST la
+   * règle.
+   */
+  it("compte la famille qui affiche une image", async () => {
     const categoryId = await createCategory("Viennoiseries");
-    await hostedAsset("media_tenue", "tenue.jpg");
+    const url = await hostedAsset("media_tenue", "tenue.jpg");
     await ctx.prisma.categoryMedia.create({
-      data: { categoryId, mediaId: "media_tenue", role: "gallery", position: 0 },
+      data: { categoryId, mediaUrl: url, role: "gallery", position: 0 },
     });
 
-    const library = ctx.app.get(MediaLibrary);
+    const carriers = ctx.app.get(MediaCarriers);
 
-    expect(await library.findOrphanKeys(CUTOFF, 10)).not.toContain("tenue.jpg");
-    expect(await library.isStillOrphan("tenue.jpg", CUTOFF)).toBe(false);
+    expect((await carriers.usesOf([url])).get(url)).toBe(1);
   });
 
-  it("réclame bien celle que plus personne ne porte", async () => {
-    // Le contre-exemple : sans lui, un `where` trop strict ferait passer le test
-    // précédent en ne réclamant JAMAIS rien.
-    await hostedAsset("media_libre", "libre.jpg");
+  it("ne compte rien pour celle que plus personne ne porte", async () => {
+    // Le contre-exemple : sans lui, un `where` trop large ferait passer le cas
+    // précédent en comptant TOUT.
+    const url = await hostedAsset("media_libre", "libre.jpg");
+
+    const carriers = ctx.app.get(MediaCarriers);
+
+    expect((await carriers.usesOf([url])).get(url)).toBeUndefined();
+  });
+
+  it("rend candidate une image hébergée et ancienne, sans rien préjuger", async () => {
+    await hostedAsset("media_vieille", "vieille.jpg");
 
     const library = ctx.app.get(MediaLibrary);
 
-    expect(await library.findOrphanKeys(CUTOFF, 10)).toContain("libre.jpg");
-    expect(await library.isStillOrphan("libre.jpg", CUTOFF)).toBe(true);
+    // « Candidate » au sens faible : la bibliothèque dit ce qu'elle sait —
+    // hébergée, ancienne — et rien de plus. Qui l'affiche est une autre
+    // question, posée aux porteurs par le handler.
+    expect((await library.findCandidates(CUTOFF, 10)).map((row) => row.storageKey)).toContain(
+      "vieille.jpg",
+    );
   });
 });

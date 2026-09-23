@@ -118,7 +118,7 @@ et retiré des questions ouvertes.
 
 ### 🔴 La clé primaire, et le risque d'échec de migration
 
-`@@id([productId, mediaId])` (`editorial-media.prisma:125`), idem pour les
+`@@id([productId, mediaId])` (`editorial-media.prisma`), idem pour les
 familles. Rien n'interdit aujourd'hui d'attacher **la même URL deux fois au même
 produit** — deux actifs distincts, deux rôles. Aucune garde d'unicité d'URL
 n'existe dans `media.ts`, ni dans `set-product-media.ts`, ni dans le magasin du

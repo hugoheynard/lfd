@@ -53,14 +53,6 @@ export class PrismaImageCatalogue extends ImageCatalogue {
     );
   }
 
-  async reference(url: string): Promise<string | null> {
-    const row = await this.prisma.mediaAsset.findUnique({
-      where: { url },
-      select: { id: true },
-    });
-    return row?.id ?? null;
-  }
-
   async has(url: string): Promise<boolean> {
     // `count` et non `findUnique` : on ne veut savoir QUE si elle existe, et
     // ramener ses colonnes pour les jeter ferait payer le transport pour rien.

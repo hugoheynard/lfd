@@ -73,12 +73,13 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
   async replaceMedia(categoryId: string, media: readonly MediaItem[]): Promise<void> {
     await this.prisma.categoryMedia.deleteMany({ where: { categoryId } });
     for (const item of media) {
-      const mediaId = await this.assetFor(item);
+      // La bibliothèque REFUSE une image qu'elle ne connaît pas ; on ne garde
+      // rien de sa réponse, il n'y a plus d'identifiant à ranger.
+      await this.assetFor(item);
       await this.prisma.categoryMedia.create({
         data: {
           mediaUrl: item.url,
           categoryId,
-          mediaId,
           role: item.role,
           position: item.position,
         },
@@ -87,16 +88,21 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
   }
 
   /**
-   * La **référence opaque** de l'image, obtenue de la bibliothèque.
+   * Refuse un visuel que la bibliothèque ne connaît pas.
+   *
+   * ⚠️ Cette méthode rendait une **référence opaque** jusqu'au 2026-09-23 : le
+   * rattachement devait ranger un identifiant d'actif, parce que `media_id`
+   * était une colonne obligatoire et une clé primaire. Elle a disparu avec la
+   * colonne — il n'y a plus rien à ranger que l'URL, et le port n'a plus qu'à
+   * dire oui ou non.
    *
    * 🔴 Il n'en existe plus qu'UN par URL (contrainte d'unicité, 2026-09-23).
    * Même mécanique et mêmes raisons que la fiche produit
    * (`prisma-editorial.repository.ts`) : la table était un journal de lignes,
    * elle redevient une bibliothèque.
    */
-  private async assetFor(item: MediaItem): Promise<string> {
-    const reference = await this.images.reference(item.url);
-    if (reference === null) {
+  private async assetFor(item: MediaItem): Promise<void> {
+    if (!(await this.images.has(item.url))) {
       // 🔴 **Plus de visuel par simple URL** (Hugo, 2026-09-23). C'était le
       // dernier chemin par lequel une image entrait sans passer par un dépôt.
       // Ce qu'on perd : illustrer depuis une banque d'images distante sans
@@ -105,6 +111,5 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
       // serveur.
       throw new UnknownImageError(item.url);
     }
-    return reference;
   }
 }
