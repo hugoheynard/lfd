@@ -74,9 +74,24 @@ ressaisies ».
 Cloudflare si `R2_MEDIA_PUBLIC_BASE_URL` pointe sur un domaine de notre zone, et
 une fonction qui réécrit l'URL côté écran.
 
-⚠️ **À vérifier avant de décider** : est-ce que ce domaine est bien dans notre
-zone Cloudflare ? Si oui, le redimensionnement est un réglage. Sinon il faut
-passer par Cloudflare Images, qui est **facturé à l'image servie**. Non vérifié.
+✅ **VÉRIFIÉ le 2026-09-23, dans le tableau de bord : c'est un réglage.**
+
+|                           |                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------- |
+| Domaine média             | `https://media.lafoliecoffee.info` — domaine PERSONNALISÉ, pas une URL `r2.dev` |
+| Derrière Cloudflare ?     | oui (`server: cloudflare`, `cf-ray`, vérifié par requête directe)               |
+| Zone `lafoliecoffee.info` | présente au compte, 1 sur 1                                                     |
+| Transformations           | **Disabled** — un interrupteur à basculer                                       |
+| Quota inclus              | **5 000** transformations uniques (0 consommée)                                 |
+
+**« 5 000 uniques » se compte par image × par jeu d'options, une fois par
+mois.** Les redemandes sortent du cache et ne comptent pas. Avec 200 images et
+quatre largeurs, on est à 800 — très loin du plafond. Ça ne redevient une
+question que si le fonds passe le millier d'images ET qu'on multiplie les
+largeurs.
+
+⚠️ L'interrupteur n'a PAS été basculé : c'est un changement de compte, il
+revient à Hugo.
 
 ### 🔴 « Et le stockage des dérivées, alors ? » — il n'y en a pas
 
@@ -316,8 +331,10 @@ peuvent le recevoir, sans priver les autres.
 
 ## Ce qui reste à trancher
 
-1. **Le domaine média est-il dans notre zone Cloudflare ?** C'est la seule
-   question qui décide si ① est un réglage ou une facture.
+1. ~~Le domaine média est-il dans notre zone Cloudflare ?~~ ✅ **Oui, vérifié
+   le 2026-09-23.** C'est un interrupteur, avec 5 000 transformations uniques
+   incluses. Reste à le basculer — et c'est une décision de compte, pas de
+   code.
 2. ~~Le décalage de mise en page se corrige-t-il tout de suite ?~~ **Il n'y en
    a pas** — vérifié le 2026-09-23, les deux conteneurs portent déjà un
    `aspect-ratio`. Cette ligne est gardée rayée parce que l'erreur est
