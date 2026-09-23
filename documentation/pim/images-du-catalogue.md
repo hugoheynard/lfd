@@ -90,6 +90,35 @@ n'aurait personne à qui s'adresser.
 _(Colonne « qui le lit » vérifiée le 2026-09-23 : `showcase.ts` est l'unique
 lecteur de rôle de tout le dépôt.)_
 
+## 🔴 Le rôle PAR DÉFAUT ne voyage nulle part
+
+Une image rattachée depuis la médiathèque arrive en **`gallery`**. Or seuls
+**deux rôles traversent** le fil : `hero` et `thumbnail`. `gallery`,
+`lifestyle` et `print` s'arrêtent au référentiel.
+
+**Conséquence, constatée deux fois le 2026-09-23** : une image tout juste
+rattachée est **invisible en boutique**, alors qu'elle est bien en base et bien
+affichée au back-office. Rien à l'écran ne le dit.
+
+⚠️ Ce n'est pas le même défaut que « `thumbnail` ne traversait pas » — celui-là
+est corrigé (fil v10). Celui-ci est le **défaut du défaut** : le rôle qu'on
+obtient sans rien décider est celui qui ne fait rien.
+
+**Trois sorties, et le choix est un choix de PRODUIT :**
+
+|                                                         | Ce que ça donne                               | Ce que ça coûte                                         |
+| ------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------- |
+| **A** le premier visuel rattaché devient `hero`         | une fiche qui a une photo la montre, toujours | l'écran décide à la place de qui rédige                 |
+| **B** l'écran DIT que `gallery` n'est publié nulle part | on comprend en regardant                      | il faut encore choisir                                  |
+| **C** `gallery` traverse en repli après `hero`          | plus de trou                                  | on publie des photos que personne n'a choisi de publier |
+
+**Recommandation : B, éventuellement avec A.** Le vrai défaut n'est pas qu'un
+rôle ne voyage pas — c'est que **rien ne le dit**. Ce tableau l'écrit noir sur
+blanc (« lu par : personne ») et cette information ne vit pas dans l'écran où
+l'on décide.
+
+---
+
 ⚠️ **`gallery` n'aura jamais de ratio**, et ce n'est pas une case qu'on n'a pas
 remplie. C'est le rôle par défaut de tout dépôt (`DEFAULT_MEDIA_ROLE`) : lui
 imposer une forme refuserait des images à l'entrée de la bibliothèque, là où on
