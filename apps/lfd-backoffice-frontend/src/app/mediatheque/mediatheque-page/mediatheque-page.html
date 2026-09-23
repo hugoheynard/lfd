@@ -198,14 +198,22 @@
             </ul>
           }
           <!-- Le compte d'emplois, toujours visible : c'est lui qui dira
-               pourquoi une suppression est refusée, avant qu'on l'essaie. -->
-          <span class="uses" [class.uses-free]="item.uses === 0">{{ usesLabel(item) }}</span>
+               pourquoi une suppression est refusée, avant qu'on l'essaie.
+               CLIQUABLE dès qu'il y en a : un nombre qui empêche sans permettre
+               de trouver quoi que ce soit transforme un garde-fou en mur. -->
           @if (item.uses === 0) {
+            <span class="uses uses-free">{{ usesLabel(item) }}</span>
             <!-- Proposé SEULEMENT quand rien ne la porte : offrir le geste sur
-                 une image affichée ferait apprendre la règle par un refus. Le
-                 serveur refuse quand même — c'est lui qui a le dernier mot,
-                 et la base derrière lui. -->
+                 une image affichée ferait apprendre la règle par un refus.
+                 🔴 Le serveur refuse quand même, et c'est LUI le dernier mot —
+                 ce commentaire disait « et la base derrière lui », ce qui est
+                 faux depuis le 2026-09-23 : il n'y a plus de clé étrangère, la
+                 règle vit entièrement dans le code. -->
             <button type="button" class="discard" (click)="discard(item)">Retirer</button>
+          } @else {
+            <button type="button" class="uses uses-link" (click)="showCarriers(item)">
+              {{ usesLabel(item) }} — voir où
+            </button>
           }
           <button type="button" class="discard" (click)="describe(item)">Décrire</button>
         </li>

@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type {
+  MediaCarrierView,
   MediaDetailsPayload,
   MediaLibraryPageView,
   UploadedMediaView,
@@ -85,6 +86,23 @@ export class MediaLibraryHttpApi {
     const body = new FormData();
     body.append('file', file);
     return firstValueFrom(this.http.post<UploadedMediaView>(`${this.base}/media`, body));
+  }
+
+  /**
+   * **Qui affiche cette image** — nommés, pas comptés.
+   *
+   * 🔴 Distinct du `uses` que porte chaque entrée de la liste : celui-là est
+   * un compte, obtenu en balayant des pages entières sans charger aucun
+   * libellé. Celui-ci nomme les porteurs d'UNE image. Les deux peuvent
+   * diverger le temps qu'une fiche change — d'où la règle d'écran : on
+   * n'affiche pas les deux nombres côte à côte.
+   */
+  async carriersOf(url: string): Promise<readonly MediaCarrierView[]> {
+    return firstValueFrom(
+      this.http.get<readonly MediaCarrierView[]>(`${this.base}/media/carriers`, {
+        params: { url },
+      }),
+    );
   }
 
   /**

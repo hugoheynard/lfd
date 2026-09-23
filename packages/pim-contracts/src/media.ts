@@ -40,6 +40,23 @@ export interface FocalPoint {
 }
 
 /**
+ * **Qui affiche une image** — une ligne de la liste des porteurs.
+ *
+ * 🔴 Elle existe parce que `uses` est un NOMBRE, et qu'un nombre empêche sans
+ * débloquer : le refus de suppression disait « 3 fiches l'affichent » sans
+ * permettre d'en trouver une seule. Le garde-fou devenait un mur.
+ *
+ * ⚠️ `label` n'est jamais vide — un porteur sans nom se désigne par son
+ * identifiant. Une ligne sans mot ne se clique pas.
+ */
+export interface MediaCarrierView {
+  /** Elle décide de l'écran vers lequel le lien renvoie. */
+  readonly kind: "product" | "category";
+  readonly id: string;
+  readonly label: string;
+}
+
+/**
  * Une image de la **bibliothèque**, telle que la médiathèque la montre.
  *
  * 🔴 Pas d'identifiant, et ce n'est pas un oubli : l'identité d'une image est

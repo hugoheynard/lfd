@@ -1,0 +1,65 @@
+.carriers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.state {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.is-failure {
+  color: var(--fold-color-alert-text);
+}
+
+.tally {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Une ligne cliquable, pas une carte : la liste sert à ATTEINDRE un porteur,
+   et lui donner l'apparence d'un objet ferait croire qu'on peut agir dessus
+   ici. */
+.carrier {
+  display: flex;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  width: 100%;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.kind {
+  flex: none;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--fold-space-lg);
+}

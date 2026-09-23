@@ -10,6 +10,7 @@ import {
 } from 'fold-ng';
 
 import { BatchUploadStore } from '../batch-upload';
+import { CarriersPanel, type CarriersPanelData } from '../carriers-panel/carriers-panel';
 import { ImagePanel, type ImagePanelData, type ImagePanelResult } from '../image-panel/image-panel';
 import { TagPaletteStore } from '../tag-palette';
 import { MediaLibraryHttpApi } from '../media-library-http-api';
@@ -139,6 +140,19 @@ export class MediathequePage {
     this.search.set('');
     this.filterTags.set([]);
     await this.refilter();
+  }
+
+  /**
+   * Ouvre la liste des porteurs d'une image.
+   *
+   * 🔴 C'est ce qui rend le refus de suppression actionnable : le compteur
+   * disait « 3 emplois » sans permettre d'en trouver un seul, donc empêchait
+   * le geste sans donner de quoi le débloquer.
+   */
+  protected showCarriers(item: LibraryMediaView): void {
+    void this.panels.open<CarriersPanelData, void>(CarriersPanel, {
+      data: { url: item.url, label: this.label(item) },
+    });
   }
 
   /**

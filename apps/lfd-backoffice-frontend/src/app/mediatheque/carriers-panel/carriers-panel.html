@@ -1,0 +1,33 @@
+<fold-panel-header title="Qui affiche cette image" [subtitle]="data().label" />
+
+<div class="carriers">
+  @if (loading()) {
+    <p class="state">Lecture des porteurs…</p>
+  } @else if (failure(); as message) {
+    <!-- Un échec de LECTURE, jamais confondu avec « aucun porteur » : croire
+         l'image libre au premier réseau qui tousse ferait proposer de la
+         supprimer. -->
+    <p class="state is-failure">{{ message }}</p>
+  } @else if (carriers().length === 0) {
+    <p class="state">Aucune fiche ni famille ne l'affiche. Elle peut être retirée du fonds.</p>
+  } @else {
+    <!-- Le compte vient de CETTE liste, pas de la vignette : deux requêtes,
+         deux fraîcheurs, et un écart entre les deux ferait conclure que le
+         compteur ment. -->
+    <p class="tally">{{ carriers().length }} porteur(s)</p>
+    <ul class="list">
+      @for (carrier of carriers(); track carrier.kind + carrier.id) {
+        <li>
+          <button type="button" class="carrier" (click)="open(carrier)">
+            <span class="kind">{{ carrier.kind === 'product' ? 'Fiche' : 'Famille' }}</span>
+            <span class="label">{{ carrier.label }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>
+
+<div class="foot">
+  <button foldButton emphasis="outline" (click)="dismiss()">Fermer</button>
+</div>

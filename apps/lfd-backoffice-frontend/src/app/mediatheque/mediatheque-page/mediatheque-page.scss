@@ -262,3 +262,17 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Le compte d'emplois quand il MÈNE quelque part. Il garde l'aspect du texte
+   voisin et ne gagne qu'un soulignement : c'est une information qu'on peut
+   suivre, pas une action qu'on déclenche. */
+.uses-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  text-decoration: underline;
+  cursor: pointer;
+}

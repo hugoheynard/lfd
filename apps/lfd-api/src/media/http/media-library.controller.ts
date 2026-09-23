@@ -16,12 +16,14 @@ import {
   mediaDetailsPayloadSchema,
   type MediaLibraryPageView,
   type UploadedMediaView,
+  type MediaCarrierView,
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { DepositImageCommand, type DepositImageResult } from "../application/deposit-image.js";
 import { UnsupportedImageError } from "../domain/value-objects/image-bytes.js";
 import { BrowseMediaLibraryQuery } from "../application/browse-media-library.js";
+import { ListMediaCarriersQuery } from "../application/list-media-carriers.js";
 import { DiscardMediaCommand } from "../application/discard-media.js";
 import { SaveMediaDetailsCommand } from "../application/save-media-details.js";
 
@@ -95,6 +97,25 @@ export class MediaLibraryController {
         q,
         tagsOf(tags),
       ),
+    );
+  }
+
+  /**
+   * **Qui affiche cette image ?** — nommés, pas comptés.
+   *
+   * 🔴 Elle rend le refus de suppression ACTIONNABLE : le compteur disait
+   * « 3 fiches l'affichent » sans permettre d'en trouver une, donc empêchait
+   * le geste sans donner de quoi le débloquer.
+   *
+   * ⚠️ L'URL est en **paramètre de requête** et non dans le chemin : elle
+   * contient des barres obliques, et la mettre dans le chemin obligerait à
+   * l'encoder des deux côtés — une double couche d'échappement sur la seule
+   * chose qui sert d'identité ici. C'est déjà le choix de `DELETE /media`.
+   */
+  @Get("carriers")
+  async carriers(@Query("url") url?: string): Promise<readonly MediaCarrierView[]> {
+    return this.queries.execute<ListMediaCarriersQuery, readonly MediaCarrierView[]>(
+      new ListMediaCarriersQuery(url ?? ""),
     );
   }
 

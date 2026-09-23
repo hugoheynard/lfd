@@ -4,6 +4,7 @@ import { MediaDatabaseModule } from "./infra/database/media-database.module.js";
 import { MediaIdGenerator, UuidV7MediaIds } from "./infra/id/media-id-generator.js";
 
 import { BrowseMediaLibraryHandler } from "./application/browse-media-library.js";
+import { ListMediaCarriersHandler } from "./application/list-media-carriers.js";
 import { DepositImageHandler } from "./application/deposit-image.js";
 import { DiscardMediaHandler } from "./application/discard-media.js";
 import { SaveMediaDetailsHandler } from "./application/save-media-details.js";
@@ -50,6 +51,7 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
   controllers: [MediaLibraryController, MediaSweepController],
   providers: [
     BrowseMediaLibraryHandler,
+    ListMediaCarriersHandler,
     SaveMediaDetailsHandler,
     DiscardMediaHandler,
     DepositImageHandler,

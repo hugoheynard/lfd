@@ -5,7 +5,7 @@ import {
   type MediaFacts,
   type RegisteredMedia,
 } from "../../domain/ports/media-library.js";
-import { MediaCarriers } from "../../channels/carriers/media-carriers.js";
+import { MediaCarriers, type Carrier } from "../../channels/carriers/media-carriers.js";
 import { SweepOrphanMediaHandler } from "../sweep-orphan-media.js";
 
 /**
@@ -30,6 +30,17 @@ class FakeCarriers extends MediaCarriers {
         }),
       ),
     );
+  }
+
+  /**
+   * Hors sujet ici — le ramassage ne nomme personne, il compte.
+   *
+   * 🔴 Mais le doublé doit porter le port ENTIER, sinon il dérive de ce qu'il
+   * prétend jouer : le jour où le balayage lira les porteurs nommés, un faux
+   * incomplet le laisserait vert sur du code qui ne peut pas tourner.
+   */
+  carriersOf(): Promise<readonly Carrier[]> {
+    return Promise.resolve([]);
   }
 }
 

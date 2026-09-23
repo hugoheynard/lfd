@@ -11,9 +11,15 @@ import { MediathequePage } from './mediatheque-page';
  * Ce que ces cas tiennent : **l'écran DIT ce que l'image porte, avant que
  * quiconque propose de la supprimer**.
  *
- * On ne supprime pas une image qu'un porteur affiche — les clés étrangères sont
- * en `ON DELETE RESTRICT`, et la base refuse. Sans le compte d'emplois à
- * l'écran, cette règle s'apprendrait par un échec.
+ * On ne supprime pas une image qu'un porteur affiche. 🔴 Cette phrase disait
+ * « les clés étrangères sont en `ON DELETE RESTRICT`, et la base refuse » :
+ * c'est faux depuis le 2026-09-23. La bibliothèque a son propre schéma, il n'y
+ * a plus de clé étrangère, et la règle vit ENTIÈREMENT dans le code. Croire
+ * que Postgres la tient encore ferait retirer le garde-fou qui l'a remplacé.
+ *
+ * Sans le compte d'emplois à l'écran, cette règle s'apprendrait par un échec —
+ * et sans la LISTE derrière, elle s'apprendrait sans qu'on puisse rien y
+ * faire.
  *
  * Et l'échec de lecture a son propre état : une grille vide et une grille qui
  * n'a pas pu charger se ressemblent, et les confondre ferait croire le fonds
@@ -39,10 +45,15 @@ function image(url: string, name = '', uses = 0): LibraryMediaView {
 class FakeLibrary {
   pages: MediaLibraryPageView[] = [];
   fails = false;
-  calls: { limit: number; offset: number }[] = [];
+  calls: { limit: number; offset: number; q: string; tags: readonly string[] }[] = [];
 
-  page(limit: number, offset: number): Promise<MediaLibraryPageView> {
-    this.calls.push({ limit, offset });
+  page(
+    limit: number,
+    offset: number,
+    q = '',
+    tags: readonly string[] = [],
+  ): Promise<MediaLibraryPageView> {
+    this.calls.push({ limit, offset, q, tags });
     if (this.fails) {
       return Promise.reject(new Error('réseau'));
     }
@@ -122,5 +133,58 @@ describe('la médiathèque', () => {
     // courte ne doit pas faire sauter des images.
     expect(library.calls.map((call) => call.offset)).toEqual([0, 0, 2]);
     expect(screen['hasMore']()).toBe(false);
+  });
+});
+
+describe('la médiathèque — la recherche', () => {
+  /**
+   * Régression (2026-09-23) : la recherche filtrait ce qui était CHARGÉ. Le
+   * fonds se parcourt soixante par soixante, donc une image non chargée était
+   * introuvable quoi qu'on tape — et rien à l'écran ne le disait.
+   */
+  it('envoie le critère au SERVEUR', async () => {
+    const screen = page();
+    screen['search'].set('croissant');
+
+    await screen['refilter']();
+
+    expect(library.calls.at(-1)?.q).toBe('croissant');
+  });
+
+  it('repart du DÉBUT quand le critère change', async () => {
+    // `load()` ajoute à ce qui est affiché — il sert « charger plus ».
+    // Réutilisé tel quel, il collerait les résultats du nouveau filtre à la
+    // suite de ceux de l'ancien.
+    const screen = page();
+    library.pages = [
+      { items: [image('a'), image('b')], total: 2 },
+      { items: [image('c')], total: 1 },
+    ];
+    await screen['load']();
+
+    screen['search'].set('croissant');
+    await screen['refilter']();
+
+    expect(screen['items']().map((item) => item.url)).toEqual(['c']);
+    expect(library.calls.at(-1)?.offset).toBe(0);
+  });
+
+  it('restreint en cumulant les mots-clés retenus', async () => {
+    const screen = page();
+
+    await screen['toggleFilterTag']('viennoiserie');
+    await screen['toggleFilterTag']('packshot');
+
+    expect(library.calls.at(-1)?.tags).toEqual(['viennoiserie', 'packshot']);
+  });
+
+  it('relâche un mot-clé retenu deux fois', async () => {
+    const screen = page();
+
+    await screen['toggleFilterTag']('viennoiserie');
+    await screen['toggleFilterTag']('viennoiserie');
+
+    expect(library.calls.at(-1)?.tags).toEqual([]);
+    expect(screen['filtering']()).toBe(false);
   });
 });
