@@ -150,8 +150,35 @@ rien.
 ### Lot 4 — nommer, taguer, pointer
 
 L'étiquette existe déjà en base (`name`), le point focal aussi. Les **tags** sont
-neufs : une table, ou un tableau de chaînes — à trancher au moment de l'écrire,
-selon qu'on veut un vocabulaire fermé ou libre.
+neufs.
+
+#### 🔴 Vocabulaire LIBRE, et à plat
+
+> Hugo, 2026-09-23 : « non pas de hiérarchie texte libre ». Un tag racine a été
+> envisagé puis écarté dans la foulée — « oublie le concept racine ».
+
+**Aucune hiérarchie, aucune racine.** Pas d'arbre, pas de parent, pas de chemin,
+pas de mot imposé à l'entrée — une liste plate de mots que quelqu'un écrit.
+
+C'est un choix contre le précédent des catégories d'allergènes, qui sont un
+arbre déplaçable, et il se défend : un vocabulaire fermé ou structuré se garde
+par le type et ne se remplit jamais ; un vocabulaire libre se remplit vraiment.
+Pour retrouver une photo, ce qui compte est qu'il y ait des mots dessus, pas
+qu'ils soient bien rangés.
+
+⚠️ **La contrepartie est assumée** : rien ne rapprochera « croissant » de
+« viennoiserie ». La recherche rendra ce qu'on a écrit, et une image mal taguée
+sera introuvable jusqu'à ce que quelqu'un la retague. C'est le prix d'un champ
+que les gens remplissent.
+
+**Normalisation** — la seule règle, et elle n'est pas négociable : découpé, mis
+en minuscules, dédoublonné. Deux personnes qui écrivent « Croissant » et
+« croissant » doivent retrouver les mêmes images, sinon le vocabulaire libre
+devient un vocabulaire à doublons, ce qu'on lui reproche à juste titre.
+
+➡️ Un `String[]` sur l'actif, et pas une table : sans hiérarchie ni propriétés,
+une table de tags n'apporterait qu'une jointure. Le jour où un tag devra porter
+autre chose que son nom, ce sera une décision à prendre, pas un regret.
 
 ### Lot 5 — la recherche et l'attribution, côté fiche
 
@@ -167,9 +194,8 @@ dans le message.
 
 ## 6. Ce que ce plan ne tranche pas
 
-| Sujet                                                                        | Pourquoi c'est ouvert                                                                                                    |
-| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Les tags : vocabulaire **fermé** ou libre ?                                  | un vocabulaire fermé se garde par le type, un libre se remplit vraiment. Les deux ont raison, et pas pour les mêmes gens |
-| Faut-il **arrêter** de recréer un actif par enregistrement ?                 | ce serait la vraie correction du §1 — mais c'est une bascule de données, donc `vitruve` d'office et trois déploiements   |
-| Les visuels de **maison** et d'**opération** rejoignent-ils la médiathèque ? | ce serait un troisième porteur ; décision non prise (cf. `plan-ouvrir-le-point-focal.md` §7)                             |
-| Le journal                                                                   | une propriété de bibliothèque n'a pas de sujet à nommer ; déposer, taguer et pointer ne laisseront aucune trace          |
+| Sujet                                                                        | Pourquoi c'est ouvert                                                                                                  |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Faut-il **arrêter** de recréer un actif par enregistrement ?                 | ce serait la vraie correction du §1 — mais c'est une bascule de données, donc `vitruve` d'office et trois déploiements |
+| Les visuels de **maison** et d'**opération** rejoignent-ils la médiathèque ? | ce serait un troisième porteur ; décision non prise (cf. `plan-ouvrir-le-point-focal.md` §7)                           |
+| Le journal                                                                   | une propriété de bibliothèque n'a pas de sujet à nommer ; déposer, taguer et pointer ne laisseront aucune trace        |
