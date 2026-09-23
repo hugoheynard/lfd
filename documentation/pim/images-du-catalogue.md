@@ -1,0 +1,213 @@
+# Les images du catalogue — le versant référentiel
+
+> **Doc d'architecture**, écrite le 2026-09-23 après lecture du code.
+>
+> Elle décrit ce que le **référentiel** fait des visuels : ce qu'un visuel est,
+> comment il se dépose, à quoi il se rattache, quand il meurt, et ce qui en sort.
+>
+> 👉 L'infrastructure — bucket, domaine public, coûts, gestes d'ops — vit dans
+> [`ops/architecture-stockage-media.md`](../ops/architecture-stockage-media.md).
+> Ce document n'y touche pas et ne la répète pas.
+
+---
+
+## 1. Un visuel est un objet, pas un attribut
+
+`MediaAsset` est un **agrégat autonome** : il a son cycle de vie, et il peut
+servir plusieurs produits **et** plusieurs familles à la fois.
+
+On stocke le **master** et un **point focal** (`focalX`, `focalY`). Les tailles
+dérivées sont calculées par chaque canal, jamais ressaisies — un recadrage n'est
+donc pas une donnée du référentiel, c'est une conséquence du point focal.
+
+### 🔴 Deux régimes cohabitent, et c'est ce qui explique le modèle
+
+|                              | `storageKey`              | `contentType`, `width`, `height`, `bytes` |
+| ---------------------------- | ------------------------- | ----------------------------------------- |
+| **Ce qu'on héberge**         | `products/{sha256}.{ext}` | mesurés au dépôt                          |
+| **Une URL saisie à la main** | `null`                    | `null`                                    |
+
+Les colonnes techniques sont **toutes nullables** pour cette seule raison : tout
+ce qui existait avant le stockage média est une URL sans clé, sans type constaté
+et sans dimensions.
+
+> `null` veut dire « pas mesuré », jamais « zéro » — un consommateur ne doit pas
+> le coercer en taille.
+
+⚠️ La distinction n'est pas cosmétique : **le ramassage d'orphelins ne touche
+jamais une image à URL externe** (§5). Nous ne possédons pas ce que nous n'avons
+pas déposé.
+
+### Deux textes, deux publics
+
+- **`alt`** — localisé (`Json`), il décrit l'image à qui ne la voit pas ;
+- **`name`** — une chaîne unique, non traduite : l'étiquette de la bibliothèque,
+  faite pour **retrouver** un fichier.
+
+Les confondre reviendrait à traduire un nom de classement, ou à classer par une
+description.
+
+---
+
+## 2. Le rattachement — deux tables, aucune clé polymorphe
+
+```
+ProductMedia  (product_id, media_id, role, position)
+CategoryMedia (category_id, media_id, role, position)
+```
+
+🔴 **Les images se rattachent au PRODUIT, jamais à la déclinaison.** Une
+déclinaison n'a pas ses propres visuels : « 6 parts » et « 8 parts » montrent la
+même tarte.
+
+Le schéma refuse explicitement la clé polymorphe (`owner_type` / `owner_id`) :
+
+> …qui priverait Postgres de toute intégrité référentielle.
+
+Deux tables coûtent une jointure de plus et rendent l'orphelin **impossible**
+plutôt que détectable après coup.
+
+### Le rôle sert, contrairement aux apparences
+
+`MediaRole` vaut `hero`, `gallery`, `lifestyle`, `thumbnail` ou `print`. Il est
+tentant de le croire inutilisé : ni l'écran du back-office ni la liste servie
+n'en dépendent.
+
+**Il a pourtant un lecteur, et il compte** — la vitrine du canal B2B cherche le
+`hero` (`channels/b2b-platform/products/showcase.ts`). Retirer l'enum au motif
+qu'il ne sert à rien casserait la vitrine sans qu'aucun type ne proteste.
+
+_(Vérifié le 2026-09-23 : c'est l'unique lecteur.)_
+
+---
+
+## 3. Déposer — `POST /catalogue/media`
+
+Multipart. Le contrôleur plafonne à **25 Mo** ; c'est une garde anti-déni de
+service, pas la règle métier.
+
+La validation métier refuse **dans cet ordre**, et l'ordre est voulu — on ne
+mesure pas un fichier dont le type n'est pas accepté :
+
+| #   | Refus                 | Seuil             |
+| --- | --------------------- | ----------------- |
+| 1   | fichier vide          | —                 |
+| 2   | trop lourd            | **10 Mo**         |
+| 3   | type non accepté      | PNG · JPEG · WebP |
+| 4   | dimensions illisibles | fichier tronqué   |
+| 5   | trop petit            | **200 × 200** px  |
+
+🔴 **C'est une liste d'ACCEPTATION, pas de refus.** Ce qui n'y figure pas est
+refusé — et le SVG l'est nommément : il est exécuté par le navigateur qui
+l'affiche, donc l'accepter mettrait du script sur notre domaine.
+
+⚠️ Le type est **constaté**, pas annoncé : on lit les en-têtes du fichier, on ne
+croit pas son extension ni le `Content-Type` du client.
+
+### L'adressage par contenu, et ce qu'il offre gratuitement
+
+La clé est `products/{SHA-256 du contenu}.{ext}`. Trois conséquences :
+
+- **la déduplication est gratuite** — le même fichier déposé dix fois ne fait
+  qu'un objet ;
+- **remplacer une image n'en supprime aucune** — l'ancienne peut servir ailleurs ;
+- une suppression accidentelle se **répare en redéposant** le même fichier : il
+  retrouve la même clé, donc la même URL.
+
+---
+
+## 4. Attacher — `PUT /catalogue/products/{id}/media`
+
+La requête **remplace la liste entière**, elle ne fusionne pas. L'ordre du
+tableau **est** le rang.
+
+Détacher une image du produit ne la supprime pas : l'objet survit tant qu'un
+lecteur existe, produit ou famille.
+
+---
+
+## 5. Le ramassage des orphelins
+
+Cron quotidien, `30 3 * * *` UTC → `POST /admin/media/sweep`.
+
+| Règle               | Valeur                         | Pourquoi                                                                                            |
+| ------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Délai de grâce      | **7 jours**                    | une image déposée mais pas encore enregistrée sur une fiche ne doit pas disparaître sous les doigts |
+| Plafond par passage | **200**                        | ne pas saturer R2 ; le reste attend le lendemain                                                    |
+| Re-vérification     | juste avant chaque suppression | la fenêtre entre le recensement et le geste                                                         |
+
+### 🔴 L'ordre est le cœur du mécanisme
+
+```
+store.remove(storageKey)     ← l'objet R2 D'ABORD
+library.forget(storageKey)   ← la ligne en base ENSUITE
+```
+
+**Jamais l'inverse.** Effacer la ligne d'abord et échouer sur R2 laisserait un
+objet que plus rien ne nomme : une fuite définitive, invisible, qui se paie tous
+les mois.
+
+Dans l'ordre retenu, un échec de R2 laisse la ligne en place — l'image reste
+orpheline et sera retentée au passage suivant. C'est réparable ; l'autre sens ne
+l'est pas.
+
+### Ce qu'il épargne
+
+- les images à **URL externe** (`storageKey = null`) — nous ne les possédons pas ;
+- les images encore citées par un produit **ou** par une famille. Les deux
+  lectures comptent, et le doublage n'est pas évident en lisant le code.
+
+⚠️ **Une fenêtre de course subsiste.** Si quelqu'un rattache l'image entre la
+re-vérification et la suppression, l'objet part alors qu'il est vivant.
+L'adressage par contenu rend le cas réparable — on redépose — mais rien ne le
+signale.
+
+---
+
+## 6. Ce qui sort
+
+- **Vitrine B2B** — le `hero` du produit (§2).
+- **Projection catalogue** — chaque produit porte un `SyncMedia | null` dans le
+  snapshot envoyé à la plateforme professionnelle.
+- **Boutique** — `ShopItemView.image`, optionnel ; sans image, elle affiche une
+  illustration de rayon.
+
+🔵 **Non établi**, et c'est le seul trou de ce document : la boutique reçoit-elle
+aujourd'hui les images du référentiel, ou n'affiche-t-elle que ses replis ? Le
+contrat existe des deux côtés ; le branchement de bout en bout n'a pas été tracé
+jusqu'à l'affichage. À vérifier en regardant, pas en lisant.
+
+---
+
+## 7. Les écrans du back-office
+
+Section **Visuels** de la fiche produit, et son équivalent sur la famille.
+
+| Geste            | Ce qui se passe                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------- |
+| Déposer          | `POST /catalogue/media`, l'image entre dans la liste **sans être enregistrée** sur la fiche |
+| Texte alternatif | un panneau par image, **une langue par champ**                                              |
+| Réordonner       | glisser-déposer, purement local jusqu'à l'enregistrement                                    |
+| Retirer          | retire de la liste — **aucun `DELETE` HTTP**, l'image peut servir ailleurs                  |
+| Enregistrer      | un seul `PUT`, la liste entière                                                             |
+
+✅ Le panneau d'alternative **n'écrit aucune liste de langues en dur** : il lit
+`LOCALES` du contrat. Ajouter une langue au catalogue ajoutera son champ tout
+seul.
+
+⚠️ **Le front ne pré-valide rien.** Déposer un SVG, un fichier de 40 Mo ou une
+vignette de 80 px part au serveur et revient en erreur. C'est correct — le
+serveur reste l'autorité — mais l'aller-retour est inutile, et le message
+d'erreur arrive loin du geste.
+
+---
+
+## 8. Ce qui reste ouvert
+
+| Sujet                                                   | État                                                                                                                                                                                                                      |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| La boutique affiche-t-elle vraiment les images du PIM ? | **non établi** (§6)                                                                                                                                                                                                       |
+| Pré-validation côté écran                               | absente — type, poids et dimensions sont connus du navigateur                                                                                                                                                             |
+| Fenêtre de course du ramassage                          | connue, réparable, non signalée                                                                                                                                                                                           |
+| Le plafond de 200 a-t-il déjà mordu en production ?     | le code le journalise (`capped`) ; jamais constaté                                                                                                                                                                        |
+| Point focal                                             | stocké en base, et **rien d'autre** — absent des contrats, donc ni saisi ni servi (vérifié le 2026-09-23). §1 le présente comme ce qui dispense de ressaisir les recadrages ; c'est vrai du modèle, pas encore de l'usage |
