@@ -17,6 +17,7 @@ import {
   type MediaLibraryPageView,
   type UploadedMediaView,
   type MediaCarrierView,
+  type MediaUploadFailureView,
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
@@ -24,6 +25,7 @@ import { DepositImageCommand, type DepositImageResult } from "../application/dep
 import { UnsupportedImageError } from "../domain/value-objects/image-bytes.js";
 import { BrowseMediaLibraryQuery } from "../application/browse-media-library.js";
 import { ListMediaCarriersQuery } from "../application/list-media-carriers.js";
+import { ReadUploadFailuresQuery } from "../application/read-upload-failures.js";
 import { DiscardMediaCommand } from "../application/discard-media.js";
 import { SaveMediaDetailsCommand } from "../application/save-media-details.js";
 
@@ -39,10 +41,22 @@ const IMAGE_UPLOAD_HARD_LIMIT = 25 * 1024 * 1024;
  *  reborne de toute façon — ceci évite juste de lui passer un `NaN`. */
 const DEFAULT_PAGE = 60;
 
-/** Le peu qu'on lit du fichier Multer. Le nom d'origine ne sert à RIEN ici :
- *  la clé vient du hachage du contenu, et le type des octets. */
+/**
+ * Le peu qu'on lit du fichier Multer.
+ *
+ * ⚠️ Cette note disait « le nom d'origine ne sert à RIEN ici : la clé vient du
+ * hachage du contenu, et le type des octets ». C'était exact pour le DÉPÔT, et
+ * ça l'est encore. Ce qui a changé le 2026-09-23, c'est le REFUS : sur un lot
+ * de cinquante fichiers, « lequel n'est pas passé » n'a de réponse que par ce
+ * nom-là. Il ne sert donc à rien quand ça marche, et il est la seule prise
+ * quand ça échoue.
+ *
+ * 🔴 **Donnée d'utilisateur** : plafonnée à l'écriture, jamais interpolée dans
+ * un message sans échappement.
+ */
 interface UploadedFilePart {
   readonly buffer: Buffer;
+  readonly originalname: string;
 }
 
 /**
@@ -97,6 +111,23 @@ export class MediaLibraryController {
         q,
         tagsOf(tags),
       ),
+    );
+  }
+
+  /**
+   * **Ce qui n'est PAS entré** — les derniers dépôts refusés.
+   *
+   * 🔴 Elle existe parce que le compte rendu d'un lot vivait en mémoire :
+   * fermer l'onglet l'effaçait, et personne ne pouvait dire le lendemain ce
+   * qui n'était pas entré la veille.
+   *
+   * ⚠️ Elle ne permet pas de REJOUER : un fichier refusé n'a pas été stocké.
+   * Elle dit quoi retrouver et pourquoi ça a échoué.
+   */
+  @Get("failures")
+  async failures(@Query("limit") limit?: string): Promise<readonly MediaUploadFailureView[]> {
+    return this.queries.execute<ReadUploadFailuresQuery, readonly MediaUploadFailureView[]>(
+      new ReadUploadFailuresQuery(numberOr(limit, DEFAULT_FAILURES_PAGE)),
     );
   }
 
@@ -175,10 +206,16 @@ export class MediaLibraryController {
       throw new UnsupportedImageError("aucun fichier reçu.");
     }
     return this.commands.execute<DepositImageCommand, DepositImageResult>(
-      new DepositImageCommand(file.buffer),
+      // Le nom de fichier ne sert PAS au dépôt — la clé est le SHA-256 du
+      // contenu. Il sert au refus : sur un lot de cinquante, « lequel n'est
+      // pas passé » n'a de réponse que par lui.
+      new DepositImageCommand(file.buffer, file.originalname),
     );
   }
 }
+
+/** Ce que l'écran demande par défaut à l'historique des refus. */
+const DEFAULT_FAILURES_PAGE = 50;
 
 function numberOr(raw: string | undefined, fallback: number): number {
   const parsed = Number(raw);

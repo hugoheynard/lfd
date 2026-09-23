@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { LibraryMediaView } from '@lfd/pim-contracts';
+import type { LibraryMediaView, MediaUploadFailureView } from '@lfd/pim-contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
@@ -77,6 +77,21 @@ export class MediathequePage {
    */
   protected readonly search = signal('');
 
+  /**
+   * **Ce qui n'est pas entré**, relu du serveur.
+   *
+   * 🔴 Distinct de `batch.entries()`, qui est la file de CE lot-ci : celle-là
+   * vit en mémoire et s'efface quand on ferme l'onglet, celui-ci survit. Les
+   * deux cohabitent parce qu'ils répondent à deux questions — « où en est mon
+   * import » et « qu'est-ce qui n'est pas entré ».
+   *
+   * ⚠️ On ne propose PAS « réessayer » ici : un fichier refusé n'a pas été
+   * stocké, donc il n'y a pas d'octets à renvoyer. Seule la file en mémoire,
+   * qui détient les `File`, peut le faire.
+   */
+  protected readonly pastFailures = signal<readonly MediaUploadFailureView[]>([]);
+  protected readonly showPast = signal(false);
+
   /** Les mots-clés retenus — l'image doit les porter TOUS. */
   protected readonly filterTags = signal<readonly string[]>([]);
 
@@ -103,6 +118,33 @@ export class MediathequePage {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /**
+   * Ouvre — ou referme — l'historique des refus, en le relisant à l'ouverture.
+   *
+   * Relu à chaque ouverture plutôt que chargé avec la page : personne ne le
+   * consulte à chaque visite, et le charger d'office coûterait une requête à
+   * tout le monde pour servir quelques-uns.
+   */
+  protected async togglePast(): Promise<void> {
+    const opening = !this.showPast();
+    this.showPast.set(opening);
+    if (!opening) {
+      return;
+    }
+    try {
+      this.pastFailures.set(await this.api.failures());
+    } catch {
+      // Muet et vide : un historique illisible n'est pas une panne de la
+      // médiathèque, et rougir ici ferait croire que le fonds est en cause.
+      this.pastFailures.set([]);
+    }
+  }
+
+  /** La date d'un refus, lisible — l'ISO du serveur ne se lit pas. */
+  protected whenOf(failure: MediaUploadFailureView): string {
+    return new Date(failure.occurredAt).toLocaleString('fr-FR');
   }
 
   /**

@@ -9,9 +9,13 @@
  * les vraies écritures aient eu lieu.
  *
  * Il tient aussi le COMPTE D'EMPLOIS, qui décide de ce que l'écran peut
- * proposer : on ne supprime pas une image qu'un porteur affiche, et les clés
- * étrangères sont en `ON DELETE RESTRICT`. Un compte faux ferait proposer une
- * suppression que Postgres refuserait.
+ * proposer : on ne supprime pas une image qu'un porteur affiche.
+ *
+ * 🔴 Cette phrase disait « et les clés étrangères sont en `ON DELETE
+ * RESTRICT` ». C'est faux depuis le 2026-09-23 : la bibliothèque a son propre
+ * schéma, il n'y a plus de clé étrangère, et la règle vit ENTIÈREMENT dans le
+ * code. Ces cas sont donc devenus le seul filet — croire que Postgres tient
+ * encore ferait retirer celui qui l'a remplacé.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { MediaStore } from "../src/platform/storage/media-store.js";
@@ -433,3 +437,78 @@ describe("une image, une ligne", () => {
     expect((row?.alt as { fr: string }).fr).toBe("Croissant doré sur une grille");
   });
 });
+
+/**
+ * **La liste des PORTEURS** — `GET /media/carriers?url=`.
+ *
+ * 🔴 Seul ce niveau prouve que la route existe, qu'elle passe le mur staff, et
+ * que la jointure vers les noms tient. Les cas unitaires doublent le canal :
+ * ils ne peuvent rien dire d'une route absente ni d'un `select` qui ne
+ * compile qu'en SQL.
+ */
+describe("qui affiche cette image", () => {
+  async function carriersOf(url: string): Promise<readonly Carrier[]> {
+    const response = await staff().get(`${MEDIA}/carriers`).query({ url });
+    expect(response.status).toBe(200);
+    return jsonBody<readonly Carrier[]>(response);
+  }
+
+  it("nomme les fiches ET les familles qui la portent", async () => {
+    const famille = await aCategory();
+    const croissant = await aProduct(famille, "Croissant");
+    await setMedia(croissant, [{ role: "hero", url: CROISSANT }]);
+    await staff()
+      .put(`${CATEGORIES}/${famille}/media`)
+      .send({ media: [{ role: "gallery", url: CROISSANT }] })
+      .expect(200);
+
+    const carriers = await carriersOf(CROISSANT);
+
+    expect(carriers).toEqual(
+      expect.arrayContaining([
+        { kind: "product", id: croissant, label: "Croissant" },
+        { kind: "category", id: famille, label: "Viennoiseries" },
+      ]),
+    );
+  });
+
+  it("ne compte un porteur QU'UNE fois, même s'il lui donne deux rôles", async () => {
+    // La clé primaire est `(porteur, url, rôle)` : la même image peut y tenir
+    // deux places. La question posée est « qui l'affiche », pas « à combien
+    // d'endroits » — sans dédoublonnage, la liste montrerait deux fois la même
+    // fiche et ferait croire à un doublon de catalogue.
+    const croissant = await aProduct(await aCategory(), "Croissant");
+    await setMedia(croissant, [
+      { role: "hero", url: CROISSANT },
+      { role: "lifestyle", url: CROISSANT },
+    ]);
+
+    const carriers = await carriersOf(CROISSANT);
+
+    expect(carriers.filter((carrier) => carrier.id === croissant)).toHaveLength(1);
+  });
+
+  it("rend une liste VIDE pour une orpheline, et non une erreur", async () => {
+    // C'est l'état normal d'une image que le ramassage emportera. Lever ferait
+    // traiter le cas courant comme une panne — et l'écran dirait « la liste
+    // n'a pas pu être lue » là où il n'y a simplement personne.
+    expect(await carriersOf(CHOCOLATINE)).toEqual([]);
+  });
+
+  it("rend une liste vide, et non une erreur, sans paramètre `url`", async () => {
+    const response = await staff().get(`${MEDIA}/carriers`);
+    expect(response.status).toBe(200);
+    expect(jsonBody<readonly Carrier[]>(response)).toEqual([]);
+  });
+
+  it("refuse un anonyme — c'est une donnée de catalogue", async () => {
+    const response = await ctx.http().get(`${MEDIA}/carriers`).query({ url: CROISSANT });
+    expect(response.status).toBe(401);
+  });
+});
+
+interface Carrier {
+  readonly kind: "product" | "category";
+  readonly id: string;
+  readonly label: string;
+}

@@ -5,6 +5,9 @@ import { MediaIdGenerator, UuidV7MediaIds } from "./infra/id/media-id-generator.
 
 import { BrowseMediaLibraryHandler } from "./application/browse-media-library.js";
 import { ListMediaCarriersHandler } from "./application/list-media-carriers.js";
+import { ReadUploadFailuresHandler } from "./application/read-upload-failures.js";
+import { MediaFailureLog } from "./domain/ports/media-failure-log.js";
+import { PrismaMediaFailureLog } from "./infrastructure/prisma-media-failure-log.js";
 import { DepositImageHandler } from "./application/deposit-image.js";
 import { DiscardMediaHandler } from "./application/discard-media.js";
 import { SaveMediaDetailsHandler } from "./application/save-media-details.js";
@@ -52,6 +55,8 @@ import { PrismaMediaLibraryWriter } from "./infrastructure/prisma-media-library-
   providers: [
     BrowseMediaLibraryHandler,
     ListMediaCarriersHandler,
+    ReadUploadFailuresHandler,
+    { provide: MediaFailureLog, useClass: PrismaMediaFailureLog },
     SaveMediaDetailsHandler,
     DiscardMediaHandler,
     DepositImageHandler,

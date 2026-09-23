@@ -1,10 +1,12 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { AppError } from "../../platform/shared/errors/app-error.js";
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { MediaStore } from "../../platform/storage/media-store.js";
 import { MEDIA_EVENTS, MediaJournal } from "../journal/media-journal.js";
+import { MediaFailureLog } from "../domain/ports/media-failure-log.js";
 import { MediaLibrary, type RegisteredMedia } from "../domain/ports/media-library.js";
-import { productImage } from "../domain/value-objects/image-bytes.js";
+import { productImage, type ProductImage } from "../domain/value-objects/image-bytes.js";
 
 /** Le préfixe d'usage dans le bucket. Il nomme l'emploi, pas un propriétaire. */
 const PREFIX = "products";
@@ -13,7 +15,19 @@ const PREFIX = "products";
 export type DepositImageResult = RegisteredMedia;
 
 export class DepositImageCommand {
-  constructor(readonly bytes: Buffer) {}
+  constructor(
+    readonly bytes: Buffer,
+    /**
+     * Le nom que le navigateur a envoyé.
+     *
+     * 🔴 Il ne sert **à rien au dépôt** — la clé de stockage est le SHA-256 du
+     * contenu, et le type est constaté dans les octets. Il sert au REFUS : sur
+     * un lot de cinquante fichiers, « lequel n'est pas passé » n'a de réponse
+     * que par ce nom-là. Le porter jusqu'ici est donc son seul emploi, et
+     * c'est pour ça qu'il est facultatif.
+     */
+    readonly fileName: string = "",
+  ) {}
 }
 
 /**
@@ -40,11 +54,12 @@ export class DepositImageHandler implements ICommandHandler<DepositImageCommand,
     private readonly store: MediaStore,
     private readonly library: MediaLibrary,
     private readonly journal: MediaJournal,
+    private readonly failures: MediaFailureLog,
     private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: DepositImageCommand): Promise<RegisteredMedia> {
-    const image = productImage(command.bytes);
+    const image = await this.validated(command);
     const stored = await this.store.put(PREFIX, {
       bytes: image.bytes,
       contentType: image.contentType,
@@ -82,5 +97,42 @@ export class DepositImageHandler implements ICommandHandler<DepositImageCommand,
         bytes: image.byteLength,
       });
     });
+  }
+
+  /**
+   * Relit les octets, et **inscrit le refus** avant de le relancer.
+   *
+   * 🔴 **Hors de toute transaction, et c'est le point.** Le refus est levé
+   * AVANT que l'unité de travail du dépôt s'ouvre ; y ranger l'inscription la
+   * ferait emporter par le rollback, et l'historique serait vide précisément
+   * les jours où il sert. `MediaFailureLog.record` ouvre donc la sienne.
+   *
+   * ⚠️ Et il **relance toujours**. L'historique observe, il n'absout pas : un
+   * fichier refusé reste refusé, et l'appelant reçoit sa raison — celle qui
+   * dit quoi corriger.
+   *
+   * On n'inscrit que les refus MÉTIER (`AppError`). Une panne de lecture
+   * d'octets n'apprend rien sur le fichier et remplirait l'historique de
+   * lignes qui parlent de nous, pas de lui.
+   */
+  private async validated(command: DepositImageCommand): Promise<ProductImage> {
+    try {
+      return productImage(command.bytes);
+    } catch (caught) {
+      if (caught instanceof AppError) {
+        await this.failures.record({
+          fileName: command.fileName,
+          reason: caught.message,
+          code: caught.code,
+          // Ce qu'on SAIT, et rien de plus : la taille est toujours
+          // mesurable, le type non — un refus pour type non supporté n'a, par
+          // construction, pas de type constaté. `null` dit « pas mesurable »,
+          // pas « vide ».
+          bytes: command.bytes.length,
+          contentType: null,
+        });
+      }
+      throw caught;
+    }
   }
 }

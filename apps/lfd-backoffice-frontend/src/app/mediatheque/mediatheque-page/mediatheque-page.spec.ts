@@ -1,6 +1,10 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { LibraryMediaView, MediaLibraryPageView } from '@lfd/pim-contracts';
+import type {
+  LibraryMediaView,
+  MediaLibraryPageView,
+  MediaUploadFailureView,
+} from '@lfd/pim-contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MediaLibraryHttpApi } from '../media-library-http-api';
@@ -43,6 +47,15 @@ function image(url: string, name = '', uses = 0): LibraryMediaView {
 }
 
 class FakeLibrary {
+  /** Ce que l'historique PERSISTANT rend — distinct de la file en mémoire. */
+  past: MediaUploadFailureView[] = [];
+  failuresCalls = 0;
+
+  failures(): Promise<readonly MediaUploadFailureView[]> {
+    this.failuresCalls += 1;
+    return Promise.resolve(this.past);
+  }
+
   pages: MediaLibraryPageView[] = [];
   fails = false;
   calls: { limit: number; offset: number; q: string; tags: readonly string[] }[] = [];
@@ -186,5 +199,47 @@ describe('la médiathèque — la recherche', () => {
 
     expect(library.calls.at(-1)?.tags).toEqual([]);
     expect(screen['filtering']()).toBe(false);
+  });
+});
+
+describe("la médiathèque — l'historique des refus", () => {
+  function refusal(fileName: string): MediaUploadFailureView {
+    return {
+      id: `f_${fileName}`,
+      fileName,
+      reason: 'Visuel refusé : format non accepté.',
+      code: 'catalogue.media.unsupported_image',
+      bytes: 1024,
+      contentType: null,
+      actorName: 'Hugo',
+      occurredAt: '2026-09-23T08:00:00.000Z',
+    };
+  }
+
+  /**
+   * Régression (2026-09-23) : le compte rendu d'un lot vivait en mémoire.
+   * Fermer l'onglet l'effaçait, et « qu'est-ce qui n'est pas entré hier »
+   * n'avait aucune réponse.
+   */
+  it('lit le serveur à l’OUVERTURE, pas au chargement de la page', async () => {
+    // Personne ne consulte l'historique à chaque visite : le charger d'office
+    // coûterait une requête à tout le monde pour servir quelques-uns.
+    const screen = page();
+    expect(library.failuresCalls).toBe(0);
+
+    library.past = [refusal('croissant.heic')];
+    await screen['togglePast']();
+
+    expect(library.failuresCalls).toBe(1);
+    expect(screen['pastFailures']().map((f) => f.fileName)).toEqual(['croissant.heic']);
+  });
+
+  it('referme sans relire', async () => {
+    const screen = page();
+    await screen['togglePast']();
+    await screen['togglePast']();
+
+    expect(screen['showPast']()).toBe(false);
+    expect(library.failuresCalls).toBe(1);
   });
 });

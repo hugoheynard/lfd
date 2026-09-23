@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type {
   MediaCarrierView,
+  MediaUploadFailureView,
   MediaDetailsPayload,
   MediaLibraryPageView,
   UploadedMediaView,
@@ -118,6 +119,26 @@ export class MediaLibraryHttpApi {
    */
   async describe(details: MediaDetailsPayload): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${this.base}/media`, details));
+  }
+
+  /**
+   * **Ce qui n'est PAS entré** — les derniers dépôts refusés.
+   *
+   * 🔴 Il SURVIT au rechargement, et c'est tout son objet : le compte rendu
+   * d'un lot vit en mémoire de l'écran, donc fermer l'onglet l'efface. Sur un
+   * import de cinquante fichiers, « lequel n'est pas passé » n'avait aucune
+   * réponse le lendemain.
+   *
+   * ⚠️ Il ne permet PAS de rejouer : un fichier refusé n'a pas été stocké, il
+   * n'y a pas d'octets à renvoyer. C'est la file en mémoire (`BatchUploadStore`)
+   * qui le fait, et elle reste le seul endroit d'où c'est possible.
+   */
+  async failures(limit = 50): Promise<readonly MediaUploadFailureView[]> {
+    return firstValueFrom(
+      this.http.get<readonly MediaUploadFailureView[]>(`${this.base}/media/failures`, {
+        params: { limit: String(limit) },
+      }),
+    );
   }
 
   /**

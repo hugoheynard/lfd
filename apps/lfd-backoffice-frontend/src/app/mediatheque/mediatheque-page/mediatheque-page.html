@@ -48,8 +48,42 @@
 
       @if (batch.hasRefused() && !batch.running()) {
         <!-- Réessayer est sans danger : la clé de stockage est le hachage du
-             contenu, donc redéposer les mêmes octets ne duplique rien. -->
+             contenu, donc redéposer les mêmes octets ne duplique rien.
+             🔴 Et c'est possible ICI et NULLE PART ailleurs : ce magasin
+             détient les `File`. L'historique persistant, lui, n'a que des noms
+             — proposer « réessayer » là-bas promettrait l'impossible. -->
         <button foldButton emphasis="outline" (click)="retry()">Réessayer les refusés</button>
+      }
+    }
+
+    <!-- L'HISTORIQUE. Il survit au rechargement, là où le compte rendu
+         ci-dessus s'efface avec l'onglet. Deux questions distinctes : « où en
+         est mon import » et « qu'est-ce qui n'est pas entré ». -->
+    <button foldButton emphasis="soft" size="sm" (click)="togglePast()">
+      {{ showPast() ? 'Masquer les refus passés' : 'Refus passés' }}
+    </button>
+
+    @if (showPast()) {
+      @if (pastFailures().length === 0) {
+        <p class="tally">Aucun refus enregistré.</p>
+      } @else {
+        <ul class="report">
+          @for (past of pastFailures(); track past.id) {
+            <li class="line line-refused">
+              <span class="file">{{ past.fileName }}</span>
+              <span class="state">{{ whenOf(past) }}</span>
+              <span class="reason">{{ past.reason }}</span>
+              @if (past.actorName; as who) {
+                <span class="state">{{ who }}</span>
+              }
+            </li>
+          }
+        </ul>
+        <!-- Dit en toutes lettres ce que cette liste NE permet pas. Sans cette
+             phrase, l'absence de bouton « réessayer » se lit comme un oubli. -->
+        <p class="tally">
+          Ces fichiers n'ont pas été conservés : redéposez-les depuis votre poste pour réessayer.
+        </p>
       }
     }
   </div>

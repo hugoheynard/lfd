@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import type { MediaCarrierView } from '@lfd/pim-contracts';
 import {
@@ -52,8 +52,23 @@ export class CarriersPanel {
   protected readonly loading = signal(true);
   protected readonly failure = signal<string | null>(null);
 
+  /**
+   * 🔴 Dans un `effect`, et **jamais dans le constructeur**.
+   *
+   * Un `input.required()` n'est pas encore posé quand le constructeur tourne :
+   * le lire y lève (NG0950). Ce panneau le faisait, et le `catch` de `load()`
+   * transformait l'erreur d'Angular en « la liste des porteurs n'a pas pu être
+   * lue » — un message qui accuse le réseau pour un défaut de cycle de vie.
+   *
+   * C'est le motif déjà employé par `image-panel` : l'effet attend que l'entrée
+   * existe. Et il n'a pas piégé `library-picker`, dont le constructeur appelle
+   * aussi `load()` — parce que ce `load()`-là ne lit rien de `data()`.
+   */
   constructor() {
-    void this.load();
+    effect(() => {
+      const { url } = this.data();
+      void this.load(url);
+    });
   }
 
   /**
@@ -79,9 +94,9 @@ export class CarriersPanel {
     this.ref.close();
   }
 
-  private async load(): Promise<void> {
+  private async load(url: string): Promise<void> {
     try {
-      this.carriers.set(await this.api.carriersOf(this.data().url));
+      this.carriers.set(await this.api.carriersOf(url));
     } catch {
       // Un échec de LECTURE, pas une absence de porteurs. Les confondre ferait
       // croire l'image libre au premier réseau qui tousse — et proposer de la

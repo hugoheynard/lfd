@@ -40,6 +40,38 @@ export interface FocalPoint {
 }
 
 /**
+ * **Un dépôt refusé**, tel que l'écran le relit.
+ *
+ * 🔴 Il existe parce que le compte rendu d'un import en lot vivait en MÉMOIRE :
+ * fermer l'onglet l'effaçait, et « qu'est-ce qui n'est pas entré hier » n'avait
+ * aucune réponse.
+ *
+ * ⚠️ **Il ne permet pas de rejouer.** Un fichier refusé n'a pas été stocké : il
+ * n'y a pas d'octets à renvoyer. Cette ligne dit QUOI retrouver et POURQUOI ça
+ * a échoué. Offrir « Réessayer » dessus promettrait un geste impossible à
+ * tenir — seule la file en mémoire de l'écran, qui détient les fichiers, peut
+ * le faire.
+ */
+export interface MediaUploadFailureView {
+  readonly id: string;
+  /** Le nom envoyé par le navigateur — la seule prise pour le retrouver. */
+  readonly fileName: string;
+  /** La phrase française du refus, telle qu'elle a été montrée. */
+  readonly reason: string;
+  readonly code: string;
+  /**
+   * ⚠️ `null` = **pas mesurable**, jamais « zéro ». Un refus pour type non
+   * supporté n'a, par construction, pas de type constaté.
+   */
+  readonly bytes: number | null;
+  readonly contentType: string | null;
+  /** `null` hors requête : un script n'a pas d'acteur, et « système » mentirait. */
+  readonly actorName: string | null;
+  /** ISO 8601. */
+  readonly occurredAt: string;
+}
+
+/**
  * **Qui affiche une image** — une ligne de la liste des porteurs.
  *
  * 🔴 Elle existe parce que `uses` est un NOMBRE, et qu'un nombre empêche sans

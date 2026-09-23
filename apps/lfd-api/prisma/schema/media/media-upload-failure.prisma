@@ -1,0 +1,58 @@
+/// **Un dépôt REFUSÉ** — ce qui n'est pas entré dans le fonds, et pourquoi.
+///
+/// 🔴 Elle existe parce qu'un compte rendu de lot vivait en mémoire :
+/// l'écran gardait le nom et la raison de chaque refus, et on fermait l'onglet.
+/// Personne ne pouvait dire le lendemain ce qui n'était pas entré la veille —
+/// sur un import de cinquante fichiers, c'est précisément la question qu'on se
+/// pose.
+///
+/// 🔴 **Ce n'est PAS le journal**, et la distinction porte. Le journal raconte
+/// la vie des images qui EXISTENT (`media_asset.deposited`, `.described`,
+/// `.discarded`) ; ces lignes-ci racontent des **tentatives**, dont le sujet
+/// n'existe pas. Les verser au même flux donnerait un `subjectId` qui ne
+/// désigne rien, et polluerait l'historique d'un fonds avec ce qui n'en fait
+/// pas partie.
+///
+/// ⚠️ **On ne garde pas les octets, et on ne le pourra jamais** : un fichier
+/// refusé n'a, par définition, pas été stocké. Cette table dit donc QUOI
+/// retrouver et POURQUOI ça a échoué ; elle ne permet pas de rejouer. Rejouer
+/// demande les octets, que seul le navigateur détient — c'est la file en
+/// mémoire de l'écran qui le fait, et elle reste le seul endroit d'où c'est
+/// possible.
+model MediaUploadFailure {
+  id String @id
+
+  /// Le nom du fichier tel que le navigateur l'a envoyé — **donnée
+  /// d'utilisateur**, plafonnée, et jamais interpolée dans un message sans
+  /// échappement. C'est la seule chose qui permette de le retrouver sur le
+  /// disque de celui qui l'a déposé.
+  fileName String @map("file_name") @db.VarChar(255)
+
+  /// La phrase FRANÇAISE du refus, telle que l'écran l'a montrée. Recopiée et
+  /// non reconstruite : elle sera lue par quelqu'un qui n'a pas le code sous
+  /// les yeux, et la rejouer depuis un code ferait deux vérités.
+  reason String @db.VarChar(500)
+
+  /// Le code du refus (`catalogue.media.unsupported_image`) — pour compter les
+  /// causes sans faire de la statistique sur une phrase.
+  code String @db.VarChar(120)
+
+  /// Ce qu'on a pu CONSTATER des octets. Trois états, et il ne faut pas les
+  /// confondre : un nombre (mesuré), `null` (pas mesurable — un refus pour
+  /// type non supporté n'a, par construction, pas de type constaté), et
+  /// l'absence de ligne (pas de refus).
+  bytes       Int?
+  contentType String? @map("content_type") @db.VarChar(120)
+
+  /// Qui déposait. `null` hors requête — un import déclenché par un script n'a
+  /// pas d'acteur, et inventer « système » ferait croire à un compte.
+  actorName String? @map("actor_name") @db.VarChar(200)
+
+  occurredAt DateTime @default(now()) @map("occurred_at")
+
+  /// Du plus RÉCENT au plus ancien : « qu'est-ce qui n'est pas entré » veut
+  /// dire « en dernier », et c'est l'ordre de toutes les lectures.
+  @@index([occurredAt(sort: Desc)])
+  @@map("media_upload_failure")
+  @@schema("media")
+}

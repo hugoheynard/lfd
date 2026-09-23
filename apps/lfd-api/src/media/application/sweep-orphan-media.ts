@@ -4,6 +4,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { Clock } from "../../platform/time/clock.js";
 import { MediaStore } from "../../platform/storage/media-store.js";
 import { MediaCarriers } from "../channels/carriers/media-carriers.js";
+import { MediaFailureLog } from "../domain/ports/media-failure-log.js";
 import { MediaLibrary } from "../domain/ports/media-library.js";
 
 /**
@@ -26,6 +27,17 @@ const GRACE_DAYS = 7;
  */
 const MAX_PER_RUN = 200;
 
+/**
+ * Combien de temps on garde un dépôt REFUSÉ.
+ *
+ * Une table d'historique qui ne se vide jamais devient une dette silencieuse.
+ * Et un refus de l'an dernier n'apprend plus rien : le fichier n'existe plus
+ * sur le disque de personne, donc le nom qu'on a gardé ne désigne plus rien de
+ * retrouvable. Quatre-vingt-dix jours couvrent très largement la question
+ * qu'on pose — « qu'est-ce qui n'est pas entré ces dernières semaines ».
+ */
+const FAILURE_RETENTION_DAYS = 90;
+
 /** Ce qu'un passage a fait — et ce qu'il a laissé. */
 export interface OrphanSweepReport {
   /** Objets réellement supprimés du bucket. */
@@ -36,6 +48,14 @@ export interface OrphanSweepReport {
   readonly spared: number;
   /** `true` si le plafond a été atteint : il reste du travail. */
   readonly capped: boolean;
+  /**
+   * Lignes d'historique de refus oubliées, passé leur rétention.
+   *
+   * Dans ce rapport parce que c'est le MÊME passage qui les ramasse : ouvrir
+   * un second cron pour une suppression quotidienne de quelques lignes
+   * coûterait un déclencheur, un secret et une sonde de plus pour rien.
+   */
+  readonly failuresForgotten: number;
 }
 
 export class SweepOrphanMediaCommand {}
@@ -98,6 +118,7 @@ export class SweepOrphanMediaHandler implements ICommandHandler<
     private readonly library: MediaLibrary,
     private readonly store: MediaStore,
     private readonly carriers: MediaCarriers,
+    private readonly failures: MediaFailureLog,
     private readonly clock: Clock,
   ) {}
 
@@ -138,14 +159,38 @@ export class SweepOrphanMediaHandler implements ICommandHandler<
       removed += 1;
     }
 
-    const report = { removed, forgotten, spared, capped: candidates.length === MAX_PER_RUN };
+    // ⚠️ APRÈS le ramassage des objets, et hors de sa boucle : c'est une tâche
+    // d'entretien sans rapport avec les orphelines, et la faire d'abord
+    // retarderait le travail qui compte pour des lignes que personne n'attend.
+    const failuresForgotten = await this.failures.forgetBefore(this.retentionCutoff());
+
+    const report = {
+      removed,
+      forgotten,
+      spared,
+      capped: candidates.length === MAX_PER_RUN,
+      failuresForgotten,
+    };
     this.report(report);
     return report;
   }
 
   private graceCutoff(): Date {
+    return this.daysAgo(GRACE_DAYS);
+  }
+
+  /** Au-delà, un refus ne désigne plus rien de retrouvable. */
+  private retentionCutoff(): Date {
+    return this.daysAgo(FAILURE_RETENTION_DAYS);
+  }
+
+  /**
+   * Une date, tant de jours avant maintenant — par l'HORLOGE, jamais par
+   * `new Date()` : la logique temporelle doit rester déterministe en test.
+   */
+  private daysAgo(days: number): Date {
     const cutoff = new Date(this.clock.now());
-    cutoff.setUTCDate(cutoff.getUTCDate() - GRACE_DAYS);
+    cutoff.setUTCDate(cutoff.getUTCDate() - days);
     return cutoff;
   }
 
@@ -161,6 +206,12 @@ export class SweepOrphanMediaHandler implements ICommandHandler<
     if (report.capped) {
       this.logger.warn(
         `Ramassage plafonné à ${String(MAX_PER_RUN)} objets — il en reste, prochain passage demain.`,
+      );
+    }
+    if (report.failuresForgotten > 0) {
+      this.logger.log(
+        `Historique des refus — ${String(report.failuresForgotten)} ligne(s) au-delà de ` +
+          `${String(FAILURE_RETENTION_DAYS)} jours oubliée(s).`,
       );
     }
     if (report.removed > 0 || report.spared > 0) {

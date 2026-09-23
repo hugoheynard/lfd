@@ -8,7 +8,7 @@ import { v7 as uuidV7 } from "uuid";
  * UUID **v7** : préfixé par l'horodatage, donc ordonné — les insertions restent
  * localisées dans l'index B-tree là où un v4 les disperse.
  *
- * ⚠️ C'est le jumeau de `MediaIdGenerator`, à l'identique. La duplication est
+ * ⚠️ C'est le jumeau de `PimIdGenerator`, à l'identique. La duplication est
  * assumée le temps qu'il faudra : un générateur d'identifiants est une brique
  * TECHNIQUE, sa place est dans `platform/`, et l'y déplacer demande de toucher
  * tous les dépôts du référentiel. Emprunter celui du PIM aurait été pire — la

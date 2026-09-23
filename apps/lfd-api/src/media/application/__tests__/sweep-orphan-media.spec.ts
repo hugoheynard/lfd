@@ -6,6 +6,7 @@ import {
   type RegisteredMedia,
 } from "../../domain/ports/media-library.js";
 import { MediaCarriers, type Carrier } from "../../channels/carriers/media-carriers.js";
+import { MediaFailureLog, type LoggedFailure } from "../../domain/ports/media-failure-log.js";
 import { SweepOrphanMediaHandler } from "../sweep-orphan-media.js";
 
 /**
@@ -111,12 +112,46 @@ class FakeStore extends MediaStore {
   }
 }
 
+/**
+ * L'historique des refus, qui retient la DATE qu'on lui donne.
+ *
+ * C'est elle qu'on éprouve : la rétention se calcule par l'horloge, et un
+ * doublé qui l'ignorerait laisserait passer un calcul faux — c'est-à-dire un
+ * effacement trop large sur des lignes qu'on voulait garder.
+ */
+class SpyingFailures extends MediaFailureLog {
+  cutoff: Date | null = null;
+
+  constructor(private readonly forgotten = 0) {
+    super();
+  }
+
+  record(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  recent(): Promise<readonly LoggedFailure[]> {
+    return Promise.resolve([]);
+  }
+
+  forgetBefore(before: Date): Promise<number> {
+    this.cutoff = before;
+    return Promise.resolve(this.forgotten);
+  }
+}
+
 function handler(
   candidates: readonly string[],
   stillOrphan: (key: string) => boolean = () => true,
   failOn: string | null = null,
   carried: ReadonlyMap<string, number> = new Map(),
-): { run: SweepOrphanMediaHandler; steps: Step[]; library: FakeLibrary } {
+  failures: SpyingFailures = new SpyingFailures(),
+): {
+  run: SweepOrphanMediaHandler;
+  steps: Step[];
+  library: FakeLibrary;
+  failures: SpyingFailures;
+} {
   const steps: Step[] = [];
   const library = new FakeLibrary(candidates, stillOrphan, steps);
   return {
@@ -124,10 +159,12 @@ function handler(
       library,
       new FakeStore(steps, failOn),
       new FakeCarriers(carried),
+      failures,
       new FixedClock(NOW),
     ),
     steps,
     library,
+    failures,
   };
 }
 
@@ -188,6 +225,10 @@ describe("SweepOrphanMediaHandler", () => {
       forgotten: 0,
       spared: 0,
       capped: false,
+      // L'entretien de l'historique des refus est dans le MÊME rapport :
+      // c'est le même passage qui le fait, et ouvrir un second cron pour
+      // quelques lignes par jour coûterait un déclencheur et un secret de plus.
+      failuresForgotten: 0,
     });
   });
 
@@ -198,5 +239,34 @@ describe("SweepOrphanMediaHandler", () => {
     const { run } = handler(full);
 
     expect((await run.execute()).capped).toBe(true);
+  });
+
+  it("oublie les refus passé leur RÉTENTION, et le dit dans le rapport", async () => {
+    // Une table d'historique qui ne se vide jamais devient une dette
+    // silencieuse — et un refus de l'an dernier ne désigne plus rien de
+    // retrouvable : le fichier n'existe plus sur le disque de personne.
+    const failures = new SpyingFailures(7);
+    const { run } = handler([], () => true, null, new Map(), failures);
+
+    const report = await run.execute();
+
+    expect(report.failuresForgotten).toBe(7);
+    // 90 jours avant l'horloge FIXE du test — jamais `new Date()`, sinon le
+    // cas devient vrai un jour et faux le lendemain.
+    const expected = new Date(NOW);
+    expected.setUTCDate(expected.getUTCDate() - 90);
+    expect(failures.cutoff?.toISOString()).toBe(expected.toISOString());
+  });
+
+  it("ramasse les refus MÊME quand aucune orpheline n'est trouvée", async () => {
+    // Les deux entretiens sont indépendants : un fonds propre ne doit pas
+    // faire grossir l'historique indéfiniment.
+    const failures = new SpyingFailures(3);
+    const { run } = handler([], () => true, null, new Map(), failures);
+
+    const report = await run.execute();
+
+    expect(report.removed).toBe(0);
+    expect(report.failuresForgotten).toBe(3);
   });
 });

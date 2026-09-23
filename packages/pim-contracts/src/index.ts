@@ -30,6 +30,7 @@ export type {
   FocalPoint,
   LibraryMediaView,
   MediaCarrierView,
+  MediaUploadFailureView,
   MediaLibraryPageView,
   MediaDetailsPayload,
 } from "./media.js";
