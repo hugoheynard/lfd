@@ -17,8 +17,38 @@
 > ont été faits le 2026-09-23 et rendent 0, 0 et 0 (§6) — à relire avant
 > d’écrire la migration, pas après.
 
-Suite de [`plan-la-mediatheque.md`](plan-la-mediatheque.md), dont les lots 1 et
-2 sont livrés (`054e9d09b`, `2839b0c65`).
+Suite de [`plan-la-mediatheque.md`](plan-la-mediatheque.md), dont **les six
+lots sont livrés** (2026-09-23).
+
+## 0. Où on en est
+
+|                             | État                                                                                                                           |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Le nom                      | `media` partout dans le code et l'API (`38a996794`) ; l'écran garde `mediatheque`, le français vivant là où des humains lisent |
+| Le journal                  | **fait** (`d518dd464`) — trois faits, sujet = l'URL, et le port d'écriture exige un laissez-passer                             |
+| Déploiement ① — **étendre** | **fait** (`65661acf0`) — `media_url` nullable sur les deux rattachements, reportée, écrite en double, lue par personne         |
+| Déploiement ② — basculer    | à faire, §5                                                                                                                    |
+| Déploiement ③ — resserrer   | à faire, §5                                                                                                                    |
+
+### 🔴 Ce que ① a appris, et qui retourne l'ordre du plan
+
+J'ai voulu sortir `src/media/` d'abord, en laissant la table où elle est. **C'est
+impossible**, et la raison est la porte que ce plan invoquait déjà :
+`lint:prisma-model-ownership` dérive la propriété d'un modèle de **qui
+l'écrit**. Or `prisma-editorial.repository.ts` CRÉE des `MediaAsset` à chaque
+enregistrement de fiche. Deux blocs écriraient le même modèle, et la porte
+tire — à raison.
+
+➡️ L'ordre n'est donc pas « déménager puis nettoyer » mais **« faire cesser le
+PIM d'écrire, ce qui libère le déménagement »**. Le code bouge en conséquence,
+jamais en premier.
+
+### ✅ Une simplification trouvée en écrivant ①
+
+Le plan prévoyait de **recopier** `pim.media_asset` vers une table neuve.
+Inutile : `ALTER TABLE "pim"."media_asset" SET SCHEMA "media"` est
+**instantané et ne copie rien** — Postgres ne déplace que le catalogue. Le ②
+s'allège d'autant, et le risque d'une copie partielle disparaît avec elle.
 
 ---
 
@@ -151,10 +181,22 @@ platform`. Un dossier `src/media/` y serait **ignoré** — ni écrivain, ni
 - Cette même porte lit `prisma.<modèle>.<méthode>` par expression régulière :
   les lectures par `include: { media: true }` lui sont **invisibles**. La
   propriété qu'elle garantit ne couvre donc pas le cas principal ici.
-- `lint:journal-tracked` s'applique à `src/pim/**`. Sortir la médiathèque du
-  dossier **sort ses écritures du périmètre de la porte**, en silence. Déposer,
-  taguer et pointer ne laisseraient aucune trace, et personne ne le verrait.
-  **À décider explicitement**, pas à subir.
+- 🔴 `lint:journal-tracked` s'applique à `src/pim/**`. Le journal de la
+  médiathèque **existe depuis le 2026-09-23** (décision Hugo : « on le fait ») ;
+  sortir du dossier le ferait donc sortir du périmètre de la porte **sans rien
+  casser** — les faits resteraient écrits, et plus rien ne garantirait que le
+  prochain geste le soit. Le lot ② doit **étendre le périmètre de la porte à
+  `src/media/**`**, sinon on perd une garantie qu'on vient d'acquérir.
+- ⚠️ Cette porte cherche les handlers qui injectent un `*Repository`. Les ports
+  de la médiathèque s'appellent `MediaLibrary*` : elle **ne les voyait pas**, et
+  c'est Hugo qui a réclamé le journal, pas elle. L'étendre au dossier ne suffit
+  donc pas — il faudra aussi qu'elle reconnaisse ces noms-là.
+- ⚠️ **Cinq registres tenus à la main** doivent connaître `media`, et aucun
+  n'échoue si on l'oublie : `BLOCKS` (porte de propriété), la carte de
+  `context-boundaries`, `datasource.prisma`, `schema-ops.counter.ts`
+  (`MediaAsset: "pim"`), et le préfixe `media_asset.` d'`activity-module.ts`
+  (posé le 2026-09-23 — il range les faits par module, et un fait sans module
+  fait échouer un test).
 
 ---
 
@@ -181,6 +223,34 @@ Il est FAUX**, et je l'avais écrit sans ouvrir le fichier : `visuals-form.ts:10
 appelle `setMediaAltText(index, …)` depuis **l'éditeur de fiche**, indexé par
 emploi, et le même mécanisme existe côté familles. Je le retire au lieu de le
 corriger : la décision tient sur ses deux autres appuis, pas sur celui-là.
+
+### 🔴 Ce que « un seul point » VIDE, et que personne n'a encore dit
+
+`alt` est déjà sur l'actif ; il n'y a donc **aucune donnée à déplacer**. Mais la
+décision a une conséquence d'écran que le plan taisait.
+
+Aujourd'hui, le texte alternatif se saisit **depuis la fiche produit** — le
+panneau `alt-text-panel` porte les trois langues, et c'est son nom même. Ce
+texte arrive dans la bibliothèque parce que `replaceMedia` recrée un actif à
+chaque enregistrement, en y recopiant ce que l'écran lui passe.
+
+➡️ Au ②, le PIM cesse d'écrire des actifs. **La saisie de l'alternative depuis
+la fiche n'a donc plus où aller**, et elle doit déménager dans la médiathèque —
+qui ne la propose pas encore (le lot 4 y a mis l'étiquette, les mots-clés et le
+point focal, pas l'alternative).
+
+| Écran               | Avant ②                                 | Après ②              |
+| ------------------- | --------------------------------------- | -------------------- |
+| Panneau de la fiche | nom, **alternative ×3**, usage, retrait | usage, retrait       |
+| Médiathèque         | étiquette, mots-clés, point focal       | + **alternative ×3** |
+
+⚠️ **Le panneau de la fiche perd sa raison d'être principale.** Il s'appelle
+« texte alternatif » et n'en portera plus. À renommer au même passage, sinon le
+prochain lecteur cherchera longtemps ce qu'il décrit.
+
+C'est cohérent avec la décision — une alternative décrit l'image, pas ce que la
+fiche en fait — mais ça se paie en gestes : qui rédige une fiche devra aller
+décrire l'image ailleurs. **Le dire avant de le faire.**
 
 ### Le critère de fusion — inopérant, puis sans objet
 
@@ -318,38 +388,55 @@ le faire bouger.
 Additif, réversible, jamais une colonne supprimée dans le même passage
 (`CLAUDE.md` §0).
 
-### ① Étendre — réversible
+### ① Étendre ✅ 2026-09-23 (`65661acf0`)
 
-- Schéma `media`, sa table, et son entrée dans `datasource.prisma`.
-- `product_media` et `category_media` gagnent `media_url`, **nullable**, en
-  double écriture.
-- Recopie **dédoublonnée par URL**, alternative choisie par le critère du §4.
-- Rien ne lit encore la nouvelle table.
+- `product_media` et `category_media` gagnent `media_url`, **nullable**,
+  reportée sur l'existant et écrite en double.
+- Deux index, parce que les lectures de ② chercheront par là.
+- **Rien ne la lit.** Un `DROP COLUMN` suffit à revenir.
+- Un e2e garde la double écriture sur les DEUX porteurs — c'est son seul
+  garde-fou, aucune lecture n'en dépendant encore.
 
-### ② Basculer — encore réversible
+⚠️ Le schéma `media` n'est **pas** créé ici, contrairement à ce que ce plan
+disait : la table n'a pas à être recopiée, elle se déplacera d'un
+`SET SCHEMA` au ②.
 
-- Le bloc `media/` naît : module, route `/mediatheque` sans préfixe `pim`, les
-  deux ports, et `media` ajouté à `BLOCKS`, à `context-boundaries` et à la
-  matrice du `CLAUDE.md`.
-- Les lectures passent sur `media_url` ; `replaceMedia` cesse d'écrire.
-- Le balayeur passe par `MediaCarriers` **avant** que la FK tombe.
-- L'ancienne colonne et l'ancienne route vivent encore.
+### ② Basculer — le gros morceau, encore réversible
+
+Dans cet ordre, parce qu'il est contraint :
+
+1. **Le PIM cesse d'écrire des actifs.** `replaceMedia` désigne par `media_url`
+   au lieu de créer un `MediaAsset` — c'est ce qui libère tout le reste
+   (§0). Le dépôt par simple URL disparaît au même moment (§2).
+2. **Les lectures passent sur `media_url`** : les deux `*-editorial.reader`, la
+   source des révisions, la vitrine B2B. Les quatre passent par `include: { media }`
+   aujourd'hui (§1) — c'est là que se cache le travail.
+3. **Dédoublonnage** de `media_asset` par URL : le journal de lignes redevient
+   une bibliothèque. Les trois comptages disent que rien n'est perdu (§6).
+4. `ALTER TABLE "pim"."media_asset" SET SCHEMA "media"` — instantané.
+5. **Le bloc `media/` naît** : module, route `/media` sans préfixe `pim`, les
+   deux ports (§3), et le balayeur passe par `MediaCarriers` **avant** que la
+   clé étrangère tombe (§5).
+6. **Les six registres** : `BLOCKS`, `context-boundaries`, la matrice du
+   `CLAUDE.md` §3, `datasource.prisma`, `schema-ops.counter.ts`, et le périmètre
+   de `lint:journal-tracked`.
+7. **Les écrans** : l'alternative quitte le panneau de la fiche pour la
+   médiathèque (§4), et le panneau change de nom.
+
+L'ancienne colonne `media_id` vit encore : on peut revenir.
 
 ### ③ Resserrer — IRRÉVERSIBLE
 
-- `media_url` obligatoire, `media_id` et sa FK tombent, la clé primaire change.
-- `pim.media_asset` supprimée — **après comptage**, geste proposé, jamais
-  exécuté d'autorité.
+- `media_url` obligatoire, `media_id` et sa clé étrangère tombent, la clé
+  primaire devient **`(produit, url, rôle)`** (§2).
+- 🔴 **C'est ici que la règle de Hugo change de gardien.** Sans clé étrangère,
+  plus de `ON DELETE RESTRICT` : « on ne supprime pas une image mappée » passe
+  de Postgres au code. Le test qui l'éprouve doit exister **avant** ce
+  déploiement, pas après (§5).
 
-③ détruit la seule copie des alternatives par emploi. C'était l'irréversibilité
-la plus lourde du plan **tant qu'on ignorait ce qu'elle détruisait** : les trois
-zéros du §6 disent qu'il n'y a rien d'unique à y perdre, puisque toutes les
-lignes d'une même image portent déjà le même texte.
-
-⚠️ **Ce qui reste irréversible malgré tout**, et qui ne se mesure pas : une
-alternative écrite **entre** la mesure et ③. Le point de contrôle tient donc,
-allégé — rejouer les trois comptages juste avant ③, et ne pas le lancer sur un
-nombre vieux de plusieurs semaines.
+⚠️ **Ce qui est irréversible et ne se mesure pas** : une alternative écrite
+**entre** la mesure et ③. Rejouer les trois comptages juste avant, et ne pas
+lancer ③ sur un nombre vieux de plusieurs semaines.
 
 ---
 
