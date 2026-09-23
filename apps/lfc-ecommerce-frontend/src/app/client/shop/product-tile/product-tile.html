@@ -1,7 +1,18 @@
 <div class="tile">
   <div class="media">
     <button class="photo" type="button" [attr.aria-label]="product().name" (click)="opened.emit()">
-      <img [src]="art().url" [attr.alt]="art().alt" />
+      <!-- `sizes` dit la place RÉELLE que le CSS donnera : sans lui, le
+           navigateur suppose la pleine largeur de la fenêtre et choisit
+           toujours la plus grande. La grille fait quatre colonnes au-delà de
+           60rem, deux en dessous. -->
+      <img
+        [src]="artSrc()"
+        [attr.srcset]="artSrcset() || null"
+        sizes="(min-width: 60rem) 25vw, 45vw"
+        [attr.alt]="art().alt"
+        loading="lazy"
+        decoding="async"
+      />
     </button>
 
     @if (product().isFeatured) {

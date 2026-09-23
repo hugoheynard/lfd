@@ -8,6 +8,7 @@ import type { ShopItemView } from '@lfd/contracts';
 import { lineTotalCents, unitPriceCents } from '@lfd/money';
 
 import { artOf, ovenHoursOf } from '../shelf-display';
+import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../media-source';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { ShopPriceBasis } from '../shop-price-basis.service';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
@@ -57,6 +58,23 @@ export class ProductSheet {
       return '';
     }
     return this.catalogue.shelves().find((shelf) => shelf.id === product.shelfId)?.name ?? '';
+  });
+
+  /**
+   * L'ouverture, à la largeur de la fiche.
+   *
+   * Plus grande que la tuile — elle occupe toute la largeur du panneau — donc
+   * ses largeurs sont doublées. Mesuré : 123 ko à 1800 px, contre 3,64 Mo pour
+   * le master.
+   */
+  protected readonly artSrc = computed(() => {
+    const visual = this.art();
+    return visual === null ? '' : sizedMedia(visual.url, SHEET_WIDTHS[0]);
+  });
+
+  protected readonly artSrcset = computed(() => {
+    const visual = this.art();
+    return visual === null ? '' : mediaSrcset(visual.url, SHEET_WIDTHS);
   });
 
   protected readonly art = computed(() => {

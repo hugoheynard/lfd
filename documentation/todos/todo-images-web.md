@@ -90,8 +90,42 @@ quatre largeurs, on est à 800 — très loin du plafond. Ça ne redevient une
 question que si le fonds passe le millier d'images ET qu'on multiplie les
 largeurs.
 
-⚠️ L'interrupteur n'a PAS été basculé : c'est un changement de compte, il
-revient à Hugo.
+✅ **Basculé le 2026-09-23**, sur demande explicite de Hugo.
+
+### Ce que ça a donné, MESURÉ sur la photo de production
+
+|                                  |                                              |
+| -------------------------------- | -------------------------------------------- |
+| Master                           | **3 636 607 octets** (3,64 Mo), `image/jpeg` |
+| Tuile, 720 px, navigateur récent | **21 974 octets** (21,5 ko), `image/avif`    |
+| Tuile, 720 px, sans AVIF         | 29 934 octets, `image/webp`                  |
+| Tuile, 720 px, très ancien       | 32 498 octets, `image/jpeg`                  |
+| Ouverture de fiche, 1800 px      | 126 446 octets (123 ko), `image/avif`        |
+
+**−99,4 % sur la tuile. Cent soixante-cinq fois moins.** Et la négociation de
+format fonctionne telle qu'annoncée : chacun reçoit le meilleur format qu'il a
+lui-même déclaré accepter.
+
+### Le tarif au-delà du quota — lu sur le compte le 2026-09-23
+
+**1 $ par tranche de 2 000 transformations uniques supplémentaires**, soit
+0,0005 $ l'unité.
+
+| Si le fonds atteint | Uniques (2 largeurs × 2 rôles) | Coût mensuel |
+| ------------------- | ------------------------------ | ------------ |
+| 200 images          | ~800                           | **0 $**      |
+| 1 000 images        | ~4 000                         | **0 $**      |
+| 1 250 images        | 5 000 — le plafond exact       | **0 $**      |
+| 5 000 images        | 20 000                         | ~**7,50 $**  |
+
+⚠️ **NON VÉRIFIÉ, et ça compte** : le dépassement s'ajoute-t-il tout seul à la
+facture, ou faut-il avoir souscrit l'offre « Images & Stream » (affichée « à
+partir de 0 $/mois », avec un bouton _Purchase_) ? Si c'est la seconde, les
+transformations **s'arrêtent** au-delà de 5 000 au lieu de se facturer — donc
+les images cassent au lieu que la facture monte. C'est la plus désagréable des
+deux hypothèses, et c'est celle qu'il faut écarter avant de se reposer sur le
+quota. À l'échelle actuelle — **une** image dans le fonds — la question ne se
+pose pas avant longtemps, mais elle se posera en silence.
 
 ### 🔴 « Et le stockage des dérivées, alors ? » — il n'y en a pas
 

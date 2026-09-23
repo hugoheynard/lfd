@@ -8,7 +8,16 @@
   >
     <span dialog-media class="photo">
       @if (art(); as visual) {
-        <img [src]="visual.url" [attr.alt]="visual.alt" />
+        <!-- `sizes` : l'ouverture occupe toute la largeur du panneau, plafonné
+             à 40rem. Sans cette indication, le navigateur suppose la pleine
+             largeur de la fenêtre et prend toujours la plus grande. -->
+        <img
+          [src]="artSrc()"
+          [attr.srcset]="artSrcset() || null"
+          sizes="(min-width: 40rem) 40rem, 100vw"
+          [attr.alt]="visual.alt"
+          decoding="async"
+        />
       }
       @if (piece.isFeatured) {
         <span class="signature">{{ t().product.signature }}</span>

@@ -7,6 +7,7 @@ import type { ShopItemView } from '@lfd/contracts';
 import { unitPriceCents } from '@lfd/money';
 
 import { artOf } from '../shelf-display';
+import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
 import { ShopPriceBasis } from '../shop-price-basis.service';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
 
@@ -97,6 +98,20 @@ export class ProductTile {
 
   /** Le visuel du référentiel, ou l'illustration de son rayon. */
   protected readonly art = computed(() => artOf(this.product()));
+
+  /**
+   * L'image **à la taille de la tuile**, et non le master.
+   *
+   * 🔴 La vitrine posait l'URL du master : mesuré sur la photo de production,
+   * 3,64 Mo servis dans une tuile de 180 px. À 720 px et en format négocié,
+   * la même photo fait 21,5 ko.
+   *
+   * `src` porte la plus petite largeur — c'est le repli d'un navigateur qui
+   * ignore `srcset`, et il doit être léger, pas fidèle.
+   */
+  protected readonly artSrc = computed(() => sizedMedia(this.art().url, TILE_WIDTHS[0]));
+
+  protected readonly artSrcset = computed(() => mediaSrcset(this.art().url, TILE_WIDTHS));
 
   protected readonly addLabel = computed(() =>
     fill(this.t().shop.addAria, { name: this.product().name }),
