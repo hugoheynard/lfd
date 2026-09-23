@@ -34,10 +34,37 @@ export class MediaLibraryHttpApi {
    */
   private readonly base = B2B_API_BASE;
 
-  async page(limit: number, offset: number): Promise<MediaLibraryPageView> {
+  /**
+   * Une page de la bibliothèque, filtrée **au serveur**.
+   *
+   * 🔴 Au serveur depuis le 2026-09-23, et c'était un défaut avant d'être un
+   * manque : les écrans filtraient ce qu'ils avaient chargé. Le sélecteur en
+   * charge cent ; l'image cent-unième était donc introuvable quoi qu'on tape,
+   * et rien ne le disait à l'écran.
+   *
+   * ⚠️ Les tags partent séparés par une VIRGULE, pas en paramètre répété :
+   * `?tags=a&tags=b` rend une chaîne quand il y en a un et un tableau quand il
+   * y en a deux, et une forme qui change selon le nombre d'éléments est la
+   * source d'une classe de bugs qu'un test à un seul tag ne voit pas. Un tag
+   * ne contient jamais de virgule — la normalisation d'écriture découpe
+   * dessus.
+   */
+  async page(
+    limit: number,
+    offset: number,
+    q = '',
+    tags: readonly string[] = [],
+  ): Promise<MediaLibraryPageView> {
     return firstValueFrom(
       this.http.get<MediaLibraryPageView>(`${this.base}/media`, {
-        params: { limit: String(limit), offset: String(offset) },
+        params: {
+          limit: String(limit),
+          offset: String(offset),
+          // Un critère vide ne part PAS : envoyer `q=` ferait poser un filtre
+          // qui n'en est pas un, et le serveur devrait le défaire.
+          ...(q.trim() === '' ? {} : { q: q.trim() }),
+          ...(tags.length === 0 ? {} : { tags: tags.join(',') }),
+        },
       }),
     );
   }

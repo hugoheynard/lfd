@@ -85,9 +85,16 @@ export class MediaLibraryController {
   async browse(
     @Query("limit") limit?: string,
     @Query("offset") offset?: string,
+    @Query("q") q?: string,
+    @Query("tags") tags?: string,
   ): Promise<MediaLibraryPageView> {
     return this.queries.execute<BrowseMediaLibraryQuery, MediaLibraryPageView>(
-      new BrowseMediaLibraryQuery(numberOr(limit, DEFAULT_PAGE), numberOr(offset, 0)),
+      new BrowseMediaLibraryQuery(
+        numberOr(limit, DEFAULT_PAGE),
+        numberOr(offset, 0),
+        q,
+        tagsOf(tags),
+      ),
     );
   }
 
@@ -155,4 +162,30 @@ export class MediaLibraryController {
 function numberOr(raw: string | undefined, fallback: number): number {
   const parsed = Number(raw);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+/**
+ * Les mots-clés d'une requête : `?tags=a,b,c`.
+ *
+ * 🔴 Une VIRGULE, et pas un paramètre répété : les deux marchent avec Nest,
+ * mais `?tags=a&tags=b` rend une string quand il y en a un seul et un tableau
+ * quand il y en a deux — une forme qui change selon le nombre d'éléments est
+ * la source d'une classe entière de bugs qu'un test à un seul tag ne voit pas.
+ *
+ * ⚠️ Un tag ne contient jamais de virgule : la normalisation d'écriture
+ * (`mediaTags`) découpe dessus. Le séparateur ne peut donc pas être ambigu.
+ *
+ * Rend `undefined` — et non `[]` — quand rien n'est demandé : un tableau vide
+ * dirait « filtre sur aucun tag », ce qui ne veut rien dire, là où l'absence
+ * dit « ne filtre pas ».
+ */
+function tagsOf(raw: string | undefined): readonly string[] | undefined {
+  if (raw === undefined) {
+    return undefined;
+  }
+  const tags = raw
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag !== "");
+  return tags.length === 0 ? undefined : tags;
 }

@@ -98,7 +98,38 @@
     </ul>
 
     @if (palette.armed(); as tag) {
-      <p class="hint">« {{ tag }} » est armé : cliquez une image pour le poser.</p>
+      <p class="hint">
+        « {{ tag }} » est armé : cliquez une image pour le poser.
+        <!-- Le même mot sert à POSER et à CHERCHER. Deux bandes de tags
+             auraient dédoublé le vocabulaire à l'écran pour une différence
+             d'intention, pas de nature. -->
+        <button foldButton emphasis="soft" size="sm" (click)="toggleFilterTag(tag)">
+          {{ isFiltering(tag) ? 'Ne plus filtrer dessus' : 'Filtrer sur ce mot-clé' }}
+        </button>
+      </p>
+    }
+  </div>
+
+  <!-- LE FILTRE. Il part au SERVEUR : filtrer ce qui est chargé ne cherche pas,
+       ça trie un échantillon de soixante. -->
+  <div class="sieve">
+    <input
+      class="sift"
+      type="search"
+      placeholder="Chercher par étiquette"
+      [value]="search()"
+      (input)="search.set($any($event.target).value)"
+      (keydown.enter)="refilter()"
+      (search)="refilter()"
+    />
+    @for (tag of filterTags(); track tag) {
+      <button type="button" class="chip" (click)="toggleFilterTag(tag)">
+        {{ tag }} <span aria-hidden="true">×</span>
+        <span class="sr-only">retirer ce mot-clé du filtre</span>
+      </button>
+    }
+    @if (filtering()) {
+      <button foldButton emphasis="soft" size="sm" (click)="clearFilter()">Tout afficher</button>
     }
   </div>
 
@@ -111,14 +142,33 @@
     <fold-empty-state tone="alert" title="Bibliothèque illisible" [subtitle]="message">
       <fold-icon empty-icon name="image" [size]="40" />
     </fold-empty-state>
+  } @else if (items().length === 0 && filtering()) {
+    <!-- Un fonds VIDE et un filtre sans résultat ne se disent pas pareil : le
+         premier demande de déposer, le second d'élargir. Les confondre ferait
+         croire la bibliothèque vide à qui vient de taper trois lettres. -->
+    <fold-empty-state
+      title="Aucune image ne correspond"
+      subtitle="Élargissez la recherche, ou retirez un mot-clé du filtre."
+    >
+      <fold-icon empty-icon name="image" [size]="40" />
+    </fold-empty-state>
   } @else if (items().length === 0) {
+    <!-- 🔴 Ce sous-titre disait « les images entrent par la section Visuels
+         d'une fiche produit ou d'une famille ». C'est faux depuis le
+         2026-09-23 : le dépôt n'existe plus QUE sur cet écran, parce
+         qu'alimenter et taguer le fonds est un autre métier que rédiger une
+         fiche. Une phrase qui envoie chercher un geste supprimé coûte plus
+         qu'une absence de phrase. -->
     <fold-empty-state
       title="La bibliothèque est vide"
-      subtitle="Les images y entrent par la section Visuels d'une fiche produit ou d'une famille."
+      subtitle="Déposez des images ici : c'est le seul endroit par lequel elles entrent."
     >
       <fold-icon empty-icon name="image" [size]="40" />
     </fold-empty-state>
   } @else {
+    <!-- « sur N » est le total DU FILTRE, pas celui du fonds : annoncer le
+         fonds ferait promettre des pages que « charger plus » ne rendrait
+         jamais. -->
     <p class="count">{{ items().length }} sur {{ total() }}</p>
 
     <ul class="grid">

@@ -4,15 +4,21 @@
   <input
     class="sift"
     type="search"
-    placeholder="Chercher par étiquette ou mot-clé"
+    placeholder="Chercher par étiquette"
     [value]="search()"
     (input)="search.set($any($event.target).value)"
+    (keydown.enter)="research()"
+    (search)="research()"
   />
 
   @if (loading()) {
     <p class="state">Lecture de la médiathèque…</p>
   } @else if (failure(); as message) {
     <p class="state">{{ message }}</p>
+  } @else if (images().length === 0 && search().trim() !== '') {
+    <!-- Rien ne CORRESPOND — distinct d'un fonds vide, qui demande un dépôt
+         là où celui-ci demande d'élargir. -->
+    <p class="state">Aucune image ne correspond à « {{ search() }} ».</p>
   } @else if (images().length === 0) {
     <!-- Fonds VIDE et recherche infructueuse ne se disent pas pareil : le
          rédacteur ne dépose pas, il faut donc lui nommer qui le fait et où —
@@ -20,11 +26,9 @@
     <p class="state">
       La médiathèque est vide. Les images y sont déposées et taguées depuis l'écran Médiathèque.
     </p>
-  } @else if (shown().length === 0) {
-    <p class="state">Aucune image ne correspond.</p>
   } @else {
     <ul class="grid">
-      @for (image of shown(); track image.url) {
+      @for (image of images(); track image.url) {
         <li>
           <button
             type="button"

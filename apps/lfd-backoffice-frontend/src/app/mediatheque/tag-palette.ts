@@ -16,7 +16,16 @@ import { Injectable, computed, signal } from '@angular/core';
  */
 @Injectable()
 export class TagPaletteStore {
-  /** Ce que les images chargées portent déjà. Réécrit à chaque relecture. */
+  /**
+   * Ce que les images chargées portent déjà.
+   *
+   * 🔴 **Cumulé, jamais réécrit** (2026-09-23). Il l'était, et c'était sans
+   * conséquence tant que l'écran chargeait tout le fonds. Depuis que la
+   * recherche filtre au SERVEUR, une réécriture ferait disparaître de la bande
+   * les tags absents du résultat — donc, dès qu'on a filtré, on ne pourrait
+   * plus élargir ni changer de critère. Une bande qui rétrécit à mesure qu'on
+   * s'en sert est un piège.
+   */
   private readonly inUse = signal<readonly string[]>([]);
   /** Ce que quelqu'un vient d'écrire et n'a pas encore posé. */
   private readonly drafted = signal<readonly string[]>([]);
@@ -54,9 +63,9 @@ export class TagPaletteStore {
     return this.all().filter((tag) => tag.includes(needle));
   });
 
-  /** Recense ce que les images portent. Appelé après chaque lecture. */
+  /** Recense ce que les images portent. Appelé après chaque lecture, en CUMUL. */
   observe(tags: readonly (readonly string[])[]): void {
-    this.inUse.set([...new Set(tags.flat())]);
+    this.inUse.update((current) => [...new Set([...current, ...tags.flat()])]);
   }
 
   /**

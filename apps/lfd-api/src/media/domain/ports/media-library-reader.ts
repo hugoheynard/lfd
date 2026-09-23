@@ -45,7 +45,48 @@ export interface LibraryMediaRecord {
   readonly depositedAt: Date;
 }
 
-/** Une page de la bibliothèque, et le total pour la pagination. */
+/**
+ * **Ce qu'on cherche dans le fonds** — la page, et ce qui la restreint.
+ *
+ * 🔴 Deux critères et pas un, parce qu'ils n'ont pas la même nature. Le
+ * **texte** cherche ce que quelqu'un a écrit (une étiquette) ; les **mots-clés**
+ * filtrent sur un vocabulaire posé. Les confondre dans une seule barre ferait
+ * une recherche floue sur des valeurs exactes — et l'index GIN des tags, qui
+ * sert `hasEvery` sur des valeurs entières, ne servirait plus à rien.
+ */
+export interface LibraryQuery {
+  readonly limit: number;
+  readonly offset: number;
+  /**
+   * Cherché dans l'ÉTIQUETTE, en sous-chaîne et sans tenir compte de la casse.
+   *
+   * ⚠️ Pas dans le nom de fichier : personne ne se souvient de `a3f9….png`, et
+   * c'est précisément pour ça que les étiquettes et les tags existent.
+   *
+   * ⚠️ Et pas de préfixe : l'écran filtrait déjà par SOUS-CHAÎNE côté
+   * navigateur. Remonter la recherche au serveur ne doit pas rétrécir ce
+   * qu'elle trouvait — un utilisateur qui tape « croissant » et perd
+   * « mini-croissant » conclut que la recherche est cassée, pas qu'elle a
+   * changé de règle.
+   */
+  readonly q?: string | undefined;
+  /**
+   * Les mots-clés que l'image doit porter — **TOUS**, pas au moins un.
+   *
+   * Cocher un second tag doit RESTREINDRE : c'est le geste que fait quelqu'un
+   * qui a trop de résultats. Un « ou » élargirait, c'est-à-dire ferait
+   * l'inverse de ce que le geste demande.
+   */
+  readonly tags?: readonly string[] | undefined;
+}
+
+/**
+ * Une page de la bibliothèque, et le total pour la pagination.
+ *
+ * 🔴 `total` est le total **du filtre**, jamais celui du fonds. Sinon « charger
+ * plus » promet des pages qui n'existent pas, et l'écran s'arrête sur un vide
+ * qu'il avait annoncé plein.
+ */
 export interface LibraryMediaPage {
   readonly items: readonly LibraryMediaRecord[];
   readonly total: number;
@@ -74,7 +115,7 @@ export abstract class MediaLibraryReader {
    * image déposée il y a six mois parce qu'on vient de sauver le produit qui la
    * porte.
    */
-  abstract page(limit: number, offset: number): Promise<LibraryMediaPage>;
+  abstract page(query: LibraryQuery): Promise<LibraryMediaPage>;
 
   /**
    * UNE image, par son URL — ou `null` si rien ne la porte.

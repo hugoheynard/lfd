@@ -6,6 +6,7 @@ import { optionalLocalizedColumn as localizedOf } from "../../pim/catalogue/shar
 import { MediaCarriers } from "../channels/carriers/media-carriers.js";
 import { MediaPrismaService } from "../infra/database/media-prisma.service.js";
 import {
+  type LibraryQuery,
   MediaLibraryReader,
   type LibraryMediaPage,
   type LibraryMediaRecord,
@@ -51,19 +52,26 @@ export class PrismaMediaLibraryReader extends MediaLibraryReader {
     super();
   }
 
-  async page(limit: number, offset: number): Promise<LibraryMediaPage> {
+  async page(query: LibraryQuery): Promise<LibraryMediaPage> {
+    const { limit, offset } = query;
+    // 0 — CE QUI RESTREINT. Le même `where` sert la page ET le total : les
+    // séparer ferait annoncer un nombre de résultats que le filtre ne rendrait
+    // pas, donc un « charger plus » qui promet des pages vides.
+    const where = filterOf(query);
+
     // 1 — LES URL de la page, par date de PREMIER dépôt. Trier par la dernière
     // inscription ferait remonter en tête une image déposée il y a six mois
     // parce qu'on vient de sauver le produit qui la porte.
     const [pageOf, total] = await Promise.all([
       this.prisma.mediaAsset.groupBy({
         by: ["url"],
+        where,
         _min: { createdAt: true },
         orderBy: { _min: { createdAt: "desc" } },
         take: limit,
         skip: offset,
       }),
-      this.countUrls(),
+      this.countUrls(where),
     ]);
 
     const urls = pageOf.map((group) => group.url);
@@ -150,8 +158,8 @@ export class PrismaMediaLibraryReader extends MediaLibraryReader {
    * ne le sera plus — le jour venu, ce compte deviendra approximatif ou
    * disparaîtra, ce qui ne coûte qu'une pagination sans total.
    */
-  private async countUrls(): Promise<number> {
-    const groups = await this.prisma.mediaAsset.groupBy({ by: ["url"] });
+  private async countUrls(where: AssetFilter): Promise<number> {
+    const groups = await this.prisma.mediaAsset.groupBy({ by: ["url"], where });
     return groups.length;
   }
 
@@ -230,4 +238,45 @@ function recordOf(
     uses,
     depositedAt,
   };
+}
+
+/**
+ * Ce que Prisma attend pour restreindre — et ce que le filtre RESTREINT
+ * vraiment.
+ *
+ * 🔴 Il porte sur la LIGNE, et c'est juste depuis le 2026-09-23 seulement : il
+ * n'y a plus qu'une ligne par URL (index unique). Avant, une image avait autant
+ * de lignes que d'enregistrements de fiche, et filtrer sur l'une d'elles aurait
+ * trouvé une image selon l'étiquette qu'elle portait à une sauvegarde
+ * quelconque — c'est-à-dire au hasard.
+ */
+type AssetFilter = {
+  name?: { contains: string; mode: "insensitive" };
+  tags?: { hasEvery: string[] };
+};
+
+/**
+ * Traduit la recherche en `where`, et rend `{}` quand elle ne demande rien.
+ *
+ * ⚠️ Une chaîne VIDE n'est pas un critère : `contains: ""` est vrai partout, ce
+ * qui ne coûterait rien ici, mais ferait croire au lecteur suivant qu'un
+ * `where` est toujours posé. Un filtre absent doit être absent.
+ *
+ * ⚠️ Les tags sont normalisés à l'ÉCRITURE (découpés, minuscules,
+ * dédoublonnés). On les met donc en minuscules ici aussi : `hasEvery` compare
+ * des valeurs exactes, et un « Croissant » coché ne trouverait rien.
+ */
+function filterOf(query: LibraryQuery): AssetFilter {
+  const filter: AssetFilter = {};
+  const needle = query.q?.trim() ?? "";
+  if (needle !== "") {
+    filter.name = { contains: needle, mode: "insensitive" };
+  }
+  const tags = (query.tags ?? [])
+    .map((tag) => tag.trim().toLowerCase())
+    .filter((tag) => tag !== "");
+  if (tags.length > 0) {
+    filter.tags = { hasEvery: tags };
+  }
+  return filter;
 }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
 import type { LibraryMediaView, MediaFactsView } from '@lfd/pim-contracts';
 import {
   FoldButtonComponent,
@@ -34,7 +34,13 @@ export interface PickedMedia extends MediaFactsView {
   readonly name: string;
 }
 
-/** Assez pour un fonds de démarrage ; la recherche prend le relais ensuite. */
+/**
+ * Assez pour un fonds de démarrage ; la recherche prend le relais ensuite.
+ *
+ * 🔴 « Prend le relais » est vrai depuis le 2026-09-23 SEULEMENT. La recherche
+ * filtrait ce qui était chargé : l'image cent-unième était donc introuvable
+ * quoi qu'on tape, et rien à l'écran ne le disait. Elle part au serveur.
+ */
 const PAGE_SIZE = 100;
 
 /**
@@ -81,22 +87,20 @@ export class LibraryPicker {
   protected readonly picked = signal<readonly string[]>([]);
 
   /**
-   * Ce que le panneau montre.
+   * Relit le fonds avec la recherche courante.
    *
-   * La recherche vise l'étiquette **et les mots-clés** — pas le nom de
-   * fichier : personne ne se souvient de `a3f9…png`, et c'est précisément pour
-   * ça que les tags existent.
+   * 🔴 Une RELECTURE, et non un filtre : `shown` était un `computed` sur
+   * `images()`, donc il ne cherchait que dans les cent premières. Ce qui
+   * ressemblait à une recherche était un tri d'échantillon.
+   *
+   * ⚠️ La recherche vise l'ÉTIQUETTE, jamais le nom de fichier : personne ne
+   * se souvient de `a3f9….png`, et c'est précisément pour ça que les
+   * étiquettes et les tags existent.
    */
-  protected readonly shown = computed(() => {
-    const needle = this.search().trim().toLowerCase();
-    if (needle === '') {
-      return this.images();
-    }
-    return this.images().filter(
-      (image) =>
-        image.name.toLowerCase().includes(needle) || image.tags.some((tag) => tag.includes(needle)),
-    );
-  });
+  protected async research(): Promise<void> {
+    this.loading.set(true);
+    await this.load();
+  }
 
   constructor() {
     void this.load();
@@ -160,7 +164,7 @@ export class LibraryPicker {
 
   private async load(): Promise<void> {
     try {
-      const page = await this.api.page(PAGE_SIZE, 0);
+      const page = await this.api.page(PAGE_SIZE, 0, this.search());
       this.images.set(page.items);
     } catch {
       this.failure.set("La médiathèque n'a pas pu être lue.");

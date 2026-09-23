@@ -66,6 +66,19 @@ export class MediathequePage {
 
   private readonly offset = signal(0);
 
+  /**
+   * Ce qu'on cherche — **envoyé au serveur**, pas appliqué ici.
+   *
+   * 🔴 Filtrer ce qui est chargé ne cherche pas, ça trie un échantillon : le
+   * fonds se parcourt soixante par soixante, donc une image non chargée était
+   * introuvable quoi qu'on tape. C'est le défaut que ce champ corrige
+   * (2026-09-23).
+   */
+  protected readonly search = signal('');
+
+  /** Les mots-clés retenus — l'image doit les porter TOUS. */
+  protected readonly filterTags = signal<readonly string[]>([]);
+
   protected readonly hasMore = computed(() => this.items().length < this.total());
 
   constructor() {
@@ -77,7 +90,7 @@ export class MediathequePage {
     this.loading.set(true);
     this.failure.set(null);
     try {
-      const page = await this.api.page(PAGE_SIZE, this.offset());
+      const page = await this.api.page(PAGE_SIZE, this.offset(), this.search(), this.filterTags());
       this.items.update((current) => [...current, ...page.items]);
       // La bande se recense sur ce qui est chargé : le vocabulaire est DÉRIVÉ
       // de l'usage, il n'a pas de table à lui.
@@ -89,6 +102,43 @@ export class MediathequePage {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  /**
+   * Relit le fonds **depuis le début** avec le filtre courant.
+   *
+   * 🔴 Depuis le début, et c'est le point : `load()` AJOUTE à ce qui est
+   * affiché, parce qu'il sert « charger plus ». Réutilisé tel quel après un
+   * changement de critère, il collerait les résultats du nouveau filtre à la
+   * suite de ceux de l'ancien — un écran qui mélange deux recherches.
+   */
+  protected async refilter(): Promise<void> {
+    this.items.set([]);
+    this.offset.set(0);
+    await this.load();
+  }
+
+  /** Retient ou relâche un mot-clé du filtre. Retenir RESTREINT. */
+  protected async toggleFilterTag(tag: string): Promise<void> {
+    this.filterTags.update((current) =>
+      current.includes(tag) ? current.filter((kept) => kept !== tag) : [...current, tag],
+    );
+    await this.refilter();
+  }
+
+  protected isFiltering(tag: string): boolean {
+    return this.filterTags().includes(tag);
+  }
+
+  /** Y a-t-il un critère posé ? Sert à proposer de l'effacer. */
+  protected readonly filtering = computed(
+    () => this.search().trim() !== '' || this.filterTags().length > 0,
+  );
+
+  protected async clearFilter(): Promise<void> {
+    this.search.set('');
+    this.filterTags.set([]);
+    await this.refilter();
   }
 
   /**

@@ -14,11 +14,22 @@ import {
 const MAX_PAGE = 100;
 const DEFAULT_PAGE = 60;
 
-/** Parcourt la bibliothèque de visuels, page par page. */
+/**
+ * Parcourt la bibliothèque de visuels, page par page — et filtrée.
+ *
+ * 🔴 **Le filtre est au SERVEUR depuis le 2026-09-23**, et c'était un défaut
+ * avant d'être un manque : les deux écrans filtraient ce qu'ils avaient
+ * chargé. Le sélecteur en charge cent ; l'image cent-unième était donc
+ * introuvable quoi qu'on tape, et rien ne le disait.
+ */
 export class BrowseMediaLibraryQuery {
   constructor(
     readonly limit: number = DEFAULT_PAGE,
     readonly offset: number = 0,
+    /** Cherché dans l'étiquette, en sous-chaîne, casse ignorée. */
+    readonly q: string | undefined = undefined,
+    /** Les mots-clés que l'image doit porter — tous. */
+    readonly tags: readonly string[] | undefined = undefined,
   ) {}
 }
 
@@ -43,7 +54,12 @@ export class BrowseMediaLibraryHandler implements IQueryHandler<
     const limit = Math.min(Math.max(Math.trunc(query.limit), 1), MAX_PAGE);
     const offset = Math.max(Math.trunc(query.offset), 0);
 
-    const page = await this.library.page(limit, offset);
+    const page = await this.library.page({
+      limit,
+      offset,
+      ...(query.q === undefined ? {} : { q: query.q }),
+      ...(query.tags === undefined ? {} : { tags: query.tags }),
+    });
     return { items: page.items.map(viewOf), total: page.total };
   }
 }
