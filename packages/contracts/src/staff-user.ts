@@ -122,6 +122,25 @@ export interface CreatedStaffUserResponse {
 const worksheetCategorySchema = z.string().trim().min(1).max(40);
 
 /**
+ * Les familles de sections de la fiche produit, telles que le formulaire les
+ * groupe. Liste **fermée**, à la différence des catégories de fiche d'atelier
+ * ci-dessus : celles-ci vivent dans le référentiel et bougent sans prévenir,
+ * celles-là sont la découpe de l'écran lui-même et ne changent qu'avec lui.
+ *
+ * ⚠️ Des VALEURS françaises, et elles le restent : ce sont les jetons que le
+ * front pose déjà dans `SectionFamily`, et une valeur n'est pas un nom (cf.
+ * `documentation/langue-du-code.md`). Les renommer serait une migration de
+ * données, pas un renommage.
+ */
+export const productSectionFamilySchema = z.enum([
+  "identite",
+  "commerce",
+  "reglementaire",
+  "communication",
+]);
+export type ProductSectionFamily = z.infer<typeof productSectionFamilySchema>;
+
+/**
  * Le sac de préférences de navigation d'une personne du staff — l'équivalent
  * back-office de `nav_prefs` côté client.
  *
@@ -134,6 +153,16 @@ const worksheetCategorySchema = z.string().trim().min(1).max(40);
 export const staffNavPreferencesSchema = z.object({
   /** La fiche d'atelier sur laquelle ce poste s'est mis. `null` = aucun choix. */
   worksheetCategory: worksheetCategorySchema.nullable().default(null),
+  /**
+   * La famille de sections regardée sur une fiche produit — le réglage suit la
+   * PERSONNE d'un produit à l'autre (Hugo, 2026-09-23 : relire les textes de dix
+   * fiches, c'est choisir « Communication » une fois, pas dix).
+   *
+   * `null` = aucun choix, donc la fiche entière. C'est le défaut délibéré : un
+   * compte qui ne s'est jamais prononcé ne doit pas découvrir une fiche amputée
+   * de sections qu'il n'a pas masquées.
+   */
+  productSectionFamily: productSectionFamilySchema.nullable().default(null),
 });
 export type StaffNavPreferences = z.infer<typeof staffNavPreferencesSchema>;
 
@@ -149,6 +178,7 @@ export type StaffNavPreferences = z.infer<typeof staffNavPreferencesSchema>;
 export const staffNavPreferencesPatchSchema = z
   .object({
     worksheetCategory: worksheetCategorySchema.nullable(),
+    productSectionFamily: productSectionFamilySchema.nullable(),
   })
   .partial();
 export type StaffNavPreferencesPatch = z.infer<typeof staffNavPreferencesPatchSchema>;

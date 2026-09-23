@@ -23,7 +23,9 @@ import {
   FoldPageSectionComponent,
   FoldTabPanelComponent,
   FoldTabsComponent,
+  FoldViewNavComponent,
   type FoldTabItem,
+  type FoldViewNavItem,
 } from 'fold-ng';
 
 import { UiPrefsStore } from '../../../shared/ui-prefs/ui-prefs.store';
@@ -39,7 +41,8 @@ import { AllergensForm } from './form-sections/allergens/allergens-form';
 import { NutritionForm } from './form-sections/nutrition/nutrition-form';
 import { VisualsForm } from './form-sections/visuals/visuals-form';
 import type { HasPendingChanges } from './pending-changes.guard';
-import { ProductFormStore, type FormSection } from './product-form-store';
+import { ProductFormStore, type FormSection, type SectionFamily } from './product-form-store';
+import { SectionFamilyFilterStore, type SectionFilter } from '../section-family-filter';
 import { ProductHistory } from './product-history/product-history';
 import { PublishRail } from './publish-rail/publish-rail';
 import { SECTION_EDITING } from '../section-state/section-editing';
@@ -57,6 +60,25 @@ type ProductTab = 'sheet' | 'history';
 const TAB_ITEMS: readonly FoldTabItem<ProductTab>[] = [
   { key: 'sheet', label: 'Fiche' },
   { key: 'history', label: 'Historique', icon: 'timeline' },
+];
+
+/** Les familles telles qu'on les lit à l'écran. La raison du découpage est au
+ *  `SectionFamily` du magasin, où les sections le portent. */
+const FAMILY_LABELS: Readonly<Record<SectionFamily, string>> = {
+  identite: 'Identité',
+  commerce: 'Commerce',
+  reglementaire: 'Réglementaire',
+  communication: 'Communication',
+};
+
+/** L'ordre de la barre : « Tout » d'abord, puis les familles dans l'ordre de
+ *  lecture de la fiche. */
+const FILTER_ORDER: readonly SectionFilter[] = [
+  'all',
+  'identite',
+  'commerce',
+  'reglementaire',
+  'communication',
 ];
 
 interface PageSection {
@@ -92,6 +114,7 @@ interface PageSection {
     FoldNavLayoutComponent,
     FoldTabsComponent,
     FoldTabPanelComponent,
+    FoldViewNavComponent,
     NgTemplateOutlet,
     ProductHistory,
     SectionState,
@@ -235,6 +258,106 @@ export class ProductFormPage implements HasPendingChanges {
         'La principale est celle des boutiques. Le texte alternatif est le seul champ d’image qui se traduit.',
     },
   ];
+
+  /**
+   * La famille retenue en haut de page — tenue HORS de la page.
+   *
+   * Le réglage suit la personne d'une fiche à l'autre (décision Hugo,
+   * 2026-09-23) : un composant de page, qui meurt à chaque navigation, ne peut
+   * pas le porter. Ce que ce siège ne fait pas encore — survivre à un
+   * rechargement — est dit dans son propre fichier.
+   */
+  private readonly filterStore = inject(SectionFamilyFilterStore);
+  protected readonly familyFilter = this.filterStore.family;
+
+  /**
+   * La famille de chaque section, lue sur le magasin.
+   *
+   * Aucune table locale : les familles vivent sur `SAVEABLE`, avec les sections
+   * qu'elles rangent. Ici on ne fait que l'indexer.
+   */
+  private readonly familyByKey = new Map<FormSection, SectionFamily>(
+    this.store.saveable.map((section) => [section.key, section.family] as const),
+  );
+
+  /** La famille d'une section, en toutes lettres. */
+  protected familyLabel(key: FormSection): string {
+    const family = this.familyByKey.get(key);
+    return family === undefined ? '' : FAMILY_LABELS[family];
+  }
+
+  /**
+   * Les items de la barre de filtre.
+   *
+   * Le compteur d'une famille est son nombre de sections **non enregistrées**,
+   * et c'est la moitié visible de la règle ci-dessous : même filtré sur une
+   * autre famille, l'écran continue de nommer celle qui porte des
+   * modifications en attente. « Tout » n'en porte pas — le total vit déjà dans
+   * le rail de publication, et le redire ici en ferait deux à tenir d'accord.
+   */
+  protected readonly filterItems = computed<FoldViewNavItem[]>(() => {
+    const dirty = this.store.dirtySections();
+    return FILTER_ORDER.map((key) => {
+      if (key === 'all') {
+        return { key, label: 'Tout' };
+      }
+      const count = dirty.filter((section) => section.family === key).length;
+      return { key, label: FAMILY_LABELS[key], badge: count === 0 ? null : count };
+    });
+  });
+
+  /**
+   * Les sections affichées, dans l'ordre de lecture.
+   *
+   * 🔴 **Une section non enregistrée reste visible, quelle que soit la
+   * famille choisie.** Le filtre range, il ne cache jamais du travail en cours :
+   * masquer une section sale rejouerait exactement la perte des visuels — des
+   * modifications qu'on ne voit plus, et qu'on quitte sans les avoir vues. Elle
+   * garde alors sa pastille de famille (en `warning`), qui dit d'où elle vient
+   * et pourquoi elle est là.
+   */
+  protected readonly visibleSections = computed<PageSection[]>(() =>
+    this.sections.filter((section) => this.isVisible(section.key)),
+  );
+
+  /**
+   * Le filtre EFFECTIF.
+   *
+   * À la création, c'est « Tout », quoi qu'ait choisi la personne ailleurs : la
+   * barre n'y est pas, donc un réglage rapporté d'une autre fiche cacherait des
+   * champs qu'on demande de saisir, sans rien pour le défaire.
+   */
+  protected readonly activeFilter = computed<SectionFilter>(() =>
+    this.store.isEdit() ? this.familyFilter() : 'all',
+  );
+
+  private isVisible(key: FormSection): boolean {
+    const filter = this.activeFilter();
+    return filter === 'all' || this.familyByKey.get(key) === filter || this.store.isDirty(key);
+  }
+
+  /** Hors de la famille filtrée, et affichée quand même parce qu'elle est sale. */
+  protected isEscapee(key: FormSection): boolean {
+    const filter = this.activeFilter();
+    return filter !== 'all' && this.familyByKey.get(key) !== filter;
+  }
+
+  /**
+   * La pastille de famille se montre sur « Tout » — où la liste est mélangée —
+   * et sur une section retenue hors de sa famille. Dans une liste déjà
+   * homogène, elle ne ferait que répéter le filtre sur chaque carte.
+   */
+  protected showsFamily(key: FormSection): boolean {
+    return this.activeFilter() === 'all' || this.isEscapee(key);
+  }
+
+  /** Le filtre de `fold-view-nav` revient en `string` : on le referme ici. */
+  protected setFamily(key: string): void {
+    const known = FILTER_ORDER.find((candidate) => candidate === key);
+    if (known !== undefined) {
+      this.filterStore.choose(known);
+    }
+  }
 
   constructor() {
     void this.store.init(this.route.snapshot.paramMap.get('id'));

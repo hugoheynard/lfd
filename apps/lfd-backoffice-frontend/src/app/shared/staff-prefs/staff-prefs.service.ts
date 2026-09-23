@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { StaffNavPreferencesPatch } from '@lfd/contracts';
+import type { ProductSectionFamily, StaffNavPreferencesPatch } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
 import { PermissionsStore } from '../../auth/permissions.store';
@@ -41,6 +41,18 @@ export class StaffPrefsService {
   async worksheetCategory(): Promise<string | null> {
     await this.permissions.ensureLoaded();
     return this.permissions.identity()?.navPrefs?.worksheetCategory ?? null;
+  }
+
+  /**
+   * La famille de sections que cette personne regarde sur une fiche produit,
+   * `null` si elle n'a jamais choisi — ce qui veut dire « tout voir ».
+   *
+   * Même `?.` défensif que ci-dessus, et pour la même raison : un backend d'une
+   * version antérieure n'envoie pas la clé, et l'écran doit ouvrir quand même.
+   */
+  async productSectionFamily(): Promise<ProductSectionFamily | null> {
+    await this.permissions.ensureLoaded();
+    return this.permissions.identity()?.navPrefs?.productSectionFamily ?? null;
   }
 
   /**

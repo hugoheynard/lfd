@@ -101,7 +101,24 @@
            que comme une frontière. Un bord ferme, et 16px suffisent alors. -->
       <div class="sections">
         <app-variant-bar />
-        @for (section of sections; track section.key) {
+        <!-- LE FILTRE DE FAMILLES. Il ne vit que sur une fiche existante : à la
+             création, la fiche se remplit d'un seul geste, et restreindre ce
+             qu'on voit y cacherait des champs qu'on demande de saisir.
+
+             Il range l'affichage et RIEN d'autre — aucune section n'est
+             désactivée, rien ne cesse d'être enregistrable. -->
+        @if (store.isEdit()) {
+          <fold-view-nav
+            [items]="filterItems()"
+            [activeKey]="familyFilter()"
+            (activeKeyChange)="setFamily($event)"
+            direction="horizontal"
+            activeStyle="fill"
+            background="surface"
+            justify="stretch"
+          />
+        }
+        @for (section of visibleSections(); track section.key) {
           <fold-card>
             <fold-page-section
               [title]="section.label"
@@ -111,6 +128,18 @@
               (openChange)="setSectionOpen(section.key, $event)"
             >
               <span sectionSubtitle>{{ section.description }}</span>
+              <!-- La famille de la section. En `warning` quand la section est
+                   affichée HORS de la famille filtrée : elle n'est là que parce
+                   qu'elle porte des modifications non enregistrées, et la
+                   pastille est ce qui le dit. -->
+              @if (showsFamily(section.key)) {
+                <fold-badge
+                  sectionActions
+                  radius="square"
+                  [content]="familyLabel(section.key)"
+                  [variant]="isEscapee(section.key) ? 'warning' : 'info'"
+                />
+              }
               <!-- VERROUILLÉE : cette carte est portée par la FICHE, pas par
                    l'article ouvert. On retire l'action d'enregistrement plutôt
                    que de la désactiver — un bouton grisé fait chercher la
@@ -156,6 +185,9 @@
                contexte. Elles sont rendues ici, dans la boucle, uniquement pour
                tomber au bon endroit dans la lecture : sous le sujet auquel elles
                répondent, et pas reléguées en fin de page. -->
+          <!-- Elles suivent donc aussi le filtre de leur section d'ancrage —
+               sans lui être rattachées deux fois : c'est la position dans la
+               boucle qui les range, pas une famille recopiée. -->
           @if (section.key === 'tarif') {
             <!-- LIMITE DE COMMANDE — sa propre carte, et pas un bloc sous le tarif.
              « Combien ça coûte » et « jusqu'à quand on en prend » sont deux
@@ -217,22 +249,28 @@
         }
 
         <!-- Une section en lecture seule : elle n'a pas d'enregistrement
-             propre, donc pas d'indicateur d'état. -->
-        <fold-card>
-          <fold-page-section
-            title="Diffusion par canal"
-            separator
-            collapsible
-            [open]="sectionOpen('diffusion')()"
-            (openChange)="setSectionOpen('diffusion', $event)"
-          >
-            <span sectionSubtitle>
-              Champs propres à chaque canal. Deux blocs côte à côte, pas un troisième niveau
-              d'onglets.
-            </span>
-            <app-integrations-form />
-          </fold-page-section>
-        </fold-card>
+             propre, donc pas d'indicateur d'état. N'appartenant à AUCUNE des
+             quatre familles (elle ne se saisit pas, elle rapporte ce que chaque
+             canal publie), elle ne se montre que sur « Tout » — la ranger de
+             force dans une famille affirmerait un classement que personne n'a
+             décidé. -->
+        @if (activeFilter() === 'all') {
+          <fold-card>
+            <fold-page-section
+              title="Diffusion par canal"
+              separator
+              collapsible
+              [open]="sectionOpen('diffusion')()"
+              (openChange)="setSectionOpen('diffusion', $event)"
+            >
+              <span sectionSubtitle>
+                Champs propres à chaque canal. Deux blocs côte à côte, pas un troisième niveau
+                d'onglets.
+              </span>
+              <app-integrations-form />
+            </fold-page-section>
+          </fold-card>
+        }
       </div>
 
       <app-publish-rail

@@ -287,9 +287,60 @@ const ALIGNABLE: Partial<Record<FormSection, VariantAspect>> = {
  */
 export type LifecycleGesture = 'publish' | 'unpublish' | 'archive' | 'restore';
 
+/**
+ * **La famille de lecture d'une section** — quatre, et elles suivent ce que
+ * chacune fait à la fiche, pas un classement de confort (décision Hugo,
+ * 2026-09-23).
+ *
+ * Ce qui les sépare, **dans le code d'aujourd'hui** :
+ *
+ * - `reglementaire` **commande la publication** : l'invariant 7 refuse de
+ *   mettre en vente une déclinaison active sans déclaration d'allergènes
+ *   (`pim/catalogue/product/domain/entities/product.ts`, `publish()`). La
+ *   nutrition, elle, n'y entre pas — le règlement l'exempte de ce qu'on vend.
+ * - `communication` **ne bloque rien** : aucun texte, aucune image n'empêche de
+ *   publier.
+ * - `identite` porte ce sans quoi le produit n'existe pas au catalogue ;
+ *   `commerce` ce qui décide de sa vente.
+ *
+ * ⚠️ **Ce qui ne les sépare qu'à MOITIÉ**, et la moitié a bougé dans la
+ * journée du 2026-09-23 :
+ *
+ * - les **visuels** ne périment plus la signature de publiabilité
+ *   (`product.media_saved` est passé à `false` dans `content-facts.ts`, avec
+ *   son amendement daté) ;
+ * - les **textes**, si (`product.editorial_saved` vaut toujours `true`). C'est
+ *   une décision **en attente**, pas un oubli : « pour l'instant on se
+ *   concentre sur les médias, on ira sur contenu après ».
+ *
+ * Et les deux entrent toujours dans l'**empreinte de révision** (`editorial` et
+ * `media` dans `revision.ts`). Un plan proposait de les en sortir ; il a été
+ * contredit et **abandonné** — le critère de l'ancre est « ce qu'un canal doit
+ * recevoir pour être autosuffisant », et la projection B2B porte désormais la
+ * note et l'image.
+ *
+ * ⚠️ Cette incise a déjà été fausse **deux fois** le même jour : écrite au
+ * présent voulu plutôt qu'au présent réel, puis périmée par la bascule des
+ * visuels quelques heures plus tard. Elle parle d'un autre fichier — c'est
+ * exactement le « commentaire dangereux » du `CLAUDE.md` §8. **Rouvrir
+ * `content-facts.ts` et `revision.ts` avant de la croire.**
+ *
+ * La raison est écrite parce qu'un regroupement muet se fait réarranger par le
+ * premier qui trouve un autre ordre « plus logique ».
+ */
+export type SectionFamily = 'identite' | 'commerce' | 'reglementaire' | 'communication';
+
 export interface SectionRef {
   readonly key: FormSection;
   readonly label: string;
+  /**
+   * La famille de la section, PORTÉE PAR ELLE.
+   *
+   * Pas une seconde table à tenir d'accord : une section ajoutée à
+   * {@link SAVEABLE} sans famille ne compile pas, là où une table parallèle
+   * l'aurait laissée tomber en silence hors de tout filtre.
+   */
+  readonly family: SectionFamily;
 }
 
 type SectionStatus = 'saving' | 'saved' | 'error';
@@ -301,15 +352,15 @@ const KINDS: readonly KindOption[] = [
 ];
 
 const SAVEABLE: readonly SectionRef[] = [
-  { key: 'identite', label: 'Identité' },
-  { key: 'tarif', label: 'Tarif & logistique' },
-  { key: 'allergenes', label: 'Allergènes' },
-  { key: 'nutrition', label: 'Valeurs nutritionnelles' },
-  { key: 'communication', label: 'Communication' },
+  { key: 'identite', label: 'Identité', family: 'identite' },
+  { key: 'tarif', label: 'Tarif & logistique', family: 'commerce' },
+  { key: 'allergenes', label: 'Allergènes', family: 'reglementaire' },
+  { key: 'nutrition', label: 'Valeurs nutritionnelles', family: 'reglementaire' },
+  { key: 'communication', label: 'Communication', family: 'communication' },
   // Les visuels s'enregistraient... nulle part. Le panneau ajoutait, retirait et
   // réordonnait dans le vide, et le garde « modifications non enregistrées » ne
   // les comptait pas — on pouvait donc les perdre sans le moindre avertissement.
-  { key: 'visuels', label: 'Visuels' },
+  { key: 'visuels', label: 'Visuels', family: 'communication' },
 ];
 
 /**

@@ -513,6 +513,7 @@ export {
   staffUserPayloadSchema,
   staffNavPreferencesSchema,
   staffNavPreferencesPatchSchema,
+  productSectionFamilySchema,
   STAFF_STATUS_LABELS,
 } from "./staff-user.js";
 export type {
@@ -522,6 +523,7 @@ export type {
   StaffUserView,
   StaffNavPreferences,
   StaffNavPreferencesPatch,
+  ProductSectionFamily,
   CreatedStaffUserResponse,
 } from "./staff-user.js";
 export {

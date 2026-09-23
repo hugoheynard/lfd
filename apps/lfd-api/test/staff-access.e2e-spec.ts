@@ -177,6 +177,32 @@ describe("le mur staff — /admin/me/prefs", () => {
     expect(row.navPrefs).toEqual({ densite: "compacte", worksheetCategory: "viennoiseries" });
   });
 
+  /**
+   * 🔴 Le bout en bout de la fusion entre DEUX préférences, sur la vraie
+   * colonne : le communicant pose sa famille de sections, et le réglage du
+   * fournil reste. C'est ce que le `.partial()` du contrat achète — une charge
+   * qui ne nomme pas une clé ne la remet pas à son défaut.
+   */
+  it("pose la famille de sections sans effacer la fiche d'atelier", async () => {
+    await accountant().patch("/admin/me/prefs").send({ worksheetCategory: "pains" }).expect(204);
+    await accountant()
+      .patch("/admin/me/prefs")
+      .send({ productSectionFamily: "communication" })
+      .expect(204);
+
+    const response = await accountant().get("/admin/me").expect(200);
+    expect(response.body).toMatchObject({
+      navPrefs: { worksheetCategory: "pains", productSectionFamily: "communication" },
+    });
+  });
+
+  it("refuse une famille de sections que l'écran ne porte pas", async () => {
+    await accountant()
+      .patch("/admin/me/prefs")
+      .send({ productSectionFamily: "photos" })
+      .expect(400);
+  });
+
   it("refuse une catégorie vide — le choix se pose ou s'efface, il ne se vide pas", async () => {
     await accountant().patch("/admin/me/prefs").send({ worksheetCategory: "   " }).expect(400);
   });
