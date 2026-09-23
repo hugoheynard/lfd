@@ -67,17 +67,54 @@ Le schéma refuse explicitement la clé polymorphe (`owner_type` / `owner_id`) :
 Deux tables coûtent une jointure de plus et rendent l'orphelin **impossible**
 plutôt que détectable après coup.
 
-### Le rôle sert, contrairement aux apparences
+### L'inventaire des rôles
 
-`MediaRole` vaut `hero`, `gallery`, `lifestyle`, `thumbnail` ou `print`. Il est
-tentant de le croire inutilisé : ni l'écran du back-office ni la liste servie
-n'en dépendent.
+`MediaRole` vaut cinq valeurs, et le domaine les range **déjà** en deux
+catégories : `SINGLE_ROLES = ["hero", "thumbnail"]` — un seul visuel par
+porteur, `DuplicateMediaRoleError` refuse le second — contre les trois autres,
+qui sont des collections.
 
-**Il a pourtant un lecteur, et il compte** — la vitrine du canal B2B cherche le
-`hero` (`channels/b2b-platform/products/showcase.ts`). Retirer l'enum au motif
-qu'il ne sert à rien casserait la vitrine sans qu'aucun type ne proteste.
+🔴 **Cette partition commande tout le reste.** Un ratio ne se spécifie que sur
+un rôle à titulaire unique : c'est là qu'une règle peut dire « celui-ci fait
+4/3 » et être opposable. Sur une collection au nombre libre, la même phrase
+n'aurait personne à qui s'adresser.
 
-_(Vérifié le 2026-09-23 : c'est l'unique lecteur.)_
+| Rôle        | Cardinalité | Ratio       | Ce qu'il est                                              | Qui le lit aujourd'hui                     |
+| ----------- | ----------- | ----------- | --------------------------------------------------------- | ------------------------------------------ |
+| `hero`      | **un seul** | _à définir_ | l'ouverture de la fiche — le plan qui présente le produit | la vitrine du canal B2B (`showcase.ts:18`) |
+| `thumbnail` | **un seul** | **4/3**     | la vignette de rayon — cadrée serré, lisible à 200 px     | **personne**                               |
+| `gallery`   | plusieurs   | —           | le neutre : « une image du produit ». Tout dépôt y naît   | personne                                   |
+| `lifestyle` | plusieurs   | _à définir_ | la mise en situation — table dressée, main, contexte      | personne                                   |
+| `print`     | plusieurs   | _à définir_ | le tirage papier : mercuriale, étiquette, fiche imprimée  | personne                                   |
+
+_(Colonne « qui le lit » vérifiée le 2026-09-23 : `showcase.ts` est l'unique
+lecteur de rôle de tout le dépôt.)_
+
+⚠️ **`gallery` n'aura jamais de ratio**, et ce n'est pas une case qu'on n'a pas
+remplie. C'est le rôle par défaut de tout dépôt (`DEFAULT_MEDIA_ROLE`) : lui
+imposer une forme refuserait des images à l'entrée de la bibliothèque, là où on
+ne sait pas encore ce qu'elles serviront.
+
+#### 🔵 La fourche que ce tableau ouvre
+
+`hero` et `thumbnail` sont aujourd'hui **le même usage sous deux noms** : la
+vitrine lit `hero` et s'en sert comme vignette de liste. Les séparer — grande
+ouverture d'un côté, vignette 4/3 de l'autre — demande de basculer
+`SHOWCASE_ROLE` sur `thumbnail`, **avec repli sur `hero`**, sans quoi toutes les
+fiches redeviennent muettes le jour du déploiement.
+
+Décision non prise. Ce que ce tableau tranche déjà, c'est que la vignette de
+rayon est un `thumbnail` et non une `gallery` : la cardinalité le dit avant le
+goût.
+
+#### Où le ratio sera vérifié
+
+**À l'affectation, pas au dépôt.** Un même fichier peut servir de `hero` ici et
+de `lifestyle` ailleurs ; refuser à l'entrée le jugerait sur un usage qu'il n'a
+pas encore. La bibliothèque accepte, le rôle exige.
+
+_(Ni l'un ni l'autre n'existe : aucune règle de ratio n'est écrite nulle part au
+2026-09-23. Ce paragraphe dit où elle ira, pas ce que le code fait.)_
 
 ---
 
@@ -252,4 +289,6 @@ d'erreur arrive loin du geste.
 | Pré-validation côté écran                               | absente — type, poids et dimensions sont connus du navigateur                                                                                                                                                             |
 | Fenêtre de course du ramassage                          | connue, réparable, non signalée                                                                                                                                                                                           |
 | Le plafond de 200 a-t-il déjà mordu en production ?     | le code le journalise (`capped`) ; jamais constaté                                                                                                                                                                        |
+| Les **ratios** des quatre rôles à forme                 | seul `thumbnail` est fixé (4/3) ; `hero`, `lifestyle` et `print` attendent une valeur de Hugo (§2)                                                                                                                        |
+| `hero` et `thumbnail` séparés ou confondus              | **fourche ouverte** (§2) — la bascule de `SHOWCASE_ROLE` exige un repli, sinon toutes les fiches redeviennent muettes                                                                                                     |
 | Point focal                                             | stocké en base, et **rien d'autre** — absent des contrats, donc ni saisi ni servi (vérifié le 2026-09-23). §1 le présente comme ce qui dispense de ressaisir les recadrages ; c'est vrai du modèle, pas encore de l'usage |
