@@ -123,7 +123,13 @@ quelle forme, le cadrage la coupe.
 
 ---
 
-## 3. Déposer — `POST /catalogue/media`
+## 3. Déposer — `POST /media`
+
+⚠️ **Cette route n'appartient plus à ce document.** Elle vit dans le bloc
+`media/` depuis le 2026-09-23, et sa description de référence est
+[`../mediatheque/la-mediatheque.md`](../mediatheque/la-mediatheque.md). Ce qui
+suit est gardé ici parce que les seuils décident de ce qu'une fiche pourra
+afficher — mais c'est la médiathèque qui les tient.
 
 Multipart. Le contrôleur plafonne à **25 Mo** ; c'est une garde anti-déni de
 service, pas la règle métier.
@@ -267,13 +273,26 @@ jusqu'à l'affichage. À vérifier en regardant, pas en lisant.
 
 Section **Visuels** de la fiche produit, et son équivalent sur la famille.
 
-| Geste            | Ce qui se passe                                                                             |
-| ---------------- | ------------------------------------------------------------------------------------------- |
-| Déposer          | `POST /catalogue/media`, l'image entre dans la liste **sans être enregistrée** sur la fiche |
-| Texte alternatif | un panneau par image, **une langue par champ**                                              |
-| Réordonner       | glisser-déposer, purement local jusqu'à l'enregistrement                                    |
-| Retirer          | retire de la liste — **aucun `DELETE` HTTP**, l'image peut servir ailleurs                  |
-| Enregistrer      | un seul `PUT`, la liste entière                                                             |
+| Geste           | Ce qui se passe                                                                         |
+| --------------- | --------------------------------------------------------------------------------------- |
+| Choisir         | un panneau ouvre la médiathèque ; l'image entre dans la liste **sans être enregistrée** |
+| Donner un usage | un panneau par image — les cinq rôles sur une fiche, aucun sur une famille              |
+| Réordonner      | glisser-déposer, purement local jusqu'à l'enregistrement                                |
+| Retirer         | retire de la liste — **aucun `DELETE` HTTP**, l'image peut servir ailleurs              |
+| Enregistrer     | un seul `PUT`, la liste entière                                                         |
+
+🔴 **Ni « Déposer » ni « Texte alternatif » ne figurent plus ici**, et les deux
+sont partis le 2026-09-23 pour la même raison : ils portent sur l'IMAGE, qui est
+partagée, et non sur l'emploi qu'une fiche en fait.
+
+Le dépôt n'existe **que** dans la médiathèque, et c'est un choix de métier :
+celui qui alimente et tague le fonds n'est pas celui qui rédige les fiches. Un
+dépôt offert au rédacteur remplirait la bibliothèque d'images non taguées, donc
+introuvables — exactement le trou que la médiathèque comble.
+
+⚠️ Le dépôt de la FAMILLE, lui, était cassé avant d'être retiré : il postait sur
+`POST /pim/catalogue/media`, route emportée par le déménagement — un 404 muet,
+l'URL étant construite à la main.
 
 ✅ Le panneau d'alternative **n'écrit aucune liste de langues en dur** : il lit
 `LOCALES` du contrat. Ajouter une langue au catalogue ajoutera son champ tout

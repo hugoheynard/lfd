@@ -24,9 +24,20 @@ export interface UploadEntry {
 /**
  * **Le dépôt en lot** — l'écran enchaîne, le serveur prend un fichier à la fois.
  *
- * La route `POST /pim/mediatheque` ne reçoit qu'un `file`. Le « lot » est donc
- * une affaire d'écran, et ce magasin est cet écran-là : il tient la file, l'état
- * de chacun, et le compte rendu.
+ * La route `POST /media` ne reçoit qu'un `file`. Le « lot » est donc une
+ * affaire d'écran, et ce magasin est cet écran-là : il tient la file, l'état de
+ * chacun, et le compte rendu.
+ *
+ * ⚠️ Cette phrase citait `POST /pim/mediatheque` — une route qui n'a jamais
+ * porté ce nom sous cette forme, et dont le préfixe est tombé au déménagement
+ * du 2026-09-23. La bibliothèque est un bloc à elle : ses routes sont à la
+ * racine.
+ *
+ * 🔴 **Le compte rendu vit en MÉMOIRE, et rien de plus.** Fermer l'onglet
+ * l'efface : personne ne peut dire demain ce qui n'est pas entré aujourd'hui.
+ * C'est ce que l'historique persistant des refus doit combler — et il ne
+ * remplacera pas cette file, parce que rejouer demande les OCTETS, que seul le
+ * navigateur détient.
  */
 @Injectable()
 export class BatchUploadStore {
