@@ -5,6 +5,7 @@ import {
 } from "../../../../allergens/application/__tests__/in-memory-allergens.js";
 import { ArchivedAllergenDeclaredError } from "../../../../allergens/domain/errors/allergen-errors.js";
 import { NutritionPartExceedsWholeError } from "../../domain/value-objects/nutrition-declaration.js";
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import {
   ArchivedProductNotWithdrawableError,
@@ -895,6 +896,7 @@ describe("SetProductMediaHandler", () => {
       editorials,
       new EmptyEditorialReader(),
       new RecordingJournal(),
+      new RecordingPublisher(),
       new DirectUnitOfWork(),
     ).execute(
       new SetProductMediaCommand(PRODUCT_ID, [
@@ -923,6 +925,7 @@ describe("SetProductMediaHandler", () => {
       editorials,
       new EmptyEditorialReader(),
       new RecordingJournal(),
+      new RecordingPublisher(),
       new DirectUnitOfWork(),
     ).execute(new SetProductMediaCommand(PRODUCT_ID, []));
 
@@ -946,6 +949,7 @@ describe("SetProductMediaHandler", () => {
       editorials,
       new StoredMediaReader([mediaRow("gallery", "https://cdn/1.jpg")]),
       journal,
+      new RecordingPublisher(),
       new DirectUnitOfWork(),
     ).execute(new SetProductMediaCommand(PRODUCT_ID, [{ role: "hero", url: "https://cdn/1.jpg" }]));
 
@@ -972,6 +976,7 @@ describe("SetProductMediaHandler", () => {
       new RecordingEditorialRepository(),
       new StoredMediaReader([mediaRow("hero", "https://cdn/1.jpg")]),
       journal,
+      new RecordingPublisher(),
       new DirectUnitOfWork(),
     ).execute(new SetProductMediaCommand(PRODUCT_ID, [{ role: "hero", url: "https://cdn/1.jpg" }]));
 
@@ -996,6 +1001,7 @@ describe("SetProductMediaHandler", () => {
         mediaRow("lifestyle", "https://cdn/2.jpg"),
       ]),
       journal,
+      new RecordingPublisher(),
       new DirectUnitOfWork(),
     ).execute(
       new SetProductMediaCommand(PRODUCT_ID, [

@@ -85,6 +85,29 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
   }
 
   /**
+   * Les articles d'un produit — **retirés compris**, et c'est la seconde
+   * échappatoire au filtre du retrait.
+   *
+   * Elle est nommée et non tacite : recevoir une photo n'est pas revenir au
+   * catalogue. Un article retiré dont on corrige le visuel doit garder son
+   * visuel à jour, sinon il reviendrait un jour en vente sous une photo
+   * périmée et personne ne saurait d'où elle vient.
+   *
+   * ⚠️ Elle n'écrit rien : c'est l'appelant qui mute l'agrégat par
+   * `showVisuals` et le repasse à `saveMany`.
+   */
+  async loadByProduct(productId: string): Promise<CatalogItem[]> {
+    // withdrawn-filter: exempt — recevoir une photo n'est pas revenir au
+    // catalogue : un retiré doit garder son visuel à jour, sinon il
+    // reviendrait un jour en vente sous une photo périmée.
+    const rows = await this.prisma.catalogItem.findMany({
+      where: { productId },
+      include: { override: true },
+    });
+    return rows.map(toDomain);
+  }
+
+  /**
    * La seule lecture qui voit les retirés — l'**échappatoire nommée** du filtre.
    *
    * Elle est exemptée dans `lint:withdrawn-filter`, qui la compte et l'affiche

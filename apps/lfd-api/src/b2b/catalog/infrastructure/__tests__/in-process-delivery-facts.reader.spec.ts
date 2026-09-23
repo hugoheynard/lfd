@@ -106,6 +106,11 @@ class MirrorDouble extends CatalogItemRepository {
     throw new Error("Le lecteur de faits ne parle QUE du catalogue en vente.");
   }
 
+  /** Hors sujet ici, mais le port l'exige — un doublé incomplet dériverait. */
+  loadByProduct(): Promise<CatalogItem[]> {
+    return Promise.resolve([]);
+  }
+
   saveMany(): Promise<void> {
     throw new Error("Le lecteur de faits n'écrit rien.");
   }

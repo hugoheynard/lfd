@@ -11,6 +11,7 @@ import { SetPublicVisibilityHandler } from "./application/commands/set-public-vi
 import { SetCatalogFeaturedHandler } from "./application/commands/set-catalog-featured.handler.js";
 import { SetCatalogVisibilityHandler } from "./application/commands/set-catalog-visibility.handler.js";
 import { IngestCatalogService } from "./application/ingest-catalog.service.js";
+import { OnProductMediaChangedHandler } from "./application/handlers/on-product-media-changed.handler.js";
 import { CatalogAdminReader } from "./domain/ports/catalog-admin.reader.js";
 import { CatalogCategoryProjection } from "./domain/ports/catalog-category.projection.js";
 import { AcceptDeliveryHandler } from "./application/commands/accept-delivery.handler.js";
@@ -96,6 +97,9 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     ShopCatalogueController,
   ],
   providers: [
+    // L'abonné qui projette les visuels d'une fiche sans attendre un push.
+    // Il n'importe pas le référentiel : il reçoit un fait du bus.
+    OnProductMediaChangedHandler,
     IngestCatalogService,
     CheckCatalogParityService,
     // Le contrôle de SANTÉ : même comparateur, autre référent — la dernière

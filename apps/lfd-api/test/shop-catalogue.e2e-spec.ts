@@ -10,6 +10,9 @@ import type { ShopCatalogueView, ShopQuoteView } from "@lfd/contracts";
 import request from "supertest";
 
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
+import { ProductMediaChangedEvent } from "../src/pim/channels/b2b-platform/products/product-media-changed.event.js";
+import { BackgroundWork } from "../src/platform/events/background-work.js";
+import { DomainEventPublisher } from "../src/platform/events/domain-event-publisher.js";
 import { CATEGORY, PUBLIC_LABEL, snapshotOf } from "./catalog-ingest-fixtures.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
@@ -354,5 +357,96 @@ describe("la vitrine publique sert le prix RÉSOLU", () => {
 
     expect(rayon).toBe(213_270);
     expect(devis.lines[0]?.unitPriceMillicents).toBe(rayon);
+  });
+});
+
+/**
+ * **Changer une photo sans republier le catalogue.**
+ *
+ * 🔴 Seul ce niveau prouve ce que Hugo a demandé. Les cas unitaires doublent
+ * le bus : ils montrent qu'un abonné bien appelé fait ce qu'il faut, jamais
+ * qu'il est appelé. Ici le fait part du référentiel, traverse le bus de la
+ * plateforme, et le commerce écrit — sans qu'aucun des deux ne connaisse
+ * l'autre.
+ *
+ * « Je ne veux pas republier pour les images » (2026-09-23).
+ */
+describe("la photo arrive sans push", () => {
+  const VIGNETTE = "https://media.example/vignette.jpg";
+
+  it("projette les visuels d'une fiche sur toutes ses déclinaisons", async () => {
+    await push([{ sku: "VIE-001", priceMillicents: 140_000, image: SHOT }]);
+    // Ce que la boutique sert AVANT : le packshot du push, pas de vignette.
+    expect((await catalogue()).items[0]?.thumbnail).toBeNull();
+
+    // Le référentiel annonce des visuels neufs. Aucun push entre les deux.
+    ctx.app.get(DomainEventPublisher).publish(
+      new ProductMediaChangedEvent("prd_VIE-001", SHOT, {
+        url: VIGNETTE,
+        alt: "Serré",
+        width: 720,
+        height: 540,
+      }),
+    );
+    // L'abonné tourne HORS de la requête : sans cette attente, le cas
+    // éprouverait un état antérieur à la projection et serait vert sur du
+    // code qui ne fait rien.
+    await ctx.app.get(BackgroundWork).whenIdle();
+
+    const after = await catalogue();
+    expect(after.items[0]?.thumbnail?.url).toBe(VIGNETTE);
+    expect(after.items[0]?.image?.url).toBe(SHOT.url);
+  });
+
+  it("EFFACE en boutique un visuel que le référentiel ne porte plus", async () => {
+    // Laisser l'ancien ferait vendre sous une photo que la fiche ne désigne
+    // plus, et personne ne saurait d'où elle vient.
+    await push([{ sku: "VIE-001", priceMillicents: 140_000, image: SHOT }]);
+
+    ctx.app
+      .get(DomainEventPublisher)
+      .publish(new ProductMediaChangedEvent("prd_VIE-001", null, null));
+    await ctx.app.get(BackgroundWork).whenIdle();
+
+    expect((await catalogue()).items[0]?.image).toBeNull();
+  });
+
+  it("ne crée AUCUN article pour un produit que le commerce ne connaît pas", async () => {
+    // Un article naît d'un push, pas d'une projection : en créer un ici ferait
+    // entrer en vente une référence sans prix ni TVA.
+    await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
+
+    ctx.app
+      .get(DomainEventPublisher)
+      .publish(new ProductMediaChangedEvent("prd_JAMAIS_POUSSE", SHOT, null));
+    await ctx.app.get(BackgroundWork).whenIdle();
+
+    expect((await catalogue()).items).toHaveLength(1);
+  });
+
+  /**
+   * ⚠️ Le PUSH répare, et il gagne : un instantané ingéré après une projection
+   * réécrit les colonnes avec ce qu'il portait. C'est correct au sens du
+   * modèle — l'instantané dit ce que le catalogue ÉTAIT — et c'est le couple
+   * assumé : la projection sert la FRAÎCHEUR, le push la RÉPARATION.
+   *
+   * Ce cas fige ce comportement plutôt que de le laisser se découvrir en
+   * production, où il se lirait comme un défaut.
+   */
+  it("laisse un push ÉCRASER une projection — c'est la réparation", async () => {
+    await push([{ sku: "VIE-001", priceMillicents: 140_000, image: SHOT }]);
+    ctx.app.get(DomainEventPublisher).publish(
+      new ProductMediaChangedEvent("prd_VIE-001", SHOT, {
+        url: VIGNETTE,
+        alt: "Serré",
+        width: 720,
+        height: 540,
+      }),
+    );
+    await ctx.app.get(BackgroundWork).whenIdle();
+
+    await push([{ sku: "VIE-001", priceMillicents: 140_000, image: SHOT }]);
+
+    expect((await catalogue()).items[0]?.thumbnail).toBeNull();
   });
 });

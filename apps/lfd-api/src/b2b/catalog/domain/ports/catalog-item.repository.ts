@@ -28,6 +28,24 @@ export abstract class CatalogItemRepository {
   abstract loadAll(): Promise<CatalogItem[]>;
 
   /**
+   * Les articles d'UN produit du référentiel — retirés compris.
+   *
+   * Un produit porte plusieurs articles (ses déclinaisons), et ses visuels sont
+   * les mêmes pour tous : c'est le PRODUIT qu'on photographie, pas la taille.
+   *
+   * 🔴 **Les retirés EN SONT**, à l'inverse de {@link loadAll}, et la raison
+   * est le sens du geste : recevoir une photo n'est pas revenir au catalogue.
+   * Un article retiré dont on corrige le visuel doit garder son visuel à jour —
+   * sinon il reviendrait un jour en vente sous une photo périmée, et personne
+   * ne saurait d'où elle vient.
+   *
+   * Rend `[]` pour un produit que le commerce ne connaît pas : le cas est
+   * NORMAL — une fiche peut exister au référentiel sans avoir jamais été
+   * poussée.
+   */
+  abstract loadByProduct(productId: string): Promise<CatalogItem[]>;
+
+  /**
    * Tout ce que le miroir a jamais porté, **retirés compris**.
    *
    * 🔴 L'ingestion est le SEUL appelant légitime, et elle ne peut pas s'en

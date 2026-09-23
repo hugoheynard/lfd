@@ -287,6 +287,19 @@ export class CatalogItem {
   }
 
   /**
+   * Le produit du RÉFÉRENTIEL dont cet article est une déclinaison.
+   *
+   * Un identifiant opaque, comme partout entre deux blocs : le commerce ne
+   * sait pas ce qu'est un produit chez le référentiel, il sait qu'il porte ce
+   * nom-là. Sert à recevoir les visuels d'une fiche — ils sont les mêmes pour
+   * toutes ses déclinaisons, parce que c'est le produit qu'on photographie et
+   * pas la taille.
+   */
+  get productId(): string {
+    return this.facts.productId;
+  }
+
+  /**
    * Le prix **réellement applicable** : la décision locale si elle existe, sinon
    * celui du PIM. La règle vit ici, une seule fois — la laisser fuir donnerait
    * autant de réponses qu'il y a d'écrans.
@@ -419,6 +432,38 @@ export class CatalogItem {
    */
   refreshFromPim(facts: PimFacts): CatalogItem {
     return new CatalogItem(facts, this.decision, null);
+  }
+
+  /**
+   * **Reçoit les visuels d'une fiche, sans rien toucher d'autre.**
+   *
+   * 🔴 Une méthode MÉTIER et non une écriture de colonnes, parce que le
+   * `CLAUDE.md` §3.1 l'exige et parce qu'elle a une règle à elle : elle ne
+   * change QUE les deux visuels. Ni le prix, ni la TVA, ni le retrait, ni la
+   * décision commerciale. Un `updateMany` sur deux colonnes aurait fait la
+   * même chose et n'aurait rien dit de cette limite.
+   *
+   * ## Pourquoi elle existe à côté de `refreshFromPim`
+   *
+   * Changer la photo d'une fiche ne se voyait en boutique qu'après une
+   * republication du catalogue — un acte lourd, délibéré, et sans rapport avec
+   * le geste qu'on venait de faire. Cette méthode est ce que la projection
+   * appelle entre deux pushes.
+   *
+   * ⚠️ **Elle ne remplace pas le push.** Un instantané ingéré ensuite écrasera
+   * ces deux champs avec ce qu'il portait : c'est la réparation, et c'est
+   * voulu — les deux lisent la même source, le référentiel.
+   *
+   * ⚠️ **Elle ne remet PAS l'article en vente**, contrairement à
+   * `refreshFromPim`. Recevoir une photo n'est pas être renvoyé au catalogue :
+   * un article retiré dont on corrige le visuel reste retiré.
+   *
+   * ⚠️ **`null` EFFACE.** Une fiche dont on retire le visuel doit le perdre en
+   * boutique — laisser l'ancien ferait vendre sous une photo que le
+   * référentiel ne porte plus.
+   */
+  showVisuals(image: PimImage | null, thumbnail: PimImage | null): CatalogItem {
+    return new CatalogItem({ ...this.facts, image, thumbnail }, this.decision, this.withdrawnAt);
   }
 
   /**

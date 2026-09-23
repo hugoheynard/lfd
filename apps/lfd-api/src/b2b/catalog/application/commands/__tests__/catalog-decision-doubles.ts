@@ -76,6 +76,11 @@ class InMemoryCatalog extends CatalogItemRepository {
     return this.loadAll();
   }
 
+  /** Les articles d'un produit — retirés compris, comme le vrai dépôt. */
+  loadByProduct(productId: string): Promise<CatalogItem[]> {
+    return Promise.resolve([...this.rows.values()].filter((item) => item.productId === productId));
+  }
+
   saveMany(items: readonly CatalogItem[]): Promise<void> {
     for (const item of items) {
       this.steps.push(`save:${item.sku}`);
