@@ -8,6 +8,7 @@ import {
   FoldPageLayoutComponent,
 } from 'fold-ng';
 
+import { BatchUploadStore } from '../batch-upload';
 import { MediaLibraryHttpApi } from '../media-library-http-api';
 
 /** Une page d'aperçus. Le serveur reborne de toute façon à 100. */
@@ -36,10 +37,14 @@ const PAGE_SIZE = 60;
   ],
   templateUrl: './mediatheque-page.html',
   styleUrl: './mediatheque-page.scss',
+  // Fourni par la PAGE et non à la racine : un compte rendu de dépôt appartient
+  // à l'écran qui l'a lancé, et le quitter doit l'oublier.
+  providers: [BatchUploadStore],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MediathequePage {
   private readonly api = inject(MediaLibraryHttpApi);
+  protected readonly batch = inject(BatchUploadStore);
 
   protected readonly items = signal<readonly LibraryMediaView[]>([]);
   protected readonly total = signal(0);
@@ -100,5 +105,46 @@ export class MediathequePage {
   /** Le nom de fichier, pour reconnaître une image qu'on n'a pas nommée. */
   protected fileOf(item: LibraryMediaView): string {
     return item.url.split('/').at(-1) ?? item.url;
+  }
+
+  /**
+   * Dépose la sélection, puis relit la bibliothèque **une seule fois**.
+   *
+   * Relire après chaque fichier ferait N requêtes et un écran qui saute à
+   * chaque image. Le compte rendu du lot dit déjà où en est chacun ; la grille
+   * n'a besoin d'être juste qu'à la fin.
+   *
+   * 🔴 On relit depuis le DÉBUT : une image déposée peut apparaître n'importe
+   * où dans l'ordre — la bibliothèque trie par premier dépôt, et redéposer des
+   * octets déjà connus ne crée pas d'entrée neuve. Ajouter une page à la suite
+   * laisserait la grille mentir.
+   */
+  protected async deposit(picked: EventTarget | null): Promise<void> {
+    const input = picked instanceof HTMLInputElement ? picked : null;
+    const files = input === null ? [] : [...(input.files ?? [])];
+    if (input !== null) {
+      // Remis à zéro TOUT DE SUITE : sans ça, redéposer la même sélection ne
+      // déclenche aucun `change`, et l'écran a l'air cassé.
+      input.value = '';
+    }
+    if (files.length === 0) {
+      return;
+    }
+    if ((await this.batch.send(files)) > 0) {
+      await this.reload();
+    }
+  }
+
+  /** Rejoue les refusés, et relit si quelque chose est passé. */
+  protected async retry(): Promise<void> {
+    if ((await this.batch.retry()) > 0) {
+      await this.reload();
+    }
+  }
+
+  private async reload(): Promise<void> {
+    this.items.set([]);
+    this.offset.set(0);
+    await this.load();
   }
 }

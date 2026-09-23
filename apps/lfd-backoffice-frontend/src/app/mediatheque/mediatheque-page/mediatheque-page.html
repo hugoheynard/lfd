@@ -4,6 +4,56 @@
     soit le nombre de fiches qui l'affichent.
   </p>
 
+  <!-- LE DÉPÔT EN LOT. `multiple`, et la liste d'acceptation du serveur reprise
+       en `accept` : l'écran ne valide rien — c'est le serveur qui relit les
+       octets — mais autant ne pas laisser choisir un PDF dans l'explorateur
+       pour le refuser trois secondes plus tard. -->
+  <div class="deposit">
+    <label class="pick" [class.pick-busy]="batch.running()">
+      <input
+        type="file"
+        multiple
+        accept="image/png,image/jpeg,image/webp"
+        [disabled]="batch.running()"
+        (change)="deposit($event.target)"
+      />
+      <span>{{ batch.running() ? 'Dépôt en cours…' : 'Déposer des images' }}</span>
+    </label>
+
+    @if (batch.entries().length > 0) {
+      <p class="tally">
+        {{ batch.deposited() }} déposée(s) · {{ batch.refused() }} refusée(s)
+        @if (batch.remaining() > 0) {
+          · {{ batch.remaining() }} en attente
+        }
+      </p>
+
+      <!-- Le compte rendu ne montre QUE ce qui a mal tourné une fois le lot
+           fini : vingt lignes « déposé » n'apprennent rien, et noieraient les
+           deux qui comptent. Pendant l'envoi, en revanche, tout s'affiche —
+           c'est la seule façon de voir que ça avance. -->
+      <ul class="report">
+        @for (entry of batch.entries(); track entry.name) {
+          @if (batch.running() || entry.state === 'refusé') {
+            <li class="line" [class.line-refused]="entry.state === 'refusé'">
+              <span class="file">{{ entry.name }}</span>
+              <span class="state">{{ entry.state }}</span>
+              @if (entry.reason; as reason) {
+                <span class="reason">{{ reason }}</span>
+              }
+            </li>
+          }
+        }
+      </ul>
+
+      @if (batch.hasRefused() && !batch.running()) {
+        <!-- Réessayer est sans danger : la clé de stockage est le hachage du
+             contenu, donc redéposer les mêmes octets ne duplique rien. -->
+        <button foldButton emphasis="outline" (click)="retry()">Réessayer les refusés</button>
+      }
+    }
+  </div>
+
   @if (loading() && items().length === 0) {
     <fold-loading message="Lecture de la bibliothèque…" />
   } @else if (failure(); as message) {

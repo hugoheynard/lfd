@@ -54,5 +54,82 @@
 /* Une image que personne ne porte se distingue : c'est la seule qu'on pourra
    supprimer, et c'est aussi celle qui a peut-être été déposée pour rien. */
 .uses-free {
-  color: var(--fold-color-warning-text, var(--fold-color-text-muted));
+  color: var(--fold-color-warning-text);
+}
+
+.deposit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin-bottom: var(--fold-space-lg);
+}
+
+/* L'entrée de fichier native est masquée et le libellé sert de bouton : c'est
+   le seul contrôle du dépôt, et fold n'en propose pas. */
+.pick {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  align-self: flex-start;
+  padding: var(--fold-space-xs) var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  cursor: pointer;
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.pick-busy {
+  cursor: progress;
+  color: var(--fold-color-text-muted);
+}
+
+.tally {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fold-text-sm);
+}
+
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+}
+
+.file {
+  font-weight: 600;
+}
+
+.state {
+  color: var(--fold-color-text-muted);
+}
+
+/* `alert` et non `danger` : fold nomme ainsi sa famille de refus — il n'y a pas
+   de `--fold-color-danger-*` dans les 194 tokens installés. Un `var()` sur un
+   nom inexistant est SILENCIEUX : la déclaration entière est ignorée, la
+   couleur reste celle héritée, et seul `lint:fold-tokens` le voit. */
+.line-refused .state {
+  color: var(--fold-color-alert-text);
+}
+
+.reason {
+  flex-basis: 100%;
+  color: var(--fold-color-text-muted);
 }

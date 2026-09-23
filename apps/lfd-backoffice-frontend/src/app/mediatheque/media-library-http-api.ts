@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { MediaLibraryPageView } from '@lfd/pim-contracts';
+import type { MediaLibraryPageView, UploadedMediaView } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../pim/data/api';
@@ -34,5 +34,23 @@ export class MediaLibraryHttpApi {
         params: { limit: String(limit), offset: String(offset) },
       }),
     );
+  }
+
+  /**
+   * Dépose UNE image et rend son entrée de bibliothèque.
+   *
+   * Un fichier par appel, et c'est le serveur qui le veut ainsi : la route
+   * prend un `file` unique. Le dépôt en lot est donc une affaire d'écran — il
+   * enchaîne, et rend compte fichier par fichier.
+   *
+   * 🔴 **Redéposer les mêmes octets est sans effet de bord** : la clé de
+   * stockage est le SHA-256 du contenu, donc reprendre un lot à moitié échoué
+   * ne duplique rien. C'est ce qui permet de proposer « réessayer » sans
+   * précaution particulière.
+   */
+  async upload(file: File): Promise<UploadedMediaView> {
+    const body = new FormData();
+    body.append('file', file);
+    return firstValueFrom(this.http.post<UploadedMediaView>(`${this.base}/mediatheque`, body));
   }
 }
