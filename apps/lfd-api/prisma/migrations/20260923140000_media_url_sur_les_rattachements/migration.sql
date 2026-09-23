@@ -1,4 +1,4 @@
--- Déploiement ① de `documentation/pim/plan-la-mediatheque-bloc-a-part.md` :
+-- Déploiement ① de `documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md` :
 -- **ÉTENDRE**. Rien n'est lu, rien n'est resserré, rien ne se déplace.
 --
 -- Le rattachement d'un visuel désignera bientôt son image par son **URL** et

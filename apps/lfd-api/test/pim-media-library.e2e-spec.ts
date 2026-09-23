@@ -85,7 +85,12 @@ async function aProduct(categoryId: string, name: string): Promise<string> {
 
 async function setMedia(
   productId: string,
-  media: readonly { role: string; url: string; name?: string }[],
+  media: readonly {
+    role: string;
+    url: string;
+    name?: string;
+    alt?: Readonly<Record<string, string>>;
+  }[],
 ): Promise<void> {
   const response = await staff().put(`${PRODUCTS}/${productId}/media`).send({ media });
   expect(response.status).toBe(200);
@@ -330,5 +335,56 @@ describe("déploiement ① — l’URL est écrite sur le rattachement", () => {
 
     const rows = await ctx.prisma.categoryMedia.findMany({ where: { categoryId: category } });
     expect(rows.map((row) => row.mediaUrl)).toEqual([CHOCOLATINE]);
+  });
+});
+
+/**
+ * Déploiement ② de `plan-la-mediatheque-bloc-a-part.md`, première étape : la
+ * table des actifs **redevient une bibliothèque**.
+ *
+ * 🔴 Ces cas gardent ce que la contrainte d'unicité rend inexprimable, et ce
+ * que le code doit faire pour ne pas la heurter : réutiliser l'actif au lieu
+ * d'en créer un. Sans ça, le second enregistrement d'une fiche échouerait.
+ */
+describe("une image, une ligne", () => {
+  it("ne crée PAS un actif de plus à chaque enregistrement", async () => {
+    const product = await aProduct(await aCategory(), "Croissant");
+    await setMedia(product, [{ role: "gallery", url: CROISSANT }]);
+    await setMedia(product, [{ role: "hero", url: CROISSANT }]);
+    await setMedia(product, [{ role: "gallery", url: CROISSANT }]);
+
+    const rows = await ctx.prisma.mediaAsset.findMany({ where: { url: CROISSANT } });
+    expect(rows).toHaveLength(1);
+  });
+
+  it("partage la même ligne entre deux porteurs", async () => {
+    const famille = await aCategory();
+    const croissant = await aProduct(famille, "Croissant");
+    await setMedia(croissant, [{ role: "gallery", url: CROISSANT }]);
+    const response = await staff()
+      .put(`/pim/catalogue/categories/${famille}/media`)
+      .send({ media: [{ role: "gallery", url: CROISSANT }] });
+    expect(response.status).toBe(200);
+
+    expect(await ctx.prisma.mediaAsset.count({ where: { url: CROISSANT } })).toBe(1);
+  });
+
+  /**
+   * 🔴 Le piège du partage : `mediaItems` remplit l'alternative manquante avec
+   * l'URL. Une fiche qui n'en porte pas envoie donc son URL — et l'écrire
+   * remplacerait la phrase humaine d'une autre fiche par `https://…`.
+   */
+  it("n’écrase pas une alternative écrite par une fiche qui n’en a pas", async () => {
+    const famille = await aCategory();
+    const croissant = await aProduct(famille, "Croissant");
+    const pain = await aProduct(famille, "Pain au chocolat");
+    await setMedia(croissant, [
+      { role: "gallery", url: CROISSANT, alt: { fr: "Croissant doré sur une grille" } },
+    ]);
+
+    await setMedia(pain, [{ role: "gallery", url: CROISSANT }]);
+
+    const row = await ctx.prisma.mediaAsset.findUnique({ where: { url: CROISSANT } });
+    expect((row?.alt as { fr: string }).fr).toBe("Croissant doré sur une grille");
   });
 });

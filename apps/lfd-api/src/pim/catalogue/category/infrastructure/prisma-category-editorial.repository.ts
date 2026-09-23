@@ -6,6 +6,7 @@ import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 import type { MediaItem } from "../../shared/domain/value-objects/media.js";
 import { localizedColumn } from "../../shared/infrastructure/json-readers.js";
+import { SOURCE_LOCALE } from "../../shared/domain/value-objects/localized-text.js";
 import { CategoryEditorialRepository } from "../domain/ports/category-editorial.repository.js";
 import {
   isEmptyCategoryEditorial,
@@ -70,22 +71,9 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
   async replaceMedia(categoryId: string, media: readonly MediaItem[]): Promise<void> {
     await this.prisma.categoryMedia.deleteMany({ where: { categoryId } });
     for (const item of media) {
-      const mediaId = this.ids.next();
-      const facts = await this.factsFor(item.url);
-      await this.prisma.mediaAsset.create({
-        data: {
-          id: mediaId,
-          url: item.url,
-          name: item.name,
-          alt: localizedColumn(item.alt),
-          ...facts,
-        },
-      });
+      const mediaId = await this.assetFor(item);
       await this.prisma.categoryMedia.create({
         data: {
-          // DOUBLE ÉCRITURE — déploiement ① du plan de la médiathèque. Personne
-          // ne la lit encore ; elle existe pour que la bascule (②) trouve des
-          // lignes déjà justes plutôt qu'à reconstruire sous la charge.
           mediaUrl: item.url,
           categoryId,
           mediaId,
@@ -94,6 +82,58 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
         },
       });
     }
+  }
+
+  /**
+   * L'identifiant de l'actif qui porte CES octets — retrouvé, ou inscrit.
+   *
+   * 🔴 Il n'en existe plus qu'UN par URL (contrainte d'unicité, 2026-09-23).
+   * Même mécanique et mêmes raisons que la fiche produit
+   * (`prisma-editorial.repository.ts`) : la table était un journal de lignes,
+   * elle redevient une bibliothèque.
+   */
+  private async assetFor(item: MediaItem): Promise<string> {
+    const known = await this.prisma.mediaAsset.findUnique({
+      where: { url: item.url },
+      select: { id: true },
+    });
+    if (known === null) {
+      const mediaId = this.ids.next();
+      await this.prisma.mediaAsset.create({
+        data: {
+          id: mediaId,
+          url: item.url,
+          name: item.name,
+          alt: localizedColumn(item.alt),
+          ...(await this.factsFor(item.url)),
+        },
+      });
+      return mediaId;
+    }
+    await this.correct(known.id, item);
+    return known.id;
+  }
+
+  /**
+   * Ce que la famille corrige encore sur l'image — et seulement ce qu'elle dit.
+   *
+   * ⚠️ Écrire l'alternative sans condition l'EFFACERAIT : `mediaItems` remplit
+   * le champ manquant avec l'URL, donc une famille sans alternative envoie son
+   * URL. On n'écrit que ce qui en diffère — même critère que la migration de
+   * fusion.
+   */
+  private async correct(mediaId: string, item: MediaItem): Promise<void> {
+    const data: { name?: string; alt?: Record<string, string> } = {};
+    if (item.name !== "") {
+      data.name = item.name;
+    }
+    if (item.alt[SOURCE_LOCALE] !== item.url) {
+      data.alt = localizedColumn(item.alt);
+    }
+    if (Object.keys(data).length === 0) {
+      return;
+    }
+    await this.prisma.mediaAsset.update({ where: { id: mediaId }, data });
   }
 
   /**

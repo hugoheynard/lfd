@@ -4,7 +4,7 @@
 > sur l'existant a été vérifiée en ouvrant le fichier cité.
 >
 > Il fait suite à l'inventaire des rôles
-> ([`images-du-catalogue.md`](images-du-catalogue.md) §2) et répond à une
+> ([`images-du-catalogue.md`](../pim/images-du-catalogue.md) §2) et répond à une
 > question de Hugo qui a déplacé le sujet : « quel serait le format de la carte
 > _je passe la prendre_ ? ou même le format d'une opération datée ? »
 

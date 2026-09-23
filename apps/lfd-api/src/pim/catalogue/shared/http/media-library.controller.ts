@@ -60,7 +60,7 @@ interface UploadedFilePart {
  * que le schéma Postgres : il est monté par le BLOC (`pim.module.ts`), et le
  * code vit encore dans ce bloc. Les deux tomberont ensemble, au même
  * déclencheur — le jour où le premier visuel de vitrine entre dans la
- * bibliothèque (cf. `documentation/pim/plan-la-mediatheque.md` §3 bis).
+ * bibliothèque (cf. `documentation/mediatheque/plan-la-mediatheque.md` §3 bis).
  *
  * Même mur que le catalogue (`@AdminSurface("pim_catalog")`) : identité
  * vérifiée contre l'annuaire, puis périmètre.

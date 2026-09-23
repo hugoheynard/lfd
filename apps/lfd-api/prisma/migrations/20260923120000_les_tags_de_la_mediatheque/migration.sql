@@ -1,4 +1,4 @@
--- Lot 4 de `documentation/pim/plan-la-mediatheque.md` — nommer, taguer, pointer.
+-- Lot 4 de `documentation/mediatheque/plan-la-mediatheque.md` — nommer, taguer, pointer.
 --
 -- Les TAGS de la bibliothèque de visuels. Vocabulaire LIBRE et à PLAT : pas
 -- d'arbre, pas de racine, pas de mot imposé à l'entrée (décision Hugo,

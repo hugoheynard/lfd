@@ -44,7 +44,7 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // La MÉDIATHÈQUE : le fonds d'images n'appartient à aucun référentiel — les
     // fiches en portent, les familles aussi — mais son code vit dans le bloc
     // `pim` et s'écrit sous ses droits. Le jour où elle devient un bloc à elle
-    // (`documentation/pim/plan-la-mediatheque-bloc-a-part.md`), cette ligne
+    // (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md`), cette ligne
     // sera le premier endroit à relire.
     "media_asset.",
   ],

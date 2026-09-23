@@ -69,7 +69,17 @@ model CatalogContent {
 /// « zéro » — un consommateur ne doit pas le coercer en taille.
 model MediaAsset {
   id  String @id
-  url String
+
+  /// 🔴 **UNIQUE depuis le 2026-09-23** — c'est ce qui fait de cette table une
+  /// bibliothèque plutôt qu'un journal de lignes.
+  ///
+  /// Jusque-là, `replaceMedia` recréait un actif NEUF par visuel à chaque
+  /// enregistrement de fiche : une même image y figurait autant de fois qu'on
+  /// avait sauvé les fiches qui la portent, et aucune identité ne traversait
+  /// deux sauvegardes. L'URL, elle, est stable — la clé de stockage est le
+  /// SHA-256 du contenu, donc les mêmes octets donnent toujours la même
+  /// adresse. La contrainte rend le doublon **inexprimable**.
+  url String @unique
   alt Json
 
   /// L'étiquette de la bibliothèque — courte, non traduite, faite pour
@@ -130,7 +140,7 @@ model ProductMedia {
   /// enregistrements de fiche.
   ///
   /// 🔴 Nullable et **pas encore lue** : c'est le déploiement ① du plan
-  /// `documentation/pim/plan-la-mediatheque-bloc-a-part.md`. Elle est écrite en
+  /// `documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md`. Elle est écrite en
   /// double de `mediaId`, le temps que les lectures basculent (②) puis que
   /// `mediaId` tombe (③).
   mediaUrl  String?    @map("media_url")

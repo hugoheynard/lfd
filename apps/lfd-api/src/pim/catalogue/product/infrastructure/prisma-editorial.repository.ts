@@ -7,6 +7,7 @@ import { EditorialRepository } from "../domain/ports/editorial.repository.js";
 import type { Editorial, MediaItem } from "../domain/value-objects/editorial.js";
 import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 import { localizedColumn } from "../../shared/infrastructure/json-readers.js";
+import { SOURCE_LOCALE } from "../../shared/domain/value-objects/localized-text.js";
 
 /**
  * Un champ vidé doit **effacer** la colonne, pas la laisser telle quelle : d'où
@@ -77,22 +78,9 @@ export class PrismaEditorialRepository extends EditorialRepository {
    */
   private async attach(productId: string, media: readonly MediaItem[]): Promise<void> {
     for (const item of media) {
-      const mediaId = this.ids.next();
-      const facts = await this.factsFor(item.url);
-      await this.prisma.mediaAsset.create({
-        data: {
-          id: mediaId,
-          url: item.url,
-          name: item.name,
-          alt: localizedColumn(item.alt),
-          ...facts,
-        },
-      });
+      const mediaId = await this.assetFor(item);
       await this.prisma.productMedia.create({
         data: {
-          // DOUBLE ÉCRITURE — déploiement ① du plan de la médiathèque. Personne
-          // ne la lit encore ; elle existe pour que la bascule (②) trouve des
-          // lignes déjà justes plutôt qu'à reconstruire sous la charge.
           mediaUrl: item.url,
           productId,
           mediaId,
@@ -101,6 +89,74 @@ export class PrismaEditorialRepository extends EditorialRepository {
         },
       });
     }
+  }
+
+  /**
+   * L'identifiant de l'actif qui porte CES octets — retrouvé, ou inscrit.
+   *
+   * 🔴 **Il n'en existe plus qu'UN par URL** (contrainte d'unicité posée le
+   * 2026-09-23). Auparavant, ce code créait un actif NEUF à chaque
+   * enregistrement de fiche : la table était un journal de lignes, aucune
+   * identité ne traversait deux sauvegardes, et c'est pourquoi la lecture de la
+   * bibliothèque doit encore grouper par URL.
+   *
+   * L'inscription à la volée reste ici parce que le visuel saisi **par son
+   * URL** est encore permis par l'API. Elle disparaîtra avec lui
+   * (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md` §2), et
+   * c'est ce départ-là qui libérera le déménagement : tant que le référentiel
+   * peut inscrire, il ÉCRIT la bibliothèque, et la porte de propriété lui en
+   * donne la charge.
+   */
+  private async assetFor(item: MediaItem): Promise<string> {
+    const known = await this.prisma.mediaAsset.findUnique({
+      where: { url: item.url },
+      select: { id: true },
+    });
+    if (known === null) {
+      const mediaId = this.ids.next();
+      await this.prisma.mediaAsset.create({
+        data: {
+          id: mediaId,
+          url: item.url,
+          name: item.name,
+          alt: localizedColumn(item.alt),
+          ...(await this.factsFor(item.url)),
+        },
+      });
+      return mediaId;
+    }
+    await this.correct(known.id, item);
+    return known.id;
+  }
+
+  /**
+   * Ce que la fiche corrige encore sur l'image — et seulement ce qu'elle dit
+   * vraiment.
+   *
+   * ⚠️ **Écrire l'alternative sans condition l'effacerait.** `mediaItems`
+   * remplit le champ manquant avec l'URL (« la colonne est obligatoire, une
+   * chaîne vide passerait pour une alternative rédigée ») : une fiche qui n'en
+   * porte pas envoie donc son URL, et l'écrire remplacerait une phrase humaine
+   * par `https://…`. D'où le même critère que la migration de fusion — on
+   * n'écrit que ce qui DIFFÈRE de l'URL.
+   *
+   * ⚠️ État TRANSITOIRE. L'étiquette et l'alternative appartiennent à la
+   * bibliothèque (« un seul point », Hugo 2026-09-23) ; la fiche ne devrait pas
+   * les écrire. Elles quitteront son panneau au même passage que le
+   * déménagement du bloc.
+   */
+  private async correct(mediaId: string, item: MediaItem): Promise<void> {
+    const data: { name?: string; alt?: Record<string, string> } = {};
+    if (item.name !== "") {
+      data.name = item.name;
+    }
+    if (item.alt[SOURCE_LOCALE] !== item.url) {
+      data.alt = localizedColumn(item.alt);
+    }
+    if (Object.keys(data).length === 0) {
+      return;
+    }
+    await this.prisma.mediaAsset.update({ where: { id: mediaId }, data });
   }
 
   /**
