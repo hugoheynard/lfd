@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, effect, inject, input, signal } fro
 import { LOCALES, SOURCE_LOCALE, writeLocalized, type LocalizedText } from '@lfd/pim-contracts';
 import {
   FoldButtonComponent,
+  FoldCheckboxComponent,
   FoldInputComponent,
   type FoldPanelDefaults,
   FoldPanelHeaderComponent,
@@ -16,6 +17,17 @@ export interface AltTextPanelData {
   readonly url: string;
   readonly name: string;
   readonly alt: LocalizedText | undefined;
+  /**
+   * Ce visuel est-il LE packshot ? **`undefined` = ce porteur n'a pas la
+   * notion**, et le panneau ne propose alors rien.
+   *
+   * 🔴 La notion n'existe que là où quelqu'un la LIT. Une fiche produit en a
+   * un consommateur — la vitrine du canal B2B cherche le `hero`. Une famille
+   * n'en a aucun (vérifié le 2026-09-23 : rien sous `pim/channels/` ne consulte
+   * le rôle d'un visuel de famille). Offrir la case là-bas ferait décider pour
+   * rien, et cette décision-là finirait par se croire lue.
+   */
+  readonly isMain?: boolean | undefined;
 }
 
 /**
@@ -27,6 +39,16 @@ export interface AltTextPanelData {
 export interface AltTextPanelResult {
   readonly name: string;
   readonly alt: LocalizedText | undefined;
+  /**
+   * Ce visuel devient-il LE packshot ? `undefined` quand le porteur n'a pas la
+   * notion (cf. {@link AltTextPanelData.isMain}).
+   *
+   * Le panneau ne voit qu'une image : il **déclare une intention**, il ne
+   * range pas la liste. C'est le magasin qui rend les autres à `gallery`, en
+   * une seule mise à jour — sans quoi deux principaux deviendraient
+   * exprimables le temps d'un aller-retour.
+   */
+  readonly isMain?: boolean | undefined;
   /** Le visuel a-t-il été RETIRÉ ? Le retrait vit ici parce que c'est ici qu'on
    *  regarde l'image en grand — décider de la jeter demande de la voir. */
   readonly removed?: boolean;
@@ -46,7 +68,12 @@ export interface AltTextPanelResult {
 @Component({
   selector: 'app-alt-text-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPanelHeaderComponent, FoldInputComponent, FoldButtonComponent],
+  imports: [
+    FoldPanelHeaderComponent,
+    FoldInputComponent,
+    FoldCheckboxComponent,
+    FoldButtonComponent,
+  ],
   templateUrl: './alt-text-panel.html',
   styleUrl: './alt-text-panel.scss',
 })
@@ -63,12 +90,15 @@ export class AltTextPanel {
 
   protected readonly draft = signal<LocalizedText>({ fr: '' });
   protected readonly name = signal('');
+  /** `undefined` tant que le porteur n'a pas la notion — voir la donnée. */
+  protected readonly isMain = signal<boolean | undefined>(undefined);
 
   constructor() {
     effect(() => {
       const data = this.data();
       this.draft.set(data.alt ?? { fr: '' });
       this.name.set(data.name);
+      this.isMain.set(data.isMain);
     });
   }
 
@@ -87,6 +117,7 @@ export class AltTextPanel {
     this.ref.close({
       name: this.name().trim(),
       alt: text[SOURCE_LOCALE].trim() === '' ? undefined : text,
+      ...(this.isMain() === undefined ? {} : { isMain: this.isMain() }),
     });
   }
 

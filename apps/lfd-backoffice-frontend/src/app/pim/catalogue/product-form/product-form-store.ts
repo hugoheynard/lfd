@@ -364,17 +364,33 @@ const SAVEABLE: readonly SectionRef[] = [
 ];
 
 /**
- * Le rôle d'un visuel neuf.
+ * Le rôle d'un visuel neuf : `gallery`, le neutre — « une image du produit »,
+ * sans prétention d'usage. C'est {@link ProductFormStore.setMainVisual} qui
+ * promeut, jamais le dépôt.
  *
- * L'API en exige un, mais l'écran n'en propose plus : classer une image est une
- * décision de CANAL — quelle image une boutique prend pour vignette — et elle
- * vivra dans « Diffusion par canal ». Le premier déposé devenait « hero », ce
- * qui affirmait une hiérarchie qu'aucun canal ne lit aujourd'hui : ni la
- * projection Shopify ni le B2B ne consultent le rôle.
+ * 🔴 **Ce commentaire a affirmé le contraire jusqu'au 2026-09-23**, et il a
+ * coûté une fonctionnalité entière. Il disait : « le premier déposé devenait
+ * `hero`, ce qui affirmait une hiérarchie qu'aucun canal ne lit aujourd'hui :
+ * ni la projection Shopify ni le B2B ne consultent le rôle. »
  *
- * `gallery` est le neutre : « une image du produit », sans prétention d'usage.
+ * Les deux moitiés étaient fausses. La vitrine du canal B2B cherche
+ * **précisément** le `hero` (`pim/channels/b2b-platform/products/showcase.ts`),
+ * et Shopify est sorti du dépôt le 2026-09-21. Conséquence mesurée : aucun
+ * produit ne portait de `hero`, `heroOf()` rendait donc toujours `null`, et
+ * **la vitrine n'a jamais montré la moindre image**. Une phrase qui justifiait
+ * de ne rien construire, par l'état d'un fichier que personne n'a rouvert.
+ *
+ * La vitrine, elle, refuse délibérément de se rabattre sur le premier visuel —
+ * « afficher une photo de table à la place d'un croissant serait pire que le
+ * vide ». Elle attend donc une désignation, et il fallait la lui donner.
  */
 const DEFAULT_MEDIA_ROLE = 'gallery';
+
+/**
+ * Le rôle du **packshot** — le visuel que les canaux montrent quand ils n'en
+ * montrent qu'un.
+ */
+const MAIN_MEDIA_ROLE = 'hero';
 
 const EMPTY_NUTRITION: NutritionValues = {
   energyKcal: null,
@@ -1219,6 +1235,33 @@ export class ProductFormStore {
 
   removeMedia(index: number): void {
     this.media.update((current) => current.filter((_, position) => position !== index));
+  }
+
+  /** Le rang du visuel principal, `-1` si la fiche n'en désigne aucun. */
+  mainVisualIndex(): number {
+    return this.media().findIndex((slot) => slot.role === MAIN_MEDIA_ROLE);
+  }
+
+  /**
+   * Désigne **le** visuel principal — ou retire la désignation.
+   *
+   * 🔴 **Un seul par fiche, et c'est le GESTE qui le garantit**, pas une règle
+   * vérifiée après coup : une seule mise à jour repasse sur toute la liste, met
+   * `hero` sur le rang visé et rend les autres à `gallery`. Deux principaux
+   * sont donc inexprimables, plutôt qu'interdits — « une donnée peut être
+   * fausse ; une structure, non ».
+   *
+   * ⚠️ N'en désigner **aucun** reste légal, et c'est l'état de toutes les fiches
+   * jusqu'au 2026-09-23. La vitrine du canal ne montre alors rien, ce qu'elle
+   * préfère à montrer n'importe laquelle.
+   */
+  setMainVisual(index: number, isMain: boolean): void {
+    this.media.update((current) =>
+      current.map((slot, position) => {
+        const role = position === index && isMain ? MAIN_MEDIA_ROLE : DEFAULT_MEDIA_ROLE;
+        return slot.role === role ? slot : { ...slot, role };
+      }),
+    );
   }
 
   /**

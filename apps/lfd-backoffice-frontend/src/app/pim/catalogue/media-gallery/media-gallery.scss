@@ -67,6 +67,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* La désignation de packshot — discrète, dans la légende. Elle DIT un état,
+   elle ne se clique pas : le geste vit dans le panneau, là où l'on voit
+   l'image en grand. */
+.media-main {
+  flex: none;
+  padding: 0 var(--fold-space-xs);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-2xs);
+}
+
 /* Rangée 1 : le nom, et le menu au bout. Le menu est DANS la légende et non
    sur l'aperçu — un contrôle posé sur une photo quelconque a exactement le
    problème de lisibilité qu'avait la pastille « Principale ». */

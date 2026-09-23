@@ -4,6 +4,9 @@ import { readLocalized, type Locale, type LocalizedText } from '@lfd/pim-contrac
 
 import { FoldButtonIconComponent, FoldFileDropzoneComponent } from 'fold-ng';
 
+/** Le rôle que la vitrine du canal B2B cherche (`showcase.ts`). */
+const MAIN_ROLE = 'hero';
+
 /**
  * Un visuel tel que la galerie l'affiche — le plus PETIT dénominateur des deux
  * porteurs. `alt` est facultatif parce qu'une fiche peut en manquer ; une
@@ -12,6 +15,15 @@ import { FoldButtonIconComponent, FoldFileDropzoneComponent } from 'fold-ng';
 export interface GallerySlot {
   readonly url: string;
   readonly name: string;
+  /**
+   * Le rôle du visuel chez son porteur. Absent = le porteur n'en a pas la
+   * notion — une famille, par exemple, dont aucun canal ne lit le rôle.
+   *
+   * La galerie ne s'en sert que pour **montrer** lequel est le packshot :
+   * l'état existait déjà en base et ne se voyait nulle part, ce qui obligeait à
+   * ouvrir chaque panneau pour savoir lequel les canaux prendraient.
+   */
+  readonly role?: string | undefined;
   readonly alt?: LocalizedText | undefined;
   readonly width?: number | null;
   readonly height?: number | null;
@@ -70,6 +82,11 @@ export class MediaGallery {
 
   protected isIncomplete(index: number): boolean {
     return this.incomplete().includes(index);
+  }
+
+  /** Le packshot — celui que les canaux montrent quand ils n'en montrent qu'un. */
+  protected isMain(slot: GallerySlot): boolean {
+    return slot.role === MAIN_ROLE;
   }
 
   /** L'alternative dans la langue lue — repli sur la source, jamais du vide. */

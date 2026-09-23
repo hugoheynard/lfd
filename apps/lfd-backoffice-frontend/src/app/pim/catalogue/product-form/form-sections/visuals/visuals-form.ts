@@ -87,7 +87,12 @@ export class VisualsForm {
     }
     void this.panels
       .open<AltTextPanelData, AltTextPanelResult>(AltTextPanel, {
-        data: { url: slot.url, name: slot.name, alt: slot.alt },
+        data: {
+          url: slot.url,
+          name: slot.name,
+          alt: slot.alt,
+          isMain: this.store.mainVisualIndex() === index,
+        },
       })
       .closed.then((result) => {
         // `undefined` = annulé. Écrire alors effacerait ce qu'on venait de
@@ -101,6 +106,9 @@ export class VisualsForm {
         }
         this.store.setMediaName(index, result.name);
         this.store.setMediaAltText(index, result.alt);
+        if (result.isMain !== undefined) {
+          this.store.setMainVisual(index, result.isMain);
+        }
       });
   }
 }

@@ -21,6 +21,13 @@
           } @else {
             <span class="media-name is-unset">Sans nom</span>
           }
+          <!-- La désignation se lit DANS la légende, jamais sur l'aperçu : une
+               pastille posée sur une photo quelconque a déjà été retirée ici
+               pour illisibilité, et la remettre au même endroit rejouerait la
+               même faute. -->
+          @if (isMain(slot)) {
+            <span class="media-main">Principal</span>
+          }
           <fold-button-icon
             class="media-menu"
             icon="more-vertical"

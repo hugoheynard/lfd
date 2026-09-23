@@ -30,6 +30,18 @@
     />
   }
 
+  <!-- La désignation vit ICI, à côté du nom et de l'alternative : c'est le seul
+       endroit où l'on voit l'image en grand, et choisir le packshot demande de
+       la regarder — même raison que le retrait, juste en dessous. -->
+  @if (isMain() !== undefined) {
+    <fold-checkbox
+      label="Visuel principal"
+      hint="Celui que les canaux montrent quand ils n'en montrent qu'un. Un seul par fiche : le désigner rend les autres à la galerie."
+      [checked]="isMain() === true"
+      (checkedChange)="isMain.set($event)"
+    />
+  }
+
   <p class="note">
     Le français fait foi : une langue laissée vide retombe sur lui plutôt que d'afficher du vide.
   </p>
