@@ -88,22 +88,51 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
     });
   }
 
-  /** Les visuels de plusieurs produits, dans leur ordre d'affichage. */
+  /**
+   * Les visuels de plusieurs produits, dans leur ordre d'affichage.
+   *
+   * 🔴 En DEUX requêtes et non par un `include` : le rattachement désigne
+   * l'image par son URL depuis le 2026-09-23, et la relation disparaîtra avec
+   * la clé étrangère au déploiement ③
+   * (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md`).
+   *
+   * Ce que ça change pour une ANCRE, et c'est ce qui compte ici : l'alternative
+   * entre dans le payload **hashé** d'une révision. Elle vient désormais de
+   * l'image elle-même — une seule par image — et non plus de la ligne d'actif
+   * propre à chaque fiche.
+   */
   private async mediaOf(ids: readonly string[]): Promise<Map<string, RevisionMedia[]>> {
     const rows = await this.prisma.productMedia.findMany({
       where: { productId: { in: [...ids] } },
       orderBy: [{ productId: "asc" }, { position: "asc" }],
-      include: { media: true },
+      select: { productId: true, role: true, mediaUrl: true },
     });
+    const urls = [...new Set(rows.flatMap((row) => (row.mediaUrl === null ? [] : [row.mediaUrl])))];
+    const assets =
+      urls.length === 0
+        ? []
+        : await this.prisma.mediaAsset.findMany({
+            where: { url: { in: urls } },
+            select: { url: true, alt: true },
+          });
+    const byUrl = new Map(assets.map((asset) => [asset.url, asset]));
+
     const byProduct = new Map<string, RevisionMedia[]>();
     for (const row of rows) {
+      const asset = row.mediaUrl === null ? undefined : byUrl.get(row.mediaUrl);
+      if (asset === undefined) {
+        // Une ancre ne fige QUE ce qu'elle a pu lire. Un rattachement sans
+        // image — une ligne antérieure au report de l'URL — n'entre pas dans
+        // l'empreinte plutôt que d'y entrer à moitié.
+        continue;
+      }
       const media = byProduct.get(row.productId) ?? [];
       media.push({
         role: row.role,
         // L'ADRESSE, jamais les octets : ils vivent dans le bucket, et un visuel
-        // remplacé crée un nouvel asset au lieu de s'écraser.
-        url: row.media.url,
-        alt: altOf(row.media.alt),
+        // remplacé est une AUTRE image, pas la même écrasée.
+        url: asset.url,
+        alt: altOf(asset.alt),
       });
       byProduct.set(row.productId, media);
     }

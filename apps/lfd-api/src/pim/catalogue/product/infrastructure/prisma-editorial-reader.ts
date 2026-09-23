@@ -68,31 +68,77 @@ export class PrismaEditorialReader extends EditorialReader {
     const rows = await this.prisma.productMedia.findMany({
       where: { productId: { in: [...productIds] } },
       orderBy: { position: "asc" },
-      include: { media: true },
+      select: { productId: true, role: true, mediaUrl: true },
     });
 
+    const images = await this.imagesByUrl(rows);
     const byProduct = new Map<string, ProductMediaRecord[]>();
     for (const row of rows) {
-      const record: ProductMediaRecord = {
-        role: row.role,
-        url: row.media.url,
-        name: row.media.name,
-        // L'alternative est stockée localisée, et relue telle quelle. Le repli sur
-        // l'URL vaut mieux que la chaîne vide qu'on rendait : une alternative
-        // absente doit se voir, pas se confondre avec une alternative écrite.
-        alt: localizedOf(row.media.alt) ?? { [SOURCE_LOCALE]: row.media.url },
-        width: row.media.width,
-        height: row.media.height,
-        bytes: row.media.bytes,
-        contentType: row.media.contentType,
-      };
+      const image = row.mediaUrl === null ? undefined : images.get(row.mediaUrl);
+      if (image === undefined) {
+        // Un rattachement sans image n'est pas rendu. Il ne peut naître que
+        // d'une ligne antérieure au report de l'URL (déploiement ①) ; la taire
+        // vaut mieux qu'un visuel cassé sur une fiche publiée.
+        continue;
+      }
       const bucket = byProduct.get(row.productId);
       if (bucket === undefined) {
-        byProduct.set(row.productId, [record]);
+        byProduct.set(row.productId, [{ ...image, role: row.role }]);
       } else {
-        bucket.push(record);
+        bucket.push({ ...image, role: row.role });
       }
     }
     return byProduct;
+  }
+
+  /**
+   * Les images citées, indexées par URL.
+   *
+   * 🔴 Une seconde requête plutôt qu'un `include`, et c'est le sujet : le
+   * rattachement ne désigne plus une LIGNE d'actif mais une image, par son
+   * URL. La relation Prisma disparaîtra au déploiement ③ avec la clé
+   * étrangère, et un `include` cesserait alors de compiler — ici, il n'y en a
+   * plus (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md` §7).
+   *
+   * C'est aussi la forme que prendra le PORT, le jour où la bibliothèque sera
+   * un bloc à elle : « donne-moi ces URL », et rien de plus.
+   */
+  private async imagesByUrl(
+    rows: readonly { readonly mediaUrl: string | null }[],
+  ): Promise<ReadonlyMap<string, Omit<ProductMediaRecord, "role">>> {
+    const urls = [...new Set(rows.flatMap((row) => (row.mediaUrl === null ? [] : [row.mediaUrl])))];
+    if (urls.length === 0) {
+      return new Map();
+    }
+    const assets = await this.prisma.mediaAsset.findMany({
+      where: { url: { in: urls } },
+      select: {
+        url: true,
+        name: true,
+        alt: true,
+        width: true,
+        height: true,
+        bytes: true,
+        contentType: true,
+      },
+    });
+    return new Map(
+      assets.map((asset) => [
+        asset.url,
+        {
+          url: asset.url,
+          name: asset.name,
+          // L'alternative est stockée localisée, et relue telle quelle. Le repli
+          // sur l'URL vaut mieux que la chaîne vide qu'on rendait : une
+          // alternative absente doit se voir, pas se confondre avec une
+          // alternative écrite.
+          alt: localizedOf(asset.alt) ?? { [SOURCE_LOCALE]: asset.url },
+          width: asset.width,
+          height: asset.height,
+          bytes: asset.bytes,
+          contentType: asset.contentType,
+        },
+      ]),
+    );
   }
 }
