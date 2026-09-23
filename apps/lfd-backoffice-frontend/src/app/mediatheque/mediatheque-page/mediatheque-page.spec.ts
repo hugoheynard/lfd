@@ -1,6 +1,6 @@
 import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { LibraryMediaPageView, LibraryMediaView } from '@lfd/pim-contracts';
+import type { LibraryMediaView, MediaLibraryPageView } from '@lfd/pim-contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MediaLibraryHttpApi } from '../media-library-http-api';
@@ -25,6 +25,8 @@ function image(url: string, name = '', uses = 0): LibraryMediaView {
     url,
     name,
     uses,
+    tags: [],
+    alt: { fr: url },
     focal: null,
     width: null,
     height: null,
@@ -35,11 +37,11 @@ function image(url: string, name = '', uses = 0): LibraryMediaView {
 }
 
 class FakeLibrary {
-  pages: LibraryMediaPageView[] = [];
+  pages: MediaLibraryPageView[] = [];
   fails = false;
   calls: { limit: number; offset: number }[] = [];
 
-  page(limit: number, offset: number): Promise<LibraryMediaPageView> {
+  page(limit: number, offset: number): Promise<MediaLibraryPageView> {
     this.calls.push({ limit, offset });
     if (this.fails) {
       return Promise.reject(new Error('réseau'));
