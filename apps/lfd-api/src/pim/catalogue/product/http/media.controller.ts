@@ -18,11 +18,11 @@ interface UploadedFilePart {
 }
 
 /**
- * 🔴 **ALIAS DÉPRÉCIÉ** de `POST /pim/mediatheque` (posé le 2026-09-23).
+ * 🔴 **ALIAS DÉPRÉCIÉ** de `POST /pim/media` (posé le 2026-09-23).
  *
  * La bibliothèque a quitté `catalogue/` : une route sous le référentiel
  * produit affirmait une propriété qu'il n'a pas. Sa surface est désormais
- * `mediatheque` (`MediaLibraryController`).
+ * `media` (`MediaLibraryController`).
  *
  * Cette route reste parce qu'un contrat déjà servi ne se casse pas dans le même
  * déploiement (`CLAUDE.md` §0) : le back-office et l'API se déploient
@@ -31,7 +31,7 @@ interface UploadedFilePart {
  * n'a jamais été servie ici.
  *
  * ⚠️ **À supprimer au déploiement suivant**, une fois le back-office en ligne
- * sur `mediatheque`. Son unique appelant était `ProductHttpApi.uploadImage`,
+ * sur `media`. Son unique appelant était `ProductHttpApi.uploadImage`,
  * qui vise déjà la nouvelle adresse.
  */
 @AdminSurface("pim_catalog")

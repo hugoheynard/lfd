@@ -49,7 +49,7 @@ interface UploadedFilePart {
 /**
  * **LA MÉDIATHÈQUE** — le fonds d'images, indépendamment de ce qui l'affiche.
  *
- * 🔴 Sa surface est `mediatheque`, et plus `catalogue/media` (2026-09-23). Ce
+ * 🔴 Sa surface est `media`, et plus `catalogue/media` (2026-09-23). Ce
  * n'est pas un rangement : une route sous `catalogue/` affirme que le
  * référentiel produit possède la bibliothèque. Il ne la possède pas — les
  * fiches en portent, les familles aussi (`CategoryMedia`), et les contenus de
@@ -66,7 +66,7 @@ interface UploadedFilePart {
  * vérifiée contre l'annuaire, puis périmètre.
  */
 @AdminSurface("pim_catalog")
-@Controller("mediatheque")
+@Controller("media")
 export class MediaLibraryController {
   constructor(
     private readonly commands: CommandBus,

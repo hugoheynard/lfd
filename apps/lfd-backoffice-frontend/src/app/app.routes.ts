@@ -40,6 +40,13 @@ export const routes: Routes = [
     // bibliothèque », `shared/domain/value-objects/media.ts`). La ranger sous
     // le référentiel lui donnerait un propriétaire qu'elle n'a pas.
     //
+    // ⚠️ La route de l'ÉCRAN reste en français — `mediatheque` — et l'API est
+    // passée à `/pim/media` le 2026-09-23. Ce n'est pas une incohérence : dans
+    // ce dépôt, le français vit là où des humains lisent (les routes du
+    // back-office disent déjà `produits`, `emplacements`, `contextes`,
+    // `limites-de-commande`) et l'anglais dans le code et les contrats. On
+    // dicte une adresse d'écran ; on n'épelle pas un chemin d'API.
+    //
     // `pim_catalog:read` : c'est le mur que la route serveur oppose
     // (`@AdminSurface("pim_catalog")`). Ouvrir l'écran à qui ne l'a pas ne
     // montrerait que des 403.

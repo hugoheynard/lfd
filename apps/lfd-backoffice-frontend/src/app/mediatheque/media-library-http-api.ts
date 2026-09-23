@@ -34,7 +34,7 @@ export class MediaLibraryHttpApi {
 
   async page(limit: number, offset: number): Promise<MediaLibraryPageView> {
     return firstValueFrom(
-      this.http.get<MediaLibraryPageView>(`${this.base}/mediatheque`, {
+      this.http.get<MediaLibraryPageView>(`${this.base}/media`, {
         params: { limit: String(limit), offset: String(offset) },
       }),
     );
@@ -55,7 +55,7 @@ export class MediaLibraryHttpApi {
   async upload(file: File): Promise<UploadedMediaView> {
     const body = new FormData();
     body.append('file', file);
-    return firstValueFrom(this.http.post<UploadedMediaView>(`${this.base}/mediatheque`, body));
+    return firstValueFrom(this.http.post<UploadedMediaView>(`${this.base}/media`, body));
   }
 
   /**
@@ -70,7 +70,7 @@ export class MediaLibraryHttpApi {
    * ne le serait pas pour une donnée réglementaire.
    */
   async describe(details: MediaDetailsPayload): Promise<void> {
-    await firstValueFrom(this.http.put<void>(`${this.base}/mediatheque`, details));
+    await firstValueFrom(this.http.put<void>(`${this.base}/media`, details));
   }
 
   /**
@@ -82,6 +82,6 @@ export class MediaLibraryHttpApi {
    * vieillirait la première.
    */
   async discard(url: string): Promise<void> {
-    await firstValueFrom(this.http.delete<void>(`${this.base}/mediatheque`, { params: { url } }));
+    await firstValueFrom(this.http.delete<void>(`${this.base}/media`, { params: { url } }));
   }
 }
