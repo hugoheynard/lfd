@@ -21,7 +21,15 @@ import {
   CategorySlugTakenError,
   CategoryVatWithoutChannelError,
 } from "../../domain/errors/category-errors.js";
+import {
+  CategoryEditorialReader,
+  type CategoryEditorialView,
+  type CategoryMediaRecord,
+} from "../../domain/ports/category-editorial-reader.js";
+import { CategoryEditorialRepository } from "../../domain/ports/category-editorial.repository.js";
 import { CategoryRepository } from "../../domain/ports/category.repository.js";
+import type { CategoryEditorial } from "../../domain/value-objects/category-editorial.js";
+import type { MediaItem } from "../../../shared/domain/value-objects/media.js";
 import { PointOfSaleOfferReader } from "../../../shared/domain/ports/point-of-sale-offer.reader.js";
 import { ProductCountReader } from "../../domain/ports/product-count.reader.js";
 import type {
@@ -38,6 +46,7 @@ import {
   SetCategoryChannelsCommand,
   SetCategoryChannelsHandler,
 } from "../set-category-channels.js";
+import { SetCategoryMediaCommand, SetCategoryMediaHandler } from "../set-category-media.js";
 import { SetCategoryVatCommand, SetCategoryVatHandler } from "../set-category-vat.js";
 import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
@@ -928,5 +937,99 @@ describe("Ce que les familles inscrivent au journal", () => {
       subjectLabel: "Famille 1",
       parent: { from: null, to: { id: parent, name: "Famille 0" } },
     });
+  });
+});
+
+/** Une ligne de visuel telle que la base la rend ; les mesures décrivent le
+ *  fichier, jamais la décision de l'écran. */
+function mediaRow(role: string, url: string): CategoryMediaRecord {
+  return {
+    role,
+    url,
+    name: "Face",
+    alt: { fr: "De face" },
+    width: null,
+    height: null,
+    bytes: null,
+    contentType: null,
+  };
+}
+
+/** Une famille qui porte DÉJÀ des visuels : sans état d'avant, aucun diff ne
+ *  peut rater un champ. */
+class StoredMediaReader extends CategoryEditorialReader {
+  constructor(private readonly stored: readonly CategoryMediaRecord[]) {
+    super();
+  }
+  findByCategory(): Promise<CategoryEditorialView | null> {
+    return Promise.resolve(null);
+  }
+  mediaOf(): Promise<readonly CategoryMediaRecord[]> {
+    return Promise.resolve(this.stored);
+  }
+}
+
+class RecordingCategoryEditorials extends CategoryEditorialRepository {
+  readonly replaced: { categoryId: string; media: readonly MediaItem[] }[] = [];
+  saveTexts(_categoryId: string, _editorial: CategoryEditorial): Promise<void> {
+    return Promise.resolve();
+  }
+  replaceMedia(categoryId: string, media: readonly MediaItem[]): Promise<void> {
+    this.replaced.push({ categoryId, media });
+    return Promise.resolve();
+  }
+}
+
+describe("SetCategoryMediaHandler", () => {
+  /**
+   * Régression : `listOf` réduisait un visuel à `{ url, name, alt }`, sans son
+   * RÔLE — le même trou que côté fiche. Promouvoir une image en `hero` ne
+   * produisait donc aucun fait, et l'écriture passait pour un enregistrement
+   * sans modification (constaté le 2026-09-23).
+   */
+  it("journalise la PROMOTION d’un visuel en hero, qui ne change que son rôle", async () => {
+    const repo = new InMemoryCategories();
+    const journal = new RecordingJournal();
+    const [id] = await openRoots(repo, 1);
+
+    await new SetCategoryMediaHandler(
+      repo,
+      new RecordingCategoryEditorials(),
+      new StoredMediaReader([mediaRow("gallery", "https://cdn/1.jpg")]),
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(
+      new SetCategoryMediaCommand(id!, [
+        { role: "hero", url: "https://cdn/1.jpg", name: "Face", alt: { fr: "De face" } },
+      ]),
+    );
+
+    expect(journal.types()).toEqual(["product_category.media_saved"]);
+    expect(journal.entries[0]?.payload["changes"]).toMatchObject({
+      media: {
+        from: [expect.objectContaining({ role: "gallery" })],
+        to: [expect.objectContaining({ role: "hero" })],
+      },
+    });
+  });
+
+  it("n’écrit aucun fait quand la liste renvoyée est identique", async () => {
+    const repo = new InMemoryCategories();
+    const journal = new RecordingJournal();
+    const [id] = await openRoots(repo, 1);
+
+    await new SetCategoryMediaHandler(
+      repo,
+      new RecordingCategoryEditorials(),
+      new StoredMediaReader([mediaRow("hero", "https://cdn/1.jpg")]),
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(
+      new SetCategoryMediaCommand(id!, [
+        { role: "hero", url: "https://cdn/1.jpg", name: "Face", alt: { fr: "De face" } },
+      ]),
+    );
+
+    expect(journal.types()).toEqual([]);
   });
 });

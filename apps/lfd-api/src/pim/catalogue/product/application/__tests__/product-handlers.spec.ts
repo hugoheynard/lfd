@@ -238,6 +238,32 @@ class EmptyEditorialReader extends EditorialReader {
   }
 }
 
+/** Une ligne de visuel telle que la base la rend : mesures comprises, et
+ *  toujours `null` ici — elles décrivent le fichier, pas la décision. */
+function mediaRow(role: string, url: string): ProductMediaRecord {
+  return {
+    role,
+    url,
+    name: "Face",
+    alt: { fr: "De face" },
+    width: null,
+    height: null,
+    bytes: null,
+    contentType: null,
+  };
+}
+
+/** Lecteur doublé d'une fiche qui porte DÉJÀ des visuels : sans état d'avant,
+ *  aucun diff ne peut rater un champ. */
+class StoredMediaReader extends EmptyEditorialReader {
+  constructor(private readonly stored: readonly ProductMediaRecord[]) {
+    super();
+  }
+  override mediaOf(): Promise<readonly ProductMediaRecord[]> {
+    return Promise.resolve(this.stored);
+  }
+}
+
 describe("l’historique d’une fiche", () => {
   it("écrit ce qui a changé, en AVANT → APRÈS", async () => {
     const products = new FakeProductRepository(seedProduct());
@@ -901,6 +927,92 @@ describe("SetProductMediaHandler", () => {
     ).execute(new SetProductMediaCommand(PRODUCT_ID, []));
 
     expect(editorials.replaced[0]?.media).toEqual([]);
+  });
+
+  /**
+   * Régression : `listOf` réduisait un visuel à `{ url, name, alt }`, sans son
+   * RÔLE. Promouvoir une image de `gallery` à `hero` — « c'est ce visuel-là
+   * qu'on affiche » — produisait donc un diff vide, aucun fait au journal, et
+   * l'écriture passait sous « section enregistrée sans modification »
+   * (constaté le 2026-09-23).
+   */
+  it("journalise la PROMOTION d’un visuel en hero, qui ne change que son rôle", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const editorials = new RecordingEditorialRepository();
+    const journal = new RecordingJournal();
+
+    await new SetProductMediaHandler(
+      products,
+      editorials,
+      new StoredMediaReader([mediaRow("gallery", "https://cdn/1.jpg")]),
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(
+      new SetProductMediaCommand(PRODUCT_ID, [
+        { role: "hero", url: "https://cdn/1.jpg", name: "Face", alt: { fr: "De face" } },
+      ]),
+    );
+
+    expect(journal.types()).toEqual(["product.media_saved"]);
+    expect(journal.entries[0]?.payload["changes"]).toMatchObject({
+      media: {
+        from: [expect.objectContaining({ role: "gallery" })],
+        to: [expect.objectContaining({ role: "hero" })],
+      },
+    });
+  });
+
+  /**
+   * Le pendant du test précédent : un enregistrement qui ne change RIEN ne doit
+   * toujours pas remplir l'historique. Ajouter `role` au diff ne devait pas
+   * rendre chaque ouverture d'écran traçante.
+   */
+  it("n’écrit aucun fait quand la liste renvoyée est identique", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const journal = new RecordingJournal();
+
+    await new SetProductMediaHandler(
+      products,
+      new RecordingEditorialRepository(),
+      new StoredMediaReader([mediaRow("hero", "https://cdn/1.jpg")]),
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(
+      new SetProductMediaCommand(PRODUCT_ID, [
+        { role: "hero", url: "https://cdn/1.jpg", name: "Face", alt: { fr: "De face" } },
+      ]),
+    );
+
+    expect(journal.types()).toEqual([]);
+  });
+
+  /**
+   * La position n'entre pas dans le diff, et n'a pas à y entrer : `changesBetween`
+   * compare les tableaux **index par index**, donc permuter deux visuels change
+   * les entrées comparées. Vérifié plutôt que supposé — c'est la seule preuve
+   * que le rang reste tracé sans champ dédié.
+   */
+  it("journalise une PERMUTATION, dont le rang est la seule différence", async () => {
+    const products = new FakeProductRepository(seedProduct());
+    const journal = new RecordingJournal();
+
+    await new SetProductMediaHandler(
+      products,
+      new RecordingEditorialRepository(),
+      new StoredMediaReader([
+        mediaRow("gallery", "https://cdn/1.jpg"),
+        mediaRow("lifestyle", "https://cdn/2.jpg"),
+      ]),
+      journal,
+      new DirectUnitOfWork(),
+    ).execute(
+      new SetProductMediaCommand(PRODUCT_ID, [
+        { role: "lifestyle", url: "https://cdn/2.jpg", name: "Face", alt: { fr: "De face" } },
+        { role: "gallery", url: "https://cdn/1.jpg", name: "Face", alt: { fr: "De face" } },
+      ]),
+    );
+
+    expect(journal.types()).toEqual(["product.media_saved"]);
   });
 });
 

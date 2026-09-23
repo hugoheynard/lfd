@@ -65,12 +65,26 @@ export class SetProductMediaHandler implements ICommandHandler<SetProductMediaCo
 }
 
 /**
- * Les visuels réduits à ce qui se compare : l'ordre, l'image, son étiquette et
- * son texte alternatif. Ni dimensions ni poids — ils décrivent le FICHIER, pas
- * la décision de l'écran, et bougeraient sans que personne n'ait rien édité.
+ * Les visuels réduits à ce qui se compare : l'ordre, l'image, son RÔLE, son
+ * étiquette et son texte alternatif. Ni dimensions ni poids — ils décrivent le
+ * FICHIER, pas la décision de l'écran, et bougeraient sans que personne n'ait
+ * rien édité.
+ *
+ * Le rôle manquait, et c'est le geste le plus fréquent de cette section :
+ * promouvoir une image en `hero` ne changeait rien d'autre, donc produisait un
+ * diff vide et aucun fait du tout (corrigé le 2026-09-23).
+ *
+ * La POSITION n'y figure pas et n'a pas à y figurer : `changesBetween` compare
+ * les tableaux index par index, donc permuter deux visuels change déjà les
+ * entrées comparées. L'ajouter ferait doublon avec le rang.
  */
 function listOf(
-  media: readonly { readonly url: string; readonly name: string; readonly alt: LocalizedText }[],
+  media: readonly {
+    readonly role: string;
+    readonly url: string;
+    readonly name: string;
+    readonly alt: LocalizedText;
+  }[],
 ): readonly Record<string, unknown>[] {
-  return media.map((item) => ({ url: item.url, name: item.name, alt: item.alt }));
+  return media.map((item) => ({ role: item.role, url: item.url, name: item.name, alt: item.alt }));
 }

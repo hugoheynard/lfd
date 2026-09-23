@@ -98,6 +98,20 @@ function isStale(view: Detail): boolean {
   return view.readinessStale;
 }
 
+/**
+ * Combien de faits `product.media_saved` porte l'historique de la fiche.
+ *
+ * Lu par la route du journal, pas en base : c'est ce que l'écran voit, et c'est
+ * la seule trace qui reste d'un changement de visuel depuis le 2026-09-23.
+ */
+async function mediaFactsOf(id: string): Promise<number> {
+  const response = await staff().get(`${PRODUCTS}/${id}/history`);
+  expect(response.status).toBe(200);
+  return jsonBody<{ entries: readonly { readonly type: string }[] }>(response).entries.filter(
+    (entry) => entry.type === "product.media_saved",
+  ).length;
+}
+
 describe("Déclaration publiable", () => {
   it("inscrit la signature, et la rend au geste qui la pose", async () => {
     const id = await aProduct();
@@ -169,6 +183,24 @@ describe("Déclaration publiable", () => {
       expect(isStale(await detail(id))).toBe(true);
     });
 
+    /**
+     * Le pendant du visuel, et la raison pour laquelle la bascule du
+     * 2026-09-23 est tenable : un ALLERGÈNE périme toujours, et c'est ce qui
+     * doit rester vrai quoi qu'il arrive aux photos.
+     */
+    it("sur la fiche réglementaire — un allergène", async () => {
+      const id = await aProduct();
+      const variant = (await detail(id)).variants.find((entry) => entry.isDefault);
+      await declareReady(id);
+
+      const response = await staff()
+        .put(`${PRODUCTS}/${id}/variants/${variant?.id ?? ""}/allergens`)
+        .send({ allergens: ["UW"] });
+      expect(response.status).toBe(200);
+
+      expect(isStale(await detail(id))).toBe(true);
+    });
+
     it("sur l’éditorial (product_editorial) — la description", async () => {
       const id = await aProduct();
       await declareReady(id);
@@ -178,20 +210,6 @@ describe("Déclaration publiable", () => {
         .send({ descriptionShort: { fr: "Pur beurre" } });
       expect(response.status).toBe(200);
 
-      expect(isStale(await detail(id))).toBe(true);
-    });
-
-    it("sur les visuels (product_media) — une photo", async () => {
-      const id = await aProduct();
-      await declareReady(id);
-
-      const response = await staff()
-        .put(`${PRODUCTS}/${id}/media`)
-        .send({ media: [{ role: "gallery", url: "https://cdn.test/croissant.jpg" }] });
-      expect(response.status).toBe(200);
-
-      // Le cas qui a motivé la colonne `updated_at` sur `product_media` : sans
-      // elle, changer la photo laissait la signature se dire à jour.
       expect(isStale(await detail(id))).toBe(true);
     });
 
@@ -263,6 +281,61 @@ describe("Déclaration publiable", () => {
       expect((await staff().put(`${PRODUCTS}/${id}/restore`).send({})).status).toBe(200);
 
       expect(isStale(await detail(id))).toBe(false);
+    });
+  });
+
+  /**
+   * **Bascule du 2026-09-23** — Hugo : « changement visuel et contenu ne créent
+   * pas de révision ». Ce bloc éprouvait l'inverse : « sur les visuels
+   * (product_media) — une photo » attendait `isStale === true`. Il dit
+   * maintenant la décision, et ce qu'elle laisse debout.
+   *
+   * Ce qu'il protège d'autre est intact : `contentUpdatedAt` bouge toujours —
+   * la colonne `updated_at` de `product_media` entre bien dans le `max`, et
+   * c'est ce que ce test-là vérifiait vraiment en plus de la péremption.
+   */
+  describe("ne se périme PAS quand seuls les VISUELS changent", () => {
+    it("remplacer la photo d’une fiche signée la laisse signée", async () => {
+      const id = await aProduct();
+      await declareReady(id);
+      const before = await detail(id);
+
+      const response = await staff()
+        .put(`${PRODUCTS}/${id}/media`)
+        .send({ media: [{ role: "gallery", url: "https://cdn.test/croissant.jpg" }] });
+      expect(response.status).toBe(200);
+
+      const after = await detail(id);
+      // L'écriture a bien eu lieu — sans cette ligne, le test passerait aussi
+      // si la route n'avait rien enregistré du tout.
+      expect(after.contentUpdatedAt > before.contentUpdatedAt).toBe(true);
+      expect(isStale(after)).toBe(false);
+    });
+
+    /**
+     * La PROMOTION en `hero` : le geste que le diff ratait jusqu'au 2026-09-23
+     * (`listOf` ne portait pas le rôle). Il ne périme rien, mais il doit
+     * laisser une trace — c'est désormais la seule qu'il laisse.
+     */
+    it("promouvoir un visuel en hero ne périme rien, et s’inscrit au journal", async () => {
+      const id = await aProduct();
+      const gallery = { role: "gallery", url: "https://cdn.test/croissant.jpg" };
+      expect(
+        (
+          await staff()
+            .put(`${PRODUCTS}/${id}/media`)
+            .send({ media: [gallery] })
+        ).status,
+      ).toBe(200);
+      await declareReady(id);
+
+      const promoted = await staff()
+        .put(`${PRODUCTS}/${id}/media`)
+        .send({ media: [{ ...gallery, role: "hero" }] });
+      expect(promoted.status).toBe(200);
+
+      expect(isStale(await detail(id))).toBe(false);
+      expect(await mediaFactsOf(id)).toBe(2);
     });
   });
 });

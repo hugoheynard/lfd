@@ -60,9 +60,24 @@ const salesChannelsV1 = () => z.array(soldChannelV1());
  */
 const vatByContextV1 = () => z.record(z.string(), fromTo(ref("vat_rate").nullable()));
 
-/** Un visuel, tel que le diff le compare : l'image, son nom, son texte alternatif. */
-const mediaList = () =>
+/**
+ * Un visuel, tel que le diff le comparait : l'image, son nom, son texte
+ * alternatif — **sans son rôle**, qui manquait au diff jusqu'au 2026-09-23.
+ * Les lignes déjà posées ont cette forme-là et doivent rester lisibles.
+ */
+const mediaListV1 = () =>
   z.array(payload({ url: z.string(), name: z.string(), alt: localizedText() }));
+
+/**
+ * Un visuel, tel que le diff le compare : son RÔLE, l'image, son nom, son
+ * texte alternatif.
+ *
+ * Le rôle est entré le 2026-09-23 : promouvoir une image en `hero` ne changeait
+ * rien d'autre, donc ne produisait aucun diff — et l'écriture passait pour un
+ * enregistrement sans modification.
+ */
+const mediaList = () =>
+  z.array(payload({ role: z.string(), url: z.string(), name: z.string(), alt: localizedText() }));
 
 const PRODUCT_KINDS = ["daily", "made_to_order", "resale"] as const;
 
@@ -135,6 +150,8 @@ const productEditorialV1 = payload({
   }),
 });
 const mediaSaved = () => payload({ changes: changes({ media: mediaList() }) });
+/** La même charge avant que le rôle n'entre dans le diff (2026-09-23). */
+const mediaSavedV1 = () => payload({ changes: changes({ media: mediaListV1() }) });
 const productChannelsV1 = fromTo(z.union([z.literal("inherited"), salesChannelsV1()]));
 const productOnSale = () => payload({ sku: z.string(), name: localizedText(), blast: blast() });
 const productIngredientsV1 = payload({
@@ -326,7 +343,10 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
     [productDeclarationV1],
   ),
   "product.editorial_saved": labelled(productEditorialV1),
-  "product.media_saved": labelled(mediaSaved()),
+  "product.media_saved": fact(mediaSaved().extend({ subjectLabel: subjectLabel() }), [
+    mediaSavedV1().extend({ subjectLabel: subjectLabel() }),
+    mediaSavedV1(),
+  ]),
   /** Où la fiche se vend : sa propre matrice, ou `inherited` (celle de sa famille). */
   "product.channels_changed": fact(
     payload({
@@ -403,7 +423,10 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
   ),
   "product_category.vat_changed": fact(vatChanged(), [vatByContextV1(), vatChangedLotB()]),
   "product_category.editorial_saved": labelled(categoryEditorial),
-  "product_category.media_saved": labelled(mediaSaved()),
+  "product_category.media_saved": fact(mediaSaved().extend({ subjectLabel: subjectLabel() }), [
+    mediaSavedV1().extend({ subjectLabel: subjectLabel() }),
+    mediaSavedV1(),
+  ]),
 
   /**
    * Une ancre est posée — le sujet est son empreinte. Son `subjectLabel` est

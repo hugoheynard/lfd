@@ -54,9 +54,28 @@ describe("les faits de contenu d'une fiche", () => {
     expect(isContentFact(PIM_EVENTS.productPricingSaved)).toBe(true);
     expect(isContentFact(PIM_EVENTS.productDeclarationSaved)).toBe(true);
     expect(isContentFact(PIM_EVENTS.productEditorialSaved)).toBe(true);
-    expect(isContentFact(PIM_EVENTS.productMediaSaved)).toBe(true);
     expect(isContentFact(PIM_EVENTS.productIngredientsSaved)).toBe(true);
     expect(isContentFact(PIM_EVENTS.productCreated)).toBe(true);
+  });
+
+  /**
+   * Décision de Hugo, 2026-09-23 : « changement visuel et contenu ne créent pas
+   * de révision ». Remplacer une photo, promouvoir un visuel en `hero` ou
+   * permuter deux images ne redemande plus de relecture — le journal continue
+   * seul de porter la trace, datée et attribuée.
+   */
+  it("ne compte PLUS les visuels depuis la décision du 2026-09-23", () => {
+    expect(isContentFact(PIM_EVENTS.productMediaSaved)).toBe(false);
+  });
+
+  /**
+   * L'autre moitié du critère, restée en place : le sujet des TEXTES est ouvert
+   * et sera tranché à part (« pour l'instant on se concentre sur les médias, on
+   * ira sur contenu après », 2026-09-23). Ce test est là pour que l'asymétrie
+   * ne se lise pas comme un oubli à combler.
+   */
+  it("compte TOUJOURS les textes — décision en attente, pas asymétrie fortuite", () => {
+    expect(isContentFact(PIM_EVENTS.productEditorialSaved)).toBe(true);
   });
 
   it("reste muet sur un type inconnu plutôt que de périmer à tort", () => {

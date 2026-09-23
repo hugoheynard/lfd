@@ -25,12 +25,43 @@ import { PIM_EVENTS } from "../../../journal/pim-journal.js";
  * Un fait est « de contenu » si un relecteur qui a signé la fiche AVANT
  * voudrait la revoir APRÈS. Ce n'est pas « le fait touche la ligne produit »,
  * ni « le fait entre dans une révision » — c'est ce que la signature engage :
- * les prix, les allergènes, les textes, les visuels, les taux, les canaux, la
- * composition.
+ * les prix, les allergènes, les textes, les taux, les canaux, la composition.
  *
  * Les quatre transitions de statut n'y sont pas, et la signature non plus. Un
  * statut dit ce que le catalogue FAIT de la fiche ; il n'affirme rien sur son
  * contenu, donc il ne peut rien démentir.
+ *
+ * ## Amendement du 2026-09-23 — les visuels sortent du critère
+ *
+ * Le critère ci-dessus citait « les textes, les visuels ». Il ne cite plus les
+ * visuels, et c'est une **décision**, pas une omission — Hugo, 2026-09-23 :
+ * « changement visuel et contenu ne créent pas de révision ».
+ *
+ * **Ce qu'on accepte, et il faut le lire en face :** une photo remplacée, un
+ * visuel promu en `hero`, deux images permutées après signature ne redemandent
+ * plus de relecture. Quelqu'un peut donc changer l'image d'un produit signé
+ * sans que l'écran le signale — la fiche reste « publiable » avec un visuel que
+ * le signataire n'a jamais vu.
+ *
+ * **Ce qui garde la trace :** le journal. `product.media_saved` continue d'être
+ * écrit, daté et attribué à une personne, à chaque enregistrement qui change
+ * quelque chose. Rien ne devient invisible ; seul l'avertissement de péremption
+ * se tait. Et depuis le même jour, le diff des visuels porte enfin le RÔLE —
+ * promouvoir une image en `hero` ne produisait aucun fait du tout, ce qui
+ * aurait fait de cette sortie un silence complet plutôt qu'une trace non
+ * bloquante.
+ *
+ * **Les TEXTES, eux, restent du contenu — pour l'instant, et c'est une décision
+ * EN ATTENTE, pas un oubli.** Hugo, le même jour : « pour l'instant on se
+ * concentre sur les médias, on ira sur contenu après ». Ne pas combler
+ * l'asymétrie d'un côté ni de l'autre avant que ce soit tranché. Elle se
+ * défend d'ailleurs telle quelle : permuter deux visuels du même produit
+ * n'appelle aucune relecture, là où une description réécrite peut engager
+ * autrement.
+ *
+ * `product.media_saved` reste **classé** ici, à `false` : la table est
+ * exhaustive, et le retirer le rendrait muet pour une autre raison que
+ * celle-ci.
  *
  * ⚠️ **La table est exhaustive, et un test le tient** : tout fait `product.*`
  * doit y figurer. Sans cette garde, un fait ajouté demain serait muet ici — et
@@ -50,7 +81,6 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   [PIM_EVENTS.productNutritionSaved]: true,
   [PIM_EVENTS.productDeclarationSaved]: true,
   [PIM_EVENTS.productEditorialSaved]: true,
-  [PIM_EVENTS.productMediaSaved]: true,
   // Taux et canaux : invisibles de l'ancienne mesure, parce qu'ils vivent dans
   // `ProductContextVat` et `ProductChannelOverride`. Ils changent le prix servi
   // et les contextes de vente — exactement ce qu'on relit avant de signer.
@@ -73,6 +103,11 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   [PIM_EVENTS.productUnpublished]: false,
   [PIM_EVENTS.productArchived]: false,
   [PIM_EVENTS.productRestored]: false,
+  // Les visuels, sortis du contenu le 2026-09-23 (voir l'amendement en tête de
+  // fichier). Ils restent journalisés, datés et attribués : c'est la relecture
+  // qu'on ne redemande plus, pas la trace. Les TEXTES, eux, sont restés
+  // au-dessus — décision en attente, pas asymétrie fortuite.
+  [PIM_EVENTS.productMediaSaved]: false,
   // La signature elle-même. Se compter comme une modification la périmerait à
   // l'instant où elle est posée.
   [PIM_EVENTS.productDeclaredReady]: false,
