@@ -43,9 +43,14 @@ export interface FocalPoint {
  * Une image de la **bibliothèque**, telle que la médiathèque la montre.
  *
  * 🔴 Pas d'identifiant, et ce n'est pas un oubli : l'identité d'une image est
- * son URL. La table des actifs est en réalité un journal de lignes — chaque
- * enregistrement d'une section Visuels en recrée une par image — et seule
- * l'adresse, calculée sur le contenu, traverse deux sauvegardes.
+ * son URL, qui est le SHA-256 de son contenu.
+ *
+ * ⚠️ Cette phrase disait « la table des actifs est en réalité un journal de
+ * lignes — chaque enregistrement d'une section Visuels en recrée une par
+ * image ». C'était vrai, et ça ne l'est plus depuis le 2026-09-23 : un index
+ * unique sur l'URL fait qu'une image y occupe UNE ligne, et les fiches n'y
+ * écrivent plus du tout. La conclusion, elle, n'a pas bougé — seule l'adresse
+ * traverse deux sauvegardes, et c'est pourquoi elle sert d'identité.
  */
 export interface LibraryMediaView extends MediaFactsView {
   readonly url: string;
@@ -62,10 +67,16 @@ export interface LibraryMediaView extends MediaFactsView {
   /**
    * Combien de porteurs l'affichent — fiches et familles confondues.
    *
-   * Sert à DIRE avant de refuser : on ne supprime pas une image qui sert, et
-   * les clés étrangères le tiennent en base. Sans ce compte, l'écran
-   * proposerait une suppression que Postgres rejetterait, et la règle
-   * s'apprendrait par un échec.
+   * Sert à DIRE avant de refuser : on ne supprime pas une image qu'un porteur
+   * affiche. Sans ce compte, l'écran proposerait une suppression que le
+   * serveur rejetterait, et la règle s'apprendrait par un échec.
+   *
+   * 🔴 Cette phrase disait « les clés étrangères le tiennent en base ». Elles
+   * ne le tiennent plus depuis le 2026-09-23 : la bibliothèque a son propre
+   * schéma, les porteurs la référencent par URL sans clé étrangère, et la
+   * règle vit dans le code — `DiscardMediaHandler` compte et refuse (409), le
+   * ramassage s'abstient si un porteur se tait. Croire que Postgres garde
+   * encore ce mur ferait retirer le garde-fou applicatif.
    */
   readonly uses: number;
   /** L'entrée dans la bibliothèque — le PREMIER dépôt de ces octets. */
@@ -130,8 +141,9 @@ export type SetMediaPayload = z.infer<typeof setMediaPayloadSchema>;
 /**
  * Ce qu'un écran DÉCIDE d'une image — par opposition à ce qu'on en a mesuré.
  *
- * Clé = l'**URL**, parce que c'est la seule identité qui traverse deux
- * enregistrements de fiche : la table des actifs est un journal de lignes.
+ * Clé = l'**URL**, parce qu'elle EST l'identité d'une image : le SHA-256 de
+ * son contenu, une ligne par image depuis le 2026-09-23 (la phrase disait
+ * « la table des actifs est un journal de lignes » — c'est fini).
  */
 export const mediaDetailsPayloadSchema = z.object({
   url: z.string().min(1),
