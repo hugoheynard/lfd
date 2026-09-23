@@ -79,13 +79,13 @@ un rôle à titulaire unique : c'est là qu'une règle peut dire « celui-ci fai
 4/3 » et être opposable. Sur une collection au nombre libre, la même phrase
 n'aurait personne à qui s'adresser.
 
-| Rôle        | Cardinalité | Ratio       | Ce qu'il est                                              | Qui le lit aujourd'hui                     |
-| ----------- | ----------- | ----------- | --------------------------------------------------------- | ------------------------------------------ |
-| `hero`      | **un seul** | _à définir_ | l'ouverture de la fiche — le plan qui présente le produit | la vitrine du canal B2B (`showcase.ts:18`) |
-| `thumbnail` | **un seul** | **4/3**     | la vignette de rayon — cadrée serré, lisible à 200 px     | **personne**                               |
-| `gallery`   | plusieurs   | —           | le neutre : « une image du produit ». Tout dépôt y naît   | personne                                   |
-| `lifestyle` | plusieurs   | _à définir_ | la mise en situation — table dressée, main, contexte      | personne                                   |
-| `print`     | plusieurs   | _à définir_ | le tirage papier : mercuriale, étiquette, fiche imprimée  | personne                                   |
+| Rôle        | Cardinalité | Ratio    | Ce qu'il est                                              | Qui le lit aujourd'hui                     |
+| ----------- | ----------- | -------- | --------------------------------------------------------- | ------------------------------------------ |
+| `hero`      | **un seul** | **3/2**  | l'ouverture de la fiche — le plan qui présente le produit | la vitrine du canal B2B (`showcase.ts:18`) |
+| `thumbnail` | **un seul** | **4/3**  | la vignette de rayon — cadrée serré, lisible à 200 px     | **personne**                               |
+| `gallery`   | plusieurs   | —        | le neutre : « une image du produit ». Tout dépôt y naît   | personne                                   |
+| `lifestyle` | plusieurs   | **16/9** | la mise en situation — table dressée, main, contexte      | personne                                   |
+| `print`     | plusieurs   | **1/1**  | le tirage papier : mercuriale, étiquette, fiche imprimée  | personne                                   |
 
 _(Colonne « qui le lit » vérifiée le 2026-09-23 : `showcase.ts` est l'unique
 lecteur de rôle de tout le dépôt.)_
@@ -113,8 +113,13 @@ goût.
 de `lifestyle` ailleurs ; refuser à l'entrée le jugerait sur un usage qu'il n'a
 pas encore. La bibliothèque accepte, le rôle exige.
 
-_(Ni l'un ni l'autre n'existe : aucune règle de ratio n'est écrite nulle part au
-2026-09-23. Ce paragraphe dit où elle ira, pas ce que le code fait.)_
+_(Ni l'un ni l'autre n'existe : aucune règle de ratio n'est **vérifiée** nulle
+part au 2026-09-23. Ce paragraphe dit où elle ira, pas ce que le code fait.)_
+
+Un seul écran applique déjà le sien : la fiche produit de la boutique pose
+`aspect-ratio: 3 / 2` sur son visuel d'ouverture (`product-sheet.scss`). C'est
+le ratio du `hero` **rendu**, pas exigé — l'image peut arriver dans n'importe
+quelle forme, le cadrage la coupe.
 
 ---
 
@@ -289,6 +294,6 @@ d'erreur arrive loin du geste.
 | Pré-validation côté écran                               | absente — type, poids et dimensions sont connus du navigateur                                                                                                                                                             |
 | Fenêtre de course du ramassage                          | connue, réparable, non signalée                                                                                                                                                                                           |
 | Le plafond de 200 a-t-il déjà mordu en production ?     | le code le journalise (`capped`) ; jamais constaté                                                                                                                                                                        |
-| Les **ratios** des quatre rôles à forme                 | seul `thumbnail` est fixé (4/3) ; `hero`, `lifestyle` et `print` attendent une valeur de Hugo (§2)                                                                                                                        |
+| Les **ratios** sont écrits, rien ne les fait respecter  | aucune règle de forme n'existe côté serveur ni côté écran ; le tableau du §2 est une spécification, pas un garde-fou. Seul l'écran de la boutique applique le 3/2 du `hero`, en CSS                                       |
 | `hero` et `thumbnail` séparés ou confondus              | **fourche ouverte** (§2) — la bascule de `SHOWCASE_ROLE` exige un repli, sinon toutes les fiches redeviennent muettes                                                                                                     |
 | Point focal                                             | stocké en base, et **rien d'autre** — absent des contrats, donc ni saisi ni servi (vérifié le 2026-09-23). §1 le présente comme ce qui dispense de ressaisir les recadrages ; c'est vrai du modèle, pas encore de l'usage |
