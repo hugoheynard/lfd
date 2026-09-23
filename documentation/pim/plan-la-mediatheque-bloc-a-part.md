@@ -1,75 +1,116 @@
 # La médiathèque devient un bloc — plan B
 
-> **Plan**, écrit le 2026-09-23. Chaque affirmation sur l'existant a été
-> vérifiée en ouvrant le fichier, la migration ou la porte citée.
+> **Plan**, écrit le 2026-09-23, **contredit par `vitruve` le même jour** et
+> réécrit contre ses seize objections. Ce que j'ai affirmé sans l'ouvrir est
+> nommé au §8 plutôt qu'effacé.
 >
-> Décision Hugo : « on avait dit que c'était à part et que ça discutait par
-> port, genre /mediatheque, et pim discute par port ».
+> Décisions Hugo, dans l'ordre où elles sont tombées :
 >
-> 🔴 **Il porte une migration de données. `vitruve` est donc dû avant qu'il
-> serve** (`CLAUDE.md` §9 bis). Il n'a pas encore été contredit.
+> - « on avait dit que c'était à part et que ça discutait par port, genre
+>   /mediatheque, et pim discute par port » ;
+> - « plus de visuel par simple URL » ;
+> - « pour les alts il faut tout rapatrier dans médiathèque, le PIM devient
+>   juste un mapper pour les images » ;
+> - « plus d'alt dans le PIM, **un seul point dans la médiathèque** ».
+>
+> 🔴 **Il porte une migration de données.** Il reste deux comptages à faire en
+> production (§6) avant que la première migration soit écrite.
 
-Il fait suite à [`plan-la-mediatheque.md`](plan-la-mediatheque.md), dont les
-lots 1 et 2 sont livrés (`054e9d09b`, `2839b0c65`).
-
----
-
-## 1. Ce que « à part » veut dire, d'après la porte qui le tient
-
-`lint:prisma-model-ownership` ne se contente pas de ranger :
-
-> « Le propriétaire d'un modèle est le bloc qui l'**ÉCRIT**. […] un modèle a UN
-> propriétaire, et lui seul le lit. »
-
-Donc un bloc `media/` qui possède `media_asset` **interdit au référentiel
-d'écrire dedans**. Ce n'est pas une conséquence à absorber plus tard : c'est la
-condition d'entrée.
-
-### Qui écrit la bibliothèque aujourd'hui — les quatre fichiers
-
-| Fichier                                                           | Ce qu'il fait                                                  |
-| ----------------------------------------------------------------- | -------------------------------------------------------------- |
-| `product/infrastructure/prisma-editorial.repository.ts`           | **crée** un actif par visuel, à chaque enregistrement de fiche |
-| `category/infrastructure/prisma-category-editorial.repository.ts` | idem, pour une famille                                         |
-| `product/infrastructure/prisma-media-library.ts`                  | inscrit un dépôt, compte, ramasse les orphelins                |
-| `shared/infrastructure/prisma-media-library-reader.ts`            | lit, groupé par URL (lot 1)                                    |
-
-_(Inventaire fait le 2026-09-23 : ce sont les seuls, hors client Prisma généré.)_
-
-🔴 **Les deux premiers sont le sujet du plan.** Les deux autres déménagent tels
-quels.
+Suite de [`plan-la-mediatheque.md`](plan-la-mediatheque.md), dont les lots 1 et
+2 sont livrés (`054e9d09b`, `2839b0c65`).
 
 ---
 
-## 2. La vraie bascule : le référentiel cesse de fabriquer des actifs
+## 1. Qui touche la bibliothèque — l'inventaire CORRIGÉ
 
-Aujourd'hui, `replaceMedia` détache tout puis **recrée un `MediaAsset` neuf par
-visuel**. C'est ce qui fait qu'une image n'a aucune identité qui traverse deux
-sauvegardes, et c'est pourquoi le lot 1 a dû grouper par URL.
+⚠️ Ma première version disait « quatre fichiers, ce sont les seuls ». **C'était
+faux**, et par une faute de méthode : j'ai cherché le nom du modèle
+(`mediaAsset`). Les lecteurs qui passent par la **relation** —
+`productMedia.findMany({ include: { media: true } })` — n'écrivent jamais ce
+nom, donc aucun grep sur le modèle ne les voit.
 
-Sous B, le rattachement ne crée plus rien : il **désigne** une image de la
-bibliothèque.
+### Ceux qui ÉCRIVENT
 
-|                                             | Avant                                  | Après                          |
-| ------------------------------------------- | -------------------------------------- | ------------------------------ |
-| `product_media` référence                   | `media_asset.id`, recréé à chaque fois | l'**URL**, stable              |
-| Enregistrer une fiche                       | écrit dans la bibliothèque             | n'y touche pas                 |
-| Une image sans dépôt (URL saisie à la main) | crée un actif au passage               | doit être **inscrite** d'abord |
+| Fichier                                                              | Ce qu'il fait                                                  |
+| -------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `product/infrastructure/prisma-editorial.repository.ts:82`           | **crée** un actif par visuel, à chaque enregistrement de fiche |
+| `category/infrastructure/prisma-category-editorial.repository.ts:75` | idem, pour une famille                                         |
+| `product/infrastructure/prisma-media-library.ts`                     | inscrit un dépôt, compte, **supprime** (`forget`)              |
 
-⚠️ **Le troisième cas est le piège du plan.** Le dépôt admet aujourd'hui des
-visuels par simple URL, et c'est le seul chemin par lequel une image entre sans
-passer par `POST /mediatheque`. Sous B il faut choisir, et le choix se dit :
-soit l'URL saisie inscrit une entrée de bibliothèque (une écriture de plus, mais
-le modèle reste un), soit elle est refusée (plus simple, et ferme une porte
-qu'on utilise encore). **Non tranché.**
+### Ceux qui LISENT — dont quatre par la relation
+
+| Fichier                                                          | Ce qu'il lit                                             |
+| ---------------------------------------------------------------- | -------------------------------------------------------- |
+| `shared/infrastructure/prisma-media-library-reader.ts`           | la bibliothèque, groupée par URL (lot 1)                 |
+| `product/infrastructure/prisma-editorial-reader.ts:71`           | `alt`, `name`, dimensions — **par `include`**            |
+| `category/infrastructure/prisma-category-editorial.reader.ts:43` | idem — **par `include`**                                 |
+| `revision/infrastructure/prisma-catalog-revision.source.ts:106`  | `alt`, qui entre dans le **payload figé d'une révision** |
+| `channels/b2b-platform/products/showcase.ts:60`                  | `alt` du `hero`, servi à la vitrine B2B                  |
+
+Plus deux registres tenus **à la main**, hors de tout bloc :
+`platform/database/schema-ops.counter.ts:197` (`MediaAsset: "pim"`) et
+`prisma/schema/datasource.prisma` (la liste des schémas).
+
+🔴 **Les deux dernières lignes de lecture sont le vrai sujet du plan** : `alt`
+ne sert pas qu'à la fiche. Il est **hashé dans une empreinte de révision** et
+**comparé dans le diff de livraison B2B**. Toute bascule sur `alt` produit donc
+un événement de catalogue, pas seulement un changement de texte (§4).
 
 ---
 
-## 3. Ce que le port doit porter
+## 2. La bascule : le référentiel cesse de fabriquer des actifs
 
-`media/` ne peut pas lire `product_media` : ce sont les tables des porteurs, et
-elles restent chez eux. Il déclare donc ce dont il a besoin, et les blocs
-porteurs l'implémentent — motif `production/channels/commerce/`.
+`replaceMedia` détache tout puis **recrée un `MediaAsset` neuf par visuel**
+(`prisma-editorial.repository.ts:59-96`, vérifié). C'est ce qui fait qu'une
+image n'a aucune identité traversant deux sauvegardes — et c'est pourquoi le lot
+1 a dû grouper par URL.
+
+Sous B, le rattachement ne crée plus rien : il **désigne**.
+
+### 🔴 Le visuel par simple URL disparaît
+
+> « plus de visuel par simple URL ».
+
+C'était le seul chemin par lequel une image entrait sans dépôt, donc le seul qui
+obligeait le rattachement à fabriquer un actif. Le fermer **est ce qui rend
+cette section possible** : tant qu'une fiche peut nommer une adresse
+quelconque, le référentiel doit pouvoir inscrire ce qu'il nomme.
+
+Ce qu'on perd : illustrer depuis une banque distante sans copier l'octet. Ce
+qu'on gagne : toute image du catalogue est chez nous, mesurée, adressée par son
+contenu, et ne disparaît pas parce qu'un tiers a rangé son serveur.
+
+⚠️ Les images **déjà** saisies ainsi sont inscrites telles quelles à l'étape ①,
+sans `storageKey`, mesures vides — ce que le modèle appelle déjà « ce qu'on
+n'héberge pas ». C'est d'en saisir de **nouvelles** qui est refusé. **Tranché**,
+et retiré des questions ouvertes.
+
+### 🔴 La clé primaire, et le risque d'échec de migration
+
+`@@id([productId, mediaId])` (`editorial-media.prisma:125`), idem pour les
+familles. Rien n'interdit aujourd'hui d'attacher **la même URL deux fois au même
+produit** — deux actifs distincts, deux rôles. Aucune garde d'unicité d'URL
+n'existe dans `media.ts`, ni dans `set-product-media.ts`, ni dans le magasin du
+front.
+
+Quand `media_id` tombe, la clé devient `(product_id, media_url)` : **collision
+de clé primaire, migration en échec sur la base de production.**
+
+➡️ Deux issues, et le comptage du §6 décide : soit l'identité d'un emploi
+devient `(produit, url, rôle)`, soit on dédoublonne avant ①. **La seconde perd
+un emploi ; la première est la bonne** — un même fichier servant de `hero` ET de
+`thumbnail` est exactement ce que l'inventaire des rôles décrit.
+
+⚠️ `product_media.updatedAt` doit survivre à la refonte de la clé :
+`ProductReadiness` le lit pour dire si une fiche a changé depuis sa signature.
+
+---
+
+## 3. Le port, et les deux sens
+
+`media/` ne peut pas lire `product_media` : ce sont les tables des porteurs.
+Il **déclare**, les blocs porteurs **implémentent** — motif
+`production/channels/commerce/`.
 
 ```ts
 /** Ce qu'un bloc porteur sait des images qu'il affiche. */
@@ -79,85 +120,221 @@ export abstract class MediaCarriers {
 }
 ```
 
-🔴 **Le sens de la dépendance compte.** C'est `media/` qui DÉCLARE et `pim/` qui
-IMPLÉMENTE, jamais l'inverse : un bloc qui publie un port ne doit pas connaître
-ceux qui le branchent, sinon la dépendance revient par l'autre bout. C'est
-`appBootstrap/` qui les relie.
+⚠️ **Il faut un SECOND port, dans l'autre sens**, et je l'avais manqué : le
+rattachement doit vérifier qu'une URL est **inscrite** (§2). C'est `pim → media`
+en lecture, pas seulement en implémentation.
 
-⚠️ Le comptage cesse donc d'être une requête et devient **N ports** — un par
-famille de porteurs. Le lot 1 le fait en une requête groupée ; sous B, la
-médiathèque additionne ce que chaque bloc lui rend. C'est plus de code pour le
-même chiffre, et c'est le prix de la frontière.
+### Ce que les portes exigent, et que le plan taisait
+
+- `lint:context-boundaries` **échoue** sur un dossier de premier niveau inconnu.
+  Il faut donc ajouter `media` à sa carte **et** la ligne correspondante à la
+  matrice du `CLAUDE.md` §3, bornée à une surface (`media/channels/pim/`),
+  comme `b2b→production` l'est à `production/channels/commerce/`.
+- 🔴 `lint:prisma-model-ownership` a un `BLOCKS` **en dur**
+  (`prisma-model-ownership.mjs:63`) : `staff, pim, b2b, production, handover,
+platform`. Un dossier `src/media/` y serait **ignoré** — ni écrivain, ni
+  lecteur. J'avais présenté cette porte comme « la condition d'entrée » du
+  plan : **en l'état, le déménagement la désarme au lieu de l'invoquer.**
+  Ajouter `media` à `BLOCKS` fait partie du lot, et sans ça rien ne tient la
+  frontière qu'on vient de dessiner.
+- Cette même porte lit `prisma.<modèle>.<méthode>` par expression régulière :
+  les lectures par `include: { media: true }` lui sont **invisibles**. La
+  propriété qu'elle garantit ne couvre donc pas le cas principal ici.
+- `lint:journal-tracked` s'applique à `src/pim/**`. Sortir la médiathèque du
+  dossier **sort ses écritures du périmètre de la porte**, en silence. Déposer,
+  taguer et pointer ne laisseraient aucune trace, et personne ne le verrait.
+  **À décider explicitement**, pas à subir.
 
 ---
 
-## 4. 🔴 La règle de suppression descend d'un barreau
+## 4. 🔴 Un seul point pour le texte alternatif
+
+> « plus d'alt dans le PIM, un seul point dans la médiathèque ».
+
+`alt` est **déjà** une colonne de `media_asset`. Ce qui change, c'est ce qu'elle
+affirme — et la décision contredit une justification écrite dans le dépôt, qu'il
+faut citer plutôt que contourner :
+
+> « Une ligne par lien, et non une ligne partagée : le `alt` appartient à la
+> FICHE (c'est ainsi que CE produit décrit l'image), et partager la ligne ferait
+> qu'en corriger un changerait silencieusement l'autre. »
+> — `prisma-editorial.repository.ts`
+
+**Cette phrase ne devient pas fausse : elle devient assumée.** Corriger
+l'alternative d'une image changera ce que toutes les fiches en disent. C'est le
+sens de « un seul point » : une image, une description, corrigée une fois.
+
+⚠️ **J'avais avancé un troisième argument — « le panneau ne saisit l'alternative
+qu'au dépôt, donc la personnalisation par fiche est un mécanisme sans usage ».
+Il est FAUX**, et je l'avais écrit sans ouvrir le fichier : `visuals-form.ts:108`
+appelle `setMediaAltText(index, …)` depuis **l'éditeur de fiche**, indexé par
+emploi, et le même mécanisme existe côté familles. Je le retire au lieu de le
+corriger : la décision tient sur ses deux autres appuis, pas sur celui-là.
+
+### Le critère de fusion — celui que j'avais est inopérant
+
+J'avais écrit « la plus récente **non vide** ». Or `media.ts:90` :
+
+```ts
+alt: localizedText("texte alternatif", input.alt ?? { [SOURCE_LOCALE]: url }),
+```
+
+🔴 **`alt` n'est JAMAIS vide** — sans saisie, on y met l'URL, et
+`prisma-media-library.ts:38` fait pareil au dépôt en le disant. Mon critère se
+réduisait donc à « la plus récente », c'est-à-dire celle du dernier produit
+enregistré. Si celui-là n'avait pas d'alternative écrite, la fusion remplace une
+phrase humaine par `https://cdn/…/a.png`, **sur toutes les fiches**, et les
+lignes sources disparaissent à ③.
+
+➡️ Le critère exploitable est **« la plus récente dont l'alternative diffère de
+l'URL »**. Et il reste imparfait : entre deux phrases humaines divergentes, il
+en jette une. D'où le comptage du §6.
+
+### Ce que la bascule déclenche, et qui n'est pas du texte
+
+- `revision/…/prisma-catalog-revision.source.ts:106` met `alt` dans le payload
+  **hashé** (SHA-256, `editorial-media.prisma:44`) → empreinte neuve à la
+  prochaine révision des fiches touchées ;
+- `b2b/catalog/domain/delivery-diff.ts:184` compare `left.alt === right.alt`
+  → **le diff de livraison annoncera « l'image a changé » à des clients pros**,
+  pour zéro changement éditorial.
+
+**À décider** : migrer `public.catalog_item.image_alt` dans le même passage, ou
+assumer un diff de masse. Ce n'est pas un détail d'implémentation — c'est un
+message qui part vers des clients.
+
+---
+
+## 5. 🔴 La suppression : la base ne refuse plus, et le BALAYEUR ne sait plus
 
 > Hugo : « on ne peut pas supprimer une image qui a été mappée quelque part ».
 
-Elle est aujourd'hui tenue par **Postgres** — `product_media_media_id_fkey` et
-`category_media_media_id_fkey` sont en `ON DELETE RESTRICT`. Sans clé étrangère
-vers un actif, la base ne peut plus rien refuser.
+Tenue aujourd'hui par Postgres — `ON DELETE RESTRICT` sur les deux FK (vérifié
+dans les deux migrations). Sans clé étrangère vers un actif, plus rien ne refuse
+tout seul.
 
-|                            | Aujourd'hui | Sous B                                |
-| -------------------------- | ----------- | ------------------------------------- |
-| Qui refuse                 | Postgres    | le code de `media/`                   |
-| Ce qu'il faut pour refuser | rien        | interroger tous les porteurs, d'abord |
-| Ce qui arrive si on oublie | impossible  | une image qui sert disparaît          |
+⚠️ **Ma première version nommait la règle sans la payer.** Elle promettait « un
+test qui supprime une image portée et attend un refus ». Un test ne couvre pas
+le **ramasseur d'orphelins**, qui a sa propre voie de suppression et son propre
+critère :
 
-**C'est la seule chose que ce déménagement dégrade, et il faut la payer
-explicitement** : un test qui supprime une image portée et attend un refus, écrit
-AVANT la bascule et vert après. Sans lui, la règle n'existe plus qu'en intention.
+```ts
+where: { storageKey: { not: null }, products: { none: {} }, categories: { none: {} } }
+```
 
-⚠️ Mon carnet dit qu'un garde-fou qui n'existe que contre un problème créé par
-ma découpe révèle une mauvaise découpe. Ici, ce n'est pas le cas — la frontière
-est bonne, c'est la **protection** qui doit changer de nature. Mais la phrase
-mérite d'être opposée au plan par qui le relira.
+🔴 Quand `media_id` et sa FK tombent, `products` et `categories` **n'existent
+plus comme relations**. Le balayeur conclurait « orphelin » sur **tout le
+fonds** et supprimerait de R2 des images affichées — automatiquement, sans
+personne devant un écran, et sans que Postgres puisse refuser puisque le
+`RESTRICT` vient de partir.
+
+➡️ Ce que le plan doit porter, et qui manquait :
+
+1. `findOrphanKeys` **et** `isStillOrphan` passent par `MediaCarriers` ;
+2. le balayeur **s'abstient** quand un porteur ne répond pas — sinon une panne
+   du port devient une suppression de masse ;
+3. la suppression manuelle compte les emplois d'abord, et refuse en entier.
+
+⚠️ `forget()` supprime par `storageKey`, donc plusieurs lignes à la fois : même
+aujourd'hui, le « impossible » du `RESTRICT` est en réalité un « refusé après
+coup ».
 
 ---
 
-## 5. Les trois déploiements
+## 6. Les deux comptages qui décident, et qu'on n'a pas
+
+Ils se lisent en **production**, et c'est Hugo qui les lance.
+
+```sql
+-- Combien d'images portent des alternatives HUMAINES divergentes.
+-- Le `IS DISTINCT FROM a.url` écarte le repli automatique : sans lui, le
+-- chiffre compte des URL et ne veut rien dire.
+SELECT count(*) AS urls_divergentes FROM (
+  SELECT a.url FROM pim.media_asset a
+  WHERE a.alt->>'fr' IS DISTINCT FROM a.url
+  GROUP BY a.url HAVING count(DISTINCT a.alt->>'fr') > 1
+) t;
+```
+
+```sql
+-- Une même URL attachée DEUX FOIS au même produit (§2). Si > 0, la clé
+-- primaire `(product_id, media_url)` échoue à la migration.
+SELECT count(*) AS emplois_en_double FROM (
+  SELECT pm.product_id, a.url FROM pim.product_media pm
+  JOIN pim.media_asset a ON a.id = pm.media_id
+  GROUP BY pm.product_id, a.url HAVING count(*) > 1
+) t;
+```
+
+➡️ **Aucune migration ne s'écrit avant ces deux nombres.** Le premier dit ce que
+« un seul point » coûte en écrit humain ; le second dit si l'objection de la clé
+primaire est une hypothèse ou un échec garanti.
+
+---
+
+## 7. Les trois déploiements
 
 Additif, réversible, jamais une colonne supprimée dans le même passage
 (`CLAUDE.md` §0).
 
-### ① Étendre
+### ① Étendre — réversible
 
-- Schéma `media`, table `media.asset`, avec les colonnes d'aujourd'hui.
-- `product_media` et `category_media` gagnent une colonne `media_url`,
-  **nullable**, remplie en double écriture à chaque enregistrement.
-- Recopie de `pim.media_asset` vers `media.asset`, **dédoublonnée par URL** —
-  c'est le moment où le journal de lignes redevient une bibliothèque.
+- Schéma `media`, sa table, et son entrée dans `datasource.prisma`.
+- `product_media` et `category_media` gagnent `media_url`, **nullable**, en
+  double écriture.
+- Recopie **dédoublonnée par URL**, alternative choisie par le critère du §4.
 - Rien ne lit encore la nouvelle table.
 
-### ② Basculer
+### ② Basculer — encore réversible
 
-- Le bloc `media/` naît, avec son module, sa route `/mediatheque` sans préfixe
-  `pim`, son port `MediaCarriers`, et l'implémentation côté `pim/`.
-- Les lectures passent sur `media_url` ; `replaceMedia` cesse de créer des
-  actifs.
-- L'ancienne route et l'ancienne colonne vivent encore.
+- Le bloc `media/` naît : module, route `/mediatheque` sans préfixe `pim`, les
+  deux ports, et `media` ajouté à `BLOCKS`, à `context-boundaries` et à la
+  matrice du `CLAUDE.md`.
+- Les lectures passent sur `media_url` ; `replaceMedia` cesse d'écrire.
+- Le balayeur passe par `MediaCarriers` **avant** que la FK tombe.
+- L'ancienne colonne et l'ancienne route vivent encore.
 
-### ③ Resserrer
+### ③ Resserrer — IRRÉVERSIBLE
 
-- `media_url` devient obligatoire, `media_id` et sa clé étrangère tombent.
-- `pim.media_asset` est supprimée — **après un comptage**, et par un geste
-  proposé, jamais exécuté d'autorité.
+- `media_url` obligatoire, `media_id` et sa FK tombent, la clé primaire change.
+- `pim.media_asset` supprimée — **après comptage**, geste proposé, jamais
+  exécuté d'autorité.
+
+🔴 **③ détruit la seule copie des alternatives par emploi.** Le choix du §4 ne
+se rattrape gratuitement qu'entre ① et ③. **Ce plan fixe donc un point de
+contrôle : ③ n'a pas lieu avant qu'on ait regardé, dans la médiathèque, les
+images du comptage.** Une durée n'aurait rien voulu dire ; un regard, si.
 
 ---
 
-## 6. Ce que le plan ne tranche pas
+## 8. Ce que la contradiction a retourné
 
-| Sujet                               | Pourquoi c'est ouvert                                                                                                                                                                                                                           |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Les visuels saisis **par URL** (§2) | les inscrire, ou les refuser. Le second est plus propre et ferme une porte qu'on utilise                                                                                                                                                        |
-| Le **texte alternatif**             | il est sur le lien, et c'est juste (« c'est ainsi que CE produit décrit l'image »). Il ne déménage pas — mais il vit sur `media_asset`, donc il doit descendre sur `product_media` au passage. **C'est une seconde migration dans la première** |
-| Le **journal**                      | une propriété de bibliothèque n'a pas de sujet à nommer. Déposer, taguer, pointer ne laisseront aucune trace                                                                                                                                    |
-| Qui possède le bloc `media/`        | il n'a pas de ressource de permission à lui : l'écran est gardé par `pim_catalog:read`, ce qui redeviendra faux le jour où la vitrine y entrera                                                                                                 |
+Pour que ça ne se reperde pas — et parce que trois de ces objections portent sur
+des phrases que j'ai écrites **sans ouvrir le fichier**, ce que l'en-tête de la
+première version prétendait pourtant avoir fait. `vitruve` l'a relevé :
+« cette phrase est plus coûteuse que son absence ».
 
-🔴 **La ligne « texte alternatif » est celle que je n'avais pas vue avant
-d'ouvrir le schéma.** `alt` est une colonne de `media_asset`, alors que le
-repository affirme qu'il appartient à la fiche — et c'est la recréation par
-enregistrement qui rendait les deux compatibles : chaque fiche avait _sa_ ligne
-d'actif. Supprimer la recréation casse cet accord silencieux. **Aucune bascule
-n'est possible sans déplacer `alt` en même temps.**
+| Ce que j'affirmais                                    | Ce qui est vrai                                                             |
+| ----------------------------------------------------- | --------------------------------------------------------------------------- |
+| « quatre fichiers touchent la bibliothèque »          | huit, dont quatre lisent par `include` — invisibles à un grep sur le modèle |
+| « la plus récente **non vide** »                      | `alt` n'est jamais vide : sans saisie, c'est l'URL                          |
+| « le panneau ne saisit l'alternative qu'au dépôt »    | il est dans l'éditeur de fiche, indexé par emploi                           |
+| « la porte de propriété interdit au PIM d'écrire »    | son `BLOCKS` est en dur ; un bloc `media/` y serait **ignoré**              |
+| « les deux autres adaptateurs déménagent tels quels » | le balayeur repose sur les relations que ③ supprime                         |
+| « §4 paie la règle de suppression »                   | il la nommait ; le balayeur a sa propre voie                                |
+
+**La racine est une seule** : j'ai compté en partant du code que je connaissais,
+pas de la ressource. Un `include: { media: true }` ne contient pas le mot que je
+cherchais.
+
+---
+
+## 9. Ce qui reste ouvert
+
+| Sujet                            | Pourquoi                                                                                                                                 |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Le **journal** de la médiathèque | sortir de `src/pim/` sort ses écritures de `lint:journal-tracked`. À décider, pas à subir (§3)                                           |
+| `image_alt` **côté B2B**         | migrer dans le même passage, ou assumer un diff de livraison de masse (§4)                                                               |
+| Le droit d'accès                 | le bloc n'a pas de ressource à lui ; l'écran est gardé par `pim_catalog:read`, ce qui redeviendra faux quand la vitrine entrera          |
+| Le nom du modèle Prisma          | `media.asset` donnerait `Asset`, qui cohabiterait avec `MediaAsset` pendant tout ②                                                       |
+| `countUrls()` sans plafond       | un `groupBy` qui ramène une ligne par URL pour n'en compter que le nombre. Tenable en milliers, pas au-delà — la bascule ne le règle pas |
