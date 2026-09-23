@@ -64,7 +64,51 @@ describe("showcaseOf", () => {
         width: 800,
         height: 800,
       },
+      // La fiche ne désigne pas de vignette : le récepteur retombera sur le
+      // packshot. On n'en fabrique PAS une ici — l'émetteur dit ce que la
+      // fiche porte, pas ce que le récepteur montrera.
+      thumbnail: null,
     });
+  });
+
+  /**
+   * 🔴 Régression du 2026-09-23, et elle était invisible depuis l'écran
+   * d'administration : `thumbnail` ne traversait pas. Le référentiel proposait
+   * un rôle « vignette de rayon (4/3) », on pouvait le choisir, et rien ne se
+   * passait — même après un push.
+   */
+  it("emporte la VIGNETTE de rayon, distincte du packshot", () => {
+    const shown = showcaseOf(
+      [product("prd_1")],
+      new Map([["prd_1", editorial()]]),
+      new Map([
+        [
+          "prd_1",
+          [
+            media({ role: "hero", url: "https://media.example/ouverture.jpg" }),
+            media({ role: "thumbnail", url: "https://media.example/vignette.jpg" }),
+          ],
+        ],
+      ]),
+    );
+
+    expect(shown.get("prd_1")?.image?.url).toBe("https://media.example/ouverture.jpg");
+    expect(shown.get("prd_1")?.thumbnail?.url).toBe("https://media.example/vignette.jpg");
+  });
+
+  it("ne DÉDUIT aucune vignette d'un packshot", () => {
+    // L'émetteur dit ce que la fiche PORTE ; c'est au récepteur de décider ce
+    // qu'il montre quand un rôle manque. Replier ici ferait voyager deux fois
+    // la même image sous deux noms, et le récepteur ne pourrait plus
+    // distinguer « vignette choisie » de « vignette déduite ».
+    const shown = showcaseOf(
+      [product("prd_1")],
+      new Map([["prd_1", editorial()]]),
+      new Map([["prd_1", [media({ role: "hero" })]]]),
+    );
+
+    expect(shown.get("prd_1")?.image).not.toBeNull();
+    expect(shown.get("prd_1")?.thumbnail).toBeNull();
   });
 
   /**
@@ -111,7 +155,7 @@ describe("showcaseOf", () => {
   it("rend `null` — pas la chaîne vide — quand aucun éditorial n'existe", () => {
     const shown = showcaseOf([product("prd_1")], new Map(), new Map());
 
-    expect(shown.get("prd_1")).toEqual({ note: null, image: null });
+    expect(shown.get("prd_1")).toEqual({ note: null, image: null, thumbnail: null });
   });
 
   it("rend `null` quand l'éditorial existe sans ligne courte", () => {

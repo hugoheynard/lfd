@@ -30,6 +30,7 @@ function item(over: Partial<ShopItemView> & Pick<ShopItemView, 'sku' | 'name'>):
   return {
     note: null,
     image: null,
+    thumbnail: null,
     unitPriceMillicents: 140_000,
     unitPriceTtcCents: 148,
     vatRatePercent: 5.5,

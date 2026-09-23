@@ -141,6 +141,18 @@ export interface PimFacts {
   readonly note: string | null;
   /** Le packshot, ou `null` — cf. {@link PimImage}. */
   readonly image: PimImage | null;
+  /**
+   * La **vignette de rayon**, ou `null` — cf. {@link PimImage}.
+   *
+   * Distincte du packshot, et pas un doublon : l'une est cadrée serré pour
+   * être lisible à 200 px dans une grille, l'autre présente la pièce en
+   * ouverture de fiche. 4/3 contre 3/2.
+   *
+   * ⚠️ `null` est le cas COURANT tant qu'un push v10 n'a pas tourné : la
+   * vignette ne traversait pas le fil avant, donc la choisir à l'écran ne
+   * produisait aucun effet. La vitrine retombe alors sur le packshot.
+   */
+  readonly thumbnail: PimImage | null;
   readonly receivedAt: Date;
 }
 
@@ -330,6 +342,10 @@ export class CatalogItem {
 
   get image(): PimImage | null {
     return this.facts.image;
+  }
+
+  get thumbnail(): PimImage | null {
+    return this.facts.thumbnail;
   }
 
   get vatRatePercent(): number | null {

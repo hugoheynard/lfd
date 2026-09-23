@@ -77,6 +77,23 @@ export interface DeliveredItem {
     readonly width: number | null;
     readonly height: number | null;
   } | null;
+  /**
+   * La **vignette de rayon**, comparée pour exactement la même raison que le
+   * packshot : c'est ce qu'un client voit d'abord, en rayon, avant même
+   * d'ouvrir la fiche.
+   *
+   * 🔴 L'ajouter au fil SANS l'ajouter ici l'aurait fait passer en vente sans
+   * relecture, pendant que l'écran de réception aurait continué d'affirmer que
+   * rien ne passe sans être relu. Un diff qui ignore un champ ne dit pas
+   * « rien n'a bougé » : il ne dit rien du tout, et c'est pire parce qu'on le
+   * lit comme le premier.
+   */
+  readonly thumbnail: {
+    readonly url: string;
+    readonly alt: string;
+    readonly width: number | null;
+    readonly height: number | null;
+  } | null;
 }
 
 /** Ce qu'une arrivée fait à un SKU. */
@@ -93,6 +110,7 @@ export type ChangedField =
   | "orderLimit"
   | "note"
   | "image"
+  | "thumbnail"
   /**
    * **L'étiquette a bougé** — ce qu'un particulier paie, taxe comprise.
    *
@@ -175,7 +193,10 @@ function sameLimit(
  * des dimensions corrigées changent la place que la grille réserve. Trois faits
  * distincts, trois raisons de relire.
  */
-function sameImage(left: DeliveredItem["image"], right: DeliveredItem["image"]): boolean {
+function sameImage(
+  left: DeliveredItem["image"] | DeliveredItem["thumbnail"],
+  right: DeliveredItem["image"] | DeliveredItem["thumbnail"],
+): boolean {
   if (left === null || right === null) {
     return left === right;
   }
@@ -225,6 +246,13 @@ function changedFields(incoming: DeliveredItem, mirror: DeliveredItem): readonly
   }
   if (!sameImage(incoming.image, mirror.image)) {
     fields.push("image");
+  }
+  // La MÊME comparaison, sur un champ distinct : une vignette et un packshot
+  // n'ont ni le même cadrage ni le même ratio, et changer l'un ne dit rien de
+  // l'autre. Les replier sur une seule ligne de relecture ferait croire qu'on a
+  // vu passer la photo de fiche alors qu'on a vu passer la vignette.
+  if (!sameImage(incoming.thumbnail, mirror.thumbnail)) {
+    fields.push("thumbnail");
   }
   return fields;
 }

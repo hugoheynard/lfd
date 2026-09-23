@@ -123,6 +123,11 @@ describe("la vitrine publique", () => {
       "note",
       "shelfId",
       "sku",
+      // La VIGNETTE DE RAYON (v10, 2026-09-23). Ajoutée délibérément et non par
+      // mégarde : c'est ce qu'un visiteur voit d'abord, en rayon, et elle ne
+      // porte rien de plus qu'une URL publique — le même degré d'exposition que
+      // `image`, qui la précède depuis toujours.
+      "thumbnail",
       "unitPriceMillicents",
       // ⚠️ **Un élargissement ASSUMÉ** (2026-09-21, D13) : le rayon public
       // affiche le TTC, et le calculer au front l'aurait fait diverger du

@@ -76,6 +76,8 @@ export interface Showcase {
   /** `null` = aucun éditorial saisi. La chaîne vide serait une ligne effacée. */
   readonly note: string | null;
   readonly image: SyncMedia | null;
+  /** La vignette de rayon — `null` si la fiche n'en désigne pas. */
+  readonly thumbnail: SyncMedia | null;
 }
 
 export interface Projection {
@@ -372,6 +374,7 @@ export function projectCatalog(
       variants: sellable,
       note: shown?.note ?? null,
       image: shown?.image ?? null,
+      thumbnail: shown?.thumbnail ?? null,
     });
   }
 

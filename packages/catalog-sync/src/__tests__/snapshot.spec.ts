@@ -59,6 +59,7 @@ const snapshot = {
       variants: [variant],
       // Traversent depuis la v8 : une vitrine montre une ligne et une pièce.
       note: "Tourage patient, beurre qui ne triche pas",
+      thumbnail: null,
       image: {
         url: "https://media.example/croissant.jpg",
         alt: "Un croissant",
@@ -253,7 +254,7 @@ describe("l'éditorial et le visuel, depuis la v8", () => {
   it("accepte une fiche sans ligne ni visuel — le référentiel n'en impose aucun", () => {
     const bare = {
       ...snapshot,
-      products: [{ ...snapshot.products[0], note: null, image: null }],
+      products: [{ ...snapshot.products[0], note: null, image: null, thumbnail: null }],
     };
 
     expect(catalogSnapshotSchema.safeParse(bare).success).toBe(true);
@@ -390,5 +391,61 @@ describe("storedCatalogSnapshotSchema — relire ce qu'on a stocké", () => {
    */
   it("refuse quand même une version inconnue", () => {
     expect(storedCatalogSnapshotSchema.safeParse({ ...snapshot, version: 99 }).success).toBe(false);
+  });
+});
+
+describe("la vignette de rayon, depuis la v10", () => {
+  /**
+   * 🔴 Le rôle `thumbnail` existait au référentiel et ne traversait PAS. On
+   * pouvait choisir « vignette de rayon (4/3) » à l'écran et rien ne se
+   * passait, même après un push — un geste sans effet.
+   */
+  it("accepte une fiche qui en porte une, distincte du packshot", () => {
+    const withThumb = {
+      ...snapshot,
+      version: 10 as const,
+      products: [
+        {
+          ...snapshot.products[0],
+          thumbnail: { url: "https://media.example/v.jpg", alt: "Serré", width: 720, height: 540 },
+        },
+      ],
+    };
+
+    expect(catalogSnapshotSchema.safeParse(withThumb).success).toBe(true);
+  });
+
+  /**
+   * 🔴 Le schéma du fil reste STRICT : un émetteur qui oublie le champ doit
+   * échouer à l'émission, pas produire une arrivée dégradée.
+   */
+  it("REFUSE une émission qui l'oublie", () => {
+    const first = snapshot.products[0];
+    const without: Record<string, unknown> = { ...first };
+    delete without["thumbnail"];
+
+    expect(catalogSnapshotSchema.safeParse({ ...snapshot, products: [without] }).success).toBe(
+      false,
+    );
+  });
+
+  /**
+   * 🔴 Et le schéma STOCKÉ l'accepte absente — c'est lui qui relit les
+   * livraisons en attente. Le rendre strict ferait DISPARAÎTRE de l'écran de
+   * revue toute livraison mise en file avant la v10, sans rien casser
+   * visiblement au déploiement.
+   */
+  it("relit une livraison d'AVANT la v10, mise en file et pas encore validée", () => {
+    const first = snapshot.products[0];
+    const older: Record<string, unknown> = { ...first };
+    delete older["thumbnail"];
+
+    const parsed = storedCatalogSnapshotSchema.safeParse({
+      ...snapshot,
+      version: 9,
+      products: [older],
+    });
+
+    expect(parsed.success).toBe(true);
   });
 });

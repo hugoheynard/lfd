@@ -52,6 +52,20 @@ export interface ShopItemView {
   readonly note: string | null;
   readonly image: ShopImageView | null;
   /**
+   * La **vignette de rayon** — cadrée serré pour être lisible à 200 px dans la
+   * grille, là où {@link image} présente la pièce en ouverture de fiche.
+   *
+   * 🔴 Elle existe depuis le 2026-09-23, et son absence était un trou visible
+   * depuis l'écran d'administration : le référentiel proposait un rôle
+   * « vignette de rayon (4/3) », on pouvait le choisir, et **rien ne le
+   * transportait**. Le choisir ne produisait aucun effet, même après un push.
+   *
+   * ⚠️ `null` = la fiche n'en désigne pas, et la vitrine retombe sur
+   * {@link image}. C'est ce qu'elle a toujours fait, et ce qu'elle continue de
+   * faire tant qu'un push v10 n'a pas tourné.
+   */
+  readonly thumbnail: ShopImageView | null;
+  /**
    * Le prix unitaire **HT en millicentimes**, entier — celui qui sera facturé à
    * un visiteur sans mercuriale.
    *

@@ -53,13 +53,30 @@ export interface ResolvedCatalogItem {
    */
   readonly allergens: OrderLineAllergens | null;
   /**
-   * **Ce que la vitrine montre** : la ligne sous le nom, et le packshot.
+   * **Ce que la vitrine montre** : la ligne sous le nom, le packshot, et la
+   * vignette de rayon.
    *
    * Reçus du référentiel et rendus tels quels. `null` = rien n'a été saisi
    * là-bas — jamais une chaîne vide, qui dirait « effacé ».
    */
   readonly note: string | null;
   readonly image: {
+    readonly url: string;
+    readonly alt: string;
+    readonly width: number | null;
+    readonly height: number | null;
+  } | null;
+  /**
+   * La **vignette de rayon** — distincte du packshot, et pas un doublon :
+   * l'une est cadrée serré pour être lisible à 200 px dans une grille, l'autre
+   * présente la pièce en ouverture de fiche. 4/3 contre 3/2.
+   *
+   * ⚠️ `null` = la fiche n'en désigne pas, et le récepteur retombe sur
+   * {@link image}. C'est ce que la vitrine faisait pour TOUT avant le fil
+   * v10 : le rôle `thumbnail` ne traversait pas, donc le choisir à l'écran ne
+   * produisait aucun effet.
+   */
+  readonly thumbnail: {
     readonly url: string;
     readonly alt: string;
     readonly width: number | null;

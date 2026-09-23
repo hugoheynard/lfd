@@ -6,7 +6,7 @@ import { ClientCopyService, fill } from '../../../client/copy/client-copy.servic
 import type { ShopItemView } from '@lfd/contracts';
 import { unitPriceCents } from '@lfd/money';
 
-import { artOf } from '../shelf-display';
+import { tileArtOf } from '../shelf-display';
 import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
 import { ShopPriceBasis } from '../shop-price-basis.service';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
@@ -97,7 +97,11 @@ export class ProductTile {
   });
 
   /** Le visuel du référentiel, ou l'illustration de son rayon. */
-  protected readonly art = computed(() => artOf(this.product()));
+  /**
+   * En rayon, c'est la VIGNETTE qui prime — puis l'ouverture, puis
+   * l'illustration du rayon. Voir `tileArtOf` pour le sens du repli.
+   */
+  protected readonly art = computed(() => tileArtOf(this.product()));
 
   /**
    * L'image **à la taille de la tuile**, et non le master.

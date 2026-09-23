@@ -37,6 +37,7 @@ const item = (sku: string, over: Partial<DeliveredItem> = {}): DeliveredItem => 
   orderTimeLimit: null,
   note: null,
   image: null,
+  thumbnail: null,
   ...over,
 });
 
@@ -249,6 +250,52 @@ describe("le diff d'une arrivée › la vitrine", () => {
     expect(diffDelivery([after], [before])).toEqual([
       { sku: "VIE-001", kind: "changed", fields: ["image"] },
     ]);
+  });
+
+  /**
+   * 🔴 Régression du 2026-09-23. La vignette de rayon est entrée sur le fil
+   * en v10 ; l'ajouter SANS l'ajouter à cette comparaison l'aurait fait passer
+   * en vente **sans relecture**, pendant que l'écran de réception aurait
+   * continué d'affirmer que rien ne passe sans être relu.
+   *
+   * Un diff qui ignore un champ ne dit pas « rien n'a bougé » : il ne dit rien
+   * du tout, et c'est pire parce qu'on le lit comme le premier.
+   */
+  it("voit une VIGNETTE qui change, et la nomme à part du packshot", () => {
+    const before = item("VIE-001", { image: shot(), thumbnail: shot() });
+    const after = item("VIE-001", {
+      image: shot(),
+      thumbnail: shot({ url: "https://m.example/vignette.jpg" }),
+    });
+
+    expect(diffDelivery([after], [before])).toEqual([
+      { sku: "VIE-001", kind: "changed", fields: ["thumbnail"] },
+    ]);
+  });
+
+  it("nomme les DEUX quand les deux changent", () => {
+    // Les replier sur une seule ligne ferait croire qu'on a vu passer la photo
+    // de fiche alors qu'on a vu passer la vignette — deux cadrages, deux
+    // ratios, deux raisons de relire.
+    const before = item("VIE-001", { image: shot(), thumbnail: shot() });
+    const after = item("VIE-001", {
+      image: shot({ url: "https://m.example/a.jpg" }),
+      thumbnail: shot({ url: "https://m.example/b.jpg" }),
+    });
+
+    expect(diffDelivery([after], [before])).toEqual([
+      { sku: "VIE-001", kind: "changed", fields: ["image", "thumbnail"] },
+    ]);
+  });
+
+  it("ne signale RIEN quand une arrivée d'avant la v10 croise un miroir sans vignette", () => {
+    // Les deux côtés lisent la même absence (`?? null` à la construction).
+    // Sans ça, le premier push v10 signalerait un changement sur TOUT le
+    // catalogue, et la relecture deviendrait illisible le jour où elle compte.
+    const before = item("VIE-001", { image: shot() });
+    const after = item("VIE-001", { image: shot() });
+
+    expect(diffDelivery([after], [before])).toEqual([]);
   });
 
   /**

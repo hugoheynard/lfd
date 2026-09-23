@@ -73,6 +73,7 @@ class StubFeed extends B2bCatalogFeedPreview {
         ],
         note: null,
         image: null,
+        thumbnail: null,
       })),
       orderTimeLimits: [],
     };

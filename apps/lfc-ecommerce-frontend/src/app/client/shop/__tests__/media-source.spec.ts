@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import type { ShopItemView } from '@lfd/contracts';
+
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS, TILE_WIDTHS } from '../media-source';
+import { artOf, tileArtOf } from '../shelf-display';
 
 const PHOTO = 'https://media.lafoliecoffee.info/products/abc123.jpg';
 
@@ -91,5 +94,63 @@ describe('mediaSrcset', () => {
     // la règle, et c'est elle qu'on enfreignait de 26 fois.
     expect(TILE_WIDTHS[1]).toBe(TILE_WIDTHS[0] * 2);
     expect(SHEET_WIDTHS[1]).toBe(SHEET_WIDTHS[0] * 2);
+  });
+});
+
+/** Un article de vitrine, réduit à ce que le choix du visuel regarde. */
+function piece(over: Partial<ShopItemView> = {}): ShopItemView {
+  return {
+    sku: 'VIE-001',
+    name: 'Croissant',
+    note: null,
+    image: null,
+    thumbnail: null,
+    unitPriceMillicents: 140_000,
+    unitPriceTtcCents: 148,
+    vatRatePercent: 5.5,
+    shelfId: 'cat_vien',
+    isFeatured: false,
+    ...over,
+  };
+}
+
+const HERO = {
+  url: 'https://m.test/hero.jpg',
+  alt: 'Croissant de face',
+  width: 1800,
+  height: 1200,
+};
+const VIGNETTE = { url: 'https://m.test/vig.jpg', alt: 'Croissant serré', width: 720, height: 540 };
+
+describe('le visuel EN RAYON', () => {
+  /**
+   * 🔴 Régression attendue du 2026-09-23, et elle était invisible depuis
+   * l'écran d'administration : le référentiel proposait un rôle « vignette de
+   * rayon (4/3) », on pouvait le choisir, et RIEN ne le transportait. Le fil
+   * ne portait qu'une image par produit — le `hero` — et la boutique lisait ce
+   * même champ pour la tuile ET pour l'ouverture.
+   *
+   * Un écran qui offre un geste sans effet apprend à se méfier de lui.
+   */
+  it('préfère la VIGNETTE quand la fiche en désigne une', () => {
+    expect(tileArtOf(piece({ image: HERO, thumbnail: VIGNETTE })).url).toBe(VIGNETTE.url);
+  });
+
+  it("retombe sur l'ouverture quand aucune vignette n'est désignée", () => {
+    // Le comportement d'hier, et celui de toutes les fiches tant qu'un push
+    // v10 n'a pas tourné. Une ouverture recadrée vaut mieux qu'un vide.
+    expect(tileArtOf(piece({ image: HERO })).url).toBe(HERO.url);
+  });
+
+  it("retombe sur l'illustration du rayon quand la fiche n'a aucune photo", () => {
+    expect(tileArtOf(piece()).url).toContain('croissant.svg');
+  });
+
+  it('ne remonte JAMAIS la vignette en ouverture de fiche', () => {
+    // Le repli va de la vignette VERS l'ouverture, jamais l'inverse : une
+    // vignette cadrée serré étirée en 3/2 montrerait un gros plan là où on
+    // attend la pièce entière.
+    expect(artOf(piece({ thumbnail: VIGNETTE })).url).toContain('croissant.svg');
+    expect(artOf(piece({ image: HERO, thumbnail: VIGNETTE })).url).toBe(HERO.url);
   });
 });

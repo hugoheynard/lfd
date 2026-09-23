@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 9;
+export const CATALOG_SNAPSHOT_VERSION = 10;
 
 /**
  * Une famille de produits, **à plat**.
@@ -365,8 +365,28 @@ export const syncProductSchema = z.object({
    * lequel des deux vient d'arriver.
    */
   note: z.string().nullable(),
-  /** Le visuel principal, ou `null` si la fiche n'en porte pas. */
+  /** Le visuel principal — le `hero` du référentiel, ou `null`. */
   image: syncMediaSchema.nullable(),
+  /**
+   * La **vignette de rayon** — le `thumbnail` du référentiel, ou `null`.
+   *
+   * 🔴 Absente jusqu'à la v10, et c'était un trou visible depuis l'écran : le
+   * référentiel proposait cinq usages, on pouvait en choisir un nommé
+   * « vignette de rayon (4/3) »… et rien ne le transportait. Mettre une image
+   * en vignette ne produisait AUCUN effet, même après un push. Un écran qui
+   * offre un geste sans effet apprend à se méfier de lui.
+   *
+   * ⚠️ **Deux champs plutôt qu'une carte de rôles.** Le fil ne porte que ce
+   * qu'un récepteur affiche : une boutique montre une pièce par référence dans
+   * un rayon, et une ouverture dans la fiche. `lifestyle` et `print` restent
+   * chez l'émetteur tant qu'aucun écran ne les demande — les faire voyager
+   * donnerait au récepteur des champs à tenir à jour sans lecteur.
+   *
+   * ⚠️ `null` = la fiche n'en porte pas. Le récepteur retombe alors sur
+   * {@link image} : une ouverture recadrée vaut mieux qu'un vide, et c'est
+   * exactement ce que la boutique faisait avant la v10.
+   */
+  thumbnail: syncMediaSchema.nullable(),
 });
 export type SyncProduct = z.infer<typeof syncProductSchema>;
 
@@ -419,7 +439,14 @@ export type CatalogSnapshot = z.infer<typeof catalogSnapshotSchema>;
  * échouer à l'émission, pas produire une arrivée dégradée.
  */
 export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
-  version: z.union([z.literal(5), z.literal(6), z.literal(7), z.literal(8), z.literal(9)]),
+  version: z.union([
+    z.literal(5),
+    z.literal(6),
+    z.literal(7),
+    z.literal(8),
+    z.literal(9),
+    z.literal(10),
+  ]),
   products: z.array(
     syncProductSchema.extend({
       // Absents avant la v8 : l'éditorial et le visuel ne traversaient pas. Une
@@ -427,6 +454,11 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
       // visuel » — ce qui est exact : elle n'en portait pas.
       note: z.string().nullable().optional(),
       image: syncMediaSchema.nullable().optional(),
+      // Absente avant la v10 : la vignette de rayon ne traversait pas, et une
+      // arrivée d'avant la bascule se lit donc « pas de vignette » — ce qui
+      // est exact, elle n'en portait pas. Le récepteur retombe sur `image`,
+      // c'est-à-dire sur le comportement d'hier.
+      thumbnail: syncMediaSchema.nullable().optional(),
       variants: z
         .array(
           syncVariantSchema.extend({

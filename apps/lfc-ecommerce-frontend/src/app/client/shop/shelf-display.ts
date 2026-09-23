@@ -57,8 +57,8 @@ export function shelfArtOf(shelfId: string): string {
 }
 
 /**
- * Le visuel d'un article : celui du référentiel, sinon l'illustration de son
- * rayon.
+ * Le visuel d'un article **en ouverture de fiche** : celui du référentiel,
+ * sinon l'illustration de son rayon.
  *
  * Le repli est nommé et non silencieux : une vitrine sans photo doit montrer
  * une pièce dessinée plutôt qu'un cadre vide, et l'alternative doit dire ce
@@ -66,4 +66,23 @@ export function shelfArtOf(shelfId: string): string {
  */
 export function artOf(item: ShopItemView): ShopImageView {
   return item.image ?? { url: shelfArtOf(item.shelfId), alt: item.name, width: null, height: null };
+}
+
+/**
+ * Le visuel d'un article **en rayon** : sa vignette, sinon son ouverture,
+ * sinon l'illustration de son rayon.
+ *
+ * 🔴 Le repli en cascade est le point. Avant le 2026-09-23, la vignette ne
+ * traversait pas le fil : le rôle existait à l'écran d'administration, on
+ * pouvait le choisir, et **rien ne se passait**. Depuis, une fiche qui en
+ * désigne une la voit en rayon ; une fiche qui n'en désigne pas garde
+ * exactement le comportement d'hier.
+ *
+ * ⚠️ Le repli va de la vignette VERS l'ouverture, jamais l'inverse. Une
+ * ouverture 3/2 recadrée en 4/3 perd ses bords, ce qui est acceptable ; une
+ * vignette cadrée serré étirée en ouverture montrerait un gros plan là où on
+ * attend la pièce entière.
+ */
+export function tileArtOf(item: ShopItemView): ShopImageView {
+  return item.thumbnail ?? artOf(item);
 }

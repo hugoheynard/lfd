@@ -32,6 +32,7 @@ function toItem(item: ResolvedCatalogItem): ShopItemView {
     name: item.name,
     note: item.note,
     image: item.image,
+    thumbnail: item.thumbnail,
     // Le prix EFFECTIF — celui du B2B s'il a été décidé, celui du référentiel
     // sinon. C'est ce qu'un visiteur paiera, et c'est ce que la caisse
     // appliquera : les deux viennent de la même composition, faite une fois

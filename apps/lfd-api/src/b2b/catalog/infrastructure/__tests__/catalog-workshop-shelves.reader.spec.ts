@@ -22,6 +22,7 @@ function item(productSku: string, categoryId: string): ResolvedCatalogItem {
     orderTimeLimit: null,
     note: null,
     image: null,
+    thumbnail: null,
   };
 }
 

@@ -29,6 +29,10 @@ interface ItemRow {
   readonly allergenLabels: unknown;
   readonly note: string | null;
   readonly imageUrl: string | null;
+  readonly thumbnailUrl: string | null;
+  readonly thumbnailAlt: string | null;
+  readonly thumbnailWidth: number | null;
+  readonly thumbnailHeight: number | null;
   readonly imageAlt: string | null;
   readonly imageWidth: number | null;
   readonly imageHeight: number | null;
@@ -248,6 +252,22 @@ function imageOf(row: ItemRow) {
   };
 }
 
+/**
+ * La vignette de rayon, ou `null`. Même mécanique et même raison que le
+ * packshot : l'URL commande.
+ */
+function thumbnailOf(row: ItemRow) {
+  if (row.thumbnailUrl === null) {
+    return null;
+  }
+  return {
+    url: row.thumbnailUrl,
+    alt: row.thumbnailAlt ?? "",
+    width: row.thumbnailWidth,
+    height: row.thumbnailHeight,
+  };
+}
+
 /** Ligne ↔ agrégat. La décision absente devient « rien décidé », pas `undefined`. */
 function toDomain(row: ItemRow): CatalogItem {
   return CatalogItem.reconstitute({
@@ -271,6 +291,7 @@ function toDomain(row: ItemRow): CatalogItem {
       orderTimeLimit: orderTimeLimitOf(row),
       note: row.note,
       image: imageOf(row),
+      thumbnail: thumbnailOf(row),
       receivedAt: row.receivedAt,
     },
     withdrawnAt: row.withdrawnAt,
@@ -314,6 +335,13 @@ function factsRow(state: CatalogItemState) {
     imageAlt: facts.image?.alt ?? null,
     imageWidth: facts.image?.width ?? null,
     imageHeight: facts.image?.height ?? null,
+    // `?? null` et non `undefined` : sur un upsert, `undefined` laisserait la
+    // colonne INCHANGÉE, et un article dont la fiche a perdu sa vignette
+    // garderait celle d'avant. Même repli, même raison que les allergènes.
+    thumbnailUrl: facts.thumbnail?.url ?? null,
+    thumbnailAlt: facts.thumbnail?.alt ?? null,
+    thumbnailWidth: facts.thumbnail?.width ?? null,
+    thumbnailHeight: facts.thumbnail?.height ?? null,
     orderLimitDaysBefore: facts.orderTimeLimit?.daysBefore ?? null,
     orderLimitTime: facts.orderTimeLimit?.time ?? null,
     orderLimitGraceMinutes: facts.orderTimeLimit?.graceMinutes ?? null,

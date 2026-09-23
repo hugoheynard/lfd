@@ -38,6 +38,10 @@ export function deliveredItems(snapshot: StoredCatalogSnapshot): DeliveredItem[]
       // même chose. `?? null` couvre une arrivée d'avant la v8.
       note: product.note ?? null,
       image: product.image ?? null,
+      // `?? null` couvre une arrivée d'avant la v10 : la vignette de rayon ne
+      // traversait pas. Les deux côtés de la comparaison doivent lire la même
+      // absence, sinon le premier push v10 signalerait un changement sur TOUT.
+      thumbnail: product.thumbnail ?? null,
     })),
   );
 }
@@ -63,5 +67,6 @@ export function mirrorItems(items: readonly CatalogItem[]): DeliveredItem[] {
     orderTimeLimit: item.orderTimeLimit,
     note: item.note,
     image: item.image,
+    thumbnail: item.thumbnail,
   }));
 }

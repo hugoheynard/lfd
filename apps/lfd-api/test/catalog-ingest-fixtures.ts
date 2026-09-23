@@ -77,6 +77,13 @@ export interface IngestedSku {
     width: number | null;
     height: number | null;
   } | null;
+  /** La vignette de rayon (v10) — absente par défaut, comme la plupart des fiches. */
+  readonly thumbnail?: {
+    url: string;
+    alt: string;
+    width: number | null;
+    height: number | null;
+  } | null;
 }
 
 /**
@@ -103,6 +110,7 @@ export function snapshotOf(
         allergenLabels = null,
         note = null,
         image = null,
+        thumbnail = null,
         publicPrice = PUBLIC_LABEL,
       }) => ({
         id: `prd_${sku}`,
@@ -112,6 +120,7 @@ export function snapshotOf(
         kind: "daily" as const,
         note,
         image,
+        thumbnail,
         variants: [
           {
             id: `var_${sku}`,

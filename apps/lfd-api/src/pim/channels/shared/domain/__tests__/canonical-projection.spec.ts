@@ -42,6 +42,7 @@ const product = (sku: string, variants: SyncVariant[] = [variant(`${sku}-1`)]): 
   variants,
   note: null,
   image: null,
+  thumbnail: null,
 });
 
 const category = (id: string, over: Partial<SyncCategory> = {}): SyncCategory => ({

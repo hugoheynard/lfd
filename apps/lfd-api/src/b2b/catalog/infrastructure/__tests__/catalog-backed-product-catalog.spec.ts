@@ -27,6 +27,7 @@ const CROISSANT: ResolvedCatalogItem = {
   orderTimeLimit: null,
   note: null,
   image: null,
+  thumbnail: null,
 };
 
 function reader(items: readonly ResolvedCatalogItem[]): CatalogReader {

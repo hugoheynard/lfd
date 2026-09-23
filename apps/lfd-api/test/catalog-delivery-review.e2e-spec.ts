@@ -89,6 +89,7 @@ function snapshot(
       ],
       note: null,
       image: null,
+      thumbnail: null,
     })),
     orderTimeLimits: [],
   } satisfies CatalogSnapshot;

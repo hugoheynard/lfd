@@ -87,6 +87,19 @@ const archivedFactsSchema = z.object({
     })
     .nullish()
     .transform((value) => value ?? null),
+  // `nullish` comme les autres, et ici ça compte plus qu'ailleurs : toutes les
+  // versions ARCHIVÉES avant le 2026-09-23 ont été écrites sans ce champ. Le
+  // rendre requis les rendrait illisibles — c'est-à-dire qu'un retour à une
+  // version figée échouerait, précisément le jour où l'on en a besoin.
+  thumbnail: z
+    .object({
+      url: z.string(),
+      alt: z.string(),
+      width: z.number().int().nullable(),
+      height: z.number().int().nullable(),
+    })
+    .nullish()
+    .transform((value) => value ?? null),
   // Écrit en ISO dans le `jsonb` : `Date` n'est pas une valeur JSON, et la
   // conversion doit être explicite plutôt que subie du sérialiseur.
   receivedAt: z.coerce.date(),
@@ -170,6 +183,7 @@ function toJson(facts: PimFacts): Prisma.InputJsonObject {
     // irait chercher l'éditorial courant raconterait une autre vitrine.
     note: facts.note,
     image: facts.image === null ? null : { ...facts.image },
+    thumbnail: facts.thumbnail === null ? null : { ...facts.thumbnail },
     receivedAt: facts.receivedAt.toISOString(),
   };
 }

@@ -146,6 +146,9 @@ function factsOf(snapshot: StoredCatalogSnapshot, receivedAt: Date): PimFacts[] 
       // arrivée d'avant la v8, qui n'en portait aucun.
       note: product.note ?? null,
       image: product.image ?? null,
+      // `?? null` couvre une arrivée d'avant la v10 : la vignette de rayon ne
+      // traversait pas le fil. Une absence, jamais un défaut inventé.
+      thumbnail: product.thumbnail ?? null,
       receivedAt,
     })),
   );

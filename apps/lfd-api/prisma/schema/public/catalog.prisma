@@ -233,6 +233,22 @@ model CatalogItem {
   imageWidth  Int?    @map("image_width")
   imageHeight Int?    @map("image_height")
 
+  /// **La vignette de rayon** — le `thumbnail` du référentiel.
+  ///
+  /// 🔴 Distincte du packshot, et ce n'est pas un doublon : l'une est cadrée
+  /// serré pour être lisible à 200 px dans une grille, l'autre présente la
+  /// pièce en ouverture de fiche. Elles n'ont ni le même cadrage ni le même
+  /// ratio — 4/3 contre 3/2.
+  ///
+  /// ⚠️ `NULL` = la fiche n'en désigne pas. La vitrine retombe alors sur le
+  /// packshot, ce qu'elle faisait pour TOUT avant le fil v10 : jusque-là le
+  /// rôle `thumbnail` ne traversait pas, donc le choisir à l'écran ne
+  /// produisait aucun effet.
+  thumbnailUrl    String? @map("thumbnail_url")
+  thumbnailAlt    String? @map("thumbnail_alt")
+  thumbnailWidth  Int?    @map("thumbnail_width")
+  thumbnailHeight Int?    @map("thumbnail_height")
+
   orderLimitDaysBefore   Int?    @map("order_limit_days_before")
   orderLimitTime         String? @map("order_limit_time")
   orderLimitGraceMinutes Int?    @map("order_limit_grace_minutes")

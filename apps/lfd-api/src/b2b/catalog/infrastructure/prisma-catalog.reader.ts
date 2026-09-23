@@ -38,6 +38,10 @@ interface ItemRow {
   readonly allergenLabels: unknown;
   readonly note: string | null;
   readonly imageUrl: string | null;
+  readonly thumbnailUrl: string | null;
+  readonly thumbnailAlt: string | null;
+  readonly thumbnailWidth: number | null;
+  readonly thumbnailHeight: number | null;
   readonly imageAlt: string | null;
   readonly imageWidth: number | null;
   readonly imageHeight: number | null;
@@ -312,6 +316,7 @@ function resolve(row: ItemRow, served: ServedPrice): ResolvedCatalogItem {
     orderTimeLimit: orderTimeLimitOf(row),
     note: row.note,
     image: imageOf(row),
+    thumbnail: thumbnailOf(row),
   };
 }
 
@@ -331,6 +336,26 @@ function imageOf(row: ItemRow): ResolvedCatalogItem["image"] {
     alt: row.imageAlt ?? "",
     width: row.imageWidth,
     height: row.imageHeight,
+  };
+}
+
+/**
+ * La vignette de rayon, ou `null`.
+ *
+ * Même mécanique et même raison que le packshot — l'URL commande. `null` est
+ * le cas COURANT tant qu'un push v10 n'a pas tourné : la vignette ne
+ * traversait pas avant, et la vitrine retombe alors sur le packshot, ce
+ * qu'elle a toujours fait.
+ */
+function thumbnailOf(row: ItemRow): ResolvedCatalogItem["thumbnail"] {
+  if (row.thumbnailUrl === null) {
+    return null;
+  }
+  return {
+    url: row.thumbnailUrl,
+    alt: row.thumbnailAlt ?? "",
+    width: row.thumbnailWidth,
+    height: row.thumbnailHeight,
   };
 }
 
