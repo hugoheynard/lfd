@@ -23,6 +23,30 @@ const stubAdminVerifier = {
 };
 
 const CATEGORIES = "/pim/catalogue/categories";
+const MEDIA = "/pim/media";
+
+/** Un PNG minimal et valide — signature, largeur, hauteur à leur place. */
+function png(width: number, height: number): Buffer {
+  const buffer = Buffer.alloc(24);
+  buffer.writeUInt32BE(0x89504e47, 0);
+  buffer.writeUInt32BE(0x0d0a1a0a, 4);
+  buffer.writeUInt32BE(width, 16);
+  buffer.writeUInt32BE(height, 20);
+  return buffer;
+}
+
+/**
+ * Dépose une image et rend son URL.
+ *
+ * 🔴 Depuis le 2026-09-23, une fiche ne peut porter qu'une image **déposée** :
+ * nommer une adresse quelconque est refusé. Ces cas passent donc par le vrai
+ * dépôt, dont seuls les octets rangés sont doublés (cf. le harnais).
+ */
+async function deposit(): Promise<string> {
+  const response = await staff().post(MEDIA).attach("file", png(800, 600), "croissant.png");
+  expect(response.status).toBe(201);
+  return jsonBody<{ url: string }>(response).url;
+}
 const PRODUCTS = "/pim/catalogue/products";
 
 let ctx: E2eContext;
@@ -302,7 +326,7 @@ describe("Déclaration publiable", () => {
 
       const response = await staff()
         .put(`${PRODUCTS}/${id}/media`)
-        .send({ media: [{ role: "gallery", url: "https://cdn.test/croissant.jpg" }] });
+        .send({ media: [{ role: "gallery", url: await deposit() }] });
       expect(response.status).toBe(200);
 
       const after = await detail(id);
@@ -319,7 +343,7 @@ describe("Déclaration publiable", () => {
      */
     it("promouvoir un visuel en hero ne périme rien, et s’inscrit au journal", async () => {
       const id = await aProduct();
-      const gallery = { role: "gallery", url: "https://cdn.test/croissant.jpg" };
+      const gallery = { role: "gallery", url: await deposit() };
       expect(
         (
           await staff()

@@ -14,7 +14,9 @@
  * suppression que Postgres refuserait.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { MediaStore } from "../src/platform/storage/media-store.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { InMemoryMediaStore } from "./in-memory-media-store.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -25,8 +27,31 @@ const CATEGORIES = "/pim/catalogue/categories";
 const PRODUCTS = "/pim/catalogue/products";
 const MEDIA = "/pim/media";
 
-const CROISSANT = "https://cdn.test/products/aaa.png";
-const CHOCOLATINE = "https://cdn.test/products/bbb.png";
+/**
+ * 🔴 Les URL ne sont plus INVENTÉES : depuis le 2026-09-23, une fiche ne peut
+ * porter qu'une image **déposée**. Elles viennent donc du dépôt, et c'est ce
+ * qui rend ces cas honnêtes — ils traversent la validation des octets, la
+ * mesure des dimensions et le fait journalisé, comme la production.
+ */
+let CROISSANT = "";
+let CHOCOLATINE = "";
+
+/** Un PNG minimal et VALIDE : signature, puis largeur et hauteur à leur place.
+ *  Deux tailles distinctes donnent deux hachages, donc deux images. */
+function png(width: number, height: number): Buffer {
+  const buffer = Buffer.alloc(24);
+  buffer.writeUInt32BE(0x89504e47, 0);
+  buffer.writeUInt32BE(0x0d0a1a0a, 4);
+  buffer.writeUInt32BE(width, 16);
+  buffer.writeUInt32BE(height, 20);
+  return buffer;
+}
+
+async function deposit(width: number, height: number): Promise<string> {
+  const response = await staff().post(MEDIA).attach("file", png(width, height), "image.png");
+  expect(response.status).toBe(201);
+  return jsonBody<{ url: string }>(response).url;
+}
 
 interface LibraryItem {
   readonly url: string;
@@ -48,7 +73,12 @@ let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      // R2 est un tiers distant à jetons ; ce n'est pas ce qu'un e2e éprouve.
+      // Tout le reste du chemin de dépôt est le vrai.
+      { token: MediaStore, value: new InMemoryMediaStore() },
+    ],
   });
 });
 
@@ -58,6 +88,9 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  // Redéposées à chaque cas : `reset()` tronque la bibliothèque comme le reste.
+  CROISSANT = await deposit(1200, 800);
+  CHOCOLATINE = await deposit(900, 600);
 });
 
 const staff = (): ReturnType<E2eContext["http"]> =>

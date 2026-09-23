@@ -36,6 +36,8 @@ import type { App } from "supertest/types";
 
 import { AppModule } from "../src/appBootstrap/app.module.js";
 import { requestContextMiddleware } from "../src/platform/context/request-context.middleware.js";
+import { MediaStore } from "../src/platform/storage/media-store.js";
+import { InMemoryMediaStore } from "./in-memory-media-store.js";
 import { AccessTokenVerifier } from "../src/platform/auth/access-token.verifier.js";
 import { BackgroundWork } from "../src/platform/events/background-work.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
@@ -119,7 +121,20 @@ export interface E2eOptions {
 export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext> {
   const builder = Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(AccessTokenVerifier)
-    .useValue(stubVerifier);
+    .useValue(stubVerifier)
+    // 🔴 SECONDE frontière doublée du harnais, après la signature Auth0, et
+    // pour la même raison : R2 est un tiers distant à jetons, et ce n'est pas
+    // ce qu'un e2e éprouve. Tout le reste du chemin de dépôt reste le vrai —
+    // validation des octets, mesure des dimensions, inscription, fait
+    // journalisé.
+    //
+    // Posée par DÉFAUT depuis le 2026-09-23 : une fiche ne peut plus porter
+    // qu'une image déposée, donc une suite qui ne sait pas déposer ne sait
+    // plus rien illustrer. Sans ce double, chaque fichier aurait fabriqué sa
+    // ligne de bibliothèque à la main — c'est-à-dire aurait contourné
+    // précisément la règle qu'on vient de poser.
+    .overrideProvider(MediaStore)
+    .useValue(new InMemoryMediaStore());
 
   for (const override of options.overrides ?? []) {
     builder.overrideProvider(override.token).useValue(override.value);

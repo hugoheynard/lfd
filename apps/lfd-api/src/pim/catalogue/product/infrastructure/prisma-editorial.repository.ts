@@ -2,11 +2,11 @@ import { Injectable } from "@nestjs/common";
 
 import { Prisma } from "../../../../platform/database/client/client.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import { EditorialRepository } from "../domain/ports/editorial.repository.js";
 import type { Editorial, MediaItem } from "../domain/value-objects/editorial.js";
 import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 import { localizedColumn } from "../../shared/infrastructure/json-readers.js";
+import { MediaNotInLibraryError } from "../../shared/domain/value-objects/media.js";
 import { SOURCE_LOCALE } from "../../shared/domain/value-objects/localized-text.js";
 
 /**
@@ -22,10 +22,7 @@ function optionalColumn(
 
 @Injectable()
 export class PrismaEditorialRepository extends EditorialRepository {
-  constructor(
-    private readonly prisma: PimPrismaService,
-    private readonly ids: PimIdGenerator,
-  ) {
+  constructor(private readonly prisma: PimPrismaService) {
     super();
   }
 
@@ -113,17 +110,19 @@ export class PrismaEditorialRepository extends EditorialRepository {
       select: { id: true },
     });
     if (known === null) {
-      const mediaId = this.ids.next();
-      await this.prisma.mediaAsset.create({
-        data: {
-          id: mediaId,
-          url: item.url,
-          name: item.name,
-          alt: localizedColumn(item.alt),
-          ...(await this.factsFor(item.url)),
-        },
-      });
-      return mediaId;
+      // 🔴 **Plus de visuel par simple URL** (Hugo, 2026-09-23). C'était le
+      // dernier chemin par lequel une image entrait sans passer par un dépôt,
+      // donc le dernier qui obligeait le référentiel à INSCRIRE dans la
+      // bibliothèque — et donc à en être propriétaire au sens de
+      // `lint:prisma-model-ownership`. Le fermer est ce qui libère le
+      // déménagement en bloc `media/`
+      // (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md` §2).
+      //
+      // Ce qu'on perd : illustrer depuis une banque d'images distante sans
+      // copier l'octet. Ce qu'on gagne : toute image du catalogue est chez
+      // nous, mesurée, et ne disparaît pas parce qu'un tiers a rangé son
+      // serveur.
+      throw new MediaNotInLibraryError(item.url);
     }
     await this.correct(known.id, item);
     return known.id;
@@ -157,84 +156,5 @@ export class PrismaEditorialRepository extends EditorialRepository {
       return;
     }
     await this.prisma.mediaAsset.update({ where: { id: mediaId }, data });
-  }
-
-  /**
-   * Ce qu'on sait déjà de cette URL, ou des colonnes vides.
-   *
-   * Vide est le cas normal d'un visuel saisi à la main : on n'héberge pas cet
-   * octet, on ne l'a pas mesuré, et aller le télécharger pour le mesurer serait
-   * une requête sortante par visuel à chaque enregistrement de fiche.
-   *
-   * 🔴 **DEUX lectures, et pas une**, parce que les deux familles de faits
-   * n'ont pas la même condition d'existence :
-   *
-   * - ce qu'on a **mesuré** n'existe que pour ce qu'on héberge, d'où le
-   *   `storageKey: { not: null }` ;
-   * - le **point focal** et les **tags** sont des DÉCISIONS, et quelqu'un peut
-   *   très bien les avoir prises sur une image saisie par son URL. Les chercher
-   *   sous la même condition les aurait perdus précisément là.
-   */
-  private async factsFor(url: string): Promise<{
-    storageKey: string | null;
-    contentType: string | null;
-    width: number | null;
-    height: number | null;
-    bytes: number | null;
-    focalX: number | null;
-    focalY: number | null;
-    tags: string[];
-  }> {
-    const measured = await this.prisma.mediaAsset.findFirst({
-      where: { url, storageKey: { not: null } },
-      orderBy: { createdAt: "desc" },
-      select: { storageKey: true, contentType: true, width: true, height: true, bytes: true },
-    });
-    return {
-      ...(measured ?? {
-        storageKey: null,
-        contentType: null,
-        width: null,
-        height: null,
-        bytes: null,
-      }),
-      ...(await this.decidedFor(url)),
-    };
-  }
-
-  /**
-   * Le point focal déjà choisi pour ces octets, ou deux colonnes vides.
-   *
-   * 🔴 **Il doit être RELU et reporté, sinon il ne survit pas.**
-   * {@link replaceMedia} détache tout puis recrée un `MediaAsset` NEUF par
-   * visuel : un identifiant d'actif ne traverse pas un enregistrement de
-   * section. Ce qui traverse, c'est l'URL — adressée par contenu, donc stable
-   * pour des octets donnés. Sans ce report, le point serait effacé au premier
-   * enregistrement suivant, c'est-à-dire qu'il marcherait à l'écran et
-   * disparaîtrait ensuite.
-   *
-   * `null` veut dire « personne ne s'est prononcé », jamais « au centre » : le
-   * centre est un choix comme un autre, et les confondre obligerait à deviner
-   * lequel on lit.
-   */
-  private async decidedFor(
-    url: string,
-  ): Promise<{ focalX: number | null; focalY: number | null; tags: string[] }> {
-    const [pointed, tagged] = await Promise.all([
-      this.prisma.mediaAsset.findFirst({
-        where: { url, focalX: { not: null } },
-        orderBy: { createdAt: "desc" },
-        select: { focalX: true, focalY: true },
-      }),
-      // Les TAGS se cherchent SÉPARÉMENT du point : une image peut être taguée
-      // sans être pointée, et l'inverse. Les lire sur la même ligne ferait
-      // perdre l'un des deux selon lequel a été décidé en dernier.
-      this.prisma.mediaAsset.findFirst({
-        where: { url, NOT: { tags: { isEmpty: true } } },
-        orderBy: { createdAt: "desc" },
-        select: { tags: true },
-      }),
-    ]);
-    return { ...(pointed ?? { focalX: null, focalY: null }), tags: tagged?.tags ?? [] };
   }
 }

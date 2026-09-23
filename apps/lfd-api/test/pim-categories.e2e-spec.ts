@@ -19,6 +19,29 @@ const stubAdminVerifier = {
 };
 
 const CATEGORIES = "/pim/catalogue/categories";
+const MEDIA = "/pim/media";
+
+/** Un PNG minimal et valide — signature, largeur, hauteur à leur place. */
+function png(width: number, height: number): Buffer {
+  const buffer = Buffer.alloc(24);
+  buffer.writeUInt32BE(0x89504e47, 0);
+  buffer.writeUInt32BE(0x0d0a1a0a, 4);
+  buffer.writeUInt32BE(width, 16);
+  buffer.writeUInt32BE(height, 20);
+  return buffer;
+}
+
+/**
+ * Dépose une image et rend son URL.
+ *
+ * 🔴 Depuis le 2026-09-23, une FAMILLE non plus ne peut porter qu'une image
+ * déposée : nommer une adresse quelconque est refusé, des deux côtés.
+ */
+async function depositImage(width = 800, height = 600): Promise<string> {
+  const response = await staff().post(MEDIA).attach("file", png(width, height), "pain.png");
+  expect(response.status).toBe(201);
+  return jsonBody<{ url: string }>(response).url;
+}
 const SHOPS = "/pim/points-of-sale";
 const RATES = "/pim/vat-rates";
 
@@ -446,19 +469,22 @@ describe("les visuels d'une famille", () => {
 
   it("remplace la liste entière et retient son ORDRE", async () => {
     const id = await createCategory("Viennoiseries");
+    // Deux tailles distinctes : la clé de stockage est le hachage du contenu,
+    // donc deux PNG identiques ne feraient qu'UNE image.
+    const [a, b] = [await depositImage(400, 300), await depositImage(800, 600)];
 
     await staff()
       .put(`${CATEGORIES}/${id}/media`)
-      .send({ media: [image("https://x/a.jpg"), image("https://x/b.jpg")] })
+      .send({ media: [image(a), image(b)] })
       .expect(200);
     await staff()
       .put(`${CATEGORIES}/${id}/media`)
-      .send({ media: [image("https://x/b.jpg"), image("https://x/a.jpg")] })
+      .send({ media: [image(b), image(a)] })
       .expect(200);
 
     const body = await detail(id);
     // Un REMPLACEMENT : deux visuels, pas quatre. Et l'ordre reçu fait foi.
-    expect(body.media.map((item) => item.url)).toEqual(["https://x/b.jpg", "https://x/a.jpg"]);
+    expect(body.media.map((item) => item.url)).toEqual([b, a]);
   });
 
   it("retient le texte alternatif dans ses trois langues", async () => {
@@ -468,7 +494,7 @@ describe("les visuels d'une famille", () => {
       .send({
         media: [
           {
-            url: "https://x/pain.jpg",
+            url: await depositImage(),
             role: "hero",
             name: "pain-de-campagne",
             alt: { fr: "Un pain", en: "A loaf", it: "Un pane" },

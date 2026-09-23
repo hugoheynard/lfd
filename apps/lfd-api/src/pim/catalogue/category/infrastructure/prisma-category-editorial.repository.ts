@@ -2,10 +2,10 @@ import { Injectable } from "@nestjs/common";
 
 import { Prisma } from "../../../../platform/database/client/client.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
-import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 import type { MediaItem } from "../../shared/domain/value-objects/media.js";
 import { localizedColumn } from "../../shared/infrastructure/json-readers.js";
+import { MediaNotInLibraryError } from "../../shared/domain/value-objects/media.js";
 import { SOURCE_LOCALE } from "../../shared/domain/value-objects/localized-text.js";
 import { CategoryEditorialRepository } from "../domain/ports/category-editorial.repository.js";
 import {
@@ -26,10 +26,7 @@ function optionalColumn(
 
 @Injectable()
 export class PrismaCategoryEditorialRepository extends CategoryEditorialRepository {
-  constructor(
-    private readonly prisma: PimPrismaService,
-    private readonly ids: PimIdGenerator,
-  ) {
+  constructor(private readonly prisma: PimPrismaService) {
     super();
   }
 
@@ -98,17 +95,19 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
       select: { id: true },
     });
     if (known === null) {
-      const mediaId = this.ids.next();
-      await this.prisma.mediaAsset.create({
-        data: {
-          id: mediaId,
-          url: item.url,
-          name: item.name,
-          alt: localizedColumn(item.alt),
-          ...(await this.factsFor(item.url)),
-        },
-      });
-      return mediaId;
+      // 🔴 **Plus de visuel par simple URL** (Hugo, 2026-09-23). C'était le
+      // dernier chemin par lequel une image entrait sans passer par un dépôt,
+      // donc le dernier qui obligeait le référentiel à INSCRIRE dans la
+      // bibliothèque — et donc à en être propriétaire au sens de
+      // `lint:prisma-model-ownership`. Le fermer est ce qui libère le
+      // déménagement en bloc `media/`
+      // (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md` §2).
+      //
+      // Ce qu'on perd : illustrer depuis une banque d'images distante sans
+      // copier l'octet. Ce qu'on gagne : toute image du catalogue est chez
+      // nous, mesurée, et ne disparaît pas parce qu'un tiers a rangé son
+      // serveur.
+      throw new MediaNotInLibraryError(item.url);
     }
     await this.correct(known.id, item);
     return known.id;
@@ -134,58 +133,5 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
       return;
     }
     await this.prisma.mediaAsset.update({ where: { id: mediaId }, data });
-  }
-
-  /**
-   * Ce qu'on sait déjà de cette URL, ou des colonnes vides.
-   *
-   * Relu depuis l'inscription faite au DÉPÔT plutôt que renvoyé par le
-   * navigateur : le serveur a mesuré ces octets, il n'a pas à redemander leur
-   * taille à un écran qui pourrait en dire autre chose.
-   */
-  private async factsFor(url: string): Promise<{
-    storageKey: string | null;
-    contentType: string | null;
-    width: number | null;
-    height: number | null;
-    bytes: number | null;
-    focalX: number | null;
-    focalY: number | null;
-    tags: string[];
-  }> {
-    const measured = await this.prisma.mediaAsset.findFirst({
-      where: { url, storageKey: { not: null } },
-      orderBy: { createdAt: "desc" },
-      select: { storageKey: true, contentType: true, width: true, height: true, bytes: true },
-    });
-    // 🔴 Le point focal se cherche SÉPARÉMENT, et sans la condition
-    // d'hébergement : c'est une décision, pas une mesure, et quelqu'un peut
-    // l'avoir prise sur une image saisie par son URL. Sans ce report, il serait
-    // effacé au premier enregistrement suivant — `replaceMedia` recrée un actif
-    // neuf par visuel, et seule l'URL traverse. Même mécanique que la fiche
-    // produit (`prisma-editorial.repository.ts`, 2026-09-23).
-    const chosen = await this.prisma.mediaAsset.findFirst({
-      where: { url, focalX: { not: null } },
-      orderBy: { createdAt: "desc" },
-      select: { focalX: true, focalY: true },
-    });
-    // Les tags se cherchent à part : une image peut être taguée sans être
-    // pointée, et l'inverse.
-    const tagged = await this.prisma.mediaAsset.findFirst({
-      where: { url, NOT: { tags: { isEmpty: true } } },
-      orderBy: { createdAt: "desc" },
-      select: { tags: true },
-    });
-    return {
-      ...(measured ?? {
-        storageKey: null,
-        contentType: null,
-        width: null,
-        height: null,
-        bytes: null,
-      }),
-      ...(chosen ?? { focalX: null, focalY: null }),
-      tags: tagged?.tags ?? [],
-    };
   }
 }
