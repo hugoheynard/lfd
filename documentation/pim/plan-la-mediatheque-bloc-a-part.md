@@ -13,8 +13,9 @@
 >   juste un mapper pour les images » ;
 > - « plus d'alt dans le PIM, **un seul point dans la médiathèque** ».
 >
-> 🔴 **Il porte une migration de données.** Il reste deux comptages à faire en
-> production (§6) avant que la première migration soit écrite.
+> 🔴 **Il porte une migration de données.** Les trois comptages qu’il exigeait
+> ont été faits le 2026-09-23 et rendent 0, 0 et 0 (§6) — à relire avant
+> d’écrire la migration, pas après.
 
 Suite de [`plan-la-mediatheque.md`](plan-la-mediatheque.md), dont les lots 1 et
 2 sont livrés (`054e9d09b`, `2839b0c65`).
@@ -96,10 +97,20 @@ front.
 Quand `media_id` tombe, la clé devient `(product_id, media_url)` : **collision
 de clé primaire, migration en échec sur la base de production.**
 
-➡️ Deux issues, et le comptage du §6 décide : soit l'identité d'un emploi
-devient `(produit, url, rôle)`, soit on dédoublonne avant ①. **La seconde perd
-un emploi ; la première est la bonne** — un même fichier servant de `hero` ET de
-`thumbnail` est exactement ce que l'inventaire des rôles décrit.
+### ✅ Mesuré : zéro doublon — et pourquoi ça ne suffit pas
+
+`emplois_en_double` rend **0** (2026-09-23). Aucune URL n'est attachée deux fois
+au même produit, donc la migration ne plantera pas sur la donnée existante.
+
+🔴 **Il ne faut surtout pas en conclure que le cas n'existe pas.** Il est à zéro
+parce qu'**aucun écran ne permettait de désigner un rôle autre que `hero`**
+jusqu'au 2026-09-23 — le geste livré ce jour-là est le premier. Or l'inventaire
+des rôles décrit précisément le cas : une même photo en `hero` **et** en
+`thumbnail`. Le jour où ce geste existe, la collision arrive.
+
+➡️ **L'identité d'un emploi est donc `(produit, url, rôle)`.** C'est une
+décision, pas une issue conditionnelle au comptage : le zéro dit que la
+migration passe, il ne dit pas que l'identité est bonne.
 
 ⚠️ `product_media.updatedAt` doit survivre à la refonte de la clé :
 `ProductReadiness` le lit pour dire si une fiche a changé depuis sa signature.
@@ -171,7 +182,7 @@ appelle `setMediaAltText(index, …)` depuis **l'éditeur de fiche**, indexé pa
 emploi, et le même mécanisme existe côté familles. Je le retire au lieu de le
 corriger : la décision tient sur ses deux autres appuis, pas sur celui-là.
 
-### Le critère de fusion — celui que j'avais est inopérant
+### Le critère de fusion — inopérant, puis sans objet
 
 J'avais écrit « la plus récente **non vide** ». Or `media.ts:90` :
 
@@ -182,26 +193,32 @@ alt: localizedText("texte alternatif", input.alt ?? { [SOURCE_LOCALE]: url }),
 🔴 **`alt` n'est JAMAIS vide** — sans saisie, on y met l'URL, et
 `prisma-media-library.ts:38` fait pareil au dépôt en le disant. Mon critère se
 réduisait donc à « la plus récente », c'est-à-dire celle du dernier produit
-enregistré. Si celui-là n'avait pas d'alternative écrite, la fusion remplace une
-phrase humaine par `https://cdn/…/a.png`, **sur toutes les fiches**, et les
-lignes sources disparaissent à ③.
+enregistré : il aurait remplacé une phrase humaine par `https://cdn/…/a.png`,
+sur toutes les fiches, sans filet.
 
-➡️ Le critère exploitable est **« la plus récente dont l'alternative diffère de
-l'URL »**. Et il reste imparfait : entre deux phrases humaines divergentes, il
-en jette une. D'où le comptage du §6.
+### ✅ Mesuré le 2026-09-23 : la fusion ne choisit rien
 
-### Ce que la bascule déclenche, et qui n'est pas du texte
+Les trois comptages du §6 rendent **0, 0 et 0** en production.
 
-- `revision/…/prisma-catalog-revision.source.ts:106` met `alt` dans le payload
-  **hashé** (SHA-256, `editorial-media.prisma:44`) → empreinte neuve à la
-  prochaine révision des fiches touchées ;
-- `b2b/catalog/domain/delivery-diff.ts:184` compare `left.alt === right.alt`
-  → **le diff de livraison annoncera « l'image a changé » à des clients pros**,
-  pour zéro changement éditorial.
+| Question                                                         | Réponse   |
+| ---------------------------------------------------------------- | --------- |
+| Des images portent-elles des alternatives humaines divergentes ? | **non**   |
+| Une URL est-elle attachée deux fois au même produit ?            | **non**   |
+| Combien d'emplois verraient leur alternative changer ?           | **aucun** |
 
-**À décider** : migrer `public.catalog_item.image_alt` dans le même passage, ou
-assumer un diff de masse. Ce n'est pas un détail d'implémentation — c'est un
-message qui part vers des clients.
+➡️ Pour chaque image, **toutes ses lignes disent déjà la même chose**. « Un seul
+point » ne fusionne rien, ne choisit rien, ne perd rien.
+
+**Et donc rien ne part.** Ni empreinte de révision recalculée
+(`prisma-catalog-revision.source.ts:106`), ni diff de livraison annonçant « l'image
+a changé » (`delivery-diff.ts:184`). L'objection qui portait sur ce point est
+sans objet **en l'état du fonds**, pas en principe : le critère corrigé — « la
+plus récente dont l'alternative diffère de l'URL » — reste celui à écrire, parce
+qu'il devra tenir le jour où quelqu'un aura édité deux fiches différemment entre
+la mesure et la migration.
+
+⚠️ **Ces trois zéros datent du 2026-09-23.** Les relire avant d'écrire la
+migration, pas après : ils décrivent un fonds, et un fonds bouge.
 
 ---
 
@@ -241,9 +258,10 @@ coup ».
 
 ---
 
-## 6. Les deux comptages qui décident, et qu'on n'a pas
+## 6. Les trois comptages — faits
 
-Ils se lisent en **production**, et c'est Hugo qui les lance.
+Ils se lisent en **production**, et c'est Hugo qui les a lancés. Les résultats
+sont plus bas.
 
 ```sql
 -- Combien d'images portent des alternatives HUMAINES divergentes.
@@ -266,9 +284,32 @@ SELECT count(*) AS emplois_en_double FROM (
 ) t;
 ```
 
-➡️ **Aucune migration ne s'écrit avant ces deux nombres.** Le premier dit ce que
-« un seul point » coûte en écrit humain ; le second dit si l'objection de la clé
-primaire est une hypothèse ou un échec garanti.
+```sql
+-- Combien d'emplois verraient leur alternative CHANGER : ceux qui portent
+-- aujourd'hui le repli automatique alors qu'une autre ligne de la même image
+-- porte une vraie phrase. C'est ce nombre, et lui seul, qui dit si un diff de
+-- livraison part vers les clients pros.
+SELECT count(*) AS emplois_qui_changent
+FROM pim.product_media pm
+JOIN pim.media_asset a ON a.id = pm.media_id
+WHERE a.alt->>'fr' = a.url
+  AND EXISTS (
+    SELECT 1 FROM pim.media_asset b
+    WHERE b.url = a.url AND b.alt->>'fr' IS DISTINCT FROM b.url
+  );
+```
+
+### ✅ Résultats — production, 2026-09-23
+
+| Comptage               | Résultat | Ce qu'il retire du plan                                                       |
+| ---------------------- | -------- | ----------------------------------------------------------------------------- |
+| `urls_divergentes`     | **0**    | la fusion ne choisit rien, ne perd aucun écrit humain                         |
+| `emplois_en_double`    | **0**    | la migration ne plante pas — mais l'identité reste `(produit, url, rôle)`, §2 |
+| `emplois_qui_changent` | **0**    | aucune empreinte de révision ne bouge, aucun diff ne part                     |
+
+⚠️ **À relire avant d'écrire la migration**, pas après. Ils décrivent un fonds
+au 2026-09-23, et le geste de rôle livré la veille est précisément ce qui peut
+le faire bouger.
 
 ---
 
@@ -300,10 +341,15 @@ Additif, réversible, jamais une colonne supprimée dans le même passage
 - `pim.media_asset` supprimée — **après comptage**, geste proposé, jamais
   exécuté d'autorité.
 
-🔴 **③ détruit la seule copie des alternatives par emploi.** Le choix du §4 ne
-se rattrape gratuitement qu'entre ① et ③. **Ce plan fixe donc un point de
-contrôle : ③ n'a pas lieu avant qu'on ait regardé, dans la médiathèque, les
-images du comptage.** Une durée n'aurait rien voulu dire ; un regard, si.
+③ détruit la seule copie des alternatives par emploi. C'était l'irréversibilité
+la plus lourde du plan **tant qu'on ignorait ce qu'elle détruisait** : les trois
+zéros du §6 disent qu'il n'y a rien d'unique à y perdre, puisque toutes les
+lignes d'une même image portent déjà le même texte.
+
+⚠️ **Ce qui reste irréversible malgré tout**, et qui ne se mesure pas : une
+alternative écrite **entre** la mesure et ③. Le point de contrôle tient donc,
+allégé — rejouer les trois comptages juste avant ③, et ne pas le lancer sur un
+nombre vieux de plusieurs semaines.
 
 ---
 
