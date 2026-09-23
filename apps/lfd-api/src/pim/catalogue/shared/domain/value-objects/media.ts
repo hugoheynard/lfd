@@ -3,7 +3,6 @@ import {
   DomainError,
   ResourceNotFoundError,
 } from "../../../../../platform/shared/errors/app-error.js";
-import { localizedText, SOURCE_LOCALE, type LocalizedText } from "./localized-text.js";
 
 /**
  * Les VISUELS, indépendamment de ce qui les porte.
@@ -37,23 +36,26 @@ export class MissingMediaUrlError extends DomainError {
   }
 }
 
+/**
+ * Ce qu'un porteur décide d'une image : **son usage et son rang**, rien d'autre.
+ *
+ * 🔴 L'étiquette et le texte alternatif en sont SORTIS le 2026-09-23. Ils
+ * décrivent l'image, pas l'emploi qu'une fiche en fait, et ils ont désormais
+ * un seul point — la médiathèque (décision Hugo). Les laisser ici obligeait le
+ * référentiel à écrire dans la bibliothèque à chaque enregistrement de fiche,
+ * ce qui lui en donnait la propriété au sens de
+ * `lint:prisma-model-ownership` — et rendait le déménagement impossible.
+ */
 export interface MediaItem {
   readonly role: MediaRole;
   readonly url: string;
-  /** L'étiquette de la bibliothèque — courte, non traduite, faite pour
-   *  RETROUVER. `''` tant que personne n'a nommé le fichier. */
-  readonly name: string;
-  /** Accessibilité **et** SEO : ce n'est pas un champ décoratif. */
-  readonly alt: LocalizedText;
   readonly position: number;
 }
 
+/** Ce qu'un écran ENVOIE : une adresse, et ce qu'il veut en faire. */
 export interface MediaInput {
   readonly role: string;
   readonly url: string;
-  readonly name?: string | undefined;
-  /** Le SEUL champ d'image qui se traduit — accessibilité ET référencement. */
-  readonly alt?: LocalizedText | undefined;
 }
 
 export function isMediaRole(value: string): value is MediaRole {
@@ -85,15 +87,7 @@ export function mediaItems(inputs: readonly MediaInput[]): MediaItem[] {
       usedSingles.add(input.role);
     }
 
-    items.push({
-      role: input.role,
-      url,
-      name: (input.name ?? "").trim(),
-      // Sans texte alternatif on retombe sur l'URL : la colonne est obligatoire,
-      // et une chaîne vide passerait pour une alternative rédigée.
-      alt: localizedText("texte alternatif", input.alt ?? { [SOURCE_LOCALE]: url }),
-      position: items.length,
-    });
+    items.push({ role: input.role, url, position: items.length });
   }
 
   return items;

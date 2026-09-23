@@ -1,25 +1,8 @@
-<!-- Le sélecteur de CETTE section. Il ne fait basculer QUE les textes
-     alternatifs : le nom, l'URL et les dimensions d'un visuel ne se traduisent
-     pas, et l'image encore moins. -->
-<app-lang-switch
-  [lang]="store.mediaLocale()"
-  (langChange)="store.mediaLocale.set($event)"
-  [missing]="store.mediaMissing()"
-  ariaLabel="Langue des textes alternatifs"
-/>
-
-<!-- UN avertissement pour la galerie, pas un par vignette. Répété sur chaque
-     tuile, le message devenait le motif de fond de la section : on ne lisait
-     plus que lui, donc plus rien. Ici il compte, il nomme les langues, et les
-     tuiles concernées se signalent par leur liseré. -->
-@if (missingHint(); as hint) {
-  <fold-callout appearance="inset" variant="warning">{{ hint }}</fold-callout>
-}
-
+<!-- 🔴 Plus de sélecteur de langue ici depuis le 2026-09-23 : cette section ne
+     porte plus aucun texte. L'étiquette et l'alternative décrivent l'image, pas
+     l'emploi qu'une fiche en fait, et se saisissent dans la médiathèque. -->
 <app-media-gallery
   [slots]="store.media()"
-  [locale]="store.mediaLocale()"
-  [incomplete]="incompleteIndexes()"
   [busy]="store.uploading()"
   (edit)="editMedia($event)"
   (picked)="store.uploadMedia($event)"

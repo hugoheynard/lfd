@@ -5,6 +5,7 @@ import { changesBetween } from "../../../journal/changes.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { MediaLibraryReader } from "../domain/ports/media-library-reader.js";
 import { MediaLibraryWriter } from "../domain/ports/media-library-writer.js";
+import { localizedText, SOURCE_LOCALE } from "../domain/value-objects/localized-text.js";
 import {
   focalPoint,
   MediaNotInLibraryError,
@@ -24,6 +25,7 @@ export class SaveMediaDetailsCommand {
     readonly url: string,
     readonly name: string,
     readonly tags: readonly string[],
+    readonly alt: Readonly<Record<string, string>>,
     readonly focal: FocalPoint | null,
   ) {}
 }
@@ -53,12 +55,25 @@ export class SaveMediaDetailsHandler implements ICommandHandler<SaveMediaDetails
     const details = {
       name: command.name.trim(),
       tags: mediaTags(command.tags),
+      // 🔴 Le repli sur l'URL, et pas un refus. Le value object exige une
+      // langue source — à juste titre : une alternative sans français n'en est
+      // pas une. Mais « je n'ai pas encore écrit d'alternative » est un état
+      // légitime de la bibliothèque, et l'exiger interdirait de poser un
+      // mot-clé sur une image qu'on n'a pas encore décrite.
+      //
+      // Le repli est l'URL, comme partout ailleurs dans ce dépôt : une
+      // alternative absente doit se VOIR, jamais se confondre avec une
+      // alternative rédigée.
+      alt: localizedText(
+        "texte alternatif",
+        command.alt[SOURCE_LOCALE] === undefined ? { [SOURCE_LOCALE]: url } : command.alt,
+      ),
       focal: focalPoint(command.focal),
     };
 
     const changes = changesBetween(
-      { name: before.name, tags: [...before.tags], focal: before.focal },
-      { name: details.name, tags: [...details.tags], focal: details.focal },
+      { name: before.name, tags: [...before.tags], alt: before.alt, focal: before.focal },
+      { name: details.name, tags: [...details.tags], alt: details.alt, focal: details.focal },
     );
 
     await this.uow.run(async () => {

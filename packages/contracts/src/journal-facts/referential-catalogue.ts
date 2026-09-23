@@ -76,7 +76,17 @@ const mediaListV1 = () =>
  * rien d'autre, donc ne produisait aucun diff — et l'écriture passait pour un
  * enregistrement sans modification.
  */
-const mediaList = () =>
+/**
+ * Ce qu'une FICHE décide de ses visuels : l'ordre, l'image et son rôle.
+ *
+ * 🔴 L'étiquette et l'alternative en sont sorties le 2026-09-23 : elles
+ * décrivent l'image et ont leur propre fait (`media_asset.described`). Les
+ * garder ferait apparaître, dans l'historique d'une fiche, une modification
+ * que quelqu'un a faite sur une AUTRE — l'image étant partagée.
+ */
+const mediaList = () => z.array(payload({ role: z.string(), url: z.string() }));
+/** La forme d'avant la sortie de l'étiquette et de l'alternative (2026-09-23). */
+const mediaListV2 = () =>
   z.array(payload({ role: z.string(), url: z.string(), name: z.string(), alt: localizedText() }));
 
 const PRODUCT_KINDS = ["daily", "made_to_order", "resale"] as const;
@@ -150,6 +160,7 @@ const productEditorialV1 = payload({
   }),
 });
 const mediaSaved = () => payload({ changes: changes({ media: mediaList() }) });
+const mediaSavedV2 = () => payload({ changes: changes({ media: mediaListV2() }) });
 
 /**
  * Ce qu'on décide d'une image de la BIBLIOTHÈQUE — par opposition à l'emploi
@@ -166,6 +177,10 @@ const mediaDescribed = () =>
     changes: changes({
       name: z.string(),
       tags: z.array(z.string()),
+      // L'alternative est une décision de la BIBLIOTHÈQUE depuis le
+      // 2026-09-23 : elle a quitté le diff de la fiche pour entrer ici, là où
+      // le sujet est l'image.
+      alt: localizedText(),
       focal: z.object({ x: z.number(), y: z.number() }).nullable(),
     }),
   });
@@ -372,6 +387,7 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
   ),
   "product.editorial_saved": labelled(productEditorialV1),
   "product.media_saved": fact(mediaSaved().extend({ subjectLabel: subjectLabel() }), [
+    mediaSavedV2().extend({ subjectLabel: subjectLabel() }),
     mediaSavedV1().extend({ subjectLabel: subjectLabel() }),
     mediaSavedV1(),
   ]),
@@ -452,6 +468,7 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
   "product_category.vat_changed": fact(vatChanged(), [vatByContextV1(), vatChangedLotB()]),
   "product_category.editorial_saved": labelled(categoryEditorial),
   "product_category.media_saved": fact(mediaSaved().extend({ subjectLabel: subjectLabel() }), [
+    mediaSavedV2().extend({ subjectLabel: subjectLabel() }),
     mediaSavedV1().extend({ subjectLabel: subjectLabel() }),
     mediaSavedV1(),
   ]),

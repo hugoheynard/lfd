@@ -7,7 +7,6 @@ import type { Editorial, MediaItem } from "../domain/value-objects/editorial.js"
 import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 import { localizedColumn } from "../../shared/infrastructure/json-readers.js";
 import { MediaNotInLibraryError } from "../../shared/domain/value-objects/media.js";
-import { SOURCE_LOCALE } from "../../shared/domain/value-objects/localized-text.js";
 
 /**
  * Un champ vidé doit **effacer** la colonne, pas la laisser telle quelle : d'où
@@ -89,7 +88,7 @@ export class PrismaEditorialRepository extends EditorialRepository {
   }
 
   /**
-   * L'identifiant de l'actif qui porte CES octets — retrouvé, ou inscrit.
+   * L'identifiant de l'actif qui porte CES octets — **retrouvé**, jamais écrit.
    *
    * 🔴 **Il n'en existe plus qu'UN par URL** (contrainte d'unicité posée le
    * 2026-09-23). Auparavant, ce code créait un actif NEUF à chaque
@@ -124,37 +123,6 @@ export class PrismaEditorialRepository extends EditorialRepository {
       // serveur.
       throw new MediaNotInLibraryError(item.url);
     }
-    await this.correct(known.id, item);
     return known.id;
-  }
-
-  /**
-   * Ce que la fiche corrige encore sur l'image — et seulement ce qu'elle dit
-   * vraiment.
-   *
-   * ⚠️ **Écrire l'alternative sans condition l'effacerait.** `mediaItems`
-   * remplit le champ manquant avec l'URL (« la colonne est obligatoire, une
-   * chaîne vide passerait pour une alternative rédigée ») : une fiche qui n'en
-   * porte pas envoie donc son URL, et l'écrire remplacerait une phrase humaine
-   * par `https://…`. D'où le même critère que la migration de fusion — on
-   * n'écrit que ce qui DIFFÈRE de l'URL.
-   *
-   * ⚠️ État TRANSITOIRE. L'étiquette et l'alternative appartiennent à la
-   * bibliothèque (« un seul point », Hugo 2026-09-23) ; la fiche ne devrait pas
-   * les écrire. Elles quitteront son panneau au même passage que le
-   * déménagement du bloc.
-   */
-  private async correct(mediaId: string, item: MediaItem): Promise<void> {
-    const data: { name?: string; alt?: Record<string, string> } = {};
-    if (item.name !== "") {
-      data.name = item.name;
-    }
-    if (item.alt[SOURCE_LOCALE] !== item.url) {
-      data.alt = localizedColumn(item.alt);
-    }
-    if (Object.keys(data).length === 0) {
-      return;
-    }
-    await this.prisma.mediaAsset.update({ where: { id: mediaId }, data });
   }
 }

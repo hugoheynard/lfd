@@ -487,20 +487,29 @@ describe("les visuels d'une famille", () => {
     expect(body.media.map((item) => item.url)).toEqual([b, a]);
   });
 
-  it("retient le texte alternatif dans ses trois langues", async () => {
+  /**
+   * 🔴 L'alternative est écrite dans la MÉDIATHÈQUE depuis le 2026-09-23, et
+   * la famille ne fait plus que désigner l'image. Ce cas garde que la
+   * description écrite là-bas ressort bien sur le porteur — c'est tout ce qui
+   * reste à vérifier de ce côté.
+   */
+  it("rend le texte alternatif écrit dans la bibliothèque", async () => {
     const id = await createCategory("Pains");
+    const url = await depositImage();
+    await staff()
+      .put(MEDIA)
+      .send({
+        url,
+        name: "pain-de-campagne",
+        tags: [],
+        alt: { fr: "Un pain", en: "A loaf", it: "Un pane" },
+        focal: null,
+      })
+      .expect(200);
+
     await staff()
       .put(`${CATEGORIES}/${id}/media`)
-      .send({
-        media: [
-          {
-            url: await depositImage(),
-            role: "hero",
-            name: "pain-de-campagne",
-            alt: { fr: "Un pain", en: "A loaf", it: "Un pane" },
-          },
-        ],
-      })
+      .send({ media: [{ url, role: "hero" }] })
       .expect(200);
 
     const body = await detail(id);

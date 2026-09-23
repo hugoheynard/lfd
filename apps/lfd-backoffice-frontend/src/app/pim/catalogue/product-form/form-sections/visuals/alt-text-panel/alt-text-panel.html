@@ -1,38 +1,15 @@
 <fold-panel-header
   title="Visuel"
-  subtitle="Son nom pour l'équipe, sa description pour qui ne le voit pas."
+  subtitle="Ce que cette fiche en fait. Son étiquette et sa description vivent dans la médiathèque."
 />
 
 <div class="body">
-  <!-- L'image, en grand : on ne décrit pas une image qu'on ne voit pas. -->
+  <!-- L'image, en grand : on ne choisit pas l'usage d'une image qu'on ne voit
+       pas, et décider de la retirer demande de la regarder. -->
   @if (data().url !== '') {
     <img class="preview" [src]="data().url" alt="" />
   }
 
-  <!-- Le NOM identifie le fichier pour l'équipe : court, non traduit, fait pour
-       retrouver. Il ne remplace pas la description, il répond à une autre
-       question. -->
-  <fold-input
-    label="Nom du visuel"
-    hint="Pour le retrouver dans la bibliothèque. Il ne se traduit pas."
-    [value]="name()"
-    (valueChange)="name.set($event)"
-  />
-
-  <p class="section-label">Description</p>
-
-  @for (locale of locales; track locale) {
-    <fold-input
-      [label]="names[locale]"
-      [required]="locale === sourceLocale"
-      [value]="valueOf(locale)"
-      (valueChange)="write(locale, $event)"
-    />
-  }
-
-  <!-- La désignation vit ICI, à côté du nom et de l'alternative : c'est le seul
-       endroit où l'on voit l'image en grand, et choisir le packshot demande de
-       la regarder — même raison que le retrait, juste en dessous. -->
   @if (role(); as chosen) {
     <!-- Les cinq USAGES, et leur ratio dit dans le libellé : c'est au moment
          de choisir qu'on a besoin de savoir quelle forme le canal attend, pas
@@ -43,17 +20,15 @@
       }
     </fold-listbox>
   }
-
-  <p class="note">
-    Le français fait foi : une langue laissée vide retombe sur lui plutôt que d'afficher du vide.
-  </p>
 </div>
 
-<footer class="foot">
-  <!-- Le retrait vit ICI parce que c'est ici qu'on voit l'image en grand :
-       décider de jeter un visuel demande de le regarder. -->
-  <button foldButton emphasis="soft" intent="danger" (click)="remove()">Retirer</button>
-  <span class="foot-spacer"></span>
-  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+<div class="foot">
+  <!-- RETIRER de la fiche, jamais de la bibliothèque : l'image reste
+       disponible pour une autre fiche. Sa suppression se fait à la
+       médiathèque, et seulement quand plus personne ne l'affiche. -->
+  <button foldButton emphasis="outline" intent="danger" (click)="remove()">
+    Retirer de la fiche
+  </button>
+  <button foldButton emphasis="outline" (click)="cancel()">Annuler</button>
   <button foldButton (click)="submit()">Enregistrer</button>
-</footer>
+</div>

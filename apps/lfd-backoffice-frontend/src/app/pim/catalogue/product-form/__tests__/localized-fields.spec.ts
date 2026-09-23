@@ -55,16 +55,13 @@ describe('champs traduisibles — écrire une langue n’efface pas les autres',
     expect(s.editorialMissing()).toEqual(['it']);
   });
 
-  it('le texte alternatif suit la même règle, par visuel', () => {
-    const s = store();
-    s.media.set([{ role: 'hero', url: 'https://x/1.jpg', name: '', alt: { fr: 'Une tarte' } }]);
-    expect(s.mediaMissing()).toEqual(['en', 'it']);
-
-    s.mediaLocale.set('it');
-    s.setMediaAlt(0, 'Una crostata');
-    expect(s.media()[0]?.alt).toEqual({ fr: 'Une tarte', it: 'Una crostata' });
-    expect(s.mediaMissing()).toEqual(['en']);
-  });
+  /*
+   * 🔴 Le cas « le texte alternatif suit la même règle, par visuel » a été
+   * RETIRÉ le 2026-09-23, et pas parce qu'il gênait : la fiche ne porte plus
+   * de texte alternatif. Il décrit l'image, qui est partagée, et se saisit
+   * dans la médiathèque — c'est là qu'une règle d'écriture par langue doit
+   * être éprouvée désormais.
+   */
 
   it('la langue de chaque section est INDÉPENDANTE', () => {
     // Traduire les descriptions ne doit pas forcer à toucher aux noms : un
@@ -72,6 +69,5 @@ describe('champs traduisibles — écrire une langue n’efface pas les autres',
     const s = store();
     s.nameLocale.set('en');
     expect(s.editorialLocale()).toBe('fr');
-    expect(s.mediaLocale()).toBe('fr');
   });
 });

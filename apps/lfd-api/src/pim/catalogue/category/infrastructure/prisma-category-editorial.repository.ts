@@ -6,7 +6,6 @@ import type { LocalizedText } from "../../shared/domain/value-objects/localized-
 import type { MediaItem } from "../../shared/domain/value-objects/media.js";
 import { localizedColumn } from "../../shared/infrastructure/json-readers.js";
 import { MediaNotInLibraryError } from "../../shared/domain/value-objects/media.js";
-import { SOURCE_LOCALE } from "../../shared/domain/value-objects/localized-text.js";
 import { CategoryEditorialRepository } from "../domain/ports/category-editorial.repository.js";
 import {
   isEmptyCategoryEditorial,
@@ -82,7 +81,7 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
   }
 
   /**
-   * L'identifiant de l'actif qui porte CES octets — retrouvé, ou inscrit.
+   * L'identifiant de l'actif qui porte CES octets — **retrouvé**, jamais écrit.
    *
    * 🔴 Il n'en existe plus qu'UN par URL (contrainte d'unicité, 2026-09-23).
    * Même mécanique et mêmes raisons que la fiche produit
@@ -109,29 +108,6 @@ export class PrismaCategoryEditorialRepository extends CategoryEditorialReposito
       // serveur.
       throw new MediaNotInLibraryError(item.url);
     }
-    await this.correct(known.id, item);
     return known.id;
-  }
-
-  /**
-   * Ce que la famille corrige encore sur l'image — et seulement ce qu'elle dit.
-   *
-   * ⚠️ Écrire l'alternative sans condition l'EFFACERAIT : `mediaItems` remplit
-   * le champ manquant avec l'URL, donc une famille sans alternative envoie son
-   * URL. On n'écrit que ce qui en diffère — même critère que la migration de
-   * fusion.
-   */
-  private async correct(mediaId: string, item: MediaItem): Promise<void> {
-    const data: { name?: string; alt?: Record<string, string> } = {};
-    if (item.name !== "") {
-      data.name = item.name;
-    }
-    if (item.alt[SOURCE_LOCALE] !== item.url) {
-      data.alt = localizedColumn(item.alt);
-    }
-    if (Object.keys(data).length === 0) {
-      return;
-    }
-    await this.prisma.mediaAsset.update({ where: { id: mediaId }, data });
   }
 }

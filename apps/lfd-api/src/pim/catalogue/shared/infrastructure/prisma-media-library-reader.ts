@@ -1,5 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
+import { SOURCE_LOCALE } from "../domain/value-objects/localized-text.js";
+import { optionalLocalizedColumn as localizedOf } from "./json-readers.js";
+
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import {
   MediaLibraryReader,
@@ -20,6 +23,7 @@ interface AssetRow {
   readonly focalX: number | null;
   readonly focalY: number | null;
   readonly tags: string[];
+  readonly alt: unknown;
 }
 
 /**
@@ -80,6 +84,7 @@ export class PrismaMediaLibraryReader extends MediaLibraryReader {
         focalX: true,
         focalY: true,
         tags: true,
+        alt: true,
       },
     });
 
@@ -117,6 +122,7 @@ export class PrismaMediaLibraryReader extends MediaLibraryReader {
         focalX: true,
         focalY: true,
         tags: true,
+        alt: true,
       },
     });
     if (rows.length === 0) {
@@ -216,6 +222,9 @@ function recordOf(
     url,
     name: named?.name ?? "",
     tags: tagged?.tags ?? [],
+    // Le repli sur l'URL vaut mieux qu'une chaîne vide : une alternative
+    // absente doit se VOIR, pas se confondre avec une alternative écrite.
+    alt: localizedOf(latest?.alt) ?? { [SOURCE_LOCALE]: url },
     storageKey: latest?.storageKey ?? null,
     contentType: latest?.contentType ?? null,
     width: latest?.width ?? null,

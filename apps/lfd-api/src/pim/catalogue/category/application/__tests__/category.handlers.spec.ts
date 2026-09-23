@@ -998,11 +998,7 @@ describe("SetCategoryMediaHandler", () => {
       new StoredMediaReader([mediaRow("gallery", "https://cdn/1.jpg")]),
       journal,
       new DirectUnitOfWork(),
-    ).execute(
-      new SetCategoryMediaCommand(id!, [
-        { role: "hero", url: "https://cdn/1.jpg", name: "Face", alt: { fr: "De face" } },
-      ]),
-    );
+    ).execute(new SetCategoryMediaCommand(id!, [{ role: "hero", url: "https://cdn/1.jpg" }]));
 
     expect(journal.types()).toEqual(["product_category.media_saved"]);
     expect(journal.entries[0]?.payload["changes"]).toMatchObject({
@@ -1024,11 +1020,7 @@ describe("SetCategoryMediaHandler", () => {
       new StoredMediaReader([mediaRow("hero", "https://cdn/1.jpg")]),
       journal,
       new DirectUnitOfWork(),
-    ).execute(
-      new SetCategoryMediaCommand(id!, [
-        { role: "hero", url: "https://cdn/1.jpg", name: "Face", alt: { fr: "De face" } },
-      ]),
-    );
+    ).execute(new SetCategoryMediaCommand(id!, [{ role: "hero", url: "https://cdn/1.jpg" }]));
 
     expect(journal.types()).toEqual([]);
   });

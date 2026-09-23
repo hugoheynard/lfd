@@ -3,7 +3,6 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { changesBetween } from "../../../journal/changes.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
-import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 import { mediaItems, type MediaInput } from "../../shared/domain/value-objects/media.js";
 import { CategoryEditorialReader } from "../domain/ports/category-editorial-reader.js";
 import { CategoryEditorialRepository } from "../domain/ports/category-editorial.repository.js";
@@ -64,10 +63,15 @@ export class SetCategoryMediaHandler implements ICommandHandler<SetCategoryMedia
 }
 
 /**
- * Les visuels réduits à ce qui se compare : l'ordre, l'image, son RÔLE, son
- * étiquette et son texte alternatif. Ni dimensions ni poids — ils décrivent le
- * FICHIER, pas la décision de l'écran, et bougeraient sans que personne n'ait
- * rien édité.
+ * Les visuels réduits à ce qu'une FICHE décide : l'ordre, l'image et son RÔLE.
+ *
+ * 🔴 Ni étiquette ni texte alternatif depuis le 2026-09-23 : ils décrivent
+ * l'image et ont leur propre fait (`media_asset.described`). Les garder ici
+ * ferait apparaître, dans l'historique d'une fiche, une modification que
+ * quelqu'un a faite sur une AUTRE — l'image étant partagée.
+ *
+ * Ni dimensions ni poids non plus : ils décrivent le fichier, pas la décision
+ * de l'écran, et bougeraient sans que personne n'ait rien édité.
  *
  * Le rôle manquait, et c'est le geste le plus fréquent de cette section :
  * promouvoir une image en `hero` ne changeait rien d'autre, donc produisait un
@@ -78,12 +82,7 @@ export class SetCategoryMediaHandler implements ICommandHandler<SetCategoryMedia
  * entrées comparées. L'ajouter ferait doublon avec le rang.
  */
 function listOf(
-  media: readonly {
-    readonly role: string;
-    readonly url: string;
-    readonly name: string;
-    readonly alt: LocalizedText;
-  }[],
+  media: readonly { readonly role: string; readonly url: string }[],
 ): readonly Record<string, unknown>[] {
-  return media.map((item) => ({ role: item.role, url: item.url, name: item.name, alt: item.alt }));
+  return media.map((item) => ({ role: item.role, url: item.url }));
 }

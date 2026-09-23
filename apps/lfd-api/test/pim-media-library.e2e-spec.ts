@@ -65,6 +65,7 @@ interface LibraryItem {
 interface DetailsBody {
   readonly url: string;
   readonly name: string;
+  readonly alt?: Readonly<Record<string, string>>;
   readonly tags: readonly string[];
   readonly focal: { readonly x: number; readonly y: number } | null;
 }
@@ -118,12 +119,7 @@ async function aProduct(categoryId: string, name: string): Promise<string> {
 
 async function setMedia(
   productId: string,
-  media: readonly {
-    role: string;
-    url: string;
-    name?: string;
-    alt?: Readonly<Record<string, string>>;
-  }[],
+  media: readonly { role: string; url: string }[],
 ): Promise<void> {
   const response = await staff().put(`${PRODUCTS}/${productId}/media`).send({ media });
   expect(response.status).toBe(200);
@@ -175,15 +171,22 @@ describe("la médiathèque", () => {
     expect(image?.uses).toBe(0);
   });
 
-  it("garde l’étiquette écrite, même si un enregistrement la laisse vide", async () => {
+  /**
+   * 🔴 L'étiquette est écrite dans la MÉDIATHÈQUE, plus depuis la fiche
+   * (2026-09-23). Ce cas garde qu'un enregistrement de section ne la balaie
+   * pas — ce qu'il faisait quand chaque sauvegarde recréait la ligne.
+   */
+  it("garde l’étiquette de la bibliothèque après un enregistrement de fiche", async () => {
     const product = await aProduct(await aCategory(), "Croissant");
-    await setMedia(product, [{ role: "gallery", url: CROISSANT, name: "croissant de face" }]);
-    // Le second enregistrement ne porte pas de nom : la ligne créée en a un
-    // vide. Prendre la DERNIÈRE ligne ferait disparaître l'étiquette.
+    await setMedia(product, [{ role: "gallery", url: CROISSANT }]);
+    const written = await staff()
+      .put(MEDIA)
+      .send({ url: CROISSANT, name: "croissant de face", tags: [], focal: null });
+    expect(written.status).toBe(200);
+
     await setMedia(product, [{ role: "hero", url: CROISSANT }]);
 
     const [image] = (await library()).filter((item) => item.url === CROISSANT);
-
     expect(image?.name).toBe("croissant de face");
   });
 
@@ -403,18 +406,27 @@ describe("une image, une ligne", () => {
   });
 
   /**
-   * 🔴 Le piège du partage : `mediaItems` remplit l'alternative manquante avec
-   * l'URL. Une fiche qui n'en porte pas envoie donc son URL — et l'écrire
-   * remplacerait la phrase humaine d'une autre fiche par `https://…`.
+   * 🔴 UN SEUL POINT pour l'alternative (Hugo, 2026-09-23) : elle est écrite
+   * dans la bibliothèque, et deux fiches qui portent la même image portent la
+   * même description. Aucune sauvegarde de fiche ne peut plus la toucher — ce
+   * qu'elle faisait, en remplaçant une phrase humaine par l'URL dès qu'une
+   * fiche sans alternative enregistrait ses visuels.
    */
-  it("n’écrase pas une alternative écrite par une fiche qui n’en a pas", async () => {
+  it("l’alternative de la bibliothèque survit aux fiches qui portent l’image", async () => {
     const famille = await aCategory();
     const croissant = await aProduct(famille, "Croissant");
     const pain = await aProduct(famille, "Pain au chocolat");
-    await setMedia(croissant, [
-      { role: "gallery", url: CROISSANT, alt: { fr: "Croissant doré sur une grille" } },
-    ]);
+    await staff()
+      .put(MEDIA)
+      .send({
+        url: CROISSANT,
+        name: "",
+        tags: [],
+        alt: { fr: "Croissant doré sur une grille" },
+        focal: null,
+      });
 
+    await setMedia(croissant, [{ role: "gallery", url: CROISSANT }]);
     await setMedia(pain, [{ role: "gallery", url: CROISSANT }]);
 
     const row = await ctx.prisma.mediaAsset.findUnique({ where: { url: CROISSANT } });

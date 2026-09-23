@@ -1,13 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-import { FoldButtonComponent, FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
+import { FoldButtonComponent, FoldPanelHostService } from 'fold-ng';
 
 import { MediaGallery } from '../../../media-gallery/media-gallery';
 
-import { LangSwitch } from '../../../../../shared/lang-switch/lang-switch';
-import { SOURCE_LOCALE } from '@lfd/pim-contracts';
-
-import { LOCALE_NAMES, missingSentence } from '../../../../../shared/lang-switch/locale-names';
 import {
   AltTextPanel,
   type AltTextPanelData,
@@ -44,7 +40,7 @@ import { ProductFormStore } from '../../product-form-store';
 @Component({
   selector: 'app-visuals-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LangSwitch, FoldButtonComponent, FoldCalloutComponent, MediaGallery],
+  imports: [FoldButtonComponent, MediaGallery],
   templateUrl: './visuals-form.html',
   styleUrls: ['../form-section.scss'],
 })
@@ -53,44 +49,15 @@ export class VisualsForm {
   private readonly panels = inject(FoldPanelHostService);
 
   /**
-   * L'avertissement de la GALERIE — un seul, au-dessus de la grille.
+   * Ouvre le panneau d'un visuel : son USAGE, et son retrait.
    *
-   * Un message par vignette devenait le motif de fond de la section : répété
-   * huit fois, on ne lisait plus que lui, donc plus rien. Ici il compte, il
-   * nomme les langues, et les tuiles concernées se signalent par leur liseré.
-   */
-  protected readonly missingHint = computed(() => {
-    const anyEmpty = this.store.media().some((slot) => slot.alt === undefined);
-    const missing = missingSentence('Des descriptions manquent', this.store.mediaMissing());
-    if (anyEmpty) {
-      return missing === undefined
-        ? 'Certaines images n’ont aucune description.'
-        : `Certaines images n’ont aucune description. ${missing}`;
-    }
-    return missing;
-  });
-
-  /** Les index dont la description est incomplète — la galerie les liserait. */
-  protected readonly incompleteIndexes = computed(() =>
-    this.store
-      .media()
-      .flatMap((_, index) => (this.store.mediaAltMissing(index).length > 0 ? [index] : [])),
-  );
-
-  /** Les langues qui manquent à CETTE image, nommées ; rien quand tout y est. */
-  protected untranslated(index: number): string | undefined {
-    const missing = this.store.mediaAltMissing(index).filter((locale) => locale !== SOURCE_LOCALE);
-    return missing.length === 0
-      ? undefined
-      : missing.map((locale) => LOCALE_NAMES[locale]).join(' et ');
-  }
-
-  /**
-   * Ouvre le panneau du texte alternatif — les trois langues d'un coup.
+   * 🔴 Plus d'étiquette ni de texte alternatif depuis le 2026-09-23. Ils
+   * décrivent l'image — qui est partagée — et une correction faite ici
+   * changeait silencieusement ce qu'une autre fiche affichait. Ils se
+   * saisissent dans la médiathèque, qui en est le seul point.
    *
-   * Le panneau rend le texte, ou `undefined` s'il a été vidé ; `dismiss()` ne
-   * rend rien du tout, et c'est la différence qui compte : annuler ne doit pas
-   * effacer ce qui existait.
+   * Le panneau rend `undefined` quand on annule, et c'est la différence qui
+   * compte : renoncer ne doit rien écrire.
    */
   protected editMedia(index: number): void {
     const slot = this.store.media()[index];
@@ -99,16 +66,9 @@ export class VisualsForm {
     }
     void this.panels
       .open<AltTextPanelData, AltTextPanelResult>(AltTextPanel, {
-        data: {
-          url: slot.url,
-          name: slot.name,
-          alt: slot.alt,
-          role: slot.role,
-        },
+        data: { url: slot.url, role: slot.role },
       })
       .closed.then((result) => {
-        // `undefined` = annulé. Écrire alors effacerait ce qu'on venait de
-        // renoncer à changer.
         if (result === undefined) {
           return;
         }
@@ -116,8 +76,6 @@ export class VisualsForm {
           this.store.removeMedia(index);
           return;
         }
-        this.store.setMediaName(index, result.name);
-        this.store.setMediaAltText(index, result.alt);
         if (result.role !== undefined) {
           this.store.setMediaRole(index, result.role);
         }
@@ -130,10 +88,6 @@ export class VisualsForm {
    * 🔴 Aucun dépôt : ces octets sont déjà chez nous. C'est le renversement du
    * modèle — une image entrait jusqu'ici dans le catalogue PAR une fiche, et la
    * retrouver demandait de se souvenir de laquelle.
-   *
-   * Renoncer (`dismiss`) rend `undefined` et n'ajoute rien ; une liste vide ne
-   * peut pas arriver, le panneau gardant son bouton fermé tant que rien n'est
-   * retenu.
    */
   protected pickFromLibrary(): void {
     void this.panels

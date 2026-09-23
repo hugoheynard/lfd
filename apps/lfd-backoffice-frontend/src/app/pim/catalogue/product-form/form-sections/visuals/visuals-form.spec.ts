@@ -171,32 +171,13 @@ describe('VisualsForm', () => {
     expect(urlInputs).toEqual([]);
   });
 
-  it('marque la tuile d’un liseré, et détaille AU-DESSUS de la grille', () => {
-    // Un message par vignette devenait le motif de fond de la section : répété
-    // huit fois, on ne lisait plus que lui. La tuile dit « celle-ci », le
-    // callout dit « ce qui manque ».
-    const store = setup();
-    store.media.set([
-      {
-        role: 'gallery',
-        url: 'https://media.test/a.png',
-        name: 'a',
-        alt: { fr: 'Une tarte', en: 'A tart', it: 'Una crostata' },
-      },
-      { role: 'gallery', url: 'https://media.test/b.png', name: 'b' },
-    ]);
-    const fixture = TestBed.createComponent(VisualsForm);
-    fixture.detectChanges();
-
-    const host = fixture.nativeElement as HTMLElement;
-    const tiles = [...host.querySelectorAll('.media-tile')];
-    expect(tiles[0]?.classList.contains('is-incomplete')).toBe(false);
-    expect(tiles[1]?.classList.contains('is-incomplete')).toBe(true);
-
-    const callouts = host.querySelectorAll('fold-callout');
-    expect(callouts.length).toBe(1);
-    expect(callouts[0]?.textContent).toContain('aucune description');
-  });
+  /*
+   * 🔴 Le cas du LISERÉ a été retiré le 2026-09-23 : il éprouvait qu'une tuile
+   * sans description se signale, or la fiche ne porte plus de description. Le
+   * texte alternatif décrit l'image — partagée — et se saisit dans la
+   * médiathèque. La complétude des descriptions est donc une question qui se
+   * pose là-bas, sur le fonds, et plus fiche par fiche.
+   */
 
   it('ne classe RIEN — la section agrège des ressources', () => {
     // Quelle image une boutique prend pour vignette est une décision du CANAL.

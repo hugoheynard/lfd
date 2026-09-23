@@ -109,7 +109,13 @@ export class MediaLibraryController {
   async describe(@Body() body: unknown): Promise<void> {
     const payload = mediaDetailsPayloadSchema.parse(body);
     await this.commands.execute<SaveMediaDetailsCommand, void>(
-      new SaveMediaDetailsCommand(payload.url, payload.name, payload.tags, payload.focal),
+      new SaveMediaDetailsCommand(
+        payload.url,
+        payload.name,
+        payload.tags,
+        payload.alt ?? {},
+        payload.focal,
+      ),
     );
   }
 

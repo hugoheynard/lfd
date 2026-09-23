@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
-import { readLocalized, type Locale, type LocalizedText } from '@lfd/pim-contracts';
+import { readLocalized, SOURCE_LOCALE, type Locale, type LocalizedText } from '@lfd/pim-contracts';
 
 import { FoldButtonIconComponent, FoldFileDropzoneComponent } from 'fold-ng';
 
@@ -70,8 +70,14 @@ function formatBytes(bytes: number): string {
 })
 export class MediaGallery {
   readonly slots = input.required<readonly GallerySlot[]>();
-  /** La langue dans laquelle on LIT les textes alternatifs. */
-  readonly locale = input.required<Locale>();
+  /**
+   * La langue dans laquelle on LIT les textes alternatifs.
+   *
+   * Facultative depuis le 2026-09-23 : les porteurs ne portent plus de texte,
+   * et l'alternative vient de la bibliothèque. La galerie ne l'affiche que
+   * quand on la lui donne.
+   */
+  readonly locale = input<Locale>(SOURCE_LOCALE);
   /** Les index dont la description est incomplète — ils portent le liseré. */
   readonly incomplete = input<readonly number[]>([]);
   /** Un dépôt est en cours. */

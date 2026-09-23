@@ -56,6 +56,8 @@ export interface LibraryMediaView extends MediaFactsView {
    * (découpés, minuscules, dédoublonnés) à l'écriture. `[]` = pas taguée.
    */
   readonly tags: readonly string[];
+  /** Le texte alternatif, dans les langues où il est écrit. */
+  readonly alt: LocalizedText;
   readonly focal: FocalPoint | null;
   /**
    * Combien de porteurs l'affichent — fiches et familles confondues.
@@ -103,12 +105,17 @@ export interface UploadedMediaView extends MediaFactsView {
   readonly url: string;
 }
 
-/** Un visuel tel qu'un écran l'ENVOIE — le rôle, l'adresse, et deux libellés. */
+/**
+ * Un visuel tel qu'un écran l'ENVOIE : **le rôle et l'adresse**.
+ *
+ * 🔴 Plus d'étiquette ni d'alternative depuis le 2026-09-23 — elles décrivent
+ * l'image, qui est partagée, et se saisissent dans la médiathèque. Les
+ * envoyer d'ici faisait écrire la bibliothèque à chaque enregistrement de
+ * fiche, et corriger l'une changeait silencieusement ce que l'autre affichait.
+ */
 export const mediaItemPayloadSchema = z.object({
   role: z.string().min(1),
   url: z.string().min(1),
-  name: z.string().optional(),
-  alt: optionalLocalizedTextSchema,
 });
 
 /**
@@ -130,6 +137,8 @@ export const mediaDetailsPayloadSchema = z.object({
   url: z.string().min(1),
   /** `''` efface l'étiquette — c'est un geste, pas une absence de champ. */
   name: z.string().max(120),
+  /** Le SEUL champ d'image qui se traduit — accessibilité ET référencement. */
+  alt: optionalLocalizedTextSchema,
   tags: z.array(z.string()).max(60),
   /**
    * `null` veut dire « personne ne s'est prononcé », jamais « au centre ».

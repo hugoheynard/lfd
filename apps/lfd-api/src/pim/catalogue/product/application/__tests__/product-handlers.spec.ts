@@ -898,7 +898,7 @@ describe("SetProductMediaHandler", () => {
       new DirectUnitOfWork(),
     ).execute(
       new SetProductMediaCommand(PRODUCT_ID, [
-        { role: "hero", url: "https://cdn/1.jpg", alt: { fr: "De face" } },
+        { role: "hero", url: "https://cdn/1.jpg" },
         { role: "gallery", url: "https://cdn/2.jpg" },
       ]),
     );
@@ -947,11 +947,7 @@ describe("SetProductMediaHandler", () => {
       new StoredMediaReader([mediaRow("gallery", "https://cdn/1.jpg")]),
       journal,
       new DirectUnitOfWork(),
-    ).execute(
-      new SetProductMediaCommand(PRODUCT_ID, [
-        { role: "hero", url: "https://cdn/1.jpg", name: "Face", alt: { fr: "De face" } },
-      ]),
-    );
+    ).execute(new SetProductMediaCommand(PRODUCT_ID, [{ role: "hero", url: "https://cdn/1.jpg" }]));
 
     expect(journal.types()).toEqual(["product.media_saved"]);
     expect(journal.entries[0]?.payload["changes"]).toMatchObject({
@@ -977,11 +973,7 @@ describe("SetProductMediaHandler", () => {
       new StoredMediaReader([mediaRow("hero", "https://cdn/1.jpg")]),
       journal,
       new DirectUnitOfWork(),
-    ).execute(
-      new SetProductMediaCommand(PRODUCT_ID, [
-        { role: "hero", url: "https://cdn/1.jpg", name: "Face", alt: { fr: "De face" } },
-      ]),
-    );
+    ).execute(new SetProductMediaCommand(PRODUCT_ID, [{ role: "hero", url: "https://cdn/1.jpg" }]));
 
     expect(journal.types()).toEqual([]);
   });
@@ -1007,8 +999,8 @@ describe("SetProductMediaHandler", () => {
       new DirectUnitOfWork(),
     ).execute(
       new SetProductMediaCommand(PRODUCT_ID, [
-        { role: "lifestyle", url: "https://cdn/2.jpg", name: "Face", alt: { fr: "De face" } },
-        { role: "gallery", url: "https://cdn/1.jpg", name: "Face", alt: { fr: "De face" } },
+        { role: "lifestyle", url: "https://cdn/2.jpg" },
+        { role: "gallery", url: "https://cdn/1.jpg" },
       ]),
     );
 

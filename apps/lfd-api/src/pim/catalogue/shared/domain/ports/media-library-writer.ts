@@ -1,4 +1,5 @@
 import type { WriteTicket } from "../../../../journal/pim-journal.js";
+import type { LocalizedText } from "../value-objects/localized-text.js";
 import type { FocalPoint } from "../value-objects/media.js";
 
 /** Ce qu'on décide d'une image, par opposition à ce qu'on en a mesuré. */
@@ -7,6 +8,15 @@ export interface MediaDetails {
   readonly name: string;
   /** Normalisés par le domaine avant d'arriver ici. */
   readonly tags: readonly string[];
+  /**
+   * Le texte alternatif, dans les langues où il est écrit.
+   *
+   * 🔴 Il vit ICI depuis le 2026-09-23, et nulle part ailleurs. Il se saisissait
+   * depuis la fiche produit, et arrivait dans la bibliothèque parce que chaque
+   * enregistrement y recréait une ligne. Une image, une description — corriger
+   * une faute se fait une fois.
+   */
+  readonly alt: LocalizedText;
   /** `null` = personne ne s'est prononcé, jamais « au centre ». */
   readonly focal: FocalPoint | null;
 }

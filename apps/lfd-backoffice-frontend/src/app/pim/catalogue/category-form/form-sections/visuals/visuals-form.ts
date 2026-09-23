@@ -58,10 +58,16 @@ export class CategoryVisualsForm {
   );
 
   /**
-   * Ouvre le panneau d'un visuel — son nom, ses trois alternatives, son retrait.
+   * Ouvre le panneau d'un visuel — **son retrait**, et rien d'autre.
+   *
+   * 🔴 Il portait le nom et les trois alternatives jusqu'au 2026-09-23 ; ils
+   * décrivent l'image, qui est partagée, et se saisissent désormais dans la
+   * médiathèque. Une famille n'a pas non plus d'usage à choisir : rien sous
+   * `pim/channels/` ne consulte le rôle d'un visuel de famille, et offrir le
+   * choix ferait décider pour rien.
    *
    * Le panneau rend `undefined` quand on ANNULE, et c'est la différence qui
-   * compte : annuler ne doit pas effacer ce qu'on venait de renoncer à changer.
+   * compte : renoncer ne doit rien écrire.
    */
   protected edit(index: number): void {
     const slot = this.store.media.items()[index];
@@ -70,18 +76,12 @@ export class CategoryVisualsForm {
     }
     void this.panels
       .open<AltTextPanelData, AltTextPanelResult>(AltTextPanel, {
-        data: { url: slot.url, name: slot.name, alt: slot.alt },
+        data: { url: slot.url },
       })
       .closed.then((result) => {
-        if (result === undefined) {
-          return;
-        }
-        if (result.removed === true) {
+        if (result?.removed === true) {
           this.store.media.remove(index);
-          return;
         }
-        this.store.media.rename(index, result.name);
-        this.store.media.describe(index, result.alt);
       });
   }
 

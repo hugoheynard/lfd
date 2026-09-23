@@ -1333,84 +1333,19 @@ export class ProductFormStore {
     });
   }
 
-  /**
-   * Renomme un visuel — la SEULE écriture libre de la liste. L'URL, elle, vient
-   * du dépôt : elle désigne un objet de notre stockage, et la saisir à la main
-   * ferait pointer une fiche vers un fichier que personne ici ne garde.
-   */
-  setMediaName(index: number, name: string): void {
-    this.media.update((current) =>
-      current.map((slot, position) => (position === index ? { ...slot, name } : slot)),
-    );
-  }
-
-  /** La langue en cours d'édition des textes alternatifs — la sienne. */
-  readonly mediaLocale = signal<Locale>(SOURCE_LOCALE);
-
-  /** Le texte alternatif d'un visuel, dans la langue affichée. */
-  mediaAlt(index: number): string {
-    return this.media()[index]?.alt?.[this.mediaLocale()] ?? '';
-  }
-
-  /** Écrit le texte alternatif dans la langue affichée, sans toucher aux autres. */
-  setMediaAlt(index: number, value: string): void {
-    this.media.update((current) =>
-      current.map((slot, position) => {
-        if (position !== index) {
-          return slot;
-        }
-        const alt = writeText(slot.alt ?? null, this.mediaLocale(), value);
-        // `exactOptionalPropertyTypes` : une clé ABSENTE et une clé à `undefined`
-        // ne sont pas la même chose, et c'est bien la première qu'on veut —
-        // « pas d'alternative » plutôt que « alternative indéfinie ».
-        const { alt: _dropped, ...rest } = slot;
-        return alt === null ? rest : { ...rest, alt };
-      }),
-    );
-  }
-
-  /** Remplace le texte alternatif d'un visuel, dans toutes ses langues. */
-  setMediaAltText(index: number, alt: LocalizedText | undefined): void {
-    this.media.update((current) =>
-      current.map((slot, position) => {
-        if (position !== index) {
-          return slot;
-        }
-        // `exactOptionalPropertyTypes` : « pas d'alternative » est une clé
-        // ABSENTE, pas une clé à `undefined`.
-        const { alt: _dropped, ...rest } = slot;
-        return alt === undefined ? rest : { ...rest, alt };
-      }),
-    );
-  }
-
-  /**
-   * Les langues qui manquent au texte alternatif d'UN visuel.
+  /*
+   * 🔴 **L'étiquette et le texte alternatif ont quitté la fiche le
+   * 2026-09-23.** Ils décrivent l'IMAGE, pas l'emploi qu'une fiche en fait, et
+   * une image est partagée : corriger une faute d'alternative depuis une fiche
+   * changeait silencieusement ce qu'une autre affichait.
    *
-   * Par image ET par langue, parce que c'est la question qu'on se pose devant
-   * une galerie : pas « est-ce qu'il manque des traductions » mais « laquelle,
-   * sur laquelle ». Le compte agrégé de la section ne peut pas y répondre.
+   * Toute la machinerie qui vivait ici — langue en cours d'édition, écriture
+   * par langue, langues manquantes par visuel et pour la section — est partie
+   * avec eux. Elle ne se recopie pas : elle appartient à la médiathèque, qui
+   * est le seul point où ces deux champs s'écrivent désormais.
+   *
+   * Ce que la fiche décide encore d'un visuel : son USAGE et son RANG.
    */
-  mediaAltMissing(index: number): readonly Locale[] {
-    const alt = this.media()[index]?.alt;
-    return alt === undefined ? LOCALES : missingLocales(alt);
-  }
-
-  /**
-   * Les langues qu'il reste à traduire sur les visuels. Même règle que
-   * l'éditorial : un visuel sans alternative du tout n'est pas « à traduire »,
-   * il est à rédiger — et c'est la complétude qui le dit, pas ce point-ci.
-   */
-  readonly mediaMissing = computed(() =>
-    LOCALES.filter((locale) =>
-      this.media().some(
-        (slot) =>
-          slot.alt !== undefined &&
-          (slot.alt[SOURCE_LOCALE] ?? '') !== '' &&
-          (slot.alt[locale] ?? '') === '',
-      ),
-    ),
-  );
 
   // ── Chargement / mode ────────────────────────────────────────────────────
 

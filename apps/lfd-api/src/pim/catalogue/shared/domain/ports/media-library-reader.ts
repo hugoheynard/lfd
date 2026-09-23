@@ -1,3 +1,5 @@
+import type { LocalizedText } from "../value-objects/localized-text.js";
+
 /**
  * Une image de la bibliothèque, **une seule fois**, quel qu'ait été son nombre
  * d'inscriptions.
@@ -20,6 +22,8 @@ export interface LibraryMediaRecord {
   readonly name: string;
   /** Les mots par lesquels on la retrouve. Normalisés à l'écriture. */
   readonly tags: readonly string[];
+  /** Le texte alternatif — une image, une description. */
+  readonly alt: LocalizedText;
   readonly storageKey: string | null;
   readonly contentType: string | null;
   readonly width: number | null;
