@@ -4,21 +4,30 @@
     soit le nombre de fiches qui l'affichent.
   </p>
 
-  <!-- LE DÉPÔT EN LOT. `multiple`, et la liste d'acceptation du serveur reprise
-       en `accept` : l'écran ne valide rien — c'est le serveur qui relit les
-       octets — mais autant ne pas laisser choisir un PDF dans l'explorateur
-       pour le refuser trois secondes plus tard. -->
+  <!-- LE DÉPÔT EN LOT. `accept` vient du CONTRAT, comme les bornes affichées :
+       l'écran ne valide rien — c'est le serveur qui relit les octets — mais
+       autant ne pas laisser choisir un PDF dans l'explorateur pour le refuser
+       trois secondes plus tard. -->
   <div class="deposit">
-    <label class="pick" [class.pick-busy]="batch.running()">
-      <input
-        type="file"
-        multiple
-        accept="image/png,image/jpeg,image/webp"
-        [disabled]="batch.running()"
-        (change)="deposit($event.target)"
-      />
-      <span>{{ batch.running() ? 'Dépôt en cours…' : 'Déposer des images' }}</span>
-    </label>
+    <!-- 🔴 Les bornes sont DITES en `hint`, avant qu'on essaie. L'écran n'en
+         disait rien : on les apprenait par un refus, et sur un lot de cinquante
+         on les apprenait cinquante fois.
+
+         ⚠️ La garde de transport (25 Mo) n'y est pas : ce n'est pas une règle
+         mais une protection, elle coupe bien plus haut, et la dire ferait deux
+         chiffres pour une seule question. -->
+    <fold-file-dropzone
+      class="pick"
+      [accept]="limits.accept"
+      [multiple]="true"
+      label="Déposer des images"
+      [hint]="
+        limits.formats + ' · ' + limits.maxSize + ' par image · ' + limits.minEdge + ' minimum'
+      "
+      [busy]="batch.running()"
+      busyLabel="Dépôt en cours…"
+      (filesPicked)="deposit($event)"
+    />
 
     @if (batch.entries().length > 0) {
       <p class="tally">

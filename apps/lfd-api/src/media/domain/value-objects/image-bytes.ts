@@ -1,29 +1,28 @@
+import { MEDIA_LIMITS } from "@lfd/pim-contracts";
 import { imageDimensions, sniffContentType } from "@lfd/storage";
 
 import { DomainError } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * Les types acceptés pour un visuel de catalogue.
+ * Les bornes viennent du CONTRAT depuis le 2026-09-23, et n'étaient nulle part
+ * ailleurs avant.
  *
- * Liste d'**acceptation**, pas de refus : ce qui n'y est pas est refusé, et
- * l'ajout d'un format est une décision qu'on relit. Un SVG est du code exécuté
- * par le navigateur qui l'affiche — l'accepter mettrait du script sur notre
- * domaine média. L'AVIF et le HEIC sont absents pour une raison plus bête : ils
+ * 🔴 Elles vivaient ici, en trois constantes privées, et l'écran n'en disait
+ * rien : le seul moyen d'apprendre qu'un fichier est trop lourd était de se le
+ * faire refuser. Deux gabarits recopiaient déjà la liste des formats en dur.
+ * Une règle que l'écran annonce et que le serveur applique ne peut pas vivre à
+ * deux endroits — l'un des deux finit par mentir.
+ *
+ * Ce fichier reste le seul à REFUSER. Le contrat ne fait que publier les
+ * chiffres pour que l'écran puisse prévenir.
+ *
+ * L'AVIF et le HEIC sont absents pour une raison plus bête que le SVG : ils
  * partagent l'en-tête `ftyp` du MP4, que le renifleur appelle aujourd'hui
  * `audio/mp4`.
  */
-const ACCEPTED = ["image/png", "image/jpeg", "image/webp"] as const;
-
-/**
- * Plafond métier. Une photo de produit publiée dépasse rarement 2 Mo une fois
- * exportée ; 10 Mo laisse passer un export brut sans laisser passer une vidéo
- * renommée. Le multipart coupe bien plus haut, en garde-fou DoS — ce plafond-ci
- * est une règle, pas une protection.
- */
-const MAX_BYTES = 10 * 1024 * 1024;
-
-/** En deçà, ce n'est pas un visuel de catalogue : c'est une icône ou une erreur. */
-const MIN_EDGE_PIXELS = 200;
+const ACCEPTED: readonly string[] = MEDIA_LIMITS.acceptedTypes;
+const MAX_BYTES = MEDIA_LIMITS.maxBytes;
+const MIN_EDGE_PIXELS = MEDIA_LIMITS.minEdgePixels;
 
 export class UnsupportedImageError extends DomainError {
   constructor(reason: string) {

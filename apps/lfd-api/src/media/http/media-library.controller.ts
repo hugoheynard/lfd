@@ -16,6 +16,7 @@ import {
   mediaDetailsPayloadSchema,
   type MediaLibraryPageView,
   type UploadedMediaView,
+  MEDIA_LIMITS,
   type MediaCarrierView,
   type MediaUploadFailureView,
 } from "@lfd/pim-contracts";
@@ -35,7 +36,7 @@ import { SaveMediaDetailsCommand } from "../application/save-media-details.js";
  * empêche de saturer la mémoire du processus, celui du domaine énonce ce qu'est
  * un visuel de catalogue acceptable.
  */
-const IMAGE_UPLOAD_HARD_LIMIT = 25 * 1024 * 1024;
+const IMAGE_UPLOAD_HARD_LIMIT = MEDIA_LIMITS.transportMaxBytes;
 
 /** Le repli quand le paramètre manque ou n'est pas un nombre. Le handler
  *  reborne de toute façon — ceci évite juste de lui passer un `NaN`. */

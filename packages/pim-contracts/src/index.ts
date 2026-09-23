@@ -22,6 +22,8 @@ export {
   mediaItemPayloadSchema,
   setMediaPayloadSchema,
 } from "./media.js";
+export { MEDIA_LIMITS } from "./media.js";
+
 export type {
   AttachedMediaView,
   MediaFactsView,

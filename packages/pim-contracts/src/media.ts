@@ -4,6 +4,47 @@ import { optionalLocalizedTextSchema } from "./localized.js";
 import type { LocalizedText } from "./shared.js";
 
 /**
+ * **Ce qu'un dépôt d'image accepte** — la seule source, lue des deux côtés.
+ *
+ * 🔴 Elles vivaient dans le domaine du serveur, et l'écran n'en disait RIEN :
+ * le seul moyen d'apprendre qu'un fichier est trop lourd était de se le faire
+ * refuser. Pire, deux gabarits recopiaient déjà la liste des formats en dur —
+ * une troisième copie aurait fini par diverger, et l'écran aurait annoncé une
+ * règle que le serveur n'applique pas.
+ *
+ * Le serveur les lit pour REFUSER, l'écran pour PRÉVENIR. Les deux ne peuvent
+ * plus se contredire.
+ */
+export const MEDIA_LIMITS = {
+  /**
+   * Liste d'**acceptation**, pas de refus : ce qui n'y est pas est refusé, et
+   * l'ajout d'un format est une décision qu'on relit. Le SVG en est exclu
+   * nommément — il est exécuté par le navigateur qui l'affiche, donc l'accepter
+   * mettrait du script sur notre domaine média.
+   */
+  acceptedTypes: ["image/png", "image/jpeg", "image/webp"],
+  /** Ce que l'attribut `accept` d'un `<input type="file">` attend. */
+  accept: "image/png,image/jpeg,image/webp",
+  /** Les mêmes, tels qu'on les dit à un humain. */
+  formatLabels: ["PNG", "JPEG", "WebP"],
+  /**
+   * Plafond **métier**, par fichier. Une photo de produit publiée dépasse
+   * rarement 2 Mo une fois exportée ; 10 Mo laisse passer un export brut sans
+   * laisser passer une vidéo renommée.
+   */
+  maxBytes: 10 * 1024 * 1024,
+  /**
+   * Garde de **transport**, par requête. Ce n'est pas une règle : c'est une
+   * protection contre le déni de service, et elle coupe bien plus haut que le
+   * plafond métier. La dire à l'écran embrouillerait — on n'annonce que
+   * `maxBytes`.
+   */
+  transportMaxBytes: 25 * 1024 * 1024,
+  /** En deçà, ce n'est pas un visuel de catalogue : c'est une icône ou une erreur. */
+  minEdgePixels: 200,
+} as const;
+
+/**
  * Les visuels, **indépendamment de ce qui les porte**.
  *
  * Ces formes vivaient dans `product.ts`, du temps où une fiche était le seul

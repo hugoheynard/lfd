@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { MEDIA_LIMITS } from '@lfd/pim-contracts';
 import type { LibraryMediaView, MediaUploadFailureView } from '@lfd/pim-contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
+  FoldFileDropzoneComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldLoadingStateComponent,
@@ -35,6 +37,7 @@ const PAGE_SIZE = 60;
   selector: 'app-mediatheque-page',
   imports: [
     FoldButtonComponent,
+    FoldFileDropzoneComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldLoadingStateComponent,
@@ -89,6 +92,28 @@ export class MediathequePage {
    * stocké, donc il n'y a pas d'octets à renvoyer. Seule la file en mémoire,
    * qui détient les `File`, peut le faire.
    */
+  /**
+   * **Ce que le dépôt accepte**, dit AVANT qu'on essaie.
+   *
+   * 🔴 L'écran n'en disait rien : le seul moyen d'apprendre qu'un fichier est
+   * trop lourd était de se le faire refuser — et sur un lot de cinquante, de
+   * découvrir la règle cinquante fois.
+   *
+   * ⚠️ Lu du CONTRAT, jamais recopié. Une borne annoncée à l'écran et une
+   * borne appliquée au serveur ne peuvent pas vivre à deux endroits : l'un des
+   * deux finit par mentir, et c'est toujours celui qui ne refuse rien.
+   *
+   * ⚠️ La garde de TRANSPORT (25 Mo) n'est pas annoncée : ce n'est pas une
+   * règle mais une protection, elle coupe bien plus haut, et la dire ferait
+   * deux chiffres pour une seule question.
+   */
+  protected readonly limits = {
+    accept: MEDIA_LIMITS.accept,
+    formats: MEDIA_LIMITS.formatLabels.join(' · '),
+    maxSize: `${String(MEDIA_LIMITS.maxBytes / (1024 * 1024))} Mo`,
+    minEdge: `${String(MEDIA_LIMITS.minEdgePixels)} × ${String(MEDIA_LIMITS.minEdgePixels)} px`,
+  };
+
   protected readonly pastFailures = signal<readonly MediaUploadFailureView[]>([]);
   protected readonly showPast = signal(false);
 
@@ -234,14 +259,18 @@ export class MediathequePage {
    * octets déjà connus ne crée pas d'entrée neuve. Ajouter une page à la suite
    * laisserait la grille mentir.
    */
-  protected async deposit(picked: EventTarget | null): Promise<void> {
-    const input = picked instanceof HTMLInputElement ? picked : null;
-    const files = input === null ? [] : [...(input.files ?? [])];
-    if (input !== null) {
-      // Remis à zéro TOUT DE SUITE : sans ça, redéposer la même sélection ne
-      // déclenche aucun `change`, et l'écran a l'air cassé.
-      input.value = '';
-    }
+  /**
+   * Dépose une sélection — ou un glisser-déposer.
+   *
+   * 🔴 Par `fold-file-dropzone` depuis le 2026-09-23. C'était un `<label>` et
+   * un `<input type="file">` masqué, sous un commentaire qui disait « fold n'en
+   * propose pas » : c'était faux, et ça l'était déjà quand la phrase a été
+   * écrite. Le composant existe, il accepte le glisser-déposer, il porte son
+   * état d'attente — et il remet sa sélection à zéro tout seul, ce que le
+   * contrôle fait main devait faire à la main sous peine de paraître cassé au
+   * second dépôt du même fichier.
+   */
+  protected async deposit(files: readonly File[]): Promise<void> {
     if (files.length === 0) {
       return;
     }
