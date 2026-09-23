@@ -4,7 +4,6 @@ import type {
   ProductDetailView,
   ProductIngredientAllergensView,
   ProductReadinessView,
-  UploadedMediaView,
   ProductEditorialView,
   SalesChannels,
   ProductView,
@@ -16,7 +15,6 @@ import { SOURCE_LOCALE, type VariantAspect } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
-import { B2B_API_BASE as API_ROOT } from '../../api/api-config';
 import { EMPTY_NUTRITION, type NutritionValues } from '../data/models';
 import type { Product, ProductKind, Variant } from '../data/models';
 import type { CreatedIdResponse } from '@lfd/contracts';
@@ -317,22 +315,12 @@ export class ProductHttpApi {
    * Un remplacement : ce que l'écran affiche fait foi. Ce panneau n'avait aucune
    * route ; on pouvait attacher des images à la création, et plus jamais.
    */
-  /**
-   * Dépose une image dans la bibliothèque et rend son entrée.
-   *
-   * Séparé de l'enregistrement de la section : déposer crée un fichier, ranger
-   * décide où il sert. Un dépôt ne modifie donc AUCUN produit — c'est ce qui
-   * permet d'illustrer un produit qu'on est en train de créer, et ce qui fait
-   * qu'une image déposée puis non enregistrée ne casse rien.
+  /*
+   * 🔴 **Le dépôt a quitté le client du référentiel le 2026-09-23.** Il visait
+   * `POST /media`, c'est-à-dire la médiathèque : une fiche envoyait des octets
+   * à un bloc qui n'est pas le sien. Le dépôt se fait dans la médiathèque, par
+   * `MediaLibraryHttpApi` — et la fiche ne fait que RATTACHER une URL.
    */
-  async uploadMedia(file: File): Promise<UploadedMediaView> {
-    const body = new FormData();
-    body.append('file', file);
-    // 🔴 La bibliothèque est un BLOC à elle depuis le 2026-09-23 : son adresse
-    // est `/media`, à la racine, et non sous le préfixe du référentiel. D'où
-    // cette URL construite à part — `this.url()` préfixerait `/pim/catalogue/`.
-    return firstValueFrom(this.http.post<UploadedMediaView>(`${API_ROOT}/media`, body));
-  }
 
   /**
    * Ajoute une **déclinaison** à la fiche.

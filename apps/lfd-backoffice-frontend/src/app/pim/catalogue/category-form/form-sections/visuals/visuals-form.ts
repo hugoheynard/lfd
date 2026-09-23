@@ -1,27 +1,35 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
 import { SOURCE_LOCALE, type Locale } from '@lfd/pim-contracts';
-import { FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
+import { FoldButtonComponent, FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
 
 import { LangSwitch } from '../../../../../shared/lang-switch/lang-switch';
 import { missingSentence } from '../../../../../shared/lang-switch/locale-names';
-import { NotifyService } from '../../../../../notify.service';
 import {
   AltTextPanel,
   type AltTextPanelData,
   type AltTextPanelResult,
 } from '../../../product-form/form-sections/visuals/alt-text-panel/alt-text-panel';
 import { MediaGallery } from '../../../media-gallery/media-gallery';
+import {
+  LibraryPicker,
+  type LibraryPickerData,
+  type PickedMedia,
+} from '../../../library-picker/library-picker';
 import { CategoryFormStore } from '../../category-form-store';
 
 /**
- * Section **Visuels** d'une famille — dépôt vers la bibliothèque, puis
- * composition de sa liste.
+ * Section **Visuels** d'une famille — composition de sa liste, et rien d'autre.
  *
- * Les deux gestes sont volontairement distincts : déposer crée un fichier et ne
- * touche à aucune famille ; enregistrer remplace la liste de CELLE-CI. C'est ce
- * qui permet au même fichier de servir une famille et une fiche sans être déposé
- * deux fois — la bibliothèque `media_asset` est commune aux deux.
+ * 🔴 **Plus aucun dépôt depuis le 2026-09-23.** Le sien visait
+ * `POST /pim/catalogue/media`, une route emportée par le déménagement de la
+ * bibliothèque : déposer depuis une famille rendait un **404** que rien ne
+ * signalait, l'URL étant construite à la main. Le retrait du geste est donc
+ * aussi la correction du défaut.
+ *
+ * Les octets entrent par la médiathèque, qui est le seul fonds ; une famille
+ * RATTACHE une URL. Alimenter et taguer le fonds est un autre métier que
+ * composer une famille.
  *
  * La galerie et le panneau de description sont ceux de la fiche produit, à
  * l'identique. Seule la source des données change.
@@ -29,14 +37,13 @@ import { CategoryFormStore } from '../../category-form-store';
 @Component({
   selector: 'app-category-visuals-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LangSwitch, FoldCalloutComponent, MediaGallery],
+  imports: [LangSwitch, FoldButtonComponent, FoldCalloutComponent, MediaGallery],
   templateUrl: './visuals-form.html',
   styleUrls: ['../../../product-form/form-sections/form-section.scss'],
 })
 export class CategoryVisualsForm {
   protected readonly store = inject(CategoryFormStore);
   private readonly panels = inject(FoldPanelHostService);
-  private readonly notify = inject(NotifyService);
 
   /** La langue dans laquelle on LIT les alternatives — propre à cette section :
    *  ni le nom d'un fichier, ni ses dimensions, ni l'image ne se traduisent. */
@@ -85,13 +92,22 @@ export class CategoryVisualsForm {
       });
   }
 
-  /** Le dépôt peut échouer — format refusé, fichier trop lourd, réseau. Sans ce
-   *  message, la tuile ne paraît simplement jamais et rien ne dit pourquoi. */
-  protected async pick(file: File): Promise<void> {
-    try {
-      await this.store.media.upload(file);
-    } catch (caught) {
-      this.notify.refused(caught, "Le dépôt de l'image a échoué.");
-    }
+  /**
+   * Ouvre la médiathèque et rattache ce qu'on y retient.
+   *
+   * 🔴 Le SEUL chemin par lequel un visuel entre sur une famille. Le panneau ne
+   * dépose pas : il désigne, et renoncer ne laisse rien derrière.
+   */
+  protected pickFromLibrary(): void {
+    void this.panels
+      .open<LibraryPickerData, readonly PickedMedia[]>(LibraryPicker, {
+        data: { already: this.store.media.items().map((slot) => slot.url) },
+      })
+      .closed.then((picked) => {
+        if (picked === undefined || picked.length === 0) {
+          return;
+        }
+        this.store.media.addFromLibrary(picked);
+      });
   }
 }

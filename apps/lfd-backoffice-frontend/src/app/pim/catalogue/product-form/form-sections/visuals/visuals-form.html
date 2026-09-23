@@ -1,18 +1,11 @@
 <!-- 🔴 Plus de sélecteur de langue ici depuis le 2026-09-23 : cette section ne
      porte plus aucun texte. L'étiquette et l'alternative décrivent l'image, pas
      l'emploi qu'une fiche en fait, et se saisissent dans la médiathèque. -->
-<app-media-gallery
-  [slots]="store.media()"
-  [busy]="store.uploading()"
-  (edit)="editMedia($event)"
-  (picked)="store.uploadMedia($event)"
-/>
+<app-media-gallery [slots]="store.media()" (edit)="editMedia($event)" />
 
-<!-- CHOISIR plutôt que redéposer. Le geste est à côté du dépôt et non à sa
-     place : une image neuve entre toujours par le dépôt, et une image qui
-     existe n'a aucune raison d'être renvoyée. -->
+<!-- 🔴 Le seul geste d'ajout depuis le 2026-09-23. Il était en second, à côté
+     d'un dépôt ; le dépôt est parti dans le panneau, et ce bouton est devenu
+     la porte — d'où l'emphase pleine plutôt que le contour. -->
 <p class="from-library">
-  <button foldButton emphasis="outline" (click)="pickFromLibrary()">
-    Choisir dans la médiathèque
-  </button>
+  <button foldButton (click)="pickFromLibrary()">Choisir dans la médiathèque</button>
 </p>

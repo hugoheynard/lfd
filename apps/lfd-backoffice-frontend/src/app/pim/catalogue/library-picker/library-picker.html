@@ -13,6 +13,13 @@
     <p class="state">Lecture de la médiathèque…</p>
   } @else if (failure(); as message) {
     <p class="state">{{ message }}</p>
+  } @else if (images().length === 0) {
+    <!-- Fonds VIDE et recherche infructueuse ne se disent pas pareil : le
+         rédacteur ne dépose pas, il faut donc lui nommer qui le fait et où —
+         sans quoi le panneau est une impasse muette. -->
+    <p class="state">
+      La médiathèque est vide. Les images y sont déposées et taguées depuis l'écran Médiathèque.
+    </p>
   } @else if (shown().length === 0) {
     <p class="state">Aucune image ne correspond.</p>
   } @else {
@@ -32,7 +39,7 @@
             <span class="caption">
               {{ label(image) }}
               @if (isAlready(image.url)) {
-                <span class="already">déjà sur la fiche</span>
+                <span class="already">déjà porté</span>
               }
             </span>
           </button>

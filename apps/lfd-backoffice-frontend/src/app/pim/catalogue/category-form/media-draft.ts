@@ -8,27 +8,32 @@ import {
   type LocalizedText,
 } from '@lfd/pim-contracts';
 
-import type { CategoryHttpApi } from '../category-http-api';
+import type { PickedMedia } from '../library-picker/library-picker';
 
 /**
  * Les visuels en cours de composition — la liste, et les gestes qui la changent.
  *
- * Déposer et enregistrer sont VOLONTAIREMENT distincts : déposer crée un fichier
- * dans la bibliothèque et ne touche à aucune famille ; enregistrer remplace la
- * liste de CETTE famille. C'est ce qui permet à un même fichier de servir une
- * famille et une fiche sans être déposé deux fois.
+ * 🔴 **Plus aucun dépôt depuis le 2026-09-23.** Une famille ne reçoit pas
+ * d'octets : elle RATTACHE une URL de la médiathèque, qui est le seul fonds.
+ * Alimenter et taguer ce fonds est un autre métier que composer une famille —
+ * un dépôt offert ici aurait produit des images que personne ne retrouve.
  */
 export interface MediaDraft {
   readonly items: WritableSignal<readonly CategoryMediaView[]>;
-  /** Un dépôt est en cours — la zone de dépôt doit le dire. */
-  readonly uploading: Signal<boolean>;
   /** Les langues dont une alternative manque, quelque part dans la liste. */
   readonly missing: Signal<readonly Locale[]>;
   /** Ce qui manque à CETTE image ; vide quand tout y est. */
   missingOf(index: number): readonly Locale[];
   adopt(source: readonly CategoryMediaView[]): void;
-  /** Dépose un fichier et l'ajoute en fin de liste. Rend l'échec à l'appelant. */
-  upload(file: File): Promise<void>;
+  /**
+   * Rattache des images de la bibliothèque, en fin de liste.
+   *
+   * 🔴 Les URL **déjà présentes sont ignorées**, silencieusement : la même
+   * image deux fois dans une famille n'a pas de sens, et la clé primaire
+   * `(famille, url, rôle)` la refuserait de toute façon — l'écran ne doit pas
+   * laisser produire la situation pour la voir refusée ensuite.
+   */
+  addFromLibrary(picked: readonly PickedMedia[]): void;
   remove(index: number): void;
   rename(index: number, name: string): void;
   describe(index: number, alt: LocalizedText | undefined): void;
@@ -42,9 +47,8 @@ export interface MediaDraft {
  *  « principale » avait été retirée faute de consommateur. */
 const ROLE = 'gallery';
 
-export function mediaDraft(api: CategoryHttpApi): MediaDraft {
+export function mediaDraft(): MediaDraft {
   const items = signal<readonly CategoryMediaView[]>([]);
-  const uploading = signal(false);
 
   const missingOf = (index: number): readonly Locale[] => {
     const slot = items()[index];
@@ -62,7 +66,6 @@ export function mediaDraft(api: CategoryHttpApi): MediaDraft {
 
   return {
     items,
-    uploading: uploading.asReadonly(),
     missingOf,
     missing: computed(() => {
       const seen = new Set<Locale>();
@@ -76,28 +79,29 @@ export function mediaDraft(api: CategoryHttpApi): MediaDraft {
     adopt(source) {
       items.set([...source]);
     },
-    async upload(file) {
-      uploading.set(true);
-      try {
-        const uploaded = await api.uploadMedia(file);
-        items.update((current) => [
-          ...current,
-          {
+    addFromLibrary(picked) {
+      items.update((current) => {
+        const known = new Set(current.map((slot) => slot.url));
+        const added = picked
+          .filter((image) => !known.has(image.url))
+          .map((image) => ({
             role: ROLE,
-            url: uploaded.url,
-            name: '',
+            url: image.url,
+            name: image.name,
             // Sans alternative écrite, l'URL : la colonne est obligatoire, et
             // une chaîne vide passerait pour une alternative rédigée.
-            alt: { [SOURCE_LOCALE]: uploaded.url },
-            width: uploaded.width,
-            height: uploaded.height,
-            bytes: uploaded.bytes,
-            contentType: uploaded.contentType,
-          },
-        ]);
-      } finally {
-        uploading.set(false);
-      }
+            //
+            // ⚠️ L'alternative RÉELLE vit dans la médiathèque et n'est pas
+            // relue ici : la liste ne sert qu'à composer, et le serveur relit
+            // la bibliothèque à l'enregistrement.
+            alt: { [SOURCE_LOCALE]: image.url },
+            width: image.width,
+            height: image.height,
+            bytes: image.bytes,
+            contentType: image.contentType,
+          }));
+        return [...current, ...added];
+      });
     },
     remove(index) {
       items.update((current) => current.filter((_, position) => position !== index));

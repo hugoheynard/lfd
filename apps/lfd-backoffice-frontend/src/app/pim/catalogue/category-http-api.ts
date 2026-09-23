@@ -7,7 +7,6 @@ import type {
   CategoryView,
   LocalizedText,
   SalesChannels,
-  UploadedMediaView,
 } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -150,18 +149,12 @@ export class CategoryHttpApi {
     });
   }
 
-  /**
-   * Dépose un fichier dans la BIBLIOTHÈQUE — pas sur une famille.
-   *
-   * La route est celle du catalogue, pas celle des fiches : un visuel existe
-   * avant d'être attaché, et le même fichier sert une famille et une fiche sans
-   * être déposé deux fois.
+  /*
+   * 🔴 **Le dépôt a quitté ce client le 2026-09-23**, et il était DÉJÀ cassé :
+   * il postait sur `/pim/catalogue/media`, route emportée par le déménagement
+   * de la bibliothèque, donc un 404 que rien ne signalait. Les octets entrent
+   * par la médiathèque ; une famille ne fait que rattacher une URL.
    */
-  uploadMedia(file: File): Promise<UploadedMediaView> {
-    const body = new FormData();
-    body.append('file', file);
-    return firstValueFrom(this.http.post<UploadedMediaView>(this.url('media'), body));
-  }
 
   private async put(path: string, body: unknown): Promise<void> {
     await firstValueFrom(this.http.put(this.url(path), body));

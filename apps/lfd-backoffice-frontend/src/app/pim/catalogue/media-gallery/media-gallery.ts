@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 
 import { readLocalized, SOURCE_LOCALE, type Locale, type LocalizedText } from '@lfd/pim-contracts';
 
-import { FoldButtonIconComponent, FoldFileDropzoneComponent } from 'fold-ng';
+import { FoldButtonIconComponent } from 'fold-ng';
 
 /** Le rôle que la vitrine du canal B2B cherche (`showcase.ts`). */
 const MAIN_ROLE = 'hero';
@@ -58,13 +58,18 @@ function formatBytes(bytes: number): string {
  * une pastille de format ajoutée de l'autre.
  *
  * Elle ne connaît donc ni fiche ni famille : on lui donne des tuiles, elle
- * signale les clics. Le dépôt est la DERNIÈRE tuile, à la place qu'occuperait
- * l'image suivante — le geste est là où le regard finit, pas en bas de section.
+ * signale les clics.
+ *
+ * 🔴 **Elle ne dépose plus rien depuis le 2026-09-23.** Elle portait la zone de
+ * dépôt en dernière tuile, ce qui faisait entrer des octets par un porteur ;
+ * ils entrent désormais par la médiathèque seule, et le sélecteur porte le
+ * geste. La galerie ne montre donc que ce qui est RATTACHÉ — un état, pas une
+ * entrée.
  */
 @Component({
   selector: 'app-media-gallery',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonIconComponent, FoldFileDropzoneComponent],
+  imports: [FoldButtonIconComponent],
   templateUrl: './media-gallery.html',
   styleUrl: './media-gallery.scss',
 })
@@ -80,11 +85,8 @@ export class MediaGallery {
   readonly locale = input<Locale>(SOURCE_LOCALE);
   /** Les index dont la description est incomplète — ils portent le liseré. */
   readonly incomplete = input<readonly number[]>([]);
-  /** Un dépôt est en cours. */
-  readonly busy = input(false);
 
   readonly edit = output<number>();
-  readonly picked = output<File>();
 
   protected isIncomplete(index: number): boolean {
     return this.incomplete().includes(index);
@@ -135,12 +137,5 @@ export class MediaGallery {
       parts.push(formatOf(contentType));
     }
     return parts.join(' · ');
-  }
-
-  protected pick(files: readonly File[]): void {
-    const file = files[0];
-    if (file !== undefined) {
-      this.picked.emit(file);
-    }
   }
 }

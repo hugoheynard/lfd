@@ -16,7 +16,12 @@
   [slots]="store.media.items()"
   [locale]="locale()"
   [incomplete]="incompleteIndexes()"
-  [busy]="store.media.uploading()"
   (edit)="edit($event)"
-  (picked)="pick($event)"
 />
+
+<!-- 🔴 Le seul geste d'ajout depuis le 2026-09-23. Il remplace une zone de
+     dépôt qui visait une route disparue — et le fonds se remplit désormais
+     depuis la médiathèque, où l'on tague. -->
+<p class="from-library">
+  <button foldButton (click)="pickFromLibrary()">Choisir dans la médiathèque</button>
+</p>

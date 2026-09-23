@@ -13,15 +13,17 @@ import {
   LibraryPicker,
   type LibraryPickerData,
   type PickedMedia,
-} from './library-picker/library-picker';
+} from '../../../library-picker/library-picker';
 import { ProductFormStore } from '../../product-form-store';
 
 /**
- * Panneau **Visuels** — dépôt de fichier vers la bibliothèque média, puis
- * composition de la liste du produit.
+ * Panneau **Visuels** — composition de la liste du produit, et rien d'autre.
  *
- * Les deux gestes sont volontairement distincts : déposer crée un fichier et ne
- * touche à aucune fiche ; enregistrer remplace la liste entière du produit.
+ * 🔴 **Plus aucun dépôt ici depuis le 2026-09-23.** Les octets entrent par la
+ * médiathèque, qui est le seul fonds ; la fiche ne fait que RATTACHER une URL,
+ * exactement comme une ligne de commande B2B porte un SKU du référentiel sans
+ * le posséder. Le sélecteur porte le dépôt pour que le parcours reste d'un
+ * seul geste.
  *
  * 🔴 **Ce JSDoc a affirmé le contraire jusqu'au 2026-09-23**, et ses deux
  * moitiés étaient fausses. Il disait : « il n'y a ni "principale" ni rôle à
@@ -85,9 +87,9 @@ export class VisualsForm {
   /**
    * Ouvre la médiathèque et ajoute ce qu'on y retient.
    *
-   * 🔴 Aucun dépôt : ces octets sont déjà chez nous. C'est le renversement du
-   * modèle — une image entrait jusqu'ici dans le catalogue PAR une fiche, et la
-   * retrouver demandait de se souvenir de laquelle.
+   * 🔴 C'est le SEUL chemin par lequel un visuel entre sur une fiche. Le
+   * panneau sait aussi déposer : une image neuve va d'abord au fonds, puis en
+   * revient rattachée — une fiche ne reçoit jamais d'octets.
    */
   protected pickFromLibrary(): void {
     void this.panels

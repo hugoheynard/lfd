@@ -69,7 +69,7 @@ export class CategoryFormStore implements SectionEditing {
   readonly editorial = editorialDraft();
 
   /** Les visuels, dans leur ordre d'affichage — qui EST l'ordre enregistré. */
-  readonly media = mediaDraft(this.api);
+  readonly media = mediaDraft();
 
   /** Les parents proposables — ni la famille elle-même, ni une archivée. */
   readonly parents = computed(() =>

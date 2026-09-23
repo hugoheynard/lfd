@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import type { LibraryMediaView } from '@lfd/pim-contracts';
+import type { LibraryMediaView, MediaFactsView } from '@lfd/pim-contracts';
 import {
   FoldButtonComponent,
   type FoldPanelDefaults,
@@ -7,10 +7,10 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
-import { MediaLibraryHttpApi } from '../../../../../../mediatheque/media-library-http-api';
+import { MediaLibraryHttpApi } from '../../../mediatheque/media-library-http-api';
 
 /**
- * Charge d'ouverture : ce que la fiche porte DÉJÀ.
+ * Charge d'ouverture : ce que le porteur porte DÉJÀ.
  *
  * 🔴 Le panneau s'en sert pour montrer ces images comme déjà prises plutôt que
  * de les laisser choisir et les ignorer ensuite. Un écran qui accepte un geste
@@ -20,8 +20,16 @@ export interface LibraryPickerData {
   readonly already: readonly string[];
 }
 
-/** Une image retenue : ce dont la fiche a besoin pour la porter. */
-export interface PickedMedia {
+/**
+ * Une image retenue : ce dont le porteur a besoin pour la porter.
+ *
+ * 🔴 Les faits MESURÉS voyagent avec, et ils ne sont pas décoratifs : la
+ * galerie affiche la forme réelle du fichier, et sans eux une image rattachée
+ * s'afficherait « Dimensions inconnues » jusqu'au prochain rechargement de la
+ * page. Ils viennent de la bibliothèque, qui les a constatés dans les octets —
+ * jamais d'un navigateur, qui pourrait en dire autre chose.
+ */
+export interface PickedMedia extends MediaFactsView {
   readonly url: string;
   readonly name: string;
 }
@@ -37,9 +45,16 @@ const PAGE_SIZE = 100;
  * quelle fiche la portait. On dépose et on tague à la source ; on attribue à
  * l'usage.
  *
- * Aucun dépôt ici — ces octets sont déjà chez nous. Le panneau ne fait que
- * désigner, et c'est ce qui le rend sans risque : renoncer ne laisse rien
- * derrière.
+ * 🔴 **Aucun dépôt ici, et c'est un choix de MÉTIER** (2026-09-23). Le panneau
+ * a porté une zone de dépôt le temps d'un essai, pour épargner un aller-retour
+ * à qui rédige une fiche. C'était compter en gestes : alimenter et taguer le
+ * fonds est le travail de quelqu'un d'autre que rédiger une fiche, et un dépôt
+ * offert ici aurait rempli la bibliothèque d'images **non taguées** — déposées
+ * par qui n'a pas le vocabulaire en tête, et que personne ne retrouverait.
+ * C'est exactement le trou que la médiathèque a été faite pour boucher.
+ *
+ * Le panneau ne fait donc que désigner, et c'est ce qui le rend sans risque :
+ * renoncer ne laisse rien derrière.
  */
 @Component({
   selector: 'app-library-picker',
@@ -95,7 +110,7 @@ export class LibraryPicker {
     return this.picked().includes(url);
   }
 
-  /** Cette image est-elle déjà portée par la fiche ? */
+  /** Cette image est-elle déjà portée ? */
   protected isAlready(url: string): boolean {
     return this.data().already.includes(url);
   }
@@ -113,15 +128,26 @@ export class LibraryPicker {
    * Rend les images retenues **dans l'ordre où on les a désignées**.
    *
    * Pas dans l'ordre de la bibliothèque : celui qui choisit trois visuels pour
-   * une fiche les choisit dans l'ordre où il veut les voir, et le lui réordonner
-   * en douce l'obligerait à tout replacer ensuite.
+   * un porteur les choisit dans l'ordre où il veut les voir, et le lui
+   * réordonner en douce l'obligerait à tout replacer ensuite.
    */
   protected confirm(): void {
     const byUrl = new Map(this.images().map((image) => [image.url, image]));
     this.ref.close(
       this.picked().flatMap((url) => {
         const image = byUrl.get(url);
-        return image === undefined ? [] : [{ url, name: image.name }];
+        return image === undefined
+          ? []
+          : [
+              {
+                url,
+                name: image.name,
+                width: image.width,
+                height: image.height,
+                bytes: image.bytes,
+                contentType: image.contentType,
+              },
+            ];
       }),
     );
   }

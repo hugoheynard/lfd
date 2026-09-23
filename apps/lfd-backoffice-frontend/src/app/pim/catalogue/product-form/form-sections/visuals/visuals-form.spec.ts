@@ -1,8 +1,7 @@
-import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import { ProductHttpApi } from '../../../product-http-api';
 import { ProductFormStore } from '../../product-form-store';
 import { VisualsForm } from './visuals-form';
 
@@ -13,92 +12,71 @@ function setup(): ProductFormStore {
   return TestBed.inject(ProductFormStore);
 }
 
-/**
- * L'enveloppe telle que l'API la rend VRAIMENT — c'est elle que `httpErrorMessage`
- * sait lire, et un faux approximatif ferait passer le test pour de mauvaises
- * raisons. `HttpErrorResponse` est une `Error` dont le `message` est générique :
- * toute la valeur est dans `error.message`.
+/*
+ * 🔴 **Les trois cas de DÉPÔT ont été retirés le 2026-09-23** — le refus du
+ * serveur, l'état « en cours » après un refus, et le rôle neutre d'un visuel
+ * déposé. Ils éprouvaient `store.uploadMedia`, qui n'existe plus : une fiche
+ * ne reçoit pas d'octets, elle rattache une URL de la médiathèque.
+ *
+ * Ce qu'ils gardaient est gardé ailleurs : le rôle neutre par
+ * `addFromLibrary` (juste en dessous), et le refus d'un fichier par la
+ * médiathèque, qui est désormais la seule à en accepter.
  */
-function refusal(message: string): HttpErrorResponse {
-  return new HttpErrorResponse({
-    status: 400,
-    url: 'http://localhost:3200/media',
-    error: { code: 'catalogue.media.unsupported_image', message },
-  });
-}
-
-/** Un dépôt qui échoue, l'API remplacée par la porte d'injection — pas par une
- *  écriture dans un champ privé du store. */
-function refusing(message: string): ProductFormStore {
-  TestBed.configureTestingModule({
-    providers: [
-      ProductFormStore,
-      provideHttpClient(),
-      {
-        provide: ProductHttpApi,
-        useValue: { uploadMedia: (): Promise<never> => Promise.reject(refusal(message)) },
-      },
-    ],
-  });
-  return TestBed.inject(ProductFormStore);
-}
-
-/** Un dépôt qui aboutit — l'API rend l'objet tel qu'elle le rend vraiment. */
-function accepting(): ProductFormStore {
-  TestBed.configureTestingModule({
-    providers: [
-      ProductFormStore,
-      provideHttpClient(),
-      {
-        provide: ProductHttpApi,
-        useValue: {
-          uploadMedia: (): Promise<{ url: string; width: number; height: number }> =>
-            Promise.resolve({ url: 'https://media.test/depose.png', width: 800, height: 600 }),
-        },
-      },
-    ],
-  });
-  return TestBed.inject(ProductFormStore);
-}
-
-describe('VisualsForm — le refus du serveur', () => {
-  it('affiche la raison du refus, pas le code HTTP', async () => {
-    const reason = 'Visuel refusé : format non accepté — PNG, JPEG ou WebP attendus.';
-    const store = refusing(reason);
-
-    await store.uploadMedia(new File([new Uint8Array([1])], 'photo.heic'));
-
-    expect(store.error()).toBe(reason);
-  });
-
-  it('ne laisse pas le dépôt marqué « en cours » après un refus', async () => {
-    const store = refusing('Trop petit.');
-
-    await store.uploadMedia(new File([new Uint8Array([1])], 'photo.png'));
-
-    expect(store.uploading()).toBe(false);
-  });
-});
 
 describe('VisualsForm', () => {
-  it('un visuel déposé prend un rôle NEUTRE', async () => {
-    // L'API en exige un, mais l'écran n'en propose plus. Le premier déposé
-    // devenait « hero », ce qui affirmait une hiérarchie que ni Shopify ni le
-    // B2B ne lisent.
-    const store = accepting();
+  it('un visuel rattaché prend un rôle NEUTRE', () => {
+    // L'API en exige un. Le premier entrant devenait « hero », ce qui
+    // affirmait une hiérarchie que personne n'avait choisie.
+    const store = setup();
 
-    await store.uploadMedia(new File([new Uint8Array([1])], 'photo.png'));
+    store.addFromLibrary([
+      {
+        url: 'https://media.test/a.png',
+        name: 'tarte',
+        width: 800,
+        height: 600,
+        bytes: 1024,
+        contentType: 'image/png',
+      },
+    ]);
 
     expect(store.media()).toHaveLength(1);
     expect(store.media()[0]?.role).toBe('gallery');
   });
 
-  it('pose le dépôt DANS la galerie, à la place de l’image suivante', () => {
+  it("transporte les dimensions MESURÉES, pour ne pas dire « inconnues » d'une image qu'on vient de rattacher", () => {
+    // Régression : `addFromLibrary` ne gardait que l'URL et le nom, donc une
+    // image rattachée s'affichait sans pastille de forme jusqu'au prochain
+    // rechargement de la page (2026-09-23).
+    const store = setup();
+
+    store.addFromLibrary([
+      {
+        url: 'https://media.test/a.png',
+        name: 'tarte',
+        width: 1600,
+        height: 1200,
+        bytes: 253952,
+        contentType: 'image/png',
+      },
+    ]);
+
+    expect(store.media()[0]?.width).toBe(1600);
+    expect(store.media()[0]?.height).toBe(1200);
+  });
+
+  it("n'offre AUCUN dépôt — les octets entrent par la médiathèque", () => {
+    // Régression (2026-09-23) : la galerie portait une zone de dépôt en
+    // dernière tuile, donc des octets entraient par une fiche. Alimenter et
+    // taguer le fonds est un autre métier que rédiger une fiche, et un dépôt
+    // offert ici remplissait la bibliothèque d'images que personne ne
+    // retrouve.
     setup();
     const fixture = TestBed.createComponent(VisualsForm);
     fixture.detectChanges();
-    const gallery = (fixture.nativeElement as HTMLElement).querySelector('.media')!;
-    expect(gallery.querySelector('fold-file-dropzone')).not.toBeNull();
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('fold-file-dropzone')).toBeNull();
+    expect(host.querySelector('input[type="file"]')).toBeNull();
   });
 
   it('dit la FORME du fichier en pastille, que le recadrage cache', () => {
@@ -155,10 +133,10 @@ describe('VisualsForm', () => {
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Dimensions inconnues');
   });
 
-  it("n'offre AUCUN chemin pour saisir une URL — un visuel entre par le dépôt", () => {
-    // Le dépôt écrit dans notre stockage ; une URL saisie ferait pointer la
-    // fiche vers un fichier que personne ici ne garde, et qui peut disparaître
-    // sans que rien ne le signale.
+  it("n'offre AUCUN chemin pour saisir une URL — un visuel se choisit", () => {
+    // Une URL saisie ferait pointer la fiche vers un fichier que personne ici
+    // ne garde, et qui peut disparaître sans que rien ne le signale. Les URL
+    // que la fiche porte viennent toutes du fonds.
     const store = setup();
     store.media.set([{ role: 'hero', url: 'https://media.test/a.png', name: 'a' }]);
     const fixture = TestBed.createComponent(VisualsForm);

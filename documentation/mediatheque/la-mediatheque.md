@@ -280,9 +280,24 @@ rapport en sortie, qui dit **toujours** quand le plafond a mordu.
 | Nommer, décrire, pointer | médiathèque             | le seul point où ces champs s'écrivent                                            |
 | Taguer                   | médiathèque, à la bande | un mot posé sur autant d'images qu'on veut                                        |
 | Retirer du fonds         | médiathèque             | refusé dès qu'un porteur l'affiche                                                |
-| Choisir une image        | fiche produit           | cherche par étiquette et mots-clés, **jamais** par nom de fichier                 |
+| Choisir une image        | fiche **et** famille    | cherche par étiquette et mots-clés, **jamais** par nom de fichier                 |
 | Donner un usage          | fiche produit           | les cinq rôles, avec leur ratio dans le libellé                                   |
-| Retirer de la fiche      | fiche produit           | **ne touche pas** la bibliothèque                                                 |
+| Retirer du porteur       | fiche et famille        | **ne touche pas** la bibliothèque                                                 |
+
+🔴 **Le dépôt n'est NULLE PART ailleurs qu'à la médiathèque, et c'est un choix
+de métier** (2026-09-23). La fiche produit et la famille en portaient un ; le
+panneau de sélection en a porté un le temps d'un essai, pour épargner un
+aller-retour à qui rédige une fiche.
+
+C'était compter en **gestes**. La bonne unité est le **métier** : celui qui
+alimente et tague le fonds n'est pas celui qui rédige les fiches. Un dépôt
+offert au rédacteur aurait rempli la bibliothèque d'images **non taguées**,
+déposées par quelqu'un qui n'a pas le vocabulaire en tête — c'est-à-dire
+introuvables, ce qui est exactement le trou que la médiathèque comble.
+
+⚠️ Le prix est réel et assumé : illustrer une fiche avec une photo qu'on vient
+de recevoir demande de passer par la médiathèque. Le sélecteur dit donc où,
+plutôt que de laisser le rédacteur devant une grille vide et muette.
 
 Le dépôt en lot est **séquentiel**, et pas par prudence : le serveur lit les
 octets en mémoire pour les mesurer, avec une garde de transport à 25 Mo. Vingt
@@ -298,7 +313,16 @@ Depuis le 2026-09-23, il **désigne** et ne fabrique plus :
 - une fiche ne peut porter qu'une image **déposée** — le visuel par simple URL
   a disparu, et c'est ce départ qui a libéré le déménagement ;
 - le rattachement ne porte que l'**URL**, le **rôle** et la **position** ;
-- aucune écriture du référentiel n'atteint la bibliothèque.
+- aucune écriture du référentiel n'atteint la bibliothèque ;
+- **aucun écran du référentiel ne reçoit d'octets** : ni la fiche, ni la
+  famille, ni le panneau qui sert les deux. Les clients HTTP du référentiel
+  n'ont plus de méthode de dépôt du tout, ce qui rend le geste inexprimable
+  plutôt qu'interdit.
+
+⚠️ Le dépôt de la FAMILLE était cassé avant d'être retiré : il postait sur
+`POST /pim/catalogue/media`, route emportée par le déménagement du
+2026-09-23, donc un **404 muet** — l'URL était construite à la main, aucun
+type ne la traversait. Le retrait du geste est aussi la correction du défaut.
 
 ⚠️ Ce qu'on a perdu : illustrer depuis une banque d'images distante sans copier
 l'octet. Ce qu'on gagne : toute image du catalogue est chez nous, mesurée, et

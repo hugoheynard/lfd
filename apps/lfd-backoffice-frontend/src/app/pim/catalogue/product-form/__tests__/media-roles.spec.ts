@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
 import { ProductFormStore, type MediaSlot } from '../product-form-store';
+import type { PickedMedia } from '../../library-picker/library-picker';
 
 /**
  * **Les cinq usages, et l'unicité de ceux qui n'en admettent qu'un.**
@@ -76,15 +77,24 @@ describe('les usages d’un visuel', () => {
 });
 
 describe('prendre dans la médiathèque', () => {
+  /**
+   * Une image telle que le PANNEAU la rend. Les faits mesurés en font partie :
+   * ils viennent de la bibliothèque, qui les a constatés dans les octets, et
+   * les omettre ici ferait passer un doublé pour le contrat qu'il joue.
+   */
+  function picked(url: string, name = ''): PickedMedia {
+    return { url, name, width: 800, height: 600, bytes: 1024, contentType: 'image/png' };
+  }
+
   it('ajoute à la suite, au rôle neutre', () => {
     const form = store();
     form.media.set([slot('a', 'hero')]);
 
-    form.addFromLibrary([{ url: 'b', name: 'croissant' }]);
+    form.addFromLibrary([picked('b', 'croissant')]);
 
     expect(form.media()).toEqual([
       { role: 'hero', url: 'a', name: '' },
-      { role: 'gallery', url: 'b', name: 'croissant' },
+      { role: 'gallery', url: 'b', name: 'croissant', width: 800, height: 600 },
     ]);
   });
 
@@ -97,10 +107,7 @@ describe('prendre dans la médiathèque', () => {
     const form = store();
     form.media.set([slot('a')]);
 
-    form.addFromLibrary([
-      { url: 'a', name: 'déjà là' },
-      { url: 'b', name: '' },
-    ]);
+    form.addFromLibrary([picked('a', 'déjà là'), picked('b')]);
 
     expect(form.media().map((item) => item.url)).toEqual(['a', 'b']);
   });

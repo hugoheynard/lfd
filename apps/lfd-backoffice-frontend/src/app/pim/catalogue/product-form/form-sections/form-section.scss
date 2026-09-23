@@ -75,6 +75,12 @@ app-lang-switch {
   color: var(--fold-color-text-muted);
 }
 
+/* Le seul geste d'ajout d'un visuel, partagé par la fiche et la famille : les
+   deux sections lisent cette feuille. */
+.from-library {
+  margin: var(--fold-space-md) 0 0;
+}
+
 @media (width < 40rem) {
   .tarif {
     grid-template-columns: 1fr;

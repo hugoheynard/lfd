@@ -60,6 +60,7 @@ import type {
   VatRate,
 } from '../../data/models';
 import { CatalogueApi } from '../catalogue-api';
+import type { PickedMedia } from '../library-picker/library-picker';
 import { ReferenceApi } from '../reference-api';
 import {
   ProductHttpApi,
@@ -755,9 +756,6 @@ export class ProductFormStore {
   private readonly variantCountValue = signal(0);
   readonly variantCount: Signal<number> = this.variantCountValue;
 
-  /** Un dépôt en cours — le bouton se désarme, la liste ne bouge pas encore. */
-  readonly uploading = signal(false);
-
   /**
    * L'identifiant de la fiche ouverte — vide tant qu'on crée.
    *
@@ -1223,39 +1221,12 @@ export class ProductFormStore {
     this.declaration.update((current) => withNoAllergen(current, on));
   }
 
-  /**
-   * Dépose un fichier et l'ajoute à la liste — SANS enregistrer la section.
-   *
-   * Les deux gestes restent distincts parce qu'ils ne portent pas le même
-   * risque : déposer crée un fichier et ne touche à aucune fiche, enregistrer
-   * remplace la liste entière du produit. Confondre les deux ferait qu'ouvrir
-   * une image écrase les autres avant même qu'on ait choisi son rôle.
-   *
-   * Le refus du serveur (format, poids, dimensions) s'affiche dans l'erreur de
-   * la page : c'est lui qui porte la raison, en français, et la répéter ici
-   * serait la maintenir à deux endroits.
+  /*
+   * 🔴 **Le dépôt a quitté la fiche le 2026-09-23.** `uploadMedia` vivait ici
+   * et faisait entrer des octets par un produit ; la bibliothèque est un bloc
+   * à part, et une fiche ne fait que RATTACHER une URL. Le panneau de
+   * médiathèque porte le geste — voir `addFromLibrary`, seule entrée restante.
    */
-  async uploadMedia(file: File): Promise<void> {
-    this.uploading.set(true);
-    this.error.set(null);
-    try {
-      const uploaded = await this.products.uploadMedia(file);
-      this.media.update((current) => [
-        ...current,
-        {
-          role: DEFAULT_MEDIA_ROLE,
-          name: '',
-          url: uploaded.url,
-          width: uploaded.width,
-          height: uploaded.height,
-        },
-      ]);
-    } catch (caught) {
-      this.error.set(messageOf(caught));
-    } finally {
-      this.uploading.set(false);
-    }
-  }
 
   removeMedia(index: number): void {
     this.media.update((current) => current.filter((_, position) => position !== index));
@@ -1323,12 +1294,21 @@ export class ProductFormStore {
    * toute façon un second `hero` — mais l'écran ne doit pas laisser produire la
    * situation pour la voir refusée ensuite.
    */
-  addFromLibrary(picked: readonly { url: string; name: string }[]): void {
+  addFromLibrary(picked: readonly PickedMedia[]): void {
     this.media.update((current) => {
       const known = new Set(current.map((slot) => slot.url));
       const added = picked
         .filter((image) => !known.has(image.url))
-        .map((image) => ({ role: DEFAULT_MEDIA_ROLE, name: image.name, url: image.url }));
+        .map((image) => ({
+          role: DEFAULT_MEDIA_ROLE,
+          name: image.name,
+          url: image.url,
+          // Mesurés par la bibliothèque, transportés jusqu'ici : sans eux la
+          // galerie dirait « Dimensions inconnues » d'une image qu'on vient de
+          // rattacher, jusqu'au prochain rechargement.
+          width: image.width,
+          height: image.height,
+        }));
       return [...current, ...added];
     });
   }

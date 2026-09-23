@@ -38,7 +38,6 @@ interface HttpSpy {
   detail: ReturnType<typeof vi.fn>;
   setEditorial: ReturnType<typeof vi.fn>;
   setMedia: ReturnType<typeof vi.fn>;
-  uploadMedia: ReturnType<typeof vi.fn>;
   create: ReturnType<typeof vi.fn>;
   rename: ReturnType<typeof vi.fn>;
   move: ReturnType<typeof vi.fn>;
@@ -73,14 +72,6 @@ async function mount(rows: Category[], id: string | null): Promise<Mounted> {
     }),
     setEditorial: vi.fn(async () => undefined),
     setMedia: vi.fn(async () => undefined),
-    uploadMedia: vi.fn(async () => ({
-      id: 'media_1',
-      url: 'https://x/neuve.jpg',
-      width: 800,
-      height: 600,
-      bytes: 1024,
-      contentType: 'image/jpeg',
-    })),
     create: vi.fn(async () => ({ id: 'cat_neuve' })),
     rename: vi.fn(async () => undefined),
     move: vi.fn(async () => undefined),
@@ -391,15 +382,22 @@ describe('CategoryFormPage — les textes', () => {
 });
 
 describe('CategoryFormPage — les visuels', () => {
-  it('ajoute le fichier déposé et envoie la liste ENTIÈRE', async () => {
+  /** Ce que le panneau de médiathèque rend : une image du FONDS, mesurée. */
+  const fromLibrary = {
+    url: 'https://x/neuve.jpg',
+    name: 'neuve',
+    width: 800,
+    height: 600,
+    bytes: 1024,
+    contentType: 'image/jpeg',
+  };
+
+  it('ajoute le visuel rattaché et envoie la liste ENTIÈRE', async () => {
     const { host, http, store, detect, stable } = await edit(category());
 
-    const dropzone = host.querySelector('fold-file-dropzone input[type="file"]');
-    expect(dropzone).not.toBeNull();
-
-    // On passe par le store : déposer un vrai `File` dans un `input` demande un
-    // `DataTransfer`, indisponible en environnement de test.
-    await store.media.upload(new File([''], 'a.jpg'));
+    // On passe par le store : ouvrir le panneau demanderait de piloter un
+    // hôte fold, et ce n'est pas ce que ce cas éprouve.
+    store.media.addFromLibrary([fromLibrary]);
     detect();
     button(host, 'Enregistrer').click();
     await stable();
@@ -409,15 +407,37 @@ describe('CategoryFormPage — les visuels', () => {
     ]);
   });
 
+  it("n'offre AUCUN dépôt — les octets entrent par la médiathèque", async () => {
+    // Régression (2026-09-23), et elle était DOUBLE : le dépôt d'une famille
+    // visait `POST /pim/catalogue/media`, route emportée par le déménagement
+    // de la bibliothèque — donc un 404 muet. Et alimenter le fonds est un
+    // autre métier que composer une famille.
+    const { host } = await edit(category());
+
+    expect(host.querySelector('fold-file-dropzone')).toBeNull();
+    expect(host.querySelector('input[type="file"]')).toBeNull();
+  });
+
   it('donne à une image sans description une alternative de repli', async () => {
     // La colonne est obligatoire côté référentiel : une chaîne vide passerait
     // pour une alternative rédigée. L'URL vaut mieux — elle se VOIT.
     const { store, detect } = await edit(category());
 
-    await store.media.upload(new File([''], 'a.jpg'));
+    store.media.addFromLibrary([fromLibrary]);
     detect();
 
     expect(store.media.items()[0]?.alt).toEqual({ fr: 'https://x/neuve.jpg' });
+  });
+
+  it('garde les dimensions MESURÉES du fonds', async () => {
+    // Sans elles, la galerie dirait « Dimensions inconnues » d'une image
+    // qu'on vient de rattacher, jusqu'au prochain rechargement.
+    const { store, detect } = await edit(category());
+
+    store.media.addFromLibrary([fromLibrary]);
+    detect();
+
+    expect(store.media.items()[0]).toMatchObject({ width: 800, height: 600 });
   });
 });
 
