@@ -122,6 +122,36 @@ Pour situer, si la question est la couverture réelle :
   sur une version antérieure reçoivent du WebP. **Ils ne voient pas d'image
   cassée : ils voient la même photo, un peu plus lourde.**
 
+### « Alors pourquoi pas que du WebP ? »
+
+La question est juste, et sa réponse dépend entièrement de **qui convertit**.
+
+| Qui convertit                         | Le bon choix  | Pourquoi                                                                                                                             |
+| ------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Nous, au dépôt**                    | **WebP seul** | chaque format en plus double le stockage ET le calcul, pour chaque largeur. Deux formats × quatre largeurs = huit fichiers par image |
+| **Un serveur d'images, à la lecture** | **`auto`**    | rien n'est stocké, rien n'est généré d'avance. C'est un cache, et il ne se remplit que de ce qu'on lui demande                       |
+
+🔴 **Et dans le second cas, « faire moins » coûte PLUS cher.** Dans l'URL,
+c'est le même paramètre :
+
+```
+/cdn-cgi/image/width=360,format=webp/…    ← « juste du WebP »
+/cdn-cgi/image/width=360,format=auto/…    ← même longueur, même effort
+```
+
+Écrire `webp` au lieu de `auto` demande exactement le même travail, ne stocke
+rien de moins, et se prive de 20 à 30 % d'octets pour les navigateurs qui font
+mieux. C'est le seul cas où simplifier n'économise rien — pas une ligne de code
+en moins, pas un format à générer, pas un cas à tester. `auto` ne rajoute pas
+une branche : il en **enlève** une, puisque c'est le serveur d'images qui
+décide.
+
+⚠️ **Ce que l'AVIF coûte vraiment**, et il faut le dire : son **encodage est
+lent** (la toute première demande d'une taille donnée peut traîner, le temps que
+le cache se remplisse), et son **décodage est plus lourd** sur un téléphone
+d'entrée de gamme. Aucun des deux ne se paie chez nous — c'est le serveur
+d'images qui encode, une fois, et le résultat est mis en cache.
+
 ⚠️ **Le repli n'est pas une dégradation visible.** C'est la différence entre
 « choisir un format » — où se tromper casse l'affichage — et « négocier », où le
 pire cas est quelques kilooctets de plus.
