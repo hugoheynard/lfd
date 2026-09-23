@@ -492,6 +492,19 @@ const TODAY_ICON =
   'c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>' +
   '</svg>';
 
+// La MÉDIATHÈQUE : un cadre, un horizon, un soleil. Le fonds d'images, et non
+// un appareil photo — ce qu'on y range est une collection, pas une prise de
+// vue. Nom NEUF, donc il compte dans l'augmentation dérivée : fold n'a aucune
+// icône d'image dans ses 91 intégrées (vérifié le 2026-09-23).
+const IMAGE_ICON =
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+  'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
+  '<rect x="3" y="4" width="18" height="16" rx="2.5"/>' +
+  '<circle cx="8.5" cy="9.5" r="1.6"/>' +
+  '<path d="M3.5 17l4.6-4.6a2 2 0 0 1 2.8 0L15 16.6"/>' +
+  '<path d="M13.6 15.2l2-2a2 2 0 0 1 2.8 0l2.1 2.1"/>' +
+  '</svg>';
+
 /**
  * Le catalogue. Une entrée = un nom que `<fold-icon name="…">` accepte.
  *
@@ -505,6 +518,7 @@ export const APP_ICONS = {
   collections: COLLECTIONS_ICON,
   dashboard: DASHBOARD_ICON,
   gauge: GAUGE_ICON,
+  image: IMAGE_ICON,
   integrations: INTEGRATIONS_ICON,
   category: CATEGORY_ICON,
   mobile: MOBILE_ICON,

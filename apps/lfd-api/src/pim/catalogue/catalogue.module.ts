@@ -71,6 +71,7 @@ import { VariantAllergensRepository } from "./product/domain/ports/variant-aller
 import { ProductRepository } from "./product/domain/ports/product.repository.js";
 import { CategoryController } from "./category/http/category.controller.js";
 import { MediaController } from "./product/http/media.controller.js";
+import { MediaLibraryController } from "./shared/http/media-library.controller.js";
 import { MediaSweepController } from "./product/http/media-sweep.controller.js";
 import { ProductController } from "./product/http/product.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
@@ -117,6 +118,7 @@ import {
     CatalogRevisionController,
     CategoryController,
     MediaController,
+    MediaLibraryController,
     MediaSweepController,
     ProductController,
     ProductHistoryController,

@@ -106,6 +106,28 @@
         ></a>
       }
 
+      @if (canSeePim()) {
+        <!-- LA MÉDIATHÈQUE — le fonds d'images, indépendamment de ce qui
+             l'affiche. Entrée de premier niveau, juste après le PIM : c'est là
+             qu'on va chercher une photo, et la bibliothèque n'appartient à
+             aucun référentiel — les fiches en portent, les familles aussi, les
+             contenus de la vitrine en porteront.
+
+             Même droit que le PIM, parce que c'est le mur que la route serveur
+             oppose (`@AdminSurface("pim_catalog")`) : une entrée ouverte plus
+             largement ne montrerait que des 403. -->
+        <a
+          fold-menu-item
+          icon="image"
+          label="Médiathèque"
+          routerLink="/mediatheque"
+          routerLinkActive
+          #mediaRla="routerLinkActive"
+          [active]="mediaRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canUseAgentTools()) {
         <!-- OUTILS AGENT — l'atelier qui PILOTE le référentiel, pas un écran du
              référentiel : sa route est de premier niveau, il a donc sa propre
@@ -520,6 +542,21 @@
             ></a>
           }
         </fold-nav-group>
+      }
+      @if (canSeePim()) {
+        <!-- La MÊME entrée qu'au rail. Deux arbres, deux modèles : une entrée
+             posée d'un seul côté est invisible de l'autre, et c'est déjà
+             arrivé. -->
+        <a
+          fold-nav-tile
+          icon="image"
+          label="Médiathèque"
+          routerLink="/mediatheque"
+          routerLinkActive
+          #mediaTile="routerLinkActive"
+          [active]="mediaTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
       @if (canUseAgentTools()) {
         <!-- La MÊME entrée qu'au rail, et il faut la poser deux fois : les deux

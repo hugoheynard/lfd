@@ -1,0 +1,58 @@
+.count {
+  margin: 0 0 var(--fold-space-3);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-font-size-sm);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--fold-space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-1);
+  min-width: 0;
+}
+
+/* Le RATIO du rôle `thumbnail` (4/3), et pas une hauteur fixe : une hauteur
+   fixe recadre différemment selon la largeur de la colonne, donc la même photo
+   n'aurait pas le même cadrage d'un écran à l'autre. Ici, toutes les vignettes
+   montrent la même chose de l'image. */
+.frame {
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-sunken);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fold-font-size-sm);
+}
+
+.uses {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-font-size-xs);
+}
+
+/* Une image que personne ne porte se distingue : c'est la seule qu'on pourra
+   supprimer, et c'est aussi celle qui a peut-être été déposée pour rien. */
+.uses-free {
+  color: var(--fold-color-warning-text, var(--fold-color-text-muted));
+}

@@ -23,7 +23,7 @@ const stubAdminVerifier = {
 
 const CATEGORIES = "/pim/catalogue/categories";
 const PRODUCTS = "/pim/catalogue/products";
-const MEDIA = "/pim/catalogue/media";
+const MEDIA = "/pim/mediatheque";
 
 const CROISSANT = "https://cdn.test/products/aaa.png";
 const CHOCOLATINE = "https://cdn.test/products/bbb.png";

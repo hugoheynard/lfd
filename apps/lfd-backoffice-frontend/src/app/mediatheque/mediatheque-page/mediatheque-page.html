@@ -1,0 +1,46 @@
+<fold-page-layout icon="image" title="Médiathèque">
+  <p description>
+    Le fonds d'images de la maison. Une image y figure <strong>une seule fois</strong>, quel que
+    soit le nombre de fiches qui l'affichent.
+  </p>
+
+  @if (loading() && items().length === 0) {
+    <fold-loading message="Lecture de la bibliothèque…" />
+  } @else if (failure(); as message) {
+    <!-- L'échec a son propre état : une grille vide et une grille qui n'a pas
+         pu charger se ressemblent, et les confondre ferait croire le fonds vide
+         au premier réseau qui tousse. -->
+    <fold-empty-state tone="alert" title="Bibliothèque illisible" [subtitle]="message">
+      <fold-icon empty-icon name="image" [size]="40" />
+    </fold-empty-state>
+  } @else if (items().length === 0) {
+    <fold-empty-state
+      title="La bibliothèque est vide"
+      subtitle="Les images y entrent par la section Visuels d'une fiche produit ou d'une famille."
+    >
+      <fold-icon empty-icon name="image" [size]="40" />
+    </fold-empty-state>
+  } @else {
+    <p class="count">{{ items().length }} sur {{ total() }}</p>
+
+    <ul class="grid">
+      @for (item of items(); track item.url) {
+        <li class="card">
+          <span class="frame">
+            <img [src]="item.url" [alt]="label(item)" loading="lazy" />
+          </span>
+          <span class="name" [title]="fileOf(item)">{{ label(item) }}</span>
+          <!-- Le compte d'emplois, toujours visible : c'est lui qui dira
+               pourquoi une suppression est refusée, avant qu'on l'essaie. -->
+          <span class="uses" [class.uses-free]="item.uses === 0">{{ usesLabel(item) }}</span>
+        </li>
+      }
+    </ul>
+
+    @if (hasMore()) {
+      <button foldButton emphasis="outline" [disabled]="loading()" (click)="load()">
+        Charger la suite
+      </button>
+    }
+  }
+</fold-page-layout>

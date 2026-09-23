@@ -31,6 +31,25 @@ export const routes: Routes = [
   // un identifiant de société, et la page afficherait « Société introuvable ».
   ...nouveauCompteRoutes,
   {
+    // **Médiathèque** — le fonds d'images, indépendamment de ce qui l'affiche.
+    //
+    // Route de PREMIER niveau, hors de `pim/`, et c'est une affirmation sur le
+    // modèle : les fiches portent des visuels, les familles aussi, et les
+    // contenus de la vitrine en porteront. Aucun d'eux ne possède la
+    // bibliothèque — le domaine le dit déjà (« ni l'un ni l'autre ne possède la
+    // bibliothèque », `shared/domain/value-objects/media.ts`). La ranger sous
+    // le référentiel lui donnerait un propriétaire qu'elle n'a pas.
+    //
+    // `pim_catalog:read` : c'est le mur que la route serveur oppose
+    // (`@AdminSurface("pim_catalog")`). Ouvrir l'écran à qui ne l'a pas ne
+    // montrerait que des 403.
+    path: 'mediatheque',
+    canActivate: [permissionGuard('pim_catalog:read')],
+    title: 'Médiathèque — LFC B2B admin',
+    loadComponent: () =>
+      import('./mediatheque/mediatheque-page/mediatheque-page').then((m) => m.MediathequePage),
+  },
+  {
     // **Outils agent** — l'écran est l'interrupteur : les outils WebMCP du
     // référentiel ne sont déclarés que par ce composant, donc ils n'existent
     // que tant qu'on est dessus. Route de premier niveau, hors de `pim/` : ce

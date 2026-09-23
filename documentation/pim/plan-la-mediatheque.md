@@ -124,6 +124,28 @@ d'écrire. L'en-tête de la porte donne elle-même la sortie — « le franchiss
 passe par un port ». Chaque bloc répond « combien des miens portent cette
 URL », et il n'y a plus une seule jointure.
 
+### 🔴 La ROUTE et le SCHÉMA ne coûtent pas la même chose
+
+Hugo, 2026-09-23 : « mais là tu es toujours catalogue, on avait dit à part non ?
+schéma et routes ? » — et les deux moitiés n'ont pas le même prix.
+
+|                            | État                   | Pourquoi                                                                                                                     |
+| -------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `catalogue/` dans la route | **parti** (2026-09-23) | rien ne le retenait : la surface est `mediatheque`, et le segment affirmait une propriété que le référentiel produit n'a pas |
+| `/pim` dans la route       | reste                  | monté par le BLOC (`pim.module.ts`), et le code y vit encore                                                                 |
+| `@@schema("pim")`          | reste                  | migration de données                                                                                                         |
+
+➡️ **Le préfixe `/pim` et le schéma Postgres tomberont ENSEMBLE**, au même
+déclencheur, parce qu'ils disent la même chose : dans quel bloc ce code vit.
+Le segment `catalogue/`, lui, ne disait rien d'autre qu'une propriété — il
+partait pour zéro.
+
+⚠️ `POST /pim/catalogue/media` survit en **alias déprécié**, et pas par
+timidité : le back-office et l'API se déploient séparément, donc un front encore
+en ligne appelle encore ce chemin pendant quelques minutes. Un contrat déjà
+servi ne se casse pas dans le même déploiement (`CLAUDE.md` §0). Il se supprime
+au déploiement suivant — c'est écrit au-dessus de la route.
+
 ### La cible (B), et ce qu'elle coûte
 
 Un bloc `media/`, son schéma, et le lien par **identifiant opaque** — l'URL,

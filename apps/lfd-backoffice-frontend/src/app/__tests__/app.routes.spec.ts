@@ -145,6 +145,13 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'b2b/reglages/livraison': null,
   'b2b/reglages/heures-limites': null,
 
+  // **Médiathèque** — hors de `pim/`, et gardée au MÊME droit que lui : c'est
+  // le mur que la route serveur oppose (`@AdminSurface("pim_catalog")`). Le
+  // fonds d'images n'appartient à aucun référentiel, mais il n'a pas encore de
+  // ressource à lui — le jour où il en aura une, cette ligne changera, et c'est
+  // ici qu'on s'en apercevra.
+  mediatheque: 'pim_catalog:read',
+
   // **Outils agent** — hors de `pim/`, et gardé PLUS SERRÉ que lui : le
   // référentiel s'ouvre en lecture (`pim_catalog:read`), cet atelier écrit. Il
   // ne peut donc pas hériter, sinon un lecteur du catalogue armerait des outils

@@ -327,7 +327,10 @@ export class ProductHttpApi {
   async uploadMedia(file: File): Promise<UploadedMediaView> {
     const body = new FormData();
     body.append('file', file);
-    return firstValueFrom(this.http.post<UploadedMediaView>(this.url('media'), body));
+    // La bibliothèque a quitté `catalogue/` le 2026-09-23 : son adresse est
+    // `mediatheque`, parce que le référentiel produit ne la possède pas. D'où
+    // cette URL construite à part, sans `this.url()` qui préfixe `catalogue/`.
+    return firstValueFrom(this.http.post<UploadedMediaView>(`${this.base}/mediatheque`, body));
   }
 
   /**
