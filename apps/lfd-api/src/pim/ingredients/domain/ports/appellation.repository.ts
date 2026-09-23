@@ -1,4 +1,4 @@
-import type { WriteTicket } from "../../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import type { AppellationAggregate, AppellationSnapshot } from "../entities/appellation.entity.js";
 
 /** Une appellation telle qu'on la LIT, avec ce qui la retient. */

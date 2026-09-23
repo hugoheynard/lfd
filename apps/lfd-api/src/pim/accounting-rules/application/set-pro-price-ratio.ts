@@ -1,7 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
-import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
+import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { AccountingRules } from "../domain/entities/accounting-rules.js";
 import { AccountingRulesRepository } from "../domain/ports/accounting-rules.repository.js";
 

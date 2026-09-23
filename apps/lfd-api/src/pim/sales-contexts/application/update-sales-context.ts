@@ -1,7 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
-import { changesBetween } from "../../journal/changes.js";
+import { changesBetween } from "../../../platform/journal/changes.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import type { SalesContextAggregate } from "../domain/entities/sales-context.entity.js";
 import { SalesContextRepository } from "../domain/ports/sales-context.repository.js";

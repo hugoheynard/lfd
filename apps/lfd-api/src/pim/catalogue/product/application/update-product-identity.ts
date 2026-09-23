@@ -1,8 +1,9 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import { changesBetween, type FieldChanges } from "../../../journal/changes.js";
-import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../../journal/pim-journal.js";
+import { changesBetween, type FieldChanges } from "../../../../platform/journal/changes.js";
+import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 
 import {
   CategoryArchivedError,

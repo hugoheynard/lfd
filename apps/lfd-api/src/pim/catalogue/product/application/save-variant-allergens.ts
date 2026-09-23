@@ -2,7 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
-import { changesBetween } from "../../../journal/changes.js";
+import { changesBetween } from "../../../../platform/journal/changes.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { VariantAllergensRepository } from "../domain/ports/variant-allergens.repository.js";

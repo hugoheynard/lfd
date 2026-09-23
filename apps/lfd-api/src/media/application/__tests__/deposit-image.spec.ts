@@ -1,5 +1,5 @@
 import { DirectUnitOfWork } from "../../../platform/database/__tests__/direct-unit-of-work.js";
-import { RecordingJournal } from "../../../pim/journal/__tests__/recording-journal.js";
+import { RecordingMediaJournal } from "../../journal/__tests__/recording-media-journal.js";
 import {
   MediaStore,
   type PublicAsset,
@@ -65,7 +65,7 @@ describe("DepositImageHandler", () => {
   it("range les octets puis inscrit ce qu'il en a MESURÉ", async () => {
     const store = new FakeStore();
     const library = new FakeLibrary();
-    const journal = new RecordingJournal();
+    const journal = new RecordingMediaJournal();
     const handler = new DepositImageHandler(store, library, journal, new DirectUnitOfWork());
 
     const result = await handler.execute(new DepositImageCommand(png(1200, 800)));
@@ -103,7 +103,7 @@ describe("DepositImageHandler", () => {
     const handler = new DepositImageHandler(
       store,
       library,
-      new RecordingJournal(),
+      new RecordingMediaJournal(),
       new DirectUnitOfWork(),
     );
 
@@ -128,7 +128,7 @@ describe("DepositImageHandler", () => {
     const handler = new DepositImageHandler(
       new FailingStore(),
       library,
-      new RecordingJournal(),
+      new RecordingMediaJournal(),
       new DirectUnitOfWork(),
     );
 

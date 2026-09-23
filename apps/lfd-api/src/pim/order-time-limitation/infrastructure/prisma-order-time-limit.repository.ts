@@ -6,7 +6,7 @@ import {
 } from "@lfd/pim-contracts";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import type { WriteTicket } from "../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
 import { OrderTimeLimit } from "../domain/entities/order-time-limit.js";
 import { OrderTimeLimitNotFoundError } from "../domain/errors/order-time-limit-errors.js";
 import { OrderTimeLimitRepository } from "../domain/ports/order-time-limit.repository.js";

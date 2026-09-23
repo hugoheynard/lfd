@@ -1,4 +1,4 @@
-import type { WriteTicket } from "../../../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../../../platform/journal/scoped-journal.js";
 import type { Category } from "../entities/category.js";
 
 /**

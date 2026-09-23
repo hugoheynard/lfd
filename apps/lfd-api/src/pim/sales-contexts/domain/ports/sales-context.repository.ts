@@ -1,4 +1,4 @@
-import type { WriteTicket } from "../../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import type { SalesContextAggregate } from "../entities/sales-context.entity.js";
 
 /** Ce qui retient un contexte, et l'empêche d'être effacé. */

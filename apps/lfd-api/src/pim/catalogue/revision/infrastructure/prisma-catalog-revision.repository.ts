@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import type { WriteTicket } from "../../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import { referenceFrom } from "../../../../platform/id/reference.js";
 import { PimIdGenerator } from "../../../infra/id/pim-id-generator.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";

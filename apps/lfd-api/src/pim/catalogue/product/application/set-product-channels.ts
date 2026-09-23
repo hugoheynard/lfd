@@ -1,7 +1,8 @@
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { requireCategory } from "../../category/application/category-support.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { PointOfSaleOfferReader } from "../../shared/domain/ports/point-of-sale-offer.reader.js";

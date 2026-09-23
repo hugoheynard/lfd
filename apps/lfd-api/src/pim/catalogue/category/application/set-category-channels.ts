@@ -1,8 +1,9 @@
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { changesBetween } from "../../../journal/changes.js";
+import { changesBetween } from "../../../../platform/journal/changes.js";
 import { PointOfSaleReader } from "../../../points-of-sale/domain/ports/point-of-sale.reader.js";
 import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repository.js";
 import { channelNamer, vatChangePayload } from "../../shared/application/journal-names.js";

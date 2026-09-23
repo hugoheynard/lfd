@@ -1,4 +1,4 @@
-import type { WriteTicket } from "../../../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../../../platform/journal/scoped-journal.js";
 import type { RevisionIndex } from "../diff.js";
 import type { JsonObject } from "../fingerprint.js";
 import type { Revision } from "../revision.js";

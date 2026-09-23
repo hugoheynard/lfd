@@ -2,7 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { MediaStore } from "../../platform/storage/media-store.js";
-import { PIM_EVENTS, PimJournal } from "../../pim/journal/pim-journal.js";
+import { MEDIA_EVENTS, MediaJournal } from "../journal/media-journal.js";
 import { MediaLibrary, type RegisteredMedia } from "../domain/ports/media-library.js";
 import { productImage } from "../domain/value-objects/image-bytes.js";
 
@@ -39,7 +39,7 @@ export class DepositImageHandler implements ICommandHandler<DepositImageCommand,
   constructor(
     private readonly store: MediaStore,
     private readonly library: MediaLibrary,
-    private readonly journal: PimJournal,
+    private readonly journal: MediaJournal,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -58,7 +58,7 @@ export class DepositImageHandler implements ICommandHandler<DepositImageCommand,
     // à l'identique. Le ramassage prendra celui-ci si personne ne l'attache.
     return this.uow.run(async () => {
       await this.journal.trace({
-        type: PIM_EVENTS.mediaDeposited,
+        type: MEDIA_EVENTS.mediaDeposited,
         subjectType: "media_asset",
         // L'URL : c'est l'identité de l'image, et elle survivra aux
         // inscriptions que les enregistrements de fiche recréeront.

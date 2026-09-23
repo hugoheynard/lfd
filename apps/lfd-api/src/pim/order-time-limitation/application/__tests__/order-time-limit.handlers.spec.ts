@@ -2,7 +2,7 @@ import type { OrderTimeLimitPayload, OrderTimeLimitView } from "@lfd/pim-contrac
 
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../journal/__tests__/recording-journal.js";
-import type { WriteTicket } from "../../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 
 import { OrderTimeLimit } from "../../domain/entities/order-time-limit.js";
 import {

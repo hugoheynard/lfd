@@ -2,7 +2,8 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import type { ProPriceMethod } from "@lfd/pim-contracts";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
-import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
+import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { AccountingRulesNotSetError } from "../domain/errors/accounting-rules-errors.js";
 import { AccountingRulesRepository } from "../domain/ports/accounting-rules.repository.js";
 

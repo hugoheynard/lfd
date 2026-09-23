@@ -1,4 +1,4 @@
-import type { WriteTicket } from "../../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import type { AppellationSnapshot } from "../entities/appellation.entity.js";
 import type { IngredientAggregate, IngredientSnapshot } from "../entities/ingredient.entity.js";
 

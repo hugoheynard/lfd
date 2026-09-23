@@ -3,7 +3,7 @@ import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import type { PointOfSale } from "../domain/entities/point-of-sale.js";
-import { changesBetween, type FieldChanges } from "../../journal/changes.js";
+import { changesBetween, type FieldChanges } from "../../../platform/journal/changes.js";
 import { PointOfSaleRepository } from "../domain/ports/point-of-sale.repository.js";
 import { PointOfSaleUsageReader } from "../domain/ports/point-of-sale-usage.reader.js";
 import { ContextStillSoldHereError } from "../domain/errors/points-of-sale-errors.js";

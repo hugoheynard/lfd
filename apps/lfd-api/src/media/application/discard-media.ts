@@ -2,7 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { MediaStore } from "../../platform/storage/media-store.js";
-import { PIM_EVENTS, PimJournal } from "../../pim/journal/pim-journal.js";
+import { MEDIA_EVENTS, MediaJournal } from "../journal/media-journal.js";
 import { MediaLibraryReader } from "../domain/ports/media-library-reader.js";
 import { MediaLibraryWriter } from "../domain/ports/media-library-writer.js";
 import { MediaNotInLibraryError, MediaStillInUseError } from "../domain/value-objects/image.js";
@@ -50,7 +50,7 @@ export class DiscardMediaHandler implements ICommandHandler<DiscardMediaCommand,
     private readonly library: MediaLibraryReader,
     private readonly writer: MediaLibraryWriter,
     private readonly store: MediaStore,
-    private readonly journal: PimJournal,
+    private readonly journal: MediaJournal,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -70,7 +70,7 @@ export class DiscardMediaHandler implements ICommandHandler<DiscardMediaCommand,
     }
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
-        type: PIM_EVENTS.mediaDiscarded,
+        type: MEDIA_EVENTS.mediaDiscarded,
         subjectType: "media_asset",
         subjectId: url,
         payload: { subjectLabel: image.name !== "" ? image.name : (url.split("/").at(-1) ?? url) },

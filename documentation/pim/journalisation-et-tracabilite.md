@@ -215,9 +215,16 @@ sur le journal réel (appBootstrap/pim-journal.module.ts — le module a été
 fondu depuis dans l'assemblage de l'app). Le PIM ne sait pas
 qui écrit sa trace.
 
-> ⚠️ Le port note qu'au **troisième bloc émetteur**, le journal doit être promu
-> en `platform/`. Il y en a déjà trois (`commerce`, `catalogue/category`,
-> `catalogue/product`) : le déménagement est dû.
+> ✅ **C'est fait le 2026-09-23.** Le port notait qu'au **troisième bloc
+> émetteur**, le journal devait être promu en `platform/`. Le troisième bloc
+> n'a pas été celui qu'on attendait : c'est la **médiathèque**, qui importait
+> `PimJournal` — un bloc indépendant tenait donc sa garantie d'écriture d'un
+> bloc voisin.
+>
+> 🔴 Seule la **mécanique** est montée (`platform/journal/scoped-journal.ts`) :
+> le laissez-passer, `trace`, `untraced`. Le **vocabulaire** reste à chaque
+> bloc — un catalogue de faits centralisé obligerait chacun à demander la
+> permission d'avoir une histoire.
 
 ---
 
@@ -420,11 +427,26 @@ flowchart LR
   B --> S["Abonnés<br/><i>projections, mails</i>"]
 ```
 
-**Le journal, lui, a déménagé.** `PimJournal` vivait dans `pim/` et se donnait
-sa propre règle : « promouvoir en `platform/` au troisième bloc émetteur ». `b2b`
-est le troisième. Le port générique (`platform/journal/`) porte donc le fait nu
-et l'écriture bloquante ; `PimJournal` reste au-dessus avec ce qui lui est propre
-— le laissez-passer et la portée.
+**Le journal, lui, a déménagé — en DEUX temps.** `PimJournal` vivait dans
+`pim/` et se donnait sa propre règle : « promouvoir en `platform/` au troisième
+bloc émetteur ».
+
+1. Le **port générique** (`platform/journal/journal.ts`) est monté quand `b2b`
+   est devenu émetteur : il porte le fait nu et l'écriture bloquante.
+2. La **mécanique du laissez-passer** (`platform/journal/scoped-journal.ts`)
+   l'a suivi le 2026-09-23, quand la médiathèque est devenue le troisième bloc
+   à en avoir besoin. `ScopedJournal<TEntry>` porte `trace`, `untraced` et le
+   symbole privé qui frappe le ticket.
+
+Au-dessus, chaque bloc garde **son vocabulaire** : `PimJournal` ses faits, ses
+sujets et sa portée ; `MediaJournal` les trois faits du fonds, et aucune portée
+— une image déposée ne touche rien, et on refuse de retirer celle qui sert.
+
+⚠️ **Un seul symbole de ticket pour tous les blocs**, et c'est assumé : un
+ticket frappé par le référentiel satisfait la signature d'un dépôt de la
+médiathèque. S'en prémunir demanderait un type générique de plus sur chaque
+port de dépôt, contre un handler qui injecterait le journal d'un AUTRE bloc —
+ce que la matrice des frontières refuse déjà.
 
 ### Ce qui est tracé, et ce qui ne l'est pas
 
@@ -612,8 +634,10 @@ ORDER BY occurred_at DESC;
 | Faits des réglages commerciaux   | `b2b/{delivery-zones,pickup-addresses,order-cutoffs}/domain/*.events.ts` |
 | Acte tarifaire → fait général    | `b2b/pricing/domain/pricing-act.ts` (`pricingFactOf`)                    |
 | Écriture d'un acte tarifaire     | `b2b/pricing/infrastructure/pricing-act.writer.ts`                       |
-| Port du référentiel + ticket     | `pim/journal/pim-journal.ts`                                             |
-| Diff `avant → après`             | `pim/journal/changes.ts`                                                 |
+| **Mécanique du laissez-passer**  | `platform/journal/scoped-journal.ts`                                     |
+| Vocabulaire du référentiel       | `pim/journal/pim-journal.ts`                                             |
+| Vocabulaire de la médiathèque    | `media/journal/media-journal.ts`                                         |
+| Diff `avant → après`             | `platform/journal/changes.ts`                                            |
 | Branchement ports → journal réel | `appBootstrap/journal.module.ts`                                         |
 | Journal réel (append)            | `b2b/growth/infrastructure/prisma-activity-recorder.ts`                  |
 | Table                            | `prisma/schema/growth.prisma` → `model ActivityEvent`                    |

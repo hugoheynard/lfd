@@ -1,8 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
-import { changesBetween } from "../../pim/journal/changes.js";
-import { PIM_EVENTS, PimJournal } from "../../pim/journal/pim-journal.js";
+import { changesBetween } from "../../platform/journal/changes.js";
+import { MEDIA_EVENTS, MediaJournal } from "../journal/media-journal.js";
 import { MediaLibraryReader } from "../domain/ports/media-library-reader.js";
 import { MediaLibraryWriter } from "../domain/ports/media-library-writer.js";
 import {
@@ -38,7 +38,7 @@ export class SaveMediaDetailsHandler implements ICommandHandler<SaveMediaDetails
   constructor(
     private readonly library: MediaLibraryWriter,
     private readonly readers: MediaLibraryReader,
-    private readonly journal: PimJournal,
+    private readonly journal: MediaJournal,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -83,7 +83,7 @@ export class SaveMediaDetailsHandler implements ICommandHandler<SaveMediaDetails
       const ticket =
         Object.keys(changes).length > 0
           ? await this.journal.trace({
-              type: PIM_EVENTS.mediaDescribed,
+              type: MEDIA_EVENTS.mediaDescribed,
               subjectType: "media_asset",
               // L'URL, parce que c'est l'identité de l'image : les inscriptions
               // sont recréées à chaque enregistrement de fiche, un identifiant

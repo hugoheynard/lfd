@@ -10,6 +10,7 @@ import {
   type PimSubjectType,
 } from "../pim/journal/pim-journal.js";
 import { PimJournalReader, type PimJournalFact } from "../pim/journal/pim-journal-reader.js";
+import { MediaJournal, type MediaJournalEntry } from "../media/journal/media-journal.js";
 import { ProductHistoryJournal } from "../pim/journal/product-history-journal.js";
 import { PrismaService } from "../platform/database/prisma.service.js";
 import { PrismaProductHistoryJournal } from "./product-history.journal.js";
@@ -72,6 +73,36 @@ class PimActivityJournal extends PimJournal {
       subjectType: entry.subjectType,
       subjectId: entry.subjectId,
       payload: entry.blast === undefined ? entry.payload : { ...entry.payload, blast: entry.blast },
+    });
+  }
+}
+
+/**
+ * Le journal de la **médiathèque**, par-dessus celui de la plateforme.
+ *
+ * Il ne traduit rien : une entrée du fonds EST déjà un fait de la plateforme —
+ * pas de portée à replier, pas de vocabulaire à convertir. Ce jumeau de
+ * `PimActivityJournal` n'existe donc que pour donner au bloc son propre port,
+ * ce qui est exactement le sujet : la médiathèque tenait sa garantie
+ * d'écriture de `PimJournal` jusqu'au 2026-09-23, c'est-à-dire d'un bloc
+ * voisin.
+ *
+ * ⚠️ Deux lignes qui se ressemblent valent mieux qu'un port partagé : le jour
+ * où le fonds voudra figer quelque chose que le référentiel ignore, il n'aura
+ * personne à convaincre.
+ */
+@Injectable()
+class MediaActivityJournal extends MediaJournal {
+  constructor(private readonly journal: Journal) {
+    super();
+  }
+
+  async record(entry: MediaJournalEntry): Promise<void> {
+    await this.journal.append({
+      type: entry.type,
+      subjectType: entry.subjectType,
+      subjectId: entry.subjectId,
+      payload: entry.payload,
     });
   }
 }
@@ -160,10 +191,11 @@ function toFact(row: {
   providers: [
     { provide: Journal, useClass: ActivityJournal },
     { provide: PimJournal, useClass: PimActivityJournal },
+    { provide: MediaJournal, useClass: MediaActivityJournal },
     { provide: PimJournalReader, useClass: PimActivityJournalReader },
     // L'historique d'une fiche : un port à lui, dans son propre fichier.
     { provide: ProductHistoryJournal, useClass: PrismaProductHistoryJournal },
   ],
-  exports: [Journal, PimJournal, PimJournalReader, ProductHistoryJournal],
+  exports: [Journal, PimJournal, MediaJournal, PimJournalReader, ProductHistoryJournal],
 })
 export class JournalModule {}

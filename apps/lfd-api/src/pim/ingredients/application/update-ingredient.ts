@@ -2,7 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import type { UpdateIngredientPayload } from "@lfd/pim-contracts";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
-import { changesBetween, type FieldChanges } from "../../journal/changes.js";
+import { changesBetween, type FieldChanges } from "../../../platform/journal/changes.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import type { IngredientSnapshot } from "../domain/entities/ingredient.entity.js";
 import { IngredientNotFoundError } from "../domain/errors/ingredient-errors.js";

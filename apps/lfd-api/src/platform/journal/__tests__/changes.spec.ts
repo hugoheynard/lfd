@@ -1,4 +1,4 @@
-import { changesBetween } from "../changes.js";
+import { changesBetween } from "../../../platform/journal/changes.js";
 
 /**
  * Ce que le diff promet — et qui, faux, produirait une trace **crédible et

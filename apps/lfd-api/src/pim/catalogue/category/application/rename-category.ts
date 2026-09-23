@@ -2,7 +2,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { changesBetween } from "../../../journal/changes.js";
+import { changesBetween } from "../../../../platform/journal/changes.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import {
   localizedText,

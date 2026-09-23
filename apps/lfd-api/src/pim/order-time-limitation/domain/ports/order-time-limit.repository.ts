@@ -1,6 +1,6 @@
 import type { OrderTimeLimitView } from "@lfd/pim-contracts";
 
-import type { WriteTicket } from "../../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 
 import type { OrderTimeLimit } from "../entities/order-time-limit.js";
 import type { LimitScope } from "../value-objects/limit-scope.js";

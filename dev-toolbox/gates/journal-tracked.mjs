@@ -5,7 +5,7 @@
  * ## Pourquoi une porte, et pas la revue
  *
  * La traçabilité du PIM repose sur une discipline : le handler appelle
- * `PimJournal` dans une `UnitOfWork`. Rien ne l'y oblige. Un handler neuf qui
+ * le journal de son bloc dans une `UnitOfWork`. Rien ne l'y oblige. Un handler neuf qui
  * l'oublie écrit sans trace — et ce manquement ne se voit NULLE PART : `tsc`
  * est content, les tests passent, l'écran fonctionne. Il ne se découvre que le
  * jour où quelqu'un demande « qui a changé ça », et où la réponse est un blanc
@@ -17,7 +17,9 @@
  * ## Ce que la porte vérifie exactement — deux zones, deux disciplines
  *
  * **Le référentiel** (`src/pim/**`) : tout `@CommandHandler` qui injecte un port
- * de dépôt (`*Repository`) doit AUSSI injecter `PimJournal` et `UnitOfWork`.
+ * de dépôt (`*Repository`) doit AUSSI injecter le journal de SON bloc
+ * (`PimJournal` au référentiel, `MediaJournal` à la médiathèque) et
+ * `UnitOfWork`.
  * C'est un filet, pas une preuve : injecter le journal n'oblige pas à l'appeler
  * — mais le laissez-passer (`WriteTicket`), lui, l'oblige, et il est tenu par le
  * compilateur.
@@ -278,26 +280,32 @@ function handlerBody(source, index) {
   return source.slice(index, next === -1 ? source.length : next);
 }
 
-/** Zone 1 — le référentiel : injecter le journal et l'unité de travail. */
-function auditPim(source, index, params, handler) {
-  // `*Repository` — et `MediaLibraryWriter`, qui EST un dépôt sans en porter
-  // le nom. La porte ne le voyait pas : c'est Hugo qui a réclamé le journal de
-  // la médiathèque, pas elle (2026-09-23).
-  if (!/\b(\w*Repository|MediaLibraryWriter|MediaLibrary)\b/.test(params)) {
-    return null;
-  }
-  checked += 1;
-  const traced = params.includes("PimJournal") && params.includes("UnitOfWork");
-  if (traced) {
-    return { traced: true };
-  }
-  return {
-    traced: false,
-    missing: [
-      params.includes("PimJournal") ? null : "PimJournal",
+/**
+ * Zone « dépôt + laissez-passer » — injecter le journal DU BLOC et l'unité de
+ * travail.
+ *
+ * 🔴 **Le nom du journal est un PARAMÈTRE depuis le 2026-09-23**, et c'est ce
+ * qui empêche cette porte de se désarmer. Elle cherchait littéralement
+ * `PimJournal`, y compris dans la zone `media` — de sorte qu'au jour où la
+ * médiathèque a pris son propre port (`MediaJournal`), la porte aurait exigé
+ * d'elle le journal d'un bloc voisin. Elle aurait mordu, ce qui est déjà
+ * mieux que se taire ; mais elle aurait mordu POUR la dépendance qu'on venait
+ * de retirer.
+ */
+function auditWithTicket(journalName) {
+  return (source, index, params, handler) => {
+    // `*Repository` — et `MediaLibraryWriter`, qui EST un dépôt sans en porter
+    // le nom. La porte ne le voyait pas : c'est Hugo qui a réclamé le journal
+    // de la médiathèque, pas elle (2026-09-23).
+    if (!/\b(\w*Repository|MediaLibraryWriter|MediaLibrary)\b/.test(params)) {
+      return null;
+    }
+    checked += 1;
+    const missing = [
+      params.includes(journalName) ? null : journalName,
       params.includes("UnitOfWork") ? null : "UnitOfWork",
-    ].filter(Boolean),
-    handler,
+    ].filter(Boolean);
+    return missing.length === 0 ? { traced: true } : { traced: false, missing, handler };
   };
 }
 
@@ -372,12 +380,17 @@ function auditMoney(source, index, params, handler) {
 
 const ZONES = [
   { root: join(SRC, STAFF_ZONE), audit: auditStaff },
-  { root: join(SRC, "pim"), audit: auditPim },
+  { root: join(SRC, "pim"), audit: auditWithTicket("PimJournal") },
   // ▸ LA MÉDIATHÈQUE, sortie du référentiel le 2026-09-23. Sans cette ligne,
   //   ses écritures sortaient du périmètre en silence — et le journal qu'on
   //   venait de lui donner (Hugo : « le journal de la médiathèque, on le
   //   fait ») n'aurait plus rien garanti pour le geste suivant.
-  { root: join(SRC, "media"), audit: auditPim },
+  //
+  //   🔴 Et depuis que la MÉCANIQUE du laissez-passer est montée en
+  //   `platform/`, ce bloc exige SON journal : `MediaJournal`. Exiger
+  //   `PimJournal` ici reviendrait à faire tenir la porte pour la dépendance
+  //   que le déménagement a supprimée.
+  { root: join(SRC, "media"), audit: auditWithTicket("MediaJournal") },
   {
     root: join(SRC, "b2b", ACCOUNT_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
@@ -446,7 +459,7 @@ if (offenders.length > 0) {
     "Un handler qui écrit sans trace ne se voit nulle part : tsc est content,\n" +
       "les tests passent, l'écran fonctionne. Ça se découvre le jour où l'on\n" +
       "demande « qui a changé ça » — et ce jour-là, le blanc ne se comble plus.\n\n" +
-      "Soit il journalise — `PimJournal` + `UnitOfWork` au référentiel,\n" +
+      "Soit il journalise — le journal de son bloc + `UnitOfWork`,\n" +
       "`publishTraced` sous unité de travail pour un acte nommé (compte,\n" +
       "panier, catalogue, argent — ou une séquence de `MONEY_DELEGATES`),\n" +
       "`journal.append` sous unité de travail dans l'équipe — soit il\n" +

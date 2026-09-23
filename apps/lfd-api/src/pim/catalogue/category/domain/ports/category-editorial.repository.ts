@@ -1,4 +1,4 @@
-import type { WriteTicket } from "../../../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../../../platform/journal/scoped-journal.js";
 import type { MediaItem } from "../../../shared/domain/value-objects/media.js";
 import type { CategoryEditorial } from "../value-objects/category-editorial.js";
 

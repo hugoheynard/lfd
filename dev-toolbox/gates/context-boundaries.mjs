@@ -184,12 +184,21 @@ const PORT_SURFACE = {
   // URL », « cette image existe-t-elle ». Elle ne voit rien d'autre de lui —
   // ni ses tables, ni ses règles, ni son vocabulaire.
   //
-  // ⚠️ Elle emprunte encore `pim/infra/database` et `pim/journal` : sa table
-  // vit dans le schéma `pim` et ses faits passent par le journal du
-  // référentiel. Les deux tombent au déploiement ③
-  // (`documentation/mediatheque/plan-la-mediatheque-bloc-a-part.md`), et ce
-  // sont les deux seules raisons pour lesquelles cette ligne n'est pas encore
-  // bornée à la seule surface du canal.
+  // ✅ **Deux des trois emprunts sont tombés.** `pim/infra/database` est parti
+  // avec le schéma `media` (déploiement ③, appliqué), et `pim/journal` le
+  // 2026-09-23 : la mécanique du laissez-passer est montée en
+  // `platform/journal/scoped-journal.ts`, et le fonds nomme ses faits chez lui
+  // (`media/journal/media-journal.ts`). C'était la raison qu'invoquait ce
+  // commentaire, et elle n'existe plus.
+  //
+  // ⚠️ **Il en reste UN, et il est nommé** : `localized-text.ts` et
+  // `json-readers.ts`, deux utilitaires transverses de
+  // `pim/catalogue/shared/`. Ils ne montent pas en `platform/` sans décision :
+  // ils importent `@lfd/pim-contracts`, et la plateforme n'importe AUCUN
+  // contrat métier aujourd'hui — l'y forcer lui ferait connaître les langues
+  // que parle le catalogue. Tant que ce point n'est pas tranché, cette ligne
+  // reste large, et elle dit pourquoi
+  // (`documentation/todos/todo-mediatheque.md`).
   "media→pim": "pim/",
   // L'autre sens : le RÉFÉRENTIEL implémente ce que la bibliothèque déclare.
   // Elle ne peut pas lire `product_media` ni `category_media` — ce sont les

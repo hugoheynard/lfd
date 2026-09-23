@@ -1,4 +1,4 @@
-import type { WriteTicket } from "../../../pim/journal/pim-journal.js";
+import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
 import type { LocalizedText } from "../../../pim/catalogue/shared/domain/value-objects/localized-text.js";
 import type { FocalPoint } from "../value-objects/image.js";
 

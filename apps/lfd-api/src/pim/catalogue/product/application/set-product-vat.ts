@@ -3,7 +3,8 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { requireRate } from "../../../vat-rates/application/vat-support.js";
 import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repository.js";
-import { PIM_EVENTS, PimJournal, type WriteTicket } from "../../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
+import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { requireCategory } from "../../category/application/category-support.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";

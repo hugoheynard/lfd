@@ -1,4 +1,4 @@
-import type { WriteTicket } from "../../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import type { AccountingRules } from "../entities/accounting-rules.js";
 
 /** Ce que le dépôt rend en plus de l'agrégat : quand la règle a bougé. */

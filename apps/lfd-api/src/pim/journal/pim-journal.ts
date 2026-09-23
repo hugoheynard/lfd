@@ -1,4 +1,5 @@
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
+import { ScopedJournal } from "../../platform/journal/scoped-journal.js";
 
 /**
  * Le **journal du référentiel** — ce que le PIM déclare vouloir tracer, sans
@@ -11,10 +12,16 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
  * port, que la racine de composition branche sur le journal réel : le même
  * montage que `B2bCatalogDriver`, pour la même raison.
  *
- * **Quand promouvoir le journal en `platform/`** : au troisième bloc émetteur.
- * À deux, un port et un binding de racine coûtent moins qu'un déménagement de
- * 43 fichiers ; à trois, la fiction « la croissance possède le journal » ne
- * tient plus.
+ * ✅ **C'est fait le 2026-09-23.** Ce fichier disait « quand promouvoir le
+ * journal en `platform/` : au troisième bloc émetteur ». La médiathèque est le
+ * troisième, et elle importait `PimJournal` — un bloc indépendant tenait donc
+ * sa garantie d'écriture d'un bloc voisin.
+ *
+ * 🔴 **Seule la MÉCANIQUE est montée** (`platform/journal/scoped-journal.ts`) :
+ * le laissez-passer, `trace`, `untraced`. Ce qui reste ici est le
+ * **vocabulaire du référentiel** — ses faits, ses sujets, sa portée —, et il
+ * reste ici parce qu'un catalogue de faits centralisé obligerait chaque bloc à
+ * demander la permission d'avoir une histoire.
  */
 
 /** La chose dont l'événement parle — treize sujets, énumérés plutôt que comptés. */
@@ -30,14 +37,14 @@ export type PimSubjectType =
   | "appellation"
   | "allergen_category"
   | "allergen_entry"
-  | "order_time_limit"
-  /**
-   * Une image de la bibliothèque. Son `subjectId` est son **URL** : adressée
-   * par contenu, c'est la seule identité qui traverse deux enregistrements de
-   * fiche. Un identifiant d'actif ne désignerait rien de durable, puisque
-   * `replaceMedia` en recrée un par visuel à chaque sauvegarde.
-   */
-  | "media_asset";
+  | "order_time_limit";
+
+/*
+ * 🔴 **`media_asset` a quitté cette liste le 2026-09-23.** La bibliothèque est
+ * un bloc à part : elle nomme ses sujets et ses faits chez elle
+ * (`media/journal/media-journal.ts`). Les garder ici faisait dire au
+ * référentiel ce qu'une image devient, alors qu'il ne fait que l'afficher.
+ */
 
 /**
  * Les faits que le référentiel journalise. **Des décisions**, pas des appels
@@ -67,12 +74,12 @@ export type PimSubjectType =
  * sur les faits à aval.
  */
 export const PIM_EVENTS = {
-  /** Une image entre dans la bibliothèque — aucune fiche n'est touchée. */
-  mediaDeposited: "media_asset.deposited",
-  /** Son étiquette, ses mots-clés ou son point focal changent. */
-  mediaDescribed: "media_asset.described",
-  /** Elle quitte la bibliothèque, octets compris. */
-  mediaDiscarded: "media_asset.discarded",
+  /*
+   * 🔴 **Les trois faits d'image sont partis le 2026-09-23** —
+   * `media_asset.deposited`, `.described`, `.discarded`. Ils vivent dans
+   * `media/journal/media-journal.ts`, avec le bloc qui les prononce. Le
+   * référentiel affiche des images ; il ne décide pas de leur vie.
+   */
   vatRateCreated: "vat_rate.created",
   /** Le taux a bougé — le seul changement de taux qui ait un aval. */
   vatRateRateChanged: "vat_rate.rate_changed",
@@ -437,64 +444,11 @@ export interface PimJournalEntry {
 }
 
 /**
- * Le **laissez-passer d'écriture** : la preuve, portée par le type, qu'une
- * trace a été inscrite.
+ * Port du journal du référentiel — le vocabulaire du PIM sur la mécanique
+ * commune.
  *
- * Les dépôts du référentiel l'exigent en paramètre. Il ne peut naître que dans
- * ce module — `mint` n'est pas exporté et la marque est un symbole privé — donc
- * la seule façon d'en obtenir un est de passer par {@link PimJournal}. Écrire
- * sans tracer ne se refuse plus en revue ni en CI : **ça ne compile pas**.
- *
- * C'est la différence entre le filet (`lint:journal-tracked`, qui vérifie qu'un
- * handler INJECTE le journal) et la garantie : injecter n'oblige pas à appeler.
- * Un ticket, si.
+ * Tout ce qui faisait la garantie — le laissez-passer, `trace`, `untraced` —
+ * vit dans {@link ScopedJournal} depuis le 2026-09-23. Ce qui reste ici est ce
+ * que le référentiel a à dire, et lui seul.
  */
-const TICKET = Symbol("pim.write-ticket");
-
-export interface WriteTicket {
-  readonly [TICKET]: true;
-}
-
-/** Frappe un laissez-passer. Privé au module : c'est toute la garantie. */
-function mint(): WriteTicket {
-  return { [TICKET]: true };
-}
-
-/**
- * Port du journal du référentiel.
- *
- * **Bloquant** : le référentiel a choisi que sa trace conditionne l'écriture.
- * Elle part dans la même transaction que la décision qu'elle décrit, donc une
- * panne de journal annule l'enregistrement. C'est la contrepartie assumée — le
- * journal devient un point de panne du métier — et c'est ce qui rend la trace
- * opposable plutôt que probable.
- */
-export abstract class PimJournal {
-  /**
-   * Inscrit le fait, et rend le laissez-passer qui autorise l'écriture.
-   *
-   * L'ordre n'a pas d'importance pour l'atomicité (tout est dans la même
-   * transaction) ; il en a pour la LECTURE du code : on voit ce qu'on s'apprête
-   * à affirmer avant de l'écrire.
-   */
-  async trace(entry: PimJournalEntry): Promise<WriteTicket> {
-    await this.record(entry);
-    return mint();
-  }
-
-  /**
-   * Un laissez-passer **sans trace**, avec son motif.
-   *
-   * Toutes les écritures n'ont pas un fait à nommer, et certaines ne l'ont pas
-   * ENCORE (cf. la dette de `lint:journal-tracked`). La dérogation existe donc
-   * — mais il faut l'écrire, dire pourquoi, et ça se grep. Une exception
-   * lisible vaut mieux qu'une règle contournée en silence : le but n'a jamais
-   * été d'empêcher, il a toujours été de rendre visible.
-   */
-  untraced(reason: string): WriteTicket {
-    void reason;
-    return mint();
-  }
-
-  protected abstract record(entry: PimJournalEntry): Promise<void>;
-}
+export abstract class PimJournal extends ScopedJournal<PimJournalEntry> {}

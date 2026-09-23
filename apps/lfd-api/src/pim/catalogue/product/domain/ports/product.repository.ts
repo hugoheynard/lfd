@@ -1,4 +1,4 @@
-import type { WriteTicket } from "../../../../journal/pim-journal.js";
+import type { WriteTicket } from "../../../../../platform/journal/scoped-journal.js";
 import type { Product, ProductSnapshot } from "../entities/product.js";
 import type { VariantNutritionSnapshot, VariantSnapshot } from "../entities/variant.js";
 
