@@ -131,3 +131,48 @@ porteur**, à côté du produit et de la famille — décision non prise.
 transposable hors du préfixe du référentiel. Le back-office et l'API doivent
 donc se déployer ensemble ; le dépôt d'image est le seul geste concerné, et la
 fenêtre est celle d'un déploiement.
+
+---
+
+## Ce que le chantier du 2026-09-23 laisse ouvert
+
+### 🔴 « Le défaut du défaut » — le rôle `gallery` ne voyage nulle part
+
+Une image affectée à une fiche **sans qu'on choisisse son rôle** prend
+`gallery`. Or seuls `hero` et `thumbnail` traversent le canal vers le
+commerce : une photo posée sans décision n'apparaît donc **jamais** en
+boutique, et rien à l'écran ne le dit. C'est exactement ce qui a fait croire à
+une panne le jour de la livraison (le croissant était en `gallery`).
+
+Les trois sorties sont écrites, avec leur coût, dans
+[`../pim/images-du-catalogue.md`](../pim/images-du-catalogue.md) §« Le rôle PAR
+DÉFAUT ne voyage nulle part » :
+
+- **A** — le premier visuel d'une fiche devient `hero` d'office ;
+- **B** — l'écran dit qu'un `gallery` n'est pas publié (recommandé) ;
+- **C** — `gallery` voyage en repli.
+
+C'est un **choix de produit**, pas une correction : il appartient à Hugo. B,
+éventuellement doublé de A, est ce que je recommande — A seul déciderait à la
+place de la personne qui photographie.
+
+### Un push écrase une projection, et c'est voulu
+
+Deux écrivains sur `catalog_items.image_*` / `thumbnail_*` : l'ingestion d'un
+instantané (le push) et la projection vive (l'abonné
+`on-product-media-changed`). Les deux lisent la **même** source — le
+référentiel — donc un push ne peut que réécrire la même valeur, ou réparer une
+projection perdue.
+
+C'est la sémantique voulue (**la projection fait la fraîcheur, le push fait la
+réparation**), elle est figée par un e2e — et elle **se lira comme un défaut**
+le jour où quelqu'un verra une image « revenir » après une publication. La
+noter ici, c'est éviter qu'on la corrige en croyant bien faire.
+
+### Remplacer une image sur place (lot 4)
+
+Toujours au plan
+[`../mediatheque/plan-les-six-de-la-mediatheque.md`](../mediatheque/plan-les-six-de-la-mediatheque.md),
+avec le lecteur de point focal. L'identité étant l'empreinte du contenu,
+« remplacer » est en vérité **déposer, puis réaffecter tous les porteurs** —
+c'est ce que le lot doit rendre atomique et visible.
