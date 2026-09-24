@@ -1,4 +1,4 @@
-# TODO — l'éditeur de vitrine, gestes de mise en page
+# TODO — l'éditeur de vitrine
 
 > Noté le 2026-09-24. Hugo : « on peut vivre sans pour le moment ». Rien n'est
 > commencé. Conception de référence :
@@ -46,3 +46,36 @@ Les cases « article du rayon » ne comptent pas : elles se reremplissent.
 partagent leur fonction pure — puis 3. Toutes en fonctions pures testées, dans
 `@lfd/storefront-layout` si elles servent aussi au serveur, sinon dans
 l'éditeur.
+
+## 4. Retirer `sampleCount`, un champ que plus personne ne remplit
+
+> Noté le 2026-09-24, après le multi-contenu en onglets (`11d3967f7`).
+
+`sampleCount` était le « nombre de contenus » que l'éditeur **simulait** dans
+son aperçu, avant que les objets portent de vrais contenus. Depuis les onglets,
+l'aperçu compte les contenus réels de l'objet
+(`storefront-object-dialog.ts`, `previewCarousel`) et le champ n'est plus
+proposé. Il reste pourtant **enregistré et validé** partout (vérifié le
+2026-09-24) :
+
+| Où                                                          | Ce qu'il y fait                                                                               |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `packages/storefront-layout/src/carousel.ts`                | champ de `CarouselSettings`, défaut 3, bornes `SAMPLE_COUNT`, `slideAt`                       |
+| `packages/contracts/src/storefront.ts`                      | `storefrontCarouselSchema.sampleCount` (la vue publique l'omet déjà)                          |
+| `apps/lfd-api/src/b2b/storefront/domain/object-settings.ts` | refuse une valeur hors bornes                                                                 |
+| `storefront-rows.ts`, `storefront.prisma`                   | colonnes `sample_count` de `storefront_object` et `storefront_template`, `NOT NULL` + `CHECK` |
+
+Chaque objet enregistré porte donc la valeur par défaut (3), qui ne dit rien
+de ses contenus. Un champ que personne ne remplit est un mensonge de contrat.
+
+**En trois déploiements** (la colonne est en production depuis `393db493a`) :
+
+1. **Étendre** — le contrat rend `sampleCount` facultatif, l'agrégat cesse de
+   le valider et écrit le défaut s'il manque, l'éditeur ne l'envoie plus ;
+   migration : `DROP NOT NULL` et `DROP CONSTRAINT` des deux `CHECK`.
+2. **Basculer** — plus aucun lecteur : `CarouselSettings` le perd, `slideAt`
+   prend le nombre de contenus en paramètre, l'aperçu de l'éditeur passe par là.
+3. **Resserrer** — migration `DROP COLUMN` des deux tables, une fois le 2
+   déployé.
+
+`lecteur-de-migrations` sur les étapes 1 et 3.
