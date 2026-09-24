@@ -148,6 +148,36 @@ plein.
 - **La pile compresse tout** : tuile, bande simple et hero y font 2×1 ou 2×2 ;
   seule leur mise en page interne les distingue.
 
+## Ce que fait une annonce au clic — proposé, NON décidé
+
+> Hugo, 2026-09-24 : « j'ai besoin qu'on nomme les contenus info, pour voir
+> comment on les traite — si ça ouvre un dialogue (un pack chocolat chaud +
+> viennoiserie, une formule) ou le rayon d'une opération datée. J'ai besoin de
+> voir avant de faire. » On y reviendra.
+
+**Proposé** : séparer le **visuel** d'une info (badge, titre, phrase, image —
+inchangé) de son **action au clic**, choisie dans une liste fermée. Et nommer
+le type **« Annonce »** dans l'éditeur plutôt que « info », qui se confond avec
+le ton, les bulles d'aide et le reste.
+
+| Action        | Exemple                                    | Ce qui s'ouvre                                                                       | Ce qu'il faut au serveur                                                                                   | État                                                                     |
+| ------------- | ------------------------------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Aucune**    | « Fermé le 25 décembre »                   | rien — une annonce                                                                   | rien                                                                                                       | ✅ tenu par le modèle actuel (pas de lien)                               |
+| **Rayon**     | « Nos pains au levain »                    | le rayon, en boutique                                                                | la clé du rayon                                                                                            | ✅ tenu par le modèle actuel (`link_shelf_key`)                          |
+| **Opération** | « Le rayon de Noël, J‑18 »                 | une sélection d'articles, sa fenêtre de dates, son délai de commande                 | un modèle d'**opération datée** — peut-être un rayon temporaire du catalogue plutôt qu'un objet de vitrine | ❌ à concevoir                                                           |
+| **Formule**   | « Chocolat chaud + viennoiserie : 4,50 € » | un **dialogue de composition** : un choix par groupe, le prix de la formule appliqué | un modèle de **formule** (groupes, choix, prix fixe) qui entre dans le panier, le devis et la facture      | ❌ à concevoir — 🔴 c'est de l'argent : plan dédié, `vitruve` avant Hugo |
+| **Page**      | « Notre levain, 48 h de pousse »           | une feuille éditoriale                                                               | un contenu éditorial                                                                                       | ❌ petit ajout                                                           |
+
+**Proposé pour le modèle** : un contenu info porte une `action` (`none` ·
+`shelf` · `operation` · `formula` · `page`) et sa cible ; `none` et `shelf`
+seuls activables d'abord, les trois autres visibles mais grisés dans
+l'éditeur jusqu'à leur propre chantier. La vitrine ne porte que le LIEN : la
+formule et l'opération vivent ailleurs.
+
+**Prochaine étape convenue** : une maquette de l'éditeur (le panneau d'une
+annonce et le choix de son action) et de ce que chaque action ouvre en
+boutique — à regarder avant de toucher au code.
+
 ## Pas encore décidé
 
 - **Dater** : une fenêtre qui allume et éteint une opération seule, à
