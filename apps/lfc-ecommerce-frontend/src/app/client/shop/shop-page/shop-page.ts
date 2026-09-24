@@ -35,7 +35,6 @@ import { SlotPickerDialog } from '../slot-picker-dialog/slot-picker-dialog';
 import { OrderBar } from '../order-bar/order-bar';
 import { PublicHousePickerDialog } from '../public-house-picker-dialog/public-house-picker-dialog';
 import { CartBar } from '../../cart/cart-bar/cart-bar';
-import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
 import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ProductSheet } from '../product-sheet/product-sheet';
 import { ShelfGrid } from './shelf-grid/shelf-grid';
@@ -68,7 +67,6 @@ import { ShelfNav } from './shelf-nav/shelf-nav';
   imports: [
     CartBar,
     OrderBar,
-    ClientBannerBlock,
     ClientBannerOutlet,
     FoldButtonComponent,
     FoldEmptyStateComponent,

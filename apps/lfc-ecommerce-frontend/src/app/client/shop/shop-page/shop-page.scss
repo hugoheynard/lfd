@@ -101,12 +101,19 @@
   }
 
   /* 🔴 LA BARRE « MA COMMANDE » À CHEVAL (plan lot 2, SPEC §2) : 50 px sur
-     l'encre, le reste sur le papier. `transform` et non `top` fixe : le
-     pourcentage se lit sur la hauteur de la BARRE, qu'on ne connaît pas
-     d'avance — ce qui déborde est donc toujours « tout sauf 50 px ». */
+     l'encre, le reste sur le papier.
+     Elle a d'abord été DESCENDUE par `transform` : le bandeau gardait sa
+     hauteur pleine, et le décalage laissait 77 px d'encre vide au-dessus
+     d'elle — visible dès que le titre de la page est parti (2026-09-24).
+     Désormais elle reste en HAUT du bandeau (16 px d'air), et c'est le bandeau
+     qui raccourcit : la marge basse négative lui retire les 77 px qui
+     débordent. Même chevauchement, sans le vide.
+     ⚠️ 77 = barre de 127 px − 50, mesuré à 1400 px : les mêmes 77 que
+     `.under-bar` et les filtres collants plus bas. Les trois bougent ensemble. */
   .terms {
     top: auto;
-    transform: translateY(calc(100% - 50px));
+    margin-top: var(--fold-space-md);
+    margin-bottom: -77px;
   }
 
   /* Ce que la barre avale du papier, rendu au rayon. Mesuré à 1400 px le
