@@ -24,6 +24,10 @@
  * n'existe plus — et c'est comme ça qu'on retire le garde-fou applicatif qui
  * l'a remplacé.
  *
+ * Deux porteurs depuis le 2026-09-24 — le référentiel (fiches, familles) et la
+ * vitrine du commerce (ses objets) —, réunis par un composite dans
+ * `appBootstrap/` qui échoue dès qu'UN des deux échoue.
+ *
  * ➡️ Conséquence : un porteur qui ne répond pas ne vaut pas « zéro emploi ».
  * Le silence doit ARRÊTER la suppression, jamais l'autoriser — sinon une panne
  * de port devient un effacement de masse.
@@ -37,8 +41,14 @@
  * on empêchait le geste sans donner de quoi le débloquer.
  */
 export interface Carrier {
-  /** La nature du porteur — elle décide de l'écran vers lequel on renvoie. */
-  readonly kind: "product" | "category";
+  /**
+   * La nature du porteur — elle décide de l'écran vers lequel on renvoie.
+   *
+   * `storefront` depuis le 2026-09-24 : un objet de la vitrine du commerce
+   * (`id` = l'identifiant de l'objet). La médiathèque ne sait pas qui répond
+   * pour quel `kind` — `appBootstrap` interroge TOUS les porteurs et somme.
+   */
+  readonly kind: "product" | "category" | "storefront";
   readonly id: string;
   /**
    * Ce qu'on lit à l'écran. Jamais vide : un porteur sans nom se désigne par

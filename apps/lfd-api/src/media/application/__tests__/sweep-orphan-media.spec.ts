@@ -45,6 +45,20 @@ class FakeCarriers extends MediaCarriers {
   }
 }
 
+/**
+ * Un porteur en PANNE. Le composite d'`appBootstrap` propage le rejet du
+ * premier porteur qui échoue ; c'est ce rejet que le balayage reçoit.
+ */
+class BrokenCarriers extends MediaCarriers {
+  usesOf(): Promise<ReadonlyMap<string, number>> {
+    return Promise.reject(new Error("porteur injoignable"));
+  }
+
+  carriersOf(): Promise<readonly Carrier[]> {
+    return Promise.reject(new Error("porteur injoignable"));
+  }
+}
+
 const NOW = new Date("2026-08-22T04:00:00Z");
 
 /** Le journal des gestes, dans l'ORDRE — c'est lui que le test principal lit. */
@@ -268,5 +282,22 @@ describe("SweepOrphanMediaHandler", () => {
 
     expect(report.removed).toBe(0);
     expect(report.failuresForgotten).toBe(3);
+  });
+
+  it("s'ARRÊTE sans rien supprimer quand un porteur ne répond pas", async () => {
+    // Le silence ne vaut pas « zéro emploi » : avaler la panne ferait de chaque
+    // candidat un orphelin, et du balayage un effacement de masse.
+    const steps: Step[] = [];
+    const run = new SweepOrphanMediaHandler(
+      new FakeLibrary(["products/aa.png", "products/bb.png"], () => true, steps),
+      new FakeStore(steps),
+      new BrokenCarriers(),
+      new SpyingFailures(),
+      new FixedClock(NOW),
+    );
+
+    await expect(run.execute()).rejects.toThrow("porteur injoignable");
+
+    expect(steps).toEqual([]);
   });
 });

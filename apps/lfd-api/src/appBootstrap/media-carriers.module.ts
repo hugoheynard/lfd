@@ -1,8 +1,11 @@
 import { Global, Module } from "@nestjs/common";
 
+import { StorefrontModule } from "../b2b/storefront/storefront.module.js";
 import { MediaCarriers } from "../media/channels/carriers/media-carriers.js";
 import { CatalogueModule } from "../pim/catalogue/catalogue.module.js";
 import { PrismaMediaCarriers } from "../pim/catalogue/shared/infrastructure/prisma-media-carriers.js";
+import { CompositeMediaCarriers } from "./composite-media-carriers.js";
+import { StorefrontMediaCarriers } from "./storefront-media-carriers.js";
 
 /**
  * **Le fil des porteurs, relié.** Le pendant exact d'`ImageCatalogueModule`, et
@@ -14,16 +17,28 @@ import { PrismaMediaCarriers } from "../pim/catalogue/shared/infrastructure/pris
  * la forme normale de deux contextes qui ont besoin l'un de l'autre sans que
  * l'un possède l'autre.
  *
+ * Depuis le 2026-09-24, la vitrine du commerce est un second porteur : le
+ * token est lié à un {@link CompositeMediaCarriers} qui interroge les deux, et
+ * échoue si l'un échoue (plan `documentation/order/plan-vitrine-enregistrement.md`, D9).
+ *
  * `@Global` pour la raison des autres fils : le consommateur du port est
  * `media/`, qui ne peut pas importer le module qui le fournit sans devenir
  * dépendant du référentiel.
  */
 @Global()
 @Module({
-  imports: [CatalogueModule],
-  // Même motif qu'`ImageCatalogueModule` : l'adaptateur vient du module qui le
-  // construit, `useExisting` le désigne sous le token de l'autre bloc.
-  providers: [{ provide: MediaCarriers, useExisting: PrismaMediaCarriers }],
+  imports: [CatalogueModule, StorefrontModule],
+  providers: [
+    StorefrontMediaCarriers,
+    // L'adaptateur du référentiel vient du module qui le construit ; celui de
+    // la vitrine vit ici, faute de droit `b2b → media` dans la matrice.
+    {
+      provide: MediaCarriers,
+      useFactory: (pim: PrismaMediaCarriers, storefront: StorefrontMediaCarriers) =>
+        new CompositeMediaCarriers([pim, storefront]),
+      inject: [PrismaMediaCarriers, StorefrontMediaCarriers],
+    },
+  ],
   exports: [MediaCarriers],
 })
 export class MediaCarriersModule {}
