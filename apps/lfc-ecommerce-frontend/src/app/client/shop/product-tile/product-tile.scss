@@ -60,29 +60,11 @@
   }
 }
 
-.star {
+.badge {
   position: absolute;
-  top: 5px;
-  left: 5px;
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  border-radius: var(--fold-radius-pill);
-  background: var(--lfc-color-accent);
-  color: var(--lfc-color-on-accent);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--lfc-weight-black);
-  line-height: 1;
-  pointer-events: none;
-}
-
-.signature {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  padding: 2px 8px;
+  top: var(--fold-space-sm);
+  left: var(--fold-space-sm);
+  padding: 4px 10px;
   border-radius: var(--fold-radius-pill);
   background: var(--lfc-color-accent);
   color: var(--lfc-color-on-accent);
@@ -91,45 +73,15 @@
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-label);
   text-transform: uppercase;
+  box-shadow: var(--lfc-shadow-card);
   pointer-events: none;
 }
 
-/* La pastille d'ajout : 30 px visibles, mais une zone d'appui de 44 px obtenue
-   par un pseudo-élément — la cible réelle ne se lit pas à l'œil. */
-.quick {
-  position: absolute;
-  right: 5px;
-  bottom: 5px;
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border: 0;
-  border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-primary-surface);
-  color: var(--lfc-color-primary-vivid);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-md);
-  font-weight: var(--lfc-weight-black);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  cursor: pointer;
-
-  fold-icon {
-    width: 16px;
-    height: 16px;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: -7px;
-  }
-}
-
-.quick.filled {
-  background: var(--lfc-color-primary-vivid);
-  color: var(--fold-color-on-primary);
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .body {
@@ -137,8 +89,8 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: var(--fold-space-sm) 9px 0;
+  gap: var(--fold-space-xs);
+  padding: 11px 12px 0;
   border: 0;
   background: none;
   text-align: left;
@@ -146,23 +98,33 @@
 }
 
 .name {
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-xs);
-  font-weight: var(--fold-weight-extrabold);
+  /* Pogonia grasse, pas Chunk (Hugo, 2026-09-24) : Chunk est une face de
+     display, et un rayon de vingt noms en capitales Chunk se lisait comme vingt
+     titres. Le registre `caps` est celui des petites capitales du dépôt. */
+  font-family: var(--lfc-font-caps);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--fold-weight-bold);
   letter-spacing: var(--lfc-tracking-block);
   text-transform: uppercase;
   line-height: 1.14;
   color: var(--fold-color-text);
-  /* Onze pixels de large pour « Chausson aux pommes » : le nom se coupe plutôt
+  /* « Chausson aux pommes » sur une colonne étroite : le nom se coupe plutôt
      que de déborder de la tuile. */
   overflow-wrap: break-word;
   hyphens: auto;
 }
 
 .note {
-  font-size: var(--fold-text-xs);
-  line-height: 1.35;
-  color: var(--lfc-color-text-subtle);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  /* Deux lignes RÉSERVÉES, même quand le texte n'en prend qu'une : sans elles,
+     une carte à note courte aurait son prix plus haut que sa voisine. */
+  min-height: calc(2 * var(--lfc-leading-body) * 1em);
+  font-size: var(--lfc-text-note);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-secondary);
 }
 
 .foot {
@@ -170,7 +132,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--fold-space-sm);
-  padding: 5px 9px 9px;
+  padding: 10px 12px 12px;
 }
 
 .price {
@@ -197,61 +159,76 @@
   color: var(--lfc-color-text-subtle);
 }
 
-.add {
+/* LE geste d'ajout : 44 px, encre pleine. Il porte « + » à vide, puis la
+   quantité — le même bouton, qui ajoute toujours. */
+.quick {
   flex: none;
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 13px;
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 var(--fold-space-sm);
   border: 0;
   border-radius: var(--fold-radius-md);
-  background: var(--fold-color-primary-surface);
-  color: var(--lfc-color-primary-vivid);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-xs);
+  font-size: var(--lfc-text-block);
   font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
-  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
   cursor: pointer;
+
+  fold-icon {
+    width: 18px;
+    height: 18px;
+  }
 }
 
-/* Le rail est un composant : la tuile ne lui donne que sa PLACE et son pli.
-   Le sélecteur nomme l'élément pour l'emporter sur le `display` que le rail
-   pose sur son propre hôte. */
-.wide-only,
-app-quantity-rail.wide-only {
-  display: none;
+/* Au panier, le bouton élargit sa pastille : la quantité se lit avant le prix. */
+.quick.filled {
+  min-width: 64px;
+}
+
+/* ── Le best-seller ──────────────────────────────────────────────────────
+   En pile, il occupe la rangée entière, photo au-dessus. Au-delà du pli, photo
+   à gauche (200 px au moins), texte à droite, et la phrase apparaît. */
+.featured {
+  border-color: var(--lfc-color-featured-border);
+  background: var(--lfc-color-featured-surface);
+  box-shadow: var(--lfc-shadow-featured);
+
+  /* Le best-seller GARDE Chunk (SPEC §5) : lui est un titre. */
+  .name {
+    font-family: var(--fold-font-label);
+    font-weight: var(--fold-weight-extrabold);
+    font-size: var(--lfc-text-screen-sm);
+    line-height: var(--lfc-leading-title);
+  }
 }
 
 @media (min-width: 900px) {
-  .narrow-only {
-    display: none;
-  }
+  .featured {
+    display: grid;
+    grid-template-columns: minmax(200px, 1fr) minmax(0, 1fr);
 
-  .signature.wide-only,
-  .add.wide-only {
-    display: inline-flex;
-  }
+    .media {
+      aspect-ratio: auto;
+      min-height: 220px;
+    }
 
-  app-quantity-rail.wide-only {
-    display: inline-flex;
-  }
+    .body {
+      padding: 18px 16px 0;
+    }
 
-  .note.wide-only {
-    display: block;
-  }
+    .note {
+      display: block;
+      min-height: 0;
+    }
 
-  .name {
-    font-size: var(--lfc-text-note);
-  }
-
-  .body {
-    padding: 11px 12px 0;
-  }
-
-  .foot {
-    padding: 10px 12px 12px;
+    .foot {
+      padding: 12px 16px 16px;
+    }
   }
 }
 

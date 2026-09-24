@@ -1,25 +1,25 @@
 .photo {
-  display: block;
-  // Le ratio du rôle `hero`, décidé le 2026-09-23 : c'est ce visuel-là que le
-  // référentiel désigne comme l'ouverture d'une fiche. Une hauteur fixe
-  // recadrait différemment selon la largeur de l'écran — la même photo était
-  // pleine sur mobile et tranchée sur grand écran.
-  aspect-ratio: 3 / 2;
-  background: var(--fold-color-surface-band);
   position: relative;
+  display: block;
+  width: 100%;
+  // 4/3 comme la vignette (handoff boutique, SPEC §6) : la fiche montre la
+  // même photo que le rayon, au même cadrage, en plus grand.
+  aspect-ratio: 4 / 3;
+  background: var(--fold-color-surface-band);
 
   img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
 }
 
-.signature {
+.badge {
   position: absolute;
   top: 14px;
   left: 16px;
-  padding: 3px 10px;
+  padding: 4px 10px;
   border-radius: var(--fold-radius-pill);
   background: var(--lfc-color-accent);
   color: var(--lfc-color-on-accent);
@@ -30,6 +30,12 @@
   text-transform: uppercase;
 }
 
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
 .note {
   margin: 0;
   font-size: var(--fold-text-base);
@@ -37,55 +43,133 @@
   color: var(--fold-color-text-secondary);
 }
 
+/* Les faits, ENTRE DEUX FILETS : la fournée aujourd'hui, pièce et allergènes
+   quand le serveur les servira. */
 .facts {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  margin: var(--fold-space-lg) 0 0;
-  border-radius: var(--lfc-radius-xl);
-  background: var(--fold-color-border-subtle);
-  overflow: clip;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: var(--fold-space-md) 0;
+  border-block: 1px solid var(--fold-color-border);
 }
 
 .fact {
-  display: flex;
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
   align-items: baseline;
-  justify-content: space-between;
   gap: var(--fold-space-md);
-  padding: 11px 14px;
-  background: var(--fold-color-surface-card);
 
   dt {
-    font-size: var(--lfc-text-note);
-    color: var(--fold-color-text-muted);
+    font-family: var(--fold-font-label);
+    font-size: var(--fold-text-2xs);
+    font-weight: var(--lfc-weight-black);
+    letter-spacing: var(--lfc-tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--lfc-color-text-subtle);
   }
 
   dd {
     margin: 0;
-    flex: none;
-    white-space: nowrap;
-    font-size: var(--lfc-text-note);
-    font-weight: var(--fold-weight-semibold);
-    font-variant-numeric: tabular-nums;
+    font-size: var(--lfc-text-block);
     color: var(--fold-color-text);
   }
 }
 
+.pricing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.price {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.amount {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-screen-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-block);
+  color: var(--fold-color-text);
+}
+
+.per {
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-block);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text);
+}
+
+.price-was {
+  font-size: var(--lfc-text-block);
+  color: var(--fold-color-text-muted);
+  text-decoration-thickness: 1px;
+}
+
+.discount {
+  padding: 4px 10px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
 .foot {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--fold-space-md);
   width: 100%;
+}
+
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.batch {
+  display: grid;
+  place-items: center;
+  min-width: 50px;
+  height: 50px;
+  padding: 0 var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-note);
+  font-weight: var(--lfc-weight-black);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+/* Le lot qui égale le brouillon : crème doré, cerne d'or. */
+.batch.current {
+  border-color: var(--lfc-color-featured-border);
+  background: var(--lfc-color-featured-surface);
 }
 
 /* La mention qui remplace le geste d'ajout au niveau `browse` : la hauteur du
    bouton qu'elle remplace, pour que la fiche ne saute pas d'un niveau à l'autre. */
 .soon {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
+  min-height: 52px;
   margin: 0;
   font-size: var(--lfc-text-block);
   font-weight: var(--fold-weight-semibold);
@@ -93,21 +177,37 @@
   text-align: center;
 }
 
+/* Pleine largeur, libellé à gauche, total à droite. */
 .cta {
-  flex: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 48px;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  width: 100%;
+  height: 52px;
+  padding: 0 var(--fold-space-lg);
   border: 0;
   border-radius: var(--fold-radius-lg);
-  background: var(--lfc-color-accent);
-  color: var(--lfc-color-on-accent);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
   font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-block);
+  font-size: var(--lfc-text-cta);
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-cta);
   text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
+
+  /* « Déjà au panier » est un ÉTAT, pas une action : peint en encre pleine,
+     il se lisait comme un bouton qu'on pouvait presser sans effet. */
+  &:disabled {
+    background: var(--fold-color-surface-card);
+    color: var(--fold-color-primary);
+    box-shadow: inset 0 0 0 1px var(--fold-color-border);
+    cursor: default;
+  }
+}
+
+.cta-total {
+  font-variant-numeric: tabular-nums;
 }

@@ -1,11 +1,18 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  output,
+} from '@angular/core';
 
 import { formatCents } from '../../../client/format-money';
 import { ClientDialog } from '../../../client/dialog/client-dialog';
-import { OrderContextStore } from '../../../client/order-context.store';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import type { ShopItemView } from '@lfd/contracts';
-import { lineTotalCents, unitPriceCents } from '@lfd/money';
+import { discountBp, lineTotalCents, millicentsFromCents, unitPriceCents } from '@lfd/money';
 
 import { artOf, ovenHoursOf } from '../shelf-display';
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../media-source';
@@ -13,13 +20,30 @@ import { ShopCatalogue } from '../shop-catalogue.store';
 import { ShopPriceBasis } from '../shop-price-basis.service';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
 
+/** Les lots qu'un professionnel commande d'un geste (handoff boutique, SPEC §6). */
+const BATCHES: readonly number[] = [6, 12, 24];
+
+/** Un point de base par centième de pour cent : 100 bp font 1 %. */
+const BP_PER_PERCENT = 100;
+
+/** Ce que le bouton du pied dit, selon le panier et le brouillon. */
+export type SheetCtaState = 'add' | 'update' | 'inCart';
+
 /**
  * La fiche d'une pièce — le geste LENT du rayon.
  *
- * Elle répond à ce que la vignette ne peut pas dire à 112 px : le nom entier, la
- * note du fournil, et trois faits qui décident vraiment — ce que ça coûte à
- * l'unité, quand ça sort du four, où ça vous attend. Le stepper y fait 44 px
- * parce que c'est ici, et pas dans la grille, qu'on RETIRE.
+ * Elle répond à ce que la vignette ne dit pas : le nom entier, la note du
+ * fournil, la fournée, et le prix par pièce avec ce qu'il économise sur le
+ * tarif boutique quand le serveur le sert.
+ *
+ * 🔴 **La quantité y est un BROUILLON.** Le stepper et les raccourcis de lot
+ * règlent une quantité locale, initialisée à ce qui est au panier (ou 1) ; seul
+ * le bouton du pied l'écrit, par `quantitySet`. On compose un lot de douze sans
+ * que le panier passe par un, deux, trois… sous les yeux.
+ *
+ * Ce que la maquette montre et que le serveur ne sert pas — pièce, allergènes,
+ * clôture — n'a PAS de ligne ici : une ligne vide ou inventée mentirait
+ * (plan `plan-boutique-pro-cartes-et-fiche.md`).
  */
 @Component({
   selector: 'app-product-sheet',
@@ -32,6 +56,7 @@ export class ProductSheet {
   /** `null` ferme la feuille : il n'y a pas de fiche sans pièce à montrer. */
   readonly product = input.required<ShopItemView | null>();
 
+  /** Ce qui est AU PANIER — la référence du brouillon, jamais modifiée ici. */
   readonly quantity = input(0);
 
   /**
@@ -42,14 +67,36 @@ export class ProductSheet {
   readonly orderable = input(true);
 
   readonly closed = output<void>();
-  readonly added = output<void>();
-  readonly removed = output<void>();
+
+  /** La quantité à poser au panier pour cette pièce — le brouillon validé. */
+  readonly quantitySet = output<number>();
 
   protected readonly t = inject(ClientCopyService).t;
-  private readonly order = inject(OrderContextStore);
   private readonly basis = inject(ShopPriceBasis);
-
   private readonly catalogue = inject(ShopCatalogue);
+
+  protected readonly showsTtc = this.basis.showsTtc;
+
+  /**
+   * Le brouillon : ce qui est au panier, ou une pièce. Il se réaligne quand la
+   * fiche change de pièce ou que le panier bouge sous elle.
+   */
+  protected readonly draft = linkedSignal(() => {
+    this.product();
+    return Math.max(this.quantity(), 1);
+  });
+
+  /** Les raccourcis de lot : un geste de professionnel, absent pour un particulier. */
+  protected readonly batches = computed(() => {
+    const c = this.t().product;
+    return this.showsTtc()
+      ? []
+      : BATCHES.map((size) => ({
+          size,
+          label: fill(c.batch, { n: String(size) }),
+          aria: fill(c.batchAria, { n: String(size) }),
+        }));
+  });
 
   /** Le nom du rayon vient du CATALOGUE : c'est lui qui range, pas cet écran. */
   protected readonly shelf = computed(() => {
@@ -61,11 +108,8 @@ export class ProductSheet {
   });
 
   /**
-   * L'ouverture, à la largeur de la fiche.
-   *
-   * Plus grande que la tuile — elle occupe toute la largeur du panneau — donc
-   * ses largeurs sont doublées. Mesuré : 123 ko à 1800 px, contre 3,64 Mo pour
-   * le master.
+   * L'ouverture, à la largeur de la fiche. Mesuré : 123 ko à 1800 px, contre
+   * 3,64 Mo pour le master.
    */
   protected readonly artSrc = computed(() => {
     const visual = this.art();
@@ -82,39 +126,86 @@ export class ProductSheet {
     return product === null ? null : artOf(product);
   });
 
-  /**
-   * Les trois faits. Le troisième dit où la pièce vous attend : il vient du mode
-   * de service, pas du produit — la même viennoiserie se retire ou se livre.
-   */
+  /** Les faits servis — la fournée seule, tant que pièce et allergènes ne traversent pas. */
   protected readonly facts = computed(() => {
     const product = this.product();
-    const c = this.t().product;
-    if (!product) {
-      return [];
-    }
-    const choice = this.order.choice();
-    const where =
-      choice === null
-        ? { key: c.pickupAt, value: '—' }
-        : {
-            key: choice.mode === 'pickup' ? c.pickupAt : c.deliverTo,
-            value: `${choice.place} · ${choice.slot}`,
-          };
-    return [
-      {
-        key: c.unitPrice,
-        // La fiche suit la vignette : même assiette, même mention. Les voir
-        // différer d'un écran à l'autre ferait douter du prix lui-même.
-        value: this.basis.showsTtc()
-          ? fill(this.t().shop.priceTtc, { price: formatCents(product.unitPriceTtcCents) })
-          : fill(this.t().shop.priceHt, {
-              price: formatCents(unitPriceCents(product.unitPriceMillicents)),
-            }),
-      },
-      { key: c.oven, value: ovenHoursOf(product.shelfId) },
-      where,
-    ];
+    return product === null
+      ? []
+      : [{ key: this.t().product.oven, value: ovenHoursOf(product.shelfId) }];
   });
+
+  /**
+   * Le prix unitaire en MILLICENTIMES, dans l'assiette de qui regarde. Le TTC
+   * arrive du serveur en centimes : on le remonte d'échelle plutôt que de le
+   * dériver du hors taxe, pour ne pas diverger du panier d'un centime.
+   */
+  private readonly unitMillicents = computed(() => {
+    const product = this.product();
+    if (product === null) {
+      return 0;
+    }
+    return this.showsTtc()
+      ? millicentsFromCents(product.unitPriceTtcCents)
+      : product.unitPriceMillicents;
+  });
+
+  protected readonly price = computed(() => formatCents(unitPriceCents(this.unitMillicents())));
+
+  /** La mention d'assiette : la vignette la porte, la fiche ne la perd pas. */
+  protected readonly basisSuffix = computed(() =>
+    this.showsTtc() ? this.t().shop.ttcSuffix : this.t().shop.htSuffix,
+  );
+
+  /** Le tarif boutique barré — même règle que la vignette : l'absence EST la réponse. */
+  protected readonly striked = computed(() => {
+    const catalogue = this.product()?.catalogPriceMillicents;
+    return catalogue === undefined ? null : formatCents(unitPriceCents(catalogue));
+  });
+
+  /**
+   * L'écart au tarif boutique, en pour cent entier — ou `null` quand il n'y a
+   * rien à dire. Dérivé des deux montants servis, tous deux hors taxe : aucun
+   * pourcentage n'est stocké, aucun n'est inventé.
+   */
+  protected readonly discountPercent = computed(() => {
+    const product = this.product();
+    const catalogue = product?.catalogPriceMillicents;
+    if (product === null || catalogue === undefined) {
+      return null;
+    }
+    const percent = Math.round(discountBp(catalogue, product.unitPriceMillicents) / BP_PER_PERCENT);
+    return percent > 0 ? percent : null;
+  });
+
+  protected readonly discountLabel = computed(() => {
+    const percent = this.discountPercent();
+    return percent === null ? null : fill(this.t().product.proDiscount, { pct: String(percent) });
+  });
+
+  protected readonly ctaState = computed<SheetCtaState>(() => {
+    const inCart = this.quantity();
+    if (inCart === 0) {
+      return 'add';
+    }
+    return this.draft() === inCart ? 'inCart' : 'update';
+  });
+
+  protected readonly ctaLabel = computed(() => {
+    const c = this.t().product;
+    switch (this.ctaState()) {
+      case 'add':
+        return fill(c.addCount, { n: String(this.draft()) });
+      case 'update':
+        return c.update;
+      case 'inCart':
+        return c.inCart;
+    }
+  });
+
+  /** Le total de ce qu'on emporte, dans la même assiette que le prix affiché. */
+  protected readonly total = computed(() =>
+    formatCents(lineTotalCents(this.unitMillicents(), this.draft())),
+  );
 
   protected readonly addLabel = computed(() =>
     fill(this.t().shop.addAria, { name: this.product()?.name ?? '' }),
@@ -124,17 +215,17 @@ export class ProductSheet {
     fill(this.t().shop.removeAria, { name: this.product()?.name ?? '' }),
   );
 
-  /** Le bouton porte le prix de ce qu'on emporte, pas celui de l'unité. */
-  protected readonly cta = computed(() => {
-    const product = this.product();
-    if (!product) {
-      return '';
+  protected increment(): void {
+    this.draft.update((n) => n + 1);
+  }
+
+  protected decrement(): void {
+    this.draft.update((n) => Math.max(n - 1, 1));
+  }
+
+  protected commit(): void {
+    if (this.ctaState() !== 'inCart') {
+      this.quantitySet.emit(this.draft());
     }
-    const pieces = Math.max(this.quantity(), 1);
-    return fill(this.t().product.cta, {
-      price: fill(this.t().shop.priceHt, {
-        price: formatCents(lineTotalCents(product.unitPriceMillicents, pieces)),
-      }),
-    });
-  });
+  }
 }

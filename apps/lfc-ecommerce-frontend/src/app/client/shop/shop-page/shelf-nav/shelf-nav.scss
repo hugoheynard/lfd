@@ -18,15 +18,17 @@
     flex: none;
     display: inline-flex;
     align-items: center;
-    height: 34px;
+    /* La maquette du 2026-09-24 : des pastilles SEGMENTÉES — coin de 13 px, pas
+       une gélule —, que le pied mobile reprend pour son état « panier vide ». */
+    height: 38px;
     padding: 0 14px;
     border: 1px solid var(--fold-color-border);
-    border-radius: var(--fold-radius-pill);
+    border-radius: var(--fold-radius-lg);
     background: var(--fold-color-surface-card);
     color: var(--fold-color-text-secondary);
-    font-family: var(--fold-font-label);
+    font-family: var(--lfc-font-caps);
     font-size: var(--fold-text-xs);
-    font-weight: var(--fold-weight-extrabold);
+    font-weight: var(--fold-weight-bold);
     letter-spacing: var(--lfc-tracking-label);
     text-transform: uppercase;
     white-space: nowrap;
@@ -58,9 +60,14 @@
 @media (min-width: 900px) {
   .chips {
     flex-wrap: wrap;
-    row-gap: 7px;
+    gap: 9px;
     margin-inline: 0;
     padding-inline: 0;
     overflow-x: visible;
+
+    button {
+      height: 40px;
+      padding: 0 17px;
+    }
   }
 }

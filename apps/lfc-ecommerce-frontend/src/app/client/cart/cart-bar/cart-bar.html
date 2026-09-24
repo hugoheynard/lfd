@@ -1,9 +1,44 @@
-<button class="bar" type="button" (click)="opened.emit()">
-  <span class="text">
-    <span class="title">{{ label() }}</span>
-    @if (where() !== '') {
-      <span class="sub">{{ where() }}</span>
+<div class="foot">
+  <!-- Ligne 1 : ce qui a été décidé. Sans choix, rien — le bouton seul mène à
+       la question, comme avant. -->
+  @if (choice(); as service) {
+    <div class="said">
+      <span class="text">
+        <span class="kicker">
+          <span class="dot" aria-hidden="true"></span>
+          <span
+            >{{ c().title }} · {{ service.mode === 'delivery' ? c().delivery : c().pickup }}</span
+          >
+        </span>
+        <span class="promise">{{ service.place }} · {{ when() }}</span>
+      </span>
+      <!-- Un LIEN : le seul geste plein du pied est « Régler ». fold n'a pas de
+           primitive lien-bouton (même constat que la barre du bureau). -->
+      <button class="edit" type="button" (click)="edit.emit()">{{ c().edit }}</button>
+    </div>
+  }
+
+  <!-- Ligne 2 : le geste. Vide, il reste à sa place en pastille inactive. -->
+  <button
+    class="pay"
+    foldButton
+    [emphasis]="count() > 0 ? 'solid' : 'outline'"
+    [intent]="count() > 0 ? 'primary' : 'neutral'"
+    size="lg"
+    block
+    type="button"
+    [disabled]="count() === 0"
+    (click)="pay.emit()"
+  >
+    <span class="lead">
+      <!-- Pas de « 0 » à côté de « Panier vide » : il le dit deux fois. -->
+      @if (count() > 0) {
+        <span class="count">{{ count() }}</span>
+      }
+      <span>{{ count() > 0 ? c().pay : c().emptyShort }}</span>
+    </span>
+    @if (count() > 0) {
+      <span class="total">{{ total() }}</span>
     }
-  </span>
-  <span class="total">{{ total() }} →</span>
-</button>
+  </button>
+</div>

@@ -67,6 +67,16 @@ export class ClientChrome {
   readonly bandLip = signal(true);
 
   /**
+   * La lèvre porte-t-elle une POIGNÉE et une ombre vers le haut — la
+   * « languette » de la boutique en pile (handoff boutique, SPEC §8) ?
+   *
+   * Non par défaut : sur les autres écrans, la feuille n'est pas un tiroir et
+   * une poignée promettrait un geste qui n'existe pas. C'est l'écran qui
+   * l'allume et l'éteint en partant, comme `bandNarrow`.
+   */
+  readonly bandHandle = signal(false);
+
+  /**
    * En PILE, le bandeau reste-t-il dans la bande fixe ?
    *
    * Oui par défaut. Mais la bande est une rangée fixe du shell : un bandeau haut

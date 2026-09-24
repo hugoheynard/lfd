@@ -346,11 +346,11 @@ export interface ClientCopy {
      * pose le nombre devant, et il le fait pour que le compte soit ANNONCÉ.
      */
     readonly piecesUnit: string;
-    readonly learnMore: string;
     readonly emptyTitle: string;
     readonly emptyHint: string;
+    /** L'action de la tuile mise en avant dans la grille — elle mène au rayon de l'opération. */
+    readonly openFeatureShelf: string;
     readonly shelvesGroup: string;
-    readonly add: string;
     /**
      * `{price}` est remplacé par le montant. Le rayon affiche du **hors taxe**,
      * et un prix alimentaire sans mention se lit TTC : la mention n'est pas une
@@ -377,19 +377,6 @@ export interface ClientCopy {
     readonly addAria: string;
     readonly removeAria: string;
     /** `{count}` est remplacé par le nombre de pièces au panier. */
-    /**
-     * Le titre de la barre du bas, en pile.
-     *
-     * 🔴 Elle disait « {count} pièces au panier » et OUVRAIT un panneau (Hugo,
-     * 2026-09-21 : « celui du bas doit emmener à règlement »). Elle nomme
-     * désormais le geste qu'elle fait — régler — et porte le montant à côté :
-     * une barre collante est la dernière chose qu'on lit avant de payer, pas un
-     * compteur.
-     *
-     * ⚠️ Le COMPTE n'est pas perdu : il est sur la pastille de la barre du
-     * haut, qui ouvre le panier entier. Deux surfaces, deux gestes.
-     */
-    readonly cartBar: string;
     readonly cartTitle: string;
     readonly cartEmpty: string;
     /** `{name}` est remplacé par la gourmandise proposée. */
@@ -403,13 +390,20 @@ export interface ClientCopy {
     readonly orderingSoon: string;
   };
   readonly product: {
-    readonly signature: string;
-    readonly unitPrice: string;
+    /** La pastille d'un article mis en avant (`isFeatured`). */
+    readonly bestSeller: string;
+    /** La ligne de fiche qui dit quand la pièce sort du four. */
     readonly oven: string;
-    readonly pickupAt: string;
-    readonly deliverTo: string;
-    /** `{price}` est remplacé par le prix de ce qui est au stepper. */
-    readonly cta: string;
+    readonly perPiece: string;
+    /** `{pct}` = l'écart au tarif boutique, dérivé des deux montants, entier. */
+    readonly proDiscount: string;
+    /** `{n}` = la taille du lot proposé en raccourci. */
+    readonly batch: string;
+    readonly batchAria: string;
+    /** `{n}` = la quantité du brouillon de la fiche. */
+    readonly addCount: string;
+    readonly update: string;
+    readonly inCart: string;
   };
   readonly cart: {
     readonly kicker: string;

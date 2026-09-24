@@ -102,9 +102,10 @@ Ce qui reste vrai, et qui coûte :
   réelles. Tant que l'export n'existe pas, l'écran n'a rien de vrai à lire : le
   retirer du menu coûte moins que le laisser mentir.
 
-Deux autres maquettes restent branchées, sans argent : `mock-event.ts`
-(l'opération datée de l'accueil public et de l'espace) et
-`shop/mock-shelf-stories.ts` (les récits du rayon).
+Une autre maquette reste branchée, sans argent : `mock-event.ts`
+(l'opération datée de l'accueil public et de l'espace). Les récits du rayon
+(`mock-shelf-stories`) sont partis le 2026-09-24 avec le bandeau « En savoir
+plus » qui les lisait.
 
 ### T13 — NOUVEAU · Une commande prête sort du chiffre d'affaires
 

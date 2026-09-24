@@ -1,0 +1,16 @@
+<fold-card class="card" padding="none" radius="lg">
+  <div class="layout">
+    <img class="art" [src]="feature().image" alt="" loading="lazy" decoding="async" />
+
+    <div class="text">
+      <span class="badge">{{ feature().badge }}</span>
+      <h2 class="title">{{ feature().title }}</h2>
+      <p class="lede">{{ feature().lede }}</p>
+      @if (feature().shelfId; as shelfId) {
+        <button foldButton class="open" type="button" size="sm" (click)="opened.emit(shelfId)">
+          {{ t().shop.openFeatureShelf }}
+        </button>
+      }
+    </div>
+  </div>
+</fold-card>

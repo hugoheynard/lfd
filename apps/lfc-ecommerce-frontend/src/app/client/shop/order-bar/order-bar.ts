@@ -1,9 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
 import { instantToLocal } from '@lfd/contracts';
+import { FoldButtonComponent } from 'fold-ng';
+
+import { ClientCart } from '../../cart/client-cart.service';
+import { formatCents } from '../../format-money';
 
 import { ClientAudience } from '../../client-audience.service';
 import { ClientLocale } from '../../client-locale.service';
-import { ClientCopyService } from '../../copy/client-copy.service';
+import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { commandTermsCopy } from '../../copy/screens/command-terms.copy';
 import { serviceWhenLabel } from '../../format-day';
 import { OrderContextStore } from '../../order-context.store';
@@ -11,8 +15,13 @@ import { pickupOffer } from '../pickup-discount';
 import { ServicePoints } from '../pickup-points.store';
 
 /**
- * **Les termes de la commande en cours** — la maison et l'heure retenues,
- * rappelées au-dessus du rayon.
+ * **La barre « Ma commande »** — la maison et l'heure retenues à gauche, le
+ * panier et le geste de régler à droite, à cheval sur la couture du rayon
+ * (handoff boutique, SPEC §2 ; plan « boutique pro — cartes et fiche », lot 2).
+ *
+ * Elle s'appelait `PublicCommandTermsSummary` tant qu'elle ne faisait que
+ * rappeler les termes. Elle porte désormais le règlement : au bureau, c'est
+ * elle — et non plus le pied — qui y mène.
  *
  * Il rend visible ce que le visiteur vient de décider à l'accueil, à l'endroit
  * où il va dépenser : le prix et ce qui sera chaud dépendent des deux, et les
@@ -31,21 +40,30 @@ import { ServicePoints } from '../pickup-points.store';
  * Il ne se montre PAS sans choix. « Je n'ai pas encore dit où je suis servi »
  * est un état de plein droit — on visite d'abord, on choisit ensuite — et une
  * carte qui dirait « aucune maison » transformerait cette liberté en manque.
- * La barre du bas et le règlement demandent le service au moment où il devient
- * nécessaire.
+ * Le pied reste alors le seul chemin vers le règlement, et c'est lui qui
+ * demande le service au moment où il devient nécessaire.
+ *
+ * Elle ne décide pas de ce que « régler » veut dire : elle émet `pay`, et
+ * l'écran tranche (service manquant, invité, passation).
  */
 @Component({
-  selector: 'app-public-command-terms-summary',
+  selector: 'app-order-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './public-command-terms-summary.html',
-  styleUrl: './public-command-terms-summary.scss',
+  imports: [FoldButtonComponent],
+  templateUrl: './order-bar.html',
+  styleUrl: './order-bar.scss',
 })
-export class PublicCommandTermsSummary {
+export class OrderBar {
   /** Retourner choisir la maison — c'est elle qui commande les heures offertes. */
   readonly houseRequested = output<void>();
 
   /** Rouvrir le sélecteur d'heure, sur la maison déjà retenue. */
   readonly timeRequested = output<void>();
+
+  /** Régler — l'écran sait ce que ça demande encore (service, identité). */
+  readonly pay = output<void>();
+
+  private readonly cart = inject(ClientCart);
 
   private readonly order = inject(OrderContextStore);
   private readonly locale = inject(ClientLocale);
@@ -58,6 +76,27 @@ export class PublicCommandTermsSummary {
   protected readonly c = computed(() => commandTermsCopy(this.locale.current()));
 
   protected readonly choice = this.order.choice;
+
+  /** Le compte de pièces du panier — celui que le pied lisait déjà. */
+  protected readonly count = this.cart.count;
+
+  /** Le total du DEVIS, remise déduite : c'est ce que le règlement demandera. */
+  protected readonly total = computed(() => formatCents(this.cart.totals().totalCents));
+
+  /**
+   * « 3 pièces · −1,20 € de remise ». La remise vient du devis, jamais d'un
+   * calcul d'écran ; nulle, elle se TAIT — « −0,00 € » annoncerait un gain qui
+   * n'existe pas.
+   */
+  protected readonly meta = computed(() => {
+    const copy = this.c();
+    const n = this.count();
+    const pieces = fill(n > 1 ? copy.pieceMany : copy.pieceOne, { n: String(n) });
+    const discount = this.cart.totals().discountCents;
+    return discount > 0
+      ? `${pieces} · ${fill(copy.discount, { amount: formatCents(discount) })}`
+      : pieces;
+  });
 
   constructor() {
     // Les points portent la remise, et la boutique n'a pas eu à les lire.

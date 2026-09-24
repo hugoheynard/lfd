@@ -1,0 +1,60 @@
+<!-- Sans choix, RIEN : visiter le rayon sans avoir dit où l'on est servi est ce
+     que la boutique promet, et une barre vide en ferait un manque. -->
+@if (choice(); as service) {
+  <div class="bar">
+    <!-- GAUCHE : ce qui a été décidé, et comment le défaire. -->
+    <div class="said">
+      <span class="kicker">
+        <span class="dot" aria-hidden="true"></span>
+        <span>{{ c().title }} · {{ service.mode === 'delivery' ? c().delivery : c().pickup }}</span>
+      </span>
+
+      <span class="value">
+        <span class="promise">
+          <span class="place">{{ service.place }}</span>
+          <span class="sep" aria-hidden="true">·</span>
+          <span class="when">{{ when() }}</span>
+        </span>
+
+        <!-- La remise du point, quand il y en a une VRAIE. Relue du point et
+             non portée par le choix : elle dépend de la clientèle. -->
+        @if (offer(); as label) {
+          <span class="offer">{{ label }}</span>
+        }
+      </span>
+
+      <!-- Deux gestes distincts : changer d'heure ne fait pas re-choisir la
+           maison. Des LIENS, plus des boutons pleins : le seul geste plein de
+           la barre est « Régler ». -->
+      <span class="acts">
+        <button class="act" type="button" (click)="houseRequested.emit()">
+          {{ c().changeHouse }}
+        </button>
+        <button class="act" type="button" (click)="timeRequested.emit()">
+          {{ c().changeTime }}
+        </button>
+      </span>
+    </div>
+
+    <!-- DROITE : le panier, et le seul geste qui compte. -->
+    <div class="cart">
+      @if (count() > 0) {
+        <span class="meta">{{ meta() }}</span>
+        <button
+          class="pay"
+          foldButton
+          emphasis="solid"
+          intent="primary"
+          size="lg"
+          type="button"
+          (click)="pay.emit()"
+        >
+          <span>{{ c().pay }}</span>
+          <span class="total">{{ total() }}</span>
+        </button>
+      } @else {
+        <span class="empty">{{ c().empty }}</span>
+      }
+    </div>
+  </div>
+}

@@ -1,13 +1,17 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { instantToLocal, type CartAdjustment, type PickupAddressView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { ClientCart } from '../../cart/client-cart.service';
 import { ClientAudience } from '../../client-audience.service';
+import { formatCents } from '../../format-money';
+import { COMMAND_TERMS_FR } from '../../copy/screens/command-terms.copy';
 import { OrderContextStore, type ServiceChoice } from '../../order-context.store';
 import { ServicePoints } from '../pickup-points.store';
-import { PublicCommandTermsSummary } from './public-command-terms-summary';
+import { OrderBar } from './order-bar';
 
 const LABO_ID = 'pick_labo';
 
@@ -48,24 +52,47 @@ function choiceToday(): ServiceChoice {
   };
 }
 
+/**
+ * Ce que la barre LIT du panier — le compte et le devis, rien d'autre. Doublé
+ * plutôt que semé : le devis vient du serveur, et le semer demanderait de
+ * rejouer la requête de chiffrage pour éprouver une ligne de texte.
+ */
+interface Panier {
+  readonly count: number;
+  readonly discountCents?: number;
+  readonly totalCents?: number;
+}
+
 interface Monde {
   readonly choice?: ServiceChoice | null;
   readonly pickup?: PickupAddressView;
+  readonly panier?: Panier;
 }
 
 function boot({
   choice = choiceToday(),
   pickup = point(),
-}: Monde = {}): ComponentFixture<PublicCommandTermsSummary> {
+  panier = { count: 0 },
+}: Monde = {}): ComponentFixture<OrderBar> {
   localStorage.clear();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
-    imports: [PublicCommandTermsSummary],
+    imports: [OrderBar],
     providers: [
       provideHttpClient(),
       provideHttpClientTesting(),
       // Un visiteur est `b2c` : c'est ce que la boutique publique sert.
       { provide: ClientAudience, useValue: { shown: () => 'b2c', current: () => 'b2c' } },
+      {
+        provide: ClientCart,
+        useValue: {
+          count: signal(panier.count),
+          totals: signal({
+            discountCents: panier.discountCents ?? 0,
+            totalCents: panier.totalCents ?? 0,
+          }),
+        },
+      },
     ],
   });
   // 🔴 On SÈME le vrai dépôt plutôt que de le doubler — son `receive()` est
@@ -73,25 +100,25 @@ function boot({
   // part, et les tests passent par la vraie conversion d'un point servi.
   TestBed.inject(ServicePoints).receive([pickup], []);
   TestBed.inject(OrderContextStore).choice.set(choice);
-  const fixture = TestBed.createComponent(PublicCommandTermsSummary);
+  const fixture = TestBed.createComponent(OrderBar);
   fixture.detectChanges();
   return fixture;
 }
 
-const el = (fixture: ComponentFixture<PublicCommandTermsSummary>): HTMLElement =>
+const el = (fixture: ComponentFixture<OrderBar>): HTMLElement =>
   fixture.nativeElement as HTMLElement;
 
-const textOf = (fixture: ComponentFixture<PublicCommandTermsSummary>, selector: string): string =>
+const textOf = (fixture: ComponentFixture<OrderBar>, selector: string): string =>
   el(fixture).querySelector(selector)?.textContent?.trim() ?? '';
 
-describe('PublicCommandTermsSummary', () => {
+describe('OrderBar', () => {
   /**
    * 🔴 « Je n'ai pas encore dit où je suis servi » est un état de PLEIN DROIT :
    * on visite d'abord, on choisit ensuite. Une carte disant « aucune maison »
    * transformerait cette liberté en manque.
    */
   it('ne montre RIEN tant qu’aucun service n’est choisi', () => {
-    expect(el(boot({ choice: null })).querySelector('.terms')).toBeNull();
+    expect(el(boot({ choice: null })).querySelector('.bar')).toBeNull();
   });
 
   it('rappelle la maison et le moment retenus', () => {
@@ -99,6 +126,42 @@ describe('PublicCommandTermsSummary', () => {
 
     expect(textOf(fixture, '.place')).toBe('Le Labo');
     expect(textOf(fixture, '.when')).toContain('7 h 15');
+    expect(textOf(fixture, '.kicker')).toBe(
+      `${COMMAND_TERMS_FR.title} · ${COMMAND_TERMS_FR.pickup}`,
+    );
+  });
+
+  it('à droite, le compte, la remise et le total du devis', () => {
+    const fixture = boot({ panier: { count: 3, discountCents: 120, totalCents: 1_080 } });
+
+    expect(textOf(fixture, '.meta')).toBe(`3 pièces · −${formatCents(120)} de remise`);
+    expect(textOf(fixture, '.pay')).toContain(COMMAND_TERMS_FR.pay);
+    expect(textOf(fixture, '.pay .total')).toBe(formatCents(1_080));
+  });
+
+  /** « −0,00 € de remise » annoncerait un gain qui n'existe pas. */
+  it('tait une remise nulle', () => {
+    const fixture = boot({ panier: { count: 1, totalCents: 250 } });
+
+    expect(textOf(fixture, '.meta')).toBe('1 pièce');
+  });
+
+  it('panier vide : une phrase, et aucun bouton de règlement', () => {
+    const fixture = boot();
+
+    expect(textOf(fixture, '.empty')).toBe(COMMAND_TERMS_FR.empty);
+    expect(el(fixture).querySelector('.pay')).toBeNull();
+    expect(el(fixture).querySelector('.meta')).toBeNull();
+  });
+
+  it('« Régler » émet `pay` — l’écran décide du reste', () => {
+    const fixture = boot({ panier: { count: 2, totalCents: 500 } });
+    let paid = 0;
+    fixture.componentInstance.pay.subscribe(() => (paid += 1));
+
+    el(fixture).querySelector<HTMLButtonElement>('.pay')?.click();
+
+    expect(paid).toBe(1);
   });
 
   /**

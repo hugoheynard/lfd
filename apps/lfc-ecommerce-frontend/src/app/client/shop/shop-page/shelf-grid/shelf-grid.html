@@ -4,13 +4,25 @@
     <p class="none-hint">{{ t().shop.emptyHint }}</p>
   </div>
 }
+@for (placed of features(); track $index) {
+  <app-shelf-feature-tile
+    class="feature"
+    [class.block]="placed.format === 'block'"
+    [class.band]="placed.format === 'band'"
+    [class.double]="placed.format === 'band' && placed.bandSize === 'double'"
+    [feature]="placed.feature"
+    [format]="placed.format"
+    [bandSize]="placed.bandSize ?? 'simple'"
+    (opened)="shelfOpened.emit($event)"
+  />
+}
 @for (piece of products(); track piece.sku) {
   <app-product-tile
+    [class.featured]="piece.isFeatured"
     [product]="piece"
     [quantity]="cart.quantityOf(piece.sku)"
     [orderable]="access.shop() !== 'browse'"
     (opened)="opened.emit(piece.sku)"
     (added)="cart.add(piece.sku)"
-    (removed)="cart.remove(piece.sku)"
   />
 }

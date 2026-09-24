@@ -9,34 +9,33 @@ import { unitPriceCents } from '@lfd/money';
 import { tileArtOf } from '../shelf-display';
 import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
 import { ShopPriceBasis } from '../shop-price-basis.service';
-import { QuantityRail } from '../quantity-rail/quantity-rail';
 
 /**
  * Une pièce du rayon — la vignette de la grille.
  *
- * Elle porte DEUX gestes à la même place, et c'est tout son propos : le « + »
- * posé sur la photo ajoute sans quitter le rayon (le geste de l'habitué), la
- * vignette ouvre la fiche (le geste de celui qui veut savoir). Deux vitesses,
- * aucun menu.
+ * Elle porte DEUX gestes : le bouton en bas à droite ajoute sans quitter le
+ * rayon (le geste de l'habitué), la photo et le nom ouvrent la fiche (le geste
+ * de celui qui veut savoir). Le bouton porte la quantité une fois l'article au
+ * panier ; le retrait se fait dans la fiche.
  *
- * La densité change avec le pli, pas le modèle. En pile, la tuile fait ~112 px :
- * un stepper à trois zones y donnerait des cibles de 24 px, donc le bouton
- * devient une pastille qui porte la quantité et le retrait se fait dans la
- * fiche. Au-delà du pli la tuile fait ~166 px, le stepper complet y tient. Les
- * deux vivent dans le DOM et c'est le CSS qui choisit — le pli est une affaire
- * de largeur, que le rendu serveur ne connaît pas.
+ * La maquette de la boutique pro a unifié les deux densités : la pastille sur
+ * la photo et le stepper « au-delà du pli » ont disparu au profit de ce seul
+ * bouton de 44 px, cible tenable au pouce comme à la souris.
+ *
+ * Le best-seller (`isFeatured`) couvre deux colonnes — c'est la grille qui
+ * l'étire, par l'hôte ; la vignette ne fait que changer de disposition.
  */
 @Component({
   selector: 'app-product-tile',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldIconComponent, QuantityRail],
+  imports: [FoldIconComponent],
   templateUrl: './product-tile.html',
   styleUrl: './product-tile.scss',
 })
 export class ProductTile {
   readonly product = input.required<ShopItemView>();
 
-  /** Ce qu'il y a déjà au panier. Zéro : la pastille redevient un « + ». */
+  /** Ce qu'il y a déjà au panier. Zéro : le bouton redevient un « + ». */
   readonly quantity = input(0);
 
   /**
@@ -49,7 +48,6 @@ export class ProductTile {
 
   readonly opened = output<void>();
   readonly added = output<void>();
-  readonly removed = output<void>();
 
   protected readonly t = inject(ClientCopyService).t;
 
@@ -121,7 +119,8 @@ export class ProductTile {
     fill(this.t().shop.addAria, { name: this.product().name }),
   );
 
-  protected readonly removeLabel = computed(() =>
-    fill(this.t().shop.removeAria, { name: this.product().name }),
+  /** Un best-seller couvre deux colonnes : son image en demande deux fois plus. */
+  protected readonly sizes = computed(() =>
+    this.product().isFeatured ? '(min-width: 900px) 25vw, 100vw' : '(min-width: 900px) 20vw, 50vw',
   );
 }

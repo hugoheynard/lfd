@@ -1,6 +1,7 @@
 @if (product(); as piece) {
   <app-client-dialog
     placement="sheet"
+    layout="split"
     [open]="true"
     [kicker]="shelf()"
     [title]="piece.name"
@@ -8,24 +9,26 @@
   >
     <span dialog-media class="photo">
       @if (art(); as visual) {
-        <!-- `sizes` : l'ouverture occupe toute la largeur du panneau, plafonné
-             à 40rem. Sans cette indication, le navigateur suppose la pleine
-             largeur de la fenêtre et prend toujours la plus grande. -->
+        <!-- `sizes` : pleine largeur en pile ; au-delà du pli, la moitié gauche
+             d'un dialogue de 900 px. Sans cette indication, le navigateur
+             suppose la pleine largeur de la fenêtre et prend la plus grande. -->
         <img
           [src]="artSrc()"
           [attr.srcset]="artSrcset() || null"
-          sizes="(min-width: 40rem) 40rem, 100vw"
+          sizes="(min-width: 900px) 450px, 100vw"
           [attr.alt]="visual.alt"
           decoding="async"
         />
       }
       @if (piece.isFeatured) {
-        <span class="signature">{{ t().product.signature }}</span>
+        <span class="badge">★ {{ t().product.bestSeller }}</span>
       }
     </span>
 
     <div class="sheet">
-      <p class="note">{{ piece.note }}</p>
+      @if (piece.note) {
+        <p class="note">{{ piece.note }}</p>
+      }
 
       <dl class="facts">
         @for (fact of facts(); track fact.key) {
@@ -35,20 +38,57 @@
           </div>
         }
       </dl>
+
+      <div class="pricing">
+        <p class="price">
+          <span class="amount">{{ price() }}</span>
+          <span class="per">{{ basisSuffix() }} {{ t().product.perPiece }}</span>
+          @if (striked(); as catalogue) {
+            <s class="price-was">{{ catalogue }}</s>
+          }
+        </p>
+        @if (discountLabel(); as discount) {
+          <span class="discount">{{ discount }}</span>
+        }
+      </div>
     </div>
 
     <div dialog-foot class="foot">
       @if (orderable()) {
-        <app-quantity-rail
-          size="lg"
-          [quantity]="quantity()"
-          [addLabel]="addLabel()"
-          [removeLabel]="removeLabel()"
-          (added)="added.emit()"
-          (removed)="removed.emit()"
-        />
+        <div class="picker">
+          <app-quantity-rail
+            size="lg"
+            [min]="1"
+            [quantity]="draft()"
+            [addLabel]="addLabel()"
+            [removeLabel]="removeLabel()"
+            (added)="increment()"
+            (removed)="decrement()"
+          />
+          @for (batch of batches(); track batch.size) {
+            <button
+              class="batch"
+              type="button"
+              [class.current]="draft() === batch.size"
+              [attr.aria-pressed]="draft() === batch.size"
+              [attr.aria-label]="batch.aria"
+              (click)="draft.set(batch.size)"
+            >
+              {{ batch.label }}
+            </button>
+          }
+        </div>
 
-        <button class="cta" type="button" (click)="added.emit()">{{ cta() }}</button>
+        <button
+          class="cta"
+          type="button"
+          [attr.data-state]="ctaState()"
+          [disabled]="ctaState() === 'inCart'"
+          (click)="commit()"
+        >
+          <span>{{ ctaLabel() }}</span>
+          <span class="cta-total">{{ total() }}</span>
+        </button>
       } @else {
         <p class="soon">{{ t().shop.orderingSoon }}</p>
       }

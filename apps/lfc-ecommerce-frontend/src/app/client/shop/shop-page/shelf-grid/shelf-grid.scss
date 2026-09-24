@@ -1,16 +1,48 @@
 /**
- * En pile : **trois colonnes fixes**, et c'est un choix.
+ * En pile : **deux colonnes fixes**.
  *
- * Une grille fluide y retomberait toute seule à une colonne sous ~440 px, et
- * une vignette pleine largeur se parcourt moins bien au pouce que trois. La
- * tuile fait alors ~112 px, et c'est pour ça qu'elle change de GESTES plutôt
- * que de taille (cf. `ProductTile`).
+ * Trois colonnes donnaient des vignettes de ~112 px, où le bouton d'ajout de
+ * 44 px et le prix ne tenaient plus côte à côte (maquette de la boutique pro,
+ * 2026-09-24). Une grille fluide à 215 px retomberait à une colonne sur un
+ * téléphone, et un best-seller « sur deux colonnes » y créerait une piste
+ * fantôme : deux colonnes fixes lui donnent la rangée entière.
+ *
+ * `dense` : le best-seller compte pour deux, et sans remplissage dense il
+ * laisserait un trou en fin de rangée quand il n'y reste qu'une place.
  */
 :host {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: dense;
   gap: var(--fold-space-sm);
   align-items: stretch;
+}
+
+app-product-tile.featured {
+  grid-column: span 2;
+}
+
+/* La tuile d'opération couvre deux colonnes ; en 2 × 2, deux rangées aussi.
+   Posée en premier dans le flux, elle prend la première case. */
+.feature {
+  grid-column: span 2;
+}
+
+.feature.block {
+  grid-row: span 2;
+}
+
+/* La bande traverse la grille en troisième rangée, à toutes les largeurs —
+   placée explicitement, elle passe avant le flux, et `dense` rebouche ce
+   qu'elle laisse au-dessus. */
+.feature.band {
+  grid-column: 1 / -1;
+  grid-row: 3;
+}
+
+/* La bande double prend la troisième ET la quatrième rangée. */
+.feature.band.double {
+  grid-row: 3 / span 2;
 }
 
 /* Le vide occupe la largeur entière : centré sur une colonne sur trois, il se
@@ -40,17 +72,21 @@
 
 @media (min-width: 900px) {
   /**
-   * Au-delà du pli, c'est le NOMBRE de colonnes qui suit la largeur, pas la
-   * taille des vignettes. Trois colonnes fixes donnaient des tuiles de 410 px
-   * sur un écran de 1920 — une photo de croissant étirée sur une demi-colonne
-   * de journal. Le plancher tient la vignette autour de 210-240 px, et l'écran
-   * en met simplement plus.
+   * Au-delà du pli, c'est le NOMBRE de colonnes qui suit la largeur — **cinq
+   * au plus** (Hugo, 2026-09-24), 215 px au moins.
    *
-   * `min(210px, 100%)` et pas `210px` seul : dans un conteneur plus étroit que
-   * le plancher, la piste déborderait.
+   * Le second terme du `max()` est la largeur d'une colonne quand il y en a
+   * cinq : la piste ne descend jamais en dessous, donc une sixième ne tient
+   * jamais. `min(…, 100%)` empêche la piste de déborder d'un conteneur plus
+   * étroit que le plancher.
    */
   :host {
-    grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
-    gap: 11px;
+    --lfc-shelf-grid-gap: 11px;
+
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(min(max(215px, (100% - 4 * var(--lfc-shelf-grid-gap)) / 5), 100%), 1fr)
+    );
+    gap: var(--lfc-shelf-grid-gap);
   }
 }

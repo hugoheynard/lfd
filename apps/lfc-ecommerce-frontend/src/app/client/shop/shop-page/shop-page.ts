@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { instantToLocal, type PickupAddressView } from '@lfd/contracts';
 import {
@@ -19,22 +26,18 @@ import { ClientCopyService, fill } from '../../../client/copy/client-copy.servic
 import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { Shop } from '../shop.service';
+import { MOCK_SHELF_FEATURES } from '../mock-shelf-feature';
+import { ALL_SHELVES } from '../shelves';
 import { ShopStore } from '../shop.store';
-import { ClientLocale } from '../../client-locale.service';
-import { commandTermsCopy } from '../../copy/screens/command-terms.copy';
-import { serviceWhenLabel } from '../../format-day';
 import { formatHour } from '../../format-hour';
 import { ServicePoints } from '../pickup-points.store';
 import { SlotPickerDialog } from '../slot-picker-dialog/slot-picker-dialog';
-import { PublicCommandTermsSummary } from '../public-command-terms-summary/public-command-terms-summary';
+import { OrderBar } from '../order-bar/order-bar';
 import { PublicHousePickerDialog } from '../public-house-picker-dialog/public-house-picker-dialog';
-import { PublicSteps } from '../public-steps/public-steps';
 import { CartBar } from '../../cart/cart-bar/cart-bar';
 import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
 import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ProductSheet } from '../product-sheet/product-sheet';
-import { ShelfSheet } from '../shelf-sheet/shelf-sheet';
-import { ShelfBanner } from '../shelf-banner/shelf-banner';
 import { ShelfGrid } from './shelf-grid/shelf-grid';
 import { ShelfNav } from './shelf-nav/shelf-nav';
 
@@ -64,8 +67,7 @@ import { ShelfNav } from './shelf-nav/shelf-nav';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CartBar,
-    PublicCommandTermsSummary,
-    PublicSteps,
+    OrderBar,
     ClientBannerBlock,
     ClientBannerOutlet,
     FoldButtonComponent,
@@ -73,8 +75,6 @@ import { ShelfNav } from './shelf-nav/shelf-nav';
     FoldLoadingStateComponent,
     FoldSearchComponent,
     ProductSheet,
-    ShelfSheet,
-    ShelfBanner,
     ShelfGrid,
     ShelfNav,
   ],
@@ -94,7 +94,6 @@ export class ShopPage {
   private readonly order = inject(OrderContextStore);
   private readonly panels = inject(FoldPanelHostService);
   private readonly points = inject(ServicePoints);
-  private readonly locale = inject(ClientLocale);
   private readonly orders = inject(ClientOrders);
   private readonly auth = inject(AuthFacade);
 
@@ -106,62 +105,25 @@ export class ShopPage {
   protected readonly shop = inject(Shop);
   private readonly catalogue = inject(ShopCatalogue);
 
+  /**
+   * Les mises en avant (tuile, bande) — sur « Tout » seulement. Dans un rayon, elle
+   * s'interposerait entre le client et ce qu'il vient de choisir ; pendant une
+   * recherche (`activeShelf` nul), elle ne répondrait pas à la question posée.
+   */
+  protected readonly features = computed(() =>
+    this.shop.activeShelf() === ALL_SHELVES ? MOCK_SHELF_FEATURES : [],
+  );
+
   /** La pièce dont la fiche est ouverte. */
   protected readonly openPiece = signal<string | null>(null);
-
-  /** Le rayon dont la feuille « En savoir plus » est ouverte. */
-  protected readonly openStory = signal<string | null>(null);
 
   /** Le tiroir du panier. Fermé en arrivant : on vient voir le rayon. */
 
   protected readonly choice = this.order.choice;
 
-  /**
-   * Le titre de la barre du bas : le GESTE, pas le compte.
-   *
-   * 🔴 Elle ouvrait un panneau et annonçait « N pièces au panier ». Elle mène
-   * maintenant au règlement (Hugo, 2026-09-21) — et une barre qui nomme un
-   * décompte pour faire tout autre chose ment sur ce qui va se passer.
-   */
-  protected readonly cartLabel = computed(() => this.t().shop.cartBar);
-
   protected readonly payLabel = computed(() =>
     fill(this.t().cart.pay, { total: formatCents(this.cart.totals().totalCents) }),
   );
-
-  /**
-   * **Ce qui a été répondu**, pour le rail des étapes — la maison, puis le
-   * moment. La troisième reste `null` : on est en train d'y répondre.
-   *
-   * 🔴 Une réponse remplace la promesse de l'étape. « La maison qui vous
-   * arrange » situe tant qu'on n'a pas choisi ; une fois Le Labo retenu, c'est
-   * « Le Labo » qu'on vient relire. Sans service pris, rien n'est répondu et le
-   * rail garde ses promesses.
-   */
-  protected readonly stepAnswers = computed<readonly (string | null)[]>(() => {
-    const service = this.choice();
-    if (service === null) {
-      return [];
-    }
-    const copy = commandTermsCopy(this.locale.current());
-    const when = serviceWhenLabel(
-      service.date,
-      service.slot,
-      instantToLocal(new Date()).day,
-      this.locale.current(),
-      { today: copy.today, tomorrow: copy.tomorrow },
-    );
-    return [service.place, when, null];
-  });
-
-  /** Le rappel du service, sur une ligne — vide tant qu'aucun n'est pris. */
-  protected readonly whereLabel = computed(() => {
-    const service = this.choice();
-    return service === null ? '' : `${service.place} · ${service.slot}`;
-  });
-
-  /** La barre du bas ne porte que le montant : le verbe est dans son titre. */
-  protected readonly totalLabel = computed(() => formatCents(this.cart.totals().totalCents));
 
   /**
    * On peut VISITER le rayon sans avoir dit où l'on est servi — c'est ce que
@@ -181,13 +143,33 @@ export class ShopPage {
     return id === null ? 0 : this.cart.quantityOf(id);
   });
 
+  /**
+   * La fiche a validé son brouillon : la quantité est POSÉE, pas ajoutée, et la
+   * fiche se ferme — on revient au rayon avec le lot au panier.
+   */
+  protected setPieceQuantity(quantity: number): void {
+    const id = this.openPiece();
+    if (id === null) {
+      return;
+    }
+    this.cart.setQuantity(id, quantity);
+    this.openPiece.set(null);
+  }
+
   /** L'état du chargement, tel que l'écran le rend. */
   protected readonly status = this.catalogue.status;
 
   constructor() {
     this.chrome.kicker.set(this.t().chrome.kickerShop);
     this.chrome.barOnDesktop.set(true);
-    this.chrome.back.set((): void => this.backToService());
+    // Pas de chevron : le logo reprend le coin (Hugo, 2026-09-24 — « ça
+    // ressemble à de l'ancien flow »). `backToService()` sert encore à
+    // `pay()` et à `changeTime()` sans maison.
+    this.chrome.back.set(null);
+    // La poignée de la languette, en pile (plan lot 3) : le chrome la dessine,
+    // l'écran la demande — et la rend en partant.
+    this.chrome.bandHandle.set(true);
+    inject(DestroyRef).onDestroy(() => this.chrome.bandHandle.set(false));
     // L'HYDRATATION, au seul endroit qui l'ouvre. Idempotente : revenir au rayon
     // depuis le panier ne redemande rien.
     void this.catalogue.hydrate();

@@ -6,7 +6,17 @@ import { provideHttpClient } from '@angular/common/http';
 
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../../shop-catalogue.fixture';
 import { ShopCatalogue } from '../../shop-catalogue.store';
+import { type ShelfFeature } from '../../mock-shelf-feature';
 import { ShelfGrid } from './shelf-grid';
+
+const NOEL: ShelfFeature = {
+  badge: 'Noël',
+  title: 'Noël',
+  lede: '…',
+  image: 'https://example.test/n.jpg',
+  shelfId: null,
+};
+const PAQUES: ShelfFeature = { ...NOEL, badge: 'Pâques', title: 'Pâques' };
 
 describe('ShelfGrid', () => {
   let fixture: ComponentFixture<ShelfGrid>;
@@ -71,5 +81,45 @@ describe('ShelfGrid', () => {
     expect(opened).toEqual([TEST_ITEMS[1]?.sku]);
     // Elle ne pose aucune feuille : ce n'est pas son état.
     expect(el().querySelector('app-product-sheet')).toBeNull();
+  });
+
+  describe('mises en avant', () => {
+    const placed = (): HTMLElement[] =>
+      Array.from(el().querySelectorAll<HTMLElement>('app-shelf-feature-tile'));
+
+    it('n’en pose aucune par défaut', () => {
+      expect(placed()).toHaveLength(0);
+    });
+
+    /**
+     * La tuile en tête du flux, la bande en troisième rangée — les deux à la
+     * fois. La rangée elle-même est du CSS (`.feature.band`), que le DOM de
+     * test n'applique pas : on vérifie la classe qui la porte.
+     */
+    it('porte la tuile et la bande ensemble, la bande en rangée 3', () => {
+      fixture.componentRef.setInput('features', [
+        { feature: NOEL, format: 'wide' },
+        { feature: PAQUES, format: 'band' },
+      ]);
+      fixture.detectChanges();
+
+      const [tile, band] = placed();
+      expect(placed()).toHaveLength(2);
+      expect(el().firstElementChild).toBe(tile);
+      expect(tile?.classList.contains('band')).toBe(false);
+      expect(band?.classList.contains('band')).toBe(true);
+      expect(band?.classList.contains('double')).toBe(false);
+      expect(tiles()).toHaveLength(3);
+    });
+
+    it('la bande double couvre deux rangées à partir de la troisième', () => {
+      fixture.componentRef.setInput('features', [
+        { feature: PAQUES, format: 'band', bandSize: 'double' },
+      ]);
+      fixture.detectChanges();
+
+      const band = placed()[0];
+      expect(band?.classList.contains('double')).toBe(true);
+    });
   });
 });

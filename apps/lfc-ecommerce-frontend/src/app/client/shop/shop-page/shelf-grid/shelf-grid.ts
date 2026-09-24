@@ -3,7 +3,9 @@ import { ChangeDetectionStrategy, Component, inject, input, output } from '@angu
 import { ClientCart } from '../../../cart/client-cart.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { ClientFeatureAccess } from '../../../feature-access/client-feature-access.service';
+import { type PlacedShelfFeature } from '../../mock-shelf-feature';
 import { ProductTile } from '../../product-tile/product-tile';
+import { ShelfFeatureTile } from '../shelf-feature-tile/shelf-feature-tile';
 import type { ShopItemView } from '@lfd/contracts';
 
 /**
@@ -23,15 +25,26 @@ import type { ShopItemView } from '@lfd/contracts';
 @Component({
   selector: 'app-shelf-grid',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ProductTile],
+  imports: [ProductTile, ShelfFeatureTile],
   templateUrl: './shelf-grid.html',
   styleUrl: './shelf-grid.scss',
 })
 export class ShelfGrid {
   readonly products = input.required<readonly ShopItemView[]>();
 
+  /**
+   * Les mises en avant, dans l'ordre — vide pour ne rien poser. C'est la PAGE
+   * qui décide où elles se montrent (sur « Tout » seulement) : la grille ne
+   * sait pas quel rayon elle affiche. Le format décide de la case : la tuile
+   * et le bloc en tête du flux, la bande en troisième rangée.
+   */
+  readonly features = input<readonly PlacedShelfFeature[]>([]);
+
   /** La pièce dont on veut la fiche. */
   readonly opened = output<string>();
+
+  /** Le rayon qu'ouvre une mise en avant. */
+  readonly shelfOpened = output<string>();
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);

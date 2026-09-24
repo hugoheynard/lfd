@@ -10,6 +10,8 @@ import { ShopCatalogue } from '../shop-catalogue.store';
 import { ClientCart } from '../../cart/client-cart.service';
 import { OrderContextStore } from '../../../client/order-context.store';
 import { FR } from '../../../client/copy/fr';
+import { COMMAND_TERMS_FR } from '../../copy/screens/command-terms.copy';
+import { ClientChrome } from '../../client-chrome.service';
 import { AuthFacade } from '../../../auth/auth.facade';
 import { ShopPage } from './shop-page';
 
@@ -99,14 +101,50 @@ describe('ShopPage', () => {
     fixture.detectChanges();
 
     expect(el().querySelector('app-cart-panel')).toBeNull();
-    expect(el().querySelector('app-cart-bar')?.textContent).toContain(FR.shop.cartBar);
+    expect(el().querySelector('app-cart-bar .pay')?.textContent).toContain(COMMAND_TERMS_FR.pay);
 
-    el().querySelector<HTMLButtonElement>('app-cart-bar button')?.click();
+    el().querySelector<HTMLButtonElement>('app-cart-bar .pay')?.click();
     fixture.detectChanges();
 
     // Sans mode de service, `pay()` renvoie à l'accueil pour le demander : la
     // barre a donc bien déclenché le PARCOURS de règlement, pas un panneau.
     expect(TestBed.inject(Router).url).not.toBe('/boutique');
+  });
+
+  /**
+   * La tuile d'opération vit en première case de « Tout », et nulle part
+   * ailleurs : ni dans un rayon choisi, ni pendant une recherche.
+   */
+  it('ne pose les mises en avant que sur « Tout »', () => {
+    const feature = (): Element | null => el().querySelector('app-shelf-feature-tile');
+    const band = (): Element | null => el().querySelector('app-shelf-feature-tile.band');
+    const grid = el().querySelector('app-shelf-grid');
+    expect(feature()).not.toBeNull();
+    expect(band()).not.toBeNull();
+    expect(grid?.firstElementChild?.tagName.toLowerCase()).toBe('app-shelf-feature-tile');
+
+    chips()[2]?.click();
+    fixture.detectChanges();
+    expect(feature()).toBeNull();
+    expect(band()).toBeNull();
+
+    chips()[0]?.click();
+    fixture.detectChanges();
+    expect(feature()).not.toBeNull();
+    expect(band()).not.toBeNull();
+
+    type('pain');
+    expect(feature()).toBeNull();
+    expect(band()).toBeNull();
+  });
+
+  /** « Ouvrir le rayon » filtre la vitrine comme une puce le ferait. */
+  it('« Ouvrir le rayon » ouvre le rayon de l’opération', () => {
+    el().querySelector<HTMLButtonElement>('app-shelf-feature-tile button')?.click();
+    fixture.detectChanges();
+
+    expect(el().querySelector('app-shelf-feature-tile')).toBeNull();
+    expect(tiles().length).toBeLessThan(TEST_ITEMS.length);
   });
 
   it('un rayon filtre la vitrine sans toucher au reste', () => {
@@ -181,13 +219,65 @@ describe('ShopPage', () => {
     expect(el().textContent).toContain(FR.shop.emptyHint);
   });
 
-  it('la barre du panier n’apparaît qu’une fois quelque chose dedans', () => {
-    expect(el().querySelector('app-cart-bar')).toBeNull();
+  /**
+   * 🔴 En PILE, le pied est là dès la boutique ouverte, panier vide compris
+   * (plan lot 3) : il porte la commande. Il ne dépend plus de `!isEmpty()` —
+   * c'est au bureau seulement qu'un panier vide le retire, par la classe.
+   */
+  it('pose le pied panier vide, bouton inactif', () => {
+    const foot = el().querySelector('app-cart-bar');
+    expect(foot).not.toBeNull();
+    expect(foot?.querySelector<HTMLButtonElement>('.pay')?.disabled).toBe(true);
+    expect(foot?.textContent).toContain(COMMAND_TERMS_FR.emptyShort);
+  });
 
+  /** Au bureau, un panier vide sans barre garde le pied retiré, comme avant. */
+  it('retire le pied au bureau tant que le panier est vide', () => {
+    TestBed.inject(OrderContextStore).choice.set(null);
+    fixture.detectChanges();
+
+    expect(el().querySelector('app-cart-bar')?.classList).toContain('desk-hidden');
+  });
+
+  /**
+   * « Modifier » rouvre l'heure sur la maison retenue (`changeTime()`) ; quand
+   * la maison n'est pas connue des points chargés — le cas de ce harnais —,
+   * il retombe sur l'accueil, où la question se pose entière.
+   */
+  it('« Modifier » du pied, sans maison connue, retombe sur l’accueil', () => {
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    el().querySelector<HTMLButtonElement>('app-cart-bar .edit')?.click();
+
+    expect(navigate).toHaveBeenCalledWith(['/bienvenue']);
+  });
+
+  /** Le chevron est parti : le logo reprend le coin (Hugo, 2026-09-24). */
+  it('ne pose plus de chevron de retour dans l’en-tête', () => {
+    expect(TestBed.inject(ClientChrome).back()).toBeNull();
+  });
+
+  /**
+   * 🔴 Au bureau, la barre « Ma commande » porte « Régler » : le pied se retire
+   * quand elle est là (plan lot 2). La largeur se lit en CSS — jsdom ne joue
+   * pas les media queries —, ce qui s'éprouve ici est la condition « barre
+   * présente » que le gabarit pose.
+   */
+  it('marque le pied à retirer au bureau quand un service est choisi', () => {
     cart.add('VIE-001');
     fixture.detectChanges();
 
-    expect(el().querySelector('app-cart-bar')).not.toBeNull();
+    expect(el().querySelector('app-cart-bar')?.classList).toContain('desk-hidden');
+  });
+
+  /** Sans service, la barre n'existe pas : le pied reste le seul chemin. */
+  it('garde le pied au bureau tant qu’aucun service n’est choisi', () => {
+    TestBed.inject(OrderContextStore).choice.set(null);
+    cart.add('VIE-001');
+    fixture.detectChanges();
+
+    expect(el().querySelector('app-cart-bar')?.classList).not.toContain('desk-hidden');
   });
 });
 
@@ -265,7 +355,7 @@ describe('ShopPage — la barre du bas, sans compte', () => {
     await import('../../cart/cart-dialog/cart-dialog');
     const el = fixture.nativeElement as HTMLElement;
 
-    el.querySelector<HTMLButtonElement>('app-cart-bar button')?.click();
+    el.querySelector<HTMLButtonElement>('app-cart-bar .pay')?.click();
     await Promise.resolve();
     await Promise.resolve();
 

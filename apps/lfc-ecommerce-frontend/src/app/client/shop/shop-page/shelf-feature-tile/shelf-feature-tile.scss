@@ -1,0 +1,180 @@
+/**
+ * En pile, la photo au-dessus ; au bureau, la bande — photo à gauche, texte à
+ * droite. Le format `block` (2 × 2) garde la pile à toutes les largeurs : il a
+ * la hauteur de deux rangées pour la porter. La bande (`band`) suit la tuile —
+ * pile puis photo à gauche — sur fond encre bleue plutôt que suie.
+ */
+:host {
+  display: block;
+  min-width: 0;
+}
+
+/* Le fond encre remplace la surface de la carte : on repeint ses rôles plutôt
+   que d'empiler un aplat par-dessus. */
+.card {
+  --fold-color-surface-card: var(--lfc-soot-950);
+  --fold-color-border: var(--lfc-soot-950);
+
+  height: 100%;
+  color: var(--lfc-paper-0);
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.art {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-height: 110px;
+  /* En pile, le 4/3 de toutes les photos du rayon (SPEC §3). Sans lui, une
+     photo en portrait prenait sa hauteur naturelle — un écran entier à
+     375 px (vu le 2026-09-24). Le bureau le lève plus bas : la case y dicte
+     la hauteur. */
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 21px;
+  padding: 0 var(--fold-space-sm);
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-gold-400);
+  color: var(--lfc-butter-900);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-lede);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  line-height: 0.98;
+  text-transform: uppercase;
+}
+
+.lede {
+  margin: 0;
+  font-size: var(--lfc-text-note);
+  line-height: var(--lfc-leading-body);
+  color: var(--lfc-butter-100);
+}
+
+/* La bande : l'encre bleue de la maison, texte crème (maquette « Bande
+   Pâques »). Même geste que la carte suie — on repeint les rôles. */
+:host(.band) .card {
+  --fold-color-surface-card: var(--lfc-ink-800);
+  --fold-color-border: var(--lfc-ink-800);
+
+  color: var(--lfc-paper-50);
+}
+
+:host(.band) .lede {
+  color: var(--lfc-ink-100);
+}
+
+/* En pile, la bande simple garde une photo basse (16/9, la maquette mobile) ;
+   la double reprend le 4/3 du rayon et un titre plus gros. */
+:host(.band:not(.double)) .art {
+  aspect-ratio: 16 / 9;
+}
+
+:host(.band.double) .title {
+  font-size: var(--lfc-text-screen-sm);
+}
+
+/* Le bouton papier : on repeint le primaire, la voix reste celle de la maison. */
+.open {
+  --fold-color-primary: var(--lfc-paper-0);
+  --fold-color-primary-strong: var(--lfc-paper-50);
+  --fold-color-on-primary: var(--lfc-butter-900);
+}
+
+:host(.band) .open {
+  --fold-color-on-primary: var(--lfc-ink-800);
+}
+
+@media (min-width: 900px) {
+  :host(:not(.block)) .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  /* 🔴 La photo REMPLIT sa case, elle n'en décide pas la hauteur. Avec
+     `height: 100%`, sa hauteur naturelle comptait dans la rangée : une photo
+     en portrait portait la première ligne du rayon à 400 px contre 289 pour
+     les autres (mesuré à 1400 px le 2026-09-24). `height: 0` + `min-height:
+     100%` la sort du calcul et l'étire ensuite sur la case. */
+  :host(:not(.block)) .art {
+    aspect-ratio: auto;
+    height: 0;
+    min-height: 100%;
+  }
+
+  /* Le texte de la bande est plus large que sa photo (1 / 1,1 à la maquette). */
+  :host(.band) .layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  }
+
+  /* Bande simple : une rangée de cartes. Le titre redescend, la phrase se
+     coupe à deux lignes plutôt que de grandir la rangée. */
+  :host(.band:not(.double)) .text {
+    padding: var(--fold-space-md);
+  }
+
+  :host(.band:not(.double)) .title {
+    font-size: var(--lfc-text-lede);
+  }
+
+  :host(.band:not(.double)) .lede {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  :host(.band.double) .title {
+    font-size: var(--lfc-text-screen);
+  }
+
+  /* 🔴 Deux rangées, pour de vrai. `grid-row: span 2` ne suffit pas : les
+     rangées 3 et 4 ne contiennent QUE la bande, et une rangée `auto` prend la
+     hauteur de ce qu'elle porte — la double mesurait 268 px, une carte (vu le
+     2026-09-24). La hauteur visée est celle de deux cartes : ~270 px chacune
+     à 1400 px, et une carte grandit avec la largeur, d'où l'appui sur `vw`
+     borné des deux côtés. */
+  :host(.band.double) {
+    min-height: clamp(440px, 38vw, 580px);
+  }
+
+  :host(.block) .art {
+    min-height: 230px;
+  }
+
+  .text {
+    padding: var(--fold-space-lg);
+  }
+
+  .title {
+    font-size: var(--lfc-text-screen-sm);
+  }
+}

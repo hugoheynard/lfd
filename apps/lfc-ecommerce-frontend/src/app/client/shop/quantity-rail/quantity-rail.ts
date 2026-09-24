@@ -43,6 +43,12 @@ export class QuantityRail {
   /** `sm` la vignette, `lg` la fiche. */
   readonly size = input<QuantityRailSize>('sm');
 
+  /**
+   * Le plancher du retrait. Zéro au panier, où retirer la dernière pièce la
+   * sort ; un dans la fiche, où l'on règle une quantité à ajouter.
+   */
+  readonly min = input(0);
+
   readonly addLabel = input.required<string>();
   readonly removeLabel = input.required<string>();
 
