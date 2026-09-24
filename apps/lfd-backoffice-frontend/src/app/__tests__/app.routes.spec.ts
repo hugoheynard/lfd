@@ -197,6 +197,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/allergenes': null,
   'pim/conditionnements': null,
   'pim/limites-de-commande': null,
+  // Préparer une opération, c'est choisir des articles et fixer des dates :
+  // même mur que le catalogue, le serveur garde `pim_catalog` à l'écriture.
+  'pim/operations': null,
+  'pim/operations/:key': null,
   'pim/integration': null,
   'pim/produits/nouveau': null,
   'pim/produits/:id': null,

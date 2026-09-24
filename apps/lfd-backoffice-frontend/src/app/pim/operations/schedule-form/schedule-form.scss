@@ -1,0 +1,12 @@
+.schedule {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.moment {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+}

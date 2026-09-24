@@ -1,0 +1,69 @@
+<fold-page-layout icon="gift" title="Opérations">
+  <p description>
+    Une <strong>sélection d'articles</strong> bornée dans le temps — Noël, Pâques, la galette —
+    qu'on annonce avant de la vendre, dont la commande ferme à une date, et qu'on retire sur des
+    jours donnés.
+  </p>
+
+  <div pageActions>
+    <button foldButton icon="plus" (click)="prepare()">Préparer une opération</button>
+  </div>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des opérations…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les opérations">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (operations().length === 0) {
+        <fold-empty-state
+          title="Aucune opération"
+          subtitle="Préparez la première : elle reste invisible en boutique jusqu'à son annonce."
+        >
+          <fold-icon empty-icon name="gift" [size]="28" />
+        </fold-empty-state>
+      } @else {
+        <fold-card>
+          <ul class="operations">
+            @for (operation of operations(); track operation.key) {
+              <li class="operation">
+                <div class="operation-head">
+                  <a class="operation-name" [routerLink]="['/pim', 'operations', operation.key]">
+                    {{ operation.name.fr }}
+                  </a>
+                  <fold-badge
+                    [content]="badgeLabel(operation)"
+                    [variant]="badgeVariant(operation)"
+                    radius="pill"
+                  />
+                </div>
+                <dl class="operation-dates">
+                  <div>
+                    <dt>Annonce</dt>
+                    <dd>{{ announce(operation) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Dernière commande</dt>
+                    <dd>{{ until(operation) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Retrait</dt>
+                    <dd>{{ pickup(operation) }}</dd>
+                  </div>
+                  <div>
+                    <dt>Clientèle</dt>
+                    <dd>{{ audience(operation) }}</dd>
+                  </div>
+                </dl>
+              </li>
+            }
+          </ul>
+        </fold-card>
+      }
+    }
+  }
+</fold-page-layout>

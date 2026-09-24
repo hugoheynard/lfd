@@ -146,6 +146,25 @@ export const pimRoutes: Routes = [
           ),
       },
       {
+        // LES OPÉRATIONS DATÉES — Noël, Pâques, la galette
+        // (`documentation/order/architecture-operations-datees.md`, lot 1). Au
+        // référentiel parce que préparer une opération, c'est choisir des
+        // articles et fixer des dates (D1) : même mur que le catalogue.
+        //
+        // `:key` est ciblé par la médiathèque (`carriers-panel.ts`) : l'image
+        // d'une opération mène à sa page.
+        path: 'operations',
+        title: 'Opérations — LFC B2B admin',
+        loadComponent: () =>
+          import('./operations/operations-page/operations-page').then((m) => m.OperationsPage),
+      },
+      {
+        path: 'operations/:key',
+        title: 'Opération — LFC B2B admin',
+        loadComponent: () =>
+          import('./operations/operation-page/operation-page').then((m) => m.OperationPage),
+      },
+      {
         path: 'appellations',
         title: 'Appellations — LFC B2B admin',
         loadComponent: () =>

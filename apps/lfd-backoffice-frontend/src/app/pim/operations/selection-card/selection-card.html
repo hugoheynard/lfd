@@ -1,0 +1,95 @@
+<fold-card>
+  <div class="card">
+    <fold-element-title
+      variant="title"
+      title="Sélection d'articles"
+      subtitle="Dans l'ordre où le rayon de l'opération les montrera."
+    >
+      @if (!locked()) {
+        <button
+          titleAction
+          foldButton
+          size="sm"
+          [disabled]="!changed()"
+          [loading]="busy()"
+          (click)="save()"
+        >
+          Enregistrer
+        </button>
+      }
+    </fold-element-title>
+
+    <fold-callout appearance="inset" variant="info">
+      La sélection ne restreint pas encore la vente : un article publié reste en vente dans son
+      rayon.
+    </fold-callout>
+
+    @if (catalogueFailed()) {
+      <fold-callout appearance="inset" variant="alert">
+        Le catalogue n'a pas pu être lu : les articles s'affichent par leur référence, et l'ajout
+        est indisponible. Rechargez la page pour réessayer.
+      </fold-callout>
+    }
+
+    @if (rows().length === 0) {
+      <fold-empty-state
+        title="Aucun article sélectionné"
+        [subtitle]="
+          locked()
+            ? 'Cette opération n’a retenu aucun article.'
+            : 'Cherchez un article ci-dessous, par son nom ou sa référence.'
+        "
+      >
+        <fold-icon empty-icon name="package" [size]="28" />
+      </fold-empty-state>
+    } @else {
+      <ol class="items">
+        @for (
+          row of rows();
+          track row.sku;
+          let index = $index;
+          let first = $first;
+          let last = $last
+        ) {
+          <li class="item">
+            <span class="item-rank">{{ index + 1 }}</span>
+            <span class="item-name">{{ row.name ?? 'Référence inconnue du catalogue' }}</span>
+            <span class="item-sku">{{ row.sku }}</span>
+            @if (!locked()) {
+              <span class="item-actions">
+                <fold-button-icon
+                  icon="chevron-up"
+                  size="sm"
+                  tooltip="Monter"
+                  [disabled]="first"
+                  (clicked)="move(index, -1)"
+                />
+                <fold-button-icon
+                  icon="chevron-down"
+                  size="sm"
+                  tooltip="Descendre"
+                  [disabled]="last"
+                  (clicked)="move(index, 1)"
+                />
+                <fold-button-icon
+                  icon="close"
+                  size="sm"
+                  tooltip="Retirer de la sélection"
+                  (clicked)="remove(row.sku)"
+                />
+              </span>
+            }
+          </li>
+        }
+      </ol>
+    }
+
+    @if (!locked() && !catalogueFailed()) {
+      <app-storefront-product-picker [products]="catalogue()" (picked)="add($event)" />
+    }
+
+    @if (refusal(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-card>

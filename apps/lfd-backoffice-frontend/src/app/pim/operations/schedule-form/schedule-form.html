@@ -1,0 +1,64 @@
+<div class="schedule">
+  <div class="moment">
+    <fold-date
+      label="Annonce — jour"
+      hint="Le rayon et ses annonces apparaissent."
+      required
+      [value]="draft().announceDay"
+      (valueChange)="set('announceDay', $event)"
+    />
+    <fold-time
+      label="Heure (Paris)"
+      required
+      [value]="draft().announceTime"
+      (valueChange)="set('announceTime', $event)"
+    />
+  </div>
+
+  <div class="moment">
+    <fold-date
+      label="Ouverture des commandes — jour"
+      hint="Vide : on commande dès l'annonce."
+      optional
+      [value]="draft().orderFromDay"
+      (valueChange)="set('orderFromDay', $event)"
+    />
+    <fold-time
+      label="Heure (Paris)"
+      optional
+      [value]="draft().orderFromTime"
+      (valueChange)="set('orderFromTime', $event)"
+    />
+  </div>
+
+  <div class="moment">
+    <fold-date
+      label="Dernière commande — jour"
+      required
+      [value]="draft().orderUntilDay"
+      (valueChange)="set('orderUntilDay', $event)"
+    />
+    <fold-time
+      label="Heure (Paris)"
+      required
+      [value]="draft().orderUntilTime"
+      (valueChange)="set('orderUntilTime', $event)"
+    />
+  </div>
+
+  <div class="moment">
+    <fold-date
+      label="Premier jour de retrait"
+      required
+      [value]="draft().pickupFrom"
+      (valueChange)="set('pickupFrom', $event)"
+    />
+    <fold-date
+      label="Dernier jour de retrait"
+      hint="Le lendemain à minuit, tout s'éteint."
+      required
+      [value]="draft().pickupUntil"
+      (valueChange)="set('pickupUntil', $event)"
+    />
+  </div>
+</div>

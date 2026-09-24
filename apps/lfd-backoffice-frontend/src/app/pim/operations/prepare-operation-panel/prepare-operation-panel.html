@@ -1,0 +1,47 @@
+<fold-panel-header
+  title="Préparer une opération"
+  subtitle="Invisible en boutique jusqu'à son annonce."
+/>
+
+<fold-panel-body>
+  <div class="form">
+    <fold-input
+      label="Clé"
+      placeholder="noel-2026"
+      hint="Minuscules, chiffres et tirets. Elle ne changera plus jamais, et ne se réemploie pas."
+      required
+      [value]="key()"
+      (valueChange)="key.set($event)"
+    />
+    <fold-input
+      label="Nom (français)"
+      placeholder="Noël 2026"
+      hint="Les traductions et l'accroche se posent ensuite, sur la page de l'opération."
+      required
+      [value]="name()"
+      (valueChange)="name.set($event)"
+    />
+
+    <app-schedule-form [(draft)]="schedule" />
+
+    <fold-listbox
+      label="Clientèle"
+      [options]="audiences"
+      [value]="audience()"
+      (selectionChange)="audience.set($event)"
+    />
+
+    @if (refusal(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    } @else if (missing(); as message) {
+      <fold-callout appearance="inset" variant="neutral">{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="missing() !== null" [loading]="busy()" (click)="submit()">
+    Préparer
+  </button>
+</fold-panel-footer>

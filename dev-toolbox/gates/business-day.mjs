@@ -63,8 +63,15 @@ const SCAN_ROOTS = [
   // `documentation/order/architecture-operations-datees.md`, D2) : leurs cinq
   // dates décident de quand on vend, et `fin(pickupUntil)` se compare à
   // l'horloge — la même question que la tarification, la même réponse.
-  // L'écran de préparation s'ajoute ici avec le lot front.
   "apps/lfd-api/src/pim/operations",
+  // Le miroir des opérations au commerce, et sa surcharge à la réception (lot 2
+  // du même plan, 2026-09-24) : la clôture effective y est `min(PIM,
+  // surcharge)`, et le lot 3 y comparera un jour de retrait aux bornes d'une
+  // opération.
+  "apps/lfd-api/src/b2b/catalog",
+  // L'écran de préparation (lot front) : il saisit ces instants en heure de
+  // Paris, par `localToInstant` — c'est lui qui transforme un jour en instant.
+  "apps/lfd-backoffice-frontend/src/app/pim/operations",
 ];
 const SKIP_DIRS = new Set(["node_modules", "dist", "client", "coverage", ".turbo"]);
 
