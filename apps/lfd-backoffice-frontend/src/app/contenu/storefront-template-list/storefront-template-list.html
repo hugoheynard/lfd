@@ -1,0 +1,52 @@
+@for (template of templates(); track template.id) {
+  <div class="row">
+    @if (editingId() === template.id) {
+      <app-template-name-form
+        submitLabel="Renommer"
+        [initial]="template.name"
+        [initialDescription]="template.description ?? ''"
+        (submitted)="submitRename(template.id, $event)"
+        (cancelled)="editingId.set(null)"
+      />
+    } @else {
+      <button
+        foldButton
+        type="button"
+        emphasis="outline"
+        size="sm"
+        class="draggable"
+        (pointerdown)="pressed.emit({ event: $event, template })"
+        (keydown.enter)="added.emit(template)"
+        (keydown.space)="added.emit(template)"
+      >
+        {{ template.name }} · {{ describe(template.format) }}
+      </button>
+      <fold-button-icon
+        icon="edit"
+        size="xs"
+        [tooltip]="'Renommer « ' + template.name + ' »'"
+        (clicked)="editingId.set(template.id)"
+      />
+      <fold-inline-confirm
+        intent="danger"
+        [message]="
+          'Supprimer le gabarit « ' + template.name + ' » ? Les objets déjà posés restent.'
+        "
+        [labels]="{ confirm: 'Supprimer', cancel: 'Annuler' }"
+        (confirmed)="deleted.emit(template.id)"
+      >
+        <button foldButton type="button" size="sm" emphasis="outline" intent="danger">
+          Supprimer
+        </button>
+      </fold-inline-confirm>
+      @if (template.description; as description) {
+        <span class="description" [title]="description">{{ description }}</span>
+      }
+    }
+  </div>
+} @empty {
+  <fold-empty-state
+    title="Aucun gabarit"
+    subtitle="Réglez un objet, puis « Enregistrer comme gabarit »."
+  />
+}

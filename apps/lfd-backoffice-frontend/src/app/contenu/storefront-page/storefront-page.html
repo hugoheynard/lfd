@@ -1,0 +1,197 @@
+<fold-page-layout icon="view" title="Vitrine">
+  <p description>
+    Composer la page d’un rayon : une grille de {{ columns }} colonnes, des formes glissées dessus —
+    le contenu (produit ou info) s’y associera plus tard ; les cases libres reçoivent le reste du
+    rayon.
+    <span class="local-note">
+      Brouillon local : rien n’est enregistré, recharger la page efface tout. Les rayons sont une
+      liste provisoire, pas encore ceux du catalogue.
+    </span>
+  </p>
+
+  @if (isExample()) {
+    <fold-callout variant="info">
+      Exemple : la rangée 1 d’aujourd’hui (tuile de Noël, carte, tuile) sur « Tout », et une bande
+      double partagée entre « Tout » et « Chocolat & confiserie » en rangée 3.
+      <button foldButton type="button" size="sm" emphasis="outline" (click)="clearAll()">
+        Vider la grille
+      </button>
+    </fold-callout>
+  }
+
+  @if (notice(); as message) {
+    <fold-callout variant="warning" announce>{{ message }}</fold-callout>
+  }
+
+  <div class="settings">
+    <fold-listbox
+      size="sm"
+      label="Rayon"
+      [options]="shelfOptions"
+      [value]="shelf()"
+      (selectionChange)="pickShelf($event)"
+    />
+    <fold-number-input
+      size="sm"
+      label="Rangées par page"
+      hint="Les mêmes pour tous les rayons."
+      integer
+      [min]="minRows"
+      [max]="maxRows"
+      [value]="requestedRows()"
+      (valueChange)="onRowsChange($event)"
+    />
+  </div>
+
+  <div class="editor">
+    <fold-card>
+      <fold-element-title
+        title="Formes"
+        subtitle="Glissez sur la grille, ou cliquez pour poser à la première place libre."
+      />
+      <div class="stack">
+        @for (format of formats; track format.format) {
+          <button
+            foldButton
+            type="button"
+            emphasis="outline"
+            size="sm"
+            class="draggable"
+            (pointerdown)="startPaletteDrag($event, format.format)"
+            (keydown.enter)="addFormat(format.format)"
+            (keydown.space)="addFormat(format.format)"
+          >
+            {{ describe(format.format) }}
+          </button>
+        }
+      </div>
+      <div class="palette-group">
+        <span class="caption">Gabarits</span>
+        <app-storefront-template-list
+          [templates]="templates()"
+          [rename]="renamer"
+          (pressed)="startTemplateDrag($event.event, $event.template)"
+          (added)="addTemplate($event)"
+          (deleted)="deleteTemplate($event)"
+        />
+      </div>
+    </fold-card>
+
+    <fold-card>
+      <fold-element-title
+        title="Bureau"
+        [subtitle]="
+          '« ' +
+          shelfLabel(shelf()) +
+          ' » — flèches pour déplacer l’objet sélectionné, Suppr pour le retirer.'
+        "
+      />
+      <div class="stack">
+        <div
+          #grid
+          class="grid"
+          [style.grid-template-rows]="'repeat(' + rows() + ', minmax(0, 1fr))'"
+          [style.aspect-ratio]="columns + ' / ' + rows()"
+        >
+          @for (cell of freeCells(); track cell.column + '-' + cell.row) {
+            <div
+              class="free-cell"
+              [style.grid-column]="cell.column"
+              [style.grid-row]="cell.row"
+              aria-hidden="true"
+            >
+              article du rayon
+            </div>
+          }
+
+          @for (block of pageBlocks(); track block.id) {
+            <div
+              class="block draggable"
+              [class.selected]="selectedId() === block.id"
+              [class.dragging]="drag()?.blockId === block.id && drag()?.moved"
+              [style.grid-column]="block.column + ' / span ' + spec(block.format).columns"
+              [style.grid-row]="block.row + ' / span ' + spec(block.format).rows"
+              tabindex="0"
+              role="group"
+              [attr.aria-label]="
+                describe(block.format) + ', colonne ' + block.column + ', rangée ' + block.row
+              "
+              aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Delete"
+              (pointerdown)="startBlockDrag($event, block)"
+              (focus)="select(block.id)"
+              (keydown)="onBlockKeydown($event, block.id)"
+            >
+              <app-storefront-media-mock
+                class="block-mock"
+                [side]="sideOf(block)"
+                [fit]="fitOf(block)"
+                [carousel]="carouselOf(block)"
+              />
+              <span class="block-format">
+                {{ spec(block.format).label }}
+                <span class="block-size">
+                  {{ spec(block.format).columns }}×{{ spec(block.format).rows }}
+                </span>
+              </span>
+              @if (isShared(block)) {
+                <span class="marker">partagé · {{ block.shelves.length }} rayons</span>
+              }
+              @if (block.applyOnMobile === false) {
+                <span class="marker">mobile : carte 1×1</span>
+              }
+              <span class="block-remove" (pointerdown)="$event.stopPropagation()">
+                <fold-button-icon
+                  icon="close"
+                  size="xs"
+                  tooltip="Retirer de tous ses rayons"
+                  (clicked)="remove(block.id)"
+                />
+              </span>
+            </div>
+          }
+
+          @if (preview(); as target) {
+            <div
+              class="preview"
+              [class.refused]="!target.verdict.ok"
+              [style.grid-column]="target.column + ' / span ' + spec(target.format).columns"
+              [style.grid-row]="target.row + ' / span ' + spec(target.format).rows"
+              aria-hidden="true"
+            ></div>
+          }
+        </div>
+        <span class="caption flow"
+          >↓ le reste du rayon s’écoule ici, en cartes, sans pagination</span
+        >
+      </div>
+    </fold-card>
+
+    <div class="stack">
+      <fold-card>
+        <fold-element-title title="Objet sélectionné" />
+        @if (selected(); as block) {
+          <app-storefront-object-panel
+            [block]="block"
+            [shelf]="shelf()"
+            [saveTemplate]="templateSaver"
+            (applyOnMobileChange)="setSelectedApplyOnMobile($event)"
+            (mediaChange)="setSelectedMedia($event)"
+            (contentsChange)="setSelectedContents($event)"
+            (carouselChange)="setSelectedCarousel($event)"
+            (shelvesChange)="setSelectedShelves($event)"
+          />
+        } @else {
+          <span class="caption">Cliquez sur un objet de la grille pour régler ses propriétés.</span>
+        }
+      </fold-card>
+
+      <fold-card>
+        <fold-element-title
+          title="Mobile"
+          subtitle="Déduit : 2 colonnes, dans l’ordre de lecture."
+        />
+        <app-storefront-mobile-preview [blocks]="pageBlocks()" [rows]="rows()" />
+      </fold-card>
+    </div>
+  </div>
+</fold-page-layout>

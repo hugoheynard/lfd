@@ -1,0 +1,64 @@
+<div class="media" [class.contain]="fit() === 'contain'">
+  <div class="picture">
+    @if (carousel() === null) {
+      <fold-icon name="image" size="sm" tone="muted" />
+    } @else {
+      <span class="slide-number">{{ index() + 1 }}</span>
+    }
+  </div>
+
+  @if (carousel(); as settings) {
+    <!-- Les commandes ne se glissent pas : l'appui ne doit pas saisir l'objet. -->
+    @if (showArrows()) {
+      <span class="arrow previous" (pointerdown)="$event.stopPropagation()">
+        <fold-button-icon
+          icon="chevron-left"
+          size="xs"
+          tooltip="Contenu précédent"
+          [disabled]="settings.autoplay"
+          (clicked)="step(-1)"
+        />
+      </span>
+      <span class="arrow next" (pointerdown)="$event.stopPropagation()">
+        <fold-button-icon
+          icon="chevron-right"
+          size="xs"
+          tooltip="Contenu suivant"
+          [disabled]="settings.autoplay"
+          (clicked)="step(1)"
+        />
+      </span>
+    }
+    @if (showDots()) {
+      <span class="dots" (pointerdown)="$event.stopPropagation()">
+        @for (slide of slides(); track slide) {
+          <button
+            type="button"
+            class="dot"
+            [class.active]="slide === index()"
+            [disabled]="settings.autoplay"
+            [attr.aria-label]="'Contenu ' + (slide + 1)"
+            (click)="show(slide)"
+          ></button>
+        }
+      </span>
+    }
+  }
+</div>
+<div class="text">
+  <span class="line"></span>
+  <span class="line"></span>
+  <span class="line short"></span>
+  @if (carousel()?.autoplay) {
+    @if (reducedMotion) {
+      <span class="badge">mouvement réduit : pas de défilement</span>
+    } @else {
+      <span class="badge">
+        auto · {{ carousel()?.firstSeconds }} s puis {{ carousel()?.intervalSeconds }} s
+        @if (hovered()) {
+          · en pause
+        }
+      </span>
+    }
+  }
+</div>

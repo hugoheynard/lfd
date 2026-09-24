@@ -391,6 +391,15 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     icon: 'grid',
     section: 'Contenu',
   },
+  {
+    // Le rail ET les tuiles du menu mobile lisent cette liste (`views('b2b')`) :
+    // une entrée ici suffit aux deux arbres (vérifié le 2026-09-24).
+    key: 'vitrine',
+    label: 'Vitrine',
+    link: '/b2b/contenu/vitrine',
+    icon: 'view',
+    section: 'Contenu',
+  },
   // LES CINQ MENTIONS LÉGALES, une entrée chacune et non une page d'index : on
   // vient corriger une mention précise, et un index n'aurait ajouté qu'un clic
   // entre le menu et le texte. Elles sont DÉRIVÉES du vocabulaire — leur ordre

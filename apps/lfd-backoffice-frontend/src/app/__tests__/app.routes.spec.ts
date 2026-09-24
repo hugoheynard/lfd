@@ -40,6 +40,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // leur forme. Le segment est validé par le composant, qui n'appelle rien
   // quand il ne désigne aucune mention du vocabulaire.
   'b2b/contenu/mentions/:mention': null,
+  // L'éditeur de vitrine, en état local : aucun appel, donc aucun droit de plus.
+  'b2b/contenu/vitrine': null,
   'commercial/comptes-clients': 'b2b_companies:read',
   'comptes-clients/nouveau': 'b2b_companies:write',
   'commandes/:orderId': 'b2b_orders:read',

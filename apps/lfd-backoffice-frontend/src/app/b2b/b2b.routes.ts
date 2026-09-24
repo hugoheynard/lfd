@@ -55,6 +55,16 @@ export const b2bRoutes: Routes = [
               import('../contenu/app-footer/app-footer-page').then((m) => m.AppFooterPage),
           },
           {
+            // LA VITRINE — composer une page de la boutique. État LOCAL pour
+            // l'instant : rien n'est enregistré (boutique-rayon-layout.md,
+            // « Composer une page »). Même mur que ses voisines de Contenu :
+            // celui de l'espace.
+            path: 'vitrine',
+            title: 'Vitrine — LFC B2B admin',
+            loadComponent: () =>
+              import('../contenu/storefront-page/storefront-page').then((m) => m.StorefrontPage),
+          },
+          {
             // L'ANCIENNE adresse des CGV, quand elles étaient la seule mention
             // adossée à un document. Elle est dans des favoris : un rangement
             // qui rend 404 se paie par celui qui ne l'a pas fait.

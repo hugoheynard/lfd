@@ -1,0 +1,31 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+// Le glisser tactile : sans cela, le doigt fait défiler la page au lieu de tirer le gabarit.
+.draggable {
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+
+// Deux lignes au plus ; le texte entier est dans `title`.
+.description {
+  display: -webkit-box;
+  flex-basis: 100%;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
