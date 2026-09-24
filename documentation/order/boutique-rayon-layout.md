@@ -43,6 +43,12 @@ couvre quatre.
   pagination.
 - Conséquence : une page composée à moitié reste une page pleine, et une page
   vide **est** le rayon d'aujourd'hui.
+- 🔴 **Aucune case n'est jamais vide** (Hugo, 2026-09-24 : « dans le doute, pas
+  d'info = articles »). Un objet qui n'a rien d'affichable — aucun contenu, un
+  article qui n'est plus en vente, une info sans titre ou sans image — ne
+  laisse pas de trou : ses cases reviennent au reste du rayon, comme des cases
+  libres. Dans l'éditeur, une vitrine sans objet montre sa grille remplie de
+  repères « article du rayon », jamais une grille blanche.
 
 ## Les formes
 
