@@ -1097,6 +1097,9 @@ export type {
 } from "./public-pickup-slots.js";
 export {
   storefrontCarouselSchema,
+  storefrontCatalogItemSchema,
+  storefrontCatalogShelfSchema,
+  storefrontCatalogViewSchema,
   storefrontContentSchema,
   storefrontImageSchema,
   storefrontInfoContentSchema,
@@ -1111,6 +1114,9 @@ export type {
   PublicStorefrontObjectView,
   PublicStorefrontPageView,
   StorefrontCarousel,
+  StorefrontCatalogItem,
+  StorefrontCatalogShelf,
+  StorefrontCatalogView,
   StorefrontContent,
   StorefrontObjectPayload,
   StorefrontObjectView,

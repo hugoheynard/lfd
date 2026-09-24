@@ -1,4 +1,4 @@
-import type { CatalogAdminItemView } from '@lfd/contracts';
+import type { StorefrontCatalogView } from '@lfd/contracts';
 import type { ShelfKey } from '@lfd/storefront-layout';
 
 /** Le rayon « Tout » — la clé que le serveur réserve (`b2b/storefront/domain/shelf-key.ts`). */
@@ -25,47 +25,25 @@ export interface StorefrontCatalog {
 }
 
 /**
- * Un article est-il en vente quelque part ? Masqué des DEUX boutiques, non :
- * aucune ne le résoudra, et sa case retomberait au reste du rayon (D4).
- */
-function isServed(item: CatalogAdminItemView): boolean {
-  return !(item.isHidden && item.isHiddenPublic);
-}
-
-/**
- * Le catalogue d'administration réduit à ce que la vitrine désigne.
+ * Le catalogue de l'éditeur, tel que `GET /admin/storefront/catalog` le rend.
  *
- * - **le SKU du produit**, jamais celui de la déclinaison : c'est lui que la
- *   boutique sert (`shop-catalogue-view.ts` rend `item.productSku`, lu le
- *   2026-09-24). Un produit à plusieurs déclinaisons ne paraît qu'une fois,
- *   sous le nom de la première ligne rencontrée ;
- * - **les familles servies** : celles qui portent au moins un article en
- *   vente, dans l'ordre où le catalogue les rend.
+ * Le serveur a déjà réduit le catalogue à ce que la vitrine désigne — SKU du
+ * PRODUIT, une fois par produit ; familles qui portent un article servi, dans
+ * l'ordre du catalogue (`b2b/storefront/infrastructure/
+ * catalog-backed-storefront-catalog.reader.ts`, 2026-09-24). Il ne reste ici
+ * qu'à poser « Tout » en tête et à écarter les articles masqués des deux
+ * boutiques : aucune ne les résoudra, et leur case retomberait au reste du
+ * rayon (D4).
  */
-export function catalogOf(items: readonly CatalogAdminItemView[]): StorefrontCatalog {
-  const products = new Map<string, CatalogProduct>();
-  const families = new Map<ShelfKey, string>();
-  for (const item of items) {
-    if (!isServed(item)) {
-      continue;
-    }
-    if (!products.has(item.productSku)) {
-      products.set(item.productSku, {
-        sku: item.productSku,
-        name: item.name,
-        shelf: item.categoryId,
-      });
-    }
-    if (!families.has(item.categoryId)) {
-      families.set(item.categoryId, item.categoryName);
-    }
-  }
+export function catalogOf(view: StorefrontCatalogView): StorefrontCatalog {
   return {
     shelves: [
       { key: ALL_SHELVES, label: 'Tout' },
-      ...[...families].map(([key, label]) => ({ key, label })),
+      ...view.shelves.map((shelf) => ({ key: shelf.key, label: shelf.name })),
     ],
-    products: [...products.values()],
+    products: view.items
+      .filter((item) => item.served)
+      .map((item) => ({ sku: item.sku, name: item.name, shelf: item.shelfKey })),
   };
 }
 

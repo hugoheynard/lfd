@@ -1,4 +1,5 @@
 import {
+  type StorefrontCatalogView,
   type StorefrontPayload,
   storefrontPayloadSchema,
   type StorefrontView,
@@ -9,6 +10,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { GetStorefrontCatalogQuery } from "../application/get-storefront-catalog.query.js";
 import { GetStorefrontQuery } from "../application/get-storefront.query.js";
 import { SaveStorefrontCommand } from "../application/save-storefront.command.js";
 
@@ -32,6 +34,18 @@ export class AdminStorefrontController {
   @Get()
   read(): Promise<StorefrontView> {
     return this.queries.execute<GetStorefrontQuery, StorefrontView>(new GetStorefrontQuery());
+  }
+
+  /**
+   * Les rayons et les articles que l'éditeur désigne — sans prix ni réglages.
+   * Sous `b2b_storefront:read`, et non `b2b_catalog` : la communication
+   * compose la vitrine sans avoir à voir le paramétrage du catalogue.
+   */
+  @Get("catalog")
+  catalog(): Promise<StorefrontCatalogView> {
+    return this.queries.execute<GetStorefrontCatalogQuery, StorefrontCatalogView>(
+      new GetStorefrontCatalogQuery(),
+    );
   }
 
   /**

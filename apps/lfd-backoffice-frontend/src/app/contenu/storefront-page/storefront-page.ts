@@ -56,7 +56,6 @@ import {
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import type { HasPendingChanges } from '../../pim/catalogue/product-form/pending-changes.guard';
-import { CatalogueService } from '../../b2b/catalogue/catalogue.service';
 import type { StorefrontContent } from '@lfd/contracts';
 import { type EditorBlock, itemsOf, setItems, setTone, toneOf } from '../storefront-block';
 import {
@@ -165,7 +164,6 @@ interface SaveRefusal {
 })
 export class StorefrontPage implements HasPendingChanges, StorefrontObjectHost {
   private readonly api = inject(StorefrontService);
-  private readonly catalogue = inject(CatalogueService);
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
   private readonly panels = inject(FoldPanelHostService);
@@ -186,7 +184,7 @@ export class StorefrontPage implements HasPendingChanges, StorefrontObjectHost {
 
   readonly status = signal<'loading' | 'ready' | 'failed'>('loading');
   protected readonly loadError = signal<string | null>(null);
-  /** Le catalogue d'administration ; `null` s'il n'a pas pu être lu. */
+  /** Le catalogue de l'éditeur (`/admin/storefront/catalog`) ; `null` s'il n'a pas pu être lu. */
   readonly catalog = signal<StorefrontCatalog | null>(null);
   protected readonly catalogFailed = signal(false);
   protected readonly saving = signal(false);
@@ -365,10 +363,7 @@ export class StorefrontPage implements HasPendingChanges, StorefrontObjectHost {
   async load(): Promise<void> {
     this.status.set('loading');
     this.saveRefusal.set(null);
-    const [storefront, catalog] = await Promise.allSettled([
-      this.api.load(),
-      this.catalogue.list(),
-    ]);
+    const [storefront, catalog] = await Promise.allSettled([this.api.load(), this.api.catalog()]);
     if (catalog.status === 'fulfilled') {
       this.catalog.set(catalogOf(catalog.value));
       this.catalogFailed.set(false);

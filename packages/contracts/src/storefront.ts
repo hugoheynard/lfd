@@ -180,3 +180,37 @@ export interface PublicStorefrontPageView {
   readonly rows: number;
   readonly objects: readonly PublicStorefrontObjectView[];
 }
+
+/** Un rayon que l'éditeur peut composer : une famille du catalogue. */
+export const storefrontCatalogShelfSchema = z.object({
+  key: z.string(),
+  name: z.string(),
+});
+export type StorefrontCatalogShelf = z.infer<typeof storefrontCatalogShelfSchema>;
+
+/**
+ * Un article qu'un contenu produit peut désigner. `sku` est celui du PRODUIT,
+ * que la boutique sert et résout. `served` : en vente dans au moins une des
+ * deux boutiques — masqué des deux, aucune ne le résoudra.
+ */
+export const storefrontCatalogItemSchema = z.object({
+  sku: z.string(),
+  name: z.string(),
+  shelfKey: z.string(),
+  served: z.boolean(),
+});
+export type StorefrontCatalogItem = z.infer<typeof storefrontCatalogItemSchema>;
+
+/**
+ * Le catalogue tel que l'éditeur de vitrine le lit — `GET /admin/storefront/catalog`.
+ *
+ * Une lecture DÉDIÉE, murée par `b2b_storefront` : l'éditeur lisait
+ * `/admin/catalog`, que la communication ne peut pas ouvrir. Elle ne rend que
+ * ce que l'éditeur désigne — ni prix, ni réglages. `shelves` : les familles qui
+ * portent au moins un article servi, dans l'ordre du catalogue, sans « Tout ».
+ */
+export const storefrontCatalogViewSchema = z.object({
+  shelves: z.array(storefrontCatalogShelfSchema),
+  items: z.array(storefrontCatalogItemSchema),
+});
+export type StorefrontCatalogView = z.infer<typeof storefrontCatalogViewSchema>;

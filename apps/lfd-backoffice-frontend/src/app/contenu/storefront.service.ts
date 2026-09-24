@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { StorefrontPayloadInput, StorefrontView } from '@lfd/contracts';
+import type { StorefrontCatalogView, StorefrontPayloadInput, StorefrontView } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -18,6 +18,17 @@ export class StorefrontService {
   /** La vitrine entière. Jamais enregistrée : `{ revision: 0 }`, vide. */
   load(): Promise<StorefrontView> {
     return firstValueFrom(this.http.get<StorefrontView>(`${B2B_API_BASE}/admin/storefront`));
+  }
+
+  /**
+   * Les rayons et les articles que l'éditeur désigne — sans prix ni réglages.
+   * Sous `b2b_storefront:read` : la communication n'a pas `b2b_catalog`, et
+   * `/admin/catalog` lui rendait un 403.
+   */
+  catalog(): Promise<StorefrontCatalogView> {
+    return firstValueFrom(
+      this.http.get<StorefrontCatalogView>(`${B2B_API_BASE}/admin/storefront/catalog`),
+    );
   }
 
   /**
