@@ -71,6 +71,15 @@ export interface ProductSnapshot {
    * suivre sa famille au comptoir est le cas courant.
    */
   readonly channelOverride: SalesChannels | null;
+  /**
+   * **Vendu seulement pendant une opération** — la bûche, pas le croissant
+   * (D3 de `documentation/order/architecture-operations-datees.md`).
+   *
+   * Un fait de la FICHE et non de la ligne d'opération : retirer la bûche de
+   * Noël, masquer ou archiver Noël doit la rendre invisible, jamais la vendre
+   * toute l'année.
+   */
+  readonly operationOnly: boolean;
 }
 
 /**
@@ -118,6 +127,7 @@ export class Product {
     private readonly variantList: Variant[],
     private vatByContextValue: ContextVat,
     private channelOverrideValue: SalesChannels | null,
+    private operationOnlyValue: boolean,
   ) {}
 
   static open(input: NewProductInput): Product {
@@ -135,6 +145,9 @@ export class Product {
       // quelqu'un décide le contraire, et cette décision se voit.
       {},
       null,
+      // Un produit naît COURANT : le réserver aux opérations est une décision
+      // qu'on prend en le sachant, et qui se lit au journal.
+      false,
     );
   }
 
@@ -151,6 +164,7 @@ export class Product {
       snapshot.variants.map((variant) => Variant.reconstitute(variant)),
       snapshot.vatByContext,
       snapshot.channelOverride,
+      snapshot.operationOnly,
     );
   }
 
@@ -245,6 +259,29 @@ export class Product {
       }
     }
     this.vatByContextValue = { ...vat };
+  }
+
+  /** Vendu seulement pendant une opération ? */
+  get operationOnly(): boolean {
+    return this.operationOnlyValue;
+  }
+
+  /**
+   * **Réserve la fiche aux opérations** — ou la rend à la vente courante.
+   *
+   * Aucune règle ne refuse le geste, et c'est voulu : une fiche archivée ou en
+   * brouillon peut se préparer pour Noël. Ce que le drapeau change se juge chez
+   * ceux qui VENDENT (D5), pas ici.
+   *
+   * @returns `false` quand la fiche y était déjà — rien à écrire au journal,
+   * comme pour un statut ({@link StatusChanged}).
+   */
+  reserveForOperations(operationOnly: boolean): boolean {
+    if (this.operationOnlyValue === operationOnly) {
+      return false;
+    }
+    this.operationOnlyValue = operationOnly;
+    return true;
   }
 
   /** Renomme — et re-dérive le slug. */
@@ -567,6 +604,7 @@ export class Product {
       status: this.statusValue,
       vatByContext: this.vatByContextValue,
       channelOverride: this.channelOverrideValue,
+      operationOnly: this.operationOnlyValue,
     };
   }
 }

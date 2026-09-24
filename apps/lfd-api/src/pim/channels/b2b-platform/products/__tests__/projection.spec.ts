@@ -8,6 +8,11 @@ import type {
 } from "../../../../catalogue/product/domain/ports/product.repository.js";
 import { AllergenStore } from "../../../../allergens/application/__tests__/in-memory-allergens.js";
 import { IncoProjector } from "../../../../allergens/domain/services/inco-projector.js";
+import {
+  Operation,
+  type OperationSnapshot,
+} from "../../../../operations/domain/entities/operation.js";
+import { projectionFingerprint } from "../../../shared/domain/canonical-projection.js";
 import { projectCatalog } from "../projection.js";
 
 const AT = "2026-08-17T08:00:00.000Z";
@@ -42,6 +47,7 @@ function product(over: Partial<ProductRecord> = {}): ProductRecord {
     categoryId: "cat_vien",
     status: "published",
     channelOverride: null,
+    operationOnly: false,
     variants: [variant()],
     vatByContext: {},
     ...over,
@@ -114,6 +120,9 @@ const NO_SHOWCASE = new Map<string, never>();
 
 const NO_LIMITS: readonly SyncOrderTimeLimitRule[] = [];
 
+/** Aucune opération datée : ces tests-ci parlent du prix et des allergènes. */
+const NO_OPERATIONS: readonly OperationSnapshot[] = [];
+
 /**
  * Le référentiel d'allergènes tel que la base le sert, **passé** à la projection
  * (D6). Trois entrées suffisent à couvrir les trois sorts d'un code déclaré :
@@ -160,6 +169,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -187,6 +197,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -214,6 +225,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -238,6 +250,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -262,6 +275,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
     const at10 = projectCatalog(
@@ -273,6 +287,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -295,6 +310,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -319,6 +335,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -339,6 +356,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -360,6 +378,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -377,6 +396,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -397,6 +417,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -425,6 +446,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -447,6 +469,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -473,6 +496,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -493,6 +517,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -511,6 +536,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -531,6 +557,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -547,6 +574,7 @@ describe("projectCatalog", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -570,6 +598,7 @@ describe("projectCatalog — la matrice DÉCIDE", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -589,6 +618,7 @@ describe("projectCatalog — la matrice DÉCIDE", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
 
@@ -624,6 +654,7 @@ describe("projectCatalog — les allergènes", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     );
     return snapshot.products[0]?.variants[0];
@@ -701,6 +732,7 @@ describe("le prix public sur le fil — v9", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     ).snapshot.products[0]?.variants[0];
 
@@ -744,6 +776,7 @@ describe("le prix public sur le fil — v9", () => {
       NO_LIMITS,
       INCO,
       NO_SHOWCASE,
+      NO_OPERATIONS,
       AT,
     ).snapshot.products[0]?.variants[0];
 
@@ -762,5 +795,90 @@ describe("le prix public sur le fil — v9", () => {
 
     expect(Object.keys(v?.publicByContext ?? {})).toEqual(["b2b"]);
     expect(v?.publicByContext["eatIn"]).toBeUndefined();
+  });
+});
+
+describe("le fil v11 — les opérations datées et le drapeau de la fiche", () => {
+  /** Noël, dont la sélection cite un article de l'envoi et un qui n'y est pas. */
+  function noel(skus: readonly string[] = ["VIE-001-1", "PAT-9-1"]): OperationSnapshot {
+    const operation = Operation.prepare({
+      key: "noel-2026",
+      name: { fr: "Noël" },
+      lede: null,
+      image: null,
+      schedule: {
+        announceFrom: new Date("2026-10-31T23:00:00.000Z"),
+        orderFrom: null,
+        orderUntil: new Date("2026-12-21T11:00:00.000Z"),
+        pickupFrom: "2026-12-20",
+        pickupUntil: "2026-12-24",
+      },
+      audience: "pro",
+    });
+    operation.select(skus);
+    return operation.snapshot();
+  }
+
+  const project = (products: readonly ProductRecord[], operations: readonly OperationSnapshot[]) =>
+    projectCatalog(
+      products,
+      [category()],
+      vat(),
+      sold(),
+      NO_DISCOUNT,
+      NO_LIMITS,
+      INCO,
+      NO_SHOWCASE,
+      operations,
+      AT,
+    );
+
+  it("porte le drapeau de la fiche sur le produit", () => {
+    const { snapshot } = project([product({ operationOnly: true })], NO_OPERATIONS);
+
+    expect(snapshot.products[0]?.operationOnly).toBe(true);
+  });
+
+  /**
+   * 🔴 Un article de la sélection non publié ne part pas : le récepteur ne le
+   * connaîtrait pas. Il est nommé dans les exclusions, à côté des autres.
+   */
+  it("filtre la sélection sur ce que l'envoi porte, et nomme ce qui manque", () => {
+    const { snapshot, excluded } = project([product()], [noel()]);
+
+    expect(snapshot.operations.map((operation) => operation.skus)).toEqual([["VIE-001-1"]]);
+    expect(excluded).toEqual([{ sku: "PAT-9-1", reason: "operation_article_absent" }]);
+  });
+
+  it("écarte de la sélection un article dont la fiche n'est pas vendue aux pros", () => {
+    const { snapshot, excluded } = projectCatalog(
+      [product()],
+      [category()],
+      vat(),
+      sold([{ pointOfSaleId: "emp_1", context: "takeaway" }]),
+      NO_DISCOUNT,
+      NO_LIMITS,
+      INCO,
+      NO_SHOWCASE,
+      [noel(["VIE-001-1"])],
+      AT,
+    );
+
+    expect(snapshot.operations[0]?.skus).toEqual([]);
+    expect(excluded).toEqual([
+      { sku: "VIE-001", reason: "canal_ferme" },
+      { sku: "VIE-001-1", reason: "operation_article_absent" },
+    ]);
+  });
+
+  /** L'empreinte relie la relecture à l'envoi : une opération qui bouge doit la changer. */
+  it("fait entrer l'opération dans l'empreinte", () => {
+    const without = project([product()], NO_OPERATIONS).snapshot;
+    const withNoel = project([product()], [noel()]).snapshot;
+    const reordered = project([product()], [noel(["PAT-9-1", "VIE-001-1"])]).snapshot;
+
+    expect(projectionFingerprint(withNoel)).not.toBe(projectionFingerprint(without));
+    // Même sélection partie (seul VIE-001-1 est dans l'envoi) : même empreinte.
+    expect(projectionFingerprint(reordered)).toBe(projectionFingerprint(withNoel));
   });
 });

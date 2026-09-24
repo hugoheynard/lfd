@@ -168,6 +168,7 @@ function tart(
     ],
     vatByContext,
     channelOverride,
+    operationOnly: false,
   });
 }
 

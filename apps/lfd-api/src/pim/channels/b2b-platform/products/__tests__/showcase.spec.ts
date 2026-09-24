@@ -23,6 +23,7 @@ const product = (id: string): ProductRecord => ({
   variants: [],
   vatByContext: {},
   channelOverride: null,
+  operationOnly: false,
 });
 
 const media = (over: Partial<ProductMediaRecord> = {}): ProductMediaRecord => ({

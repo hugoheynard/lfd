@@ -44,6 +44,7 @@ const EMPTY_SNAPSHOT: CatalogSnapshot = {
   categories: [],
   products: [],
   orderTimeLimits: [],
+  operations: [],
 };
 
 /**

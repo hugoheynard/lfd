@@ -1128,3 +1128,15 @@ export type {
   StorefrontText,
   StorefrontView,
 } from "./storefront.js";
+export {
+  RECEIVED_OPERATION_AUDIENCES,
+  setOperationOverridePayloadSchema,
+} from "./catalog-operations.js";
+export type {
+  EffectiveOperationView,
+  OperationOverrideView,
+  ReceivedOperationAudience,
+  ReceivedOperationText,
+  ReceivedOperationView,
+  SetOperationOverridePayload,
+} from "./catalog-operations.js";

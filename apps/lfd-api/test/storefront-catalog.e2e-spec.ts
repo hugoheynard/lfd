@@ -67,6 +67,7 @@ function product(id: string, sku: string, name: string): CatalogSnapshot["produc
     note: null,
     image: null,
     thumbnail: null,
+    operationOnly: false,
   };
 }
 
@@ -90,6 +91,7 @@ function snapshot(): CatalogSnapshot {
       product("prd_2", "VIE-002", "Chocolatine"),
     ],
     orderTimeLimits: [],
+    operations: [],
   };
 }
 

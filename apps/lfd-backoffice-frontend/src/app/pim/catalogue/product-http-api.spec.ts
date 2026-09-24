@@ -44,6 +44,7 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     variants: [variant],
     vatByContext: {},
     channelOverride: null,
+    operationOnly: false,
   };
 }
 

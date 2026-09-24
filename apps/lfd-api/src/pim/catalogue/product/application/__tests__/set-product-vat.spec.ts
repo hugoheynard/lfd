@@ -85,6 +85,7 @@ function snapshot(
     ],
     vatByContext,
     channelOverride,
+    operationOnly: false,
   };
 }
 

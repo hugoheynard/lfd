@@ -22,8 +22,11 @@ import { PrismaOperationRepository } from "./infrastructure/prisma-operation.rep
  * (`documentation/order/architecture-operations-datees.md`).
  *
  * Dans le référentiel parce que préparer Noël, c'est choisir des articles et
- * fixer des dates : le travail du catalogue (D1). Le commerce les recevra par
- * le fil au lot 2 + 3 ; ce module n'exporte rien d'ici là.
+ * fixer des dates : le travail du catalogue (D1).
+ *
+ * Il n'exporte que son port de LECTURE, depuis le lot 2 : le canal de la
+ * plateforme projette les opérations dans le fil v11, et il n'a pas à pouvoir
+ * en écrire une (ISP).
  */
 @Module({
   imports: [PimDatabaseModule],
@@ -41,5 +44,6 @@ import { PrismaOperationRepository } from "./infrastructure/prisma-operation.rep
     ListOperationsHandler,
     GetOperationHandler,
   ],
+  exports: [OperationReader],
 })
 export class OperationsModule {}

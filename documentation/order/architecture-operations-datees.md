@@ -361,6 +361,26 @@ contexte `apps/lfd-api/src/pim/operations/`, la migration
 de préparation, et l'extension de `SCAN_ROOTS` à `src/b2b/catalog` et à cet
 écran.
 
+✅ **Lot 2, côté serveur : bâti le 2026-09-24** (non commité à cette date).
+La migration `20260924180000_les_operations_traversent_le_fil` ; la case
+`operationOnly` de la fiche (`PUT /pim/catalogue/products/:id/operation-only`,
+fait `product.operation_only_changed`) ; le fil **v11** (`operations[]`,
+`operationOnly` sur le produit ; le schéma stocké relit la v10 sans valeur de
+remplacement) ; la projection (opérations non archivées, SKU filtrés sur
+l'envoi, motif `operation_article_absent`, empreinte) ; le miroir
+`catalog_operations` / `catalog_operation_items` et `CatalogItem.operationOnly`,
+écrits à l'acceptation, **marqués** retirés et jamais supprimés ; la
+photographie des opérations dans `catalog_versions.operations` (colonne
+`jsonb` nullable — que « Les données » ne listait pas : `NULL` = version d'avant
+la v11) ; la surcharge `catalog_operation_overrides` sous `b2b_catalog`
+(`GET /admin/catalog/operations`, `PUT /admin/catalog/operations/:key/override`,
+fait `catalog_operation.override_set`) ; le lecteur `CatalogOperationsReader`
+pour le lot 3, **lu par personne encore** ; `SCAN_ROOTS` étendus à
+`src/b2b/catalog` ; le runbook « Avant de déployer le fil v11 ». Restent au
+lot 2 : la case de la fiche et l'écran de réception, côté back-office. Le
+lot 3 n'est pas commencé — tant qu'il ne l'est pas, `operationOnly` ne restreint
+aucune vente, et le lot 2 ne part pas seul.
+
 **Sans retour après le premier merge du lot 2 + 3** : le fil v11 (revenir au
 code v10 laisserait des envois v11 que personne ne relit — un seul processus
 porte l'émetteur et le récepteur, ils partent ensemble) ; les clés `op:<key>`

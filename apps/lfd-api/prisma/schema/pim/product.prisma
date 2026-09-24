@@ -88,6 +88,15 @@ model Product {
   category   Category      @relation(fields: [categoryId], references: [id])
   status     ProductStatus @default(draft)
 
+  /// **Vendu seulement pendant une opération** — la bûche, pas le croissant
+  /// (D3 de `documentation/order/architecture-operations-datees.md`).
+  ///
+  /// Un fait de la FICHE, pas de la ligne d'opération : retirer la bûche de la
+  /// sélection, masquer ou archiver Noël doit la rendre invisible, jamais la
+  /// vendre toute l'année. `false` par défaut — c'est la règle d'avant la
+  /// colonne, et c'est celle de tout article courant.
+  operationOnly Boolean @default(false) @map("operation_only")
+
   /// ⚠️ **AUCUN LECTEUR, AUCUN ÉCRIVAIN** — constaté le 2026-09-02 sur tout le
   /// dépôt : backend, les deux fronts, `packages/*`, le seed. La colonne existe
   /// depuis sa migration de création (20260820160000) et vaut `{}` partout.

@@ -100,6 +100,12 @@ export function canonicalProjection(snapshot: CatalogSnapshot): CanonicalProject
     products: [...snapshot.products]
       .sort((left, right) => byKey(left.sku, right.sku))
       .map(canonicalProduct),
+    // Les opérations datées (v11) triées par CLÉ — l'ordre du lecteur suit
+    // l'annonce, qu'on peut redater sans rien changer d'autre. ⚠️ Leurs `skus`,
+    // eux, ne se trient PAS : la sélection n'a pas de champ `position`, son
+    // ordre EST l'ordre du rayon, et le trier rendrait l'empreinte aveugle à un
+    // réordonnancement que le canal reçoit.
+    operations: [...snapshot.operations].sort((left, right) => byKey(left.key, right.key)),
   };
 }
 

@@ -86,6 +86,10 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   // et les contextes de vente — exactement ce qu'on relit avant de signer.
   [PIM_EVENTS.productVatChanged]: true,
   [PIM_EVENTS.productChannelsChanged]: true,
+  // Réserver la fiche aux opérations change QUAND elle se vend, comme les
+  // canaux changent OÙ : un signataire qui l'a relue courante voudrait la
+  // revoir exclusive (lot 2 du plan des opérations datées, 2026-09-24).
+  [PIM_EVENTS.productOperationOnlyChanged]: true,
   // Changer de famille change les taux et les canaux hérités. Le même geste
   // écrit aussi `identity_saved`, déjà compté : ce fait-ci ne périme donc
   // rien de plus, mais la table est exhaustive et il y a sa place.

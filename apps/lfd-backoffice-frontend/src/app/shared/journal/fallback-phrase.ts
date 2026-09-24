@@ -83,6 +83,7 @@ const SUBJECT_NOUNS: Readonly<Record<string, string>> = {
   appellation: 'l’appellation',
   catalog_delivery: 'l’arrivée du référentiel',
   catalog_item: 'l’article',
+  catalog_operation: 'l’opération reçue',
   catalog_revision: 'la révision',
   company: 'le client',
   company_bank_account: 'le RIB',

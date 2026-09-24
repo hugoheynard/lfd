@@ -17,6 +17,8 @@ import {
 } from "../../../domain/errors/catalog-errors.js";
 import { CatalogDeliveryRepository } from "../../../domain/ports/catalog-delivery.repository.js";
 import { CatalogItemRepository } from "../../../domain/ports/catalog-item.repository.js";
+import { CatalogOperation } from "../../../domain/entities/catalog-operation.js";
+import { CatalogOperationRepository } from "../../../domain/ports/catalog-operation.repository.js";
 import { IngestCatalogService } from "../../ingest-catalog.service.js";
 import { AcceptDeliveryCommand } from "../accept-delivery.command.js";
 import { AcceptDeliveryHandler } from "../accept-delivery.handler.js";
@@ -55,8 +57,10 @@ const snapshot = (skus: readonly string[]): CatalogSnapshot => ({
     note: null,
     image: null,
     thumbnail: null,
+    operationOnly: false,
   })),
   orderTimeLimits: [],
+  operations: [],
 });
 
 interface Journal {
@@ -104,13 +108,56 @@ function mirrorItem(sku: string, priceMillicents = 210_000): CatalogItem {
     note: null,
     image: null,
     thumbnail: null,
+    operationOnly: false,
     orderTimeLimit: null,
     receivedAt: new Date("2026-01-01T00:00:00.000Z"),
   };
   return CatalogItem.receive(facts);
 }
 
+/** Une opération reçue — les dates ne sont comparées à rien ici, seul l'état compte. */
+function heldOperation(key: string, withdrawn: boolean): CatalogOperation {
+  const operation = CatalogOperation.receive({
+    key,
+    name: { fr: key },
+    lede: null,
+    image: null,
+    announceFrom: new Date("2026-11-01T00:00:00.000Z"),
+    orderFrom: null,
+    orderUntil: new Date("2026-12-21T11:00:00.000Z"),
+    pickupFrom: "2026-12-20",
+    pickupUntil: "2026-12-24",
+    audience: "both",
+    skus: ["VIE-001-1"],
+    receivedAt: new Date("2026-01-01T00:00:00.000Z"),
+  });
+  if (withdrawn) {
+    operation.withdraw(new Date("2026-01-01T00:00:00.000Z"));
+  }
+  return operation;
+}
+
+/** Le miroir des opérations tel que l'application l'a laissé — lu, jamais écrit ici. */
+class HeldOperations extends CatalogOperationRepository {
+  constructor(private readonly held: readonly CatalogOperation[]) {
+    super();
+  }
+
+  load(key: string): Promise<CatalogOperation | null> {
+    return Promise.resolve(this.held.find((operation) => operation.key === key) ?? null);
+  }
+
+  loadAllIncludingWithdrawn(): Promise<CatalogOperation[]> {
+    return Promise.resolve([...this.held]);
+  }
+
+  saveMany(): Promise<void> {
+    return Promise.reject(new Error("la validation ne doit pas écrire d'opération elle-même"));
+  }
+}
+
 async function build(options: {
+  readonly operations?: readonly CatalogOperation[];
   readonly delivered?: readonly string[];
   readonly mirror?: readonly string[];
   readonly closeFails?: boolean;
@@ -164,6 +211,10 @@ async function build(options: {
       AcceptDeliveryHandler,
       { provide: CatalogDeliveryRepository, useValue: deliveries },
       { provide: CatalogItemRepository, useValue: items },
+      {
+        provide: CatalogOperationRepository,
+        useValue: new HeldOperations(options.operations ?? []),
+      },
       { provide: CatalogVersionRepository, useValue: versions },
       { provide: IngestCatalogService, useValue: ingest },
       { provide: Clock, useValue: { now: () => new Date("2026-01-02T00:00:00.000Z") } },
@@ -268,6 +319,24 @@ describe("AcceptDeliveryHandler", () => {
 
     const [version] = journal.archived;
     expect(version?.lines.map((line) => line.sku)).toEqual(["PAT-002-1", "VIE-001-1"]);
+  });
+
+  /**
+   * D10 : « qu'était-il possible de commander le 20 décembre ? ». La version
+   * porte les opérations TENUES après application — pas celles que l'envoi a
+   * marquées retirées.
+   */
+  it("photographie les opérations tenues, pas les retirées", async () => {
+    const { handler, journal } = await build({
+      mirror: ["VIE-001-1"],
+      operations: [heldOperation("paques-2027", false), heldOperation("noel-2025", true)],
+    });
+
+    await handler.execute(new AcceptDeliveryCommand("d_1", [], "staff_1"));
+
+    expect(journal.archived[0]?.operations?.map((operation) => operation.key)).toEqual([
+      "paques-2027",
+    ]);
   });
 
   /**

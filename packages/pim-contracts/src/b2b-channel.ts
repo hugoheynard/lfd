@@ -96,7 +96,14 @@ export type B2bExclusionReason =
    * hors taxe : il fallait alors dire de quel ancrage on parlait. Il n'y en a
    * plus qu'un, donc le préciser ne distinguait plus rien.
    */
-  | "variant_sans_taux";
+  | "variant_sans_taux"
+  /**
+   * Un article de la sélection d'une opération datée que CET envoi ne porte
+   * pas — non publié, sans prix, canal fermé (fil v11). Il manquerait au rayon
+   * de l'opération sans que personne sache pourquoi ; le motif le dit, et
+   * l'écran de l'opération dit lequel ouvrir.
+   */
+  | "operation_article_absent";
 
 export interface B2bExclusionView {
   readonly sku: string;

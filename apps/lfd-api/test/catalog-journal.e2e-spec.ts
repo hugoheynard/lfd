@@ -98,8 +98,10 @@ function snapshot(skus: readonly string[]): CatalogSnapshot {
       note: null,
       image: null,
       thumbnail: null,
+      operationOnly: false,
     })),
     orderTimeLimits: [],
+    operations: [],
   };
 }
 

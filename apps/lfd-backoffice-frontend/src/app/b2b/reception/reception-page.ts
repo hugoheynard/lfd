@@ -29,6 +29,8 @@ const FIELDS: Readonly<Record<string, string>> = {
   // Depuis la v7 du fil. Elle ne se comparait pas : changer la limite globale
   // produisait une arrivée annoncée « 0 changement », validée à l'aveugle.
   orderLimit: 'limite de commande',
+  // Depuis la v11 : l'article n'est vendu que pendant une opération datée.
+  operationOnly: 'réservé aux opérations',
 };
 
 /** Ce que l'arrivée fait à un article, dit comme on le lit. */

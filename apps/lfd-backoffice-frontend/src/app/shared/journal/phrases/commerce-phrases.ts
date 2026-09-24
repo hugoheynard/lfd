@@ -44,6 +44,15 @@ function article(fact: PhraseFact): Segment[] {
 
 const ARTICLE_KEYS = ['subjectLabel', 'sku'];
 
+/** « l'opération « Noël 2026 » », ou « l'opération noel-2026 » sans nom figé. */
+function operation(fact: PhraseFact): Segment[] {
+  const label = subjectLabelOf(fact);
+  if (label === null) {
+    return [text('l’opération '), subject(fact, optional(fact.subjectId) ?? '')];
+  }
+  return [text('l’opération « '), subject(fact, label), text(' »')];
+}
+
 /** « … a masqué « Tarte citron » (TAR-001) du catalogue professionnel ». */
 function onArticle(before: string, after: string): Phrase {
   return (fact) => byActor(fact, [text(before), ...article(fact), text(after)], ARTICLE_KEYS);
@@ -307,6 +316,10 @@ export const COMMERCE_PHRASES = {
   'catalog_item.featured': onArticle('a mis en avant ', ' dans le catalogue professionnel'),
   'catalog_item.unfeatured': onArticle('a cessé de mettre en avant ', ''),
   'catalog_delivery.accepted': deliveryAccepted,
+  // La surcharge d'une opération datée reçue (D9, lot 2 du plan des opérations
+  // datées, 2026-09-24). Le détail dit ce qui est restreint.
+  'catalog_operation.override_set': (fact) =>
+    byActor(fact, [text('a restreint à la réception '), ...operation(fact)], ['subjectLabel']),
 
   'lead.captured': (fact) =>
     byActor(fact, [text('a saisi '), ...lead(fact)], ['subjectLabel', 'businessName']),

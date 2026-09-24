@@ -2,9 +2,12 @@ import { Injectable } from "@nestjs/common";
 import type { StoredCatalogSnapshot } from "@lfd/catalog-sync";
 
 import { CatalogItem, type PimFacts } from "../domain/entities/catalog-item.js";
+import { CatalogOperation } from "../domain/entities/catalog-operation.js";
 import { snapshotLimitReader } from "../domain/snapshot-limits.js";
 import { CatalogCategoryProjection } from "../domain/ports/catalog-category.projection.js";
 import { CatalogItemRepository } from "../domain/ports/catalog-item.repository.js";
+import { CatalogOperationRepository } from "../domain/ports/catalog-operation.repository.js";
+import { operationFactsOf } from "./operation-facts.js";
 
 /** Ce qu'une ingestion a réellement changé, pour que l'appelant puisse le dire. */
 export interface IngestionOutcome {
@@ -19,6 +22,8 @@ export interface IngestionOutcome {
    * fil, que la plateforme rend à l'émetteur.
    */
   readonly removedSkus: readonly string[];
+  /** Les clés d'opérations tenues avant, absentes de l'envoi — donc marquées retirées. */
+  readonly withdrawnOperations: readonly string[];
 }
 
 /**
@@ -39,6 +44,7 @@ export class IngestCatalogService {
   constructor(
     private readonly items: CatalogItemRepository,
     private readonly categories: CatalogCategoryProjection,
+    private readonly operations: CatalogOperationRepository,
   ) {}
 
   async apply(
@@ -104,13 +110,59 @@ export class IngestCatalogService {
       });
 
     await this.items.saveMany([...toSave, ...withdrawn]);
+    const withdrawnOperations = await this.applyOperations(snapshot, receivedAt);
 
     return {
       acceptedProducts: snapshot.products.length,
       acceptedVariants: toSave.length,
       acceptedCategories: snapshot.categories.length,
       removedSkus: withdrawn.map((item) => item.sku),
+      withdrawnOperations,
     };
+  }
+
+  /**
+   * **Les opérations datées** (fil v11, D10) : reçues, rafraîchies, ou
+   * MARQUÉES retirées — jamais supprimées. Une clé ne se réemploie pas, et la
+   * surcharge de la réception doit garder son parent (D9).
+   *
+   * ⚠️ Un envoi v10 (champ absent) se lit « aucune opération » : il marque donc
+   * retirées toutes celles que le miroir tenait. C'est voulu (D10) — aucun
+   * article n'y est réservé aux opérations, donc rien d'exclusif n'est vendu —,
+   * et le runbook dit comment l'éviter au déploiement.
+   *
+   * Les SKU écartés à la validation ne touchent pas aux opérations : la
+   * sélection se restreint à la réception par la surcharge, pas par un envoi
+   * accepté à moitié.
+   *
+   * @returns les clés marquées retirées par cet envoi.
+   */
+  private async applyOperations(
+    snapshot: StoredCatalogSnapshot,
+    receivedAt: Date,
+  ): Promise<readonly string[]> {
+    const incoming = (snapshot.operations ?? []).map((operation) =>
+      operationFactsOf(operation, receivedAt),
+    );
+    const existing = new Map(
+      (await this.operations.loadAllIncludingWithdrawn()).map((operation) => [
+        operation.key,
+        operation,
+      ]),
+    );
+    const received = incoming.map(
+      (facts) => existing.get(facts.key)?.refreshFromPim(facts) ?? CatalogOperation.receive(facts),
+    );
+    const arriving = new Set(incoming.map((facts) => facts.key));
+    // `!isWithdrawn` : une opération déjà retirée garde la date de son retrait.
+    const withdrawn = [...existing.values()].filter(
+      (operation) => !arriving.has(operation.key) && !operation.isWithdrawn,
+    );
+    for (const operation of withdrawn) {
+      operation.withdraw(receivedAt);
+    }
+    await this.operations.saveMany([...received, ...withdrawn]);
+    return withdrawn.map((operation) => operation.key);
   }
 }
 
@@ -149,6 +201,9 @@ function factsOf(snapshot: StoredCatalogSnapshot, receivedAt: Date): PimFacts[] 
       // `?? null` couvre une arrivée d'avant la v10 : la vignette de rayon ne
       // traversait pas le fil. Une absence, jamais un défaut inventé.
       thumbnail: product.thumbnail ?? null,
+      // Absent avant la v11 : aucun article n'était réservé aux opérations, et
+      // `false` le dit — c'est la version qui décide de la lecture (D10).
+      operationOnly: product.operationOnly ?? false,
       receivedAt,
     })),
   );

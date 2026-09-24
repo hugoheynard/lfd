@@ -100,6 +100,13 @@ export const PIM_EVENTS = {
   /** Une fiche redéfinit où elle se vend — ou revient à sa famille. */
   productChannelsChanged: "product.channels_changed",
   /**
+   * Une fiche est **réservée aux opérations** — ou rendue à la vente courante
+   * (D3 du plan des opérations datées, lot 2, 2026-09-24). Un fait à part et
+   * non un champ d'identité : il change QUAND l'article se vend, et « qui a
+   * rendu la bûche exclusive » ne doit pas se chercher dans des noms retouchés.
+   */
+  productOperationOnlyChanged: "product.operation_only_changed",
+  /**
    * **Quelqu'un affirme que la fiche est juste.** Distinct de `published` :
    * l'un est une signature sur un contenu, l'autre une mise en vente. Un
    * historique qui les confondrait ne saurait plus répondre à « qui a validé ce

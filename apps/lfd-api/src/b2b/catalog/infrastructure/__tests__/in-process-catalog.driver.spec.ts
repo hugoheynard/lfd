@@ -48,9 +48,11 @@ const snapshot: CatalogSnapshot = {
       note: null,
       image: null,
       thumbnail: null,
+      operationOnly: false,
     },
   ],
   orderTimeLimits: [],
+  operations: [],
 };
 
 const ORIGIN = { revisionId: "rev_7", fingerprint: "empreinte-A" };

@@ -70,6 +70,10 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // (2026-09-19).
     "catalog_item.",
     "catalog_delivery.",
+    // La surcharge d'une opération datée reçue restreint ce qu'on vend et
+    // quand : le même geste que masquer un article (2026-09-24, lot 2 du plan
+    // des opérations datées).
+    "catalog_operation.",
     // La vitrine décide ce qu'on met en avant, sur quel rayon : le même métier
     // que la mise en avant d'un article (`catalog_item.featured`), 2026-09-24.
     "storefront.",

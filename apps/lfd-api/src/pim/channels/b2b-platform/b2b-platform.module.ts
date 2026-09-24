@@ -5,6 +5,7 @@ import { AllergensModule } from "../../allergens/allergens.module.js";
 import { CatalogueModule } from "../../catalogue/catalogue.module.js";
 import { OrderTimeLimitationModule } from "../../order-time-limitation/order-time-limitation.module.js";
 import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";
+import { OperationsModule } from "../../operations/operations.module.js";
 import { PushB2bCatalogHandler } from "./application/push-b2b-catalog.js";
 import { B2bMembershipController } from "./membership/membership.controller.js";
 import { B2bMembershipService } from "./membership/membership.service.js";
@@ -40,6 +41,8 @@ import { B2bCatalogPushService } from "./products/push.service.js";
     CatalogueModule,
     AccountingRulesModule,
     AllergensModule,
+    // Le port de LECTURE des opérations datées, projetées dans le fil v11.
+    OperationsModule,
   ],
   controllers: [B2bMembershipController, B2bPushController, B2bProductDeliveryController],
   providers: [

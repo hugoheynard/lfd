@@ -14,11 +14,13 @@ import {
   type UpdateVariantPricingPayload,
   setProductMediaPayloadSchema,
   setProductChannelsPayloadSchema,
+  setProductOperationOnlyPayloadSchema,
   setProductVatPayloadSchema,
   addProductVariantPayloadSchema,
   alignVariantPayloadSchema,
   type SetProductMediaPayload,
   type SetProductChannelsPayload,
+  type SetProductOperationOnlyPayload,
   type SetProductVatPayload,
   type AddProductVariantPayload,
   renameProductVariantPayloadSchema,
@@ -48,6 +50,7 @@ import { RestoreProductCommand } from "../application/restore-product.js";
 import { UnpublishProductCommand } from "../application/unpublish-product.js";
 import { SetProductMediaCommand } from "../application/set-product-media.js";
 import { SetProductChannelsCommand } from "../application/set-product-channels.js";
+import { SetProductOperationOnlyCommand } from "../application/set-product-operation-only.js";
 import { SetProductVatCommand } from "../application/set-product-vat.js";
 import { UpdateProductEditorialCommand } from "../application/update-product-editorial.js";
 import { UpdateProductIdentityCommand } from "../application/update-product-identity.js";
@@ -146,6 +149,22 @@ export class ProductController {
   ) {
     await this.commands.execute<SetProductChannelsCommand, void>(
       new SetProductChannelsCommand(id, body.channels),
+    );
+    return { id };
+  }
+
+  /**
+   * **Vendu seulement pendant une opération** — la case de la fiche (D3 du plan
+   * des opérations datées). L'état entier, comme les autres sections.
+   */
+  @Put(":id/operation-only")
+  async setProductOperationOnly(
+    @Param("id") id: string,
+    @Body(new ZodBody(setProductOperationOnlyPayloadSchema))
+    body: SetProductOperationOnlyPayload,
+  ) {
+    await this.commands.execute<SetProductOperationOnlyCommand, void>(
+      new SetProductOperationOnlyCommand(id, body.operationOnly),
     );
     return { id };
   }

@@ -48,6 +48,17 @@ import { GetCatalogSummaryHandler } from "./application/queries/get-catalog-summ
 import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
 import { CheckCatalogParityHandler } from "./application/queries/check-catalog-parity.handler.js";
 import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog-push.handler.js";
+import { SetOperationOverrideHandler } from "./application/commands/set-operation-override.handler.js";
+import { ListReceivedOperationsHandler } from "./application/queries/list-received-operations.handler.js";
+import { CatalogOperationRepository } from "./domain/ports/catalog-operation.repository.js";
+import { CatalogOperationOverrideRepository } from "./domain/ports/catalog-operation-override.repository.js";
+import { CatalogOperationsReader } from "./domain/ports/catalog-operations.reader.js";
+import { ReceivedOperationsReader } from "./domain/ports/received-operations.reader.js";
+import { AdminCatalogOperationsController } from "./http/admin-catalog-operations.controller.js";
+import { PrismaCatalogOperationRepository } from "./infrastructure/prisma-catalog-operation.repository.js";
+import { PrismaCatalogOperationOverrideRepository } from "./infrastructure/prisma-catalog-operation-override.repository.js";
+import { PrismaCatalogOperationsReader } from "./infrastructure/prisma-catalog-operations.reader.js";
+import { PrismaReceivedOperationsReader } from "./infrastructure/prisma-received-operations.reader.js";
 
 /**
  * **Le catalogue de la plateforme** : ce que le PIM pousse, plus ce qu'on décide
@@ -90,6 +101,8 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     AdminCatalogController,
     AdminCatalogParityController,
     AdminCatalogDeliveryController,
+    // Les opérations datées reçues et leur surcharge à la réception (D9).
+    AdminCatalogOperationsController,
     // La porte MACHINE du contrôle de santé : même requête, serrure partagée.
     // Le workflow d'ops ne pouvait pas passer par la surface staff.
     OpsCatalogHealthController,
@@ -144,6 +157,19 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     { provide: CatalogVersionReader, useClass: PrismaCatalogVersionReader },
     AcceptDeliveryHandler,
     GetPendingDeliveryHandler,
+    // Les opérations datées (fil v11, lot 2 du plan des opérations datées) :
+    // le miroir que l'ingestion écrit, la surcharge que la réception pose, et
+    // deux lecteurs pour deux questions (ISP) — l'écran de réception voit tout,
+    // les vendeurs du lot 3 ne voient que ce qui s'applique.
+    { provide: CatalogOperationRepository, useClass: PrismaCatalogOperationRepository },
+    {
+      provide: CatalogOperationOverrideRepository,
+      useClass: PrismaCatalogOperationOverrideRepository,
+    },
+    { provide: ReceivedOperationsReader, useClass: PrismaReceivedOperationsReader },
+    { provide: CatalogOperationsReader, useClass: PrismaCatalogOperationsReader },
+    SetOperationOverrideHandler,
+    ListReceivedOperationsHandler,
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.
@@ -184,6 +210,10 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     // communication ne peut pas ouvrir. Son adaptateur n'en garde ni prix ni
     // réglages.
     CatalogAdminReader,
+    // Pour les vendeurs du lot 3 (`operationAccess`, D4-D6) : les opérations
+    // appliquées et les articles qui ne se vendent que par elles. Exporté dès
+    // maintenant, lu par personne encore (2026-09-24).
+    CatalogOperationsReader,
   ],
 })
 export class CatalogModule {}
