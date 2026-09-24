@@ -75,3 +75,18 @@ export class OccurrenceOutsideWindowError extends BusinessError {
     );
   }
 }
+
+/**
+ * Un panier récurrent ne porte pas d'article « vendu seulement pendant une
+ * opération » (D6 du plan des opérations datées) : une bûche de Noël revenant
+ * chaque semaine n'a pas de sens, et aucun générateur n'aurait à le découvrir
+ * au moment d'écrire la commande.
+ */
+export class OperationOnlyInSubscriptionError extends BusinessError {
+  constructor(readonly productNames: readonly string[]) {
+    super(
+      "subscriptions.operation_only",
+      `${productNames.map((name) => `« ${name} »`).join(", ")} ne se vend${productNames.length > 1 ? "ent" : ""} que pendant une opération datée, pas en panier récurrent. Retirez-le${productNames.length > 1 ? "s" : ""} de l’abonnement, et commandez-le${productNames.length > 1 ? "s" : ""} pour un jour de l’opération.`,
+    );
+  }
+}

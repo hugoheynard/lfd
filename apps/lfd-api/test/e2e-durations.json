@@ -59,6 +59,7 @@
   "test/me-establishment.e2e-spec.ts": 2401,
   "test/me.e2e-spec.ts": 5222,
   "test/my-shop-catalogue.e2e-spec.ts": 5961,
+  "test/operation-sales.e2e-spec.ts": 8517,
   "test/ops-traffic.e2e-spec.ts": 11580,
   "test/ops-vitals.e2e-spec.ts": 1259,
   "test/order-cutoffs.e2e-spec.ts": 8138,

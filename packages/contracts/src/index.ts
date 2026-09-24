@@ -387,7 +387,11 @@ export type { LateFeeAdjustment, OrderLateFeePayload, OrderLateFeeView } from ".
 export type {
   ShopCatalogueView,
   ShopImageView,
+  ShopItemOperationView,
   ShopItemView,
+  ShopOperationState,
+  ShopOperationText,
+  ShopOperationView,
   ShopShelfView,
 } from "./shop-catalogue.js";
 export {

@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { CatalogModule } from "../catalog/catalog.module.js";
 import { CreateSubscriptionHandler } from "./application/commands/create-subscription.handler.js";
 import { DeleteSubscriptionHandler } from "./application/commands/delete-subscription.handler.js";
 import { SetSubscriptionStatusHandler } from "./application/commands/set-subscription-status.handler.js";
@@ -18,6 +19,8 @@ import { SubscriptionsController } from "./http/subscriptions.controller.js";
  * seul client connecté. Les ports sont câblés sur leurs adaptateurs ici.
  */
 @Module({
+  // Le catalogue, pour refuser un article d'opération datée (`SaleOperations`).
+  imports: [CatalogModule],
   controllers: [SubscriptionsController, AdminSubscriptionsController],
   providers: [
     CreateSubscriptionHandler,

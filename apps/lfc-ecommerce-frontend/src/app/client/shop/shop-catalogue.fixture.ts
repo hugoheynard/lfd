@@ -86,6 +86,7 @@ export const TEST_ITEMS: readonly ShopItemView[] = [
 export const TEST_CATALOGUE: ShopCatalogueView = {
   shelves: [...TEST_SHELVES],
   items: TEST_ITEMS,
+  operations: [],
 };
 
 /**

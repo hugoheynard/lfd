@@ -3,6 +3,8 @@ import { lineTotalCents, ttcCentsOf } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import { Pricer } from "../../pricing/application/pricer.js";
+import { Clock } from "../../../platform/time/clock.js";
+import { CatalogOperationsReader } from "../domain/ports/catalog-operations.reader.js";
 import { CatalogReader } from "../domain/ports/catalog.reader.js";
 import { catalogueArticle } from "../domain/catalogue-article.js";
 import { UnknownCatalogShelfError } from "../domain/errors/unknown-catalog-shelf.error.js";
@@ -77,6 +79,8 @@ export class ShopCataloguePricing {
   constructor(
     private readonly catalog: CatalogReader,
     private readonly pricer: Pricer,
+    private readonly operations: CatalogOperationsReader,
+    private readonly clock: Clock,
   ) {}
 
   /**
@@ -95,8 +99,20 @@ export class ShopCataloguePricing {
     // donc le prix d'étiquette. La déduction est la même que celle qui pilotait
     // déjà la mercuriale ; elle nomme simplement ce qu'elle voulait dire.
     const audience = companyId === null ? "public" : "pro";
-    const sellable = await this.catalog.listSellable(audience);
-    const catalogue = shopCatalogueOf(sellable);
+    // Les opérations datées se lisent avec le rayon (D5) : deux lectures de
+    // plus sur la route anonyme, sans cache — le miroir des opérations tient
+    // en quelques lignes, et une clôture doit s'appliquer à la minute.
+    const [sellable, operations, operationOnlySkus] = await Promise.all([
+      this.catalog.listSellable(audience),
+      this.operations.sellableOperations(),
+      this.operations.operationOnlySkus(),
+    ]);
+    const catalogue = shopCatalogueOf(sellable, {
+      operations,
+      operationOnlySkus,
+      audience,
+      now: this.clock.now(),
+    });
     if (catalogue.items.length === 0) {
       return catalogue;
     }

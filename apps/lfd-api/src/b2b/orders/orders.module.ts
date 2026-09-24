@@ -37,6 +37,7 @@ import { CustomerAudiences } from "./application/services/customer-audiences.ser
 import { CompanyStatusReader } from "./domain/ports/company-status.reader.js";
 import { ShopCartController } from "./http/shop-cart.controller.js";
 import { ShopQuoteController } from "./http/shop-quote.controller.js";
+import { OrderOperations } from "./application/services/order-operations.service.js";
 import { OrderDrafting } from "./application/services/order-drafting.service.js";
 import { OrderLinePricing } from "./application/services/order-line-pricing.service.js";
 import { GetAdminOrderHandler } from "./application/queries/get-admin-order.handler.js";
@@ -147,6 +148,8 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
   ],
   providers: [
     OrderDrafting,
+    // Le garde des opérations datées, partagé par la caisse et les deux devis.
+    OrderOperations,
     OrderLinePricing,
     CartAdjustments,
     CustomerAudiences,

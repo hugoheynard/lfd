@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { CatalogModule } from "../catalog/catalog.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { ListFulfillmentDaysHandler } from "./application/list-fulfillment-days.handler.js";
 import { CreateOrderCutoffHandler } from "./application/create-order-cutoff.handler.js";
@@ -23,7 +24,8 @@ import { PrismaOrderCutoffRepository } from "./infrastructure/prisma-order-cutof
 @Module({
   // Les points de retrait pour `GET /fulfillment-days` : la journée se calcule
   // par point, et c'est ce module-ci qui possède les règles qui la décident.
-  imports: [PickupAddressesModule],
+  // Le catalogue, pour les jours d'une opération datée (`SaleOperations`).
+  imports: [PickupAddressesModule, CatalogModule],
   controllers: [AdminOrderCutoffsController, FulfillmentDaysController],
   providers: [
     { provide: OrderCutoffRepository, useClass: PrismaOrderCutoffRepository },

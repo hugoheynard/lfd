@@ -137,6 +137,68 @@ export interface ShopItemView {
   readonly shelfId: string;
   /** La pièce qui ne doit pas se noyer dans son rayon. */
   readonly isFeatured: boolean;
+  /**
+   * **L'opération datée qui rend cet article vendable**, pour un article
+   * « vendu seulement pendant une opération » (D3, D8 de
+   * `documentation/order/architecture-operations-datees.md`) : la carte dit
+   * « Ouvre le 15 nov. » ou « Commandes closes », et remplace son « + ».
+   *
+   * La clé renvoie à {@link ShopCatalogueView.operations}, qui porte le nom et
+   * les dates : les recopier sur chaque carte grossirait la réponse pour rien.
+   *
+   * Optionnel, donc **absent du fil** pour un article courant — la règle de
+   * `catalogPriceMillicents` : la vitrine énumère les clés de cette vue pour
+   * garder la surface publique étroite. Un article courant d'une opération (le
+   * croissant de Noël) n'en porte pas : rien ne restreint sa vente.
+   */
+  readonly operation?: ShopItemOperationView;
+}
+
+/** L'état d'une opération montrée, calculé à l'horloge du serveur (D2). */
+export type ShopOperationState = "announced" | "open" | "closed";
+
+/** Ce qu'une carte sait de l'opération qui la rend vendable. */
+export interface ShopItemOperationView {
+  readonly key: string;
+  readonly state: ShopOperationState;
+}
+
+/** Un texte d'opération, dans les langues que le référentiel a saisies — le français toujours. */
+export interface ShopOperationText {
+  readonly fr: string;
+  readonly en?: string;
+  readonly it?: string;
+}
+
+/**
+ * **Une opération datée montrée par la vitrine** — son rayon `op:<key>`, en
+ * tête pendant sa fenêtre (D8).
+ *
+ * Seules celles qui s'adressent à la clientèle servie et dont la fenêtre court
+ * (de l'annonce au lendemain du dernier jour de retrait) sont rendues : une
+ * opération en préparation n'est pas publique. Les dates sont les dates
+ * EFFECTIVES — la clôture tient compte de la réception.
+ */
+export interface ShopOperationView {
+  /** La clé, qui ne se réemploie jamais — le rayon s'appelle `op:<key>`. */
+  readonly key: string;
+  readonly name: ShopOperationText;
+  readonly lede: ShopOperationText | null;
+  readonly image: { readonly url: string; readonly alt: string } | null;
+  readonly state: ShopOperationState;
+  /** Instant ISO d'ouverture de la commande (l'annonce quand le référentiel n'en fixe pas). */
+  readonly orderFrom: string;
+  /** Instant ISO de clôture, le plus tôt du référentiel et de la réception. */
+  readonly orderUntil: string;
+  /** Premier et dernier jours de retrait, `AAAA-MM-JJ`. */
+  readonly pickupFrom: string;
+  readonly pickupUntil: string;
+  /**
+   * Les SKU **produit** du rayon, dans l'ordre du référentiel, restreints aux
+   * articles que {@link ShopCatalogueView.items} porte — donc jamais un SKU
+   * que la vitrine ne saurait pas afficher.
+   */
+  readonly skus: readonly string[];
 }
 
 /**
@@ -149,4 +211,10 @@ export interface ShopItemView {
 export interface ShopCatalogueView {
   readonly shelves: readonly ShopShelfView[];
   readonly items: readonly ShopItemView[];
+  /**
+   * Les opérations montrées, l'annonce la plus récente d'abord (D8) — vide
+   * hors saison. Ajoutées au lot 3 du plan des opérations datées ; la
+   * boutique en fait ses rayons `op:<key>` au lot 4.
+   */
+  readonly operations: readonly ShopOperationView[];
 }

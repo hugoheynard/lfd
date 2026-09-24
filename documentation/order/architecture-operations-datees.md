@@ -381,6 +381,21 @@ lot 2 : la case de la fiche et l'écran de réception, côté back-office. Le
 lot 3 n'est pas commencé — tant qu'il ne l'est pas, `operationOnly` ne restreint
 aucune vente, et le lot 2 ne part pas seul.
 
+✅ **Lot 3, côté serveur : bâti le 2026-09-24** (non commité à cette date).
+`operationAccess` (D4) est une fonction pure de `b2b/catalog/domain/operation-access.ts` ;
+le service `SaleOperations` fait le passage SKU produit → SKU du catalogue
+(l'opération porte la déclinaison, la commande le produit). Le rayon de la
+boutique écarte `absent`, marque la carte (`ShopItemView.operation`) et sert
+la liste `ShopCatalogueView.operations` pour le lot 4 ; la passation et les
+deux devis opposent `ensureWithinOperation` (D6) après le délai, à la clientèle
+de la commande ; `GET /fulfillment-days?skus=…&audience=…` ne propose que les
+jours de l'opération ; l'abonnement refuse un article `operationOnly`. La
+fiche atelier, la tarification et la parité ne sont pas filtrées (D5). Écart
+avec D5 : le filtre n'est pas posé dans `catalog-backed-product-catalog.ts:40/48`,
+que la tarification appelle aussi — il vit chez les vendeurs qui les
+appellent. Les paniers et brouillons ne sont toujours pas relus à
+l'enregistrement : c'est leur devis qui nomme la raison.
+
 **Sans retour après le premier merge du lot 2 + 3** : le fil v11 (revenir au
 code v10 laisserait des envois v11 que personne ne relit — un seul processus
 porte l'émetteur et le récepteur, ils partent ensemble) ; les clés `op:<key>`

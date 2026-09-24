@@ -56,3 +56,17 @@ export class UnreadableOperationColumnError extends TechnicalError {
     );
   }
 }
+
+/**
+ * Minuit n'existe pas, heure de Paris, le lendemain du dernier jour de retrait
+ * d'une opération : sa fin ne se calcule pas. Impossible tant que les bascules
+ * d'heure tombent la nuit — bruyant plutôt qu'une fin inventée.
+ */
+export class OperationDayEndMissingError extends TechnicalError {
+  constructor(readonly day: string) {
+    super(
+      "catalog.operation.day_end_missing",
+      `Minuit n’existe pas le ${day} à Paris : la fin de l’opération ne se calcule pas. Signalez-le à l’équipe technique.`,
+    );
+  }
+}

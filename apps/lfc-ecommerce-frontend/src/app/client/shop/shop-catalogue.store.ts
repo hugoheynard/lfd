@@ -81,7 +81,11 @@ export class ShopCatalogue {
 
   /** Quelqu'un a-t-il demandé la vitrine ? Sans demande, une bascule ne relit rien. */
   private wanted = false;
-  private readonly catalogue = signal<ShopCatalogueView>({ shelves: [], items: [] });
+  private readonly catalogue = signal<ShopCatalogueView>({
+    shelves: [],
+    items: [],
+    operations: [],
+  });
 
   readonly status = this.state.asReadonly();
   readonly items = computed<readonly ShopItemView[]>(() => this.catalogue().items);

@@ -66,6 +66,8 @@ import {
 import { CartAdjustments } from "../../services/cart-adjustments.service.js";
 import { CustomerAudiences } from "../../services/customer-audiences.service.js";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
+import { OrderOperations } from "../../services/order-operations.service.js";
+import { noSaleOperations } from "../../../../catalog/application/__tests__/sale-operations-doubles.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { PlaceShopOrderCommand } from "../place-shop-order.command.js";
 import { PlaceShopOrderHandler } from "../place-shop-order.handler.js";
@@ -253,6 +255,7 @@ function drafting(): OrderDrafting {
     noWaivers,
     noLateFee,
     new CustomerAudiences(noCompanies),
+    new OrderOperations(noSaleOperations(PRICED_AT)),
   );
 }
 

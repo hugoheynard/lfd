@@ -39,6 +39,7 @@ import { AdminCatalogParityController } from "./http/admin-catalog-parity.contro
 import { OpsCatalogHealthController } from "./http/ops-catalog-health.controller.js";
 import { ShopCatalogueController } from "./http/shop-catalogue.controller.js";
 import { ReadShopCatalogueHandler } from "./application/queries/read-shop-catalogue.js";
+import { SaleOperations } from "./application/sale-operations.service.js";
 import { ShopCataloguePricing } from "./application/shop-catalogue-pricing.service.js";
 import { CheckCatalogParityService } from "./application/check-catalog-parity.service.js";
 import { CheckCatalogHealthService } from "./application/check-catalog-health.service.js";
@@ -168,6 +169,9 @@ import { PrismaReceivedOperationsReader } from "./infrastructure/prisma-received
     },
     { provide: ReceivedOperationsReader, useClass: PrismaReceivedOperationsReader },
     { provide: CatalogOperationsReader, useClass: PrismaCatalogOperationsReader },
+    // Ce que les vendeurs par SKU produit appliquent (lot 3) : la caisse, le
+    // devis, les jours proposés, les abonnements.
+    SaleOperations,
     SetOperationOverrideHandler,
     ListReceivedOperationsHandler,
   ],
@@ -188,6 +192,9 @@ import { PrismaReceivedOperationsReader } from "./infrastructure/prisma-received
     // l'inverse serait un cycle — c'est aussi pourquoi la table des rayons est
     // descendue ici.
     ShopCataloguePricing,
+    // Les opérations datées, pour la caisse, le devis, les jours et les
+    // abonnements (lot 3 du plan des opérations datées).
+    SaleOperations,
     CatalogItemRepository,
     // Le MODULE, et non le provider : `CatalogModule` ne le fournit plus depuis
     // que l'historique a son propre module — Nest refuse d'exporter un provider
