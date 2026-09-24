@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import type { OperationView } from '@lfd/pim-contracts';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldButtonIconComponent,
   FoldCalloutComponent,
@@ -32,6 +33,8 @@ interface SelectionRow {
   readonly sku: string;
   /** `null` : le catalogue n'a pas été lu, ou ne connaît plus cette référence. */
   readonly name: string | null;
+  /** La fiche est « vendue seulement pendant une opération » (D3). */
+  readonly operationOnly: boolean;
 }
 
 /**
@@ -51,19 +54,28 @@ export function selectableOf(products: readonly Product[]): readonly CatalogProd
   );
 }
 
+/** Les SKU dont la fiche est « vendue seulement pendant une opération ». */
+export function operationOnlySkusOf(products: readonly Product[]): ReadonlySet<string> {
+  return new Set(
+    products
+      .filter((product) => product.operationOnly)
+      .flatMap((product) => product.variants.map((variant) => variant.sku)),
+  );
+}
+
 /**
  * **Sélection d'articles** — ordonnée, réécrite en entier à l'enregistrement.
  *
- * 🔴 L'encart d'information n'est pas décoratif (plan, « Le découpage ») :
- * jusqu'au lot 2 + 3, sélectionner un article ne le retire d'aucun rayon — une
- * bûche publiée reste en vente dans les pâtisseries un 3 mars. Il n'y a donc
- * PAS de case « seulement pendant une opération » : elle arrive avec le garde
- * qui la tient.
+ * Sélectionner un article ne le retire d'aucun rayon : c'est la case « Vendu
+ * seulement pendant une opération » de sa FICHE qui le réserve (D3). La carte
+ * le dit donc article par article, sans requête de plus — la liste du
+ * catalogue qu'elle lit déjà porte le drapeau.
  */
 @Component({
   selector: 'app-selection-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldCalloutComponent,
@@ -85,6 +97,7 @@ export class SelectionCard {
   readonly saved = output<string>();
 
   protected readonly catalogue = signal<readonly CatalogProduct[]>([]);
+  private readonly operationOnlySkus = signal<ReadonlySet<string>>(new Set());
   protected readonly catalogueFailed = signal(false);
   protected readonly skus = signal<readonly string[]>([]);
   protected readonly busy = signal(false);
@@ -92,7 +105,12 @@ export class SelectionCard {
 
   protected readonly rows = computed<readonly SelectionRow[]>(() => {
     const names = new Map(this.catalogue().map((item) => [item.sku, item.name]));
-    return this.skus().map((sku) => ({ sku, name: names.get(sku) ?? null }));
+    const reserved = this.operationOnlySkus();
+    return this.skus().map((sku) => ({
+      sku,
+      name: names.get(sku) ?? null,
+      operationOnly: reserved.has(sku),
+    }));
   });
 
   protected readonly changed = computed(() => !sameOrder(this.skus(), this.operation().skus));
@@ -134,7 +152,9 @@ export class SelectionCard {
 
   private async loadCatalogue(): Promise<void> {
     try {
-      this.catalogue.set(selectableOf(await this.products.list()));
+      const products = await this.products.list();
+      this.catalogue.set(selectableOf(products));
+      this.operationOnlySkus.set(operationOnlySkusOf(products));
     } catch {
       this.catalogueFailed.set(true);
     }

@@ -97,3 +97,8 @@
     }
   }
 }
+
+<!-- Les opérations reçues vivent HORS du switch : elles se relisent et se
+     restreignent même quand aucune arrivée n'attend, et leur échec ne doit pas
+     cacher la relecture d'une livraison. -->
+<app-received-operations />

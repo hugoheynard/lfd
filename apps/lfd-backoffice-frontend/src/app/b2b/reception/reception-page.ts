@@ -11,6 +11,7 @@ import {
 
 import { NotifyService } from '../../notify.service';
 import { PendingDeliveryStore } from './pending-delivery.store';
+import { ReceivedOperations } from './received-operations/received-operations';
 import { ReceptionService } from './reception.service';
 
 /** Les champs, dits en français — un écran qui affiche `vatRate` ne se relit pas. */
@@ -69,6 +70,7 @@ const KINDS: Readonly<Record<DeliveryChangeView['kind'], string>> = {
     FoldCheckboxComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
+    ReceivedOperations,
   ],
   templateUrl: './reception-page.html',
   styleUrl: './reception-page.scss',

@@ -1,0 +1,79 @@
+<section class="ro">
+  <fold-element-title
+    variant="title"
+    title="Opérations reçues"
+    subtitle="La surcharge restreint, elle n'élargit jamais, et se combine au référentiel : la commande ferme à la plus tôt des deux clôtures."
+  />
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture des opérations reçues…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de lire les opérations reçues">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (namesFailed()) {
+        <fold-callout variant="alert">
+          Le catalogue vendu n'a pas pu être lu&nbsp;: les articles s'affichent par leur référence.
+        </fold-callout>
+      }
+      @for (card of cards(); track card.key) {
+        <fold-card>
+          <div class="ro-card">
+            <fold-element-title variant="title" [title]="card.name" [subtitle]="card.dates">
+              @if (!card.withdrawn) {
+                <button
+                  *appCan="'b2b_catalog:write'"
+                  titleAction
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  (click)="decide(card)"
+                >
+                  {{ card.decided ? 'Modifier la surcharge' : 'Restreindre' }}
+                </button>
+              }
+            </fold-element-title>
+
+            @if (card.withdrawn; as withdrawn) {
+              <fold-callout appearance="inset" variant="neutral">
+                <strong>{{ withdrawn }}</strong
+                >. Elle n'est plus tenue en boutique&nbsp;; sa surcharge est gardée.
+              </fold-callout>
+            } @else if (card.hidden) {
+              <fold-badge content="Masquée ici" variant="warning" radius="pill" />
+            }
+
+            <dl class="ro-lines">
+              @for (line of card.lines; track line.label) {
+                <div class="ro-line">
+                  <dt>{{ line.label }}</dt>
+                  <dd>
+                    {{ line.effective }}
+                    @if (line.received; as received) {
+                      <span class="ro-received">reçu&nbsp;: {{ received }}</span>
+                    }
+                  </dd>
+                </div>
+              }
+            </dl>
+
+            @if (card.decided; as decided) {
+              <p class="ro-decided">{{ decided }}</p>
+            }
+          </div>
+        </fold-card>
+      } @empty {
+        <fold-empty-state
+          title="Aucune opération reçue"
+          subtitle="Les opérations préparées au référentiel apparaîtront ici une fois leur envoi accepté."
+        >
+          <fold-icon empty-icon name="gift" [size]="28" />
+        </fold-empty-state>
+      }
+    }
+  }
+</section>

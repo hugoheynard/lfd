@@ -184,6 +184,12 @@ export interface Product {
    * pour pouvoir dire d'où vient chaque taux.
    */
   vatByContext: Readonly<Record<string, string>>;
+  /**
+   * **Vendu seulement pendant une opération** (D3 du plan des opérations
+   * datées) : hors d'une opération qui le montre, l'article n'est ni visible ni
+   * commandable. `false` = article courant.
+   */
+  operationOnly: boolean;
   /** Pilote l'URL publique — jamais changé après création (SEO). */
   slug?: LocalizedText;
   /** Prix de vente TTC, en euros. */

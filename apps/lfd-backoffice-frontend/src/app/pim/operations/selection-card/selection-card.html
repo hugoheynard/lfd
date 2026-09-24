@@ -19,11 +19,6 @@
       }
     </fold-element-title>
 
-    <fold-callout appearance="inset" variant="info">
-      La sélection ne restreint pas encore la vente : un article publié reste en vente dans son
-      rayon.
-    </fold-callout>
-
     @if (catalogueFailed()) {
       <fold-callout appearance="inset" variant="alert">
         Le catalogue n'a pas pu être lu : les articles s'affichent par leur référence, et l'ajout
@@ -55,6 +50,9 @@
             <span class="item-rank">{{ index + 1 }}</span>
             <span class="item-name">{{ row.name ?? 'Référence inconnue du catalogue' }}</span>
             <span class="item-sku">{{ row.sku }}</span>
+            @if (row.operationOnly) {
+              <fold-badge radius="pill" variant="info" content="Seulement pendant une opération" />
+            }
             @if (!locked()) {
               <span class="item-actions">
                 <fold-button-icon

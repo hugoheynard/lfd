@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import type { PendingDeliveryView } from '@lfd/contracts';
 import { NotifyService } from '../../notify.service';
 import { ReceptionPage } from './reception-page';
+import { CatalogueService } from '../catalogue/catalogue.service';
+import { ReceivedOperationsService } from './received-operations.service';
 import { ReceptionService } from './reception.service';
 
 /**
@@ -60,6 +62,9 @@ async function render(api: FakeReception, notify = new FakeNotify()) {
     providers: [
       { provide: ReceptionService, useValue: api },
       { provide: NotifyService, useValue: notify },
+      // Les opérations reçues ont leur propre spec : ici, rien de reçu.
+      { provide: ReceivedOperationsService, useValue: { list: async () => [] } },
+      { provide: CatalogueService, useValue: { list: async () => [] } },
     ],
   });
   const fixture: ComponentFixture<ReceptionPage> = TestBed.createComponent(ReceptionPage);

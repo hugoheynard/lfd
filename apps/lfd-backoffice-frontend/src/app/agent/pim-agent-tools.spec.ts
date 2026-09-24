@@ -60,6 +60,7 @@ function detailWith(variants: readonly Variant[]): ProductDetail {
       variants: [...variants],
       channelsOverride: null,
       vatByContext: {},
+      operationOnly: false,
     },
     editorial: {
       descriptionShort: null,

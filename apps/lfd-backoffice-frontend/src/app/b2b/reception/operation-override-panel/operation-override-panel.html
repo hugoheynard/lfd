@@ -1,0 +1,75 @@
+<fold-panel-header
+  [title]="title()"
+  subtitle="Restreindre ce que le référentiel a envoyé, ici seulement"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <div class="oop">
+    <fold-callout appearance="inset" variant="info">
+      La surcharge restreint, elle n'élargit jamais, et se combine au référentiel&nbsp;: la commande
+      ferme à la plus tôt des deux clôtures, et la clientèle est celle que les deux partagent.
+    </fold-callout>
+
+    <fold-checkbox
+      label="Ne pas tenir cette opération"
+      hint="Son rayon disparaît de la boutique, et ses articles réservés aux opérations n'y sont plus ni visibles ni commandables."
+      [checked]="draft().isHidden"
+      (checkedChange)="setHidden($event)"
+    />
+
+    <div class="oop-moment">
+      <fold-date
+        label="Fermer la commande plus tôt — jour"
+        [hint]="'Vide : la clôture reçue s’applique, ' + receivedUntil() + '.'"
+        optional
+        [value]="draft().orderUntilDay"
+        (valueChange)="setUntil('orderUntilDay', $event)"
+      />
+      <fold-time
+        label="Heure (Paris)"
+        optional
+        [value]="draft().orderUntilTime"
+        (valueChange)="setUntil('orderUntilTime', $event)"
+      />
+    </div>
+
+    <fold-listbox
+      label="Clientèle"
+      [hint]="'Reçue : ' + receivedAudience() + '.'"
+      [options]="audienceChoices"
+      [value]="audienceValue()"
+      (selectionChange)="setAudience($event)"
+    />
+
+    @if (articles().length > 0) {
+      <fieldset class="oop-articles">
+        <legend class="oop-legend">Articles retirés de l'opération, ici seulement</legend>
+        @for (article of articles(); track article.sku) {
+          <fold-checkbox
+            size="sm"
+            [label]="article.name + ' (' + article.sku + ')'"
+            [checked]="article.hidden"
+            (checkedChange)="setArticleHidden(article.sku, $event)"
+          />
+        }
+      </fieldset>
+    }
+
+    @if (problem(); as message) {
+      <fold-callout appearance="inset" variant="warning">{{ message }}</fold-callout>
+    }
+    @if (refusal(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button foldButton type="button" [disabled]="!canSave()" [loading]="busy()" (click)="save()">
+    Enregistrer
+  </button>
+</fold-panel-footer>

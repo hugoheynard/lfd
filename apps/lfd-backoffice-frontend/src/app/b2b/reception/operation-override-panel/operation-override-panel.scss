@@ -1,0 +1,27 @@
+.oop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* Le jour et l'heure d'un même instant, côte à côte : lus comme un seul champ. */
+.oop-moment {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--fold-space-sm);
+}
+
+.oop-articles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.oop-legend {
+  padding: 0;
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+}

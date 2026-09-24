@@ -72,6 +72,10 @@ const SCAN_ROOTS = [
   // L'écran de préparation (lot front) : il saisit ces instants en heure de
   // Paris, par `localToInstant` — c'est lui qui transforme un jour en instant.
   "apps/lfd-backoffice-frontend/src/app/pim/operations",
+  // La surcharge des opérations à la réception (lot 2, écran) : la clôture
+  // plus précoce s'y saisit en heure de Paris, et le serveur la compare à
+  // l'horloge (`min(PIM, surcharge)`).
+  "apps/lfd-backoffice-frontend/src/app/b2b/reception",
 ];
 const SKIP_DIRS = new Set(["node_modules", "dist", "client", "coverage", ".turbo"]);
 

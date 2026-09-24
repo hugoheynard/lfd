@@ -26,7 +26,7 @@ function variant(sku: string, name: string): Variant {
   };
 }
 
-function product(name: string, variants: readonly Variant[]): Product {
+function product(name: string, variants: readonly Variant[], operationOnly = false): Product {
   return {
     id: name,
     sku: name,
@@ -37,11 +37,12 @@ function product(name: string, variants: readonly Variant[]): Product {
     variants: [...variants],
     channelsOverride: null,
     vatByContext: {},
+    operationOnly,
   };
 }
 
 const CATALOGUE: readonly Product[] = [
-  product('Bûche', [variant('BUCHE-4', '4 parts'), variant('BUCHE-8', '8 parts')]),
+  product('Bûche', [variant('BUCHE-4', '4 parts'), variant('BUCHE-8', '8 parts')], true),
   product('Galette', [variant('GALETTE-1', 'Unique')]),
 ];
 
@@ -82,19 +83,21 @@ describe('selectableOf', () => {
 });
 
 describe('SelectionCard', () => {
-  it('dit que la sélection ne restreint pas encore la vente (lot 1)', () => {
-    const { fixture } = setup([]);
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
-      'La sélection ne restreint pas encore la vente : un article publié reste en vente dans son rayon.',
-    );
+  it('marque les articles réservés aux opérations, et eux seuls', async () => {
+    const { fixture, card } = setup(['BUCHE-4', 'GALETTE-1']);
+    await vi.waitFor(() => expect(card['catalogue']()).toHaveLength(3));
+    fixture.detectChanges();
+    const items = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.item')];
+    expect(items.map((item) => item.querySelector('fold-badge') !== null)).toEqual([true, false]);
+    expect(fixture.nativeElement.textContent).not.toContain('ne restreint pas encore');
   });
 
   it('nomme les articles par le catalogue, et signale une référence inconnue', async () => {
     const { card } = setup(['GALETTE-1', 'DISPARU-1']);
     await vi.waitFor(() => expect(card['catalogue']()).toHaveLength(3));
     expect(card['rows']()).toEqual([
-      { sku: 'GALETTE-1', name: 'Galette' },
-      { sku: 'DISPARU-1', name: null },
+      { sku: 'GALETTE-1', name: 'Galette', operationOnly: false },
+      { sku: 'DISPARU-1', name: null, operationOnly: false },
     ]);
   });
 
