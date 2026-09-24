@@ -144,6 +144,8 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // consommaient se lisait sur une autre facture. Elles comptent ici désormais,
   // sous leur schéma.
   SkuRegistry: "pim",
+  Operation: "pim",
+  OperationItem: "pim",
   Category: "pim",
   CategoryContextVat: "pim",
   // Les deux satellites d'une famille : ses textes, et ses rattachements à la
