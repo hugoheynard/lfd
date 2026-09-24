@@ -154,3 +154,11 @@
   opacity: 0.8;
   font-size: var(--fold-text-2xs);
 }
+
+.label {
+  overflow: hidden;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

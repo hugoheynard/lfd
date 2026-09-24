@@ -78,7 +78,7 @@ describe('StorefrontObjectPanel', () => {
     const titles = Array.from(root.querySelectorAll('.section > fold-element-title')).map((t) =>
       t.textContent?.trim(),
     );
-    expect(titles).toEqual(['Forme et image', 'Rayons', 'Contenus', 'Mobile et défilement']);
+    expect(titles).toEqual(['Forme et image', 'Rayons', 'Contenus', 'Mobile']);
     expect(root.querySelector('fold-tabs')).toBeNull();
   });
 

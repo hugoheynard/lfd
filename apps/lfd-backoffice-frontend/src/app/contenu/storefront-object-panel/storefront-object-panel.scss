@@ -32,3 +32,9 @@
     border-top: 1px solid var(--fold-color-border);
   }
 }
+
+.durations {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--fold-space-sm);
+}

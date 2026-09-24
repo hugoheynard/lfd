@@ -4,6 +4,7 @@ import {
   computed,
   input,
   linkedSignal,
+  model,
   output,
 } from '@angular/core';
 import {
@@ -32,7 +33,6 @@ import {
   mediaFitOf,
   type MediaSide,
   mediaSideOf,
-  SAMPLE_COUNT,
   type ShelfKey,
   STOREFRONT_TONES,
   type StorefrontShape,
@@ -86,7 +86,7 @@ const SCOPE_OPTIONS: readonly FoldViewToggleOption[] = [
   { value: 'all', label: 'Tous les rayons' },
 ];
 
-type CarouselNumberField = 'intervalSeconds' | 'firstSeconds' | 'sampleCount';
+type CarouselNumberField = 'intervalSeconds' | 'firstSeconds';
 
 function isFit(value: string): value is MediaFit {
   return value === 'cover' || value === 'contain';
@@ -106,7 +106,7 @@ function isScope(value: string): value is ShelfScope {
 
 /**
  * Les réglages de l'objet sélectionné, en quatre sections l'une sous l'autre :
- * « Forme et image », « Rayons », « Contenus », « Mobile et défilement ». Il
+ * « Forme et image », « Rayons », « Contenus » (défilement compris), « Mobile ». Il
  * vit dans le dialogue de l'objet, qui défile à côté de son aperçu fixe.
  *
  * Il ne tient AUCUN état de l'éditeur : il traduit chaque choix en une
@@ -145,6 +145,8 @@ export class StorefrontObjectPanel {
   readonly carouselChange = output<Partial<CarouselSettings>>();
   readonly shelvesChange = output<readonly ShelfKey[]>();
   readonly itemsChange = output<readonly StorefrontContent[]>();
+  /** Le contenu qu'on prépare ; le dialogue cale l'aperçu dessus. */
+  readonly selectedContent = model(0);
 
   protected readonly describe = describeFormat;
   protected readonly hasMobileOption = hasMobileOption;
@@ -166,7 +168,6 @@ export class StorefrontObjectPanel {
   protected readonly scopeOptions = SCOPE_OPTIONS;
   protected readonly firstBounds = FIRST_SECONDS;
   protected readonly intervalBounds = INTERVAL_SECONDS;
-  protected readonly sampleBounds = SAMPLE_COUNT;
 
   /** « Une sélection » a été choisie : on montre les cases même si la liste dit encore autre chose. */
   private readonly pickingShelves = linkedSignal({

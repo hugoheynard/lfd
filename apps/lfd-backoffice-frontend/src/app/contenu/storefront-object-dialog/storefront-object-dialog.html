@@ -22,7 +22,9 @@
               [side]="sideOf(block)"
               [fit]="fitOf(block)"
               [tone]="toneOf(block)"
-              [carousel]="carouselOf(block)"
+              [carousel]="previewCarousel()"
+              [pinned]="pinned()"
+              [label]="previewLabel()"
             />
           </div>
         </div>
@@ -41,17 +43,21 @@
               [side]="mobileSideOf(block)"
               [fit]="fitOf(block)"
               [tone]="toneOf(block)"
-              [carousel]="carouselOf(block)"
+              [carousel]="previewCarousel()"
+              [pinned]="pinned()"
+              [label]="previewLabel()"
             />
           </div>
         </div>
       </section>
 
       <app-storefront-object-panel
+        class="settings"
         [block]="block"
         [shelf]="host().shelf()"
         [shelves]="host().shelves()"
         [catalog]="host().catalog()"
+        [(selectedContent)]="selectedContent"
         (applyOnMobileChange)="host().setSelectedApplyOnMobile($event)"
         (mediaChange)="host().setSelectedMedia($event)"
         (formatChange)="host().setSelectedFormat($event)"

@@ -1,29 +1,38 @@
-// L'aperçu à gauche, les réglages à droite ; en pile sous 900 px.
+// Les RÉGLAGES sur les 2/3, l'une section sous l'autre sur toute leur largeur ;
+// l'APERÇU sur le tiers restant, à droite, qui reste sous les yeux pendant que
+// les sections défilent (Hugo, 2026-09-24). En pile sous 900 px : l'aperçu
+// passe en haut et défile avec le reste.
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  gap: var(--fold-space-lg);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-areas: 'settings previews';
+  gap: var(--fold-space-xl);
   align-items: start;
 
   @media (max-width: 899px) {
     grid-template-columns: minmax(0, 1fr);
-
-    .previews {
-      position: static;
-    }
+    grid-template-areas: 'previews' 'settings';
   }
 }
 
-// L'aperçu reste sous les yeux pendant que les sections défilent à droite ;
-// en pile, il passe en haut et défile avec le reste.
+.settings {
+  grid-area: settings;
+  min-width: 0;
+}
+
+// Bureau puis mobile, l'un sous l'autre : sur un tiers de largeur, côte à côte
+// ils seraient illisibles.
 .previews {
+  grid-area: previews;
   position: sticky;
   inset-block-start: 0;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 2fr);
+  display: flex;
+  flex-direction: column;
   gap: var(--fold-space-md);
-  align-items: start;
+
+  @media (max-width: 899px) {
+    position: static;
+  }
 }
 
 .preview {

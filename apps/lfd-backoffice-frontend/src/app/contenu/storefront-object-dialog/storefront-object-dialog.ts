@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+} from '@angular/core';
 import {
   activeCarousel,
   describeFormat,
@@ -21,7 +29,7 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
-import { toneOf } from '../storefront-block';
+import { itemsOf, toneOf } from '../storefront-block';
 import type { StorefrontObjectDialogData } from '../storefront-object-host';
 import type { TemplateLabel } from '../storefront-templates';
 import { StorefrontMediaMock } from '../storefront-media-mock/storefront-media-mock';
@@ -40,6 +48,9 @@ import { TemplateNameForm } from '../template-name-form/template-name-form';
  * dit ici, pas derrière le voile. Rien ne part au serveur : l'envoi reste le
  * bouton « Enregistrer » de la page.
  */
+/** Assez large pour tenir réglages (2/3) et aperçu (1/3) côte à côte. */
+const STOREFRONT_OBJECT_DIALOG_WIDTH = 1200;
+
 @Component({
   selector: 'app-storefront-object-dialog',
   imports: [
@@ -59,7 +70,16 @@ import { TemplateNameForm } from '../template-name-form/template-name-form';
 })
 export class StorefrontObjectDialog {
   /** Large : l'aperçu et les réglages côte à côte. */
-  static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'xl', surface: 'solid' };
+  /**
+   * 1200 px et non `xl` (Hugo, 2026-09-24) : les réglages prennent les 2/3, un
+   * aperçu le tiers restant, et `xl` ne laissait à chacun qu'une colonne où le
+   * formulaire d'info étouffait. Le panneau se borne de lui-même à l'écran.
+   */
+  static readonly foldPanel: FoldPanelDefaults = {
+    side: 'center',
+    width: STOREFRONT_OBJECT_DIALOG_WIDTH,
+    surface: 'solid',
+  };
 
   private readonly ref = inject<FoldPanelRef<void>>(FoldPanelRef);
 
@@ -75,7 +95,6 @@ export class StorefrontObjectDialog {
   protected readonly fitOf = mediaFitOf;
   protected readonly sideOf = mediaSideOf;
   protected readonly mobileSideOf = mobileSide;
-  protected readonly carouselOf = activeCarousel;
   protected readonly spec = formatSpec;
   protected readonly mobileOf = mobileFormat;
 
@@ -87,6 +106,47 @@ export class StorefrontObjectDialog {
   protected readonly subtitle = computed(() => {
     const block = this.block();
     return block === null ? '' : `Colonne ${block.column}, rangée ${block.row}`;
+  });
+
+  private readonly blockId = computed(() => this.block()?.id ?? null);
+
+  /** Le contenu qu'on prépare : les onglets le choisissent, l'aperçu le montre. */
+  protected readonly selectedContent = linkedSignal<string | null, number>({
+    source: this.blockId,
+    computation: () => 0,
+  });
+
+  /**
+   * Le défilement de l'aperçu compte les VRAIS contenus de l'objet, et non
+   * plus un nombre saisi pour la maquette (2026-09-24).
+   */
+  protected readonly previewCarousel = computed(() => {
+    const block = this.block();
+    const carousel = block === null ? null : activeCarousel(block);
+    if (block === null || carousel === null) {
+      return null;
+    }
+    return { ...carousel, sampleCount: Math.max(itemsOf(block).length, 1) };
+  });
+
+  /** L'aperçu se cale sur le contenu préparé, dès qu'il y en a plusieurs. */
+  protected readonly pinned = computed(() =>
+    this.previewCarousel() === null ? null : this.selectedContent(),
+  );
+
+  protected readonly previewLabel = computed(() => {
+    const block = this.block();
+    const item = block === null ? undefined : itemsOf(block)[this.selectedContent()];
+    if (item === undefined) {
+      return null;
+    }
+    if (item.kind === 'product') {
+      const name = this.host()
+        .catalog()
+        ?.products.find((p) => p.sku === item.sku)?.name;
+      return `Article · ${name ?? item.sku}`;
+    }
+    return `Info · ${item.title.fr.trim() === '' ? 'Sans titre' : item.title.fr}`;
   });
 
   /** Le formulaire de nom du gabarit, au pied. */

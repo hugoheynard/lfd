@@ -62,6 +62,13 @@ export class StorefrontMediaMock {
   readonly tone = input<StorefrontTone>('light');
   /** `null` pour un seul contenu. */
   readonly carousel = input<CarouselSettings | null>(null);
+  /**
+   * Le contenu à montrer, fixé : celui qu'on prépare dans le dialogue. Le
+   * défilement est alors suspendu — on regarde CE contenu, pas la séquence.
+   */
+  readonly pinned = input<number | null>(null);
+  /** Ce que porte le contenu montré (« Info · Noël ») ; des lignes grises sinon. */
+  readonly label = input<string | null>(null);
 
   protected readonly hovered = signal(false);
   private readonly elapsedMs = signal(0);
@@ -70,7 +77,7 @@ export class StorefrontMediaMock {
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   protected readonly autoplaying = computed(
-    () => this.carousel()?.autoplay === true && !this.reducedMotion,
+    () => this.carousel()?.autoplay === true && !this.reducedMotion && this.pinned() === null,
   );
 
   protected readonly slides = computed(() =>
@@ -81,6 +88,10 @@ export class StorefrontMediaMock {
     const carousel = this.carousel();
     if (carousel === null) {
       return 0;
+    }
+    const pinned = this.pinned();
+    if (pinned !== null) {
+      return pinned % carousel.sampleCount;
     }
     if (carousel.autoplay) {
       return this.reducedMotion ? 0 : slideAt(this.elapsedMs(), carousel);

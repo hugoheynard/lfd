@@ -89,29 +89,9 @@
         [block]="block()"
         [catalog]="catalog()"
         [shelves]="shelves()"
+        [(selected)]="selectedContent"
         (itemsChange)="itemsChange.emit($event)"
       />
-    </div>
-  </section>
-
-  <section class="section" aria-label="Mobile et défilement">
-    <fold-element-title variant="title" [level]="3" title="Mobile et défilement" />
-    <div class="stack">
-      @if (hasMobileOption(block().format)) {
-        <fold-checkbox
-          label="Appliquer en mobile"
-          [hint]="
-            block().applyOnMobile === false
-              ? 'Non : en pile, il se réduit à une carte 1×1.'
-              : 'Oui : en pile, il prend sa taille mobile.'
-          "
-          [checked]="block().applyOnMobile !== false"
-          (checkedChange)="applyOnMobileChange.emit($event)"
-        />
-      } @else {
-        <span class="hint">Une carte est déjà à la taille mobile : rien à régler.</span>
-      }
-
       @if (carouselOf(block()); as settings) {
         <div class="palette-group">
           <span class="caption">Défilement</span>
@@ -128,41 +108,50 @@
             [checked]="settings.autoplay"
             (checkedChange)="carouselChange.emit({ autoplay: $event })"
           />
-          <fold-number-input
-            size="sm"
-            label="Premier contenu (s)"
-            integer
-            [min]="firstBounds.min"
-            [max]="firstBounds.max"
-            [disabled]="!settings.autoplay"
-            [value]="settings.firstSeconds"
-            (valueChange)="onSecondsChange('firstSeconds', $event)"
-          />
-          <fold-number-input
-            size="sm"
-            label="Contenus suivants (s)"
-            integer
-            [min]="intervalBounds.min"
-            [max]="intervalBounds.max"
-            [disabled]="!settings.autoplay"
-            [value]="settings.intervalSeconds"
-            (valueChange)="onSecondsChange('intervalSeconds', $event)"
-          />
-          <fold-number-input
-            size="sm"
-            label="Nombre de contenus"
-            hint="Pour l’aperçu de l’éditeur seulement : la boutique fait défiler les contenus associés."
-            integer
-            [min]="sampleBounds.min"
-            [max]="sampleBounds.max"
-            [value]="settings.sampleCount"
-            (valueChange)="onSecondsChange('sampleCount', $event)"
-          />
+          <div class="durations">
+            <fold-number-input
+              size="sm"
+              label="Contenu 1 (s)"
+              hint="Le premier reste plus longtemps : c’est lui qu’on voit en arrivant."
+              integer
+              [min]="firstBounds.min"
+              [max]="firstBounds.max"
+              [disabled]="!settings.autoplay"
+              [value]="settings.firstSeconds"
+              (valueChange)="onSecondsChange('firstSeconds', $event)"
+            />
+            <fold-number-input
+              size="sm"
+              label="Contenus 2 et suivants (s)"
+              integer
+              [min]="intervalBounds.min"
+              [max]="intervalBounds.max"
+              [disabled]="!settings.autoplay"
+              [value]="settings.intervalSeconds"
+              (valueChange)="onSecondsChange('intervalSeconds', $event)"
+            />
+          </div>
         </div>
+      }
+    </div>
+  </section>
+
+  <section class="section" aria-label="Mobile">
+    <fold-element-title variant="title" [level]="3" title="Mobile" />
+    <div class="stack">
+      @if (hasMobileOption(block().format)) {
+        <fold-checkbox
+          label="Appliquer en mobile"
+          [hint]="
+            block().applyOnMobile === false
+              ? 'Non : en pile, il se réduit à une carte 1×1.'
+              : 'Oui : en pile, il prend sa taille mobile.'
+          "
+          [checked]="block().applyOnMobile !== false"
+          (checkedChange)="applyOnMobileChange.emit($event)"
+        />
       } @else {
-        <span class="hint"
-          >Un seul contenu : pas de défilement. Passez à « Plusieurs » dans Contenus.</span
-        >
+        <span class="hint">Une carte est déjà à la taille mobile : rien à régler.</span>
       }
     </div>
   </section>

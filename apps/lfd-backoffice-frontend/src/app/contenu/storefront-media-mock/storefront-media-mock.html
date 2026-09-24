@@ -46,12 +46,21 @@
   }
 </div>
 <div class="text">
-  <span class="line"></span>
+  @if (label(); as text) {
+    <span class="label">{{ text }}</span>
+  } @else {
+    <span class="line"></span>
+  }
   <span class="line"></span>
   <span class="line short"></span>
   @if (carousel()?.autoplay) {
     @if (reducedMotion) {
       <span class="badge">mouvement réduit : pas de défilement</span>
+    } @else if (pinned() !== null) {
+      <span class="badge">
+        contenu {{ index() + 1 }} · affiché
+        {{ index() === 0 ? carousel()?.firstSeconds : carousel()?.intervalSeconds }} s
+      </span>
     } @else {
       <span class="badge">
         auto · {{ carousel()?.firstSeconds }} s puis {{ carousel()?.intervalSeconds }} s
