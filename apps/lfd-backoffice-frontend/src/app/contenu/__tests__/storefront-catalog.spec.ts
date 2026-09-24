@@ -59,4 +59,19 @@ describe('le catalogue de l’éditeur', () => {
     expect(searchProducts(products, 'bag').map((p) => p.sku)).toEqual(['BAG']);
     expect(searchProducts(products, '  ')).toHaveLength(2);
   });
+
+  /** D8 : les rayons des opérations arrivent en tête, et se disent opérations. */
+  it('libelle le rayon d’une opération comme opération, et garde la liste des opérations', () => {
+    const catalog = catalogOf({
+      operations: [],
+      shelves: [{ key: 'op:noel-2026', name: 'Noël', operation: true }, BREAD],
+      items: [],
+    });
+    expect(catalog.shelves).toEqual([
+      { key: 'all', label: 'Tout' },
+      { key: 'op:noel-2026', label: 'Opération · Noël', operation: true },
+      { key: 'bread', label: 'Pains' },
+    ]);
+    expect(catalog.operations).toEqual([]);
+  });
 });

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import type { StorefrontContent, StorefrontText } from '@lfd/contracts';
+import type { PublicStorefrontContent, StorefrontText } from '@lfd/contracts';
 import {
   formatSpec,
   type MediaFit,
@@ -14,6 +14,8 @@ import { FoldButtonComponent, FoldCardComponent } from 'fold-ng';
 import { ClientLocale, type LocaleCode } from '../../../client-locale.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../../media-source';
+import { operationShelfId } from '../../operations';
+import { operationBadge } from '../operation-badge';
 import { StorefrontActions } from '../storefront-actions';
 import type { StorefrontRenderer } from '../storefront-renderers';
 
@@ -36,6 +38,10 @@ function localized(text: StorefrontText, locale: LocaleCode): string {
  * Elle n'est PAS une carte interactive : une annonce sans rayon n'a rien à
  * ouvrir, et une carte `role="button"` qui ne mène nulle part mentirait.
  * L'action est le seul bouton, et il n'existe que si le rayon existe.
+ *
+ * **Liée à une opération** (D11 de `architecture-operations-datees.md`), elle
+ * ouvre le rayon `op:<key>` — le même geste que les pastilles de rayon — et,
+ * sans pastille saisie, elle calcule la sienne depuis l'état de l'opération.
  */
 @Component({
   selector: 'app-info-card',
@@ -46,7 +52,7 @@ function localized(text: StorefrontText, locale: LocaleCode): string {
   styleUrl: './info-card.scss',
 })
 export class InfoCard implements StorefrontRenderer {
-  readonly content = input.required<StorefrontContent>();
+  readonly content = input.required<PublicStorefrontContent>();
   readonly shape = input.required<StorefrontShape>();
   readonly mediaFit = input.required<MediaFit>();
   readonly mediaSide = input.required<MediaSide>();
@@ -67,9 +73,19 @@ export class InfoCard implements StorefrontRenderer {
     return info === null ? '' : localized(info.title, this.locale());
   });
 
+  /** La pastille saisie ; sinon celle que l'opération liée se calcule ; sinon aucune. */
   protected readonly badge = computed(() => {
-    const badge = this.info()?.badge ?? null;
-    return badge === null ? null : localized(badge, this.locale());
+    const info = this.info();
+    if (info === null) {
+      return null;
+    }
+    if (info.badge !== null) {
+      return localized(info.badge, this.locale());
+    }
+    const operation = info.operation ?? null;
+    return operation === null
+      ? null
+      : operationBadge(operation, new Date(), this.locale(), this.t());
   });
 
   protected readonly lede = computed(() => {
@@ -95,7 +111,22 @@ export class InfoCard implements StorefrontRenderer {
     return alt === null ? '' : localized(alt, this.locale());
   });
 
-  protected readonly linkShelf = computed(() => this.info()?.linkShelfKey ?? null);
+  /**
+   * Le rayon qu'ouvre l'annonce : celui de son opération (`op:<key>`), sinon
+   * le rayon lié, sinon aucun. L'action rendue par le serveur tranche ; une
+   * réponse d'avant les opérations n'en porte pas, et le rayon lié suffit.
+   */
+  protected readonly linkShelf = computed(() => {
+    const info = this.info();
+    if (info === null) {
+      return null;
+    }
+    const operationKey = info.operationKey ?? null;
+    if (info.action === 'operation' || (info.action === undefined && operationKey !== null)) {
+      return operationKey === null ? null : operationShelfId(operationKey);
+    }
+    return info.action === 'none' ? null : info.linkShelfKey;
+  });
 
   /** La place de l'image : une colonne sur cinq par colonne couverte, la moitié en pile. */
   protected readonly sizes = computed(() => {

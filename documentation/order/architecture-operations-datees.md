@@ -1,6 +1,6 @@
 # Les opérations datées — Noël, Pâques, la galette
 
-> **État : plan, rien n'est construit (2026-09-24).** Conception arrêtée avec
+> **État : bâti le 2026-09-24, lots 1 à 5 ; pas encore en production.** Conception arrêtée avec
 > Hugo le même jour :
 >
 > - l'opération **vit dans le catalogue** (le PIM), « pour des raisons de
@@ -417,9 +417,18 @@ par `GET /admin/storefront/catalog`, les rayons `op:<key>` des opérations
 reçues non retirées et la liste des opérations (état à l'horloge du serveur :
 `preparing` · `announced` · `open` · `closed` · `ended` · `hidden`).
 `isContentRenderable` (`@lfd/storefront-layout`) tient une annonce liée pour
-affichable. `OperationOverrideView` gagne `decidedByName`. Restent au lot 5 :
-l'éditeur et le rendu de la boutique (badge localisé, clic vers `op:<key>`,
-bascule vers `/mine` quand le client est reconnu).
+affichable. `OperationOverrideView` gagne `decidedByName`.
+
+✅ **Lot 5 — écrans, bâtis le 2026-09-24.** L'éditeur choisit l'action au clic
+(aucune, rayon, opération), montre en gris ce qui est hérité avec une croix pour
+y revenir, et signale une annonce dont l'opération est inconnue, retirée,
+terminée, masquée ou en préparation. La boutique calcule le badge (« Dès le 15
+nov. », « J‑18 », « Dernier jour », « Commandes closes »), ouvre `op:<key>` au
+clic, lit `/mine` pour un client reconnu, et **n'affiche une annonce
+d'opération que si le catalogue qu'elle a reçu sert cette opération** — ce qui
+couvre une opération sans article en rayon, que la lecture de la vitrine ne
+peut pas voir sans relire le catalogue. Le sélecteur d'heure ne propose plus de
+jour au-delà du plus petit `pickupUntil` des articles réservés du panier.
 
 **Sans retour après le premier merge du lot 2 + 3** : le fil v11 (revenir au
 code v10 laisserait des envois v11 que personne ne relit — un seul processus

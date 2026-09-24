@@ -1,4 +1,4 @@
-import type { StorefrontContent, StorefrontText } from '@lfd/contracts';
+import type { StorefrontContent, StorefrontInfoAction, StorefrontText } from '@lfd/contracts';
 import { contentLocales } from '@lfd/contracts/content-values';
 
 /** Une langue d'un texte de vitrine : le français est obligatoire, les autres facultatives. */
@@ -64,11 +64,67 @@ export function optionalText(text: StorefrontText): StorefrontText | null {
   return STOREFRONT_LOCALES.some((locale) => textIn(text, locale).trim() !== '') ? text : null;
 }
 
+/** L'opération que l'annonce désigne, ou `null`. */
+export function linkedOperation(info: InfoContent): string | null {
+  const key = info.operationKey ?? null;
+  return key === null || key === '' ? null : key;
+}
+
+/**
+ * Ce que fait l'annonce au clic : celle qu'on a choisie, sinon celle que ses
+ * cibles disent — la règle du serveur (`operation` si une opération, `shelf`
+ * si un rayon, `none` sinon).
+ */
+export function infoActionOf(info: InfoContent): StorefrontInfoAction {
+  if (info.action !== undefined) {
+    return info.action;
+  }
+  if (linkedOperation(info) !== null) {
+    return 'operation';
+  }
+  return info.linkShelfKey === null ? 'none' : 'shelf';
+}
+
+/** Un texte dont aucune langue n'est écrite. */
+function isBlank(text: StorefrontText): boolean {
+  return STOREFRONT_LOCALES.every((locale) => textIn(text, locale).trim() === '');
+}
+
+/**
+ * Le titre : obligatoire en français, sauf sur une annonce liée à une
+ * opération, où un titre ENTIÈREMENT vide hérite du nom de l'opération. Une
+ * traduction sans français y reste refusée : l'héritage est tout ou rien
+ * (`storefront-content.ts` du serveur, `title()`, lu le 2026-09-24).
+ */
+function titleIssue(info: InfoContent): string | null {
+  if (info.title.fr.trim() !== '') {
+    return null;
+  }
+  if (linkedOperation(info) === null) {
+    return 'Le titre en français est obligatoire.';
+  }
+  return isBlank(info.title) ? null : 'Le titre a une traduction : écrivez aussi son français.';
+}
+
+/** Une action choisie sans sa cible : le serveur la refuserait. */
+function targetIssue(info: InfoContent): string | null {
+  const action = infoActionOf(info);
+  if (action === 'shelf' && info.linkShelfKey === null) {
+    return 'Choisissez le rayon qu’ouvre l’annonce, ou changez l’action.';
+  }
+  if (action === 'operation' && linkedOperation(info) === null) {
+    return 'Choisissez l’opération qu’ouvre l’annonce, ou changez l’action.';
+  }
+  return null;
+}
+
 /** Ce qui empêcherait le serveur d'accepter une info, dit pour la personne qui la rédige. */
 export function infoIssues(info: InfoContent): readonly string[] {
   const issues: string[] = [];
-  if (info.title.fr.trim() === '') {
-    issues.push('Le titre en français est obligatoire.');
+  for (const issue of [titleIssue(info), targetIssue(info)]) {
+    if (issue !== null) {
+      issues.push(issue);
+    }
   }
   const texts: readonly [TextField, StorefrontText | null][] = [
     ['badge', info.badge],
@@ -96,7 +152,7 @@ export function infoIssues(info: InfoContent): readonly string[] {
   return issues;
 }
 
-/** Une info neuve : un titre à écrire, rien d'autre. */
+/** Une info neuve : un titre à écrire, et rien au clic. */
 export function emptyInfo(): InfoContent {
   return {
     kind: 'info',
@@ -105,5 +161,7 @@ export function emptyInfo(): InfoContent {
     lede: null,
     image: null,
     linkShelfKey: null,
+    operationKey: null,
+    action: 'none',
   };
 }

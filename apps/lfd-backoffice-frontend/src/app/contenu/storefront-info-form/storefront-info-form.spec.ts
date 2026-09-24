@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import type { StorefrontCatalogOperation } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
@@ -14,8 +15,22 @@ import { StorefrontInfoForm } from './storefront-info-form';
  */
 const SHELVES: readonly ShelfOption[] = [
   { key: 'all', label: 'Tout' },
+  { key: 'op:noel-2026', label: 'Opération · Noël', operation: true },
   { key: 'choc', label: 'Chocolat & confiserie' },
 ];
+
+const NOEL: StorefrontCatalogOperation = {
+  key: 'noel-2026',
+  name: { fr: 'Noël', en: 'Christmas' },
+  lede: { fr: 'Bûches et papillotes.' },
+  image: { url: 'https://cdn.example/buche.jpg', alt: 'Une bûche' },
+  state: 'closed',
+  announceFrom: '2026-10-31T23:00:00.000Z',
+  orderFrom: '2026-11-14T23:00:00.000Z',
+  orderUntil: '2026-12-21T11:00:00.000Z',
+  pickupFrom: '2026-12-20',
+  pickupUntil: '2026-12-24',
+};
 
 const IMAGE: PickedMedia = {
   url: 'https://cdn.example/paques.jpg',
@@ -44,6 +59,7 @@ function setup(info: InfoContent = emptyInfo(), picked: readonly PickedMedia[] =
   const fixture = TestBed.createComponent(StorefrontInfoForm);
   fixture.componentRef.setInput('info', info);
   fixture.componentRef.setInput('shelves', SHELVES);
+  fixture.componentRef.setInput('operations', [NOEL]);
   fixture.detectChanges();
   const form = fixture.componentInstance;
   const changes: InfoContent[] = [];
@@ -88,8 +104,64 @@ describe('StorefrontInfoForm', () => {
     form['setAlt']('Des œufs en chocolat');
     expect(changes.at(-1)?.image).toEqual({ url: IMAGE.url, alt: { fr: 'Des œufs en chocolat' } });
     form['setLink']('choc');
-    expect(changes.at(-1)?.linkShelfKey).toBe('choc');
-    form['setLink'](null);
-    expect(changes.at(-1)?.linkShelfKey).toBeNull();
+    expect(changes.at(-1)).toMatchObject({ linkShelfKey: 'choc', action: 'shelf' });
+  });
+
+  describe('l’action au clic (D11)', () => {
+    it('ouvrir une opération retire le rayon lié ; « Aucune » retire les deux', () => {
+      const { form, changes } = setup({ ...emptyInfo(), linkShelfKey: 'choc', action: 'shelf' });
+      form['pickAction']('operation');
+      expect(changes.at(-1)).toMatchObject({ action: 'operation', linkShelfKey: null });
+      form['setOperation']('noel-2026');
+      expect(changes.at(-1)).toMatchObject({ operationKey: 'noel-2026', action: 'operation' });
+      form['pickAction']('none');
+      expect(changes.at(-1)).toMatchObject({
+        action: 'none',
+        linkShelfKey: null,
+        operationKey: null,
+      });
+    });
+
+    it('propose les familles comme rayon, pas le rayon d’une opération', () => {
+      const { form } = setup();
+      expect(form['shelfOptions']().map((o) => o.value)).toEqual(['all', 'choc']);
+    });
+
+    it('nomme les opérations avec leur état, et garde une clé inconnue du catalogue', () => {
+      const { form } = setup({ ...emptyInfo(), operationKey: 'paques-2027', action: 'operation' });
+      expect(form['operationOptions']()).toEqual([
+        { value: 'noel-2026', label: expect.stringContaining('Noël — Commandes closes') },
+        { value: 'paques-2027', label: 'paques-2027 — inconnue du catalogue' },
+      ]);
+    });
+  });
+
+  describe('l’héritage d’une annonce liée', () => {
+    const linked = { ...emptyInfo(), operationKey: 'noel-2026', action: 'operation' as const };
+
+    it('montre en gris ce que l’opération mettra, dans la langue écrite', () => {
+      const { form, fixture } = setup(linked);
+      expect(form['inheritedBadge']()).toBe('Commandes closes');
+      expect(form['inheritedTitle']()).toBe('Noël');
+      form['pickLocale']('en');
+      fixture.detectChanges();
+      expect(form['inheritedTitle']()).toBe('Christmas');
+      // Pas d'anglais pour la phrase : la boutique montrera le français.
+      expect(form['inheritedLede']()).toBe('Bûches et papillotes.');
+      expect(form['inheritedImage']()?.url).toBe(NOEL.image?.url);
+    });
+
+    it('la croix vide le champ dans toutes ses langues : l’opération reprend la main', () => {
+      const { form, changes } = setup({
+        ...linked,
+        title: { fr: 'Les bûches', en: 'Logs' },
+        badge: { fr: 'Vite' },
+      });
+      expect(form['inherits']('title')).toBe(false);
+      form['inherit']('title');
+      expect(changes.at(-1)?.title).toEqual({ fr: '' });
+      form['inherit']('badge');
+      expect(changes.at(-1)?.badge).toBeNull();
+    });
   });
 });

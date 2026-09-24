@@ -10,33 +10,114 @@
     />
   </div>
 
-  <fold-input
-    size="sm"
-    [label]="labelOf('Pastille')"
-    optional
-    placeholder="Nouveau"
-    [hint]="sourceHint(info().badge, limits.badge.max)"
-    [value]="textIn(info().badge, locale())"
-    (valueChange)="setOptional('badge', $event)"
-  />
-  <fold-input
-    size="sm"
-    [label]="labelOf('Titre')"
-    [required]="isSource()"
-    [optional]="!isSource()"
-    [hint]="sourceHint(info().title, limits.title.max)"
-    [value]="textIn(info().title, locale())"
-    (valueChange)="setTitle($event)"
-  />
-  <fold-textarea
-    size="sm"
-    [label]="labelOf('Phrase')"
-    optional
-    [rows]="3"
-    [hint]="sourceHint(info().lede, limits.lede.max)"
-    [value]="textIn(info().lede, locale())"
-    (valueChange)="setOptional('lede', $event)"
-  />
+  <div class="field-group">
+    <span class="caption">Au clic</span>
+    <fold-view-toggle
+      size="sm"
+      ariaLabel="Ce que fait l’annonce au clic"
+      [options]="actionOptions"
+      [value]="action()"
+      (valueChange)="pickAction($event)"
+    />
+    @if (action() === 'shelf') {
+      <fold-listbox
+        size="sm"
+        label="Rayon ouvert"
+        placeholder="Choisir un rayon"
+        [options]="shelfOptions()"
+        [value]="info().linkShelfKey"
+        (selectionChange)="setLink($event)"
+      />
+    } @else if (action() === 'operation') {
+      <fold-listbox
+        size="sm"
+        label="Opération ouverte"
+        placeholder="Choisir une opération"
+        [hint]="
+          operations() === null
+            ? 'Le catalogue n’a pas pu être lu : les opérations ne sont pas proposées.'
+            : 'Les champs laissés vides prennent la valeur de l’opération.'
+        "
+        [options]="operationOptions()"
+        [value]="info().operationKey ?? null"
+        (selectionChange)="setOperation($event)"
+      />
+    }
+  </div>
+
+  <div class="overridable">
+    <fold-input
+      size="sm"
+      [label]="labelOf('Pastille')"
+      optional
+      [placeholder]="
+        (operation() !== null && inherits('badge') ? inheritedBadge() : null) ?? 'Nouveau'
+      "
+      [hint]="
+        operation() !== null && inherits('badge')
+          ? 'Vide : la boutique la calcule depuis l’opération.'
+          : sourceHint(info().badge, limits.badge.max)
+      "
+      [value]="textIn(info().badge, locale())"
+      (valueChange)="setOptional('badge', $event)"
+    />
+    @if (operation() !== null && !inherits('badge')) {
+      <fold-button-icon
+        icon="close"
+        size="xs"
+        tooltip="Revenir à la valeur de l’opération"
+        (clicked)="inherit('badge')"
+      />
+    }
+  </div>
+  <div class="overridable">
+    <fold-input
+      size="sm"
+      [label]="labelOf('Titre')"
+      [required]="isSource() && operation() === null"
+      [optional]="!isSource() || operation() !== null"
+      [placeholder]="operation() !== null && inherits('title') ? (inheritedTitle() ?? '') : ''"
+      [hint]="
+        operation() !== null && inherits('title')
+          ? 'Vide : le nom de l’opération.'
+          : sourceHint(info().title, limits.title.max)
+      "
+      [value]="textIn(info().title, locale())"
+      (valueChange)="setTitle($event)"
+    />
+    @if (operation() !== null && !inherits('title')) {
+      <fold-button-icon
+        icon="close"
+        size="xs"
+        tooltip="Revenir à la valeur de l’opération"
+        (clicked)="inherit('title')"
+      />
+    }
+  </div>
+  <div class="overridable">
+    <fold-textarea
+      size="sm"
+      [label]="labelOf('Phrase')"
+      optional
+      [rows]="3"
+      [placeholder]="operation() !== null && inherits('lede') ? (inheritedLede() ?? '') : ''"
+      [hint]="
+        operation() !== null && inherits('lede')
+          ? 'Vide : la phrase de l’opération.'
+          : sourceHint(info().lede, limits.lede.max)
+      "
+      [value]="textIn(info().lede, locale())"
+      (valueChange)="setOptional('lede', $event)"
+    />
+    @if (operation() !== null && !inherits('lede')) {
+      <fold-button-icon
+        icon="close"
+        size="xs"
+        tooltip="Revenir à la valeur de l’opération"
+        (clicked)="inherit('lede')"
+      />
+    }
+  </div>
 
   <div class="field-group">
     <span class="caption">Image</span>
@@ -55,24 +136,17 @@
           Changer d’image
         </button>
         <button foldButton type="button" size="sm" emphasis="soft" (click)="removeImage()">
-          Retirer l’image
+          {{ operation() !== null ? 'Revenir à l’image de l’opération' : 'Retirer l’image' }}
         </button>
       </div>
     } @else {
+      @if (inheritedImage(); as image) {
+        <img class="preview" [src]="image.url" [alt]="image.alt" />
+        <span class="caption">L’image de l’opération.</span>
+      }
       <button foldButton type="button" size="sm" emphasis="outline" (click)="chooseImage()">
-        Choisir dans la médiathèque
+        {{ inheritedImage() !== null ? 'En choisir une autre' : 'Choisir dans la médiathèque' }}
       </button>
     }
   </div>
-
-  <fold-listbox
-    size="sm"
-    label="Lien vers un rayon"
-    optional
-    allowClear
-    placeholder="Aucun lien"
-    [options]="shelfOptions()"
-    [value]="info().linkShelfKey"
-    (valueChange)="setLink($event)"
-  />
 </div>

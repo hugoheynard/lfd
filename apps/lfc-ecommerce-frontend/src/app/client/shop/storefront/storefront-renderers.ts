@@ -1,5 +1,5 @@
 import { InjectionToken, type InputSignal, type Type } from '@angular/core';
-import type { StorefrontContent } from '@lfd/contracts';
+import type { PublicStorefrontContent } from '@lfd/contracts';
 import type { MediaFit, MediaSide, StorefrontShape, StorefrontTone } from '@lfd/storefront-layout';
 
 import { InfoCard } from './info-card/info-card';
@@ -12,14 +12,14 @@ import { StorefrontProduct } from './storefront-product/storefront-product';
  * l'exécution, pas à la compilation — d'où ce contrat.
  */
 export interface StorefrontRenderer {
-  readonly content: InputSignal<StorefrontContent>;
+  readonly content: InputSignal<PublicStorefrontContent>;
   readonly shape: InputSignal<StorefrontShape>;
   readonly mediaFit: InputSignal<MediaFit>;
   readonly mediaSide: InputSignal<MediaSide>;
   readonly tone: InputSignal<StorefrontTone>;
 }
 
-export type StorefrontContentKind = StorefrontContent['kind'];
+export type StorefrontContentKind = PublicStorefrontContent['kind'];
 
 /**
  * **Le registre** : un composant par TYPE DE CONTENU, jamais par forme — la

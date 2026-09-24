@@ -233,6 +233,9 @@ export const IT: ClientCopy = {
     operationOpensOn: 'Apre il {date}',
     operationNotOpen: 'Non ancora aperto',
     operationClosed: 'Ordini chiusi',
+    operationBadgeFrom: 'Dal {date}',
+    operationBadgeDays: 'G‑{days}',
+    operationBadgeLastDay: 'Ultimo giorno',
   },
   product: {
     bestSeller: 'Best-seller',

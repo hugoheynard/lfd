@@ -308,3 +308,19 @@ describe('SlotPickerDialog — les journées', () => {
     ]);
   });
 });
+
+describe('SlotPickerDialog — le dernier jour proposable', () => {
+  const tabDays = (fixture: ComponentFixture<SlotPickerDialog>): readonly string[] =>
+    fixture.componentInstance['days']().map((tab) => tab.day);
+
+  /** 🔴 Les onglets dépassaient `pickupUntil` : la commande aurait refusé ces jours-là. */
+  it('ne propose aucun jour au-delà de la dernière journée d’opération du panier', async () => {
+    const { fixture } = await mount({ ...DATA, lastDay: '2026-09-19' });
+    expect(tabDays(fixture)).toEqual(['2026-09-17', '2026-09-18', '2026-09-19']);
+  });
+
+  it('sans borne, rien ne change : une semaine d’onglets', async () => {
+    const { fixture } = await mount({ ...DATA, lastDay: null });
+    expect(tabDays(fixture)).toHaveLength(7);
+  });
+});

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   emptyInfo,
+  infoActionOf,
   infoIssues,
   optionalText,
   TEXT_LIMITS,
@@ -52,5 +53,36 @@ describe('ce qui empêcherait d’envoyer une info', () => {
       image: { url: 'https://cdn.example/noel.jpg', alt: null },
     };
     expect(infoIssues(info)).toEqual([]);
+  });
+
+  describe('liée à une opération (D11)', () => {
+    const linked = { ...emptyInfo(), operationKey: 'noel-2026', action: 'operation' as const };
+
+    it('un titre vide hérite du nom de l’opération : rien à dire', () => {
+      expect(infoIssues(linked)).toEqual([]);
+    });
+
+    it('une traduction du titre sans son français reste refusée — l’héritage est tout ou rien', () => {
+      expect(infoIssues({ ...linked, title: { fr: '', en: 'Christmas' } })).toEqual([
+        'Le titre a une traduction : écrivez aussi son français.',
+      ]);
+    });
+
+    it('une action sans sa cible le dit', () => {
+      expect(infoIssues({ ...linked, operationKey: null })).toEqual([
+        'Le titre en français est obligatoire.',
+        'Choisissez l’opération qu’ouvre l’annonce, ou changez l’action.',
+      ]);
+      expect(infoIssues({ ...emptyInfo(), title: { fr: 'Noël' }, action: 'shelf' })).toEqual([
+        'Choisissez le rayon qu’ouvre l’annonce, ou changez l’action.',
+      ]);
+    });
+  });
+
+  it('l’action se déduit des cibles quand elle n’est pas dite', () => {
+    const { action: _omitted, ...bare } = emptyInfo();
+    expect(infoActionOf(bare)).toBe('none');
+    expect(infoActionOf({ ...bare, linkShelfKey: 'bread' })).toBe('shelf');
+    expect(infoActionOf({ ...bare, operationKey: 'noel-2026' })).toBe('operation');
   });
 });

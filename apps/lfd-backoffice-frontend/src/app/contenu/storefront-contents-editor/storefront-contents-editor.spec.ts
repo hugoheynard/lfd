@@ -16,6 +16,20 @@ const CATALOG: StorefrontCatalog = {
     { sku: 'CRO', name: 'Croissant', shelf: 'vien' },
     { sku: 'BAG', name: 'Baguette', shelf: 'bread' },
   ],
+  operations: [
+    {
+      key: 'galette-2025',
+      name: { fr: 'Galette 2025' },
+      lede: null,
+      image: null,
+      state: 'ended',
+      announceFrom: '2024-12-20T23:00:00.000Z',
+      orderFrom: '2024-12-20T23:00:00.000Z',
+      orderUntil: '2025-01-30T11:00:00.000Z',
+      pickupFrom: '2025-01-02',
+      pickupUntil: '2025-01-31',
+    },
+  ],
 };
 
 function block(items: readonly StorefrontContent[], multiple = true): EditorBlock {
@@ -125,5 +139,28 @@ describe('StorefrontContentsEditor', () => {
       ]),
     );
     expect(root.textContent).toContain('Le titre en français est obligatoire.');
+  });
+
+  /** D11 : une annonce liée à une opération terminée se signale comme un article plus en vente. */
+  it('marque l’annonce d’une opération terminée, nommée par l’opération', () => {
+    const { root } = setup(
+      block(
+        [
+          {
+            kind: 'info',
+            badge: null,
+            title: { fr: '' },
+            lede: null,
+            image: null,
+            linkShelfKey: null,
+            operationKey: 'galette-2025',
+            action: 'operation',
+          },
+        ],
+        false,
+      ),
+    );
+    expect(root.textContent).toContain('Opération terminée — l’annonce ne s’affiche plus');
+    expect(root.textContent).not.toContain('Le titre en français est obligatoire.');
   });
 });

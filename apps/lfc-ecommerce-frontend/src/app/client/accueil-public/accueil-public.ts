@@ -546,6 +546,7 @@ export class AccueilPublic {
       // La journée vient du SERVEUR, heure limite comprise. `null` = aucune
       // journée demandable ici, et le dialogue le dit plutôt que d'en inventer.
       firstDay: this.points.nextDayFor(house.point.id),
+      lastDay: this.points.lastDay(),
     });
     const slot = await ref.closed;
     if (slot === undefined) {

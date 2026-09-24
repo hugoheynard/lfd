@@ -102,6 +102,21 @@ export class ServicePoints {
   }
 
   /**
+   * **Le dernier jour proposable** : le plus petit `pickupUntil` des
+   * opérations dont le panier porte un article réservé, ou `null` sans article
+   * réservé. Les onglets du sélecteur d'heure partent de la première journée
+   * accordée et s'étendent sur une semaine : sans cette borne, ils proposaient
+   * des jours que la commande refuserait. Posé par {@link CartFulfillmentDays},
+   * pour la même raison que {@link scopeDaysTo}.
+   */
+  private readonly ceiling = signal<string | null>(null);
+  readonly lastDay = this.ceiling.asReadonly();
+
+  capDaysAt(lastDay: string | null): void {
+    this.ceiling.set(lastDay);
+  }
+
+  /**
    * Pose des listes déjà obtenues, et considère l'hydratation faite.
    *
    * Publique parce que les suites en ont besoin : elles posent les points au

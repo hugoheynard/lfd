@@ -403,6 +403,16 @@ export interface ClientCopy {
     readonly operationNotOpen: string;
     /** À la place du « + » quand la commande de l'opération est close. */
     readonly operationClosed: string;
+    /**
+     * La pastille CALCULÉE d'une annonce liée à une opération (D11), quand la
+     * vitrine n'en a pas saisi : annoncée, `{date}` = l'ouverture courte
+     * (« 15 nov. ») ; ouverte, `{days}` = les jours calendaires de Paris
+     * jusqu'à la clôture ; le jour même, {@link operationBadgeLastDay}. Close :
+     * {@link operationClosed}.
+     */
+    readonly operationBadgeFrom: string;
+    readonly operationBadgeDays: string;
+    readonly operationBadgeLastDay: string;
   };
   readonly product: {
     /** La pastille d'un article mis en avant (`isFeatured`). */

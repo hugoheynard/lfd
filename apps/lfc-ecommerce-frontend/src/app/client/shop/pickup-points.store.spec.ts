@@ -129,4 +129,34 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
     expect(points.nextDayFor('pick_labo')).toBe('2026-12-20');
     http.verify();
   });
+
+  /** Le sélecteur d'heure s'arrête au dernier jour de retrait de l'opération du panier. */
+  it('borne les jours au plus petit dernier jour des opérations du panier', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideWorkspace(workspaceDouble()),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+    points = TestBed.inject(ServicePoints);
+    hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue('open'));
+    const cart = TestBed.inject(CartStore);
+    // Le panier se garde d'une suite à l'autre : on part d'un panier vide.
+    cart.clear();
+    TestBed.inject(CartFulfillmentDays);
+
+    cart.setQuantity('VIE-001', 2);
+    TestBed.tick();
+    expect(points.lastDay()).toBeNull();
+
+    cart.setQuantity('PAT-NOE', 1);
+    TestBed.tick();
+    expect(points.lastDay()).toBe('2026-12-24');
+
+    cart.setQuantity('PAT-NOE', 0);
+    TestBed.tick();
+    expect(points.lastDay()).toBeNull();
+  });
 });

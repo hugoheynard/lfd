@@ -13,6 +13,7 @@ import { ClientCopyService } from '../../../copy/client-copy.service';
 import { ClientFeatureAccess } from '../../../feature-access/client-feature-access.service';
 import { ProductTile } from '../../product-tile/product-tile';
 import { ShopCatalogue } from '../../shop-catalogue.store';
+import { withServedAnnouncements } from '../../storefront/served-announcements';
 import { StorefrontActions } from '../../storefront/storefront-actions';
 import { StorefrontSlot } from '../../storefront/storefront-slot/storefront-slot';
 
@@ -93,7 +94,7 @@ export class ShelfGrid {
       return null;
     }
     const cells = composeShelf(
-      page,
+      withServedAnnouncements(page, (key) => this.catalogue.operationOf(key) !== null),
       this.products().map((item) => item.sku),
       this.served(),
     );

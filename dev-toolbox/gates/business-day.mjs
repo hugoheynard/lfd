@@ -76,6 +76,13 @@ const SCAN_ROOTS = [
   // plus précoce s'y saisit en heure de Paris, et le serveur la compare à
   // l'horloge (`min(PIM, surcharge)`).
   "apps/lfd-backoffice-frontend/src/app/b2b/reception",
+  // La vitrine liée aux opérations (lot 5 du même plan, D11, 2026-09-24) :
+  // la pastille « J‑18 » y compte les jours de Paris jusqu'à la clôture —
+  // dans l'éditeur (`contenu/storefront-operations.ts`) comme en boutique
+  // (`shop/storefront/operation-badge.ts`). Un jour mal traduit s'y lit
+  // « Dernier jour » la veille.
+  "apps/lfd-backoffice-frontend/src/app/contenu",
+  "apps/lfc-ecommerce-frontend/src/app/client/shop/storefront",
 ];
 const SKIP_DIRS = new Set(["node_modules", "dist", "client", "coverage", ".turbo"]);
 

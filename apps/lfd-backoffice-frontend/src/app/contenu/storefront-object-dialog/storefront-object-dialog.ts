@@ -31,6 +31,7 @@ import {
 
 import { itemsOf, toneOf } from '../storefront-block';
 import type { StorefrontObjectDialogData } from '../storefront-object-host';
+import { infoPreviewText } from '../storefront-operations';
 import type { TemplateLabel } from '../storefront-templates';
 import { StorefrontMediaMock } from '../storefront-media-mock/storefront-media-mock';
 import { StorefrontObjectPanel } from '../storefront-object-panel/storefront-object-panel';
@@ -146,7 +147,7 @@ export class StorefrontObjectDialog {
         ?.products.find((p) => p.sku === item.sku)?.name;
       return `Article · ${name ?? item.sku}`;
     }
-    return `Info · ${item.title.fr.trim() === '' ? 'Sans titre' : item.title.fr}`;
+    return `Info · ${infoPreviewText(item, this.host().catalog()?.operations ?? [], new Date())}`;
   });
 
   /** Le formulaire de nom du gabarit, au pied. */

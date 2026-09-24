@@ -110,4 +110,47 @@ describe('InfoCard', () => {
     render({ shape: 'card', mediaSide: 'top', tone: 'accent' });
     expect(el().className).toContain('tone-accent');
   });
+
+  describe('liée à une opération (D11)', () => {
+    const LINKED = {
+      ...NOEL,
+      badge: null,
+      linkShelfKey: null,
+      operationKey: 'noel-2026',
+      action: 'operation' as const,
+      operation: {
+        key: 'noel-2026',
+        state: 'closed' as const,
+        orderFrom: '2026-11-14T23:00:00.000Z',
+        orderUntil: '2026-12-21T11:00:00.000Z',
+        pickupFrom: '2026-12-20',
+        pickupUntil: '2026-12-24',
+      },
+    };
+
+    it('ouvre le rayon `op:<key>`, comme une pastille de rayon', () => {
+      const opened: string[] = [];
+      actions.shelfOpened.subscribe((key) => opened.push(key));
+      render({ content: LINKED });
+
+      el().querySelector<HTMLButtonElement>('button')?.click();
+
+      expect(opened).toEqual(['op:noel-2026']);
+    });
+
+    it('sans pastille saisie, calcule la sienne depuis l’état de l’opération', () => {
+      render({ content: LINKED });
+      expect(text('.badge')).toBe(FR.shop.operationClosed);
+    });
+
+    it('une pastille saisie l’emporte sur la pastille calculée', () => {
+      render({ content: { ...LINKED, badge: { fr: 'Bientôt' } } });
+      expect(text('.badge')).toBe('Bientôt');
+    });
+
+    it('l’action « aucune » n’offre aucun bouton, même avec un rayon', () => {
+      render({ content: { ...NOEL, action: 'none' } });
+      expect(el().querySelector('button')).toBeNull();
+    });
+  });
 });

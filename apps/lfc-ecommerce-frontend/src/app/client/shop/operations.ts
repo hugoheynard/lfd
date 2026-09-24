@@ -75,7 +75,7 @@ export function operationGate(
 }
 
 /** « 15 nov. » — l'instant lu à l'heure de Paris. */
-function shortDate(instant: string, locale: LocaleCode): string {
+export function shortDate(instant: string, locale: LocaleCode): string {
   const date = new Date(instant);
   if (Number.isNaN(date.getTime())) {
     return instant;

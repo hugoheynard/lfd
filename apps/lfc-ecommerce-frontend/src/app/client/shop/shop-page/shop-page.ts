@@ -192,9 +192,11 @@ export class ShopPage {
     // L'HYDRATATION, au seul endroit qui l'ouvre. Idempotente : revenir au rayon
     // depuis le panier ne redemande rien.
     void this.catalogue.hydrate();
-    // La page de vitrine du rayon affiché, une fois par rayon.
+    // La page de vitrine du rayon affiché, une fois par rayon et par lecteur :
+    // se reconnaître ou changer d'espace relit (une annonce vise une clientèle).
     effect(() => {
       const shelf = this.shop.activeShelf();
+      this.storefront.reader();
       if (shelf !== null) {
         untracked(() => {
           void this.storefront.load(shelf);
@@ -273,6 +275,7 @@ export class ShopPage {
       pickupAddressId: point.id,
       place,
       firstDay: this.points.nextDayFor(point.id),
+      lastDay: this.points.lastDay(),
     });
     const slot = await ref.closed;
     if (slot === undefined) {

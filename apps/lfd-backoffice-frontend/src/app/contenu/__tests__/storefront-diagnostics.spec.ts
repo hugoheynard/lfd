@@ -8,6 +8,32 @@ import { contentIssuesOf, returnedIdsOf, shelfOptionsOf } from '../storefront-di
 const CATALOG: StorefrontCatalog = {
   shelves: [{ key: 'all', label: 'Tout' }],
   products: [{ sku: 'CRO', name: 'Croissant', shelf: 'vien' }],
+  operations: [
+    {
+      key: 'noel-2026',
+      name: { fr: 'Noël' },
+      lede: null,
+      image: null,
+      state: 'open',
+      announceFrom: '2026-10-31T23:00:00.000Z',
+      orderFrom: '2026-11-14T23:00:00.000Z',
+      orderUntil: '2026-12-21T11:00:00.000Z',
+      pickupFrom: '2026-12-20',
+      pickupUntil: '2026-12-24',
+    },
+    {
+      key: 'galette-2025',
+      name: { fr: 'Galette' },
+      lede: null,
+      image: null,
+      state: 'ended',
+      announceFrom: '2024-12-20T23:00:00.000Z',
+      orderFrom: '2024-12-20T23:00:00.000Z',
+      orderUntil: '2025-01-30T11:00:00.000Z',
+      pickupFrom: '2025-01-02',
+      pickupUntil: '2025-01-31',
+    },
+  ],
 };
 
 function block(id: string, items: readonly StorefrontContent[]): EditorBlock {
@@ -48,5 +74,22 @@ describe('storefront-diagnostics', () => {
 
   it('sans catalogue, ne déclare aucun article retiré', () => {
     expect(returnedIdsOf([block('retire', [{ kind: 'product', sku: 'OLD' }])], null).size).toBe(0);
+  });
+
+  /** D11 : l'annonce d'une opération que la boutique ne montre pas n'occupe pas ses cases. */
+  it('rend au rayon l’objet dont l’annonce vise une opération terminée ou inconnue', () => {
+    const linked = (operationKey: string) => ({
+      ...untitled,
+      operationKey,
+      action: 'operation' as const,
+    });
+    const blocks = [
+      block('ouverte', [linked('noel-2026')]),
+      block('terminee', [linked('galette-2025')]),
+      block('inconnue', [linked('paques-2027')]),
+      block('mixte', [linked('galette-2025'), { kind: 'product', sku: 'CRO' }]),
+    ];
+    expect([...returnedIdsOf(blocks, CATALOG)].sort()).toEqual(['inconnue', 'terminee']);
+    expect(returnedIdsOf(blocks, null).size).toBe(0);
   });
 });

@@ -58,6 +58,12 @@ export interface SlotPickerData {
    * et le dialogue le dit au lieu d'en inventer une.
    */
   readonly firstDay: string | null;
+  /**
+   * Le dernier jour proposable, ou `null` : aucun. Un panier qui porte un
+   * article réservé à une opération ne se retire que jusqu'à son `pickupUntil`
+   * ({@link ServicePoints.lastDay}) — au-delà, la commande serait refusée.
+   */
+  readonly lastDay?: string | null;
 }
 
 /**
@@ -172,7 +178,8 @@ export class SlotPickerDialog {
   protected readonly picked = signal<PublicPickupSlot | null>(null);
 
   /**
-   * Les trois journées offertes, à partir de celle que le serveur accorde.
+   * Les journées offertes, à partir de celle que le serveur accorde, et
+   * jamais au-delà du dernier jour proposable.
    *
    * ⚠️ Le libellé (« demain ») se lit à l'horloge du navigateur, à Paris — c'est
    * un LIBELLÉ, pas une décision de service, et le panier fait déjà exactement
@@ -186,16 +193,18 @@ export class SlotPickerDialog {
     const copy = this.c();
     const today = instantToLocal(new Date()).day;
     const locale = this.locale.current();
-    return Array.from({ length: DAYS_SHOWN }, (_unused, index) => {
-      const day = addDays(first, index);
-      return {
+    const last = this.data().lastDay ?? null;
+    // La première journée reste : c'est le serveur qui l'a accordée, bornes
+    // d'opération comprises. Les suivantes s'arrêtent au dernier jour.
+    return Array.from({ length: DAYS_SHOWN }, (_unused, index) => addDays(first, index))
+      .filter((day, index) => index === 0 || last === null || day <= last)
+      .map((day) => ({
         day,
         label: serviceDayLabel(day, today, locale, {
           today: copy.days.today,
           tomorrow: copy.days.tomorrow,
         }),
-      };
-    });
+      }));
   });
 
   /**

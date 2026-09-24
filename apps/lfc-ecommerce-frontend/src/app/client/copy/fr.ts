@@ -229,6 +229,9 @@ export const FR: ClientCopy = {
     operationOpensOn: 'Ouvre le {date}',
     operationNotOpen: 'Pas encore ouvert',
     operationClosed: 'Commandes closes',
+    operationBadgeFrom: 'Dès le {date}',
+    operationBadgeDays: 'J‑{days}',
+    operationBadgeLastDay: 'Dernier jour',
   },
   product: {
     bestSeller: 'Best-seller',

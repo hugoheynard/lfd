@@ -14,8 +14,9 @@ import { FoldBadgeComponent, FoldButtonComponent, FoldButtonIconComponent } from
 import { type EditorBlock, itemsOf, moveItem, removeItem, replaceItem } from '../storefront-block';
 import type { ShelfOption, StorefrontCatalog } from '../storefront-catalog';
 import { StorefrontInfoForm } from '../storefront-info-form/storefront-info-form';
+import { operationOf, operationWarning } from '../storefront-operations';
 import { StorefrontProductPicker } from '../storefront-product-picker/storefront-product-picker';
-import { emptyInfo, type InfoContent, infoIssues } from '../storefront-text';
+import { emptyInfo, type InfoContent, infoIssues, linkedOperation } from '../storefront-text';
 
 /** Un article en cours de choix, avant qu'il n'entre dans la liste. */
 type Adding = 'product' | null;
@@ -102,17 +103,42 @@ export class StorefrontContentsEditor {
     return index === 0 ? carousel.firstSeconds : carousel.intervalSeconds;
   }
 
-  /** Le nom de l'article, ou son SKU quand le catalogue ne le connaît pas ; le titre d'une info. */
+  /**
+   * Le nom de l'article, ou son SKU quand le catalogue ne le connaît pas ; le
+   * titre d'une info — celui de son opération quand elle en hérite.
+   */
   protected nameOf(item: StorefrontContent): string {
     if (item.kind === 'product') {
       return this.names().get(item.sku) ?? item.sku;
     }
-    return item.title.fr.trim() === '' ? 'Sans titre' : item.title.fr;
+    if (item.title.fr.trim() !== '') {
+      return item.title.fr;
+    }
+    const key = linkedOperation(item);
+    if (key === null) {
+      return 'Sans titre';
+    }
+    return operationOf(this.catalog()?.operations ?? [], key)?.name.fr ?? key;
   }
 
-  /** Un onglet à reprendre : article plus en vente, ou info incomplète. */
+  /** Un onglet à reprendre : article plus en vente, annonce éteinte, ou info incomplète. */
   protected isFlagged(item: StorefrontContent): boolean {
-    return this.isUnserved(item) || this.issuesOf(item).length > 0;
+    return (
+      this.isUnserved(item) ||
+      this.operationWarningOf(item) !== null ||
+      this.issuesOf(item).length > 0
+    );
+  }
+
+  /**
+   * Une annonce liée à une opération que la boutique ne montre pas —
+   * inconnue, retirée, terminée, masquée, en préparation —, dite comme un
+   * article plus en vente. Sans catalogue, on ne sait pas : rien n'est dit.
+   */
+  protected operationWarningOf(item: StorefrontContent): string | null {
+    const catalog = this.catalog();
+    const key = item.kind === 'info' ? linkedOperation(item) : null;
+    return catalog === null || key === null ? null : operationWarning(catalog.operations, key);
   }
 
   /** Un SKU que le catalogue ne sert plus : la boutique ne le rendra pas (D4). */
