@@ -111,6 +111,10 @@ articles » dans un flux, on **compose** une page.
   colonnes ou moins — un partage gauche/droite sur 170 px ferait deux
   moitiés illisibles. « Plein » reste plein.
 
+- **Le ton** (Hugo, 2026-09-24) : clair (papier crème, défaut) · sombre
+  (encre noire) · accent (encre bleue). Sur toutes les formes, sauf un
+  produit rendu en carte 1×1, qui garde le rendu standard du rayon.
+
 - **Un contenu ou plusieurs** (Hugo, 2026-09-24). Un objet porte **un seul**
   contenu (défaut) ou **plusieurs**, qui défilent à la même place. Avec
   plusieurs :

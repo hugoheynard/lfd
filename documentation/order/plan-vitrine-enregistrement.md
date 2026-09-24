@@ -55,7 +55,7 @@ storefront              id = 'main' (PK), revision int, updated_at, updated_by_s
 storefront_page         shelf_key (PK), rows smallint
 storefront_object       id (ULID), shape, col, row, apply_on_mobile,
                         media_fit, media_side, multiple, nav, autoplay,
-                        interval_s, first_s, sample_count, archived_at
+                        interval_s, first_s, sample_count, tone, archived_at
 storefront_object_shelf object_id, shelf_key                 (PK composée)
 storefront_content      id, object_id, position, kind,
                         product_sku,                                  -- product
@@ -79,6 +79,13 @@ storefront_template     id, name, name_key (UNIQUE : nom normalisé casse+accent
   - `jsonb_typeof(title) = 'object'` quand non nul, idem `lede`, `image_alt`.
     La collision reste une règle de l'agrégat : la base ne sait pas dire « deux
     rectangles ne se recouvrent pas sur un même rayon ».
+- **`tone`** (Hugo, 2026-09-24) : `light` (papier crème, cerne or — l'allure
+  du best-seller ; défaut) · `dark` (encre noire — la tuile Noël) · `accent`
+  (encre bleue — la bande Pâques). `NOT NULL DEFAULT 'light'`, CHECK sur les
+  trois valeurs. Il se choisit partout **sauf** pour un produit rendu en carte
+  1×1 : celle-ci garde le rendu standard du rayon, pour que la grille reste
+  homogène. La colonne existe quand même sur ces objets — c'est le rendu qui
+  l'ignore, et l'éditeur qui ne la propose pas.
 - `updated_by_staff_id` est l'identifiant **interne** du staff, jamais un `sub`
   (`lint:auth0-id-readers`).
 - Les modèles sont rangés sous `public/` et ne sont lus que par `b2b`
