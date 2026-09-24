@@ -407,6 +407,13 @@ jobs:
       # partie en rouge sans qu'une ligne du dépôt change, et les quatre shards
       # e2e sont tombés avant d'exécuter un seul test.
       #
+      # 🔴 **Chainguard, et plus quay.io**, depuis le 2026-09-24. quay.io a fermé
+      # à son tour `minio/minio` (401 sur tout le dépôt) : même panne, même
+      # symptôme, douze jours après Hub. `cgr.dev/chainguard/minio` est le même
+      # serveur MinIO, tirable sans compte ; seul `latest` y est gratuit, donc
+      # on l'épingle par DIGEST — un tag mouvant ferait changer la CI sans
+      # changer le dépôt, exactement ce qu'on vient de subir deux fois.
+      #
       # ⚠️ Une machine de développement ne voit PAS la panne : son cache Docker
       # garde l'image déjà tirée, donc les e2e y restent vertes. C'est ce qui a
       # fait conclure « c'est vert » la veille d'un déploiement bloqué. Un
@@ -415,7 +422,8 @@ jobs:
         run: |
           docker run -d --name minio -p 9100:9000 \
             -e MINIO_ROOT_USER=lfc -e MINIO_ROOT_PASSWORD=lfclfclfc \
-            quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+            cgr.dev/chainguard/minio@sha256:bd014394a80898e68c149f2311fdf8d5a2c2f3bb2c33b9327ae6d02b4b065ae1 \
+            server /data
           for _ in $(seq 1 30); do
             if curl -fs http://localhost:9100/minio/health/live > /dev/null; then
               exit 0
