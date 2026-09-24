@@ -145,6 +145,15 @@ export class ReceivedOperations {
     void this.load();
   }
 
+  /**
+   * Relit les opérations reçues. La page l'appelle après avoir validé une
+   * arrivée : c'est l'acceptation qui les écrit, et la carte, chargée à
+   * l'ouverture, disait encore « aucune opération reçue » (vu le 2026-09-24).
+   */
+  reload(): Promise<void> {
+    return this.load();
+  }
+
   protected async load(): Promise<void> {
     this.state.set('loading');
     const [operations, items] = await Promise.allSettled([this.api.list(), this.catalogue.list()]);

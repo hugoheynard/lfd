@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import type { DeliveryChangeView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -142,6 +149,9 @@ export class ReceptionPage {
     this.excluded.set(next);
   }
 
+  /** Les opérations reçues : l'acceptation les écrit, la carte doit les relire. */
+  private readonly receivedOperations = viewChild(ReceivedOperations);
+
   protected async accept(): Promise<void> {
     const pending = this.delivery();
     if (pending === null) {
@@ -153,7 +163,7 @@ export class ReceptionPage {
       this.notify.success('Arrivée validée — le catalogue est à jour.');
       // On RECHARGE plutôt que de vider l'écran : une nouvelle livraison a pu
       // arriver entre-temps, et laisser l'écran vide la ferait manquer.
-      await this.load();
+      await Promise.all([this.load(), this.receivedOperations()?.reload()]);
     } catch (caught) {
       // `notify.error` lit l'enveloppe : le refus du serveur est en français
       // dedans — « cette arrivée a été remplacée par une livraison plus

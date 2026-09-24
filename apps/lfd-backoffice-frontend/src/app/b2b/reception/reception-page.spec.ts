@@ -56,14 +56,18 @@ class FakeNotify {
   }
 }
 
-async function render(api: FakeReception, notify = new FakeNotify()) {
+async function render(
+  api: FakeReception,
+  notify = new FakeNotify(),
+  operations: { list: () => Promise<never[]> } = { list: async () => [] },
+) {
   TestBed.configureTestingModule({
     imports: [ReceptionPage],
     providers: [
       { provide: ReceptionService, useValue: api },
       { provide: NotifyService, useValue: notify },
       // Les opérations reçues ont leur propre spec : ici, rien de reçu.
-      { provide: ReceivedOperationsService, useValue: { list: async () => [] } },
+      { provide: ReceivedOperationsService, useValue: operations },
       { provide: CatalogueService, useValue: { list: async () => [] } },
     ],
   });
@@ -99,6 +103,27 @@ async function click(fixture: ComponentFixture<ReceptionPage>, label: string): P
 }
 
 describe('ReceptionPage', () => {
+  /**
+   * Régression : après validation, la carte des opérations reçues disait encore
+   * « aucune opération reçue » — c'est l'acceptation qui les écrit, et la carte
+   * ne se relisait qu'à l'ouverture (vu à l'écran le 2026-09-24).
+   */
+  it('relit les opérations reçues après avoir validé une arrivée', async () => {
+    let reads = 0;
+    const operations = {
+      list: async (): Promise<never[]> => {
+        reads += 1;
+        return [];
+      },
+    };
+    const { fixture } = await render(new FakeReception(), new FakeNotify(), operations);
+    const before = reads;
+
+    await click(fixture, 'Valider');
+
+    expect(reads).toBeGreaterThan(before);
+  });
+
   it('valide sans rien écarter quand on ne touche à rien', async () => {
     const api = new FakeReception();
     const { fixture } = await render(api);
