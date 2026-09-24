@@ -181,6 +181,64 @@ lot.
 - `Carrier.kind` gagne `"storefront"`, et l'écran de la médiathèque renvoie
   vers `/vitrine`.
 
+### D10 — Le rendu côté boutique : placement pur, registre par contenu (décidé le 2026-09-24)
+
+Deux niveaux, séparés : **où** va chaque chose (des fonctions pures), **quoi**
+y afficher (un registre). La forme n'entre pas dans le registre.
+
+**1. Le placement ne rend aucun composant.** `@lfd/storefront-layout` reçoit
+la page du rayon et le catalogue, et rend des **cases résolues** :
+
+```ts
+type Cell = {
+  desk: { col: number; row: number; cols: number; rows: number };
+  mobile: { order: number; cols: number; rows: number };
+  slot: { contents: readonly Content[]; carousel: CarouselSettings } | { fill: string }; // case libre : un SKU du reste du rayon
+};
+```
+
+La grille pose chaque case par variables CSS — `grid-column: var(--col) /
+span var(--cols)` au bureau, `order` et spans mobiles sous la media query.
+**Les deux placements sont dans le même DOM, et le CSS choisit** : le rendu
+serveur ne connaît pas la largeur. Aucun `if (mobile)` en TypeScript.
+
+**2. Le rendu passe par un registre indexé par TYPE DE CONTENU.**
+
+```ts
+export const STOREFRONT_RENDERERS = new InjectionToken<
+  Readonly<Record<ContentKind, Type<StorefrontRenderer>>>
+>("STOREFRONT_RENDERERS");
+// { product: ProductTile, info: InfoCard }
+```
+
+La case appelle le composant par `NgComponentOutlet`, avec des entrées
+communes : `content`, `shape`, `mediaFit`, `mediaSide`. Ajouter un type de
+contenu (vidéo, recette, compte à rebours) = une ligne au registre et un
+composant ; la grille ne change pas (OCP, CLAUDE.md §2).
+
+**La forme n'est PAS une clé du registre** : 7 formes × 2 contenus feraient
+14 composants presque identiques. Chaque composant reçoit sa forme en classe
+d'hôte et se met en page par **container queries** — d'après la place réelle
+de sa case, pas d'après l'écran. `ProductTile` en carte 1×1 est la vignette
+d'aujourd'hui ; en tuile 2×1, c'est le best-seller ; en hero, le même en grand.
+
+**3. Le défilement est un enveloppeur, écrit une fois.** `StorefrontSlot` :
+un seul contenu → il rend le composant du registre ; plusieurs → un à la fois,
+points ou flèches, minuterie, arrêt au survol, au focus et au toucher, jamais
+sous `prefers-reduced-motion`. Les composants de rendu n'en savent rien.
+
+```
+ShelfGrid ── cells() du paquet
+  ├─ StorefrontSlot           (une par case composée)
+  │    └─ NgComponentOutlet ← STOREFRONT_RENDERERS[content.kind]
+  │         ├─ ProductTile    (forme → container queries)
+  │         └─ InfoCard       (forme + cadrage + côté de l'image)
+  └─ ProductTile              (cases « fill » : le reste du rayon, sans registre)
+```
+
+**L'aperçu de l'éditeur emploie le même paquet** : ce qu'on compose au
+back-office et ce que voit le client sortent de la même table des formes.
+
 ## Lots
 
 | Lot                 | Contenu                                                                                                                                                                                                                                                                                                          |
