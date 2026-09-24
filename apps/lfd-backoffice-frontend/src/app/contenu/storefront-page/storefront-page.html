@@ -5,20 +5,20 @@
     boutique montre la vitrine dès l’enregistrement.
   </p>
 
-  @if (status() === 'ready' && canWrite()) {
+  @if (persistence.status() === 'ready' && canWrite()) {
     <button
       pageActions
       foldButton
       type="button"
-      [disabled]="!dirty() || contentIssues().length > 0"
-      [loading]="saving()"
-      (click)="save()"
+      [disabled]="!store.dirty() || store.contentIssues().length > 0"
+      [loading]="persistence.saving()"
+      (click)="persistence.save()"
     >
       Enregistrer
     </button>
   }
 
-  @switch (status()) {
+  @switch (persistence.status()) {
     @case ('loading') {
       <fold-loading message="Lecture de la vitrine…" />
     }
@@ -26,9 +26,11 @@
       <fold-empty-state
         tone="alert"
         title="La vitrine n’a pas pu être lue"
-        [subtitle]="loadError() ?? ''"
+        [subtitle]="persistence.loadError() ?? ''"
       >
-        <button foldButton type="button" emphasis="outline" (click)="load()">Réessayer</button>
+        <button foldButton type="button" emphasis="outline" (click)="persistence.load()">
+          Réessayer
+        </button>
       </fold-empty-state>
     }
     @case ('ready') {
@@ -39,49 +41,63 @@
         </fold-callout>
       }
 
-      @if (saveRefusal(); as refusal) {
+      @if (persistence.saveRefusal(); as refusal) {
         <fold-callout variant="alert" announce>
           {{ refusal.message }}
           @if (refusal.conflict) {
-            <button actions foldButton type="button" size="sm" emphasis="outline" (click)="load()">
+            <button
+              actions
+              foldButton
+              type="button"
+              size="sm"
+              emphasis="outline"
+              (click)="persistence.load()"
+            >
               Recharger
             </button>
           }
         </fold-callout>
       }
 
-      @if (leaveWarned() && dirty()) {
+      @if (leaveWarned() && store.dirty()) {
         <fold-callout variant="warning" announce>
           Des modifications ne sont pas enregistrées. Enregistrez-les, ou quittez à nouveau la page
           pour les abandonner.
         </fold-callout>
-      } @else if (dirty() && canWrite()) {
+      } @else if (store.dirty() && canWrite()) {
         <fold-callout variant="neutral">Modifications non enregistrées.</fold-callout>
       }
 
-      @if (catalogFailed()) {
+      @if (persistence.catalogFailed()) {
         <fold-callout variant="alert">
           Le catalogue n’a pas pu être lu : les rayons sont nommés par leur identifiant, et les
           articles ne peuvent être ni choisis ni vérifiés.
-          <button actions foldButton type="button" size="sm" emphasis="outline" (click)="load()">
+          <button
+            actions
+            foldButton
+            type="button"
+            size="sm"
+            emphasis="outline"
+            (click)="persistence.load()"
+          >
             Recharger
           </button>
         </fold-callout>
       }
 
-      @if (vanished().length > 0) {
+      @if (store.vanished().length > 0) {
         <fold-callout variant="warning">
           Des rayons ne sont plus des familles du catalogue : la boutique ne les sert plus.
           Videz-les — leur page part, et un objet qui n’y paraissait que là est retiré à
           l’enregistrement.
           <span actions class="vanished">
-            @for (key of vanished(); track key) {
+            @for (key of store.vanished(); track key) {
               <button
                 foldButton
                 type="button"
                 size="sm"
                 emphasis="outline"
-                (click)="clearShelf(key)"
+                (click)="store.clearShelf(key)"
               >
                 Vider « {{ key }} »
               </button>
@@ -90,18 +106,18 @@
         </fold-callout>
       }
 
-      @if (contentIssues().length > 0 && canWrite()) {
+      @if (store.contentIssues().length > 0 && canWrite()) {
         <fold-callout variant="warning">
           À compléter avant d’enregistrer :
           <ul class="issues">
-            @for (issue of contentIssues(); track issue) {
+            @for (issue of store.contentIssues(); track issue) {
               <li>{{ issue }}</li>
             }
           </ul>
         </fold-callout>
       }
 
-      @if (notice(); as message) {
+      @if (store.notice(); as message) {
         <fold-callout variant="warning" announce>{{ message }}</fold-callout>
       }
 
@@ -110,8 +126,8 @@
           size="sm"
           label="Rayon"
           [options]="shelfOptions()"
-          [value]="shelf()"
-          (selectionChange)="pickShelf($event)"
+          [value]="store.shelf()"
+          (selectionChange)="store.pickShelf($event)"
         />
         <fold-number-input
           size="sm"
@@ -140,8 +156,8 @@
                 size="sm"
                 class="draggable"
                 (pointerdown)="startPaletteDrag($event, format.format)"
-                (keydown.enter)="addFormat(format.format)"
-                (keydown.space)="addFormat(format.format)"
+                (keydown.enter)="store.addFormat(format.format)"
+                (keydown.space)="store.addFormat(format.format)"
               >
                 {{ describe(format.format) }}
               </button>
@@ -150,11 +166,11 @@
           <div class="palette-group">
             <span class="caption">Gabarits</span>
             <app-storefront-template-list
-              [templates]="templates()"
+              [templates]="store.templates()"
               [rename]="renamer"
               (pressed)="startTemplateDrag($event.event, $event.template)"
-              (added)="addTemplate($event)"
-              (deleted)="deleteTemplate($event)"
+              (added)="store.addTemplate($event)"
+              (deleted)="store.deleteTemplate($event)"
             />
           </div>
         </fold-card>
@@ -164,7 +180,7 @@
             title="Bureau"
             [subtitle]="
               '« ' +
-              shelfLabel(shelf()) +
+              store.shelfLabel(store.shelf()) +
               ' » — clic pour sélectionner, double-clic ou Entrée pour modifier, flèches pour déplacer, Suppr pour retirer.'
             "
           />
@@ -172,10 +188,10 @@
             <div
               #grid
               class="grid"
-              [style.grid-template-rows]="'repeat(' + rows() + ', minmax(0, 1fr))'"
-              [style.aspect-ratio]="columns + ' / ' + rows()"
+              [style.grid-template-rows]="'repeat(' + store.rows() + ', minmax(0, 1fr))'"
+              [style.aspect-ratio]="columns + ' / ' + store.rows()"
             >
-              @for (cell of freeCells(); track cell.column + '-' + cell.row) {
+              @for (cell of store.freeCells(); track cell.column + '-' + cell.row) {
                 <div
                   class="free-cell"
                   [style.grid-column]="cell.column"
@@ -186,10 +202,10 @@
                 </div>
               }
 
-              @for (block of pageBlocks(); track block.id) {
+              @for (block of store.pageBlocks(); track block.id) {
                 <div
                   class="block draggable"
-                  [class.selected]="selectedId() === block.id"
+                  [class.selected]="store.selectedId() === block.id"
                   [class.dragging]="drag()?.blockId === block.id && drag()?.moved"
                   [style.grid-column]="block.column + ' / span ' + spec(block.format).columns"
                   [style.grid-row]="block.row + ' / span ' + spec(block.format).rows"
@@ -200,7 +216,7 @@
                   "
                   aria-keyshortcuts="Enter ArrowLeft ArrowRight ArrowUp ArrowDown Delete"
                   (pointerdown)="startBlockDrag($event, block)"
-                  (focus)="select(block.id)"
+                  (focus)="store.select(block.id)"
                   (keydown)="onBlockKeydown($event, block.id)"
                   (dblclick)="openEditor(block.id)"
                 >
@@ -223,7 +239,7 @@
                   @if (hasUnserved(block)) {
                     <span class="marker">article plus en vente</span>
                   }
-                  @if (returnedIds().has(block.id)) {
+                  @if (store.returnedIds().has(block.id)) {
                     <span class="marker">rendu au rayon tant qu’il est vide</span>
                   }
                   @if (isShared(block)) {
@@ -243,7 +259,7 @@
                       icon="close"
                       size="xs"
                       tooltip="Retirer de tous ses rayons"
-                      (clicked)="remove(block.id)"
+                      (clicked)="store.remove(block.id)"
                     />
                   </span>
                 </div>
@@ -273,9 +289,9 @@
             subtitle="Déduit : 2 colonnes, dans l’ordre de lecture."
           />
           <app-storefront-mobile-preview
-            [blocks]="pageBlocks()"
-            [rows]="rows()"
-            [returned]="returnedIds()"
+            [blocks]="store.pageBlocks()"
+            [rows]="store.rows()"
+            [returned]="store.returnedIds()"
           />
         </fold-card>
       </div>
