@@ -4,6 +4,10 @@ import {
   type ReceivedOperation,
 } from "../../../domain/ports/received-operations.reader.js";
 import { receivedNoel } from "../../commands/__tests__/operation-doubles.js";
+import {
+  authorsKnownAs,
+  FixedStaffAuthorDirectory,
+} from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { ListReceivedOperationsHandler } from "../list-received-operations.handler.js";
 
 class FixedReceived extends ReceivedOperationsReader {
@@ -31,8 +35,14 @@ const override = (
   decidedAt: new Date("2026-09-24T10:00:00.000Z"),
 });
 
-async function view(operation: ReceivedOperation) {
-  const [first] = await new ListReceivedOperationsHandler(new FixedReceived([operation])).execute();
+async function view(
+  operation: ReceivedOperation,
+  staff: FixedStaffAuthorDirectory = new FixedStaffAuthorDirectory(),
+) {
+  const [first] = await new ListReceivedOperationsHandler(
+    new FixedReceived([operation]),
+    staff,
+  ).execute();
   return first;
 }
 
@@ -88,5 +98,28 @@ describe("ListReceivedOperationsHandler — ce que la réception voit", () => {
       withdrawnAt: "2026-09-20T00:00:00.000Z",
       override: { isHidden: true },
     });
+  });
+
+  it("nomme l'auteur d'une surcharge, en une résolution pour toute la liste", async () => {
+    const staff = new FixedStaffAuthorDirectory(
+      authorsKnownAs({ firstName: "Claire", lastName: "Martin" }, "staff_1"),
+    );
+    const shown = await view(
+      { received: receivedNoel(), withdrawnAt: null, override: override({ isHidden: true }) },
+      staff,
+    );
+
+    expect(shown?.override).toMatchObject({ decidedBy: "staff_1", decidedByName: "Claire Martin" });
+    expect(staff.asked).toEqual([["staff_1"]]);
+  });
+
+  it("laisse le nom vide quand l'auteur ne désigne aucune fiche", async () => {
+    const shown = await view({
+      received: receivedNoel(),
+      withdrawnAt: null,
+      override: override({ isHidden: true }),
+    });
+
+    expect(shown?.override).toMatchObject({ decidedBy: "staff_1", decidedByName: null });
   });
 });

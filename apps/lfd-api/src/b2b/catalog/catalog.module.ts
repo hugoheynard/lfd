@@ -218,9 +218,12 @@ import { PrismaReceivedOperationsReader } from "./infrastructure/prisma-received
     // réglages.
     CatalogAdminReader,
     // Pour les vendeurs du lot 3 (`operationAccess`, D4-D6) : les opérations
-    // appliquées et les articles qui ne se vendent que par elles. Exporté dès
-    // maintenant, lu par personne encore (2026-09-24).
+    // appliquées et les articles qui ne se vendent que par elles — et pour la
+    // vitrine publique, qui éteint une annonce avec son opération (lot 5).
     CatalogOperationsReader,
+    // Pour l'éditeur de vitrine (lot 5) : les opérations reçues qu'une annonce
+    // peut désigner, et les rayons `op:<key>` qu'il compose.
+    ReceivedOperationsReader,
   ],
 })
 export class CatalogModule {}

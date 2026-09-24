@@ -8,6 +8,8 @@ import {
 } from "@lfd/storefront-layout";
 import { z } from "zod";
 
+import type { ShopOperationState } from "./shop-catalogue.js";
+
 /**
  * **La vitrine** — le contrat de l'éditeur (admin) et de la boutique (public).
  *
@@ -73,15 +75,42 @@ export const storefrontImageSchema = z.object({
   alt: storefrontTextSchema.nullable(),
 });
 
-/** Un contenu **info** : pastille, titre, phrase, image, lien vers un rayon. */
+/**
+ * Ce que fait une annonce au clic (D11 de
+ * `documentation/order/architecture-operations-datees.md`) : rien, ouvrir un
+ * rayon (`linkShelfKey`), ou ouvrir le rayon `op:<key>` d'une opération datée
+ * (`operationKey`). Formule et page viendront à leur propre chantier.
+ */
+export const STOREFRONT_INFO_ACTIONS = ["none", "shelf", "operation"] as const;
+export type StorefrontInfoAction = (typeof STOREFRONT_INFO_ACTIONS)[number];
+
+/**
+ * Un contenu **info** — une annonce : pastille, titre, phrase, image, et son
+ * action au clic.
+ *
+ * L'action se **déduit** des cibles : `operation` si `operationKey`, `shelf`
+ * si `linkShelfKey`, `none` sinon — les deux cibles à la fois sont refusées.
+ * `action` est donc facultative à l'écriture (un éditeur qui ne la connaît
+ * pas reste valide) ; si elle est envoyée, elle doit dire la même chose que
+ * les cibles. À la lecture, le serveur la rend toujours.
+ *
+ * **Liée à une opération**, l'annonce HÉRITE : `badge`, `lede` et `image` à
+ * `null`, et `title.fr` vide, prennent la valeur de l'opération à la lecture
+ * publique ; un champ rempli la surcharge.
+ */
 export const storefrontInfoContentSchema = z.object({
   kind: z.literal("info"),
   badge: storefrontTextSchema.nullable(),
+  /** `fr` vide : hérité de l'opération — permis seulement avec `operationKey`. */
   title: storefrontTextSchema,
   lede: storefrontTextSchema.nullable(),
   image: storefrontImageSchema.nullable(),
   linkShelfKey: z.string().nullable(),
+  /** Absent = `null` : un éditeur d'avant les opérations n'en envoie pas. */
+  operationKey: z.string().nullable().optional(),
+  action: z.enum(STOREFRONT_INFO_ACTIONS).optional(),
 });
+export type StorefrontInfoContent = z.infer<typeof storefrontInfoContentSchema>;
 
 export const storefrontContentSchema = z.discriminatedUnion("kind", [
   storefrontProductContentSchema,
@@ -167,13 +196,48 @@ export interface PublicStorefrontObjectView {
   readonly mediaSide: StorefrontObjectPayload["mediaSide"];
   readonly carousel: Omit<StorefrontCarousel, "sampleCount"> | null;
   readonly tone: StorefrontObjectPayload["tone"];
-  /** Dans l'ordre de défilement. */
-  readonly contents: readonly StorefrontContent[];
+  /** Dans l'ordre de défilement. Les annonces d'une opération éteinte n'y sont plus. */
+  readonly contents: readonly PublicStorefrontContent[];
 }
 
 /**
- * La page d'un rayon — `GET /shop/storefront/:shelfKey` (D8). Objets archivés
- * exclus. Un rayon sans page rend `{ rows: 0, objects: [] }` : la boutique
+ * L'opération d'une annonce, telle que la boutique en tire son badge
+ * (« Dès le 15 nov. », « J‑18 », « Commandes closes ») et son clic (le rayon
+ * `op:<key>`). Dates EFFECTIVES, comme {@link ShopOperationView} : la clôture
+ * tient compte de la réception.
+ */
+export interface PublicStorefrontOperationView {
+  readonly key: string;
+  readonly state: ShopOperationState;
+  /** Instant ISO d'ouverture de la commande (l'annonce quand le référentiel n'en fixe pas). */
+  readonly orderFrom: string;
+  /** Instant ISO de clôture. */
+  readonly orderUntil: string;
+  /** Jours `AAAA-MM-JJ`. */
+  readonly pickupFrom: string;
+  readonly pickupUntil: string;
+}
+
+/**
+ * Une annonce telle que la boutique la reçoit : les champs hérités déjà
+ * remplis (le titre n'est jamais vide), et `operation` quand elle est liée à
+ * une opération — `null` sinon. `badge: null` sur une annonce liée : la
+ * boutique le calcule depuis `operation`.
+ */
+export type PublicStorefrontInfoContent = StorefrontInfoContent & {
+  readonly operation?: PublicStorefrontOperationView | null;
+};
+
+/** Un contenu tel que la boutique le compose. */
+export type PublicStorefrontContent =
+  z.infer<typeof storefrontProductContentSchema> | PublicStorefrontInfoContent;
+
+/**
+ * La page d'un rayon — `GET /shop/storefront/:shelfKey` (visiteur, clientèle
+ * `public`) et `GET /shop/storefront/:shelfKey/mine` (reconnu : `pro` quand une
+ * société est résolue). Objets archivés exclus ; une annonce dont l'opération
+ * n'est pas montrée à cette clientèle maintenant est omise — l'objet peut
+ * alors rester sans contenu, et rend ses cases (`isRenderable`). Un rayon sans page rend `{ rows: 0, objects: [] }` : la boutique
  * l'affiche comme aujourd'hui, en cartes.
  */
 export interface PublicStorefrontPageView {
@@ -181,10 +245,15 @@ export interface PublicStorefrontPageView {
   readonly objects: readonly PublicStorefrontObjectView[];
 }
 
-/** Un rayon que l'éditeur peut composer : une famille du catalogue. */
+/**
+ * Un rayon que l'éditeur peut composer : une famille du catalogue, ou le rayon
+ * `op:<key>` d'une opération reçue non retirée (`operation: true`, nom en
+ * français) — D8 : sa vitrine se compose comme les autres.
+ */
 export const storefrontCatalogShelfSchema = z.object({
   key: z.string(),
   name: z.string(),
+  operation: z.boolean(),
 });
 export type StorefrontCatalogShelf = z.infer<typeof storefrontCatalogShelfSchema>;
 
@@ -202,15 +271,53 @@ export const storefrontCatalogItemSchema = z.object({
 export type StorefrontCatalogItem = z.infer<typeof storefrontCatalogItemSchema>;
 
 /**
+ * L'état d'une opération pour l'éditeur, à l'horloge du serveur : en
+ * préparation (avant l'annonce), annoncée, ouverte, close, terminée (après le
+ * dernier jour de retrait) — ou `hidden` : masquée à la réception, ou sans
+ * clientèle. Une annonce liée à une opération qui n'est ni `announced`, ni
+ * `open`, ni `closed` ne paraît pas en boutique.
+ */
+export const STOREFRONT_OPERATION_STATES = [
+  "preparing",
+  "announced",
+  "open",
+  "closed",
+  "ended",
+  "hidden",
+] as const;
+export type StorefrontOperationState = (typeof STOREFRONT_OPERATION_STATES)[number];
+
+/**
+ * Une opération qu'une annonce peut désigner : les opérations reçues **non
+ * retirées**, l'annonce la plus récente d'abord. Les textes servent au gris
+ * de l'héritage dans l'éditeur ; les dates sont les dates effectives.
+ */
+export const storefrontCatalogOperationSchema = z.object({
+  key: z.string(),
+  name: storefrontTextSchema,
+  lede: storefrontTextSchema.nullable(),
+  image: z.object({ url: z.string(), alt: z.string() }).nullable(),
+  state: z.enum(STOREFRONT_OPERATION_STATES),
+  announceFrom: z.string(),
+  orderFrom: z.string(),
+  orderUntil: z.string(),
+  pickupFrom: z.string(),
+  pickupUntil: z.string(),
+});
+export type StorefrontCatalogOperation = z.infer<typeof storefrontCatalogOperationSchema>;
+
+/**
  * Le catalogue tel que l'éditeur de vitrine le lit — `GET /admin/storefront/catalog`.
  *
  * Une lecture DÉDIÉE, murée par `b2b_storefront` : l'éditeur lisait
  * `/admin/catalog`, que la communication ne peut pas ouvrir. Elle ne rend que
- * ce que l'éditeur désigne — ni prix, ni réglages. `shelves` : les familles qui
- * portent au moins un article servi, dans l'ordre du catalogue, sans « Tout ».
+ * ce que l'éditeur désigne — ni prix, ni réglages. `shelves` : les rayons des
+ * opérations (en tête, comme en boutique), puis les familles qui portent au
+ * moins un article servi, dans l'ordre du catalogue, sans « Tout ».
  */
 export const storefrontCatalogViewSchema = z.object({
   shelves: z.array(storefrontCatalogShelfSchema),
   items: z.array(storefrontCatalogItemSchema),
+  operations: z.array(storefrontCatalogOperationSchema),
 });
 export type StorefrontCatalogView = z.infer<typeof storefrontCatalogViewSchema>;

@@ -78,6 +78,8 @@ export type StorefrontRefusal =
   | "text"
   | "shelf_key"
   | "sku"
+  | "operation"
+  | "action"
   | "image"
   | "settings"
   | "page"

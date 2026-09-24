@@ -5,7 +5,7 @@ import type {
   StorefrontTemplateView,
 } from "@lfd/contracts";
 
-import type { StorefrontContentState } from "../domain/storefront-content.js";
+import { infoActionOf, type StorefrontContentState } from "../domain/storefront-content.js";
 import type { StorefrontObjectState } from "../domain/storefront-object.js";
 import type { StorefrontTemplateState } from "../domain/storefront-template.js";
 
@@ -63,6 +63,18 @@ export function publicObjectView(object: StorefrontObjectState): PublicStorefron
   };
 }
 
-function contentView(content: StorefrontContentState): StorefrontContent {
-  return content.kind === "product" ? { kind: "product", sku: content.sku } : { ...content };
+/**
+ * Un contenu, tel que l'éditeur le relit. Une annonce porte toujours son
+ * action (déduite) et sa clé d'opération ; un titre hérité se lit `{ fr: "" }`
+ * — la forme du contrat, que l'éditeur affiche en gris.
+ */
+export function contentView(content: StorefrontContentState): StorefrontContent {
+  if (content.kind === "product") {
+    return { kind: "product", sku: content.sku };
+  }
+  return {
+    ...content,
+    title: content.title ?? { fr: "" },
+    action: infoActionOf(content),
+  };
 }

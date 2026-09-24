@@ -1,6 +1,10 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { OperationOverrideView, ReceivedOperationView } from "@lfd/contracts";
 
+import {
+  StaffAuthorDirectory,
+  type StaffAuthors,
+} from "../../../../staff/directory/domain/staff-author-directory.js";
 import { effectiveOperation } from "../../domain/effective-operation.js";
 import type { CatalogOperationOverrideState } from "../../domain/entities/catalog-operation-override.js";
 import {
@@ -15,20 +19,33 @@ import { ListReceivedOperationsQuery } from "./list-received-operations.query.js
  * le domaine (`effectiveOperation`) et jamais par l'écran. Deux écrans qui
  * recombineraient chacun `min` et intersection finiraient par ne plus dire la
  * même chose que la boutique.
+ *
+ * L'auteur d'une surcharge est nommé comme celui d'une décision d'article
+ * (`decidedByName`), en une résolution pour toute la liste.
  */
 @QueryHandler(ListReceivedOperationsQuery)
 export class ListReceivedOperationsHandler implements IQueryHandler<
   ListReceivedOperationsQuery,
   ReceivedOperationView[]
 > {
-  constructor(private readonly operations: ReceivedOperationsReader) {}
+  constructor(
+    private readonly operations: ReceivedOperationsReader,
+    private readonly staffAuthors: StaffAuthorDirectory,
+  ) {}
 
   async execute(): Promise<ReceivedOperationView[]> {
-    return (await this.operations.list()).map(toView);
+    const received = await this.operations.list();
+    const authors = await this.staffAuthors.identify(
+      received.map(({ override }) => override?.decidedBy ?? null),
+    );
+    return received.map((operation) => toView(operation, authors));
   }
 }
 
-function toView({ received, withdrawnAt, override }: ReceivedOperation): ReceivedOperationView {
+function toView(
+  { received, withdrawnAt, override }: ReceivedOperation,
+  authors: StaffAuthors,
+): ReceivedOperationView {
   const effective = effectiveOperation(received, override?.restriction ?? null);
   return {
     key: received.key,
@@ -45,7 +62,7 @@ function toView({ received, withdrawnAt, override }: ReceivedOperation): Receive
     receivedAt: received.receivedAt.toISOString(),
     withdrawn: withdrawnAt !== null,
     withdrawnAt: withdrawnAt === null ? null : withdrawnAt.toISOString(),
-    override: override === null ? null : overrideView(override),
+    override: override === null ? null : overrideView(override, authors),
     effective: {
       isHidden: effective.isHidden,
       orderUntil: effective.orderUntil.toISOString(),
@@ -55,7 +72,10 @@ function toView({ received, withdrawnAt, override }: ReceivedOperation): Receive
   };
 }
 
-function overrideView(state: CatalogOperationOverrideState): OperationOverrideView {
+function overrideView(
+  state: CatalogOperationOverrideState,
+  authors: StaffAuthors,
+): OperationOverrideView {
   const { restriction } = state;
   return {
     isHidden: restriction.isHidden,
@@ -63,6 +83,7 @@ function overrideView(state: CatalogOperationOverrideState): OperationOverrideVi
     audience: restriction.audience,
     hiddenSkus: restriction.hiddenSkus,
     decidedBy: state.decidedBy,
+    decidedByName: authors.nameOf(state.decidedBy),
     decidedAt: state.decidedAt.toISOString(),
   };
 }

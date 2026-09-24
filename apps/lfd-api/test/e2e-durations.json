@@ -129,6 +129,7 @@
   "test/staff-users.e2e-spec.ts": 7541,
   "test/storefront-catalog.e2e-spec.ts": 2900,
   "test/storefront-media-carriers.e2e-spec.ts": 4000,
+  "test/storefront-operations.e2e-spec.ts": 7900,
   "test/storefront-roles-migration.e2e-spec.ts": 1600,
   "test/storefront.e2e-spec.ts": 7100,
   "test/subscriptions-journal.e2e-spec.ts": 3063,

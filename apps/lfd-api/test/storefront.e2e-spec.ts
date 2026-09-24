@@ -317,10 +317,18 @@ describe("la lecture publique", () => {
       ["card", 2, 1],
     ]);
     const band = all.objects[0];
+    // Une annonce sans opération se lit avec son action déduite et sans bloc
+    // d'opération (lot 5 des opérations datées, champs additifs).
+    const served = (fr: string) => ({
+      ...info(fr),
+      operationKey: null,
+      action: "none",
+      operation: null,
+    });
     expect(band?.contents).toEqual([
-      info("Pâques"),
+      served("Pâques"),
       { kind: "product", sku: "OEUF-01" },
-      info("Noël"),
+      served("Noël"),
     ]);
     expect(band?.carousel).toEqual({
       nav: "dots",

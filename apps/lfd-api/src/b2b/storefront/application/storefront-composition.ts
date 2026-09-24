@@ -1,7 +1,7 @@
 import type { StorefrontContent as ContentPayload, StorefrontPayload } from "@lfd/contracts";
 
 import type { IdGenerator } from "../../../platform/id/id-generator.js";
-import type { StorefrontContentState } from "../domain/storefront-content.js";
+import type { StorefrontContentInput } from "../domain/storefront-content.js";
 import { StorefrontObject } from "../domain/storefront-object.js";
 import { StorefrontPage } from "../domain/storefront-page.js";
 import { StorefrontTemplate } from "../domain/storefront-template.js";
@@ -56,7 +56,7 @@ function proposed<T>(
 }
 
 /** Le contenu du contrat, en primitives du domaine (les champs facultatifs restent absents). */
-function contentState(content: ContentPayload): StorefrontContentState {
+function contentState(content: ContentPayload): StorefrontContentInput {
   if (content.kind === "product") {
     return { kind: "product", sku: content.sku };
   }
@@ -67,5 +67,7 @@ function contentState(content: ContentPayload): StorefrontContentState {
     lede: content.lede,
     image: content.image,
     linkShelfKey: content.linkShelfKey,
+    operationKey: content.operationKey,
+    action: content.action,
   };
 }

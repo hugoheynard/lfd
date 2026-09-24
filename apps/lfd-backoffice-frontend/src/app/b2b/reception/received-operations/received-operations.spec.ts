@@ -22,6 +22,7 @@ const RESTRICTED = receivedOperation({
     audience: 'public',
     hiddenSkus: ['BUCHE-8'],
     decidedBy: 'staff_1',
+    decidedByName: null,
     decidedAt: '2026-11-02T09:00:00.000Z',
   },
   audience: 'pro',

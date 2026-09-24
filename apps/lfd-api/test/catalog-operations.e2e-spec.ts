@@ -244,6 +244,8 @@ describe("un envoi suivant qui ne porte plus l'opération", () => {
       override: { isHidden: true },
     });
     expect(shown?.override?.decidedBy).not.toBeNull();
+    // L'auteur est nommé, comme celui d'une décision d'article (lot 5).
+    expect(shown?.override?.decidedByName).toBe("Opérateur E2E");
     expect(shown?.withdrawnAt).not.toBeNull();
     expect(await ctx.prisma.catalogOperationOverride.count()).toBe(1);
     expect(await ctx.app.get(CatalogOperationsReader).sellableOperations()).toEqual([]);

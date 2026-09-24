@@ -31,6 +31,22 @@ describe("un contenu s'affiche-t-il ?", () => {
   it("une info sans image, oui : c'est une annonce en texte", () => {
     expect(isContentRenderable({ ...easter, image: null }, served)).toBe(true);
   });
+
+  it("une annonce liée à une opération, oui, même sans titre : il est hérité", () => {
+    const christmas: RenderableContent = {
+      kind: "info",
+      title: { fr: "" },
+      image: null,
+      operationKey: "noel-2026",
+    };
+    expect(isContentRenderable(christmas, served)).toBe(true);
+  });
+
+  it("une annonce sans opération (clé nulle) reste jugée sur son titre", () => {
+    expect(isContentRenderable({ ...easter, title: { fr: "" }, operationKey: null }, served)).toBe(
+      false,
+    );
+  });
 });
 
 describe("un objet montre-t-il quelque chose ?", () => {

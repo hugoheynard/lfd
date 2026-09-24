@@ -1,6 +1,12 @@
 import type { CatalogAdminItemView } from "@lfd/contracts";
 
+import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { receivedNoel } from "../../../catalog/application/commands/__tests__/operation-doubles.js";
 import { CatalogAdminReader } from "../../../catalog/domain/ports/catalog-admin.reader.js";
+import {
+  ReceivedOperationsReader,
+  type ReceivedOperation,
+} from "../../../catalog/domain/ports/received-operations.reader.js";
 import { CatalogBackedStorefrontCatalogReader } from "../../infrastructure/catalog-backed-storefront-catalog.reader.js";
 import { GetStorefrontCatalogHandler } from "../get-storefront-catalog.handler.js";
 
@@ -14,6 +20,23 @@ class ListedCatalog extends CatalogAdminReader {
     return Promise.resolve(this.lines);
   }
 }
+
+/** Les opérations reçues, telles que `b2b/catalog` les rend. */
+class ListedOperations extends ReceivedOperationsReader {
+  constructor(private readonly operations: readonly ReceivedOperation[]) {
+    super();
+  }
+
+  list(): Promise<readonly ReceivedOperation[]> {
+    return Promise.resolve(this.operations);
+  }
+}
+
+const DAY_MS = 86_400_000;
+
+/** Noël reçu ; l'horloge se pose RELATIVEMENT à ses dates, jamais au calendrier. */
+const NOEL = receivedNoel();
+const DURING_ANNOUNCE = new Date(NOEL.announceFrom.getTime() + DAY_MS);
 
 /** Une ligne du catalogue ; `receivedAt` n'est jamais comparé à l'horloge. */
 function line(overrides: Partial<CatalogAdminItemView>): CatalogAdminItemView {
@@ -43,10 +66,22 @@ function line(overrides: Partial<CatalogAdminItemView>): CatalogAdminItemView {
   };
 }
 
-function handlerOver(lines: CatalogAdminItemView[]): GetStorefrontCatalogHandler {
+function handlerOver(
+  lines: CatalogAdminItemView[],
+  operations: readonly ReceivedOperation[] = [],
+  now: Date = DURING_ANNOUNCE,
+): GetStorefrontCatalogHandler {
   return new GetStorefrontCatalogHandler(
-    new CatalogBackedStorefrontCatalogReader(new ListedCatalog(lines)),
+    new CatalogBackedStorefrontCatalogReader(
+      new ListedCatalog(lines),
+      new ListedOperations(operations),
+      new FixedClock(now),
+    ),
   );
+}
+
+function received(over: Partial<ReceivedOperation> = {}): ReceivedOperation {
+  return { received: NOEL, withdrawnAt: null, override: null, ...over };
 }
 
 describe("GetStorefrontCatalogHandler", () => {
@@ -57,8 +92,9 @@ describe("GetStorefrontCatalogHandler", () => {
     ]).execute();
 
     expect(view).toEqual({
-      shelves: [{ key: "bread", name: "Pains" }],
+      shelves: [{ key: "bread", name: "Pains", operation: false }],
       items: [{ sku: "PAI-001", name: "Baguette", shelfKey: "bread", served: true }],
+      operations: [],
     });
   });
 
@@ -76,7 +112,7 @@ describe("GetStorefrontCatalogHandler", () => {
       }),
     ]).execute();
 
-    expect(view.shelves).toEqual([{ key: "bread", name: "Pains" }]);
+    expect(view.shelves).toEqual([{ key: "bread", name: "Pains", operation: false }]);
     expect(view.items).toContainEqual({
       sku: "VIE-001",
       name: "Croissant",
@@ -113,5 +149,63 @@ describe("GetStorefrontCatalogHandler", () => {
     ]).execute();
 
     expect(view.shelves.map((shelf) => shelf.key)).toEqual(["pastry", "bread"]);
+  });
+
+  it("propose le rayon op:<key> de chaque opération reçue, en tête, nommé en français", async () => {
+    const view = await handlerOver([line({})], [received()]).execute();
+
+    expect(view.shelves).toEqual([
+      { key: "op:noel-2026", name: "Noël", operation: true },
+      { key: "bread", name: "Pains", operation: false },
+    ]);
+    expect(view.operations).toEqual([
+      {
+        key: "noel-2026",
+        name: { fr: "Noël", en: "Christmas" },
+        lede: null,
+        image: null,
+        // Sans `orderFrom`, la commande ouvre dès l'annonce (D2).
+        state: "open",
+        announceFrom: NOEL.announceFrom.toISOString(),
+        orderFrom: NOEL.announceFrom.toISOString(),
+        orderUntil: NOEL.orderUntil.toISOString(),
+        pickupFrom: "2026-12-20",
+        pickupUntil: "2026-12-24",
+      },
+    ]);
+  });
+
+  it("ne propose pas une opération retirée", async () => {
+    const view = await handlerOver(
+      [line({})],
+      [received({ withdrawnAt: NOEL.receivedAt })],
+    ).execute();
+
+    expect(view.operations).toEqual([]);
+    expect(view.shelves.map((shelf) => shelf.key)).toEqual(["bread"]);
+  });
+
+  it("dit l'état de l'opération à l'horloge du serveur, et la clôture effective", async () => {
+    const earlier = new Date(NOEL.orderUntil.getTime() - DAY_MS);
+    const hidden = received({
+      override: {
+        operationKey: "noel-2026",
+        restriction: { isHidden: true, orderUntil: earlier, audience: null, hiddenSkus: [] },
+        decidedBy: "staff_1",
+        decidedAt: NOEL.receivedAt,
+      },
+    });
+    const before = new Date(NOEL.announceFrom.getTime() - DAY_MS);
+    const after = new Date(NOEL.orderUntil.getTime() + 30 * DAY_MS);
+
+    const stateAt = async (operation: ReceivedOperation, now: Date) =>
+      (await handlerOver([], [operation], now).execute()).operations[0];
+
+    expect((await stateAt(received(), before))?.state).toBe("preparing");
+    expect((await stateAt(received(), after))?.state).toBe("ended");
+    expect(await stateAt(hidden, DURING_ANNOUNCE)).toMatchObject({
+      state: "hidden",
+      orderUntil: earlier.toISOString(),
+    });
   });
 });

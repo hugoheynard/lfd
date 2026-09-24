@@ -396,6 +396,31 @@ que la tarification appelle aussi — il vit chez les vendeurs qui les
 appellent. Les paniers et brouillons ne sont toujours pas relus à
 l'enregistrement : c'est leur devis qui nomme la raison.
 
+✅ **Lot 5, côté serveur : bâti le 2026-09-24** (non commité à cette date).
+La migration `20260924200000_l_annonce_designe_une_operation` : colonne
+nullable `storefront_content.operation_key`, un rayon OU une opération
+(`CHECK`), et le titre d'une info **relâché** pour une annonce liée (hérité).
+L'action n'est **pas stockée** : `operation` si `operationKey`, `shelf` si
+`linkShelfKey`, `none` sinon ; le contrat la rend à la lecture et l'accepte,
+facultative, à l'écriture (refusée si elle contredit la cible). L'agrégat ne
+refuse que la **forme** de la clé — une opération inconnue du miroir
+s'enregistre (elle peut arriver au prochain envoi) ; `ShelfKey` accepte
+`op:<slug>`. La lecture publique résout chaque annonce liée par
+`StorefrontOperationsReader` (branché sur `CatalogOperationsReader`,
+`operationStateAt`, `reachesAudience`) : **omise** si l'opération n'est pas
+montrée à cette clientèle maintenant, sinon servie avec titre, phrase et image
+hérités et un bloc `operation { key, state, orderFrom, orderUntil, pickupFrom,
+pickupUntil }` ; le badge reste à calculer par la boutique. La clientèle vient
+d'une **seconde route**, `GET /shop/storefront/:shelfKey/mine` (muré, société
+⇒ `pro`), la route publique n'ayant pas de demandeur. L'éditeur lit en plus,
+par `GET /admin/storefront/catalog`, les rayons `op:<key>` des opérations
+reçues non retirées et la liste des opérations (état à l'horloge du serveur :
+`preparing` · `announced` · `open` · `closed` · `ended` · `hidden`).
+`isContentRenderable` (`@lfd/storefront-layout`) tient une annonce liée pour
+affichable. `OperationOverrideView` gagne `decidedByName`. Restent au lot 5 :
+l'éditeur et le rendu de la boutique (badge localisé, clic vers `op:<key>`,
+bascule vers `/mine` quand le client est reconnu).
+
 **Sans retour après le premier merge du lot 2 + 3** : le fil v11 (revenir au
 code v10 laisserait des envois v11 que personne ne relit — un seul processus
 porte l'émetteur et le récepteur, ils partent ensemble) ; les clés `op:<key>`

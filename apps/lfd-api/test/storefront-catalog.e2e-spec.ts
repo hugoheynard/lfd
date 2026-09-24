@@ -8,11 +8,22 @@
  */
 import type { StorefrontCatalogView } from "@lfd/contracts";
 import { millicentsFromCents } from "@lfd/money";
-import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
+import {
+  CATALOG_SNAPSHOT_VERSION,
+  type CatalogSnapshot,
+  type SyncOperation,
+} from "@lfd/catalog-sync";
 
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  daysAgo,
+  E2E_STAFF_SUB,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
 
 const ROUTE = "/admin/storefront/catalog";
 
@@ -71,8 +82,23 @@ function product(id: string, sku: string, name: string): CatalogSnapshot["produc
   };
 }
 
+/** Noël, annoncé il y a deux jours, commande ouverte dans trois — dates relatives. */
+const NOEL: SyncOperation = {
+  key: "noel",
+  name: { fr: "Noël", en: "Christmas" },
+  lede: null,
+  image: null,
+  announceFrom: daysAgo(2),
+  orderFrom: daysAgo(-3),
+  orderUntil: daysAgo(-10),
+  pickupFrom: serviceDay(12),
+  pickupUntil: serviceDay(14),
+  audience: "both",
+  skus: ["VIE-001-1"],
+};
+
 /** `generatedAt` n'est comparé à aucune horloge : c'est une étiquette de push. */
-function snapshot(): CatalogSnapshot {
+function snapshot(operations: SyncOperation[] = []): CatalogSnapshot {
   return {
     version: CATALOG_SNAPSHOT_VERSION,
     generatedAt: "2026-08-17T08:00:00.000Z",
@@ -91,7 +117,7 @@ function snapshot(): CatalogSnapshot {
       product("prd_2", "VIE-002", "Chocolatine"),
     ],
     orderTimeLimits: [],
-    operations: [],
+    operations,
   };
 }
 
@@ -118,11 +144,12 @@ describe("GET /admin/storefront/catalog", () => {
     const response = await ctx.asSub(sub).get(ROUTE).expect(200);
 
     expect(jsonBody<StorefrontCatalogView>(response)).toEqual({
-      shelves: [{ key: "cat_vien", name: "Viennoiseries" }],
+      shelves: [{ key: "cat_vien", name: "Viennoiseries", operation: false }],
       items: [
         { sku: "VIE-001", name: "Croissant", shelfKey: "cat_vien", served: true },
         { sku: "VIE-002", name: "Chocolatine", shelfKey: "cat_vien", served: true },
       ],
+      operations: [],
     });
     expect(response.text).not.toMatch(/price|millicents|cents|vat/iu);
   });
@@ -151,5 +178,34 @@ describe("GET /admin/storefront/catalog", () => {
       served: false,
     });
     expect(view.items).toContainEqual(expect.objectContaining({ sku: "VIE-001", served: true }));
+  });
+
+  it("propose le rayon op:<key> d'une opération reçue, et l'opération comme cible d'annonce", async () => {
+    await ctx.app.get(B2bCatalogDriver).send(snapshot([NOEL]), {
+      revisionId: "rev_e2e_op",
+      fingerprint: "empreinte-e2e-op",
+    });
+    const sub = await person("communication");
+
+    const view = jsonBody<StorefrontCatalogView>(await ctx.asSub(sub).get(ROUTE).expect(200));
+
+    expect(view.shelves).toEqual([
+      { key: "op:noel", name: "Noël", operation: true },
+      { key: "cat_vien", name: "Viennoiseries", operation: false },
+    ]);
+    expect(view.operations).toEqual([
+      {
+        key: "noel",
+        name: { fr: "Noël", en: "Christmas" },
+        lede: null,
+        image: null,
+        state: "announced",
+        announceFrom: NOEL.announceFrom,
+        orderFrom: NOEL.orderFrom,
+        orderUntil: NOEL.orderUntil,
+        pickupFrom: NOEL.pickupFrom,
+        pickupUntil: NOEL.pickupUntil,
+      },
+    ]);
   });
 });

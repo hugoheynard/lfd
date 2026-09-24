@@ -53,6 +53,12 @@ export interface OperationOverrideView {
   readonly hiddenSkus: readonly string[];
   /** Un `StaffUser.id`, ou `null` hors requête. */
   readonly decidedBy: string | null;
+  /**
+   * « Prénom Nom » de l'auteur, résolu comme pour la surcharge d'un article
+   * (`CatalogAdminItemView.decidedByName`) ; `null` quand `decidedBy` ne
+   * désigne aucune fiche — l'écran affiche alors `decidedBy` tel quel.
+   */
+  readonly decidedByName: string | null;
   readonly decidedAt: string;
 }
 

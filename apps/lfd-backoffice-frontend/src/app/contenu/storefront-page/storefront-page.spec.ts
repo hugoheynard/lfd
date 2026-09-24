@@ -95,11 +95,12 @@ function item(sku: string, shelfKey: string): StorefrontCatalogView['items'][num
 
 const CATALOG: StorefrontCatalogView = {
   shelves: [
-    { key: 'viennoiserie', name: 'Viennoiseries' },
-    { key: 'bread', name: 'Pains' },
-    { key: 'chocolate', name: 'Chocolat & confiserie' },
+    { key: 'viennoiserie', name: 'Viennoiseries', operation: false },
+    { key: 'bread', name: 'Pains', operation: false },
+    { key: 'chocolate', name: 'Chocolat & confiserie', operation: false },
   ],
   items: [item('CRO', 'viennoiserie'), item('BAG', 'bread'), item('TRU', 'chocolate')],
+  operations: [],
 };
 
 class FakeStorefront {
