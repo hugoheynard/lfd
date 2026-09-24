@@ -47,6 +47,7 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     isHidden: false,
     isHiddenPublic: false,
     isFeatured: false,
+    operationOnly: false,
     decidedBy: null,
     decidedByName: null,
     decidedAt: null,

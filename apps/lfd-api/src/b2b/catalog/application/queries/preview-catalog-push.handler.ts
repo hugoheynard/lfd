@@ -21,7 +21,7 @@ export class PreviewCatalogPushHandler implements IQueryHandler<
   constructor(private readonly parity: CheckCatalogParityService) {}
 
   async execute(): Promise<B2bPushPreviewView> {
-    const { preview, reference, parity } = await this.parity.confront();
+    const { preview, reference, parity, operations } = await this.parity.confront();
     const changes = changeIndex(parity);
 
     return {
@@ -41,6 +41,11 @@ export class PreviewCatalogPushHandler implements IQueryHandler<
       // pas la voir : elle seule suppose de connaître l'état du canal.
       removed: parity.stale,
       fingerprint: preview.fingerprint,
+      operations: operations.map((operation) => ({
+        key: operation.key,
+        name: operation.name,
+        change: operation.change,
+      })),
       parity,
     };
   }
@@ -49,8 +54,8 @@ export class PreviewCatalogPushHandler implements IQueryHandler<
 /**
  * L'effet de l'envoi sur chaque article, dérivé de l'écart.
  *
- * `missing` — le canal ne l'a pas — est une ENTRÉE. Un écart de prix, de taux ou
- * de nom est un CHANGEMENT. Le reste ne bouge pas, et c'est le cas courant :
+ * `missing` — le canal ne l'a pas — est une ENTRÉE. Un écart de prix, de taux,
+ * de nom ou de réservation aux opérations est un CHANGEMENT. Le reste ne bouge pas, et c'est le cas courant :
  * un envoi qui ne change rien est un envoi normal, pas un envoi vide.
  *
  * L'ordre compte : une entrée n'est pas aussi un changement, et l'écrire après
@@ -59,7 +64,13 @@ export class PreviewCatalogPushHandler implements IQueryHandler<
  */
 function changeIndex(parity: ParityReport): ReadonlyMap<string, B2bPushChange> {
   const changes = new Map<string, B2bPushChange>();
-  for (const gap of [...parity.priceGaps, ...parity.vatGaps, ...parity.nameGaps]) {
+  const gaps = [
+    ...parity.priceGaps,
+    ...parity.vatGaps,
+    ...parity.nameGaps,
+    ...parity.operationOnlyGaps,
+  ];
+  for (const gap of gaps) {
     changes.set(gap.sku, "changed");
   }
   for (const sku of parity.missing) {

@@ -890,6 +890,8 @@ export type {
 export type { CatalogParityGap, CatalogParityView } from "./catalog-parity.js";
 export type {
   B2bPushChange,
+  B2bPushOperationChange,
+  B2bPushPreviewOperation,
   B2bPushPreviewExclusion,
   B2bPushPreviewItem,
   B2bPushPreviewView,

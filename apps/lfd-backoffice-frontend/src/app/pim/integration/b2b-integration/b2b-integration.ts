@@ -172,7 +172,7 @@ export class B2bIntegration {
   }
 }
 
-/** Les trois familles d'écarts, dans l'ordre où elles coûtent cher. */
+/** Les quatre familles d'écarts, dans l'ordre où elles coûtent cher. */
 function rowsOf(report: CatalogParityView): readonly GapRow[] {
   return [
     ...report.priceGaps.map((gap) => ({
@@ -192,6 +192,12 @@ function rowsOf(report: CatalogParityView): readonly GapRow[] {
       field: 'Nom',
       reference: gap.reference,
       mirror: gap.mirror,
+    })),
+    ...report.operationOnlyGaps.map((gap) => ({
+      sku: gap.sku,
+      field: 'Réservé aux opérations',
+      reference: gap.reference ? 'oui' : 'non',
+      mirror: gap.mirror ? 'oui' : 'non',
     })),
   ];
 }

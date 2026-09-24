@@ -23,6 +23,7 @@ interface AdminRow {
   readonly vatRatePercent: { toNumber: () => number } | null;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
+  readonly operationOnly: boolean;
   readonly receivedAt: Date;
   // Le taux de la FAMILLE n'y figure plus : plus rien ici ne le lit. Le laisser
   // dans la forme suffirait à ce qu'un jour quelqu'un le relise « puisqu'il est
@@ -124,6 +125,7 @@ function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
     isHidden: row.override?.isHidden ?? false,
     isHiddenPublic: row.override?.isHiddenPublic ?? false,
     isFeatured: row.override?.isFeatured ?? false,
+    operationOnly: row.operationOnly,
     decidedBy: row.override?.decidedBy ?? null,
     decidedByName: authors.nameOf(row.override?.decidedBy ?? null),
     decidedAt: row.override?.decidedAt.toISOString() ?? null,

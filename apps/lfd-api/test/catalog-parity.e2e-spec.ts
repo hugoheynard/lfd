@@ -6,7 +6,12 @@
  * Prisma. C'est exactement le point où la fusion des processus se voit — deux
  * bases, un seul appel, aucun réseau.
  */
-import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
+import {
+  CATALOG_SNAPSHOT_VERSION,
+  type CatalogSnapshot,
+  type SyncOperation,
+} from "@lfd/catalog-sync";
+import type { B2bPushPreviewView } from "@lfd/contracts";
 import { projectionFingerprint } from "../src/pim/channels/shared/domain/canonical-projection.js";
 
 import {
@@ -29,7 +34,9 @@ class StubFeed extends B2bCatalogFeedPreview {
     name: string;
     priceMillicents: number;
     vatRatePercent: number | null;
+    operationOnly?: boolean;
   }[] = [];
+  operations: SyncOperation[] = [];
 
   preview(generatedAt: string): Promise<FeedPreview> {
     const snapshot = this.snapshotAt(generatedAt);
@@ -74,10 +81,10 @@ class StubFeed extends B2bCatalogFeedPreview {
         note: null,
         image: null,
         thumbnail: null,
-        operationOnly: false,
+        operationOnly: variant.operationOnly ?? false,
       })),
       orderTimeLimits: [],
-      operations: [],
+      operations: [...this.operations],
     };
   }
 }
@@ -101,6 +108,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await ctx.reset();
   feed.products = [];
+  feed.operations = [];
 });
 
 /** Le miroir tel que la boutique le lit, réduit aux SKU semés par le harnais. */
@@ -197,5 +205,64 @@ describe("le taux de TVA, à parité comme le prix", () => {
       mirror: seeded.vatRatePercent,
     });
     expect(report.inSync).toBe(false);
+  });
+});
+
+/**
+ * Régression (2026-09-24) : l'aperçu ne voyait ni les opérations ni la
+ * réservation aux opérations. Une opération préparée au PIM laissait l'écran
+ * dire « la boutique est à jour » et griser l'envoi — elle ne partait jamais.
+ */
+describe("l'aperçu d'envoi voit les opérations", () => {
+  async function preview(): Promise<B2bPushPreviewView> {
+    const response = await ctx
+      .http()
+      .get("/admin/catalog/push-preview")
+      .set("Authorization", "Bearer s");
+    expect(response.status).toBe(200);
+    return jsonBody<B2bPushPreviewView>(response);
+  }
+
+  it("marque « change » un article devenu réservé aux opérations", async () => {
+    const [seeded] = await mirrorOf(["VIE-001-1"]);
+    if (seeded === undefined) {
+      throw new Error("le harnais doit semer VIE-001-1");
+    }
+    feed.products = [{ ...seeded, operationOnly: true }];
+
+    const view = await preview();
+
+    expect(view.outgoing.find((item) => item.sku === "VIE-001-1")?.change).toBe("changed");
+    expect(view.parity.operationOnlyGaps).toEqual([
+      { sku: "VIE-001-1", reference: true, mirror: false },
+    ]);
+  });
+
+  it("annonce l'entrée d'une opération préparée que le canal ne tient pas", async () => {
+    const [seeded] = await mirrorOf(["VIE-001-1"]);
+    if (seeded === undefined) {
+      throw new Error("le harnais doit semer VIE-001-1");
+    }
+    feed.products = [seeded];
+    // Dates comparées au miroir seulement, jamais à l'horloge.
+    feed.operations = [
+      {
+        key: "noel-2026",
+        name: { fr: "Noël" },
+        lede: null,
+        image: null,
+        announceFrom: "2026-10-31T23:00:00.000Z",
+        orderFrom: null,
+        orderUntil: "2026-12-21T11:00:00.000Z",
+        pickupFrom: "2026-12-20",
+        pickupUntil: "2026-12-24",
+        audience: "both",
+        skus: ["VIE-001-1"],
+      },
+    ];
+
+    const view = await preview();
+
+    expect(view.operations).toEqual([{ key: "noel-2026", name: "Noël", change: "added" }]);
   });
 });

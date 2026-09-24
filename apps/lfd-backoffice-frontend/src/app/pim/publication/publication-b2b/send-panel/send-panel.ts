@@ -13,6 +13,8 @@ export interface SendPanelData {
   readonly entering: number;
   readonly changing: number;
   readonly removing: number;
+  /** Les opérations datées qui entrent, changent ou sont retirées — un envoi peut ne porter qu'elles. */
+  readonly operations: number;
 }
 
 /** Ce que le panneau rend quand on confirme. `null` = on a renoncé. */
@@ -75,11 +77,12 @@ export class SendPanel {
 
   /** Ce que l'envoi va faire, en une ligne — pour ne pas confirmer à l'aveugle. */
   protected readonly summary = computed(() => {
-    const { entering, changing, removing } = this.data();
+    const { entering, changing, removing, operations } = this.data();
     const parts = [
       entering > 0 ? `${String(entering)} entrant(s)` : null,
       changing > 0 ? `${String(changing)} modifié(s)` : null,
       removing > 0 ? `${String(removing)} retiré(s)` : null,
+      operations > 0 ? `${String(operations)} opération(s)` : null,
     ].filter((part): part is string => part !== null);
     return parts.length === 0 ? 'aucun changement' : parts.join(' · ');
   });

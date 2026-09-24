@@ -53,42 +53,70 @@
       </fold-callout>
     }
 
-    @if (moving().length > 0) {
+    @if (moving().length > 0 || movingOperations().length > 0) {
       <fold-page-section title="Ce que cet envoi changerait" separator>
-        <table class="outgoing">
-          <thead>
-            <tr>
-              <th scope="col">Référence</th>
-              <th scope="col">Nom</th>
-              <th scope="col" class="num">Prix HT</th>
-              <th scope="col" class="num">TVA</th>
-              <th scope="col">Effet</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (item of moving(); track item.sku) {
+        @if (movingOperations().length > 0) {
+          <table class="outgoing operations">
+            <thead>
               <tr>
-                <td>
-                  <code>{{ item.sku }}</code>
-                </td>
-                <td>{{ item.name }}</td>
-                <td class="num">{{ euros(item.priceMillicents) }} €</td>
-                <td class="num">
-                  @if (item.vatRatePercent === null) {
-                    <span class="unset">non réglé</span>
-                  } @else {
-                    {{ item.vatRatePercent }} %
-                  }
-                </td>
-                <td>
-                  <span class="change" [attr.data-change]="item.change">{{
-                    changeLabel(item.change)
-                  }}</span>
-                </td>
+                <th scope="col">Opération</th>
+                <th scope="col">Nom</th>
+                <th scope="col">Effet</th>
               </tr>
-            }
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              @for (operation of movingOperations(); track operation.key) {
+                <tr>
+                  <td>
+                    <code>{{ operation.key }}</code>
+                  </td>
+                  <td>{{ operation.name }}</td>
+                  <td>
+                    <span class="change" [attr.data-change]="operation.change">{{
+                      changeLabel(operation.change)
+                    }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+        @if (moving().length > 0) {
+          <table class="outgoing">
+            <thead>
+              <tr>
+                <th scope="col">Référence</th>
+                <th scope="col">Nom</th>
+                <th scope="col" class="num">Prix HT</th>
+                <th scope="col" class="num">TVA</th>
+                <th scope="col">Effet</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of moving(); track item.sku) {
+                <tr>
+                  <td>
+                    <code>{{ item.sku }}</code>
+                  </td>
+                  <td>{{ item.name }}</td>
+                  <td class="num">{{ euros(item.priceMillicents) }} €</td>
+                  <td class="num">
+                    @if (item.vatRatePercent === null) {
+                      <span class="unset">non réglé</span>
+                    } @else {
+                      {{ item.vatRatePercent }} %
+                    }
+                  </td>
+                  <td>
+                    <span class="change" [attr.data-change]="item.change">{{
+                      changeLabel(item.change)
+                    }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
       </fold-page-section>
     }
 
