@@ -1,3 +1,4 @@
+import type { StorefrontContent } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import type { EditorBlock } from '../storefront-block';
@@ -9,7 +10,7 @@ const CATALOG: StorefrontCatalog = {
   products: [{ sku: 'CRO', name: 'Croissant', shelf: 'vien' }],
 };
 
-function block(id: string, items: EditorBlock['items']): EditorBlock {
+function block(id: string, items: readonly StorefrontContent[]): EditorBlock {
   return { id, format: 'tile', column: 1, row: 1, shelves: ['all'], contents: 'multiple', items };
 }
 
