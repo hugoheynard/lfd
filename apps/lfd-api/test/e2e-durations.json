@@ -123,6 +123,9 @@
   "test/staff-notification-authors.e2e-spec.ts": 1925,
   "test/staff-roles.e2e-spec.ts": 14643,
   "test/staff-users.e2e-spec.ts": 7541,
+  "test/storefront-media-carriers.e2e-spec.ts": 4000,
+  "test/storefront-roles-migration.e2e-spec.ts": 1600,
+  "test/storefront.e2e-spec.ts": 7100,
   "test/subscriptions-journal.e2e-spec.ts": 3063,
   "test/subscriptions.e2e-spec.ts": 4403,
   "test/support-requests.e2e-spec.ts": 4435

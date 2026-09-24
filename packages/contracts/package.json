@@ -44,6 +44,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@lfd/storefront-layout": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {

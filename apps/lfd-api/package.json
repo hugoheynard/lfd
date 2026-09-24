@@ -54,6 +54,7 @@
     "@lfd/ops-contract": "workspace:*",
     "@lfd/pim-contracts": "workspace:*",
     "@lfd/storage": "workspace:*",
+    "@lfd/storefront-layout": "workspace:*",
     "@nestjs/common": "catalog:",
     "@nestjs/config": "catalog:",
     "@nestjs/core": "catalog:",

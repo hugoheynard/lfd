@@ -103,6 +103,14 @@ const ACCOUNT_ZONE = "account";
 const SETTINGS_ZONES = ["delivery-zones", "pickup-addresses", "order-cutoffs"];
 
 /**
+ * **La vitrine** (2026-09-24, `documentation/order/plan-vitrine-enregistrement.md`,
+ * D6) : enregistrer la publie, et le fait `storefront.saved` est la SEULE
+ * trace de qui a vidé un rayon — une vitrine se réécrit en bloc. Tous ses
+ * handlers d'écriture sont staff ; sa route publique ne fait que lire.
+ */
+const STOREFRONT_ZONE = "storefront";
+
+/**
  * La tarification, elle, est tenue par le COMPILATEUR : ses dépôts d'écriture
  * exigent un `PricingAct` en paramètre, et un acte non fourni ne compile pas.
  * C'est plus fort que cette porte, et ça couvre règles, limites et barèmes.
@@ -393,6 +401,10 @@ const ZONES = [
   { root: join(SRC, "media"), audit: auditWithTicket("MediaJournal") },
   {
     root: join(SRC, "b2b", ACCOUNT_ZONE),
+    audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
+  },
+  {
+    root: join(SRC, "b2b", STOREFRONT_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   ...SETTINGS_ZONES.map((zone) => ({

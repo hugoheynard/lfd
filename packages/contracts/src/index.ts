@@ -1095,3 +1095,30 @@ export type {
   PublicPickupSlotRuleView,
   PublicPickupSlotTaken,
 } from "./public-pickup-slots.js";
+export {
+  storefrontCarouselSchema,
+  storefrontContentSchema,
+  storefrontImageSchema,
+  storefrontInfoContentSchema,
+  storefrontObjectPayloadSchema,
+  storefrontPageSchema,
+  storefrontPayloadSchema,
+  storefrontProductContentSchema,
+  storefrontTemplatePayloadSchema,
+  storefrontTextSchema,
+} from "./storefront.js";
+export type {
+  PublicStorefrontObjectView,
+  PublicStorefrontPageView,
+  StorefrontCarousel,
+  StorefrontContent,
+  StorefrontObjectPayload,
+  StorefrontObjectView,
+  StorefrontPage,
+  StorefrontPayload,
+  StorefrontPayloadInput,
+  StorefrontTemplatePayload,
+  StorefrontTemplateView,
+  StorefrontText,
+  StorefrontView,
+} from "./storefront.js";

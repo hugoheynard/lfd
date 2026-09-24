@@ -3,6 +3,7 @@ import { z } from "zod";
 import { appointmentChannelSchema } from "../appointment.js";
 import {
   cents,
+  count,
   fact,
   instant,
   millicents,
@@ -81,6 +82,25 @@ export const COMMERCE_FACTS = {
       revisionId: ref("catalog_revision"),
       versionId: ref("catalog_version"),
       excludedSkus: z.array(z.string()),
+    }),
+  ),
+
+  /**
+   * **La vitrine enregistrée** (`plan-vitrine-enregistrement.md`, D6). Enregistrer
+   * publie tout de suite : ce fait est la SEULE trace de qui a vidé un rayon.
+   *
+   * `subjectLabel` : « Vitrine » — il n'y en a qu'une. Les objets sont cités
+   * par leur identifiant : ils n'ont pas de nom, seulement une forme et une
+   * place. `shelves` : les rayons dont la page a changé, `all` compris.
+   */
+  "storefront.saved": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      revision: count(),
+      added: z.array(z.string()),
+      moved: z.array(z.string()),
+      archived: z.array(z.string()),
+      shelves: z.array(z.string()),
     }),
   ),
 

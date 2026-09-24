@@ -64,6 +64,9 @@ enum StaffResource {
   b2b_feature_access
   b2b_client_notes
   b2b_settings
+  /// La VITRINE — composer les pages de la boutique (2026-09-24,
+  /// `plan-vitrine-enregistrement.md`, D7).
+  b2b_storefront
 
   staff_access
   staff_notifications

@@ -138,23 +138,35 @@ laisserait deux PUT lire la même révision et passer tous les deux.
   `lint:events-tracked` / `lint:journal-tracked`. Enregistrer publie tout de
   suite : c'est la seule trace de qui a vidé un rayon.
 
-### D7 — La permission `storefront`, et une route HORS de l'espace b2b
+### D7 — La permission `b2b_storefront`, et une route HORS de l'espace b2b
 
-Ressource `storefront` (read / write) accordée à `admin` et `communication`.
+Ressource `b2b_storefront` (read / write) accordée à `admin` et `communication`.
 
 - **Deux migrations** : `ALTER TYPE "StaffResource" ADD VALUE IF NOT EXISTS
-'storefront'` seule, puis une seconde qui crée les tables et **met à jour
+'b2b_storefront'` seule, puis une seconde qui crée les tables et **met à jour
   `staff_role_definitions`** pour `admin` et `communication`, par un UPDATE
   idempotent sur le modèle de `20260923200100_le_role_communication`.
 - 🔴 **Un test qui lit les rôles tels que la migration les a laissés**, avant
   tout `reset()` : c'est le seul qui voit une migration oubliée, puisque les
   e2e réécrivent les rôles depuis le code.
-- **La route sort de l'espace b2b** : `/vitrine`, gardée par `storefront:read`,
-  avec son entrée de navigation affichée pour qui a `storefront:read`. Changer
+- **La route sort de l'espace b2b** : `/vitrine`, gardée par `b2b_storefront:read`,
+  avec son entrée de navigation affichée pour qui a `b2b_storefront:read`. Changer
   la garde du parent `b2b` ouvrirait tous les onglets de l'espace à
   `communication`. L'entrée « Vitrine » reste aussi dans Contenu pour qui voit
   déjà l'espace. L'ancienne route `/b2b/contenu/vitrine` redirige.
-- L'admin porte `@AdminSurface("storefront")`.
+- L'admin porte `@AdminSurface("b2b_storefront")`.
+- **Nom tranché par Hugo le 2026-09-24** : `b2b_storefront` et non `storefront`
+  — « le préfixe est le bloc de `src/` » (`staff-access.ts`), et la vitrine vit
+  dans `b2b/`. Seule la RESSOURCE porte le préfixe : tables `storefront_*`,
+  contexte `b2b/storefront`, fait `storefront.saved`, `Carrier.kind` et routes
+  gardent leur nom.
+- ⚠️ **Le guard ne lit pas `staff_role_definitions`** (vérifié le 2026-09-24) :
+  il résout depuis `ROLE_GRANTS` par `resolveStaffPermissions`
+  (`apps/lfd-api/src/staff/permissions/prisma-staff-access.resolver.ts`). La
+  table est ce que l'écran des rôles lit et édite. La migration
+  `20260923200100_le_role_communication` affirme le contraire dans son
+  commentaire et ne peut plus être corrigée (appliquée) ; le test des rôles
+  migrés garde donc l'accord table ↔ contrat, pas l'ouverture de la route.
 
 ### D8 — La lecture publique, et UN paquet de composition
 
@@ -271,8 +283,8 @@ Les lots 1 et 2 partent ensemble : sans le 2, le 1 ouvre un trou.
 
 - Les tables sont neuves et ne portent rien d'autre : les supprimer rend
   l'état d'avant.
-- Les droits : un UPDATE qui retire `storefront` des deux rôles.
-- 🔴 **La valeur d'enum `storefront` ne se retire pas** (Postgres ne sait pas
+- Les droits : un UPDATE qui retire `b2b_storefront` des deux rôles.
+- 🔴 **La valeur d'enum `b2b_storefront` ne se retire pas** (Postgres ne sait pas
   ôter une valeur d'enum). Elle reste, inutilisée et sans effet. C'est
   l'unique partie non réversible du lot, et elle est inoffensive.
 

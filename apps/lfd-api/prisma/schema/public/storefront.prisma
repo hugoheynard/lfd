@@ -1,0 +1,150 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// La vitrine — les pages composées de la boutique
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Plan : documentation/order/plan-vitrine-enregistrement.md (D2, D3, D6).
+// Écrites et lues par `b2b/storefront` seul. L'agrégat est la vitrine ENTIÈRE :
+// un objet partagé paraît sur plusieurs rayons, et la collision se juge sur
+// chacun — deux agrégats « page » ne pourraient pas la garder ensemble.
+//
+// 🔴 Les CHECK de ces tables vivent dans la migration
+// `20260924100100_la_vitrine_s_enregistre` : Prisma ne sait pas les dire. La
+// collision, elle, n'est dans aucune : la base ne sait pas dire « deux
+// rectangles ne se recouvrent pas sur un même rayon ».
+
+/// **La vitrine**, en une ligne : `id = 'main'`. Elle porte la RÉVISION, qui
+/// est le verrou de l'enregistrement (D6) — l'upsert conditionnel ne touche
+/// aucune ligne si quelqu'un a enregistré depuis le chargement.
+///
+/// Pas de ligne semée : une vitrine absente se lit `{ revision: 0 }`, vide, et
+/// le premier enregistrement l'insère.
+model Storefront {
+  /// Toujours `'main'` : il n'y a qu'une vitrine.
+  id       String @id
+  revision Int
+
+  updatedAt        DateTime @map("updated_at")
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0
+  /// (`lint:auth0-id-readers`).
+  updatedByStaffId String   @map("updated_by_staff_id")
+
+  @@map("storefront")
+  @@schema("public")
+}
+
+/// **La page d'un rayon** : combien de rangées sa composition occupe. Sous la
+/// dernière, le reste du rayon s'écoule en cartes.
+model StorefrontPage {
+  /// L'identifiant de famille du référentiel, ou `all`. Chaîne OPAQUE, sans
+  /// clé étrangère vers le PIM (§1 : les deux contextes ne se lisent pas).
+  shelfKey String @id @map("shelf_key")
+  rows     Int    @db.SmallInt
+
+  @@map("storefront_page")
+  @@schema("public")
+}
+
+/// **Un objet posé** : une forme, une position, ses réglages. Il paraît à la
+/// MÊME position sur chacun de ses rayons.
+///
+/// Jamais supprimé : un objet retiré de la composition est ARCHIVÉ
+/// (`archived_at`), et ses rayons et contenus restent tels qu'il les avait.
+model StorefrontObject {
+  /// ULID, posé par le serveur.
+  id            String  @id
+  /// `StorefrontShape` de `@lfd/storefront-layout`.
+  shape         String
+  col           Int     @db.SmallInt
+  row           Int     @db.SmallInt
+  applyOnMobile Boolean @map("apply_on_mobile")
+  mediaFit      String  @map("media_fit")
+  mediaSide     String  @map("media_side")
+
+  /// `false` : un seul contenu. Les réglages du défilement sont TOUJOURS
+  /// stockés — conservés mais inactifs, comme dans l'éditeur.
+  multiple    Boolean
+  nav         String
+  autoplay    Boolean
+  intervalS   Int     @map("interval_s") @db.SmallInt
+  firstS      Int     @map("first_s") @db.SmallInt
+  /// Le nombre de contenus SIMULÉ par l'aperçu de l'éditeur.
+  sampleCount Int     @map("sample_count") @db.SmallInt
+
+  /// `light` (défaut) · `dark` · `accent` — `StorefrontTone`. Présent sur tous
+  /// les objets ; un produit en carte 1×1 l'ignore au rendu (`toneApplies`).
+  tone String @default("light")
+
+  archivedAt DateTime? @map("archived_at")
+
+  shelves  StorefrontObjectShelf[]
+  contents StorefrontContent[]
+
+  @@map("storefront_object")
+  @@schema("public")
+}
+
+/// **Un rayon où paraît un objet.** Partie de la valeur de l'objet : réécrite
+/// en bloc à chaque enregistrement.
+model StorefrontObjectShelf {
+  objectId String           @map("object_id")
+  object   StorefrontObject @relation(fields: [objectId], references: [id])
+  shelfKey String           @map("shelf_key")
+
+  @@id([objectId, shelfKey])
+  @@index([shelfKey])
+  @@map("storefront_object_shelf")
+  @@schema("public")
+}
+
+/// **Un contenu d'objet** — un produit (le SKU, et lui seul : D4) ou une info.
+/// Partie de la valeur de l'objet : réécrite en bloc à chaque enregistrement.
+model StorefrontContent {
+  id       String           @id
+  objectId String           @map("object_id")
+  object   StorefrontObject @relation(fields: [objectId], references: [id])
+  /// L'ordre de défilement, à partir de 0.
+  position Int              @db.SmallInt
+  /// `product` | `info`.
+  kind     String
+
+  productSku String? @map("product_sku")
+
+  /// Textes localisés `{ fr, en?, it? }`.
+  badge        Json?
+  title        Json?
+  lede         Json?
+  imageUrl     String? @map("image_url")
+  imageAlt     Json?   @map("image_alt")
+  linkShelfKey String? @map("link_shelf_key")
+
+  @@unique([objectId, position])
+  @@map("storefront_content")
+  @@schema("public")
+}
+
+/// **Un gabarit** : un objet réglé, sous un nom. Ni position, ni rayons, ni
+/// contenus. L'objet posé depuis un gabarit en est une COPIE.
+model StorefrontTemplate {
+  id          String  @id
+  name        String
+  /// Le nom sans casse, sans accents, sans espaces autour
+  /// (`templateNameKey`, `@lfd/storefront-layout`) : deux gabarits ne portent
+  /// pas le même nom.
+  nameKey     String  @unique @map("name_key")
+  description String?
+
+  shape         String
+  applyOnMobile Boolean @map("apply_on_mobile")
+  mediaFit      String  @map("media_fit")
+  mediaSide     String  @map("media_side")
+  multiple      Boolean
+  nav           String
+  autoplay      Boolean
+  intervalS     Int     @map("interval_s") @db.SmallInt
+  firstS        Int     @map("first_s") @db.SmallInt
+  sampleCount   Int     @map("sample_count") @db.SmallInt
+  tone          String  @default("light")
+
+  @@map("storefront_template")
+  @@schema("public")
+}

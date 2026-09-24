@@ -178,6 +178,17 @@ export const staffResourceSchema = z.enum([
   "b2b_client_notes",
   /** Le reste du paramétrage : contenu, zones de livraison, créneaux, retraits. */
   "b2b_settings",
+  /**
+   * **La vitrine** — composer les pages de la boutique : formes, positions,
+   * rayons, contenus, gabarits (`documentation/order/plan-vitrine-enregistrement.md`,
+   * D7).
+   *
+   * Détachée de `b2b_settings` parce que ce n'est pas le même métier : la
+   * communication compose la vitrine, elle ne règle ni les points de retrait
+   * ni les heures limites. Accordée à `admin` et `communication`, et à eux
+   * seuls.
+   */
+  "b2b_storefront",
 
   // ── `staff.` — LE SOCLE ─────────────────────────────────────────────────
   /**
@@ -265,6 +276,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   pim_settings: "Référentiel — Points et contextes de vente",
   pim_tax: "Référentiel — Fiscalité",
   media_library: "Médiathèque",
+  b2b_storefront: "Vitrine",
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
   b2b_subscriptions: "Paniers récurrents",
@@ -357,6 +369,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_client_notes: "write",
     b2b_settings: "write",
     media_library: "write",
+    b2b_storefront: "write",
     staff_access: "write",
     staff_notifications: "write",
     ops_health: "write",
@@ -453,6 +466,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
    */
   communication: {
     media_library: "write",
+    // Composer la vitrine est son métier au même titre qu'illustrer
+    // (plan-vitrine-enregistrement.md, D7 — Hugo, 2026-09-24).
+    b2b_storefront: "write",
     pim_catalog: "read",
     staff_notifications: "write",
   },

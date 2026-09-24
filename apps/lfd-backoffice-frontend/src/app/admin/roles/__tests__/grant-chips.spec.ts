@@ -55,8 +55,12 @@ describe('grantGroups', () => {
    * `pim_catalog`, donc qui lisait le catalogue pouvait supprimer du fonds.
    * Alimenter et taguer n'est pas rédiger une fiche — seuls `admin` et
    * `communication` l'obtiennent.
+   *
+   * `b2b_storefront` l'a fait passer à 25 le 2026-09-24 : composer la vitrine
+   * n'est pas régler la plateforme, et la communication doit pouvoir le faire
+   * sans ouvrir `b2b_settings` (plan-vitrine-enregistrement.md, D7).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(24);
+    expect(RESOURCE_COUNT).toBe(25);
   });
 });
