@@ -16,9 +16,8 @@ import { MediaLibraryHttpApi } from '../media-library-http-api';
  * Une table plutôt qu'un ternaire : un porteur de plus est une ligne de plus.
  * Les chemins des fiches et des familles ont été vérifiés dans
  * `pim/pim.routes.ts` le 2026-09-23 : enfants DIRECTS de `pim`, et « familles »
- * se dit `categories` dans l'URL. La vitrine est sous `b2b/contenu` jusqu'au
- * lot 3 du plan `documentation/order/plan-vitrine-enregistrement.md`, qui la
- * déménage en `/vitrine` avec une redirection depuis l'ancienne adresse.
+ * se dit `categories` dans l'URL. La vitrine vit en `/vitrine`, hors de
+ * l'espace B2B (`documentation/order/plan-vitrine-enregistrement.md`, D7).
  */
 const CARRIER_DESTINATIONS: Readonly<
   Record<
@@ -28,7 +27,7 @@ const CARRIER_DESTINATIONS: Readonly<
 > = {
   product: { word: 'Fiche', path: (id) => ['/pim', 'produits', id] },
   category: { word: 'Famille', path: (id) => ['/pim', 'categories', id] },
-  storefront: { word: 'Vitrine', path: () => ['/b2b', 'contenu', 'vitrine'] },
+  storefront: { word: 'Vitrine', path: () => ['/vitrine'] },
 };
 
 /** L'image dont on demande les porteurs. */

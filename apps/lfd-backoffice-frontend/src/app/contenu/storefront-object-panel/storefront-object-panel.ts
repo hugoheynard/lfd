@@ -7,44 +7,42 @@ import {
   output,
 } from '@angular/core';
 import {
-  FoldButtonComponent,
   FoldCheckboxComponent,
   FoldListboxComponent,
   FoldNumberInputComponent,
+  FoldElementTitleComponent,
   FoldViewToggleComponent,
   type FoldViewToggleOption,
 } from 'fold-ng';
 
+import type { StorefrontContent } from '@lfd/contracts';
 import {
   activeCarousel,
+  allowedSides,
   type CarouselNav,
   type CarouselSettings,
   type ContentsMode,
   contentsOf,
-  FIRST_SECONDS,
-  INTERVAL_SECONDS,
-  SAMPLE_COUNT,
-} from '../storefront-carousel';
-import {
   describeFormat,
+  FIRST_SECONDS,
   FORMATS,
-  type PlacedBlock,
-  type ShelfKey,
-  type StorefrontShape,
-} from '../storefront-grid';
-import {
-  allowedSides,
+  hasMobileOption,
+  INTERVAL_SECONDS,
   type MediaFit,
   mediaFitOf,
   type MediaSide,
   mediaSideOf,
-  type Tone,
-  toneOf,
-} from '../storefront-media';
-import { hasMobileOption } from '../storefront-mobile';
-import { STOREFRONT_SHELVES } from '../storefront-shelves';
-import type { TemplateLabel } from '../storefront-templates';
-import { TemplateNameForm } from '../template-name-form/template-name-form';
+  SAMPLE_COUNT,
+  type ShelfKey,
+  STOREFRONT_TONES,
+  type StorefrontShape,
+  type StorefrontTone,
+  toneApplies,
+} from '@lfd/storefront-layout';
+
+import { type EditorBlock, itemsOf, toneOf } from '../storefront-block';
+import type { ShelfOption, StorefrontCatalog } from '../storefront-catalog';
+import { StorefrontContentsEditor } from '../storefront-contents-editor/storefront-contents-editor';
 
 const SIDE_LABELS: Readonly<Record<MediaSide, string>> = {
   left: 'Gauche',
@@ -64,8 +62,8 @@ const TONE_OPTIONS: readonly FoldViewToggleOption[] = [
   { value: 'accent', label: 'Accent' },
 ];
 
-function isTone(value: string): value is Tone {
-  return value === 'light' || value === 'dark' || value === 'accent';
+function isTone(value: string): value is StorefrontTone {
+  return (STOREFRONT_TONES as readonly string[]).includes(value);
 }
 
 const CONTENTS_OPTIONS: readonly FoldViewToggleOption[] = [
@@ -88,8 +86,6 @@ const SCOPE_OPTIONS: readonly FoldViewToggleOption[] = [
   { value: 'all', label: 'Tous les rayons' },
 ];
 
-const ALL_SHELF_KEYS: readonly ShelfKey[] = STOREFRONT_SHELVES.map((shelf) => shelf.key);
-
 type CarouselNumberField = 'intervalSeconds' | 'firstSeconds' | 'sampleCount';
 
 function isFit(value: string): value is MediaFit {
@@ -109,44 +105,46 @@ function isScope(value: string): value is ShelfScope {
 }
 
 /**
- * Le panneau de l'objet sélectionné dans l'éditeur « Vitrine » : forme, ton, image,
- * option mobile, un ou plusieurs contenus, rayons, et « Enregistrer comme
- * gabarit ».
+ * Les réglages de l'objet sélectionné, en quatre sections l'une sous l'autre :
+ * « Forme et image », « Rayons », « Contenus », « Mobile et défilement ». Il
+ * vit dans le dialogue de l'objet, qui défile à côté de son aperçu fixe.
  *
  * Il ne tient AUCUN état de l'éditeur : il traduit chaque choix en une
- * intention typée, que l'éditeur applique — ou refuse, et le dit. Seuls deux
- * états d'affichage lui sont propres, remis à zéro quand la sélection change :
- * le choix « Une sélection » de rayons, et le formulaire de nom du gabarit.
- * Ce dernier passe par `saveTemplate`, fourni par l'éditeur, qui tient la
- * liste et juge l'unicité — le formulaire ne se ferme que sur `true`.
+ * intention typée, que l'éditeur applique — ou refuse, et le dit. Son seul
+ * état d'affichage est le choix « Une sélection » de rayons, remis à zéro
+ * quand la sélection change.
  */
 @Component({
   selector: 'app-storefront-object-panel',
   imports: [
-    FoldButtonComponent,
     FoldCheckboxComponent,
+    FoldElementTitleComponent,
     FoldListboxComponent,
     FoldNumberInputComponent,
     FoldViewToggleComponent,
-    TemplateNameForm,
+    StorefrontContentsEditor,
   ],
   templateUrl: './storefront-object-panel.html',
   styleUrl: './storefront-object-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StorefrontObjectPanel {
-  readonly block = input.required<PlacedBlock>();
+  readonly block = input.required<EditorBlock>();
   /** Le rayon édité : « ce rayon seulement », et la case qu'on ne décoche pas. */
   readonly shelf = input.required<ShelfKey>();
-  readonly saveTemplate = input.required<(label: TemplateLabel) => boolean>();
+  /** Les rayons qu'on peut cocher — ceux du catalogue, « Tout » en tête. */
+  readonly shelves = input.required<readonly ShelfOption[]>();
+  /** Le catalogue d'administration ; `null` s'il n'a pas pu être lu. */
+  readonly catalog = input<StorefrontCatalog | null>(null);
 
   readonly applyOnMobileChange = output<boolean>();
   readonly mediaChange = output<{ readonly fit?: MediaFit; readonly side?: MediaSide }>();
   readonly formatChange = output<StorefrontShape>();
-  readonly toneChange = output<Tone>();
+  readonly toneChange = output<StorefrontTone>();
   readonly contentsChange = output<ContentsMode>();
   readonly carouselChange = output<Partial<CarouselSettings>>();
   readonly shelvesChange = output<readonly ShelfKey[]>();
+  readonly itemsChange = output<readonly StorefrontContent[]>();
 
   protected readonly describe = describeFormat;
   protected readonly hasMobileOption = hasMobileOption;
@@ -155,7 +153,6 @@ export class StorefrontObjectPanel {
   protected readonly contentsOf = contentsOf;
   /** Les réglages du défilement ne s'éditent qu'en plusieurs contenus. */
   protected readonly carouselOf = activeCarousel;
-  protected readonly shelves = STOREFRONT_SHELVES;
   protected readonly fitOptions = FIT_OPTIONS;
   protected readonly toneOptions = TONE_OPTIONS;
   /** Les sept formes, telles que la palette les nomme. */
@@ -171,16 +168,20 @@ export class StorefrontObjectPanel {
   protected readonly intervalBounds = INTERVAL_SECONDS;
   protected readonly sampleBounds = SAMPLE_COUNT;
 
-  /** Le formulaire de nom du gabarit — refermé quand la sélection change. */
-  protected readonly naming = linkedSignal({
-    source: () => this.block().id,
-    computation: () => false,
-  });
   /** « Une sélection » a été choisie : on montre les cases même si la liste dit encore autre chose. */
   private readonly pickingShelves = linkedSignal({
     source: () => this.block().id,
     computation: () => false,
   });
+
+  /**
+   * Le ton se propose-t-il ? Non sur une carte qui ne porte que des produits :
+   * elle garde le rendu standard du rayon (D3), et proposer un réglage sans
+   * effet serait mentir sur l'écran.
+   */
+  protected readonly toneShown = computed(() =>
+    toneApplies(this.block().format, itemsOf(this.block())),
+  );
 
   /** Les côtés que la forme permet — et eux seuls. */
   protected readonly sideOptions = computed<readonly FoldViewToggleOption[]>(() =>
@@ -192,17 +193,14 @@ export class StorefrontObjectPanel {
     if (this.pickingShelves()) {
       return 'some';
     }
-    if (block.shelves.length === ALL_SHELF_KEYS.length) {
+    const all = this.allShelfKeys();
+    if (all.length > 1 && all.every((key) => block.shelves.includes(key))) {
       return 'all';
     }
     return block.shelves.length === 1 && block.shelves[0] === this.shelf() ? 'this' : 'some';
   });
 
-  protected onTemplateNamed(label: TemplateLabel): void {
-    if (this.saveTemplate()(label)) {
-      this.naming.set(false);
-    }
-  }
+  private readonly allShelfKeys = computed(() => this.shelves().map((shelf) => shelf.key));
 
   protected onFitChange(value: string): void {
     if (isFit(value)) {
@@ -249,7 +247,7 @@ export class StorefrontObjectPanel {
     if (value === 'this') {
       this.shelvesChange.emit([this.shelf()]);
     } else if (value === 'all') {
-      this.shelvesChange.emit(ALL_SHELF_KEYS);
+      this.shelvesChange.emit(this.allShelfKeys());
     }
   }
 
@@ -257,6 +255,11 @@ export class StorefrontObjectPanel {
   protected toggleShelf(shelf: ShelfKey, checked: boolean): void {
     const current = this.block().shelves;
     const next = checked ? [...current, shelf] : current.filter((key) => key !== shelf);
-    this.shelvesChange.emit(ALL_SHELF_KEYS.filter((key) => next.includes(key)));
+    // L'ordre du catalogue ; un rayon disparu qu'il portait encore reste, à la fin.
+    const known = this.allShelfKeys();
+    this.shelvesChange.emit([
+      ...known.filter((key) => next.includes(key)),
+      ...next.filter((key) => !known.includes(key)),
+    ]);
   }
 }

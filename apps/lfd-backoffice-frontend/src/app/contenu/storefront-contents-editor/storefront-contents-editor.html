@@ -1,0 +1,109 @@
+<div class="contents">
+  @if (items().length === 0) {
+    <span class="caption">
+      Aucun contenu : l’objet reste vide le temps de composer, et la boutique ne le montre pas
+      encore.
+    </span>
+  }
+
+  <ol class="list">
+    @for (item of items(); track $index; let first = $first; let last = $last) {
+      <li class="item">
+        <div class="item-head">
+          <span class="item-text">
+            <span class="kind">{{ item.kind === 'product' ? 'Article' : 'Info' }}</span>
+            <span class="name">{{ nameOf(item) }}</span>
+          </span>
+          <span class="item-actions">
+            @if (items().length > 1) {
+              <fold-button-icon
+                icon="chevron-up"
+                size="xs"
+                tooltip="Plus tôt dans le défilement"
+                [disabled]="first"
+                (clicked)="move($index, -1)"
+              />
+              <fold-button-icon
+                icon="chevron-down"
+                size="xs"
+                tooltip="Plus tard dans le défilement"
+                [disabled]="last"
+                (clicked)="move($index, 1)"
+              />
+            }
+            <fold-button-icon
+              [icon]="isOpen($index) ? 'chevron-up' : 'edit'"
+              size="xs"
+              [tooltip]="isOpen($index) ? 'Refermer' : 'Modifier'"
+              (clicked)="toggle($index)"
+            />
+            <fold-button-icon
+              icon="close"
+              size="xs"
+              tooltip="Retirer ce contenu"
+              (clicked)="remove($index)"
+            />
+          </span>
+        </div>
+        @if (isUnserved(item)) {
+          <fold-badge
+            variant="warning"
+            content="Article plus en vente — la boutique ne le montre pas"
+          />
+        }
+        @for (issue of issuesOf(item); track issue) {
+          <fold-badge variant="alert" [content]="issue" />
+        }
+
+        @if (isOpen($index)) {
+          @if (item.kind === 'product') {
+            @if (catalog(); as known) {
+              <app-storefront-product-picker
+                [products]="known.products"
+                [sku]="item.sku"
+                (picked)="replaceProduct($index, $event)"
+              />
+            } @else {
+              <span class="caption"
+                >Le catalogue n’a pas pu être lu : l’article ne se change pas.</span
+              >
+            }
+          } @else {
+            <app-storefront-info-form
+              [info]="item"
+              [shelves]="shelves()"
+              (changed)="replaceInfo($index, $event)"
+            />
+          }
+        }
+      </li>
+    }
+  </ol>
+
+  @if (opened() === 'adding-product') {
+    @if (catalog(); as known) {
+      <app-storefront-product-picker [products]="known.products" (picked)="addProduct($event)" />
+    }
+    <button foldButton type="button" size="sm" emphasis="soft" (click)="opened.set(null)">
+      Annuler
+    </button>
+  } @else if (canAdd()) {
+    <div class="add">
+      <button
+        foldButton
+        type="button"
+        size="sm"
+        emphasis="outline"
+        [disabled]="catalog() === null"
+        (click)="startAddingProduct()"
+      >
+        Ajouter un article
+      </button>
+      <button foldButton type="button" size="sm" emphasis="outline" (click)="addInfo()">
+        Ajouter une info
+      </button>
+    </div>
+  } @else {
+    <span class="caption">Un seul contenu : passez à « Plusieurs » pour en ajouter.</span>
+  }
+</div>

@@ -1,21 +1,29 @@
 import {
+  type CarouselSettings,
   type Cell,
+  type ContentsMode,
   firstFreeCell,
-  place,
-  type PlacedBlock,
-  type PlacementResult,
+  type MediaFit,
+  type MediaSide,
   type ShelfKey,
   type StorefrontShape,
-} from './storefront-grid';
-import { type MediaFit, type MediaSide, type Tone } from './storefront-media';
-import { type CarouselSettings, type ContentsMode } from './storefront-carousel';
+  type StorefrontTone,
+  TEMPLATE_DESCRIPTION_MAX,
+  TEMPLATE_NAME_MAX,
+  templateNameKey,
+} from '@lfd/storefront-layout';
+
+import type { EditorBlock } from './storefront-block';
+import { type AcrossResult, placeAcross, type RowsOf } from './storefront-placement';
+
+export { TEMPLATE_DESCRIPTION_MAX, TEMPLATE_NAME_MAX };
 
 /**
  * Les gabarits de la vitrine — un objet réglé, enregistré sous un nom.
  *
- * 🔴 **En mémoire seulement** (2026-09-24) : ni serveur, ni `localStorage`.
- * Ils deviendront serveur avec le lot d'enregistrement ; d'ici là, recharger
- * l'onglet les efface, comme le reste de l'éditeur.
+ * Ils font partie de la vitrine : chargés avec elle, renvoyés dans le même
+ * `PUT` (`plan-vitrine-enregistrement.md`, D3 et D6). Un gabarit NEUF porte un
+ * identifiant local jusqu'à l'enregistrement ; le serveur lui en donne un.
  *
  * Un gabarit porte un nom (unique), une description facultative, la forme, le ton et ses réglages — cadrage, côté, mobile, un ou
  * plusieurs contenus, défilement (nombre simulé compris). **Ni position, ni
@@ -29,14 +37,11 @@ export interface StorefrontTemplate {
   readonly format: StorefrontShape;
   readonly mediaFit?: MediaFit;
   readonly mediaSide?: MediaSide;
-  readonly tone?: Tone;
+  readonly tone?: StorefrontTone;
   readonly applyOnMobile?: boolean;
   readonly contents?: ContentsMode;
   readonly carousel?: CarouselSettings;
 }
-
-export const TEMPLATE_NAME_MAX = 60;
-export const TEMPLATE_DESCRIPTION_MAX = 280;
 
 /** Ce que le formulaire d'un gabarit envoie. */
 export interface TemplateLabel {
@@ -48,9 +53,13 @@ export type TemplateResult =
   | { readonly ok: true; readonly templates: readonly StorefrontTemplate[] }
   | { readonly ok: false; readonly message: string };
 
-/** Même nom à la casse et aux accents près : « Noël » et « noel » se confondraient à l'œil. */
+/**
+ * Même nom à la casse et aux accents près : « Noël » et « noel » se
+ * confondraient à l'œil. La clé est celle du paquet, que le serveur range dans
+ * sa colonne UNIQUE — l'éditeur refuse donc exactement ce que la base refuserait.
+ */
 function sameName(a: string, b: string): boolean {
-  return a.localeCompare(b, 'fr', { sensitivity: 'base' }) === 0;
+  return templateNameKey(a) === templateNameKey(b);
 }
 
 /**
@@ -123,7 +132,7 @@ function settingsOf(
 
 export function createTemplate(
   templates: readonly StorefrontTemplate[],
-  block: PlacedBlock,
+  block: EditorBlock,
   id: string,
   label: TemplateLabel,
 ): TemplateResult {
@@ -168,27 +177,30 @@ export function deleteTemplate(
   return templates.filter((template) => template.id !== id);
 }
 
-/** L'objet posé depuis un gabarit : une COPIE, que modifier le gabarit ne touche plus. */
+/**
+ * L'objet posé depuis un gabarit : une COPIE, que modifier le gabarit ne touche
+ * plus. Sans contenu : un gabarit n'en garde pas.
+ */
 export function blockFromTemplate(
   template: StorefrontTemplate,
   id: string,
   cell: Cell,
   shelves: readonly ShelfKey[],
-): PlacedBlock {
+): EditorBlock {
   return { id, ...settingsOf(template), column: cell.column, row: cell.row, shelves: [...shelves] };
 }
 
-/** Pose un gabarit à la première place libre de `shelves`, comme une forme. */
+/** Pose un gabarit à la première place libre du rayon édité, comme une forme. */
 export function placeTemplate(
-  blocks: readonly PlacedBlock[],
-  rows: number,
+  blocks: readonly EditorBlock[],
+  rowsOf: RowsOf,
   template: StorefrontTemplate,
   id: string,
-  shelves: readonly ShelfKey[],
-): PlacementResult | { readonly ok: false; readonly reason: 'full' } {
-  const cell = firstFreeCell(blocks, rows, template.format, shelves);
+  shelf: ShelfKey,
+): AcrossResult<EditorBlock> | { readonly ok: false; readonly reason: 'full' } {
+  const cell = firstFreeCell(blocks, rowsOf(shelf), template.format, [shelf]);
   if (cell === null) {
     return { ok: false, reason: 'full' };
   }
-  return place(blocks, rows, blockFromTemplate(template, id, cell, shelves));
+  return placeAcross(blocks, rowsOf, blockFromTemplate(template, id, cell, [shelf]));
 }

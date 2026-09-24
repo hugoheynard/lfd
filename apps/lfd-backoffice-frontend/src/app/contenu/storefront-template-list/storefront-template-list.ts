@@ -6,7 +6,8 @@ import {
   FoldInlineConfirmComponent,
 } from 'fold-ng';
 
-import { describeFormat } from '../storefront-grid';
+import { describeFormat } from '@lfd/storefront-layout';
+
 import type { StorefrontTemplate, TemplateLabel } from '../storefront-templates';
 import { TemplateNameForm } from '../template-name-form/template-name-form';
 

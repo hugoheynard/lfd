@@ -48,11 +48,11 @@ export function activeCarousel(block: PlacedBlock): CarouselSettings | null {
 }
 
 /** Bascule un / plusieurs, sans jamais perdre les réglages du défilement. */
-export function setContents(
-  blocks: readonly PlacedBlock[],
+export function setContents<B extends PlacedBlock>(
+  blocks: readonly B[],
   id: string,
   contents: ContentsMode,
-): readonly PlacedBlock[] {
+): readonly B[] {
   return blocks.map((block) => (block.id === id ? { ...block, contents } : block));
 }
 
@@ -63,8 +63,8 @@ function withinBounds(
   return Number.isInteger(value) && value >= bounds.min && value <= bounds.max;
 }
 
-export type CarouselResult =
-  | { readonly ok: true; readonly blocks: readonly PlacedBlock[] }
+export type CarouselResult<B extends PlacedBlock = PlacedBlock> =
+  | { readonly ok: true; readonly blocks: readonly B[] }
   | {
       readonly ok: false;
       readonly field: "intervalSeconds" | "firstSeconds" | "sampleCount";
@@ -72,11 +72,11 @@ export type CarouselResult =
     };
 
 /** Règle le défilement ; une durée hors bornes (ou non entière) est refusée, en le disant. */
-export function setCarousel(
-  blocks: readonly PlacedBlock[],
+export function setCarousel<B extends PlacedBlock>(
+  blocks: readonly B[],
   id: string,
   patch: Partial<CarouselSettings>,
-): CarouselResult {
+): CarouselResult<B> {
   if (
     patch.intervalSeconds !== undefined &&
     !withinBounds(patch.intervalSeconds, INTERVAL_SECONDS)

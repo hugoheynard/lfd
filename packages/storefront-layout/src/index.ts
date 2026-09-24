@@ -12,3 +12,4 @@ export * from "./mobile.js";
 export * from "./carousel.js";
 export * from "./template-name.js";
 export * from "./tone.js";
+export * from "./render.js";

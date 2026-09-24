@@ -121,8 +121,12 @@ export type PlacementRefusal =
 
 export type PlacementVerdict = { readonly ok: true } | ({ readonly ok: false } & PlacementRefusal);
 
-export type PlacementResult =
-  | { readonly ok: true; readonly blocks: readonly PlacedBlock[] }
+/**
+ * Le résultat d'une pose. Générique : un appelant qui porte davantage sur ses
+ * objets (l'éditeur y range le ton et les contenus) les retrouve tels quels.
+ */
+export type PlacementResult<B extends PlacedBlock = PlacedBlock> =
+  | { readonly ok: true; readonly blocks: readonly B[] }
   | ({ readonly ok: false } & PlacementRefusal);
 
 export function formatSpec(format: StorefrontShape): FormatSpec {
@@ -191,7 +195,10 @@ export function checkPlacement(
 }
 
 /** Les objets qui paraissent sur un rayon. */
-export function onShelf(blocks: readonly PlacedBlock[], shelf: ShelfKey): readonly PlacedBlock[] {
+export function onShelf<B extends PlacedBlock>(
+  blocks: readonly B[],
+  shelf: ShelfKey,
+): readonly B[] {
   return blocks.filter((block) => block.shelves.includes(shelf));
 }
 
@@ -200,12 +207,12 @@ export function onShelf(blocks: readonly PlacedBlock[], shelf: ShelfKey): readon
  * prise sur un des rayons ajoutés (le refus nomme le rayon et l'objet), ou si
  * la liste est vide. Les doublons sont ignorés.
  */
-export function setShelves(
-  blocks: readonly PlacedBlock[],
+export function setShelves<B extends PlacedBlock>(
+  blocks: readonly B[],
   rows: number,
   id: string,
   shelves: readonly ShelfKey[],
-): PlacementResult {
+): PlacementResult<B> {
   const block = blocks.find((candidate) => candidate.id === id);
   if (block === undefined) {
     return { ok: true, blocks };
@@ -214,11 +221,11 @@ export function setShelves(
 }
 
 /** Pose (ou repose, même `id`) le candidat s'il tient. */
-export function place(
-  blocks: readonly PlacedBlock[],
+export function place<B extends PlacedBlock>(
+  blocks: readonly B[],
   rows: number,
-  candidate: PlacedBlock,
-): PlacementResult {
+  candidate: B,
+): PlacementResult<B> {
   const verdict = checkPlacement(blocks, rows, candidate);
   if (!verdict.ok) {
     return verdict;
@@ -233,13 +240,13 @@ export function place(
 }
 
 /** Décale un objet posé d'un pas (la voie clavier). Un `id` inconnu ne change rien. */
-export function moveBy(
-  blocks: readonly PlacedBlock[],
+export function moveBy<B extends PlacedBlock>(
+  blocks: readonly B[],
   rows: number,
   id: string,
   deltaColumn: number,
   deltaRow: number,
-): PlacementResult {
+): PlacementResult<B> {
   const block = blocks.find((candidate) => candidate.id === id);
   if (block === undefined) {
     return { ok: true, blocks };
@@ -251,7 +258,7 @@ export function moveBy(
   });
 }
 
-export function removeBlock(blocks: readonly PlacedBlock[], id: string): readonly PlacedBlock[] {
+export function removeBlock<B extends PlacedBlock>(blocks: readonly B[], id: string): readonly B[] {
   return blocks.filter((block) => block.id !== id);
 }
 
@@ -268,7 +275,7 @@ export function checkRowLimit(
 }
 
 /** Rangée, puis colonne — l'ordre dont la pile se déduira. */
-export function readingOrder(blocks: readonly PlacedBlock[]): readonly PlacedBlock[] {
+export function readingOrder<B extends PlacedBlock>(blocks: readonly B[]): readonly B[] {
   return [...blocks].sort((a, b) => a.row - b.row || a.column - b.column);
 }
 

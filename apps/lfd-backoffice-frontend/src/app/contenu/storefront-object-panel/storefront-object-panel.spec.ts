@@ -1,33 +1,39 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import type { PlacedBlock } from '../storefront-grid';
-import type { TemplateLabel } from '../storefront-templates';
+import type { EditorBlock } from '../storefront-block';
+import type { ShelfOption } from '../storefront-catalog';
 import { StorefrontObjectPanel } from './storefront-object-panel';
 
 /**
  * Le panneau ne tient aucun état de l'éditeur : il traduit un choix en une
  * intention typée. Ce qu'on tient ici : il ne propose que ce que la forme
  * permet, la portée des rayons se traduit en liste, le rayon édité ne se
- * décoche pas, et le formulaire de gabarit ne se ferme que sur un accord.
+ * décoche pas, et les réglages se rangent en sections.
  */
-const card: PlacedBlock = { id: 'c', format: 'card', column: 1, row: 1, shelves: ['all'] };
+const card: EditorBlock = { id: 'c', format: 'card', column: 1, row: 1, shelves: ['all'] };
 
-function setup(block: PlacedBlock, accept = true) {
+/** Les rayons tels que le catalogue les rendrait — « Tout » en tête. */
+const SHELVES: readonly ShelfOption[] = [
+  { key: 'all', label: 'Tout' },
+  { key: 'viennoiserie', label: 'Viennoiseries' },
+  { key: 'bread', label: 'Pains' },
+  { key: 'pastry', label: 'Pâtisseries' },
+  { key: 'savoury', label: 'Salé & traiteur' },
+  { key: 'chocolate', label: 'Chocolat & confiserie' },
+];
+
+function setup(block: EditorBlock) {
   const fixture = TestBed.createComponent(StorefrontObjectPanel);
-  const saved: TemplateLabel[] = [];
   fixture.componentRef.setInput('block', block);
   fixture.componentRef.setInput('shelf', 'all');
-  fixture.componentRef.setInput('saveTemplate', (label: TemplateLabel) => {
-    saved.push(label);
-    return accept;
-  });
+  fixture.componentRef.setInput('shelves', SHELVES);
   fixture.detectChanges();
   const panel = fixture.componentInstance;
   const emitted: { shelves: (readonly string[])[]; media: unknown[] } = { shelves: [], media: [] };
   panel.shelvesChange.subscribe((s) => emitted.shelves.push(s));
   panel.mediaChange.subscribe((m) => emitted.media.push(m));
-  return { fixture, panel, root: fixture.nativeElement as HTMLElement, saved, emitted };
+  return { fixture, panel, root: fixture.nativeElement as HTMLElement, emitted };
 }
 
 describe('StorefrontObjectPanel', () => {
@@ -67,31 +73,34 @@ describe('StorefrontObjectPanel', () => {
     expect(emitted.shelves[0]).toEqual(['all', 'bread', 'chocolate']);
   });
 
-  it('le formulaire de gabarit ne se ferme que si l’éditeur accepte', () => {
-    const refused = setup(card, false);
-    refused.panel['naming'].set(true);
-    refused.panel['onTemplateNamed']({ name: 'A', description: '' });
-    expect(refused.panel['naming']()).toBe(true);
-
-    const accepted = setup(card, true);
-    accepted.panel['naming'].set(true);
-    accepted.panel['onTemplateNamed']({ name: 'A', description: '' });
-    expect(accepted.panel['naming']()).toBe(false);
-    expect(accepted.saved).toEqual([{ name: 'A', description: '' }]);
+  it('range les réglages en quatre sections titrées, l’une sous l’autre', () => {
+    const { root } = setup(card);
+    const titles = Array.from(root.querySelectorAll('.section > fold-element-title')).map((t) =>
+      t.textContent?.trim(),
+    );
+    expect(titles).toEqual(['Forme et image', 'Rayons', 'Contenus', 'Mobile et défilement']);
+    expect(root.querySelector('fold-tabs')).toBeNull();
   });
 
-  it('le ton se propose partout ; sur la carte, une aide dit sa limite', () => {
+  it('le ton se propose partout — sauf sur une carte qui ne porte que des articles', () => {
     const onCard = setup(card);
-    expect(onCard.root.textContent).toContain('Sans effet si la carte porte un produit');
+    expect(onCard.root.textContent).toContain('Clair');
     const tones: string[] = [];
     onCard.panel.toneChange.subscribe((t) => tones.push(t));
     onCard.panel['onToneChange']('dark');
     onCard.panel['onToneChange']('violet');
     expect(tones).toEqual(['dark']);
 
-    const onTile = setup({ ...card, format: 'tile' });
-    expect(onTile.root.textContent).toContain('Clair');
-    expect(onTile.root.textContent).not.toContain('Sans effet si la carte');
+    const productCard = setup({ ...card, items: [{ kind: 'product', sku: 'CRO' }] });
+    expect(productCard.root.textContent).not.toContain('Clair');
+    expect(productCard.root.textContent).toContain('garde le rendu standard du rayon');
+
+    const productTile = setup({
+      ...card,
+      format: 'tile',
+      items: [{ kind: 'product', sku: 'CRO' }],
+    });
+    expect(productTile.root.textContent).toContain('Clair');
   });
 
   it('le choix de forme montre la forme courante et émet la nouvelle', () => {

@@ -1,10 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-import { activeCarousel } from '../storefront-carousel';
-import { formatSpec, type PlacedBlock } from '../storefront-grid';
-import { mediaFitOf, mobileSide, toneOf } from '../storefront-media';
+import {
+  activeCarousel,
+  formatSpec,
+  mediaFitOf,
+  mobileSequence,
+  mobileSide,
+} from '@lfd/storefront-layout';
+
+import { type EditorBlock, toneOf } from '../storefront-block';
 import { StorefrontMediaMock } from '../storefront-media-mock/storefront-media-mock';
-import { mobileSequence } from '../storefront-mobile';
 
 /**
  * L'aperçu « Mobile » de l'éditeur « Vitrine » : la pile DÉDUITE de la page
@@ -20,8 +25,10 @@ import { mobileSequence } from '../storefront-mobile';
 })
 export class StorefrontMobilePreview {
   /** Les objets de la page éditée (un rayon). */
-  readonly blocks = input.required<readonly PlacedBlock[]>();
+  readonly blocks = input.required<readonly EditorBlock[]>();
   readonly rows = input.required<number>();
+  /** Les objets qui n'ont rien à montrer : la boutique rend leurs cases au rayon. */
+  readonly returned = input<ReadonlySet<string>>(new Set());
 
   protected readonly items = computed(() => mobileSequence(this.blocks(), this.rows()));
   protected readonly spec = formatSpec;

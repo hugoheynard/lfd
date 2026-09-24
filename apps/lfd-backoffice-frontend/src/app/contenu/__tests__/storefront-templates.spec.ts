@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { type PlacedBlock } from '../storefront-grid';
-import { DEFAULT_CAROUSEL } from '../storefront-carousel';
+import { DEFAULT_CAROUSEL } from '@lfd/storefront-layout';
+
+import type { EditorBlock } from '../storefront-block';
 import {
   blockFromTemplate,
   createTemplate,
@@ -15,7 +16,7 @@ import {
   validateTemplateName,
 } from '../storefront-templates';
 
-const tuned: PlacedBlock = {
+const tuned: EditorBlock = {
   id: 'b',
   format: 'tile',
   column: 3,
@@ -55,7 +56,7 @@ describe('createTemplate', () => {
   });
 
   it('un objet sans réglage donne un gabarit sans réglage', () => {
-    const plain: PlacedBlock = { id: 'p', format: 'card', column: 1, row: 1, shelves: ['all'] };
+    const plain: EditorBlock = { id: 'p', format: 'card', column: 1, row: 1, shelves: ['all'] };
     const result = createTemplate([], plain, 'g', { name: 'Simple', description: '' });
     expect(result.ok && result.templates[0]).toEqual({ id: 'g', name: 'Simple', format: 'card' });
   });
@@ -141,8 +142,8 @@ describe('blockFromTemplate — une copie indépendante', () => {
 
 describe('placeTemplate', () => {
   it('pose à la première place libre du rayon', () => {
-    const blocking: PlacedBlock = { id: 'x', format: 'tile', column: 1, row: 1, shelves: ['all'] };
-    const result = placeTemplate([blocking], 2, created(), 'n', ['all']);
+    const blocking: EditorBlock = { id: 'x', format: 'tile', column: 1, row: 1, shelves: ['all'] };
+    const result = placeTemplate([blocking], () => 2, created(), 'n', 'all');
     expect(result.ok && result.blocks[1]).toMatchObject({
       id: 'n',
       column: 3,
@@ -152,20 +153,20 @@ describe('placeTemplate', () => {
   });
 
   it('ignore les objets des autres rayons', () => {
-    const elsewhere: PlacedBlock = {
+    const elsewhere: EditorBlock = {
       id: 'x',
       format: 'tile',
       column: 1,
       row: 1,
       shelves: ['bread'],
     };
-    const result = placeTemplate([elsewhere], 2, created(), 'n', ['all']);
+    const result = placeTemplate([elsewhere], () => 2, created(), 'n', 'all');
     expect(result.ok && result.blocks[1]).toMatchObject({ column: 1, row: 1 });
   });
 
   it('dit quand la page est pleine', () => {
-    const full: PlacedBlock = { id: 'x', format: 'band', column: 1, row: 1, shelves: ['all'] };
-    expect(placeTemplate([full], 1, created(), 'n', ['all'])).toEqual({
+    const full: EditorBlock = { id: 'x', format: 'band', column: 1, row: 1, shelves: ['all'] };
+    expect(placeTemplate([full], () => 1, created(), 'n', 'all')).toEqual({
       ok: false,
       reason: 'full',
     });

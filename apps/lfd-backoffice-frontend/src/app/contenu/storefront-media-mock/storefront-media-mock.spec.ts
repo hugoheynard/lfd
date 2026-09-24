@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { type CarouselSettings, DEFAULT_CAROUSEL } from '../storefront-carousel';
+import { type CarouselSettings, DEFAULT_CAROUSEL } from '@lfd/storefront-layout';
 import { StorefrontMediaMock } from './storefront-media-mock';
 
 /**

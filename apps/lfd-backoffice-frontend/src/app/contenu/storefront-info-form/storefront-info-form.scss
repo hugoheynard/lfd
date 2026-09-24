@@ -1,0 +1,32 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.caption {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.preview {
+  display: block;
+  width: 100%;
+  max-height: 160px;
+  object-fit: contain;
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-sunken);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}

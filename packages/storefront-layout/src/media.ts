@@ -66,11 +66,11 @@ export function mobileSide(block: PlacedBlock): MediaSide {
 }
 
 /** Règle le cadrage et/ou le côté d'un objet ; un côté non permis par sa forme ne change rien. */
-export function setMedia(
-  blocks: readonly PlacedBlock[],
+export function setMedia<B extends PlacedBlock>(
+  blocks: readonly B[],
   id: string,
   media: { readonly fit?: MediaFit; readonly side?: MediaSide },
-): readonly PlacedBlock[] {
+): readonly B[] {
   return blocks.map((block) => {
     if (block.id !== id) {
       return block;

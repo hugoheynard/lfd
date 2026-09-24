@@ -1,6 +1,7 @@
 import { signal } from '@angular/core';
 
-import type { Cell, StorefrontShape } from './storefront-grid';
+import type { Cell, StorefrontShape } from '@lfd/storefront-layout';
+
 import type { StorefrontTemplate } from './storefront-templates';
 
 /** En deçà, un appui suivi d'un lâcher est un clic, pas un glisser. */

@@ -1,152 +1,169 @@
 <div class="stack">
-  <span>
-    <strong>{{ describe(block().format) }}</strong> · colonne {{ block().column }}, rangée
-    {{ block().row }}
-  </span>
+  <section class="section" aria-label="Forme et image">
+    <fold-element-title variant="title" [level]="3" title="Forme et image" />
+    <div class="stack">
+      <fold-listbox
+        size="sm"
+        label="Forme"
+        hint="Le coin haut-gauche ne bouge pas ; refusé si la nouvelle taille ne tient pas."
+        [options]="formatOptions"
+        [value]="block().format"
+        (selectionChange)="formatChange.emit($event)"
+      />
 
-  @if (naming()) {
-    <app-template-name-form
-      submitLabel="Enregistrer le gabarit"
-      (submitted)="onTemplateNamed($event)"
-      (cancelled)="naming.set(false)"
-    />
-  } @else {
-    <button foldButton type="button" size="sm" emphasis="outline" (click)="naming.set(true)">
-      Enregistrer comme gabarit
-    </button>
-  }
+      <div class="palette-group">
+        <span class="caption">Image : cadrage</span>
+        <fold-view-toggle
+          size="sm"
+          ariaLabel="Cadrage de l’image"
+          [options]="fitOptions"
+          [value]="fitOf(block())"
+          (valueChange)="onFitChange($event)"
+        />
+      </div>
+      <div class="palette-group">
+        <span class="caption">Image : côté</span>
+        <fold-view-toggle
+          size="sm"
+          ariaLabel="Côté de l’image"
+          [options]="sideOptions()"
+          [value]="sideOf(block())"
+          (valueChange)="onSideChange($event)"
+        />
+      </div>
 
-  @if (hasMobileOption(block().format)) {
-    <fold-checkbox
-      label="Appliquer en mobile"
-      [hint]="
-        block().applyOnMobile === false
-          ? 'Non : en pile, il se réduit à une carte 1×1.'
-          : 'Oui : en pile, il prend sa taille mobile.'
-      "
-      [checked]="block().applyOnMobile !== false"
-      (checkedChange)="applyOnMobileChange.emit($event)"
-    />
-  }
+      <div class="palette-group">
+        <span class="caption">Ton</span>
+        @if (toneShown()) {
+          <fold-view-toggle
+            size="sm"
+            ariaLabel="Ton de l’objet"
+            [options]="toneOptions"
+            [value]="toneOf(block())"
+            (valueChange)="onToneChange($event)"
+          />
+        } @else {
+          <span class="hint">
+            Une carte qui porte un article garde le rendu standard du rayon : pas de ton.
+          </span>
+        }
+      </div>
+    </div>
+  </section>
 
-  <fold-listbox
-    size="sm"
-    label="Forme"
-    hint="Le coin haut-gauche ne bouge pas ; refusé si la nouvelle taille ne tient pas."
-    [options]="formatOptions"
-    [value]="block().format"
-    (selectionChange)="formatChange.emit($event)"
-  />
-
-  <div class="palette-group">
-    <span class="caption">Ton</span>
-    <fold-view-toggle
-      size="sm"
-      ariaLabel="Ton de l’objet"
-      [options]="toneOptions"
-      [value]="toneOf(block())"
-      (valueChange)="onToneChange($event)"
-    />
-    @if (block().format === 'card') {
-      <span class="hint">Sans effet si la carte porte un produit.</span>
-    }
-  </div>
-
-  <div class="palette-group">
-    <span class="caption">Image : cadrage</span>
-    <fold-view-toggle
-      size="sm"
-      ariaLabel="Cadrage de l’image"
-      [options]="fitOptions"
-      [value]="fitOf(block())"
-      (valueChange)="onFitChange($event)"
-    />
-  </div>
-  <div class="palette-group">
-    <span class="caption">Image : côté</span>
-    <fold-view-toggle
-      size="sm"
-      ariaLabel="Côté de l’image"
-      [options]="sideOptions()"
-      [value]="sideOf(block())"
-      (valueChange)="onSideChange($event)"
-    />
-  </div>
-
-  <div class="palette-group">
-    <span class="caption">Contenus</span>
-    <fold-view-toggle
-      size="sm"
-      ariaLabel="Un contenu ou plusieurs"
-      [options]="contentsOptions"
-      [value]="contentsOf(block())"
-      (valueChange)="onContentsChange($event)"
-    />
-    @if (carouselOf(block()); as settings) {
+  <section class="section" aria-label="Rayons">
+    <fold-element-title variant="title" [level]="3" title="Rayons" />
+    <div class="palette-group">
+      <span class="caption">Rayons où il paraît, à la même place</span>
       <fold-view-toggle
         size="sm"
-        ariaLabel="Navigation entre les contenus"
-        [options]="navOptions"
-        [value]="settings.nav"
-        (valueChange)="onNavChange($event)"
+        ariaLabel="Rayons où il paraît"
+        [options]="scopeOptions"
+        [value]="selectedScope()"
+        (valueChange)="onScopeChange($event)"
       />
-      <fold-checkbox
-        label="Défilement automatique"
-        hint="Il s’arrête au survol, au focus et au toucher, et jamais sous « mouvement réduit »."
-        [checked]="settings.autoplay"
-        (checkedChange)="carouselChange.emit({ autoplay: $event })"
-      />
-      <fold-number-input
-        size="sm"
-        label="Premier contenu (s)"
-        integer
-        [min]="firstBounds.min"
-        [max]="firstBounds.max"
-        [disabled]="!settings.autoplay"
-        [value]="settings.firstSeconds"
-        (valueChange)="onSecondsChange('firstSeconds', $event)"
-      />
-      <fold-number-input
-        size="sm"
-        label="Contenus suivants (s)"
-        integer
-        [min]="intervalBounds.min"
-        [max]="intervalBounds.max"
-        [disabled]="!settings.autoplay"
-        [value]="settings.intervalSeconds"
-        (valueChange)="onSecondsChange('intervalSeconds', $event)"
-      />
-      <fold-number-input
-        size="sm"
-        label="Nombre de contenus"
-        hint="Pour l’aperçu seulement : le vrai nombre viendra des contenus associés."
-        integer
-        [min]="sampleBounds.min"
-        [max]="sampleBounds.max"
-        [value]="settings.sampleCount"
-        (valueChange)="onSecondsChange('sampleCount', $event)"
-      />
-    }
-  </div>
-
-  <div class="palette-group">
-    <span class="caption">Rayons où il paraît, à la même place</span>
-    <fold-view-toggle
-      size="sm"
-      ariaLabel="Rayons où il paraît"
-      [options]="scopeOptions"
-      [value]="selectedScope()"
-      (valueChange)="onScopeChange($event)"
-    />
-    @if (selectedScope() === 'some') {
-      @for (option of shelves; track option.key) {
-        <fold-checkbox
-          [label]="option.label"
-          [checked]="block().shelves.includes(option.key)"
-          [disabled]="option.key === shelf()"
-          (checkedChange)="toggleShelf(option.key, $event)"
-        />
+      @if (selectedScope() === 'some') {
+        @for (option of shelves(); track option.key) {
+          <fold-checkbox
+            [label]="option.label"
+            [checked]="block().shelves.includes(option.key)"
+            [disabled]="option.key === shelf()"
+            (checkedChange)="toggleShelf(option.key, $event)"
+          />
+        }
       }
-    }
-  </div>
+    </div>
+  </section>
+
+  <section class="section" aria-label="Contenus">
+    <fold-element-title variant="title" [level]="3" title="Contenus" />
+    <div class="stack">
+      <fold-view-toggle
+        size="sm"
+        ariaLabel="Un contenu ou plusieurs"
+        [options]="contentsOptions"
+        [value]="contentsOf(block())"
+        (valueChange)="onContentsChange($event)"
+      />
+      <app-storefront-contents-editor
+        [block]="block()"
+        [catalog]="catalog()"
+        [shelves]="shelves()"
+        (itemsChange)="itemsChange.emit($event)"
+      />
+    </div>
+  </section>
+
+  <section class="section" aria-label="Mobile et défilement">
+    <fold-element-title variant="title" [level]="3" title="Mobile et défilement" />
+    <div class="stack">
+      @if (hasMobileOption(block().format)) {
+        <fold-checkbox
+          label="Appliquer en mobile"
+          [hint]="
+            block().applyOnMobile === false
+              ? 'Non : en pile, il se réduit à une carte 1×1.'
+              : 'Oui : en pile, il prend sa taille mobile.'
+          "
+          [checked]="block().applyOnMobile !== false"
+          (checkedChange)="applyOnMobileChange.emit($event)"
+        />
+      } @else {
+        <span class="hint">Une carte est déjà à la taille mobile : rien à régler.</span>
+      }
+
+      @if (carouselOf(block()); as settings) {
+        <div class="palette-group">
+          <span class="caption">Défilement</span>
+          <fold-view-toggle
+            size="sm"
+            ariaLabel="Navigation entre les contenus"
+            [options]="navOptions"
+            [value]="settings.nav"
+            (valueChange)="onNavChange($event)"
+          />
+          <fold-checkbox
+            label="Défilement automatique"
+            hint="Il s’arrête au survol, au focus et au toucher, et jamais sous « mouvement réduit »."
+            [checked]="settings.autoplay"
+            (checkedChange)="carouselChange.emit({ autoplay: $event })"
+          />
+          <fold-number-input
+            size="sm"
+            label="Premier contenu (s)"
+            integer
+            [min]="firstBounds.min"
+            [max]="firstBounds.max"
+            [disabled]="!settings.autoplay"
+            [value]="settings.firstSeconds"
+            (valueChange)="onSecondsChange('firstSeconds', $event)"
+          />
+          <fold-number-input
+            size="sm"
+            label="Contenus suivants (s)"
+            integer
+            [min]="intervalBounds.min"
+            [max]="intervalBounds.max"
+            [disabled]="!settings.autoplay"
+            [value]="settings.intervalSeconds"
+            (valueChange)="onSecondsChange('intervalSeconds', $event)"
+          />
+          <fold-number-input
+            size="sm"
+            label="Nombre de contenus"
+            hint="Pour l’aperçu de l’éditeur seulement : la boutique fait défiler les contenus associés."
+            integer
+            [min]="sampleBounds.min"
+            [max]="sampleBounds.max"
+            [value]="settings.sampleCount"
+            (valueChange)="onSecondsChange('sampleCount', $event)"
+          />
+        </div>
+      } @else {
+        <span class="hint"
+          >Un seul contenu : pas de défilement. Passez à « Plusieurs » dans Contenus.</span
+        >
+      }
+    </div>
+  </section>
 </div>

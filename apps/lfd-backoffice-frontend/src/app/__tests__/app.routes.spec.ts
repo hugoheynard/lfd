@@ -40,8 +40,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // leur forme. Le segment est validé par le composant, qui n'appelle rien
   // quand il ne désigne aucune mention du vocabulaire.
   'b2b/contenu/mentions/:mention': null,
-  // L'éditeur de vitrine, en état local : aucun appel, donc aucun droit de plus.
-  'b2b/contenu/vitrine': null,
   'commercial/comptes-clients': 'b2b_companies:read',
   'comptes-clients/nouveau': 'b2b_companies:write',
   'commandes/:orderId': 'b2b_orders:read',
@@ -153,6 +151,11 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // ressource à lui — le jour où il en aura une, cette ligne changera, et c'est
   // ici qu'on s'en apercevra.
   mediatheque: 'pim_catalog:read',
+
+  // **Vitrine** — hors de l'espace B2B, derrière SA ressource : sous `b2b`, le
+  // mur `b2b_settings` l'aurait fermée à la communication, qui la compose
+  // (plan-vitrine-enregistrement.md, D7). L'ancienne adresse redirige.
+  vitrine: 'b2b_storefront:read',
 
   // **Outils agent** — hors de `pim/`, et gardé PLUS SERRÉ que lui : le
   // référentiel s'ouvre en lecture (`pim_catalog:read`), cet atelier écrit. Il
@@ -327,6 +330,16 @@ describe("l'arbre de routes du back-office", () => {
       ['tarification/simulateur', '/b2b/tarification/simulateur'],
       ['retraits-livraisons', '/b2b/reglages/points-de-retrait'],
     ]);
+  });
+
+  it('renvoie l’ancienne adresse de la vitrine vers son écran hors de l’espace', () => {
+    // Elle a quitté `b2b/contenu` pour `/vitrine` (plan vitrine, D7) : l'adresse
+    // vit dans des favoris, et un rangement qui rend 404 se paie par celui qui
+    // ne l'a pas fait. Absolue, sans quoi elle resterait sous le mur de l'espace.
+    const b2b = routes.find((route) => route.path === 'b2b');
+    const contenu = b2b?.children?.find((child) => child.path === 'contenu');
+    const vitrine = contenu?.children?.find((child) => child.path === 'vitrine');
+    expect(vitrine?.redirectTo).toBe('/vitrine');
   });
 
   it('ne laisse hériter que les écrans dont le parent est gardé', () => {

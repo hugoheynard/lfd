@@ -1,0 +1,92 @@
+<fold-panel-header [title]="title()" [subtitle]="subtitle()" />
+
+<fold-panel-body>
+  @if (block(); as block) {
+    @if (notice(); as message) {
+      <fold-callout variant="warning" announce>{{ message }}</fold-callout>
+    }
+    <div class="layout">
+      <section class="previews" aria-label="Aperçu de l’objet">
+        <div class="preview">
+          <span class="caption"
+            >Bureau · {{ spec(block.format).columns }}×{{ spec(block.format).rows }}</span
+          >
+          <div
+            class="frame"
+            [style.grid-template-columns]="'repeat(' + desktopColumns + ', minmax(0, 1fr))'"
+          >
+            <app-storefront-media-mock
+              class="object"
+              [style.grid-column]="'span ' + spec(block.format).columns"
+              [style.grid-row]="'span ' + spec(block.format).rows"
+              [side]="sideOf(block)"
+              [fit]="fitOf(block)"
+              [tone]="toneOf(block)"
+              [carousel]="carouselOf(block)"
+            />
+          </div>
+        </div>
+        <div class="preview">
+          <span class="caption">
+            Mobile · {{ mobileOf(block).columns }}×{{ mobileOf(block).rows }}
+          </span>
+          <div
+            class="frame"
+            [style.grid-template-columns]="'repeat(' + mobileColumns + ', minmax(0, 1fr))'"
+          >
+            <app-storefront-media-mock
+              class="object"
+              [style.grid-column]="'span ' + mobileOf(block).columns"
+              [style.grid-row]="'span ' + mobileOf(block).rows"
+              [side]="mobileSideOf(block)"
+              [fit]="fitOf(block)"
+              [tone]="toneOf(block)"
+              [carousel]="carouselOf(block)"
+            />
+          </div>
+        </div>
+      </section>
+
+      <app-storefront-object-panel
+        [block]="block"
+        [shelf]="host().shelf()"
+        [shelves]="host().shelves()"
+        [catalog]="host().catalog()"
+        (applyOnMobileChange)="host().setSelectedApplyOnMobile($event)"
+        (mediaChange)="host().setSelectedMedia($event)"
+        (formatChange)="host().setSelectedFormat($event)"
+        (toneChange)="host().setSelectedTone($event)"
+        (contentsChange)="host().setSelectedContents($event)"
+        (carouselChange)="host().setSelectedCarousel($event)"
+        (shelvesChange)="host().setSelectedShelves($event)"
+        (itemsChange)="host().setSelectedItems($event)"
+      />
+    </div>
+  } @else {
+    <fold-empty-state
+      title="Cet objet n’est plus sur la page"
+      subtitle="Il a été retiré de la composition. Fermez pour revenir à la grille."
+    />
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  @if (naming()) {
+    <app-template-name-form
+      submitLabel="Enregistrer le gabarit"
+      (submitted)="saveTemplate($event)"
+      (cancelled)="naming.set(false)"
+    />
+  } @else {
+    <button
+      foldButton
+      type="button"
+      emphasis="outline"
+      [disabled]="block() === null"
+      (click)="naming.set(true)"
+    >
+      Enregistrer comme gabarit
+    </button>
+    <button foldButton type="button" (click)="close()">Fermer</button>
+  }
+</fold-panel-footer>

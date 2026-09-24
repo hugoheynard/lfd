@@ -1,66 +1,92 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   type ElementRef,
+  inject,
+  linkedSignal,
   signal,
   viewChild,
 } from '@angular/core';
+import { httpErrorMessage } from '@lfd/endpoints';
 import {
-  FoldButtonComponent,
-  FoldButtonIconComponent,
-  FoldCalloutComponent,
-  FoldCardComponent,
-  FoldElementTitleComponent,
-  FoldListboxComponent,
-  FoldNumberInputComponent,
-  FoldPageLayoutComponent,
-} from 'fold-ng';
-
-import {
+  activeCarousel,
+  type CarouselSettings,
   type Cell,
-  checkPlacement,
   checkRowLimit,
-  DEFAULT_ROWS,
+  type ContentsMode,
   describeFormat,
   firstFreeCell,
   FORMATS,
   formatSpec,
   freeCells,
   GRID_COLUMNS,
+  isRenderable,
   MAX_ROWS,
-  MIN_ROWS,
-  moveBy,
-  onShelf,
-  place,
-  type PlacedBlock,
-  type PlacementResult,
-  refusalMessage,
-  removeBlock,
-  setShelves,
-  type ShelfKey,
-  type StorefrontShape,
-} from '../storefront-grid';
-import {
-  type MediaFit,
   mediaFitOf,
-  type MediaSide,
   mediaSideOf,
-  setMedia,
-  setTone,
-  type Tone,
-  toneOf,
-} from '../storefront-media';
-import {
-  activeCarousel,
-  type CarouselSettings,
-  type ContentsMode,
+  type MediaFit,
+  type MediaSide,
+  MIN_ROWS,
+  onShelf,
+  removeBlock,
+  setApplyOnMobile,
   setCarousel,
   setContents,
-} from '../storefront-carousel';
-import { setApplyOnMobile } from '../storefront-mobile';
+  setMedia,
+  type ShelfKey,
+  type StorefrontShape,
+  type StorefrontTone,
+} from '@lfd/storefront-layout';
+import {
+  FoldButtonComponent,
+  FoldButtonIconComponent,
+  FoldCalloutComponent,
+  FoldCardComponent,
+  FoldElementTitleComponent,
+  FoldEmptyStateComponent,
+  FoldListboxComponent,
+  FoldLoadingStateComponent,
+  FoldNumberInputComponent,
+  FoldPageLayoutComponent,
+  FoldPanelHostService,
+} from 'fold-ng';
+
+import { PermissionsStore } from '../../auth/permissions.store';
+import { NotifyService } from '../../notify.service';
+import type { HasPendingChanges } from '../../pim/catalogue/product-form/pending-changes.guard';
+import { CatalogueService } from '../../b2b/catalogue/catalogue.service';
+import type { StorefrontContent } from '@lfd/contracts';
+import { type EditorBlock, itemsOf, setItems, setTone, toneOf } from '../storefront-block';
+import {
+  ALL_SHELVES,
+  catalogOf,
+  type ShelfOption,
+  shelfLabelIn,
+  type StorefrontCatalog,
+  vanishedShelves,
+} from '../storefront-catalog';
+import { PointerDrag } from '../storefront-drag';
+import {
+  dropShelf,
+  EMPTY_STATE,
+  type EditorState,
+  LOCAL_ID_PREFIX,
+  payloadOf,
+  rowsIn,
+  stateOf,
+} from '../storefront-payload';
+import {
+  acrossMessage,
+  type AcrossResult,
+  checkAcross,
+  moveAcross,
+  placeAcross,
+  setShelvesAcross,
+} from '../storefront-placement';
 import { cellAtPoint } from '../storefront-pointer';
-import { shelfLabel, STOREFRONT_SHELVES } from '../storefront-shelves';
+import { reshape } from '../storefront-reshape';
 import {
   blockFromTemplate,
   createTemplate,
@@ -71,13 +97,13 @@ import {
   type TemplateResult,
   updateTemplateLabel,
 } from '../storefront-templates';
-import { PointerDrag } from '../storefront-drag';
-import { reshape } from '../storefront-reshape';
-import { EXAMPLE_BLOCKS } from '../storefront-example';
-import { StorefrontTemplateList } from '../storefront-template-list/storefront-template-list';
-import { StorefrontObjectPanel } from '../storefront-object-panel/storefront-object-panel';
-import { StorefrontMobilePreview } from '../storefront-mobile-preview/storefront-mobile-preview';
+import { infoIssues } from '../storefront-text';
+import { StorefrontService } from '../storefront.service';
 import { StorefrontMediaMock } from '../storefront-media-mock/storefront-media-mock';
+import { StorefrontMobilePreview } from '../storefront-mobile-preview/storefront-mobile-preview';
+import { StorefrontObjectDialog } from '../storefront-object-dialog/storefront-object-dialog';
+import type { StorefrontObjectDialogData, StorefrontObjectHost } from '../storefront-object-host';
+import { StorefrontTemplateList } from '../storefront-template-list/storefront-template-list';
 
 /** Les flèches du clavier, en pas de grille. */
 const ARROW_STEPS: Readonly<Record<string, Cell>> = {
@@ -87,24 +113,28 @@ const ARROW_STEPS: Readonly<Record<string, Cell>> = {
   ArrowDown: { column: 0, row: 1 },
 };
 
+/** Un refus d'enregistrement. `conflict` : quelqu'un a enregistré entre-temps (409). */
+interface SaveRefusal {
+  readonly message: string;
+  readonly conflict: boolean;
+}
+
 /**
- * L'éditeur de page « Vitrine » — composer, rayon par rayon, une grille de 5
- * colonnes × R rangées en y glissant des FORMES ; le contenu (produit ou
- * info) s'y associera plus tard. Sous la
- * dernière rangée, le reste du rayon s'écoule en cartes.
+ * L'éditeur « Vitrine » — composer, rayon par rayon, une grille de 5 colonnes
+ * × R rangées en y glissant des FORMES ; sous la dernière rangée, le reste du
+ * rayon s'écoule en cartes.
  *
- * 🔴 **État LOCAL seulement** : aucun appel serveur, aucun contrat, rien
- * d'enregistré, et des rayons DOUBLÉS (`../storefront-shelves.ts`). Il sert à
- * éprouver le geste avant d'écrire le modèle serveur
- * (`documentation/order/boutique-rayon-layout.md`, « Composer une page »).
- * Recharger l'onglet revient à l'exemple.
+ * Il charge la vitrine ENTIÈRE et la renvoie entière, avec la révision lue
+ * (`plan-vitrine-enregistrement.md`, D2 et D6) : enregistrer publie. Un `409`
+ * dit que quelqu'un a enregistré entre-temps ; on recharge, on ne force pas.
  *
- * R est UNE valeur pour tous les rayons : un objet partagé se tient à la même
- * position partout, et un R par rayon aurait fait vérifier ses bornes rayon
- * par rayon pour un gain que personne n'a demandé.
+ * Chaque rayon a SON nombre de rangées (Hugo, 2026-09-24) : un objet partagé
+ * doit tenir sur chacun de ses rayons, jugé avec les rangées de chacun
+ * (`../storefront-placement.ts`). Les rayons sont ceux du catalogue
+ * d'administration — « Tout », puis les familles servies.
  *
- * La règle de placement vit dans `../storefront-grid.ts` (fonctions pures) ;
- * ce composant ne fait que traduire le pointeur et le clavier en cases.
+ * La règle de placement vit dans `@lfd/storefront-layout` ; ce composant ne
+ * fait que traduire le pointeur et le clavier en cases.
  */
 @Component({
   selector: 'app-storefront-page',
@@ -114,12 +144,13 @@ const ARROW_STEPS: Readonly<Record<string, Cell>> = {
     FoldCalloutComponent,
     FoldCardComponent,
     FoldElementTitleComponent,
+    FoldEmptyStateComponent,
     FoldListboxComponent,
+    FoldLoadingStateComponent,
     FoldNumberInputComponent,
     FoldPageLayoutComponent,
     StorefrontMediaMock,
     StorefrontTemplateList,
-    StorefrontObjectPanel,
     StorefrontMobilePreview,
   ],
   templateUrl: './storefront-page.html',
@@ -129,44 +160,167 @@ const ARROW_STEPS: Readonly<Record<string, Cell>> = {
     '(window:pointermove)': 'onPointerMove($event)',
     '(window:pointerup)': 'onPointerUp($event)',
     '(window:pointercancel)': 'cancelDrag()',
+    '(window:beforeunload)': 'onBeforeUnload($event)',
   },
 })
-export class StorefrontPage {
+export class StorefrontPage implements HasPendingChanges, StorefrontObjectHost {
+  private readonly api = inject(StorefrontService);
+  private readonly catalogue = inject(CatalogueService);
+  private readonly notify = inject(NotifyService);
+  private readonly permissions = inject(PermissionsStore);
+  private readonly panels = inject(FoldPanelHostService);
+
   protected readonly columns = GRID_COLUMNS;
   protected readonly minRows = MIN_ROWS;
   protected readonly maxRows = MAX_ROWS;
   protected readonly describe = describeFormat;
   protected readonly spec = formatSpec;
-  protected readonly shelfLabel = shelfLabel;
-  protected readonly shelfOptions = STOREFRONT_SHELVES.map((shelf) => ({
-    value: shelf.key,
-    label: shelf.label,
-  }));
   /** Ce que la maquette simule : rien pour un seul contenu, même avec des réglages gardés. */
   protected readonly carouselOf = activeCarousel;
   protected readonly sideOf = mediaSideOf;
   protected readonly fitOf = mediaFitOf;
   protected readonly toneOf = toneOf;
-
   protected readonly formats = FORMATS;
 
-  /** Ce que le champ demande ; la grille ne le suit que si rien ne déborde. */
-  protected readonly requestedRows = signal<number | null>(DEFAULT_ROWS);
-  readonly rows = signal(DEFAULT_ROWS);
-  readonly shelf = signal<ShelfKey>('all');
+  // ── Chargement et enregistrement ───────────────────────────────────────
+
+  readonly status = signal<'loading' | 'ready' | 'failed'>('loading');
+  protected readonly loadError = signal<string | null>(null);
+  /** Le catalogue d'administration ; `null` s'il n'a pas pu être lu. */
+  readonly catalog = signal<StorefrontCatalog | null>(null);
+  protected readonly catalogFailed = signal(false);
+  protected readonly saving = signal(false);
+  readonly saveRefusal = signal<SaveRefusal | null>(null);
+  /** Une sortie a été retenue : la seconde passe (cf. {@link canLeave}). */
+  protected readonly leaveWarned = signal(false);
+
+  /** L'écriture : sans elle, on compose pour voir, et rien ne part. */
+  readonly canWrite = computed(() => this.permissions.can('b2b_storefront:write'));
+
+  readonly revision = signal(0);
+  /** Les rangées de chaque rayon qui a une page. */
+  readonly rowsByShelf = signal<Readonly<Record<ShelfKey, number>>>({});
   /** Tous les objets, de tous les rayons. */
-  readonly blocks = signal<readonly PlacedBlock[]>(EXAMPLE_BLOCKS);
+  readonly blocks = signal<readonly EditorBlock[]>([]);
+  readonly templates = signal<readonly StorefrontTemplate[]>([]);
+  /** La vitrine telle que chargée ou enregistrée, en payload : le point de comparaison. */
+  private readonly baseline = signal(JSON.stringify(payloadOf(EMPTY_STATE)));
+
+  readonly editorState = computed<EditorState>(() => ({
+    revision: this.revision(),
+    rows: this.rowsByShelf(),
+    blocks: this.blocks(),
+    templates: this.templates(),
+  }));
+
+  /** Des modifications que le serveur n'a pas. */
+  readonly dirty = computed(
+    () => JSON.stringify(payloadOf(this.editorState())) !== this.baseline(),
+  );
+
+  // ── Rayons ─────────────────────────────────────────────────────────────
+
+  readonly shelf = signal<ShelfKey>(ALL_SHELVES);
+
+  /**
+   * Les rayons proposés. Sans catalogue, « Tout » et les rayons que la vitrine
+   * vise déjà, nommés par leur clé : on peut encore composer, pas nommer.
+   */
+  readonly shelves = computed<readonly ShelfOption[]>(() => {
+    const catalog = this.catalog();
+    if (catalog !== null) {
+      return catalog.shelves;
+    }
+    const keys = new Set([ALL_SHELVES, ...this.usedShelves()]);
+    return [...keys].map((key) => ({ key, label: key === ALL_SHELVES ? 'Tout' : key }));
+  });
+
+  /** Les rayons que la vitrine vise : une page, ou un objet qui y paraît. */
+  private readonly usedShelves = computed<readonly ShelfKey[]>(() => [
+    ...new Set([...Object.keys(this.rowsByShelf()), ...this.blocks().flatMap((b) => b.shelves)]),
+  ]);
+
+  /**
+   * Les rayons DISPARUS : visés par la vitrine, mais plus une famille servie
+   * (D4). La boutique ne les sert plus ; on les liste pour les vider. Sans
+   * catalogue, on n'en sait rien — et l'on n'en affirme aucun.
+   */
+  readonly vanished = computed<readonly ShelfKey[]>(() =>
+    this.catalog() === null ? [] : vanishedShelves(this.usedShelves(), this.shelves()),
+  );
+
+  /** Le choix du rayon : les rayons servis, puis les disparus, qu'on peut encore regarder. */
+  protected readonly shelfOptions = computed(() => [
+    ...this.shelves().map((shelf) => ({ value: shelf.key, label: shelf.label })),
+    ...this.vanished().map((key) => ({ value: key, label: `${key} — rayon disparu` })),
+  ]);
+
+  /**
+   * Les contenus qu'on ne peut pas encore envoyer — un titre manquant, un
+   * texte trop long —, nommés par leur objet. Tant qu'il y en a, Enregistrer
+   * reste fermé : le serveur refuserait la vitrine entière pour l'un d'eux.
+   */
+  readonly contentIssues = computed<readonly string[]>(() =>
+    this.blocks().flatMap((block) =>
+      itemsOf(block).flatMap((item, index) =>
+        item.kind === 'info'
+          ? infoIssues(item).map(
+              (issue) =>
+                `« ${describeFormat(block.format)} » (${block.shelves.map(this.shelfLabel).join(', ')}, ` +
+                `colonne ${block.column}, rangée ${block.row}), contenu ${index + 1} : ${issue}`,
+            )
+          : [],
+      ),
+    ),
+  );
+
+  /**
+   * Les objets qui n'ont rien à montrer — aucun contenu, un article retiré, une
+   * info sans titre ou sans image. La boutique rend leurs cases au rayon
+   * (« aucune case n'est jamais vide », `boutique-rayon-layout.md`) ; l'éditeur
+   * le dit sur l'objet. Sans catalogue, on ne sait pas quels articles sont
+   * retirés : on n'en déclare aucun, et seuls le vide et l'info incomplète
+   * comptent.
+   */
+  readonly returnedIds = computed<ReadonlySet<string>>(() => {
+    const catalog = this.catalog();
+    const served = catalog === null ? null : new Set(catalog.products.map((p) => p.sku));
+    return new Set(
+      this.blocks()
+        .filter((block) => {
+          const contents = itemsOf(block);
+          const known =
+            served ??
+            new Set(contents.flatMap((item) => (item.kind === 'product' ? [item.sku] : [])));
+          return !isRenderable({ contents }, known);
+        })
+        .map((block) => block.id),
+    );
+  });
+
+  /** Le nom de l'article d'un contenu produit, s'il est encore en vente. */
+  private readonly productNames = computed(
+    () => new Map((this.catalog()?.products ?? []).map((product) => [product.sku, product.name])),
+  );
+
+  readonly shelfLabel = (key: ShelfKey): string => shelfLabelIn(this.shelves(), key);
+
+  /** Les rangées d'un rayon — chacun a les siennes. */
+  readonly rowsOf = (shelf: ShelfKey): number => rowsIn({ rows: this.rowsByShelf() }, shelf);
+
+  /** Les rangées du rayon édité. */
+  readonly rows = computed(() => this.rowsOf(this.shelf()));
+
+  /** Ce que le champ demande ; la grille ne le suit que si rien ne déborde. Remis au rayon changé. */
+  protected readonly requestedRows = linkedSignal<number | null>(() => this.rows());
+
+  // ── Sélection et grille ────────────────────────────────────────────────
+
   readonly selectedId = signal<string | null>(null);
   /** Le dernier refus, dit en toutes lettres. */
   readonly notice = signal<string | null>(null);
-  protected readonly isExample = signal(true);
   private readonly dragging = new PointerDrag();
   protected readonly drag = this.dragging.state;
-  /** Les gabarits — en mémoire, perdus au rechargement (cf. `storefront-templates.ts`). */
-  readonly templates = signal<readonly StorefrontTemplate[]>([]);
-  /** L'enregistrement, tel que le panneau l'appelle : son formulaire se ferme sur `true`. */
-  protected readonly templateSaver = (label: TemplateLabel): boolean =>
-    this.saveSelectedAsTemplate(label);
   /** Le renommage, tel que la liste l'appelle : elle se ferme sur `true`. */
   protected readonly renamer = (id: string, label: TemplateLabel): boolean =>
     this.updateTemplate(id, label);
@@ -194,14 +348,94 @@ export class StorefrontPage {
     if (drag === null || !drag.moved || drag.target === null) {
       return null;
     }
-    const candidate: PlacedBlock = {
+    const candidate: EditorBlock = {
       id: drag.blockId ?? '',
       format: drag.format,
       ...drag.target,
       shelves: this.shelvesOf(drag.blockId),
     };
-    return { ...candidate, verdict: checkPlacement(this.blocks(), this.rows(), candidate) };
+    return { ...candidate, verdict: checkAcross(this.blocks(), this.rowsOf, candidate) };
   });
+
+  constructor() {
+    void this.load();
+  }
+
+  /** Charge la vitrine et le catalogue ensemble ; seul l'échec de la vitrine vide l'écran. */
+  async load(): Promise<void> {
+    this.status.set('loading');
+    this.saveRefusal.set(null);
+    const [storefront, catalog] = await Promise.allSettled([
+      this.api.load(),
+      this.catalogue.list(),
+    ]);
+    if (catalog.status === 'fulfilled') {
+      this.catalog.set(catalogOf(catalog.value));
+      this.catalogFailed.set(false);
+    } else {
+      this.catalog.set(null);
+      this.catalogFailed.set(true);
+    }
+    if (storefront.status === 'rejected') {
+      this.loadError.set(httpErrorMessage(storefront.reason, 'La vitrine n’a pas pu être lue.'));
+      this.status.set('failed');
+      return;
+    }
+    this.apply(stateOf(storefront.value));
+    this.status.set('ready');
+  }
+
+  /** Enregistre la vitrine ENTIÈRE, puis la relit : les objets neufs y reçoivent leur identifiant. */
+  async save(): Promise<void> {
+    if (!this.canWrite() || this.saving()) {
+      return;
+    }
+    this.saving.set(true);
+    this.saveRefusal.set(null);
+    try {
+      await this.api.save(payloadOf(this.editorState()));
+      this.apply(stateOf(await this.api.load()));
+      this.notify.success('Vitrine enregistrée : la boutique la montre dès maintenant.');
+    } catch (error: unknown) {
+      this.saveRefusal.set({
+        message: httpErrorMessage(error, 'La vitrine n’a pas été enregistrée.'),
+        conflict: error instanceof HttpErrorResponse && error.status === 409,
+      });
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  private apply(state: EditorState): void {
+    this.revision.set(state.revision);
+    this.rowsByShelf.set(state.rows);
+    this.blocks.set(state.blocks);
+    this.templates.set(state.templates);
+    this.baseline.set(JSON.stringify(payloadOf(state)));
+    this.leaveWarned.set(false);
+    this.notice.set(null);
+    if (!state.blocks.some((block) => block.id === this.selectedId())) {
+      this.selectedId.set(null);
+    }
+  }
+
+  /**
+   * Retient la première sortie quand des modifications attendent — la bannière
+   * le dit ; la seconde passe. Sans droit d'écrire, rien ne se perd : on sort.
+   */
+  canLeave(): boolean {
+    if (!this.dirty() || !this.canWrite() || this.leaveWarned()) {
+      return true;
+    }
+    this.leaveWarned.set(true);
+    return false;
+  }
+
+  protected onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (this.dirty() && this.canWrite()) {
+      event.preventDefault();
+    }
+  }
 
   // ── Rayon et rangées ───────────────────────────────────────────────────
 
@@ -219,19 +453,20 @@ export class StorefrontPage {
     this.setRows(value);
   }
 
-  /** Réduire sous un objet posé — sur n'importe quel rayon — est refusé, en le nommant. */
+  /** Réduire le rayon édité sous un de ses objets est refusé, en le nommant. */
   setRows(rows: number): boolean {
-    const verdict = checkRowLimit(this.blocks(), rows);
+    const shelf = this.shelf();
+    const verdict = checkRowLimit(this.pageBlocks(), rows);
     if (!verdict.ok) {
       const { blocker } = verdict;
       this.notice.set(
-        `Impossible de passer à ${rows} rangée${rows > 1 ? 's' : ''} : « ${describeFormat(blocker.format)} » ` +
-          `(${this.shelvesText(blocker)}, colonne ${blocker.column}, rangée ${blocker.row}) dépasserait. ` +
-          `Déplacez-le ou retirez-le d’abord — la grille reste à ${this.rows()} rangées.`,
+        `Impossible de passer « ${this.shelfLabel(shelf)} » à ${rows} rangée${rows > 1 ? 's' : ''} : ` +
+          `« ${describeFormat(blocker.format)} » (colonne ${blocker.column}, rangée ${blocker.row}) dépasserait. ` +
+          `Déplacez-le ou retirez-le d’abord — la page reste à ${this.rows()} rangées.`,
       );
       return false;
     }
-    this.rows.set(rows);
+    this.rowsByShelf.update((current) => ({ ...current, [shelf]: rows }));
     this.notice.set(null);
     return true;
   }
@@ -247,16 +482,14 @@ export class StorefrontPage {
       return;
     }
     this.commit(
-      place(this.blocks(), this.rows(), { id: this.newId(), format, ...cell, shelves }),
+      placeAcross(this.blocks(), this.rowsOf, { id: this.newId(), format, ...cell, shelves }),
       true,
     );
   }
 
   /** Un gabarit se pose comme une forme : à la première place libre du rayon édité. */
   addTemplate(template: StorefrontTemplate): void {
-    const result = placeTemplate(this.blocks(), this.rows(), template, this.newId(), [
-      this.shelf(),
-    ]);
+    const result = placeTemplate(this.blocks(), this.rowsOf, template, this.newId(), this.shelf());
     if (!result.ok && result.reason === 'full') {
       this.notice.set(`Plus aucune place pour le gabarit « ${template.name} » sur ce rayon.`);
       return;
@@ -264,7 +497,7 @@ export class StorefrontPage {
     this.commit(result, true);
   }
 
-  // ── Gabarits (en mémoire seulement) ────────────────────────────────────
+  // ── Gabarits ───────────────────────────────────────────────────────────
 
   /** Enregistre l'objet sélectionné comme gabarit ; rend `false` si le nom est refusé. */
   saveSelectedAsTemplate(label: TemplateLabel): boolean {
@@ -272,9 +505,7 @@ export class StorefrontPage {
     if (block === null) {
       return false;
     }
-    return this.applyTemplates(
-      createTemplate(this.templates(), block, `template-${this.nextId++}`, label),
-    );
+    return this.applyTemplates(createTemplate(this.templates(), block, this.newId(), label));
   }
 
   /** Renomme et/ou redécrit un gabarit ; les objets déjà posés n'en savent rien. */
@@ -299,25 +530,17 @@ export class StorefrontPage {
   moveSelected(deltaColumn: number, deltaRow: number): void {
     const id = this.selectedId();
     if (id !== null) {
-      this.commit(moveBy(this.blocks(), this.rows(), id, deltaColumn, deltaRow), false);
+      this.commit(moveAcross(this.blocks(), this.rowsOf, id, deltaColumn, deltaRow), false);
     }
   }
 
   /** Retirer, c'est retirer de TOUS ses rayons : l'objet est un seul objet. */
   remove(id: string): void {
     this.blocks.update((blocks) => removeBlock(blocks, id));
-    this.isExample.set(false);
     this.notice.set(null);
     if (this.selectedId() === id) {
       this.selectedId.set(null);
     }
-  }
-
-  protected clearAll(): void {
-    this.blocks.set([]);
-    this.selectedId.set(null);
-    this.isExample.set(false);
-    this.notice.set(null);
   }
 
   protected onBlockKeydown(event: KeyboardEvent, id: string): void {
@@ -329,6 +552,9 @@ export class StorefrontPage {
     } else if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
       this.remove(id);
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      this.openEditor(id);
     } else if (event.key === 'Escape') {
       this.selectedId.set(null);
     }
@@ -338,46 +564,98 @@ export class StorefrontPage {
     this.selectedId.set(id);
   }
 
+  /**
+   * Ouvre le dialogue CENTRÉ de l'objet — double-clic, Entrée ou « Modifier ».
+   * Un clic seul ne fait que sélectionner : on déplace sans ouvrir.
+   *
+   * ⚠️ Centré à toutes les largeurs : sous 900 px, la consigne voulait le plein
+   * écran, et fold n'en a pas (`FoldPanelConfig` n'offre que des côtés et des
+   * largeurs, vérifié dans `fold-ng.d.ts` le 2026-09-24). La feuille du bas
+   * reste sous l'en-tête, ce n'en est pas un. Le dialogue s'y met donc en pile,
+   * aperçu en haut, dans la largeur que fold lui laisse.
+   */
+  openEditor(id: string): void {
+    this.select(id);
+    this.notice.set(null);
+    this.panels.open<StorefrontObjectDialogData>(StorefrontObjectDialog, { data: { host: this } });
+  }
+
   // ── Propriétés de la sélection ─────────────────────────────────────────
 
-  setSelectedApplyOnMobile(value: boolean): void {
+  /** Applique une transformation à l'objet sélectionné, s'il y en a un. */
+  private updateSelected(
+    change: (blocks: readonly EditorBlock[], id: string) => readonly EditorBlock[],
+  ): void {
     const id = this.selectedId();
     if (id !== null) {
-      this.blocks.update((blocks) => setApplyOnMobile(blocks, id, value));
-      this.isExample.set(false);
+      this.blocks.update((blocks) => change(blocks, id));
     }
   }
 
+  setSelectedApplyOnMobile(value: boolean): void {
+    this.updateSelected((blocks, id) => setApplyOnMobile(blocks, id, value));
+  }
+
   setSelectedMedia(media: { readonly fit?: MediaFit; readonly side?: MediaSide }): void {
-    const id = this.selectedId();
-    if (id !== null) {
-      this.blocks.update((blocks) => setMedia(blocks, id, media));
-      this.isExample.set(false);
-    }
+    this.updateSelected((blocks, id) => setMedia(blocks, id, media));
   }
 
   /** Change la forme ; refusé (et dit) si la nouvelle taille ne tient pas sur un de ses rayons. */
   setSelectedFormat(format: StorefrontShape): void {
     const id = this.selectedId();
     if (id !== null) {
-      this.commit(reshape(this.blocks(), this.rows(), id, format), false);
+      this.commit(reshape(this.blocks(), this.rowsOf, id, format), false);
     }
   }
 
-  setSelectedTone(tone: Tone): void {
-    const id = this.selectedId();
-    if (id !== null) {
-      this.blocks.update((blocks) => setTone(blocks, id, tone));
-      this.isExample.set(false);
-    }
+  setSelectedTone(tone: StorefrontTone): void {
+    this.updateSelected((blocks, id) => setTone(blocks, id, tone));
   }
 
+  /** Repasser à « un seul » avec plusieurs contenus est refusé : le serveur le refuserait aussi. */
   setSelectedContents(value: ContentsMode): void {
-    const id = this.selectedId();
-    if (id !== null) {
-      this.blocks.update((blocks) => setContents(blocks, id, value));
-      this.isExample.set(false);
+    const selected = this.selected();
+    if (value === 'single' && selected !== null && itemsOf(selected).length > 1) {
+      this.notice.set(
+        `Refusé : cet objet porte ${itemsOf(selected).length} contenus. Retirez-en jusqu’à un seul d’abord.`,
+      );
+      return;
     }
+    this.updateSelected((blocks, id) => setContents(blocks, id, value));
+  }
+
+  setSelectedItems(items: readonly StorefrontContent[]): void {
+    this.updateSelected((blocks, id) => setItems(blocks, id, items));
+  }
+
+  /** Vide un rayon disparu : sa page part, et les objets qui n'y paraissaient que là avec elle. */
+  clearShelf(shelf: ShelfKey): void {
+    const next = dropShelf(this.editorState(), shelf);
+    this.rowsByShelf.set(next.rows);
+    this.blocks.set(next.blocks);
+    if (this.shelf() === shelf) {
+      this.pickShelf(ALL_SHELVES);
+    }
+  }
+
+  /** Ce que la maquette d'un objet écrit : le nom de son premier contenu, s'il en a un. */
+  protected contentLabel(block: EditorBlock): string | null {
+    const [first] = itemsOf(block);
+    if (first === undefined) {
+      return null;
+    }
+    if (first.kind === 'product') {
+      return this.productNames().get(first.sku) ?? first.sku;
+    }
+    return first.title.fr.trim() === '' ? 'Info sans titre' : first.title.fr;
+  }
+
+  /** Un de ses articles n'est plus en vente : la boutique ne le montrera pas. */
+  protected hasUnserved(block: EditorBlock): boolean {
+    return (
+      this.catalog() !== null &&
+      itemsOf(block).some((item) => item.kind === 'product' && !this.productNames().has(item.sku))
+    );
   }
 
   /** Une valeur hors bornes est refusée et dite ; le réglage précédent reste. */
@@ -392,18 +670,17 @@ export class StorefrontPage {
       return;
     }
     this.blocks.set(result.blocks);
-    this.isExample.set(false);
     this.notice.set(null);
   }
 
   setSelectedShelves(shelves: readonly ShelfKey[]): void {
     const id = this.selectedId();
     if (id !== null) {
-      this.commit(setShelves(this.blocks(), this.rows(), id, shelves), false);
+      this.commit(setShelvesAcross(this.blocks(), this.rowsOf, id, shelves), false);
     }
   }
 
-  protected isShared(block: PlacedBlock): boolean {
+  protected isShared(block: EditorBlock): boolean {
     return block.shelves.length > 1;
   }
 
@@ -421,7 +698,7 @@ export class StorefrontPage {
     );
   }
 
-  protected startBlockDrag(event: PointerEvent, block: PlacedBlock): void {
+  protected startBlockDrag(event: PointerEvent, block: EditorBlock): void {
     const cell = this.cellAt(event);
     const grab =
       cell === null
@@ -457,13 +734,13 @@ export class StorefrontPage {
     }
     const shelves = this.shelvesOf(drag.blockId);
     const moved = this.blocks().find((block) => block.id === drag.blockId);
-    const candidate: PlacedBlock =
+    const candidate: EditorBlock =
       moved !== undefined
         ? { ...moved, ...origin }
         : drag.template !== null
           ? blockFromTemplate(drag.template, this.newId(), origin, shelves)
           : { id: this.newId(), format: drag.format, ...origin, shelves };
-    this.commit(place(this.blocks(), this.rows(), candidate), drag.blockId === null);
+    this.commit(placeAcross(this.blocks(), this.rowsOf, candidate), drag.blockId === null);
   }
 
   protected cancelDrag(): void {
@@ -477,10 +754,6 @@ export class StorefrontPage {
     return block?.shelves ?? [this.shelf()];
   }
 
-  private shelvesText(block: PlacedBlock): string {
-    return block.shelves.map((key) => `« ${shelfLabel(key)} »`).join(', ');
-  }
-
   private cellAt(event: PointerEvent): Cell | null {
     const element = this.grid()?.nativeElement;
     if (element === undefined) {
@@ -489,13 +762,17 @@ export class StorefrontPage {
     return cellAtPoint(element.getBoundingClientRect(), this.rows(), event.clientX, event.clientY);
   }
 
-  private commit(result: PlacementResult, selectNew: boolean): void {
+  private commit(
+    result: AcrossResult<EditorBlock> | { readonly ok: false; readonly reason: 'full' },
+    selectNew: boolean,
+  ): void {
     if (!result.ok) {
-      this.notice.set(`Refusé : ${refusalMessage(result, this.rows(), shelfLabel)}`);
+      if (result.reason !== 'full') {
+        this.notice.set(`Refusé : ${acrossMessage(result, this.rowsOf, this.shelfLabel)}`);
+      }
       return;
     }
     this.blocks.set(result.blocks);
-    this.isExample.set(false);
     this.notice.set(null);
     const last = result.blocks.at(-1);
     if (selectNew && last !== undefined) {
@@ -504,6 +781,6 @@ export class StorefrontPage {
   }
 
   private newId(): string {
-    return `block-${this.nextId++}`;
+    return `${LOCAL_ID_PREFIX}${this.nextId++}`;
   }
 }

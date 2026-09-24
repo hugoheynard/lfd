@@ -1,6 +1,7 @@
 import { type Routes } from '@angular/router';
 
 import { permissionGuard } from './auth/permission.guard';
+import { pendingChangesGuard } from './pim/catalogue/product-form/pending-changes.guard';
 import { DEV_TOOLS_ROUTES } from './dev/dev-tools';
 import { adminRoutes } from './admin/admin.routes';
 import { commercialRoutes } from './commercial/commercial.routes';
@@ -55,6 +56,23 @@ export const routes: Routes = [
     title: 'Médiathèque — LFC B2B admin',
     loadComponent: () =>
       import('./mediatheque/mediatheque-page/mediatheque-page').then((m) => m.MediathequePage),
+  },
+  {
+    // **Vitrine** — composer les pages de la boutique. Route de PREMIER niveau,
+    // hors de l'espace `b2b` : ce parent est gardé par `b2b_settings:read`, et
+    // l'ouvrir à la communication, qui compose la vitrine, lui aurait ouvert
+    // tous les onglets de l'espace (plan-vitrine-enregistrement.md, D7).
+    // L'ancienne adresse `/b2b/contenu/vitrine` y redirige.
+    //
+    // `b2b_storefront:read` : le mur que la route serveur oppose
+    // (`@AdminSurface("b2b_storefront")`). Enregistrer demande `:write`, que
+    // l'écran lit pour ouvrir ou fermer son bouton.
+    path: 'vitrine',
+    canActivate: [permissionGuard('b2b_storefront:read')],
+    canDeactivate: [pendingChangesGuard],
+    title: 'Vitrine — LFC B2B admin',
+    loadComponent: () =>
+      import('./contenu/storefront-page/storefront-page').then((m) => m.StorefrontPage),
   },
   {
     // **Outils agent** — l'écran est l'interrupteur : les outils WebMCP du

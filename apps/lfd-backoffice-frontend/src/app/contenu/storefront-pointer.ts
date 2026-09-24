@@ -3,7 +3,7 @@
  * la boîte et le point viennent de l'appelant.
  */
 
-import { type Cell, GRID_COLUMNS } from './storefront-grid';
+import { type Cell, GRID_COLUMNS } from '@lfd/storefront-layout';
 
 export interface GridBox {
   readonly left: number;

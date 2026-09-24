@@ -168,6 +168,24 @@
         ></a>
       }
 
+      @if (canSeeStorefront()) {
+        <!-- LA VITRINE — hors de l'espace E-commerce, sous son propre droit :
+             la communication la compose sans voir l'espace (plan vitrine, D7).
+             Juste après lui, parce que c'est sa boutique qu'on y compose.
+             Posée AUSSI aux tuiles plus bas : les deux arbres ne partagent pas
+             leur modèle. -->
+        <a
+          fold-menu-item
+          icon="view"
+          label="Vitrine"
+          routerLink="/vitrine"
+          routerLinkActive
+          #storefrontRla="routerLinkActive"
+          [active]="storefrontRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeeAccounting()) {
         <!-- COMPTABILITÉ — qui encaisse, sous quelle identité. Juste après le
              B2B, et avant l'Admin : on descend de ce qu'on vend vers qui
@@ -592,6 +610,19 @@
             ></a>
           }
         </fold-nav-group>
+      }
+      @if (canSeeStorefront()) {
+        <!-- La MÊME entrée qu'au rail : deux arbres, deux modèles. -->
+        <a
+          fold-nav-tile
+          icon="view"
+          label="Vitrine"
+          routerLink="/vitrine"
+          routerLinkActive
+          #storefrontTile="routerLinkActive"
+          [active]="storefrontTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
       @if (canSeeAccounting()) {
         <fold-nav-group icon="receipt" label="Comptabilité" [entryCountLabel]="entriesLabel">

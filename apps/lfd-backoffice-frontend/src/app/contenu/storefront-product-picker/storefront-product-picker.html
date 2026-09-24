@@ -1,0 +1,19 @@
+<div class="picker">
+  <fold-search
+    size="sm"
+    ariaLabel="Chercher un article par nom ou par SKU"
+    placeholder="Nom ou SKU"
+    [value]="query()"
+    [resultCount]="matches().length"
+    (valueChange)="query.set($event)"
+  />
+  <fold-listbox
+    size="sm"
+    label="Article"
+    placeholder="Choisir un article"
+    [hint]="hint()"
+    [options]="options()"
+    [value]="sku()"
+    (selectionChange)="picked.emit($event)"
+  />
+</div>

@@ -34,8 +34,8 @@ export function mobileFormat(block: PlacedBlock): MobileFormat {
   return { format: shown.format, columns: shown.mobileColumns, rows: shown.mobileRows };
 }
 
-export type MobileItem =
-  | { readonly type: "block"; readonly block: PlacedBlock; readonly mobile: MobileFormat }
+export type MobileItem<B extends PlacedBlock = PlacedBlock> =
+  | { readonly type: "block"; readonly block: B; readonly mobile: MobileFormat }
   | { readonly type: "free"; readonly cell: Cell };
 
 /**
@@ -43,11 +43,11 @@ export type MobileItem =
  * ordre de lecture du bureau, chaque objet traduit par la table des formats.
  * La grille de 2 colonnes les range ensuite (`dense`, comme la boutique).
  */
-export function mobileSequence(
-  blocks: readonly PlacedBlock[],
+export function mobileSequence<B extends PlacedBlock>(
+  blocks: readonly B[],
   rows: number,
-): readonly MobileItem[] {
-  const items: { readonly at: Cell; readonly item: MobileItem }[] = [
+): readonly MobileItem<B>[] {
+  const items: { readonly at: Cell; readonly item: MobileItem<B> }[] = [
     ...blocks.map((block) => ({
       at: block,
       item: { type: "block", block, mobile: mobileFormat(block) } as const,
@@ -60,11 +60,11 @@ export function mobileSequence(
 }
 
 /** Change l'option « Appliquer en mobile » — sans effet sur un format 1×1. */
-export function setApplyOnMobile(
-  blocks: readonly PlacedBlock[],
+export function setApplyOnMobile<B extends PlacedBlock>(
+  blocks: readonly B[],
   id: string,
   applyOnMobile: boolean,
-): readonly PlacedBlock[] {
+): readonly B[] {
   return blocks.map((block) =>
     block.id === id && hasMobileOption(block.format) ? { ...block, applyOnMobile } : block,
   );

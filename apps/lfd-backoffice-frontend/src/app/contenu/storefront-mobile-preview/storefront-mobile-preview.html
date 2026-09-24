@@ -18,6 +18,9 @@
             item.mobile.rows
           }}</span
         >
+        @if (returned().has(item.block.id)) {
+          <span class="marker">rendu au rayon tant qu’il est vide</span>
+        }
       </div>
     } @else {
       <div class="mobile-item free-cell">article du rayon</div>

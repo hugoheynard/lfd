@@ -33,7 +33,7 @@ function mount(api: FakeApi): {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
-      provideRouter([{ path: 'b2b/contenu/vitrine', component: Landing }]),
+      provideRouter([{ path: 'vitrine', component: Landing }]),
       { provide: MediaLibraryHttpApi, useValue: api },
       { provide: FoldPanelRef, useValue: { close: (): void => undefined } },
     ],
@@ -115,6 +115,6 @@ describe('CarriersPanel', () => {
     expect(words.join(' ')).toBe('Vitrine · Tuile Noël');
     line?.click();
     await fixture.whenStable();
-    expect(TestBed.inject(Router).url).toBe('/b2b/contenu/vitrine');
+    expect(TestBed.inject(Router).url).toBe('/vitrine');
   });
 });

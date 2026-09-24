@@ -55,14 +55,14 @@ export const b2bRoutes: Routes = [
               import('../contenu/app-footer/app-footer-page').then((m) => m.AppFooterPage),
           },
           {
-            // LA VITRINE — composer une page de la boutique. État LOCAL pour
-            // l'instant : rien n'est enregistré (boutique-rayon-layout.md,
-            // « Composer une page »). Même mur que ses voisines de Contenu :
-            // celui de l'espace.
+            // L'ANCIENNE adresse de la vitrine. Elle a quitté l'espace pour
+            // `/vitrine`, gardée par son propre droit : sous ce parent, le mur
+            // `b2b_settings` aurait fermé l'éditeur à la communication, qui la
+            // compose (plan-vitrine-enregistrement.md, D7). La redirection
+            // s'applique AVANT les gardes : le mur de l'espace ne la voit pas.
             path: 'vitrine',
-            title: 'Vitrine — LFC B2B admin',
-            loadComponent: () =>
-              import('../contenu/storefront-page/storefront-page').then((m) => m.StorefrontPage),
+            pathMatch: 'full',
+            redirectTo: '/vitrine',
           },
           {
             // L'ANCIENNE adresse des CGV, quand elles étaient la seule mention

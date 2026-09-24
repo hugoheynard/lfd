@@ -10,8 +10,13 @@ import {
 } from '@angular/core';
 import { FoldButtonIconComponent, FoldIconComponent } from 'fold-ng';
 
-import { type MediaFit, type MediaSide, type Tone } from '../storefront-media';
-import { type CarouselSettings, slideAt } from '../storefront-carousel';
+import {
+  type CarouselSettings,
+  type MediaFit,
+  type MediaSide,
+  slideAt,
+  type StorefrontTone,
+} from '@lfd/storefront-layout';
 
 /** Pas du minuteur de simulation : assez fin pour qu'un changement tombe à la seconde. */
 const TICK_MS = 250;
@@ -54,7 +59,7 @@ export class StorefrontMediaMock {
   readonly side = input.required<MediaSide>();
   readonly fit = input.required<MediaFit>();
   /** Les couleurs de l'objet : papier crème, encre noire ou encre bleue. */
-  readonly tone = input<Tone>('light');
+  readonly tone = input<StorefrontTone>('light');
   /** `null` pour un seul contenu. */
   readonly carousel = input<CarouselSettings | null>(null);
 
