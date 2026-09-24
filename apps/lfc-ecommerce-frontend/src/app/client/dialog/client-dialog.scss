@@ -64,8 +64,11 @@
   :host([data-placement='sheet']) .dlg {
     width: min(600px, calc(100vw - 32px));
     /* Au bureau, la feuille redevient une boîte centrée : sa hauteur suit
-       son contenu. */
-    height: auto;
+       son contenu. ⚠️ `fit-content` et NON `auto` : un `<dialog>` modal est
+       fixe et ancré en haut ET en bas (`inset: 0`), et une hauteur `auto` s'y
+       étire jusqu'au `max-height` — la fiche produit faisait 852 px pour
+       392 px de contenu (mesuré le 2026-09-24). */
+    height: fit-content;
     max-height: min(860px, calc(100dvh - 48px));
     margin-bottom: auto;
     border-radius: var(--lfc-radius-3xl);
@@ -230,5 +233,35 @@
 @keyframes drawer-in {
   from {
     transform: translateX(100%);
+  }
+}
+
+/* ── La disposition en deux colonnes ───────────────────────────────────────
+   Au-delà du pli seulement : le visuel occupe la moitié gauche sur toute la
+   hauteur, en affleurant les bords ; en-tête, corps et pied se rangent à
+   droite. Posée APRÈS les placements, elle l'emporte sur leur largeur. */
+@media (min-width: 900px) {
+  :host([data-layout='split']) .dlg {
+    width: min(900px, calc(100vw - 32px));
+  }
+
+  :host([data-layout='split']) .panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    column-gap: 28px;
+  }
+
+  :host([data-layout='split']) .media {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    display: flex;
+    align-items: center;
+    margin: -26px 0 -24px -28px;
+    background: var(--fold-color-surface-band);
+  }
+
+  :host([data-layout='split']) :is(.head, .body, .foot) {
+    grid-column: 2;
   }
 }
