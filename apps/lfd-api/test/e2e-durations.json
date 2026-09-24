@@ -78,6 +78,7 @@
   "test/pim-journal-atomicity.e2e-spec.ts": 2914,
   "test/pim-localized.e2e-spec.ts": 2611,
   "test/pim-media-library.e2e-spec.ts": 7272,
+  "test/pim-operations.e2e-spec.ts": 6904,
   "test/pim-order-time-limits.e2e-spec.ts": 3826,
   "test/pim-points-of-sale.e2e-spec.ts": 3814,
   "test/pim-product-history.e2e-spec.ts": 5384,

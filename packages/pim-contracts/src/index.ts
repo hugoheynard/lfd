@@ -266,3 +266,29 @@ export type {
   ProductHistoryEntryView,
   ProductHistoryPageView,
 } from "./product-history.js";
+
+export {
+  OPERATION_AUDIENCES,
+  OPERATION_STATES,
+  operationAudienceSchema,
+  operationImageSchema,
+  operationScheduleSchema,
+  prepareOperationPayloadSchema,
+  editOperationPayloadSchema,
+  rescheduleOperationPayloadSchema,
+  setOperationAudiencePayloadSchema,
+  setOperationSelectionPayloadSchema,
+} from "./operation.js";
+export type {
+  OperationAudience,
+  OperationState,
+  OperationImage,
+  OperationSchedulePayload,
+  PrepareOperationPayload,
+  EditOperationPayload,
+  RescheduleOperationPayload,
+  SetOperationAudiencePayload,
+  SetOperationSelectionPayload,
+  OperationKeyResponse,
+  OperationView,
+} from "./operation.js";

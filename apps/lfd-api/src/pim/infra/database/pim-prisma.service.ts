@@ -73,6 +73,9 @@ export abstract class PimPrismaService {
   abstract readonly allergenCategory: PrismaService["allergenCategory"];
   abstract readonly allergenEntry: PrismaService["allergenEntry"];
   abstract readonly ingredientAllergen: PrismaService["ingredientAllergen"];
+  /** Les opérations datées et leur sélection (`pim/operations/`, 2026-09-24). */
+  abstract readonly operation: PrismaService["operation"];
+  abstract readonly operationItem: PrismaService["operationItem"];
 
   /**
    * Le lot atomique, **forme TABLEAU seulement**.

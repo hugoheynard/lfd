@@ -95,6 +95,7 @@ const SUBJECT_NOUNS: Readonly<Record<string, string>> = {
   lead: 'le prospect',
   legal_entity: 'l’entité juridique',
   mercuriale: 'la mercuriale',
+  operation: 'l’opération',
   order_cutoff: 'l’heure limite',
   order_cutoff_waiver: 'la dérogation d’heure limite',
   order_late_fee: 'la surtaxe de retard',

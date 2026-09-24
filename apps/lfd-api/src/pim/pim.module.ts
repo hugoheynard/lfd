@@ -6,6 +6,7 @@ import { AllergensModule } from "./allergens/allergens.module.js";
 import { CatalogueModule } from "./catalogue/catalogue.module.js";
 import { B2bPlatformModule } from "./channels/b2b-platform/b2b-platform.module.js";
 import { IngredientsModule } from "./ingredients/ingredients.module.js";
+import { OperationsModule } from "./operations/operations.module.js";
 import { OrderTimeLimitationModule } from "./order-time-limitation/order-time-limitation.module.js";
 import { PublicationModule } from "./publication/publication.module.js";
 import { VatRatesModule } from "./vat-rates/vat-rates.module.js";
@@ -44,6 +45,7 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
     SalesContextsModule,
     IngredientsModule,
     OrderTimeLimitationModule,
+    OperationsModule,
     PublicationModule,
     B2bPlatformModule,
     // La hiérarchie de routes du référentiel, déclarée ici plutôt qu'à la
@@ -63,6 +65,7 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
           SalesContextsModule,
           IngredientsModule,
           OrderTimeLimitationModule,
+          OperationsModule,
           PublicationModule,
           {
             path: "channels",

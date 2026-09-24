@@ -353,6 +353,14 @@ encore la vente »).
 | 4     | Boutique : rayon `op:<key>` en tête, états des cartes (D8)                                                                                                                                                           |                                                                                                 |
 | 5     | Vitrine : action `operation`, héritage, extinction (D11)                                                                                                                                                             |                                                                                                 |
 
+✅ **Lot 1, côté serveur : bâti le 2026-09-24** (non commité à cette date). Le
+contexte `apps/lfd-api/src/pim/operations/`, la migration
+`20260924120000_les_operations_datees`, les routes `/pim/operations`, six faits
+`operation.*` au journal, l'image comptée par la médiathèque, et
+`lint:business-day` étendue à `src/pim/operations`. Restent au lot 1 : l'écran
+de préparation, et l'extension de `SCAN_ROOTS` à `src/b2b/catalog` et à cet
+écran.
+
 **Sans retour après le premier merge du lot 2 + 3** : le fil v11 (revenir au
 code v10 laisserait des envois v11 que personne ne relit — un seul processus
 porte l'émetteur et le récepteur, ils partent ensemble) ; les clés `op:<key>`

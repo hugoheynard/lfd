@@ -59,6 +59,12 @@ const SCAN_ROOTS = [
   "apps/lfd-backoffice-frontend/src/app/commercial/tarification",
   "apps/lfd-backoffice-frontend/src/app/fiche-client/tarifs",
   "apps/lfd-api/src/b2b/pricing",
+  // Les opérations datées (2026-09-24, lot 1 du plan
+  // `documentation/order/architecture-operations-datees.md`, D2) : leurs cinq
+  // dates décident de quand on vend, et `fin(pickupUntil)` se compare à
+  // l'horloge — la même question que la tarification, la même réponse.
+  // L'écran de préparation s'ajoute ici avec le lot front.
+  "apps/lfd-api/src/pim/operations",
 ];
 const SKIP_DIRS = new Set(["node_modules", "dist", "client", "coverage", ".turbo"]);
 

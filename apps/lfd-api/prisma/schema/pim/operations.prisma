@@ -1,0 +1,66 @@
+/// **L'opération datée** — Noël, Pâques, la galette : une sélection d'articles,
+/// bornée dans le temps, qu'on annonce avant de la vendre
+/// (`documentation/order/architecture-operations-datees.md`).
+///
+/// La clé est la clé primaire, et c'est tout le mécanisme de D9 : une opération
+/// ne se supprime pas, elle s'archive (`archived_at`), donc `noel-2026` ne peut
+/// jamais renaître sous une autre opération. Le commerce, qui garde des
+/// surcharges accrochées à cette clé, n'a ainsi jamais à se demander si c'est
+/// « la même ».
+///
+/// Les invariants de dates vivent dans l'agrégat `Operation` ; ceux qui
+/// s'écrivent en SQL sont AUSSI tenus par des `CHECK` posés par la migration
+/// `20260924120000_les_operations_datees` — un `UPDATE` à la main passerait à
+/// côté de l'agrégat, pas de la base.
+model Operation {
+  /// Minuscules, chiffres, tirets (`noel-2026`). Jamais réemployée.
+  key  String @id
+  /// `{ fr, en?, it? }` — l'annonce est en trois langues.
+  name Json
+  lede Json?
+
+  /// L'URL d'une image de la médiathèque. Elle compte comme un porteur : une
+  /// image affichée par une opération ne se supprime pas de la bibliothèque.
+  imageUrl String? @map("image_url")
+  imageAlt String? @map("image_alt")
+
+  /// Des INSTANTS : le rayon paraît, la commande ouvre, la commande ferme.
+  announceFrom DateTime  @map("announce_from") @db.Timestamptz(3)
+  /// `NULL` = on commande dès l'annonce.
+  orderFrom    DateTime? @map("order_from") @db.Timestamptz(3)
+  orderUntil   DateTime  @map("order_until") @db.Timestamptz(3)
+
+  /// Des JOURS : une commande porte un jour de retrait, pas un instant. Le
+  /// lendemain de `pickupUntil`, à minuit heure de Paris, l'opération s'éteint.
+  pickupFrom  DateTime @map("pickup_from") @db.Date
+  pickupUntil DateTime @map("pickup_until") @db.Date
+
+  /// `pro` | `public` | `both`.
+  audience String
+
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  items OperationItem[]
+
+  @@map("operations")
+  @@schema("pim")
+}
+
+/// Un article de la sélection, à son rang. Le SKU est une référence du
+/// référentiel, portée en texte comme partout ailleurs : un SKU n'est jamais
+/// réattribué (`lint:sku-never-recycled`).
+model OperationItem {
+  operationKey String @map("operation_key")
+  sku          String
+  /// Le rang d'affichage, à partir de 0. Unique dans l'opération.
+  position     Int
+
+  operation Operation @relation(fields: [operationKey], references: [key], onDelete: Restrict)
+
+  @@id([operationKey, sku])
+  @@unique([operationKey, position])
+  @@map("operation_items")
+  @@schema("pim")
+}
