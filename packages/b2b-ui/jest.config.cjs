@@ -29,6 +29,9 @@ module.exports = {
   // de s'en passer ou d'en recopier une version.
   moduleNameMapper: {
     '^@lfd/contracts$': '<rootDir>/../contracts/src/index.ts',
+    // Même raison pour la table des formes de la vitrine, que le contrat lit
+    // depuis le 2026-09-24 (`plan-vitrine-enregistrement.md`, D8).
+    '^@lfd/storefront-layout$': '<rootDir>/../storefront-layout/src/index.ts',
     // Ses imports relatifs portent l'extension `.js` (NodeNext) : on la retire
     // pour que le résolveur retombe sur la source TS.
     '^(\\.{1,2}/.*)\\.js$': '$1',

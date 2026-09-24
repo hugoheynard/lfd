@@ -1,0 +1,10 @@
+/* La vignette prend toute la case : c'est la case qui a la taille de la forme. */
+:host {
+  display: block;
+  height: 100%;
+  min-width: 0;
+}
+
+app-product-tile {
+  height: 100%;
+}

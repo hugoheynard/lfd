@@ -1,0 +1,28 @@
+<form class="form" (submit)="submit($event)">
+  <fold-input
+    size="sm"
+    label="Nom du gabarit"
+    required
+    [autofocus]="true"
+    [hint]="'Unique, ' + max + ' caractères au plus.'"
+    [value]="value()"
+    (valueChange)="draft.set($event)"
+  />
+  <fold-textarea
+    size="sm"
+    label="Description"
+    optional
+    [rows]="2"
+    [hint]="descriptionMax + ' caractères au plus.'"
+    [value]="description()"
+    (valueChange)="descriptionDraft.set($event)"
+  />
+  <div class="actions">
+    <button foldButton type="submit" size="sm" [disabled]="value().trim() === ''">
+      {{ submitLabel() }}
+    </button>
+    <button foldButton type="button" size="sm" emphasis="outline" (click)="cancelled.emit()">
+      Annuler
+    </button>
+  </div>
+</form>

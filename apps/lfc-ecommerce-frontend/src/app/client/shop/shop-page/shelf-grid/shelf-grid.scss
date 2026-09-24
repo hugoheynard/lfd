@@ -1,16 +1,29 @@
 /**
- * En pile : **trois colonnes fixes**, et c'est un choix.
+ * ── LE RAYON D'AUJOURD'HUI ─────────────────────────────────────────────────
+ * Sans page composée : les pièces s'écoulent, le best-seller `isFeatured` sur
+ * deux colonnes.
  *
- * Une grille fluide y retomberait toute seule à une colonne sous ~440 px, et
- * une vignette pleine largeur se parcourt moins bien au pouce que trois. La
- * tuile fait alors ~112 px, et c'est pour ça qu'elle change de GESTES plutôt
- * que de taille (cf. `ProductTile`).
+ * En pile : **deux colonnes fixes**.
+ *
+ * Trois colonnes donnaient des vignettes de ~112 px, où le bouton d'ajout de
+ * 44 px et le prix ne tenaient plus côte à côte (maquette de la boutique pro,
+ * 2026-09-24). Une grille fluide à 215 px retomberait à une colonne sur un
+ * téléphone, et un best-seller « sur deux colonnes » y créerait une piste
+ * fantôme : deux colonnes fixes lui donnent la rangée entière.
+ *
+ * `dense` : le best-seller compte pour deux, et sans remplissage dense il
+ * laisserait un trou en fin de rangée quand il n'y reste qu'une place.
  */
 :host {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: dense;
   gap: var(--fold-space-sm);
   align-items: stretch;
+}
+
+app-product-tile.featured {
+  grid-column: span 2;
 }
 
 /* Le vide occupe la largeur entière : centré sur une colonne sur trois, il se
@@ -40,17 +53,113 @@
 
 @media (min-width: 900px) {
   /**
-   * Au-delà du pli, c'est le NOMBRE de colonnes qui suit la largeur, pas la
-   * taille des vignettes. Trois colonnes fixes donnaient des tuiles de 410 px
-   * sur un écran de 1920 — une photo de croissant étirée sur une demi-colonne
-   * de journal. Le plancher tient la vignette autour de 210-240 px, et l'écran
-   * en met simplement plus.
+   * Au-delà du pli, c'est le NOMBRE de colonnes qui suit la largeur — **cinq
+   * au plus** (Hugo, 2026-09-24), 215 px au moins.
    *
-   * `min(210px, 100%)` et pas `210px` seul : dans un conteneur plus étroit que
-   * le plancher, la piste déborderait.
+   * Le second terme du `max()` est la largeur d'une colonne quand il y en a
+   * cinq : la piste ne descend jamais en dessous, donc une sixième ne tient
+   * jamais. `min(…, 100%)` empêche la piste de déborder d'un conteneur plus
+   * étroit que le plancher.
    */
   :host {
-    grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
-    gap: 11px;
+    --lfc-shelf-grid-gap: 11px;
+
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(min(max(215px, (100% - 4 * var(--lfc-shelf-grid-gap)) / 5), 100%), 1fr)
+    );
+    gap: var(--lfc-shelf-grid-gap);
+  }
+}
+
+/**
+ * ── LA VITRINE COMPOSÉE ────────────────────────────────────────────────────
+ * (`plan-vitrine-enregistrement.md`, D10.) Chaque case porte SES DEUX places
+ * en variables — `--d-*` au bureau, `--m-*` en pile — et le CSS choisit : le
+ * rendu serveur ne connaît pas la largeur.
+ *
+ * L'hôte devient un conteneur : c'est la largeur de la GRILLE, pas celle de
+ * l'écran, qui dit si les cinq colonnes tiennent.
+ */
+:host(.composed) {
+  display: block;
+  container-type: inline-size;
+}
+
+/* La pile : deux colonnes, l'ordre de lecture du bureau, les tailles « Pile ».
+   `dense` rebouche le trou qu'une case de deux laisse en fin de rangée. */
+.board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: dense;
+  gap: var(--fold-space-sm);
+  align-items: stretch;
+}
+
+.cell {
+  order: var(--m-order);
+  grid-column: span var(--m-cols);
+  grid-row: span var(--m-rows);
+  min-width: 0;
+}
+
+@media (min-width: 900px) {
+  /* Entre le pli et la largeur qui tient cinq colonnes de 215 px, la grille en
+     a moins : les cases gardent l'ordre et les tailles de la pile — une
+     position de bureau en colonne 5 n'y existe pas —, et une bande reste
+     pleine largeur (« toutes les colonnes »). */
+  .board {
+    --lfc-shelf-grid-gap: 11px;
+
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(min(max(215px, (100% - 4 * var(--lfc-shelf-grid-gap)) / 5), 100%), 1fr)
+    );
+    gap: var(--lfc-shelf-grid-gap);
+  }
+
+  .cell.full {
+    grid-column: 1 / -1;
+  }
+
+  /* Cinq colonnes de 215 px et leurs quatre écarts de 11 px : 1119 px. Au-delà,
+     chaque case prend SA place de bureau. */
+  @container (min-width: 1119px) {
+    .board {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-auto-flow: row;
+      /* 🔴 CHAQUE rangée a au moins la hauteur d'une carte (2026-09-24). Une
+         rangée sans carte — un hero 3×2 et un bloc 2×2 côte à côte — prenait
+         la hauteur de leur texte : 220 px pour deux rangées. Une carte, c'est
+         sa photo 4/3 sur la largeur d'une colonne (`100cqi` : la grille
+         elle-même, conteneur posé sur l'hôte) plus nom, texte court et prix.
+         Le plancher n'en prend que 70 % (Hugo : « le 2 rows est un peu
+         énorme ») : une rangée qui porte des cartes a de toute façon leur
+         hauteur ; le plancher ne décide que des rangées sans carte, où un
+         objet de deux rangées faisait deux cartes pleines. */
+      grid-auto-rows: minmax(
+        calc(((100cqi - 4 * var(--lfc-shelf-grid-gap)) / 5 * 0.75 + 130px) * 0.7),
+        auto
+      );
+    }
+
+    .cell,
+    .cell.full {
+      order: 0;
+      grid-column: var(--d-col) / span var(--d-cols);
+      grid-row: var(--d-row) / span var(--d-rows);
+    }
+
+    /* 🔴 Une rangée qui ne contient QU'UN objet prend sa hauteur : une bande
+       double mesurait 268 px, une carte (vu le 2026-09-24). Plancher d'une
+       rangée de cartes, et de deux pour une case qui en couvre deux — réglé à
+       l'œil à 1400 px (`boutique-rayon-layout.md`, « Pièges »). */
+    .cell.alone {
+      min-height: clamp(220px, 19vw, 290px);
+    }
+
+    .cell.alone.tall {
+      min-height: clamp(440px, 38vw, 580px);
+    }
   }
 }

@@ -1,4 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
@@ -10,7 +11,10 @@ import { ShopCatalogue } from '../shop-catalogue.store';
 import { ClientCart } from '../../cart/client-cart.service';
 import { OrderContextStore } from '../../../client/order-context.store';
 import { FR } from '../../../client/copy/fr';
+import { COMMAND_TERMS_FR } from '../../copy/screens/command-terms.copy';
+import { ClientChrome } from '../../client-chrome.service';
 import { AuthFacade } from '../../../auth/auth.facade';
+import { NOEL, storefrontObject } from '../storefront/storefront.fixture';
 import { ShopPage } from './shop-page';
 
 describe('ShopPage', () => {
@@ -43,7 +47,7 @@ describe('ShopPage', () => {
     localStorage.clear();
     TestBed.configureTestingModule({
       imports: [ShopPage],
-      providers: [provideRouter([]), provideHttpClient()],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
     TestBed.inject(OrderContextStore).choice.set({
@@ -99,14 +103,79 @@ describe('ShopPage', () => {
     fixture.detectChanges();
 
     expect(el().querySelector('app-cart-panel')).toBeNull();
-    expect(el().querySelector('app-cart-bar')?.textContent).toContain(FR.shop.cartBar);
+    expect(el().querySelector('app-cart-bar .pay')?.textContent).toContain(COMMAND_TERMS_FR.pay);
 
-    el().querySelector<HTMLButtonElement>('app-cart-bar button')?.click();
+    el().querySelector<HTMLButtonElement>('app-cart-bar .pay')?.click();
     fixture.detectChanges();
 
     // Sans mode de service, `pay()` renvoie à l'accueil pour le demander : la
     // barre a donc bien déclenché le PARCOURS de règlement, pas un panneau.
     expect(TestBed.inject(Router).url).not.toBe('/boutique');
+  });
+
+  describe('la vitrine du rayon', () => {
+    const info = (): Element | null => el().querySelector('app-info-card');
+    const storefront = (key: string) =>
+      TestBed.inject(HttpTestingController).expectOne((request) =>
+        request.url.endsWith(`/shop/storefront/${key}`),
+      );
+
+    async function settle(): Promise<void> {
+      await fixture.whenStable();
+      fixture.detectChanges();
+    }
+
+    /**
+     * Chaque rayon a SA page — « Tout » sous la clé `all`. Pendant une
+     * recherche, aucune : elle traverse les rayons.
+     */
+    it('compose chaque rayon avec sa page, et rien pendant une recherche', async () => {
+      storefront('all').flush({ rows: 2, objects: [storefrontObject({ id: 'noel' })] });
+      await settle();
+      expect(info()).not.toBeNull();
+
+      chips()[2]?.click();
+      fixture.detectChanges();
+      storefront('cat_pains').flush({ rows: 0, objects: [] });
+      await settle();
+      expect(info()).toBeNull();
+      expect(tiles().length).toBe(2);
+
+      chips()[0]?.click();
+      await settle();
+      expect(info()).not.toBeNull();
+
+      type('pain');
+      expect(info()).toBeNull();
+    });
+
+    /** 🔴 Une vitrine injoignable n'est pas un écran vide : le rayon, comme avant. */
+    it('une vitrine en panne rend le rayon comme avant', async () => {
+      storefront('all').flush('boum', { status: 503, statusText: 'Unavailable' });
+      await settle();
+
+      expect(el().querySelector('app-shelf-grid .board')).toBeNull();
+      expect(tiles().length).toBe(TEST_ITEMS.length);
+    });
+
+    it('le rayon reste là pendant que sa page se charge', () => {
+      storefront('all');
+      expect(tiles().length).toBe(TEST_ITEMS.length);
+    });
+
+    /** « Ouvrir le rayon » d'une annonce filtre la vitrine comme une puce le ferait. */
+    it('« Ouvrir le rayon » d’une annonce ouvre le rayon lié', async () => {
+      storefront('all').flush({ rows: 1, objects: [storefrontObject({ id: 'noel' })] });
+      await settle();
+
+      el().querySelector<HTMLButtonElement>('app-info-card button')?.click();
+      fixture.detectChanges();
+      storefront(NOEL.linkShelfKey ?? '').flush({ rows: 0, objects: [] });
+      await settle();
+
+      expect(info()).toBeNull();
+      expect(tiles().length).toBeLessThan(TEST_ITEMS.length);
+    });
   });
 
   it('un rayon filtre la vitrine sans toucher au reste', () => {
@@ -181,13 +250,51 @@ describe('ShopPage', () => {
     expect(el().textContent).toContain(FR.shop.emptyHint);
   });
 
-  it('la barre du panier n’apparaît qu’une fois quelque chose dedans', () => {
-    expect(el().querySelector('app-cart-bar')).toBeNull();
+  /**
+   * 🔴 En PILE, le pied est là dès la boutique ouverte, panier vide compris
+   * (plan lot 3) : il porte la commande. Il ne dépend plus de `!isEmpty()` —
+   * au bureau, il n'est jamais montré (CSS) : la barre porte le règlement.
+   */
+  it('pose le pied panier vide, bouton inactif', () => {
+    const foot = el().querySelector('app-cart-bar');
+    expect(foot).not.toBeNull();
+    expect(foot?.querySelector<HTMLButtonElement>('.pay')?.disabled).toBe(true);
+    expect(foot?.textContent).toContain(COMMAND_TERMS_FR.emptyShort);
+  });
+
+  /**
+   * « Modifier » rouvre l'heure sur la maison retenue (`changeTime()`) ; quand
+   * la maison n'est pas connue des points chargés — le cas de ce harnais —,
+   * il retombe sur l'accueil, où la question se pose entière.
+   */
+  it('« Modifier » du pied, sans maison connue, retombe sur l’accueil', () => {
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    el().querySelector<HTMLButtonElement>('app-cart-bar .edit')?.click();
+
+    expect(navigate).toHaveBeenCalledWith(['/bienvenue']);
+  });
+
+  /** Le chevron est parti : le logo reprend le coin (Hugo, 2026-09-24). */
+  it('ne pose plus de chevron de retour dans l’en-tête', () => {
+    expect(TestBed.inject(ClientChrome).back()).toBeNull();
+  });
+
+  /**
+   * 🔴 Au bureau, la barre « Ma commande » apparaît dès la PREMIÈRE pièce,
+   * service choisi ou non (Hugo, 2026-09-24) ; le pied n'y est jamais montré —
+   * c'est du CSS, que jsdom ne joue pas. Ce qui s'éprouve ici : la page réserve
+   * la place de la barre dès qu'elle existe.
+   */
+  it('réserve la place de la barre dès la première pièce, sans service choisi', () => {
+    TestBed.inject(OrderContextStore).choice.set(null);
+    fixture.detectChanges();
+    expect(el().querySelector('.shop')?.classList).not.toContain('under-bar');
 
     cart.add('VIE-001');
     fixture.detectChanges();
-
-    expect(el().querySelector('app-cart-bar')).not.toBeNull();
+    expect(el().querySelector('.shop')?.classList).toContain('under-bar');
   });
 });
 
@@ -216,6 +323,7 @@ describe('ShopPage — la barre du bas, sans compte', () => {
       providers: [
         provideRouter([]),
         provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: AuthFacade,
           useValue: {
@@ -265,7 +373,7 @@ describe('ShopPage — la barre du bas, sans compte', () => {
     await import('../../cart/cart-dialog/cart-dialog');
     const el = fixture.nativeElement as HTMLElement;
 
-    el.querySelector<HTMLButtonElement>('app-cart-bar button')?.click();
+    el.querySelector<HTMLButtonElement>('app-cart-bar .pay')?.click();
     await Promise.resolve();
     await Promise.resolve();
 

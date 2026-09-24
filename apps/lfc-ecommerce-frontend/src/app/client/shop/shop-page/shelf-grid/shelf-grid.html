@@ -1,16 +1,62 @@
-@if (products().length === 0) {
-  <div class="none">
-    <p class="none-title">{{ t().shop.emptyTitle }}</p>
-    <p class="none-hint">{{ t().shop.emptyHint }}</p>
+@if (cells(); as cells) {
+  <div class="board">
+    @for (cell of cells; track cell.key) {
+      @let slot = cell.slot;
+      @if (slot.kind === 'object') {
+        <app-storefront-slot
+          class="cell"
+          [class.alone]="cell.desk.alone"
+          [class.tall]="cell.desk.rows > 1"
+          [class.full]="cell.desk.cols === fullWidth && cell.mobile.cols === pileWidth"
+          [style.--d-col]="cell.desk.col"
+          [style.--d-row]="cell.desk.row"
+          [style.--d-cols]="cell.desk.cols"
+          [style.--d-rows]="cell.desk.rows"
+          [style.--m-order]="cell.mobile.order"
+          [style.--m-cols]="cell.mobile.cols"
+          [style.--m-rows]="cell.mobile.rows"
+          [contents]="slot.contents"
+          [carousel]="slot.carousel"
+          [shape]="slot.object.shape"
+          [mediaFit]="slot.object.mediaFit"
+          [mediaSide]="slot.object.mediaSide"
+          [tone]="slot.object.tone"
+        />
+      } @else if (slot.kind === 'fill' && bySku().get(slot.sku); as piece) {
+        <app-product-tile
+          class="cell"
+          shape="card"
+          [style.--d-col]="cell.desk.col"
+          [style.--d-row]="cell.desk.row"
+          [style.--d-cols]="cell.desk.cols"
+          [style.--d-rows]="cell.desk.rows"
+          [style.--m-order]="cell.mobile.order"
+          [style.--m-cols]="cell.mobile.cols"
+          [style.--m-rows]="cell.mobile.rows"
+          [product]="piece"
+          [quantity]="cart.quantityOf(piece.sku)"
+          [orderable]="access.shop() !== 'browse'"
+          (opened)="actions.productOpened.next(piece.sku)"
+          (added)="cart.add(piece.sku)"
+        />
+      }
+    }
   </div>
-}
-@for (piece of products(); track piece.sku) {
-  <app-product-tile
-    [product]="piece"
-    [quantity]="cart.quantityOf(piece.sku)"
-    [orderable]="access.shop() !== 'browse'"
-    (opened)="opened.emit(piece.sku)"
-    (added)="cart.add(piece.sku)"
-    (removed)="cart.remove(piece.sku)"
-  />
+} @else {
+  @if (products().length === 0) {
+    <div class="none">
+      <p class="none-title">{{ t().shop.emptyTitle }}</p>
+      <p class="none-hint">{{ t().shop.emptyHint }}</p>
+    </div>
+  }
+  @for (piece of products(); track piece.sku) {
+    <app-product-tile
+      [class.featured]="piece.isFeatured"
+      [product]="piece"
+      [quantity]="cart.quantityOf(piece.sku)"
+      [orderable]="access.shop() !== 'browse'"
+      (opened)="actions.productOpened.next(piece.sku)"
+      (added)="cart.add(piece.sku)"
+    />
+  }
 }

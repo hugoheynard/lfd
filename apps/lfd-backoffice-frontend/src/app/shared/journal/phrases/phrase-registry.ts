@@ -10,6 +10,7 @@ import { PRICING_PHRASES } from './pricing-phrases';
 import { REFERENTIAL_PHRASES } from './referential-phrases';
 import { REFERENTIAL_SETTINGS_PHRASES } from './referential-settings-phrases';
 import { SETTINGS_PHRASES } from './settings-phrases';
+import { STOREFRONT_PHRASES } from './storefront-phrases';
 import { TEAM_PHRASES } from './team-phrases';
 
 /**
@@ -39,7 +40,7 @@ import { TEAM_PHRASES } from './team-phrases';
  * | --------------------- | --------------------------------- | -------------------------------- |
  * | `referentialCatalogue`| `referential-phrases.ts`          | `values/referential-values.ts`   |
  * | `referentialSettings` | `referential-settings-phrases.ts` | `values/referential-values.ts`   |
- * | `commerce`            | `commerce-phrases.ts`             | `values/commerce-values.ts`      |
+ * | `commerce`            | `commerce-phrases.ts`, `storefront-phrases.ts` | `values/commerce-values.ts` |
  * | `accountsAndCarts`    | `accounts-phrases.ts`             | `values/accounts-values.ts`      |
  * | `ordersAndProduction` | `orders-phrases.ts`               | `values/orders-values.ts`        |
  * | `pricing`             | `pricing-phrases.ts`              | `values/pricing-values.ts`       |
@@ -137,6 +138,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...REFERENTIAL_SETTINGS_PHRASES,
   ...SETTINGS_PHRASES,
   ...COMMERCE_PHRASES,
+  ...STOREFRONT_PHRASES,
   ...ORDERS_PHRASES,
   ...PRICING_PHRASES,
   ...ACCOUNTS_PHRASES,

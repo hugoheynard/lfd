@@ -66,6 +66,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // (2026-09-19).
     "catalog_item.",
     "catalog_delivery.",
+    // La vitrine décide ce qu'on met en avant, sur quel rayon : le même métier
+    // que la mise en avant d'un article (`catalog_item.featured`), 2026-09-24.
+    "storefront.",
   ],
   // Zones, points de retrait, heures limites et ouverture de la livraison
   // décident où et quand une commande part : ils se lisent avec les commandes,

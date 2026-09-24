@@ -1,0 +1,284 @@
+<fold-page-layout icon="view" title="Vitrine">
+  <p description>
+    Composer la page d’un rayon : une grille de {{ columns }} colonnes, des formes glissées dessus,
+    et leurs contenus ; les cases libres reçoivent le reste du rayon. Enregistrer publie : la
+    boutique montre la vitrine dès l’enregistrement.
+  </p>
+
+  @if (status() === 'ready' && canWrite()) {
+    <button
+      pageActions
+      foldButton
+      type="button"
+      [disabled]="!dirty() || contentIssues().length > 0"
+      [loading]="saving()"
+      (click)="save()"
+    >
+      Enregistrer
+    </button>
+  }
+
+  @switch (status()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de la vitrine…" />
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        title="La vitrine n’a pas pu être lue"
+        [subtitle]="loadError() ?? ''"
+      >
+        <button foldButton type="button" emphasis="outline" (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (!canWrite()) {
+        <fold-callout variant="info">
+          Lecture seule : votre rôle ne permet pas d’enregistrer la vitrine. Vous pouvez composer
+          pour essayer, rien ne sera envoyé.
+        </fold-callout>
+      }
+
+      @if (saveRefusal(); as refusal) {
+        <fold-callout variant="alert" announce>
+          {{ refusal.message }}
+          @if (refusal.conflict) {
+            <button actions foldButton type="button" size="sm" emphasis="outline" (click)="load()">
+              Recharger
+            </button>
+          }
+        </fold-callout>
+      }
+
+      @if (leaveWarned() && dirty()) {
+        <fold-callout variant="warning" announce>
+          Des modifications ne sont pas enregistrées. Enregistrez-les, ou quittez à nouveau la page
+          pour les abandonner.
+        </fold-callout>
+      } @else if (dirty() && canWrite()) {
+        <fold-callout variant="neutral">Modifications non enregistrées.</fold-callout>
+      }
+
+      @if (catalogFailed()) {
+        <fold-callout variant="alert">
+          Le catalogue n’a pas pu être lu : les rayons sont nommés par leur identifiant, et les
+          articles ne peuvent être ni choisis ni vérifiés.
+          <button actions foldButton type="button" size="sm" emphasis="outline" (click)="load()">
+            Recharger
+          </button>
+        </fold-callout>
+      }
+
+      @if (vanished().length > 0) {
+        <fold-callout variant="warning">
+          Des rayons ne sont plus des familles du catalogue : la boutique ne les sert plus.
+          Videz-les — leur page part, et un objet qui n’y paraissait que là est retiré à
+          l’enregistrement.
+          <span actions class="vanished">
+            @for (key of vanished(); track key) {
+              <button
+                foldButton
+                type="button"
+                size="sm"
+                emphasis="outline"
+                (click)="clearShelf(key)"
+              >
+                Vider « {{ key }} »
+              </button>
+            }
+          </span>
+        </fold-callout>
+      }
+
+      @if (contentIssues().length > 0 && canWrite()) {
+        <fold-callout variant="warning">
+          À compléter avant d’enregistrer :
+          <ul class="issues">
+            @for (issue of contentIssues(); track issue) {
+              <li>{{ issue }}</li>
+            }
+          </ul>
+        </fold-callout>
+      }
+
+      @if (notice(); as message) {
+        <fold-callout variant="warning" announce>{{ message }}</fold-callout>
+      }
+
+      <div class="settings">
+        <fold-listbox
+          size="sm"
+          label="Rayon"
+          [options]="shelfOptions()"
+          [value]="shelf()"
+          (selectionChange)="pickShelf($event)"
+        />
+        <fold-number-input
+          size="sm"
+          label="Rangées de ce rayon"
+          hint="Chaque rayon a les siennes."
+          integer
+          [min]="minRows"
+          [max]="maxRows"
+          [value]="requestedRows()"
+          (valueChange)="onRowsChange($event)"
+        />
+      </div>
+
+      <div class="editor">
+        <fold-card>
+          <fold-element-title
+            title="Formes"
+            subtitle="Glissez sur la grille, ou cliquez pour poser à la première place libre."
+          />
+          <div class="stack">
+            @for (format of formats; track format.format) {
+              <button
+                foldButton
+                type="button"
+                emphasis="outline"
+                size="sm"
+                class="draggable"
+                (pointerdown)="startPaletteDrag($event, format.format)"
+                (keydown.enter)="addFormat(format.format)"
+                (keydown.space)="addFormat(format.format)"
+              >
+                {{ describe(format.format) }}
+              </button>
+            }
+          </div>
+          <div class="palette-group">
+            <span class="caption">Gabarits</span>
+            <app-storefront-template-list
+              [templates]="templates()"
+              [rename]="renamer"
+              (pressed)="startTemplateDrag($event.event, $event.template)"
+              (added)="addTemplate($event)"
+              (deleted)="deleteTemplate($event)"
+            />
+          </div>
+        </fold-card>
+
+        <fold-card>
+          <fold-element-title
+            title="Bureau"
+            [subtitle]="
+              '« ' +
+              shelfLabel(shelf()) +
+              ' » — clic pour sélectionner, double-clic ou Entrée pour modifier, flèches pour déplacer, Suppr pour retirer.'
+            "
+          />
+          <div class="stack">
+            <div
+              #grid
+              class="grid"
+              [style.grid-template-rows]="'repeat(' + rows() + ', minmax(0, 1fr))'"
+              [style.aspect-ratio]="columns + ' / ' + rows()"
+            >
+              @for (cell of freeCells(); track cell.column + '-' + cell.row) {
+                <div
+                  class="free-cell"
+                  [style.grid-column]="cell.column"
+                  [style.grid-row]="cell.row"
+                  aria-hidden="true"
+                >
+                  article du rayon
+                </div>
+              }
+
+              @for (block of pageBlocks(); track block.id) {
+                <div
+                  class="block draggable"
+                  [class.selected]="selectedId() === block.id"
+                  [class.dragging]="drag()?.blockId === block.id && drag()?.moved"
+                  [style.grid-column]="block.column + ' / span ' + spec(block.format).columns"
+                  [style.grid-row]="block.row + ' / span ' + spec(block.format).rows"
+                  tabindex="0"
+                  role="group"
+                  [attr.aria-label]="
+                    describe(block.format) + ', colonne ' + block.column + ', rangée ' + block.row
+                  "
+                  aria-keyshortcuts="Enter ArrowLeft ArrowRight ArrowUp ArrowDown Delete"
+                  (pointerdown)="startBlockDrag($event, block)"
+                  (focus)="select(block.id)"
+                  (keydown)="onBlockKeydown($event, block.id)"
+                  (dblclick)="openEditor(block.id)"
+                >
+                  <app-storefront-media-mock
+                    class="block-mock"
+                    [side]="sideOf(block)"
+                    [fit]="fitOf(block)"
+                    [tone]="toneOf(block)"
+                    [carousel]="carouselOf(block)"
+                  />
+                  <span class="block-format">
+                    {{ spec(block.format).label }}
+                    <span class="block-size">
+                      {{ spec(block.format).columns }}×{{ spec(block.format).rows }}
+                    </span>
+                  </span>
+                  @if (contentLabel(block); as label) {
+                    <span class="block-content">{{ label }}</span>
+                  }
+                  @if (hasUnserved(block)) {
+                    <span class="marker">article plus en vente</span>
+                  }
+                  @if (returnedIds().has(block.id)) {
+                    <span class="marker">rendu au rayon tant qu’il est vide</span>
+                  }
+                  @if (isShared(block)) {
+                    <span class="marker">partagé · {{ block.shelves.length }} rayons</span>
+                  }
+                  @if (block.applyOnMobile === false) {
+                    <span class="marker">mobile : carte 1×1</span>
+                  }
+                  <span class="block-actions" (pointerdown)="$event.stopPropagation()">
+                    <fold-button-icon
+                      icon="edit"
+                      size="xs"
+                      tooltip="Modifier"
+                      (clicked)="openEditor(block.id)"
+                    />
+                    <fold-button-icon
+                      icon="close"
+                      size="xs"
+                      tooltip="Retirer de tous ses rayons"
+                      (clicked)="remove(block.id)"
+                    />
+                  </span>
+                </div>
+              }
+
+              @if (preview(); as target) {
+                <div
+                  class="preview"
+                  [class.refused]="!target.verdict.ok"
+                  [style.grid-column]="target.column + ' / span ' + spec(target.format).columns"
+                  [style.grid-row]="target.row + ' / span ' + spec(target.format).rows"
+                  aria-hidden="true"
+                ></div>
+              }
+            </div>
+            <span class="caption flow"
+              >↓ le reste du rayon s’écoule ici, en cartes, sans pagination</span
+            >
+          </div>
+        </fold-card>
+
+        <!-- La colonne de droite n'a plus que l'aperçu mobile de la page : l'objet
+             se règle dans son dialogue (double-clic, Entrée ou « Modifier »). -->
+        <fold-card>
+          <fold-element-title
+            title="Mobile"
+            subtitle="Déduit : 2 colonnes, dans l’ordre de lecture."
+          />
+          <app-storefront-mobile-preview
+            [blocks]="pageBlocks()"
+            [rows]="rows()"
+            [returned]="returnedIds()"
+          />
+        </fold-card>
+      </div>
+    }
+  }
+</fold-page-layout>

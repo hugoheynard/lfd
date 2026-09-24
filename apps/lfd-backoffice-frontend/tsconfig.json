@@ -38,7 +38,10 @@
       "@lfd/b2b-ui/pricing": ["../../packages/b2b-ui/src/pricing/index.ts"],
       "@lfd/b2b-ui/subscription": ["../../packages/b2b-ui/src/subscription/index.ts"],
       "@lfd/catalog-ui": ["../../packages/catalog-ui/src/index.ts"],
-      "@lfd/endpoints": ["../../packages/endpoints/src/index.ts"]
+      "@lfd/endpoints": ["../../packages/endpoints/src/index.ts"],
+      // Pur, sans dépendance : la table des formes de la vitrine, que l'éditeur
+      // partage avec le serveur et la boutique (plan-vitrine-enregistrement.md, D8).
+      "@lfd/storefront-layout": ["../../packages/storefront-layout/src/index.ts"]
     }
   },
   "files": [],

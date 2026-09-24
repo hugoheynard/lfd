@@ -9,33 +9,30 @@
      déborde (mesuré le 2026-09-17 : 32 px masqués, sur toute la remontée).
      C'est la même leçon que l'accueil, prise par l'autre bout. -->
 <ng-template clientBanner>
-  <app-client-banner-block titleAlign="start" [kicker]="chrome.kicker()" [title]="shop.heading()">
-    <!-- Le rail SOUS le titre, pleine largeur — le layout de l'accueil, à
-         l'identique. `banner-below` et non `banner-action` : l'action se range
-         à DROITE du titre, ce qui est une autre grammaire, et laisser le slot
-         d'action vide recentrait le titre.
-         `3` : où l'on en est — les deux premières sont franchies, puisqu'on
-         n'arrive ici qu'en y ayant répondu, ou en les ayant volontairement
-         sautées par « je visite la boutique ». -->
-    <app-public-steps banner-below [current]="3" [answers]="stepAnswers()" />
-  </app-client-banner-block>
+  <!-- Plus de titre ici (Hugo, 2026-09-24 : « je veux gagner de la hauteur »).
+       « Boutique · Tout le rayon » répétait ce que disent déjà la pastille de
+       rayon active et l'onglet du navigateur ; le triptyque 1/2/3 était parti
+       avant lui pour la même raison. Le bandeau ne porte plus que la barre. -->
 
-  <!-- LES TERMES DE LA COMMANDE, au bas de la descente — juste avant le rayon.
+  <!-- LA BARRE « MA COMMANDE », au bas de la descente — juste avant le rayon.
        Ils ont REMPLACÉ la carte de panier qui vivait ici : les deux rappelaient
        le même service, et ce fichier avait déjà corrigé ce doublon une fois
        (« deux surfaces pour le même contexte, une de trop »).
        Ce qu'elle portait en plus — pièces, total, régler — est dans la barre du
        bas, qui suit le rayon à toutes les largeurs. Seul « porter au compte »
        disparaît : il était explicitement marqué MAQUETTE dans son propre code,
-       faute de condition de règlement sur un écran servi sans jeton. -->
-  <app-public-command-terms-summary
+       faute de condition de règlement sur un écran servi sans jeton.
+       Depuis le lot 2 (2026-09-24), elle porte AUSSI pièces, remise et
+       « Régler » : au bureau, le pied se retire quand elle est là. -->
+  <app-order-bar
     class="terms"
     (houseRequested)="changeHouse()"
     (timeRequested)="changeTime()"
+    (pay)="void pay()"
   />
 </ng-template>
 
-<div class="shop">
+<div class="shop" [class.under-bar]="!needsService() || !cart.isEmpty()">
   <fold-search
     class="search"
     [(value)]="shop.query"
@@ -47,8 +44,6 @@
   />
 
   <app-shelf-nav class="shelves" [active]="shop.activeShelf()" (picked)="shop.browse($event)" />
-
-  <app-shelf-banner class="banner" [shelf]="shop.shelf()" (opened)="openStory.set(shop.shelf())" />
 
   @switch (status()) {
     @case ('failed') {
@@ -64,7 +59,13 @@
       </fold-empty-state>
     }
     @case ('ready') {
-      <app-shelf-grid class="grid" [products]="shop.products()" (opened)="openPiece.set($event)" />
+      <app-shelf-grid
+        class="grid"
+        [products]="shop.products()"
+        [page]="page()"
+        (opened)="openPiece.set($event)"
+        (shelfOpened)="shop.browse($event)"
+      />
     }
     @default {
       <fold-loading class="grid" [message]="t().shop.loading" />
@@ -72,27 +73,23 @@
   }
 </div>
 
-<!-- La barre du bas suit le rayon à TOUTES les largeurs : le bandeau, lui,
-     défile avec la page, et le compte disparaîtrait au premier écran parcouru.
-     Elle ouvre le tiroir plutôt que de changer d'écran — on n'a pas fini de
-     choisir quand on vérifie ce qu'on a pris. -->
-@if (!cart.isEmpty()) {
-  <app-cart-bar
-    class="cartbar"
-    [label]="cartLabel()"
-    [where]="whereLabel()"
-    [total]="totalLabel()"
-    (opened)="void pay()"
-  />
-}
+<!-- LE PIED COLLÉ (plan lot 3, SPEC §8).
+     En PILE, il est toujours là, panier vide compris : c'est lui qui porte la
+     commande, la barre du bandeau n'y étant pas rendue.
+     🔴 Au BUREAU, rien ne change : il se retire dès que la barre « Ma
+     commande » est là — elle porte le même geste (plan lot 2) —, et tant que
+     le panier est vide, comme avant. La largeur se lit en CSS, le SSR ne la
+     connaît pas ; les deux conditions, elles, se lisent ici. -->
+<!-- « Modifier » rouvre l'HEURE sur la maison retenue (2026-09-24) : c'est le
+     changement le plus fréquent, et le dialogue a son propre « Retour » vers la
+     maison. Renvoyer à l'accueil faisait re-choisir la maison pour changer
+     d'heure — ce que la barre du bureau évite déjà avec ses deux liens. -->
+<app-cart-bar class="cartbar" (pay)="void pay()" (edit)="void changeTime()" />
 
 <app-product-sheet
   [product]="piece()"
   [quantity]="pieceQuantity()"
   [orderable]="access.shop() !== 'browse'"
   (closed)="openPiece.set(null)"
-  (added)="cart.add(openPiece() ?? '')"
-  (removed)="cart.remove(openPiece() ?? '')"
+  (quantitySet)="setPieceQuantity($event)"
 />
-
-<app-shelf-sheet [shelf]="openStory()" (closed)="openStory.set(null)" />

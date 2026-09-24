@@ -58,6 +58,11 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
    * l'avaient sous `pim_catalog` jusqu'à ce jour-là.
    */
   { resource: "media_library", path: "/media" },
+  /**
+   * La VITRINE (2026-09-24) — sa propre ressource, pour que la communication
+   * la compose sans ouvrir `b2b_settings` (plan-vitrine-enregistrement.md, D7).
+   */
+  { resource: "b2b_storefront", path: "/admin/storefront" },
 ];
 
 /** Le produit cartésien rôle × surface : tout ce qu'il y a à vérifier. */

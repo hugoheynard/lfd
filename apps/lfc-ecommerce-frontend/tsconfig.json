@@ -29,7 +29,8 @@
       "@lfd/b2b-ui/payment": ["../../packages/b2b-ui/src/payment/index.ts"],
       "@lfd/b2b-ui/pricing": ["../../packages/b2b-ui/src/pricing/index.ts"],
       "@lfd/b2b-ui/subscription": ["../../packages/b2b-ui/src/subscription/index.ts"],
-      "@lfd/endpoints": ["../../packages/endpoints/src/index.ts"]
+      "@lfd/endpoints": ["../../packages/endpoints/src/index.ts"],
+      "@lfd/storefront-layout": ["../../packages/storefront-layout/src/index.ts"]
     }
   },
   "files": [],

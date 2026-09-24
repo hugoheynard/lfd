@@ -1,0 +1,152 @@
+<div class="contents">
+  @if (items().length === 0 && adding() === null) {
+    <span class="caption">
+      Aucun contenu : l’objet reste vide le temps de composer, et la boutique ne le montre pas
+      encore.
+    </span>
+  }
+
+  @if (multiple() && items().length > 0) {
+    <!-- Les contenus dans l'ordre du défilement : un onglet chacun, avec sa durée à l'écran. -->
+    <div class="tabs" role="tablist" aria-label="Contenus, dans l’ordre du défilement">
+      @for (item of items(); track $index) {
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.active]="current() === $index && adding() === null"
+          [class.flagged]="isFlagged(item)"
+          [attr.aria-selected]="current() === $index && adding() === null"
+          (click)="select($index)"
+        >
+          <span class="number">{{ $index + 1 }}</span>
+          <span class="tab-text">
+            <span class="kind">
+              {{ item.kind === 'product' ? 'Article' : 'Info' }}
+              @if (secondsOf($index); as seconds) {
+                · {{ seconds }} s
+              }
+            </span>
+            <span class="name">{{ nameOf(item) }}</span>
+          </span>
+        </button>
+      }
+      @if (canAdd()) {
+        <button
+          type="button"
+          class="tab add-tab"
+          [class.active]="adding() === 'product'"
+          [disabled]="catalog() === null"
+          (click)="startAddingProduct()"
+        >
+          + Article
+        </button>
+        <button type="button" class="tab add-tab" (click)="addInfo()">+ Info</button>
+      }
+    </div>
+  }
+
+  @if (adding() === 'product') {
+    <div class="panel">
+      <span class="panel-title">Nouveau contenu {{ items().length + 1 }} · article</span>
+      @if (catalog(); as known) {
+        <app-storefront-product-picker [products]="known.products" (picked)="addProduct($event)" />
+      }
+      <div class="actions">
+        <button foldButton type="button" size="sm" emphasis="soft" (click)="adding.set(null)">
+          Annuler
+        </button>
+      </div>
+    </div>
+  } @else if (currentItem(); as item) {
+    <div class="panel" role="tabpanel">
+      <div class="panel-head">
+        <span class="panel-title">
+          @if (multiple()) {
+            Contenu {{ current() + 1 }} sur {{ items().length }} ·
+          }
+          {{ item.kind === 'product' ? 'Article' : 'Info' }}
+          @if (secondsOf(current()); as seconds) {
+            · affiché {{ seconds }} s
+          }
+        </span>
+        <span class="actions">
+          @if (items().length > 1) {
+            <fold-button-icon
+              icon="chevron-left"
+              size="xs"
+              tooltip="Plus tôt dans le défilement"
+              [disabled]="current() === 0"
+              (clicked)="move(-1)"
+            />
+            <fold-button-icon
+              icon="chevron-right"
+              size="xs"
+              tooltip="Plus tard dans le défilement"
+              [disabled]="current() === items().length - 1"
+              (clicked)="move(1)"
+            />
+          }
+          <fold-button-icon
+            icon="close"
+            size="xs"
+            tooltip="Retirer ce contenu"
+            (clicked)="remove()"
+          />
+        </span>
+      </div>
+
+      @if (isUnserved(item)) {
+        <fold-badge
+          variant="warning"
+          content="Article plus en vente — la boutique ne le montre pas"
+        />
+      }
+      @for (issue of issuesOf(item); track issue) {
+        <fold-badge variant="alert" [content]="issue" />
+      }
+
+      @if (item.kind === 'product') {
+        @if (catalog(); as known) {
+          <app-storefront-product-picker
+            [products]="known.products"
+            [sku]="item.sku"
+            (picked)="replaceProduct($event)"
+          />
+        } @else {
+          <span class="caption">Le catalogue n’a pas pu être lu : l’article ne se change pas.</span>
+        }
+      } @else {
+        <app-storefront-info-form
+          [info]="item"
+          [shelves]="shelves()"
+          (changed)="replaceInfo($event)"
+        />
+      }
+    </div>
+  }
+
+  @if (!multiple()) {
+    @if (items().length === 0 && adding() === null) {
+      <div class="add">
+        <button
+          foldButton
+          type="button"
+          size="sm"
+          emphasis="outline"
+          [disabled]="catalog() === null"
+          (click)="startAddingProduct()"
+        >
+          Ajouter un article
+        </button>
+        <button foldButton type="button" size="sm" emphasis="outline" (click)="addInfo()">
+          Ajouter une info
+        </button>
+      </div>
+    } @else if (items().length > 0) {
+      <span class="caption"
+        >Un seul contenu : passez à « Plusieurs » pour en faire défiler d’autres.</span
+      >
+    }
+  }
+</div>

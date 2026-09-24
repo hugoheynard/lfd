@@ -232,6 +232,13 @@ export class App {
   );
   protected readonly canSeeSettings = computed(() => this.permissions.can('b2b_settings:read'));
   /**
+   * **Vitrine** — sa propre ressource, et une entrée à la racine : la
+   * communication la compose sans voir l'espace E-commerce, dont elle n'a pas
+   * le droit (`plan-vitrine-enregistrement.md`, D7). Qui voit l'espace la
+   * retrouve aussi sous Contenu.
+   */
+  protected readonly canSeeStorefront = computed(() => this.permissions.can('b2b_storefront:read'));
+  /**
    * **Comptabilité** — son propre droit, et surtout pas `b2b_settings`.
    *
    * Ce qui vit derrière cette entrée est notre identité d'émetteur : l'ICS

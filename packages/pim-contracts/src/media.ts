@@ -123,8 +123,11 @@ export interface MediaUploadFailureView {
  * identifiant. Une ligne sans mot ne se clique pas.
  */
 export interface MediaCarrierView {
-  /** Elle décide de l'écran vers lequel le lien renvoie. */
-  readonly kind: "product" | "category";
+  /**
+   * Elle décide de l'écran vers lequel le lien renvoie. `storefront` = un
+   * objet de la vitrine du commerce (`id` = l'identifiant de l'objet).
+   */
+  readonly kind: "product" | "category" | "storefront";
   readonly id: string;
   readonly label: string;
 }

@@ -1,0 +1,29 @@
+<div class="mobile">
+  @for (item of items(); track $index) {
+    @if (item.type === 'block') {
+      <div
+        class="mobile-item"
+        [style.grid-column]="'span ' + item.mobile.columns"
+        [style.grid-row]="'span ' + item.mobile.rows"
+      >
+        <app-storefront-media-mock
+          class="block-mock"
+          [side]="sideOf(item.block)"
+          [fit]="fitOf(item.block)"
+          [tone]="toneOf(item.block)"
+          [carousel]="carouselOf(item.block)"
+        />
+        <span
+          >{{ spec(item.mobile.format).label }} {{ item.mobile.columns }}×{{
+            item.mobile.rows
+          }}</span
+        >
+        @if (returned().has(item.block.id)) {
+          <span class="marker">rendu au rayon tant qu’il est vide</span>
+        }
+      </div>
+    } @else {
+      <div class="mobile-item free-cell">article du rayon</div>
+    }
+  }
+</div>

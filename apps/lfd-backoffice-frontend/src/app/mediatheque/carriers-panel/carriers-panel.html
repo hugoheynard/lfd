@@ -9,7 +9,9 @@
          supprimer. -->
     <p class="state is-failure">{{ message }}</p>
   } @else if (carriers().length === 0) {
-    <p class="state">Aucune fiche ni famille ne l'affiche. Elle peut être retirée du fonds.</p>
+    <p class="state">
+      Aucune fiche, famille ni vitrine ne l'affiche. Elle peut être retirée du fonds.
+    </p>
   } @else {
     <!-- Le compte vient de CETTE liste, pas de la vignette : deux requêtes,
          deux fraîcheurs, et un écart entre les deux ferait conclure que le
@@ -19,7 +21,8 @@
       @for (carrier of carriers(); track carrier.kind + carrier.id) {
         <li>
           <button type="button" class="carrier" (click)="open(carrier)">
-            <span class="kind">{{ carrier.kind === 'product' ? 'Fiche' : 'Famille' }}</span>
+            <span class="kind">{{ word(carrier) }}</span>
+            <span class="kind" aria-hidden="true">·</span>
             <span class="label">{{ carrier.label }}</span>
           </button>
         </li>

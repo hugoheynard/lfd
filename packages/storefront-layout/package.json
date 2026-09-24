@@ -1,0 +1,34 @@
+{
+  "name": "@lfd/storefront-layout",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "private": true,
+  "scripts": {
+    "dev:watch": "tsc -b tsconfig.json --watch",
+    "build": "tsc -b tsconfig.json",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "lint": "eslint src",
+    "lint:ci": "eslint src",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@eslint/js": "catalog:",
+    "@types/jest": "catalog:",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
+    "globals": "catalog:",
+    "jest": "catalog:",
+    "prettier": "catalog:",
+    "ts-jest": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:"
+  }
+}

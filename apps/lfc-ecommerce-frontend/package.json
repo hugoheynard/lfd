@@ -37,6 +37,7 @@
     "@lfd/front-ops": "workspace:*",
     "@lfd/money": "workspace:*",
     "@lfd/ops-contract": "workspace:*",
+    "@lfd/storefront-layout": "workspace:*",
     "@sentry/angular": "catalog:",
     "@stripe/stripe-js": "catalog:",
     "fold-ng": "catalog:",

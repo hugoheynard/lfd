@@ -1,0 +1,78 @@
+<div class="form">
+  <div class="field-group">
+    <span class="caption">Langue</span>
+    <fold-view-toggle
+      size="sm"
+      ariaLabel="Langue écrite"
+      [options]="localeOptions"
+      [value]="locale()"
+      (valueChange)="pickLocale($event)"
+    />
+  </div>
+
+  <fold-input
+    size="sm"
+    [label]="labelOf('Pastille')"
+    optional
+    placeholder="Nouveau"
+    [hint]="sourceHint(info().badge, limits.badge.max)"
+    [value]="textIn(info().badge, locale())"
+    (valueChange)="setOptional('badge', $event)"
+  />
+  <fold-input
+    size="sm"
+    [label]="labelOf('Titre')"
+    [required]="isSource()"
+    [optional]="!isSource()"
+    [hint]="sourceHint(info().title, limits.title.max)"
+    [value]="textIn(info().title, locale())"
+    (valueChange)="setTitle($event)"
+  />
+  <fold-textarea
+    size="sm"
+    [label]="labelOf('Phrase')"
+    optional
+    [rows]="3"
+    [hint]="sourceHint(info().lede, limits.lede.max)"
+    [value]="textIn(info().lede, locale())"
+    (valueChange)="setOptional('lede', $event)"
+  />
+
+  <div class="field-group">
+    <span class="caption">Image</span>
+    @if (info().image; as image) {
+      <img class="preview" [src]="image.url" [alt]="textIn(image.alt, 'fr')" />
+      <fold-input
+        size="sm"
+        [label]="labelOf('Texte alternatif')"
+        optional
+        [hint]="sourceHint(image.alt, limits.imageAlt.max)"
+        [value]="textIn(image.alt, locale())"
+        (valueChange)="setAlt($event)"
+      />
+      <div class="actions">
+        <button foldButton type="button" size="sm" emphasis="outline" (click)="chooseImage()">
+          Changer d’image
+        </button>
+        <button foldButton type="button" size="sm" emphasis="soft" (click)="removeImage()">
+          Retirer l’image
+        </button>
+      </div>
+    } @else {
+      <button foldButton type="button" size="sm" emphasis="outline" (click)="chooseImage()">
+        Choisir dans la médiathèque
+      </button>
+    }
+  </div>
+
+  <fold-listbox
+    size="sm"
+    label="Lien vers un rayon"
+    optional
+    allowClear
+    placeholder="Aucun lien"
+    [options]="shelfOptions()"
+    [value]="info().linkShelfKey"
+    (valueChange)="setLink($event)"
+  />
+</div>

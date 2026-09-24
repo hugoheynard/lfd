@@ -1,14 +1,19 @@
-<div class="tile">
+<div
+  class="tile"
+  [class]="layout()"
+  [class.featured]="featured()"
+  [class.contain]="mediaFit() === 'contain'"
+>
   <div class="media">
     <button class="photo" type="button" [attr.aria-label]="product().name" (click)="opened.emit()">
       <!-- `sizes` dit la place RÉELLE que le CSS donnera : sans lui, le
            navigateur suppose la pleine largeur de la fenêtre et choisit
-           toujours la plus grande. La grille fait quatre colonnes au-delà de
-           60rem, deux en dessous. -->
+           toujours la plus grande. Deux colonnes en pile ; au-delà du pli, cinq
+           au plus — un best-seller en couvre deux. -->
       <img
         [src]="artSrc()"
         [attr.srcset]="artSrcset() || null"
-        sizes="(min-width: 60rem) 25vw, 45vw"
+        [attr.sizes]="sizes()"
         [attr.alt]="art().alt"
         loading="lazy"
         decoding="async"
@@ -16,72 +21,51 @@
     </button>
 
     @if (product().isFeatured) {
-      <!-- L'étoile en pile, le mot au-delà du pli : à 112 px de large, un badge
-           écrit mangerait la moitié de la photo. -->
-      <span class="star narrow-only" aria-hidden="true">★</span>
-      <span class="signature wide-only">{{ t().product.signature }}</span>
-    }
-
-    @if (orderable()) {
-      <!-- LE GESTE RAPIDE, en pile : la pastille porte la quantité. Le retrait se
-           fait dans la fiche, où la cible est assez grande pour être visée. -->
-      <button
-        class="quick narrow-only"
-        type="button"
-        [class.filled]="quantity() > 0"
-        [attr.aria-label]="addLabel()"
-        (click)="added.emit()"
-      >
-        @if (quantity() > 0) {
-          {{ quantity() }}
-        } @else {
-          <fold-icon name="plus" />
-        }
-      </button>
+      <span class="badge">★ {{ t().product.bestSeller }}</span>
     }
   </div>
 
-  <button class="body" type="button" (click)="opened.emit()">
-    <span class="name">{{ product().name }}</span>
-    <span class="note wide-only">{{ product().note }}</span>
-  </button>
-
-  <div class="foot">
-    <span class="price">
-      <!-- Le tarif catalogue, barré, quand ce client paie moins. Il ne
-           s'affiche que sur les articles négociés : une rature sur tout le
-           rayon ne dirait plus rien, et sur aucun elle cacherait ce qu'on lui
-           a consenti. -->
-      @if (striked(); as catalogue) {
-        <s class="price-was">{{ catalogue }}</s>
+  <div class="content">
+    <button class="body" type="button" (click)="opened.emit()">
+      <span class="name">{{ product().name }}</span>
+      @if (product().note; as note) {
+        <!-- Le texte court, sur TOUTES les cartes (Hugo, 2026-09-24) — coupé à
+             deux lignes pour que les rangées gardent une hauteur. La fiche le
+             donne en entier. Le best-seller le porte sans coupe, au bureau. -->
+        <span class="note">{{ note }}</span>
       }
-      {{ price() }}
-      <span class="price-ht">{{ showsTtc() ? t().shop.ttcSuffix : t().shop.htSuffix }}</span>
-    </span>
+    </button>
 
-    @if (orderable()) {
-      <!-- LE STEPPER, au-delà du pli seulement : c'est là que la tuile a la place
-           de porter trois cibles au lieu d'une. -->
-      @if (quantity() > 0) {
-        <app-quantity-rail
-          class="wide-only"
-          size="sm"
-          [quantity]="quantity()"
-          [addLabel]="addLabel()"
-          [removeLabel]="removeLabel()"
-          (added)="added.emit()"
-          (removed)="removed.emit()"
-        />
-      } @else {
+    <div class="foot">
+      <span class="price">
+        <!-- Le tarif catalogue, barré, quand ce client paie moins. Il ne
+             s'affiche que sur les articles négociés : une rature sur tout le
+             rayon ne dirait plus rien, et sur aucun elle cacherait ce qu'on lui
+             a consenti. -->
+        @if (striked(); as catalogue) {
+          <s class="price-was">{{ catalogue }}</s>
+        }
+        {{ price() }}
+        <span class="price-ht">{{ showsTtc() ? t().shop.ttcSuffix : t().shop.htSuffix }}</span>
+      </span>
+
+      @if (orderable()) {
+        <!-- UN seul geste, aux deux densités : il ajoute, et porte la quantité
+             une fois l'article au panier. Le retrait se fait dans la fiche. -->
         <button
-          class="add wide-only"
+          class="quick"
           type="button"
+          [class.filled]="quantity() > 0"
           [attr.aria-label]="addLabel()"
           (click)="added.emit()"
         >
-          {{ t().shop.add }}
+          @if (quantity() > 0) {
+            {{ quantity() }}
+          } @else {
+            <fold-icon name="plus" />
+          }
         </button>
       }
-    }
+    </div>
   </div>
 </div>

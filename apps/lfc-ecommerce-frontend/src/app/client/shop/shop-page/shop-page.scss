@@ -52,7 +52,7 @@
      hors du cadre par la droite. Le zéro autorise la colonne à être plus étroite
      que son contenu, et c'est le rail qui défile — lui seul. */
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'search' 'chips' 'banner' 'grid';
+  grid-template-areas: 'search' 'chips' 'grid';
   gap: var(--fold-space-md);
   padding: var(--fold-space-md) var(--fold-space-lg) var(--fold-space-2xl);
 }
@@ -63,10 +63,13 @@
   grid-area: search;
 }
 
-/* La bannière et la barre du panier sont des composants : l'écran ne leur donne
-   que leur PLACE dans la grille, jamais leur peinture. */
-.banner {
-  grid-area: banner;
+/* En PILE, la barre « Ma commande » n'est pas rendue (plan lot 3) : elle
+   flottait seule sur l'encre, et le pied collé porte désormais les mêmes
+   faits et le même geste. */
+@media (max-width: 899.98px) {
+  .terms {
+    display: none;
+  }
 }
 
 /* ── Le pli ───────────────────────────────────────────────────────────────── */
@@ -88,9 +91,68 @@
     margin-inline: auto;
     gap: 20px;
     padding: 20px 26px 24px;
+    /* Les rayons à gauche, la recherche à droite, SUR LA MÊME LIGNE (Hugo,
+       2026-09-24) : la recherche est un filtre du rayon comme les pastilles,
+       pas un titre au-dessus d'eux. Elle ne prend que ce qu'il lui faut —
+       une recherche de 1300 px pour « croissant » se lit comme un vide. */
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 380px);
+    grid-template-areas: 'chips search' 'grid grid';
+    align-items: center;
   }
 
-  .banner {
-    align-self: start;
+  /* 🔴 LA BARRE « MA COMMANDE » À CHEVAL (plan lot 2, SPEC §2) : 50 px sur
+     l'encre, le reste sur le papier.
+     Elle a d'abord été DESCENDUE par `transform` : le bandeau gardait sa
+     hauteur pleine, et le décalage laissait 77 px d'encre vide au-dessus
+     d'elle — visible dès que le titre de la page est parti (2026-09-24).
+     Désormais elle reste en HAUT du bandeau (16 px d'air), et c'est le bandeau
+     qui raccourcit : la marge basse négative lui retire les 77 px qui
+     débordent. Même chevauchement, sans le vide.
+     ⚠️ 77 = barre de 127 px − 50, mesuré à 1400 px : les mêmes 77 que
+     `.under-bar` et les filtres collants plus bas. Les trois bougent ensemble. */
+  .terms {
+    top: auto;
+    margin-top: var(--fold-space-md);
+    margin-bottom: -77px;
+  }
+
+  /* Ce que la barre avale du papier, rendu au rayon. Mesuré à 1400 px le
+     2026-09-24 : barre de 127 px, donc 77 de débord ; à 73 la recherche
+     passait 4 px DESSOUS. 100 laisse ~24 px d'air sous la barre. */
+  .shop.under-bar {
+    padding-top: 100px;
+  }
+
+  /* 🔴 LE FILTRE RESTE, LE RAYON DÉFILE (Hugo, 2026-09-24). Le bandeau et la
+     barre vivent hors du conteneur qui défile ; les pastilles et la recherche,
+     elles, sont dedans — elles partaient avec les cartes, et changer de rayon
+     obligeait à remonter. Collées juste sous la barre.
+     `top: 77px` = ce que la barre déborde sur le papier (127 − 50, mesuré à
+     1400 px le 2026-09-24) : collées à 0, elles passeraient SOUS la barre.
+     Le fond et l'ombre pleine masquent les cartes qui glissent dessous, y
+     compris dans la gouttière entre les deux cases. */
+  .shop > :is(.search, .shelves) {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding-block: 12px;
+    background: var(--fold-color-bg-page);
+    /* La seconde ombre remonte des 77 px du débord, jusque sous la barre : ses coins sont arrondis
+       et elle est moins large que la page, donc une carte qui défile passait
+       dans l'entre-deux, à gauche et à droite (vu le 2026-09-24). */
+    box-shadow:
+      0 0 0 10px var(--fold-color-bg-page),
+      0 -77px 0 10px var(--fold-color-bg-page);
+  }
+
+  .shop.under-bar > :is(.search, .shelves) {
+    top: 77px;
+  }
+
+  /* 🔴 Le pied est un objet MOBILE (Hugo, 2026-09-24). Au bureau, la barre
+     « Ma commande » porte le règlement dès la première pièce ; rien pris et
+     rien choisi, il n'y a rien à régler et donc rien à montrer. */
+  .cartbar {
+    display: none;
   }
 }

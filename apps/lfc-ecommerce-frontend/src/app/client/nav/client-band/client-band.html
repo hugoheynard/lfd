@@ -10,5 +10,11 @@
      appartient au chrome et pas aux écrans — sinon chaque nouvel écran devrait
      y penser, et le premier qui l'oublie casse le raccord. -->
 @if (chrome.bandLip()) {
-  <span class="lip" aria-hidden="true"></span>
+  <!-- Avec poignée, la lèvre devient la LANGUETTE de la boutique (SPEC §8) :
+       décor seul, il n'y a rien à tirer. -->
+  <span class="lip" [class.handled]="chrome.bandHandle()" aria-hidden="true">
+    @if (chrome.bandHandle()) {
+      <span class="handle"></span>
+    }
+  </span>
 }

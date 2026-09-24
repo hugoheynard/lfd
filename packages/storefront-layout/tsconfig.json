@@ -1,0 +1,19 @@
+{
+  // LA COMPOSITION D'UNE PAGE DE VITRINE — table des formes, collision,
+  // pile, défilement. Feuille du graphe : AUCUNE dépendance, pas même zod.
+  // Lue par le serveur (b2b/storefront), l'éditeur et la boutique.
+  // Émet des déclarations ; `exports.types` pointe la source in-workspace.
+  "extends": "../../tsconfig/tsflags.backend.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "dist",
+    "composite": true,
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false
+  },
+  "include": ["src"],
+  "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**"]
+}

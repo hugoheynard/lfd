@@ -10,6 +10,26 @@ import {
 
 import { MediaLibraryHttpApi } from '../media-library-http-api';
 
+/**
+ * Où mène un porteur, et comment il se nomme — une entrée par `kind`.
+ *
+ * Une table plutôt qu'un ternaire : un porteur de plus est une ligne de plus.
+ * Les chemins des fiches et des familles ont été vérifiés dans
+ * `pim/pim.routes.ts` le 2026-09-23 : enfants DIRECTS de `pim`, et « familles »
+ * se dit `categories` dans l'URL. La vitrine vit en `/vitrine`, hors de
+ * l'espace B2B (`documentation/order/plan-vitrine-enregistrement.md`, D7).
+ */
+const CARRIER_DESTINATIONS: Readonly<
+  Record<
+    MediaCarrierView['kind'],
+    { readonly word: string; readonly path: (id: string) => readonly string[] }
+  >
+> = {
+  product: { word: 'Fiche', path: (id) => ['/pim', 'produits', id] },
+  category: { word: 'Famille', path: (id) => ['/pim', 'categories', id] },
+  storefront: { word: 'Vitrine', path: () => ['/vitrine'] },
+};
+
 /** L'image dont on demande les porteurs. */
 export interface CarriersPanelData {
   readonly url: string;
@@ -79,15 +99,13 @@ export class CarriersPanel {
    * corriger — deux sujets, un seul écran.
    */
   protected open(carrier: MediaCarrierView): void {
-    // Les vrais chemins, vérifiés dans `pim/pim.routes.ts` le 2026-09-23 :
-    // les fiches et les familles sont des enfants DIRECTS de `pim`, pas de
-    // `pim/catalogue`. Et « familles » se dit `categories` dans l'URL.
-    const path =
-      carrier.kind === 'product'
-        ? ['/pim', 'produits', carrier.id]
-        : ['/pim', 'categories', carrier.id];
-    void this.router.navigate(path);
+    void this.router.navigate([...CARRIER_DESTINATIONS[carrier.kind].path(carrier.id)]);
     this.ref.close();
+  }
+
+  /** Le mot qui précède le libellé : « Fiche », « Famille », « Vitrine ». */
+  protected word(carrier: MediaCarrierView): string {
+    return CARRIER_DESTINATIONS[carrier.kind].word;
   }
 
   protected dismiss(): void {

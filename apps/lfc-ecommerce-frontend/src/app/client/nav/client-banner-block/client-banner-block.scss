@@ -97,3 +97,15 @@
     text-align: start;
   }
 }
+
+/* ── Le bandeau serré (`compact`) ──────────────────────────────────────────
+   Posé APRÈS le pli pour l'emporter à toutes les largeurs. Le titre descend
+   d'un cran, la marge basse de deux : le rayon remonte d'autant. */
+:host(.compact) .banner {
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md) var(--lfc-inset) var(--fold-space-lg);
+}
+
+:host(.compact) .title {
+  font-size: var(--lfc-text-screen-sm);
+}

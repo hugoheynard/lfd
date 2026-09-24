@@ -46,6 +46,9 @@
   --lfc-paper-400: #d8cdb6;
 
   /* ── Primitives : encre chaude (le texte) ── */
+  /* Le fond encre de la tuile d'opération (boutique pro, « Tuile Noël ») : plus
+     profond que `soot-900`, pour qu'une photo de bûche y tienne sans voile. */
+  --lfc-soot-950: #1c1408;
   --lfc-soot-900: #23201a;
   --lfc-soot-700: #5c5548;
   --lfc-soot-600: #6f6858;
@@ -54,12 +57,22 @@
 
   /* ── Primitives : beurre (l'argent, la signature, l'événement) ── */
   --lfc-butter-500: #d99a2b;
+  /* L'or de la pastille d'opération (« Noël · J‑18 ») — plus clair que
+     `butter-500`, qui virait au caramel sur le fond `soot-950`. */
+  --lfc-gold-400: #e3b23c;
   --lfc-butter-100: #f6e8cd;
   --lfc-butter-900: #3d2a05;
   --lfc-butter-800: #5a3d07;
   --lfc-butter-300: #e6d3a5;
   --lfc-butter-200: #f0dcae;
   --lfc-butter-400: #e6c98a;
+  /* Le crème DORÉ et l'OR du best-seller (handoff boutique, SPEC §5) : aucun
+     cran existant ne les approchait sans virer au jaune ou au sable. */
+  --lfc-butter-50: #fdf3dc;
+  --lfc-butter-450: #dcbf7a;
+  /* La CRÈME de la barre « Ma commande » (handoff boutique, SPEC §2) : entre le
+     crème doré (50) et le 100, trop rosé pour porter un bloc de cette taille. */
+  --lfc-butter-75: #f6ecd6;
 
   /* ── Primitives : statut ── */
   --lfc-brick-700: #8f2c1f;
@@ -191,6 +204,10 @@
   --lfc-color-accent-action: color-mix(in srgb, var(--lfc-butter-500) 85%, var(--lfc-butter-900));
   --lfc-color-accent-surface: var(--lfc-butter-100);
   --lfc-color-accent-text: var(--lfc-butter-800);
+  /* L'article MIS EN AVANT : fond crème doré, cerne d'or. Le même couple sert
+     au raccourci de lot qui égale la quantité choisie. */
+  --lfc-color-featured-surface: var(--lfc-butter-50);
+  --lfc-color-featured-border: var(--lfc-butter-450);
   /* Ne passe pas AA en texte courant : sur-titres capitalisés UNIQUEMENT. */
   --lfc-color-text-subtle: var(--lfc-soot-500);
   --lfc-color-border-strong: var(--lfc-paper-400);
@@ -285,6 +302,7 @@
      pas l'égalité des nombres. */
   --lfc-text-lede-tile: 1.0625rem;
   --lfc-text-screen-sm: 1.75rem; /* 28px — titre d'écran secondaire */
+  --lfc-text-sheet-title: 2.25rem; /* 36px — nom d'une pièce dans sa fiche (capture 04) */
   --lfc-text-screen: 2.375rem; /* 38px — titre d'écran sur le registre sombre */
   /* ⚠️ Ce cran-là GRANDIT AU BUREAU, plus bas dans ce fichier. La valeur
      ci-dessus est celle du TÉLÉPHONE, et c'est la seule que la maquette de 390
@@ -359,6 +377,16 @@
   /* ── Ombres de l'app client ── */
   --lfc-shadow-card: 0 2px 10px -6px rgb(35 32 26 / 18%);
   --lfc-shadow-promo: 0 10px 26px -14px rgb(35 32 26 / 50%);
+  /* L'ombre CHAUDE du best-seller : teintée d'or brun, elle le décolle sans le
+     griser. */
+  --lfc-shadow-featured: 0 14px 30px -16px rgb(90 61 7 / 45%);
+  /* L'ombre LONGUE de la barre « Ma commande » : portée bleu nuit, elle la
+     détache de l'encre du bandeau qu'elle chevauche (SPEC §2). */
+  --lfc-shadow-order-bar: 0 34px 64px -26px rgb(6 16 46 / 60%);
+  /* L'ombre VERS LE HAUT des bords de feuille en pile — le pied collé et la
+     languette de la boutique (SPEC §8) : portée bleu nuit, elle les décolle de
+     ce qui passe dessous. */
+  --lfc-shadow-sheet-up: 0 -16px 30px -20px rgb(6 16 46 / 55%);
   /* LE RELIEF DU BANDEAU — trois couches, et chacune fait un travail que les
      deux autres ne font pas (Hugo, 2026-09-20 : « améliorer l'effet relief de
      cette grande carte »).

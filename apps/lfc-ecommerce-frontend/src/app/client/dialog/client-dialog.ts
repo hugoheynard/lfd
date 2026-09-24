@@ -39,7 +39,7 @@ import { ClientCopyService } from '../copy/client-copy.service';
   selector: 'app-client-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FoldIconComponent],
-  host: { '[attr.data-placement]': 'placement()' },
+  host: { '[attr.data-placement]': 'placement()', '[attr.data-layout]': 'layout()' },
   templateUrl: './client-dialog.html',
   styleUrl: './client-dialog.scss',
 })
@@ -62,6 +62,15 @@ export class ClientDialog {
    * façon connue de les voir se désynchroniser.
    */
   readonly placement = input<'centre' | 'sheet' | 'side'>('centre');
+
+  /**
+   * La disposition AU-DELÀ DU PLI. `stack` empile le visuel au-dessus du texte ;
+   * `split` pose le visuel à gauche et le reste à droite, dans une boîte de
+   * 900 px — la fiche produit de la boutique pro (handoff, SPEC §6). En pile,
+   * les deux sont identiques : la largeur d'un téléphone ne tient pas deux
+   * colonnes.
+   */
+  readonly layout = input<'stack' | 'split'>('stack');
 
   /** Le sur-titre : de quel chemin ce dialogue est l'étape. */
   readonly kicker = input.required<string>();

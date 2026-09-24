@@ -18,6 +18,12 @@ import { MediaLibraryHttpApi } from '../../../mediatheque/media-library-http-api
  */
 export interface LibraryPickerData {
   readonly already: readonly string[];
+  /**
+   * UNE image, pas une liste : désigner en remplace la désignation précédente.
+   * Absent : plusieurs, dans l'ordre où on les désigne. L'image d'une info de
+   * vitrine n'en porte qu'une (`plan-vitrine-enregistrement.md`, D3).
+   */
+  readonly single?: boolean;
 }
 
 /**
@@ -123,9 +129,12 @@ export class LibraryPicker {
     if (this.isAlready(url)) {
       return;
     }
-    this.picked.update((current) =>
-      current.includes(url) ? current.filter((kept) => kept !== url) : [...current, url],
-    );
+    this.picked.update((current) => {
+      if (current.includes(url)) {
+        return current.filter((kept) => kept !== url);
+      }
+      return this.data().single === true ? [url] : [...current, url];
+    });
   }
 
   /**

@@ -58,6 +58,10 @@
   <!-- Fermé tant que rien n'est retenu : un « Ajouter » qui n'ajoute rien
        laisse croire que le geste a échoué. -->
   <button foldButton [disabled]="picked().length === 0" (click)="confirm()">
-    Ajouter {{ picked().length > 0 ? '(' + picked().length + ')' : '' }}
+    @if (data().single) {
+      Choisir
+    } @else {
+      Ajouter {{ picked().length > 0 ? '(' + picked().length + ')' : '' }}
+    }
   </button>
 </div>

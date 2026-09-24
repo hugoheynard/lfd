@@ -1,0 +1,62 @@
+// Les RÉGLAGES sur les 2/3, l'une section sous l'autre sur toute leur largeur ;
+// l'APERÇU sur le tiers restant, à droite, qui reste sous les yeux pendant que
+// les sections défilent (Hugo, 2026-09-24). En pile sous 900 px : l'aperçu
+// passe en haut et défile avec le reste.
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-areas: 'settings previews';
+  gap: var(--fold-space-xl);
+  align-items: start;
+
+  @media (max-width: 899px) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'previews' 'settings';
+  }
+}
+
+.settings {
+  grid-area: settings;
+  min-width: 0;
+}
+
+// Bureau puis mobile, l'un sous l'autre : sur un tiers de largeur, côte à côte
+// ils seraient illisibles.
+.previews {
+  grid-area: previews;
+  position: sticky;
+  inset-block-start: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+
+  @media (max-width: 899px) {
+    position: static;
+  }
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.caption {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+}
+
+// Une case = une carte : les rangées ont la hauteur d'une colonne, comme dans la boutique.
+.frame {
+  display: grid;
+  grid-auto-rows: minmax(var(--fold-space-2xl), auto);
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-xs);
+  border: 1px dashed var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-sm);
+}
+
+.object {
+  min-block-size: var(--fold-space-2xl);
+}

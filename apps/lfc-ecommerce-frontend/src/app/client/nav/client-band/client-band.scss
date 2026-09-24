@@ -85,6 +85,26 @@
   }
 }
 
+/* ── La languette (boutique, SPEC §8) ───────────────────────────────────────
+   La même feuille, plus une ombre qui monte sur l'encre et une poignée
+   centrée. `::after` porte l'ombre : c'est lui, le bord crème. */
+.lip.handled::after {
+  box-shadow: var(--lfc-shadow-sheet-up);
+}
+
+.handle {
+  position: absolute;
+  /* Au-dessus de `::after`, qui peint la crème par-dessus le contenu. */
+  z-index: 1;
+  top: calc(var(--fold-space-xl) + var(--fold-space-sm));
+  left: 50%;
+  inline-size: 42px;
+  block-size: 4px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-paper-400);
+  transform: translateX(-50%);
+}
+
 /* ── La fenêtre ─────────────────────────────────────────────────────────────
    Le bord bas de la crème reçoit deux angles CONCAVES, alignés sur la
    gouttière : ce qui remonte semble entrer dans une ouverture arrondie au lieu

@@ -114,4 +114,106 @@ describe('ProductTile', () => {
 
     expect(el.querySelector('.price-was')).toBeNull();
   });
+
+  /**
+   * La maquette de la boutique pro a UNIFIÉ les deux densités : un seul bouton,
+   * qui ajoute, et porte la quantité une fois l'article au panier. Plus de
+   * stepper dans la vignette — le retrait se fait dans la fiche.
+   */
+  it('porte UN seul geste d’ajout, « + » à vide puis la quantité', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    const added: number[] = [];
+    fixture.componentInstance.added.subscribe(() => added.push(1));
+
+    expect(el.querySelectorAll('.quick')).toHaveLength(1);
+    expect(el.querySelector('app-quantity-rail')).toBeNull();
+    expect(el.querySelector('.quick fold-icon')).not.toBeNull();
+
+    el.querySelector<HTMLButtonElement>('.quick')?.click();
+    expect(added).toHaveLength(1);
+
+    fixture.componentRef.setInput('quantity', 3);
+    fixture.detectChanges();
+    expect(el.querySelector('.quick')?.textContent?.trim()).toBe('3');
+  });
+
+  it('au niveau `browse`, ne propose aucun ajout', () => {
+    fixture.componentRef.setInput('orderable', false);
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.quick')).toBeNull();
+  });
+
+  /**
+   * Le best-seller se distingue par sa pastille ; une pièce ordinaire n'en a
+   * pas — aucun chiffre de vente n'est servi, aucun n'est affiché.
+   */
+  it('marque le best-seller, et lui seul, de sa pastille', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.badge')).toBeNull();
+
+    const featured = { ...TEST_ITEMS[0], isFeatured: true, note: 'Tressée aux pralines' };
+    fixture.componentRef.setInput('product', featured);
+    fixture.detectChanges();
+
+    expect(el.querySelector('.tile.featured')).not.toBeNull();
+    expect(el.querySelector('.badge')?.textContent).toContain(FR.product.bestSeller);
+    expect(el.querySelector('.note')?.textContent?.trim()).toBe(featured.note);
+  });
+
+  /**
+   * Le texte court est sur TOUTES les cartes depuis le 2026-09-24 — il était
+   * réservé au best-seller. Sans texte au référentiel, rien : pas de ligne vide.
+   */
+  it('porte le texte court sur une carte ordinaire, et rien quand il manque', () => {
+    const el = fixture.nativeElement as HTMLElement;
+
+    fixture.componentRef.setInput('product', { ...TEST_ITEMS[0], note: 'Pur beurre' });
+    fixture.detectChanges();
+    expect(el.querySelector('.note')?.textContent?.trim()).toBe('Pur beurre');
+
+    fixture.componentRef.setInput('product', { ...TEST_ITEMS[0], note: null });
+    fixture.detectChanges();
+    expect(el.querySelector('.note')).toBeNull();
+  });
+
+  describe('sa forme de vitrine', () => {
+    const tile = (): Element | null =>
+      (fixture.nativeElement as HTMLElement).querySelector('.tile');
+    const featuredItem = TEST_ITEMS.find((item) => item.isFeatured);
+
+    it('hors vitrine, le best-seller est celui que le catalogue marque', () => {
+      fixture.componentRef.setInput('product', featuredItem);
+      fixture.detectChanges();
+
+      expect(tile()?.classList.contains('featured')).toBe(true);
+      expect(tile()?.classList.contains('side-left')).toBe(true);
+    });
+
+    /** Dans une grille composée, c'est la FORME qui fait le best-seller, plus `isFeatured`. */
+    it('en carte 1×1, un article marqué reste une vignette, sans ton', () => {
+      fixture.componentRef.setInput('product', featuredItem);
+      fixture.componentRef.setInput('shape', 'card');
+      fixture.componentRef.setInput('tone', 'dark');
+      fixture.detectChanges();
+
+      expect(tile()?.classList.contains('featured')).toBe(false);
+      expect(tile()?.classList.contains('tone-dark')).toBe(false);
+    });
+
+    it('sur une forme plus grande, tout article prend la mise en page du best-seller', () => {
+      fixture.componentRef.setInput('shape', 'block');
+      fixture.componentRef.setInput('mediaSide', 'top');
+      fixture.componentRef.setInput('tone', 'accent');
+      fixture.componentRef.setInput('mediaFit', 'contain');
+      fixture.detectChanges();
+
+      const classes = tile()?.classList;
+      expect(classes?.contains('featured')).toBe(true);
+      expect(classes?.contains('side-top')).toBe(true);
+      expect(classes?.contains('tall')).toBe(true);
+      expect(classes?.contains('tone-accent')).toBe(true);
+      expect(classes?.contains('contain')).toBe(true);
+    });
+  });
 });

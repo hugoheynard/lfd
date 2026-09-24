@@ -1,0 +1,164 @@
+:host {
+  display: grid;
+  gap: var(--fold-space-xs);
+  min-block-size: var(--fold-space-xl);
+  padding: var(--fold-space-xs);
+  border: 1px solid transparent;
+  border-radius: var(--fold-radius-sm);
+  overflow: hidden;
+}
+
+// LE TON. Le back-office n'a pas les jetons de la boutique : les plus proches
+// de fold — le crème et l'or de l'avertissement, l'encre du texte, le bleu de
+// l'information. Tout le reste de la maquette suit `currentColor`.
+:host(.tone-light) {
+  border-color: var(--fold-color-warning-border);
+  background: var(--fold-color-warning-surface);
+  color: var(--fold-color-text);
+}
+
+:host(.tone-dark) {
+  background: var(--fold-color-text);
+  color: var(--fold-color-surface-card);
+}
+
+:host(.tone-accent) {
+  background: var(--fold-color-info);
+  color: var(--fold-color-on-info);
+}
+
+:host(.side-left) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+:host(.side-right) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+
+  .media {
+    order: 1;
+  }
+}
+
+:host(.side-top) {
+  grid-template-rows: minmax(0, 3fr) minmax(0, 2fr);
+}
+
+// Plein : l'image sous tout l'objet, le texte par-dessus, en bas.
+:host(.side-full) {
+  grid-template-areas: 'stack';
+
+  .media,
+  .text {
+    grid-area: stack;
+  }
+
+  .text {
+    align-self: end;
+    padding: var(--fold-space-xs);
+  }
+}
+
+.media {
+  display: grid;
+  border-radius: var(--fold-radius-sm);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+
+  &.contain {
+    padding: var(--fold-space-sm);
+  }
+}
+
+.picture {
+  display: grid;
+  place-items: center;
+  border-radius: var(--fold-radius-sm);
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, currentColor 10%, transparent) 0 var(--fold-space-xs),
+    color-mix(in srgb, currentColor 28%, transparent) var(--fold-space-xs) var(--fold-space-sm)
+  );
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--fold-space-xs);
+}
+
+.line {
+  block-size: var(--fold-space-xs);
+  border-radius: var(--fold-radius-pill);
+  background: color-mix(in srgb, currentColor 45%, transparent);
+
+  &.short {
+    inline-size: 60%;
+  }
+}
+
+.media {
+  position: relative;
+}
+
+.slide-number {
+  color: currentColor;
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
+  line-height: var(--fold-leading-none);
+}
+
+.arrow {
+  position: absolute;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+
+  &.previous {
+    inset-inline-start: 0;
+  }
+
+  &.next {
+    inset-inline-end: 0;
+  }
+}
+
+.dots {
+  position: absolute;
+  inset-block-end: var(--fold-space-xs);
+  inset-inline: 0;
+  display: flex;
+  justify-content: center;
+  gap: var(--fold-space-xs);
+}
+
+// Pas de pastille de pagination dans fold (2026-09-24) : un bouton natif minimal.
+.dot {
+  inline-size: var(--fold-space-sm);
+  block-size: var(--fold-space-sm);
+  padding: 0;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-card);
+  cursor: pointer;
+
+  &.active {
+    background: var(--fold-color-primary);
+    border-color: var(--fold-color-primary);
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.badge {
+  opacity: 0.8;
+  font-size: var(--fold-text-2xs);
+}
+
+.label {
+  overflow: hidden;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

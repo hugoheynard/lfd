@@ -1,0 +1,116 @@
+.contents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+// Les onglets, dans l'ordre du défilement : ils passent à la ligne plutôt que de défiler.
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  max-inline-size: 14rem;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-info);
+    outline-offset: 2px;
+  }
+
+  &.active {
+    border-color: var(--fold-color-text);
+    box-shadow: inset 0 0 0 1px var(--fold-color-text);
+  }
+
+  &.flagged .number {
+    background: var(--fold-color-warning-surface);
+    color: var(--fold-color-text);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.add-tab {
+  border-style: dashed;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.number {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border-radius: 50%;
+  background: var(--fold-color-text);
+  color: var(--fold-color-surface-card);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.tab-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.kind,
+.caption {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+.name {
+  overflow: hidden;
+  font-size: var(--fold-text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Le contenu préparé : un cadre, parce que c'est LUI qu'on édite.
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-xs);
+}
+
+.panel-title {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.actions,
+.add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}

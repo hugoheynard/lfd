@@ -1,62 +1,126 @@
+/* Le pied collé (SPEC §8) : papier, filet des pastilles, coins hauts
+   arrondis, ombre vers le haut. Il suit le rayon au bas de l'écran. */
+
 :host {
   position: sticky;
   bottom: 0;
-  z-index: 1;
+  /* 4, et c'est un PLANCHER : toutes les feuilles passent au-dessus (SPEC §8).
+     `ClientDialog` est un `<dialog>` modal, donc dans la couche du dessus ;
+     l'hôte des panneaux fold pose ses docks à 50 (bords) et 210 (centre) —
+     vérifié dans `fold-ng.mjs` le 2026-09-24. */
+  z-index: 4;
   display: block;
   margin-top: auto;
 }
 
-.bar {
+.foot {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md) var(--fold-space-md)
+    calc(var(--fold-space-lg) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--fold-color-border);
+  border-radius: var(--lfc-radius-3xl) var(--lfc-radius-3xl) 0 0;
+  background: var(--fold-color-surface-card);
+  box-shadow: var(--lfc-shadow-sheet-up);
+}
+
+.said {
+  display: flex;
+  align-items: flex-end;
   justify-content: space-between;
   gap: var(--fold-space-md);
-  width: 100%;
-  padding: 11px 8px 11px var(--fold-space-lg);
-  border: 0;
-  border-top: 1px solid var(--fold-color-border);
-  background: var(--fold-color-surface-card);
-  cursor: pointer;
+  padding-inline: var(--fold-space-xs);
 }
 
 .text {
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  text-align: left;
-  line-height: 1.2;
+  gap: var(--fold-space-xs);
+  min-width: 0;
 }
 
-.title {
-  font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-block);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-cta);
+.kicker {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
   text-transform: uppercase;
-  color: var(--fold-color-text);
-  white-space: nowrap;
+  color: var(--fold-color-text-muted);
 }
 
-.sub {
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-muted);
-  white-space: nowrap;
+.dot {
+  flex: none;
+  inline-size: 7px;
+  block-size: 7px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--lfc-ink-800);
+}
+
+.promise {
   overflow: hidden;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  line-height: 1.1;
   text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.edit {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--lfc-ink-800);
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-decoration-color: var(--fold-color-border);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+/* Le libellé et le compte à gauche, le total à droite. */
+.pay {
+  justify-content: space-between;
+  font-family: var(--lfc-font-caps);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+}
+
+.lead {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+/* La pastille crème du compte ; vide, elle passe au papier sourd. */
+.count {
+  display: grid;
+  place-items: center;
+  min-inline-size: 26px;
+  block-size: 26px;
+  padding-inline: var(--fold-space-xs);
+  border-radius: var(--fold-radius-sm);
+  background: var(--lfc-butter-75);
+  color: var(--lfc-ink-800);
+  font-variant-numeric: tabular-nums;
+}
+
+.pay:disabled .count {
+  background: var(--lfc-paper-100);
+  color: var(--fold-color-text-muted);
 }
 
 .total {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  padding: 11px 15px;
-  border-radius: var(--fold-radius-md);
-  background: var(--fold-color-primary);
-  color: var(--fold-color-on-primary);
-  font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-block);
-  font-weight: var(--lfc-weight-black);
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }

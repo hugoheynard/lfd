@@ -179,6 +179,11 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     // laquelle elle a été passée. En lecture seule — le contexte marchand ne
     // pose pas de version, il en cite une.
     CatalogVersionReader,
+    // Pour l'éditeur de vitrine : il désigne des rayons et des articles, et
+    // les lit par ce port plutôt que par la route du paramétrage, que la
+    // communication ne peut pas ouvrir. Son adaptateur n'en garde ni prix ni
+    // réglages.
+    CatalogAdminReader,
   ],
 })
 export class CatalogModule {}

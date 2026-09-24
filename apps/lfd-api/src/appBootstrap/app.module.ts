@@ -34,6 +34,7 @@ import { CatalogFeedModule } from "./catalog-feed.module.js";
 import { JournalModule } from "./journal.module.js";
 import { StaffAccessModule } from "./staff-access.module.js";
 import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.module.js";
+import { StorefrontModule } from "../b2b/storefront/storefront.module.js";
 import { StaffNotificationsModule } from "../staff/notifications/staff-notifications.module.js";
 import { StaffUsersModule } from "../staff/staff.module.js";
 import { StaffAuthorsModule } from "../staff/directory/staff-authors.module.js";
@@ -92,6 +93,8 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     OrderCutoffsModule,
     OrderWaiversModule,
     PickupAddressesModule,
+    // La vitrine : les pages composées de la boutique, et leur éditeur.
+    StorefrontModule,
     CatalogModule,
     DeliveryZonesModule,
     // À qui la livraison est proposée — lu par la caisse et le devis.

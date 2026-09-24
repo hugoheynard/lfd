@@ -1,0 +1,39 @@
+.mobile {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(var(--fold-space-2xl), auto);
+  grid-auto-flow: dense;
+  gap: var(--fold-space-xs);
+}
+
+.mobile-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-xs);
+  border-radius: var(--fold-radius-sm);
+  font-size: var(--fold-text-2xs);
+  text-align: center;
+
+  &:not(.free-cell) {
+    border: 1px solid var(--fold-color-primary-border);
+    background: var(--fold-color-primary-surface);
+    color: var(--fold-color-primary-text);
+  }
+}
+
+// La case libre : le reste du rayon s'y range, en carte.
+.free-cell {
+  border: 1px dashed var(--fold-color-border-subtle);
+  color: var(--fold-color-text-faded);
+}
+
+.block-mock {
+  flex: 1;
+  min-block-size: 0;
+}
+
+.marker {
+  font-style: italic;
+}

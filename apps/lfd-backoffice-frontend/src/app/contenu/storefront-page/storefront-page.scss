@@ -1,0 +1,152 @@
+.settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+  align-items: start;
+}
+
+.editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 3fr) minmax(0, 1.3fr);
+  gap: var(--fold-space-lg);
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.palette-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.caption {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.flow {
+  text-align: center;
+}
+
+// Le glisser tactile : sans cela, le doigt fait défiler la page au lieu de tirer l'objet.
+.draggable {
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-xs);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-sunken);
+}
+
+.free-cell {
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-sm);
+  color: var(--fold-color-text-faded);
+  font-size: var(--fold-text-2xs);
+  text-align: center;
+}
+
+.block {
+  border: 1px solid;
+  background: var(--fold-color-primary-surface);
+  border-color: var(--fold-color-primary-border);
+  color: var(--fold-color-primary-text);
+}
+
+.block {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-sm);
+  border-radius: var(--fold-radius-sm);
+  font-size: var(--fold-text-xs);
+  overflow: hidden;
+
+  &.selected,
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: 1px;
+  }
+
+  &.dragging {
+    opacity: 0.5;
+  }
+}
+
+.block-mock {
+  flex: 1;
+  min-block-size: 0;
+}
+
+.block-format {
+  font-weight: var(--fold-weight-semibold);
+}
+
+.block-size {
+  font-family: var(--fold-font-mono);
+}
+
+// Le nom du contenu posé : un article, ou le titre d'une info.
+.block-content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marker {
+  font-size: var(--fold-text-2xs);
+  font-style: italic;
+}
+
+.block-actions {
+  position: absolute;
+  inset-block-start: var(--fold-space-xs);
+  inset-inline-end: var(--fold-space-xs);
+  display: flex;
+  gap: var(--fold-space-xs);
+}
+
+.preview {
+  z-index: 1;
+  pointer-events: none;
+  border: 2px dashed var(--fold-color-primary);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-primary-surface);
+  opacity: 0.7;
+
+  &.refused {
+    border-color: var(--fold-color-alert-border);
+    background: var(--fold-color-alert-surface);
+  }
+}
+
+.vanished {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.issues {
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+}

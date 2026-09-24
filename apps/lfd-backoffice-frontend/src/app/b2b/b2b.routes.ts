@@ -55,6 +55,16 @@ export const b2bRoutes: Routes = [
               import('../contenu/app-footer/app-footer-page').then((m) => m.AppFooterPage),
           },
           {
+            // L'ANCIENNE adresse de la vitrine. Elle a quitté l'espace pour
+            // `/vitrine`, gardée par son propre droit : sous ce parent, le mur
+            // `b2b_settings` aurait fermé l'éditeur à la communication, qui la
+            // compose (plan-vitrine-enregistrement.md, D7). La redirection
+            // s'applique AVANT les gardes : le mur de l'espace ne la voit pas.
+            path: 'vitrine',
+            pathMatch: 'full',
+            redirectTo: '/vitrine',
+          },
+          {
             // L'ANCIENNE adresse des CGV, quand elles étaient la seule mention
             // adossée à un document. Elle est dans des favoris : un rangement
             // qui rend 404 se paie par celui qui ne l'a pas fait.

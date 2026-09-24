@@ -1,6 +1,6 @@
-import { provideZonelessChangeDetection } from '@angular/core';
+import { Component, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import type { MediaCarrierView } from '@lfd/pim-contracts';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
@@ -8,6 +8,9 @@ import { describe, expect, it } from 'vitest';
 import { MediaLibraryHttpApi } from '../media-library-http-api';
 
 import { CarriersPanel } from './carriers-panel';
+
+@Component({ template: '' })
+class Landing {}
 
 const IMAGE = 'https://media.test/products/abc.png';
 
@@ -30,7 +33,7 @@ function mount(api: FakeApi): {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
-      provideRouter([]),
+      provideRouter([{ path: 'vitrine', component: Landing }]),
       { provide: MediaLibraryHttpApi, useValue: api },
       { provide: FoldPanelRef, useValue: { close: (): void => undefined } },
     ],
@@ -79,7 +82,7 @@ describe('CarriersPanel', () => {
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
-    expect(host.textContent).toContain('Aucune fiche ni famille');
+    expect(host.textContent).toContain('Aucune fiche, famille ni vitrine');
     expect(host.textContent).not.toContain("n'a pas pu être lue");
   });
 
@@ -93,5 +96,25 @@ describe('CarriersPanel', () => {
     fixture.detectChanges();
 
     expect((fixture.nativeElement as HTMLElement).textContent).toContain("n'a pas pu être lue");
+  });
+
+  it('nomme un objet de VITRINE et renvoie vers l’éditeur de la vitrine', async () => {
+    const api = new FakeApi();
+    api.answer = [{ kind: 'storefront', id: 'obj_1', label: 'Tuile Noël' }];
+
+    const { fixture } = mount(api);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const line = host.querySelector<HTMLButtonElement>('button.carrier');
+    const words = [...(line?.querySelectorAll('span') ?? [])].map((span) =>
+      span.textContent.trim(),
+    );
+    expect(words.join(' ')).toBe('Vitrine · Tuile Noël');
+    line?.click();
+    await fixture.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/vitrine');
   });
 });
