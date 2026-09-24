@@ -2,10 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { ShopCatalogue } from '../../shop-catalogue.store';
+import { ClientLocale } from '../../../client-locale.service';
+import { operationShelfId, operationText } from '../../operations';
 import { ALL_SHELVES } from '../../shelves';
 
 /**
- * **Le rail des rayons** — « Tout » puis les six familles.
+ * **Le rail des rayons** — « Tout », les opérations datées servies, puis les
+ * familles.
  *
  * Il construit sa liste lui-même : elle ne dépend que du catalogue HYDRATÉ et du
  * dictionnaire de langue, jamais de l'écran qui l'affiche. La faire descendre en
@@ -41,9 +44,18 @@ export class ShelfNav {
 
   protected readonly t = inject(ClientCopyService).t;
   private readonly catalogue = inject(ShopCatalogue);
+  private readonly locale = inject(ClientLocale);
 
+  /**
+   * Une opération servie est un rayon **juste après « Tout »**, dans l'ordre du
+   * serveur (D8) : c'est le moment de l'année, pas une famille de plus.
+   */
   protected readonly shelves = computed(() => [
     { id: ALL_SHELVES, label: this.t().shop.allShelves },
+    ...this.catalogue.operations().map((operation) => ({
+      id: operationShelfId(operation.key),
+      label: operationText(operation.name, this.locale.current()),
+    })),
     ...this.catalogue.shelves().map((shelf) => ({ id: shelf.id, label: shelf.name })),
   ]);
 }

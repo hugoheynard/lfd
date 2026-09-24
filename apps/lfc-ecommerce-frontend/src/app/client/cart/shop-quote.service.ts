@@ -55,6 +55,23 @@ export type QuoteStatus = 'idle' | 'loading' | 'ready' | 'failed' | 'refused';
 const DELIVERY_CLOSED_FALLBACK =
   "La livraison n'est pas proposée pour cet espace. Choisissez le retrait.";
 
+/**
+ * Le préfixe des refus d'une opération datée (409) — pas encore ouverte, close,
+ * article qu'aucune opération ne propose (D6 de
+ * `architecture-operations-datees.md`). Leurs messages sont écrits en français
+ * par le serveur, pour être montrés tels quels.
+ *
+ * Le préfixe plutôt que la liste : les codes vivent dans
+ * `apps/lfd-api/src/b2b/orders/domain/errors/order-operation-errors.ts`, et
+ * aucun sous-chemin sans zod de `@lfd/contracts` ne les exporte (vérifié le
+ * 2026-09-24) ; les recopier un à un en ferait une liste qui dérive.
+ */
+const OPERATION_REFUSAL_PREFIX = 'orders.operation.';
+
+/** Le repli d'un refus d'opération sans message lisible. */
+const OPERATION_REFUSAL_FALLBACK =
+  "Un article du panier n'est vendu que pendant une opération qui n'est pas ouverte.";
+
 /** Le décompte d'un panier vide — ce qu'on montre avant la première réponse. */
 const EMPTY: ShopQuoteView = {
   lines: [],
@@ -115,8 +132,8 @@ export class ShopQuote {
   /**
    * Le refus du serveur à MONTRER, ou `null`.
    *
-   * Aujourd'hui un seul : la livraison fermée à la clientèle (409
-   * `DELIVERY_CLOSED_FOR_AUDIENCE`). Tout autre échec reste un `failed` qui
+   * La livraison fermée à la clientèle (409 `DELIVERY_CLOSED_FOR_AUDIENCE`), et
+   * les refus d'une opération datée (409 `orders.operation.*`). Tout autre échec reste un `failed` qui
    * garde le dernier décompte — celui-ci non : ses frais de coursier sont ceux
    * d'une livraison que la commande refusera.
    */
@@ -213,6 +230,15 @@ export class ShopQuote {
           this.view.set(EMPTY);
           this.state.set('refused');
           this.refused.set(httpErrorMessage(error, DELIVERY_CLOSED_FALLBACK));
+          return of(null);
+        }
+        const code = httpErrorCode(error);
+        if (code?.startsWith(OPERATION_REFUSAL_PREFIX) === true) {
+          // La commande refuserait ce panier tel quel : le décompte le dit
+          // avant le règlement, avec le message du serveur (D6).
+          this.view.set(EMPTY);
+          this.state.set('refused');
+          this.refused.set(httpErrorMessage(error, OPERATION_REFUSAL_FALLBACK));
           return of(null);
         }
         this.state.set('failed');

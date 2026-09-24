@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { FoldIconComponent } from 'fold-ng';
+import { FoldBadgeComponent, FoldIconComponent } from 'fold-ng';
 
 import { formatCents } from '../../../client/format-money';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
@@ -15,6 +15,9 @@ import {
   toneApplies,
 } from '@lfd/storefront-layout';
 
+import { ClientLocale } from '../../client-locale.service';
+import { operationGate } from '../operations';
+import { ShopCatalogue } from '../shop-catalogue.store';
 import { tileArtOf } from '../shelf-display';
 import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
 import { ShopPriceBasis } from '../shop-price-basis.service';
@@ -46,7 +49,7 @@ import { ShopPriceBasis } from '../shop-price-basis.service';
 @Component({
   selector: 'app-product-tile',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldIconComponent],
+  imports: [FoldBadgeComponent, FoldIconComponent],
   templateUrl: './product-tile.html',
   styleUrl: './product-tile.scss',
 })
@@ -110,6 +113,24 @@ export class ProductTile {
   });
 
   protected readonly t = inject(ClientCopyService).t;
+  private readonly catalogue = inject(ShopCatalogue);
+  private readonly locale = inject(ClientLocale);
+
+  /**
+   * **L'état d'un article réservé à une opération datée** (D8) : annoncée, le
+   * « + » devient « Ouvre le 15 nov. » ; close, « Commandes closes ». Un
+   * article courant n'en porte pas, et rien ne change pour lui.
+   */
+  protected readonly gate = computed(() => {
+    const product = this.product();
+    const key = product.operation?.key;
+    return operationGate(
+      product,
+      key === undefined ? null : this.catalogue.operationOf(key),
+      this.locale.current(),
+      this.t(),
+    );
+  });
 
   /**
    * Le prix **dans l'assiette de qui regarde**, sans sa mention — le gabarit la

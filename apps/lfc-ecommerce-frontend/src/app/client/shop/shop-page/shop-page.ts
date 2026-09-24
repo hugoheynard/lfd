@@ -31,6 +31,7 @@ import { Shop } from '../shop.service';
 import { ShopStorefront } from '../storefront/shop-storefront.store';
 import { ShopStore } from '../shop.store';
 import { formatHour } from '../../format-hour';
+import { CartFulfillmentDays } from '../cart-fulfillment-days.service';
 import { ServicePoints } from '../pickup-points.store';
 import { SlotPickerDialog } from '../slot-picker-dialog/slot-picker-dialog';
 import { OrderBar } from '../order-bar/order-bar';
@@ -175,6 +176,9 @@ export class ShopPage {
   }
 
   constructor() {
+    // Les jours proposés suivent les articles d'opération du panier (D6) :
+    // les deux écrans qui ouvrent le choix de l'heure le démarrent.
+    inject(CartFulfillmentDays);
     this.chrome.kicker.set(this.t().chrome.kickerShop);
     this.chrome.barOnDesktop.set(true);
     // Pas de chevron : le logo reprend le coin (Hugo, 2026-09-24 — « ça

@@ -5,7 +5,14 @@ import type { CompanyView, ShopItemView } from '@lfd/contracts';
 
 import { ClientCompany } from '../../client-company.service';
 import { FR } from '../../copy/fr';
-import { TEST_ITEMS } from '../shop-catalogue.fixture';
+import {
+  hydrateWith,
+  operationCatalogue,
+  TEST_ITEMS,
+  testOperationItem,
+} from '../shop-catalogue.fixture';
+import { ShopCatalogue } from '../shop-catalogue.store';
+import type { ShopOperationState } from '@lfd/contracts';
 import { ProductSheet } from './product-sheet';
 
 /** 1,40 € HT servi, 1,5556 € HT au tarif boutique : 10 % d'écart. */
@@ -167,5 +174,48 @@ describe('ProductSheet', () => {
 
     expect(cta()).toBeNull();
     expect(el().textContent).toContain(FR.shop.orderingSoon);
+  });
+
+  /** D8 : la fiche ne propose pas d'ajouter tant que l'opération n'est pas ouverte. */
+  describe('un article réservé à une opération', () => {
+    function mountOperation(state: ShopOperationState): void {
+      mount(testOperationItem(state), 0, false);
+      hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue(state));
+      fixture.detectChanges();
+    }
+
+    const facts = (): string[] =>
+      Array.from(el().querySelectorAll('.fact')).map(
+        (fact) =>
+          `${fact.querySelector('dt')?.textContent?.trim() ?? ''} ${fact.querySelector('dd')?.textContent?.trim() ?? ''}`,
+      );
+
+    it('annoncée : dit la date d’ouverture, sans geste d’ajout', () => {
+      mountOperation('announced');
+
+      expect(el().querySelector('.soon')?.textContent?.trim()).toBe('Ouvre le 15 nov.');
+      expect(cta()).toBeNull();
+    });
+
+    it('close : « Commandes closes », sans geste d’ajout', () => {
+      mountOperation('closed');
+
+      expect(el().querySelector('.soon')?.textContent?.trim()).toBe(FR.shop.operationClosed);
+      expect(cta()).toBeNull();
+    });
+
+    it('ouverte : l’ajout, et les jours de retrait en ligne discrète', () => {
+      mountOperation('open');
+
+      expect(cta()).not.toBeNull();
+      expect(facts()).toContain('Retrait du 20 au 24 déc.');
+    });
+
+    it('un article courant ne porte aucune ligne de retrait', () => {
+      mount(TEST_ITEMS[0] as ShopItemView, 0, false);
+
+      expect(cta()).not.toBeNull();
+      expect(facts().some((fact) => fact.startsWith(FR.product.operationPickup))).toBe(false);
+    });
   });
 });

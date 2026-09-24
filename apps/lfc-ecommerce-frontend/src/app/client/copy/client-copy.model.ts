@@ -393,12 +393,28 @@ export interface ClientCopy {
      * système n'en porte une.
      */
     readonly orderingSoon: string;
+    /**
+     * À la place du « + » d'un article réservé à une opération datée, tant que
+     * sa commande n'est pas ouverte (D8 de `architecture-operations-datees.md`).
+     * `{date}` = le jour d'ouverture, court et localisé (« 15 nov. »).
+     */
+    readonly operationOpensOn: string;
+    /** Le même, quand l'opération n'est pas (ou plus) servie avec la carte. */
+    readonly operationNotOpen: string;
+    /** À la place du « + » quand la commande de l'opération est close. */
+    readonly operationClosed: string;
   };
   readonly product: {
     /** La pastille d'un article mis en avant (`isFeatured`). */
     readonly bestSeller: string;
     /** La ligne de fiche qui dit quand la pièce sort du four. */
     readonly oven: string;
+    /** La ligne de fiche d'un article d'opération ouverte : ses jours de retrait. */
+    readonly operationPickup: string;
+    /** `{from}` et `{until}` = premier et dernier jours de retrait (« 20 », « 24 déc. »). */
+    readonly operationPickupSpan: string;
+    /** `{day}` = l'unique jour de retrait. */
+    readonly operationPickupDay: string;
     readonly perPiece: string;
     /** `{pct}` = l'écart au tarif boutique, dérivé des deux montants, entier. */
     readonly proDiscount: string;

@@ -1,4 +1,9 @@
-import type { ShopCatalogueView, ShopItemView } from '@lfd/contracts';
+import type {
+  ShopCatalogueView,
+  ShopItemView,
+  ShopOperationState,
+  ShopOperationView,
+} from '@lfd/contracts';
 
 import type { ShopCatalogue } from './shop-catalogue.store';
 
@@ -88,6 +93,50 @@ export const TEST_CATALOGUE: ShopCatalogueView = {
   items: TEST_ITEMS,
   operations: [],
 };
+
+/**
+ * **Une opération datée de test** — Noël : la bûche, réservée à l'opération,
+ * puis le croissant, article courant qu'elle montre aussi. L'ordre du rayon
+ * est celui du référentiel, pas celui des familles.
+ *
+ * Les dates ne sont comparées à aucune horloge : l'état est servi tel quel.
+ */
+export const TEST_OPERATION_KEY = 'noel-2026';
+
+export function testOperation(state: ShopOperationState): ShopOperationView {
+  return {
+    key: TEST_OPERATION_KEY,
+    name: { fr: 'Noël', en: 'Christmas' },
+    lede: null,
+    image: null,
+    state,
+    // 15 novembre, minuit à Paris.
+    orderFrom: '2026-11-14T23:00:00.000Z',
+    orderUntil: '2026-12-21T11:00:00.000Z',
+    pickupFrom: '2026-12-20',
+    pickupUntil: '2026-12-24',
+    skus: ['PAT-NOE', 'VIE-001'],
+  };
+}
+
+/** La bûche, dans son rayon d'origine, marquée par l'état de son opération. */
+export function testOperationItem(state: ShopOperationState): ShopItemView {
+  return item({
+    sku: 'PAT-NOE',
+    name: 'Bûche de Noël',
+    shelfId: 'cat_patis',
+    operation: { key: TEST_OPERATION_KEY, state },
+  });
+}
+
+/** Le catalogue de test, pendant Noël. */
+export function operationCatalogue(state: ShopOperationState): ShopCatalogueView {
+  return {
+    shelves: [...TEST_SHELVES],
+    items: [...TEST_ITEMS, testOperationItem(state)],
+    operations: [testOperation(state)],
+  };
+}
 
 /**
  * Pose le catalogue comme le réseau le poserait.

@@ -14,6 +14,8 @@ import { ClientCopyService, fill } from '../../../client/copy/client-copy.servic
 import type { ShopItemView } from '@lfd/contracts';
 import { discountBp, lineTotalCents, millicentsFromCents, unitPriceCents } from '@lfd/money';
 
+import { ClientLocale } from '../../client-locale.service';
+import { operationGate, pickupSpan } from '../operations';
 import { artOf, ovenHoursOf } from '../shelf-display';
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../media-source';
 import { ShopCatalogue } from '../shop-catalogue.store';
@@ -74,6 +76,24 @@ export class ProductSheet {
   protected readonly t = inject(ClientCopyService).t;
   private readonly basis = inject(ShopPriceBasis);
   private readonly catalogue = inject(ShopCatalogue);
+  private readonly locale = inject(ClientLocale);
+
+  /** L'opération datée qui rend la pièce vendable, ou `null` : un article courant. */
+  private readonly operation = computed(() => {
+    const key = this.product()?.operation?.key;
+    return key === undefined ? null : this.catalogue.operationOf(key);
+  });
+
+  /**
+   * L'état d'un article réservé à une opération (D8) : tant qu'elle n'est pas
+   * ouverte, la fiche ne propose pas d'ajouter, et dit pourquoi.
+   */
+  protected readonly gate = computed(() => {
+    const product = this.product();
+    return product === null
+      ? null
+      : operationGate(product, this.operation(), this.locale.current(), this.t());
+  });
 
   protected readonly showsTtc = this.basis.showsTtc;
 
@@ -126,12 +146,18 @@ export class ProductSheet {
     return product === null ? null : artOf(product);
   });
 
-  /** Les faits servis — la fournée seule, tant que pièce et allergènes ne traversent pas. */
+  /**
+   * Les faits servis — la fournée, et les jours de retrait d'une opération
+   * ouverte ; pièce et allergènes ne traversent pas encore.
+   */
   protected readonly facts = computed(() => {
     const product = this.product();
     return product === null
       ? []
-      : [{ key: this.t().product.oven, value: ovenHoursOf(product.shelfId) }];
+      : [
+          { key: this.t().product.oven, value: ovenHoursOf(product.shelfId) },
+          ...this.pickupFact(product),
+        ];
   });
 
   /**
@@ -214,6 +240,25 @@ export class ProductSheet {
   protected readonly removeLabel = computed(() =>
     fill(this.t().shop.removeAria, { name: this.product()?.name ?? '' }),
   );
+
+  /**
+   * Les jours de retrait d'une opération OUVERTE, en ligne discrète : c'est ce
+   * que le calendrier proposera, et le dire avant évite de chercher un jour
+   * que la commande refuserait.
+   */
+  private pickupFact(product: ShopItemView): readonly { key: string; value: string }[] {
+    const operation = this.operation();
+    if (product.operation?.state !== 'open' || operation === null) {
+      return [];
+    }
+    const copy = this.t();
+    return [
+      {
+        key: copy.product.operationPickup,
+        value: pickupSpan(operation, this.locale.current(), copy),
+      },
+    ];
+  }
 
   protected increment(): void {
     this.draft.update((n) => n + 1);

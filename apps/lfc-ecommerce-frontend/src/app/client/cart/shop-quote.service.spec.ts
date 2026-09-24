@@ -216,6 +216,29 @@ describe('ShopQuote', () => {
     http.verify();
   });
 
+  /**
+   * D6 des opérations datées : un panier qui porte une bûche avant l'ouverture
+   * est refusé AU DEVIS, et le message du serveur se montre tel quel — le
+   * refus n'attend pas le règlement.
+   */
+  it('montre tel quel le refus d’une opération datée', () => {
+    const { cart, quote, http } = boot();
+    const message = 'Les commandes de « Noël » ouvrent le 15 novembre.';
+
+    cart.setQuantity(SKU, 1);
+    quiet();
+    http
+      .expectOne(QUOTE)
+      .flush(
+        { code: 'orders.operation.not_yet_open', message },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+    expect(quote.status()).toBe('refused');
+    expect(quote.refusal()).toBe(message);
+    http.verify();
+  });
+
   it('un autre refus reste un échec qui garde le dernier décompte', () => {
     const { cart, quote, http } = boot();
 

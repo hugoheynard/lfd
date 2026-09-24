@@ -3,6 +3,8 @@ import { computed, inject, Injectable } from '@angular/core';
 import { ClientCopyService, fill } from '../copy/client-copy.service';
 import { ShopCatalogue } from './shop-catalogue.store';
 import { ShopStore } from './shop.store';
+import { ClientLocale } from '../client-locale.service';
+import { operationKeyOf, operationText } from './operations';
 import { ALL_SHELVES } from './shelves';
 
 /**
@@ -40,6 +42,7 @@ export class Shop {
   private readonly store = inject(ShopStore);
   private readonly catalogue = inject(ShopCatalogue);
   private readonly t = inject(ClientCopyService).t;
+  private readonly locale = inject(ClientLocale);
 
   /** Le terme cherché — écrit directement par le champ, qui en est la vue. */
   readonly query = this.store.query;
@@ -67,7 +70,17 @@ export class Shop {
       );
     }
     const shelf = this.store.shelf();
-    return shelf === ALL_SHELVES ? items : items.filter((item) => item.shelfId === shelf);
+    if (shelf === ALL_SHELVES) {
+      return items;
+    }
+    const operationKey = operationKeyOf(shelf);
+    if (operationKey !== null) {
+      // Le rayon d'une opération suit l'ordre du référentiel, pas celui des
+      // familles ; chaque pièce reste celle du catalogue, prix et fiche compris.
+      const skus = this.catalogue.operationOf(operationKey)?.skus ?? [];
+      return skus.flatMap((sku) => this.catalogue.itemOf(sku) ?? []);
+    }
+    return items.filter((item) => item.shelfId === shelf);
   });
 
   /** Le titre de la grille : le rayon, ou ce qu'on vient de chercher. */
@@ -99,6 +112,11 @@ export class Shop {
   }
 
   private shelfTitle(shelf: string, fallback: string): string {
+    const operationKey = operationKeyOf(shelf);
+    if (operationKey !== null) {
+      const operation = this.catalogue.operationOf(operationKey);
+      return operation === null ? fallback : operationText(operation.name, this.locale.current());
+    }
     return shelf === ALL_SHELVES
       ? fallback
       : (this.catalogue.shelves().find((entry) => entry.id === shelf)?.name ?? fallback);

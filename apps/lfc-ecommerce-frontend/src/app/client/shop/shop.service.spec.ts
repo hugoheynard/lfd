@@ -3,7 +3,15 @@ import { TestBed } from '@angular/core/testing';
 
 import { FR } from '../copy/fr';
 import { ALL_SHELVES } from './shelves';
-import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS, TEST_SHELVES } from './shop-catalogue.fixture';
+import {
+  hydrateWith,
+  operationCatalogue,
+  TEST_CATALOGUE,
+  TEST_ITEMS,
+  TEST_OPERATION_KEY,
+  TEST_SHELVES,
+} from './shop-catalogue.fixture';
+import { operationShelfId } from './operations';
 import { ShopCatalogue } from './shop-catalogue.store';
 import { Shop } from './shop.service';
 import { ShopStore } from './shop.store';
@@ -116,5 +124,20 @@ describe('Shop — ce que la boutique montre', () => {
     expect(shop.products().every((item) => item.shelfId === shelf?.id)).toBe(true);
     // Et le rail reste allumé : la grille n'a pas changé, le rail non plus.
     expect(shop.activeShelf()).toBe(shelf?.id);
+  });
+
+  /**
+   * D8 : le rayon d'une opération liste SES articles, dans l'ordre du
+   * référentiel — la bûche avant le croissant, alors que les familles les
+   * rangent à l'inverse —, et porte son nom.
+   */
+  it('le rayon d’une opération liste ses articles dans l’ordre servi', () => {
+    hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue('open'));
+    shop.browse(operationShelfId(TEST_OPERATION_KEY));
+
+    expect(shown()).toEqual(['PAT-NOE', 'VIE-001']);
+    expect(shop.heading()).toBe('Noël');
+    // Chaque pièce reste celle du catalogue : même prix, même fiche.
+    expect(shop.products()[1]).toBe(TEST_ITEMS[0]);
   });
 });
