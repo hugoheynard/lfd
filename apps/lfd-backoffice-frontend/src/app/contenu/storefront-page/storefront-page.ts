@@ -47,6 +47,9 @@ import {
   type MediaSide,
   mediaSideOf,
   setMedia,
+  setTone,
+  type Tone,
+  toneOf,
 } from '../storefront-media';
 import {
   activeCarousel,
@@ -69,6 +72,7 @@ import {
   updateTemplateLabel,
 } from '../storefront-templates';
 import { PointerDrag } from '../storefront-drag';
+import { reshape } from '../storefront-reshape';
 import { EXAMPLE_BLOCKS } from '../storefront-example';
 import { StorefrontTemplateList } from '../storefront-template-list/storefront-template-list';
 import { StorefrontObjectPanel } from '../storefront-object-panel/storefront-object-panel';
@@ -142,6 +146,7 @@ export class StorefrontPage {
   protected readonly carouselOf = activeCarousel;
   protected readonly sideOf = mediaSideOf;
   protected readonly fitOf = mediaFitOf;
+  protected readonly toneOf = toneOf;
 
   protected readonly formats = FORMATS;
 
@@ -347,6 +352,22 @@ export class StorefrontPage {
     const id = this.selectedId();
     if (id !== null) {
       this.blocks.update((blocks) => setMedia(blocks, id, media));
+      this.isExample.set(false);
+    }
+  }
+
+  /** Change la forme ; refusé (et dit) si la nouvelle taille ne tient pas sur un de ses rayons. */
+  setSelectedFormat(format: StorefrontShape): void {
+    const id = this.selectedId();
+    if (id !== null) {
+      this.commit(reshape(this.blocks(), this.rows(), id, format), false);
+    }
+  }
+
+  setSelectedTone(tone: Tone): void {
+    const id = this.selectedId();
+    if (id !== null) {
+      this.blocks.update((blocks) => setTone(blocks, id, tone));
       this.isExample.set(false);
     }
   }

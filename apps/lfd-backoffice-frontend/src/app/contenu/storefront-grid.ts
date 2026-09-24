@@ -17,7 +17,7 @@
  */
 
 import type { CarouselSettings, ContentsMode } from './storefront-carousel';
-import type { MediaFit, MediaSide } from './storefront-media';
+import type { MediaFit, MediaSide, Tone } from './storefront-media';
 
 /** La grille de bureau fait 5 colonnes au plus. */
 export const GRID_COLUMNS = 5;
@@ -91,6 +91,8 @@ export interface PlacedBlock extends Cell {
   readonly mediaFit?: MediaFit;
   /** Absent = le défaut de la forme. Toujours parmi les côtés permis de sa forme (`storefront-media.ts`). */
   readonly mediaSide?: MediaSide;
+  /** Absent = `light`. */
+  readonly tone?: Tone;
   /** Absent = `single`. */
   readonly contents?: ContentsMode;
   /**

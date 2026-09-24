@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { FoldButtonIconComponent, FoldIconComponent } from 'fold-ng';
 
-import { type MediaFit, type MediaSide } from '../storefront-media';
+import { type MediaFit, type MediaSide, type Tone } from '../storefront-media';
 import { type CarouselSettings, slideAt } from '../storefront-carousel';
 
 /** Pas du minuteur de simulation : assez fin pour qu'un changement tombe à la seconde. */
@@ -22,7 +22,9 @@ const TICK_MS = 250;
  * pas un contenu (il n'y en a pas encore).
  *
  * En `cover`, l'image remplit sa zone ; en `contain`, un rectangle plus petit
- * centré sur le fond de l'objet dit « l'image entière, sans rognage ».
+ * centré sur le fond de l'objet dit « l'image entière, sans rognage ». Le
+ * ton donne ses couleurs à toute la maquette ; hachures et lignes suivent la
+ * couleur du texte, lisibles sur les trois fonds.
  *
  * Avec plusieurs contenus, elle SIMULE le défilement : un grand numéro au
  * centre de l'image, les points et/ou les flèches selon la navigation. En
@@ -41,6 +43,9 @@ const TICK_MS = 250;
     '[class.side-right]': "side() === 'right'",
     '[class.side-top]': "side() === 'top'",
     '[class.side-full]': "side() === 'full'",
+    '[class.tone-light]': "tone() === 'light'",
+    '[class.tone-dark]': "tone() === 'dark'",
+    '[class.tone-accent]': "tone() === 'accent'",
     '(pointerenter)': 'hovered.set(true)',
     '(pointerleave)': 'hovered.set(false)',
   },
@@ -48,6 +53,8 @@ const TICK_MS = 250;
 export class StorefrontMediaMock {
   readonly side = input.required<MediaSide>();
   readonly fit = input.required<MediaFit>();
+  /** Les couleurs de l'objet : papier crème, encre noire ou encre bleue. */
+  readonly tone = input<Tone>('light');
   /** `null` pour un seul contenu. */
   readonly carousel = input<CarouselSettings | null>(null);
 

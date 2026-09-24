@@ -8,7 +8,9 @@ import {
   mediaSideOf,
   mobileSide,
   setMedia,
+  setTone,
   sideForShape,
+  toneOf,
 } from '../storefront-media';
 
 const ALL = ['all'] as const;
@@ -84,3 +86,18 @@ describe('l’image de l’objet', () => {
 function block2x2(): PlacedBlock {
   return { id: 'q', format: 'block', column: 1, row: 1, shelves: ALL };
 }
+
+describe('le ton', () => {
+  it('par défaut : clair', () => {
+    expect(toneOf(card)).toBe('light');
+  });
+
+  it('setTone règle le seul objet visé', () => {
+    expect(setTone([tile, card], 't', 'dark')).toEqual([{ ...tile, tone: 'dark' }, card]);
+    expect(toneOf({ ...band2, tone: 'accent' })).toBe('accent');
+  });
+
+  it('se propose sur toutes les formes, carte comprise', () => {
+    expect(setTone([card], 'c', 'accent')).toEqual([{ ...card, tone: 'accent' }]);
+  });
+});

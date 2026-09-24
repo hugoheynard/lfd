@@ -125,6 +125,7 @@
                 class="block-mock"
                 [side]="sideOf(block)"
                 [fit]="fitOf(block)"
+                [tone]="toneOf(block)"
                 [carousel]="carouselOf(block)"
               />
               <span class="block-format">
@@ -176,6 +177,8 @@
             [saveTemplate]="templateSaver"
             (applyOnMobileChange)="setSelectedApplyOnMobile($event)"
             (mediaChange)="setSelectedMedia($event)"
+            (formatChange)="setSelectedFormat($event)"
+            (toneChange)="setSelectedTone($event)"
             (contentsChange)="setSelectedContents($event)"
             (carouselChange)="setSelectedCarousel($event)"
             (shelvesChange)="setSelectedShelves($event)"

@@ -2,8 +2,29 @@
   display: grid;
   gap: var(--fold-space-xs);
   min-block-size: var(--fold-space-xl);
+  padding: var(--fold-space-xs);
+  border: 1px solid transparent;
   border-radius: var(--fold-radius-sm);
   overflow: hidden;
+}
+
+// LE TON. Le back-office n'a pas les jetons de la boutique : les plus proches
+// de fold — le crème et l'or de l'avertissement, l'encre du texte, le bleu de
+// l'information. Tout le reste de la maquette suit `currentColor`.
+:host(.tone-light) {
+  border-color: var(--fold-color-warning-border);
+  background: var(--fold-color-warning-surface);
+  color: var(--fold-color-text);
+}
+
+:host(.tone-dark) {
+  background: var(--fold-color-text);
+  color: var(--fold-color-surface-card);
+}
+
+:host(.tone-accent) {
+  background: var(--fold-color-info);
+  color: var(--fold-color-on-info);
 }
 
 :host(.side-left) {
@@ -40,7 +61,7 @@
 .media {
   display: grid;
   border-radius: var(--fold-radius-sm);
-  background: var(--fold-color-surface-sunken);
+  background: color-mix(in srgb, currentColor 12%, transparent);
 
   &.contain {
     padding: var(--fold-space-sm);
@@ -53,8 +74,8 @@
   border-radius: var(--fold-radius-sm);
   background: repeating-linear-gradient(
     45deg,
-    var(--fold-color-surface-raised) 0 var(--fold-space-xs),
-    var(--fold-color-border-subtle) var(--fold-space-xs) var(--fold-space-sm)
+    color-mix(in srgb, currentColor 10%, transparent) 0 var(--fold-space-xs),
+    color-mix(in srgb, currentColor 28%, transparent) var(--fold-space-xs) var(--fold-space-sm)
   );
 }
 
@@ -68,7 +89,7 @@
 .line {
   block-size: var(--fold-space-xs);
   border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-border);
+  background: color-mix(in srgb, currentColor 45%, transparent);
 
   &.short {
     inline-size: 60%;
@@ -80,7 +101,7 @@
 }
 
 .slide-number {
-  color: var(--fold-color-text-muted);
+  color: currentColor;
   font-size: var(--fold-text-2xl);
   font-weight: var(--fold-weight-bold);
   line-height: var(--fold-leading-none);
@@ -130,6 +151,6 @@
 }
 
 .badge {
-  color: var(--fold-color-text-muted);
+  opacity: 0.8;
   font-size: var(--fold-text-2xs);
 }

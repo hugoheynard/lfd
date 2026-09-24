@@ -1,7 +1,7 @@
 <div class="media" [class.contain]="fit() === 'contain'">
   <div class="picture">
     @if (carousel() === null) {
-      <fold-icon name="image" size="sm" tone="muted" />
+      <fold-icon name="image" size="sm" />
     } @else {
       <span class="slide-number">{{ index() + 1 }}</span>
     }

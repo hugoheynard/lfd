@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 
 import { activeCarousel } from '../storefront-carousel';
 import { formatSpec, type PlacedBlock } from '../storefront-grid';
-import { mediaFitOf, mobileSide } from '../storefront-media';
+import { mediaFitOf, mobileSide, toneOf } from '../storefront-media';
 import { StorefrontMediaMock } from '../storefront-media-mock/storefront-media-mock';
 import { mobileSequence } from '../storefront-mobile';
 
@@ -27,6 +27,7 @@ export class StorefrontMobilePreview {
   protected readonly spec = formatSpec;
   protected readonly sideOf = mobileSide;
   protected readonly fitOf = mediaFitOf;
+  protected readonly toneOf = toneOf;
   /** Ce que la maquette simule : rien pour un seul contenu, même avec des réglages gardés. */
   protected readonly carouselOf = activeCarousel;
 }

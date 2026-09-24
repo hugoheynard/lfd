@@ -79,4 +79,28 @@ describe('StorefrontObjectPanel', () => {
     expect(accepted.panel['naming']()).toBe(false);
     expect(accepted.saved).toEqual([{ name: 'A', description: '' }]);
   });
+
+  it('le ton se propose partout ; sur la carte, une aide dit sa limite', () => {
+    const onCard = setup(card);
+    expect(onCard.root.textContent).toContain('Sans effet si la carte porte un produit');
+    const tones: string[] = [];
+    onCard.panel.toneChange.subscribe((t) => tones.push(t));
+    onCard.panel['onToneChange']('dark');
+    onCard.panel['onToneChange']('violet');
+    expect(tones).toEqual(['dark']);
+
+    const onTile = setup({ ...card, format: 'tile' });
+    expect(onTile.root.textContent).toContain('Clair');
+    expect(onTile.root.textContent).not.toContain('Sans effet si la carte');
+  });
+
+  it('le choix de forme montre la forme courante et émet la nouvelle', () => {
+    const { panel, root } = setup(card);
+    expect(root.textContent).toContain('Forme');
+    const formats: string[] = [];
+    panel.formatChange.subscribe((f) => formats.push(f));
+    panel.formatChange.emit('tile');
+    expect(formats).toEqual(['tile']);
+    expect(panel['formatOptions']).toHaveLength(7);
+  });
 });

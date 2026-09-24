@@ -79,3 +79,25 @@ export function setMedia(
       : { ...withFit, mediaSide: media.side };
   });
 }
+
+/**
+ * Le ton de l'objet (Hugo, 2026-09-24) : `light` (papier crème, cerne or —
+ * défaut), `dark` (encre noire), `accent` (encre bleue). Proposé sur toutes
+ * les formes tant que l'éditeur n'a pas de contenus ; le rendu l'ignorera sur
+ * un produit en carte 1×1 (`plan-vitrine-enregistrement.md`, D3).
+ */
+export type Tone = 'light' | 'dark' | 'accent';
+
+export const DEFAULT_TONE: Tone = 'light';
+
+export function toneOf(block: PlacedBlock): Tone {
+  return block.tone ?? DEFAULT_TONE;
+}
+
+export function setTone(
+  blocks: readonly PlacedBlock[],
+  id: string,
+  tone: Tone,
+): readonly PlacedBlock[] {
+  return blocks.map((block) => (block.id === id ? { ...block, tone } : block));
+}

@@ -199,7 +199,14 @@ describe('StorefrontPage', () => {
     page.select('example-3'); // la tuile image à droite
     expect(page.saveSelectedAsTemplate({ name: '  Tuile droite ', description: '' })).toBe(true);
     expect(page.templates()).toEqual([
-      { id: expect.any(String), name: 'Tuile droite', format: 'tile', mediaSide: 'right' },
+      // Le ton voyage avec le gabarit (2026-09-24) : la tuile de l'exemple est sombre.
+      {
+        id: expect.any(String),
+        name: 'Tuile droite',
+        format: 'tile',
+        mediaSide: 'right',
+        tone: 'dark',
+      },
     ]);
 
     expect(page.saveSelectedAsTemplate({ name: 'tuile DROITE', description: '' })).toBe(false);
@@ -234,5 +241,44 @@ describe('StorefrontPage', () => {
       mediaSide: 'full',
       contents: 'multiple',
     });
+  });
+
+  it('le ton : l’exemple montre les trois, et un déplacement le garde', () => {
+    const { fixture, page, root } = setup();
+    const tones = Array.from(root.querySelectorAll('.grid app-storefront-media-mock')).map((m) =>
+      Array.from(m.classList).find((c) => c.startsWith('tone-')),
+    );
+    expect(tones).toEqual(['tone-light', 'tone-light', 'tone-dark', 'tone-accent']);
+
+    page.select('example-3');
+    page.setSelectedTone('accent');
+    page.moveSelected(0, 1);
+    fixture.detectChanges();
+    expect(page.blocks().find((b) => b.id === 'example-3')).toMatchObject({
+      row: 2,
+      tone: 'accent',
+    });
+    expect(root.querySelector('.mobile app-storefront-media-mock.tone-accent')).not.toBeNull();
+  });
+
+  it('changer de forme : garde les réglages, ou refuse en nommant rayon et objet', () => {
+    const { fixture, page, root } = setup();
+    page.select('example-3'); // tuile sombre image à droite, colonne 4
+    page.setSelectedFormat('band');
+    fixture.detectChanges();
+    expect(page.blocks().find((b) => b.id === 'example-3')?.format).toBe('tile');
+    expect(root.textContent).toContain('Déborde des 5 colonnes');
+
+    page.setSelectedFormat('card');
+    expect(page.blocks().find((b) => b.id === 'example-3')).toMatchObject({
+      format: 'card',
+      column: 4,
+      tone: 'dark',
+      mediaSide: 'top',
+    });
+
+    page.select('example-1'); // tuile en (1,1) : en bloc, elle prend les rangées 1-2, libres
+    page.setSelectedFormat('block');
+    expect(page.blocks().find((b) => b.id === 'example-1')?.format).toBe('block');
   });
 });

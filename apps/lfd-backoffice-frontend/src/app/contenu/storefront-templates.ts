@@ -7,7 +7,7 @@ import {
   type ShelfKey,
   type StorefrontShape,
 } from './storefront-grid';
-import { type MediaFit, type MediaSide } from './storefront-media';
+import { type MediaFit, type MediaSide, type Tone } from './storefront-media';
 import { type CarouselSettings, type ContentsMode } from './storefront-carousel';
 
 /**
@@ -17,7 +17,7 @@ import { type CarouselSettings, type ContentsMode } from './storefront-carousel'
  * Ils deviendront serveur avec le lot d'enregistrement ; d'ici là, recharger
  * l'onglet les efface, comme le reste de l'éditeur.
  *
- * Un gabarit porte un nom (unique), une description facultative, la forme et ses réglages — cadrage, côté, mobile, un ou
+ * Un gabarit porte un nom (unique), une description facultative, la forme, le ton et ses réglages — cadrage, côté, mobile, un ou
  * plusieurs contenus, défilement (nombre simulé compris). **Ni position, ni
  * rayons, ni contenus** (`boutique-rayon-layout.md`, « Les gabarits »).
  */
@@ -29,6 +29,7 @@ export interface StorefrontTemplate {
   readonly format: StorefrontShape;
   readonly mediaFit?: MediaFit;
   readonly mediaSide?: MediaSide;
+  readonly tone?: Tone;
   readonly applyOnMobile?: boolean;
   readonly contents?: ContentsMode;
   readonly carousel?: CarouselSettings;
@@ -113,6 +114,7 @@ function settingsOf(
     format: source.format,
     ...(source.mediaFit === undefined ? {} : { mediaFit: source.mediaFit }),
     ...(source.mediaSide === undefined ? {} : { mediaSide: source.mediaSide }),
+    ...(source.tone === undefined ? {} : { tone: source.tone }),
     ...(source.applyOnMobile === undefined ? {} : { applyOnMobile: source.applyOnMobile }),
     ...(source.contents === undefined ? {} : { contents: source.contents }),
     ...(source.carousel === undefined ? {} : { carousel: { ...source.carousel } }),

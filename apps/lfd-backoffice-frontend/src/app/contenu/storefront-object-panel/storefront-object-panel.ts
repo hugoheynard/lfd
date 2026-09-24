@@ -9,6 +9,7 @@ import {
 import {
   FoldButtonComponent,
   FoldCheckboxComponent,
+  FoldListboxComponent,
   FoldNumberInputComponent,
   FoldViewToggleComponent,
   type FoldViewToggleOption,
@@ -24,13 +25,21 @@ import {
   INTERVAL_SECONDS,
   SAMPLE_COUNT,
 } from '../storefront-carousel';
-import { describeFormat, type PlacedBlock, type ShelfKey } from '../storefront-grid';
+import {
+  describeFormat,
+  FORMATS,
+  type PlacedBlock,
+  type ShelfKey,
+  type StorefrontShape,
+} from '../storefront-grid';
 import {
   allowedSides,
   type MediaFit,
   mediaFitOf,
   type MediaSide,
   mediaSideOf,
+  type Tone,
+  toneOf,
 } from '../storefront-media';
 import { hasMobileOption } from '../storefront-mobile';
 import { STOREFRONT_SHELVES } from '../storefront-shelves';
@@ -48,6 +57,16 @@ const FIT_OPTIONS: readonly FoldViewToggleOption[] = [
   { value: 'cover', label: 'Remplir' },
   { value: 'contain', label: 'Contenir' },
 ];
+
+const TONE_OPTIONS: readonly FoldViewToggleOption[] = [
+  { value: 'light', label: 'Clair' },
+  { value: 'dark', label: 'Sombre' },
+  { value: 'accent', label: 'Accent' },
+];
+
+function isTone(value: string): value is Tone {
+  return value === 'light' || value === 'dark' || value === 'accent';
+}
 
 const CONTENTS_OPTIONS: readonly FoldViewToggleOption[] = [
   { value: 'single', label: 'Un seul' },
@@ -90,7 +109,7 @@ function isScope(value: string): value is ShelfScope {
 }
 
 /**
- * Le panneau de l'objet sélectionné dans l'éditeur « Vitrine » : image,
+ * Le panneau de l'objet sélectionné dans l'éditeur « Vitrine » : forme, ton, image,
  * option mobile, un ou plusieurs contenus, rayons, et « Enregistrer comme
  * gabarit ».
  *
@@ -106,6 +125,7 @@ function isScope(value: string): value is ShelfScope {
   imports: [
     FoldButtonComponent,
     FoldCheckboxComponent,
+    FoldListboxComponent,
     FoldNumberInputComponent,
     FoldViewToggleComponent,
     TemplateNameForm,
@@ -122,6 +142,8 @@ export class StorefrontObjectPanel {
 
   readonly applyOnMobileChange = output<boolean>();
   readonly mediaChange = output<{ readonly fit?: MediaFit; readonly side?: MediaSide }>();
+  readonly formatChange = output<StorefrontShape>();
+  readonly toneChange = output<Tone>();
   readonly contentsChange = output<ContentsMode>();
   readonly carouselChange = output<Partial<CarouselSettings>>();
   readonly shelvesChange = output<readonly ShelfKey[]>();
@@ -135,6 +157,13 @@ export class StorefrontObjectPanel {
   protected readonly carouselOf = activeCarousel;
   protected readonly shelves = STOREFRONT_SHELVES;
   protected readonly fitOptions = FIT_OPTIONS;
+  protected readonly toneOptions = TONE_OPTIONS;
+  /** Les sept formes, telles que la palette les nomme. */
+  protected readonly formatOptions = FORMATS.map((spec) => ({
+    value: spec.format,
+    label: describeFormat(spec.format),
+  }));
+  protected readonly toneOf = toneOf;
   protected readonly contentsOptions = CONTENTS_OPTIONS;
   protected readonly navOptions = NAV_OPTIONS;
   protected readonly scopeOptions = SCOPE_OPTIONS;
@@ -185,6 +214,12 @@ export class StorefrontObjectPanel {
     const side = allowedSides(this.block().format).find((candidate) => candidate === value);
     if (side !== undefined) {
       this.mediaChange.emit({ side });
+    }
+  }
+
+  protected onToneChange(value: string): void {
+    if (isTone(value)) {
+      this.toneChange.emit(value);
     }
   }
 

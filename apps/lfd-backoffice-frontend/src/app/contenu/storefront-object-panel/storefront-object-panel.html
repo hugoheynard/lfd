@@ -29,6 +29,29 @@
     />
   }
 
+  <fold-listbox
+    size="sm"
+    label="Forme"
+    hint="Le coin haut-gauche ne bouge pas ; refusé si la nouvelle taille ne tient pas."
+    [options]="formatOptions"
+    [value]="block().format"
+    (selectionChange)="formatChange.emit($event)"
+  />
+
+  <div class="palette-group">
+    <span class="caption">Ton</span>
+    <fold-view-toggle
+      size="sm"
+      ariaLabel="Ton de l’objet"
+      [options]="toneOptions"
+      [value]="toneOf(block())"
+      (valueChange)="onToneChange($event)"
+    />
+    @if (block().format === 'card') {
+      <span class="hint">Sans effet si la carte porte un produit.</span>
+    }
+  </div>
+
   <div class="palette-group">
     <span class="caption">Image : cadrage</span>
     <fold-view-toggle
