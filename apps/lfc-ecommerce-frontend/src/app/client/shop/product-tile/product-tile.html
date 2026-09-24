@@ -1,4 +1,9 @@
-<div class="tile" [class.featured]="product().isFeatured">
+<div
+  class="tile"
+  [class]="layout()"
+  [class.featured]="featured()"
+  [class.contain]="mediaFit() === 'contain'"
+>
   <div class="media">
     <button class="photo" type="button" [attr.aria-label]="product().name" (click)="opened.emit()">
       <!-- `sizes` dit la place RÉELLE que le CSS donnera : sans lui, le

@@ -176,4 +176,44 @@ describe('ProductTile', () => {
     fixture.detectChanges();
     expect(el.querySelector('.note')).toBeNull();
   });
+
+  describe('sa forme de vitrine', () => {
+    const tile = (): Element | null =>
+      (fixture.nativeElement as HTMLElement).querySelector('.tile');
+    const featuredItem = TEST_ITEMS.find((item) => item.isFeatured);
+
+    it('hors vitrine, le best-seller est celui que le catalogue marque', () => {
+      fixture.componentRef.setInput('product', featuredItem);
+      fixture.detectChanges();
+
+      expect(tile()?.classList.contains('featured')).toBe(true);
+      expect(tile()?.classList.contains('side-left')).toBe(true);
+    });
+
+    /** Dans une grille composée, c'est la FORME qui fait le best-seller, plus `isFeatured`. */
+    it('en carte 1×1, un article marqué reste une vignette, sans ton', () => {
+      fixture.componentRef.setInput('product', featuredItem);
+      fixture.componentRef.setInput('shape', 'card');
+      fixture.componentRef.setInput('tone', 'dark');
+      fixture.detectChanges();
+
+      expect(tile()?.classList.contains('featured')).toBe(false);
+      expect(tile()?.classList.contains('tone-dark')).toBe(false);
+    });
+
+    it('sur une forme plus grande, tout article prend la mise en page du best-seller', () => {
+      fixture.componentRef.setInput('shape', 'block');
+      fixture.componentRef.setInput('mediaSide', 'top');
+      fixture.componentRef.setInput('tone', 'accent');
+      fixture.componentRef.setInput('mediaFit', 'contain');
+      fixture.detectChanges();
+
+      const classes = tile()?.classList;
+      expect(classes?.contains('featured')).toBe(true);
+      expect(classes?.contains('side-top')).toBe(true);
+      expect(classes?.contains('tall')).toBe(true);
+      expect(classes?.contains('tone-accent')).toBe(true);
+      expect(classes?.contains('contain')).toBe(true);
+    });
+  });
 });

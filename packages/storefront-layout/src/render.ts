@@ -28,7 +28,13 @@ export type RenderableContent =
  * Un contenu s'affiche-t-il ?
  *
  * - un **produit**, si le catalogue sert encore son SKU (D4) ;
- * - une **info**, si elle a un titre en français ET une image.
+ * - une **info**, si elle a un titre en français. L'image est facultative :
+ *   sans elle, c'est une annonce en texte sur le fond de son ton.
+ *
+ * 🔴 Jusqu'au 2026-09-24, une info sans image était « vide » et rendait ses
+ * cases au rayon : les deux premières infos composées en dev (« Tes », « 2 »)
+ * n'ont jamais paru en boutique, sans un mot. Une annonce « Fermé le 25 »
+ * n'a pas besoin de photo (Hugo : « ça a marché pour produit, pas pour info »).
  */
 export function isContentRenderable(
   content: RenderableContent,
@@ -37,9 +43,7 @@ export function isContentRenderable(
   if (content.kind === "product") {
     return servedSkus.has(content.sku);
   }
-  return (
-    content.title.fr.trim() !== "" && content.image !== null && content.image.url.trim() !== ""
-  );
+  return content.title.fr.trim() !== "";
 }
 
 /**

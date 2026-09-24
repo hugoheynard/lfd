@@ -13,3 +13,4 @@ export * from "./carousel.js";
 export * from "./template-name.js";
 export * from "./tone.js";
 export * from "./render.js";
+export * from "./compose.js";

@@ -1,0 +1,72 @@
+<div
+  class="viewport"
+  (mouseenter)="hold('hover', true)"
+  (mouseleave)="hold('hover', false)"
+  (focusin)="hold('focus', true)"
+  (focusout)="hold('focus', false)"
+  (touchstart)="stop()"
+>
+  <div class="slides">
+    @for (slide of slides(); track $index) {
+      <div
+        class="slide"
+        [class.current]="$index === index()"
+        [attr.aria-hidden]="$index === index() ? null : 'true'"
+      >
+        <ng-container *ngComponentOutlet="slide.component; inputs: slide.inputs" />
+      </div>
+    }
+  </div>
+
+  @if (active()) {
+    <div class="controls">
+      @if (arrows()) {
+        <button
+          foldButton
+          class="arrow"
+          type="button"
+          size="sm"
+          shape="pill"
+          emphasis="soft"
+          intent="neutral"
+          [attr.aria-label]="t().shop.slidePrevious"
+          (click)="go(index() - 1)"
+        >
+          <fold-icon name="chevron-left" />
+        </button>
+      }
+      @if (dots()) {
+        @for (slide of slides(); track $index) {
+          <button
+            foldButton
+            type="button"
+            size="sm"
+            shape="pill"
+            intent="neutral"
+            [emphasis]="$index === index() ? 'solid' : 'soft'"
+            [attr.aria-label]="dotLabel($index)"
+            [attr.aria-current]="$index === index() ? 'true' : null"
+            (click)="go($index)"
+          >
+            {{ $index + 1 }}
+          </button>
+        }
+      }
+      @if (arrows()) {
+        <button
+          foldButton
+          class="arrow"
+          type="button"
+          size="sm"
+          shape="pill"
+          emphasis="soft"
+          intent="neutral"
+          [attr.aria-label]="t().shop.slideNext"
+          (click)="go(index() + 1)"
+        >
+          <fold-icon name="chevron-right" />
+        </button>
+      }
+    </div>
+  }
+</div>

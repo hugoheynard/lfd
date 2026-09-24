@@ -24,9 +24,12 @@ describe("un contenu s'affiche-t-il ?", () => {
     expect(isContentRenderable({ ...easter, title: { fr: "  " } }, served)).toBe(false);
   });
 
-  it("une info sans image, non", () => {
-    expect(isContentRenderable({ ...easter, image: null }, served)).toBe(false);
-    expect(isContentRenderable({ ...easter, image: { url: " " } }, served)).toBe(false);
+  /**
+   * Régression : une info sans image était jugée vide, et les deux premières
+   * infos composées en dev n'ont jamais paru en boutique (2026-09-24).
+   */
+  it("une info sans image, oui : c'est une annonce en texte", () => {
+    expect(isContentRenderable({ ...easter, image: null }, served)).toBe(true);
   });
 });
 
@@ -45,6 +48,8 @@ describe("un objet montre-t-il quelque chose ?", () => {
   });
 
   it("si aucun ne s'affiche, non", () => {
-    expect(isRenderable({ contents: [withdrawn, { ...easter, image: null }] }, served)).toBe(false);
+    expect(isRenderable({ contents: [withdrawn, { ...easter, title: { fr: "" } }] }, served)).toBe(
+      false,
+    );
   });
 });

@@ -5,6 +5,15 @@ import { formatCents } from '../../../client/format-money';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import type { ShopItemView } from '@lfd/contracts';
 import { unitPriceCents } from '@lfd/money';
+import {
+  formatSpec,
+  type MediaFit,
+  type MediaSide,
+  sideForShape,
+  type StorefrontShape,
+  type StorefrontTone,
+  toneApplies,
+} from '@lfd/storefront-layout';
 
 import { tileArtOf } from '../shelf-display';
 import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
@@ -22,8 +31,17 @@ import { ShopPriceBasis } from '../shop-price-basis.service';
  * la photo et le stepper « au-delà du pli » ont disparu au profit de ce seul
  * bouton de 44 px, cible tenable au pouce comme à la souris.
  *
- * Le best-seller (`isFeatured`) couvre deux colonnes — c'est la grille qui
- * l'étire, par l'hôte ; la vignette ne fait que changer de disposition.
+ * **Sa forme décide de sa mise en page** (`plan-vitrine-enregistrement.md`,
+ * D10). Posée par la vitrine, elle reçoit sa forme, son cadrage, son côté
+ * d'image et son ton : en carte 1×1, c'est la vignette d'aujourd'hui ; sur une
+ * forme plus grande, c'est le best-seller — photo à côté au bureau si le côté
+ * le veut, au-dessus en pile. C'est la GRILLE qui l'étire, par sa case ; la
+ * vignette ne fait que changer de disposition.
+ *
+ * Sans forme (`null`), elle est dans le rayon d'avant la vitrine : le
+ * best-seller y est celui que le catalogue marque (`isFeatured`), et la grille
+ * lui donne deux colonnes. C'est le rendu d'un rayon dont la page ne pose aucun
+ * objet.
  */
 @Component({
   selector: 'app-product-tile',
@@ -46,8 +64,50 @@ export class ProductTile {
    */
   readonly orderable = input(true);
 
+  /** La forme de sa case de vitrine ; `null` hors vitrine composée. */
+  readonly shape = input<StorefrontShape | null>(null);
+  readonly mediaFit = input<MediaFit>('cover');
+  /** Absent : le côté par défaut de la forme. */
+  readonly mediaSide = input<MediaSide | null>(null);
+  readonly tone = input<StorefrontTone>('light');
+
   readonly opened = output<void>();
   readonly added = output<void>();
+
+  /**
+   * La mise en page du best-seller : sur toute forme autre que la carte 1×1,
+   * ou — hors vitrine — quand le catalogue marque l'article.
+   */
+  protected readonly featured = computed(() => {
+    const shape = this.shape();
+    return shape === null ? this.product().isFeatured : shape !== 'card';
+  });
+
+  /**
+   * Les classes de mise en page. Le côté ne se lit qu'au bureau : en pile, le
+   * CSS remet l'image au-dessus (`mobileSide` du paquet — deux colonnes ou
+   * moins). Le ton ne se voit pas sur une carte 1×1 (`toneApplies`) : elle
+   * garde le rendu du rayon, pour que la grille reste homogène.
+   */
+  private readonly side = computed<MediaSide>(() => {
+    const shape = this.shape();
+    if (!this.featured()) {
+      return 'top';
+    }
+    return shape === null ? 'left' : sideForShape(shape, this.mediaSide() ?? undefined);
+  });
+
+  protected readonly layout = computed(() => {
+    const shape = this.shape();
+    const side = this.side();
+    if (!this.featured()) {
+      return 'side-top';
+    }
+    const tone =
+      shape !== null && toneApplies(shape, [{ kind: 'product' }]) ? this.tone() : 'light';
+    const tall = shape !== null && formatSpec(shape).rows > 1 ? ' tall' : '';
+    return `side-${side} tone-${tone}${tall}`;
+  });
 
   protected readonly t = inject(ClientCopyService).t;
 
@@ -119,8 +179,17 @@ export class ProductTile {
     fill(this.t().shop.addAria, { name: this.product().name }),
   );
 
-  /** Un best-seller couvre deux colonnes : son image en demande deux fois plus. */
-  protected readonly sizes = computed(() =>
-    this.product().isFeatured ? '(min-width: 900px) 25vw, 100vw' : '(min-width: 900px) 20vw, 50vw',
-  );
+  /**
+   * La place que l'image prendra : une colonne sur cinq par colonne couverte
+   * au bureau, la moitié de l'écran par colonne en pile. Un best-seller hors
+   * vitrine couvre deux colonnes.
+   */
+  protected readonly sizes = computed(() => {
+    const shape = this.shape();
+    const spec = shape === null ? null : formatSpec(shape);
+    const desk = spec?.columns ?? (this.product().isFeatured ? 2 : 1);
+    const pile = spec?.mobileColumns ?? desk;
+    const share = this.side() === 'left' || this.side() === 'right' ? 0.5 : 1;
+    return `(min-width: 900px) ${Math.round(desk * 20 * share)}vw, ${Math.min(pile, 2) * 50}vw`;
+  });
 }

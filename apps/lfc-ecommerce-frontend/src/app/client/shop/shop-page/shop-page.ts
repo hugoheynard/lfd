@@ -3,8 +3,10 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { instantToLocal, type PickupAddressView } from '@lfd/contracts';
@@ -26,8 +28,7 @@ import { ClientCopyService, fill } from '../../../client/copy/client-copy.servic
 import { ClientFeatureAccess } from '../../feature-access/client-feature-access.service';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { Shop } from '../shop.service';
-import { MOCK_SHELF_FEATURES } from '../mock-shelf-feature';
-import { ALL_SHELVES } from '../shelves';
+import { ShopStorefront } from '../storefront/shop-storefront.store';
 import { ShopStore } from '../shop.store';
 import { formatHour } from '../../format-hour';
 import { ServicePoints } from '../pickup-points.store';
@@ -103,14 +104,33 @@ export class ShopPage {
   protected readonly shop = inject(Shop);
   private readonly catalogue = inject(ShopCatalogue);
 
+  /** L'état du chargement, tel que l'écran le rend. */
+  protected readonly status = this.catalogue.status;
+
+  private readonly storefront = inject(ShopStorefront);
+
   /**
-   * Les mises en avant (tuile, bande) — sur « Tout » seulement. Dans un rayon, elle
-   * s'interposerait entre le client et ce qu'il vient de choisir ; pendant une
-   * recherche (`activeShelf` nul), elle ne répondrait pas à la question posée.
+   * L'état de la page de vitrine du rayon affiché — `null` pendant une
+   * recherche : elle traverse les rayons, et aucune mise en scène ne répond à
+   * la question posée. « Tout » a la sienne (clé `all`).
    */
-  protected readonly features = computed(() =>
-    this.shop.activeShelf() === ALL_SHELVES ? MOCK_SHELF_FEATURES : [],
-  );
+  private readonly pageState = computed(() => {
+    const shelf = this.shop.activeShelf();
+    return shelf === null ? null : this.storefront.stateOf(shelf);
+  });
+
+  /**
+   * La page à composer, ou `null` : la grille rend alors le rayon comme avant
+   * la vitrine — pendant le chargement de la page comme après son échec.
+   * 🔴 Une vitrine injoignable n'est pas un écran vide, et une vitrine lente ne
+   * retient pas le rayon : il est là, et se compose quand la page arrive. Au
+   * rendu serveur, la page est attendue avec le reste, et le visiteur reçoit
+   * la grille déjà composée.
+   */
+  protected readonly page = computed(() => {
+    const state = this.pageState();
+    return state?.status === 'ready' ? state.page : null;
+  });
 
   /** La pièce dont la fiche est ouverte. */
   protected readonly openPiece = signal<string | null>(null);
@@ -154,9 +174,6 @@ export class ShopPage {
     this.openPiece.set(null);
   }
 
-  /** L'état du chargement, tel que l'écran le rend. */
-  protected readonly status = this.catalogue.status;
-
   constructor() {
     this.chrome.kicker.set(this.t().chrome.kickerShop);
     this.chrome.barOnDesktop.set(true);
@@ -171,6 +188,15 @@ export class ShopPage {
     // L'HYDRATATION, au seul endroit qui l'ouvre. Idempotente : revenir au rayon
     // depuis le panier ne redemande rien.
     void this.catalogue.hydrate();
+    // La page de vitrine du rayon affiché, une fois par rayon.
+    effect(() => {
+      const shelf = this.shop.activeShelf();
+      if (shelf !== null) {
+        untracked(() => {
+          void this.storefront.load(shelf);
+        });
+      }
+    });
   }
 
   /** Réessayer après un échec — le seul geste qu'un écran vide doit offrir. */

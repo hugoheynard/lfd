@@ -1,6 +1,10 @@
 :host {
   display: block;
   min-width: 0;
+  /* La vignette se met en page d'après la place de SA case (container
+     queries), pas d'après l'écran : une tuile de vitrine et un best-seller
+     hors vitrine n'ont pas la même largeur à la même taille d'écran. */
+  container-type: inline-size;
 
   /**
    * Le ratio du visuel, en VARIABLE et non en hauteur fixe.
@@ -191,8 +195,10 @@
 }
 
 /* ── Le best-seller ──────────────────────────────────────────────────────
-   En pile, il occupe la rangée entière, photo au-dessus. Au-delà du pli, photo
-   à gauche (200 px au moins), texte à droite, et la phrase apparaît. */
+   Hors vitrine, l'article que le catalogue marque ; dans la vitrine, tout
+   article posé sur une forme plus grande qu'une carte. En pile, il occupe sa
+   case, photo au-dessus. Au-delà du pli, le côté de l'objet décide : photo à
+   gauche ou à droite, au-dessus, ou sous tout le texte (« plein »). */
 .featured {
   border-color: var(--lfc-color-featured-border);
   background: var(--lfc-color-featured-surface);
@@ -207,27 +213,110 @@
   }
 }
 
+/* Les tons d'un objet de vitrine : on repeint les rôles plutôt que d'empiler
+   un aplat — le même geste que les tuiles d'annonce. */
+.featured.tone-dark,
+.featured.tone-accent {
+  --fold-color-text: var(--lfc-paper-0);
+  --fold-color-primary: var(--lfc-paper-0);
+  --fold-color-on-primary: var(--lfc-soot-950);
+
+  box-shadow: none;
+}
+
+.featured.tone-dark {
+  --fold-color-text-secondary: var(--lfc-butter-100);
+  --lfc-color-text-subtle: var(--lfc-butter-100);
+
+  border-color: var(--lfc-soot-950);
+  background: var(--lfc-soot-950);
+}
+
+.featured.tone-accent {
+  --fold-color-text-secondary: var(--lfc-ink-100);
+  --lfc-color-text-subtle: var(--lfc-ink-100);
+  --fold-color-on-primary: var(--lfc-ink-800);
+
+  border-color: var(--lfc-ink-800);
+  background: var(--lfc-ink-800);
+}
+
+/* « Contenir » : l'image entière, sur le fond de la carte (détourés). */
+.contain .photo img {
+  object-fit: contain;
+}
+
+/* « Plein » : la photo sous tout l'objet, le texte dessus avec un voile. */
+.side-full {
+  position: relative;
+  justify-content: flex-end;
+  --fold-color-text: var(--lfc-paper-0);
+  --fold-color-text-secondary: var(--lfc-butter-100);
+  --lfc-color-text-subtle: var(--lfc-butter-100);
+
+  .media {
+    position: absolute;
+    inset: 0;
+    aspect-ratio: auto;
+  }
+
+  .content {
+    position: relative;
+    flex: none;
+    background: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--lfc-soot-950) 85%, transparent) 60%,
+      transparent
+    );
+  }
+}
+
 @media (min-width: 900px) {
-  .featured {
-    display: grid;
-    grid-template-columns: minmax(200px, 1fr) minmax(0, 1fr);
+  /* 🔴 La photo REMPLIT sa case, elle n'en décide pas la hauteur : sur une
+     forme de plusieurs rangées, sa hauteur naturelle porterait la rangée
+     (`boutique-rayon-layout.md`, « Pièges »). `flex-basis: 0` la sort du
+     calcul, la place restante lui revient. */
+  .featured.side-top.tall .media {
+    flex: 1 1 0;
+    aspect-ratio: auto;
+    min-height: 140px;
+  }
 
-    .media {
-      aspect-ratio: auto;
-      min-height: 220px;
+  .featured .note {
+    display: block;
+    min-height: 0;
+  }
+}
+
+/* Photo à côté : seulement au-delà du pli ET si la case est assez large —
+   une carte de vitrine étroite garde la photo au-dessus. La case, pas
+   l'écran : c'est sa place réelle qui décide. */
+@media (min-width: 900px) {
+  @container (min-width: 380px) {
+    .featured.side-left,
+    .featured.side-right {
+      display: grid;
+      grid-template-columns: minmax(200px, 1fr) minmax(0, 1fr);
+
+      /* Même règle qu'au-dessus : `height: 0` + `min-height: 100%` sort la
+         photo du calcul de la rangée, puis l'étire sur la case. */
+      .media {
+        aspect-ratio: auto;
+        height: 0;
+        min-height: 100%;
+      }
+
+      .body {
+        padding: 18px 16px 0;
+      }
+
+      .foot {
+        padding: 12px 16px 16px;
+      }
     }
 
-    .body {
-      padding: 18px 16px 0;
-    }
-
-    .note {
-      display: block;
-      min-height: 0;
-    }
-
-    .foot {
-      padding: 12px 16px 16px;
+    .featured.side-right .media {
+      order: 2;
     }
   }
 }

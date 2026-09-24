@@ -1,8 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import type {
-  CatalogAdminItemView,
   StaffPermission,
+  StorefrontCatalogView,
   StorefrontObjectView,
   StorefrontPayloadInput,
   StorefrontView,
@@ -12,7 +12,6 @@ import { FoldPanelHostService, FoldPanelRef } from 'fold-ng';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { CatalogueService } from '../../b2b/catalogue/catalogue.service';
 import { NotifyService } from '../../notify.service';
 import { StorefrontObjectDialog } from '../storefront-object-dialog/storefront-object-dialog';
 import type { StorefrontObjectDialogData } from '../storefront-object-host';
@@ -88,47 +87,36 @@ const EMPTY_VIEW: StorefrontView = {
   templates: [],
 };
 
-function item(sku: string, categoryId: string, categoryName: string): CatalogAdminItemView {
-  return {
-    sku,
-    productSku: sku,
-    name: `Article ${sku}`,
-    categoryId,
-    categoryName,
-    pimPriceMillicents: 100_000,
-    b2bPriceMillicents: null,
-    effectivePriceMillicents: 100_000,
-    publicTtcCents: null,
-    publicVatRatePercent: null,
-    decidedPublicTtcCents: null,
-    vatRatePercent: 5.5,
-    allergens: null,
-    allergensIncomplete: false,
-    isHidden: false,
-    isHiddenPublic: false,
-    isFeatured: false,
-    decidedBy: null,
-    decidedByName: null,
-    decidedAt: null,
-    receivedAt: '2026-01-01T00:00:00.000Z',
-  };
+function item(sku: string, shelfKey: string): StorefrontCatalogView['items'][number] {
+  return { sku, name: `Article ${sku}`, shelfKey, served: true };
 }
 
-const CATALOG: readonly CatalogAdminItemView[] = [
-  item('CRO', 'viennoiserie', 'Viennoiseries'),
-  item('BAG', 'bread', 'Pains'),
-  item('TRU', 'chocolate', 'Chocolat & confiserie'),
-];
+const CATALOG: StorefrontCatalogView = {
+  shelves: [
+    { key: 'viennoiserie', name: 'Viennoiseries' },
+    { key: 'bread', name: 'Pains' },
+    { key: 'chocolate', name: 'Chocolat & confiserie' },
+  ],
+  items: [item('CRO', 'viennoiserie'), item('BAG', 'bread'), item('TRU', 'chocolate')],
+};
 
 class FakeStorefront {
   view: StorefrontView = composedView();
   readonly saved: StorefrontPayloadInput[] = [];
   failure: unknown = null;
+  catalogFailure: unknown = null;
   loads = 0;
 
   async load(): Promise<StorefrontView> {
     this.loads++;
     return this.view;
+  }
+
+  async catalog(): Promise<StorefrontCatalogView> {
+    if (this.catalogFailure !== null) {
+      throw this.catalogFailure;
+    }
+    return CATALOG;
   }
 
   async save(payload: StorefrontPayloadInput): Promise<void> {
@@ -148,6 +136,9 @@ interface Options {
 async function setup(options: Options = {}) {
   const api = new FakeStorefront();
   api.view = options.view ?? composedView();
+  if (options.catalog === 'fails') {
+    api.catalogFailure = new HttpErrorResponse({ status: 403 });
+  }
   const granted = options.permissions ?? ['b2b_storefront:read', 'b2b_storefront:write'];
   const successes: string[] = [];
   const opened: { component: unknown; data: StorefrontObjectDialogData }[] = [];
@@ -159,17 +150,6 @@ async function setup(options: Options = {}) {
         useValue: {
           open: (component: unknown, config: { data: StorefrontObjectDialogData }) =>
             opened.push({ component, data: config.data }),
-        },
-      },
-      {
-        provide: CatalogueService,
-        useValue: {
-          list: async () => {
-            if (options.catalog === 'fails') {
-              throw new HttpErrorResponse({ status: 403 });
-            }
-            return CATALOG;
-          },
         },
       },
       { provide: NotifyService, useValue: { success: (m: string) => successes.push(m) } },
@@ -244,7 +224,6 @@ describe('StorefrontPage — chargement', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: StorefrontService, useValue: api },
-        { provide: CatalogueService, useValue: { list: async () => CATALOG } },
         { provide: NotifyService, useValue: { success: () => undefined } },
         { provide: PermissionsStore, useValue: { can: () => true } },
       ],
@@ -694,21 +673,24 @@ describe('StorefrontPage — contenus', () => {
     );
   });
 
-  it('une info sans image rend aussi ses cases ; complète, elle les garde', async () => {
+  /**
+   * Une info sans image s'affiche (annonce en texte) depuis le 2026-09-24 :
+   * seule une info SANS TITRE rend ses cases au rayon.
+   */
+  it('une info sans titre rend ses cases ; avec un titre, même sans image, elle les garde', async () => {
     const { page } = await setup();
     page.select('o-2');
-    const title = { fr: 'Pâques' };
     page.setSelectedItems([
-      { kind: 'info', badge: null, title, lede: null, image: null, linkShelfKey: null },
+      { kind: 'info', badge: null, title: { fr: '' }, lede: null, image: null, linkShelfKey: null },
     ]);
     expect(page.returnedIds().has('o-2')).toBe(true);
     page.setSelectedItems([
       {
         kind: 'info',
         badge: null,
-        title,
+        title: { fr: 'Pâques' },
         lede: null,
-        image: { url: 'https://cdn.example/paques.jpg', alt: null },
+        image: null,
         linkShelfKey: null,
       },
     ]);

@@ -6,17 +6,8 @@ import { provideHttpClient } from '@angular/common/http';
 
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../../shop-catalogue.fixture';
 import { ShopCatalogue } from '../../shop-catalogue.store';
-import { type ShelfFeature } from '../../mock-shelf-feature';
+import { NOEL, productContent, storefrontObject } from '../../storefront/storefront.fixture';
 import { ShelfGrid } from './shelf-grid';
-
-const NOEL: ShelfFeature = {
-  badge: 'Noël',
-  title: 'Noël',
-  lede: '…',
-  image: 'https://example.test/n.jpg',
-  shelfId: null,
-};
-const PAQUES: ShelfFeature = { ...NOEL, badge: 'Pâques', title: 'Pâques' };
 
 describe('ShelfGrid', () => {
   let fixture: ComponentFixture<ShelfGrid>;
@@ -83,43 +74,124 @@ describe('ShelfGrid', () => {
     expect(el().querySelector('app-product-sheet')).toBeNull();
   });
 
-  describe('mises en avant', () => {
-    const placed = (): HTMLElement[] =>
-      Array.from(el().querySelectorAll<HTMLElement>('app-shelf-feature-tile'));
+  describe('la vitrine composée', () => {
+    const slots = (): HTMLElement[] =>
+      Array.from(el().querySelectorAll<HTMLElement>('app-storefront-slot'));
+    const fillTiles = (): HTMLElement[] =>
+      Array.from(el().querySelectorAll<HTMLElement>('.board > app-product-tile'));
+    const nameOf = (tile: HTMLElement): string | undefined =>
+      tile.querySelector('.name')?.textContent?.trim();
 
-    it('n’en pose aucune par défaut', () => {
-      expect(placed()).toHaveLength(0);
+    beforeEach(() => {
+      fixture.componentRef.setInput('products', TEST_ITEMS);
+      fixture.detectChanges();
     });
 
-    /**
-     * La tuile en tête du flux, la bande en troisième rangée — les deux à la
-     * fois. La rangée elle-même est du CSS (`.feature.band`), que le DOM de
-     * test n'applique pas : on vérifie la classe qui la porte.
-     */
-    it('porte la tuile et la bande ensemble, la bande en rangée 3', () => {
-      fixture.componentRef.setInput('features', [
-        { feature: NOEL, format: 'wide' },
-        { feature: PAQUES, format: 'band' },
-      ]);
-      fixture.detectChanges();
-
-      const [tile, band] = placed();
-      expect(placed()).toHaveLength(2);
-      expect(el().firstElementChild).toBe(tile);
-      expect(tile?.classList.contains('band')).toBe(false);
-      expect(band?.classList.contains('band')).toBe(true);
-      expect(band?.classList.contains('double')).toBe(false);
-      expect(tiles()).toHaveLength(3);
+    it('sans page, le rayon d’aujourd’hui : le best-seller est celui du catalogue', () => {
+      expect(el().querySelector('.board')).toBeNull();
+      expect(el().classList.contains('composed')).toBe(false);
+      const featured = el().querySelectorAll('app-product-tile.featured');
+      expect(featured).toHaveLength(TEST_ITEMS.filter((item) => item.isFeatured).length);
     });
 
-    it('la bande double couvre deux rangées à partir de la troisième', () => {
-      fixture.componentRef.setInput('features', [
-        { feature: PAQUES, format: 'band', bandSize: 'double' },
-      ]);
+    /** « Une page vide EST le rayon d'aujourd'hui » — best-seller compris. */
+    it('une page sans objet affichable garde le rayon d’aujourd’hui', () => {
+      fixture.componentRef.setInput('page', {
+        rows: 2,
+        objects: [storefrontObject({ id: 'vide', contents: [productContent('RETIRE')] })],
+      });
       fixture.detectChanges();
 
-      const band = placed()[0];
-      expect(band?.classList.contains('double')).toBe(true);
+      expect(el().querySelector('.board')).toBeNull();
+      expect(tiles()).toHaveLength(TEST_ITEMS.length);
+    });
+
+    it('pose l’objet et remplit le reste avec le rayon, sans best-seller du catalogue', () => {
+      fixture.componentRef.setInput('page', {
+        rows: 2,
+        objects: [storefrontObject({ id: 'noel', column: 2 })],
+      });
+      fixture.detectChanges();
+
+      expect(el().classList.contains('composed')).toBe(true);
+      expect(slots()).toHaveLength(1);
+      expect(el().querySelector('app-info-card')).not.toBeNull();
+      expect(fillTiles()).toHaveLength(TEST_ITEMS.length);
+      // Le best-seller du catalogue n'est plus qu'une carte parmi les autres.
+      expect(el().querySelectorAll('.tile.featured')).toHaveLength(0);
+    });
+
+    /** Les deux places vivent dans le même DOM : le CSS choisit selon la largeur. */
+    it('donne à chaque case sa place de bureau ET sa place de pile', () => {
+      fixture.componentRef.setInput('page', {
+        rows: 2,
+        objects: [storefrontObject({ id: 'noel', column: 2 })],
+      });
+      fixture.detectChanges();
+
+      const slot = slots()[0];
+      expect(slot?.style.getPropertyValue('--d-col')).toBe('2');
+      expect(slot?.style.getPropertyValue('--d-cols')).toBe('2');
+      expect(slot?.style.getPropertyValue('--m-order')).toBe('1');
+      expect(slot?.style.getPropertyValue('--m-cols')).toBe('2');
+      expect(fillTiles()[0]?.style.getPropertyValue('--d-col')).toBe('1');
+      expect(fillTiles()[1]?.style.getPropertyValue('--d-col')).toBe('4');
+    });
+
+    it('un article posé par un objet ne reparaît pas dans les cases du rayon', () => {
+      const star = TEST_ITEMS[2];
+      fixture.componentRef.setInput('page', {
+        rows: 1,
+        objects: [storefrontObject({ id: 'star', contents: [productContent(star?.sku ?? '')] })],
+      });
+      fixture.detectChanges();
+
+      expect(fillTiles().map(nameOf)).not.toContain(star?.name);
+      expect(fillTiles()).toHaveLength(TEST_ITEMS.length - 1);
+      expect(slots()[0]?.querySelector('.name')?.textContent?.trim()).toBe(star?.name);
+    });
+
+    it('marque la case seule sur ses rangées, et la bande pleine largeur', () => {
+      fixture.componentRef.setInput('products', []);
+      fixture.componentRef.setInput('page', {
+        rows: 2,
+        objects: [storefrontObject({ id: 'band', shape: 'doubleBand' })],
+      });
+      fixture.detectChanges();
+
+      const band = slots()[0];
+      expect(band?.classList.contains('alone')).toBe(true);
+      expect(band?.classList.contains('tall')).toBe(true);
+      expect(band?.classList.contains('full')).toBe(true);
+    });
+
+    it('remonte le rayon qu’ouvre une annonce', () => {
+      const shelves: string[] = [];
+      fixture.componentInstance.shelfOpened.subscribe((key) => shelves.push(key));
+      fixture.componentRef.setInput('page', { rows: 1, objects: [storefrontObject({ id: 'n' })] });
+      fixture.detectChanges();
+
+      el().querySelector<HTMLButtonElement>('app-info-card button')?.click();
+
+      expect(shelves).toEqual([NOEL.linkShelfKey]);
+    });
+
+    it('un produit posé ajoute au panier et ouvre sa fiche comme les autres', () => {
+      const opened: string[] = [];
+      fixture.componentInstance.opened.subscribe((sku) => opened.push(sku));
+      fixture.componentRef.setInput('page', {
+        rows: 1,
+        objects: [storefrontObject({ id: 'p', contents: [productContent('VIE-001')] })],
+      });
+      fixture.detectChanges();
+
+      const posed = slots()[0];
+      posed?.querySelector<HTMLButtonElement>('.quick')?.click();
+      posed?.querySelector<HTMLButtonElement>('.photo')?.click();
+      fixture.detectChanges();
+
+      expect(cart.quantityOf('VIE-001')).toBe(1);
+      expect(opened).toEqual(['VIE-001']);
     });
   });
 });

@@ -243,6 +243,9 @@ importers:
       '@lfd/ops-contract':
         specifier: workspace:*
         version: link:../../packages/ops-contract
+      '@lfd/storefront-layout':
+        specifier: workspace:*
+        version: link:../../packages/storefront-layout
       '@sentry/angular':
         specifier: 'catalog:'
         version: 10.70.0(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/router@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(@angular/platform-browser@22.1.2(@angular/common@22.1.2(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.1.2(@angular/compiler@22.1.2)(rxjs@7.8.2)))(rxjs@7.8.2))(rxjs@7.8.2)

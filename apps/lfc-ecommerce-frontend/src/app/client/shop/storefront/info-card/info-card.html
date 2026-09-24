@@ -1,0 +1,38 @@
+<fold-card class="card" padding="none" radius="lg">
+  <div class="layout">
+    @if (imageSrc(); as src) {
+      <div class="media">
+        <img
+          class="art"
+          [src]="src"
+          [attr.srcset]="imageSrcset() || null"
+          [attr.sizes]="sizes()"
+          [alt]="imageAlt()"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    }
+
+    <div class="text">
+      @if (badge(); as badge) {
+        <span class="badge">{{ badge }}</span>
+      }
+      <h2 class="title">{{ title() }}</h2>
+      @if (lede(); as lede) {
+        <p class="lede">{{ lede }}</p>
+      }
+      @if (linkShelf(); as shelf) {
+        <button
+          foldButton
+          class="open"
+          type="button"
+          size="sm"
+          (click)="actions.shelfOpened.next(shelf)"
+        >
+          {{ t().shop.openFeatureShelf }}
+        </button>
+      }
+    </div>
+  </div>
+</fold-card>

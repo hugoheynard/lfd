@@ -62,7 +62,7 @@
       <app-shelf-grid
         class="grid"
         [products]="shop.products()"
-        [features]="features()"
+        [page]="page()"
         (opened)="openPiece.set($event)"
         (shelfOpened)="shop.browse($event)"
       />

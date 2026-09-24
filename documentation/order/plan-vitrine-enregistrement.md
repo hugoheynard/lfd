@@ -182,8 +182,8 @@ boutique l'emploie (lot 4), le serveur aussi pour sa règle de collision. Une
 seule table des formes : deux implémentations divergeraient à la première
 forme ajoutée. Sans zod, il ne pèse rien dans le budget de la boutique.
 
-La simulation remplacée au lot 4 : `mock-shelf-feature.ts` (la tuile Noël et
-la bande Pâques). La carte Pâques de l'accueil (`mock-event.ts`) reste hors
+La simulation remplacée au lot 4 — la tuile Noël et la bande Pâques, écrites
+en dur dans la boutique — est retirée (2026-09-24). La carte Pâques de l'accueil (`mock-event.ts`) reste hors
 lot.
 
 ### D9 — La vitrine, troisième porteur de la médiathèque — la matrice ne bouge pas
@@ -265,7 +265,7 @@ back-office et ce que voit le client sortent de la même table des formes.
 | **1 — serveur**     | deux migrations (enum seule ; puis tables + droits), paquet `@lfd/storefront-layout`, agrégat et value objects, handlers, deux contrôleurs, fait publié, contrat Zod dans `@lfd/contracts`, e2e (collision multi-rayons, 409 concurrent réel, bornes, CHECK, archivage, lecture publique), test des rôles migrés |
 | **2 — médiathèque** | composite + `kind: "storefront"` + renvoi d'écran ; e2e : une image posée en vitrine ne se supprime pas                                                                                                                                                                                                          |
 | **3 — éditeur**     | route `/vitrine` et sa garde, fonctions pures déménagées dans le paquet, charger / enregistrer, 409, gabarits persistés, association des contenus (choisir un article, écrire une info, choisir une image dans la médiathèque), R par rayon, rayons réels, marques « article plus en vente » / « rayon disparu » |
-| **4 — boutique**    | lecture publique, composition, retrait de `mock-shelf-feature.ts`                                                                                                                                                                                                                                                |
+| **4 — boutique**    | lecture publique, composition, retrait de la simulation (tuile Noël, bande Pâques)                                                                                                                                                                                                                               |
 
 Les lots 1 et 2 partent ensemble : sans le 2, le 1 ouvre un trou.
 

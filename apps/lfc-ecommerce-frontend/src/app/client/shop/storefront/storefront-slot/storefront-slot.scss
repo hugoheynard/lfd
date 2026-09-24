@@ -1,0 +1,44 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.viewport {
+  position: relative;
+  height: 100%;
+}
+
+/* Tous les contenus sur la même case de grille : la case prend la hauteur du
+   plus grand, et un passage ne fait rien bouger autour. */
+.slides {
+  display: grid;
+  height: 100%;
+}
+
+.slide {
+  grid-area: 1 / 1;
+  min-width: 0;
+  visibility: hidden;
+}
+
+.slide.current {
+  visibility: visible;
+}
+
+/* Les commandes flottent en bas de la case, au-dessus du contenu. */
+/* EN HAUT À DROITE, sur l'image (2026-09-24) : en bas, les points
+   recouvraient le prix et le « + » d'un produit qui défile. Le haut d'une
+   case est toujours de l'image ou du texte de tête — jamais un geste. */
+.controls {
+  position: absolute;
+  inset-inline-end: var(--fold-space-sm);
+  top: var(--fold-space-sm);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-xs);
+  pointer-events: none;
+
+  button {
+    pointer-events: auto;
+  }
+}

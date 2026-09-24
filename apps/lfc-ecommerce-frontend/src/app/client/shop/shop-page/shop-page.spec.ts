@@ -1,4 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { vi } from 'vitest';
@@ -13,6 +14,7 @@ import { FR } from '../../../client/copy/fr';
 import { COMMAND_TERMS_FR } from '../../copy/screens/command-terms.copy';
 import { ClientChrome } from '../../client-chrome.service';
 import { AuthFacade } from '../../../auth/auth.facade';
+import { NOEL, storefrontObject } from '../storefront/storefront.fixture';
 import { ShopPage } from './shop-page';
 
 describe('ShopPage', () => {
@@ -45,7 +47,7 @@ describe('ShopPage', () => {
     localStorage.clear();
     TestBed.configureTestingModule({
       imports: [ShopPage],
-      providers: [provideRouter([]), provideHttpClient()],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
     TestBed.inject(OrderContextStore).choice.set({
@@ -111,40 +113,69 @@ describe('ShopPage', () => {
     expect(TestBed.inject(Router).url).not.toBe('/boutique');
   });
 
-  /**
-   * La tuile d'opération vit en première case de « Tout », et nulle part
-   * ailleurs : ni dans un rayon choisi, ni pendant une recherche.
-   */
-  it('ne pose les mises en avant que sur « Tout »', () => {
-    const feature = (): Element | null => el().querySelector('app-shelf-feature-tile');
-    const band = (): Element | null => el().querySelector('app-shelf-feature-tile.band');
-    const grid = el().querySelector('app-shelf-grid');
-    expect(feature()).not.toBeNull();
-    expect(band()).not.toBeNull();
-    expect(grid?.firstElementChild?.tagName.toLowerCase()).toBe('app-shelf-feature-tile');
+  describe('la vitrine du rayon', () => {
+    const info = (): Element | null => el().querySelector('app-info-card');
+    const storefront = (key: string) =>
+      TestBed.inject(HttpTestingController).expectOne((request) =>
+        request.url.endsWith(`/shop/storefront/${key}`),
+      );
 
-    chips()[2]?.click();
-    fixture.detectChanges();
-    expect(feature()).toBeNull();
-    expect(band()).toBeNull();
+    async function settle(): Promise<void> {
+      await fixture.whenStable();
+      fixture.detectChanges();
+    }
 
-    chips()[0]?.click();
-    fixture.detectChanges();
-    expect(feature()).not.toBeNull();
-    expect(band()).not.toBeNull();
+    /**
+     * Chaque rayon a SA page — « Tout » sous la clé `all`. Pendant une
+     * recherche, aucune : elle traverse les rayons.
+     */
+    it('compose chaque rayon avec sa page, et rien pendant une recherche', async () => {
+      storefront('all').flush({ rows: 2, objects: [storefrontObject({ id: 'noel' })] });
+      await settle();
+      expect(info()).not.toBeNull();
 
-    type('pain');
-    expect(feature()).toBeNull();
-    expect(band()).toBeNull();
-  });
+      chips()[2]?.click();
+      fixture.detectChanges();
+      storefront('cat_pains').flush({ rows: 0, objects: [] });
+      await settle();
+      expect(info()).toBeNull();
+      expect(tiles().length).toBe(2);
 
-  /** « Ouvrir le rayon » filtre la vitrine comme une puce le ferait. */
-  it('« Ouvrir le rayon » ouvre le rayon de l’opération', () => {
-    el().querySelector<HTMLButtonElement>('app-shelf-feature-tile button')?.click();
-    fixture.detectChanges();
+      chips()[0]?.click();
+      await settle();
+      expect(info()).not.toBeNull();
 
-    expect(el().querySelector('app-shelf-feature-tile')).toBeNull();
-    expect(tiles().length).toBeLessThan(TEST_ITEMS.length);
+      type('pain');
+      expect(info()).toBeNull();
+    });
+
+    /** 🔴 Une vitrine injoignable n'est pas un écran vide : le rayon, comme avant. */
+    it('une vitrine en panne rend le rayon comme avant', async () => {
+      storefront('all').flush('boum', { status: 503, statusText: 'Unavailable' });
+      await settle();
+
+      expect(el().querySelector('app-shelf-grid .board')).toBeNull();
+      expect(tiles().length).toBe(TEST_ITEMS.length);
+    });
+
+    it('le rayon reste là pendant que sa page se charge', () => {
+      storefront('all');
+      expect(tiles().length).toBe(TEST_ITEMS.length);
+    });
+
+    /** « Ouvrir le rayon » d'une annonce filtre la vitrine comme une puce le ferait. */
+    it('« Ouvrir le rayon » d’une annonce ouvre le rayon lié', async () => {
+      storefront('all').flush({ rows: 1, objects: [storefrontObject({ id: 'noel' })] });
+      await settle();
+
+      el().querySelector<HTMLButtonElement>('app-info-card button')?.click();
+      fixture.detectChanges();
+      storefront(NOEL.linkShelfKey ?? '').flush({ rows: 0, objects: [] });
+      await settle();
+
+      expect(info()).toBeNull();
+      expect(tiles().length).toBeLessThan(TEST_ITEMS.length);
+    });
   });
 
   it('un rayon filtre la vitrine sans toucher au reste', () => {
@@ -292,6 +323,7 @@ describe('ShopPage — la barre du bas, sans compte', () => {
       providers: [
         provideRouter([]),
         provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: AuthFacade,
           useValue: {

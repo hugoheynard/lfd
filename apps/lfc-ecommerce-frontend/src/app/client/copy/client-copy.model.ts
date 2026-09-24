@@ -350,6 +350,11 @@ export interface ClientCopy {
     readonly emptyHint: string;
     /** L'action de la tuile mise en avant dans la grille — elle mène au rayon de l'opération. */
     readonly openFeatureShelf: string;
+    /** Les flèches d'une case de vitrine qui porte plusieurs contenus. */
+    readonly slidePrevious: string;
+    readonly slideNext: string;
+    /** Un point du défilement. `{n}` et `{count}` sont remplacés. */
+    readonly slideGoTo: string;
     readonly shelvesGroup: string;
     /**
      * `{price}` est remplacé par le montant. Le rayon affiche du **hors taxe**,
