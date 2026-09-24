@@ -142,9 +142,10 @@
     top: 77px;
   }
 
-  /* Le pied se retire au bureau quand la barre « Ma commande » porte le
-     règlement — la condition « barre présente » est posée par le gabarit. */
-  .cartbar.desk-hidden {
+  /* 🔴 Le pied est un objet MOBILE (Hugo, 2026-09-24). Au bureau, la barre
+     « Ma commande » porte le règlement dès la première pièce ; rien pris et
+     rien choisi, il n'y a rien à régler et donc rien à montrer. */
+  .cartbar {
     display: none;
   }
 }

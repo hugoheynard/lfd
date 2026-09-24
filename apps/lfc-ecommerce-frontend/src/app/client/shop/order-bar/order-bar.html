@@ -1,40 +1,65 @@
-<!-- Sans choix, RIEN : visiter le rayon sans avoir dit où l'on est servi est ce
-     que la boutique promet, et une barre vide en ferait un manque. -->
-@if (choice(); as service) {
+<!-- La barre existe dès qu'il y a QUELQUE CHOSE à dire : un service choisi, ou
+     une première pièce au panier (Hugo, 2026-09-24 — « dès qu'on appuie sur un
+     item, la barre centrale doit apparaître ; le pied, c'est le mobile »).
+     Rien de choisi et rien pris : pas de barre — visiter est permis, et une
+     barre vide en ferait un manque. -->
+@if (choice() !== null || count() > 0) {
   <div class="bar">
-    <!-- GAUCHE : ce qui a été décidé, et comment le défaire. -->
-    <div class="said">
-      <span class="kicker">
-        <span class="dot" aria-hidden="true"></span>
-        <span>{{ c().title }} · {{ service.mode === 'delivery' ? c().delivery : c().pickup }}</span>
-      </span>
-
-      <span class="value">
-        <span class="promise">
-          <span class="place">{{ service.place }}</span>
-          <span class="sep" aria-hidden="true">·</span>
-          <span class="when">{{ when() }}</span>
+    @if (choice(); as service) {
+      <!-- GAUCHE : ce qui a été décidé, et comment le défaire. -->
+      <div class="said">
+        <span class="kicker">
+          <span class="dot" aria-hidden="true"></span>
+          <span
+            >{{ c().title }} · {{ service.mode === 'delivery' ? c().delivery : c().pickup }}</span
+          >
         </span>
 
-        <!-- La remise du point, quand il y en a une VRAIE. Relue du point et
-             non portée par le choix : elle dépend de la clientèle. -->
-        @if (offer(); as label) {
-          <span class="offer">{{ label }}</span>
-        }
-      </span>
+        <span class="value">
+          <span class="promise">
+            <span class="place">{{ service.place }}</span>
+            <span class="sep" aria-hidden="true">·</span>
+            <span class="when">{{ when() }}</span>
+          </span>
 
-      <!-- Deux gestes distincts : changer d'heure ne fait pas re-choisir la
+          <!-- La remise du point, quand il y en a une VRAIE. Relue du point et
+             non portée par le choix : elle dépend de la clientèle. -->
+          @if (offer(); as label) {
+            <span class="offer">{{ label }}</span>
+          }
+        </span>
+
+        <!-- Deux gestes distincts : changer d'heure ne fait pas re-choisir la
            maison. Des LIENS, plus des boutons pleins : le seul geste plein de
            la barre est « Régler ». -->
-      <span class="acts">
-        <button class="act" type="button" (click)="houseRequested.emit()">
-          {{ c().changeHouse }}
-        </button>
-        <button class="act" type="button" (click)="timeRequested.emit()">
-          {{ c().changeTime }}
-        </button>
-      </span>
-    </div>
+        <span class="acts">
+          <button class="act" type="button" (click)="houseRequested.emit()">
+            {{ c().changeHouse }}
+          </button>
+          <button class="act" type="button" (click)="timeRequested.emit()">
+            {{ c().changeTime }}
+          </button>
+        </span>
+      </div>
+    } @else {
+      <!-- GAUCHE, rien de choisi : la question à l'endroit où la réponse
+           s'écrira, et le geste qui y mène. Pas de « aucune maison » : c'est
+           une étape à venir, pas un manque. -->
+      <div class="said">
+        <span class="kicker">
+          <span class="dot" aria-hidden="true"></span>
+          <span>{{ c().title }}</span>
+        </span>
+        <span class="value">
+          <span class="promise">{{ c().unset }}</span>
+        </span>
+        <span class="acts">
+          <button class="act" type="button" (click)="houseRequested.emit()">
+            {{ c().choose }}
+          </button>
+        </span>
+      </div>
+    }
 
     <!-- DROITE : le panier, et le seul geste qui compte. -->
     <div class="cart">

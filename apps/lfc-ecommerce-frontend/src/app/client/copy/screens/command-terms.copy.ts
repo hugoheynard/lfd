@@ -42,6 +42,10 @@ export interface CommandTermsCopy {
 
   /** Le pied collé en pile, panier vide : le bouton inactif le dit court. */
   readonly emptyShort: string;
+  /** La barre sans service choisi : la question, là où le choix s'écrirait. */
+  readonly unset: string;
+  /** Le seul geste de la moitié gauche quand rien n'est choisi. */
+  readonly choose: string;
 }
 
 export const COMMAND_TERMS_FR: CommandTermsCopy = {
@@ -59,6 +63,8 @@ export const COMMAND_TERMS_FR: CommandTermsCopy = {
   empty: 'Panier vide — ajoutez depuis le rayon',
   edit: 'Modifier',
   emptyShort: 'Panier vide',
+  unset: 'Où et quand ?',
+  choose: 'Choisir la maison et l’heure',
 };
 
 export const COMMAND_TERMS_EN: CommandTermsCopy = {
@@ -76,6 +82,8 @@ export const COMMAND_TERMS_EN: CommandTermsCopy = {
   empty: 'Empty basket — add from the shelf',
   edit: 'Change',
   emptyShort: 'Empty basket',
+  unset: 'Where and when?',
+  choose: 'Choose the bakery and time',
 };
 
 export const COMMAND_TERMS_IT: CommandTermsCopy = {
@@ -93,6 +101,8 @@ export const COMMAND_TERMS_IT: CommandTermsCopy = {
   empty: 'Carrello vuoto — aggiungi dallo scaffale',
   edit: 'Modifica',
   emptyShort: 'Carrello vuoto',
+  unset: 'Dove e quando?',
+  choose: 'Scegli la bottega e l’ora',
 };
 
 const DICTIONARIES: Readonly<Record<LocaleCode, CommandTermsCopy>> = {

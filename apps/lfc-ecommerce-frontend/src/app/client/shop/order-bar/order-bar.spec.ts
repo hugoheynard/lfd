@@ -117,8 +117,22 @@ describe('OrderBar', () => {
    * on visite d'abord, on choisit ensuite. Une carte disant « aucune maison »
    * transformerait cette liberté en manque.
    */
-  it('ne montre RIEN tant qu’aucun service n’est choisi', () => {
+  it('ne montre RIEN tant qu’aucun service n’est choisi et que rien n’est pris', () => {
     expect(el(boot({ choice: null })).querySelector('.bar')).toBeNull();
+  });
+
+  /**
+   * Dès la première pièce, la barre existe même sans service (Hugo,
+   * 2026-09-24) : à gauche la question et le geste qui y mène, à droite
+   * « Régler ».
+   */
+  it('sans service mais avec une pièce : la question à gauche, Régler à droite', () => {
+    const fixture = boot({ choice: null, panier: { count: 1, totalCents: 150 } });
+    const bar = el(fixture).querySelector('.bar');
+
+    expect(bar?.textContent).toContain(COMMAND_TERMS_FR.unset);
+    expect(bar?.textContent).toContain(COMMAND_TERMS_FR.choose);
+    expect(bar?.querySelector('.pay')).not.toBeNull();
   });
 
   it('rappelle la maison et le moment retenus', () => {

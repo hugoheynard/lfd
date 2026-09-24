@@ -222,21 +222,13 @@ describe('ShopPage', () => {
   /**
    * 🔴 En PILE, le pied est là dès la boutique ouverte, panier vide compris
    * (plan lot 3) : il porte la commande. Il ne dépend plus de `!isEmpty()` —
-   * c'est au bureau seulement qu'un panier vide le retire, par la classe.
+   * au bureau, il n'est jamais montré (CSS) : la barre porte le règlement.
    */
   it('pose le pied panier vide, bouton inactif', () => {
     const foot = el().querySelector('app-cart-bar');
     expect(foot).not.toBeNull();
     expect(foot?.querySelector<HTMLButtonElement>('.pay')?.disabled).toBe(true);
     expect(foot?.textContent).toContain(COMMAND_TERMS_FR.emptyShort);
-  });
-
-  /** Au bureau, un panier vide sans barre garde le pied retiré, comme avant. */
-  it('retire le pied au bureau tant que le panier est vide', () => {
-    TestBed.inject(OrderContextStore).choice.set(null);
-    fixture.detectChanges();
-
-    expect(el().querySelector('app-cart-bar')?.classList).toContain('desk-hidden');
   });
 
   /**
@@ -259,25 +251,19 @@ describe('ShopPage', () => {
   });
 
   /**
-   * 🔴 Au bureau, la barre « Ma commande » porte « Régler » : le pied se retire
-   * quand elle est là (plan lot 2). La largeur se lit en CSS — jsdom ne joue
-   * pas les media queries —, ce qui s'éprouve ici est la condition « barre
-   * présente » que le gabarit pose.
+   * 🔴 Au bureau, la barre « Ma commande » apparaît dès la PREMIÈRE pièce,
+   * service choisi ou non (Hugo, 2026-09-24) ; le pied n'y est jamais montré —
+   * c'est du CSS, que jsdom ne joue pas. Ce qui s'éprouve ici : la page réserve
+   * la place de la barre dès qu'elle existe.
    */
-  it('marque le pied à retirer au bureau quand un service est choisi', () => {
-    cart.add('VIE-001');
-    fixture.detectChanges();
-
-    expect(el().querySelector('app-cart-bar')?.classList).toContain('desk-hidden');
-  });
-
-  /** Sans service, la barre n'existe pas : le pied reste le seul chemin. */
-  it('garde le pied au bureau tant qu’aucun service n’est choisi', () => {
+  it('réserve la place de la barre dès la première pièce, sans service choisi', () => {
     TestBed.inject(OrderContextStore).choice.set(null);
+    fixture.detectChanges();
+    expect(el().querySelector('.shop')?.classList).not.toContain('under-bar');
+
     cart.add('VIE-001');
     fixture.detectChanges();
-
-    expect(el().querySelector('app-cart-bar')?.classList).not.toContain('desk-hidden');
+    expect(el().querySelector('.shop')?.classList).toContain('under-bar');
   });
 });
 

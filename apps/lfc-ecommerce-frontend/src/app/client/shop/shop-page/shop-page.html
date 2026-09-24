@@ -40,7 +40,7 @@
   />
 </ng-template>
 
-<div class="shop" [class.under-bar]="!needsService()">
+<div class="shop" [class.under-bar]="!needsService() || !cart.isEmpty()">
   <fold-search
     class="search"
     [(value)]="shop.query"
@@ -92,12 +92,7 @@
      changement le plus fréquent, et le dialogue a son propre « Retour » vers la
      maison. Renvoyer à l'accueil faisait re-choisir la maison pour changer
      d'heure — ce que la barre du bureau évite déjà avec ses deux liens. -->
-<app-cart-bar
-  class="cartbar"
-  [class.desk-hidden]="!needsService() || cart.isEmpty()"
-  (pay)="void pay()"
-  (edit)="void changeTime()"
-/>
+<app-cart-bar class="cartbar" (pay)="void pay()" (edit)="void changeTime()" />
 
 <app-product-sheet
   [product]="piece()"
