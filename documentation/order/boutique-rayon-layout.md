@@ -12,14 +12,14 @@
 
 ## Où en est la construction
 
-| Pièce                                                                 | État        | Où                                                                                                                                                                             |
-| --------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Les règles — formes, collision, côtés d'image, tons, pile, défilement | ✅          | paquet `@lfd/storefront-layout` (`44d8948cc`)                                                                                                                                  |
-| Le modèle, le droit `b2b_storefront`, le verrou, la lecture publique  | ✅          | `apps/lfd-api/src/b2b/storefront/` (`44d8948cc`)                                                                                                                               |
-| La vitrine porteur d'images de la médiathèque                         | ✅          | `apps/lfd-api/src/appBootstrap/` (`568804d92`)                                                                                                                                 |
-| L'éditeur, en état local                                              | ✅          | `apps/lfd-backoffice-frontend/src/app/contenu/` (`40b6bd33e`, `0932c542d`)                                                                                                     |
-| L'éditeur branché sur le serveur, contenus associés                   | 🟡 en cours | lot 3 du plan                                                                                                                                                                  |
-| La boutique qui lit la vitrine                                        | ⬜          | lot 4 du plan — aujourd'hui, la tuile Noël et la bande Pâques de la boutique sont une **simulation** (`apps/lfc-ecommerce-frontend/src/app/client/shop/mock-shelf-feature.ts`) |
+| Pièce                                                                 | État                          | Où                                                                                                                                                                             |
+| --------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Les règles — formes, collision, côtés d'image, tons, pile, défilement | ✅                            | paquet `@lfd/storefront-layout` (`44d8948cc`)                                                                                                                                  |
+| Le modèle, le droit `b2b_storefront`, le verrou, la lecture publique  | ✅                            | `apps/lfd-api/src/b2b/storefront/` (`44d8948cc`)                                                                                                                               |
+| La vitrine porteur d'images de la médiathèque                         | ✅                            | `apps/lfd-api/src/appBootstrap/` (`568804d92`)                                                                                                                                 |
+| L'éditeur, en état local                                              | ✅                            | `apps/lfd-backoffice-frontend/src/app/contenu/` (`40b6bd33e`, `0932c542d`)                                                                                                     |
+| L'éditeur branché sur le serveur, contenus associés                   | ✅                            | lot 3 du plan (`a5f2eb71f`) ; multi-contenu en onglets (2026-09-24)                                                                                                            |
+| La boutique qui lit la vitrine                                        | ✅ vu à l'écran le 2026-09-24 | lot 4 du plan (2026-09-24) — `composeShelf` du paquet, et `apps/lfc-ecommerce-frontend/src/app/client/shop/storefront/` ; la simulation (tuile Noël, bande Pâques) est retirée |
 
 ## La grille
 
@@ -180,9 +180,9 @@ boutique — à regarder avant de toucher au code.
 
 ## Pas encore décidé
 
-- **Dater** : une fenêtre qui allume et éteint une opération seule, à
-  l'horloge du serveur. La table des objets est prête à la recevoir sans
-  migration de données.
+- **Dater** : proposé dans
+  [`architecture-operations-datees.md`](architecture-operations-datees.md) —
+  le contenu s'éteint avec son opération, l'objet ne porte pas de date.
 - **Cibler** : pour quel public — pro, particulier, les deux.
 - **Les gestes de mise en page** — poser en poussant, gérer les rangées,
   miroir : [`todo-vitrine-editeur.md`](todo-vitrine-editeur.md).
