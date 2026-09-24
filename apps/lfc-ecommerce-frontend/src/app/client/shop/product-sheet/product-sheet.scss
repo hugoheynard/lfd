@@ -94,7 +94,9 @@
 
 .amount {
   font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-screen-sm);
+  /* Le prix pèse autant que le nom (capture 04) : c'est la seconde chose
+     qu'on vient lire dans une fiche, et la première qu'un pro compare. */
+  font-size: var(--lfc-text-sheet-title);
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-block);
   color: var(--fold-color-text);
@@ -102,7 +104,7 @@
 
 .per {
   font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-block);
+  font-size: var(--fold-text-xl);
   font-weight: var(--fold-weight-bold);
   color: var(--fold-color-text);
 }
@@ -210,4 +212,13 @@
 
 .cta-total {
   font-variant-numeric: tabular-nums;
+}
+
+/* Au bureau, en deux colonnes, la photo remplit toute la hauteur de sa moitié
+   (capture 04) — le 4/3 ne vaut qu'en pile, où la feuille est une colonne. */
+@media (min-width: 900px) {
+  .photo {
+    flex: 1;
+    aspect-ratio: auto;
+  }
 }

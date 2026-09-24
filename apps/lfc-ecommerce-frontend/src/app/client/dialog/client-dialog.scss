@@ -264,4 +264,49 @@
   :host([data-layout='split']) :is(.head, .body, .foot) {
     grid-column: 2;
   }
+
+  /* La fiche de la démo (handoff boutique, capture 04) est HAUTE : la photo
+     tient la moitié gauche du haut en bas, elle ne flotte pas entre deux
+     bandes. Une hauteur plancher le permet sans étirer un contenu court. */
+  :host([data-layout='split']) .dlg {
+    min-height: min(620px, calc(100dvh - 48px));
+  }
+
+  /* Le panneau HÉRITE du plancher : sans lui, la boîte grandit et la grille
+     reste à la hauteur de son contenu — la photo s'arrêtait à mi-hauteur. */
+  :host([data-layout='split']) .panel {
+    min-height: inherit;
+  }
+
+  :host([data-layout='split']) .media {
+    align-items: stretch;
+  }
+
+  /* Le rayon en Pogonia espacée, pas en Chunk : c'est une étiquette, et il
+     laisse de l'air au titre, qui est lui la voix de la fiche. */
+  :host([data-layout='split']) .kicker {
+    margin-bottom: var(--fold-space-md);
+    font-family: var(--lfc-font-caps);
+    font-weight: var(--fold-weight-bold);
+  }
+
+  :host([data-layout='split']) .title {
+    font-size: var(--lfc-text-sheet-title);
+  }
+
+  :host([data-layout='split']) .head {
+    padding-top: var(--fold-space-sm);
+  }
+
+  /* Fermer : un carré crème, pas une pastille cernée (capture 04). Il se lit
+     comme un objet de la fiche, posé sur son papier, au lieu d'un contrôle
+     générique du chrome. */
+  :host([data-layout='split']) .close {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: var(--fold-radius-md);
+    background: var(--lfc-butter-75);
+    color: var(--fold-color-text);
+  }
 }
