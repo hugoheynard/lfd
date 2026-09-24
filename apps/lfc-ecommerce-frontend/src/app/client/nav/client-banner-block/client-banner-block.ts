@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /**
  * Le contenu du bandeau : ce que l'écran dit, sur le registre sombre.
@@ -18,7 +18,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 @Component({
   selector: 'app-client-banner-block',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.align-start]': "titleAlign() === 'start'" },
+  host: { '[class.align-start]': "titleAlign() === 'start'", '[class.compact]': 'compact()' },
   templateUrl: './client-banner-block.html',
   styleUrl: './client-banner-block.scss',
 })
@@ -37,6 +37,14 @@ export class ClientBannerBlock {
 
   /** La ligne sous le titre. Vide, elle ne prend pas de place. */
   readonly lead = input('');
+
+  /**
+   * Le bandeau SERRÉ : moins de marge, un titre d'un cran plus petit. Pour un
+   * écran où le bandeau n'est qu'une étiquette et où la place appartient à ce
+   * qui suit — la boutique, dont la navigation manquait de hauteur (Hugo,
+   * 2026-09-24).
+   */
+  readonly compact = input(false, { transform: booleanAttribute });
 
   /**
    * Où se range le texte quand rien n'est projeté **à côté** de lui.
