@@ -146,7 +146,7 @@ Un **nouvel agrégat** `PaymentLink` dans `b2b/payments/` :
 | ------------------------------------------ | ---------------------------------------------------------- |
 | `id`                                       | ULID (`IdGenerator`)                                       |
 | `companyId`                                | obligatoire — un lien libre s'adresse à un client          |
-| `amountCents`                              | entier > 0, plafonné — **montant à décider par Hugo**      |
+| `amountCents`                              | entier > 0, plafonné par le réglage ci-dessous             |
 | `label`                                    | 1–140, repris sur la page Stripe (« Régularisation août ») |
 | `status`                                   | `open` → `paid` \| `cancelled` \| `expired`                |
 | `stripeSessionId`                          | `cs_…`, unique, clé de rapprochement                       |
@@ -184,6 +184,17 @@ rapprochement avec ce qu'il régularise reste humain pour ce premier lot.
 
 API : `GET/POST /admin/accounting/payment-links`,
 `POST /admin/accounting/payment-links/:id/cancel`.
+
+### Le plafond — un réglage du comptable (Hugo, 2026-09-25)
+
+« Plafond à définir par le comptable, `null` si pas de plafond. » Une table
+`accounting_settings` à ligne unique (id fixe `default`), colonne
+`payment_link_max_cents Int?` : `null` = aucun plafond. C'est de la config sans
+transition, donc un CRUD `Payload`↔`View` (§3.1 de `CLAUDE.md`), pas un agrégat.
+Le plafond est lu **à la création** du lien et passé à `PaymentLink.create`, qui
+refuse au-delà (409 qui nomme le plafond). Un lien déjà créé n'est pas touché
+quand le plafond baisse. Le réglage s'édite dans l'onglet des liens libres,
+droit `b2b_accounting`.
 
 ### L'écran — `comptabilite/liens-de-paiement`
 
