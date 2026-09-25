@@ -167,9 +167,17 @@ retirées`). Par commande : heure, client, unités, et l'état :
 La tournée (véhicule, arrêts) n'a pas de donnée (§7) : l'onglet Livraison
 liste les commandes à livrer par créneau, sans ordre de route.
 
-**Couleurs** : les tokens fold d'état, pas les hexadécimaux de la maquette ;
-l'état est toujours porté **aussi** par un libellé — jamais la couleur seule
-(SPEC §7).
+**Le design est celui de la maquette** (Hugo, 2026-09-25 : « je veux le même
+design que la maquette ») : disposition, barre graphite, bande de compteurs,
+typographie Plex Sans / Plex Mono, cartes, lisérés, pastilles Mono, densité.
+Seuls changent les gestes retirés (§1). La maquette est fold-native — le
+back-office porte déjà IBM Plex, et ses couleurs d'état SONT des tokens de
+référence fold (vérifié le 2026-09-25 dans fold-ng 0.27.2 : `#146b48` =
+`--fold-ref-green-700`, `#d4a017` = `--fold-ref-amber-500`, `#b33a2a` =
+`--fold-ref-red-600`). Elle se reproduit donc **par les tokens**, jamais en
+hexadécimal ; une valeur de la maquette qui n'aurait pas de token est
+signalée, pas écrite en dur. L'état est toujours porté **aussi** par un
+libellé — jamais la couleur seule (SPEC §7).
 
 ## 6. Mobile
 
