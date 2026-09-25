@@ -3,134 +3,215 @@
 > Ouvert le 2026-09-25, à la demande de Hugo : « il me manque un endroit pour
 > superviser à la fois le suivi de prod, de packing, de retrait et de
 > livraison », puis « supervision doit être orienté view, donc à part ».
-> État : **doc-first**.
+>
+> **Réécrit le même jour sur la maquette** `handoff-suivi` (Bureau de Hugo :
+> `SPEC.md`, `design/Suivi - export.dc.html`, `captures/`). Hugo : « on voit,
+> on n'agit pas — un dashboard de suivi et d'alertes ; le manager qui regarde
+> ça peut ensuite aller opérer sur comptoir ou colisage ».
+>
+> **Déjà bâti** (première version, avant la maquette) : la lecture
+> `GET /admin/supervision/day` et le droit `b2b_supervision` (`af0b79fa5`),
+> un écran de compteurs par étape (`afeae8cc2`). Ce plan **garde** le droit et
+> la lecture — elle devient la source des retards de la colonne 3 — et
+> **remplace** l'écran.
 
-## Ce que c'est
+## 1. Le principe de la maquette, et ce qu'on en change
 
-Une **vue**, en lecture seule, pour une date de service : où en est chaque
-commande entre la passation et la remise, et lesquelles sont en retard. Elle
-n'agit pas : elle renvoie vers l'écran de terrain qui agit (fournée, colisage,
-file de retrait). Elle est **à part** des espaces de travail — Production,
-Comptoir, Livraison restent les postes de ceux qui font ; la Supervision est
-la place de celui qui regarde l'ensemble.
+**L'unité change de colonne en colonne** — ce n'est pas un kanban. On prépare
+des **produits**, on colise des **commandes**, on retire à des **gens dans un
+créneau**.
 
-## Ce qui existe (vérifié le 2026-09-25, contredit par vitruve le même jour)
+| Colonne                 | Unité                   | Ce qu'on y voit                                                       |
+| ----------------------- | ----------------------- | --------------------------------------------------------------------- |
+| 1 · Préparation         | le **rayon** (produits) | `n / N lignes` par rayon ; rayons finis repliés en bas                |
+| 2 · Colisage            | la **commande**         | références posées / total, bacs ; « attend le four »                  |
+| 3 · Retrait / livraison | le **créneau**          | par tranche horaire : retirées, attendues, créneau dépassé, pas prête |
 
-Tout ce dont la vue a besoin est **déjà sur la commande** (`public.orders`),
-recopié par le commerce à chaque fait des autres blocs :
+🔴 **Ce que la Supervision change à la maquette : elle n'agit pas.** La
+maquette porte des gestes (cocher une ligne, Étiquettes, Bon de commande,
+Remettre, Scanner un QR, Appeler). **Aucun n'est repris.** Chacun devient un
+**renvoi** vers l'écran qui opère, et seulement si le lecteur y a droit :
 
-| Étape affichée   | Statuts                        | Qui l'écrit                                                                                                                                                     |
-| ---------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Commandée        | `placed`                       | passation                                                                                                                                                       |
-| En production    | `confirmed`, `in_production`   | `confirmed` : `OnProductionDayClosed` (clôture du jour). `in_production` n'est écrit par **aucun** handler ; une ligne héritée qui le porterait est comptée ici |
-| Prête            | `ready` (+ `readyAt`)          | `OnOrderPacked` ← `OrderPackedEvent` (scan de colisage)                                                                                                         |
-| Retirée / Livrée | `fulfilled` (+ `handedOverAt`) | `OnOrderHandedOver` ← `OrderHandedOverEvent`                                                                                                                    |
-| Annulée          | `cancelled`                    | à part, jamais en retard                                                                                                                                        |
+| Geste de la maquette                        | Dans la Supervision                                                                                                                                                                                     |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| cocher une ligne, « Ouvrir la fiche »       | lien vers `/production/journee` (la fournée)                                                                                                                                                            |
+| Étiquettes, Bon de commande, cases de colis | lien vers `/production/colisage`                                                                                                                                                                        |
+| Remettre                                    | lien vers `/comptoir/retrait`                                                                                                                                                                           |
+| Scanner un QR                               | **retiré** — c'est l'action principale d'un poste, pas d'une vue                                                                                                                                        |
+| Appeler                                     | **retiré au premier lot** : le téléphone du client ne sort aujourd'hui sur aucun écran (bons PDF et gabarits de courriel seulement, vérifié le 2026-09-25). L'exposer est une décision d'accès, à part. |
 
-`draft` est exclu. « Colisée » **est** « prête » : le scan de colisage écrit
-`ready` ; le colisage ligne à ligne (schéma `production`) n'est pas repris.
+Le renvoi prend le libellé de ce qu'on va y faire (« Ouvrir le colisage »),
+jamais celui du geste, pour qu'on ne croie pas agir d'ici.
 
-- **Clé du jour** : `requestedDeliveryDate`, **nullable**. Une commande sans
-  date n'appartient à aucun jour : la vue ne l'invente pas, mais elle la
-  **compte** dans un signal à part (« N commandes sans date de service » — les ouvertes seulement : ni retirée ni annulée, qui ne demandent plus de geste) pour
-  que le trou se voie au lieu de disparaître du filtre.
-- **Le créneau** : `fulfillment` est `Json?` de forme
-  `{ window: { value: FulfillmentWindow | null, source }, … }`
-  (`packages/contracts/src/order.ts`). `value` peut être nul (aucune tranche
-  demandée), et `source: "default"` désigne une **heure d'ouverture recopiée**
-  — l'heure du point de retrait, pas une
-  promesse faite au client. La lecture réutilise `fulfillmentOf` / `windowOf`
-  de `b2b/orders/infrastructure/handover-order.query.ts`, extraits dans un
-  fichier partagé du même dossier : **un seul parseur de ce JSON**.
-- **Ce que le fournil fabrique** : `settlementWhere()`
-  (`b2b/orders/infrastructure/plan-filter.ts`) — la même moitié « argent » que
-  le dossier du jour, et pour la même raison : on garde les commandes prêtes
-  et retirées, on écarte les règlements morts et le visiteur dont la carte est
-  restée en l'air. La vue supervise **ce qu'on fabrique**, ni plus ni moins.
-- **Particuliers** : leurs commandes sont dans `public.orders`
-  (`clientele = public`, `companyId` nul ; `clientele` nul sur l'historique).
-  Elles sont supervisées comme les autres. Le nom affiché vient de la société
-  si elle existe, sinon de `placedBy` — le nom seul, jamais e-mail ni
-  téléphone.
-- **Livraison** : aucune donnée de tournée. Une livraison passe de `ready` à
-  `fulfilled`, sans « en route ». La vue ne l'invente pas.
+## 2. Ce qui existe (vérifié le 2026-09-25)
 
-**Frontière** : la lecture n'a besoin d'aucun autre bloc. Elle vit dans
-`b2b/orders`, sur ses propres tables — rien de neuf dans la matrice.
+| Besoin                | Donnée                                                                                                                                        | Lecture existante                                                                                                             |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Rayons, `n / N`       | `production.production_count` (`doneAt` par sku et par jour) ; rayon d'un sku par le port `WorkshopShelvesReader`, implémenté par le commerce | `GET /admin/production/worksheet` → `worksheetGroupsOf` : `lineCount`, `doneCount`, `totalUnits`, `remainingUnits` par groupe |
+| Colisage par commande | `production_order_line.packedAt`, `production_order.packedAt`, `containerCount` (bacs d'expédition)                                           | `GET /admin/production/packing` → `ProductionPackingView`                                                                     |
+| Retrait par créneau   | `HandoverQueueEntry` : client, enseigne, clientèle, point de retrait, acheminement, créneau **avec sa source**, unités, statut, `readyAt`     | `GET /admin/handover/file`                                                                                                    |
+| Retards               | règles pures `latenessOf` (créneaux promis seulement)                                                                                         | `GET /admin/supervision/day` (`b2b_supervision`)                                                                              |
 
-## Serveur
+Les trois premières sont en `@AdminSurface("b2b_orders")`.
 
-- Ressource **`b2b_supervision`** (« Supervision »). Une vue en lecture seule,
-  mais `admin` la reçoit en `write` : c'est l'invariant « l'administrateur
-  couvre tout », qu'un test du contrat exige, pas une contradiction.
-  Même chemin que `b2b_counter` (`82846b1f3`) : valeur d'enum Postgres
-  (irréversible — **le nom se tranche avant le premier merge**), deux
-  migrations (la valeur ne s'emploie pas dans sa transaction d'ajout),
-  `staff-access.ts` et libellé, `grant-chips.spec`, `staff-roles.e2e-spec`,
-  `architecture-acces-staff.md`. **À trancher par Hugo** : l'accorder
-  d'office à un autre rôle qu'`admin`.
-- **Ce que le droit ouvre, écrit** : le nom des clients du jour, particuliers
-  compris, toutes sociétés. C'est moins que `b2b_orders:read` (pas de lignes,
-  pas de montants, pas de contact), mais c'est un élargissement pour qui n'a
-  pas ce droit — à l'inverse du mouvement de `b2b_counter`. Assumé : on ne
-  supervise pas une file de numéros.
-- `GET /admin/supervision/day?date=YYYY-MM-DD` → `GetDaySupervisionQuery`,
-  `@AdminSurface("b2b_supervision")`. Rend :
-  - `flow` : par acheminement, le compte par étape (annulées à part) ;
-  - `late` : les commandes en retard — numéro, nom affiché, acheminement,
-    créneau, étape, **règle qui la signale** ;
-  - `undated` : le nombre de commandes sans date de service ;
-  - `asOf` : l'instant de lecture (`Clock`).
-    Aucun montant.
-- **Les règles de retard** — fonctions pures du domaine, testées sans Nest.
-  Elles ne jugent **que les créneaux promis** (`value` non nul et
-  `source ≠ "default"`) ; les autres commandes s'affichent avec « heure
-  d'ouverture » ou « sans créneau », jamais en retard :
-  1. **pas retirée / pas livrée après son créneau** : étape ≠ retirée et
-     `now > localToInstant(date, window.end)` ;
-  2. **pas prête à l'approche du créneau** : étape ∈ {commandée, en
-     production} et `now > localToInstant(date, window.start ?? window.end) −
-READY_BEFORE_WINDOW_MINUTES`.
-     Le temps passe par `packages/contracts/src/paris-time.ts`
-     (`localToInstant`, `addMinutes`) et le `Clock` — jamais `new Date()`.
-     `localToInstant` peut rendre `null` (heure inexistante au changement
-     d'heure) : la commande n'est alors pas jugée, et la règle ne l'invente pas.
-     La marge est une **constante nommée du domaine** ; **valeur à fixer par
-     Hugo**, réglable dans un lot suivant s'il le veut.
-- Hors règles, au premier lot : un retrait **fait** en retard n'est pas
-  signalé (`handedOverAt` est lu, pas jugé).
+## 3. Où vit la composition — décision
 
-## Front
+**Chaque bloc sert sa propre colonne, sous `b2b_supervision` ; le front
+juxtapose.** Aucun bloc ne lit l'intérieur d'un autre :
 
-- Route de premier niveau **`/supervision`**, garde `b2b_supervision:read`,
-  entrée à part dans le menu principal et la tuile mobile, hors des espaces
-  Production / Comptoir.
-- Une page : sélecteur de date (aujourd'hui par défaut), deux lignes de flux
-  (Retrait, Livraison), un compte par étape — un clic filtre la liste —, le
-  signal « sans date » s'il est non nul, puis la liste des retards, la règle
-  écrite en clair (« Créneau 7 h–8 h dépassé, pas retirée »).
-- Rafraîchissement périodique : `periodic-refresh.ts` **a déménagé** de `production/`
-  dans `shared/` (il sert désormais deux espaces), ses importeurs suivent.
-- Une ligne renvoie à l'écran de terrain **seulement si** le lecteur en a le
-  droit (`/commandes/:id` sous `b2b_orders:read`) ; sinon ce n'est pas un
-  lien. La Supervision ne devient pas une porte dérobée.
-- Vocabulaire : « Retirée » et « Livrée », jamais « remise » (§8).
+| Colonne         | Route                                | Bloc         | Ce qu'elle rejoue                                   |
+| --------------- | ------------------------------------ | ------------ | --------------------------------------------------- |
+| 1 · Préparation | `GET /admin/supervision/preparation` | `production` | la même query que `GET /admin/production/worksheet` |
+| 2 · Colisage    | `GET /admin/supervision/packing`     | `production` | la même query que `GET /admin/production/packing`   |
+| 3 · Retrait     | `GET /admin/supervision/handover`    | `handover`   | la même query que `GET /admin/handover/file`        |
+| retards         | `GET /admin/supervision/day`         | `b2b`        | déjà bâtie                                          |
 
-## Tests
+Un **second contrôleur** par bloc, en `@AdminSurface("b2b_supervision")`,
+qui n'injecte que le `QueryBus` et envoie la **même** query que le poste :
+une seule lecture nommée, deux portes, chacune avec son droit. Rien de neuf
+dans la matrice, aucun handler dupliqué.
 
-- Unitaires : chaque règle aux bornes — pile à `end`, une minute après,
-  créneau sans `start`, `value` nul, `source: "default"` jamais en retard,
-  `localToInstant` nul, annulée jamais en retard, `in_production` compté en
-  production.
-- e2e : 403 sans le droit ; le flux compte juste sur un jour semé (dates
-  **relatives**) ; une commande d'un autre jour n'y entre pas ; une commande
-  sans date est comptée dans `undated` ; une commande particulier en attente
-  de carte n'y entre pas, une commande pro en attente si ; aucun montant ni
-  e-mail dans la réponse.
+Pourquoi pas ailleurs :
 
-## Hors périmètre
+- _un agrégat serveur unique_ : les canaux `production/channels/commerce/` et
+  `handover/channels/commerce/` sont DÉCLARÉS par ces blocs et IMPLÉMENTÉS par
+  `b2b` — ce sont des besoins, pas des surfaces de lecture ; un agrégat dans
+  `b2b` devrait lire les tables du fournil en Prisma direct. (`b2b` sait bien,
+  par `OrderPacked` / `ProductionDayClosed`, si une commande est colisée —
+  c'est ce que `supervision/day` lit —, mais pas le détail par ligne ni
+  l'avancement par rayon.)
+- _les routes des postes telles quelles, sous garde double_ : `b2b_orders`
+  ouvre la Production et le Comptoir en entier, **en écriture** pour qui
+  l'a en `write`. Le droit `b2b_supervision` n'ouvrirait plus rien seul, alors
+  que c'est sa raison d'être (`app.routes.spec.ts` : « elle se donne à qui
+  supervise sans ouvrir les commandes »).
+- _un neuvième bloc « supervision »_ : disproportionné pour juxtaposer.
 
-- Le suivi de tournée (« en route », livré par qui, quand) : il attend le
+**Le coût** : quatre requêtes par rafraîchissement, à 15 s — seize par minute
+et par écran ouvert, sur des lectures qui recalculent (la balance du
+colisage, la demande d'une journée ouverte). Le rafraîchissement réutilise
+`shared/periodic-refresh.ts` (déménagé de `production/` dans `afeae8cc2`),
+qui **suspend quand l'onglet est caché et ne chevauche jamais deux cycles**
+(vérifié le 2026-09-25 ; vitruve le croyait inexistant). Les quatre lectures
+n'ont pas d'instant commun : un écran qui les juxtapose peut montrer une
+commande « colisée » en colonne 2 et « pas prête » en colonne 3 le temps d'un
+cycle. Assumé pour une vue ; c'est précisément pourquoi elle n'agit pas.
+
+## 4. L'accès
+
+- La page `/supervision` exige **`b2b_supervision:read` seul**, comme
+  aujourd'hui : ses quatre lectures sont sous ce droit.
+- Ce que le droit montre, écrit : l'avancement du fournil par rayon, les
+  commandes du jour avec le nom du client, leurs lignes et leurs bacs, la
+  file de retrait. **Aucun montant, aucun contact.** C'est plus que la
+  première version (qui ne rendait que des compteurs et des noms) : les
+  lignes de commande entrent. Seul `admin` le porte ; un rôle « manager » se
+  compose à l'écran des rôles. **Aucune migration de droits.**
+- **Les renvois** (§1) : affichés seulement si le lecteur a `b2b_orders:read`
+  — la garde **héritée de la coquille** des trois routes cibles
+  (`production`, `comptoir`), les routes enfants déclarant `null`. Un test
+  confronte chaque renvoi à la garde effective de sa cible (enfant, sinon
+  parent) dans la table de routes, pour qu'un droit propre à la Production
+  (TODO `todo-comptoir-statuts-et-droit-production.md`) ne laisse pas un
+  renvoi pointer vers un refus. Les renvois visent les **listes**
+  (`/production/colisage`), jamais `colisage/:reference`, qui est en `write`.
+
+## 5. Les trois colonnes, dans le détail
+
+**En-tête** : « Supervision · Avancement du jour », date, « à jour à 9 h 42 »
+(`asOf`). Le jour par défaut est celui du **serveur** — `supervision/day`
+sans date rend le jour courant de son `Clock` —, jamais l'horloge du poste. Bande de
+compteurs, un par colonne : lignes ouvertes · commandes à coliser · attendues
+au retrait (dont N livraisons). Ni sélecteur de site, ni bouton Scanner.
+
+**Colonne 1 · Préparation** — une carte par groupe du worksheet, barre
+`doneCount / lineCount`, unités restantes ; état **Terminé** / **En cours** /
+**Pas commencé**. Les lignes non faites sont listées (quantité en chiffres
+tabulaires + produit), **sans case à cocher**. Rayons terminés repliés en bas
+dans un encart. L'état **Bloqué** de la maquette n'a pas de donnée (§7).
+
+**Colonne 2 · Colisage** — une carte par commande de la vue de colisage :
+
+- **Colisée** : bac fermé (`packedAt`), N bacs ;
+- **En cours** : `k références sur N posées`, barre ;
+- **Attend le four** (liseré d'avertissement) : au moins une ligne porte
+  `awaitingProduction` — **lu tel quel** dans la vue de colisage, jamais
+  recalculé : le fournil le calcule (`production-packing.ts`), et il compte
+  aussi en attente un article absent du compte à produire. La carte nomme
+  les produits attendus ;
+- **À coliser** : tout est sorti, rien n'est posé.
+
+Tri : attend le four et en cours d'abord, puis par heure de retrait — le
+créneau vient de la file de retrait, jointe par `reference` (la vue de
+colisage ne porte ni créneau ni `orderId`) ; une commande sans créneau va en
+fin. Au-delà de dix, « + N commandes ». Colisées repliées en bas.
+
+**Journée pas encore arrêtée** : le colisage ne commence qu'après la clôture,
+et sa vue rend alors `closedAt: null` et aucune feuille. La colonne le dit —
+« La journée n'est pas encore arrêtée : le colisage commence à la clôture »
+— au lieu d'une colonne vide.
+
+**Colonne 3 · Retrait / livraison** — segmenté **Retrait · N / Livraison ·
+N**, groupé par tranche horaire du créneau (`7 h – 8 h · 6 attendues · 4
+retirées`). Par commande : heure, client, unités, et l'état :
+
+- **Retirée** : barrée, « Retirée à 7 h 04 » ;
+- **Créneau dépassé** (liseré d'alerte) : « créneau dépassé de 55 min ». Le
+  **verdict** vient de `GET /admin/supervision/day`, jamais recalculé ; la
+  **durée** affichée, elle, se calcule côté front (`asOf − fin du créneau`),
+  `LateOrder` n'en portant pas ;
+- **Annulée** : barrée dans sa tranche, hors des comptes ;
+- **Pas prête** : « encore au colisage » ;
+- **Heure d'ouverture** / **sans créneau** : dit tel quel, jamais en retard.
+
+La tournée (véhicule, arrêts) n'a pas de donnée (§7) : l'onglet Livraison
+liste les commandes à livrer par créneau, sans ordre de route.
+
+**Couleurs** : les tokens fold d'état, pas les hexadécimaux de la maquette ;
+l'état est toujours porté **aussi** par un libellé — jamais la couleur seule
+(SPEC §7).
+
+## 6. Mobile
+
+Une colonne à la fois, trois onglets (Préparation N · Colisage N · Retrait
+N). **Le rôle choisit l'onglet d'arrivée** : une table `rôle → colonne` dans
+le front, défaut Préparation ; le dernier onglet ouvert ne l'emporte pas
+(SPEC §6). Un blocage de la colonne voisine revient en pastille sur son
+onglet (commandes qui attendent le four → pastille sur Préparation ;
+créneaux dépassés → pastille sur Retrait).
+
+## 7. Hors périmètre — ce que la maquette montre et que la base ne sait pas
+
+- **Rayon bloqué · rupture matière** : rien ne l'enregistre. Il faudrait que
+  le fournil déclare une rupture (qui, quoi, commandes impactées) — un geste
+  et une table, plan à part.
+- **Tournée** (véhicule, départ, arrêts dans l'ordre, estimés) : attend le
   module Livraison.
-- Le colisage partiel ligne à ligne.
-- Retirer la Production au rôle `comptoir` : sujet voisin, traité à part.
+- **« Signé A. Meunier »** : on sait qui a retiré et quand, pas de signature
+  client.
+- **Appeler** : voir §1.
+
+## 8. Lots
+
+1. **Serveur** : les trois contrôleurs `admin/supervision/*` (deux dans
+   `production/http/`, un dans `handover/http/`), chacun rejouant la query du
+   poste ; `supervision/day` accepte l'absence de date (jour du `Clock`) ;
+   e2e : 403 sans `b2b_supervision`, 200 avec lui seul — sans `b2b_orders` —,
+   et les routes des postes toujours 403 à ce rôle.
+2. **Front** : services des quatre lectures, les trois colonnes, le mobile
+   par rôle, les renvois selon la garde effective. Remplace
+   `supervision/supervision-page/`.
+
+## 9. Tests
+
+- État d'une carte de colisage : colisée, en cours, attend le four (une ligne
+  `awaitingProduction`), à coliser ; jointure du créneau par `reference`,
+  commande absente de la file en fin de tri.
+- Regroupement par tranche horaire : créneau sans `start`, sans créneau,
+  heure d'ouverture.
+- Page : une lecture qui échoue n'efface pas les autres (chaque colonne a son
+  propre état d'erreur) ; renvois selon la permission ; onglet d'arrivée
+  selon le rôle ; **aucun bouton d'action**.
+- Renvois : chacun confronté à la garde effective de sa cible dans la table
+  de routes ; masqués sans `b2b_orders:read`.
+- Journée non arrêtée : la colonne 2 le dit.
