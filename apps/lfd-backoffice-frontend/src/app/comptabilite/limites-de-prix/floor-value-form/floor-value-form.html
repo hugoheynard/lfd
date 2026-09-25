@@ -1,0 +1,117 @@
+<div class="mode">
+  @if (unitScoped()) {
+    <fold-view-toggle
+      ariaLabel="Unité de la limite"
+      size="sm"
+      [options]="unitOptions()"
+      [value]="mode()"
+      (valueChange)="setMode($event)"
+    />
+    <p class="hint">
+      @if (mode() === 'percent') {
+        Une fraction <strong>suit</strong> le tarif : si le PIM augmente, la limite monte avec lui.
+      } @else {
+        Un montant est une limite <strong>absolue</strong> — pour un coût fixe connu, qu'un
+        pourcentage n'exprimerait pas.
+      }
+    </p>
+  } @else {
+    <!--
+      Pas de choix ici, et la raison est écrite : un montant unique sur une
+      portée large laisserait passer les articles chers et relèverait les
+      articles bon marché.
+    -->
+    <p class="hint">
+      <strong>En pourcentage du tarif</strong>, forcément : au-delà d'un article, un montant unique
+      relèverait les prix bas et laisserait passer les prix élevés. Une fraction, elle, suit chaque
+      article à son échelle.
+    </p>
+  }
+</div>
+
+<fold-input
+  [label]="mode() === 'percent' ? 'Limite (% du tarif)' : 'Limite (€ HT)'"
+  [disabled]="disabled()"
+  [placeholder]="mode() === 'percent' ? '50' : '1,20'"
+  [value]="show(amount())"
+  (valueChange)="setAmount($event)"
+/>
+
+@if (preview(); as apercu) {
+  <p class="hint">
+    Sur cet article, ça fait <strong>{{ apercu }}</strong
+    >.
+  </p>
+}
+
+@if (overHundred()) {
+  <p class="warn">
+    Au-delà de 100 %, ce n'est plus une limite : elle <strong>relèverait</strong> tous les prix, y
+    compris ceux qu'aucune règle n'a touchés.
+  </p>
+}
+
+<!-- La PORTE : facultative. Vide, il n'y en a pas. -->
+<fieldset class="door" [disabled]="disabled()">
+  <legend class="door-title">Porte dynamique (facultative)</legend>
+  <p class="hint">
+    Un plancher <strong>plus bas</strong>, que le volume ouvre : il vaut dès que la commande atteint
+    la quantité, ou que le volume observé atteint le ratio — les deux s'ils sont remplis.
+  </p>
+  @if (keptDoor() !== null) {
+    <!-- La porte posée, telle quelle — son unité peut différer de celle du mur. -->
+    <p class="kept">
+      Porte actuelle&nbsp;: <strong>{{ keptDoorLabel() }}</strong>
+    </p>
+    @if (!disabled()) {
+      <div class="door-actions">
+        <button
+          foldButton
+          type="button"
+          size="sm"
+          emphasis="outline"
+          intent="neutral"
+          (click)="editDoor()"
+        >
+          Modifier la porte
+        </button>
+        <button
+          foldButton
+          type="button"
+          size="sm"
+          emphasis="outline"
+          intent="danger"
+          (click)="dropDoor()"
+        >
+          Retirer la porte
+        </button>
+      </div>
+    }
+  } @else {
+    <fold-input
+      [label]="mode() === 'percent' ? 'Porte (% du tarif)' : 'Porte (€ HT)'"
+      [disabled]="disabled()"
+      [value]="show(doorAmount())"
+      (valueChange)="setDoorAmount($event)"
+    />
+    <div class="door-keys">
+      <fold-input
+        label="Dès la quantité"
+        [disabled]="disabled()"
+        placeholder="20"
+        [value]="show(doorQuantity())"
+        (valueChange)="setDoorQuantity($event)"
+      />
+      <fold-input
+        label="Ratio de volume (×)"
+        [disabled]="disabled()"
+        placeholder="1,25"
+        [value]="show(doorRatio())"
+        (valueChange)="setDoorRatio($event)"
+      />
+    </div>
+  }
+  @if (doorProblem(); as problem) {
+    <p class="warn">{{ problem }}</p>
+  }
+</fieldset>

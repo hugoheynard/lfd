@@ -1,0 +1,45 @@
+<fold-panel-header title="Poser une limite groupée" [subtitle]="subtitle()" />
+
+<div class="body">
+  @if (outcome(); as bilan) {
+    <fold-callout [variant]="bilan.refused.length === 0 ? 'success' : 'warning'" announce>
+      {{ bilan.posed.length }} posée(s), {{ bilan.refused.length }} refusée(s).
+    </fold-callout>
+    @if (bilan.refused.length > 0) {
+      <ul class="refusals">
+        @for (refusal of bilan.refused; track refusal.item.sku) {
+          <li>
+            <strong>{{ refusal.item.name }}</strong>
+            <span class="ref">{{ refusal.item.sku }}</span> — {{ refusal.reason }}
+          </li>
+        }
+      </ul>
+    }
+  } @else {
+    @if (replaced() > 0) {
+      <fold-callout variant="warning">
+        {{ replaced() }} article(s) de la sélection ont déjà leur propre limite : elle sera
+        <strong>remplacée</strong>.
+      </fold-callout>
+    }
+    <app-floor-value-form [unitScoped]="true" (draftChange)="draft.set($event)" />
+  }
+</div>
+
+<footer class="foot">
+  <span class="spacer"></span>
+  @if (outcome() === null) {
+    <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+    <button
+      foldButton
+      intent="primary"
+      [loading]="running()"
+      [disabled]="!canSubmit()"
+      (click)="submit()"
+    >
+      Poser sur {{ articles().length }} articles
+    </button>
+  } @else {
+    <button foldButton intent="primary" (click)="close()">Fermer</button>
+  }
+</footer>

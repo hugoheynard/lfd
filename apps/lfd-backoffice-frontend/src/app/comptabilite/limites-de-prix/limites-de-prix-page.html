@@ -5,6 +5,16 @@
     refuse pas. Celle d'un article remplace celle de sa famille, qui remplace celle du catalogue.
   </p>
 
+  @if (coverage() !== null) {
+    <span pageActions class="tally">
+      <fold-badge variant="alert" [content]="uncoveredCount() + ' sans limite'" />
+      <fold-badge variant="warning" [content]="globalOnlyCount() + ' au catalogue seulement'" />
+    </span>
+  }
+  @if (canWrite()) {
+    <button pageActions foldButton intent="primary" (click)="create()">Créer une limite</button>
+  }
+
   <div class="toolbar">
     <fold-view-toggle
       ariaLabel="Clientèle"
@@ -13,15 +23,33 @@
       [value]="clientele()"
       (valueChange)="setClientele($event)"
     />
+    <fold-listbox
+      size="sm"
+      label="Afficher"
+      [options]="filters"
+      [value]="filter()"
+      (selectionChange)="setFilter($event)"
+    />
     @if (canWrite()) {
-      <fold-listbox
-        size="sm"
-        label="Portée"
-        [options]="scopeOptions()"
-        [value]="chosenScope()"
-        (selectionChange)="chosenScope.set($event)"
-      />
-      <button foldButton size="sm" intent="primary" (click)="pose()">Poser une limite</button>
+      <span class="selection">
+        <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="selectFiltered()">
+          Tout ce qui est filtré ({{ filteredCount() }})
+        </button>
+        @if (selected().size > 0) {
+          <button foldButton size="sm" emphasis="soft" intent="neutral" (click)="clearSelection()">
+            Vider la sélection
+          </button>
+        }
+        <button
+          foldButton
+          size="sm"
+          intent="primary"
+          [disabled]="selected().size === 0"
+          (click)="openBulk()"
+        >
+          Poser une limite sur {{ selected().size }} articles
+        </button>
+      </span>
     }
   </div>
 
@@ -32,91 +60,127 @@
     </fold-callout>
   }
 
-  @if (boardError(); as message) {
-    <fold-callout variant="alert">{{ message }}</fold-callout>
-  }
-
-  @if (actionError(); as message) {
-    <fold-callout variant="alert" announce>{{ message }}</fold-callout>
-  }
-
   @if (loadError(); as message) {
     <fold-empty-state tone="alert" title="Impossible de lire les limites" [subtitle]="message">
       <button foldButton (click)="load()">Réessayer</button>
     </fold-empty-state>
-  } @else if (loading()) {
+  } @else if (loading() && coverage() === null) {
     <fold-loading message="Lecture des limites…" />
-  } @else if (sorted().length === 0) {
-    <fold-empty-state
-      [title]="clientele() === 'public' ? 'Aucune limite publique' : 'Aucune limite pro'"
-      subtitle="Aucun prix n'est borné par le bas pour cette clientèle."
-    >
-      <fold-icon empty-icon name="shield" />
-    </fold-empty-state>
   } @else {
+    <!-- Les portées larges, en tête : ce dont chaque article hérite. -->
     <fold-card>
       <fold-data-table
-        [caption]="
-          clientele() === 'public' ? 'Limites publiques en vigueur' : 'Limites pro en vigueur'
-        "
+        caption="Catalogue et familles"
         narrowLayout="cards"
         zebra
-        [columns]="columns()"
-        [rows]="sorted()"
+        hover
+        clickable
+        [columns]="scopeColumns"
+        [rows]="scopeRows()"
         [rowKey]="rowKey"
+        (rowClick)="open($event)"
       >
-        <!-- `fold-data-table` n'a AUCUN rendu par défaut : chaque `key` de
-             `columns` a son template ici. -->
         <ng-template foldCell="scope" let-row>
-          <span class="scope">
-            <span class="strong">{{ targetOf(row) }}</span>
-            <span class="muted">{{ scopeKindOf(row) }}</span>
+          <span class="stack">
+            <span class="strong">{{ row.name }}</span>
+            <span class="muted">{{ row.kind }}</span>
           </span>
         </ng-template>
-
-        <ng-template foldCell="value" let-row>
-          <span class="strong">{{ floorLabel(row) }}</span>
+        <ng-template foldCell="limit" let-row>
+          <ng-container *ngTemplateOutlet="limitCell; context: { $implicit: row }" />
         </ng-template>
-
         <ng-template foldCell="door" let-row>
-          @if (doorOf(row); as door) {
-            {{ door }}
-          } @else {
-            <span class="muted">—</span>
-          }
+          <ng-container *ngTemplateOutlet="doorCell; context: { $implicit: row }" />
         </ng-template>
-
         <ng-template foldCell="state" let-row>
           @if (isStale(row)) {
-            <!-- L'intention a vieilli : le tarif a bougé sous elle. -->
-            <span class="stale">à confirmer</span>
-          } @else {
-            <span class="muted">à jour</span>
+            <fold-badge variant="warning" content="À confirmer" />
           }
-        </ng-template>
-
-        <ng-template foldCell="actions" let-row>
-          <span class="actions">
-            <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="edit(row)">
-              Modifier
-            </button>
-            @if (isStale(row)) {
-              <button
-                foldButton
-                size="sm"
-                emphasis="outline"
-                intent="neutral"
-                (click)="confirm(row)"
-              >
-                Confirmer
-              </button>
-            }
-            <button foldButton size="sm" emphasis="outline" intent="danger" (click)="retire(row)">
-              Retirer
-            </button>
-          </span>
         </ng-template>
       </fold-data-table>
     </fold-card>
+
+    @for (shelf of visibleShelves(); track shelf.family.key) {
+      <fold-page-section [title]="shelf.family.name" titleVariant="heading" separator>
+        <fold-data-table
+          [caption]="'Limites — ' + shelf.family.name"
+          narrowLayout="cards"
+          density="compact"
+          zebra
+          hover
+          clickable
+          [selectable]="canWrite()"
+          [selectionLabel]="selectionLabel"
+          [selected]="selectedIn(shelf)"
+          (selectedChange)="onSelect(shelf, $event)"
+          [columns]="articleColumns"
+          [rows]="shelf.articles"
+          [rowKey]="articleKey"
+          (rowClick)="open($event)"
+        >
+          <ng-template foldCell="article" let-row>
+            <span class="stack">
+              <span class="strong">{{ row.name }}</span>
+              <span class="ref">{{ row.sku }}</span>
+            </span>
+          </ng-template>
+          <ng-template foldCell="price" let-row>
+            <span class="num">{{ euros(row.canonicalMillicents) }}</span>
+          </ng-template>
+          <ng-template foldCell="limit" let-row>
+            <ng-container *ngTemplateOutlet="limitCell; context: { $implicit: row }" />
+          </ng-template>
+          <ng-template foldCell="door" let-row>
+            <ng-container *ngTemplateOutlet="doorCell; context: { $implicit: row }" />
+          </ng-template>
+          <ng-template foldCell="state" let-row>
+            <span class="badges">
+              @switch (coverageOf(row)) {
+                @case ('none') {
+                  <fold-badge variant="alert" content="Sans limite" />
+                }
+                @case ('global-only') {
+                  <fold-badge variant="warning" content="Limite du catalogue seulement" />
+                }
+              }
+              @if (isStale(row)) {
+                <fold-badge variant="warning" content="À confirmer" />
+              }
+            </span>
+          </ng-template>
+        </fold-data-table>
+      </fold-page-section>
+    } @empty {
+      @if (filter() !== 'all') {
+        <fold-empty-state
+          title="Tout est couvert"
+          subtitle="Aucun article ne correspond à ce filtre pour cette clientèle."
+        >
+          <fold-icon empty-icon name="shield" />
+        </fold-empty-state>
+      } @else {
+        <fold-empty-state
+          title="Aucun article"
+          subtitle="Le tableau tarifaire ne porte encore aucun article vendu."
+        >
+          <fold-icon empty-icon name="shield" />
+        </fold-empty-state>
+      }
+    }
   }
 </fold-page-layout>
+
+<ng-template #limitCell let-row>
+  <span class="stack">
+    <span class="strong">{{ appliedLabel(row) }}</span>
+    <span class="muted">{{ sourceLabel(row) }}</span>
+  </span>
+</ng-template>
+
+<ng-template #doorCell let-row>
+  @if (doorOf(row); as door) {
+    {{ door }}
+  } @else {
+    <span class="muted">—</span>
+  }
+</ng-template>

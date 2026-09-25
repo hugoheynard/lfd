@@ -1,17 +1,8 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  input,
-  signal,
-  untracked,
-} from '@angular/core';
-import type { FloorClientele, PriceFloorView, PriceMode, PriceScopePayload } from '@lfd/contracts';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import type { FloorClientele } from '@lfd/contracts';
 import {
   FoldButtonComponent,
-  FoldInputComponent,
+  FoldDangerZoneComponent,
   FoldPanelHeaderComponent,
   FoldPanelHostService,
   FoldPanelRef,
@@ -28,44 +19,57 @@ import {
   JournalPanel,
   type JournalPanelData,
 } from '../../../b2b/tarification/journal-panel/journal-panel';
-import { magnitudeFromWire, magnitudeToWire } from '../../../b2b/tarification/pricing-format';
+import { floorLabel } from '../../../b2b/tarification/pricing-format';
 import { PriceLimitsService } from '../../price-limits.service';
-
-/** Charge d'ouverture : la portée visée, ce qui y est posé, ce dont elle hérite. */
-export interface FloorPanelData {
-  readonly scope: PriceScopePayload;
-  /** La clientèle visée — la même portée peut porter une limite pro et une publique. */
-  readonly clientele: FloorClientele;
-  readonly target: string;
-  /** La limite posée sur CETTE portée, ou `null`. */
-  readonly current: PriceFloorView | null;
-  /** Celle qui s'applique aujourd'hui — la sienne, ou celle dont elle hérite. */
-  readonly inherited: PriceFloorView | null;
-  /** Le prix canonique, pour montrer ce qu'une fraction donnerait. `null` sur une famille. */
-  readonly canonicalMillicents: number | null;
-}
+import { FloorValueForm, type FloorValueDraft } from '../floor-value-form/floor-value-form';
+import { ScopePicker, type FloorTarget, type ScopeChoice } from '../scope-picker/scope-picker';
 
 /**
- * Panneau **Limite** — le prix ne descendra pas sous ce seuil.
+ * Charge d'ouverture : la clientèle, le droit, et la portée visée — ou les
+ * portées parmi lesquelles la choisir (« Créer une limite »).
+ */
+export interface FloorPanelData {
+  /** La clientèle visée — la même portée peut porter une limite pro et une publique. */
+  readonly clientele: FloorClientele;
+  /**
+   * `lfc_price_limits:write` ? Sans lui, le panneau s'ouvre en LECTURE : même
+   * contenu, ni enregistrement, ni confirmation, ni zone danger.
+   */
+  readonly canWrite: boolean;
+  /** La portée visée, ou `null` : elle se choisit alors dans le panneau. */
+  readonly target: FloorTarget | null;
+  /** Les portées proposées quand `target` est `null`. */
+  readonly choices: readonly ScopeChoice[];
+}
+
+/** Un mois « de calendrier » pour dire l'âge d'une limite. */
+const DAYS_PER_MONTH = 30;
+
+/**
+ * Panneau **Limite** — le prix ne descendra pas sous ce seuil. Il pose quand
+ * rien n'est posé, et modifie sinon.
  *
  * Né dans la Tarification B2B, il vit dans la Comptabilité depuis que les
  * limites relèvent de `lfc_price_limits` (`plan-limites-de-prix.md` §6). Il y a
- * gagné la clientèle, qu'il envoie à chaque geste.
+ * gagné la clientèle, qu'il envoie à chaque geste, et le choix de la portée.
  *
  * Deux choses que cet écran doit dire, parce qu'elles surprennent :
  *
  * - **poser une limite sur un article REMPLACE celle de sa famille**, elle ne
- *   s'y ajoute pas. Elle peut donc l'abaisser. C'est le geste « cet article est
- *   une exception », et il faut le voir avant de le faire — d'où le rappel de
- *   la limite héritée, juste à côté ;
- * - **une fraction suit le tarif** quand le PIM augmente ; un montant non. Le
- *   pourcentage vaut pour une marge relative, le montant pour un coût fixe connu
- *   (un emballage, une pièce achetée).
+ *   s'y ajoute pas. Elle peut donc l'abaisser — d'où le rappel de la limite
+ *   héritée, juste à côté ;
+ * - **une fraction suit le tarif** quand le PIM augmente ; un montant non.
  */
 @Component({
   selector: 'app-floor-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPanelHeaderComponent, FoldButtonComponent, FoldInputComponent],
+  imports: [
+    FoldPanelHeaderComponent,
+    FoldButtonComponent,
+    FoldDangerZoneComponent,
+    FloorValueForm,
+    ScopePicker,
+  ],
   templateUrl: './floor-panel.html',
   styleUrl: './floor-panel.scss',
 })
@@ -77,38 +81,36 @@ export class FloorPanel {
 
   readonly data = input<FloorPanelData | undefined>(undefined);
 
-  protected readonly mode = signal<PriceMode>('amount');
-
-  /**
-   * **Une limite en euros n'a de sens que sur une unité.**
-   *
-   * « Jamais sous 1,50 € » sur une famille laisserait passer une pièce montée à
-   * 1,50 € et relèverait un croissant qui se vend 2,00 € : le même mur, deux
-   * effets opposés. Une fraction, elle, suit l'article.
-   *
-   * L'écran ne propose donc pas le choix au-delà d'un article — plutôt que de
-   * l'offrir et de le refuser ensuite, ce qui est la façon la plus sûre de faire
-   * saisir deux fois la même chose. Le serveur le refuse de son côté : c'est une
-   * règle du modèle, pas une commodité de saisie.
-   */
-  protected readonly unitScoped = computed(() => {
-    const type = this.data()?.scope.type;
-    return type === 'product' || type === 'variant';
-  });
-  /** La grandeur telle que saisie : des euros, ou des pourcents. */
-  protected readonly amount = signal<number | null>(null);
+  /** La portée choisie dans le panneau, quand elle n'était pas donnée. */
+  protected readonly picked = signal<FloorTarget | null>(null);
+  protected readonly draft = signal<FloorValueDraft | null>(null);
   protected readonly saving = signal(false);
-  private readonly seeded = signal(false);
 
-  /** Centimes → euros, exposé au gabarit. */
   protected readonly euros = formatEuros;
 
-  protected readonly target = computed(() => this.data()?.target ?? '');
-  /** « pour les pros » / « pour le public » — l'en-tête dit quelle limite on règle. */
-  protected readonly clienteleLabel = computed(() =>
-    this.data()?.clientele === 'public' ? 'pour le public' : 'pour les pros',
+  /** La portée qu'on règle : celle donnée à l'ouverture, ou celle choisie ici. */
+  protected readonly focus = computed(() => this.data()?.target ?? this.picked());
+  protected readonly choosing = computed(() => this.data()?.target === null);
+  protected readonly choices = computed(() => this.data()?.choices ?? []);
+
+  protected readonly target = computed(() => this.focus()?.target ?? '');
+  protected readonly canWrite = computed(() => this.data()?.canWrite === true);
+  protected readonly current = computed(() => this.focus()?.current ?? null);
+  protected readonly canonicalMillicents = computed(
+    () => this.focus()?.canonicalMillicents ?? null,
   );
-  protected readonly current = computed(() => this.data()?.current ?? null);
+
+  /** Un montant en euros n'a de sens que sur une unité — le formulaire le dit. */
+  protected readonly unitScoped = computed(() => {
+    const type = this.focus()?.scope.type;
+    return type === 'product' || type === 'variant';
+  });
+
+  protected readonly subtitle = computed(() => {
+    const who = this.data()?.clientele === 'public' ? 'pour le public' : 'pour les pros';
+    const where = this.focus() === null ? 'Choisissez une portée' : `Sur ${this.target()}`;
+    return `${where}, ${who}. Le prix ne descendra pas sous ce seuil.`;
+  });
 
   /** L'écart entre l'intention et le tarif du jour, s'il y a lieu de le montrer. */
   protected readonly drift = computed(() => this.current()?.drift ?? null);
@@ -126,7 +128,7 @@ export class FloorPanel {
   /** L'âge en mois pleins : « il y a 8 mois » se lit mieux que « 240 jours ». */
   protected readonly ageLabel = computed(() => {
     const days = this.drift()?.ageDays ?? 0;
-    const months = Math.floor(days / 30);
+    const months = Math.floor(days / DAYS_PER_MONTH);
     return months >= 1 ? `${String(months)} mois` : `${String(days)} jours`;
   });
 
@@ -135,105 +137,39 @@ export class FloorPanel {
    * qu'un remplacement fait sauter, donc c'est celle qu'il faut montrer.
    */
   protected readonly inherited = computed(() => {
-    const data = this.data();
-    if (data === undefined || data.inherited === null) {
+    const focus = this.focus();
+    if (focus === null || focus.inherited === null) {
       return null;
     }
-    return data.inherited.id === data.current?.id ? null : data.inherited;
+    return focus.inherited.id === focus.current?.id ? null : focus.inherited;
   });
 
-  /**
-   * Ce qu'une fraction donnerait **sur cet article** — la seule façon de juger
-   * un pourcentage. « 50 % » ne dit rien tant qu'on ne voit pas 1,00 €.
-   */
-  protected readonly preview = computed(() => {
-    const canonical = this.data()?.canonicalMillicents ?? null;
-    const value = this.amount();
-    if (canonical === null || value === null || this.mode() !== 'percent') {
-      return null;
-    }
-    return formatEuros(Math.round((canonical * value) / 100));
-  });
-
-  /** La limite héritée, mise en forme selon son unité. */
   protected readonly inheritedLabel = computed(() => {
     const heritee = this.inherited();
-    if (heritee === null) {
-      return '';
-    }
-    return heritee.mode === 'percent'
-      ? `${String(heritee.value / 100)} % du tarif`
-      : formatEuros(heritee.value);
+    return heritee === null ? '' : floorLabel(heritee);
   });
 
-  constructor() {
-    // Amorçage **unique**, comme `lfd-price-alteration-field` : réamorcer à
-    // chaque passage remettrait le champ à sa valeur d'origine pendant qu'on est
-    // en train de le retaper.
-    effect(() => {
-      const data = this.data();
-      if (data === undefined || untracked(this.seeded)) {
-        return;
-      }
-      this.seeded.set(true);
-      // Au-delà d'un article, l'unité n'est pas un choix : le panneau s'ouvre
-      // donc directement sur la seule forme qui ait un sens.
-      if (!untracked(this.unitScoped)) {
-        this.mode.set('percent');
-      }
-      if (data.current !== null) {
-        this.mode.set(data.current.mode);
-        this.amount.set(magnitudeFromWire(data.current.value, data.current.mode));
-      }
-    });
-  }
+  protected readonly canSubmit = computed(
+    () => this.canWrite() && this.focus() !== null && this.draft() !== null,
+  );
 
-  protected setMode(mode: PriceMode): void {
-    if (mode === 'amount' && !this.unitScoped()) {
-      return;
-    }
-    this.mode.set(mode);
+  protected pick(choice: ScopeChoice): void {
+    this.picked.set(choice);
   }
-
-  protected setAmount(value: string): void {
-    const parsed = Number.parseFloat(value.replace(',', '.'));
-    this.amount.set(value.trim() === '' || Number.isNaN(parsed) ? null : parsed);
-  }
-
-  protected readonly canSubmit = computed(() => {
-    const value = this.amount();
-    if (value === null || value <= 0) {
-      return false;
-    }
-    // Au-delà de 100 %, ce n'est plus un plancher : ça relèverait TOUS les prix,
-    // y compris ceux qu'aucune règle n'a touchés. Le serveur le refuse aussi ;
-    // le dire ici évite un aller-retour pour une faute évidente.
-    return this.mode() !== 'percent' || value <= 100;
-  });
 
   protected async submit(): Promise<void> {
     const data = this.data();
-    const value = this.amount();
-    if (data === undefined || value === null || !this.canSubmit() || this.saving()) {
+    const focus = this.focus();
+    const draft = this.draft();
+    if (data === undefined || focus === null || draft === null || !this.canSubmit()) {
+      return;
+    }
+    if (this.saving()) {
       return;
     }
     this.saving.set(true);
     try {
-      await this.limits.setFloor({
-        scope: data.scope,
-        clientele: data.clientele,
-        mode: this.mode(),
-        // Points de base si pourcentage, MILLICENTIMES si montant — les deux
-        // facteurs diffèrent. Ils étaient confondus, et une limite « 2,18 € »
-        // se posait à 0,00218 €.
-        value: magnitudeToWire(value, this.mode()),
-        // Le MUR seul. La porte — un plancher plus bas déverrouillé par le
-        // volume — est acceptée par le serveur mais pas encore saisissable ici :
-        // envoyer `null` explicitement plutôt que d'omettre le champ, pour que
-        // re-poser une limite n'efface pas une porte par inadvertance… et pour
-        // que le jour où l'écran la propose, ce soit une décision visible.
-        dynamic: null,
-      });
+      await this.limits.setFloor({ scope: focus.scope, clientele: data.clientele, ...draft });
       this.notify.success('Limite posée.');
       this.ref.close(true);
     } catch (error) {
@@ -245,20 +181,18 @@ export class FloorPanel {
 
   /**
    * **Maintenir** l'intention : la limite ne change pas, sa référence et sa date
-   * repartent d'aujourd'hui.
-   *
-   * C'est ce qui éteint le signal. L'alternative — modifier la limite pour faire
-   * taire le rappel — reviendrait à changer une décision pour de mauvaises
-   * raisons.
+   * repartent d'aujourd'hui. C'est ce qui éteint le signal « à confirmer », sans
+   * changer une décision pour faire taire un rappel.
    */
   protected async confirm(): Promise<void> {
     const data = this.data();
-    if (data === undefined || this.saving()) {
+    const focus = this.focus();
+    if (data === undefined || focus === null || !data.canWrite || this.saving()) {
       return;
     }
     this.saving.set(true);
     try {
-      await this.limits.confirmFloor(data.scope, data.clientele);
+      await this.limits.confirmFloor(focus.scope, data.clientele);
       this.notify.success('Limite confirmée — elle repart pour un tour.');
       this.ref.close(true);
     } catch (error) {
@@ -269,22 +203,23 @@ export class FloorPanel {
   }
 
   /**
-   * **Retirer** ouvre le panneau d'archivage, qui demande pourquoi.
-   *
-   * Rien n'est effacé : la limite est archivée, la portée retombe sur celle dont
-   * elle hérite, et le journal garde qui l'a retirée et pour quelle raison.
+   * **Retirer**, depuis la zone danger du bas, ouvre le panneau d'archivage,
+   * qui demande pourquoi. La zone ne confirme rien elle-même : le motif EST la
+   * confirmation, et deux « êtes-vous sûr ? » d'affilée n'en font pas une
+   * meilleure.
    */
   protected retire(): void {
     const data = this.data();
+    const focus = this.focus();
     const current = this.current();
-    if (data === undefined || current === null) {
+    if (data === undefined || focus === null || !data.canWrite || current === null) {
       return;
     }
     this.panels.open<ArchivePanelData, boolean>(ArchivePanel, {
       data: {
-        subject: { kind: 'floor', scope: data.scope, clientele: data.clientele },
-        target: data.target,
-        summary: `Limite sur ${data.target} — ${floorSentence(current)}`,
+        subject: { kind: 'floor', scope: focus.scope, clientele: data.clientele },
+        target: focus.target,
+        summary: `Limite sur ${focus.target} — ${floorLabel(current)}`,
       },
       width: 'md',
     });
@@ -292,19 +227,15 @@ export class FloorPanel {
 
   /**
    * **Le journal de cette limite** : qui l'a posée, qui l'a confirmée, quand.
-   *
-   * Il REMPLACE ce panneau plutôt que de s'empiler dessus — lire l'histoire
-   * n'est pas une étape de la saisie, et deux panneaux superposés cacheraient
-   * celui qu'on croyait encore ouvert.
+   * Il REMPLACE ce panneau plutôt que de s'empiler dessus.
    */
   protected openJournal(): void {
-    const data = this.data();
     const current = this.current();
-    if (data === undefined || current === null) {
+    if (current === null) {
       return;
     }
     this.panels.open<JournalPanelData, boolean>(JournalPanel, {
-      data: { subjectType: 'floor', subjectId: current.id, target: data.target },
+      data: { subjectType: 'floor', subjectId: current.id, target: this.target() },
       width: 'md',
     });
   }
@@ -312,11 +243,4 @@ export class FloorPanel {
   protected cancel(): void {
     this.ref.close();
   }
-}
-
-/** La limite en une phrase, pour que le panneau d'archivage dise ce qu'il range. */
-function floorSentence(floor: PriceFloorView): string {
-  return floor.mode === 'amount'
-    ? formatEuros(floor.value)
-    : `${String(floor.value / 100).replace('.', ',')} % du tarif`;
 }

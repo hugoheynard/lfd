@@ -1,11 +1,10 @@
-<fold-panel-header
-  title="Limite de prix"
-  [subtitle]="
-    'Sur ' + target() + ', ' + clienteleLabel() + '. Le prix ne descendra pas sous ce seuil.'
-  "
-/>
+<fold-panel-header title="Limite de prix" [subtitle]="subtitle()" />
 
 <div class="body">
+  @if (choosing()) {
+    <app-scope-picker [choices]="choices()" (picked)="pick($event)" />
+  }
+
   @if (inherited() !== null) {
     <!--
       Le point qui surprend : une limite d'article REMPLACE celle de sa famille,
@@ -35,7 +34,7 @@
         {{ euros(ecart.currentCanonicalMillicents) }}
         aujourd'hui.
       </p>
-      @if (ecart.stale) {
+      @if (ecart.stale && canWrite()) {
         <p class="drift-ask">
           Cette limite reflète-t-elle encore ce que vous voulez ? Ajustez-la, ou
           <strong>confirmez-la</strong> — elle repartira pour un tour.
@@ -54,93 +53,56 @@
     </div>
   }
 
-  <div class="mode">
-    <span class="mode-label">Exprimée en</span>
-    @if (unitScoped()) {
-      <div class="mode-choices" role="group" aria-label="Unité de la limite">
-        <button
-          type="button"
-          class="mode-choice"
-          [class.is-on]="mode() === 'amount'"
-          [attr.aria-pressed]="mode() === 'amount'"
-          (click)="setMode('amount')"
-        >
-          € — un montant
-        </button>
-        <button
-          type="button"
-          class="mode-choice"
-          [class.is-on]="mode() === 'percent'"
-          [attr.aria-pressed]="mode() === 'percent'"
-          (click)="setMode('percent')"
-        >
-          % — du tarif
-        </button>
-      </div>
-      <p class="mode-hint">
-        @if (mode() === 'percent') {
-          Une fraction <strong>suit</strong> le tarif : si le PIM augmente, la limite monte avec
-          lui.
-        } @else {
-          Un montant est une limite <strong>absolue</strong> — pour un coût fixe connu, qu'un
-          pourcentage n'exprimerait pas.
-        }
-      </p>
-    } @else {
-      <!--
-        Pas de choix ici, et la raison est écrite : un montant unique sur une
-        portée large laisserait passer les articles chers et relèverait les
-        articles bon marché. Offrir le choix pour le refuser ensuite serait la
-        façon la plus sûre de faire saisir deux fois la même chose.
-      -->
-      <p class="mode-hint">
-        <strong>En pourcentage du tarif</strong>, forcément : au-delà d'un article, un montant
-        unique relèverait les prix bas et laisserait passer les prix élevés. Une fraction, elle,
-        suit chaque article à son échelle.
-      </p>
-    }
-  </div>
-
-  <fold-input
-    [label]="mode() === 'percent' ? 'Limite (% du tarif)' : 'Limite (€ HT)'"
-    inputmode="decimal"
-    [placeholder]="mode() === 'percent' ? '50' : '1,20'"
-    [value]="amount() === null ? '' : amount()!.toString()"
-    (valueChange)="setAmount($event)"
-  />
-
-  @if (preview(); as apercu) {
-    <p class="preview">
-      Sur cet article, ça fait <strong>{{ apercu }}</strong
-      >.
-    </p>
-  }
-
-  @if (mode() === 'percent' && (amount() ?? 0) > 100) {
-    <p class="warn">
-      Au-delà de 100 %, ce n'est plus une limite : elle <strong>relèverait</strong> tous les prix, y
-      compris ceux qu'aucune règle n'a touchés.
-    </p>
+  @if (focus() !== null) {
+    <app-floor-value-form
+      [unitScoped]="unitScoped()"
+      [disabled]="!canWrite()"
+      [initial]="current()"
+      [canonicalMillicents]="canonicalMillicents()"
+      (draftChange)="draft.set($event)"
+    />
   }
 
   <p class="when">
     La limite s'applique <strong>en fin de chaîne</strong>, une fois tous les étages passés. Quand
     elle mord, l'écran le dit sur le prix final.
   </p>
+
+  @if (current() !== null && canWrite()) {
+    <!-- Le motif de l'app : une zone danger en bas du panneau. Sans action
+         propre — le bouton ouvre le panneau d'archivage, qui demande pourquoi. -->
+    <fold-danger-zone appearance="section" title="Retirer cette limite">
+      <p>
+        La limite est archivée, pas effacée : la portée retombe sur celle dont elle hérite, et le
+        journal garde qui l'a retirée et pourquoi.
+      </p>
+      <button
+        foldButton
+        size="sm"
+        emphasis="outline"
+        intent="danger"
+        [disabled]="saving()"
+        (click)="retire()"
+      >
+        Retirer la limite
+      </button>
+    </fold-danger-zone>
+  }
 </div>
 
 <footer class="foot">
   @if (current() !== null) {
-    <button foldButton emphasis="outline" intent="danger" [disabled]="saving()" (click)="retire()">
-      Retirer
-    </button>
     <!-- L'histoire se lit LÀ où la décision se modifie : « qui a posé ça, et
          quand » ne devrait pas demander d'ouvrir un autre écran. -->
     <button foldButton emphasis="soft" intent="neutral" (click)="openJournal()">Journal</button>
   }
   <span class="spacer"></span>
-  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
-  <button foldButton intent="primary" [disabled]="!canSubmit() || saving()" (click)="submit()">
-    {{ current() === null ? 'Poser la limite' : 'Enregistrer' }}
-  </button>
+  @if (canWrite()) {
+    <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+    <button foldButton intent="primary" [disabled]="!canSubmit() || saving()" (click)="submit()">
+      {{ current() === null ? 'Poser la limite' : 'Enregistrer' }}
+    </button>
+  } @else {
+    <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Fermer</button>
+  }
 </footer>

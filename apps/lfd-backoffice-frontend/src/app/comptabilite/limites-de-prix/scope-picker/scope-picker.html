@@ -1,0 +1,14 @@
+<fold-search
+  size="sm"
+  placeholder="Nom ou référence d'article…"
+  ariaLabel="Chercher un article"
+  [resultCount]="articleCount()"
+  [(value)]="query"
+/>
+<fold-listbox
+  label="Portée"
+  placeholder="Catalogue, famille ou article"
+  [options]="options()"
+  [value]="chosen()"
+  (selectionChange)="pick($event)"
+/>

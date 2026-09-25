@@ -1,0 +1,32 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg);
+}
+
+.refusals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding-left: var(--fold-space-lg);
+  font-size: var(--fold-text-sm, 0.875rem);
+}
+
+.ref {
+  font-family: var(--fold-font-mono);
+  color: var(--fold-color-text-muted);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.spacer {
+  flex: 1;
+}

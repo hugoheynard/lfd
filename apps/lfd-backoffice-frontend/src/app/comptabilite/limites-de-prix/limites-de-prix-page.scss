@@ -1,4 +1,4 @@
-/* Le segmenté, la portée et le geste sur une ligne, à leur largeur naturelle. */
+/* Le segmenté, le filtre et la sélection sur une ligne, à leur largeur naturelle. */
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -6,7 +6,16 @@
   gap: var(--fold-space-md);
 }
 
-.scope {
+.selection,
+.tally,
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.stack {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-xs);
@@ -18,18 +27,15 @@
   font-variant-numeric: tabular-nums;
 }
 
-.muted {
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.ref {
+  font-family: var(--fold-font-mono);
   color: var(--fold-color-text-muted);
 }
 
-/* « À confirmer » : la limite a vieilli, le tarif a bougé sous elle. */
-.stale {
-  font-weight: var(--fold-weight-semibold);
-  color: var(--fold-color-warning-text, var(--fold-color-text));
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-sm);
+.muted {
+  color: var(--fold-color-text-muted);
 }

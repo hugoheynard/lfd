@@ -4,6 +4,7 @@ import type {
   ElasticityComparison,
   ItemElasticityView,
   PriceFloorView,
+  DynamicFloorPayload,
   PriceMode,
   PriceRuleView,
   PriceScopePayload,
@@ -140,10 +141,11 @@ export function floorLabel(floor: PriceFloorView): string {
  * toutes deux.
  */
 export function dynamicFloorLabel(floor: PriceFloorView): string | null {
-  const door = floor.dynamic;
-  if (door === null) {
-    return null;
-  }
+  return floor.dynamic === null ? null : doorLabel(floor.dynamic);
+}
+
+/** La porte seule, en clair — avec SON unité, qui peut différer de celle du mur. */
+export function doorLabel(door: DynamicFloorPayload): string {
   const conditions: string[] = [];
   if (door.unlock.minQuantity !== null) {
     conditions.push(`dès ${String(door.unlock.minQuantity)} u.`);

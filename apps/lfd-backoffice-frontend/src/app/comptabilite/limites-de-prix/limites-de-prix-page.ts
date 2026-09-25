@@ -1,11 +1,8 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type {
-  FloorClientele,
-  PriceFloorView,
-  PriceScopePayload,
-  PricingBoardView,
-} from '@lfd/contracts';
+import type { FloorClientele, PriceFloorView, PricingBoardView } from '@lfd/contracts';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
@@ -16,75 +13,69 @@ import {
   FoldListboxComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
+  FoldPageSectionComponent,
   FoldPanelHostService,
   FoldViewToggleComponent,
-  type FoldSelectOptionGroup,
-  type FoldTableColumn,
-  type FoldViewToggleOption,
 } from 'fold-ng';
 
+import { formatEuros } from '@lfd/catalog-ui';
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import {
-  ArchivePanel,
-  type ArchivePanelData,
-} from '../../b2b/tarification/archive-panel/archive-panel';
-import { dynamicFloorLabel, floorLabel } from '../../b2b/tarification/pricing-format';
 import { TarificationService } from '../../b2b/tarification/tarification.service';
 import { PriceLimitsService } from '../price-limits.service';
+import {
+  BulkFloorPanel,
+  type BulkArticle,
+  type BulkFloorPanelData,
+} from './bulk-floor-panel/bulk-floor-panel';
 import { FloorPanel, type FloorPanelData } from './floor-panel/floor-panel';
-
-const CLIENTELES: readonly FoldViewToggleOption[] = [
-  { value: 'pro', label: 'Pro' },
-  { value: 'public', label: 'Public' },
-];
-
-const BASE_COLUMNS: readonly FoldTableColumn[] = [
-  { key: 'scope', label: 'Portée' },
-  { key: 'value', label: 'Limite' },
-  { key: 'door', label: 'Porte dynamique' },
-  { key: 'state', label: 'État' },
-];
-
-/** L'ordre de lecture : ce dont tout hérite, puis les familles, puis les articles. */
-const SCOPE_ORDER: Readonly<Record<PriceScopePayload['type'], number>> = {
-  global: 0,
-  category: 1,
-  product: 2,
-  variant: 3,
-};
-
-const GLOBAL_KEY = 'global:';
-
-/** Ce que l'écran sait d'une cible : son nom, et d'où elle hérite. */
-interface ScopeTarget {
-  readonly scope: PriceScopePayload;
-  readonly name: string;
-  /** La portée dont elle hérite quand elle n'a pas de limite à elle. */
-  readonly parentKey: string | null;
-  readonly canonicalMillicents: number | null;
-}
+import {
+  limitCoverage,
+  matchesFilter,
+  type ArticleLimitRow,
+  type CoverageFilter,
+  type LimitShelf,
+  type ScopeLimitRow,
+} from './limit-coverage';
+import {
+  appliedLabel,
+  ARTICLE_COLUMNS,
+  CLIENTELES,
+  doorOf,
+  FILTERS,
+  isStale,
+  SCOPE_COLUMNS,
+  sourceLabel,
+  type LimitRow,
+} from './limit-cells';
+import { scopeChoices, targetOf } from './scope-choices';
 
 /**
  * **Comptabilité › Limites de prix** — sous quel prix on ne descend pas, pour
- * les pros et pour le public.
+ * les pros et pour le public, article par article.
  *
- * La colonne « Limites » de la Tarification B2B, déménagée : les limites
- * relèvent de `lfc_price_limits`, que le commercial n'a pas
- * (`documentation/comptabilite/plan-limites-de-prix.md` §6). Les dialogues sont
- * ceux qu'il utilisait — le panneau de limite, venu avec la vue, et le panneau
- * d'archivage, resté à la Tarification parce que les règles s'en servent.
+ * Une table de TOUS les articles, rangée par famille comme la Tarification, et
+ * pas la seule liste des limites posées : ce qui compte ici est ce qui n'est
+ * PAS couvert. Une entreprise structurée a des limites partout — c'est ce qui
+ * garde la marge (Hugo, 2026-09-25) —, d'où deux pastilles : « Sans limite »
+ * et « Limite du catalogue seulement ».
  *
- * **Les noms viennent du tableau tarifaire.** `PriceLimitsView` ne porte que
- * des portées ; le tableau (`b2b_pricing:read`) nomme les familles et les
- * articles, et dit de quelle famille un article hérite. S'il manque, la vue
- * reste lisible sur les identifiants, et la pose se borne au catalogue.
+ * La structure vient du tableau tarifaire (`GET /admin/pricing`), les limites
+ * de la liste de la clientèle (`GET /admin/pricing/floors?clientele=`), et
+ * l'héritage se calcule par portée (`limit-coverage.ts`) — pour le pro comme
+ * pour le public, avec le même code.
+ *
+ * Une ligne ouvre le panneau de SA portée. Sans `lfc_price_limits:write`, il
+ * s'ouvre en lecture, et ni création ni sélection ne s'affichent.
+ * Plan : `documentation/comptabilite/plan-limites-de-prix.md` §6.
  */
 @Component({
   selector: 'app-limites-de-prix-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NgTemplateOutlet,
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -95,6 +86,7 @@ interface ScopeTarget {
     FoldListboxComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    FoldPageSectionComponent,
     FoldViewToggleComponent,
   ],
   templateUrl: './limites-de-prix-page.html',
@@ -107,105 +99,84 @@ export class LimitesDePrixPage {
   private readonly permissions = inject(PermissionsStore);
 
   protected readonly clienteles = CLIENTELES;
-  protected readonly clientele = signal<FloorClientele>('pro');
+  protected readonly filters = FILTERS;
+  protected readonly scopeColumns = SCOPE_COLUMNS;
+  protected readonly articleColumns = ARTICLE_COLUMNS;
 
+  protected readonly clientele = signal<FloorClientele>('pro');
+  protected readonly filter = signal<CoverageFilter>('all');
   protected readonly floors = signal<readonly PriceFloorView[]>([]);
   protected readonly board = signal<PricingBoardView | null>(null);
   protected readonly loading = signal(true);
-  /** L'échec de la LECTURE — rien à montrer. */
   protected readonly loadError = signal<string | null>(null);
-  /** L'échec d'un GESTE — la liste reste à l'écran. */
-  protected readonly actionError = signal<string | null>(null);
-  /** Le tableau tarifaire n'a pas pu être lu : les noms manquent, pas les limites. */
-  protected readonly boardError = signal<string | null>(null);
+  /** Les articles cochés, par référence — toutes familles confondues. */
+  protected readonly selected = signal<ReadonlySet<string>>(new Set());
 
-  /** La portée choisie pour une pose — une clé `type:id`. */
-  protected readonly chosenScope = signal<string>(GLOBAL_KEY);
+  protected readonly euros = formatEuros;
 
-  protected readonly floorLabel = floorLabel;
-  protected readonly dynamicFloorLabel = dynamicFloorLabel;
-
-  /** Les gestes demandent `lfc_price_limits:write` ; sans lui, la liste se lit seulement. */
+  /** Les gestes demandent `lfc_price_limits:write` ; sans lui, tout se lit seulement. */
   protected readonly canWrite = computed(() => this.permissions.can('lfc_price_limits:write'));
 
-  protected readonly columns = computed<readonly FoldTableColumn[]>(() =>
-    this.canWrite() ? [...BASE_COLUMNS, { key: 'actions', label: '' }] : BASE_COLUMNS,
-  );
-
-  /** Global, puis familles, puis articles — l'ordre de l'héritage. */
-  protected readonly sorted = computed(() =>
-    [...this.floors()].sort((a, b) => SCOPE_ORDER[a.scope.type] - SCOPE_ORDER[b.scope.type]),
-  );
-
-  /** Toutes les cibles connues, par clé — le catalogue, les familles, les articles. */
-  private readonly targets = computed(() => {
-    const byKey = new Map<string, ScopeTarget>();
-    byKey.set(GLOBAL_KEY, {
-      scope: { type: 'global', id: null },
-      name: 'Tout le catalogue',
-      parentKey: null,
-      canonicalMillicents: null,
-    });
-    for (const category of this.board()?.categories ?? []) {
-      const categoryScope: PriceScopePayload = { type: 'category', id: category.id };
-      byKey.set(scopeKey(categoryScope), {
-        scope: categoryScope,
-        name: category.name,
-        parentKey: GLOBAL_KEY,
-        canonicalMillicents: null,
-      });
-      for (const item of category.items) {
-        const itemScope: PriceScopePayload = { type: 'product', id: item.sku };
-        byKey.set(scopeKey(itemScope), {
-          scope: itemScope,
-          name: item.name,
-          parentKey: scopeKey(categoryScope),
-          canonicalMillicents: item.canonicalMillicents,
-        });
-      }
-    }
-    return byKey;
+  protected readonly coverage = computed(() => {
+    const board = this.board();
+    return board === null ? null : limitCoverage(board, this.floors());
   });
 
-  /** Le choix de la portée à poser, groupé comme le catalogue. */
-  protected readonly scopeOptions = computed(() => {
-    const groups: FoldSelectOptionGroup<string>[] = [
-      { label: 'Catalogue', options: [{ value: GLOBAL_KEY, label: 'Tout le catalogue' }] },
-    ];
-    for (const category of this.board()?.categories ?? []) {
-      groups.push({
-        label: category.name,
-        options: [
-          {
-            value: scopeKey({ type: 'category', id: category.id }),
-            label: `Famille ${category.name}`,
-          },
-          ...category.items.map((item) => ({
-            value: scopeKey({ type: 'product', id: item.sku }),
-            label: `${item.name} · ${item.sku}`,
-          })),
-        ],
-      });
-    }
-    return groups;
+  /** Le catalogue, puis chaque famille — les lignes des portées larges. */
+  protected readonly scopeRows = computed<readonly ScopeLimitRow[]>(() => {
+    const coverage = this.coverage();
+    return coverage === null
+      ? []
+      : [coverage.catalogue, ...coverage.shelves.map((shelf) => shelf.family)];
   });
 
-  protected readonly rowKey = (floor: PriceFloorView): string => floor.id;
+  private readonly allArticles = computed(() =>
+    (this.coverage()?.shelves ?? []).flatMap((shelf) => shelf.articles),
+  );
+
+  protected readonly uncoveredCount = computed(
+    () => this.allArticles().filter((row) => row.coverage === 'none').length,
+  );
+  protected readonly globalOnlyCount = computed(
+    () => this.allArticles().filter((row) => row.coverage === 'global-only').length,
+  );
+
+  /** Les rayons sous le filtre ; un rayon vide disparaît. */
+  protected readonly visibleShelves = computed<readonly LimitShelf[]>(() =>
+    (this.coverage()?.shelves ?? [])
+      .map((shelf) => ({
+        family: shelf.family,
+        articles: shelf.articles.filter((row) => matchesFilter(row, this.filter())),
+      }))
+      .filter((shelf) => shelf.articles.length > 0),
+  );
+
+  protected readonly filteredCount = computed(() =>
+    this.visibleShelves().reduce((sum, shelf) => sum + shelf.articles.length, 0),
+  );
+
+  protected readonly rowKey = (row: LimitRow): string => row.key;
+  protected readonly articleKey = (row: ArticleLimitRow): string => row.sku;
+  protected readonly selectionLabel = (row: ArticleLimitRow): string => row.name;
 
   constructor() {
     void this.load();
-    void this.loadBoard();
   }
 
   protected async load(): Promise<void> {
     this.loading.set(true);
     this.loadError.set(null);
+    const clientele = this.clientele();
     try {
-      const view = await this.limits.list(this.clientele());
+      const [view, board] = await Promise.all([
+        this.limits.list(clientele),
+        this.tarification.read(),
+      ]);
       // La clientèle RENDUE fait foi : une réponse lente d'avant la bascule ne
       // doit pas s'afficher sous l'autre segment.
       if (view.clientele === this.clientele()) {
         this.floors.set(view.floors);
+        this.board.set(board);
       }
     } catch (caught) {
       this.loadError.set(httpErrorMessage(caught, 'Les limites sont illisibles.'));
@@ -221,76 +192,96 @@ export class LimitesDePrixPage {
     }
     this.clientele.set(next);
     this.floors.set([]);
+    this.selected.set(new Set());
     void this.load();
   }
 
-  // Le contexte d'un `foldCell` n'est pas typé : on entre par des méthodes qui
-  // rendent la ligne typée.
-  protected targetOf(floor: PriceFloorView): string {
-    return this.targets().get(scopeKey(floor.scope))?.name ?? floor.scope.id ?? 'Tout le catalogue';
+  protected setFilter(value: CoverageFilter): void {
+    this.filter.set(value);
   }
 
-  protected scopeKindOf(floor: PriceFloorView): string {
-    return SCOPE_KIND_LABELS[floor.scope.type];
+  // --- Sélection -----------------------------------------------------------
+
+  protected selectedIn(shelf: LimitShelf): ReadonlySet<string> {
+    const all = this.selected();
+    return new Set(shelf.articles.map((row) => row.sku).filter((sku) => all.has(sku)));
   }
 
-  protected doorOf(floor: PriceFloorView): string | null {
-    return dynamicFloorLabel(floor);
-  }
-
-  protected isStale(floor: PriceFloorView): boolean {
-    return floor.drift?.stale === true;
-  }
-
-  /** Poser sur la portée choisie — ou la modifier, si elle en porte déjà une. */
-  protected pose(): void {
-    const target = this.targets().get(this.chosenScope());
-    if (target !== undefined) {
-      void this.openFloor(target.scope);
+  /** Le tableau d'un rayon rend SA sélection : on la recoud dans celle de la page. */
+  protected onSelect(shelf: LimitShelf, next: ReadonlySet<string | number>): void {
+    const merged = new Set(this.selected());
+    for (const row of shelf.articles) {
+      if (next.has(row.sku)) {
+        merged.add(row.sku);
+      } else {
+        merged.delete(row.sku);
+      }
     }
+    this.selected.set(merged);
   }
 
-  protected edit(floor: PriceFloorView): void {
-    void this.openFloor(floor.scope);
-  }
-
-  protected async confirm(floor: PriceFloorView): Promise<void> {
-    this.actionError.set(null);
-    try {
-      await this.limits.confirmFloor(floor.scope, this.clientele());
-      await this.load();
-    } catch (caught) {
-      this.actionError.set(httpErrorMessage(caught, "La limite n'a pas pu être confirmée."));
+  protected selectFiltered(): void {
+    const merged = new Set(this.selected());
+    for (const shelf of this.visibleShelves()) {
+      shelf.articles.forEach((row) => merged.add(row.sku));
     }
+    this.selected.set(merged);
   }
 
-  protected async retire(floor: PriceFloorView): Promise<void> {
-    const target = this.targetOf(floor);
-    const data: ArchivePanelData = {
-      subject: { kind: 'floor', scope: floor.scope, clientele: this.clientele() },
-      target,
-      summary: `Limite sur ${target} — ${floorLabel(floor)}`,
-    };
-    const done = await this.panels.open<ArchivePanelData, boolean>(ArchivePanel, {
-      data,
+  protected clearSelection(): void {
+    this.selected.set(new Set());
+  }
+
+  protected readonly appliedLabel = appliedLabel;
+  protected readonly sourceLabel = sourceLabel;
+  protected readonly doorOf = doorOf;
+  protected readonly isStale = isStale;
+
+  protected coverageOf(row: ArticleLimitRow): ArticleLimitRow['coverage'] {
+    return row.coverage;
+  }
+
+  // --- Gestes ----------------------------------------------------------------
+
+  /** Une ligne ouvre le panneau de SA portée : poser si rien n'y est, modifier sinon. */
+  protected open(row: LimitRow): void {
+    void this.openPanel({
+      clientele: this.clientele(),
+      canWrite: this.canWrite(),
+      target: targetOf(row),
+      choices: [],
+    });
+  }
+
+  /** « Créer une limite » : le panneau vide, la portée se choisit dedans. */
+  protected create(): void {
+    void this.openPanel({
+      clientele: this.clientele(),
+      canWrite: this.canWrite(),
+      target: null,
+      choices: scopeChoices(this.coverage()),
+    });
+  }
+
+  protected async openBulk(): Promise<void> {
+    const chosen = this.selected();
+    const articles: BulkArticle[] = this.allArticles()
+      .filter((row) => chosen.has(row.sku))
+      .map((row) => ({ sku: row.sku, name: row.name, hasOwn: row.own !== null }));
+    if (articles.length === 0) {
+      return;
+    }
+    const done = await this.panels.open<BulkFloorPanelData, boolean>(BulkFloorPanel, {
+      data: { clientele: this.clientele(), articles },
       width: 'md',
     }).closed;
     if (done === true) {
+      this.selected.set(new Set());
       await this.load();
     }
   }
 
-  private async openFloor(scope: PriceScopePayload): Promise<void> {
-    const key = scopeKey(scope);
-    const target = this.targets().get(key);
-    const data: FloorPanelData = {
-      scope,
-      clientele: this.clientele(),
-      target: target?.name ?? scope.id ?? 'tout le catalogue',
-      current: this.floorAt(key),
-      inherited: this.inheritedAt(key),
-      canonicalMillicents: target?.canonicalMillicents ?? null,
-    };
+  private async openPanel(data: FloorPanelData): Promise<void> {
     const done = await this.panels.open<FloorPanelData | undefined, boolean>(FloorPanel, {
       data,
       width: 'md',
@@ -299,46 +290,4 @@ export class LimitesDePrixPage {
       await this.load();
     }
   }
-
-  private floorAt(key: string): PriceFloorView | null {
-    return this.floors().find((floor) => scopeKey(floor.scope) === key) ?? null;
-  }
-
-  /** Celle qui s'applique aujourd'hui : la sienne, ou la première en remontant. */
-  private inheritedAt(key: string): PriceFloorView | null {
-    let cursor: string | null = key;
-    while (cursor !== null) {
-      const found = this.floorAt(cursor);
-      if (found !== null) {
-        return found;
-      }
-      cursor = this.targets().get(cursor)?.parentKey ?? null;
-    }
-    return null;
-  }
-
-  /**
-   * Le tableau ne sert qu'à NOMMER. Son absence n'empêche rien de lire : la
-   * liste s'affiche sur les identifiants, et la pose se borne au catalogue.
-   */
-  private async loadBoard(): Promise<void> {
-    try {
-      this.board.set(await this.tarification.read());
-    } catch (caught) {
-      this.boardError.set(
-        httpErrorMessage(caught, 'Les noms des familles et des articles sont illisibles.'),
-      );
-    }
-  }
-}
-
-const SCOPE_KIND_LABELS: Readonly<Record<PriceScopePayload['type'], string>> = {
-  global: 'Catalogue',
-  category: 'Famille',
-  product: 'Article',
-  variant: 'Déclinaison',
-};
-
-function scopeKey(scope: PriceScopePayload): string {
-  return `${scope.type}:${scope.id ?? ''}`;
 }
