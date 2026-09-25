@@ -241,9 +241,28 @@
   background: var(--lfc-ink-800);
 }
 
-/* « Contenir » : l'image entière, sur le fond de la carte (détourés). */
+/* « Contenir » : l'image entière, à sa taille réelle, centrée avec une marge
+   et des coins arrondis — collée aux bords, elle faisait une image mal
+   découpée (vu le 2026-09-25, même règle que la carte d'info). */
+.contain .photo {
+  position: relative;
+}
+
 .contain .photo img {
-  object-fit: contain;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: auto;
+  height: auto;
+  max-width: calc(100% - 2 * var(--fold-space-md));
+  max-height: calc(100% - 2 * var(--fold-space-md));
+  /* Avant son chargement, une image sans taille fait 0 × 0 : le chargement
+     différé ne la juge jamais visible. */
+  min-width: 25%;
+  min-height: 25%;
+  border-radius: var(--fold-radius-md);
+  translate: -50% -50%;
+  filter: drop-shadow(0 4px 10px color-mix(in srgb, var(--lfc-soot-950) 22%, transparent));
 }
 
 /* « Plein » : la photo sous tout l'objet, le texte dessus avec un voile. */

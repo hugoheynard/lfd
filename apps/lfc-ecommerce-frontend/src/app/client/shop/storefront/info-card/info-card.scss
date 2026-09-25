@@ -63,8 +63,32 @@
   object-fit: cover;
 }
 
+/* « Contenir » : l'image ENTIÈRE, à sa taille réelle, centrée dans sa case
+   avec une marge et des coins arrondis — une photo posée sur la carte.
+   Collée aux bords en `object-fit`, elle faisait une image mal découpée :
+   calée en haut (une hauteur en % ne se résout pas contre le `min-height` du
+   bureau), des arêtes vives, et un fond de photo sans contour (vu le
+   2026-09-25). En absolu, ses `max-*` se résolvent contre la case posée ;
+   l'ombre en `drop-shadow` suit la silhouette, un détouré compris. */
+:host(.contain) .media {
+  position: relative;
+}
+
 :host(.contain) .art {
-  object-fit: contain;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: auto;
+  height: auto;
+  max-width: calc(100% - 2 * var(--fold-space-lg));
+  max-height: calc(100% - 2 * var(--fold-space-lg));
+  /* Avant son chargement, une image sans taille fait 0 × 0 : le chargement
+     différé ne la juge jamais visible. */
+  min-width: 25%;
+  min-height: 25%;
+  border-radius: var(--fold-radius-md);
+  translate: -50% -50%;
+  filter: drop-shadow(0 8px 18px color-mix(in srgb, var(--lfc-soot-950) 30%, transparent));
 }
 
 /* La bande simple garde une photo basse en pile (16/9, la maquette mobile). */
