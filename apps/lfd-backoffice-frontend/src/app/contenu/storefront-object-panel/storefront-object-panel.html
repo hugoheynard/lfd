@@ -62,6 +62,17 @@
         [value]="selectedScope()"
         (valueChange)="onScopeChange($event)"
       />
+      @for (option of excludedShelves(); track option.key) {
+        <span class="caption">
+          Sauf « {{ option.label }} » : une annonce ne paraît pas dans le rayon qu’elle annonce.
+        </span>
+      }
+      @if (hiddenHere()) {
+        <fold-badge
+          variant="warning"
+          content="Ce rayon est celui qu’il annonce : la boutique ne l’y montre pas."
+        />
+      }
       @if (selectedScope() === 'some') {
         @for (option of shelves(); track option.key) {
           <fold-checkbox

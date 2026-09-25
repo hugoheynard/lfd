@@ -96,13 +96,14 @@ async function read(
   contents: PublicStorefrontContent[],
   operations: ShownByAudience,
   companyId: string | null = null,
+  shelfKey = "all",
 ): Promise<readonly PublicStorefrontContent[]> {
   const handler = new GetPublicStorefrontPageHandler(
     new FixedPage({ rows: 2, objects: [object(contents)] }),
     operations,
     NOW,
   );
-  const page = await handler.execute(new GetPublicStorefrontPageQuery("all", companyId));
+  const page = await handler.execute(new GetPublicStorefrontPageQuery(shelfKey, companyId));
   return page.objects[0]?.contents ?? [];
 }
 
@@ -180,5 +181,39 @@ describe("GetPublicStorefrontPageHandler — les annonces d'opération (D11)", (
     );
 
     expect(content).toMatchObject({ image: { url: "https://cdn.example/x.jpg", alt: null } });
+  });
+
+  /** Régression : la tuile Noël paraissait dans le rayon de Noël, qu'elle annonce (2026-09-25). */
+  it("n'annonce pas une opération dans son propre rayon, et garde le reste", async () => {
+    const contents = await read(
+      [LINKED, PLAIN],
+      new ShownByAudience({ public: [NOEL] }),
+      null,
+      "op:noel-2026",
+    );
+
+    expect(contents).toEqual([{ ...PLAIN, operation: null }]);
+  });
+
+  it("omet aussi l'annonce qui ouvre le rayon de l'opération qu'on sert", async () => {
+    const opening: PublicStorefrontContent = {
+      ...PLAIN,
+      linkShelfKey: "op:noel-2026",
+      action: "shelf",
+    };
+    const contents = await read([opening], new ShownByAudience({}), null, "op:noel-2026");
+
+    expect(contents).toEqual([]);
+  });
+
+  it("montre l'annonce d'une AUTRE opération dans un rayon d'opération", async () => {
+    const contents = await read(
+      [LINKED],
+      new ShownByAudience({ public: [NOEL] }),
+      null,
+      "op:paques-2027",
+    );
+
+    expect(contents).toHaveLength(1);
   });
 });

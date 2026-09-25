@@ -8,6 +8,7 @@ import {
   output,
 } from '@angular/core';
 import {
+  FoldBadgeComponent,
   FoldCheckboxComponent,
   FoldListboxComponent,
   FoldNumberInputComponent,
@@ -42,6 +43,7 @@ import {
 
 import { type EditorBlock, itemsOf, toneOf } from '../storefront-block';
 import type { ShelfOption, StorefrontCatalog } from '../storefront-catalog';
+import { announcedShelvesOf } from '../storefront-operation-shelves';
 import { StorefrontContentsEditor } from '../storefront-contents-editor/storefront-contents-editor';
 
 const SIDE_LABELS: Readonly<Record<MediaSide, string>> = {
@@ -117,6 +119,7 @@ function isScope(value: string): value is ShelfScope {
 @Component({
   selector: 'app-storefront-object-panel',
   imports: [
+    FoldBadgeComponent,
     FoldCheckboxComponent,
     FoldElementTitleComponent,
     FoldListboxComponent,
@@ -202,6 +205,17 @@ export class StorefrontObjectPanel {
   });
 
   private readonly allShelfKeys = computed(() => this.shelves().map((shelf) => shelf.key));
+
+  /** Les rayons d'opération que l'objet annonce : la boutique ne l'y montre pas. */
+  protected readonly excludedShelves = computed(() => {
+    const announced = announcedShelvesOf(itemsOf(this.block()));
+    return this.shelves().filter((option) => announced.includes(option.key));
+  });
+
+  /** On compose la page même du rayon qu'il annonce : il n'y paraîtra pas. */
+  protected readonly hiddenHere = computed(() =>
+    this.excludedShelves().some((option) => option.key === this.shelf()),
+  );
 
   protected onFitChange(value: string): void {
     if (isFit(value)) {

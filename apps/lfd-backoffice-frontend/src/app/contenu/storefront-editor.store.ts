@@ -44,6 +44,7 @@ import {
   setShelvesAcross,
 } from './storefront-placement';
 import type { StorefrontObjectHost } from './storefront-object-host';
+import { announcedShelvesOf } from './storefront-operation-shelves';
 import { reshape } from './storefront-reshape';
 import {
   createTemplate,
@@ -305,8 +306,50 @@ export class StorefrontEditorStore implements StorefrontObjectHost {
     this.updateSelected((blocks, id) => setContents(blocks, id, value));
   }
 
+  /**
+   * Un objet qui SE MET à annoncer une opération s'étend par défaut à tous les
+   * rayons où sa place est libre — la boutique l'omet d'elle-même dans le rayon
+   * qu'il annonce (Hugo, 2026-09-25). Seulement s'il était sur le seul rayon
+   * édité : une sélection faite à la main n'est pas écrasée. Les rayons où la
+   * place est prise sont nommés.
+   */
   setSelectedItems(items: readonly StorefrontContent[]): void {
+    const before = this.selected();
     this.updateSelected((blocks, id) => setItems(blocks, id, items));
+    const startsAnnouncing =
+      before !== null &&
+      announcedShelvesOf(itemsOf(before)).length === 0 &&
+      announcedShelvesOf(items).length > 0 &&
+      before.shelves.length === 1 &&
+      before.shelves[0] === this.shelf();
+    if (startsAnnouncing) {
+      this.spreadEverywhere(before.id);
+    }
+  }
+
+  /** Ajoute l'objet à chaque rayon, un par un, là où il tient. */
+  private spreadEverywhere(id: string): void {
+    const skipped: string[] = [];
+    for (const option of this.shelves()) {
+      const current = this.blocks().find((block) => block.id === id);
+      if (current === undefined || current.shelves.includes(option.key)) {
+        continue;
+      }
+      const result = setShelvesAcross(this.blocks(), this.rowsOf, id, [
+        ...current.shelves,
+        option.key,
+      ]);
+      if (result.ok) {
+        this.blocks.set(result.blocks);
+      } else {
+        skipped.push(option.label);
+      }
+    }
+    this.notice.set(
+      skipped.length === 0
+        ? null
+        : `Étendu à tous les rayons, sauf ${skipped.map((label) => `« ${label} »`).join(', ')} : la place y est prise.`,
+    );
   }
 
   /** Une valeur hors bornes est refusée et dite ; le réglage précédent reste. */

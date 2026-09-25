@@ -32,6 +32,6 @@ export class GetPublicStorefrontPageHandler implements IQueryHandler<
     const shown = hasOperationAnnouncements(page)
       ? await this.operations.shownTo(audience, this.clock.now())
       : new Map();
-    return resolveOperationAnnouncements(page, shown);
+    return resolveOperationAnnouncements(page, shown, query.shelfKey);
   }
 }

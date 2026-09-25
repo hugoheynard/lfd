@@ -5,6 +5,7 @@ import type {
   PublicStorefrontPageView,
 } from "@lfd/contracts";
 
+import { OPERATION_SHELF_PREFIX } from "../domain/operation-link.js";
 import type { ShownOperation } from "../domain/storefront-operations.reader.js";
 
 /** La page porte-t-elle au moins une annonce liée à une opération ? */
@@ -25,27 +26,37 @@ export function hasOperationAnnouncements(page: PublicStorefrontPageView): boole
  * - une annonce montrée hérite ce qu'elle laisse vide (titre, phrase, image)
  *   et porte `operation` : la boutique en calcule le badge quand `badge` est
  *   `null`, et ouvre le rayon `op:<key>` au clic ;
- * - toute autre annonce porte `operation: null`.
+ * - toute autre annonce porte `operation: null` ;
+ * - **une annonce n'a pas sa place dans le rayon qu'elle annonce** : sur la
+ *   page `op:<key>`, ce qui annonce `<key>` — lié à l'opération, ou ouvrant
+ *   son rayon — est omis. L'objet paraît donc « partout sauf là » sans que
+ *   l'éditeur ait à tenir la liste (Hugo, 2026-09-25) : une famille ajoutée
+ *   plus tard n'y change rien, et une liste de rayons oubliée non plus.
  */
 export function resolveOperationAnnouncements(
   page: PublicStorefrontPageView,
   shown: ReadonlyMap<string, ShownOperation>,
+  shelfKey: string,
 ): PublicStorefrontPageView {
   return {
     rows: page.rows,
-    objects: page.objects.map((object) => resolveObject(object, shown)),
+    objects: page.objects.map((object) => resolveObject(object, shown, shelfKey)),
   };
 }
 
 function resolveObject(
   object: PublicStorefrontObjectView,
   shown: ReadonlyMap<string, ShownOperation>,
+  shelfKey: string,
 ): PublicStorefrontObjectView {
   return {
     ...object,
     contents: object.contents.flatMap((content): PublicStorefrontContent[] => {
       if (content.kind === "product") {
         return [content];
+      }
+      if (announces(content, shelfKey)) {
+        return [];
       }
       if (!isLinked(content)) {
         return [{ ...content, operation: null }];
@@ -54,6 +65,15 @@ function resolveObject(
       return operation === undefined ? [] : [inherited(content, operation)];
     }),
   };
+}
+
+/** L'annonce désigne-t-elle le rayon d'opération qu'on sert ? */
+function announces(content: PublicStorefrontInfoContent, shelfKey: string): boolean {
+  if (!shelfKey.startsWith(OPERATION_SHELF_PREFIX)) {
+    return false;
+  }
+  const key = shelfKey.slice(OPERATION_SHELF_PREFIX.length);
+  return content.operationKey === key || content.linkShelfKey === shelfKey;
 }
 
 function isLinked(

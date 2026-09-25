@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import type {
+  StorefrontContent,
   StaffPermission,
   StorefrontCatalogView,
   StorefrontObjectView,
@@ -29,6 +30,18 @@ import { StorefrontPage } from './storefront-page';
  */
 
 /** Un objet de la vitrine chargée, réglages résolus comme le serveur les rend. */
+/** Une annonce liée à Noël : la boutique ne la sert pas dans le rayon de Noël. */
+const NOEL_ANNOUNCEMENT: StorefrontContent = {
+  kind: 'info',
+  badge: null,
+  title: { fr: '' },
+  lede: null,
+  image: null,
+  linkShelfKey: null,
+  operationKey: 'noel-2026',
+  action: 'operation',
+};
+
 function object(
   id: string,
   overrides: Partial<StorefrontObjectView> & Pick<StorefrontObjectView, 'shape' | 'column' | 'row'>,
@@ -343,6 +356,30 @@ describe('StorefrontPage — composer', () => {
       row: 1,
       shelves: ['bread'],
     });
+  });
+
+  it('un objet qui se met à annoncer une opération passe à tous les rayons', async () => {
+    const { store } = await setup();
+    store.pickShelf('bread');
+    store.addFormat('card');
+    const id = store.blocks().at(-1)?.id ?? '';
+    store.select(id);
+    store.setSelectedItems([NOEL_ANNOUNCEMENT]);
+    // (1,1) est prise sur « Tout » par o-1 : l'objet s'étend partout ailleurs, et le dit.
+    expect(store.blocks().find((b) => b.id === id)?.shelves).toEqual([
+      'bread',
+      'viennoiserie',
+      'chocolate',
+    ]);
+    expect(store.notice()).toContain('sauf « Tout »');
+  });
+
+  it('une sélection de rayons faite à la main n’est pas écrasée par le lien à une opération', async () => {
+    const { store } = await setup();
+    store.select('o-1');
+    store.setSelectedShelves(['all', 'bread']);
+    store.setSelectedItems([NOEL_ANNOUNCEMENT]);
+    expect(store.blocks().find((b) => b.id === 'o-1')?.shelves).toEqual(['all', 'bread']);
   });
 
   it('refuse d’étendre un objet à un rayon où la place est prise, en nommant le rayon', async () => {
