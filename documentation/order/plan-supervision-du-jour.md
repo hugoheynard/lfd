@@ -109,7 +109,7 @@ READY_BEFORE_WINDOW_MINUTES`.
   (Retrait, Livraison), un compte par étape — un clic filtre la liste —, le
   signal « sans date » s'il est non nul, puis la liste des retards, la règle
   écrite en clair (« Créneau 7 h–8 h dépassé, pas retirée »).
-- Rafraîchissement périodique : `production/periodic-refresh.ts` **déménage**
+- Rafraîchissement périodique : `periodic-refresh.ts` **a déménagé** de `production/`
   dans `shared/` (il sert désormais deux espaces), ses importeurs suivent.
 - Une ligne renvoie à l'écran de terrain **seulement si** le lecteur en a le
   droit (`/commandes/:id` sous `b2b_orders:read`) ; sinon ce n'est pas un
