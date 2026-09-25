@@ -616,7 +616,8 @@ Conséquences tant que ce n'est pas fait :
   fiche.
 
 À trancher : finir la bascule, ou retirer l'éditeur de l'écran jusqu'à ce
-qu'elle soit faite. En attendant, les commentaires de `staff-role.ts` et de la
+qu'elle soit faite. **Tranché le 2026-09-25 : finir la bascule** —
+[`plan-roles-lus-en-base.md`](plan-roles-lus-en-base.md). En attendant, les commentaires de `staff-role.ts` et de la
 table décrivent un état qui n'est pas celui du résolveur.
 
 ### 13.2 Le départ d'un membre n'a pas encore son geste
