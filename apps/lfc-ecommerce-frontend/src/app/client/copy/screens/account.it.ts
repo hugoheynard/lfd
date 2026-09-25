@@ -270,11 +270,13 @@ export const ACCOUNT_IT: AccountCopy = {
   termGrantedSub: 'Concesso dal vostro commerciale: gli ordini si saldano a fine mese.',
   termRequestedSub: 'Richiesta inviata: il vostro commerciale la convalida.',
   termNoneSub: 'Su richiesta: il vostro commerciale lo concede società per società.',
+  termSuspendedSub: 'Addebito mensile sospeso — gli ordini si pagano con carta.',
   termOrder: 'All’ordine',
   termOrderSub: 'Carta o Apple Pay, senza aspettare la fattura',
   stateActive: 'Attivo',
   stateAvailable: 'Disponibile',
   stateRequested: 'In attesa',
+  stateSuspended: 'Sospeso',
   paymentNote:
     'Due regimi, non di più: fine mese quando un credito è concesso, all’ordine altrimenti — e tutti possono ordinare all’ordine.',
   termRequest: 'Richiedere il pagamento mensile',

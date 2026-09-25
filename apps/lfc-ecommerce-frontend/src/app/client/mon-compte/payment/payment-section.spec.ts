@@ -9,6 +9,7 @@ import { canRequestMonthly, monthlyTermState, monthlyTermView } from './payment-
 const GRANTED: CompanyView = TOMMEUSES;
 const REQUESTED: CompanyView = { ...TOMMEUSES, grantedTerms: [], requestedTerm: 'monthly' };
 const NONE: CompanyView = { ...TOMMEUSES, grantedTerms: [], requestedTerm: null };
+const SUSPENDED: CompanyView = { ...TOMMEUSES, directDebitBlocked: true };
 
 describe('l’état du crédit mensuel', () => {
   it('se lit sur `grantedTerms` puis `requestedTerm`, et rien d’autre', () => {
@@ -16,6 +17,16 @@ describe('l’état du crédit mensuel', () => {
     expect(monthlyTermState(REQUESTED)).toBe('requested');
     expect(monthlyTermState(NONE)).toBe('none');
     expect(monthlyTermState(null)).toBe('none');
+  });
+
+  it('dit « suspendu » quand le prélèvement du crédit accordé est bloqué — et ne laisse pas redemander', () => {
+    expect(monthlyTermState(SUSPENDED)).toBe('suspended');
+    expect(canRequestMonthly(SUSPENDED)).toBe(false);
+    expect(monthlyTermView('suspended', FR.account)).toEqual({
+      badge: FR.account.stateSuspended,
+      variant: 'warning',
+      note: FR.account.termSuspendedSub,
+    });
   });
 
   /** Le serveur solde la demande à l'accord ; si les deux coexistaient, l'accord l'emporte. */

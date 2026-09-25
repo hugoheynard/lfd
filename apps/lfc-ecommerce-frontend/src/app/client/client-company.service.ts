@@ -1,6 +1,7 @@
 import { computed, inject, Injectable } from '@angular/core';
 import type { CompanyStatus, CompanyView } from '@lfd/contracts';
 
+import { directDebitSuspended, settlesOnAccount } from '../account/account.model';
 import { AccountService } from '../account/account.service';
 import { ClientWorkspace, companyName } from './client-workspace.service';
 
@@ -66,11 +67,15 @@ export class ClientCompany {
     return this.company()?.status ?? 'incomplete';
   });
   /**
-   * La condition de règlement **convenue**, en un mot.
+   * La condition de règlement **convenue et exercée**, en un mot — `false`
+   * quand le prélèvement est suspendu (`settlesOnAccount`).
    *
    * Vide = paiement à la commande, ce que tout le monde peut faire de toute
    * façon. Ce n'est pas une absence de réglage, c'est le défaut — d'où une
    * phrase plutôt qu'un tiret.
    */
-  readonly hasDeferredTerm = computed(() => (this.company()?.grantedTerms.length ?? 0) > 0);
+  readonly hasDeferredTerm = computed(() => settlesOnAccount(this.company()));
+
+  /** Le mensuel est accordé, mais son prélèvement est suspendu par la comptabilité. */
+  readonly directDebitSuspended = computed(() => directDebitSuspended(this.company()));
 }

@@ -1,21 +1,23 @@
-import type { CompanyMemberRole, CompanyView, DeferredTerm } from '@lfd/contracts';
+import type { CompanyMemberRole, CompanyView } from '@lfd/contracts';
 import type { FoldBadgeVariant } from 'fold-ng';
 
+import { directDebitSuspended, MONTHLY, settlesOnAccount } from '../../../account/account.model';
 import type { AccountCopy } from '../../copy/screens/account.copy';
 
-/** Le seul crédit que la plateforme sait accorder (`deferredTermSchema`, vérifié le 2026-09-14). */
-export const MONTHLY: DeferredTerm = 'monthly';
+export { MONTHLY };
 
 /**
  * Où en est le crédit mensuel d'une société, tel que `/me` le dit — et rien de
  * plus : `CompanyView` porte les termes ACCORDÉS et le terme DEMANDÉ, ni date
  * d'accord ni plafond.
  *
- * - `granted` : le commercial l'a accordé ;
+ * - `granted` : le commercial l'a accordé, et il s'exerce ;
+ * - `suspended` : accordé, mais la comptabilité a suspendu le prélèvement —
+ *   les commandes se règlent par carte, le crédit n'est pas retiré ;
  * - `requested` : le client l'a demandé, le commercial n'a pas tranché ;
  * - `none` : ni l'un ni l'autre.
  */
-export type MonthlyTermState = 'granted' | 'requested' | 'none';
+export type MonthlyTermState = 'granted' | 'suspended' | 'requested' | 'none';
 
 /**
  * Les rôles qui demandent un crédit : ceux que l'API laisse écrire (vérifié le
@@ -27,8 +29,11 @@ export function monthlyTermState(company: CompanyView | null): MonthlyTermState 
   if (company === null) {
     return 'none';
   }
-  if (company.grantedTerms.includes(MONTHLY)) {
+  if (settlesOnAccount(company)) {
     return 'granted';
+  }
+  if (directDebitSuspended(company)) {
+    return 'suspended';
   }
   return company.requestedTerm === MONTHLY ? 'requested' : 'none';
 }
@@ -53,6 +58,8 @@ export function monthlyTermView(
   switch (state) {
     case 'granted':
       return { badge: copy.stateActive, variant: 'success', note: copy.termGrantedSub };
+    case 'suspended':
+      return { badge: copy.stateSuspended, variant: 'warning', note: copy.termSuspendedSub };
     case 'requested':
       return { badge: copy.stateRequested, variant: 'warning', note: copy.termRequestedSub };
     case 'none':

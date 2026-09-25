@@ -302,12 +302,19 @@ export interface AccountCopy {
   readonly termGrantedSub: string;
   readonly termRequestedSub: string;
   readonly termNoneSub: string;
+  /**
+   * Le crédit est accordé mais la comptabilité a suspendu le prélèvement
+   * (`directDebitBlocked`) : le crédit reste, les commandes se règlent par carte.
+   */
+  readonly termSuspendedSub: string;
   readonly termOrder: string;
   readonly termOrderSub: string;
   readonly stateActive: string;
   readonly stateAvailable: string;
   /** Le crédit demandé, que le commercial n'a pas encore tranché. */
   readonly stateRequested: string;
+  /** Le crédit accordé dont le prélèvement est suspendu. */
+  readonly stateSuspended: string;
   readonly paymentNote: string;
   /** Le geste de la carte et du panneau — une DEMANDE, que le commercial valide. */
   readonly termRequest: string;

@@ -268,11 +268,13 @@ export const ACCOUNT_EN: AccountCopy = {
   termGrantedSub: 'Granted by your sales contact: your orders are settled at month end.',
   termRequestedSub: 'Request sent: your sales contact will approve it.',
   termNoneSub: 'On request: your sales contact grants it company by company.',
+  termSuspendedSub: 'Monthly direct debit suspended — your orders are paid by card.',
   termOrder: 'At checkout',
   termOrderSub: 'Card or Apple Pay, without waiting for the invoice',
   stateActive: 'Active',
   stateAvailable: 'Available',
   stateRequested: 'Pending',
+  stateSuspended: 'Suspended',
   paymentNote:
     'Two regimes, no more: end of month when credit is granted, at checkout otherwise — and everyone can order at checkout.',
   termRequest: 'Request monthly payment',

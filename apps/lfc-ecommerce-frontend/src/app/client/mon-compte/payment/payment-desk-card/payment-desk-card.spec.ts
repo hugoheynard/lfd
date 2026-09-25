@@ -13,6 +13,8 @@ import { PaymentDeskCard } from './payment-desk-card';
 const GRANTED: CompanyView = TOMMEUSES;
 const REQUESTED: CompanyView = { ...TOMMEUSES, grantedTerms: [], requestedTerm: 'monthly' };
 const NONE: CompanyView = { ...TOMMEUSES, grantedTerms: [], requestedTerm: null };
+/** Accordé, mais la comptabilité a suspendu le prélèvement. */
+const SUSPENDED: CompanyView = { ...TOMMEUSES, directDebitBlocked: true };
 
 afterEach(() => {
   TestBed.inject(FoldPanelHostService).dismissAll();
@@ -37,6 +39,17 @@ describe('PaymentDeskCard', () => {
     expect(badges(el)).toEqual([FR.account.stateActive, FR.account.stateAvailable]);
     expect(el.querySelector('.monthly')?.textContent).toContain(FR.account.termGrantedSub);
     expect(el.textContent).toContain(FR.account.paymentNote);
+    expect(requestButton(el)).toBeUndefined();
+  });
+
+  /** Le crédit n'est pas retiré : le client doit lire qu'il est suspendu, et pourquoi il paie par carte. */
+  it('suspendu : « Suspendu », « Prélèvement mensuel suspendu — vos commandes se règlent par carte », rien à demander', () => {
+    const el = render(SUSPENDED);
+
+    expect(badges(el)).toEqual([FR.account.stateSuspended, FR.account.stateAvailable]);
+    expect(el.querySelector('.monthly')?.textContent).toContain(
+      'Prélèvement mensuel suspendu — vos commandes se règlent par carte',
+    );
     expect(requestButton(el)).toBeUndefined();
   });
 

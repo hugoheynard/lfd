@@ -53,6 +53,8 @@ interface Monde {
   readonly auth?: unknown;
   /** Les termes ACCORDÉS à la société — vide = aucune société, ou aucun crédit. */
   readonly granted?: readonly string[];
+  /** La comptabilité a suspendu le prélèvement (`directDebitBlocked`). */
+  readonly blocked?: boolean;
   readonly service?: ServiceChoice | null;
   readonly panier?: boolean;
 }
@@ -70,6 +72,7 @@ function boot({
   service = AU_LABO,
   panier = true,
   granted = [],
+  blocked = false,
 }: Monde = {}): ComponentFixture<CartDialog> {
   localStorage.clear();
   TestBed.resetTestingModule();
@@ -93,7 +96,11 @@ function boot({
       },
       {
         provide: ClientCompany,
-        useValue: { company: signal(granted.length === 0 ? null : { grantedTerms: granted }) },
+        useValue: {
+          company: signal(
+            granted.length === 0 ? null : { grantedTerms: granted, directDebitBlocked: blocked },
+          ),
+        },
       },
       {
         provide: ClientOrders,
@@ -303,6 +310,22 @@ describe('le panier demande COMMENT régler, à qui a le choix', () => {
 
     expect(el(fixture).textContent).toContain(FR.cart.settleAccount);
     expect(el(fixture).textContent).toContain(FR.cart.settleCard);
+  });
+
+  /**
+   * Le crédit reste accordé quand la comptabilité suspend le prélèvement : lire
+   * `grantedTerms` seul proposerait « au compte », que le serveur refuse.
+   */
+  it('🔴 ne propose plus « au compte » quand le prélèvement est SUSPENDU', async () => {
+    const fixture = boot({ auth: RECONNU, granted: ['monthly'], blocked: true });
+
+    expect(el(fixture).textContent).not.toContain(FR.cart.settleAccount);
+    expect(el(fixture).textContent).not.toContain(FR.cart.settleTitle);
+
+    // Le seul bouton restant ne demande pas le compte : le serveur tranche.
+    el(fixture).querySelector<HTMLButtonElement>('button.pay')?.click();
+    await Promise.resolve();
+    expect(regle).not.toContain('account');
   });
 
   it('🔴 envoie « account » quand on ajoute au compte', async () => {

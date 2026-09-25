@@ -15,6 +15,7 @@ import { GuestIdentityDialog } from '../guest-identity-dialog/guest-identity-dia
 import type { OrderSettlement } from '@lfd/contracts';
 
 import { AuthFacade } from '../../../auth/auth.facade';
+import { settlesOnAccount } from '../../../account/account.model';
 import { ClientCompany } from '../../client-company.service';
 import { formatCents } from '../../format-money';
 import { ClientCart } from '../client-cart.service';
@@ -115,11 +116,10 @@ export class CartDialog {
    * 🔴 `grantedTerms`, et non le terme SOUHAITÉ : le contrat distingue les deux
    * (`company.ts`), et confondre une demande avec un droit acquis proposerait
    * un règlement que le serveur refuse par `TermsNotGrantedError`. Un
-   * particulier n'a pas de société, donc jamais.
+   * particulier n'a pas de société, donc jamais. Un prélèvement suspendu par
+   * la comptabilité ferme aussi l'option (`settlesOnAccount`).
    */
-  protected readonly mayUseAccount = computed(
-    () => this.firm.company()?.grantedTerms.includes('monthly') === true,
-  );
+  protected readonly mayUseAccount = computed(() => settlesOnAccount(this.firm.company()));
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);

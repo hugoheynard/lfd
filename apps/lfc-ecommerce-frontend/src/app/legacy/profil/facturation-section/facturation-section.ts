@@ -2,7 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { FoldPanelHostService } from 'fold-ng';
 import { CompanyBillingCard } from '@lfd/b2b-ui/company';
 
-import { type Company, settlementSummary, settlementLabel } from '../../../account/account.model';
+import {
+  type Company,
+  directDebitSuspended,
+  settlementSummary,
+  settlementLabel,
+} from '../../../account/account.model';
 import { canManageCompany } from '../../../account/account.model';
 import { PaymentTermPanel } from '../../entreprises/payment-term-panel/payment-term-panel';
 
@@ -25,7 +30,14 @@ export class FacturationSection {
 
   readonly company = input.required<Company>();
 
-  protected readonly termLabel = computed(() => settlementSummary(this.company().grantedTerms));
+  protected readonly termLabel = computed(() => settlementSummary(this.company()));
+
+  /** Le crédit reste accordé, mais la comptabilité en a suspendu le prélèvement. */
+  protected readonly note = computed(() =>
+    directDebitSuspended(this.company())
+      ? 'Prélèvement mensuel suspendu — vos commandes se règlent par carte.'
+      : "Définie avec votre commercial La Folie Coffee. Toute évolution passe par lui et s'appliquera à vos prochaines commandes.",
+  );
   protected readonly canManage = computed(() => canManageCompany(this.company().role));
 
   /** Une demande n'est « en attente » que si elle diffère réellement du convenu. */

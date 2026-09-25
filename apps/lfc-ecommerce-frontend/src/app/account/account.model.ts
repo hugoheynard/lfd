@@ -65,12 +65,35 @@ export function settlementLabel(mean: SettlementMean): string {
   return SETTLEMENT_LABELS[mean];
 }
 
+/** Le seul crédit que la plateforme sait accorder (`deferredTermSchema`, vérifié le 2026-09-14). */
+export const MONTHLY: DeferredTerm = 'monthly';
+
 /**
- * Ce dont une société dispose, en une phrase : le socle, plus les crédits qui
- * lui ont été accordés. Ils s'ajoutent — le premier ne disparaît jamais.
+ * **Cette société règle-t-elle au compte ?** — le SEUL calcul du front
+ * (plan `comptabilite/plan-blocage-prelevement-et-liens-de-paiement.md`, §1).
+ *
+ * Le mensuel ACCORDÉ ne suffit plus : la comptabilité peut suspendre le
+ * prélèvement sans retirer le crédit (`directDebitBlocked`). `grantedTerms`
+ * reste alors rempli — le client doit comprendre qu'il a un crédit, suspendu —
+ * et lire ce champ seul proposerait un règlement que le serveur refuse.
  */
-export function settlementSummary(grantedTerms: readonly DeferredTerm[]): string {
-  return ['per_order' as const, ...grantedTerms].map(settlementLabel).join(' · ');
+export function settlesOnAccount(company: CompanyView | null): boolean {
+  return company !== null && company.grantedTerms.includes(MONTHLY) && !company.directDebitBlocked;
+}
+
+/** Le crédit est accordé, mais la comptabilité en a suspendu le prélèvement. */
+export function directDebitSuspended(company: CompanyView | null): boolean {
+  return company !== null && company.grantedTerms.includes(MONTHLY) && company.directDebitBlocked;
+}
+
+/**
+ * Ce dont une société dispose, en une phrase : le socle, plus les crédits
+ * qu'elle peut EXERCER. Ils s'ajoutent — le premier ne disparaît jamais ; un
+ * crédit suspendu n'y figure pas.
+ */
+export function settlementSummary(company: CompanyView): string {
+  const terms = settlesOnAccount(company) ? company.grantedTerms : [];
+  return ['per_order' as const, ...terms].map(settlementLabel).join(' · ');
 }
 
 /** Le profil de la personne connectée. */

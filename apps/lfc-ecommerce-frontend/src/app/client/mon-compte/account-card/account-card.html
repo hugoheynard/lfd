@@ -28,6 +28,12 @@
         @if (client.hasDeferredTerm()) {
           <fold-icon class="mark ok" name="check" size="xs" aria-hidden="true" />
           <span>{{ t().account.cardPaymentOnAccount }}</span>
+        } @else if (client.directDebitSuspended()) {
+          <fold-icon class="mark" name="clock" size="xs" aria-hidden="true" />
+          <span class="payment-text">
+            {{ t().account.cardPaymentOnAccount }}
+            <span class="payment-note">{{ t().account.termSuspendedSub }}</span>
+          </span>
         } @else {
           <fold-icon class="mark" name="clock" size="xs" aria-hidden="true" />
           <span class="payment-text">

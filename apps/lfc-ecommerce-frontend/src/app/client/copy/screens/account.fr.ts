@@ -271,11 +271,13 @@ export const ACCOUNT_FR: AccountCopy = {
   termGrantedSub: 'Accordé par votre commercial : vos commandes se règlent en fin de mois.',
   termRequestedSub: 'Demande envoyée : votre commercial la valide.',
   termNoneSub: 'Sur demande : votre commercial l’accorde société par société.',
+  termSuspendedSub: 'Prélèvement mensuel suspendu — vos commandes se règlent par carte.',
   termOrder: 'À la commande',
   termOrderSub: 'Carte ou Apple Pay, sans attendre la facture',
   stateActive: 'Actif',
   stateAvailable: 'Disponible',
   stateRequested: 'En attente',
+  stateSuspended: 'Suspendu',
   paymentNote:
     'Deux régimes, pas plus : fin de mois quand un crédit est accordé, à la commande sinon — et tout le monde peut commander à la commande.',
   termRequest: 'Demander le règlement mensuel',
