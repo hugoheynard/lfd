@@ -258,3 +258,16 @@ GROUP BY u.role;
 
 Tout écart entre `grants` et `ROLE_GRANTS` est une édition faite à l'écran qui
 **prendra effet** au déploiement. À trancher un par un avant.
+
+**Résultat, lu par Hugo en production le 2026-09-25** : aucune édition faite à
+l'écran. Tous les écarts sont des droits que les migrations n'ont jamais écrits
+dans la table, ou que les migrations en attente (`160100`, `100100`, `110100`)
+posent. Le vrai trou : trois ressources n'ont été écrites par AUCUNE migration
+et n'existaient que dans `ROLE_GRANTS` — `b2b_accounting` (admin write,
+comptabilite write), `b2b_order_waivers` (admin write, commercial write),
+`b2b_feature_access` (admin write, commercial read). Après la bascule, ces trois
+rôles les auraient perdues. Refermé par `20260926120100_les_droits_jamais_ecrits`
+(ajout seul, par clé, idempotent), et gardé par
+`apps/lfd-api/test/staff-role-grants-parity.e2e-spec.ts`, qui rejoue toutes les écritures
+de la table depuis la graine du 2026-09-01 et exige l'égalité exacte avec
+`ROLE_GRANTS`. Il échoue sans cette migration (vérifié le 2026-09-26).

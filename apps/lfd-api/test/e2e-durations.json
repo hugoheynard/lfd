@@ -131,6 +131,7 @@
   "test/staff-journal.e2e-spec.ts": 10950,
   "test/staff-lockout.e2e-spec.ts": 12944,
   "test/staff-notification-authors.e2e-spec.ts": 1925,
+  "test/staff-role-grants-parity.e2e-spec.ts": 3071,
   "test/staff-role-keys-migration.e2e-spec.ts": 5468,
   "test/staff-roles-in-database.e2e-spec.ts": 7498,
   "test/staff-roles.e2e-spec.ts": 46685,
