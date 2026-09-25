@@ -15,7 +15,7 @@ import {
 import type { PackingContainerStep, PackingSheet, ProductionPackingView } from '@lfd/contracts';
 
 import { methodLabel, packingMarkKey, type PackingStack } from '../packing-board';
-import { refreshWhileVisible } from '../periodic-refresh';
+import { refreshWhileVisible } from '../../shared/periodic-refresh';
 import { PackingDayReader } from './packing-day.reader';
 import { PackingGestures } from './packing-gestures';
 import { PackingOpenOrder, type PackingLineToggle } from './packing-open-order/packing-open-order';

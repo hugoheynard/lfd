@@ -193,6 +193,14 @@ export class App {
   protected readonly canSeeProduction = computed(() => this.permissions.can('b2b_orders:read'));
 
   /**
+   * La Supervision a son droit à elle : elle montre le nom des clients du jour
+   * sans ouvrir les commandes, et ne suit donc pas `b2b_orders:read`.
+   */
+  protected readonly canSeeSupervision = computed(() =>
+    this.permissions.can('b2b_supervision:read'),
+  );
+
+  /**
    * **L'outillage de développement** — une liste, pas un droit.
    *
    * 🔴 Elle est VIDE dans un build de production, et l'écran qu'elle annonce n'y

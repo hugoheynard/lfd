@@ -37,6 +37,22 @@
         ></a>
       }
 
+      @if (canSeeSupervision()) {
+        <!-- LA SUPERVISION DU JOUR — une vue, à part des espaces de travail :
+             celui qui regarde l'ensemble, pas celui qui fait. Avant la
+             production parce qu'elle la surplombe. -->
+        <a
+          fold-menu-item
+          icon="eye"
+          label="Supervision"
+          routerLink="/supervision"
+          routerLinkActive
+          #supervisionRla="routerLinkActive"
+          [active]="supervisionRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeeProduction()) {
         <!-- La production : ce que le labo doit fabriquer aujourd'hui et demain.
              Après le commercial parce qu'on y va une ou deux fois par jour, à la
@@ -489,6 +505,19 @@
             ></a>
           }
         </fold-nav-group>
+      }
+      @if (canSeeSupervision()) {
+        <!-- La MÊME entrée qu'au rail : les deux arbres ne partagent pas leur modèle. -->
+        <a
+          fold-nav-tile
+          icon="eye"
+          label="Supervision"
+          routerLink="/supervision"
+          routerLinkActive
+          #supervisionTile="routerLinkActive"
+          [active]="supervisionTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
       @if (canSeeProduction()) {
         <!-- La production est un ESPACE depuis qu'elle a deux vues : une tuile

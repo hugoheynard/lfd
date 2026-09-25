@@ -15,7 +15,7 @@ fois — ou qu'on répartit deux fois la même marchandise.
 
 Chaque poste **se relit toutes les 15 secondes tant que son onglet est
 visible**, et **tout de suite** quand on revient dessus.
-Code : `apps/lfd-backoffice-frontend/src/app/production/periodic-refresh.ts`.
+Code : `apps/lfd-backoffice-frontend/src/app/shared/periodic-refresh.ts` (dans `production/` jusqu'au 2026-09-25 : la Supervision du jour s'en sert aussi).
 
 | Règle                            | Pourquoi                                                                                                                                    |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |

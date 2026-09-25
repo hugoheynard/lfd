@@ -218,6 +218,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // LE COMPTOIR est un ESPACE : la coquille porte la lecture, la file de
   // retrait en hérite — attester un retrait passe par `retrait/:token`, qui
   // exige l'écriture. La commande pro ÉCRIT, d'où son propre garde.
+  // UNE VUE à part des espaces, sous son propre droit : elle montre le nom des
+  // clients du jour sans ouvrir les commandes (plan-supervision-du-jour.md).
+  supervision: 'b2b_supervision:read',
   comptoir: 'b2b_orders:read',
   'comptoir/retrait': null,
   // Lire les clients du comptoir ET commander : deux gardes, deux droits
@@ -383,6 +386,14 @@ describe("l'arbre de routes du back-office", () => {
     const comptoir = routes.find((route) => route.path === 'comptoir');
     const entry = comptoir?.children?.find((child) => child.path === 'nouvelle-commande/:id');
     expect(entry?.data?.['origin']).toBe('counter');
+  });
+
+  it('monte la Supervision au premier niveau, sous son seul droit', () => {
+    // Pas sous `b2b_orders:read` : c'est le point — elle se donne à qui supervise
+    // sans ouvrir les commandes (plan-supervision-du-jour.md, Front).
+    const supervision = routes.find((route) => route.path === 'supervision');
+
+    expect(supervision && declaredPermission(supervision)).toEqual(['b2b_supervision:read']);
   });
 
   it('ouvre le comptoir sur la file de retrait', () => {

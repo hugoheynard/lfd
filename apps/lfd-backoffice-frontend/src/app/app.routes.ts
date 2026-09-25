@@ -329,6 +329,17 @@ export const routes: Routes = [
     redirectTo: 'comptoir/retrait',
   },
   {
+    // LA SUPERVISION DU JOUR — une VUE, pas un espace de travail : elle regarde
+    // la production, le colisage et le retrait sans rien y faire. D'où le
+    // premier niveau, hors de Production et de Comptoir, et un droit à elle
+    // (`documentation/order/plan-supervision-du-jour.md`, Front).
+    path: 'supervision',
+    canActivate: [permissionGuard('b2b_supervision:read')],
+    title: 'Supervision du jour — LFC B2B admin',
+    loadComponent: () =>
+      import('./supervision/supervision-page/supervision-page').then((m) => m.SupervisionPage),
+  },
+  {
     // LE COMPTOIR — un ESPACE de travail : ce qui se fait quand le client est
     // devant nous. Rendre une commande (la file de retrait) et en prendre une
     // pour un pro (recherche du compte, puis l'écran de saisie du Commercial).

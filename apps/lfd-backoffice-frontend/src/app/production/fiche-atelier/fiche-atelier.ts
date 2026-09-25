@@ -18,7 +18,7 @@ import type { WorkshopGroup, WorkshopLine } from '@lfd/contracts';
 
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
-import { refreshWhileVisible } from '../periodic-refresh';
+import { refreshWhileVisible } from '../../shared/periodic-refresh';
 import { markKey } from '../worksheet-day';
 import { DriftBanner } from './drift-banner/drift-banner';
 import { WorkshopDayReader } from './workshop-day.reader';

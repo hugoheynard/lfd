@@ -2,9 +2,9 @@ import { isPlatformBrowser } from '@angular/common';
 import { DestroyRef, inject, PLATFORM_ID } from '@angular/core';
 
 /**
- * **La relecture des postes du fournil.**
+ * **La relecture des écrans qui suivent le jour.**
  *
- * Partagée par la fiche d'atelier et le poste de colisage. Pourquoi une relecture
+ * Partagée par la fiche d'atelier, le poste de colisage et la Supervision du jour. Pourquoi une relecture
  * et pas une websocket, et ce qu'il faudrait pour passer à la seconde :
  * `documentation/production/relecture-des-postes.md`.
  */
