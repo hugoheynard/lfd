@@ -1,0 +1,26 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.cap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Un bouton garde sa largeur naturelle au lieu de courir sur la carte. */
+.row {
+  display: flex;
+}
+
+.created {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+}

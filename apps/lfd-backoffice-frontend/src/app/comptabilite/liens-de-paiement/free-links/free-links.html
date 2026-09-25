@@ -1,0 +1,116 @@
+@if (loading()) {
+  <fold-loading message="Lecture des liens de paiement…" />
+} @else if (loadError(); as message) {
+  <fold-empty-state
+    tone="alert"
+    title="Impossible de lire les liens de paiement"
+    [subtitle]="message"
+  >
+    <button foldButton (click)="load()">Réessayer</button>
+  </fold-empty-state>
+} @else {
+  <div class="stack">
+    <fold-card>
+      <fold-element-title variant="title" title="Plafond d'un lien" [subtitle]="capSummary()" />
+      @if (canWrite()) {
+        <div class="cap">
+          <fold-input
+            label="Plafond (€)"
+            placeholder="Aucun plafond"
+            [hint]="
+              capInvalid()
+                ? 'Un montant positif, au centime près — ou vide pour aucun plafond.'
+                : 'Vide : aucun plafond. Les liens déjà créés ne sont pas touchés.'
+            "
+            [(value)]="capInput"
+          />
+          <div class="row">
+            <button
+              foldButton
+              [disabled]="capInvalid() || !capDirty()"
+              [loading]="savingCap()"
+              (click)="saveCap()"
+            >
+              Enregistrer le plafond
+            </button>
+          </div>
+          @if (capError(); as message) {
+            <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+          }
+        </div>
+      }
+    </fold-card>
+
+    @if (canWrite()) {
+      <div class="row">
+        <button foldButton (click)="create()">
+          <fold-icon name="plus" size="sm" />
+          Nouveau lien
+        </button>
+      </div>
+    }
+
+    @if (actionError(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    }
+
+    @if (rows().length === 0) {
+      <fold-empty-state
+        title="Aucun lien libre"
+        subtitle="Un lien libre demande à un client une somme hors commande, réglée par carte."
+      >
+        <fold-icon empty-icon name="credit-card" />
+      </fold-empty-state>
+    } @else {
+      <fold-card>
+        <fold-data-table
+          caption="Liens de paiement libres"
+          narrowLayout="cards"
+          zebra
+          [columns]="columns()"
+          [rows]="rows()"
+          [rowKey]="rowKey"
+        >
+          <ng-template foldCell="company" let-row>{{ row.companyName }}</ng-template>
+
+          <ng-template foldCell="label" let-row>{{ row.label }}</ng-template>
+
+          <ng-template foldCell="amount" let-row>{{ amountOf(row) }}</ng-template>
+
+          <ng-template foldCell="createdAt" let-row>
+            <span class="created">
+              <span>{{ dateOf(row) }}</span>
+              @if (row.createdByName !== null) {
+                <span class="muted">{{ row.createdByName }}</span>
+              }
+            </span>
+          </ng-template>
+
+          <ng-template foldCell="status" let-row>
+            <fold-badge [variant]="statusOf(row).variant" [content]="statusOf(row).label" />
+          </ng-template>
+
+          <ng-template foldCell="link" let-row>
+            <button foldButton size="sm" emphasis="outline" (click)="copy(row)">
+              Copier le lien
+            </button>
+          </ng-template>
+
+          <ng-template foldCell="actions" let-row>
+            @if (row.status === 'open') {
+              <fold-inline-confirm
+                intent="danger"
+                message="Le client ne pourra plus régler ce lien."
+                [labels]="{ confirm: 'Annuler le lien' }"
+                [loading]="pending() === row.id"
+                (confirmed)="cancel(row)"
+              >
+                <button foldButton size="sm" emphasis="outline" intent="danger">Annuler</button>
+              </fold-inline-confirm>
+            }
+          </ng-template>
+        </fold-data-table>
+      </fold-card>
+    }
+  </div>
+}

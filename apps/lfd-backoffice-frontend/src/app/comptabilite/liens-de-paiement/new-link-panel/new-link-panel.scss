@@ -1,0 +1,26 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg);
+}
+
+.row {
+  display: flex;
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+/* L'URL se lit entière et se sélectionne à la main si le presse-papiers refuse. */
+.url {
+  margin: 0;
+  font-family: var(--fold-font-mono);
+  overflow-wrap: anywhere;
+  user-select: all;
+}

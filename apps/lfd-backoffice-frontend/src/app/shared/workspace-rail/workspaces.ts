@@ -535,6 +535,13 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     icon: 'lock',
     needs: 'b2b_accounting:read',
   },
+  {
+    key: 'liens-de-paiement',
+    label: 'Liens de paiement',
+    link: '/comptabilite/liens-de-paiement',
+    icon: 'credit-card',
+    needs: 'b2b_accounting:read',
+  },
 ];
 
 /**

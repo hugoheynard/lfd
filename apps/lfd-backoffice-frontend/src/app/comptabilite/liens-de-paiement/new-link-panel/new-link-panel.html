@@ -1,0 +1,63 @@
+<fold-panel-header title="Nouveau lien de paiement" subtitle="Une somme demandée hors commande" />
+
+<div class="body">
+  @if (created(); as link) {
+    <fold-callout appearance="inset" variant="success" announce>
+      Lien créé. Copiez-le pour l'envoyer au client&nbsp;: il ouvre une page de paiement Stripe.
+    </fold-callout>
+    <p class="url">{{ link.url }}</p>
+    <div class="row">
+      <button foldButton emphasis="outline" (click)="copy(link.url)">Copier le lien</button>
+    </div>
+  } @else if (loadingCompanies()) {
+    <fold-loading message="Lecture des sociétés…" />
+  } @else if (companiesError(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    <div class="row">
+      <button foldButton emphasis="outline" (click)="loadCompanies()">Réessayer</button>
+    </div>
+  } @else {
+    <fold-listbox
+      label="Société"
+      placeholder="Choisir une société"
+      required
+      [options]="companyOptions()"
+      [(value)]="companyId"
+    />
+
+    <fold-input
+      label="Montant (€)"
+      placeholder="125,50"
+      required
+      [hint]="amountHint()"
+      [(value)]="amount"
+    />
+
+    <fold-input
+      label="Libellé"
+      placeholder="Régularisation août"
+      required
+      [hint]="
+        labelTooLong()
+          ? 'Au plus ' + labelMax + ' caractères.'
+          : 'Repris sur la page de paiement. Au plus ' + labelMax + ' caractères.'
+      "
+      [(value)]="label"
+    />
+
+    @if (error(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    }
+  }
+</div>
+
+<footer class="foot">
+  @if (created() === null) {
+    <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+    <button foldButton [disabled]="!canSubmit()" [loading]="saving()" (click)="submit()">
+      Créer le lien
+    </button>
+  } @else {
+    <button foldButton (click)="close()">Fermer</button>
+  }
+</footer>

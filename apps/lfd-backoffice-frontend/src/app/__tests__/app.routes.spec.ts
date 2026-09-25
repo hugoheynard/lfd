@@ -64,6 +64,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptabilite/entites-juridiques': null,
   'comptabilite/entites-juridiques/:id': null,
   'comptabilite/blocages-prelevement': null,
+  'comptabilite/liens-de-paiement': null,
 
   'comptes-clients/:id': 'b2b_companies:read',
   'comptes-clients/:id/dashboard': null,

@@ -50,6 +50,15 @@ export const comptabiliteRoutes: Routes = [
           ),
       },
       {
+        // Faire régler par carte : commandes impayées et liens libres. Les
+        // gestes (renvoyer, créer, annuler, plafond) demandent
+        // `b2b_accounting:write` ; l'écran les masque sans ce droit.
+        path: 'liens-de-paiement',
+        title: 'Liens de paiement — LFC B2B admin',
+        loadComponent: () =>
+          import('./liens-de-paiement/liens-de-paiement-page').then((m) => m.LiensDePaiementPage),
+      },
+      {
         // La FICHE d'une entité — tout ce qui se règle sur un émetteur. Elle
         // n'a pas de garde propre pour la raison écrite en tête de fichier :
         // elle parle de la même ressource que la liste dont elle vient.

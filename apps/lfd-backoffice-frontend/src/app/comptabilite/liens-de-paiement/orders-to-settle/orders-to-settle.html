@@ -1,0 +1,78 @@
+@if (loading()) {
+  <fold-loading message="Lecture des commandes à régler…" />
+} @else if (loadError(); as message) {
+  <fold-empty-state
+    tone="alert"
+    title="Impossible de lire les commandes à régler"
+    [subtitle]="message"
+  >
+    <button foldButton (click)="load()">Réessayer</button>
+  </fold-empty-state>
+} @else if (rows().length === 0) {
+  <fold-empty-state
+    title="Aucune commande à régler"
+    subtitle="Toutes les commandes réglées par carte l'ont été."
+  >
+    <fold-icon empty-icon name="receipt" />
+  </fold-empty-state>
+} @else {
+  <div class="stack">
+    @if (actionError(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    }
+
+    <fold-card>
+      <fold-data-table
+        caption="Commandes à régler par carte"
+        narrowLayout="cards"
+        zebra
+        [columns]="columns"
+        [rows]="rows()"
+        [rowKey]="rowKey"
+      >
+        <ng-template foldCell="company" let-row>{{ companyOf(row) }}</ng-template>
+
+        <ng-template foldCell="reference" let-row>
+          <span class="ref">{{ row.reference }}</span>
+        </ng-template>
+
+        <ng-template foldCell="amount" let-row>{{ amountOf(row) }}</ng-template>
+
+        <ng-template foldCell="placedAt" let-row>{{ dateOf(row) }}</ng-template>
+
+        <ng-template foldCell="status" let-row>
+          @if (row.paymentStatus === 'failed') {
+            <fold-badge variant="alert" content="Refusé" />
+          } @else {
+            <fold-badge variant="warning" content="En attente" />
+          }
+        </ng-template>
+
+        <ng-template foldCell="link" let-row>
+          @if (row.paymentUrl === null) {
+            <span class="muted">
+              Pas de lien&nbsp;: l'adresse publique de l'espace client n'est pas configurée.
+            </span>
+          } @else {
+            <span class="actions">
+              <button foldButton size="sm" emphasis="outline" (click)="copy(row)">
+                Copier le lien
+              </button>
+              @if (canWrite()) {
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  [loading]="pending() === row.orderId"
+                  (click)="resend(row)"
+                >
+                  Renvoyer par e-mail
+                </button>
+              }
+            </span>
+          }
+        </ng-template>
+      </fold-data-table>
+    </fold-card>
+  </div>
+}

@@ -1,0 +1,26 @@
+<fold-page-layout title="Liens de paiement" separator>
+  <p description>
+    Faire régler un client <strong>par carte</strong>&nbsp;: une commande restée impayée, ou une
+    somme demandée hors commande. Le lien ouvre une page de paiement Stripe.
+  </p>
+
+  <fold-nav-layout>
+    <fold-tabs
+      tabNav
+      #bar="foldTabs"
+      size="compact"
+      activeStyle="fill"
+      background="surface"
+      [tabs]="tabs"
+      [(activeKey)]="tab"
+    />
+
+    <fold-tab-panel [tabs]="bar" [key]="tab()">
+      @if (tab() === 'orders') {
+        <app-orders-to-settle />
+      } @else {
+        <app-free-links />
+      }
+    </fold-tab-panel>
+  </fold-nav-layout>
+</fold-page-layout>
