@@ -5,7 +5,7 @@
 > livraison », puis « supervision doit être orienté view, donc à part ».
 >
 > **Réécrit le même jour sur la maquette** `handoff-suivi` (Bureau de Hugo :
-> `SPEC.md`, `design/Suivi - export.dc.html`, `captures/`). Hugo : « on voit,
+> sa spécification, sa maquette HTML et ses captures — hors du dépôt). Hugo : « on voit,
 > on n'agit pas — un dashboard de suivi et d'alertes ; le manager qui regarde
 > ça peut ensuite aller opérer sur comptoir ou colisage ».
 >
