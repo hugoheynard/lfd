@@ -16,7 +16,7 @@ import { StaffAccessResolver } from "../../platform/auth/staff-access.resolver.j
 import type { StaffAccess, StaffPrincipal } from "../../platform/auth/staff-principal.js";
 import { staffStatusFact } from "../directory/domain/staff-facts.js";
 import { linkedSubject } from "../directory/infrastructure/staff-subject-aliases.js";
-import { HELD_ROLE_SELECT, resolveHeldRole } from "./infrastructure/held-role.js";
+import { HELD_ROLE_SELECT, isRescueFiche, resolveHeldRole } from "./infrastructure/held-role.js";
 
 /** Durée de vie d'une entrée de cache, en millisecondes. */
 const CACHE_TTL_MS = 30_000;
@@ -113,7 +113,7 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
     const overrides: StaffOverride[] = row.overrides.map((entry) => ({ ...entry }));
     // 🔴 Le secours s'ancre sur la FICHE trouvée par `findStaff`, jamais sur le
     // claim `email` du jeton, qui se fabrique (`plan-roles-lus-en-base.md` §3.4).
-    const isRescue = row.email === this.config.bootstrapAdminEmail();
+    const isRescue = isRescueFiche(row.email, this.config.bootstrapAdminEmail());
     const role = resolveHeldRole(row, overrides, isRescue, (key, error) =>
       this.reportUnreadableRole(key, error),
     );

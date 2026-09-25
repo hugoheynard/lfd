@@ -33,6 +33,22 @@ export class ProtectedStaffUserError extends BusinessError {
 }
 
 /**
+ * Écarts refusés sur la fiche de **secours** : elle résout `superadmin`, qui
+ * ignore les écarts. En écrire un créerait l'illusion d'une restriction que
+ * rien n'applique. Refus **métier** (409).
+ */
+export class RescueOverridesLockedError extends BusinessError {
+  constructor() {
+    super(
+      "staff_user.rescue_overrides_locked",
+      "La fiche de secours (l'adresse BOOTSTRAP_ADMIN_EMAIL) a tous les droits, quels que " +
+        "soient ses écarts : ils ne se modifient pas. Pour restreindre quelqu'un, faites-le " +
+        "sur sa propre fiche.",
+    );
+  }
+}
+
+/**
  * Mutation refusée : plus personne — la fiche de secours mise à part — ne
  * tiendrait `staff_access:write` par son rôle.
  *

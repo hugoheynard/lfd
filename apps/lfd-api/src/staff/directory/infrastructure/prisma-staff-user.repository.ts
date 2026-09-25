@@ -1,5 +1,6 @@
 import {
   dedupeStaffOverrides,
+  isSuperAdminRoleKey,
   type StaffMeView,
   type StaffStatusChange,
   type StaffUserPayload,
@@ -11,8 +12,12 @@ import { AppConfig } from "../../../platform/config/app-config.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { bootstrapAdmin } from "../domain/bootstrap-admin.js";
-import { resolveHeldRole } from "../../permissions/infrastructure/held-role.js";
-import { assignableRole, roleColumns } from "../../permissions/infrastructure/role-assignment.js";
+import { isRescueFiche, resolveHeldRole } from "../../permissions/infrastructure/held-role.js";
+import {
+  assignableRole,
+  roleColumns,
+  type AssignableRole,
+} from "../../permissions/infrastructure/role-assignment.js";
 import {
   assertEditAllowed,
   assertStatusChangeAllowed,
@@ -76,7 +81,7 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     const role = resolveHeldRole(
       row,
       row.overrides,
-      row.email === this.config.bootstrapAdminEmail(),
+      isRescueFiche(row.email, this.config.bootstrapAdminEmail()),
       this.reportUnreadable,
     );
     return {
@@ -114,11 +119,12 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
 
   async update(id: string, payload: StaffUserPayload, actorId: string): Promise<StaffUserEdit> {
     const target = await this.loadTarget(id, actorId);
-    const after = identityColumns(payload);
+    const requested = identityColumns(payload);
     // Normalisé AVANT de valider : on refuse ou on accepte exactement l'état
     // qu'on s'apprête à écrire, jamais un autre.
     const overrides = dedupeStaffOverrides(payload.overrides);
-    const role = await assignableRole(this.prisma, after.role);
+    const role = await this.intendedRole(target, requested.role);
+    const after = { ...requested, role: role.key };
     assertEditAllowed(target.policy, {
       email: after.email,
       roleKey: role.key,
@@ -255,6 +261,20 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
         }),
       ),
     ];
+  }
+
+  /**
+   * Le rôle qu'une édition écrira. La fiche de secours se présente sous son rôle
+   * EFFECTIF (`superadmin`, cf. `toView`) : le renvoyer tel quel veut dire
+   * « inchangé », et la clé écrite est gardée — sans relire sa définition, qui
+   * peut être archivée sans rien lui retirer (§3.4). Toute autre clé passe par
+   * la politique, qui refuse de changer le rôle de cette fiche.
+   */
+  private async intendedRole(target: LoadedTarget, key: string): Promise<AssignableRole> {
+    if (target.policy.isRoot && isSuperAdminRoleKey(key)) {
+      return { key: target.policy.roleKey ?? "", label: target.roleLabel, grants: {} };
+    }
+    return assignableRole(this.prisma, key);
   }
 
   /** Une définition illisible : l'erreur au log, avec la clé (§2). */

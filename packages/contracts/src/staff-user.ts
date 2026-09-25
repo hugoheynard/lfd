@@ -77,6 +77,12 @@ export interface StaffUserView {
   readonly role: string;
   /** Son libellé, lu dans la définition. C'est lui qu'un écran affiche. */
   readonly roleLabel: string;
+  /**
+   * Vrai pour la fiche de secours (`BOOTSTRAP_ADMIN_EMAIL`) : elle résout
+   * `superadmin` quels que soient son rôle et ses écarts, et `role`/`roleLabel`
+   * le disent. Son rôle et ses écarts ne se modifient pas — le serveur refuse.
+   */
+  readonly isRescue: boolean;
   readonly status: StaffStatus;
   /**
    * Quand le dernier lien d'invitation a été émis (ISO), `null` si jamais.

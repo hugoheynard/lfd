@@ -27,7 +27,7 @@ import {
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { StaffRolesService } from '../../roles/staff-roles.service';
-import { roleOptionsFrom } from '../staff-roles';
+import { roleOptionsFrom, staffRoleLabelOf } from '../staff-roles';
 import { OverridesGrid } from './overrides-grid/overrides-grid';
 import { StaffUsersService } from '../staff-users.service';
 
@@ -75,12 +75,26 @@ export class StaffUserPanel {
   /** Les définitions de rôle, lues en base — la seule liste qu'une fiche accepte. */
   private readonly definitions = signal<readonly StaffRoleView[]>([]);
 
+  /**
+   * La fiche de secours (`BOOTSTRAP_ADMIN_EMAIL`) a tous les droits quels que
+   * soient son rôle et ses écarts : le sélecteur est figé et la grille absente,
+   * et le serveur refuse de toute façon de les changer.
+   */
+  protected readonly isRescue = computed(() => this.data()?.user?.isRescue ?? false);
+
+  protected readonly roleHint = computed(() =>
+    this.isRescue()
+      ? "Cette fiche a tous les droits, quel que soit son rôle — c'est l'adresse de secours " +
+        '(BOOTSTRAP_ADMIN_EMAIL).'
+      : 'Ce que cette personne peut faire dans le back-office.',
+  );
+
   protected readonly roleOptions = computed(() => {
     const user = this.data()?.user ?? null;
-    return roleOptionsFrom(
-      this.definitions(),
-      user === null ? null : { value: user.role, label: user.roleLabel },
-    );
+    const current = user === null ? null : { value: user.role, label: staffRoleLabelOf(user) };
+    return this.isRescue() && current !== null
+      ? [current]
+      : roleOptionsFrom(this.definitions(), current);
   });
 
   /**

@@ -9,6 +9,7 @@ import {
   AdminOverrideRefusedError,
   LastStaffAdminError,
   ProtectedStaffUserError,
+  RescueOverridesLockedError,
   SelfDemotionError,
   StaffGrantByOverrideError,
 } from "../../directory/domain/staff-user-errors.js";
@@ -23,6 +24,7 @@ function admin(overrides: Partial<StaffMutationTarget> = {}): StaffMutationTarge
     email: "camille@lafoliedouce.com",
     isRoot: false,
     roleKey: "admin",
+    currentOverrides: [],
     keepsDirectory: true,
     otherDirectoryKeepers: 1,
     isSelf: false,
@@ -295,5 +297,41 @@ describe("les invariants tiennent sur le DROIT, plus sur la chaîne « admin »"
         intentFor("admin", ROLE_GRANTS.admin, { email: "racine@lafoliedouce.com" }),
       ),
     ).toThrow(ProtectedStaffUserError);
+  });
+});
+
+describe("la fiche de secours — ses écarts ne bougent pas", () => {
+  /**
+   * `superadmin` ignore les écarts : en écrire un sur la fiche de secours
+   * créerait l'illusion d'une restriction. Le rôle et l'adresse étaient déjà
+   * gardés ; les écarts ne l'étaient pas (2026-09-26).
+   */
+  const kept: StaffOverride = { resource: "b2b_growth", action: "read", effect: "deny" };
+  const root = admin({
+    isRoot: true,
+    email: "racine@lafoliedouce.com",
+    currentOverrides: [kept],
+  });
+
+  it("refuse d'en ajouter, d'en retirer ou d'en changer", () => {
+    const email = "racine@lafoliedouce.com";
+    expect(() => assertEditAllowed(root, intent("admin", { email, overrides: [] }))).toThrow(
+      RescueOverridesLockedError,
+    );
+    expect(() =>
+      assertEditAllowed(
+        root,
+        intent("admin", { email, overrides: [{ ...kept, effect: "allow" }] }),
+      ),
+    ).toThrow(RescueOverridesLockedError);
+  });
+
+  it("laisse passer les mêmes écarts, dans n'importe quel ordre", () => {
+    expect(() =>
+      assertEditAllowed(
+        root,
+        intent("admin", { email: "racine@lafoliedouce.com", overrides: [{ ...kept }] }),
+      ),
+    ).not.toThrow();
   });
 });

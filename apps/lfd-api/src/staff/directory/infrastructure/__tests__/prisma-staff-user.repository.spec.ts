@@ -150,3 +150,44 @@ describe("PrismaStaffUserRepository — attribuer une CLÉ de rôle (plan roles-
     );
   });
 });
+
+describe("PrismaStaffUserRepository — la fiche de secours montre son rôle EFFECTIF", () => {
+  const ROOT = row({ id: "root", email: BOOTSTRAP_ADMIN_EMAIL, ...holding("admin") });
+
+  it("se lit `superadmin`, avec `isRescue`, et les autres restent sur leur clé", async () => {
+    const { prisma } = fakePrisma(ROOT);
+    const repo = await buildRepo({
+      ...prisma,
+      staffUser: {
+        ...(prisma as { staffUser: object }).staffUser,
+        findMany: (): Promise<unknown[]> => Promise.resolve([ROOT, row()]),
+      },
+    });
+
+    const [root, other] = await repo.list();
+
+    expect(root).toMatchObject({
+      role: "superadmin",
+      roleLabel: "Super administrateur",
+      isRescue: true,
+    });
+    expect(other).toMatchObject({ role: "commercial", roleLabel: "Commercial", isRescue: false });
+  });
+
+  it("renvoyer `superadmin` veut dire « inchangé » : la clé écrite reste `admin`", async () => {
+    const { prisma, updated } = fakePrisma(ROOT);
+    const repo = await buildRepo(prisma);
+
+    await repo.update(
+      "root",
+      payload({ email: BOOTSTRAP_ADMIN_EMAIL, role: "superadmin", phone: "0600000000" }),
+      ACTOR,
+    );
+
+    expect(updated[0]?.data).toMatchObject({
+      roleKey: "admin",
+      role: "admin",
+      phone: "0600000000",
+    });
+  });
+});

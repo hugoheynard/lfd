@@ -23,7 +23,7 @@ import {
 
 import { NotifyService } from '../../notify.service';
 import { CanDirective } from '../../shared/can/can.directive';
-import { STATUS_VARIANT } from './staff-roles';
+import { staffRoleLabelOf, STATUS_VARIANT } from './staff-roles';
 import { StaffUserPanel, type StaffUserPanelData } from './staff-user-panel/staff-user-panel';
 import { StaffUsersService } from './staff-users.service';
 
@@ -153,7 +153,7 @@ export class ReglagesStaffUsersPage {
   // Le contexte d'un `foldCell` n'est pas typé : on entre par une méthode, qui
   // rend la ligne typée au passage — plutôt que d'indexer un Record avec `any`.
   protected roleLabel(user: StaffUserView): string {
-    return user.roleLabel;
+    return staffRoleLabelOf(user);
   }
 
   /**

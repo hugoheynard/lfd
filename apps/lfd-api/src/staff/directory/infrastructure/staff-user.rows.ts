@@ -5,6 +5,7 @@ import {
   HELD_ROLE_SELECT,
   heldRoleKey,
   heldRoleLabel,
+  isRescueFiche,
   resolveHeldRole,
   type HeldRoleRow,
   type UnreadableGrantsReporter,
@@ -51,12 +52,12 @@ export const SELECT = {
 
 /**
  * La vue porte l'**effectif** déjà résolu : l'écran affiche ce qu'on lui donne au
- * lieu de rejouer la formule. Deux implémentations de la même règle divergent —
- * d'où `resolveHeldRole`, la même fonction que le guard.
+ * lieu de rejouer la formule — d'où `resolveHeldRole`, la même fonction que le
+ * guard.
  *
- * `role` est la clé ÉCRITE sur la fiche, même pour la fiche de secours : c'est
- * ce que le sélecteur de la fiche édite. Ses `permissions`, elles, sont
- * celles de `superadmin` (§3.4).
+ * La fiche de secours (§3.4) montre son rôle EFFECTIF, `superadmin`, et
+ * `isRescue` : afficher la clé écrite (« Administrateur ») mentirait sur ce
+ * qu'elle peut faire. Son rôle et ses écarts ne se modifient pas (politique).
  */
 export function toView(
   row: StaffRow,
@@ -65,6 +66,8 @@ export function toView(
   report: UnreadableGrantsReporter,
 ): StaffUserView {
   const overrides = row.overrides.map((entry) => ({ ...entry }));
+  const isRescue = isRescueFiche(row.email, rescueEmail);
+  const effective = resolveHeldRole(row, overrides, isRescue, report);
   return {
     id: row.id,
     firstName: row.firstName,
@@ -72,8 +75,9 @@ export function toView(
     email: row.email,
     phone: row.phone,
     jobTitle: row.jobTitle,
-    role: heldRoleKey(row) ?? "",
-    roleLabel: heldRoleLabel(row),
+    role: isRescue ? effective.key : (heldRoleKey(row) ?? ""),
+    roleLabel: isRescue ? effective.label : heldRoleLabel(row),
+    isRescue,
     status: row.status,
     invitedAt: row.invitedAt?.toISOString() ?? null,
     // La péremption ne vaut que pour une invitation en attente : une fois
@@ -82,7 +86,7 @@ export function toView(
     invitationExpired:
       row.status === "invited" && row.invitedAt !== null && isInvitationExpired(row.invitedAt, now),
     overrides,
-    permissions: resolveHeldRole(row, overrides, row.email === rescueEmail, report).permissions,
+    permissions: effective.permissions,
   };
 }
 

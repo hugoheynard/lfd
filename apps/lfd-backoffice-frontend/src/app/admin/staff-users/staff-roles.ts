@@ -1,4 +1,4 @@
-import type { StaffRoleView, StaffStatus } from '@lfd/contracts';
+import type { StaffRoleView, StaffStatus, StaffUserView } from '@lfd/contracts';
 
 /** Une entrée du sélecteur de rôle d'une fiche. */
 export interface RoleOption {
@@ -27,6 +27,15 @@ export function roleOptionsFrom(
     return active;
   }
   return [current, ...active];
+}
+
+/**
+ * Le libellé du rôle d'une personne, tel que la liste et la fiche l'affichent.
+ * La fiche de secours se dit comme telle : le serveur la rend déjà sous son rôle
+ * effectif (`superadmin`), l'écran ajoute pourquoi.
+ */
+export function staffRoleLabelOf(user: Pick<StaffUserView, 'roleLabel' | 'isRescue'>): string {
+  return user.isRescue ? `${user.roleLabel} · porte de secours` : user.roleLabel;
 }
 
 /** Le ton du badge d'état — seul ce qui appelle une action est signalé. */

@@ -7,7 +7,12 @@
  * par personne. Chaque cas ci-dessous éprouve, en vrai HTTP et contre la vraie
  * base, une ligne du plan.
  */
-import { staffRoleSchema, type StaffMeView, type StaffPermission } from "@lfd/contracts";
+import {
+  staffRoleSchema,
+  type StaffMeView,
+  type StaffPermission,
+  type StaffUserView,
+} from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import type { StaffPrincipal } from "../src/platform/auth/staff-principal.js";
@@ -426,5 +431,69 @@ describe("aucun rôle ne vide l'accès à l'annuaire (plan §3.3)", () => {
     });
 
     await admin().put("/admin/staff-roles/admin").send(withoutDirectory).expect(204);
+  });
+});
+
+describe("la fiche de secours dans l'annuaire — son rôle EFFECTIF, et rien d'éditable", () => {
+  const rootEdit = (over: Record<string, unknown>): Record<string, unknown> => ({
+    firstName: "Admin",
+    lastName: "La Folie Coffee",
+    email: DEFAULT_BOOTSTRAP_ADMIN_EMAIL,
+    role: "superadmin",
+    ...over,
+  });
+
+  async function rootView(): Promise<StaffUserView | undefined> {
+    const rows = jsonBody<readonly StaffUserView[]>(
+      await admin().get("/admin/staff-users").expect(200),
+    );
+    return rows.find((row) => row.email === DEFAULT_BOOTSTRAP_ADMIN_EMAIL);
+  }
+
+  beforeEach(async () => {
+    await ctx.app.get(StaffUserRepository).ensureBootstrapAdmin();
+  });
+
+  it("la liste la montre `superadmin`, porte de secours", async () => {
+    expect(await rootView()).toMatchObject({
+      role: "superadmin",
+      roleLabel: "Super administrateur",
+      isRescue: true,
+    });
+  });
+
+  it("s'édite sur le reste en renvoyant ce qu'elle montre — la clé écrite ne bouge pas", async () => {
+    const id = (await rootView())?.id ?? "";
+
+    await admin()
+      .patch(`/admin/staff-users/${id}`)
+      .send(rootEdit({ phone: "0600000000" }))
+      .expect(204);
+
+    const stored = await ctx.prisma.staffUser.findUniqueOrThrow({ where: { id } });
+    expect(stored).toMatchObject({ roleKey: "admin", phone: "0600000000" });
+  });
+
+  it("refuse un écart (409, le cas nommé), et n'écrit rien", async () => {
+    const id = (await rootView())?.id ?? "";
+
+    const response = await admin()
+      .patch(`/admin/staff-users/${id}`)
+      .send(rootEdit({ overrides: [{ resource: "b2b_growth", action: "read", effect: "deny" }] }))
+      .expect(409);
+
+    expect(jsonBody<{ code: string }>(response).code).toBe("staff_user.rescue_overrides_locked");
+    expect(await ctx.prisma.staffPermissionOverride.count({ where: { staffUserId: id } })).toBe(0);
+  });
+
+  it("refuse un changement de rôle (409) — déjà gardé par la politique", async () => {
+    const id = (await rootView())?.id ?? "";
+
+    const response = await admin()
+      .patch(`/admin/staff-users/${id}`)
+      .send(rootEdit({ role: "commercial" }))
+      .expect(409);
+
+    expect(jsonBody<{ code: string }>(response).code).toBe("staff_user.protected");
   });
 });

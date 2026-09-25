@@ -3,6 +3,7 @@ import {
   heldRoleGrants,
   heldRoleKey,
   heldRoleLabel,
+  isRescueFiche,
   type UnreadableGrantsReporter,
 } from "../../permissions/infrastructure/held-role.js";
 import { directoryKeepers } from "../../permissions/infrastructure/role-assignment.js";
@@ -48,7 +49,7 @@ export async function loadMutationTarget(
   if (existing === null) {
     throw new StaffUserNotFoundError(query.id);
   }
-  const isRoot = existing.email === query.rescueEmail;
+  const isRoot = isRescueFiche(existing.email, query.rescueEmail);
   const roleKey = heldRoleKey(existing);
   const keepers = await directoryKeepers(prisma, query.rescueEmail);
   return {
@@ -69,6 +70,7 @@ export async function loadMutationTarget(
       email: existing.email,
       isRoot,
       roleKey,
+      currentOverrides: existing.overrides,
       keepsDirectory:
         !isRoot &&
         existing.status !== "suspended" &&

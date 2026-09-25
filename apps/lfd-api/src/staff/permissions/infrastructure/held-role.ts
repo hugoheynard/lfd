@@ -54,6 +54,16 @@ export interface ResolvedRole {
 /** Où part une définition illisible : le log applicatif, avec la clé. */
 export type UnreadableGrantsReporter = (roleKey: string, error: unknown) => void;
 
+/**
+ * **La** question « cette fiche est-elle celle de secours ? » — une seule
+ * réponse, lue par le résolveur, l'annuaire et la politique (plan §3.4).
+ * L'adresse est celle de la FICHE, jamais celle d'un jeton ; les deux sont
+ * normalisées (minuscules) à l'écriture.
+ */
+export function isRescueFiche(ficheEmail: string, rescueEmail: string): boolean {
+  return ficheEmail === rescueEmail;
+}
+
 /** La clé portée. `role_key` d'abord ; l'enum n'est qu'un repli de transition. */
 export function heldRoleKey(row: HeldRoleRow): string | null {
   return row.roleKey ?? row.role;

@@ -24,6 +24,7 @@ const USER: StaffUserView = {
   jobTitle: '',
   role: 'commercial',
   roleLabel: 'Commercial',
+  isRescue: false,
   overrides: [],
   status: 'active',
   invitedAt: null,
@@ -167,5 +168,43 @@ describe('StaffUserPanel — le sélecteur de rôle lit les définitions', () =>
     ]);
 
     expect(roleOptions(fixture)).toEqual(['ancien', 'commercial', 'vendeur-marche']);
+  });
+});
+
+/** La fiche de secours : tous les droits, rien d'éditable côté rôle. */
+describe('StaffUserPanel — la fiche de secours', () => {
+  const RESCUE: StaffUserView = {
+    ...USER,
+    role: 'superadmin',
+    roleLabel: 'Super administrateur',
+    isRescue: true,
+  };
+
+  it('fige le sélecteur sur « Super administrateur · porte de secours », avec sa raison', async () => {
+    const { fixture } = await boot(RESCUE, ['staff_access:write']);
+    const host = fixture.nativeElement as HTMLElement;
+
+    const select = host.querySelector<HTMLSelectElement>('fold-select select');
+    expect(select?.disabled).toBe(true);
+    expect([...(select?.options ?? [])].map((option) => option.textContent?.trim())).toEqual([
+      'Super administrateur · porte de secours',
+    ]);
+    expect(host.textContent).toContain(
+      "Cette fiche a tous les droits, quel que soit son rôle — c'est l'adresse de secours",
+    );
+  });
+
+  it('ne montre pas la grille des écarts', async () => {
+    const { fixture } = await boot(RESCUE, ['staff_access:write']);
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.querySelector('app-overrides-grid')).toBeNull();
+  });
+
+  it('montre la grille pour une fiche ordinaire', async () => {
+    const { fixture } = await boot(USER, ['staff_access:write']);
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.querySelector('app-overrides-grid')).not.toBeNull();
   });
 });

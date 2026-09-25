@@ -9,6 +9,7 @@ import {
 import {
   AdminOverrideRefusedError,
   LastStaffAdminError,
+  RescueOverridesLockedError,
   ProtectedStaffUserError,
   SelfDemotionError,
   StaffGrantByOverrideError,
@@ -57,6 +58,8 @@ export interface StaffMutationTarget {
   readonly isRoot: boolean;
   /** La clé du rôle porté aujourd'hui. */
   readonly roleKey: string | null;
+  /** Les écarts en base — la fiche de secours ne doit pas les voir changer. */
+  readonly currentOverrides: readonly StaffOverride[];
   /**
    * Vrai si la cible, non suspendue, tient aujourd'hui `staff_access:write` par
    * son rôle — c'est-à-dire si la perdre retirerait un recours.
@@ -90,6 +93,7 @@ export interface StaffMutationIntent {
  *
  * @throws {ProtectedStaffUserError} la cible est la fiche racine et la mutation
  *   la renommerait ou lui changerait de rôle.
+ * @throws {RescueOverridesLockedError} la cible est la fiche racine et ses écarts changeraient.
  * @throws {StaffGrantByOverrideError} un écart ouvrirait l'annuaire.
  * @throws {AdminOverrideRefusedError} un écart fermerait l'annuaire que le rôle ouvre.
  * @throws {SelfDemotionError} l'auteur se retire `staff_access:write`.
@@ -138,6 +142,19 @@ function assertRootIntact(target: StaffMutationTarget, intent: StaffMutationInte
   if (intent.email.trim().toLowerCase() !== target.email || intent.roleKey !== target.roleKey) {
     throw new ProtectedStaffUserError();
   }
+  // Le rôle et l'adresse étaient déjà gardés ; les écarts ne l'étaient pas
+  // (vérifié le 2026-09-26), alors que `superadmin` les ignore.
+  if (overridesKey(intent.overrides) !== overridesKey(target.currentOverrides)) {
+    throw new RescueOverridesLockedError();
+  }
+}
+
+/** Une forme comparable d'un jeu d'écarts, indépendante de l'ordre. */
+function overridesKey(overrides: readonly StaffOverride[]): string {
+  return overrides
+    .map((entry) => `${entry.resource}:${entry.action}:${entry.effect}`)
+    .sort()
+    .join("|");
 }
 
 /**

@@ -40,8 +40,9 @@
     <h3 class="block-title">Rôle</h3>
     <fold-select
       label="Rôle"
-      hint="Ce que cette personne peut faire dans le back-office."
+      [hint]="roleHint()"
       [value]="role()"
+      [disabled]="isRescue()"
       (valueChange)="setRole($event)"
     >
       @for (option of roleOptions(); track option.value) {
@@ -50,10 +51,12 @@
     </fold-select>
   </section>
 
-  <section class="block">
-    <h3 class="block-title">Dérogations au rôle</h3>
-    <app-overrides-grid [grants]="roleGrants()" [(overrides)]="overrides" />
-  </section>
+  @if (!isRescue()) {
+    <section class="block">
+      <h3 class="block-title">Dérogations au rôle</h3>
+      <app-overrides-grid [grants]="roleGrants()" [(overrides)]="overrides" />
+    </section>
+  }
 </div>
 
 <footer class="foot">
