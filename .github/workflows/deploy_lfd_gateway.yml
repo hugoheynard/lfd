@@ -53,16 +53,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # ── La porte ────────────────────────────────────────────────────────────
-      # Jusqu'au 2026-08-27, ce déploiement partait dès le push sur `main`, sans
-      # rien savoir de la CI : elle tournait EN MÊME TEMPS, et son verdict
-      # arrivait après coup. Un commit rouge se déployait quand même.
-      - name: Attendre que la CI soit verte
-        if: github.event_name != 'workflow_dispatch'
-        uses: ./.github/actions/attendre-un-run
-        with:
-          workflow: ci.yml
-
       - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v7
@@ -74,6 +64,22 @@ jobs:
 
       - name: Typecheck
         run: pnpm --filter lfd-gateway run typecheck
+
+      # ── La porte, APRÈS la construction (2026-09-25) ────────────────────────
+      # Tout ce qui précède se construit sans rien changer au monde : installer,
+      # typer, construire. On le fait donc PENDANT que la CI (ou le backend)
+      # tourne, et l'on n'attend son verdict qu'ici, juste avant le premier
+      # geste qui touche la production. Mesuré le 2026-09-24 : les fronts
+      # attendaient l'API puis construisaient ~3 min ; ils construisent
+      # désormais en même temps qu'elle se déploie.
+      # Jusqu'au 2026-08-27, ce déploiement partait dès le push sur `main`, sans
+      # rien savoir de la CI : elle tournait EN MÊME TEMPS, et son verdict
+      # arrivait après coup. Un commit rouge se déployait quand même.
+      - name: Attendre que la CI soit verte
+        if: github.event_name != 'workflow_dispatch'
+        uses: ./.github/actions/attendre-un-run
+        with:
+          workflow: ci.yml
 
       # wrangler est installé dans le paquet gateway (devDep) — on l'invoque via
       # `exec` (pas `dlx`) pour utiliser la version pinnée. Il lit le token et

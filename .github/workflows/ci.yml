@@ -359,12 +359,19 @@ jobs:
   # KBIS, mandat signé — partent pour de bon. Le bucket, lui, est créé par le
   # harnais (`ensureTestBucket`), donc rien à provisionner ici.
   b2b-backend:
-    name: Backend B2B · e2e ${{ matrix.shard }}/4
+    name: Backend B2B · e2e ${{ matrix.shard }}/6
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.api == 'true'
     strategy:
-      # QUATRE RUNNERS, un quart des suites chacun.
+      # SIX RUNNERS depuis le 2026-09-25 (quatre avant). 136 suites, et une
+      # tranche sur quatre portait 895 s de tests quand une autre en portait
+      # 439 — les durées de `test/e2e-durations.json` dataient d'avant la
+      # moitié des suites. Régénérées depuis un run de CI vert (même date) :
+      # ~395 s par tranche à six, deux processus chacune, soit ~3 min 20 de
+      # tests au lieu de 7 min 30 pour la plus chargée.
+      #
+      # QUATRE RUNNERS, à l'origine, un quart des suites chacun.
       #
       # Le chronomètre par suite (`test/slow-suites.reporter.cjs`) a montré une
       # distribution PLATE : ~5 s par suite, dominées par l'amorçage de
@@ -380,7 +387,7 @@ jobs:
       # sinon on corrige une panne, on repousse, et on en découvre une seconde.
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6]
     services:
       postgres:
         image: postgres:16-alpine
@@ -467,7 +474,7 @@ jobs:
         # CI. `--runTestsByPath` prend des chemins littéraux, pas des motifs.
         run: |
           pnpm --filter lfd-api run test:e2e --runTestsByPath \
-            $(node dev-toolbox/ci/e2e-shard.mjs ${{ matrix.shard }} 4)
+            $(node dev-toolbox/ci/e2e-shard.mjs ${{ matrix.shard }} 6)
 
   # ── Les fronts et le PIM ────────────────────────────────────────────────────
   # Le build de production est le seul endroit qui exerce la compilation AOT des
