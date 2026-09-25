@@ -22,6 +22,11 @@ import { OrderReadyMail } from "./application/services/order-ready-mail.service.
 import { SendHandoverReminderHandler } from "./application/commands/send-handover-reminder.handler.js";
 import { AppConfig } from "../../platform/config/app-config.js";
 import { OrderMailOrigins } from "./domain/ports/order-mail-origins.js";
+import { OrderPaymentLinkReader } from "./domain/ports/order-payment-link.reader.js";
+import { PrismaOrderPaymentLinkReader } from "./infrastructure/prisma-order-payment-link.reader.js";
+import { AdminOrderPaymentLinksController } from "./http/admin-order-payment-links.controller.js";
+import { ListOrdersAwaitingPaymentHandler } from "./application/queries/list-orders-awaiting-payment.handler.js";
+import { ResendOrderPaymentLinkHandler } from "./application/commands/resend-order-payment-link.handler.js";
 import { OrderRecipientReader } from "./domain/ports/order-recipient.reader.js";
 import { PrismaOrderRecipientReader } from "./infrastructure/prisma-order-recipient.reader.js";
 import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
@@ -138,6 +143,9 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     AdminProductionController,
     AdminOrderDraftsController,
     AdminCatalogController,
+    // Les commandes à régler par carte, vues de la comptabilité (plan liens de
+    // paiement §2a) : la commande vit ici, la ressource est `b2b_accounting`.
+    AdminOrderPaymentLinksController,
     // La seule surface PUBLIQUE de ce contexte. Rangée avec les autres parce
     // qu'elle tarife un panier — c'est un sujet de commande, pas de catalogue —
     // et son absence de jeton est écrite dans son en-tête, pas dans sa place.
@@ -195,6 +203,9 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     // l'annonce) et par le rappel du comptoir (qui le renvoie).
     OrderReadyMail,
     SendHandoverReminderHandler,
+    { provide: OrderPaymentLinkReader, useClass: PrismaOrderPaymentLinkReader },
+    ListOrdersAwaitingPaymentHandler,
+    ResendOrderPaymentLinkHandler,
     { provide: OrderRecipientReader, useClass: PrismaOrderRecipientReader },
     {
       // Les deux origines, extraites de la configuration à la racine de

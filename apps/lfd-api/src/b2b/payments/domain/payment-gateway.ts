@@ -25,6 +25,15 @@ export interface CreatedIntent {
 export type PaymentWebhookEvent =
   | { readonly kind: "succeeded"; readonly paymentIntentId: string }
   | { readonly kind: "failed"; readonly paymentIntentId: string }
+  /**
+   * Un **lien libre** est encaissé (plan liens de paiement §2b) :
+   * `checkout.session.completed` avec `payment_status = paid`, ou
+   * `checkout.session.async_payment_succeeded`. Un `completed` encore impayé
+   * (moyen de paiement différé) est `ignored` : son issue viendra plus tard.
+   */
+  | { readonly kind: "link_paid"; readonly sessionId: string }
+  /** La session d'un lien libre a expiré sans règlement (`checkout.session.expired`). */
+  | { readonly kind: "link_expired"; readonly sessionId: string }
   | { readonly kind: "ignored" };
 
 /**

@@ -190,6 +190,40 @@ const proofPurged: Phrase = (fact) =>
     [...MANDATE_KEYS, 'cause'],
   );
 
+// ─── Les liens de paiement libres ───────────────────────────────────────────
+
+const PAYMENT_LINK: Noun = { the: 'le lien de paiement', a: 'un lien de paiement' };
+
+/**
+ * « … a créé le lien de paiement « Régularisation août » de 120,00 € pour le
+ * client « X » ». Faits nés le 2026-09-25 (plan liens de paiement §2b) ; phrase
+ * minimale posée avec le fait pour que le registre reste complet — l'écran du
+ * lot 4 peut l'affiner.
+ */
+function onPaymentLink(verb: string): Phrase {
+  return (fact) => {
+    const client = subjectLabelOf(fact);
+    return byActor(
+      fact,
+      [
+        text(`${verb} `),
+        ...cite(PAYMENT_LINK, fact.payload['paymentLink']),
+        text(' de '),
+        inUnit('cents', fact.payload['amountCents']),
+        ...(client === null
+          ? [text(' pour un client')]
+          : [text(' pour le client « '), subject(fact, client), text(' »')]),
+      ],
+      ['subjectLabel', 'paymentLink', 'amountCents'],
+    );
+  };
+}
+
+/** Un plafond en centimes, ou « aucun » — `null` veut dire « pas de plafond ». */
+function capOf(raw: unknown): Segment {
+  return raw === null ? value('aucun') : inUnit('cents', raw);
+}
+
 export const ACCOUNTING_PHRASES = {
   'legal_entity.declared': onEntity(
     'a déclaré',
@@ -270,4 +304,15 @@ export const ACCOUNTING_PHRASES = {
   ),
   'payment_mandate.options_changed': optionsChanged,
   'payment_mandate.proof_purged': proofPurged,
+  'payment_link.created': onPaymentLink('a créé'),
+  'payment_link.cancelled': onPaymentLink('a annulé'),
+  'accounting_settings.payment_link_cap_set': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a changé le plafond des liens de paiement '),
+        ...fromTo([capOf(fact.payload['from'])], [capOf(fact.payload['to'])]),
+      ],
+      ['subjectLabel', 'from', 'to'],
+    ),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

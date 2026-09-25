@@ -362,3 +362,14 @@ export class ReminderRefusedError extends BusinessError {
     super("orders.handover.reminder_refused", reason);
   }
 }
+
+/**
+ * **Le renvoi du lien de règlement est refusé** — et la phrase dit pourquoi
+ * (plan liens de paiement §2a). `BusinessError` (409) : la demande est bien
+ * formée, c'est l'état de la commande ou de la configuration qui s'y oppose.
+ */
+export class OrderPaymentLinkRefusedError extends BusinessError {
+  constructor(reason: string) {
+    super("orders.payment_link.refused", reason);
+  }
+}

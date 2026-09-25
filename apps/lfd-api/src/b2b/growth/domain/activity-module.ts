@@ -121,6 +121,11 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // envoyé, révoqué par le staff sous `b2b_payments` — le client peut aussi
     // en préparer un et y joindre sa preuve. Sous `comptes` jusqu'au 2026-09-19.
     "payment_mandate.",
+    // Les liens de paiement libres, créés et annulés sous `b2b_accounting`
+    // (plan liens de paiement §2b, 2026-09-25).
+    "payment_link.",
+    // Le réglage de la comptabilité — aujourd'hui le plafond de ces liens.
+    "accounting_settings.",
   ],
 };
 

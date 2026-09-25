@@ -379,3 +379,78 @@ model PaymentMandate {
   @@map("payment_mandates")
   @@schema("public")
 }
+
+/// L'état d'un **lien de paiement libre**. `open` est le seul état dont on
+/// sort ; `paid` vient de Stripe (webhook), `cancelled` du staff, `expired` de
+/// Stripe (la session a vécu ses 24 h sans règlement).
+enum PaymentLinkStatus {
+  open
+  paid
+  cancelled
+  expired
+
+  @@schema("public")
+}
+
+/// Un **lien de paiement libre** — une somme demandée à un client hors de toute
+/// commande (« Régularisation août »), encaissée par Stripe Checkout hébergé.
+///
+/// Ce n'est PAS une commande : il n'entre ni au chiffre d'affaires des
+/// commandes ni au cycle de prélèvement, et ne solde aucune commande — le
+/// rapprochement reste humain. Propriétaire : `src/b2b/payments/`. Plan
+/// `documentation/comptabilite/plan-blocage-prelevement-et-liens-de-paiement.md` §2b.
+///
+/// Aucun DELETE : un lien se clôt par son statut.
+model PaymentLink {
+  id String @id
+
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
+  /// Centimes, entier > 0 (tenu par l'agrégat ET par la contrainte `CHECK`).
+  amountCents Int    @map("amount_cents")
+  /// Repris tel quel sur la page Stripe — 1 à 140 caractères.
+  label       String
+
+  status PaymentLinkStatus @default(open)
+
+  /// `cs_…` — la clé de rapprochement du webhook.
+  stripeSessionId String @unique @map("stripe_session_id")
+  /// L'URL hébergée par Stripe, à copier et envoyer au client.
+  url             String
+
+  /// Instants lus du `Clock`, jamais de l'horloge de la base.
+  createdAt        DateTime  @map("created_at")
+  /// L'id de fiche staff, pas une clé étrangère : un lien est une pièce
+  /// comptable, il survit au départ de qui l'a créé.
+  createdByStaffId String    @map("created_by_staff_id")
+  paidAt           DateTime? @map("paid_at")
+  cancelledAt      DateTime? @map("cancelled_at")
+  cancelledByStaffId String? @map("cancelled_by_staff_id")
+
+  @@index([companyId])
+  @@index([status, createdAt])
+  @@map("payment_links")
+  @@schema("public")
+}
+
+/// Les **réglages de la comptabilité** — UNE ligne, clé fixe `default`.
+///
+/// Ligne absente = aucun réglage posé, donc aucun plafond. Config sans
+/// transition (CLAUDE.md §3.1) : un CRUD, pas un agrégat. Propriétaire :
+/// `src/b2b/payments/`.
+model AccountingSettings {
+  /// Toujours `default` : il n'y a qu'un réglage.
+  id String @id
+
+  /// Le plafond d'un lien de paiement libre, en centimes. `NULL` = aucun
+  /// plafond (Hugo, 2026-09-25). Lu à la CRÉATION d'un lien seulement : un lien
+  /// déjà créé n'est pas touché quand il baisse.
+  paymentLinkMaxCents Int? @map("payment_link_max_cents")
+
+  updatedAt        DateTime @map("updated_at")
+  updatedByStaffId String   @map("updated_by_staff_id")
+
+  @@map("accounting_settings")
+  @@schema("public")
+}

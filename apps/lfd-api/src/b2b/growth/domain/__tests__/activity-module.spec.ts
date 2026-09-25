@@ -123,12 +123,21 @@ describe("moduleOf — la comptabilité", () => {
     ["payment_mandate.minted", "comptabilite"],
     ["payment_mandate.signed", "comptabilite"],
     ["payment_mandate.revoked", "comptabilite"],
+    // Les liens de paiement libres (2026-09-25) : un geste de la comptabilité.
+    ["payment_link.created", "comptabilite"],
+    ["payment_link.cancelled", "comptabilite"],
+    ["accounting_settings.payment_link_cap_set", "comptabilite"],
   ])("%s se range sous %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module ne ramène que ses deux préfixes", () => {
-    expect(prefixesOf("comptabilite")).toEqual(["legal_entity.", "payment_mandate."]);
+  it("le filtre du module ne ramène que ses quatre préfixes", () => {
+    expect(prefixesOf("comptabilite")).toEqual([
+      "legal_entity.",
+      "payment_mandate.",
+      "payment_link.",
+      "accounting_settings.",
+    ]);
   });
 
   /** Le mandat a quitté les comptes clients ; le RIB du client, lui, y reste. */

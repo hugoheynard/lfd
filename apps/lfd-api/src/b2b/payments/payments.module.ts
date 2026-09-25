@@ -38,6 +38,28 @@ import { AdminCompanyBankAccountController } from "./http/admin-company-bank-acc
 import { CompanyBankAccountController } from "./http/company-bank-account.controller.js";
 import { AdminMandatesController } from "./http/admin-mandates.controller.js";
 import { PaymentsWebhookController } from "./http/payments-webhook.controller.js";
+import { AdminAccountingSettingsController } from "./http/admin-accounting-settings.controller.js";
+import { AdminPaymentLinksController } from "./http/admin-payment-links.controller.js";
+import {
+  AccountingSettingsReader,
+  AccountingSettingsWriter,
+} from "./domain/ports/accounting-settings.store.js";
+import { CheckoutGateway } from "./domain/ports/checkout-gateway.js";
+import { PaymentLinkCompanyReader } from "./domain/ports/payment-link-company.reader.js";
+import { PaymentLinkReader } from "./domain/ports/payment-link.reader.js";
+import { PaymentLinkRepository } from "./domain/ports/payment-link.repository.js";
+import { CancelPaymentLinkHandler } from "./application/commands/cancel-payment-link.handler.js";
+import { CreatePaymentLinkHandler } from "./application/commands/create-payment-link.handler.js";
+import { ExpirePaymentLinkHandler } from "./application/commands/expire-payment-link.handler.js";
+import { SetAccountingSettingsHandler } from "./application/commands/set-accounting-settings.handler.js";
+import { SettlePaymentLinkHandler } from "./application/commands/settle-payment-link.handler.js";
+import { GetAccountingSettingsHandler } from "./application/queries/get-accounting-settings.handler.js";
+import { ListPaymentLinksHandler } from "./application/queries/list-payment-links.handler.js";
+import { PrismaAccountingSettingsStore } from "./infrastructure/prisma-accounting-settings.store.js";
+import { PrismaPaymentLinkCompanyReader } from "./infrastructure/prisma-payment-link-company.reader.js";
+import { PrismaPaymentLinkReader } from "./infrastructure/prisma-payment-link.reader.js";
+import { PrismaPaymentLinkRepository } from "./infrastructure/prisma-payment-link.repository.js";
+import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.js";
 
 /**
  * Contexte **paiement** : l'encaissement d'une commande par carte, et le
@@ -71,6 +93,8 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
     AdminCompanyBankAccountController,
     CompanyBankAccountController,
     CompanyMandateController,
+    AdminPaymentLinksController,
+    AdminAccountingSettingsController,
   ],
   providers: [
     { provide: PaymentGateway, useClass: StripePaymentGateway },
@@ -81,6 +105,22 @@ import { PaymentsWebhookController } from "./http/payments-webhook.controller.js
     },
     { provide: BankAccountGuardReader, useClass: PrismaBankAccountGuardReader },
     { provide: CustomerMandateGate, useClass: FeatureAccessCustomerMandateGate },
+    // Les liens de paiement libres (plan liens de paiement §2b). Le réglage du
+    // plafond : une ligne, deux ports (lecture / écriture) sur le même adaptateur.
+    { provide: CheckoutGateway, useClass: StripeCheckoutGateway },
+    { provide: PaymentLinkRepository, useClass: PrismaPaymentLinkRepository },
+    { provide: PaymentLinkReader, useClass: PrismaPaymentLinkReader },
+    { provide: PaymentLinkCompanyReader, useClass: PrismaPaymentLinkCompanyReader },
+    PrismaAccountingSettingsStore,
+    { provide: AccountingSettingsReader, useExisting: PrismaAccountingSettingsStore },
+    { provide: AccountingSettingsWriter, useExisting: PrismaAccountingSettingsStore },
+    CreatePaymentLinkHandler,
+    CancelPaymentLinkHandler,
+    SettlePaymentLinkHandler,
+    ExpirePaymentLinkHandler,
+    ListPaymentLinksHandler,
+    SetAccountingSettingsHandler,
+    GetAccountingSettingsHandler,
     MintMandateHandler,
     SignMandateHandler,
     SendMandateHandler,

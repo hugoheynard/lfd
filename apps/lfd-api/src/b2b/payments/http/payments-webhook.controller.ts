@@ -13,7 +13,9 @@ import type { Request } from "express";
 import { ConfirmOrderPaymentCommand } from "../../orders/application/commands/confirm-order-payment.command.js";
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { InvalidWebhookSignatureError } from "../domain/errors/payment-errors.js";
-import { PaymentGateway } from "../domain/payment-gateway.js";
+import { PaymentGateway, type PaymentWebhookEvent } from "../domain/payment-gateway.js";
+import { ExpirePaymentLinkCommand } from "../application/commands/expire-payment-link.command.js";
+import { SettlePaymentLinkCommand } from "../application/commands/settle-payment-link.command.js";
 
 /**
  * Réception des **webhooks Stripe**.
@@ -48,15 +50,32 @@ export class PaymentsWebhookController {
       throw new InvalidWebhookSignatureError();
     }
 
-    const event = this.payments.parseWebhook(rawBody, signature);
-    if (event.kind === "succeeded") {
-      await this.commands.execute(
-        new ConfirmOrderPaymentCommand(event.paymentIntentId, "succeeded"),
-      );
-    } else if (event.kind === "failed") {
-      await this.commands.execute(new ConfirmOrderPaymentCommand(event.paymentIntentId, "failed"));
+    const command = commandFor(this.payments.parseWebhook(rawBody, signature));
+    if (command !== null) {
+      await this.commands.execute(command);
     }
     // `ignored` (ou traité) : 200 pour que Stripe cesse de réessayer.
     return { received: true };
   }
+}
+
+/**
+ * L'événement réduit → la commande qui le projette. Une table exhaustive sur
+ * `kind` : un type d'événement ajouté au port sans sa commande ne compile pas.
+ */
+const COMMANDS: {
+  readonly [K in PaymentWebhookEvent["kind"]]: (
+    event: Extract<PaymentWebhookEvent, { kind: K }>,
+  ) => object | null;
+} = {
+  succeeded: (event) => new ConfirmOrderPaymentCommand(event.paymentIntentId, "succeeded"),
+  failed: (event) => new ConfirmOrderPaymentCommand(event.paymentIntentId, "failed"),
+  link_paid: (event) => new SettlePaymentLinkCommand(event.sessionId),
+  link_expired: (event) => new ExpirePaymentLinkCommand(event.sessionId),
+  ignored: () => null,
+};
+
+function commandFor<E extends PaymentWebhookEvent>(event: E): object | null {
+  const project = COMMANDS[event.kind] as (event: E) => object | null;
+  return project(event);
 }

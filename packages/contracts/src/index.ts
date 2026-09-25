@@ -137,6 +137,21 @@ export {
   PRE_NOTIFICATION_MIN_DAYS,
 } from "./legal-entity.js";
 export type { BillingCycleView } from "./billing-cycle.js";
+export {
+  createPaymentLinkPayloadSchema,
+  paymentLinkStatusSchema,
+  setAccountingSettingsPayloadSchema,
+  PAYMENT_LINK_LABEL_MAX,
+} from "./payment-link.js";
+export type {
+  AccountingSettingsView,
+  CreatedPaymentLink,
+  CreatePaymentLinkPayload,
+  OrderAwaitingPaymentView,
+  PaymentLinkStatus,
+  PaymentLinkView,
+  SetAccountingSettingsPayload,
+} from "./payment-link.js";
 export type {
   AssignCreditorIdentifierPayload,
   CorrectLegalEntityPayload,

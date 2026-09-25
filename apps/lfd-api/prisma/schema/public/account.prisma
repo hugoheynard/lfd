@@ -241,6 +241,8 @@ model Company {
   mandates           PaymentMandate[]
   // Le RIB du client — au plus un (`company_id` est unique côté table).
   bankAccount        CompanyBankAccount?
+  // Les liens de paiement libres adressés à ce client (cf. payments/).
+  paymentLinks       PaymentLink[]
 
   /// Dérogations de ce compte aux règles d'alerte globales (cf. alerts/).
   alertOverrides AccountAlertOverride[]

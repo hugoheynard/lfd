@@ -69,6 +69,7 @@
   "test/orders-idempotency.e2e-spec.ts": 8306,
   "test/orders.e2e-spec.ts": 21558,
   "test/password-link.e2e-spec.ts": 8340,
+  "test/payment-links.e2e-spec.ts": 4500,
   "test/payments-journal.e2e-spec.ts": 11133,
   "test/pickup-addresses.e2e-spec.ts": 10180,
   "test/pim-alignment-by-half.e2e-spec.ts": 7861,

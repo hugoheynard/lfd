@@ -739,6 +739,36 @@ origine réelle, et sur iPhone l'abonnement n'est possible qu'une fois l'app
 installée sur l'écran d'accueil — Safari refuse en **silence** avant cela. C'est
 le même profil que le webhook Resend : la chaîne ne se vérifie qu'en ligne.
 
+## Abonner le webhook Stripe aux liens de paiement
+
+Les **liens de paiement libres** (plan
+[`plan-blocage-prelevement-et-liens-de-paiement.md`](../comptabilite/plan-blocage-prelevement-et-liens-de-paiement.md)
+§2b) sont des pages Stripe Checkout hébergées. Stripe ne prévient le backend
+que des événements auxquels l'endpoint est **abonné** — et un événement non
+abonné ne produit **aucune erreur** : le lien reste `open` pour toujours alors
+que le client a payé.
+
+Le geste, dans le tableau de bord Stripe (Développeurs → Webhooks), sur
+l'endpoint **déjà branché** sur `POST /payments/webhook` — celui qui reçoit
+`payment_intent.succeeded` et `payment_intent.payment_failed`. Ne pas en créer
+un second : il aurait son propre secret de signature, que le backend ne connaît
+pas, et chacun de ses appels serait refusé en `400`.
+
+Ajouter ces **trois** événements aux deux déjà cochés :
+
+| Événement                                  | Ce qu'il fait chez nous                             |
+| ------------------------------------------ | --------------------------------------------------- |
+| `checkout.session.completed`               | lien → `paid`, seulement si `payment_status = paid` |
+| `checkout.session.async_payment_succeeded` | lien → `paid` (moyen de paiement différé)           |
+| `checkout.session.expired`                 | lien `open` → `expired`                             |
+
+**Vérifier** : créer un lien d'un euro depuis l'onglet « Liens libres », le
+payer avec une carte de test (en mode test), puis relire la liste — le lien doit
+être « payé ». Dans Stripe, l'onglet de l'endpoint montre la livraison de
+`checkout.session.completed` en `200`. Un `200` avec un lien resté ouvert veut
+dire que la session ne porte pas la métadonnée `paymentLinkId` : ce n'est pas
+une page ouverte par le back-office.
+
 ## En dev : un `400` sur un corps pourtant valide
 
 Le symptôme : une requête que le front envoie correctement, refusée en `400`

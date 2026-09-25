@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { mandateStatusSchema } from "../payment-mandate.js";
 import {
+  cents,
   day,
   days,
   fact,
@@ -133,5 +134,38 @@ export const ACCOUNTING_FACTS = {
   "payment_mandate.proof_purged": fact(
     payload({ ...mandate, cause: z.enum(["proof_replaced", "draft_voided"]) }),
     [payload({ ...mandateBefore, cause: z.enum(["proof_replaced", "draft_voided"]) })],
+  ),
+
+  /**
+   * Un lien de paiement libre est créé (plan liens de paiement §2b). Sujet :
+   * la société à qui il s'adresse (`subjectLabel` = son nom) ; le lien est
+   * cité par son libellé, celui que le client lit sur la page Stripe.
+   */
+  "payment_link.created": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      paymentLink: named("payment_link"),
+      amountCents: cents(),
+    }),
+  ),
+  /** Le staff l'a retiré avant règlement. */
+  "payment_link.cancelled": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      paymentLink: named("payment_link"),
+      amountCents: cents(),
+    }),
+  ),
+  /**
+   * Le plafond d'un lien libre, posé par la comptabilité (Hugo, 2026-09-25).
+   * `null` = aucun plafond. `subjectLabel` : le nom du réglage — une ligne
+   * unique n'en a pas d'autre.
+   */
+  "accounting_settings.payment_link_cap_set": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      from: cents().nullable(),
+      to: cents().nullable(),
+    }),
   ),
 } as const satisfies JournalFactFamily;

@@ -1,4 +1,4 @@
-import { paymentUrlFor } from "../payment-link.js";
+import { awaitsCardPayment, paymentUrlFor } from "../payment-link.js";
 
 describe("paymentUrlFor", () => {
   it("compose le lien vers l'espace client", () => {
@@ -24,5 +24,23 @@ describe("paymentUrlFor", () => {
     expect(paymentUrlFor("https://boutique.lfc.fr", "a/b")).toBe(
       "https://boutique.lfc.fr/commandes/a%2Fb/regler",
     );
+  });
+});
+
+describe("awaitsCardPayment", () => {
+  it("retient un règlement en attente ou refusé, sur une commande vivante", () => {
+    expect(awaitsCardPayment("placed", "pending")).toBe(true);
+    expect(awaitsCardPayment("ready", "failed")).toBe(true);
+  });
+
+  it("écarte une commande annulée : on ne fait pas payer ce qu'on ne fabriquera pas", () => {
+    expect(awaitsCardPayment("cancelled", "pending")).toBe(false);
+    expect(awaitsCardPayment("cancelled", "failed")).toBe(false);
+  });
+
+  it("écarte un règlement payé, sans objet ou remboursé", () => {
+    expect(awaitsCardPayment("placed", "paid")).toBe(false);
+    expect(awaitsCardPayment("placed", "not_required")).toBe(false);
+    expect(awaitsCardPayment("placed", "refunded")).toBe(false);
   });
 });

@@ -12,6 +12,7 @@ import {
   type CreatedIntent,
   type PaymentWebhookEvent,
 } from "../domain/payment-gateway.js";
+import { PAYMENT_LINK_METADATA_KEY } from "./stripe-checkout-gateway.js";
 
 /**
  * Adaptateur **Stripe** du port {@link PaymentGateway}.
@@ -99,5 +100,40 @@ function reduceEvent(event: Stripe.Event): PaymentWebhookEvent {
   if (event.type === "payment_intent.payment_failed") {
     return { kind: "failed", paymentIntentId: event.data.object.id };
   }
+  return reduceCheckoutEvent(event);
+}
+
+/**
+ * Les trois événements d'une page hébergée, **limités aux liens libres** : une
+ * session sans `paymentLinkId` en métadonnée n'a pas été ouverte par nous.
+ *
+ * `completed` ne vaut paiement que si `payment_status = paid` — un moyen
+ * différé termine la page avant d'encaisser, et c'est
+ * `async_payment_succeeded` qui dira le reste.
+ */
+function reduceCheckoutEvent(event: Stripe.Event): PaymentWebhookEvent {
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object;
+    return isPaymentLink(session) && session.payment_status === "paid"
+      ? { kind: "link_paid", sessionId: session.id }
+      : { kind: "ignored" };
+  }
+  if (event.type === "checkout.session.async_payment_succeeded") {
+    const session = event.data.object;
+    return isPaymentLink(session)
+      ? { kind: "link_paid", sessionId: session.id }
+      : { kind: "ignored" };
+  }
+  if (event.type === "checkout.session.expired") {
+    const session = event.data.object;
+    return isPaymentLink(session)
+      ? { kind: "link_expired", sessionId: session.id }
+      : { kind: "ignored" };
+  }
   return { kind: "ignored" };
+}
+
+function isPaymentLink(session: Stripe.Checkout.Session): boolean {
+  const id = session.metadata?.[PAYMENT_LINK_METADATA_KEY];
+  return id !== undefined && id !== "";
 }

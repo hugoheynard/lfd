@@ -70,6 +70,26 @@ export interface B2bMails {
     readonly settleUrl: string;
     readonly locale: ContentLocale;
   };
+  /**
+   * **Le lien de règlement d'une commande**, renvoyé par la comptabilité (plan
+   * `plan-blocage-prelevement-et-liens-de-paiement.md` §2a). Destinataire :
+   * l'acheteur.
+   *
+   * Le seul courriel qui porte le lien `/commandes/:id/regler` : l'accusé de
+   * passation ne le porte pas, et le courriel de refus pointe vers l'écran de
+   * reprise du règlement. Il part à la main, quand quelqu'un a constaté qu'une
+   * commande attend encore son argent.
+   *
+   * Il ne reprend pas le décompte : il répond à UNE question — combien, et où
+   * payer. Pas de locale : la comptabilité écrit en français, comme les autres
+   * courriels partis d'un geste du back-office.
+   */
+  "customer.order-payment-link": {
+    readonly reference: string;
+    readonly totalCents: number;
+    /** Jamais vide : sans lien, le renvoi est refusé avant d'arriver ici. */
+    readonly settleUrl: string;
+  };
   "customer.order-placed": {
     readonly sheet: ClientSheet;
     /** Le jeton de retrait, ou `null` — une livraison n'a pas de comptoir. */
@@ -563,6 +583,20 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         }),
       };
     },
+    "customer.order-payment-link": (data) => ({
+      subject: sanitiseSubject(`Votre commande ${data.reference} reste à régler`),
+      html: customerMail({
+        title: "Votre commande attend son règlement",
+        body:
+          `Le règlement de votre commande ${data.reference} ne nous est pas encore parvenu.\n\n` +
+          "Vous pouvez la régler par carte depuis votre espace, en suivant le lien ci-dessous.",
+        rows: [{ label: "Montant à régler", value: money(data.totalCents, "fr") }],
+        cta: { label: "Régler ma commande", url: data.settleUrl },
+        footer:
+          "Déjà réglée ? Les deux messages se sont croisés : ignorez celui-ci. " +
+          "Un doute ? Répondez à cet e-mail.",
+      }),
+    }),
     "customer.access-opened": (data) => ({
       subject: sanitiseSubject(`Votre accès à l'espace pro ${data.companyName}`),
       html: customerMail({
