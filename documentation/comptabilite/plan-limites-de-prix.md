@@ -120,11 +120,22 @@ floorScopeKey(scope)`. Décision, irréversible dès le premier fait publié :
   ressource à la définition du rôle si elle est absente, sans jamais écraser
   `grants`, et `ROLE_GRANTS` dit la même chose (e2e de parité). Migrations
   datées **après** `20260926120100`.
-- Octroi : `admin` `write` (invariant), `comptabilite` `write`, `commercial`
-  **`read`** — il continue de **voir** la limite sous chaque ligne de sa
-  tarification sans pouvoir la poser. 🔴 **À trancher par Hugo avant la
-  migration** : c'est le retrait d'un geste en service (`b2b_pricing:write`
-  pose les limites aujourd'hui).
+- Octroi : `admin` `write` (invariant), `comptabilite` `write`.
+- **Qui a le droit de pricer voit la limite** (Hugo, 2026-09-25 : « par défaut
+  si tu as le droit de pricer, tu devrais pouvoir voir la limite au moins »).
+  Deux effets :
+  - la ligne en lecture seule sous chaque article de la Tarification B2B vient
+    du tableau, sous `b2b_pricing:read` : **aucun droit de plus** n'est
+    nécessaire pour la voir ;
+  - `price_limits:read` (la vue Comptabilité) est accordé à **tout rôle qui
+    porte `b2b_pricing`**, en lecture ou en écriture — sélection par le
+    **contenu** des définitions, et écart jumeau pour tout écart individuel
+    qui accorde `b2b_pricing` (motif `20260926100100_le_comptoir_est_accorde`).
+    Au 2026-09-25, cela désigne `commercial` et `comptabilite` (qui l'a déjà
+    en écriture). Un test du contrat tient la règle : tout rôle de
+    `ROLE_GRANTS` qui porte `b2b_pricing` lit `price_limits`.
+  - Le commercial **perd** le geste de poser une limite (il n'a plus que la
+    lecture) — c'est l'objet de la demande.
 - **Les routes changent de garde, pas d'adresse.** Le contrôleur compte **sept**
   routes (poser ; confirmer global et par portée ; archiver global et par
   portée ; deux `DELETE`). Elles passent dans un contrôleur à elles,
