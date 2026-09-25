@@ -17,27 +17,27 @@
 -- sous `b2b_pricing:read` — pas par ce droit. Aucune sélection par contenu,
 -- aucun écart jumeau.
 --
--- Retour arrière : retirer `price_limits` des `grants` d'admin et de
+-- Retour arrière : retirer `lfc_price_limits` des `grants` d'admin et de
 -- comptabilite. La valeur d'enum reste (migration précédente).
 
 -- ── 1. L'ADMINISTRATEUR COUVRE TOUT, SANS TROU ─────────────────────────────
 UPDATE "public"."staff_role_definitions"
-SET "grants" = "grants" || '[{"resource":"price_limits","action":"write"}]'::jsonb,
+SET "grants" = "grants" || '[{"resource":"lfc_price_limits","action":"write"}]'::jsonb,
     "updated_at" = CURRENT_TIMESTAMP
 WHERE "key" = 'admin'
   AND NOT EXISTS (
     SELECT 1
     FROM jsonb_array_elements("grants") AS entry
-    WHERE entry->>'resource' = 'price_limits'
+    WHERE entry->>'resource' = 'lfc_price_limits'
   );
 
 -- ── 2. LA COMPTABILITÉ POSE LES LIMITES ────────────────────────────────────
 UPDATE "public"."staff_role_definitions"
-SET "grants" = "grants" || '[{"resource":"price_limits","action":"write"}]'::jsonb,
+SET "grants" = "grants" || '[{"resource":"lfc_price_limits","action":"write"}]'::jsonb,
     "updated_at" = CURRENT_TIMESTAMP
 WHERE "key" = 'comptabilite'
   AND NOT EXISTS (
     SELECT 1
     FROM jsonb_array_elements("grants") AS entry
-    WHERE entry->>'resource' = 'price_limits'
+    WHERE entry->>'resource' = 'lfc_price_limits'
   );

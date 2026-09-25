@@ -4,7 +4,8 @@ import { staffResourceSchema, STAFF_RESOURCE_LABELS, type StaffResource } from '
  * **À quel outil appartient un domaine de droits.**
  *
  * 🔴 **Il n'y a plus de table.** L'outil se lit dans la clé : `pim_catalog`
- * appartient au PIM, `b2b_pricing` à la plateforme, `staff_access` au socle. La
+ * appartient au PIM, `b2b_pricing` à la plateforme, `staff_access` au socle,
+ * `lfc_price_limits` à la vente LFC entière — pros et particuliers (2026-09-25). La
  * version précédente de ce fichier portait un `Record<StaffResource, StaffTool>`
  * écrit à la main — une seconde déclaration de la même vérité, qu'il fallait
  * tenir d'accord avec le contrat.
@@ -18,13 +19,14 @@ import { staffResourceSchema, STAFF_RESOURCE_LABELS, type StaffResource } from '
  * ⚠️ Reste **une** exception, et elle est nommée : `activity` n'a pas de
  * préfixe, parce que le journal ne se range dans aucun outil.
  */
-export type StaffTool = 'pim' | 'b2b' | 'staff' | 'ops' | 'transverse';
+export type StaffTool = 'pim' | 'lfc' | 'b2b' | 'staff' | 'ops' | 'transverse';
 
 /** L'ordre des groupes à l'écran — du métier vers la plomberie. */
-const TOOL_ORDER: readonly StaffTool[] = ['pim', 'b2b', 'staff', 'ops', 'transverse'];
+const TOOL_ORDER: readonly StaffTool[] = ['pim', 'lfc', 'b2b', 'staff', 'ops', 'transverse'];
 
 const TOOL_LABELS: Readonly<Record<StaffTool, string>> = {
   pim: 'Référentiel produit',
+  lfc: 'Vente LFC',
   b2b: 'Plateforme B2B',
   staff: 'Équipe et accès',
   ops: 'Exploitation',
@@ -34,6 +36,7 @@ const TOOL_LABELS: Readonly<Record<StaffTool, string>> = {
 /** Ce que le groupe recouvre, pour qui ne connaît pas le découpage. */
 const TOOL_HINTS: Readonly<Record<StaffTool, string>> = {
   pim: 'ce que le catalogue contient, et ce qui en sort',
+  lfc: 'ce qui vaut pour la vente aux pros comme aux particuliers',
   b2b: 'les clients, les commandes, la vente',
   staff: 'qui est qui, et qui peut quoi',
   ops: 'la santé de l’écosystème',
@@ -66,6 +69,7 @@ export function toolOf(resource: StaffResource): StaffTool {
   const prefix = resource.split('_')[0];
   switch (prefix) {
     case 'pim':
+    case 'lfc':
     case 'b2b':
     case 'staff':
     case 'ops':

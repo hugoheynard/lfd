@@ -84,7 +84,7 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
    * Les LIMITES DE PRIX (2026-09-26) — détachées de `b2b_pricing` : la
    * comptabilité les lit, le commercial non (plan-limites-de-prix.md §5).
    */
-  { resource: "price_limits", path: "/admin/pricing/floors?clientele=pro" },
+  { resource: "lfc_price_limits", path: "/admin/pricing/floors?clientele=pro" },
 ];
 
 /** Le produit cartésien rôle × surface : tout ce qu'il y a à vérifier. */

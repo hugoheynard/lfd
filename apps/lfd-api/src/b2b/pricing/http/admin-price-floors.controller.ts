@@ -46,14 +46,14 @@ import type { PriceFloor, PriceScope } from "../domain/price-rule.js";
  * identifiant : c'est ce que l'écran connaît. La clientèle vaut `pro` quand
  * elle n'est pas dite — le front en ligne n'envoie rien, et vise le pro.
  *
- * 🔴 **Sa propre surface, `price_limits`, et plus `b2b_pricing`**
+ * 🔴 **Sa propre surface, `lfc_price_limits`, et plus `b2b_pricing`**
  * (`plan-limites-de-prix.md` §5) : les routes changent de garde, pas
  * d'adresse. Une surface par contrôleur plutôt qu'un `@RequirePermission` par
  * route : ce dernier aurait marché, mais une route ajoutée plus tard ici
  * retomberait sur la ressource de surface — donc sur `b2b_pricing`.
  */
 @Controller("admin/pricing")
-@AdminSurface("price_limits")
+@AdminSurface("lfc_price_limits")
 export class AdminPriceFloorsController {
   constructor(
     private readonly commands: CommandBus,

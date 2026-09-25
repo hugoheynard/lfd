@@ -603,7 +603,7 @@ export interface PriceFloorView {
 
 /**
  * **Les limites en vigueur d'une clientèle** — la vue Comptabilité › Limites
- * de prix (`GET /admin/pricing/floors?clientele=`, sous `price_limits:read`).
+ * de prix (`GET /admin/pricing/floors?clientele=`, sous `lfc_price_limits:read`).
  *
  * La clientèle est rendue avec la liste : l'écran sait ce qu'il montre sans se
  * fier à ce qu'il a demandé. Sous `public`, les limites se posent et se datent

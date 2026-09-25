@@ -326,18 +326,18 @@ describe("les limites de prix", () => {
    */
   it("n'ouvre les limites qu'à l'administrateur et à la comptabilité, en écriture", () => {
     const holders = staffRoleSchema.options.filter((role) =>
-      hasStaffPermission(resolveStaffPermissions(role), "price_limits:read"),
+      hasStaffPermission(resolveStaffPermissions(role), "lfc_price_limits:read"),
     );
 
     expect(holders).toEqual(["admin", "comptabilite"]);
-    expect(ROLE_GRANTS.admin.price_limits).toBe("write");
-    expect(ROLE_GRANTS.comptabilite.price_limits).toBe("write");
+    expect(ROLE_GRANTS.admin.lfc_price_limits).toBe("write");
+    expect(ROLE_GRANTS.comptabilite.lfc_price_limits).toBe("write");
   });
 
   it("🔴 ne donne pas les limites au commercial, qui écrit pourtant la tarification", () => {
     const granted = resolveStaffPermissions("commercial");
 
     expect(hasStaffPermission(granted, "b2b_pricing:write")).toBe(true);
-    expect(hasStaffPermission(granted, "price_limits:read")).toBe(false);
+    expect(hasStaffPermission(granted, "lfc_price_limits:read")).toBe(false);
   });
 });

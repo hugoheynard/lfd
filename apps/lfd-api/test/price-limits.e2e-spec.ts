@@ -214,7 +214,7 @@ describe("la résolution ne lit que le pro", () => {
   });
 });
 
-describe("le droit `price_limits`", () => {
+describe("le droit `lfc_price_limits`", () => {
   it("🔴 refuse la pose au commercial, qui a pourtant `b2b_pricing:write`", async () => {
     const commercial = await asRole("commercial");
 

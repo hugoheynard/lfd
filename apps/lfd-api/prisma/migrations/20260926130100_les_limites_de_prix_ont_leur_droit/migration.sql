@@ -1,4 +1,4 @@
--- LES LIMITES DE PRIX ONT LEUR DROIT — `price_limits`
+-- LES LIMITES DE PRIX ONT LEUR DROIT — `lfc_price_limits`
 --
 -- Plan : documentation/comptabilite/plan-limites-de-prix.md §5.
 --
@@ -13,4 +13,4 @@
 -- ⚠️ IRRÉVERSIBLE, et sans conséquence : Postgres ne sait pas ôter une valeur
 -- d'enum. Un retour arrière la laisse en place, inutilisée.
 
-ALTER TYPE "public"."StaffResource" ADD VALUE IF NOT EXISTS 'price_limits' BEFORE 'b2b_alerts';
+ALTER TYPE "public"."StaffResource" ADD VALUE IF NOT EXISTS 'lfc_price_limits' BEFORE 'b2b_alerts';

@@ -120,7 +120,7 @@ async function beforeGrants(): Promise<void> {
     UPDATE "public"."staff_role_definitions"
     SET "grants" = COALESCE(
       (SELECT jsonb_agg(entry) FROM jsonb_array_elements("grants") AS entry
-       WHERE entry->>'resource' IS DISTINCT FROM 'price_limits'),
+       WHERE entry->>'resource' IS DISTINCT FROM 'lfc_price_limits'),
       '[]'::jsonb)`);
   await ctx.prisma.$executeRawUnsafe(
     `INSERT INTO "public"."staff_role_definitions" ("id", "key", "label", "grants", "updated_at")
@@ -130,18 +130,18 @@ async function beforeGrants(): Promise<void> {
   );
 }
 
-/** Les entrées `price_limits` de chaque rôle, telles que la table les porte. */
+/** Les entrées `lfc_price_limits` de chaque rôle, telles que la table les porte. */
 async function limitGrants(): Promise<Record<string, readonly string[]>> {
   const rows = await ctx.prisma.$queryRawUnsafe<{ key: string; actions: string[] }[]>(`
     SELECT "key",
-           COALESCE(array_agg(entry->>'action') FILTER (WHERE entry->>'resource' = 'price_limits'), '{}') AS actions
+           COALESCE(array_agg(entry->>'action') FILTER (WHERE entry->>'resource' = 'lfc_price_limits'), '{}') AS actions
     FROM "public"."staff_role_definitions"
     LEFT JOIN LATERAL jsonb_array_elements("grants") AS entry ON true
     GROUP BY "key"`);
   return Object.fromEntries(rows.map((row) => [row.key, row.actions]));
 }
 
-describe("la migration accorde `price_limits` — à l'administrateur et à la comptabilité seuls", () => {
+describe("la migration accorde `lfc_price_limits` — à l'administrateur et à la comptabilité seuls", () => {
   it("met la table d'accord avec le contrat, pour chaque rôle connu", async () => {
     await beforeGrants();
     // Sans ce point de départ, le test passerait même si la migration n'accordait rien.
@@ -151,7 +151,7 @@ describe("la migration accorde `price_limits` — à l'administrateur et à la c
 
     const grants = await limitGrants();
     for (const role of staffRoleSchema.options) {
-      const expected = ROLE_GRANTS[role].price_limits;
+      const expected = ROLE_GRANTS[role].lfc_price_limits;
       expect({ role, actions: grants[role] ?? [] }).toEqual({
         role,
         actions: expected === undefined ? [] : [expected],
@@ -184,7 +184,7 @@ describe("la migration accorde `price_limits` — à l'administrateur et à la c
     await beforeGrants();
     await ctx.prisma.$executeRawUnsafe(`
       UPDATE "public"."staff_role_definitions"
-      SET "grants" = "grants" || '[{"resource":"price_limits","action":"read"}]'::jsonb
+      SET "grants" = "grants" || '[{"resource":"lfc_price_limits","action":"read"}]'::jsonb
       WHERE "key" = 'comptabilite'`);
 
     await replayGrants();

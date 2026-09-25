@@ -22,6 +22,7 @@ describe('les domaines rangés par outil', () => {
   it('range du métier vers la plomberie', () => {
     expect(toolGroups().map((group) => group.tool)).toEqual([
       'pim',
+      'lfc',
       'b2b',
       'staff',
       'ops',
@@ -69,6 +70,10 @@ describe('les domaines rangés par outil', () => {
   });
 
   /** La seule ressource sans préfixe, et c'est écrit dans son contrat. */
+  it('rattache les limites de prix à la vente LFC — pros et particuliers', () => {
+    expect(toolOf('lfc_price_limits')).toBe('lfc');
+  });
+
   it('rattache le journal au transverse — il traverse les outils', () => {
     expect(toolOf('activity')).toBe('transverse');
   });

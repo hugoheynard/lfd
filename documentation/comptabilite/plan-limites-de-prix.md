@@ -5,7 +5,7 @@
 > limite de prix, avec un droit à part — étendre le concept à pro / public ;
 > dans la table tarification B2B, sous la ligne avec la ref et le prix, une
 > ligne limite avec les mêmes infos, en lecture seule ». Décidé ensuite :
-> le droit s'appelle `price_limits` ; la porte dynamique passe aussi en
+> le droit s'appelle `lfc_price_limits` ; la porte dynamique passe aussi en
 > comptabilité ; la limite publique **existe dès maintenant** mais ne borne
 > rien tant que le moteur de promotions public n'est pas bâti (« c'est juste
 > pas implémenté pour le moment »). État : **doc-first**, contredit par vitruve
@@ -43,9 +43,9 @@
 
 ## 2. Ce qui change
 
-1. **Un droit `price_limits`** gouverne les trois gestes, porte dynamique
+1. **Un droit `lfc_price_limits`** gouverne les trois gestes, porte dynamique
    comprise. Il n'est **plus** couvert par `b2b_pricing` : le commercial ne
-   pose plus ses propres limites. Lecture : `price_limits:read`.
+   pose plus ses propres limites. Lecture : `lfc_price_limits:read`.
 2. **Chaque limite vise un public** : `pro` ou `public`.
 3. **Une vue « Limites de prix »** dans l'espace Comptabilité, qui reprend
    tout ce que fait la colonne aujourd'hui, pour les deux publics.
@@ -113,7 +113,7 @@ floorScopeKey(scope)`. Décision, irréversible dès le premier fait publié :
 
 ## 5. Le droit et les routes
 
-- Ressource `price_limits`, libellé « Limites de prix ». Valeur d'enum dans sa
+- Ressource `lfc_price_limits`, libellé « Limites de prix ». Valeur d'enum dans sa
   migration seule, puis octroi.
 - **L'octroi suit le modèle de `20260926120100_les_droits_jamais_ecrits`** : la
   table des rôles peut diverger du contrat en production, donc on **ajoute** la
@@ -126,14 +126,14 @@ floorScopeKey(scope)`. Décision, irréversible dès le premier fait publié :
   devrais pouvoir voir la limite au moins », puis « mes commerciaux n'ont pas
   à accéder au bloc comptabilité »). La ligne en lecture seule sous chaque
   article vient du tableau, sous `b2b_pricing:read` : **aucun droit de plus**.
-  `price_limits:read` n'est accordé à **aucun** rôle de pricing ; la vue
+  `lfc_price_limits:read` n'est accordé à **aucun** rôle de pricing ; la vue
   Comptabilité reste à la comptabilité et à l'administration. Le commercial
   perd le geste de poser une limite — c'est l'objet de la demande — et garde
   la lecture là où il travaille.
 - **Les routes changent de garde, pas d'adresse.** Le contrôleur compte **sept**
   routes (poser ; confirmer global et par portée ; archiver global et par
   portée ; deux `DELETE`). Elles passent dans un contrôleur à elles,
-  `@AdminSurface("price_limits")`, **mêmes chemins** : l'action se déduit du
+  `@AdminSurface("lfc_price_limits")`, **mêmes chemins** : l'action se déduit du
   verbe comme partout, `admin-surface-coverage.spec` les couvre, et une route
   ajoutée plus tard ne retombera pas sur `b2b_pricing`. (Un
   `@RequirePermission` par route aurait marché — il **remplace** la ressource
@@ -143,14 +143,14 @@ floorScopeKey(scope)`. Décision, irréversible dès le premier fait publié :
   archiver. Le front en ligne, qui n'envoie rien, continue de viser le pro —
   le contrat servi ne casse pas (`CLAUDE.md` §0).
 - Une lecture `GET /admin/pricing/floors?clientele=` (liste en vigueur, pour
-  la vue Comptabilité), `price_limits:read`. La ligne sous la Tarification B2B
+  la vue Comptabilité), `lfc_price_limits:read`. La ligne sous la Tarification B2B
   passe par le tableau existant (`b2b_pricing:read`), qui porte déjà la limite
   pro.
 
 ## 6. Écrans
 
 **Comptabilité › Limites de prix** (`/comptabilite/limites-de-prix`, garde
-`price_limits:read`, entrée du rail de la Comptabilité) :
+`lfc_price_limits:read`, entrée du rail de la Comptabilité) :
 
 - Un segmenté **Pro · Public**. Sous Public, une bannière : « Les limites
   publiques s'appliqueront aux promotions de la boutique. Elles ne bornent
@@ -159,7 +159,7 @@ floorScopeKey(scope)`. Décision, irréversible dès le premier fait publié :
   puis produits — la même lecture que la colonne d'aujourd'hui (valeur,
   porte dynamique, « a relevé », « à confirmer »).
 - Les gestes (poser, modifier, confirmer, retirer) : les dialogues **existants**
-  de la Tarification B2B. Visibles avec `price_limits:write` seulement.
+  de la Tarification B2B. Visibles avec `lfc_price_limits:write` seulement.
 - **Le coût, chiffré** : 17 fichiers de `b2b/tarification` parlent de limite.
   Le dialogue propre à la limite (`floor-panel`) déménage dans
   `comptabilite/` ; ce qui est **partagé avec les règles** (`archive-panel`,
@@ -172,7 +172,7 @@ floorScopeKey(scope)`. Décision, irréversible dès le premier fait publié :
 **Tarification B2B** : la colonne « Limites » disparaît. Sous chaque ligne
 d'article, une ligne « Limite » en lecture seule : valeur, héritée ou propre,
 porte dynamique si elle existe, « a relevé », « à confirmer ». Un lien « Gérer
-les limites » vers la Comptabilité, affiché avec `price_limits:read`.
+les limites » vers la Comptabilité, affiché avec `lfc_price_limits:read`.
 
 ## 7. Tests
 
@@ -185,7 +185,7 @@ les limites » vers la Comptabilité, affiché avec `price_limits:read`.
 - Journal : l'historique d'une portée pro ne montre aucun fait public.
 - Résolution : une limite **publique** ne relève **aucun** prix pro (e2e :
   limite publique posée à un montant élevé, prix pro inchangé).
-- Droit : poser une limite sans `price_limits:write` → 403, **y compris avec
+- Droit : poser une limite sans `lfc_price_limits:write` → 403, **y compris avec
   `b2b_pricing:write`** (le commercial) ; avec, 200.
 - Parité des rôles : `ROLE_GRANTS` ↔ table.
 - Front : la Tarification B2B n'a plus aucun bouton de limite ; la ligne en

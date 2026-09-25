@@ -204,12 +204,12 @@ ressource et action.
 |                  | `b2b_payments`               | le mandat SEPA **d'un client**                                                                                  |
 |                  | `b2b_accounting`             | **notre** identité d'émetteur : entités, identifiant créancier, compte qui reçoit l'argent                      |
 |                  | `b2b_deferred_payment_block` | bloquer / débloquer le prélèvement d'une société au crédit (2026-09-25)                                         |
-|                  | `price_limits`               | les limites de prix, pro et publiques : poser, confirmer, retirer, et leur liste (2026-09-26)                   |
 |                  | `b2b_alerts`                 | les alertes, de compte et globales                                                                              |
 |                  | `b2b_order_waivers`          | les dérogations d'heure limite — accepter une commande en retard                                                |
 |                  | `b2b_feature_access`         | ouvrir, fermer ou mettre en vitrine la boutique                                                                 |
 |                  | `b2b_client_notes`           | les notes photo du commercial sur un compte                                                                     |
 |                  | `b2b_settings`               | les réglages du commerce : zones, points de retrait, contenu                                                    |
+| **vente LFC**    | `lfc_price_limits`           | les limites de prix, pro et publiques : poser, confirmer, retirer, et leur liste (2026-09-26)                   |
 | **socle**        | `staff_access`               | l'annuaire, les invitations, les rôles — **le droit qui permet de se donner tous les autres**                   |
 |                  | `staff_notifications`        | la cloche du back-office                                                                                        |
 | **exploitation** | `ops_health`                 | la carte de santé                                                                                               |
@@ -258,7 +258,7 @@ propre `RecomputeGuard`, et aucune personne ne s'y authentifie.
 | `b2b_payments`               | w       | r            | w              | —         | —     |
 | `b2b_accounting`             | w       | —            | **w**          | —         | —     |
 | `b2b_deferred_payment_block` | w       | —            | **w**          | —         | —     |
-| `price_limits`               | w       | —            | **w**          | —         | —     |
+| `lfc_price_limits`           | w       | —            | **w**          | —         | —     |
 | `b2b_alerts`                 | w       | w            | —              | —         | —     |
 | `b2b_order_waivers`          | w       | w            | —              | —         | —     |
 | `b2b_feature_access`         | w       | r            | —              | —         | —     |
@@ -283,15 +283,16 @@ Les choix qui ne se devinent pas :
   une décision comptable ; le pousser vers un canal reste un geste de catalogue.
 - **`commercial` écrit `b2b_catalog` et `b2b_pricing`** : négocier un prix et
   valider ce qui entre en vente sont ses deux gestes.
-- **`price_limits` n'est qu'à `admin` et `comptabilite`, en écriture**
+- **`lfc_price_limits` n'est qu'à `admin` et `comptabilite`, en écriture**
   (2026-09-26, `documentation/comptabilite/plan-limites-de-prix.md` §5). Les
   sept routes des limites — mêmes chemins qu'avant — sont passées de
   `b2b_pricing` à ce droit : le commercial ne pose plus la limite sous laquelle
   il négocie. Il n'a pas non plus accès au bloc Comptabilité (Hugo,
   2026-09-25) : il voit la limite **pro** d'un article par le tableau de la
   Tarification, sous `b2b_pricing:read`, et `GET /admin/pricing/floors` lui
-  répond 403. Seule ressource du commerce sans préfixe `b2b_`, parce que le
-  nom a été décidé tel quel — l'écran des rôles la range sous « Transverse ».
+  répond 403. Préfixe `lfc_` (Hugo, 2026-09-25) : la limite vaut pour toute
+  la vente LFC, pros et particuliers — première ressource de cette famille,
+  rangée sous « Vente LFC » à l'écran des rôles.
 - **`commercial` lit `b2b_feature_access` sans l'écrire** : il doit pouvoir dire
   à un client si la boutique est ouverte, pas l'ouvrir.
 - **`staff_notifications` est ouvert à tous** : la cloche n'est pas un
