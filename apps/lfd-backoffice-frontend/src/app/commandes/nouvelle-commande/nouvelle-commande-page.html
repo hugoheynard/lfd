@@ -13,10 +13,7 @@
   }
   @default {
     <header class="nc-head">
-      <fold-back-link
-        [routerLink]="['/comptes-clients', id(), 'commandes']"
-        label="Ses commandes"
-      />
+      <fold-back-link [routerLink]="back().link" [label]="back().label" />
       <div class="nc-titles">
         <h1 class="nc-title">Nouvelle commande — {{ companyName() }}</h1>
         @if (!narrow()) {

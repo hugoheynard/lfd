@@ -3,3 +3,21 @@
   flex-direction: column;
   gap: var(--fold-space-sm);
 }
+
+.placed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.row {
+  display: flex;
+}
+
+/* L'URL se lit entière et se sélectionne à la main si le presse-papiers refuse. */
+.url {
+  margin: 0;
+  font-family: var(--fold-font-mono);
+  overflow-wrap: anywhere;
+  user-select: all;
+}

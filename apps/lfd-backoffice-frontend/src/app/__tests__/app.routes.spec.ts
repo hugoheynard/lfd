@@ -221,6 +221,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   comptoir: 'b2b_orders:read',
   'comptoir/retrait': null,
   'comptoir/nouvelle-commande': 'b2b_orders:write',
+  // La MÊME saisie que `comptes-clients/:id/nouvelle-commande`, montée sous le
+  // comptoir pour que la navigation n'en sorte pas.
+  'comptoir/nouvelle-commande/:id': 'b2b_orders:write',
   livraison: 'b2b_orders:read',
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.
   'app-mobile': OPEN,
@@ -356,6 +359,14 @@ describe("l'arbre de routes du back-office", () => {
     const remises = routes.find((route) => route.path === 'remises');
     expect(remises?.redirectTo).toBe('comptoir/retrait');
     expect(remises?.loadComponent).toBeUndefined();
+  });
+
+  it('monte la saisie du comptoir avec l’origine « counter »', () => {
+    // Sans elle, la saisie reprend les liens du Commercial — vers
+    // `/comptes-clients`, que le poste du comptoir n'a pas forcément le droit d'ouvrir.
+    const comptoir = routes.find((route) => route.path === 'comptoir');
+    const entry = comptoir?.children?.find((child) => child.path === 'nouvelle-commande/:id');
+    expect(entry?.data?.['origin']).toBe('counter');
   });
 
   it('ouvre le comptoir sur la file de retrait', () => {

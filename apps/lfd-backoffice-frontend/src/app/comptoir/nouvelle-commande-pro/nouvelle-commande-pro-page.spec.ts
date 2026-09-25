@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
@@ -116,10 +117,56 @@ describe('NouvelleCommandeProPage', () => {
     expect(page.loadState).toBe('error');
   });
 
-  it('ouvre l’écran de saisie du compte choisi', async () => {
+  it('ouvre la saisie SOUS le comptoir, jamais vers /comptes-clients', async () => {
     const page = await setup(() => Promise.resolve(COMPANIES));
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     page.pick('2');
-    expect(navigate).toHaveBeenCalledWith(['/comptes-clients', '2', 'nouvelle-commande']);
+    expect(navigate).toHaveBeenCalledWith(['/comptoir/nouvelle-commande', '2']);
+  });
+});
+
+/** Arrive sur le sélecteur par une VRAIE navigation, avec l'état qu'y laisse la saisie. */
+async function arriveWith(state: Record<string, unknown>): Promise<HTMLElement> {
+  TestBed.configureTestingModule({
+    providers: [
+      provideRouter([{ path: 'comptoir/nouvelle-commande', component: NouvelleCommandeProPage }]),
+      {
+        provide: AdminCompaniesService,
+        useValue: {
+          list: () => Promise.resolve(COMPANIES),
+        } satisfies Pick<AdminCompaniesService, 'list'>,
+      },
+    ],
+  });
+  const harness = await RouterTestingHarness.create();
+  await TestBed.inject(Router).navigate(['/comptoir/nouvelle-commande'], { state });
+  harness.detectChanges();
+  return harness.routeNativeElement ?? document.createElement('div');
+}
+
+describe('NouvelleCommandeProPage — retour de la saisie', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  it('AFFICHE le lien de règlement de la commande passée : le client est en face', async () => {
+    const host = await arriveWith({
+      counterPlacedOrder: { orderNumber: 'CMD-42', paymentUrl: 'https://pay.example/abc' },
+    });
+    expect(host.textContent).toContain('Commande CMD-42 enregistrée.');
+    expect(host.querySelector('.url')?.textContent).toBe('https://pay.example/abc');
+  });
+
+  it('ne montre aucun lien quand la commande n’en a pas', async () => {
+    const host = await arriveWith({
+      counterPlacedOrder: { orderNumber: 'CMD-43', paymentUrl: null },
+    });
+    expect(host.textContent).toContain('Commande CMD-43 enregistrée.');
+    expect(host.querySelector('.url')).toBeNull();
+  });
+
+  it('ne montre rien quand on arrive sans commande', async () => {
+    const host = await arriveWith({});
+    expect(host.textContent).not.toContain('enregistrée');
   });
 });

@@ -1,6 +1,10 @@
 import { type Routes } from '@angular/router';
 
 import { permissionGuard } from './auth/permission.guard';
+import {
+  ORDER_ENTRY_ORIGIN_KEY,
+  type OrderEntryOrigin,
+} from './commandes/nouvelle-commande/order-entry-origin';
 import { pendingChangesGuard } from './pim/catalogue/product-form/pending-changes.guard';
 import { DEV_TOOLS_ROUTES } from './dev/dev-tools';
 import { adminRoutes } from './admin/admin.routes';
@@ -341,6 +345,20 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./comptoir/nouvelle-commande-pro/nouvelle-commande-pro-page').then(
             (m) => m.NouvelleCommandeProPage,
+          ),
+      },
+      {
+        // LA SAISIE, montée SOUS le comptoir : la personne du comptoir n'a pas
+        // forcément les droits du Commercial, et la navigation doit rester
+        // enfermée ici. Même composant que `comptes-clients/:id/nouvelle-commande` ;
+        // c'est l'origine déclarée en `data` qui referme ses liens sur `/comptoir`.
+        path: 'nouvelle-commande/:id',
+        canActivate: [permissionGuard('b2b_orders:write')],
+        title: 'Nouvelle commande pro — LFC B2B admin',
+        data: { [ORDER_ENTRY_ORIGIN_KEY]: 'counter' satisfies OrderEntryOrigin },
+        loadComponent: () =>
+          import('./commandes/nouvelle-commande/nouvelle-commande-page').then(
+            (m) => m.NouvelleCommandePage,
           ),
       },
     ],

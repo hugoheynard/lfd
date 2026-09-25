@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { companyDisplayName } from '@lfd/contracts';
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
@@ -15,6 +16,12 @@ import {
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import type { AdminCompany } from '../../comptes-clients/admin-company';
 import { matchesCompanySearch } from '../../comptes-clients/company-search';
+import { copyLink } from '../../comptabilite/copy-link';
+import {
+  COUNTER_ORDER_PICKER_LINK,
+  counterPlacedOrderOf,
+} from '../../commandes/nouvelle-commande/order-entry-origin';
+import { NotifyService } from '../../notify.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -39,6 +46,10 @@ interface CompanyRow {
  * Proposer un compte en attente mènerait à une commande de particulier, ce que
  * l'entrée « commande pro » ne promet pas.
  *
+ * Elle est aussi le RETOUR de la saisie : la commande passée revient ici avec
+ * son numéro et son lien de règlement, affiché en clair parce que le client
+ * est en face — le presse-papiers seul ne se montre pas.
+ *
  * La recherche est celle de la liste des comptes (`matchesCompanySearch`) :
  * au comptoir comme au téléphone, on arrive avec un nom, un SIRET ou la
  * personne qui administre l'espace.
@@ -48,6 +59,7 @@ interface CompanyRow {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldCardComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
@@ -62,6 +74,16 @@ interface CompanyRow {
 export class NouvelleCommandeProPage {
   private readonly companies = inject(AdminCompaniesService);
   private readonly router = inject(Router);
+  private readonly notify = inject(NotifyService);
+
+  /**
+   * La commande qu'on vient de passer, transmise par l'état de navigation de la
+   * saisie. Lue une fois, à l'arrivée : elle concerne le client qui est encore
+   * là, pas le suivant.
+   */
+  protected readonly placed = signal(
+    counterPlacedOrderOf(this.router.currentNavigation()?.extras.state),
+  );
 
   protected readonly state = signal<LoadState>('loading');
   private readonly active = signal<readonly AdminCompany[]>([]);
@@ -100,6 +122,15 @@ export class NouvelleCommandeProPage {
   }
 
   protected choose(companyId: string): void {
-    void this.router.navigate(['/comptes-clients', companyId, 'nouvelle-commande']);
+    void this.router.navigate([COUNTER_ORDER_PICKER_LINK, companyId]);
+  }
+
+  protected copy(url: string): void {
+    void copyLink(url, this.notify);
+  }
+
+  /** Le client suivant : on range le récapitulatif du précédent. */
+  protected dismissPlaced(): void {
+    this.placed.set(null);
   }
 }

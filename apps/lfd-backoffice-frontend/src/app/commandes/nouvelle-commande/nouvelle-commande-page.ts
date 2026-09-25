@@ -12,10 +12,17 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, filter, tap } from 'rxjs';
 
 import { quoteKeyOf } from './quote-key';
+import {
+  backLinkOf,
+  COUNTER_PLACED_ORDER_KEY,
+  destinationAfterPlacingOf,
+  orderEntryOriginOf,
+  type CounterPlacedOrder,
+} from './order-entry-origin';
 
 /**
  * L'accalmie au bout de laquelle on chiffre, en millisecondes.
@@ -149,6 +156,15 @@ export class NouvelleCommandePage {
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
   private readonly router = inject(Router);
+
+  /**
+   * D'où l'on saisit : le Commercial (défaut) ou le Comptoir, lu dans la `data`
+   * de la route. Au comptoir, aucun lien ne sort de `/comptoir`.
+   */
+  protected readonly origin = orderEntryOriginOf(inject(ActivatedRoute).snapshot.data);
+
+  /** Le retour de l'en-tête — le dossier du compte, ou le sélecteur du comptoir. */
+  protected readonly back = computed(() => backLinkOf(this.origin, this.id()));
 
   /**
    * Le panier de CET écran. Une instance par page, jamais un service racine :
@@ -590,9 +606,7 @@ export class NouvelleCommandePage {
       this.lateDraft.set(null);
       this.waiverReason.set('');
       this.notify.success(`Commande ${placed.orderNumber} enregistrée.`);
-      // Dans le dossier du compte : on vient de passer une commande POUR lui, et
-      // la suite (en repasser une, vérifier la facturation) s'y trouve.
-      await this.router.navigate(['/comptes-clients', this.id(), 'commandes', placed.id]);
+      await this.leaveAfterPlacing(placed.id, placed.orderNumber, placed.paymentUrl ?? null);
     } catch (error) {
       // Le refus « encore rattrapable » n'est pas une panne : on garde la saisie
       // et on propose le geste, plutôt qu'un toast qui laisse le commercial
@@ -617,6 +631,24 @@ export class NouvelleCommandePage {
     } finally {
       this.submitting.set(false);
     }
+  }
+
+  /**
+   * Quitte la saisie une fois la commande passée (cf. `destinationAfterPlacingOf`).
+   * Au comptoir, le sélecteur reçoit la commande par l'état de navigation, pour
+   * AFFICHER son lien de règlement : le client est en face.
+   */
+  private async leaveAfterPlacing(
+    orderId: string,
+    orderNumber: string,
+    paymentUrl: string | null,
+  ): Promise<void> {
+    const destination = destinationAfterPlacingOf(this.origin, this.id(), orderId);
+    const placed: CounterPlacedOrder = { orderNumber, paymentUrl };
+    await this.router.navigate(
+      destination,
+      this.origin === 'counter' ? { state: { [COUNTER_PLACED_ORDER_KEY]: placed } } : {},
+    );
   }
 
   /** Relit le réglage de livraison ; un échec garde celui qu'on avait. */

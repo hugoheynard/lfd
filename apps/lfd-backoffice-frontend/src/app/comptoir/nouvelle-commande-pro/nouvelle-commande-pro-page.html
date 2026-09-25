@@ -4,6 +4,36 @@
     proposés.
   </p>
 
+  @if (placed(); as order) {
+    <div class="placed">
+      <fold-callout variant="success" announce>
+        Commande {{ order.orderNumber }} enregistrée.
+        @if (order.paymentUrl !== null) {
+          Lien de règlement à transmettre au client&nbsp;:
+        }
+        <div actions>
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            type="button"
+            (click)="dismissPlaced()"
+          >
+            Client suivant
+          </button>
+        </div>
+      </fold-callout>
+      @if (order.paymentUrl; as url) {
+        <p class="url">{{ url }}</p>
+        <div class="row">
+          <button foldButton emphasis="outline" type="button" (click)="copy(url)">
+            Copier le lien
+          </button>
+        </div>
+      }
+    </div>
+  }
+
   @switch (state()) {
     @case ('loading') {
       <fold-loading message="Chargement des comptes clients…" />
