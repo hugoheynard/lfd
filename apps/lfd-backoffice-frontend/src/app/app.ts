@@ -62,6 +62,7 @@ const ROLE_LABELS: Readonly<Record<StaffRole, string>> = {
   commercial: 'Commercial',
   comptabilite: 'Comptabilité',
   communication: 'Communication',
+  comptoir: 'Vendeur comptoir',
   support: 'Support',
   dev: 'Technique',
 };

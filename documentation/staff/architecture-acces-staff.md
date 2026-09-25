@@ -179,38 +179,39 @@ et deux implications s'y propagent :
 
 ## 4. Les ressources
 
-Vingt-trois ressources. Chacune porte en préfixe **l'outil** auquel elle
+Vingt-sept ressources (compte vérifié le 2026-09-25 sur `staffResourceSchema`). Chacune porte en préfixe **l'outil** auquel elle
 appartient, c'est-à-dire le bloc de `src/` : la frontière d'architecture est
 lisible dans la permission elle-même. Le séparateur est un tiret bas, parce que
 Prisma refuse le point dans une valeur d'enum et que le deux-points sépare déjà
 ressource et action.
 
-| Outil            | Ressource                    | Ce qu'elle couvre                                                                                    |
-| ---------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **référentiel**  | `pim_catalog`                | les fiches produit, familles, collections                                                            |
-|                  | `pim_channels`               | ce qui **sort** du référentiel : publication, Shopify, la boutique, les révisions                    |
-|                  | `pim_settings`               | les réglages du référentiel                                                                          |
-|                  | `pim_tax`                    | la fiscalité : régimes de TVA, règles comptables                                                     |
-| **commerce**     | `b2b_companies`              | les comptes clients                                                                                  |
-|                  | `b2b_orders`                 | les commandes, la saisie assistée, le retrait au comptoir                                            |
-|                  | `b2b_subscriptions`          | les abonnements                                                                                      |
-|                  | `b2b_catalog`                | le catalogue **vendu** : prix négocié, masquage, mise en avant                                       |
-|                  | `b2b_pricing`                | la tarification : règles, planchers, gabarits, engagements                                           |
-|                  | `b2b_growth`                 | le cockpit commercial, prospects, marché                                                             |
-|                  | `b2b_appointments`           | disponibilités et rendez-vous                                                                        |
-|                  | `b2b_support`                | les demandes des clients                                                                             |
-|                  | `b2b_payments`               | le mandat SEPA **d'un client**                                                                       |
-|                  | `b2b_accounting`             | **notre** identité d'émetteur : entités, identifiant créancier, compte qui reçoit l'argent           |
-|                  | `b2b_deferred_payment_block` | bloquer / débloquer le prélèvement d'une société au crédit (2026-09-25)                              |
-|                  | `b2b_alerts`                 | les alertes, de compte et globales                                                                   |
-|                  | `b2b_order_waivers`          | les dérogations d'heure limite — accepter une commande en retard                                     |
-|                  | `b2b_feature_access`         | ouvrir, fermer ou mettre en vitrine la boutique                                                      |
-|                  | `b2b_client_notes`           | les notes photo du commercial sur un compte                                                          |
-|                  | `b2b_settings`               | les réglages du commerce : zones, points de retrait, contenu                                         |
-| **socle**        | `staff_access`               | l'annuaire, les invitations, les rôles — **le droit qui permet de se donner tous les autres**        |
-|                  | `staff_notifications`        | la cloche du back-office                                                                             |
-| **exploitation** | `ops_health`                 | la carte de santé                                                                                    |
-| _aucun_          | `activity`                   | le journal d'activité, qui traverse tous les outils — seule exception au préfixe, écrite comme telle |
+| Outil            | Ressource                    | Ce qu'elle couvre                                                                                     |
+| ---------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **référentiel**  | `pim_catalog`                | les fiches produit, familles, collections                                                             |
+|                  | `pim_channels`               | ce qui **sort** du référentiel : publication, Shopify, la boutique, les révisions                     |
+|                  | `pim_settings`               | les réglages du référentiel                                                                           |
+|                  | `pim_tax`                    | la fiscalité : régimes de TVA, règles comptables                                                      |
+| **commerce**     | `b2b_companies`              | les comptes clients                                                                                   |
+|                  | `b2b_orders`                 | les commandes, la saisie assistée, le retrait au comptoir                                             |
+|                  | `b2b_counter`                | le Comptoir : la carte et le détail d'un client, taillés pour lui vendre — sans sa fiche (2026-09-25) |
+|                  | `b2b_subscriptions`          | les abonnements                                                                                       |
+|                  | `b2b_catalog`                | le catalogue **vendu** : prix négocié, masquage, mise en avant                                        |
+|                  | `b2b_pricing`                | la tarification : règles, planchers, gabarits, engagements                                            |
+|                  | `b2b_growth`                 | le cockpit commercial, prospects, marché                                                              |
+|                  | `b2b_appointments`           | disponibilités et rendez-vous                                                                         |
+|                  | `b2b_support`                | les demandes des clients                                                                              |
+|                  | `b2b_payments`               | le mandat SEPA **d'un client**                                                                        |
+|                  | `b2b_accounting`             | **notre** identité d'émetteur : entités, identifiant créancier, compte qui reçoit l'argent            |
+|                  | `b2b_deferred_payment_block` | bloquer / débloquer le prélèvement d'une société au crédit (2026-09-25)                               |
+|                  | `b2b_alerts`                 | les alertes, de compte et globales                                                                    |
+|                  | `b2b_order_waivers`          | les dérogations d'heure limite — accepter une commande en retard                                      |
+|                  | `b2b_feature_access`         | ouvrir, fermer ou mettre en vitrine la boutique                                                       |
+|                  | `b2b_client_notes`           | les notes photo du commercial sur un compte                                                           |
+|                  | `b2b_settings`               | les réglages du commerce : zones, points de retrait, contenu                                          |
+| **socle**        | `staff_access`               | l'annuaire, les invitations, les rôles — **le droit qui permet de se donner tous les autres**         |
+|                  | `staff_notifications`        | la cloche du back-office                                                                              |
+| **exploitation** | `ops_health`                 | la carte de santé                                                                                     |
+| _aucun_          | `activity`                   | le journal d'activité, qui traverse tous les outils — seule exception au préfixe, écrite comme telle  |
 
 Chaque découpe a sa raison, écrite au-dessus de la valeur dans le contrat.
 Les trois qui comptent le plus :
@@ -244,6 +245,7 @@ propre `RecomputeGuard`, et aucune personne ne s'y authentifie.
 | `pim_tax`                    | w       | r            | **w**          | —         | r     |
 | `b2b_companies`              | w       | w            | r              | r         | —     |
 | `b2b_orders`                 | w       | w            | w              | r         | —     |
+| `b2b_counter`                | w       | r            | r              | —         | —     |
 | `b2b_subscriptions`          | w       | w            | r              | r         | —     |
 | `b2b_catalog`                | w       | **w**        | r              | —         | —     |
 | `b2b_pricing`                | w       | **w**        | r              | —         | —     |
@@ -281,6 +283,14 @@ Les choix qui ne se devinent pas :
   à un client si la boutique est ouverte, pas l'ouvrir.
 - **`staff_notifications` est ouvert à tous** : la cloche n'est pas un
   privilège, c'est la façon dont on apprend qu'il s'est passé quelque chose.
+  `comptoir` compris (Hugo, 2026-09-25).
+- **`comptoir` (« Vendeur comptoir ») n'a que `b2b_counter: r`,
+  `b2b_orders: w` et la cloche** (2026-09-25, `documentation/order/plan-commande-au-comptoir.md`).
+  Il prend la commande d'un pro sans lire sa fiche : ni crédit, ni KBIS, ni
+  contacts. `b2b_counter` est reconduit en lecture à tout rôle — et à tout
+  écart individuel — qui écrit `b2b_orders`, sélectionné par son contenu :
+  personne ne perd la saisie au comptoir. Ni `comptoir` ni `communication`
+  n'ont de colonne ci-dessus ; `ROLE_GRANTS` fait foi.
 
 ---
 

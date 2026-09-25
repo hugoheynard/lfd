@@ -62,8 +62,11 @@ describe('grantGroups', () => {
    *
    * `b2b_deferred_payment_block` l'a fait passer à 26 le 2026-09-25 :
    * suspendre le prélèvement d'un client n'est pas ouvrir la comptabilité.
+   *
+   * `b2b_counter` l'a fait passer à 27 le 2026-09-25 : vendre au comptoir
+   * n'est pas lire la fiche client (plan-commande-au-comptoir.md).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(26);
+    expect(RESOURCE_COUNT).toBe(27);
   });
 });

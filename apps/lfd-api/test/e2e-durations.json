@@ -36,6 +36,8 @@
   "test/company-pricing.e2e-spec.ts": 41068,
   "test/company-siren.e2e-spec.ts": 10259,
   "test/contacts.e2e-spec.ts": 17523,
+  "test/counter-customers.e2e-spec.ts": 6000,
+  "test/counter-roles-migration.e2e-spec.ts": 1600,
   "test/customer-audience.e2e-spec.ts": 17242,
   "test/customer-bank-account.e2e-spec.ts": 14668,
   "test/customer-mandate-options.e2e-spec.ts": 8746,

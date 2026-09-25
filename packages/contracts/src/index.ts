@@ -1173,3 +1173,15 @@ export type {
   ReceivedOperationView,
   SetOperationOverridePayload,
 } from "./catalog-operations.js";
+export {
+  counterCustomerCardSchema,
+  counterCustomerBuyerSchema,
+  counterDeliveryAddressSchema,
+  counterCustomerViewSchema,
+} from "./counter-customer.js";
+export type {
+  CounterCustomerCard,
+  CounterCustomerBuyer,
+  CounterDeliveryAddress,
+  CounterCustomerView,
+} from "./counter-customer.js";

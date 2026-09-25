@@ -280,3 +280,39 @@ describe("la médiathèque", () => {
     expect(hasStaffPermission(granted, "pim_channels:read")).toBe(false);
   });
 });
+
+describe("le comptoir", () => {
+  /**
+   * Le rôle pour lequel `plan-commande-au-comptoir.md` existe : prendre la
+   * commande d'un pro sans lire sa fiche. Si ce cas rougit parce qu'on a donné
+   * `b2b_companies` au comptoir, c'est la décision qu'il faut reprendre, pas le
+   * test.
+   */
+  it("donne au vendeur de comptoir le Comptoir et la passation, et pas la fiche client", () => {
+    const granted = resolveStaffPermissions("comptoir");
+
+    expect(hasStaffPermission(granted, "b2b_counter:read")).toBe(true);
+    expect(hasStaffPermission(granted, "b2b_orders:write")).toBe(true);
+    expect(hasStaffPermission(granted, "b2b_companies:read")).toBe(false);
+    expect(hasStaffPermission(granted, "b2b_settings:read")).toBe(false);
+  });
+
+  it("n'ôte la saisie au comptoir à personne : qui commande pour un pro lit le Comptoir", () => {
+    // Reconduction du 2026-09-25 — la migration l'applique aux rôles par leur
+    // CONTENU, le contrat doit dire la même chose.
+    const orderWriters = staffRoleSchema.options.filter((role) =>
+      hasStaffPermission(resolveStaffPermissions(role), "b2b_orders:write"),
+    );
+
+    expect(orderWriters.length).toBeGreaterThan(0);
+    for (const role of orderWriters) {
+      expect({
+        role,
+        counter: hasStaffPermission(resolveStaffPermissions(role), "b2b_counter:read"),
+      }).toEqual({
+        role,
+        counter: true,
+      });
+    }
+  });
+});

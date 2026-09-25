@@ -76,6 +76,11 @@ import { ListDirectDebitBlocksHandler } from "./application/queries/list-direct-
 import { DirectDebitBlockReader } from "./domain/ports/direct-debit-block.reader.js";
 import { PrismaDirectDebitBlockReader } from "./infrastructure/prisma-direct-debit-block.reader.js";
 import { AdminDirectDebitBlocksController } from "./http/admin-direct-debit-blocks.controller.js";
+import { ListCounterCustomersHandler } from "./application/queries/list-counter-customers.handler.js";
+import { GetCounterCustomerHandler } from "./application/queries/get-counter-customer.handler.js";
+import { CounterCustomerReader } from "./domain/ports/counter-customer.reader.js";
+import { PrismaCounterCustomerReader } from "./infrastructure/prisma-counter-customer.reader.js";
+import { AdminCounterCustomersController } from "./http/admin-counter-customers.controller.js";
 import { ListCompanyAddressesHandler } from "./application/queries/list-company-addresses.handler.js";
 import { GetMyCompanyActivationHandler } from "./application/queries/get-my-company-activation.handler.js";
 import { AccountReader } from "./domain/ports/account.reader.js";
@@ -178,6 +183,7 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     AdminAccessPendingController,
     AdminCompaniesController,
     AdminDirectDebitBlocksController,
+    AdminCounterCustomersController,
     AdminCompanyMembersController,
     AdminCompanyContactsController,
     AdminCompanyPiecesController,
@@ -265,12 +271,15 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     ListSupportRequestsHandler,
     ListAllCompaniesHandler,
     ListDirectDebitBlocksHandler,
+    ListCounterCustomersHandler,
+    GetCounterCustomerHandler,
     GetCustomerPortfolioHandler,
     ExportCustomersCsvHandler,
     { provide: UserProfileRepository, useClass: PrismaUserProfileRepository },
     { provide: NavPreferencesRepository, useClass: PrismaNavPreferencesRepository },
     { provide: AdminCompanyReader, useClass: PrismaAdminCompanyReader },
     { provide: DirectDebitBlockReader, useClass: PrismaDirectDebitBlockReader },
+    { provide: CounterCustomerReader, useClass: PrismaCounterCustomerReader },
     { provide: PendingAccessReader, useClass: PrismaPendingAccessReader },
     ListPendingAccessHandler,
     IssuePasswordLinkHandler,

@@ -79,7 +79,7 @@ rend déjà `{ openToB2b, openToB2c }`, tout ce que l'écran consulte
     d'auteur). Qui pouvait commander pour un pro depuis `afa81ae34` le peut
     toujours après.
   - La définition du rôle **`comptoir`** (« Vendeur comptoir ») est créée :
-    `b2b_counter:read`, `b2b_orders:write`, rien d'autre — le rôle pour
+    `b2b_counter:read`, `b2b_orders:write`, la cloche (`staff_notifications`, ouverte à tous les rôles), rien d'autre — le rôle pour
     lequel tout ce plan existe. Même chemin que l'ouverture de
     `communication` le 2026-09-23 (enum, `ROLE_GRANTS`, libellé, définition).
   - `ROLE_GRANTS` dit la même chose ; un e2e rejoue la migration sur un rôle

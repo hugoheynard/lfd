@@ -100,6 +100,19 @@ export const staffResourceSchema = z.enum([
   // ── `b2b.` — LA PLATEFORME MARCHANDE ────────────────────────────────────
   "b2b_companies",
   "b2b_orders",
+  /**
+   * **Le Comptoir** — ce qu'il faut voir d'un client pour lui vendre, rien de
+   * plus : une carte de recherche, et au détail ses adresses, ses acheteurs et
+   * s'il règle au compte (`documentation/order/plan-commande-au-comptoir.md`).
+   *
+   * Détachée de `b2b_companies` (Hugo, 2026-09-25 : « celui qui manipulera
+   * comptoir ne sera pas forcément autorisé à utiliser commercial »). Sans
+   * elle, le sélecteur de la commande au comptoir exigeait la lecture de la
+   * fiche client ENTIÈRE — crédit, KBIS, contacts, conditions — et l'écran
+   * Comptes clients à qui tape l'URL. La passation, elle, reste sous
+   * `b2b_orders:write` : c'est le même geste que celui du commercial.
+   */
+  "b2b_counter",
   /** Les paniers récurrents — un engagement dans la durée, pas une commande. */
   "b2b_subscriptions",
   /**
@@ -249,7 +262,7 @@ export function staffPermission(resource: StaffResource, action: StaffAction): S
 }
 
 /**
- * Les rôles. `admin` porte tous les pouvoirs ; les quatre autres découpent le
+ * Les rôles. `admin` porte tous les pouvoirs ; les autres découpent le
  * back-office par métier.
  */
 export const staffRoleSchema = z.enum([
@@ -267,6 +280,17 @@ export const staffRoleSchema = z.enum([
    * personne ne retrouve.
    */
   "communication",
+  /**
+   * **Le vendeur de comptoir** — prend la commande d'un client pro au
+   * comptoir, et rien d'autre (`documentation/order/plan-commande-au-comptoir.md`).
+   *
+   * Ouvert le 2026-09-25 pour la phrase de Hugo qui a fait tout le plan :
+   * « celui qui manipulera comptoir ne sera pas forcément autorisé à utiliser
+   * commercial ». Un vendeur qui aurait dû porter `commercial` pour saisir une
+   * commande aurait lu, en prime, le crédit et les conditions de tous les
+   * clients.
+   */
+  "comptoir",
   "support",
   "dev",
 ]);
@@ -278,6 +302,7 @@ export const STAFF_ROLE_LABELS: Readonly<Record<StaffRole, string>> = {
   commercial: "Commercial",
   comptabilite: "Comptabilité",
   communication: "Communication",
+  comptoir: "Vendeur comptoir",
   support: "Support",
   dev: "Technique",
 };
@@ -291,6 +316,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_storefront: "Vitrine",
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
+  b2b_counter: "Comptoir",
   b2b_subscriptions: "Paniers récurrents",
   b2b_catalog: "Catalogue vendu",
   b2b_pricing: "Tarification",
@@ -368,6 +394,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     pim_tax: "write",
     b2b_companies: "write",
     b2b_orders: "write",
+    b2b_counter: "write",
     b2b_subscriptions: "write",
     b2b_catalog: "write",
     b2b_pricing: "write",
@@ -404,6 +431,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // Il ne couvre TOUJOURS PAS la modification d'une commande passée : aucune
     // route ne l'expose, et ce sont les avenants qui la porteront.
     b2b_orders: "write",
+    // Qui commande pour un pro garde le Comptoir, qui en est une porte de plus
+    // (2026-09-25) : personne ne perd la saisie que `afa81ae34` lui ouvrait.
+    b2b_counter: "read",
     b2b_subscriptions: "write",
     // 🔴 Les deux droits que le découpage lui DONNE, et qui motivaient tout.
     // Il négocie un prix et valide ce qui entre en vente — c'est son métier, et
@@ -444,6 +474,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // avec l'administrateur (Hugo, 2026-09-25) — pas au commercial.
     b2b_deferred_payment_block: "write",
     b2b_orders: "write",
+    // Même reconduction que pour le commercial : elle commandait pour un pro
+    // depuis le Comptoir, elle le peut toujours (2026-09-25).
+    b2b_counter: "read",
     b2b_subscriptions: "read",
     b2b_catalog: "read",
     b2b_pricing: "read",
@@ -487,6 +520,22 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // (plan-vitrine-enregistrement.md, D7 — Hugo, 2026-09-24).
     b2b_storefront: "write",
     pim_catalog: "read",
+    staff_notifications: "write",
+  },
+  /**
+   * **Le vendeur de comptoir** — le Comptoir et la passation, rien d'autre
+   * (`documentation/order/plan-commande-au-comptoir.md`).
+   *
+   * 🔴 Pas `b2b_companies` : c'est tout l'objet du rôle. Il voit d'un client
+   * ce qu'il faut pour lui vendre — `b2b_counter:read` — et non sa fiche.
+   *
+   * ⚠️ `b2b_orders:write` emporte `GET /admin/orders` pour toutes les sociétés,
+   * le bon PDF et le rappel de retrait : c'est son métier, il sert la file de
+   * tous les clients, et c'est ce que `comptoir/retrait` lui ouvre déjà.
+   */
+  comptoir: {
+    b2b_counter: "read",
+    b2b_orders: "write",
     staff_notifications: "write",
   },
   support: {

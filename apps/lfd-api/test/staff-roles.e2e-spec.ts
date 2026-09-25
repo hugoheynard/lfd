@@ -63,6 +63,11 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
    * la compose sans ouvrir `b2b_settings` (plan-vitrine-enregistrement.md, D7).
    */
   { resource: "b2b_storefront", path: "/admin/storefront" },
+  /**
+   * Le COMPTOIR (2026-09-25) — ce qu'un vendeur voit d'un client pour lui
+   * vendre, sans la fiche (plan-commande-au-comptoir.md).
+   */
+  { resource: "b2b_counter", path: "/admin/counter/customers" },
 ];
 
 /** Le produit cartésien rôle × surface : tout ce qu'il y a à vérifier. */
