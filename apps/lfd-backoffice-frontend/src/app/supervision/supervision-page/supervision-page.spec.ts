@@ -324,9 +324,9 @@ describe('SupervisionPage', () => {
     const masthead = root(fixture).querySelector('fold-page-section.masthead');
 
     expect(masthead?.getAttribute('data-surface')).toBe('chrome');
-    expect(masthead?.querySelector('[data-counter="packing"]')?.textContent).toContain(
-      'commandes à coliser',
-    );
+    const packing = masthead?.querySelector('fold-card[data-counter="packing"]');
+    expect(packing?.textContent).toContain('Colisage');
+    expect(packing?.textContent).toContain('commandes à coliser');
     expect(masthead?.querySelector('[data-stamp]')?.textContent).toContain('à jour à 9 h 42');
     expect(root(fixture).querySelector('.bar')).toBeNull();
   });
@@ -348,5 +348,37 @@ describe('SupervisionPage', () => {
     await fixture.whenStable();
 
     expect(handover?.textContent).toContain('Aucune livraison ce jour');
+  });
+
+  it('dit un blocage par une pastille d’état sur la carte qui le porte', async () => {
+    const fixture = await mount();
+    const card = (key: string) => root(fixture).querySelector(`fold-card[data-counter="${key}"]`);
+
+    const oven = card('preparation')?.querySelector('fold-badge');
+    expect(oven?.getAttribute('variant')).toBe('warning');
+    expect(oven?.textContent).toContain('1 commande attend le four');
+    const overdue = card('handover')?.querySelector('fold-badge');
+    expect(overdue?.getAttribute('variant')).toBe('alert');
+    expect(overdue?.textContent).toContain('1 créneau dépassé');
+    expect(card('packing')?.querySelector('fold-badge')).toBeNull();
+  });
+
+  it('précise les livraisons dans la carte du retrait, seulement s’il y en a', async () => {
+    const withDelivery: HandoverQueueView = {
+      ...QUEUE,
+      entries: [
+        ...QUEUE.entries,
+        { ...QUEUE.entries[0]!, orderId: 'o-d', reference: 'D', fulfillmentMethod: 'delivery' },
+      ],
+    };
+    const plain = await mount();
+    expect(
+      root(plain).querySelector('fold-card[data-counter="handover"]')?.textContent,
+    ).not.toContain('dont');
+    TestBed.resetTestingModule();
+    const fixture = await mount({ handover: () => Promise.resolve(withDelivery) });
+    expect(
+      root(fixture).querySelector('fold-card[data-counter="handover"]')?.textContent,
+    ).toContain('attendues · dont 1 livraison');
   });
 });

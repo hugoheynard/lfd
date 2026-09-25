@@ -1,20 +1,45 @@
 <fold-page-layout>
   <!-- Le masthead, sur le modèle de Retrait boutique : le header de l'app nomme
        déjà l'écran, la bande porte les trois chiffres et la fraîcheur. -->
-  <fold-page-section bleed class="masthead" foldSurface="chrome">
-    <div class="masthead-bar">
-      <p class="masthead-counters">
-        <span class="mc-count" data-counter="preparation"
-          ><strong>{{ counters().preparation ?? '—' }}</strong> lignes ouvertes</span
-        >
-        <span class="mc-count" data-counter="packing"
-          ><strong>{{ counters().packing ?? '—' }}</strong> commandes à coliser</span
-        >
-        <span class="mc-count" data-counter="handover"
-          ><strong>{{ counters().handover ?? '—' }}</strong> {{ counters().handoverUnit }}</span
-        >
-      </p>
+  <fold-page-section bleed stack class="masthead" foldSurface="chrome">
+    <div class="masthead-head">
       <span class="mc-clock" data-stamp>{{ stamp() }}</span>
+    </div>
+
+    <!-- Les trois chiffres en cartes — le motif de \`shared/compte-chiffres\`
+         (en-tête d'un compte) : une carte = une mesure, sur le chrome. -->
+    <div class="chiffres">
+      <fold-card class="chiffre" radius="sm" padding="sm" data-counter="preparation">
+        <div class="chiffre-body">
+          <span class="chiffre-label">Préparation</span>
+          <span class="chiffre-value">{{ counters().preparation ?? '—' }}</span>
+          <span class="chiffre-unit">lignes ouvertes</span>
+          @if (blockers().oven > 0) {
+            <fold-badge class="chiffre-flag" variant="warning" [content]="blockers().ovenLabel" />
+          }
+        </div>
+      </fold-card>
+      <fold-card class="chiffre" radius="sm" padding="sm" data-counter="packing">
+        <div class="chiffre-body">
+          <span class="chiffre-label">Colisage</span>
+          <span class="chiffre-value">{{ counters().packing ?? '—' }}</span>
+          <span class="chiffre-unit">commandes à coliser</span>
+        </div>
+      </fold-card>
+      <fold-card class="chiffre" radius="sm" padding="sm" data-counter="handover">
+        <div class="chiffre-body">
+          <span class="chiffre-label">Retrait / livraison</span>
+          <span class="chiffre-value">{{ counters().handover ?? '—' }}</span>
+          <span class="chiffre-unit"
+            >attendues{{
+              counters().deliveryNote === null ? '' : ' · ' + counters().deliveryNote
+            }}</span
+          >
+          @if (blockers().overdue > 0) {
+            <fold-badge class="chiffre-flag" variant="alert" [content]="blockers().overdueLabel" />
+          }
+        </div>
+      </fold-card>
     </div>
   </fold-page-section>
 </fold-page-layout>

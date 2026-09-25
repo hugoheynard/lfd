@@ -28,46 +28,72 @@ fold-page-layout {
 /* ── LE MASTHEAD — le traitement de Retrait boutique ─────────────────────── */
 
 .masthead {
-  padding: 0 var(--fold-page-gutter);
+  // Plus haute qu'une ligne de méta : le motif de la bande du Commercial — le
+  // même écart au-dessus des cartes que sous elles.
+  --fold-page-section-gap: var(--fold-space-md);
+
+  padding: var(--fold-space-md) var(--fold-page-gutter) var(--fold-space-lg);
   // Le bleu « secondaire » de fold : il n'existe pas de token `secondary` de
-  // couleur ; c'est le fond du rail secondaire, celui que portent déjà les
-  // bandes de tête du Commercial, de la Tarification et du Catalogue.
+  // couleur ; c'est le fond du rail secondaire, celui des bandes du Commercial,
+  // de la Tarification et du Catalogue.
   background: var(--fold-color-bg-rail-secondary);
 }
 
-.masthead-bar {
+.masthead-head {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fold-space-sm) var(--fold-space-lg);
-}
-
-.masthead-counters {
-  display: flex;
-  flex: 0 1 auto;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--fold-space-md);
-  margin: 0;
-  font-size: var(--fold-text-sm);
-  font-variant-numeric: tabular-nums;
-}
-
-.mc-count {
-  color: var(--fold-color-text-secondary);
-
-  strong {
-    font-weight: var(--fold-weight-semibold);
-    color: var(--fold-color-text);
-  }
+  justify-content: flex-end;
 }
 
 .mc-clock {
-  flex: 0 0 auto;
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);
+}
+
+// Le motif de `shared/compte-chiffres` : une grille qui se replie seule, une
+// carte par mesure, un cran plus claire que la bande.
+.chiffres {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--fold-space-sm);
+}
+
+.chiffre {
+  background: var(--fold-color-surface-card);
+  border: 1px solid var(--fold-color-border);
+}
+
+.chiffre-label {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.chiffre-value {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--fold-leading-tight);
+  color: var(--fold-color-text);
+}
+
+.chiffre-unit {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.chiffre-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.chiffre-flag {
+  align-self: flex-start;
 }
 
 /* ── LES ONGLETS DU MOBILE, sous le masthead ─────────────────────────────── */

@@ -15,6 +15,8 @@ import type {
 import type { FulfillmentMethod } from '@lfd/contracts';
 import type { FoldViewNavItem, FoldViewToggleOption } from 'fold-ng';
 import {
+  FoldBadgeComponent,
+  FoldCardComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
   FoldSurfaceDirective,
@@ -63,6 +65,8 @@ const BOARD_NARROW = '(max-width: 900px)';
   selector: 'app-supervision-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBadgeComponent,
+    FoldCardComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
     FoldSurfaceDirective,
@@ -130,10 +134,24 @@ export class SupervisionPage {
       preparation: this.preparationBoard()?.openLines ?? null,
       packing: this.packingBoard()?.toPack ?? null,
       handover: handover === null ? null : handover.pickupExpected + delivery,
-      handoverUnit:
-        delivery === 0
-          ? 'attendues'
-          : `attendues · dont ${countLabel(delivery, 'livraison', 'livraisons')}`,
+      deliveryNote:
+        delivery === 0 ? null : `dont ${countLabel(delivery, 'livraison', 'livraisons')}`,
+    };
+  });
+
+  /**
+   * Les blocages que porte une carte du masthead — dits par une pastille
+   * d'état, jamais par la couleur seule : les commandes qui attendent le four
+   * (sur Préparation, la colonne qui bloque) et les créneaux dépassés.
+   */
+  protected readonly blockers = computed(() => {
+    const oven = this.packingBoard()?.awaitingOven ?? 0;
+    const overdue = this.handoverBoard()?.overdue ?? 0;
+    return {
+      oven,
+      ovenLabel: `${countLabel(oven, 'commande attend', 'commandes attendent')} le four`,
+      overdue,
+      overdueLabel: countLabel(overdue, 'créneau dépassé', 'créneaux dépassés'),
     };
   });
 
