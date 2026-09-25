@@ -32,13 +32,13 @@ recopié par le commerce à chaque fait des autres blocs :
 
 - **Clé du jour** : `requestedDeliveryDate`, **nullable**. Une commande sans
   date n'appartient à aucun jour : la vue ne l'invente pas, mais elle la
-  **compte** dans un signal à part (« N commandes sans date de service ») pour
+  **compte** dans un signal à part (« N commandes sans date de service » — les ouvertes seulement : ni retirée ni annulée, qui ne demandent plus de geste) pour
   que le trou se voie au lieu de disparaître du filtre.
 - **Le créneau** : `fulfillment` est `Json?` de forme
   `{ window: { value: FulfillmentWindow | null, source }, … }`
   (`packages/contracts/src/order.ts`). `value` peut être nul (aucune tranche
   demandée), et `source: "default"` désigne une **heure d'ouverture recopiée**
-  — posée par le backfill du 2026-08-15 sur tout l'historique —, pas une
+  — l'heure du point de retrait, pas une
   promesse faite au client. La lecture réutilise `fulfillmentOf` / `windowOf`
   de `b2b/orders/infrastructure/handover-order.query.ts`, extraits dans un
   fichier partagé du même dossier : **un seul parseur de ce JSON**.

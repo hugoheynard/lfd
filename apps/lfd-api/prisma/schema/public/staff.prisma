@@ -57,6 +57,9 @@ enum StaffResource {
   /// Le COMPTOIR — la carte et le détail d'un client, taillés pour la prise de
   /// commande (2026-09-25, `plan-commande-au-comptoir.md`).
   b2b_counter
+  /// La SUPERVISION — la vue du jour, en lecture seule, de la passation au
+  /// retrait (2026-09-25, `plan-supervision-du-jour.md`).
+  b2b_supervision
   b2b_subscriptions
   b2b_catalog
   b2b_pricing

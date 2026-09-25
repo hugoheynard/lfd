@@ -68,6 +68,11 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
    * vendre, sans la fiche (plan-commande-au-comptoir.md).
    */
   { resource: "b2b_counter", path: "/admin/counter/customers" },
+  /**
+   * La SUPERVISION (2026-09-25) — la vue du jour, de la passation au retrait
+   * (plan-supervision-du-jour.md). La date est exigée : sans elle, 400.
+   */
+  { resource: "b2b_supervision", path: "/admin/supervision/day?date=2026-01-01" },
 ];
 
 /** Le produit cartésien rôle × surface : tout ce qu'il y a à vérifier. */

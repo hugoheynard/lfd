@@ -100,6 +100,10 @@ import { OrdersController } from "./http/orders.controller.js";
 import { MyShopCatalogueController } from "./http/my-shop-catalogue.controller.js";
 import { MyShopQuoteController } from "./http/my-shop-quote.controller.js";
 import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-catalogue.js";
+import { GetDaySupervisionHandler } from "./application/queries/get-day-supervision.handler.js";
+import { DaySupervisionReader } from "./domain/ports/day-supervision.reader.js";
+import { PrismaDaySupervisionReader } from "./infrastructure/prisma-day-supervision.reader.js";
+import { AdminSupervisionController } from "./http/admin-supervision.controller.js";
 
 /**
  * Contexte **commandes** : le checkout (panier → `Order` en Postgres) et la
@@ -146,6 +150,9 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     // Les commandes à régler par carte, vues de la comptabilité (plan liens de
     // paiement §2a) : la commande vit ici, la ressource est `b2b_accounting`.
     AdminOrderPaymentLinksController,
+    // La Supervision du jour, sous sa propre ressource `b2b_supervision` :
+    // elle lit les commandes d'ici, mais ne les ouvre pas.
+    AdminSupervisionController,
     // La seule surface PUBLIQUE de ce contexte. Rangée avec les autres parce
     // qu'elle tarife un panier — c'est un sujet de commande, pas de catalogue —
     // et son absence de jeton est écrite dans son en-tête, pas dans sa place.
@@ -205,6 +212,8 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
     SendHandoverReminderHandler,
     { provide: OrderPaymentLinkReader, useClass: PrismaOrderPaymentLinkReader },
     ListOrdersAwaitingPaymentHandler,
+    { provide: DaySupervisionReader, useClass: PrismaDaySupervisionReader },
+    GetDaySupervisionHandler,
     ResendOrderPaymentLinkHandler,
     { provide: OrderRecipientReader, useClass: PrismaOrderRecipientReader },
     {

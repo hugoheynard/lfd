@@ -113,6 +113,17 @@ export const staffResourceSchema = z.enum([
    * `b2b_orders:write` : c'est le même geste que celui du commercial.
    */
   "b2b_counter",
+  /**
+   * **La Supervision** — une vue du jour, en lecture seule : où en est chaque
+   * commande entre la passation et le retrait, et lesquelles sont en retard
+   * (`documentation/order/plan-supervision-du-jour.md`).
+   *
+   * Ce qu'elle ouvre, écrit : le NOM des clients du jour, particuliers compris,
+   * toutes sociétés — ni lignes, ni montants, ni contact. C'est moins que
+   * `b2b_orders:read`, mais c'est un élargissement pour qui n'a pas ce droit.
+   * Accordée à l'administrateur seul (Hugo, 2026-09-25).
+   */
+  "b2b_supervision",
   /** Les paniers récurrents — un engagement dans la durée, pas une commande. */
   "b2b_subscriptions",
   /**
@@ -317,6 +328,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
   b2b_counter: "Comptoir",
+  b2b_supervision: "Supervision",
   b2b_subscriptions: "Paniers récurrents",
   b2b_catalog: "Catalogue vendu",
   b2b_pricing: "Tarification",
@@ -395,6 +407,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_companies: "write",
     b2b_orders: "write",
     b2b_counter: "write",
+    // `write` sur une vue en lecture seule : l'administrateur couvre tout, sans
+    // trou — l'invariant qu'un test du contrat exige (2026-09-25).
+    b2b_supervision: "write",
     b2b_subscriptions: "write",
     b2b_catalog: "write",
     b2b_pricing: "write",

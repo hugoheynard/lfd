@@ -1185,3 +1185,21 @@ export type {
   CounterDeliveryAddress,
   CounterCustomerView,
 } from "./counter-customer.js";
+export {
+  daySupervisionQuerySchema,
+  supervisionStageSchema,
+  latenessRuleSchema,
+  supervisionWindowSchema,
+  supervisionFlowSchema,
+  lateOrderSchema,
+  daySupervisionViewSchema,
+} from "./day-supervision.js";
+export type {
+  DaySupervisionQuery,
+  SupervisionStage,
+  LatenessRule,
+  SupervisionWindow,
+  SupervisionFlow,
+  LateOrder,
+  DaySupervisionView,
+} from "./day-supervision.js";

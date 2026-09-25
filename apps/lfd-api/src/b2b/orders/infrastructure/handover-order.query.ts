@@ -1,12 +1,8 @@
 import type { Prisma } from "../../../platform/database/client/client.js";
-import {
-  billingAddressPayloadSchema,
-  orderFulfillmentSchema,
-  type BillingAddressPayload,
-  type OrderFulfillment,
-} from "@lfd/contracts";
+import { billingAddressPayloadSchema, type BillingAddressPayload } from "@lfd/contracts";
 
 import type { HandoverQueueWindow } from "../domain/ports/order.reader.js";
+import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
 
 /**
  * **La lecture d'une commande POUR LA REMISE**, partagée par les deux
@@ -97,39 +93,6 @@ function pickupLabelOf(value: Prisma.JsonValue | null): string | null {
   }
   return address.label;
 }
-
-/**
- * L'acheminement convenu, figé en JSON. Validé plutôt que casté — et le **repli
- * est explicite** : une commande antérieure à la colonne n'en porte pas, elle
- * rend alors « rien de convenu, tout par défaut » plutôt qu'un contact inventé.
- */
-function fulfillmentOf(value: Prisma.JsonValue | null): OrderFulfillment {
-  const parsed = orderFulfillmentSchema.safeParse(value);
-  return parsed.success ? parsed.data : NOTHING_AGREED;
-}
-
-/**
- * Le créneau convenu, **avec sa provenance**, ou `null` s'il n'y en a pas.
- *
- * 🔴 La provenance traverse le port au lieu d'être aplatie. Un `end` en
- * `source: "default"` est une heure d'ouverture recopiée à la passation, pas une
- * promesse — et le backfill du 2026-08-15 en a posé une sur TOUTES les commandes
- * antérieures. Un écran qui ne verrait que l'heure calculerait un retard sur
- * l'intégralité du portefeuille d'un coup.
- */
-function windowOf(agreed: OrderFulfillment): HandoverQueueWindow | null {
-  const window = agreed.window.value;
-  return window === null
-    ? null
-    : { start: window.start, end: window.end, source: agreed.window.source };
-}
-
-/** Ce que dit une commande qui n'a jamais rien convenu : rien, et par défaut. */
-const NOTHING_AGREED: OrderFulfillment = {
-  window: { value: null, source: "default" },
-  contact: { value: null, source: "default" },
-  signatureRequired: { value: false, source: "default" },
-};
 
 /** Valide un snapshot d'adresse postale figée (retrait ou coursier), ou `null`. */
 function parseAddress(value: Prisma.JsonValue | null): BillingAddressPayload | null {

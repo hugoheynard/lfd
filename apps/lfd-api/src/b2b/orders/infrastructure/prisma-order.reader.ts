@@ -18,7 +18,6 @@ import {
   floorDecisionSchema,
   type OrderStatus,
   type OrderFulfillment,
-  orderFulfillmentSchema,
   type OrderView,
   type PaymentStatus,
   type SheetContact,
@@ -30,6 +29,7 @@ import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { fulfillmentOf } from "./order-fulfillment.parse.js";
 import { settlementWhere } from "./plan-filter.js";
 import {
   OrderReader,
@@ -396,23 +396,6 @@ export class PrismaOrderReader extends OrderReader {
     };
   }
 }
-
-/**
- * L'acheminement convenu, figé en JSON. Validé plutôt que casté — et le **repli
- * est explicite** : une commande antérieure à la colonne n'en porte pas, elle
- * rend alors « rien de convenu, tout par défaut » plutôt qu'un contact inventé.
- */
-function fulfillmentOf(value: Prisma.JsonValue | null): OrderFulfillment {
-  const parsed = orderFulfillmentSchema.safeParse(value);
-  return parsed.success ? parsed.data : NOTHING_AGREED;
-}
-
-/** Ce que dit une commande qui n'a jamais rien convenu : rien, et par défaut. */
-const NOTHING_AGREED: OrderFulfillment = {
-  window: { value: null, source: "default" },
-  contact: { value: null, source: "default" },
-  signatureRequired: { value: false, source: "default" },
-};
 
 /**
  * **Qui appeler en livrant**, dans l'ordre : le contact convenu sur la commande,
