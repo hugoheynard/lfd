@@ -5,11 +5,17 @@ export class CreateStaffRoleCommand {
   constructor(readonly payload: CreateStaffRolePayload) {}
 }
 
-/** Réécrit le libellé et les droits d'un rôle. La clé n'en fait pas partie. */
+/**
+ * Réécrit le libellé et les droits d'un rôle. La clé n'en fait pas partie.
+ *
+ * `actorId` — l'id de FICHE de l'auteur : on ne se retire pas l'annuaire en
+ * éditant le rôle qu'on porte (plan `plan-roles-lus-en-base.md` §3.3).
+ */
 export class UpdateStaffRoleCommand {
   constructor(
     readonly key: string,
     readonly payload: UpdateStaffRolePayload,
+    readonly actorId: string,
   ) {}
 }
 

@@ -317,10 +317,27 @@ describe("annuaire staff — les bords, jusqu'à la base", () => {
     expect(response.status).toBe(409);
   });
 
-  it("refuse un rôle qui n'est pas au catalogue (400)", async () => {
+  /**
+   * ⚠️ Jusqu'au 2026-09-26 : 400, le schéma fermait la liste sur l'enum. Depuis
+   * que les rôles se lisent en base (`plan-roles-lus-en-base.md` §3.5), la
+   * charge accepte toute CLÉ bien formée, et c'est le serveur qui la confronte
+   * aux définitions actives : un rôle que personne n'a défini est un refus
+   * MÉTIER (409), et rien n'est écrit.
+   */
+  it("refuse un rôle qu'aucune définition ne porte (409), sans rien écrire", async () => {
     const response = await staff()
       .post("/admin/staff-users")
       .send(user({ role: "super-admin" }));
+
+    expect(response.status).toBe(409);
+    expect(jsonBody<{ code: string }>(response).code).toBe("staff.role.not_assignable");
+    expect(await ctx.prisma.staffUser.count({ where: { email: "alex.martin@lfc.test" } })).toBe(0);
+  });
+
+  it("refuse une clé de rôle mal formée (400)", async () => {
+    const response = await staff()
+      .post("/admin/staff-users")
+      .send(user({ role: "Super Admin !" }));
 
     expect(response.status).toBe(400);
   });

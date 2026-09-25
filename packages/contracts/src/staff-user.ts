@@ -1,12 +1,7 @@
 import { z } from "zod";
 
-import {
-  staffOverrideSchema,
-  staffRoleSchema,
-  type StaffOverride,
-  type StaffPermission,
-  type StaffRole,
-} from "./staff-access.js";
+import { staffOverrideSchema, type StaffOverride, type StaffPermission } from "./staff-access.js";
+import { staffRoleKeySchema } from "./staff-role.js";
 
 /**
  * Contrat de fil des **utilisateurs staff** (back-office) — l'annuaire des
@@ -49,7 +44,13 @@ export const staffUserPayloadSchema = z.object({
   // Facultatifs : un annuaire à moitié rempli reste un annuaire utile.
   phone: z.string().trim().default(""),
   jobTitle: z.string().trim().default(""),
-  role: staffRoleSchema,
+  /**
+   * La **clé** d'un rôle défini — plus une valeur de l'enum depuis le
+   * 2026-09-26 (`documentation/staff/plan-roles-lus-en-base.md` §3.5). La
+   * forme seule est vérifiée ici ; le serveur la confronte aux définitions
+   * ACTIVES au moment d'écrire.
+   */
+  role: staffRoleKeySchema,
   // Les écarts au rôle, et eux seuls — l'absence de ligne vaut « hérite ».
   overrides: z.array(staffOverrideSchema).default([]),
 });
@@ -69,7 +70,13 @@ export interface StaffUserView {
   readonly email: string;
   readonly phone: string;
   readonly jobTitle: string;
-  readonly role: StaffRole;
+  /**
+   * La clé du rôle porté — une chaîne, plus l'union `StaffRole` : un rôle créé
+   * à l'écran s'attribue (plan `plan-roles-lus-en-base.md` §3.5).
+   */
+  readonly role: string;
+  /** Son libellé, lu dans la définition. C'est lui qu'un écran affiche. */
+  readonly roleLabel: string;
   readonly status: StaffStatus;
   /**
    * Quand le dernier lien d'invitation a été émis (ISO), `null` si jamais.

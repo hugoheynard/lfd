@@ -26,22 +26,27 @@ export class ProtectedStaffUserError extends BusinessError {
   constructor() {
     super(
       "staff_user.protected",
-      "L'administrateur racine ne peut être ni supprimé ni rétrogradé.",
+      "La fiche racine (l'adresse de secours) ne peut être ni supprimée, ni suspendue, " +
+        "ni renommée, ni changer de rôle.",
     );
   }
 }
 
 /**
- * Mutation refusée : elle laisserait le back-office **sans administrateur**.
+ * Mutation refusée : plus personne — la fiche de secours mise à part — ne
+ * tiendrait `staff_access:write` par son rôle.
  *
- * L'admin racine protège une ligne, pas la propriété : rien n'empêchait jusqu'ici
- * de rétrograder tous les *autres* administrateurs. Refus **métier** (409).
+ * L'admin racine protège une ligne, pas la propriété. Depuis que les rôles se
+ * lisent en base (plan `plan-roles-lus-en-base.md` §3.3), la propriété ne tient
+ * plus sur la chaîne `"admin"` — qui s'édite — mais sur le droit lui-même, et
+ * elle vaut qu'on modifie une fiche, un rôle ou un écart. Refus **métier** (409).
  */
 export class LastStaffAdminError extends BusinessError {
   constructor() {
     super(
       "staff_user.last_admin",
-      "Il doit rester au moins un administrateur : désignez-en un autre d'abord.",
+      "Il doit rester au moins une personne active qui gère les utilisateurs par son rôle : " +
+        "donnez ce droit à quelqu'un d'autre d'abord.",
     );
   }
 }
@@ -56,13 +61,15 @@ export class SelfDemotionError extends BusinessError {
   constructor() {
     super(
       "staff_user.self_demotion",
-      "Vous ne pouvez pas retirer vos propres droits d'administration.",
+      "Vous ne pouvez pas vous retirer à vous-même le droit de gérer les utilisateurs : " +
+        "demandez-le à une autre personne qui le tient.",
     );
   }
 }
 
 /**
- * Dérogation refusée : elle couperait à un administrateur l'accès à l'annuaire.
+ * Dérogation refusée : elle couperait l'accès à l'annuaire à quelqu'un dont le
+ * RÔLE l'accorde.
  *
  * Sans ce refus, le delta contournerait par la porte de derrière l'invariant
  * « il reste au moins un administrateur » : l'admin serait toujours là, mais privé
@@ -72,7 +79,8 @@ export class AdminOverrideRefusedError extends BusinessError {
   constructor() {
     super(
       "staff_user.admin_override_refused",
-      "Un administrateur ne peut pas être privé de l'accès aux utilisateurs.",
+      "Un écart ne peut pas retirer l'accès aux utilisateurs que le rôle accorde : " +
+        "changez plutôt le rôle de la personne.",
     );
   }
 }
@@ -90,7 +98,7 @@ export class StaffGrantByOverrideError extends BusinessError {
   constructor() {
     super(
       "staff_user.staff_grant_by_override",
-      "L'accès aux utilisateurs ne s'accorde que par le rôle administrateur.",
+      "L'accès aux utilisateurs ne s'accorde que par le rôle, jamais par un écart.",
     );
   }
 }

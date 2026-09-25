@@ -1,6 +1,7 @@
-import { resolveStaffPermissions, type StaffOverride, type StaffStatus } from "@lfd/contracts";
+import type { StaffOverride, StaffStatus } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
+import { AppConfig } from "../../platform/config/app-config.js";
 import {
   currentRequestContext,
   runWithRequestContext,
@@ -15,6 +16,7 @@ import { StaffAccessResolver } from "../../platform/auth/staff-access.resolver.j
 import type { StaffAccess, StaffPrincipal } from "../../platform/auth/staff-principal.js";
 import { staffStatusFact } from "../directory/domain/staff-facts.js";
 import { linkedSubject } from "../directory/infrastructure/staff-subject-aliases.js";
+import { HELD_ROLE_SELECT, resolveHeldRole } from "./infrastructure/held-role.js";
 
 /** Durée de vie d'une entrée de cache, en millisecondes. */
 const CACHE_TTL_MS = 30_000;
@@ -30,7 +32,9 @@ const STAFF_SELECT = {
   // par son nom figé (D6 du plan des phrases).
   firstName: true,
   lastName: true,
-  role: true,
+  // L'adresse de la FICHE reconnaît la racine (§3.4) — jamais celle du jeton.
+  email: true,
+  ...HELD_ROLE_SELECT,
   status: true,
   auth0Id: true,
   overrides: { select: { resource: true, action: true, effect: true } },
@@ -85,6 +89,7 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
     private readonly journal: Journal,
+    private readonly config: AppConfig,
   ) {
     super();
   }
@@ -106,10 +111,17 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
     }
 
     const overrides: StaffOverride[] = row.overrides.map((entry) => ({ ...entry }));
+    // 🔴 Le secours s'ancre sur la FICHE trouvée par `findStaff`, jamais sur le
+    // claim `email` du jeton, qui se fabrique (`plan-roles-lus-en-base.md` §3.4).
+    const isRescue = row.email === this.config.bootstrapAdminEmail();
+    const role = resolveHeldRole(row, overrides, isRescue, (key, error) =>
+      this.reportUnreadableRole(key, error),
+    );
     const access: StaffAccess = {
       staffUserId: row.id,
-      role: row.role,
-      permissions: resolveStaffPermissions(row.role, overrides),
+      role: role.key,
+      roleLabel: role.label,
+      permissions: role.permissions,
     };
     this.cache.set(principal.subject, {
       access,
@@ -244,6 +256,15 @@ export class PrismaStaffAccessResolver extends StaffAccessResolver {
       }
       this.reportLostActivation(row.id, error);
     }
+  }
+
+  /** Une définition illisible : le log, avec la clé ; ses porteurs gardent leurs écarts (§2). */
+  protected reportUnreadableRole(roleKey: string, error: unknown): void {
+    this.logger.error(
+      `Droits illisibles pour le rôle « ${roleKey} » : ses porteurs n'ont plus que leurs ` +
+        `écarts individuels. Corriger la définition dans Admin › Rôles.`,
+      error,
+    );
   }
 
   /** Où part une première activation perdue : le log applicatif, en erreur. */

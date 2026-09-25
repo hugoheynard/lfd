@@ -1,4 +1,9 @@
-import { STAFF_RESOURCE_LABELS, type StaffOverride } from "@lfd/contracts";
+import {
+  STAFF_RESOURCE_LABELS,
+  STAFF_ROLE_LABELS,
+  staffRoleSchema,
+  type StaffOverride,
+} from "@lfd/contracts";
 import { checkJournalFact } from "@lfd/contracts/journal-facts";
 
 import type { OverrideDiff } from "../override-diff.js";
@@ -36,9 +41,23 @@ const IDENTITY: StaffUserIdentity = {
   role: BEFORE.role,
 };
 
-function edit(after: Partial<StaffUserIdentity>, overrides = NO_OVERRIDE_CHANGE): StaffUserEdit {
-  return { before: BEFORE, after: { ...IDENTITY, ...after }, overrides };
+/** Le libellé d'une clé tel que sa définition le porterait : le contrat, ou la clé. */
+function labelOf(key: string): string {
+  const builtIn = staffRoleSchema.safeParse(key);
+  return builtIn.success ? STAFF_ROLE_LABELS[builtIn.data] : key;
 }
+
+function edit(after: Partial<StaffUserIdentity>, overrides = NO_OVERRIDE_CHANGE): StaffUserEdit {
+  const next = { ...IDENTITY, ...after };
+  return {
+    before: BEFORE,
+    after: next,
+    overrides,
+    roleLabels: { before: labelOf(BEFORE.role), after: labelOf(next.role) },
+  };
+}
+
+const CECILE_AS_COMMERCIAL = { ...BEFORE, roleLabel: "Commercial" };
 
 /** Aucune adresse, aucun lien, aucun `sub` ne doit sortir vers le journal (D5). */
 function assertNoContactLeak(payload: Record<string, unknown>): void {
@@ -94,6 +113,7 @@ describe("les faits de l'annuaire — un par changement réel", () => {
       before,
       after: { ...IDENTITY, phone: "" },
       overrides: NO_OVERRIDE_CHANGE,
+      roleLabels: { before: "Commercial", after: "Commercial" },
     });
 
     expect(fact?.payload).toMatchObject({
@@ -152,6 +172,26 @@ describe("les faits de l'annuaire — un par changement réel", () => {
     });
   });
 
+  it("fige le libellé de la DÉFINITION pour un rôle créé à l'écran", () => {
+    // Plan `plan-roles-lus-en-base.md` §3.5 : un rôle hors enum n'a pas de
+    // libellé dans le contrat ; c'est celui de sa définition qui entre au journal.
+    const [fact] = staffUserEditFacts("s1", {
+      ...edit({ role: "vendeur-marche" }),
+      roleLabels: { before: "Commercial", after: "Vendeur du marché" },
+    });
+
+    expect(fact?.payload).toMatchObject({ fromLabel: "Commercial", toLabel: "Vendeur du marché" });
+  });
+
+  it("n'écrit rien quand seule la clé ne bouge pas, même si le libellé a changé", () => {
+    const facts = staffUserEditFacts("s1", {
+      ...edit({}),
+      roleLabels: { before: "Commercial", after: "Commerciale terrain" },
+    });
+
+    expect(facts).toEqual([]);
+  });
+
   it("décrit le diff des dérogations avec les libellés de ressource", () => {
     const flipped: StaffOverride = { resource: "b2b_growth", action: "read", effect: "allow" };
     const removed: StaffOverride = { resource: "b2b_orders", action: "write", effect: "deny" };
@@ -191,7 +231,7 @@ describe("les faits de l'annuaire — les gestes à un seul fait", () => {
     const fact = staffUserCreatedFact("s1", {
       firstName: "Cécile",
       lastName: "Martin",
-      role: "support",
+      roleLabel: "Support",
     });
 
     expect(fact).toEqual({
@@ -228,7 +268,7 @@ describe("les faits de l'annuaire — les gestes à un seul fait", () => {
   });
 
   it("supprime : fige qui elle était et son rôle", () => {
-    expect(staffUserDeletedFact("s1", BEFORE).payload).toEqual({
+    expect(staffUserDeletedFact("s1", CECILE_AS_COMMERCIAL).payload).toEqual({
       person: { firstName: "Cécile", lastName: "Martin" },
       roleLabel: "Commercial",
     });
@@ -254,7 +294,7 @@ describe("les faits de l'annuaire — les gestes à un seul fait", () => {
 
   it("chaque fait écrit suit la forme courante du catalogue, libellé du sujet compris", () => {
     const written = [
-      staffUserCreatedFact("s1", BEFORE),
+      staffUserCreatedFact("s1", CECILE_AS_COMMERCIAL),
       staffUserInvitedFact("s1", BEFORE, "invitation"),
       staffPasswordLinkIssuedFact("s1", BEFORE),
       staffStatusFact("s1", BEFORE, "pending", "active"),

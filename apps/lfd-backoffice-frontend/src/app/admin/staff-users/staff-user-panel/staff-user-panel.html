@@ -44,7 +44,7 @@
       [value]="role()"
       (valueChange)="setRole($event)"
     >
-      @for (option of roleOptions; track option.value) {
+      @for (option of roleOptions(); track option.value) {
         <option [value]="option.value">{{ option.label }}</option>
       }
     </fold-select>
@@ -52,7 +52,7 @@
 
   <section class="block">
     <h3 class="block-title">Dérogations au rôle</h3>
-    <app-overrides-grid [role]="role()" [(overrides)]="overrides" />
+    <app-overrides-grid [grants]="roleGrants()" [(overrides)]="overrides" />
   </section>
 </div>
 

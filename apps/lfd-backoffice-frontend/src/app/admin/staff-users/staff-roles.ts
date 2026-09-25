@@ -1,25 +1,32 @@
-import {
-  STAFF_ROLE_LABELS,
-  staffRoleSchema,
-  type StaffRole,
-  type StaffStatus,
-} from '@lfd/contracts';
+import type { StaffRoleView, StaffStatus } from '@lfd/contracts';
+
+/** Une entrée du sélecteur de rôle d'une fiche. */
+export interface RoleOption {
+  readonly value: string;
+  readonly label: string;
+}
 
 /**
- * Les rôles dans l'ordre du catalogue, du plus large au plus étroit. Les libellés
- * viennent du contrat : un rôle renommé se renomme partout, pas seulement ici.
+ * Les rôles qu'une fiche peut recevoir : les définitions **actives** de la
+ * table, dans l'ordre où le serveur les rend — plus l'enum écrit dans le code
+ * (plan `documentation/staff/plan-roles-lus-en-base.md` §3.5). `superadmin` n'y
+ * est jamais : c'est la porte de secours, pas un rôle qu'on donne.
+ *
+ * Le rôle que la fiche porte déjà reste proposé même s'il n'est plus actif :
+ * un sélecteur qui n'afficherait pas la valeur courante laisserait croire
+ * qu'elle est vide, et l'enregistrer la changerait sans qu'on l'ait voulu.
  */
-export const ROLE_OPTIONS: readonly { readonly value: StaffRole; readonly label: string }[] =
-  staffRoleSchema.options.map((role) => ({ value: role, label: STAFF_ROLE_LABELS[role] }));
-
-/**
- * Reconnaît un rôle rendu par un `<select>` natif, qui ne parle que `string`.
- * Une valeur inconnue est **ignorée** plutôt que forcée : mieux vaut ne rien
- * changer que d'écrire un rôle que le catalogue ne connaît pas.
- */
-export function toStaffRole(value: string): StaffRole | null {
-  const parsed = staffRoleSchema.safeParse(value);
-  return parsed.success ? parsed.data : null;
+export function roleOptionsFrom(
+  definitions: readonly StaffRoleView[],
+  current: RoleOption | null,
+): readonly RoleOption[] {
+  const active = definitions
+    .filter((definition) => !definition.locked && definition.archivedAt === null)
+    .map((definition) => ({ value: definition.key, label: definition.label }));
+  if (current === null || active.some((option) => option.value === current.value)) {
+    return active;
+  }
+  return [current, ...active];
 }
 
 /** Le ton du badge d'état — seul ce qui appelle une action est signalé. */

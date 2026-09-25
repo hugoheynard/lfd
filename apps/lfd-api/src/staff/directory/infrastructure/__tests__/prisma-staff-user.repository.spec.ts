@@ -4,14 +4,15 @@ import {
   ProtectedStaffUserError,
   SelfDemotionError,
 } from "../../domain/staff-user-errors.js";
-import { ACTOR, buildRepo, fakePrisma, row, TODAY } from "./fake-staff-prisma.js";
+import { StaffRoleNotAssignableError } from "../../../permissions/domain/staff-role-errors.js";
+import { ACTOR, buildRepo, fakePrisma, holding, payload, row, TODAY } from "./fake-staff-prisma.js";
 
 const SUSPEND = { status: "suspended" } as const;
 
 describe("PrismaStaffUserRepository — admin racine protégé", () => {
   it("refuse de suspendre l'admin racine et ne touche pas la base", async () => {
     const { prisma, updated } = fakePrisma(
-      row({ id: "root", email: BOOTSTRAP_ADMIN_EMAIL, role: "admin" }),
+      row({ id: "root", email: BOOTSTRAP_ADMIN_EMAIL, ...holding("admin") }),
     );
     const repo = await buildRepo(prisma);
 
@@ -31,7 +32,7 @@ describe("PrismaStaffUserRepository — admin racine protégé", () => {
 
   it("ensureBootstrapAdmin ne recrée rien s'il existe déjà", async () => {
     const { prisma, created } = fakePrisma(
-      row({ id: "root", email: BOOTSTRAP_ADMIN_EMAIL, role: "admin" }),
+      row({ id: "root", email: BOOTSTRAP_ADMIN_EMAIL, ...holding("admin") }),
     );
     const repo = await buildRepo(prisma);
 
@@ -44,7 +45,7 @@ describe("PrismaStaffUserRepository — les faits que la politique attend", () =
   it("refuse de suspendre le dernier administrateur", async () => {
     // Le repo ne décide pas : il compte, et la politique tranche. Le zéro ici est
     // le seul fait qui manquait avant cette tranche.
-    const { prisma, updated } = fakePrisma(row({ role: "admin" }), 0);
+    const { prisma, updated } = fakePrisma(row({ ...holding("admin") }), 0);
     const repo = await buildRepo(prisma);
 
     await expect(repo.setStatus("u1", SUSPEND, ACTOR)).rejects.toBeInstanceOf(LastStaffAdminError);
@@ -55,14 +56,14 @@ describe("PrismaStaffUserRepository — les faits que la politique attend", () =
     // Depuis le lot 2 du plan `plan-journal-de-l-annuaire.md`, le contrôleur
     // passe l'id de fiche de l'auteur (`@StaffUserId()`). Une liaison Auth0
     // égale à cet id n'est qu'une coïncidence, pas une identité.
-    const { prisma } = fakePrisma(row({ id: ACTOR, role: "admin", auth0Id: null }));
+    const { prisma } = fakePrisma(row({ id: ACTOR, ...holding("admin"), auth0Id: null }));
     const repo = await buildRepo(prisma);
 
     await expect(repo.setStatus(ACTOR, SUSPEND, ACTOR)).rejects.toBeInstanceOf(SelfDemotionError);
   });
 
   it("n'est plus dupe d'un `sub` égal à l'identifiant de l'auteur", async () => {
-    const { prisma, updated } = fakePrisma(row({ role: "admin", auth0Id: ACTOR }));
+    const { prisma, updated } = fakePrisma(row({ ...holding("admin"), auth0Id: ACTOR }));
     const repo = await buildRepo(prisma);
 
     await repo.setStatus("u1", SUSPEND, ACTOR);
@@ -81,5 +82,71 @@ describe("PrismaStaffUserRepository — la table des `sub`", () => {
 
     expect(updated.map((args) => args.data["auth0Id"])).toEqual(["auth0|camille"]);
     expect(aliases).toEqual([{ sub: "auth0|camille", staffUserId: "u1", source: "linked" }]);
+  });
+});
+
+describe("PrismaStaffUserRepository — attribuer une CLÉ de rôle (plan roles-lus-en-base §3.5)", () => {
+  /** Une définition créée à l'écran, rendue par la lecture `FOR SHARE`. */
+  function withDefinition(definition: { readonly key: string; readonly archived_at: Date | null }) {
+    const fake = fakePrisma(row());
+    const prisma = {
+      ...fake.prisma,
+      $queryRaw: (_sql: TemplateStringsArray, key: string): Promise<unknown[]> =>
+        Promise.resolve(
+          key === definition.key
+            ? [
+                {
+                  ...definition,
+                  label: "Vendeur du marché",
+                  grants: [{ resource: "b2b_orders", action: "read" }],
+                },
+              ]
+            : [],
+        ),
+    };
+    return { prisma, updated: fake.updated };
+  }
+
+  it("écrit la clé ET l'enum pour un rôle du contrat", async () => {
+    const { prisma, updated } = fakePrisma(row());
+    const repo = await buildRepo(prisma);
+
+    const edit = await repo.update("u1", payload({ role: "support" }), ACTOR);
+
+    expect(updated[0]?.data).toMatchObject({ roleKey: "support", role: "support" });
+    expect(edit.roleLabels).toEqual({ before: "Commercial", after: "Support" });
+  });
+
+  it("écrit la clé seule, l'enum à NULL, pour un rôle créé à l'écran", async () => {
+    // `role` est écrit NUL, pas omis : la colonne a un défaut, et le
+    // déclencheur recopierait ce défaut dans `role_key`.
+    const { prisma, updated } = withDefinition({ key: "vendeur-marche", archived_at: null });
+    const repo = await buildRepo(prisma);
+
+    await repo.update("u1", payload({ role: "vendeur-marche" }), ACTOR);
+
+    expect(updated[0]?.data).toMatchObject({ roleKey: "vendeur-marche", role: null });
+  });
+
+  it("refuse un rôle archivé, et n'écrit rien", async () => {
+    const { prisma, updated } = withDefinition({
+      key: "vendeur-marche",
+      archived_at: new Date(0),
+    });
+    const repo = await buildRepo(prisma);
+
+    await expect(
+      repo.update("u1", payload({ role: "vendeur-marche" }), ACTOR),
+    ).rejects.toBeInstanceOf(StaffRoleNotAssignableError);
+    expect(updated).toHaveLength(0);
+  });
+
+  it("refuse une clé qu'aucune définition ne porte — `superadmin` compris", async () => {
+    const { prisma } = fakePrisma(row());
+    const repo = await buildRepo(prisma);
+
+    await expect(repo.update("u1", payload({ role: "superadmin" }), ACTOR)).rejects.toBeInstanceOf(
+      StaffRoleNotAssignableError,
+    );
   });
 });

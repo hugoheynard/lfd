@@ -1,4 +1,4 @@
-import type { StaffRole, StaffStatus } from "@lfd/contracts";
+import type { StaffStatus } from "@lfd/contracts";
 
 import type { OverrideDiff } from "./override-diff.js";
 
@@ -12,7 +12,11 @@ export interface StaffUserIdentity {
   readonly email: string;
   readonly phone: string;
   readonly jobTitle: string;
-  readonly role: StaffRole;
+  /**
+   * La clé du rôle — une chaîne, plus l'union `StaffRole` : un rôle créé à
+   * l'écran s'attribue (plan `plan-roles-lus-en-base.md` §3.5).
+   */
+  readonly role: string;
 }
 
 /**
@@ -34,4 +38,16 @@ export interface StaffUserEdit {
   readonly before: StaffUserSnapshot;
   readonly after: StaffUserIdentity;
   readonly overrides: OverrideDiff;
+  /**
+   * Les libellés des deux rôles, lus dans leurs définitions au moment de
+   * l'écriture : le journal les fige (« des libellés figés, jamais des clés
+   * seules »), et le domaine ne connaît plus la table des libellés.
+   */
+  readonly roleLabels: { readonly before: string; readonly after: string };
+}
+
+/** Une fiche créée : son id, et le libellé du rôle attribué, pour le journal. */
+export interface StaffUserCreated {
+  readonly id: string;
+  readonly roleLabel: string;
 }

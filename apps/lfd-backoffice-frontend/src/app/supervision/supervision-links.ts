@@ -1,4 +1,4 @@
-import type { StaffPermission, StaffRole } from '@lfd/contracts';
+import type { StaffPermission } from '@lfd/contracts';
 
 /**
  * **Les renvois de la Supervision** — ce qui remplace chaque geste de la
@@ -31,10 +31,13 @@ export const LINK_PERMISSION: StaffPermission = 'b2b_orders:read';
  * autres sur la préparation, par défaut. Aucun rôle « fournil » n'existe
  * aujourd'hui (vérifié le 2026-09-25 dans `staffRoleSchema`).
  */
-const LANDING_BY_ROLE: Readonly<Partial<Record<StaffRole, SupervisionColumn>>> = {
-  comptoir: 'handover',
-};
+const LANDING_BY_ROLE: ReadonlyMap<string, SupervisionColumn> = new Map([['comptoir', 'handover']]);
 
-export function landingColumnOf(role: StaffRole | null): SupervisionColumn {
-  return (role === null ? undefined : LANDING_BY_ROLE[role]) ?? 'preparation';
+/**
+ * `role` est une CLÉ de rôle, plus l'union `StaffRole` : un rôle créé à l'écran
+ * arrive ici aussi (plan `plan-roles-lus-en-base.md` §3.5), et tombe sur le
+ * défaut.
+ */
+export function landingColumnOf(role: string | null): SupervisionColumn {
+  return (role === null ? undefined : LANDING_BY_ROLE.get(role)) ?? 'preparation';
 }

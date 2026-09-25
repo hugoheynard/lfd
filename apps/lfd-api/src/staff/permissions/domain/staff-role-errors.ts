@@ -66,3 +66,53 @@ export class StaffRoleNotFoundError extends ResourceNotFoundError {
     super("staff.role.not_found", `Aucun rôle « ${key} ».`);
   }
 }
+
+/**
+ * On n'attribue qu'un rôle **actif** (plan `plan-roles-lus-en-base.md` §3.5).
+ *
+ * La fiche n'accepte plus seulement les valeurs de l'enum : elle accepte toute
+ * clé définie. Une clé inconnue, ou un rôle archivé, laisserait la personne
+ * sans aucun droit par son rôle — sans qu'aucun écran ne lui dise pourquoi.
+ */
+export class StaffRoleNotAssignableError extends BusinessError {
+  constructor(
+    readonly key: string,
+    readonly archived: boolean,
+  ) {
+    super(
+      "staff.role.not_assignable",
+      archived
+        ? `Le rôle « ${key} » est archivé : restaurez-le dans Admin › Rôles, ou choisissez ` +
+            `un autre rôle.`
+        : `Aucun rôle « ${key} » n'est défini : choisissez un rôle dans la liste.`,
+    );
+  }
+}
+
+/**
+ * Éditer ce rôle laisserait l'annuaire sans personne pour le tenir.
+ *
+ * Plus personne — la fiche de secours mise à part — ne tiendrait
+ * `staff_access:write` par son rôle : l'invariant du §3.3, vu depuis le rôle
+ * plutôt que depuis la fiche.
+ */
+export class StaffRoleLastDirectoryKeeperError extends BusinessError {
+  constructor(readonly key: string) {
+    super(
+      "staff.role.last_directory_keeper",
+      `Retirer « Équipe et accès » en écriture au rôle « ${key} » laisserait l'annuaire sans ` +
+        `personne pour le gérer : donnez d'abord ce droit à quelqu'un par un autre rôle.`,
+    );
+  }
+}
+
+/** On ne se retire pas l'annuaire à soi-même en éditant le rôle qu'on porte. */
+export class StaffRoleSelfRevokeError extends BusinessError {
+  constructor(readonly key: string) {
+    super(
+      "staff.role.self_revoke",
+      `Vous portez le rôle « ${key} » : lui retirer « Équipe et accès » en écriture vous ` +
+        `retirerait ce droit à vous-même. Demandez-le à une autre personne qui le tient.`,
+    );
+  }
+}

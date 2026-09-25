@@ -8,7 +8,11 @@ import type {
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { StaffAccessCache } from "../../../permissions/staff-access-cache.port.js";
 import type { OverrideDiff } from "../../domain/override-diff.js";
-import type { StaffUserEdit, StaffUserSnapshot } from "../../domain/staff-user-state.js";
+import type {
+  StaffUserCreated,
+  StaffUserEdit,
+  StaffUserSnapshot,
+} from "../../domain/staff-user-state.js";
 import {
   StaffUserRepository,
   type StaffIdentityFacts,
@@ -90,16 +94,21 @@ export class ScriptedStaffUsers extends StaffUserRepository {
   ) {
     super();
     const { id: _id, status: _status, auth0Id: _auth0Id, ...identity } = snapshot;
-    this.edit = { before: snapshot, after: identity, overrides: NO_OVERRIDE_CHANGE };
+    this.edit = {
+      before: snapshot,
+      after: identity,
+      overrides: NO_OVERRIDE_CHANGE,
+      roleLabels: { before: "Commercial", after: "Commercial" },
+    };
   }
 
   private note(method: string): void {
     this.writes.push({ method, insideTransaction: this.uow.inside });
   }
 
-  create(_payload: StaffUserPayload, _actorId: string): Promise<string> {
+  create(_payload: StaffUserPayload, _actorId: string): Promise<StaffUserCreated> {
     this.note("create");
-    return Promise.resolve(this.snapshot.id);
+    return Promise.resolve({ id: this.snapshot.id, roleLabel: "Commercial" });
   }
 
   update(_id: string, _payload: StaffUserPayload, _actorId: string): Promise<StaffUserEdit> {

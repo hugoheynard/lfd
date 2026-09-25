@@ -2,6 +2,12 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
+  HELD_ROLE_SELECT,
+  heldRoleKey,
+  heldRoleLabel,
+  type HeldRoleRow,
+} from "../../permissions/infrastructure/held-role.js";
+import {
   StaffAuthorDirectory,
   StaffAuthorReferences,
   StaffAuthors,
@@ -12,16 +18,15 @@ const AUTHOR_SELECT = {
   id: true,
   firstName: true,
   lastName: true,
-  role: true,
+  ...HELD_ROLE_SELECT,
   jobTitle: true,
   auth0Id: true,
 } as const;
 
-interface AuthorRow {
+interface AuthorRow extends HeldRoleRow {
   readonly id: string;
   readonly firstName: string;
   readonly lastName: string;
-  readonly role: StaffAuthor["role"];
   readonly jobTitle: string;
   readonly auth0Id: string | null;
 }
@@ -124,7 +129,8 @@ function toAuthor(row: AuthorRow): StaffAuthor {
     staffUserId: row.id,
     firstName: row.firstName,
     lastName: row.lastName,
-    role: row.role,
+    role: heldRoleKey(row) ?? "",
+    roleLabel: heldRoleLabel(row),
     jobTitle: row.jobTitle,
   };
 }

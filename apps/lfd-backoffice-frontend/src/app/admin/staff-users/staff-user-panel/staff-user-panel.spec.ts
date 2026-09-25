@@ -1,11 +1,17 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import type { StaffPermission, StaffUserView } from '@lfd/contracts';
+import {
+  ALL_STAFF_PERMISSIONS,
+  type StaffPermission,
+  type StaffRoleView,
+  type StaffUserView,
+} from '@lfd/contracts';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
+import { StaffRolesService } from '../../roles/staff-roles.service';
 import { StaffUsersService } from '../staff-users.service';
 import { StaffUserPanel } from './staff-user-panel';
 
@@ -17,12 +23,41 @@ const USER: StaffUserView = {
   phone: '',
   jobTitle: '',
   role: 'commercial',
+  roleLabel: 'Commercial',
   overrides: [],
   status: 'active',
   invitedAt: null,
   invitationExpired: false,
   permissions: [],
 };
+
+/** Une définition telle que `GET /admin/staff-roles` la rend. */
+function definition(key: string, label: string, over: Partial<StaffRoleView> = {}): StaffRoleView {
+  return {
+    key,
+    label,
+    locked: false,
+    grants: [{ resource: 'b2b_orders', action: 'read' }],
+    permissions: ['b2b_orders:read'],
+    memberCount: 0,
+    archivedAt: null,
+    ...over,
+  };
+}
+
+/** Les rôles en base : le sommet, deux actifs dont un créé à l'écran, un archivé. */
+const DEFINITIONS: readonly StaffRoleView[] = [
+  definition('superadmin', 'Super administrateur', {
+    locked: true,
+    grants: [],
+    permissions: ALL_STAFF_PERMISSIONS,
+  }),
+  definition('commercial', 'Commercial'),
+  definition('vendeur-marche', 'Vendeur du marché', {
+    grants: [{ resource: 'b2b_counter', action: 'read' }],
+  }),
+  definition('ancien', 'Ancien rôle', { archivedAt: '2026-01-01T00:00:00.000Z' }),
+];
 
 interface Booted {
   readonly fixture: ComponentFixture<StaffUserPanel>;
@@ -46,6 +81,10 @@ async function boot(
       provideRouter([{ path: 'admin/journal', children: [] }]),
       { provide: PermissionsStore, useValue: store },
       { provide: StaffUsersService, useValue: {} },
+      {
+        provide: StaffRolesService,
+        useValue: { list: (): Promise<readonly StaffRoleView[]> => Promise.resolve(DEFINITIONS) },
+      },
       { provide: NotifyService, useValue: {} },
       { provide: FoldPanelRef, useValue: new FoldPanelRef(1, (r) => closes.push(r)) },
     ],
@@ -101,5 +140,32 @@ describe('StaffUserPanel — le lien vers le journal', () => {
 
     expect(TestBed.inject(Router).url).toBe('/admin/journal?actorId=stf_1');
     expect(closes).toEqual([undefined]);
+  });
+});
+
+/**
+ * Plan `plan-roles-lus-en-base.md` §3.5 : la fiche propose les définitions
+ * ACTIVES de la table — un rôle créé à l'écran compris —, jamais le sommet.
+ */
+describe('StaffUserPanel — le sélecteur de rôle lit les définitions', () => {
+  function roleOptions(fixture: ComponentFixture<StaffUserPanel>): string[] {
+    const host = fixture.nativeElement as HTMLElement;
+    return [...host.querySelectorAll<HTMLOptionElement>('option')]
+      .map((option) => option.value)
+      .filter((value) => !['inherit', 'allow', 'deny'].includes(value));
+  }
+
+  it('propose les rôles actifs, sans le sommet ni les archivés', async () => {
+    const { fixture } = await boot(null, ['staff_access:write']);
+
+    expect(roleOptions(fixture)).toEqual(['commercial', 'vendeur-marche']);
+  });
+
+  it('garde en tête le rôle porté même s’il n’est plus actif', async () => {
+    const { fixture } = await boot({ ...USER, role: 'ancien', roleLabel: 'Ancien rôle' }, [
+      'staff_access:write',
+    ]);
+
+    expect(roleOptions(fixture)).toEqual(['ancien', 'commercial', 'vendeur-marche']);
   });
 });

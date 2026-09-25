@@ -3,9 +3,14 @@ import type { RoleGrant } from "@lfd/contracts";
 import {
   InvalidStaffRoleError,
   ReservedStaffRoleKeyError,
+  StaffRoleLastDirectoryKeeperError,
+  StaffRoleSelfRevokeError,
   StaffRoleStillHeldError,
 } from "../staff-role-errors.js";
-import { StaffRoleDefinition } from "../staff-role-definition.js";
+import { StaffRoleDefinition, type DirectoryKeepersSnapshot } from "../staff-role-definition.js";
+
+/** Personne ne tient l'annuaire : une redéfinition ordinaire ne regarde rien. */
+const NOBODY_KEEPS: DirectoryKeepersSnapshot = { actorId: "auteur", keepers: [] };
 
 const GRANTS: readonly RoleGrant[] = [
   { resource: "b2b_orders", action: "write" },
@@ -79,10 +84,13 @@ describe("StaffRoleDefinition — ce qu'il accorde", () => {
 describe("StaffRoleDefinition — réécriture", () => {
   it("change le libellé et les droits, jamais la clé", () => {
     const role = fournil();
-    role.redefine({
-      label: "Fournil & labo",
-      grants: [{ resource: "pim_catalog", action: "read" }],
-    });
+    role.redefine(
+      {
+        label: "Fournil & labo",
+        grants: [{ resource: "pim_catalog", action: "read" }],
+      },
+      NOBODY_KEEPS,
+    );
     expect(role.toPersistence()).toMatchObject({
       key: "fournil",
       label: "Fournil & labo",
@@ -92,7 +100,84 @@ describe("StaffRoleDefinition — réécriture", () => {
 
   it("refuse de se vider par réécriture, comme à la création", () => {
     const role = fournil();
-    expect(() => role.redefine({ label: "Fournil", grants: [] })).toThrow(InvalidStaffRoleError);
+    expect(() => role.redefine({ label: "Fournil", grants: [] }, NOBODY_KEEPS)).toThrow(
+      InvalidStaffRoleError,
+    );
+  });
+});
+
+describe("StaffRoleDefinition — on ne vide pas l'annuaire en redéfinissant", () => {
+  /**
+   * Plan `plan-roles-lus-en-base.md` §3.3 : depuis que la définition fait foi,
+   * retirer `staff_access:write` à un rôle le retire à ses porteurs.
+   */
+  const gatekeeper = (): StaffRoleDefinition =>
+    StaffRoleDefinition.define({
+      key: "gardien",
+      label: "Gardien",
+      grants: [
+        { resource: "staff_access", action: "write" },
+        { resource: "b2b_orders", action: "read" },
+      ],
+    });
+  const stripped = {
+    label: "Gardien",
+    grants: [{ resource: "b2b_orders", action: "read" }],
+  } as const;
+
+  it("refuse quand ses porteurs sont les seuls à tenir l'annuaire", () => {
+    const role = gatekeeper();
+
+    expect(() =>
+      role.redefine(
+        { ...stripped, grants: [...stripped.grants] },
+        { actorId: "auteur", keepers: [{ staffUserId: "a", roleKey: "gardien" }] },
+      ),
+    ).toThrow(StaffRoleLastDirectoryKeeperError);
+    expect(role.permissions()).toContain("staff_access:write");
+  });
+
+  it("refuse que l'auteur se le retire à lui-même", () => {
+    expect(() =>
+      gatekeeper().redefine(
+        { ...stripped, grants: [...stripped.grants] },
+        {
+          actorId: "auteur",
+          keepers: [
+            { staffUserId: "auteur", roleKey: "gardien" },
+            { staffUserId: "b", roleKey: "admin" },
+          ],
+        },
+      ),
+    ).toThrow(StaffRoleSelfRevokeError);
+  });
+
+  it("laisse faire quand un autre rôle le tient encore", () => {
+    const role = gatekeeper();
+
+    role.redefine(
+      { ...stripped, grants: [...stripped.grants] },
+      {
+        actorId: "auteur",
+        keepers: [
+          { staffUserId: "a", roleKey: "gardien" },
+          { staffUserId: "b", roleKey: "admin" },
+        ],
+      },
+    );
+
+    expect(role.permissions()).not.toContain("staff_access:write");
+  });
+
+  it("ne regarde rien quand le droit n'est pas retiré", () => {
+    const role = gatekeeper();
+
+    expect(() =>
+      role.redefine(
+        { label: "Gardien de nuit", grants: [{ resource: "staff_access", action: "write" }] },
+        { actorId: "auteur", keepers: [{ staffUserId: "auteur", roleKey: "gardien" }] },
+      ),
+    ).not.toThrow();
   });
 });
 

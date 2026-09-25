@@ -102,6 +102,11 @@ const ADMITTED = new Map([
   ],
   [`${STAFF_DIR}directory/infrastructure/staff-user.rows.ts`, "la ligne lue par l'annuaire"],
   [
+    `${STAFF_DIR}directory/infrastructure/staff-mutation-target.ts`,
+    "l'état d'avant d'une édition, sorti du dépôt de l'annuaire le 2026-09-26 : " +
+      "`auth0Id` y sert à propager une adresse changée chez le fournisseur",
+  ],
+  [
     `${STAFF_DIR}directory/application/update-staff-user.handler.ts`,
     "propage une adresse changée chez le fournisseur, qui ne connaît que le `sub`",
   ],

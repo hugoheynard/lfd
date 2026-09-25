@@ -591,34 +591,49 @@ serait vert pour une autre raison que celle annoncée.
 
 ## 13. Points en suspens
 
-### 13.1 🔴 Les rôles édités à l'écran ne sont lus par aucune décision d'accès
+### 13.1 Les rôles se lisent en base — « basculer » fait, « resserrer » à venir
 
-L'écran **Admin › Rôles** (`admin/roles`, routes `admin/staff-roles`) crée,
-modifie, archive des rôles dans `staff_role_definitions`, et affiche `superadmin`
-en tête. **Le résolveur ne lit pas cette table** : il appelle
-`resolveStaffPermissions(row.role, …)`, c'est-à-dire l'enum `role` et
-`ROLE_GRANTS` du code (vérifié le 2026-09-18).
+> Jusqu'au 2026-09-26, ce paragraphe s'intitulait « 🔴 Les rôles édités à
+> l'écran ne sont lus par aucune décision d'accès » : le résolveur appelait
+> `resolveStaffPermissions(row.role, …)`, c'est-à-dire l'enum et `ROLE_GRANTS`,
+> et l'écran Admin › Rôles écrivait une table que personne ne lisait. Plan :
+> [`plan-roles-lus-en-base.md`](plan-roles-lus-en-base.md).
 
-C'est l'étape « étendre » d'une bascule en trois temps, et la migration
-`20260901140000_roles_definis` le dit : la table existe et se remplit, personne
-ne la lit. Il manque « basculer » — une colonne de clé de rôle sur la fiche, le
-résolveur qui lit `staff_role_definitions` via `resolveRolePermissions` — puis
-« resserrer ».
+**État réel au 2026-09-26** — la migration
+`20260926120000_les_roles_se_lisent_en_base` et le code déployé avec elle :
 
-Conséquences tant que ce n'est pas fait :
+- la fiche porte `staff_users.role_key`, clé étrangère vers
+  `staff_role_definitions(key)` ; `role` (l'enum) devient nullable et n'est
+  plus qu'une valeur de transition, `NULL` pour un rôle créé à l'écran. Un
+  déclencheur recopie `role` dans `role_key` quand un code d'avant la bascule
+  écrit l'enum seul ;
+- le résolveur (`apps/lfd-api/src/staff/permissions/prisma-staff-access.resolver.ts`) lit, dans la même requête,
+  la fiche, sa définition et ses écarts, et passe par `resolveHeldRole`
+  (`apps/lfd-api/src/staff/permissions/infrastructure/held-role.ts`) — la même fonction que
+  `/admin/me` et la liste de l'annuaire. Définition archivée ou `grants`
+  illisibles : aucun droit par le rôle, les écarts seuls ; une ligne illisible
+  est journalisée avec sa clé et ne fait tomber que ses porteurs ;
+- **la fiche racine** (celle de `BOOTSTRAP_ADMIN_EMAIL`), une fois trouvée par
+  son `sub` ou par une adresse **vérifiée** encore libre, résout toujours
+  `superadmin` — jamais sur la seule revendication `email` d'un jeton ;
+- toute écriture de définition vide le cache d'accès de l'instance ; une
+  édition prend effet tout de suite là, en trente secondes au plus ailleurs ;
+- attribuer un rôle confronte la clé aux définitions **actives** sous
+  `FOR SHARE`, archiver verrouille la définition sous `FOR UPDATE` et compte
+  les porteurs sur `role_key`, dans la même transaction ;
+- la politique (§6) ne tient plus sur la chaîne `"admin"` mais sur
+  `staff_access:write` : il reste au moins une personne non suspendue qui le
+  tient par son rôle, la racine mise à part, qu'on modifie une fiche, un rôle
+  ou un écart ; et on ne se le retire pas à soi-même.
 
-- **modifier un rôle à l'écran n'a aucun effet** sur ce que les gens peuvent
-  faire — le défaut que ce document décrivait en août sous le nom de « mur peint
-  sur le sol » ;
-- **un rôle créé à l'écran ne peut être porté par personne** : la fiche n'accepte
-  que les cinq valeurs de l'enum ;
-- **`superadmin` n'est attribuable à personne**, faute de pouvoir l'écrire sur une
-  fiche.
+**Ce qui reste** : le « resserrer » (plan §4) — `role_key NOT NULL`, la
+colonne `role`, le déclencheur et le repli sur `ROLE_GRANTS` (clé nulle)
+disparaissent un déploiement plus tard. Jusque-là, `ROLE_GRANTS` sème les
+définitions d'une base neuve et sert au repli ; les migrations de droits
+écrivent encore les deux.
 
-À trancher : finir la bascule, ou retirer l'éditeur de l'écran jusqu'à ce
-qu'elle soit faite. **Tranché le 2026-09-25 : finir la bascule** —
-[`plan-roles-lus-en-base.md`](plan-roles-lus-en-base.md). En attendant, les commentaires de `staff-role.ts` et de la
-table décrivent un état qui n'est pas celui du résolveur.
+⚠️ **Le retour arrière se ferme à la première attribution d'un rôle hors
+enum** : cette fiche a `role = NULL`, que l'ancien code ne sait pas lire.
 
 ### 13.2 Le départ d'un membre n'a pas encore son geste
 

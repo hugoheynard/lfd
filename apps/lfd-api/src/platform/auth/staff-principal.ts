@@ -1,4 +1,4 @@
-import type { StaffPermission, StaffRole } from "@lfd/contracts";
+import type { StaffPermission } from "@lfd/contracts";
 import type { Request } from "express";
 
 /**
@@ -31,7 +31,13 @@ export interface StaffPrincipal {
  */
 export interface StaffAccess {
   readonly staffUserId: string;
-  readonly role: StaffRole;
+  /**
+   * La clé du rôle qui a résolu les droits — une chaîne depuis que les rôles
+   * se lisent en base (`plan-roles-lus-en-base.md` §3.5) ; `superadmin` pour la
+   * fiche de secours. Pour la trace et l'affichage, jamais pour autoriser.
+   */
+  readonly role: string;
+  readonly roleLabel: string;
   readonly permissions: readonly StaffPermission[];
 }
 

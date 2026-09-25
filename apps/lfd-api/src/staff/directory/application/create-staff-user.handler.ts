@@ -41,8 +41,10 @@ export class CreateStaffUserHandler implements ICommandHandler<CreateStaffUserCo
   async execute(command: CreateStaffUserCommand): Promise<string> {
     const id = await this.uow.run(async () => {
       const created = await this.staff.create(command.payload, command.actorId);
-      await this.journal.append(staffUserCreatedFact(created, command.payload));
-      return created;
+      await this.journal.append(
+        staffUserCreatedFact(created.id, { ...command.payload, roleLabel: created.roleLabel }),
+      );
+      return created.id;
     });
     try {
       await this.access.open(id);

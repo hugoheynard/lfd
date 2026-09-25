@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Journal } from "../../../platform/journal/journal.js";
+import { StaffAccessCache } from "../staff-access-cache.port.js";
 import { StaffRoleDefinition } from "../domain/staff-role-definition.js";
 import { StaffRoleKeyAlreadyUsedError } from "../domain/staff-role-errors.js";
 import { roleCreatedFact } from "../domain/staff-role-facts.js";
@@ -22,6 +23,7 @@ export class CreateStaffRoleHandler implements ICommandHandler<CreateStaffRoleCo
     private readonly roles: StaffRoleRepository,
     private readonly journal: Journal,
     private readonly uow: UnitOfWork,
+    private readonly cache: StaffAccessCache,
   ) {}
 
   async execute(command: CreateStaffRoleCommand): Promise<string> {
@@ -33,6 +35,9 @@ export class CreateStaffRoleHandler implements ICommandHandler<CreateStaffRoleCo
       await this.roles.save(role);
       await this.journal.append(roleCreatedFact(role.toPersistence()));
     });
+    // Toute écriture de définition oublie le cache (§3.3) — celle-ci n'a pas
+    // encore de porteur, mais une règle sans exception ne s'oublie pas.
+    this.cache.forgetAll();
     return role.key;
   }
 }

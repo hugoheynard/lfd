@@ -23,6 +23,7 @@ const ME: StaffMeView = {
   lastName: 'Bréal',
   email: 'compta@lfc.test',
   role: 'comptabilite',
+  roleLabel: 'Comptabilité',
   permissions: ['b2b_orders:read', 'b2b_orders:write', 'b2b_companies:read', 'b2b_settings:read'],
   navPrefs: { worksheetCategory: null, productSectionFamily: null },
 };

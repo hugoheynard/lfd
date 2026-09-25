@@ -1,13 +1,14 @@
-import {
-  resolveStaffPermissions,
-  type StaffOverride,
-  type StaffRole,
-  type StaffStatus,
-  type StaffUserPayload,
-  type StaffUserView,
-} from "@lfd/contracts";
+import type { StaffOverride, StaffStatus, StaffUserPayload, StaffUserView } from "@lfd/contracts";
 
 import { isInvitationExpired } from "../../../platform/shared/invitation/invitation-expiry.js";
+import {
+  HELD_ROLE_SELECT,
+  heldRoleKey,
+  heldRoleLabel,
+  resolveHeldRole,
+  type HeldRoleRow,
+  type UnreadableGrantsReporter,
+} from "../../permissions/infrastructure/held-role.js";
 import type { StaffMutationTarget } from "../../permissions/staff-access.policy.js";
 import type { StaffUserIdentity, StaffUserSnapshot } from "../domain/staff-user-state.js";
 
@@ -23,14 +24,13 @@ export interface OverrideRow {
   readonly effect: StaffOverride["effect"];
 }
 
-export interface StaffRow {
+export interface StaffRow extends HeldRoleRow {
   readonly id: string;
   readonly firstName: string;
   readonly lastName: string;
   readonly email: string;
   readonly phone: string;
   readonly jobTitle: string;
-  readonly role: StaffRole;
   readonly status: StaffStatus;
   readonly invitedAt: Date | null;
   readonly overrides: readonly OverrideRow[];
@@ -43,7 +43,7 @@ export const SELECT = {
   email: true,
   phone: true,
   jobTitle: true,
-  role: true,
+  ...HELD_ROLE_SELECT,
   status: true,
   invitedAt: true,
   overrides: { select: { resource: true, action: true, effect: true } },
@@ -51,9 +51,19 @@ export const SELECT = {
 
 /**
  * La vue porte l'**effectif** déjà résolu : l'écran affiche ce qu'on lui donne au
- * lieu de rejouer la formule. Deux implémentations de la même règle divergent.
+ * lieu de rejouer la formule. Deux implémentations de la même règle divergent —
+ * d'où `resolveHeldRole`, la même fonction que le guard.
+ *
+ * `role` est la clé ÉCRITE sur la fiche, même pour la fiche de secours : c'est
+ * ce que le sélecteur de la fiche édite. Ses `permissions`, elles, sont
+ * celles de `superadmin` (§3.4).
  */
-export function toView(row: StaffRow, now: Date): StaffUserView {
+export function toView(
+  row: StaffRow,
+  now: Date,
+  rescueEmail: string,
+  report: UnreadableGrantsReporter,
+): StaffUserView {
   const overrides = row.overrides.map((entry) => ({ ...entry }));
   return {
     id: row.id,
@@ -62,7 +72,8 @@ export function toView(row: StaffRow, now: Date): StaffUserView {
     email: row.email,
     phone: row.phone,
     jobTitle: row.jobTitle,
-    role: row.role,
+    role: heldRoleKey(row) ?? "",
+    roleLabel: heldRoleLabel(row),
     status: row.status,
     invitedAt: row.invitedAt?.toISOString() ?? null,
     // La péremption ne vaut que pour une invitation en attente : une fois
@@ -71,7 +82,7 @@ export function toView(row: StaffRow, now: Date): StaffUserView {
     invitationExpired:
       row.status === "invited" && row.invitedAt !== null && isInvitationExpired(row.invitedAt, now),
     overrides,
-    permissions: resolveStaffPermissions(row.role, overrides),
+    permissions: resolveHeldRole(row, overrides, row.email === rescueEmail, report).permissions,
   };
 }
 
@@ -88,7 +99,7 @@ export function identityColumns(payload: StaffUserPayload): StaffUserIdentity {
     email: normalizeEmail(payload.email),
     phone: payload.phone,
     jobTitle: payload.jobTitle,
-    role: payload.role,
+    role: payload.role.trim().toLowerCase(),
   };
 }
 
@@ -100,7 +111,7 @@ export const SNAPSHOT = {
   email: true,
   phone: true,
   jobTitle: true,
-  role: true,
+  ...HELD_ROLE_SELECT,
   status: true,
   auth0Id: true,
 } as const;
@@ -109,6 +120,8 @@ export const SNAPSHOT = {
 export interface LoadedTarget {
   readonly snapshot: StaffUserSnapshot;
   readonly overrides: readonly OverrideRow[];
+  /** Le libellé du rôle d'avant, lu dans sa définition — pour le journal. */
+  readonly roleLabel: string;
   readonly policy: StaffMutationTarget;
 }
 

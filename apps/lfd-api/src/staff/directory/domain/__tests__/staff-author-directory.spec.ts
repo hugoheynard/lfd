@@ -5,6 +5,7 @@ const CAMILLE: StaffAuthor = {
   firstName: "Camille",
   lastName: "Durand",
   role: "commercial",
+  roleLabel: "Commercial",
   jobTitle: "",
 };
 

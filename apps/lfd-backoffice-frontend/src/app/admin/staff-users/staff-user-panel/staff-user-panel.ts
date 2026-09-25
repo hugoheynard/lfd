@@ -8,7 +8,14 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { StaffOverride, StaffRole, StaffUserPayload, StaffUserView } from '@lfd/contracts';
+import {
+  toRoleGrants,
+  type RoleGrants,
+  type StaffOverride,
+  type StaffRoleView,
+  type StaffUserPayload,
+  type StaffUserView,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldInputComponent,
@@ -19,7 +26,8 @@ import {
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
-import { ROLE_OPTIONS, toStaffRole } from '../staff-roles';
+import { StaffRolesService } from '../../roles/staff-roles.service';
+import { roleOptionsFrom } from '../staff-roles';
 import { OverridesGrid } from './overrides-grid/overrides-grid';
 import { StaffUsersService } from '../staff-users.service';
 
@@ -60,17 +68,37 @@ export class StaffUserPanel {
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
   private readonly permissions = inject(PermissionsStore);
+  private readonly roles = inject(StaffRolesService);
 
   readonly data = input<StaffUserPanelData | undefined>(undefined);
 
-  protected readonly roleOptions = ROLE_OPTIONS;
+  /** Les définitions de rôle, lues en base — la seule liste qu'une fiche accepte. */
+  private readonly definitions = signal<readonly StaffRoleView[]>([]);
+
+  protected readonly roleOptions = computed(() => {
+    const user = this.data()?.user ?? null;
+    return roleOptionsFrom(
+      this.definitions(),
+      user === null ? null : { value: user.role, label: user.roleLabel },
+    );
+  });
+
+  /**
+   * Les droits du rôle choisi, lus dans sa définition. Vides tant que la liste
+   * n'est pas arrivée : la grille montre alors les seuls écarts, plutôt que des
+   * droits du contrat que la base a peut-être changés.
+   */
+  protected readonly roleGrants = computed<RoleGrants>(() => {
+    const definition = this.definitions().find((entry) => entry.key === this.role());
+    return definition === undefined ? {} : toRoleGrants(definition.grants);
+  });
 
   protected readonly firstName = signal('');
   protected readonly lastName = signal('');
   protected readonly email = signal('');
   protected readonly phone = signal('');
   protected readonly jobTitle = signal('');
-  protected readonly role = signal<StaffRole>('commercial');
+  protected readonly role = signal('commercial');
   protected readonly saving = signal(false);
 
   /** Les écarts au rôle — édités par la grille, enregistrés avec le reste. */
@@ -123,6 +151,7 @@ export class StaffUserPanel {
   );
 
   constructor() {
+    void this.loadDefinitions();
     // Préremplit à l'ouverture. `data` est fixé et ne change plus.
     effect(() => {
       const user = this.data()?.user ?? null;
@@ -139,11 +168,21 @@ export class StaffUserPanel {
     });
   }
 
-  /** Le `<select>` natif ne rend qu'une chaîne : on ne garde que ce qui est un rôle. */
+  /**
+   * Le `<select>` natif ne rend qu'une chaîne : on ne garde que ce que la liste
+   * propose. Le serveur revalide de toute façon contre les définitions actives.
+   */
   protected setRole(value: string): void {
-    const role = toStaffRole(value);
-    if (role !== null) {
-      this.role.set(role);
+    if (this.roleOptions().some((option) => option.value === value)) {
+      this.role.set(value);
+    }
+  }
+
+  private async loadDefinitions(): Promise<void> {
+    try {
+      this.definitions.set(await this.roles.list());
+    } catch (error) {
+      this.notify.error(error);
     }
   }
 

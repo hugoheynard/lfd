@@ -5,12 +5,14 @@ import {
   type StaffUserPayload,
   type StaffUserView,
 } from "@lfd/contracts";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { bootstrapAdmin } from "../domain/bootstrap-admin.js";
+import { resolveHeldRole } from "../../permissions/infrastructure/held-role.js";
+import { assignableRole, roleColumns } from "../../permissions/infrastructure/role-assignment.js";
 import {
   assertEditAllowed,
   assertStatusChangeAllowed,
@@ -19,13 +21,18 @@ import { parseStaffNavPreferences } from "../domain/staff-nav-preferences.js";
 import { diffOverrides, isEmptyOverrideDiff, type OverrideDiff } from "../domain/override-diff.js";
 import { DuplicateStaffEmailError, StaffUserNotFoundError } from "../domain/staff-user-errors.js";
 import { StaffUserRepository, type StaffIdentityFacts } from "../domain/staff-user.repository.js";
-import type { StaffUserEdit, StaffUserSnapshot } from "../domain/staff-user-state.js";
+import type {
+  StaffUserCreated,
+  StaffUserEdit,
+  StaffUserIdentity,
+  StaffUserSnapshot,
+} from "../domain/staff-user-state.js";
+import { loadMutationTarget } from "./staff-mutation-target.js";
 import { linkedSubject } from "./staff-subject-aliases.js";
 import {
   identityColumns,
   sameIdentity,
   SELECT,
-  SNAPSHOT,
   toView,
   type LoadedTarget,
   type OverrideRow,
@@ -34,6 +41,8 @@ import {
 /** Adaptateur Prisma de l'annuaire staff. Tient l'unicité de l'e-mail. */
 @Injectable()
 export class PrismaStaffUserRepository extends StaffUserRepository {
+  private readonly logger = new Logger(PrismaStaffUserRepository.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: AppConfig,
@@ -48,7 +57,8 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
       select: SELECT,
     });
     const now = this.clock.now();
-    return rows.map((row) => toView(row, now));
+    const rescue = this.config.bootstrapAdminEmail();
+    return rows.map((row) => toView(row, now, rescue, this.reportUnreadable));
   }
 
   async me(id: string): Promise<StaffMeView> {
@@ -61,14 +71,22 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     if (row === null) {
       throw new StaffUserNotFoundError(id);
     }
-    const view = toView(row, this.clock.now());
+    // La MÊME résolution que le guard, secours compris : `/admin/me` répond à
+    // « que puis-je faire », et une autre réponse que celle du guard mentirait.
+    const role = resolveHeldRole(
+      row,
+      row.overrides,
+      row.email === this.config.bootstrapAdminEmail(),
+      this.reportUnreadable,
+    );
     return {
-      id: view.id,
-      firstName: view.firstName,
-      lastName: view.lastName,
-      email: view.email,
-      role: view.role,
-      permissions: view.permissions,
+      id: row.id,
+      firstName: row.firstName,
+      lastName: row.lastName,
+      email: row.email,
+      role: role.key,
+      roleLabel: role.label,
+      permissions: role.permissions,
       // Défauts appliqués ici, une fois : `nav_prefs` est `NULL` sur toutes les
       // fiches d'avant la colonne, et laisser passer ce `null` obligerait chaque
       // écran à décider pour son compte de ce que « rien de choisi » veut dire.
@@ -76,19 +94,22 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     };
   }
 
-  async create(payload: StaffUserPayload, actorId: string): Promise<string> {
+  async create(payload: StaffUserPayload, actorId: string): Promise<StaffUserCreated> {
     const data = identityColumns(payload);
     const overrides = dedupeStaffOverrides(payload.overrides);
+    // Sous verrou partagé, dans l'unité de travail du handler : un archivage
+    // concurrent attend que la fiche soit écrite (§3.3).
+    const role = await assignableRole(this.prisma, data.role);
     await this.assertEmailFree(data.email, null);
     const granted = { grantedByStaffId: actorId, grantedAt: this.clock.now() };
     const created = await this.prisma.staffUser.create({
       data: {
-        ...data,
+        ...writableIdentity(data),
         overrides: { create: overrides.map((override) => ({ ...override, ...granted })) },
       },
       select: { id: true },
     });
-    return created.id;
+    return { id: created.id, roleLabel: role.label };
   }
 
   async update(id: string, payload: StaffUserPayload, actorId: string): Promise<StaffUserEdit> {
@@ -97,7 +118,13 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     // Normalisé AVANT de valider : on refuse ou on accepte exactement l'état
     // qu'on s'apprête à écrire, jamais un autre.
     const overrides = dedupeStaffOverrides(payload.overrides);
-    assertEditAllowed(target.policy, { email: after.email, role: after.role, overrides });
+    const role = await assignableRole(this.prisma, after.role);
+    assertEditAllowed(target.policy, {
+      email: after.email,
+      roleKey: role.key,
+      roleGrants: role.grants,
+      overrides,
+    });
     await this.assertEmailFree(after.email, id);
     // Le formulaire décrit un ÉTAT ; on n'écrit que le CHANGEMENT. Recréer
     // toutes les lignes réattribuait chaque écart à son dernier éditeur et en
@@ -107,9 +134,14 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
       ...this.overrideWrites(id, diff, actorId),
       ...(sameIdentity(target.snapshot, after)
         ? []
-        : [this.prisma.staffUser.update({ where: { id }, data: after })]),
+        : [this.prisma.staffUser.update({ where: { id }, data: writableIdentity(after) })]),
     ]);
-    return { before: target.snapshot, after, overrides: diff };
+    return {
+      before: target.snapshot,
+      after,
+      overrides: diff,
+      roleLabels: { before: target.roleLabel, after: role.label },
+    };
   }
 
   async setStatus(
@@ -178,41 +210,17 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     if (existing !== null) {
       return; // déjà présent — on ne clobbe pas d'éventuelles éditions (prénom…).
     }
-    await this.prisma.staffUser.create({ data, select: { id: true } });
+    await this.prisma.staffUser.create({ data: writableIdentity(data), select: { id: true } });
   }
 
-  /**
-   * Rassemble l'état complet d'avant — la fiche et ses dérogations — et les
-   * faits dont la politique a besoin.
-   *
-   * `isSelf` compare les **id de fiche** : l'auteur arrive par son id
-   * d'annuaire (`@StaffUserId()`), plus par son `sub`. Une fiche jamais liée
-   * à une identité se reconnaît donc elle aussi — le garde-fou n'est plus
-   * inerte tant que personne n'est entré.
-   */
-  private async loadTarget(id: string, actorId: string): Promise<LoadedTarget> {
-    const existing = await this.prisma.staffUser.findUnique({
-      where: { id },
-      select: {
-        ...SNAPSHOT,
-        overrides: { select: { resource: true, action: true, effect: true } },
-      },
+  /** L'état d'avant et les faits de la politique — cf. {@link loadMutationTarget}. */
+  private loadTarget(id: string, actorId: string): Promise<LoadedTarget> {
+    return loadMutationTarget(this.prisma, {
+      id,
+      actorId,
+      rescueEmail: this.config.bootstrapAdminEmail(),
+      report: this.reportUnreadable,
     });
-    if (existing === null) {
-      throw new StaffUserNotFoundError(id);
-    }
-    const { overrides, ...snapshot } = existing;
-    return {
-      snapshot,
-      overrides,
-      policy: {
-        email: existing.email,
-        isRoot: existing.email === this.config.bootstrapAdminEmail(),
-        role: existing.role,
-        otherLivingAdmins: await this.countOtherLivingAdmins(id),
-        isSelf: existing.id === actorId,
-      },
-    };
   }
 
   /**
@@ -249,12 +257,10 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     ];
   }
 
-  /** Les administrateurs encore en état d'entrer, la cible exclue. */
-  private countOtherLivingAdmins(exceptId: string): Promise<number> {
-    return this.prisma.staffUser.count({
-      where: { role: "admin", status: { not: "suspended" }, id: { not: exceptId } },
-    });
-  }
+  /** Une définition illisible : l'erreur au log, avec la clé (§2). */
+  private readonly reportUnreadable = (roleKey: string, error: unknown): void => {
+    this.logger.error(`Droits illisibles pour le rôle « ${roleKey} ».`, error);
+  };
 
   /** Refuse un e-mail déjà pris par un **autre** user (`exceptId` s'exclut lui-même). */
   private async assertEmailFree(email: string, exceptId: string | null): Promise<void> {
@@ -266,4 +272,10 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
       throw new DuplicateStaffEmailError(email);
     }
   }
+}
+
+/** L'identité telle qu'elle s'écrit : la clé de rôle, et l'enum de transition. */
+function writableIdentity(identity: StaffUserIdentity) {
+  const { role, ...rest } = identity;
+  return { ...rest, ...roleColumns(role) };
 }

@@ -1,5 +1,3 @@
-import type { StaffRole } from "@lfd/contracts";
-
 /**
  * **Qui est l'auteur d'un acte staff**, quelle que soit la forme sous laquelle
  * il a été écrit.
@@ -50,7 +48,10 @@ export interface StaffAuthor {
   readonly staffUserId: string;
   readonly firstName: string;
   readonly lastName: string;
-  readonly role: StaffRole;
+  /** La clé du rôle porté — une chaîne, un rôle créé à l'écran compris. */
+  readonly role: string;
+  /** Son libellé, lu dans la définition : c'est lui qu'une trace fige. */
+  readonly roleLabel: string;
   readonly jobTitle: string;
 }
 

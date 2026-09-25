@@ -1,4 +1,11 @@
-import type { StaffOverride, StaffRole, StaffStatus, StaffUserPayload } from "@lfd/contracts";
+import {
+  legacyRoleSeeds,
+  type RoleGrant,
+  type StaffOverride,
+  type StaffRole,
+  type StaffStatus,
+  type StaffUserPayload,
+} from "@lfd/contracts";
 import { Test } from "@nestjs/testing";
 
 import { AppConfig } from "../../../../platform/config/app-config.js";
@@ -22,10 +29,36 @@ export interface Row {
   readonly email: string;
   readonly phone: string;
   readonly jobTitle: string;
-  readonly role: StaffRole;
+  readonly role: StaffRole | null;
+  readonly roleKey: string | null;
+  readonly roleDefinition: {
+    readonly label: string;
+    readonly grants: readonly RoleGrant[];
+    readonly archivedAt: Date | null;
+  } | null;
   readonly status: StaffStatus;
   readonly auth0Id: string | null;
   readonly overrides: readonly StaffOverride[];
+}
+
+/** La définition semée d'un rôle du contrat — ce que la migration pose en base. */
+export function seededDefinition(key: string): {
+  readonly key: string;
+  readonly label: string;
+  readonly grants: readonly RoleGrant[];
+} | null {
+  return legacyRoleSeeds().find((seed) => seed.key === key) ?? null;
+}
+
+/** Les colonnes de rôle d'une fiche qui porte ce rôle du contrat, définition jointe. */
+export function holding(role: StaffRole): Pick<Row, "role" | "roleKey" | "roleDefinition"> {
+  const seed = seededDefinition(role);
+  return {
+    role,
+    roleKey: role,
+    roleDefinition:
+      seed === null ? null : { label: seed.label, grants: seed.grants, archivedAt: null },
+  };
 }
 
 export interface CreateArgs {
@@ -48,7 +81,7 @@ export function row(overrides: Partial<Row> = {}): Row {
     email: "commercial@lafoliedouce.com",
     phone: "",
     jobTitle: "",
-    role: "commercial",
+    ...holding("commercial"),
     status: "active",
     auth0Id: null,
     overrides: [],
@@ -80,7 +113,9 @@ export interface AliasRow {
 
 /**
  * Fake Prisma à closures (le backend évite `jest.fn`) : capture les appels.
- * `otherAdmins` simule le compte des administrateurs restants.
+ * `otherAdmins` simule les AUTRES personnes qui tiennent l'annuaire par leur
+ * rôle (`findMany` de `directoryKeepers`). `$queryRaw` rend la définition semée
+ * de la clé demandée — la lecture `FOR SHARE` de l'attribution.
  */
 export function fakePrisma(found: Row | null, otherAdmins = 1): FakePrisma {
   const deleted: string[] = [];
@@ -96,9 +131,18 @@ export function fakePrisma(found: Row | null, otherAdmins = 1): FakePrisma {
     // La forme TABLEAU : les opérations sont déjà lancées, il suffit de les attendre.
     $transaction: (operations: readonly Promise<unknown>[]): Promise<unknown[]> =>
       Promise.all(operations),
+    $queryRaw: (_sql: TemplateStringsArray, key: string): Promise<unknown[]> => {
+      const seed = seededDefinition(key);
+      return Promise.resolve(seed === null ? [] : [{ ...seed, archived_at: null }]);
+    },
     staffUser: {
       findUnique: (): Promise<Row | null> => Promise.resolve(found),
-      count: (): Promise<number> => Promise.resolve(otherAdmins),
+      findMany: (): Promise<Row[]> =>
+        Promise.resolve(
+          Array.from({ length: otherAdmins }, (_, index) =>
+            row({ id: `keeper_${String(index)}`, ...holding("admin") }),
+          ),
+        ),
       update: (args: UpdateArgs): Promise<Row> => {
         updated.push(args);
         return Promise.resolve(found ?? row());

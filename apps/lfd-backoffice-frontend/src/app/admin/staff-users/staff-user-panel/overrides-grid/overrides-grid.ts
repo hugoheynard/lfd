@@ -1,15 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
 import {
   hasStaffPermission,
-  resolveStaffPermissions,
+  resolvePermissionsFromGrants,
   staffPermission,
   staffResourceSchema,
   STAFF_RESOURCE_LABELS,
   type StaffAction,
   type StaffOverride,
   type StaffOverrideEffect,
+  type RoleGrants,
   type StaffResource,
-  type StaffRole,
 } from '@lfd/contracts';
 import { FoldBadgeComponent, FoldSelectComponent } from 'fold-ng';
 
@@ -54,14 +54,18 @@ interface Row {
   styleUrl: './overrides-grid.scss',
 })
 export class OverridesGrid {
-  /** Le rôle dont on dérive l'héritage. Change ⇒ l'effectif change avec lui. */
-  readonly role = input.required<StaffRole>();
+  /**
+   * Les droits du rôle dont on dérive l'héritage — ceux de sa DÉFINITION, lue
+   * en base, plus ceux du contrat (plan `plan-roles-lus-en-base.md` §3.5).
+   * Changent ⇒ l'effectif change avec eux.
+   */
+  readonly grants = input.required<RoleGrants>();
   readonly overrides = model.required<readonly StaffOverride[]>();
 
   protected readonly choices = CHOICES;
 
   protected readonly rows = computed<readonly Row[]>(() => {
-    const effective = resolveStaffPermissions(this.role(), this.overrides());
+    const effective = resolvePermissionsFromGrants(this.grants(), this.overrides());
     return staffResourceSchema.options.map((resource) => ({
       resource,
       label: STAFF_RESOURCE_LABELS[resource],

@@ -1,6 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { STAFF_ROLE_LABELS, STAFF_STATUS_LABELS, type StaffUserView } from '@lfd/contracts';
+import { STAFF_STATUS_LABELS, type StaffUserView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -153,7 +153,7 @@ export class ReglagesStaffUsersPage {
   // Le contexte d'un `foldCell` n'est pas typé : on entre par une méthode, qui
   // rend la ligne typée au passage — plutôt que d'indexer un Record avec `any`.
   protected roleLabel(user: StaffUserView): string {
-    return STAFF_ROLE_LABELS[user.role];
+    return user.roleLabel;
   }
 
   /**

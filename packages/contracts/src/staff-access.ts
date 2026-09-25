@@ -715,7 +715,14 @@ export interface StaffMeView {
   readonly firstName: string;
   readonly lastName: string;
   readonly email: string;
-  readonly role: StaffRole;
+  /**
+   * La clé du rôle qui a résolu les droits — `superadmin` pour la fiche de
+   * secours (`plan-roles-lus-en-base.md` §3.4). Une chaîne : un rôle créé à
+   * l'écran n'est pas dans l'union `StaffRole`.
+   */
+  readonly role: string;
+  /** Son libellé, lu dans la définition — ce que l'en-tête affiche. */
+  readonly roleLabel: string;
   readonly permissions: readonly StaffPermission[];
   /**
    * Les préférences de navigation de la personne, **défauts déjà appliqués**.

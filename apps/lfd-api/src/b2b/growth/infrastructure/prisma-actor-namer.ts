@@ -3,7 +3,6 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import type { ActivityActorType } from "../domain/activity-event.js";
-import { STAFF_ROLE_LABELS } from "@lfd/contracts";
 
 import { ActorNamer, type ActorIdentity } from "../domain/ports/actor-namer.js";
 
@@ -39,8 +38,9 @@ export class PrismaActorNamer extends ActorNamer {
         : {
             name: fullName(staff.firstName, staff.lastName),
             // Le LIBELLÉ, pas la clé : « Commercial » se relit dans six mois,
-            // même si le rôle a été renommé entre-temps.
-            role: STAFF_ROLE_LABELS[staff.role],
+            // même si le rôle a été renommé entre-temps. Celui de la
+            // DÉFINITION : un rôle créé à l'écran n'en a pas dans le contrat.
+            role: staff.roleLabel,
           };
     }
     if (type === "customer") {

@@ -2,7 +2,6 @@ import {
   ALL_STAFF_PERMISSIONS,
   resolveRolePermissions,
   roleGrantsSchema,
-  staffRoleSchema,
   toRoleGrants,
   SUPER_ADMIN_ROLE_KEY,
   SUPER_ADMIN_ROLE_LABEL,
@@ -11,19 +10,31 @@ import {
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
+import { AppConfig } from "../../../platform/config/app-config.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { StaffRoleDefinition } from "../domain/staff-role-definition.js";
+import { StaffRoleDefinition, type DirectoryKeeper } from "../domain/staff-role-definition.js";
 import { StaffRoleReader } from "../domain/staff-role.reader.js";
-import { StaffRoleRepository } from "../domain/staff-role.repository.js";
+import { StaffRoleRepository, type StaffRoleLoadOptions } from "../domain/staff-role.repository.js";
+import { directoryKeepers } from "./role-assignment.js";
 
 /** Adaptateur Prisma du dépôt de rôles. */
 @Injectable()
 export class PrismaStaffRoleRepository extends StaffRoleRepository {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: AppConfig,
+  ) {
     super();
   }
 
-  async load(key: string): Promise<StaffRoleDefinition | null> {
+  async load(key: string, options?: StaffRoleLoadOptions): Promise<StaffRoleDefinition | null> {
+    if (options?.forUpdate === true) {
+      // Le verrou d'abord, la lecture typée ensuite : Prisma n'exprime pas
+      // `FOR UPDATE`. Une attribution concurrente (`FOR SHARE`) attend ici,
+      // ou nous fait attendre — jamais un rôle archivé porté (§3.3).
+      await this.prisma.$queryRaw`
+        SELECT 1 FROM "public"."staff_role_definitions" WHERE "key" = ${key} FOR UPDATE`;
+    }
     const row = await this.prisma.staffRoleDefinition.findUnique({ where: { key } });
     return row === null
       ? null
@@ -51,15 +62,15 @@ export class PrismaStaffRoleRepository extends StaffRoleRepository {
     });
   }
 
-  async memberCount(key: string): Promise<number> {
-    // `staff_users.role` est encore l'enum du catalogue : une clé qui n'en fait
-    // pas partie n'est portée par personne, et l'interroger ferait échouer
-    // Prisma sur une valeur d'enum inconnue au lieu de rendre zéro.
-    const asBuiltIn = staffRoleSchema.safeParse(key);
-    if (!asBuiltIn.success) {
-      return 0;
-    }
-    return this.prisma.staffUser.count({ where: { role: asBuiltIn.data } });
+  memberCount(key: string): Promise<number> {
+    // Sur `role_key`, plus sur l'enum : l'enum rendait 0 pour un rôle créé à
+    // l'écran, qui s'archivait alors en retirant à ses porteurs tous leurs
+    // droits, en silence (plan `plan-roles-lus-en-base.md` §3.3).
+    return this.prisma.staffUser.count({ where: { roleKey: key } });
+  }
+
+  directoryKeepers(): Promise<readonly DirectoryKeeper[]> {
+    return directoryKeepers(this.prisma, this.config.bootstrapAdminEmail());
   }
 }
 
@@ -73,9 +84,13 @@ export class PrismaStaffRoleReader extends StaffRoleReader {
   async list(): Promise<readonly StaffRoleView[]> {
     const [rows, counts] = await Promise.all([
       this.prisma.staffRoleDefinition.findMany({ orderBy: { key: "asc" } }),
-      this.prisma.staffUser.groupBy({ by: ["role"], _count: { _all: true } }),
+      this.prisma.staffUser.groupBy({ by: ["roleKey"], _count: { _all: true } }),
     ]);
-    const membersByKey = new Map(counts.map((entry) => [String(entry.role), entry._count._all]));
+    const membersByKey = new Map(
+      counts.flatMap((entry) =>
+        entry.roleKey === null ? [] : [[entry.roleKey, entry._count._all] as const],
+      ),
+    );
 
     const defined = rows.map((row): StaffRoleView => {
       const grants = parseGrants(row.grants);

@@ -2,7 +2,7 @@
 
 > Ouvert le 2026-09-25, à la demande de Hugo : « règle l'histoire des rôles qui
 > sont lus dans le code au lieu de la db, fais-moi une doc explicative ».
-> État : **doc-first**, contredit par vitruve le 2026-09-25 (trois objections
+> État : **bâti le 2026-09-25** (« basculer » ; le « resserrer », §4, reste à faire), contredit par vitruve le 2026-09-25 (trois objections
 > bloquantes, corrigées ci-dessous : §3.1, §3.3, §3.4). Ce document explique l'existant, puis décrit la
 > bascule. Il complète `architecture-acces-staff.md` §13.1, qui nommait le trou
 > depuis le 2026-09-18.

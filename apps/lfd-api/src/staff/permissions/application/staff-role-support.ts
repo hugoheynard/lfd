@@ -2,7 +2,7 @@ import { isSuperAdminRoleKey } from "@lfd/contracts";
 
 import type { StaffRoleDefinition } from "../domain/staff-role-definition.js";
 import { ReservedStaffRoleKeyError, StaffRoleNotFoundError } from "../domain/staff-role-errors.js";
-import type { StaffRoleRepository } from "../domain/staff-role.repository.js";
+import type { StaffRoleLoadOptions, StaffRoleRepository } from "../domain/staff-role.repository.js";
 
 /**
  * Le rôle, s'il est modifiable. Partagé par les trois mutations parce que les
@@ -19,11 +19,12 @@ import type { StaffRoleRepository } from "../domain/staff-role.repository.js";
 export async function loadEditableRole(
   roles: StaffRoleRepository,
   key: string,
+  options?: StaffRoleLoadOptions,
 ): Promise<StaffRoleDefinition> {
   if (isSuperAdminRoleKey(key)) {
     throw new ReservedStaffRoleKeyError(key);
   }
-  const role = await roles.load(key);
+  const role = await roles.load(key, options);
   if (role === null) {
     throw new StaffRoleNotFoundError(key);
   }

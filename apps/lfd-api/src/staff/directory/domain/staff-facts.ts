@@ -1,9 +1,4 @@
-import {
-  STAFF_ROLE_LABELS,
-  type StaffOverride,
-  type StaffRole,
-  type StaffStatus,
-} from "@lfd/contracts";
+import type { StaffOverride, StaffStatus } from "@lfd/contracts";
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact } from "../../../platform/journal/journal-fact.js";
@@ -94,13 +89,17 @@ export function personOf(identity: StaffPerson): StaffPerson {
   return { firstName: identity.firstName, lastName: identity.lastName };
 }
 
-/** Ce qu'il faut pour nommer une fiche ET son rôle — une charge d'API y suffit. */
-export type StaffPersonWithRole = StaffPerson & { readonly role: StaffRole };
+/**
+ * Ce qu'il faut pour nommer une fiche ET son rôle. Le libellé vient de la
+ * DÉFINITION du rôle, lue à l'écriture : un rôle créé à l'écran n'a pas de
+ * libellé dans le contrat (plan `plan-roles-lus-en-base.md` §3.5).
+ */
+export type StaffPersonWithRole = StaffPerson & { readonly roleLabel: string };
 
 export function staffUserCreatedFact(id: string, created: StaffPersonWithRole): JournalFact {
   return fact(STAFF_FACTS.created, id, {
     person: personOf(created),
-    roleLabel: STAFF_ROLE_LABELS[created.role],
+    roleLabel: created.roleLabel,
   });
 }
 
@@ -125,7 +124,7 @@ export function staffUserDeletedFact(id: string, deleted: StaffPersonWithRole): 
     type: STAFF_FACTS.deleted,
     subjectType: STAFF_USER_SUBJECT,
     subjectId: id,
-    payload: { person: personOf(deleted), roleLabel: STAFF_ROLE_LABELS[deleted.role] },
+    payload: { person: personOf(deleted), roleLabel: deleted.roleLabel },
   };
 }
 
@@ -167,7 +166,7 @@ export function staffUserEditFacts(id: string, edit: StaffUserEdit): readonly Jo
   const person = personOf(edit.after);
   return [
     identityEditedFact(id, edit, person),
-    roleChangedFact(id, edit.before.role, edit.after.role, person),
+    roleChangedFact(id, edit, person),
     overridesChangedFact(id, edit, person),
   ].filter((entry): entry is JournalFact => entry !== null);
 }
@@ -199,18 +198,14 @@ function identityEditedFact(
   });
 }
 
-function roleChangedFact(
-  id: string,
-  from: StaffRole,
-  to: StaffRole,
-  person: StaffPerson,
-): JournalFact | null {
-  return from === to
+/** Comparé sur les CLÉS ; la phrase porte les libellés figés des définitions. */
+function roleChangedFact(id: string, edit: StaffUserEdit, person: StaffPerson): JournalFact | null {
+  return edit.before.role === edit.after.role
     ? null
     : fact(STAFF_FACTS.roleChanged, id, {
         person,
-        fromLabel: STAFF_ROLE_LABELS[from],
-        toLabel: STAFF_ROLE_LABELS[to],
+        fromLabel: edit.roleLabels.before,
+        toLabel: edit.roleLabels.after,
       });
 }
 

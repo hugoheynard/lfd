@@ -1,4 +1,5 @@
 import {
+  hasStaffPermission,
   isSuperAdminRoleKey,
   resolveRolePermissions,
   toRoleGrants,
@@ -9,8 +10,28 @@ import {
 import {
   InvalidStaffRoleError,
   ReservedStaffRoleKeyError,
+  StaffRoleLastDirectoryKeeperError,
+  StaffRoleSelfRevokeError,
   StaffRoleStillHeldError,
 } from "./staff-role-errors.js";
+
+/** Une personne qui tient l'annuaire (`staff_access:write`) par son rôle. */
+export interface DirectoryKeeper {
+  readonly staffUserId: string;
+  readonly roleKey: string | null;
+}
+
+/**
+ * Ce qu'une redéfinition doit savoir pour ne pas vider l'annuaire : qui la
+ * demande, et qui le tient aujourd'hui — personnes non suspendues, fiche de
+ * secours exclue (plan `plan-roles-lus-en-base.md` §3.3).
+ */
+export interface DirectoryKeepersSnapshot {
+  readonly actorId: string;
+  readonly keepers: readonly DirectoryKeeper[];
+}
+
+const DIRECTORY_WRITE = "staff_access:write";
 
 /** L'état complet, tel qu'il vit en base. Aucun type Prisma ici. */
 export interface StaffRoleSnapshot {
@@ -86,10 +107,28 @@ export class StaffRoleDefinition {
     return this.archivedAtValue !== null;
   }
 
-  /** Le libellé et les droits changent ; la clé, jamais. */
-  redefine(input: { readonly label: string; readonly grants: readonly RoleGrant[] }): void {
-    this.labelValue = requireLabel(input.label);
-    this.grantsValue = requireGrants(input.grants);
+  /**
+   * Le libellé et les droits changent ; la clé, jamais.
+   *
+   * 🔴 Depuis que les rôles se lisent en base, une redéfinition **prend effet**
+   * sur ses porteurs. Retirer `staff_access:write` à ce rôle est donc refusé
+   * quand ça le retirerait à l'auteur lui-même, ou au dernier groupe de
+   * personnes qui le tiennent (§3.3).
+   *
+   * @throws {StaffRoleSelfRevokeError} l'auteur tient l'annuaire par ce rôle.
+   * @throws {StaffRoleLastDirectoryKeeperError} seuls ses porteurs le tiennent.
+   */
+  redefine(
+    input: { readonly label: string; readonly grants: readonly RoleGrant[] },
+    directory: DirectoryKeepersSnapshot,
+  ): void {
+    const label = requireLabel(input.label);
+    const grants = requireGrants(input.grants);
+    if (this.opensDirectory(this.grantsValue) && !this.opensDirectory(grants)) {
+      this.assertDirectoryStillKept(directory);
+    }
+    this.labelValue = label;
+    this.grantsValue = grants;
   }
 
   /**
@@ -106,6 +145,23 @@ export class StaffRoleDefinition {
 
   restore(): void {
     this.archivedAtValue = null;
+  }
+
+  private opensDirectory(grants: readonly RoleGrant[]): boolean {
+    return hasStaffPermission(
+      resolveRolePermissions(this.key, toRoleGrants(grants)),
+      DIRECTORY_WRITE,
+    );
+  }
+
+  private assertDirectoryStillKept(directory: DirectoryKeepersSnapshot): void {
+    const mine = directory.keepers.filter((keeper) => keeper.roleKey === this.key);
+    if (mine.some((keeper) => keeper.staffUserId === directory.actorId)) {
+      throw new StaffRoleSelfRevokeError(this.key);
+    }
+    if (mine.length > 0 && mine.length === directory.keepers.length) {
+      throw new StaffRoleLastDirectoryKeeperError(this.key);
+    }
   }
 
   /** Ce que ce rôle accorde, résolu exactement comme un guard le vérifiera. */

@@ -1,4 +1,13 @@
-import type { StaffRoleDefinition } from "./staff-role-definition.js";
+import type { DirectoryKeeper, StaffRoleDefinition } from "./staff-role-definition.js";
+
+/**
+ * `forUpdate` : verrouille la ligne jusqu'au commit (`SELECT … FOR UPDATE`).
+ * Ne vaut que dans une unité de travail — hors transaction, le verrou tombe à
+ * la fin de la lecture.
+ */
+export interface StaffRoleLoadOptions {
+  readonly forUpdate: boolean;
+}
 
 /**
  * Port d'**écriture** des rôles définis.
@@ -10,7 +19,7 @@ import type { StaffRoleDefinition } from "./staff-role-definition.js";
  */
 export abstract class StaffRoleRepository {
   /** Le rôle par sa clé, ou `null`. Les droits sont revalidés à la relecture. */
-  abstract load(key: string): Promise<StaffRoleDefinition | null>;
+  abstract load(key: string, options?: StaffRoleLoadOptions): Promise<StaffRoleDefinition | null>;
 
   /** Écrit le rôle entier, tel que `toPersistence()` le rend. */
   abstract save(role: StaffRoleDefinition): Promise<void>;
@@ -21,4 +30,13 @@ export abstract class StaffRoleRepository {
    * contexte `directory` pour un `count` coûterait un couplage entier (ISP).
    */
   abstract memberCount(key: string): Promise<number>;
+
+  /**
+   * Qui tient l'annuaire (`staff_access:write`) par son rôle aujourd'hui :
+   * personnes non suspendues, fiche de secours exclue. L'agrégat en a besoin
+   * pour refuser une redéfinition qui le viderait (plan
+   * `plan-roles-lus-en-base.md` §3.3) — même raison d'être ici que
+   * {@link memberCount}.
+   */
+  abstract directoryKeepers(): Promise<readonly DirectoryKeeper[]>;
 }

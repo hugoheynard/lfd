@@ -123,8 +123,18 @@ model StaffUser {
   phone    String @default("")
   jobTitle String @default("") @map("job_title")
 
-  /// Le rôle : le paquet de permissions dont cette personne hérite.
-  role StaffRole @default(commercial)
+  /// L'ancien rôle, en valeur d'enum. Nul pour une personne qui porte un rôle
+  /// créé à l'écran ; tenu en phase avec `roleKey` par un déclencheur tant que
+  /// du code d'avant la bascule peut l'écrire. Disparaît au « resserrer »
+  /// (`documentation/staff/plan-roles-lus-en-base.md` §4).
+  role StaffRole? @default(commercial)
+
+  /// **La** clé du rôle porté, celle que le résolveur lit (plan
+  /// `plan-roles-lus-en-base.md` §3.1). Nulle seulement pour une fiche d'avant
+  /// la migration que rien n'aurait remplie — repli sur `role`, retiré au
+  /// « resserrer ».
+  roleKey        String?              @map("role_key")
+  roleDefinition StaffRoleDefinition? @relation(fields: [roleKey], references: [key], onDelete: Restrict)
 
   /// L'état de la connexion. La fiche précède le compte, donc `pending` par
   /// défaut : créer quelqu'un ne lui ouvre aucune porte.
@@ -220,6 +230,9 @@ model StaffRoleDefinition {
   /// Un rôle ne se supprime pas tant qu'une fiche le porte — il s'archive, et
   /// les fiches qui le citent restent lisibles.
   archivedAt DateTime? @map("archived_at")
+
+  /// Les fiches qui portent ce rôle — par `staff_users.role_key`.
+  holders StaffUser[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

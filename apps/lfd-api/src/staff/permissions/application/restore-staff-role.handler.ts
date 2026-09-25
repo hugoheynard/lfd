@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Journal } from "../../../platform/journal/journal.js";
+import { StaffAccessCache } from "../staff-access-cache.port.js";
 import { roleRestoredFact } from "../domain/staff-role-facts.js";
 import { StaffRoleRepository } from "../domain/staff-role.repository.js";
 import { loadEditableRole } from "./staff-role-support.js";
@@ -14,6 +15,7 @@ export class RestoreStaffRoleHandler implements ICommandHandler<RestoreStaffRole
     private readonly roles: StaffRoleRepository,
     private readonly journal: Journal,
     private readonly uow: UnitOfWork,
+    private readonly cache: StaffAccessCache,
   ) {}
 
   async execute(command: RestoreStaffRoleCommand): Promise<void> {
@@ -27,5 +29,6 @@ export class RestoreStaffRoleHandler implements ICommandHandler<RestoreStaffRole
         await this.journal.append(fact);
       }
     });
+    this.cache.forgetAll();
   }
 }

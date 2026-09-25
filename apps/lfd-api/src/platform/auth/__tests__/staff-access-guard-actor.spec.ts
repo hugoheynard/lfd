@@ -53,6 +53,7 @@ class OneStaffDirectory extends StaffAccessResolver {
     return Promise.resolve({
       staffUserId: FICHE_ID,
       role: "commercial",
+      roleLabel: "Commercial",
       permissions: ["b2b_orders:read"],
     });
   }

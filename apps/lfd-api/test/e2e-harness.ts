@@ -205,11 +205,11 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
       // une migration déjà appliquée. On le garantit donc à chaque remise à zéro.
       await ensureSalesContexts(prisma);
       // Les rôles sont semés par migration, comme les contextes de vente, et le
-      // `TRUNCATE` les emporte de la même façon. Rien ne les lit ENCORE — le
-      // résolveur d'accès tient toujours son catalogue en dur — mais le jour de
-      // la bascule, leur absence retirerait toutes leurs permissions à tous les
-      // comptes de test : un 403 partout, qui accuserait le mur au lieu du
-      // harnais. On les remet avant que ça n'arrive.
+      // `TRUNCATE` les emporte de la même façon. Depuis le 2026-09-26, le
+      // résolveur d'accès LES LIT (`plan-roles-lus-en-base.md`) : leur absence
+      // retirerait toutes leurs permissions à tous les comptes de test — un 403
+      // partout, qui accuserait le mur au lieu du harnais. Ils sont remis AVANT
+      // l'opérateur des suites, que la clé étrangère `role_key` y rattache.
       await ensureStaffRoleDefinitions(prisma);
       // La plateforme professionnelle est semée au BOOT, donc une seule fois —
       // et le `TRUNCATE` ci-dessus l'emporte à chaque remise à zéro. On rejoue

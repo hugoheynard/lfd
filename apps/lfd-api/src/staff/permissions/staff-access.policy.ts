@@ -1,8 +1,8 @@
 import {
   hasStaffPermission,
-  resolveStaffPermissions,
+  resolvePermissionsFromGrants,
+  type RoleGrants,
   type StaffOverride,
-  type StaffRole,
   type StaffStatus,
 } from "@lfd/contracts";
 
@@ -22,8 +22,27 @@ import {
  * dans le domaine, pas dans un écran, qui n'est qu'une suggestion — et elles se
  * testent sans base ni HTTP.
  *
+ * 🔴 **Elles tiennent sur le DROIT, plus sur la chaîne `"admin"`** (plan
+ * `documentation/staff/plan-roles-lus-en-base.md` §3.3). Depuis que les rôles se
+ * lisent en base, `admin` s'édite : tester son nom ne garantit plus rien. Les
+ * deux invariants deviennent :
+ *
+ * - il reste au moins une personne active qui tient `staff_access:write` **par
+ *   son rôle**, la fiche de secours mise à part ;
+ * - on ne se retire pas `staff_access:write` à soi-même.
+ *
+ * Le versant « éditer un rôle » vit dans `StaffRoleDefinition.redefine`.
+ *
  * Modèle complet : `documentation/staff/architecture-acces-staff.md` §6.
  */
+
+/** Le droit que les invariants protègent : celui de désigner qui a quels droits. */
+export const DIRECTORY_WRITE = "staff_access:write";
+
+/** Vrai si ces droits de rôle, avec ces écarts, tiennent l'annuaire en écriture. */
+export function keepsDirectory(grants: RoleGrants, overrides: readonly StaffOverride[]): boolean {
+  return hasStaffPermission(resolvePermissionsFromGrants(grants, overrides), DIRECTORY_WRITE);
+}
 
 /** Ce qu'il faut savoir de la personne visée pour trancher une mutation. */
 export interface StaffMutationTarget {
@@ -36,13 +55,20 @@ export interface StaffMutationTarget {
    * domaine.
    */
   readonly isRoot: boolean;
-  readonly role: StaffRole;
+  /** La clé du rôle porté aujourd'hui. */
+  readonly roleKey: string | null;
   /**
-   * Le nombre d'**autres** administrateurs encore en état d'entrer, c'est-à-dire
-   * non suspendus. On ne compte pas les seuls `active` : quelqu'un qui n'a jamais
-   * ouvert sa session reste un recours valide, il lui suffit de se connecter.
+   * Vrai si la cible, non suspendue, tient aujourd'hui `staff_access:write` par
+   * son rôle — c'est-à-dire si la perdre retirerait un recours.
    */
-  readonly otherLivingAdmins: number;
+  readonly keepsDirectory: boolean;
+  /**
+   * Combien d'**autres** personnes tiennent l'annuaire par leur rôle, non
+   * suspendues, la fiche de secours exclue. On ne compte pas les seuls
+   * `active` : quelqu'un qui n'a jamais ouvert sa session reste un recours
+   * valide, il lui suffit de se connecter.
+   */
+  readonly otherDirectoryKeepers: number;
   /**
    * Vrai si l'auteur de la mutation est la personne visée — comparé par **id de
    * fiche** depuis le 2026-09-18 (l'auteur arrive par `@StaffUserId()`, plus par
@@ -51,27 +77,29 @@ export interface StaffMutationTarget {
   readonly isSelf: boolean;
 }
 
-/** Ce que la mutation veut écrire. */
+/** Ce que la mutation veut écrire — le rôle visé, déjà lu dans sa définition active. */
 export interface StaffMutationIntent {
   readonly email: string;
-  readonly role: StaffRole;
+  readonly roleKey: string;
+  readonly roleGrants: RoleGrants;
   readonly overrides: readonly StaffOverride[];
 }
 
 /**
  * Autorise (ou refuse) une **édition** de fiche.
  *
- * @throws {ProtectedStaffUserError} la cible est l'admin racine et la mutation le
- *   renommerait ou le rétrograderait.
- * @throws {SelfDemotionError} l'auteur se retire son propre rôle `admin`.
- * @throws {LastStaffAdminError} la mutation retirerait le dernier administrateur.
- * @throws {AdminOverrideRefusedError} une dérogation priverait un admin de `staff:write`.
+ * @throws {ProtectedStaffUserError} la cible est la fiche racine et la mutation
+ *   la renommerait ou lui changerait de rôle.
+ * @throws {StaffGrantByOverrideError} un écart ouvrirait l'annuaire.
+ * @throws {AdminOverrideRefusedError} un écart fermerait l'annuaire que le rôle ouvre.
+ * @throws {SelfDemotionError} l'auteur se retire `staff_access:write`.
+ * @throws {LastStaffAdminError} plus personne ne tiendrait l'annuaire par son rôle.
  */
 export function assertEditAllowed(target: StaffMutationTarget, intent: StaffMutationIntent): void {
-  assertRootAdminIntact(target, intent);
+  assertRootIntact(target, intent);
   assertOverridesAllowed(intent);
-  if (losesAdmin(target, intent.role)) {
-    assertAdminRemovable(target);
+  if (target.keepsDirectory && !keepsDirectory(intent.roleGrants, intent.overrides)) {
+    assertKeeperRemovable(target);
   }
 }
 
@@ -79,9 +107,9 @@ export function assertEditAllowed(target: StaffMutationTarget, intent: StaffMuta
  * Autorise (ou refuse) un changement d'**état de connexion**. Seule la suspension
  * retire un accès ; les autres transitions se constatent et ne menacent personne.
  *
- * @throws {ProtectedStaffUserError} la cible est l'admin racine.
- * @throws {SelfDemotionError} l'auteur se suspend lui-même alors qu'il est admin.
- * @throws {LastStaffAdminError} suspendre laisserait le back-office sans admin.
+ * @throws {ProtectedStaffUserError} la cible est la fiche racine.
+ * @throws {SelfDemotionError} l'auteur se suspend lui-même alors qu'il tient l'annuaire.
+ * @throws {LastStaffAdminError} suspendre laisserait l'annuaire sans personne pour le tenir.
  */
 export function assertStatusChangeAllowed(
   target: StaffMutationTarget,
@@ -93,20 +121,21 @@ export function assertStatusChangeAllowed(
   if (target.isRoot) {
     throw new ProtectedStaffUserError();
   }
-  if (target.role === "admin") {
-    assertAdminRemovable(target);
+  if (target.keepsDirectory) {
+    assertKeeperRemovable(target);
   }
 }
 
 /**
- * L'admin racine reste racine : e-mail figé et rôle `admin` conservé. Sinon il
- * s'auto-exclut du provisioning, ou échappe à sa propre garde par renommage.
+ * La fiche racine reste ce qu'elle est : e-mail figé, rôle inchangé. C'est
+ * l'e-mail qui la désigne comme secours (§3.4) — le changer serait le chemin en
+ * deux temps vers sa disparition.
  */
-function assertRootAdminIntact(target: StaffMutationTarget, intent: StaffMutationIntent): void {
+function assertRootIntact(target: StaffMutationTarget, intent: StaffMutationIntent): void {
   if (!target.isRoot) {
     return;
   }
-  if (intent.email.trim().toLowerCase() !== target.email || intent.role !== "admin") {
+  if (intent.email.trim().toLowerCase() !== target.email || intent.roleKey !== target.roleKey) {
     throw new ProtectedStaffUserError();
   }
 }
@@ -116,11 +145,10 @@ function assertRootAdminIntact(target: StaffMutationTarget, intent: StaffMutatio
  * bouts : **l'annuaire ne s'ouvre ni ne se ferme par un delta**.
  *
  * - Une dérogation ne l'**ouvre** pas à qui son rôle ne l'ouvre pas : obtenir
- *   `staff_access:write` par écart, c'est pouvoir s'attribuer `admin` dans la foulée,
- *   et le modèle n'a plus de sommet.
- * - Elle ne le **ferme** pas à un administrateur : ce serait contourner « il
- *   reste au moins un admin » par la porte de derrière — l'admin serait là, mais
- *   privé du seul droit qui permet d'en désigner un autre.
+ *   `staff_access:write` par écart, c'est pouvoir s'attribuer n'importe quel
+ *   rôle dans la foulée, et le modèle n'a plus de sommet.
+ * - Elle ne le **ferme** pas à qui son rôle l'ouvre : ce serait contourner « il
+ *   reste au moins un recours » par la porte de derrière.
  */
 function assertOverridesAllowed(intent: StaffMutationIntent): void {
   const opensDirectory = intent.overrides.some(
@@ -129,26 +157,20 @@ function assertOverridesAllowed(intent: StaffMutationIntent): void {
   if (opensDirectory) {
     throw new StaffGrantByOverrideError();
   }
-  if (intent.role !== "admin") {
-    return;
-  }
-  const effective = resolveStaffPermissions(intent.role, intent.overrides);
-  if (!hasStaffPermission(effective, "staff_access:write")) {
+  if (
+    keepsDirectory(intent.roleGrants, []) &&
+    !keepsDirectory(intent.roleGrants, intent.overrides)
+  ) {
     throw new AdminOverrideRefusedError();
   }
 }
 
-/** Vrai si la mutation fait perdre le rôle `admin` à la cible. */
-function losesAdmin(target: StaffMutationTarget, nextRole: StaffRole): boolean {
-  return target.role === "admin" && nextRole !== "admin";
-}
-
-/** Le cœur : on ne retire un administrateur ni à soi-même, ni au dernier. */
-function assertAdminRemovable(target: StaffMutationTarget): void {
+/** Le cœur : on ne retire l'annuaire ni à soi-même, ni au dernier qui le tient. */
+function assertKeeperRemovable(target: StaffMutationTarget): void {
   if (target.isSelf) {
     throw new SelfDemotionError();
   }
-  if (target.otherLivingAdmins === 0) {
+  if (target.otherDirectoryKeepers === 0) {
     throw new LastStaffAdminError();
   }
 }

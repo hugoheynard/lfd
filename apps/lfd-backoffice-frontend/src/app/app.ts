@@ -36,8 +36,6 @@ import {
   FoldToastContainerComponent,
 } from 'fold-ng';
 
-import type { StaffRole } from '@lfd/contracts';
-
 import { PermissionsStore } from './auth/permissions.store';
 import { DEV_TOOLS } from './dev/dev-tools';
 import { StaffAuth } from './auth/staff-auth';
@@ -47,25 +45,6 @@ import { CanDirective } from './shared/can/can.directive';
 import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
 import { groupRailItems, WorkspaceRailStore } from './shared/workspace-rail/workspace-rail.store';
 import { WorkspaceCatalogue } from './shared/workspace-rail/workspaces';
-
-/**
- * Les rôles en toutes lettres. Une COPIE de `STAFF_ROLE_LABELS`, et c'est
- * délibéré : la table du contrat est une *valeur*, donc l'importer ici tirerait
- * zod et tous les schémas dans le bundle EAGER — la racine n'est pas paresseuse.
- *
- * Une copie qui dérive serait un mensonge, mais celle-ci ne peut pas : le
- * `Record<StaffRole, string>` est exhaustif, donc un rôle ajouté au contrat
- * casse la compilation ici jusqu'à ce qu'on lui donne son libellé.
- */
-const ROLE_LABELS: Readonly<Record<StaffRole, string>> = {
-  admin: 'Administrateur',
-  commercial: 'Commercial',
-  comptabilite: 'Comptabilité',
-  communication: 'Communication',
-  comptoir: 'Vendeur comptoir',
-  support: 'Support',
-  dev: 'Technique',
-};
 
 /**
  * Racine de l'app **B2B admin** (staff) : un rail de navigation + le contenu
@@ -297,7 +276,9 @@ export class App {
 
   protected readonly whoSecondary = computed(() => {
     const me = this.permissions.identity();
-    return me ? ROLE_LABELS[me.role] : '';
+    // Le libellé vient du serveur, lu dans la définition du rôle : un rôle créé
+    // à l'écran n'a pas d'entrée dans le contrat (plan-roles-lus-en-base §3.5).
+    return me ? me.roleLabel : '';
   });
 
   /**

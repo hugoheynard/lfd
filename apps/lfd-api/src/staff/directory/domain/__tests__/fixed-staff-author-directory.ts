@@ -1,4 +1,4 @@
-import type { StaffRole } from "@lfd/contracts";
+import { STAFF_ROLE_LABELS, type StaffRole } from "@lfd/contracts";
 
 import { StaffAuthorDirectory, StaffAuthors, type StaffAuthor } from "../staff-author-directory.js";
 
@@ -38,6 +38,7 @@ export function authorsKnownAs(
     firstName: person.firstName,
     lastName: person.lastName,
     role: person.role ?? "commercial",
+    roleLabel: STAFF_ROLE_LABELS[person.role ?? "commercial"],
     jobTitle: "",
   };
   return new Map(references.map((reference) => [reference, author]));

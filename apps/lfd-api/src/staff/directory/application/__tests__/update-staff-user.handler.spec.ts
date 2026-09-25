@@ -82,6 +82,7 @@ function harness(
     before,
     after: { ...IDENTITY, ...options.after },
     overrides: { added: options.added ?? [], removed: [], changed: [] },
+    roleLabels: { before: "Commercial", after: "Commercial" },
   };
   const journal = new RecordingJournal(options.journalDown ? new Error("journal en panne") : null);
   const identities = new RecordingIdentities(options.identityFails ?? false);

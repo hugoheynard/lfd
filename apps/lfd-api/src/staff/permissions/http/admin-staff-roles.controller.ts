@@ -19,6 +19,7 @@ import {
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ListStaffRolesQuery } from "../application/list-staff-roles.query.js";
 import {
@@ -71,9 +72,10 @@ export class AdminStaffRolesController {
   async update(
     @Param("key") key: string,
     @Body(new ZodBody(updateStaffRolePayloadSchema)) payload: UpdateStaffRolePayload,
+    @StaffUserId() actorId: string,
   ): Promise<void> {
     await this.commands.execute<UpdateStaffRoleCommand, void>(
-      new UpdateStaffRoleCommand(key, payload),
+      new UpdateStaffRoleCommand(key, payload, actorId),
     );
   }
 

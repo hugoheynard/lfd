@@ -6,7 +6,7 @@ import type {
   StaffUserView,
 } from "@lfd/contracts";
 
-import type { StaffUserEdit, StaffUserSnapshot } from "./staff-user-state.js";
+import type { StaffUserCreated, StaffUserEdit, StaffUserSnapshot } from "./staff-user-state.js";
 
 /**
  * Port des **utilisateurs staff** (annuaire back-office). Source de vérité
@@ -26,9 +26,15 @@ export abstract class StaffUserRepository {
   /**
    * Ajoute un user. `actorId` — l'id de la **fiche** de l'auteur, jamais son
    * `sub` — attribue ses éventuelles dérogations à leur auteur.
+   *
+   * Le rôle est une **clé**, confrontée aux définitions actives sous verrou
+   * partagé (plan `plan-roles-lus-en-base.md` §3.3, §3.5) : à appeler dans une
+   * unité de travail. Rend l'id et le libellé du rôle, que le journal fige.
+   *
    * @throws {DuplicateStaffEmailError} l'e-mail est déjà pris.
+   * @throws {StaffRoleNotAssignableError} le rôle n'est pas défini, ou archivé.
    */
-  abstract create(payload: StaffUserPayload, actorId: string): Promise<string>;
+  abstract create(payload: StaffUserPayload, actorId: string): Promise<StaffUserCreated>;
 
   /**
    * Remplace l'identité et le rôle d'un user, et **applique le diff** de ses
@@ -47,10 +53,11 @@ export abstract class StaffUserRepository {
    *
    * @throws {StaffUserNotFoundError} l'`id` n'existe pas.
    * @throws {DuplicateStaffEmailError} l'e-mail est pris par un autre user.
-   * @throws {ProtectedStaffUserError} la cible est l'admin racine, renommé ou rétrogradé.
-   * @throws {SelfDemotionError} l'auteur se retire son propre rôle `admin`.
-   * @throws {LastStaffAdminError} la mutation retirerait le dernier administrateur.
-   * @throws {AdminOverrideRefusedError} une dérogation priverait un admin de `staff:write`.
+   * @throws {ProtectedStaffUserError} la cible est la fiche racine, renommée ou changée de rôle.
+   * @throws {StaffRoleNotAssignableError} le rôle visé n'est pas défini, ou archivé.
+   * @throws {SelfDemotionError} l'auteur se retire `staff_access:write`.
+   * @throws {LastStaffAdminError} plus personne ne tiendrait l'annuaire par son rôle.
+   * @throws {AdminOverrideRefusedError} un écart fermerait l'annuaire que le rôle ouvre.
    */
   abstract update(id: string, payload: StaffUserPayload, actorId: string): Promise<StaffUserEdit>;
 
@@ -64,8 +71,8 @@ export abstract class StaffUserRepository {
    *
    * @throws {StaffUserNotFoundError} l'`id` n'existe pas.
    * @throws {ProtectedStaffUserError} la cible est l'admin racine.
-   * @throws {SelfDemotionError} l'auteur se suspend lui-même alors qu'il est admin.
-   * @throws {LastStaffAdminError} suspendre laisserait le back-office sans admin.
+   * @throws {SelfDemotionError} l'auteur se suspend lui-même alors qu'il tient l'annuaire.
+   * @throws {LastStaffAdminError} suspendre laisserait l'annuaire sans personne pour le tenir.
    */
   abstract setStatus(
     id: string,
