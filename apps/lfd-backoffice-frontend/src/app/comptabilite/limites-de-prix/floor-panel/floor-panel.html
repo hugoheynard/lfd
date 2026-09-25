@@ -1,6 +1,8 @@
 <fold-panel-header
   title="Limite de prix"
-  [subtitle]="'Sur ' + target() + '. Le prix ne descendra pas sous ce seuil.'"
+  [subtitle]="
+    'Sur ' + target() + ', ' + clienteleLabel() + '. Le prix ne descendra pas sous ce seuil.'
+  "
 />
 
 <div class="body">

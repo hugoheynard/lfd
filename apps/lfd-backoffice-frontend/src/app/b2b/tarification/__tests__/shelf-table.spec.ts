@@ -8,6 +8,7 @@ import type {
 } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { floorLabel } from '../pricing-format';
 import { ShelfTable } from '../shelf-table/shelf-table';
 
 /**
@@ -266,7 +267,60 @@ describe('l’en-tête de rayon', () => {
     expect(rendered).toContain('Limite : 1,50');
   });
 
-  it('propose de poser une limite de famille quand il n’y en a pas', () => {
-    expect(text(mount(category()))).toContain('Limite de famille');
+  it('dit qu’il n’y a pas de limite de famille, sans proposer d’en poser', () => {
+    expect(text(mount(category()))).toContain('Aucune limite de famille');
+  });
+});
+
+/**
+ * **La ligne « Limite », en lecture seule** (`plan-limites-de-prix.md` §6). La
+ * colonne éditable a disparu : la limite se lit sous la référence et le tarif,
+ * avec la même étiquette, et aucun bouton ne la pose ni ne la modifie.
+ */
+describe('la ligne Limite', () => {
+  const buttons = (fixture: ComponentFixture<ShelfTable>): string[] =>
+    Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('button')).map(
+      (b) => `${b.textContent ?? ''} ${b.getAttribute('aria-label') ?? ''}`,
+    );
+
+  it('reprend l’étiquette : valeur, provenance, « à confirmer »', () => {
+    const stale = floor({
+      drift: {
+        referenceCanonicalMillicents: 200_000,
+        currentCanonicalMillicents: 260_000,
+        driftBp: 3000,
+        ageDays: 240,
+        stale: true,
+      },
+    });
+    const own = item({ ownFloor: stale, effectiveFloor: stale });
+    const rendered = text(mount(category({ items: [own] })));
+
+    expect(rendered).toContain(`Limite ${floorLabel(stale)}`);
+    expect(rendered).toContain('propre');
+    expect(rendered).toContain('à confirmer');
+  });
+
+  it('écrit la porte dynamique quand il y en a une', () => {
+    const door = floor({
+      dynamic: {
+        mode: 'percent',
+        value: 4000,
+        unlock: { minQuantity: 20, minVolumeRatioBp: null },
+      },
+    });
+
+    expect(text(mount(category({ items: [item({ effectiveFloor: door })] })))).toContain(
+      'porte : 40 % du tarif (dès 20 u.)',
+    );
+  });
+
+  it('ne porte aucun bouton de limite', () => {
+    const shelf = category({
+      floor: floor(),
+      items: [item({ effectiveFloor: floor() }), item({ sku: 'VIE-002' })],
+    });
+
+    expect(buttons(mount(shelf)).filter((label) => /limite/i.test(label))).toEqual([]);
   });
 });

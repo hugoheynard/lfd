@@ -4,11 +4,11 @@ import type { PriceFloorView } from '@lfd/contracts';
 import { FoldPanelHostService, FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
+import { ArchivePanel } from '../../../b2b/tarification/archive-panel/archive-panel';
+import { JournalPanel } from '../../../b2b/tarification/journal-panel/journal-panel';
 import { NotifyService } from '../../../notify.service';
-import { ArchivePanel } from '../archive-panel/archive-panel';
-import { FloorPanel, type FloorPanelData } from '../floor-panel/floor-panel';
-import { JournalPanel } from '../journal-panel/journal-panel';
-import { TarificationService } from '../tarification.service';
+import { PriceLimitsService } from '../../price-limits.service';
+import { FloorPanel, type FloorPanelData } from './floor-panel';
 
 /**
  * **Ce que le panneau Limite ne fait plus.**
@@ -32,6 +32,7 @@ const FLOOR: PriceFloorView = {
 
 const DATA: FloorPanelData = {
   scope: { type: 'category', id: 'viennoiserie' },
+  clientele: 'pro',
   target: 'Viennoiseries',
   current: FLOOR,
   inherited: null,
@@ -43,20 +44,20 @@ function mount(
   calls: string[],
   data: FloorPanelData = DATA,
 ): ComponentFixture<FloorPanel> {
-  const service: Pick<TarificationService, 'setFloor' | 'confirmFloor'> = {
-    setFloor: () => {
-      calls.push('setFloor');
+  const service: Pick<PriceLimitsService, 'setFloor' | 'confirmFloor'> = {
+    setFloor: (payload) => {
+      calls.push(`setFloor:${payload.clientele}`);
       return Promise.resolve();
     },
-    confirmFloor: () => {
-      calls.push('confirmFloor');
+    confirmFloor: (_scope, clientele) => {
+      calls.push(`confirmFloor:${clientele}`);
       return Promise.resolve();
     },
   };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
-      { provide: TarificationService, useValue: service },
+      { provide: PriceLimitsService, useValue: service },
       { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
       { provide: FoldPanelRef, useValue: { close: () => undefined } },
       {
@@ -148,5 +149,32 @@ describe("l'unité de la limite", () => {
     );
 
     expect(text).toContain('En pourcentage du tarif');
+  });
+});
+
+/**
+ * **Le geste envoie la clientèle.** Le serveur vise `pro` quand elle manque :
+ * une limite publique posée sans elle remplacerait silencieusement la limite
+ * pro de la même portée.
+ */
+describe('la clientèle du geste', () => {
+  const PUBLIC: FloorPanelData = { ...DATA, clientele: 'public' };
+
+  it('pose la limite pour la clientèle choisie', async () => {
+    const calls: string[] = [];
+    const panel = mount([], calls, { ...PUBLIC, current: null }).componentInstance;
+
+    panel['setAmount']('40');
+    await panel['submit']();
+
+    expect(calls).toEqual(['setFloor:public']);
+  });
+
+  it('confirme la limite de la clientèle choisie', async () => {
+    const calls: string[] = [];
+
+    await mount([], calls, PUBLIC).componentInstance['confirm']();
+
+    expect(calls).toEqual(['confirmFloor:public']);
   });
 });

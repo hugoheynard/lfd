@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import type {
+  StaffPermission,
   PriceRuleView,
   PriceStepView,
   PricingBoardView,
@@ -10,8 +12,8 @@ import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { ArchivePanel } from '../archive-panel/archive-panel';
-import { FloorPanel } from '../floor-panel/floor-panel';
 import { JournalPanel } from '../journal-panel/journal-panel';
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { TarificationPage } from '../tarification-page';
 import { RulePanel } from '../rule-panel/rule-panel';
 import { TarificationService } from '../tarification.service';
@@ -25,6 +27,15 @@ import { TarificationService } from '../tarification.service';
  * famille supplantée, la marge négociable — a suivi la table dans
  * `shelf-table.spec.ts` : c'est là que ces faits se rendent maintenant.
  */
+
+function permissionsOf(granted: readonly StaffPermission[]) {
+  return {
+    provide: PermissionsStore,
+    useValue: { can: (p: StaffPermission): boolean => granted.includes(p) },
+  };
+}
+
+const NO_PERMISSION = permissionsOf([]);
 
 const EMPTY_BOARD: PricingBoardView = {
   categories: [],
@@ -41,6 +52,7 @@ function page(board: PricingBoardView = EMPTY_BOARD): TarificationPage {
     providers: [
       { provide: TarificationService, useValue: service },
       { provide: FoldPanelHostService, useValue: {} },
+      NO_PERMISSION,
     ],
   });
   return TestBed.runInInjectionContext(() => new TarificationPage());
@@ -186,6 +198,7 @@ describe('suspendre et reprendre', () => {
       providers: [
         { provide: TarificationService, useValue: service },
         { provide: FoldPanelHostService, useValue: panelHost(opened) },
+        NO_PERMISSION,
       ],
     });
     return TestBed.runInInjectionContext(() => new TarificationPage());
@@ -228,19 +241,6 @@ describe('suspendre et reprendre', () => {
     await pageWith([], opened)['openRuleJournal'](rule());
 
     expect(opened).toContain(JournalPanel);
-  });
-
-  /**
-   * La limite du catalogue et ses altérations existaient dans le modèle et
-   * n'étaient visibles nulle part : la bande du haut est leur seul accès.
-   */
-  it('ouvre la limite de tout le catalogue', async () => {
-    const opened: unknown[] = [];
-
-    pageWith([], opened)['editGlobalFloor']();
-    await Promise.resolve();
-
-    expect(opened).toContain(FloorPanel);
   });
 
   it('ouvre la pose d’une altération sur tout le catalogue', async () => {
@@ -308,6 +308,8 @@ describe('la ligne dont on regarde le chemin du prix', () => {
       providers: [
         { provide: TarificationService, useValue: service },
         { provide: FoldPanelHostService, useValue: {} },
+        NO_PERMISSION,
+        NO_PERMISSION,
       ],
     });
     const screen = TestBed.runInInjectionContext(() => new TarificationPage());
@@ -329,5 +331,69 @@ describe('la ligne dont on regarde le chemin du prix', () => {
     screen['board'].set(board([item({ sku: 'VIE-999' })]));
 
     expect(screen['selectedItem']()).toBeNull();
+  });
+});
+
+/**
+ * **Les limites se lisent ici, elles se règlent en Comptabilité**
+ * (`plan-limites-de-prix.md` §6). La page ne porte plus aucun geste de limite,
+ * et le lien vers la Comptabilité suit `lfc_price_limits:read` : le commercial,
+ * qui voit la limite, n'a rien à faire dans le bloc comptable.
+ */
+describe('les limites, en lecture', () => {
+  async function render(granted: readonly StaffPermission[]): Promise<HTMLElement> {
+    const floor = {
+      id: 'global',
+      scope: { type: 'global' as const, id: null },
+      mode: 'percent' as const,
+      value: 5000,
+      dynamic: null,
+      drift: null,
+      createdBy: 'staff',
+      createdByName: null,
+      updatedAt: '2026-08-01T00:00:00.000Z',
+    };
+    const served: PricingBoardView = {
+      ...EMPTY_BOARD,
+      globalFloor: floor,
+      categories: [category({ floor, items: [item({ effectiveFloor: floor })] })],
+    };
+    const service: Pick<TarificationService, 'read'> = { read: () => Promise.resolve(served) };
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: TarificationService, useValue: service },
+        { provide: FoldPanelHostService, useValue: {} },
+        permissionsOf(granted),
+      ],
+    });
+    const fixture = TestBed.createComponent(TarificationPage);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  const labels = (root: HTMLElement, selector: string): string[] =>
+    Array.from(root.querySelectorAll(selector)).map((el) => el.textContent?.trim() ?? '');
+
+  it('ne propose aucun bouton de limite', async () => {
+    const root = await render(['b2b_pricing:write', 'lfc_price_limits:write']);
+
+    const floorButtons = labels(root, 'button').filter((label) => /limite/i.test(label));
+    expect(floorButtons).toEqual([]);
+    expect(root.textContent).toContain('Limite : 50 % du tarif');
+  });
+
+  it('mène à la Comptabilité avec `lfc_price_limits:read`', async () => {
+    const root = await render(['b2b_pricing:read', 'lfc_price_limits:read']);
+
+    expect(labels(root, 'a')).toContain('Gérer les limites →');
+  });
+
+  it('tait le lien sans `lfc_price_limits:read`', async () => {
+    const root = await render(['b2b_pricing:write']);
+
+    expect(labels(root, 'a')).not.toContain('Gérer les limites →');
   });
 });

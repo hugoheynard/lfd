@@ -5,7 +5,9 @@ import { permissionGuard } from '../auth/permission.guard';
 /**
  * Les routes de l'**espace Comptabilité**.
  *
- * Un seul droit à l'entrée (`b2b_accounting:read`) et pas de garde par vue :
+ * Un seul droit à l'entrée (`b2b_accounting:read`), et une garde par vue là
+ * seulement où la vue relève d'un autre mur — les limites de prix
+ * (`lfc_price_limits:read`, 2026-09-25). Le reste n'en porte pas :
  * contrairement à l'Admin, dont les écrans relèvent de deux murs différents,
  * tout ce qui vit ici relève du même — l'identité d'émetteur, ses coordonnées,
  * et bientôt ses factures. Le jour où une vue demandera autre chose, elle
@@ -57,6 +59,18 @@ export const comptabiliteRoutes: Routes = [
         title: 'Liens de paiement — LFC B2B admin',
         loadComponent: () =>
           import('./liens-de-paiement/liens-de-paiement-page').then((m) => m.LiensDePaiementPage),
+      },
+      {
+        // Les limites de prix, pro et publiques. Elles relèvent de
+        // `lfc_price_limits`, PAS de `b2b_accounting` : la vue porte donc son
+        // propre garde, comme l'annonce l'en-tête de ce fichier. Les gestes
+        // demandent `lfc_price_limits:write` ; l'écran les masque sans lui.
+        // Plan : documentation/comptabilite/plan-limites-de-prix.md §6.
+        path: 'limites-de-prix',
+        canActivate: [permissionGuard('lfc_price_limits:read')],
+        title: 'Limites de prix — LFC B2B admin',
+        loadComponent: () =>
+          import('./limites-de-prix/limites-de-prix-page').then((m) => m.LimitesDePrixPage),
       },
       {
         // La FICHE d'une entité — tout ce qui se règle sur un émetteur. Elle

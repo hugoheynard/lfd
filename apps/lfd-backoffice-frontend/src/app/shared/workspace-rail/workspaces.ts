@@ -577,6 +577,15 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     icon: 'credit-card',
     needs: 'b2b_accounting:read',
   },
+  {
+    // Son propre droit : les limites relèvent de `lfc_price_limits`, pas de la
+    // comptabilité (plan `plan-limites-de-prix.md` §5).
+    key: 'limites-de-prix',
+    label: 'Limites de prix',
+    link: '/comptabilite/limites-de-prix',
+    icon: 'shield',
+    needs: 'lfc_price_limits:read',
+  },
 ];
 
 /**

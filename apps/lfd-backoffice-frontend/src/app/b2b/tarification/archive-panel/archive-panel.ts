@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import type { PriceScopePayload } from '@lfd/contracts';
+import type { FloorClientele, PriceScopePayload } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldPanelHeaderComponent,
@@ -8,12 +8,20 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
+import { PriceLimitsService } from '../../../comptabilite/price-limits.service';
 import { TarificationService } from '../tarification.service';
 
-/** Ce qu'on archive : une règle par son identifiant, une limite par sa portée. */
+/**
+ * Ce qu'on archive : une règle par son identifiant, une limite par sa portée
+ * et sa clientèle — la même portée peut porter une limite pro et une publique.
+ */
 export type ArchiveSubject =
   | { readonly kind: 'rule'; readonly id: string }
-  | { readonly kind: 'floor'; readonly scope: PriceScopePayload };
+  | {
+      readonly kind: 'floor';
+      readonly scope: PriceScopePayload;
+      readonly clientele: FloorClientele;
+    };
 
 /** Charge d'ouverture : quoi, comment l'appeler, et ce qu'elle disait. */
 export interface ArchivePanelData {
@@ -49,6 +57,7 @@ export interface ArchivePanelData {
 })
 export class ArchivePanel {
   private readonly tarification = inject(TarificationService);
+  private readonly limits = inject(PriceLimitsService);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
 
@@ -89,6 +98,6 @@ export class ArchivePanel {
       await this.tarification.archiveRule(data.subject.id, reason);
       return;
     }
-    await this.tarification.archiveFloor(data.subject.scope, reason);
+    await this.limits.archiveFloor(data.subject.scope, data.subject.clientele, reason);
   }
 }

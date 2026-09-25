@@ -65,6 +65,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptabilite/entites-juridiques/:id': null,
   'comptabilite/blocages-prelevement': null,
   'comptabilite/liens-de-paiement': null,
+  'comptabilite/limites-de-prix': 'lfc_price_limits:read',
 
   'comptes-clients/:id': 'b2b_companies:read',
   'comptes-clients/:id/dashboard': null,

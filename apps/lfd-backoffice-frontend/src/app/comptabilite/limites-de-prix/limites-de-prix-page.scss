@@ -1,0 +1,35 @@
+/* Le segmenté, la portée et le geste sur une ligne, à leur largeur naturelle. */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-md);
+}
+
+.scope {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.strong {
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+}
+
+/* « À confirmer » : la limite a vieilli, le tarif a bougé sous elle. */
+.stale {
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-warning-text, var(--fold-color-text));
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}

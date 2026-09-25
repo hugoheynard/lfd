@@ -8,7 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { PriceFloorView, PriceMode, PriceScopePayload } from '@lfd/contracts';
+import type { FloorClientele, PriceFloorView, PriceMode, PriceScopePayload } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldInputComponent,
@@ -20,14 +20,22 @@ import {
 import { formatEuros } from '@lfd/catalog-ui';
 
 import { NotifyService } from '../../../notify.service';
-import { magnitudeFromWire, magnitudeToWire } from '../pricing-format';
-import { ArchivePanel, type ArchivePanelData } from '../archive-panel/archive-panel';
-import { JournalPanel, type JournalPanelData } from '../journal-panel/journal-panel';
-import { TarificationService } from '../tarification.service';
+import {
+  ArchivePanel,
+  type ArchivePanelData,
+} from '../../../b2b/tarification/archive-panel/archive-panel';
+import {
+  JournalPanel,
+  type JournalPanelData,
+} from '../../../b2b/tarification/journal-panel/journal-panel';
+import { magnitudeFromWire, magnitudeToWire } from '../../../b2b/tarification/pricing-format';
+import { PriceLimitsService } from '../../price-limits.service';
 
 /** Charge d'ouverture : la portée visée, ce qui y est posé, ce dont elle hérite. */
 export interface FloorPanelData {
   readonly scope: PriceScopePayload;
+  /** La clientèle visée — la même portée peut porter une limite pro et une publique. */
+  readonly clientele: FloorClientele;
   readonly target: string;
   /** La limite posée sur CETTE portée, ou `null`. */
   readonly current: PriceFloorView | null;
@@ -39,6 +47,10 @@ export interface FloorPanelData {
 
 /**
  * Panneau **Limite** — le prix ne descendra pas sous ce seuil.
+ *
+ * Né dans la Tarification B2B, il vit dans la Comptabilité depuis que les
+ * limites relèvent de `lfc_price_limits` (`plan-limites-de-prix.md` §6). Il y a
+ * gagné la clientèle, qu'il envoie à chaque geste.
  *
  * Deux choses que cet écran doit dire, parce qu'elles surprennent :
  *
@@ -58,7 +70,7 @@ export interface FloorPanelData {
   styleUrl: './floor-panel.scss',
 })
 export class FloorPanel {
-  private readonly tarification = inject(TarificationService);
+  private readonly limits = inject(PriceLimitsService);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
   private readonly panels = inject(FoldPanelHostService);
@@ -92,6 +104,10 @@ export class FloorPanel {
   protected readonly euros = formatEuros;
 
   protected readonly target = computed(() => this.data()?.target ?? '');
+  /** « pour les pros » / « pour le public » — l'en-tête dit quelle limite on règle. */
+  protected readonly clienteleLabel = computed(() =>
+    this.data()?.clientele === 'public' ? 'pour le public' : 'pour les pros',
+  );
   protected readonly current = computed(() => this.data()?.current ?? null);
 
   /** L'écart entre l'intention et le tarif du jour, s'il y a lieu de le montrer. */
@@ -196,15 +212,16 @@ export class FloorPanel {
   });
 
   protected async submit(): Promise<void> {
-    const scope = this.data()?.scope;
+    const data = this.data();
     const value = this.amount();
-    if (scope === undefined || value === null || !this.canSubmit() || this.saving()) {
+    if (data === undefined || value === null || !this.canSubmit() || this.saving()) {
       return;
     }
     this.saving.set(true);
     try {
-      await this.tarification.setFloor({
-        scope,
+      await this.limits.setFloor({
+        scope: data.scope,
+        clientele: data.clientele,
         mode: this.mode(),
         // Points de base si pourcentage, MILLICENTIMES si montant — les deux
         // facteurs diffèrent. Ils étaient confondus, et une limite « 2,18 € »
@@ -235,13 +252,13 @@ export class FloorPanel {
    * raisons.
    */
   protected async confirm(): Promise<void> {
-    const scope = this.data()?.scope;
-    if (scope === undefined || this.saving()) {
+    const data = this.data();
+    if (data === undefined || this.saving()) {
       return;
     }
     this.saving.set(true);
     try {
-      await this.tarification.confirmFloor(scope);
+      await this.limits.confirmFloor(data.scope, data.clientele);
       this.notify.success('Limite confirmée — elle repart pour un tour.');
       this.ref.close(true);
     } catch (error) {
@@ -265,7 +282,7 @@ export class FloorPanel {
     }
     this.panels.open<ArchivePanelData, boolean>(ArchivePanel, {
       data: {
-        subject: { kind: 'floor', scope: data.scope },
+        subject: { kind: 'floor', scope: data.scope, clientele: data.clientele },
         target: data.target,
         summary: `Limite sur ${data.target} — ${floorSentence(current)}`,
       },

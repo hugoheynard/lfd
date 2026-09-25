@@ -1,11 +1,12 @@
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
-import type { PriceScopePayload } from '@lfd/contracts';
+import type { FloorClientele, PriceScopePayload } from '@lfd/contracts';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { NotifyService } from '../../../notify.service';
 import { ArchivePanel, type ArchivePanelData } from '../archive-panel/archive-panel';
+import { PriceLimitsService } from '../../../comptabilite/price-limits.service';
 import { TarificationService } from '../tarification.service';
 
 /**
@@ -29,7 +30,7 @@ const RULE: ArchivePanelData = {
 };
 
 const FLOOR: ArchivePanelData = {
-  subject: { kind: 'floor', scope: { type: 'category', id: 'viennoiserie' } },
+  subject: { kind: 'floor', scope: { type: 'category', id: 'viennoiserie' }, clientele: 'public' },
   target: 'Viennoiseries',
   summary: 'mur à 1,50 €',
 };
@@ -39,13 +40,19 @@ function mount(
   archived: Archived[],
   closed: boolean[],
 ): ComponentFixture<ArchivePanel> {
-  const service: Pick<TarificationService, 'archiveRule' | 'archiveFloor'> = {
+  const service: Pick<TarificationService, 'archiveRule'> = {
     archiveRule: (id, reason) => {
       archived.push({ kind: 'rule', key: id, reason });
       return Promise.resolve();
     },
-    archiveFloor: (scope: PriceScopePayload, reason) => {
-      archived.push({ kind: 'floor', key: `${scope.type}:${scope.id ?? ''}`, reason });
+  };
+  const limits: Pick<PriceLimitsService, 'archiveFloor'> = {
+    archiveFloor: (scope: PriceScopePayload, clientele: FloorClientele, reason) => {
+      archived.push({
+        kind: 'floor',
+        key: `${clientele}:${scope.type}:${scope.id ?? ''}`,
+        reason,
+      });
       return Promise.resolve();
     },
   };
@@ -53,6 +60,7 @@ function mount(
   TestBed.configureTestingModule({
     providers: [
       { provide: TarificationService, useValue: service },
+      { provide: PriceLimitsService, useValue: limits },
       { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
       {
         provide: FoldPanelRef,
@@ -93,15 +101,20 @@ describe('archiver en disant pourquoi', () => {
     expect(archived[0]?.reason).toBeNull();
   });
 
-  /** Une limite n'a pas d'identifiant à transporter : elle se désigne par sa portée. */
-  it('archive une limite par sa portée', async () => {
+  /**
+   * Une limite n'a pas d'identifiant à transporter : elle se désigne par sa
+   * portée ET sa clientèle — sans elle, le serveur viserait la limite pro.
+   */
+  it('archive une limite par sa portée et sa clientèle', async () => {
     const archived: Archived[] = [];
 
     await mount(FLOOR, archived, [])
       .componentInstance['submit']()
       .then(() => undefined);
 
-    expect(archived).toEqual([{ kind: 'floor', key: 'category:viennoiserie', reason: null }]);
+    expect(archived).toEqual([
+      { kind: 'floor', key: 'public:category:viennoiserie', reason: null },
+    ]);
   });
 
   it('referme en signalant que quelque chose a changé', async () => {

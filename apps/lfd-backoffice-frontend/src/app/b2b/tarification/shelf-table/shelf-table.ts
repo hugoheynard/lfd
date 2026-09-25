@@ -3,7 +3,6 @@ import { formatEuros } from '@lfd/catalog-ui';
 import type { PriceRuleView, PricingCategoryView, PricingItemView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
-  FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldPageSectionComponent,
@@ -15,14 +14,13 @@ import {
 import { FinalPrice } from '../final-price/final-price';
 import { RuleChip } from '../rule-chip/rule-chip';
 import { VolumeEffort } from '../volume-effort/volume-effort';
-import { floorLabel, roomEuros, roomPercent } from '../pricing-format';
+import { dynamicFloorLabel, floorLabel, roomEuros, roomPercent } from '../pricing-format';
 
 /**
  * **Un rayon, en table.**
  *
  * Les colonnes se lisent de GAUCHE à DROITE, comme le prix se construit :
- * l'article et son tarif, la limite qui le protège, l'altération qui le vise, le
- * prix qui en sort — puis deux colonnes qui ne construisent plus le prix mais le
+ * l'article et son tarif, l'altération qui le vise, le prix qui en sort — puis deux colonnes qui ne construisent plus le prix mais le
  * **commentent**, le négoce restant et l'effort de volume.
  *
  * **Une `fold-data-table`, et non une grille maison.** L'écran dessinait sept
@@ -43,6 +41,12 @@ import { floorLabel, roomEuros, roomPercent } from '../pricing-format';
  * remplissait jamais. Dans l'en-tête, à côté de la limite de famille, les deux
  * décisions de rayon sont voisines et se lisent ensemble.
  *
+ * **La limite se LIT ici, elle ne se règle plus.** Elle avait sa colonne, avec
+ * ses boutons poser / modifier ; les limites relèvent désormais de
+ * `lfc_price_limits` et se posent dans la Comptabilité
+ * (`plan-limites-de-prix.md` §6). Il en reste une ligne sous la référence et
+ * le tarif de chaque article — la limite pro qui s'applique, et d'où elle vient.
+ *
  * Ce composant ne décide rien : il rend ce que la vue du rayon porte et remonte
  * les gestes. Les panneaux d'écriture appartiennent à la page.
  */
@@ -51,7 +55,6 @@ import { floorLabel, roomEuros, roomPercent } from '../pricing-format';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldBadgeComponent,
-    FoldButtonComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
     FoldPageSectionComponent,
@@ -68,9 +71,7 @@ export class ShelfTable {
   readonly selectedSku = input<string | null>(null);
 
   readonly picked = output<PricingItemView>();
-  readonly categoryFloorRequested = output<PricingCategoryView>();
   readonly categoryRuleRequested = output<PricingCategoryView>();
-  readonly itemFloorRequested = output<PricingItemView>();
   readonly itemRuleRequested = output<PricingItemView>();
   readonly ruleToggled = output<PriceRuleView>();
   readonly ruleJournalRequested = output<PriceRuleView>();
@@ -78,6 +79,7 @@ export class ShelfTable {
 
   protected readonly euros = formatEuros;
   protected readonly floorLabel = floorLabel;
+  protected readonly dynamicFloorLabel = dynamicFloorLabel;
 
   protected readonly items = computed<readonly PricingItemView[]>(() => this.category().items);
 
@@ -88,7 +90,6 @@ export class ShelfTable {
    */
   protected readonly columns: readonly FoldTableColumn<PricingItemView>[] = [
     { key: 'article', label: 'Article · tarif' },
-    { key: 'limit', label: 'Limite', width: '8rem' },
     { key: 'product', label: 'Altération produit', width: '12rem' },
     { key: 'final', label: 'Prix final', width: '11rem' },
     { key: 'room', label: 'Négoce', width: '9rem' },
@@ -129,7 +130,7 @@ export class ShelfTable {
     return roomPercent(maxDiscountBp);
   }
 
-  /** La limite de l'article vient-elle d'ailleurs ? Poser la sienne fait sauter celle-là. */
+  /** La limite de l'article vient-elle d'ailleurs — de sa famille, ou du catalogue ? */
   protected isInherited(item: PricingItemView): boolean {
     return item.ownFloor === null && item.effectiveFloor !== null;
   }

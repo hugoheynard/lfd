@@ -71,6 +71,18 @@
               >
                 Simuler un prix →
               </a>
+              @if (canManageLimits()) {
+                <!-- Les limites se LISENT ici et se règlent en Comptabilité. -->
+                <a
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  intent="neutral"
+                  routerLink="/comptabilite/limites-de-prix"
+                >
+                  Gérer les limites →
+                </a>
+              }
               <button
                 foldButton
                 size="sm"
@@ -142,19 +154,14 @@
             <h2 class="shelf-name">Tout le catalogue</h2>
             <span class="shelf-vat">ce dont chaque famille hérite</span>
             <span class="shelf-spacer"></span>
-            <button
-              foldButton
-              size="sm"
-              emphasis="outline"
-              intent="neutral"
-              (click)="editGlobalFloor()"
-            >
+            <!-- En LECTURE : la limite du catalogue se pose dans la Comptabilité. -->
+            <span class="shelf-vat">
               {{
                 globalFloor() === null
-                  ? 'Limite du catalogue'
+                  ? 'Aucune limite du catalogue'
                   : 'Limite : ' + floorLabel(globalFloor()!)
               }}
-            </button>
+            </span>
           </header>
 
           <div class="global-rules">
@@ -183,9 +190,7 @@
             [category]="category"
             [selectedSku]="selectedSku()"
             (picked)="toggleSelection($event)"
-            (categoryFloorRequested)="editCategoryFloor($event)"
             (categoryRuleRequested)="addCategoryRule($event)"
-            (itemFloorRequested)="editItemFloor($event)"
             (itemRuleRequested)="addItemRule($event)"
             (ruleToggled)="toggleRule($event)"
             (ruleJournalRequested)="openRuleJournal($event)"

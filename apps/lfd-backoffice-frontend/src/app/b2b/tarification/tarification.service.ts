@@ -8,19 +8,20 @@ import type {
   PriceProjectionPayload,
   PriceProjectionView,
   PriceRuleView,
-  PriceScopePayload,
   PricingBoardView,
   PricingComparisonView,
   PricingJournalPageView,
-  SetPriceFloorPayload,
   SetVolumeLadderPayload,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
 
 /**
- * Le **paramétrage tarifaire** : ce qui altère un prix, et ce qui l'empêche de
- * descendre trop bas.
+ * Le **paramétrage tarifaire** : ce qui altère un prix.
+ *
+ * Les limites — ce qui l'empêche de descendre trop bas — n'y sont plus : elles
+ * relèvent de `lfc_price_limits` et vivent dans `PriceLimitsService`
+ * (`comptabilite/`). Le tableau les porte encore, en lecture.
  *
  * Écriture par geste nommé, comme côté serveur. Aucune arithmétique ici : le
  * tableau arrive avec ses prix **déjà résolus** par la fonction qui facture. Un
@@ -153,41 +154,6 @@ export class TarificationService {
     );
   }
 
-  /** Pose la limite. **Idempotent par portée** : re-poser remplace. */
-  async setFloor(payload: SetPriceFloorPayload): Promise<void> {
-    await firstValueFrom(this.http.put<void>(`${B2B_API_BASE}/admin/pricing/floors`, payload));
-  }
-
-  /**
-   * **Confirme** une limite sans la changer : l'intention est maintenue, sa
-   * référence et sa date repartent d'aujourd'hui.
-   *
-   * Un geste à part, pas un `PUT` déguisé. Sans lui, la seule façon d'éteindre
-   * le signal de dérive serait de MODIFIER la limite — donc de changer une
-   * décision pour faire taire un rappel.
-   */
-  async confirmFloor(scope: PriceScopePayload): Promise<void> {
-    await firstValueFrom(
-      this.http.post<void>(`${B2B_API_BASE}/admin/pricing/floors/${floorPath(scope)}/confirm`, {}),
-    );
-  }
-
-  /**
-   * **Archive** la limite d'une portée, avec le motif écrit à l'écran.
-   *
-   * `POST` et non `DELETE` : un `DELETE` ne porte pas de corps de façon fiable à
-   * travers les intermédiaires HTTP, et le motif est précisément ce qu'on veut
-   * garder. Le serveur conserve son `DELETE` sans motif — aucun écran ne l'appelle
-   * plus, et un client qui n'a rien à dire s'en sert encore.
-   */
-  async archiveFloor(scope: PriceScopePayload, reason: string | null): Promise<void> {
-    await firstValueFrom(
-      this.http.post<void>(`${B2B_API_BASE}/admin/pricing/floors/${floorPath(scope)}/archive`, {
-        reason,
-      }),
-    );
-  }
-
   /**
    * **Ce que l'article coûterait à des niveaux de cumul qui n'existent pas.**
    *
@@ -199,14 +165,4 @@ export class TarificationService {
       this.http.post<PriceProjectionView>(`${B2B_API_BASE}/admin/pricing/projection`, payload),
     );
   }
-}
-
-/**
- * Le chemin d'une limite.
- *
- * La portée globale ne désigne aucune cible, donc le sien n'en porte pas — un
- * segment vide ne s'apparie pas côté serveur.
- */
-function floorPath(scope: PriceScopePayload): string {
-  return scope.id === null ? 'global' : `${scope.type}/${encodeURIComponent(scope.id)}`;
 }

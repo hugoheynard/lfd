@@ -127,9 +127,42 @@ export function magnitudeFromWire(value: number, mode: PriceMode): number {
  * d'un rayon l'affichent toutes deux — et deux formulations divergeraient.
  */
 export function floorLabel(floor: PriceFloorView): string {
-  return floor.mode === 'percent'
-    ? `${String(floor.value / 100)} % du tarif`
-    : formatEuros(floor.value);
+  return floorMagnitude(floor.mode, floor.value);
+}
+
+/**
+ * **La porte d'une limite, en clair** — « porte : 40 % du tarif (dès 20 u. ·
+ * volume ×1,25) », ou `null` sans porte.
+ *
+ * La porte est un plancher plus BAS que le volume ouvre : la taire laisserait
+ * croire que le mur vaut pour tout le monde. Écrite ici parce que la
+ * Tarification (en lecture) et la Comptabilité (où elle se règle) la montrent
+ * toutes deux.
+ */
+export function dynamicFloorLabel(floor: PriceFloorView): string | null {
+  const door = floor.dynamic;
+  if (door === null) {
+    return null;
+  }
+  const conditions: string[] = [];
+  if (door.unlock.minQuantity !== null) {
+    conditions.push(`dès ${String(door.unlock.minQuantity)} u.`);
+  }
+  if (door.unlock.minVolumeRatioBp !== null) {
+    const ratio = (door.unlock.minVolumeRatioBp / BASIS_POINTS_PER_UNIT).toFixed(2);
+    conditions.push(`volume ×${ratio.replace('.', ',')}`);
+  }
+  const value = floorMagnitude(door.mode, door.value);
+  return conditions.length === 0
+    ? `porte : ${value}`
+    : `porte : ${value} (${conditions.join(' · ')})`;
+}
+
+/** Un ratio en points de base : `10000` = ×1. */
+const BASIS_POINTS_PER_UNIT = 10_000;
+
+function floorMagnitude(mode: PriceMode, value: number): string {
+  return mode === 'percent' ? `${String(value / 100)} % du tarif` : formatEuros(value);
 }
 
 /**

@@ -24,7 +24,6 @@ import {
 import { ArchivePanel, type ArchivePanelData } from './archive-panel/archive-panel';
 import { ArchivesPanel } from './archives-panel/archives-panel';
 
-import { FloorPanel, type FloorPanelData } from './floor-panel/floor-panel';
 import { GridSkeleton } from './grid-skeleton/grid-skeleton';
 import { PricePath } from './price-path/price-path';
 import { LadderPanel, type LadderPanelData } from './ladder-panel/ladder-panel';
@@ -33,6 +32,7 @@ import { ShelfTable } from './shelf-table/shelf-table';
 import { TarificationSummaryBar } from './summary-bar/summary-bar';
 import { JournalPanel, type JournalPanelData } from './journal-panel/journal-panel';
 import { RulePanel, type RulePanelData } from './rule-panel/rule-panel';
+import { PermissionsStore } from '../../auth/permissions.store';
 import { TarificationService } from './tarification.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -42,8 +42,9 @@ type LoadState = 'loading' | 'ready' | 'error';
  * prix.
  *
  * Elle se lit de **gauche à droite**, comme le prix se construit : l'article et
- * son tarif, la limite qui le protège, l'altération de sa famille, la sienne, et
- * le prix qui en sort. Chaque cellule vide porte un `+` en pointillés : la
+ * son tarif, l'altération de sa famille, la sienne, et le prix qui en sort. La
+ * limite qui le protège se LIT sous l'article ; elle se pose dans la
+ * Comptabilité, sous `lfc_price_limits`. Chaque cellule vide porte un `+` en pointillés : la
  * colonne dit où poser, sans qu'on ait à chercher dans un menu.
  *
  * Deux colonnes suivent, qui ne construisent plus le prix mais le **commentent** :
@@ -99,6 +100,16 @@ type LoadState = 'loading' | 'ready' | 'error';
 export class TarificationPage {
   private readonly tarification = inject(TarificationService);
   private readonly panels = inject(FoldPanelHostService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /**
+   * **Gérer les limites** mène à la Comptabilité, et seulement pour qui peut y
+   * lire les limites : le commercial les voit ici, il ne va pas là-bas
+   * (`plan-limites-de-prix.md` §5).
+   */
+  protected readonly canManageLimits = computed(() =>
+    this.permissions.can('lfc_price_limits:read'),
+  );
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly board = signal<PricingBoardView | null>(null);
@@ -219,23 +230,6 @@ export class TarificationPage {
   protected readonly globalRules = computed(() => this.board()?.globalRules ?? []);
 
   /**
-   * **La limite du catalogue** — celle dont toutes les autres héritent.
-   *
-   * Elle n'a pas de prix canonique à montrer : elle ne vise aucun article en
-   * particulier, et c'est exactement pourquoi elle ne peut s'exprimer qu'en
-   * pourcentage.
-   */
-  protected editGlobalFloor(): void {
-    void this.openFloor({
-      scope: { type: 'global', id: null },
-      target: 'tout le catalogue',
-      current: this.globalFloor(),
-      inherited: null,
-      canonicalMillicents: null,
-    });
-  }
-
-  /**
    * **Une altération sur tout le catalogue** : la hausse de saison, le geste de
    * fin d'année. Elle s'applique à chaque article que rien de plus précis ne
    * vise — c'est l'étage le plus large de la chaîne.
@@ -274,26 +268,6 @@ export class TarificationPage {
 
   protected addItemRule(item: PricingItemView): void {
     void this.openRule({ scope: { type: 'product', id: item.sku }, target: item.name });
-  }
-
-  protected editItemFloor(item: PricingItemView): void {
-    void this.openFloor({
-      scope: { type: 'product', id: item.sku },
-      target: item.name,
-      current: item.ownFloor,
-      inherited: item.effectiveFloor,
-      canonicalMillicents: item.canonicalMillicents,
-    });
-  }
-
-  protected editCategoryFloor(category: PricingCategoryView): void {
-    void this.openFloor({
-      scope: { type: 'category', id: category.id },
-      target: category.name,
-      current: category.floor,
-      inherited: this.board()?.globalFloor ?? null,
-      canonicalMillicents: null,
-    });
   }
 
   /**
@@ -354,13 +328,6 @@ export class TarificationPage {
   private async openRule(data: RulePanelData): Promise<void> {
     await this.reloadIfChanged(
       this.panels.open<RulePanelData | undefined, boolean>(RulePanel, { data, width: 'md' }).closed,
-    );
-  }
-
-  private async openFloor(data: FloorPanelData): Promise<void> {
-    await this.reloadIfChanged(
-      this.panels.open<FloorPanelData | undefined, boolean>(FloorPanel, { data, width: 'md' })
-        .closed,
     );
   }
 
