@@ -12,8 +12,15 @@ import type {
   ProductionPackingView,
   ProductionWorksheetView,
 } from '@lfd/contracts';
-import type { FoldViewNavItem } from 'fold-ng';
-import { FoldPageLayoutComponent, FoldSurfaceDirective, FoldViewNavComponent } from 'fold-ng';
+import type { FulfillmentMethod } from '@lfd/contracts';
+import type { FoldViewNavItem, FoldViewToggleOption } from 'fold-ng';
+import {
+  FoldPageLayoutComponent,
+  FoldPageSectionComponent,
+  FoldSurfaceDirective,
+  FoldViewNavComponent,
+  FoldViewToggleComponent,
+} from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { dayLabelOf } from '../../production/worksheet-day';
@@ -42,13 +49,6 @@ import { SupervisionService } from '../supervision.service';
  */
 const BOARD_NARROW = '(max-width: 900px)';
 
-/** L'unité de chaque colonne — la maquette la répète dans la barre en mobile. */
-const UNITS: Readonly<Record<Column, string>> = {
-  preparation: "l'unité est le produit",
-  packing: "l'unité est la commande",
-  handover: "l'unité est le créneau",
-};
-
 /**
  * **La Supervision du jour** — on voit, on n'agit pas (plan
  * `documentation/order/plan-supervision-du-jour.md`).
@@ -64,8 +64,10 @@ const UNITS: Readonly<Record<Column, string>> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldPageLayoutComponent,
+    FoldPageSectionComponent,
     FoldSurfaceDirective,
     FoldViewNavComponent,
+    FoldViewToggleComponent,
     HandoverColumn,
     PackingColumn,
     PreparationColumn,
@@ -156,11 +158,24 @@ export class SupervisionPage {
     ];
   });
 
-  protected readonly unit = computed(() => UNITS[this.tab()]);
+  /** L'acheminement lu en colonne 3 : le segmenté vit dans l'en-tête fixe de la colonne. */
+  protected readonly handoverMethod = signal<FulfillmentMethod>('pickup');
+
+  protected readonly methodOptions = computed<readonly FoldViewToggleOption[]>(() => {
+    const board = this.handoverBoard();
+    return [
+      { value: 'pickup', label: `Retrait · ${String(board?.pickupExpected ?? 0)}` },
+      { value: 'delivery', label: `Livraison · ${String(board?.deliveryExpected ?? 0)}` },
+    ];
+  });
 
   constructor() {
     void this.load();
     refreshWhileVisible(() => this.refresh());
+  }
+
+  protected selectMethod(value: string): void {
+    this.handoverMethod.set(value === 'delivery' ? 'delivery' : 'pickup');
   }
 
   protected selectTab(key: string): void {

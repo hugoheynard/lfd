@@ -195,6 +195,9 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** `min-height: 0`, que jsdom rend tel qu'écrit. */
+const ZERO = /^0(px)?$/u;
+
 describe('SupervisionPage', () => {
   it('lit le jour au serveur, sans date, puis les trois colonnes à ce jour-là', async () => {
     const day = vi.fn(() => Promise.resolve(DAY));
@@ -303,5 +306,47 @@ describe('SupervisionPage', () => {
     );
     // Une commande attend le four (→ Préparation), un créneau est dépassé (→ Retrait).
     expect(badges).toEqual(['1', '1']);
+  });
+
+  it('ne défile pas : la chaîne flex tient la hauteur jusqu’aux colonnes', async () => {
+    const fixture = await mount();
+    const style = (selector: string): CSSStyleDeclaration =>
+      getComputedStyle(root(fixture).querySelector(selector) ?? root(fixture));
+
+    expect(style('.board').minHeight).toMatch(ZERO);
+    expect(style('.columns').minHeight).toMatch(ZERO);
+    expect(style('[data-column="packing"]').minHeight).toMatch(ZERO);
+    expect(style('.board').overflowY).not.toBe('auto');
+  });
+
+  it('pose les trois chiffres et la fraîcheur dans le masthead, sans barre graphite', async () => {
+    const fixture = await mount();
+    const masthead = root(fixture).querySelector('fold-page-section.masthead');
+
+    expect(masthead?.getAttribute('data-surface')).toBe('chrome');
+    expect(masthead?.querySelector('[data-counter="packing"]')?.textContent).toContain(
+      'commandes à coliser',
+    );
+    expect(masthead?.querySelector('[data-stamp]')?.textContent).toContain('à jour à 9 h 42');
+    expect(root(fixture).querySelector('.bar')).toBeNull();
+  });
+
+  it('garde le segmenté hors du corps qui défile, et bascule la colonne 3', async () => {
+    const fixture = await mount();
+    const handover = column(fixture, 'handover');
+
+    const toggle = handover?.querySelector('fold-view-toggle');
+    expect(toggle?.closest('.tools')).not.toBeNull();
+    expect(toggle?.closest('.body')).toBeNull();
+    const segments = Array.from(toggle?.querySelectorAll<HTMLButtonElement>('button') ?? []);
+    expect(segments.map((segment) => segment.textContent?.trim())).toEqual([
+      'Retrait · 1',
+      'Livraison · 0',
+    ]);
+    segments[1]?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(handover?.textContent).toContain('Aucune livraison ce jour');
   });
 });

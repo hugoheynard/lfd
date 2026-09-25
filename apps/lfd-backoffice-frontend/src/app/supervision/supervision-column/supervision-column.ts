@@ -13,7 +13,8 @@ import type { ColumnState } from '../column-state';
  * Préparation », « L'UNITÉ EST LE PRODUIT », la phrase qui dit ce qu'on y lit),
  * et SES états — chaque colonne a le sien (plan §9).
  *
- * Le contenu est projeté : ce cadre ne sait rien de ce qu'il encadre. Les trois
+ * L'en-tête reste en place, SEUL le corps défile : chaque colonne a son propre
+ * défilement, et la page n'en a pas. Le contenu est projeté : ce cadre ne sait rien de ce qu'il encadre. Les trois
  * états passent par fold — `fold-loading`, `fold-empty-state` d'alerte avec
  * « Réessayer », `fold-callout` quand une relecture échoue sur un contenu déjà
  * affiché.
@@ -39,8 +40,6 @@ export class SupervisionColumn {
   readonly state = input.required<ColumnState<unknown>>();
   readonly loadingMessage = input.required<string>();
   readonly errorTitle = input.required<string>();
-  /** En mobile, l'intitulé passe dans la barre de l'écran : la colonne ne le répète pas. */
-  readonly narrow = input(false);
 
   readonly retry = output();
 

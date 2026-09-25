@@ -1,152 +1,112 @@
-// La maquette `handoff-suivi`, par les tokens fold. Chaque valeur qui n'a pas
-// son token exact est inscrite dans « Écarts à la maquette »
-// (documentation/order/plan-supervision-du-jour.md).
+// La maquette `handoff-suivi`, intégrée au design de l'app sur le modèle de
+// Retrait boutique. Chaque écart est inscrit dans « Écarts à la maquette »
+// (documentation/order/plan-supervision-du-jour.md, §10).
 
-.board {
+/* ── PLEINE HAUTEUR, ET LA PAGE NE DÉFILE PAS ──────────────────────────────
+   Chaque colonne défile seule ; le masthead et les en-têtes de colonne restent
+   en place. Il faut donc une hauteur BORNÉE, et la chaîne flex de fold ne la
+   donne pas : `.content-flow` est en `flex: 1 0 auto`, il refuse de descendre
+   sous son contenu. Même geste que le mur du Prévisionnel : `main.content` est
+   `position: relative` et fait exactement la boîte de contenu de la coquille,
+   donc `inset: 0` s'y résout sans nombre magique. */
+:host {
+  --fold-page-gap: 0;
+  --fold-page-pad-top: 0;
+  --fold-page-pad-bottom: 0;
+
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  min-width: 0;
-  overflow: clip;
-  background: var(--fold-color-bg-page);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-lg);
-  box-shadow: var(--fold-shadow-md);
+  min-height: 0;
 }
 
-// ── La barre graphite ───────────────────────────────────────────────────────
-
-.bar {
-  display: flex;
+fold-page-layout {
   flex: none;
+}
+
+/* ── LE MASTHEAD — le traitement de Retrait boutique ─────────────────────── */
+
+.masthead {
+  padding: 0 var(--fold-page-gutter);
+  // Le bleu « secondaire » de fold : il n'existe pas de token `secondary` de
+  // couleur ; c'est le fond du rail secondaire, celui que portent déjà les
+  // bandes de tête du Commercial, de la Tarification et du Catalogue.
+  background: var(--fold-color-bg-rail-secondary);
+}
+
+.masthead-bar {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: var(--fold-space-sm) var(--fold-space-lg);
+}
+
+.masthead-counters {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: baseline;
   gap: var(--fold-space-md);
-  min-height: 52px;
-  padding: 0 var(--fold-space-lg);
-  background: var(--fold-color-bg-header);
-}
-
-.crumb {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-md);
-  min-width: 0;
-}
-
-.crumb-title {
-  font-size: var(--fold-text-base);
-  font-weight: var(--fold-weight-semibold);
-  letter-spacing: var(--fold-tracking-tight);
-  color: var(--fold-color-text);
-}
-
-.crumb-sep {
-  font-size: var(--fold-text-md);
-  color: var(--fold-color-text-faded);
-}
-
-.crumb-page {
-  font-size: var(--fold-text-md);
-  color: var(--fold-color-text-secondary);
-}
-
-.crumb-unit {
-  font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-bold);
-  letter-spacing: var(--fold-tracking-caps);
-  text-transform: uppercase;
-  color: var(--fold-color-text-muted);
-}
-
-.stamp {
-  font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-text-muted);
-  white-space: nowrap;
-}
-
-// ── La bande de compteurs ───────────────────────────────────────────────────
-
-.counters {
-  display: flex;
-  flex: none;
-  align-items: center;
-  padding: var(--fold-space-lg) var(--fold-space-xl);
-  background: var(--fold-color-bg-rail-primary);
-}
-
-.counter {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-xs);
-  padding: 0 var(--fold-space-xl);
-  border-right: 1px solid var(--fold-color-border);
-
-  &:first-child {
-    padding-left: 0;
-  }
-
-  &:last-child {
-    padding-right: 0;
-    border-right: none;
-  }
-}
-
-.counter-label {
-  font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-bold);
-  letter-spacing: var(--fold-tracking-caps);
-  text-transform: uppercase;
-  color: var(--fold-color-text-muted);
-}
-
-.counter-value {
-  font-size: var(--fold-text-xl);
-  font-weight: var(--fold-weight-bold);
+  margin: 0;
+  font-size: var(--fold-text-sm);
   font-variant-numeric: tabular-nums;
-  line-height: var(--fold-leading-none);
-  letter-spacing: var(--fold-tracking-tighter);
-  color: var(--fold-color-text);
 }
 
-.counter-unit {
-  font-size: var(--fold-text-md);
-  font-weight: var(--fold-weight-medium);
-  letter-spacing: var(--fold-tracking-normal);
+.mc-count {
+  color: var(--fold-color-text-secondary);
+
+  strong {
+    font-weight: var(--fold-weight-semibold);
+    color: var(--fold-color-text);
+  }
+}
+
+.mc-clock {
+  flex: 0 0 auto;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);
 }
 
-// ── Les onglets du mobile ───────────────────────────────────────────────────
+/* ── LES ONGLETS DU MOBILE, sous le masthead ─────────────────────────────── */
 
 .tabs {
-  // fold-view-nav pose un écart sous une barre autonome : la bande graphite
-  // porte déjà le sien.
+  // fold-view-nav pose un écart sous une barre autonome : la bande porte le sien.
   --fold-nav-layout-gap: 0;
 
   flex: none;
   min-width: 0;
-  padding: var(--fold-space-sm) var(--fold-space-md) var(--fold-space-md);
-  background: var(--fold-color-bg-rail-primary);
+  padding: var(--fold-space-xs) var(--fold-space-md) var(--fold-space-sm);
+  background: var(--fold-color-bg-rail-secondary);
 }
 
-// ── Les trois colonnes ──────────────────────────────────────────────────────
+/* ── LES TROIS COLONNES, bord à bord, jusqu'en bas ───────────────────────── */
+
+.board {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--fold-color-bg-page);
+}
 
 .columns {
   display: grid;
-  flex: 1;
+  flex: 1 1 0;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.columns > * {
+  min-height: 0;
 }
 
 .columns > * + * {
   border-left: 1px solid var(--fold-color-border);
-}
-
-.board.narrow .crumb {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
 }
 
 .board.narrow .columns {

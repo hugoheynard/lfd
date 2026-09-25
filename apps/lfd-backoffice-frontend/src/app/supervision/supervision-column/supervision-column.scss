@@ -6,13 +6,15 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 
 .column {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 
 .head {
@@ -55,10 +57,22 @@
   color: var(--fold-color-text-secondary);
 }
 
+.tools {
+  flex: none;
+  padding: var(--fold-space-md) var(--fold-space-md) 0;
+
+  &:empty {
+    display: none;
+  }
+}
+
 .body {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
   flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   gap: var(--fold-space-sm);
   padding: var(--fold-space-md);
 }

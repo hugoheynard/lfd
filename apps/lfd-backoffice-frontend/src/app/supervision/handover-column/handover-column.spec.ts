@@ -87,22 +87,15 @@ describe('HandoverColumn', () => {
     expect(element.querySelector('[data-reference="RETIREE"] a')).toBeNull();
   });
 
-  it('bascule sur la livraison par le segmenté', async () => {
+  it('lit l’acheminement choisi par la page', async () => {
     const fixture = await mount(BOARD);
-    const element: HTMLElement = fixture.nativeElement;
-
-    const segments = Array.from(
-      element.querySelectorAll<HTMLButtonElement>('fold-view-toggle button'),
-    );
-    expect(segments.map((segment) => segment.textContent?.trim())).toEqual([
-      'Retrait · 2',
-      'Livraison · 1',
-    ]);
-    segments[1]?.click();
+    fixture.componentRef.setInput('method', 'delivery');
     fixture.detectChanges();
     await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
 
     expect(element.querySelector('[data-reference="LIV"]')).not.toBeNull();
     expect(element.querySelector('[data-reference="PRETE"]')).toBeNull();
+    expect(element.querySelector('fold-view-toggle')).toBeNull();
   });
 });

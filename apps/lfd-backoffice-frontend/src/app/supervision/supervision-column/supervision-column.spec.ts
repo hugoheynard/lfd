@@ -34,6 +34,9 @@ async function mount(state: ColumnState<unknown>) {
   return fixture;
 }
 
+/** `min-height: 0`, que jsdom rend tel qu'écrit. */
+const ZERO = /^0(px)?$/u;
+
 describe('SupervisionColumn', () => {
   it('dit son unité, et charge par fold', async () => {
     const fixture = await mount({ status: 'loading' });
@@ -59,5 +62,24 @@ describe('SupervisionColumn', () => {
 
     expect(element.querySelector('.content')).not.toBeNull();
     expect(element.querySelector('fold-callout')?.textContent).toContain('relecture a échoué');
+  });
+
+  /**
+   * Chaque colonne a SON défilement : l'en-tête reste, seul le corps défile, et
+   * la chaîne flex ne se laisse pas pousser par son contenu (Hugo, 2026-09-25).
+   */
+  it('fait défiler le corps seul, sous un en-tête fixe', async () => {
+    const fixture = await mount({ status: 'ready', data: {}, stale: false });
+    const element: HTMLElement = fixture.nativeElement;
+    const style = (selector: string): CSSStyleDeclaration =>
+      getComputedStyle(element.querySelector(selector) ?? element);
+
+    expect(style('.body').overflowY).toBe('auto');
+    expect(style('.body').minHeight).toMatch(ZERO);
+    expect(style('.column').minHeight).toMatch(ZERO);
+    expect(
+      getComputedStyle(element.querySelector('app-supervision-column') ?? element).minHeight,
+    ).toMatch(ZERO);
+    expect(style('.head').overflowY).not.toBe('auto');
   });
 });

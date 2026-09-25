@@ -1,13 +1,15 @@
 <section class="column" [attr.aria-label]="heading()">
-  @if (!narrow()) {
-    <header class="head">
-      <div class="title-row">
-        <h2 class="title">{{ heading() }}</h2>
-        <span class="unit">{{ unit() }}</span>
-      </div>
-      <p class="description">{{ description() }}</p>
-    </header>
-  }
+  <header class="head">
+    <div class="title-row">
+      <h2 class="title">{{ heading() }}</h2>
+      <span class="unit">{{ unit() }}</span>
+    </div>
+    <p class="description">{{ description() }}</p>
+  </header>
+
+  <!-- Ce qui règle la lecture de la colonne (le segmenté du retrait) reste
+       FIXE avec l'en-tête : seul le corps défile. -->
+  <div class="tools"><ng-content select="[columnTools]" /></div>
 
   <div class="body">
     @switch (state().status) {

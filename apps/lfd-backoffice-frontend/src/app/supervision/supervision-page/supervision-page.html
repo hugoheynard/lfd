@@ -1,113 +1,108 @@
 <fold-page-layout>
-  <section class="board" [class.narrow]="narrow()" aria-label="Supervision du jour">
-    <header class="bar" foldSurface="chrome">
-      <div class="crumb">
-        <span class="crumb-title">Supervision</span>
-        @if (narrow()) {
-          <span class="crumb-unit">{{ unit() }}</span>
-        } @else {
-          <span class="crumb-sep" aria-hidden="true">/</span>
-          <span class="crumb-page">Avancement du jour</span>
-        }
-      </div>
-      @if (!narrow()) {
-        <span class="stamp" data-stamp>{{ stamp() }}</span>
-      }
-    </header>
-
-    @if (narrow()) {
-      <div class="tabs" foldSurface="chrome">
-        <fold-view-nav
-          activeStyle="fill"
-          direction="horizontal"
-          justify="stretch"
-          [items]="tabs()"
-          [activeKey]="tab()"
-          (activeKeyChange)="selectTab($event)"
-        />
-      </div>
-    } @else {
-      <div class="counters" foldSurface="chrome">
-        <div class="counter" data-counter="preparation">
-          <span class="counter-label">Préparation</span>
-          <span class="counter-value"
-            >{{ counters().preparation ?? '—' }}
-            <span class="counter-unit">lignes ouvertes</span></span
-          >
-        </div>
-        <div class="counter" data-counter="packing">
-          <span class="counter-label">Colisage</span>
-          <span class="counter-value"
-            >{{ counters().packing ?? '—' }} <span class="counter-unit">commandes</span></span
-          >
-        </div>
-        <div class="counter" data-counter="handover">
-          <span class="counter-label">Retrait / livraison</span>
-          <span class="counter-value"
-            >{{ counters().handover ?? '—' }}
-            <span class="counter-unit">{{ counters().handoverUnit }}</span></span
-          >
-        </div>
-      </div>
-    }
-
-    <div class="columns">
-      @if (!narrow() || tab() === 'preparation') {
-        <app-supervision-column
-          heading="1 · Préparation"
-          unit="l'unité est le produit"
-          description="Aucune commande ici. On lit l'avancement de la fournée, rayon par rayon ; une commande devient colisable quand tous ses produits sont sortis."
-          loadingMessage="Lecture de la fournée…"
-          errorTitle="La fournée n'a pas pu être lue"
-          data-column="preparation"
-          [narrow]="narrow()"
-          [state]="preparation()"
-          (retry)="retry('preparation')"
+  <!-- Le masthead, sur le modèle de Retrait boutique : le header de l'app nomme
+       déjà l'écran, la bande porte les trois chiffres et la fraîcheur. -->
+  <fold-page-section bleed class="masthead" foldSurface="chrome">
+    <div class="masthead-bar">
+      <p class="masthead-counters">
+        <span class="mc-count" data-counter="preparation"
+          ><strong>{{ counters().preparation ?? '—' }}</strong> lignes ouvertes</span
         >
-          @if (preparationBoard(); as board) {
-            <app-preparation-column [board]="board" [showLinks]="showLinks()" [narrow]="narrow()" />
-          }
-        </app-supervision-column>
-      }
-      @if (!narrow() || tab() === 'packing') {
-        <app-supervision-column
-          heading="2 · Colisage"
-          unit="l'unité est la commande"
-          description="Ici et seulement ici, une carte = un client. On voit ce qui est posé dans les bacs, et ce qui attend encore le four."
-          loadingMessage="Lecture du colisage…"
-          errorTitle="Le colisage n'a pas pu être lu"
-          data-column="packing"
-          [narrow]="narrow()"
-          [state]="packing()"
-          (retry)="retry('packing')"
+        <span class="mc-count" data-counter="packing"
+          ><strong>{{ counters().packing ?? '—' }}</strong> commandes à coliser</span
         >
-          @if (packingBoard(); as board) {
-            <app-packing-column [board]="board" [showLinks]="showLinks()" [narrow]="narrow()" />
-          }
-        </app-supervision-column>
-      }
-      @if (!narrow() || tab() === 'handover') {
-        <app-supervision-column
-          heading="3 · Retrait / livraison"
-          unit="l'unité est le créneau"
-          description="Deux métiers dans une colonne : le comptoir attend qu'on vienne, la livraison part. Chacun se lit par tranche horaire."
-          loadingMessage="Lecture de la file de retrait…"
-          errorTitle="La file de retrait n'a pas pu être lue"
-          data-column="handover"
-          [narrow]="narrow()"
-          [state]="handover()"
-          (retry)="retry('handover')"
+        <span class="mc-count" data-counter="handover"
+          ><strong>{{ counters().handover ?? '—' }}</strong> {{ counters().handoverUnit }}</span
         >
-          @if (handoverBoard(); as board) {
-            <app-handover-column
-              [board]="board"
-              [showLinks]="showLinks()"
-              [narrow]="narrow()"
-              [latenessUnknown]="latenessUnknown()"
-            />
-          }
-        </app-supervision-column>
-      }
+      </p>
+      <span class="mc-clock" data-stamp>{{ stamp() }}</span>
     </div>
-  </section>
+  </fold-page-section>
 </fold-page-layout>
+
+<!-- Onglets et colonnes vivent HORS du layout, comme la table du Prévisionnel :
+     `.page-body` de fold est en `flex: 0 1 auto` et ne s'étire jamais, donc
+     rien de ce qu'il contient ne peut prendre la hauteur restante (vérifié
+     dans `production/previsionnel/previsionnel-page.html`, 2026-09-25). -->
+
+@if (narrow()) {
+  <div class="tabs" foldSurface="chrome">
+    <fold-view-nav
+      activeStyle="fill"
+      direction="horizontal"
+      justify="stretch"
+      [items]="tabs()"
+      [activeKey]="tab()"
+      (activeKeyChange)="selectTab($event)"
+    />
+  </div>
+}
+
+<section class="board" [class.narrow]="narrow()" aria-label="Supervision du jour">
+  <div class="columns">
+    @if (!narrow() || tab() === 'preparation') {
+      <app-supervision-column
+        heading="1 · Préparation"
+        unit="l'unité est le produit"
+        description="Aucune commande ici. On lit l'avancement de la fournée, rayon par rayon ; une commande devient colisable quand tous ses produits sont sortis."
+        loadingMessage="Lecture de la fournée…"
+        errorTitle="La fournée n'a pas pu être lue"
+        data-column="preparation"
+        [state]="preparation()"
+        (retry)="retry('preparation')"
+      >
+        @if (preparationBoard(); as board) {
+          <app-preparation-column [board]="board" [showLinks]="showLinks()" [narrow]="narrow()" />
+        }
+      </app-supervision-column>
+    }
+    @if (!narrow() || tab() === 'packing') {
+      <app-supervision-column
+        heading="2 · Colisage"
+        unit="l'unité est la commande"
+        description="Ici et seulement ici, une carte = un client. On voit ce qui est posé dans les bacs, et ce qui attend encore le four."
+        loadingMessage="Lecture du colisage…"
+        errorTitle="Le colisage n'a pas pu être lu"
+        data-column="packing"
+        [state]="packing()"
+        (retry)="retry('packing')"
+      >
+        @if (packingBoard(); as board) {
+          <app-packing-column [board]="board" [showLinks]="showLinks()" [narrow]="narrow()" />
+        }
+      </app-supervision-column>
+    }
+    @if (!narrow() || tab() === 'handover') {
+      <app-supervision-column
+        heading="3 · Retrait / livraison"
+        unit="l'unité est le créneau"
+        description="Deux métiers dans une colonne : le comptoir attend qu'on vienne, la livraison part. Chacun se lit par tranche horaire."
+        loadingMessage="Lecture de la file de retrait…"
+        errorTitle="La file de retrait n'a pas pu être lue"
+        data-column="handover"
+        [state]="handover()"
+        (retry)="retry('handover')"
+      >
+        @if (handoverBoard() !== null) {
+          <div columnTools>
+            <fold-view-toggle
+              ariaLabel="Acheminement"
+              activeStyle="solid"
+              [options]="methodOptions()"
+              [value]="handoverMethod()"
+              (valueChange)="selectMethod($event)"
+            />
+          </div>
+        }
+        @if (handoverBoard(); as board) {
+          <app-handover-column
+            [method]="handoverMethod()"
+            [board]="board"
+            [showLinks]="showLinks()"
+            [narrow]="narrow()"
+            [latenessUnknown]="latenessUnknown()"
+          />
+        }
+      </app-supervision-column>
+    }
+  </div>
+</section>

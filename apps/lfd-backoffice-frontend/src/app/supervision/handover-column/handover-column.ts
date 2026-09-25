@@ -1,13 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { FulfillmentMethod } from '@lfd/contracts';
-import type { FoldViewToggleOption } from 'fold-ng';
 import {
   FoldCalloutComponent,
   FoldCardComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
-  FoldViewToggleComponent,
 } from 'fold-ng';
 
 import type { HandoverBoard, SlotGroup, SlotRow } from '../handover-slots';
@@ -16,7 +14,7 @@ import { SUPERVISION_LINKS } from '../supervision-links';
 
 /**
  * **Colonne 3 · Retrait / livraison — l'unité est le créneau.** Deux métiers,
- * séparés par un segmenté ; chacun groupé par tranche horaire.
+ * séparés par un segmenté (posé par la page dans l'en-tête fixe) ; chacun groupé par tranche horaire.
  *
  * Ni Remettre, ni Scanner, ni Appeler (plan §1) : une commande prête renvoie
  * vers le retrait, qui opère. La tournée de la maquette n'a pas de donnée
@@ -32,7 +30,6 @@ import { SUPERVISION_LINKS } from '../supervision-links';
     FoldCardComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
-    FoldViewToggleComponent,
   ],
   templateUrl: './handover-column.html',
   styleUrl: './handover-column.scss',
@@ -45,20 +42,12 @@ export class HandoverColumn {
   readonly latenessUnknown = input(false);
 
   protected readonly link = SUPERVISION_LINKS.handover;
-  protected readonly method = signal<FulfillmentMethod>('pickup');
-
-  protected readonly options = computed<readonly FoldViewToggleOption[]>(() => [
-    { value: 'pickup', label: `Retrait · ${String(this.board().pickupExpected)}` },
-    { value: 'delivery', label: `Livraison · ${String(this.board().deliveryExpected)}` },
-  ]);
+  /** L'acheminement lu — choisi par le segmenté, que la page pose dans l'en-tête FIXE de la colonne. */
+  readonly method = input<FulfillmentMethod>('pickup');
 
   protected readonly groups = computed<readonly SlotGroup[]>(() =>
     this.method() === 'pickup' ? this.board().pickup : this.board().delivery,
   );
-
-  protected selectMethod(value: string): void {
-    this.method.set(value === 'delivery' ? 'delivery' : 'pickup');
-  }
 
   protected groupCount(group: SlotGroup): string {
     const expected = countLabel(group.expected, 'attendue', 'attendues');

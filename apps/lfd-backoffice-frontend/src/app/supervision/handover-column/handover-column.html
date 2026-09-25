@@ -4,14 +4,6 @@
   </fold-callout>
 }
 
-<fold-view-toggle
-  ariaLabel="Acheminement"
-  activeStyle="solid"
-  [options]="options()"
-  [value]="method()"
-  (valueChange)="selectMethod($event)"
-/>
-
 @for (group of groups(); track group.key) {
   <div class="slot-head" [attr.data-slot]="group.key">
     <span class="slot-label">{{ group.label }}</span>
