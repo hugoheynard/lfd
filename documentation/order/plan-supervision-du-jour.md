@@ -223,3 +223,128 @@ créneaux dépassés → pastille sur Retrait).
 - Renvois : chacun confronté à la garde effective de sa cible dans la table
   de routes ; masqués sans `b2b_orders:read`.
 - Journée non arrêtée : la colonne 2 le dit.
+
+## 10. Écarts à la maquette
+
+> Ajouté le 2026-09-25 à la construction du lot 2 (front), à la demande de
+> Hugo : « tu notes les différences mais tu fais exactement ça ». Le rendu a
+> été confronté aux captures `02-poste-fixe.png` et `04-mobile.png` sur des
+> données calquées sur la maquette. Chaque ligne donne l'élément, ce que dit la
+> maquette, ce qu'on fait, et pourquoi.
+
+### Les gestes retirés et les données absentes (§1, §7)
+
+| Élément                                     | Maquette                                        | Ici                                                                                                             | Pourquoi                                                                                      |
+| ------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Cases à cocher (préparation)                | carré 18 px (26 px mobile) devant chaque ligne  | absentes ; la quantité Mono et le produit restent à leur place                                                  | geste de la fournée (§1)                                                                      |
+| « Ouvrir la fiche Viennoiseries → »         | lien vers la fiche du rayon                     | « Ouvrir la fournée → », même style, vers `/production/journee`                                                 | renvoi vers la liste ; aucun lien profond vers un rayon                                       |
+| Rayon **Bloqué**                            | liséré rouge, cause, « Voir les 3 commandes »   | n'existe pas ; « Pas commencé » : `0 / 2 lignes · pas commencé`                                                 | aucune donnée de rupture (§7) ; l'état est dit en toutes lettres (SPEC §7)                    |
+| Cases de colis, Étiquettes, Bon de commande | trois cases + deux boutons                      | « Ouvrir le colisage → » ; le nombre de bacs passe dans la ligne Mono                                           | gestes du poste (§1)                                                                          |
+| Carte « prêt à coliser »                    | pastille verte « prêt à coliser »               | pastille verte « à coliser »                                                                                    | nom de l'état dans le plan (§5)                                                               |
+| « Attend le four »                          | « Bloquée par **2 lignes viennoiserie** »       | « Bloquée par **Pain au chocolat, Brioche tressée** » ; pas de renvoi                                           | le plan demande de nommer les produits ; rien à ouvrir tant que le four n'a pas sorti         |
+| Cartes « à venir » à 72 % d'opacité         | compactes, sous les cartes pleines              | toutes les commandes ouvertes ont une carte pleine ; les colisées sont repliées en bas dans un encart pointillé | le plan trie attend le four / en cours, puis à coliser, et replie les colisées (§5)           |
+| Libellé du compte en trop                   | « + 13 commandes · triées par heure de remise » | « + 13 commandes · triées par heure de retrait »                                                                | « remise » ne désigne que la réduction de prix (CLAUDE.md §8)                                 |
+| Remettre                                    | bouton graphite plein                           | lien « Ouvrir le retrait → », sur les commandes prêtes ou en retard, en retrait seulement                       | renvoi, pas un geste ; aucune cible écrite pour la livraison (voir la note sous le tableau)   |
+| Appeler                                     | bouton contour sur le retard                    | absent                                                                                                          | §1                                                                                            |
+| Scanner un QR, sélecteur « Le Labo »        | en-tête, à droite                               | absents                                                                                                         | §1 et §5                                                                                      |
+| « Remis 7 h 04 · signé A. Meunier »         | ligne verte                                     | « Retirée à 7 h 04 » (« Livrée à … » en livraison)                                                              | pas de signature (§7) ; vocabulaire                                                           |
+| « 3 colis · zone A2 »                       | colis et zone                                   | « 24 pièces · <point de retrait> »                                                                              | la file porte des pièces et le point de retrait, pas de colis ni de zone                      |
+| « 4 colis · encore au colisage »            | ambre                                           | « 24 pièces · encore au colisage », ambre                                                                       | idem                                                                                          |
+| Carte graphite de la tournée                | véhicule, départ, arrêts numérotés              | absente ; l'onglet Livraison liste les commandes par créneau                                                    | aucune donnée de tournée (§7)                                                                 |
+| Segmenté                                    | « Comptoir · 25 / Tournée · 4 »                 | « Retrait · N / Livraison · N »                                                                                 | vocabulaire du plan (§5)                                                                      |
+| Onglet mobile « Remise »                    | « Remise »                                      | « Retrait »                                                                                                     | vocabulaire                                                                                   |
+| Pastilles mobiles                           | Colisage 3 et Remise 1                          | Préparation (commandes qui attendent le four) et Retrait (créneaux dépassés)                                    | le plan pose la pastille sur l'onglet de la colonne **qui bloque** (§6)                       |
+| Barre mobile                                | « Suivi du jour », heure système, avatar        | « Supervision » + l'unité de l'onglet ; ni date, ni heure                                                       | l'avatar et la barre système appartiennent à la coque ; le nom de l'écran est « Supervision » |
+
+**La livraison n'a pas de renvoi.** Le plan (§1) ne renvoie « Remettre » que
+vers `/comptoir/retrait`. Aucune ligne ne dit où envoyer pour une commande à
+livrer : `/livraison` existe sous la même garde, mais ce plan ne la nomme
+pas. Donc pas de lien. À trancher.
+
+### Ce qui vient de la coque et de la page
+
+| Élément                  | Maquette                                                     | Ici                                                                                              | Pourquoi                                                                  |
+| ------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| Carré « f » et avatar CR | dans la barre graphite                                       | absents                                                                                          | la coque du back-office les porte déjà au-dessus de la page               |
+| Fil de la barre          | « Production / Avancement du jour »                          | « Supervision / Avancement du jour »                                                             | le nom de l'écran (§5)                                                    |
+| Date de la barre         | « jeudi 3 septembre · 6 h 40 »                               | « jeudi 3 septembre · à jour à 6 h 40 »                                                          | l'heure est celle de la lecture du serveur (`asOf`), pas une horloge (§5) |
+| Cadre                    | 1440 px de large, bordure `#c8cedb`, rayon 8 px, ombre douce | largeur de la page, `--fold-color-border`, `--fold-radius-lg` (8 px en navi), `--fold-shadow-md` | la page suit la coque ; ombre fold la plus proche                         |
+| Compteur 3               | « 29 dont 4 en tournée »                                     | « N attendues · dont N livraisons »                                                              | attendues = ni retirées ni annulées ; aucune tournée (§7)                 |
+| Pli mobile               | téléphone de 390 px                                          | une colonne à la fois en dessous de 900 px                                                       | trois colonnes de cartes ne tiennent pas sur une tablette en portrait     |
+
+### Ce que fold dessine autrement (composants)
+
+| Élément                         | Maquette                                                                                         | Ici                                                                                                                                                | Pourquoi                                                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Barre de progression            | 5 px, sans libellé, la phrase (« 6 références sur 9 posées ») **sous** la barre                  | `fold-meter` : piste de 4 px, libellé obligatoire **au-dessus** (« 6 références sur 9 posées », « 188 pièces restantes »)                          | fold d'abord ; le libellé est requis par `fold-meter`. Les teintes sont celles de la maquette (voir « Couleurs ») |
+| « Unités restantes »            | absente                                                                                          | libellé du mètre : « N pièces restantes » / « Rayon terminé · N pièces sorties »                                                                   | le plan la demande (§5) ; le libellé du mètre la porte                                                            |
+| Pastille d'état                 | 22 px de haut, rayon 3 px, sans bordure, Mono 10 px gras, capitales, +0,1 em                     | `fold-badge radius="square"` : bordure d'1 px de la teinte, rayon 4 px, Mono `--fold-text-2xs` gras, capitales, `--fold-tracking-caps`             | fold d'abord ; la bordure et la hauteur viennent du badge                                                         |
+| Segmenté                        | deux boutons séparés de 28 px, actif graphite plein, inactif blanc bordé                         | `fold-view-toggle activeStyle="solid"` : un seul contour, segment actif **bleu** (`--fold-color-primary`)                                          | fold d'abord ; aucun style « graphite » dans `FoldViewToggleActiveStyle` (`solid`, `accent`, `raised`)            |
+| Onglets mobiles                 | tuiles de 48 px : libellé, compte Mono bleu sous le libellé, actif blanc, pastille rouge en coin | `fold-view-nav activeStyle="fill"` : « Préparation 5 » sur une ligne, pastille `fold-badge` **neutre** à côté du libellé, actif en fond bleu clair | fold n'a pas d'onglet avec un compte sous le libellé et une pastille d'alerte en coin — manque à signaler à fold  |
+| Pastille rouge d'onglet         | fond `#b33a2a`, blanc, bord graphite, en coin                                                    | `fold-badge` neutre (ou accent sur l'onglet actif), inline                                                                                         | idem : le badge de `fold-view-nav` n'a pas de ton                                                                 |
+| « Ouvrir la fiche » mobile      | bouton de 36 px, fond `#f1f3f7`, texte bleu                                                      | `foldButton emphasis="soft" intent="neutral"` (texte neutre, hauteur fold)                                                                         | fold d'abord                                                                                                      |
+| « Déplier ▾ »                   | texte graphite 12 px semi-gras                                                                   | `fold-link` (texte bleu `--fold-text-xs`)                                                                                                          | fold d'abord ; `fold-link` sans `href` rend un bouton                                                             |
+| Cartes                          | rayon 5 px (7 px mobile), padding 12 × 14 px (13 × 15 mobile)                                    | `fold-card radius="sm"` (4 px en navi), padding `--fold-space-md` (12 px) ; mobile 12 × 16 px                                                      | tokens de rayon et d'espace les plus proches                                                                      |
+| Liseré                          | 3 px à gauche, coin gauche droit                                                                 | identique, posé sur l'hôte de `fold-card`                                                                                                          | —                                                                                                                 |
+| Retard en mobile                | fond `#fbeeec` sur toute la carte                                                                | `--fold-color-alert-surface`                                                                                                                       | pas de token exact                                                                                                |
+| Encadré mobile « Bloquée par… » | fond `#fbf2dc`, texte `#8a6508`                                                                  | `--fold-color-warning-surface` / `--fold-color-warning-text`                                                                                       | pas de token exact                                                                                                |
+| Espacement dans une carte       | 9 / 10 / 11 px entre titre, barre, lignes, lien                                                  | `--fold-space-sm` (8 px) partout                                                                                                                   | un seul écart de la grille fold                                                                                   |
+
+### Couleurs — une valeur de la maquette sans token exact
+
+Les trois teintes d'état **sont** des tokens et sont reprises telles quelles :
+`#146b48` = `--fold-ref-green-700`, `#d4a017` = `--fold-ref-amber-500`,
+`#b33a2a` = `--fold-ref-red-600`. Le fond de piste `#e6e9ef` =
+`--fold-ref-paper-200`. Pour avoir exactement ces couleurs de barre,
+`fold-meter` reçoit localement `--fold-color-success`, `--fold-color-warning`
+et `--fold-color-surface-raised`. Sur la surface `chrome`, `#f2f5fb` et
+`#b9c4da` sont exacts (`--fold-ref-navyink-50` / `-200`, via les rôles de
+texte).
+
+| Maquette                                        | Token retenu                                          | Valeur du token       |
+| ----------------------------------------------- | ----------------------------------------------------- | --------------------- |
+| graphite de la barre `#0e1420`                  | `--fold-color-bg-header` (`graphite-950`)             | `#141b2b`             |
+| bande de compteurs `#131a28`                    | `--fold-color-bg-rail-primary` (`graphite-900`)       | `#1a2336`             |
+| accent `#2b4fc9` (liens, barre en cours)        | `--fold-color-primary` (`signal-600`)                 | `#3357d4`             |
+| accent au survol `#1f3fa8`                      | `--fold-color-primary-strong` (`signal-700`)          | `#2643aa`             |
+| texte « en cours » `#2b4fc9`                    | `--fold-color-primary-text` (badge accent)            | `#2643aa`             |
+| fond « en cours » `#eaeef8`                     | `--fold-color-primary-surface`                        | mélange 8 %           |
+| texte « attend » `#8a6508`                      | `--fold-color-warning-text` (`amber-700`)             | `#8f6508`             |
+| fond « attend » `#fbf2dc`                       | `--fold-color-warning-surface`                        | mélange 8 %           |
+| fond « fait » `#e8f0e9`                         | `--fold-color-success-surface`                        | mélange 10 %          |
+| texte « bloqué / dépassé » `#8f2c1f`            | `--fold-color-alert-text` (`red-600`)                 | `#b33a2a`             |
+| page `#eef0f4`                                  | `--fold-color-bg-page` (`paper-100`)                  | `#f3f5f8`             |
+| en-tête de colonne `#dde2ea`                    | `--fold-color-surface-band` (`paper-200`)             | `#e6e9ef`             |
+| bordure `#c8cedb`                               | `--fold-color-border` (`paper-300`)                   | `#d3d8e2`             |
+| encart replié `#e6e9ef`, pointillé `#b9c1d0`    | `--fold-color-surface-band` / `--fold-color-border`   | `#e6e9ef` / `#d3d8e2` |
+| filet entre lignes mobiles `#f0f2f6`            | `--fold-color-border-subtle` (`paper-200`)            | `#e6e9ef`             |
+| texte `#0f1523`                                 | `--fold-color-text` (`slate-900`)                     | `#1a1d23`             |
+| texte secondaire `#41506b`                      | `--fold-color-text-secondary` (`slate-650`)           | `#4a5468`             |
+| texte discret `#5c6a80`                         | `--fold-color-text-muted` (`slate-600`)               | `#5f6b7a`             |
+| texte discret sur graphite `#8290ae`            | `--fold-color-text-muted` en `chrome` (`navyink-300`) | `#9aa7c2`             |
+| séparateur sur graphite `rgba(242,245,251,.14)` | `--fold-color-border` en `chrome` (mélange 10 %)      | —                     |
+| ombre des cartes `0 1px 2px rgba(14,20,32,.05)` | `--fold-shadow-sm` (navi, 8 %)                        | —                     |
+
+### Typographie et espacement
+
+Plex Sans et Plex Mono sont celles de la maquette (`--fold-font-sans` /
+`--fold-font-mono`, surchargées par `styles.scss`). Les tailles, graisses et
+approches passent par les tokens ; règle retenue : le token le plus proche,
+**le plus petit en cas d'égalité**, pour garder la densité.
+
+| Maquette                                      | Token                                                            | Écart                  |
+| --------------------------------------------- | ---------------------------------------------------------------- | ---------------------- |
+| 10 px, 10,5 px (capitales Mono)               | `--fold-text-2xs` (10 px)                                        | 0 à −0,5 px            |
+| 11,5 px (méta, lien, compteur de rayon)       | `--fold-text-xs` (11 px)                                         | −0,5 px                |
+| 12,5 px (produit, carte compacte)             | `--fold-text-sm` (12 px)                                         | −0,5 px                |
+| 13,5 px (nom du client en colisage)           | `--fold-text-md` (13 px)                                         | −0,5 px                |
+| 15 px (titre de carte mobile)                 | `--fold-text-base` (14 px)                                       | −1 px                  |
+| 18 px (quantité mobile)                       | `--fold-text-lg` (16 px)                                         | −2 px                  |
+| 22 px (compteurs)                             | `--fold-text-xl` (20 px)                                         | −2 px                  |
+| approche des capitales .1 à .18 em            | `--fold-tracking-caps` (.07 em)                                  | plus serré             |
+| « créneau dépassé » +.06 em                   | `--fold-tracking-wide` (.04 em)                                  | −.02 em                |
+| −.012 em, −.028 em                            | `--fold-tracking-tight` (−.01), `--fold-tracking-tighter` (−.02) | ≤ .008 em              |
+| espaces 7, 9, 10, 11 px                       | `--fold-space-sm` (8 px)                                         | ±3 px au plus          |
+| espaces 13, 14 px                             | `--fold-space-md` (12 px)                                        | −1 à −2 px             |
+| espaces 18, 22 px                             | `--fold-space-lg` (16), `--fold-space-xl` (20)                   | −2 px                  |
+| colonne des heures 44 px, des quantités 34 px | `4ch`                                                            | ≈ ±4 px selon la fonte |

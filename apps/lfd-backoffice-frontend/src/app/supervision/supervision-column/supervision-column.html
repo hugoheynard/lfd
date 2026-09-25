@@ -1,0 +1,34 @@
+<section class="column" [attr.aria-label]="heading()">
+  @if (!narrow()) {
+    <header class="head">
+      <div class="title-row">
+        <h2 class="title">{{ heading() }}</h2>
+        <span class="unit">{{ unit() }}</span>
+      </div>
+      <p class="description">{{ description() }}</p>
+    </header>
+  }
+
+  <div class="body">
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading [message]="loadingMessage()" />
+      }
+      @case ('error') {
+        <fold-empty-state tone="alert" [title]="errorTitle()">
+          <button foldButton emphasis="outline" type="button" (click)="retry.emit()">
+            Réessayer
+          </button>
+        </fold-empty-state>
+      }
+      @default {
+        @if (stale()) {
+          <fold-callout variant="alert">
+            La dernière relecture a échoué : cette colonne montre la lecture précédente.
+          </fold-callout>
+        }
+        <ng-content />
+      }
+    }
+  </div>
+</section>

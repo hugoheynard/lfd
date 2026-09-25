@@ -1,132 +1,113 @@
-<fold-page-layout icon="eye" title="Supervision du jour">
-  <p description>
-    Où en est chaque commande d'une date de service, et lesquelles sont en retard. Lecture seule :
-    on agit depuis la production, le colisage ou le comptoir.
-  </p>
-
-  <div pageActions class="toolbar">
-    <fold-date
-      label="Date de service"
-      size="sm"
-      [value]="date()"
-      (valueChange)="changeDate($event)"
-    />
-    @if (asOf(); as label) {
-      <fold-badge variant="neutral" [content]="label" />
-    }
-  </div>
-
-  @if (loading() && view() === null) {
-    <fold-loading message="Lecture de la journée…" />
-  } @else if (loadFailed()) {
-    <fold-empty-state tone="alert" title="La journée n'a pas pu être lue">
-      <button foldButton emphasis="outline" type="button" (click)="load()">Réessayer</button>
-    </fold-empty-state>
-  } @else if (view() !== null) {
-    <div class="board">
-      @if (refreshFailed()) {
-        <fold-callout variant="alert">
-          La dernière relecture a échoué : ce qui est affiché date de la lecture précédente ({{
-            asOf()
-          }}).
-        </fold-callout>
-      }
-      @if (undated(); as label) {
-        <fold-callout variant="warning" icon="calendar">
-          {{ label }} — elles n'apparaissent dans aucune journée.
-        </fold-callout>
-      }
-
-      @for (row of flows(); track row.method) {
-        <fold-card>
-          <fold-element-title
-            cardHeader
-            variant="title"
-            [icon]="row.icon"
-            [title]="row.title"
-            [subtitle]="row.cancelled"
-          />
-          <div class="stages" role="group" [attr.aria-label]="'Étapes — ' + row.title">
-            @for (cell of row.cells; track cell.stage) {
-              <button
-                foldButton
-                type="button"
-                class="stage"
-                [emphasis]="cell.selected ? 'solid' : 'outline'"
-                [intent]="cell.late > 0 ? 'danger' : 'neutral'"
-                [attr.aria-pressed]="cell.selected"
-                [attr.data-stage]="row.method + ':' + cell.stage"
-                (click)="toggleStage(row.method, cell.stage)"
-              >
-                <span class="stage-body">
-                  <span class="count">{{ cell.count }}</span>
-                  <span>{{ cell.label }}</span>
-                  @if (cell.late > 0) {
-                    <fold-badge variant="alert" [content]="cell.late + ' en retard'" />
-                  }
-                </span>
-              </button>
-            }
-          </div>
-        </fold-card>
-      }
-
-      <fold-card>
-        <fold-element-title
-          cardHeader
-          variant="title"
-          icon="clock"
-          title="Retards"
-          [subtitle]="filterLabel() ?? ''"
-        >
-          <span titleAction class="title-action">
-            @if (lateCount() > 0) {
-              <fold-badge variant="alert" [content]="lateCount() + ' en retard'" />
-            } @else {
-              <fold-badge variant="success" content="Aucun retard" />
-            }
-            @if (filterLabel() !== null) {
-              <button foldButton emphasis="soft" size="sm" type="button" (click)="clearFilter()">
-                Toutes les étapes
-              </button>
-            }
-          </span>
-        </fold-element-title>
-
-        @if (lateOrders().length === 0) {
-          <fold-empty-state
-            [title]="
-              filterLabel() === null ? 'Aucune commande en retard' : 'Aucun retard à cette étape'
-            "
-            subtitle="Seuls les créneaux promis au client sont jugés — une heure d'ouverture ne l'est pas."
-          >
-            <fold-icon empty-icon name="check-circle" />
-          </fold-empty-state>
+<fold-page-layout>
+  <section class="board" [class.narrow]="narrow()" aria-label="Supervision du jour">
+    <header class="bar" foldSurface="chrome">
+      <div class="crumb">
+        <span class="crumb-title">Supervision</span>
+        @if (narrow()) {
+          <span class="crumb-unit">{{ unit() }}</span>
         } @else {
-          <ul class="late-list">
-            @for (order of lateOrders(); track order.orderId) {
-              <li class="late-row" [attr.data-order]="order.orderId">
-                <span class="reference">
-                  @if (canOpenOrders()) {
-                    <a [routerLink]="['/commandes', order.orderId]">{{ order.reference }}</a>
-                  } @else {
-                    {{ order.reference }}
-                  }
-                </span>
-                <span class="customer">{{ order.customerName ?? 'Client sans nom' }}</span>
-                <fold-badge
-                  radius="square"
-                  variant="neutral"
-                  [content]="
-                    methodLabel(order.fulfillmentMethod) + ' · ' + windowLabel(order.window)
-                  "
-                />
-                <fold-badge variant="alert" [content]="ruleLabel(order)" />
-              </li>
-            }
-          </ul>
+          <span class="crumb-sep" aria-hidden="true">/</span>
+          <span class="crumb-page">Avancement du jour</span>
         }
-      </fold-card>
+      </div>
+      @if (!narrow()) {
+        <span class="stamp" data-stamp>{{ stamp() }}</span>
+      }
+    </header>
+
+    @if (narrow()) {
+      <div class="tabs" foldSurface="chrome">
+        <fold-view-nav
+          activeStyle="fill"
+          direction="horizontal"
+          justify="stretch"
+          [items]="tabs()"
+          [activeKey]="tab()"
+          (activeKeyChange)="selectTab($event)"
+        />
+      </div>
+    } @else {
+      <div class="counters" foldSurface="chrome">
+        <div class="counter" data-counter="preparation">
+          <span class="counter-label">Préparation</span>
+          <span class="counter-value"
+            >{{ counters().preparation ?? '—' }}
+            <span class="counter-unit">lignes ouvertes</span></span
+          >
+        </div>
+        <div class="counter" data-counter="packing">
+          <span class="counter-label">Colisage</span>
+          <span class="counter-value"
+            >{{ counters().packing ?? '—' }} <span class="counter-unit">commandes</span></span
+          >
+        </div>
+        <div class="counter" data-counter="handover">
+          <span class="counter-label">Retrait / livraison</span>
+          <span class="counter-value"
+            >{{ counters().handover ?? '—' }}
+            <span class="counter-unit">{{ counters().handoverUnit }}</span></span
+          >
+        </div>
+      </div>
+    }
+
+    <div class="columns">
+      @if (!narrow() || tab() === 'preparation') {
+        <app-supervision-column
+          heading="1 · Préparation"
+          unit="l'unité est le produit"
+          description="Aucune commande ici. On lit l'avancement de la fournée, rayon par rayon ; une commande devient colisable quand tous ses produits sont sortis."
+          loadingMessage="Lecture de la fournée…"
+          errorTitle="La fournée n'a pas pu être lue"
+          data-column="preparation"
+          [narrow]="narrow()"
+          [state]="preparation()"
+          (retry)="retry('preparation')"
+        >
+          @if (preparationBoard(); as board) {
+            <app-preparation-column [board]="board" [showLinks]="showLinks()" [narrow]="narrow()" />
+          }
+        </app-supervision-column>
+      }
+      @if (!narrow() || tab() === 'packing') {
+        <app-supervision-column
+          heading="2 · Colisage"
+          unit="l'unité est la commande"
+          description="Ici et seulement ici, une carte = un client. On voit ce qui est posé dans les bacs, et ce qui attend encore le four."
+          loadingMessage="Lecture du colisage…"
+          errorTitle="Le colisage n'a pas pu être lu"
+          data-column="packing"
+          [narrow]="narrow()"
+          [state]="packing()"
+          (retry)="retry('packing')"
+        >
+          @if (packingBoard(); as board) {
+            <app-packing-column [board]="board" [showLinks]="showLinks()" [narrow]="narrow()" />
+          }
+        </app-supervision-column>
+      }
+      @if (!narrow() || tab() === 'handover') {
+        <app-supervision-column
+          heading="3 · Retrait / livraison"
+          unit="l'unité est le créneau"
+          description="Deux métiers dans une colonne : le comptoir attend qu'on vienne, la livraison part. Chacun se lit par tranche horaire."
+          loadingMessage="Lecture de la file de retrait…"
+          errorTitle="La file de retrait n'a pas pu être lue"
+          data-column="handover"
+          [narrow]="narrow()"
+          [state]="handover()"
+          (retry)="retry('handover')"
+        >
+          @if (handoverBoard(); as board) {
+            <app-handover-column
+              [board]="board"
+              [showLinks]="showLinks()"
+              [narrow]="narrow()"
+              [latenessUnknown]="latenessUnknown()"
+            />
+          }
+        </app-supervision-column>
+      }
     </div>
-  }
+  </section>
 </fold-page-layout>

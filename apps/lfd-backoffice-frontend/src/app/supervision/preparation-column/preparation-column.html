@@ -1,0 +1,80 @@
+@if (narrow()) {
+  <div class="band">
+    <span class="band-title">Rayons au four · {{ board().open.length }}</span>
+    <span class="band-meta">{{ board().openLines }} lignes ouvertes</span>
+  </div>
+}
+
+@if (!board().shelvesKnown) {
+  <fold-callout variant="warning">
+    Les rayons n'ont pas pu être lus : toutes les lignes sont sous « Rayon inconnu ».
+  </fold-callout>
+}
+
+@if (empty()) {
+  <fold-empty-state title="Rien au four" subtitle="Aucune ligne de fabrication pour ce jour.">
+    <fold-icon empty-icon name="clock" />
+  </fold-empty-state>
+}
+
+@for (card of shown(); track card.key) {
+  <fold-card radius="sm" class="shelf" [class.narrow]="narrow()" [attr.data-shelf]="card.key">
+    <div class="stack">
+      <div class="shelf-head">
+        <span class="shelf-name">{{ card.label }}</span>
+        <span
+          class="shelf-count"
+          [class.is-done]="card.state === 'done'"
+          [class.is-progress]="card.state === 'in_progress'"
+          >{{ card.doneCount }} / {{ card.lineCount }} lignes{{
+            card.state === 'not_started' ? ' · pas commencé' : ''
+          }}</span
+        >
+      </div>
+      <fold-meter
+        class="shelf-meter"
+        [label]="meterLabel(card)"
+        [value]="card.doneCount"
+        [max]="card.lineCount === 0 ? 1 : card.lineCount"
+        [tone]="meterTone(card)"
+      />
+      @if (card.pending.length > 0) {
+        <ul class="lines">
+          @for (line of card.pending; track line.sku) {
+            <li class="line">
+              <span class="qty">{{ line.quantity }}</span>
+              <span class="product">{{ line.productName }}</span>
+            </li>
+          }
+        </ul>
+      }
+      @if (showLinks() && card.state !== 'done') {
+        @if (narrow()) {
+          <a foldButton emphasis="soft" intent="neutral" [routerLink]="link.path">
+            {{ link.label }} →
+          </a>
+        } @else {
+          <a class="renvoi" [routerLink]="link.path">{{ link.label }} →</a>
+        }
+      }
+    </div>
+  </fold-card>
+}
+
+@if (board().finished.length > 0) {
+  @if (narrow()) {
+    <div class="foot">
+      <span class="band-title">Terminés · {{ board().finished.length }}</span>
+      <span class="foot-names">{{ finishedNames() }}</span>
+      <fold-link class="foot-toggle" (clicked)="toggle()">{{
+        unfolded() ? 'Replier ▴' : 'Déplier ▾'
+      }}</fold-link>
+    </div>
+  } @else {
+    <p class="folded" data-folded>
+      {{ finishedNames() }} —
+      <strong>terminés{{ board().finishedAt === null ? '' : ' à ' + board().finishedAt }}</strong
+      >. Les rayons finis descendent et se replient : la colonne ne montre que ce qui reste au four.
+    </p>
+  }
+}

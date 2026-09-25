@@ -1,0 +1,105 @@
+@if (board().notClosed) {
+  <fold-empty-state
+    title="La journée n'est pas encore arrêtée"
+    subtitle="Le colisage commence à la clôture."
+    data-not-closed
+  >
+    <fold-icon empty-icon name="package" />
+  </fold-empty-state>
+} @else {
+  @if (narrow()) {
+    <div class="band">
+      <span class="band-title">À coliser · {{ board().toPack }}</span>
+      <span class="band-meta">{{ board().packed.length }} colisées</span>
+    </div>
+  }
+
+  @if (empty()) {
+    <fold-empty-state title="Aucune commande" subtitle="Rien à coliser ce jour.">
+      <fold-icon empty-icon name="package" />
+    </fold-empty-state>
+  }
+
+  @for (card of board().visible; track card.reference) {
+    <fold-card
+      radius="sm"
+      class="order"
+      [class.narrow]="narrow()"
+      [class.edge-warning]="card.state === 'awaiting_oven'"
+      [attr.data-packing]="card.state"
+      [attr.data-reference]="card.reference"
+    >
+      <div class="stack">
+        <div class="order-head">
+          <div class="order-id">
+            <span class="customer">{{ card.customerLabel }}</span>
+            <span class="meta">{{ meta(card) }}</span>
+          </div>
+          <fold-badge
+            class="pastille"
+            radius="square"
+            [content]="badgeLabel(card)"
+            [variant]="badgeVariant(card)"
+          />
+        </div>
+
+        @if (card.state === 'in_progress') {
+          <fold-meter
+            class="order-meter"
+            [label]="progressLabel(card)"
+            [value]="card.packedLines"
+            [max]="card.lineCount === 0 ? 1 : card.lineCount"
+            tone="accent"
+          />
+        }
+        @if (card.state === 'awaiting_oven') {
+          <p class="blocked">
+            Bloquée par <strong>{{ card.awaited.join(', ') }}</strong> encore au four. Rien à faire
+            tant que la colonne 1 ne l'a pas libérée.
+          </p>
+        }
+
+        @if (showLinks() && card.state !== 'awaiting_oven') {
+          @if (narrow()) {
+            <a foldButton emphasis="soft" intent="neutral" [routerLink]="link.path">
+              {{ link.label }} →
+            </a>
+          } @else {
+            <a class="renvoi" [routerLink]="link.path">{{ link.label }} →</a>
+          }
+        }
+      </div>
+    </fold-card>
+  }
+
+  @if (board().overflow > 0) {
+    <p class="overflow">{{ overflowLabel() }}</p>
+  }
+
+  @if (board().packed.length > 0) {
+    @if (narrow() && unfolded()) {
+      @for (card of board().packed; track card.reference) {
+        <fold-card radius="sm" class="order compact" [attr.data-packing]="card.state">
+          <div class="compact-row">
+            <span class="compact-name">{{ card.customerLabel }}</span>
+            <span class="meta">{{ meta(card) }}</span>
+          </div>
+        </fold-card>
+      }
+    }
+    @if (narrow()) {
+      <div class="foot">
+        <span class="band-title">Colisées · {{ board().packed.length }}</span>
+        <span class="foot-names">{{ packedNames() }}</span>
+        <fold-link class="foot-toggle" (clicked)="toggle()">{{
+          unfolded() ? 'Replier ▴' : 'Déplier ▾'
+        }}</fold-link>
+      </div>
+    } @else {
+      <p class="folded" data-folded>
+        {{ packedNames() }} — <strong>{{ packedCount() }}</strong
+        >. Les commandes colisées descendent et se replient.
+      </p>
+    }
+  }
+}

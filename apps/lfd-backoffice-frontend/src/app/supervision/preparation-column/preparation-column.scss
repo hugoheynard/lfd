@@ -1,0 +1,203 @@
+// La maquette `handoff-suivi`, par les tokens fold. Chaque valeur qui n'a pas
+// son token exact est inscrite dans « Écarts à la maquette »
+// (documentation/order/plan-supervision-du-jour.md).
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.shelf {
+  --fold-card-padding: var(--fold-space-md);
+
+  box-shadow: var(--fold-shadow-sm);
+}
+
+// fold-card ne range pas son contenu : une colonne, et l'écart vient du gap.
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.shelf-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.shelf-name {
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text);
+}
+
+.shelf-count {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+
+  &.is-done {
+    color: var(--fold-ref-green-700);
+  }
+
+  &.is-progress {
+    color: var(--fold-color-warning-text);
+  }
+}
+
+// Les teintes de barre de la maquette SONT des références fold : on les
+// redonne au mètre plutôt que de dessiner une seconde barre.
+.shelf-meter {
+  --fold-color-success: var(--fold-ref-green-700);
+  --fold-color-warning: var(--fold-ref-amber-500);
+  --fold-color-surface-raised: var(--fold-ref-paper-200);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.qty {
+  flex: none;
+  min-width: 4ch;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--fold-color-text);
+}
+
+.product {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text);
+}
+
+.renvoi {
+  align-self: flex-start;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-primary);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--fold-color-primary-strong);
+  }
+}
+
+.folded {
+  margin: 0;
+  padding: var(--fold-space-md);
+  font-size: var(--fold-text-xs);
+  line-height: var(--fold-leading-normal);
+  color: var(--fold-color-text-muted);
+  background: var(--fold-color-surface-band);
+  border: 1px dashed var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+
+  strong {
+    color: var(--fold-color-text);
+  }
+}
+
+// ── Mobile : bandes de tête et de pied, cibles tactiles relevées ─────────────
+
+.band,
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm) var(--fold-space-lg);
+  background: var(--fold-color-surface-band);
+}
+
+.band {
+  margin: calc(-1 * var(--fold-space-md)) calc(-1 * var(--fold-space-md)) 0;
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.foot {
+  margin: 0 calc(-1 * var(--fold-space-md)) calc(-1 * var(--fold-space-md));
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.band-title {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
+}
+
+.band-meta {
+  margin-left: auto;
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+.foot-names {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--fold-text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fold-color-text-muted);
+}
+
+.foot-toggle {
+  flex: none;
+}
+
+.shelf.narrow {
+  --fold-card-padding: var(--fold-space-md) var(--fold-space-lg);
+
+  .shelf-name {
+    font-size: var(--fold-text-base);
+  }
+
+  .shelf-count {
+    font-size: var(--fold-text-sm);
+  }
+
+  .lines {
+    gap: 0;
+  }
+
+  .line {
+    min-height: 44px;
+    gap: var(--fold-space-md);
+  }
+
+  .line + .line {
+    border-top: 1px solid var(--fold-color-border-subtle);
+  }
+
+  .qty {
+    font-size: var(--fold-text-lg);
+  }
+
+  .product {
+    font-size: var(--fold-text-base);
+  }
+}

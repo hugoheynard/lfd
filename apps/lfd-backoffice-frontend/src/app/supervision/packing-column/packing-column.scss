@@ -1,0 +1,202 @@
+// La maquette `handoff-suivi`, par les tokens fold. Chaque valeur qui n'a pas
+// son token exact est inscrite dans « Écarts à la maquette »
+// (documentation/order/plan-supervision-du-jour.md).
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.order {
+  --fold-card-padding: var(--fold-space-md);
+
+  box-shadow: var(--fold-shadow-sm);
+
+  // Le liseré d'état : trois pixels à gauche, le coin gauche redevient droit.
+  &.edge-warning {
+    border-left: 3px solid var(--fold-ref-amber-500);
+    border-radius: 0 var(--fold-radius-sm) var(--fold-radius-sm) 0;
+  }
+}
+
+// fold-card ne range pas son contenu : une colonne, et l'écart vient du gap.
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.order-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.order-id {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+}
+
+.customer {
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-tight);
+  color: var(--fold-color-text);
+}
+
+.meta {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+// La pastille Mono : le badge fold, dans la voix des étiquettes de la maquette.
+.pastille {
+  flex: none;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+}
+
+.order-meter {
+  --fold-color-surface-raised: var(--fold-ref-paper-200);
+}
+
+.blocked {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  line-height: var(--fold-leading-normal);
+  color: var(--fold-color-text-secondary);
+
+  strong {
+    color: var(--fold-color-text);
+  }
+}
+
+.renvoi {
+  align-self: flex-start;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-primary);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--fold-color-primary-strong);
+  }
+}
+
+.overflow {
+  margin: 0;
+  font-size: var(--fold-text-xs);
+  text-align: center;
+  color: var(--fold-color-text-muted);
+}
+
+.folded {
+  margin: 0;
+  padding: var(--fold-space-md);
+  font-size: var(--fold-text-xs);
+  line-height: var(--fold-leading-normal);
+  color: var(--fold-color-text-muted);
+  background: var(--fold-color-surface-band);
+  border: 1px dashed var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+
+  strong {
+    color: var(--fold-color-text);
+  }
+}
+
+.compact {
+  opacity: 0.72;
+}
+
+.compact-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.compact-name {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+}
+
+// ── Mobile ──────────────────────────────────────────────────────────────────
+
+.band,
+.foot {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm) var(--fold-space-lg);
+  background: var(--fold-color-surface-band);
+}
+
+.band {
+  margin: calc(-1 * var(--fold-space-md)) calc(-1 * var(--fold-space-md)) 0;
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.foot {
+  margin: 0 calc(-1 * var(--fold-space-md)) calc(-1 * var(--fold-space-md));
+  border-top: 1px solid var(--fold-color-border);
+}
+
+.band-title {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
+}
+
+.band-meta {
+  margin-left: auto;
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+.foot-names {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--fold-text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fold-color-text-muted);
+}
+
+.foot-toggle {
+  flex: none;
+}
+
+.order.narrow {
+  --fold-card-padding: var(--fold-space-md) var(--fold-space-lg);
+
+  .customer {
+    font-size: var(--fold-text-base);
+  }
+
+  .blocked {
+    padding: var(--fold-space-sm) var(--fold-space-md);
+    font-weight: var(--fold-weight-semibold);
+    color: var(--fold-color-warning-text);
+    background: var(--fold-color-warning-surface);
+    border-radius: var(--fold-radius-sm);
+
+    strong {
+      color: inherit;
+    }
+  }
+}

@@ -1,0 +1,57 @@
+@if (latenessUnknown()) {
+  <fold-callout variant="alert">
+    Les retards n'ont pas pu être lus : aucun créneau n'est signalé comme dépassé.
+  </fold-callout>
+}
+
+<fold-view-toggle
+  ariaLabel="Acheminement"
+  activeStyle="solid"
+  [options]="options()"
+  [value]="method()"
+  (valueChange)="selectMethod($event)"
+/>
+
+@for (group of groups(); track group.key) {
+  <div class="slot-head" [attr.data-slot]="group.key">
+    <span class="slot-label">{{ group.label }}</span>
+    <span class="slot-rule"></span>
+    <span class="slot-count">{{ groupCount(group) }}</span>
+  </div>
+
+  @for (row of group.rows; track row.orderId) {
+    <fold-card
+      radius="sm"
+      class="row"
+      [class.narrow]="narrow()"
+      [class.edge-alert]="row.state === 'overdue'"
+      [class.is-past]="row.state === 'handed_over' || row.state === 'cancelled'"
+      [attr.data-row]="row.state"
+      [attr.data-reference]="row.reference"
+    >
+      <div class="row-line">
+        <span class="time">{{ row.time ?? '—' }}</span>
+        <div class="who">
+          <span class="customer">{{ row.customerLabel }}</span>
+          <span
+            class="sub"
+            [class.is-done]="row.state === 'handed_over'"
+            [class.is-late]="row.state === 'overdue'"
+            [class.is-waiting]="row.state === 'not_ready'"
+            >{{ subLine(row) }}</span
+          >
+        </div>
+        @if (linksTo(row)) {
+          <a class="renvoi" [routerLink]="link.path">{{ link.label }} →</a>
+        }
+      </div>
+    </fold-card>
+  }
+} @empty {
+  <fold-empty-state
+    [title]="method() === 'pickup' ? 'Aucun retrait ce jour' : 'Aucune livraison ce jour'"
+    subtitle="La file de ce jour est vide."
+  >
+    <fold-icon empty-icon [name]="method() === 'pickup' ? 'store' : 'truck'" />
+  </fold-empty-state>
+}

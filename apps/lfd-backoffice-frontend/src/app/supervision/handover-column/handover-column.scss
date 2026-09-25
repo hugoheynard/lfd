@@ -1,0 +1,141 @@
+// La maquette `handoff-suivi`, par les tokens fold. Chaque valeur qui n'a pas
+// son token exact est inscrite dans « Écarts à la maquette »
+// (documentation/order/plan-supervision-du-jour.md).
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.slot-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding-top: var(--fold-space-xs);
+}
+
+.slot-label {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.slot-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--fold-color-border);
+}
+
+.slot-count {
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+.row {
+  --fold-card-padding: var(--fold-space-md);
+
+  box-shadow: var(--fold-shadow-sm);
+
+  &.edge-alert {
+    border-left: 3px solid var(--fold-ref-red-600);
+    border-radius: 0 var(--fold-radius-sm) var(--fold-radius-sm) 0;
+
+    .time {
+      color: var(--fold-color-alert-text);
+    }
+  }
+
+  &.is-past {
+    opacity: 0.68;
+
+    .time {
+      color: var(--fold-color-text-muted);
+    }
+
+    .customer {
+      font-weight: var(--fold-weight-semibold);
+      text-decoration: line-through;
+      text-decoration-color: var(--fold-color-border);
+    }
+  }
+}
+
+.row-line {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.time {
+  flex: none;
+  width: 4ch;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+.who {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+}
+
+.customer {
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text);
+}
+
+.sub {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+
+  &.is-done {
+    font-weight: var(--fold-weight-semibold);
+    color: var(--fold-ref-green-700);
+  }
+
+  &.is-late {
+    font-family: var(--fold-font-mono);
+    font-weight: var(--fold-weight-bold);
+    letter-spacing: var(--fold-tracking-wide);
+    text-transform: uppercase;
+    color: var(--fold-color-alert-text);
+  }
+
+  &.is-waiting {
+    color: var(--fold-color-warning-text);
+  }
+}
+
+.renvoi {
+  flex: none;
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-primary);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--fold-color-primary-strong);
+  }
+}
+
+.row.narrow {
+  .time {
+    width: auto;
+    white-space: nowrap;
+  }
+
+  &.edge-alert {
+    background: var(--fold-color-alert-surface);
+  }
+}
