@@ -17,6 +17,7 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
     status: "pending",
     grantedTerms: [],
     requestedTerm: null,
+    directDebitBlocked: false,
     primaryContact: {
       role: null,
       id: null,

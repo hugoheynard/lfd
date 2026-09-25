@@ -32,6 +32,8 @@ import { RemoveDeliveryAddressByStaffHandler } from "./application/commands/remo
 import { SetDefaultDeliveryByStaffHandler } from "./application/commands/set-default-delivery-by-staff.handler.js";
 import { UpdateDeliveryAddressByStaffHandler } from "./application/commands/update-delivery-address-by-staff.handler.js";
 import { GrantTermsHandler } from "./application/commands/grant-terms.handler.js";
+import { BlockDirectDebitHandler } from "./application/commands/block-direct-debit.handler.js";
+import { UnblockDirectDebitHandler } from "./application/commands/unblock-direct-debit.handler.js";
 import { UpdateIdentityByStaffHandler } from "./application/commands/update-identity-by-staff.handler.js";
 import { UploadKbisByStaffHandler } from "./application/commands/upload-kbis-by-staff.handler.js";
 import { PreferFulfillmentHandler } from "./application/commands/prefer-fulfillment.handler.js";
@@ -70,6 +72,10 @@ import { GetCompanyForStaffHandler } from "./application/queries/get-company-for
 import { ExportCustomersCsvHandler } from "./application/queries/export-customers-csv.handler.js";
 import { GetCustomerPortfolioHandler } from "./application/queries/get-customer-portfolio.handler.js";
 import { ListAllCompaniesHandler } from "./application/queries/list-all-companies.handler.js";
+import { ListDirectDebitBlocksHandler } from "./application/queries/list-direct-debit-blocks.handler.js";
+import { DirectDebitBlockReader } from "./domain/ports/direct-debit-block.reader.js";
+import { PrismaDirectDebitBlockReader } from "./infrastructure/prisma-direct-debit-block.reader.js";
+import { AdminDirectDebitBlocksController } from "./http/admin-direct-debit-blocks.controller.js";
 import { ListCompanyAddressesHandler } from "./application/queries/list-company-addresses.handler.js";
 import { GetMyCompanyActivationHandler } from "./application/queries/get-my-company-activation.handler.js";
 import { AccountReader } from "./domain/ports/account.reader.js";
@@ -171,6 +177,7 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     AdminSupportController,
     AdminAccessPendingController,
     AdminCompaniesController,
+    AdminDirectDebitBlocksController,
     AdminCompanyMembersController,
     AdminCompanyContactsController,
     AdminCompanyPiecesController,
@@ -245,6 +252,8 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     RevokeKbisCertificationHandler,
     UpdateIdentityByStaffHandler,
     GrantTermsHandler,
+    BlockDirectDebitHandler,
+    UnblockDirectDebitHandler,
     PreferFulfillmentByStaffHandler,
     SaveBillingAddressByStaffHandler,
     AddDeliveryAddressByStaffHandler,
@@ -255,11 +264,13 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     HandleSupportRequestHandler,
     ListSupportRequestsHandler,
     ListAllCompaniesHandler,
+    ListDirectDebitBlocksHandler,
     GetCustomerPortfolioHandler,
     ExportCustomersCsvHandler,
     { provide: UserProfileRepository, useClass: PrismaUserProfileRepository },
     { provide: NavPreferencesRepository, useClass: PrismaNavPreferencesRepository },
     { provide: AdminCompanyReader, useClass: PrismaAdminCompanyReader },
+    { provide: DirectDebitBlockReader, useClass: PrismaDirectDebitBlockReader },
     { provide: PendingAccessReader, useClass: PrismaPendingAccessReader },
     ListPendingAccessHandler,
     IssuePasswordLinkHandler,

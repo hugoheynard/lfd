@@ -8,6 +8,7 @@ import { Company, type CompanySoftState } from "../domain/entities/company.js";
 import { SiretAlreadyRegisteredError } from "../domain/errors/account-errors.js";
 import { CompanyRepository, type KbisLocation } from "../domain/ports/company.repository.js";
 import { KbisDeposit } from "../domain/value-objects/kbis-deposit.js";
+import { DirectDebitBlock } from "../domain/value-objects/direct-debit-block.js";
 import { ContactDetails } from "../domain/value-objects/contact-details.js";
 
 /** Préfixe de la référence société — ce que le `P-` du produit est à un article. */
@@ -206,6 +207,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
       suspensionCause: row.suspensionCause,
       nafCode: row.nafCode,
       kbis: kbisOf(row),
+      directDebitBlock: directDebitBlockOf(row),
       fulfillmentPreference: {
         method: row.preferredFulfillmentMethod,
         pickupAddressId: row.preferredPickupAddressId,
@@ -247,6 +249,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
         preferredDeliveryAddressId: state.fulfillmentPreference.deliveryAddressId,
         deliverySignatureRequired: state.fulfillmentPreference.signatureRequired,
         ...kbisColumns(state.kbis),
+        ...directDebitBlockColumns(state.directDebitBlock),
       },
     });
   }
@@ -416,5 +419,41 @@ function kbisColumns(kbis: KbisDeposit | null): {
     // un nom vide — et la lecture n'a ainsi qu'un seul cas à traiter.
     kbisCertifiedByName: blankToNull(certification?.byName),
     kbisCertifiedByRole: blankToNull(certification?.byRole),
+  };
+}
+
+/** Les colonnes du blocage du prélèvement d'une ligne `companies`. */
+interface DirectDebitBlockRow {
+  readonly directDebitBlockedAt: Date | null;
+  readonly directDebitBlockedBy: string | null;
+  readonly directDebitBlockReason: string | null;
+}
+
+/**
+ * Ligne → blocage, ou `null`. Les trois colonnes sont nulles ou posées ensemble
+ * (contrainte `companies_direct_debit_block_complete`) ; on exige quand même
+ * les trois plutôt que l'instant seul.
+ */
+function directDebitBlockOf(row: DirectDebitBlockRow): DirectDebitBlock | null {
+  if (
+    row.directDebitBlockedAt === null ||
+    row.directDebitBlockedBy === null ||
+    row.directDebitBlockReason === null
+  ) {
+    return null;
+  }
+  return DirectDebitBlock.reconstitute(
+    row.directDebitBlockedAt,
+    row.directDebitBlockedBy,
+    row.directDebitBlockReason,
+  );
+}
+
+/** Blocage → colonnes, toujours les trois : débloquer les remet à `null` ensemble. */
+function directDebitBlockColumns(block: DirectDebitBlock | null): DirectDebitBlockRow {
+  return {
+    directDebitBlockedAt: block?.blockedAt ?? null,
+    directDebitBlockedBy: block?.blockedBy ?? null,
+    directDebitBlockReason: block?.reason ?? null,
   };
 }

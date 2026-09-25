@@ -56,6 +56,10 @@ export const ACCOUNT_FACTS = {
   paymentTermsGranted: "company.payment_terms_granted",
   /** Un agent suspend, réactive ou résilie le compte. */
   statusChanged: "company.status_changed",
+  /** La comptabilité bloque le prélèvement mensuel — le crédit reste accordé. */
+  directDebitBlocked: "company.direct_debit_blocked",
+  /** La comptabilité rétablit le prélèvement mensuel. */
+  directDebitUnblocked: "company.direct_debit_unblocked",
   /** Un agent écrit l'adresse de facturation — celle qui part sur les factures. */
   billingAddressSaved: "company.billing_address_saved",
   deliveryAddressAdded: "company.delivery_address_added",

@@ -157,10 +157,17 @@ export class OrderNotPayableError extends BusinessError {
  * la plateforme livrerait à crédit sans jamais l'avoir décidé.
  */
 export class AccountSettlementNotGrantedError extends BusinessError {
-  constructor() {
+  /**
+   * @param directDebitBlocked le crédit est accordé mais la comptabilité a
+   * suspendu le prélèvement — le message le dit, pour qu'on ne cherche pas à
+   * rouvrir un crédit qui existe.
+   */
+  constructor(readonly directDebitBlocked = false) {
     super(
       "orders.settlement.account_not_granted",
-      "Cette société ne règle pas au compte : la commande doit être réglée par lien de paiement.",
+      directDebitBlocked
+        ? "Le prélèvement mensuel de cette société est suspendu par la comptabilité : la commande doit être réglée par lien de paiement (carte)."
+        : "Cette société ne règle pas au compte : la commande doit être réglée par lien de paiement.",
     );
   }
 }
@@ -321,14 +328,25 @@ export class IdempotencyKeyReusedError extends BusinessError {
  * ouvrir les termes.
  */
 export class TermsNotGrantedError extends BusinessError {
-  constructor(readonly companyId: string | null) {
-    super(
-      "order.terms_not_granted",
-      companyId === null
-        ? "Une commande personnelle se règle par carte : le compte se négocie avec une société."
-        : "Aucun terme de paiement n'a été accordé à cette société : cette commande se règle par carte.",
-    );
+  /**
+   * @param directDebitBlocked le crédit est accordé mais le prélèvement est
+   * suspendu : la sortie est la même (la carte), la raison ne l'est pas.
+   */
+  constructor(
+    readonly companyId: string | null,
+    readonly directDebitBlocked = false,
+  ) {
+    super("order.terms_not_granted", termsNotGrantedMessage(companyId, directDebitBlocked));
   }
+}
+
+function termsNotGrantedMessage(companyId: string | null, directDebitBlocked: boolean): string {
+  if (companyId === null) {
+    return "Une commande personnelle se règle par carte : le compte se négocie avec une société.";
+  }
+  return directDebitBlocked
+    ? "Le prélèvement mensuel de cette société est suspendu : réglez cette commande par carte. Contactez-nous pour le rétablir."
+    : "Aucun terme de paiement n'a été accordé à cette société : cette commande se règle par carte.";
 }
 
 /**

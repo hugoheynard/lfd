@@ -6,6 +6,12 @@ export type { OrderCompanyStatus } from "./company-status.reader.js";
 export type OrderRole = "owner" | "admin" | "orders" | "billing";
 
 /**
+ * Où en est le règlement au compte d'une société : accordé, accordé mais
+ * prélèvement bloqué par la comptabilité, ou jamais accordé.
+ */
+export type AccountSettlementStanding = "granted" | "blocked" | "none";
+
+/**
  * Port de **lecture** des garde-fous d'une commande : le rôle du demandeur dans
  * l'entreprise (mur de tenancy), le statut d'activation (droit de commander) et le
  * terme de règlement (qui décide si une carte est exigée au checkout). Le contexte
@@ -19,11 +25,15 @@ export abstract class OrderGuardReader extends CompanyStatusReader {
   abstract roleOf(userId: string, companyId: string): Promise<OrderRole | null>;
 
   /**
-   * Cette société règle-t-elle **au compte** ? (Faux si elle n'existe pas.)
+   * Cette société règle-t-elle **au compte** ? (`none` si elle n'existe pas.)
    *
-   * Vrai dès qu'un crédit lui est accordé : c'est alors le régime négocié, donc
-   * le défaut. Payer à la commande reste possible — mais c'est le client qui le
-   * demande, commande par commande, et ça ne se lit pas ici.
+   * `granted` dès qu'un crédit lui est accordé : c'est alors le régime négocié,
+   * donc le défaut. Payer à la commande reste possible — mais c'est le client
+   * qui le demande, commande par commande, et ça ne se lit pas ici.
+   *
+   * Trois états et pas un booléen : un crédit accordé dont le prélèvement est
+   * **bloqué** ne règle pas au compte, et le refus doit pouvoir dire
+   * « suspendu » plutôt que « jamais accordé ».
    */
-  abstract settlesOnAccount(companyId: string): Promise<boolean>;
+  abstract settlesOnAccount(companyId: string): Promise<AccountSettlementStanding>;
 }

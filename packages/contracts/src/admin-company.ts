@@ -55,6 +55,11 @@ export interface AdminCompanyView {
   readonly grantedTerms: readonly DeferredTerm[];
   /** Terme **demandé** par le client, en attente ; `null` = aucune demande. */
   readonly requestedTerm: DeferredTerm | null;
+  /**
+   * Le prélèvement mensuel est bloqué par la comptabilité — `grantedTerms` est
+   * conservé, les commandes se règlent par carte. Ajouté le 2026-09-25.
+   */
+  readonly directDebitBlocked: boolean;
   /** Contact principal — le futur interlocuteur du commercial. */
   readonly primaryContact: ContactView;
   /** Qui administre l'espace côté client, ou `null` si personne encore. */
@@ -178,6 +183,30 @@ export interface StaffActorView {
  */
 export interface AdminCompanyFicheView extends AdminCompanyDetailView {
   readonly gate: ActivationGate;
+}
+
+/**
+ * Une société au crédit mensuel, telle que la page « Blocages du prélèvement »
+ * la liste — bloquée ou non. Plan :
+ * `documentation/comptabilite/plan-blocage-prelevement-et-liens-de-paiement.md` §1.
+ */
+export interface DirectDebitBlockView {
+  readonly companyId: string;
+  /** Référence humaine courte (`C-XXXXXX`). */
+  readonly reference: string;
+  readonly raisonSociale: string;
+  readonly enseigne: string;
+  /** `null` = au prélèvement ; sinon le blocage en cours. */
+  readonly block: DirectDebitBlockDetailView | null;
+}
+
+/** Le blocage en cours : depuis quand, par qui, pourquoi. */
+export interface DirectDebitBlockDetailView {
+  /** ISO. */
+  readonly blockedAt: string;
+  /** L'agent, nommé par l'annuaire — `null` s'il n'y est pas rattaché. */
+  readonly blockedBy: StaffActorView | null;
+  readonly reason: string;
 }
 
 /** L'ouverture du compte, datée et signée. */

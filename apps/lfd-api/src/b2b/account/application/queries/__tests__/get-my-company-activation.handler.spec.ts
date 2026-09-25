@@ -25,6 +25,7 @@ const detail: AdminCompanyDetailView = {
   status: "pending",
   grantedTerms: [],
   requestedTerm: null,
+  directDebitBlocked: false,
   primaryContact: {
     role: null,
     id: null,

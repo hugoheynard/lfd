@@ -188,6 +188,14 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
   "company.status_changed": labelled({
     action: z.enum(["suspend", "reactivate", "terminate"]),
   }),
+  /**
+   * La comptabilité suspend le prélèvement mensuel (crédit conservé). L'auteur
+   * est sur la ligne, pas dans la charge. Né le 2026-09-25 : aucune forme d'avant.
+   */
+  "company.direct_debit_blocked": fact(
+    payload({ subjectLabel: subjectLabel(), reason: z.string().min(1) }),
+  ),
+  "company.direct_debit_unblocked": fact(payload({ subjectLabel: subjectLabel() })),
   "company.billing_address_saved": labelled(place),
   "company.delivery_address_added": addressCited(place),
   "company.delivery_address_updated": addressCited(place),

@@ -16,6 +16,7 @@ function company(overrides: Partial<AdminCompany> = {}): AdminCompany {
     status: 'active',
     grantedTerms: [],
     requestedTerm: null,
+    directDebitBlocked: false,
     primaryContact: {
       id: null,
       // L'API renvoie le rôle du contact ; la fixture le portait pas.

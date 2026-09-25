@@ -42,7 +42,7 @@ function reader(order: OwnedOrder | null): OrderReader {
 const guard: OrderGuardReader = {
   roleOf: () => Promise.resolve(null),
   companyStatusOf: () => Promise.resolve(null),
-  settlesOnAccount: () => Promise.resolve(false),
+  settlesOnAccount: () => Promise.resolve("none" as const),
 };
 
 function payments(sink: { retrieved: string | null } = { retrieved: null }): PaymentGateway {

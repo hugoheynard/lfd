@@ -21,6 +21,7 @@ function company(over: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
     status: 'pending',
     grantedTerms: [],
     requestedTerm: null,
+    directDebitBlocked: false,
     primaryContact: {
       id: null,
       // L'API renvoie le rôle du contact ; la fixture le portait pas.

@@ -114,6 +114,13 @@ export interface CompanyView {
   readonly grantedTerms: readonly DeferredTerm[];
   /** Terme **demandé** par le client, en attente de validation staff ; `null` = aucune demande. */
   readonly requestedTerm: DeferredTerm | null;
+  /**
+   * Le prélèvement mensuel est **suspendu** par la comptabilité : `grantedTerms`
+   * reste tel quel (le client garde de quoi comprendre qu'il a un crédit), mais
+   * ses commandes se règlent par carte. Le serveur refuse « au compte » de toute
+   * façon ; ce champ sert à ne plus le proposer. Ajouté le 2026-09-25.
+   */
+  readonly directDebitBlocked: boolean;
   /** Rôle de la personne dans CETTE société. */
   readonly role: CompanyMemberRole;
   /** Contact **principal** (carte « Admin du compte entreprise »), toujours présent. */

@@ -24,6 +24,7 @@ function company(over: Partial<AdminCompanyView>): AdminCompanyView {
     status: "active",
     grantedTerms: [],
     requestedTerm: null,
+    directDebitBlocked: false,
     primaryContact: {
       id: null,
       firstName: "Camille",

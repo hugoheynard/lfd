@@ -154,3 +154,11 @@ export const adminCreateCompanyPayload = createCompanyPayload.extend({
 });
 
 export type AdminCreateCompanyPayload = z.infer<typeof adminCreateCompanyPayload>;
+
+/**
+ * Bloquer le prélèvement d'une société : la raison seule. Sa borne (1–500)
+ * appartient au value object `DirectDebitBlock`, pas à ce schéma.
+ */
+export const blockDirectDebitPayload = z.strictObject({ reason: z.string() });
+
+export type BlockDirectDebitPayload = z.infer<typeof blockDirectDebitPayload>;

@@ -22,6 +22,12 @@ import {
   type KbisCertification,
   type KbisFile,
 } from "../value-objects/kbis-deposit.js";
+import { DirectDebitBlock } from "../value-objects/direct-debit-block.js";
+import {
+  DirectDebitAlreadyBlockedError,
+  DirectDebitNotBlockedError,
+  NoDirectDebitToBlockError,
+} from "../errors/direct-debit-errors.js";
 
 const TEXT_MAX_LENGTH = 160;
 
@@ -101,6 +107,8 @@ export interface ReconstituteCompanyInput {
    * papiers déposés n'en a pas, et c'est l'état de départ de toutes.
    */
   readonly kbis?: KbisDeposit | null;
+  /** Le blocage du prélèvement, **facultatif** : absent = non bloqué. */
+  readonly directDebitBlock?: DirectDebitBlock | null;
 }
 
 /**
@@ -147,6 +155,8 @@ export interface CompanySoftState {
   readonly fulfillmentPreference: FulfillmentPreferenceView;
   /** L'extrait déposé et sa certification, ou `null` — écrit avec le reste. */
   readonly kbis: KbisDeposit | null;
+  /** Le blocage du prélèvement, ou `null` — les trois colonnes ensemble. */
+  readonly directDebitBlock: DirectDebitBlock | null;
 }
 
 /**
@@ -190,6 +200,8 @@ export class Company {
     private nafCodeValue: string,
     /** L'extrait déposé, ou `null` : aucun papier n'est encore arrivé. */
     private kbisValue: KbisDeposit | null,
+    /** Le prélèvement bloqué (crédit conservé), ou `null`. */
+    private directDebitBlockValue: DirectDebitBlock | null,
   ) {}
 
   static declare(identity: CompanyIdentityInput, contact: CompanyContact | null): Company {
@@ -221,6 +233,8 @@ export class Company {
       "",
       // Aucun papier : un compte s'ouvre sans, ils arrivent ensuite.
       null,
+      // Aucun crédit, donc rien à bloquer.
+      null,
     );
   }
 
@@ -243,6 +257,7 @@ export class Company {
       input.suspensionCause,
       input.nafCode,
       input.kbis ?? null,
+      input.directDebitBlock ?? null,
     );
   }
 
@@ -413,9 +428,47 @@ export class Company {
    * Dès qu'un crédit est accordé, c'est le régime négocié, donc le défaut. Le
    * client garde la possibilité de payer une commande ponctuelle par carte —
    * mais c'est lui qui le demande, commande par commande.
+   *
+   * Un prélèvement **bloqué** suspend le régime sans retirer le crédit.
    */
   settlesOnAccount(): boolean {
-    return this.grantedTermsValue.length > 0;
+    return this.grantedTermsValue.length > 0 && this.directDebitBlockValue === null;
+  }
+
+  /** Le blocage du prélèvement en cours, ou `null`. */
+  get directDebitBlock(): DirectDebitBlock | null {
+    return this.directDebitBlockValue;
+  }
+
+  /**
+   * **Bloque le prélèvement** : les commandes à venir se règlent par carte. Le
+   * crédit accordé n'est pas touché — débloquer le rend tel quel.
+   *
+   * @throws {DirectDebitAlreadyBlockedError} déjà bloqué : on n'écrase pas la
+   * raison et l'auteur du premier blocage.
+   * @throws {NoDirectDebitToBlockError} aucun crédit accordé : ce client paie
+   * déjà par carte.
+   */
+  blockDirectDebit(reason: string, at: Date, by: string): void {
+    if (this.directDebitBlockValue !== null) {
+      throw new DirectDebitAlreadyBlockedError(this.identityId ?? "");
+    }
+    if (this.grantedTermsValue.length === 0) {
+      throw new NoDirectDebitToBlockError(this.identityId ?? "");
+    }
+    this.directDebitBlockValue = DirectDebitBlock.impose(reason, at, by);
+  }
+
+  /**
+   * **Débloque le prélèvement** : le crédit accordé redevient le régime.
+   *
+   * @throws {DirectDebitNotBlockedError} rien n'était bloqué.
+   */
+  unblockDirectDebit(): void {
+    if (this.directDebitBlockValue === null) {
+      throw new DirectDebitNotBlockedError(this.identityId ?? "");
+    }
+    this.directDebitBlockValue = null;
   }
 
   /**
@@ -440,6 +493,12 @@ export class Company {
   grantTerms(terms: readonly DeferredTerm[]): void {
     this.grantedTermsValue = [...new Set(terms)];
     this.requestedTermValue = null;
+    // Plus aucun crédit, plus rien à bloquer : garder le blocage laisserait un
+    // blocage fantôme, qui ressurgirait au prochain octroi sans que personne
+    // ne l'ait redécidé.
+    if (this.grantedTermsValue.length === 0) {
+      this.directDebitBlockValue = null;
+    }
   }
 
   /** Comment ce client est servi d'habitude. */
@@ -651,6 +710,7 @@ export class Company {
       suspensionCause: this.suspensionCauseValue,
       nafCode: this.nafCodeValue,
       kbis: this.kbisValue,
+      directDebitBlock: this.directDebitBlockValue,
     };
   }
 }

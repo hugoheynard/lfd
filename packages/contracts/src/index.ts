@@ -15,6 +15,8 @@ export type {
   CompanyOpened,
   HolderAttached,
   SuspensionCause,
+  DirectDebitBlockView,
+  DirectDebitBlockDetailView,
 } from "./admin-company.js";
 export type {
   CatalogueView,

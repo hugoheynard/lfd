@@ -45,6 +45,7 @@
   "test/delivery-procedure-refusals.e2e-spec.ts": 19104,
   "test/delivery-procedure.e2e-spec.ts": 11841,
   "test/devis-comptable.e2e-spec.ts": 9279,
+  "test/direct-debit-blocks.e2e-spec.ts": 6500,
   "test/feature-access-guards.e2e-spec.ts": 12099,
   "test/feature-access.e2e-spec.ts": 23394,
   "test/first-mandate-ledger.e2e-spec.ts": 6191,

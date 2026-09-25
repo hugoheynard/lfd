@@ -33,7 +33,7 @@ function guard(role: OrderRole | null): OrderGuardReader & { asked: boolean } {
     },
     companyStatusOf: () => Promise.resolve(null),
     paymentTermOf: () => Promise.resolve(null),
-    settlesOnAccount: () => Promise.resolve(false),
+    settlesOnAccount: () => Promise.resolve("none" as const),
   };
   return spy;
 }

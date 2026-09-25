@@ -28,6 +28,7 @@ function company(id: string, raisonSociale: string, enseigne = ''): Company {
     status: 'pending',
     grantedTerms: [],
     requestedTerm: null,
+    directDebitBlocked: false,
     role: 'admin',
     primaryContact: {
       id: null,

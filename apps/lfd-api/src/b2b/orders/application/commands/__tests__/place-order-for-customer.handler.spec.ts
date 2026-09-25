@@ -18,6 +18,7 @@ import {
 import { OrderPlacedEvent } from "../../../domain/events/order-placed.event.js";
 import {
   OrderGuardReader,
+  type AccountSettlementStanding,
   type OrderCompanyStatus,
   type OrderRole,
 } from "../../../domain/ports/order-guard.reader.js";
@@ -188,7 +189,7 @@ const LABO: PickupAddressView = {
 function guard(
   role: OrderRole | null,
   status: OrderCompanyStatus | null = "active",
-  onAccount = true,
+  onAccount: AccountSettlementStanding = "granted",
   asked: { userId: string | null } = { userId: null },
 ): OrderGuardReader {
   return {
@@ -379,7 +380,7 @@ describe("PlaceOrderForCustomerHandler — le mur", () => {
     const asked = { userId: null as string | null };
     const sink = { placed: null as OrderToPlace | null };
 
-    await handler(guard("orders", "active", true, asked), sink).execute(
+    await handler(guard("orders", "active", "granted", asked), sink).execute(
       new PlaceOrderForCustomerCommand("staff_1", payload()),
     );
 
@@ -463,7 +464,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     const intents = { intent: null as CreateIntentParams | null };
     const sink = { placed: null as OrderToPlace | null };
 
-    const result = await handler(guard("orders", "active", true), sink, {
+    const result = await handler(guard("orders", "active", "granted"), sink, {
       payments: payments(intents),
     }).execute(new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })));
 
@@ -478,10 +479,24 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     const sink = { placed: null as OrderToPlace | null };
 
     await expect(
-      handler(guard("orders", "active", false), sink).execute(
+      handler(guard("orders", "active", "none"), sink).execute(
         new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
       ),
     ).rejects.toBeInstanceOf(AccountSettlementNotGrantedError);
+    expect(sink.placed).toBeNull();
+  });
+
+  it("REFUSE le compte à une société dont le prélèvement est BLOQUÉ, en le disant", async () => {
+    // Plan « blocage du prélèvement », §1 : le crédit est accordé, la
+    // comptabilité l'a suspendu — le back-office ne passe pas outre.
+    const sink = { placed: null as OrderToPlace | null };
+
+    const refusal = handler(guard("orders", "active", "blocked"), sink).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
+    );
+
+    await expect(refusal).rejects.toBeInstanceOf(AccountSettlementNotGrantedError);
+    await expect(refusal).rejects.toThrow(/suspendu/u);
     expect(sink.placed).toBeNull();
   });
 
@@ -489,7 +504,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
     const sink = { placed: null as OrderToPlace | null };
 
     await expect(
-      handler(guard("orders", "pending", true), sink).execute(
+      handler(guard("orders", "pending", "granted"), sink).execute(
         new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "account" })),
       ),
     ).rejects.toBeInstanceOf(AccountSettlementNotGrantedError);

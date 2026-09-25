@@ -28,6 +28,7 @@ function makeCompany(
     status,
     grantedTerms: [],
     requestedTerm: null,
+    directDebitBlocked: false,
     primaryContact: {
       role: null,
       id: null,

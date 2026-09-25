@@ -6,6 +6,7 @@ import { ListAllCompaniesHandler } from "../list-all-companies.handler.js";
 
 const view: AdminCompanyView = {
   requestedTerm: null,
+  directDebitBlocked: false,
   owner: null,
   warnings: [],
   id: "company_1",

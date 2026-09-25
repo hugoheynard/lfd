@@ -47,6 +47,7 @@ export const TOMMEUSES: CompanyView = {
   status: 'active',
   grantedTerms: ['monthly'],
   requestedTerm: null,
+  directDebitBlocked: false,
   role: 'owner',
   primaryContact: HOLDER,
   contacts: [COMPTA],

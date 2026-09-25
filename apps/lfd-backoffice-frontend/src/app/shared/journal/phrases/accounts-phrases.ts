@@ -334,6 +334,24 @@ const statusChanged: Phrase = (fact) => {
     : byActor(fact, [text(verb), ...client(fact, 'of')], ['subjectLabel', 'action']);
 };
 
+/**
+ * « … a bloqué le prélèvement mensuel du client « X » : raison ». Fait né le
+ * 2026-09-25 (plan « blocage du prélèvement », §1) ; phrase minimale posée avec
+ * le fait pour que le registre reste complet — l'écran du lot 2 peut l'affiner.
+ */
+const directDebitBlocked: Phrase = (fact) => {
+  const reason = optional(fact.payload['reason']);
+  return byActor(
+    fact,
+    [
+      text('a bloqué le prélèvement mensuel '),
+      ...client(fact, 'of'),
+      ...(reason === null ? [] : [text(' : '), value(reason)]),
+    ],
+    ['subjectLabel', 'reason'],
+  );
+};
+
 /** « … a enregistré l'adresse de facturation du client « X », à Paris (75011) ». */
 const billingAddressSaved: Phrase = (fact) => {
   const place = placeOf(fact.payload);
@@ -651,6 +669,8 @@ export const ACCOUNTS_PHRASES = {
   'company.payment_terms_granted': paymentTermsGranted,
   'company.payment_term_requested': paymentTermRequested,
   'company.status_changed': statusChanged,
+  'company.direct_debit_blocked': directDebitBlocked,
+  'company.direct_debit_unblocked': onClient('a rétabli le prélèvement mensuel ', 'of'),
   'company.billing_address_saved': billingAddressSaved,
   'company.delivery_address_added': onDeliveryAddress('a ajouté', 'to'),
   'company.delivery_address_updated': onDeliveryAddress('a modifié', 'of'),

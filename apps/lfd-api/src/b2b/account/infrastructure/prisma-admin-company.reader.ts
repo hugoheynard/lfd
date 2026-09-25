@@ -27,6 +27,7 @@ const COMPANY_SELECT = {
   status: true,
   grantedTerms: true,
   requestedTerm: true,
+  directDebitBlockedAt: true,
   kbisFileName: true,
   kbisUploadedAt: true,
   kbisCertifiedAt: true,
@@ -197,6 +198,7 @@ function toView(company: CompanyRow, now: Date): AdminCompanyView {
     status: company.status,
     grantedTerms: company.grantedTerms,
     requestedTerm: company.requestedTerm,
+    directDebitBlocked: company.directDebitBlockedAt !== null,
     activatedAt: company.activatedAt?.toISOString() ?? null,
     primaryContact: {
       id: null,

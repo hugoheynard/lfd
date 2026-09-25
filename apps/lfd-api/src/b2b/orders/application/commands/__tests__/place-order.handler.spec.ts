@@ -18,10 +18,12 @@ import {
   NoDeliveryZoneForPostalCodeError,
   OrderCompanyNotFoundError,
   PickupNotConfiguredError,
+  TermsNotGrantedError,
 } from "../../../domain/errors/order-errors.js";
 import { UnknownSkuError } from "../../../../catalog/domain/errors/unknown-sku.error.js";
 import {
   OrderGuardReader,
+  type AccountSettlementStanding,
   type OrderCompanyStatus,
   type OrderRole,
 } from "../../../domain/ports/order-guard.reader.js";
@@ -217,7 +219,7 @@ const CATALOG: Record<string, UnsealedCatalogItem> = {
 function guard(
   role: OrderRole | null,
   status: OrderCompanyStatus | null,
-  onAccount = true,
+  onAccount: AccountSettlementStanding = "granted",
 ): OrderGuardReader {
   return {
     roleOf: () => Promise.resolve(role),
@@ -826,7 +828,7 @@ describe("PlaceOrderHandler", () => {
       discountAudiences: { b2b: true, b2c: false },
     };
     const handler = new PlaceOrderHandler(
-      guard("orders", "pending", false),
+      guard("orders", "pending", "none"),
       drafting(pickups(point), zones(), versionsAt(CURRENT_VERSION), { status: "pending" }),
       capturingRepo(sink),
       payments(),
@@ -848,7 +850,7 @@ describe("PlaceOrderHandler", () => {
   it("en COURSIER, refuse la livraison fermée aux particuliers pour une commande perso, sans rien écrire", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
-      guard(null, null, false),
+      guard(null, null, "none"),
       drafting(pickups(), zones(TARENTAISE), versionsAt(CURRENT_VERSION), {
         delivery: { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2c: false },
       }),
@@ -949,7 +951,7 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const intentSink = { intent: null as CreateIntentParams | null };
     const handler = new PlaceOrderHandler(
-      guard("orders", "active", false),
+      guard("orders", "active", "none"),
       drafting(pickups(LABO_POINT), zones()),
       capturingRepo(sink),
       payments(intentSink),
@@ -1123,5 +1125,91 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
     );
 
     expect(sink.placed).not.toBeNull();
+  });
+});
+
+/**
+ * Le prélèvement **bloqué** par la comptabilité (plan « blocage du
+ * prélèvement », §1) : le crédit reste accordé, mais la commande ne se porte
+ * plus au compte.
+ */
+describe("PlaceOrderHandler — prélèvement bloqué", () => {
+  function blockedHandler(
+    standing: AccountSettlementStanding,
+    sink: { placed: OrderToPlace | null },
+    intentSink: { intent: CreateIntentParams | null },
+  ): PlaceOrderHandler {
+    return new PlaceOrderHandler(
+      guard("orders", "active", standing),
+      drafting(pickups(LABO_POINT), zones()),
+      capturingRepo(sink),
+      payments(intentSink),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+    );
+  }
+
+  it("REFUSE « au compte » en nommant la suspension, sans rien enregistrer", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intentSink = { intent: null as CreateIntentParams | null };
+
+    const refusal = blockedHandler("blocked", sink, intentSink).execute(
+      new PlaceOrderCommand("u1", payload({ settlement: "account" }), "c1"),
+    );
+
+    await expect(refusal).rejects.toBeInstanceOf(TermsNotGrantedError);
+    await expect(refusal).rejects.toThrow(/suspendu/u);
+    expect(sink.placed).toBeNull();
+    expect(intentSink.intent).toBeNull();
+  });
+
+  it("sans mode choisi, bascule sur la carte en silence", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intentSink = { intent: null as CreateIntentParams | null };
+
+    await blockedHandler("blocked", sink, intentSink).execute(
+      new PlaceOrderCommand("u1", payload(), "c1"),
+    );
+
+    expect(intentSink.intent).not.toBeNull();
+    expect(sink.placed?.paymentStatus).toBe("pending");
+  });
+
+  it("par carte demandée, passe comme avant", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intentSink = { intent: null as CreateIntentParams | null };
+
+    await blockedHandler("blocked", sink, intentSink).execute(
+      new PlaceOrderCommand("u1", payload({ settlement: "card" }), "c1"),
+    );
+
+    expect(sink.placed?.paymentStatus).toBe("pending");
+  });
+
+  it("sans crédit du tout, le refus ne parle PAS de suspension", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intentSink = { intent: null as CreateIntentParams | null };
+
+    const refusal = blockedHandler("none", sink, intentSink).execute(
+      new PlaceOrderCommand("u1", payload({ settlement: "account" }), "c1"),
+    );
+
+    await expect(refusal).rejects.toThrow(/Aucun terme de paiement/u);
+  });
+
+  it("crédit accordé et non bloqué : « au compte » passe sans intention", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intentSink = { intent: null as CreateIntentParams | null };
+
+    await blockedHandler("granted", sink, intentSink).execute(
+      new PlaceOrderCommand("u1", payload({ settlement: "account" }), "c1"),
+    );
+
+    expect(intentSink.intent).toBeNull();
+    expect(sink.placed?.paymentStatus).toBe("not_required");
   });
 });

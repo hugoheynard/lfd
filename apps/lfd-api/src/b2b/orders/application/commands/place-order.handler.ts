@@ -14,7 +14,10 @@ import {
   TermsNotGrantedError,
 } from "../../domain/errors/order-errors.js";
 import { OrderPlacedEvent } from "../../domain/events/order-placed.event.js";
-import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
+import {
+  OrderGuardReader,
+  type AccountSettlementStanding,
+} from "../../domain/ports/order-guard.reader.js";
 import { OrderIdempotencyStore } from "../../domain/ports/order-idempotency.store.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
@@ -253,7 +256,8 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     companyId: string | null,
     settlement: OrderSettlement | null,
   ): Promise<boolean> {
-    const onAccount = await this.maySettleOnAccount(companyId);
+    const standing = await this.accountStanding(companyId);
+    const onAccount = standing === "granted";
     // **Payer comptant est toujours possible**, y compris pour une société à qui
     // le mensuel a été accordé. Le crédit est une facilité, pas une obligation :
     // un client qui veut régler tout de suite avec SON tarif doit pouvoir le
@@ -266,27 +270,29 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     // surprise qui se règle au téléphone.
     if (settlement === "account") {
       if (!onAccount) {
-        throw new TermsNotGrantedError(companyId);
+        throw new TermsNotGrantedError(companyId, standing === "blocked");
       }
       return false;
     }
     // Rien de demandé : la décision d'avant, mot pour mot. C'est le chemin du
-    // back-office, qui n'a personne devant l'écran pour choisir.
+    // back-office, qui n'a personne devant l'écran pour choisir. Un prélèvement
+    // bloqué y bascule sur la carte en silence — personne n'a demandé le compte.
     return !onAccount;
   }
 
   /**
-   * Une société **active** à qui un crédit a été accordé peut régler au compte.
+   * Une société **active** à qui un crédit a été accordé, et dont le
+   * prélèvement n'est pas bloqué, peut régler au compte.
    *
    * Sans entreprise, ou entreprise non activée : jamais. Le crédit se négocie
    * avec une société cliente, pas avec un panier.
    */
-  private async maySettleOnAccount(companyId: string | null): Promise<boolean> {
+  private async accountStanding(companyId: string | null): Promise<AccountSettlementStanding> {
     if (companyId === null) {
-      return false;
+      return "none";
     }
     if ((await this.guard.companyStatusOf(companyId)) !== "active") {
-      return false;
+      return "none";
     }
     return this.guard.settlesOnAccount(companyId);
   }

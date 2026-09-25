@@ -135,3 +135,33 @@ export class CompanyStatusChangedByStaffEvent extends CompanyStaffAct {
     return { action: this.action };
   }
 }
+
+/**
+ * La comptabilité a bloqué le prélèvement mensuel : les commandes à venir se
+ * règlent par carte. La raison part dans la charge — c'est elle qu'on relira
+ * avant de débloquer.
+ */
+export class DirectDebitBlockedEvent extends CompanyStaffAct {
+  constructor(
+    company: NamedRef,
+    readonly reason: string,
+  ) {
+    super(company);
+  }
+  protected type(): JournalFactType {
+    return ACCOUNT_FACTS.directDebitBlocked;
+  }
+  protected override details(): Record<string, unknown> {
+    return { reason: this.reason };
+  }
+}
+
+/** La comptabilité a rétabli le prélèvement mensuel. */
+export class DirectDebitUnblockedEvent extends CompanyStaffAct {
+  constructor(company: NamedRef) {
+    super(company);
+  }
+  protected type(): JournalFactType {
+    return ACCOUNT_FACTS.directDebitUnblocked;
+  }
+}

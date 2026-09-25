@@ -64,6 +64,7 @@ export class PrismaAccountReader extends AccountReader {
                 status: true,
                 grantedTerms: true,
                 requestedTerm: true,
+                directDebitBlockedAt: true,
                 preferredFulfillmentMethod: true,
                 preferredPickupAddressId: true,
                 preferredDeliveryAddressId: true,
@@ -112,6 +113,7 @@ export class PrismaAccountReader extends AccountReader {
       status: company.status,
       grantedTerms: company.grantedTerms,
       requestedTerm: company.requestedTerm,
+      directDebitBlocked: company.directDebitBlockedAt !== null,
       fulfillmentPreference: {
         method: company.preferredFulfillmentMethod,
         pickupAddressId: company.preferredPickupAddressId,

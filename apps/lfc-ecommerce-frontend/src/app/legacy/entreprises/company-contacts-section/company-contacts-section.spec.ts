@@ -30,6 +30,7 @@ function company(over: Partial<Company> = {}): Company {
     status: 'active',
     grantedTerms: [],
     requestedTerm: null,
+    directDebitBlocked: false,
     role: 'admin',
     primaryContact: {
       id: null,

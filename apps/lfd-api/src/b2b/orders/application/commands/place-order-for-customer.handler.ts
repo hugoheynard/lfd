@@ -131,9 +131,12 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
 
   /** Le crédit se négocie société par société : il se constate, il ne se suppose pas. */
   private async ensureSettlesOnAccount(companyId: string): Promise<void> {
-    const status = await this.guard.companyStatusOf(companyId);
-    if (status !== "active" || !(await this.guard.settlesOnAccount(companyId))) {
+    if ((await this.guard.companyStatusOf(companyId)) !== "active") {
       throw new AccountSettlementNotGrantedError();
+    }
+    const standing = await this.guard.settlesOnAccount(companyId);
+    if (standing !== "granted") {
+      throw new AccountSettlementNotGrantedError(standing === "blocked");
     }
   }
 }
