@@ -9,6 +9,7 @@ import { HandoverAttestation } from "./application/services/handover-attestation
 import { HandoverAttestationsReader } from "./domain/ports/handover-attestations.reader.js";
 import { OrderHandoverRepository } from "./domain/ports/order-handover.repository.js";
 import { HandoverController } from "./http/handover.controller.js";
+import { HandoverSupervisionController } from "./http/handover-supervision.controller.js";
 import { PrismaHandoverAttestationsReader } from "./infrastructure/prisma-handover-attestations.reader.js";
 import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-handover.repository.js";
 
@@ -27,7 +28,7 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
  * comme implémentation du port d'un autre.
  */
 @Module({
-  controllers: [HandoverController],
+  controllers: [HandoverController, HandoverSupervisionController],
   providers: [
     ConfirmHandoverHandler,
     ConfirmManualHandoverHandler,

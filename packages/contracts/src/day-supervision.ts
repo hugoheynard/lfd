@@ -12,9 +12,16 @@ import { fulfillmentMethodSchema, fulfillmentSourceSchema } from "./order.js";
  * particuliers compris —, quelqu'un qui n'a pas forcément `b2b_orders`.
  */
 
-/** La date de service supervisée, `AAAA-MM-JJ`. */
+/**
+ * La date de service supervisée, `AAAA-MM-JJ`. **Facultative** depuis le
+ * 2026-09-25 : absente, le serveur rend le jour courant de SON horloge, à
+ * l'heure de Paris — l'horloge du poste n'est pas une autorité (plan §5).
+ */
 export const daySupervisionQuerySchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "date attendue au format AAAA-MM-JJ"),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/u, "date attendue au format AAAA-MM-JJ")
+    .optional(),
 });
 export type DaySupervisionQuery = z.infer<typeof daySupervisionQuerySchema>;
 

@@ -140,5 +140,6 @@
   "test/storefront.e2e-spec.ts": 20997,
   "test/subscriptions-journal.e2e-spec.ts": 14875,
   "test/subscriptions.e2e-spec.ts": 7639,
+  "test/supervision-routes.e2e-spec.ts": 7790,
   "test/support-requests.e2e-spec.ts": 15183
 }

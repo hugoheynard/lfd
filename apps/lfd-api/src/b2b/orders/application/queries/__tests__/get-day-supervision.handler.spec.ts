@@ -51,6 +51,18 @@ describe("GetDaySupervisionHandler", () => {
     expect(view.asOf).toBe(NOW.toISOString());
   });
 
+  it("sans jour demandé, lit le jour courant du Clock à l'heure de Paris", async () => {
+    // 23 h 30 UTC le 10 novembre = 00 h 30 le 11 à Paris : l'UTC dirait la veille.
+    const reader = new StubReader([], 0);
+    const view = await new GetDaySupervisionHandler(
+      reader,
+      new FixedClock(new Date(`${DAY}T23:30:00.000Z`)),
+    ).execute(new GetDaySupervisionQuery());
+
+    expect(reader.days).toEqual(["2026-11-11"]);
+    expect(view.date).toBe("2026-11-11");
+  });
+
   it("rend le compte des commandes sans date tel que le port le donne", async () => {
     const view = await new GetDaySupervisionHandler(
       new StubReader([], 3),

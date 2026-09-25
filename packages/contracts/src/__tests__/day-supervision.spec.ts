@@ -5,10 +5,13 @@ import {
 } from "../day-supervision.js";
 
 describe("daySupervisionQuerySchema", () => {
-  it("exige une date AAAA-MM-JJ", () => {
+  it("refuse une date qui n'est pas AAAA-MM-JJ", () => {
     expect(daySupervisionQuerySchema.safeParse({ date: "2026-10-03" }).success).toBe(true);
     expect(daySupervisionQuerySchema.safeParse({ date: "03/10/2026" }).success).toBe(false);
-    expect(daySupervisionQuerySchema.safeParse({}).success).toBe(false);
+  });
+
+  it("accepte l'absence de date : le serveur prend alors le jour de son horloge", () => {
+    expect(daySupervisionQuerySchema.safeParse({}).success).toBe(true);
   });
 });
 

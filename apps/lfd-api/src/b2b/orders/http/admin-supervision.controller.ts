@@ -23,7 +23,10 @@ import { GetDaySupervisionQuery } from "../application/queries/get-day-supervisi
 export class AdminSupervisionController {
   constructor(private readonly queries: QueryBus) {}
 
-  /** Une date de SERVICE (retrait ou livraison), pas de commande. */
+  /**
+   * Une date de SERVICE (retrait ou livraison), pas de commande. Absente, le
+   * jour courant du serveur à Paris : l'écran n'a pas à choisir sa journée.
+   */
   @Get("day")
   day(
     @Query(new ZodQuery(daySupervisionQuerySchema)) query: DaySupervisionQuery,

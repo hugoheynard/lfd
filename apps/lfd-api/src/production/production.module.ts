@@ -27,6 +27,7 @@ import { ProductionDayRepository } from "./domain/ports/production-day.repositor
 import { ProductionPlanReader } from "./domain/ports/production-plan.reader.js";
 import { ProductionDayController } from "./http/production-day.controller.js";
 import { ProductionPackingController } from "./http/production-packing.controller.js";
+import { ProductionSupervisionController } from "./http/production-supervision.controller.js";
 import { ProductionWorksheetController } from "./http/production-worksheet.controller.js";
 import {
   PrismaProductionContainerReader,
@@ -54,6 +55,7 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
     ProductionDayController,
     ProductionWorksheetController,
     ProductionPackingController,
+    ProductionSupervisionController,
   ],
   providers: [
     CloseProductionDayHandler,

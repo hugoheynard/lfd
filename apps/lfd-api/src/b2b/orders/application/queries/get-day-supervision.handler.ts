@@ -1,4 +1,4 @@
-import type { DaySupervisionView, LateOrder } from "@lfd/contracts";
+import { instantToLocal, type DaySupervisionView, type LateOrder } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
@@ -22,8 +22,11 @@ export class GetDaySupervisionHandler implements IQueryHandler<
     private readonly clock: Clock,
   ) {}
 
-  async execute({ day }: GetDaySupervisionQuery): Promise<DaySupervisionView> {
+  async execute(query: GetDaySupervisionQuery): Promise<DaySupervisionView> {
     const now = this.clock.now();
+    // Le jour de Paris, et non `toISOString().slice(0, 10)` : à 00 h 30 l'été,
+    // il est encore la veille en UTC.
+    const day = query.day ?? instantToLocal(now).day;
     const [orders, undated] = await Promise.all([
       this.reader.ordersOn(day),
       this.reader.countUndated(),
