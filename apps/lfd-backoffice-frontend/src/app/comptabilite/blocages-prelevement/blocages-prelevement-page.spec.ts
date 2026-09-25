@@ -1,4 +1,5 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
@@ -121,6 +122,35 @@ describe('BlocagesPrelevementPage', () => {
     expect(body).toContain('Prélèvement bloqué');
     expect(body).toContain('Camille Martin');
     expect(body).toContain('Deux rejets de prélèvement');
+  });
+
+  it('le filtre « Bloquées » ne garde que les sociétés bloquées, « Toutes » les rend', async () => {
+    const fixture = await render(new FakeApi());
+    const listbox = fixture.debugElement.query(By.css('fold-listbox'));
+
+    listbox.triggerEventHandler('selectionChange', 'blocked');
+    await settle(fixture);
+    expect(text(fixture)).toContain('Café des Alpes SARL');
+    expect(text(fixture)).not.toContain('Le Lac');
+
+    listbox.triggerEventHandler('selectionChange', 'all');
+    await settle(fixture);
+    expect(text(fixture)).toContain('Le Lac');
+    expect(text(fixture)).toContain('Café des Alpes SARL');
+  });
+
+  it('« Bloquées » sans aucune société bloquée : la liste se vide, pas l’écran', async () => {
+    const api = new FakeApi();
+    api.rows = [row()];
+    const fixture = await render(api);
+
+    fixture.debugElement
+      .query(By.css('fold-listbox'))
+      .triggerEventHandler('selectionChange', 'blocked');
+    await settle(fixture);
+
+    expect(text(fixture)).not.toContain('Le Lac');
+    expect(fixture.debugElement.query(By.css('fold-listbox'))).not.toBeNull();
   });
 
   it('sans droit d’écriture, ni « Bloquer » ni « Débloquer »', async () => {
