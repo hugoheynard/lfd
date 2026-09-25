@@ -342,11 +342,11 @@ routage en production, et il porte la réécriture de l'IP cliente.
 
 ## 3bis. Les hooks — ce qui est attrapé avant le push
 
-| Hook                | Ce qu'il fait                                     | Coût      |
-| ------------------- | ------------------------------------------------- | --------- |
-| `pre-commit`        | Prettier sur ce qui est indexé                    | ~1 s      |
-| `pre-push`          | les 18 portes + les typechecks de ce qui a changé | **~10 s** |
-| `pre-push` → `main` | + le verdict de la CI sur le commit promu         | ~1 s      |
+| Hook                | Ce qu'il fait                                       | Coût      |
+| ------------------- | --------------------------------------------------- | --------- |
+| `pre-commit`        | Prettier sur ce qui est indexé                      | ~1 s      |
+| `pre-push`          | les 18 portes + les typechecks de ce qui a changé   | **~10 s** |
+| `pre-push` → `main` | + c'est bien `origin/dev`, et sa CI n'est pas rouge | ~1 s      |
 
 Le partage n'est pas arbitraire. Un commit est cent fois plus fréquent qu'un
 push : y mettre autre chose que du formatage ferait contourner le hook au
@@ -385,6 +385,13 @@ Le hook lit **la ref distante**, jamais la locale : pousser `dev:main` promeut,
 pousser `dev` ne promeut pas. Une CI encore en cours ou absente **avertit sans
 bloquer** — refuser là interdirait une promotion légitime pour une raison de
 calendrier.
+
+🔴 **Depuis le 2026-09-25, la promotion est une avance rapide, et la CI ne
+tourne plus sur `main`** (`ci.yml`, `on.push.branches: [dev]`). Le hook refuse
+une promotion qui ne pousse pas exactement `origin/dev` : un commit fabriqué
+localement — une fusion, un correctif posé sur `main` — n'aurait aucun run de
+CI, et les déploiements, qui l'attendent par SHA, s'arrêteraient. La procédure
+et sa raison chiffrée sont dans `documentation/ops/runbook.md`, « Déployer ».
 
 ⚠️ `git push --no-verify` reste possible, et c'est voulu : un garde-fou qu'on ne
 peut pas franchir devient un obstacle qu'on démonte.

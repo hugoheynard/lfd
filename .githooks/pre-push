@@ -101,6 +101,25 @@ fi
 # de CI » alors qu'elle est peut-être rouge.
 echo "→ promotion vers main : que dit la CI de $(echo "$promotion" | cut -c1-8) ?"
 
+# 🔴 Une promotion pousse EXACTEMENT le `dev` publié (2026-09-25). La CI ne
+# tourne plus sur `main` : le déploiement retrouve le run de `dev` par SHA. Un
+# commit fabriqué localement (une fusion, un correctif posé sur `main`) n'en a
+# aucun, et le déploiement s'arrêterait après coup. On le refuse ici, avant.
+git fetch --quiet origin dev 2>/dev/null || true
+published_dev=$(git rev-parse --verify --quiet origin/dev || echo "")
+if [ "$promotion" != "$published_dev" ]; then
+  echo "" >&2
+  echo "✖ Une promotion pousse le dev publié, et lui seul." >&2
+  echo "  poussé : $(echo "$promotion" | cut -c1-8) · origin/dev : $(echo "$published_dev" | cut -c1-8)" >&2
+  echo "" >&2
+  echo "  1. git push origin dev        (et attendre la CI)" >&2
+  echo "  2. git push origin dev:main   (une avance rapide, sans fusion)" >&2
+  echo "" >&2
+  echo "  Si main porte un commit que dev n'a pas : git merge --ff-only origin/main" >&2
+  echo "  sur dev d'abord — sinon l'avance rapide est impossible." >&2
+  exit 1
+fi
+
 if ! command -v gh > /dev/null 2>&1; then
   echo "  gh absent — impossible de vérifier. On laisse passer." >&2
   exit 0
@@ -124,11 +143,9 @@ case "$verdict" in
     exit 1
     ;;
   ""|"null|null")
-    # Aucun run : le commit vient d'être poussé sur `dev` et la CI n'est pas
-    # encore créée, ou `dev` n'a pas été poussé du tout. On AVERTIT sans
-    # bloquer — refuser ici interdirait la promotion d'un commit légitime pour
-    # une raison de calendrier.
-    echo "  ⚠️  aucune CI trouvée sur ce commit — poussez d'abord sur dev." >&2
+    # Aucun run sur le dev publié : la CI n'est pas encore créée (quelques
+    # secondes après le push). Le déploiement l'attendra ; on avertit.
+    echo "  ⚠️  aucune CI encore sur ce commit — le déploiement l'attendra." >&2
     ;;
   *)
     echo "  ⚠️  CI en cours (${verdict%%|*}) — le déploiement l'attendra." >&2

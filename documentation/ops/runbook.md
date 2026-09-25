@@ -11,43 +11,39 @@ qu'on lit sous pression mérite qu'on sache jusqu'où elle a été éprouvée.
 
 ## Déployer
 
-Tout part d'un merge dans `main`. Les filtres de chemins choisissent quoi
-redéployer.
+Tout part d'une **avance rapide** de `main` sur `dev`. Les filtres de chemins
+choisissent quoi redéployer.
 
 ```bash
-git checkout main && git merge --no-ff dev -F <message> && git push
+git push origin dev                # la CI tourne sur dev, et seulement là
+# … attendre qu'elle soit verte …
+git push origin dev:main           # avance rapide : main reçoit CE commit-là
 ```
 
-🔴 **`--ff-only` échoue, et c'est normal.** Cette page a prescrit
-`git merge --ff-only dev` jusqu'au 2026-09-13. La commande ne marche plus depuis
-qu'une promotion a été faite par commit de fusion : `main` porte alors un commit
-que `dev` ne contient pas, et l'avance rapide devient impossible **pour
-toujours**. Les trois promotions de `main` sont des `merge(dev): …`
-(`07c963aa`, `459c511a`, `544c54e6`) — la consigne décrivait donc un geste que
-personne n'avait pu suivre depuis deux déploiements, et qu'on découvrait au
-moment de déployer.
+🔴 **Depuis le 2026-09-25, plus de commit de fusion, et plus de CI sur
+`main`.** Les promotions se faisaient par `git merge --no-ff dev` : le commit de
+fusion avait un SHA qu'aucune CI n'avait vu, et la CI se rejouait donc sur
+`main`, sur un arbre identique à `dev` déjà vert. Mesuré le 2026-09-24 : 14
+minutes d'attente sur 21 avant le premier déploiement. Désormais `main` reçoit
+le SHA de `dev`, et les déploiements retrouvent son run de CI par ce SHA
+(`.github/actions/attendre-un-run`).
 
-**Avant de fusionner, vérifier qu'on n'écrase rien** — c'est ce que `--ff-only`
-garantissait gratuitement, et qu'un merge ordinaire ne garantit plus :
+**Ce qui empêche de revenir en arrière** :
 
-```bash
-git log --oneline --no-merges dev..main   # doit être VIDE : aucun contenu propre à main
-git diff dev main --stat                  # après le merge : doit être VIDE
-```
+- le hook `.githooks/pre-push` refuse une promotion qui ne pousse pas
+  exactement `origin/dev`, ou dont la CI est rouge ;
+- côté serveur, un commit qui atteindrait `main` sans être passé par `dev` n'a
+  aucun run de CI : l'attente des déploiements échoue, et rien ne part.
 
-Le premier dit qu'aucun correctif n'a été posé directement sur `main` ; le
-second, une fois la fusion faite, que les deux branches portent le même arbre.
-Une sortie non vide au premier ⇒ **ne pas fusionner** : reporter d'abord sur
-`dev`, sans quoi la fusion réintroduit l'ancien état du fichier concerné.
+Si `main` porte un jour un commit que `dev` n'a pas (un correctif posé en
+urgence), l'avance rapide devient impossible : **réaligner `dev` d'abord**, par
+`git merge --ff-only origin/main` sur `dev`, puis `git push origin dev`. C'est ce
+qui a été fait une fois le 2026-09-25, après la dernière promotion par fusion
+(`5b4193b52`).
 
-Le message suit la forme des précédents : `merge(dev): <ce que la promotion
-emporte>`, et il dit ce qui a été **contrôlé** avant — portes, tests, et le
-verdict du lecteur de migrations.
-
-⚠️ Le hook de pré-push avertit « aucune CI trouvée sur ce commit — poussez
-d'abord sur dev » : le commit de FUSION n'existe sur aucune branche déjà passée
-en CI, il n'a donc rien à interroger. C'est attendu tant que `dev` a été poussé
-et vert juste avant ; ça ne l'est pas autrement.
+⚠️ La CI de `dev` annule un run en cours quand un nouveau commit arrive
+(`cancel-in-progress`). On promeut donc le dernier `dev` publié, celui dont la
+CI a fini — le hook y veille.
 
 **Contrôle** — pour un backend, lire l'étape « Migrer la base » :
 

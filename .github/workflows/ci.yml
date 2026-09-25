@@ -20,10 +20,17 @@ name: CI
 #     lui qui empêche un double de test de dériver du port qu'il prétend jouer
 #     — la panne qui rend un test VERT sur du code qui n'existe plus.
 
+# 🔴 PAS sur `main`, depuis le 2026-09-25. Une promotion est une AVANCE RAPIDE
+# (`git push origin dev:main`) : `main` reçoit le commit que la CI de `dev` a
+# déjà validé, au même SHA. La rejouer sur `main` coûtait 7 à 14 minutes par
+# déploiement pour tester un arbre déjà vert. Les déploiements attendent la CI
+# par SHA (`.github/actions/attendre-un-run`) et trouvent donc le run de `dev`.
+# Un commit qui atteindrait `main` sans être passé par `dev` n'a AUCUN run :
+# l'attente échoue (`exiger: true`) et rien ne se déploie — c'est voulu.
 on:
   pull_request:
   push:
-    branches: [main, dev]
+    branches: [dev]
 
 concurrency:
   # Une PR qui reçoit trois commits d'affilée n'occupe pas trois runners.
