@@ -39,6 +39,17 @@ export const comptabiliteRoutes: Routes = [
           ),
       },
       {
+        // Les clients au crédit mensuel, et leur prélèvement bloqué ou non.
+        // L'ÉCRITURE demande `b2b_accounting:write` : l'écran masque ses
+        // gestes sans ce droit, et le serveur refuse de toute façon.
+        path: 'blocages-prelevement',
+        title: 'Blocages du prélèvement — LFC B2B admin',
+        loadComponent: () =>
+          import('./blocages-prelevement/blocages-prelevement-page').then(
+            (m) => m.BlocagesPrelevementPage,
+          ),
+      },
+      {
         // La FICHE d'une entité — tout ce qui se règle sur un émetteur. Elle
         // n'a pas de garde propre pour la raison écrite en tête de fichier :
         // elle parle de la même ressource que la liste dont elle vient.

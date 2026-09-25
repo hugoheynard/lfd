@@ -113,6 +113,15 @@ export class ClientFacturationPage {
   /** Le compte règle-t-il au mois ? Faux ⇒ la colonne de gauche s'explique. */
   protected readonly onAccount = computed(() => (this.company()?.grantedTerms.length ?? 0) > 0);
 
+  /**
+   * Le crédit est accordé, mais la comptabilité a bloqué le prélèvement : les
+   * commandes À VENIR se règlent par carte. Ce qui est déjà au compte reste dans
+   * son cycle — d'où un avertissement, pas une colonne qui se vide.
+   */
+  protected readonly debitSuspended = computed(
+    () => this.onAccount() && this.company()?.directDebitBlocked === true,
+  );
+
   /** Ce qui a été réglé à l'unité, en centimes — le pendant du total « au compte ». */
   protected readonly perOrderTotalCents = computed(() =>
     this.split().perOrder.reduce((sum, order) => sum + order.totalCents, 0),

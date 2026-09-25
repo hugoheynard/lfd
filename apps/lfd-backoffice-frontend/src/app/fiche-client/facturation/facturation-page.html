@@ -56,6 +56,14 @@
       qu'elles se reportent en comptabilité.
     </fold-callout>
 
+    @if (debitSuspended()) {
+      <fold-callout appearance="inset" variant="warning">
+        <strong>Prélèvement mensuel suspendu.</strong> La comptabilité a bloqué le prélèvement de ce
+        compte&nbsp;: ses prochaines commandes se règlent par carte. Ce qui est déjà au compte reste
+        dans son cycle.
+      </fold-callout>
+    }
+
     @if (maybeTruncated()) {
       <fold-callout appearance="inset" variant="warning">
         Ce compte dépasse la fenêtre de lecture : les périodes les plus anciennes sont incomplètes.

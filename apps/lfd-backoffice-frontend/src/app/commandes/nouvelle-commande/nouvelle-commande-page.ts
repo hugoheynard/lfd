@@ -232,12 +232,19 @@ export class NouvelleCommandePage {
 
   /**
    * La société règle-t-elle au compte ? Le miroir exact de la règle serveur —
-   * active **et** au moins un terme accordé. L'écran s'en sert seulement pour ne
-   * pas proposer un bouton qui échouerait ; c'est le serveur qui décide.
+   * active, au moins un terme accordé, **et** prélèvement non bloqué par la
+   * comptabilité (le crédit d'une société bloquée est conservé, il ne vaut pas
+   * pour les commandes à venir). L'écran s'en sert seulement pour ne pas
+   * proposer un bouton qui échouerait ; c'est le serveur qui décide.
    */
   protected readonly settlesOnAccount = computed(() => {
     const company = this.company();
-    return company !== null && company.status === 'active' && company.grantedTerms.length > 0;
+    return (
+      company !== null &&
+      company.status === 'active' &&
+      company.grantedTerms.length > 0 &&
+      !company.directDebitBlocked
+    );
   });
 
   /**

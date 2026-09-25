@@ -1,0 +1,114 @@
+<fold-page-layout title="Blocages du prélèvement" separator>
+  <p description>
+    Les clients au <strong>crédit mensuel</strong>. Bloquer leur prélèvement fait régler leurs
+    commandes à venir par carte&nbsp;; le crédit accordé est conservé, et débloquer le rend tel
+    quel.
+  </p>
+
+  @if (loadError(); as message) {
+    <fold-empty-state tone="alert" title="Impossible de lire les blocages" [subtitle]="message">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  } @else if (noCredit()) {
+    <fold-empty-state
+      title="Aucun client au crédit mensuel"
+      subtitle="Tous les clients règlent déjà à la commande : il n'y a aucun prélèvement à bloquer."
+    >
+      <fold-icon empty-icon name="receipt" />
+    </fold-empty-state>
+  } @else {
+    <div class="toolbar">
+      <fold-listbox
+        size="sm"
+        label="Afficher"
+        [options]="filters"
+        [value]="filter()"
+        (selectionChange)="setFilter($event)"
+      />
+    </div>
+
+    @if (actionError(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    }
+
+    @if (noneBlocked()) {
+      <fold-empty-state
+        title="Aucun prélèvement bloqué"
+        subtitle="Tous les clients au crédit mensuel sont prélevés normalement."
+      >
+        <fold-icon empty-icon name="receipt" />
+      </fold-empty-state>
+    } @else {
+      <fold-card>
+        <fold-data-table
+          caption="Clients au crédit mensuel"
+          narrowLayout="cards"
+          zebra
+          [columns]="columns()"
+          [rows]="visible()"
+          [rowKey]="rowKey"
+          [loading]="loading()"
+        >
+          <!-- `fold-data-table` n'a AUCUN rendu par défaut : chaque `key` de
+               `columns` a son template ici. -->
+          <ng-template foldCell="company" let-row>
+            <span class="company">
+              <span class="strong">{{ nameOf(row) }}</span>
+              <span class="ref">{{ row.reference }}</span>
+            </span>
+          </ng-template>
+
+          <ng-template foldCell="state" let-row>
+            @if (row.block === null) {
+              <fold-badge variant="success" content="Au prélèvement" />
+            } @else {
+              <fold-badge variant="alert" content="Prélèvement bloqué" />
+            }
+          </ng-template>
+
+          <ng-template foldCell="since" let-row>
+            @if (row.block === null) {
+              <span class="muted">—</span>
+            } @else {
+              {{ sinceOf(row) }}
+            }
+          </ng-template>
+
+          <ng-template foldCell="by" let-row>
+            @if (byOf(row) === '') {
+              <span class="muted">—</span>
+            } @else {
+              {{ byOf(row) }}
+            }
+          </ng-template>
+
+          <ng-template foldCell="reason" let-row>
+            @if (row.block === null) {
+              <span class="muted">—</span>
+            } @else {
+              <span class="reason">{{ row.block.reason }}</span>
+            }
+          </ng-template>
+
+          <ng-template foldCell="actions" let-row>
+            @if (row.block === null) {
+              <button foldButton size="sm" emphasis="outline" intent="danger" (click)="block(row)">
+                Bloquer
+              </button>
+            } @else {
+              <fold-inline-confirm
+                intent="primary"
+                message="Les commandes à venir pourront de nouveau se régler au compte."
+                [labels]="{ confirm: 'Débloquer' }"
+                [loading]="pending() === row.companyId"
+                (confirmed)="unblock(row)"
+              >
+                <button foldButton size="sm" emphasis="outline">Débloquer</button>
+              </fold-inline-confirm>
+            }
+          </ng-template>
+        </fold-data-table>
+      </fold-card>
+    }
+  }
+</fold-page-layout>

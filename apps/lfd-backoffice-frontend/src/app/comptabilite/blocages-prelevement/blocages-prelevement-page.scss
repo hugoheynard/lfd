@@ -1,0 +1,29 @@
+/* Le filtre garde sa largeur naturelle au lieu de courir sur la page. */
+.toolbar {
+  display: flex;
+}
+
+.company {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-2xs);
+}
+
+.strong {
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+}
+
+.ref {
+  font-family: var(--fold-font-mono);
+  color: var(--fold-color-text-muted);
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+}
+
+/* La raison est lue par le personnel suivant : elle se garde entière. */
+.reason {
+  white-space: pre-line;
+}

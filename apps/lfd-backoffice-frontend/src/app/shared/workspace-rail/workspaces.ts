@@ -528,6 +528,13 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     icon: 'company',
     needs: 'b2b_accounting:read',
   },
+  {
+    key: 'blocages-prelevement',
+    label: 'Blocages du prélèvement',
+    link: '/comptabilite/blocages-prelevement',
+    icon: 'lock',
+    needs: 'b2b_accounting:read',
+  },
 ];
 
 /**

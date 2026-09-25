@@ -1,0 +1,39 @@
+<fold-panel-header title="Bloquer le prélèvement" [subtitle]="companyName()" />
+
+<div class="body">
+  <p class="said">
+    Les commandes <strong>à venir</strong> se régleront par carte. Le crédit mensuel accordé est
+    conservé&nbsp;: débloquer le rendra tel quel. Les commandes déjà passées au compte restent dans
+    leur cycle.
+  </p>
+
+  <fold-textarea
+    label="Raison"
+    required
+    [rows]="4"
+    placeholder="Rejet de prélèvement, mandat contesté, retard de règlement…"
+    [hint]="
+      tooLong()
+        ? 'Au plus ' + maxLength + ' caractères.'
+        : 'Lue par le personnel qui répondra au client. Au plus ' + maxLength + ' caractères.'
+    "
+    [(value)]="reason"
+  />
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button
+    foldButton
+    intent="danger"
+    [disabled]="!canSubmit()"
+    [loading]="saving()"
+    (click)="submit()"
+  >
+    Bloquer
+  </button>
+</footer>
