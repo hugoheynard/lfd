@@ -3,7 +3,6 @@ import { FoldButtonComponent, FoldCalloutComponent, FoldSelectComponent } from '
 import {
   STAFF_SETTLEMENT_LABELS,
   type BillingAddressPayload,
-  type CompanyMemberView,
   type CustomerAudience,
   type DeliveryAddressView,
   type DeliveryAvailabilityView,
@@ -18,6 +17,7 @@ import { formatCents } from '@lfd/b2b-ui/order';
 
 import type { CartStore } from '../cart.store';
 import type { DraftStore } from '../draft.store';
+import type { OrderEntryBuyer } from '../order-entry-customer';
 import {
   AcheminementCommande,
   type FulfillmentChoice,
@@ -90,7 +90,7 @@ export class PanierCommande {
   /** Le nom du compte — la commande est la sienne, et la colonne le redit. */
   readonly companyName = input.required<string>();
   /** Les personnes du compte à qui la commande peut être portée. */
-  readonly buyers = input.required<readonly CompanyMemberView[]>();
+  readonly buyers = input.required<readonly OrderEntryBuyer[]>();
   readonly pickups = input.required<readonly PickupAddressView[]>();
   readonly addresses = input.required<readonly DeliveryAddressView[]>();
   readonly zones = input.required<readonly DeliveryZoneView[]>();
@@ -104,6 +104,11 @@ export class PanierCommande {
    */
   readonly settlesOnAccount = input.required<boolean>();
   readonly submitting = input(false);
+  /**
+   * La case « enregistrer au carnet » est-elle proposée ? Vrai par défaut ;
+   * faux au comptoir, qui n'a pas `b2b_companies:write`.
+   */
+  readonly canKeepAddress = input(true);
 
   readonly place = output<OrderDraft>();
 
@@ -210,7 +215,7 @@ export class PanierCommande {
   }
 
   /** Le nom d'une personne, ou son adresse quand elle n'en a pas encore. */
-  protected nameOf(member: CompanyMemberView): string {
+  protected nameOf(member: OrderEntryBuyer): string {
     const name = `${member.firstName} ${member.lastName}`.trim();
     return name === '' ? member.email : name;
   }

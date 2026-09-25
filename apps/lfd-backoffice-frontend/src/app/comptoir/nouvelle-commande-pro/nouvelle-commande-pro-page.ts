@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { companyDisplayName } from '@lfd/contracts';
+import { companyDisplayName, type CounterCustomerCard } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -13,15 +13,14 @@ import {
   FoldSearchComponent,
 } from 'fold-ng';
 
-import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
-import type { AdminCompany } from '../../comptes-clients/admin-company';
-import { matchesCompanySearch } from '../../comptes-clients/company-search';
 import { copyLink } from '../../comptabilite/copy-link';
 import {
   COUNTER_ORDER_PICKER_LINK,
   counterPlacedOrderOf,
 } from '../../commandes/nouvelle-commande/order-entry-origin';
 import { NotifyService } from '../../notify.service';
+import { CounterCustomersService } from '../counter-customers.service';
+import { matchesCounterSearch } from '../counter-customer-search';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -41,18 +40,18 @@ interface CompanyRow {
  * c'est `comptes-clients/:id/nouvelle-commande`, inchangé — une seconde saisie
  * divergerait au premier changement de règle.
  *
- * Seuls les comptes **actifs** sont proposés : c'est le statut qui fait d'une
- * société une clientèle pro (`audienceOf`, la même règle que le serveur).
- * Proposer un compte en attente mènerait à une commande de particulier, ce que
- * l'entrée « commande pro » ne promet pas.
+ * Seuls les comptes **actifs** sont proposés — c'est le serveur qui filtre
+ * (`GET /admin/counter/customers`) : c'est le statut qui fait d'une société une
+ * clientèle pro. La liste se lit sous `b2b_counter:read`, jamais sous
+ * `b2b_companies` : le vendeur de comptoir n'a pas la fiche client.
  *
  * Elle est aussi le RETOUR de la saisie : la commande passée revient ici avec
  * son numéro et son lien de règlement, affiché en clair parce que le client
  * est en face — le presse-papiers seul ne se montre pas.
  *
- * La recherche est celle de la liste des comptes (`matchesCompanySearch`) :
- * au comptoir comme au téléphone, on arrive avec un nom, un SIRET ou la
- * personne qui administre l'espace.
+ * La recherche porte sur les champs de la carte (`matchesCounterSearch`) :
+ * raison sociale, enseigne, référence, SIRET — pas le propriétaire, que la
+ * carte du comptoir ne porte pas.
  */
 @Component({
   selector: 'app-nouvelle-commande-pro-page',
@@ -72,7 +71,7 @@ interface CompanyRow {
   styleUrl: './nouvelle-commande-pro-page.scss',
 })
 export class NouvelleCommandeProPage {
-  private readonly companies = inject(AdminCompaniesService);
+  private readonly customers = inject(CounterCustomersService);
   private readonly router = inject(Router);
   private readonly notify = inject(NotifyService);
 
@@ -86,7 +85,7 @@ export class NouvelleCommandeProPage {
   );
 
   protected readonly state = signal<LoadState>('loading');
-  private readonly active = signal<readonly AdminCompany[]>([]);
+  private readonly active = signal<readonly CounterCustomerCard[]>([]);
   protected readonly query = signal('');
 
   /** Aucun compte pro du tout — distinct d'une recherche qui ne trouve rien. */
@@ -94,11 +93,11 @@ export class NouvelleCommandeProPage {
 
   protected readonly rows = computed<readonly CompanyRow[]>(() =>
     this.active()
-      .filter((company) => matchesCompanySearch(company, this.query()))
-      .map((company) => ({
-        id: company.id,
-        name: companyDisplayName(company),
-        detail: `${company.reference} · SIRET ${company.siret}`,
+      .filter((card) => matchesCounterSearch(card, this.query()))
+      .map((card) => ({
+        id: card.id,
+        name: companyDisplayName({ raisonSociale: card.name, enseigne: card.tradeName }),
+        detail: `${card.reference} · SIRET ${card.siret}`,
       })),
   );
 
@@ -109,8 +108,8 @@ export class NouvelleCommandeProPage {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      const all = await this.companies.list();
-      this.active.set(all.filter((company) => company.status === 'active'));
+      // Le serveur ne rend que les sociétés actives : aucun filtre à refaire ici.
+      this.active.set(await this.customers.list());
       this.state.set('ready');
     } catch {
       this.state.set('error');

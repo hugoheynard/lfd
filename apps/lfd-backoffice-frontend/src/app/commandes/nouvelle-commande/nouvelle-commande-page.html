@@ -6,7 +6,7 @@
     <fold-empty-state
       tone="alert"
       title="Impossible d'ouvrir la saisie"
-      subtitle="Le compte, le catalogue ou l'historique n'ont pas pu être lus."
+      [subtitle]="loadError() ?? 'Le compte, le catalogue ou l’historique n’ont pas pu être lus.'"
     >
       <button foldButton (click)="load(id())">Réessayer</button>
     </fold-empty-state>
@@ -122,6 +122,7 @@
           [deliveryAvailability]="deliveryAvailability()"
           [audience]="audience()"
           [settlesOnAccount]="settlesOnAccount()"
+          [canKeepAddress]="canKeepAddress"
           [submitting]="submitting()"
           (place)="onPlace($event)"
         />

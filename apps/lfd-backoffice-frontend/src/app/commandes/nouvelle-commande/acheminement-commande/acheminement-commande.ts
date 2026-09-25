@@ -83,6 +83,12 @@ export class AcheminementCommande {
   readonly audience = input.required<CustomerAudience>();
   /** Le brouillon de l'écran : c'est LUI qui garde le choix, pas ce composant. */
   readonly draft = input.required<DraftStore>();
+  /**
+   * La case « enregistrer au carnet » est-elle proposée ? Faux au comptoir : il
+   * faut `b2b_companies:write`, et une case sans effet laisserait croire
+   * l'adresse gardée.
+   */
+  readonly canKeepAddress = input(true);
 
   readonly choiceChange = output<FulfillmentChoice>();
 
@@ -326,7 +332,7 @@ export class AcheminementCommande {
       },
       // Décochée par défaut, et sans effet sur une entrée du carnet : c'est un
       // geste explicite, pas une conséquence d'avoir tapé une adresse.
-      saveToBook: this.isNewAddress() && this.keepAddress(),
+      saveToBook: this.canKeepAddress() && this.isNewAddress() && this.keepAddress(),
       // ⚠️ Jamais de tranche en coursier : celle qui vaut est au CARNET, et le
       // serveur la lit à partir de l'adresse. En poser une ici l'écraserait.
       window: null,

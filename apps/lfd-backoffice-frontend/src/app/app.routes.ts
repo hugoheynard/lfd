@@ -30,6 +30,19 @@ import { reglagesRoutes } from './reglages/reglages.routes';
  * revient pas en arrière — trois ordres ci-dessous portent une garantie, et
  * chacun est commenté à l'endroit où il se joue.
  */
+/**
+ * Les gardes de la commande pro au comptoir : LIRE les clients du comptoir
+ * (`b2b_counter:read`) ET passer une commande (`b2b_orders:write`). L'un sans
+ * l'autre ouvrirait un écran dont la moitié des appels répondrait 403
+ * (`documentation/order/plan-commande-au-comptoir.md`, Front). Deux gardes
+ * plutôt qu'un garde composé : chacun porte sa permission, que la table des
+ * routes relit.
+ */
+const COUNTER_ORDER_GUARDS = [
+  permissionGuard('b2b_counter:read'),
+  permissionGuard('b2b_orders:write'),
+];
+
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'comptes-clients' },
   // ORDRE ① — avant `ficheClientRoutes` : sans cela « nouveau » serait lu comme
@@ -321,7 +334,7 @@ export const routes: Routes = [
     // pour un pro (recherche du compte, puis l'écran de saisie du Commercial).
     //
     // Le garde est sur la coquille, comme pour la production : un favori ne
-    // passe pas par le rail. La saisie ajoute le sien, parce qu'elle écrit.
+    // passe pas par le rail. La saisie ajoute les siens (`COUNTER_ORDER_GUARDS`).
     path: 'comptoir',
     canActivate: [permissionGuard('b2b_orders:read')],
     loadComponent: () =>
@@ -340,7 +353,7 @@ export const routes: Routes = [
       },
       {
         path: 'nouvelle-commande',
-        canActivate: [permissionGuard('b2b_orders:write')],
+        canActivate: COUNTER_ORDER_GUARDS,
         title: 'Nouvelle commande pro — LFC B2B admin',
         loadComponent: () =>
           import('./comptoir/nouvelle-commande-pro/nouvelle-commande-pro-page').then(
@@ -353,7 +366,7 @@ export const routes: Routes = [
         // enfermée ici. Même composant que `comptes-clients/:id/nouvelle-commande` ;
         // c'est l'origine déclarée en `data` qui referme ses liens sur `/comptoir`.
         path: 'nouvelle-commande/:id',
-        canActivate: [permissionGuard('b2b_orders:write')],
+        canActivate: COUNTER_ORDER_GUARDS,
         title: 'Nouvelle commande pro — LFC B2B admin',
         data: { [ORDER_ENTRY_ORIGIN_KEY]: 'counter' satisfies OrderEntryOrigin },
         loadComponent: () =>

@@ -29,7 +29,7 @@ const OPEN = 'open';
  * écran ouvert exprès s'écrivent pareil, et le test qui traque les orphelins ne
  * peut plus rien dire.
  */
-type ScreenAccess = StaffPermission | null | typeof OPEN;
+type ScreenAccess = StaffPermission | readonly StaffPermission[] | null | typeof OPEN;
 
 const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // CONTENU PLATEFORME — sous le B2B, dont il partage le contexte et le droit.
@@ -220,10 +220,13 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // exige l'écriture. La commande pro ÉCRIT, d'où son propre garde.
   comptoir: 'b2b_orders:read',
   'comptoir/retrait': null,
-  'comptoir/nouvelle-commande': 'b2b_orders:write',
+  // Lire les clients du comptoir ET commander : deux gardes, deux droits
+  // (plan-commande-au-comptoir.md). `b2b_companies` n'y apparaît pas — c'est le
+  // point : le vendeur de comptoir n'a pas la fiche client.
+  'comptoir/nouvelle-commande': ['b2b_counter:read', 'b2b_orders:write'],
   // La MÊME saisie que `comptes-clients/:id/nouvelle-commande`, montée sous le
   // comptoir pour que la navigation n'en sorte pas.
-  'comptoir/nouvelle-commande/:id': 'b2b_orders:write',
+  'comptoir/nouvelle-commande/:id': ['b2b_counter:read', 'b2b_orders:write'],
   livraison: 'b2b_orders:read',
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.
   'app-mobile': OPEN,
@@ -293,9 +296,22 @@ function carriesPermission(guard: unknown): guard is PermissionGuard {
   return typeof guard === 'function' && 'permission' in guard;
 }
 
-/** La permission déclarée par cette route, ou `null` si elle n'en déclare pas. */
-function declaredPermission(route: Route): StaffPermission | null {
-  return (route.canActivate ?? []).filter(carriesPermission)[0]?.permission ?? null;
+/**
+ * Les permissions déclarées par cette route, TOUTES, ou `null` si elle n'en
+ * déclare pas. Toutes et non la première : la commande pro du comptoir porte
+ * deux gardes, et n'en lire qu'un laissait le second changer sans rien rougir.
+ */
+function declaredPermission(route: Route): readonly StaffPermission[] | null {
+  const permissions = (route.canActivate ?? []).filter(carriesPermission).map((g) => g.permission);
+  return permissions.length === 0 ? null : permissions;
+}
+
+/** Une forme comparable d'un accès : `null`, ou les permissions dans l'ordre. */
+function accessKey(access: ScreenAccess): string | null {
+  if (access === null || access === OPEN) {
+    return null;
+  }
+  return typeof access === 'string' ? access : access.join(' + ');
 }
 
 describe("l'arbre de routes du back-office", () => {
@@ -318,7 +334,7 @@ describe("l'arbre de routes du back-office", () => {
     const wrong = screens()
       .map(({ path, route }) => ({ path, declared: declaredPermission(route) }))
       // Un écran `OPEN` ne déclare rien — c'est exactement ce qu'on attend de lui.
-      .filter(({ path, declared }) => declared !== (SCREENS[path] === OPEN ? null : SCREENS[path]));
+      .filter(({ path, declared }) => accessKey(declared) !== accessKey(SCREENS[path] ?? null));
 
     expect(wrong).toEqual([]);
   });

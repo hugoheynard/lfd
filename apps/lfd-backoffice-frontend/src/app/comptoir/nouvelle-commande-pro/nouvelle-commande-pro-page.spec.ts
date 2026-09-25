@@ -3,52 +3,19 @@ import { Router, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
-import type { AdminCompany, CompanyStatus } from '../../comptes-clients/admin-company';
+import type { CounterCustomerCard } from '@lfd/contracts';
+
+import { CounterCustomersService } from '../counter-customers.service';
 import { NouvelleCommandeProPage } from './nouvelle-commande-pro-page';
 
-function makeCompany(
-  id: string,
-  raisonSociale: string,
-  status: CompanyStatus,
-  siret: string,
-): AdminCompany {
-  return {
-    id,
-    reference: `C-${id}`,
-    raisonSociale,
-    enseigne: '',
-    formeJuridique: 'SAS',
-    siret,
-    siren: '',
-    vatNumber: '',
-    status,
-    grantedTerms: [],
-    requestedTerm: null,
-    directDebitBlocked: false,
-    primaryContact: {
-      role: null,
-      id: null,
-      firstName: 'A',
-      lastName: 'B',
-      fonction: '',
-      email: '',
-      phone: '',
-    },
-    kbis: null,
-    owner: null,
-    hasOpenSupportRequest: false,
-    createdAt: '2026-07-30T10:00:00.000Z',
-    activatedAt: null,
-    warnings: [],
-  };
+function card(id: string, name: string, siret: string, tradeName = ''): CounterCustomerCard {
+  return { id, name, tradeName, reference: `C-${id}`, siret };
 }
 
-const COMPANIES: readonly AdminCompany[] = [
-  makeCompany('1', 'Café Périn', 'active', '81234567800019'),
-  makeCompany('2', 'Hôtel du Port', 'active', '99988877700011'),
-  makeCompany('3', 'Café en attente', 'pending', '11122233300044'),
-  makeCompany('4', 'Café suspendu', 'suspended', '55566677700088'),
+/** Ce que rend `GET /admin/counter/customers` — des actives seulement, filtrées par le serveur. */
+const CARDS: readonly CounterCustomerCard[] = [
+  card('1', 'Café Périn', '81234567800019'),
+  card('2', 'SAS Portuaire', '99988877700011', 'Hôtel du Port'),
 ];
 
 /** Expose l'état protégé sans cast : la page est testée par ce qu'elle dérive. */
@@ -67,13 +34,13 @@ class Harness extends NouvelleCommandeProPage {
   }
 }
 
-async function setup(list: () => Promise<readonly AdminCompany[]>): Promise<Harness> {
+async function setup(list: () => Promise<readonly CounterCustomerCard[]>): Promise<Harness> {
   TestBed.configureTestingModule({
     providers: [
       provideRouter([{ path: '**', children: [] }]),
       {
-        provide: AdminCompaniesService,
-        useValue: { list } satisfies Pick<AdminCompaniesService, 'list'>,
+        provide: CounterCustomersService,
+        useValue: { list } satisfies Pick<CounterCustomersService, 'list'>,
       },
     ],
   });
@@ -88,28 +55,28 @@ describe('NouvelleCommandeProPage', () => {
     TestBed.resetTestingModule();
   });
 
-  it('ne propose que les comptes actifs', async () => {
-    const page = await setup(() => Promise.resolve(COMPANIES));
+  it('montre les cartes du comptoir, sous leur nom d’usage', async () => {
+    const page = await setup(() => Promise.resolve(CARDS));
     expect(page.loadState).toBe('ready');
     expect(page.visibleIds).toEqual(['1', '2']);
   });
 
   it('filtre par raison sociale, sans accents', async () => {
-    const page = await setup(() => Promise.resolve(COMPANIES));
+    const page = await setup(() => Promise.resolve(CARDS));
     page.search('perin');
     expect(page.visibleIds).toEqual(['1']);
   });
 
-  it('filtre par SIRET dicté avec des espaces', async () => {
-    const page = await setup(() => Promise.resolve(COMPANIES));
-    page.search('999 888');
+  it('filtre par enseigne', async () => {
+    const page = await setup(() => Promise.resolve(CARDS));
+    page.search('hotel');
     expect(page.visibleIds).toEqual(['2']);
   });
 
-  it('ne remonte pas un compte inactif même s’il correspond', async () => {
-    const page = await setup(() => Promise.resolve(COMPANIES));
-    page.search('café');
-    expect(page.visibleIds).toEqual(['1']);
+  it('filtre par SIRET dicté avec des espaces', async () => {
+    const page = await setup(() => Promise.resolve(CARDS));
+    page.search('999 888');
+    expect(page.visibleIds).toEqual(['2']);
   });
 
   it('passe en erreur quand la liste ne se charge pas', async () => {
@@ -118,7 +85,7 @@ describe('NouvelleCommandeProPage', () => {
   });
 
   it('ouvre la saisie SOUS le comptoir, jamais vers /comptes-clients', async () => {
-    const page = await setup(() => Promise.resolve(COMPANIES));
+    const page = await setup(() => Promise.resolve(CARDS));
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     page.pick('2');
     expect(navigate).toHaveBeenCalledWith(['/comptoir/nouvelle-commande', '2']);
@@ -131,10 +98,10 @@ async function arriveWith(state: Record<string, unknown>): Promise<HTMLElement> 
     providers: [
       provideRouter([{ path: 'comptoir/nouvelle-commande', component: NouvelleCommandeProPage }]),
       {
-        provide: AdminCompaniesService,
+        provide: CounterCustomersService,
         useValue: {
-          list: () => Promise.resolve(COMPANIES),
-        } satisfies Pick<AdminCompaniesService, 'list'>,
+          list: () => Promise.resolve(CARDS),
+        } satisfies Pick<CounterCustomersService, 'list'>,
       },
     ],
   });

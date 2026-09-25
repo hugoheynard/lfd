@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { FoldPanelHeaderComponent, FoldPanelRef, type FoldPanelDefaults } from 'fold-ng';
 import type {
-  CompanyMemberView,
   CustomerAudience,
   DeliveryAddressView,
   DeliveryAvailabilityView,
@@ -11,6 +10,7 @@ import type {
 
 import type { CartStore } from '../cart.store';
 import type { DraftStore } from '../draft.store';
+import type { OrderEntryBuyer } from '../order-entry-customer';
 import { PanierCommande, type OrderDraft } from '../panier-commande/panier-commande';
 
 /** Ce que la page confie au tiroir — les mêmes entrées que la colonne de droite. */
@@ -18,13 +18,15 @@ export interface PanierPanelData {
   readonly cart: CartStore;
   readonly draft: DraftStore;
   readonly companyName: string;
-  readonly buyers: readonly CompanyMemberView[];
+  readonly buyers: readonly OrderEntryBuyer[];
   readonly pickups: readonly PickupAddressView[];
   readonly addresses: readonly DeliveryAddressView[];
   readonly zones: readonly DeliveryZoneView[];
   readonly deliveryAvailability: DeliveryAvailabilityView;
   readonly audience: CustomerAudience;
   readonly settlesOnAccount: boolean;
+  /** La case « au carnet » — absente au comptoir. */
+  readonly canKeepAddress: boolean;
 }
 
 /**

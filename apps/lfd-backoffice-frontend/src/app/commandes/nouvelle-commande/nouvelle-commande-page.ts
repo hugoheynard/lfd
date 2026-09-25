@@ -12,6 +12,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, filter, tap } from 'rxjs';
 
@@ -44,12 +45,10 @@ import {
 } from 'fold-ng';
 import {
   audienceOf,
-  companyDisplayName,
   DEFAULT_DELIVERY_AVAILABILITY,
   type AdminOrderRow,
   type BillingAddressPayload,
   type DeliverySpecs,
-  type CompanyMemberView,
   type CatalogItemView,
   type CustomerSkuStat,
   type DeliveryAddressView,
@@ -60,15 +59,20 @@ import {
   type PickupAddressView,
 } from '@lfd/contracts';
 
-import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { AdminCompaniesService } from '../../comptes-clients/admin-companies.service';
 import { NotifyService } from '../../notify.service';
-import { DeliveryAvailabilityService } from '../../b2b/reglages/delivery-availability.service';
 import { DeliveryZonesService } from '../../b2b/reglages/delivery-zones.service';
 import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
 import { AdminCatalogService } from '../catalog.service';
 import { AdminOrdersService } from '../orders.service';
 import { OrderDraftsService } from '../order-drafts.service';
+import {
+  CommercialOrderEntrySource,
+  CounterOrderEntrySource,
+  type OrderEntrySource,
+} from '../order-entry-sources';
+import { serverMessageOf } from '../../production/server-message';
+import type { OrderEntryBuyer, OrderEntryCustomer } from './order-entry-customer';
 import { formatOrderInstant } from '@lfd/b2b-ui/order';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { BarrePanier } from './barre-panier/barre-panier';
@@ -151,7 +155,6 @@ export class NouvelleCommandePage {
   private readonly catalogService = inject(AdminCatalogService);
   private readonly pickupsService = inject(PickupAddressesService);
   private readonly zonesService = inject(DeliveryZonesService);
-  private readonly deliveryAvailabilityService = inject(DeliveryAvailabilityService);
   private readonly draftsService = inject(OrderDraftsService);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
@@ -162,6 +165,24 @@ export class NouvelleCommandePage {
    * de la route. Au comptoir, aucun lien ne sort de `/comptoir`.
    */
   protected readonly origin = orderEntryOriginOf(inject(ActivatedRoute).snapshot.data);
+
+  /**
+   * D'où vient le client : la fiche au Commercial, les lectures du comptoir au
+   * Comptoir. Choisie une fois, à la construction — l'origine ne change pas.
+   */
+  private readonly customerSource: OrderEntrySource =
+    this.origin === 'counter'
+      ? inject(CounterOrderEntrySource)
+      : inject(CommercialOrderEntrySource);
+
+  /** La case « enregistrer au carnet » n'existe que si la source peut l'honorer. */
+  protected readonly canKeepAddress = this.customerSource.keepsAddresses;
+
+  /**
+   * Le refus du serveur à l'ouverture, quand il en a dit un — au comptoir, le
+   * 404 d'un client inconnu ou inactif invite à contacter le service commercial.
+   */
+  protected readonly loadError = signal<string | null>(null);
 
   /** Le retour de l'en-tête — le dossier du compte, ou le sélecteur du comptoir. */
   protected readonly back = computed(() => backLinkOf(this.origin, this.id()));
@@ -182,11 +203,13 @@ export class NouvelleCommandePage {
   protected readonly narrow = narrowViewport();
 
   protected readonly state = signal<LoadState>('loading');
-  protected readonly company = signal<AdminCompanyDetail | null>(null);
+  protected readonly company = signal<OrderEntryCustomer | null>(null);
   protected readonly history = signal<readonly AdminOrderRow[]>([]);
   protected readonly catalogue = signal<readonly CatalogItemView[]>([]);
   protected readonly habits = signal<readonly CustomerSkuStat[]>([]);
-  protected readonly buyers = signal<readonly CompanyMemberView[]>([]);
+  protected readonly buyers = computed<readonly OrderEntryBuyer[]>(
+    () => this.company()?.buyers ?? [],
+  );
   protected readonly pickups = signal<readonly PickupAddressView[]>([]);
   protected readonly zones = signal<readonly DeliveryZoneView[]>([]);
   /** À quelles clientèles la livraison est proposée — le coursier en dépend. */
@@ -232,7 +255,7 @@ export class NouvelleCommandePage {
   protected readonly selectedOrder = signal<OrderView | null>(null);
 
   /** Le carnet de livraison du compte — vide tant que la fiche n'en porte aucune. */
-  protected readonly addresses = computed(() => this.company()?.addresses.deliveries ?? []);
+  protected readonly addresses = computed(() => this.company()?.addresses ?? []);
 
   /**
    * La clientèle de la société : pro si elle est **active**, particulier sinon
@@ -242,26 +265,15 @@ export class NouvelleCommandePage {
   protected readonly audience = computed(() => audienceOf(this.company()?.status ?? null));
 
   protected readonly companyName = computed(() => {
-    const company = this.company();
-    return company === null ? '' : companyDisplayName(company);
+    return this.company()?.displayName ?? '';
   });
 
   /**
-   * La société règle-t-elle au compte ? Le miroir exact de la règle serveur —
-   * active, au moins un terme accordé, **et** prélèvement non bloqué par la
-   * comptabilité (le crédit d'une société bloquée est conservé, il ne vaut pas
-   * pour les commandes à venir). L'écran s'en sert seulement pour ne pas
-   * proposer un bouton qui échouerait ; c'est le serveur qui décide.
+   * La société règle-t-elle au compte ? Dit par la source (cf.
+   * `OrderEntryCustomer`). L'écran s'en sert seulement pour ne pas proposer un
+   * bouton qui échouerait ; c'est le serveur qui décide.
    */
-  protected readonly settlesOnAccount = computed(() => {
-    const company = this.company();
-    return (
-      company !== null &&
-      company.status === 'active' &&
-      company.grantedTerms.length > 0 &&
-      !company.directDebitBlocked
-    );
-  });
+  protected readonly settlesOnAccount = computed(() => this.company()?.settlesOnAccount ?? false);
 
   /**
    * Ce dont le prix dépend, et rien d'autre — cf. `quoteKeyOf`.
@@ -357,34 +369,25 @@ export class NouvelleCommandePage {
 
   protected async load(companyId: string): Promise<void> {
     this.state.set('loading');
+    this.loadError.set(null);
     try {
       // Sept lectures indépendantes : les enchaîner aurait multiplié l'attente
       // par sept devant un commercial qui a le client en ligne.
-      const [
-        company,
-        history,
-        catalogue,
-        habits,
-        buyers,
-        pickups,
-        zones,
-        saved,
-        deliveryAvailability,
-      ] = await Promise.all([
-        this.companies.getById(companyId),
-        this.orders.list({ companyId, limit: HISTORY_SIZE }),
-        this.catalogService.list(),
-        this.catalogService.habitsOf(companyId),
-        this.companies.listMembers(companyId),
-        this.pickupsService.list(),
-        this.zonesService.list(),
-        this.draftsService.find(companyId),
-        // Illisible = le défaut du contrat, ouverte aux deux (plan, §4) : le
-        // serveur refuse de toute façon une livraison fermée, et ce refus-là
-        // est montré. Faire tomber tout l'écran pour ce réglage serait
-        // disproportionné devant un client en ligne.
-        this.deliveryAvailabilityService.read().catch(() => DEFAULT_DELIVERY_AVAILABILITY),
-      ]);
+      const [company, history, catalogue, habits, pickups, zones, saved, deliveryAvailability] =
+        await Promise.all([
+          this.customerSource.customer(companyId),
+          this.orders.list({ companyId, limit: HISTORY_SIZE }),
+          this.catalogService.list(),
+          this.catalogService.habitsOf(companyId),
+          this.pickupsService.list(),
+          this.zonesService.list(),
+          this.draftsService.find(companyId),
+          // Illisible = le défaut du contrat, ouverte aux deux (plan, §4) : le
+          // serveur refuse de toute façon une livraison fermée, et ce refus-là
+          // est montré. Faire tomber tout l'écran pour ce réglage serait
+          // disproportionné devant un client en ligne.
+          this.customerSource.deliveryAvailability().catch(() => DEFAULT_DELIVERY_AVAILABILITY),
+        ]);
       if (company === undefined) {
         this.state.set('error');
         return;
@@ -393,13 +396,15 @@ export class NouvelleCommandePage {
       this.history.set(history);
       this.catalogue.set(catalogue);
       this.habits.set(habits);
-      this.buyers.set(buyers);
       this.pickups.set(pickups);
       this.zones.set(zones);
       this.deliveryAvailability.set(deliveryAvailability);
-      this.resume(saved, catalogue, company.addresses.deliveries);
+      this.resume(saved, catalogue, company.addresses);
       this.state.set('ready');
-    } catch {
+    } catch (error) {
+      // Le message du serveur quand il y en a un (le 404 du comptoir), le
+      // sous-titre générique sinon.
+      this.loadError.set(error instanceof HttpErrorResponse ? serverMessageOf(error) : null);
       this.state.set('error');
     }
   }
@@ -483,6 +488,7 @@ export class NouvelleCommandePage {
         deliveryAvailability: this.deliveryAvailability(),
         audience: this.audience(),
         settlesOnAccount: this.settlesOnAccount(),
+        canKeepAddress: this.canKeepAddress,
       },
     });
     const placed = await ref.closed;
@@ -594,7 +600,7 @@ export class NouvelleCommandePage {
       void this.draftsService.discard(this.id()).catch(() => undefined);
       // Le carnet APRÈS la commande : une adresse enregistrée pour une commande
       // qui n'est pas passée serait une trace de rien.
-      if (draft.saveAddressToBook && draft.deliveryAddress !== null) {
+      if (this.canKeepAddress && draft.saveAddressToBook && draft.deliveryAddress !== null) {
         await this.keepAddress(draft.deliveryAddress);
       }
       // Le lien de règlement est copié plutôt qu'affiché en passant : le
@@ -654,7 +660,7 @@ export class NouvelleCommandePage {
   /** Relit le réglage de livraison ; un échec garde celui qu'on avait. */
   private async refreshDeliveryAvailability(): Promise<void> {
     try {
-      this.deliveryAvailability.set(await this.deliveryAvailabilityService.read());
+      this.deliveryAvailability.set(await this.customerSource.deliveryAvailability());
     } catch {
       // Rien à dire de plus : le refus vient d'être montré.
     }

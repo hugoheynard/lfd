@@ -9,7 +9,12 @@ import type { WorkspaceRail, WorkspaceRailItem } from './workspace-rail.store';
 
 /** Une vue d'espace de travail, et le droit qui l'ouvre s'il lui est propre. */
 export interface WorkspaceView extends WorkspaceRailItem {
-  readonly needs?: StaffPermission;
+  /**
+   * Le droit — ou les droits, TOUS exigés — qui ouvrent la vue. Une liste pour
+   * la commande pro du comptoir, gardée par deux permissions : le rail doit
+   * dire exactement ce que la route laissera passer.
+   */
+  readonly needs?: StaffPermission | readonly StaffPermission[];
   /**
    * La vue n'existe que si le déploiement OUVRE la publication.
    *
@@ -167,8 +172,9 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
  * divergeraient au premier changement de règle.
  *
  * `needs` sur la seule nouvelle commande : `b2b_orders:read` ouvre l'espace et
- * suffit à la file de retrait, mais saisir une commande ÉCRIT. Sans lui, un
- * poste en lecture verrait l'entrée, pour un refus du garde.
+ * suffit à la file de retrait, mais la commande pro exige de lire les clients
+ * du comptoir ET d'écrire une commande — les deux gardes de sa route. Sans eux,
+ * un poste verrait l'entrée, pour un refus du garde.
  */
 export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
   {
@@ -182,7 +188,7 @@ export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
     label: 'Nouvelle commande pro',
     link: '/comptoir/nouvelle-commande',
     icon: 'basket',
-    needs: 'b2b_orders:write',
+    needs: ['b2b_counter:read', 'b2b_orders:write'],
   },
 ];
 
@@ -697,10 +703,19 @@ export class WorkspaceCatalogue {
   views(key: WorkspaceKey): Signal<WorkspaceRailItem[]> {
     return computed(() =>
       WORKSPACES[key].views
-        .filter((view) => view.needs === undefined || this.permissions.can(view.needs))
+        .filter((view) => this.grants(view.needs))
         .filter((view) => view.needsPublication !== true || this.capabilities.publication())
         .map(({ needs, needsPublication, ...view }) => view),
     );
+  }
+
+  /** Tous les droits exigés par une vue sont-ils accordés ? */
+  private grants(needs: WorkspaceView['needs']): boolean {
+    if (needs === undefined) {
+      return true;
+    }
+    const all: readonly StaffPermission[] = typeof needs === 'string' ? [needs] : needs;
+    return all.every((permission) => this.permissions.can(permission));
   }
 
   /** Le même espace, sous la forme que publie `provideWorkspaceRail`. */

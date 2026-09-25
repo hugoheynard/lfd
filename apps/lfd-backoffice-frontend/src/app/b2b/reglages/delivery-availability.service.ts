@@ -2,7 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { DeliveryAvailabilityPatch, DeliveryAvailabilityView } from '@lfd/contracts';
+import type {
+  DeliveryAvailabilityPatch,
+  DeliveryAvailabilityView,
+  PublicDeliveryAvailabilityView,
+} from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
 
@@ -33,6 +37,25 @@ export class DeliveryAvailabilityService {
    */
   update(patch: DeliveryAvailabilityPatch): Promise<void> {
     return firstValueFrom(this.http.patch<void>(this.url(), patch));
+  }
+
+  /**
+   * Le même réglage par la route **publique** — `{ openToB2b, openToB2c }`, sans
+   * l'instant ni l'auteur, projeté dans la vue complète.
+   *
+   * Pour qui n'a pas `b2b_settings:read` : le comptoir consulte l'ouverture de
+   * la livraison sans avoir à lire les réglages du commerce.
+   */
+  async readPublic(): Promise<DeliveryAvailabilityView> {
+    const open = await firstValueFrom(
+      this.http.get<PublicDeliveryAvailabilityView>(`${B2B_API_BASE}/delivery-availability`),
+    );
+    return {
+      openToB2b: open.openToB2b,
+      openToB2c: open.openToB2c,
+      updatedAt: null,
+      updatedBy: null,
+    };
   }
 
   private url(): string {
