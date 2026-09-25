@@ -9,11 +9,14 @@ import { SaveStorefrontHandler } from "./application/save-storefront.handler.js"
 import { StorefrontMediaUsage } from "./channels/media/storefront-media-usage.js";
 import { PublicStorefrontReader } from "./domain/public-storefront.reader.js";
 import { StorefrontCatalogReader } from "./domain/storefront-catalog.reader.js";
+import { StorefrontOperationsReader } from "./domain/storefront-operations.reader.js";
 import { StorefrontReader } from "./domain/storefront.reader.js";
 import { StorefrontRepository } from "./domain/storefront.repository.js";
 import { AdminStorefrontController } from "./http/admin-storefront.controller.js";
+import { MyStorefrontController } from "./http/my-storefront.controller.js";
 import { StorefrontController } from "./http/storefront.controller.js";
 import { CatalogBackedStorefrontCatalogReader } from "./infrastructure/catalog-backed-storefront-catalog.reader.js";
+import { CatalogBackedStorefrontOperationsReader } from "./infrastructure/catalog-backed-storefront-operations.reader.js";
 import { PrismaPublicStorefrontReader } from "./infrastructure/prisma-public-storefront.reader.js";
 import { PrismaStorefrontMediaUsage } from "./infrastructure/prisma-storefront-media-usage.js";
 import { PrismaStorefrontReader } from "./infrastructure/prisma-storefront.reader.js";
@@ -27,19 +30,22 @@ import { PrismaStorefrontRepository } from "./infrastructure/prisma-storefront.r
  * l'éditeur lit tout, la boutique lit la page d'un rayon — et l'éditeur lit le
  * catalogue par `StorefrontCatalogReader`, branché sur `CatalogAdminReader` :
  * une lecture murée par `b2b_storefront`, que la communication peut ouvrir,
- * sans prix ni réglages. Et un canal publié,
+ * sans prix ni réglages. La boutique lit les opérations par
+ * `StorefrontOperationsReader`, branché sur `CatalogOperationsReader` : une
+ * annonce liée s'éteint avec son opération (D11). Et un canal publié,
  * `channels/media/` : les images qu'emploie la vitrine, que `appBootstrap/`
  * branche sur la médiathèque (D9).
  */
 @Module({
   imports: [CatalogModule],
-  controllers: [AdminStorefrontController, StorefrontController],
+  controllers: [AdminStorefrontController, StorefrontController, MyStorefrontController],
   providers: [
     { provide: StorefrontRepository, useClass: PrismaStorefrontRepository },
     { provide: StorefrontReader, useClass: PrismaStorefrontReader },
     { provide: PublicStorefrontReader, useClass: PrismaPublicStorefrontReader },
     { provide: StorefrontMediaUsage, useClass: PrismaStorefrontMediaUsage },
     { provide: StorefrontCatalogReader, useClass: CatalogBackedStorefrontCatalogReader },
+    { provide: StorefrontOperationsReader, useClass: CatalogBackedStorefrontOperationsReader },
     SaveStorefrontHandler,
     GetStorefrontHandler,
     GetPublicStorefrontPageHandler,

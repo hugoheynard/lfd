@@ -90,9 +90,11 @@ function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): Catal
         note: null,
         image: null,
         thumbnail: null,
+        operationOnly: false,
       },
     ],
     orderTimeLimits: [],
+    operations: [],
   };
 }
 
@@ -676,8 +678,10 @@ describe("GET /admin/catalog — l'ordre du rayon", () => {
           note: null,
           image: null,
           thumbnail: null,
+          operationOnly: false,
         })),
         orderTimeLimits: [],
+        operations: [],
       },
       { revisionId: "rev_ordre", fingerprint: "empreinte-ordre" },
     );

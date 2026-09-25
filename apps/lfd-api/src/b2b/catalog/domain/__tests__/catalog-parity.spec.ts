@@ -7,11 +7,25 @@ import { compareToReference, type MirrorEntry, type ReferenceEntry } from "../ca
  */
 
 function reference(over: Partial<ReferenceEntry> = {}): ReferenceEntry {
-  return { sku: "VIE-001-1", name: "Croissant", priceMillicents: 200, vatRate: 5.5, ...over };
+  return {
+    sku: "VIE-001-1",
+    name: "Croissant",
+    priceMillicents: 200,
+    vatRate: 5.5,
+    operationOnly: false,
+    ...over,
+  };
 }
 
 function mirror(over: Partial<MirrorEntry> = {}): MirrorEntry {
-  return { sku: "VIE-001-1", name: "Croissant", pimPriceMillicents: 200, vatRate: 5.5, ...over };
+  return {
+    sku: "VIE-001-1",
+    name: "Croissant",
+    pimPriceMillicents: 200,
+    vatRate: 5.5,
+    operationOnly: false,
+    ...over,
+  };
 }
 
 describe("compareToReference", () => {
@@ -103,5 +117,28 @@ describe("l’écart de TVA", () => {
 
   it("se tait quand les deux côtés portent le même taux", () => {
     expect(compareToReference([reference()], [mirror()]).vatGaps).toEqual([]);
+  });
+});
+
+describe("l’écart de réservation aux opérations", () => {
+  /**
+   * Régression (2026-09-24) : basculer un article en « réservé aux opérations »
+   * au PIM ne comptait pas comme un écart — l'aperçu disait « à jour » et
+   * grisait l'envoi.
+   */
+  it("dit qu’un article est devenu exclusif sans que la boutique suive", () => {
+    const report = compareToReference(
+      [reference({ operationOnly: true })],
+      [mirror({ operationOnly: false })],
+    );
+
+    expect(report.operationOnlyGaps).toEqual([
+      { sku: "VIE-001-1", reference: true, mirror: false },
+    ]);
+    expect(report.inSync).toBe(false);
+  });
+
+  it("se tait quand les deux côtés s’accordent", () => {
+    expect(compareToReference([reference()], [mirror()]).operationOnlyGaps).toEqual([]);
   });
 });

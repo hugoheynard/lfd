@@ -204,6 +204,17 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     icon: 'category',
     section: 'Catalogue',
   },
+  // Les opérations datées : une sélection d'articles bornée dans le temps.
+  // Au Catalogue, parce qu'on y CHOISIT des articles — rien n'y est diffusé
+  // avant la réception au commerce. Une seule table nourrit le rail ET le
+  // lanceur mobile (`app.html`, `pimViews()`), d'où une seule entrée.
+  {
+    key: 'operations',
+    label: 'Opérations',
+    link: '/pim/operations',
+    icon: 'gift',
+    section: 'Catalogue',
+  },
   {
     key: 'revisions',
     label: 'Révisions',

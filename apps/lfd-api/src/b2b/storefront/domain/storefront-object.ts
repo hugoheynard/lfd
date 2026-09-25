@@ -6,7 +6,11 @@ import {
   type ObjectSettingsState,
 } from "./object-settings.js";
 import { ShelfKey } from "./shelf-key.js";
-import { StorefrontContent, type StorefrontContentState } from "./storefront-content.js";
+import {
+  StorefrontContent,
+  type StorefrontContentInput,
+  type StorefrontContentState,
+} from "./storefront-content.js";
 import { InvalidStorefrontError } from "./storefront-errors.js";
 
 /** Un objet, en primitives validées. */
@@ -27,7 +31,7 @@ export interface StorefrontObjectInput {
   readonly column: number;
   readonly row: number;
   readonly shelves: readonly string[];
-  readonly contents: readonly StorefrontContentState[];
+  readonly contents: readonly StorefrontContentInput[];
 }
 
 /**

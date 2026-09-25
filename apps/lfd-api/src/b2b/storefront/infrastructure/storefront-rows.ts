@@ -38,6 +38,7 @@ interface ContentColumns {
   readonly imageUrl: string | null;
   readonly imageAlt: Prisma.JsonValue;
   readonly linkShelfKey: string | null;
+  readonly operationKey: string | null;
 }
 
 export interface ObjectRow extends SettingsColumns {
@@ -126,17 +127,19 @@ function contentOfRow(row: ContentColumns): StorefrontContentState {
   if (row.kind === "product" && row.productSku !== null) {
     return { kind: "product", sku: row.productSku };
   }
-  const title = textOf(row.title);
-  if (row.kind !== "info" || title === null) {
+  if (row.kind !== "info") {
     throw new CorruptStorefrontRowError(`contenu de nature « ${row.kind} »`);
   }
+  // Un titre absent n'est permis qu'à une annonce liée à une opération (il est
+  // hérité) : l'agrégat le refuse ailleurs, en le disant.
   return {
     kind: "info",
     badge: textOf(row.badge),
-    title,
+    title: textOf(row.title),
     lede: textOf(row.lede),
     image: row.imageUrl === null ? null : { url: row.imageUrl, alt: textOf(row.imageAlt) },
     linkShelfKey: row.linkShelfKey,
+    operationKey: row.operationKey,
   };
 }
 
@@ -153,6 +156,7 @@ export function contentColumns(content: StorefrontContentState): {
   readonly imageUrl: string | null;
   readonly imageAlt: NullableJson;
   readonly linkShelfKey: string | null;
+  readonly operationKey: string | null;
 } {
   if (content.kind === "product") {
     return {
@@ -164,6 +168,7 @@ export function contentColumns(content: StorefrontContentState): {
       imageUrl: null,
       imageAlt: Prisma.DbNull,
       linkShelfKey: null,
+      operationKey: null,
     };
   }
   return {
@@ -175,6 +180,7 @@ export function contentColumns(content: StorefrontContentState): {
     imageUrl: content.image?.url ?? null,
     imageAlt: jsonOf(content.image?.alt ?? null),
     linkShelfKey: content.linkShelfKey,
+    operationKey: content.operationKey,
   };
 }
 

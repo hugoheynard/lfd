@@ -46,6 +46,12 @@ export interface ReferenceEntry {
    * appliquer un taux différent.
    */
   readonly vatRate: number | null;
+  /**
+   * Réservé aux opérations. Comparé parce qu'il décide QUAND l'article se vend :
+   * sans lui, basculer une bûche en exclusive laissait l'aperçu conclure « à
+   * jour » et griser l'envoi.
+   */
+  readonly operationOnly: boolean;
 }
 
 /** Un article tel que la plateforme le tient — le miroir. */
@@ -56,6 +62,7 @@ export interface MirrorEntry {
   readonly pimPriceMillicents: number;
   /** Le taux que la boutique appliquerait aujourd'hui. */
   readonly vatRate: number | null;
+  readonly operationOnly: boolean;
 }
 
 /**
@@ -77,6 +84,7 @@ export function compareToReference(
   const priceGaps: FieldGap<number>[] = [];
   const vatGaps: FieldGap<number | null>[] = [];
   const nameGaps: FieldGap<string>[] = [];
+  const operationOnlyGaps: FieldGap<boolean>[] = [];
 
   for (const entry of reference) {
     const match = mirrorBySku.get(entry.sku);
@@ -99,6 +107,13 @@ export function compareToReference(
     if (match.name !== entry.name) {
       nameGaps.push({ sku: entry.sku, reference: entry.name, mirror: match.name });
     }
+    if (match.operationOnly !== entry.operationOnly) {
+      operationOnlyGaps.push({
+        sku: entry.sku,
+        reference: entry.operationOnly,
+        mirror: match.operationOnly,
+      });
+    }
   }
 
   const stale = mirror.map((entry) => entry.sku).filter((sku) => !seen.has(sku));
@@ -111,11 +126,13 @@ export function compareToReference(
     priceGaps,
     vatGaps,
     nameGaps,
+    operationOnlyGaps,
     inSync:
       missing.length === 0 &&
       stale.length === 0 &&
       priceGaps.length === 0 &&
       vatGaps.length === 0 &&
-      nameGaps.length === 0,
+      nameGaps.length === 0 &&
+      operationOnlyGaps.length === 0,
   };
 }

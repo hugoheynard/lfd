@@ -216,6 +216,27 @@
                 <app-order-limit-form />
               </fold-page-section>
             </fold-card>
+            <!-- VENTE EN OPÉRATION — sous la limite, parce qu'elle répond à la
+             même question (quand peut-on commander cet article ?) et qu'elle
+             s'écrit de la même façon : seule, sur sa route, hors de « Tout
+             enregistrer ». N'existe qu'une fois la fiche créée. -->
+            @if (store.isEdit()) {
+              <fold-card>
+                <fold-page-section
+                  title="Vente en opération"
+                  separator
+                  collapsible
+                  [open]="sectionOpen('operation-only')()"
+                  (openChange)="setSectionOpen('operation-only', $event)"
+                >
+                  <span sectionSubtitle>
+                    Réserver l'article à Noël, Pâques ou la galette. S'applique à toutes ses
+                    déclinaisons.
+                  </span>
+                  <app-operation-only-form />
+                </fold-page-section>
+              </fold-card>
+            }
           }
           @if (section.key === 'nutrition') {
             <!-- INGRÉDIENTS — sous les deux sections réglementaires, et pas avec

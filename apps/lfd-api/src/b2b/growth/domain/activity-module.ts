@@ -41,6 +41,10 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "ingredient.",
     "allergen_category.",
     "allergen_entry.",
+    // Les opérations datées se préparent au référentiel, sous `pim_catalog` :
+    // choisir les articles de Noël et fixer ses dates, c'est le travail du
+    // catalogue (plan des opérations datées, D1 — 2026-09-24).
+    "operation.",
     // La MÉDIATHÈQUE : le fonds d'images n'appartient à aucun référentiel — les
     // fiches en portent, les familles aussi — mais son code vit dans le bloc
     // `pim` et s'écrit sous ses droits. Le jour où elle devient un bloc à elle
@@ -66,6 +70,10 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // (2026-09-19).
     "catalog_item.",
     "catalog_delivery.",
+    // La surcharge d'une opération datée reçue restreint ce qu'on vend et
+    // quand : le même geste que masquer un article (2026-09-24, lot 2 du plan
+    // des opérations datées).
+    "catalog_operation.",
     // La vitrine décide ce qu'on met en avant, sur quel rayon : le même métier
     // que la mise en avant d'un article (`catalog_item.featured`), 2026-09-24.
     "storefront.",

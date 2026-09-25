@@ -90,8 +90,10 @@ function snapshot(
       note: null,
       image: null,
       thumbnail: null,
+      operationOnly: false,
     })),
     orderTimeLimits: [],
+    operations: [],
   } satisfies CatalogSnapshot;
 }
 

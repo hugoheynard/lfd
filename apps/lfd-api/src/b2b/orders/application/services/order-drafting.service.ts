@@ -33,6 +33,7 @@ import { OrderLateFeeReader } from "../../domain/ports/order-late-fee.reader.js"
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { ensureWithinOrderCutoff } from "../../domain/services/order-cutoff-guard.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { OrderOperations } from "./order-operations.service.js";
 import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";
 import type { OrderParties } from "./order-parties.js";
 import { lineTotalCents } from "@lfd/money";
@@ -118,6 +119,7 @@ export class OrderDrafting {
     private readonly waivers: OrderCutoffWaiverGate,
     private readonly lateFees: OrderLateFeeReader,
     private readonly audiences: CustomerAudiences,
+    private readonly operations: OrderOperations,
   ) {}
 
   /**
@@ -153,6 +155,10 @@ export class OrderDrafting {
     // de tarifer un panier qu'on refusera ensuite ; le prix de l'inverse serait
     // d'opposer la mauvaise règle, ce qui est un refus faux.
     const waiverUsed = await this.ensureNotTooLate(content, acheminement, parties);
+    // APRÈS le délai de fabrication, et sans la dérogation : les deux gardes
+    // s'appliquent, c'est le plus tôt qui ferme, et l'équipe ne rouvre pas une
+    // opération close (D6 du plan des opérations datées).
+    await this.operations.ensure(content.lines, parties.companyId, content.requestedDeliveryDate);
     // La surtaxe ne se lit QUE si une dérogation a servi : une requête de plus
     // sur chaque commande, pour un réglage que la plupart des maisons n'ont pas,
     // se paierait sur toutes les commandes à l'heure.
@@ -214,7 +220,12 @@ export class OrderDrafting {
     parties: OrderParties,
     lines: readonly OrderLineRequest[],
   ): Promise<ResolvedOrderLine[]> {
-    return this.linePricing.explain(lines, parties);
+    const explained = await this.linePricing.explain(lines, parties);
+    // Sans jour : le devis ne juge pas la date, mais il dit déjà qu'une bûche
+    // n'est pas encore ouverte, close ou introuvable — le refus n'attend pas
+    // le paiement (D6).
+    await this.operations.ensure(lines, parties.companyId);
+    return explained;
   }
 
   /**

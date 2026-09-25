@@ -387,7 +387,11 @@ export type { LateFeeAdjustment, OrderLateFeePayload, OrderLateFeeView } from ".
 export type {
   ShopCatalogueView,
   ShopImageView,
+  ShopItemOperationView,
   ShopItemView,
+  ShopOperationState,
+  ShopOperationText,
+  ShopOperationView,
   ShopShelfView,
 } from "./shop-catalogue.js";
 export {
@@ -886,6 +890,8 @@ export type {
 export type { CatalogParityGap, CatalogParityView } from "./catalog-parity.js";
 export type {
   B2bPushChange,
+  B2bPushOperationChange,
+  B2bPushPreviewOperation,
   B2bPushPreviewExclusion,
   B2bPushPreviewItem,
   B2bPushPreviewView,
@@ -1096,8 +1102,11 @@ export type {
   PublicPickupSlotTaken,
 } from "./public-pickup-slots.js";
 export {
+  STOREFRONT_INFO_ACTIONS,
+  STOREFRONT_OPERATION_STATES,
   storefrontCarouselSchema,
   storefrontCatalogItemSchema,
+  storefrontCatalogOperationSchema,
   storefrontCatalogShelfSchema,
   storefrontCatalogViewSchema,
   storefrontContentSchema,
@@ -1111,20 +1120,39 @@ export {
   storefrontTextSchema,
 } from "./storefront.js";
 export type {
+  PublicStorefrontContent,
+  PublicStorefrontInfoContent,
   PublicStorefrontObjectView,
+  PublicStorefrontOperationView,
   PublicStorefrontPageView,
   StorefrontCarousel,
   StorefrontCatalogItem,
+  StorefrontCatalogOperation,
   StorefrontCatalogShelf,
   StorefrontCatalogView,
   StorefrontContent,
+  StorefrontInfoAction,
+  StorefrontInfoContent,
   StorefrontObjectPayload,
   StorefrontObjectView,
   StorefrontPage,
   StorefrontPayload,
   StorefrontPayloadInput,
   StorefrontTemplatePayload,
+  StorefrontOperationState,
   StorefrontTemplateView,
   StorefrontText,
   StorefrontView,
 } from "./storefront.js";
+export {
+  RECEIVED_OPERATION_AUDIENCES,
+  setOperationOverridePayloadSchema,
+} from "./catalog-operations.js";
+export type {
+  EffectiveOperationView,
+  OperationOverrideView,
+  ReceivedOperationAudience,
+  ReceivedOperationText,
+  ReceivedOperationView,
+  SetOperationOverridePayload,
+} from "./catalog-operations.js";

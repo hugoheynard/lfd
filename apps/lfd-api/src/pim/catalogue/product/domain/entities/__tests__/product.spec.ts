@@ -377,3 +377,38 @@ describe("l’agrégat Product", () => {
     expect(Product.reconstitute(snapshot).snapshot()).toEqual(snapshot);
   });
 });
+
+describe("réservée aux opérations datées (D3)", () => {
+  it("naît courante : réserver une fiche est une décision qu'on prend en le sachant", () => {
+    expect(open().snapshot().operationOnly).toBe(false);
+  });
+
+  it("se réserve, et dit qu'elle a changé", () => {
+    const product = open();
+
+    expect(product.reserveForOperations(true)).toBe(true);
+    expect(product.snapshot().operationOnly).toBe(true);
+    expect(product.persistenceSnapshot().operationOnly).toBe(true);
+  });
+
+  it("ne dit rien changé quand elle y était déjà — pas de fait à journaliser", () => {
+    const product = open();
+    product.reserveForOperations(true);
+
+    expect(product.reserveForOperations(true)).toBe(false);
+  });
+
+  it("se réserve même archivée : Noël se prépare sur des fiches qu'on ne vend pas encore", () => {
+    const product = open();
+    product.archive();
+
+    expect(product.reserveForOperations(true)).toBe(true);
+  });
+
+  it("garde le drapeau à la reconstitution", () => {
+    const product = open();
+    product.reserveForOperations(true);
+
+    expect(Product.reconstitute(product.snapshot()).operationOnly).toBe(true);
+  });
+});

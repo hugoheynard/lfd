@@ -5,7 +5,15 @@ import type { CompanyView } from '@lfd/contracts';
 import { ClientCompany } from '../../client-company.service';
 
 import { FR } from '../../copy/fr';
-import { TEST_ITEMS } from '../shop-catalogue.fixture';
+import {
+  hydrateWith,
+  operationCatalogue,
+  TEST_ITEMS,
+  testOperationItem,
+} from '../shop-catalogue.fixture';
+import { ShopCatalogue } from '../shop-catalogue.store';
+import type { ShopOperationState } from '@lfd/contracts';
+import { provideHttpClient } from '@angular/common/http';
 import { ProductTile } from './product-tile';
 
 describe('ProductTile', () => {
@@ -214,6 +222,49 @@ describe('ProductTile', () => {
       expect(classes?.contains('tall')).toBe(true);
       expect(classes?.contains('tone-accent')).toBe(true);
       expect(classes?.contains('contain')).toBe(true);
+    });
+  });
+
+  /**
+   * D8 : l'état d'un article réservé à une opération prend la place du « + ».
+   * L'ajouter avant l'ouverture ferait un panier que la caisse refuse.
+   */
+  describe('un article réservé à une opération', () => {
+    const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
+
+    function mountOperation(state: ShopOperationState): void {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ imports: [ProductTile], providers: [provideHttpClient()] });
+      hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue(state));
+      fixture = TestBed.createComponent(ProductTile);
+      fixture.componentRef.setInput('product', testOperationItem(state));
+      fixture.detectChanges();
+    }
+
+    it('annoncée : « Ouvre le 15 nov. », à l’heure de Paris, et pas de « + »', () => {
+      mountOperation('announced');
+
+      expect(el().querySelector('fold-badge')?.textContent?.trim()).toBe('Ouvre le 15 nov.');
+      expect(el().querySelector('.quick')).toBeNull();
+    });
+
+    it('close : « Commandes closes », et pas de « + »', () => {
+      mountOperation('closed');
+
+      expect(el().querySelector('fold-badge')?.textContent?.trim()).toBe(FR.shop.operationClosed);
+      expect(el().querySelector('.quick')).toBeNull();
+    });
+
+    it('ouverte : le « + » comme n’importe quel article', () => {
+      mountOperation('open');
+
+      expect(el().querySelector('fold-badge')).toBeNull();
+      expect(el().querySelector('.quick')).not.toBeNull();
+    });
+
+    it('un article courant n’a ni pastille ni changement', () => {
+      expect(el().querySelector('fold-badge')).toBeNull();
+      expect(el().querySelector('.quick')).not.toBeNull();
     });
   });
 });

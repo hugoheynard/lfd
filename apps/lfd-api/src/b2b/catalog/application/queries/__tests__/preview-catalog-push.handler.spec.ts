@@ -4,6 +4,10 @@ import type { CatalogSnapshot } from "@lfd/catalog-sync";
 import { B2bCatalogFeedPreview } from "../../../../../pim/channels/b2b-platform/products/feed-preview.js";
 import { Clock } from "../../../../../platform/time/clock.js";
 import { CatalogAdminReader } from "../../../domain/ports/catalog-admin.reader.js";
+import {
+  ReceivedOperationsReader,
+  type ReceivedOperation,
+} from "../../../domain/ports/received-operations.reader.js";
 import type { CatalogConfrontation } from "../../check-catalog-parity.service.js";
 import { CheckCatalogParityService } from "../../check-catalog-parity.service.js";
 import type { ParityReport, ReferenceEntry } from "../../../domain/catalog-parity.js";
@@ -21,7 +25,7 @@ import { PreviewCatalogPushHandler } from "../preview-catalog-push.handler.js";
  */
 
 function reference(sku: string, name = `Article ${sku}`): ReferenceEntry {
-  return { sku, name, priceMillicents: 250_000, vatRate: 5.5 };
+  return { sku, name, priceMillicents: 250_000, vatRate: 5.5, operationOnly: false };
 }
 
 function parity(over: Partial<ParityReport> = {}): ParityReport {
@@ -33,6 +37,7 @@ function parity(over: Partial<ParityReport> = {}): ParityReport {
     priceGaps: [],
     vatGaps: [],
     nameGaps: [],
+    operationOnlyGaps: [],
     inSync: true,
     ...over,
   };
@@ -44,6 +49,7 @@ const EMPTY_SNAPSHOT: CatalogSnapshot = {
   categories: [],
   products: [],
   orderTimeLimits: [],
+  operations: [],
 };
 
 /**
@@ -57,7 +63,7 @@ const EMPTY_SNAPSHOT: CatalogSnapshot = {
  */
 class StubParityService extends CheckCatalogParityService {
   constructor(private readonly result: CatalogConfrontation) {
-    super(new SilentPreview(), new EmptyMirror(), new FrozenClock());
+    super(new SilentPreview(), new EmptyMirror(), new FrozenClock(), new NoOperations());
   }
 
   override confront(): Promise<CatalogConfrontation> {
@@ -73,6 +79,12 @@ class SilentPreview extends B2bCatalogFeedPreview {
 
 class EmptyMirror extends CatalogAdminReader {
   list(): Promise<[]> {
+    return Promise.resolve([]);
+  }
+}
+
+class NoOperations extends ReceivedOperationsReader {
+  list(): Promise<readonly ReceivedOperation[]> {
     return Promise.resolve([]);
   }
 }
@@ -94,6 +106,7 @@ function service(confrontation: Partial<CatalogConfrontation>): CheckCatalogPari
     },
     reference: confrontation.reference ?? [],
     parity: confrontation.parity ?? parity(),
+    operations: confrontation.operations ?? [],
   });
 }
 
@@ -154,6 +167,24 @@ describe("l'aperçu d'envoi dit l'effet sur le canal", () => {
     const view = await handler.execute();
 
     expect(view.outgoing.map((item) => item.change)).toEqual(["unchanged", "changed"]);
+  });
+
+  /**
+   * Régression (2026-09-24) : un article basculé « réservé aux opérations » au
+   * PIM restait « inchangé » — l'écran disait « à jour » et grisait l'envoi.
+   */
+  it("marque « change » un article dont la réservation aux opérations a basculé", async () => {
+    const handler = handlerOn({
+      reference: [reference("PAT-9-1")],
+      parity: parity({
+        operationOnlyGaps: [{ sku: "PAT-9-1", reference: true, mirror: false }],
+        inSync: false,
+      }),
+    });
+
+    const view = await handler.execute();
+
+    expect(view.outgoing[0]?.change).toBe("changed");
   });
 
   /**

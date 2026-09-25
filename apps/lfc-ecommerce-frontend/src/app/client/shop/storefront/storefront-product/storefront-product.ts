@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import type { StorefrontContent } from '@lfd/contracts';
+import type { PublicStorefrontContent } from '@lfd/contracts';
 import type { MediaFit, MediaSide, StorefrontShape, StorefrontTone } from '@lfd/storefront-layout';
 
 import { ClientCart } from '../../../cart/client-cart.service';
@@ -30,7 +30,7 @@ import type { StorefrontRenderer } from '../storefront-renderers';
   styleUrl: './storefront-product.scss',
 })
 export class StorefrontProduct implements StorefrontRenderer {
-  readonly content = input.required<StorefrontContent>();
+  readonly content = input.required<PublicStorefrontContent>();
   readonly shape = input.required<StorefrontShape>();
   readonly mediaFit = input.required<MediaFit>();
   readonly mediaSide = input.required<MediaSide>();

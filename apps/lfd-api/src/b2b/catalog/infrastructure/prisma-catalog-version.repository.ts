@@ -7,6 +7,7 @@ import type { PimFacts } from "../domain/entities/catalog-item.js";
 import { CatalogVersion } from "../domain/entities/catalog-version.js";
 import { CatalogVersionReader } from "../domain/ports/catalog-version.reader.js";
 import { CatalogVersionRepository } from "../domain/ports/catalog-version.repository.js";
+import { archivedOperationsJson, readArchivedOperations } from "./archived-operations.js";
 
 /**
  * La forme des faits archivés.
@@ -100,6 +101,13 @@ const archivedFactsSchema = z.object({
     })
     .nullish()
     .transform((value) => value ?? null),
+  // `.optional()` avec un défaut, selon la règle d'évolution en tête : toutes
+  // les versions archivées avant le fil v11 ont été écrites sans ce champ, et
+  // `false` y est exact — aucun article n'était alors réservé aux opérations.
+  operationOnly: z
+    .boolean()
+    .optional()
+    .transform((value) => value ?? false),
   // Écrit en ISO dans le `jsonb` : `Date` n'est pas une valeur JSON, et la
   // conversion doit être explicite plutôt que subie du sérialiseur.
   receivedAt: z.coerce.date(),
@@ -116,6 +124,7 @@ interface VersionRow {
   readonly fingerprint: string;
   readonly excludedSkus: unknown;
   readonly items: unknown;
+  readonly operations: unknown;
   readonly createdAt: Date;
   readonly createdBy: string | null;
 }
@@ -130,6 +139,7 @@ function toDomain(row: VersionRow): CatalogVersion {
     createdAt: row.createdAt,
     createdBy: row.createdBy,
     lines: archivedLinesSchema.parse(row.items),
+    operations: readArchivedOperations(row.operations),
   });
 }
 
@@ -184,6 +194,7 @@ function toJson(facts: PimFacts): Prisma.InputJsonObject {
     note: facts.note,
     image: facts.image === null ? null : { ...facts.image },
     thumbnail: facts.thumbnail === null ? null : { ...facts.thumbnail },
+    operationOnly: facts.operationOnly,
     receivedAt: facts.receivedAt.toISOString(),
   };
 }
@@ -212,6 +223,10 @@ export class PrismaCatalogVersionRepository extends CatalogVersionRepository {
         // Redondant avec `items`, et assumé : lister les versions sans
         // désérialiser cent kilo-octets par ligne.
         itemCount: state.lines.length,
+        // `DbNull` et non `null` : une colonne `Json?` distingue le NULL SQL
+        // (« version d'avant la v11 ») du `null` JSON.
+        operations:
+          state.operations === null ? Prisma.DbNull : archivedOperationsJson(state.operations),
         createdAt: state.createdAt,
         createdBy: state.createdBy,
       },

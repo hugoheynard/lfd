@@ -36,6 +36,7 @@ import { UnpublishProductHandler } from "./product/application/unpublish-product
 import { RestoreProductHandler } from "./product/application/restore-product.js";
 import { SetProductMediaHandler } from "./product/application/set-product-media.js";
 import { SetProductChannelsHandler } from "./product/application/set-product-channels.js";
+import { SetProductOperationOnlyHandler } from "./product/application/set-product-operation-only.js";
 import { SetProductVatHandler } from "./product/application/set-product-vat.js";
 import { UpdateProductEditorialHandler } from "./product/application/update-product-editorial.js";
 import { UpdateProductIdentityHandler } from "./product/application/update-product-identity.js";
@@ -137,6 +138,7 @@ import {
     RenameProductVariantHandler,
     SetProductMediaHandler,
     SetProductChannelsHandler,
+    SetProductOperationOnlyHandler,
     SetProductVatHandler,
     UpdateProductEditorialHandler,
     SaveVariantAllergensHandler,

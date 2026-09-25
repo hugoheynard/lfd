@@ -1,4 +1,5 @@
 import type { CatalogItem, PimFacts } from "./catalog-item.js";
+import type { CatalogOperation, CatalogOperationFacts } from "./catalog-operation.js";
 
 /** L'état d'une version, sérialisé pour la persistance — aucun type Prisma ici. */
 export interface CatalogVersionState {
@@ -15,6 +16,13 @@ export interface CatalogVersionState {
   readonly createdBy: string | null;
   /** Les faits PIM du miroir, un par SKU, triés par SKU. */
   readonly lines: readonly PimFacts[];
+  /**
+   * Les opérations TENUES au moment de la validation, telles que reçues, triées
+   * par clé (D10 : « qu'était-il possible de commander le 20 décembre ? »).
+   * `null` = version posée avant le fil v11 — on ne le sait pas, ce qui n'est
+   * pas « aucune ».
+   */
+  readonly operations: readonly CatalogOperationFacts[] | null;
 }
 
 /** Tri stable des lignes. `<` et non `localeCompare` : celui-ci dépend d'ICU. */
@@ -23,6 +31,13 @@ function bySku(left: PimFacts, right: PimFacts): number {
     return -1;
   }
   return left.sku > right.sku ? 1 : 0;
+}
+
+function byOperationKey(left: CatalogOperationFacts, right: CatalogOperationFacts): number {
+  if (left.key < right.key) {
+    return -1;
+  }
+  return left.key > right.key ? 1 : 0;
 }
 
 /**
@@ -79,6 +94,12 @@ export class CatalogVersion {
     readonly createdAt: Date;
     readonly createdBy: string | null;
     readonly mirror: readonly CatalogItem[];
+    /**
+     * Le miroir des opérations, retirées comprises : la photographie ne garde
+     * que les tenues. Reçues, jamais effectives — la surcharge de la réception
+     * bouge comme un prix négocié, et une version ne bouge pas.
+     */
+    readonly operations: readonly CatalogOperation[];
   }): CatalogVersion {
     return new CatalogVersion({
       id: input.id,
@@ -93,6 +114,10 @@ export class CatalogVersion {
       // Triées à la pose : deux versions d'un catalogue identique doivent se
       // comparer ligne à ligne sans dépendre de l'ordre physique des lignes.
       lines: input.mirror.map((item) => item.pimFacts).sort(bySku),
+      operations: input.operations
+        .filter((operation) => !operation.isWithdrawn)
+        .map((operation) => operation.received)
+        .sort(byOperationKey),
     });
   }
 
@@ -127,6 +152,11 @@ export class CatalogVersion {
 
   get lines(): readonly PimFacts[] {
     return this.state.lines;
+  }
+
+  /** Les opérations tenues à cette version ; `null` avant le fil v11. */
+  get operations(): readonly CatalogOperationFacts[] | null {
+    return this.state.operations;
   }
 
   get lineCount(): number {

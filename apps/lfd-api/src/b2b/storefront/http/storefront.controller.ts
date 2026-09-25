@@ -22,11 +22,15 @@ import { GetPublicStorefrontPageQuery } from "../application/get-public-storefro
 export class StorefrontController {
   constructor(private readonly queries: QueryBus) {}
 
-  /** `shelfKey` : `all`, ou l'identifiant d'une famille du référentiel. */
+  /**
+   * `shelfKey` : `all`, l'identifiant d'une famille du référentiel, ou
+   * `op:<key>`. Pour un VISITEUR : les annonces d'une opération réservée aux
+   * pros s'y éteignent — un client reconnu lit `/:shelfKey/mine`.
+   */
   @Get(":shelfKey")
   page(@Param("shelfKey") shelfKey: string): Promise<PublicStorefrontPageView> {
     return this.queries.execute<GetPublicStorefrontPageQuery, PublicStorefrontPageView>(
-      new GetPublicStorefrontPageQuery(shelfKey),
+      new GetPublicStorefrontPageQuery(shelfKey, null),
     );
   }
 }

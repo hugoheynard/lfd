@@ -125,9 +125,10 @@ export interface MediaUploadFailureView {
 export interface MediaCarrierView {
   /**
    * Elle décide de l'écran vers lequel le lien renvoie. `storefront` = un
-   * objet de la vitrine du commerce (`id` = l'identifiant de l'objet).
+   * objet de la vitrine du commerce (`id` = l'identifiant de l'objet) ;
+   * `operation` = une opération datée du référentiel (`id` = sa clé).
    */
-  readonly kind: "product" | "category" | "storefront";
+  readonly kind: "product" | "category" | "storefront" | "operation";
   readonly id: string;
   readonly label: string;
 }

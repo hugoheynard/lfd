@@ -11,7 +11,10 @@ import {
   type ParityReport,
   type ReferenceEntry,
 } from "../domain/catalog-parity.js";
+import { compareOperations, type OperationChange } from "../domain/operation-parity.js";
 import { CatalogAdminReader } from "../domain/ports/catalog-admin.reader.js";
+import { ReceivedOperationsReader } from "../domain/ports/received-operations.reader.js";
+import { operationFactsOf } from "./operation-facts.js";
 
 /**
  * Confronte le miroir de la plateforme à ce que le référentiel publierait.
@@ -47,6 +50,7 @@ export class CheckCatalogParityService {
     private readonly feed: B2bCatalogFeedPreview,
     private readonly catalog: CatalogAdminReader,
     private readonly clock: Clock,
+    private readonly operations: ReceivedOperationsReader,
   ) {}
 
   async check(): Promise<ParityReport> {
@@ -68,9 +72,11 @@ export class CheckCatalogParityService {
     // en couche application — que le CLAUDE.md §3.2 interdit — et le JSDoc
     // justifiait même l'appel unique, ce qui rendait la dette d'autant plus
     // facile à ne jamais voir.
-    const [preview, mirror] = await Promise.all([
-      this.feed.preview(this.clock.now().toISOString()),
+    const now = this.clock.now();
+    const [preview, mirror, received] = await Promise.all([
+      this.feed.preview(now.toISOString()),
       this.catalog.list(),
+      this.operations.list(),
     ]);
 
     const reference = preview.snapshot.products.flatMap((product) =>
@@ -79,6 +85,8 @@ export class CheckCatalogParityService {
         name: variant.name,
         priceMillicents: variant.priceMillicents,
         vatRate: variant.vatRatePercent,
+        // `?? false` comme à l'ingestion : un produit d'avant la v11 n'est pas exclusif.
+        operationOnly: product.operationOnly ?? false,
       })),
     );
 
@@ -86,6 +94,12 @@ export class CheckCatalogParityService {
       preview,
       reference,
       parity: compareToReference(reference, mirror.map(asMirrorEntry)),
+      // Les opérations de LA MÊME projection — celles que le fil v11 porterait,
+      // archivées déjà écartées par `projectOperations` — contre le miroir.
+      operations: compareOperations(
+        preview.snapshot.operations.map((operation) => operationFactsOf(operation, now)),
+        received.map((entry) => ({ facts: entry.received, withdrawnAt: entry.withdrawnAt })),
+      ),
     };
   }
 }
@@ -96,19 +110,23 @@ export interface CatalogConfrontation {
   /** La projection aplatie en articles — l'unité que la comparaison manipule. */
   readonly reference: readonly ReferenceEntry[];
   readonly parity: ParityReport;
+  /** Ce que l'envoi ferait aux opérations datées du canal. */
+  readonly operations: readonly OperationChange[];
 }
 
-/** Le miroir, réduit aux quatre champs que la comparaison regarde. */
+/** Le miroir, réduit aux champs que la comparaison regarde. */
 export function asMirrorEntry(item: {
   readonly sku: string;
   readonly name: string;
   readonly pimPriceMillicents: number;
   readonly vatRatePercent: number | null;
+  readonly operationOnly: boolean;
 }): MirrorEntry {
   return {
     sku: item.sku,
     name: item.name,
     pimPriceMillicents: item.pimPriceMillicents,
     vatRate: item.vatRatePercent,
+    operationOnly: item.operationOnly,
   };
 }

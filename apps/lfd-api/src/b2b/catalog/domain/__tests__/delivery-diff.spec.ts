@@ -38,12 +38,26 @@ const item = (sku: string, over: Partial<DeliveredItem> = {}): DeliveredItem => 
   note: null,
   image: null,
   thumbnail: null,
+  operationOnly: false,
   ...over,
 });
 
 const skus = (changes: readonly SkuChange[]): string[] => changes.map((change) => change.sku);
 
 describe("le diff d'une arrivée", () => {
+  /**
+   * Fil v11 : rendre la bûche exclusive change QUAND elle se vend. Sans ce
+   * champ au diff, l'arrivée l'annoncerait « inchangée » et passerait sans
+   * relecture.
+   */
+  it("nomme un article devenu réservé aux opérations", () => {
+    const changes = diffDelivery([item("A", { operationOnly: true })], [item("A")]);
+
+    expect(changes).toEqual([
+      expect.objectContaining({ sku: "A", kind: "changed", fields: ["operationOnly"] }),
+    ]);
+  });
+
   it("ne dit rien d'un catalogue identique", () => {
     const catalogue = [item("A"), item("B")];
 

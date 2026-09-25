@@ -15,7 +15,7 @@ import { SendPanel, type SendPanelData } from './send-panel';
  * - **une note vide n'est pas une note** : elle remonte à `null`, faute de quoi
  *   la base porterait une chaîne vide qu'on ne distinguerait plus d'un silence.
  */
-function render(data: SendPanelData = { entering: 2, changing: 1, removing: 0 }) {
+function render(data: SendPanelData = { entering: 2, changing: 1, removing: 0, operations: 0 }) {
   const close = vi.fn();
   TestBed.configureTestingModule({
     imports: [SendPanel],
@@ -52,7 +52,7 @@ function render(data: SendPanelData = { entering: 2, changing: 1, removing: 0 })
 
 describe('SendPanel', () => {
   it("dit ce que l'envoi va faire, avant qu'on confirme", () => {
-    const { host } = render({ entering: 2, changing: 1, removing: 3 });
+    const { host } = render({ entering: 2, changing: 1, removing: 3, operations: 0 });
 
     const shown = (host.textContent ?? '').replace(/\s+/gu, ' ');
     expect(shown).toContain('2 entrant(s)');

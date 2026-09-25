@@ -42,6 +42,9 @@ export function deliveredItems(snapshot: StoredCatalogSnapshot): DeliveredItem[]
       // traversait pas. Les deux côtés de la comparaison doivent lire la même
       // absence, sinon le premier push v10 signalerait un changement sur TOUT.
       thumbnail: product.thumbnail ?? null,
+      // `?? false` couvre une arrivée d'avant la v11, comme à l'ingestion : les
+      // deux côtés doivent lire la même absence.
+      operationOnly: product.operationOnly ?? false,
     })),
   );
 }
@@ -68,5 +71,6 @@ export function mirrorItems(items: readonly CatalogItem[]): DeliveredItem[] {
     note: item.note,
     image: item.image,
     thumbnail: item.thumbnail,
+    operationOnly: item.operationOnly,
   }));
 }

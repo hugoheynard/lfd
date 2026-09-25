@@ -15,6 +15,8 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { StorefrontObjectDialog } from '../storefront-object-dialog/storefront-object-dialog';
 import type { StorefrontObjectDialogData } from '../storefront-object-host';
+import { StorefrontEditorStore } from '../storefront-editor.store';
+import { StorefrontPersistence } from '../storefront-persistence';
 import { StorefrontService } from '../storefront.service';
 import { StorefrontPage } from './storefront-page';
 
@@ -93,11 +95,12 @@ function item(sku: string, shelfKey: string): StorefrontCatalogView['items'][num
 
 const CATALOG: StorefrontCatalogView = {
   shelves: [
-    { key: 'viennoiserie', name: 'Viennoiseries' },
-    { key: 'bread', name: 'Pains' },
-    { key: 'chocolate', name: 'Chocolat & confiserie' },
+    { key: 'viennoiserie', name: 'Viennoiseries', operation: false },
+    { key: 'bread', name: 'Pains', operation: false },
+    { key: 'chocolate', name: 'Chocolat & confiserie', operation: false },
   ],
   items: [item('CRO', 'viennoiserie'), item('BAG', 'bread'), item('TRU', 'chocolate')],
+  operations: [],
 };
 
 class FakeStorefront {
@@ -160,8 +163,8 @@ async function setup(options: Options = {}) {
       },
     ],
   });
-  const { fixture, page, root } = await rendered();
-  return { fixture, page, root, api, successes, opened };
+  const rendering = await rendered();
+  return { ...rendering, api, successes, opened };
 }
 
 /**
@@ -172,10 +175,12 @@ async function setup(options: Options = {}) {
 async function rendered() {
   const fixture = TestBed.createComponent(StorefrontPage);
   const page = fixture.componentInstance;
+  const store = fixture.debugElement.injector.get(StorefrontEditorStore);
+  const persistence = fixture.debugElement.injector.get(StorefrontPersistence);
   fixture.detectChanges();
-  await vi.waitFor(() => expect(page.status()).not.toBe('loading'));
+  await vi.waitFor(() => expect(persistence.status()).not.toBe('loading'));
   fixture.detectChanges();
-  return { fixture, page, root: fixture.nativeElement as HTMLElement };
+  return { fixture, page, store, persistence, root: fixture.nativeElement as HTMLElement };
 }
 
 function key(target: Element, name: string): void {
@@ -184,24 +189,24 @@ function key(target: Element, name: string): void {
 
 describe('StorefrontPage — chargement', () => {
   it('charge la vitrine : ses objets, ses rangées, et rien à enregistrer', async () => {
-    const { page, root } = await setup();
-    expect(page.status()).toBe('ready');
-    expect(page.rows()).toBe(6);
-    expect(page.blocks().map((b) => b.format)).toEqual(['tile', 'card', 'tile', 'doubleBand']);
+    const { store, persistence, root } = await setup();
+    expect(persistence.status()).toBe('ready');
+    expect(store.rows()).toBe(6);
+    expect(store.blocks().map((b) => b.format)).toEqual(['tile', 'card', 'tile', 'doubleBand']);
     expect(root.querySelectorAll('.block')).toHaveLength(4);
-    expect(page.dirty()).toBe(false);
+    expect(store.dirty()).toBe(false);
     expect(root.textContent).not.toContain('Modifications non enregistrées');
   });
 
   it('une vitrine jamais enregistrée s’ouvre vide — aucun exemple pré-rempli', async () => {
-    const { page, root } = await setup({ view: EMPTY_VIEW });
-    expect(page.blocks()).toEqual([]);
+    const { store, root } = await setup({ view: EMPTY_VIEW });
+    expect(store.blocks()).toEqual([]);
     expect(root.querySelectorAll('.grid .free-cell')).toHaveLength(30);
   });
 
   it('les rayons sont ceux du catalogue : « Tout », puis les familles servies', async () => {
-    const { page } = await setup();
-    expect(page.shelves().map((s) => s.label)).toEqual([
+    const { store } = await setup();
+    expect(store.shelves().map((s) => s.label)).toEqual([
       'Tout',
       'Viennoiseries',
       'Pains',
@@ -210,10 +215,10 @@ describe('StorefrontPage — chargement', () => {
   });
 
   it('sans catalogue : le dit, et nomme les rayons par leur clé', async () => {
-    const { page, root } = await setup({ catalog: 'fails' });
-    expect(page.status()).toBe('ready');
+    const { store, persistence, root } = await setup({ catalog: 'fails' });
+    expect(persistence.status()).toBe('ready');
     expect(root.textContent).toContain('Le catalogue n’a pas pu être lu');
-    expect(page.shelves().map((s) => s.key)).toEqual(['all', 'chocolate']);
+    expect(store.shelves().map((s) => s.key)).toEqual(['all', 'chocolate']);
   });
 
   it('une vitrine illisible vide l’écran et propose de réessayer', async () => {
@@ -244,95 +249,95 @@ describe('StorefrontPage — composer', () => {
   });
 
   it('pose depuis la palette à la première place libre, et le signale non enregistré', async () => {
-    const { page, fixture, root } = await setup();
-    page.addFormat('card');
+    const { store, fixture, root } = await setup();
+    store.addFormat('card');
     fixture.detectChanges();
-    const added = page.blocks().at(-1);
+    const added = store.blocks().at(-1);
     expect(added).toMatchObject({ format: 'card', column: 1, row: 2 });
-    expect(page.selectedId()).toBe(added?.id);
-    expect(page.dirty()).toBe(true);
+    expect(store.selectedId()).toBe(added?.id);
+    expect(store.dirty()).toBe(true);
     expect(root.textContent).toContain('Modifications non enregistrées');
   });
 
   it('déplace à la flèche et refuse le chevauchement en le disant', async () => {
-    const { fixture, page, root } = await setup();
+    const { fixture, store, root } = await setup();
     const cardBlock = root.querySelectorAll('.block')[1];
     if (cardBlock === undefined) throw new Error('carte absente');
     key(cardBlock, 'ArrowDown');
     fixture.detectChanges();
-    expect(page.blocks()[1]).toMatchObject({ column: 3, row: 2 });
+    expect(store.blocks()[1]).toMatchObject({ column: 3, row: 2 });
 
     key(cardBlock, 'ArrowDown');
     fixture.detectChanges();
-    expect(page.blocks()[1]).toMatchObject({ column: 3, row: 2 });
+    expect(store.blocks()[1]).toMatchObject({ column: 3, row: 2 });
     expect(root.textContent).toContain('Sur le rayon « Tout », chevauche « Bande double 5×2 »');
   });
 
   it('retire à Suppr', async () => {
-    const { fixture, page, root } = await setup();
+    const { fixture, store, root } = await setup();
     const tileBlock = root.querySelector('.block');
     if (tileBlock === null) throw new Error('tuile absente');
     key(tileBlock, 'Delete');
     fixture.detectChanges();
-    expect(page.blocks().map((b) => b.format)).toEqual(['card', 'tile', 'doubleBand']);
+    expect(store.blocks().map((b) => b.format)).toEqual(['card', 'tile', 'doubleBand']);
   });
 
   it('refuse de réduire le rayon sous un de ses objets, en le nommant', async () => {
-    const { fixture, page, root } = await setup();
-    expect(page.setRows(3)).toBe(false);
+    const { fixture, store, root } = await setup();
+    expect(store.setRows(3)).toBe(false);
     fixture.detectChanges();
-    expect(page.rows()).toBe(6);
+    expect(store.rows()).toBe(6);
     expect(root.textContent).toContain(
       'Impossible de passer « Tout » à 3 rangées : « Bande double 5×2 » (colonne 1, rangée 3)',
     );
 
-    expect(page.setRows(4)).toBe(true);
-    expect(page.rows()).toBe(4);
+    expect(store.setRows(4)).toBe(true);
+    expect(store.rows()).toBe(4);
   });
 
   it('chaque rayon a SES rangées : régler l’un ne touche pas l’autre', async () => {
-    const { page } = await setup();
-    page.pickShelf('bread');
-    expect(page.setRows(2)).toBe(true);
-    expect(page.rows()).toBe(2);
-    page.pickShelf('all');
-    expect(page.rows()).toBe(6);
-    page.pickShelf('bread');
-    expect(page.rows()).toBe(2);
+    const { store } = await setup();
+    store.pickShelf('bread');
+    expect(store.setRows(2)).toBe(true);
+    expect(store.rows()).toBe(2);
+    store.pickShelf('all');
+    expect(store.rows()).toBe(6);
+    store.pickShelf('bread');
+    expect(store.rows()).toBe(2);
   });
 
   it('un objet partagé doit tenir sur chacun de ses rayons, avec les rangées de chacun', async () => {
-    const { fixture, page, root } = await setup();
-    page.pickShelf('bread');
-    page.setRows(2);
-    page.pickShelf('all');
-    page.select('o-4'); // la bande double en rangée 3 : trop bas pour « Pains »
-    page.setSelectedShelves(['all', 'chocolate', 'bread']);
+    const { fixture, store, root } = await setup();
+    store.pickShelf('bread');
+    store.setRows(2);
+    store.pickShelf('all');
+    store.select('o-4'); // la bande double en rangée 3 : trop bas pour « Pains »
+    store.setSelectedShelves(['all', 'chocolate', 'bread']);
     fixture.detectChanges();
-    expect(page.blocks().find((b) => b.id === 'o-4')?.shelves).toEqual(['all', 'chocolate']);
+    expect(store.blocks().find((b) => b.id === 'o-4')?.shelves).toEqual(['all', 'chocolate']);
     expect(root.textContent).toContain('Sur le rayon « Pains » : Déborde des 2 rangées');
   });
 
   it('chaque rayon a sa page ; un objet partagé paraît sur toutes les siennes, avec son repère', async () => {
-    const { fixture, page, root } = await setup();
+    const { fixture, store, root } = await setup();
     expect(root.textContent).toContain('le reste du rayon s’écoule ici');
-    page.pickShelf('chocolate');
+    store.pickShelf('chocolate');
     fixture.detectChanges();
     const blocks = root.querySelectorAll('.block');
     expect(blocks).toHaveLength(1);
     expect(blocks[0]?.textContent).toContain('partagé · 2 rayons');
 
-    page.pickShelf('bread');
+    store.pickShelf('bread');
     fixture.detectChanges();
     expect(root.querySelectorAll('.block')).toHaveLength(0);
     expect(root.querySelectorAll('.grid .free-cell').length).toBeGreaterThanOrEqual(30);
   });
 
   it('pose un objet neuf sur le rayon édité seulement', async () => {
-    const { page } = await setup();
-    page.pickShelf('bread');
-    page.addFormat('block');
-    expect(page.blocks().at(-1)).toMatchObject({
+    const { store } = await setup();
+    store.pickShelf('bread');
+    store.addFormat('block');
+    expect(store.blocks().at(-1)).toMatchObject({
       format: 'block',
       column: 1,
       row: 1,
@@ -341,34 +346,34 @@ describe('StorefrontPage — composer', () => {
   });
 
   it('refuse d’étendre un objet à un rayon où la place est prise, en nommant le rayon', async () => {
-    const { fixture, page, root } = await setup();
-    page.pickShelf('chocolate');
-    page.addFormat('card'); // (1,1) sur « Chocolat & confiserie », libre là-bas
-    page.pickShelf('all');
-    page.select('o-1');
-    page.setSelectedShelves(['all', 'chocolate']);
+    const { fixture, store, root } = await setup();
+    store.pickShelf('chocolate');
+    store.addFormat('card'); // (1,1) sur « Chocolat & confiserie », libre là-bas
+    store.pickShelf('all');
+    store.select('o-1');
+    store.setSelectedShelves(['all', 'chocolate']);
     fixture.detectChanges();
-    expect(page.blocks().find((b) => b.id === 'o-1')?.shelves).toEqual(['all']);
+    expect(store.blocks().find((b) => b.id === 'o-1')?.shelves).toEqual(['all']);
     expect(root.textContent).toContain(
       'Sur le rayon « Chocolat & confiserie », chevauche « Carte 1×1 »',
     );
   });
 
   it('« Appliquer en mobile » à non : repère sur l’objet, carte 1×1 dans l’aperçu mobile', async () => {
-    const { fixture, page, root } = await setup();
-    page.select('o-1');
-    page.setSelectedApplyOnMobile(false);
+    const { fixture, store, root } = await setup();
+    store.select('o-1');
+    store.setSelectedApplyOnMobile(false);
     fixture.detectChanges();
     expect(root.querySelector('.block')?.textContent).toContain('mobile : carte 1×1');
     expect(root.querySelector('.mobile-item')?.textContent).toContain('Carte 1×1');
   });
 
   it('un réglage de l’image se voit sur la maquette de la grille', async () => {
-    const { fixture, page, root } = await setup();
-    page.select('o-2');
-    page.setSelectedMedia({ side: 'full', fit: 'cover' });
+    const { fixture, store, root } = await setup();
+    store.select('o-2');
+    store.setSelectedMedia({ side: 'full', fit: 'cover' });
     fixture.detectChanges();
-    expect(page.blocks()[1]).toMatchObject({ mediaSide: 'full', mediaFit: 'cover' });
+    expect(store.blocks()[1]).toMatchObject({ mediaSide: 'full', mediaFit: 'cover' });
     const mock = root.querySelectorAll('.grid app-storefront-media-mock')[1];
     expect(mock?.classList.contains('side-full')).toBe(true);
   });
@@ -382,56 +387,56 @@ describe('StorefrontPage — composer', () => {
   });
 
   it('plusieurs contenus : une durée hors bornes est refusée et dite', async () => {
-    const { fixture, page, root } = await setup();
-    page.select('o-1');
-    page.setSelectedContents('multiple');
+    const { fixture, store, root } = await setup();
+    store.select('o-1');
+    store.setSelectedContents('multiple');
     fixture.detectChanges();
-    expect(page.blocks()[0]?.contents).toBe('multiple');
+    expect(store.blocks()[0]?.contents).toBe('multiple');
 
-    page.setSelectedCarousel({ intervalSeconds: 20 });
+    store.setSelectedCarousel({ intervalSeconds: 20 });
     fixture.detectChanges();
     expect(root.textContent).toContain('de 3 à 15 secondes');
-    expect(page.blocks()[0]?.carousel).toEqual(DEFAULT_CAROUSEL);
+    expect(store.blocks()[0]?.carousel).toEqual(DEFAULT_CAROUSEL);
   });
 
   it('gabarits : enregistrer, refuser un doublon, poser une copie indépendante', async () => {
-    const { fixture, page, root } = await setup();
-    page.select('o-3'); // la tuile sombre, image à droite
-    expect(page.saveSelectedAsTemplate({ name: '  Tuile droite ', description: '' })).toBe(true);
-    expect(page.templates()).toHaveLength(1);
-    expect(page.templates()[0]).toMatchObject({
+    const { fixture, store, root } = await setup();
+    store.select('o-3'); // la tuile sombre, image à droite
+    expect(store.saveSelectedAsTemplate({ name: '  Tuile droite ', description: '' })).toBe(true);
+    expect(store.templates()).toHaveLength(1);
+    expect(store.templates()[0]).toMatchObject({
       name: 'Tuile droite',
       format: 'tile',
       mediaSide: 'right',
       tone: 'dark',
     });
 
-    expect(page.saveSelectedAsTemplate({ name: 'tuile DROITE', description: '' })).toBe(false);
+    expect(store.saveSelectedAsTemplate({ name: 'tuile DROITE', description: '' })).toBe(false);
     fixture.detectChanges();
     expect(root.textContent).toContain('Le gabarit « Tuile droite » existe déjà');
 
-    const [template] = page.templates();
+    const [template] = store.templates();
     if (template === undefined) throw new Error('gabarit absent');
-    page.addTemplate(template);
-    const placed = page.blocks().at(-1);
+    store.addTemplate(template);
+    const placed = store.blocks().at(-1);
     expect(placed).toMatchObject({ format: 'tile', mediaSide: 'right', column: 1, row: 2 });
 
-    page.updateTemplate(template.id, { name: 'Autre', description: 'Modifiée' });
-    page.deleteTemplate(template.id);
-    expect(page.templates()).toEqual([]);
-    expect(page.blocks().at(-1)).toEqual(placed);
+    store.updateTemplate(template.id, { name: 'Autre', description: 'Modifiée' });
+    store.deleteTemplate(template.id);
+    expect(store.templates()).toEqual([]);
+    expect(store.blocks().at(-1)).toEqual(placed);
   });
 
   it('changer de forme : garde les réglages, ou refuse en nommant la raison', async () => {
-    const { fixture, page, root } = await setup();
-    page.select('o-3'); // tuile sombre image à droite, colonne 4
-    page.setSelectedFormat('band');
+    const { fixture, store, root } = await setup();
+    store.select('o-3'); // tuile sombre image à droite, colonne 4
+    store.setSelectedFormat('band');
     fixture.detectChanges();
-    expect(page.blocks().find((b) => b.id === 'o-3')?.format).toBe('tile');
+    expect(store.blocks().find((b) => b.id === 'o-3')?.format).toBe('tile');
     expect(root.textContent).toContain('Déborde des 5 colonnes');
 
-    page.setSelectedFormat('card');
-    expect(page.blocks().find((b) => b.id === 'o-3')).toMatchObject({
+    store.setSelectedFormat('card');
+    expect(store.blocks().find((b) => b.id === 'o-3')).toMatchObject({
       format: 'card',
       column: 4,
       tone: 'dark',
@@ -442,23 +447,23 @@ describe('StorefrontPage — composer', () => {
 
 describe('StorefrontPage — le dialogue de l’objet', () => {
   it('un clic sélectionne sans ouvrir', async () => {
-    const { fixture, page, root, opened } = await setup();
+    const { fixture, store, root, opened } = await setup();
     root.querySelectorAll('.block')[1]?.dispatchEvent(new FocusEvent('focus'));
     fixture.detectChanges();
-    expect(page.selectedId()).toBe('o-2');
+    expect(store.selectedId()).toBe('o-2');
     expect(opened).toHaveLength(0);
   });
 
   it('un double-clic ouvre le dialogue de l’objet, centré, sur l’éditeur lui-même', async () => {
-    const { page, root, opened } = await setup();
+    const { store, root, opened } = await setup();
     root
       .querySelectorAll('.block')[1]
       ?.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     expect(opened).toHaveLength(1);
     expect(opened[0]?.component).toBe(StorefrontObjectDialog);
     expect(StorefrontObjectDialog.foldPanel.side).toBe('center');
-    expect(opened[0]?.data.host).toBe(page);
-    expect(page.selectedId()).toBe('o-2');
+    expect(opened[0]?.data.host).toBe(store);
+    expect(store.selectedId()).toBe('o-2');
   });
 
   it('Entrée ouvre le dialogue', async () => {
@@ -490,23 +495,23 @@ describe('StorefrontPage — le dialogue de l’objet', () => {
   }
 
   it('un réglage fait dans le dialogue arrive dans la composition, et l’aperçu suit', async () => {
-    const { page, dialog, dialogRoot } = await dialogFor('o-3');
+    const { store, dialog, dialogRoot } = await dialogFor('o-3');
     const panel = dialog.debugElement.query(
       (el) => el.name === 'app-storefront-object-panel',
     ).componentInstance;
     panel.toneChange.emit('accent');
     dialog.detectChanges();
-    expect(page.blocks().find((b) => b.id === 'o-3')?.tone).toBe('accent');
+    expect(store.blocks().find((b) => b.id === 'o-3')?.tone).toBe('accent');
     expect(
       dialogRoot.querySelector('.previews app-storefront-media-mock.tone-accent'),
     ).not.toBeNull();
   });
 
   it('un refus s’affiche DANS le dialogue', async () => {
-    const { page, dialog, dialogRoot } = await dialogFor('o-3'); // tuile en colonne 4
-    page.setSelectedFormat('band');
+    const { store, dialog, dialogRoot } = await dialogFor('o-3'); // tuile en colonne 4
+    store.setSelectedFormat('band');
     dialog.detectChanges();
-    expect(page.blocks().find((b) => b.id === 'o-3')?.format).toBe('tile');
+    expect(store.blocks().find((b) => b.id === 'o-3')?.format).toBe('tile');
     expect(dialogRoot.querySelector('fold-callout')?.textContent).toContain(
       'Déborde des 5 colonnes',
     );
@@ -521,10 +526,10 @@ describe('StorefrontPage — le dialogue de l’objet', () => {
 
 describe('StorefrontPage — enregistrer', () => {
   it('envoie la vitrine ENTIÈRE avec la révision lue ; un objet neuf part sans identifiant', async () => {
-    const { fixture, page, api, successes } = await setup();
-    page.pickShelf('bread');
-    page.addFormat('card');
-    await page.save();
+    const { fixture, store, persistence, api, successes } = await setup();
+    store.pickShelf('bread');
+    store.addFormat('card');
+    await persistence.save();
     fixture.detectChanges();
 
     const [payload] = api.saved;
@@ -542,8 +547,8 @@ describe('StorefrontPage — enregistrer', () => {
   });
 
   it('un 409 dit le message du serveur et propose de recharger', async () => {
-    const { fixture, page, root, api } = await setup();
-    page.addFormat('card');
+    const { fixture, store, persistence, root, api } = await setup();
+    store.addFormat('card');
     api.failure = new HttpErrorResponse({
       status: 409,
       error: {
@@ -552,24 +557,24 @@ describe('StorefrontPage — enregistrer', () => {
           'La vitrine a été modifiée à 10:42 pendant que vous travailliez — rechargez pour reprendre la dernière version.',
       },
     });
-    await page.save();
+    await persistence.save();
     fixture.detectChanges();
-    expect(page.saveRefusal()?.conflict).toBe(true);
+    expect(persistence.saveRefusal()?.conflict).toBe(true);
     expect(root.textContent).toContain('La vitrine a été modifiée à 10:42');
     const reload = Array.from(root.querySelectorAll('button')).find((b) =>
       b.textContent?.includes('Recharger'),
     );
     expect(reload).toBeDefined();
     // Recharger reprend la dernière version : la carte non enregistrée disparaît.
-    await page.load();
-    expect(page.blocks()).toHaveLength(4);
-    expect(page.dirty()).toBe(false);
+    await persistence.load();
+    expect(store.blocks()).toHaveLength(4);
+    expect(store.dirty()).toBe(false);
   });
 
   it('retient une première sortie quand des modifications attendent, laisse passer la seconde', async () => {
-    const { fixture, page, root } = await setup();
+    const { fixture, page, store, root } = await setup();
     expect(page.canLeave()).toBe(true);
-    page.addFormat('card');
+    store.addFormat('card');
     expect(page.canLeave()).toBe(false);
     fixture.detectChanges();
     expect(root.textContent).toContain('quittez à nouveau la page');
@@ -577,13 +582,13 @@ describe('StorefrontPage — enregistrer', () => {
   });
 
   it('sans droit d’écrire : pas de bouton Enregistrer, une mention, et aucune sortie retenue', async () => {
-    const { page, root } = await setup({ permissions: ['b2b_storefront:read'] });
+    const { page, store, root } = await setup({ permissions: ['b2b_storefront:read'] });
     expect(root.textContent).toContain('Lecture seule');
     const save = Array.from(root.querySelectorAll('button')).find(
       (b) => b.textContent?.trim() === 'Enregistrer',
     );
     expect(save).toBeUndefined();
-    page.addFormat('card');
+    store.addFormat('card');
     expect(page.canLeave()).toBe(true);
   });
 });
@@ -619,22 +624,22 @@ describe('StorefrontPage — contenus', () => {
   });
 
   it('refuse de repasser à « un seul » tant que l’objet en porte plusieurs', async () => {
-    const { fixture, page, root } = await setup({ view: withContents() });
-    page.select('o-1');
-    page.setSelectedContents('single');
+    const { fixture, store, root } = await setup({ view: withContents() });
+    store.select('o-1');
+    store.setSelectedContents('single');
     fixture.detectChanges();
-    expect(page.blocks()[0]?.contents).toBe('multiple');
+    expect(store.blocks()[0]?.contents).toBe('multiple');
     expect(root.textContent).toContain('cet objet porte 2 contenus');
   });
 
   it('une info sans titre ferme Enregistrer, et le dit en nommant l’objet', async () => {
-    const { fixture, page, root } = await setup();
-    page.select('o-2');
-    page.setSelectedItems([
+    const { fixture, store, root } = await setup();
+    store.select('o-2');
+    store.setSelectedItems([
       { kind: 'info', badge: null, title: { fr: '' }, lede: null, image: null, linkShelfKey: null },
     ]);
     fixture.detectChanges();
-    expect(page.contentIssues()).toHaveLength(1);
+    expect(store.contentIssues()).toHaveLength(1);
     expect(root.textContent).toContain('À compléter avant d’enregistrer');
     expect(root.textContent).toContain('« Carte 1×1 » (Tout, colonne 3, rangée 1), contenu 1');
     const save = Array.from(root.querySelectorAll('button')).find(
@@ -644,27 +649,27 @@ describe('StorefrontPage — contenus', () => {
   });
 
   it('les rayons disparus sont listés, et les vider retire leur page et leurs objets', async () => {
-    const { fixture, page, root } = await setup({ view: withContents() });
-    expect(page.vanished()).toEqual(['gone']);
+    const { fixture, store, root } = await setup({ view: withContents() });
+    expect(store.vanished()).toEqual(['gone']);
     expect(root.textContent).toContain('Vider « gone »');
-    page.clearShelf('gone');
+    store.clearShelf('gone');
     fixture.detectChanges();
-    expect(page.vanished()).toEqual([]);
-    expect(page.blocks().map((b) => b.id)).toEqual(['o-1']);
-    expect(page.rowsByShelf()).not.toHaveProperty('gone');
+    expect(store.vanished()).toEqual([]);
+    expect(store.blocks().map((b) => b.id)).toEqual(['o-1']);
+    expect(store.rowsByShelf()).not.toHaveProperty('gone');
   });
 
   it('un objet qui n’a rien à montrer le dit, sur la grille comme en mobile', async () => {
-    const { fixture, page, root } = await setup({ view: withContents() });
+    const { fixture, store, root } = await setup({ view: withContents() });
     // La tuile porte un article en vente : elle montre quelque chose.
-    expect(page.returnedIds().has('o-1')).toBe(false);
-    page.select('o-1');
-    page.setSelectedItems([{ kind: 'product', sku: 'OLD' }]);
-    page.addFormat('card');
+    expect(store.returnedIds().has('o-1')).toBe(false);
+    store.select('o-1');
+    store.setSelectedItems([{ kind: 'product', sku: 'OLD' }]);
+    store.addFormat('card');
     fixture.detectChanges();
-    const returned = [...page.returnedIds()];
+    const returned = [...store.returnedIds()];
     expect(returned).toContain('o-1');
-    expect(returned).toContain(page.blocks().at(-1)?.id);
+    expect(returned).toContain(store.blocks().at(-1)?.id);
     expect(root.querySelector('.grid .block')?.textContent).toContain(
       'rendu au rayon tant qu’il est vide',
     );
@@ -678,13 +683,13 @@ describe('StorefrontPage — contenus', () => {
    * seule une info SANS TITRE rend ses cases au rayon.
    */
   it('une info sans titre rend ses cases ; avec un titre, même sans image, elle les garde', async () => {
-    const { page } = await setup();
-    page.select('o-2');
-    page.setSelectedItems([
+    const { store } = await setup();
+    store.select('o-2');
+    store.setSelectedItems([
       { kind: 'info', badge: null, title: { fr: '' }, lede: null, image: null, linkShelfKey: null },
     ]);
-    expect(page.returnedIds().has('o-2')).toBe(true);
-    page.setSelectedItems([
+    expect(store.returnedIds().has('o-2')).toBe(true);
+    store.setSelectedItems([
       {
         kind: 'info',
         badge: null,
@@ -694,22 +699,22 @@ describe('StorefrontPage — contenus', () => {
         linkShelfKey: null,
       },
     ]);
-    expect(page.returnedIds().has('o-2')).toBe(false);
+    expect(store.returnedIds().has('o-2')).toBe(false);
   });
 
   it('une vitrine sans objet : toute la grille en « article du rayon », aucun repère de retour', async () => {
-    const { page, root } = await setup({ view: EMPTY_VIEW });
+    const { store, root } = await setup({ view: EMPTY_VIEW });
     expect(root.querySelectorAll('.grid .free-cell')).toHaveLength(30);
     // Le seul état vide admis est celui de la liste des gabarits : la vitrine, elle, n'est jamais vide.
     const empties = Array.from(root.querySelectorAll('fold-empty-state'));
     expect(empties.every((e) => e.closest('app-storefront-template-list') !== null)).toBe(true);
-    expect(page.returnedIds().size).toBe(0);
+    expect(store.returnedIds().size).toBe(0);
   });
 
   it('les contenus partent avec l’objet, dans leur ordre', async () => {
-    const { page, api } = await setup({ view: withContents() });
-    page.clearShelf('gone');
-    await page.save();
+    const { store, persistence, api } = await setup({ view: withContents() });
+    store.clearShelf('gone');
+    await persistence.save();
     expect(api.saved[0]?.objects[0]?.contents).toEqual([
       { kind: 'product', sku: 'CRO' },
       { kind: 'product', sku: 'OLD' },

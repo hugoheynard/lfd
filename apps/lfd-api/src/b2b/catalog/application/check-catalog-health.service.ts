@@ -72,6 +72,7 @@ export class CheckCatalogHealthService {
           // Comparer l'effectif ferait sonner l'alarme sur chaque négociation.
           priceMillicents: line.priceMillicents,
           vatRate: line.vatRatePercent,
+          operationOnly: line.operationOnly,
         })),
         mirror.map(asMirrorEntry),
       ),

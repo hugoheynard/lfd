@@ -72,6 +72,10 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   // (c'est la raison qui a fait versionner le catalogue entier), ils entreront
   // dans `RevisionItemInput` et cette ligne citera leur champ.
   [PIM_EVENTS.productIngredientsSaved]: [],
+  // Le drapeau « vendu seulement pendant une opération » n'est dans AUCUN champ
+  // de révision (`RevisionItemInput`, vérifié le 2026-09-24) : il traverse le
+  // fil v11, pas l'ancre. Le jour où il y entre, cette ligne citera son champ.
+  [PIM_EVENTS.productOperationOnlyChanged]: [],
 };
 
 /** Les champs de révision qu'un fait touche. Vide = il n'en touche aucun. */

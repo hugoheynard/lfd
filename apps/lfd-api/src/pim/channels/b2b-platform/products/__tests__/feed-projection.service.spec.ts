@@ -13,6 +13,8 @@ import { CatalogueReader } from "../../../../catalogue/shared/domain/ports/catal
 import { B2bMembershipService } from "../../membership/membership.service.js";
 import { B2bCatalogFeedProjection } from "../feed-projection.service.js";
 import { EditorialReader } from "../../../../catalogue/product/domain/ports/editorial-reader.js";
+import type { OperationSnapshot } from "../../../../operations/domain/entities/operation.js";
+import { OperationReader } from "../../../../operations/domain/ports/operation.reader.js";
 
 /**
  * **Le garde qui protège la boutique d'un réglage manquant.**
@@ -57,6 +59,17 @@ const EMPTY_CATALOGUE = {
   effectiveChannels: () => Promise.resolve(new Map()),
 };
 
+/** Aucune opération datée : cette suite parle du rapport pro. */
+class NoOperations extends OperationReader {
+  list(): Promise<readonly OperationSnapshot[]> {
+    return Promise.resolve([]);
+  }
+
+  find(): Promise<OperationSnapshot | null> {
+    return Promise.resolve(null);
+  }
+}
+
 async function build(options: {
   readonly publishedIds: readonly string[];
   readonly ratioBp: number | null;
@@ -66,6 +79,7 @@ async function build(options: {
     providers: [
       B2bCatalogFeedProjection,
       { provide: CatalogueReader, useValue: options.catalogue },
+      { provide: OperationReader, useClass: NoOperations },
       // Aucune limite de commande déclarée : le sujet de cette suite est le
       // rapport pro, pas l'heure. Un double vide plutôt qu'un cas de plus.
       { provide: OrderTimeLimitRepository, useValue: { list: () => Promise.resolve([]) } },

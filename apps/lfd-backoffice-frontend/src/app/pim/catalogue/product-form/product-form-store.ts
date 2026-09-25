@@ -625,6 +625,11 @@ export class ProductFormStore {
    * pas vendue là ou si sa famille ne l'y vendait pas.
    */
   readonly channelsOverride = signal<SalesChannels | null>(null);
+  /**
+   * Vendu seulement pendant une opération (D3). Hors des sections : sa carte
+   * l'écrit seule, sur sa propre route, comme la limite de commande.
+   */
+  readonly operationOnly = signal(false);
   readonly weightGrams = signal<number | null>(null);
   /**
    * **La déclaration d'allergènes — un seul signal, et c'est le sujet.**
@@ -2094,6 +2099,7 @@ export class ProductFormStore {
     // ils se lisent sur la déclinaison ouverte, plus sur le produit aplati.
     this.vatOverride.set(product.vatByContext);
     this.channelsOverride.set(product.channelsOverride);
+    this.operationOnly.set(product.operationOnly);
 
     this.editorial.set(detail.editorial);
     this.media.set([...detail.media]);

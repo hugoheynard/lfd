@@ -54,7 +54,9 @@
     </div>
 
     <div dialog-foot class="foot">
-      @if (orderable()) {
+      @if (gate()?.label; as closedLabel) {
+        <p class="soon">{{ closedLabel }}</p>
+      } @else if (orderable()) {
         <div class="picker">
           <app-quantity-rail
             size="lg"

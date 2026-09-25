@@ -39,13 +39,13 @@ describe('StorefrontProductPicker', () => {
     const { picker } = setup('BAG');
     picker['query'].set('eclair');
     expect(picker['options']().map((o) => o.value)).toEqual(['BAG', 'ECL']);
-    expect(picker['hint']()).toBe('1 article en vente.');
+    expect(picker['hint']()).toBe('1 article.');
   });
 
   it('rien ne correspond : il le dit', () => {
     const { picker } = setup();
     picker['query'].set('zzz');
-    expect(picker['hint']()).toBe('Aucun article en vente ne correspond.');
+    expect(picker['hint']()).toBe('Aucun article ne correspond.');
   });
 
   it('rend le seul SKU choisi', () => {

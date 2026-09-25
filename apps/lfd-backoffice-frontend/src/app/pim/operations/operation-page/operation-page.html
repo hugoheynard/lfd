@@ -1,0 +1,95 @@
+<fold-page-layout [title]="operation()?.name?.fr ?? 'Opération'" headerBleed separator>
+  <fold-back-link pageEyebrow icon="arrow-back" label="Opérations" routerLink="/pim/operations" />
+
+  @if (badge(); as current) {
+    <fold-badge
+      titleBadge
+      [content]="badgeLabel(current)"
+      [variant]="badgeVariant(current)"
+      radius="pill"
+    />
+  }
+
+  @if (operation(); as operation) {
+    <span pageSubtitle>Clé {{ operation.key }}</span>
+  }
+
+  @if (loading()) {
+    <fold-loading message="Lecture de l'opération…" />
+  } @else if (loadFailure(); as message) {
+    <fold-empty-state tone="alert" title="Opération illisible" [subtitle]="message">
+      <button foldButton (click)="load(key())">Réessayer</button>
+    </fold-empty-state>
+  } @else if (operation(); as operation) {
+    @if (locked()) {
+      <fold-callout appearance="inset" variant="neutral">
+        Cette opération est <strong>archivée</strong> : elle se lit, elle ne se modifie plus. Sa clé
+        ne se réemploie pas — pour recommencer, préparez-en une nouvelle.
+      </fold-callout>
+    }
+
+    <app-presentation-card [operation]="operation" [locked]="locked()" (saved)="saved($event)" />
+
+    <app-schedule-card [operation]="operation" [locked]="locked()" (saved)="saved($event)" />
+
+    <fold-card>
+      <div class="card">
+        <fold-element-title
+          variant="title"
+          title="Clientèle"
+          subtitle="À qui l'opération s'adresse. La réception au commerce peut la restreindre, jamais l'élargir."
+        >
+          @if (!locked()) {
+            <button
+              titleAction
+              foldButton
+              size="sm"
+              [disabled]="audience() === operation.audience"
+              [loading]="audienceBusy()"
+              (click)="saveAudience()"
+            >
+              Enregistrer
+            </button>
+          }
+        </fold-element-title>
+        <fold-listbox
+          label="Clientèle"
+          [disabled]="locked()"
+          [options]="audiences"
+          [value]="audience()"
+          (selectionChange)="audience.set($event)"
+        />
+        @if (audienceRefusal(); as message) {
+          <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+        }
+      </div>
+    </fold-card>
+
+    <app-selection-card [operation]="operation" [locked]="locked()" (saved)="saved($event)" />
+
+    @if (!locked()) {
+      <fold-danger-zone appearance="section" title="Archiver cette opération">
+        <div class="card">
+          <p class="said">
+            Archiver n'efface rien : l'opération reste lisible, mais ne se modifie plus, et sa clé
+            ne se réemploie jamais. Le geste est sans retour.
+          </p>
+          @if (archiveRefusal(); as message) {
+            <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+          }
+          <fold-inline-confirm
+            intent="danger"
+            confirmIcon="archive"
+            message="Archiver cette opération ? Elle ne se modifiera plus."
+            [labels]="{ confirm: 'Archiver' }"
+            (confirmed)="archive()"
+          >
+            <button foldButton intent="danger" icon="archive" [loading]="archiveBusy()">
+              Archiver l'opération
+            </button>
+          </fold-inline-confirm>
+        </div>
+      </fold-danger-zone>
+    }
+  }
+</fold-page-layout>

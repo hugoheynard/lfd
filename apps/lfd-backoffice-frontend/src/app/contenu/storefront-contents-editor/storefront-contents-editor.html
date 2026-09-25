@@ -102,6 +102,9 @@
           content="Article plus en vente — la boutique ne le montre pas"
         />
       }
+      @if (operationWarningOf(item); as warning) {
+        <fold-badge variant="warning" [content]="warning" />
+      }
       @for (issue of issuesOf(item); track issue) {
         <fold-badge variant="alert" [content]="issue" />
       }
@@ -120,6 +123,7 @@
         <app-storefront-info-form
           [info]="item"
           [shelves]="shelves()"
+          [operations]="catalog()?.operations ?? null"
           (changed)="replaceInfo($event)"
         />
       }

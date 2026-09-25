@@ -118,7 +118,11 @@ describe("la vitrine publique", () => {
     await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
 
     const body = await catalogue();
-    expect(Object.keys(body).sort()).toEqual(["items", "shelves"]);
+    // ⚠️ **Un élargissement ASSUMÉ** (2026-09-24, lot 3 des opérations datées) :
+    // les opérations MONTRÉES — nom, dates, articles —, c'est-à-dire ce que
+    // l'annonce affiche déjà en vitrine. Une opération en préparation n'y est
+    // jamais : hors fenêtre, la liste est vide.
+    expect(Object.keys(body).sort()).toEqual(["items", "operations", "shelves"]);
     expect(Object.keys(body.items[0] ?? {}).sort()).toEqual([
       "image",
       "isFeatured",
@@ -249,7 +253,7 @@ describe("la vitrine publique", () => {
     const { status } = await shop();
 
     expect(status).toBe(200);
-    expect(await catalogue()).toEqual({ shelves: [], items: [] });
+    expect(await catalogue()).toEqual({ shelves: [], items: [], operations: [] });
   });
 });
 

@@ -1,6 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { SaleOperations } from "../../../catalog/application/sale-operations.service.js";
+import { OperationOnlyInSubscriptionError } from "../../domain/errors/subscription-errors.js";
 import { Subscription } from "../../domain/entities/subscription.js";
 import { SubscriptionCreatedEvent } from "../../domain/events/subscription-created.event.js";
 import {
@@ -32,10 +34,18 @@ export class CreateSubscriptionHandler implements ICommandHandler<
   constructor(
     private readonly subscriptions: SubscriptionRepository,
     private readonly events: DomainEventPublisher,
+    private readonly sale: SaleOperations,
   ) {}
 
+  /** @throws {OperationOnlyInSubscriptionError} une ligne ne se vend que pendant une opération. */
   async execute(command: CreateSubscriptionCommand): Promise<CreatedSubscription> {
     const { payload } = command;
+    // Avant l'agrégat : la règle dépend du catalogue, que l'abonnement ne lit
+    // nulle part ailleurs (D6 du plan des opérations datées).
+    const bound = await this.sale.operationOnlyAmong(payload.lines.map((line) => line.sku));
+    if (bound.length > 0) {
+      throw new OperationOnlyInSubscriptionError(bound);
+    }
     const subscription = Subscription.open({
       placedByUserId: command.actorUserId,
       fromOrderId: payload.fromOrderId,

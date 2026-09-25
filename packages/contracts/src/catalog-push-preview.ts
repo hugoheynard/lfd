@@ -53,6 +53,15 @@ export interface B2bPushPreviewView {
    * bouge entre l'ouverture de l'écran et le clic, le serveur refuse.
    */
   readonly fingerprint: string;
+  /**
+   * **Les opérations datées**, telles que l'envoi les porterait, confrontées à
+   * celles que le canal tient — retirées comprises quand l'envoi les retirerait.
+   *
+   * Elles manquaient : une opération préparée au référentiel ne changeait aucun
+   * article, l'écran concluait « la boutique est à jour » et grisait l'envoi.
+   * Elle ne pouvait donc jamais partir.
+   */
+  readonly operations: readonly B2bPushPreviewOperation[];
   /** L'écart complet avec le canal, gaps de prix et de taux compris. */
   readonly parity: CatalogParityView;
 }
@@ -78,4 +87,17 @@ export interface B2bPushPreviewItem {
   /** `null` = famille non réglée : l'article voyage mais n'est pas vendable. */
   readonly vatRatePercent: number | null;
   readonly change: B2bPushChange;
+}
+
+/**
+ * Ce que l'envoi ferait à CETTE opération. `withdrawn` : le canal la tient et
+ * l'envoi ne la porte plus — il la marquerait retirée, jamais effacée.
+ */
+export type B2bPushOperationChange = "added" | "changed" | "withdrawn" | "unchanged";
+
+export interface B2bPushPreviewOperation {
+  readonly key: string;
+  /** Le nom d'annonce, en français — la langue qui fait foi. */
+  readonly name: string;
+  readonly change: B2bPushOperationChange;
 }

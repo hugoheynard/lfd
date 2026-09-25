@@ -2,6 +2,7 @@ import {
   CATALOG_SNAPSHOT_VERSION,
   type CatalogSnapshot,
   type SyncCategory,
+  type SyncOperation,
   type SyncProduct,
   type SyncVariant,
 } from "@lfd/catalog-sync";
@@ -43,6 +44,7 @@ const product = (sku: string, variants: SyncVariant[] = [variant(`${sku}-1`)]): 
   note: null,
   image: null,
   thumbnail: null,
+  operationOnly: false,
 });
 
 const category = (id: string, over: Partial<SyncCategory> = {}): SyncCategory => ({
@@ -64,6 +66,7 @@ const snapshot = (over: Partial<CatalogSnapshot> = {}): CatalogSnapshot => ({
   categories: [category("c_vie"), category("c_pat")],
   products: [product("VIE-001"), product("PAT-002")],
   orderTimeLimits: [],
+  operations: [],
   ...over,
 });
 
@@ -197,5 +200,49 @@ describe("la forme canonique d'une projection", () => {
 
     expect(source.products.map((p) => p.sku)).toEqual(ordreInitial);
     expect(source).toHaveProperty("generatedAt");
+  });
+});
+
+describe("les opérations datées dans l'empreinte (fil v11)", () => {
+  // Dates comparées au schéma et entre elles seulement, jamais à l'horloge.
+  const operation = (key: string, skus: readonly string[] = ["VIE-001-1"]): SyncOperation => ({
+    key,
+    name: { fr: key },
+    lede: null,
+    image: null,
+    announceFrom: "2026-10-31T23:00:00.000Z",
+    orderFrom: null,
+    orderUntil: "2026-12-21T11:00:00.000Z",
+    pickupFrom: "2026-12-20",
+    pickupUntil: "2026-12-24",
+    audience: "both",
+    skus: [...skus],
+  });
+
+  it("ignore l'ordre des opérations rendu par le lecteur", () => {
+    const a = snapshot({ operations: [operation("noel-2026"), operation("galette-2027")] });
+    const b = snapshot({ operations: [operation("galette-2027"), operation("noel-2026")] });
+
+    expect(projectionFingerprint(a)).toBe(projectionFingerprint(b));
+  });
+
+  /**
+   * 🔴 La sélection n'a pas de `position` : son ordre EST l'ordre du rayon. Le
+   * trier rendrait l'empreinte aveugle à un réordonnancement que le canal reçoit.
+   */
+  it("VOIT un réordonnancement de la sélection", () => {
+    const a = snapshot({ operations: [operation("noel-2026", ["VIE-001-1", "PAT-002-1"])] });
+    const b = snapshot({ operations: [operation("noel-2026", ["PAT-002-1", "VIE-001-1"])] });
+
+    expect(projectionFingerprint(a)).not.toBe(projectionFingerprint(b));
+  });
+
+  it("voit une clôture qui bouge", () => {
+    const a = snapshot({ operations: [operation("noel-2026")] });
+    const b = snapshot({
+      operations: [{ ...operation("noel-2026"), orderUntil: "2026-12-20T11:00:00.000Z" }],
+    });
+
+    expect(projectionFingerprint(a)).not.toBe(projectionFingerprint(b));
   });
 });

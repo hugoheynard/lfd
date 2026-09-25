@@ -47,8 +47,11 @@ export interface Carrier {
    * `storefront` depuis le 2026-09-24 : un objet de la vitrine du commerce
    * (`id` = l'identifiant de l'objet). La médiathèque ne sait pas qui répond
    * pour quel `kind` — `appBootstrap` interroge TOUS les porteurs et somme.
+   *
+   * `operation` depuis le 2026-09-24 : une opération datée du référentiel
+   * (`id` = sa clé), dont l'image paraît dans l'annonce de la boutique.
    */
-  readonly kind: "product" | "category" | "storefront";
+  readonly kind: "product" | "category" | "storefront" | "operation";
   readonly id: string;
   /**
    * Ce qu'on lit à l'écran. Jamais vide : un porteur sans nom se désigne par

@@ -1,0 +1,32 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--fold-space-sm);
+}
+
+.image {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.preview {
+  display: block;
+  width: 100%;
+  max-height: 160px;
+  object-fit: contain;
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-sunken);
+}
+
+.image-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}

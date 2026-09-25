@@ -2,6 +2,12 @@ import type { ShopCatalogueView, ShopItemView, ShopShelfView } from "@lfd/contra
 import { lineTotalCents, ttcCentsOf } from "@lfd/money";
 
 import type { ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
+import {
+  itemOperationOf,
+  shopAccessOf,
+  shopOperationsOf,
+  type ShopSale,
+} from "./shop-catalogue-operations.js";
 
 /**
  * **Ce qu'une vitrine montre, et comment ça se range** — sans un seul prix
@@ -20,10 +26,37 @@ import type { ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
  * d'écart qu'on ne découvre qu'au téléphone.
  */
 
-/** Les articles vendables et leurs rayons, au **tarif** — le prix vient après. */
-export function shopCatalogueOf(sellable: readonly ResolvedCatalogItem[]): ShopCatalogueView {
-  const items = sellable.filter((item) => item.isDefault).map(toItem);
-  return { shelves: shelvesOf(sellable, items), items };
+/**
+ * Les articles vendables et leurs rayons, au **tarif** — le prix vient après.
+ *
+ * 🔴 **Les opérations datées s'appliquent ICI** (D5 du plan des opérations
+ * datées) : un article « vendu seulement pendant une opération » qu'aucune ne
+ * montre à cette clientèle n'est ni en rayon, ni en fiche. Le lecteur, lui, le
+ * rend toujours — la fiche atelier et la tarification en ont besoin.
+ */
+export function shopCatalogueOf(
+  sellable: readonly ResolvedCatalogItem[],
+  sale: ShopSale,
+): ShopCatalogueView {
+  const shown: ResolvedCatalogItem[] = [];
+  const items: ShopItemView[] = [];
+  for (const item of sellable) {
+    if (!item.isDefault) {
+      continue;
+    }
+    const access = shopAccessOf(item, sale);
+    if (access === "absent") {
+      continue;
+    }
+    shown.push(item);
+    const operation = itemOperationOf(item, access, sale);
+    items.push(operation === null ? toItem(item) : { ...toItem(item), operation });
+  }
+  return {
+    shelves: shelvesOf(sellable, items),
+    items,
+    operations: shopOperationsOf(sale, shown),
+  };
 }
 
 function toItem(item: ResolvedCatalogItem): ShopItemView {

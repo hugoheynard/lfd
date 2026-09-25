@@ -592,6 +592,7 @@ describe("l'estampille de version sur la commande", () => {
         createdAt: new Date(),
         createdBy: "staff_e2e",
         mirror,
+        operations: [],
       }),
     );
   }

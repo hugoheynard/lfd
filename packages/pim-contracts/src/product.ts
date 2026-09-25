@@ -282,6 +282,11 @@ export interface ProductView {
    * de dire « ceci vient d'ici » — donc de proposer d'y renoncer.
    */
   readonly channelOverride: SalesChannels | null;
+  /**
+   * **Vendu seulement pendant une opération** (D3 du plan des opérations
+   * datées). `false` = article courant, le cas de toute fiche d'avant le lot 2.
+   */
+  readonly operationOnly: boolean;
 }
 
 /**
@@ -412,6 +417,16 @@ export const setProductChannelsPayloadSchema = z.object({
   channels: salesChannelsSchema.nullable(),
 });
 export type SetProductChannelsPayload = z.infer<typeof setProductChannelsPayloadSchema>;
+
+/**
+ * Réserver la fiche aux opérations datées, ou la rendre à la vente courante
+ * (`PUT /pim/catalogue/products/:id/operation-only`). Le booléen entier plutôt
+ * que deux routes : l'écran envoie l'état de sa case, comme les autres sections.
+ */
+export const setProductOperationOnlyPayloadSchema = z.strictObject({
+  operationOnly: z.boolean(),
+});
+export type SetProductOperationOnlyPayload = z.infer<typeof setProductOperationOnlyPayloadSchema>;
 
 export const setProductVatPayloadSchema = z.object({
   vatByContext: z.record(z.string(), z.string()),

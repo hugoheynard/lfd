@@ -26,6 +26,7 @@ function emptySnapshot(generatedAt: string): CatalogSnapshot {
     categories: [],
     products: [],
     orderTimeLimits: [],
+    operations: [],
   };
 }
 
@@ -46,6 +47,7 @@ function product(over: Partial<ProductRecord> = {}): ProductRecord {
     status: "published",
     vatByContext: {},
     channelOverride: null,
+    operationOnly: false,
     variants: [
       {
         id: "var_1",
@@ -199,6 +201,8 @@ async function build(
                       IncoProjector.from([], "fr"),
                       // Ni ligne ni visuel : ce test parle d'estampille.
                       new Map(),
+                      // Aucune opération datée : ce test parle d'estampille.
+                      [],
                       generatedAt,
                     ),
                     candidates: publishedIds.length,

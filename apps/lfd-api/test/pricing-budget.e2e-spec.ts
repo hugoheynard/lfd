@@ -140,11 +140,19 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * devis et des commandes pendant sa durée après une fermeture posée en admin
  * (plan `plan-inscription-pro-seule.md` §2.1).
  *
- * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4, 5 ou 6,
+ * 🔴 **Il est passé de 6 à 7 le 2026-09-24, et voici laquelle.** Le devis
+ * applique le garde des opérations datées (`SaleOperations.boundItems`, lot 3
+ * de `architecture-operations-datees.md`) : il lit l'ensemble des SKU réservés
+ * aux opérations (`operationOnlySkus`), UNE fois pour le panier, avant de savoir
+ * si l'une de ses lignes en fait partie. Constante — elle ne dépend ni du nombre
+ * de lignes ni des règles —, et c'est elle qui permet de ne RIEN lire de plus
+ * quand le panier n'en contient aucun, le cas de presque tous les devis.
+ *
+ * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4, 5, 6 ou 7,
  * c'est que dix lignes coûtent le même nombre qu'une seule. C'est l'égalité qui
  * attrape un N+1, pas la valeur absolue.
  */
-const COLD_QUOTE_OPS = 6;
+const COLD_QUOTE_OPS = 7;
 
 /**
  * Sème `count` règles de promotion **distinctes**.

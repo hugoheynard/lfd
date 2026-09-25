@@ -94,6 +94,13 @@ export interface DeliveredItem {
     readonly width: number | null;
     readonly height: number | null;
   } | null;
+  /**
+   * **Vendu seulement pendant une opération** (fil v11). Comparé pour la
+   * raison que la vignette donne juste au-dessus : rendre la bûche exclusive
+   * change QUAND elle se vend, et un diff qui l'ignorerait l'annoncerait
+   * « inchangée ».
+   */
+  readonly operationOnly: boolean;
 }
 
 /** Ce qu'une arrivée fait à un SKU. */
@@ -111,6 +118,7 @@ export type ChangedField =
   | "note"
   | "image"
   | "thumbnail"
+  | "operationOnly"
   /**
    * **L'étiquette a bougé** — ce qu'un particulier paie, taxe comprise.
    *
@@ -253,6 +261,9 @@ function changedFields(incoming: DeliveredItem, mirror: DeliveredItem): readonly
   // vu passer la photo de fiche alors qu'on a vu passer la vignette.
   if (!sameImage(incoming.thumbnail, mirror.thumbnail)) {
     fields.push("thumbnail");
+  }
+  if (incoming.operationOnly !== mirror.operationOnly) {
+    fields.push("operationOnly");
   }
   return fields;
 }

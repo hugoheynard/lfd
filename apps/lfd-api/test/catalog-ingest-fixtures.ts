@@ -1,6 +1,7 @@
 import {
   CATALOG_SNAPSHOT_VERSION,
   type CatalogSnapshot,
+  type SyncOperation,
   type SyncOrderTimeLimitRule,
 } from "@lfd/catalog-sync";
 
@@ -77,6 +78,8 @@ export interface IngestedSku {
     width: number | null;
     height: number | null;
   } | null;
+  /** Réservé aux opérations datées (v11) — non par défaut, comme tout article courant. */
+  readonly operationOnly?: boolean;
   /** La vignette de rayon (v10) — absente par défaut, comme la plupart des fiches. */
   readonly thumbnail?: {
     url: string;
@@ -91,11 +94,12 @@ export interface IngestedSku {
  *
  * L'échelle des limites est **vide par défaut**, comme sur la quasi-totalité du
  * catalogue : les suites qui l'éprouvent la passent explicitement, ce qui rend
- * le sujet du test lisible depuis son appel.
+ * le sujet du test lisible depuis son appel. Les opérations datées (v11) aussi.
  */
 export function snapshotOf(
   skus: readonly IngestedSku[],
   orderTimeLimits: readonly SyncOrderTimeLimitRule[] = [],
+  operations: readonly SyncOperation[] = [],
 ): CatalogSnapshot {
   return {
     version: CATALOG_SNAPSHOT_VERSION,
@@ -112,6 +116,7 @@ export function snapshotOf(
         image = null,
         thumbnail = null,
         publicPrice = PUBLIC_LABEL,
+        operationOnly = false,
       }) => ({
         id: `prd_${sku}`,
         sku,
@@ -121,6 +126,7 @@ export function snapshotOf(
         note,
         image,
         thumbnail,
+        operationOnly,
         variants: [
           {
             id: `var_${sku}`,
@@ -149,5 +155,6 @@ export function snapshotOf(
       }),
     ),
     orderTimeLimits: [...orderTimeLimits],
+    operations: [...operations],
   };
 }

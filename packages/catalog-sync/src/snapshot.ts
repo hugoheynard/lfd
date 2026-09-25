@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 10;
+export const CATALOG_SNAPSHOT_VERSION = 11;
 
 /**
  * Une famille de produits, **à plat**.
@@ -387,8 +387,86 @@ export const syncProductSchema = z.object({
    * exactement ce que la boutique faisait avant la v10.
    */
   thumbnail: syncMediaSchema.nullable(),
+  /**
+   * **Vendu seulement pendant une opération** — la bûche, pas le croissant.
+   *
+   * 🔴 Un fait de l'ARTICLE, pas de son opération, depuis la v11 (D3 de
+   * `documentation/order/architecture-operations-datees.md`). La première
+   * conception le lisait dans la ligne d'opération : retirer la bûche de la
+   * sélection, masquer Noël à la réception ou l'archiver au référentiel la
+   * faisaient alors sortir de toute opération — donc vendre toute l'année.
+   * Porté ici, tout ce qui retire une opération fait tomber l'article du bon
+   * côté : invisible, jamais libre.
+   *
+   * Sur le PRODUIT comme la ligne et les visuels : le référentiel le range sur
+   * la fiche, et le récepteur le descend sur chacun de ses articles.
+   *
+   * Obligatoire : un émetteur qui l'oublie échoue à l'émission, plutôt que de
+   * produire un article qu'on lirait « courant » par défaut.
+   */
+  operationOnly: z.boolean(),
 });
 export type SyncProduct = z.infer<typeof syncProductSchema>;
+
+/**
+ * Un texte d'annonce **dans ses trois langues** — le français toujours.
+ *
+ * ⚠️ **Exception assumée au fil monolingue.** Le nom d'une famille ou d'un
+ * article y voyage aplati en français, parce que la plateforme ne le montre
+ * qu'en français. Celui d'une opération s'affiche TEL QUEL dans l'annonce de
+ * la vitrine, qui est en trois langues : l'aplatir ici obligerait à le
+ * rechercher ailleurs, et la plateforme n'a pas d'ailleurs (D10).
+ */
+export const syncLocalizedTextSchema = z.object({
+  fr: z.string().min(1),
+  en: z.string().min(1).optional(),
+  it: z.string().min(1).optional(),
+});
+export type SyncLocalizedText = z.infer<typeof syncLocalizedTextSchema>;
+
+/**
+ * **Une opération datée** — Noël, Pâques, la galette — telle qu'elle traverse
+ * depuis la v11 (D10 de `documentation/order/architecture-operations-datees.md`).
+ *
+ * Elle naît au référentiel (D1) et la plateforme la **reçoit** : elle peut la
+ * restreindre à la réception, jamais l'étendre (D9). Seules les opérations NON
+ * archivées traversent ; une clé qui disparaît d'un envoi est marquée retirée
+ * par le récepteur, jamais effacée — une clé ne se réemploie pas, et la
+ * surcharge locale doit garder son parent.
+ */
+export const syncOperationSchema = z.object({
+  /** Minuscules, chiffres, tirets (`noel-2026`). Jamais réemployée. */
+  key: z.string().min(1),
+  name: syncLocalizedTextSchema,
+  /** `null` = aucune accroche saisie. */
+  lede: syncLocalizedTextSchema.nullable(),
+  /** Une image de la médiathèque, ou `null`. Sans dimensions : l'annonce les recadre. */
+  image: z.object({ url: z.string().min(1), alt: z.string() }).nullable(),
+  /**
+   * Trois INSTANTS : le rayon paraît, la commande ouvre, la commande ferme.
+   * `orderFrom` à `null` = on commande dès l'annonce.
+   */
+  announceFrom: z.string().datetime({ offset: true }),
+  orderFrom: z.string().datetime({ offset: true }).nullable(),
+  orderUntil: z.string().datetime({ offset: true }),
+  /**
+   * Deux JOURS `AAAA-MM-JJ` : une commande porte un jour de retrait, pas un
+   * instant. Le lendemain de `pickupUntil` à minuit, heure de Paris, tout
+   * s'éteint — c'est au lecteur de faire cette traduction, par le fuseau, et
+   * jamais en collant un `T00:00Z`.
+   */
+  pickupFrom: z.string().date(),
+  pickupUntil: z.string().date(),
+  audience: z.enum(["pro", "public", "both"]),
+  /**
+   * Les SKU de la sélection, **dans l'ordre du rayon**, et seulement ceux que
+   * CET envoi porte : un article de la sélection qui ne part pas (non publié,
+   * sans prix, canal fermé) est nommé dans les exclusions de l'émetteur, pas
+   * transporté vers un récepteur qui ne le connaît pas.
+   */
+  skus: z.array(z.string().min(1)),
+});
+export type SyncOperation = z.infer<typeof syncOperationSchema>;
 
 /**
  * Le payload complet d'un push.
@@ -412,6 +490,15 @@ export const catalogSnapshotSchema = z.object({
    * c'est la VERSION qui distingue les deux, jamais la longueur du tableau.
    */
   orderTimeLimits: z.array(syncOrderTimeLimitRuleSchema),
+  /**
+   * **Les opérations datées**, non archivées, depuis la v11.
+   *
+   * Un tableau **vide** est net : le référentiel n'en prépare aucune, et le
+   * récepteur marque retirées celles qu'il tenait. À ne pas confondre avec le
+   * champ ABSENT d'un envoi antérieur à la v11 — c'est la VERSION qui
+   * distingue les deux, jamais la longueur du tableau.
+   */
+  operations: z.array(syncOperationSchema),
 });
 export type CatalogSnapshot = z.infer<typeof catalogSnapshotSchema>;
 
@@ -446,9 +533,15 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
     z.literal(8),
     z.literal(9),
     z.literal(10),
+    z.literal(11),
   ]),
   products: z.array(
     syncProductSchema.extend({
+      // Absent avant la v11 : aucun article n'était réservé aux opérations,
+      // qui ne traversaient pas. Une arrivée d'avant la bascule se lit donc
+      // « aucun article exclusif » — ce qui était vrai. Pas de `false` de
+      // remplacement ici : c'est la VERSION qui dit comment lire.
+      operationOnly: z.boolean().optional(),
       // Absents avant la v8 : l'éditorial et le visuel ne traversaient pas. Une
       // arrivée d'avant la bascule reste lisible, et se lit alors « ni ligne ni
       // visuel » — ce qui est exact : elle n'en portait pas.
@@ -494,6 +587,14 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
   ),
   /** Absentes avant la v7 : l'échelle ne traversait pas. */
   orderTimeLimits: z.array(syncOrderTimeLimitRuleSchema).optional(),
+  /**
+   * Absentes avant la v11 : les opérations ne traversaient pas. ⚠️ Une arrivée
+   * v10 acceptée après le déploiement se lit « aucune opération », et le
+   * récepteur marque donc retirées toutes celles qu'il tenait jusqu'à l'envoi
+   * suivant — sans danger, aucun article n'y étant exclusif (D10, et le
+   * runbook : « Avant de déployer le fil v11 »).
+   */
+  operations: z.array(syncOperationSchema).optional(),
 });
 
 /**

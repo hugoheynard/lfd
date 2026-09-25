@@ -3,7 +3,14 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 
 import { ALL_SHELVES } from '../../shelves';
-import { hydrateWith, TEST_CATALOGUE, TEST_SHELVES } from '../../shop-catalogue.fixture';
+import {
+  hydrateWith,
+  operationCatalogue,
+  TEST_CATALOGUE,
+  TEST_OPERATION_KEY,
+  TEST_SHELVES,
+} from '../../shop-catalogue.fixture';
+import { ClientLocale } from '../../../client-locale.service';
 import { ShopCatalogue } from '../../shop-catalogue.store';
 import { FR } from '../../../copy/fr';
 import { ShelfNav } from './shelf-nav';
@@ -66,6 +73,43 @@ describe('ShelfNav', () => {
     chips()[2]?.click();
 
     expect(picked).toEqual([TEST_SHELVES[1]?.id]);
+  });
+
+  /** D8 : une opération servie est un rayon juste après « Tout », avant les familles. */
+  it('place une opération servie juste après « Tout »', () => {
+    hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue('announced'));
+    fixture.detectChanges();
+
+    expect(labels(chips()).slice(0, 3)).toEqual([
+      FR.shop.allShelves,
+      'Noël',
+      TEST_SHELVES[0]?.name,
+    ]);
+  });
+
+  it('nomme l’opération dans la langue de l’interface, le français faute de mieux', () => {
+    hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue('open'));
+    const locale = TestBed.inject(ClientLocale);
+
+    locale.current.set('en');
+    fixture.detectChanges();
+    expect(labels(chips())[1]).toBe('Christmas');
+
+    // Le référentiel n'a pas saisi l'italien : le français le remplace.
+    locale.current.set('it');
+    fixture.detectChanges();
+    expect(labels(chips())[1]).toBe('Noël');
+  });
+
+  it('signale la clé `op:<key>` quand on choisit l’opération', () => {
+    hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue('open'));
+    fixture.detectChanges();
+    const picked: string[] = [];
+    fixture.componentInstance.picked.subscribe((id) => picked.push(id));
+
+    chips()[1]?.click();
+
+    expect(picked).toEqual([`op:${TEST_OPERATION_KEY}`]);
   });
 });
 

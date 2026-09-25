@@ -45,6 +45,7 @@ const SANS_DERIVE: CatalogParityView = {
   priceGaps: [],
   vatGaps: [],
   nameGaps: [],
+  operationOnlyGaps: [],
   inSync: true,
 };
 

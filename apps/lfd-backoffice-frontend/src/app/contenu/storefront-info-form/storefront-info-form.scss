@@ -30,3 +30,15 @@
   flex-wrap: wrap;
   gap: var(--fold-space-xs);
 }
+
+// Un champ qu'une annonce liée hérite, et sa croix pour revenir à l'opération.
+.overridable {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+
+  > :first-child {
+    flex: 1;
+    min-width: 0;
+  }
+}

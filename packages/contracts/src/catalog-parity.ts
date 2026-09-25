@@ -41,6 +41,14 @@ export interface CatalogParityView {
   readonly vatGaps: readonly CatalogParityGap<number | null>[];
   readonly nameGaps: readonly CatalogParityGap<string>[];
   /**
+   * **Réservé aux opérations** a basculé sans que le miroir suive (fil v11).
+   *
+   * Il manquait, et c'était le seul écart qui décide QUAND un article se vend :
+   * rendre la bûche exclusive au PIM laissait l'aperçu dire « la boutique est à
+   * jour » et griser l'envoi — l'opération ne pouvait donc jamais partir.
+   */
+  readonly operationOnlyGaps: readonly CatalogParityGap<boolean>[];
+  /**
    * `true` **seulement** si rien ne diffère. Un booléen plutôt qu'un score : la
    * question est « le miroir est-il fidèle ? », et elle n'a pas de nuance.
    */

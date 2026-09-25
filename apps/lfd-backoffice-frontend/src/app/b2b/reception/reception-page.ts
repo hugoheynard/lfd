@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import type { DeliveryChangeView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -11,6 +18,7 @@ import {
 
 import { NotifyService } from '../../notify.service';
 import { PendingDeliveryStore } from './pending-delivery.store';
+import { ReceivedOperations } from './received-operations/received-operations';
 import { ReceptionService } from './reception.service';
 
 /** Les champs, dits en français — un écran qui affiche `vatRate` ne se relit pas. */
@@ -29,6 +37,8 @@ const FIELDS: Readonly<Record<string, string>> = {
   // Depuis la v7 du fil. Elle ne se comparait pas : changer la limite globale
   // produisait une arrivée annoncée « 0 changement », validée à l'aveugle.
   orderLimit: 'limite de commande',
+  // Depuis la v11 : l'article n'est vendu que pendant une opération datée.
+  operationOnly: 'réservé aux opérations',
 };
 
 /** Ce que l'arrivée fait à un article, dit comme on le lit. */
@@ -67,6 +77,7 @@ const KINDS: Readonly<Record<DeliveryChangeView['kind'], string>> = {
     FoldCheckboxComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
+    ReceivedOperations,
   ],
   templateUrl: './reception-page.html',
   styleUrl: './reception-page.scss',
@@ -138,6 +149,9 @@ export class ReceptionPage {
     this.excluded.set(next);
   }
 
+  /** Les opérations reçues : l'acceptation les écrit, la carte doit les relire. */
+  private readonly receivedOperations = viewChild(ReceivedOperations);
+
   protected async accept(): Promise<void> {
     const pending = this.delivery();
     if (pending === null) {
@@ -149,7 +163,7 @@ export class ReceptionPage {
       this.notify.success('Arrivée validée — le catalogue est à jour.');
       // On RECHARGE plutôt que de vider l'écran : une nouvelle livraison a pu
       // arriver entre-temps, et laisser l'écran vide la ferait manquer.
-      await this.load();
+      await Promise.all([this.load(), this.receivedOperations()?.reload()]);
     } catch (caught) {
       // `notify.error` lit l'enveloppe : le refus du serveur est en français
       // dedans — « cette arrivée a été remplacée par une livraison plus

@@ -15,6 +15,8 @@ import { toSyncRule } from "./order-time-limits.js";
 import { B2bMembershipService } from "../membership/membership.service.js";
 import { B2bCatalogFeedPreview, type FeedPreview } from "./feed-preview.js";
 import { projectCatalog } from "./projection.js";
+import { OperationReader } from "../../../operations/domain/ports/operation.reader.js";
+import { projectOperations } from "./operation-projection.js";
 
 /** Un canal sans aucun produit publié — rien à envoyer, rien à comparer. */
 const EMPTY_SNAPSHOT_PRODUCTS: readonly [] = [];
@@ -46,6 +48,7 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
     private readonly allergens: AllergenCatalogueReader,
     private readonly orderTimeLimits: OrderTimeLimitRepository,
     private readonly editorials: EditorialReader,
+    private readonly operations: OperationReader,
   ) {
     super();
   }
@@ -57,11 +60,15 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
       // quatre-vingt-quinze articles puis pousser un catalogue devenu vide est
       // la dérive la plus coûteuse qui soit. Sans empreinte ici, ce cas-là
       // sortirait en « rien à faire » — un succès.
-      const empty = emptySnapshot(generatedAt);
+      //
+      // Les opérations y voyagent aussi, sélection vide : un canal sans article
+      // n'en porte aucun, et chaque SKU de sélection est nommé comme écarté.
+      const dated = projectOperations(await this.operations.list(), new Set());
+      const empty = { ...emptySnapshot(generatedAt), operations: [...dated.operations] };
       return {
         snapshot: empty,
         candidates: 0,
-        excluded: [],
+        excluded: [...dated.excluded],
         fingerprint: projectionFingerprint(empty),
       };
     }
@@ -91,15 +98,26 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
     // pour tout le lot : ce sont des satellites du produit, absents de
     // `ProductRecord` par construction, et un appel par fiche coûterait ici
     // quatre-vingt-quinze allers-retours pour une ligne et une image.
-    const [vatByProduct, channelsByProduct, allergenCatalogue, timeLimitRules, notes, medias] =
-      await Promise.all([
-        this.catalogue.vatPercents(products),
-        this.catalogue.effectiveChannels(products),
-        this.allergens.catalogue(),
-        this.orderTimeLimits.list(),
-        this.editorials.findByProducts(productIds),
-        this.editorials.mediaOfProducts(productIds),
-      ]);
+    //
+    // Les opérations datées les rejoignent depuis la v11, archivées comprises :
+    // c'est la projection qui les trie, et elle seule sait quels SKU partent.
+    const [
+      vatByProduct,
+      channelsByProduct,
+      allergenCatalogue,
+      timeLimitRules,
+      notes,
+      medias,
+      operations,
+    ] = await Promise.all([
+      this.catalogue.vatPercents(products),
+      this.catalogue.effectiveChannels(products),
+      this.allergens.catalogue(),
+      this.orderTimeLimits.list(),
+      this.editorials.findByProducts(productIds),
+      this.editorials.mediaOfProducts(productIds),
+      this.operations.list(),
+    ]);
     // L'échelle traverse TELLE QUELLE depuis la v7. Elle s'arrêtait ici, et le
     // fil ne portait que sa résolution — ce qui recopiait une règle globale sur
     // N articles et rendait son changement indescriptible : le diff d'arrivée
@@ -120,6 +138,7 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
       // plutôt que de transporter un objet localisé que personne ne lira.
       IncoProjector.from(allergenCatalogue, SOURCE_LOCALE),
       showcaseOf(products, notes, medias),
+      operations,
       generatedAt,
     );
     // L'empreinte se calcule ICI, sur la projection qu'on vient de produire :
@@ -143,5 +162,6 @@ function emptySnapshot(generatedAt: string): FeedPreview["snapshot"] {
     categories: [],
     products: [...EMPTY_SNAPSHOT_PRODUCTS],
     orderTimeLimits: [],
+    operations: [],
   };
 }

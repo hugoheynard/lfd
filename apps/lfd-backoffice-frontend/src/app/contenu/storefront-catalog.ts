@@ -1,4 +1,4 @@
-import type { StorefrontCatalogView } from '@lfd/contracts';
+import type { StorefrontCatalogOperation, StorefrontCatalogView } from '@lfd/contracts';
 import type { ShelfKey } from '@lfd/storefront-layout';
 
 /** Le rayon « Tout » — la clé que le serveur réserve (`b2b/storefront/domain/shelf-key.ts`). */
@@ -7,6 +7,8 @@ export const ALL_SHELVES: ShelfKey = 'all';
 export interface ShelfOption {
   readonly key: ShelfKey;
   readonly label: string;
+  /** Le rayon `op:<key>` d'une opération reçue (D8) — absent pour une famille. */
+  readonly operation?: true;
 }
 
 /** Un article qu'un contenu produit peut désigner. */
@@ -19,9 +21,11 @@ export interface CatalogProduct {
 
 /** Ce que l'éditeur lit du catalogue : les rayons servis, et les articles en vente. */
 export interface StorefrontCatalog {
-  /** « Tout » en tête, puis les familles dans l'ordre du catalogue. */
+  /** « Tout » en tête, puis les rayons d'opération, puis les familles dans l'ordre du catalogue. */
   readonly shelves: readonly ShelfOption[];
   readonly products: readonly CatalogProduct[];
+  /** Les opérations reçues non retirées, qu'une annonce peut désigner (D11). */
+  readonly operations: readonly StorefrontCatalogOperation[];
 }
 
 /**
@@ -34,16 +38,24 @@ export interface StorefrontCatalog {
  * qu'à poser « Tout » en tête et à écarter les articles masqués des deux
  * boutiques : aucune ne les résoudra, et leur case retomberait au reste du
  * rayon (D4).
+ *
+ * Les rayons `op:<key>` arrivent en tête, comme en boutique ; leur libellé dit
+ * qu'ils sont une opération, pour qu'on ne les prenne pas pour une famille.
  */
 export function catalogOf(view: StorefrontCatalogView): StorefrontCatalog {
   return {
     shelves: [
       { key: ALL_SHELVES, label: 'Tout' },
-      ...view.shelves.map((shelf) => ({ key: shelf.key, label: shelf.name })),
+      ...view.shelves.map((shelf): ShelfOption =>
+        shelf.operation
+          ? { key: shelf.key, label: `Opération · ${shelf.name}`, operation: true }
+          : { key: shelf.key, label: shelf.name },
+      ),
     ],
     products: view.items
       .filter((item) => item.served)
       .map((item) => ({ sku: item.sku, name: item.name, shelf: item.shelfKey })),
+    operations: view.operations,
   };
 }
 

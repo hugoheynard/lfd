@@ -48,6 +48,18 @@ import {
 } from "../../../domain/ports/company-status.reader.js";
 import { DEFAULT_DELIVERY_AVAILABILITY, type DeliveryAvailabilityView } from "@lfd/contracts";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
+import { OrderOperations } from "../../services/order-operations.service.js";
+import { noSaleOperations } from "../../../../catalog/application/__tests__/sale-operations-doubles.js";
+import type { SaleOperations } from "../../../../catalog/application/sale-operations.service.js";
+import {
+  catalogItem,
+  saleOperationsOver,
+} from "../../../../catalog/application/__tests__/sale-operations-doubles.js";
+import type { SellableOperation } from "../../../../catalog/domain/ports/catalog-operations.reader.js";
+import {
+  OperationClosedError,
+  OperationDayOutsideError,
+} from "../../../domain/errors/order-operation-errors.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderIdempotencyStore } from "../../../domain/ports/order-idempotency.store.js";
@@ -353,6 +365,7 @@ function drafting(
   audience: {
     readonly status?: CompanyStatusOf | null;
     readonly delivery?: DeliveryAvailabilityView;
+    readonly sale?: SaleOperations;
   } = {},
 ): OrderDrafting {
   return new OrderDrafting(
@@ -385,6 +398,7 @@ function drafting(
     noWaivers,
     noLateFee,
     new CustomerAudiences(companiesAt(audience.status === undefined ? "active" : audience.status)),
+    new OrderOperations(audience.sale ?? noSaleOperations(PRICED_AT)),
   );
 }
 
@@ -1003,5 +1017,111 @@ describe("PlaceOrderHandler", () => {
 
     expect(intentSink.intent?.amountCents).toBe(400);
     expect(sink.placed?.paymentStatus).toBe("pending");
+  });
+});
+
+/**
+ * D6 du plan des opérations datées : le garde s'applique à la passation, APRÈS
+ * le délai de fabrication, pour la clientèle de la commande (ici sans société,
+ * donc `public`). Dates comparées à `PRICED_AT`, l'horloge figée du test.
+ */
+describe("PlaceOrderHandler — un article d'opération datée", () => {
+  function galette(over: Partial<SellableOperation> = {}): SellableOperation {
+    return {
+      key: "galette",
+      name: { fr: "Galette" },
+      lede: null,
+      image: null,
+      announceFrom: new Date("2026-01-01T00:00:00.000Z"),
+      orderFrom: null,
+      orderUntil: new Date("2026-01-20T11:00:00.000Z"),
+      pickupFrom: "2026-01-24",
+      pickupUntil: "2026-01-25",
+      audience: "both",
+      skus: ["VIE-001-1"],
+      ...over,
+    };
+  }
+
+  function handlerOver(operation: SellableOperation, sink: { placed: OrderToPlace | null }) {
+    const sale = saleOperationsOver({
+      now: PRICED_AT,
+      operations: [operation],
+      items: [catalogItem("VIE-001")],
+      onlySkus: ["VIE-001-1"],
+    });
+    return new PlaceOrderHandler(
+      guard(null, null),
+      drafting(pickups(LABO_POINT), zones(), versionsAt(CURRENT_VERSION), { sale }),
+      capturingRepo(sink),
+      payments(),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+    );
+  }
+
+  it("passe pour un jour de retrait de l'opération, commande ouverte", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await handlerOver(galette(), sink).execute(
+      new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: "2026-01-24" }), null),
+    );
+
+    expect(sink.placed).not.toBeNull();
+  });
+
+  it("refuse un jour hors des jours de retrait, et n'écrit rien", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await expect(
+      handlerOver(galette(), sink).execute(
+        new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: "2026-01-26" }), null),
+      ),
+    ).rejects.toBeInstanceOf(OperationDayOutsideError);
+    expect(sink.placed).toBeNull();
+  });
+
+  it("refuse une opération close, même pour un jour de retrait", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const closed = galette({ orderUntil: new Date("2026-01-10T11:00:00.000Z") });
+
+    await expect(
+      handlerOver(closed, sink).execute(
+        new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: "2026-01-24" }), null),
+      ),
+    ).rejects.toBeInstanceOf(OperationClosedError);
+    expect(sink.placed).toBeNull();
+  });
+
+  it("laisse passer un article courant de l'opération après sa clôture (le croissant du 26)", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const sale = saleOperationsOver({
+      now: PRICED_AT,
+      operations: [galette({ orderUntil: new Date("2026-01-10T11:00:00.000Z") })],
+      items: [catalogItem("VIE-001")],
+      onlySkus: [],
+    });
+    const handler = new PlaceOrderHandler(
+      guard(null, null),
+      drafting(pickups(LABO_POINT), zones(), versionsAt(CURRENT_VERSION), { sale }),
+      capturingRepo(sink),
+      payments(),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+    );
+
+    await handler.execute(
+      new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: "2026-01-26" }), null),
+    );
+
+    expect(sink.placed).not.toBeNull();
   });
 });

@@ -52,6 +52,21 @@ export class ServicePoints {
   private readonly settingsHeld = signal<PublicDeliveryAvailabilityView | null>(null);
   private asked = false;
 
+  /**
+   * **Ce que le panier demande aux jours**, panier compris (D6 de
+   * `architecture-operations-datees.md`) : un panier qui porte un article
+   * réservé à une opération ne se voit proposer que les jours de retrait de
+   * celle-ci. Chaîne vide = aucun, la réponse d'hier.
+   *
+   * Posée de l'extérieur par {@link CartFulfillmentDays} : ce dépôt ne lit ni
+   * le panier ni le catalogue, et le rester lui évite de les charger chez tous
+   * ceux qui ne veulent que des points de retrait.
+   */
+  private cartQuery = '';
+
+  /** La requête dont {@link dayList} est la réponse. */
+  private daysAskedFor = '';
+
   readonly pickups = this.pickupList.asReadonly();
   readonly zones = this.zoneList.asReadonly();
 
@@ -69,6 +84,37 @@ export class ServicePoints {
    * est fermée.
    */
   readonly deliveryAvailabilityKnown = computed(() => this.settingsHeld() !== null);
+
+  /**
+   * Borne les jours au panier : les articles réservés à une opération qu'il
+   * porte, et la clientèle qui commande. Relit les jours seuls quand la
+   * réponse connue ne vaut plus — et rien avant la première hydratation,
+   * c'est elle qui les lira.
+   */
+  scopeDaysTo(operationSkus: readonly string[], audience: 'pro' | 'public'): void {
+    this.cartQuery =
+      operationSkus.length === 0
+        ? ''
+        : `?skus=${encodeURIComponent(operationSkus.join(','))}&audience=${audience}`;
+    if (this.asked && this.cartQuery !== this.daysAskedFor) {
+      void this.refreshDays(this.cartQuery);
+    }
+  }
+
+  /**
+   * **Le dernier jour proposable** : le plus petit `pickupUntil` des
+   * opérations dont le panier porte un article réservé, ou `null` sans article
+   * réservé. Les onglets du sélecteur d'heure partent de la première journée
+   * accordée et s'étendent sur une semaine : sans cette borne, ils proposaient
+   * des jours que la commande refuserait. Posé par {@link CartFulfillmentDays},
+   * pour la même raison que {@link scopeDaysTo}.
+   */
+  private readonly ceiling = signal<string | null>(null);
+  readonly lastDay = this.ceiling.asReadonly();
+
+  capDaysAt(lastDay: string | null): void {
+    this.ceiling.set(lastDay);
+  }
 
   /**
    * Pose des listes déjà obtenues, et considère l'hydratation faite.
@@ -111,7 +157,7 @@ export class ServicePoints {
       const [pickups, zones, days, settings] = await Promise.all([
         firstValueFrom(this.http.get<readonly PickupAddressView[]>(`${base}/pickup-addresses`)),
         firstValueFrom(this.http.get<readonly DeliveryZoneView[]>(`${base}/delivery-zones`)),
-        firstValueFrom(this.http.get<readonly FulfillmentDayView[]>(`${base}/fulfillment-days`)),
+        this.daysFor(this.cartQuery),
         firstValueFrom(
           this.http.get<PublicDeliveryAvailabilityView>(`${base}/delivery-availability`),
         ).catch(() => null),
@@ -122,6 +168,32 @@ export class ServicePoints {
       this.settingsHeld.set(settings === null ? null : servedSettings(settings));
     } catch {
       this.asked = false;
+    }
+  }
+
+  /** Les jours pour cette requête, retenus comme sa réponse. */
+  private async daysFor(query: string): Promise<readonly FulfillmentDayView[]> {
+    this.daysAskedFor = query;
+    return firstValueFrom(
+      this.http.get<readonly FulfillmentDayView[]>(
+        `${AUTH_CONFIG.apiBaseUrl}/fulfillment-days${query}`,
+      ),
+    );
+  }
+
+  /**
+   * Relit les jours seuls. Un échec garde les jours connus : l'écran les
+   * montre, et la commande refuse de toute façon un jour hors de l'opération
+   * — en nommant les bons. Le prochain changement du panier retente.
+   */
+  private async refreshDays(query: string): Promise<void> {
+    try {
+      const days = await this.daysFor(query);
+      if (this.daysAskedFor === query) {
+        this.dayList.set(days);
+      }
+    } catch {
+      // Les jours connus restent : voir plus haut.
     }
   }
 

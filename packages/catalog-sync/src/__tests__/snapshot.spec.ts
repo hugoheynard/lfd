@@ -66,10 +66,14 @@ const snapshot = {
         width: 800,
         height: 800,
       },
+      // Traverse depuis la v11 : le croissant est un article courant.
+      operationOnly: false,
     },
   ],
   // L'échelle traverse depuis la v7 — vide est le cas courant, et il est net.
   orderTimeLimits: [],
+  // Traversent depuis la v11 — vide est le cas courant, et il est net.
+  operations: [],
 };
 
 describe("catalogSnapshotSchema", () => {
@@ -403,7 +407,6 @@ describe("la vignette de rayon, depuis la v10", () => {
   it("accepte une fiche qui en porte une, distincte du packshot", () => {
     const withThumb = {
       ...snapshot,
-      version: 10 as const,
       products: [
         {
           ...snapshot.products[0],
@@ -447,5 +450,104 @@ describe("la vignette de rayon, depuis la v10", () => {
     });
 
     expect(parsed.success).toBe(true);
+  });
+});
+
+describe("les opérations datées, depuis la v11", () => {
+  /** Noël, tel que le référentiel l'envoie. Les dates ne sont comparées qu'au schéma. */
+  const noel = {
+    key: "noel-2026",
+    name: { fr: "Noël", en: "Christmas" },
+    lede: null,
+    image: { url: "https://media.example/noel.jpg", alt: "Une bûche" },
+    announceFrom: "2026-11-01T00:00:00+01:00",
+    orderFrom: null,
+    orderUntil: "2026-12-21T12:00:00+01:00",
+    pickupFrom: "2026-12-20",
+    pickupUntil: "2026-12-24",
+    audience: "both",
+    skus: ["VIE-001-1"],
+  };
+
+  const withNoel = { ...snapshot, operations: [noel] };
+
+  it("accepte une opération et un article réservé aux opérations", () => {
+    const bucheOnly = {
+      ...withNoel,
+      products: [{ ...snapshot.products[0], operationOnly: true }],
+    };
+
+    expect(catalogSnapshotSchema.safeParse(bucheOnly).success).toBe(true);
+  });
+
+  /**
+   * 🔴 Le fil reste STRICT : un émetteur qui oublie les opérations doit
+   * échouer à l'émission. Un tableau absent qu'on lirait « vide » ferait
+   * marquer retirées toutes les opérations du commerce, sans rien dire.
+   */
+  it("REFUSE une émission sans `operations`", () => {
+    const without: Record<string, unknown> = { ...withNoel };
+    delete without["operations"];
+
+    expect(catalogSnapshotSchema.safeParse(without).success).toBe(false);
+  });
+
+  it("REFUSE une émission dont un produit tait `operationOnly`", () => {
+    const product: Record<string, unknown> = { ...snapshot.products[0] };
+    delete product["operationOnly"];
+
+    expect(catalogSnapshotSchema.safeParse({ ...withNoel, products: [product] }).success).toBe(
+      false,
+    );
+  });
+
+  it("refuse un jour de retrait qui n'est pas un jour `AAAA-MM-JJ`", () => {
+    const shifted = { ...noel, pickupFrom: "2026-12-20T00:00:00Z" };
+
+    expect(catalogSnapshotSchema.safeParse({ ...snapshot, operations: [shifted] }).success).toBe(
+      false,
+    );
+  });
+
+  it("refuse une clientèle hors des trois", () => {
+    const everyone = { ...noel, audience: "tout-le-monde" };
+
+    expect(catalogSnapshotSchema.safeParse({ ...snapshot, operations: [everyone] }).success).toBe(
+      false,
+    );
+  });
+
+  it("refuse un nom sans français — la langue source de l'annonce", () => {
+    const english = { ...noel, name: { en: "Christmas" } };
+
+    expect(catalogSnapshotSchema.safeParse({ ...snapshot, operations: [english] }).success).toBe(
+      false,
+    );
+  });
+
+  /**
+   * 🔴 Une arrivée v10 mise en file AVANT le déploiement doit rester lisible :
+   * la rendre illisible la ferait disparaître de l'écran de revue. Elle se lit
+   * « ni opération ni article exclusif » — et les champs MANQUENT, sans valeur
+   * de remplacement : c'est la version qui dit comment lire.
+   */
+  it("relit une arrivée v10 stockée, sans opérations ni drapeau", () => {
+    const product: Record<string, unknown> = { ...snapshot.products[0] };
+    delete product["operationOnly"];
+    const v10: Record<string, unknown> = { ...snapshot, version: 10, products: [product] };
+    delete v10["operations"];
+
+    const parsed = storedCatalogSnapshotSchema.safeParse(v10);
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.operations).toBeUndefined();
+    expect(parsed.data?.products[0]?.operationOnly).toBeUndefined();
+  });
+
+  it("relit une arrivée v11 stockée, opérations comprises", () => {
+    const parsed = storedCatalogSnapshotSchema.safeParse(withNoel);
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.operations?.[0]?.skus).toEqual(["VIE-001-1"]);
   });
 });

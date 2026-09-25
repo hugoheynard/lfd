@@ -393,6 +393,54 @@ admin (fait le 2026-09-17).
 plus la fiche de l'admin racine. Celle qui l'a liée en premier la garde ;
 pour changer, remettre `auth0_id` à `NULL` sur la base **locale**.
 
+## Avant de déployer le fil v11 (les opérations datées)
+
+Lot 2 de [`architecture-operations-datees.md`](../order/architecture-operations-datees.md)
+(D10, 2026-09-24). Le fil catalogue passe en **v11** : il transporte les
+opérations datées (Noël, Pâques, la galette) et le drapeau « vendu seulement
+pendant une opération » des fiches. Les lots 2 et 3 partent **dans le même
+merge** — le drapeau et la garde qui refuse la vente vont ensemble.
+
+**Le seul piège : un envoi v10 encore en attente dans la boîte de réception.**
+Il reste lisible après le déploiement, et il s'accepte — mais il se lit « aucune
+opération » : l'accepter **marque retirées toutes les opérations** du commerce
+jusqu'à l'envoi suivant. Ce n'est pas dangereux (aucun article n'y est réservé
+aux opérations, donc rien d'exclusif ne se vend), mais l'écran de réception
+montrerait Noël « opération retirée » pendant ce temps.
+
+**Avant le merge, lire en production** :
+
+```sql
+select id, snapshot->>'version' as version, received_at
+  from public.catalog_delivery
+ where status = 'pending';
+```
+
+- **Zéro ligne ⇒ déployer.**
+- **Une ligne en version `10` ⇒** au choix, et dire lequel à l'équipe du
+  catalogue :
+  1. la faire **accepter avant** le déploiement (écran « Réception » du
+     back-office), puis déployer ;
+  2. ou déployer, puis **demander un envoi neuf** au référentiel juste après
+     (« Publier » côté PIM) : il remplace l'arrivée v10 en attente, qui passe
+     `superseded` sans jamais être appliquée.
+
+**Après le déploiement**, un envoi accepté doit remplir le miroir :
+
+```sql
+select key, withdrawn_at from public.catalog_operations order by key;
+```
+
+Une opération préparée au PIM (non archivée) et présente dans le dernier envoi
+accepté a `withdrawn_at` à `NULL`. Si elle manque, relire les exclusions du
+dernier push : un article de la sélection non publié est nommé
+`operation_article_absent`.
+
+🔴 **Sans retour une fois un envoi v11 posé** : le code v10 ne relit pas une
+arrivée v11 en attente. Revenir en arrière après ce point demande d'abord de
+vider la boîte de réception (faire accepter, ou attendre un envoi v10 qui la
+remplace) — cf. « Sans retour » dans le plan.
+
 ## Si l'API refuse de démarrer : `persistence.migrations_pending`
 
 Symptôme : au démarrage, `La base de données est en retard de N migration(s) : …`

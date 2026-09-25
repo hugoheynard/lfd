@@ -9,7 +9,7 @@ import {
   input,
   signal,
 } from '@angular/core';
-import type { StorefrontContent } from '@lfd/contracts';
+import type { PublicStorefrontContent } from '@lfd/contracts';
 import type {
   ComposedCarousel,
   MediaFit,
@@ -55,7 +55,7 @@ const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 })
 export class StorefrontSlot {
   /** Jamais vide : la composition n'envoie ici que des contenus affichables. */
-  readonly contents = input.required<readonly StorefrontContent[]>();
+  readonly contents = input.required<readonly PublicStorefrontContent[]>();
   /** `null` : un seul contenu montré. */
   readonly carousel = input<ComposedCarousel | null>(null);
   readonly shape = input.required<StorefrontShape>();

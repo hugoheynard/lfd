@@ -1,6 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
-import type { ShopCatalogueView, ShopItemView, ShopShelfView } from '@lfd/contracts';
+import type {
+  ShopCatalogueView,
+  ShopItemView,
+  ShopOperationView,
+  ShopShelfView,
+} from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -81,11 +86,26 @@ export class ShopCatalogue {
 
   /** Quelqu'un a-t-il demandé la vitrine ? Sans demande, une bascule ne relit rien. */
   private wanted = false;
-  private readonly catalogue = signal<ShopCatalogueView>({ shelves: [], items: [] });
+  private readonly catalogue = signal<ShopCatalogueView>({
+    shelves: [],
+    items: [],
+    operations: [],
+  });
 
   readonly status = this.state.asReadonly();
   readonly items = computed<readonly ShopItemView[]>(() => this.catalogue().items);
   readonly shelves = computed<readonly ShopShelfView[]>(() => this.catalogue().shelves);
+  /** Les opérations datées servies, l'annonce la plus récente d'abord — vide hors saison. */
+  readonly operations = computed<readonly ShopOperationView[]>(() => this.catalogue().operations);
+
+  private readonly byOperation = computed(
+    () => new Map(this.catalogue().operations.map((operation) => [operation.key, operation])),
+  );
+
+  /** L'opération d'une clé, ou `null` : elle n'est pas (ou plus) servie. */
+  operationOf(key: string): ShopOperationView | null {
+    return this.byOperation().get(key) ?? null;
+  }
 
   /** Les articles par SKU — ce que le panier interroge à chaque ligne. */
   private readonly bySku = computed(

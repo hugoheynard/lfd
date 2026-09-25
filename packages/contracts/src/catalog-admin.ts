@@ -113,6 +113,11 @@ export interface CatalogAdminItemView {
    */
   readonly isHiddenPublic: boolean;
   readonly isFeatured: boolean;
+  /**
+   * Vendu **seulement pendant une opération** (fil v11), tel que reçu. Porté ici
+   * parce que ce port est le miroir que le contrôle de parité confronte.
+   */
+  readonly operationOnly: boolean;
 
   /**
    * Qui a décidé, et quand. `null` tant que personne n'a rien décidé.

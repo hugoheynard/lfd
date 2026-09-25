@@ -279,6 +279,15 @@ model CatalogItem {
   /// puis réintroduit resterait invisible pour toujours, et rien ne le dirait.
   withdrawnAt DateTime? @map("withdrawn_at")
 
+  /// **Vendu seulement pendant une opération**, tel que le référentiel le dit
+  /// de la fiche (fil v11, D3 de `documentation/order/architecture-operations-datees.md`).
+  ///
+  /// Un fait reçu comme les autres : un push le réécrit. `false` sur toute
+  /// ligne d'avant la v11, et c'est exact — aucun article n'était alors
+  /// réservé aux opérations. ⚠️ Jusqu'au lot 3 du plan, AUCUN lecteur ne s'en
+  /// sert pour refuser une vente : le drapeau et sa garde partent ensemble.
+  operationOnly Boolean @default(false) @map("operation_only")
+
   override CatalogItemOverride?
 
   @@index([categoryId])
@@ -405,6 +414,16 @@ model CatalogVersion {
   /// versions sans désérialiser cent kilo-octets par ligne.
   items     Json
   itemCount Int  @map("item_count")
+
+  /// **Les opérations reçues, photographiées avec les articles** (D10) :
+  /// « qu'était-il possible de commander le 20 décembre ? » doit avoir une
+  /// réponse. Les opérations du miroir non retirées, telles que reçues — la
+  /// surcharge locale n'y entre pas, pour la raison qui en écarte le prix
+  /// négocié : une version est immuable, une décision locale bouge.
+  ///
+  /// `NULL` = version posée avant le fil v11, quand rien n'était photographié.
+  /// Ce n'est pas « aucune opération » : c'est « on ne le sait pas ».
+  operations Json?
 
   createdAt DateTime @map("created_at")
   /// Qui a validé. Un `StaffUser.id`, jamais une clé étrangère : une version est

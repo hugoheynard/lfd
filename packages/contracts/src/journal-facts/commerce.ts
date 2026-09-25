@@ -76,6 +76,23 @@ export const COMMERCE_FACTS = {
    * arrivée, ni une révision, ni une version n'ont de nom — ce sont des
    * instantanés datés, que la ligne date déjà (lot B, 2026-09-19).
    */
+  /**
+   * **La surcharge d'une opération reçue est posée** — l'état ENTIER après le
+   * geste (D9 du plan des opérations datées, lot 2, 2026-09-24). Restreindre,
+   * jamais étendre : la clôture appliquée est `min(référentiel, surcharge)`, la
+   * clientèle l'intersection, calculées à la lecture. `null` = on garde ce que
+   * le référentiel a dit. Le sujet est l'opération, par sa clé ; `subjectLabel`
+   * son nom français du moment.
+   */
+  "catalog_operation.override_set": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      isHidden: z.boolean(),
+      orderUntil: instant().nullable(),
+      audience: z.enum(["pro", "public", "both"]).nullable(),
+      hiddenSkus: z.array(z.string()),
+    }),
+  ),
   "catalog_delivery.accepted": fact(
     payload({
       deliveryId: ref("catalog_delivery"),

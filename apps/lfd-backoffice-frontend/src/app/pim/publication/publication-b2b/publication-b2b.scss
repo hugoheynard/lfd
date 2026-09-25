@@ -77,6 +77,16 @@
     border-color: var(--fold-color-info-border);
     color: var(--fold-color-info-text);
   }
+
+  &[data-change='withdrawn'] {
+    border-color: var(--fold-color-warning-border);
+    color: var(--fold-color-warning-text);
+  }
+}
+
+/* Les opérations précèdent les articles dans la même section : un souffle les sépare. */
+.operations {
+  margin-block-end: var(--fold-space-md);
 }
 
 .skus {

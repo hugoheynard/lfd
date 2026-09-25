@@ -25,6 +25,8 @@ import { ScopedJournal } from "../../platform/journal/scoped-journal.js";
  */
 
 /** La chose dont l'événement parle — treize sujets, énumérés plutôt que comptés. */
+// ⚠️ « treize » n'était plus vrai depuis le départ de `media_asset` (douze) ;
+// il le redevient avec `operation`, le 2026-09-24 (compté ce jour-là).
 export type PimSubjectType =
   | "vat_rate"
   | "product"
@@ -37,7 +39,8 @@ export type PimSubjectType =
   | "appellation"
   | "allergen_category"
   | "allergen_entry"
-  | "order_time_limit";
+  | "order_time_limit"
+  | "operation";
 
 /*
  * 🔴 **`media_asset` a quitté cette liste le 2026-09-23.** La bibliothèque est
@@ -96,6 +99,13 @@ export const PIM_EVENTS = {
   productVatChanged: "product.vat_changed",
   /** Une fiche redéfinit où elle se vend — ou revient à sa famille. */
   productChannelsChanged: "product.channels_changed",
+  /**
+   * Une fiche est **réservée aux opérations** — ou rendue à la vente courante
+   * (D3 du plan des opérations datées, lot 2, 2026-09-24). Un fait à part et
+   * non un champ d'identité : il change QUAND l'article se vend, et « qui a
+   * rendu la bûche exclusive » ne doit pas se chercher dans des noms retouchés.
+   */
+  productOperationOnlyChanged: "product.operation_only_changed",
   /**
    * **Quelqu'un affirme que la fiche est juste.** Distinct de `published` :
    * l'un est une signature sur un contenu, l'autre une mise en vente. Un
@@ -385,6 +395,23 @@ export const PIM_EVENTS = {
   orderTimeLimitSet: "order_time_limit.set",
   /** Retirée : l'article retombe sur le rang du dessus. */
   orderTimeLimitRemoved: "order_time_limit.removed",
+
+  /**
+   * **Les opérations datées** — Noël, Pâques, la galette (lot 1 du plan
+   * `documentation/order/architecture-operations-datees.md`). Le sujet est
+   * l'opération, son identifiant sa CLÉ : une clé ne se réemploie jamais.
+   *
+   * Un fait par geste de l'écran de préparation : redater change ce que la
+   * boutique vendra et quand, renommer ne change que ce qu'elle affiche, et
+   * « qui a avancé la clôture de Noël » ne doit pas se chercher parmi des
+   * retouches d'accroche.
+   */
+  operationPrepared: "operation.prepared",
+  operationEdited: "operation.edited",
+  operationRescheduled: "operation.rescheduled",
+  operationAudienceChanged: "operation.audience_changed",
+  operationSelectionSaved: "operation.selection_saved",
+  operationArchived: "operation.archived",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**

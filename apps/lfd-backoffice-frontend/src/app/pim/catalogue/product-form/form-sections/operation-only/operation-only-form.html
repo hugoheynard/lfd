@@ -1,0 +1,7 @@
+<fold-checkbox
+  label="Vendu seulement pendant une opération"
+  hint="L'article n'apparaît en boutique que pendant une opération qui le contient, et ne s'y commande qu'aux dates de cette opération. Hors opération, il n'est ni visible ni commandable."
+  [checked]="store.operationOnly()"
+  [disabled]="busy()"
+  (checkedChange)="onChange($event)"
+/>

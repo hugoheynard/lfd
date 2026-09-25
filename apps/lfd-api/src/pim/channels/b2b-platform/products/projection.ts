@@ -39,6 +39,8 @@ import type {
   ProductRecord,
   VariantRecord,
 } from "../../../catalogue/product/domain/ports/product.repository.js";
+import type { OperationSnapshot } from "../../../operations/domain/entities/operation.js";
+import { projectOperations } from "./operation-projection.js";
 
 /**
  * Projection catalogue → snapshot de la plateforme B2B. **Pure et testable** :
@@ -324,6 +326,12 @@ export function projectCatalog(
    * comme `null` — et non comme une chaîne vide, qui dirait « effacé ».
    */
   showcase: ReadonlyMap<string, Showcase>,
+  /**
+   * **Les opérations datées du référentiel**, archivées comprises — c'est la
+   * projection qui les trie (fil v11, `operation-projection.ts`). Passées
+   * comme le reste : lues une fois par push, jamais cherchées d'ici.
+   */
+  operations: readonly OperationSnapshot[],
   generatedAt: string,
 ): Projection {
   const byId = new Map(categories.map((category) => [category.id, category]));
@@ -375,8 +383,19 @@ export function projectCatalog(
       note: shown?.note ?? null,
       image: shown?.image ?? null,
       thumbnail: shown?.thumbnail ?? null,
+      // Le drapeau de la FICHE (D3) : le récepteur le descend sur chacun de
+      // ses articles, comme la ligne et les visuels.
+      operationOnly: product.operationOnly,
     });
   }
+
+  // Les opérations APRÈS les produits : leurs SKU se filtrent sur ce que cet
+  // envoi porte réellement, et on ne le sait qu'ici.
+  const shipped = new Set(
+    kept.flatMap((product) => product.variants.map((variant) => variant.sku)),
+  );
+  const dated = projectOperations(operations, shipped);
+  excluded.push(...dated.excluded);
 
   return {
     snapshot: {
@@ -387,6 +406,7 @@ export function projectCatalog(
         .map(projectCategory),
       products: kept,
       orderTimeLimits: [...orderTimeLimits],
+      operations: [...dated.operations],
     },
     excluded,
   };

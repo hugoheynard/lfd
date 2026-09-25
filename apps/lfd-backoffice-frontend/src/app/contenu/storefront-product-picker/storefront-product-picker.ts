@@ -45,10 +45,10 @@ export class StorefrontProductPicker {
   protected readonly hint = computed(() => {
     const count = this.matches().length;
     if (count === 0) {
-      return 'Aucun article en vente ne correspond.';
+      return 'Aucun article ne correspond.';
     }
     return count > MAX_MATCHES
       ? `${count} articles correspondent : les ${MAX_MATCHES} premiers sont listés, affinez la recherche.`
-      : `${count} article${count > 1 ? 's' : ''} en vente.`;
+      : `${count} article${count > 1 ? 's' : ''}.`;
   });
 }

@@ -36,6 +36,7 @@ function article(): CatalogItem {
     note: null,
     image: null,
     thumbnail: null,
+    operationOnly: false,
     orderTimeLimit: null,
     receivedAt: new Date("2026-01-01T00:00:00.000Z"),
   };

@@ -39,6 +39,7 @@ import { AdminCatalogParityController } from "./http/admin-catalog-parity.contro
 import { OpsCatalogHealthController } from "./http/ops-catalog-health.controller.js";
 import { ShopCatalogueController } from "./http/shop-catalogue.controller.js";
 import { ReadShopCatalogueHandler } from "./application/queries/read-shop-catalogue.js";
+import { SaleOperations } from "./application/sale-operations.service.js";
 import { ShopCataloguePricing } from "./application/shop-catalogue-pricing.service.js";
 import { CheckCatalogParityService } from "./application/check-catalog-parity.service.js";
 import { CheckCatalogHealthService } from "./application/check-catalog-health.service.js";
@@ -48,6 +49,17 @@ import { GetCatalogSummaryHandler } from "./application/queries/get-catalog-summ
 import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
 import { CheckCatalogParityHandler } from "./application/queries/check-catalog-parity.handler.js";
 import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog-push.handler.js";
+import { SetOperationOverrideHandler } from "./application/commands/set-operation-override.handler.js";
+import { ListReceivedOperationsHandler } from "./application/queries/list-received-operations.handler.js";
+import { CatalogOperationRepository } from "./domain/ports/catalog-operation.repository.js";
+import { CatalogOperationOverrideRepository } from "./domain/ports/catalog-operation-override.repository.js";
+import { CatalogOperationsReader } from "./domain/ports/catalog-operations.reader.js";
+import { ReceivedOperationsReader } from "./domain/ports/received-operations.reader.js";
+import { AdminCatalogOperationsController } from "./http/admin-catalog-operations.controller.js";
+import { PrismaCatalogOperationRepository } from "./infrastructure/prisma-catalog-operation.repository.js";
+import { PrismaCatalogOperationOverrideRepository } from "./infrastructure/prisma-catalog-operation-override.repository.js";
+import { PrismaCatalogOperationsReader } from "./infrastructure/prisma-catalog-operations.reader.js";
+import { PrismaReceivedOperationsReader } from "./infrastructure/prisma-received-operations.reader.js";
 
 /**
  * **Le catalogue de la plateforme** : ce que le PIM pousse, plus ce qu'on décide
@@ -90,6 +102,8 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     AdminCatalogController,
     AdminCatalogParityController,
     AdminCatalogDeliveryController,
+    // Les opérations datées reçues et leur surcharge à la réception (D9).
+    AdminCatalogOperationsController,
     // La porte MACHINE du contrôle de santé : même requête, serrure partagée.
     // Le workflow d'ops ne pouvait pas passer par la surface staff.
     OpsCatalogHealthController,
@@ -144,6 +158,22 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     { provide: CatalogVersionReader, useClass: PrismaCatalogVersionReader },
     AcceptDeliveryHandler,
     GetPendingDeliveryHandler,
+    // Les opérations datées (fil v11, lot 2 du plan des opérations datées) :
+    // le miroir que l'ingestion écrit, la surcharge que la réception pose, et
+    // deux lecteurs pour deux questions (ISP) — l'écran de réception voit tout,
+    // les vendeurs du lot 3 ne voient que ce qui s'applique.
+    { provide: CatalogOperationRepository, useClass: PrismaCatalogOperationRepository },
+    {
+      provide: CatalogOperationOverrideRepository,
+      useClass: PrismaCatalogOperationOverrideRepository,
+    },
+    { provide: ReceivedOperationsReader, useClass: PrismaReceivedOperationsReader },
+    { provide: CatalogOperationsReader, useClass: PrismaCatalogOperationsReader },
+    // Ce que les vendeurs par SKU produit appliquent (lot 3) : la caisse, le
+    // devis, les jours proposés, les abonnements.
+    SaleOperations,
+    SetOperationOverrideHandler,
+    ListReceivedOperationsHandler,
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.
@@ -162,6 +192,9 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     // l'inverse serait un cycle — c'est aussi pourquoi la table des rayons est
     // descendue ici.
     ShopCataloguePricing,
+    // Les opérations datées, pour la caisse, le devis, les jours et les
+    // abonnements (lot 3 du plan des opérations datées).
+    SaleOperations,
     CatalogItemRepository,
     // Le MODULE, et non le provider : `CatalogModule` ne le fournit plus depuis
     // que l'historique a son propre module — Nest refuse d'exporter un provider
@@ -184,6 +217,13 @@ import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog
     // communication ne peut pas ouvrir. Son adaptateur n'en garde ni prix ni
     // réglages.
     CatalogAdminReader,
+    // Pour les vendeurs du lot 3 (`operationAccess`, D4-D6) : les opérations
+    // appliquées et les articles qui ne se vendent que par elles — et pour la
+    // vitrine publique, qui éteint une annonce avec son opération (lot 5).
+    CatalogOperationsReader,
+    // Pour l'éditeur de vitrine (lot 5) : les opérations reçues qu'une annonce
+    // peut désigner, et les rayons `op:<key>` qu'il compose.
+    ReceivedOperationsReader,
   ],
 })
 export class CatalogModule {}

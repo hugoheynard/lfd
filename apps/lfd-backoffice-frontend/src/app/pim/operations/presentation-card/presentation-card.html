@@ -1,0 +1,107 @@
+<fold-card>
+  <div class="card">
+    <fold-element-title
+      variant="title"
+      title="Présentation"
+      subtitle="Ce que l'annonce affiche. Une langue laissée vide retombe sur le français."
+    >
+      @if (!locked()) {
+        <button
+          titleAction
+          foldButton
+          size="sm"
+          [disabled]="!changed()"
+          [loading]="busy()"
+          (click)="save()"
+        >
+          Enregistrer
+        </button>
+      }
+    </fold-element-title>
+
+    <div class="row">
+      <fold-input
+        label="Nom (FR)"
+        required
+        [readOnly]="locked()"
+        [value]="name().fr"
+        (valueChange)="setName('fr', $event)"
+      />
+      <fold-input
+        label="Nom (EN)"
+        optional
+        [readOnly]="locked()"
+        [value]="name().en"
+        (valueChange)="setName('en', $event)"
+      />
+      <fold-input
+        label="Nom (IT)"
+        optional
+        [readOnly]="locked()"
+        [value]="name().it"
+        (valueChange)="setName('it', $event)"
+      />
+    </div>
+
+    <div class="row">
+      <fold-textarea
+        label="Accroche (FR)"
+        optional
+        [rows]="2"
+        [readOnly]="locked()"
+        [value]="lede().fr"
+        (valueChange)="setLede('fr', $event)"
+      />
+      <fold-textarea
+        label="Accroche (EN)"
+        optional
+        [rows]="2"
+        [readOnly]="locked()"
+        [value]="lede().en"
+        (valueChange)="setLede('en', $event)"
+      />
+      <fold-textarea
+        label="Accroche (IT)"
+        optional
+        [rows]="2"
+        [readOnly]="locked()"
+        [value]="lede().it"
+        (valueChange)="setLede('it', $event)"
+      />
+    </div>
+
+    <div class="image">
+      @if (image(); as picked) {
+        <img class="preview" [src]="picked.url" [alt]="picked.alt" />
+        <fold-input
+          label="Texte alternatif"
+          optional
+          hint="Ce que l'image montre, pour qui ne la voit pas."
+          [readOnly]="locked()"
+          [value]="picked.alt"
+          (valueChange)="setAlt($event)"
+        />
+      }
+      @if (!locked()) {
+        <div class="image-actions">
+          <button foldButton size="sm" emphasis="outline" icon="image" (click)="chooseImage()">
+            {{ image() === null ? 'Choisir dans la médiathèque' : 'Changer d’image' }}
+          </button>
+          @if (image() !== null) {
+            <button foldButton size="sm" emphasis="soft" (click)="removeImage()">
+              Retirer l’image
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    @if (refusal(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    } @else if (nameMissing() && !locked()) {
+      <fold-callout appearance="inset" variant="neutral">
+        Le nom en français est obligatoire : c'est lui que les autres langues remplacent.
+      </fold-callout>
+    }
+  </div>
+</fold-card>

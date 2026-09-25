@@ -15,6 +15,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { CartAdjustments } from "../services/cart-adjustments.service.js";
 import { CustomerAudiences } from "../services/customer-audiences.service.js";
+import { OrderOperations } from "../services/order-operations.service.js";
 import { OrderLinePricing } from "../services/order-line-pricing.service.js";
 
 /**
@@ -59,6 +60,7 @@ export class QuoteShopCartHandler implements IQueryHandler<QuoteShopCartQuery, S
     private readonly pricing: OrderLinePricing,
     private readonly adjustments: CartAdjustments,
     private readonly audiences: CustomerAudiences,
+    private readonly operations: OrderOperations,
   ) {}
 
   /**
@@ -96,6 +98,11 @@ export class QuoteShopCartHandler implements IQueryHandler<QuoteShopCartQuery, S
       // parcours par défaut de la boutique, et `applies` le sait déjà.
       { companyId: query.companyId },
     );
+    // Sans jour — le devis de la boutique n'en porte pas —, mais une bûche
+    // pas encore ouverte, close ou introuvable le dit ici, au panier, plutôt
+    // qu'au paiement ; et une ligne qui ne passera plus nomme son cas au lieu
+    // de « SKU inconnu » (D6 du plan des opérations datées).
+    await this.operations.ensure(query.payload.lines, query.companyId);
 
     const lines = resolved.map(toQuoteLine);
     // Le sous-total est un MONTANT : la somme de totaux DÉJÀ arrondis, un par

@@ -417,3 +417,20 @@ function frozenAllergens(row: ItemRow): OrderLineAllergens | null {
   }
   return { codes, labels, incomplete: labelsRaw?.incomplete === true };
 }
+
+/**
+ * **Les SKU en vente réservés aux opérations datées** (D3) — la moitié
+ * « articles » de `CatalogOperationsReader`.
+ *
+ * Ici plutôt que dans l'adaptateur des opérations, et c'est la porte qui le
+ * veut : `lint:withdrawn-filter` n'admet la lecture de `catalogItem` que dans
+ * les lecteurs qui portent le filtre du retrait. Un article retiré n'est pas en
+ * vente — qu'il soit exclusif ou non ne dit plus rien.
+ */
+export async function operationOnlySkusOf(prisma: PrismaService): Promise<ReadonlySet<string>> {
+  const rows = await prisma.catalogItem.findMany({
+    where: { ...STILL_SOLD, operationOnly: true },
+    select: { sku: true },
+  });
+  return new Set(rows.map((row) => row.sku));
+}

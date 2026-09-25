@@ -18,7 +18,10 @@ import { API_BASE_URL } from '../data/api';
 import { EMPTY_NUTRITION, type NutritionValues } from '../data/models';
 import type { Product, ProductKind, Variant } from '../data/models';
 import type { CreatedIdResponse } from '@lfd/contracts';
-import type { UpdateVariantPricingPayload } from '@lfd/pim-contracts';
+import type {
+  SetProductOperationOnlyPayload,
+  UpdateVariantPricingPayload,
+} from '@lfd/pim-contracts';
 
 // Formes RENDUES par l'API = vues du contrat `@lfd/pim-contracts`. `priceCents`
 // HT canonique ; le front l'expose en euros dans `priceEur` (TTC/HT relève de la
@@ -182,6 +185,7 @@ export function backendToProduct(
     // l'écran affirmait donc un héritage qu'il n'avait pas lu.
     channelsOverride: product.channelOverride,
     vatByContext: product.vatByContext,
+    operationOnly: product.operationOnly,
     slug: product.slug,
     ...(price === null || price === undefined ? {} : { priceEur: price / 100 }),
     ...(weight === null || weight === undefined ? {} : { weightGrams: weight }),
@@ -492,6 +496,16 @@ export class ProductHttpApi {
       priceCents: input.priceEur === undefined ? null : Math.round(input.priceEur * 100),
       weightGrams: input.weightGrams === undefined ? null : input.weightGrams,
     });
+  }
+
+  /**
+   * **Vendu seulement pendant une opération** — une écriture à part, journalisée
+   * par le serveur (`product.operation_only_changed`), hors de l'enregistrement
+   * des sections : le drapeau n'appartient à aucune d'elles.
+   */
+  async setOperationOnly(id: string, operationOnly: boolean): Promise<void> {
+    const payload: SetProductOperationOnlyPayload = { operationOnly };
+    await this.put(`products/${id}/operation-only`, payload);
   }
 
   private async put(path: string, body: unknown): Promise<void> {

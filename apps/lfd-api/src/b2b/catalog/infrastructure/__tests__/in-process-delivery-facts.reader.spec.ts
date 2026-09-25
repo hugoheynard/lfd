@@ -36,6 +36,7 @@ function facts(sku: string, over: Partial<PimFacts> = {}): PimFacts {
     note: null,
     image: null,
     thumbnail: null,
+    operationOnly: false,
     receivedAt: RECU_LE,
     ...over,
   };
@@ -56,6 +57,7 @@ function snapshot(variants: readonly { sku: string; priceMillicents?: number }[]
       note: null,
       image: null,
       thumbnail: null,
+      operationOnly: false,
       variants: [
         {
           id: `var_${variant.sku}`,
@@ -74,6 +76,7 @@ function snapshot(variants: readonly { sku: string; priceMillicents?: number }[]
       ],
     })),
     orderTimeLimits: [],
+    operations: [],
   };
 }
 

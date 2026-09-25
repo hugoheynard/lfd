@@ -13,6 +13,7 @@ import { ClientCart } from '../cart/client-cart.service';
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
 import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
 import { ServicePoints } from '../shop/pickup-points.store';
+import { CartFulfillmentDays } from '../shop/cart-fulfillment-days.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { AccueilPublic } from './accueil-public';
 
@@ -150,6 +151,8 @@ async function mount(
       },
       { provide: ClientOrderHistory, useValue: { orders: signal(orders) } },
       { provide: ShopCatalogue, useValue: boutique },
+      // Les jours bornés par le panier ne sont pas le sujet de l'accueil.
+      { provide: CartFulfillmentDays, useValue: {} },
       { provide: ClientCart, useValue: boutique },
       ...whoProviders(who),
     ],
@@ -241,6 +244,7 @@ describe('AccueilPublic — ce qu’il refuse de dire', () => {
         { provide: ClientFeatureAccess, useValue: { shop: signal('order' as const) } },
         { provide: ClientOrderHistory, useValue: { orders: signal([]) } },
         { provide: ShopCatalogue, useValue: new FakeShop([]) },
+        { provide: CartFulfillmentDays, useValue: {} },
         { provide: ClientCart, useValue: new FakeShop([]) },
         ...whoProviders('visiteur'),
       ],

@@ -12,6 +12,7 @@ import { UnknownExcludedSkuError } from "../../domain/errors/catalog-errors.js";
 import { CatalogDeliveryAcceptedEvent } from "../../domain/events/catalog-delivery.events.js";
 import { CatalogDeliveryRepository } from "../../domain/ports/catalog-delivery.repository.js";
 import { CatalogItemRepository } from "../../domain/ports/catalog-item.repository.js";
+import { CatalogOperationRepository } from "../../domain/ports/catalog-operation.repository.js";
 import { CatalogVersionRepository } from "../../domain/ports/catalog-version.repository.js";
 import { IngestCatalogService } from "../ingest-catalog.service.js";
 import { AcceptDeliveryCommand } from "./accept-delivery.command.js";
@@ -79,6 +80,7 @@ export class AcceptDeliveryHandler implements ICommandHandler<AcceptDeliveryComm
   constructor(
     private readonly deliveries: CatalogDeliveryRepository,
     private readonly items: CatalogItemRepository,
+    private readonly operations: CatalogOperationRepository,
     private readonly versions: CatalogVersionRepository,
     private readonly ingest: IngestCatalogService,
     private readonly clock: Clock,
@@ -145,6 +147,9 @@ export class AcceptDeliveryHandler implements ICommandHandler<AcceptDeliveryComm
         createdAt: acceptedAt,
         createdBy: command.acceptedBy,
         mirror: await this.items.loadAll(),
+        // Les opérations aussi, relues après application comme les articles
+        // (D10) : « qu'était-il possible de commander le 20 décembre ? ».
+        operations: await this.operations.loadAllIncludingWithdrawn(),
       }),
     );
     return versionId;

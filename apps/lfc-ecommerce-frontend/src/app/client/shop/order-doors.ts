@@ -137,6 +137,7 @@ export class OrderDoors {
       // La journée vient du SERVEUR, heure limite comprise. `null` = aucune
       // journée demandable ici, et le dialogue le dit plutôt que d'en inventer.
       firstDay: this.points.nextDayFor(pickupAddressId),
+      lastDay: this.points.lastDay(),
     }).closed;
     if (slot === undefined) {
       return false;

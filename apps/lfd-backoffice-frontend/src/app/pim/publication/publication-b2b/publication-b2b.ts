@@ -27,6 +27,7 @@ const CHANGES: Readonly<Record<string, string>> = {
   added: 'entre',
   changed: 'change',
   unchanged: 'inchangé',
+  withdrawn: 'retirée',
 };
 
 /**
@@ -92,6 +93,17 @@ export class PublicationB2b {
   );
 
   /**
+   * Les opérations datées que l'envoi fait entrer, change ou retire.
+   *
+   * Elles manquaient : une opération préparée au référentiel ne change aucun
+   * article, et l'écran disait « la boutique est à jour » en grisant l'envoi —
+   * elle ne pouvait jamais partir (constaté le 2026-09-24).
+   */
+  protected readonly movingOperations = computed(() =>
+    (this.preview()?.operations ?? []).filter((operation) => operation.change !== 'unchanged'),
+  );
+
+  /**
    * Ce que l'envoi ne toucherait pas — le gros du catalogue.
    *
    * Listé, mais **replié** : c'est la réponse à « et le reste ? », qu'on se pose
@@ -104,7 +116,7 @@ export class PublicationB2b {
   );
 
   /**
-   * La synthèse, en tête — les cinq nombres qui répondent avant tout détail.
+   * La synthèse, en tête — les six nombres qui répondent avant tout détail.
    *
    * Un `0` s'affiche comme les autres : une ligne absente se lirait « pas
    * calculé », alors qu'elle dit « rien dans cette catégorie ».
@@ -117,6 +129,7 @@ export class PublicationB2b {
       { label: 'Retirés', value: view?.removed.length ?? 0 },
       { label: 'Inchangés', value: this.steady().length },
       { label: 'Écartés', value: view?.excluded.length ?? 0 },
+      { label: 'Opérations', value: this.movingOperations().length },
     ];
   });
 
@@ -126,14 +139,17 @@ export class PublicationB2b {
   }
 
   /**
-   * Rien ne bouge : ni entrée, ni changement, ni retrait.
+   * Rien ne bouge : ni entrée, ni changement, ni retrait — d'article ou d'opération.
    *
    * `parity.inSync` répondrait presque, mais pas tout à fait — il compte aussi
    * les écarts de nom, qu'un envoi corrige au même titre. On lit donc ce qu'on
    * affiche, plutôt qu'un booléen calculé sur un périmètre voisin.
    */
   protected readonly settled = computed(
-    () => this.moving().length === 0 && (this.preview()?.removed.length ?? 0) === 0,
+    () =>
+      this.moving().length === 0 &&
+      (this.preview()?.removed.length ?? 0) === 0 &&
+      this.movingOperations().length === 0,
   );
 
   /** Replié d'entrée, et rouvert par le lecteur seul. */
@@ -200,6 +216,7 @@ export class PublicationB2b {
         entering: this.countOf('added'),
         changing: this.countOf('changed'),
         removing: view.removed.length,
+        operations: this.movingOperations().length,
       },
       width: 'md',
     }).closed;

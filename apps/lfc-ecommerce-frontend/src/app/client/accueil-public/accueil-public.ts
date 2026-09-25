@@ -33,6 +33,7 @@ import { formatHour } from '../format-hour';
 import { MOCK_EVENT } from '../mock-event';
 import { bestPickupDiscount, discountLabel, pickupOffer } from '../shop/pickup-discount';
 import { OrderDoors } from '../shop/order-doors';
+import { CartFulfillmentDays } from '../shop/cart-fulfillment-days.service';
 import { ServicePoints } from '../shop/pickup-points.store';
 import { PublicHousePickerDialog } from '../shop/public-house-picker-dialog/public-house-picker-dialog';
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
@@ -455,6 +456,9 @@ export class AccueilPublic {
   );
 
   constructor() {
+    // Les jours proposés suivent les articles d'opération du panier (D6) :
+    // les deux écrans qui ouvrent le choix de l'heure le démarrent.
+    inject(CartFulfillmentDays);
     const chrome = inject(ClientChrome);
     chrome.kicker.set(this.c().kicker);
     // Le menu suit la RECONNAISSANCE. Un visiteur n'en a pas : la barre lui
@@ -542,6 +546,7 @@ export class AccueilPublic {
       // La journée vient du SERVEUR, heure limite comprise. `null` = aucune
       // journée demandable ici, et le dialogue le dit plutôt que d'en inventer.
       firstDay: this.points.nextDayFor(house.point.id),
+      lastDay: this.points.lastDay(),
     });
     const slot = await ref.closed;
     if (slot === undefined) {

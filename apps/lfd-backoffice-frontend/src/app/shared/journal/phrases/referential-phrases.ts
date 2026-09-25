@@ -265,6 +265,23 @@ function sheetSaved(what: string): Phrase {
  * famille ») et se consomme ; une matrice propre reste au détail, point de
  * vente par point de vente.
  */
+/**
+ * « … a réservé « Bûche » aux opérations » / « … a rendu « Bûche » à la vente
+ * courante » (D3 du plan des opérations datées, lot 2, 2026-09-24).
+ */
+function operationOnlyChanged(fact: PhraseFact): Said {
+  const reserved = fact.payload['to'] === true;
+  return byActor(
+    fact,
+    [
+      text(reserved ? 'a réservé ' : 'a rendu '),
+      ...theSubject(fact, PRODUCT),
+      text(reserved ? ' aux opérations datées' : ' à la vente courante'),
+    ],
+    ['subjectLabel', 'from', 'to'],
+  );
+}
+
 function channelsChanged(fact: PhraseFact): Said {
   const p = fact.payload;
   if (p['to'] === 'inherited') {
@@ -317,6 +334,7 @@ export const REFERENTIAL_PHRASES = {
   'product.editorial_saved': sectionSaved('les textes', OF_PRODUCT, 'names'),
   'product.media_saved': sectionSaved('les visuels', OF_PRODUCT, 'none'),
   'product.channels_changed': channelsChanged,
+  'product.operation_only_changed': operationOnlyChanged,
   'product.declared_ready': onProduct('a déclaré', ' prête à publier'),
   'product.published': onSale('a publié', ' au catalogue'),
   'product.unpublished': onSale('a retiré de la vente', ''),

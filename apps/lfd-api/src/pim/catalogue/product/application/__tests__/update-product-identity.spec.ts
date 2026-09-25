@@ -123,6 +123,7 @@ function tart(): OneProduct {
     ],
     vatByContext: {},
     channelOverride: null,
+    operationOnly: false,
   });
 }
 

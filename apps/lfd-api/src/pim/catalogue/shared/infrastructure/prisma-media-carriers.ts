@@ -6,8 +6,13 @@ import { optionalLocalizedColumn as localizedOf } from "./json-readers.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 
 /**
- * Ce que le RÉFÉRENTIEL répond à la médiathèque : combien de ses fiches et de
- * ses familles affichent chacune de ces images.
+ * Ce que le RÉFÉRENTIEL répond à la médiathèque : combien de ses fiches, de
+ * ses familles et de ses opérations datées affichent chacune de ces images.
+ *
+ * Les opérations depuis le 2026-09-24 (plan des opérations datées, lot 1) :
+ * leur image paraît dans l'annonce de la boutique. Une opération ARCHIVÉE
+ * compte encore — elle garde son image, et la supprimer laisserait une ligne
+ * de l'historique pointer vers rien.
  *
  * Le comptage se fait par `media_url` et non par l'identifiant d'actif : c'est
  * l'URL qui est l'identité d'une image, et c'est elle que la bibliothèque
@@ -27,9 +32,10 @@ export class PrismaMediaCarriers extends MediaCarriers {
     if (wanted.length === 0) {
       return new Map();
     }
-    // Les DEUX porteurs, et l'oubli du second ne se serait vu qu'en production :
-    // l'écran aurait proposé de supprimer une image qu'une famille affiche.
-    const [byProduct, byCategory] = await Promise.all([
+    // Les TROIS porteurs, et l'oubli d'un seul ne se serait vu qu'en
+    // production : l'écran aurait proposé de supprimer une image qu'une
+    // famille, ou l'annonce de Noël, affiche.
+    const [byProduct, byCategory, byOperation] = await Promise.all([
       this.prisma.productMedia.groupBy({
         by: ["mediaUrl"],
         where: { mediaUrl: { in: wanted } },
@@ -40,14 +46,24 @@ export class PrismaMediaCarriers extends MediaCarriers {
         where: { mediaUrl: { in: wanted } },
         _count: { _all: true },
       }),
+      this.prisma.operation.groupBy({
+        by: ["imageUrl"],
+        where: { imageUrl: { in: wanted } },
+        _count: { _all: true },
+      }),
     ]);
 
     const counts = new Map<string, number>();
-    for (const group of [...byProduct, ...byCategory]) {
-      if (group.mediaUrl === null) {
-        continue;
+    const add = (url: string | null, uses: number): void => {
+      if (url !== null) {
+        counts.set(url, (counts.get(url) ?? 0) + uses);
       }
-      counts.set(group.mediaUrl, (counts.get(group.mediaUrl) ?? 0) + group._count._all);
+    };
+    for (const group of [...byProduct, ...byCategory]) {
+      add(group.mediaUrl, group._count._all);
+    }
+    for (const group of byOperation) {
+      add(group.imageUrl, group._count._all);
     }
     return counts;
   }
@@ -55,9 +71,10 @@ export class PrismaMediaCarriers extends MediaCarriers {
   /**
    * Les porteurs d'UNE image, nommés.
    *
-   * Deux lectures, une par table, parce que les deux porteurs n'ont ni le même
-   * écran ni le même nom de colonne. Les fiches d'abord : c'est le cas
-   * fréquent, et l'ordre de la liste est l'ordre dans lequel on cherchera.
+   * Une lecture par table, parce que les porteurs n'ont ni le même écran ni le
+   * même nom de colonne. Les fiches d'abord : c'est le cas fréquent, et
+   * l'ordre de la liste est l'ordre dans lequel on cherchera. Les opérations
+   * en dernier, sous leur CLÉ comme identifiant.
    *
    * ⚠️ **Un porteur peut apparaître deux fois** si la même image y tient deux
    * RÔLES — la clé primaire est `(porteur, url, rôle)`. On dédoublonne donc par
@@ -66,7 +83,7 @@ export class PrismaMediaCarriers extends MediaCarriers {
    * et ferait croire à un doublon de catalogue.
    */
   async carriersOf(url: string): Promise<readonly Carrier[]> {
-    const [products, categories] = await Promise.all([
+    const [products, categories, operations] = await Promise.all([
       this.prisma.productMedia.findMany({
         where: { mediaUrl: url },
         select: { productId: true, product: { select: { name: true } } },
@@ -74,6 +91,11 @@ export class PrismaMediaCarriers extends MediaCarriers {
       this.prisma.categoryMedia.findMany({
         where: { mediaUrl: url },
         select: { categoryId: true, category: { select: { name: true } } },
+      }),
+      this.prisma.operation.findMany({
+        where: { imageUrl: url },
+        select: { key: true, name: true },
+        orderBy: { key: "asc" },
       }),
     ]);
 
@@ -90,6 +112,13 @@ export class PrismaMediaCarriers extends MediaCarriers {
         kind: "category",
         id: row.categoryId,
         label: labelOf(row.category.name, row.categoryId),
+      });
+    }
+    for (const row of operations) {
+      carriers.set(`operation:${row.key}`, {
+        kind: "operation",
+        id: row.key,
+        label: labelOf(row.name, row.key),
       });
     }
     return [...carriers.values()];

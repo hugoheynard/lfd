@@ -49,7 +49,11 @@
         <span class="price-ht">{{ showsTtc() ? t().shop.ttcSuffix : t().shop.htSuffix }}</span>
       </span>
 
-      @if (orderable()) {
+      @if (gate().label; as closedLabel) {
+        <!-- Un article d'opération pas encore (ou plus) ouverte : l'état prend la
+             place du « + » — l'ajouter ferait un panier que la caisse refuse. -->
+        <fold-badge variant="neutral" [content]="closedLabel" />
+      } @else if (orderable()) {
         <!-- UN seul geste, aux deux densités : il ajoute, et porte la quantité
              une fois l'article au panier. Le retrait se fait dans la fiche. -->
         <button

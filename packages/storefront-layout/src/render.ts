@@ -22,6 +22,8 @@ export type RenderableContent =
       readonly kind: "info";
       readonly title: { readonly fr: string };
       readonly image: { readonly url: string } | null;
+      /** Une annonce liée à une opération datée — absent chez un éditeur d'avant. */
+      readonly operationKey?: string | null | undefined;
     };
 
 /**
@@ -29,7 +31,12 @@ export type RenderableContent =
  *
  * - un **produit**, si le catalogue sert encore son SKU (D4) ;
  * - une **info**, si elle a un titre en français. L'image est facultative :
- *   sans elle, c'est une annonce en texte sur le fond de son ton.
+ *   sans elle, c'est une annonce en texte sur le fond de son ton ;
+ * - une **info liée à une opération**, toujours : son titre vide est HÉRITÉ
+ *   de l'opération. Que l'opération soit montrée ou non, c'est le serveur
+ *   qui le décide à la lecture — il omet l'annonce d'une opération éteinte
+ *   (D11 de `documentation/order/architecture-operations-datees.md`), et ce
+ *   qui arrive en boutique porte déjà le titre hérité.
  *
  * 🔴 Jusqu'au 2026-09-24, une info sans image était « vide » et rendait ses
  * cases au rayon : les deux premières infos composées en dev (« Tes », « 2 »)
@@ -42,6 +49,9 @@ export function isContentRenderable(
 ): boolean {
   if (content.kind === "product") {
     return servedSkus.has(content.sku);
+  }
+  if (content.operationKey !== undefined && content.operationKey !== null) {
+    return content.operationKey !== "";
   }
   return content.title.fr.trim() !== "";
 }

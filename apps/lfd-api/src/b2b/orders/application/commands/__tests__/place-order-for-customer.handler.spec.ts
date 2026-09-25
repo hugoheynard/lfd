@@ -38,6 +38,8 @@ import { CustomerAudiences } from "../../services/customer-audiences.service.js"
 import { DeliveryAvailabilityReader } from "../../../../delivery-availability/domain/ports/delivery-availability.reader.js";
 import { DEFAULT_DELIVERY_AVAILABILITY, type DeliveryAvailabilityView } from "@lfd/contracts";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
+import { OrderOperations } from "../../services/order-operations.service.js";
+import { noSaleOperations } from "../../../../catalog/application/__tests__/sale-operations-doubles.js";
 import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
@@ -334,6 +336,7 @@ function handler(
       noWaivers,
       noLateFee,
       new CustomerAudiences(guardDouble),
+      new OrderOperations(noSaleOperations(PRICED_AT)),
     ),
     repo(sink),
     options.payments ?? payments(),
@@ -565,6 +568,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         noWaivers,
         noLateFee,
         new CustomerAudiences(guard("orders")),
+        new OrderOperations(noSaleOperations(PRICED_AT)),
       ),
       repo(sink),
       payments(intents),

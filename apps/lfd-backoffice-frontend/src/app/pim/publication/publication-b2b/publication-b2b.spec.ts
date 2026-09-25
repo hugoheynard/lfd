@@ -49,8 +49,10 @@ function preview(over: Partial<B2bPushPreviewView> = {}): B2bPushPreviewView {
       priceGaps: [],
       vatGaps: [],
       nameGaps: [],
+      operationOnlyGaps: [],
       inSync: false,
     },
+    operations: [],
     ...over,
   };
 }
@@ -222,7 +224,14 @@ describe('la publication B2B lit son aperçu toute seule', () => {
     const figures = [...fixture.nativeElement.querySelectorAll('.figures > div')].map(
       (node: Element) => node.textContent?.replace(/\s+/g, ' ').trim(),
     );
-    expect(figures).toEqual(['Entrent1', 'Changent1', 'Retirés1', 'Inchangés1', 'Écartés1']);
+    expect(figures).toEqual([
+      'Entrent1',
+      'Changent1',
+      'Retirés1',
+      'Inchangés1',
+      'Écartés1',
+      'Opérations0',
+    ]);
   });
 
   /**
@@ -271,12 +280,47 @@ describe('la publication B2B lit son aperçu toute seule', () => {
         priceGaps: [],
         vatGaps: [],
         nameGaps: [],
+        operationOnlyGaps: [],
         inSync: true,
       },
     });
     const { buttonNamed } = await make(api);
 
     expect(buttonNamed('Envoyer…').disabled).toBe(true);
+  });
+
+  /**
+   * Régression (2026-09-24) : une opération préparée au PIM ne changeait aucun
+   * article, l'écran disait « la boutique est à jour » et grisait « Envoyer… » —
+   * l'opération ne pouvait jamais partir.
+   */
+  it('arme l’envoi quand seule une opération change, et la nomme', async () => {
+    const api = new FakeApi();
+    api.next = preview({
+      outgoing: [
+        {
+          sku: 'CHO-001',
+          name: 'Gros florentin lait',
+          priceMillicents: 250_000,
+          vatRatePercent: 5.5,
+          change: 'unchanged',
+        },
+      ],
+      operations: [
+        { key: 'noel-2026', name: 'Noël', change: 'added' },
+        { key: 'paques-2026', name: 'Pâques', change: 'withdrawn' },
+        { key: 'rentree-2026', name: 'Rentrée', change: 'unchanged' },
+      ],
+    });
+    const { fixture, buttonNamed } = await make(api);
+
+    const text: string = fixture.nativeElement.textContent;
+    expect(buttonNamed('Envoyer…').disabled).toBe(false);
+    expect(text).not.toContain('La boutique est à jour');
+    expect(text).toContain('Noël');
+    expect(text).toContain('Pâques');
+    expect(text).toContain('retirée');
+    expect(text).not.toContain('Rentrée');
   });
 
   /** Ce que la simulation ne pouvait pas voir : ce que l'envoi RETIRE. */

@@ -1,0 +1,94 @@
+/// **Le miroir des opérations datées** — ce que le référentiel a livré de
+/// Noël, de Pâques, de la galette (fil v11, D10 de
+/// `documentation/order/architecture-operations-datees.md`).
+///
+/// Un miroir, pas une copie de travail : le commerce ne crée pas d'opération
+/// et n'y ajoute rien (D1). Il la RESTREINT à la réception, dans
+/// `catalog_operation_overrides`.
+///
+/// 🔴 **Une opération disparue d'un envoi n'est PAS supprimée** : elle reçoit
+/// `withdrawn_at`, comme un article. Une clé ne se réemploie jamais, et la
+/// surcharge garde ainsi son parent — l'écran de réception la montre
+/// « opération retirée ».
+///
+/// Une clé en texte, jamais une clé étrangère vers `pim.operations` : une FK
+/// inter-schémas est interdite (CLAUDE.md § 1).
+model CatalogOperation {
+  key String @id
+
+  /// `{ fr, en?, it? }` — l'annonce est en trois langues (D10).
+  name Json
+  lede Json?
+
+  imageUrl String? @map("image_url")
+  imageAlt String? @map("image_alt")
+
+  announceFrom DateTime  @map("announce_from") @db.Timestamptz(3)
+  orderFrom    DateTime? @map("order_from") @db.Timestamptz(3)
+  orderUntil   DateTime  @map("order_until") @db.Timestamptz(3)
+
+  /// Des JOURS, rangés en `DATE` : une commande porte un jour de retrait.
+  pickupFrom  DateTime @map("pickup_from") @db.Date
+  pickupUntil DateTime @map("pickup_until") @db.Date
+
+  /// `pro` | `public` | `both`, tel que le référentiel l'a décidé.
+  audience String
+
+  /// Quand l'envoi qui l'a écrite a été émis.
+  receivedAt  DateTime  @map("received_at") @db.Timestamptz(3)
+  /// Quand elle a disparu d'un envoi accepté, ou `NULL` si elle est tenue.
+  withdrawnAt DateTime? @map("withdrawn_at") @db.Timestamptz(3)
+
+  items    CatalogOperationItem[]
+  override CatalogOperationOverride?
+
+  @@map("catalog_operations")
+  @@schema("public")
+}
+
+/// Un article de la sélection reçue, à son rang. Le SKU est une référence du
+/// miroir des articles portée en texte : l'envoi ne transporte que des SKU
+/// qu'il porte aussi, mais un article retiré plus tard ne doit pas emporter
+/// la sélection d'une opération retirée qu'on relit.
+model CatalogOperationItem {
+  operationKey String @map("operation_key")
+  sku          String
+  position     Int
+
+  operation CatalogOperation @relation(fields: [operationKey], references: [key], onDelete: Restrict)
+
+  @@id([operationKey, sku])
+  @@map("catalog_operation_items")
+  @@schema("public")
+}
+
+/// Ce que **la plateforme** décide d'une opération reçue — restreindre,
+/// jamais étendre (D9).
+///
+/// Elle ne se vérifie PAS contre le référentiel à l'écriture : elle se
+/// COMBINE à la lecture. La clôture appliquée est `min(PIM, surcharge)`, la
+/// clientèle l'intersection. Un envoi qui avance la date du référentiel ne
+/// rend donc jamais la surcharge « plus tardive », et un envoi qui la recule
+/// ne la rend pas fausse.
+///
+/// `NULL` sur un champ = on garde ce que le référentiel a dit.
+model CatalogOperationOverride {
+  operationKey String           @id @map("operation_key")
+  operation    CatalogOperation @relation(fields: [operationKey], references: [key], onDelete: Restrict)
+
+  /// Ne pas tenir l'opération du tout.
+  isHidden   Boolean   @default(false) @map("is_hidden")
+  /// Fermer la commande plus tôt que le référentiel.
+  orderUntil DateTime? @map("order_until") @db.Timestamptz(3)
+  /// Restreindre la clientèle (`pro` | `public` | `both`).
+  audience   String?
+  /// Les articles retirés de la sélection, ici seulement.
+  hiddenSkus String[]  @default([]) @map("hidden_skus")
+
+  /// Qui a décidé, et quand. Un `StaffUser.id`, jamais une clé étrangère.
+  decidedBy String?  @map("decided_by")
+  decidedAt DateTime @map("decided_at") @db.Timestamptz(3)
+
+  @@map("catalog_operation_overrides")
+  @@schema("public")
+}

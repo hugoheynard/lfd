@@ -400,6 +400,13 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
     }),
     [productChannelsV1],
   ),
+  /**
+   * La fiche est réservée aux opérations (`to: true`), ou rendue à la vente
+   * courante (`to: false`) — D3 du plan des opérations datées.
+   */
+  "product.operation_only_changed": fact(
+    payload({ subjectLabel: subjectLabel(), from: z.boolean(), to: z.boolean() }),
+  ),
   "product.vat_changed": fact(vatChanged(), [vatByContextV1(), vatChangedLotB()]),
   "product.declared_ready": labelled(skuAndName()),
   "product.published": labelled(productOnSale()),

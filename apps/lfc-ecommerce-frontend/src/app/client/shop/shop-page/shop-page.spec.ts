@@ -14,6 +14,7 @@ import { FR } from '../../../client/copy/fr';
 import { COMMAND_TERMS_FR } from '../../copy/screens/command-terms.copy';
 import { ClientChrome } from '../../client-chrome.service';
 import { AuthFacade } from '../../../auth/auth.facade';
+import { provideWorkspace, workspaceDouble } from '../../client-workspace.fixture';
 import { NOEL, storefrontObject } from '../storefront/storefront.fixture';
 import { ShopPage } from './shop-page';
 
@@ -47,7 +48,14 @@ describe('ShopPage', () => {
     localStorage.clear();
     TestBed.configureTestingModule({
       imports: [ShopPage],
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        // Une personne reconnue (le contournement d'Auth0 des suites), en perso :
+        // la vitrine se lit alors par `/mine`, dès que l'espace est connu.
+        provideWorkspace(workspaceDouble()),
+      ],
     });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
     TestBed.inject(OrderContextStore).choice.set({
@@ -117,7 +125,7 @@ describe('ShopPage', () => {
     const info = (): Element | null => el().querySelector('app-info-card');
     const storefront = (key: string) =>
       TestBed.inject(HttpTestingController).expectOne((request) =>
-        request.url.endsWith(`/shop/storefront/${key}`),
+        request.url.endsWith(`/shop/storefront/${key}/mine`),
       );
 
     async function settle(): Promise<void> {

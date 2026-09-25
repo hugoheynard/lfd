@@ -86,6 +86,16 @@ export const PRO_PRICE_METHOD = domain('méthode du prix professionnel (toutes)'
   remise_apres_tva_max: 'Remise après plus haute TVA possible',
 });
 
+/**
+ * La clientèle d'une opération datée (`operation.*`, D7 du plan
+ * `documentation/order/architecture-operations-datees.md`, 2026-09-24).
+ */
+export const OPERATION_AUDIENCE = domain('clientèle d’une opération', {
+  pro: 'Professionnels',
+  public: 'Particuliers',
+  both: 'Professionnels et particuliers',
+});
+
 export const REFERENTIAL_VALUES: ValueFamily = {
   enums: [
     PRODUCT_KIND,
@@ -94,6 +104,7 @@ export const REFERENTIAL_VALUES: ValueFamily = {
     POINT_OF_SALE_KIND,
     PUSH_CHANNEL,
     PRO_PRICE_METHOD_WRITTEN,
+    OPERATION_AUDIENCE,
   ],
   literals: {
     // Une fiche qui n'a pas sa propre matrice de canaux suit celle de sa famille.

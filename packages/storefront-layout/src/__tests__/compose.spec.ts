@@ -178,6 +178,17 @@ describe("aucune case n'est jamais vide", () => {
     expect(hasComposedObject(cells)).toBe(false);
   });
 
+  it("une annonce liée à une opération se pose, son titre vide étant hérité", () => {
+    const skus = shelf(2);
+    const linked = object({
+      id: "o",
+      contents: [{ ...infoWithoutTitle, operationKey: "noel-2026" }],
+    });
+    const cells = composeShelf({ rows: 1, objects: [linked] }, skus, served(skus));
+
+    expect(hasComposedObject(cells)).toBe(true);
+  });
+
   it("un objet à plusieurs contenus perd ceux qui ne s'affichent plus, et garde les autres", () => {
     const skus = shelf(3);
     const mixed = object({

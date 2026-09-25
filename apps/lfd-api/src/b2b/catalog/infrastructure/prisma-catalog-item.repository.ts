@@ -39,6 +39,7 @@ interface ItemRow {
   readonly orderLimitDaysBefore: number | null;
   readonly orderLimitTime: string | null;
   readonly orderLimitGraceMinutes: number | null;
+  readonly operationOnly: boolean;
   readonly receivedAt: Date;
   readonly withdrawnAt: Date | null;
   readonly override: {
@@ -315,6 +316,7 @@ function toDomain(row: ItemRow): CatalogItem {
       note: row.note,
       image: imageOf(row),
       thumbnail: thumbnailOf(row),
+      operationOnly: row.operationOnly,
       receivedAt: row.receivedAt,
     },
     withdrawnAt: row.withdrawnAt,
@@ -393,6 +395,7 @@ function factsRow(state: CatalogItemState) {
             })),
             incomplete: facts.allergenLabels.incomplete,
           },
+    operationOnly: facts.operationOnly,
     receivedAt: facts.receivedAt,
     // 🔴 Écrit à CHAQUE upsert, et c'est ce qui remet en rayon un article qui
     // revient. Le miroir ne rend plus les retirés, donc un SKU réintroduit

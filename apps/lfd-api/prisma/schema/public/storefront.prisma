@@ -116,6 +116,11 @@ model StorefrontContent {
   imageUrl     String? @map("image_url")
   imageAlt     Json?   @map("image_alt")
   linkShelfKey String? @map("link_shelf_key")
+  /// L'opération datée qu'annonce une info (D11 de
+  /// `architecture-operations-datees.md`) — clé OPAQUE du miroir, sans clé
+  /// étrangère : une opération retirée éteint l'annonce, elle ne la bloque
+  /// pas. Exclusive de `linkShelfKey` ; `title` peut alors manquer (hérité).
+  operationKey String? @map("operation_key")
 
   @@unique([objectId, position])
   @@map("storefront_content")

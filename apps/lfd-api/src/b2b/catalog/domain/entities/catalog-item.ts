@@ -153,6 +153,15 @@ export interface PimFacts {
    * produisait aucun effet. La vitrine retombe alors sur le packshot.
    */
   readonly thumbnail: PimImage | null;
+  /**
+   * **Vendu seulement pendant une opération** (fil v11, D3 du plan des
+   * opérations datées) — un fait de la fiche, descendu sur chaque article.
+   *
+   * `false` pour tout article reçu avant la v11, et c'est exact : aucun n'était
+   * alors réservé aux opérations. ⚠️ Jusqu'au lot 3 du plan, aucun vendeur ne
+   * le lit : le drapeau et la garde partent dans le même merge.
+   */
+  readonly operationOnly: boolean;
   readonly receivedAt: Date;
 }
 
@@ -359,6 +368,10 @@ export class CatalogItem {
 
   get thumbnail(): PimImage | null {
     return this.facts.thumbnail;
+  }
+
+  get operationOnly(): boolean {
+    return this.facts.operationOnly;
   }
 
   get vatRatePercent(): number | null {
