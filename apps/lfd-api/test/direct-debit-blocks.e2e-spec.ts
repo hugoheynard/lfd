@@ -8,12 +8,15 @@ import { randomUUID } from "node:crypto";
  *   BACK-OFFICE (`POST /admin/orders`), exigence de Hugo du 2026-09-25 ;
  * - bloquer / débloquer / lister traversent la contrainte `CHECK` et le
  *   journal, dans la même transaction ;
- * - retirer tout crédit (`grantTerms([])`) lève le blocage.
+ * - retirer tout crédit (`grantTerms([])`) lève le blocage ;
+ * - bloquer / débloquer exigent `b2b_deferred_payment_block:write`, que
+ *   `b2b_accounting:write` ne donne pas (Hugo, 2026-09-25).
  *
  * Plan : `documentation/comptabilite/plan-blocage-prelevement-et-liens-de-paiement.md` §1.
  * Deux frontières doublées : la signature du jeton staff et la passerelle Stripe.
  */
-import type { AccountView, DirectDebitBlockView } from "@lfd/contracts";
+import type { AccountView, DirectDebitBlockView, StaffRole } from "@lfd/contracts";
+import type request from "supertest";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
@@ -36,9 +39,10 @@ const BUYER = "auth0|acheteur-bloque";
 const ROUTE = "/admin/accounting/direct-debit-blocks";
 const REASON = "Rejet SEPA du prélèvement d'août";
 
+/** Le jeton porteur EST le `sub` : chaque suite de rôle a son agent. */
 const stubAdminVerifier = {
-  verify: (): Promise<{ subject: string; scopes: string[] }> =>
-    Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
+  verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
+    Promise.resolve({ subject: token, scopes: [] }),
 };
 
 let intentCounter = 0;
@@ -297,5 +301,66 @@ describe("la contrainte en base", () => {
         data: { directDebitBlockedAt: new Date("2026-09-25T09:00:00.000Z") },
       }),
     ).rejects.toThrow(/companies_direct_debit_block_complete/u);
+  });
+});
+
+/** Une fiche staff active du rôle donné, éventuellement dérogée ; rend son agent. */
+async function staffAs(
+  role: StaffRole,
+  allow: readonly { readonly resource: "b2b_accounting"; readonly action: "read" | "write" }[] = [],
+): Promise<request.Agent> {
+  const sub = `staff-block-${role}`;
+  const user = await ctx.prisma.staffUser.create({
+    data: {
+      firstName: "Test",
+      lastName: role,
+      email: `block-${role}@lfc.test`,
+      role,
+      status: "active",
+      auth0Id: sub,
+    },
+  });
+  for (const grant of allow) {
+    await ctx.prisma.staffPermissionOverride.create({
+      data: { staffUserId: user.id, ...grant, effect: "allow" },
+    });
+  }
+  return ctx.asSub(sub);
+}
+
+describe("le droit du geste — `b2b_deferred_payment_block`, pas `b2b_accounting`", () => {
+  it("`b2b_accounting:write` sans le droit du blocage : lit la liste, mais bloquer et débloquer sont refusés (403)", async () => {
+    const { companyId } = await seedCompany(true);
+    const agent = await staffAs("commercial", [
+      { resource: "b2b_accounting", action: "read" },
+      { resource: "b2b_accounting", action: "write" },
+    ]);
+
+    await agent.get(ROUTE).expect(200);
+    await agent.post(`${ROUTE}/${companyId}`).send({ reason: REASON }).expect(403);
+    await block(companyId);
+    await agent.delete(`${ROUTE}/${companyId}`).expect(403);
+
+    const row = await ctx.prisma.company.findUniqueOrThrow({
+      where: { id: companyId },
+      select: { directDebitBlockReason: true },
+    });
+    expect(row.directDebitBlockReason).toBe(REASON);
+  });
+
+  it("la comptabilité bloque et débloque", async () => {
+    const { companyId } = await seedCompany(true);
+    const agent = await staffAs("comptabilite");
+
+    await agent.post(`${ROUTE}/${companyId}`).send({ reason: REASON }).expect(204);
+    await agent.delete(`${ROUTE}/${companyId}`).expect(204);
+  });
+
+  it("l'administrateur bloque et débloque", async () => {
+    const { companyId } = await seedCompany(true);
+    const agent = await staffAs("admin");
+
+    await agent.post(`${ROUTE}/${companyId}`).send({ reason: REASON }).expect(204);
+    await agent.delete(`${ROUTE}/${companyId}`).expect(204);
   });
 });

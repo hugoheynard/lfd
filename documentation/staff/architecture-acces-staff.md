@@ -185,31 +185,32 @@ lisible dans la permission elle-même. Le séparateur est un tiret bas, parce qu
 Prisma refuse le point dans une valeur d'enum et que le deux-points sépare déjà
 ressource et action.
 
-| Outil            | Ressource             | Ce qu'elle couvre                                                                                    |
-| ---------------- | --------------------- | ---------------------------------------------------------------------------------------------------- |
-| **référentiel**  | `pim_catalog`         | les fiches produit, familles, collections                                                            |
-|                  | `pim_channels`        | ce qui **sort** du référentiel : publication, Shopify, la boutique, les révisions                    |
-|                  | `pim_settings`        | les réglages du référentiel                                                                          |
-|                  | `pim_tax`             | la fiscalité : régimes de TVA, règles comptables                                                     |
-| **commerce**     | `b2b_companies`       | les comptes clients                                                                                  |
-|                  | `b2b_orders`          | les commandes, la saisie assistée, le retrait au comptoir                                            |
-|                  | `b2b_subscriptions`   | les abonnements                                                                                      |
-|                  | `b2b_catalog`         | le catalogue **vendu** : prix négocié, masquage, mise en avant                                       |
-|                  | `b2b_pricing`         | la tarification : règles, planchers, gabarits, engagements                                           |
-|                  | `b2b_growth`          | le cockpit commercial, prospects, marché                                                             |
-|                  | `b2b_appointments`    | disponibilités et rendez-vous                                                                        |
-|                  | `b2b_support`         | les demandes des clients                                                                             |
-|                  | `b2b_payments`        | le mandat SEPA **d'un client**                                                                       |
-|                  | `b2b_accounting`      | **notre** identité d'émetteur : entités, identifiant créancier, compte qui reçoit l'argent           |
-|                  | `b2b_alerts`          | les alertes, de compte et globales                                                                   |
-|                  | `b2b_order_waivers`   | les dérogations d'heure limite — accepter une commande en retard                                     |
-|                  | `b2b_feature_access`  | ouvrir, fermer ou mettre en vitrine la boutique                                                      |
-|                  | `b2b_client_notes`    | les notes photo du commercial sur un compte                                                          |
-|                  | `b2b_settings`        | les réglages du commerce : zones, points de retrait, contenu                                         |
-| **socle**        | `staff_access`        | l'annuaire, les invitations, les rôles — **le droit qui permet de se donner tous les autres**        |
-|                  | `staff_notifications` | la cloche du back-office                                                                             |
-| **exploitation** | `ops_health`          | la carte de santé                                                                                    |
-| _aucun_          | `activity`            | le journal d'activité, qui traverse tous les outils — seule exception au préfixe, écrite comme telle |
+| Outil            | Ressource                    | Ce qu'elle couvre                                                                                    |
+| ---------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **référentiel**  | `pim_catalog`                | les fiches produit, familles, collections                                                            |
+|                  | `pim_channels`               | ce qui **sort** du référentiel : publication, Shopify, la boutique, les révisions                    |
+|                  | `pim_settings`               | les réglages du référentiel                                                                          |
+|                  | `pim_tax`                    | la fiscalité : régimes de TVA, règles comptables                                                     |
+| **commerce**     | `b2b_companies`              | les comptes clients                                                                                  |
+|                  | `b2b_orders`                 | les commandes, la saisie assistée, le retrait au comptoir                                            |
+|                  | `b2b_subscriptions`          | les abonnements                                                                                      |
+|                  | `b2b_catalog`                | le catalogue **vendu** : prix négocié, masquage, mise en avant                                       |
+|                  | `b2b_pricing`                | la tarification : règles, planchers, gabarits, engagements                                           |
+|                  | `b2b_growth`                 | le cockpit commercial, prospects, marché                                                             |
+|                  | `b2b_appointments`           | disponibilités et rendez-vous                                                                        |
+|                  | `b2b_support`                | les demandes des clients                                                                             |
+|                  | `b2b_payments`               | le mandat SEPA **d'un client**                                                                       |
+|                  | `b2b_accounting`             | **notre** identité d'émetteur : entités, identifiant créancier, compte qui reçoit l'argent           |
+|                  | `b2b_deferred_payment_block` | bloquer / débloquer le prélèvement d'une société au crédit (2026-09-25)                              |
+|                  | `b2b_alerts`                 | les alertes, de compte et globales                                                                   |
+|                  | `b2b_order_waivers`          | les dérogations d'heure limite — accepter une commande en retard                                     |
+|                  | `b2b_feature_access`         | ouvrir, fermer ou mettre en vitrine la boutique                                                      |
+|                  | `b2b_client_notes`           | les notes photo du commercial sur un compte                                                          |
+|                  | `b2b_settings`               | les réglages du commerce : zones, points de retrait, contenu                                         |
+| **socle**        | `staff_access`               | l'annuaire, les invitations, les rôles — **le droit qui permet de se donner tous les autres**        |
+|                  | `staff_notifications`        | la cloche du back-office                                                                             |
+| **exploitation** | `ops_health`                 | la carte de santé                                                                                    |
+| _aucun_          | `activity`                   | le journal d'activité, qui traverse tous les outils — seule exception au préfixe, écrite comme telle |
 
 Chaque découpe a sa raison, écrite au-dessus de la valeur dans le contrat.
 Les trois qui comptent le plus :
@@ -235,31 +236,32 @@ propre `RecomputeGuard`, et aucune personne ne s'y authentifie.
 `w` = lecture et écriture · `r` = lecture · `—` = aucun accès. Source :
 `ROLE_GRANTS`.
 
-| Ressource             | `admin` | `commercial` | `comptabilite` | `support` | `dev` |
-| --------------------- | ------- | ------------ | -------------- | --------- | ----- |
-| `pim_catalog`         | w       | r            | r              | —         | r     |
-| `pim_channels`        | w       | —            | —              | —         | —     |
-| `pim_settings`        | w       | —            | —              | —         | —     |
-| `pim_tax`             | w       | r            | **w**          | —         | r     |
-| `b2b_companies`       | w       | w            | r              | r         | —     |
-| `b2b_orders`          | w       | w            | w              | r         | —     |
-| `b2b_subscriptions`   | w       | w            | r              | r         | —     |
-| `b2b_catalog`         | w       | **w**        | r              | —         | —     |
-| `b2b_pricing`         | w       | **w**        | r              | —         | —     |
-| `b2b_growth`          | w       | w            | —              | —         | —     |
-| `b2b_appointments`    | w       | w            | —              | w         | —     |
-| `b2b_support`         | w       | w            | —              | w         | —     |
-| `b2b_payments`        | w       | r            | w              | —         | —     |
-| `b2b_accounting`      | w       | —            | **w**          | —         | —     |
-| `b2b_alerts`          | w       | w            | —              | —         | —     |
-| `b2b_order_waivers`   | w       | w            | —              | —         | —     |
-| `b2b_feature_access`  | w       | r            | —              | —         | —     |
-| `b2b_client_notes`    | w       | w            | —              | —         | —     |
-| `b2b_settings`        | w       | r            | r              | —         | r     |
-| `staff_access`        | w       | —            | —              | —         | —     |
-| `staff_notifications` | w       | w            | w              | w         | w     |
-| `ops_health`          | w       | —            | —              | —         | r     |
-| `activity`            | w       | —            | —              | —         | —     |
+| Ressource                    | `admin` | `commercial` | `comptabilite` | `support` | `dev` |
+| ---------------------------- | ------- | ------------ | -------------- | --------- | ----- |
+| `pim_catalog`                | w       | r            | r              | —         | r     |
+| `pim_channels`               | w       | —            | —              | —         | —     |
+| `pim_settings`               | w       | —            | —              | —         | —     |
+| `pim_tax`                    | w       | r            | **w**          | —         | r     |
+| `b2b_companies`              | w       | w            | r              | r         | —     |
+| `b2b_orders`                 | w       | w            | w              | r         | —     |
+| `b2b_subscriptions`          | w       | w            | r              | r         | —     |
+| `b2b_catalog`                | w       | **w**        | r              | —         | —     |
+| `b2b_pricing`                | w       | **w**        | r              | —         | —     |
+| `b2b_growth`                 | w       | w            | —              | —         | —     |
+| `b2b_appointments`           | w       | w            | —              | w         | —     |
+| `b2b_support`                | w       | w            | —              | w         | —     |
+| `b2b_payments`               | w       | r            | w              | —         | —     |
+| `b2b_accounting`             | w       | —            | **w**          | —         | —     |
+| `b2b_deferred_payment_block` | w       | —            | **w**          | —         | —     |
+| `b2b_alerts`                 | w       | w            | —              | —         | —     |
+| `b2b_order_waivers`          | w       | w            | —              | —         | —     |
+| `b2b_feature_access`         | w       | r            | —              | —         | —     |
+| `b2b_client_notes`           | w       | w            | —              | —         | —     |
+| `b2b_settings`               | w       | r            | r              | —         | r     |
+| `staff_access`               | w       | —            | —              | —         | —     |
+| `staff_notifications`        | w       | w            | w              | w         | w     |
+| `ops_health`                 | w       | —            | —              | —         | r     |
+| `activity`                   | w       | —            | —              | —         | —     |
 
 Les choix qui ne se devinent pas :
 

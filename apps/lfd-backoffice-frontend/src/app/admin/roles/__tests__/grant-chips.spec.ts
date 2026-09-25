@@ -59,8 +59,11 @@ describe('grantGroups', () => {
    * `b2b_storefront` l'a fait passer à 25 le 2026-09-24 : composer la vitrine
    * n'est pas régler la plateforme, et la communication doit pouvoir le faire
    * sans ouvrir `b2b_settings` (plan-vitrine-enregistrement.md, D7).
+   *
+   * `b2b_deferred_payment_block` l'a fait passer à 26 le 2026-09-25 :
+   * suspendre le prélèvement d'un client n'est pas ouvrir la comptabilité.
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(25);
+    expect(RESOURCE_COUNT).toBe(26);
   });
 });

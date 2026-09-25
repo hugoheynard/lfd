@@ -110,12 +110,22 @@ autres changements d'accès.
   leur état (bloqué ou non, depuis, par qui, pourquoi). Droit
   `b2b_accounting:read`.
 - `POST /admin/accounting/direct-debit-blocks/:companyId` `{ reason }` — bloque.
-- `DELETE /admin/accounting/direct-debit-blocks/:companyId` — débloque.
+  Droit `b2b_deferred_payment_block:write`.
+- `DELETE /admin/accounting/direct-debit-blocks/:companyId` — débloque. Droit
+  `b2b_deferred_payment_block:write`.
 
-Droit : `b2b_accounting` par `@AdminSurface`, dont l'action se déduit du verbe HTTP.
-La donnée vit dans `b2b/account/`, parce que la société y vit. Le contrôleur de
-`account` déclare la ressource `b2b_accounting`, et `accounting` ne lit pas la
-colonne. Le journal s'écrit dans la même unité de travail que la société.
+Droit : la surface déclare `b2b_accounting` par `@AdminSurface` (la liste, en
+lecture), et les deux gestes exigent `b2b_deferred_payment_block:write` par
+`@RequirePermission` sur leur route (Hugo, 2026-09-25 : « bloquer/débloquer le
+prélèvement, c'est rôle comptabilité seulement »). La ressource n'est accordée
+qu'à `admin` et `comptabilite` ; `b2b_accounting:write` ne la donne pas, pour
+qu'une dérogation qui ouvre la comptabilité — relancer un lien de paiement — ne
+porte pas en prime le pouvoir de suspendre le crédit d'un client. L'écran
+masque « Bloquer » / « Débloquer » sans ce droit. Migrations
+`20260925160000_le_blocage_du_prelevement_a_son_droit` (la valeur d'enum, seule)
+et `20260925160100_le_blocage_du_prelevement_est_accorde` (la table des rôles).
+La donnée vit dans `b2b/account/`, parce que la société y vit, et `accounting`
+ne lit pas la colonne. Le journal s'écrit dans la même unité de travail que la société.
 
 ### L'écran — `comptabilite/blocages-prelevement`
 

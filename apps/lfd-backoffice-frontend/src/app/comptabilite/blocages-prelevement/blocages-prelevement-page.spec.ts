@@ -16,7 +16,8 @@ import { BlocagesPrelevementPage } from './blocages-prelevement-page';
  * - chaque colonne rend quelque chose (`fold-data-table` n'a aucun rendu par
  *   défaut) — l'état, l'agent, la raison ;
  * - le filtre « Bloquées » retire les sociétés au prélèvement ;
- * - sans `b2b_accounting:write`, aucun geste ne s'affiche ;
+ * - sans `b2b_deferred_payment_block:write`, aucun geste ne s'affiche — même
+ *   avec `b2b_accounting:write` ;
  * - un refus du serveur s'affiche avec SES mots, et la liste reste à l'écran.
  */
 
@@ -68,7 +69,10 @@ interface Opened {
 
 async function render(
   api: FakeApi,
-  permissions: readonly StaffPermission[] = ['b2b_accounting:read', 'b2b_accounting:write'],
+  permissions: readonly StaffPermission[] = [
+    'b2b_accounting:read',
+    'b2b_deferred_payment_block:write',
+  ],
   opened: Opened[] = [],
   answer: boolean | undefined = undefined,
 ): Promise<ComponentFixture<BlocagesPrelevementPage>> {
@@ -155,6 +159,13 @@ describe('BlocagesPrelevementPage', () => {
 
   it('sans droit d’écriture, ni « Bloquer » ni « Débloquer »', async () => {
     const fixture = await render(new FakeApi(), ['b2b_accounting:read']);
+
+    expect(buttons(fixture, 'Bloquer')).toHaveLength(0);
+    expect(buttons(fixture, 'Débloquer')).toHaveLength(0);
+  });
+
+  it('`b2b_accounting:write` ne suffit pas : le geste a son propre droit', async () => {
+    const fixture = await render(new FakeApi(), ['b2b_accounting:read', 'b2b_accounting:write']);
 
     expect(buttons(fixture, 'Bloquer')).toHaveLength(0);
     expect(buttons(fixture, 'Débloquer')).toHaveLength(0);

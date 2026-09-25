@@ -3,7 +3,7 @@
  * société. Le crédit accordé est conservé ; les commandes à venir se règlent
  * par carte. Plan : `documentation/comptabilite/plan-blocage-prelevement-et-liens-de-paiement.md` §1.
  *
- * Aucun mur membership : `@AdminSurface("b2b_accounting")` garde la route.
+ * Aucun mur membership : `b2b_deferred_payment_block:write` garde la route.
  */
 export class BlockDirectDebitCommand {
   constructor(

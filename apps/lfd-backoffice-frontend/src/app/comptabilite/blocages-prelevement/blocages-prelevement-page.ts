@@ -88,8 +88,14 @@ export class BlocagesPrelevementPage {
   protected readonly filters = FILTERS;
   protected readonly filter = signal<BlockFilter>('all');
 
-  /** Écrire demande `b2b_accounting:write` ; sans lui, la colonne d'actions disparaît. */
-  protected readonly canWrite = computed(() => this.permissions.can('b2b_accounting:write'));
+  /**
+   * Bloquer et débloquer demandent `b2b_deferred_payment_block:write` — pas
+   * `b2b_accounting:write`, qui ouvre la comptabilité sans ce geste (Hugo,
+   * 2026-09-25). Sans lui, la colonne d'actions disparaît.
+   */
+  protected readonly canWrite = computed(() =>
+    this.permissions.can('b2b_deferred_payment_block:write'),
+  );
 
   protected readonly columns = computed<readonly FoldTableColumn[]>(() =>
     this.canWrite() ? [...BASE_COLUMNS, { key: 'actions', label: '' }] : BASE_COLUMNS,

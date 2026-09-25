@@ -41,6 +41,7 @@
   "test/customer-mandate-options.e2e-spec.ts": 8746,
   "test/customer-mandate.e2e-spec.ts": 18857,
   "test/customer-sheet.e2e-spec.ts": 13763,
+  "test/deferred-payment-block-roles-migration.e2e-spec.ts": 1600,
   "test/delivery-availability.e2e-spec.ts": 8026,
   "test/delivery-procedure-refusals.e2e-spec.ts": 19104,
   "test/delivery-procedure.e2e-spec.ts": 11841,

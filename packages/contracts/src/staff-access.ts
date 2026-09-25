@@ -139,6 +139,18 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_accounting",
   /**
+   * **Bloquer ou débloquer le prélèvement** d'une société au crédit (Hugo,
+   * 2026-09-25 : « c'est rôle comptabilité seulement »).
+   *
+   * Distincte de `b2b_accounting`, qui ouvre tout l'espace comptable — liens de
+   * paiement, entité émettrice, cycle de facturation. Suspendre le crédit d'un
+   * client change la façon dont il paie ses prochaines commandes ; une
+   * dérogation qui ouvre la comptabilité à quelqu'un pour relancer un lien ne
+   * doit pas lui donner ce geste-là en prime. La LISTE des blocages reste sous
+   * `b2b_accounting:read` : seul le geste est isolé.
+   */
+  "b2b_deferred_payment_block",
+  /**
    * Les **alertes** — de compte et globales.
    *
    * Leurs trois écrans étaient répartis sur trois ressources différentes
@@ -287,6 +299,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_support: "Demandes clients",
   b2b_payments: "Moyens de paiement",
   b2b_accounting: "Comptabilité",
+  b2b_deferred_payment_block: "Blocage du prélèvement",
   b2b_alerts: "Alertes",
   b2b_order_waivers: "Dérogations d'heure limite",
   b2b_feature_access: "Accès aux fonctionnalités",
@@ -363,6 +376,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_support: "write",
     b2b_payments: "write",
     b2b_accounting: "write",
+    b2b_deferred_payment_block: "write",
     b2b_alerts: "write",
     b2b_order_waivers: "write",
     b2b_feature_access: "write",
@@ -426,6 +440,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // Aucun autre rôle que l'administrateur ne l'obtient, pas même le
     // commercial — il n'a rien à faire de l'identifiant créancier.
     b2b_accounting: "write",
+    // Suspendre le prélèvement d'un client est SA décision, et à elle seule
+    // avec l'administrateur (Hugo, 2026-09-25) — pas au commercial.
+    b2b_deferred_payment_block: "write",
     b2b_orders: "write",
     b2b_subscriptions: "read",
     b2b_catalog: "read",
