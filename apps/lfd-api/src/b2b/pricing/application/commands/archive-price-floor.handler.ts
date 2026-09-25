@@ -1,10 +1,10 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { floorScopeKey } from "../../domain/entities/pricing-floor.js";
+import { floorSubjectKey } from "../../domain/entities/pricing-floor.js";
 import { PricingFloorRepository } from "../../domain/ports/pricing-floor.repository.js";
 import { PriceFloorNotFoundError } from "../../domain/pricing-errors.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { describeFloorPolicy, describeScope } from "../../domain/pricing-act.js";
+import { describeFloor, describeScope } from "../../domain/pricing-act.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { scopeNameOf } from "../scope-names.js";
 import { ArchivePriceFloorCommand } from "./archive-price-floor.command.js";
@@ -27,24 +27,24 @@ export class ArchivePriceFloorHandler implements ICommandHandler<ArchivePriceFlo
    */
   async execute(command: ArchivePriceFloorCommand): Promise<void> {
     const now = this.clock.now();
-    const existing = await this.floors.inForceFor(command.scope, now);
+    const existing = await this.floors.inForceFor(command.scope, command.clientele, now);
     if (existing === null) {
-      throw new PriceFloorNotFoundError(command.scope.type, command.scope.id);
+      throw new PriceFloorNotFoundError(command.scope.type, command.scope.id, command.clientele);
     }
     const id = existing.id;
     const act: PricingAct = {
       subjectType: "floor",
-      subjectId: floorScopeKey(command.scope),
+      subjectId: floorSubjectKey(command.scope, command.clientele),
       kind: "archived",
       actor: command.staffUserId,
       at: now,
       reason: command.reason,
-      summary: describeFloorPolicy(existing.toPersistence().policy),
+      summary: describeFloor(command.clientele, existing.toPersistence().policy),
       // Le sujet d'une limite est sa PORTÉE : c'est elle qu'on nomme.
       subjectLabel: describeScope(command.scope, await scopeNameOf(command.scope, this.catalog)),
     };
     if (!(await this.floors.archive(id, act))) {
-      throw new PriceFloorNotFoundError(command.scope.type, command.scope.id);
+      throw new PriceFloorNotFoundError(command.scope.type, command.scope.id, command.clientele);
     }
   }
 }

@@ -1,5 +1,6 @@
 import {
   describeArticleCount,
+  describeFloor,
   describeLadder,
   describeRule,
   describeScope,
@@ -206,5 +207,17 @@ describe("ruleCitations — ce qu'un acte de règle cite d'elle", () => {
     expect(ruleCitations(rule(scope, { type: "company", id: "cmp_1" }), NO_NAMES)).toEqual({
       stage: "promotion",
     });
+  });
+});
+
+describe("la phrase d'une limite nomme sa clientèle", () => {
+  const wall = { hard: { mode: "amount", millicents: 150_000 }, dynamic: null } as const;
+
+  it("dit « Limite pro » devant la politique", () => {
+    expect(describeFloor("pro", wall)).toBe("Limite pro · mur à 1,50 €");
+  });
+
+  it("dit « Limite publique » devant la politique", () => {
+    expect(describeFloor("public", wall)).toBe("Limite publique · mur à 1,50 €");
   });
 });

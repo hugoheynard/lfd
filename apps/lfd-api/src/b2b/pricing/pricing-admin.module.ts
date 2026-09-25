@@ -22,6 +22,9 @@ import { PricingRuleRepository } from "./domain/ports/pricing-rule.repository.js
 import { VolumeLadderRepository } from "./domain/ports/volume-ladder.repository.js";
 import { VolumeCommitmentRepository } from "./domain/ports/volume-commitment.repository.js";
 import { AdminPriceFloorsController } from "./http/admin-price-floors.controller.js";
+import { ListPriceLimitsHandler } from "./application/queries/list-price-limits.handler.js";
+import { PriceLimitsReader } from "./application/ports/price-limits.reader.js";
+import { PrismaPriceLimitsReader } from "./infrastructure/prisma-price-limits.reader.js";
 import { AdminPricingController } from "./http/admin-pricing.controller.js";
 import { AdminPricingJournalController } from "./http/admin-pricing-journal.controller.js";
 import { PrismaPricingBoardReader } from "./infrastructure/prisma-pricing-board.reader.js";
@@ -148,6 +151,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     ListPriceTemplatesHandler,
     GetPriceTemplateHandler,
     ListVolumeCommitmentsHandler,
+    ListPriceLimitsHandler,
     SaveMercurialeDraftHandler,
     DiscardMercurialeDraftHandler,
     // 🔴 **Les trois dernières lectures directes de la couche application.**
@@ -180,6 +184,9 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     // l'onglet Tarifs d'une fiche compte lisaient ces tables chacun de son
     // côté, avec deux clauses `where` — et elles avaient déjà divergé (R21).
     { provide: PricingDecisionsReader, useClass: PrismaPricingDecisionsReader },
+    // Les limites d'UNE clientèle, pro ou publique — la vue Comptabilité. À
+    // part du lecteur ci-dessus, qui ne lit que le pro (plan-limites-de-prix §4).
+    { provide: PriceLimitsReader, useClass: PrismaPriceLimitsReader },
     { provide: PricedCompanyReader, useClass: PrismaPricedCompanyReader },
     { provide: PricedCompanyNamer, useClass: PrismaPricedCompanyNamer },
     { provide: PricingJournalReader, useClass: PrismaPricingJournalReader },

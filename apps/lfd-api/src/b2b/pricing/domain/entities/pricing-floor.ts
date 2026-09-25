@@ -9,10 +9,22 @@ import {
 import type { PriceFloorPolicy } from "../floor-policy.js";
 import type { PriceFloor, PriceScope, ScopedPriceFloor } from "../price-rule.js";
 
+/**
+ * **La clientèle qu'une limite protège** : `pro` ou `public`.
+ *
+ * Elle fait partie de la PORTÉE partout où une limite se cherche (la pose clôt
+ * la précédente, la confirmation et l'archivage la retrouvent) — sans quoi
+ * poser une limite publique fermerait la limite pro de la même portée. Elle
+ * n'entre PAS dans la résolution : les lecteurs choisissent la clientèle, et
+ * `resolve-floor.ts` n'a pas à la connaître.
+ */
+export type FloorClientele = "pro" | "public";
+
 /** L'état persisté d'un plancher posé — le mur, et la porte s'il y en a une. */
 export interface PricingFloorState {
   readonly id: string;
   readonly scope: PriceScope;
+  readonly clientele: FloorClientele;
   readonly policy: PriceFloorPolicy;
   readonly createdBy: string;
   /**
@@ -54,6 +66,23 @@ export function floorScopeKey(scope: PriceScope): string {
   return `${scope.type}:${scope.id ?? ""}`;
 }
 
+/** Le préfixe qui sépare, dans le journal, l'histoire publique de la pro. */
+const PUBLIC_SUBJECT_PREFIX = "public:";
+
+/**
+ * **Le sujet d'une limite dans le journal tarifaire.**
+ *
+ * 🔴 Irréversible dès le premier fait publié (`plan-limites-de-prix.md` §4) :
+ * la clé d'une limite **pro** ne change pas — son historique, écrit quand il
+ * n'y avait qu'une clientèle, reste continu. Celle d'une limite **publique**
+ * est préfixée, pour que l'histoire d'une portée pro ne montre aucun fait
+ * public.
+ */
+export function floorSubjectKey(scope: PriceScope, clientele: FloorClientele): string {
+  const key = floorScopeKey(scope);
+  return clientele === "pro" ? key : `${PUBLIC_SUBJECT_PREFIX}${key}`;
+}
+
 /**
  * **Le plancher, en tant qu'agrégat.**
  *
@@ -71,6 +100,7 @@ export class PricingFloor {
   static pose(
     id: string,
     scope: PriceScope,
+    clientele: FloorClientele,
     policy: PriceFloorPolicy,
     createdBy: string,
     at: Date,
@@ -104,6 +134,7 @@ export class PricingFloor {
     return new PricingFloor({
       id,
       scope,
+      clientele,
       policy,
       createdBy,
       referenceCanonicalMillicents,
@@ -120,6 +151,10 @@ export class PricingFloor {
 
   get id(): string {
     return this.state.id;
+  }
+
+  get clientele(): FloorClientele {
+    return this.state.clientele;
   }
 
   /** La forme que lit la résolution. */

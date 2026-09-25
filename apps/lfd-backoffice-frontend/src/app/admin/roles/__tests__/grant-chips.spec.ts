@@ -68,8 +68,11 @@ describe('grantGroups', () => {
    *
    * `b2b_supervision` l'a fait passer à 28 le 2026-09-25 : regarder la
    * journée entière n'est pas lire les commandes (plan-supervision-du-jour.md).
+   *
+   * `price_limits` l'a fait passer à 29 le 2026-09-26 : poser une limite de
+   * prix n'est pas négocier un prix (plan-limites-de-prix.md §5).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(28);
+    expect(RESOURCE_COUNT).toBe(29);
   });
 });

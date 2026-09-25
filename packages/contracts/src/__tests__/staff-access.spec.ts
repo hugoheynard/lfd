@@ -316,3 +316,28 @@ describe("le comptoir", () => {
     }
   });
 });
+
+describe("les limites de prix", () => {
+  /**
+   * `documentation/comptabilite/plan-limites-de-prix.md` §5, corrigé par Hugo
+   * le 2026-09-25 : les commerciaux n'ont PAS accès au bloc Comptabilité. Qui
+   * price voit la limite pro par le tableau de la Tarification, sous
+   * `b2b_pricing:read` — pas par ce droit.
+   */
+  it("n'ouvre les limites qu'à l'administrateur et à la comptabilité, en écriture", () => {
+    const holders = staffRoleSchema.options.filter((role) =>
+      hasStaffPermission(resolveStaffPermissions(role), "price_limits:read"),
+    );
+
+    expect(holders).toEqual(["admin", "comptabilite"]);
+    expect(ROLE_GRANTS.admin.price_limits).toBe("write");
+    expect(ROLE_GRANTS.comptabilite.price_limits).toBe("write");
+  });
+
+  it("🔴 ne donne pas les limites au commercial, qui écrit pourtant la tarification", () => {
+    const granted = resolveStaffPermissions("commercial");
+
+    expect(hasStaffPermission(granted, "b2b_pricing:write")).toBe(true);
+    expect(hasStaffPermission(granted, "price_limits:read")).toBe(false);
+  });
+});

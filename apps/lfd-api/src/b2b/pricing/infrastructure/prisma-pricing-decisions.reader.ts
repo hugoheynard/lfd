@@ -50,10 +50,16 @@ export class PrismaPricingDecisionsReader extends PricingDecisionsReader {
       // deux écrans n'en montrent qu'une, par un `find` sur la portée. Sans ce
       // filtre, c'est la PREMIÈRE venue : la limite d'avant une re-pose, avec
       // son signal de dérive rallumé sur une limite qu'on venait de revoir.
+      //
+      // 🔴 **Les limites PRO seules** : ce lecteur sert trois écrans pro (le
+      // tableau, le tarif d'un client, les prix affichés) qui trouvent LA
+      // limite d'une portée par un `find`. Une publique y serait la première
+      // venue une fois sur deux (`plan-limites-de-prix.md` §4).
       this.prisma.priceFloor.findMany({
         where: {
           AND: [
             unarchivedAt(at),
+            { clientele: "pro" },
             { validFrom: { lte: at } },
             { OR: [{ validTo: null }, { validTo: { gt: at } }] },
           ],

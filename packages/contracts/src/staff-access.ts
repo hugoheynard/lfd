@@ -175,6 +175,21 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_deferred_payment_block",
   /**
+   * **Les limites de prix** — poser, confirmer, retirer une limite, porte
+   * dynamique comprise, pour la clientèle pro comme pour le public
+   * (`documentation/comptabilite/plan-limites-de-prix.md` §5).
+   *
+   * Détachée de `b2b_pricing` le 2026-09-26 (Hugo) : qui négocie un prix ne
+   * pose plus lui-même la limite sous laquelle il ne descend pas. Accordée à
+   * l'administrateur et à la comptabilité, à elles seules — les commerciaux
+   * n'ont pas accès au bloc Comptabilité, et voient la limite pro par le
+   * tableau de la Tarification B2B, sous `b2b_pricing:read`.
+   *
+   * ⚠️ Sans préfixe d'outil, par décision du plan (le nom a été choisi tel
+   * quel) : l'écran des rôles la range donc sous « Transverse ».
+   */
+  "price_limits",
+  /**
    * Les **alertes** — de compte et globales.
    *
    * Leurs trois écrans étaient répartis sur trois ressources différentes
@@ -338,6 +353,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_payments: "Moyens de paiement",
   b2b_accounting: "Comptabilité",
   b2b_deferred_payment_block: "Blocage du prélèvement",
+  price_limits: "Limites de prix",
   b2b_alerts: "Alertes",
   b2b_order_waivers: "Dérogations d'heure limite",
   b2b_feature_access: "Accès aux fonctionnalités",
@@ -419,6 +435,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_payments: "write",
     b2b_accounting: "write",
     b2b_deferred_payment_block: "write",
+    price_limits: "write",
     b2b_alerts: "write",
     b2b_order_waivers: "write",
     b2b_feature_access: "write",
@@ -455,6 +472,8 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // il ne pouvait ni l'un ni l'autre : la tarification dormait dans
     // `settings: read`, et le catalogue vendu dans `catalog: read`.
     b2b_catalog: "write",
+    // Sans les LIMITES : `price_limits` n'est pas à lui (Hugo, 2026-09-26). Il
+    // voit la limite pro sur le tableau qu'il lit déjà, il ne la pose plus.
     b2b_pricing: "write",
     b2b_growth: "write",
     b2b_appointments: "write",
@@ -488,6 +507,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // Suspendre le prélèvement d'un client est SA décision, et à elle seule
     // avec l'administrateur (Hugo, 2026-09-25) — pas au commercial.
     b2b_deferred_payment_block: "write",
+    // Poser les limites de prix, pro et publiques : c'est elle qui les tient
+    // (Hugo, 2026-09-26), et pas le commercial qui négocie au-dessus.
+    price_limits: "write",
     b2b_orders: "write",
     // Même reconduction que pour le commercial : elle commandait pour un pro
     // depuis le Comptoir, elle le peut toujours (2026-09-25).

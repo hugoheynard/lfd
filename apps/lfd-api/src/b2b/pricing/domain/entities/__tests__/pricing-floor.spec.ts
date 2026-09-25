@@ -1,4 +1,4 @@
-import { PricingFloor, floorScopeKey } from "../pricing-floor.js";
+import { PricingFloor, floorScopeKey, floorSubjectKey } from "../pricing-floor.js";
 import {
   AmountFloorOnBroadScopeError,
   DynamicFloorNotBelowHardError,
@@ -22,6 +22,7 @@ describe("PricingFloor.pose", () => {
     const floor = PricingFloor.pose(
       "flr_1",
       { type: "product", id: "VIE-001" },
+      "pro",
       { hard: { mode: "amount", millicents: 150 }, dynamic: null },
       "auth0|cecile",
       POSED_AT,
@@ -52,6 +53,7 @@ describe("PricingFloor.pose", () => {
     const first = PricingFloor.pose(
       "flr_1",
       scope,
+      "pro",
       wall({ mode: "percent", bp: 6_000 }),
       "a",
       POSED_AT,
@@ -59,6 +61,7 @@ describe("PricingFloor.pose", () => {
     const second = PricingFloor.pose(
       "flr_2",
       scope,
+      "pro",
       wall({ mode: "percent", bp: 4000 }),
       "b",
       POSED_AT,
@@ -81,6 +84,7 @@ describe("PricingFloor.pose", () => {
       PricingFloor.pose(
         "flr_1",
         { type: "global", id: null },
+        "pro",
         wall({ mode: "percent", bp: 5000 }),
         "a",
         POSED_AT,
@@ -94,6 +98,7 @@ describe("PricingFloor.pose", () => {
       PricingFloor.pose(
         "flr_1",
         { type: "global", id: null },
+        "pro",
         wall({ mode: "percent", bp: 10_000 }),
         "a",
         POSED_AT,
@@ -111,6 +116,7 @@ describe("PricingFloor.pose", () => {
       PricingFloor.pose(
         "flr_1",
         { type: "global", id: null },
+        "pro",
         wall({ mode: "percent", bp: 12_000 }),
         "a",
         POSED_AT,
@@ -123,6 +129,7 @@ describe("PricingFloor.pose", () => {
       PricingFloor.pose(
         "flr_1",
         { type: "category", id: null },
+        "pro",
         wall({ mode: "amount", millicents: 100 }),
         "a",
         POSED_AT,
@@ -135,6 +142,7 @@ describe("PricingFloor.pose", () => {
       PricingFloor.pose(
         "flr_1",
         { type: "product", id: "VIE-001" },
+        "pro",
         wall({ mode: "amount", millicents: 0 }),
         "a",
         POSED_AT,
@@ -154,6 +162,7 @@ describe("la porte", () => {
       PricingFloor.pose(
         "flr_1",
         scope,
+        "pro",
         {
           hard: HARD,
           dynamic: {
@@ -177,6 +186,7 @@ describe("la porte", () => {
       PricingFloor.pose(
         "flr_1",
         scope,
+        "pro",
         {
           hard: HARD,
           dynamic: {
@@ -196,6 +206,7 @@ describe("la porte", () => {
       PricingFloor.pose(
         "flr_1",
         scope,
+        "pro",
         {
           hard: HARD,
           dynamic: {
@@ -219,6 +230,7 @@ describe("la porte", () => {
       PricingFloor.pose(
         "flr_1",
         scope,
+        "pro",
         {
           hard: HARD,
           dynamic: {
@@ -245,13 +257,27 @@ describe("une limite en euros", () => {
 
   it("se pose sur un article", () => {
     expect(() =>
-      PricingFloor.pose("flr_1", { type: "product", id: "VIE-001" }, wall(AMOUNT), "a", POSED_AT),
+      PricingFloor.pose(
+        "flr_1",
+        { type: "product", id: "VIE-001" },
+        "pro",
+        wall(AMOUNT),
+        "a",
+        POSED_AT,
+      ),
     ).not.toThrow();
   });
 
   it("se pose sur une déclinaison", () => {
     expect(() =>
-      PricingFloor.pose("flr_1", { type: "variant", id: "VIE-001-1" }, wall(AMOUNT), "a", POSED_AT),
+      PricingFloor.pose(
+        "flr_1",
+        { type: "variant", id: "VIE-001-1" },
+        "pro",
+        wall(AMOUNT),
+        "a",
+        POSED_AT,
+      ),
     ).not.toThrow();
   });
 
@@ -260,6 +286,7 @@ describe("une limite en euros", () => {
       PricingFloor.pose(
         "flr_1",
         { type: "category", id: "viennoiserie" },
+        "pro",
         wall(AMOUNT),
         "a",
         POSED_AT,
@@ -269,7 +296,7 @@ describe("une limite en euros", () => {
 
   it("est refusée sur tout le catalogue", () => {
     expect(() =>
-      PricingFloor.pose("flr_1", { type: "global", id: null }, wall(AMOUNT), "a", POSED_AT),
+      PricingFloor.pose("flr_1", { type: "global", id: null }, "pro", wall(AMOUNT), "a", POSED_AT),
     ).toThrow(AmountFloorOnBroadScopeError);
   });
 
@@ -279,6 +306,7 @@ describe("une limite en euros", () => {
       PricingFloor.pose(
         "flr_1",
         { type: "category", id: "viennoiserie" },
+        "pro",
         {
           hard: { mode: "percent", bp: 6_000 },
           dynamic: {
@@ -297,10 +325,64 @@ describe("une limite en euros", () => {
     const percent = wall({ mode: "percent", bp: 6_000 });
 
     expect(() =>
-      PricingFloor.pose("flr_1", { type: "global", id: null }, percent, "a", POSED_AT),
+      PricingFloor.pose("flr_1", { type: "global", id: null }, "pro", percent, "a", POSED_AT),
     ).not.toThrow();
     expect(() =>
-      PricingFloor.pose("flr_1", { type: "category", id: "viennoiserie" }, percent, "a", POSED_AT),
+      PricingFloor.pose(
+        "flr_1",
+        { type: "category", id: "viennoiserie" },
+        "pro",
+        percent,
+        "a",
+        POSED_AT,
+      ),
     ).not.toThrow();
+  });
+});
+
+describe("la clientèle d'une limite", () => {
+  it("porte la clientèle posée, jusque dans l'état persisté", () => {
+    const floor = PricingFloor.pose(
+      "flr_1",
+      { type: "global", id: null },
+      "public",
+      wall({ mode: "percent", bp: 6_000 }),
+      "a",
+      POSED_AT,
+    );
+
+    expect(floor.clientele).toBe("public");
+    expect(floor.toPersistence().clientele).toBe("public");
+  });
+
+  it("garde la clientèle en se bornant — une limite close reste celle de sa clientèle", () => {
+    const floor = PricingFloor.pose(
+      "flr_1",
+      { type: "global", id: null },
+      "public",
+      wall({ mode: "percent", bp: 6_000 }),
+      "a",
+      POSED_AT,
+    );
+
+    expect(floor.closedAt(POSED_AT).clientele).toBe("public");
+  });
+
+  /**
+   * 🔴 Irréversible dès le premier fait publié : l'histoire des limites pro,
+   * écrite quand il n'y avait qu'une clientèle, doit rester continue.
+   */
+  it("journalise une limite pro sous la clé d'avant la clientèle", () => {
+    const scope = { type: "category", id: "viennoiserie" } as const;
+
+    expect(floorSubjectKey(scope, "pro")).toBe(floorScopeKey(scope));
+    expect(floorSubjectKey(scope, "pro")).toBe("category:viennoiserie");
+  });
+
+  it("sépare l'histoire publique de la pro par un préfixe", () => {
+    expect(floorSubjectKey({ type: "global", id: null }, "public")).toBe("public:global:");
+    expect(floorSubjectKey({ type: "product", id: "VIE-001" }, "public")).toBe(
+      "public:product:VIE-001",
+    );
   });
 });

@@ -1,3 +1,4 @@
+import type { FloorClientele } from "../../domain/entities/pricing-floor.js";
 import type { PriceScope } from "../../domain/price-rule.js";
 
 /**
@@ -11,6 +12,7 @@ import type { PriceScope } from "../../domain/price-rule.js";
 export class ConfirmPriceFloorCommand {
   constructor(
     readonly scope: PriceScope,
+    readonly clientele: FloorClientele,
     readonly staffUserId: string,
   ) {}
 }

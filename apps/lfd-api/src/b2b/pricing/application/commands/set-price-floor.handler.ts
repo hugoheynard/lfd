@@ -1,16 +1,14 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
-import { PricingFloor, floorScopeKey } from "../../domain/entities/pricing-floor.js";
+import { PricingFloor, floorSubjectKey } from "../../domain/entities/pricing-floor.js";
 import { PricingFloorRepository } from "../../domain/ports/pricing-floor.repository.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { referenceCanonicalFor } from "../floor-reference.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { describeFloorPolicy, describeScope } from "../../domain/pricing-act.js";
+import { describeFloor, describeScope } from "../../domain/pricing-act.js";
 import { scopeNameOf } from "../scope-names.js";
 import { SetPriceFloorCommand } from "./set-price-floor.command.js";
-import type { PriceScope } from "../../domain/price-rule.js";
-import type { PriceFloorPolicy } from "../../domain/floor-policy.js";
 import type { PricingActKind } from "../../domain/pricing-act.js";
 
 @CommandHandler(SetPriceFloorCommand)
@@ -33,26 +31,16 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
    */
   async execute(command: SetPriceFloorCommand): Promise<void> {
     const now = this.clock.now();
-    const existing = await this.floors.inForceFor(command.scope, now);
-    await this.pose(
-      command.scope,
-      command.policy,
-      command.staffUserId,
-      existing === null ? "posed" : "replaced",
-      now,
-    );
+    const existing = await this.floors.inForceFor(command.scope, command.clientele, now);
+    await this.pose(command, existing === null ? "posed" : "replaced", now);
   }
 
-  private async pose(
-    scope: PriceScope,
-    policy: PriceFloorPolicy,
-    staffUserId: string,
-    kind: PricingActKind,
-    at: Date,
-  ): Promise<void> {
+  private async pose(command: SetPriceFloorCommand, kind: PricingActKind, at: Date): Promise<void> {
+    const { scope, clientele, policy, staffUserId } = command;
     const floor = PricingFloor.pose(
       this.ids.next(),
       scope,
+      clientele,
       policy,
       staffUserId,
       at,
@@ -67,12 +55,14 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
       //
       // Or la question qu'on pose au journal est « qu'est-ce qui a protégé cet
       // article, et qui l'a décidé ? ». Son sujet est la cible, pas la ligne.
-      subjectId: floorScopeKey(scope),
+      // Préfixée pour une limite publique, inchangée pour la pro : cf.
+      // `floorSubjectKey`.
+      subjectId: floorSubjectKey(scope, clientele),
       kind,
       actor: staffUserId,
       at,
       reason: null,
-      summary: describeFloorPolicy(policy),
+      summary: describeFloor(clientele, policy),
       // Le sujet d'une limite est sa PORTÉE : c'est elle qu'on nomme.
       subjectLabel: describeScope(scope, await scopeNameOf(scope, this.catalog)),
     });

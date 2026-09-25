@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { PricingFloorRepository } from "../domain/ports/pricing-floor.repository.js";
-import { PricingFloor } from "../domain/entities/pricing-floor.js";
+import { PricingFloor, type FloorClientele } from "../domain/entities/pricing-floor.js";
 import { floorFromRow } from "./price-rows.js";
 import { PricingActWriter } from "./pricing-act.writer.js";
 import type { PricingAct } from "../domain/pricing-act.js";
@@ -29,8 +29,12 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
    *
    * La course que l'`upsert` évitait est désormais rattrapée là où elle l'est
    * pour les quatre autres familles : par la contrainte d'exclusion
-   * `price_floors_no_overlap`. Deux poses concurrentes ne peuvent pas laisser
-   * deux limites en vigueur sur la même portée.
+   * `price_floors_no_overlap_by_clientele`. Deux poses concurrentes ne peuvent
+   * pas laisser deux limites en vigueur sur la même portée et la même clientèle.
+   *
+   * 🔴 La clôture de la précédente vise **portée + clientèle** : la contrainte
+   * ne voit pas de chevauchement entre une pro et une publique, donc seul ce
+   * `where` empêche une pose publique de fermer la limite pro.
    */
   async pose(floor: PricingFloor, act: PricingAct): Promise<void> {
     const state = floor.toPersistence();
@@ -38,6 +42,7 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
     const shared = {
       scopeType: state.scope.type,
       scopeId: state.scope.id,
+      clientele: state.clientele,
       mode: state.policy.hard.mode,
       value: magnitudeOf(state.policy.hard),
       // Toutes les colonnes de la porte sont écrites, y compris à `null` : un
@@ -71,6 +76,7 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
           where: {
             scopeType: state.scope.type,
             scopeId: state.scope.id,
+            clientele: state.clientele,
             archivedAt: null,
             OR: [{ validTo: null }, { validTo: { gt: state.validFrom } }],
           },
@@ -88,11 +94,16 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
    * désormais N lignes par portée, une par période : c'est la portée **et
    * l'instant** qui désignent, et l'écran continue de ne connaître que la portée.
    */
-  async inForceFor(scope: PriceScope, at: Date): Promise<PricingFloor | null> {
+  async inForceFor(
+    scope: PriceScope,
+    clientele: FloorClientele,
+    at: Date,
+  ): Promise<PricingFloor | null> {
     const row = await this.prisma.priceFloor.findFirst({
       where: {
         scopeType: scope.type,
         scopeId: scope.id,
+        clientele,
         archivedAt: null,
         validFrom: { lte: at },
         OR: [{ validTo: null }, { validTo: { gt: at } }],
@@ -105,6 +116,7 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
     return PricingFloor.reconstitute({
       id: scoped.id,
       scope: scoped.scope,
+      clientele: row.clientele,
       policy: scoped.policy,
       createdBy: row.createdBy,
       referenceCanonicalMillicents: row.referenceCanonicalMillicents,

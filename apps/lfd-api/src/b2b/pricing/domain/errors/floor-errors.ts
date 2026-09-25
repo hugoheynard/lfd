@@ -65,15 +65,22 @@ export class FloorAboveCanonicalError extends DomainError {
   }
 }
 
-/** Aucun plancher n'était posé sur cette portée. Même raisonnement. */
+/**
+ * Aucun plancher de cette clientèle n'était posé sur cette portée. Même
+ * raisonnement.
+ *
+ * Le message nomme la clientèle : une portée peut porter une limite pro et pas
+ * de publique, et « aucune limite posée » ferait chercher la pro qu'on voit.
+ */
 export class PriceFloorNotFoundError extends ResourceNotFoundError {
   constructor(
     readonly scopeType: string,
     readonly scopeId: string | null,
+    readonly clientele: "pro" | "public",
   ) {
     super(
       "pricing.floor.not_found",
-      `Aucune limite posée sur cette portée (${scopeType}${scopeId === null ? "" : ` : ${scopeId}`}).`,
+      `Aucune limite ${clientele === "pro" ? "pro" : "publique"} posée sur cette portée (${scopeType}${scopeId === null ? "" : ` : ${scopeId}`}).`,
     );
   }
 }

@@ -1,20 +1,36 @@
 import {
+  floorClienteleQuerySchema,
   pricingReasonPayloadSchema,
   setPriceFloorPayloadSchema,
+  type FloorClienteleQuery,
+  type PriceLimitsView,
+  type ParsedSetPriceFloorPayload,
   type PriceScopePayload,
   type PricingReasonPayload,
-  type SetPriceFloorPayload,
 } from "@lfd/contracts";
-import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Post, Put } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+} from "@nestjs/common";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
-import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ListPriceLimitsQuery } from "../application/queries/list-price-limits.query.js";
 import { ArchivePriceFloorCommand } from "../application/commands/archive-price-floor.command.js";
 import { ConfirmPriceFloorCommand } from "../application/commands/confirm-price-floor.command.js";
 import { SetPriceFloorCommand } from "../application/commands/set-price-floor.command.js";
 import { UnknownPriceScopeError } from "../domain/pricing-errors.js";
+import type { FloorClientele } from "../domain/entities/pricing-floor.js";
 import type { PriceFloorPolicy } from "../domain/floor-policy.js";
 import type { PriceFloor, PriceScope } from "../domain/price-rule.js";
 
@@ -26,22 +42,47 @@ import type { PriceFloor, PriceScope } from "../domain/price-rule.js";
  * arbitre — et ses trois gestes (poser, confirmer, archiver) ne ressemblent à
  * aucun de ceux d'une règle.
  *
- * Une limite se désigne par sa **portée** et jamais par un identifiant : c'est ce
- * que l'écran connaît, et l'identifiant en dérive de toute façon.
+ * Une limite se désigne par sa **portée** et sa **clientèle**, jamais par un
+ * identifiant : c'est ce que l'écran connaît. La clientèle vaut `pro` quand
+ * elle n'est pas dite — le front en ligne n'envoie rien, et vise le pro.
+ *
+ * 🔴 **Sa propre surface, `price_limits`, et plus `b2b_pricing`**
+ * (`plan-limites-de-prix.md` §5) : les routes changent de garde, pas
+ * d'adresse. Une surface par contrôleur plutôt qu'un `@RequirePermission` par
+ * route : ce dernier aurait marché, mais une route ajoutée plus tard ici
+ * retomberait sur la ressource de surface — donc sur `b2b_pricing`.
  */
 @Controller("admin/pricing")
-@AdminSurface("b2b_pricing")
+@AdminSurface("price_limits")
 export class AdminPriceFloorsController {
-  constructor(private readonly commands: CommandBus) {}
+  constructor(
+    private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
+  ) {}
+
+  /** Les limites en vigueur d'une clientèle — la vue Comptabilité. */
+  @Get("floors")
+  async listFloors(
+    @Query(new ZodQuery(floorClienteleQuerySchema)) query: FloorClienteleQuery,
+  ): Promise<PriceLimitsView> {
+    return this.queries.execute<ListPriceLimitsQuery, PriceLimitsView>(
+      new ListPriceLimitsQuery(query.clientele),
+    );
+  }
 
   @Put("floors")
   @HttpCode(HttpStatus.NO_CONTENT)
   async setFloor(
-    @Body(new ZodBody(setPriceFloorPayloadSchema)) payload: SetPriceFloorPayload,
+    @Body(new ZodBody(setPriceFloorPayloadSchema)) payload: ParsedSetPriceFloorPayload,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SetPriceFloorCommand, void>(
-      new SetPriceFloorCommand(toScope(payload.scope), toPolicy(payload), staffUserId),
+      new SetPriceFloorCommand(
+        toScope(payload.scope),
+        payload.clientele,
+        toPolicy(payload),
+        staffUserId,
+      ),
     );
   }
 
@@ -55,8 +96,11 @@ export class AdminPriceFloorsController {
    */
   @Post("floors/global/confirm")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async confirmGlobalFloor(@StaffUserId() staffUserId: string): Promise<void> {
-    await this.confirmFloorOn({ type: "global", id: null }, staffUserId);
+  async confirmGlobalFloor(
+    @Query(new ZodQuery(floorClienteleQuerySchema)) query: FloorClienteleQuery,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.confirmFloorOn({ type: "global", id: null }, query.clientele, staffUserId);
   }
 
   @Post("floors/:scopeType/:scopeId/confirm")
@@ -64,14 +108,23 @@ export class AdminPriceFloorsController {
   async confirmFloor(
     @Param("scopeType") scopeType: string,
     @Param("scopeId") scopeId: string,
+    @Query(new ZodQuery(floorClienteleQuerySchema)) query: FloorClienteleQuery,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
-    await this.confirmFloorOn({ type: parseScopeType(scopeType), id: scopeId }, staffUserId);
+    await this.confirmFloorOn(
+      { type: parseScopeType(scopeType), id: scopeId },
+      query.clientele,
+      staffUserId,
+    );
   }
 
-  private async confirmFloorOn(scope: PriceScopePayload, staffUserId: string): Promise<void> {
+  private async confirmFloorOn(
+    scope: PriceScopePayload,
+    clientele: FloorClientele,
+    staffUserId: string,
+  ): Promise<void> {
     await this.commands.execute<ConfirmPriceFloorCommand, void>(
-      new ConfirmPriceFloorCommand(toScope(scope), staffUserId),
+      new ConfirmPriceFloorCommand(toScope(scope), clientele, staffUserId),
     );
   }
 
@@ -96,9 +149,15 @@ export class AdminPriceFloorsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async archiveGlobalFloor(
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
+    @Query(new ZodQuery(floorClienteleQuerySchema)) query: FloorClienteleQuery,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
-    await this.archiveFloorOn({ type: "global", id: null }, staffUserId, payload.reason);
+    await this.archiveFloorOn(
+      { type: "global", id: null },
+      query.clientele,
+      staffUserId,
+      payload.reason,
+    );
   }
 
   @Post("floors/:scopeType/:scopeId/archive")
@@ -107,10 +166,12 @@ export class AdminPriceFloorsController {
     @Param("scopeType") scopeType: string,
     @Param("scopeId") scopeId: string,
     @Body(new ZodBody(pricingReasonPayloadSchema)) payload: PricingReasonPayload,
+    @Query(new ZodQuery(floorClienteleQuerySchema)) query: FloorClienteleQuery,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.archiveFloorOn(
       { type: parseScopeType(scopeType), id: scopeId },
+      query.clientele,
       staffUserId,
       payload.reason,
     );
@@ -118,8 +179,11 @@ export class AdminPriceFloorsController {
 
   @Delete("floors/global")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async removeGlobalFloor(@StaffUserId() staffUserId: string): Promise<void> {
-    await this.archiveFloorOn({ type: "global", id: null }, staffUserId);
+  async removeGlobalFloor(
+    @Query(new ZodQuery(floorClienteleQuerySchema)) query: FloorClienteleQuery,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.archiveFloorOn({ type: "global", id: null }, query.clientele, staffUserId);
   }
 
   @Delete("floors/:scopeType/:scopeId")
@@ -127,19 +191,25 @@ export class AdminPriceFloorsController {
   async removeFloor(
     @Param("scopeType") scopeType: string,
     @Param("scopeId") scopeId: string,
+    @Query(new ZodQuery(floorClienteleQuerySchema)) query: FloorClienteleQuery,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
-    await this.archiveFloorOn({ type: parseScopeType(scopeType), id: scopeId }, staffUserId);
+    await this.archiveFloorOn(
+      { type: parseScopeType(scopeType), id: scopeId },
+      query.clientele,
+      staffUserId,
+    );
   }
 
   /** Retirer une limite l'**archive** : rien ne s'efface, ici non plus. */
   private async archiveFloorOn(
     scope: PriceScopePayload,
+    clientele: FloorClientele,
     staffUserId: string,
     reason: string | null = null,
   ): Promise<void> {
     await this.commands.execute<ArchivePriceFloorCommand, void>(
-      new ArchivePriceFloorCommand(toScope(scope), staffUserId, reason),
+      new ArchivePriceFloorCommand(toScope(scope), clientele, staffUserId, reason),
     );
   }
 }
@@ -154,7 +224,7 @@ function toScope(scope: PriceScopePayload): PriceScope {
  * Les conditions d'ouverture traversent telles quelles ; c'est l'agrégat qui
  * refuse une porte sans clé, ou une porte au-dessus du mur.
  */
-function toPolicy(payload: SetPriceFloorPayload): PriceFloorPolicy {
+function toPolicy(payload: ParsedSetPriceFloorPayload): PriceFloorPolicy {
   const dynamic = payload.dynamic;
   return {
     hard: toFloor(payload.mode, payload.value),

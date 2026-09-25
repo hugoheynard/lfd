@@ -8,6 +8,15 @@ import { floorFromRow } from "./price-rows.js";
 import type { PricingScopes } from "../domain/pricing-scopes.js";
 import type { ScopedPriceFloor } from "../domain/price-rule.js";
 
+/**
+ * 🔴 **La résolution ne lit que les limites PRO** (`plan-limites-de-prix.md`
+ * §4). C'est le seul lecteur de la résolution — la commande y passe par le
+ * chargeur — donc le seul endroit où une limite publique pourrait relever un
+ * prix pro. Le futur moteur de promotions publiques lira `public` par la même
+ * post-condition, qui n'a pas à connaître la clientèle.
+ */
+const RESOLVED_CLIENTELE = "pro";
+
 @Injectable()
 export class PrismaPriceFloorReader extends PriceFloorReader {
   constructor(
@@ -35,15 +44,19 @@ export class PrismaPriceFloorReader extends PriceFloorReader {
     return [...(await this.cache.of(PRICING_CACHE_KEYS.floors, () => this.unarchived()))];
   }
 
-  /** Toutes les limites vivantes — l'unique lecture que le cache retient. */
+  /** Toutes les limites **pro** vivantes — l'unique lecture que le cache retient. */
   private async unarchived(): Promise<ScopedPriceFloor[]> {
-    const rows = await this.prisma.priceFloor.findMany({ where: { archivedAt: null } });
+    const rows = await this.prisma.priceFloor.findMany({
+      where: { archivedAt: null, clientele: RESOLVED_CLIENTELE },
+    });
     return rows.map(floorFromRow);
   }
 
   /** « Archivée » se lit **à l'instant demandé** : cf. {@link unarchivedAt}. */
   async listAll(at: Date): Promise<ScopedPriceFloor[]> {
-    const rows = await this.prisma.priceFloor.findMany({ where: unarchivedAt(at) });
+    const rows = await this.prisma.priceFloor.findMany({
+      where: { AND: [unarchivedAt(at), { clientele: RESOLVED_CLIENTELE }] },
+    });
     return rows.map(floorFromRow);
   }
 }

@@ -37,10 +37,10 @@ import { SEEDED_POINT_LABELS, SEEDED_ZONE_LABELS } from "./station.seed.js";
  * Une décision tarifaire d'essai n'est pas un décor : c'est un prix. Un poste
  * qui en garde de vieilles ment sur ce que la caisse ferait.
  *
- * ⚠️ **Les LIMITES sont épargnées** (`price_floors`), et c'est délibéré : ce
- * sont des garde-fous, pas des remises. Les retirer supprimerait la protection
- * que l'écran affiche, et le poste cesserait de refuser ce que la production
- * refuse.
+ * ⚠️ **Les LIMITES sont épargnées** (`price_floors`), pro comme publiques, et
+ * c'est délibéré : ce sont des garde-fous, pas des remises. Les retirer
+ * supprimerait la protection que l'écran affiche, et le poste cesserait de
+ * refuser ce que la production refuse.
  *
  * ## Ce qu'il NE touche pas
  *

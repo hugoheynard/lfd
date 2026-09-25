@@ -7,6 +7,7 @@ import type { PriceRule, PriceStage } from "./price-rule.js";
 
 export {
   describeArticleCount,
+  describeFloor,
   describeFloorPolicy,
   describeLadder,
   describeRule,

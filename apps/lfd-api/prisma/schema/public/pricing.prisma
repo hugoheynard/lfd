@@ -123,6 +123,20 @@ model PriceFloor {
   scopeType String  @map("scope_type")
   scopeId   String? @map("scope_id")
 
+  /// **À quelle clientèle cette limite s'applique** : `pro` ou `public`.
+  ///
+  /// Ajoutée le 2026-09-26 (`documentation/comptabilite/plan-limites-de-prix.md`
+  /// §3). Toutes les limites d'avant sont `pro` — c'est leur sens réel, elles
+  /// ne se sont jamais appliquées au public. Le type est l'enum de la commande,
+  /// pas un second typage des mêmes valeurs ; et le mot n'est PAS « audience »,
+  /// qui dit déjà ici à quel client une règle s'applique.
+  ///
+  /// 🔴 Elle fait partie de la PORTÉE partout où une limite se cherche : la
+  /// contrainte `price_floors_no_overlap_by_clientele`, et la clôture de la
+  /// précédente à la pose. Sans elle, poser une limite publique fermerait la
+  /// limite pro de la même portée.
+  clientele OrderClientele @default(pro)
+
   /// **Le mur** — jamais franchi, quoi qu'il arrive.
   ///
   /// `percent` : une fraction du prix canonique, en points de base — elle suit

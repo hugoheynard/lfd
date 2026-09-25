@@ -1,5 +1,5 @@
 import type { PriceScope } from "../price-rule.js";
-import type { PricingFloor } from "../entities/pricing-floor.js";
+import type { FloorClientele, PricingFloor } from "../entities/pricing-floor.js";
 import type { PricingAct } from "../pricing-act.js";
 
 /**
@@ -31,8 +31,16 @@ export abstract class PricingFloorRepository {
    * portée, donc unique par cible. Depuis que les planchers sont versionnés, il
    * y a N lignes par portée : c'est la portée **et l'instant** qui désignent.
    * L'écran, lui, ne connaît toujours que la portée.
+   *
+   * 🔴 **Et la clientèle** (2026-09-26) : une portée porte une limite pro ET une
+   * publique, et rendre « la première venue » ferait confirmer ou archiver la
+   * pro par un geste public.
    */
-  abstract inForceFor(scope: PriceScope, at: Date): Promise<PricingFloor | null>;
+  abstract inForceFor(
+    scope: PriceScope,
+    clientele: FloorClientele,
+    at: Date,
+  ): Promise<PricingFloor | null>;
 
   /**
    * **Archive** la limite. Rend `false` si aucune n'était posée sur cette portée.

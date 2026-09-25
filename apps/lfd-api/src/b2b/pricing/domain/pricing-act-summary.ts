@@ -1,3 +1,4 @@
+import type { FloorClientele } from "./entities/pricing-floor.js";
 import type { PriceFloorPolicy } from "./floor-policy.js";
 import type { VolumeLadder } from "./volume-ladder.js";
 import type {
@@ -128,6 +129,20 @@ export function describeFloorPolicy(policy: PriceFloorPolicy): string {
     unlock.minVolumeRatioBp === null ? null : `volume ×${ratio(unlock.minVolumeRatioBp)}`,
   ].filter((part) => part !== null);
   return `${wall} · porte à ${floorAmount(floor)} (${keys.join(" et ")})`;
+}
+
+const CLIENTELE_WORDS: Readonly<Record<FloorClientele, string>> = {
+  pro: "Limite pro",
+  public: "Limite publique",
+};
+
+/**
+ * La phrase du journal pour un geste sur une limite : sa **clientèle**, puis sa
+ * politique (`plan-limites-de-prix.md` §4). Relire « mur à 60 % » sans savoir
+ * qui il protège laisserait croire qu'une limite publique a borné un prix pro.
+ */
+export function describeFloor(clientele: FloorClientele, policy: PriceFloorPolicy): string {
+  return `${CLIENTELE_WORDS[clientele]} · ${describeFloorPolicy(policy)}`;
 }
 
 function floorAmount(floor: PriceFloor): string {

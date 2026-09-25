@@ -245,6 +245,22 @@ export const dynamicFloorSchema = z.object({
 export type DynamicFloorPayload = z.infer<typeof dynamicFloorSchema>;
 
 /**
+ * **La clientèle d'une limite** : `pro` ou `public` — les valeurs de
+ * `OrderClientele`, et le même enum Postgres en base.
+ *
+ * `pro` par défaut partout où elle entre : le front en ligne n'envoie rien, et
+ * doit continuer de viser la limite pro (`plan-limites-de-prix.md` §5).
+ */
+export const floorClienteleSchema = z.enum(["pro", "public"]);
+export type FloorClientele = z.infer<typeof floorClienteleSchema>;
+
+/** `?clientele=` sur confirmer, archiver et lister les limites. */
+export const floorClienteleQuerySchema = z.object({
+  clientele: floorClienteleSchema.default("pro"),
+});
+export type FloorClienteleQuery = z.infer<typeof floorClienteleQuerySchema>;
+
+/**
  * Poser un plancher sur une portée. **Idempotent par portée** : re-poser
  * remplace, il n'y a jamais deux limites sur la même cible.
  *
@@ -262,8 +278,21 @@ export const setPriceFloorPayloadSchema = z.object({
   value: z.number().int().positive(),
   /** La porte, ou `null` s'il n'y en a pas. */
   dynamic: dynamicFloorSchema.nullable().default(null),
+  /** La clientèle visée. Absente = `pro`, ce que le front en ligne envoie. */
+  clientele: floorClienteleSchema.default("pro"),
 });
-export type SetPriceFloorPayload = z.infer<typeof setPriceFloorPayloadSchema>;
+/** La charge telle que le serveur la lit, défauts appliqués : `clientele` y est toujours. */
+export type ParsedSetPriceFloorPayload = z.infer<typeof setPriceFloorPayloadSchema>;
+/**
+ * La charge telle qu'un client l'**envoie** : `clientele` y est facultative.
+ *
+ * Distincte de {@link ParsedSetPriceFloorPayload} pour ne pas casser le contrat
+ * servi (`CLAUDE.md` §0) : le front en ligne construit cette charge sans
+ * clientèle, et le type en sortie de Zod la rendrait obligatoire.
+ */
+export type SetPriceFloorPayload = Omit<ParsedSetPriceFloorPayload, "clientele"> & {
+  readonly clientele?: FloorClientele;
+};
 
 /** Une règle telle que l'écran la lit. */
 export interface PriceRuleView {
@@ -570,6 +599,19 @@ export interface PriceFloorView {
    */
   readonly createdByName: string | null;
   readonly updatedAt: string;
+}
+
+/**
+ * **Les limites en vigueur d'une clientèle** — la vue Comptabilité › Limites
+ * de prix (`GET /admin/pricing/floors?clientele=`, sous `price_limits:read`).
+ *
+ * La clientèle est rendue avec la liste : l'écran sait ce qu'il montre sans se
+ * fier à ce qu'il a demandé. Sous `public`, les limites se posent et se datent
+ * mais ne bornent encore aucun prix — il n'y a pas de promotion publique.
+ */
+export interface PriceLimitsView {
+  readonly clientele: FloorClientele;
+  readonly floors: readonly PriceFloorView[];
 }
 
 /**

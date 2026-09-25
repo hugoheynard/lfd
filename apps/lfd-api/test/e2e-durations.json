@@ -102,6 +102,8 @@
   "test/pim-vat-rates.e2e-spec.ts": 12285,
   "test/pim-wall.e2e-spec.ts": 30820,
   "test/platform-content.e2e-spec.ts": 8071,
+  "test/price-limits-migration.e2e-spec.ts": 6687,
+  "test/price-limits.e2e-spec.ts": 13223,
   "test/price-rules.e2e-spec.ts": 45616,
   "test/pricer.e2e-spec.ts": 14597,
   "test/pricing-budget.e2e-spec.ts": 9531,

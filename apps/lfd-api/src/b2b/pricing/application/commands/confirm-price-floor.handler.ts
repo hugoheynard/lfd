@@ -1,13 +1,13 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
-import { PricingFloor, floorScopeKey } from "../../domain/entities/pricing-floor.js";
+import { PricingFloor, floorSubjectKey } from "../../domain/entities/pricing-floor.js";
 import { PricingFloorRepository } from "../../domain/ports/pricing-floor.repository.js";
 import { PriceFloorNotFoundError } from "../../domain/pricing-errors.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { referenceCanonicalFor } from "../floor-reference.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { describeFloorPolicy, describeScope } from "../../domain/pricing-act.js";
+import { describeFloor, describeScope } from "../../domain/pricing-act.js";
 import { scopeNameOf } from "../scope-names.js";
 import { ConfirmPriceFloorCommand } from "./confirm-price-floor.command.js";
 
@@ -33,14 +33,15 @@ export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFlo
    */
   async execute(command: ConfirmPriceFloorCommand): Promise<void> {
     const now = this.clock.now();
-    const existing = await this.floors.inForceFor(command.scope, now);
+    const existing = await this.floors.inForceFor(command.scope, command.clientele, now);
     if (existing === null) {
-      throw new PriceFloorNotFoundError(command.scope.type, command.scope.id);
+      throw new PriceFloorNotFoundError(command.scope.type, command.scope.id, command.clientele);
     }
     const state = existing.toPersistence();
     const floor = PricingFloor.pose(
       this.ids.next(),
       state.scope,
+      state.clientele,
       state.policy,
       command.staffUserId,
       now,
@@ -48,12 +49,12 @@ export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFlo
     );
     await this.floors.pose(floor, {
       subjectType: "floor",
-      subjectId: floorScopeKey(state.scope),
+      subjectId: floorSubjectKey(state.scope, state.clientele),
       kind: "confirmed",
       actor: command.staffUserId,
       at: now,
       reason: null,
-      summary: describeFloorPolicy(state.policy),
+      summary: describeFloor(state.clientele, state.policy),
       // Le sujet d'une limite est sa PORTÉE : c'est elle qu'on nomme.
       subjectLabel: describeScope(state.scope, await scopeNameOf(state.scope, this.catalog)),
     });
