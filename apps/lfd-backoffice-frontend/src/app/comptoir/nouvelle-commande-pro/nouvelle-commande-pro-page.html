@@ -1,0 +1,53 @@
+<fold-page-layout title="Nouvelle commande pro">
+  <p description>
+    Cherchez le compte du client, puis saisissez sa commande. Seuls les comptes pro actifs sont
+    proposés.
+  </p>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des comptes clients…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les comptes clients">
+        <button foldButton type="button" (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (noActiveCompany()) {
+        <fold-empty-state
+          title="Aucun compte pro actif"
+          subtitle="Un compte doit être activé avant de pouvoir commander en pro."
+        >
+          <fold-icon empty-icon name="customer-account" />
+        </fold-empty-state>
+      } @else {
+        <div class="picker">
+          <fold-search
+            placeholder="Société, SIRET, propriétaire de l’espace…"
+            ariaLabel="Chercher un compte client"
+            [resultCount]="rows().length"
+            (searchChange)="onSearchChange($event)"
+          />
+
+          @for (row of rows(); track row.id) {
+            <fold-card
+              interactive
+              [ariaLabel]="'Commander pour ' + row.name"
+              (activated)="choose(row.id)"
+            >
+              <fold-element-title variant="title" [title]="row.name" [subtitle]="row.detail" />
+            </fold-card>
+          } @empty {
+            <fold-empty-state
+              title="Aucun compte ne correspond"
+              subtitle="Essayez la raison sociale, l’enseigne, la référence ou le SIRET."
+            >
+              <fold-icon empty-icon name="search" />
+            </fold-empty-state>
+          }
+        </div>
+      }
+    }
+  }
+</fold-page-layout>

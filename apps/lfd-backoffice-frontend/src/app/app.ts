@@ -148,6 +148,7 @@ export class App {
   private readonly catalogue = inject(WorkspaceCatalogue);
   protected readonly commercialViews = this.catalogue.views('commercial');
   protected readonly productionViews = this.catalogue.views('production');
+  protected readonly comptoirViews = this.catalogue.views('comptoir');
   protected readonly pimViews = this.catalogue.views('pim');
   protected readonly b2bViews = this.catalogue.views('b2b');
   protected readonly adminViews = this.catalogue.views('admin');

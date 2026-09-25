@@ -55,18 +55,18 @@
       }
 
       @if (canSeeProduction()) {
-        <!-- LA FILE DE REMISE — qui attend au comptoir. Juste après la
+        <!-- LE COMPTOIR — la file de retrait et la commande pro. Juste après la
              production parce que c'est la suite du même flux : on fabrique, on
-             remet. Même droit, c'est la même commande vue plus tard. -->
+             rend. Même droit, c'est la même commande vue plus tard. -->
         <a
           fold-menu-item
           icon="package-check"
-          label="Retrait boutique"
+          label="Comptoir"
           badge="app"
-          routerLink="/remises"
+          routerLink="/comptoir"
           routerLinkActive
-          #remisesRla="routerLinkActive"
-          [active]="remisesRla.isActive"
+          #comptoirRla="routerLinkActive"
+          [active]="comptoirRla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
@@ -518,19 +518,28 @@
       }
       @if (canSeeProduction()) {
         <!-- La MÊME entrée qu'au rail, et il faut la poser deux fois : les
-             deux arbres ne partagent pas leur modèle, et une entrée d'un seul
-             côté est invisible de l'autre. -->
-        <a
-          fold-nav-tile
+             deux arbres ne partagent pas leur modèle. Comme la production, le
+             lanceur montre les vues de l'espace, lues dans le MÊME catalogue
+             que le rail secondaire. -->
+        <fold-nav-group
           icon="package-check"
-          label="Retrait boutique"
+          label="Comptoir"
           badge="app"
-          routerLink="/remises"
-          routerLinkActive
-          #remisesTile="routerLinkActive"
-          [active]="remisesTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
+          [entryCountLabel]="entriesLabel"
+        >
+          @for (view of comptoirViews(); track view.key) {
+            <a
+              fold-nav-tile
+              [icon]="view.icon"
+              [label]="view.label"
+              [routerLink]="view.link"
+              routerLinkActive
+              #comptoirTile="routerLinkActive"
+              [active]="comptoirTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-nav-group>
       }
       @if (canSeeProduction()) {
         <a

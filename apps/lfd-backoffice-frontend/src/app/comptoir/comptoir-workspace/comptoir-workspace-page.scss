@@ -1,0 +1,9 @@
+// Une coquille qui ne dessine rien doit quand même laisser passer la HAUTEUR :
+// fold chaîne des colonnes flex jusqu'à `fold-page-layout`, et un hôte resté en
+// `display: block` rompt la chaîne (même raison que la coquille de production).
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  min-height: 0;
+}

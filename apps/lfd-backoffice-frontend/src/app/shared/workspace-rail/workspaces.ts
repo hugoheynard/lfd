@@ -158,6 +158,35 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
 ];
 
 /**
+ * Les vues du **Comptoir** — ce qui se passe quand un client est DEVANT nous.
+ *
+ * Deux gestes, et c'est ce qui les réunit : rendre une commande déjà faite, et
+ * en prendre une nouvelle pour un pro venu sans l'avoir passée. La commande pro
+ * n'est pas un second écran de saisie : elle cherche le compte, puis ouvre le
+ * même `comptes-clients/:id/nouvelle-commande` que le Commercial — deux saisies
+ * divergeraient au premier changement de règle.
+ *
+ * `needs` sur la seule nouvelle commande : `b2b_orders:read` ouvre l'espace et
+ * suffit à la file de retrait, mais saisir une commande ÉCRIT. Sans lui, un
+ * poste en lecture verrait l'entrée, pour un refus du garde.
+ */
+export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
+  {
+    key: 'retrait',
+    label: 'Retrait boutique',
+    link: '/comptoir/retrait',
+    icon: 'package-check',
+  },
+  {
+    key: 'nouvelle-commande',
+    label: 'Nouvelle commande pro',
+    link: '/comptoir/nouvelle-commande',
+    icon: 'basket',
+    needs: 'b2b_orders:write',
+  },
+];
+
+/**
  * Les vues du **PIM**, en trois sections.
  *
  * Elles ne sont pas décoratives : elles disent trois natures de travail qui
@@ -620,6 +649,12 @@ export const WORKSPACES = {
     title: 'Production',
     icon: 'production',
     views: PRODUCTION_VIEWS,
+  },
+  comptoir: {
+    key: 'comptoir',
+    title: 'Comptoir',
+    icon: 'package-check',
+    views: COMPTOIR_VIEWS,
   },
   pim: { key: 'pim', title: 'PIM', icon: 'catalog', views: PIM_VIEWS },
   // « E-commerce LFC » : le libellé seul. La clé et les adresses `/b2b/…`

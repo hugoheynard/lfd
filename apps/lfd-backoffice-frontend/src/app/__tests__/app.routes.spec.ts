@@ -215,10 +215,12 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'production/journee': null,
   'production/previsionnel': null,
   'production/colisage': null,
-  // La file du comptoir : la MÊME commande, vue au moment où on la remet. En
-  // lecture — attester une remise passe par `retrait/:token`, qui exige
-  // l'écriture.
-  remises: 'b2b_orders:read',
+  // LE COMPTOIR est un ESPACE : la coquille porte la lecture, la file de
+  // retrait en hérite — attester un retrait passe par `retrait/:token`, qui
+  // exige l'écriture. La commande pro ÉCRIT, d'où son propre garde.
+  comptoir: 'b2b_orders:read',
+  'comptoir/retrait': null,
+  'comptoir/nouvelle-commande': 'b2b_orders:write',
   livraison: 'b2b_orders:read',
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.
   'app-mobile': OPEN,
@@ -346,6 +348,20 @@ describe("l'arbre de routes du back-office", () => {
     const contenu = b2b?.children?.find((child) => child.path === 'contenu');
     const vitrine = contenu?.children?.find((child) => child.path === 'vitrine');
     expect(vitrine?.redirectTo).toBe('/vitrine');
+  });
+
+  it('renvoie l’ancienne file de retrait vers la vue du comptoir', () => {
+    // `/remises` vit dans les favoris du personnel : le passage à l'espace
+    // Comptoir ne doit pas le rendre 404.
+    const remises = routes.find((route) => route.path === 'remises');
+    expect(remises?.redirectTo).toBe('comptoir/retrait');
+    expect(remises?.loadComponent).toBeUndefined();
+  });
+
+  it('ouvre le comptoir sur la file de retrait', () => {
+    const comptoir = routes.find((route) => route.path === 'comptoir');
+    const root = comptoir?.children?.find((child) => child.path === '');
+    expect(root?.redirectTo).toBe('retrait');
   });
 
   it('ne laisse hériter que les écrans dont le parent est gardé', () => {

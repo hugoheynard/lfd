@@ -298,23 +298,52 @@ export const routes: Routes = [
       import('./app-mobile/app-mobile-page/app-mobile-page').then((m) => m.AppMobilePage),
   },
   {
-    // LA FILE DE RETRAIT — qui attend au comptoir aujourd'hui. Route de premier
-    // niveau, à côté de « production » et « livraison » : c'est le même flux de
-    // commandes, vu à un troisième moment.
+    // L'ANCIENNE FILE DE RETRAIT — devenue la vue `retrait` de l'espace Comptoir.
     //
-    // ⚠️ Le chemin `remises` est une VALEUR : le renommer romprait les
-    // signets du personnel, et une valeur n'est pas un nom (CLAUDE.md §8).
+    // ⚠️ Le chemin `remises` est une VALEUR : les signets du personnel pointent
+    // dessus, et une valeur n'est pas un nom (CLAUDE.md §8). Il redirige donc,
+    // il ne disparaît pas.
     //
     // ⚠️ Elle ne remplace PAS `retrait/:token`, et ne peut pas : ce chemin-là
     // est ce que les QR déjà partis en courriel encodent. Celui-ci est la file
     // qu'on ouvre le matin ; l'autre est la cible d'un scan.
     path: 'remises',
+    pathMatch: 'full',
+    redirectTo: 'comptoir/retrait',
+  },
+  {
+    // LE COMPTOIR — un ESPACE de travail : ce qui se fait quand le client est
+    // devant nous. Rendre une commande (la file de retrait) et en prendre une
+    // pour un pro (recherche du compte, puis l'écran de saisie du Commercial).
+    //
+    // Le garde est sur la coquille, comme pour la production : un favori ne
+    // passe pas par le rail. La saisie ajoute le sien, parce qu'elle écrit.
+    path: 'comptoir',
     canActivate: [permissionGuard('b2b_orders:read')],
-    title: 'Retrait boutique — LFC B2B admin',
     loadComponent: () =>
-      import('./handover-shop/handover-shop-page/handover-shop-page').then(
-        (m) => m.HandoverShopPage,
+      import('./comptoir/comptoir-workspace/comptoir-workspace-page').then(
+        (m) => m.ComptoirWorkspacePage,
       ),
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'retrait' },
+      {
+        path: 'retrait',
+        title: 'Retrait boutique — LFC B2B admin',
+        loadComponent: () =>
+          import('./handover-shop/handover-shop-page/handover-shop-page').then(
+            (m) => m.HandoverShopPage,
+          ),
+      },
+      {
+        path: 'nouvelle-commande',
+        canActivate: [permissionGuard('b2b_orders:write')],
+        title: 'Nouvelle commande pro — LFC B2B admin',
+        loadComponent: () =>
+          import('./comptoir/nouvelle-commande-pro/nouvelle-commande-pro-page').then(
+            (m) => m.NouvelleCommandeProPage,
+          ),
+      },
+    ],
   },
   {
     // LA PRODUCTION — un ESPACE de travail, et non plus une page. Deux vues, et
