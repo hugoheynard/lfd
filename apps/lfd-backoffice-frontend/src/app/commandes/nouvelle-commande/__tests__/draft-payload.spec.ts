@@ -29,7 +29,8 @@ const CATALOGUE: readonly CatalogItemView[] = [
     name: 'Croissant',
     unitPriceMillicents: 120,
     vatRate: 5.5,
-    category: 'viennoiserie',
+    family: { id: 'fam_01J9V1', name: 'Viennoiseries', position: 1 },
+    category: null,
   },
 ];
 

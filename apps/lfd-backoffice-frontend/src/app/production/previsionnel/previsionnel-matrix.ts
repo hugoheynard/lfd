@@ -1,13 +1,12 @@
 import {
   SHELF_LABEL_OFF_CATALOG,
   SHELF_LABEL_UNKNOWN,
-  CATALOG_CATEGORY_LABELS,
-  CATALOG_CATEGORY_ORDER,
-  type CatalogCategory,
+  type CatalogFamilyView,
   type CatalogItemView,
   type ProductionForecastLine,
   type ProductionForecastView,
 } from '@lfd/contracts';
+import { catalogShelves } from '@lfd/b2b-ui/catalog';
 
 /**
  * La **matrice du prévisionnel**, telle que l'écran la lit — et rien d'autre.
@@ -16,8 +15,8 @@ import {
  * ordre stable, donc deux lectures rendent la même chose. L'ordre d'AFFICHAGE,
  * lui, est ici, parce qu'il dépend du **catalogue d'aujourd'hui** :
  *
- * - les rayons sortent dans l'**ordre de la vitrine** (`CATALOG_CATEGORY_ORDER`)
- *   et non par poids — c'est l'ordre que l'équipe connaît déjà, et un ordre qui
+ * - les rayons sortent dans l'**ordre du référentiel** (la `position` de la
+ *   famille, via `catalogShelves`) et non par poids — c'est l'ordre que l'équipe connaît déjà, et un ordre qui
  *   bougerait d'un jour à l'autre obligerait à relire la grille en entier ;
  * - à l'intérieur d'un rayon, la **quantité décroissante** sur toute la plage :
  *   c'est par le plus gros que le fournil commence. À égalité, par nom, pour que
@@ -75,8 +74,8 @@ export interface ForecastProduct {
 
 /** Un rayon : son nom, son poids par jour, et ses produits. */
 export interface ForecastRayon {
-  /** `null` = les SKU que le catalogue ne connaît plus. */
-  readonly category: CatalogCategory | null;
+  /** `null` = les SKU dont la famille n'est pas connue (retirés, ou catalogue illisible). */
+  readonly family: CatalogFamilyView | null;
   readonly label: string;
   /** Le total du rayon jour par jour — la ligne de tête du groupe. */
   readonly quantities: readonly number[];
@@ -101,41 +100,31 @@ export function forecastRayons(
    */
   shelvesKnown = true,
 ): readonly ForecastRayon[] {
-  const categoryOf = new Map(catalogue.map((item) => [item.sku, item.category]));
+  const familyOf = new Map(catalogue.map((item) => [item.sku, item.family]));
   const width = view.days.length;
   const peakColumn = view.days.findIndex((day) => day.date === view.peakDate);
-  const buckets = new Map<CatalogCategory | null, ForecastProduct[]>();
+  const products = view.lines.map((line) => productOf(line, width, peakColumn));
 
-  for (const line of view.lines) {
-    const category = categoryOf.get(line.sku) ?? null;
-    const lines = buckets.get(category) ?? [];
-    lines.push(productOf(line, width, peakColumn));
-    buckets.set(category, lines);
-  }
-
-  const ordered: (CatalogCategory | null)[] = [...CATALOG_CATEGORY_ORDER, null];
-  return ordered
-    .filter((category) => buckets.has(category))
-    .map((category) => {
-      const lines = [...(buckets.get(category) ?? [])].sort(
-        (a, b) => b.totalUnits - a.totalUnits || a.productName.localeCompare(b.productName, 'fr'),
-      );
-      return {
-        category,
-        label: labelOf(category, shelvesKnown),
-        quantities: Array.from({ length: width }, (_unused, column) =>
-          lines.reduce((sum, line) => sum + (line.cells[column]?.quantity ?? 0), 0),
-        ),
-        totalUnits: lines.reduce((sum, line) => sum + line.totalUnits, 0),
-        lines,
-      };
-    });
+  return catalogShelves(products, (product) => familyOf.get(product.sku) ?? null).map((shelf) => {
+    const lines = [...shelf.items].sort(
+      (a, b) => b.totalUnits - a.totalUnits || a.productName.localeCompare(b.productName, 'fr'),
+    );
+    return {
+      family: shelf.family,
+      label: labelOf(shelf.family, shelvesKnown),
+      quantities: Array.from({ length: width }, (_unused, column) =>
+        lines.reduce((sum, line) => sum + (line.cells[column]?.quantity ?? 0), 0),
+      ),
+      totalUnits: lines.reduce((sum, line) => sum + line.totalUnits, 0),
+      lines,
+    };
+  });
 }
 
 /** Le nom d'un rayon — et ce qu'on dit quand on ne le connaît pas. */
-function labelOf(category: CatalogCategory | null, shelvesKnown: boolean): string {
-  if (category !== null) {
-    return CATALOG_CATEGORY_LABELS[category];
+function labelOf(family: CatalogFamilyView | null, shelvesKnown: boolean): string {
+  if (family !== null) {
+    return family.name;
   }
   return shelvesKnown ? OFF_CATALOG_LABEL : UNKNOWN_SHELF_LABEL;
 }

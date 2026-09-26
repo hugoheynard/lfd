@@ -28,7 +28,7 @@
     @if (shelves().length === 0) {
       <fold-empty-state title="Aucun produit" subtitle="Rien ne correspond à cette recherche." />
     } @else {
-      @for (shelf of shelves(); track shelf.category) {
+      @for (shelf of shelves(); track shelf.family?.id ?? null) {
         <h3 class="src-shelf">{{ shelf.label }}</h3>
         <ul class="src-list">
           @for (line of shelf.items; track line.product.id) {

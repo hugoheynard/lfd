@@ -28,6 +28,7 @@ const categories: readonly PricingCategoryView[] = [
   {
     id: 'pains',
     name: 'Pains',
+    family: { id: 'pains', name: 'Pains', position: 1 },
     vatRatePercent: 5.5,
     floor: null,
     items: [item('a'), item('b'), item('c')],
@@ -38,6 +39,7 @@ const categories: readonly PricingCategoryView[] = [
   {
     id: 'viennoiseries',
     name: 'Viennoiseries',
+    family: { id: 'viennoiseries', name: 'Viennoiseries', position: 2 },
     vatRatePercent: 5.5,
     floor: null,
     items: [item('d')],

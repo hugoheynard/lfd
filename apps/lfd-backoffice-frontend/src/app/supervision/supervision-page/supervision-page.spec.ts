@@ -47,6 +47,7 @@ const WORKSHEET: ProductionWorksheetView = {
   groups: [
     {
       key: 'v',
+      family: { id: 'v', name: 'Viennoiseries', position: 1 },
       category: null,
       label: 'Viennoiseries',
       lineCount: 2,

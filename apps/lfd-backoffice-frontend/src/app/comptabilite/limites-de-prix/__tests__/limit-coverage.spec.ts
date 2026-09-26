@@ -29,8 +29,9 @@ const BOARD: Pick<PricingBoardView, 'categories'> = {
   categories: [
     { id: 'vie', name: 'Viennoiseries', items: [item('VIE-1'), item('VIE-2')] },
     { id: 'pain', name: 'Pains', items: [item('PAI-1')] },
-  ].map((category) => ({
+  ].map((category, position) => ({
     ...category,
+    family: { id: category.id, name: category.name, position },
     vatRatePercent: 5.5,
     floor: null,
     rules: [],

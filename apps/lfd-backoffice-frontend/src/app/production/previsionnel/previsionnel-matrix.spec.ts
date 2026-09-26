@@ -1,4 +1,4 @@
-import type { CatalogItemView, ProductionForecastView } from '@lfd/contracts';
+import type { CatalogFamilyView, CatalogItemView, ProductionForecastView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { forecastRayons, totalOfRayons } from './previsionnel-matrix';
@@ -20,20 +20,43 @@ function view(
   };
 }
 
-function item(sku: string, category: CatalogItemView['category']): CatalogItemView {
-  return { sku, name: sku, unitPriceMillicents: 0, vatRate: 5.5, category };
+/** Des familles opaques, telles que le référentiel les livre : un id, un nom, un rang. */
+const VIENNOISERIES: CatalogFamilyView = { id: 'fam_01J9V1', name: 'Viennoiseries', position: 1 };
+const CHOCOLATS: CatalogFamilyView = {
+  id: 'fam_01J9C5',
+  name: 'Chocolat & confiserie',
+  position: 5,
+};
+
+function item(sku: string, family: CatalogFamilyView | null): CatalogItemView {
+  return { sku, name: sku, unitPriceMillicents: 0, vatRate: 5.5, family, category: null };
 }
 
 describe('forecastRayons', () => {
-  it("range les rayons dans l'ordre de la vitrine, pas par poids", () => {
+  it("range les rayons dans l'ordre du référentiel, pas par poids", () => {
     const rayons = forecastRayons(
       view([
         { sku: 'CHO-1', productName: 'Tablette', quantities: [900, 0, 0] },
         { sku: 'VIE-1', productName: 'Croissant', quantities: [10, 0, 0] },
       ]),
-      [item('CHO-1', 'chocolat'), item('VIE-1', 'viennoiserie')],
+      [item('CHO-1', CHOCOLATS), item('VIE-1', VIENNOISERIES)],
     );
     expect(rayons.map((rayon) => rayon.label)).toEqual(['Viennoiseries', 'Chocolat & confiserie']);
+  });
+
+  /**
+   * Régression : l'union fermée des rayons a mis le catalogue pro en 500 le
+   * 2026-09-26, le jour où le référentiel a livré une famille qu'elle ne
+   * connaissait pas. Une famille neuve est un rayon comme les autres.
+   */
+  it('fait un rayon d’une famille que le front ne connaît pas', () => {
+    const galettes: CatalogFamilyView = { id: 'fam_NEUVE', name: 'Galettes', position: 3 };
+    const rayons = forecastRayons(
+      view([{ sku: 'GAL-1', productName: 'Galette des rois', quantities: [4, 0, 0] }]),
+      [item('GAL-1', galettes)],
+    );
+    expect(rayons.map((rayon) => rayon.label)).toEqual(['Galettes']);
+    expect(rayons[0]?.family).toEqual(galettes);
   });
 
   it("trie les produits d'un rayon par quantité décroissante, puis par nom", () => {
@@ -43,7 +66,7 @@ describe('forecastRayons', () => {
         { sku: 'VIE-2', productName: 'Pain au chocolat', quantities: [40, 0, 0] },
         { sku: 'VIE-3', productName: 'Chausson', quantities: [40, 0, 0] },
       ]),
-      [item('VIE-1', 'viennoiserie'), item('VIE-2', 'viennoiserie'), item('VIE-3', 'viennoiserie')],
+      [item('VIE-1', VIENNOISERIES), item('VIE-2', VIENNOISERIES), item('VIE-3', VIENNOISERIES)],
     );
     expect(rayons[0]?.lines.map((line) => line.productName)).toEqual([
       'Chausson',
@@ -58,7 +81,7 @@ describe('forecastRayons', () => {
         { sku: 'VIE-1', productName: 'Croissant', quantities: [10, 5, 0] },
         { sku: 'VIE-2', productName: 'Pain au chocolat', quantities: [2, 0, 7] },
       ]),
-      [item('VIE-1', 'viennoiserie'), item('VIE-2', 'viennoiserie')],
+      [item('VIE-1', VIENNOISERIES), item('VIE-2', VIENNOISERIES)],
     );
     expect(rayons[0]?.quantities).toEqual([12, 5, 7]);
     expect(rayons[0]?.totalUnits).toBe(24);
@@ -75,10 +98,10 @@ describe('forecastRayons', () => {
         { sku: 'VIE-1', productName: 'Croissant', quantities: [10, 0, 0] },
         { sku: 'XXX-9', productName: 'Produit retiré', quantities: [3, 0, 0] },
       ]),
-      [item('VIE-1', 'viennoiserie')],
+      [item('VIE-1', VIENNOISERIES)],
     );
     expect(rayons.map((rayon) => rayon.label)).toEqual(['Viennoiseries', 'Hors catalogue']);
-    expect(rayons[1]?.category).toBeNull();
+    expect(rayons[1]?.family).toBeNull();
     expect(totalOfRayons(rayons)).toBe(13);
   });
 
@@ -100,7 +123,7 @@ describe('forecastRayons', () => {
   it('donne à chaque ligne autant de cases que de jours, quoi que dise la ligne', () => {
     const rayons = forecastRayons(
       view([{ sku: 'VIE-1', productName: 'Croissant', quantities: [10, 0, 0] }]),
-      [item('VIE-1', 'viennoiserie')],
+      [item('VIE-1', VIENNOISERIES)],
     );
     expect(rayons[0]?.lines[0]?.cells).toHaveLength(DAYS.length);
   });
@@ -108,7 +131,7 @@ describe('forecastRayons', () => {
   it('pastille une quantité bien au-delà de la moyenne du produit', () => {
     const rayons = forecastRayons(
       view([{ sku: 'VIE-1', productName: 'Croissant', quantities: [10, 10, 400] }]),
-      [item('VIE-1', 'viennoiserie')],
+      [item('VIE-1', VIENNOISERIES)],
     );
     expect(rayons[0]?.lines[0]?.cells.map((cell) => cell.exceptional)).toEqual([
       false,
@@ -131,7 +154,7 @@ describe('forecastRayons', () => {
   it('ne pastille rien sur la colonne du pic, qui est déjà annoncée', () => {
     const rayons = forecastRayons(
       view([{ sku: 'VIE-1', productName: 'Croissant', quantities: [10, 10, 400] }], DAYS[2]),
-      [item('VIE-1', 'viennoiserie')],
+      [item('VIE-1', VIENNOISERIES)],
     );
     expect(rayons[0]?.lines[0]?.cells.every((cell) => !cell.exceptional)).toBe(true);
   });
@@ -139,7 +162,7 @@ describe('forecastRayons', () => {
   it("ne pastille pas un produit qui ne sort qu'un jour", () => {
     const rayons = forecastRayons(
       view([{ sku: 'VIE-1', productName: 'Croissant', quantities: [0, 0, 400] }]),
-      [item('VIE-1', 'viennoiserie')],
+      [item('VIE-1', VIENNOISERIES)],
     );
     expect(rayons[0]?.lines[0]?.cells.every((cell) => !cell.exceptional)).toBe(true);
   });

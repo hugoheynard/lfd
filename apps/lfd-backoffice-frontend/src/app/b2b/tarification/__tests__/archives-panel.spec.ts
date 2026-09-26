@@ -19,7 +19,7 @@ function archived(overrides: Partial<PriceRuleView> = {}): PriceRuleView {
   return {
     id: 'rule_1',
     stage: 'promotion',
-    scope: { type: 'category', id: 'viennoiserie' },
+    scope: { type: 'category', id: 'fam_01J9V1' },
     audience: { type: 'all', id: null },
     minQuantity: null,
     effect: { nature: 'alter', direction: 'decrease', mode: 'percent', value: 1000 },

@@ -143,7 +143,7 @@ export class SourceProduits {
   protected readonly shelves = computed<readonly CatalogShelf<ProposedLine>[]>(() => {
     const start = (this.page() - 1) * CATALOGUE_PAGE_SIZE;
     const slice = this.matching().slice(start, start + CATALOGUE_PAGE_SIZE);
-    return catalogShelves(slice, (item) => item.category).map((shelf) => ({
+    return catalogShelves(slice, (item) => item.family).map((shelf) => ({
       ...shelf,
       items: shelf.items.map(fromCatalog),
     }));

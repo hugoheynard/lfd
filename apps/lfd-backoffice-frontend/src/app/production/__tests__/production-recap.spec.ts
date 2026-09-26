@@ -1,4 +1,4 @@
-import type { CatalogItemView, AtelierSheet } from '@lfd/contracts';
+import type { CatalogFamilyView, CatalogItemView, AtelierSheet } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { productionRecap, totalPieces } from '../production-recap';
@@ -27,14 +27,18 @@ function sheet(reference: string, lines: [string, string, number][]): AtelierShe
   };
 }
 
-function item(sku: string, category: CatalogItemView['category']): CatalogItemView {
-  return { sku, name: sku, unitPriceMillicents: 100, vatRate: 5.5, category };
+/** Des familles opaques, telles que le référentiel les livre : un id, un nom, un rang. */
+const VIENNOISERIES: CatalogFamilyView = { id: 'fam_01J9V1', name: 'Viennoiseries', position: 1 };
+const PAINS: CatalogFamilyView = { id: 'fam_01J9P2', name: 'Pains', position: 2 };
+
+function item(sku: string, family: CatalogFamilyView | null): CatalogItemView {
+  return { sku, name: sku, unitPriceMillicents: 100, vatRate: 5.5, family, category: null };
 }
 
 const CATALOGUE: readonly CatalogItemView[] = [
-  item('CRO', 'viennoiserie'),
-  item('PAC', 'viennoiserie'),
-  item('BAG', 'pain'),
+  item('CRO', VIENNOISERIES),
+  item('PAC', VIENNOISERIES),
+  item('BAG', PAINS),
 ];
 
 describe('le récapitulatif de production', () => {
@@ -50,7 +54,7 @@ describe('le récapitulatif de production', () => {
     expect(croissant?.orderCount).toBe(2);
   });
 
-  it('groupe par rayon, dans l’ordre de la vitrine et non par poids', () => {
+  it('groupe par rayon, dans l’ordre du référentiel et non par poids', () => {
     // La baguette pèse plus que le croissant, mais « Pains » vient après
     // « Viennoiseries » au catalogue : c'est l'ordre que l'équipe connaît.
     const recap = productionRecap(

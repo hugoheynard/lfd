@@ -21,6 +21,7 @@ function group(key: string, lines: readonly WorkshopLine[]): WorkshopGroup {
   const pending = lines.filter((l) => !l.done);
   return {
     key,
+    family: { id: key, name: key, position: 0 },
     category: null,
     label: key,
     lineCount: lines.length,

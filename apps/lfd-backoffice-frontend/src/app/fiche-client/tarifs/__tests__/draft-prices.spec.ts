@@ -47,7 +47,14 @@ function view(items: readonly PricingItemView[]): CompanyPricingView {
   return {
     companyId: 'co_1',
     at: new Date().toISOString(),
-    categories: [{ id: 'viennoiserie', name: 'Viennoiseries', items }],
+    categories: [
+      {
+        id: 'fam_01J9V1',
+        name: 'Viennoiseries',
+        family: { id: 'fam_01J9V1', name: 'Viennoiseries', position: 1 },
+        items,
+      },
+    ],
     mercuriales: [],
     negotiatedSkuCount: 0,
     averageGapBp: null,

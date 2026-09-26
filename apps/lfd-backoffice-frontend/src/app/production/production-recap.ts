@@ -1,12 +1,11 @@
 import {
   SHELF_LABEL_OFF_CATALOG,
   SHELF_LABEL_UNKNOWN,
-  CATALOG_CATEGORY_LABELS,
-  CATALOG_CATEGORY_ORDER,
-  type CatalogCategory,
+  type CatalogFamilyView,
   type CatalogItemView,
   type AtelierSheet,
 } from '@lfd/contracts';
+import { catalogShelves } from '@lfd/b2b-ui/catalog';
 
 /**
  * La **récapitulation de production** : ce que le lot représente, rayon par
@@ -36,8 +35,8 @@ export interface ProductionRecapLine {
 
 /** Un rayon et son contenu. */
 export interface ProductionRecapGroup {
-  /** `null` = les SKU que le catalogue ne connaît plus. */
-  readonly category: CatalogCategory | null;
+  /** `null` = les SKU dont la famille n'est pas connue (retirés, ou catalogue illisible). */
+  readonly family: CatalogFamilyView | null;
   readonly label: string;
   readonly quantity: number;
   readonly lines: readonly ProductionRecapLine[];
@@ -73,8 +72,8 @@ interface Tally {
 /**
  * Agrège les lignes d'un lot, groupées par rayon.
  *
- * Les rayons sortent dans l'**ordre de la vitrine** (`CATALOG_CATEGORY_ORDER`) et
- * non par poids : c'est l'ordre que l'équipe connaît déjà du catalogue, et un
+ * Les rayons sortent dans l'**ordre du référentiel** (la `position` de la
+ * famille, via `catalogShelves`) et non par poids : c'est l'ordre que l'équipe connaît déjà du catalogue, et un
  * ordre qui bougerait d'un jour à l'autre obligerait à relire la feuille en
  * entier. À l'intérieur d'un rayon, en revanche, la **quantité décroissante** —
  * c'est par le plus gros que le fournil commence. À quantité égale, par nom,
@@ -90,7 +89,7 @@ export function productionRecap(
    */
   shelvesKnown = true,
 ): readonly ProductionRecapGroup[] {
-  const categoryOf = new Map(catalogue.map((item) => [item.sku, item.category]));
+  const familyOf = new Map(catalogue.map((item) => [item.sku, item.family]));
   const bySku = new Map<string, Tally>();
 
   for (const sheet of sheets) {
@@ -109,28 +108,18 @@ export function productionRecap(
     }
   }
 
-  const buckets = new Map<CatalogCategory | null, ProductionRecapLine[]>();
-  for (const [sku, tally] of bySku) {
-    const category = categoryOf.get(sku) ?? null;
-    const lines = buckets.get(category) ?? [];
-    lines.push({ sku, ...tally });
-    buckets.set(category, lines);
-  }
-
-  const ordered: (CatalogCategory | null)[] = [...CATALOG_CATEGORY_ORDER, null];
-  return ordered
-    .filter((category) => buckets.has(category))
-    .map((category) => {
-      const lines = [...(buckets.get(category) ?? [])].sort(
-        (a, b) => b.quantity - a.quantity || a.productName.localeCompare(b.productName, 'fr'),
-      );
-      return {
-        category,
-        label: shelfLabel(category, shelvesKnown),
-        quantity: lines.reduce((sum, line) => sum + line.quantity, 0),
-        lines,
-      };
-    });
+  const tallied: ProductionRecapLine[] = [...bySku].map(([sku, tally]) => ({ sku, ...tally }));
+  return catalogShelves(tallied, (line) => familyOf.get(line.sku) ?? null).map((shelf) => {
+    const lines = [...shelf.items].sort(
+      (a, b) => b.quantity - a.quantity || a.productName.localeCompare(b.productName, 'fr'),
+    );
+    return {
+      family: shelf.family,
+      label: shelfLabel(shelf.family, shelvesKnown),
+      quantity: lines.reduce((sum, line) => sum + line.quantity, 0),
+      lines,
+    };
+  });
 }
 
 /**
@@ -141,9 +130,9 @@ export function productionRecap(
  * qui nommeraient différemment une lecture ratée du catalogue en feraient deux
  * incidents distincts (ouvert le 2026-09-13).
  */
-export function shelfLabel(category: CatalogCategory | null, shelvesKnown: boolean): string {
-  if (category !== null) {
-    return CATALOG_CATEGORY_LABELS[category];
+export function shelfLabel(family: CatalogFamilyView | null, shelvesKnown: boolean): string {
+  if (family !== null) {
+    return family.name;
   }
   return shelvesKnown ? OFF_CATALOG_LABEL : UNKNOWN_SHELF_LABEL;
 }

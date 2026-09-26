@@ -21,8 +21,8 @@ import { FloorPanel, type FloorPanelData } from './floor-panel';
  */
 
 const FLOOR: PriceFloorView = {
-  id: 'category:viennoiserie',
-  scope: { type: 'category', id: 'viennoiserie' },
+  id: 'category:fam_01J9V1',
+  scope: { type: 'category', id: 'fam_01J9V1' },
   mode: 'amount',
   value: 150,
   dynamic: null,
@@ -36,7 +36,7 @@ const DATA: FloorPanelData = {
   clientele: 'pro',
   canWrite: true,
   target: {
-    scope: { type: 'category', id: 'viennoiserie' },
+    scope: { type: 'category', id: 'fam_01J9V1' },
     target: 'Viennoiseries',
     current: FLOOR,
     inherited: null,

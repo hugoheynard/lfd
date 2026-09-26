@@ -30,7 +30,7 @@ const RULE: ArchivePanelData = {
 };
 
 const FLOOR: ArchivePanelData = {
-  subject: { kind: 'floor', scope: { type: 'category', id: 'viennoiserie' }, clientele: 'public' },
+  subject: { kind: 'floor', scope: { type: 'category', id: 'fam_01J9V1' }, clientele: 'public' },
   target: 'Viennoiseries',
   summary: 'mur à 1,50 €',
 };
@@ -112,9 +112,7 @@ describe('archiver en disant pourquoi', () => {
       .componentInstance['submit']()
       .then(() => undefined);
 
-    expect(archived).toEqual([
-      { kind: 'floor', key: 'public:category:viennoiserie', reason: null },
-    ]);
+    expect(archived).toEqual([{ kind: 'floor', key: 'public:category:fam_01J9V1', reason: null }]);
   });
 
   it('referme en signalant que quelque chose a changé', async () => {

@@ -70,6 +70,7 @@ function shelf(id: string, name: string, items: PricingItemView[]) {
   return {
     id,
     name,
+    family: { id, name, position: 0 },
     vatRatePercent: 5.5,
     floor: null,
     rules: [],

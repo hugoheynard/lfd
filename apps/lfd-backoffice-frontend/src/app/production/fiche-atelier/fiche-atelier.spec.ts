@@ -48,11 +48,16 @@ function line(over: Partial<WorkshopLine> = {}): WorkshopLine {
 const SEIGLE = line({ sku: 'SEI', productName: 'Pain de seigle', quantity: 30 });
 const BAGUETTE_DONE = line({ done: true, initials: 'MJ', doneAt: `${DAY}T04:30:00` });
 
+/** Des familles opaques, telles que le référentiel les livre : un id, un nom, un rang. */
+const VIENNOISERIES = { id: 'fam_01J9V1', name: 'Viennoiseries', position: 1 };
+const PAINS = { id: 'fam_01J9P2', name: 'Pains', position: 2 };
+
 /** Le rayon des pains, rien de coché. */
 function painTodo(): WorkshopGroup {
   return {
-    key: 'pain',
-    category: 'pain',
+    key: PAINS.id,
+    family: PAINS,
+    category: null,
     label: 'Pains',
     lineCount: 2,
     doneCount: 0,
@@ -474,7 +479,7 @@ describe('la fiche d’atelier', () => {
         {
           ...painTodo(),
           key: UNSHELVED_WORKSHOP_GROUP_KEY,
-          category: null,
+          family: null,
           label: SHELF_LABEL_UNKNOWN,
         },
       ],
@@ -510,32 +515,47 @@ describe('la fiche d’atelier', () => {
     expect(el.querySelector('.fa-body')).toBeNull();
   });
 
-  it('ouvre sur la fiche que la PERSONNE a laissée', async () => {
+  /** Une fiche des viennoiseries, servie la première. */
+  function viennoiserieTodo(): WorkshopGroup {
     const croissant = line({ sku: 'CRO', productName: 'Croissant', quantity: 240 });
-    api.view = sheet({
-      groups: [
-        {
-          key: 'viennoiserie',
-          category: 'viennoiserie',
-          label: 'Viennoiseries',
-          lineCount: 1,
-          doneCount: 0,
-          totalUnits: 240,
-          remainingUnits: 240,
-          doneUnits: 0,
-          lines: [croissant],
-          pending: [croissant],
-          done: [],
-        },
-        painTodo(),
-      ],
-    });
-    prefs.category = 'pain';
+    return {
+      key: VIENNOISERIES.id,
+      family: VIENNOISERIES,
+      category: null,
+      label: 'Viennoiseries',
+      lineCount: 1,
+      doneCount: 0,
+      totalUnits: 240,
+      remainingUnits: 240,
+      doneUnits: 0,
+      lines: [croissant],
+      pending: [croissant],
+      done: [],
+    };
+  }
+
+  it('ouvre sur la fiche que la PERSONNE a laissée', async () => {
+    api.view = sheet({ groups: [viennoiserieTodo(), painTodo()] });
+    prefs.category = PAINS.id;
     const { el } = await render();
 
     // « Viennoiseries » est servie la première : sans la préférence, c'est elle
     // qui se serait ouverte.
     expect(text(el, '.fa-title').trim()).toBe('Pains');
     expect(text(el, '.fa-eyebrow')).toContain('fiche 2 sur 2');
+  });
+
+  /**
+   * Régression : les préférences enregistrées avant les familles en données
+   * portent un ancien code de rayon (`"pain"`), qu'aucune fiche ne porte plus
+   * (2026-09-26). Il ne doit ni planter, ni ouvrir une fiche devinée.
+   */
+  it('retombe sur la première fiche quand la préférence porte un ancien code de rayon', async () => {
+    api.view = sheet({ groups: [viennoiserieTodo(), painTodo()] });
+    prefs.category = 'pain';
+    const { el } = await render();
+
+    expect(text(el, '.fa-title').trim()).toBe('Viennoiseries');
+    expect(text(el, '.fa-eyebrow')).toContain('fiche 1 sur 2');
   });
 });

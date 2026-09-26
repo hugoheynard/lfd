@@ -28,7 +28,7 @@ function rule(overrides: Partial<PriceRuleView> = {}): PriceRuleView {
   return {
     id: 'rule_1',
     stage: 'promotion',
-    scope: { type: 'category', id: 'viennoiserie' },
+    scope: { type: 'category', id: 'fam_01J9V1' },
     audience: { type: 'all', id: null },
     minQuantity: null,
     effect: { nature: 'alter', direction: 'decrease', mode: 'percent', value: 1000 },
@@ -53,8 +53,8 @@ function rule(overrides: Partial<PriceRuleView> = {}): PriceRuleView {
 
 function floor(overrides: Partial<PriceFloorView> = {}): PriceFloorView {
   return {
-    id: 'category:viennoiserie',
-    scope: { type: 'category', id: 'viennoiserie' },
+    id: 'category:fam_01J9V1',
+    scope: { type: 'category', id: 'fam_01J9V1' },
     mode: 'amount',
     value: 150_000,
     dynamic: null,
@@ -90,8 +90,9 @@ function item(overrides: Partial<PricingItemView> = {}): PricingItemView {
 
 function category(overrides: Partial<PricingCategoryView> = {}): PricingCategoryView {
   return {
-    id: 'viennoiserie',
+    id: 'fam_01J9V1',
     name: 'Viennoiseries',
+    family: { id: 'fam_01J9V1', name: 'Viennoiseries', position: 1 },
     vatRatePercent: 5.5,
     floor: null,
     rules: [],

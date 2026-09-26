@@ -37,7 +37,12 @@ function item(sku: string, canonicalMillicents: number): PricingItemView {
 }
 
 const CATEGORIES: readonly CompanyPricingCategoryView[] = [
-  { id: 'viennoiserie', name: 'Viennoiseries', items: [item('VIE-012', 213_270)] },
+  {
+    id: 'fam_01J9V1',
+    name: 'Viennoiseries',
+    family: { id: 'fam_01J9V1', name: 'Viennoiseries', position: 1 },
+    items: [item('VIE-012', 213_270)],
+  },
 ];
 
 function mercuriale(lines: PosedMercurialeView['lines']): PosedMercurialeView {
