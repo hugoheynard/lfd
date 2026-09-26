@@ -19,8 +19,8 @@ import { clientSheetOf } from "../../domain/services/order-sheet.js";
  * « rien n'a été débité » : c'est la question qu'un client se pose en lisant
  * « annulée ».
  *
- * ⚠️ Aucun appelant ne publie encore la cause `day_closed` au 2026-09-26 :
- * c'est le balayage de la clôture (lot 6) qui le fera.
+ * La cause `day_closed` est publiée par le seul balayage de la clôture,
+ * `PendingSettlementSweep` (lot 6, vérifié le 2026-09-26).
  */
 @EventsHandler(OrderPaymentFailedEvent)
 export class SendPaymentExpiredMail implements IEventHandler<OrderPaymentFailedEvent> {

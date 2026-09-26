@@ -3,6 +3,7 @@ import { Global, Module } from "@nestjs/common";
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { CatalogWorkshopShelvesReader } from "../b2b/catalog/infrastructure/catalog-workshop-shelves.reader.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
+import { PendingSettlementSweep } from "../b2b/orders/application/services/pending-settlement-sweep.service.js";
 import { PrismaDayOrdersReader } from "../b2b/orders/infrastructure/prisma-day-orders.reader.js";
 import { PrismaExpectedProductionReader } from "../b2b/orders/infrastructure/prisma-expected-production.reader.js";
 import { PrismaPendingOrdersReader } from "../b2b/orders/infrastructure/prisma-pending-orders.reader.js";
@@ -10,6 +11,7 @@ import {
   DayOrdersReader,
   ExpectedProductionReader,
   PendingCommerceOrdersReader,
+  PendingSettlementSweeper,
   WorkshopShelvesReader,
 } from "../production/channels/commerce/index.js";
 
@@ -56,11 +58,16 @@ import {
     // chez `catalog/` et non chez `orders/` : c'est là que sont le miroir du
     // catalogue et la seule table famille → rayon.
     { provide: WorkshopShelvesReader, useClass: CatalogWorkshopShelvesReader },
+    // Le seul port du canal qui ÉCRIT chez le commerce : la clôture lui demande
+    // de trancher les règlements en vol avant de compter (plan d'abandon, B1).
+    // `useExisting` : l'instance est celle d'`OrdersModule`, qui a ses ports.
+    { provide: PendingSettlementSweeper, useExisting: PendingSettlementSweep },
   ],
   exports: [
     DayOrdersReader,
     ExpectedProductionReader,
     PendingCommerceOrdersReader,
+    PendingSettlementSweeper,
     WorkshopShelvesReader,
   ],
 })

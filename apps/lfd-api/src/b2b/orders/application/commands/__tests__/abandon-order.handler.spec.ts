@@ -133,6 +133,7 @@ interface Scenario {
   readonly role?: OrderRole | null;
   readonly outcome?: IntentCancellation;
   readonly written?: AbandonedSettlement | null;
+  readonly clientele?: "pro" | "public" | null;
 }
 
 function build(scenario: Scenario = {}) {
@@ -146,6 +147,7 @@ function build(scenario: Scenario = {}) {
     companyId: scenario.companyId ?? null,
     placedByUserId: scenario.author ?? "u1",
     stripePaymentIntentId: scenario.intent === undefined ? "pi_1" : scenario.intent,
+    clientele: scenario.clientele === undefined ? "public" : scenario.clientele,
   });
   const handler = new AbandonOrderHandler(
     new OneRoleGuard(scenario.role ?? null),
@@ -181,13 +183,19 @@ describe("AbandonOrderHandler — l'ordre des gestes", () => {
   });
 
   it("rapporte ce que la base a écrit — un pro garde sa commande, son règlement tombe", async () => {
-    const { abandon, events } = build({ written: "failed", companyId: "cmp_1", role: "orders" });
+    const { abandon, events } = build({
+      written: "failed",
+      companyId: "cmp_1",
+      role: "orders",
+      clientele: "pro",
+    });
 
     await abandon();
 
-    expect(events.published).toContainEqual(
+    expect(events.published).toEqual([
+      new OrderPaymentFailedEvent("order_1", "abandoned"),
       new OrderAbandonedEvent("order_1", "ORD-4812", "u1", "failed"),
-    );
+    ]);
   });
 
   it("ne publie rien quand la base n'a rien franchi (second clic d'un pro)", async () => {
@@ -204,6 +212,36 @@ describe("AbandonOrderHandler — l'ordre des gestes", () => {
     await abandon();
 
     expect(gateway.cancelled).toEqual([]);
+    expect(repository.abandoned).toEqual(["order_1"]);
+  });
+});
+
+describe("AbandonOrderHandler — un pro garde son intention vivante (Q8)", () => {
+  it.each([["pro" as const], [null]])(
+    "clientèle %s : n'appelle pas Stripe, écrit le refus — payable jusqu'à la clôture",
+    async (clientele) => {
+      const { abandon, gateway, repository } = build({
+        clientele,
+        written: "failed",
+        companyId: "cmp_1",
+        role: "orders",
+      });
+
+      await abandon();
+
+      expect(gateway.cancelled).toEqual([]);
+      expect(repository.abandoned).toEqual(["order_1"]);
+    },
+  );
+
+  it("Stripe injoignable ne refuse pas l'abandon d'un pro : on ne l'appelle pas", async () => {
+    const { abandon, repository } = build({
+      clientele: "pro",
+      written: "failed",
+      outcome: { kind: "unavailable", reason: "ECONNRESET" },
+    });
+
+    await expect(abandon()).resolves.toBeUndefined();
     expect(repository.abandoned).toEqual(["order_1"]);
   });
 });

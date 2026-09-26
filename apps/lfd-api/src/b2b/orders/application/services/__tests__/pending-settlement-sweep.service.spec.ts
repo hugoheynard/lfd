@@ -1,0 +1,224 @@
+import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
+import { ServiceDay } from "../../../../../production/channels/commerce/index.js";
+import {
+  PaymentGateway,
+  type CreatedIntent,
+  type IntentCancellation,
+  type PaymentWebhookEvent,
+  type RetrievedIntent,
+} from "../../../../payments/domain/payment-gateway.js";
+import { OrderPaymentFailedEvent } from "../../../domain/events/order-payment-failed.event.js";
+import {
+  OrderRepository,
+  type AbandonedSettlement,
+  type PlacedOrder,
+} from "../../../domain/ports/order.repository.js";
+import {
+  UnsettledSettlementReader,
+  type UnsettledSettlement,
+} from "../../../domain/ports/unsettled-settlement.reader.js";
+import type { SettlementSweepWindow } from "../../../domain/services/settlement-sweep.js";
+import { PendingSettlementSweep } from "../pending-settlement-sweep.service.js";
+
+const DAY = "2026-01-15";
+
+/** Les commandes non encaissées de la journée, et la fenêtre demandée. */
+class Unsettled extends UnsettledSettlementReader {
+  readonly windows: SettlementSweepWindow[] = [];
+
+  constructor(private readonly rows: readonly UnsettledSettlement[]) {
+    super();
+  }
+
+  unsettledOn(window: SettlementSweepWindow): Promise<readonly UnsettledSettlement[]> {
+    this.windows.push(window);
+    return Promise.resolve(this.rows);
+  }
+}
+
+/** Stripe : une issue d'annulation écrite d'avance, et la séquence des gestes. */
+class ScriptedGateway extends PaymentGateway {
+  constructor(
+    private readonly outcome: IntentCancellation,
+    private readonly calls: string[],
+  ) {
+    super();
+  }
+
+  cancelIntent(paymentIntentId: string): Promise<IntentCancellation> {
+    this.calls.push(`cancel:${paymentIntentId}`);
+    return Promise.resolve(this.outcome);
+  }
+
+  createIntent(): Promise<CreatedIntent> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  retrieveIntent(): Promise<RetrievedIntent> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  publishableKey(): string {
+    return "pk_test";
+  }
+
+  parseWebhook(): PaymentWebhookEvent {
+    return { kind: "ignored" };
+  }
+}
+
+/** Le dépôt : `failAtClosing` rend ce que la base aurait franchi. */
+class ClosingRepository extends OrderRepository {
+  constructor(
+    private readonly crossed: ReadonlySet<string>,
+    private readonly calls: string[],
+  ) {
+    super();
+  }
+
+  failAtClosing(orderId: string): Promise<boolean> {
+    this.calls.push(`fail:${orderId}`);
+    return Promise.resolve(this.crossed.has(orderId));
+  }
+
+  markAbandoned(): Promise<AbandonedSettlement | null> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  place(): Promise<PlacedOrder> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  markPaid(): Promise<string | null> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  markPaymentFailed(): Promise<string | null> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  markFulfilled(): Promise<boolean> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  markReady(): Promise<boolean> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+
+  absorbIntoPlan(): Promise<number> {
+    return Promise.reject(new Error("non utilisé"));
+  }
+}
+
+interface Scenario {
+  readonly rows: readonly UnsettledSettlement[];
+  readonly outcome?: IntentCancellation;
+  readonly crossed?: readonly string[];
+}
+
+function build(scenario: Scenario) {
+  const calls: string[] = [];
+  const unsettled = new Unsettled(scenario.rows);
+  const events = new RecordingPublisher();
+  const sweep = new PendingSettlementSweep(
+    unsettled,
+    new ScriptedGateway(scenario.outcome ?? { kind: "cancelled" }, calls),
+    new ClosingRepository(
+      new Set(scenario.crossed ?? scenario.rows.map((row) => row.orderId)),
+      calls,
+    ),
+    events,
+  );
+  return { run: () => sweep.sweep(ServiceDay.of(DAY)), unsettled, events, calls };
+}
+
+describe("PendingSettlementSweep — la clôture coupe les règlements en vol", () => {
+  it("demande la journée ET son jour de passation à Paris (Q5)", async () => {
+    const { run, unsettled } = build({ rows: [] });
+
+    await run();
+
+    expect(unsettled.windows).toEqual([
+      {
+        serviceDay: DAY,
+        placedFrom: new Date("2026-01-14T23:00:00.000Z"),
+        placedBefore: new Date("2026-01-15T23:00:00.000Z"),
+      },
+    ]);
+  });
+
+  it("annule l'intention, PUIS écrit, puis publie la cause `day_closed`", async () => {
+    const { run, events, calls } = build({
+      rows: [
+        { orderId: "ord_1", paymentIntentId: "pi_1" },
+        { orderId: "ord_2", paymentIntentId: "pi_2" },
+      ],
+    });
+
+    await run();
+
+    expect(calls).toEqual(["cancel:pi_1", "fail:ord_1", "cancel:pi_2", "fail:ord_2"]);
+    expect(events.published).toEqual([
+      new OrderPaymentFailedEvent("ord_1", "day_closed"),
+      new OrderPaymentFailedEvent("ord_2", "day_closed"),
+    ]);
+  });
+
+  it("écrit sans appeler Stripe quand la commande n'a pas d'intention", async () => {
+    const { run, calls } = build({ rows: [{ orderId: "ord_1", paymentIntentId: null }] });
+
+    await run();
+
+    expect(calls).toEqual(["fail:ord_1"]);
+  });
+
+  it.each<IntentCancellation>([
+    { kind: "unavailable", reason: "ECONNRESET" },
+    { kind: "already_cancelled" },
+  ])(
+    "écrit même quand Stripe ne confirme pas (%o) — il ne bloque jamais la clôture (B1)",
+    async (outcome) => {
+      const { run, calls, events } = build({
+        rows: [{ orderId: "ord_1", paymentIntentId: "pi_1" }],
+        outcome,
+      });
+
+      await expect(run()).resolves.toBeUndefined();
+
+      expect(calls).toEqual(["cancel:pi_1", "fail:ord_1"]);
+      expect(events.published).toEqual([new OrderPaymentFailedEvent("ord_1", "day_closed")]);
+    },
+  );
+
+  /**
+   * Régression : la clôture annulait aussi une commande dont Stripe disait
+   * l'argent déjà pris ou en train de l'être — une vente réelle, remboursée, et
+   * un client à qui l'on écrivait « rien n'a été débité » (corrigé le
+   * 2026-09-26, avant tout déploiement).
+   */
+  it.each<IntentCancellation>([{ kind: "already_paid" }, { kind: "in_progress" }])(
+    "épargne une commande dont l'argent est pris ou en route (%o)",
+    async (outcome) => {
+      const { run, calls, events } = build({
+        rows: [{ orderId: "ord_1", paymentIntentId: "pi_1" }],
+        outcome,
+      });
+
+      await run();
+
+      expect(calls).toEqual(["cancel:pi_1"]);
+      expect(events.published).toEqual([]);
+    },
+  );
+
+  it("ne republie rien pour ce que la base n'a pas franchi (réannonce, S4)", async () => {
+    const { run, events } = build({
+      rows: [{ orderId: "ord_1", paymentIntentId: "pi_1" }],
+      crossed: [],
+    });
+
+    await run();
+
+    expect(events.published).toEqual([]);
+  });
+});

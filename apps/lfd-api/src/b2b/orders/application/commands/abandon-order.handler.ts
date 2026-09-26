@@ -26,13 +26,22 @@ import { AbandonOrderCommand } from "./abandon-order.command.js";
  * **Abandonner le règlement** d'une commande — le client quitte l'écran de
  * carte (plan `documentation/order/plan-abandon-du-reglement.md`, D1, D4, §5).
  *
- * ## L'ordre : Stripe d'abord, la base ensuite
+ * ## L'ordre, pour un particulier : Stripe d'abord, la base ensuite
  *
  * Annuler chez nous une commande dont l'intention vit encore laisserait une
  * carte la payer — une annulée encaissée. On annule donc l'intention, et on
  * n'écrit que si Stripe confirme qu'elle est morte (`cancelled`, ou
  * `already_cancelled` : le second clic). Sinon rien n'est écrit, et le refus
  * nomme pourquoi : payée (le webhook suit), en cours, ou Stripe injoignable.
+ *
+ * ## Un pro ne touche pas Stripe (Q8, tranché par Hugo le 2026-09-26 : a)
+ *
+ * Pour un pro — et une clientèle inconnue, traitée comme lui — l'intention
+ * **reste vivante** : la commande passe `failed`, reste `placed`, et demeure
+ * payable jusqu'à la clôture, qui l'annulera (Q7). L'annuler chez Stripe
+ * l'aurait rendue impayable (la page de règlement refuse une intention morte,
+ * et aucune nouvelle n'est créée), ce qui contredisait D4. Aucun appel au
+ * prestataire, donc aucun refus « Stripe injoignable » pour lui.
  *
  * ⚠️ Le trou que cet ordre ne ferme pas — Stripe annule, puis notre écriture
  * se perd — est tenu ailleurs : la page de règlement relit l'intention et
@@ -41,8 +50,8 @@ import { AbandonOrderCommand } from "./abandon-order.command.js";
  * ## Idempotent
  *
  * Une commande déjà annulée répond comme la première fois, sans rappeler
- * Stripe. Un second clic sur une commande pro retombe sur `already_cancelled`,
- * et le dépôt n'écrit rien : aucun fait n'est republié.
+ * Stripe. Un second clic sur une commande pro trouve un règlement déjà
+ * `failed` : le dépôt n'écrit rien, aucun fait n'est republié.
  */
 @CommandHandler(AbandonOrderCommand)
 export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand, void> {
@@ -65,7 +74,7 @@ export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand,
     if (standing !== "abandon") {
       throw new OrderNotAbandonableError(standing);
     }
-    if (owned.stripePaymentIntentId !== null) {
+    if (owned.clientele === "public" && owned.stripePaymentIntentId !== null) {
       const outcome = await this.payments.cancelIntent(owned.stripePaymentIntentId);
       this.ensureIntentDead(outcome, command.orderId);
     }

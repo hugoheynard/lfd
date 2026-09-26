@@ -5,6 +5,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
+import { PendingSettlementSweeper } from "../../channels/commerce/pending-settlement.sweeper.js";
 import { ProductionDayClosedEvent } from "../../channels/commerce/production-day-closed.event.js";
 import { ProductionDayClosedJournalEvent } from "../../domain/events/production-day.events.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
@@ -19,6 +20,21 @@ import { CloseProductionDayCommand } from "./close-production-day.command.js";
  * Il charge l'agrégat, lui demande de se clore, l'écrit, et **publie**. Il
  * n'écrit rien chez le commerce : `confirmed` est un fait du commerce, tiré du
  * nôtre par un abonné qui vit chez lui. Chaque contexte n'écrit que ses tables.
+ *
+ * ## Balayer d'abord, compter ensuite (depuis le 2026-09-26)
+ *
+ * Avant tout, il DEMANDE au commerce de trancher les règlements restés en l'air
+ * pour la journée — `PendingSettlementSweeper`, un port que le fournil déclare
+ * et que le commerce implémente (plan
+ * `documentation/order/plan-abandon-du-reglement.md`, Q1, B1). C'est le
+ * commerce qui écrit, dans ses tables ; le fournil n'en connaît que la
+ * question. Sans ce geste, une journée où aucune carte n'est payée resterait
+ * vide, donc inarrêtable, donc ses règlements vivraient pour toujours.
+ *
+ * Le balayage tourne à **chaque** appel, réannonce comprise (S4) : une
+ * commande passée après la première clôture doit mourir aussi. Le refus
+ * « journée vide » vient APRÈS lui, et ne dit plus que la vérité : personne
+ * n'a payé.
  *
  * ## Pourquoi une commande, alors que le dossier dit « pas un clic »
  *
@@ -65,6 +81,7 @@ export class CloseProductionDayHandler implements ICommandHandler<
   constructor(
     private readonly days: ProductionDayRepository,
     private readonly orders: DayOrdersReader,
+    private readonly settlements: PendingSettlementSweeper,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
@@ -72,6 +89,9 @@ export class CloseProductionDayHandler implements ICommandHandler<
 
   async execute(command: CloseProductionDayCommand): Promise<ProductionPlanClosure> {
     const day = ServiceDay.of(command.serviceDay);
+    // AVANT le chargement et avant la branche de réannonce : le balayage vaut
+    // pour chaque appel, et une journée déjà close n'en est pas dispensée (S4).
+    await this.settlements.sweep(day);
     const current = await this.days.load(day);
 
     if (current.isClosed) {

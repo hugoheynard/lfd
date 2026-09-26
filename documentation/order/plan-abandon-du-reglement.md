@@ -432,21 +432,21 @@ Q1 à Q6 le sont au §5 bis. La dernière est née de la seconde contradiction
 
 ## 8. Les lots
 
-| Lot       | Contenu                                                                                                                                                                          | Bloque par |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| **0**     | ✅ **mesuré le 2026-09-26** (§4 bis) — **Mesurer** ce que la tranche 1 casse réellement (§4) — aucun code                                                                        | —          |
-| **1**     | ✅ bâti le 2026-09-26 — La règle : `plan-filter.ts`, les signatures, les JSDoc datés                                                                                             | 0          |
-| **2**     | ✅ bâti le 2026-09-26 — Le triage des e2e tombées, famille par famille                                                                                                           | 1          |
-| **3**     | ✅ bâti le 2026-09-26 — `cancelIntent` + les **cinq issues** traduites (§5)                                                                                                      | —          |
-| **7**     | ✅ bâti le 2026-09-26 — `GetOrderPaymentHandler` relit l'intention chez Stripe et refuse une intention non payable, et toute commande `cancelled` — **avant** 3 bis (§9 bis, B3) | 3          |
-| **3 bis** | la page de règlement accepte `failed` **tant que son intention est vivante** (§9 bis, B3)                                                                                        | 7          |
-| **4**     | ✅ bâti le 2026-09-26 — `markAbandoned` / `failAtClosing`, la commande, le handler, la route, le mur : l'auteur `placedByUserId` (Q2)                                            | 3          |
-| **5**     | ✅ bâti le 2026-09-26 — La cause sur `OrderPaymentFailedEvent` (`refused`, `day_closed`, `abandoned`), l'abonné cloche, le mail qui suit la cause (Q4, §9 bis S9)                | 4          |
-| **6**     | La clôture : le port synchrone de balayage, appelé **avant** de compter, à chaque appel de clôture (§9 bis, B1, B2, S4), rattachement au jour de passation (Q5)                  | 3, 4       |
-| **6 bis** | Un encaissement sur une commande `cancelled` : ne jamais la rouvrir, sonner « à rembourser » (§9 bis, B1)                                                                        | 6          |
-| **8**     | Le front : libellé, confirmation, appel **tenté**, navigation inconditionnelle                                                                                                   | 4          |
-| **10**    | Prévenir le commercial à l'heure limite (Q6) : une passe horaire idempotente, un cron de plus                                                                                    | 5          |
-| **9**     | Les docs et les justifications datées (§10)                                                                                                                                      | 1–8        |
+| Lot       | Contenu                                                                                                                                                                                 | Bloque par |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **0**     | ✅ **mesuré le 2026-09-26** (§4 bis) — **Mesurer** ce que la tranche 1 casse réellement (§4) — aucun code                                                                               | —          |
+| **1**     | ✅ bâti le 2026-09-26 — La règle : `plan-filter.ts`, les signatures, les JSDoc datés                                                                                                    | 0          |
+| **2**     | ✅ bâti le 2026-09-26 — Le triage des e2e tombées, famille par famille                                                                                                                  | 1          |
+| **3**     | ✅ bâti le 2026-09-26 — `cancelIntent` + les **cinq issues** traduites (§5)                                                                                                             | —          |
+| **7**     | ✅ bâti le 2026-09-26 — `GetOrderPaymentHandler` relit l'intention chez Stripe et refuse une intention non payable, et toute commande `cancelled` — **avant** 3 bis (§9 bis, B3)        | 3          |
+| **3 bis** | ✅ bâti le 2026-09-26 — la page de règlement accepte `failed` **tant que son intention est vivante** (§9 bis, B3)                                                                       | 7          |
+| **4**     | ✅ bâti le 2026-09-26 — `markAbandoned` / `failAtClosing`, la commande, le handler, la route, le mur : l'auteur `placedByUserId` (Q2)                                                   | 3          |
+| **5**     | ✅ bâti le 2026-09-26 — La cause sur `OrderPaymentFailedEvent` (`refused`, `day_closed`, `abandoned`), l'abonné cloche, le mail qui suit la cause (Q4, §9 bis S9)                       | 4          |
+| **6**     | ✅ bâti le 2026-09-26 — La clôture : le port synchrone de balayage, appelé **avant** de compter, à chaque appel de clôture (§9 bis, B1, B2, S4), rattachement au jour de passation (Q5) | 3, 4       |
+| **6 bis** | ✅ bâti le 2026-09-26 — Un encaissement sur une commande `cancelled` : ne jamais la rouvrir, sonner « à rembourser » (§9 bis, B1)                                                       | 6          |
+| **8**     | Le front : libellé, confirmation, appel **tenté**, navigation inconditionnelle                                                                                                          | 4          |
+| **10**    | Prévenir le commercial à l'heure limite (Q6) : une passe horaire idempotente, un cron de plus                                                                                           | 5          |
+| **9**     | Les docs et les justifications datées (§10)                                                                                                                                             | 1–8        |
 
 ⚠️ **Le lot 5 touche `packages/contracts`** — catalogue des faits, spec de
 fermeture, **et** la phrase du back-office. La règle « la racine dès que
@@ -596,6 +596,21 @@ sonne : c'est **Q7** (§6).
   de détruit), et la cloche ne sonne pas, faute de savoir qui relancer.
 - Le 409 « Stripe injoignable » annonce une annulation à la fournée : elle
   n'est vraie qu'avec le lot 6.
+
+## 9 quinquies. Ce que le lot 6 a tranché en bâtissant (2026-09-26)
+
+- **À la clôture, de l'argent pris ou en route épargne la commande.** B1 disait
+  « écrire quelle que soit l'issue » ; appliqué à la lettre, il annulait une
+  commande dont Stripe répondait `already_paid` ou `in_progress`, c'est-à-dire
+  une vente réelle, et écrivait au client « rien n'a été débité ». Corrigé avant
+  tout déploiement : ces deux issues épargnent la commande, et le webhook la
+  soldera, **hors du plan arrêté** (l'équipe décide). Seule une panne
+  (`unavailable`) annule quand même, et un encaissement tardif sonne « à
+  rembourser » (6 bis).
+- **Une journée où personne n'a payé** est balayée (annulations, mails), puis
+  toujours refusée « vide » : elle reste non arrêtée, et le colisage et le
+  dossier du jour restent bloqués ce jour-là s'il n'y a rien d'autre. Conforme
+  au §4 ; signalé à Hugo.
 
 ## 10. Les justifications datées que ce chantier périme
 

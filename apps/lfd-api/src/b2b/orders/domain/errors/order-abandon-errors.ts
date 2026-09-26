@@ -1,4 +1,8 @@
-import { AuthorizationError, BusinessError } from "../../../../platform/shared/errors/app-error.js";
+import {
+  AuthorizationError,
+  BusinessError,
+  TechnicalError,
+} from "../../../../platform/shared/errors/app-error.js";
 
 /*
  * Les refus de l'abandon du règlement (plan
@@ -81,6 +85,21 @@ export class OrderAbandonUnavailableError extends BusinessError {
       "orders.abandon.provider_unavailable",
       "Nous n'avons pas pu annuler ce paiement pour le moment. Rien n'a été débité ; " +
         "la commande sera annulée d'elle-même si elle n'est pas réglée avant la fournée.",
+    );
+  }
+}
+
+/**
+ * Le jour demandé au balayage de la clôture n'a pas de minuit à Paris. Ne se
+ * produit pas — minuit existe tous les jours, les bascules d'heure tombent à
+ * 2 h et 3 h —, mais le calcul le dit plutôt que de balayer une fenêtre fausse.
+ */
+export class SettlementSweepDayError extends TechnicalError {
+  constructor(readonly serviceDay: string) {
+    super(
+      "orders.settlement_sweep.unreadable_day",
+      `Le jour ${serviceDay} n'a pas pu être lu à l'heure de Paris : la clôture n'a ` +
+        "rien balayé. Vérifier la date demandée, puis relancer la clôture.",
     );
   }
 }

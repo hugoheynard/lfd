@@ -97,8 +97,8 @@ export abstract class OrderRepository {
    * si la ligne a franchi — l'appelant publie lui-même le fait : `FAILED_FROM`
    * ne franchirait pas une commande déjà refusée (§9 bis, mineurs).
    *
-   * ⚠️ Aucun appelant au 2026-09-26 : c'est le balayage de la clôture (lot 6)
-   * qui l'appellera.
+   * Son seul appelant est le balayage de la clôture, `PendingSettlementSweep`
+   * (lot 6, vérifié le 2026-09-26).
    */
   abstract failAtClosing(orderId: string): Promise<boolean>;
 

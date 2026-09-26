@@ -2,7 +2,8 @@
  * E2E de **l'abandon du règlement** (plan
  * `documentation/order/plan-abandon-du-reglement.md`, lots 4 et 5) : le client
  * quitte l'écran de carte, et `POST /orders/:id/abandon` annule l'intention
- * chez Stripe PUIS écrit la base.
+ * chez Stripe PUIS écrit la base — pour un particulier. Un pro garde son
+ * intention vivante jusqu'à la clôture (Q8).
  *
  * Stripe est la seule frontière doublée (avec la signature Auth0 du harnais) :
  * son issue d'annulation est écrite d'avance, test par test. Tout le reste —
@@ -157,6 +158,16 @@ describe("POST /orders/:id/abandon — ce que la base retient", () => {
       status: OrderStatus.placed,
       paymentStatus: PaymentStatus.failed,
     });
+  });
+
+  it("l'intention d'un pro reste vivante : Stripe n'est pas appelé (Q8)", async () => {
+    const { orderId } = await seedOrder(OrderClientele.pro);
+    // Même une panne Stripe ne refuse pas son abandon : on ne l'appelle pas.
+    cancellation = { kind: "unavailable", reason: "ECONNRESET" };
+
+    await abandon(orderId).then((response) => expect(response.status).toBe(204));
+
+    expect(cancelledIntents).toEqual([]);
   });
 
   it("le second clic rend 204, sans rien réécrire ni resonner", async () => {

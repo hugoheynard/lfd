@@ -1,8 +1,10 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { OrderPaidAfterCancellationEvent } from "../../domain/events/order-paid-after-cancellation.event.js";
 import { OrderPaymentFailedEvent } from "../../domain/events/order-payment-failed.event.js";
 import { OrderPaymentSettledEvent } from "../../domain/events/order-payment-settled.event.js";
+import { CancelledOrderPaymentReader } from "../../domain/ports/cancelled-order-payment.reader.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
 import { ConfirmOrderPaymentCommand } from "./confirm-order-payment.command.js";
 
@@ -29,6 +31,15 @@ import { ConfirmOrderPaymentCommand } from "./confirm-order-payment.command.js";
  * qu'au FRANCHISSEMENT. Un webhook rejoué ne bascule rien, donc ne publie rien —
  * l'idempotence du message est celle de l'écriture, pas un garde de plus.
  *
+ * ## Un encaissement sur une commande annulée (lot 6 bis, 2026-09-26)
+ *
+ * La base ne la rouvre jamais (`markPaid` exclut `cancelled`), donc rien ne
+ * franchit. Mais l'argent est reçu chez Stripe : quand l'écriture ne franchit
+ * pas ET que l'intention appartient à une commande annulée, le fait
+ * `OrderPaidAfterCancellationEvent` part, et la cloche dit « à rembourser ».
+ * C'est le prix assumé d'une clôture que Stripe ne bloque pas (plan
+ * `documentation/order/plan-abandon-du-reglement.md`, B1).
+ *
  * ⚠️ `publish` et non `publishTraced` : ce sont des projections d'un événement
  * externe, pas des actes dont un humain doit répondre. Le journal des actes
  * porte les gestes de l'équipe ; celui-ci appartient à Stripe.
@@ -40,6 +51,7 @@ export class ConfirmOrderPaymentHandler implements ICommandHandler<
 > {
   constructor(
     private readonly orders: OrderRepository,
+    private readonly cancelled: CancelledOrderPaymentReader,
     private readonly events: DomainEventPublisher,
   ) {}
 
@@ -48,6 +60,11 @@ export class ConfirmOrderPaymentHandler implements ICommandHandler<
       const settled = await this.orders.markPaid(command.paymentIntentId);
       if (settled !== null) {
         this.events.publish(new OrderPaymentSettledEvent(settled));
+        return;
+      }
+      const refundDue = await this.cancelled.cancelledOrderOf(command.paymentIntentId);
+      if (refundDue !== null) {
+        this.events.publish(new OrderPaidAfterCancellationEvent(refundDue));
       }
       return;
     }

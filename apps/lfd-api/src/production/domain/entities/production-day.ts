@@ -129,10 +129,15 @@ export class ProductionDay {
    *   fournil, et le premier scan est le seul vrai. Le second ne doit pas
    *   réécrire l'heure ni changer l'identité qui l'a déclaré.
    *
-   * ⚠️ Aucun refus sur une commande ANNULÉE, et c'est un fait, pas un oubli :
-   * rien n'annule une commande dans ce système — `cancelled` est une valeur que
-   * l'énuméré accepte et que personne n'écrit. Le jour où l'annulation existera,
-   * elle devra se propager jusqu'ici, sinon le fournil colisera pour rien.
+   * ⚠️ Aucun refus sur une commande ANNULÉE, et c'est un fait, pas un oubli.
+   * `cancelled` s'écrit depuis le 2026-09-26 (plan
+   * `documentation/order/plan-abandon-du-reglement.md`), mais par deux gestes
+   * seulement, et aucun n'atteint une commande inscrite ici (vérifié le
+   * 2026-09-26) : l'abandon du client et le balayage de la clôture ne touchent
+   * qu'un règlement NON encaissé, que la règle de production n'inscrit jamais,
+   * et le balayage passe AVANT le compte. Le jour où une commande PAYÉE
+   * s'annulera (chantier d'annulation général), l'annulation devra se propager
+   * jusqu'ici, sinon le fournil colisera pour rien.
    *
    * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
    * @throws {AtelierSheetNotFoundError} aucune commande sous cette référence.

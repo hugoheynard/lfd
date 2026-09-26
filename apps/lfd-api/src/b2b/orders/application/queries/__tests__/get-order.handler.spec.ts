@@ -39,11 +39,23 @@ function guard(role: OrderRole | null): OrderGuardReader & { asked: boolean } {
 }
 
 function personal(placedByUserId: string): OwnedOrder {
-  return { stripePaymentIntentId: null, view: VIEW, companyId: null, placedByUserId };
+  return {
+    stripePaymentIntentId: null,
+    clientele: "public",
+    view: VIEW,
+    companyId: null,
+    placedByUserId,
+  };
 }
 
 function ofCompany(companyId: string): OwnedOrder {
-  return { stripePaymentIntentId: null, view: VIEW, companyId, placedByUserId: "usr_someone_else" };
+  return {
+    stripePaymentIntentId: null,
+    clientele: "pro",
+    view: VIEW,
+    companyId,
+    placedByUserId: "usr_someone_else",
+  };
 }
 
 describe("GetOrderHandler", () => {

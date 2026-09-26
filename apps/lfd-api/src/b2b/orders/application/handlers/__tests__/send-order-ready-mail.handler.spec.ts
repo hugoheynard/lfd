@@ -192,7 +192,13 @@ function readerOf(order: OrderView | null): OrderReader {
   return new OneOrderReader(
     order === null
       ? null
-      : { view: order, companyId: null, placedByUserId: "user_7", stripePaymentIntentId: null },
+      : {
+          view: order,
+          companyId: null,
+          placedByUserId: "user_7",
+          stripePaymentIntentId: null,
+          clientele: "public",
+        },
   );
 }
 

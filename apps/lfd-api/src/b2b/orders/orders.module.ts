@@ -20,6 +20,12 @@ import { RingFailedProSettlement } from "./application/handlers/ring-failed-pro-
 import { SendPaymentExpiredMail } from "./application/handlers/send-payment-expired-mail.handler.js";
 import { FailedSettlementReader } from "./domain/ports/failed-settlement.reader.js";
 import { PrismaFailedSettlementReader } from "./infrastructure/prisma-failed-settlement.reader.js";
+import { UnsettledSettlementReader } from "./domain/ports/unsettled-settlement.reader.js";
+import { PrismaUnsettledSettlementReader } from "./infrastructure/prisma-unsettled-settlement.reader.js";
+import { CancelledOrderPaymentReader } from "./domain/ports/cancelled-order-payment.reader.js";
+import { PrismaCancelledOrderPaymentReader } from "./infrastructure/prisma-cancelled-order-payment.reader.js";
+import { RingRefundDue } from "./application/handlers/ring-refund-due.handler.js";
+import { PendingSettlementSweep } from "./application/services/pending-settlement-sweep.service.js";
 import { SendPaymentFailedMail } from "./application/handlers/send-payment-failed-mail.handler.js";
 import { OrderPlacedMail } from "./application/services/order-placed-mail.service.js";
 import { OrderReadyMail } from "./application/services/order-ready-mail.service.js";
@@ -212,6 +218,15 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Tout règlement pro qui meurt sonne, quelle qu'en soit la cause (D4).
     RingFailedProSettlement,
     { provide: FailedSettlementReader, useClass: PrismaFailedSettlementReader },
+    // La clôture tue les règlements en vol de sa journée AVANT de compter
+    // (plan d'abandon, Q1, B1) : le port est celui du fournil, relié dans
+    // `ProductionFeedModule`.
+    PendingSettlementSweep,
+    { provide: UnsettledSettlementReader, useClass: PrismaUnsettledSettlementReader },
+    // Son prix : une intention restée vivante peut être payée sur une commande
+    // annulée. La base ne la rouvre pas ; la cloche dit « à rembourser » (6 bis).
+    RingRefundDue,
+    { provide: CancelledOrderPaymentReader, useClass: PrismaCancelledOrderPaymentReader },
     // Le composeur de l'accusé, partagé par les deux chemins ci-dessus.
     OrderPlacedMail,
     // Prévient le propriétaire d'une adresse qu'une commande sans compte l'a
@@ -294,6 +309,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     PrismaDayOrdersReader,
     PrismaHandoverSubjectReader,
     PrismaPendingOrdersReader,
+    PendingSettlementSweep,
     // Et le port de lecture des commandes, dont le troisième dépend : il
     // DÉLÈGUE la lecture du sujet de remise plutôt que de recopier son `select`,
     // et Nest doit pouvoir le lui donner là où il est instancié.

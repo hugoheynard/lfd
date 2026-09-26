@@ -102,6 +102,15 @@ describe("RingFailedProSettlement", () => {
     expect(notices[0]?.body).toContain("annulée");
   });
 
+  it("un abandon pro dit que la commande reste payable jusqu'à la clôture (Q8)", async () => {
+    // L'intention d'un pro n'est plus annulée à l'abandon : la cloche disait
+    // « paiement par carte annulé », ce qui n'est plus vrai (2026-09-26).
+    const notices = await ring(PRO, "abandoned");
+
+    expect(notices[0]?.body).toContain("encore payable jusqu'à la clôture");
+    expect(notices[0]?.body).not.toContain("annulé");
+  });
+
   it("ne sonne pas pour un particulier, ni pour une clientèle inconnue", async () => {
     expect(await ring({ ...PRO, clientele: "public" }, "refused")).toEqual([]);
     expect(await ring({ ...PRO, clientele: null }, "refused")).toEqual([]);

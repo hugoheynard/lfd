@@ -6,6 +6,7 @@ import {
   DayOrdersReader,
   type ProducibleOrder,
 } from "../../../channels/commerce/day-orders.reader.js";
+import { PendingSettlementSweeper } from "../../../channels/commerce/pending-settlement.sweeper.js";
 import { ProductionDayClosedEvent } from "../../../channels/commerce/production-day-closed.event.js";
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionDayClosedJournalEvent } from "../../../domain/events/production-day.events.js";
@@ -31,17 +32,39 @@ function order(overrides: Partial<ProducibleOrder> = {}): ProducibleOrder {
   };
 }
 
+/** Le journal des gestes demandés au commerce, dans l'ordre où ils arrivent. */
+type CommerceCall = "sweep" | "producibleFor";
+
 /** Le commerce doublé — il ÉTEND le port, donc aucun cast n'est nécessaire. */
 class Commerce extends DayOrdersReader {
   asked = 0;
 
-  constructor(private readonly rows: readonly ProducibleOrder[]) {
+  constructor(
+    private readonly rows: readonly ProducibleOrder[],
+    private readonly calls: CommerceCall[],
+  ) {
     super();
   }
 
   producibleFor(): Promise<readonly ProducibleOrder[]> {
     this.asked += 1;
+    this.calls.push("producibleFor");
     return Promise.resolve(this.rows);
+  }
+}
+
+/** Le balayage doublé : il note les jours demandés, et sa place dans la séquence. */
+class Sweeper extends PendingSettlementSweeper {
+  readonly days: string[] = [];
+
+  constructor(private readonly calls: CommerceCall[]) {
+    super();
+  }
+
+  sweep(day: ServiceDay): Promise<void> {
+    this.days.push(day.value);
+    this.calls.push("sweep");
+    return Promise.resolve();
   }
 }
 
@@ -129,14 +152,25 @@ class Publisher extends RecordingPublisher {
 
 function subject(day: ProductionDay, rows: readonly ProducibleOrder[]) {
   const days = new Days(day);
-  const commerce = new Commerce(rows);
+  const calls: CommerceCall[] = [];
+  const commerce = new Commerce(rows, calls);
+  const sweeper = new Sweeper(calls);
   const uow = new ObservedUnitOfWork();
   const events = new Publisher(uow);
   return {
     days,
     commerce,
+    sweeper,
+    calls,
     events,
-    handler: new CloseProductionDayHandler(days, commerce, events, new FixedClock(NOW), uow),
+    handler: new CloseProductionDayHandler(
+      days,
+      commerce,
+      sweeper,
+      events,
+      new FixedClock(NOW),
+      uow,
+    ),
   };
 }
 
@@ -190,16 +224,36 @@ describe("clore une journée", () => {
     expect(events.insideUnitOfWork).toEqual([new ProductionDayClosedJournalEvent(DAY, 1)]);
   });
 
-  it("n'écrit RIEN chez le commerce — il l'apprend par l'événement", async () => {
-    // Le handler ne connaît aucun port d'écriture du commerce, et c'est tout le
-    // sujet du couplage minimal : chaque contexte n'écrit que ses tables. Ce
-    // cas le tient par la SIGNATURE — aucun des ports du constructeur n'écrit
-    // ailleurs que chez la production ou au journal.
+  it("ne confirme RIEN chez le commerce — il l'apprend par l'événement", async () => {
+    // `confirmed` reste un fait du commerce, tiré de l'événement par son
+    // abonné. Le seul geste que la clôture DEMANDE au commerce est le
+    // balayage des règlements en vol, par le port que le fournil déclare
+    // (plan d'abandon, B1, 2026-09-26) — et c'est le commerce qui l'écrit.
     const { handler, commerce } = subject(ProductionDay.open(ServiceDay.of(DAY)), [order()]);
 
     await handler.execute(new CloseProductionDayCommand(DAY));
 
     expect(commerce.asked).toBe(1);
+  });
+
+  it("BALAIE les règlements en vol AVANT de compter (Q1)", async () => {
+    // Compter d'abord laisserait une journée sans carte payée vide, donc
+    // inarrêtable, et ses règlements en vol vivants pour toujours (§4).
+    const { handler, sweeper, calls } = subject(ProductionDay.open(ServiceDay.of(DAY)), [order()]);
+
+    await handler.execute(new CloseProductionDayCommand(DAY));
+
+    expect(sweeper.days).toEqual([DAY]);
+    expect(calls).toEqual(["sweep", "producibleFor"]);
+  });
+
+  it("refuse la journée vide APRÈS avoir balayé : personne n'a payé", async () => {
+    const { handler, sweeper } = subject(ProductionDay.open(ServiceDay.of(DAY)), []);
+
+    await expect(handler.execute(new CloseProductionDayCommand(DAY))).rejects.toThrow(
+      ProductionDayEmptyError,
+    );
+    expect(sweeper.days).toEqual([DAY]);
   });
 
   it("REFUSE une journée sans commande, plutôt que d'arrêter le vide", async () => {
@@ -220,6 +274,16 @@ describe("clore une journée", () => {
 });
 
 describe("réannoncer une journée déjà close", () => {
+  it("BALAIE quand même : une commande passée après la clôture meurt aussi (S4)", async () => {
+    const closed = ProductionDay.open(ServiceDay.of(DAY));
+    closed.close([order()], EARLIER);
+    const { handler, sweeper } = subject(closed, [order()]);
+
+    await handler.execute(new CloseProductionDayCommand(DAY));
+
+    expect(sweeper.days).toEqual([DAY]);
+  });
+
   it("REPUBLIE le fait sans rien recalculer", async () => {
     // C'est le rattrapage prévu : le bus vit en processus, donc un abonné qui a
     // échoué laisserait des commandes `placed` sur une journée close. Presser à

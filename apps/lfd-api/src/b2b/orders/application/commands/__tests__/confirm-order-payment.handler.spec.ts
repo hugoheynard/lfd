@@ -1,6 +1,8 @@
 import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
+import { OrderPaidAfterCancellationEvent } from "../../../domain/events/order-paid-after-cancellation.event.js";
 import { OrderPaymentFailedEvent } from "../../../domain/events/order-payment-failed.event.js";
 import { OrderPaymentSettledEvent } from "../../../domain/events/order-payment-settled.event.js";
+import { CancelledOrderPaymentReader } from "../../../domain/ports/cancelled-order-payment.reader.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import { ConfirmOrderPaymentCommand } from "../confirm-order-payment.command.js";
 import { ConfirmOrderPaymentHandler } from "../confirm-order-payment.handler.js";
@@ -50,8 +52,30 @@ function recordingPublisher(sink: Sink): DomainEventPublisher {
   };
 }
 
-const handlerWith = (sink: Sink, franchit: string | null): ConfirmOrderPaymentHandler =>
-  new ConfirmOrderPaymentHandler(recordingRepo(sink, franchit), recordingPublisher(sink));
+/** La commande annulée qui porte l'intention, ou aucune ; et les intentions demandées. */
+class CancelledOrders extends CancelledOrderPaymentReader {
+  readonly asked: string[] = [];
+
+  constructor(private readonly cancelledOrderId: string | null) {
+    super();
+  }
+
+  cancelledOrderOf(paymentIntentId: string): Promise<string | null> {
+    this.asked.push(paymentIntentId);
+    return Promise.resolve(this.cancelledOrderId);
+  }
+}
+
+const handlerWith = (
+  sink: Sink,
+  franchit: string | null,
+  cancelled: CancelledOrders = new CancelledOrders(null),
+): ConfirmOrderPaymentHandler =>
+  new ConfirmOrderPaymentHandler(
+    recordingRepo(sink, franchit),
+    cancelled,
+    recordingPublisher(sink),
+  );
 
 describe("ConfirmOrderPaymentHandler", () => {
   it("route un succès vers markPaid(paymentIntentId)", async () => {
@@ -118,6 +142,49 @@ describe("ConfirmOrderPaymentHandler — ce qu'il PUBLIE", () => {
     await handlerWith(sink, null).execute(new ConfirmOrderPaymentCommand("pi_10", "failed"));
 
     expect(sink.failed).toEqual(["pi_10"]);
+    expect(sink.published).toEqual([]);
+  });
+});
+
+/**
+ * Lot 6 bis du plan d'abandon : la clôture annule une commande même quand
+ * Stripe n'a pas confirmé la mort de son intention. Un encaissement tardif ne
+ * la rouvre pas — mais l'argent est reçu, et quelqu'un doit rembourser.
+ */
+describe("ConfirmOrderPaymentHandler — un encaissement sur une commande annulée", () => {
+  it("publie « à rembourser » quand rien ne franchit ET que la commande est annulée", async () => {
+    const sink = emptySink();
+    const cancelled = new CancelledOrders("order_11");
+
+    await handlerWith(sink, null, cancelled).execute(
+      new ConfirmOrderPaymentCommand("pi_11", "succeeded"),
+    );
+
+    expect(cancelled.asked).toEqual(["pi_11"]);
+    expect(sink.published).toEqual([new OrderPaidAfterCancellationEvent("order_11")]);
+  });
+
+  it("ne demande rien quand l'encaissement a franchi", async () => {
+    const sink = emptySink();
+    const cancelled = new CancelledOrders("order_12");
+
+    await handlerWith(sink, "order_12", cancelled).execute(
+      new ConfirmOrderPaymentCommand("pi_12", "succeeded"),
+    );
+
+    expect(cancelled.asked).toEqual([]);
+    expect(sink.published).toEqual([new OrderPaymentSettledEvent("order_12")]);
+  });
+
+  it("ne sonne pas sur un refus arrivé après l'annulation — aucun argent reçu", async () => {
+    const sink = emptySink();
+    const cancelled = new CancelledOrders("order_13");
+
+    await handlerWith(sink, null, cancelled).execute(
+      new ConfirmOrderPaymentCommand("pi_13", "failed"),
+    );
+
+    expect(cancelled.asked).toEqual([]);
     expect(sink.published).toEqual([]);
   });
 });

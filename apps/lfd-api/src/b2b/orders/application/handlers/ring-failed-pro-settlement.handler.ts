@@ -14,8 +14,8 @@ import { FailedSettlementReader } from "../../domain/ports/failed-settlement.rea
 const CAUSE_LINES: Readonly<Record<PaymentFailureCause, string>> = {
   refused: "la banque a refusé la carte. La commande reste en attente de règlement",
   abandoned:
-    "le client a quitté l'écran de règlement et son paiement par carte est annulé. " +
-    "La commande n'est pas produite en l'état : à relancer",
+    "le client a quitté l'écran de règlement sans payer. La commande est abandonnée, " +
+    "encore payable jusqu'à la clôture de la journée : à relancer",
   day_closed:
     "le paiement n'a pas abouti avant la clôture de la journée. La commande est annulée, " +
     "à ressaisir s'il le faut",

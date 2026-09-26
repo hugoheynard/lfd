@@ -26,6 +26,13 @@ export interface OwnedOrder {
    * il la reçoit quand il demande explicitement à régler.
    */
   readonly stripePaymentIntentId: string | null;
+  /**
+   * La clientèle **figée** à la passation, ou `null` pour une commande d'avant
+   * la distinction. Hors `OrderView` : l'abandon en a besoin AVANT d'appeler
+   * Stripe — un pro garde son intention vivante jusqu'à la clôture (plan
+   * `documentation/order/plan-abandon-du-reglement.md`, Q8).
+   */
+  readonly clientele: "pro" | "public" | null;
 }
 
 /**

@@ -229,6 +229,7 @@ export class PrismaOrderReader extends OrderReader {
         companyId: true,
         placedByUserId: true,
         stripePaymentIntentId: true,
+        clientele: true,
       },
     });
     if (row === null) {
@@ -239,6 +240,7 @@ export class PrismaOrderReader extends OrderReader {
       companyId: row.companyId,
       placedByUserId: row.placedByUserId,
       stripePaymentIntentId: row.stripePaymentIntentId,
+      clientele: row.clientele,
     };
   }
 

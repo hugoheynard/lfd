@@ -24,10 +24,13 @@ import { MarkOrderReadyCommand } from "../commands/mark-order-ready.command.js";
  *
  * ⚠️ Le bus vit en processus. Un `packingBlocker` qui refuse — commande annulée,
  * déjà remise — laisse la production avec un bac déclaré et le commerce en
- * arrière. Ça ne peut PAS arriver aujourd'hui : rien n'annule une commande, et
- * une remise avant colisage est déjà refusée par l'agrégat de production. Le
- * jour où l'annulation existera, elle devra se propager jusqu'au fournil —
- * sinon il colise pour rien, ce qui est le vrai problème, pas la divergence.
+ * arrière. Ça ne peut PAS arriver aujourd'hui (vérifié le 2026-09-26) : les
+ * seules annulations — l'abandon du client et le balayage de la clôture — ne
+ * touchent qu'un règlement non encaissé, que le plan du soir n'inscrit jamais,
+ * et une remise avant colisage est déjà refusée par l'agrégat de production.
+ * Le jour où une commande PAYÉE s'annulera, l'annulation devra se propager
+ * jusqu'au fournil — sinon il colise pour rien, ce qui est le vrai problème,
+ * pas la divergence.
  *
  * `BackgroundWork.track` est obligatoire (`lint:events-tracked`) : un `void`
  * promesse mourrait en silence.
