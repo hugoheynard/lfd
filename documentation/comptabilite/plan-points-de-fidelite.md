@@ -1,6 +1,7 @@
 # Plan — les points de fidélité
 
-**Statut** : 📐 plan, 2026-09-26. **Rien n'est bâti.** Touche **l'argent**
+**Statut** : 🟡 **partiel**, 2026-09-26. **Bâtis : A, B, D** (§4) — le programme
+est livrable fermé ; rien ne se convertit ni ne s'utilise encore (E1, C, E2). Touche **l'argent**
 (une remise qui réduit un total et sa TVA). **Contredit par `vitruve` le même
 jour : 3 BLOQUANT, 8 SÉRIEUX** — ce document est la version d'après, le §6 dit
 ce qui a changé. **Réécrit le même jour après les réponses de Hugo (§7)** :
@@ -177,6 +178,21 @@ Règles :
   Le lien de paiement en passe par un autre (`settle-payment-link.handler.ts`).
   Le comptoir est à vérifier. Le rattrapage les couvre tous, puisqu'il lit
   l'état et non les événements.
+  **Inventaire fait au lot D (2026-09-26)** : un seul chemin écrit `paid` sur
+  une commande — `PrismaOrderRepository.settle`, via `markPaid`, appelé par
+  `ConfirmOrderPaymentHandler` sur le webhook `payment_intent.succeeded`, qui
+  publie `OrderPaymentSettledEvent`. La page « régler » d'une commande refusée
+  réutilise la même intention Stripe, donc le même chemin.
+  `settle-payment-link.handler.ts` passe à `paid` un **lien libre**
+  (`PaymentLink`, rattaché à une société, sans commande) : il ne touche aucune
+  commande. Le comptoir n'écrit aucun règlement. Hors code de production, seul
+  le semis de démonstration (`dev/seeding/orders.seed.ts`) écrit `paid`.
+  **Bâti au lot D** : `CompletedOrderReader` (déclaré et exporté par
+  `orders`), les abonnés `CreditPointsOnHandover` et
+  `CreditPointsOnPaymentSettled`, et le rattrapage `POST /admin/loyalty/sweep`
+  (porte machine, `RecomputeGuard`), qui enchaîne l'expiration des bons.
+  ⚠️ Aucun Cron Trigger ne l'appelle encore : `wrangler.jsonc` et
+  `container/worker.ts` sont à compléter, décision d'horaire à Hugo.
 
 ### D4 — L'assiette : les marchandises seulement
 
@@ -301,15 +317,15 @@ qu'une annulation ne rende le bon d'origine : on aurait alors les deux.
 
 ## 4. Les lots
 
-| Lot | Contenu                                                                                                                                                                                                                                                                                               |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A   | migration additive : `loyalty_settings`, `loyalty_ledger_entries`, `loyalty_vouchers`, avec le CHECK de titulaire et les `RESTRICT`. Contexte `b2b/loyalty/` : le livre, le verrou, la conversion, le bon en états `available`, `expired` et `cancelled` seulement. Journal. Tests aux trois niveaux. |
-| B   | Comptabilité › Fidélité : le réglage, une vue des soldes et des bons, l'ajustement motivé, l'annulation d'un bon.                                                                                                                                                                                     |
-| D   | le crédit : l'abonné et la tâche de rattrapage, par un port de lecture d'`orders` ; l'inventaire des chemins vers `paid`.                                                                                                                                                                             |
-| E1  | boutique : le solde, « vous gagnerez N points », et la conversion en bon.                                                                                                                                                                                                                             |
-| C   | **attend la réponse à D6.** L'état `reserved`, la réservation à la passation, la libération à l'annulation, l'effet sur le total et sur l'assiette. Avant de bâtir : l'inventaire de tous les lecteurs du total. Ensuite, un passage de `vitruve`.                                                    |
-| E2  | boutique : utiliser un bon au paiement.                                                                                                                                                                                                                                                               |
-| F   | ouvrir aux pros : un signal « facture réglée » avant tout `openToPro`.                                                                                                                                                                                                                                |
+| Lot | Contenu                                                                                                                                                                                                                                                                                                                                                                                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A   | ✅ bâti le 2026-09-26, `1057ecfa3` — migration additive : `loyalty_settings`, `loyalty_ledger_entries`, `loyalty_vouchers`, avec le CHECK de titulaire et les `RESTRICT`. Contexte `b2b/loyalty/` : le livre, le verrou, la conversion, le bon en états `available`, `expired` et `cancelled` seulement. Journal. Tests aux trois niveaux.                                                 |
+| B   | ✅ bâti le 2026-09-26, `1057ecfa3` (routes) et `b862ee9fb` (écran) — Comptabilité › Fidélité : le réglage, une vue des soldes et des bons, l'ajustement motivé, l'annulation d'un bon.                                                                                                                                                                                                     |
+| D   | ✅ bâti le 2026-09-26, `9f1ebf2c8`. ⚠️ **Le cron n'est pas branché** : `POST /admin/loyalty/sweep` existe, derrière `RecomputeGuard`, mais ni `wrangler.jsonc` ni `container/worker.ts` ne l'appellent — d'ici là, le crédit repose sur les deux abonnés seuls — le crédit : l'abonné et la tâche de rattrapage, par un port de lecture d'`orders` ; l'inventaire des chemins vers `paid`. |
+| E1  | boutique : le solde, « vous gagnerez N points », et la conversion en bon.                                                                                                                                                                                                                                                                                                                  |
+| C   | **attend la réponse à D6.** L'état `reserved`, la réservation à la passation, la libération à l'annulation, l'effet sur le total et sur l'assiette. Avant de bâtir : l'inventaire de tous les lecteurs du total. Ensuite, un passage de `vitruve`.                                                                                                                                         |
+| E2  | boutique : utiliser un bon au paiement.                                                                                                                                                                                                                                                                                                                                                    |
+| F   | ✅ le serveur **refuse** déjà `openToPro` (`LoyaltyProNotYetOpenableError`, `9f1ebf2c8`) ; ce lot lève le refus — ouvrir aux pros : un signal « facture réglée » avant tout `openToPro`.                                                                                                                                                                                                   |
 
 Le cycle du bon s'arrête volontairement à `available` dans le lot A.
 L'imputation dépend de D6 : avec le traitement B, le bon devient un
