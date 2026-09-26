@@ -96,9 +96,9 @@ describe("CreditOrderPointsHandler — le gain d'une commande définitive", () =
     expect(events.traced).toEqual([]);
   });
 
-  it("n'accorde rien sur le port ni sur la surtaxe", async () => {
+  it("crédite le hors taxe des marchandises, remise déduite", async () => {
     const { ledger, handler } = setup([
-      completedOrder({ totalCents: 3_340, deliveryFeeCents: 700, lateFeeCents: 300 }),
+      completedOrder({ subtotalCents: 2_500, discountCents: 160 }),
     ]);
     await handler.execute(new CreditOrderPointsCommand("o1"));
     expect(ledger.entries[0]?.points).toBe(2_340);

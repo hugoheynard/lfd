@@ -196,9 +196,8 @@ export function completedOrder(overrides: Partial<CompletedOrder> = {}): Complet
     companyId: null,
     placedByUserId: "u1",
     buyerHasAccount: true,
-    totalCents: 2_340,
-    deliveryFeeCents: 0,
-    lateFeeCents: 0,
+    subtotalCents: 2_340,
+    discountCents: 0,
     ...overrides,
   };
 }

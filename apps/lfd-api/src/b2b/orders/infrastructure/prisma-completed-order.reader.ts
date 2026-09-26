@@ -21,9 +21,8 @@ const SELECT = {
   clientele: true,
   companyId: true,
   placedByUserId: true,
-  totalCents: true,
-  deliveryFeeCents: true,
-  lateFeeCents: true,
+  subtotalCents: true,
+  discountCents: true,
   placedBy: { select: { auth0Sub: true } },
 } as const;
 
@@ -33,9 +32,8 @@ interface CompletedRow {
   readonly clientele: "pro" | "public" | null;
   readonly companyId: string | null;
   readonly placedByUserId: string;
-  readonly totalCents: number;
-  readonly deliveryFeeCents: number;
-  readonly lateFeeCents: number;
+  readonly subtotalCents: number;
+  readonly discountCents: number;
   readonly placedBy: { readonly auth0Sub: string | null };
 }
 
@@ -86,8 +84,7 @@ function toCompleted(row: CompletedRow): CompletedOrder | null {
     companyId: row.companyId,
     placedByUserId: row.placedByUserId,
     buyerHasAccount: row.placedBy.auth0Sub !== null,
-    totalCents: row.totalCents,
-    deliveryFeeCents: row.deliveryFeeCents,
-    lateFeeCents: row.lateFeeCents,
+    subtotalCents: row.subtotalCents,
+    discountCents: row.discountCents,
   };
 }

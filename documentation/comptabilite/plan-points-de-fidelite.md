@@ -203,12 +203,15 @@ Règles :
 ### D4 — L'assiette : les marchandises seulement
 
 Décidé par Hugo : le port et la surtaxe **ne rapportent pas** de points.
-L'assiette vaut `totalCents − deliveryFeeCents − lateFeeCents`, c'est-à-dire
-le TTC des marchandises après toutes les remises.
+Puis, le même jour : l'assiette est **hors taxe**, parce qu'un crédit calculé
+sur le TTC rendrait au client la TVA qu'on reverse. L'assiette vaut
+`subtotalCents − discountCents`, les marchandises HT après la remise du point
+de retrait. (Bâti d'abord sur le TTC, `totalCents − port − surtaxe`, et
+corrigé avant tout déploiement.)
 
-⚠️ **Avec un bon, l'assiette dépend de D6.** En traitement A, `totalCents` est
-déjà réduit du bon. En traitement B, il reste plein, et il faudra lui
-soustraire le règlement par bon. Le lot D n'en dépend pas : tant que le lot C
+⚠️ **Avec un bon, l'assiette dépend de D6.** En traitement A, le bon devient
+une remise HT de plus, à soustraire aussi. En traitement B, le HT reste plein,
+et c'est le règlement par bon qu'il faudra exclure. Le lot D n'en dépend pas : tant que le lot C
 n'est pas bâti, aucune commande ne porte de bon. Le lot C fixera cette
 soustraction.
 

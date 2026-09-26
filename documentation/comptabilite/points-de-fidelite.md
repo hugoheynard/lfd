@@ -13,7 +13,7 @@
 ## 1. En une phrase
 
 Une commande **remise et payée** crédite ses points à son **titulaire**, à
-raison d'un point par centime de marchandises TTC. Les points se convertissent
+raison d'un point par centime de marchandises **hors taxe**. Les points se convertissent
 en **bons d'achat** par paliers entiers, à un ratio réglé dans
 **Comptabilité › Fidélité**. Tant que ce réglage n'est pas enregistré, le
 programme est **fermé** : rien ne se gagne, et rien ne se convertit.
@@ -128,8 +128,10 @@ vident d'abord les deux tables de fidélité, par un seul `TRUNCATE`.
 | assiette ≤ 0                                         | rien — `empty_basis`                 |
 | sinon                                                | **assiette × 1** points au titulaire |
 
-- **L'assiette** vaut `totalCents − deliveryFeeCents − lateFeeCents` : le TTC
-  des marchandises après remises. Le port et la surtaxe ne rapportent rien.
+- **L'assiette** vaut `subtotalCents − discountCents` : le **hors taxe** des
+  marchandises, remise du point de retrait déduite. Ni la TVA — on ne rend pas
+  en points ce qu'on reverse à l'État (Hugo, 2026-09-26) —, ni le port, ni la
+  surtaxe. Une commande de 23,40 € HT rapporte 2 340 points.
 - **Le titulaire** est `Order.companyId` pour `pro`, `Order.placedByUserId`
   pour `public`. Une `clientele` nulle (commandes d'avant ce champ) n'est
   jamais lue.

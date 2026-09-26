@@ -59,7 +59,7 @@ describe("CreditPendingOrderPointsHandler — le rattrapage", () => {
   it("crédite ce que l'abonné a manqué, et saute ce qui est déjà écrit", async () => {
     const { ledger, handler } = setup([
       completedOrder({ orderId: "o1" }),
-      completedOrder({ orderId: "o2", orderNumber: "CMD-2", totalCents: 1_000 }),
+      completedOrder({ orderId: "o2", orderNumber: "CMD-2", subtotalCents: 1_000 }),
     ]);
     ledger.entries.push({
       id: "déjà",

@@ -15,12 +15,13 @@ export interface EarnableOrder {
   readonly placedByUserId: string;
   /** Faux = un invité, sans compte connectable. */
   readonly buyerHasAccount: boolean;
-  readonly totalCents: number;
-  readonly deliveryFeeCents: number;
-  readonly lateFeeCents: number;
+  /** Les marchandises hors taxe, avant remise. */
+  readonly subtotalCents: number;
+  /** La remise du point de retrait, hors taxe. */
+  readonly discountCents: number;
 }
 
-/** Un point par centime d'assiette : 23,40 € rapportent 2 340 points (plan §0). */
+/** Un point par centime d'assiette HORS TAXE : 23,40 € HT rapportent 2 340 points. */
 const POINTS_PER_CENT = 1;
 
 /** Pourquoi une commande définitive ne rapporte rien. */
@@ -37,7 +38,9 @@ export type OrderEarning =
  * - le titulaire est la société pour `pro` — rien si elle a été supprimée —,
  *   la personne pour `public` — rien si c'est un invité, dont les points
  *   seraient inaccessibles ;
- * - l'assiette est le TTC des marchandises : ni le port, ni la surtaxe ;
+ * - l'assiette est le **hors taxe** des marchandises, remise déduite. Ni la
+ *   TVA — on ne rend pas en crédit ce qu'on reverse à l'État (Hugo,
+ *   2026-09-26) —, ni le port, ni la surtaxe ;
  * - rien tant que le programme est fermé, ou fermé à cette clientèle.
  *
  * Un « rien » n'est pas une erreur : c'est le cas normal d'une grande part
@@ -54,7 +57,7 @@ export function earningFor(order: EarnableOrder, settings: LoyaltySettings | nul
   if (!settings.isOpenTo(holder)) {
     return skip("clientele_closed");
   }
-  const basisCents = order.totalCents - order.deliveryFeeCents - order.lateFeeCents;
+  const basisCents = order.subtotalCents - order.discountCents;
   if (basisCents <= 0) {
     return skip("empty_basis");
   }

@@ -22,9 +22,8 @@ const PUBLIC_ORDER: EarnableOrder = {
   companyId: null,
   placedByUserId: "u1",
   buyerHasAccount: true,
-  totalCents: 2_340,
-  deliveryFeeCents: 0,
-  lateFeeCents: 0,
+  subtotalCents: 2_340,
+  discountCents: 0,
 };
 const PRO_ORDER: EarnableOrder = { ...PUBLIC_ORDER, clientele: "pro", companyId: "c1" };
 
@@ -37,8 +36,12 @@ describe("earningFor — ce que rapporte une commande définitive, et à qui", (
     });
   });
 
-  it("n'accorde rien sur le port ni sur la surtaxe", () => {
-    const order = { ...PUBLIC_ORDER, totalCents: 3_340, deliveryFeeCents: 700, lateFeeCents: 300 };
+  /**
+   * L'assiette est hors taxe : un crédit calculé sur le TTC rendrait au client,
+   * en points, la TVA qu'on reverse à l'État (décision du 2026-09-26).
+   */
+  it("compte le hors taxe des marchandises, remise déduite", () => {
+    const order = { ...PUBLIC_ORDER, subtotalCents: 2_500, discountCents: 160 };
     expect(earningFor(order, PUBLIC_ONLY)).toMatchObject({ kind: "earn", points: 2_340 });
   });
 
@@ -55,8 +58,8 @@ describe("earningFor — ce que rapporte une commande définitive, et à qui", (
     ["la société a été supprimée", { ...PRO_ORDER, companyId: null }, BOTH, "company_missing"],
     ["l'acheteur est un invité", { ...PUBLIC_ORDER, buyerHasAccount: false }, BOTH, "guest_buyer"],
     [
-      "il ne reste que du port",
-      { ...PUBLIC_ORDER, totalCents: 700, deliveryFeeCents: 700 },
+      "la remise couvre tout",
+      { ...PUBLIC_ORDER, subtotalCents: 700, discountCents: 700 },
       BOTH,
       "empty_basis",
     ],

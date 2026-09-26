@@ -92,7 +92,9 @@ interface OrderSeed {
   readonly companyId?: string | null;
   readonly clientele?: OrderClientele;
   readonly paymentStatus?: PaymentStatus;
-  readonly totalCents?: number;
+  readonly subtotalCents?: number;
+  readonly discountCents?: number;
+  readonly vatCents?: number;
   readonly deliveryFeeCents?: number;
   readonly lateFeeCents?: number;
 }
@@ -102,7 +104,11 @@ async function seedOrder(seed: OrderSeed): Promise<{ id: string; number: string;
   sequence += 1;
   const number = `CMD-FID-${String(sequence)}`;
   const intent = `pi_fidelite_${String(sequence)}`;
-  const totalCents = seed.totalCents ?? 2_340;
+  const subtotalCents = seed.subtotalCents ?? 2_340;
+  const discountCents = seed.discountCents ?? 0;
+  const deliveryFeeCents = seed.deliveryFeeCents ?? 0;
+  const lateFeeCents = seed.lateFeeCents ?? 0;
+  const vatCents = seed.vatCents ?? 0;
   const order = await ctx.prisma.order.create({
     data: {
       orderNumber: number,
@@ -110,10 +116,12 @@ async function seedOrder(seed: OrderSeed): Promise<{ id: string; number: string;
       companyId: seed.companyId ?? null,
       clientele: seed.clientele ?? OrderClientele.public,
       status: OrderStatus.ready,
-      subtotalCents: totalCents,
-      totalCents,
-      deliveryFeeCents: seed.deliveryFeeCents ?? 0,
-      lateFeeCents: seed.lateFeeCents ?? 0,
+      subtotalCents,
+      discountCents,
+      deliveryFeeCents,
+      lateFeeCents,
+      vatCents,
+      totalCents: subtotalCents - discountCents + deliveryFeeCents + lateFeeCents + vatCents,
       paymentStatus: seed.paymentStatus ?? PaymentStatus.pending,
       stripePaymentIntentId: intent,
     },
@@ -157,12 +165,14 @@ async function member(): Promise<string> {
 }
 
 describe("le crédit au fil de l'eau — remise ET encaissement", () => {
-  it("crédite au second fait quand la carte est réglée avant la remise, port et surtaxe exclus", async () => {
+  it("crédite au second fait quand la carte est réglée avant la remise — hors taxe, sans port ni surtaxe", async () => {
     await openProgram();
     const userId = await member();
     const order = await seedOrder({
       placedByUserId: userId,
-      totalCents: 3_340,
+      subtotalCents: 2_500,
+      discountCents: 160,
+      vatCents: 129,
       deliveryFeeCents: 700,
       lateFeeCents: 300,
     });

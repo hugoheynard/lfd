@@ -32,9 +32,10 @@ export interface CompletedOrder {
    * pas d'ici — seul ce booléen.
    */
   readonly buyerHasAccount: boolean;
-  readonly totalCents: number;
-  readonly deliveryFeeCents: number;
-  readonly lateFeeCents: number;
+  /** Les marchandises **hors taxe**, avant remise — centimes. */
+  readonly subtotalCents: number;
+  /** La remise du point de retrait, **hors taxe** — centimes. */
+  readonly discountCents: number;
 }
 
 /** Un lot, et le curseur du suivant (`null` = plus rien après). */
