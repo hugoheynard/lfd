@@ -6,9 +6,12 @@ import type { OrderPaymentIntent } from '@lfd/contracts';
 import { of } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { type AbandonOutcome, ClientOrderAbandon } from '../../client-order-abandon.service';
 import { CARD_DUE, provideRecognised } from '../../client-orders.fixture';
+import { ClientWorkspace } from '../../client-workspace.service';
 import { ClientOrders } from '../../client-orders.service';
 import { FR } from '../../copy/fr';
+import { NotifyService } from '../../../notify.service';
 import { StripeLoader } from '../../stripe-loader.service';
 import { ReglementPage } from './reglement-page';
 
@@ -43,13 +46,23 @@ interface Booted {
   fixture: ComponentFixture<ReglementPage>;
   /** Les navigations tentées, dans l'ordre — c'est la sortie qu'on éprouve. */
   gone: unknown[][];
+  /** Les commandes abandonnées — l'appel au serveur, doublé. */
+  abandoned: string[];
+}
+
+/** Ce que le serveur répond à l'abandon, et si l'espace est celui d'une société. */
+interface Exit {
+  readonly outcome?: AbandonOutcome;
+  readonly pro?: boolean;
 }
 
 async function boot(
   loader: unknown,
   orderId = 'ord_9',
   payment: OrderPaymentIntent | null = CARD_DUE,
+  exit: Exit = {},
 ): Promise<Booted> {
+  const abandoned: string[] = [];
   localStorage.clear();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -60,6 +73,15 @@ async function boot(
       provideRecognised(),
       { provide: StripeLoader, useValue: loader },
       { provide: ActivatedRoute, useValue: { paramMap: of({ get: () => orderId }) } },
+      {
+        provide: ClientOrderAbandon,
+        useValue: {
+          abandon: (id: string) => {
+            abandoned.push(id);
+            return Promise.resolve(exit.outcome ?? 'abandoned');
+          },
+        },
+      },
     ],
   });
   const gone: unknown[][] = [];
@@ -71,6 +93,10 @@ async function boot(
   // est l'écran, pas la façon dont le service va la chercher — elle a sa propre
   // suite dans `client-orders.service.spec.ts`.
   vi.spyOn(TestBed.inject(ClientOrders), 'paymentFor').mockResolvedValue(payment);
+  // `company` est un `computed` : on le double, on ne sème pas tout un compte.
+  vi.spyOn(TestBed.inject(ClientWorkspace), 'company').mockReturnValue(
+    exit.pro === true ? ({ id: 'co_1' } as ReturnType<ClientWorkspace['company']>) : null,
+  );
 
   const fixture = TestBed.createComponent(ReglementPage);
   fixture.detectChanges();
@@ -78,7 +104,7 @@ async function boot(
   await Promise.resolve();
   await Promise.resolve();
   fixture.detectChanges();
-  return { fixture, gone };
+  return { fixture, gone, abandoned };
 }
 
 const text = (fixture: ComponentFixture<ReglementPage>): string =>
@@ -182,16 +208,90 @@ describe('ReglementPage', () => {
     const { fixture } = await boot({ load: () => Promise.resolve(null) });
 
     expect(text(fixture)).toContain(FR.pay.unavailable);
-    expect(text(fixture)).toContain(FR.pay.later);
+    expect(text(fixture)).toContain(FR.pay.abandon);
     expect(() => button(fixture, FR.pay.submit.split('{')[0]!.trim())).toThrow();
   });
 
-  /** Partir sans payer est une sortie assumée : la commande reste, le dû aussi. */
-  it('« régler plus tard » mène à la confirmation', async () => {
-    const { fixture, gone } = await boot(stripeThatAnswers({}));
+  /**
+   * Régression : « Je règle depuis « Mes commandes » » appelait `later()`, qui ne
+   * marquait rien et menait à la confirmation d'une commande que personne ne
+   * payait (plan `plan-abandon-du-reglement.md`, §1).
+   */
+  it('dit la conséquence AVANT d’abandonner, et n’appelle rien sans confirmation', async () => {
+    const { fixture, gone, abandoned } = await boot(stripeThatAnswers({}));
 
-    button(fixture, FR.pay.later).click();
+    button(fixture, FR.pay.abandon).click();
+    fixture.detectChanges();
 
+    expect(text(fixture)).toContain(FR.pay.abandonWarning);
+    expect(abandoned).toEqual([]);
+    expect(gone).toEqual([]);
+  });
+
+  it('abandonne, annonce l’annulation et mène à la boutique', async () => {
+    const { fixture, gone, abandoned } = await boot(stripeThatAnswers({}));
+    const success = vi.spyOn(TestBed.inject(NotifyService), 'success');
+
+    await leave(fixture);
+
+    expect(abandoned).toEqual(['ord_9']);
+    expect(success).toHaveBeenCalledWith(FR.pay.abandoned);
+    expect(gone).toEqual([['/boutique']]);
+  });
+
+  /** Un pro garde une intention vivante jusqu'à la clôture (Q8, a) : jamais « annulée ». */
+  it('ne dit pas « annulée » à un pro, dont la commande reste payable', async () => {
+    const { fixture, gone } = await boot(stripeThatAnswers({}), 'ord_9', CARD_DUE, { pro: true });
+    const success = vi.spyOn(TestBed.inject(NotifyService), 'success');
+    const info = vi.spyOn(TestBed.inject(NotifyService), 'info');
+
+    button(fixture, FR.pay.abandon).click();
+    fixture.detectChanges();
+    expect(text(fixture)).toContain(FR.pay.abandonWarningPro);
+    await confirm(fixture);
+
+    expect(success).not.toHaveBeenCalled();
+    expect(info).toHaveBeenCalledWith(FR.pay.abandonPending);
+    expect(gone).toEqual([['/boutique']]);
+  });
+
+  /** De l'argent pris ou en route : la dire annulée serait faux. */
+  it('mène à la confirmation quand le paiement a abouti entre-temps', async () => {
+    const { fixture, gone } = await boot(stripeThatAnswers({}), 'ord_9', CARD_DUE, {
+      outcome: 'settled',
+    });
+    const info = vi.spyOn(TestBed.inject(NotifyService), 'info');
+
+    await leave(fixture);
+
+    expect(info).toHaveBeenCalledWith(FR.pay.abandonSettled);
     expect(gone).toEqual([['/confirmation-de-commande']]);
   });
+
+  /** §5 « Sortir quand Stripe est injoignable » : la sortie ne dépend de personne. */
+  it('part quand même quand l’abandon n’a rien écrit, même Stripe indisponible', async () => {
+    const { fixture, gone } = await boot({ load: () => Promise.resolve(null) }, 'ord_9', CARD_DUE, {
+      outcome: 'unsettled',
+    });
+    const info = vi.spyOn(TestBed.inject(NotifyService), 'info');
+
+    await leave(fixture);
+
+    expect(info).toHaveBeenCalledWith(FR.pay.abandonPending);
+    expect(gone).toEqual([['/boutique']]);
+  });
 });
+
+/** Ouvre la confirmation puis la valide. */
+async function leave(fixture: ComponentFixture<ReglementPage>): Promise<void> {
+  button(fixture, FR.pay.abandon).click();
+  fixture.detectChanges();
+  await confirm(fixture);
+}
+
+async function confirm(fixture: ComponentFixture<ReglementPage>): Promise<void> {
+  button(fixture, FR.pay.abandonConfirm).click();
+  await Promise.resolve();
+  await Promise.resolve();
+  fixture.detectChanges();
+}

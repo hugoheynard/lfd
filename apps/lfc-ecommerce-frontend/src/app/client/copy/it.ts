@@ -311,9 +311,19 @@ export const IT: ClientCopy = {
     loading: 'Caricamento del pagamento sicuro…',
     submit: 'Paga {total}',
     submitting: 'Pagamento…',
-    later: 'Pago da « I miei ordini »',
+    abandon: 'Abbandona il mio ordine',
+    abandonWarning: 'Il suo ordine sarà annullato. Nulla è stato addebitato.',
+    abandonWarningPro:
+      'Nulla sarà addebitato. Se non è pagato prima dell’infornata, l’ordine sarà annullato.',
+    abandonConfirm: 'Abbandona',
+    abandonKeep: 'Tengo il mio ordine',
+    abandonBusy: 'Abbandono…',
+    abandoned: 'Ordine annullato. Nulla è stato addebitato.',
+    abandonPending:
+      'Il suo ordine non è pagato. Nulla è stato addebitato; sarà annullato se non è pagato prima dell’infornata.',
+    abandonSettled: 'Il suo pagamento è stato ricevuto: l’ordine non è abbandonato.',
     unavailable:
-      'Il pagamento non è disponibile al momento. Il suo ordine è registrato: potrà pagarlo da « I miei ordini ».',
+      'Il pagamento non è disponibile al momento. Nulla è stato addebitato; se non è pagato prima dell’infornata, l’ordine sarà annullato.',
     refused: 'Il pagamento è stato rifiutato.',
     failed: 'Il pagamento non è andato a buon fine.',
     accepted: 'Pagamento accettato.',

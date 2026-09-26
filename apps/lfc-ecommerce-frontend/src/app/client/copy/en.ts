@@ -307,9 +307,19 @@ export const EN: ClientCopy = {
     loading: 'Loading secure payment…',
     submit: 'Pay {total}',
     submitting: 'Paying…',
-    later: 'I will pay from “My orders”',
+    abandon: 'Abandon my order',
+    abandonWarning: 'Your order will be cancelled. Nothing has been charged.',
+    abandonWarningPro:
+      'Nothing will be charged. If it is not paid before the bake, the order will be cancelled.',
+    abandonConfirm: 'Abandon',
+    abandonKeep: 'Keep my order',
+    abandonBusy: 'Abandoning…',
+    abandoned: 'Order cancelled. Nothing has been charged.',
+    abandonPending:
+      'Your order is not paid. Nothing has been charged; it will be cancelled if it is not paid before the bake.',
+    abandonSettled: 'Your payment was received: the order is not abandoned.',
     unavailable:
-      'Payment is unavailable right now. Your order is on file: you can pay it from “My orders”.',
+      'Payment is unavailable right now. Nothing has been charged; if it is not paid before the bake, the order will be cancelled.',
     refused: 'The payment was declined.',
     failed: 'The payment could not be completed.',
     accepted: 'Payment accepted.',

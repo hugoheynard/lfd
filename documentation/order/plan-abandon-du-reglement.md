@@ -444,7 +444,7 @@ Q1 à Q6 le sont au §5 bis. La dernière est née de la seconde contradiction
 | **5**     | ✅ bâti le 2026-09-26 — La cause sur `OrderPaymentFailedEvent` (`refused`, `day_closed`, `abandoned`), l'abonné cloche, le mail qui suit la cause (Q4, §9 bis S9)                       | 4          |
 | **6**     | ✅ bâti le 2026-09-26 — La clôture : le port synchrone de balayage, appelé **avant** de compter, à chaque appel de clôture (§9 bis, B1, B2, S4), rattachement au jour de passation (Q5) | 3, 4       |
 | **6 bis** | ✅ bâti le 2026-09-26 — Un encaissement sur une commande `cancelled` : ne jamais la rouvrir, sonner « à rembourser » (§9 bis, B1)                                                       | 6          |
-| **8**     | Le front : libellé, confirmation, appel **tenté**, navigation inconditionnelle                                                                                                          | 4          |
+| **8**     | ✅ bâti le 2026-09-26 — Le front : libellé, confirmation, appel **tenté**, navigation inconditionnelle                                                                                  | 4          |
 | **10**    | Prévenir le commercial à l'heure limite (Q6) : une passe horaire idempotente, un cron de plus                                                                                           | 5          |
 | **9**     | Les docs et les justifications datées (§10)                                                                                                                                             | 1–8        |
 
@@ -611,6 +611,20 @@ sonne : c'est **Q7** (§6).
   toujours refusée « vide » : elle reste non arrêtée, et le colisage et le
   dossier du jour restent bloqués ce jour-là s'il n'y a rien d'autre. Conforme
   au §4 ; signalé à Hugo.
+
+## 9 sexies. Ce que le lot 8 a laissé ouvert (2026-09-26)
+
+- **La colonne « Carte » de Mes commandes n'a pas changé**, conformément au §1
+  (Hugo, 2026-09-22 : pas d'état « à régler »). Une commande `cancelled` le dit
+  déjà par son statut ; ce que la colonne de règlement affiche pour elle n'est
+  pas tranché.
+- **La clientèle n'est pas dans le contrat du règlement** : l'écran la déduit de
+  l'espace courant (une société = pro). Rouvert depuis un autre espace, le texte
+  serait faux. Exposer `clientele` dans `GET /orders/:id/payment` le fermerait.
+- 🔴 **Une boucle confirmation ↔ règlement** : quand `GET /orders/:id/payment`
+  refuse (commande annulée ou intention close, depuis le lot 7), l'écran de
+  règlement renvoie à la confirmation, qui propose « Régler maintenant » à
+  partir d'un `settlement: 'due'` gardé en local. À fermer avant de pousser.
 
 ## 10. Les justifications datées que ce chantier périme
 

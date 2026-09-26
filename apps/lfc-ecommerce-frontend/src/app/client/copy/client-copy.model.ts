@@ -551,19 +551,33 @@ export interface ClientCopy {
     readonly submit: string;
     readonly submitting: string;
     /**
-     * **La sortie sans payer.**
+     * **La sortie sans payer : un ABANDON, et le libellé le dit.**
      *
-     * 🔴 Elle s'appelait « Régler plus tard » jusqu'au 2026-09-21 (Hugo : « ça
-     * n'arrive jamais »), et c'était une promesse fausse. On n'atteint cet
-     * écran que quand le serveur a répondu `due`, c'est-à-dire quand la CARTE
-     * est requise : rien n'a été différé. Le vrai différé, c'est « au compte »,
-     * et il ne passe jamais par ici.
-     *
-     * ⚠️ Le geste, lui, reste bon : la commande est écrite, son adresse de
-     * règlement se rouvre. Le libellé dit donc D'OÙ on revient la payer, au
-     * lieu de laisser croire à un délai accordé.
+     * 🔴 Elle s'est appelée « Régler plus tard » (jusqu'au 2026-09-21), puis
+     * « Je règle depuis « Mes commandes » » (jusqu'au 2026-09-26) : deux
+     * promesses de délai pour un geste qui ne marquait rien. Rien dans « Mes
+     * commandes » ne menait au règlement. Depuis le lot 8 du plan
+     * `documentation/order/plan-abandon-du-reglement.md`, elle TENTE
+     * `POST /orders/:id/abandon` et navigue quoi qu'il arrive.
      */
-    readonly later: string;
+    readonly abandon: string;
+    /** La conséquence, dite AVANT d'agir — particulier : l'intention meurt. */
+    readonly abandonWarning: string;
+    /** La même, pour un pro : l'intention vit jusqu'à la clôture (Q8, a). */
+    readonly abandonWarningPro: string;
+    readonly abandonConfirm: string;
+    readonly abandonKeep: string;
+    /** Le bouton de confirmation pendant l'appel. */
+    readonly abandonBusy: string;
+    /** 204, particulier : annulée, rien débité. */
+    readonly abandoned: string;
+    /**
+     * Rien n'est annulé MAINTENANT — pro (204), Stripe injoignable, réseau,
+     * visiteur : la clôture de la journée balaiera la commande non réglée.
+     */
+    readonly abandonPending: string;
+    /** 409 `already_paid` / `payment_in_progress` : jamais « annulée ». */
+    readonly abandonSettled: string;
     /** Le module de paiement ne s'est pas chargé — la commande, elle, existe. */
     readonly unavailable: string;
     /** Repli quand Stripe refuse sans message ; sinon c'est le SIEN qu'on montre. */

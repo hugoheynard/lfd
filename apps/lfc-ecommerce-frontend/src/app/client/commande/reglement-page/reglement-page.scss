@@ -122,14 +122,3 @@
   opacity: 0.55;
   cursor: default;
 }
-
-.later {
-  width: 100%;
-  padding: var(--fold-space-sm);
-  border: 0;
-  background: none;
-  font-size: var(--fold-text-sm);
-  color: var(--fold-color-text-secondary);
-  text-decoration: underline;
-  cursor: pointer;
-}

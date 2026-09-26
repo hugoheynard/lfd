@@ -12,9 +12,17 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs/operators';
 import type { Stripe, StripeElements } from '@stripe/stripe-js';
+import {
+  FOLD_INLINE_CONFIRM_DEFAULT_LABELS,
+  FoldButtonComponent,
+  type FoldInlineConfirmLabels,
+  FoldInlineConfirmComponent,
+} from 'fold-ng';
 
 import { ClientChrome } from '../../client-chrome.service';
+import { type AbandonOutcome, ClientOrderAbandon } from '../../client-order-abandon.service';
 import { ClientOrders } from '../../client-orders.service';
+import { ClientWorkspace } from '../../client-workspace.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { formatCents } from '../../format-money';
 import { NotifyService } from '../../../notify.service';
@@ -45,19 +53,24 @@ type Phase = 'loading' | 'ready' | 'paying' | 'unavailable';
  * et c'est le **webhook** serveur qui écrit `paid` dans notre base. Un
  * `succeeded` obtenu ici donne le droit d'afficher « réglé », rien de plus.
  *
- * ## Quitter sans payer est une SORTIE, pas un délai accordé
+ * ## Quitter sans payer est un ABANDON, et il se dit
  *
- * 🔴 Le bouton disait « Régler plus tard » jusqu'au 2026-09-21 (Hugo : « ça
- * n'arrive jamais »). C'était faux : on n'atteint cet écran que si le serveur a
- * répondu `due`, c'est-à-dire si la CARTE est requise. Rien n'a été différé, et
- * le comptoir ne rattrape pas — la boutique promet « rien à régler sur place ».
- * Un libellé qui sonne comme un délai laissait donc partir avec une commande
- * que personne ne recouvre.
+ * 🔴 Le bouton a dit « Régler plus tard », puis « Je règle depuis « Mes
+ * commandes » » : deux promesses de délai pour un geste — `later()` — qui ne
+ * marquait rien et menait à la confirmation d'une commande que personne ne
+ * payait. Depuis le 2026-09-26 (lot 8 du plan
+ * `documentation/order/plan-abandon-du-reglement.md`), la sortie s'appelle
+ * « Abandonner ma commande », dit sa conséquence AVANT d'agir, TENTE
+ * `POST /orders/:id/abandon`, et navigue **quoi qu'il arrive**.
  *
- * Le GESTE reste bon : la commande est écrite, et l'adresse de cet écran se
- * rouvre. Le libellé dit désormais d'OÙ on revient la payer. Bloquer la sortie
- * retiendrait quelqu'un devant un formulaire de carte pour une commande déjà
- * écrite.
+ * Bloquer la sortie retiendrait quelqu'un devant un formulaire de carte pour
+ * une commande déjà écrite — y compris en phase `unavailable`, quand Stripe ne
+ * s'est pas chargé. L'annulation est donc ce qu'on tente, jamais une condition
+ * pour partir : si elle échoue, la clôture de la journée balaiera la commande.
+ *
+ * Seule exception à « vers la boutique » : de l'argent pris ou en route
+ * (`already_paid`, `payment_in_progress`) mène à la confirmation — la dire
+ * annulée serait faux.
  *
  * ⚠️ Le vrai différé s'appelle **« au compte »** (`OrderSettlement.account`),
  * il se décide AU PANIER, et il ne passe jamais par ici : une commande au
@@ -66,6 +79,7 @@ type Phase = 'loading' | 'ready' | 'paying' | 'unavailable';
 @Component({
   selector: 'app-reglement-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FoldButtonComponent, FoldInlineConfirmComponent],
   templateUrl: './reglement-page.html',
   styleUrl: './reglement-page.scss',
 })
@@ -76,6 +90,8 @@ export class ReglementPage {
   private readonly orders = inject(ClientOrders);
   private readonly stripeLoader = inject(StripeLoader);
   private readonly notify = inject(NotifyService);
+  private readonly abandoning = inject(ClientOrderAbandon);
+  private readonly workspace = inject(ClientWorkspace);
 
   protected readonly t = inject(ClientCopyService).t;
 
@@ -93,6 +109,34 @@ export class ReglementPage {
   protected readonly phase = signal<Phase>('loading');
   protected readonly amountCents = signal<number | null>(null);
   protected readonly error = signal<string | null>(null);
+  /** L'abandon est parti : la confirmation reste ouverte, en attente. */
+  protected readonly leaving = signal(false);
+  protected readonly confirmOpen = signal(false);
+
+  /**
+   * Pro ou particulier, lu de l'ESPACE courant : le contrat de l'écran ne porte
+   * pas la clientèle, et le serveur la déduit de la société de la commande,
+   * passée dans cet espace-ci. Un pro qui abandonne garde une intention vivante
+   * jusqu'à la clôture (Q8, a) : lui dire « annulée » serait faux.
+   */
+  private readonly pro = computed(() => this.workspace.company() !== null);
+
+  protected readonly abandonWarning = computed(() =>
+    this.pro() ? this.t().pay.abandonWarningPro : this.t().pay.abandonWarning,
+  );
+
+  /** Les mots de la confirmation — fold parle anglais par défaut. */
+  protected readonly abandonLabels = computed<FoldInlineConfirmLabels>(() => {
+    const pay = this.t().pay;
+    return {
+      ...FOLD_INLINE_CONFIRM_DEFAULT_LABELS,
+      confirm: pay.abandonConfirm,
+      cancel: pay.abandonKeep,
+      cancelAria: pay.abandonKeep,
+      busy: pay.abandonBusy,
+      group: pay.abandon,
+    };
+  });
 
   /** La commande de ce règlement, si le navigateur la connaît encore. */
   private readonly order = computed(() => this.orders.all().find((row) => row.id === this.id()));
@@ -116,8 +160,7 @@ export class ReglementPage {
   constructor() {
     this.chrome.kicker.set(this.t().chrome.kickerPay);
     // Aucune flèche de retour : derrière cet écran il y a un panier vide et une
-    // commande déjà passée. La sortie est « régler plus tard », qui mène à la
-    // confirmation — donc en avant, pas en arrière.
+    // commande déjà passée. La sortie est l'abandon, qui dit ce qu'il fait.
     this.chrome.back.set(null);
     // Navigateur uniquement : `afterNextRender` ne tourne pas en SSR, et le nœud
     // de montage du Payment Element existe alors dans le DOM.
@@ -190,13 +233,33 @@ export class ReglementPage {
   }
 
   /**
-   * Sortie assumée : la commande reste, le règlement aussi.
+   * **Abandonner**, une fois la conséquence confirmée.
    *
-   * ⚠️ Elle ne MARQUE rien — ni payé, ni différé. L'état de la commande est
-   * celui que le serveur tient ; cet écran ne fait que cesser de demander.
+   * L'appel est TENTÉ et ne retient jamais : quelle que soit l'issue — serveur
+   * muet, Stripe injoignable, refus —, on part. Seul le message change, et la
+   * destination quand le paiement a abouti.
    */
-  protected later(): void {
-    void this.toConfirmation();
+  protected async abandon(): Promise<void> {
+    if (this.leaving()) {
+      return;
+    }
+    this.leaving.set(true);
+    const outcome = await this.abandoning.abandon(this.id());
+    this.announce(outcome);
+    this.confirmOpen.set(false);
+    void (outcome === 'settled' ? this.toConfirmation() : this.router.navigate(['/boutique']));
+  }
+
+  /** Ce qui est VRAI après la tentative — jamais « annulée » sans que le serveur l'ait écrit. */
+  private announce(outcome: AbandonOutcome): void {
+    const pay = this.t().pay;
+    if (outcome === 'settled') {
+      this.notify.info(pay.abandonSettled);
+    } else if (outcome === 'abandoned' && !this.pro()) {
+      this.notify.success(pay.abandoned);
+    } else {
+      this.notify.info(pay.abandonPending);
+    }
   }
 
   private unavailable(): void {

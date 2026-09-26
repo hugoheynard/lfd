@@ -307,9 +307,19 @@ export const FR: ClientCopy = {
     loading: 'Chargement du paiement sécurisé…',
     submit: 'Payer {total}',
     submitting: 'Paiement…',
-    later: 'Je règle depuis « Mes commandes »',
+    abandon: 'Abandonner ma commande',
+    abandonWarning: 'Votre commande sera annulée. Rien n’a été débité.',
+    abandonWarningPro:
+      'Rien ne sera débité. Sans règlement avant la fournée, la commande sera annulée.',
+    abandonConfirm: 'Abandonner',
+    abandonKeep: 'Garder ma commande',
+    abandonBusy: 'Abandon…',
+    abandoned: 'Commande annulée. Rien n’a été débité.',
+    abandonPending:
+      'Votre commande n’est pas réglée. Rien n’a été débité ; elle sera annulée si elle n’est pas réglée avant la fournée.',
+    abandonSettled: 'Votre paiement a été reçu : la commande n’est pas abandonnée.',
     unavailable:
-      'Le paiement est indisponible pour l’instant. Votre commande est enregistrée : vous pourrez la régler depuis « Mes commandes ».',
+      'Le paiement est indisponible pour l’instant. Rien n’a été débité ; sans règlement avant la fournée, la commande sera annulée.',
     refused: 'Le paiement a été refusé.',
     failed: 'Le paiement n’a pas pu être finalisé.',
     accepted: 'Paiement accepté.',

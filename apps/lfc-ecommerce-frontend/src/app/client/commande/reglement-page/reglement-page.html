@@ -28,6 +28,23 @@
         {{ submitLabel() }}
       </button>
     }
-    <button class="later" type="button" (click)="later()">{{ t().pay.later }}</button>
+    <!-- La sortie reste offerte en phase `unavailable` : elle ne dépend ni de
+         Stripe ni du serveur. Retirée seulement pendant une confirmation de
+         carte, qui pourrait encaisser pendant qu'on abandonne. -->
+    @if (phase() !== 'paying') {
+      <fold-inline-confirm
+        intent="danger"
+        keepOpenOnConfirm
+        [message]="abandonWarning()"
+        [labels]="abandonLabels()"
+        [loading]="leaving()"
+        [(open)]="confirmOpen"
+        (confirmed)="abandon()"
+      >
+        <button foldButton type="button" emphasis="outline" intent="neutral" block>
+          {{ t().pay.abandon }}
+        </button>
+      </fold-inline-confirm>
+    }
   </div>
 </div>
