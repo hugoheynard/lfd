@@ -150,7 +150,7 @@ Tout ce qui suit a été ouvert le 2026-09-22.
 
 ### 🔴 Ce que Stripe autorise vraiment
 
-Lu dans le SDK **épinglé** — paquet `stripe` en 22.4.0, déclaration de
+Lu dans le SDK installé — paquet `stripe` en 22.4.0 (`^22.4.0`, non épinglé), déclaration de
 `paymentIntents.cancel` — et non de mémoire :
 
 > You can cancel a PaymentIntent object when it's in one of these statuses:
@@ -227,8 +227,7 @@ compte ensuite** :
 Le refus « journée vide » garde alors tout son sens — il dit une vérité :
 personne n'a payé.
 
-⚠️ **À valider par Hugo.** C'est un changement du cycle de la clôture, pas un
-détail d'ordonnancement.
+✅ **Validé par Hugo le 2026-09-26** (Q1). Le comment est au §9 bis, B1.
 
 ### Le coût, et un chiffre qu'il ne faut PAS reprendre
 
@@ -377,18 +376,27 @@ confirmer**.
 
 ---
 
+## 5 bis. Les réponses de Hugo (2026-09-26)
+
+> « ok pour tes avis, Q6 on prévient le commercial » — Hugo.
+
+| #      | Décision                                                                                                                                                                                                                                                                                                                                                            |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Q1** | **La clôture annule d'abord, compte ensuite.** Elle annule les intentions en vol de la journée et les marque selon la clientèle (§5), **puis** compte le producible. Le refus « journée vide » ne dit plus que la vérité : personne n'a payé.                                                                                                                       |
+| **Q2** | **Seul l'auteur** abandonne la commande d'une société. La lecture reste ouverte à tout membre ; abandonner est une destruction, et elle revient à qui a passé la commande.                                                                                                                                                                                          |
+| **Q3** | **Une commande abandonnée passe aussi `paymentStatus = failed`.** Le rejeu de passation devient correct sans condition de plus, et l'affichage suit. Un pro qui abandonne lui-même fait sonner la cloche : l'équipe veut le savoir.                                                                                                                                 |
+| **Q4** | **Le mail suit la cause** : deux gabarits, `refused` (carte refusée, celui déjà en service) et `day_closed` (le paiement n'a pas abouti à temps pour la fournée).                                                                                                                                                                                                   |
+| **Q5** | **Une commande sans jour de retrait est rattachée à son jour de passation** pour la clôture : aucune commande n'échappe au balayage.                                                                                                                                                                                                                                |
+| **Q6** | **On prévient le commercial** qu'une commande saisie par l'équipe, avec lien de paiement, n'est toujours pas réglée. ⚠️ **Quand**, ce n'est pas dit : proposé **à l'heure limite de commande de la journée** (`architecture-heure-limite-de-commande.md`), assez tôt pour relancer le client avant la fournée. La cloche du back-office, visible de tous, comme D4. |
+
 ## 6. 🔵 Les questions ouvertes
 
-| #      | La question                                                                                                                                                                                  | Pourquoi elle ne peut pas être tranchée ici                                          |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| **Q1** | **La clôture tue-t-elle avant de compter ?** (§4)                                                                                                                                            | change le cycle de la clôture                                                        |
-| **Q2** | **Qui peut abandonner la commande d'une société ?** Tout membre (comme la lecture) ou l'auteur seul ?                                                                                        | `ensureOrderVisible` laisse passer tout membre — c'est la question 2 du TODO général |
-| **Q3** | `paymentStatus` d'une abandonnée = `failed` ? (§5)                                                                                                                                           | fait sonner la cloche sur un abandon pro                                             |
-| **Q4** | Le **courriel** au client suit-il la cause ?                                                                                                                                                 | change un gabarit déjà parti à des humains                                           |
-| **Q5** | Une commande **sans journée de service** n'est prise par aucune clôture. Borne-t-on sur la journée de passation ?                                                                            | sinon D3 laisse un reste                                                             |
-| **Q6** | La **commande saisie par l'équipe** (`settlement: 'link'`) : le client ne clique jamais le lien, elle sort du plan en silence. Le commercial doit-il l'apprendre autrement qu'à la clôture ? | c'est le cas pro le plus courant, et le plan ne le couvre qu'indirectement           |
+Q1 à Q6 sont tranchées (§5 bis). **Il en reste une**, née de la seconde
+contradiction (§9 bis, B3) :
 
----
+| #      | La question                                                                                                                                                                                                                                                                                             | Proposé                                                                                                                                                                            |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Q7** | À la clôture, une commande **pro** non réglée : `failed` seule (D4, elle reste `placed`), ou `cancelled` + `failed` comme une commande publique ? Après la clôture, elle ne sera ni produite ni payable (D3) : en `placed`, elle traîne dans la file et dans « à reprendre » sans pouvoir être reprise. | **`cancelled` + `failed`, et la cloche sonne** : le commercial la ressaisit s'il le faut. D4 garde son sens pour un refus **en journée**, qui reste reprenable jusqu'à la clôture. |
 
 ## 7. Ce que ce plan ne fait pas
 
@@ -408,19 +416,21 @@ confirmer**.
 
 ## 8. Les lots
 
-| Lot       | Contenu                                                                           | Bloque par |
-| --------- | --------------------------------------------------------------------------------- | ---------- |
-| **0**     | **Mesurer** ce que la tranche 1 casse réellement (§4) — aucun code                | —          |
-| **1**     | La règle : `plan-filter.ts`, les signatures, les JSDoc datés                      | 0          |
-| **2**     | Le triage des e2e tombées, famille par famille                                    | 1          |
-| **3**     | `cancelIntent` + les **six issues** traduites (§5)                                | —          |
-| **3 bis** | la page de règlement accepte une commande `failed` (§0, fait nouveau 2)           | —          |
-| **4**     | `markAbandoned` / `failAtClosing`, la commande, le handler, la route, le mur (Q2) | 3          |
-| **5**     | La cause sur `OrderPaymentFailedEvent` + l'abonné cloche + le catalogue des faits | 4          |
-| **6**     | La clôture : balayer avant de compter (Q1)                                        | 3, 4       |
-| **7**     | `GetOrderPaymentHandler` refuse une intention non payable (§5)                    | 3          |
-| **8**     | Le front : libellé, confirmation, appel **tenté**, navigation inconditionnelle    | 4          |
-| **9**     | Les docs et les justifications datées (§10)                                       | 1–8        |
+| Lot       | Contenu                                                                                                                                                         | Bloque par |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| **0**     | **Mesurer** ce que la tranche 1 casse réellement (§4) — aucun code                                                                                              | —          |
+| **1**     | La règle : `plan-filter.ts`, les signatures, les JSDoc datés                                                                                                    | 0          |
+| **2**     | Le triage des e2e tombées, famille par famille                                                                                                                  | 1          |
+| **3**     | `cancelIntent` + les **cinq issues** traduites (§5)                                                                                                             | —          |
+| **7**     | `GetOrderPaymentHandler` relit l'intention chez Stripe et refuse une intention non payable, et toute commande `cancelled` — **avant** 3 bis (§9 bis, B3)        | 3          |
+| **3 bis** | la page de règlement accepte `failed` **tant que son intention est vivante** (§9 bis, B3)                                                                       | 7          |
+| **4**     | `markAbandoned` / `failAtClosing`, la commande, le handler, la route, le mur : l'auteur `placedByUserId` (Q2)                                                   | 3          |
+| **5**     | La cause sur `OrderPaymentFailedEvent` (`refused`, `day_closed`, `abandoned`), l'abonné cloche, le mail qui suit la cause (Q4, §9 bis S9)                       | 4          |
+| **6**     | La clôture : le port synchrone de balayage, appelé **avant** de compter, à chaque appel de clôture (§9 bis, B1, B2, S4), rattachement au jour de passation (Q5) | 3, 4       |
+| **6 bis** | Un encaissement sur une commande `cancelled` : ne jamais la rouvrir, sonner « à rembourser » (§9 bis, B1)                                                       | 6          |
+| **8**     | Le front : libellé, confirmation, appel **tenté**, navigation inconditionnelle                                                                                  | 4          |
+| **10**    | Prévenir le commercial à l'heure limite (Q6) : une passe horaire idempotente, un cron de plus                                                                   | 5          |
+| **9**     | Les docs et les justifications datées (§10)                                                                                                                     | 1–8        |
 
 ⚠️ **Le lot 5 touche `packages/contracts`** — catalogue des faits, spec de
 fermeture, **et** la phrase du back-office. La règle « la racine dès que
@@ -468,6 +478,77 @@ abandon, donc le client compte comme ayant commandé, pour toujours
 quand sa commande meurt ?
 
 ---
+
+## 9 bis. Ce que la seconde contradiction (2026-09-26) a changé
+
+`vitruve`, sur la version reprise : **3 BLOQUANT, 6 SÉRIEUX, 5 MINEUR**.
+
+**B1 — la clôture n'a pas d'endroit où annuler.** `CloseProductionDayHandler`
+compte puis ferme ; le commerce n'agit qu'après, par un abonné hors
+transaction. Et `production → b2b` est interdit. **Réponse** :
+
+- `production/channels/commerce/` gagne un **port synchrone**,
+  `PendingSettlementSweeper.sweep(day)`, que `b2b` implémente et
+  qu'`appBootstrap` relie ;
+- la clôture l'appelle **avant** `producibleFor` ;
+- **Stripe injoignable ne bloque jamais la clôture.** Pour chaque commande, on
+  tente `cancelIntent`, puis on écrit la base **quelle que soit l'issue**.
+  L'échec est journalisé. Le fournil ne s'arrête pas à cause d'une panne
+  Stripe ;
+- le prix : une intention restée vivante peut encore être payée. D'où le
+  **lot 6 bis** : un encaissement sur une commande `cancelled` ne la rouvre
+  jamais, et la cloche sonne « encaissé sur une commande annulée — à
+  rembourser ». `PAID_FROM` (`3b8598fdf`) accepte `pending` et `failed`, mais
+  le `where` doit exclure `status = cancelled`.
+
+**B2 — le balayage ne voyait pas les cartes refusées en journée.** Une
+commande `failed` a une intention vivante (`requires_payment_method`), et
+depuis `3b8598fdf`, elle peut encore passer `paid`. **Réponse** : le balayage
+vise tout règlement **non encaissé**, `pending` **ou** `failed`, et pas
+seulement `pending`. C'est aussi ce qui libère le bon de fidélité réservé
+d'une commande refusée et jamais reprise.
+
+**B3 — le lot 3 bis servait des intentions mortes.** **Réponse** : le lot 7
+passe avant. `GetOrderPaymentHandler` relit l'intention **chez Stripe** et
+refuse une intention `canceled` ou `succeeded`, ainsi que toute commande
+`cancelled`. Une commande `failed` n'est donc payable que **tant que sa
+journée n'est pas close**, et aucune nouvelle intention n'est jamais créée.
+Après la clôture, elle n'est plus payable (D3). Reste à savoir ce qu'elle
+devient : c'est **Q7** (§6).
+
+**Sérieux** :
+
+- **S4, la clôture rejouée** : le balayage tourne à **chaque** appel de
+  clôture, réannonce comprise. Il est idempotent par ses conditions, et il
+  prend les commandes passées après la première clôture.
+- **S5, Q6 sans déclencheur** : c'est le lot 10, une passe horaire
+  idempotente qui compare l'heure de Paris à l'heure limite du jour. C'est un
+  cron de plus, et le §9 bis ne tranche pas l'architecture des crons.
+- **S6, le jour de passation** : c'est le jour ouvré Europe/Paris de
+  `createdAt`, par l'outil que `lint:business-day` impose. La clôture du jour
+  D balaie `requestedDeliveryDate = D`, ou bien une date nulle dont le jour de
+  passation vaut D.
+- **S7, la 3-D Secure tuée à la clôture** : **assumé**. À l'heure de la
+  clôture, une authentification en cours paierait une commande qui ne sera
+  pas produite.
+- **S8, la fidélité** : le chemin `failed → paid` publie le même
+  `OrderPaymentSettledEvent` que `pending → paid` (même `settle`, même
+  handler). Le crédit de points le voit donc sans changement, mais c'est à
+  vérifier par un test au lot 6 bis. B2 couvre la libération du bon.
+- **S9, le mail d'un abandon** : il y a une troisième cause, `abandoned`. Le
+  client qui vient de cliquer ne reçoit **pas** « carte refusée ». La cloche
+  sonne pour un pro (Q3).
+
+**Mineurs** :
+
+- les §4 et §6 disaient encore « à valider » : corrigé ;
+- les « six issues » sont cinq ;
+- le SDK n'est pas épinglé ;
+- l'auteur est `placedByUserId`. Pour une commande saisie par l'équipe, c'est
+  le client pour qui elle a été saisie ; l'équipe annule, elle, depuis le
+  back-office (hors de ce plan) ;
+- `failAtClosing` publie son événement lui-même : `FAILED_FROM = [pending]`
+  ne franchirait pas une commande déjà `failed`.
 
 ## 10. Les justifications datées que ce chantier périme
 
