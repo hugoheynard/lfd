@@ -5,9 +5,14 @@ de journée — la règle d'entrée au compte de production, les deux courriels 
 règlement et le dossier du jour. 🟠 **Une proposition non implémentée** : le
 sort de la carte abandonnée (§4.1), avec trois points à trancher. Le reste
 ouvert est au §8.
-**Portée** : qui paie, quand, ce que le client en apprend, et quelles commandes
-le fournil fabrique ou imprime. Ni le tarif, ni l'heure limite — ils ont leurs
-documents.
+
+> ⚠️ **Corrigé le 2026-09-26** : le §4.1 n'est plus une proposition. Le sort
+> d'un règlement non encaissé est **bâti**, sous une autre forme, et décrit
+> dans [`architecture-abandon-du-reglement.md`](architecture-abandon-du-reglement.md). Les phrases de ce document que le chantier a rendues
+> fausses portent chacune une correction datée ; le reste est inchangé.
+> **Portée** : qui paie, quand, ce que le client en apprend, et quelles commandes
+> le fournil fabrique ou imprime. Ni le tarif, ni l'heure limite — ils ont leurs
+> documents.
 
 > 🔴 **Ce document existe parce que deux colonnes indépendantes se sont mises à
 > diverger.** `status` dit où en est la FABRICATION, `paymentStatus` dit où en
@@ -104,9 +109,16 @@ flowchart LR
     PEND -.->|"🔴 l'onglet est fermé<br/>AUCUN événement n'est émis"| JAMAIS["**pending** pour TOUJOURS"]
 ```
 
-Les deux écritures sont **idempotentes** : un `updateMany` filtré sur `pending`,
-donc un webhook rejoué ou un intent inconnu ne fait rien
+Les deux écritures sont **idempotentes** : un `updateMany` filtré sur l'état
+d'origine, donc un webhook rejoué ou un intent inconnu ne fait rien
 ([`prisma-order.repository.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts)).
+
+> ⚠️ **Corrigé le 2026-09-26** : le filtre n'est plus « `pending` » pour les
+> deux. Un encaissement part de `pending` **ou** `failed` (une autre carte sur
+> la même intention, `8ceed327b`), et aucune bascule ne touche une commande
+> `cancelled`. Et « `pending` pour TOUJOURS » ne l'est plus : la clôture de la
+> journée balaie ces commandes
+> ([`architecture-abandon-du-reglement.md`](architecture-abandon-du-reglement.md), §5).
 
 ⚠️ **Le troisième chemin est le plus important, et il n'a pas d'événement.** Une
 carte simplement abandonnée — l'onglet qu'on ferme devant le formulaire — ne
@@ -115,6 +127,15 @@ n'est pas un incident : c'est le comportement normal d'un panier public qu'on
 n'a pas fini de payer.
 
 ### 4.1 🟠 Ce qu'on en fait — l'expiration à l'arrêt de la journée
+
+> ⚠️ **Remplacé le 2026-09-26** par ce qui a été bâti, et décrit dans
+> [`architecture-abandon-du-reglement.md`](architecture-abandon-du-reglement.md) (§5). Les trois points à trancher l'ont été : le client est
+> prévenu (`customer.payment-expired`) ; il n'y a pas d'expiration plus tôt ;
+> le pro reçoit la même annulation à la clôture (Q7), et la cloche sonne. Deux
+> écarts avec ce qui suit : le balayage prend `pending` **et** `failed` pour
+> toutes les clientèles, et il **n'attend pas** Stripe — une panne n'empêche
+> pas d'annuler. Le texte ci-dessous est conservé comme la proposition
+> d'origine.
 
 > **Proposé, PAS implémenté** (2026-09-17). Trois points restent à trancher par
 > Hugo, en fin de section ; le plan détaillé passera par `vitruve` avant de lui
@@ -181,6 +202,13 @@ Les deux retours de Stripe sont désormais **publiés** par
 — et seulement au franchissement : le dépôt ne bascule que ce qui était encore
 `pending`, donc un webhook rejoué ne publie rien.
 
+> ⚠️ **Corrigé le 2026-09-26** : « aucun courriel, jamais » ne vaut plus pour
+> une carte abandonnée. `OrderPaymentFailedEvent` porte une cause ; la clôture
+> publie `day_closed`, et `send-payment-expired-mail` envoie
+> `customer.payment-expired` (« pas abouti à temps », sans bouton). Un abandon
+> cliqué (`abandoned`) n'envoie rien. Le refus ne part plus que sur `refused`
+> ([`architecture-abandon-du-reglement.md`](architecture-abandon-du-reglement.md), §7).
+
 ```mermaid
 flowchart TD
     PL["OrderPlacedEvent<br/>(passation)"] --> Q{"paymentStatus ?"}
@@ -237,9 +265,13 @@ rattraper. La mesure qui la justifiait (« 48 tests sur 89 ») est périmée : l
 lot 0 du plan d'abandon a mesuré **8 tests**, tous attendus (§4 bis).
 
 ⚠️ **Le prix de la règle** : un client — pro ou visiteur — dont le webhook
-`succeeded` arrive APRÈS la clôture a payé et n'est pas produit. Le sort des
+`succeeded` arrive APRÈS la clôture a payé et n'est pas produit. ~~Le sort des
 règlements en vol à la clôture est l'objet des lots 3 à 6 du plan d'abandon,
-non bâtis au 2026-09-26.
+non bâtis au 2026-09-26.~~ **Corrigé le 2026-09-26** : ils sont bâtis. La
+clôture balaie avant de compter ; un paiement pris ou en route **épargne** la
+commande, qui sera soldée hors du plan arrêté ; un encaissement sur une
+commande annulée ne la rouvre pas et sonne « à rembourser »
+([`architecture-abandon-du-reglement.md`](architecture-abandon-du-reglement.md), §3 et §5).
 
 ### Où la règle est écrite, et qui la lit
 
@@ -304,12 +336,14 @@ quelqu'un qui se présente pourquoi on ne lui donne rien.
 
 ## 8. Ce qui reste ouvert
 
-- **L'expiration des commandes impayées** — proposée au §4.1, pas
-  implémentée. Sans elle, ces commandes restent `pending` indéfiniment, et leur
-  client ne reçoit ni accusé ni refus (§5).
+- ~~**L'expiration des commandes impayées**~~ — **bâtie le 2026-09-26**, par le
+  balayage de la clôture ([`architecture-abandon-du-reglement.md`](architecture-abandon-du-reglement.md), §5).
 - **La surveillance des webhooks en retard.** Une commande `paid` restée
   `placed` après une clôture est une anomalie à rattraper à la main ; personne ne
-  la signale aujourd'hui.
+  la signale aujourd'hui. ⚠️ **Précisé le 2026-09-26** : elle ne naît plus que
+  d'un paiement pris ou en route à l'heure de la clôture (la commande est
+  épargnée) ; un encaissement sur une commande annulée, lui, sonne « à
+  rembourser ».
 - **Le remboursement.** `refunded` existe dans l'énuméré et aucun chemin du code
   ne l'écrit (vérifié le 2026-09-17).
 - **Les variables d'environnement des courriels** (`ADMIN_BASE_URL`,

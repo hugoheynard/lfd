@@ -6,6 +6,14 @@ existent dans l'énuméré sans qu'aucun chemin ne les écrive (`draft`,
 `in_production`, `cancelled`) ; un reste à créer (`in_delivery`). Les §1 à §5
 décrivent le code, le §6 la cible encore doc-first.
 
+> ⚠️ **Corrigé le 2026-09-26** : `cancelled` **s'écrit** désormais, par deux
+> chemins et sur une seule origine — une commande `placed` dont le règlement
+> par carte n'est pas encaissé. L'**abandon** du client (`POST
+/orders/:id/abandon`, particulier seulement) et le **balayage de la
+> clôture** (toutes clientèles). Décrit dans [`architecture-abandon-du-reglement.md`](architecture-abandon-du-reglement.md). Seuls `draft` et
+> `in_production` restent sans chemin. Les phrases ci-dessous que ce fait
+> contredit portent chacune leur correction ; le reste n'a pas été relu.
+
 **Portée** : l'axe **fabrication** (`status`). Le règlement (`paymentStatus`)
 est un axe indépendant, décrit dans
 [`architecture-reglement-et-compte-de-production.md`](architecture-reglement-et-compte-de-production.md) ;
@@ -41,6 +49,10 @@ stateDiagram-v2
         et AUCUN chemin ne les écrit
     end note
 ```
+
+> ⚠️ **Corrigé le 2026-09-26** : il manque au diagramme `placed → cancelled`
+> (abandon d'un particulier, ou clôture), réservé à un règlement non encaissé.
+> La note ne vaut plus que pour `draft` et `in_production`.
 
 **Pourquoi autant de flèches.** Le colisage et le retrait sont **volontairement
 permissifs sur l'avancement** : ils acceptent tout état sauf `draft`,
@@ -137,19 +149,19 @@ flowchart LR
   F -.-> Fj["📓 order.handed_over"]
 ```
 
-| Étape       | Ce qui sort                                            | Pour qui   | Où                                                                                                    |
-| ----------- | ------------------------------------------------------ | ---------- | ----------------------------------------------------------------------------------------------------- |
-| `placed`    | 📧 accusé de réception, QR en ligne                    | le client  | `send-order-placed-mail` / `send-order-settled-mail` — **attend le paiement** carte                   |
-| `placed`    | 📧 « votre paiement n'est pas passé »                  | le client  | `send-payment-failed-mail`                                                                            |
-| `placed`    | jeton de retrait                                       | — (secret) | à l'écriture, **pour les deux acheminements**                                                         |
-| `placed`    | 📓 `order.placed`                                      | l'analyse  | `growth/on-order-placed`                                                                              |
-| `placed`    | 📄 bon de commande PDF                                 | le client  | `GET /orders/:id/bon.pdf`, archivé en R2 (`OrderSheetArchive`)                                        |
-| `confirmed` | 🖨️ fiche d'atelier, compte à produire, dossier du jour | le fournil | fiche et compte en PDF (`GET /admin/production/batch/:date/…pdf`), dossier imprimé par le back-office |
-| `ready`     | 📧 « votre commande est prête », QR reporté            | le client  | `send-order-ready-mail` ; renvoyable par `POST /admin/orders/:id/rappel-retrait`                      |
-| `ready`     | 📓 `order.ready`                                       | la preuve  | `growth/on-order-ready`                                                                               |
-| `fulfilled` | attestation de retrait                                 | l'équipe   | `production.order_handover` — la **source** ; la commande n'en garde qu'une copie                     |
-| `fulfilled` | 📓 `order.handed_over`, avec `via`                     | la preuve  | `growth/on-order-handed-over`                                                                         |
-| `cancelled` | rien                                                   | —          | ⛔ aucune transition                                                                                  |
+| Étape       | Ce qui sort                                                                                     | Pour qui            | Où                                                                                                                                                                   |
+| ----------- | ----------------------------------------------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `placed`    | 📧 accusé de réception, QR en ligne                                                             | le client           | `send-order-placed-mail` / `send-order-settled-mail` — **attend le paiement** carte                                                                                  |
+| `placed`    | 📧 « votre paiement n'est pas passé »                                                           | le client           | `send-payment-failed-mail`                                                                                                                                           |
+| `placed`    | jeton de retrait                                                                                | — (secret)          | à l'écriture, **pour les deux acheminements**                                                                                                                        |
+| `placed`    | 📓 `order.placed`                                                                               | l'analyse           | `growth/on-order-placed`                                                                                                                                             |
+| `placed`    | 📄 bon de commande PDF                                                                          | le client           | `GET /orders/:id/bon.pdf`, archivé en R2 (`OrderSheetArchive`)                                                                                                       |
+| `confirmed` | 🖨️ fiche d'atelier, compte à produire, dossier du jour                                          | le fournil          | fiche et compte en PDF (`GET /admin/production/batch/:date/…pdf`), dossier imprimé par le back-office                                                                |
+| `ready`     | 📧 « votre commande est prête », QR reporté                                                     | le client           | `send-order-ready-mail` ; renvoyable par `POST /admin/orders/:id/rappel-retrait`                                                                                     |
+| `ready`     | 📓 `order.ready`                                                                                | la preuve           | `growth/on-order-ready`                                                                                                                                              |
+| `fulfilled` | attestation de retrait                                                                          | l'équipe            | `production.order_handover` — la **source** ; la commande n'en garde qu'une copie                                                                                    |
+| `fulfilled` | 📓 `order.handed_over`, avec `via`                                                              | la preuve           | `growth/on-order-handed-over`                                                                                                                                        |
+| `cancelled` | 📧 « pas abouti à temps » (clôture seulement) ; 📓 `order.abandoned` (abandon) ; 🔔 pour un pro | le client, l'équipe | `send-payment-expired-mail`, `on-order-abandoned`, `ring-failed-pro-settlement` — **corrigé le 2026-09-26**, cf. [abandon, §7](architecture-abandon-du-reglement.md) |
 
 **Le QR voyage deux fois, et jamais sur le même papier.** Celui de **retrait**
 est un secret : il ne part que dans un courriel, jamais sur un document — un bon
@@ -184,7 +196,10 @@ une panne du journal ne bloque pas le comptoir.
 - 🔴 **`fulfilled` n'est pas terminal PAR LE CODE.** Rien dans l'agrégat
   `Order` ne l'interdit ; c'est l'absence de toute transition sortante qui le
   rend terminal aujourd'hui. Le jour où une annulation existera, elle devra le
-  refuser explicitement.
+  refuser explicitement. ⚠️ **Précisé le 2026-09-26** : l'annulation existe,
+  mais ne part que d'une commande `placed` non encaissée, condition écrite dans
+  le `where` ; elle n'atteint donc pas `fulfilled`. La phrase reste vraie pour
+  une annulation de commande payée.
 
 ## 5. Ce que le client en voit — la frise
 
@@ -199,7 +214,7 @@ une panne du journal ne bloque pas le comptoir.
 | Prête au retrait · Prête au départ | 4    | `ready`                                                              |
 | Confiée au coursier · En livraison | —    | **non suivis** : allumés seulement à la remise                       |
 | Retirée · Livrée                   | 5    | `fulfilled`                                                          |
-| Commande annulée                   | —    | `cancelled` — jamais atteint aujourd'hui                             |
+| Commande annulée                   | —    | `cancelled` — atteint depuis le 2026-09-26 (abandon, clôture)        |
 
 🔴 **Écart avec le serveur (constaté le 2026-09-17).** La frise considère qu'un
 règlement `pending` **bloque** la production, pour tout le monde
@@ -207,6 +222,11 @@ règlement `pending` **bloque** la production, pour tout le monde
 paiement est encore en vol. Un pro qui paie par carte voit donc une frise
 arrêtée sur une commande que le fournil prépare. À trancher : aligner la frise
 sur la clientèle, ou l'assumer le temps d'un webhook.
+
+> ✅ **Fermé le 2026-09-26** : c'est le serveur qui s'est aligné. Un règlement
+> `pending` ne produit plus pour personne (D2, `09128f9aa`) ; la frise
+> (`pending` ou `failed` bloquent) et le compte de production disent la même
+> chose.
 
 ## 6. La cible — ce qui reste doc-first
 
@@ -226,13 +246,13 @@ stateDiagram-v2
     cancelled --> [*]
 ```
 
-| Changement             | Ce qu'il demande                                                                                                                        | État                                                                                                                |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `in_production` écrit  | un geste « je lance » — que l'atelier ne fait pas avant de pétrir                                                                       | ⛔ ; la frise et la permissivité du colisage vivent sans                                                            |
-| `in_delivery` ajouté   | une valeur d'énuméré (migration additive) et le geste « remis au coursier », livraison seulement                                        | ⛔                                                                                                                  |
-| `cancelled` écrit      | une transition **staff**, qui se propage au fournil — sinon il colise pour rien                                                         | ⛔ — et l'expiration des impayés en a besoin ([règlement, §4.1](architecture-reglement-et-compte-de-production.md)) |
-| `draft` retiré         | retirer une valeur d'énuméré : migration en trois temps, et les lecteurs qui la testent (`packingBlocker`, `handoverBlocker`, la frise) | ⛔ — le brouillon vit dans `order_drafts`, le panier dans `shop_carts`                                              |
-| terminal par l'agrégat | `fulfilled` et `cancelled` refusés comme point de départ, dans une méthode de l'agrégat                                                 | ⛔                                                                                                                  |
+| Changement             | Ce qu'il demande                                                                                                                        | État                                                                                                                                                                                                 |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `in_production` écrit  | un geste « je lance » — que l'atelier ne fait pas avant de pétrir                                                                       | ⛔ ; la frise et la permissivité du colisage vivent sans                                                                                                                                             |
+| `in_delivery` ajouté   | une valeur d'énuméré (migration additive) et le geste « remis au coursier », livraison seulement                                        | ⛔                                                                                                                                                                                                   |
+| `cancelled` écrit      | une transition **staff**, qui se propage au fournil — sinon il colise pour rien                                                         | 🟡 — écrit depuis le 2026-09-26 pour un règlement non encaissé, par le client et la clôture ([abandon](architecture-abandon-du-reglement.md)) ; l'annulation **staff** d'une commande payée reste ⛔ |
+| `draft` retiré         | retirer une valeur d'énuméré : migration en trois temps, et les lecteurs qui la testent (`packingBlocker`, `handoverBlocker`, la frise) | ⛔ — le brouillon vit dans `order_drafts`, le panier dans `shop_carts`                                                                                                                               |
+| terminal par l'agrégat | `fulfilled` et `cancelled` refusés comme point de départ, dans une méthode de l'agrégat                                                 | ⛔                                                                                                                                                                                                   |
 
 ## 7. Les décisions de conception, conservées
 
@@ -247,7 +267,9 @@ est celui que l'équipe faisait déjà — arrêter de prendre pour le lendemain
 `confirmed_at` sans `confirmed_by`.
 
 **`cancelled` sera staff, pas atelier.** Annuler, c'est rembourser, prévenir, et
-parfois offrir : une décision commerciale.
+parfois offrir : une décision commerciale. ⚠️ **Précisé le 2026-09-26** : pour
+une commande **payée**. Un règlement qui n'a jamais été encaissé s'annule sans
+décision commerciale — par le client qui abandonne, ou par la clôture.
 
 **L'énuméré ne décrit que la fabrication.** Fusionner le règlement produirait
 une trentaine d'états que personne ne saurait dessiner.
@@ -266,7 +288,10 @@ pas un retour en arrière du statut.
   arrêter, coliser et remettre. Le jour où l'atelier devient un rôle, ces trois
   routes sont le premier périmètre à murer.
 - **L'annulation par le client.** Avant `confirmed` elle serait défendable, et
-  elle ouvre le remboursement automatique.
+  elle ouvre le remboursement automatique. ⚠️ **Précisé le 2026-09-26** : le
+  client particulier abandonne déjà une commande **non réglée**
+  ([abandon, §4](architecture-abandon-du-reglement.md)) ; reste ouverte
+  l'annulation d'une commande payée.
 
 ## 9. Documents voisins périmés (constaté le 2026-09-17)
 

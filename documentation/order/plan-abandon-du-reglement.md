@@ -1,5 +1,10 @@
 # Plan — l'abandon du règlement
 
+> ✅ **Bâti le 2026-09-26** (lots 1 à 8, 3 bis, 6 bis). Ce qui est bâti est
+> décrit dans [`architecture-abandon-du-reglement.md`](architecture-abandon-du-reglement.md),
+> **qui fait foi**. Ce plan garde l'histoire : le constat, les contradictions,
+> les réponses de Hugo. Reste le lot 10 (§8).
+
 > **Ouvert le 2026-09-22**, à un constat de Hugo : « en perso il y avait un "je
 > règle depuis mes commandes" qui m'a envoyé sur la confirmation de commande
 > alors que je n'avais pas réglé, ce n'est pas possible ».
@@ -446,7 +451,7 @@ Q1 à Q6 le sont au §5 bis. La dernière est née de la seconde contradiction
 | **6 bis** | ✅ bâti le 2026-09-26 — Un encaissement sur une commande `cancelled` : ne jamais la rouvrir, sonner « à rembourser » (§9 bis, B1)                                                                                                                                          | 6          |
 | **8**     | ✅ bâti le 2026-09-26 — Le front : libellé, confirmation, appel **tenté**, navigation inconditionnelle                                                                                                                                                                     | 4          |
 | **10**    | ✅ bâti le 2026-09-26 — Prévenir le commercial à l'heure limite (Q6) : une passe horaire idempotente, un cron de plus (`0 * * * *`, `POST /admin/orders/settlement-reminders`). ⚠️ l'heure limite opposée est la règle **par défaut** de la journée — voir sous le tableau | 5          |
-| **9**     | Les docs et les justifications datées (§10)                                                                                                                                                                                                                                | 1–8        |
+| **9**     | ✅ écrit le 2026-09-26 — Les docs et les justifications datées (§10) ; les JSDoc de code du §10 sont repris le même jour                                                                                                                                                   | 1–8        |
 
 ⚠️ **Lot 10, ce qu'il n'oppose pas** (vérifié le 2026-09-26) : une commande
 ne garde ni l'identifiant de son point de retrait (seulement le snapshot
@@ -654,3 +659,15 @@ mécanisme pour une raison qui n'existe pas ». Quatre, à réécrire dans le lo
 4. **`production-day.ts:132`** — « rien n'annule une commande dans ce système […]
    le jour où l'annulation existera, elle devra se propager jusqu'ici ». Ce jour
    est arrivé.
+
+**Où en sont les quatre (vérifié le 2026-09-26, lot 9)** :
+
+1. ✅ réécrit : le §6 de l'architecture du règlement porte des corrections
+   datées.
+2. 🟠 à moitié : le JSDoc de `PAYMENTS_AWAITING` ne parle plus d'expiration,
+   mais dit encore les lots 3 à 6 « non bâtis » (`production-plan.ts:120-122`),
+   et celui d'`absorbedByPlan` dit toujours qu'un webhook tardif « se surveille
+   au back-office » (l. 59-63). Du code, que le lot 9 ne touche pas.
+3. ✅ réécrit : `OrderPaymentFailedEvent` porte sa cause et le dit.
+4. ✅ réécrit : `production-day.ts` date le fait (« `cancelled` s'écrit depuis
+   le 2026-09-26 ») et dit pourquoi aucune annulation n'atteint le colisage.
