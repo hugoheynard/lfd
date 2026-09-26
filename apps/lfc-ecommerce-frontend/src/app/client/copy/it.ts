@@ -322,6 +322,9 @@ export const IT: ClientCopy = {
     abandonPending:
       'Il suo ordine non è pagato. Nulla è stato addebitato; sarà annullato se non è pagato prima dell’infornata.',
     abandonSettled: 'Il suo pagamento è stato ricevuto: l’ordine non è abbandonato.',
+    closed:
+      'Questo ordine non attende più un pagamento online. Il suo stato aggiornato è in «I miei ordini».',
+    closedAction: 'Vedi i miei ordini',
     unavailable:
       'Il pagamento non è disponibile al momento. Nulla è stato addebitato; se non è pagato prima dell’infornata, l’ordine sarà annullato.',
     refused: 'Il pagamento è stato rifiutato.',

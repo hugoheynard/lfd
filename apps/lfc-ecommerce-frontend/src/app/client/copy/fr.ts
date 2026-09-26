@@ -318,6 +318,9 @@ export const FR: ClientCopy = {
     abandonPending:
       'Votre commande n’est pas réglée. Rien n’a été débité ; elle sera annulée si elle n’est pas réglée avant la fournée.',
     abandonSettled: 'Votre paiement a été reçu : la commande n’est pas abandonnée.',
+    closed:
+      'Cette commande n’attend plus de paiement en ligne. Son état à jour est dans « Mes commandes ».',
+    closedAction: 'Voir mes commandes',
     unavailable:
       'Le paiement est indisponible pour l’instant. Rien n’a été débité ; sans règlement avant la fournée, la commande sera annulée.',
     refused: 'Le paiement a été refusé.',

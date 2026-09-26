@@ -624,7 +624,10 @@ sonne : c'est **Q7** (§6).
 - 🔴 **Une boucle confirmation ↔ règlement** : quand `GET /orders/:id/payment`
   refuse (commande annulée ou intention close, depuis le lot 7), l'écran de
   règlement renvoie à la confirmation, qui propose « Régler maintenant » à
-  partir d'un `settlement: 'due'` gardé en local. À fermer avant de pousser.
+  partir d'un `settlement: 'due'` gardé en local. ✅ **Fermée le 2026-09-26** :
+  l'écran de règlement ne renvoie plus à la confirmation, il dit lui-même que
+  la commande n'attend plus de paiement en ligne et mène à « Mes commandes »,
+  qui lit l'état au serveur.
 
 ## 10. Les justifications datées que ce chantier périme
 

@@ -578,6 +578,9 @@ export interface ClientCopy {
     readonly abandonPending: string;
     /** 409 `already_paid` / `payment_in_progress` : jamais « annulée ». */
     readonly abandonSettled: string;
+    /** La commande ne se règle plus en ligne : réglée, au compte, annulée, ou intention close. */
+    readonly closed: string;
+    readonly closedAction: string;
     /** Le module de paiement ne s'est pas chargé — la commande, elle, existe. */
     readonly unavailable: string;
     /** Repli quand Stripe refuse sans message ; sinon c'est le SIEN qu'on montre. */

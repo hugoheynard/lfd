@@ -318,6 +318,8 @@ export const EN: ClientCopy = {
     abandonPending:
       'Your order is not paid. Nothing has been charged; it will be cancelled if it is not paid before the bake.',
     abandonSettled: 'Your payment was received: the order is not abandoned.',
+    closed: 'This order no longer awaits an online payment. Its current status is in “My orders”.',
+    closedAction: 'See my orders',
     unavailable:
       'Payment is unavailable right now. Nothing has been charged; if it is not paid before the bake, the order will be cancelled.',
     refused: 'The payment was declined.',

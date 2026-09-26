@@ -23,7 +23,11 @@
   }
 
   <div class="foot">
-    @if (phase() !== 'unavailable') {
+    @if (phase() === 'closed') {
+      <button foldButton type="button" emphasis="solid" block (click)="toOrders()">
+        {{ t().pay.closedAction }}
+      </button>
+    } @else if (phase() !== 'unavailable') {
       <button class="pay" type="button" [disabled]="phase() !== 'ready'" (click)="pay()">
         {{ submitLabel() }}
       </button>
@@ -31,7 +35,7 @@
     <!-- La sortie reste offerte en phase `unavailable` : elle ne dépend ni de
          Stripe ni du serveur. Retirée seulement pendant une confirmation de
          carte, qui pourrait encaisser pendant qu'on abandonne. -->
-    @if (phase() !== 'paying') {
+    @if (phase() !== 'paying' && phase() !== 'closed') {
       <fold-inline-confirm
         intent="danger"
         keepOpenOnConfirm

@@ -192,12 +192,24 @@ describe('ReglementPage', () => {
 
   /**
    * Une commande qui n'attend aucun règlement — déjà réglée, portée au compte —
-   * n'est pas une panne : la confirmation porte l'état réel, on y file.
+   * n'est pas une panne : on le dit ici, et on renvoie vers « Mes commandes ».
+   *
+   * Régression : l'écran filait à la confirmation, qui lit l'état « dû » gardé
+   * dans le navigateur et reproposait « Régler maintenant » — une boucle
+   * confirmation ↔ règlement, dès que le serveur refusait une commande annulée
+   * ou une intention close (lot 7, corrigé le 2026-09-26).
    */
-  it('file à la confirmation quand rien n’est à encaisser', async () => {
-    const { gone } = await boot(stripeThatAnswers({}), 'ord_reglee', null);
+  it('dit qu’il n’y a plus rien à régler ici, sans renvoyer à la confirmation', async () => {
+    const { fixture, gone } = await boot(stripeThatAnswers({}), 'ord_reglee', null);
 
-    expect(gone).toEqual([['/confirmation-de-commande']]);
+    expect(gone).toEqual([]);
+    expect(text(fixture)).toContain(FR.pay.closed);
+    expect(text(fixture)).not.toContain(FR.pay.abandon);
+    expect(() => button(fixture, FR.pay.submit.split('{')[0]!.trim())).toThrow();
+
+    button(fixture, FR.pay.closedAction).click();
+    await fixture.whenStable();
+    expect(gone).toEqual([['/mes-commandes']]);
   });
 
   /**

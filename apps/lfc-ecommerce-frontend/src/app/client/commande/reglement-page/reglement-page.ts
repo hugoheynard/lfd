@@ -29,7 +29,7 @@ import { NotifyService } from '../../../notify.service';
 import { StripeLoader } from '../../stripe-loader.service';
 
 /** L'écran ne peut être que dans un de ces états, et il n'en montre qu'un. */
-type Phase = 'loading' | 'ready' | 'paying' | 'unavailable';
+type Phase = 'loading' | 'ready' | 'paying' | 'unavailable' | 'closed';
 
 /**
  * **Le règlement** — l'étape qui manquait entre le panier et la confirmation.
@@ -173,14 +173,21 @@ export class ReglementPage {
    * Va chercher de quoi payer, puis monte le Payment Element.
    *
    * Une commande qui n'attend aucun règlement en ligne — déjà réglée, portée au
-   * compte, ou qu'on ne peut plus lire — n'est pas une panne : on file à la
-   * confirmation, qui porte l'état réel. Seul un CHARGEMENT raté est une panne,
-   * et il se dit sans faire disparaître la commande.
+   * compte, annulée, ou dont l'intention est close — n'est pas une panne : on le
+   * dit ICI, et on renvoie vers « Mes commandes », qui lit l'état au serveur.
+   *
+   * 🔴 On filait à la confirmation. Or elle lit l'état « dû » gardé dans le
+   * navigateur, et proposait donc « Régler maintenant » pour une commande que le
+   * serveur venait de déclarer non réglable — une boucle sans sortie
+   * (confirmation ↔ règlement), apparue avec le refus des commandes annulées et
+   * des intentions closes (lot 7, corrigé le 2026-09-26). Seul un CHARGEMENT
+   * raté est une panne, et il se dit sans faire disparaître la commande.
    */
   private async prepare(): Promise<void> {
     const payment = await this.orders.paymentFor(this.id());
     if (payment === null) {
-      void this.toConfirmation();
+      this.phase.set('closed');
+      this.error.set(this.t().pay.closed);
       return;
     }
     this.amountCents.set(payment.amountCents);
@@ -260,6 +267,11 @@ export class ReglementPage {
     } else {
       this.notify.info(pay.abandonPending);
     }
+  }
+
+  /** La sortie d'une commande qui ne se règle plus ici : l'état réel est au serveur. */
+  protected toOrders(): void {
+    void this.router.navigate(['/mes-commandes']);
   }
 
   private unavailable(): void {
