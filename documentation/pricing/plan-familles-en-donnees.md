@@ -121,6 +121,23 @@ PIM est un rayon nouveau dès sa livraison, sans déploiement.
 
 Ce lot vit tant que le lot 3 n'a pas supprimé la traduction.
 
+### L'état réel de la production (lu par Hugo le 2026-09-26)
+
+- **Le PIM** a cinq familles, toutes à id généré : `01a031ff-146f-…`
+  (viennoiseries), `01a031fe-c498-…` (pains), `01a031ff-fab7-…` (patisseries),
+  `01a03200-7180-…` (sale-traiteur), `01a03200-cca9-…` (chocolat-confiserie).
+  Aucune ne s'appelle `cat_*` — et l'index `category_slug_fr_unique` y est.
+- **Le miroir du commerce** (`catalog_categories`, `catalog_items`) range
+  encore la plupart des articles sous les `cat_*` d'une livraison ancienne ;
+  seuls les articles republiés depuis portent l'id réel (deux, au
+  2026-09-26).
+- 🔴 **Conséquence pour les deux lots** : une même famille existe, dans le
+  miroir, sous **deux ids** — `cat_vien` pour les articles pas encore
+  republiés, `01a031ff-146f-…` pour les autres —, avec **le même slug**. Le
+  lien stable entre l'ancien code de rayon, `cat_*` et l'id réel est le
+  **slug** : `viennoiserie ↔ viennoiseries`, `pain ↔ pains`, `patisserie ↔
+patisseries`, `sale ↔ sale-traiteur`, `chocolat ↔ chocolat-confiserie`.
+
 ### Lot 1 — étendre : la famille voyage à côté du rayon
 
 - Contrats : `CatalogItemView` gagne `family: { id, name, position }` **à côté
@@ -130,7 +147,16 @@ Ce lot vit tant que le lot 3 n'a pas supprimé la traduction.
   famille dans `catalog_categories`.
 - Tarification : `PricingContext.categoryId` devient l'id PIM ; la résolution
   compare les portées « famille » à cet id **et**, le temps de la transition,
-  au code de rayon — une règle posée avant la migration continue de mordre.
+  au code de rayon de la famille — **retrouvé par son slug**, pas par son id,
+  pour qu'un article resté sous `cat_vien` et un article republié sous
+  `01a031ff-…` reçoivent tous deux les règles posées sur `viennoiserie`. La
+  table de transition est `slug → code` (cinq lignes, datée, supprimée au lot 3) ; elle remplace `SHELF_BY_PIM_CATEGORY`, qui visait des ids que le PIM n'a
+  plus. Un article dont le slug n'y est pas reste « sans famille connue »
+  (lot 0).
+- **À l'écran, une famille = un slug** tant que le miroir porte deux ids pour
+  la même : regrouper par id ferait deux rayons « Viennoiseries ». Le rayon
+  affiché prend le nom et la position de l'id réel (non `cat_*`) quand il
+  existe.
 - Écriture — 🔴 **sans jamais deux clés pour la même famille** : pour une des
   cinq familles connues, on écrit **toujours l'ancien code** jusqu'au lot 2 ;
   seule une famille sans code (nouvelle) s'écrit par son id PIM. Sinon, une
@@ -148,9 +174,18 @@ Ce lot vit tant que le lot 3 n'a pas supprimé la traduction.
 
 ### Lot 2 — basculer : les portées persistées changent de clé
 
+**Préalable, tenu par la migration elle-même** : le miroir ne doit plus porter
+aucun article sous une famille `cat_*` — Hugo republie tout le catalogue
+depuis le PIM avant le déploiement. Sinon les articles restés sous `cat_vien`
+perdraient leurs règles, réécrites vers l'id réel. La migration **s'arrête**
+s'il en reste un (`SELECT count(*) FROM catalog_items WHERE category_id LIKE
+'cat\_%'`).
+
 Migration de données, **par table**. 🔴 **La correspondance code → id PIM
-n'est pas écrite de mémoire** : elle sort de l'état des lieux de production
-(§5), et la migration **s'arrête** si une des cinq cibles n'existe pas dans
+n'est pas écrite de mémoire** : elle se calcule dans la migration, code → slug
+(la table de transition) → l'unique id **non `cat_*`** de `catalog_categories`
+qui porte ce slug — conforme à l'état des lieux ci-dessus —, et la migration
+**s'arrête** si une des cinq cibles manque ou est ambiguë dans
 `catalog_categories` — sinon chaque règle serait réécrite vers un id mort et
 cesserait de mordre sans que rien ne le dise.
 
