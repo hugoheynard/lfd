@@ -252,6 +252,22 @@ qu'il existe pour attraper.
 
 ---
 
+### 4 bis. Ce que la mesure a donné (lot 0, 2026-09-26)
+
+La règle a été appliquée dans une copie isolée, puis retirée. Tous les tests de
+l'API ont tourné contre la base jetable : **507 suites unitaires (4 796 tests),
+150 fichiers e2e (2 054 tests)**. Le « 48 sur 89 » du §4 est donc bien périmé.
+
+**8 échecs, tous attendus, aucun vrai bug :**
+
+| Fichier                                                            | Tests | Famille            | Correction                                                                       |
+| ------------------------------------------------------------------ | ----- | ------------------ | -------------------------------------------------------------------------------- |
+| `src/b2b/orders/domain/services/__tests__/production-plan.spec.ts` | 3     | A — ancienne règle | réécrire : un pro `pending` et une clientèle nulle ne sont plus produits         |
+| `test/day-supervision.e2e-spec.ts`                                 | 1     | A — ancienne règle | réécrire : « garde le pro en attente » devient « l'écarte aussi »                |
+| `test/production-forecast.e2e-spec.ts`                             | 4     | B — fixture        | **une** correction au semis : `placeOrder` règle la carte (`settleCardPayments`) |
+
+Le lot 2 est donc court : environ une heure, sans code produit.
+
 ## 5. La tranche 2 — ce qui arrive à une commande non réglée
 
 ### Deux déclencheurs, un seul mécanisme
@@ -418,7 +434,7 @@ Q1 à Q6 le sont au §5 bis. La dernière est née de la seconde contradiction
 
 | Lot       | Contenu                                                                                                                                                         | Bloque par |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| **0**     | **Mesurer** ce que la tranche 1 casse réellement (§4) — aucun code                                                                                              | —          |
+| **0**     | ✅ **mesuré le 2026-09-26** (§4 bis) — **Mesurer** ce que la tranche 1 casse réellement (§4) — aucun code                                                       | —          |
 | **1**     | La règle : `plan-filter.ts`, les signatures, les JSDoc datés                                                                                                    | 0          |
 | **2**     | Le triage des e2e tombées, famille par famille                                                                                                                  | 1          |
 | **3**     | `cancelIntent` + les **cinq issues** traduites (§5)                                                                                                             | —          |
