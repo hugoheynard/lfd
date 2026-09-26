@@ -1,0 +1,217 @@
+# Plan — les familles en données, plus de rayons codés en dur
+
+> Ouvert le 2026-09-26, après une panne de production : un article rangé par
+> le PIM dans une **seconde** famille « Viennoiseries » (id
+> `01a031ff-146f-756f-a21b-4a2759a35e85`, même slug que `cat_vien`) n'avait
+> pas de rayon ; `shelfOfCategory` a levé `catalog.shelf.unknown`, et tout ce
+> qui lit le catalogue pro est tombé en 500 — Tarification B2B, tarif d'un
+> client, Limites de prix, liste d'articles de la saisie de commande. Hugo :
+> « on ne devrait pas avoir de familles hardcodées, tout devrait être data ».
+> État : **doc-first**, contredit par vitruve le 2026-09-26 (trois objections
+> bloquantes, corrigées : §1, §3 lots 1 et 2, §5).
+
+## 1. Ce qui existe (inventaire du 2026-09-26)
+
+- **Une union fermée** : `catalogCategorySchema` (`packages/contracts/src/catalog.ts`)
+  — `viennoiserie | pain | patisserie | sale | chocolat` —, avec
+  `CATALOG_CATEGORY_LABELS` et `CATALOG_CATEGORY_ORDER`. `CatalogItemView.category`
+  la porte ; `production-worksheet.ts` aussi.
+- **Une traduction en dur** : `SHELF_BY_PIM_CATEGORY`
+  (`apps/lfd-api/src/b2b/catalog/domain/shelf-of-category.ts`), `cat_vien →
+viennoiserie`, etc. Trois lecteurs l'appellent : le catalogue pro
+  (`catalog-backed-product-catalog.ts`, **lève** — c'est la panne), la fiche
+  d'atelier (`catalog-workshop-shelves.reader.ts`, rend `null`), la vitrine
+  publique (`shop-catalogue-pricing.service.ts`, rend `null`).
+- **Des littéraux de rayon PERSISTÉS** comme `scope_id` quand `scope_type =
+'category'` : `price_rules`, `price_floors`, `volume_ladders`,
+  `volume_commitments` (schéma `public`), `order_time_limit` (schéma `pim`).
+  `pricing-context.ts` le dit : « `categoryId` est le code de rayon, pas
+  l'identifiant PIM » — et que la bascule devra reprendre ces lignes.
+- **Le miroir des familles existe déjà** : `catalog_categories` (`id` du PIM,
+  `name`, `slug`, `parent_id`, `position`, `vat_rate_percent`), reçu du PIM à
+  chaque livraison, jamais édité côté commerce.
+- **La doc qui a fait ce choix** :
+  `architecture-resolution-de-prix.md` (« une famille inédite exige un
+  déploiement, pas une devinette ») et `journal-de-remediation.md`. Le choix
+  protégeait d'un rayon **deviné** ; il ne protège pas d'un rayon **manquant**,
+  qui met tout le catalogue en panne. Les données le règlent mieux : une
+  famille reçue EST un rayon, il n'y a plus rien à deviner.
+- **Aucune porte** ne tient les rayons.
+- **Ce qui porte DÉJÀ l'id PIM** (vérifié par vitruve) : les heures limites
+  (`pim.order_time_limit`, résolues par `prisma.category` dans
+  `target-labels.ts`) — et elles suivent la **hiérarchie** : le commerce les lit
+  par `categoryPathOf(snapshot.categories, product.categoryId)`
+  (`snapshot-limits.ts`). La vitrine range ses objets par `line.categoryId`
+  (`storefront_object_shelf.shelf_key`). Ce plan ne touche ni l'un ni l'autre :
+  c'est le modèle qu'il rejoint.
+- **Des clés de famille dans le journal et les instantanés** : un fait de
+  plancher a pour sujet `floorScopeKey`, soit `category:viennoiserie` (et
+  `public:category:…` pour la clientèle publique) ; les instantanés de prix des
+  lignes de commande (`pricing_steps`, `pricing_floor`, `pricing_commitment`,
+  `pricing_rejected`) peuvent porter des portées en code de rayon. Les deux
+  sont immuables.
+- **Les ids de production ne sont pas prouvés** : aucun semis ni aucune
+  migration ne crée `cat_vien` ; on ne le trouve que dans des tests, des
+  fixtures et un JSDoc. Le doublon a un UUIDv7 — l'id que le PIM attribue
+  aujourd'hui. Les cinq familles de production peuvent s'appeler autrement.
+
+## 2. La décision
+
+**Le rayon est la famille du référentiel**, identifiée par son `id` PIM, avec
+son `name` et sa `position` lus dans `catalog_categories`. Plus d'union, plus
+de table de traduction, plus de libellés en dur. Une famille nouvelle dans le
+PIM est un rayon nouveau dès sa livraison, sans déploiement.
+
+- **La portée « famille »** d'une règle, d'une limite, d'un palier, d'un
+  engagement ou d'une heure limite porte l'**id PIM** de la famille.
+- **La famille d'un article suit son CHEMIN**, comme les heures limites le
+  font déjà (`categoryPathOf`) : une décision posée sur une famille vaut pour
+  ses sous-familles, et la plus proche l'emporte (article > famille la plus
+  profonde > … > catalogue). Deux sémantiques de famille dans le même
+  produit — avec chemin pour l'heure limite, sans pour le prix — seraient
+  une incohérence qu'on paierait à la première sous-famille. Aujourd'hui les
+  cinq sont à plat, donc rien ne change de prix.
+- **Le PIM refuse une famille dont le slug existe déjà** (et le nom, à la
+  casse et aux accents près) : **index unique** sur le slug des familles non
+  archivées, en base, et refus par l'agrégat de famille pour le nom normalisé,
+  avec un message qui nomme la famille existante. Il est au **lot 0**. Le doublon du 2026-09-26 n'aurait pas pu être
+  créé. Avec les familles en données, un doublon ne casse plus rien — il
+  devient une vraie seconde famille, tarifable à part, ce qui est pire en
+  silence : c'est pour ça que le refus est à la source.
+
+## 3. Les lots — trois temps, parce que des contrats sont servis
+
+### Lot 0 — la panne ne se reproduit pas (immédiat, indépendant)
+
+1. **Un article d'une famille sans rayon n'est plus refusé : il se tarife sans
+   décision de famille.** Écarter l'article aurait cassé autre chose —
+   `CatalogBackedProductCatalog` est l'autorité de prix du checkout, et ses
+   consommateurs (repricing d'un brouillon, occurrence d'abonnement, devis,
+   mercuriale) échoueraient à leur tour sur ce SKU. Tarifé sans famille, il
+   reçoit les décisions **d'article et de catalogue** — la limite du
+   catalogue comprise — et aucune règle de famille : ce n'est pas un rayon
+   **faux** (le risque que la levée voulait éviter), c'est un rayon
+   **absent**, visible.
+2. **Visible** : un compteur « N articles sans famille connue » en tête de la
+   Réception du catalogue et de la Tarification, lu à la volée. C'est un
+   **log** côté serveur (niveau avertissement, avec SKU et id de famille),
+   pas un fait du journal : une lecture n'écrit rien (`CLAUDE.md` §4).
+3. **Le refus du doublon dans le PIM** (§2).
+
+Ce lot vit tant que le lot 3 n'a pas supprimé la traduction.
+
+### Lot 1 — étendre : la famille voyage à côté du rayon
+
+- Contrats : `CatalogItemView` gagne `family: { id, name, position }` **à côté
+  de** `category` (déprécié, pas retiré : les deux fronts en ligne le lisent).
+  Idem `production-worksheet`.
+- Lecteurs : le catalogue pro, la fiche d'atelier, la vitrine lisent la
+  famille dans `catalog_categories`.
+- Tarification : `PricingContext.categoryId` devient l'id PIM ; la résolution
+  compare les portées « famille » à cet id **et**, le temps de la transition,
+  au code de rayon — une règle posée avant la migration continue de mordre.
+- Écriture — 🔴 **sans jamais deux clés pour la même famille** : pour une des
+  cinq familles connues, on écrit **toujours l'ancien code** jusqu'au lot 2 ;
+  seule une famille sans code (nouvelle) s'écrit par son id PIM. Sinon, une
+  règle posée sur `cat_vien` coexisterait avec une règle active sur
+  `viennoiserie` — les contraintes d'exclusion comparent `scope_id` et ne
+  verraient pas le doublon, la résolution ferait mordre les deux, et
+  l'`UPDATE` du lot 2 créerait le chevauchement et échouerait en production.
+- **L'ordre de déploiement** : les fronts d'abord (ils lisent `family` s'il
+  est là, sinon `category`), le serveur ensuite. Pour un article d'une famille
+  hors union, `category` n'a pas de valeur honnête : tant que le serveur la
+  sert, ces articles portent `family` seul et `category` est **absent** — ce
+  que les fronts du lot 1 savent lire, et qu'aucun front plus ancien ne verra,
+  puisqu'ils sont déployés avant.
+- Fronts : regroupement, libellés et ordre lus dans `family`.
+
+### Lot 2 — basculer : les portées persistées changent de clé
+
+Migration de données, **par table**. 🔴 **La correspondance code → id PIM
+n'est pas écrite de mémoire** : elle sort de l'état des lieux de production
+(§5), et la migration **s'arrête** si une des cinq cibles n'existe pas dans
+`catalog_categories` — sinon chaque règle serait réécrite vers un id mort et
+cesserait de mordre sans que rien ne le dise.
+
+- `price_rules`, `price_floors`, `volume_ladders`, `volume_commitments` :
+  `scope_id` réécrit là où `scope_type = 'category'`. **Pas**
+  `pim.order_time_limit`, qui porte déjà l'id PIM — et qu'une migration du
+  commerce n'a pas à toucher (frontière `b2b → pim`).
+- **Les contraintes d'exclusion** portent sur `scope_id` : la réécriture est
+  un `UPDATE` d'une clé vers une autre, sans chevauchement nouveau possible
+  (correspondance injective).
+- **Le journal tarifaire** (`pricing_events.subject_id`) est immuable : les
+  faits passés gardent leur clé, dans ses **formes réelles** —
+  `category:viennoiserie`, `public:category:viennoiserie`. La lecture de
+  l'historique d'une famille cherche les deux formes (id PIM et ancien code),
+  la correspondance étant écrite une fois, dans un seul fichier daté, qui ne
+  grandira plus.
+- **Les instantanés de prix des lignes de commande** gardent leurs portées en
+  code ; leurs lecteurs de libellés (`scope-names.ts`,
+  `pricing-act-summary.ts`) lisent les anciens codes par ce même fichier
+  daté après le lot 3.
+- **Retour arrière** : l'`UPDATE` inverse, possible tant qu'aucune décision
+  n'a été posée sur une famille nouvelle ; au-delà, il n'a plus de sens.
+  Écrit en tête de la migration.
+- **Avant de lancer** : un état des lieux de production (lecture, par Hugo) —
+  combien de lignes de portée famille par table, et aucune valeur hors des
+  cinq codes. Requête au §5.
+
+### Lot 3 — resserrer : l'union disparaît
+
+Un déploiement après le lot 2 (27 fichiers hors tests lisent l'union, compte
+de vitruve du 2026-09-26) : `catalogCategorySchema`, ses libellés, son
+ordre, `SHELF_BY_PIM_CATEGORY`, `shelfOfCategory`, `UnknownCatalogShelfError`,
+le champ `category` déprécié et la double comparaison du lot 1 sont retirés.
+Une porte (`lint:no-shelf-literals`) refuse le retour d'un littéral de rayon
+dans `apps/lfd-api/src` et les contrats.
+
+## 4. Tests
+
+- Lot 0 : un article d'une famille inconnue n'empêche pas la liste de se
+  charger (régression nommée d'après la panne) ; il se tarife sans décision
+  de famille, la limite du catalogue le relève ; un brouillon, une
+  occurrence d'abonnement et un devis qui le contiennent passent ; il est
+  compté.
+- Lot 1 : une famille livrée par le PIM et absente de l'union apparaît comme
+  rayon, se tarife, se limite ; une règle posée sur l'ancien code mord
+  toujours ; poser une règle sur une des cinq familles écrit l'ancien code
+  (jamais deux clés) ; une décision sur une famille parente vaut pour sa
+  sous-famille, la plus proche l'emporte.
+- Lot 2 : la migration rejouée sur une base semée des cinq codes réécrit
+  chaque ligne, et seulement celles de portée famille ; le prix d'un article
+  est identique avant et après (e2e sur le tableau de la Tarification) ;
+  l'historique d'une famille montre les faits d'avant et d'après.
+- PIM : créer une famille au slug ou au nom déjà pris → refusé, avec un
+  message qui nomme la famille existante.
+
+## 5. L'état des lieux à lancer en production avant le lot 2
+
+Lecture seule, par Hugo.
+
+```sql
+-- 1. les familles réelles : la correspondance du lot 2 en sort
+SELECT id, name, slug, parent_id, position FROM public.catalog_categories ORDER BY position;
+
+-- 2. les décisions de portée famille, vivantes, par clé
+SELECT 'price_rules' AS t, scope_id, count(*) FROM public.price_rules
+  WHERE scope_type = 'category' AND archived_at IS NULL GROUP BY scope_id
+UNION ALL
+SELECT 'price_floors', scope_id || ' · ' || clientele, count(*) FROM public.price_floors
+  WHERE scope_type = 'category' AND archived_at IS NULL GROUP BY scope_id, clientele
+UNION ALL
+SELECT 'volume_ladders', scope_id, count(*) FROM public.volume_ladders
+  WHERE scope_type = 'category' GROUP BY scope_id
+UNION ALL
+SELECT 'volume_commitments', scope_id, count(*) FROM public.volume_commitments
+  WHERE scope_type = 'category' GROUP BY scope_id;
+```
+
+Toute clé de la requête 2 qui n'est ni un des cinq codes ni un id de la
+requête 1 est à comprendre avant de lancer : c'est une collision possible.
+
+## 6. Hors périmètre
+
+- L'héritage entre familles imbriquées.
+- Le nettoyage du doublon de production : geste PIM de Hugo (déplacer les deux
+  articles vers `cat_vien`, archiver le doublon).
