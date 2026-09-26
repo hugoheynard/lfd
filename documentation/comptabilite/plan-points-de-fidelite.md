@@ -3,11 +3,13 @@
 **Statut** : 📐 plan, 2026-09-26. **Rien n'est bâti.** Touche **l'argent**
 (une remise qui réduit un total et sa TVA). **Contredit par `vitruve` le même
 jour : 3 BLOQUANT, 8 SÉRIEUX** — ce document est la version d'après, le §6 dit
-ce qui a changé. Il doit repasser par lui avant le lot C.
-**Portée** : gagner des points sur une commande, les convertir en **remise
-fidélité** sur une commande suivante, et régler le taux de conversion dans
-Comptabilité. Ouvert à la clientèle **publique** d'abord, conçu pour
-s'étendre aux pros sans refonte.
+ce qui a changé. **Réécrit le même jour après les réponses de Hugo (§7)** :
+les points se convertissent en **bon d'achat**. Il doit repasser par `vitruve`
+avant le lot C.
+**Portée** : gagner des points sur une commande, les convertir en **bon
+d'achat**, utiliser ce bon sur une commande suivante, et régler le taux de
+conversion dans Comptabilité. Ouvert à la clientèle **publique** d'abord,
+conçu pour s'étendre aux pros sans refonte.
 
 ## 0. La demande
 
@@ -20,7 +22,11 @@ Donc :
 
 - **gagner** : une commande de 23,40 € rapporte **2 340 points** ;
 - **convertir** : un ratio réglé à l'écran, par exemple **1 000 points = 5 €** ;
-- **dépenser** : les points deviennent une remise sur une commande.
+- **dépenser** : la personne convertit ses points en **bon d'achat**, puis
+  utilise ce bon sur une commande.
+
+> « 1 non. 2 je ne sais pas, documente. 3 la société. En fait la personne
+> convertit ses points en bon d'achat » — Hugo, même jour, réponses au §5.
 
 ## 1. L'existant (ouvert et vérifié le 2026-09-26)
 
@@ -49,200 +55,279 @@ Donc :
 
 ## 2. Ce qu'on bâtit, en une phrase
 
-Un **grand livre de points** par personne connectée, où l'on écrit sans jamais
-effacer. La passation d'une commande qui dépense des points **débite** le livre
-dans sa propre transaction et fige une **remise fidélité**. Tout ce qui fait
-échouer la commande **rend** ce débit. Le passage à `fulfilled` d'une commande
-réglée **crédite** le livre dans la même transaction. Le ratio vit dans
-Comptabilité, est lu à la passation, et reste ensuite figé sur la commande.
+Chaque **titulaire** a un **grand livre de points** où l'on écrit sans jamais
+effacer. Le titulaire est la **société** pour un pro, la **personne** pour un
+particulier. Le passage à `fulfilled` d'une commande réglée **crédite** ce
+livre. Quand une personne le décide, elle **convertit** des points en un **bon
+d'achat** d'un montant fixe. Le ratio est lu à ce moment-là, puis figé sur le
+bon. Le bon s'utilise ensuite sur une commande, avec un traitement de TVA qui
+reste à trancher (§3, D6). Il y reste attaché tant que la commande vit. Il ne
+redevient disponible que si la commande est **annulée**. Un paiement refusé
+ne suffit pas : une commande refusée se reprend par un lien de paiement.
 
 ```mermaid
 flowchart LR
-  P["passation<br/>(même transaction)<br/>remise figée + débit spent"] --> OK{"règlement"}
-  OK -->|paid / not_required| F["fulfilled<br/>(même transaction)<br/>crédit earned"]
-  OK -->|failed, abandonné, annulé| R["débit rendu : restored"]
-  S["Comptabilité › Fidélité<br/>ratio, clientèles ouvertes"] -.lu à la passation.-> P
+  F["commande fulfilled + paid<br/>(événement + rattrapage)"] --> E["+ points earned"]
+  E --> L[("grand livre<br/>du titulaire")]
+  L -->|la personne convertit| V["bon d'achat<br/>montant et ratio figés<br/>− points converted"]
+  V -->|passation| O["commande<br/>rabais figé, bon used"]
+  O -->|annulation seulement| V2["bon available à nouveau"]
+  S["Comptabilité › Fidélité<br/>ratio, clientèles"] -.lu à la conversion.-> V
 ```
+
+**Pourquoi le bon simplifie** : la dépense de points est un geste à part
+entière, hors de la passation. La passation ne touche plus au livre : elle
+réserve un bon. Une annulation rend donc un bon, pas des points, et le
+ratio ne peut plus changer entre le panier et le paiement, puisqu'il est figé
+sur le bon.
 
 ## 3. Les décisions
 
-### D1 — Le solde est un grand livre, pas une colonne
+### D1 — Le titulaire : la société, ou la personne
+
+- **Titulaire** = `company_id` pour un pro, `user_id` pour un particulier.
+  Une table de titulaires n'est pas nécessaire. Chaque ligne du livre et
+  chaque bon portent **l'un des deux, exactement** :
+  `CHECK ((company_id IS NULL) <> (user_id IS NULL))`.
+- Qui gagne : c'est la `clientele` de la commande qui tranche.
+  - `pro` crédite `Order.companyId`. Si ce champ est nul, parce que la société
+    a été supprimée (`orders.prisma:101-103`), il n'y a pas de crédit, et la
+    sonde l'écarte explicitement ;
+  - `public` crédite `placedByUserId` ;
+  - une `clientele` nulle (commandes d'avant le champ) ne crédite rien.
+- **Les clés étrangères vers `companies` et `users` sont `ON DELETE RESTRICT`**
+  sur le livre et sur les bons. Un livre ne s'efface pas. Avant la migration
+  du lot A, il faut vérifier quels chemins suppriment une société ou une
+  personne, et ce que ce refus leur fait.
+- **Seul un compte connecté gagne** (`auth0_sub` non nul) :
+  - `User.email` n'est pas unique, et une commande sans compte reste
+    rattachée à l'invité neuf (`plan-commande-sans-compte.md`) ;
+  - les points d'un invité seraient donc inaccessibles, et s'attribuer ceux
+    d'une adresse serait une faille.
+- **Qui convertit, chez un pro** : toute personne active rattachée à la
+  société, avec le droit d'y commander. La société est celle de **l'espace
+  courant**, pas celle de la personne : une personne peut appartenir à
+  plusieurs sociétés. Le rattachement est revérifié sous verrou. Une personne
+  qui quitte la société ne part pas avec ses bons : ils sont à la société. ⚠️ **Question** (§5) : faut-il le
+  réserver au titulaire du compte ?
+
+### D2 — Le grand livre
 
 Nouvelle table `loyalty_ledger_entries` (schéma `public`, contexte
-`b2b/loyalty/`) : `id`, `user_id`, `kind`, `points` (entier **signé**),
-`order_id` (nullable), `occurred_at`, `staff_user_id` et `reason` (nullables,
-pour un ajustement manuel).
+`b2b/loyalty/`) :
 
-- `kind` : `earned` (+), `spent` (−), `restored` (+, rend un `spent`),
-  `adjusted` (±, geste du staff, avec un motif).
-- **Le solde est la somme.** Aucune colonne « solde » qui pourrait diverger
-  de l'historique.
-- **Une commande ne crédite, ne débite et ne rend qu'une fois** : unicité
-  `(order_id, kind)` en base pour `earned`, `spent` et `restored`. Et
-  `restored` n'existe que s'il y a un `spent` sur la même commande : on le
-  vérifie dans la transaction qui l'écrit.
-- **Le solde ne descend jamais sous zéro.** Le débit prend un
-  `pg_advisory_xact_lock` sur la personne, selon la convention du dépôt
-  (`prisma-person-attachment.lock.ts`), puis relit la somme. On ne pose pas de
-  `FOR UPDATE` sur `users`, qui bloquerait toute écriture de profil pendant la
-  passation.
-- Chaque écriture a son fait de journal : `loyalty.points_earned`,
-  `loyalty.points_spent`, `loyalty.points_restored`,
-  `loyalty.points_adjusted`.
+- le titulaire (D1) ;
+- `kind`, `points` (entier **signé**), `order_id` et `voucher_id`
+  (nullables) ;
+- `occurred_at`, `actor_user_id` ou `staff_user_id`, et `reason` pour un
+  ajustement.
 
-### D2 — Débiter à la passation, et rendre sur chaque échec
+Valeurs de `kind` :
 
-- **Le débit vit dans la transaction qui crée la commande.** Si la commande
-  échoue, le débit échoue avec elle. Aucun débit n'existe sans sa commande.
-- **L'idempotence de passation passe avant tout calcul de fidélité.** Un rejeu
-  rend la commande existante sans relire ni le solde ni le ratio. Sinon, le
-  second essai échouerait sur « solde insuffisant », puisque le premier débit
-  est déjà écrit.
-- **Tout chemin qui renonce à une commande écrit `restored`, dans sa propre
-  transaction.** Cela couvre :
-  - `markPaymentFailed` (le refus Stripe) ;
-  - l'abandon du règlement (`order/plan-abandon-du-reglement.md`, qui écrit
-    `cancelled`) ;
-  - l'annulation, le jour où elle sera bâtie.
+- `earned` (+) : une commande remise et réglée ;
+- `converted` (−) : un bon émis ;
+- `adjusted` (±) : un geste du staff, avec un motif obligatoire.
 
-  🔴 **C'est une condition de bâtisse pour les deux autres plans** : chacun
-  doit citer ce paragraphe. Le lot C ne part pas en production avant que
-  `markPaymentFailed` rende les points. Et si l'abandon est bâti avant le
-  lot C, il n'a encore aucun débit à rendre, donc il n'y a rien à perdre.
+Règles :
 
-### D3 — Créditer au passage à `fulfilled`, pas par un événement
+- **Le solde est la somme.** Aucune colonne de solde.
+- **Unicités en base** : `(order_id)` pour `earned`, `(voucher_id)` pour
+  `converted`. Un rejeu n'écrit rien de plus.
+- **Le solde ne descend jamais sous zéro.** La conversion prend un
+  `pg_advisory_xact_lock` sur le titulaire, selon la convention du dépôt
+  (`prisma-person-attachment.lock.ts`). Son espace de noms est propre, et la
+  clé est préfixée `company:` ou `user:`, pour qu'un identifiant de société et
+  un identifiant de personne ne tombent jamais sur le même verrou. Elle relit ensuite la somme, puis
+  écrit le bon et le débit **dans la même transaction**. Pour un pro, deux
+  personnes de la même société qui convertissent en même temps attendent
+  l'une l'autre.
+- Faits de journal : `loyalty.points_earned`, `loyalty.points_adjusted`,
+  `loyalty.voucher_issued`, `loyalty.voucher_reserved`,
+  `loyalty.voucher_released`, `loyalty.voucher_expired`,
+  `loyalty.voucher_cancelled`.
+- `actor_user_id` : quand une personne est effacée, il passe à `NULL` sans que
+  la ligne disparaisse. C'est la seule exception au `RESTRICT`, parce que
+  l'auteur d'un geste n'est pas le titulaire.
 
-- **Le crédit s'écrit dans la transaction qui pose `fulfilled`**
-  (`markFulfilled`, `prisma-order.repository.ts:245`). On n'utilise pas un
-  abonné à `OrderHandedOverEvent`, parce que `BackgroundWork` avale ses échecs
-  (`platform/events/background-work.ts`) : un crédit raté y serait perdu en
-  silence.
-- **Condition** : `paymentStatus` vaut `paid` ou `not_required`. Une commande
-  remise mais non réglée ne rapporte rien tant qu'elle n'est pas réglée. Le
-  crédit s'écrit alors à `markPaid`, si la commande est déjà `fulfilled`, et
-  c'est la même fonction qui le fait.
-- **Une vérification de rattrapage** liste les commandes `fulfilled` et
-  réglées d'une clientèle ouverte qui n'ont pas de ligne `earned`. Elle sert
-  de sonde, pas d'écriture automatique.
-- **Pourquoi pas à la passation** : la marchandise n'est pas encore partie, et
-  rien ne garantit que la commande sera payée.
+### D3 — Créditer après remise et encaissement, par rattrapage idempotent
 
-### D4 — L'assiette
+- **Condition** : la commande est `fulfilled` **et** `paymentStatus = paid`.
+  `not_required` ne compte **pas** : chez un pro, cela veut dire « payé à
+  terme », pas encaissé (`orders.prisma:206-210`). Le jour où l'on ouvre
+  les pros, il faudra un signal « facture réglée ». Il n'existe pas
+  aujourd'hui, et ouvrir `openToPro` sans lui n'est pas permis (lot F).
+- **Pas de transaction partagée avec `orders`.** `markFulfilled` et
+  `settle` écrivent en autocommit (`prisma-order.repository.ts:154-260`).
+  Les faire écrire dans les tables de `b2b/loyalty/` ferait lire à une classe
+  les tables d'un autre contexte en Prisma direct (`CLAUDE.md` §3).
+- **Le mécanisme** : `b2b/loyalty/` crédite de deux façons, toutes deux
+  idempotentes par l'unicité `(order_id)` sur `earned` :
+  1. **au fil de l'eau**, un abonné à l'événement de remise et à celui de
+     règlement. Au bout, il se déclenche sur le **second** des deux. Il écoute
+     la classe publiée **par le commerce**
+     (`b2b/orders/domain/events/order-handed-over.event.ts`), et non celle du
+     canal `handover` ;
+  2. **par rattrapage**, une tâche périodique qui **écrit** le crédit des
+     commandes `fulfilled` et `paid`, d'une clientèle ouverte, qui n'ont pas
+     encore de ligne `earned`. Elle lit les commandes par un port de lecture
+     que `orders` expose, pas par Prisma direct.
+     L'abonné peut échouer, puisque `BackgroundWork` avale son erreur. Le
+     rattrapage garantit que le crédit arrive au plus tard au passage suivant.
+- **Les chemins vers `paid` sont à inventorier au lot D.** `settle` en est un.
+  Le lien de paiement en passe par un autre (`settle-payment-link.handler.ts`).
+  Le comptoir est à vérifier. Le rattrapage les couvre tous, puisqu'il lit
+  l'état et non les événements.
 
-**Proposé** : on crédite `totalCents` **moins** `deliveryFeeCents` et
-`lateFeeCents`. Autrement dit, les points récompensent l'achat de
-marchandises, TTC, après toutes les remises. On ne gagne pas de points sur des
-points.
-**Question pour Hugo** : inclure le port ? Ta phrase dit « la commande ».
+### D4 — L'assiette : les marchandises seulement
 
-### D5 — Le ratio : un réglage, figé sur la commande
+Décidé par Hugo : le port et la surtaxe **ne rapportent pas** de points.
+L'assiette vaut `totalCents − deliveryFeeCents − lateFeeCents`, c'est-à-dire
+le TTC des marchandises après toutes les remises.
 
-Nouvelle table `loyalty_settings`, clé fixe `id = 'default'`, calquée sur
-`AccountingSettings` :
+⚠️ **Avec un bon, l'assiette dépend de D6.** En traitement A, `totalCents` est
+déjà réduit du bon. En traitement B, il reste plein, et il faudra lui
+soustraire le règlement par bon. Le lot D n'en dépend pas : tant que le lot C
+n'est pas bâti, aucune commande ne porte de bon. Le lot C fixera cette
+soustraction.
 
-- `pointsPerStep` (ex. 1 000) et `stepValueCents` (ex. 500, **TTC**) : deux
-  entiers, jamais un flottant ;
-- `openToPublic` (vrai), `openToPro` (faux) : pour étendre aux pros, on
-  modifie un réglage, on ne relance pas un chantier ;
-- **tant que la ligne n'existe pas, le programme est fermé.** Aucune valeur
-  par défaut inventée.
+### D5 — Le ratio : lu à la conversion, figé sur le bon
 
-Écran : **Comptabilité › Fidélité**, gardé par `b2b_accounting` read et
-write. Aucune nouvelle ressource. Fait de journal : `loyalty_settings.set`,
-avec l'avant et l'après.
+Nouvelle table `loyalty_settings`, clé fixe `id = 'default'` :
 
-- **Le ratio appliqué est figé sur la commande** (`loyaltyPointsSpent`,
-  `loyaltyStepValueCents`, `loyaltyPointsPerStep`), comme `discountCents`
-  fige son ajustement d'origine.
-- **Le panier envoie le nombre de paliers et le ratio qu'il a affichés.** Si
-  le ratio a changé entre-temps, le serveur refuse avec un 409 nommé
-  (« Le barème de fidélité vient de changer, votre panier a été mis à
-  jour ») plutôt que d'appliquer une valeur que le client n'a pas vue.
-- ⚠️ **Changer le ratio change la valeur des points déjà gagnés**, pas leur
-  nombre. L'écran le dit au moment d'enregistrer.
+- `pointsPerStep` (ex. 1 000) et `stepValueCents` (ex. 500, TTC) ;
+- `openToPublic` (vrai) et `openToPro` (faux) ;
+- `voucherValidityDays` (nullable : un bon sans date limite si nul, question
+  §5).
 
-### D6 — La remise fidélité est un rabais
+**Tant que la ligne n'existe pas, le programme est fermé.** L'écran est
+**Comptabilité › Fidélité**, sous le droit `b2b_accounting`. Fait de journal :
+`loyalty_settings.set`.
 
-| Traitement           | TVA                                  | Ce que ça demande                                          |
-| -------------------- | ------------------------------------ | ---------------------------------------------------------- |
-| **rabais (proposé)** | réduit l'assiette, ventilée par taux | une remise HT de plus dans `ventilateVat`                  |
-| moyen de paiement    | TVA sur le prix plein                | un second encaissement à côté de Stripe, que rien ne porte |
+Règles de conversion :
 
-**Proposé : rabais.** On donne les points, le client ne les achète pas. La
-remise réduit donc le prix de vente.
-🔴 **Irréversible pour les factures émises** : une fois des commandes figées
-avec une TVA réduite, passer à « moyen de paiement » ne les réécrit pas.
-**À faire valider par le cabinet comptable avant le lot C.**
+- **On convertit par paliers entiers** : un bon vaut
+  `n × stepValueCents` et coûte `n × pointsPerStep` points.
+- **Le bon fige** son montant, les points qu'il a coûtés et le ratio appliqué.
+  Changer le ratio n'altère ni un bon émis, ni un nombre de points. Cela change
+  seulement ce que vaudront les **prochaines** conversions, et l'écran le dit
+  au moment d'enregistrer.
 
-La mécanique :
+### D6 — Le bon et la TVA : ce qu'on ne sait pas encore
 
-1. **Ordre** : la remise du point de retrait s'applique d'abord. Le plafond de
-   la fidélité est le **sous-total HT restant**, c'est-à-dire
-   `subtotalCents − discountCents`.
-2. **Capacité** : le nombre de paliers autorisés vaut
-   `floor(TTC restant des marchandises / stepValueCents)`. Le client choisit
-   entre 0 et `min(capacité, paliers de son solde)`. On ne dépense donc
-   jamais un palier pour une remise tronquée. Un panier plus petit qu'un
-   palier ne peut pas dépenser de points, et l'écran le dit.
-3. **Conversion** : une nouvelle fonction de `@lfd/money`,
-   `htDiscountForTtcTarget(lines, discountCents, targetTtcCents)`, cherche la
-   remise HT **la plus grande** dont l'effet TTC, calculé par `ventilateVat`
-   lui-même, ne dépasse pas la cible. Elle procède par recherche sur des
-   entiers, pas par inversion d'une formule, pour que l'arrondi soit par
-   construction celui de `ventilateVat`.
-4. **Ce que voit le client, et ce qui est imprimé** : « Remise fidélité », pour
-   la **baisse de TTC réellement obtenue**, c'est-à-dire le total sans la
-   remise moins le total avec. Le montant peut valoir 4,99 € pour une cible de
-   5 €, jamais 5,01 €. Les lignes imprimées retombent donc toujours sur le
-   total.
-5. `ventilateVat` reçoit `loyaltyDiscountCents` à part. Il n'est pas
-   additionné à `discountCents`, pour que chaque remise reste lisible sur la
-   facture. Les deux s'appliquent avant la TVA.
+**Non tranché**, à demander au cabinet comptable. Voici ce qu'on sait, pour
+qu'il réponde vite.
 
-### D7 — Qui gagne, qui dépense
+Deux traitements sont possibles :
 
-- **Seule une personne connectée gagne et dépense** (`auth0_sub` non nul),
-  quand la clientèle de sa commande est ouverte (D5).
-- **Un invité ne gagne rien.** `User.email` n'est pas unique, et une commande
-  sans compte reste rattachée à l'invité neuf, jamais au compte existant
-  (`plan-commande-sans-compte.md`). Les points d'un invité seraient donc
-  inaccessibles. S'attribuer les points d'une adresse serait en plus une
-  faille. L'écran de commande sans compte peut dire « créez un compte pour
-  gagner N points ».
-- **Chez un pro, le jour venu** : les points vont à la **personne**, pas à la
-  société. ⚠️ **Question pour Hugo** : c'est irréversible sans migration de
-  données.
+| Traitement                                 | Effet sur la commande                                                      | Effet sur la TVA                  | Coût de bâtisse                                                                              |
+| ------------------------------------------ | -------------------------------------------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------- |
+| **A. Rabais** (réduction du prix de vente) | une remise de plus, figée à la passation                                   | réduit la base, ventilée par taux | une remise HT de plus dans `ventilateVat`, et un calcul du HT pour une cible TTC             |
+| **B. Moyen de paiement** (comme un avoir)  | le total TTC reste plein ; le bon en paie une partie, Stripe paie le reste | TVA calculée sur le prix plein    | un second encaissement à côté de Stripe, un « reste à payer », une facture à deux règlements |
+
+Ce qu'on lit habituellement, **non vérifié ici et à faire confirmer** : un bon
+**remis gratuitement** par le vendeur, et utilisé chez lui, est traité comme
+une **réduction de prix**, qui diminue la base de TVA (traitement A). Un bon
+**vendu**, comme une carte cadeau, relève plutôt du traitement B. Nos bons ne
+sont jamais vendus : ils naissent de points donnés. Le cas penche donc vers A.
+
+Ce qui ne dépend pas de la réponse, et qu'on peut bâtir avant :
+
+- le livre, la conversion et l'émission du bon (lots A, B, D) ;
+- le bon en tant qu'objet, avec ses états et son verrou.
+
+Ce qui en dépend :
+
+- le lot C tout entier : l'effet sur le total, la facture, l'export comptable ;
+- 🔴 **le choix est irréversible pour les factures émises.**
+
+**Si la réponse est A**, voici la mécanique retenue après la contradiction :
+
+1. La remise du point de retrait s'applique d'abord.
+2. Le bon s'impute ensuite sur le TTC des marchandises restant. Il ne paie
+   jamais le port.
+3. Une fonction `@lfd/money`, `htDiscountForTtcTarget`, cherche par recherche
+   entière la plus grande remise HT dont l'effet TTC, calculé par
+   `ventilateVat` lui-même, ne dépasse pas la cible. La facture imprime la
+   **baisse de TTC réellement obtenue** : 4,99 € possible, 5,01 € jamais.
+4. `ventilateVat` reçoit la remise du bon à part de `discountCents`.
+
+**Question liée** (§5) : un bon plus gros que le panier. Soit on le
+refuse, soit on le consomme entièrement et la différence est perdue, soit on
+émet un bon de reliquat. Le reliquat se bâtit simplement dans les deux
+traitements, mais c'est une décision.
+
+### D7 — Le cycle d'un bon
+
+| État        | Entre par                                           | Sort par                                                             |
+| ----------- | --------------------------------------------------- | -------------------------------------------------------------------- |
+| `available` | conversion, ou libération                           | passation (`reserved`), date limite (`expired`), staff (`cancelled`) |
+| `reserved`  | la passation, sous le verrou du **titulaire**       | l'annulation de la commande (`available`)                            |
+| `expired`   | date limite dépassée, **seulement** si `available`  | —                                                                    |
+| `cancelled` | geste du staff motivé, **seulement** si `available` | —                                                                    |
+
+- **Pas d'état `used`.** Un bon `reserved` sur une commande qui vit est
+  consommé. Il ne pourrait revenir que par l'annulation. `markPaymentFailed`
+  ne libère **rien** : une commande refusée n'est pas terminée, elle se
+  reprend par un lien de paiement (`payment-link.ts:28-32`). Libérer le bon à
+  ce moment-là permettrait de le dépenser deux fois.
+- **Un bon réservé n'expire pas.** Libéré après sa date limite, il passe
+  directement à `expired`.
+- **Annuler un bon** (staff) : il passe à `cancelled`, et une ligne `adjusted`
+  liée au bon recrédite ses points.
+- **Un bon par commande** (`voucher_id` sur `Order`, colonne additive
+  nullable). La réservation vit dans la transaction de passation, par un port
+  que `orders` déclare et que `loyalty` implémente, relié dans
+  `appBootstrap`.
+- **L'idempotence de passation passe avant la réservation** : un rejeu rend
+  la commande existante et ne touche pas au bon.
+- 🔴 **L'annulation, quand elle sera bâtie, libère le bon.** Le plan
+  d'annulation, et le plan d'abandon s'il écrit `cancelled`, doivent le citer.
+- Chez un pro, toute personne qui peut commander pour la société peut
+  utiliser un bon de la société.
 
 ### D8 — Ce qu'on ne fait pas
 
-- **L'expiration** : rien n'expire. On pourra l'ajouter plus tard par un
-  `kind` de plus.
-- **Les points au comptoir sans compte, la carte physique, le parrainage.**
-- **Un plafond en pourcentage du panier** : il n'y en a pas au-delà du
-  sous-total (question 4).
+- Les points au comptoir sans compte, la carte physique, le parrainage.
+- La vente de bons ou de cartes cadeaux : ce serait l'autre traitement de TVA.
+- Défaire une conversion depuis la boutique. Seul le staff annule un bon
+  (D7).
 
 ## 4. Les lots
 
-| Lot | Contenu                                                                                                                                                                                                                                                                                                                                                                                            |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A   | migration additive : `loyalty_settings`, `loyalty_ledger_entries` ; contexte `b2b/loyalty/` (`LoyaltyRatio`, le livre, le verrou) ; les quatre faits de journal ; tests aux trois niveaux                                                                                                                                                                                                          |
-| B   | Comptabilité › Fidélité : l'écran, la commande, le journal. Le programme reste fermé tant que rien n'est enregistré.                                                                                                                                                                                                                                                                               |
-| C   | `@lfd/money` `htDiscountForTtcTarget`. Sur `Order`, les colonnes additives `loyaltyDiscountCents` (défaut 0) et le ratio figé. Débit dans la passation, `restored` dans `markPaymentFailed`. Avant de bâtir : **inventaire de tous les lecteurs du total** (récapitulatif, facture, mail, `@lfd/b2b-ui`, export comptable), parce qu'un lecteur qui recalcule sans le champ affiche un total faux. |
-| D   | Crédit dans `markFulfilled` et dans `markPaid`. Sonde de rattrapage.                                                                                                                                                                                                                                                                                                                               |
-| E   | Boutique : le solde dans le compte, « vous gagnerez N points » au panier, le choix des paliers au paiement, le 409 de barème changé.                                                                                                                                                                                                                                                               |
+| Lot | Contenu                                                                                                                                                                                                                                                                                               |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A   | migration additive : `loyalty_settings`, `loyalty_ledger_entries`, `loyalty_vouchers`, avec le CHECK de titulaire et les `RESTRICT`. Contexte `b2b/loyalty/` : le livre, le verrou, la conversion, le bon en états `available`, `expired` et `cancelled` seulement. Journal. Tests aux trois niveaux. |
+| B   | Comptabilité › Fidélité : le réglage, une vue des soldes et des bons, l'ajustement motivé, l'annulation d'un bon.                                                                                                                                                                                     |
+| D   | le crédit : l'abonné et la tâche de rattrapage, par un port de lecture d'`orders` ; l'inventaire des chemins vers `paid`.                                                                                                                                                                             |
+| E1  | boutique : le solde, « vous gagnerez N points », et la conversion en bon.                                                                                                                                                                                                                             |
+| C   | **attend la réponse à D6.** L'état `reserved`, la réservation à la passation, la libération à l'annulation, l'effet sur le total et sur l'assiette. Avant de bâtir : l'inventaire de tous les lecteurs du total. Ensuite, un passage de `vitruve`.                                                    |
+| E2  | boutique : utiliser un bon au paiement.                                                                                                                                                                                                                                                               |
+| F   | ouvrir aux pros : un signal « facture réglée » avant tout `openToPro`.                                                                                                                                                                                                                                |
 
-A, B et D ne touchent pas un total. **C est le seul lot qui touche l'argent.**
-Il attend la validation de D6 par le cabinet comptable, puis un second passage
-de `vitruve`.
+Le cycle du bon s'arrête volontairement à `available` dans le lot A.
+L'imputation dépend de D6 : avec le traitement B, le bon devient un
+règlement, et peut laisser un reliquat. Figer `reserved` avant de connaître la
+réponse coûterait une migration de plus.
+
+⚠️ **À décider** : ouvrir E1 seulement quand C est prêt, pour ne pas
+distribuer des bons qu'on ne peut pas encore utiliser.
 
 ## 5. Questions ouvertes
 
-1. D4 : les frais de livraison et la surtaxe rapportent-ils des points ?
-2. D6 : rabais ou moyen de paiement ? La réponse vient du cabinet comptable.
-3. D7 : chez les pros, les points vont-ils à la personne ou à la société ?
-4. Faut-il un plafond en pourcentage du panier, par exemple 50 % ?
+1. **D6 — au cabinet comptable** : un bon d'achat gratuit, issu de points
+   de fidélité, est-il un rabais (A) ou un moyen de paiement (B) ?
+2. D6 — que faire d'un bon plus gros que le panier : le refuser, perdre la
+   différence, ou émettre un bon de reliquat ?
+3. D1 — chez un pro, qui a le droit de convertir : toute personne qui commande,
+   ou seulement le titulaire du compte ?
+4. D5 — les bons ont-ils une date limite ?
+5. §4 — ouvrir la conversion avant que les bons soient utilisables ?
 
-## 6. Ce que la contradiction a changé (2026-09-26)
+## 6. Ce que la première contradiction a changé (2026-09-26)
+
+> ⚠️ **En partie remplacé par le §7 et le §8.** Le bon d'achat a supprimé
+> `restored`, le débit à la passation et le 409 « barème changé ». Ce qui
+> suit est gardé comme historique.
 
 - **B1** — Des points débités restaient perdus si le règlement échouait ou
   était abandonné. Désormais, `restored` est écrit par chaque chemin de
@@ -253,7 +338,7 @@ de `vitruve`.
   de rattrapage (D3).
 - **B3** — « L'invité retrouve ses points en ouvrant un compte » était faux,
   puisque l'adresse n'est pas unique. Désormais, l'invité ne gagne rien
-  (D7).
+  (aujourd'hui D1).
 - **Sérieux** :
   - la conversion TTC vers HT est nommée et construite par recherche ;
   - on imprime la baisse de TTC réelle ;
@@ -266,3 +351,37 @@ de `vitruve`.
   - l'irréversibilité du rabais est dite ;
   - le ratio est figé sur la commande, et un barème changé donne un 409 ;
   - l'inventaire des lecteurs du total est une étape du lot C.
+
+## 7. Les réponses de Hugo (2026-09-26)
+
+- **Assiette** : le port et la surtaxe ne rapportent pas de points (D4).
+- **TVA** : « je ne sais pas, documente ». D6 expose les deux traitements, ce
+  qui ne dépend pas de la réponse, et ce qui en dépend. Le lot C attend.
+- **Titulaire** : les points appartiennent à la **société** chez un pro (D1).
+- **Bon d'achat** : la personne convertit ses points en bon, puis utilise le
+  bon. Ce choix a remplacé la remise en points à la passation. Il a supprimé
+  l'ancien `restored` : un échec de commande libère le bon, pas les points. Il
+  a aussi supprimé le 409 « barème changé » : le ratio est figé sur le bon au
+  moment de la conversion.
+
+## 8. Ce que la seconde contradiction a changé (2026-09-26)
+
+- **B1** — Libérer le bon au refus de paiement permettait de le dépenser deux
+  fois : une commande refusée se reprend. Désormais, seule l'annulation libère
+  un bon, et l'état `used` disparaît (D7).
+- **B2** — « Dans la même transaction que `fulfilled` » supposait une
+  transaction qui n'existe pas, et une écriture d'`orders` dans les tables de
+  `loyalty`. Le crédit passe maintenant par un abonné et par un rattrapage
+  idempotent qui écrit, en lisant les commandes par un port (D3).
+- **B3** — `not_required` n'est pas un encaissement. Seul `paid` crédite, et
+  l'ouverture aux pros attend un signal « facture réglée » (lot F).
+- **Sérieux** :
+  - société supprimée : la sonde l'écarte ;
+  - clés étrangères en `RESTRICT` ;
+  - `clientele` nulle exclue ;
+  - titulaire pris dans l'espace courant ;
+  - espace de noms de verrou préfixé ;
+  - assiette avec bon renvoyée au lot C ;
+  - cycle du bon arrêté à `available` avant D6 ;
+  - un bon réservé n'expire pas ;
+  - les chemins vers `paid` sont couverts par le rattrapage.
