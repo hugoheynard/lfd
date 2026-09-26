@@ -373,11 +373,13 @@ export default {
     return guardedFetch(request, env.RATE_LIMITER, (forwarded) => backend(env).fetch(forwarded));
   },
 
-  // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc). Trois
-  // rythmes sur le même handler, départagés par l'expression : toutes les 5 min
-  // pour garder le container chaud, 3×/jour aux heures creuses pour le recompute
-  // batch, et 1×/jour pour le ramassage des visuels orphelins. `waitUntil` garde
-  // le Worker vivant jusqu'à la fin de l'appel container.
+  // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc). Cinq
+  // rythmes sur le même handler, départagés par l'expression (`dispatchCron`) :
+  // toutes les 5 min pour garder le container chaud, toutes les heures pour les
+  // liens de paiement non réglés à l'heure limite, 3×/jour aux heures creuses
+  // pour le recompute batch, et 1×/nuit pour la fidélité puis pour le ramassage
+  // des visuels orphelins. `waitUntil` garde le Worker vivant jusqu'à la fin de
+  // l'appel container.
   scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
     ctx.waitUntil(dispatchCron(controller.cron, env));
   },

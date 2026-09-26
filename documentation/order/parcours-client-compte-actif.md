@@ -165,17 +165,17 @@ arrive ici. L'adresse survit donc à un rechargement et se rouvre plus tard sur
 une commande restée à payer — ce qu'un panneau dans le panier n'aurait tenu ni
 l'un ni l'autre.
 
-| Rôle     | Clé                      | Texte                                                                                                                              |
-| -------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| titre    | `pay.title`              | « Il reste à régler. »                                                                                                             |
-| chapeau  | `pay.lead`               | « Votre commande {ref} est enregistrée. Elle part en fabrication une fois réglée. »                                                |
-| montant  | `pay.amount`             | « Montant à régler »                                                                                                               |
-| bouton   | `pay.submit`             | « Payer {total} »                                                                                                                  |
-| sortie   | `pay.later`              | « Régler plus tard »                                                                                                               |
-| indispo. | `pay.unavailable`        | « Le paiement est indisponible pour l'instant. Votre commande est enregistrée : vous pourrez la régler depuis « Mes commandes ». » |
-| refus    | `pay.refused` / `failed` | « Le paiement a été refusé. » / « Le paiement n'a pas pu être finalisé. »                                                          |
+| Rôle     | Clé                      | Texte                                                                                                                                                                               |
+| -------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| titre    | `pay.title`              | « Il reste à régler. »                                                                                                                                                              |
+| chapeau  | `pay.lead`               | « Votre commande {ref} est enregistrée. Elle part en fabrication une fois réglée. »                                                                                                 |
+| montant  | `pay.amount`             | « Montant à régler »                                                                                                                                                                |
+| bouton   | `pay.submit`             | « Payer {total} »                                                                                                                                                                   |
+| sortie   | `pay.abandon`            | « Abandonner ma commande » — remplace `pay.later` le 2026-09-26 ; confirmation, puis abandon tenté ([`architecture-abandon-du-reglement.md`](architecture-abandon-du-reglement.md)) |
+| indispo. | `pay.unavailable`        | « Le paiement est indisponible pour l'instant. Votre commande est enregistrée : vous pourrez la régler depuis « Mes commandes ». »                                                  |
+| refus    | `pay.refused` / `failed` | « Le paiement a été refusé. » / « Le paiement n'a pas pu être finalisé. »                                                                                                           |
 
-**Une porte de sortie existe** (`pay.later`) et c'est délibéré : la commande est
+**Une porte de sortie existe** (`pay.abandon`, anciennement `pay.later`) et c'est délibéré : la commande est
 déjà écrite, la retenir derrière un paiement ne la ferait pas exister davantage.
 
 ### `/nouvelle-commande/confirmee` — les trois régimes

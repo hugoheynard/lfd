@@ -1,7 +1,8 @@
 # L'abandon du règlement
 
-> État : **implémenté** au 2026-09-26, à un lot près (§9 : le lot 10, qui
-> prévient le commercial à l'heure limite, est en cours). Écrit à l'affirmative
+> État : **implémenté** au 2026-09-26, lot 10 compris (`9c10d2d2c` : un lien
+> de paiement non réglé à l'heure limite fait sonner la cloche, une fois, par
+> un cron horaire). Écrit à l'affirmative
 > le 2026-09-26. Chaque phrase a été confrontée ce jour-là au code de `dev`
 > (`d987090d7`).
 >
@@ -297,13 +298,14 @@ en cours n'est pas refusé à qui recharge la page.
 - Le texte pro/particulier est choisi par **l'espace courant** (l. 122), pas
   par le contrat (§9).
 
-⚠️ Deux nuances lues dans le code, non corrigées :
+⚠️ Une nuance lue dans le code : `ClientOrders.paymentFor` sert d'abord
+l'intention **gardée en mémoire** depuis la passation, sans interroger le
+serveur ; seul un retour sur la page hors de cette session passe par les refus
+ci-dessus.
 
-- `ClientOrders.paymentFor` sert d'abord l'intention **gardée en mémoire** depuis
-  la passation, sans interroger le serveur ; seul un retour sur la page hors de
-  cette session passe par les refus ci-dessus ;
-- toute erreur de `GET /orders/:id/payment`, panne réseau comprise, mène à
-  l'état `closed` et non à `unavailable`.
+Seul un **refus** du serveur (4xx) mène à l'état `closed`. Une panne — réseau
+coupé, 5xx — est relancée par `paymentFor` et mène à `unavailable` : elle ne dit
+rien de la commande (corrigé le 2026-09-26, avant tout déploiement).
 
 ## 7. Les causes et leurs effets
 
@@ -359,8 +361,5 @@ substituent un faux `PaymentGateway`.
   [chantier d'annulation général](plan-annulation-de-commande.md), comme
   l'annulation d'une commande payée.
 - **La croissance** (S11) : `order.placed` reste compté après un abandon.
-- **Des JSDoc périmés par ce chantier**, dans le code et non corrigés ici
-  (vérifié le 2026-09-26) : `PAYMENTS_AWAITING` dit les lots 3 à 6 « non bâtis »
-  (`production-plan.ts:120-122`), `absorbedByPlan` dit qu'un webhook tardif « se
-  surveille au back-office » (l. 59-63), et `ClientOrders.paymentFor` dit que la
-  page « mène à la confirmation » après un refus.
+- Les JSDoc de code que ce chantier périmait (`PAYMENTS_AWAITING`,
+  `absorbedByPlan`, `ClientOrders.paymentFor`) sont réécrits le 2026-09-26.

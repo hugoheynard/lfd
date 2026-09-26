@@ -381,8 +381,10 @@ copie. Une commande annulée ne fait pas disparaître ce qu'on a fabriqué
 
 Relevés en écrivant ce document, **non corrigés** — chacun demande une décision.
 
-- **`cancelled` n'est écrit par aucun chemin.** Aucune commande ne peut être
-  annulée aujourd'hui, alors que la file du comptoir, le dossier du jour et le
+- ~~**`cancelled` n'est écrit par aucun chemin.**~~ ✅ **Fermé le 2026-09-26** :
+  l'abandon du règlement et la clôture l'écrivent
+  ([`architecture-abandon-du-reglement.md`](architecture-abandon-du-reglement.md)).
+  Le constat d'origine : aucune commande ne pouvait être annulée, alors que la file du comptoir, le dossier du jour et le
   compte de production savent l'écarter. La proposition d'expiration des
   commandes impayées en aurait besoin
   ([`architecture-reglement-et-compte-de-production.md`](architecture-reglement-et-compte-de-production.md) §4.1).

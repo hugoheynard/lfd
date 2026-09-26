@@ -20,11 +20,10 @@ export interface LoyaltySweepReport extends PendingOrderPointsReport {
  * `admin/media/sweep` et `admin/recompute` — le `RecomputeGuard` et son jeton,
  * présentés par le Worker sur un Cron Trigger.
  *
- * ⚠️ Aucun Cron Trigger ne l'appelle encore (vérifié le 2026-09-26 : ni
- * `wrangler.jsonc`, ni `container/worker.ts`). Tant qu'il n'est pas branché,
- * le crédit repose sur les deux abonnés seuls, et les bons passés leur date
- * restent `available` en base — inutilisables quand même, parce que
- * l'expiration se lit à l'horloge.
+ * Appelé chaque nuit à 02 h UTC : `0 2 * * *` dans `wrangler.jsonc`, et
+ * `LOYALTY_SWEEP_CRON` dans `container/worker.ts` (vérifié le 2026-09-26). Il
+ * rattrape les crédits que les abonnés ont manqués, puis écrit l'expiration
+ * des bons échus — déjà inutilisables avant, parce qu'elle se lit à l'horloge.
  */
 @Controller("admin/loyalty/sweep")
 @Public()

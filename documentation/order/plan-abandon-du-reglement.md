@@ -46,7 +46,7 @@ de l'existant tient**, à trois nuances près et deux faits nouveaux.
 - `stripe` est en `^22.4.0` dans `apps/lfd-api/package.json`, et non « épinglé ».
   La lecture du SDK du §3 reste valable pour cette version.
 
-**🔴 Fait nouveau 1 — corrigé le 2026-09-26 (`3b8598fdf`).** `settle` ne
+**🔴 Fait nouveau 1 — corrigé le 2026-09-26 (`8ceed327b` sur `dev`).** `settle` ne
 basculait à `paid` que depuis `pending`. Or un refus de carte rend l'intention
 à `requires_payment_method` : le client peut saisir une autre carte sur la
 même page. Si elle passait, **il était débité, et la commande restait
@@ -527,12 +527,12 @@ transaction. Et `production → b2b` est interdit. **Réponse** :
 - le prix : une intention restée vivante peut encore être payée. D'où le
   **lot 6 bis** : un encaissement sur une commande `cancelled` ne la rouvre
   jamais, et la cloche sonne « encaissé sur une commande annulée — à
-  rembourser ». `PAID_FROM` (`3b8598fdf`) accepte `pending` et `failed`, mais
+  rembourser ». `PAID_FROM` (`8ceed327b` sur `dev`) accepte `pending` et `failed`, mais
   le `where` doit exclure `status = cancelled`.
 
 **B2 — le balayage ne voyait pas les cartes refusées en journée.** Une
 commande `failed` a une intention vivante (`requires_payment_method`), et
-depuis `3b8598fdf`, elle peut encore passer `paid`. **Réponse** : le balayage
+depuis `8ceed327b`, elle peut encore passer `paid`. **Réponse** : le balayage
 vise tout règlement **non encaissé**, `pending` **ou** `failed`, et pas
 seulement `pending`. C'est aussi ce qui libère le bon de fidélité réservé
 d'une commande refusée et jamais reprise.

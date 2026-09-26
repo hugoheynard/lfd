@@ -57,10 +57,12 @@ import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
  * que rien ne le démente.
  *
  * ⚠️ **Le prix de cette règle, et il est réel** : un paiement dont le webhook
- * arrive APRÈS la clôture laisse une commande payée hors du plan. Le client a
- * payé et ne sera pas servi. C'est le risque assumé, et il se surveille au
- * back-office — une commande `paid` restée `placed` après une clôture est une
- * anomalie à rattraper à la main, pas un cas normal.
+ * arrive APRÈS la clôture laisse une commande payée hors du plan. La clôture
+ * l'épargne quand Stripe dit l'argent pris ou en route, et annule le reste ;
+ * un encaissement sur une commande annulée sonne « à rembourser »
+ * (`pending-settlement-sweep.service.ts`, `ring-refund-due.handler.ts`,
+ * vérifié le 2026-09-26). Une commande `paid` restée `placed` après une
+ * clôture reste une anomalie à trancher à la main, pas un cas normal.
  *
  * Le sens du choix est celui-ci : produire pour rien coûte de la marchandise
  * tous les jours, tandis qu'un webhook en retard est un incident rare et
@@ -118,8 +120,9 @@ export const PAYMENTS_REFUSED: readonly PaymentStatus[] = ["failed", "refunded"]
  * produit que ce qui est payé, ou ce qui n'a pas à l'être (`not_required`).
  *
  * ⚠️ Le prix, assumé : un pro dont le webhook arrive après la clôture n'est pas
- * produit. C'est la clôture qui doit trancher le sort des règlements en vol
- * (lots 3 à 6 du même plan, non bâtis au 2026-09-26) — pas une exception ici.
+ * produit. C'est la clôture qui tranche le sort des règlements en vol, en les
+ * balayant avant de compter (`PendingSettlementSweep`, lots 3 à 6 bâtis le
+ * 2026-09-26) — pas une exception ici.
  */
 export const PAYMENTS_AWAITING: readonly PaymentStatus[] = ["pending"];
 
