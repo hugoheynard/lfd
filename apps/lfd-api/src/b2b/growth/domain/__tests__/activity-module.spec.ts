@@ -127,16 +127,22 @@ describe("moduleOf — la comptabilité", () => {
     ["payment_link.created", "comptabilite"],
     ["payment_link.cancelled", "comptabilite"],
     ["accounting_settings.payment_link_cap_set", "comptabilite"],
+    // La fidélité (2026-09-26) : le ratio, les bons et les ajustements.
+    ["loyalty_settings.set", "comptabilite"],
+    ["loyalty.voucher_issued", "comptabilite"],
+    ["loyalty.points_adjusted", "comptabilite"],
   ])("%s se range sous %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module ne ramène que ses quatre préfixes", () => {
+  it("le filtre du module ne ramène que ses six préfixes", () => {
     expect(prefixesOf("comptabilite")).toEqual([
       "legal_entity.",
       "payment_mandate.",
       "payment_link.",
       "accounting_settings.",
+      "loyalty_settings.",
+      "loyalty.",
     ]);
   });
 

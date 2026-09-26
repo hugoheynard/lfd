@@ -16,6 +16,7 @@ import { PricingAdminModule } from "../b2b/pricing/pricing-admin.module.js";
 import { OrderPricingModule } from "../b2b/orders/order-pricing.module.js";
 import { AccountingModule } from "../b2b/accounting/accounting.module.js";
 import { PaymentsModule } from "../b2b/payments/payments.module.js";
+import { LoyaltyModule } from "../b2b/loyalty/loyalty.module.js";
 import { DevModule } from "../dev/dev.module.js";
 import { OrderCutoffsModule } from "../b2b/order-cutoffs/order-cutoffs.module.js";
 import { OrderWaiversModule } from "../b2b/order-waivers/order-waivers.module.js";
@@ -132,6 +133,8 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     // Paiement avant Orders : Orders consomme le port PaymentGateway exposé ici.
     PaymentsModule,
     AccountingModule,
+    // La fidélité : le livre de points et les bons (plan points de fidélité).
+    LoyaltyModule,
     OrdersModule,
     ProductionModule,
     ProductionFeedModule,

@@ -143,6 +143,25 @@ export {
   setAccountingSettingsPayloadSchema,
   PAYMENT_LINK_LABEL_MAX,
 } from "./payment-link.js";
+export {
+  adjustLoyaltyPointsPayloadSchema,
+  cancelLoyaltyVoucherPayloadSchema,
+  loyaltyHolderKindSchema,
+  loyaltyVoucherStatusSchema,
+  setLoyaltySettingsPayloadSchema,
+  LOYALTY_REASON_MAX,
+} from "./loyalty.js";
+export type {
+  AdjustLoyaltyPointsPayload,
+  CancelLoyaltyVoucherPayload,
+  LoyaltyBalanceView,
+  LoyaltyHolderKind,
+  LoyaltyHolderView,
+  LoyaltySettingsView,
+  LoyaltyVoucherStatus,
+  LoyaltyVoucherView,
+  SetLoyaltySettingsPayload,
+} from "./loyalty.js";
 export type {
   AccountingSettingsView,
   CreatedPaymentLink,

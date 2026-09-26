@@ -176,8 +176,12 @@ const STAFF_DELEGATES = new Map([
  * `UnitOfWork`), avec une nuance : `payments` partage ses séquences entre le
  * chemin client et le chemin staff, et le handler y DÉLÈGUE (cf.
  * `MONEY_DELEGATES`).
+ *
+ * `loyalty` depuis le 2026-09-26 : un point de fidélité se convertit en bon
+ * d'achat, c'est-à-dire en argent — chaque geste sur le livre ou sur un bon
+ * se trace dans la transaction qui l'écrit.
  */
-const MONEY_ZONES = ["order-waivers", "payments"];
+const MONEY_ZONES = ["order-waivers", "payments", "loyalty"];
 
 /**
  * Les séquences partagées de `payments` qui journalisent elles-mêmes, et le

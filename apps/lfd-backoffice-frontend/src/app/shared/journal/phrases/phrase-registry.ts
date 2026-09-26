@@ -5,6 +5,7 @@ import type { Phrase } from '../phrase';
 import { ACCOUNTING_PHRASES } from './accounting-phrases';
 import { ACCOUNTS_PHRASES } from './accounts-phrases';
 import { COMMERCE_PHRASES } from './commerce-phrases';
+import { LOYALTY_PHRASES } from './loyalty-phrases';
 import { OPERATION_PHRASES } from './operation-phrases';
 import { ORDERS_PHRASES } from './orders-phrases';
 import { PRICING_PHRASES } from './pricing-phrases';
@@ -146,5 +147,6 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...PRICING_PHRASES,
   ...ACCOUNTS_PHRASES,
   ...ACCOUNTING_PHRASES,
+  ...LOYALTY_PHRASES,
   ...TEAM_PHRASES,
 };

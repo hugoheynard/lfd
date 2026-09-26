@@ -1,0 +1,143 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// La fidélité — le grand livre de points, les bons d'achat, le réglage
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Propriétaire : `src/b2b/loyalty/`. Plan
+// `documentation/comptabilite/plan-points-de-fidelite.md` (lot A).
+//
+// 🔴 Plusieurs contraintes vivent dans la migration `20260926160000_la_fidelite`
+// et sont INVISIBLES ici — Prisma ne sait pas les exprimer :
+//   · le titulaire : `company_id` XOR `user_id`, sur le livre ET sur les bons ;
+//   · le signe de chaque sorte de ligne, et ce qu'elle doit citer ;
+//   · une ligne `earned` par commande, une `converted` par bon, une `adjusted`
+//     liée par bon (l'annulation ne recrédite qu'une fois) — index partiels ;
+//   · un bon d'origine vaut exactement ses paliers au ratio figé ;
+//   · une annulation porte son instant, son auteur et son motif.
+
+/// La sorte d'une ligne du livre. `earned` (+) une commande remise et réglée,
+/// `converted` (−) un bon émis, `adjusted` (±) un geste motivé du staff.
+enum LoyaltyEntryKind {
+  earned
+  converted
+  adjusted
+
+  @@schema("public")
+}
+
+/// L'état d'un bon. `reserved` n'existe PAS encore, et c'est voulu : il dépend
+/// du traitement de TVA (plan D6), et le figer avant coûterait une migration.
+enum LoyaltyVoucherStatus {
+  available
+  expired
+  cancelled
+
+  @@schema("public")
+}
+
+/// **Le réglage du programme** — UNE ligne, clé fixe `default`.
+///
+/// 🔴 Ligne absente = programme FERMÉ : aucune conversion. Aucune colonne n'a
+/// de défaut, délibérément : la première valeur est celle que le comptable
+/// écrit à l'écran, pas celle qu'une migration aurait devinée.
+model LoyaltySettings {
+  /// Toujours `default` (contrainte `CHECK`).
+  id String @id
+
+  /// Le ratio : `pointsPerStep` points valent `stepValueCents` centimes TTC.
+  pointsPerStep  Int @map("points_per_step")
+  stepValueCents Int @map("step_value_cents")
+
+  openToPublic Boolean @map("open_to_public")
+  openToPro    Boolean @map("open_to_pro")
+
+  /// La durée de vie d'un bon émis, en jours — lue à l'émission, figée sur le bon.
+  voucherValidityDays Int @map("voucher_validity_days")
+
+  updatedAt        DateTime @map("updated_at")
+  updatedByStaffId String   @map("updated_by_staff_id")
+
+  @@map("loyalty_settings")
+  @@schema("public")
+}
+
+/// **Une ligne du grand livre de points.** On écrit, on n'efface jamais : le
+/// solde d'un titulaire est la SOMME de ses lignes, il n'a pas de colonne.
+///
+/// Le titulaire est la société pour un pro, la personne pour un particulier —
+/// exactement l'un des deux (contrainte `CHECK`).
+model LoyaltyLedgerEntry {
+  id String @id
+
+  companyId String?  @map("company_id")
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  userId    String?  @map("user_id")
+  user      User?    @relation("LoyaltyEntryHolder", fields: [userId], references: [id], onDelete: Restrict)
+
+  kind   LoyaltyEntryKind
+  /// Signé : positif au gain, négatif à la conversion, l'un ou l'autre à l'ajustement.
+  points Int
+
+  /// La commande qui a rapporté les points — un identifiant opaque, SANS clé
+  /// étrangère : le livre est une pièce, il ne suit pas la vie d'une commande.
+  orderId   String?         @map("order_id")
+  voucherId String?         @map("voucher_id")
+  voucher   LoyaltyVoucher? @relation(fields: [voucherId], references: [id], onDelete: Restrict)
+
+  occurredAt DateTime @map("occurred_at")
+
+  /// La personne qui a agi (conversion). `SET NULL` à son effacement : l'auteur
+  /// d'un geste n'est pas le titulaire, et la ligne, elle, reste.
+  actorUserId String? @map("actor_user_id")
+  actor       User?   @relation("LoyaltyEntryActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  /// La fiche staff d'un ajustement — pas de clé étrangère, comme partout où
+  /// une pièce comptable survit au départ de son auteur.
+  staffUserId String? @map("staff_user_id")
+  /// Le motif d'un ajustement ; obligatoire pour `adjusted` (contrainte `CHECK`).
+  reason      String?
+
+  @@index([companyId])
+  @@index([userId])
+  @@map("loyalty_ledger_entries")
+  @@schema("public")
+}
+
+/// **Un bon d'achat**, né d'une conversion de points. Son montant, son coût et
+/// le ratio appliqué sont FIGÉS à l'émission : changer le réglage ne touche
+/// aucun bon émis.
+model LoyaltyVoucher {
+  id String @id
+
+  companyId String?  @map("company_id")
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  userId    String?  @map("user_id")
+  user      User?    @relation("LoyaltyVoucherHolder", fields: [userId], references: [id], onDelete: Restrict)
+
+  valueCents          Int @map("value_cents")
+  pointsCost          Int @map("points_cost")
+  ratioPointsPerStep  Int @map("ratio_points_per_step")
+  ratioStepValueCents Int @map("ratio_step_value_cents")
+
+  issuedAt  DateTime @map("issued_at")
+  expiresAt DateTime @map("expires_at")
+
+  status LoyaltyVoucherStatus
+
+  /// Le bon d'origine d'un reliquat (lot C). Unique : un bon ne laisse qu'un reliquat.
+  parentVoucherId String?         @unique @map("parent_voucher_id")
+  parentVoucher   LoyaltyVoucher? @relation("LoyaltyVoucherRemainder", fields: [parentVoucherId], references: [id], onDelete: Restrict)
+  remainder       LoyaltyVoucher? @relation("LoyaltyVoucherRemainder")
+
+  expiredAt          DateTime? @map("expired_at")
+  cancelledAt        DateTime? @map("cancelled_at")
+  cancelledByStaffId String?   @map("cancelled_by_staff_id")
+  cancellationReason String?   @map("cancellation_reason")
+
+  entries LoyaltyLedgerEntry[]
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([status, expiresAt])
+  @@map("loyalty_vouchers")
+  @@schema("public")
+}

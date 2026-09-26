@@ -126,6 +126,11 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "payment_link.",
     // Le réglage de la comptabilité — aujourd'hui le plafond de ces liens.
     "accounting_settings.",
+    // La fidélité, sous `b2b_accounting` : le ratio, les bons et les
+    // ajustements (plan points de fidélité, 2026-09-26). `loyalty.` ne couvre
+    // PAS `loyalty_settings.` — le point fait partie du préfixe.
+    "loyalty_settings.",
+    "loyalty.",
   ],
 };
 

@@ -243,6 +243,9 @@ model Company {
   bankAccount        CompanyBankAccount?
   // Les liens de paiement libres adressés à ce client (cf. payments/).
   paymentLinks       PaymentLink[]
+  // Le grand livre de fidélité et les bons de ce client (cf. b2b/loyalty/).
+  loyaltyEntries     LoyaltyLedgerEntry[]
+  loyaltyVouchers    LoyaltyVoucher[]
 
   /// Dérogations de ce compte aux règles d'alerte globales (cf. alerts/).
   alertOverrides AccountAlertOverride[]
@@ -328,6 +331,11 @@ model User {
   // Un panier par espace de travail : le perso, puis un par société.
   shopCarts        ShopCart[]
   orderIdempotency OrderIdempotency[]
+  // La fidélité (cf. b2b/loyalty/) : le livre et les bons dont la personne est
+  // titulaire, et les lignes dont elle est l'auteur.
+  loyaltyEntries   LoyaltyLedgerEntry[] @relation("LoyaltyEntryHolder")
+  loyaltyActs      LoyaltyLedgerEntry[] @relation("LoyaltyEntryActor")
+  loyaltyVouchers  LoyaltyVoucher[]     @relation("LoyaltyVoucherHolder")
 
   @@map("users")
   @@schema("public")

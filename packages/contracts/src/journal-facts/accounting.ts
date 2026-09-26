@@ -3,9 +3,11 @@ import { z } from "zod";
 import { mandateStatusSchema } from "../payment-mandate.js";
 import {
   cents,
+  count,
   day,
   days,
   fact,
+  instant,
   named,
   payload,
   ref,
@@ -166,6 +168,71 @@ export const ACCOUNTING_FACTS = {
       subjectLabel: subjectLabel(),
       from: cents().nullable(),
       to: cents().nullable(),
+    }),
+  ),
+
+  // ─── La fidélité (plan `plan-points-de-fidelite.md`, lot A, 2026-09-26) ───
+  // Sujet : le TITULAIRE — la société (`company`) ou la personne (`user`),
+  // `subjectLabel` = son nom, omis plutôt qu'inventé quand une personne n'en a
+  // pas (même règle que les faits d'une personne). Un bon se cite par un nom
+  // qui dit son montant : il n'en a pas d'autre.
+
+  /**
+   * Le réglage du programme, posé en entier par la comptabilité. Sujet :
+   * `loyalty_settings`, `subjectLabel` = le nom du réglage.
+   */
+  "loyalty_settings.set": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      pointsPerStep: count(),
+      stepValueCents: cents(),
+      openToPublic: z.boolean(),
+      openToPro: z.boolean(),
+      voucherValidityDays: days(),
+    }),
+  ),
+  /** Une commande remise et réglée a rapporté des points (lot D). */
+  "loyalty.points_earned": fact(
+    payload({ subjectLabel: subjectLabel().optional(), points: count(), order: named("order") }),
+  ),
+  /**
+   * Un geste motivé du staff sur le livre — signé. `voucher` cite le bon dont
+   * l'annulation a recrédité les points ; `null` pour un ajustement libre.
+   */
+  "loyalty.points_adjusted": fact(
+    payload({
+      subjectLabel: subjectLabel().optional(),
+      points: z.number().int(),
+      reason: z.string(),
+      voucher: named("loyalty_voucher").nullable(),
+    }),
+  ),
+  /** Des points convertis en bon d'achat : son montant, son coût, sa date limite. */
+  "loyalty.voucher_issued": fact(
+    payload({
+      subjectLabel: subjectLabel().optional(),
+      voucher: named("loyalty_voucher"),
+      valueCents: cents(),
+      pointsCost: count(),
+      expiresAt: instant(),
+    }),
+  ),
+  /** Un bon disponible a passé sa date limite. */
+  "loyalty.voucher_expired": fact(
+    payload({
+      subjectLabel: subjectLabel().optional(),
+      voucher: named("loyalty_voucher"),
+      valueCents: cents(),
+    }),
+  ),
+  /** Le staff a annulé un bon disponible ; ses points sont recrédités à part. */
+  "loyalty.voucher_cancelled": fact(
+    payload({
+      subjectLabel: subjectLabel().optional(),
+      voucher: named("loyalty_voucher"),
+      valueCents: cents(),
+      pointsCost: count(),
+      reason: z.string(),
     }),
   ),
 } as const satisfies JournalFactFamily;
