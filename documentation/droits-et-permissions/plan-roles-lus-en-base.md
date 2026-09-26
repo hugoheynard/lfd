@@ -1,5 +1,11 @@
 # Les rôles lus en base — pourquoi ils ne l'étaient pas, et la bascule
 
+> ✅ **« Basculer » est fait et vérifié contre le code le 2026-09-26.** L'état
+> réel s'écrit désormais dans
+> [`stockage-et-resolution-des-droits.md`](stockage-et-resolution-des-droits.md) ;
+> ce plan reste l'histoire de la décision. Seul le « resserrer » (§4) est
+> encore à faire.
+
 > Ouvert le 2026-09-25, à la demande de Hugo : « règle l'histoire des rôles qui
 > sont lus dans le code au lieu de la db, fais-moi une doc explicative ».
 > État : **bâti le 2026-09-25** (« basculer » ; le « resserrer », §4, reste à faire), contredit par vitruve le 2026-09-25 (trois objections

@@ -611,41 +611,11 @@ serait vert pour une autre raison que celle annoncée.
 > et l'écran Admin › Rôles écrivait une table que personne ne lisait. Plan :
 > [`plan-roles-lus-en-base.md`](plan-roles-lus-en-base.md).
 
-**État réel au 2026-09-26** — la migration
-`20260926120000_les_roles_se_lisent_en_base` et le code déployé avec elle :
-
-- la fiche porte `staff_users.role_key`, clé étrangère vers
-  `staff_role_definitions(key)` ; `role` (l'enum) devient nullable et n'est
-  plus qu'une valeur de transition, `NULL` pour un rôle créé à l'écran. Un
-  déclencheur recopie `role` dans `role_key` quand un code d'avant la bascule
-  écrit l'enum seul ;
-- le résolveur (`apps/lfd-api/src/staff/permissions/prisma-staff-access.resolver.ts`) lit, dans la même requête,
-  la fiche, sa définition et ses écarts, et passe par `resolveHeldRole`
-  (`apps/lfd-api/src/staff/permissions/infrastructure/held-role.ts`) — la même fonction que
-  `/admin/me` et la liste de l'annuaire. Définition archivée ou `grants`
-  illisibles : aucun droit par le rôle, les écarts seuls ; une ligne illisible
-  est journalisée avec sa clé et ne fait tomber que ses porteurs ;
-- **la fiche racine** (celle de `BOOTSTRAP_ADMIN_EMAIL`), une fois trouvée par
-  son `sub` ou par une adresse **vérifiée** encore libre, résout toujours
-  `superadmin` — jamais sur la seule revendication `email` d'un jeton ;
-- toute écriture de définition vide le cache d'accès de l'instance ; une
-  édition prend effet tout de suite là, en trente secondes au plus ailleurs ;
-- attribuer un rôle confronte la clé aux définitions **actives** sous
-  `FOR SHARE`, archiver verrouille la définition sous `FOR UPDATE` et compte
-  les porteurs sur `role_key`, dans la même transaction ;
-- la politique (§6) ne tient plus sur la chaîne `"admin"` mais sur
-  `staff_access:write` : il reste au moins une personne non suspendue qui le
-  tient par son rôle, la racine mise à part, qu'on modifie une fiche, un rôle
-  ou un écart ; et on ne se le retire pas à soi-même.
-
-**Ce qui reste** : le « resserrer » (plan §4) — `role_key NOT NULL`, la
-colonne `role`, le déclencheur et le repli sur `ROLE_GRANTS` (clé nulle)
-disparaissent un déploiement plus tard. Jusque-là, `ROLE_GRANTS` sème les
-définitions d'une base neuve et sert au repli ; les migrations de droits
-écrivent encore les deux.
-
-⚠️ **Le retour arrière se ferme à la première attribution d'un rôle hors
-enum** : cette fiche a `role = NULL`, que l'ancien code ne sait pas lire.
+**Le stockage et la résolution des droits sont décrits dans
+[`stockage-et-resolution-des-droits.md`](stockage-et-resolution-des-droits.md)**
+(2026-09-26) : les tables, l'ordre de résolution, la porte de secours, le
+cache, les invariants de l'annuaire, l'ajout d'un droit, et le « resserrer »
+encore en suspens.
 
 ### 13.2 Le départ d'un membre n'a pas encore son geste
 
