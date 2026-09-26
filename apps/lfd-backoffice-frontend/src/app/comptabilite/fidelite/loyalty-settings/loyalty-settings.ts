@@ -34,7 +34,7 @@ function positiveInt(value: number | null): number | null {
 
 /**
  * **Le réglage du programme de fidélité** : combien de points font un palier,
- * ce que vaut un palier en euros TTC, quelles clientèles gagnent, et combien de
+ * ce que vaut un palier en euros **hors taxe**, quelles clientèles gagnent, et combien de
  * temps vit un bon.
  *
  * Tant que rien n'est enregistré, le programme est **fermé** (plan D5) : aucune

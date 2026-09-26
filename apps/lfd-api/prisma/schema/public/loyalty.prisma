@@ -43,7 +43,7 @@ model LoyaltySettings {
   /// Toujours `default` (contrainte `CHECK`).
   id String @id
 
-  /// Le ratio : `pointsPerStep` points valent `stepValueCents` centimes TTC.
+  /// Le ratio : `pointsPerStep` points valent `stepValueCents` centimes HORS TAXE, l'unité de l'assiette du gain.
   pointsPerStep  Int @map("points_per_step")
   stepValueCents Int @map("step_value_cents")
 

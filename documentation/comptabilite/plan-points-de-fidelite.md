@@ -421,3 +421,15 @@ reliquat, qui convertit, la date limite et l'ordre d'ouverture.
   - cycle du bon arrêté à `available` avant D6 ;
   - un bon réservé n'expire pas ;
   - les chemins vers `paid` sont couverts par le rattrapage.
+
+## 9. La valeur du bon est hors taxe (2026-09-26)
+
+> « je vote pour le calcul qui est le plus cohérent pour nous, au pire ça fait
+> un peu plus de réduc pour le client » — Hugo.
+
+`stepValueCents` est **HT**, comme l'assiette du gain. Ce choix remplace, dans
+D5 et D6, tout ce qui parle d'un bon « TTC » et de la recherche
+`htDiscountForTtcTarget` : en traitement A, la valeur du bon entre telle quelle
+comme remise HT. Le client gagne la TVA en plus, par exemple 5,28 € de baisse
+pour un bon de 5 € HT à 5,5 %. L'affichage devra montrer cette baisse réelle.
+Rien n'était déployé : aucune donnée n'est à convertir.

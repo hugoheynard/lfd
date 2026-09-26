@@ -30,13 +30,13 @@
           [(value)]="pointsPerStep"
         />
         <fold-input
-          label="Valeur d'un palier (€ TTC)"
+          label="Valeur d'un palier (€ HT)"
           placeholder="5,00"
           [readOnly]="!canWrite()"
           [hint]="
             stepValueInvalid()
               ? 'Un montant positif, au centime près.'
-              : 'Le montant du bon d\'achat pour un palier.'
+              : 'Le montant hors taxe du bon d\'achat pour un palier : le client y gagne en plus la TVA.'
           "
           [(value)]="stepValueInput"
         />

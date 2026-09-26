@@ -47,7 +47,7 @@ flowchart LR
 | **titulaire**           | à qui appartiennent les points : la **société** pour une commande pro, la **personne** pour le public | `LoyaltyHolder` (`company` / `user`) |
 | **grand livre**         | la suite des mouvements de points d'un titulaire ; on n'y efface rien                                 | `loyalty_ledger_entries`             |
 | **solde**               | la **somme** du grand livre — aucune colonne ne la stocke                                             | `LoyaltyAccount`                     |
-| **palier**              | l'unité de conversion : `pointsPerStep` points valent `stepValueCents` centimes TTC                   | `LoyaltyRatio`                       |
+| **palier**              | l'unité de conversion : `pointsPerStep` points valent `stepValueCents` centimes **HT**                | `LoyaltyRatio`                       |
 | **bon d'achat**         | un montant fixe en euros, issu d'une conversion, qui fige son ratio                                   | `LoyaltyVoucher`                     |
 | **commande définitive** | une commande à la fois `fulfilled` et `paid`                                                          | `CompletedOrderReader`               |
 
@@ -62,7 +62,7 @@ migration `20260926160000_la_fidelite`, purement additive).
 | ----------------------------------- | ------------------------------------------------------------------------------ |
 | `id`                                | toujours `'default'` (`CHECK`)                                                 |
 | `points_per_step`                   | points d'un palier, entier > 0                                                 |
-| `step_value_cents`                  | valeur TTC d'un palier, entier > 0                                             |
+| `step_value_cents`                  | valeur **HT** d'un palier, entier > 0                                          |
 | `open_to_public`                    | la clientèle publique gagne et convertit                                       |
 | `open_to_pro`                       | la clientèle pro — **refusée à l'écriture** (§7)                               |
 | `voucher_validity_days`             | durée de validité d'un bon (365 au premier enregistrement proposé par l'écran) |
@@ -266,22 +266,24 @@ reprend.
 
 ### La TVA du bon : l'état de la question
 
-| Traitement            | Effet sur la TVA                  | Ce que le code devra faire                                             |
-| --------------------- | --------------------------------- | ---------------------------------------------------------------------- |
-| **rabais**            | réduit la base, ventilée par taux | une remise HT de plus dans `ventilateVat`, cherchée pour une cible TTC |
-| **moyen de paiement** | TVA sur le prix plein             | un second règlement à côté de Stripe, et un reste à payer              |
+| Traitement            | Effet sur la TVA                  | Ce que le code devra faire                                                     |
+| --------------------- | --------------------------------- | ------------------------------------------------------------------------------ |
+| **rabais**            | réduit la base, ventilée par taux | la valeur du bon, déjà HT, entre telle quelle comme remise dans `ventilateVat` |
+| **moyen de paiement** | TVA sur le prix plein             | un second règlement à côté de Stripe, et un reste à payer                      |
 
 Un bon **offert** est d'ordinaire traité comme un rabais ; un bon **vendu**
 comme un moyen de paiement. Les nôtres ne sont jamais vendus. **À faire
 confirmer par le cabinet comptable** : c'est irréversible pour les factures
 émises.
 
-`ventilateVat` fait déjà le calcul d'un rabais : retrait au prorata du poids HT
-de chaque taux, un arrondi par taux. Il manque la fonction qui trouve la
-remise HT dont l'effet TTC atteint une cible sans la dépasser. Exemple vérifié
-à la main le 2026-09-26 : pour « −4 € » sur une tarte à 15 € (5,5 %) et un
-chocolat à 5 € (20 %), la proportion directe donne 3,68 € HT, soit 3,99 € de
-baisse ; 3,69 € HT donne exactement 4,00 €.
+**Le bon vaut un montant hors taxe** (Hugo, 2026-09-26), dans la même unité
+que l'assiette du gain : un point coûte ce qu'il a rapporté. En rabais, il
+entre donc tel quel dans `ventilateVat`, qui le retire au prorata du poids HT
+de chaque taux avec un arrondi par taux. Aucune conversion depuis le TTC n'est
+nécessaire. Le client y gagne la TVA en plus : un bon de 5 € HT baisse son
+total de 5,28 € sur de la pâtisserie à 5,5 %, et de 6 € sur un article à 20 %.
+L'écran de paiement devra donc afficher la **baisse réelle** de son total, pas
+les 5 € HT.
 
 ## 9. Le journal
 

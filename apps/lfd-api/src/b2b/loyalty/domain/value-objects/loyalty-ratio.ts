@@ -2,7 +2,9 @@ import { InvalidLoyaltyRatioError } from "../errors/loyalty-errors.js";
 
 /**
  * **Le ratio de conversion** : `pointsPerStep` points valent `stepValueCents`
- * centimes TTC. Des entiers, toujours — un bon vaut `n × stepValueCents` et
+ * centimes **hors taxe** — la même unité que l'assiette du gain, pour qu'un
+ * point coûte ce qu'il a rapporté (Hugo, 2026-09-26). Le client y gagne en
+ * plus la TVA : un bon de 5 € HT baisse son total de 5,28 € à 5,5 %. Des entiers, toujours — un bon vaut `n × stepValueCents` et
  * coûte `n × pointsPerStep` (plan D5) : aucune division, donc aucun arrondi.
  */
 export class LoyaltyRatio {
