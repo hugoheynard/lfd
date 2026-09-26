@@ -1,0 +1,19 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg);
+}
+
+.said {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-lg);
+  border-top: 1px solid var(--fold-color-border);
+}

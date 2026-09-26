@@ -1,0 +1,38 @@
+<fold-panel-header title="Annuler le bon" [subtitle]="subtitle()" />
+
+<div class="body">
+  <p class="said">
+    Le bon ne pourra plus être utilisé, et ses <strong>{{ refunded() }} points</strong> reviennent
+    au titulaire. L'annulation est définitive.
+  </p>
+
+  <fold-textarea
+    label="Motif"
+    required
+    [rows]="4"
+    placeholder="Demande du client, bon émis par erreur…"
+    [hint]="
+      tooLong()
+        ? 'Au plus ' + maxLength + ' caractères.'
+        : 'Gardé avec le bon. Au plus ' + maxLength + ' caractères.'
+    "
+    [(value)]="reason"
+  />
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Retour</button>
+  <button
+    foldButton
+    intent="danger"
+    [disabled]="!canSubmit()"
+    [loading]="saving()"
+    (click)="submit()"
+  >
+    Annuler le bon
+  </button>
+</footer>

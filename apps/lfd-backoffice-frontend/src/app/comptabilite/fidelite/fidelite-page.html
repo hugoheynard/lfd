@@ -1,0 +1,33 @@
+<fold-page-layout title="Fidélité" separator>
+  <p description>
+    Les clients gagnent des <strong>points</strong> sur leurs commandes remises et réglées, puis les
+    convertissent en <strong>bon d'achat</strong>. Le ratio est lu à la conversion et figé sur le
+    bon.
+  </p>
+
+  <fold-nav-layout>
+    <fold-tabs
+      tabNav
+      #bar="foldTabs"
+      size="compact"
+      activeStyle="fill"
+      background="surface"
+      [tabs]="tabs"
+      [(activeKey)]="tab"
+    />
+
+    <fold-tab-panel [tabs]="bar" [key]="tab()">
+      @switch (tab()) {
+        @case ('settings') {
+          <app-loyalty-settings />
+        }
+        @case ('balances') {
+          <app-loyalty-balances />
+        }
+        @case ('vouchers') {
+          <app-loyalty-vouchers />
+        }
+      }
+    </fold-tab-panel>
+  </fold-nav-layout>
+</fold-page-layout>

@@ -1,0 +1,41 @@
+<fold-panel-header title="Ajuster les points" [subtitle]="holderLabel()" />
+
+<div class="body">
+  <p class="said">
+    Solde actuel&nbsp;: <strong>{{ currentBalance() }} points</strong>. L'ajustement s'inscrit au
+    grand livre avec son motif&nbsp;; il ne s'efface pas, il se corrige par un autre ajustement.
+  </p>
+
+  <fold-number-input
+    label="Points"
+    integer
+    required
+    placeholder="+500 ou −200"
+    [hint]="pointsHint()"
+    [(value)]="points"
+  />
+
+  <fold-textarea
+    label="Motif"
+    required
+    [rows]="4"
+    placeholder="Geste commercial, commande mal créditée, erreur de saisie…"
+    [hint]="
+      tooLong()
+        ? 'Au plus ' + maxLength + ' caractères.'
+        : 'Lu par qui cherchera d\'où vient ce solde. Au plus ' + maxLength + ' caractères.'
+    "
+    [(value)]="reason"
+  />
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" [loading]="saving()" (click)="submit()">
+    Ajuster
+  </button>
+</footer>

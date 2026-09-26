@@ -541,9 +541,9 @@ export const ADMIN_VIEWS: readonly WorkspaceView[] = [
 /**
  * Les vues de la **Comptabilité**.
  *
- * Une seule pour l'instant, et elle porte quand même son droit : le jour où les
- * factures et les lots de prélèvement arrivent, ils ne relèveront pas forcément
- * du même mur — émettre une facture et déposer un lot à la banque ne sont pas
+ * Chaque vue porte son droit, même quand toutes partagent le même aujourd'hui :
+ * le jour où les factures et les lots de prélèvement arrivent, ils ne relèveront
+ * pas forcément du même mur — émettre une facture et déposer un lot à la banque ne sont pas
  * le même geste. Le déclarer maintenant coûte une ligne ; le rattraper après
  * coup demande de rouvrir chaque entrée.
  */
@@ -576,6 +576,13 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     label: 'Liens de paiement',
     link: '/comptabilite/liens-de-paiement',
     icon: 'credit-card',
+    needs: 'b2b_accounting:read',
+  },
+  {
+    key: 'fidelite',
+    label: 'Fidélité',
+    link: '/comptabilite/fidelite',
+    icon: 'gift',
     needs: 'b2b_accounting:read',
   },
   {

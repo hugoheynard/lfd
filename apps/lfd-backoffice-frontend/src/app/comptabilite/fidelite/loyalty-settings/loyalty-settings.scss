@@ -1,0 +1,23 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* Les deux moitiés du ratio se lisent côte à côte : « N points = X € ». */
+.ratio {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--fold-space-md);
+}
+
+.clienteles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Un bouton garde sa largeur naturelle au lieu de courir sur la carte. */
+.row {
+  display: flex;
+}
