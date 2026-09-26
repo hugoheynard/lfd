@@ -256,6 +256,26 @@ async function triggerMediaSweep(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et déclenche la nuit de la fidélité : le rattrapage des
+ * points qu'aucun abonné n'a crédités, puis l'expiration des bons échus.
+ *
+ * Même porte et même jeton que le recompute. Sans ce passage, un crédit raté
+ * par un abonné (`BackgroundWork` avale ses échecs) ne serait jamais rattrapé.
+ */
+async function triggerLoyaltySweep(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await backend(env).fetch(
+    new Request("https://internal/admin/loyalty/sweep", {
+      method: "POST",
+      headers: { "x-lfc-recompute-token": token },
+    }),
+  );
+}
+
+/**
  * L'expression exacte du cron de rafraîchissement, telle qu'écrite dans
  * `wrangler.jsonc`. Cloudflare ne transmet que cette chaîne pour distinguer les
  * déclenchements : elle doit rester **identique des deux côtés**, sinon le ping
@@ -270,6 +290,13 @@ const KEEP_WARM_CRON = "*/5 * * * *";
  * déclenchements, et un écart ferait passer le ramassage pour un recompute.
  */
 const MEDIA_SWEEP_CRON = "30 3 * * *";
+
+/**
+ * La nuit de la fidélité — une fois par jour, avant le ramassage des visuels
+ * et loin des commandes. Même règle : identique à `wrangler.jsonc`, sinon elle
+ * partirait en recompute.
+ */
+const LOYALTY_SWEEP_CRON = "0 2 * * *";
 
 /**
  * Garde l'instance chaude en la sollicitant plus souvent que son `sleepAfter`.
@@ -300,6 +327,8 @@ function dispatchCron(cron: string, env: Env): Promise<void> {
       return keepWarm(env);
     case MEDIA_SWEEP_CRON:
       return triggerMediaSweep(env);
+    case LOYALTY_SWEEP_CRON:
+      return triggerLoyaltySweep(env);
     default:
       return triggerRecompute(env);
   }
