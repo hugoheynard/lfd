@@ -108,8 +108,8 @@ sur le bon.
   société, avec le droit d'y commander. La société est celle de **l'espace
   courant**, pas celle de la personne : une personne peut appartenir à
   plusieurs sociétés. Le rattachement est revérifié sous verrou. Une personne
-  qui quitte la société ne part pas avec ses bons : ils sont à la société. ⚠️ **Question** (§5) : faut-il le
-  réserver au titulaire du compte ?
+  qui quitte la société ne part pas avec ses bons : ils sont à la société. Décidé par Hugo :
+  **tout le monde**, pas seulement le titulaire du compte.
 
 ### D2 — Le grand livre
 
@@ -196,8 +196,9 @@ Nouvelle table `loyalty_settings`, clé fixe `id = 'default'` :
 
 - `pointsPerStep` (ex. 1 000) et `stepValueCents` (ex. 500, TTC) ;
 - `openToPublic` (vrai) et `openToPro` (faux) ;
-- `voucherValidityDays` (nullable : un bon sans date limite si nul, question
-  §5).
+- `voucherValidityDays` : **365**, décidé par Hugo (un an). Colonne non
+  nulle, sans défaut en base : sa valeur est écrite au premier enregistrement
+  de l'écran.
 
 **Tant que la ligne n'existe pas, le programme est fermé.** L'écran est
 **Comptabilité › Fidélité**, sous le droit `b2b_accounting`. Fait de journal :
@@ -251,10 +252,16 @@ Ce qui en dépend :
    **baisse de TTC réellement obtenue** : 4,99 € possible, 5,01 € jamais.
 4. `ventilateVat` reçoit la remise du bon à part de `discountCents`.
 
-**Question liée** (§5) : un bon plus gros que le panier. Soit on le
-refuse, soit on le consomme entièrement et la différence est perdue, soit on
-émet un bon de reliquat. Le reliquat se bâtit simplement dans les deux
-traitements, mais c'est une décision.
+**Un bon plus gros que le panier donne un reliquat** (décidé par Hugo). La
+différence devient un **nouveau bon** du même titulaire. Il porte
+`parent_voucher_id` et garde **la date limite du bon d'origine** : sinon,
+un reliquat en chaîne prolongerait indéfiniment la validité.
+
+🔴 **Le reliquat n'est pas émis à la passation.** Il est émis quand la commande
+devient définitive, c'est-à-dire `fulfilled` et `paid`, par le même abonné et
+le même rattrapage idempotent que le gain de points (D3), avec l'unicité
+`(parent_voucher_id)`. Émis à la passation, il pourrait être dépensé avant
+qu'une annulation ne rende le bon d'origine : on aurait alors les deux.
 
 ### D7 — Le cycle d'un bon
 
@@ -262,7 +269,7 @@ traitements, mais c'est une décision.
 | ----------- | --------------------------------------------------- | -------------------------------------------------------------------- |
 | `available` | conversion, ou libération                           | passation (`reserved`), date limite (`expired`), staff (`cancelled`) |
 | `reserved`  | la passation, sous le verrou du **titulaire**       | l'annulation de la commande (`available`)                            |
-| `expired`   | date limite dépassée, **seulement** si `available`  | —                                                                    |
+| `expired`   | un an écoulé, **seulement** si `available`          | —                                                                    |
 | `cancelled` | geste du staff motivé, **seulement** si `available` | —                                                                    |
 
 - **Pas d'état `used`.** Un bon `reserved` sur une commande qui vit est
@@ -309,19 +316,18 @@ L'imputation dépend de D6 : avec le traitement B, le bon devient un
 règlement, et peut laisser un reliquat. Figer `reserved` avant de connaître la
 réponse coûterait une migration de plus.
 
-⚠️ **À décider** : ouvrir E1 seulement quand C est prêt, pour ne pas
-distribuer des bons qu'on ne peut pas encore utiliser.
+**Décidé par Hugo : E1 attend C.** On ne distribue pas de bons qu'on ne
+pourrait pas encore utiliser. A, B et D peuvent être bâtis et livrés
+programme fermé.
 
 ## 5. Questions ouvertes
 
 1. **D6 — au cabinet comptable** : un bon d'achat gratuit, issu de points
-   de fidélité, est-il un rabais (A) ou un moyen de paiement (B) ?
-2. D6 — que faire d'un bon plus gros que le panier : le refuser, perdre la
-   différence, ou émettre un bon de reliquat ?
-3. D1 — chez un pro, qui a le droit de convertir : toute personne qui commande,
-   ou seulement le titulaire du compte ?
-4. D5 — les bons ont-ils une date limite ?
-5. §4 — ouvrir la conversion avant que les bons soient utilisables ?
+   de fidélité, est-il un rabais (A) ou un moyen de paiement (B) ? Le lot C
+   attend la réponse.
+
+Tranchées le 2026-09-26 (§7) : l'assiette, le titulaire, le bon d'achat, le
+reliquat, qui convertit, la date limite et l'ordre d'ouverture.
 
 ## 6. Ce que la première contradiction a changé (2026-09-26)
 
@@ -363,6 +369,11 @@ distribuer des bons qu'on ne peut pas encore utiliser.
   l'ancien `restored` : un échec de commande libère le bon, pas les points. Il
   a aussi supprimé le 409 « barème changé » : le ratio est figé sur le bon au
   moment de la conversion.
+
+- **Second tour** : un bon trop gros donne un **reliquat** (D6), **toute
+  personne** qui commande pour la société peut convertir (D1), un bon vaut
+  **un an** (D5), et la conversion **attend** que les bons soient
+  utilisables (§4).
 
 ## 8. Ce que la seconde contradiction a changé (2026-09-26)
 
