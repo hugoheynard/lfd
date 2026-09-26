@@ -68,8 +68,8 @@ public (`cancelled`, §5) doit donc **libérer le bon réservé**, dans sa propr
 transaction. Tant que le lot C n'est pas bâti, il n'y a rien à libérer : ce
 plan peut être bâti avant lui.
 
-**Il doit toujours repasser par `vitruve`** avant d'être bâti, et Hugo doit
-trancher les questions du §6.
+**Il est repassé par `vitruve`** le 2026-09-26 (§9 bis), et les questions du §6
+sont toutes tranchées (2026-09-26).
 
 ---
 
@@ -260,11 +260,11 @@ qu'il existe pour attraper.
 flowchart TD
     T1["le client clique<br/>« Abandonner »"] --> M
     T2["la clôture arrête<br/>la journée"] --> M
-    M["annuler l'intention chez Stripe"] --> Q{"clientèle ?"}
-    Q -->|public| CAN["status = cancelled"]
-    Q -->|pro| FAIL["paymentStatus = failed<br/>+ OrderPaymentFailedEvent"]
+    M["annuler l'intention chez Stripe<br/>(tentée, jamais bloquante)"] --> CAN["status = cancelled<br/>+ paymentStatus = failed<br/>+ OrderPaymentFailedEvent (cause)"]
+    CAN --> Q{"clientèle ?"}
+    Q -->|pro| FAIL["pro"]
     FAIL --> BELL["🔔 la cloche sonne"]
-    FAIL --> MAIL["✉️ le client est prévenu"]
+    CAN --> MAIL["✉️ le client est prévenu<br/>(sauf s'il a abandonné lui-même)"]
 ```
 
 🔴 **La cloche s'accroche à l'ÉVÉNEMENT, pas à l'appelant.** Un abonné
@@ -389,14 +389,14 @@ confirmer**.
 | **Q5** | **Une commande sans jour de retrait est rattachée à son jour de passation** pour la clôture : aucune commande n'échappe au balayage.                                                                                                                                                                                                                                |
 | **Q6** | **On prévient le commercial** qu'une commande saisie par l'équipe, avec lien de paiement, n'est toujours pas réglée. ⚠️ **Quand**, ce n'est pas dit : proposé **à l'heure limite de commande de la journée** (`architecture-heure-limite-de-commande.md`), assez tôt pour relancer le client avant la fournée. La cloche du back-office, visible de tous, comme D4. |
 
-## 6. 🔵 Les questions ouvertes
+## 6. Les questions — toutes tranchées
 
-Q1 à Q6 sont tranchées (§5 bis). **Il en reste une**, née de la seconde
-contradiction (§9 bis, B3) :
+Q1 à Q6 le sont au §5 bis. La dernière est née de la seconde contradiction
+(§9 bis, B3) :
 
-| #      | La question                                                                                                                                                                                                                                                                                             | Proposé                                                                                                                                                                            |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Q7** | À la clôture, une commande **pro** non réglée : `failed` seule (D4, elle reste `placed`), ou `cancelled` + `failed` comme une commande publique ? Après la clôture, elle ne sera ni produite ni payable (D3) : en `placed`, elle traîne dans la file et dans « à reprendre » sans pouvoir être reprise. | **`cancelled` + `failed`, et la cloche sonne** : le commercial la ressaisit s'il le faut. D4 garde son sens pour un refus **en journée**, qui reste reprenable jusqu'à la clôture. |
+| #      | Décision (Hugo, 2026-09-26 : « Q7 je pense tu as raison »)                                                                                                                                                                                                                                                        |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Q7** | **À la clôture, une commande pro non réglée devient `cancelled` + `failed`, comme une commande publique, et la cloche sonne** (cause `day_closed`) : le commercial la ressaisit s'il le faut. D4 garde son sens **en journée** : une carte pro refusée reste `placed` + `failed`, reprenable, jusqu'à la clôture. |
 
 ## 7. Ce que ce plan ne fait pas
 
@@ -513,8 +513,8 @@ passe avant. `GetOrderPaymentHandler` relit l'intention **chez Stripe** et
 refuse une intention `canceled` ou `succeeded`, ainsi que toute commande
 `cancelled`. Une commande `failed` n'est donc payable que **tant que sa
 journée n'est pas close**, et aucune nouvelle intention n'est jamais créée.
-Après la clôture, elle n'est plus payable (D3). Reste à savoir ce qu'elle
-devient : c'est **Q7** (§6).
+Après la clôture, elle n'est plus payable (D3). Elle est annulée, et la cloche
+sonne : c'est **Q7** (§6).
 
 **Sérieux** :
 
