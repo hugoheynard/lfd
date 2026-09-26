@@ -10,6 +10,67 @@
 > chaque objection est devenue. **Il doit repasser à `vitruve` avant d'être
 > bâti** — sa forme a changé sur trois décisions prises après l'audit.
 
+## 0. Repris le 2026-09-26 — ce qui a changé depuis le 22
+
+Le plan a été rouvert contre le code de `dev` (`c10fee286`). **Ce qu'il affirme
+de l'existant tient**, à trois nuances près et deux faits nouveaux.
+
+**Toujours vrai (vérifié le 2026-09-26)** :
+
+- la sortie de `/reglement/:id` (`later()`, `fr.ts:310`) ne marque rien, et
+  elle est affichée même quand Stripe ne s'est pas chargé ;
+- `order-rows.ts:249` affiche « Carte » pour une commande `pending` ;
+- personne n'écrit `cancelled` ;
+- la règle de production porte encore l'exception pro
+  (`production-plan.ts:98-106`) ;
+- les deux refus de la clôture existent (`production-errors.ts:33`, `:50`) ;
+- il n'y a pas de `cancelIntent` sur le port de paiement ;
+- `OrderPaymentFailedEvent` ne porte pas de cause ;
+- le rejeu de passation ne regarde que `pending` (`place-order.handler.ts:196`) ;
+- la commande saisie par l'équipe en lien reste `pending` ;
+- l'architecture du règlement dit toujours « on restreint au public » (§6).
+
+**Nuances** :
+
+- `GetOrderPaymentHandler` vérifie bien `paymentStatus = pending` avant de
+  servir le secret, mais **en base, pas chez Stripe**. Le trou du §5 (Stripe
+  annulé, base toujours `pending`) tient donc tel quel.
+- Le mail au client sur un refus **existe** désormais
+  (`send-payment-failed-mail.handler.ts`, gabarit `customer.payment-failed`).
+  Q4 porte donc sur un gabarit déjà en service.
+- `stripe` est en `^22.4.0` dans `apps/lfd-api/package.json`, et non « épinglé ».
+  La lecture du SDK du §3 reste valable pour cette version.
+
+**🔴 Fait nouveau 1 — corrigé le 2026-09-26 (`3b8598fdf`).** `settle` ne
+basculait à `paid` que depuis `pending`. Or un refus de carte rend l'intention
+à `requires_payment_method` : le client peut saisir une autre carte sur la
+même page. Si elle passait, **il était débité, et la commande restait
+`failed`**, exclue de la production. Un encaissement part désormais d'une
+attente ou d'un refus. Le test est `test/order-payment-retry.e2e-spec.ts`.
+⚠️ **À lire en production par Hugo** : les commandes `failed` dont
+l'intention Stripe est `succeeded`. Ce sont des clients débités d'une commande
+jamais produite.
+
+**🔴 Fait nouveau 2 — une contradiction sur `failed`.** La refonte des liens
+de paiement (2026-09-25) traite `failed` comme « refusé et à reprendre »
+(`payment-link.ts`, `AWAITING_CARD`), et renvoie un lien vers
+`/commandes/:id/regler`. Mais `GET /orders/:id/payment` **refuse** une commande
+`failed` (`OrderNotPayableError`). Un lien envoyé pour une commande refusée
+mène donc à un refus. Or D4 fait justement passer un pro à `failed` avant de
+lui renvoyer un lien. **Il faut que la page de règlement accepte `failed`**, ce
+que Stripe permet, puisque l'intention est revenue à
+`requires_payment_method`. C'est le nouveau lot 3 bis (§8).
+
+**Fait nouveau 3 — la fidélité en dépend.** Le lot C des points de fidélité
+réservera un bon à la passation, et seule l'annulation le libérera
+(`documentation/comptabilite/plan-points-de-fidelite.md`, D7). L'abandon
+public (`cancelled`, §5) doit donc **libérer le bon réservé**, dans sa propre
+transaction. Tant que le lot C n'est pas bâti, il n'y a rien à libérer : ce
+plan peut être bâti avant lui.
+
+**Il doit toujours repasser par `vitruve`** avant d'être bâti, et Hugo doit
+trancher les questions du §6.
+
 ---
 
 ## 1. Le constat
@@ -347,18 +408,19 @@ confirmer**.
 
 ## 8. Les lots
 
-| Lot   | Contenu                                                                           | Bloque par |
-| ----- | --------------------------------------------------------------------------------- | ---------- |
-| **0** | **Mesurer** ce que la tranche 1 casse réellement (§4) — aucun code                | —          |
-| **1** | La règle : `plan-filter.ts`, les signatures, les JSDoc datés                      | 0          |
-| **2** | Le triage des e2e tombées, famille par famille                                    | 1          |
-| **3** | `cancelIntent` + les **six issues** traduites (§5)                                | —          |
-| **4** | `markAbandoned` / `failAtClosing`, la commande, le handler, la route, le mur (Q2) | 3          |
-| **5** | La cause sur `OrderPaymentFailedEvent` + l'abonné cloche + le catalogue des faits | 4          |
-| **6** | La clôture : balayer avant de compter (Q1)                                        | 3, 4       |
-| **7** | `GetOrderPaymentHandler` refuse une intention non payable (§5)                    | 3          |
-| **8** | Le front : libellé, confirmation, appel **tenté**, navigation inconditionnelle    | 4          |
-| **9** | Les docs et les justifications datées (§10)                                       | 1–8        |
+| Lot       | Contenu                                                                           | Bloque par |
+| --------- | --------------------------------------------------------------------------------- | ---------- |
+| **0**     | **Mesurer** ce que la tranche 1 casse réellement (§4) — aucun code                | —          |
+| **1**     | La règle : `plan-filter.ts`, les signatures, les JSDoc datés                      | 0          |
+| **2**     | Le triage des e2e tombées, famille par famille                                    | 1          |
+| **3**     | `cancelIntent` + les **six issues** traduites (§5)                                | —          |
+| **3 bis** | la page de règlement accepte une commande `failed` (§0, fait nouveau 2)           | —          |
+| **4**     | `markAbandoned` / `failAtClosing`, la commande, le handler, la route, le mur (Q2) | 3          |
+| **5**     | La cause sur `OrderPaymentFailedEvent` + l'abonné cloche + le catalogue des faits | 4          |
+| **6**     | La clôture : balayer avant de compter (Q1)                                        | 3, 4       |
+| **7**     | `GetOrderPaymentHandler` refuse une intention non payable (§5)                    | 3          |
+| **8**     | Le front : libellé, confirmation, appel **tenté**, navigation inconditionnelle    | 4          |
+| **9**     | Les docs et les justifications datées (§10)                                       | 1–8        |
 
 ⚠️ **Le lot 5 touche `packages/contracts`** — catalogue des faits, spec de
 fermeture, **et** la phrase du back-office. La règle « la racine dès que
