@@ -22,6 +22,10 @@ import { FailedSettlementReader } from "./domain/ports/failed-settlement.reader.
 import { PrismaFailedSettlementReader } from "./infrastructure/prisma-failed-settlement.reader.js";
 import { UnsettledSettlementReader } from "./domain/ports/unsettled-settlement.reader.js";
 import { PrismaUnsettledSettlementReader } from "./infrastructure/prisma-unsettled-settlement.reader.js";
+import { UnpaidLinkOrderReader } from "./domain/ports/unpaid-link-order.reader.js";
+import { PrismaUnpaidLinkOrderReader } from "./infrastructure/prisma-unpaid-link-order.reader.js";
+import { SendSettlementRemindersHandler } from "./application/commands/send-settlement-reminders.handler.js";
+import { SettlementRemindersController } from "./http/admin-settlement-reminders.controller.js";
 import { CancelledOrderPaymentReader } from "./domain/ports/cancelled-order-payment.reader.js";
 import { PrismaCancelledOrderPaymentReader } from "./infrastructure/prisma-cancelled-order-payment.reader.js";
 import { RingRefundDue } from "./application/handlers/ring-refund-due.handler.js";
@@ -173,6 +177,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Murée, elle : un panier a un propriétaire. Rangée près de la vitrine
     // parce qu'elle sert le même écran, pas parce qu'elle a le même public.
     ShopCartController,
+    // Porte machine-à-machine (jeton du Cron Trigger), pas une surface staff :
+    // le rappel horaire des liens de paiement non réglés (plan d'abandon, Q6).
+    SettlementRemindersController,
   ],
   providers: [
     OrderDrafting,
@@ -223,6 +230,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // `ProductionFeedModule`.
     PendingSettlementSweep,
     { provide: UnsettledSettlementReader, useClass: PrismaUnsettledSettlementReader },
+    SendSettlementRemindersHandler,
+    { provide: UnpaidLinkOrderReader, useClass: PrismaUnpaidLinkOrderReader },
     // Son prix : une intention restée vivante peut être payée sur une commande
     // annulée. La base ne la rouvre pas ; la cloche dit « à rembourser » (6 bis).
     RingRefundDue,

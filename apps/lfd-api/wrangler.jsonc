@@ -146,13 +146,27 @@
   //    points que les abonnés ont manqués, puis expire les bons échus. Recopié
   //    dans `LOYALTY_SWEEP_CRON` (worker.ts), à l'identique.
   //
+  // 5. `0 *` — RAPPEL DE RÈGLEMENT (POST /admin/orders/settlement-reminders) :
+  //    toutes les heures, prévient le commercial d'une commande saisie par
+  //    l'équipe dont le lien de paiement n'est pas réglé à l'heure limite de sa
+  //    journée. Idempotent — une commande ne sonne qu'une fois. Recopié dans
+  //    `SETTLEMENT_REMINDERS_CRON` (worker.ts), à l'identique.
+  //
   // ⚠️ Les crons Cloudflare sont en **UTC**. On vise ~04h/12h/20h Europe/Paris ;
   // avec le décalage saisonnier (UTC+1 hiver / UTC+2 été), 03/11/19 UTC tombe à
   // 04/12/20 en hiver et 05/13/21 en été — une dérive d'une heure sans importance
   // pour un batch dont la fraîcheur assumée est ≤ ~8 h. Le jeton se pose par
   // `wrangler secret put RECOMPUTE_TOKEN` (jamais commité).
   "triggers": {
-    "crons": ["*/5 * * * *", "0 3 * * *", "0 11 * * *", "0 19 * * *", "30 3 * * *", "0 2 * * *"],
+    "crons": [
+      "*/5 * * * *",
+      "0 3 * * *",
+      "0 11 * * *",
+      "0 19 * * *",
+      "30 3 * * *",
+      "0 2 * * *",
+      "0 * * * *",
+    ],
   },
 
   // ── Observabilité ────────────────────────────────────────────────────────

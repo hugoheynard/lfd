@@ -276,6 +276,26 @@ async function triggerLoyaltySweep(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et déclenche le rappel des liens de paiement non réglés
+ * à l'heure limite (plan `documentation/order/plan-abandon-du-reglement.md`, Q6).
+ *
+ * Même porte et même jeton que le recompute. La passe est idempotente : un tour
+ * manqué est rattrapé au suivant, un tour rejoué ne sonne pas deux fois.
+ */
+async function triggerSettlementReminders(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await backend(env).fetch(
+    new Request("https://internal/admin/orders/settlement-reminders", {
+      method: "POST",
+      headers: { "x-lfc-recompute-token": token },
+    }),
+  );
+}
+
+/**
  * L'expression exacte du cron de rafraîchissement, telle qu'écrite dans
  * `wrangler.jsonc`. Cloudflare ne transmet que cette chaîne pour distinguer les
  * déclenchements : elle doit rester **identique des deux côtés**, sinon le ping
@@ -297,6 +317,14 @@ const MEDIA_SWEEP_CRON = "30 3 * * *";
  * partirait en recompute.
  */
 const LOYALTY_SWEEP_CRON = "0 2 * * *";
+
+/**
+ * Le rappel de règlement — toutes les heures, pile : l'heure limite se règle à
+ * la minute, et une heure de retard au plus laisse encore le temps de relancer
+ * avant la fournée. Même règle : identique à `wrangler.jsonc`, sinon il
+ * partirait en recompute.
+ */
+const SETTLEMENT_REMINDERS_CRON = "0 * * * *";
 
 /**
  * Garde l'instance chaude en la sollicitant plus souvent que son `sleepAfter`.
@@ -329,6 +357,8 @@ function dispatchCron(cron: string, env: Env): Promise<void> {
       return triggerMediaSweep(env);
     case LOYALTY_SWEEP_CRON:
       return triggerLoyaltySweep(env);
+    case SETTLEMENT_REMINDERS_CRON:
+      return triggerSettlementReminders(env);
     default:
       return triggerRecompute(env);
   }
