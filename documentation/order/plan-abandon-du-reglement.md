@@ -586,7 +586,12 @@ sonne : c'est **Q7** (§6).
   l'abandon annule l'intention chez Stripe, le lot 7 refuse une intention
   `canceled`, et B3 interdit d'en créer une nouvelle. Seule une carte
   **refusée** (intention vivante) reste reprenable. Bâti tel quel ; la cloche
-  dit « paiement par carte annulé, à relancer ». **À trancher par Hugo.**
+  dit « paiement par carte annulé, à relancer ».
+  ✅ **Tranché par Hugo le 2026-09-26 : (a).** Pour un **pro**, abandonner
+  **n'annule pas** l'intention chez Stripe : la commande passe `failed`, reste
+  `placed` et **payable jusqu'à la clôture**, qui l'annulera (Q7). D4 tient
+  telle quelle. Pour un particulier, rien ne change : l'intention est annulée,
+  la commande aussi.
 - **Clientèle `NULL`** : traitée comme un pro à l'écriture (`failed` seul, rien
   de détruit), et la cloche ne sonne pas, faute de savoir qui relancer.
 - Le 409 « Stripe injoignable » annonce une annulation à la fournée : elle
