@@ -1,5 +1,11 @@
 # Plan — les points de fidélité
 
+> 📘 **Ce qui est bâti est décrit à l'affirmative dans
+> [`points-de-fidelite.md`](points-de-fidelite.md)** (2026-09-26), qui fait
+> foi. Ce plan reste l'**histoire de la décision** : la demande, les deux
+> contradictions de `vitruve`, les réponses de Hugo. Il reste aussi la
+> référence des lots **C, E1, E2 et F**, qui ne sont pas bâtis.
+
 **Statut** : 🟡 **partiel**, 2026-09-26. **Bâtis : A, B, D** (§4) — le programme
 est livrable fermé ; rien ne se convertit ni ne s'utilise encore (E1, C, E2). Touche **l'argent**
 (une remise qui réduit un total et sa TVA). **Contredit par `vitruve` le même
