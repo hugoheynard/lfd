@@ -435,8 +435,8 @@ Q1 à Q6 le sont au §5 bis. La dernière est née de la seconde contradiction
 | Lot       | Contenu                                                                                                                                                         | Bloque par |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | **0**     | ✅ **mesuré le 2026-09-26** (§4 bis) — **Mesurer** ce que la tranche 1 casse réellement (§4) — aucun code                                                       | —          |
-| **1**     | La règle : `plan-filter.ts`, les signatures, les JSDoc datés                                                                                                    | 0          |
-| **2**     | Le triage des e2e tombées, famille par famille                                                                                                                  | 1          |
+| **1**     | ✅ bâti le 2026-09-26 — La règle : `plan-filter.ts`, les signatures, les JSDoc datés                                                                            | 0          |
+| **2**     | ✅ bâti le 2026-09-26 — Le triage des e2e tombées, famille par famille                                                                                          | 1          |
 | **3**     | `cancelIntent` + les **cinq issues** traduites (§5)                                                                                                             | —          |
 | **7**     | `GetOrderPaymentHandler` relit l'intention chez Stripe et refuse une intention non payable, et toute commande `cancelled` — **avant** 3 bis (§9 bis, B3)        | 3          |
 | **3 bis** | la page de règlement accepte `failed` **tant que son intention est vivante** (§9 bis, B3)                                                                       | 7          |

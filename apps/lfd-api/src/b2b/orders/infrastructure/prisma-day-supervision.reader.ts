@@ -25,8 +25,8 @@ const SUPERVISION_SELECT = {
  *
  * 🔴 **Le filtre d'argent est celui du dossier du jour** — `settlementWhere`, pas
  * `planWhere` : on garde les commandes prêtes et retirées, qui sont justement
- * ce qu'on supervise, et on écarte les règlements morts et le visiteur dont la
- * carte est restée en l'air.
+ * ce qu'on supervise, et on écarte les règlements morts et toute carte restée
+ * en l'air — pro compris depuis D2 (2026-09-22).
  */
 @Injectable()
 export class PrismaDaySupervisionReader extends DaySupervisionReader {

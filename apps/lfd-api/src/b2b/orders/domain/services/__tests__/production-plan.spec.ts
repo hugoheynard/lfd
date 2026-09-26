@@ -1,16 +1,13 @@
-import type { OrderClientele, OrderStatus, PaymentStatus } from "@lfd/contracts";
+import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 
 import { absorbedByPlan, settlementAllowsProduction } from "../production-plan.js";
 
 /** Le règlement d'un client au compte : il n'a rien à payer en ligne. */
 const ON_ACCOUNT: PaymentStatus = "not_required";
 
-/** Un client pro — celui qui a un compte, un historique et un téléphone. */
-const PRO: OrderClientele = "pro";
-
 describe("le plan du soir", () => {
   it("absorbe une commande passée — c'est exactement ce qu'il attend", () => {
-    expect(absorbedByPlan("placed", ON_ACCOUNT, PRO)).toBe(true);
+    expect(absorbedByPlan("placed", ON_ACCOUNT)).toBe(true);
   });
 
   it.each<OrderStatus>(["confirmed", "in_production", "ready", "fulfilled"])(
@@ -18,23 +15,23 @@ describe("le plan du soir", () => {
     (status) => {
       // Les états ne reculent jamais. Reconfirmer une commande déjà en
       // fabrication effacerait le fait qu'elle l'était.
-      expect(absorbedByPlan(status, ON_ACCOUNT, PRO)).toBe(false);
+      expect(absorbedByPlan(status, ON_ACCOUNT)).toBe(false);
     },
   );
 
   it("laisse une commande annulée dehors — elle n'est plus à produire", () => {
-    expect(absorbedByPlan("cancelled", ON_ACCOUNT, PRO)).toBe(false);
+    expect(absorbedByPlan("cancelled", ON_ACCOUNT)).toBe(false);
   });
 
   it("laisse un brouillon dehors — il n'existe pas encore", () => {
-    expect(absorbedByPlan("draft", ON_ACCOUNT, PRO)).toBe(false);
+    expect(absorbedByPlan("draft", ON_ACCOUNT)).toBe(false);
   });
 
   it("rend la clôture IDEMPOTENTE par sa règle, pas par un garde", () => {
     // Une journée close une seconde fois ne contient plus aucune `placed` :
     // zéro commande à absorber, sans qu'aucun verrou n'ait été posé.
     const secondPass = (["confirmed", "cancelled"] as const).filter((status) =>
-      absorbedByPlan(status, ON_ACCOUNT, PRO),
+      absorbedByPlan(status, ON_ACCOUNT),
     );
 
     expect(secondPass).toEqual([]);
@@ -52,53 +49,45 @@ describe("le plan du soir et le RÈGLEMENT", () => {
   it.each<PaymentStatus>(["failed", "refunded"])(
     "🔴 ne produit JAMAIS un règlement %s, quelle que soit la clientèle",
     (payment) => {
-      expect(absorbedByPlan("placed", payment, PRO)).toBe(false);
-      expect(absorbedByPlan("placed", payment, "public")).toBe(false);
-      expect(absorbedByPlan("placed", payment, null)).toBe(false);
+      expect(absorbedByPlan("placed", payment)).toBe(false);
     },
   );
 
   it("produit ce qui est payé, et ce qui n'a pas à l'être", () => {
-    expect(absorbedByPlan("placed", "paid", PRO)).toBe(true);
-    expect(absorbedByPlan("placed", "not_required", PRO)).toBe(true);
-    expect(absorbedByPlan("placed", "paid", "public")).toBe(true);
+    expect(absorbedByPlan("placed", "paid")).toBe(true);
+    expect(absorbedByPlan("placed", "not_required")).toBe(true);
   });
 
   it("un règlement refusé ne ressuscite pas un état déjà dépassé", () => {
     // La condition de statut reste la première : `failed` ne change rien à une
     // commande qui a déjà quitté `placed`.
-    expect(absorbedByPlan("confirmed", "failed", PRO)).toBe(false);
+    expect(absorbedByPlan("confirmed", "failed")).toBe(false);
   });
 });
 
 /**
- * 🔴 **Le règlement EN VOL ne vaut que pour qui a un compte** (Hugo,
- * 2026-09-17 : « on restreint au public pour le moment »).
+ * 🔴 **Un règlement EN VOL ne produit pour PERSONNE** (D2, Hugo, 2026-09-22).
  *
- * Ces trois cas tiennent la règle ET son exception nullable, qui est la plus
- * facile à casser : `clientele` est nullable **pour toujours** sur les commandes
- * antérieures à la distinction, et « sans société » n'a jamais voulu dire
- * « public ».
+ * Jusque-là, seul le visiteur était écarté : le pro `pending` et la clientèle
+ * nulle étaient produits. La clientèle a disparu de la signature — ces cas
+ * tiennent que rien ne la fait revenir par la bande.
  */
-describe("le plan du soir et la CLIENTÈLE", () => {
-  it("🔴 ne produit PAS un visiteur dont le règlement est encore en vol", () => {
-    // Une carte abandonnée n'émet aucun événement Stripe : sa commande
-    // resterait `pending` pour toujours, et serait fabriquée chaque nuit.
-    expect(absorbedByPlan("placed", "pending", "public")).toBe(false);
+describe("le plan du soir et le règlement EN VOL", () => {
+  /**
+   * Régression : un pro dont la carte est en l'air partait au plan du soir, et
+   * une carte abandonnée n'émet aucun événement Stripe — il était fabriqué
+   * toutes les nuits (règle antérieure à D2, 2026-09-22).
+   */
+  it("🔴 un pro dont la carte est en l'air ne part pas au plan du soir", () => {
+    expect(absorbedByPlan("placed", "pending")).toBe(false);
   });
 
-  it("produit un PRO dont le règlement est encore en vol", () => {
-    // Il a un compte et quelqu'un à appeler. Ne pas le produire parce que son
-    // webhook a quelques secondes de retard coûterait une commande payée non
-    // servie — plus cher qu'une marchandise perdue.
-    expect(absorbedByPlan("placed", "pending", PRO)).toBe(true);
+  it("🔴 n'imprime pas de bon pour un règlement en vol, quelle que soit la clientèle", () => {
+    expect(settlementAllowsProduction("pending")).toBe(false);
   });
 
-  it("🔴 traite une clientèle INCONNUE comme « pas public »", () => {
-    // Les commandes d'avant la distinction portent `null`. Les faire sortir du
-    // plan parce qu'on ignore leur origine retirerait de la production des
-    // commandes parfaitement légitimes.
-    expect(absorbedByPlan("placed", "pending", null)).toBe(true);
+  it("produit toujours le pro au compte — `not_required` n'a rien à attendre", () => {
+    expect(absorbedByPlan("placed", ON_ACCOUNT)).toBe(true);
   });
 });
 
@@ -122,20 +111,9 @@ describe("l'argent, sans le statut — ce que le plan et le dossier PARTAGENT", 
   it.each<PaymentStatus>(["failed", "refunded"])(
     "🔴 n'imprime JAMAIS un bon pour un règlement %s",
     (payment) => {
-      expect(settlementAllowsProduction(payment, PRO)).toBe(false);
-      expect(settlementAllowsProduction(payment, "public")).toBe(false);
-      expect(settlementAllowsProduction(payment, null)).toBe(false);
+      expect(settlementAllowsProduction(payment)).toBe(false);
     },
   );
-
-  it("🔴 n'imprime PAS un visiteur dont le règlement est encore en vol", () => {
-    expect(settlementAllowsProduction("pending", "public")).toBe(false);
-  });
-
-  it("imprime un PRO en vol, et une clientèle inconnue", () => {
-    expect(settlementAllowsProduction("pending", PRO)).toBe(true);
-    expect(settlementAllowsProduction("pending", null)).toBe(true);
-  });
 
   it("🔴 NE PORTE PAS de condition de statut — c'est tout son objet", () => {
     // Le dossier garde ce qui est déjà prêt ou déjà remis : sa pile numérotée
@@ -143,30 +121,25 @@ describe("l'argent, sans le statut — ce que le plan et le dossier PARTAGENT", 
     // c'est que la règle du plan a été recopiée ici en entier — et le dossier
     // sortira VIDE de l'imprimante, une fois la journée arrêtée.
     for (const status of ["confirmed", "ready", "fulfilled"] as const) {
-      expect(absorbedByPlan(status, ON_ACCOUNT, PRO)).toBe(false);
+      expect(absorbedByPlan(status, ON_ACCOUNT)).toBe(false);
     }
-    expect(settlementAllowsProduction(ON_ACCOUNT, PRO)).toBe(true);
+    expect(settlementAllowsProduction(ON_ACCOUNT)).toBe(true);
   });
 
   it("reste le MIROIR exact de la règle du plan sur une commande passée", () => {
     // Les deux ne peuvent diverger que par le statut. Sur `placed`, elles disent
     // forcément la même chose — sinon le dossier et le compte à produire
     // repartiraient chacun de leur côté, ce qui est exactement le bug d'origine.
-    const cases: readonly [PaymentStatus, OrderClientele | null][] = [
-      ["paid", PRO],
-      ["paid", "public"],
-      ["not_required", PRO],
-      ["pending", PRO],
-      ["pending", "public"],
-      ["pending", null],
-      ["failed", PRO],
-      ["refunded", "public"],
+    const cases: readonly PaymentStatus[] = [
+      "paid",
+      "not_required",
+      "pending",
+      "failed",
+      "refunded",
     ];
 
-    for (const [payment, clientele] of cases) {
-      expect(settlementAllowsProduction(payment, clientele)).toBe(
-        absorbedByPlan("placed", payment, clientele),
-      );
+    for (const payment of cases) {
+      expect(settlementAllowsProduction(payment)).toBe(absorbedByPlan("placed", payment));
     }
   });
 });

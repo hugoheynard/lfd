@@ -213,9 +213,10 @@ flowchart TD
 
 ## 6. Le compte de production — ce qui entre, et ce qui n'entre pas
 
-🔴 **La règle est décidée** (Hugo, 2026-09-17 : « on restreint au public pour le
-moment ») : on ne produit que ce qui est payé, ce qui n'a pas à l'être, et le
-règlement en vol **d'un client qui a un compte**.
+🔴 **La règle a changé le 2026-09-22 (D2, Hugo)** : on ne produit que ce qui
+est payé et ce qui n'a pas à l'être. **Un règlement en vol ne produit pour
+personne**, pro compris ([`plan-abandon-du-reglement.md`](plan-abandon-du-reglement.md)
+§4 ; appliqué dans le code le 2026-09-26, lots 1–2).
 
 ```mermaid
 flowchart TD
@@ -223,30 +224,22 @@ flowchart TD
     B1 -->|oui| B3{"paymentStatus ?"}
     B3 -->|"paid · not_required"| OK["✅ absorbée"]
     B3 -->|"failed · refunded"| KO["❌ hors plan, pour tout le monde"]
-    B3 -->|"pending"| C{"clientele ?"}
-    C -->|"pro"| OK
-    C -->|"NULL — commande d'avant la distinction"| OK
-    C -->|"public"| KO2["❌ hors plan<br/>— un panier abandonné n'émet rien"]
+    B3 -->|"pending"| KO2["❌ hors plan, pour tout le monde<br/>— une carte abandonnée n'émet rien"]
 ```
 
-**Pourquoi la clientèle, et pas « `pending` exclu pour tous »** — mesuré avant
-de trancher : 48 tests de bout en bout sur 89 tombaient et la clôture rendait
-`409`, parce qu'un pro qui **paie à la commande** est `pending` lui aussi (§2).
-Le priver de fabrication parce que son webhook a quelques secondes de retard
-coûte une commande payée non servie. Un pro a un compte et quelqu'un à appeler ;
-un visiteur qui ferme l'onglet n'a ni l'un ni l'autre.
+⚠️ **Ce qu'elle remplace.** Du 2026-09-17 au 2026-09-22, la règle était « on
+restreint au public pour le moment » : le `pending` d'un pro, et celui d'une
+clientèle `NULL` (commande d'avant la distinction), restaient produits, et le
+fragment portait un `OR` sur `clientele` avec une branche `IS NULL` explicite.
+Cette exception laissait fabriquer toutes les nuits la commande d'un pro qui
+abandonne sa carte. La clientèle ne compte plus ; le `NULL` n'a plus rien à
+rattraper. La mesure qui la justifiait (« 48 tests sur 89 ») est périmée : le
+lot 0 du plan d'abandon a mesuré **8 tests**, tous attendus (§4 bis).
 
-⚠️ **`NULL` vaut « pas public », et c'est délibéré.** `orders.clientele` est
-nullable pour toujours sur les commandes antérieures à la distinction
-([`plan-nature-du-client-sur-la-commande.md`](plan-nature-du-client-sur-la-commande.md)).
-En SQL, `clientele <> 'public'` est **faux** sur `NULL` : le fragment porte donc
-une branche `clientele IS NULL` explicite, sans quoi ces commandes sortiraient
-du plan au premier règlement en vol.
-
-⚠️ **Le prix de la règle** : un visiteur dont le webhook `succeeded` arrive
-APRÈS la clôture a payé et n'est pas produit. Le risque est assumé — produire
-pour rien coûterait de la marchandise chaque nuit, un webhook en retard est un
-incident rare — mais personne ne le signale encore (§8).
+⚠️ **Le prix de la règle** : un client — pro ou visiteur — dont le webhook
+`succeeded` arrive APRÈS la clôture a payé et n'est pas produit. Le sort des
+règlements en vol à la clôture est l'objet des lots 3 à 6 du plan d'abandon,
+non bâtis au 2026-09-26.
 
 ### Où la règle est écrite, et qui la lit
 

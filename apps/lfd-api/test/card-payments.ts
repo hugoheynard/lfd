@@ -6,10 +6,10 @@ import type { E2eContext } from "./e2e-harness.js";
  * **Règle les cartes**, comme le ferait le webhook Stripe : chaque intention de
  * paiement émise depuis le dernier appel est confirmée, par la vraie commande.
  *
- * Pourquoi les suites de production en ont besoin (2026-09-18) : une commande
- * **sans société** dont la carte est encore `pending` n'entre plus au plan du
- * soir (`planWhere`, `production-plan.ts`) — un visiteur qui abandonne devant sa
- * carte ne doit rien faire fabriquer. Et son accusé de réception attend le
+ * Pourquoi les suites de production en ont besoin (2026-09-18, élargi le
+ * 2026-09-22 par D2) : une commande dont la carte est encore `pending` n'entre
+ * plus au plan du soir (`planWhere`, `production-plan.ts`) — **pro compris** :
+ * qui abandonne devant sa carte ne doit rien faire fabriquer. Et son accusé de réception attend le
  * règlement (`send-order-settled-mail.handler.ts`). Une suite qui passe une
  * commande perso et veut la voir produite doit donc la **payer**, comme un vrai
  * client.

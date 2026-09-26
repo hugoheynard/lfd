@@ -199,7 +199,7 @@ describe("la Supervision du jour", () => {
     expect(view.flow[0]?.placed).toBe(1);
   });
 
-  it("écarte le particulier dont la carte est en l'air, garde le pro en attente", async () => {
+  it("écarte la carte en l'air du particulier ET du pro (D2, 2026-09-22)", async () => {
     const { companyId, memberId, guestId } = await seedParties();
     await seedOrder({
       reference: "CMD-PUBLIC",
@@ -218,7 +218,9 @@ describe("la Supervision du jour", () => {
 
     const view = await supervise(DAY);
 
-    expect(view.flow[0]?.placed).toBe(1);
+    // Jusqu'au 2026-09-22 le pro en attente était gardé ; un règlement en vol
+    // ne produit plus pour personne.
+    expect(view.flow.reduce((sum, row) => sum + row.placed, 0)).toBe(0);
   });
 
   it("signale un créneau promis dépassé, et ne rend ni montant ni e-mail", async () => {

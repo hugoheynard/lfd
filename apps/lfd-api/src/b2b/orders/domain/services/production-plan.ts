@@ -1,4 +1,4 @@
-import type { OrderClientele, OrderStatus, PaymentStatus } from "@lfd/contracts";
+import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 
 /**
  * La règle du **plan du soir** : quelles commandes une journée absorbe.
@@ -46,7 +46,9 @@ import type { OrderClientele, OrderStatus, PaymentStatus } from "@lfd/contracts"
  * c'est le premier flux où « commande passée » et « commande payée » se séparent
  * en masse, parce que tout le monde y paie par carte.
  *
- * 🔴 **`pending` N'EST PAS ABSORBÉ** — décidé par Hugo le 2026-09-17.
+ * 🔴 **`pending` N'EST PAS ABSORBÉ, pour PERSONNE** — décidé par Hugo le
+ * 2026-09-17 pour le public, étendu au pro le 2026-09-22 (D2,
+ * `documentation/order/plan-abandon-du-reglement.md`).
  *
  * **On ne produit que ce qui est payé, ou ce qui n'a pas à l'être.** Un
  * règlement encore en vol ne donne droit à aucune fabrication : une carte
@@ -64,12 +66,8 @@ import type { OrderClientele, OrderStatus, PaymentStatus } from "@lfd/contracts"
  * tous les jours, tandis qu'un webhook en retard est un incident rare et
  * visible.
  */
-export function absorbedByPlan(
-  status: OrderStatus,
-  payment: PaymentStatus,
-  clientele: OrderClientele | null,
-): boolean {
-  return status === STATUS_IN_PLAN && settlementAllowsProduction(payment, clientele);
+export function absorbedByPlan(status: OrderStatus, payment: PaymentStatus): boolean {
+  return status === STATUS_IN_PLAN && settlementAllowsProduction(payment);
 }
 
 /**
@@ -95,15 +93,8 @@ export function absorbedByPlan(
  * La moitié « argent » est ce que les deux ont en commun. Le statut, lui, reste
  * propre à chacun — et c'est une différence qui se dit, pas un oubli.
  */
-export function settlementAllowsProduction(
-  payment: PaymentStatus,
-  clientele: OrderClientele | null,
-): boolean {
-  if (PAYMENTS_REFUSED.includes(payment)) {
-    return false;
-  }
-  // Un règlement en vol ne vaut que pour qui a un compte : cf. `PAYMENTS_AWAITING`.
-  return payment !== "pending" || clientele !== "public";
+export function settlementAllowsProduction(payment: PaymentStatus): boolean {
+  return !PAYMENTS_REFUSED.includes(payment) && !PAYMENTS_AWAITING.includes(payment);
 }
 
 /**
@@ -115,29 +106,20 @@ export function settlementAllowsProduction(
 export const PAYMENTS_REFUSED: readonly PaymentStatus[] = ["failed", "refunded"];
 
 /**
- * 🔴 **Le règlement EN VOL, et pourquoi il ne vaut que pour le pro**
- * (2026-09-17, Hugo : « on restreint au public pour le moment »).
+ * 🔴 **Le règlement EN VOL — jamais produit, pour PERSONNE** (D2, Hugo,
+ * 2026-09-22 ; `documentation/order/plan-abandon-du-reglement.md`).
  *
- * `pending` veut dire « Stripe n'a pas encore répondu ». Les deux clientèles y
- * passent, et ce qu'on risque n'y est pas le même :
+ * `pending` veut dire « Stripe n'a pas encore répondu ». Jusqu'au 2026-09-22,
+ * seul le visiteur en était exclu : le pro restait produit parce qu'il « a un
+ * compte et quelqu'un à appeler », et `null` était traité comme « pas public ».
+ * Cette exception laissait ouvert le cas d'un pro qui abandonne sa carte — une
+ * carte abandonnée n'émet AUCUN événement Stripe, et sa commande aurait été
+ * fabriquée toutes les nuits. La clientèle ne compte donc plus ici : on ne
+ * produit que ce qui est payé, ou ce qui n'a pas à l'être (`not_required`).
  *
- * - **un pro** a un compte, un historique et quelqu'un à appeler. Ne pas le
- *   produire parce que son webhook a quelques secondes de retard coûterait une
- *   commande payée non servie — le cas le plus cher du poste ;
- * - **un visiteur** qui ferme l'onglet devant le formulaire de carte n'émet
- *   AUCUN événement Stripe. Sa commande resterait `pending` pour toujours, et
- *   le fournil la fabriquerait toutes les nuits.
- *
- * ⚠️ **`null` est traité comme « pas public », et c'est délibéré.** La colonne
- * est nullable pour toujours sur les commandes antérieures à la distinction, et
- * « sans société » n'a jamais voulu dire « public ». Les faire sortir du plan
- * parce qu'on ignore leur origine retirerait de la production des commandes
- * parfaitement légitimes.
- *
- * ⚠️ **Provisoire, et assumé comme tel.** Le cas d'un pro qui abandonne un
- * paiement par carte reste ouvert : sa commande est produite. Ce qui le fermera
- * n'est pas une condition de plus ici, c'est l'expiration des commandes
- * impayées — cf. `documentation/order/architecture-reglement-et-compte-de-production.md`.
+ * ⚠️ Le prix, assumé : un pro dont le webhook arrive après la clôture n'est pas
+ * produit. C'est la clôture qui doit trancher le sort des règlements en vol
+ * (lots 3 à 6 du même plan, non bâtis au 2026-09-26) — pas une exception ici.
  */
 export const PAYMENTS_AWAITING: readonly PaymentStatus[] = ["pending"];
 

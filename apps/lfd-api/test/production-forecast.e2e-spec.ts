@@ -21,6 +21,7 @@ import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { settleCardPayments } from "./card-payments.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const MEMBER = "auth0|member";
@@ -52,10 +53,13 @@ const stubAdminVerifier = {
  * sur une contrainte qui n'a rien à voir avec ce qu'on éprouve ici.
  */
 let intentCount = 0;
+/** Les intentions émises et pas encore réglées — vidées par `settleCardPayments`. */
+const issuedIntents: string[] = [];
 const fakeGateway = {
   createIntent: () => {
     intentCount += 1;
     const id = `pi_e2e_forecast_${String(intentCount)}`;
+    issuedIntents.push(id);
     return Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` });
   },
   publishableKey: () => "pk_e2e",
@@ -110,6 +114,9 @@ async function placeOrder(
       lines,
     })
     .expect(201);
+  // Un règlement en vol ne produit plus, pro compris (D2, 2026-09-22) : la
+  // commande qu'on veut voir au prévisionnel est payée, comme par un vrai client.
+  await settleCardPayments(ctx, issuedIntents);
 }
 
 async function forecast(from: string, to: string): Promise<ProductionForecastView> {
