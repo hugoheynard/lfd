@@ -53,7 +53,7 @@ export class ConfirmOrderPaymentHandler implements ICommandHandler<
     }
     const refused = await this.orders.markPaymentFailed(command.paymentIntentId);
     if (refused !== null) {
-      this.events.publish(new OrderPaymentFailedEvent(refused));
+      this.events.publish(new OrderPaymentFailedEvent(refused, "refused"));
     }
   }
 }

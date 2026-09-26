@@ -27,6 +27,14 @@ import { clientSheetOf } from "../../domain/services/order-sheet.js";
  * contredirait la phrase qui le précède, et c'est exactement le genre de
  * message qui fait venir quelqu'un pour rien.
  *
+ * ## Il ne parle que d'un REFUS
+ *
+ * Le fait porte une cause depuis le 2026-09-26 (plan
+ * `documentation/order/plan-abandon-du-reglement.md`, Q4, §9 bis S9). « Votre
+ * banque a refusé » est faux pour les deux autres : le client qui abandonne
+ * vient de cliquer et ne reçoit rien, et la clôture a son propre courriel
+ * (`SendPaymentExpiredMail`).
+ *
  * ## Pourquoi il ne part qu'une fois
  *
  * Le fait n'est publié qu'au **franchissement** : le dépôt ne bascule que ce qui
@@ -45,6 +53,9 @@ export class SendPaymentFailedMail implements IEventHandler<OrderPaymentFailedEv
   ) {}
 
   handle(event: OrderPaymentFailedEvent): void {
+    if (event.cause !== "refused") {
+      return;
+    }
     // **Suivi** : cet abonné tourne hors de la requête du webhook. Sans cette
     // inscription, un test vide la base pendant que l'envoi la lit, et l'échec
     // accuse le test SUIVANT.

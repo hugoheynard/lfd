@@ -20,8 +20,14 @@ export const HANDOVER_VIA = domain('manière de remettre une commande', {
   manual: 'Saisie à la main',
 });
 
+/** Ce que l'abandon du règlement a fait de la commande (`order.abandoned`). */
+export const ABANDON_OUTCOME = domain('issue d’un abandon de règlement', {
+  cancelled: 'Commande annulée',
+  failed: 'Commande à régler',
+});
+
 export const ORDERS_VALUES: ValueFamily = {
-  enums: [WEEKDAY, HANDOVER_VIA],
+  enums: [WEEKDAY, HANDOVER_VIA, ABANDON_OUTCOME],
   literals: {
     // Le `mode` d'une surtaxe de retard (`CartAdjustment`).
     percent: 'Pourcentage',

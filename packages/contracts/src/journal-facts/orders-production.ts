@@ -199,6 +199,21 @@ export const ORDERS_PRODUCTION_FACTS = {
     }),
     [orderReadyBeforeLabel()],
   ),
+  /**
+   * Le client a **abandonné le règlement** de sa commande en quittant l'écran
+   * de carte (plan `documentation/order/plan-abandon-du-reglement.md`, D1).
+   * Le sujet est ce client, seul à pouvoir le faire (Q2). `cancelled` : la
+   * commande d'un particulier est annulée ; `failed` : celle d'un pro garde
+   * son statut, son seul règlement est tombé (D4).
+   */
+  "order.abandoned": fact(
+    payload({
+      subjectLabel: customerLabel(),
+      orderId: ref("order"),
+      orderNumber: z.string(),
+      outcome: z.enum(["cancelled", "failed"]),
+    }),
+  ),
   "order.handed_over": fact(
     payload({
       subjectLabel: customerLabel(),

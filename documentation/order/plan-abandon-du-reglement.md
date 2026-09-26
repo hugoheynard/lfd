@@ -440,8 +440,8 @@ Q1 à Q6 le sont au §5 bis. La dernière est née de la seconde contradiction
 | **3**     | ✅ bâti le 2026-09-26 — `cancelIntent` + les **cinq issues** traduites (§5)                                                                                                      | —          |
 | **7**     | ✅ bâti le 2026-09-26 — `GetOrderPaymentHandler` relit l'intention chez Stripe et refuse une intention non payable, et toute commande `cancelled` — **avant** 3 bis (§9 bis, B3) | 3          |
 | **3 bis** | la page de règlement accepte `failed` **tant que son intention est vivante** (§9 bis, B3)                                                                                        | 7          |
-| **4**     | `markAbandoned` / `failAtClosing`, la commande, le handler, la route, le mur : l'auteur `placedByUserId` (Q2)                                                                    | 3          |
-| **5**     | La cause sur `OrderPaymentFailedEvent` (`refused`, `day_closed`, `abandoned`), l'abonné cloche, le mail qui suit la cause (Q4, §9 bis S9)                                        | 4          |
+| **4**     | ✅ bâti le 2026-09-26 — `markAbandoned` / `failAtClosing`, la commande, le handler, la route, le mur : l'auteur `placedByUserId` (Q2)                                            | 3          |
+| **5**     | ✅ bâti le 2026-09-26 — La cause sur `OrderPaymentFailedEvent` (`refused`, `day_closed`, `abandoned`), l'abonné cloche, le mail qui suit la cause (Q4, §9 bis S9)                | 4          |
 | **6**     | La clôture : le port synchrone de balayage, appelé **avant** de compter, à chaque appel de clôture (§9 bis, B1, B2, S4), rattachement au jour de passation (Q5)                  | 3, 4       |
 | **6 bis** | Un encaissement sur une commande `cancelled` : ne jamais la rouvrir, sonner « à rembourser » (§9 bis, B1)                                                                        | 6          |
 | **8**     | Le front : libellé, confirmation, appel **tenté**, navigation inconditionnelle                                                                                                   | 4          |
@@ -578,6 +578,19 @@ sonne : c'est **Q7** (§6).
   panne. ⚠️ Non éprouvé contre le mode test de Stripe.
 - **`processing` reste servi** par `GET /orders/:id/payment` : un paiement en
   cours n'est pas refusé au client qui recharge la page.
+
+## 9 quater. Ce que les lots 4 et 5 ont révélé (2026-09-26)
+
+- 🔴 **Q8 — un pro qui abandonne n'est plus reprenable par carte.** D4 dit
+  qu'un pro reste `placed` + `failed`, reprenable jusqu'à la clôture. Mais
+  l'abandon annule l'intention chez Stripe, le lot 7 refuse une intention
+  `canceled`, et B3 interdit d'en créer une nouvelle. Seule une carte
+  **refusée** (intention vivante) reste reprenable. Bâti tel quel ; la cloche
+  dit « paiement par carte annulé, à relancer ». **À trancher par Hugo.**
+- **Clientèle `NULL`** : traitée comme un pro à l'écriture (`failed` seul, rien
+  de détruit), et la cloche ne sonne pas, faute de savoir qui relancer.
+- Le 409 « Stripe injoignable » annonce une annulation à la fournée : elle
+  n'est vraie qu'avec le lot 6.
 
 ## 10. Les justifications datées que ce chantier périme
 

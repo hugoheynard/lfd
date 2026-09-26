@@ -20,6 +20,7 @@ import { OnCompanyDeclared } from "./application/handlers/on-company-declared.ha
 import { OnCompanyStepReached } from "./application/handlers/on-company-step-reached.handler.js";
 import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.handler.js";
 import { OnOrderPlaced } from "./application/handlers/on-order-placed.handler.js";
+import { OnOrderAbandoned } from "./application/handlers/on-order-abandoned.handler.js";
 import { OnOrderReady } from "./application/handlers/on-order-ready.handler.js";
 import { OnSubscriptionCreated } from "./application/handlers/on-subscription-created.handler.js";
 import { OnUserRegistered } from "./application/handlers/on-user-registered.handler.js";
@@ -205,6 +206,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     ListActivationsHandler,
     OnOrderPlaced,
     OnOrderReady,
+    OnOrderAbandoned,
     OnOrderHandedOver,
     OnCompanyDeclared,
     OnCompanyStepReached,

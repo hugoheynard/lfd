@@ -35,6 +35,8 @@ function recordingRepo(sink: Sink, franchit: string | null): OrderRepository {
     markFulfilled: () => Promise.reject(new Error("non utilisé")),
     markReady: () => Promise.reject(new Error("non utilisé")),
     absorbIntoPlan: () => Promise.reject(new Error("non utilisé")),
+    markAbandoned: () => Promise.reject(new Error("non utilisé")),
+    failAtClosing: () => Promise.reject(new Error("non utilisé")),
   };
 }
 
@@ -91,7 +93,7 @@ describe("ConfirmOrderPaymentHandler — ce qu'il PUBLIE", () => {
 
     await handlerWith(sink, "order_8").execute(new ConfirmOrderPaymentCommand("pi_8", "failed"));
 
-    expect(sink.published).toEqual([new OrderPaymentFailedEvent("order_8")]);
+    expect(sink.published).toEqual([new OrderPaymentFailedEvent("order_8", "refused")]);
   });
 
   /**

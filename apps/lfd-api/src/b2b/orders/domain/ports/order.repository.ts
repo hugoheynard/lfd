@@ -8,6 +8,12 @@ export interface PlacedOrder {
 }
 
 /**
+ * Ce qu'un abandon a écrit : la commande annulée (clientèle publique), ou son
+ * seul règlement tombé (pro, reprenable jusqu'à la clôture).
+ */
+export type AbandonedSettlement = "cancelled" | "failed";
+
+/**
  * Port d'**écriture** des commandes.
  *
  * `place` prend l'**agrégat** (déjà validé et calculé — l'adaptateur lit son
@@ -56,6 +62,45 @@ export abstract class OrderRepository {
    * refus, ce que le système ne faisait pas du tout.
    */
   abstract markPaymentFailed(paymentIntentId: string): Promise<string | null>;
+
+  /**
+   * **L'abandon du règlement par son client** — il quitte l'écran de carte
+   * (plan `documentation/order/plan-abandon-du-reglement.md`, D1, D4, Q3).
+   *
+   * 🔴 **Écriture nue, conditionnée en base, et c'est voulu** — au même titre
+   * que {@link markPaid} : `Order` est un agrégat de PASSATION qui ne sait pas
+   * se recharger, et la règle tient entière dans le `where` (`status: placed`,
+   * règlement non encaissé). Une load→save y perdrait l'atomicité face au
+   * webhook d'encaissement pour zéro invariant de plus. Ne pas « corriger » :
+   * lire.
+   *
+   * L'effet dépend de la clientèle **figée** sur la commande :
+   *
+   * - `public` → `status = cancelled` **et** `paymentStatus = failed`, depuis
+   *   une attente ou un refus : une commande abandonnée est un règlement mort,
+   *   et le rejeu de passation la voit comme telle sans condition de plus (Q3) ;
+   * - `pro`, ou clientèle inconnue (`NULL`, commande d'avant la distinction) →
+   *   `paymentStatus = failed` seul, depuis une attente : la commande reste
+   *   `placed` et se reprend jusqu'à la clôture (D4).
+   *
+   * @returns `cancelled` ou `failed` selon ce qui a été ÉCRIT, `null` si rien
+   * n'a franchi (second clic, commande déjà encaissée, refus déjà posé).
+   * C'est ce `null` qui interdit de publier deux fois le même fait.
+   */
+  abstract markAbandoned(orderId: string): Promise<AbandonedSettlement | null>;
+
+  /**
+   * **La clôture coupe un règlement resté en l'air** : `cancelled` + `failed`,
+   * pour TOUTES les clientèles (Q7), depuis une attente ou un refus.
+   *
+   * Même justification d'écriture nue que {@link markAbandoned}. Rend `true`
+   * si la ligne a franchi — l'appelant publie lui-même le fait : `FAILED_FROM`
+   * ne franchirait pas une commande déjà refusée (§9 bis, mineurs).
+   *
+   * ⚠️ Aucun appelant au 2026-09-26 : c'est le balayage de la clôture (lot 6)
+   * qui l'appellera.
+   */
+  abstract failAtClosing(orderId: string): Promise<boolean>;
 
   /**
    * Recopie la remise **annoncée par le fournil** et ferme la commande.

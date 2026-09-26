@@ -34,6 +34,7 @@ import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { RequiresShop } from "../../feature-access/http/requires-shop.decorator.js";
+import { AbandonOrderCommand } from "../application/commands/abandon-order.command.js";
 import {
   PlaceOrderCommand,
   type PlaceOrderResult,
@@ -215,6 +216,23 @@ export class OrdersController {
   ): Promise<OrderPaymentIntent> {
     return this.queries.execute<GetOrderPaymentQuery, OrderPaymentIntent>(
       new GetOrderPaymentQuery(user.userId, id),
+    );
+  }
+
+  /**
+   * **Abandonner le règlement** : le client quitte l'écran de carte (plan
+   * `plan-abandon-du-reglement.md`, D1). `204` aussi au second clic.
+   *
+   * Seul l'auteur l'obtient (`403` pour un autre membre, `404` pour un
+   * étranger). Un `409` quand Stripe n'a pas confirmé la mort de l'intention —
+   * déjà payée, en cours, ou injoignable : rien n'est alors écrit, et le front
+   * navigue quand même (§5, « Sortir quand Stripe est injoignable »).
+   */
+  @Post(":id/abandon")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async abandon(@CurrentUser() user: Principal, @Param("id") id: string): Promise<void> {
+    await this.commands.execute<AbandonOrderCommand, void>(
+      new AbandonOrderCommand(user.userId, id),
     );
   }
 }

@@ -16,6 +16,10 @@ import { SendGuestOrderNotice } from "./application/handlers/send-guest-order-no
 import { SendOrderPlacedMail } from "./application/handlers/send-order-placed-mail.handler.js";
 import { SendOrderReadyMail } from "./application/handlers/send-order-ready-mail.handler.js";
 import { SendOrderSettledMail } from "./application/handlers/send-order-settled-mail.handler.js";
+import { RingFailedProSettlement } from "./application/handlers/ring-failed-pro-settlement.handler.js";
+import { SendPaymentExpiredMail } from "./application/handlers/send-payment-expired-mail.handler.js";
+import { FailedSettlementReader } from "./domain/ports/failed-settlement.reader.js";
+import { PrismaFailedSettlementReader } from "./infrastructure/prisma-failed-settlement.reader.js";
 import { SendPaymentFailedMail } from "./application/handlers/send-payment-failed-mail.handler.js";
 import { OrderPlacedMail } from "./application/services/order-placed-mail.service.js";
 import { OrderReadyMail } from "./application/services/order-ready-mail.service.js";
@@ -31,6 +35,7 @@ import { OrderRecipientReader } from "./domain/ports/order-recipient.reader.js";
 import { CompletedOrderReader } from "./domain/ports/completed-order.reader.js";
 import { PrismaCompletedOrderReader } from "./infrastructure/prisma-completed-order.reader.js";
 import { PrismaOrderRecipientReader } from "./infrastructure/prisma-order-recipient.reader.js";
+import { AbandonOrderHandler } from "./application/commands/abandon-order.handler.js";
 import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
 import { DiscardOrderDraftHandler } from "./application/commands/discard-order-draft.handler.js";
 import { PlaceOrderForCustomerHandler } from "./application/commands/place-order-for-customer.handler.js";
@@ -173,6 +178,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     PlaceOrderHandler,
     PlaceOrderForCustomerHandler,
     ConfirmOrderPaymentHandler,
+    AbandonOrderHandler,
     ListCompanyOrdersHandler,
     ListPersonalOrdersHandler,
     GetOrderHandler,
@@ -201,6 +207,11 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Et quand elle a répondu NON. Ce courriel n'existait pas : un refus était
     // écrit dans une colonne que personne ne relisait.
     SendPaymentFailedMail,
+    // Le règlement mort à la clôture a son propre courriel ; l'abandon, aucun.
+    SendPaymentExpiredMail,
+    // Tout règlement pro qui meurt sonne, quelle qu'en soit la cause (D4).
+    RingFailedProSettlement,
+    { provide: FailedSettlementReader, useClass: PrismaFailedSettlementReader },
     // Le composeur de l'accusé, partagé par les deux chemins ci-dessus.
     OrderPlacedMail,
     // Prévient le propriétaire d'une adresse qu'une commande sans compte l'a

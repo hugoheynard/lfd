@@ -1,14 +1,23 @@
-import type { OrderFulfillment, PriceStepView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import { OrderStatus, PaymentStatus, Prisma } from "../../../platform/database/client/client.js";
+import {
+  OrderClientele,
+  OrderStatus,
+  PaymentStatus,
+  Prisma,
+} from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { SecretGenerator } from "../../../platform/secret/secret-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import type { Order } from "../domain/entities/order.js";
-import { OrderRepository, type PlacedOrder } from "../domain/ports/order.repository.js";
+import {
+  OrderRepository,
+  type AbandonedSettlement,
+  type PlacedOrder,
+} from "../domain/ports/order.repository.js";
 import { issuesHandoverToken, type HandoverVia } from "../domain/services/handover.js";
+import { jsonSteps, toFulfillmentJson } from "./order-json.js";
 import { planWhere } from "./plan-filter.js";
 
 /** Adaptateur Prisma des commandes. */
@@ -20,6 +29,8 @@ import { planWhere } from "./plan-filter.js";
  */
 const PAID_FROM: readonly PaymentStatus[] = [PaymentStatus.pending, PaymentStatus.failed];
 const FAILED_FROM: readonly PaymentStatus[] = [PaymentStatus.pending];
+/** Un règlement non encaissé : en attente, ou refusé et encore reprenable. */
+const UNSETTLED: readonly PaymentStatus[] = [PaymentStatus.pending, PaymentStatus.failed];
 
 @Injectable()
 export class PrismaOrderRepository extends OrderRepository {
@@ -211,13 +222,63 @@ export class PrismaOrderRepository extends OrderRepository {
       return null;
     }
     const { count } = await this.prisma.order.updateMany({
-      where: { stripePaymentIntentId: paymentIntentId, paymentStatus: { in: [...from] } },
+      where: {
+        stripePaymentIntentId: paymentIntentId,
+        paymentStatus: { in: [...from] },
+        // 🔴 **Une commande annulée ne se rouvre jamais** (2026-09-26). Depuis
+        // l'abandon, `cancelled` s'écrit ; son règlement vaut `failed`, donc
+        // `PAID_FROM` l'aurait repassée `paid` sur un encaissement tardif — une
+        // commande annulée, payée, que personne ne produira. Le refus ici la
+        // laisse annulée ; l'argent, lui, est reçu chez Stripe.
+        // TODO(2026-09-26) : lot 6 bis du plan d'abandon — sonner « encaissé
+        // sur une commande annulée — à rembourser » ; aujourd'hui, rien ne le dit.
+        status: { not: OrderStatus.cancelled },
+      },
       data:
         to === PaymentStatus.paid
           ? { paymentStatus: PaymentStatus.paid, paidAt: this.clock.now() }
           : { paymentStatus: PaymentStatus.failed },
     });
     return count === 0 ? null : order.id;
+  }
+
+  async markAbandoned(orderId: string): Promise<AbandonedSettlement | null> {
+    // Deux écritures exclusives par leur `where` : la clientèle est figée, une
+    // seule des deux peut trouver la ligne. Le public d'abord — c'est le cas
+    // courant de l'écran de règlement.
+    const cancelled = await this.prisma.order.updateMany({
+      where: {
+        id: orderId,
+        clientele: OrderClientele.public,
+        status: OrderStatus.placed,
+        paymentStatus: { in: [...UNSETTLED] },
+      },
+      data: { status: OrderStatus.cancelled, paymentStatus: PaymentStatus.failed },
+    });
+    if (cancelled.count === 1) {
+      return "cancelled";
+    }
+    // Pro, ou clientèle inconnue : `clientele <> 'public'` serait FAUX sur
+    // `NULL` en SQL, d'où les deux branches écrites. Depuis la seule attente :
+    // un refus déjà posé a déjà publié son fait, un second abandon ne dit rien.
+    const failed = await this.prisma.order.updateMany({
+      where: {
+        id: orderId,
+        OR: [{ clientele: OrderClientele.pro }, { clientele: null }],
+        status: OrderStatus.placed,
+        paymentStatus: PaymentStatus.pending,
+      },
+      data: { paymentStatus: PaymentStatus.failed },
+    });
+    return failed.count === 1 ? "failed" : null;
+  }
+
+  async failAtClosing(orderId: string): Promise<boolean> {
+    const { count } = await this.prisma.order.updateMany({
+      where: { id: orderId, status: OrderStatus.placed, paymentStatus: { in: [...UNSETTLED] } },
+      data: { status: OrderStatus.cancelled, paymentStatus: PaymentStatus.failed },
+    });
+    return count === 1;
   }
 
   async absorbIntoPlan(serviceDay: string, at: Date): Promise<number> {
@@ -279,64 +340,4 @@ export class PrismaOrderRepository extends OrderRepository {
     });
     return count === 1;
   }
-}
-
-/**
- * L'acheminement convenu, en JSON **écrit explicitement**.
- *
- * Prisma refuse un type `readonly` comme valeur JSON, et un cast l'aurait fait
- * taire sans rien garantir. Recopier la forme ici la rend symétrique de
- * `orderFulfillmentSchema`, qui la relit : les deux bouts sont visibles côte à
- * côte, et un champ ajouté d'un seul côté se voit.
- */
-function toFulfillmentJson(agreed: OrderFulfillment): Prisma.InputJsonValue {
-  return {
-    window: {
-      value: agreed.window.value === null ? null : { ...agreed.window.value },
-      source: agreed.window.source,
-    },
-    contact: {
-      value: agreed.contact.value === null ? null : { ...agreed.contact.value },
-      source: agreed.contact.source,
-    },
-    signatureRequired: { ...agreed.signatureRequired },
-  };
-}
-
-/**
- * Les étages, en JSON pur.
- *
- * Recopiés champ à champ plutôt que passés tels quels : `PriceStepView` est une
- * **interface**, et TypeScript ne leur accorde pas de signature d'index — donc
- * elle n'est pas assignable au type JSON de Prisma. Le mapping n'est pas une
- * cérémonie : il rend explicite ce qui part en base, et une nouvelle propriété
- * du domaine ne s'y invitera pas sans qu'on l'ait décidé.
- */
-function jsonSteps(steps: readonly PriceStepView[]): Prisma.InputJsonValue {
-  return steps.map((step) => ({
-    stage: step.stage,
-    ruleId: step.ruleId,
-    label: step.label,
-    resultMillicents: step.resultMillicents,
-    // 🔴 **Le champ que le lecteur attendait depuis le 2026-09-03.**
-    //
-    // `priceStepsSchema` le déclare défailli — `scope` à `null` — pour qu'une
-    // trace ancienne reste lisible. Il n'était simplement **jamais écrit** : ce
-    // mapping s'arrêtait à quatre champs, si bien que TOUTE trace persistée, y
-    // compris celle de la commande passée à l'instant, relisait `scope: null`.
-    // Un défaut posé pour lire le passé rendait le présent muet, et rien ne
-    // pouvait rougir (R25, 2026-09-09).
-    scope: step.scope === null ? null : { ...step.scope },
-    // ⚠️ **`supersedes` n'est PAS écrit, et c'est délibéré.** Il porte le
-    // LIBELLÉ COMMERCIAL des règles rivales — « Promo grands comptes −20 % ».
-    // `GET /orders/mine`, `GET /orders/:id` et `GET /companies/:id/orders`
-    // servent la trace au client **sans rétrécissement**, alors que
-    // `POST /orders/quote` a été rétrécie exactement pour ça (cf. son JSDoc :
-    // « les rivales qu'elle a évincées »). L'écrire ici enverrait au client le
-    // nom des promotions qu'il n'a pas eues.
-    //
-    // Il attend donc le rétrécissement des trois routes client — un lot à part,
-    // au registre. Rien d'autre ne le retient : le domaine le calcule, le
-    // lecteur l'accueille.
-  }));
 }

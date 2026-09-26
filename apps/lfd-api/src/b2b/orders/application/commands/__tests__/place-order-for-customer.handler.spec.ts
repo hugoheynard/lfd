@@ -259,6 +259,8 @@ function repo(sink: { placed: OrderToPlace | null }): OrderRepository {
     markFulfilled: () => Promise.resolve(true),
     markReady: () => Promise.reject(new Error("non utilisé")),
     absorbIntoPlan: () => Promise.reject(new Error("non utilisé")),
+    markAbandoned: () => Promise.reject(new Error("non utilisé")),
+    failAtClosing: () => Promise.reject(new Error("non utilisé")),
   };
 }
 

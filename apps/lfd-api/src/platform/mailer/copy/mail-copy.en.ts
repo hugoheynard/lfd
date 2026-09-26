@@ -59,4 +59,16 @@ export const MAIL_EN: MailCopy = {
     footer:
       "Unsure, or think this is a mistake? Call us — Le Labo · route de la Balme, Val d'Isère.",
   },
+  paymentExpired: {
+    subject: "Order {ref} cancelled — payment not completed",
+    kicker: "Order cancelled",
+    title: "Your payment did not go through in time.",
+    intro: "The payment for this order was not completed before the batch was prepared.",
+    consequence:
+      "Your order has therefore been cancelled, and nothing has been charged. " +
+      "If you still need it, please place a new order.",
+    amountLabel: "Amount not charged",
+    footer:
+      "Unsure, or think this is a mistake? Call us — Le Labo · route de la Balme, Val d'Isère.",
+  },
 };

@@ -60,6 +60,35 @@ describe('la passation d’une commande (order.placed)', () => {
   });
 });
 
+describe('l’abandon du règlement (order.abandoned)', () => {
+  const abandoned = (outcome: string): FactInput =>
+    fact({
+      type: 'order.abandoned',
+      subjectType: 'user',
+      actorName: 'Jean Dupont',
+      actorType: 'customer',
+      payload: { subjectLabel: 'Jean Dupont', orderId: 'ord_1', orderNumber: 'ORD-142', outcome },
+    });
+
+  it('dit que la commande d’un particulier est annulée', () => {
+    expect(sentence(abandoned('cancelled'))).toBe(
+      'Jean Dupont a abandonné le règlement de la commande ORD-142 : elle est annulée',
+    );
+  });
+
+  it('dit que la commande d’un pro reste à régler', () => {
+    expect(sentence(abandoned('failed'))).toBe(
+      'Jean Dupont a abandonné le règlement de la commande ORD-142 : elle reste à régler',
+    );
+  });
+
+  it('laisse au détail une issue qu’elle ne connaît pas', () => {
+    expect(sentence(abandoned('constructor'))).toBe(
+      'Jean Dupont a abandonné le règlement de la commande ORD-142',
+    );
+  });
+});
+
 describe('les réglages du retrait, de la livraison et des heures limites', () => {
   it('met l’auteur en sujet d’une zone, d’un point de retrait, de ses créneaux', () => {
     expect(

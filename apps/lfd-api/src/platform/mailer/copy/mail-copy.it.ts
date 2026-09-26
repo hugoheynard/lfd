@@ -59,4 +59,15 @@ export const MAIL_IT: MailCopy = {
     cta: "Riprendere il pagamento",
     footer: "Un dubbio o un errore? Ci chiami — Le Labo · route de la Balme, Val d'Isère.",
   },
+  paymentExpired: {
+    subject: "Ordine {ref} annullato — pagamento non riuscito",
+    kicker: "Ordine annullato",
+    title: "Il suo pagamento non è riuscito in tempo.",
+    intro: "Il pagamento di questo ordine non è riuscito prima della preparazione dell'infornata.",
+    consequence:
+      "Il suo ordine è quindi annullato e nulla è stato addebitato. " +
+      "Se ne ha ancora bisogno, effettui un nuovo ordine.",
+    amountLabel: "Importo non addebitato",
+    footer: "Un dubbio o un errore? Ci chiami — Le Labo · route de la Balme, Val d'Isère.",
+  },
 };

@@ -334,6 +334,8 @@ function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
     markFulfilled: () => Promise.reject(new Error("non utilisé")),
     markReady: () => Promise.reject(new Error("non utilisé")),
     absorbIntoPlan: () => Promise.reject(new Error("non utilisé")),
+    markAbandoned: () => Promise.reject(new Error("non utilisé")),
+    failAtClosing: () => Promise.reject(new Error("non utilisé")),
   };
 }
 

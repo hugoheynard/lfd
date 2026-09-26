@@ -71,6 +71,18 @@ export interface B2bMails {
     readonly locale: ContentLocale;
   };
   /**
+   * **Le paiement n'a pas abouti à temps pour la fournée.** Destinataire : le
+   * client. La clôture de la journée a annulé la commande (plan
+   * `documentation/order/plan-abandon-du-reglement.md`, Q4, Q7).
+   *
+   * Sans bouton : il n'y a plus rien à reprendre, et un lien vers un
+   * règlement mort mènerait à un refus.
+   */
+  "customer.payment-expired": {
+    readonly sheet: ClientSheet;
+    readonly locale: ContentLocale;
+  };
+  /**
    * **Le lien de règlement d'une commande**, renvoyé par la comptabilité (plan
    * `plan-blocage-prelevement-et-liens-de-paiement.md` §2a). Destinataire :
    * l'acheteur.
@@ -579,6 +591,20 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
           // Pas de bouton quand l'origine cliente est inconnue : un lien relatif
           // est inerte dans une boîte mail, et le recours reste dans le pied.
           ...(data.settleUrl === "" ? {} : { cta: { label: copy.cta, url: data.settleUrl } }),
+          footer: copy.footer,
+        }),
+      };
+    },
+    "customer.payment-expired": (data) => {
+      const copy = mailCopyOf(data.locale).paymentExpired;
+      return {
+        subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
+        html: customerMail({
+          title: copy.title,
+          body: `${copy.intro}\n\n${copy.consequence}\n\n${data.sheet.reference}`,
+          rows: [
+            { label: copy.amountLabel, value: money(data.sheet.money.totalCents, data.locale) },
+          ],
           footer: copy.footer,
         }),
       };

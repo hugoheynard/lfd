@@ -65,6 +65,9 @@ const UNMARKED: Readonly<Record<string, string>> = {
   "GET /orders/:id/bon": "le bon d'une commande existante reste lisible (§2.3)",
   "GET /orders/:id/bon.pdf": "le bon d'une commande existante reste lisible (§2.3)",
   "GET /orders/:id/payment": "le règlement d'une commande existante reste possible (§2.3, S6)",
+  // 2026-09-26, plan d'abandon du règlement : retenir quelqu'un devant un
+  // formulaire de carte parce que la boutique ferme serait l'inverse de D1.
+  "POST /orders/:id/abandon": "abandonner le règlement d'une commande existante ne passe rien",
   "GET /companies/:companyId/orders": "les commandes existantes de la société (§2.3)",
   "GET /subscriptions/mine": "relire ses paniers récurrents ne passe aucune commande",
   // Tranché le 2026-09-14 : retirer un engagement ne passe aucune commande, et

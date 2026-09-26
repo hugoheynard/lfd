@@ -63,4 +63,16 @@ export const MAIL_FR: MailCopy = {
     footer:
       "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
   },
+  paymentExpired: {
+    subject: "Commande {ref} annulée — paiement non abouti",
+    kicker: "Commande annulée",
+    title: "Votre paiement n'a pas abouti à temps.",
+    intro: "Le règlement de cette commande n'a pas abouti avant la préparation de la fournée.",
+    consequence:
+      "Votre commande est donc annulée, et rien n'a été débité. " +
+      "Si vous en avez toujours besoin, passez une nouvelle commande.",
+    amountLabel: "Montant non débité",
+    footer:
+      "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
+  },
 };

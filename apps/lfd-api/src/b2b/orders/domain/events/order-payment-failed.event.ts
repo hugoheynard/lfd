@@ -1,5 +1,17 @@
 /**
- * Fait de domaine : **le règlement d'une commande a été refusé**.
+ * Pourquoi un règlement est mort — chacun appelle un message différent :
+ *
+ * - `refused` — la banque a refusé la carte (webhook Stripe). La commande reste
+ *   `placed` et se reprend sur la même intention ;
+ * - `abandoned` — le client a quitté l'écran de règlement. Il vient de cliquer :
+ *   aucun courriel ne lui apprend ce qu'il sait déjà ;
+ * - `day_closed` — la clôture de la journée a coupé un règlement resté en
+ *   l'air : la commande est annulée, pour toutes les clientèles (Q7).
+ */
+export type PaymentFailureCause = "refused" | "abandoned" | "day_closed";
+
+/**
+ * Fait de domaine : **le règlement d'une commande est mort**.
  *
  * 🔴 **Ce fait n'existait pas, et son absence coûtait deux choses** (Hugo,
  * 2026-09-17). Le dépôt écrivait `failed` dans une colonne que personne ne
@@ -7,16 +19,21 @@
  * passation, un courriel lui annonçant que sa commande entrait en fabrication —
  * et le comptoir continuait de l'attendre.
  *
- * ⚠️ Comme son jumeau {@link OrderPaymentSettledEvent}, il ne porte que
- * l'identifiant, et n'est publié qu'au **franchissement** : un webhook rejoué ne
- * bascule aucune ligne, donc ne prévient pas deux fois.
+ * ⚠️ Comme son jumeau {@link OrderPaymentSettledEvent}, il n'est publié qu'au
+ * **franchissement** : un webhook rejoué ou un second clic ne bascule aucune
+ * ligne, donc ne prévient pas deux fois.
  *
- * ⚠️ **Ce que ce fait ne dit PAS** : qu'une carte a été abandonnée. Fermer
- * l'onglet devant le formulaire n'émet aucun événement Stripe — la commande
- * reste `pending` pour toujours, et personne n'est prévenu. Fermer ce cas
- * demande d'expirer les commandes impayées, ce qui est un autre chantier
- * (`documentation/order/architecture-reglement-et-compte-de-production.md`, §8).
+ * 🔴 **Il porte sa cause depuis le 2026-09-26.** Son JSDoc disait qu'il ne
+ * couvrait pas l'abandon d'une carte — fermer l'onglet n'émet rien chez
+ * Stripe — et que fermer ce cas était « un autre chantier » : c'est le plan
+ * `documentation/order/plan-abandon-du-reglement.md`. L'abandon et la clôture
+ * de la journée le publient désormais eux-mêmes, avec leur cause ; les abonnés
+ * (courriel, cloche) choisissent sur elle. Un onglet fermé SANS cliquer ne
+ * publie toujours rien — c'est la clôture qui le rattrape.
  */
 export class OrderPaymentFailedEvent {
-  constructor(readonly orderId: string) {}
+  constructor(
+    readonly orderId: string,
+    readonly cause: PaymentFailureCause,
+  ) {}
 }

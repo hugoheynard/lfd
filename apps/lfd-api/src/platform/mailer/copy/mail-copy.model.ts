@@ -141,11 +141,30 @@ export interface PaymentFailedCopy {
   readonly footer: string;
 }
 
+/**
+ * Ce que dit le courriel d'un **paiement arrivé trop tard** : la clôture de la
+ * journée a annulé la commande. Mêmes trois devoirs que le refus — ce qui
+ * s'est passé, ce que devient la commande, et « rien n'a été débité » — mais
+ * sans geste de reprise : il n'y a plus rien à régler.
+ */
+export interface PaymentExpiredCopy {
+  /** Objet du message. `{ref}` = le numéro de commande. */
+  readonly subject: string;
+  readonly kicker: string;
+  readonly title: string;
+  readonly intro: string;
+  /** 🔴 La commande est annulée, et rien n'a été débité. */
+  readonly consequence: string;
+  readonly amountLabel: string;
+  readonly footer: string;
+}
+
 /** Tout ce qu'un e-mail sait dire, dans une langue. */
 export interface MailCopy {
   readonly orderPlaced: OrderPlacedCopy;
   readonly orderReady: OrderReadyCopy;
   readonly paymentFailed: PaymentFailedCopy;
+  readonly paymentExpired: PaymentExpiredCopy;
 }
 
 /**

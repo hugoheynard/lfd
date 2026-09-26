@@ -216,9 +216,38 @@ const orderPlaced: Phrase = (fact) => {
   );
 };
 
+/** Ce que devient la commande après l'abandon ; une valeur inconnue reste au détail. */
+const ABANDON_OUTCOMES: Readonly<Record<string, string>> = {
+  cancelled: ' : elle est annulée',
+  failed: ' : elle reste à régler',
+};
+
+/**
+ * L'abandon du règlement : « Léa Martin a abandonné le règlement de la
+ * commande ORD-142 : elle est annulée ». L'auteur est le client lui-même —
+ * seul celui qui a passé la commande peut l'abandonner.
+ */
+const orderAbandoned: Phrase = (fact) => {
+  const raw = optional(fact.payload['outcome']);
+  const outcome =
+    raw !== null && Object.hasOwn(ABANDON_OUTCOMES, raw) ? ABANDON_OUTCOMES[raw] : undefined;
+  return byActor(
+    fact,
+    [
+      text('a abandonné le règlement de la commande '),
+      name(orDash(fact.payload['orderNumber'])),
+      ...(outcome === undefined ? [] : [text(outcome)]),
+    ],
+    outcome === undefined
+      ? ['subjectLabel', 'orderNumber']
+      : ['subjectLabel', 'orderNumber', 'outcome'],
+  );
+};
+
 export const ORDERS_PHRASES = {
   'order.placed': orderPlaced,
   'order.ready': orderReady,
+  'order.abandoned': orderAbandoned,
   'order.handed_over': orderHandedOver,
 
   'order_cutoff_waiver.granted': (fact) =>

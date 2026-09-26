@@ -69,6 +69,7 @@ const BARE_REFS: Readonly<Record<string, string>> = {
   "order.placed:orderId": "voisine son nom figé (`orderNumber`)",
   "order.placed:companyId": "voisine son nom figé (`clientName`), et la croissance la lit",
   "order.ready:orderId": "voisine son nom figé (`orderNumber`)",
+  "order.abandoned:orderId": "voisine son nom figé (`orderNumber`)",
   "order.ready:readyBy": "une fiche staff que l'annuaire ne nomme pas se cite par son id",
   "order.handed_over:orderId": "voisine son nom figé (`orderNumber`)",
   "order.handed_over:handedOverBy":
