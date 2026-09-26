@@ -1,5 +1,11 @@
 # Plan — les familles en données, plus de rayons codés en dur
 
+> ⚠️ **Rectifié le 2026-09-26, même jour** : il n'y avait **pas** de doublon dans
+> le PIM. La production a l'index `category_slug_fr_unique` et une seule
+> « Viennoiseries », `01a031ff-…`, celle que Hugo a créée ; `cat_vien` n'existe
+> plus que dans le miroir du commerce (`catalog_categories`), périmé. La panne
+> vient de la table en dur qui désigne des familles que le PIM n'a plus.
+>
 > Ouvert le 2026-09-26, après une panne de production : un article rangé par
 > le PIM dans une **seconde** famille « Viennoiseries » (id
 > `01a031ff-146f-756f-a21b-4a2759a35e85`, même slug que `cat_vien`) n'avait
