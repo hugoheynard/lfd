@@ -87,6 +87,12 @@ const ADMITTED = new Map([
     "apps/lfd-api/src/b2b/orders/infrastructure/prisma-guest-order-notice.reader.ts",
     "distingue l'invité (sans `sub`) de la personne qui a un compte",
   ],
+  [
+    "apps/lfd-api/src/b2b/orders/infrastructure/prisma-completed-order.reader.ts",
+    "dit si l'acheteur d'une commande définitive est un invité — seul un invité ne " +
+      "gagne pas de points (plan des points de fidélité, D1, 2026-09-26) ; " +
+      "un booléen en sort, le `sub` jamais",
+  ],
   ["apps/lfd-api/src/dev/seeding/client.seed.ts", "le semis de développement crée des comptes"],
   [
     `${STAFF_DIR}directory/domain/staff-user-state.ts`,

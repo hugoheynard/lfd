@@ -6,6 +6,7 @@ import type { LoyaltyHolder } from "../value-objects/loyalty-holder.js";
 import type { LoyaltySettings } from "../value-objects/loyalty-settings.js";
 
 export const LOYALTY_SETTINGS_SET = "loyalty_settings.set" satisfies JournalFactType;
+export const LOYALTY_POINTS_EARNED = "loyalty.points_earned" satisfies JournalFactType;
 export const LOYALTY_POINTS_ADJUSTED = "loyalty.points_adjusted" satisfies JournalFactType;
 export const LOYALTY_VOUCHER_ISSUED = "loyalty.voucher_issued" satisfies JournalFactType;
 export const LOYALTY_VOUCHER_EXPIRED = "loyalty.voucher_expired" satisfies JournalFactType;
@@ -53,6 +54,26 @@ export class LoyaltySettingsSetEvent implements JournaledEvent {
       subjectId: "default",
       payload: { subjectLabel: SETTINGS_LABEL, ...this.settings.toInput() },
     };
+  }
+}
+
+/**
+ * Une commande remise et réglée a rapporté des points. Pas un geste humain :
+ * la trace dit quelle commande, pour que le titulaire qui conteste un solde
+ * puisse relire d'où vient chaque gain.
+ */
+export class LoyaltyPointsEarnedEvent implements JournaledEvent {
+  constructor(
+    readonly named: NamedHolder,
+    readonly points: number,
+    readonly order: { readonly id: string; readonly number: string },
+  ) {}
+
+  journalFact(): JournalFact {
+    return onHolder(LOYALTY_POINTS_EARNED, this.named, {
+      points: this.points,
+      order: { id: this.order.id, name: this.order.number },
+    });
   }
 }
 

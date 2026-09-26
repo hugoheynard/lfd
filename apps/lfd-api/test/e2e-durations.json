@@ -60,6 +60,7 @@
   "test/kbis.e2e-spec.ts": 3299,
   "test/leads.e2e-spec.ts": 4313,
   "test/login-methods.e2e-spec.ts": 3564,
+  "test/loyalty-earning.e2e-spec.ts": 9900,
   "test/loyalty.e2e-spec.ts": 10490,
   "test/mandate-mentions.e2e-spec.ts": 3005,
   "test/mandate-scheme.e2e-spec.ts": 4774,

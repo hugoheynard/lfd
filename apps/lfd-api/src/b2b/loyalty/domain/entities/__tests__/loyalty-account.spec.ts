@@ -1,6 +1,7 @@
 import {
   EmptyAdjustmentError,
   InsufficientLoyaltyPointsError,
+  InvalidEarnedPointsError,
   InvalidStepCountError,
   LoyaltyBalanceBelowZeroError,
   LoyaltyProgramClosedError,
@@ -133,5 +134,36 @@ describe("LoyaltyAccount.recreditCancelled — l'annulation rend les points", ()
     voucher.cancel(AT, "staff_1", LoyaltyReason.of("erreur"));
     const other = LoyaltyAccount.reconstitute(LoyaltyHolder.of("user", "u2"), 0);
     expect(() => other.recreditCancelled(voucher, act)).toThrow(LoyaltyVoucherNotAvailableError);
+  });
+});
+
+describe("LoyaltyAccount.earn — le gain d'une commande définitive", () => {
+  it("ajoute une ligne `earned` liée à la commande, et le solde suit", () => {
+    const account = LoyaltyAccount.reconstitute(PERSON, 100);
+    account.earn({ entryId: "e3", orderId: "o1", points: 2_340, at: AT });
+
+    expect(account.balance).toBe(2_440);
+    expect(account.pendingEntries).toEqual([
+      {
+        id: "e3",
+        holder: PERSON,
+        kind: "earned",
+        points: 2_340,
+        orderId: "o1",
+        voucherId: null,
+        occurredAt: AT,
+        actorUserId: null,
+        staffUserId: null,
+        reason: null,
+      },
+    ]);
+  });
+
+  it.each([0, -5, 1.5])("refuse un gain de %p points, et n'écrit rien", (points) => {
+    const account = LoyaltyAccount.reconstitute(PERSON, 0);
+    expect(() => account.earn({ entryId: "e3", orderId: "o1", points, at: AT })).toThrow(
+      InvalidEarnedPointsError,
+    );
+    expect(account.pendingEntries).toEqual([]);
   });
 });

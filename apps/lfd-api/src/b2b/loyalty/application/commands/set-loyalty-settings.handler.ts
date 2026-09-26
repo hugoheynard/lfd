@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { LoyaltyProNotYetOpenableError } from "../../domain/errors/loyalty-errors.js";
 import { LoyaltySettingsSetEvent } from "../../domain/events/loyalty.events.js";
 import {
   LoyaltySettingsReader,
@@ -18,6 +19,12 @@ import { SetLoyaltySettingsCommand } from "./set-loyalty-settings.command.js";
  *
  * Aucun bon émis n'est touché : le ratio est figé sur chacun d'eux (plan D5).
  * Un réglage inchangé n'écrit ni ne trace rien.
+ *
+ * 🔴 La clientèle pro ne s'ouvre pas encore : c'est ici, au seul geste qui
+ * écrit, et non dans {@link LoyaltySettings}, pour que le crédit d'une société
+ * reste éprouvable avant le lot F.
+ *
+ * @throws {LoyaltyProNotYetOpenableError} `openToPro` demandé.
  */
 @CommandHandler(SetLoyaltySettingsCommand)
 export class SetLoyaltySettingsHandler implements ICommandHandler<SetLoyaltySettingsCommand, void> {
@@ -30,6 +37,9 @@ export class SetLoyaltySettingsHandler implements ICommandHandler<SetLoyaltySett
   ) {}
 
   async execute(command: SetLoyaltySettingsCommand): Promise<void> {
+    if (command.settings.openToPro) {
+      throw new LoyaltyProNotYetOpenableError();
+    }
     const next = LoyaltySettings.of(command.settings);
     const current = await this.reader.read();
     if (current?.equals(next) === true) {

@@ -206,6 +206,13 @@ const MONEY_DELEGATES = new Map([
   ],
   ["mintDraftMandate", join("b2b", "payments", "application", "mint-mandate-support.ts")],
   ["attachProofToDraft", join("b2b", "payments", "application", "mandate-proof-support.ts")],
+  // Le gain d'une commande définitive, partagé par l'abonné et le rattrapage
+  // de la fidélité (plan des points, D3, 2026-09-26) : il trace
+  // `loyalty.points_earned` dans la transaction qui écrit la ligne.
+  [
+    "creditEarnedPoints",
+    join("b2b", "loyalty", "application", "services", "order-points-crediting.ts"),
+  ],
 ]);
 
 /**

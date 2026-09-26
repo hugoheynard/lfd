@@ -1,6 +1,7 @@
 import {
   EmptyAdjustmentError,
   InsufficientLoyaltyPointsError,
+  InvalidEarnedPointsError,
   InvalidStepCountError,
   LoyaltyBalanceBelowZeroError,
   LoyaltyProgramClosedError,
@@ -39,6 +40,14 @@ export interface LoyaltyConversion {
   readonly voucherId: string;
   readonly entryId: string;
   readonly actorUserId: string;
+  readonly at: Date;
+}
+
+/** Ce que rapporte une commande définitive (plan D3, D4). */
+export interface LoyaltyOrderGain {
+  readonly entryId: string;
+  readonly orderId: string;
+  readonly points: number;
   readonly at: Date;
 }
 
@@ -121,11 +130,34 @@ export class LoyaltyAccount {
       id: conversion.entryId,
       kind: "converted",
       points: -cost,
+      orderId: null,
       voucherId: voucher.id,
       at: conversion.at,
       actorUserId: conversion.actorUserId,
     });
     return voucher;
+  }
+
+  /**
+   * Crédite ce que rapporte une commande définitive. N'écrit qu'un gain par
+   * commande : c'est l'index partiel `(order_id) WHERE kind = 'earned'` qui le
+   * garantit, et l'appelant le vérifie avant sous le verrou du titulaire.
+   *
+   * @throws {InvalidEarnedPointsError} pas un entier strictement positif.
+   */
+  earn(gain: LoyaltyOrderGain): void {
+    if (!isPositiveInteger(gain.points)) {
+      throw new InvalidEarnedPointsError(gain.points);
+    }
+    this.append({
+      id: gain.entryId,
+      kind: "earned",
+      points: gain.points,
+      orderId: gain.orderId,
+      voucherId: null,
+      at: gain.at,
+      actorUserId: null,
+    });
   }
 
   /**
@@ -178,6 +210,7 @@ export class LoyaltyAccount {
     readonly id: string;
     readonly kind: LoyaltyEntryKind;
     readonly points: number;
+    readonly orderId: string | null;
     readonly voucherId: string | null;
     readonly at: Date;
     readonly actorUserId: string | null;
@@ -187,7 +220,7 @@ export class LoyaltyAccount {
       holder: this.holder,
       kind: entry.kind,
       points: entry.points,
-      orderId: null,
+      orderId: entry.orderId,
       voucherId: entry.voucherId,
       occurredAt: entry.at,
       actorUserId: entry.actorUserId,

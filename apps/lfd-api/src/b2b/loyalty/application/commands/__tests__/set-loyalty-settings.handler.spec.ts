@@ -1,7 +1,10 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { InvalidLoyaltyRatioError } from "../../../domain/errors/loyalty-errors.js";
+import {
+  InvalidLoyaltyRatioError,
+  LoyaltyProNotYetOpenableError,
+} from "../../../domain/errors/loyalty-errors.js";
 import type { LoyaltySettingsInput } from "../../../domain/value-objects/loyalty-settings.js";
 import { SetLoyaltySettingsCommand } from "../set-loyalty-settings.command.js";
 import { SetLoyaltySettingsHandler } from "../set-loyalty-settings.handler.js";
@@ -49,5 +52,17 @@ describe("SetLoyaltySettingsHandler — le réglage du programme", () => {
     const { writer, done } = run(null, { ...OPEN_TO_PUBLIC, stepValueCents: 0 });
     await expect(done).rejects.toThrow(InvalidLoyaltyRatioError);
     expect(writer.written).toEqual([]);
+  });
+
+  /**
+   * Chez un pro, « pas de paiement requis » veut dire « payé à terme » : ouvrir
+   * les pros sans signal « facture réglée » créditerait des commandes non
+   * encaissées. L'écran ne le propose pas ; le serveur le refuse quand même.
+   */
+  it("refuse d'ouvrir la clientèle pro, et n'écrit rien", async () => {
+    const { writer, events, done } = run(null, { ...OPEN_TO_PUBLIC, openToPro: true });
+    await expect(done).rejects.toBeInstanceOf(LoyaltyProNotYetOpenableError);
+    expect(writer.written).toEqual([]);
+    expect(events.traced).toEqual([]);
   });
 });

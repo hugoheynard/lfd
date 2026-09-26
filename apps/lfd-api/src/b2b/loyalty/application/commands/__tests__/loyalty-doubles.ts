@@ -6,6 +6,12 @@ import {
   LoyaltyVoucher,
   type LoyaltyVoucherSnapshot,
 } from "../../../domain/entities/loyalty-voucher.js";
+import {
+  CompletedOrderReader,
+  type CompletedOrder,
+  type CompletedOrderPage,
+} from "../../../../orders/domain/ports/completed-order.reader.js";
+import { LoyaltyEarnedOrdersReader } from "../../../domain/ports/loyalty-earned-orders.reader.js";
 import { LoyaltyAccountRepository } from "../../../domain/ports/loyalty-account.repository.js";
 import { LoyaltyConversionGate } from "../../../domain/ports/loyalty-conversion.gate.js";
 import {
@@ -135,4 +141,64 @@ export class FixedGate extends LoyaltyConversionGate {
   mayConvert(holder: LoyaltyHolder, actorUserId: string): Promise<boolean> {
     return Promise.resolve(this.allowed.includes(`${holder.lockKey}>${actorUserId}`));
   }
+}
+
+/** Les gains déjà écrits, lus dans le livre en mémoire. */
+export class LedgerEarnedOrders extends LoyaltyEarnedOrdersReader {
+  constructor(private readonly ledger: InMemoryLedger) {
+    super();
+  }
+
+  earnedAmong(orderIds: readonly string[]): Promise<ReadonlySet<string>> {
+    return Promise.resolve(
+      new Set(
+        this.ledger.entries
+          .filter((entry) => entry.kind === "earned" && entry.orderId !== null)
+          .flatMap((entry) =>
+            entry.orderId !== null && orderIds.includes(entry.orderId) ? [entry.orderId] : [],
+          ),
+      ),
+    );
+  }
+}
+
+/** Les commandes définitives connues, dans l'ordre des identifiants. */
+export class FixedCompletedOrders extends CompletedOrderReader {
+  readonly pages: (string | null)[] = [];
+
+  constructor(private readonly orders: readonly CompletedOrder[]) {
+    super();
+  }
+
+  findCompleted(orderId: string): Promise<CompletedOrder | null> {
+    return Promise.resolve(this.orders.find((order) => order.orderId === orderId) ?? null);
+  }
+
+  listCompleted(after: string | null, limit: number): Promise<CompletedOrderPage> {
+    this.pages.push(after);
+    const sorted = [...this.orders].sort((a, b) => a.orderId.localeCompare(b.orderId));
+    const rest = sorted.filter((order) => after === null || order.orderId > after);
+    const page = rest.slice(0, limit);
+    const last = page.at(-1);
+    return Promise.resolve({
+      orders: page,
+      nextAfter: rest.length > limit && last !== undefined ? last.orderId : null,
+    });
+  }
+}
+
+/** Une commande publique définitive d'un compte connecté : le cas qui crédite. */
+export function completedOrder(overrides: Partial<CompletedOrder> = {}): CompletedOrder {
+  return {
+    orderId: "o1",
+    orderNumber: "CMD-1",
+    clientele: "public",
+    companyId: null,
+    placedByUserId: "u1",
+    buyerHasAccount: true,
+    totalCents: 2_340,
+    deliveryFeeCents: 0,
+    lateFeeCents: 0,
+    ...overrides,
+  };
 }

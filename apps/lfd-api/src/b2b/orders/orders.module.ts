@@ -28,6 +28,8 @@ import { AdminOrderPaymentLinksController } from "./http/admin-order-payment-lin
 import { ListOrdersAwaitingPaymentHandler } from "./application/queries/list-orders-awaiting-payment.handler.js";
 import { ResendOrderPaymentLinkHandler } from "./application/commands/resend-order-payment-link.handler.js";
 import { OrderRecipientReader } from "./domain/ports/order-recipient.reader.js";
+import { CompletedOrderReader } from "./domain/ports/completed-order.reader.js";
+import { PrismaCompletedOrderReader } from "./infrastructure/prisma-completed-order.reader.js";
 import { PrismaOrderRecipientReader } from "./infrastructure/prisma-order-recipient.reader.js";
 import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
 import { DiscardOrderDraftHandler } from "./application/commands/discard-order-draft.handler.js";
@@ -269,6 +271,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: OrderDraftRepository, useClass: PrismaOrderDraftRepository },
     { provide: ShopCartRepository, useClass: PrismaShopCartRepository },
     { provide: OrderReader, useClass: PrismaOrderReader },
+    { provide: CompletedOrderReader, useClass: PrismaCompletedOrderReader },
   ],
   // Le catalogue sort d'ici parce que l'écran de tarification en a besoin : il
   // doit résoudre les prix contre l'autorité que la caisse utilise, pas contre
@@ -284,6 +287,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // DÉLÈGUE la lecture du sujet de remise plutôt que de recopier son `select`,
     // et Nest doit pouvoir le lui donner là où il est instancié.
     OrderReader,
+    // Les commandes définitives, que la fidélité crédite (plan des points,
+    // D3) : elle les lit par ce port, jamais dans les tables de la commande.
+    CompletedOrderReader,
   ],
 })
 export class OrdersModule {}

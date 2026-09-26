@@ -32,6 +32,22 @@ export class InvalidVoucherValidityError extends DomainError {
   }
 }
 
+/**
+ * Ouvrir la fidélité aux pros avant qu'on sache qu'une facture est réglée —
+ * **409**. Chez un pro, `not_required` veut dire « payé à terme », pas encaissé :
+ * sans ce signal, le programme créditerait des commandes non payées (plan des
+ * points, lot F). L'écran ne le propose pas ; le serveur ne le croit pas.
+ */
+export class LoyaltyProNotYetOpenableError extends BusinessError {
+  constructor() {
+    super(
+      "loyalty.pro_not_yet_openable",
+      "La fidélité ne peut pas encore être ouverte aux professionnels : le logiciel ne sait pas " +
+        "encore quand une facture à terme est réglée. Laissez la clientèle pro fermée.",
+    );
+  }
+}
+
 /** Le motif d'un geste du staff est vide ou trop long — **400**. */
 export class InvalidLoyaltyReasonError extends DomainError {
   constructor(max: number) {
@@ -48,6 +64,19 @@ export class InvalidLoyaltyHolderError extends DomainError {
     super(
       "loyalty.invalid_holder",
       "Titulaire de points invalide : une société ou une personne, désignée par son identifiant.",
+    );
+  }
+}
+
+/**
+ * Un gain de commande nul, négatif ou fractionnaire — **400**. La base le
+ * refuserait aussi (`CHECK`), mais sans dire pourquoi.
+ */
+export class InvalidEarnedPointsError extends DomainError {
+  constructor(points: number) {
+    super(
+      "loyalty.invalid_earned_points",
+      `Gain de fidélité invalide (${String(points)} points) : une commande rapporte un nombre entier de points, au moins 1.`,
     );
   }
 }

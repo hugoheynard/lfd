@@ -73,6 +73,14 @@ async function main(): Promise<void> {
     ]);
 
     // Purge de la cible en ordre FK INVERSE (enfants d'abord).
+    // La fidélité d'abord : ses clés vers `companies` et `users` sont en
+    // RESTRICT (un grand livre ne s'efface pas), et le `deleteMany` des
+    // titulaires échouerait après que les commandes ont déjà disparu. Un seul
+    // TRUNCATE pour les deux tables, parce qu'un reliquat référence son bon
+    // d'origine (RESTRICT, lot C) : deux DELETE successifs ne passeraient pas.
+    // Elle n'est pas recopiée : les points de la source ne sont pas des données
+    // de démonstration.
+    await target.$executeRaw`TRUNCATE "public"."loyalty_ledger_entries", "public"."loyalty_vouchers"`;
     await target.orderLine.deleteMany();
     await target.order.deleteMany();
     await target.supportRequest.deleteMany();
