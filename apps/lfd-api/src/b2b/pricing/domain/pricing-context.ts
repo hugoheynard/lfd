@@ -35,7 +35,8 @@ export type { PricingParties } from "./loaded-pricer.js";
  */
 export function pricingContextFor(
   sku: string,
-  categoryCode: string,
+  /** `null` = famille inconnue du catalogue : aucune règle de famille. */
+  categoryCode: string | null,
   quantity: number,
   parties: PricingParties,
   at: Date,

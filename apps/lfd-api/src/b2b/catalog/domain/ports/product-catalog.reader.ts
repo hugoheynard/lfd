@@ -14,8 +14,15 @@ export interface PricedSku {
 export interface CatalogItem extends PricedSku {
   /** Taux de TVA du **produit** en %, ex. 5.5 (alimentaire) ou 20 (non-alimentaire). */
   readonly vatRate: number;
-  /** Sa famille — ce par quoi un écran range 92 produits en cinq rayons. */
-  readonly category: CatalogCategory;
+  /**
+   * Sa famille — ce par quoi un écran range 92 produits en cinq rayons.
+   *
+   * `null` = la famille du PIM n'a pas de rayon (panne du 2026-09-26) :
+   * l'article reste vendable et tarifé, sans aucune décision de famille. Jamais
+   * un rayon par défaut — un rayon faux ferait mordre les règles d'une autre
+   * famille.
+   */
+  readonly category: CatalogCategory | null;
   /**
    * **Ce qui est déclaré**, au moment où l'on résout la ligne.
    *

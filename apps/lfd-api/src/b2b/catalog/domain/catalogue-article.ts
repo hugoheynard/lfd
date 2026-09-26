@@ -52,8 +52,11 @@ declare const FROM_CATALOGUE: unique symbol;
 export interface CatalogArticle {
   readonly sku: string;
   readonly name: string;
-  /** Sa famille — ce que vise une règle de portée `category`. */
-  readonly category: string;
+  /**
+   * Sa famille — ce que vise une règle de portée `category`. `null` = famille
+   * du PIM sans rayon : tarifé sans décision de famille.
+   */
+  readonly category: string | null;
   /** Le tarif de liste, en millicentimes. **Lu du catalogue, jamais reçu.** */
   readonly canonicalMillicents: number;
   readonly [FROM_CATALOGUE]: true;
@@ -74,7 +77,7 @@ export interface CatalogArticle {
 interface Unsealed {
   readonly sku: string;
   readonly name: string;
-  readonly category: string;
+  readonly category: string | null;
   readonly unitPriceMillicents: number;
 }
 
@@ -119,7 +122,7 @@ export function catalogueArticle(item: Unsealed): CatalogArticle {
  * qui l'affiche.
  */
 export function atCanonicalPrice<T extends { readonly sku: string; readonly name: string }>(
-  item: T & { readonly category: string; readonly unitPriceMillicents: number },
+  item: T & { readonly category: string | null; readonly unitPriceMillicents: number },
   unitPriceMillicents: number,
 ): T & { readonly unitPriceMillicents: number; readonly article: CatalogArticle } {
   return {

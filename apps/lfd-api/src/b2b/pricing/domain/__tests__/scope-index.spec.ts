@@ -120,6 +120,23 @@ describe("l'index rend exactement ce que matchesScope retenait", () => {
     );
   });
 
+  /**
+   * Panne du 2026-09-26 : un article d'une famille sans rayon est tarifé SANS
+   * famille. Aucune portée `category` ne le vise — pas même celle sans
+   * identifiant, que `null === null` aurait laissé passer.
+   */
+  it("et sur un article de famille inconnue, qu'aucune portée de famille ne vise", () => {
+    const orphan = context({ categoryId: null });
+    const index = indexByScope(EVERY_SCOPE, scopeOf);
+
+    const byIndex = namesOf(candidatesIn(index, orphan)).sort();
+
+    expect(byIndex).toEqual(
+      namesOf(EVERY_SCOPE.filter((item) => matchesScope(item.scope, orphan))).sort(),
+    );
+    expect(byIndex).toEqual(["global", "sa déclinaison", "son produit"].sort());
+  });
+
   it("rend un tableau vide, pas une erreur, quand aucun seau ne répond", () => {
     expect(candidatesIn(indexByScope([], scopeOf), context())).toEqual([]);
   });

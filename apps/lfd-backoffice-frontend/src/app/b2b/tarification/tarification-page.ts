@@ -13,6 +13,7 @@ import { chainOf, floorLabel, ruleSentence } from './pricing-format';
 import {
   FoldButtonComponent,
   FoldBadgeComponent,
+  FoldCalloutComponent,
   FoldCardComponent,
   FoldEmptyStateComponent,
   FoldPageLayoutComponent,
@@ -83,6 +84,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     RouterLink,
     FoldButtonComponent,
     FoldBadgeComponent,
+    FoldCalloutComponent,
     FoldCardComponent,
     FoldEmptyStateComponent,
     FoldPageLayoutComponent,
@@ -228,6 +230,19 @@ export class TarificationPage {
   /** La limite et les règles qui valent pour **tout le catalogue**. */
   protected readonly globalFloor = computed(() => this.board()?.globalFloor ?? null);
   protected readonly globalRules = computed(() => this.board()?.globalRules ?? []);
+
+  /**
+   * Les articles dont la famille n'a pas de rayon : tarifés sans décision de
+   * famille, et absents de la grille. Compté par le serveur à chaque lecture.
+   */
+  protected readonly unknownFamilyCount = computed(() => this.board()?.unknownFamilyCount ?? 0);
+
+  protected readonly unknownFamilyNotice = computed(() => {
+    const count = this.unknownFamilyCount();
+    return count === 1
+      ? "1 article sans famille connue : il se tarife sans règle, limite ni palier de famille, et n'apparaît pas dans la grille. Rattachez-le à une famille connue dans le référentiel."
+      : `${count} articles sans famille connue : ils se tarifent sans règle, limite ni palier de famille, et n'apparaissent pas dans la grille. Rattachez-les à une famille connue dans le référentiel.`;
+  });
 
   /**
    * **Une altération sur tout le catalogue** : la hausse de saison, le geste de

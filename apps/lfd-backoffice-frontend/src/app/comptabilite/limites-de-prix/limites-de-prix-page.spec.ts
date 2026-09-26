@@ -88,6 +88,7 @@ const BOARD: PricingBoardView = {
   globalFloor: null,
   globalRules: [],
   canonicalHistoryStartsAt: null,
+  unknownFamilyCount: 0,
   simulation: { quantity: 1, at: '2026-08-17T10:00:00.000Z', audience: 'all' },
 };
 

@@ -619,6 +619,19 @@ describe("le rang d’un niveau", () => {
   });
 });
 
+/**
+ * Le dépôt tel que la production le vit au 2026-09-26 : deux familles actives
+ * y portent le slug `viennoiseries`, donc aucune contrainte ne refuse
+ * l'écriture. Seul le refus applicatif garde.
+ */
+class CategoriesWithoutSlugIndex extends InMemoryCategories {
+  override save(category: Category): Promise<void> {
+    const snapshot = category.snapshot();
+    this.stored.set(snapshot.id, snapshot);
+    return Promise.resolve();
+  }
+}
+
 describe("le slug est unique", () => {
   /**
    * Il est dérivé du nom et sert d'identifiant en aval : préfixe de famille de
@@ -671,6 +684,54 @@ describe("le slug est unique", () => {
     );
 
     expect(repo.at(id!).slug.fr).toBe(own);
+  });
+
+  /**
+   * Régression : le 2026-09-26, une seconde « Viennoiseries » est arrivée en
+   * production. Le refus doit nommer celle qui existe, et ignorer casse et
+   * accents.
+   */
+  it("refuse un nom pris à la casse et aux accents près, en nommant la famille existante", async () => {
+    const repo = new InMemoryCategories();
+    const handler = new CreateCategoryHandler(
+      repo,
+      new SequentialIds(),
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+    );
+    const existing = await handler.execute(
+      new CreateCategoryCommand({ name: { fr: "Viennoiseries" } }),
+    );
+
+    const refusal = handler.execute(new CreateCategoryCommand({ name: { fr: "VIENNOISÉRIES" } }));
+
+    await expect(refusal).rejects.toMatchObject({
+      holder: { id: existing, name: "Viennoiseries", isArchived: false },
+    });
+    await expect(refusal).rejects.toThrow("La famille « Viennoiseries » porte déjà ce nom");
+  });
+
+  /**
+   * La production porte deux « Viennoiseries » actives, antérieures au refus
+   * (2026-09-26) : corriger l'une sans changer son slug ne bute pas sur l'autre.
+   */
+  it("laisse renommer un doublon existant tant que son slug ne change pas", async () => {
+    const repo = new CategoriesWithoutSlugIndex();
+    for (const id of ["cat_vien", "cat_vien_bis"]) {
+      const twin = Category.open({
+        id,
+        name: { fr: "Viennoiseries" },
+        parentId: null,
+        position: 0,
+      });
+      repo.stored.set(id, twin.snapshot());
+    }
+
+    await new RenameCategoryHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
+      new RenameCategoryCommand("cat_vien_bis", { name: { fr: "Viennoiseries", en: "Pastries" } }),
+    );
+
+    expect(repo.at("cat_vien_bis").name.en).toBe("Pastries");
   });
 
   /** Une archivée garde ses fiches, donc son préfixe de SKU reste pris. */

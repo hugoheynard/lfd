@@ -81,7 +81,11 @@ export function isRunningAt(commitment: VolumeCommitment, at: Date): boolean {
  */
 export function commitmentFor(
   commitments: readonly VolumeCommitment[],
-  target: { readonly categoryId: string; readonly productSku: string; readonly variantSku: string },
+  target: {
+    readonly categoryId: string | null;
+    readonly productSku: string;
+    readonly variantSku: string;
+  },
   at: Date,
 ): VolumeCommitment | null {
   const covering = commitments
@@ -92,13 +96,13 @@ export function commitmentFor(
 
 function coversTarget(
   scope: PriceScope,
-  target: { categoryId: string; productSku: string; variantSku: string },
+  target: { categoryId: string | null; productSku: string; variantSku: string },
 ): boolean {
   switch (scope.type) {
     case "global":
       return true;
     case "category":
-      return scope.id === target.categoryId;
+      return target.categoryId !== null && scope.id === target.categoryId;
     case "product":
       return scope.id === target.productSku;
     case "variant":

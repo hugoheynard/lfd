@@ -11,7 +11,7 @@ import {
   localizedText,
   type LocalizedText,
 } from "../../shared/domain/value-objects/localized-text.js";
-import { requireCategory } from "./category-support.js";
+import { assertSlugFree, requireCategory } from "./category-support.js";
 
 export interface CreateCategoryPayload {
   /** Le nom, dans les langues renseignées — la source est obligatoire. Une
@@ -58,6 +58,7 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
       parentId,
       position: await this.categories.nextPosition(parentId),
     });
+    await assertSlugFree(this.categories, category);
 
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({

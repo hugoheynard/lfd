@@ -63,5 +63,10 @@ export interface CatalogItemView {
   readonly unitPriceMillicents: number;
   /** Taux de TVA en %, ex. 5.5 (alimentaire) ou 20 (non-alimentaire). */
   readonly vatRate: number;
-  readonly category: CatalogCategory;
+  /**
+   * Son rayon. `null` = la famille du référentiel n'a pas de rayon côté
+   * commerce (panne du 2026-09-26) : l'article reste commandable et tarifé,
+   * sans décision de famille. Jamais un rayon par défaut.
+   */
+  readonly category: CatalogCategory | null;
 }

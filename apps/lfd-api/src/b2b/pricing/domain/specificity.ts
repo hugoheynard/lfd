@@ -84,7 +84,9 @@ export function matchesScope(scope: PriceScope, context: PricingContext): boolea
     case "global":
       return true;
     case "category":
-      return scope.id === context.categoryId;
+      // Une famille inconnue (`null`) n'est visée par AUCUNE portée — pas même
+      // une portée `category` sans identifiant, que `null === null` accepterait.
+      return context.categoryId !== null && scope.id === context.categoryId;
     case "product":
       return scope.id === context.productSku;
     case "variant":

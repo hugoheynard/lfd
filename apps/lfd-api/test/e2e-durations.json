@@ -27,6 +27,7 @@
   "test/catalog-journal.e2e-spec.ts": 17398,
   "test/catalog-operations.e2e-spec.ts": 17959,
   "test/catalog-parity.e2e-spec.ts": 8877,
+  "test/catalog-unknown-family.e2e-spec.ts": 6471,
   "test/client-notes-wall.e2e-spec.ts": 7465,
   "test/client-notes.e2e-spec.ts": 20399,
   "test/cockpit.e2e-spec.ts": 11163,

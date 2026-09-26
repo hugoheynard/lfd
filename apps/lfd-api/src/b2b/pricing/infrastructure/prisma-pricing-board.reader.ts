@@ -201,6 +201,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
         .filter((entry) => entry.rule.scope.type === "global")
         .map((entry) => entry.view),
       canonicalHistoryStartsAt: loaded.historyStartsAt?.toISOString() ?? null,
+      unknownFamilyCount: loaded.articles.filter((item) => item.category === null).length,
       simulation: { quantity: 1, at: at.toISOString(), audience: "all" },
     };
   }

@@ -37,12 +37,11 @@ export function scopeKeyOf(scope: PriceScope): ScopeKey | null {
  * simplement stable, ce qui rend les tests lisibles et les traces comparables.
  */
 export function scopeKeysOf(context: PricingContext): readonly ScopeKey[] {
-  return [
-    "global",
-    `category:${context.categoryId}`,
-    `product:${context.productSku}`,
-    `variant:${context.variantSku}`,
-  ];
+  // Une famille inconnue n'a pas de seau : fabriquer `category:null` la ferait
+  // percuter une famille réellement nommée « null ».
+  const category: readonly ScopeKey[] =
+    context.categoryId === null ? [] : [`category:${context.categoryId}`];
+  return ["global", ...category, `product:${context.productSku}`, `variant:${context.variantSku}`];
 }
 
 /**

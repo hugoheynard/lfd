@@ -79,6 +79,21 @@ PIM est un rayon nouveau dès sa livraison, sans déploiement.
   devient une vraie seconde famille, tarifable à part, ce qui est pire en
   silence : c'est pour ça que le refus est à la source.
 
+  > **Révisé le 2026-09-26 (Hugo) — pas d'index pour l'instant.** Hugo
+  > n'archive aucune des familles qu'il a créées en production : le doublon
+  > `viennoiseries` y reste actif, et tout index unique échouerait au
+  > déploiement. Le refus est donc **applicatif seul**, à la création et au
+  > renommage (quand le slug change), et nomme la famille existante. Les
+  > doublons existants restent tels quels. Un index est la bonne garantie —
+  > une lecture ne ferme pas la course entre deux créations —, il viendra
+  > quand la production n'aura plus de doublon.
+  >
+  > ⚠️ Constaté au lot 0 : la migration `20260826090000_unicite_slug_rang_emplacement`
+  > pose **déjà** `category_slug_fr_unique` (sur `slug->>'fr'`, archivées
+  > comprises), et la base de dev l'a. Un doublon de slug actif en production
+  > veut dire que la production n'a pas cet index — dérive à vérifier
+  > (`SELECT indexname FROM pg_indexes WHERE schemaname = 'pim' AND tablename = 'category'`).
+
 ## 3. Les lots — trois temps, parce que des contrats sont servis
 
 ### Lot 0 — la panne ne se reproduit pas (immédiat, indépendant)

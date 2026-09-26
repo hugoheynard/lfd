@@ -106,12 +106,18 @@ function targetsCategory(scope: PriceScope, category: CatalogCategory): boolean 
   return scope.type === "category" && scope.id === category;
 }
 
-/** Le catalogue rangé par famille, en une passe. */
+/** Le catalogue rangé par famille, en une passe — sans les familles inconnues. */
 export function groupByCategory(
   articles: readonly CatalogItem[],
 ): ReadonlyMap<CatalogCategory, CatalogItem[]> {
   const grouped = new Map<CatalogCategory, CatalogItem[]>();
   for (const article of articles) {
+    // Famille inconnue : aucun rayon où la ranger. L'article n'est pas perdu —
+    // il reste tarifé partout où on le résout — et le tableau le COMPTE
+    // (`unknownFamilyCount`) plutôt que de l'inventer dans un rayon voisin.
+    if (article.category === null) {
+      continue;
+    }
     const bucket = grouped.get(article.category);
     if (bucket === undefined) {
       grouped.set(article.category, [article]);

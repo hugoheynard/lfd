@@ -42,6 +42,7 @@ const EMPTY_BOARD: PricingBoardView = {
   globalFloor: null,
   globalRules: [],
   canonicalHistoryStartsAt: null,
+  unknownFamilyCount: 0,
   simulation: { quantity: 1, at: '2026-08-17T10:00:00.000Z', audience: 'all' },
 };
 
@@ -158,6 +159,23 @@ describe('les compteurs de tête', () => {
     await screen['load']();
 
     expect(screen['alteredCount']()).toBe(1);
+  });
+
+  // Panne du 2026-09-26 : un article d'une famille sans rayon est servi sans
+  // famille ; il n'est dans aucune famille de la grille, le compte le montre.
+  it('annonce les articles sans famille connue', async () => {
+    const screen = page({ ...EMPTY_BOARD, unknownFamilyCount: 2 });
+    await screen['load']();
+
+    expect(screen['unknownFamilyCount']()).toBe(2);
+    expect(screen['unknownFamilyNotice']()).toContain('2 articles sans famille connue');
+  });
+
+  it('se tait quand toutes les familles sont connues', async () => {
+    const screen = page(EMPTY_BOARD);
+    await screen['load']();
+
+    expect(screen['unknownFamilyCount']()).toBe(0);
   });
 });
 

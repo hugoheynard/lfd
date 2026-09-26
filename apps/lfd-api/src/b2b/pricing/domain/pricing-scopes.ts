@@ -50,7 +50,7 @@ export function scopesOf(context: PricingContext): PricingScopes {
     at: context.at,
     companyId: context.companyId,
     segmentId: context.segmentId,
-    categoryIds: [context.categoryId],
+    categoryIds: context.categoryId === null ? [] : [context.categoryId],
     productSkus: [context.productSku],
     variantSkus: [context.variantSku],
   };
@@ -72,7 +72,9 @@ export function scopesOfAll(contexts: readonly PricingContext[]): PricingScopes 
     at: first.at,
     companyId: first.companyId,
     segmentId: first.segmentId,
-    categoryIds: [...new Set(contexts.map((c) => c.categoryId))],
+    categoryIds: [
+      ...new Set(contexts.flatMap((c) => (c.categoryId === null ? [] : [c.categoryId]))),
+    ],
     productSkus: [...new Set(contexts.map((c) => c.productSku))],
     variantSkus: [...new Set(contexts.map((c) => c.variantSku))],
   };

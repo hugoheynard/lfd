@@ -8,7 +8,7 @@ import {
   localizedText,
   type LocalizedText,
 } from "../../shared/domain/value-objects/localized-text.js";
-import { requireCategory } from "./category-support.js";
+import { assertSlugFree, requireCategory } from "./category-support.js";
 
 export interface RenameCategoryPayload {
   /** Le nom, dans les langues renseignées — la source est obligatoire. Une
@@ -36,7 +36,14 @@ export class RenameCategoryHandler implements ICommandHandler<RenameCategoryComm
   async execute(command: RenameCategoryCommand): Promise<void> {
     const category = await requireCategory(this.categories, command.id);
     const before = category.name;
+    const slugBefore = category.slug.fr;
     category.rename(localizedText("nom", command.payload.name));
+    // Seul un slug qui CHANGE est vérifié : la production porte des doublons
+    // antérieurs au refus (2026-09-26), et corriger l'anglais ou la casse de
+    // l'un d'eux ne doit pas buter sur son jumeau.
+    if (category.slug.fr !== slugBefore) {
+      await assertSlugFree(this.categories, category);
+    }
     const changes = changesBetween({ name: before }, { name: category.name });
     await this.uow.run(async () => {
       // Un renommage qui ne renomme rien n'est pas un fait : le geste existe

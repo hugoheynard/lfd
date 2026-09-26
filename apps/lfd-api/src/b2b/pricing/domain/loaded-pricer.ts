@@ -33,8 +33,11 @@ export interface PricingParties {
 export interface PricedItem {
   readonly sku: string;
   readonly name: string;
-  /** Sa famille — ce que vise une règle de portée `category`. */
-  readonly category: string;
+  /**
+   * Sa famille — ce que vise une règle de portée `category`. `null` = famille
+   * inconnue du catalogue : aucune règle de famille ne le vise.
+   */
+  readonly category: string | null;
   /** Le tarif de liste, en millicentimes. */
   readonly canonicalMillicents: number;
 }
@@ -287,7 +290,7 @@ export class LoadedPricer {
       productSku: item.sku,
       // Aucune règle de famille n'est lue ici : la mercuriale vise l'article
       // nommément.
-      categoryId: "",
+      categoryId: null,
       companyId,
       segmentId: null,
     };

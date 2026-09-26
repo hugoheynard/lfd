@@ -56,6 +56,22 @@ describe('catalogShelves', () => {
     expect(shelves).toHaveLength(1);
   });
 
+  /**
+   * Régression : le 2026-09-26, un article d'une famille sans rayon a mis le
+   * catalogue pro en 500. Servi désormais sans famille, il ne doit pas
+   * disparaître de la saisie de commande.
+   */
+  it('range un article sans famille connue en dernier, sous son propre titre', () => {
+    const orphan: CatalogItemView = { ...CROISSANT, sku: 'VIE-099', category: null };
+
+    const shelves = catalogShelves([orphan, TABLETTE], (item) => item.category);
+
+    expect(shelves.map((shelf) => [shelf.category, shelf.label])).toEqual([
+      ['chocolat', 'Chocolat & confiserie'],
+      [null, 'Sans famille connue'],
+    ]);
+  });
+
   it("ne rend rien quand il n'y a rien", () => {
     expect(catalogShelves([], (item: CatalogItemView) => item.category)).toEqual([]);
   });

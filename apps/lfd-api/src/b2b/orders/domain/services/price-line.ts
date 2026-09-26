@@ -13,7 +13,8 @@ export interface LineToPrice {
   readonly name: string;
   readonly unitPriceMillicents: number;
   readonly vatRate: number;
-  readonly category: string;
+  /** `null` = famille inconnue du catalogue : tarifé sans décision de famille. */
+  readonly category: string | null;
   /**
    * Ce que le référentiel déclare. `null` = il n'en porte pas — une absence,
    * jamais « aucun allergène », et jamais `undefined` : l'appelant doit poser

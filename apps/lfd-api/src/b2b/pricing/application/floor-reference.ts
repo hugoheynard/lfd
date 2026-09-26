@@ -4,7 +4,8 @@ import type { PriceScope } from "../domain/price-rule.js";
 /** Ce que la référence a besoin de savoir d'un article : son rayon et son prix. */
 export interface ReferenceArticle {
   readonly sku: string;
-  readonly category: string;
+  /** `null` = famille inconnue : aucune limite de famille ne le compte. */
+  readonly category: string | null;
   readonly unitPriceMillicents: number;
 }
 
@@ -42,7 +43,9 @@ function targeted(
     case "global":
       return articles;
     case "category":
-      return articles.filter((article) => article.category === scope.id);
+      return articles.filter(
+        (article) => article.category !== null && article.category === scope.id,
+      );
     case "product":
     case "variant":
       return articles.filter((article) => article.sku === scope.id);

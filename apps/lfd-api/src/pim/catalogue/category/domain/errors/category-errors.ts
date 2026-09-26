@@ -99,16 +99,41 @@ export class CategoryHasActiveChildrenError extends BusinessError {
  */
 export class CategorySlugTakenError extends BusinessError {
   /**
-   * Plus de `takenBy` : l'unicité est tenue par la base, et une violation de
-   * contrainte ne dit pas QUI détient la valeur. Le donner obligerait à une
-   * lecture de plus, pour un identifiant que personne n'affichait.
+   * L'unicité est tenue par la base, et une violation de contrainte ne dit pas
+   * QUI détient la valeur : `holder` est donc `null` quand le refus vient de la
+   * contrainte (une course entre deux créations).
+   *
+   * Le chemin ordinaire le nomme, lui : depuis le 2026-09-26, la création et le
+   * renommage lisent la famille qui porte déjà le slug avant d'écrire. Une
+   * seconde « Viennoiseries » est arrivée en production ce jour-là, et un refus
+   * qui ne dit pas laquelle envoie chercher parmi toutes.
    */
-  constructor(readonly slugFr: string) {
-    super(
-      "catalogue.category.slug_taken",
-      `Une autre famille porte déjà ce nom (slug « ${slugFr} »).`,
-    );
+  constructor(
+    readonly slugFr: string,
+    readonly holder: SlugHolder | null = null,
+  ) {
+    super("catalogue.category.slug_taken", slugTakenMessage(slugFr, holder));
   }
+}
+
+/** La famille qui porte déjà un slug : son nom, et si elle est archivée. */
+export interface SlugHolder {
+  readonly id: string;
+  readonly name: string;
+  readonly isArchived: boolean;
+}
+
+function slugTakenMessage(slugFr: string, holder: SlugHolder | null): string {
+  if (holder === null) {
+    return `Une autre famille porte déjà ce nom (slug « ${slugFr} »).`;
+  }
+  const exit = holder.isArchived
+    ? "Elle est archivée : la renommer d’abord, ou choisir un autre nom."
+    : "Ranger les produits dans cette famille, ou choisir un autre nom.";
+  return (
+    `La famille « ${holder.name} » porte déjà ce nom, à la casse et aux accents près ` +
+    `(slug « ${slugFr} »). ${exit}`
+  );
 }
 
 /**

@@ -197,7 +197,13 @@ export interface PricingContext {
   /** Les identifiants de portée de l'article visé. */
   readonly variantSku: string;
   readonly productSku: string;
-  readonly categoryId: string;
+  /**
+   * `null` = **famille inconnue** : le catalogue n'a pas de rayon pour la
+   * famille du PIM. Aucune portée `category` ne la vise — l'article ne reçoit
+   * que les décisions d'article et de catalogue (plan des familles en données,
+   * lot 0).
+   */
+  readonly categoryId: string | null;
   /** `null` pour une commande sans entreprise (parcours zéro friction). */
   readonly companyId: string | null;
   readonly segmentId: string | null;

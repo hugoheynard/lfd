@@ -113,6 +113,13 @@
           }
         </fold-page-section>
 
+        <!-- Un article d'une famille sans rayon n'est dans aucune famille de la
+             grille : il se tarife sans règle de famille. Le dire ici, sinon il
+             est simplement absent. -->
+        @if (unknownFamilyCount() > 0) {
+          <fold-callout variant="warning" icon="info">{{ unknownFamilyNotice() }}</fold-callout>
+        }
+
         <!--
           La mise en garde vient AVANT la grille parce qu'elle change la lecture
           de tout ce qui suit : sans elle, la colonne du prix passerait pour « le

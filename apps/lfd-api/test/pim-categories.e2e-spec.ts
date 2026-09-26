@@ -136,6 +136,36 @@ describe("le slug d'une famille est unique", () => {
     expect(all.filter((row) => row.slug.fr === "pains")).toHaveLength(1);
   });
 
+  /**
+   * Régression : le 2026-09-26, une seconde « Viennoiseries » est arrivée en
+   * production. Le refus ignore casse et accents, et nomme celle qui existe —
+   * par l'application, car la production n'a pas d'index qui le tienne.
+   */
+  it("refuse un nom pris à la casse et aux accents près, en nommant la famille", async () => {
+    await createCategory("Viennoiseries");
+
+    const response = await staff()
+      .post(CATEGORIES)
+      .send({ name: { fr: "VIENNOISÉRIES" } });
+
+    expect(response.status).toBe(409);
+    const body = jsonBody<{ code: string; message: string }>(response);
+    expect(body.code).toBe("catalogue.category.slug_taken");
+    expect(body.message).toContain("La famille « Viennoiseries » porte déjà ce nom");
+  });
+
+  it("refuse un renommage vers le slug d'une autre, en la nommant", async () => {
+    await createCategory("Pains");
+    const other = await createCategory("Brioches");
+
+    const response = await staff()
+      .put(`${CATEGORIES}/${other}/name`)
+      .send({ name: { fr: "pains" } });
+
+    expect(response.status).toBe(409);
+    expect(jsonBody<{ message: string }>(response).message).toContain("« Pains »");
+  });
+
   it("laisse un nom différent qui donne un autre slug", async () => {
     await createCategory("Pains");
 

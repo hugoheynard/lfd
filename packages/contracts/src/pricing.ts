@@ -1242,6 +1242,16 @@ export interface PricingBoardView {
    * existe pour supprimer.
    */
   readonly canonicalHistoryStartsAt: string | null;
+  /**
+   * **Combien d'articles vendables n'ont pas de famille connue** — lu à la
+   * volée, à chaque lecture.
+   *
+   * Leur famille du référentiel n'a pas de rayon côté commerce : ils restent
+   * vendables et tarifés (décisions d'article et de catalogue seulement), mais
+   * aucune famille du tableau ne les porte. Le compte les rend visibles plutôt
+   * que de les ranger dans un rayon deviné (panne du 2026-09-26).
+   */
+  readonly unknownFamilyCount: number;
   readonly simulation: {
     readonly quantity: number;
     readonly at: string;

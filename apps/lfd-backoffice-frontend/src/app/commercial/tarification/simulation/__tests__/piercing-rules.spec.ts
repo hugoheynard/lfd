@@ -33,6 +33,7 @@ function rule(over: Partial<PriceRuleView>): PriceRuleView {
 function board(rules: readonly PriceRuleView[]): PricingBoardView {
   return {
     canonicalHistoryStartsAt: null,
+    unknownFamilyCount: 0,
     globalRules: rules,
     globalFloor: null,
     categories: [],

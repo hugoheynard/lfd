@@ -1,6 +1,5 @@
 import { CatalogReader, type ResolvedCatalogItem } from "../../domain/ports/catalog.reader.js";
 import { CatalogBackedProductCatalog } from "../catalog-backed-product-catalog.js";
-import { UnknownCatalogShelfError } from "../../domain/errors/unknown-catalog-shelf.error.js";
 
 /**
  * **La bascule du catalogue** (Cat C5b), éprouvée sur ce qui compte : ce que
@@ -77,15 +76,41 @@ describe("le catalogue du checkout, branché sur la base", () => {
   });
 
   /**
-   * Un rayon faux ferait appliquer à l'article les règles de prix d'une AUTRE
-   * famille — et rien ne le signalerait avant la facture. Le refus est donc
-   * préférable au rangement par défaut.
+   * Régression — panne du 2026-09-26 : une seconde famille « Viennoiseries »
+   * créée au PIM n'avait pas de rayon, l'adaptateur levait, et tout ce qui lit
+   * le catalogue pro tombait en 500. L'article est désormais servi SANS
+   * famille — jamais rangé dans un rayon deviné.
    */
-  it("refuse un article dont la famille n'a pas de rayon", async () => {
-    const orphan = { ...CROISSANT, categoryId: "cat_inconnue" };
+  it("sert un article dont la famille n'a pas de rayon, sans famille", async () => {
+    const orphan = { ...CROISSANT, categoryId: "01a031ff-146f-756f-a21b-4a2759a35e85" };
     const catalog = new CatalogBackedProductCatalog(reader([orphan]));
 
-    await expect(catalog.resolve("VIE-001", "pro")).rejects.toThrow(UnknownCatalogShelfError);
+    const item = await catalog.resolve("VIE-001", "pro");
+
+    expect(item?.category).toBeNull();
+    expect(item?.article.category).toBeNull();
+    expect(item?.unitPriceMillicents).toBe(200_000);
+  });
+
+  it("ne met pas le catalogue entier en panne pour un article sans rayon", async () => {
+    const orphan = {
+      ...CROISSANT,
+      sku: "VIE-050-1",
+      productSku: "VIE-050",
+      name: "Abricotine",
+      categoryId: "01a031ff-146f-756f-a21b-4a2759a35e85",
+    };
+    const catalog = new CatalogBackedProductCatalog(reader([orphan, CROISSANT]));
+
+    const all = await catalog.all();
+    const many = await catalog.resolveMany(["VIE-050", "VIE-001"], "pro");
+
+    // Les articles sans famille connue ferment la marche, quel que soit leur nom.
+    expect(all.map((item) => [item.sku, item.category])).toEqual([
+      ["VIE-001", "viennoiserie"],
+      ["VIE-050", null],
+    ]);
+    expect(many.get("VIE-050")?.category).toBeNull();
   });
 
   /** Les autres conditionnements n'existaient pas pour la boutique : ils n'entrent pas. */
