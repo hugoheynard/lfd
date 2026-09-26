@@ -87,7 +87,7 @@ export const routes: Routes = [
     path: 'vitrine',
     canActivate: [permissionGuard('b2b_storefront:read')],
     canDeactivate: [pendingChangesGuard],
-    title: 'Vitrine — LFC B2B admin',
+    title: 'Vitrine boutique — LFC B2B admin',
     loadComponent: () =>
       import('./contenu/storefront-page/storefront-page').then((m) => m.StorefrontPage),
   },

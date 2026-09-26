@@ -441,11 +441,12 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     // Le rail ET les tuiles du menu mobile lisent cette liste (`views('b2b')`) :
     // une entrée ici suffit aux deux arbres (vérifié le 2026-09-24).
     //
-    // L'écran vit HORS de l'espace, sous `/vitrine` et son propre droit
-    // (plan-vitrine-enregistrement.md, D7) : l'entrée reste ici pour qui voit
-    // déjà l'espace, et la racine en porte une pour qui ne le voit pas.
+    // L'écran vit sous `/vitrine` et son propre droit
+    // (plan-vitrine-enregistrement.md, D7). Depuis le 2026-09-26 (Hugo), c'est
+    // sa SEULE entrée : la racine n'en porte plus, et le libellé dit de quelle
+    // vitrine il s'agit.
     key: 'vitrine',
-    label: 'Vitrine',
+    label: 'Vitrine boutique',
     link: '/vitrine',
     icon: 'view',
     section: 'Contenu',
