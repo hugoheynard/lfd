@@ -35,7 +35,7 @@ import { PrismaLoyaltySettingsStore } from "./infrastructure/prisma-loyalty-sett
 import { PrismaLoyaltyVoucherRepository } from "./infrastructure/prisma-loyalty-voucher.repository.js";
 
 /**
- * Contexte **fidélité** : le grand livre de points, les bons d'achat, le
+ * Contexte **fidélité** : le grand livre de points, les bons de fidélité, le
  * réglage du ratio (plan `documentation/comptabilite/plan-points-de-fidelite.md`).
  *
  * Programme livré FERMÉ : tant que la comptabilité n'a pas enregistré de

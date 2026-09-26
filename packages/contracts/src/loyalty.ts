@@ -61,7 +61,7 @@ export interface LoyaltyBalanceView {
 export const loyaltyVoucherStatusSchema = z.enum(["available", "expired", "cancelled"]);
 export type LoyaltyVoucherStatus = z.infer<typeof loyaltyVoucherStatusSchema>;
 
-/** Un bon d'achat : son montant, son coût et le ratio figés à l'émission. */
+/** Un bon de fidélité : son montant, son coût et le ratio figés à l'émission. */
 export interface LoyaltyVoucherView {
   readonly id: string;
   readonly holder: LoyaltyHolderView;

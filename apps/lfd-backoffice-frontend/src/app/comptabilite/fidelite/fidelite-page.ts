@@ -17,12 +17,12 @@ export type LoyaltyTab = 'settings' | 'balances' | 'vouchers';
 const TABS: readonly FoldTabItem<LoyaltyTab>[] = [
   { key: 'settings', label: 'Réglage', icon: 'sliders' },
   { key: 'balances', label: 'Soldes', icon: 'coins' },
-  { key: 'vouchers', label: "Bons d'achat", icon: 'gift' },
+  { key: 'vouchers', label: 'Bons de fidélité', icon: 'gift' },
 ];
 
 /**
  * **Comptabilité › Fidélité** — le réglage du programme de points, les soldes
- * par titulaire et les bons d'achat émis.
+ * par titulaire et les bons de fidélité émis.
  *
  * Chaque onglet charge ce qu'il montre, à l'ouverture : un solde relu après
  * l'annulation d'un bon est donc à jour sans qu'un onglet prévienne l'autre.

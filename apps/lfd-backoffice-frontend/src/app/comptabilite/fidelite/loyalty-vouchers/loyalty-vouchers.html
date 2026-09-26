@@ -1,12 +1,12 @@
 @if (loading()) {
-  <fold-loading message="Lecture des bons d'achat…" />
+  <fold-loading message="Lecture des bons de fidélité…" />
 } @else if (loadError(); as message) {
   <fold-empty-state tone="alert" title="Impossible de lire les bons" [subtitle]="message">
     <button foldButton (click)="load()">Réessayer</button>
   </fold-empty-state>
 } @else if (rows().length === 0) {
   <fold-empty-state
-    title="Aucun bon d'achat"
+    title="Aucun bon de fidélité"
     subtitle="Un bon naît quand un titulaire convertit ses points."
   >
     <fold-icon empty-icon name="gift" />
@@ -19,7 +19,7 @@
 
     <fold-card>
       <fold-data-table
-        caption="Bons d'achat émis"
+        caption="Bons de fidélité émis"
         narrowLayout="cards"
         zebra
         [columns]="columns()"

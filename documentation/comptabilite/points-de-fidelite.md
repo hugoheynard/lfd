@@ -14,7 +14,7 @@
 
 Une commande **remise et payée** crédite ses points à son **titulaire**, à
 raison d'un point par centime de marchandises **hors taxe**. Les points se convertissent
-en **bons d'achat** par paliers entiers, à un ratio réglé dans
+en **bons de fidélité** par paliers entiers, à un ratio réglé dans
 **Comptabilité › Fidélité**. Tant que ce réglage n'est pas enregistré, le
 programme est **fermé** : rien ne se gagne, et rien ne se convertit.
 
@@ -48,7 +48,7 @@ flowchart LR
 | **grand livre**         | la suite des mouvements de points d'un titulaire ; on n'y efface rien                                 | `loyalty_ledger_entries`             |
 | **solde**               | la **somme** du grand livre — aucune colonne ne la stocke                                             | `LoyaltyAccount`                     |
 | **palier**              | l'unité de conversion : `pointsPerStep` points valent `stepValueCents` centimes **HT**                | `LoyaltyRatio`                       |
-| **bon d'achat**         | un montant fixe en euros, issu d'une conversion, qui fige son ratio                                   | `LoyaltyVoucher`                     |
+| **bon de fidélité**     | un montant fixe en euros, issu d'une conversion, qui fige son ratio                                   | `LoyaltyVoucher`                     |
 | **commande définitive** | une commande à la fois `fulfilled` et `paid`                                                          | `CompletedOrderReader`               |
 
 ## 3. Le stockage
@@ -176,7 +176,7 @@ Deux passages concurrents sur la même commande s'attendent, et le second ne
 trouve rien à faire. L'index unique `(order_id) WHERE kind = 'earned'` est le
 filet en base.
 
-## 5. Convertir en bon d'achat
+## 5. Convertir en bon de fidélité
 
 `ConvertLoyaltyPointsCommand` existe sur le bus et est éprouvée de bout en
 bout. **Aucune route ne l'expose encore** (lot E1, §8).
@@ -223,11 +223,11 @@ stateDiagram-v2
 (`apps/lfd-backoffice-frontend/src/app/comptabilite/fidelite/`), sous le droit
 `b2b_accounting` : la lecture pour voir, l'écriture pour agir.
 
-| Onglet           | Ce qu'on y fait                                                                                                                                                                                                        |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Réglage**      | poser le ratio (valeur saisie en euros, envoyée en centimes entiers), les clientèles, la validité. « Programme fermé » tant que rien n'est enregistré. Changer le ratio d'un programme réglé demande une confirmation. |
-| **Soldes**       | le solde de chaque titulaire, et un ajustement ± motivé                                                                                                                                                                |
-| **Bons d'achat** | chaque bon avec son état et son ratio figé, et l'annulation motivée d'un bon disponible                                                                                                                                |
+| Onglet               | Ce qu'on y fait                                                                                                                                                                                                        |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Réglage**          | poser le ratio (valeur saisie en euros, envoyée en centimes entiers), les clientèles, la validité. « Programme fermé » tant que rien n'est enregistré. Changer le ratio d'un programme réglé demande une confirmation. |
+| **Soldes**           | le solde de chaque titulaire, et un ajustement ± motivé                                                                                                                                                                |
+| **Bons de fidélité** | chaque bon avec son état et son ratio figé, et l'annulation motivée d'un bon disponible                                                                                                                                |
 
 Les routes (`admin/accounting/loyalty`, `@AdminSurface("b2b_accounting")`) :
 
@@ -284,6 +284,31 @@ nécessaire. Le client y gagne la TVA en plus : un bon de 5 € HT baisse son
 total de 5,28 € sur de la pâtisserie à 5,5 %, et de 6 € sur un article à 20 %.
 L'écran de paiement devra donc afficher la **baisse réelle** de son total, pas
 les 5 € HT.
+
+### Bon de fidélité ≠ carte cadeau
+
+La boutique vendra aussi des **cartes cadeaux** (Hugo, 2026-09-26). Ce sont
+deux objets distincts, avec deux régimes, et ils ne partagent **ni table, ni
+code, ni mot** :
+
+|                 | **Bon de fidélité** (ce contexte)             | **Carte cadeau** (chantier à ouvrir)                                                           |
+| --------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Origine         | **offert**, né de points                      | **vendu** au client                                                                            |
+| Valeur          | un montant **HT**                             | un montant **TTC** : un moyen de paiement n'a pas de HT                                        |
+| Sur la commande | une **remise** : réduit la base de TVA (si A) | un **règlement** : paie une partie du TTC, ne touche pas la TVA                                |
+| TVA             | à l'utilisation, sur le prix remisé           | bon à usages multiples (5,5 % et 20 %) : due à l'utilisation, pas à la vente — **à confirmer** |
+| Code            | `b2b/loyalty/`, `LoyaltyVoucher`              | son propre contexte ; jamais `LoyaltyVoucher`                                                  |
+
+🔴 **« Bon d'achat » n'est plus employé** : le mot aurait désigné les deux. On
+dit « bon de fidélité » et « carte cadeau ».
+
+⚠️ Les cartes cadeaux demanderont de toute façon un **second moyen de
+paiement** à côté de Stripe, avec un reste à payer. Le coût de construction ne
+départage donc plus les traitements A et B du bon de fidélité : seule la réponse
+fiscale le fait.
+
+La question complète, posée au cabinet, est rangée dans
+[`question-cabinet-fidelite-et-cartes-cadeaux.md`](question-cabinet-fidelite-et-cartes-cadeaux.md).
 
 ## 9. Le journal
 

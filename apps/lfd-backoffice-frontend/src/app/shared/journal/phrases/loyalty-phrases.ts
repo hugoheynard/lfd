@@ -18,7 +18,7 @@ import {
 
 /**
  * **La fidélité** — le réglage du programme, le livre de points et les bons
- * d'achat (famille `accounting` du catalogue des faits, plan
+ * de fidélité (famille `accounting` du catalogue des faits, plan
  * `documentation/comptabilite/plan-points-de-fidelite.md`, lot A, 2026-09-26).
  * Guide : en tête de `phrase-registry.ts`.
  *
@@ -26,7 +26,7 @@ import {
  * « un client » — son adresse n'en tient jamais lieu.
  */
 
-const LOYALTY_VOUCHER: Noun = { the: 'le bon', a: 'un bon d’achat' };
+const LOYALTY_VOUCHER: Noun = { the: 'le bon', a: 'un bon de fidélité' };
 const ORDER: Noun = { the: 'la commande', a: 'une commande' };
 
 /** Le titulaire des points : « le client « X » », ou « un client » sans nom. */

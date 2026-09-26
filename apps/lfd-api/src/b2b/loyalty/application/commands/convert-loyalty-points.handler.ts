@@ -16,7 +16,7 @@ import { requireNamedHolder } from "./loyalty-holder-support.js";
 import { LoyaltyHolderDirectory } from "../../domain/ports/loyalty-holder.directory.js";
 
 /**
- * Convertit des points en bon d'achat (plan D2, D5).
+ * Convertit des points en bon de fidélité (plan D2, D5).
  *
  * 🔴 Tout se joue dans UNE transaction, sous le verrou du titulaire : le droit
  * de convertir est revérifié, la somme du livre relue, puis le bon et le débit

@@ -33,7 +33,7 @@ const BASE_COLUMNS: readonly FoldTableColumn[] = [
 ];
 
 /**
- * **Les bons d'achat émis** — leur montant, les points qu'ils ont coûté et le
+ * **Les bons de fidélité émis** — leur montant, les points qu'ils ont coûté et le
  * ratio appliqué, tous figés à l'émission (plan D5), et leur état lu
  * maintenant : un bon dont la date limite est passée se lit « expiré ».
  *
@@ -86,7 +86,7 @@ export class LoyaltyVouchers {
     try {
       this.rows.set(await this.api.listVouchers());
     } catch (caught) {
-      this.loadError.set(httpErrorMessage(caught, "Les bons d'achat sont illisibles."));
+      this.loadError.set(httpErrorMessage(caught, 'Les bons de fidélité sont illisibles.'));
     } finally {
       this.loading.set(false);
     }

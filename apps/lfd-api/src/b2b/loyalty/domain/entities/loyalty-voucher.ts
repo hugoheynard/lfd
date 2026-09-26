@@ -63,7 +63,7 @@ interface Cancellation {
 }
 
 /**
- * **Un bon d'achat**, né d'une conversion de points (plan D5, D7).
+ * **Un bon de fidélité**, né d'une conversion de points (plan D5, D7).
  *
  * Son montant, son coût et le ratio appliqué sont figés à l'émission : changer
  * le réglage ne touche aucun bon émis. `available` est le seul état dont on

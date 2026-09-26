@@ -170,7 +170,7 @@ export class LoyaltyVoucherExpiredError extends BusinessError {
 /** Aucun bon sous cet identifiant — **404**. */
 export class LoyaltyVoucherNotFoundError extends ResourceNotFoundError {
   constructor(id: string) {
-    super("loyalty.voucher_not_found", `Aucun bon d'achat sous l'identifiant ${id}.`);
+    super("loyalty.voucher_not_found", `Aucun bon de fidélité sous l'identifiant ${id}.`);
   }
 }
 

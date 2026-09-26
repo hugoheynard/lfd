@@ -207,7 +207,7 @@ export const ACCOUNTING_FACTS = {
       voucher: named("loyalty_voucher").nullable(),
     }),
   ),
-  /** Des points convertis en bon d'achat : son montant, son coût, sa date limite. */
+  /** Des points convertis en bon de fidélité : son montant, son coût, sa date limite. */
   "loyalty.voucher_issued": fact(
     payload({
       subjectLabel: subjectLabel().optional(),

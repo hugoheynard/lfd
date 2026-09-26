@@ -320,7 +320,7 @@ qu'une annulation ne rende le bon d'origine : on aurait alors les deux.
 ### D8 — Ce qu'on ne fait pas
 
 - Les points au comptoir sans compte, la carte physique, le parrainage.
-- La vente de bons ou de cartes cadeaux : ce serait l'autre traitement de TVA.
+- La vente de cartes cadeaux : c'est l'autre régime de TVA, et un **chantier à part**, sans table ni code communs (Hugo annonce les cartes cadeaux le 2026-09-26 ; distinction écrite dans `points-de-fidelite.md`). Depuis ce jour, on dit **« bon de fidélité »**, jamais « bon d'achat ».
 - Défaire une conversion depuis la boutique. Seul le staff annule un bon
   (D7).
 
