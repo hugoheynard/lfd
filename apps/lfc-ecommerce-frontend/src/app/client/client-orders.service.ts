@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import {
   WORKSPACE_HEADER,
@@ -446,9 +446,16 @@ export class ClientOrders {
    * De quoi régler cette commande-ci : l'intention gardée si c'est la bonne,
    * sinon celle que le serveur veut bien redonner.
    *
-   * `null` = elle n'attend aucun règlement en ligne — déjà réglée, portée au
-   * compte, ou introuvable. La page appelante n'a pas à distinguer : dans les
-   * trois cas il n'y a pas de carte à demander.
+   * `null` = le serveur REFUSE (4xx) : elle n'attend aucun règlement en ligne
+   * — déjà réglée, portée au compte, annulée, intention close, ou introuvable.
+   * Dans tous ces cas il n'y a pas de carte à demander.
+   *
+   * 🔴 **Une panne se relance**, elle ne rend pas `null` : un réseau coupé ou un
+   * 5xx ne dit rien de la commande. Les confondre faisait dire à l'écran « cette
+   * commande n'attend plus de paiement » pendant une simple coupure (constaté le
+   * 2026-09-26, en relisant l'état « clos » de l'écran de règlement).
+   *
+   * @throws l'erreur d'origine, quand ce n'est pas un refus du serveur.
    */
   async paymentFor(orderId: string): Promise<OrderPaymentIntent | null> {
     const held = this.intent();
@@ -471,12 +478,14 @@ export class ClientOrders {
             ),
           ),
       );
-    } catch {
+    } catch (error) {
       // Un refus n'est pas une panne : le serveur dit « cette commande n'attend
       // aucun règlement en ligne » exactement comme il dirait « je ne la
-      // connais pas ». Aucun toast — la page mène à la confirmation, qui porte
-      // déjà l'état réel de la commande.
-      return null;
+      // connais pas ». Aucun toast — l'écran de règlement le dit lui-même.
+      if (isServerRefusal(error)) {
+        return null;
+      }
+      throw error;
     }
   }
 
@@ -644,4 +653,9 @@ function guestContentOf(
 ): Omit<PlaceOrderPayload, 'settlement'> {
   const { settlement, ...content } = payloadOf(service, lines, idempotencyKey, null);
   return content;
+}
+
+/** Le serveur a répondu, et il refuse : un 4xx. Un réseau coupé (0) ou un 5xx n'en est pas un. */
+function isServerRefusal(error: unknown): boolean {
+  return error instanceof HttpErrorResponse && error.status >= 400 && error.status < 500;
 }

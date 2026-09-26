@@ -270,7 +270,7 @@ describe('le règlement de la commande', () => {
   /**
    * Un refus n'est pas une panne : « cette commande n'attend aucun règlement en
    * ligne » se dit exactement comme « je ne la connais pas ». Dans les deux cas
-   * il n'y a pas de carte à demander, et l'écran doit filer à la confirmation.
+   * il n'y a pas de carte à demander, et l'écran le dit lui-même.
    */
   it('rend null quand la commande n’attend aucun règlement', async () => {
     const http = boot();
@@ -282,6 +282,34 @@ describe('le règlement de la commande', () => {
       .flush({ message: 'Cette commande est déjà réglée.' }, { status: 409, statusText: 'C' });
 
     expect(await asking).toBeNull();
+  });
+
+  /**
+   * Régression : une panne réseau rendait `null`, et l'écran annonçait « cette
+   * commande n'attend plus de paiement » pendant une simple coupure (2026-09-26).
+   */
+  it('relance une panne au lieu de la faire passer pour un refus', async () => {
+    const http = boot();
+    const asking = TestBed.inject(ClientOrders).paymentFor('ord_coupee');
+    await Promise.resolve();
+    await Promise.resolve();
+    http
+      .expectOne((r) => r.url.endsWith('/orders/ord_coupee/payment'))
+      .error(new ProgressEvent('error'), { status: 0, statusText: '' });
+
+    await expect(asking).rejects.toBeDefined();
+  });
+
+  it('relance une erreur serveur (5xx)', async () => {
+    const http = boot();
+    const asking = TestBed.inject(ClientOrders).paymentFor('ord_5xx');
+    await Promise.resolve();
+    await Promise.resolve();
+    http
+      .expectOne((r) => r.url.endsWith('/orders/ord_5xx/payment'))
+      .flush({ message: 'boum' }, { status: 503, statusText: 'KO' });
+
+    await expect(asking).rejects.toBeDefined();
   });
 
   /** Le paiement abouti change l'état de CETTE commande, et d'aucune autre. */

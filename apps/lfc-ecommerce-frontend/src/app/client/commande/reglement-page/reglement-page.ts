@@ -184,7 +184,14 @@ export class ReglementPage {
    * raté est une panne, et il se dit sans faire disparaître la commande.
    */
   private async prepare(): Promise<void> {
-    const payment = await this.orders.paymentFor(this.id());
+    let payment: Awaited<ReturnType<ClientOrders['paymentFor']>>;
+    try {
+      payment = await this.orders.paymentFor(this.id());
+    } catch {
+      // Une panne ne dit rien de la commande : on ne la déclare pas close.
+      this.unavailable();
+      return;
+    }
     if (payment === null) {
       this.phase.set('closed');
       this.error.set(this.t().pay.closed);

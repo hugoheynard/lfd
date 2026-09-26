@@ -59,7 +59,7 @@ interface Exit {
 async function boot(
   loader: unknown,
   orderId = 'ord_9',
-  payment: OrderPaymentIntent | null = CARD_DUE,
+  payment: OrderPaymentIntent | null | 'unreachable' = CARD_DUE,
   exit: Exit = {},
 ): Promise<Booted> {
   const abandoned: string[] = [];
@@ -92,7 +92,12 @@ async function boot(
   // L'intention est POSÉE plutôt que jouée par le réseau : ce qu'on éprouve ici
   // est l'écran, pas la façon dont le service va la chercher — elle a sa propre
   // suite dans `client-orders.service.spec.ts`.
-  vi.spyOn(TestBed.inject(ClientOrders), 'paymentFor').mockResolvedValue(payment);
+  const paymentFor = vi.spyOn(TestBed.inject(ClientOrders), 'paymentFor');
+  if (payment === 'unreachable') {
+    paymentFor.mockRejectedValue(new Error('réseau coupé'));
+  } else {
+    paymentFor.mockResolvedValue(payment);
+  }
   // `company` est un `computed` : on le double, on ne sème pas tout un compte.
   vi.spyOn(TestBed.inject(ClientWorkspace), 'company').mockReturnValue(
     exit.pro === true ? ({ id: 'co_1' } as ReturnType<ClientWorkspace['company']>) : null,
@@ -210,6 +215,16 @@ describe('ReglementPage', () => {
     button(fixture, FR.pay.closedAction).click();
     await fixture.whenStable();
     expect(gone).toEqual([['/mes-commandes']]);
+  });
+
+  /** Régression : une coupure réseau se disait « plus rien à régler » (2026-09-26). */
+  it('dit la panne, pas la clôture, quand le serveur est injoignable', async () => {
+    const { fixture, gone } = await boot(stripeThatAnswers({}), 'ord_9', 'unreachable');
+
+    expect(gone).toEqual([]);
+    expect(text(fixture)).toContain(FR.pay.unavailable);
+    expect(text(fixture)).not.toContain(FR.pay.closed);
+    expect(text(fixture)).toContain(FR.pay.abandon);
   });
 
   /**
