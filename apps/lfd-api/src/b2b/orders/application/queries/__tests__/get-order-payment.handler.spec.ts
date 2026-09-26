@@ -33,6 +33,7 @@ function owned(over: {
     placedByUserId: over.placedByUserId ?? "u1",
     stripePaymentIntentId:
       over.stripePaymentIntentId === undefined ? "pi_1" : over.stripePaymentIntentId,
+    clientele: "public",
   };
 }
 
@@ -210,10 +211,51 @@ describe("GetOrderPaymentHandler", () => {
     expect(intent.clientSecret).toBe("pi_1_secret");
   });
 
-  it("garde `failed` refusé : l'élargissement appartient au lot suivant", async () => {
+  it("sert une commande `failed` dont l'intention est vivante : la carte refusée se reprend", async () => {
+    const sink = { retrieved: null as string | null };
     const handler = new GetOrderPaymentHandler(
       guard,
       reader(owned({ paymentStatus: "failed" })),
+      payments(sink, "awaiting_payment"),
+    );
+
+    const intent = await handler.execute(new GetOrderPaymentQuery("u1", "order_1"));
+
+    expect(intent.clientSecret).toBe("pi_1_secret");
+    // La MÊME intention : aucune nouvelle n'est créée.
+    expect(sink.retrieved).toBe("pi_1");
+  });
+
+  it("refuse une commande `failed` dont l'intention a été annulée chez Stripe", async () => {
+    const handler = new GetOrderPaymentHandler(
+      guard,
+      reader(owned({ paymentStatus: "failed" })),
+      payments(undefined, "canceled"),
+    );
+
+    const refusal = handler.execute(new GetOrderPaymentQuery("u1", "order_1"));
+    await expect(refusal).rejects.toBeInstanceOf(PaymentIntentClosedError);
+    await expect(refusal).rejects.toMatchObject({ state: "canceled" });
+  });
+
+  it("refuse une commande `failed` sans intention, sans appeler le prestataire", async () => {
+    const sink = { retrieved: null as string | null };
+    const handler = new GetOrderPaymentHandler(
+      guard,
+      reader(owned({ paymentStatus: "failed", stripePaymentIntentId: null })),
+      payments(sink),
+    );
+
+    await expect(handler.execute(new GetOrderPaymentQuery("u1", "order_1"))).rejects.toBeInstanceOf(
+      OrderNotPayableError,
+    );
+    expect(sink.retrieved).toBeNull();
+  });
+
+  it("refuse une commande remboursée : il n'y a plus rien à encaisser", async () => {
+    const handler = new GetOrderPaymentHandler(
+      guard,
+      reader(owned({ paymentStatus: "refunded" })),
       payments(),
     );
 

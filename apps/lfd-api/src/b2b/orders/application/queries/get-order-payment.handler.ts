@@ -10,10 +10,22 @@ import {
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { ensureOrderVisible } from "../../domain/services/order-access.js";
+import { awaitsCardPayment } from "../../domain/services/payment-link.js";
 import { GetOrderPaymentQuery } from "./get-order-payment.query.js";
 
 /**
- * Rend de quoi régler une commande **en attente de paiement**.
+ * Rend de quoi régler une commande **en attente de paiement**, ou dont le
+ * règlement a **échoué et reste à reprendre**.
+ *
+ * `failed` est admis depuis le 2026-09-26 (plan
+ * `documentation/order/plan-abandon-du-reglement.md`, lot 3 bis, §9 bis B3 et
+ * Q8 a) : une carte refusée rend l'intention à `requires_payment_method`, et un
+ * pro qui abandonne garde une intention non annulée — dans les deux cas le
+ * client peut encore payer. Le lien de paiement le déclarait déjà « à
+ * reprendre » (`awaitsCardPayment`, `domain/services/payment-link.ts`, vérifié
+ * le 2026-09-26) ; la page le refusait, et le lien menait à un refus. Aucune
+ * nouvelle intention n'est jamais créée : seule l'intention d'origine, et
+ * seulement tant qu'elle est vivante chez Stripe (relue plus bas).
  *
  * Le mur est celui de la lecture d'une commande — c'est le même droit : qui peut
  * la voir peut la payer. Pas un droit de plus : un membre qui règle la commande
@@ -57,10 +69,13 @@ export class GetOrderPaymentHandler implements IQueryHandler<
     }
 
     // Deux refus distincts, et ils se disent différemment : une commande déjà
-    // réglée ou portée au compte n'a rien à encaisser (`paid`, `not_required`),
-    // tandis qu'une commande `pending` sans intention est une anomalie. Les
-    // confondre ferait passer un état normal pour une panne.
-    if (owned.view.paymentStatus !== "pending" || owned.stripePaymentIntentId === null) {
+    // réglée, portée au compte ou remboursée n'a rien à encaisser (`paid`,
+    // `not_required`, `refunded`), tandis qu'une commande `pending` ou `failed`
+    // sans intention est une anomalie. La règle est celle du lien de paiement.
+    if (
+      !awaitsCardPayment(owned.view.status, owned.view.paymentStatus) ||
+      owned.stripePaymentIntentId === null
+    ) {
       throw new OrderNotPayableError(owned.view.paymentStatus);
     }
 
