@@ -14,7 +14,7 @@ function facts(sku: string, over: Partial<PimFacts> = {}): PimFacts {
     productSku: sku,
     name: sku,
     kind: "daily",
-    categoryId: "cat_vien",
+    categoryId: "fam-vien",
     priceMillicents: 210_000,
     weightGrams: null,
     isDefault: true,

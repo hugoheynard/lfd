@@ -13,7 +13,7 @@ import type { PriceAudience, PriceRule, PriceScope } from "../price-rule.js";
  * **La phrase figée d'un acte tarifaire nomme ce qu'elle vise** (plan des
  * phrases du journal, lot B).
  *
- * Régression : elle citait l'identifiant brut — « famille viennoiserie »,
+ * Régression : elle citait l'identifiant brut — « famille fam-vien »,
  * « produit P-7K2 » —, illisible à la relecture et faux le jour où l'article
  * change de nom. Seul le TEXTE change : aucun calcul ne lit cette phrase.
  */
@@ -47,12 +47,12 @@ function rule(scope: PriceScope, audience: PriceAudience = { type: "all", id: nu
 describe("describeRule — la portée, nommée", () => {
   it("nomme la famille visée par son nom du moment", () => {
     const summary = describeRule(
-      rule({ type: "category", id: "viennoiserie" }),
+      rule({ type: "category", id: "fam-vien" }),
       scopeNamed("Viennoiseries"),
     );
 
     expect(summary).toContain("famille « Viennoiseries »");
-    expect(summary).not.toContain("famille viennoiserie");
+    expect(summary).not.toContain("famille fam-vien");
   });
 
   it("nomme l'article visé plutôt que son SKU", () => {

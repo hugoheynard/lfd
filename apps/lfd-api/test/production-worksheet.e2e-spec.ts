@@ -27,6 +27,7 @@ import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { settleCardPayments } from "./card-payments.js";
+import { E2E_FAMILIES } from "./catalog-fixture.js";
 
 const MEMBER = "auth0|member";
 const STAFF = "staff-e2e";
@@ -353,7 +354,7 @@ describe("le contenant", () => {
 });
 
 describe("les fiches par rayon", () => {
-  it("sert les groupes dans l'ordre de la vitrine, avec leurs deux listes et leurs compteurs", async () => {
+  it("sert les groupes dans l'ordre du référentiel, avec leurs deux listes et leurs compteurs", async () => {
     await place(BAGUETTE, 30);
     await place(CROISSANT, 12);
     await closePlan();
@@ -364,8 +365,13 @@ describe("les fiches par rayon", () => {
     expect(view.shelvesKnown).toBe(true);
     // Sept jours devant : ni aujourd'hui, ni demain.
     expect(view.relativeDay).toBeNull();
-    expect(view.groups.map((group) => group.key)).toEqual(["viennoiserie", "pain"]);
+    expect(view.groups.map((group) => group.key)).toEqual([
+      E2E_FAMILIES.VIE.id,
+      E2E_FAMILIES.PAI.id,
+    ]);
     expect(view.groups[0]).toMatchObject({
+      family: { id: E2E_FAMILIES.VIE.id, name: "Viennoiseries" },
+      category: null,
       lineCount: 1,
       doneCount: 0,
       remainingUnits: 12,
@@ -417,6 +423,6 @@ describe("la fiche EN COURS", () => {
     expect(view.date).toBe(SERVICE_DAY);
     expect(view.relativeDay).toBe("tomorrow");
     expect(view.generatedAt).toBe(closedAt);
-    expect(view.groups.map((group) => group.key)).toEqual(["viennoiserie"]);
+    expect(view.groups.map((group) => group.key)).toEqual([E2E_FAMILIES.VIE.id]);
   });
 });

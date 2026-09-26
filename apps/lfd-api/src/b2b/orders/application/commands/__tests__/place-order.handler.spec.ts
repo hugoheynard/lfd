@@ -88,6 +88,7 @@ import { PlaceOrderHandler } from "../place-order.handler.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CanonicalPriceHistoryReader } from "../../../../catalog/domain/ports/canonical-price-history.reader.js";
 import type { CatalogPricing } from "@lfd/contracts";
+import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js";
 
 /**
  * L'historique du tarif canonique — **jamais consulté ici** : ces cas ne posent
@@ -192,7 +193,7 @@ function versionsAt(id: string | null): CatalogVersionReader {
 
 const CATALOG: Record<string, UnsealedCatalogItem> = {
   "VIE-001": {
-    category: "pain",
+    family: PAINS,
     allergens: null,
     orderTimeLimit: null,
     sku: "VIE-001",
@@ -201,7 +202,7 @@ const CATALOG: Record<string, UnsealedCatalogItem> = {
     vatRate: 0,
   },
   "VIE-002": {
-    category: "pain",
+    family: PAINS,
     allergens: null,
     orderTimeLimit: null,
     sku: "VIE-002",

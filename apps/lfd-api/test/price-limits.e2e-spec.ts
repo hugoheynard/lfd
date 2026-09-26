@@ -15,6 +15,7 @@ import type { PriceLimitsView, PricingBoardView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { E2E_FAMILIES } from "./catalog-fixture.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -23,7 +24,7 @@ const stubAdminVerifier = {
 
 /** VIE-001 vaut 200 c dans le catalogue qui facture. */
 const SKU = "VIE-001";
-const FAMILY = "viennoiserie";
+const FAMILY = E2E_FAMILIES.VIE.id;
 const CANONICAL_MILLICENTS = millicentsFromCents(200);
 const GLOBAL = { type: "global", id: null } as const;
 

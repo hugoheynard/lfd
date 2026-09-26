@@ -159,15 +159,7 @@ export class Pricer {
         throw new NoCanonicalPriceAtError(article.sku, at, startsAt);
       }
       return {
-        item: atCanonicalPrice(
-          {
-            sku: article.sku,
-            name: article.name,
-            category: article.category,
-            unitPriceMillicents: article.canonicalMillicents,
-          },
-          past.unitPriceMillicents,
-        ).article,
+        item: atCanonicalPrice({ article }, past.unitPriceMillicents).article,
         quantity,
       };
     });

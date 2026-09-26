@@ -22,14 +22,30 @@ import type { PrismaService } from "../src/platform/database/prisma.service.js";
  * (`VIE-001-1`), et c'est son `productSku` (`VIE-001`) que la boutique vend.
  */
 
-/** Le rayon du seed → la famille du PIM. L'inverse de la table de l'adaptateur. */
-const PIM_CATEGORY_BY_PREFIX: Readonly<Record<string, { id: string; name: string }>> = {
-  VIE: { id: "cat_vien", name: "Viennoiseries" },
-  PAI: { id: "cat_pains", name: "Pains" },
-  PAT: { id: "cat_patis", name: "Pâtisseries" },
-  SAL: { id: "cat_sale", name: "Salé & traiteur" },
-  CHO: { id: "cat_choco", name: "Chocolat & confiserie" },
-};
+/**
+ * **Les familles du semis**, telles que le référentiel les livrerait : un id
+ * opaque, un nom, un slug, une position.
+ *
+ * Aucune table de rayons ne les connaît depuis le 2026-09-26 (plan des
+ * familles en données) : une portée « famille » vise leur `id`. Les suites qui
+ * posent une décision de famille le lisent ici plutôt que de le recopier.
+ *
+ * Les slugs sont ceux de la production (plan §3) : c'est par eux que la
+ * migration `les_familles_se_lisent_en_donnees` retrouve une famille à partir
+ * d'un ancien code de rayon, et sa suite les rejoue sur ce semis.
+ */
+export const E2E_FAMILIES = {
+  VIE: { id: "fam-vien", name: "Viennoiseries", slug: "viennoiseries" },
+  PAI: { id: "fam-pains", name: "Pains", slug: "pains" },
+  PAT: { id: "fam-patis", name: "Pâtisseries", slug: "patisseries" },
+  SAL: { id: "fam-sale", name: "Salé & traiteur", slug: "sale-traiteur" },
+  CHO: { id: "fam-choco", name: "Chocolat & confiserie", slug: "chocolat-confiserie" },
+} as const;
+
+/** Le préfixe d'un SKU du semis → sa famille. */
+const PIM_CATEGORY_BY_PREFIX: Readonly<
+  Record<string, { readonly id: string; readonly name: string; readonly slug: string }>
+> = E2E_FAMILIES;
 
 /**
  * Alimentaire : le seul taux que le seed connaissait, et sa table de surcharges
@@ -113,7 +129,7 @@ export async function seedE2eCatalog(prisma: PrismaService): Promise<void> {
       return {
         id: category.id,
         name: category.name,
-        slug: category.id.replace("cat_", ""),
+        slug: category.slug,
         position: index,
         vatRatePercent: FOOD_VAT_RATE,
         receivedAt,

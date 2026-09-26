@@ -1,4 +1,4 @@
-import type { CatalogAdminItemView } from "@lfd/contracts";
+import type { CatalogAdminItemView, CatalogItemView } from "@lfd/contracts";
 import { millicentsFromCents } from "@lfd/money";
 /**
  * E2E du **paramétrage du catalogue** — sur un vrai Postgres.
@@ -57,7 +57,7 @@ function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): Catal
     generatedAt: "2026-08-17T08:00:00.000Z",
     categories: [
       {
-        id: "cat_vien",
+        id: "fam-vien",
         name: "Viennoiseries",
         slug: "viennoiseries",
         parentId: null,
@@ -70,7 +70,7 @@ function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): Catal
         id: "prd_1",
         sku: "VIE-001",
         name: "Croissant",
-        categoryId: "cat_vien",
+        categoryId: "fam-vien",
         kind: "daily",
         variants: [
           {
@@ -645,7 +645,7 @@ describe("GET /admin/catalog — l'ordre du rayon", () => {
         generatedAt: "2026-08-17T08:00:00.000Z",
         categories: [
           {
-            id: "cat_vien",
+            id: "fam-vien",
             name: "Viennoiseries",
             slug: "viennoiseries",
             parentId: null,
@@ -657,7 +657,7 @@ describe("GET /admin/catalog — l'ordre du rayon", () => {
           id: `prd_${sku}`,
           sku,
           name: sku,
-          categoryId: "cat_vien",
+          categoryId: "fam-vien",
           kind: "daily",
           variants: [
             {
@@ -773,17 +773,16 @@ describe("GET /admin/catalog/sellable", () => {
     await push(240);
 
     const response = await asStaff().get("/admin/catalog/sellable").expect(200);
-    const items =
-      jsonBody<{ sku: string; name: string; category: string; unitPriceMillicents: number }[]>(
-        response,
-      );
+    const items = jsonBody<CatalogItemView[]>(response);
 
     // Le compte d'abord : une liste vide passerait toutes les assertions qui
     // suivent sans rien affirmer.
     expect(items).toHaveLength(1);
     expect(items[0]).toMatchObject({
       name: "Croissant",
-      category: "viennoiserie",
+      family: { id: "fam-vien", name: "Viennoiseries" },
+      // Déprécié, servi à `null` tant qu'un front déployé le lit.
+      category: null,
     });
   });
 

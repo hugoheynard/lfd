@@ -71,6 +71,7 @@ import { noSaleOperations } from "../../../../catalog/application/__tests__/sale
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { PlaceShopOrderCommand } from "../place-shop-order.command.js";
 import { PlaceShopOrderHandler } from "../place-shop-order.handler.js";
+import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js";
 
 /**
  * **La commande sans compte**, éprouvée là où elle décide — plan
@@ -92,7 +93,7 @@ const PRICED_AT = new Date("2026-01-15T09:00:00.000Z");
 
 const CATALOG: readonly UnsealedCatalogItem[] = [
   {
-    category: "pain",
+    family: PAINS,
     allergens: null,
     orderTimeLimit: null,
     sku: "VIE-001",

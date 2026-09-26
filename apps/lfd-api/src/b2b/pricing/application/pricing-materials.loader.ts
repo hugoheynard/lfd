@@ -100,7 +100,7 @@ export class PricingMaterialsLoader {
     const entries: LotEntry[] = items.map(({ item, quantity }) => ({
       item,
       quantity,
-      scopeContext: pricingContextFor(item.sku, item.category, quantity, parties, at),
+      scopeContext: pricingContextFor(item.sku, item.categoryPath, quantity, parties, at),
     }));
     const scopes = scopesOfAll(entries.map((entry) => entry.scopeContext));
     if (scopes === null) {
@@ -202,7 +202,7 @@ export class PricingMaterialsLoader {
     for (const { item } of entries) {
       const commitment = commitmentFor(
         materials.commitments,
-        { categoryId: item.category, productSku: item.sku, variantSku: item.sku },
+        { categoryPath: item.categoryPath, productSku: item.sku, variantSku: item.sku },
         at,
       );
       if (commitment === null) {

@@ -15,6 +15,11 @@ export interface JournalEntry extends Omit<PricingAct, "subjectLabel"> {
 export interface JournalPageRequest {
   readonly subjectType: PricingSubjectType;
   readonly subjectId: string;
+  /**
+   * Les anciens noms du même sujet, lus avec lui — une limite de famille
+   * posée quand la famille était un code de rayon (`legacy-journal-subjects.ts`).
+   */
+  readonly formerSubjectIds?: readonly string[];
   /** À partir de 1. */
   readonly page: number;
   readonly pageSize: number;
@@ -50,8 +55,15 @@ export interface JournalPage {
  * réinscriptible ne prouve rien.
  */
 export abstract class PricingJournalReader {
-  /** Ce qui est arrivé à cette règle ou à cette limite, du plus récent au plus ancien. */
-  abstract forSubject(subjectType: string, subjectId: string): Promise<JournalEntry[]>;
+  /**
+   * Ce qui est arrivé à cette règle ou à cette limite, du plus récent au plus
+   * ancien — anciens noms du sujet compris (`formerSubjectIds`).
+   */
+  abstract forSubject(
+    subjectType: string,
+    subjectId: string,
+    formerSubjectIds?: readonly string[],
+  ): Promise<JournalEntry[]>;
 
   /**
    * Une page du journal d'un sujet, du plus récent au plus ancien, lue dans un

@@ -341,7 +341,7 @@ describe("la lecture publique", () => {
   });
 
   it("un rayon sans page rend une page vide — la boutique l'affiche en cartes", async () => {
-    expect(await publicPage("pain")).toEqual({ rows: 0, objects: [] });
+    expect(await publicPage("fam-sans-page")).toEqual({ rows: 0, objects: [] });
   });
 });
 

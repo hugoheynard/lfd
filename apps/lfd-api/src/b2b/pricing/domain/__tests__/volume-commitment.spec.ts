@@ -24,7 +24,7 @@ function commitment(over: Partial<VolumeCommitment> = {}): VolumeCommitment {
   };
 }
 
-const TARGET = { categoryId: "cat_vien", productSku: "VIE-001", variantSku: "VIE-001" };
+const TARGET = { categoryPath: ["fam-vien"], productSku: "VIE-001", variantSku: "VIE-001" };
 
 describe("isRunningAt", () => {
   it("borne basse INCLUSE, borne haute EXCLUE", () => {
@@ -63,11 +63,25 @@ describe("commitmentFor", () => {
    * ici que le plus précis l'emporte, comme partout ailleurs dans ce contexte.
    */
   it("le plus spécifique gagne : l'article bat sa famille", () => {
-    const famille = commitment({ id: "fam", scope: { type: "category", id: "cat_vien" } });
+    const famille = commitment({ id: "fam", scope: { type: "category", id: "fam-vien" } });
     const article = commitment({ id: "art", scope: { type: "product", id: "VIE-001" } });
 
     expect(commitmentFor([famille, article], TARGET, JUILLET)?.id).toBe("art");
     expect(commitmentFor([article, famille], TARGET, JUILLET)?.id).toBe("art");
+  });
+
+  it("un engagement de famille parente couvre la sous-famille, la plus proche l'emporte", () => {
+    const tarte = {
+      categoryPath: ["fam-tartes", "fam-patis"],
+      productSku: "T-1",
+      variantSku: "T-1",
+    };
+    const parente = commitment({ id: "par", scope: { type: "category", id: "fam-patis" } });
+    const proche = commitment({ id: "pro", scope: { type: "category", id: "fam-tartes" } });
+
+    expect(commitmentFor([parente], tarte, JUILLET)?.id).toBe("par");
+    expect(commitmentFor([parente, proche], tarte, JUILLET)?.id).toBe("pro");
+    expect(commitmentFor([proche, parente], tarte, JUILLET)?.id).toBe("pro");
   });
 
   it("un engagement de catalogue couvre tout", () => {

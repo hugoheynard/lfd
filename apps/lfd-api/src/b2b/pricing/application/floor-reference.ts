@@ -1,11 +1,15 @@
 import { medianMillicents } from "../domain/floor-drift.js";
 import type { PriceScope } from "../domain/price-rule.js";
 
-/** Ce que la référence a besoin de savoir d'un article : son rayon et son prix. */
+/** Ce que la référence a besoin de savoir d'un article : sa famille et son prix. */
 export interface ReferenceArticle {
   readonly sku: string;
-  /** `null` = famille inconnue : aucune limite de famille ne le compte. */
-  readonly category: string | null;
+  /**
+   * Sa famille, lignée comprise — une limite posée sur une parente compte ses
+   * sous-familles. `null` = famille inconnue : aucune limite de famille ne le
+   * compte.
+   */
+  readonly family: { readonly path: readonly string[] } | null;
   readonly unitPriceMillicents: number;
 }
 
@@ -44,7 +48,7 @@ function targeted(
       return articles;
     case "category":
       return articles.filter(
-        (article) => article.category !== null && article.category === scope.id,
+        (article) => scope.id !== null && (article.family?.path.includes(scope.id) ?? false),
       );
     case "product":
     case "variant":

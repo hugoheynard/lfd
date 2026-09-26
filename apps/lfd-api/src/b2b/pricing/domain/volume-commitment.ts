@@ -1,4 +1,5 @@
 import type { PriceScope } from "./price-rule.js";
+import { familyClosenessOf } from "./specificity.js";
 
 /**
  * **L'engagement de volume** — un client vise un volume sur une période, et le
@@ -81,28 +82,36 @@ export function isRunningAt(commitment: VolumeCommitment, at: Date): boolean {
  */
 export function commitmentFor(
   commitments: readonly VolumeCommitment[],
-  target: {
-    readonly categoryId: string | null;
-    readonly productSku: string;
-    readonly variantSku: string;
-  },
+  target: CommitmentTarget,
   at: Date,
 ): VolumeCommitment | null {
   const covering = commitments
     .filter((commitment) => isRunningAt(commitment, at))
     .filter((commitment) => coversTarget(commitment.scope, target));
-  return [...covering].sort((left, right) => rankOf(right.scope) - rankOf(left.scope))[0] ?? null;
+  return (
+    [...covering].sort(
+      (left, right) =>
+        rankOf(right.scope) - rankOf(left.scope) ||
+        familyClosenessOf(right.scope, target.categoryPath) -
+          familyClosenessOf(left.scope, target.categoryPath),
+    )[0] ?? null
+  );
 }
 
-function coversTarget(
-  scope: PriceScope,
-  target: { categoryId: string | null; productSku: string; variantSku: string },
-): boolean {
+/** Ce qu'un engagement peut viser d'un article : sa lignée de familles, ses SKU. */
+export interface CommitmentTarget {
+  /** De la plus proche à la plus lointaine ; vide = famille inconnue. */
+  readonly categoryPath: readonly string[];
+  readonly productSku: string;
+  readonly variantSku: string;
+}
+
+function coversTarget(scope: PriceScope, target: CommitmentTarget): boolean {
   switch (scope.type) {
     case "global":
       return true;
     case "category":
-      return target.categoryId !== null && scope.id === target.categoryId;
+      return scope.id !== null && target.categoryPath.includes(scope.id);
     case "product":
       return scope.id === target.productSku;
     case "variant":

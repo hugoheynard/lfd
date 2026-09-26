@@ -22,6 +22,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { E2E_FAMILIES } from "./catalog-fixture.js";
 
 const SERVICE_DAY = serviceDay();
 let pickupId = "pickup_absent";
@@ -503,7 +504,7 @@ describe("une règle change le prix facturé", () => {
    */
   it("le plancher de la famille couvre ses articles", async () => {
     await seedRule({ id: "promo", stage: "promotion", bp: 5000 });
-    await seedFloor("category", "viennoiserie", 170);
+    await seedFloor("category", E2E_FAMILIES.VIE.id, 170);
 
     const response = await placeOrder(1);
 
@@ -513,7 +514,7 @@ describe("une règle change le prix facturé", () => {
   /** Un plancher d'article REMPLACE celui de sa famille — il peut donc l'abaisser. */
   it("le plancher de l'article l'emporte sur celui de sa famille", async () => {
     await seedRule({ id: "promo", stage: "promotion", bp: 5000 });
-    await seedFloor("category", "viennoiserie", 170);
+    await seedFloor("category", E2E_FAMILIES.VIE.id, 170);
     await seedFloor("product", SKU, 120);
 
     const response = await placeOrder(1);
@@ -530,7 +531,7 @@ describe("une règle change le prix facturé", () => {
     await seedFloor("global", null, 100);
 
     await expect(seedFloor("global", null, 200)).rejects.toThrow();
-    await expect(seedFloor("category", "viennoiserie", 100)).resolves.toBeDefined();
+    await expect(seedFloor("category", E2E_FAMILIES.VIE.id, 100)).resolves.toBeDefined();
   });
 
   it("une règle visant une entreprise n'atteint pas l'acheteur d'une AUTRE", async () => {
@@ -1179,7 +1180,7 @@ describe("les engagements de volume, signés par la route staff", () => {
    * décision de branche du journal de remédiation.
    */
   it("🔴 avoue ne rien mesurer sur une portée de FAMILLE, au lieu de rendre zéro", async () => {
-    await sign({ type: "category", id: "viennoiserie" }, 10_000).expect(201);
+    await sign({ type: "category", id: E2E_FAMILIES.VIE.id }, 10_000).expect(201);
 
     const listed = jsonBody<{ scope: { type: string }; orderedQuantity: number | null }[]>(
       await staff().get(`/admin/pricing/commitments?companyId=${companyId}`).expect(200),
@@ -1243,7 +1244,7 @@ describe("les engagements de volume, signés par la route staff", () => {
 
   it("refuse deux engagements qui se recouvrent sur la même cible", async () => {
     await sign({ type: "product", id: SKU }, 6_000).expect(201);
-    await sign({ type: "category", id: "viennoiserie" }, 6_000).expect(201);
+    await sign({ type: "category", id: E2E_FAMILIES.VIE.id }, 6_000).expect(201);
 
     await sign({ type: "product", id: SKU }, 9_000).expect(409);
   });

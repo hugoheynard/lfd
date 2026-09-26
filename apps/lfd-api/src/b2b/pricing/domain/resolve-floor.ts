@@ -1,6 +1,6 @@
 import { fractionByBasisPoints, fromCents, roundToCents } from "@lfd/money";
 import { AmbiguousPriceFloorsError } from "./pricing-errors.js";
-import { isInForce, matchesScope, SCOPE_RANK } from "./specificity.js";
+import { familyClosenessOf, isInForce, matchesScope, SCOPE_RANK } from "./specificity.js";
 import type { PriceFloor, PricingContext, ScopedPriceFloor } from "./price-rule.js";
 
 /**
@@ -53,7 +53,12 @@ export function resolveScopedFloor(
   let best = first;
   let tie: ScopedPriceFloor | null = null;
   for (const candidate of rest) {
-    const delta = SCOPE_RANK[candidate.scope.type] - SCOPE_RANK[best.scope.type];
+    // Le rang de portée, puis la proximité de famille : la sous-famille
+    // l'emporte sur sa parente, comme pour les règles.
+    const delta =
+      SCOPE_RANK[candidate.scope.type] - SCOPE_RANK[best.scope.type] ||
+      familyClosenessOf(candidate.scope, context.categoryPath) -
+        familyClosenessOf(best.scope, context.categoryPath);
     if (delta > 0) {
       best = candidate;
       tie = null;

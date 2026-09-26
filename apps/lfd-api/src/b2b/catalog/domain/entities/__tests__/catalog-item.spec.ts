@@ -27,7 +27,7 @@ function facts(over: Partial<PimFacts> = {}): PimFacts {
     productSku: "VIE-001",
     name: "Croissant",
     kind: "daily",
-    categoryId: "cat_vien",
+    categoryId: "fam-vien",
     priceMillicents: 200,
     weightGrams: null,
     isDefault: true,

@@ -23,7 +23,7 @@
   `CATALOG_CATEGORY_LABELS` et `CATALOG_CATEGORY_ORDER`. `CatalogItemView.category`
   la porte ; `production-worksheet.ts` aussi.
 - **Une traduction en dur** : `SHELF_BY_PIM_CATEGORY`
-  (`apps/lfd-api/src/b2b/catalog/domain/shelf-of-category.ts`), `cat_vien →
+  (le fichier `shelf-of-category` du catalogue, retiré par la livraison), `cat_vien →
 viennoiserie`, etc. Trois lecteurs l'appellent : le catalogue pro
   (`catalog-backed-product-catalog.ts`, **lève** — c'est la panne), la fiche
   d'atelier (`catalog-workshop-shelves.reader.ts`, rend `null`), la vitrine
@@ -170,7 +170,7 @@ tombaient toutes sur cette fenêtre. Sans données à migrer, pas de fenêtre.
    `UnknownCatalogShelfError` côté serveur. Une porte
    (`lint:no-shelf-literals`) refuse leur retour. **Sauf le champ servi
    `category`** : il reste dans les vues, **toujours `null`**, déprécié — le
-   front déjà déployé (`b2b-ui/catalog-shelves.ts`) range un `null` sous
+   front déjà déployé (`packages/b2b-ui/src/catalog/catalog-shelves.ts`) range un `null` sous
    « Sans famille connue » mais **perd** un article dont le champ est absent
    (`undefined` ne passe aucun test), et fronts et serveur se déploient par
    des workflows distincts (`CLAUDE.md` §0). Il se retire dans une livraison
@@ -194,7 +194,8 @@ tombaient toutes sur cette fenêtre. Sans données à migrer, pas de fenêtre.
    décision archivée après `at`. Si une règle ou une limite archivée porte un
    code de rayon, la migration la réécrit aussi — sinon elle cesserait de
    s'appliquer au passé. **À mesurer** : l'état des lieux se relance sans le
-   filtre d'archivage (§5, requête 3).
+   filtre d'archivage (§5, requête 3). **Mesuré le 2026-09-26 : aucune** —
+   en production, la migration ne réécrit rien, archives comprises.
 9. **Lecteurs des clés passées** : les instantanés (`pricing_steps`…) et les
    sujets du journal (`category:viennoiserie`) sont inventoriés au début de la
    livraison ; tout lecteur qui les **compare** (et pas seulement les

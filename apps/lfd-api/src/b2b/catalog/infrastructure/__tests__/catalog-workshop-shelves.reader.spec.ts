@@ -1,4 +1,6 @@
+import type { CatalogFamily } from "../../domain/catalog-family.js";
 import { CatalogReader, type ResolvedCatalogItem } from "../../domain/ports/catalog.reader.js";
+import { family, PAINS, VIENNOISERIES } from "../../domain/__tests__/families.fixture.js";
 import { CatalogWorkshopShelvesReader } from "../catalog-workshop-shelves.reader.js";
 
 /**
@@ -6,7 +8,7 @@ import { CatalogWorkshopShelvesReader } from "../catalog-workshop-shelves.reader
  * la fiche, et une vraie panne n'est pas déguisée en « hors catalogue ».
  */
 
-function item(productSku: string, categoryId: string): ResolvedCatalogItem {
+function item(productSku: string, of: CatalogFamily): ResolvedCatalogItem {
   return {
     sku: `${productSku}-1`,
     productSku,
@@ -14,8 +16,9 @@ function item(productSku: string, categoryId: string): ResolvedCatalogItem {
     unitPriceMillicents: 200_000,
     pimPriceMillicents: 200_000,
     vatRate: 5.5,
-    categoryId,
-    categoryName: categoryId,
+    categoryId: of.id,
+    categoryName: of.name,
+    family: of,
     isDefault: true,
     isFeatured: false,
     allergens: null,
@@ -67,8 +70,8 @@ class BrokenCatalog extends Catalog {
 }
 
 describe("CatalogWorkshopShelvesReader", () => {
-  it("traduit la famille du PIM en rayon, sous le SKU du PRODUIT", async () => {
-    const catalog = new Catalog([item("VIE-001", "cat_vien"), item("PAI-001", "cat_pains")]);
+  it("range sous la famille du référentiel, sous le SKU du PRODUIT", async () => {
+    const catalog = new Catalog([item("VIE-001", VIENNOISERIES), item("PAI-001", PAINS)]);
 
     const shelves = await new CatalogWorkshopShelvesReader(catalog).shelvesOf([
       "VIE-001",
@@ -77,23 +80,26 @@ describe("CatalogWorkshopShelvesReader", () => {
 
     expect(catalog.asked).toEqual(["VIE-001", "PAI-001"]);
     expect([...shelves.entries()]).toEqual([
-      ["VIE-001", "viennoiserie"],
-      ["PAI-001", "pain"],
+      ["VIE-001", { id: "fam-vien", name: "Viennoiseries", position: 0 }],
+      ["PAI-001", { id: "fam-pain", name: "Pains", position: 1 }],
     ]);
   });
 
-  it("🔴 un article d'une famille SANS rayon est absent — les autres restent rangés", async () => {
-    // `resolveMany` lève `UnknownCatalogShelfError` pour ce seul article, et
-    // aurait fait tomber le rangement de toute la fiche.
-    const catalog = new Catalog([item("VIE-001", "cat_vien"), item("NEW-001", "cat_inventee")]);
+  /**
+   * Régression — panne du 2026-09-26 : une famille que la table en dur ne
+   * connaissait pas rendait son article orphelin. Livrée par le référentiel,
+   * elle est un rayon comme les autres.
+   */
+  it("range un article d'une famille qu'aucun code ne connaît", async () => {
+    const livree = family("01a0-inventee", "Snacking", 5);
+    const catalog = new Catalog([item("VIE-001", VIENNOISERIES), item("NEW-001", livree)]);
 
     const shelves = await new CatalogWorkshopShelvesReader(catalog).shelvesOf([
       "VIE-001",
       "NEW-001",
     ]);
 
-    expect(shelves.get("VIE-001")).toBe("viennoiserie");
-    expect(shelves.has("NEW-001")).toBe(false);
+    expect(shelves.get("NEW-001")).toEqual({ id: "01a0-inventee", name: "Snacking", position: 5 });
   });
 
   it("un SKU inconnu du catalogue est absent, jamais présent à `null`", async () => {

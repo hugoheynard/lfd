@@ -48,14 +48,14 @@ const WIDE = {
 const CROISSANT: PricedItem = {
   sku: "VIE-001",
   name: "Croissant au beurre",
-  category: "viennoiserie",
+  categoryPath: ["fam-vien"],
   canonicalMillicents: 200_000,
 };
 
 const PAIN: PricedItem = {
   sku: "PAI-001",
   name: "Baguette",
-  category: "pain",
+  categoryPath: ["fam-pain"],
   canonicalMillicents: 100_000,
 };
 

@@ -124,7 +124,7 @@ export function itemView(
   const item = {
     sku: article.sku,
     name: article.name,
-    category: article.category,
+    categoryPath: article.categoryPath,
     canonicalMillicents: article.canonicalMillicents,
   };
   // 🔴 **L'écran ne calcule plus son prix : il le demande.** La même méthode que

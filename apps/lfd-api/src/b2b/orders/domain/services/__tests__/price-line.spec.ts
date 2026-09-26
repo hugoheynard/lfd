@@ -35,7 +35,6 @@ const CROISSANT: LineToPrice = {
   name: "Croissant au beurre",
   unitPriceMillicents: 200_000,
   vatRate: 5.5,
-  category: "viennoiserie",
   allergens: null,
   // La suite déclare SON catalogue, et le scelle comme le port le ferait. Le
   // tarificateur n'accepte plus un article construit à la main — c'est ce qui
@@ -43,7 +42,7 @@ const CROISSANT: LineToPrice = {
   article: catalogueArticle({
     sku: "VIE-001",
     name: "Croissant au beurre",
-    category: "viennoiserie",
+    categoryPath: ["fam-vien"],
     unitPriceMillicents: 200_000,
   }),
 };

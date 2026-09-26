@@ -24,6 +24,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { E2E_FAMILIES } from "./catalog-fixture.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -98,7 +99,7 @@ const staff = () => ctx.asSub("staff-e2e");
 /** VIE-001 vaut 200 c dans le catalogue qui facture. */
 const SKU = "VIE-001";
 const CANONICAL = 200;
-const FAMILY = "viennoiserie";
+const FAMILY = E2E_FAMILIES.VIE.id;
 
 interface RuleBody {
   stage?: string;

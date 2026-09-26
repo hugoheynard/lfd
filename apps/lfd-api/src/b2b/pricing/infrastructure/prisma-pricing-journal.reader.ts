@@ -54,9 +54,13 @@ export class PrismaPricingJournalReader extends PricingJournalReader {
     super();
   }
 
-  async forSubject(subjectType: string, subjectId: string): Promise<JournalEntry[]> {
+  async forSubject(
+    subjectType: string,
+    subjectId: string,
+    formerSubjectIds: readonly string[] = [],
+  ): Promise<JournalEntry[]> {
     const rows = await this.prisma.pricingEvent.findMany({
-      where: { subjectType, subjectId },
+      where: { subjectType, subjectId: { in: [subjectId, ...formerSubjectIds] } },
       orderBy: { occurredAt: "desc" },
       take: MAX_ENTRIES,
     });
@@ -69,7 +73,10 @@ export class PrismaPricingJournalReader extends PricingJournalReader {
    * deux ne le voit.
    */
   async pageForSubject(request: JournalPageRequest): Promise<JournalPage> {
-    const subject = { subjectType: request.subjectType, subjectId: request.subjectId };
+    const subject = {
+      subjectType: request.subjectType,
+      subjectId: { in: [request.subjectId, ...(request.formerSubjectIds ?? [])] },
+    };
     const anchor = await this.anchorOf(subject, request.asOf);
     if (anchor === null) {
       return { entries: [], total: 0, asOf: null };
@@ -92,7 +99,7 @@ export class PrismaPricingJournalReader extends PricingJournalReader {
    * `null` seulement quand le sujet n'a encore aucun acte.
    */
   private async anchorOf(
-    subject: { readonly subjectType: string; readonly subjectId: string },
+    subject: { readonly subjectType: string; readonly subjectId: { readonly in: string[] } },
     asOf: string | null,
   ): Promise<Anchor | null> {
     const select = { id: true, occurredAt: true } as const;

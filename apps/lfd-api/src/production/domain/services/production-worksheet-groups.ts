@@ -1,10 +1,8 @@
 import {
-  CATALOG_CATEGORY_LABELS,
-  CATALOG_CATEGORY_ORDER,
   SHELF_LABEL_OFF_CATALOG,
   SHELF_LABEL_UNKNOWN,
   UNSHELVED_WORKSHOP_GROUP_KEY,
-  type CatalogCategory,
+  type CatalogFamilyView,
 } from "@lfd/contracts";
 
 import type { WorksheetLine } from "./production-worksheet.js";
@@ -23,9 +21,11 @@ import type { WorksheetLine } from "./production-worksheet.js";
 
 /** Une fiche, dans le vocabulaire du domaine (instants en `Date`). */
 export interface WorksheetGroup {
-  /** La catégorie, ou `UNSHELVED_WORKSHOP_GROUP_KEY`. */
+  /** L'id de la famille, ou `UNSHELVED_WORKSHOP_GROUP_KEY`. */
   readonly key: string;
-  readonly category: CatalogCategory | null;
+  readonly family: CatalogFamilyView | null;
+  /** Déprécié au contrat, servi toujours à `null` (cf. `WorkshopGroup.category`). */
+  readonly category: null;
   readonly label: string;
   readonly lineCount: number;
   readonly doneCount: number;
@@ -43,9 +43,10 @@ export interface WorksheetGroup {
  *
  * ## Les deux ordres
  *
- * Les fiches suivent **la vitrine** (`CATALOG_CATEGORY_ORDER`) : c'est l'ordre
- * dans lequel tout le back-office montre les rayons, et un fournil qui passe
- * d'un écran à l'autre ne doit pas les chercher. Le groupe sans rayon ferme la
+ * Les fiches suivent **le référentiel** — la position de la famille, puis son
+ * nom : c'est l'ordre dans lequel tout le back-office montre les rayons, et un
+ * fournil qui passe d'un écran à l'autre ne doit pas les chercher. Aucune liste
+ * de rayons ici : une famille livrée par le PIM a sa fiche sans déploiement. Le groupe sans rayon ferme la
  * marche — il est l'anomalie, pas le travail du jour.
  *
  * Les lignes **gardent l'ordre reçu** : `worksheetOf` a déjà trié (le plus gros
@@ -62,26 +63,26 @@ export interface WorksheetGroup {
  */
 export function worksheetGroupsOf(
   lines: readonly WorksheetLine[],
-  shelves: ReadonlyMap<string, CatalogCategory> | null,
+  shelves: ReadonlyMap<string, CatalogFamilyView> | null,
 ): readonly WorksheetGroup[] {
-  const byShelf = new Map<CatalogCategory, WorksheetLine[]>();
+  const byFamily = new Map<string, { family: CatalogFamilyView; lines: WorksheetLine[] }>();
   const unshelved: WorksheetLine[] = [];
   for (const line of lines) {
-    const shelf = shelves?.get(line.sku);
-    if (shelf === undefined) {
+    const family = shelves?.get(line.sku);
+    if (family === undefined) {
       unshelved.push(line);
       continue;
     }
-    const bucket = byShelf.get(shelf) ?? [];
-    bucket.push(line);
-    byShelf.set(shelf, bucket);
+    const bucket = byFamily.get(family.id);
+    if (bucket === undefined) {
+      byFamily.set(family.id, { family, lines: [line] });
+    } else {
+      bucket.lines.push(line);
+    }
   }
-  const groups = CATALOG_CATEGORY_ORDER.flatMap((category) => {
-    const bucket = byShelf.get(category);
-    return bucket === undefined
-      ? []
-      : [groupOf(category, category, CATALOG_CATEGORY_LABELS[category], bucket)];
-  });
+  const groups = [...byFamily.values()]
+    .sort((left, right) => byPositionThenName(left.family, right.family))
+    .map((bucket) => groupOf(bucket.family.id, bucket.family, bucket.family.name, bucket.lines));
   if (unshelved.length === 0) {
     return groups;
   }
@@ -89,10 +90,20 @@ export function worksheetGroupsOf(
   return [...groups, groupOf(UNSHELVED_WORKSHOP_GROUP_KEY, null, label, unshelved)];
 }
 
+/** Position, puis nom, puis id : deux homonymes restent chacun d'un bloc. */
+function byPositionThenName(left: CatalogFamilyView, right: CatalogFamilyView): number {
+  const delta = left.position - right.position;
+  if (delta !== 0) {
+    return delta;
+  }
+  const byName = left.name.localeCompare(right.name, "fr");
+  return byName !== 0 ? byName : left.id.localeCompare(right.id);
+}
+
 /** Une fiche et ses compteurs — les deux listes dans l'ordre reçu. */
 function groupOf(
   key: string,
-  category: CatalogCategory | null,
+  family: CatalogFamilyView | null,
   label: string,
   lines: readonly WorksheetLine[],
 ): WorksheetGroup {
@@ -102,7 +113,8 @@ function groupOf(
   const doneUnits = unitsOf(done);
   return {
     key,
-    category,
+    family,
+    category: null,
     label,
     lineCount: lines.length,
     doneCount: done.length,

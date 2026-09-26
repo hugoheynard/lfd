@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { CatalogFamilyView } from "./catalog.js";
+
 /**
  * ## L'unité de l'argent, dans tout ce fichier
  *
@@ -1191,10 +1193,18 @@ export interface PricingLadderBandView {
   readonly tierCount: number;
 }
 
-/** Une famille et ses articles — la bande horizontale de l'écran. */
+/**
+ * Une famille et ses articles — la bande horizontale de l'écran.
+ *
+ * `id` et `name` sont ceux de {@link family} : gardés parce que servis, et
+ * `id` est l'identifiant PIM de la famille — celui que vise une portée
+ * `category` depuis le 2026-09-26, et non plus un code de rayon.
+ */
 export interface PricingCategoryView {
   readonly id: string;
   readonly name: string;
+  /** La famille du référentiel, avec sa position — l'ordre des bandes. */
+  readonly family: CatalogFamilyView;
   /** `null` = famille sans régime de TVA : ses articles ne sont pas vendables. */
   readonly vatRatePercent: number | null;
   readonly floor: PriceFloorView | null;
@@ -1686,8 +1696,10 @@ export interface MercurialeBenchmarkView {
  * le catalogue entier, pas sur un dossier client.
  */
 export interface CompanyPricingCategoryView {
+  /** L'identifiant PIM de la famille, comme {@link PricingCategoryView.id}. */
   readonly id: string;
   readonly name: string;
+  readonly family: CatalogFamilyView;
   readonly items: readonly PricingItemView[];
 }
 

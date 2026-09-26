@@ -91,10 +91,10 @@ describe("Storefront.compose — la collision se juge sur CHAQUE rayon", () => {
   });
 
   it("refuse un objet posé sur un rayon qui n'a pas de page", () => {
-    const card = object("c", "card", [1, 1], ["pain"]);
+    const card = object("c", "card", [1, 1], ["fam-pain"]);
 
     expect(() => stored().compose(composition([fresh(card)]), SAVING)).toThrow(
-      /paraît sur le rayon « pain », qui n'a pas de page/u,
+      /paraît sur le rayon « fam-pain », qui n'a pas de page/u,
     );
   });
 

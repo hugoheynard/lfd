@@ -173,7 +173,7 @@ describe("vue comme une règle", () => {
     cumulativeQuantity: null,
     variantSku: "VIE-012",
     productSku: "VIE-012",
-    categoryId: "viennoiserie",
+    categoryPath: ["fam-vien"],
     companyId: "co_folie",
     segmentId: null,
   };

@@ -47,11 +47,42 @@ export const SCOPE_RANK: Readonly<Record<PriceScope["type"], number>> = {
   variant: 3,
 };
 
-/** Les trois critères, du plus fort au plus faible. */
-type Specificity = readonly [audience: number, scope: number, minQuantity: number];
+/**
+ * **La proximité d'une famille visée**, dans la lignée de l'article : plus
+ * elle est proche, plus le nombre est haut. `0` pour une portée qui n'est pas
+ * une famille, ou une famille hors de la lignée.
+ *
+ * C'est ce qui fait gagner la sous-famille sur sa parente, à étage, audience
+ * et portée égaux — la même règle que l'heure limite (`mostSpecificFirst`,
+ * `@lfd/catalog-sync`). Exporté parce que le plancher et l'engagement
+ * s'arbitrent de la même façon.
+ */
+export function familyClosenessOf(scope: PriceScope, categoryPath: readonly string[]): number {
+  if (scope.type !== "category" || scope.id === null) {
+    return 0;
+  }
+  const index = categoryPath.indexOf(scope.id);
+  return index < 0 ? 0 : categoryPath.length - index;
+}
 
-function specificityOf(rule: PriceRule): Specificity {
-  return [AUDIENCE_RANK[rule.audience.type], SCOPE_RANK[rule.scope.type], rule.minQuantity ?? 0];
+/**
+ * Les quatre critères, du plus fort au plus faible. La proximité de famille
+ * se glisse sous la portée : elle ne départage que deux familles entre elles.
+ */
+type Specificity = readonly [
+  audience: number,
+  scope: number,
+  familyCloseness: number,
+  minQuantity: number,
+];
+
+function specificityOf(rule: PriceRule, categoryPath: readonly string[]): Specificity {
+  return [
+    AUDIENCE_RANK[rule.audience.type],
+    SCOPE_RANK[rule.scope.type],
+    familyClosenessOf(rule.scope, categoryPath),
+    rule.minQuantity ?? 0,
+  ];
 }
 
 /** Ordre lexicographique sur les trois critères. `0` = strictement aussi spécifiques. */
@@ -74,8 +105,13 @@ function compare(left: Specificity, right: Specificity): number {
  * là-bas aurait donné un écran qui désigne un gagnant, et une caisse qui en
  * applique un autre — le genre de divergence qu'on ne découvre qu'au litige.
  */
-export function compareSpecificity(left: PriceRule, right: PriceRule): number {
-  return compare(specificityOf(left), specificityOf(right));
+export function compareSpecificity(
+  left: PriceRule,
+  right: PriceRule,
+  /** La lignée de l'article jugé — vide pour une frise, qui ne mêle qu'une famille. */
+  categoryPath: readonly string[] = [],
+): number {
+  return compare(specificityOf(left, categoryPath), specificityOf(right, categoryPath));
 }
 
 /** La portée vise-t-elle cet article ? Un `id` qui ne correspond pas l'exclut. */
@@ -84,9 +120,9 @@ export function matchesScope(scope: PriceScope, context: PricingContext): boolea
     case "global":
       return true;
     case "category":
-      // Une famille inconnue (`null`) n'est visée par AUCUNE portée — pas même
-      // une portée `category` sans identifiant, que `null === null` accepterait.
-      return context.categoryId !== null && scope.id === context.categoryId;
+      // La famille OU l'une de ses parentes. Une famille inconnue (lignée vide)
+      // n'est visée par AUCUNE portée — pas même une portée sans identifiant.
+      return scope.id !== null && context.categoryPath.includes(scope.id);
     case "product":
       return scope.id === context.productSku;
     case "variant":
@@ -294,11 +330,11 @@ export function winnerOf(rules: readonly PriceRule[], context: PricingContext): 
   }
 
   let best = first;
-  let bestScore = specificityOf(best);
+  let bestScore = specificityOf(best, context.categoryPath);
   let tie: PriceRule | null = null;
 
   for (const candidate of rest) {
-    const score = specificityOf(candidate);
+    const score = specificityOf(candidate, context.categoryPath);
     const delta = compare(score, bestScore);
     if (delta > 0) {
       best = candidate;

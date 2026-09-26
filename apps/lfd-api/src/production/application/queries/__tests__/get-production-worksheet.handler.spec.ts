@@ -3,7 +3,7 @@ import {
   UNSHELVED_WORKSHOP_GROUP_KEY,
   addDays,
   instantToLocal,
-  type CatalogCategory,
+  type CatalogFamilyView,
 } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -114,18 +114,19 @@ class Containers extends ProductionContainerReader {
 
 /** Les rayons doublés : une table fixe, ou une panne du commerce. */
 class Shelves extends WorkshopShelvesReader {
-  constructor(private readonly table: ReadonlyMap<string, CatalogCategory> | "down") {
+  constructor(private readonly table: ReadonlyMap<string, CatalogFamilyView> | "down") {
     super();
   }
 
-  shelvesOf(): Promise<ReadonlyMap<string, CatalogCategory>> {
+  shelvesOf(): Promise<ReadonlyMap<string, CatalogFamilyView>> {
     return this.table === "down"
       ? Promise.reject(new Error("catalogue injoignable"))
       : Promise.resolve(this.table);
   }
 }
 
-const SEIGLE_AU_PAIN = new Map<string, CatalogCategory>([["PAI-SEI", "pain"]]);
+const PAINS: CatalogFamilyView = { id: "fam-pain", name: "Pains", position: 1 };
+const SEIGLE_AU_PAIN = new Map<string, CatalogFamilyView>([["PAI-SEI", PAINS]]);
 
 function demandOfDay(quantity: number): ExpectedDayProduction {
   return {
@@ -259,7 +260,12 @@ describe("GetProductionWorksheetHandler", () => {
 
     expect(view.shelvesKnown).toBe(true);
     expect(view.groups).toHaveLength(1);
-    expect(view.groups[0]).toMatchObject({ key: "pain", label: "Pains", totalUnits: 30 });
+    expect(view.groups[0]).toMatchObject({
+      key: "fam-pain",
+      family: PAINS,
+      label: "Pains",
+      totalUnits: 30,
+    });
     expect(view.groups[0]?.pending[0]).toMatchObject({ sku: "PAI-SEI", done: false });
   });
 

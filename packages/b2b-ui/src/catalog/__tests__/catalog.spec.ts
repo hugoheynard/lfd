@@ -1,4 +1,4 @@
-import type { CatalogItemView } from '@lfd/contracts';
+import type { CatalogFamilyView, CatalogItemView } from '@lfd/contracts';
 
 import { catalogShelves } from '../catalog-shelves';
 import { toCatalogProduct } from '../to-catalog-product';
@@ -9,12 +9,19 @@ import { toCatalogProduct } from '../to-catalog-product';
 // donc « 0,0022 € » — un catalogue divisé par mille. C'est très exactement le
 // défaut que la migration se donnait pour mission d'éviter en CONVERTISSANT les
 // valeurs plutôt qu'en les réinterprétant ; elle l'a fait en base, pas ici.
+// Des familles telles que le référentiel les livre : un id opaque, un nom, une
+// position. Aucune n'est connue du code — c'est tout l'objet du rangement.
+const VIENNOISERIES: CatalogFamilyView = { id: 'fam-vien', name: 'Viennoiseries', position: 0 };
+const PAINS: CatalogFamilyView = { id: 'fam-pains', name: 'Pains', position: 1 };
+const CHOCOLAT: CatalogFamilyView = { id: 'fam-choco', name: 'Chocolat & confiserie', position: 4 };
+
 const CROISSANT: CatalogItemView = {
   sku: 'VIE-001',
   name: 'Croissant',
   unitPriceMillicents: 220_000,
   vatRate: 5.5,
-  category: 'viennoiserie',
+  family: VIENNOISERIES,
+  category: null,
 };
 
 const BAGUETTE: CatalogItemView = {
@@ -22,7 +29,8 @@ const BAGUETTE: CatalogItemView = {
   name: 'Baguette tradition',
   unitPriceMillicents: 200_000,
   vatRate: 5.5,
-  category: 'pain',
+  family: PAINS,
+  category: null,
 };
 
 const TABLETTE: CatalogItemView = {
@@ -30,50 +38,68 @@ const TABLETTE: CatalogItemView = {
   name: 'Tablette lait',
   unitPriceMillicents: 1_000_000,
   vatRate: 5.5,
-  category: 'chocolat',
+  family: CHOCOLAT,
+  category: null,
 };
 
 describe('catalogShelves', () => {
-  it("range dans l'ordre de la vitrine, pas dans celui des données", () => {
+  it("range dans l'ordre du référentiel, pas dans celui des données", () => {
     // Le chocolat arrive en premier dans l'entrée et doit finir en dernier :
-    // c'est le contrat qui fixe l'ordre des rayons, pas l'appelant.
-    const shelves = catalogShelves([TABLETTE, BAGUETTE, CROISSANT], (item) => item.category);
+    // c'est la position de la famille qui fixe l'ordre, pas l'appelant.
+    const shelves = catalogShelves([TABLETTE, BAGUETTE, CROISSANT], (item) => item.family);
 
-    expect(shelves.map((shelf) => shelf.category)).toEqual(['viennoiserie', 'pain', 'chocolat']);
+    expect(shelves.map((shelf) => shelf.family?.id)).toEqual([
+      'fam-vien',
+      'fam-pains',
+      'fam-choco',
+    ]);
   });
 
-  it('nomme chaque rayon avec le libellé du contrat', () => {
-    const [shelf] = catalogShelves([CROISSANT], (item) => item.category);
+  it('nomme chaque rayon du nom de sa famille', () => {
+    const [shelf] = catalogShelves([CROISSANT], (item) => item.family);
 
     expect(shelf?.label).toBe('Viennoiseries');
   });
 
-  it('fait disparaître un rayon vide', () => {
-    // Après une recherche, un en-tête sans article laisse croire que le filtre a
-    // échoué alors qu'il a simplement tout écarté.
-    const shelves = catalogShelves([CROISSANT], (item) => item.category);
+  it('range une famille inconnue du code, sans déploiement', () => {
+    // Une famille que le référentiel vient de créer : aucun code ne la connaît,
+    // elle devient un rayon parce qu'elle porte un article.
+    const snacking: CatalogFamilyView = { id: '01a0-neuve', name: 'Snacking', position: 2 };
+    const wrap: CatalogItemView = { ...BAGUETTE, sku: 'SNK-001', name: 'Wrap', family: snacking };
+
+    const shelves = catalogShelves([TABLETTE, wrap, CROISSANT], (item) => item.family);
+
+    expect(shelves.map((shelf) => shelf.label)).toEqual([
+      'Viennoiseries',
+      'Snacking',
+      'Chocolat & confiserie',
+    ]);
+  });
+
+  it('ne crée pas de rayon vide', () => {
+    const shelves = catalogShelves([CROISSANT], (item) => item.family);
 
     expect(shelves).toHaveLength(1);
   });
 
   /**
    * Régression : le 2026-09-26, un article d'une famille sans rayon a mis le
-   * catalogue pro en 500. Servi désormais sans famille, il ne doit pas
-   * disparaître de la saisie de commande.
+   * catalogue pro en 500. Servi sans famille, il ne doit pas disparaître de la
+   * saisie de commande.
    */
   it('range un article sans famille connue en dernier, sous son propre titre', () => {
-    const orphan: CatalogItemView = { ...CROISSANT, sku: 'VIE-099', category: null };
+    const orphan: CatalogItemView = { ...CROISSANT, sku: 'VIE-099', family: null };
 
-    const shelves = catalogShelves([orphan, TABLETTE], (item) => item.category);
+    const shelves = catalogShelves([orphan, TABLETTE], (item) => item.family);
 
-    expect(shelves.map((shelf) => [shelf.category, shelf.label])).toEqual([
-      ['chocolat', 'Chocolat & confiserie'],
+    expect(shelves.map((shelf) => [shelf.family?.id ?? null, shelf.label])).toEqual([
+      ['fam-choco', 'Chocolat & confiserie'],
       [null, 'Sans famille connue'],
     ]);
   });
 
   it("ne rend rien quand il n'y a rien", () => {
-    expect(catalogShelves([], (item: CatalogItemView) => item.category)).toEqual([]);
+    expect(catalogShelves([], (item: CatalogItemView) => item.family)).toEqual([]);
   });
 });
 

@@ -1,4 +1,4 @@
-import { CATALOG_CATEGORY_ORDER, type PriceRuleView, type PricingBoardView } from "@lfd/contracts";
+import type { PriceRuleView, PricingBoardView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../platform/time/clock.js";
@@ -19,7 +19,7 @@ import {
   type LoadedFloor,
   type LoadedRule,
 } from "../application/ports/pricing-decisions.reader.js";
-import { actsAt, categoryView, groupByCategory } from "../application/board-category.js";
+import { actsAt, categoryView, groupByFamily } from "../application/board-category.js";
 import { ruleViewFromRow } from "./price-rows.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 
@@ -178,7 +178,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // Groupé UNE fois : filtrer le catalogue entier par famille rendait le coût
     // proportionnel au produit familles × articles, pour un découpage qui ne
     // change jamais d'une famille à l'autre.
-    const byCategory = groupByCategory(loaded.articles);
+    const shelves = groupByFamily(loaded.articles);
 
     // Les recouvrements se calculent sur les règles qui AGISSENT : une règle
     // suspendue ne recouvre rien, et l'annoncer ferait chercher un cumul qui
@@ -193,15 +193,17 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     };
 
     return {
-      categories: CATALOG_CATEGORY_ORDER.map((category) =>
-        categoryView(category, byCategory.get(category) ?? [], loaded, materials, catalogue, at),
-      ).filter((view) => view.items.length > 0),
+      // Les familles qui portent au moins un article, dans l'ordre du
+      // référentiel : une famille orpheline du miroir n'a pas de bande.
+      categories: shelves.map((shelf) =>
+        categoryView(shelf.family, shelf.articles, loaded, materials, catalogue, at),
+      ),
       globalFloor: loaded.floors.find((entry) => entry.floor.scope.type === "global")?.view ?? null,
       globalRules: loaded.rules
         .filter((entry) => entry.rule.scope.type === "global")
         .map((entry) => entry.view),
       canonicalHistoryStartsAt: loaded.historyStartsAt?.toISOString() ?? null,
-      unknownFamilyCount: loaded.articles.filter((item) => item.category === null).length,
+      unknownFamilyCount: loaded.articles.filter((item) => item.family === null).length,
       simulation: { quantity: 1, at: at.toISOString(), audience: "all" },
     };
   }

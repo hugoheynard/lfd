@@ -64,6 +64,7 @@ import { PlaceOrderForCustomerHandler } from "../place-order-for-customer.handle
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CanonicalPriceHistoryReader } from "../../../../catalog/domain/ports/canonical-price-history.reader.js";
 import type { CatalogPricing } from "@lfd/contracts";
+import { VIENNOISERIES } from "../../../../catalog/domain/__tests__/families.fixture.js";
 
 /**
  * L'historique du tarif canonique — **jamais consulté ici** : ces cas ne posent
@@ -157,7 +158,7 @@ const CATALOG: Record<string, UnsealedCatalogItem> = {
     name: "Croissant",
     unitPriceMillicents: 200_000,
     vatRate: 0,
-    category: "viennoiserie",
+    family: VIENNOISERIES,
     allergens: null,
     orderTimeLimit: null,
   },
@@ -548,7 +549,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         name: "Croissant offert",
         unitPriceMillicents: 0,
         vatRate: 0,
-        category: "viennoiserie",
+        family: VIENNOISERIES,
         allergens: null,
         orderTimeLimit: null,
       },

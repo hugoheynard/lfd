@@ -29,7 +29,7 @@ function snapshotOf(over: Record<string, unknown>): StoredCatalogSnapshot {
         vatRatePercent: 5.5,
       },
       {
-        id: "pain",
+        id: "fam-pain",
         name: "Pain",
         slug: "p",
         parentId: "boulangerie",
@@ -42,7 +42,7 @@ function snapshotOf(over: Record<string, unknown>): StoredCatalogSnapshot {
         id: "prd_1",
         sku: "PAI-001",
         name: "Baguette",
-        categoryId: "pain",
+        categoryId: "fam-pain",
         kind: "daily",
         variants: [
           {
@@ -135,7 +135,7 @@ describe("snapshotLimitReader", () => {
           id: "prd_1",
           sku: "PAI-001",
           name: "Baguette",
-          categoryId: "pain",
+          categoryId: "fam-pain",
           kind: "daily",
           variants: [
             {

@@ -29,12 +29,12 @@ import { StaffAuthors } from "../../../../staff/directory/domain/staff-author-di
  */
 
 const AT = new Date("2026-08-17T00:00:00.000Z");
-const CONTEXT = pricingContextFor("VIE-001", "viennoiserie", 1, { companyId: null }, AT);
+const CONTEXT = pricingContextFor("VIE-001", ["fam-vien"], 1, { companyId: null }, AT);
 /** La suite déclare son catalogue, et le scelle comme le port le ferait. */
 const ARTICLE = catalogueArticle({
   sku: "VIE-001",
   name: "Croissant",
-  category: "viennoiserie",
+  categoryPath: ["fam-vien"],
   unitPriceMillicents: 200_000,
 });
 
@@ -172,7 +172,7 @@ describe("un nœud du tableau", () => {
   /** Le plus spécifique REMPLACE : un plancher d'article ne s'ajoute pas à celui de sa famille. */
   it("retient le plancher le plus spécifique, même quand il est plus bas", async () => {
     const floors = [
-      loadedFloor("famille", { type: "category", id: "viennoiserie" }, 9_000),
+      loadedFloor("famille", { type: "category", id: "fam-vien" }, 9_000),
       loadedFloor("article", { type: "product", id: "VIE-001" }, 5_000),
     ];
     const rules = loadedRules([ruleRow("a", { bp: 4_000 })]);
@@ -218,7 +218,7 @@ describe("viser un article nommément", () => {
   it("ne retient que les portées produit et déclinaison", () => {
     expect(targetsArticle({ type: "product", id: "VIE-001" }, "VIE-001")).toBe(true);
     expect(targetsArticle({ type: "variant", id: "VIE-001" }, "VIE-001")).toBe(true);
-    expect(targetsArticle({ type: "category", id: "viennoiserie" }, "VIE-001")).toBe(false);
+    expect(targetsArticle({ type: "category", id: "fam-vien" }, "VIE-001")).toBe(false);
     expect(targetsArticle({ type: "global", id: null }, "VIE-001")).toBe(false);
   });
 });

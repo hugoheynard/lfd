@@ -52,7 +52,7 @@ function context(over: Partial<PricingContext> = {}): PricingContext {
     quantity: 1,
     variantSku: "VIE-001-1",
     productSku: "VIE-001",
-    categoryId: "cat_vien",
+    categoryPath: ["fam-vien"],
     companyId: "cmp_dupont",
     segmentId: null,
     cumulativeQuantity: null,

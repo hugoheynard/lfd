@@ -41,7 +41,11 @@
 >   **38** le même jour avec `lint:auth0-id-readers` : le même identifiant une
 >   fois RANGÉ en base (`auth0_id`, `auth0_sub`, la table des `sub`) — liste
 >   admise de ses lecteurs, et jamais interpolé dans un message, après un log
->   de production qui l'écrivait en clair. C'est la
+>   de production qui l'écrivait en clair. Et **39** depuis le 2026-09-26 avec
+>   `lint:no-shelf-literals` : une table de rayons en dur a mis le catalogue pro
+>   en 500 le jour où le référentiel a créé une famille qu'elle ne connaissait
+>   pas ; la famille est désormais une donnée, et la porte refuse le retour des
+>   noms retirés comme d'un code de rayon écrit dans le commerce. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1087,7 +1091,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 38 portes du dépôt, d'un coup
+pnpm lint:gates         # les 39 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

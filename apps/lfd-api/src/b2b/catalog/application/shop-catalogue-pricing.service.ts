@@ -1,4 +1,4 @@
-import type { CatalogCategory, ShopCatalogueView, ShopItemView } from "@lfd/contracts";
+import type { ShopCatalogueView, ShopItemView } from "@lfd/contracts";
 import { lineTotalCents, ttcCentsOf } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
@@ -7,8 +7,6 @@ import { Clock } from "../../../platform/time/clock.js";
 import { CatalogOperationsReader } from "../domain/ports/catalog-operations.reader.js";
 import { CatalogReader } from "../domain/ports/catalog.reader.js";
 import { catalogueArticle } from "../domain/catalogue-article.js";
-import { UnknownCatalogShelfError } from "../domain/errors/unknown-catalog-shelf.error.js";
-import { shelfOfCategory } from "../domain/shelf-of-category.js";
 import { shopCatalogueOf } from "./shop-catalogue-view.js";
 
 /**
@@ -88,10 +86,6 @@ export class ShopCataloguePricing {
    *
    * @param companyId `null` = un visiteur. Le tarif public, promotions
    * comprises, et aucune mercuriale lue — il n'y a rien à négocier sans client.
-   *
-   * **Ne lève pas** sur une famille sans rayon : l'article sort à son tarif, non
-   * tarifé. Cf. {@link shelfFor} — une vitrine anonyme ne tombe pas en entier
-   * pour un article.
    */
   async priced(companyId: string | null): Promise<ShopCatalogueView> {
     // 🔴 **L'audience se déduit ICI, et c'est le seul endroit.** « Sans société »
@@ -117,15 +111,13 @@ export class ShopCataloguePricing {
       return catalogue;
     }
 
-    // 🔴 Le rayon, pas la famille du PIM. `ShopItemView.shelfId` porte
-    // `cat_vien` ; le tarificateur attend `viennoiserie`. Construire l'article à
-    // tarifer depuis la VUE ferait rater toutes les règles de portée famille,
-    // sans que rien ne rougisse.
+    // 🔴 La LIGNÉE de la famille, lue sur l'article du catalogue et non sur la
+    // vue : `ShopItemView.shelfId` ne porte que la famille elle-même, et une
+    // règle posée sur une parente ne mordrait pas.
     const byProductSku = new Map(sellable.map((item) => [item.productSku, item]));
     const articles = catalogue.items.flatMap((item) => {
       const source = byProductSku.get(item.sku);
-      const shelf = source === undefined ? null : shelfFor(source.sku, source.categoryId);
-      return shelf === null
+      return source === undefined
         ? []
         : [
             {
@@ -134,7 +126,7 @@ export class ShopCataloguePricing {
               article: catalogueArticle({
                 sku: item.sku,
                 name: item.name,
-                category: shelf,
+                categoryPath: source.family.path,
                 unitPriceMillicents: item.unitPriceMillicents,
               }),
               // 🔴 **Quantité 1, et c'est une limite assumée.** `minQuantity`
@@ -199,29 +191,4 @@ function struck(item: ShopItemView, prices: ReadonlyMap<string, number>): ShopIt
     return resolved === item.unitPriceMillicents ? item : priced;
   }
   return { ...priced, catalogPriceMillicents: item.unitPriceMillicents };
-}
-
-/**
- * Le rayon d'un article, ou `null` s'il n'en a pas — **et la vitrine continue**.
- *
- * `shelfOfCategory` refuse une famille inconnue, et c'est la bonne réponse au
- * checkout : mieux vaut ne pas vendre que facturer au hasard. Sur la vitrine
- * **anonyme**, la même réponse ferait tomber la page entière en 500 pour tous
- * les visiteurs, à cause d'un seul article d'une famille que le PIM vient
- * d'inventer.
- *
- * L'article sort donc **à son tarif**, non tarifé — exactement ce que cette
- * route servait avant R22. Ce n'est pas un prix inventé : c'est le canonique,
- * et la famille inconnue reste refusée là où elle compte, au moment de
- * commander.
- */
-function shelfFor(sku: string, categoryId: string): CatalogCategory | null {
-  try {
-    return shelfOfCategory(sku, categoryId);
-  } catch (error) {
-    if (error instanceof UnknownCatalogShelfError) {
-      return null;
-    }
-    throw error;
-  }
 }

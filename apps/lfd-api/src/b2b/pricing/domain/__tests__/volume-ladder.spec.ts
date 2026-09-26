@@ -47,7 +47,7 @@ function context(quantity: number): PricingContext {
     quantity,
     variantSku: "VIE-001-1",
     productSku: "VIE-001",
-    categoryId: "viennoiserie",
+    categoryPath: ["fam-vien"],
     companyId: null,
     segmentId: null,
     cumulativeQuantity: null,

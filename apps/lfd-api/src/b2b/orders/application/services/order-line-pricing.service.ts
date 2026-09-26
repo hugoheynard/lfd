@@ -140,7 +140,6 @@ export class OrderLinePricing {
         name: found.name,
         unitPriceMillicents: found.unitPriceMillicents,
         vatRate: found.vatRate,
-        category: found.category,
         allergens: found.allergens,
         // L'article SCELLÉ, tel que le catalogue l'a frappé : c'est lui que le
         // tarificateur exige, et c'est ce qui interdit de lui présenter un prix

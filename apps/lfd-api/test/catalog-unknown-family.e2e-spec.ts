@@ -1,13 +1,13 @@
 /**
- * E2E — **un article d'une famille inconnue ne met plus le catalogue pro en
- * panne** (plan `documentation/pricing/plan-familles-en-donnees.md`, lot 0).
+ * E2E — **une famille livrée par le référentiel devient un rayon, sans
+ * déploiement** (plan `documentation/pricing/plan-familles-en-donnees.md`).
  *
- * Régression de la panne du 2026-09-26 : une seconde famille « Viennoiseries »
- * créée au PIM n'avait pas de rayon, `shelfOfCategory` levait, et la
- * Tarification, le tarif d'un client, les Limites de prix et la liste
- * d'articles de la saisie répondaient 500. L'article est désormais servi SANS
- * famille : décisions d'article et de catalogue seulement, jamais un rayon
- * deviné.
+ * Régression de la panne du 2026-09-26 : une famille créée au PIM n'avait pas
+ * de rayon dans la table en dur, la traduction levait, et la Tarification,
+ * le tarif d'un client, les Limites de prix et la liste d'articles de la saisie
+ * répondaient 500. Le lot 0 servait l'article sans famille ; depuis que la
+ * famille est une donnée, il n'y a plus rien à traduire : la famille reçue EST
+ * le rayon, avec son nom et sa position, tarifable et limitable par son id.
  *
  * L'état est posé comme un push du référentiel le laisserait : une famille
  * reçue dans `catalog_categories`, et un article qui y est rangé.
@@ -28,11 +28,14 @@ import {
   DeferredTerm,
 } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { E2E_FAMILIES } from "./catalog-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
-/** L'id que le PIM a donné au doublon de production — un UUIDv7, sans rayon. */
+/** L'id que le PIM a donné à la famille de la panne — un UUIDv7, inconnu du code. */
 const UNKNOWN_FAMILY = "01a031ff-146f-756f-a21b-4a2759a35e85";
-/** Rangé dans la famille inconnue par `seedOrphan`. */
+/** Une famille orpheline du miroir : reçue un jour, plus aucun article vivant. */
+const ORPHAN_FAMILY = "fam-orpheline";
+/** Rangé dans la famille nouvelle par `seedOrphan`. */
 const ORPHAN = "VIE-002";
 const BUYER = "auth0|acheteur-orphelin";
 
@@ -78,17 +81,30 @@ beforeEach(async () => {
 
 const staff = () => ctx.asSub("staff-e2e");
 
-/** La famille reçue du PIM sans rayon, et un article qui y est rangé. */
+/**
+ * La famille reçue du PIM, inconnue du code, un article qui y est rangé — et
+ * une famille orpheline, reçue mais sans article vivant.
+ */
 async function seedOrphan(): Promise<void> {
-  await ctx.prisma.catalogCategory.create({
-    data: {
-      id: UNKNOWN_FAMILY,
-      name: "Viennoiseries",
-      slug: "viennoiseries",
-      position: 5,
-      vatRatePercent: 5.5,
-      receivedAt: new Date(),
-    },
+  await ctx.prisma.catalogCategory.createMany({
+    data: [
+      {
+        id: UNKNOWN_FAMILY,
+        name: "Viennoiseries du matin",
+        slug: "viennoiseries-du-matin",
+        position: 5,
+        vatRatePercent: 5.5,
+        receivedAt: new Date(),
+      },
+      {
+        id: ORPHAN_FAMILY,
+        name: "Orpheline",
+        slug: "orpheline",
+        position: 9,
+        vatRatePercent: 5.5,
+        receivedAt: new Date(),
+      },
+    ],
   });
   await ctx.prisma.catalogItem.update({
     where: { sku: `${ORPHAN}-1` },
@@ -148,50 +164,73 @@ async function quoteOf(companyId: string, sku: string) {
   return line;
 }
 
-describe("un article d'une famille inconnue — la panne du 2026-09-26", () => {
-  it("ne met pas le catalogue pro en 500 : la saisie le liste, sans famille", async () => {
+describe("une famille livrée par le référentiel — la panne du 2026-09-26", () => {
+  it("devient un rayon de la saisie, avec son nom et sa position", async () => {
     const items = jsonBody<CatalogItemView[]>(
       await staff().get("/admin/catalog/sellable").expect(200),
     );
 
-    expect(items.find((item) => item.sku === ORPHAN)?.category).toBeNull();
-    expect(items.find((item) => item.sku === "VIE-001")?.category).toBe("viennoiserie");
+    expect(items.find((item) => item.sku === ORPHAN)?.family).toEqual({
+      id: UNKNOWN_FAMILY,
+      name: "Viennoiseries du matin",
+      position: 5,
+    });
+    expect(items.find((item) => item.sku === "VIE-001")?.family?.id).toBe(E2E_FAMILIES.VIE.id);
+    // Le champ déprécié reste servi, et toujours à `null`.
+    expect(items.every((item) => item.category === null)).toBe(true);
   });
 
-  it("laisse la Tarification se charger, et le compte", async () => {
+  it("devient une bande de la Tarification, à sa position — sans famille orpheline", async () => {
     const board = jsonBody<PricingBoardView>(await staff().get("/admin/pricing").expect(200));
 
-    expect(board.unknownFamilyCount).toBe(1);
-    const skus = board.categories.flatMap((category) => category.items.map((item) => item.sku));
-    expect(skus).not.toContain(ORPHAN);
-    expect(skus).toContain("VIE-001");
+    expect(board.unknownFamilyCount).toBe(0);
+    const ids = board.categories.map((category) => category.id);
+    expect(ids).toEqual([
+      E2E_FAMILIES.VIE.id,
+      E2E_FAMILIES.PAI.id,
+      E2E_FAMILIES.PAT.id,
+      E2E_FAMILIES.SAL.id,
+      E2E_FAMILIES.CHO.id,
+      UNKNOWN_FAMILY,
+    ]);
+    expect(ids).not.toContain(ORPHAN_FAMILY);
+    const band = board.categories.find((category) => category.id === UNKNOWN_FAMILY);
+    expect(band?.family).toEqual({
+      id: UNKNOWN_FAMILY,
+      name: "Viennoiseries du matin",
+      position: 5,
+    });
+    expect(band?.items.map((item) => item.sku)).toEqual([ORPHAN]);
   });
 
   it("laisse les Limites de prix et le tarif d'un client se charger", async () => {
     const { companyId } = await seedBuyer();
 
     await staff().get("/admin/pricing/floors?clientele=pro").expect(200);
-    await staff().get(`/admin/pricing/companies/${companyId}`).expect(200);
+    const company = await staff().get(`/admin/pricing/companies/${companyId}`).expect(200);
+    const categories = jsonBody<{ categories: { id: string }[] }>(company).categories;
+    expect(categories.map((category) => category.id)).toContain(UNKNOWN_FAMILY);
+    expect(categories.map((category) => category.id)).not.toContain(ORPHAN_FAMILY);
   });
 });
 
-describe("il se tarife sans décision de famille", () => {
-  it("ne reçoit pas la règle de sa famille d'origine", async () => {
+describe("elle se tarife et se limite par son id", () => {
+  it("reçoit la règle posée sur ELLE, et pas celle de sa voisine", async () => {
     const { companyId } = await seedBuyer();
-    await postRule({ type: "category", id: "viennoiserie" }, 5_000);
+    await postRule({ type: "category", id: UNKNOWN_FAMILY }, 5_000);
 
     const orphan = await quoteOf(companyId, ORPHAN);
     const known = await quoteOf(companyId, "VIE-001");
 
-    expect(orphan.unitPriceMillicents).toBe(orphan.canonicalMillicents);
-    expect(known.unitPriceMillicents).toBe(known.canonicalMillicents / 2);
+    expect(orphan.unitPriceMillicents).toBe(orphan.canonicalMillicents / 2);
+    expect(known.unitPriceMillicents).toBe(known.canonicalMillicents);
   });
 
-  it("reçoit les décisions d'article, et la limite du catalogue le relève", async () => {
+  it("se limite par son id : la limite de sa famille le relève", async () => {
     const { companyId } = await seedBuyer();
     await staff()
       .put("/admin/pricing/floors")
-      .send({ scope: { type: "global", id: null }, mode: "percent", value: 6_000 })
+      .send({ scope: { type: "category", id: UNKNOWN_FAMILY }, mode: "percent", value: 6_000 })
       .expect(204);
     await postRule({ type: "product", id: ORPHAN }, 9_000);
 
@@ -199,8 +238,52 @@ describe("il se tarife sans décision de famille", () => {
 
     expect(line.steps.map((step) => step.stage)).toEqual(["promotion"]);
     expect(line.floored).toBe(true);
-    // −90 % l'aurait mis à 10 % du tarif : la limite l'a relevé au-dessus.
-    expect(line.unitPriceMillicents).toBeGreaterThan(line.canonicalMillicents / 10);
+    // −90 % l'aurait mis à 10 % du tarif : la limite l'a relevé à 60 %.
+    expect(line.unitPriceMillicents).toBe((line.canonicalMillicents * 6) / 10);
+  });
+});
+
+describe("une sous-famille suit son chemin", () => {
+  /** Une sous-famille des pâtisseries, livrée par le référentiel, et un article rangé dedans. */
+  async function seedTartes(): Promise<string> {
+    const tartes = "fam-tartes";
+    await ctx.prisma.catalogCategory.create({
+      data: {
+        id: tartes,
+        name: "Tartes",
+        slug: "tartes",
+        parentId: E2E_FAMILIES.PAT.id,
+        position: 3,
+        vatRatePercent: 5.5,
+        receivedAt: new Date(),
+      },
+    });
+    await ctx.prisma.catalogItem.update({
+      where: { sku: "PAT-001-1" },
+      data: { categoryId: tartes },
+    });
+    return tartes;
+  }
+
+  it("reçoit la règle de sa famille parente", async () => {
+    const { companyId } = await seedBuyer();
+    await seedTartes();
+    await postRule({ type: "category", id: E2E_FAMILIES.PAT.id }, 5_000);
+
+    const line = await quoteOf(companyId, "PAT-001");
+
+    expect(line.unitPriceMillicents).toBe(line.canonicalMillicents / 2);
+  });
+
+  it("la règle de la famille la plus proche l'emporte sur celle de la parente", async () => {
+    const { companyId } = await seedBuyer();
+    const tartes = await seedTartes();
+    await postRule({ type: "category", id: E2E_FAMILIES.PAT.id }, 5_000);
+    await postRule({ type: "category", id: tartes }, 2_500);
+
+    const line = await quoteOf(companyId, "PAT-001");
+
+    expect(line.unitPriceMillicents).toBe((line.canonicalMillicents * 3) / 4);
   });
 });
 

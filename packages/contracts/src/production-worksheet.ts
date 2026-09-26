@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { CatalogCategory } from "./catalog.js";
+import type { CatalogFamilyView } from "./catalog.js";
 
 /**
  * **La fiche d'atelier** : ce que le fournil a à sortir aujourd'hui, et ce qui
@@ -96,10 +96,19 @@ export const UNSHELVED_WORKSHOP_GROUP_KEY = "?";
  * séparées, dans l'ordre de la fiche, qui ne bouge pas quand on coche.
  */
 export interface WorkshopGroup {
-  /** La catégorie, ou `UNSHELVED_WORKSHOP_GROUP_KEY`. Sert d'onglet et de préférence. */
+  /**
+   * L'id de la famille du référentiel, ou `UNSHELVED_WORKSHOP_GROUP_KEY`. Sert
+   * d'onglet et de préférence.
+   */
   readonly key: string;
   /** `null` = SKU hors catalogue, ou rayons illisibles (`shelvesKnown: false`). */
-  readonly category: CatalogCategory | null;
+  readonly family: CatalogFamilyView | null;
+  /**
+   * @deprecated remplacé par {@link family} le 2026-09-26. Servi **toujours à
+   * `null`** tant qu'un front déployé le lit ; retiré dans une livraison
+   * suivante.
+   */
+  readonly category: null;
   readonly label: string;
   readonly lineCount: number;
   readonly doneCount: number;

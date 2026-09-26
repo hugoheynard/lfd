@@ -32,6 +32,8 @@ import {
   authorsKnownAs,
   FixedStaffAuthorDirectory,
 } from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
+import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
+import { VIENNOISERIES } from "../../../../catalog/domain/__tests__/families.fixture.js";
 
 const POSED_AT = new Date("2026-06-15T09:00:00.000Z");
 
@@ -52,7 +54,7 @@ function act(over: Partial<JournalEntry> = {}): JournalEntry {
 /** Retient ce qu'on lui a demandé : c'est l'objet même de deux des trois cas. */
 class RecordingPricingJournal extends PricingJournalReader {
   recentLimit: number | null = null;
-  subjectAsked: readonly [string, string] | null = null;
+  subjectAsked: readonly [string, string, readonly string[]] | null = null;
   pageAsked: JournalPageRequest | null = null;
 
   constructor(
@@ -72,11 +74,31 @@ class RecordingPricingJournal extends PricingJournalReader {
     return Promise.resolve(this.entries);
   }
 
-  forSubject(subjectType: string, subjectId: string): Promise<JournalEntry[]> {
-    this.subjectAsked = [subjectType, subjectId];
+  forSubject(
+    subjectType: string,
+    subjectId: string,
+    formerSubjectIds: readonly string[] = [],
+  ): Promise<JournalEntry[]> {
+    this.subjectAsked = [subjectType, subjectId, formerSubjectIds];
     return Promise.resolve(this.entries);
   }
 }
+
+/**
+ * Le catalogue : une famille dont le slug est celui d'un ancien code de rayon —
+ * c'est par lui que l'ancien sujet du journal se retrouve.
+ */
+const CATALOG = new InMemoryProductCatalog([
+  {
+    sku: "VIE-001",
+    name: "Croissant",
+    unitPriceMillicents: 220_000,
+    vatRate: 5.5,
+    family: { ...VIENNOISERIES, slug: "viennoiseries" },
+    allergens: null,
+    orderTimeLimit: null,
+  },
+]);
 
 /** L'annuaire : `auth0|staff` est Camille ; `system` n'est personne. */
 const AUTHORS = new FixedStaffAuthorDirectory(
@@ -130,11 +152,11 @@ describe("ReadSubjectJournalHandler", () => {
   it("interroge le sujet demandé, sans le réinterpréter", async () => {
     const journal = new RecordingPricingJournal([]);
 
-    await new ReadSubjectJournalHandler(journal, AUTHORS).execute(
+    await new ReadSubjectJournalHandler(journal, AUTHORS, CATALOG).execute(
       new ReadSubjectJournalQuery("ladder", "ladder_7"),
     );
 
-    expect(journal.subjectAsked).toEqual(["ladder", "ladder_7"]);
+    expect(journal.subjectAsked).toEqual(["ladder", "ladder_7", []]);
   });
 
   it("rend le même fil que la lecture générale — un seul mapper pour les deux", async () => {
@@ -142,7 +164,7 @@ describe("ReadSubjectJournalHandler", () => {
       act({ subjectType: "floor", subjectId: "floor_2" }),
     ]);
 
-    const view = await new ReadSubjectJournalHandler(journal, AUTHORS).execute(
+    const view = await new ReadSubjectJournalHandler(journal, AUTHORS, CATALOG).execute(
       new ReadSubjectJournalQuery("floor", "floor_2"),
     );
 
@@ -155,17 +177,56 @@ describe("ReadSubjectJournalHandler", () => {
   });
 });
 
+describe("les anciens sujets d'une limite de famille", () => {
+  /**
+   * Avant le 2026-09-26, une limite de famille avait pour sujet un code de
+   * rayon (`category:viennoiserie`). La migration a repris la limite, pas son
+   * journal, qui est immuable : sans ce pont, son historique s'arrêterait au
+   * jour de la bascule.
+   */
+  it("relit l'ancien sujet de la famille, par son slug", async () => {
+    const journal = new RecordingPricingJournal([]);
+
+    await new ReadSubjectJournalHandler(journal, AUTHORS, CATALOG).execute(
+      new ReadSubjectJournalQuery("floor", "category:fam-vien"),
+    );
+
+    expect(journal.subjectAsked).toEqual(["floor", "category:fam-vien", ["category:viennoiserie"]]);
+  });
+
+  it("garde le préfixe de la clientèle publique", async () => {
+    const journal = new RecordingPricingJournal([]);
+
+    await new ReadSubjectJournalPageHandler(journal, AUTHORS, CATALOG).execute(
+      new ReadSubjectJournalPageQuery("floor", "public:category:fam-vien", 1, 20, null),
+    );
+
+    expect(journal.pageAsked?.formerSubjectIds).toEqual(["public:category:viennoiserie"]);
+  });
+
+  it("n'invente aucun ancien sujet pour une famille née après la bascule", async () => {
+    const journal = new RecordingPricingJournal([]);
+
+    await new ReadSubjectJournalHandler(journal, AUTHORS, CATALOG).execute(
+      new ReadSubjectJournalQuery("floor", "category:01a0-snacking"),
+    );
+
+    expect(journal.subjectAsked).toEqual(["floor", "category:01a0-snacking", []]);
+  });
+});
+
 describe("ReadSubjectJournalPageHandler", () => {
   it("transmet le sujet, la page, la taille et l'ancre, sans les réinterpréter", async () => {
     const journal = new RecordingPricingJournal([]);
 
-    await new ReadSubjectJournalPageHandler(journal, AUTHORS).execute(
+    await new ReadSubjectJournalPageHandler(journal, AUTHORS, CATALOG).execute(
       new ReadSubjectJournalPageQuery("mercuriale", "merc_3", 3, 20, "act_45"),
     );
 
     expect(journal.pageAsked).toEqual({
       subjectType: "mercuriale",
       subjectId: "merc_3",
+      formerSubjectIds: [],
       page: 3,
       pageSize: 20,
       asOf: "act_45",
@@ -175,7 +236,7 @@ describe("ReadSubjectJournalPageHandler", () => {
   it("rend le total et l'ancre du lecteur, et la page et la taille demandées", async () => {
     const journal = new RecordingPricingJournal([act()], { total: 45, asOf: "act_45" });
 
-    const view = await new ReadSubjectJournalPageHandler(journal, AUTHORS).execute(
+    const view = await new ReadSubjectJournalPageHandler(journal, AUTHORS, CATALOG).execute(
       new ReadSubjectJournalPageQuery("rule", "rule_1", 3, 20, null),
     );
 
@@ -187,7 +248,7 @@ describe("ReadSubjectJournalPageHandler", () => {
   it("nomme les auteurs avec le même mapper que le fil", async () => {
     const journal = new RecordingPricingJournal([act(), act({ id: "act_2", actor: "system" })]);
 
-    const view = await new ReadSubjectJournalPageHandler(journal, AUTHORS).execute(
+    const view = await new ReadSubjectJournalPageHandler(journal, AUTHORS, CATALOG).execute(
       new ReadSubjectJournalPageQuery("rule", "rule_1", 1, 20, null),
     );
 
@@ -198,7 +259,7 @@ describe("ReadSubjectJournalPageHandler", () => {
   it("rend une page vide et une ancre nulle pour un sujet sans acte", async () => {
     const journal = new RecordingPricingJournal([], { total: 0, asOf: null });
 
-    const view = await new ReadSubjectJournalPageHandler(journal, AUTHORS).execute(
+    const view = await new ReadSubjectJournalPageHandler(journal, AUTHORS, CATALOG).execute(
       new ReadSubjectJournalPageQuery("floor", "global:", 1, 20, null),
     );
 

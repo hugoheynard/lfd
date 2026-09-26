@@ -208,7 +208,7 @@ describe("l'annonce liée, enregistrée", () => {
         })
         .expect(400);
 
-    await refused({ ...LINKED, linkShelfKey: "cat_vien", action: undefined });
+    await refused({ ...LINKED, linkShelfKey: "fam-vien", action: undefined });
     await refused({ ...LINKED, operationKey: "Noël 2026" });
   });
 
@@ -317,9 +317,9 @@ describe("la base refuse ce que le domaine refuse", () => {
     const insert = (id: string, position: number, columns: string, values: string): string =>
       `INSERT INTO "public"."storefront_content" ("id", "object_id", "position", "kind", ${columns}) VALUES ('${id}', '${host.id}', ${String(position)}, 'info', ${values})`;
 
-    await refuses(insert("c1", 5, `"link_shelf_key", "operation_key"`, `'cat_vien', 'noel'`));
+    await refuses(insert("c1", 5, `"link_shelf_key", "operation_key"`, `'fam-vien', 'noel'`));
     await refuses(insert("c2", 6, `"operation_key"`, `'Noël'`));
-    await refuses(insert("c3", 7, `"link_shelf_key"`, `'cat_vien'`));
+    await refuses(insert("c3", 7, `"link_shelf_key"`, `'fam-vien'`));
     await ctx.prisma.$executeRawUnsafe(insert("c4", 8, `"operation_key"`, `'noel'`));
   });
 });

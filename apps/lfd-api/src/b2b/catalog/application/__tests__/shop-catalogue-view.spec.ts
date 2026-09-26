@@ -33,7 +33,7 @@ function noel(over: Partial<SellableOperation> = {}): SellableOperation {
 const SELLABLE = [
   catalogItem("VIE-001", {
     name: "Croissant",
-    categoryId: "cat_vien",
+    categoryId: "fam-vien",
     categoryName: "Viennoiseries",
   }),
   catalogItem("PAT-002", { name: "Bûche" }),
@@ -56,7 +56,7 @@ describe("shopCatalogueOf — les opérations datées", () => {
     const view = shopCatalogueOf(SELLABLE, sale(new Date("2026-10-01T00:00:00.000Z")));
 
     expect(view.items.map((item) => item.sku)).toEqual(["VIE-001"]);
-    expect(view.shelves.map((shelf) => shelf.id)).toEqual(["cat_vien"]);
+    expect(view.shelves.map((shelf) => shelf.id)).toEqual(["fam-vien"]);
     expect(view.operations).toEqual([]);
   });
 

@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 /**
  * Le **catalogue**, tel qu'un écran le parcourt.
  *
@@ -15,36 +13,21 @@ import { z } from "zod";
  */
 
 /**
- * Les familles de produits. Un **code**, pas l'identifiant `cat_*` du PIM : ce
- * dernier est une clé de sa base, et la faire transiter ici lierait le
- * back-office au schéma d'une autre application.
+ * **Une famille du référentiel**, telle qu'un écran la range.
+ *
+ * L'`id` est celui du PIM, reçu par le miroir `catalog_categories` ; `name` et
+ * `position` aussi. Il n'y a plus de liste des rayons dans le code (plan
+ * `documentation/pricing/plan-familles-en-donnees.md`) : une famille livrée par
+ * le référentiel EST un rayon, sans déploiement. L'union fermée qui la
+ * remplaçait a mis tout le catalogue pro en 500 le 2026-09-26, le jour où le
+ * PIM a rangé un article dans une famille qu'elle ne connaissait pas.
  */
-export const catalogCategorySchema = z.enum([
-  "viennoiserie",
-  "pain",
-  "patisserie",
-  "sale",
-  "chocolat",
-]);
-export type CatalogCategory = z.infer<typeof catalogCategorySchema>;
-
-/** Les libellés d'écran, dans l'ordre où le catalogue se parcourt. */
-export const CATALOG_CATEGORY_LABELS: Readonly<Record<CatalogCategory, string>> = {
-  viennoiserie: "Viennoiseries",
-  pain: "Pains",
-  patisserie: "Pâtisseries",
-  sale: "Salé & traiteur",
-  chocolat: "Chocolat & confiserie",
-};
-
-/** L'ordre d'affichage — celui de la vitrine, pas l'alphabet. */
-export const CATALOG_CATEGORY_ORDER: readonly CatalogCategory[] = [
-  "viennoiserie",
-  "pain",
-  "patisserie",
-  "sale",
-  "chocolat",
-];
+export interface CatalogFamilyView {
+  readonly id: string;
+  readonly name: string;
+  /** L'ordre du référentiel — celui dans lequel les rayons se parcourent. */
+  readonly position: number;
+}
 
 /**
  * Un article du catalogue. Prix unitaire **HT** en **millicentimes** et taux de
@@ -64,9 +47,16 @@ export interface CatalogItemView {
   /** Taux de TVA en %, ex. 5.5 (alimentaire) ou 20 (non-alimentaire). */
   readonly vatRate: number;
   /**
-   * Son rayon. `null` = la famille du référentiel n'a pas de rayon côté
-   * commerce (panne du 2026-09-26) : l'article reste commandable et tarifé,
-   * sans décision de famille. Jamais un rayon par défaut.
+   * Sa famille, lue dans le miroir du référentiel. `null` = article reçu sans
+   * famille connue (une livraison incomplète) : il reste commandable et tarifé,
+   * sans décision de famille. Jamais une famille par défaut.
    */
-  readonly category: CatalogCategory | null;
+  readonly family: CatalogFamilyView | null;
+  /**
+   * @deprecated remplacé par {@link family} le 2026-09-26. Servi **toujours à
+   * `null`**, et pas retiré : le front déjà déployé range un `null` sous « Sans
+   * famille connue », mais PERD un article dont le champ est absent. Il se
+   * retire dans une livraison suivante, quand plus aucun front ne le lit.
+   */
+  readonly category: null;
 }

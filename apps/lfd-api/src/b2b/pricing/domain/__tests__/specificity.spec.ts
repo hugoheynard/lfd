@@ -16,7 +16,7 @@ function context(over: Partial<PricingContext> = {}): PricingContext {
     quantity: 1,
     variantSku: "VIE-001-1",
     productSku: "VIE-001",
-    categoryId: "cat_vien",
+    categoryPath: ["fam-vien"],
     companyId: "cmp_dupont",
     segmentId: "seg_boulangerie",
     cumulativeQuantity: null,
@@ -69,7 +69,7 @@ describe("applies — la portée et l'audience", () => {
   it("reconnaît une règle qui vise la variante, le produit ou la famille", () => {
     expect(applies(rule({ scope: { type: "variant", id: "VIE-001-1" } }), context())).toBe(true);
     expect(applies(rule({ scope: { type: "product", id: "VIE-001" } }), context())).toBe(true);
-    expect(applies(rule({ scope: { type: "category", id: "cat_vien" } }), context())).toBe(true);
+    expect(applies(rule({ scope: { type: "category", id: "fam-vien" } }), context())).toBe(true);
   });
 
   it("écarte une règle qui vise un AUTRE article", () => {
@@ -119,10 +119,44 @@ describe("winnerOf — l'ordre des critères", () => {
   });
 
   it("à audience égale, la portée la plus précise gagne", () => {
-    const famille = rule({ id: "famille", scope: { type: "category", id: "cat_vien" } });
+    const famille = rule({ id: "famille", scope: { type: "category", id: "fam-vien" } });
     const variante = rule({ id: "variante", scope: { type: "variant", id: "VIE-001-1" } });
 
     expect(winnerOf([famille, variante], context())?.id).toBe("variante");
+  });
+
+  /**
+   * La famille suit son CHEMIN, comme l'heure limite (plan des familles en
+   * données, 2026-09-26) : une décision sur une parente vaut pour la
+   * sous-famille, et la plus proche l'emporte.
+   */
+  it("une règle posée sur une famille PARENTE vaut pour sa sous-famille", () => {
+    const parente = rule({ id: "parente", scope: { type: "category", id: "fam-patis" } });
+    const tarte = context({ categoryPath: ["fam-tartes", "fam-patis"] });
+
+    expect(applies(parente, tarte)).toBe(true);
+    expect(winnerOf([parente], tarte)?.id).toBe("parente");
+  });
+
+  it("la famille la plus PROCHE l'emporte sur sa parente", () => {
+    const parente = rule({ id: "parente", scope: { type: "category", id: "fam-patis" } });
+    const proche = rule({ id: "proche", scope: { type: "category", id: "fam-tartes" } });
+    const tarte = context({ categoryPath: ["fam-tartes", "fam-patis"] });
+
+    expect(winnerOf([parente, proche], tarte)?.id).toBe("proche");
+    expect(winnerOf([proche, parente], tarte)?.id).toBe("proche");
+  });
+
+  it("une règle de sous-famille ne remonte pas sur la parente", () => {
+    const proche = rule({ id: "proche", scope: { type: "category", id: "fam-tartes" } });
+
+    expect(applies(proche, context({ categoryPath: ["fam-patis"] }))).toBe(false);
+  });
+
+  it("un article sans famille connue n'est visé par aucune famille", () => {
+    const famille = rule({ scope: { type: "category", id: "fam-vien" } });
+
+    expect(applies(famille, context({ categoryPath: [] }))).toBe(false);
   });
 
   it("le segment bat « tous », et l'entreprise bat le segment", () => {

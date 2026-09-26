@@ -145,7 +145,7 @@ describe("PricingRule.create", () => {
     });
 
     it("refuse une portée globale qui nomme quand même une cible", () => {
-      expect(() => create({ scope: { type: "global", id: "viennoiserie" } })).toThrow(
+      expect(() => create({ scope: { type: "global", id: "fam-vien" } })).toThrow(
         ScopeIdMismatchError,
       );
     });

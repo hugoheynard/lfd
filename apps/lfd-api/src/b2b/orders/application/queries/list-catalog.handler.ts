@@ -1,6 +1,7 @@
 import type { CatalogItemView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { familyView } from "../../../catalog/domain/catalog-family.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { ListCatalogQuery } from "./list-catalog.query.js";
 
@@ -22,7 +23,9 @@ export class ListCatalogHandler implements IQueryHandler<
       name: item.name,
       unitPriceMillicents: item.unitPriceMillicents,
       vatRate: item.vatRate,
-      category: item.category,
+      family: item.family === null ? null : familyView(item.family),
+      // Déprécié, servi à `null` tant qu'un front déployé le lit.
+      category: null,
     }));
   }
 }

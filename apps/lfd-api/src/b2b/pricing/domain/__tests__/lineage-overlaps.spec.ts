@@ -36,7 +36,7 @@ function promo(id: string, from: string, to: string | null, bp = 2_000): PriceRu
 function ladder(over: Partial<VolumeLadder> = {}): VolumeLadder {
   return {
     id: "ladder_1",
-    scope: { type: "category", id: "viennoiserie" } satisfies PriceScope,
+    scope: { type: "category", id: "fam-vien" } satisfies PriceScope,
     audience: { type: "all", id: null },
     unit: "percent",
     tiers: [

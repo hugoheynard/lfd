@@ -13,7 +13,8 @@ import type { PricingContext } from "./price-rule.js";
  * Ce que le `WHERE` sélectionne ne dépend en réalité que de deux choses : la
  * **fenêtre** (l'instant, gelé pour tout l'appel) et l'**audience** (le client,
  * gelé aussi). Seule la portée varie d'un article à l'autre — et c'est une
- * égalité sur un identifiant, donc un `IN`.
+ * égalité sur un identifiant (pour une famille : chacune de sa lignée), donc un
+ * `IN`.
  *
  * ## Un `WHERE`, deux entrées
  *
@@ -32,7 +33,7 @@ export interface PricingScopes {
   readonly at: Date;
   readonly companyId: string | null;
   readonly segmentId: string | null;
-  /** Les familles visées par au moins un article du panier. */
+  /** Les familles — lignées comprises — d'au moins un article du panier. */
   readonly categoryIds: readonly string[];
   readonly productSkus: readonly string[];
   readonly variantSkus: readonly string[];
@@ -50,7 +51,7 @@ export function scopesOf(context: PricingContext): PricingScopes {
     at: context.at,
     companyId: context.companyId,
     segmentId: context.segmentId,
-    categoryIds: context.categoryId === null ? [] : [context.categoryId],
+    categoryIds: [...context.categoryPath],
     productSkus: [context.productSku],
     variantSkus: [context.variantSku],
   };
@@ -72,9 +73,7 @@ export function scopesOfAll(contexts: readonly PricingContext[]): PricingScopes 
     at: first.at,
     companyId: first.companyId,
     segmentId: first.segmentId,
-    categoryIds: [
-      ...new Set(contexts.flatMap((c) => (c.categoryId === null ? [] : [c.categoryId]))),
-    ],
+    categoryIds: [...new Set(contexts.flatMap((c) => c.categoryPath))],
     productSkus: [...new Set(contexts.map((c) => c.productSku))],
     variantSkus: [...new Set(contexts.map((c) => c.variantSku))],
   };

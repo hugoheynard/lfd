@@ -32,14 +32,14 @@ const AT = new Date("2026-06-15T09:00:00.000Z");
 const CROISSANT = catalogueArticle({
   sku: "VIE-001",
   name: "Croissant au beurre",
-  category: "viennoiserie",
+  categoryPath: ["fam-vien"],
   unitPriceMillicents: 200_000,
 });
 
 const PAIN = catalogueArticle({
   sku: "PAI-001",
   name: "Baguette",
-  category: "pain",
+  categoryPath: ["fam-pain"],
   unitPriceMillicents: 100_000,
 });
 

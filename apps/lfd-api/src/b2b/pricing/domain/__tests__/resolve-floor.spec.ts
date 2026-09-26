@@ -7,7 +7,7 @@ const CONTEXT: PricingContext = {
   quantity: 1,
   variantSku: "VIE-001-U",
   productSku: "VIE-001",
-  categoryId: "viennoiserie",
+  categoryPath: ["fam-vien"],
   companyId: null,
   segmentId: null,
   cumulativeQuantity: null,
@@ -51,6 +51,21 @@ describe("resolveFloor", () => {
     expect(resolveFloor(ailleurs, CONTEXT)).toBeNull();
   });
 
+  /**
+   * La famille suit son chemin (plan des familles en données, 2026-09-26) :
+   * une limite sur une parente couvre la sous-famille, et la plus proche
+   * l'emporte — sans ambiguïté, puisqu'elles ne sont pas au même rang.
+   */
+  it("prend la limite de la famille la plus PROCHE, et celle de la parente à défaut", () => {
+    const tarte = { ...CONTEXT, categoryPath: ["fam-tartes", "fam-patis"] };
+    const parente = floor("p", "category", "fam-patis", 100);
+    const proche = floor("t", "category", "fam-tartes", 150);
+
+    expect(resolveFloor([parente], tarte)).toEqual({ mode: "amount", millicents: 100 });
+    expect(resolveFloor([parente, proche], tarte)).toEqual({ mode: "amount", millicents: 150 });
+    expect(resolveFloor([proche, parente], tarte)).toEqual({ mode: "amount", millicents: 150 });
+  });
+
   it("prend le plancher global à défaut de mieux", () => {
     expect(resolveFloor([floor("g", "global", null, 50)], CONTEXT)).toEqual({
       mode: "amount",
@@ -62,7 +77,7 @@ describe("resolveFloor", () => {
    * L'héritage, dans le seul sens utile : une famille couvre ses articles.
    */
   it("le plancher de la famille couvre l'article", () => {
-    expect(resolveFloor([floor("c", "category", "viennoiserie", 120)], CONTEXT)).toEqual({
+    expect(resolveFloor([floor("c", "category", "fam-vien", 120)], CONTEXT)).toEqual({
       mode: "amount",
       millicents: 120,
     });
@@ -75,10 +90,7 @@ describe("resolveFloor", () => {
    * que l'écran doit montrer les deux.
    */
   it("le plancher de l'article remplace celui de la famille, MÊME s'il est plus bas", () => {
-    const posés = [
-      floor("c", "category", "viennoiserie", 150),
-      floor("p", "product", "VIE-001", 100),
-    ];
+    const posés = [floor("c", "category", "fam-vien", 150), floor("p", "product", "VIE-001", 100)];
 
     expect(resolveFloor(posés, CONTEXT)).toEqual({ mode: "amount", millicents: 100 });
   });
@@ -86,7 +98,7 @@ describe("resolveFloor", () => {
   it("la déclinaison l'emporte sur le produit, qui l'emporte sur la famille", () => {
     const posés = [
       floor("g", "global", null, 10),
-      floor("c", "category", "viennoiserie", 20),
+      floor("c", "category", "fam-vien", 20),
       floor("p", "product", "VIE-001", 30),
       floor("v", "variant", "VIE-001-U", 40),
     ];
@@ -120,15 +132,15 @@ describe("resolveFloor", () => {
    */
   it("refuse deux planchers de même portée plutôt que d'en tirer un au hasard", () => {
     const doublon = [
-      floor("a", "category", "viennoiserie", 100),
-      floor("b", "category", "viennoiserie", 200),
+      floor("a", "category", "fam-vien", 100),
+      floor("b", "category", "fam-vien", 200),
     ];
 
     expect(() => resolveFloor(doublon, CONTEXT)).toThrow(AmbiguousPriceFloorsError);
   });
 
   it("ne voit pas d'ambiguïté entre deux portées différentes", () => {
-    const posés = [floor("c", "category", "viennoiserie", 100), floor("g", "global", null, 200)];
+    const posés = [floor("c", "category", "fam-vien", 100), floor("g", "global", null, 200)];
 
     expect(() => resolveFloor(posés, CONTEXT)).not.toThrow();
   });

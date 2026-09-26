@@ -53,10 +53,11 @@ export interface CatalogArticle {
   readonly sku: string;
   readonly name: string;
   /**
-   * Sa famille — ce que vise une règle de portée `category`. `null` = famille
-   * du PIM sans rayon : tarifé sans décision de famille.
+   * Sa famille et ses parentes, de la plus proche à la plus lointaine — ce que
+   * vise une règle de portée `category`. Vide = article sans famille connue :
+   * tarifé sans décision de famille.
    */
-  readonly category: string | null;
+  readonly categoryPath: readonly string[];
   /** Le tarif de liste, en millicentimes. **Lu du catalogue, jamais reçu.** */
   readonly canonicalMillicents: number;
   readonly [FROM_CATALOGUE]: true;
@@ -77,7 +78,7 @@ export interface CatalogArticle {
 interface Unsealed {
   readonly sku: string;
   readonly name: string;
-  readonly category: string | null;
+  readonly categoryPath: readonly string[];
   readonly unitPriceMillicents: number;
 }
 
@@ -102,7 +103,7 @@ export function catalogueArticle(item: Unsealed): CatalogArticle {
   return {
     sku: item.sku,
     name: item.name,
-    category: item.category,
+    categoryPath: item.categoryPath,
     canonicalMillicents: item.unitPriceMillicents,
   } as CatalogArticle;
 }
@@ -121,17 +122,17 @@ export function catalogueArticle(item: Unsealed): CatalogArticle {
  * article est un geste du catalogue**, pas une retouche d'objet chez le lecteur
  * qui l'affiche.
  */
-export function atCanonicalPrice<T extends { readonly sku: string; readonly name: string }>(
-  item: T & { readonly category: string | null; readonly unitPriceMillicents: number },
+export function atCanonicalPrice<T extends { readonly article: CatalogArticle }>(
+  item: T,
   unitPriceMillicents: number,
 ): T & { readonly unitPriceMillicents: number; readonly article: CatalogArticle } {
   return {
     ...item,
     unitPriceMillicents,
     article: catalogueArticle({
-      sku: item.sku,
-      name: item.name,
-      category: item.category,
+      sku: item.article.sku,
+      name: item.article.name,
+      categoryPath: item.article.categoryPath,
       unitPriceMillicents,
     }),
   };

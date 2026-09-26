@@ -1,3 +1,4 @@
+import { categoryPathOf } from "@lfd/catalog-sync";
 import { Injectable } from "@nestjs/common";
 import type { OrderLineAllergens } from "@lfd/contracts";
 import { htMillicentsOf } from "@lfd/money";
@@ -54,6 +55,8 @@ interface ItemRow {
   readonly category: {
     readonly id: string;
     readonly name: string;
+    readonly slug: string;
+    readonly parentId: string | null;
     readonly position: number;
   };
   readonly override: {
@@ -87,7 +90,7 @@ export class PrismaCatalogReader extends CatalogReader {
       return null;
     }
     const served = servedPriceOf(row, "pro");
-    return served === null ? null : resolve(row, served);
+    return served === null ? null : resolve(row, served, await this.lineage([row]));
   }
 
   /** Une seule ligne visée par index, jamais le catalogue entier chargé puis filtré. */
@@ -103,7 +106,7 @@ export class PrismaCatalogReader extends CatalogReader {
       return null;
     }
     const served = servedPriceOf(row, audience);
-    return served === null ? null : resolve(row, served);
+    return served === null ? null : resolve(row, served, await this.lineage([row]));
   }
 
   async listDefaultsByProductSkus(
@@ -118,12 +121,13 @@ export class PrismaCatalogReader extends CatalogReader {
       include: { category: true, override: true },
     });
     const resolved = new Map<string, ResolvedCatalogItem>();
+    const lineage = await this.lineage(rows);
     for (const row of rows) {
       const served = servedPriceOf(row, audience);
       if (hiddenFrom(row, audience) || served === null) {
         continue;
       }
-      resolved.set(row.productSku, resolve(row, served));
+      resolved.set(row.productSku, resolve(row, served, lineage));
     }
     return resolved;
   }
@@ -168,12 +172,50 @@ export class PrismaCatalogReader extends CatalogReader {
       // égalités n'est pas un tri.
       orderBy: [{ category: { position: "asc" } }, { position: "asc" }, { sku: "asc" }],
     });
+    const lineage = await this.lineage(rows);
     return rows.flatMap((row) => {
       const served = servedPriceOf(row, audience);
-      return served === null ? [] : [resolve(row, served)];
+      return served === null ? [] : [resolve(row, served, lineage)];
     });
   }
+
+  /**
+   * **La lignée des familles** des lignes lues.
+   *
+   * Une famille sans parente est sa propre lignée : c'est le cas de toutes au
+   * 2026-09-26, et ce chemin ne coûte alors AUCUNE lecture de plus — le budget
+   * du devis (`test/pricing-budget.e2e-spec.ts`) compte les allers-retours au
+   * schéma, et la hiérarchie ne doit pas le payer tant qu'elle n'existe pas.
+   *
+   * Dès qu'une famille lue a une parente, le miroir est lu entier, en une
+   * requête : il ne porte pas de relation vers le parent, seulement
+   * `parent_id`, la profondeur n'est pas bornée, et la table tient en quelques
+   * lignes. La descente est celle de l'heure limite (`categoryPathOf`) — une
+   * seconde implémentation finirait par diverger.
+   */
+  private async lineage(rows: readonly ItemRow[]): Promise<Lineage> {
+    if (rows.every((row) => row.category.parentId === null)) {
+      return (familyId) => [familyId];
+    }
+    const families = await this.prisma.catalogCategory.findMany({
+      select: { id: true, parentId: true },
+    });
+    const nodes = families.map((family) => ({ id: family.id, parentId: family.parentId }));
+    const cache = new Map<string, readonly string[]>();
+    return (familyId) => {
+      const known = cache.get(familyId);
+      if (known !== undefined) {
+        return known;
+      }
+      const path = categoryPathOf(nodes, familyId);
+      cache.set(familyId, path);
+      return path;
+    };
+  }
 }
+
+/** La lignée d'une famille, la famille en tête. */
+type Lineage = (familyId: string) => readonly string[];
 
 /**
  * **L'article est-il masqué POUR CETTE AUDIENCE ?**
@@ -300,7 +342,7 @@ function billableRate(row: ItemRow): number | null {
  * pas dire « prix PIM 2,40 € · prix B2B 2,10 € », et un prix sans provenance ne
  * se défend pas devant un client qui le conteste.
  */
-function resolve(row: ItemRow, served: ServedPrice): ResolvedCatalogItem {
+function resolve(row: ItemRow, served: ServedPrice, lineage: Lineage): ResolvedCatalogItem {
   return {
     sku: row.sku,
     productSku: row.productSku,
@@ -310,6 +352,13 @@ function resolve(row: ItemRow, served: ServedPrice): ResolvedCatalogItem {
     vatRate: served.vatRate,
     categoryId: row.category.id,
     categoryName: row.category.name,
+    family: {
+      id: row.category.id,
+      name: row.category.name,
+      position: row.category.position,
+      slug: row.category.slug,
+      path: lineage(row.category.id),
+    },
     isDefault: row.isDefault,
     isFeatured: row.override?.isFeatured ?? false,
     allergens: frozenAllergens(row),

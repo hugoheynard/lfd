@@ -49,7 +49,7 @@ describe("PricingFloor.pose", () => {
    * plancher de cette catégorie » — mais elle n'identifie plus une ligne.
    */
   it("deux limites sur la même portée sont DEUX décisions, groupées par la portée", () => {
-    const scope = { type: "category", id: "viennoiserie" } as const;
+    const scope = { type: "category", id: "fam-vien" } as const;
     const first = PricingFloor.pose(
       "flr_1",
       scope,
@@ -285,7 +285,7 @@ describe("une limite en euros", () => {
     expect(() =>
       PricingFloor.pose(
         "flr_1",
-        { type: "category", id: "viennoiserie" },
+        { type: "category", id: "fam-vien" },
         "pro",
         wall(AMOUNT),
         "a",
@@ -305,7 +305,7 @@ describe("une limite en euros", () => {
     expect(() =>
       PricingFloor.pose(
         "flr_1",
-        { type: "category", id: "viennoiserie" },
+        { type: "category", id: "fam-vien" },
         "pro",
         {
           hard: { mode: "percent", bp: 6_000 },
@@ -330,7 +330,7 @@ describe("une limite en euros", () => {
     expect(() =>
       PricingFloor.pose(
         "flr_1",
-        { type: "category", id: "viennoiserie" },
+        { type: "category", id: "fam-vien" },
         "pro",
         percent,
         "a",
@@ -373,10 +373,10 @@ describe("la clientèle d'une limite", () => {
    * écrite quand il n'y avait qu'une clientèle, doit rester continue.
    */
   it("journalise une limite pro sous la clé d'avant la clientèle", () => {
-    const scope = { type: "category", id: "viennoiserie" } as const;
+    const scope = { type: "category", id: "fam-vien" } as const;
 
     expect(floorSubjectKey(scope, "pro")).toBe(floorScopeKey(scope));
-    expect(floorSubjectKey(scope, "pro")).toBe("category:viennoiserie");
+    expect(floorSubjectKey(scope, "pro")).toBe("category:fam-vien");
   });
 
   it("sépare l'histoire publique de la pro par un préfixe", () => {

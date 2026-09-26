@@ -4,9 +4,10 @@ import type { PriceScope, PricingContext } from "./price-rule.js";
  * **La clé de portée** — ce par quoi un matériau de prix se range.
  *
  * `matchesScope` ne connaît que quatre formes : `global`, vrai sans condition,
- * et **trois égalités** sur un identifiant. Un article n'a donc que quatre clés
- * possibles, et piocher ces quatre seaux rend exactement ce que le prédicat
- * retenait — ni plus, ni moins. C'est cette équivalence qui autorise l'index,
+ * l'**appartenance** d'une famille à la lignée de l'article, et deux égalités
+ * sur un SKU. Un article a donc une clé `global`, une clé par famille de sa
+ * lignée, et ses deux clés de SKU — et piocher ces seaux rend exactement ce que
+ * le prédicat retenait, ni plus, ni moins. C'est cette équivalence qui autorise l'index,
  * et `scope-index.spec.ts` la tient contre `matchesScope` lui-même plutôt que
  * contre une liste écrite à la main.
  */
@@ -18,8 +19,7 @@ export type ScopeKey = "global" | `category:${string}` | `product:${string}` | `
  * `PriceScope` porte son invariant en commentaire — « `id` est `null` si et
  * seulement si `type === 'global'` » — et un type ne le tient pas. Une portée
  * `category` sans identifiant est donc représentable, et `matchesScope` la
- * refuse déjà (`null === context.categoryId` est faux, `categoryId` étant une
- * chaîne). L'index la **jette** plutôt que de fabriquer une clé `category:null`
+ * refuse déjà (une lignée ne contient que des chaînes). L'index la **jette** plutôt que de fabriquer une clé `category:null`
  * qu'une famille réellement nommée « null » viendrait un jour percuter.
  */
 export function scopeKeyOf(scope: PriceScope): ScopeKey | null {
@@ -30,17 +30,19 @@ export function scopeKeyOf(scope: PriceScope): ScopeKey | null {
 }
 
 /**
- * Les quatre clés que **cet article** porte, de la plus large à la plus étroite.
+ * Les clés que **cet article** porte, de la plus large à la plus étroite — les
+ * familles de sa lignée de la plus lointaine à la plus proche.
  *
  * L'ordre n'arbitre rien — `winnerOf` s'en charge par la spécificité, et
  * `resolvePrice` a besoin des perdants pour dire qui évince qui. Il est
  * simplement stable, ce qui rend les tests lisibles et les traces comparables.
  */
 export function scopeKeysOf(context: PricingContext): readonly ScopeKey[] {
-  // Une famille inconnue n'a pas de seau : fabriquer `category:null` la ferait
-  // percuter une famille réellement nommée « null ».
-  const category: readonly ScopeKey[] =
-    context.categoryId === null ? [] : [`category:${context.categoryId}`];
+  // Une famille inconnue (lignée vide) n'a pas de seau : fabriquer
+  // `category:null` la ferait percuter une famille réellement nommée « null ».
+  const category: readonly ScopeKey[] = [...context.categoryPath]
+    .reverse()
+    .map((id): ScopeKey => `category:${id}`);
   return ["global", ...category, `product:${context.productSku}`, `variant:${context.variantSku}`];
 }
 
@@ -98,7 +100,7 @@ export function indexByScope<T>(
 }
 
 /**
- * Ce que l'index rend pour un article : la concaténation de ses quatre seaux.
+ * Ce que l'index rend pour un article : la concaténation de ses seaux.
  *
  * **Le même tableau que le `WHERE` d'aujourd'hui**, reconstruit sans aller le
  * chercher. Ce n'est donc pas une accélération : le travail par article reste

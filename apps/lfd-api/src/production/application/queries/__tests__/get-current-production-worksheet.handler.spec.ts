@@ -1,4 +1,4 @@
-import { addDays, instantToLocal, localToInstant, type CatalogCategory } from "@lfd/contracts";
+import { addDays, instantToLocal, localToInstant, type CatalogFamilyView } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
@@ -97,7 +97,7 @@ class NoContainers extends ProductionContainerReader {
 }
 
 class NoShelves extends WorkshopShelvesReader {
-  shelvesOf(): Promise<ReadonlyMap<string, CatalogCategory>> {
+  shelvesOf(): Promise<ReadonlyMap<string, CatalogFamilyView>> {
     return Promise.resolve(new Map());
   }
 }

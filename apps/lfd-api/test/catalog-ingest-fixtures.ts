@@ -19,7 +19,7 @@ import {
  */
 
 export const CATEGORY = {
-  id: "cat_vien",
+  id: "fam-vien",
   name: "Viennoiseries",
   slug: "viennoiseries",
   parentId: null,

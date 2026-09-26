@@ -22,9 +22,10 @@ export type { PricingParties } from "./loaded-pricer.js";
  *    règle de portée `variant` et une de portée `product` visent donc la même
  *    chose pour l'instant — ce qui est correct, pas approximatif : il n'y a
  *    réellement qu'un article derrière ce SKU.
- * 2. **`categoryId` est le code de rayon** (`viennoiserie`…), pas l'identifiant
- *    PIM. Une règle de portée `category` saisie aujourd'hui devra donc être
- *    reprise à la bascule — c'est noté, et il n'y en a aucune.
+ * 2. ~~`categoryId` est le code de rayon~~ — **refermé le 2026-09-26** : la
+ *    famille est la lignée d'identifiants du référentiel (`categoryPath`), et
+ *    la migration `les_familles_se_lisent_en_donnees` a repris les portées
+ *    posées en code.
  * 3. **`segmentId` est toujours `null`.** Aucune notion de segment n'existe sur
  *    `Company`. L'audience `segment` est modélisée et **inatteignable** : elle
  *    attend que les segments existent, et ne fausse rien en attendant puisque
@@ -35,8 +36,8 @@ export type { PricingParties } from "./loaded-pricer.js";
  */
 export function pricingContextFor(
   sku: string,
-  /** `null` = famille inconnue du catalogue : aucune règle de famille. */
-  categoryCode: string | null,
+  /** La famille puis ses parentes ; vide = famille inconnue, aucune règle de famille. */
+  categoryPath: readonly string[],
   quantity: number,
   parties: PricingParties,
   at: Date,
@@ -52,7 +53,7 @@ export function pricingContextFor(
     quantity,
     variantSku: sku,
     productSku: sku,
-    categoryId: categoryCode,
+    categoryPath,
     companyId: parties.companyId,
     segmentId: null,
     cumulativeQuantity,

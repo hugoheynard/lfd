@@ -1,6 +1,7 @@
-import type { CatalogCategory, OrderLimitSpec, OrderLineAllergens } from "@lfd/contracts";
+import type { OrderLimitSpec, OrderLineAllergens } from "@lfd/contracts";
 
 import type { CatalogArticle } from "../catalogue-article.js";
+import type { CatalogFamily } from "../catalog-family.js";
 import type { ShopAudience } from "./catalog.reader.js";
 
 /** Ce que le seed porte pour un SKU : nom + prix unitaire **HT** en millicentimes. */
@@ -15,14 +16,14 @@ export interface CatalogItem extends PricedSku {
   /** Taux de TVA du **produit** en %, ex. 5.5 (alimentaire) ou 20 (non-alimentaire). */
   readonly vatRate: number;
   /**
-   * Sa famille — ce par quoi un écran range 92 produits en cinq rayons.
+   * Sa famille du référentiel, lignée comprise — ce par quoi un écran range et
+   * ce que vise une portée `category`.
    *
-   * `null` = la famille du PIM n'a pas de rayon (panne du 2026-09-26) :
-   * l'article reste vendable et tarifé, sans aucune décision de famille. Jamais
-   * un rayon par défaut — un rayon faux ferait mordre les règles d'une autre
-   * famille.
+   * `null` = article sans famille connue : il reste vendable et tarifé, sans
+   * aucune décision de famille. Jamais une famille par défaut — une famille
+   * fausse ferait mordre les règles d'une autre.
    */
-  readonly category: CatalogCategory | null;
+  readonly family: CatalogFamily | null;
   /**
    * **Ce qui est déclaré**, au moment où l'on résout la ligne.
    *

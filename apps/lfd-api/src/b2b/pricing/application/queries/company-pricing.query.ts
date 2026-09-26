@@ -1,7 +1,5 @@
 import { averageGapBp as averageBp, gapBp } from "@lfd/money";
 import {
-  CATALOG_CATEGORY_LABELS,
-  CATALOG_CATEGORY_ORDER,
   type CompanyPricingCategoryView,
   type CompanyPricingView,
   type PricingItemView,
@@ -18,7 +16,8 @@ import { BoardElasticityService } from "../board-elasticity.service.js";
 import { boardMaterials, itemView } from "../board-item.js";
 import { PricingDecisionsReader } from "../ports/pricing-decisions.reader.js";
 import { PricedCompanyReader } from "../../domain/ports/priced-company.reader.js";
-import { groupByCategory } from "../board-category.js";
+import { groupByFamily } from "../board-category.js";
+import { familyView } from "../../../catalog/domain/catalog-family.js";
 import { posedMercurialeView } from "../posed-mercuriale-view.js";
 import { pricingContextFor } from "../../domain/pricing-context.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
@@ -99,19 +98,20 @@ export class CompanyPricingQuery {
 
     const names = new Map(articles.map((article) => [article.sku, article.name]));
     const materials = await boardMaterials(rules, floors, at, live, ladders, companyId);
-    const byCategory = groupByCategory(articles);
-    const categories: CompanyPricingCategoryView[] = CATALOG_CATEGORY_ORDER.map((category) => ({
-      id: category,
-      name: CATALOG_CATEGORY_LABELS[category],
-      items: (byCategory.get(category) ?? []).map((article) =>
+    // Les familles qui portent au moins un article, dans l'ordre du référentiel.
+    const categories: CompanyPricingCategoryView[] = groupByFamily(articles).map((shelf) => ({
+      id: shelf.family.id,
+      name: shelf.family.name,
+      family: familyView(shelf.family),
+      items: shelf.articles.map((article) =>
         itemView(
           article.article,
-          pricingContextFor(article.sku, article.category, 1, { companyId }, at),
+          pricingContextFor(article.sku, article.article.categoryPath, 1, { companyId }, at),
           materials,
           { rules, floors },
         ),
       ),
-    })).filter((category) => category.items.length > 0);
+    }));
 
     // 🔴 **L'effort de vente se mesure sur CE client, pas sur le marché.**
     //

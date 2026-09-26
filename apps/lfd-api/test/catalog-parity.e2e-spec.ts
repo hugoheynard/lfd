@@ -57,7 +57,7 @@ class StubFeed extends B2bCatalogFeedPreview {
         id: `prd_${variant.sku}`,
         sku: variant.sku.replace(/-\d+$/, ""),
         name: variant.name,
-        categoryId: "cat_vien",
+        categoryId: "fam-vien",
         kind: "daily" as const,
         variants: [
           {

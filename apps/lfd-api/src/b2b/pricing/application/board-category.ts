@@ -1,6 +1,4 @@
 import {
-  CATALOG_CATEGORY_LABELS,
-  type CatalogCategory,
   type PriceOverlapView,
   type PricingCategoryView,
   type PricingLadderBandView,
@@ -11,6 +9,11 @@ import { pricingContextFor } from "../domain/pricing-context.js";
 import { itemView, type BoardMaterials } from "./board-item.js";
 import type { LoadedFloor, LoadedRule } from "./ports/pricing-decisions.reader.js";
 import type { CatalogItem } from "../../catalog/domain/ports/product-catalog.reader.js";
+import {
+  compareFamilies,
+  familyView,
+  type CatalogFamily,
+} from "../../catalog/domain/catalog-family.js";
 import type { OverlapSegment } from "../domain/rule-overlaps.js";
 import type { PriceRule, PriceScope } from "../domain/price-rule.js";
 import type { VolumeLadder } from "../domain/volume-ladder.js";
@@ -37,28 +40,31 @@ export interface LoadedDecisions {
  * bouge pas.
  */
 export function categoryView(
-  category: CatalogCategory,
+  family: CatalogFamily,
   articles: readonly CatalogItem[],
   loaded: LoadedDecisions,
   materials: BoardMaterials,
   catalogue: CatalogueLevel,
   at: Date,
 ): PricingCategoryView {
-  const ownRules = loaded.rules.filter((entry) => targetsCategory(entry.rule.scope, category));
+  const ownRules = loaded.rules.filter((entry) => targetsFamily(entry.rule.scope, family));
+  // Les parentes redescendent sur la famille comme le catalogue : la lignée
+  // de la frise est catalogue → parentes → famille.
+  const parentRules = loaded.rules.filter((entry) => targetsParentOf(entry.rule.scope, family));
   // La lignée, barèmes compris : un barème compose avec toute promotion en
   // cours, et la frise se lirait « rien d'autre ne joue » sans lui.
   const lineageLadders = [
     ...catalogue.ladders,
-    ...loaded.ladders.filter((ladder) => targetsCategory(ladder.scope, category)),
+    ...loaded.ladders.filter((ladder) => targetsLineage(ladder.scope, family)),
   ];
   return {
-    id: category,
-    name: CATALOG_CATEGORY_LABELS[category],
+    id: family.id,
+    name: family.name,
+    family: familyView(family),
     // Le taux vient du catalogue, où il est **par produit**. Une famille qui
     // en mélangerait deux n'en annonce aucun plutôt que le premier venu.
     vatRatePercent: uniformVatRate(articles.map((item) => item.vatRate)),
-    floor:
-      loaded.floors.find((entry) => targetsCategory(entry.floor.scope, category))?.view ?? null,
+    floor: loaded.floors.find((entry) => targetsFamily(entry.floor.scope, family))?.view ?? null,
     rules: ownRules.map((entry) => entry.view),
     // La LIGNÉE, catalogue puis famille : c'est entre niveaux que le
     // recouvrement arrive, puisque deux règles de même étage et même portée ne
@@ -67,7 +73,9 @@ export function categoryView(
     overlaps: lineageSegments(
       [
         ...catalogue.rules,
-        ...ownRules.filter((entry) => entry.rule.suspendedFrom === null).map((entry) => entry.rule),
+        ...[...parentRules, ...ownRules]
+          .filter((entry) => entry.rule.suspendedFrom === null)
+          .map((entry) => entry.rule),
       ],
       lineageLadders,
     ).map(overlapView),
@@ -76,7 +84,7 @@ export function categoryView(
       itemView(
         // L'article scellé par le catalogue — plus de traduction ici.
         item.article,
-        pricingContextFor(item.sku, item.category, 1, { companyId: null }, at),
+        pricingContextFor(item.sku, item.article.categoryPath, 1, { companyId: null }, at),
         materials,
         loaded,
       ),
@@ -96,36 +104,64 @@ export function actsAt(suspendedFrom: Date | null, at: Date): boolean {
 }
 
 /**
- * La portée vise-t-elle cette famille (et pas un article, ni tout le catalogue) ?
+ * La portée vise-t-elle cette famille elle-même (et pas un article, ni tout le
+ * catalogue, ni une parente) ?
  *
  * Prend une `PriceScope` et non deux primitives : le type et l'identifiant vont
  * ensemble, et les séparer en `(type: string, id: string | null)` jetait l'union
  * discriminée exactement là où elle protège — l'appariement de portée.
  */
-function targetsCategory(scope: PriceScope, category: CatalogCategory): boolean {
-  return scope.type === "category" && scope.id === category;
+function targetsFamily(scope: PriceScope, family: CatalogFamily): boolean {
+  return scope.type === "category" && scope.id === family.id;
 }
 
-/** Le catalogue rangé par famille, en une passe — sans les familles inconnues. */
-export function groupByCategory(
-  articles: readonly CatalogItem[],
-): ReadonlyMap<CatalogCategory, CatalogItem[]> {
-  const grouped = new Map<CatalogCategory, CatalogItem[]>();
+/** La portée vise-t-elle une PARENTE de cette famille ? */
+function targetsParentOf(scope: PriceScope, family: CatalogFamily): boolean {
+  return (
+    scope.type === "category" &&
+    scope.id !== null &&
+    scope.id !== family.id &&
+    family.path.includes(scope.id)
+  );
+}
+
+/** La famille ou l'une de ses parentes. */
+function targetsLineage(scope: PriceScope, family: CatalogFamily): boolean {
+  return scope.type === "category" && scope.id !== null && family.path.includes(scope.id);
+}
+
+/** Une famille du tableau et ses articles. */
+export interface FamilyShelf {
+  readonly family: CatalogFamily;
+  readonly articles: readonly CatalogItem[];
+}
+
+/**
+ * Le catalogue rangé par famille, en une passe, **dans l'ordre du
+ * référentiel** — sans les articles de famille inconnue.
+ *
+ * Une famille n'apparaît que si elle porte au moins un article vivant : les
+ * familles orphelines du miroir (les `cat_*` jamais retirés, la projection ne
+ * supprimant rien) ne naissent jamais ici, puisque les rayons naissent des
+ * articles.
+ */
+export function groupByFamily(articles: readonly CatalogItem[]): readonly FamilyShelf[] {
+  const grouped = new Map<string, { family: CatalogFamily; articles: CatalogItem[] }>();
   for (const article of articles) {
     // Famille inconnue : aucun rayon où la ranger. L'article n'est pas perdu —
     // il reste tarifé partout où on le résout — et le tableau le COMPTE
     // (`unknownFamilyCount`) plutôt que de l'inventer dans un rayon voisin.
-    if (article.category === null) {
+    if (article.family === null) {
       continue;
     }
-    const bucket = grouped.get(article.category);
+    const bucket = grouped.get(article.family.id);
     if (bucket === undefined) {
-      grouped.set(article.category, [article]);
+      grouped.set(article.family.id, { family: article.family, articles: [article] });
       continue;
     }
-    bucket.push(article);
+    bucket.articles.push(article);
   }
-  return grouped;
+  return [...grouped.values()].sort((left, right) => compareFamilies(left.family, right.family));
 }
 
 /**

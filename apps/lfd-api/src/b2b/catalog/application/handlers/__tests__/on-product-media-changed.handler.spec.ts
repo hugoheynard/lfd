@@ -48,7 +48,7 @@ function anItem(sku: string): CatalogItem {
     productSku: "CRO",
     name: "Croissant",
     kind: "daily",
-    categoryId: "cat_vien",
+    categoryId: "fam-vien",
     priceMillicents: 140_000,
     weightGrams: null,
     isDefault: true,

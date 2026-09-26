@@ -34,10 +34,11 @@ export interface PricedItem {
   readonly sku: string;
   readonly name: string;
   /**
-   * Sa famille — ce que vise une règle de portée `category`. `null` = famille
-   * inconnue du catalogue : aucune règle de famille ne le vise.
+   * Sa famille puis ses parentes, de la plus proche à la plus lointaine — ce
+   * que vise une règle de portée `category`. Vide = famille inconnue : aucune
+   * règle de famille ne le vise.
    */
-  readonly category: string | null;
+  readonly categoryPath: readonly string[];
   /** Le tarif de liste, en millicentimes. */
   readonly canonicalMillicents: number;
 }
@@ -290,7 +291,7 @@ export class LoadedPricer {
       productSku: item.sku,
       // Aucune règle de famille n'est lue ici : la mercuriale vise l'article
       // nommément.
-      categoryId: null,
+      categoryPath: [],
       companyId,
       segmentId: null,
     };
@@ -310,7 +311,7 @@ export class LoadedPricer {
    * Le contexte de résolution — construit **ICI**, jamais par l'appelant.
    *
    * Il passe par `pricingContextFor`, qui centralise les trois écarts du
-   * catalogue en place (un seul niveau de SKU, la famille en code de rayon,
+   * catalogue en place (un seul niveau de SKU, la lignée de familles,
    * l'absence de segment). Les recopier ici en ferait une quatrième copie, et
    * la bascule du PIM aurait deux endroits à corriger au lieu d'un.
    */
@@ -321,7 +322,7 @@ export class LoadedPricer {
   ): PricingContext {
     return pricingContextFor(
       item.sku,
-      item.category,
+      item.categoryPath,
       quantity,
       this.parties,
       this.at,
@@ -360,7 +361,7 @@ export class LoadedPricer {
   private commitmentOf(item: PricedItem, quantity: number): CommitmentDecisionView | null {
     const commitment = commitmentFor(
       this.materials.commitments,
-      { categoryId: item.category, productSku: item.sku, variantSku: item.sku },
+      { categoryPath: item.categoryPath, productSku: item.sku, variantSku: item.sku },
       this.at,
     );
     if (commitment === null) {

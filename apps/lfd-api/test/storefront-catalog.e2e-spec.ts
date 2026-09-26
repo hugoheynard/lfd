@@ -57,7 +57,7 @@ function product(id: string, sku: string, name: string): CatalogSnapshot["produc
     id,
     sku,
     name,
-    categoryId: "cat_vien",
+    categoryId: "fam-vien",
     kind: "daily",
     variants: [
       {
@@ -104,7 +104,7 @@ function snapshot(operations: SyncOperation[] = []): CatalogSnapshot {
     generatedAt: "2026-08-17T08:00:00.000Z",
     categories: [
       {
-        id: "cat_vien",
+        id: "fam-vien",
         name: "Viennoiseries",
         slug: "viennoiseries",
         parentId: null,
@@ -144,10 +144,10 @@ describe("GET /admin/storefront/catalog", () => {
     const response = await ctx.asSub(sub).get(ROUTE).expect(200);
 
     expect(jsonBody<StorefrontCatalogView>(response)).toEqual({
-      shelves: [{ key: "cat_vien", name: "Viennoiseries", operation: false }],
+      shelves: [{ key: "fam-vien", name: "Viennoiseries", operation: false }],
       items: [
-        { sku: "VIE-001", name: "Croissant", shelfKey: "cat_vien", served: true },
-        { sku: "VIE-002", name: "Chocolatine", shelfKey: "cat_vien", served: true },
+        { sku: "VIE-001", name: "Croissant", shelfKey: "fam-vien", served: true },
+        { sku: "VIE-002", name: "Chocolatine", shelfKey: "fam-vien", served: true },
       ],
       operations: [],
     });
@@ -174,7 +174,7 @@ describe("GET /admin/storefront/catalog", () => {
     expect(view.items).toContainEqual({
       sku: "VIE-002",
       name: "Chocolatine",
-      shelfKey: "cat_vien",
+      shelfKey: "fam-vien",
       served: false,
     });
     expect(view.items).toContainEqual(expect.objectContaining({ sku: "VIE-001", served: true }));
@@ -191,7 +191,7 @@ describe("GET /admin/storefront/catalog", () => {
 
     expect(view.shelves).toEqual([
       { key: "op:noel", name: "Noël", operation: true },
-      { key: "cat_vien", name: "Viennoiseries", operation: false },
+      { key: "fam-vien", name: "Viennoiseries", operation: false },
     ]);
     expect(view.operations).toEqual([
       {

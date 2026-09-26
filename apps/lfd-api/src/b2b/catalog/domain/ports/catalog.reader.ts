@@ -1,5 +1,7 @@
 import type { OrderLineAllergens } from "@lfd/contracts";
 
+import type { CatalogFamily } from "../catalog-family.js";
+
 /** Un article vendable, prix **résolu** : la décision locale a déjà gagné. */
 export interface ResolvedCatalogItem {
   readonly sku: string;
@@ -31,6 +33,12 @@ export interface ResolvedCatalogItem {
   } | null;
   readonly categoryId: string;
   readonly categoryName: string;
+  /**
+   * Sa famille, lignée comprise — ce que la tarification vise et ce par quoi
+   * un écran range. `categoryId` et `categoryName` en sont la tête, gardés pour
+   * leurs lecteurs (vitrine, comparaison d'arrivée).
+   */
+  readonly family: CatalogFamily;
   /**
    * L'unité vendue **par défaut** du produit.
    *

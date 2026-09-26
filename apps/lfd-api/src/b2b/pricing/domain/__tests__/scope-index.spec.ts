@@ -20,7 +20,7 @@ function context(over: Partial<PricingContext> = {}): PricingContext {
     quantity: 1,
     variantSku: "VIE-001-1",
     productSku: "VIE-001",
-    categoryId: "cat_vien",
+    categoryPath: ["fam-vien"],
     companyId: "cmp_dupont",
     segmentId: null,
     cumulativeQuantity: null,
@@ -40,8 +40,9 @@ const namesOf = (items: readonly Material[]): string[] => items.map((item) => it
 /** Toutes les portées représentables, y compris celles qui ne visent rien. */
 const EVERY_SCOPE: readonly Material[] = [
   { name: "global", scope: { type: "global", id: null } },
-  { name: "sa famille", scope: { type: "category", id: "cat_vien" } },
-  { name: "une autre famille", scope: { type: "category", id: "cat_pain" } },
+  { name: "sa famille", scope: { type: "category", id: "fam-vien" } },
+  { name: "une autre famille", scope: { type: "category", id: "fam-pain" } },
+  { name: "une famille parente", scope: { type: "category", id: "fam-patis" } },
   { name: "son produit", scope: { type: "product", id: "VIE-001" } },
   { name: "un autre produit", scope: { type: "product", id: "PAI-001" } },
   { name: "sa déclinaison", scope: { type: "variant", id: "VIE-001-1" } },
@@ -54,7 +55,7 @@ const EVERY_SCOPE: readonly Material[] = [
 describe("scopeKeyOf", () => {
   it("range chaque forme de portée sous sa clé", () => {
     expect(scopeKeyOf({ type: "global", id: null })).toBe("global");
-    expect(scopeKeyOf({ type: "category", id: "cat_vien" })).toBe("category:cat_vien");
+    expect(scopeKeyOf({ type: "category", id: "fam-vien" })).toBe("category:fam-vien");
     expect(scopeKeyOf({ type: "product", id: "VIE-001" })).toBe("product:VIE-001");
     expect(scopeKeyOf({ type: "variant", id: "VIE-001-1" })).toBe("variant:VIE-001-1");
   });
@@ -76,10 +77,20 @@ describe("scopeKeyOf", () => {
 });
 
 describe("scopeKeysOf", () => {
+  it("met les familles de la lignée de la plus lointaine à la plus proche", () => {
+    expect(scopeKeysOf(context({ categoryPath: ["fam-tartes", "fam-patis"] }))).toEqual([
+      "global",
+      "category:fam-patis",
+      "category:fam-tartes",
+      "product:VIE-001",
+      "variant:VIE-001-1",
+    ]);
+  });
+
   it("rend les quatre clés de l'article, de la plus large à la plus étroite", () => {
     expect(scopeKeysOf(context())).toEqual([
       "global",
-      "category:cat_vien",
+      "category:fam-vien",
       "product:VIE-001",
       "variant:VIE-001-1",
     ]);
@@ -109,7 +120,7 @@ describe("l'index rend exactement ce que matchesScope retenait", () => {
 
   it("et sur un article d'une autre famille, qui ne partage que le seau global", () => {
     const elsewhere = context({
-      categoryId: "cat_pain",
+      categoryPath: ["fam-pain"],
       productSku: "PAI-001",
       variantSku: "PAI-001-1",
     });
@@ -126,7 +137,7 @@ describe("l'index rend exactement ce que matchesScope retenait", () => {
    * identifiant, que `null === null` aurait laissé passer.
    */
   it("et sur un article de famille inconnue, qu'aucune portée de famille ne vise", () => {
-    const orphan = context({ categoryId: null });
+    const orphan = context({ categoryPath: [] });
     const index = indexByScope(EVERY_SCOPE, scopeOf);
 
     const byIndex = namesOf(candidatesIn(index, orphan)).sort();
@@ -135,6 +146,18 @@ describe("l'index rend exactement ce que matchesScope retenait", () => {
       namesOf(EVERY_SCOPE.filter((item) => matchesScope(item.scope, orphan))).sort(),
     );
     expect(byIndex).toEqual(["global", "sa déclinaison", "son produit"].sort());
+  });
+
+  it("et sur une sous-famille, que visent aussi les portées de ses parentes", () => {
+    const tarte = context({ categoryPath: ["fam-tartes", "fam-patis"] });
+    const index = indexByScope(EVERY_SCOPE, scopeOf);
+
+    const byIndex = namesOf(candidatesIn(index, tarte)).sort();
+
+    expect(byIndex).toEqual(
+      namesOf(EVERY_SCOPE.filter((item) => matchesScope(item.scope, tarte))).sort(),
+    );
+    expect(byIndex).toContain("une famille parente");
   });
 
   it("rend un tableau vide, pas une erreur, quand aucun seau ne répond", () => {

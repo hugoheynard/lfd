@@ -2,7 +2,7 @@ import {
   SHELF_LABEL_OFF_CATALOG,
   SHELF_LABEL_UNKNOWN,
   UNSHELVED_WORKSHOP_GROUP_KEY,
-  type CatalogCategory,
+  type CatalogFamilyView,
 } from "@lfd/contracts";
 
 import { worksheetGroupsOf } from "../production-worksheet-groups.js";
@@ -28,33 +28,39 @@ function line(sku: string, quantity: number, done = false): WorksheetLine {
   };
 }
 
-function shelves(entries: readonly (readonly [string, CatalogCategory])[]) {
-  return new Map<string, CatalogCategory>(entries);
+// Des familles telles que le commerce les sert : id du référentiel, nom,
+// position. Aucune n'est connue du code.
+const VIENNOISERIES: CatalogFamilyView = { id: "fam-vien", name: "Viennoiseries", position: 0 };
+const PAINS: CatalogFamilyView = { id: "fam-pain", name: "Pains", position: 1 };
+const CHOCOLAT: CatalogFamilyView = { id: "fam-choco", name: "Chocolat & confiserie", position: 4 };
+
+function shelves(entries: readonly (readonly [string, CatalogFamilyView])[]) {
+  return new Map<string, CatalogFamilyView>(entries);
 }
 
 describe("worksheetGroupsOf", () => {
-  it("range les fiches dans l'ordre de la VITRINE, pas dans l'ordre des lignes", () => {
+  it("range les fiches dans l'ordre du RÉFÉRENTIEL, pas dans l'ordre des lignes", () => {
     const groups = worksheetGroupsOf(
       [line("CHO-1", 50), line("PAI-1", 40), line("VIE-1", 30)],
       shelves([
-        ["CHO-1", "chocolat"],
-        ["PAI-1", "pain"],
-        ["VIE-1", "viennoiserie"],
+        ["CHO-1", CHOCOLAT],
+        ["PAI-1", PAINS],
+        ["VIE-1", VIENNOISERIES],
       ]),
     );
 
-    expect(groups.map((group) => group.key)).toEqual(["viennoiserie", "pain", "chocolat"]);
-    expect(groups[0]).toMatchObject({ category: "viennoiserie", label: "Viennoiseries" });
+    expect(groups.map((group) => group.key)).toEqual(["fam-vien", "fam-pain", "fam-choco"]);
+    expect(groups[0]).toMatchObject({ family: VIENNOISERIES, label: "Viennoiseries" });
   });
 
   it("met le groupe sans rayon en DERNIER, libellé « Hors catalogue »", () => {
     const groups = worksheetGroupsOf(
       [line("XXX-1", 99), line("PAI-1", 10)],
-      shelves([["PAI-1", "pain"]]),
+      shelves([["PAI-1", PAINS]]),
     );
 
-    expect(groups.map((group) => group.key)).toEqual(["pain", UNSHELVED_WORKSHOP_GROUP_KEY]);
-    expect(groups[1]).toMatchObject({ category: null, label: SHELF_LABEL_OFF_CATALOG });
+    expect(groups.map((group) => group.key)).toEqual(["fam-pain", UNSHELVED_WORKSHOP_GROUP_KEY]);
+    expect(groups[1]).toMatchObject({ family: null, label: SHELF_LABEL_OFF_CATALOG });
   });
 
   it("🔴 une table ILLISIBLE range tout en « Rayon inconnu », jamais « Hors catalogue »", () => {
@@ -65,7 +71,7 @@ describe("worksheetGroupsOf", () => {
     expect(groups).toHaveLength(1);
     expect(groups[0]).toMatchObject({
       key: UNSHELVED_WORKSHOP_GROUP_KEY,
-      category: null,
+      family: null,
       label: SHELF_LABEL_UNKNOWN,
       lineCount: 2,
     });
@@ -74,17 +80,17 @@ describe("worksheetGroupsOf", () => {
   it("ne rend aucun groupe vide", () => {
     expect(worksheetGroupsOf([], shelves([]))).toEqual([]);
     expect(worksheetGroupsOf([], null)).toEqual([]);
-    const groups = worksheetGroupsOf([line("PAI-1", 5)], shelves([["PAI-1", "pain"]]));
-    expect(groups.map((group) => group.key)).toEqual(["pain"]);
+    const groups = worksheetGroupsOf([line("PAI-1", 5)], shelves([["PAI-1", PAINS]]));
+    expect(groups.map((group) => group.key)).toEqual(["fam-pain"]);
   });
 
   it("compte les lignes et les pièces — faites, restantes, totales", () => {
     const [pain] = worksheetGroupsOf(
       [line("PAI-1", 40, true), line("PAI-2", 25), line("PAI-3", 10, true)],
       shelves([
-        ["PAI-1", "pain"],
-        ["PAI-2", "pain"],
-        ["PAI-3", "pain"],
+        ["PAI-1", PAINS],
+        ["PAI-2", PAINS],
+        ["PAI-3", PAINS],
       ]),
     );
 
@@ -108,11 +114,11 @@ describe("worksheetGroupsOf", () => {
         line("PAI-E", 40),
       ],
       shelves([
-        ["PAI-A", "pain"],
-        ["PAI-B", "pain"],
-        ["PAI-C", "pain"],
-        ["PAI-D", "pain"],
-        ["PAI-E", "pain"],
+        ["PAI-A", PAINS],
+        ["PAI-B", PAINS],
+        ["PAI-C", PAINS],
+        ["PAI-D", PAINS],
+        ["PAI-E", PAINS],
       ]),
     );
 

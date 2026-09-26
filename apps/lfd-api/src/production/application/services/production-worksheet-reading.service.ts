@@ -1,4 +1,4 @@
-import type { CatalogCategory, ProductionWorksheetView, WorkshopLine } from "@lfd/contracts";
+import type { CatalogFamilyView, ProductionWorksheetView, WorkshopLine } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { Clock } from "../../../platform/time/clock.js";
@@ -98,7 +98,7 @@ export class ProductionWorksheetReading {
   private async shelvesOrNull(
     day: ServiceDay,
     lines: Worksheet["lines"],
-  ): Promise<ReadonlyMap<string, CatalogCategory> | null> {
+  ): Promise<ReadonlyMap<string, CatalogFamilyView> | null> {
     if (lines.length === 0) {
       return new Map();
     }

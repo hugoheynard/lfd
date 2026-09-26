@@ -50,6 +50,7 @@ import type { CatalogPricing } from "@lfd/contracts";
 import type { VolumeLadder } from "../../domain/volume-ladder.js";
 import { EmptyLotError, type PricedLot } from "../priced-lot.js";
 import { NoCanonicalPriceAtError, Pricer } from "../pricer.js";
+import { VIENNOISERIES } from "../../../catalog/domain/__tests__/families.fixture.js";
 
 // ── L'instant, et les fenêtres ────────────────────────────────────────────
 //
@@ -77,7 +78,7 @@ function item(sku: string, cents: number, name = `Article ${sku}`): CatalogItem 
     name,
     unitPriceMillicents: millicentsFromCents(cents),
     vatRate: 5.5,
-    category: "viennoiserie",
+    family: VIENNOISERIES,
     allergens: null satisfies OrderLineAllergens | null,
     orderTimeLimit: null satisfies OrderLimitSpec | null,
     // Ce double SCELLE ce qu'il rend, comme la source le fait : c'est ce qui le
@@ -86,7 +87,7 @@ function item(sku: string, cents: number, name = `Article ${sku}`): CatalogItem 
     article: catalogueArticle({
       sku,
       name,
-      category: "viennoiserie",
+      categoryPath: ["fam-vien"],
       unitPriceMillicents: millicentsFromCents(cents),
     }),
   };

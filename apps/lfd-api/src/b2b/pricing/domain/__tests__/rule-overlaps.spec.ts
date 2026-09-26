@@ -177,7 +177,7 @@ describe("trois règles", () => {
  * sans dire à partir de quand.
  */
 describe("une lignée catalogue → famille", () => {
-  const famille: PriceScope = { type: "category", id: "viennoiserie" };
+  const famille: PriceScope = { type: "category", id: "fam-vien" };
 
   it("évince la règle du catalogue pendant que celle de la famille court", () => {
     const [segment] = overlapSegments([

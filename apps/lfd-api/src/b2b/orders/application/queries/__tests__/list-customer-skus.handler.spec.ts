@@ -6,6 +6,7 @@ import {
 import { type UnsealedCatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
 import { ListCustomerSkusHandler } from "../list-customer-skus.handler.js";
 import { ListCustomerSkusQuery } from "../list-customer-skus.query.js";
+import { VIENNOISERIES } from "../../../../catalog/domain/__tests__/families.fixture.js";
 
 /** Le catalogue d'AUJOURD'HUI : le croissant a augmenté, la brioche a disparu. */
 const CATALOG: Record<string, UnsealedCatalogItem> = {
@@ -14,7 +15,7 @@ const CATALOG: Record<string, UnsealedCatalogItem> = {
     name: "Croissant",
     unitPriceMillicents: 220_000,
     vatRate: 5.5,
-    category: "viennoiserie",
+    family: VIENNOISERIES,
     allergens: null,
     orderTimeLimit: null,
   },

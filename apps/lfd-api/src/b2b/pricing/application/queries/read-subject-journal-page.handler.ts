@@ -2,7 +2,9 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { PricingJournalPageView } from "@lfd/contracts";
 
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
+import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { PricingJournalReader } from "../../domain/ports/pricing-journal.reader.js";
+import { legacyJournalSubjects } from "../legacy-journal-subjects.js";
 import { journalView } from "../journal-view.js";
 import { ReadSubjectJournalPageQuery } from "./read-subject-journal-page.query.js";
 
@@ -20,12 +22,18 @@ export class ReadSubjectJournalPageHandler implements IQueryHandler<
   constructor(
     private readonly journal: PricingJournalReader,
     private readonly staffAuthors: StaffAuthorDirectory,
+    private readonly catalog: ProductCatalogReader,
   ) {}
 
   async execute(query: ReadSubjectJournalPageQuery): Promise<PricingJournalPageView> {
     const { entries, total, asOf } = await this.journal.pageForSubject({
       subjectType: query.subjectType,
       subjectId: query.subjectId,
+      formerSubjectIds: await legacyJournalSubjects(
+        query.subjectType,
+        query.subjectId,
+        this.catalog,
+      ),
       page: query.page,
       pageSize: query.pageSize,
       asOf: query.asOf,
