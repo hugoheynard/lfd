@@ -310,8 +310,13 @@ function payments(sink: PaymentCalls): PaymentGateway {
     },
     retrieveIntent: () => {
       sink.retrieved += 1;
-      return Promise.resolve({ paymentIntentId: "pi_public", clientSecret: "pi_public_secret" });
+      return Promise.resolve({
+        paymentIntentId: "pi_public",
+        clientSecret: "pi_public_secret",
+        state: "awaiting_payment",
+      });
     },
+    cancelIntent: () => Promise.resolve({ kind: "cancelled" }),
     publishableKey: () => "pk_test_123",
     parseWebhook: () => ({ kind: "ignored" }),
   };

@@ -59,9 +59,15 @@ const fakeGateway = {
       clientSecret: `pi_link_${String(intentCounter)}_secret`,
     });
   },
-  retrieveIntent: (id: string) => Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_s` }),
+  retrieveIntent: (id: string) =>
+    Promise.resolve({
+      paymentIntentId: id,
+      clientSecret: `${id}_s`,
+      state: "awaiting_payment" as const,
+    }),
   publishableKey: () => "pk_e2e",
   parseWebhook: (): PaymentWebhookEvent => nextWebhook,
+  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
 };
 
 let sessionCounter = 0;

@@ -39,6 +39,7 @@ const fakeGateway = {
   createIntent: () => Promise.resolve({ paymentIntentId: "pi_e2e", clientSecret: "pi_e2e_secret" }),
   publishableKey: () => "pk_e2e",
   parseWebhook: () => ({ kind: "ignored" as const }),
+  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
 };
 
 let ctx: E2eContext;

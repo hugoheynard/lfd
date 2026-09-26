@@ -10,8 +10,16 @@ import {
   PaymentGateway,
   type CreateIntentParams,
   type CreatedIntent,
+  type IntentCancellation,
   type PaymentWebhookEvent,
+  type RetrievedIntent,
 } from "../domain/payment-gateway.js";
+import {
+  cancellationFromError,
+  cancellationFromRefusedState,
+  intentStateOf,
+  refusedWithoutState,
+} from "./stripe-intent-translation.js";
 import { PAYMENT_LINK_METADATA_KEY } from "./stripe-checkout-gateway.js";
 
 /**
@@ -50,13 +58,47 @@ export class StripePaymentGateway extends PaymentGateway {
     return { paymentIntentId: intent.id, clientSecret: intent.client_secret };
   }
 
-  async retrieveIntent(paymentIntentId: string): Promise<CreatedIntent> {
+  async retrieveIntent(paymentIntentId: string): Promise<RetrievedIntent> {
     const client = this.requireClient();
     const intent = await client.paymentIntents.retrieve(paymentIntentId);
     if (intent.client_secret === null) {
       throw new PaymentGatewayUnavailableError("client_secret absent de la PaymentIntent relue");
     }
-    return { paymentIntentId: intent.id, clientSecret: intent.client_secret };
+    return {
+      paymentIntentId: intent.id,
+      clientSecret: intent.client_secret,
+      state: intentStateOf(intent.status),
+    };
+  }
+
+  /**
+   * Un canal non configuré est une issue (`unavailable`), pas une exception :
+   * le port promet de ne jamais lever, et la clôture ne doit pas s'arrêter
+   * parce que Stripe manque.
+   */
+  async cancelIntent(paymentIntentId: string): Promise<IntentCancellation> {
+    if (this.client === null) {
+      return { kind: "unavailable", reason: "STRIPE_SECRET_KEY non configurée" };
+    }
+    try {
+      await this.client.paymentIntents.cancel(paymentIntentId);
+      return { kind: "cancelled" };
+    } catch (error) {
+      if (refusedWithoutState(error)) {
+        return this.cancellationFromCurrentState(paymentIntentId);
+      }
+      return cancellationFromError(error);
+    }
+  }
+
+  /** Relit l'intention pour dire pourquoi Stripe a refusé de l'annuler. Ne lève jamais. */
+  private async cancellationFromCurrentState(paymentIntentId: string): Promise<IntentCancellation> {
+    try {
+      const intent = await this.requireClient().paymentIntents.retrieve(paymentIntentId);
+      return cancellationFromRefusedState(intent.status);
+    } catch (error) {
+      return cancellationFromError(error);
+    }
   }
 
   publishableKey(): string {

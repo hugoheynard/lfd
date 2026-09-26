@@ -58,9 +58,14 @@ const fakeGateway = {
     return Promise.resolve({ paymentIntentId, clientSecret: `${paymentIntentId}_secret` });
   },
   retrieveIntent: () =>
-    Promise.resolve({ paymentIntentId: "pi_public_1", clientSecret: "pi_public_1_secret" }),
+    Promise.resolve({
+      paymentIntentId: "pi_public_1",
+      clientSecret: "pi_public_1_secret",
+      state: "awaiting_payment" as const,
+    }),
   publishableKey: () => "pk_public",
   parseWebhook: () => ({ kind: "ignored" as const }),
+  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
 };
 
 let ctx: E2eContext;

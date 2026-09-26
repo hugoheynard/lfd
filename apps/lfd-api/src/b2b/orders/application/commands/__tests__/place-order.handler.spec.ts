@@ -242,7 +242,13 @@ function payments(sink: { intent: CreateIntentParams | null } = { intent: null }
       sink.intent = params;
       return Promise.resolve({ paymentIntentId: "pi_test_1", clientSecret: "pi_test_1_secret" });
     },
-    retrieveIntent: () => Promise.resolve({ paymentIntentId: "pi_1", clientSecret: "pi_1_secret" }),
+    retrieveIntent: () =>
+      Promise.resolve({
+        paymentIntentId: "pi_1",
+        clientSecret: "pi_1_secret",
+        state: "awaiting_payment",
+      }),
+    cancelIntent: () => Promise.resolve({ kind: "cancelled" }),
     publishableKey: () => "pk_test_123",
     parseWebhook: () => ({ kind: "ignored" }),
   };

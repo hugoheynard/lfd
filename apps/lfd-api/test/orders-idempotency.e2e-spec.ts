@@ -41,10 +41,15 @@ const fakeGateway = {
   },
   retrieveIntent: (paymentIntentId: string) => {
     retrieved += 1;
-    return Promise.resolve({ paymentIntentId, clientSecret: `${paymentIntentId}_sec` });
+    return Promise.resolve({
+      paymentIntentId,
+      clientSecret: `${paymentIntentId}_sec`,
+      state: "awaiting_payment" as const,
+    });
   },
   publishableKey: () => "pk_e2e",
   parseWebhook: () => ({ kind: "ignored" as const }),
+  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
 };
 
 let ctx: E2eContext;

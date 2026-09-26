@@ -27,6 +27,12 @@ describe("StripePaymentGateway (canal non configuré)", () => {
     ).rejects.toBeInstanceOf(PaymentGatewayUnavailableError);
   });
 
+  it("rend cancelIntent `unavailable` sans lever quand Stripe n'est pas configuré", async () => {
+    // La clôture tente l'annulation et continue : une exception l'arrêterait.
+    const gateway = await gatewayWith(null);
+    await expect(gateway.cancelIntent("pi_1")).resolves.toMatchObject({ kind: "unavailable" });
+  });
+
   it("refuse publishableKey quand Stripe n'est pas configuré", async () => {
     const gateway = await gatewayWith(null);
     expect(() => gateway.publishableKey()).toThrow(PaymentGatewayUnavailableError);

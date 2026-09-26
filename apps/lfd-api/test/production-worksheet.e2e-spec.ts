@@ -65,6 +65,7 @@ const fakeGateway = {
   },
   publishableKey: () => "pk_e2e",
   parseWebhook: () => ({ kind: "ignored" as const }),
+  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
 };
 
 /**

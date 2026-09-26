@@ -47,6 +47,7 @@ const fakeGateway = {
   },
   publishableKey: () => "pk_op",
   parseWebhook: () => ({ kind: "ignored" as const }),
+  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
 };
 
 let ctx: E2eContext;

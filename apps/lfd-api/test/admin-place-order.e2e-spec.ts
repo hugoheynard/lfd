@@ -21,7 +21,10 @@ import {
   CustomerRole,
   DeferredTerm,
 } from "../src/platform/database/client/client.js";
-import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import {
+  PaymentGateway,
+  type PaymentIntentState,
+} from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
@@ -48,6 +51,8 @@ const stubAdminVerifier = {
 
 /** L'identifiant d'intention change à chaque appel : la colonne est `@unique`. */
 let intentCounter = 0;
+/** L'état que Stripe rendrait à la relecture — remis à « payable » avant chaque test. */
+let intentState: PaymentIntentState = "awaiting_payment";
 const fakeGateway = {
   createIntent: () => {
     intentCounter += 1;
@@ -57,9 +62,14 @@ const fakeGateway = {
     });
   },
   retrieveIntent: (id: string) =>
-    Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_secret` }),
+    Promise.resolve({
+      paymentIntentId: id,
+      clientSecret: `${id}_secret`,
+      state: intentState,
+    }),
   publishableKey: () => "pk_e2e",
   parseWebhook: () => ({ kind: "ignored" as const }),
+  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
 };
 
 let ctx: E2eContext;
@@ -78,6 +88,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  intentState = "awaiting_payment";
   await ctx.reset();
 });
 
@@ -331,6 +342,39 @@ describe("POST /admin/orders — le règlement", () => {
       await ctx.asSub(BUYER).get(`/orders/${placed.id}/payment`).expect(200),
     );
     expect(intent.amountCents).toBe(placed.totalCents);
+  });
+
+  it("une intention annulée chez Stripe ne se sert plus, même si notre base la croit en attente", async () => {
+    // Le trou du plan d'abandon (§5) : Stripe a annulé, notre écriture s'est perdue.
+    const { companyId, buyerId } = await seedCompany(false);
+    const placed = jsonBody<AdminPlacedOrderResponse>(
+      await staff()
+        .post("/admin/orders")
+        .send(payload({ companyId, buyerUserId: buyerId, settlement: "link" }))
+        .expect(201),
+    );
+    intentState = "canceled";
+
+    const refusal = await ctx.asSub(BUYER).get(`/orders/${placed.id}/payment`).expect(409);
+    expect(jsonBody<{ readonly code: string }>(refusal).code).toBe("orders.payment.intent_closed");
+  });
+
+  it("une commande annulée ne se paie plus : 409, sans rien servir", async () => {
+    const { companyId, buyerId } = await seedCompany(false);
+    const placed = jsonBody<AdminPlacedOrderResponse>(
+      await staff()
+        .post("/admin/orders")
+        .send(payload({ companyId, buyerUserId: buyerId, settlement: "link" }))
+        .expect(201),
+    );
+    // Aucun geste d'annulation n'existe encore côté domaine (lot 4 du plan
+    // d'abandon) : l'état est posé en base, seul moyen de l'atteindre.
+    await ctx.prisma.order.update({ where: { id: placed.id }, data: { status: "cancelled" } });
+
+    const refusal = await ctx.asSub(BUYER).get(`/orders/${placed.id}/payment`).expect(409);
+    expect(jsonBody<{ readonly code: string }>(refusal).code).toBe(
+      "orders.payment.order_cancelled",
+    );
   });
 
   it("une commande portée au compte n'a rien à régler : 409, pas 404", async () => {

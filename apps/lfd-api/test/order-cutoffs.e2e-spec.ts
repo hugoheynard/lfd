@@ -41,9 +41,15 @@ const LABO: BillingAddressPayload = {
 
 const fakeGateway = {
   createIntent: () => Promise.resolve({ paymentIntentId: "pi_cut", clientSecret: "pi_cut_secret" }),
-  retrieveIntent: (id: string) => Promise.resolve({ paymentIntentId: id, clientSecret: `${id}_s` }),
+  retrieveIntent: (id: string) =>
+    Promise.resolve({
+      paymentIntentId: id,
+      clientSecret: `${id}_s`,
+      state: "awaiting_payment" as const,
+    }),
   publishableKey: () => "pk_e2e",
   parseWebhook: () => ({ kind: "ignored" as const }),
+  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
 };
 
 const stubAdminVerifier = {
