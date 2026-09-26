@@ -70,6 +70,7 @@
   "test/ops-traffic.e2e-spec.ts": 12064,
   "test/ops-vitals.e2e-spec.ts": 1238,
   "test/order-cutoffs.e2e-spec.ts": 8414,
+  "test/order-payment-retry.e2e-spec.ts": 5000,
   "test/order-sheet-archive.e2e-spec.ts": 3528,
   "test/order-waivers-journal.e2e-spec.ts": 3830,
   "test/orders-idempotency.e2e-spec.ts": 3380,

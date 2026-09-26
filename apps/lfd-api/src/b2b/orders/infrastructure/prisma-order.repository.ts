@@ -12,6 +12,15 @@ import { issuesHandoverToken, type HandoverVia } from "../domain/services/handov
 import { planWhere } from "./plan-filter.js";
 
 /** Adaptateur Prisma des commandes. */
+/**
+ * D'où peut partir chaque bascule de règlement. Un encaissement part d'une
+ * attente OU d'un refus : le client a pu réessayer une autre carte sur la même
+ * intention. Un refus ne part que d'une attente : il ne rétrograde jamais un
+ * encaissement, et un second refus ne republie rien.
+ */
+const PAID_FROM: readonly PaymentStatus[] = [PaymentStatus.pending, PaymentStatus.failed];
+const FAILED_FROM: readonly PaymentStatus[] = [PaymentStatus.pending];
+
 @Injectable()
 export class PrismaOrderRepository extends OrderRepository {
   constructor(
@@ -152,15 +161,23 @@ export class PrismaOrderRepository extends OrderRepository {
   }
 
   async markPaid(paymentIntentId: string): Promise<string | null> {
-    // `updateMany` + filtre `pending` = idempotence : un webhook rejoué (déjà
-    // `paid`) ou un intent inconnu ne matche aucune ligne, l'appel est un no-op.
-    return this.settle(paymentIntentId, PaymentStatus.paid);
+    // `updateMany` + filtre sur l'état d'origine = idempotence : un webhook
+    // rejoué (déjà `paid`) ou un intent inconnu ne matche aucune ligne.
+    //
+    // 🔴 `failed` est une origine légitime. Un refus rend l'intention Stripe à
+    // `requires_payment_method` : le client peut saisir une autre carte sur la
+    // même page, et `succeeded` suit sur la MÊME intention. Ne partir que de
+    // `pending` laissait un client débité devant une commande « refusée »,
+    // exclue de la production (constaté le 2026-09-26,
+    // `test/order-payment-retry.e2e-spec.ts`). Un encaissement réel l'emporte
+    // toujours sur un refus antérieur.
+    return this.settle(paymentIntentId, PaymentStatus.paid, PAID_FROM);
   }
 
   async markPaymentFailed(paymentIntentId: string): Promise<string | null> {
     // Même idempotence : on ne rétrograde que ce qui était encore `pending` (un
     // paiement déjà `paid` n'est jamais repassé à `failed`).
-    return this.settle(paymentIntentId, PaymentStatus.failed);
+    return this.settle(paymentIntentId, PaymentStatus.failed, FAILED_FROM);
   }
 
   /**
@@ -176,12 +193,16 @@ export class PrismaOrderRepository extends OrderRepository {
    * compte — et lui seul — qui dit s'il y a eu franchissement.
    *
    * ⚠️ **`count === 0` rend `null`, et c'est le cœur de l'idempotence.** Stripe
-   * réémet jusqu'à obtenir un 2xx : un second passage ne trouve plus rien en
-   * `pending`, ne publie donc aucun fait, et le client ne reçoit pas deux fois
+   * réémet jusqu'à obtenir un 2xx : un second passage ne trouve plus rien dans
+   * l'état d'origine, ne publie donc aucun fait, et le client ne reçoit pas deux fois
    * le même message. La garantie tient dans le `where`, pas dans un garde ajouté
    * par-dessus.
    */
-  private async settle(paymentIntentId: string, to: PaymentStatus): Promise<string | null> {
+  private async settle(
+    paymentIntentId: string,
+    to: PaymentStatus,
+    from: readonly PaymentStatus[],
+  ): Promise<string | null> {
     const order = await this.prisma.order.findUnique({
       where: { stripePaymentIntentId: paymentIntentId },
       select: { id: true },
@@ -190,7 +211,7 @@ export class PrismaOrderRepository extends OrderRepository {
       return null;
     }
     const { count } = await this.prisma.order.updateMany({
-      where: { stripePaymentIntentId: paymentIntentId, paymentStatus: PaymentStatus.pending },
+      where: { stripePaymentIntentId: paymentIntentId, paymentStatus: { in: [...from] } },
       data:
         to === PaymentStatus.paid
           ? { paymentStatus: PaymentStatus.paid, paidAt: this.clock.now() }
