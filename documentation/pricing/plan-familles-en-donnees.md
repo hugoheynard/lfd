@@ -269,5 +269,5 @@ requête 1 est à comprendre avant de lancer : c'est une collision possible.
 ## 6. Hors périmètre
 
 - L'héritage entre familles imbriquées.
-- Le nettoyage du doublon de production : geste PIM de Hugo (déplacer les deux
-  articles vers `cat_vien`, archiver le doublon).
+- ~~Le nettoyage du doublon de production~~ : il n'y avait pas de doublon
+  (bandeau en tête). Rien à nettoyer dans le PIM.
