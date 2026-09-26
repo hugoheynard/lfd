@@ -14,7 +14,7 @@
 > texte d'origine se relit par
 > `git show 9420feb0:documentation/auth-inscription/plan-journal-de-l-annuaire.md`.
 > Le modèle d'accès lui-même — rôles, dérogations, invitation — est dans
-> [`../architecture-acces-staff.md`](../architecture-acces-staff.md).
+> [`../../droits-et-permissions/architecture-acces-staff.md`](../../droits-et-permissions/architecture-acces-staff.md).
 
 ## Table des matières
 

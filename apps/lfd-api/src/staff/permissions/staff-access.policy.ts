@@ -24,7 +24,7 @@ import {
  * testent sans base ni HTTP.
  *
  * 🔴 **Elles tiennent sur le DROIT, plus sur la chaîne `"admin"`** (plan
- * `documentation/staff/plan-roles-lus-en-base.md` §3.3). Depuis que les rôles se
+ * `documentation/droits-et-permissions/plan-roles-lus-en-base.md` §3.3). Depuis que les rôles se
  * lisent en base, `admin` s'édite : tester son nom ne garantit plus rien. Les
  * deux invariants deviennent :
  *
@@ -34,7 +34,7 @@ import {
  *
  * Le versant « éditer un rôle » vit dans `StaffRoleDefinition.redefine`.
  *
- * Modèle complet : `documentation/staff/architecture-acces-staff.md` §6.
+ * Modèle complet : `documentation/droits-et-permissions/architecture-acces-staff.md` §6.
  */
 
 /** Le droit que les invariants protègent : celui de désigner qui a quels droits. */

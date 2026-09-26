@@ -86,13 +86,13 @@ const BARE_REFS: Readonly<Record<string, string>> = {
  * Les types dont la forme courante porte encore un e-mail, et pourquoi.
  * Ceux-là seulement : tout autre échoue. Les dérogations d'accès sont la
  * SEULE exception, mise de côté par Hugo le 2026-09-19 (`8bef9b98`) — voir
- * `documentation/journalisation/todo-derogations-d-acces.md`.
+ * `documentation/droits-et-permissions/todo-derogations-d-acces.md`.
  */
 const EMAIL_CARRIERS: Readonly<Record<string, string>> = {
   "feature_access.exemption_added":
-    "mis de côté par Hugo : documentation/journalisation/todo-derogations-d-acces.md",
+    "mis de côté par Hugo : documentation/droits-et-permissions/todo-derogations-d-acces.md",
   "feature_access.exemption_removed":
-    "mis de côté par Hugo : documentation/journalisation/todo-derogations-d-acces.md",
+    "mis de côté par Hugo : documentation/droits-et-permissions/todo-derogations-d-acces.md",
 };
 
 function activeTypes(): readonly [string, z.ZodType][] {

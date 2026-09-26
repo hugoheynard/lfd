@@ -114,7 +114,7 @@ enum StaffOverrideEffect {
 /// suite : identité, **rôle**, et l'état de sa connexion. Source de vérité
 /// **locale** : on ne dépend pas d'Auth0 pour administrer sa propre suite.
 ///
-/// Modèle et invariants : `documentation/staff/architecture-acces-staff.md`.
+/// Modèle et invariants : `documentation/droits-et-permissions/architecture-acces-staff.md`.
 model StaffUser {
   id String @id @default(cuid())
 
@@ -129,7 +129,7 @@ model StaffUser {
   /// L'ancien rôle, en valeur d'enum. Nul pour une personne qui porte un rôle
   /// créé à l'écran ; tenu en phase avec `roleKey` par un déclencheur tant que
   /// du code d'avant la bascule peut l'écrire. Disparaît au « resserrer »
-  /// (`documentation/staff/plan-roles-lus-en-base.md` §4).
+  /// (`documentation/droits-et-permissions/plan-roles-lus-en-base.md` §4).
   role StaffRole? @default(commercial)
 
   /// **La** clé du rôle porté, celle que le résolveur lit (plan

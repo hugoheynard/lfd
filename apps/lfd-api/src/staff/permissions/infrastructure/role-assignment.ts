@@ -15,7 +15,7 @@ import { HELD_ROLE_SELECT, heldRoleGrants, heldRoleKey } from "./held-role.js";
 /**
  * **Attribuer un rôle, et compter qui tient l'annuaire** — les deux lectures
  * de définitions que l'annuaire fait pour écrire une fiche (plan
- * `documentation/staff/plan-roles-lus-en-base.md` §3.3 et §3.5).
+ * `documentation/droits-et-permissions/plan-roles-lus-en-base.md` §3.3 et §3.5).
  *
  * Vivent dans `permissions/` parce que c'est la table des rôles qu'elles lisent ;
  * l'annuaire les appelle depuis son adaptateur.

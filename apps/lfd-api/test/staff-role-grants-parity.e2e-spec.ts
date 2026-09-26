@@ -1,7 +1,7 @@
 /**
  * E2E de la **parité table ↔ contrat, depuis la graine** — le trou que l'état
  * des lieux de la production a trouvé le 2026-09-25
- * (`documentation/staff/plan-roles-lus-en-base.md` §6).
+ * (`documentation/droits-et-permissions/plan-roles-lus-en-base.md` §6).
  *
  * `b2b_accounting`, `b2b_order_waivers` et `b2b_feature_access` n'avaient été
  * écrites par AUCUNE migration : elles n'existaient que dans `ROLE_GRANTS`. Le

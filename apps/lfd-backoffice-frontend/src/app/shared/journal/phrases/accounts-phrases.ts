@@ -47,7 +47,7 @@ import { labelIn } from '../values';
  * 🔴 Aucune phrase ne dit une coordonnée : une adresse se dit par sa ville et
  * son code postal, un RIB par ses quatre derniers caractères, une personne par
  * son nom. L'adresse e-mail d'une dérogation d'accès reste au détail, telle
- * que la charge la porte (`documentation/journalisation/todo-derogations-d-acces.md`).
+ * que la charge la porte (`documentation/droits-et-permissions/todo-derogations-d-acces.md`).
  */
 
 /**

@@ -12,7 +12,7 @@
 `dev@lafoliedouce.com` est une **adresse de fonction**, pas une personne. C'est
 l'admin racine (`BOOTSTRAP_ADMIN_EMAIL`, voir
 [`architecture-journal-de-l-annuaire.md`](architecture-journal-de-l-annuaire.md)
-et [`../architecture-acces-staff.md`](../architecture-acces-staff.md)), et c'est
+et [`../../droits-et-permissions/architecture-acces-staff.md`](../../droits-et-permissions/architecture-acces-staff.md)), et c'est
 elle qui a créé toute l'équipe. Le jour où une autre personne reprend cette
 boîte, tout ce qui a été fait sous cette adresse doit rester attribué à la
 personne d'avant, et tout ce qui sera fait ensuite à la nouvelle.

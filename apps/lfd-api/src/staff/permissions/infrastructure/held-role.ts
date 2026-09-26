@@ -16,7 +16,7 @@ import {
 /**
  * **Le rôle qu'une fiche porte, lu en base** — et ce qu'il accorde.
  *
- * Plan `documentation/staff/plan-roles-lus-en-base.md` §3.2. Un seul endroit
+ * Plan `documentation/droits-et-permissions/plan-roles-lus-en-base.md` §3.2. Un seul endroit
  * sait passer d'une ligne `staff_users` (et de sa définition jointe) à des
  * droits : le résolveur d'accès, `/admin/me` et la liste de l'annuaire le
  * lisent tous trois. Deux implémentations de la même règle divergeraient, et

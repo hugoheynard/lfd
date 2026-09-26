@@ -1,7 +1,7 @@
 # TODO — une dérogation d'accès au journal porte un e-mail
 
 > **Mis de côté par Hugo le 2026-09-19**, pendant le lot B du
-> [plan des phrases](plan-phrases-du-journal.md) : le sujet dépasse le
+> [plan des phrases](../journalisation/plan-phrases-du-journal.md) : le sujet dépasse le
 > journal, il touche à ce qu'est une dérogation. Rien n'est décidé.
 
 ## Le constat (vérifié le 2026-09-19)
@@ -12,7 +12,7 @@ dehors du niveau d'accès général (`b2b/feature-access/`, modèle
 
 - Ses faits (`feature_access.exemption_added` / `_removed`) écrivent
   **l'e-mail en clair** au journal — contraire à la règle « jamais de
-  coordonnées » ([`todo-journal-activite.md`](todo-journal-activite.md), la
+  coordonnées » ([`todo-journal-activite.md`](../journalisation/todo-journal-activite.md), la
   règle en ajoutant un émetteur).
 - Le retrait **supprime la ligne** (`deleteMany`,
   `prisma-feature-exemption.repository.ts`). Une fois la dérogation retirée,

@@ -57,7 +57,7 @@ vue fiscale sont en place.
   phrases font des centaines de fichiers.
 - Les coordonnées encore écrites, par exception décidée :
   l'e-mail et le téléphone du staff (Hugo, 2026-09-18), l'e-mail d'une
-  dérogation d'accès ([`todo-derogations-d-acces.md`](todo-derogations-d-acces.md)).
+  dérogation d'accès ([`todo-derogations-d-acces.md`](../droits-et-permissions/todo-derogations-d-acces.md)).
 - Le volume (§ « Rétention et volume », § « Un index pour la recherche ») :
   tient aujourd'hui, pas sans y revenir.
 

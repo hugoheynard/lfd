@@ -157,7 +157,7 @@ C'est le lot qui rend l'inventaire exact. Il ne change rien à l'écran.
 
 > Reste : le déployer. Écarts assumés : `product.ingredients_saved` ne nomme pas
 > la fiche (les ingrédients ne lisent pas le catalogue) ; les dérogations
-> d'accès gardent leur e-mail ([`todo-derogations-d-acces.md`](todo-derogations-d-acces.md)) ;
+> d'accès gardent leur e-mail ([`todo-derogations-d-acces.md`](../droits-et-permissions/todo-derogations-d-acces.md)) ;
 > `staff_user.identity_edited` garde l'avant/après complet, e-mail et téléphone
 > du staff compris — décision de Hugo du 2026-09-18
 > (`../staff/journalisation-staff/architecture-journal-de-l-annuaire.md`).

@@ -112,7 +112,7 @@ cycle. Assumé pour une vue ; c'est précisément pourquoi elle n'agit pas.
   (`production`, `comptoir`), les routes enfants déclarant `null`. Un test
   confronte chaque renvoi à la garde effective de sa cible (enfant, sinon
   parent) dans la table de routes, pour qu'un droit propre à la Production
-  (TODO `todo-comptoir-statuts-et-droit-production.md`) ne laisse pas un
+  (TODO [`todo-comptoir-statuts-et-droit-production.md`](../droits-et-permissions/todo-comptoir-statuts-et-droit-production.md)) ne laisse pas un
   renvoi pointer vers un refus. Les renvois visent les **listes**
   (`/production/colisage`), jamais `colisage/:reference`, qui est en `write`.
 

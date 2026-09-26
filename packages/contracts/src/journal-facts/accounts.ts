@@ -438,7 +438,7 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
    * coordonnées au journal » : l'exemption retirée est SUPPRIMÉE de sa table,
    * et le journal est alors la seule mémoire de l'adresse qu'elle ouvrait.
    * Mis de côté par Hugo le 2026-09-19 (`8bef9b98`) :
-   * `documentation/journalisation/todo-derogations-d-acces.md`.
+   * `documentation/droits-et-permissions/todo-derogations-d-acces.md`.
    */
   "feature_access.exemption_added": labelled({
     exemptionId: ref("feature_exemption"),

@@ -1,5 +1,5 @@
 /**
- * E2E des **rôles lus en base** — plan `documentation/staff/plan-roles-lus-en-base.md` §5.
+ * E2E des **rôles lus en base** — plan `documentation/droits-et-permissions/plan-roles-lus-en-base.md` §5.
  *
  * Jusqu'au 2026-09-26, le guard résolvait depuis `ROLE_GRANTS`, écrit dans le
  * code, et l'écran Admin › Rôles écrivait une table que personne ne lisait :

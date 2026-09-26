@@ -46,7 +46,7 @@ export const staffUserPayloadSchema = z.object({
   jobTitle: z.string().trim().default(""),
   /**
    * La **clé** d'un rôle défini — plus une valeur de l'enum depuis le
-   * 2026-09-26 (`documentation/staff/plan-roles-lus-en-base.md` §3.5). La
+   * 2026-09-26 (`documentation/droits-et-permissions/plan-roles-lus-en-base.md` §3.5). La
    * forme seule est vérifiée ici ; le serveur la confronte aux définitions
    * ACTIVES au moment d'écrire.
    */

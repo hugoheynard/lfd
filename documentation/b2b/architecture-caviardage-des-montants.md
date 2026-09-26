@@ -10,7 +10,7 @@
 > l'autre.
 >
 > Décidé le **2026-09-01**. Prérequis lu :
-> [`../staff/architecture-acces-staff.md`](../staff/architecture-acces-staff.md) (rôles,
+> [`../droits-et-permissions/architecture-acces-staff.md`](../droits-et-permissions/architecture-acces-staff.md) (rôles,
 > dérogations, résolution d'accès).
 >
 > **Statut : 📐 doc-first. Rien n'est codé.**

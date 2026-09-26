@@ -498,7 +498,7 @@ async function observed(prisma: object): Promise<ObservedResolver> {
 }
 
 /**
- * Plan `documentation/staff/plan-roles-lus-en-base.md` §3.2 : le résolveur lit
+ * Plan `documentation/droits-et-permissions/plan-roles-lus-en-base.md` §3.2 : le résolveur lit
  * la DÉFINITION du rôle, plus `ROLE_GRANTS`. Chaque ligne du tableau a son cas.
  */
 describe("PrismaStaffAccessResolver — les droits viennent de la définition en base", () => {

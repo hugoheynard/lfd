@@ -617,7 +617,7 @@ repli pour une personne que la fiche ne connaît plus.
 
 ⚠️ **La seule exception** : `feature_access.exemption_added` / `_removed`
 portent encore l'adresse exemptée — mise de côté par Hugo le 2026-09-19,
-[`todo-derogations-d-acces.md`](todo-derogations-d-acces.md).
+[`todo-derogations-d-acces.md`](../droits-et-permissions/todo-derogations-d-acces.md).
 
 **Ce qui le tient.** `packages/contracts/src/journal-facts/__tests__/closure.spec.ts`, sur le
 catalogue entier : chaque type actif porte `subjectLabel` (obligatoire ou

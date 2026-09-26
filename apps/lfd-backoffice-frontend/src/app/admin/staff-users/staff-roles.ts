@@ -9,7 +9,7 @@ export interface RoleOption {
 /**
  * Les rôles qu'une fiche peut recevoir : les définitions **actives** de la
  * table, dans l'ordre où le serveur les rend — plus l'enum écrit dans le code
- * (plan `documentation/staff/plan-roles-lus-en-base.md` §3.5). `superadmin` n'y
+ * (plan `documentation/droits-et-permissions/plan-roles-lus-en-base.md` §3.5). `superadmin` n'y
  * est jamais : c'est la porte de secours, pas un rôle qu'on donne.
  *
  * Le rôle que la fiche porte déjà reste proposé même s'il n'est plus actif :

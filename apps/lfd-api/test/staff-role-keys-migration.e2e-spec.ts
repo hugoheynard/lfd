@@ -1,6 +1,6 @@
 /**
  * E2E de la migration `20260926120000_les_roles_se_lisent_en_base`, rejouée
- * (plan `documentation/staff/plan-roles-lus-en-base.md` §3.1 et §5).
+ * (plan `documentation/droits-et-permissions/plan-roles-lus-en-base.md` §3.1 et §5).
  *
  * Même mécanique que les suites `*-roles-migration` : on REJOUE les ordres lus
  * dans le fichier de migration, depuis un état d'avant fabriqué — jamais une

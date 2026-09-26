@@ -657,7 +657,7 @@ ce que la personne a fait ; la supprimer l'aurait effacé.
 Ce qui manque : **un départ définitif**. Aujourd'hui, se séparer de quelqu'un,
 c'est le suspendre. L'état `departed`, « Passer le relais » sur une adresse de
 fonction et « Faire revenir » sont en plan :
-[`plan-depart-et-adresses-de-fonction.md`](plan-depart-et-adresses-de-fonction.md)
+[`plan-depart-et-adresses-de-fonction.md`](../staff/plan-depart-et-adresses-de-fonction.md)
 (v3, à valider).
 
 ### 13.3 Le bypass de dev sur une base clonée de la production
@@ -683,7 +683,7 @@ le bypass rend alors `403`. Non constaté à l'écran ; déduit du code.
   (« Hugo Heynard a créé Cécile Martin, Commercial »). Les dérogations désignent
   leur auteur par l'id de sa fiche, et ne sont plus réécrites quand elles ne
   changent pas. Plan et limites :
-  [`journalisation-staff/architecture-journal-de-l-annuaire.md`](journalisation-staff/architecture-journal-de-l-annuaire.md).
+  [`journalisation-staff/architecture-journal-de-l-annuaire.md`](../staff/journalisation-staff/architecture-journal-de-l-annuaire.md).
 
 - **L'invitation affichée valable 14 jours sur un lien qui en vit 7.** La règle
   (`invitation-expiry.ts`) est désormais **dérivée** de la durée de vie du lien

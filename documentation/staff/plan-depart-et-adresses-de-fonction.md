@@ -3,7 +3,7 @@
 > **Ouvert le 2026-09-18** à la demande de Hugo, en trois temps :
 >
 > - « pas possible de supprimer une fiche staff, ça serait une erreur, propose
->   moi autre chose » ([`architecture-acces-staff.md`](architecture-acces-staff.md) §13.2) ;
+>   moi autre chose » ([`architecture-acces-staff.md`](../droits-et-permissions/architecture-acces-staff.md) §13.2) ;
 > - « si la personne derrière dev@lafoliedouce.com change, il faut qu'on puisse
 >   opérer une transition qui fige les faits opérés par la personne ayant
 >   l'adresse avant » ;
@@ -292,7 +292,7 @@ rend possible ensemble.
   est l'id d'une fiche ; le D3 de ce plan garde sa seule raison de sécurité
   (un jeton d'accès ne se révoque pas).
 - Les rôles éditables à l'écran, non lus par l'accès
-  ([`architecture-acces-staff.md`](architecture-acces-staff.md) §13.1).
+  ([`architecture-acces-staff.md`](../droits-et-permissions/architecture-acces-staff.md) §13.1).
 
 ## 7. À vérifier chez Auth0, avant de bâtir
 
