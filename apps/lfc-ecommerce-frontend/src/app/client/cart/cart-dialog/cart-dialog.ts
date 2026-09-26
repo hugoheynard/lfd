@@ -15,7 +15,7 @@ import { GuestIdentityDialog } from '../guest-identity-dialog/guest-identity-dia
 import type { OrderSettlement } from '@lfd/contracts';
 
 import { AuthFacade } from '../../../auth/auth.facade';
-import { settlesOnAccount } from '../../../account/account.model';
+import { settlesOnAccount } from '../../../account/settles-on-account';
 import { ClientCompany } from '../../client-company.service';
 import { formatCents } from '../../format-money';
 import { ClientCart } from '../client-cart.service';

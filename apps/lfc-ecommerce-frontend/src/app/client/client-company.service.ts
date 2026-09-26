@@ -1,7 +1,7 @@
 import { computed, inject, Injectable } from '@angular/core';
 import type { CompanyStatus, CompanyView } from '@lfd/contracts';
 
-import { directDebitSuspended, settlesOnAccount } from '../account/account.model';
+import { directDebitSuspended, settlesOnAccount } from '../account/settles-on-account';
 import { AccountService } from '../account/account.service';
 import { ClientWorkspace, companyName } from './client-workspace.service';
 
