@@ -138,89 +138,49 @@ Ce lot vit tant que le lot 3 n'a pas supprimé la traduction.
   **slug** : `viennoiserie ↔ viennoiseries`, `pain ↔ pains`, `patisserie ↔
 patisseries`, `sale ↔ sale-traiteur`, `chocolat ↔ chocolat-confiserie`.
 
-### Lot 1 — étendre : la famille voyage à côté du rayon
+### Lots 1 à 3 réunis — la famille est l'id PIM, en une livraison
 
-- Contrats : `CatalogItemView` gagne `family: { id, name, position }` **à côté
-  de** `category` (déprécié, pas retiré : les deux fronts en ligne le lisent).
-  Idem `production-worksheet`.
-- Lecteurs : le catalogue pro, la fiche d'atelier, la vitrine lisent la
-  famille dans `catalog_categories`.
-- Tarification : `PricingContext.categoryId` devient l'id PIM ; la résolution
-  compare les portées « famille » à cet id **et**, le temps de la transition,
-  au code de rayon de la famille — **retrouvé par son slug**, pas par son id,
-  pour qu'un article resté sous `cat_vien` et un article republié sous
-  `01a031ff-…` reçoivent tous deux les règles posées sur `viennoiserie`. La
-  table de transition est `slug → code` (cinq lignes, datée, supprimée au lot 3) ; elle remplace `SHELF_BY_PIM_CATEGORY`, qui visait des ids que le PIM n'a
-  plus. Un article dont le slug n'y est pas reste « sans famille connue »
-  (lot 0).
-- **À l'écran, une famille = un slug** tant que le miroir porte deux ids pour
-  la même : regrouper par id ferait deux rayons « Viennoiseries ». Le rayon
-  affiché prend le nom et la position de l'id réel (non `cat_*`) quand il
-  existe.
-- Écriture — 🔴 **sans jamais deux clés pour la même famille** : pour une des
-  cinq familles connues, on écrit **toujours l'ancien code** jusqu'au lot 2 ;
-  seule une famille sans code (nouvelle) s'écrit par son id PIM. Sinon, une
-  règle posée sur `cat_vien` coexisterait avec une règle active sur
-  `viennoiserie` — les contraintes d'exclusion comparent `scope_id` et ne
-  verraient pas le doublon, la résolution ferait mordre les deux, et
-  l'`UPDATE` du lot 2 créerait le chevauchement et échouerait en production.
-- **L'ordre de déploiement** : les fronts d'abord (ils lisent `family` s'il
-  est là, sinon `category`), le serveur ensuite. Pour un article d'une famille
-  hors union, `category` n'a pas de valeur honnête : tant que le serveur la
-  sert, ces articles portent `family` seul et `category` est **absent** — ce
-  que les fronts du lot 1 savent lire, et qu'aucun front plus ancien ne verra,
-  puisqu'ils sont déployés avant.
-- Fronts : regroupement, libellés et ordre lus dans `family`.
+**Pourquoi réunis** (état des lieux de production lu par Hugo le
+2026-09-26) : **aucune** décision de portée famille n'existe en production —
+ni règle, ni limite, ni palier, ni engagement vivants — et **aucun** article
+vivant n'est rangé sous un `cat_*`. La transition en trois temps (double clé,
+pont par slug, réécriture pendant le déploiement) protégeait des données qui
+n'existent pas ; ses trois objections bloquantes (vitruve, 2026-09-26)
+tombaient toutes sur cette fenêtre. Sans données à migrer, pas de fenêtre.
 
-### Lot 2 — basculer : les portées persistées changent de clé
-
-**Préalable, tenu par la migration elle-même** : le miroir ne doit plus porter
-aucun article sous une famille `cat_*` — Hugo republie tout le catalogue
-depuis le PIM avant le déploiement. Sinon les articles restés sous `cat_vien`
-perdraient leurs règles, réécrites vers l'id réel. La migration **s'arrête**
-s'il en reste un (`SELECT count(*) FROM catalog_items WHERE category_id LIKE
-'cat\_%'`).
-
-Migration de données, **par table**. 🔴 **La correspondance code → id PIM
-n'est pas écrite de mémoire** : elle se calcule dans la migration, code → slug
-(la table de transition) → l'unique id **non `cat_*`** de `catalog_categories`
-qui porte ce slug — conforme à l'état des lieux ci-dessus —, et la migration
-**s'arrête** si une des cinq cibles manque ou est ambiguë dans
-`catalog_categories` — sinon chaque règle serait réécrite vers un id mort et
-cesserait de mordre sans que rien ne le dise.
-
-- `price_rules`, `price_floors`, `volume_ladders`, `volume_commitments` :
-  `scope_id` réécrit là où `scope_type = 'category'`. **Pas**
-  `pim.order_time_limit`, qui porte déjà l'id PIM — et qu'une migration du
-  commerce n'a pas à toucher (frontière `b2b → pim`).
-- **Les contraintes d'exclusion** portent sur `scope_id` : la réécriture est
-  un `UPDATE` d'une clé vers une autre, sans chevauchement nouveau possible
-  (correspondance injective).
-- **Le journal tarifaire** (`pricing_events.subject_id`) est immuable : les
-  faits passés gardent leur clé, dans ses **formes réelles** —
-  `category:viennoiserie`, `public:category:viennoiserie`. La lecture de
-  l'historique d'une famille cherche les deux formes (id PIM et ancien code),
-  la correspondance étant écrite une fois, dans un seul fichier daté, qui ne
-  grandira plus.
-- **Les instantanés de prix des lignes de commande** gardent leurs portées en
-  code ; leurs lecteurs de libellés (`scope-names.ts`,
-  `pricing-act-summary.ts`) lisent les anciens codes par ce même fichier
-  daté après le lot 3.
-- **Retour arrière** : l'`UPDATE` inverse, possible tant qu'aucune décision
-  n'a été posée sur une famille nouvelle ; au-delà, il n'a plus de sens.
-  Écrit en tête de la migration.
-- **Avant de lancer** : un état des lieux de production (lecture, par Hugo) —
-  combien de lignes de portée famille par table, et aucune valeur hors des
-  cinq codes. Requête au §5.
-
-### Lot 3 — resserrer : l'union disparaît
-
-Un déploiement après le lot 2 (27 fichiers hors tests lisent l'union, compte
-de vitruve du 2026-09-26) : `catalogCategorySchema`, ses libellés, son
-ordre, `SHELF_BY_PIM_CATEGORY`, `shelfOfCategory`, `UnknownCatalogShelfError`,
-le champ `category` déprécié et la double comparaison du lot 1 sont retirés.
-Une porte (`lint:no-shelf-literals`) refuse le retour d'un littéral de rayon
-dans `apps/lfd-api/src` et les contrats.
+1. **La famille d'un article est son `category_id`**, id PIM, avec `name` et
+   `position` lus dans `catalog_categories`. Contrats : `CatalogItemView`,
+   `production-worksheet` et les vues de la Tarification portent
+   `family: { id, name, position } | null` (`null` = article sans famille
+   reçue, cas du lot 0 qui ne peut plus se produire que par une livraison
+   incomplète).
+2. **La tarification compare l'id PIM**, et lui seul : `PricingContext.categoryId`,
+   `scope-index`, `specificity`, `volume-commitment`, `pricing-scopes` (le
+   chargement), `pricing-materials.loader`, `loaded-pricer`, `board-category`,
+   `board-comparison` — tous les sites que vitruve a nommés.
+3. **Le chemin** : une décision de famille vaut pour ses sous-familles, la
+   plus proche l'emporte (`categoryPathOf`, comme l'heure limite).
+4. **Retirés** : `catalogCategorySchema`, `CATALOG_CATEGORY_LABELS`,
+   `CATALOG_CATEGORY_ORDER`, `SHELF_BY_PIM_CATEGORY`, `shelfOfCategory`,
+   `UnknownCatalogShelfError`, le champ `category`. Une porte
+   (`lint:no-shelf-literals`) refuse leur retour.
+5. **La migration** `…_les_familles_se_lisent_en_donnees` : pour les bases qui
+   ont des codes de rayon (le dev, les semis de test), réécrit `scope_id`
+   des quatre tables de portée famille, **code → slug → l'id de
+   `catalog_categories` qui porte ce slug**, en préférant l'id non `cat_*`
+   s'il y en a deux. Elle **échoue** si un code présent n'a pas de cible
+   unique — avec un message qui dit laquelle. En production, elle ne réécrit
+   rien : l'état des lieux l'a montré, et c'est le premier test qu'elle
+   passe. Pas de réécriture de `pim.order_time_limit` (déjà en id PIM).
+6. **Le journal et les instantanés** gardent leurs clés passées ; un seul
+   fichier daté (`legacy-shelf-codes.ts`, cinq lignes, qui ne grandira plus)
+   traduit un ancien code en libellé pour les lire.
+7. **L'ordre de déploiement** : les fronts lisent `family` et tolèrent
+   l'absence de `category` — c'est le même déploiement que le serveur, qui
+   ne sert plus `category` ; la fenêtre où un front ancien lirait un serveur
+   neuf dure le temps des déploiements, et un front ancien sans `category`
+   range l'article sous « Sans famille connue » (lot 0, déjà en production),
+   sans planter.
 
 ## 4. Tests
 
@@ -229,15 +189,13 @@ dans `apps/lfd-api/src` et les contrats.
   de famille, la limite du catalogue le relève ; un brouillon, une
   occurrence d'abonnement et un devis qui le contiennent passent ; il est
   compté.
-- Lot 1 : une famille livrée par le PIM et absente de l'union apparaît comme
-  rayon, se tarife, se limite ; une règle posée sur l'ancien code mord
-  toujours ; poser une règle sur une des cinq familles écrit l'ancien code
-  (jamais deux clés) ; une décision sur une famille parente vaut pour sa
-  sous-famille, la plus proche l'emporte.
-- Lot 2 : la migration rejouée sur une base semée des cinq codes réécrit
-  chaque ligne, et seulement celles de portée famille ; le prix d'un article
-  est identique avant et après (e2e sur le tableau de la Tarification) ;
-  l'historique d'une famille montre les faits d'avant et d'après.
+- Une famille livrée par le PIM apparaît comme rayon, avec son nom et sa
+  position, se tarife et se limite, sans déploiement ; une décision sur une
+  famille parente vaut pour sa sous-famille, la plus proche l'emporte.
+- La migration, rejouée sur une base semée des cinq codes, réécrit chaque
+  ligne de portée famille et elles seules ; le prix d'un article est
+  identique avant et après ; sur une base sans code, elle ne touche rien ;
+  un code sans cible unique la fait échouer.
 - PIM : créer une famille au slug ou au nom déjà pris → refusé, avec un
   message qui nomme la famille existante.
 
