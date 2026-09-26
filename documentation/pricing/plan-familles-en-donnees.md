@@ -127,10 +127,12 @@ Ce lot vit tant que le lot 3 n'a pas supprimé la traduction.
   (viennoiseries), `01a031fe-c498-…` (pains), `01a031ff-fab7-…` (patisseries),
   `01a03200-7180-…` (sale-traiteur), `01a03200-cca9-…` (chocolat-confiserie).
   Aucune ne s'appelle `cat_*` — et l'index `category_slug_fr_unique` y est.
-- **Le miroir du commerce** (`catalog_categories`, `catalog_items`) range
-  encore la plupart des articles sous les `cat_*` d'une livraison ancienne ;
-  seuls les articles republiés depuis portent l'id réel (deux, au
-  2026-09-26).
+- **Le miroir du commerce** : **aucun article vivant** n'est rangé sous un
+  `cat_*` (requête de Hugo, 0). Les lignes `cat_*` de `catalog_categories`
+  restent pourtant — la projection fait des `upsert` et ne supprime jamais —,
+  familles orphelines sans article vivant. ⚠️ Une version antérieure de ce
+  paragraphe disait « la plupart des articles sous `cat_*` » : c'était une
+  déduction, démentie par la mesure.
 - 🔴 **Conséquence pour les deux lots** : une même famille existe, dans le
   miroir, sous **deux ids** — `cat_vien` pour les articles pas encore
   republiés, `01a031ff-146f-…` pour les autres —, avec **le même slug**. Le
@@ -149,7 +151,10 @@ n'existent pas ; ses trois objections bloquantes (vitruve, 2026-09-26)
 tombaient toutes sur cette fenêtre. Sans données à migrer, pas de fenêtre.
 
 1. **La famille d'un article est son `category_id`**, id PIM, avec `name` et
-   `position` lus dans `catalog_categories`. Contrats : `CatalogItemView`,
+   `position` lus dans `catalog_categories`. **Une liste de familles ne montre
+   que celles qui portent au moins un article vivant** : les `cat_*`
+   orphelins du miroir n'apparaissent nulle part (sélecteur de portée,
+   rayons, compteurs). Contrats : `CatalogItemView`,
    `production-worksheet` et les vues de la Tarification portent
    `family: { id, name, position } | null` (`null` = article sans famille
    reçue, cas du lot 0 qui ne peut plus se produire que par une livraison
@@ -162,8 +167,14 @@ tombaient toutes sur cette fenêtre. Sans données à migrer, pas de fenêtre.
    plus proche l'emporte (`categoryPathOf`, comme l'heure limite).
 4. **Retirés** : `catalogCategorySchema`, `CATALOG_CATEGORY_LABELS`,
    `CATALOG_CATEGORY_ORDER`, `SHELF_BY_PIM_CATEGORY`, `shelfOfCategory`,
-   `UnknownCatalogShelfError`, le champ `category`. Une porte
-   (`lint:no-shelf-literals`) refuse leur retour.
+   `UnknownCatalogShelfError` côté serveur. Une porte
+   (`lint:no-shelf-literals`) refuse leur retour. **Sauf le champ servi
+   `category`** : il reste dans les vues, **toujours `null`**, déprécié — le
+   front déjà déployé (`b2b-ui/catalog-shelves.ts`) range un `null` sous
+   « Sans famille connue » mais **perd** un article dont le champ est absent
+   (`undefined` ne passe aucun test), et fronts et serveur se déploient par
+   des workflows distincts (`CLAUDE.md` §0). Il se retire dans une livraison
+   suivante, quand plus aucun front ne le lit.
 5. **La migration** `…_les_familles_se_lisent_en_donnees` : pour les bases qui
    ont des codes de rayon (le dev, les semis de test), réécrit `scope_id`
    des quatre tables de portée famille, **code → slug → l'id de
@@ -175,12 +186,33 @@ tombaient toutes sur cette fenêtre. Sans données à migrer, pas de fenêtre.
 6. **Le journal et les instantanés** gardent leurs clés passées ; un seul
    fichier daté (`legacy-shelf-codes.ts`, cinq lignes, qui ne grandira plus)
    traduit un ancien code en libellé pour les lire.
-7. **L'ordre de déploiement** : les fronts lisent `family` et tolèrent
-   l'absence de `category` — c'est le même déploiement que le serveur, qui
-   ne sert plus `category` ; la fenêtre où un front ancien lirait un serveur
-   neuf dure le temps des déploiements, et un front ancien sans `category`
-   range l'article sous « Sans famille connue » (lot 0, déjà en production),
-   sans planter.
+7. **L'ordre de déploiement** : pendant la fenêtre où un front ancien lit un
+   serveur neuf, il reçoit `category: null` et range tout sous « Sans famille
+   connue » — dégradé, pas vide, et quelques minutes. Les fronts neufs lisent
+   `family`.
+8. **Décisions archivées** : la lecture datée (`unarchivedAt(at)`) relit une
+   décision archivée après `at`. Si une règle ou une limite archivée porte un
+   code de rayon, la migration la réécrit aussi — sinon elle cesserait de
+   s'appliquer au passé. **À mesurer** : l'état des lieux se relance sans le
+   filtre d'archivage (§5, requête 3).
+9. **Lecteurs des clés passées** : les instantanés (`pricing_steps`…) et les
+   sujets du journal (`category:viennoiserie`) sont inventoriés au début de la
+   livraison ; tout lecteur qui les **compare** (et pas seulement les
+   affiche) passe par `legacy-shelf-codes.ts`.
+10. **Le coût, chiffré** (vitruve, 2026-09-26) : 19 fichiers source lisent
+    l'union ou la traduction — dont le port du fournil
+    `production/channels/commerce/workshop-shelves.reader.ts`,
+    `production-worksheet-groups.ts`, `scope-names.ts`,
+    `company-pricing.query.ts`, `prisma-pricing-board.reader.ts` — et
+    `"viennoiserie"` paraît dans 30 fichiers dont 7 e2e ; les fixtures `cat_*`
+    (catalog-fixture, catalog-ingest-fixtures, storefront-*, catalog-parity,
+    admin-catalog) se réécrivent à la main : la migration ne sert pas les
+    bases de test, créées vides.
+11. **Base de dev sans cible** : si la migration échoue faute de slug (un
+    miroir de dev jamais livré par le PIM), le geste de sortie est de relancer
+    `seed:pim` puis `migrate deploy`. Écrit en tête de la migration.
+12. **Retour arrière** : gratuit tant que rien n'est sur `main` ; ensuite, une
+    migration inverse id → code, non écrite.
 
 ## 4. Tests
 
@@ -199,7 +231,7 @@ tombaient toutes sur cette fenêtre. Sans données à migrer, pas de fenêtre.
 - PIM : créer une famille au slug ou au nom déjà pris → refusé, avec un
   message qui nomme la famille existante.
 
-## 5. L'état des lieux à lancer en production avant le lot 2
+## 5. L'état des lieux à lancer en production avant la livraison
 
 Lecture seule, par Hugo.
 
@@ -219,6 +251,15 @@ SELECT 'volume_ladders', scope_id, count(*) FROM public.volume_ladders
 UNION ALL
 SELECT 'volume_commitments', scope_id, count(*) FROM public.volume_commitments
   WHERE scope_type = 'category' GROUP BY scope_id;
+```
+
+```sql
+-- 3. les décisions ARCHIVÉES de portée famille (la lecture datée les relit)
+SELECT 'price_rules' AS t, scope_id, count(*) FROM public.price_rules
+  WHERE scope_type = 'category' AND archived_at IS NOT NULL GROUP BY scope_id
+UNION ALL
+SELECT 'price_floors', scope_id, count(*) FROM public.price_floors
+  WHERE scope_type = 'category' AND archived_at IS NOT NULL GROUP BY scope_id;
 ```
 
 Toute clé de la requête 2 qui n'est ni un des cinq codes ni un id de la
