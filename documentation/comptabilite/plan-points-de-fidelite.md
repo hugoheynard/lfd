@@ -671,5 +671,8 @@ s'annule dans `placeOnce`, qui l'a sous la main, pas dans le `catch`
 d'`execute` ; « au retrait » est retiré de C5 — tout total nul est
 `not_required`.
 
-**Ouvert, pour Hugo** : C6 (l'assiette après bon), B2 (le reliquat échu
-s'éteint), S4 (le TODO de l'abandon).
+**Tranché par Hugo le 2026-09-27** (« ok pour les trois ») : C6 — l'assiette
+est le HT après remise **et** bon ; B2 — le reliquat échu s'éteint, journalisé ;
+S4 — TODO ouvert :
+[`../order/todo-commande-epargnee-a-la-cloture-puis-refusee.md`](../order/todo-commande-epargnee-a-la-cloture-puis-refusee.md).
+Le lot C est lancé.
