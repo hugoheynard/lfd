@@ -15,9 +15,7 @@ import { ClientWorkspace } from '../../client-workspace.service';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { VoucherChoice } from '../voucher-choice.service';
-
-/** L'heure de la boutique : une date limite se lit à Paris, comme dans « Ma fidélité ». */
-const SHOP_TIME_ZONE = 'Europe/Paris';
+import { SHOP_TIME_ZONE } from '../../shop-time-zone';
 
 /**
  * Le décompte du panier : les lignes, la relance, la remise, la TVA, le total.

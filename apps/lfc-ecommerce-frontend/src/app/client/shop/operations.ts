@@ -3,6 +3,7 @@ import type { ShopItemView, ShopOperationText, ShopOperationView } from '@lfd/co
 import type { LocaleCode } from '../client-locale.service';
 import type { ClientCopy } from '../copy/client-copy.model';
 import { fill } from '../copy/client-copy.service';
+import { SHOP_TIME_ZONE } from '../shop-time-zone';
 
 /**
  * **Les opérations datées, telles que la vitrine les montre** (D8 de
@@ -14,9 +15,6 @@ import { fill } from '../copy/client-copy.service';
  * identifiant inventé par l'écran.
  */
 export const OPERATION_SHELF_PREFIX = 'op:';
-
-/** Le fuseau des dates d'ouverture : celui de la maison, pas celui du navigateur. */
-const PARIS = 'Europe/Paris';
 
 /** Midi UTC : un jour `AAAA-MM-JJ` reste le même jour dans tous les fuseaux d'Europe. */
 const MIDDAY = 'T12:00:00.000Z';
@@ -83,7 +81,7 @@ export function shortDate(instant: string, locale: LocaleCode): string {
   return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: 'short',
-    timeZone: PARIS,
+    timeZone: SHOP_TIME_ZONE,
   }).format(date);
 }
 

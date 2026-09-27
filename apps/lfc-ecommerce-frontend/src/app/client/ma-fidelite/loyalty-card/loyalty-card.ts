@@ -17,6 +17,7 @@ import { ClientLocale } from '../../client-locale.service';
 import { ClientLoyalty, type ConversionOutcome } from '../../client-loyalty.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { formatCents } from '../../format-money';
+import { SHOP_TIME_ZONE } from '../../shop-time-zone';
 
 /** Ce que la carte montre — `closed` ne rend RIEN (plan des points, E1.3). */
 type LoyaltyCardState = 'loading' | 'failed' | 'closed' | 'open';
@@ -29,9 +30,6 @@ interface Row {
   readonly label: string;
   readonly detail: string;
 }
-
-/** Le fuseau des dates limites : celui de la boutique, pas celui du navigateur. */
-const SHOP_TIME_ZONE = 'Europe/Paris';
 
 /**
  * **Le cœur de `/ma-fidelite`** — le solde, ce que vaut un palier, la conversion en bon, les
