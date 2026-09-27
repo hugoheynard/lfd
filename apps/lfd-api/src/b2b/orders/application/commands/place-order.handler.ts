@@ -6,18 +6,13 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import type { Order } from "../../domain/entities/order.js";
-import type { OrderSettlement } from "@lfd/contracts";
 
 import {
   IdempotencyKeyReusedError,
   OrderAlreadyInFlightError,
-  TermsNotGrantedError,
 } from "../../domain/errors/order-errors.js";
 import { OrderPlacedEvent } from "../../domain/events/order-placed.event.js";
-import {
-  OrderGuardReader,
-  type AccountSettlementStanding,
-} from "../../domain/ports/order-guard.reader.js";
+import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { OrderIdempotencyStore } from "../../domain/ports/order-idempotency.store.js";
 import { LoyaltyVoucherQuoteReader } from "../../domain/ports/loyalty-voucher-quote.reader.js";
 import { LoyaltyVoucherRedemption } from "../../domain/ports/loyalty-voucher-redemption.js";
@@ -26,16 +21,8 @@ import { OrderRepository, type PlacedOrder } from "../../domain/ports/order.repo
 import { ensureOrderMember } from "../../domain/services/order-access.js";
 import { orderFingerprint } from "../../domain/services/order-fingerprint.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
+import { settleOrder, type CreatedIntent } from "../services/order-settlement.js";
 import { PlaceOrderCommand, type PlaceOrderResult } from "./place-order.command.js";
-
-/** Devise unique de la plateforme (montants en centimes d'euro). */
-const CURRENCY = "eur";
-
-/** L'intention Stripe créée pour la commande — de quoi la rendre au client, ou l'annuler. */
-interface CreatedIntent {
-  readonly paymentIntentId: string;
-  readonly clientSecret: string;
-}
 
 /**
  * Passe une commande — **zéro friction**, le client pour lui-même.
@@ -149,7 +136,12 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       voucher,
     );
 
-    const intent = await this.settle(order, companyId, payload.settlement);
+    const intent = await settleOrder(
+      { guard: this.guard, payments: this.payments },
+      order,
+      companyId,
+      payload.settlement,
+    );
     const placed = await this.persist(command, order, intent);
 
     // La dérogation se consomme APRÈS la persistance : la brûler avant aurait
@@ -284,79 +276,5 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       return;
     }
     await this.waivers.consume(waiverId, orderId, this.clock.now());
-  }
-
-  /**
-   * Décide le règlement de l'agrégat et crée l'intention Stripe si une carte est
-   * requise (total > 0). Renvoie l'intention (pour le `clientSecret`) ou `null`
-   * (différé / gratuit). L'intention est dimensionnée sur `order.totalCents`.
-   */
-  private async settle(
-    order: Order,
-    companyId: string | null,
-    settlement: OrderSettlement | null,
-  ): Promise<CreatedIntent | null> {
-    const requiresCard = (await this.requiresCard(companyId, settlement)) && order.totalCents > 0;
-    if (!requiresCard) {
-      order.deferPayment();
-      return null;
-    }
-    const intent = await this.payments.createIntent({
-      amountCents: order.totalCents,
-      currency: CURRENCY,
-      companyId,
-    });
-    order.payByCard(intent.paymentIntentId);
-    return { paymentIntentId: intent.paymentIntentId, clientSecret: intent.clientSecret };
-  }
-
-  /**
-   * **La carte est-elle requise ?** — le choix du client d'abord, la règle ensuite.
-   *
-   * @throws {TermsNotGrantedError} le compte a été demandé sans crédit accordé.
-   */
-  private async requiresCard(
-    companyId: string | null,
-    settlement: OrderSettlement | null,
-  ): Promise<boolean> {
-    const standing = await this.accountStanding(companyId);
-    const onAccount = standing === "granted";
-    // **Payer comptant est toujours possible**, y compris pour une société à qui
-    // le mensuel a été accordé. Le crédit est une facilité, pas une obligation :
-    // un client qui veut régler tout de suite avec SON tarif doit pouvoir le
-    // faire, et c'est exactement ce que la boutique lui demandera.
-    if (settlement === "card") {
-      return true;
-    }
-    // Le compte se REFUSE plutôt que de se rabattre en silence sur la carte :
-    // prélever quelqu'un qui croyait commander au compte est le genre de
-    // surprise qui se règle au téléphone.
-    if (settlement === "account") {
-      if (!onAccount) {
-        throw new TermsNotGrantedError(companyId, standing === "blocked");
-      }
-      return false;
-    }
-    // Rien de demandé : la décision d'avant, mot pour mot. C'est le chemin du
-    // back-office, qui n'a personne devant l'écran pour choisir. Un prélèvement
-    // bloqué y bascule sur la carte en silence — personne n'a demandé le compte.
-    return !onAccount;
-  }
-
-  /**
-   * Une société **active** à qui un crédit a été accordé, et dont le
-   * prélèvement n'est pas bloqué, peut régler au compte.
-   *
-   * Sans entreprise, ou entreprise non activée : jamais. Le crédit se négocie
-   * avec une société cliente, pas avec un panier.
-   */
-  private async accountStanding(companyId: string | null): Promise<AccountSettlementStanding> {
-    if (companyId === null) {
-      return "none";
-    }
-    if ((await this.guard.companyStatusOf(companyId)) !== "active") {
-      return "none";
-    }
-    return this.guard.settlesOnAccount(companyId);
   }
 }
