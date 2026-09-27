@@ -725,7 +725,7 @@ la même bombe, déguisée en donnée métier.
 - **Zéro `any`, zéro `as unknown as T`, zéro `@ts-ignore`, zéro
   `eslint-disable`.** `pnpm lint:no-type-escapes` tient les trois derniers
   depuis le 2026-09-03 — le premier l'était déjà par ESLint. Directives : zéro,
-  partout. `as unknown as` : **quinze fichiers** (seize jusqu'au 2026-09-18), tous des tests, comptés et
+  partout. `as unknown as` : **deux fichiers** (quinze jusqu'au 2026-09-27, seize jusqu'au 2026-09-18), tous des tests, comptés et
   affichés ; un fichier hors liste qui en gagne un échoue, un fichier nettoyé
   qui reste inscrit échoue aussi. Un cast compte **plus** dans un test que dans
   du code de production : c'est lui qui laisse un doublé dériver du port qu'il

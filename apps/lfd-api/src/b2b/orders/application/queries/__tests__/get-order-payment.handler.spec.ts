@@ -11,6 +11,7 @@ import {
 } from "../../../domain/errors/order-payment-errors.js";
 import { OrderGuardReader } from "../../../domain/ports/order-guard.reader.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
+import { orderView } from "../../handlers/__tests__/payment-failure-doubles.js";
 import { GetOrderPaymentHandler } from "../get-order-payment.handler.js";
 import { GetOrderPaymentQuery } from "../get-order-payment.query.js";
 
@@ -21,12 +22,10 @@ function owned(over: {
   readonly stripePaymentIntentId?: string | null;
   readonly placedByUserId?: string;
 }): OwnedOrder {
-  const view = {
-    id: "order_1",
-    status: over.status ?? "placed",
-    paymentStatus: over.paymentStatus,
+  const view: OrderView = {
+    ...orderView(over.status ?? "placed", over.paymentStatus),
     totalCents: 12_345,
-  } as unknown as OrderView;
+  };
   return {
     view,
     companyId: null,

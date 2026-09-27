@@ -14,15 +14,54 @@ import {
   preferenceForMethod,
 } from '../fulfillment-preference.model';
 
-const PICKUPS = [
-  { id: 'pick_1', label: 'Labo Bastille', isDefault: true },
-  { id: 'pick_2', label: 'Labo Nation', isDefault: false },
-] as unknown as readonly PickupAddressView[];
+const POSTAL = {
+  ligne1: '12 rue de la Roquette',
+  ligne2: '',
+  codePostal: '75011',
+  ville: 'Paris',
+  pays: 'France',
+} as const;
 
-const DELIVERIES = [
-  { id: 'addr_1', label: 'Boutique', isDefault: true },
-  { id: 'addr_2', label: 'Entrepôt', isDefault: false },
-] as unknown as readonly DeliveryAddressView[];
+/** Un point de retrait complet ; seuls `id`, `label` et `isDefault` comptent ici. */
+function pickup(id: string, label: string, isDefault: boolean): PickupAddressView {
+  return {
+    id,
+    label,
+    ...POSTAL,
+    isDefault,
+    discount: null,
+    discountAudiences: { b2b: false, b2c: false },
+    opening: { publicOpening: null, proPickup: null },
+  };
+}
+
+/** Une adresse de livraison complète ; mêmes trois champs lus. */
+function delivery(id: string, label: string, isDefault: boolean): DeliveryAddressView {
+  return {
+    id,
+    label,
+    ...POSTAL,
+    isDefault,
+    procedureStepCount: 0,
+    specs: {
+      note: '',
+      slots: { mode: 'everyday', slot: { start: '06:00', end: '08:00' } },
+      deliveryContact: null,
+      gps: null,
+      signatureRequired: null,
+    },
+  };
+}
+
+const PICKUPS: readonly PickupAddressView[] = [
+  pickup('pick_1', 'Labo Bastille', true),
+  pickup('pick_2', 'Labo Nation', false),
+];
+
+const DELIVERIES: readonly DeliveryAddressView[] = [
+  delivery('addr_1', 'Boutique', true),
+  delivery('addr_2', 'Entrepôt', false),
+];
 
 describe('destinations proposées', () => {
   it('propose les POINTS DE RETRAIT en retrait', () => {

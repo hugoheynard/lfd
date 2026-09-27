@@ -1,5 +1,7 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { FicheClientActions } from '../informations/fiche-client.actions';
@@ -7,7 +9,81 @@ import { FicheClientFacade } from '../informations/fiche-client.facade';
 import { FicheClientPanels } from '../informations/fiche-client.panels';
 import { FicheClientStore } from '../informations/fiche-client.store';
 
-const COMPANY = { id: 'cmp_1', contacts: [] } as unknown as AdminCompanyDetail;
+const COMPANY: AdminCompanyDetail = {
+  activation: null,
+  gate: { canActivate: false, blocking: [], checklist: [] },
+  suspensionCause: null,
+  id: 'cmp_1',
+  reference: 'C-ADM001',
+  raisonSociale: 'Café des Halles SAS',
+  enseigne: '',
+  formeJuridique: 'SAS',
+  siret: '81245678900021',
+  siren: '',
+  vatNumber: '',
+  status: 'pending',
+  grantedTerms: [],
+  requestedTerm: null,
+  directDebitBlocked: false,
+  primaryContact: {
+    id: null,
+    role: null,
+    firstName: 'Camille',
+    lastName: 'Rousseau',
+    fonction: 'Gérante',
+    email: 'gerant@halles.fr',
+    phone: '',
+  },
+  kbis: null,
+  owner: null,
+  hasOpenSupportRequest: false,
+  createdAt: '2026-07-30T10:00:00.000Z',
+  activatedAt: null,
+  warnings: [],
+  vatNumberRequired: true,
+  addresses: { billing: null, deliveries: [] },
+  contacts: [],
+  fulfillmentPreference: {
+    method: null,
+    pickupAddressId: null,
+    deliveryAddressId: null,
+    signatureRequired: false,
+  },
+};
+
+/**
+ * Les trois collaborateurs sont doublés en HÉRITANT d'eux : la façade lit
+ * leurs signaux au champ, et un objet partiel laissait ces champs à
+ * `undefined` sans que rien ne le dise. Leurs dépendances HTTP sont montées
+ * sur le backend de test ; aucune n'est appelée, puisque ce qui les touche est
+ * redéfini ici.
+ */
+class CountingStore extends FicheClientStore {
+  loads = 0;
+
+  override load(): Promise<void> {
+    this.loads += 1;
+    this.company.set(COMPANY);
+    return Promise.resolve();
+  }
+}
+
+class ScriptedActions extends FicheClientActions {
+  succeeds = true;
+
+  override activate(): Promise<boolean> {
+    return Promise.resolve(this.succeeds);
+  }
+}
+
+class RecordingPanels extends FicheClientPanels {
+  closes = true;
+
+  override openStep(key: string): Promise<unknown> | null {
+    openedSteps.push(key);
+    return this.closes ? Promise.resolve() : null;
+  }
+}
 
 /** Les clés d'étape demandées aux panneaux, dans l'ordre. */
 let openedSteps: string[] = [];
@@ -16,6 +92,15 @@ interface Harness {
   readonly facade: FicheClientFacade;
   readonly loads: () => number;
   readonly store: FicheClientStore;
+}
+
+/** Le doublé fourni sous le jeton du collaborateur réel, sous son propre type. */
+function injected<T, D extends T>(token: abstract new () => T, double: abstract new () => D): D {
+  const instance = TestBed.inject(token);
+  if (!(instance instanceof double)) {
+    throw new Error(`Le doublé ${double.name} n’a pas été fourni.`);
+  }
+  return instance;
 }
 
 /**
@@ -28,57 +113,23 @@ function setup(
     readonly panelCloses?: boolean;
   } = {},
 ): Harness {
-  let loads = 0;
   openedSteps = [];
-  const store = {
-    company: (): AdminCompanyDetail | null => COMPANY,
-    load: (): Promise<void> => {
-      loads += 1;
-      return Promise.resolve();
-    },
-    adopt: vi.fn(),
-    start: vi.fn(),
-    // Les signaux ré-exposés : la façade les lit au champ, pas à l'appel.
-    state: vi.fn(),
-    draft: vi.fn(),
-    identity: vi.fn(),
-    contacts: vi.fn(),
-    billing: vi.fn(),
-    deliveries: vi.fn(),
-    pickups: vi.fn(),
-    defaultPickup: vi.fn(),
-    kbisRequirement: vi.fn(),
-    deliveryHidden: vi.fn(),
-    libSteps: (): readonly unknown[] => [],
-    ready: vi.fn(),
-    isPending: vi.fn(),
-    canActivate: vi.fn(),
-    blockedReason: vi.fn(),
-  } as unknown as FicheClientStore;
-
-  const actions = {
-    creating: vi.fn(),
-    granting: vi.fn(),
-    activate: (): Promise<boolean> => Promise.resolve(options.succeeds ?? true),
-  } as unknown as FicheClientActions;
-
-  const panels = {
-    openStep: (key: string): Promise<unknown> | null => {
-      openedSteps.push(key);
-      return options.panelCloses === false ? null : Promise.resolve();
-    },
-  } as unknown as FicheClientPanels;
-
   TestBed.configureTestingModule({
     providers: [
+      provideHttpClient(),
+      provideHttpClientTesting(),
       FicheClientFacade,
-      { provide: FicheClientStore, useValue: store },
-      { provide: FicheClientActions, useValue: actions },
-      { provide: FicheClientPanels, useValue: panels },
+      { provide: FicheClientStore, useClass: CountingStore },
+      { provide: FicheClientActions, useClass: ScriptedActions },
+      { provide: FicheClientPanels, useClass: RecordingPanels },
     ],
   });
+  const store = injected(FicheClientStore, CountingStore);
+  store.company.set(COMPANY);
+  injected(FicheClientActions, ScriptedActions).succeeds = options.succeeds ?? true;
+  injected(FicheClientPanels, RecordingPanels).closes = options.panelCloses !== false;
 
-  return { facade: TestBed.inject(FicheClientFacade), loads: () => loads, store };
+  return { facade: TestBed.inject(FicheClientFacade), loads: () => store.loads, store };
 }
 
 describe('façade — un geste réussi recharge la fiche', () => {

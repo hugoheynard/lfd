@@ -3,12 +3,13 @@ import type { OrderView } from "@lfd/contracts";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
 import { OrderGuardReader, type OrderRole } from "../../../domain/ports/order-guard.reader.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
+import { orderView } from "../../handlers/__tests__/payment-failure-doubles.js";
 import { GetAdminOrderHandler } from "../get-admin-order.handler.js";
 import { GetAdminOrderQuery } from "../get-admin-order.query.js";
 import { GetOrderHandler } from "../get-order.handler.js";
 import { GetOrderQuery } from "../get-order.query.js";
 
-const VIEW = { id: "ord_1", orderNumber: "CMD-0001" } as unknown as OrderView;
+const VIEW: OrderView = { ...orderView(), id: "ord_1", orderNumber: "CMD-0001" };
 
 /** Lecteur doublé : rend la commande demandée (ou rien), et compte ses appels. */
 function reader(owned: OwnedOrder | null): OrderReader {

@@ -1,5 +1,6 @@
-import { CommandHandler, EventBus, type ICommandHandler } from "@nestjs/cqrs";
+import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { SupportRequestedEvent } from "../../domain/events/support-requested.event.js";
 
@@ -31,7 +32,7 @@ export class RequestActivationSupportHandler implements ICommandHandler<
   constructor(
     private readonly memberships: MembershipReader,
     private readonly support: SupportRequestRepository,
-    private readonly events: EventBus,
+    private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly names: AccountJournalNames,
   ) {}

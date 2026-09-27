@@ -11,6 +11,10 @@
  * `eslint-disable`, et **seize fichiers** portant un `as unknown as` — tous des
  * tests. Le code de production est parfaitement propre.
  *
+ * Au 2026-09-27 : **deux fichiers**, trois casts, jugés irréductibles —
+ * `ArgumentsHost.getResponse<T = any>()` de Nest, et `PointerEvent` absent de
+ * jsdom. Douze fichiers nettoyés ce jour-là.
+ *
  * ⚠️ Un `grep` naïf en annonçait vingt et une directive. Les cinq de trop
  * étaient des MENTIONS entre accents graves — dont une qui explique que ce
  * dépôt a REFUSÉ le cast et payé trois ports de plus pour s'en passer. Compter
@@ -64,19 +68,7 @@ const SKIP = new Set(["node_modules", "dist", "client", "coverage", "out-tsc", "
  */
 const KNOWN_CASTS = new Set([
   "apps/lfd-backoffice-frontend/src/app/b2b/tarification/__tests__/timeline-axis.spec.ts",
-  "apps/lfd-backoffice-frontend/src/app/commercial/tarification/simulation/__tests__/piercing-rules.spec.ts",
-  "apps/lfd-backoffice-frontend/src/app/fiche-client/__tests__/fiche-client.facade.spec.ts",
-  "apps/lfd-backoffice-frontend/src/app/pim/catalogue/__tests__/sold-contexts.spec.ts",
-  "apps/lfd-backoffice-frontend/src/app/shared/notifications/__tests__/notifications-panel.spec.ts",
-  "apps/lfd-api/src/b2b/account/application/commands/__tests__/issue-password-link.handler.spec.ts",
-  "apps/lfd-api/src/b2b/account/application/commands/__tests__/request-activation-support.handler.spec.ts",
-  "apps/lfd-api/src/b2b/orders/application/queries/__tests__/get-order-payment.handler.spec.ts",
-  "apps/lfd-api/src/b2b/orders/application/queries/__tests__/get-order.handler.spec.ts",
-  "apps/lfd-api/src/pim/catalogue/product/application/__tests__/set-product-vat.spec.ts",
-  "apps/lfd-api/src/platform/context/__tests__/request-context.middleware.spec.ts",
   "apps/lfd-api/src/platform/shared/http/__tests__/app-error.filter.spec.ts",
-  "packages/b2b-ui/src/company/__tests__/fulfillment-preference.model.spec.ts",
-  "packages/storage/src/__tests__/s3-storage-service.spec.ts",
 ]);
 
 const DIRECTIVES = /@ts-ignore|@ts-expect-error|eslint-disable/;

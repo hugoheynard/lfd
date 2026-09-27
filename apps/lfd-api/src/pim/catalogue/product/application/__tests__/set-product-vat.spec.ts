@@ -142,9 +142,41 @@ function familySelling(channels: SalesChannels): CategoryRepository {
     channelPreset: channels,
     vatByContext: { takeaway: "tva_55" },
   });
-  return {
-    findById: () => Promise.resolve(category),
-  } as unknown as CategoryRepository;
+  return new FamilyOnly(category);
+}
+
+/** Le port des familles réduit à la lecture par id ; toute écriture refuse. */
+class FamilyOnly extends CategoryRepository {
+  constructor(private readonly category: Category) {
+    super();
+  }
+  findById(): Promise<Category | null> {
+    return Promise.resolve(this.category);
+  }
+  findBySlugFr(): Promise<Category | null> {
+    return Promise.resolve(null);
+  }
+  listAll(): Promise<Category[]> {
+    return Promise.resolve([this.category]);
+  }
+  listChildren(): Promise<Category[]> {
+    return Promise.resolve([]);
+  }
+  add(): Promise<void> {
+    return Promise.reject(new Error("non appelé : la TVA d'un produit n'écrit pas sa famille"));
+  }
+  save(): Promise<void> {
+    return this.add();
+  }
+  saveAll(): Promise<void> {
+    return this.add();
+  }
+  countActiveChildren(): Promise<number> {
+    return Promise.resolve(0);
+  }
+  nextPosition(): Promise<number> {
+    return Promise.resolve(0);
+  }
 }
 
 function rates(): VatRateRepository {

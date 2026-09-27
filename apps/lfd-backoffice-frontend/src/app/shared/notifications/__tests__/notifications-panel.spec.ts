@@ -55,8 +55,8 @@ class FakeNotifications {
   }
 }
 
-/** Ce que le panneau attend de son `PanelRef` : pouvoir se fermer. */
-const PANEL_REF = { close: (): void => undefined } as unknown as FoldPanelRef;
+/** Ce que le panneau attend de son `PanelRef` : pouvoir se fermer — le vrai, sans hôte. */
+const PANEL_REF = new FoldPanelRef(1, () => undefined);
 
 async function render(fake: FakeNotifications): Promise<ComponentFixture<NotificationsPanel>> {
   TestBed.configureTestingModule({

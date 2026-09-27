@@ -6,6 +6,7 @@ import {
   DeleteObjectsCommand,
   GetObjectCommand,
   ListObjectsV2Command,
+  type GetObjectCommandInput,
 } from "@aws-sdk/client-s3";
 import { mockClient } from "aws-sdk-client-mock";
 
@@ -49,12 +50,16 @@ function svc(metrics?: IStorageMetrics): S3StorageService {
 }
 
 /** Latest GetObjectCommand handed to getSignedUrl. */
-function lastSignedInput(): Record<string, unknown> {
+function lastSignedInput(): GetObjectCommandInput {
   const call = getSignedUrlMock.mock.calls.at(-1);
   if (!call) {
     throw new Error("getSignedUrl was not called");
   }
-  return (call[1] as GetObjectCommand).input as unknown as Record<string, unknown>;
+  const command = call[1];
+  if (!(command instanceof GetObjectCommand)) {
+    throw new Error("getSignedUrl was not handed a GetObjectCommand");
+  }
+  return command.input;
 }
 
 beforeEach(() => {

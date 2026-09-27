@@ -17,7 +17,11 @@ import { extractOrCreateTraceId } from "./trace-context.js";
  * `now` : un temps propagé ne sert qu'à l'observabilité (latence), jamais à
  * écrire du métier — dérive d'horloges + risque de spoof.
  */
-export function requestContextMiddleware(req: Request, _res: Response, next: NextFunction): void {
+export function requestContextMiddleware(
+  req: Pick<Request, "headers">,
+  _res: Response,
+  next: NextFunction,
+): void {
   const traceId = extractOrCreateTraceId(req.headers["traceparent"]);
   const now = new Date();
   runWithRequestContext({ now, traceId }, () => {

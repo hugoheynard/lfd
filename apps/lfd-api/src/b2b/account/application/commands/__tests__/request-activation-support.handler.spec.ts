@@ -1,4 +1,5 @@
-import type { EventBus } from "@nestjs/cqrs";
+import { DomainEventPublisher } from "../../../../../platform/events/domain-event-publisher.js";
+import type { JournaledEvent } from "../../../../../platform/journal/journal-fact.js";
 import type { ActivationSupportPayload } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -44,9 +45,23 @@ function supportRepo(hasOpen: boolean, recorder?: { recorded: number }): Support
   } satisfies SupportRequestRepository;
 }
 
-/** Bus doublé : on capture ce qui est publié, sans monter CQRS. */
-function eventBus(published: unknown[]): EventBus {
-  return { publish: (event: unknown) => published.push(event) } as unknown as EventBus;
+/** Publieur doublé : on capture ce qui est publié best-effort ; la trace n'est pas attendue. */
+class CapturingPublisher extends DomainEventPublisher {
+  constructor(private readonly published: unknown[]) {
+    super();
+  }
+
+  publish(event: object): void {
+    this.published.push(event);
+  }
+
+  publishTraced(_event: JournaledEvent): Promise<void> {
+    return Promise.reject(new Error("non appelé : la demande de support est best-effort"));
+  }
+}
+
+function eventBus(published: unknown[]): DomainEventPublisher {
+  return new CapturingPublisher(published);
 }
 
 const CLOCK = new FixedClock(new Date("2026-06-01T08:00:00.000Z"));

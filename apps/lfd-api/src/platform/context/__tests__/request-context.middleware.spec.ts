@@ -4,9 +4,9 @@ import { requestContextMiddleware } from "../request-context.middleware.js";
 import { currentRequestContext } from "../request-context.store.js";
 import type { RequestContext } from "../request-context.js";
 
-/** Construit une fausse requête Express avec les en-têtes donnés. */
-function fakeRequest(headers: Record<string, string | undefined>): Request {
-  return { headers } as unknown as Request;
+/** Construit une fausse requête réduite à ce que le middleware lit : ses en-têtes. */
+function fakeRequest(headers: Record<string, string | undefined>): Pick<Request, "headers"> {
+  return { headers };
 }
 
 /**

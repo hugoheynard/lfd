@@ -11,11 +11,25 @@ const CONTEXTS: readonly SalesContextView[] = [
   { key: 'eatIn', label: 'Sur place', position: 2 },
 ];
 
-const POINTS = [
-  { id: 'pos_labo', label: 'Labo' },
-  { id: 'pos_village', label: 'Village' },
-  { id: 'pos_b2b', label: 'Plateforme pro' },
-] as unknown as readonly PointOfSaleView[];
+/** Un point de vente complet ; seuls `id` et `label` comptent ici. */
+function point(id: string, label: string, kind: PointOfSaleView['kind'] = 'shop'): PointOfSaleView {
+  return {
+    id,
+    kind,
+    label,
+    baseUrl: null,
+    contexts: [],
+    tables: [],
+    usedByCategories: 0,
+    root: false,
+  };
+}
+
+const POINTS: readonly PointOfSaleView[] = [
+  point('pos_labo', 'Labo'),
+  point('pos_village', 'Village'),
+  point('pos_b2b', 'Plateforme pro', 'platform'),
+];
 
 const channels = (...pairs: readonly [string, string][]): SalesChannels =>
   pairs.map(([pointOfSaleId, context]) => ({ pointOfSaleId, context }));

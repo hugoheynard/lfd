@@ -1,5 +1,9 @@
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
-import { CustomerIdentityPort } from "../../../domain/ports/customer-identity.port.js";
+import {
+  CustomerIdentityPort,
+  type LoginMethod,
+  type ProvisionedIdentity,
+} from "../../../domain/ports/customer-identity.port.js";
 import { PendingAccessNotFoundError } from "../../../domain/errors/account-errors.js";
 import { PendingAccessReader } from "../../../domain/ports/pending-access.reader.js";
 import { IssuePasswordLinkCommand } from "../issue-password-link.command.js";
@@ -13,14 +17,50 @@ function reader(subject: string | null): PendingAccessReader {
   };
 }
 
+/**
+ * Fournisseur d'identité doublé : seul `issuePasswordLink` est attendu ; tout
+ * autre geste échoue, ce qui ferait rougir le test s'il était appelé.
+ */
+class IssuingIdentity extends CustomerIdentityPort {
+  constructor(
+    private readonly url: string,
+    private readonly issued: string[],
+  ) {
+    super();
+  }
+
+  issuePasswordLink(subject: string): Promise<string> {
+    this.issued.push(subject);
+    return Promise.resolve(this.url);
+  }
+
+  changeEmail(): Promise<void> {
+    return Promise.reject(new Error("non appelé"));
+  }
+
+  provision(): Promise<ProvisionedIdentity> {
+    return Promise.reject(new Error("non appelé"));
+  }
+
+  sendPasswordResetLink(): Promise<void> {
+    return Promise.reject(new Error("non appelé"));
+  }
+
+  listLoginMethods(): Promise<readonly LoginMethod[]> {
+    return Promise.reject(new Error("non appelé"));
+  }
+
+  linkLoginMethod(): Promise<readonly LoginMethod[]> {
+    return Promise.reject(new Error("non appelé"));
+  }
+
+  unlinkLoginMethod(): Promise<readonly LoginMethod[]> {
+    return Promise.reject(new Error("non appelé"));
+  }
+}
+
 function identity(url: string, issued: string[] = []): CustomerIdentityPort {
-  return {
-    provision: () => Promise.reject(new Error("non appelé")),
-    issuePasswordLink: (subject: string) => {
-      issued.push(subject);
-      return Promise.resolve(url);
-    },
-  } as unknown as CustomerIdentityPort;
+  return new IssuingIdentity(url, issued);
 }
 
 describe("fabriquer un lien à remettre à la main", () => {
