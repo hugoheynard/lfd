@@ -10,7 +10,7 @@ import type {
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { LoyaltyService } from '../../loyalty.service';
-import { LoyaltySettings } from './loyalty-settings';
+import { cashbackPercent, LoyaltySettings } from './loyalty-settings';
 
 /**
  * Ce que ces cas tiennent : tant que rien n'est enregistré le programme est
@@ -203,5 +203,57 @@ describe('LoyaltySettings', () => {
 
     expect(text(fixture)).toMatch(/1\s000 points = 5,00\s€/u);
     expect(hasButton(fixture, 'Enregistrer')).toBe(false);
+  });
+});
+
+describe('cashbackPercent', () => {
+  it('1 000 points pour 5,00 € HT font 50 %', () => {
+    expect(cashbackPercent(1_000, 500)).toBe(50);
+  });
+
+  it('1 000 points pour 0,50 € HT font 5 %', () => {
+    expect(cashbackPercent(1_000, 50)).toBe(5);
+  });
+
+  it('ne rend rien sur un côté vide ou nul — ni NaN, ni Infinity', () => {
+    expect(cashbackPercent(null, 500)).toBeNull();
+    expect(cashbackPercent(1_000, null)).toBeNull();
+    expect(cashbackPercent(0, 500)).toBeNull();
+    expect(cashbackPercent(1_000, 0)).toBeNull();
+  });
+});
+
+describe('LoyaltySettings — le cashback en direct', () => {
+  const nbsp = (value: string): string => value.replace(/[\u00a0\u202f]/g, ' ');
+
+  it('suit la saisie, sans enregistrer', async () => {
+    const api = new FakeApi();
+    api.settings = SET;
+    const fixture = await render(api);
+    expect(nbsp(text(fixture))).toContain(
+      "Soit 50 % de cashback : 100,00 € HT d'achats rapportent 10 000 points, soit un bon de 50,00 € HT.",
+    );
+
+    type(fixture, 1, '0,50');
+    expect(nbsp(text(fixture))).toContain('Soit 5 % de cashback');
+    expect(nbsp(text(fixture))).toContain('soit un bon de 5,00 € HT');
+
+    type(fixture, 1, '0,15');
+    expect(nbsp(text(fixture))).toContain('Soit 1,5 % de cashback');
+    expect(api.saved).toEqual([]);
+  });
+
+  it("se tait tant qu'un champ est vide ou nul", async () => {
+    const api = new FakeApi();
+    api.settings = SET;
+    const fixture = await render(api);
+
+    type(fixture, 1, '0,00');
+    expect(text(fixture)).not.toContain('cashback');
+
+    type(fixture, 1, '5,00');
+    type(fixture, 0, '');
+    expect(text(fixture)).not.toContain('cashback');
+    expect(text(fixture)).not.toMatch(/NaN|Infinity/);
   });
 });

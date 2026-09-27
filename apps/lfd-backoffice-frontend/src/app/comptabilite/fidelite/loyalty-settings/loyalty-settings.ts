@@ -19,11 +19,44 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { centsField, centsOf } from '../../cents-field';
-import { formatRatio } from '../../loyalty-format';
+import { formatCents } from '@lfd/b2b-ui/order';
+
+import { formatPoints, formatRatio } from '../../loyalty-format';
 import { LoyaltyService } from '../../loyalty.service';
 
 /** Ce que le premier enregistrement propose : un an (plan D5, décidé par Hugo). */
 export const DEFAULT_VOUCHER_VALIDITY_DAYS = 365;
+
+/**
+ * Un centime HORS TAXE d'assiette rapporte un point. La constante qui fait foi
+ * est `POINTS_PER_CENT` du domaine (`order-earning.ts`, non exportée ni publiée
+ * dans `@lfd/contracts` — vérifié le 2026-09-27) : celle-ci en est l'écho, pour
+ * que l'écran explique la règle sans la réécrire en chiffre nu.
+ */
+export const POINTS_PER_CENT = 1;
+
+/** Le panier d'exemple du calcul en direct : 100,00 € HT. */
+export const EXAMPLE_BASKET_CENTS = 10_000;
+
+const PERCENT = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
+
+/** Le cashback d'un ratio, ou `null` si l'un des deux côtés est illisible. */
+export function cashbackPercent(
+  pointsPerStep: number | null,
+  stepValueCents: number | null,
+): number | null {
+  if (
+    pointsPerStep === null ||
+    stepValueCents === null ||
+    pointsPerStep <= 0 ||
+    stepValueCents <= 0
+  ) {
+    return null;
+  }
+  // Un point = POINTS_PER_CENT⁻¹ centime dépensé : la valeur d'un point en
+  // centimes, rapportée au centime qui l'a gagné, EST le taux.
+  return (stepValueCents / pointsPerStep) * POINTS_PER_CENT * 100;
+}
 
 type Settings = NonNullable<LoyaltySettingsView['settings']>;
 
@@ -134,6 +167,22 @@ export class LoyaltySettings {
       saved !== null &&
       (payload.pointsPerStep !== saved.pointsPerStep ||
         payload.stepValueCents !== saved.stepValueCents)
+    );
+  });
+
+  /** La phrase du calcul en direct, ou `null` tant qu'un côté du ratio manque. */
+  protected readonly cashback = computed<string | null>(() => {
+    const pointsPerStep = positiveInt(this.pointsPerStep());
+    const stepValueCents = centsOf(this.stepValueInput());
+    const percent = cashbackPercent(pointsPerStep, stepValueCents);
+    if (percent === null || pointsPerStep === null || stepValueCents === null) {
+      return null;
+    }
+    const points = EXAMPLE_BASKET_CENTS * POINTS_PER_CENT;
+    const voucherCents = Math.round((points * stepValueCents) / pointsPerStep);
+    return (
+      `Soit ${PERCENT.format(percent)} % de cashback : ${formatCents(EXAMPLE_BASKET_CENTS)} HT ` +
+      `d'achats rapportent ${formatPoints(points)} points, soit un bon de ${formatCents(voucherCents)} HT.`
     );
   });
 

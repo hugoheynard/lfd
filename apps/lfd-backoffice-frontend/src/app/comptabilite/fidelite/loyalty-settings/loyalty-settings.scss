@@ -21,3 +21,10 @@
 .row {
   display: flex;
 }
+
+/* La règle de gain et la mention TVA : du texte d'appui, pas des champs. */
+.rule {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

@@ -16,6 +16,12 @@
     <fold-element-title variant="title" title="Réglage du programme" [subtitle]="summary()" />
 
     <div class="form">
+      <p class="rule">
+        Chaque commande payée et retirée rapporte <strong>1 point par centime</strong> du montant
+        hors taxe des marchandises, remise et bon de fidélité déduits. Le port et les frais n'en
+        rapportent pas.
+      </p>
+
       <div class="ratio">
         <fold-number-input
           label="Points par palier"
@@ -36,11 +42,16 @@
           [hint]="
             stepValueInvalid()
               ? 'Un montant positif, au centime près.'
-              : 'Le montant hors taxe du bon d\'achat pour un palier : le client y gagne en plus la TVA.'
+              : 'Le montant hors taxe du bon d\'achat pour un palier.'
           "
           [(value)]="stepValueInput"
         />
       </div>
+
+      @if (cashback(); as sentence) {
+        <fold-callout appearance="inset" variant="info">{{ sentence }}</fold-callout>
+      }
+      <p class="rule">Le bon étant hors taxe, le client gagne en plus la TVA sur la remise.</p>
 
       <div class="clienteles">
         <fold-checkbox
