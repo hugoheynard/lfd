@@ -97,7 +97,7 @@ base, pas seulement par le code.
 
 Le titulaire (même `CHECK`), `value_cents`, `points_cost`, le **ratio figé**
 (`ratio_points_per_step`, `ratio_step_value_cents`), `issued_at`,
-`expires_at`, `status`, et les traces de fin de vie (`expired_at`,
+`expires_at`, `status`, `remainder_settled_at` (lot C : reliquat soldé), et les traces de fin de vie (`expired_at`,
 `cancelled_at`, `cancelled_by_staff_id`, `cancellation_reason`).
 
 - **Paliers entiers** (`CHECK`) : `value_cents` vaut exactement
@@ -128,8 +128,9 @@ vident d'abord les deux tables de fidélité, par un seul `TRUNCATE`.
 | assiette ≤ 0                                         | rien — `empty_basis`                 |
 | sinon                                                | **assiette × 1** points au titulaire |
 
-- **L'assiette** vaut `subtotalCents − discountCents` : le **hors taxe** des
-  marchandises, remise du point de retrait déduite. Ni la TVA — on ne rend pas
+- **L'assiette** vaut `subtotalCents − discountCents − voucherDiscountCents` :
+  le **hors taxe** des marchandises, remise du point de retrait et bon de
+  fidélité déduits (lot C, C6 tranché par Hugo le 2026-09-27). Ni la TVA — on ne rend pas
   en points ce qu'on reverse à l'État (Hugo, 2026-09-26) —, ni le port, ni la
   surtaxe. Une commande de 23,40 € HT rapporte 2 340 points.
 - **Le titulaire** est `Order.companyId` pour `pro`, `Order.placedByUserId`
@@ -206,16 +207,53 @@ stateDiagram-v2
   [*] --> available: conversion
   available --> expired: date limite passée
   available --> cancelled: geste motivé du staff
-  available --> reserved: passation (lot C, pas bâti)
+  available --> reserved: passation (lot C)
   reserved --> available: annulation de la commande (lot C)
+  reserved --> expired: annulation après la date limite (lot C)
 ```
 
-| État        | Aujourd'hui                                                                                                                                                                 |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `available` | le seul état d'entrée                                                                                                                                                       |
-| `expired`   | **lu à l'horloge** : un bon échu se lit expiré même si la base dit encore `available`. La nuit l'écrit (`ExpireLoyaltyVouchersCommand`, fait `loyalty.voucher_expired`).    |
-| `cancelled` | par le staff, avec un motif, **seulement** si le bon est disponible et non échu. Ses points reviennent par une ligne `adjusted` liée au bon, une seule fois (index unique). |
-| `reserved`  | **n'existe pas encore** : l'enum de la base ne le porte pas (lot C)                                                                                                         |
+| État        | Aujourd'hui                                                                                                                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `available` | le seul état d'entrée                                                                                                                                                                                   |
+| `expired`   | **lu à l'horloge** : un bon échu se lit expiré même si la base dit encore `available`. La nuit l'écrit (`ExpireLoyaltyVouchersCommand`, fait `loyalty.voucher_expired`).                                |
+| `cancelled` | par le staff, avec un motif, **seulement** si le bon est disponible et non échu. Ses points reviennent par une ligne `adjusted` liée au bon, une seule fois (index unique).                             |
+| `reserved`  | engagé sur une commande vivante (lot C). **N'expire pas**, ne s'annule pas par le staff (`LoyaltyVoucherReservedError`, 409). Faute d'état `used`, l'écran dit « utilisé sur … » en lisant la commande. |
+
+### Le bon sur la commande (lot C, bâti le 2026-09-27 — non commité à l'écriture)
+
+- **Qui** : un client connecté qui commande pour lui-même (`POST /orders`,
+  champ `voucherId` facultatif). Refusé sur une commande de société
+  (`orders.voucher_not_for_company_order`, 400) ; absent des contrats de
+  l'invité et de la saisie staff.
+- **Le calcul** : la remise du point d'abord, le bon ensuite, plafonné au HT
+  de marchandises restant (`voucherImputationCents`). `computeOrderTotals`
+  passe `discountCents + voucherDiscountCents` à `ventilateVat`, dont la
+  signature ne change pas. La commande garde `voucher_discount_cents` et
+  `loyalty_voucher_id` à part de la remise.
+- **La réservation** : lue d'abord (`LoyaltyVoucherQuoteReader`, sans verrou),
+  puis réservée DANS la transaction de passation, sous le verrou du
+  titulaire, avant l'écriture de la commande. Une course perdue rend 409, ni
+  commande ni clé ; l'intention Stripe déjà créée est annulée. Un index
+  unique partiel (`WHERE status <> 'cancelled'`) interdit deux commandes
+  vivantes sur un même bon.
+- **La libération** : `markAbandoned` (branche publique) et `failAtClosing`,
+  quand elles écrivent `cancelled`, libèrent le bon dans la même transaction
+  — `available`, ou `expired` passé sa date limite.
+- **Le reliquat** : un nouveau bon, même titulaire, même date limite, zéro
+  point, `parent_voucher_id`. Émis à la passation si la commande n'a rien à
+  encaisser (`not_required`), sinon par le passage de nuit une fois la
+  commande `paid`. Idempotent par l'unicité de `parent_voucher_id`.
+- **Les ports** : `orders` déclare `LoyaltyVoucherQuoteReader`,
+  `LoyaltyVoucherRedemption` et `VoucherOrderReader` ; `loyalty` implémente les
+  deux premiers, `apps/lfd-api/src/appBootstrap/loyalty-voucher.module.ts` les relie.
+- **L'assiette des points** : `sous-total − remise − bon` (C6, Hugo).
+
+**Le solde du reliquat est une marque** (`remainder_settled_at`, décision du
+2026-09-27) : posée sur le bon d'origine, sous le verrou du titulaire, quand
+sa commande devient définitive — reliquat émis, reliquat **éteint** si le bon
+est échu entre le paiement et la nuit (fait `loyalty.voucher_remainder_lapsed`,
+une seule fois), ou rien à émettre. Le passage de nuit ne relit que les bons
+`reserved` non soldés (index partiel) : un bon soldé n'est jamais relu.
 
 ## 7. Le back-office
 
@@ -251,12 +289,12 @@ sert aucune recherche de société ou de personne.
 
 ## 8. Ce qui n'est pas bâti
 
-| Lot    | Ce qu'il fera                                                                                      | Ce qu'il attend                                                        |
-| ------ | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| **C**  | réserver un bon à la passation, le libérer à l'annulation, l'imputer au total, émettre le reliquat | sa conception, puis `vitruve` — le traitement est tranché : **rabais** |
-| **E1** | dans la boutique : le solde, « vous gagnerez N points », la conversion                             | le lot C — on ne distribue pas de bons inutilisables                   |
-| **E2** | dans la boutique : utiliser un bon au paiement                                                     | le lot C                                                               |
-| **F**  | ouvrir aux pros                                                                                    | un signal « facture réglée »                                           |
+| Lot    | Ce qu'il fera                                                          | Ce qu'il attend                                      |
+| ------ | ---------------------------------------------------------------------- | ---------------------------------------------------- |
+| **C**  | ✅ bâti le 2026-09-27 (§6) — reste la décision sur le reliquat échu    | —                                                    |
+| **E1** | dans la boutique : le solde, « vous gagnerez N points », la conversion | le lot C — on ne distribue pas de bons inutilisables |
+| **E2** | dans la boutique : utiliser un bon au paiement                         | le lot C                                             |
+| **F**  | ouvrir aux pros                                                        | un signal « facture réglée »                         |
 
 Les décisions déjà prises pour ces lots sont écrites dans le plan : bon plus
 gros que le panier → **reliquat**, émis quand la commande devient définitive et
@@ -315,14 +353,16 @@ La question complète, posée au cabinet, est rangée dans
 
 ## 9. Le journal
 
-| Fait                        | Quand                                                 |
-| --------------------------- | ----------------------------------------------------- |
-| `loyalty_settings.set`      | le réglage change (un réglage identique n'écrit rien) |
-| `loyalty.points_earned`     | une commande définitive crédite                       |
-| `loyalty.points_adjusted`   | un ajustement du staff                                |
-| `loyalty.voucher_issued`    | une conversion                                        |
-| `loyalty.voucher_expired`   | la nuit écrit une expiration                          |
-| `loyalty.voucher_cancelled` | le staff annule un bon                                |
+| Fait                               | Quand                                                                        |
+| ---------------------------------- | ---------------------------------------------------------------------------- |
+| `loyalty_settings.set`             | le réglage change (un réglage identique n'écrit rien)                        |
+| `loyalty.points_earned`            | une commande définitive crédite                                              |
+| `loyalty.points_adjusted`          | un ajustement du staff                                                       |
+| `loyalty.voucher_issued`           | une conversion                                                               |
+| `loyalty.voucher_expired`          | la nuit écrit une expiration                                                 |
+| `loyalty.voucher_cancelled`        | le staff annule un bon                                                       |
+| `loyalty.voucher_remainder_issued` | le reliquat d'un bon consommé est émis (lot C)                               |
+| `loyalty.voucher_remainder_lapsed` | un reliquat s'éteint, bon échu avant que sa commande soit définitive (lot C) |
 
 Ils se rangent sous la comptabilité dans le journal. `loyalty` est une zone
 d'argent pour `lint:journal-tracked` : tout gestionnaire doit tracer sous
@@ -334,7 +374,10 @@ Chaque nuit à **02 h UTC** (`0 2 * * *` dans `apps/lfd-api/wrangler.jsonc`,
 recopié à l'identique dans `LOYALTY_SWEEP_CRON`, `container/worker.ts`), le
 Worker appelle `POST /admin/loyalty/sweep` avec le jeton du recompute
 (`RecomputeGuard`). La route lance le rattrapage des crédits, puis
-l'expiration des bons, et rend `{scanned, credited, expired}`.
+l'expiration des bons, puis le rattrapage des bons engagés (lot C : reliquat
+des commandes payées, cloche `loyalty.voucher_stalled` pour un bon engagé sur
+une commande ni payée ni annulée passé son jour de service — sans le libérer),
+et rend `{scanned, credited, expired, vouchers}`.
 
 ⚠️ **Le rattrapage reparcourt toutes les commandes définitives** à chaque nuit,
 en ne lisant que leurs identifiants. Son coût grandit avec l'historique.

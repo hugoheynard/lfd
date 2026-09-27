@@ -23,6 +23,7 @@ const SELECT = {
   placedByUserId: true,
   subtotalCents: true,
   discountCents: true,
+  voucherDiscountCents: true,
   placedBy: { select: { auth0Sub: true } },
 } as const;
 
@@ -34,6 +35,7 @@ interface CompletedRow {
   readonly placedByUserId: string;
   readonly subtotalCents: number;
   readonly discountCents: number;
+  readonly voucherDiscountCents: number;
   readonly placedBy: { readonly auth0Sub: string | null };
 }
 
@@ -86,5 +88,6 @@ function toCompleted(row: CompletedRow): CompletedOrder | null {
     buyerHasAccount: row.placedBy.auth0Sub !== null,
     subtotalCents: row.subtotalCents,
     discountCents: row.discountCents,
+    voucherDiscountCents: row.voucherDiscountCents,
   };
 }

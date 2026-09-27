@@ -34,6 +34,7 @@ function owned(over: {
     stripePaymentIntentId:
       over.stripePaymentIntentId === undefined ? "pi_1" : over.stripePaymentIntentId,
     clientele: "public",
+    loyaltyVoucherId: null,
   };
 }
 

@@ -37,8 +37,12 @@ export class PrismaUnsettledSettlementReader extends UnsettledSettlementReader {
         ],
       },
       orderBy: { orderNumber: "asc" },
-      select: { id: true, stripePaymentIntentId: true },
+      select: { id: true, stripePaymentIntentId: true, loyaltyVoucherId: true },
     });
-    return rows.map((row) => ({ orderId: row.id, paymentIntentId: row.stripePaymentIntentId }));
+    return rows.map((row) => ({
+      orderId: row.id,
+      paymentIntentId: row.stripePaymentIntentId,
+      loyaltyVoucherId: row.loyaltyVoucherId,
+    }));
   }
 }

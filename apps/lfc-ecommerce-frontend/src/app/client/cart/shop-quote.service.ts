@@ -78,6 +78,7 @@ const EMPTY: ShopQuoteView = {
   subtotalHtCents: 0,
   discountCents: 0,
   discountAdjustment: null,
+  voucherDiscountCents: 0,
   deliveryFeeCents: 0,
   vat: [],
   totalCents: 0,

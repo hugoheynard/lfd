@@ -145,6 +145,8 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     const { order } = await this.drafting.draft(
       { companyId: null, placedByUserId: buyerUserId, placedByStaffId: null },
       payload,
+      // Un invité n'a pas de bons : son contrat n'en nomme aucun (plan des points, C3).
+      null,
     );
 
     const intent = await this.settle(order);

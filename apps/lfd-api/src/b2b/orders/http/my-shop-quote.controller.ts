@@ -3,6 +3,8 @@ import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
 import { ActingCompany } from "../../../platform/auth/acting-company.decorator.js";
+import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
+import type { Principal } from "../../../platform/auth/principal.js";
 import { RequiresShop } from "../../feature-access/http/requires-shop.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { QuoteShopCartQuery } from "../application/queries/quote-shop-cart.handler.js";
@@ -44,9 +46,10 @@ export class MyShopQuoteController {
   async quote(
     @Body(new ZodBody(shopQuotePayloadSchema)) payload: ShopQuotePayload,
     @ActingCompany() companyId: string | null,
+    @CurrentUser() user: Principal,
   ): Promise<ShopQuoteView> {
     return this.queries.execute<QuoteShopCartQuery, ShopQuoteView>(
-      new QuoteShopCartQuery(payload, companyId),
+      new QuoteShopCartQuery(payload, companyId, user.userId),
     );
   }
 }

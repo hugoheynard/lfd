@@ -22,7 +22,7 @@ import {
   type FulfillmentDefaults,
   windowFitsPickup,
 } from "../../domain/services/agreed-fulfillment.js";
-import { Order } from "../../domain/entities/order.js";
+import { Order, type OrderVoucher } from "../../domain/entities/order.js";
 import {
   InvalidOrderFulfillmentError,
   PickupClosedAtRequestedTimeError,
@@ -130,8 +130,17 @@ export class OrderDrafting {
    * consommer sur place n'est pas de la timidité — consommer une autorisation
    * pour une commande qui échoue ensuite la brûlerait, et le client devrait
    * rappeler pour en obtenir une seconde qu'il avait déjà.
+   *
+   * `voucher` : le bon de fidélité déjà lu par l'appelant, ou `null`. Seule la
+   * passation du client connecté en porte un (plan des points, C3) ; ce
+   * service ne le réserve pas — il le passe à l'agrégat, qui décide ce qu'il
+   * impute.
    */
-  async draft(parties: OrderParties, content: OrderContent): Promise<DraftedOrder> {
+  async draft(
+    parties: OrderParties,
+    content: OrderContent,
+    voucher: OrderVoucher | null,
+  ): Promise<DraftedOrder> {
     // Lue AVANT la résolution, et l'ordre est un choix. Une validation qui
     // tomberait pile entre les deux ne peut alors que rendre l'estampille
     // ANCIENNE de ce que les lignes portent — jamais l'inverse. Une estampille
@@ -198,6 +207,7 @@ export class OrderDrafting {
       // choix valable.
       lateFeeCents: late.cents,
       lateFeeAdjustment: late.frozen,
+      voucher,
     });
     return { order, waiverUsed };
   }

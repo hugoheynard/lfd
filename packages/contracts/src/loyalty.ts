@@ -57,8 +57,11 @@ export interface LoyaltyBalanceView {
 /**
  * L'état d'un bon **tel qu'on le lit maintenant** : un bon `available` dont la
  * date limite est passée se lit `expired`, même avant d'avoir été écrit ainsi.
+ *
+ * `reserved` (lot C) : engagé sur une commande vivante. Faute d'état `used`,
+ * c'est la commande qui dit s'il a servi — cf. {@link LoyaltyVoucherView.usedOn}.
  */
-export const loyaltyVoucherStatusSchema = z.enum(["available", "expired", "cancelled"]);
+export const loyaltyVoucherStatusSchema = z.enum(["available", "expired", "cancelled", "reserved"]);
 export type LoyaltyVoucherStatus = z.infer<typeof loyaltyVoucherStatusSchema>;
 
 /** Un bon de fidélité : son montant, son coût et le ratio figés à l'émission. */
@@ -74,6 +77,12 @@ export interface LoyaltyVoucherView {
   readonly status: LoyaltyVoucherStatus;
   readonly cancelledAt: string | null;
   readonly cancellationReason: string | null;
+  /**
+   * La commande **vivante** qui porte un bon `reserved` — « utilisé sur … ».
+   * `null` pour tout autre état, ou si aucune commande vivante ne le porte
+   * (un état que la réservation en transaction rend anormal).
+   */
+  readonly usedOn: { readonly orderId: string; readonly orderNumber: string } | null;
 }
 
 const reason = () => z.string().trim().min(1).max(LOYALTY_REASON_MAX);

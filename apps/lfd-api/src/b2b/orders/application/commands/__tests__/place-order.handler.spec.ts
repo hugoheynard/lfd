@@ -84,6 +84,8 @@ function noDeliveryDefaults(): DeliveryDefaultsReader {
   return { of: (): Promise<DeliveryDefaults> => Promise.resolve(NO_DELIVERY_DEFAULTS) };
 }
 import { PlaceOrderCommand } from "../place-order.command.js";
+import { FixedVoucherQuotes, RecordingRedemption, VoucherTakenError } from "./voucher-doubles.js";
+import { VoucherNotForCompanyOrderError } from "../../../domain/errors/order-voucher-errors.js";
 import { PlaceOrderHandler } from "../place-order.handler.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CanonicalPriceHistoryReader } from "../../../../catalog/domain/ports/canonical-price-history.reader.js";
@@ -515,6 +517,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -540,6 +544,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -561,6 +567,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -601,6 +609,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     await expect(
@@ -623,6 +633,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -647,6 +659,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     await handler.execute(
@@ -709,6 +723,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     await handler.execute(
@@ -745,6 +761,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     await expect(
@@ -768,6 +786,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -791,6 +811,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     await expect(
@@ -813,6 +835,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     // 2 × 200 = 400 ; remise 20 % = 80 ; total = 320.
@@ -847,6 +871,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -871,6 +897,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     await expect(
@@ -898,6 +926,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     // 2 × 200 = 400 HT (TVA 0 dans ce catalogue de test) ; frais 20 € = 2000 HT
@@ -939,6 +969,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     await expect(
@@ -970,6 +1002,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -998,6 +1032,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1022,6 +1058,8 @@ describe("PlaceOrderHandler", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1072,6 +1110,8 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
   }
 
@@ -1127,6 +1167,8 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
 
     await handler.execute(
@@ -1159,6 +1201,8 @@ describe("PlaceOrderHandler — prélèvement bloqué", () => {
       freeKeys,
       noReader,
       directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
     );
   }
 
@@ -1220,5 +1264,109 @@ describe("PlaceOrderHandler — prélèvement bloqué", () => {
 
     expect(intentSink.intent).toBeNull();
     expect(sink.placed?.paymentStatus).toBe("not_required");
+  });
+});
+
+/**
+ * Le bon de fidélité à la passation (plan des points, C3, C5) : lu avant de
+ * chiffrer, réservé DANS la transaction avant l'écriture de la commande, soldé
+ * sur-le-champ quand la commande n'a rien à encaisser. Le panier de ces cas
+ * vaut 2 × 200 = 400 HT, sans TVA.
+ */
+describe("PlaceOrderHandler — le bon de fidélité", () => {
+  function voucherHandler(over: {
+    readonly sink: { placed: OrderToPlace | null };
+    readonly redemption: RecordingRedemption;
+    readonly cancelled?: string[];
+    readonly role?: OrderRole | null;
+    readonly status?: OrderCompanyStatus | null;
+  }): PlaceOrderHandler {
+    const cancelled = over.cancelled ?? [];
+    const gateway = payments();
+    return new PlaceOrderHandler(
+      guard(over.role ?? null, over.status ?? null),
+      drafting(pickups(LABO_POINT), zones()),
+      capturingRepo(over.sink),
+      {
+        createIntent: (params) => gateway.createIntent(params),
+        retrieveIntent: (id) => gateway.retrieveIntent(id),
+        publishableKey: () => gateway.publishableKey(),
+        parseWebhook: (body, signature) => gateway.parseWebhook(body, signature),
+        cancelIntent: (paymentIntentId) => {
+          cancelled.push(paymentIntentId);
+          return Promise.resolve({ kind: "cancelled" });
+        },
+      },
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes({ v150: 150, v500: 500 }),
+      over.redemption,
+    );
+  }
+
+  it("déduit le bon du total, le réserve, et ne solde rien tant que la carte n'a pas payé", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const redemption = new RecordingRedemption();
+
+    const result = await voucherHandler({ sink, redemption }).execute(
+      new PlaceOrderCommand("u1", payload({ voucherId: "v150" }), null),
+    );
+
+    expect(sink.placed?.voucherDiscountCents).toBe(150);
+    expect(sink.placed?.loyaltyVoucherId).toBe("v150");
+    expect(sink.placed?.totalCents).toBe(250);
+    expect(result.payment?.amountCents).toBe(250);
+    expect(redemption.calls).toEqual(["reserve:v150>u1"]);
+  });
+
+  it("un bon plus gros que le panier : total nul, sans intention, reliquat soldé à la passation", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const redemption = new RecordingRedemption();
+
+    const result = await voucherHandler({ sink, redemption }).execute(
+      new PlaceOrderCommand("u1", payload({ voucherId: "v500" }), null),
+    );
+
+    expect(sink.placed?.totalCents).toBe(0);
+    expect(sink.placed?.paymentStatus).toBe("not_required");
+    expect(result.payment).toBeUndefined();
+    expect(redemption.calls).toEqual(["reserve:v500>u1", "settle:v500"]);
+    expect(redemption.settlements[0]).toEqual({
+      voucherId: "v500",
+      appliedCents: 400,
+      order: { id: "order_1", number: "ORD-TEST" },
+    });
+  });
+
+  it("une course perdue à la réservation : rien d'écrit, l'intention Stripe est annulée", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const cancelled: string[] = [];
+
+    await expect(
+      voucherHandler({ sink, redemption: new RecordingRedemption(true), cancelled }).execute(
+        new PlaceOrderCommand("u1", payload({ voucherId: "v150" }), null),
+      ),
+    ).rejects.toBeInstanceOf(VoucherTakenError);
+
+    expect(sink.placed).toBeNull();
+    expect(cancelled).toEqual(["pi_test_1"]);
+  });
+
+  it("refuse un bon sur une commande de société, sans rien réserver", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const redemption = new RecordingRedemption();
+
+    await expect(
+      voucherHandler({ sink, redemption, role: "orders", status: "active" }).execute(
+        new PlaceOrderCommand("u1", payload({ voucherId: "v150" }), "c1"),
+      ),
+    ).rejects.toBeInstanceOf(VoucherNotForCompanyOrderError);
+
+    expect(redemption.calls).toEqual([]);
+    expect(sink.placed).toBeNull();
   });
 });

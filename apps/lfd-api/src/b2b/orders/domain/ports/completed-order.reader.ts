@@ -36,6 +36,8 @@ export interface CompletedOrder {
   readonly subtotalCents: number;
   /** La remise du point de retrait, **hors taxe** — centimes. */
   readonly discountCents: number;
+  /** La part du bon de fidélité imputée, **hors taxe** — centimes, `0` sans bon. */
+  readonly voucherDiscountCents: number;
 }
 
 /** Un lot, et le curseur du suivant (`null` = plus rien après). */

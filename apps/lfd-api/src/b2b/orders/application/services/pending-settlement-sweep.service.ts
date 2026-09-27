@@ -1,12 +1,15 @@
 import { Injectable, Logger } from "@nestjs/common";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { Clock } from "../../../../platform/time/clock.js";
 import {
   PendingSettlementSweeper,
   type ServiceDay,
 } from "../../../../production/channels/commerce/index.js";
 import { PaymentGateway } from "../../../payments/domain/payment-gateway.js";
 import { OrderPaymentFailedEvent } from "../../domain/events/order-payment-failed.event.js";
+import { LoyaltyVoucherRedemption } from "../../domain/ports/loyalty-voucher-redemption.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
 import {
   UnsettledSettlementReader,
@@ -41,6 +44,13 @@ import { settlementSweepWindow } from "../../domain/services/settlement-sweep.js
  * encaissé) : un second passage ne trouve plus ces commandes, n'écrit rien et
  * ne republie rien. Le fait `day_closed` est publié ICI, sur le seul
  * franchissement — `FAILED_FROM` ne franchirait pas une commande déjà refusée.
+ *
+ * ## Le bon de fidélité revient avec l'annulation
+ *
+ * `failAtClosing` est la seconde des deux écritures de `cancelled` (plan des
+ * points, C4). Quand elle franchit, le bon engagé est libéré dans la même
+ * transaction — une par commande : ce balayage tourne HORS de l'unité de
+ * travail de la clôture (`close-production-day.handler.ts`, §11 bis S9).
  */
 @Injectable()
 export class PendingSettlementSweep extends PendingSettlementSweeper {
@@ -51,6 +61,9 @@ export class PendingSettlementSweep extends PendingSettlementSweeper {
     private readonly payments: PaymentGateway,
     private readonly orders: OrderRepository,
     private readonly events: DomainEventPublisher,
+    private readonly unitOfWork: UnitOfWork,
+    private readonly vouchers: LoyaltyVoucherRedemption,
+    private readonly clock: Clock,
   ) {
     super();
   }
@@ -69,9 +82,20 @@ export class PendingSettlementSweep extends PendingSettlementSweeper {
         return;
       }
     }
-    if (await this.orders.failAtClosing(settlement.orderId)) {
+    if (await this.failAtClosing(settlement)) {
       this.events.publish(new OrderPaymentFailedEvent(settlement.orderId, "day_closed"));
     }
+  }
+
+  /** L'annulation, et la libération du bon si elle a franchi — ensemble ou pas du tout. */
+  private async failAtClosing(settlement: UnsettledSettlement): Promise<boolean> {
+    return this.unitOfWork.run(async () => {
+      const crossed = await this.orders.failAtClosing(settlement.orderId);
+      if (crossed && settlement.loyaltyVoucherId !== null) {
+        await this.vouchers.release(settlement.loyaltyVoucherId, this.clock.now());
+      }
+      return crossed;
+    });
   }
 
   /**

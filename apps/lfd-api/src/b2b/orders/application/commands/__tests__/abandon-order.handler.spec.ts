@@ -32,6 +32,9 @@ import {
 import { OneOrderReader, orderView } from "../../handlers/__tests__/payment-failure-doubles.js";
 import { AbandonOrderCommand } from "../abandon-order.command.js";
 import { AbandonOrderHandler } from "../abandon-order.handler.js";
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { RecordingRedemption } from "./voucher-doubles.js";
 
 /** Un seul rôle, pour tout demandeur : membre (`orders`) ou étranger (`null`). */
 class OneRoleGuard extends OrderGuardReader {
@@ -134,6 +137,7 @@ interface Scenario {
   readonly outcome?: IntentCancellation;
   readonly written?: AbandonedSettlement | null;
   readonly clientele?: "pro" | "public" | null;
+  readonly voucher?: string | null;
 }
 
 function build(scenario: Scenario = {}) {
@@ -148,16 +152,21 @@ function build(scenario: Scenario = {}) {
     placedByUserId: scenario.author ?? "u1",
     stripePaymentIntentId: scenario.intent === undefined ? "pi_1" : scenario.intent,
     clientele: scenario.clientele === undefined ? "public" : scenario.clientele,
+    loyaltyVoucherId: scenario.voucher ?? null,
   });
+  const vouchers = new RecordingRedemption();
   const handler = new AbandonOrderHandler(
     new OneRoleGuard(scenario.role ?? null),
     reader,
     repository,
     gateway,
     events,
+    new DirectUnitOfWork(),
+    vouchers,
+    new FixedClock(new Date(0)),
   );
   const abandon = (actor = "u1") => handler.execute(new AbandonOrderCommand(actor, "order_1"));
-  return { abandon, gateway, repository, events };
+  return { abandon, gateway, repository, events, vouchers };
 }
 
 describe("AbandonOrderHandler — l'ordre des gestes", () => {
@@ -295,5 +304,50 @@ describe("AbandonOrderHandler — l'état et le mur", () => {
     const { abandon } = build({ companyId: "cmp_1", role: null });
 
     await expect(abandon()).rejects.toBeInstanceOf(OrderNotFoundError);
+  });
+});
+
+/**
+ * Le bon de fidélité revient avec l'annulation (plan des points, C4), et
+ * seulement avec elle : un règlement pro tombé se reprend, le rendre ouvrirait
+ * la double dépense (D7).
+ */
+describe("AbandonOrderHandler — le bon de fidélité", () => {
+  it("libère le bon quand l'abandon a annulé la commande", async () => {
+    const { abandon, vouchers } = build({ voucher: "v1" });
+
+    await abandon();
+
+    expect(vouchers.calls).toEqual(["release:v1"]);
+  });
+
+  it("ne libère rien quand l'abandon n'a écrit que le refus (pro)", async () => {
+    const { abandon, vouchers } = build({
+      voucher: "v1",
+      written: "failed",
+      companyId: "cmp_1",
+      role: "orders",
+      clientele: "pro",
+    });
+
+    await abandon();
+
+    expect(vouchers.calls).toEqual([]);
+  });
+
+  it("ne libère rien quand rien n'a franchi (second clic)", async () => {
+    const { abandon, vouchers } = build({ voucher: "v1", written: null });
+
+    await abandon();
+
+    expect(vouchers.calls).toEqual([]);
+  });
+
+  it("ne demande rien à la fidélité sans bon", async () => {
+    const { abandon, vouchers } = build();
+
+    await abandon();
+
+    expect(vouchers.calls).toEqual([]);
   });
 });

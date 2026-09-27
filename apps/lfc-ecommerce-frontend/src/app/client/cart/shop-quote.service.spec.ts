@@ -19,6 +19,7 @@ const ANSWER: ShopQuoteView = {
   subtotalHtCents: 1_200,
   discountCents: 0,
   discountAdjustment: null,
+  voucherDiscountCents: 0,
   deliveryFeeCents: 0,
   vat: [{ rate: 5.5, amountCents: 66 }],
   totalCents: 1_266,

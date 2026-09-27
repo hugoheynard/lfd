@@ -69,6 +69,8 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     const { order, waiverUsed } = await this.drafting.draft(
       { companyId, placedByUserId: buyerUserId, placedByStaffId: command.staffUserId },
       payload,
+      // Le staff ne dépense pas le bon d'un client : son contrat n'en nomme aucun (plan des points, C3).
+      null,
     );
 
     const intent = await this.settle(order, payload.settlement, companyId);

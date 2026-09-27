@@ -1,6 +1,4 @@
 import {
-  cartAdjustmentCents,
-  discountCentsOf,
   type BillingAddressPayload,
   // Aliasé : `OrderFulfillmentInput` désigne déjà ici le mode + les adresses.
   // Deux « fulfillment » dans le même fichier finiraient par se confondre.
@@ -19,6 +17,12 @@ import {
 } from "../errors/order-errors.js";
 import type { VatShare } from "@lfd/money";
 
+import {
+  ensureDeliveryFeeMatches,
+  ensureDiscountMatches,
+  ensureLateFeeMatches,
+  voucherDiscountOf,
+} from "./order-amount-guards.js";
 import { computeOrderTotals } from "../services/vat.js";
 import {
   OrderLine,
@@ -32,6 +36,15 @@ export interface OrderFulfillmentInput {
   readonly deliveryZoneId: string | null;
   readonly deliveryAddress: BillingAddressPayload | null;
   readonly pickupAddress: BillingAddressPayload | null;
+}
+
+/**
+ * Le bon de fidélité nommé à la commande, tel que la fidélité l'a lu : son
+ * identifiant et sa valeur **hors taxe**. Ce qu'il impute se décide ici.
+ */
+export interface OrderVoucher {
+  readonly id: string;
+  readonly valueCents: number;
 }
 
 /** Ce qu'il faut pour **composer** une commande (prix/frais déjà résolus serveur). */
@@ -81,6 +94,11 @@ export interface DraftOrderInput {
   readonly lateFeeCents: number;
   /** L'ajustement ET le taux qui l'ont produite, figés. `null` si aucune. */
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
+  /**
+   * Le bon de fidélité, ou `null` (plan des points, lot C). Seulement pour une
+   * commande personnelle : l'agrégat refuse un bon sur une commande de société.
+   */
+  readonly voucher: OrderVoucher | null;
 }
 
 /** État de la commande sérialisé pour la persistance — aucun type Prisma ici. */
@@ -106,6 +124,10 @@ export interface OrderToPlace {
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   readonly lateFeeCents: number;
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
+  /** La part du bon réellement imputée, HT — `0` sans bon. */
+  readonly voucherDiscountCents: number;
+  /** Le bon engagé, ou `null`. */
+  readonly loyaltyVoucherId: string | null;
   readonly vatCents: number;
   /**
    * La TVA par taux, **figée comme le reste**. C'est ce qui permet au bon de
@@ -116,82 +138,6 @@ export interface OrderToPlace {
   readonly paymentStatus: PaymentStatus;
   readonly stripePaymentIntentId: string | null;
   readonly lines: readonly OrderLineSnapshot[];
-}
-
-/**
- * La surtaxe correspond-elle à l'ajustement qui la prétend ?
- *
- * Même garde que pour la remise, et pour la même raison : les deux nombres
- * arrivent séparément de l'appelant, et rien d'autre ne les relie. Un montant
- * qui ne découle pas de son ajustement rendrait la trace figée mensongère —
- * c'est-à-dire pire qu'absente.
- */
-function ensureLateFeeMatches(input: DraftOrderInput, subtotalCents: number): void {
-  const frozen = input.lateFeeAdjustment;
-  if (frozen === null) {
-    if (input.lateFeeCents !== 0) {
-      throw new InvalidOrderPaymentError("Surtaxe sans ajustement qui la justifie.");
-    }
-    return;
-  }
-  if (cartAdjustmentCents(frozen.adjustment, subtotalCents) !== input.lateFeeCents) {
-    throw new InvalidOrderPaymentError("La surtaxe ne correspond pas à son ajustement.");
-  }
-}
-
-/**
- * Les frais de zone correspondent-ils au barème qui les prétend ?
- *
- * Troisième garde du même modèle, et la dernière à être posée : les deux
- * nombres arrivent séparément de l'appelant, et rien d'autre ne les relie. Un
- * montant qui ne découle pas de son barème rendrait la trace figée mensongère —
- * c'est-à-dire pire qu'absente.
- *
- * ⚠️ `cartAdjustmentCents` et **non** `discountCentsOf` : des frais ne sont pas
- * bornés par le panier. Une course peut coûter plus cher qu'un petit panier, et
- * c'est déjà la règle qui les calcule.
- *
- * L'absence d'ajustement n'est refusée que si des frais existent : une commande
- * en RETRAIT n'en a aucun, et lui en exiger un serait exiger la trace d'un
- * geste qui n'a pas eu lieu.
- */
-function ensureDeliveryFeeMatches(input: DraftOrderInput, subtotalCents: number): void {
-  const frozen = input.deliveryFeeAdjustment;
-  if (frozen === null) {
-    if (input.deliveryFeeCents !== 0) {
-      throw new InvalidOrderPaymentError("Frais de livraison sans barème qui les justifie.");
-    }
-    return;
-  }
-  if (cartAdjustmentCents(frozen, subtotalCents) !== input.deliveryFeeCents) {
-    throw new InvalidOrderPaymentError("Les frais de livraison ne correspondent pas à leur zone.");
-  }
-}
-
-/**
- * L'ajustement figé doit **reproduire** le montant retenu. Sans ce contrôle, une
- * commande pourrait porter « −20 % » à côté d'une remise de 12 € : le libellé et
- * le chiffre se contrediraient sur la facture, et rien ne dirait lequel ment.
- *
- * 🔴 Il compare du **borné** à du borné (`discountCentsOf`), là où il comparait
- * du brut. Une remise en montant fixe supérieure au panier — 50 € sur 10 € —
- * passait donc telle quelle et s'enregistrait à 50 € à côté d'un sous-total de
- * 10 € : la ligne ne s'additionnait pas, et elle contredisait le devis, que
- * `ventilateVat` bornait déjà de son côté. La borne est désormais posée à la
- * source, dans `CartAdjustments` ; celle-ci est la barrière de l'agrégat, qui
- * ne fait confiance à aucun appelant.
- *
- * @throws {InvalidOrderPaymentError} le libellé ne correspond pas au montant.
- */
-function ensureDiscountMatches(input: DraftOrderInput, subtotalCents: number): void {
-  if (input.discountAdjustment === null) {
-    return;
-  }
-  if (discountCentsOf(input.discountAdjustment, subtotalCents) !== input.discountCents) {
-    throw new InvalidOrderPaymentError(
-      "La remise retenue ne correspond pas à l'ajustement appliqué.",
-    );
-  }
 }
 
 /** Décision de règlement : indécise (`null`), carte (intent), ou différée. */
@@ -224,6 +170,7 @@ export class Order {
     private readonly deliveryFeeAdjustment: CartAdjustment | null,
     private readonly lateFeeCents: number,
     private readonly lateFeeAdjustment: LateFeeAdjustment | null,
+    private readonly voucher: { readonly id: string; readonly appliedCents: number } | null,
     private readonly subtotalCentsValue: number,
     private readonly vatCentsValue: number,
     private readonly vatSharesValue: readonly VatShare[],
@@ -249,6 +196,11 @@ export class Order {
     ensureDiscountMatches(input, subtotalCents);
     ensureLateFeeMatches(input, subtotalCents);
     ensureDeliveryFeeMatches(input, subtotalCents);
+    const voucherDiscountCents = voucherDiscountOf(
+      input.voucher,
+      input.companyId,
+      subtotalCents - input.discountCents,
+    );
     // 🔴 **Une seule définition du TTC**, et elle est dans la ventilation.
     //
     // Le total se recomposait ici — `max(0, sous-total − remise) + frais +
@@ -266,6 +218,7 @@ export class Order {
     const { vatCents, vatShares, totalCents } = computeOrderTotals({
       lines: lines.map((line) => ({ htCents: line.lineTotalCents, vatRate: line.vatRate })),
       discountCents: input.discountCents,
+      voucherDiscountCents,
       deliveryFeeCents: input.deliveryFeeCents,
       lateFeeCents: input.lateFeeCents,
       lateFeeVatRate: input.lateFeeAdjustment?.vatRatePercent ?? null,
@@ -286,6 +239,7 @@ export class Order {
       input.deliveryFeeAdjustment,
       input.lateFeeCents,
       input.lateFeeAdjustment,
+      input.voucher === null ? null : { id: input.voucher.id, appliedCents: voucherDiscountCents },
       subtotalCents,
       vatCents,
       vatShares,
@@ -296,6 +250,11 @@ export class Order {
   /** Total **TTC** à encaisser — la source pour dimensionner l'intention Stripe. */
   get totalCents(): number {
     return this.totalCentsValue;
+  }
+
+  /** La part du bon réellement imputée, HT — `0` sans bon. Ce que le reliquat retranche. */
+  get voucherDiscountCents(): number {
+    return this.voucher?.appliedCents ?? 0;
   }
 
   /** Règlement **carte** : rattache l'intention Stripe. Refuse un total nul. */
@@ -336,6 +295,8 @@ export class Order {
       deliveryFeeAdjustment: this.deliveryFeeAdjustment,
       lateFeeCents: this.lateFeeCents,
       lateFeeAdjustment: this.lateFeeAdjustment,
+      voucherDiscountCents: this.voucherDiscountCents,
+      loyaltyVoucherId: this.voucher?.id ?? null,
       vatCents: this.vatCentsValue,
       vatShares: this.vatSharesValue,
       totalCents: this.totalCentsValue,

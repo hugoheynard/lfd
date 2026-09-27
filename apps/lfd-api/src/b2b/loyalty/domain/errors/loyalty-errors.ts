@@ -196,6 +196,92 @@ export class LoyaltyConversionForbiddenError extends AuthorizationError {
   }
 }
 
+/**
+ * Annuler un bon engagé sur une commande vivante — **409**. C'est un geste sur
+ * la commande, pas sur le bon (plan C9) : annuler la commande le rend
+ * disponible, et c'est alors qu'il s'annule.
+ */
+export class LoyaltyVoucherReservedError extends BusinessError {
+  constructor() {
+    super(
+      "loyalty.voucher_reserved",
+      "Ce bon est engagé sur une commande en cours : il ne s'annule pas ici. " +
+        "Si la commande est annulée, le bon redevient disponible, et pourra alors être annulé.",
+    );
+  }
+}
+
+/**
+ * Le bon nommé à la commande n'est pas utilisable — **409**. Lu par le client
+ * au moment de payer : il nomme le cas et le geste de sortie.
+ */
+export class LoyaltyVoucherNotUsableError extends BusinessError {
+  constructor(status: string) {
+    super(
+      "loyalty.voucher_not_usable",
+      `${USE_WORDS[status] ?? "Ce bon de fidélité n'est pas utilisable"} : ` +
+        "retirez-le de la commande, ou choisissez-en un autre.",
+    );
+  }
+}
+
+/** Le bon est disponible, mais sa date limite est passée — **409**. */
+export class LoyaltyVoucherLapsedForUseError extends BusinessError {
+  constructor(expiresAt: Date) {
+    super(
+      "loyalty.voucher_lapsed",
+      `Ce bon de fidélité a expiré le ${expiresAt.toISOString().slice(0, 10)} : il ne s'utilise plus. ` +
+        "Retirez-le de la commande.",
+    );
+  }
+}
+
+/**
+ * Le bon nommé n'existe pas, ou n'appartient pas à la personne qui commande —
+ * **404**. Les deux cas disent la même chose : un bon d'autrui n'existe pas
+ * pour celui qui le nomme.
+ */
+export class LoyaltyVoucherUnknownError extends ResourceNotFoundError {
+  constructor(id: string) {
+    super(
+      "loyalty.voucher_unknown",
+      `Aucun bon de fidélité à votre nom sous l'identifiant ${id} : retirez-le de la commande.`,
+    );
+  }
+}
+
+/**
+ * Libérer, ou solder, un bon qui n'est pas engagé — **409**. Ne devrait jamais
+ * sortir : la commande qui porte le bon l'a réservé dans sa transaction. S'il
+ * sort, l'état du bon et celui de la commande se contredisent.
+ */
+export class LoyaltyVoucherNotReservedError extends BusinessError {
+  constructor(status: string) {
+    super(
+      "loyalty.voucher_not_reserved",
+      `Ce bon de fidélité n'est pas engagé sur une commande (état : ${status}) : ` +
+        "l'état du bon et celui de la commande se contredisent, à signaler à l'équipe technique.",
+    );
+  }
+}
+
+/** Un montant imputé impossible — **400**. Une faute de l'appelant. */
+export class InvalidAppliedVoucherAmountError extends DomainError {
+  constructor(appliedCents: number, valueCents: number) {
+    super(
+      "loyalty.invalid_applied_amount",
+      `Montant imputé invalide (${String(appliedCents)} centimes) : un bon de ${String(valueCents)} centimes ` +
+        "impute un nombre entier de centimes, entre zéro et sa valeur.",
+    );
+  }
+}
+
+const USE_WORDS: Readonly<Record<string, string>> = {
+  reserved: "Ce bon de fidélité a déjà servi sur une autre commande",
+  expired: "Ce bon de fidélité a expiré",
+  cancelled: "Ce bon de fidélité a été annulé",
+};
+
 const STATUS_WORDS: Readonly<Record<string, string>> = {
   expired: "expiré",
   cancelled: "déjà annulé",

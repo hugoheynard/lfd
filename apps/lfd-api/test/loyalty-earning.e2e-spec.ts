@@ -142,7 +142,12 @@ async function handOver(number: string): Promise<void> {
   await ctx.drain();
 }
 
-async function sweep(): Promise<{ scanned: number; credited: number; expired: number }> {
+async function sweep(): Promise<{
+  scanned: number;
+  credited: number;
+  expired: number;
+  vouchers: { reserved: number; settled: number; stalled: number };
+}> {
   const response = await ctx
     .http()
     .post("/admin/loyalty/sweep")
@@ -274,7 +279,14 @@ describe("ce qui ne crédite pas", () => {
     await pay(order.intent);
     await handOver(order.number);
 
-    expect(await sweep()).toEqual({ scanned: 0, credited: 0, expired: 0 });
+    // `vouchers` : le rattrapage des bons engagés (lot C, 2026-09-27). Il ne
+    // dépend pas du réglage — un bon déjà engagé se solde même programme fermé.
+    expect(await sweep()).toEqual({
+      scanned: 0,
+      credited: 0,
+      expired: 0,
+      vouchers: { reserved: 0, settled: 0, stalled: 0 },
+    });
     expect(await earned()).toEqual([]);
   });
 });

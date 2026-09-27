@@ -56,6 +56,7 @@ function view(overrides: Partial<OrderView> = {}): OrderView {
     subtotalCents: 1_440,
     discountCents: 0,
     discountAdjustment: null,
+    voucherDiscountCents: 0,
     deliveryFeeCents: 0,
     // Retrait : aucun frais de zone, donc aucun barème à figer.
     deliveryFeeAdjustment: null,
@@ -198,6 +199,7 @@ function readerOf(order: OrderView | null): OrderReader {
           placedByUserId: "user_7",
           stripePaymentIntentId: null,
           clientele: "public",
+          loyaltyVoucherId: null,
         },
   );
 }

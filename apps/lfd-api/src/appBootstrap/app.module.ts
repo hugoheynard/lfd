@@ -27,6 +27,7 @@ import { HandoverModule } from "../handover/handover.module.js";
 import { ProductionModule } from "../production/production.module.js";
 import { HandoverFeedModule } from "./handover-feed.module.js";
 import { DebtorMandateModule } from "./debtor-mandate.module.js";
+import { LoyaltyVoucherModule } from "./loyalty-voucher.module.js";
 import { IssuedMandatesModule } from "./issued-mandates.module.js";
 import { ProductionFeedModule } from "./production-feed.module.js";
 import { ImageCatalogueModule } from "./image-catalogue.module.js";
@@ -141,6 +142,7 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     HandoverModule,
     HandoverFeedModule,
     DebtorMandateModule,
+    LoyaltyVoucherModule,
     IssuedMandatesModule,
     PricingAdminModule,
     OrderPricingModule,

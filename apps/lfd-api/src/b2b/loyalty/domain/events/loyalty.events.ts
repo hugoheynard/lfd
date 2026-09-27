@@ -11,6 +11,10 @@ export const LOYALTY_POINTS_ADJUSTED = "loyalty.points_adjusted" satisfies Journ
 export const LOYALTY_VOUCHER_ISSUED = "loyalty.voucher_issued" satisfies JournalFactType;
 export const LOYALTY_VOUCHER_EXPIRED = "loyalty.voucher_expired" satisfies JournalFactType;
 export const LOYALTY_VOUCHER_CANCELLED = "loyalty.voucher_cancelled" satisfies JournalFactType;
+export const LOYALTY_VOUCHER_REMAINDER_ISSUED =
+  "loyalty.voucher_remainder_issued" satisfies JournalFactType;
+export const LOYALTY_VOUCHER_REMAINDER_LAPSED =
+  "loyalty.voucher_remainder_lapsed" satisfies JournalFactType;
 
 /** Le nom du réglage, seul libellé qu'une ligne unique puisse porter. */
 const SETTINGS_LABEL = "Programme de fidélité";
@@ -140,6 +144,53 @@ export class LoyaltyVoucherCancelledEvent implements JournaledEvent {
       valueCents: this.voucher.valueCents,
       pointsCost: this.voucher.pointsCost,
       reason: this.voucher.cancellationReason ?? "",
+    });
+  }
+}
+
+/** La commande sur laquelle un bon a servi : son identifiant et son numéro. */
+export interface VoucherOrderRef {
+  readonly id: string;
+  readonly number: string;
+}
+
+/** Le reliquat d'un bon consommé, émis quand la commande devient définitive (plan C5). */
+export class LoyaltyVoucherRemainderIssuedEvent implements JournaledEvent {
+  constructor(
+    readonly named: NamedHolder,
+    readonly remainder: LoyaltyVoucher,
+    readonly parent: LoyaltyVoucher,
+    readonly order: VoucherOrderRef,
+  ) {}
+
+  journalFact(): JournalFact {
+    return onHolder(LOYALTY_VOUCHER_REMAINDER_ISSUED, this.named, {
+      voucher: voucherName(this.remainder),
+      parent: voucherName(this.parent),
+      order: { id: this.order.id, name: this.order.number },
+      valueCents: this.remainder.valueCents,
+      expiresAt: this.remainder.expiresAt.toISOString(),
+    });
+  }
+}
+
+/**
+ * Un reliquat qui ne naît pas : le bon d'origine était échu quand la commande
+ * est devenue définitive (§11 bis B2). La trace dit ce qui s'est perdu.
+ */
+export class LoyaltyVoucherRemainderLapsedEvent implements JournaledEvent {
+  constructor(
+    readonly named: NamedHolder,
+    readonly parent: LoyaltyVoucher,
+    readonly order: VoucherOrderRef,
+    readonly remainderCents: number,
+  ) {}
+
+  journalFact(): JournalFact {
+    return onHolder(LOYALTY_VOUCHER_REMAINDER_LAPSED, this.named, {
+      voucher: voucherName(this.parent),
+      order: { id: this.order.id, name: this.order.number },
+      remainderCents: this.remainderCents,
     });
   }
 }

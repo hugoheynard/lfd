@@ -44,6 +44,8 @@ import { ResendOrderPaymentLinkHandler } from "./application/commands/resend-ord
 import { OrderRecipientReader } from "./domain/ports/order-recipient.reader.js";
 import { CompletedOrderReader } from "./domain/ports/completed-order.reader.js";
 import { PrismaCompletedOrderReader } from "./infrastructure/prisma-completed-order.reader.js";
+import { VoucherOrderReader } from "./domain/ports/voucher-order.reader.js";
+import { PrismaVoucherOrderReader } from "./infrastructure/prisma-voucher-order.reader.js";
 import { PrismaOrderRecipientReader } from "./infrastructure/prisma-order-recipient.reader.js";
 import { AbandonOrderHandler } from "./application/commands/abandon-order.handler.js";
 import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
@@ -307,6 +309,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: ShopCartRepository, useClass: PrismaShopCartRepository },
     { provide: OrderReader, useClass: PrismaOrderReader },
     { provide: CompletedOrderReader, useClass: PrismaCompletedOrderReader },
+    { provide: VoucherOrderReader, useClass: PrismaVoucherOrderReader },
   ],
   // Le catalogue sort d'ici parce que l'écran de tarification en a besoin : il
   // doit résoudre les prix contre l'autorité que la caisse utilise, pas contre
@@ -326,6 +329,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Les commandes définitives, que la fidélité crédite (plan des points,
     // D3) : elle les lit par ce port, jamais dans les tables de la commande.
     CompletedOrderReader,
+    // Les commandes qui portent des bons, que le rattrapage de nuit de la
+    // fidélité et son écran lisent (plan des points, C5, §11 bis S4, S6).
+    VoucherOrderReader,
   ],
 })
 export class OrdersModule {}

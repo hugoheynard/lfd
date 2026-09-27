@@ -1,9 +1,13 @@
 import type { SettlementSweepWindow } from "../services/settlement-sweep.js";
 
-/** Une commande dont le règlement n'est pas encaissé, et son intention s'il y en a une. */
+/**
+ * Une commande dont le règlement n'est pas encaissé, son intention s'il y en a
+ * une, et le bon de fidélité qu'elle engage — que l'annulation rend.
+ */
 export interface UnsettledSettlement {
   readonly orderId: string;
   readonly paymentIntentId: string | null;
+  readonly loyaltyVoucherId: string | null;
 }
 
 /**

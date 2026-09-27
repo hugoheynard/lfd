@@ -112,6 +112,16 @@ export function orderTotalRows(order: CustomerOrderView): readonly TotalRow[] {
       strong: false,
     });
   }
+  if (order.voucherDiscountCents > 0) {
+    // Le bon de fidélité, APRÈS la remise et sur sa propre ligne : la facture
+    // et l'assiette des points les distinguent (plan des points, C7).
+    rows.push({
+      key: 'voucher',
+      label: 'Bon de fidélité',
+      value: `− ${formatCents(order.voucherDiscountCents)}`,
+      strong: false,
+    });
+  }
   if (order.deliveryFeeCents > 0) {
     rows.push({
       key: 'delivery',

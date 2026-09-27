@@ -1,6 +1,10 @@
 import type { BillingAddressPayload } from "@lfd/contracts";
 
 import {
+  InvalidOrderVoucherError,
+  VoucherNotForCompanyOrderError,
+} from "../../errors/order-voucher-errors.js";
+import {
   EmptyOrderError,
   InvalidOrderFulfillmentError,
   InvalidOrderPaymentError,
@@ -60,6 +64,7 @@ function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
     deliveryFeeAdjustment: null,
     lateFeeCents: 0,
     lateFeeAdjustment: null,
+    voucher: null,
     ...over,
   };
 }
@@ -393,5 +398,74 @@ describe("Order — règlement", () => {
   it("refuse de persister une commande au règlement non décidé", () => {
     const order = Order.draft(draftInput());
     expect(() => order.toPersistence()).toThrow(InvalidOrderPaymentError);
+  });
+});
+
+/**
+ * Le bon de fidélité (plan des points, C1) : une remise HT de plus, imputée
+ * APRÈS celle du point de retrait, plafonnée aux marchandises restantes, et qui
+ * ne touche ni le port ni la surtaxe.
+ */
+describe("Order — le bon de fidélité", () => {
+  it("impute le bon entier quand le panier le couvre, et réduit la base de TVA", () => {
+    // 2 × 200 = 400 HT à 5,5 % ; bon 100 HT → 300 HT, TVA 16,5 → 17 ; total 317.
+    const state = deferred({ voucher: { id: "v1", valueCents: 100 } });
+    expect(state.voucherDiscountCents).toBe(100);
+    expect(state.loyaltyVoucherId).toBe("v1");
+    expect(state.vatCents).toBe(17);
+    expect(state.totalCents).toBe(317);
+  });
+
+  it("s'impute APRÈS la remise du point, plafonné à ce qui reste", () => {
+    // 400 HT, remise 350 → reste 50 : un bon de 100 n'en impute que 50.
+    const state = deferred({
+      discountCents: 350,
+      discountAdjustment: { mode: "amount", cents: 350 },
+      voucher: { id: "v1", valueCents: 100 },
+    });
+    expect(state.voucherDiscountCents).toBe(50);
+    expect(state.totalCents).toBe(0);
+  });
+
+  it("un bon plus gros que le panier ne paie jamais le port : le total vaut les frais taxés", () => {
+    const state = deferred({
+      fulfillment: {
+        method: "delivery",
+        deliveryZoneId: "zone_1",
+        deliveryAddress: ADDRESS,
+        pickupAddress: null,
+      },
+      deliveryFeeCents: 1_000,
+      deliveryFeeAdjustment: { mode: "amount", cents: 1_000 },
+      voucher: { id: "v1", valueCents: 5_000 },
+    });
+    expect(state.voucherDiscountCents).toBe(400);
+    // Seuls les frais restent : 1000 HT à 20 % = 1200 TTC.
+    expect(state.totalCents).toBe(1_200);
+  });
+
+  it("un panier que le bon couvre entier a un total nul", () => {
+    const state = deferred({ voucher: { id: "v1", valueCents: 400 } });
+    expect(state.voucherDiscountCents).toBe(400);
+    expect(state.vatCents).toBe(0);
+    expect(state.totalCents).toBe(0);
+  });
+
+  it("sans bon, rien ne change", () => {
+    const state = deferred();
+    expect(state.voucherDiscountCents).toBe(0);
+    expect(state.loyaltyVoucherId).toBeNull();
+  });
+
+  it("refuse un bon sur une commande de société", () => {
+    expect(() =>
+      Order.draft(draftInput({ companyId: "c1", voucher: { id: "v1", valueCents: 100 } })),
+    ).toThrow(VoucherNotForCompanyOrderError);
+  });
+
+  it.each([0, -5, 1.5])("refuse un bon d'une valeur de %p centimes", (valueCents) => {
+    expect(() => Order.draft(draftInput({ voucher: { id: "v1", valueCents } }))).toThrow(
+      InvalidOrderVoucherError,
+    );
   });
 });

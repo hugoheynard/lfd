@@ -40,6 +40,7 @@ export function orderView(
     subtotalCents: 1_440,
     discountCents: 0,
     discountAdjustment: null,
+    voucherDiscountCents: 0,
     deliveryFeeCents: 0,
     deliveryFeeAdjustment: null,
     lateFeeAdjustment: null,

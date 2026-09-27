@@ -364,6 +364,13 @@ export const placeOrderPayloadSchema = z
     /** Le règlement choisi, ou `null` = le serveur décide. Cf. {@link orderSettlementSchema}. */
     settlement: orderSettlementSchema.nullable().default(null),
     idempotencyKey: idempotencyKeySchema,
+    /**
+     * Le **bon de fidélité** à utiliser, ou absent (plan des points, lot C).
+     * Seulement pour une commande personnelle : le serveur le refuse sur une
+     * commande de société. Ni la commande invitée, ni la saisie du staff ne
+     * portent ce champ.
+     */
+    voucherId: z.string().min(1).optional(),
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())
@@ -599,6 +606,12 @@ export interface OrderView {
   /** Remise (retrait) déduite du sous-total, en centimes. `0` si aucune. */
   readonly discountCents: number;
   /**
+   * La part du **bon de fidélité** imputée, HT, en centimes — distincte de la
+   * remise du point de retrait, parce que la facture et l'assiette des points
+   * les distinguent. `0` sans bon, et pour toute commande antérieure.
+   */
+  readonly voucherDiscountCents: number;
+  /**
    * **Ce qui a produit** `discountCents`, figé à la commande : le taux ou le
    * montant de la remise du point de retrait. Sans lui, une facture ne peut dire
    * que « Remise 70,68 € » — jamais « Retrait au labo −20 % ». Le déduire d'une
@@ -824,6 +837,7 @@ export interface CustomerOrderView {
   readonly subtotalCents: number;
   readonly discountCents: number;
   readonly discountAdjustment: CartAdjustment | null;
+  readonly voucherDiscountCents: number;
   readonly deliveryFeeCents: number;
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   readonly lateFeeCents: number;
@@ -874,6 +888,7 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
     subtotalCents: view.subtotalCents,
     discountCents: view.discountCents,
     discountAdjustment: view.discountAdjustment,
+    voucherDiscountCents: view.voucherDiscountCents,
     deliveryFeeCents: view.deliveryFeeCents,
     deliveryFeeAdjustment: view.deliveryFeeAdjustment,
     lateFeeCents: view.lateFeeCents,

@@ -1,4 +1,5 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
@@ -27,6 +28,7 @@ function voucher(over: Partial<LoyaltyVoucherView> = {}): LoyaltyVoucherView {
     status: 'available',
     cancelledAt: null,
     cancellationReason: null,
+    usedOn: null,
     ...over,
   };
 }
@@ -40,6 +42,7 @@ const VOUCHERS: readonly LoyaltyVoucherView[] = [
     cancelledAt: '2026-09-21T09:00:00.000Z',
     cancellationReason: 'Émis par erreur',
   }),
+  voucher({ id: 'v4', status: 'reserved', usedOn: { orderId: 'o9', orderNumber: 'ORD-9' } }),
 ];
 
 class FakeApi {
@@ -59,6 +62,7 @@ async function render(
   TestBed.configureTestingModule({
     imports: [LoyaltyVouchers],
     providers: [
+      provideRouter([]),
       { provide: LoyaltyService, useValue: api },
       {
         provide: PermissionsStore,
@@ -120,6 +124,19 @@ describe('LoyaltyVouchers', () => {
 
     expect(opened).toEqual([VOUCHERS[0]]);
     expect(api.reads).toBe(2);
+  });
+
+  it('un bon engagé dit sur quelle commande, et ne propose pas « Annuler »', async () => {
+    // Plan des points, §11 bis S6 et C9 : annuler un bon engagé est un geste
+    // sur la commande, pas sur le bon.
+    const fixture = await render(new FakeApi());
+    const body = text(fixture);
+
+    expect(body).toContain('Utilisé');
+    expect(body).toContain('utilisé sur ORD-9');
+    const link = (fixture.nativeElement as HTMLElement).querySelector('a[href="/commandes/o9"]');
+    expect(link).not.toBeNull();
+    expect(buttons(fixture, 'Annuler')).toHaveLength(1);
   });
 
   it('sans droit d’écriture, aucune annulation', async () => {

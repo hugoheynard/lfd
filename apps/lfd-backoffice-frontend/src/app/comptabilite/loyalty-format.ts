@@ -37,7 +37,7 @@ export function formatRatio(ratio: {
 /** L'état d'un bon, en mots et en couleur de pastille. */
 export function voucherStatusBadge(status: LoyaltyVoucherStatus): {
   readonly label: string;
-  readonly variant: 'success' | 'neutral' | 'alert';
+  readonly variant: 'success' | 'neutral' | 'alert' | 'info';
 } {
   switch (status) {
     case 'available':
@@ -46,5 +46,9 @@ export function voucherStatusBadge(status: LoyaltyVoucherStatus): {
       return { label: 'Expiré', variant: 'neutral' };
     case 'cancelled':
       return { label: 'Annulé', variant: 'alert' };
+    // Engagé sur une commande vivante : faute d'état « utilisé », c'est la
+    // commande qui le dit (plan des points, §11 bis S6).
+    case 'reserved':
+      return { label: 'Utilisé', variant: 'info' };
   }
 }

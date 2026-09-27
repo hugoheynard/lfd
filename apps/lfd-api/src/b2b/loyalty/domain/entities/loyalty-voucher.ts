@@ -1,6 +1,11 @@
 import {
+  InvalidAppliedVoucherAmountError,
   LoyaltyVoucherExpiredError,
+  LoyaltyVoucherLapsedForUseError,
   LoyaltyVoucherNotAvailableError,
+  LoyaltyVoucherNotReservedError,
+  LoyaltyVoucherNotUsableError,
+  LoyaltyVoucherReservedError,
 } from "../errors/loyalty-errors.js";
 import { LoyaltyHolder } from "../value-objects/loyalty-holder.js";
 import { LoyaltyRatio } from "../value-objects/loyalty-ratio.js";
@@ -8,10 +13,11 @@ import type { LoyaltyReason } from "../value-objects/loyalty-reason.js";
 import type { LoyaltySettings } from "../value-objects/loyalty-settings.js";
 
 /**
- * Les états d'un bon au lot A. `reserved` n'existe pas encore : il attend le
- * traitement de TVA (plan D6 et §4).
+ * Les états d'un bon (plan D7). `reserved` : engagé sur une commande vivante,
+ * depuis le lot C. Il n'y a pas d'état `used` — un bon réservé sur une commande
+ * qui vit EST consommé, et n'en revient que par l'annulation de la commande.
  */
-export type LoyaltyVoucherStatus = "available" | "expired" | "cancelled";
+export type LoyaltyVoucherStatus = "available" | "expired" | "cancelled" | "reserved";
 
 const MS_PER_DAY = 86_400_000;
 
@@ -41,6 +47,8 @@ export interface LoyaltyVoucherSnapshot {
   readonly expiresAt: Date;
   readonly status: LoyaltyVoucherStatus;
   readonly parentVoucherId: string | null;
+  /** Le reliquat de ce bon est soldé — émis, éteint, ou rien à émettre (lot C). */
+  readonly remainderSettledAt: Date | null;
   readonly expiredAt: Date | null;
   readonly cancelledAt: Date | null;
   readonly cancelledByStaffId: string | null;
@@ -56,6 +64,20 @@ export interface LoyaltyVoucherIssue {
   readonly issuedAt: Date;
 }
 
+/**
+ * Ce que laisse un bon consommé sur une commande (plan C5, §11 bis B2) :
+ * - `settled` : déjà soldé — rien n'est refait ;
+ * - `none` : il a tout imputé ;
+ * - `issued` : un reliquat, nouveau bon du même titulaire ;
+ * - `lapsed` : il restait `remainderCents`, mais sa date limite était passée
+ *   à l'émission — le reliquat s'éteint, comme l'aurait fait le bon inutilisé.
+ */
+export type VoucherRemainder =
+  | { readonly kind: "none" }
+  | { readonly kind: "settled" }
+  | { readonly kind: "issued"; readonly voucher: LoyaltyVoucher }
+  | { readonly kind: "lapsed"; readonly remainderCents: number };
+
 interface Cancellation {
   readonly at: Date;
   readonly byStaffId: string;
@@ -66,8 +88,10 @@ interface Cancellation {
  * **Un bon de fidélité**, né d'une conversion de points (plan D5, D7).
  *
  * Son montant, son coût et le ratio appliqué sont figés à l'émission : changer
- * le réglage ne touche aucun bon émis. `available` est le seul état dont on
- * sort ; `expired` et `cancelled` sont terminaux.
+ * le réglage ne touche aucun bon émis. `available` sort vers `reserved`
+ * (passation), `expired` ou `cancelled` ; `reserved` ne revient à `available`
+ * — ou ne tombe à `expired` — que par l'annulation de la commande ; `expired`
+ * et `cancelled` sont terminaux.
  *
  * L'expiration se LIT à l'horloge ({@link isExpiredAt}) : un bon disponible
  * dont la date limite est passée n'est plus utilisable ni annulable, même
@@ -86,6 +110,7 @@ export class LoyaltyVoucher {
     private statusValue: LoyaltyVoucherStatus,
     private expiredAtValue: Date | null,
     private cancellationValue: Cancellation | null,
+    private remainderSettledAtValue: Date | null = null,
   ) {}
 
   /**
@@ -129,6 +154,7 @@ export class LoyaltyVoucher {
       row.status,
       row.expiredAt,
       cancellation,
+      row.remainderSettledAt,
     );
   }
 
@@ -155,10 +181,14 @@ export class LoyaltyVoucher {
    * limite : un bon expiré ne rend pas ses points (plan D7). Le recrédit est
    * le travail de {@link LoyaltyAccount.recreditCancelled}.
    *
+   * @throws {LoyaltyVoucherReservedError} engagé sur une commande vivante (plan C9).
    * @throws {LoyaltyVoucherNotAvailableError} déjà expiré ou annulé.
    * @throws {LoyaltyVoucherExpiredError} disponible, mais sa date limite est passée.
    */
   cancel(at: Date, byStaffId: string, reason: LoyaltyReason): void {
+    if (this.statusValue === "reserved") {
+      throw new LoyaltyVoucherReservedError();
+    }
     if (this.statusValue !== "available") {
       throw new LoyaltyVoucherNotAvailableError(this.statusValue);
     }
@@ -184,6 +214,116 @@ export class LoyaltyVoucher {
     return true;
   }
 
+  /**
+   * La passation engage le bon sur une commande (plan C3, D7) : `available →
+   * reserved`. Appelée sous le verrou du titulaire, sur un bon RELU : une
+   * course perdue trouve un bon déjà réservé et est refusée.
+   *
+   * @throws {LoyaltyVoucherNotUsableError} déjà réservé, annulé ou expiré.
+   * @throws {LoyaltyVoucherLapsedForUseError} disponible, mais échu à cet instant.
+   */
+  reserve(now: Date): void {
+    this.ensureUsableAt(now);
+    this.statusValue = "reserved";
+  }
+
+  /**
+   * Le bon pourrait-il être engagé à cet instant ? La même règle que
+   * {@link reserve}, sans rien changer : c'est ce que lit le devis, et la
+   * passation avant de chiffrer son total.
+   *
+   * @throws {LoyaltyVoucherNotUsableError} déjà réservé, annulé ou expiré.
+   * @throws {LoyaltyVoucherLapsedForUseError} disponible, mais échu à cet instant.
+   */
+  ensureUsableAt(now: Date): void {
+    if (this.statusValue !== "available") {
+      throw new LoyaltyVoucherNotUsableError(this.statusValue);
+    }
+    if (this.isExpiredAt(now)) {
+      throw new LoyaltyVoucherLapsedForUseError(this.expiresAt);
+    }
+  }
+
+  /**
+   * La commande qui le portait est annulée : le bon revient (plan C4, D7).
+   * Un bon réservé n'expire pas ; libéré après sa date limite, il passe
+   * directement à `expired`.
+   *
+   * @returns l'état où il retombe.
+   * @throws {LoyaltyVoucherNotReservedError} il n'était pas réservé.
+   */
+  release(now: Date): "available" | "expired" {
+    if (this.statusValue !== "reserved") {
+      throw new LoyaltyVoucherNotReservedError(this.statusValue);
+    }
+    if (now.getTime() >= this.expiresAt.getTime()) {
+      this.statusValue = "expired";
+      this.expiredAtValue = now;
+      return "expired";
+    }
+    this.statusValue = "available";
+    return "available";
+  }
+
+  /**
+   * Ce que le bon laisse, une fois la commande définitive (plan C5) :
+   * `valueCents − appliedCents`. Le reliquat garde le titulaire et **la date
+   * limite du bon d'origine** — sinon un reliquat en chaîne prolongerait la
+   * validité sans fin —, et ne coûte aucun point : le parent les a payés.
+   *
+   * Rien si la date limite est passée à l'émission (§11 bis B2) : le reliquat
+   * s'éteint, et l'appelant le journalise.
+   *
+   * 🔴 Dans TOUS les cas, le bon est marqué soldé (`remainderSettledAt`) : un
+   * second appel rend `settled` sans rien refaire. C'est cette marque qui
+   * rend l'extinction journalisable une seule fois, et qui borne le passage de
+   * nuit aux seuls bons encore à solder (décision du 2026-09-27).
+   *
+   * @throws {LoyaltyVoucherNotReservedError} le bon n'est pas engagé.
+   * @throws {InvalidAppliedVoucherAmountError} montant imputé hors de `[0, valueCents]`.
+   */
+  leaveRemainder(remainder: {
+    readonly id: string;
+    readonly appliedCents: number;
+    readonly at: Date;
+  }): VoucherRemainder {
+    if (this.statusValue !== "reserved") {
+      throw new LoyaltyVoucherNotReservedError(this.statusValue);
+    }
+    if (this.remainderSettledAtValue !== null) {
+      return { kind: "settled" };
+    }
+    const { appliedCents, at } = remainder;
+    if (!Number.isInteger(appliedCents) || appliedCents < 0 || appliedCents > this.valueCents) {
+      throw new InvalidAppliedVoucherAmountError(appliedCents, this.valueCents);
+    }
+    const remainderCents = this.valueCents - appliedCents;
+    this.remainderSettledAtValue = at;
+    if (remainderCents === 0) {
+      return { kind: "none" };
+    }
+    if (at.getTime() >= this.expiresAt.getTime()) {
+      return { kind: "lapsed", remainderCents };
+    }
+    return {
+      kind: "issued",
+      voucher: new LoyaltyVoucher(
+        remainder.id,
+        this.holder,
+        remainderCents,
+        0,
+        this.ratio,
+        at,
+        this.expiresAt,
+        this.id,
+        "available",
+        null,
+        null,
+        null,
+      ),
+    };
+  }
+
   toPersistence(): LoyaltyVoucherSnapshot {
     return {
       id: this.id,
@@ -197,6 +337,7 @@ export class LoyaltyVoucher {
       expiresAt: this.expiresAt,
       status: this.statusValue,
       parentVoucherId: this.parentVoucherId,
+      remainderSettledAt: this.remainderSettledAtValue,
       expiredAt: this.expiredAtValue,
       cancelledAt: this.cancellationValue?.at ?? null,
       cancelledByStaffId: this.cancellationValue?.byStaffId ?? null,

@@ -323,6 +323,10 @@ describe("le devis de la vitrine", () => {
       "subtotalHtCents",
       "totalCents",
       "vat",
+      // Ajouté le 2026-09-27 (plan des points, lot C) et admis DÉLIBÉRÉMENT :
+      // un montant retiré, comme `discountCents` — il ne dit rien de la façon
+      // dont le prix a été fabriqué. Zéro sans bon, et la route anonyme en refuse.
+      "voucherDiscountCents",
     ]);
     for (const line of view.lines) {
       expect(Object.keys(line).sort()).toEqual([

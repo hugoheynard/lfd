@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import type { LoyaltyVoucherView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
@@ -38,7 +39,9 @@ const BASE_COLUMNS: readonly FoldTableColumn[] = [
  * maintenant : un bon dont la date limite est passée se lit « expiré ».
  *
  * Seul un bon **disponible** s'annule (plan D7), et le geste demande
- * `b2b_accounting:write` : sans lui, la colonne d'actions disparaît.
+ * `b2b_accounting:write` : sans lui, la colonne d'actions disparaît. Un bon
+ * engagé sur une commande (`reserved`, lot C) dit laquelle — « utilisé sur … »
+ * — et ne s'annule pas ici : c'est un geste sur la commande.
  */
 @Component({
   selector: 'app-loyalty-vouchers',
@@ -53,6 +56,7 @@ const BASE_COLUMNS: readonly FoldTableColumn[] = [
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldLoadingStateComponent,
+    RouterLink,
   ],
   templateUrl: './loyalty-vouchers.html',
   styleUrl: './loyalty-vouchers.scss',
@@ -120,6 +124,11 @@ export class LoyaltyVouchers {
 
   protected statusOf(row: LoyaltyVoucherView): ReturnType<typeof voucherStatusBadge> {
     return voucherStatusBadge(row.status);
+  }
+
+  /** La commande vivante qui engage le bon, ou `null`. */
+  protected usedOn(row: LoyaltyVoucherView): LoyaltyVoucherView['usedOn'] {
+    return row.usedOn;
   }
 
   protected isAvailable(row: LoyaltyVoucherView): boolean {

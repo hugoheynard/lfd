@@ -49,6 +49,11 @@
             @if (row.cancellationReason !== null) {
               <span class="reason">{{ row.cancellationReason }}</span>
             }
+            @if (usedOn(row); as order) {
+              <a class="muted" [routerLink]="['/commandes', order.orderId]"
+                >utilisé sur {{ order.orderNumber }}</a
+              >
+            }
           </span>
         </ng-template>
 

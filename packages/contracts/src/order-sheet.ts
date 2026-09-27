@@ -148,6 +148,8 @@ export const sheetMoneySchema = z.object({
   discountCents: z.number().int(),
   /** Ce qui a produit la remise — sans lui, on ne sait dire qu'un montant. */
   discountAdjustment: cartAdjustmentSchema.nullable(),
+  /** La part du bon de fidélité — absente d'une feuille d'avant le lot C, lue zéro. */
+  voucherDiscountCents: z.number().int().default(0),
   deliveryFeeCents: z.number().int(),
   lateFeeCents: z.number().int(),
   vatCents: z.number().int(),
@@ -159,6 +161,11 @@ export interface SheetMoney {
   readonly subtotalCents: number;
   readonly discountCents: number;
   readonly discountAdjustment: CartAdjustment | null;
+  /**
+   * Le **bon de fidélité** imputé, HT — une ligne à part de la remise, jamais
+   * fondue avec elle (plan des points, C7). `0` sans bon.
+   */
+  readonly voucherDiscountCents: number;
   readonly deliveryFeeCents: number;
   readonly lateFeeCents: number;
   readonly vatCents: number;

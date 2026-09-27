@@ -19,8 +19,10 @@ import {
   type AccountSettlementStanding,
 } from "../../domain/ports/order-guard.reader.js";
 import { OrderIdempotencyStore } from "../../domain/ports/order-idempotency.store.js";
+import { LoyaltyVoucherQuoteReader } from "../../domain/ports/loyalty-voucher-quote.reader.js";
+import { LoyaltyVoucherRedemption } from "../../domain/ports/loyalty-voucher-redemption.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
-import { OrderRepository } from "../../domain/ports/order.repository.js";
+import { OrderRepository, type PlacedOrder } from "../../domain/ports/order.repository.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
 import { orderFingerprint } from "../../domain/services/order-fingerprint.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
@@ -28,6 +30,12 @@ import { PlaceOrderCommand, type PlaceOrderResult } from "./place-order.command.
 
 /** Devise unique de la plateforme (montants en centimes d'euro). */
 const CURRENCY = "eur";
+
+/** L'intention Stripe créée pour la commande — de quoi la rendre au client, ou l'annuler. */
+interface CreatedIntent {
+  readonly paymentIntentId: string;
+  readonly clientSecret: string;
+}
 
 /**
  * Passe une commande — **zéro friction**, le client pour lui-même.
@@ -55,6 +63,8 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly keys: OrderIdempotencyStore,
     private readonly reader: OrderReader,
     private readonly unitOfWork: UnitOfWork,
+    private readonly voucherQuotes: LoyaltyVoucherQuoteReader,
+    private readonly vouchers: LoyaltyVoucherRedemption,
   ) {}
 
   /**
@@ -126,21 +136,21 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       ensureOrderMember(role, companyId);
     }
 
+    // Le bon se LIT ici, sans rien engager : sa valeur entre dans le total, donc
+    // dans l'intention Stripe. C'est la réservation, plus bas, qui tranche une
+    // course (plan des points, C3).
+    const voucher =
+      payload.voucherId === undefined
+        ? null
+        : await this.voucherQuotes.quote(payload.voucherId, command.actorUserId, this.clock.now());
     const { order, waiverUsed } = await this.drafting.draft(
       { companyId, placedByUserId: command.actorUserId, placedByStaffId: null },
       payload,
+      voucher,
     );
 
     const intent = await this.settle(order, companyId, payload.settlement);
-    // LA COMMANDE ET SA CLÉ, ENSEMBLE. `transactionalPrisma` fait rejoindre les
-    // deux dépôts à la transaction ouverte ici : il n'existe donc aucun instant
-    // où la commande est écrite et la clé ne l'est pas — le seul état que ce
-    // dispositif ne survivrait pas.
-    const placed = await this.unitOfWork.run(async () => {
-      const written = await this.orders.place(order);
-      await this.keys.resolve(command.actorUserId, payload.idempotencyKey, written.id);
-      return written;
-    });
+    const placed = await this.persist(command, order, intent);
 
     // La dérogation se consomme APRÈS la persistance : la brûler avant aurait
     // laissé le client sans autorisation pour une commande qui n'existe pas.
@@ -171,6 +181,59 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
         amountCents: order.totalCents,
       },
     };
+  }
+
+  /**
+   * **La commande, sa clé, et son bon, ensemble.**
+   *
+   * `transactionalPrisma` fait rejoindre les dépôts à la transaction ouverte
+   * ici : il n'existe aucun instant où la commande est écrite et la clé ne
+   * l'est pas — le seul état que ce dispositif ne survivrait pas. Le bon y
+   * entre aussi (plan des points, C3) : réservé AVANT l'écriture de la
+   * commande, sous le verrou de son titulaire. Une course perdue lève ici,
+   * avant `orders.place` : rien n'est écrit, et la clé est rendue.
+   *
+   * Une commande sans règlement (`not_required` — un total que le bon couvre
+   * entier) est définitive dès sa passation : son reliquat s'émet dans la même
+   * transaction (C5). Les autres attendent le rattrapage de nuit.
+   *
+   * 🔴 Si la transaction échoue, l'intention Stripe déjà créée est annulée
+   * (§11 bis, mineurs) : jamais confirmée, elle ne serait jamais débitée, mais
+   * un bon disputé par deux onglets en rendrait l'orpheline courante.
+   * `cancelIntent` ne lève jamais.
+   */
+  private async persist(
+    command: PlaceOrderCommand,
+    order: Order,
+    intent: CreatedIntent | null,
+  ): Promise<PlacedOrder> {
+    const { actorUserId, payload } = command;
+    const voucherId = payload.voucherId ?? null;
+    try {
+      return await this.unitOfWork.run(async () => {
+        if (voucherId !== null) {
+          await this.vouchers.reserve(voucherId, actorUserId, this.clock.now());
+        }
+        const written = await this.orders.place(order);
+        await this.keys.resolve(actorUserId, payload.idempotencyKey, written.id);
+        if (voucherId !== null && intent === null) {
+          await this.vouchers.settleRemainder(
+            {
+              voucherId,
+              appliedCents: order.voucherDiscountCents,
+              order: { id: written.id, number: written.orderNumber },
+            },
+            this.clock.now(),
+          );
+        }
+        return written;
+      });
+    } catch (error) {
+      if (intent !== null) {
+        await this.payments.cancelIntent(intent.paymentIntentId);
+      }
+      throw error;
+    }
   }
 
   /**
@@ -232,7 +295,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     order: Order,
     companyId: string | null,
     settlement: OrderSettlement | null,
-  ): Promise<{ clientSecret: string } | null> {
+  ): Promise<CreatedIntent | null> {
     const requiresCard = (await this.requiresCard(companyId, settlement)) && order.totalCents > 0;
     if (!requiresCard) {
       order.deferPayment();
@@ -244,7 +307,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       companyId,
     });
     order.payByCard(intent.paymentIntentId);
-    return { clientSecret: intent.clientSecret };
+    return { paymentIntentId: intent.paymentIntentId, clientSecret: intent.clientSecret };
   }
 
   /**

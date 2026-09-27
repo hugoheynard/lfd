@@ -77,6 +77,7 @@ interface OrderRow {
   readonly subtotalCents: number;
   readonly discountCents: number;
   readonly discountAdjustment: Prisma.JsonValue | null;
+  readonly voucherDiscountCents: number;
   readonly deliveryFeeAdjustment: Prisma.JsonValue | null;
   readonly deliveryFeeCents: number;
   readonly lateFeeCents: number;
@@ -119,6 +120,7 @@ const ORDER_SELECT = {
   subtotalCents: true,
   discountCents: true,
   discountAdjustment: true,
+  voucherDiscountCents: true,
   deliveryFeeCents: true,
   deliveryFeeAdjustment: true,
   lateFeeCents: true,
@@ -230,6 +232,7 @@ export class PrismaOrderReader extends OrderReader {
         placedByUserId: true,
         stripePaymentIntentId: true,
         clientele: true,
+        loyaltyVoucherId: true,
       },
     });
     if (row === null) {
@@ -241,6 +244,7 @@ export class PrismaOrderReader extends OrderReader {
       placedByUserId: row.placedByUserId,
       stripePaymentIntentId: row.stripePaymentIntentId,
       clientele: row.clientele,
+      loyaltyVoucherId: row.loyaltyVoucherId,
     };
   }
 
@@ -581,6 +585,7 @@ function toOrderView(row: OrderRow): OrderView {
     subtotalCents: row.subtotalCents,
     discountCents: row.discountCents,
     discountAdjustment: parseAdjustment(row.discountAdjustment),
+    voucherDiscountCents: row.voucherDiscountCents,
     // Même indulgence, même barrière : un barème illisible rend `null` — la
     // facture perd le libellé de ses frais, pas son montant.
     deliveryFeeAdjustment: parseAdjustment(row.deliveryFeeAdjustment),

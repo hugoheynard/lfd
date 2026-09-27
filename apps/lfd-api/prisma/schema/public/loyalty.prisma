@@ -24,12 +24,13 @@ enum LoyaltyEntryKind {
   @@schema("public")
 }
 
-/// L'état d'un bon. `reserved` n'existe PAS encore, et c'est voulu : il dépend
-/// du traitement de TVA (plan D6), et le figer avant coûterait une migration.
+/// L'état d'un bon. `reserved` (lot C, migration `20260927100000_le_bon_sur_la_commande`) :
+/// engagé sur une commande vivante — la commande porte le lien, pas le bon.
 enum LoyaltyVoucherStatus {
   available
   expired
   cancelled
+  reserved
 
   @@schema("public")
 }
@@ -128,12 +129,19 @@ model LoyaltyVoucher {
   parentVoucher   LoyaltyVoucher? @relation("LoyaltyVoucherRemainder", fields: [parentVoucherId], references: [id], onDelete: Restrict)
   remainder       LoyaltyVoucher? @relation("LoyaltyVoucherRemainder")
 
+  /// Le reliquat de ce bon est soldé (émis, éteint, ou rien à émettre) — lot C.
+  /// Index partiel `status = 'reserved' AND remainder_settled_at IS NULL`,
+  /// écrit à la main dans la migration.
+  remainderSettledAt DateTime? @map("remainder_settled_at") @db.Timestamptz(3)
   expiredAt          DateTime? @map("expired_at")
   cancelledAt        DateTime? @map("cancelled_at")
   cancelledByStaffId String?   @map("cancelled_by_staff_id")
   cancellationReason String?   @map("cancellation_reason")
 
   entries LoyaltyLedgerEntry[]
+  /// Les commandes qui l'ont porté — une seule VIVANTE au plus (index unique
+  /// partiel, écrit à la main dans la migration du lot C).
+  orders  Order[]
 
   @@index([companyId])
   @@index([userId])

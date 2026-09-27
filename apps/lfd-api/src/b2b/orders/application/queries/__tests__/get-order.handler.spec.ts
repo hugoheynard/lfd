@@ -42,6 +42,7 @@ function personal(placedByUserId: string): OwnedOrder {
   return {
     stripePaymentIntentId: null,
     clientele: "public",
+    loyaltyVoucherId: null,
     view: VIEW,
     companyId: null,
     placedByUserId,
@@ -52,6 +53,7 @@ function ofCompany(companyId: string): OwnedOrder {
   return {
     stripePaymentIntentId: null,
     clientele: "pro",
+    loyaltyVoucherId: null,
     view: VIEW,
     companyId,
     placedByUserId: "usr_someone_else",

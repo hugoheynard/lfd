@@ -235,4 +235,31 @@ export const ACCOUNTING_FACTS = {
       reason: z.string(),
     }),
   ),
+  /**
+   * Le reliquat d'un bon consommé (lot C) : un nouveau bon du même titulaire,
+   * sans coût en points, qui garde la date limite de `parent`.
+   */
+  "loyalty.voucher_remainder_issued": fact(
+    payload({
+      subjectLabel: subjectLabel().optional(),
+      voucher: named("loyalty_voucher"),
+      parent: named("loyalty_voucher"),
+      order: named("order"),
+      valueCents: cents(),
+      expiresAt: instant(),
+    }),
+  ),
+  /**
+   * Le reliquat d'un bon s'est éteint : sa date limite était passée quand la
+   * commande est devenue définitive (plan des points, §11 bis B2). Le montant
+   * dit ce qui s'est perdu, comme l'aurait fait l'expiration du bon inutilisé.
+   */
+  "loyalty.voucher_remainder_lapsed": fact(
+    payload({
+      subjectLabel: subjectLabel().optional(),
+      voucher: named("loyalty_voucher"),
+      order: named("order"),
+      remainderCents: cents(),
+    }),
+  ),
 } as const satisfies JournalFactFamily;

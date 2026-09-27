@@ -19,6 +19,8 @@ export interface OrderFingerprintMaterial {
   readonly deliveryAddress: BillingAddressPayload | null;
   readonly requestedDeliveryDate: string;
   readonly lines: readonly { readonly sku: string; readonly quantity: number }[];
+  /** Le bon de fidélité nommé — seule la passation du client connecté en porte un. */
+  readonly voucherId?: string | undefined;
 }
 
 /**
@@ -70,6 +72,11 @@ export function orderFingerprint(
     deliveryAddress: payload.deliveryAddress,
     requestedDeliveryDate: payload.requestedDeliveryDate,
     lines,
+    // Le bon entre (plan des points, §11 bis S5) : sans lui, rejouer la clé
+    // avec un AUTRE bon rendrait la première commande comme un rejeu. Absent,
+    // il n'entre pas du tout — l'empreinte d'une commande sans bon est celle
+    // d'avant le lot C, et une clé en vol au déploiement reste un rejeu.
+    ...(payload.voucherId === undefined ? {} : { voucherId: payload.voucherId }),
   });
   return createHash("sha256").update(material).digest("hex");
 }

@@ -33,6 +33,11 @@ export interface OwnedOrder {
    * `documentation/order/plan-abandon-du-reglement.md`, Q8).
    */
   readonly clientele: "pro" | "public" | null;
+  /**
+   * Le bon de fidélité engagé, ou `null`. Hors `OrderView` : l'annulation en a
+   * besoin pour le rendre (plan des points, C4), le client n'a pas à le relire.
+   */
+  readonly loyaltyVoucherId: string | null;
 }
 
 /**

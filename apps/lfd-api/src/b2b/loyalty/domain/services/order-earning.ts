@@ -19,6 +19,8 @@ export interface EarnableOrder {
   readonly subtotalCents: number;
   /** La remise du point de retrait, hors taxe. */
   readonly discountCents: number;
+  /** La part du bon de fidélité imputée, hors taxe — `0` sans bon. */
+  readonly voucherDiscountCents: number;
 }
 
 /** Un point par centime d'assiette HORS TAXE : 23,40 € HT rapportent 2 340 points. */
@@ -38,9 +40,11 @@ export type OrderEarning =
  * - le titulaire est la société pour `pro` — rien si elle a été supprimée —,
  *   la personne pour `public` — rien si c'est un invité, dont les points
  *   seraient inaccessibles ;
- * - l'assiette est le **hors taxe** des marchandises, remise déduite. Ni la
- *   TVA — on ne rend pas en crédit ce qu'on reverse à l'État (Hugo,
- *   2026-09-26) —, ni le port, ni la surtaxe ;
+ * - l'assiette est le **hors taxe** des marchandises, remise ET bon de
+ *   fidélité déduits : le HT réellement payé, et un point dépensé ne rapporte
+ *   pas de point (plan C6, tranché par Hugo le 2026-09-27). Ni la TVA — on ne
+ *   rend pas en crédit ce qu'on reverse à l'État (Hugo, 2026-09-26) —, ni le
+ *   port, ni la surtaxe ;
  * - rien tant que le programme est fermé, ou fermé à cette clientèle.
  *
  * Un « rien » n'est pas une erreur : c'est le cas normal d'une grande part
@@ -57,7 +61,7 @@ export function earningFor(order: EarnableOrder, settings: LoyaltySettings | nul
   if (!settings.isOpenTo(holder)) {
     return skip("clientele_closed");
   }
-  const basisCents = order.subtotalCents - order.discountCents;
+  const basisCents = order.subtotalCents - order.discountCents - order.voucherDiscountCents;
   if (basisCents <= 0) {
     return skip("empty_basis");
   }

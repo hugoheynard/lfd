@@ -13,6 +13,14 @@ import {
 } from "@lfd/money";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { Clock } from "../../../../platform/time/clock.js";
+import {
+  VoucherNotForCompanyOrderError,
+  VoucherRequiresSignInError,
+} from "../../domain/errors/order-voucher-errors.js";
+import { LoyaltyVoucherQuoteReader } from "../../domain/ports/loyalty-voucher-quote.reader.js";
+import { voucherImputationCents } from "../../domain/services/voucher-imputation.js";
+
 import { CartAdjustments } from "../services/cart-adjustments.service.js";
 import { CustomerAudiences } from "../services/customer-audiences.service.js";
 import { OrderOperations } from "../services/order-operations.service.js";
@@ -38,6 +46,11 @@ export class QuoteShopCartQuery {
      * active, B2C sinon.
      */
     readonly companyId: string | null = null,
+    /**
+     * La personne connectée, ou `null` sur la route anonyme. Seule elle peut
+     * faire déduire un bon : il lui appartient (plan des points, lot C).
+     */
+    readonly buyerUserId: string | null = null,
   ) {}
 }
 
@@ -61,6 +74,8 @@ export class QuoteShopCartHandler implements IQueryHandler<QuoteShopCartQuery, S
     private readonly adjustments: CartAdjustments,
     private readonly audiences: CustomerAudiences,
     private readonly operations: OrderOperations,
+    private readonly voucherQuotes: LoyaltyVoucherQuoteReader,
+    private readonly clock: Clock,
   ) {}
 
   /**
@@ -110,13 +125,19 @@ export class QuoteShopCartHandler implements IQueryHandler<QuoteShopCartQuery, S
     // de remise se déclenche au même centime des deux côtés.
     const subtotalHtCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
     const terms = await this.termsOf(query.payload.fulfillment, subtotalHtCents, query.companyId);
+    const voucherDiscountCents = await this.voucherDiscountOf(
+      query,
+      subtotalHtCents - terms.discountCents,
+    );
 
     const ventilated = ventilateVat({
       lines: lines.map((line): VatLine => ({
         htCents: line.lineTotalCents,
         vatRate: line.vatRatePercent,
       })),
-      discountCents: terms.discountCents,
+      // Le bon s'ajoute à la remise, comme dans `computeOrderTotals` : devis et
+      // commande ventilent la même somme (plan des points, C1).
+      discountCents: terms.discountCents + voucherDiscountCents,
       // Le coursier est un terme HORS remise, au taux du transport : on ne fait
       // pas de geste commercial sur une prestation.
       extras:
@@ -128,12 +149,45 @@ export class QuoteShopCartHandler implements IQueryHandler<QuoteShopCartQuery, S
     return {
       lines,
       subtotalHtCents: ventilated.subtotalHtCents,
-      discountCents: ventilated.discountCents,
+      // `ventilated.discountCents` porte la somme des deux : on les rend à part.
+      discountCents: terms.discountCents,
       discountAdjustment: terms.discountAdjustment,
+      voucherDiscountCents,
       deliveryFeeCents: terms.deliveryFeeCents,
       vat: ventilated.vat.map((share) => ({ rate: share.rate, amountCents: share.amountCents })),
       totalCents: ventilated.totalCents,
     };
+  }
+
+  /**
+   * Ce que le bon déduit, **comme la commande le déduira** : après la remise,
+   * plafonné aux marchandises restantes, borné à zéro — la règle de
+   * `Order.draft` (plan des points, C1).
+   *
+   * Le mur : le bon doit appartenir à la personne connectée, c'est la lecture
+   * de la fidélité qui le vérifie. Sans personne (route anonyme), ou pour une
+   * société, un bon nommé est refusé plutôt qu'ignoré — l'ignorer afficherait
+   * un total que la commande contredirait.
+   *
+   * @throws {VoucherRequiresSignInError} un bon dans un devis anonyme.
+   * @throws {VoucherNotForCompanyOrderError} un bon dans un devis de société.
+   */
+  private async voucherDiscountOf(
+    query: QuoteShopCartQuery,
+    goodsAfterDiscountCents: number,
+  ): Promise<number> {
+    const voucherId = query.payload.voucherId;
+    if (voucherId === undefined) {
+      return 0;
+    }
+    if (query.buyerUserId === null) {
+      throw new VoucherRequiresSignInError();
+    }
+    if (query.companyId !== null) {
+      throw new VoucherNotForCompanyOrderError();
+    }
+    const voucher = await this.voucherQuotes.quote(voucherId, query.buyerUserId, this.clock.now());
+    return voucherImputationCents(voucher.valueCents, goodsAfterDiscountCents);
   }
 
   /**

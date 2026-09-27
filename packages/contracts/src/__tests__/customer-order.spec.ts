@@ -37,6 +37,7 @@ const STAFF_ORDER: OrderView = {
   subtotalCents: 2_160,
   discountCents: 0,
   discountAdjustment: null,
+  voucherDiscountCents: 0,
   deliveryFeeCents: 0,
   deliveryFeeAdjustment: null,
   lateFeeCents: 0,

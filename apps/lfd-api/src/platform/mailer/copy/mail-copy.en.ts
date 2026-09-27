@@ -24,6 +24,7 @@ export const MAIL_EN: MailCopy = {
     recapContent: "Contents",
     recapPieces: "{count} items",
     recapDiscount: "Discount",
+    recapVoucher: "Loyalty voucher",
     recapVat: "incl. VAT",
     qrTitle: "Your pickup code",
     qrLine: "Show this code at the counter. The team's scan is what records the handover.",

@@ -47,6 +47,15 @@ export interface VatInput {
   readonly lines: readonly VatLine[];
   /** Remise (retrait) déduite des marchandises, HT, en centimes. */
   readonly discountCents: number;
+  /**
+   * La part du **bon de fidélité** imputée, HT, en centimes — `0` sans bon.
+   *
+   * Passée à `ventilateVat` **ajoutée** à la remise, sans toucher sa signature
+   * (plan des points, C1) : les deux sont HT et retranchées des marchandises au
+   * prorata de chaque taux, leur somme se ventile donc comme chacune à part.
+   * Absent = aucun bon.
+   */
+  readonly voucherDiscountCents?: number;
   /** Frais de livraison (zone), HT, en centimes. */
   readonly deliveryFeeCents: number;
   /** Taux de la livraison en %, défaut {@link DELIVERY_VAT_RATE}. */
@@ -116,7 +125,7 @@ export interface OrderTotals {
 export function computeOrderTotals(input: VatInput): OrderTotals {
   const ventilated = ventilateVat({
     lines: input.lines,
-    discountCents: input.discountCents,
+    discountCents: input.discountCents + (input.voucherDiscountCents ?? 0),
     extras: extrasOf(input),
   });
   return {

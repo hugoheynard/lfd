@@ -34,6 +34,7 @@ const COMMON = {
 const MONEY = {
   subtotalCents: 1000,
   discountCents: 100,
+  voucherDiscountCents: 0,
   discountAdjustment: null,
   deliveryFeeCents: 0,
   lateFeeCents: 0,
@@ -167,6 +168,18 @@ describe('la feuille chiffrée', () => {
 
     expect(text).not.toContain('Coursier');
     expect(text).not.toContain('Surtaxe');
+  });
+
+  it('imprime le bon de fidélité sur sa propre ligne, après la remise', () => {
+    // Plan des points, C7 : la facture et l'assiette des points les distinguent.
+    const text = renderOrderSheetText(client({ money: { ...MONEY, voucherDiscountCents: 500 } }));
+
+    expect(text).toContain('Bon fidélité');
+    expect(text.indexOf('Remise')).toBeLessThan(text.indexOf('Bon fidélité'));
+  });
+
+  it("tait le bon quand il n'y en a pas", () => {
+    expect(renderOrderSheetText(client())).not.toContain('Bon fidélité');
   });
 
   it("n'imprime pas de SKU sur la feuille du client, et en imprime sur celle du staff", () => {

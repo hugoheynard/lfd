@@ -28,6 +28,7 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
     subtotalCents: 10_000,
     discountCents: 0,
     discountAdjustment: null,
+    voucherDiscountCents: 0,
     deliveryFeeCents: 0,
     lateFeeCents: 0,
     lateFeeAdjustment: null,
@@ -99,6 +100,22 @@ describe('le récapitulatif des montants', () => {
 
     expect(row(view, 'late-fee')).toMatchObject({ value: `15,00${EUR}` });
     expect(row(view, 'late-fee')?.hint).toBeUndefined();
+  });
+});
+
+describe('le bon de fidélité', () => {
+  it('a sa propre ligne, après la remise et avant la livraison', () => {
+    // Plan des points, C7 : fondu dans la remise, il fausserait l'assiette
+    // qu'une facture et les points relisent.
+    const view = order({
+      discountCents: 1_000,
+      discountAdjustment: { mode: 'percent', bp: 1000 },
+      voucherDiscountCents: 500,
+      deliveryFeeCents: 500,
+    });
+
+    expect(keys(view)).toEqual(['subtotal', 'discount', 'voucher', 'delivery', 'vat', 'total']);
+    expect(row(view, 'voucher')).toMatchObject({ label: 'Bon de fidélité', value: `− 5,00${EUR}` });
   });
 });
 

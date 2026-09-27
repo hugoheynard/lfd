@@ -1,6 +1,11 @@
 import {
+  InvalidAppliedVoucherAmountError,
   LoyaltyVoucherExpiredError,
+  LoyaltyVoucherLapsedForUseError,
   LoyaltyVoucherNotAvailableError,
+  LoyaltyVoucherNotReservedError,
+  LoyaltyVoucherNotUsableError,
+  LoyaltyVoucherReservedError,
 } from "../../errors/loyalty-errors.js";
 import { LoyaltyHolder } from "../../value-objects/loyalty-holder.js";
 import { LoyaltyReason } from "../../value-objects/loyalty-reason.js";
@@ -94,5 +99,122 @@ describe("LoyaltyVoucher — annulation par le staff", () => {
       LoyaltyVoucherExpiredError,
     );
     expect(voucher.status).toBe("available");
+  });
+});
+
+// ─── Lot C : le bon sur la commande (plan des points, D7, C3, C4, C5) ─────────
+
+const BEFORE_EXPIRY = new Date(ISSUED.getTime() + DAY);
+const AFTER_EXPIRY = new Date(ISSUED.getTime() + 400 * DAY);
+
+function reserved(): LoyaltyVoucher {
+  const voucher = issue();
+  voucher.reserve(BEFORE_EXPIRY);
+  return voucher;
+}
+
+describe("LoyaltyVoucher — la réservation", () => {
+  it("engage un bon disponible", () => {
+    expect(reserved().status).toBe("reserved");
+  });
+
+  it("refuse un bon déjà réservé : c'est la course perdue", () => {
+    expect(() => reserved().reserve(BEFORE_EXPIRY)).toThrow(LoyaltyVoucherNotUsableError);
+  });
+
+  it("refuse un bon disponible mais échu", () => {
+    expect(() => issue().reserve(AFTER_EXPIRY)).toThrow(LoyaltyVoucherLapsedForUseError);
+  });
+
+  it("refuse un bon annulé", () => {
+    const voucher = issue();
+    voucher.cancel(BEFORE_EXPIRY, "staff_1", REASON);
+    expect(() => voucher.reserve(BEFORE_EXPIRY)).toThrow(LoyaltyVoucherNotUsableError);
+  });
+
+  it("un bon réservé n'expire pas, et ne s'annule pas par le staff", () => {
+    const voucher = reserved();
+    expect(voucher.statusAt(AFTER_EXPIRY)).toBe("reserved");
+    expect(voucher.expire(AFTER_EXPIRY)).toBe(false);
+    expect(() => voucher.cancel(BEFORE_EXPIRY, "staff_1", REASON)).toThrow(
+      LoyaltyVoucherReservedError,
+    );
+  });
+});
+
+describe("LoyaltyVoucher — la libération", () => {
+  it("revient disponible avant sa date limite", () => {
+    const voucher = reserved();
+    expect(voucher.release(BEFORE_EXPIRY)).toBe("available");
+    expect(voucher.toPersistence()).toMatchObject({ status: "available", expiredAt: null });
+  });
+
+  it("passe directement à expiré après sa date limite", () => {
+    const voucher = reserved();
+    expect(voucher.release(AFTER_EXPIRY)).toBe("expired");
+    expect(voucher.toPersistence()).toMatchObject({ status: "expired", expiredAt: AFTER_EXPIRY });
+  });
+
+  it("refuse de libérer un bon qui n'est pas engagé", () => {
+    expect(() => issue().release(BEFORE_EXPIRY)).toThrow(LoyaltyVoucherNotReservedError);
+  });
+});
+
+describe("LoyaltyVoucher — le reliquat", () => {
+  it("rend un nouveau bon du reste : même titulaire, même date limite, aucun point", () => {
+    const parent = reserved();
+    const outcome = parent.leaveRemainder({ id: "v2", appliedCents: 400, at: BEFORE_EXPIRY });
+    expect(outcome.kind).toBe("issued");
+    if (outcome.kind !== "issued") {
+      return;
+    }
+    expect(outcome.voucher.toPersistence()).toMatchObject({
+      id: "v2",
+      userId: "u1",
+      valueCents: 600,
+      pointsCost: 0,
+      parentVoucherId: "v1",
+      status: "available",
+      issuedAt: BEFORE_EXPIRY,
+      expiresAt: parent.expiresAt,
+    });
+  });
+
+  it("ne rend rien quand tout a été imputé", () => {
+    expect(reserved().leaveRemainder({ id: "v2", appliedCents: 1_000, at: BEFORE_EXPIRY })).toEqual(
+      { kind: "none" },
+    );
+  });
+
+  it("s'éteint si la date limite est passée à l'émission, en disant ce qui se perd", () => {
+    expect(reserved().leaveRemainder({ id: "v2", appliedCents: 250, at: AFTER_EXPIRY })).toEqual({
+      kind: "lapsed",
+      remainderCents: 750,
+    });
+  });
+
+  it("marque le bon soldé dans tous les cas, et un second solde ne refait rien", () => {
+    for (const [appliedCents, at] of [
+      [400, BEFORE_EXPIRY],
+      [1_000, BEFORE_EXPIRY],
+      [250, AFTER_EXPIRY],
+    ] as const) {
+      const parent = reserved();
+      parent.leaveRemainder({ id: "v2", appliedCents, at });
+      expect(parent.toPersistence().remainderSettledAt).toEqual(at);
+      expect(parent.leaveRemainder({ id: "v3", appliedCents, at })).toEqual({ kind: "settled" });
+    }
+  });
+
+  it.each([-1, 1_001, 2.5])("refuse un montant imputé de %p", (appliedCents) => {
+    expect(() => reserved().leaveRemainder({ id: "v2", appliedCents, at: BEFORE_EXPIRY })).toThrow(
+      InvalidAppliedVoucherAmountError,
+    );
+  });
+
+  it("refuse de solder un bon qui n'est pas engagé", () => {
+    expect(() => issue().leaveRemainder({ id: "v2", appliedCents: 0, at: BEFORE_EXPIRY })).toThrow(
+      LoyaltyVoucherNotReservedError,
+    );
   });
 });

@@ -400,7 +400,10 @@ function totalRows(
   sheet: PricedSheet,
 ): readonly { label: string; value: string; rule?: boolean; strong?: boolean }[] {
   const totals = sheet.money;
-  const net = Math.max(0, totals.subtotalCents - totals.discountCents);
+  const net = Math.max(
+    0,
+    totals.subtotalCents - totals.discountCents - totals.voucherDiscountCents,
+  );
   return [
     // 🔴 **« HT » est écrit, il n'est plus sous-entendu.** La colonne des
     // articles peut désormais être en TTC ; un pied qui dirait « Sous-total »
@@ -411,6 +414,10 @@ function totalRows(
     ...(totals.discountCents === 0
       ? []
       : [{ label: "Remise", value: money(-totals.discountCents) }]),
+    // Le bon de fidélité, après la remise et sur sa propre ligne (plan des points, C7).
+    ...(totals.voucherDiscountCents === 0
+      ? []
+      : [{ label: "Bon de fidélité", value: money(-totals.voucherDiscountCents) }]),
     ...(totals.deliveryFeeCents === 0
       ? []
       : [{ label: "Livraison", value: money(totals.deliveryFeeCents) }]),

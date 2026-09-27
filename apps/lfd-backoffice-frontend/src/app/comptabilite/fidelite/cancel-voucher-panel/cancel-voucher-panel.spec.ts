@@ -23,6 +23,7 @@ const VOUCHER: LoyaltyVoucherView = {
   status: 'available',
   cancelledAt: null,
   cancellationReason: null,
+  usedOn: null,
 };
 
 class FakeApi {

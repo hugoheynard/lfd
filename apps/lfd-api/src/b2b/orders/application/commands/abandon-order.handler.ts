@@ -1,7 +1,9 @@
 import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { Clock } from "../../../../platform/time/clock.js";
 import {
   PaymentGateway,
   type IntentCancellation,
@@ -15,9 +17,10 @@ import {
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import { OrderAbandonedEvent } from "../../domain/events/order-abandoned.event.js";
 import { OrderPaymentFailedEvent } from "../../domain/events/order-payment-failed.event.js";
+import { LoyaltyVoucherRedemption } from "../../domain/ports/loyalty-voucher-redemption.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { OrderReader, type OwnedOrder } from "../../domain/ports/order.reader.js";
-import { OrderRepository } from "../../domain/ports/order.repository.js";
+import { OrderRepository, type AbandonedSettlement } from "../../domain/ports/order.repository.js";
 import { ensureOrderVisible } from "../../domain/services/order-access.js";
 import { abandonStanding, ensureOrderAuthor } from "../../domain/services/order-abandon.js";
 import { AbandonOrderCommand } from "./abandon-order.command.js";
@@ -52,6 +55,15 @@ import { AbandonOrderCommand } from "./abandon-order.command.js";
  * Une commande déjà annulée répond comme la première fois, sans rappeler
  * Stripe. Un second clic sur une commande pro trouve un règlement déjà
  * `failed` : le dépôt n'écrit rien, aucun fait n'est republié.
+ *
+ * ## Le bon de fidélité revient avec l'annulation
+ *
+ * `markAbandoned` (branche publique) est l'une des deux seules écritures de
+ * `cancelled` (plan des points, C4, vérifié le 2026-09-27). Quand elle
+ * franchit, le bon engagé est libéré **dans la même transaction** : jamais une
+ * commande annulée qui garde son bon, ni un bon rendu pour une commande qui
+ * vit. La branche pro n'écrit que `failed` et ne rend rien — un refus se
+ * reprend, et libérer permettrait la double dépense (D7).
  */
 @CommandHandler(AbandonOrderCommand)
 export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand, void> {
@@ -63,6 +75,9 @@ export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand,
     private readonly repository: OrderRepository,
     private readonly payments: PaymentGateway,
     private readonly events: DomainEventPublisher,
+    private readonly unitOfWork: UnitOfWork,
+    private readonly vouchers: LoyaltyVoucherRedemption,
+    private readonly clock: Clock,
   ) {}
 
   async execute(command: AbandonOrderCommand): Promise<void> {
@@ -79,7 +94,7 @@ export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand,
       this.ensureIntentDead(outcome, command.orderId);
     }
 
-    const written = await this.repository.markAbandoned(command.orderId);
+    const written = await this.abandon(command.orderId, owned.loyaltyVoucherId);
     if (written === null) {
       return;
     }
@@ -92,6 +107,20 @@ export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand,
         written,
       ),
     );
+  }
+
+  /** L'écriture, et la libération du bon si elle a annulé — ensemble ou pas du tout. */
+  private async abandon(
+    orderId: string,
+    voucherId: string | null,
+  ): Promise<AbandonedSettlement | null> {
+    return this.unitOfWork.run(async () => {
+      const written = await this.repository.markAbandoned(orderId);
+      if (written === "cancelled" && voucherId !== null) {
+        await this.vouchers.release(voucherId, this.clock.now());
+      }
+      return written;
+    });
   }
 
   /** Le mur de lecture d'abord (404 aux étrangers), puis celui de l'auteur (403). */

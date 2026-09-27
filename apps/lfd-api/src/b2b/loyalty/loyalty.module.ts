@@ -7,6 +7,11 @@ import { CreditPendingOrderPointsHandler } from "./application/commands/credit-p
 import { ConvertLoyaltyPointsHandler } from "./application/commands/convert-loyalty-points.handler.js";
 import { ExpireLoyaltyVouchersHandler } from "./application/commands/expire-loyalty-vouchers.handler.js";
 import { SetLoyaltySettingsHandler } from "./application/commands/set-loyalty-settings.handler.js";
+import { SettleVoucherRemaindersHandler } from "./application/commands/settle-voucher-remainders.handler.js";
+import { LoyaltyVoucherQuoting } from "./application/services/loyalty-voucher-quoting.js";
+import { LoyaltyVoucherRedeeming } from "./application/services/loyalty-voucher-redeeming.js";
+import { LoyaltyHolderLock } from "./domain/ports/loyalty-holder.lock.js";
+import { PrismaLoyaltyHolderLock } from "./infrastructure/prisma-loyalty-holder.lock.js";
 import { CreditPointsOnHandover } from "./application/handlers/credit-points-on-handover.handler.js";
 import { CreditPointsOnPaymentSettled } from "./application/handlers/credit-points-on-payment-settled.handler.js";
 import { GetLoyaltySettingsHandler } from "./application/queries/get-loyalty-settings.handler.js";
@@ -46,6 +51,11 @@ import { PrismaLoyaltyVoucherRepository } from "./infrastructure/prisma-loyalty-
  * Le crédit des commandes (lot D) lit les commandes définitives par le port
  * que `orders` exporte (`CompletedOrderReader`) — d'où l'import de son module,
  * dans ce sens seulement : `orders` ne connaît pas la fidélité.
+ *
+ * Le bon sur la commande (lot C) : `orders` DÉCLARE ce qu'il demande
+ * (`LoyaltyVoucherQuoteReader`, `LoyaltyVoucherRedemption`), ce module
+ * l'implémente et l'exporte, et `appBootstrap/loyalty-voucher.module.ts` relie
+ * les deux — l'inverse de l'import ci-dessous ferait un cycle (§11 bis S8).
  */
 @Module({
   imports: [OrdersModule],
@@ -54,6 +64,7 @@ import { PrismaLoyaltyVoucherRepository } from "./infrastructure/prisma-loyalty-
     PrismaLoyaltySettingsStore,
     { provide: LoyaltySettingsReader, useExisting: PrismaLoyaltySettingsStore },
     { provide: LoyaltySettingsWriter, useExisting: PrismaLoyaltySettingsStore },
+    { provide: LoyaltyHolderLock, useClass: PrismaLoyaltyHolderLock },
     { provide: LoyaltyAccountRepository, useClass: PrismaLoyaltyAccountRepository },
     { provide: LoyaltyVoucherRepository, useClass: PrismaLoyaltyVoucherRepository },
     { provide: LoyaltyHolderDirectory, useClass: PrismaLoyaltyHolderDirectory },
@@ -61,6 +72,9 @@ import { PrismaLoyaltyVoucherRepository } from "./infrastructure/prisma-loyalty-
     { provide: LoyaltyLedgerReader, useClass: PrismaLoyaltyLedgerReader },
     { provide: LoyaltyEarnedOrdersReader, useClass: PrismaLoyaltyEarnedOrdersReader },
     OrderPointsCrediting,
+    LoyaltyVoucherQuoting,
+    LoyaltyVoucherRedeeming,
+    SettleVoucherRemaindersHandler,
     CreditOrderPointsHandler,
     CreditPendingOrderPointsHandler,
     CreditPointsOnHandover,
@@ -74,5 +88,6 @@ import { PrismaLoyaltyVoucherRepository } from "./infrastructure/prisma-loyalty-
     ListLoyaltyBalancesHandler,
     ListLoyaltyVouchersHandler,
   ],
+  exports: [LoyaltyVoucherQuoting, LoyaltyVoucherRedeeming],
 })
 export class LoyaltyModule {}

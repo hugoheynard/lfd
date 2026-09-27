@@ -18,6 +18,9 @@ import {
   type UnsettledSettlement,
 } from "../../../domain/ports/unsettled-settlement.reader.js";
 import type { SettlementSweepWindow } from "../../../domain/services/settlement-sweep.js";
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { RecordingRedemption } from "../../commands/__tests__/voucher-doubles.js";
 import { PendingSettlementSweep } from "../pending-settlement-sweep.service.js";
 
 const DAY = "2026-01-15";
@@ -120,6 +123,7 @@ function build(scenario: Scenario) {
   const calls: string[] = [];
   const unsettled = new Unsettled(scenario.rows);
   const events = new RecordingPublisher();
+  const vouchers = new RecordingRedemption();
   const sweep = new PendingSettlementSweep(
     unsettled,
     new ScriptedGateway(scenario.outcome ?? { kind: "cancelled" }, calls),
@@ -128,8 +132,11 @@ function build(scenario: Scenario) {
       calls,
     ),
     events,
+    new DirectUnitOfWork(),
+    vouchers,
+    new FixedClock(new Date(0)),
   );
-  return { run: () => sweep.sweep(ServiceDay.of(DAY)), unsettled, events, calls };
+  return { run: () => sweep.sweep(ServiceDay.of(DAY)), unsettled, events, calls, vouchers };
 }
 
 describe("PendingSettlementSweep — la clôture coupe les règlements en vol", () => {
@@ -150,8 +157,8 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
   it("annule l'intention, PUIS écrit, puis publie la cause `day_closed`", async () => {
     const { run, events, calls } = build({
       rows: [
-        { orderId: "ord_1", paymentIntentId: "pi_1" },
-        { orderId: "ord_2", paymentIntentId: "pi_2" },
+        { orderId: "ord_1", paymentIntentId: "pi_1", loyaltyVoucherId: null },
+        { orderId: "ord_2", paymentIntentId: "pi_2", loyaltyVoucherId: null },
       ],
     });
 
@@ -165,7 +172,9 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
   });
 
   it("écrit sans appeler Stripe quand la commande n'a pas d'intention", async () => {
-    const { run, calls } = build({ rows: [{ orderId: "ord_1", paymentIntentId: null }] });
+    const { run, calls } = build({
+      rows: [{ orderId: "ord_1", paymentIntentId: null, loyaltyVoucherId: null }],
+    });
 
     await run();
 
@@ -179,7 +188,7 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
     "écrit même quand Stripe ne confirme pas (%o) — il ne bloque jamais la clôture (B1)",
     async (outcome) => {
       const { run, calls, events } = build({
-        rows: [{ orderId: "ord_1", paymentIntentId: "pi_1" }],
+        rows: [{ orderId: "ord_1", paymentIntentId: "pi_1", loyaltyVoucherId: null }],
         outcome,
       });
 
@@ -200,7 +209,7 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
     "épargne une commande dont l'argent est pris ou en route (%o)",
     async (outcome) => {
       const { run, calls, events } = build({
-        rows: [{ orderId: "ord_1", paymentIntentId: "pi_1" }],
+        rows: [{ orderId: "ord_1", paymentIntentId: "pi_1", loyaltyVoucherId: null }],
         outcome,
       });
 
@@ -213,12 +222,43 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
 
   it("ne republie rien pour ce que la base n'a pas franchi (réannonce, S4)", async () => {
     const { run, events } = build({
-      rows: [{ orderId: "ord_1", paymentIntentId: "pi_1" }],
+      rows: [{ orderId: "ord_1", paymentIntentId: "pi_1", loyaltyVoucherId: null }],
       crossed: [],
     });
 
     await run();
 
     expect(events.published).toEqual([]);
+  });
+});
+
+/**
+ * `failAtClosing` est la seconde écriture de `cancelled` : quand elle franchit,
+ * le bon engagé revient (plan des points, C4).
+ */
+describe("PendingSettlementSweep — le bon de fidélité", () => {
+  it("libère le bon de la commande annulée à la clôture, et d'elle seule", async () => {
+    const { run, vouchers } = build({
+      rows: [
+        { orderId: "ord_1", paymentIntentId: "pi_1", loyaltyVoucherId: "v1" },
+        { orderId: "ord_2", paymentIntentId: "pi_2", loyaltyVoucherId: "v2" },
+      ],
+      crossed: ["ord_1"],
+    });
+
+    await run();
+
+    expect(vouchers.calls).toEqual(["release:v1"]);
+  });
+
+  it("ne libère rien pour une commande épargnée (paiement déjà pris)", async () => {
+    const { run, vouchers } = build({
+      rows: [{ orderId: "ord_1", paymentIntentId: "pi_1", loyaltyVoucherId: "v1" }],
+      outcome: { kind: "already_paid" },
+    });
+
+    await run();
+
+    expect(vouchers.calls).toEqual([]);
   });
 });

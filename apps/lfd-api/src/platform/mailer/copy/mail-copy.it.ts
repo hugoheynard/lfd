@@ -24,6 +24,7 @@ export const MAIL_IT: MailCopy = {
     recapContent: "Contenuto",
     recapPieces: "{count} pezzi",
     recapDiscount: "Sconto",
+    recapVoucher: "Buono fedeltà",
     recapVat: "IVA inclusa",
     qrTitle: "Il suo codice di ritiro",
     qrLine: "Mostri questo codice al banco. È la scansione del team che attesta la consegna.",

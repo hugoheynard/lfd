@@ -156,4 +156,40 @@ export const LOYALTY_PHRASES = {
     ],
     ['valueCents', 'pointsCost', 'reason'],
   ),
+  // Lot C (2026-09-27) : le reliquat d'un bon consommé sur une commande.
+  'loyalty.voucher_remainder_issued': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a émis le reliquat '),
+        ...cite(LOYALTY_VOUCHER, fact.payload['voucher']),
+        text(' pour '),
+        ...holderOf(fact),
+        text(', d’une valeur de '),
+        inUnit('cents', fact.payload['valueCents']),
+        text(', laissé par '),
+        ...cite(LOYALTY_VOUCHER, fact.payload['parent']),
+        text(' sur '),
+        ...cite(ORDER, fact.payload['order']),
+        text(', valable jusqu’au '),
+        inUnit('instant', fact.payload['expiresAt']),
+      ],
+      ['subjectLabel', 'voucher', 'valueCents', 'parent', 'order', 'expiresAt'],
+    ),
+  'loyalty.voucher_remainder_lapsed': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a constaté l’extinction d’un reliquat de '),
+        inUnit('cents', fact.payload['remainderCents']),
+        text(', laissé par '),
+        ...cite(LOYALTY_VOUCHER, fact.payload['voucher']),
+        text(' pour '),
+        ...holderOf(fact),
+        text(' : le bon était échu quand '),
+        ...cite(ORDER, fact.payload['order']),
+        text(' est devenue définitive'),
+      ],
+      ['subjectLabel', 'remainderCents', 'voucher', 'order'],
+    ),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

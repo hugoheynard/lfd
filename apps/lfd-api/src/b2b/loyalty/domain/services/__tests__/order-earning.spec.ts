@@ -24,6 +24,7 @@ const PUBLIC_ORDER: EarnableOrder = {
   buyerHasAccount: true,
   subtotalCents: 2_340,
   discountCents: 0,
+  voucherDiscountCents: 0,
 };
 const PRO_ORDER: EarnableOrder = { ...PUBLIC_ORDER, clientele: "pro", companyId: "c1" };
 
@@ -65,5 +66,21 @@ describe("earningFor — ce que rapporte une commande définitive, et à qui", (
     ],
   ] as const)("ne rapporte rien quand %s", (_case, order, settings, reason) => {
     expect(earningFor(order, settings)).toEqual({ kind: "skip", reason });
+  });
+
+  /** Plan C6, tranché par Hugo le 2026-09-27 : un point dépensé ne rapporte pas de point. */
+  it("déduit la remise ET le bon de fidélité de l'assiette", () => {
+    const order = {
+      ...PUBLIC_ORDER,
+      subtotalCents: 2_500,
+      discountCents: 160,
+      voucherDiscountCents: 500,
+    };
+    expect(earningFor(order, PUBLIC_ONLY)).toMatchObject({ kind: "earn", points: 1_840 });
+  });
+
+  it("ne rapporte rien quand le bon couvre toutes les marchandises", () => {
+    const order = { ...PUBLIC_ORDER, subtotalCents: 700, voucherDiscountCents: 700 };
+    expect(earningFor(order, PUBLIC_ONLY)).toEqual({ kind: "skip", reason: "empty_basis" });
   });
 });

@@ -39,6 +39,7 @@ export const LIVE_PICKUP: CustomerOrderView = {
   subtotalCents: 1_137,
   discountCents: 0,
   discountAdjustment: null,
+  voucherDiscountCents: 0,
   deliveryFeeCents: 0,
   // Retrait : aucun frais de zone, donc aucun barème à figer. `null` dit ici
   // « il n'y en a pas », pas « on ne sait pas » — les deux se distinguent par

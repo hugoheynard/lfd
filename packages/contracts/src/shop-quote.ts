@@ -81,6 +81,12 @@ export const shopQuotePayloadSchema = z.object({
    */
   lines: z.array(shopQuoteLineSchema).min(1).max(100),
   fulfillment: shopQuoteFulfillmentSchema.nullable(),
+  /**
+   * Le bon de fidélité à déduire, pour que le devis et la commande concordent
+   * (plan des points, lot C). Refusé sur la route anonyme — un bon appartient
+   * à une personne — et sur un devis de société.
+   */
+  voucherId: z.string().min(1).optional(),
 });
 
 export type ShopQuoteLinePayload = z.infer<typeof shopQuoteLineSchema>;
@@ -145,6 +151,11 @@ export interface ShopQuoteView {
    * d'API, et empêché de la traduire.
    */
   readonly discountAdjustment: CartAdjustment | null;
+  /**
+   * La part du **bon de fidélité** imputée, HT, positive. Zéro sans bon. Elle
+   * s'impute après la remise, sur les marchandises seules, comme à la commande.
+   */
+  readonly voucherDiscountCents: number;
   /** Les frais de coursier, HT. Zéro en retrait — et alors aucune ligne. */
   readonly deliveryFeeCents: number;
   /** Une part par taux RÉELLEMENT présent, du plus bas au plus haut. */

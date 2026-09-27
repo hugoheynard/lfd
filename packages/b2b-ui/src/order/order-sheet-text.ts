@@ -113,6 +113,11 @@ function moneyLines(money: SheetMoney): readonly string[] {
     ...(money.discountCents === 0
       ? []
       : [`  Remise        ${amount(`−${formatCents(money.discountCents)}`, 26)}`]),
+    // Le bon de fidélité s'impute APRÈS la remise, et reste sa propre ligne :
+    // la facture et l'assiette des points les distinguent (plan des points, C7).
+    ...(money.voucherDiscountCents === 0
+      ? []
+      : [`  Bon fidélité  ${amount(`−${formatCents(money.voucherDiscountCents)}`, 26)}`]),
     ...(money.deliveryFeeCents === 0
       ? []
       : [`  Coursier      ${amount(formatCents(money.deliveryFeeCents), 26)}`]),

@@ -94,6 +94,7 @@ function moneyOf(order: OrderView): SheetMoney {
     subtotalCents: order.subtotalCents,
     discountCents: order.discountCents,
     discountAdjustment: order.discountAdjustment,
+    voucherDiscountCents: order.voucherDiscountCents,
     deliveryFeeCents: order.deliveryFeeCents,
     lateFeeCents: order.lateFeeCents,
     vatCents: order.vatCents,

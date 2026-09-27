@@ -76,6 +76,7 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
     subtotalCents: 128_460,
     discountCents: 12_846,
     discountAdjustment: null,
+    voucherDiscountCents: 0,
     deliveryFeeCents: 0,
     // Retrait : aucun frais de zone, donc aucun barème à figer.
     deliveryFeeAdjustment: null,

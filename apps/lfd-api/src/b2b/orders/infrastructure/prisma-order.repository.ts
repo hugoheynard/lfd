@@ -92,6 +92,11 @@ export class PrismaOrderRepository extends OrderRepository {
         subtotalCents: state.subtotalCents,
         discountCents: state.discountCents,
         discountAdjustment: state.discountAdjustment ?? Prisma.DbNull,
+        // Le bon, et ce qu'il a imputé — à part de la remise (plan des points, C2).
+        // L'index unique partiel refuse un second bon vivant, même si l'agrégat
+        // du bon l'avait laissé passer.
+        voucherDiscountCents: state.voucherDiscountCents,
+        loyaltyVoucherId: state.loyaltyVoucherId,
         deliveryFeeAdjustment: state.deliveryFeeAdjustment ?? Prisma.DbNull,
         deliveryFeeCents: state.deliveryFeeCents,
         lateFeeCents: state.lateFeeCents,

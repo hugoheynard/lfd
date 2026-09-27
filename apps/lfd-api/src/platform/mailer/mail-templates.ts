@@ -382,6 +382,14 @@ function recapRows(
     ...(sheet.money.discountCents === 0
       ? []
       : [{ label: copy.recapDiscount, value: `−${money(sheet.money.discountCents, locale)}` }]),
+    ...(sheet.money.voucherDiscountCents === 0
+      ? []
+      : [
+          {
+            label: copy.recapVoucher,
+            value: `−${money(sheet.money.voucherDiscountCents, locale)}`,
+          },
+        ]),
     { label: copy.recapVat, value: money(sheet.money.vatCents, locale) },
     {
       label: copy.totalLabel[settlement],

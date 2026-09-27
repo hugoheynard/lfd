@@ -11,6 +11,10 @@ import {
   type CompletedOrder,
   type CompletedOrderPage,
 } from "../../../../orders/domain/ports/completed-order.reader.js";
+import {
+  VoucherOrderReader,
+  type VoucherOrder,
+} from "../../../../orders/domain/ports/voucher-order.reader.js";
 import { LoyaltyEarnedOrdersReader } from "../../../domain/ports/loyalty-earned-orders.reader.js";
 import { LoyaltyAccountRepository } from "../../../domain/ports/loyalty-account.repository.js";
 import { LoyaltyConversionGate } from "../../../domain/ports/loyalty-conversion.gate.js";
@@ -23,6 +27,7 @@ import {
   LoyaltySettingsWriter,
 } from "../../../domain/ports/loyalty-settings.store.js";
 import { LoyaltyVoucherRepository } from "../../../domain/ports/loyalty-voucher.repository.js";
+import { LoyaltyHolderLock } from "../../../domain/ports/loyalty-holder.lock.js";
 import type { LoyaltyHolder } from "../../../domain/value-objects/loyalty-holder.js";
 import {
   LoyaltySettings,
@@ -92,6 +97,15 @@ export class InMemoryVouchers extends LoyaltyVoucherRepository {
       .filter((row) => row.status === "available" && row.expiresAt.getTime() <= now.getTime())
       .slice(0, limit);
     return Promise.resolve(due.map((row) => LoyaltyVoucher.reconstitute(row)));
+  }
+
+  loadReservedUnsettled(after: string | null, limit: number): Promise<readonly LoyaltyVoucher[]> {
+    const found = [...this.rows.values()]
+      .filter((row) => row.status === "reserved" && row.remainderSettledAt === null)
+      .filter((row) => after === null || row.id > after)
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .slice(0, limit);
+    return Promise.resolve(found.map((row) => LoyaltyVoucher.reconstitute(row)));
   }
 
   save(voucher: LoyaltyVoucher): Promise<void> {
@@ -198,6 +212,50 @@ export function completedOrder(overrides: Partial<CompletedOrder> = {}): Complet
     buyerHasAccount: true,
     subtotalCents: 2_340,
     discountCents: 0,
+    voucherDiscountCents: 0,
     ...overrides,
   };
+}
+
+/** Les commandes vivantes qui portent des bons — lues par la nuit et par l'écran. */
+export class FixedVoucherOrders extends VoucherOrderReader {
+  constructor(private readonly orders: readonly VoucherOrder[] = []) {
+    super();
+  }
+
+  liveOrdersCarrying(voucherIds: readonly string[]): Promise<ReadonlyMap<string, VoucherOrder>> {
+    return Promise.resolve(
+      new Map(
+        this.orders
+          .filter((order) => voucherIds.includes(order.voucherId))
+          .map((order) => [order.voucherId, order]),
+      ),
+    );
+  }
+}
+
+/** Une commande vivante qui porte le bon `v1` — payée par défaut. */
+export function voucherOrder(overrides: Partial<VoucherOrder> = {}): VoucherOrder {
+  return {
+    voucherId: "v1",
+    orderId: "o1",
+    orderNumber: "CMD-1",
+    status: "placed",
+    paymentStatus: "paid",
+    voucherDiscountCents: 300,
+    serviceDay: null,
+    ...overrides,
+  };
+}
+
+/** Le verrou du titulaire : il n'attend rien, il note qu'on l'a pris — dans le journal partagé. */
+export class RecordingLock extends LoyaltyHolderLock {
+  constructor(private readonly calls: string[]) {
+    super();
+  }
+
+  acquire(holder: LoyaltyHolder): Promise<void> {
+    this.calls.push(`lock:${holder.lockKey}`);
+    return Promise.resolve();
+  }
 }

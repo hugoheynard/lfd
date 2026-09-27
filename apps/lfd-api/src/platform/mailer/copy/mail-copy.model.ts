@@ -60,6 +60,8 @@ export interface OrderPlacedCopy {
   /** `{count}` = le nombre de pièces. */
   readonly recapPieces: string;
   readonly recapDiscount: string;
+  /** La ligne du bon de fidélité, distincte de la remise (plan des points, C7). */
+  readonly recapVoucher: string;
   readonly recapVat: string;
   /**
    * Le bloc du QR de retrait. Il est **dans le corps** et non en pièce jointe :

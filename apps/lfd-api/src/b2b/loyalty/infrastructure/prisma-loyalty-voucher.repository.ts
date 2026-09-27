@@ -17,6 +17,7 @@ const VOUCHER_SELECT = {
   expiresAt: true,
   status: true,
   parentVoucherId: true,
+  remainderSettledAt: true,
   expiredAt: true,
   cancelledAt: true,
   cancelledByStaffId: true,
@@ -51,6 +52,23 @@ export class PrismaLoyaltyVoucherRepository extends LoyaltyVoucherRepository {
     return rows.map((row) => LoyaltyVoucher.reconstitute(row));
   }
 
+  async loadReservedUnsettled(
+    after: string | null,
+    limit: number,
+  ): Promise<readonly LoyaltyVoucher[]> {
+    const rows = await this.prisma.loyaltyVoucher.findMany({
+      where: {
+        status: "reserved",
+        remainderSettledAt: null,
+        ...(after === null ? {} : { id: { gt: after } }),
+      },
+      orderBy: { id: "asc" },
+      take: limit,
+      select: VOUCHER_SELECT,
+    });
+    return rows.map((row) => LoyaltyVoucher.reconstitute(row));
+  }
+
   async save(voucher: LoyaltyVoucher): Promise<void> {
     const { id, ...columns } = voucher.toPersistence();
     await this.prisma.loyaltyVoucher.upsert({
@@ -60,6 +78,7 @@ export class PrismaLoyaltyVoucherRepository extends LoyaltyVoucherRepository {
       // les dates d'un bon sont figés à son émission.
       update: {
         status: columns.status,
+        remainderSettledAt: columns.remainderSettledAt,
         expiredAt: columns.expiredAt,
         cancelledAt: columns.cancelledAt,
         cancelledByStaffId: columns.cancelledByStaffId,
