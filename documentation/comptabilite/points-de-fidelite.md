@@ -194,6 +194,17 @@ espace personnel (`@ActingCompany()` nul) :
 | boutique, `/ma-fidelite`      | entrée à part (Hugo) ; lien de navigation seulement en espace personnel, programme ouvert ; un espace société est renvoyé à son accueil (`personalWorkspaceGuard`) — **aucune fidélité en pro avant le lot F** (Hugo, 2026-09-27) |
 | boutique, décompte du panier  | « Vous gagnerez N points » si `loyaltyPointsToEarn > 0`                                                                                                                                                                           |
 
+**Utiliser un bon (lot E2)** — dans le décompte du panier, le particulier
+connecté choisit un bon `available`, un seul ou aucun ; il part au devis et à
+la passation (`voucherId`), et entre dans la clé d'idempotence (un autre bon,
+une autre tentative). La ligne est **« Bon de fidélité −5,00 € HT »**, avec la
+remise, avant la TVA : le décompte retombe exactement sur son total. La baisse
+réelle, `voucherTotalEffectCents` (devis connecté seulement, total sans le bon
+moins total avec, par `ventilateVat`), est une **mention** : « soit −5,28 €
+sur votre total ». Un bon plus gros que le panier annonce son reliquat. Un
+refus `loyalty.*` remet le choix à aucun et relit les bons. La confirmation et
+Mes commandes montrent la ligne HT ; l'effet n'est pas figé sur la commande.
+
 L'historique rend une **nature** de ligne et un numéro de commande, jamais le
 motif d'un ajustement staff, écrit pour le staff.
 
@@ -308,7 +319,7 @@ sert aucune recherche de société ou de personne.
 | ------ | ------------------------------------------------------------------- | ---------------------------- |
 | **C**  | ✅ bâti le 2026-09-27 (§6) — reste la décision sur le reliquat échu | —                            |
 | **E1** | ✅ bâti le 2026-09-27 (§5)                                          | —                            |
-| **E2** | dans la boutique : utiliser un bon au paiement                      | le lot C                     |
+| **E2** | ✅ bâti le 2026-09-27 (§5)                                          | —                            |
 | **F**  | ouvrir aux pros                                                     | un signal « facture réglée » |
 
 Les décisions déjà prises pour ces lots sont écrites dans le plan : bon plus

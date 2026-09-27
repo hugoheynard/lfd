@@ -30,6 +30,21 @@
 @if (refusal(); as message) {
   <fold-callout variant="alert">{{ message }}</fold-callout>
 } @else {
+  <!-- Le bon de fidélité : seulement en espace personnel, programme ouvert,
+       au moins un bon disponible. Un seul par commande, ou aucun. -->
+  @if (voucherOptions().length > 0) {
+    <fold-listbox
+      size="sm"
+      allowClear
+      [label]="t().cart.voucherPick"
+      [placeholder]="t().cart.voucherNone"
+      [clearLabel]="t().cart.voucherNone"
+      [options]="voucherOptions()"
+      [value]="voucher.selected()"
+      (valueChange)="voucher.select($event)"
+    />
+  }
+
   <dl class="count">
     <div class="row">
       <dt>{{ t().cart.subtotal }}</dt>
@@ -40,6 +55,20 @@
       <div class="row saved">
         <dt>{{ label }}</dt>
         <dd>−{{ money(totals().discountCents) }}</dd>
+      </div>
+    }
+
+    <!-- Le bon, en HT avec la remise : les lignes retombent sur le total.
+         La baisse de TTC, calculée par le serveur, en mention. -->
+    @if (voucherLine(); as line) {
+      <div class="row saved">
+        <dt>
+          {{ t().cart.voucherLine }}
+          @if (line.effect; as effect) {
+            <span class="voucher-effect">{{ effect }}</span>
+          }
+        </dt>
+        <dd>−{{ line.amount }}</dd>
       </div>
     }
 
@@ -67,6 +96,9 @@
   </dl>
 
   <!-- Discrète, SOUS le total : ce n'est pas un montant, c'est une promesse. -->
+  @if (voucherRemainder(); as label) {
+    <p class="points">{{ label }}</p>
+  }
   @if (pointsLabel(); as label) {
     <p class="points">{{ label }}</p>
   }

@@ -10,6 +10,7 @@ import {
   ttcCentsOf,
   ventilateVat,
   type VatLine,
+  type VatVentilationInput,
 } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
@@ -20,6 +21,7 @@ import {
 } from "../../domain/errors/order-voucher-errors.js";
 import { LoyaltyVoucherQuoteReader } from "../../domain/ports/loyalty-voucher-quote.reader.js";
 import { voucherImputationCents } from "../../domain/services/voucher-imputation.js";
+import { voucherTotalEffectCents } from "../../domain/services/voucher-total-effect.js";
 
 import { CartAdjustments } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
@@ -35,6 +37,16 @@ export interface ShopCartQuoteRequest {
   readonly payload: ShopQuotePayload;
   readonly companyId: string | null;
   readonly buyerUserId: string | null;
+}
+
+/**
+ * Le décompte **et** ce que le bon a baissé du TTC. Deux champs plutôt qu'une
+ * vue élargie : le devis anonyme ne doit pas porter la clé (contrat servi,
+ * plan des points E2.1), et un spread de la vue l'y ferait passer.
+ */
+export interface ShopCartQuote {
+  readonly view: ShopQuoteView;
+  readonly voucherTotalEffectCents: number;
 }
 
 /** Ce que l'acheminement retire et ajoute, hors taxe. */
@@ -95,7 +107,7 @@ export class ShopCartQuoting {
    * résolu. Un seul handler, parce que le décompte est le même — c'est le PRIX
    * qui change, pas la façon de compter.
    */
-  async quote(query: ShopCartQuoteRequest): Promise<ShopQuoteView> {
+  async quote(query: ShopCartQuoteRequest): Promise<ShopCartQuote> {
     const resolved = await this.pricing.resolve(
       query.payload.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
       // `null` pour un visiteur : ce n'est pas un trou à combler, c'est le
@@ -119,7 +131,7 @@ export class ShopCartQuoting {
       subtotalHtCents - terms.discountCents,
     );
 
-    const ventilated = ventilateVat({
+    const ventilation: VatVentilationInput = {
       lines: lines.map((line): VatLine => ({
         htCents: line.lineTotalCents,
         vatRate: line.vatRatePercent,
@@ -133,9 +145,10 @@ export class ShopCartQuoting {
         terms.deliveryFeeCents === 0
           ? []
           : [{ htCents: terms.deliveryFeeCents, vatRate: DELIVERY_VAT_RATE }],
-    });
+    };
+    const ventilated = ventilateVat(ventilation);
 
-    return {
+    const view: ShopQuoteView = {
       lines,
       subtotalHtCents: ventilated.subtotalHtCents,
       // `ventilated.discountCents` porte la somme des deux : on les rend à part.
@@ -145,6 +158,10 @@ export class ShopCartQuoting {
       deliveryFeeCents: terms.deliveryFeeCents,
       vat: ventilated.vat.map((share) => ({ rate: share.rate, amountCents: share.amountCents })),
       totalCents: ventilated.totalCents,
+    };
+    return {
+      view,
+      voucherTotalEffectCents: voucherTotalEffectCents(ventilation, voucherDiscountCents),
     };
   }
 

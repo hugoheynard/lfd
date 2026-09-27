@@ -11,7 +11,15 @@ import {
   type WorkspaceDouble,
 } from '../../client-workspace.fixture';
 
+import { formatCents } from '../../format-money';
+import {
+  EMPTY_LOYALTY,
+  loyaltyDouble,
+  provideLoyalty,
+  type LoyaltyDouble,
+} from '../../client-loyalty.fixture';
 import { ClientCart } from '../client-cart.service';
+import { VoucherChoice } from '../voucher-choice.service';
 import { hydrateWith, TEST_CATALOGUE } from '../../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
 import { CartSummary } from './cart-summary';
@@ -192,6 +200,7 @@ describe('CartSummary — les points à gagner', () => {
       vat: [],
       totalCents: 264,
       loyaltyPointsToEarn: points,
+      voucherTotalEffectCents: 0,
     };
     TestBed.inject(HttpTestingController)
       .expectOne((r) => r.url.endsWith('/shop/quote/mine'))
@@ -224,5 +233,170 @@ describe('CartSummary — les points à gagner', () => {
     fixture.detectChanges();
 
     expect(el(fixture).querySelector('.points')).toBeNull();
+  });
+});
+
+/** Plan des points, §13, E2.2 et E2.4 : le choix du bon, son effet, son reliquat. */
+describe('CartSummary — le bon de fidélité', () => {
+  let space: WorkspaceDouble;
+  let loyalty: LoyaltyDouble;
+  let fixture: ComponentFixture<CartSummary>;
+  let http: HttpTestingController;
+
+  const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
+
+  const QUOTE: MyShopQuoteView = {
+    lines: [],
+    subtotalHtCents: 1000,
+    discountCents: 0,
+    discountAdjustment: null,
+    voucherDiscountCents: 0,
+    deliveryFeeCents: 0,
+    vat: [],
+    totalCents: 1055,
+    loyaltyPointsToEarn: null,
+    voucherTotalEffectCents: 0,
+  };
+
+  /** Laisse passer l'accalmie, puis rend la requête du décompte à flusher. */
+  function nextQuote() {
+    TestBed.tick();
+    vi.advanceTimersByTime(400);
+    TestBed.tick();
+    return http.expectOne((r) => r.url.endsWith('/shop/quote/mine'));
+  }
+
+  function boot(): void {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [CartSummary],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideWorkspace(space),
+        provideRecognised(),
+        provideLoyalty(loyalty),
+      ],
+    });
+    http = TestBed.inject(HttpTestingController);
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    TestBed.inject(ClientCart).add('VIE-001');
+    fixture = TestBed.createComponent(CartSummary);
+    fixture.detectChanges();
+    nextQuote().flush(QUOTE);
+    fixture.detectChanges();
+  }
+
+  /** Choisit le bon de 5,00 € HT et rend le devis qui l'impute. */
+  function pick(
+    imputed: number,
+    effect: number,
+    shape: Partial<MyShopQuoteView> = {},
+  ): Record<string, unknown> {
+    TestBed.inject(VoucherChoice).select('v_available');
+    const request = nextQuote();
+    const body = request.request.body as Record<string, unknown>;
+    request.flush({
+      ...QUOTE,
+      voucherDiscountCents: imputed,
+      voucherTotalEffectCents: effect,
+      ...shape,
+    } satisfies MyShopQuoteView);
+    fixture.detectChanges();
+    return body;
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    space = workspaceDouble();
+    loyalty = loyaltyDouble();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('propose le choix, et aucune ligne tant qu’aucun bon n’est choisi', () => {
+    boot();
+
+    expect(el().querySelector('fold-listbox')?.textContent).toContain(
+      'Utiliser un bon de fidélité',
+    );
+    expect(el().textContent).not.toContain('Bon de fidélité');
+  });
+
+  it('envoie le bon au devis et montre la baisse TTC rendue par le serveur', () => {
+    boot();
+    const body = pick(500, 528);
+
+    expect(body['voucherId']).toBe('v_available');
+    const line = [...el().querySelectorAll('.count .row')].find((row) =>
+      (row.textContent ?? '').includes('Bon de fidélité'),
+    );
+    // La part HT en montant, la baisse TTC en mention — les lignes bouclent.
+    expect(line?.querySelector('dd')?.textContent).toContain(`${formatCents(500)} HT`);
+    expect(line?.querySelector('.voucher-effect')?.textContent).toContain(formatCents(528));
+  });
+
+  /**
+   * Régression (2026-09-27) : la ligne du bon portait l'effet TTC, et le
+   * décompte comptait deux fois l'écart de TVA — ses lignes ne retombaient pas
+   * sur le total affiché.
+   */
+  it('retombe exactement sur le total : sous-total − remise − bon + frais + TVA', () => {
+    boot();
+    // 10,00 € HT, bon de 5,00 € HT, TVA 5,5 % sur 5,00 € = 0,28 € → 5,28 €.
+    pick(500, 528, { vat: [{ rate: 5.5, amountCents: 28 }], totalCents: 528 });
+
+    const cents = (text: string | null | undefined): number => {
+      const digits = (text ?? '').replace(/[^\d,−-]/gu, '');
+      const sign = /[−-]/u.test(digits) ? -1 : 1;
+      return sign * Number(digits.replace(/[−-]/gu, '').replace(',', ''));
+    };
+    const amounts = [...el().querySelectorAll('.count .row:not(.grand) dd')].map((dd) =>
+      cents(dd.textContent),
+    );
+    const total = cents(el().querySelector('.count .grand dd')?.textContent);
+
+    expect(amounts).toEqual([1000, -500, 28]);
+    expect(amounts.reduce((sum, value) => sum + value, 0)).toBe(total);
+  });
+
+  it('annonce le reliquat d’un bon plus gros que le panier', () => {
+    boot();
+    pick(260, 274);
+
+    expect(el().textContent).toContain(
+      `Le reste, ${formatCents(240)} HT, vous sera rendu en bon une fois la commande réglée.`,
+    );
+  });
+
+  it('n’annonce aucun reliquat quand le bon est entièrement imputé', () => {
+    boot();
+    pick(500, 528);
+
+    expect(el().textContent).not.toContain('Le reste');
+  });
+
+  it('ne montre rien sans bon disponible', () => {
+    loyalty = loyaltyDouble(EMPTY_LOYALTY);
+    boot();
+
+    expect(el().querySelector('fold-listbox')).toBeNull();
+  });
+
+  /** « Pas de fidélité en pro » (Hugo, 2026-09-27) : rien ne survit à la bascule. */
+  it('retire le choix et la ligne dès la bascule vers une société', () => {
+    boot();
+    pick(500, 528);
+    expect(el().textContent).toContain('Bon de fidélité');
+
+    space.current.set('co_1');
+    TestBed.tick();
+    fixture.detectChanges();
+
+    expect(el().querySelector('fold-listbox')).toBeNull();
+    expect(el().textContent).not.toContain('Bon de fidélité');
   });
 });

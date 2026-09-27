@@ -269,6 +269,15 @@ export const IT: ClientCopy = {
     vat: 'IVA {rate}',
     total: 'Totale IVA incl.',
     pointsToEarn: 'Guadagnerai {n} punti',
+    voucherPick: 'Usa un buono fedeltà',
+    voucherNone: 'Nessun buono',
+    voucherOption: '{value} IVA esclusa — fino al {date}',
+    voucherLine: 'Buono fedeltà',
+    voucherHt: '{value} IVA esclusa',
+    voucherRemainder:
+      'Il resto, {value} IVA esclusa, ti sarà restituito in buono una volta saldato l’ordine.',
+    voucherEffect: 'cioè −{value} sul totale',
+    voucherHtLine: 'Buono fedeltà (IVA esclusa)',
     clear: 'Svuota il carrello',
     payOnAccount: 'Addebita sul conto',
     accountSoon:

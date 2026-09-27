@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { FoldCalloutComponent, FoldIconComponent } from 'fold-ng';
+import {
+  FoldCalloutComponent,
+  FoldIconComponent,
+  FoldListboxComponent,
+  type FoldSelectItem,
+} from 'fold-ng';
 
 import { formatCents, formatRate } from '../../format-money';
 import { CartProductLine } from '../cart-product-line/cart-product-line';
@@ -9,6 +14,10 @@ import { ClientLocale } from '../../client-locale.service';
 import { ClientWorkspace } from '../../client-workspace.service';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
+import { VoucherChoice } from '../voucher-choice.service';
+
+/** L'heure de la boutique : une date limite se lit à Paris, comme dans « Ma fidélité ». */
+const SHOP_TIME_ZONE = 'Europe/Paris';
 
 /**
  * Le décompte du panier : les lignes, la relance, la remise, la TVA, le total.
@@ -28,7 +37,7 @@ import { ClientCopyService, fill } from '../../copy/client-copy.service';
 @Component({
   selector: 'app-cart-summary',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CartProductLine, FoldCalloutComponent, FoldIconComponent],
+  imports: [CartProductLine, FoldCalloutComponent, FoldIconComponent, FoldListboxComponent],
   templateUrl: './cart-summary.html',
   styleUrl: './cart-summary.scss',
 })
@@ -42,6 +51,7 @@ export class CartSummary {
   private readonly order = inject(OrderContextStore);
   private readonly locale = inject(ClientLocale);
   private readonly workspace = inject(ClientWorkspace);
+  protected readonly voucher = inject(VoucherChoice);
 
   protected readonly totals = this.cart.totals;
 
@@ -143,6 +153,62 @@ export class CartSummary {
     return fill(this.t().cart.pointsToEarn, {
       n: new Intl.NumberFormat(this.locale.current()).format(points),
     });
+  });
+
+  /**
+   * Les bons proposables, un par option : « 5,00 € HT — jusqu'au 27 sept.
+   * 2027 ». Vide hors espace personnel, programme fermé, ou sans bon
+   * disponible — et alors le choix n'existe pas (plan des points, E2.2).
+   */
+  protected readonly voucherOptions = computed<readonly FoldSelectItem<string>[]>(() => {
+    const c = this.t().cart;
+    const dates = new Intl.DateTimeFormat(this.locale.current(), {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: SHOP_TIME_ZONE,
+    });
+    return this.voucher.available().map((voucher) => ({
+      value: voucher.id,
+      label: fill(c.voucherOption, {
+        value: formatCents(voucher.valueCents),
+        date: dates.format(new Date(voucher.expiresAt)),
+      }),
+    }));
+  });
+
+  /**
+   * La ligne du bon : la part **HT** imputée, dans la partie hors taxe avec la
+   * remise — c'est ce qui fait retomber les lignes sur le total. La baisse de
+   * TTC rendue par le serveur passe en mention (plan des points, E2.2 corrigé
+   * le 2026-09-27 : la ligne en TTC faisait compter deux fois l'écart de TVA).
+   * Rien tant que le devis avec bon n'est pas revenu, rien en société.
+   */
+  protected readonly voucherLine = computed(() => {
+    const imputed = this.totals().voucherDiscountCents;
+    if (this.voucher.effective() === null || !this.workspace.isPersonal() || imputed <= 0) {
+      return null;
+    }
+    const effect = this.cart.voucherTotalEffectCents();
+    const c = this.t().cart;
+    return {
+      amount: fill(c.voucherHt, { value: formatCents(imputed) }),
+      effect: effect > 0 ? fill(c.voucherEffect, { value: formatCents(effect) }) : null,
+    };
+  });
+
+  /**
+   * Le reliquat d'un bon plus gros que le panier : sa valeur moins la part
+   * imputée. Le serveur le rend en bon une fois la commande réglée.
+   */
+  protected readonly voucherRemainder = computed(() => {
+    const chosen = this.voucher.effective();
+    const imputed = this.totals().voucherDiscountCents;
+    if (chosen === null || this.voucherLine() === null || imputed <= 0) {
+      return null;
+    }
+    const rest = chosen.valueCents - imputed;
+    return rest > 0 ? fill(this.t().cart.voucherRemainder, { value: formatCents(rest) }) : null;
   });
 
   protected readonly upsellLabel = computed(() => {

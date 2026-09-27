@@ -11,6 +11,9 @@ import { ShopQuote } from './shop-quote.service';
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
+import { loyaltyDouble, provideLoyalty, type LoyaltyDouble } from '../client-loyalty.fixture';
+import { provideRecognised } from '../client-orders.fixture';
+import { VoucherChoice } from './voucher-choice.service';
 
 const SKU = TEST_ITEMS[0]?.sku ?? '';
 
@@ -30,6 +33,9 @@ function boot(): { quote: ShopQuote; cart: CartStore; http: HttpTestingControlle
   TestBed.configureTestingModule({
     providers: [
       provideWorkspace(workspaceDouble()),
+      // La fidélité doublée : sa lecture n'est pas le sujet, et elle ouvrirait
+      // une requête que `verify()` compterait.
+      provideLoyalty(loyaltyDouble()),
       provideHttpClient(),
       provideHttpClientTesting(),
     ],
@@ -332,5 +338,79 @@ describe('la route du devis', () => {
     const asked = http.expectOne(QUOTE);
     expect(JSON.stringify(asked.request.body)).not.toContain('companyId');
     asked.flush(ANSWER);
+  });
+});
+
+/** Plan des points, §13, E2.2 : le bon choisi part au devis, un refus le retire. */
+describe('le bon au devis', () => {
+  let loyalty: LoyaltyDouble;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    loyalty = loyaltyDouble();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideWorkspace(workspaceDouble()),
+        provideRecognised(),
+        provideLoyalty(loyalty),
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    TestBed.inject(ShopQuote);
+    TestBed.inject(CartStore).setQuantity(SKU, 1);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const http = (): HttpTestingController => TestBed.inject(HttpTestingController);
+
+  it('n’envoie aucun bon tant qu’aucun n’est choisi — la clé est absente, pas nulle', () => {
+    quiet();
+    const asked = http().expectOne(QUOTE);
+    expect('voucherId' in (asked.request.body as object)).toBe(false);
+    asked.flush(ANSWER);
+  });
+
+  it('redemande le décompte avec le bon choisi, et garde la baisse TTC du serveur', () => {
+    quiet();
+    http().expectOne(QUOTE).flush(ANSWER);
+
+    TestBed.inject(VoucherChoice).select('v_available');
+    quiet();
+    const asked = http().expectOne(QUOTE);
+    expect((asked.request.body as { voucherId?: string }).voucherId).toBe('v_available');
+    asked.flush({
+      ...ANSWER,
+      voucherDiscountCents: 500,
+      loyaltyPointsToEarn: null,
+      voucherTotalEffectCents: 528,
+    });
+
+    expect(TestBed.inject(ShopQuote).voucherTotalEffectCents()).toBe(528);
+  });
+
+  it('un bon refusé revient à « aucun », la fidélité est relue et le décompte redemandé sans lui', () => {
+    quiet();
+    http().expectOne(QUOTE).flush(ANSWER);
+    TestBed.inject(VoucherChoice).select('v_available');
+    quiet();
+    http()
+      .expectOne(QUOTE)
+      .flush(
+        { code: 'loyalty.voucher_expired', message: 'Ce bon a expiré.' },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+    expect(TestBed.inject(VoucherChoice).selected()).toBeNull();
+    expect(loyalty.reads.count).toBe(1);
+    quiet();
+    const again = http().expectOne(QUOTE);
+    expect('voucherId' in (again.request.body as object)).toBe(false);
+    again.flush(ANSWER);
   });
 });

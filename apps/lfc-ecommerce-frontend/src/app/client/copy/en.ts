@@ -265,6 +265,15 @@ export const EN: ClientCopy = {
     vat: 'VAT {rate}',
     total: 'Total incl. VAT',
     pointsToEarn: 'You will earn {n} points',
+    voucherPick: 'Use a loyalty voucher',
+    voucherNone: 'No voucher',
+    voucherOption: '{value} excl. VAT — until {date}',
+    voucherLine: 'Loyalty voucher',
+    voucherHt: '{value} excl. VAT',
+    voucherRemainder:
+      'The remaining {value} excl. VAT will be returned to you as a voucher once the order is paid.',
+    voucherEffect: 'i.e. −{value} off your total',
+    voucherHtLine: 'Loyalty voucher (excl. VAT)',
     clear: 'Empty the basket',
     payOnAccount: 'Charge to account',
     accountSoon:

@@ -40,7 +40,10 @@ export class QuoteShopCartQuery {
 export class QuoteShopCartHandler implements IQueryHandler<QuoteShopCartQuery, ShopQuoteView> {
   constructor(private readonly quoting: ShopCartQuoting) {}
 
-  execute(query: QuoteShopCartQuery): Promise<ShopQuoteView> {
-    return this.quoting.quote(query);
+  async execute(query: QuoteShopCartQuery): Promise<ShopQuoteView> {
+    // Le décompte seul : l'effet du bon n'a pas de sens sans personne, et la
+    // clé n'appartient pas à ce contrat servi.
+    const { view } = await this.quoting.quote(query);
+    return view;
   }
 }

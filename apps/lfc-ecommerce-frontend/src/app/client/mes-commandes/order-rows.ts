@@ -125,6 +125,8 @@ export interface HistoryOrder {
   readonly slot: string;
   readonly pieces: number;
   readonly total: number;
+  /** La part HT du bon de fidélité imputée, en centimes ; `0` sans bon. */
+  readonly voucherDiscountCents: number;
   readonly status: OrderRowStatus;
   readonly payment: OrderPayment;
   readonly origin: OrderOrigin;
@@ -243,6 +245,7 @@ export function historyRowOf(order: CustomerOrderView, org: string, copy: RowCop
     slot: windowOf(order),
     pieces: piecesOf(order),
     total: order.totalCents / 100,
+    voucherDiscountCents: order.voucherDiscountCents,
     status: statusOf(order),
     // `not_required` = portée au compte, facturée en fin de mois. Tout le reste
     // est passé par la carte au moment de commander.

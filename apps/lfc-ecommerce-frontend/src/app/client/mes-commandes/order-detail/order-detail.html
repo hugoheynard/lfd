@@ -22,6 +22,14 @@
            lien explicite avec le relevé. -->
       <dd>{{ paymentLabel() }} · {{ paymentNote() }}</dd>
     </div>
+    <!-- La part HT du bon, figée à la commande : les totaux disent déjà le TTC
+         payé (plan des points, E2.3). -->
+    @if (voucherAmount(); as amount) {
+      <div class="fact">
+        <dt>{{ t().cart.voucherHtLine }}</dt>
+        <dd>−{{ amount }}</dd>
+      </div>
+    }
   </dl>
 </div>
 

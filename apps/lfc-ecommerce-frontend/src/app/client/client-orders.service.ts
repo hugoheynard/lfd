@@ -19,6 +19,7 @@ import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
 import { NotifyService } from '../notify.service';
 import { ClientCart } from './cart/client-cart.service';
+import { LOYALTY_REFUSAL_PREFIX, VoucherChoice } from './cart/voucher-choice.service';
 import { ClientWorkspace } from './client-workspace.service';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
 import { clearLocal, isRecord, readLocal, readNumber, readString, writeLocal } from './local-store';
@@ -108,6 +109,15 @@ const ATTEMPT_KEY = 'order-attempt';
  * `IdempotencyKeyReusedError` au lieu de passer.
  */
 const attemptKeyOf = (workspace: string): string => `${ATTEMPT_KEY}.${workspace}`;
+
+/**
+ * La clé de tentative **avec un bon** : une par bon (plan des points, E2.2).
+ * Changer de bon après un premier envoi est une autre commande — rejouée sous
+ * la clé du premier, elle serait prise pour un rejeu. Le serveur exige un UUID :
+ * le bon entre donc dans le NOM de l'entrée gardée, pas dans la clé elle-même.
+ */
+const voucherAttemptKeyOf = (workspace: string, voucherId: string | null): string =>
+  voucherId === null ? attemptKeyOf(workspace) : `${attemptKeyOf(workspace)}.voucher.${voucherId}`;
 
 /**
  * Range sous l'espace les clés écrites avant qu'il existe, **une fois**.
@@ -212,6 +222,7 @@ export class ClientOrders {
   private readonly auth = inject(AuthFacade);
   private readonly notify = inject(NotifyService);
   private readonly workspace = inject(ClientWorkspace);
+  private readonly voucher = inject(VoucherChoice);
 
   /** Les commandes gardées pour l'espace COURANT — vide tant qu'il n'est pas connu. */
   private readonly placed = signal<readonly PlacedOrder[]>([]);
@@ -253,13 +264,14 @@ export class ClientOrders {
    * tentative — et qu'un panier corrigé, lui, part sous la même clé mais avec
    * une empreinte différente, que le serveur refuse plutôt que d'honorer.
    */
-  private attemptKey(workspace: string): string {
-    const held = readLocal(attemptKeyOf(workspace), readString);
+  private attemptKey(workspace: string, voucherId: string | null = null): string {
+    const slot = voucherAttemptKeyOf(workspace, voucherId);
+    const held = readLocal(slot, readString);
     if (held !== null) {
       return held;
     }
     const fresh = crypto.randomUUID();
-    writeLocal(attemptKeyOf(workspace), fresh);
+    writeLocal(slot, fresh);
     return fresh;
   }
 
@@ -285,10 +297,13 @@ export class ClientOrders {
     // cliqué, et c'est sous lui que la tentative et la commande se rangent.
     // Inconnu, `/me` n'a pas répondu — l'intercepteur ne déclarerait rien.
     const workspace = this.workspace.current();
+    // Le bon choisi, capturé au clic comme l'espace. `null` hors espace
+    // personnel : `VoucherChoice` ne le propose qu'au particulier.
+    const voucherId = this.voucher.selected();
     if (service === null || lines.length === 0 || workspace === null) {
       return null;
     }
-    const placed = await this.send(service, lines, settlement, workspace);
+    const placed = await this.send(service, lines, settlement, workspace, voucherId);
     if (placed === null) {
       return null;
     }
@@ -319,8 +334,14 @@ export class ClientOrders {
     // La tentative est close : la commande suivante en ouvrira une autre. Gardée
     // au-delà, elle ferait rendre CETTE commande au prochain panier.
     clearLocal(attemptKeyOf(workspace));
+    clearLocal(voucherAttemptKeyOf(workspace, voucherId));
     const kept = [order, ...(readLocal(ordersKey(workspace), parseOrders) ?? [])];
     writeLocal(ordersKey(workspace), kept);
+    if (voucherId !== null) {
+      // Le bon est désormais « utilisé sur CMD-… » : le choix revient à aucun,
+      // et « Ma fidélité » est relue (plan des points, E2.3).
+      void this.voucher.release();
+    }
     // Une bascule pendant la passation : la commande est rangée dans SON espace,
     // et ni la liste ni le panier de l'espace où l'on est passé n'en sont touchés.
     if (this.workspace.current() === workspace) {
@@ -519,13 +540,18 @@ export class ClientOrders {
     lines: readonly { product: { sku: string }; quantity: number }[],
     settlement: OrderSettlement | null,
     workspace: string,
+    voucherId: string | null,
   ): Promise<PlacedOrderResponse | null> {
     if (!this.auth.isAuthenticated()) {
       // Pas un échec : une étape. L'écran envoie se connecter, et le panier
       // survit — il vit en base pour qui a déjà un compte.
       return null;
     }
-    const payload = payloadOf(service, lines, this.attemptKey(workspace), settlement);
+    const payload: PlaceOrderPayload = {
+      ...payloadOf(service, lines, this.attemptKey(workspace, voucherId), settlement),
+      // Omis sans bon, jamais `null` : le contrat le déclare facultatif.
+      ...(voucherId === null ? {} : { voucherId }),
+    };
     try {
       return await firstValueFrom(
         this.auth.accessToken$().pipe(
@@ -551,6 +577,12 @@ export class ClientOrders {
       // `NotifyService.error` filtre déjà l'enveloppe : le message du serveur
       // quand il est sûr, ce repli sinon. Jamais un détail interne.
       this.notify.error(error, "La commande n'a pas pu être passée.");
+      if (voucherId !== null && httpErrorCode(error)?.startsWith(LOYALTY_REFUSAL_PREFIX) === true) {
+        // Le bon est refusé (expiré, déjà utilisé, pris par un autre onglet) :
+        // le message du serveur est dit, le choix revient à « aucun », la liste
+        // est relue (plan des points, E2.2).
+        void this.voucher.release();
+      }
       return null;
     }
   }

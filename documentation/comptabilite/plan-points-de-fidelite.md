@@ -782,8 +782,12 @@ TTC payé. Figer l'effet serait une colonne de plus pour un affichage.
 - Dans le décompte du panier, avant le total : « Utiliser un bon de
   fidélité », un choix parmi les bons disponibles (« 5,00 € HT — jusqu'au
   27 sept. 2027 »), ou aucun. **Un seul bon** par commande.
-- Le bon choisi part dans le devis (`voucherId`) ; la ligne devient « Bon de
-  fidélité −5,28 € » (l'effet TTC), et une mention discrète « 5,00 € HT ».
+- Le bon choisi part dans le devis (`voucherId`). ⚠️ **Corrigé le 2026-09-27**
+  (trouvé en bâtissant) : une ligne « −5,28 € » placée à côté d'une TVA déjà
+  réduite comptait l'écart de TVA deux fois, et le décompte ne retombait pas
+  sur son total. La ligne est donc **« Bon de fidélité −5,00 € HT »**, avec la
+  remise, avant la TVA ; l'effet TTC passe en **mention** : « soit −5,28 € sur
+  votre total ».
 - Un bon plus gros que le panier : « Le reste, 2,40 € HT, vous sera rendu en
   bon une fois la commande réglée. » (valeur − `voucherDiscountCents`).
 - Le choix part dans la passation (`voucherId`). Il entre dans la clé

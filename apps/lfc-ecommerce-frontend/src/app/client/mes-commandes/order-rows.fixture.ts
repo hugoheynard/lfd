@@ -18,6 +18,7 @@ export const ROWS: readonly HistoryOrder[] = [
     slot: '07:00 – 08:00',
     pieces: 7,
     total: 96.4,
+    voucherDiscountCents: 0,
     status: 'done',
     // Portée au compte : c'est la facture du mois qui la règle.
     payment: 'account',
@@ -32,6 +33,8 @@ export const ROWS: readonly HistoryOrder[] = [
     slot: '',
     pieces: 4,
     total: 38.2,
+    // Un bon de fidélité imputé : la ligne « Bon de fidélité (HT) » paraît.
+    voucherDiscountCents: 500,
     status: 'delivered',
     payment: 'card',
     // Saisie par l'équipe : la seule ligne que le client n'a pas posée lui-même.
@@ -46,6 +49,7 @@ export const ROWS: readonly HistoryOrder[] = [
     slot: '07:00 – 08:00',
     pieces: 12,
     total: 142.9,
+    voucherDiscountCents: 0,
     status: 'done',
     payment: 'account',
     origin: 'recurring',

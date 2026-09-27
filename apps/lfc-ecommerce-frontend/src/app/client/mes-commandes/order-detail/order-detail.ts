@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { FoldButtonComponent } from 'fold-ng';
 
 import { ClientCopyService } from '../../copy/client-copy.service';
+import { formatCents } from '../../format-money';
 import type { HistoryOrder } from '../order-rows';
 
 /** Une note de 1 à 5. Zéro veut dire « pas encore notée », pas « zéro étoile ». */
@@ -57,6 +58,12 @@ export class OrderDetail {
       card: copy.payCard,
     };
     return labels[this.order().payment];
+  });
+
+  /** La part HT du bon de fidélité, mise en forme ; `null` sans bon. */
+  protected readonly voucherAmount = computed(() => {
+    const cents = this.order().voucherDiscountCents;
+    return cents > 0 ? formatCents(cents) : null;
   });
 
   protected readonly paymentNote = computed(() => {

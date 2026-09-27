@@ -71,4 +71,13 @@ describe('OrderDetail', () => {
     el().querySelector<HTMLButtonElement>('button[intent="danger"]')?.click();
     expect(raised).toBe(1);
   });
+
+  /** Plan des points, E2.3 : la part HT du bon, seulement quand il y en a une. */
+  it('montre la ligne « Bon de fidélité (HT) » seulement quand un bon a été imputé', () => {
+    expect(el().textContent).not.toContain(FR.cart.voucherHtLine);
+
+    fixture.componentRef.setInput('order', ROWS[1]);
+    fixture.detectChanges();
+    expect(el().textContent).toContain(FR.cart.voucherHtLine);
+  });
 });

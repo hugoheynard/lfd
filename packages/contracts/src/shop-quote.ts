@@ -178,4 +178,15 @@ export interface MyShopQuoteView extends ShopQuoteView {
    * fermé au public, espace société, assiette vide.
    */
   readonly loyaltyPointsToEarn: number | null;
+  /**
+   * La **baisse de TTC réellement obtenue** par le bon, en centimes : le total
+   * sans le bon moins le total avec, les deux ventilés par `ventilateVat`.
+   * Zéro sans bon.
+   *
+   * 🔴 **Il ne se déduit pas à l'écran.** Un bon de 5,00 € HT sur du 5,5 % baisse
+   * le total de 5,28 € ; sur un panier à deux taux, la baisse dépend de la
+   * répartition au prorata et des arrondis par taux — refaire la ventilation
+   * au front, c'est une seconde règle d'arrondi (plan des points, E2.1).
+   */
+  readonly voucherTotalEffectCents: number;
 }

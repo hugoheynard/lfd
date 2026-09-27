@@ -191,3 +191,11 @@
   font-size: var(--lfc-text-note);
   color: var(--lfc-color-accent-text);
 }
+
+/* La baisse de TTC du bon : une mention, pas un second montant. */
+.voucher-effect {
+  display: block;
+  font-size: var(--lfc-text-note);
+  font-weight: var(--fold-weight-regular);
+  color: var(--lfc-color-text-subtle);
+}

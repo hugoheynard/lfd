@@ -21,7 +21,12 @@ import { randomUUID } from "node:crypto";
  * `loyalty-earning.e2e-spec.ts`) ; les bons, eux, naissent par la vraie
  * conversion.
  */
-import type { PlacedOrderResponse, SetLoyaltySettingsPayload, ShopQuoteView } from "@lfd/contracts";
+import type {
+  MyShopQuoteView,
+  PlacedOrderResponse,
+  SetLoyaltySettingsPayload,
+  ShopQuoteView,
+} from "@lfd/contracts";
 import { CommandBus } from "@nestjs/cqrs";
 import request from "supertest";
 
@@ -366,6 +371,93 @@ describe("la libération", () => {
     await ctx.app.get(PendingSettlementSweep).sweep(ServiceDay.of(DAY_OF_SERVICE));
 
     expect((await voucherRow(voucherId)).status).toBe("expired");
+  });
+});
+
+/**
+ * Le pain au chocolat passé à 20 %, sur l'article ET sa trace, comme un push
+ * du référentiel les écrit ensemble : le panier porte alors deux taux.
+ */
+async function painAuChocolatAtTwentyPercent(): Promise<void> {
+  const item = await ctx.prisma.catalogItem.findUniqueOrThrow({
+    where: { sku: "VIE-002-1" },
+    select: { publicByContext: true },
+  });
+  // Le prix public (celui de l'espace personnel) porte son propre taux : on
+  // garde son hors taxe et on ne change que le taux.
+  const publicByContext = Object.fromEntries(
+    Object.entries(item.publicByContext as Record<string, { htMillicents: number }>).map(
+      ([key, entry]) => [key, { ...entry, vatRatePercent: 20 }],
+    ),
+  );
+  await ctx.prisma.catalogItem.update({
+    where: { sku: "VIE-002-1" },
+    data: { vatRatePercent: 20, publicByContext },
+  });
+  await ctx.prisma.catalogPriceHistory.updateMany({
+    where: { productSku: "VIE-002" },
+    data: { vatRatePercent: 20 },
+  });
+}
+
+/** Le devis reconnu d'un panier sans acheminement, avec ou sans bon. */
+async function myQuote(
+  lines: readonly { sku: string; quantity: number }[],
+  voucherId?: string,
+): Promise<MyShopQuoteView> {
+  const response = await ctx
+    .asSub(CLIENT)
+    .post("/shop/quote/mine")
+    .send({ lines, fulfillment: null, ...(voucherId === undefined ? {} : { voucherId }) })
+    .expect(200);
+  return jsonBody<MyShopQuoteView>(response);
+}
+
+describe("l'effet du bon sur le total (lot E2)", () => {
+  const TWO_RATES = [
+    { sku: "VIE-001", quantity: 5 },
+    { sku: "VIE-002", quantity: 5 },
+  ];
+
+  it("dit la baisse TTC exacte d'un panier à deux taux, pas le HT du bon", async () => {
+    await painAuChocolatAtTwentyPercent();
+    const { voucherId } = await holderWithVoucher();
+
+    const without = await myQuote(TWO_RATES);
+    const withVoucher = await myQuote(TWO_RATES, voucherId);
+
+    expect(withVoucher.vat.map((share) => share.rate)).toEqual([5.5, 20]);
+    expect(withVoucher.voucherDiscountCents).toBe(500);
+    expect(withVoucher.voucherTotalEffectCents).toBe(without.totalCents - withVoucher.totalCents);
+    expect(withVoucher.voucherTotalEffectCents).toBeGreaterThan(500);
+  });
+
+  it("un bon plus gros que le panier : l'effet est tout le TTC des marchandises", async () => {
+    await painAuChocolatAtTwentyPercent();
+    const { voucherId } = await holderWithVoucher();
+
+    const quote = await myQuote([{ sku: "VIE-002", quantity: 1 }], voucherId);
+
+    // Prix public 2,75 € HT à 20 % : le bon de 5,00 € est plafonné à 2,75 €, et
+    // la baisse est tout le TTC, 3,30 €.
+    expect(quote.voucherDiscountCents).toBe(275);
+    expect(quote.voucherTotalEffectCents).toBe(330);
+    expect(quote.totalCents).toBe(0);
+  });
+
+  it("sans bon, l'effet est nul", async () => {
+    await createUser(ctx.prisma, { auth0Sub: CLIENT, firstName: "Léa" });
+
+    expect((await myQuote(TWO_RATES)).voucherTotalEffectCents).toBe(0);
+  });
+
+  it("le devis anonyme ne porte pas la clé", async () => {
+    const response = await request(ctx.app.getHttpServer())
+      .post("/shop/quote")
+      .send({ lines: TWO_RATES, fulfillment: null })
+      .expect(200);
+
+    expect(jsonBody<ShopQuoteView>(response)).not.toHaveProperty("voucherTotalEffectCents");
   });
 });
 

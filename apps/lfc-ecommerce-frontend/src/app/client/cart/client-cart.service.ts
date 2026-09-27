@@ -141,6 +141,9 @@ export class ClientCart {
   /** Les points que le panier rapporterait, selon le serveur — cf. {@link ShopQuote.loyaltyPointsToEarn}. */
   readonly loyaltyPointsToEarn = this.quote.loyaltyPointsToEarn;
 
+  /** La baisse de TTC du bon choisi, selon le serveur — cf. {@link ShopQuote.voucherTotalEffectCents}. */
+  readonly voucherTotalEffectCents = this.quote.voucherTotalEffectCents;
+
   quantityOf(productId: string): number {
     return this.store.quantityOf(productId);
   }

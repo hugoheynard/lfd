@@ -39,6 +39,14 @@
           <dd>−{{ money(done.totals.discountCents) }}</dd>
         </div>
       }
+      <!-- La part HT du bon, telle que la commande l'a imputée : le total
+           ci-dessous dit déjà le TTC payé (plan des points, E2.3). -->
+      @if (done.totals.voucherDiscountCents > 0) {
+        <div class="row saved">
+          <dt>{{ t().cart.voucherHtLine }}</dt>
+          <dd>−{{ money(done.totals.voucherDiscountCents) }}</dd>
+        </div>
+      }
       @for (vat of vatLines(); track vat.label) {
         <div class="row vat">
           <dt>

@@ -26,6 +26,7 @@ import { ClientWorkspace } from '../client-workspace.service';
 import { CartStore } from './cart.store';
 import { OrderContextStore } from '../order-context.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { LOYALTY_REFUSAL_PREFIX, VoucherChoice } from './voucher-choice.service';
 
 /**
  * L'accalmie au bout de laquelle on chiffre, en millisecondes.
@@ -127,11 +128,13 @@ export class ShopQuote {
   private readonly order = inject(OrderContextStore);
   private readonly catalogue = inject(ShopCatalogue);
   private readonly workspace = inject(ClientWorkspace);
+  private readonly voucher = inject(VoucherChoice);
 
   private readonly view = signal<ShopQuoteView>(EMPTY);
   private readonly state = signal<QuoteStatus>('idle');
   private readonly refused = signal<string | null>(null);
   private readonly points = signal<number | null>(null);
+  private readonly voucherEffect = signal(0);
   /** Le lecteur du dernier décompte demandé — cf. la remise à zéro des points. */
   private lastReader: string | null = null;
 
@@ -158,6 +161,13 @@ export class ShopQuote {
   readonly loyaltyPointsToEarn = this.points.asReadonly();
 
   /**
+   * La baisse de TTC que le bon choisi obtient, **telle que le serveur l'a
+   * ventilée** (plan des points, E2.1). Zéro sans bon. Elle ne se déduit pas
+   * de la valeur HT du bon : ce serait une seconde règle d'arrondi.
+   */
+  readonly voucherTotalEffectCents = this.voucherEffect.asReadonly();
+
+  /**
    * Ce dont le décompte dépend, et **rien d'autre**.
    *
    * Une clé plutôt que les signaux bruts : sans elle, tout changement du
@@ -171,7 +181,10 @@ export class ShopQuote {
     // sous la mercuriale d'une société, donc une bascule redemande le décompte.
     // `null` = reconnu, espace pas encore connu — cf. `ask`.
     const reader = this.auth.isAuthenticated() ? this.workspace.current() : VISITOR;
-    return JSON.stringify({ lines, service, reader });
+    // Le bon choisi change le décompte : il est dans la clé. `null` hors de
+    // l'espace personnel — cf. `VoucherChoice.effective`.
+    const voucher = this.voucher.selected();
+    return JSON.stringify({ lines, service, reader, voucher });
   });
 
   constructor() {
@@ -213,6 +226,7 @@ export class ShopQuote {
           if (reader !== this.lastReader) {
             this.lastReader = reader;
             this.points.set(null);
+            this.voucherEffect.set(0);
           }
         }),
         debounceTime(QUOTE_DEBOUNCE_MS),
@@ -237,6 +251,7 @@ export class ShopQuote {
       this.state.set('idle');
       this.refused.set(null);
       this.points.set(null);
+      this.voucherEffect.set(0);
       return of(null);
     }
     if (readerIn(key) === null) {
@@ -244,12 +259,21 @@ export class ShopQuote {
       // l'espace que le serveur choisit. L'arrivée de l'espace change la clé.
       return of(null);
     }
-    const body = { lines, fulfillment: fulfillmentIn(key) };
+    const voucherId = voucherIn(key);
+    const body = {
+      lines,
+      fulfillment: fulfillmentIn(key),
+      // Omis sans bon, jamais `null` : le contrat le déclare facultatif.
+      ...(voucherId === null ? {} : { voucherId }),
+    };
     return this.quoted(body).pipe(
       tap((view) => {
         this.view.set(view);
         // Le devis anonyme n'a pas la clé (absente, pas nulle).
         this.points.set('loyaltyPointsToEarn' in view ? view.loyaltyPointsToEarn : null);
+        this.voucherEffect.set(
+          'voucherTotalEffectCents' in view ? view.voucherTotalEffectCents : 0,
+        );
         this.state.set('ready');
         this.refused.set(null);
       }),
@@ -259,16 +283,25 @@ export class ShopQuote {
           // coursier pour une livraison que la commande refusera (plan D5).
           this.view.set(EMPTY);
           this.points.set(null);
+          this.voucherEffect.set(0);
           this.state.set('refused');
           this.refused.set(httpErrorMessage(error, DELIVERY_CLOSED_FALLBACK));
           return of(null);
         }
         const code = httpErrorCode(error);
+        if (voucherId !== null && code?.startsWith(LOYALTY_REFUSAL_PREFIX) === true) {
+          // Le bon n'est plus utilisable (expiré, pris par un autre onglet) :
+          // le choix revient à « aucun » et la liste est relue — la clé change,
+          // et le décompte se redemande sans lui.
+          void this.voucher.release();
+          return of(null);
+        }
         if (code?.startsWith(OPERATION_REFUSAL_PREFIX) === true) {
           // La commande refuserait ce panier tel quel : le décompte le dit
           // avant le règlement, avec le message du serveur (D6).
           this.view.set(EMPTY);
           this.points.set(null);
+          this.voucherEffect.set(0);
           this.state.set('refused');
           this.refused.set(httpErrorMessage(error, OPERATION_REFUSAL_FALLBACK));
           return of(null);
@@ -292,12 +325,11 @@ export class ShopQuote {
    * réclamait, et rien de ce qu'on lui avait négocié ne lui était montré avant
    * la confirmation.
    */
-  private quoted(body: {
-    lines: readonly { sku: string; quantity: number }[];
-    fulfillment: ReturnType<typeof fulfillmentIn>;
-  }): Observable<ShopQuoteView | MyShopQuoteView> {
+  private quoted(body: ShopQuotePayload): Observable<ShopQuoteView | MyShopQuoteView> {
     if (!this.auth.isAuthenticated()) {
-      return this.http.post<ShopQuoteView>(`${AUTH_CONFIG.apiBaseUrl}/shop/quote`, body);
+      // Un bon appartient à une personne : la route anonyme le refuserait.
+      const { voucherId, ...anonymous } = body;
+      return this.http.post<ShopQuoteView>(`${AUTH_CONFIG.apiBaseUrl}/shop/quote`, anonymous);
     }
     return this.auth.accessToken$().pipe(
       switchMap((token) =>
@@ -350,6 +382,11 @@ function linesOf(key: string): ShopQuotePayload['lines'] {
 /** Le lecteur encodé dans la clé : l'espace, {@link VISITOR}, ou `null` s'il n'est pas connu. */
 function readerIn(key: string): string | null {
   return (JSON.parse(key) as { reader: string | null }).reader;
+}
+
+/** Le bon encodé dans la clé, `null` = aucun. */
+function voucherIn(key: string): string | null {
+  return (JSON.parse(key) as { voucher: string | null }).voucher;
 }
 
 /** Le service encodé dans la clé. */

@@ -466,6 +466,23 @@ export interface ClientCopy {
      * La ligne n'existe que si le serveur en annonce plus de zéro.
      */
     readonly pointsToEarn: string;
+    /**
+     * Le choix d'un bon de fidélité au décompte (plan des points, E2.2) : son
+     * libellé, l'option « aucun », et une option par bon (`{value}`, `{date}`).
+     */
+    readonly voucherPick: string;
+    readonly voucherNone: string;
+    readonly voucherOption: string;
+    /** La ligne du décompte — son montant est la part HT imputée, rendue par le serveur. */
+    readonly voucherLine: string;
+    /** Le montant HT de la ligne du bon (`{value}`). */
+    readonly voucherHt: string;
+    /** Le reliquat d'un bon plus gros que le panier (`{value}`). */
+    readonly voucherRemainder: string;
+    /** La baisse de TTC que le bon obtient, en mention sous sa ligne (`{value}`). */
+    readonly voucherEffect: string;
+    /** La ligne d'une commande passée : la part HT imputée. */
+    readonly voucherHtLine: string;
     /** La sortie du panier : tout retirer d'un coup. */
     readonly clear: string;
     /** Le second règlement : porter la commande au compte plutôt que payer. */

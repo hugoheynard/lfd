@@ -14,6 +14,8 @@ import {
   provideRecognised,
   RECOGNISED,
 } from './client-orders.fixture';
+import { loyaltyDouble, provideLoyalty, type LoyaltyDouble } from './client-loyalty.fixture';
+import { VoucherChoice } from './cart/voucher-choice.service';
 import { provideWorkspace, workspaceDouble } from './client-workspace.fixture';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
 import { hydrateWith, TEST_CATALOGUE } from './shop/shop-catalogue.fixture';
@@ -50,11 +52,15 @@ const LIVRE: ServiceChoice = {
   },
 };
 
-function boot(auth: unknown = RECOGNISED): HttpTestingController {
+function boot(
+  auth: unknown = RECOGNISED,
+  loyalty: LoyaltyDouble = loyaltyDouble(),
+): HttpTestingController {
   localStorage.clear();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      provideLoyalty(loyalty),
       provideHttpClient(),
       provideHttpClientTesting(),
       // L'espace connu : sans lui, la passation attend `/me` et ne part pas.
@@ -342,5 +348,103 @@ describe('le règlement de la commande', () => {
     boot();
 
     expect(TestBed.inject(ClientOrders).all()).toEqual([]);
+  });
+});
+
+/** Plan des points, §13, E2.2 et E2.3 : le bon choisi part à la passation. */
+describe('passer commande avec un bon de fidélité', () => {
+  let loyalty: LoyaltyDouble;
+
+  beforeEach(() => {
+    loyalty = loyaltyDouble();
+  });
+
+  async function send(): Promise<{
+    body: PlaceOrderPayload;
+    answer: (status: number) => Promise<unknown>;
+  }> {
+    const placing = TestBed.inject(ClientOrders).place();
+    await Promise.resolve();
+    await Promise.resolve();
+    const request = TestBed.inject(HttpTestingController).expectOne((r) =>
+      r.url.endsWith('/orders'),
+    );
+    return {
+      body: request.request.body as PlaceOrderPayload,
+      answer: async (status) => {
+        if (status === 201) {
+          request.flush({ id: 'ord_1', orderNumber: 'CMD-0007' });
+        } else {
+          request.flush(
+            { code: 'loyalty.voucher_reserved', message: 'Ce bon est déjà utilisé.' },
+            { status, statusText: 'Conflict' },
+          );
+        }
+        return placing;
+      },
+    };
+  }
+
+  function ready(): void {
+    boot(RECOGNISED, loyalty);
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+  }
+
+  it('envoie le bon choisi, et n’en envoie aucun sans choix', async () => {
+    ready();
+    const without = await send();
+    expect('voucherId' in without.body).toBe(false);
+    await without.answer(409);
+
+    TestBed.inject(VoucherChoice).select('v_available');
+    const withVoucher = await send();
+    expect(withVoucher.body.voucherId).toBe('v_available');
+    await withVoucher.answer(201);
+  });
+
+  it('change de clé d’idempotence quand le bon change — c’est une autre commande', async () => {
+    ready();
+    const first = await send();
+    await first.answer(409);
+    const replay = await send();
+    // Le rejeu du même panier, sans bon : la même tentative.
+    expect(replay.body.idempotencyKey).toBe(first.body.idempotencyKey);
+    await replay.answer(409);
+
+    TestBed.inject(VoucherChoice).select('v_available');
+    const withVoucher = await send();
+    expect(withVoucher.body.idempotencyKey).not.toBe(first.body.idempotencyKey);
+    await withVoucher.answer(201);
+  });
+
+  it('un refus du bon remet le choix à « aucun » et relit la fidélité', async () => {
+    ready();
+    TestBed.inject(VoucherChoice).select('v_available');
+    const attempt = await send();
+
+    expect(await attempt.answer(409)).toBeNull();
+
+    expect(TestBed.inject(VoucherChoice).selected()).toBeNull();
+    expect(loyalty.reads.count).toBe(1);
+    expect(TestBed.inject(ClientCart).isEmpty()).toBe(false);
+  });
+
+  it('relit la fidélité après une passation avec bon — le bon y passe « utilisé »', async () => {
+    ready();
+    TestBed.inject(VoucherChoice).select('v_available');
+    const attempt = await send();
+
+    expect(await attempt.answer(201)).not.toBeNull();
+
+    expect(loyalty.reads.count).toBe(1);
+    expect(TestBed.inject(VoucherChoice).selected()).toBeNull();
+  });
+
+  it('ne relit rien après une passation sans bon', async () => {
+    ready();
+    await (await send()).answer(201);
+
+    expect(loyalty.reads.count).toBe(0);
   });
 });
