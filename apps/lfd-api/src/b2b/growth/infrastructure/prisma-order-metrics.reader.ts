@@ -40,6 +40,7 @@ export class PrismaOrderMetricsReader extends OrderMetricsReader {
         totalCents: true,
         subtotalCents: true,
         discountCents: true,
+        voucherDiscountCents: true,
         fromSubscriptionId: true,
         companyId: true,
         placedByUserId: true,
