@@ -1,7 +1,8 @@
 # Question au cabinet comptable — bons de fidélité et cartes cadeaux
 
 > **Ouverte le 2026-09-26.** Envoyée par Hugo au cabinet comptable. **Sans
-> réponse à ce jour.** Quand elle arrive, elle se range au §2, datée, et les
+> réponse à ce jour.** Hugo a tranché la question 1 le 2026-09-27 : **rabais
+> (A)** ; la réponse du cabinet vaut désormais confirmation. Quand elle arrive, elle se range au §2, datée, et les
 > documents qui en dépendent se mettent à jour :
 > [`points-de-fidelite.md`](points-de-fidelite.md) §8 et le lot C de
 > [`plan-points-de-fidelite.md`](plan-points-de-fidelite.md).

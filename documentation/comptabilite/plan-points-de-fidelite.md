@@ -332,7 +332,7 @@ qu'une annulation ne rende le bon d'origine : on aurait alors les deux.
 | B   | ✅ bâti le 2026-09-26, `1057ecfa3` (routes) et `b862ee9fb` (écran) — Comptabilité › Fidélité : le réglage, une vue des soldes et des bons, l'ajustement motivé, l'annulation d'un bon.                                                                                                                                                     |
 | D   | ✅ bâti le 2026-09-26, `9f1ebf2c8`. le rattrapage et l'expiration passent **chaque nuit à 02 h UTC** (`0 2 * * *`, `wrangler.jsonc` et `LOYALTY_SWEEP_CRON` dans `container/worker.ts`) — le crédit : l'abonné et la tâche de rattrapage, par un port de lecture d'`orders` ; l'inventaire des chemins vers `paid`.                        |
 | E1  | boutique : le solde, « vous gagnerez N points », et la conversion en bon.                                                                                                                                                                                                                                                                  |
-| C   | **attend la réponse à D6.** L'état `reserved`, la réservation à la passation, la libération à l'annulation, l'effet sur le total et sur l'assiette. Avant de bâtir : l'inventaire de tous les lecteurs du total. Ensuite, un passage de `vitruve`.                                                                                         |
+| C   | **D6 tranché : rabais** (Hugo, 2026-09-27, §10). L'état `reserved`, la réservation à la passation, la libération à l'annulation, l'effet sur le total et sur l'assiette. Avant de bâtir : l'inventaire de tous les lecteurs du total. Ensuite, un passage de `vitruve`.                                                                    |
 | E2  | boutique : utiliser un bon au paiement.                                                                                                                                                                                                                                                                                                    |
 | F   | ✅ le serveur **refuse** déjà `openToPro` (`LoyaltyProNotYetOpenableError`, `9f1ebf2c8`) ; ce lot lève le refus — ouvrir aux pros : un signal « facture réglée » avant tout `openToPro`.                                                                                                                                                   |
 
@@ -347,9 +347,8 @@ programme fermé.
 
 ## 5. Questions ouvertes
 
-1. **D6 — au cabinet comptable** : un bon d'achat gratuit, issu de points
-   de fidélité, est-il un rabais (A) ou un moyen de paiement (B) ? Le lot C
-   attend la réponse.
+1. ~~**D6**~~ — tranché par Hugo le 2026-09-27 : **rabais** (§10). La
+   question au cabinet reste posée, en confirmation.
 
 Tranchées le 2026-09-26 (§7) : l'assiette, le titulaire, le bon d'achat, le
 reliquat, qui convertit, la date limite et l'ordre d'ouverture.
@@ -433,3 +432,23 @@ D5 et D6, tout ce qui parle d'un bon « TTC » et de la recherche
 comme remise HT. Le client gagne la TVA en plus, par exemple 5,28 € de baisse
 pour un bon de 5 € HT à 5,5 %. L'affichage devra montrer cette baisse réelle.
 Rien n'était déployé : aucune donnée n'est à convertir.
+
+## 10. Le bon est un rabais (2026-09-27)
+
+> « je dis le bon est une remise » — Hugo.
+
+D6 est tranché : **traitement A**. Le bon réduit la base de TVA ; sa valeur,
+déjà HT (§9), entre telle quelle dans `ventilateVat`, à part de la remise du
+point de retrait. Le traitement B, son second règlement et son reste à payer,
+est écarté pour le bon de fidélité ; il reviendra avec les cartes cadeaux, qui
+sont un autre chantier.
+
+La question au cabinet n'est pas retirée : elle devient une **confirmation**.
+Une réponse contraire, arrivée après la première facture émise avec un bon,
+coûterait des factures rectificatives — c'est ce que « irréversible » veut dire
+ici.
+
+Le lot C n'attend plus la réponse. Il attend sa propre conception, qui doit
+aussi citer les trois chemins qui écrivent `cancelled` depuis l'abandon du
+règlement (l'abandon par le client, le balayage de clôture, `failAtClosing`) :
+chacun devra libérer le bon (D7, 🔴).

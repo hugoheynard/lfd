@@ -251,12 +251,12 @@ sert aucune recherche de société ou de personne.
 
 ## 8. Ce qui n'est pas bâti
 
-| Lot    | Ce qu'il fera                                                                                      | Ce qu'il attend                                                |
-| ------ | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| **C**  | réserver un bon à la passation, le libérer à l'annulation, l'imputer au total, émettre le reliquat | **le traitement de TVA du bon**, question au cabinet comptable |
-| **E1** | dans la boutique : le solde, « vous gagnerez N points », la conversion                             | le lot C — on ne distribue pas de bons inutilisables           |
-| **E2** | dans la boutique : utiliser un bon au paiement                                                     | le lot C                                                       |
-| **F**  | ouvrir aux pros                                                                                    | un signal « facture réglée »                                   |
+| Lot    | Ce qu'il fera                                                                                      | Ce qu'il attend                                                        |
+| ------ | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **C**  | réserver un bon à la passation, le libérer à l'annulation, l'imputer au total, émettre le reliquat | sa conception, puis `vitruve` — le traitement est tranché : **rabais** |
+| **E1** | dans la boutique : le solde, « vous gagnerez N points », la conversion                             | le lot C — on ne distribue pas de bons inutilisables                   |
+| **E2** | dans la boutique : utiliser un bon au paiement                                                     | le lot C                                                               |
+| **F**  | ouvrir aux pros                                                                                    | un signal « facture réglée »                                           |
 
 Les décisions déjà prises pour ces lots sont écrites dans le plan : bon plus
 gros que le panier → **reliquat**, émis quand la commande devient définitive et
@@ -272,9 +272,12 @@ reprend.
 | **moyen de paiement** | TVA sur le prix plein             | un second règlement à côté de Stripe, et un reste à payer                      |
 
 Un bon **offert** est d'ordinaire traité comme un rabais ; un bon **vendu**
-comme un moyen de paiement. Les nôtres ne sont jamais vendus. **À faire
-confirmer par le cabinet comptable** : c'est irréversible pour les factures
-émises.
+comme un moyen de paiement. Les nôtres ne sont jamais vendus.
+
+🔴 **Tranché par Hugo le 2026-09-27 : le bon de fidélité est un rabais.** « je
+dis le bon est une remise ». La question au cabinet reste posée ; si sa
+réponse contredisait ce choix, c'est avant la première facture émise avec un
+bon qu'il faudrait le savoir, puisque le choix est irréversible pour elles.
 
 **Le bon vaut un montant hors taxe** (Hugo, 2026-09-26), dans la même unité
 que l'assiette du gain : un point coûte ce qu'il a rapporté. En rabais, il
@@ -291,13 +294,13 @@ La boutique vendra aussi des **cartes cadeaux** (Hugo, 2026-09-26). Ce sont
 deux objets distincts, avec deux régimes, et ils ne partagent **ni table, ni
 code, ni mot** :
 
-|                 | **Bon de fidélité** (ce contexte)             | **Carte cadeau** (chantier à ouvrir)                                                           |
-| --------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Origine         | **offert**, né de points                      | **vendu** au client                                                                            |
-| Valeur          | un montant **HT**                             | un montant **TTC** : un moyen de paiement n'a pas de HT                                        |
-| Sur la commande | une **remise** : réduit la base de TVA (si A) | un **règlement** : paie une partie du TTC, ne touche pas la TVA                                |
-| TVA             | à l'utilisation, sur le prix remisé           | bon à usages multiples (5,5 % et 20 %) : due à l'utilisation, pas à la vente — **à confirmer** |
-| Code            | `b2b/loyalty/`, `LoyaltyVoucher`              | son propre contexte ; jamais `LoyaltyVoucher`                                                  |
+|                 | **Bon de fidélité** (ce contexte)      | **Carte cadeau** (chantier à ouvrir)                                                           |
+| --------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Origine         | **offert**, né de points               | **vendu** au client                                                                            |
+| Valeur          | un montant **HT**                      | un montant **TTC** : un moyen de paiement n'a pas de HT                                        |
+| Sur la commande | une **remise** : réduit la base de TVA | un **règlement** : paie une partie du TTC, ne touche pas la TVA                                |
+| TVA             | à l'utilisation, sur le prix remisé    | bon à usages multiples (5,5 % et 20 %) : due à l'utilisation, pas à la vente — **à confirmer** |
+| Code            | `b2b/loyalty/`, `LoyaltyVoucher`       | son propre contexte ; jamais `LoyaltyVoucher`                                                  |
 
 🔴 **« Bon d'achat » n'est plus employé** : le mot aurait désigné les deux. On
 dit « bon de fidélité » et « carte cadeau ».
