@@ -676,3 +676,76 @@ est le HT après remise **et** bon ; B2 — le reliquat échu s'éteint, journal
 S4 — TODO ouvert :
 [`../order/todo-commande-epargnee-a-la-cloture-puis-refusee.md`](../order/todo-commande-epargnee-a-la-cloture-puis-refusee.md).
 Le lot C est lancé.
+
+## 12. Conception du lot E1 (2026-09-27)
+
+> Doc-first. Le mécanisme (livre, conversion, bon) est bâti et contredit ; E1
+> ne fait que l'**exposer** au particulier. Vérifié soi-même plutôt que
+> `vitruve` (§9 bis du CLAUDE.md) : aucune règle d'argent neuve, aucune
+> migration. Ouvert le 2026-09-27 : `ConvertLoyaltyPointsHandler` (verrou,
+> solde relu), `@ActingCompany()` (`my-shop-quote.controller.ts`),
+> `earningFor` (`order-earning.ts`).
+
+**Qui** : un particulier **connecté**, dans son espace personnel
+(`@ActingCompany()` nul). Un espace société, un invité : rien (lot F). Le
+programme fermé au public (`openToPublic` faux ou réglage absent) : la
+boutique ne montre rien, et les routes rendent `{ open: false }`.
+
+### E1.1 — Les routes, `me/loyalty`
+
+| Route                         | Rend                                                                                                                         |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `GET me/loyalty`              | `{ open: false }` ou `{ open: true, balancePoints, pointsPerStep, stepValueCents, convertibleSteps, vouchers[], entries[] }` |
+| `POST me/loyalty/conversions` | corps `{ steps, expectedBalancePoints }` → 201 `{ voucherId }`                                                               |
+
+- `vouchers[]` : les bons du titulaire, `available` et `reserved` d'abord
+  (valeur HT, date limite, et pour un `reserved` le numéro de la commande),
+  puis les 20 derniers `expired`/`cancelled`.
+- `entries[]` : les 20 dernières lignes du livre, dans les mots du client
+  (« Commande CMD-… », « Conversion en bon », « Ajustement »). Le motif d'un
+  ajustement staff n'est **pas** exposé : il est écrit pour le staff.
+- Le titulaire se prend **du principal**, jamais du corps : `user:<userId>`.
+- 🔴 **`expectedBalancePoints` contre le double clic.** La conversion n'a pas
+  de clé d'idempotence ; deux clics convertiraient deux fois, légitimement aux
+  yeux du livre. Sous le verrou, si le solde relu diffère de celui que l'écran
+  affichait, 409 « votre solde a changé, rechargez ». Le second clic échoue
+  toujours : le premier a baissé le solde. Pas de table de clés pour ça.
+- Les handlers existants servent : une query `GetMyLoyaltyQuery` neuve (lecture
+  du livre et des bons par le titulaire, ports existants ou un lecteur neuf),
+  et `ConvertLoyaltyPointsCommand` gagne `expectedBalancePoints: number | null`
+  (nul depuis le staff, qui ne convertit pas aujourd'hui — vérifier).
+
+### E1.2 — « Vous gagnerez N points »
+
+Le devis connecté (`POST shop/quote/mine`) gagne
+`loyaltyPointsToEarn: number | null` : nul si le programme est fermé au
+public, si l'espace est une société, ou si l'assiette est vide. Calculé par
+**la même fonction** que le crédit (`earningFor`), derrière un port que
+`orders` déclare et que `loyalty` implémente, lié par le module `@Global` du
+lot C. Une règle recopiée côté front divergerait au premier changement
+d'assiette.
+
+Le devis anonyme ne le porte pas (clé absente, pas nulle — contrat servi).
+
+### E1.3 — La boutique
+
+- **Mon compte › Ma fidélité**, une carte de `mon-compte` : le solde, ce que
+  vaut un palier (« 1 000 points = un bon de 5,00 € HT »), le nombre de paliers
+  convertibles, un choix du nombre de paliers et une conversion confirmée en
+  ligne (`fold-inline-confirm`) ; la liste des bons (« 5,00 € HT, valable
+  jusqu'au 27 septembre 2027 », « utilisé sur CMD-… ») ; l'historique.
+- Le bon s'affiche **HT avec sa mention** : c'est sa vraie valeur, et le
+  client verra la baisse réelle au paiement (E2). Une phrase le dit : « Un bon
+  réduit le prix hors taxe de vos achats ; la baisse sur votre total est
+  un peu plus grande, TVA comprise. »
+- Le décompte du panier : une ligne discrète « Vous gagnerez N points » sous
+  le total, seulement si `loyaltyPointsToEarn > 0`.
+- Programme fermé : ni carte, ni ligne. Rien ne dit « bientôt ».
+
+### E1.4 — Tests
+
+Back : e2e du mur (un client ne lit ni ne convertit que ses points ; un
+espace société reçoit `open: false` et 403 à la conversion), du programme
+fermé, du double clic (deux POST avec le même `expectedBalancePoints` → 201
+puis 409, un seul bon), du devis avec et sans programme. Front : specs des
+composants neufs, états ouvert/fermé/vide, conversion confirmée, 409 affiché.
