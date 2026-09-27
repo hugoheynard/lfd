@@ -96,7 +96,8 @@ const DEBT = new Map([
   // reste sur l'élément hôte et n'atteint jamais le champ. C'est une limite de
   // fold, pas une faute de frappe — la sortie demande une entrée chez fold, ou
   // un aveu écrit. `readonly`, en revanche, est une faute de casse : `readOnly`.
-  [1],
+  // (`floor-panel.html` en est sorti le 2026-09-27 : sa ligne, qui avait perdu son
+  // chemin et s’était réduite à `[1]`, faisait afficher « NaN » au compte.)
   ["apps/lfd-backoffice-frontend/src/app/b2b/tarification/ladder-panel/ladder-panel.html", 2],
   ["apps/lfd-backoffice-frontend/src/app/b2b/tarification/rule-panel/rule-panel.html", 1],
   ["apps/lfd-backoffice-frontend/src/app/b2b/tarification/simulateur/simulateur-page.html", 3],
@@ -551,6 +552,20 @@ for (const rel of trackedTemplates()) {
       found.set(rel, [...(found.get(rel) ?? []), { line, tag, name }]);
     }
   }
+}
+
+// Une entrée de dette mal formée ne se tolère pas : une clé sans chemin ou un
+// compte non entier rend le total `NaN`, et la porte cesse de compter ce
+// qu'elle prétend compter (arrivé le 2026-09-27 : une ligne réduite à `[1]`).
+const malformed = [...DEBT].filter(
+  ([rel, count]) => typeof rel !== "string" || !Number.isInteger(count) || count < 1,
+);
+if (malformed.length > 0) {
+  console.error("\n✖ Entrées de DEBT mal formées (attendu : [chemin, entier ≥ 1]) :\n");
+  for (const [rel, count] of malformed) {
+    console.error(`  ${JSON.stringify(rel)} → ${JSON.stringify(count)}`);
+  }
+  process.exit(1);
 }
 
 const failures = [];
