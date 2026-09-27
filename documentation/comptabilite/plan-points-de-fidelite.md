@@ -452,3 +452,224 @@ Le lot C n'attend plus la réponse. Il attend sa propre conception, qui doit
 aussi citer les trois chemins qui écrivent `cancelled` depuis l'abandon du
 règlement (l'abandon par le client, le balayage de clôture, `failAtClosing`) :
 chacun devra libérer le bon (D7, 🔴).
+
+## 11. Conception du lot C (2026-09-27)
+
+> ⚠️ **Contredite par `vitruve` le 2026-09-27 : 3 BLOQUANT, 6 SÉRIEUX.** Le
+> §11 bis dit ce qui change ; il l'emporte sur ce qui suit.
+>
+> **Doc-first, rien n'est bâti.** Écrite après l'inventaire des lecteurs du
+> total et la lecture de la passation, des deux écritures `cancelled` et de
+> l'agrégat du bon (ouverts le 2026-09-27). À contredire par `vitruve` avant
+> Hugo : elle touche l'argent et porte une migration.
+
+### C1 — Le calcul : `ventilateVat` ne change pas
+
+Le total n'est calculé qu'à **un** endroit, `ventilateVat`
+(`packages/money/src/vat.ts`), appelé par `computeOrderTotals` pour la commande
+et par `quote-shop-cart.handler.ts` pour le devis. Les deux remises sont HT et
+toutes deux retranchées des **marchandises** au prorata de chaque taux ; leur
+somme se ventile donc exactement comme chacune séparément, à l'arrondi par taux
+près — et c'est le même arrondi. On passe `discountCents + voucherDiscountCents`
+à `ventilateVat`, sans toucher sa signature.
+
+Ce que la commande garde **à part**, parce que la facture et l'assiette le
+demandent :
+
+- `discountCents` : la remise du point de retrait, inchangée ;
+- `voucherDiscountCents` : la part du bon **réellement imputée**.
+
+Ordre et plafond (D6) : la remise du point s'applique d'abord ; le bon s'impute
+ensuite, plafonné au HT de marchandises restant :
+`voucherDiscountCents = min(voucher.valueCents, subtotalCents − discountCents)`.
+Il ne paie jamais le port ni la surtaxe, puisque `ventilateVat` ne retranche
+rien des `extras`.
+
+### C2 — La persistance
+
+Migration **additive** sur `orders` :
+
+- `voucher_discount_cents INT NOT NULL DEFAULT 0` ;
+- `loyalty_voucher_id TEXT NULL`, clé étrangère `RESTRICT` vers
+  `loyalty_vouchers`, **unique** : un bon ne sert qu'à une commande, et la base
+  le refuse même si l'agrégat l'oubliait.
+
+Sur `loyalty_vouchers` : la valeur `reserved` rejoint les états, et
+`reserved_order_id` n'est **pas** ajouté — le lien vit sur la commande, une
+seule fois. `appliedCents` non plus : la commande le porte.
+
+### C3 — La réservation, dans la transaction de passation
+
+`orders` déclare un port `LoyaltyVoucherRedemption` (domaine d'`orders`),
+`loyalty` l'implémente, `appBootstrap` les relie — la forme de D7.
+
+1. **Au drafting**, `quote(voucherId, holder, now)` lit le bon : titulaire =
+   celui de la commande (la personne en public), `available`, non échu. Sinon
+   un refus métier qui nomme le cas (« ce bon a expiré le … », « ce bon a déjà
+   servi »). Rend `valueCents`.
+2. `Order.draft` reçoit `voucher: { id, valueCents } | null`, calcule
+   `voucherDiscountCents` (C1) et le total.
+3. L'intention Stripe est créée sur ce total (inchangé : `order.totalCents`).
+4. **Dans `unitOfWork.run`**, avant `orders.place` : `reserve(voucherId,
+holder, now)` prend le verrou du titulaire (`loyalty.ledger:user:…`), relit
+   le bon, le fait passer `available → reserved` par sa méthode
+   (`LoyaltyVoucher.reserve(now)`, qui refuse l'échu et tout autre état), et
+   sauve. Une course perdue lève le refus ; la transaction rend tout, la clé
+   d'idempotence est rendue (erreur **avant** l'écriture de la commande).
+
+⚠️ **L'intention Stripe créée en 3 reste orpheline si 4 échoue.** C'est déjà
+le cas aujourd'hui pour toute erreur de `orders.place` ; elle n'est jamais
+confirmée, donc jamais débitée. Le lot C l'annule quand même
+(`cancelIntent`, qui ne lève jamais) : un bon disputé par deux onglets est le
+seul chemin où ça devient courant.
+
+L'idempotence passe **avant** : un rejeu rend la commande existante et ne
+touche pas au bon (D7, inchangé).
+
+**Qui peut utiliser un bon, au lot C** : un client **connecté** qui commande
+pour lui-même (`PlaceOrderHandler`, `companyId` nul). Pas l'invité
+(`PlaceShopOrderHandler` — il n'a pas de bons), pas le staff pour un client
+(`place-order-for-customer`), pas un pro (lot F). Le contrat de ces trois
+chemins n'expose pas le champ.
+
+### C4 — La libération : les deux écritures `cancelled`
+
+Il n'y en a que **deux** (vérifié le 2026-09-27) :
+`PrismaOrderRepository.markAbandoned` (branche publique) et `failAtClosing`.
+Toutes deux sont des `updateMany` conditionnés, justifiés en tête du dépôt.
+
+Chacune, quand elle franchit (`count === 1`), libère le bon dans la **même
+transaction** : `release(orderId, now)` → `reserved → available`, ou
+`→ expired` si la date limite est passée (D7). La libération est donc portée par
+un port d'`orders` appelé par le handler de l'abandon et par le service de
+clôture, sous `unitOfWork`, pas par un abonné à un événement : un abonné dont
+l'échec est avalé laisserait un bon réservé sur une commande morte.
+
+La branche **pro** de `markAbandoned` n'écrit que `failed` et ne libère rien —
+un pro n'a pas de bon au lot C, et un refus se reprend (D7).
+
+### C5 — Le reliquat
+
+`valueCents − voucherDiscountCents > 0` donne un nouveau bon, `available`, même
+titulaire, **même date limite**, `parentVoucherId` = le bon consommé, et
+`pointsCost = 0` (ses points ont été payés par le parent).
+
+**Quand** : quand la commande ne peut plus être annulée. Les deux écritures
+`cancelled` exigent un règlement `pending` ou `failed` ; une commande est donc
+définitive dès qu'elle est **`paid`**, ou dès sa passation si elle est
+**`not_required`** — un panier que le bon couvre entièrement, au retrait, a un
+total nul et ne crée aucune intention (`place-order.handler.ts`,
+`settle`). Deux déclencheurs :
+
+- à la passation, dans la transaction, si `not_required` ;
+- sinon, par le rattrapage de nuit du lot D, qui cherche les commandes `paid`
+  dont le bon a un reliquat non émis. Idempotent par l'unicité de
+  `parentVoucherId` (index unique partiel) : un seul enfant par parent.
+
+Pas d'abonné à `payment_intent.succeeded` : le rattrapage suffit, un reliquat
+émis au matin n'est pas une urgence, et c'est un chemin de moins.
+
+### C6 — L'assiette des points
+
+`order-earning.ts` : `basis = subtotalCents − discountCents −
+voucherDiscountCents`. Le HT réellement payé. Un point dépensé ne rapporte pas
+de point. **À confirmer par Hugo** — c'est la seule règle commerciale neuve du
+lot.
+
+### C7 — Les lecteurs (inventaire du 2026-09-27)
+
+| Surface                                             | Changement                                                            |
+| --------------------------------------------------- | --------------------------------------------------------------------- |
+| `computeOrderTotals`, `Order.draft`, `OrderToPlace` | le bon entre, `voucherDiscountCents` sort                             |
+| `quote-shop-cart.handler.ts`, `ShopQuoteView`       | `voucherId` optionnel au devis, pour que devis et commande concordent |
+| `OrderView`, `CustomerOrderView`, `SheetMoney`      | `voucherDiscountCents` (additif, défaut 0)                            |
+| `order-sheet-text.ts` (bon de commande, PDF)        | une ligne « Bon de fidélité » distincte de « Remise »                 |
+| gabarits d'e-mail                                   | la même ligne                                                         |
+| `order-earning.ts`, `CompletedOrderReader`          | C6                                                                    |
+| intention Stripe, production, retrait               | rien : ils lisent le total final                                      |
+
+Facture et export comptable : **n'existent pas** (`orderDocuments` annonce la
+facture « pas encore disponible »). Rien à changer ; la future facture lira
+`voucherDiscountCents` et `vatShares`, déjà figés.
+
+L'**affichage de la baisse réelle** (5,28 € pour un bon de 5 € HT à 5,5 %) est
+le travail d'E2 : le devis rend déjà le TTC avant et après.
+
+### C8 — Tests exigés
+
+- unitaire : `LoyaltyVoucher.reserve/release`, les refus ; `Order.draft` avec
+  bon plafonné, bon plus gros que le panier, total nul ;
+- e2e : réservation et course de deux commandes sur le même bon (une seule
+  passe, l'autre 409, aucune commande ni clé écrite) ; libération par l'abandon
+  et par la clôture, avec et sans échéance passée ; reliquat à la passation
+  (`not_required`) et au rattrapage (`paid`), rejoué sans doublon ; parité
+  devis/commande avec bon ; assiette de points ; un pro et un invité ne peuvent
+  pas nommer de bon.
+
+### C9 — Ouvert
+
+1. C6 — l'assiette après bon (Hugo).
+2. Le bouton « annuler un bon » du staff (lot B) refuse un bon `reserved` :
+   l'agrégat ne sort de `cancelled` que depuis `available`. À garder ainsi —
+   annuler un bon engagé sur une commande vivante est un geste sur la commande.
+
+## 11 bis. Ce que la contradiction du lot C a changé (2026-09-27)
+
+**Bloquants**
+
+- **B1 — le reliquat viole un CHECK en base.** `loyalty_vouchers_amounts_positive`
+  exige `points_cost > 0`. La migration du lot C le remplace par
+  `points_cost > 0 OR parent_voucher_id IS NOT NULL` (et `points_cost >= 0`) :
+  un relâchement, sans donnée à convertir.
+- **B2 — un reliquat peut naître déjà échu** (bon qui arrive à échéance entre
+  le paiement et le passage de 02 h ; `expires_at > issued_at` le refuserait,
+  en boucle chaque nuit). Règle : **si la date limite du parent est passée à
+  l'émission, aucun reliquat n'est émis** ; le fait
+  `loyalty_voucher.remainder_lapsed` le journalise avec le montant. C'est ce
+  qu'aurait fait l'expiration d'un bon non utilisé. **À confirmer par Hugo.**
+- **B3 — l'unicité de `orders.loyalty_voucher_id` interdisait de réutiliser un
+  bon libéré.** Elle devient **partielle** : `UNIQUE … WHERE status <>
+'cancelled'`, en SQL écrit dans la migration. La commande annulée garde la
+  trace du bon.
+
+**Sérieux**
+
+- **S4 — un bon peut rester `reserved` sans issue** : une commande épargnée à la
+  clôture (`in_progress`) puis refusée reste `placed`/`failed`, et plus aucun
+  balayage ne la relit. Ce n'est pas un trou du bon, c'est un trou de
+  l'abandon du règlement (la commande elle-même reste pendante) ; le lot C ne
+  libère pas pour autant — libérer une commande qui se reprend, c'est la double
+  dépense (D7). Le rattrapage de nuit **signale** à la cloche tout bon
+  `reserved` dont la commande n'est ni payée ni annulée passé son jour de
+  service. **Le trou de l'abandon est à ouvrir en TODO dans `order/`.**
+- **S5 — l'empreinte d'idempotence** (`order-fingerprint.ts`) reçoit
+  `voucherId` : sans lui, rejouer la clé avec un autre bon rendrait la
+  première commande comme un rejeu.
+- **S6 — le contrat `loyalty.ts` n'accepte pas `reserved`.** Il est élargi, et
+  le back-office l'affiche, dans le même lot. Risque nul au déploiement : aucun
+  bon n'existe tant qu'E1 n'ouvre pas la conversion. Faute d'état `used`,
+  l'écran lit la commande : `reserved` sur une commande vivante s'affiche
+  « utilisé sur CMD-… ».
+- **S7 — la facture devra dire l'assiette HT par taux**, que `vatShares` ne
+  fige pas. La TVA figée est juste ; la base par taux se **recalcule** des
+  lignes figées par une règle écrite maintenant pour le chantier facture :
+  chaque remise répartie au prorata du HT de chaque taux, **plus grand reste**
+  pour que la somme retombe au centime. Déterministe, puisque tout ce qu'elle
+  lit est figé.
+- **S8 — le port `orders → loyalty`** est lié par un module `@Global` dans
+  `appBootstrap/` (forme de `debtor-mandate.module.ts`) : `LoyaltyModule`
+  importe déjà `OrdersModule`, l'inverse ferait un cycle. `lint:context-boundaries`
+  ne regarde pas l'intérieur de `b2b` : la frontière tient par discipline.
+- **S9 — la libération** prend le verrou du titulaire, comme la réservation.
+  `AbandonOrderHandler` et `PendingSettlementSweepService` reçoivent un
+  `UnitOfWork` (le balayage tourne hors du `uow.run` de la clôture,
+  `close-production-day.handler.ts`).
+
+**Mineurs** : l'unicité de `parentVoucherId` existe déjà (`@unique` plein,
+suffisant) ; `voucherDiscountCents` est borné à 0 ; l'intention orpheline
+s'annule dans `placeOnce`, qui l'a sous la main, pas dans le `catch`
+d'`execute` ; « au retrait » est retiré de C5 — tout total nul est
+`not_required`.
+
+**Ouvert, pour Hugo** : C6 (l'assiette après bon), B2 (le reliquat échu
+s'éteint), S4 (le TODO de l'abandon).
