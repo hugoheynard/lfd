@@ -754,3 +754,55 @@ espace société reçoit `open: false` et 403 à la conversion), du programme
 fermé, du double clic (deux POST avec le même `expectedBalancePoints` → 201
 puis 409, un seul bon), du devis avec et sans programme. Front : specs des
 composants neufs, états ouvert/fermé/vide, conversion confirmée, 409 affiché.
+
+## 13. Conception du lot E2 (2026-09-27)
+
+> Doc-first. Le serveur impute déjà un bon (lot C : `voucherId` au payload de
+> passation et au devis connecté, `voucherDiscountCents` sur la commande et
+> dans le devis). E2 est l'**écran** qui le choisit, et un seul champ serveur
+> neuf. Vérifié soi-même : aucune règle d'argent neuve.
+
+### E2.1 — La baisse réelle, calculée par le serveur
+
+§9 exige d'afficher la **baisse de TTC réellement obtenue** (5,28 € pour un
+bon de 5 € HT à 5,5 %), pas les 5 € HT. Le front ne la calcule pas : il
+faudrait refaire la ventilation. Le devis connecté gagne
+`voucherTotalEffectCents: number` — le total **sans** le bon moins le total
+**avec**, les deux par `ventilateVat`, dans le service de devis partagé. Nul
+sans bon. Absent du devis anonyme (contrat servi).
+
+La commande ne le fige pas : le récapitulatif d'une commande passée montre
+« Bon de fidélité (HT) −5,00 € » à côté de ses totaux, qui disent déjà le
+TTC payé. Figer l'effet serait une colonne de plus pour un affichage.
+
+### E2.2 — Le choix du bon, dans le panier
+
+- Seulement le particulier connecté, en espace personnel, programme ouvert,
+  avec au moins un bon `available` (lu par `ClientLoyalty`, déjà chargé).
+- Dans le décompte du panier, avant le total : « Utiliser un bon de
+  fidélité », un choix parmi les bons disponibles (« 5,00 € HT — jusqu'au
+  27 sept. 2027 »), ou aucun. **Un seul bon** par commande.
+- Le bon choisi part dans le devis (`voucherId`) ; la ligne devient « Bon de
+  fidélité −5,28 € » (l'effet TTC), et une mention discrète « 5,00 € HT ».
+- Un bon plus gros que le panier : « Le reste, 2,40 € HT, vous sera rendu en
+  bon une fois la commande réglée. » (valeur − `voucherDiscountCents`).
+- Le choix part dans la passation (`voucherId`). Il entre dans la clé
+  d'idempotence : changer de bon après un premier envoi est une autre
+  commande.
+- Refus de passation liés au bon (expiré, déjà utilisé, disputé par un autre
+  onglet — 409) : le message du serveur, le choix remis à « aucun », la liste
+  relue.
+- Panier sans bon disponible : rien ne s'affiche. En société : rien.
+
+### E2.3 — Après
+
+- La confirmation et « Mes commandes » : la ligne « Bon de fidélité (HT) » si
+  `voucherDiscountCents > 0`.
+- La page « Ma fidélité » est relue après une passation avec bon (le bon passe
+  « utilisé sur CMD-… »).
+
+### E2.4 — Tests
+
+Back : e2e du devis connecté avec bon (effet TTC exact sur un panier à deux
+taux, nul sans bon, clé absente en anonyme). Front : choix, effet affiché,
+reliquat annoncé, refus 409 remis à zéro, rien en société ni sans bon.
