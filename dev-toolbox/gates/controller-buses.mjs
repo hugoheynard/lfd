@@ -108,6 +108,10 @@ const SCOPE = [
   // que ce qu'elle voit fauter, et rien n'aurait rougi le jour où quelqu'un y
   // aurait injecté un port. Être vert et être tenu sont deux choses.
   "apps/lfd-api/src/b2b/pricing/http/admin-price-floors.controller.ts",
+  "apps/lfd-api/src/ops/traffic/admin-traffic.controller.ts",
+  "apps/lfd-api/src/pim/sales-contexts/http/sales-context.controller.ts",
+  "apps/lfd-api/src/platform/mailer/webhook/resend-webhook.controller.ts",
+  "apps/lfd-api/src/staff/notifications/http/admin-staff-push.controller.ts",
 ];
 
 /** Tout le reste, pour que le solde restant soit visible et non silencieux. */

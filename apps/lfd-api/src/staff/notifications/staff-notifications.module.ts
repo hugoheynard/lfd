@@ -1,6 +1,9 @@
 import { Global, Module } from "@nestjs/common";
 
 import { MarkNotificationReadHandler } from "./application/commands/mark-notification-read.handler.js";
+import { SubscribeStaffPushHandler } from "./application/commands/subscribe-staff-push.handler.js";
+import { UnsubscribeStaffPushHandler } from "./application/commands/unsubscribe-staff-push.handler.js";
+import { GetPushCapabilityHandler } from "./application/queries/get-push-capability.handler.js";
 import { PushingStaffNotifier } from "./application/pushing-staff-notifier.js";
 import { GetStaffNotificationsHandler } from "./application/queries/get-staff-notifications.handler.js";
 import {
@@ -41,6 +44,9 @@ import { WebPushSender } from "./infrastructure/web-push-sender.js";
     { provide: StaffPushSender, useClass: WebPushSender },
     GetStaffNotificationsHandler,
     MarkNotificationReadHandler,
+    GetPushCapabilityHandler,
+    SubscribeStaffPushHandler,
+    UnsubscribeStaffPushHandler,
   ],
   exports: [StaffNotifier],
 })

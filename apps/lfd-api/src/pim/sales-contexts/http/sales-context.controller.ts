@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   createSalesContextPayloadSchema,
   updateSalesContextPayloadSchema,
@@ -12,11 +12,10 @@ import {
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CreateSalesContextCommand } from "../application/create-sales-context.js";
+import { ListActiveSalesContextsQuery } from "../application/list-active-sales-contexts.js";
+import { ListSalesContextsQuery } from "../application/list-sales-contexts.js";
 import { RemoveSalesContextCommand } from "../application/remove-sales-context.js";
 import { UpdateSalesContextCommand } from "../application/update-sales-context.js";
-import { isRootContext } from "../domain/value-objects/bootstrap-contexts.js";
-import { SalesContextRegistry } from "../domain/ports/sales-context.registry.js";
-import { SalesContextRepository } from "../domain/ports/sales-context.repository.js";
 
 /**
  * Les **contextes de vente** — le registre, en lecture ET en écriture.
@@ -37,9 +36,8 @@ import { SalesContextRepository } from "../domain/ports/sales-context.repository
 @Controller("sales-contexts")
 export class SalesContextController {
   constructor(
-    private readonly contexts: SalesContextRegistry,
-    private readonly repository: SalesContextRepository,
     private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
   ) {}
 
   /**
@@ -56,39 +54,17 @@ export class SalesContextController {
    * finit par ne jamais être trouvée.
    */
   @Get("active")
-  async activeSalesContexts(): Promise<SalesContextView[]> {
-    const contexts = await this.contexts.active();
-    return contexts.map((context) => ({
-      key: context.key,
-      label: context.label,
-      position: context.position,
-    }));
+  activeSalesContexts(): Promise<SalesContextView[]> {
+    return this.queries.execute<ListActiveSalesContextsQuery, SalesContextView[]>(
+      new ListActiveSalesContextsQuery(),
+    );
   }
 
   @Get()
-  async list(): Promise<SalesContextAdminView[]> {
-    const [contexts, offered, usage] = await Promise.all([
-      this.contexts.all(),
-      this.contexts.offeredByLocations(),
-      this.repository.usageByKey(),
-    ]);
-    return contexts.map((context) => ({
-      key: context.key,
-      label: context.label,
-      position: context.position,
-      active: context.active,
-      shopifyProjected: context.shopifyProjected,
-      handleSuffix: context.handleSuffix,
-      root: isRootContext(context.key),
-      // Un contexte global n'est offert par aucun lieu, et ce zéro-là n'est pas
-      // un manque : il n'a pas de sens à demander. L'écran le sait par
-      // `perLocation` et n'affiche pas le compte.
-      offeredByLocations: offered.get(context.key) ?? 0,
-      // Ce qui le RETIENT — l'écran doit le dire avant le geste, plutôt que de
-      // laisser le refus l'apprendre après le clic.
-      soldBy: usage.get(context.key)?.soldBy ?? 0,
-      ratedBy: usage.get(context.key)?.ratedBy ?? 0,
-    }));
+  list(): Promise<SalesContextAdminView[]> {
+    return this.queries.execute<ListSalesContextsQuery, SalesContextAdminView[]>(
+      new ListSalesContextsQuery(),
+    );
   }
 
   @Post()

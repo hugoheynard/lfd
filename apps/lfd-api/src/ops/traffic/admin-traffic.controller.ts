@@ -1,9 +1,9 @@
 import { Controller, Get, Query } from "@nestjs/common";
+import { QueryBus } from "@nestjs/cqrs";
 import type { TrafficReport } from "@lfd/ops-contract";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
-import { resolveWindowMinutes } from "./traffic-query.js";
-import { TrafficReader } from "./traffic-reader.port.js";
+import { ReadTrafficQuery } from "./read-traffic.query.js";
 
 /**
  * La surface de lecture d'OPS : ce que la gateway a vu passer.
@@ -18,10 +18,10 @@ import { TrafficReader } from "./traffic-reader.port.js";
 @Controller("admin/ops/traffic")
 @AdminSurface("ops_health")
 export class AdminTrafficController {
-  constructor(private readonly traffic: TrafficReader) {}
+  constructor(private readonly queries: QueryBus) {}
 
   @Get()
   read(@Query("minutes") minutes?: string): Promise<TrafficReport> {
-    return this.traffic.read(resolveWindowMinutes(minutes));
+    return this.queries.execute<ReadTrafficQuery, TrafficReport>(new ReadTrafficQuery(minutes));
   }
 }

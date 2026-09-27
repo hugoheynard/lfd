@@ -3,6 +3,8 @@ import { Logger, Module, type OnModuleInit } from "@nestjs/common";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { StartupReport } from "../../platform/startup/startup-report.service.js";
 import { CreateSalesContextHandler } from "./application/create-sales-context.js";
+import { ListActiveSalesContextsHandler } from "./application/list-active-sales-contexts.js";
+import { ListSalesContextsHandler } from "./application/list-sales-contexts.js";
 import { RemoveSalesContextHandler } from "./application/remove-sales-context.js";
 import { UpdateSalesContextHandler } from "./application/update-sales-context.js";
 import { SalesContextRegistry } from "./domain/ports/sales-context.registry.js";
@@ -47,6 +49,8 @@ import { PrismaSalesContextRepository } from "./infrastructure/prisma-sales-cont
     CreateSalesContextHandler,
     UpdateSalesContextHandler,
     RemoveSalesContextHandler,
+    ListActiveSalesContextsHandler,
+    ListSalesContextsHandler,
     { provide: SalesContextRegistry, useClass: PrismaSalesContextRegistry },
     { provide: SalesContextRepository, useClass: PrismaSalesContextRepository },
   ],

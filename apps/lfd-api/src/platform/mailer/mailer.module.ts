@@ -8,6 +8,7 @@ import { AdminMailCheckController } from "./admin-mail-check.controller.js";
 import { JournalingMailer } from "./journal/journaling-mailer.js";
 import { MailJournal } from "./journal/mail-journal.port.js";
 import { PrismaMailJournal } from "./journal/prisma-mail-journal.js";
+import { ReceiveResendEventHandler } from "./webhook/receive-resend-event.handler.js";
 import { ResendWebhookChecker } from "./webhook/resend-webhook.checker.js";
 import { ResendWebhookController } from "./webhook/resend-webhook.controller.js";
 import { b2bMailTemplates, type B2bMails } from "./mail-templates.js";
@@ -36,6 +37,7 @@ export type { B2bMailer };
   providers: [
     { provide: MailJournal, useClass: PrismaMailJournal },
     ResendWebhookChecker,
+    ReceiveResendEventHandler,
     {
       provide: MAILER,
       inject: [AppConfig, MailJournal, Clock, BackgroundWork],

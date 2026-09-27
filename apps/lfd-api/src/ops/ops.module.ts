@@ -16,6 +16,7 @@ import { ProbeRunner } from "./probes/probe-runner.service.js";
 import { NODE_PROBES, type NodeProbe } from "./probes/probe.port.js";
 import { OpsHealthService } from "./health/ops-health.service.js";
 import { AdminTrafficController } from "./traffic/admin-traffic.controller.js";
+import { ReadTrafficHandler } from "./traffic/read-traffic.handler.js";
 import { AnalyticsEngineTrafficReader } from "./traffic/analytics-engine-traffic.reader.js";
 import { RehearsalTrafficReader } from "./traffic/rehearsal-traffic.reader.js";
 import { TrafficReader } from "./traffic/traffic-reader.port.js";
@@ -77,6 +78,7 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
     },
     AnalyticsEngineTrafficReader,
     RehearsalTrafficReader,
+    ReadTrafficHandler,
     {
       // Le choix se fait UNE FOIS, au démarrage, sur la présence de la
       // configuration — jamais requête par requête. Une bascule en cours de

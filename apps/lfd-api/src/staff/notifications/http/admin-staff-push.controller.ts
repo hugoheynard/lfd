@@ -6,11 +6,14 @@ import {
   type PushUnsubscribePayload,
 } from "@lfd/contracts";
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import { StaffPushSender, StaffPushSubscriptions } from "../domain/ports/staff-push.js";
+import { SubscribeStaffPushCommand } from "../application/commands/subscribe-staff-push.command.js";
+import { UnsubscribeStaffPushCommand } from "../application/commands/unsubscribe-staff-push.command.js";
+import { GetPushCapabilityQuery } from "../application/queries/get-push-capability.query.js";
 
 /**
  * L'**abonnement du navigateur** aux notifications poussées.
@@ -26,8 +29,8 @@ import { StaffPushSender, StaffPushSubscriptions } from "../domain/ports/staff-p
 @AdminSurface("staff_notifications")
 export class AdminStaffPushController {
   constructor(
-    private readonly sender: StaffPushSender,
-    private readonly subscriptions: StaffPushSubscriptions,
+    private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
   ) {}
 
   /**
@@ -36,8 +39,10 @@ export class AdminStaffPushController {
    * signature — la garder secrète n'aurait aucun sens.
    */
   @Get("key")
-  key(): PushCapability {
-    return { publicKey: this.sender.publicKey() };
+  key(): Promise<PushCapability> {
+    return this.queries.execute<GetPushCapabilityQuery, PushCapability>(
+      new GetPushCapabilityQuery(),
+    );
   }
 
   @Post()
@@ -46,9 +51,11 @@ export class AdminStaffPushController {
     @Body(new ZodBody(pushSubscriptionSchema)) body: PushSubscriptionPayload,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
-    await this.subscriptions.save(
-      { endpoint: body.endpoint, p256dh: body.keys.p256dh, auth: body.keys.auth },
-      staffUserId,
+    await this.commands.execute<SubscribeStaffPushCommand, void>(
+      new SubscribeStaffPushCommand(
+        { endpoint: body.endpoint, p256dh: body.keys.p256dh, auth: body.keys.auth },
+        staffUserId,
+      ),
     );
   }
 
@@ -57,6 +64,8 @@ export class AdminStaffPushController {
   async unsubscribe(
     @Body(new ZodBody(pushUnsubscribeSchema)) body: PushUnsubscribePayload,
   ): Promise<void> {
-    await this.subscriptions.forget(body.endpoint);
+    await this.commands.execute<UnsubscribeStaffPushCommand, void>(
+      new UnsubscribeStaffPushCommand(body.endpoint),
+    );
   }
 }
