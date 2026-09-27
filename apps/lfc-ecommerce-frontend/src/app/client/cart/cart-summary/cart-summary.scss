@@ -183,3 +183,11 @@
     letter-spacing: var(--lfc-tracking-block);
   }
 }
+
+/* Les points à gagner : une note sous le total, pas une ligne du décompte. */
+.points {
+  margin: 0;
+  text-align: center;
+  font-size: var(--lfc-text-note);
+  color: var(--lfc-color-accent-text);
+}

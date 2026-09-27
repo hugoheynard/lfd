@@ -729,7 +729,12 @@ Le devis anonyme ne le porte pas (clé absente, pas nulle — contrat servi).
 
 ### E1.3 — La boutique
 
-- **Mon compte › Ma fidélité**, une carte de `mon-compte` : le solde, ce que
+- ⚠️ **Corrigé le 2026-09-27** : « une carte de `mon-compte` » était faux —
+  `mon-compte` est gardé par `companyWorkspaceGuard`, fermé à l'espace
+  personnel, seul espace où la fidélité s'ouvre. **Hugo : une entrée à part,
+  « Ma fidélité »**, route `ma-fidelite`, lien visible seulement en espace
+  personnel quand le programme est ouvert.
+- **Ma fidélité** : le solde, ce que
   vaut un palier (« 1 000 points = un bon de 5,00 € HT »), le nombre de paliers
   convertibles, un choix du nombre de paliers et une conversion confirmée en
   ligne (`fold-inline-confirm`) ; la liste des bons (« 5,00 € HT, valable

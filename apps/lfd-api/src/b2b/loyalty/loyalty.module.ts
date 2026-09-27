@@ -30,6 +30,11 @@ import {
 import { LoyaltyVoucherRepository } from "./domain/ports/loyalty-voucher.repository.js";
 import { OrdersModule } from "../orders/orders.module.js";
 import { AdminLoyaltyController } from "./http/admin-loyalty.controller.js";
+import { MyLoyaltyController } from "./http/my-loyalty.controller.js";
+import { GetMyLoyaltyHandler } from "./application/queries/get-my-loyalty.handler.js";
+import { LoyaltyEarningPreviewing } from "./application/services/loyalty-earning-previewing.js";
+import { HolderLoyaltyReader } from "./domain/ports/holder-loyalty.reader.js";
+import { PrismaHolderLoyaltyReader } from "./infrastructure/prisma-holder-loyalty.reader.js";
 import { LoyaltySweepController } from "./http/loyalty-sweep.controller.js";
 import { PrismaLoyaltyAccountRepository } from "./infrastructure/prisma-loyalty-account.repository.js";
 import { PrismaLoyaltyConversionGate } from "./infrastructure/prisma-loyalty-conversion.gate.js";
@@ -44,9 +49,8 @@ import { PrismaLoyaltyVoucherRepository } from "./infrastructure/prisma-loyalty-
  * réglage du ratio (plan `documentation/comptabilite/plan-points-de-fidelite.md`).
  *
  * Programme livré FERMÉ : tant que la comptabilité n'a pas enregistré de
- * réglage, aucune conversion ne passe et aucune commande ne crédite. La route
- * de conversion côté client (lot E1) n'est pas encore bâtie ; la conversion
- * existe ici comme cas d'usage sur le bus.
+ * réglage, aucune conversion ne passe et aucune commande ne crédite. Le
+ * particulier lit et convertit ses points par `me/loyalty` (lot E1).
  *
  * Le crédit des commandes (lot D) lit les commandes définitives par le port
  * que `orders` exporte (`CompletedOrderReader`) — d'où l'import de son module,
@@ -59,7 +63,7 @@ import { PrismaLoyaltyVoucherRepository } from "./infrastructure/prisma-loyalty-
  */
 @Module({
   imports: [OrdersModule],
-  controllers: [AdminLoyaltyController, LoyaltySweepController],
+  controllers: [AdminLoyaltyController, LoyaltySweepController, MyLoyaltyController],
   providers: [
     PrismaLoyaltySettingsStore,
     { provide: LoyaltySettingsReader, useExisting: PrismaLoyaltySettingsStore },
@@ -70,6 +74,7 @@ import { PrismaLoyaltyVoucherRepository } from "./infrastructure/prisma-loyalty-
     { provide: LoyaltyHolderDirectory, useClass: PrismaLoyaltyHolderDirectory },
     { provide: LoyaltyConversionGate, useClass: PrismaLoyaltyConversionGate },
     { provide: LoyaltyLedgerReader, useClass: PrismaLoyaltyLedgerReader },
+    { provide: HolderLoyaltyReader, useClass: PrismaHolderLoyaltyReader },
     { provide: LoyaltyEarnedOrdersReader, useClass: PrismaLoyaltyEarnedOrdersReader },
     OrderPointsCrediting,
     LoyaltyVoucherQuoting,
@@ -87,7 +92,9 @@ import { PrismaLoyaltyVoucherRepository } from "./infrastructure/prisma-loyalty-
     GetLoyaltySettingsHandler,
     ListLoyaltyBalancesHandler,
     ListLoyaltyVouchersHandler,
+    GetMyLoyaltyHandler,
+    LoyaltyEarningPreviewing,
   ],
-  exports: [LoyaltyVoucherQuoting, LoyaltyVoucherRedeeming],
+  exports: [LoyaltyVoucherQuoting, LoyaltyVoucherRedeeming, LoyaltyEarningPreviewing],
 })
 export class LoyaltyModule {}

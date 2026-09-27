@@ -5,6 +5,7 @@ import { NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
 
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
+import { ClientLoyalty } from '../client-loyalty.service';
 import { ClientSubscriptions } from '../client-subscriptions.service';
 import { ClientCopyService } from '../copy/client-copy.service';
 import { ClientFeatureAccess } from '../feature-access/client-feature-access.service';
@@ -15,13 +16,13 @@ import { ProOnboarding } from '../pro-onboarding.service';
 
 /** Une destination du menu, telle qu'elle est DÉCLARÉE — sans compteur ni libellé. */
 interface Destination {
-  readonly id: 'shop' | 'orders' | 'invoices' | 'baskets' | 'account';
+  readonly id: 'shop' | 'orders' | 'loyalty' | 'invoices' | 'baskets' | 'account';
   readonly route: string;
   /**
    * L'écran existe-t-il ?
    *
-   * Faux ne retire pas la destination : la réf pose que **l'ordre des six ne
-   * change jamais** entre le menu mobile, la sous-barre et le rail. Une
+   * Faux ne retire pas la destination : la réf pose que **l'ordre des
+   * destinations ne change jamais** entre le menu mobile, la sous-barre et le rail. Une
    * destination qui disparaîtrait le temps qu'on écrive son écran ferait bouger
    * les quatre autres, et l'habitude du pouce avec.
    */
@@ -43,6 +44,12 @@ interface Destination {
    * les adresses qui ont une route.
    */
   readonly companyOnly?: true;
+  /**
+   * Un écran de la PERSONNE qui ne paraît que si le serveur l'a dit ouvert :
+   * « Ma fidélité », en espace personnel connecté et programme ouvert au
+   * public (plan des points, §12). Fermé, rien ne dit « bientôt ».
+   */
+  readonly loyaltyOnly?: true;
 }
 
 /**
@@ -75,6 +82,7 @@ interface Destination {
 const DESTINATIONS: readonly Destination[] = [
   { id: 'shop', route: '/boutique', ready: true, shop: 'browse' },
   { id: 'orders', route: '/mes-commandes', ready: true, shop: 'closed', surface: 'orders' },
+  { id: 'loyalty', route: '/ma-fidelite', ready: true, shop: 'closed', loyaltyOnly: true },
   {
     id: 'invoices',
     route: '/mes-factures',
@@ -114,7 +122,10 @@ export interface NavItem {
 }
 
 /**
- * Les six destinations de l'app cliente, comptées.
+ * Les destinations de l'app cliente, comptées — six, et une septième, « Ma
+ * fidélité », en espace personnel quand le programme est ouvert (2026-09-27).
+ * Elle ne s'intercale pas au gré d'un écran en chantier : elle paraît ou non
+ * selon un réglage durable, comme une destination gardée par niveau.
  *
  * Un seul endroit les déclare, et les trois surfaces qui les affichent (menu
  * mobile, sous-barre desktop, et le rail le jour où il existera) le lisent : la
@@ -139,6 +150,7 @@ export class ClientNav {
   private readonly injector = inject(Injector);
   private readonly t = inject(ClientCopyService).t;
   private readonly router = inject(Router);
+  private readonly loyalty = inject(ClientLoyalty);
 
   /**
    * L'adresse courante, en SIGNAL.
@@ -165,7 +177,10 @@ export class ClientNav {
       (d) =>
         this.access.atLeast(d.shop) &&
         (d.surface === undefined || this.access.visible(d.surface)) &&
-        !(d.companyOnly === true && this.companyScreensClosed()),
+        !(d.companyOnly === true && this.companyScreensClosed()) &&
+        // `isOpen` n'est vrai qu'en espace personnel connecté : le service rend
+        // `{ open: false }` ailleurs sans appel, et lit une seule fois sinon.
+        (d.loyaltyOnly !== true || this.loyalty.isOpen()),
     ).map((d) => ({
       id: d.id,
       route: d.route,

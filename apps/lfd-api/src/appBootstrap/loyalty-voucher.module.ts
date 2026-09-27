@@ -1,8 +1,10 @@
 import { Global, Module } from "@nestjs/common";
 
+import { LoyaltyEarningPreviewing } from "../b2b/loyalty/application/services/loyalty-earning-previewing.js";
 import { LoyaltyVoucherQuoting } from "../b2b/loyalty/application/services/loyalty-voucher-quoting.js";
 import { LoyaltyVoucherRedeeming } from "../b2b/loyalty/application/services/loyalty-voucher-redeeming.js";
 import { LoyaltyModule } from "../b2b/loyalty/loyalty.module.js";
+import { LoyaltyEarningPreview } from "../b2b/orders/domain/ports/loyalty-earning-preview.js";
 import { LoyaltyVoucherQuoteReader } from "../b2b/orders/domain/ports/loyalty-voucher-quote.reader.js";
 import { LoyaltyVoucherRedemption } from "../b2b/orders/domain/ports/loyalty-voucher-redemption.js";
 
@@ -11,7 +13,8 @@ import { LoyaltyVoucherRedemption } from "../b2b/orders/domain/ports/loyalty-vou
  * `documentation/comptabilite/plan-points-de-fidelite.md`, C3, §11 bis S8).
  *
  * La commande déclare ce dont elle a besoin — lire ce que vaut un bon, puis
- * l'engager, le rendre, solder son reliquat — et la fidélité y répond, parce
+ * l'engager, le rendre, solder son reliquat ; et depuis E1, prévoir ce qu'un
+ * panier rapporterait — et la fidélité y répond, parce
  * qu'elle possède les bons. Le câblage vit ici et pas dans l'un des deux
  * modules : `LoyaltyModule` importe déjà `OrdersModule` pour lire les
  * commandes définitives, et l'import inverse ferait un cycle.
@@ -29,7 +32,9 @@ import { LoyaltyVoucherRedemption } from "../b2b/orders/domain/ports/loyalty-vou
   providers: [
     { provide: LoyaltyVoucherQuoteReader, useExisting: LoyaltyVoucherQuoting },
     { provide: LoyaltyVoucherRedemption, useExisting: LoyaltyVoucherRedeeming },
+    // « Vous gagnerez N points » : le devis connecté le demande (plan E1.2).
+    { provide: LoyaltyEarningPreview, useExisting: LoyaltyEarningPreviewing },
   ],
-  exports: [LoyaltyVoucherQuoteReader, LoyaltyVoucherRedemption],
+  exports: [LoyaltyVoucherQuoteReader, LoyaltyVoucherRedemption, LoyaltyEarningPreview],
 })
 export class LoyaltyVoucherModule {}

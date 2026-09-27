@@ -138,6 +138,9 @@ export class ClientCart {
   /** Le refus du serveur que le décompte doit montrer à la place de ses montants. */
   readonly refusal = this.quote.refusal;
 
+  /** Les points que le panier rapporterait, selon le serveur — cf. {@link ShopQuote.loyaltyPointsToEarn}. */
+  readonly loyaltyPointsToEarn = this.quote.loyaltyPointsToEarn;
+
   quantityOf(productId: string): number {
     return this.store.quantityOf(productId);
   }

@@ -1,7 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import type { ShopQuoteFulfillment, ShopQuotePayload, ShopQuoteView } from '@lfd/contracts';
+import type {
+  MyShopQuoteView,
+  ShopQuoteFulfillment,
+  ShopQuotePayload,
+  ShopQuoteView,
+} from '@lfd/contracts';
 // Valeur par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
 import { DELIVERY_CLOSED_FOR_AUDIENCE } from '@lfd/contracts/shop-values';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
@@ -126,6 +131,9 @@ export class ShopQuote {
   private readonly view = signal<ShopQuoteView>(EMPTY);
   private readonly state = signal<QuoteStatus>('idle');
   private readonly refused = signal<string | null>(null);
+  private readonly points = signal<number | null>(null);
+  /** Le lecteur du dernier décompte demandé — cf. la remise à zéro des points. */
+  private lastReader: string | null = null;
 
   readonly totals = this.view.asReadonly();
   readonly status = this.state.asReadonly();
@@ -139,6 +147,15 @@ export class ShopQuote {
    * d'une livraison que la commande refusera.
    */
   readonly refusal = this.refused.asReadonly();
+
+  /**
+   * Les points que ce panier rapporterait, **tels que le serveur les compte**
+   * (plan des points, E1.2) — par la même règle que le crédit. `null` sans
+   * décompte connecté, programme fermé, espace société ou assiette vide.
+   * Aucune règle recopiée ici : elle divergerait au premier changement
+   * d'assiette.
+   */
+  readonly loyaltyPointsToEarn = this.points.asReadonly();
 
   /**
    * Ce dont le décompte dépend, et **rien d'autre**.
@@ -188,6 +205,15 @@ export class ShopQuote {
         distinctUntilChanged(),
         tap((key) => {
           this.state.set(linesOf(key).length === 0 ? 'idle' : 'loading');
+          // Les points appartiennent au LECTEUR, pas au panier : après une
+          // bascule d'espace, ceux du perso ne s'affichent pas un instant de
+          // plus sous le décompte d'une société (Hugo, 2026-09-27 : « pas de
+          // fidélité en pro »). Les montants, eux, restent — cf. plus haut.
+          const reader = readerIn(key);
+          if (reader !== this.lastReader) {
+            this.lastReader = reader;
+            this.points.set(null);
+          }
         }),
         debounceTime(QUOTE_DEBOUNCE_MS),
         switchMap((key) => this.ask(key)),
@@ -210,6 +236,7 @@ export class ShopQuote {
       this.view.set(EMPTY);
       this.state.set('idle');
       this.refused.set(null);
+      this.points.set(null);
       return of(null);
     }
     if (readerIn(key) === null) {
@@ -221,6 +248,8 @@ export class ShopQuote {
     return this.quoted(body).pipe(
       tap((view) => {
         this.view.set(view);
+        // Le devis anonyme n'a pas la clé (absente, pas nulle).
+        this.points.set('loyaltyPointsToEarn' in view ? view.loyaltyPointsToEarn : null);
         this.state.set('ready');
         this.refused.set(null);
       }),
@@ -229,6 +258,7 @@ export class ShopQuote {
           // 🔴 Le dernier décompte NE reste PAS : il porte des frais de
           // coursier pour une livraison que la commande refusera (plan D5).
           this.view.set(EMPTY);
+          this.points.set(null);
           this.state.set('refused');
           this.refused.set(httpErrorMessage(error, DELIVERY_CLOSED_FALLBACK));
           return of(null);
@@ -238,6 +268,7 @@ export class ShopQuote {
           // La commande refuserait ce panier tel quel : le décompte le dit
           // avant le règlement, avec le message du serveur (D6).
           this.view.set(EMPTY);
+          this.points.set(null);
           this.state.set('refused');
           this.refused.set(httpErrorMessage(error, OPERATION_REFUSAL_FALLBACK));
           return of(null);
@@ -264,13 +295,13 @@ export class ShopQuote {
   private quoted(body: {
     lines: readonly { sku: string; quantity: number }[];
     fulfillment: ReturnType<typeof fulfillmentIn>;
-  }): Observable<ShopQuoteView> {
+  }): Observable<ShopQuoteView | MyShopQuoteView> {
     if (!this.auth.isAuthenticated()) {
       return this.http.post<ShopQuoteView>(`${AUTH_CONFIG.apiBaseUrl}/shop/quote`, body);
     }
     return this.auth.accessToken$().pipe(
       switchMap((token) =>
-        this.http.post<ShopQuoteView>(`${AUTH_CONFIG.apiBaseUrl}/shop/quote/mine`, body, {
+        this.http.post<MyShopQuoteView>(`${AUTH_CONFIG.apiBaseUrl}/shop/quote/mine`, body, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ),

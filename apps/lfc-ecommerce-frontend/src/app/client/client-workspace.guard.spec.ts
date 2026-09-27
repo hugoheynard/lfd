@@ -13,6 +13,7 @@ import { AccountService } from '../account/account.service';
 import { AuthFacade } from '../auth/auth.facade';
 import {
   companyWorkspaceGuard,
+  personalWorkspaceGuard,
   workspaceHomeGuard,
   WORKSPACE_WAIT_MS,
 } from './client-workspace.guard';
@@ -213,5 +214,32 @@ describe('workspaceHomeGuard — la cible de la connexion', () => {
 
   it('envoie qui n’est pas connecté sur l’accueil public', async () => {
     expect(await land({ signedIn: false, current: null, companies: false })).toBe('/bienvenue');
+  });
+});
+
+describe('personalWorkspaceGuard — « pas de fidélité en pro »', () => {
+  async function runPersonal(signedIn: boolean, current: string | null) {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: AuthFacade, useValue: { authGate$: () => of(signedIn) } },
+        provideWorkspace(workspaceDouble(current, current === TOMMEUSES.id ? [TOMMEUSES] : [])),
+      ],
+    });
+    const result = await TestBed.runInInjectionContext(() => personalWorkspaceGuard(ROUTE, STATE));
+    return result instanceof UrlTree ? TestBed.inject(Router).serializeUrl(result) : result;
+  }
+
+  it('laisse passer l’espace personnel', async () => {
+    expect(await runPersonal(true, PERSONAL_WORKSPACE)).toBe(true);
+  });
+
+  it('renvoie un espace société à son accueil', async () => {
+    expect(await runPersonal(true, TOMMEUSES.id)).toBe('/bienvenue');
+  });
+
+  it('laisse passer qui n’est pas connecté — `authenticatedGuard` décide pour lui', async () => {
+    expect(await runPersonal(false, null)).toBe(true);
   });
 });

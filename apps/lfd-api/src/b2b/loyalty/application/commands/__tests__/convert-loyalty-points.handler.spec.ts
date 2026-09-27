@@ -4,6 +4,7 @@ import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   InsufficientLoyaltyPointsError,
+  LoyaltyBalanceChangedError,
   LoyaltyConversionForbiddenError,
   LoyaltyHolderNotFoundError,
   LoyaltyProgramClosedError,
@@ -49,7 +50,9 @@ describe("ConvertLoyaltyPointsHandler — des points contre un bon", () => {
     const { ledger, vouchers, events, handler } = setup();
     ledger.seedEarned(PERSON, 2_340);
 
-    const voucherId = await handler.execute(new ConvertLoyaltyPointsCommand("user", "u1", "u1", 2));
+    const voucherId = await handler.execute(
+      new ConvertLoyaltyPointsCommand("user", "u1", "u1", 2, null),
+    );
 
     expect(ledger.calls).toEqual(["lock:user:u1", "ledger.save"]);
     expect(vouchers.calls).toEqual(["voucher.save"]);
@@ -68,7 +71,7 @@ describe("ConvertLoyaltyPointsHandler — des points contre un bon", () => {
     ledger.seedEarned(PERSON, 10_000);
 
     await expect(
-      handler.execute(new ConvertLoyaltyPointsCommand("user", "u1", "u1", 1)),
+      handler.execute(new ConvertLoyaltyPointsCommand("user", "u1", "u1", 1, null)),
     ).rejects.toThrow(LoyaltyProgramClosedError);
     expect(vouchers.rows.size).toBe(0);
     expect(events.traced).toEqual([]);
@@ -78,14 +81,14 @@ describe("ConvertLoyaltyPointsHandler — des points contre un bon", () => {
     const { ledger, handler } = setup();
     ledger.seedEarned(COMPANY, 10_000);
     await expect(
-      handler.execute(new ConvertLoyaltyPointsCommand("company", "c1", "u2", 1)),
+      handler.execute(new ConvertLoyaltyPointsCommand("company", "c1", "u2", 1, null)),
     ).rejects.toThrow(LoyaltyProgramClosedToClienteleError);
   });
 
   it("laisse un membre de la société convertir quand la clientèle pro est ouverte", async () => {
     const { ledger, handler } = setup({ ...OPEN_TO_PUBLIC, openToPro: true });
     ledger.seedEarned(COMPANY, 1_000);
-    await handler.execute(new ConvertLoyaltyPointsCommand("company", "c1", "u2", 1));
+    await handler.execute(new ConvertLoyaltyPointsCommand("company", "c1", "u2", 1, null));
     expect(ledger.balanceOf(COMPANY)).toBe(0);
   });
 
@@ -93,7 +96,7 @@ describe("ConvertLoyaltyPointsHandler — des points contre un bon", () => {
     const { ledger, handler } = setup();
     ledger.seedEarned(PERSON, 10_000);
     await expect(
-      handler.execute(new ConvertLoyaltyPointsCommand("user", "u1", "intrus", 1)),
+      handler.execute(new ConvertLoyaltyPointsCommand("user", "u1", "intrus", 1, null)),
     ).rejects.toThrow(LoyaltyConversionForbiddenError);
   });
 
@@ -101,14 +104,35 @@ describe("ConvertLoyaltyPointsHandler — des points contre un bon", () => {
     const { ledger, handler } = setup();
     ledger.seedEarned(PERSON, 999);
     await expect(
-      handler.execute(new ConvertLoyaltyPointsCommand("user", "u1", "u1", 1)),
+      handler.execute(new ConvertLoyaltyPointsCommand("user", "u1", "u1", 1, null)),
     ).rejects.toThrow(InsufficientLoyaltyPointsError);
   });
 
   it("refuse un titulaire inconnu", async () => {
     const { handler } = setup();
     await expect(
-      handler.execute(new ConvertLoyaltyPointsCommand("user", "fantome", "fantome", 1)),
+      handler.execute(new ConvertLoyaltyPointsCommand("user", "fantome", "fantome", 1, null)),
     ).rejects.toThrow(LoyaltyHolderNotFoundError);
+  });
+
+  it("convertit quand le solde que voyait le client est celui relu sous le verrou", async () => {
+    const { ledger, handler } = setup();
+    ledger.seedEarned(PERSON, 2_340);
+    await handler.execute(new ConvertLoyaltyPointsCommand("user", "u1", "u1", 1, 2_340));
+    expect(ledger.balanceOf(PERSON)).toBe(1_340);
+  });
+
+  it("🔴 le double clic : même solde attendu deux fois, un seul bon, le second refusé", async () => {
+    const { ledger, vouchers, handler } = setup();
+    ledger.seedEarned(PERSON, 2_340);
+    await handler.execute(new ConvertLoyaltyPointsCommand("user", "u1", "u1", 1, 2_340));
+
+    await expect(
+      handler.execute(new ConvertLoyaltyPointsCommand("user", "u1", "u1", 1, 2_340)),
+    ).rejects.toThrow(LoyaltyBalanceChangedError);
+    expect(vouchers.rows.size).toBe(1);
+    expect(ledger.balanceOf(PERSON)).toBe(1_340);
+    // Le refus vient APRÈS le verrou : c'est le solde relu qui tranche.
+    expect(ledger.calls.filter((call) => call.startsWith("lock:"))).toHaveLength(2);
   });
 });

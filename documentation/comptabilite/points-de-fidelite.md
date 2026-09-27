@@ -179,8 +179,23 @@ filet en base.
 
 ## 5. Convertir en bon de fidélité
 
-`ConvertLoyaltyPointsCommand` existe sur le bus et est éprouvée de bout en
-bout. **Aucune route ne l'expose encore** (lot E1, §8).
+`ConvertLoyaltyPointsCommand` est exposée au particulier depuis le lot E1
+(2026-09-27) par `POST me/loyalty/conversions`, corps
+`{ steps, expectedBalancePoints }` ; le staff ne convertit pas.
+
+**Côté client (lot E1)** — seulement un particulier **connecté**, dans son
+espace personnel (`@ActingCompany()` nul) :
+
+| Surface                       | Ce qu'elle fait                                                                                                                                                                                                                   |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET me/loyalty`              | `{ open: false }` sans réglage, programme fermé au public, ou espace société ; sinon solde, palier, paliers convertibles, bons, 20 dernières lignes                                                                               |
+| `POST me/loyalty/conversions` | 403 depuis un espace société ; **409 `loyalty.balance_changed`** si le solde relu sous le verrou n'est pas celui que l'écran affichait — deux clics ne font qu'un bon                                                             |
+| `POST shop/quote/mine`        | `loyaltyPointsToEarn`, calculé par `earningFor` (la fonction du crédit) ; `null` fermé ou en société ; absent du devis anonyme                                                                                                    |
+| boutique, `/ma-fidelite`      | entrée à part (Hugo) ; lien de navigation seulement en espace personnel, programme ouvert ; un espace société est renvoyé à son accueil (`personalWorkspaceGuard`) — **aucune fidélité en pro avant le lot F** (Hugo, 2026-09-27) |
+| boutique, décompte du panier  | « Vous gagnerez N points » si `loyaltyPointsToEarn > 0`                                                                                                                                                                           |
+
+L'historique rend une **nature** de ligne et un numéro de commande, jamais le
+motif d'un ajustement staff, écrit pour le staff.
 
 1. **Qui peut** (`PrismaLoyaltyConversionGate`) :
    - pour une personne : elle-même, au statut `active` ;
@@ -289,12 +304,12 @@ sert aucune recherche de société ou de personne.
 
 ## 8. Ce qui n'est pas bâti
 
-| Lot    | Ce qu'il fera                                                          | Ce qu'il attend                                      |
-| ------ | ---------------------------------------------------------------------- | ---------------------------------------------------- |
-| **C**  | ✅ bâti le 2026-09-27 (§6) — reste la décision sur le reliquat échu    | —                                                    |
-| **E1** | dans la boutique : le solde, « vous gagnerez N points », la conversion | le lot C — on ne distribue pas de bons inutilisables |
-| **E2** | dans la boutique : utiliser un bon au paiement                         | le lot C                                             |
-| **F**  | ouvrir aux pros                                                        | un signal « facture réglée »                         |
+| Lot    | Ce qu'il fera                                                       | Ce qu'il attend              |
+| ------ | ------------------------------------------------------------------- | ---------------------------- |
+| **C**  | ✅ bâti le 2026-09-27 (§6) — reste la décision sur le reliquat échu | —                            |
+| **E1** | ✅ bâti le 2026-09-27 (§5)                                          | —                            |
+| **E2** | dans la boutique : utiliser un bon au paiement                      | le lot C                     |
+| **F**  | ouvrir aux pros                                                     | un signal « facture réglée » |
 
 Les décisions déjà prises pour ces lots sont écrites dans le plan : bon plus
 gros que le panier → **reliquat**, émis quand la commande devient définitive et

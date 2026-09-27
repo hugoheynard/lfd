@@ -19,7 +19,8 @@ import { LoyaltyHolderDirectory } from "../../domain/ports/loyalty-holder.direct
  * Convertit des points en bon de fidélité (plan D2, D5).
  *
  * 🔴 Tout se joue dans UNE transaction, sous le verrou du titulaire : le droit
- * de convertir est revérifié, la somme du livre relue, puis le bon et le débit
+ * de convertir est revérifié, la somme du livre relue — et confrontée au solde
+ * que le client voyait, s'il en voyait un —, puis le bon et le débit
  * écrits ensemble. Deux conversions concurrentes du même titulaire attendent
  * l'une l'autre, et la seconde lit le solde que la première a laissé — le
  * solde ne descend donc jamais sous zéro.
@@ -60,6 +61,7 @@ export class ConvertLoyaltyPointsHandler implements ICommandHandler<
         entryId: this.ids.next(),
         actorUserId: command.actorUserId,
         at: this.clock.now(),
+        expectedBalance: command.expectedBalancePoints,
       });
       // Le bon d'abord : la ligne de débit le cite par clé étrangère.
       await this.vouchers.save(voucher);

@@ -1,10 +1,15 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { DELIVERY_CLOSED_FOR_AUDIENCE } from '@lfd/contracts';
+import { DELIVERY_CLOSED_FOR_AUDIENCE, type MyShopQuoteView } from '@lfd/contracts';
 
 import { AuthFacade } from '../../../auth/auth.facade';
-import { provideWorkspace, workspaceDouble } from '../../client-workspace.fixture';
+import { provideRecognised } from '../../client-orders.fixture';
+import {
+  provideWorkspace,
+  workspaceDouble,
+  type WorkspaceDouble,
+} from '../../client-workspace.fixture';
 
 import { ClientCart } from '../client-cart.service';
 import { hydrateWith, TEST_CATALOGUE } from '../../shop/shop-catalogue.fixture';
@@ -141,5 +146,83 @@ describe('CartSummary — une livraison refusée', () => {
     expect(el.querySelector('fold-callout')?.textContent).toContain('Choisissez le retrait.');
     expect(el.querySelector('dl.count')).toBeNull();
     expect(el.querySelectorAll('.lines > li')).toHaveLength(1);
+  });
+});
+
+/** Plan des points, E1.3 : la ligne n'existe que si le serveur annonce plus de zéro. */
+describe('CartSummary — les points à gagner', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function quoted(
+    points: number | null,
+    space: WorkspaceDouble = workspaceDouble(),
+  ): ComponentFixture<CartSummary> {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [CartSummary],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideWorkspace(space),
+        provideRecognised(),
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    TestBed.inject(ClientCart).add('VIE-001');
+    const fixture = TestBed.createComponent(CartSummary);
+    fixture.detectChanges();
+    TestBed.tick();
+    vi.advanceTimersByTime(400);
+    TestBed.tick();
+
+    const view: MyShopQuoteView = {
+      lines: [],
+      subtotalHtCents: 250,
+      discountCents: 0,
+      discountAdjustment: null,
+      voucherDiscountCents: 0,
+      deliveryFeeCents: 0,
+      vat: [],
+      totalCents: 264,
+      loyaltyPointsToEarn: points,
+    };
+    TestBed.inject(HttpTestingController)
+      .expectOne((r) => r.url.endsWith('/shop/quote/mine'))
+      .flush(view);
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  const el = (fixture: ComponentFixture<CartSummary>): HTMLElement =>
+    fixture.nativeElement as HTMLElement;
+
+  it('dit « Vous gagnerez N points » sous le total', () => {
+    expect(el(quoted(1250)).querySelector('.points')?.textContent).toBe(
+      'Vous gagnerez 1\u202f250 points',
+    );
+  });
+
+  it.each([0, null])('se tait quand le serveur annonce %s', (points) => {
+    expect(el(quoted(points)).querySelector('.points')).toBeNull();
+  });
+
+  /** « Pas de fidélité en pro » (Hugo, 2026-09-27) : le devis perso ne survit pas à la bascule. */
+  it('retire la ligne dès la bascule vers une société, avant le nouveau devis', () => {
+    const space = workspaceDouble();
+    const fixture = quoted(1250, space);
+    expect(el(fixture).querySelector('.points')).not.toBeNull();
+
+    space.current.set('co_1');
+    TestBed.tick();
+    fixture.detectChanges();
+
+    expect(el(fixture).querySelector('.points')).toBeNull();
   });
 });

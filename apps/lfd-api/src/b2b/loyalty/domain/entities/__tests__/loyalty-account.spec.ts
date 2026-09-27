@@ -4,6 +4,7 @@ import {
   InvalidEarnedPointsError,
   InvalidStepCountError,
   LoyaltyBalanceBelowZeroError,
+  LoyaltyBalanceChangedError,
   LoyaltyProgramClosedError,
   LoyaltyProgramClosedToClienteleError,
   LoyaltyVoucherNotAvailableError,
@@ -24,8 +25,20 @@ const SETTINGS = LoyaltySettings.of({
   voucherValidityDays: 365,
 });
 
-function conversion(steps: number, settings: LoyaltySettings | null = SETTINGS): LoyaltyConversion {
-  return { steps, settings, voucherId: "v1", entryId: "e1", actorUserId: "u1", at: AT };
+function conversion(
+  steps: number,
+  settings: LoyaltySettings | null = SETTINGS,
+  expectedBalance: number | null = null,
+): LoyaltyConversion {
+  return {
+    steps,
+    settings,
+    voucherId: "v1",
+    entryId: "e1",
+    actorUserId: "u1",
+    at: AT,
+    expectedBalance,
+  };
 }
 
 const act = { entryId: "e2", staffUserId: "staff_1", reason: LoyaltyReason.of("geste"), at: AT };
@@ -77,6 +90,27 @@ describe("LoyaltyAccount.convert — des points contre un bon", () => {
   it("refuse une société tant que la clientèle pro est fermée", () => {
     const account = LoyaltyAccount.reconstitute(COMPANY, 10_000);
     expect(() => account.convert(conversion(1))).toThrow(LoyaltyProgramClosedToClienteleError);
+  });
+
+  it("convertit quand le solde attendu est celui du livre", () => {
+    const account = LoyaltyAccount.reconstitute(PERSON, 2_340);
+    account.convert(conversion(1, SETTINGS, 2_340));
+    expect(account.balance).toBe(1_340);
+  });
+
+  it("refuse un solde attendu qui n'est plus celui du livre — le second clic — et n'écrit rien", () => {
+    const account = LoyaltyAccount.reconstitute(PERSON, 1_340);
+    expect(() => account.convert(conversion(1, SETTINGS, 2_340))).toThrow(
+      LoyaltyBalanceChangedError,
+    );
+    expect(account.pendingEntries).toEqual([]);
+  });
+
+  it("refuse un solde attendu différent même quand le solde réel couvrirait le bon", () => {
+    const account = LoyaltyAccount.reconstitute(PERSON, 5_000);
+    expect(() => account.convert(conversion(1, SETTINGS, 4_000))).toThrow(
+      LoyaltyBalanceChangedError,
+    );
   });
 });
 

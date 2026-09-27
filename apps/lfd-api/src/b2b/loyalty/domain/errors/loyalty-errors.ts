@@ -135,6 +135,35 @@ export class InsufficientLoyaltyPointsError extends BusinessError {
   }
 }
 
+/**
+ * Le solde relu sous le verrou n'est pas celui que l'écran affichait — **409**.
+ * Le cas typique est un double clic : la première conversion a baissé le
+ * solde, la seconde est refusée (plan des points, E1.1).
+ */
+export class LoyaltyBalanceChangedError extends BusinessError {
+  constructor(expected: number, balance: number) {
+    super(
+      "loyalty.balance_changed",
+      `Votre solde a changé : l'écran affichait ${String(expected)} points, il en compte maintenant ${String(balance)}. ` +
+        "Rechargez la page pour voir vos bons et votre solde à jour, puis recommencez si besoin.",
+    );
+  }
+}
+
+/**
+ * Convertir ses points depuis un espace société — **403**. Les points d'un
+ * particulier se convertissent dans son espace personnel ; ceux d'une société
+ * ne se convertissent pas encore depuis la boutique (plan des points, lot F).
+ */
+export class LoyaltyPersonalSpaceRequiredError extends AuthorizationError {
+  constructor() {
+    super(
+      "loyalty.personal_space_required",
+      "La fidélité se gère depuis votre espace personnel : quittez l'espace de votre société, puis recommencez.",
+    );
+  }
+}
+
 /** Un retrait de points ferait passer le solde sous zéro — **409**. */
 export class LoyaltyBalanceBelowZeroError extends BusinessError {
   constructor(balance: number, points: number) {

@@ -61,6 +61,7 @@
   "test/leads.e2e-spec.ts": 4679,
   "test/login-methods.e2e-spec.ts": 3657,
   "test/loyalty-earning.e2e-spec.ts": 4838,
+  "test/loyalty-me.e2e-spec.ts": 9365,
   "test/loyalty-voucher-order.e2e-spec.ts": 6200,
   "test/loyalty.e2e-spec.ts": 4817,
   "test/mandate-mentions.e2e-spec.ts": 2677,

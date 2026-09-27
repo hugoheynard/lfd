@@ -1,4 +1,8 @@
-import { shopQuotePayloadSchema, type ShopQuotePayload, type ShopQuoteView } from "@lfd/contracts";
+import {
+  shopQuotePayloadSchema,
+  type MyShopQuoteView,
+  type ShopQuotePayload,
+} from "@lfd/contracts";
 import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
@@ -7,14 +11,15 @@ import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { RequiresShop } from "../../feature-access/http/requires-shop.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import { QuoteShopCartQuery } from "../application/queries/quote-shop-cart.handler.js";
+import { QuoteMyShopCartQuery } from "../application/queries/quote-my-shop-cart.handler.js";
 
 /**
  * **Le décompte du panier d'un client reconnu** — le jumeau muré de
  * `POST /shop/quote`.
  *
- * Même handler, même vue, même façon de compter : c'est le PRIX qui change, pas
- * l'arithmétique. Ce qui les sépare est l'audience — l'une chiffre pour un
+ * Même arithmétique (`ShopCartQuoting`), même façon de compter : c'est le PRIX
+ * qui change, pas l'arithmétique — et la vue gagne les points que la commande
+ * rapporterait (`loyaltyPointsToEarn`, plan des points, E1.2). Ce qui les sépare est l'audience — l'une chiffre pour un
  * visiteur, l'autre pour une société —, et ça se joue à l'entrée, pas dans le
  * calcul.
  *
@@ -47,9 +52,9 @@ export class MyShopQuoteController {
     @Body(new ZodBody(shopQuotePayloadSchema)) payload: ShopQuotePayload,
     @ActingCompany() companyId: string | null,
     @CurrentUser() user: Principal,
-  ): Promise<ShopQuoteView> {
-    return this.queries.execute<QuoteShopCartQuery, ShopQuoteView>(
-      new QuoteShopCartQuery(payload, companyId, user.userId),
+  ): Promise<MyShopQuoteView> {
+    return this.queries.execute<QuoteMyShopCartQuery, MyShopQuoteView>(
+      new QuoteMyShopCartQuery(payload, companyId, user.userId),
     );
   }
 }

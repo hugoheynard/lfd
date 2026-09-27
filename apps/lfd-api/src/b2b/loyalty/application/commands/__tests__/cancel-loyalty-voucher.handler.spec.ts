@@ -36,6 +36,7 @@ function setup(now: Date = ISSUED) {
     entryId: "conv1",
     actorUserId: "u1",
     at: ISSUED,
+    expectedBalance: null,
   });
   ledger.entries.push(...account.pendingEntries);
   vouchers.rows.set(voucher.id, voucher.toPersistence());

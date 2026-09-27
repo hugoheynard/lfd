@@ -4,6 +4,7 @@ import {
   InvalidEarnedPointsError,
   InvalidStepCountError,
   LoyaltyBalanceBelowZeroError,
+  LoyaltyBalanceChangedError,
   LoyaltyProgramClosedError,
   LoyaltyProgramClosedToClienteleError,
   LoyaltyVoucherNotAvailableError,
@@ -41,6 +42,12 @@ export interface LoyaltyConversion {
   readonly entryId: string;
   readonly actorUserId: string;
   readonly at: Date;
+  /**
+   * Le solde que la personne avait sous les yeux, ou `null` quand l'appelant
+   * n'en affiche pas. Confronté au solde relu sous le verrou : c'est ce qui
+   * rend un double clic inoffensif (plan des points, E1.1).
+   */
+  readonly expectedBalance: number | null;
 }
 
 /** Ce que rapporte une commande définitive (plan D3, D4). */
@@ -98,6 +105,7 @@ export class LoyaltyAccount {
    * réglage — lu maintenant, figé sur le bon (plan D5).
    *
    * @throws {InvalidStepCountError} pas un entier strictement positif.
+   * @throws {LoyaltyBalanceChangedError} le solde n'est plus celui que la personne voyait.
    * @throws {LoyaltyProgramClosedError} aucun réglage posé.
    * @throws {LoyaltyProgramClosedToClienteleError} la clientèle du titulaire est fermée.
    * @throws {InsufficientLoyaltyPointsError} le solde ne couvre pas le coût.
@@ -106,6 +114,9 @@ export class LoyaltyAccount {
     const { settings, steps } = conversion;
     if (!isPositiveInteger(steps)) {
       throw new InvalidStepCountError(steps);
+    }
+    if (conversion.expectedBalance !== null && conversion.expectedBalance !== this.balanceValue) {
+      throw new LoyaltyBalanceChangedError(conversion.expectedBalance, this.balanceValue);
     }
     if (settings === null) {
       throw new LoyaltyProgramClosedError();

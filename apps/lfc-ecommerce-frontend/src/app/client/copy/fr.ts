@@ -1,6 +1,7 @@
 import type { ClientCopy } from './client-copy.model';
 import { ACCOUNT_FR } from './screens/account.fr';
 import { INVOICES_FR } from './screens/invoices.copy';
+import { LOYALTY_FR } from './screens/loyalty.copy';
 import { ORDERS_FR } from './screens/orders.copy';
 
 /** La langue de référence : c'est elle que la maquette écrit. */
@@ -52,6 +53,7 @@ export const FR: ClientCopy = {
       invoices: 'Factures',
       baskets: 'Paniers récurrents',
       account: 'Mon compte',
+      loyalty: 'Ma fidélité',
     },
     invoicesDue: '{n} à régler',
     basketsCount: '{n} modèles',
@@ -262,6 +264,7 @@ export const FR: ClientCopy = {
     fee: 'Coursier',
     vat: 'TVA {rate}',
     total: 'Total TTC',
+    pointsToEarn: 'Vous gagnerez {n} points',
     clear: 'Vider le panier',
     payOnAccount: 'Ajouter au compte',
     accountSoon:
@@ -403,6 +406,7 @@ export const FR: ClientCopy = {
   },
   orders: ORDERS_FR,
   invoices: INVOICES_FR,
+  loyalty: LOYALTY_FR,
   account: ACCOUNT_FR,
   pro: {
     title: 'Intéressé par l’espace pro ?',

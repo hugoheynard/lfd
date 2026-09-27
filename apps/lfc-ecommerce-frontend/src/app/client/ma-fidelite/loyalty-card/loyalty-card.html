@@ -1,0 +1,105 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-card>
+      <fold-loading [message]="c().loading" />
+    </fold-card>
+  }
+  @case ('failed') {
+    <fold-card>
+      <fold-empty-state tone="alert" [title]="c().loadFailedTitle" [subtitle]="c().loadFailedBody">
+        <button foldButton emphasis="solid" intent="primary" type="button" (click)="reload()">
+          {{ c().retry }}
+        </button>
+      </fold-empty-state>
+    </fold-card>
+  }
+  @case ('open') {
+    <fold-card>
+      <div class="body">
+        <fold-element-title
+          variant="title"
+          icon="star"
+          [title]="c().balanceLabel"
+          [subtitle]="stepWorth()"
+        />
+
+        <div class="balance">
+          <span class="balance-value">{{ balance() }}</span>
+          <span class="balance-note">{{ convertibleLabel() }}</span>
+        </div>
+
+        @if ((open()?.convertibleSteps ?? 0) > 0) {
+          <div class="convert">
+            <fold-listbox
+              [label]="c().stepsLabel"
+              [options]="stepOptions()"
+              [value]="steps()"
+              (selectionChange)="chooseSteps($event)"
+            />
+            <fold-inline-confirm
+              intent="primary"
+              keepOpenOnConfirm
+              [message]="confirmMessage()"
+              [labels]="confirmLabels()"
+              [loading]="converting()"
+              [open]="confirmOpen()"
+              (openChange)="confirmOpen.set($event)"
+              (confirmed)="convert()"
+            >
+              <button foldButton emphasis="solid" intent="primary" type="button">
+                {{ c().convert }}
+              </button>
+            </fold-inline-confirm>
+          </div>
+        }
+
+        @switch (outcome()) {
+          @case ('converted') {
+            <fold-callout variant="success" announce>{{ convertedLabel() }}</fold-callout>
+          }
+          @case ('balance-changed') {
+            <fold-callout variant="alert" announce>{{ c().balanceChanged }}</fold-callout>
+          }
+          @case ('failed') {
+            <fold-callout variant="alert" announce>{{ c().convertFailed }}</fold-callout>
+          }
+        }
+
+        <p class="vat-note">{{ c().vatNote }}</p>
+
+        @if (empty()) {
+          <fold-empty-state [title]="c().emptyTitle" [subtitle]="c().emptyBody">
+            <fold-icon empty-icon name="star" size="xl" />
+          </fold-empty-state>
+        } @else {
+          @if (vouchers().length > 0) {
+            <section class="group">
+              <fold-element-title variant="caps" [level]="3" [title]="c().vouchersTitle" />
+              <ul class="rows">
+                @for (row of vouchers(); track row.id) {
+                  <li class="row">
+                    <span class="row-label">{{ row.label }}</span>
+                    <span class="row-detail">{{ row.detail }}</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+          @if (entries().length > 0) {
+            <section class="group">
+              <fold-element-title variant="caps" [level]="3" [title]="c().historyTitle" />
+              <ul class="rows">
+                @for (row of entries(); track row.id) {
+                  <li class="row">
+                    <span class="row-label">{{ row.label }}</span>
+                    <span class="row-detail">{{ row.detail }}</span>
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+        }
+      </div>
+    </fold-card>
+  }
+}

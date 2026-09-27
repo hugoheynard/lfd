@@ -65,6 +65,11 @@
       <dd>{{ money(totals().totalCents) }}</dd>
     </div>
   </dl>
+
+  <!-- Discrète, SOUS le total : ce n'est pas un montant, c'est une promesse. -->
+  @if (pointsLabel(); as label) {
+    <p class="points">{{ label }}</p>
+  }
 }
 
 <!-- Vider est une SORTIE, pas une action de premier plan : discrète, sous le

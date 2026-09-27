@@ -12,6 +12,7 @@
  */
 import type { AccountCopy } from './screens/account.copy';
 import type { InvoicesCopy } from './screens/invoices.copy';
+import type { LoyaltyCopy } from './screens/loyalty.copy';
 import type { OrdersCopy } from './screens/orders.copy';
 
 export interface ClientCopy {
@@ -112,6 +113,7 @@ export interface ClientCopy {
       readonly invoices: string;
       readonly baskets: string;
       readonly account: string;
+      readonly loyalty: string;
     };
     /** `{n}` est remplacé par le nombre de factures en attente. */
     readonly invoicesDue: string;
@@ -459,6 +461,11 @@ export interface ClientCopy {
      */
     readonly vat: string;
     readonly total: string;
+    /**
+     * `{n}` = les points que la commande rapporterait (plan des points, E1.2).
+     * La ligne n'existe que si le serveur en annonce plus de zéro.
+     */
+    readonly pointsToEarn: string;
     /** La sortie du panier : tout retirer d'un coup. */
     readonly clear: string;
     /** Le second règlement : porter la commande au compte plutôt que payer. */
@@ -722,6 +729,7 @@ export interface ClientCopy {
    */
   readonly orders: OrdersCopy;
   readonly invoices: InvoicesCopy;
+  readonly loyalty: LoyaltyCopy;
   readonly account: AccountCopy;
 
   readonly pro: {

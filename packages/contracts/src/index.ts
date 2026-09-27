@@ -146,7 +146,9 @@ export {
 export {
   adjustLoyaltyPointsPayloadSchema,
   cancelLoyaltyVoucherPayloadSchema,
+  convertMyLoyaltyPointsPayloadSchema,
   loyaltyHolderKindSchema,
+  myLoyaltyEntryKindSchema,
   loyaltyVoucherStatusSchema,
   setLoyaltySettingsPayloadSchema,
   LOYALTY_REASON_MAX,
@@ -154,12 +156,18 @@ export {
 export type {
   AdjustLoyaltyPointsPayload,
   CancelLoyaltyVoucherPayload,
+  ConvertMyLoyaltyPointsPayload,
   LoyaltyBalanceView,
   LoyaltyHolderKind,
   LoyaltyHolderView,
   LoyaltySettingsView,
   LoyaltyVoucherStatus,
   LoyaltyVoucherView,
+  MyLoyaltyConversionResponse,
+  MyLoyaltyEntryKind,
+  MyLoyaltyEntryView,
+  MyLoyaltyView,
+  MyLoyaltyVoucherView,
   SetLoyaltySettingsPayload,
 } from "./loyalty.js";
 export type {
@@ -444,6 +452,7 @@ export type {
   ShopQuoteLinePayload,
   ShopQuoteLineView,
   ShopQuotePayload,
+  MyShopQuoteView,
   ShopQuoteVatShare,
   ShopQuoteView,
 } from "./shop-quote.js";

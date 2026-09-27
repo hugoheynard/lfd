@@ -36,6 +36,20 @@ describe("LoyaltyRatio — des entiers, toujours", () => {
   });
 });
 
+describe("LoyaltyRatio.stepsCoveredBy — ce que l'écran propose de convertir", () => {
+  const ratio = LoyaltyRatio.of(1_000, 500);
+
+  it.each([
+    [2_340, 2],
+    [2_000, 2],
+    [999, 0],
+    [0, 0],
+    [-50, 0],
+  ])("un solde de %p points couvre %p palier(s)", (balance, steps) => {
+    expect(ratio.stepsCoveredBy(balance)).toBe(steps);
+  });
+});
+
 describe("LoyaltyHolder — la société OU la personne", () => {
   it("préfixe la clé de verrou : une société et une personne de même id ne se croisent pas", () => {
     const company = LoyaltyHolder.of("company", "abc");

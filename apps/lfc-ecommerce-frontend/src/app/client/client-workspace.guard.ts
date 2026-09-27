@@ -100,6 +100,37 @@ export const companyWorkspaceGuard: CanActivateFn = async () => {
 };
 
 /**
+ * **Les écrans de la PERSONNE en tant que cliente** — `/ma-fidelite` (plan des
+ * points, §12).
+ *
+ * « Tant qu'on n'a pas ouvert la fidélité aux pros, on n'affiche pas de
+ * fidélité en pro, juste public » (Hugo, 2026-09-27). Dans un espace société,
+ * l'adresse renvoie à l'accueil de cet espace : rien n'y parle de fidélité, pas
+ * même pour dire qu'elle n'y est pas.
+ *
+ * Même forme que {@link companyWorkspaceGuard} : un visiteur passe (la route
+ * porte aussi `authenticatedGuard`, qui décide pour lui), et l'espace est
+ * attendu. Resté inconnu au bout de l'attente, on part où la connexion part
+ * dans ce cas — une page qui attendrait un espace pour lire tournerait sans fin.
+ */
+export const personalWorkspaceGuard: CanActivateFn = async () => {
+  // Tout ce qui s'injecte l'est AVANT le premier `await`.
+  const workspace = inject(ClientWorkspace);
+  const auth = inject(AuthFacade);
+  const router = inject(Router);
+  const injector = inject(Injector);
+
+  if (!(await firstValueFrom(auth.authGate$()))) {
+    return true;
+  }
+  await workspaceKnown(workspace, injector);
+  if (workspace.current() === null) {
+    return router.parseUrl(WORKSPACE_UNKNOWN_HOME);
+  }
+  return workspace.isPersonal() ? true : router.parseUrl(COMPANY_HOME);
+};
+
+/**
  * **L'accueil de l'espace où l'on entre** — l'adresse que vise la connexion
  * (Hugo, 2026-09-17 : « la co en perso doit envoyer sur bienvenue »).
  *

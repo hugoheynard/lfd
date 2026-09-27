@@ -1,0 +1,16 @@
+<!-- Le même châssis que `/mon-profil` : le titre dans le BANDEAU du shell, le
+     contenu dans `.page` (aucune page du shell client n'utilise
+     `fold-page-layout`, cf. profile-page.html). -->
+<ng-template clientBanner>
+  <app-client-banner-block class="align-start" [title]="c().title" [lead]="c().lead" />
+</ng-template>
+
+<div class="page">
+  @if (closed()) {
+    <fold-empty-state [title]="c().closedTitle">
+      <fold-icon empty-icon name="star" size="xl" />
+    </fold-empty-state>
+  } @else {
+    <app-loyalty-card />
+  }
+</div>

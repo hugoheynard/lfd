@@ -81,7 +81,7 @@ function convert(userId: string, steps: number): Promise<string> {
   return ctx.app
     .get(CommandBus)
     .execute<ConvertLoyaltyPointsCommand, string>(
-      new ConvertLoyaltyPointsCommand("user", userId, userId, steps),
+      new ConvertLoyaltyPointsCommand("user", userId, userId, steps, null),
     );
 }
 

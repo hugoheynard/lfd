@@ -1,0 +1,76 @@
+/* Une colonne : l'écart entre les blocs est un `gap`, jamais une marge. */
+.body,
+.group,
+.balance {
+  display: flex;
+  flex-direction: column;
+}
+
+.body {
+  gap: var(--fold-space-md);
+}
+
+.group {
+  gap: var(--fold-space-sm);
+}
+
+.balance {
+  gap: var(--fold-space-xs);
+}
+
+.balance-note,
+.vat-note {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.balance-value {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-extrabold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+.convert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+.vat-note {
+  margin: 0;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  & > li + li {
+    border-top: 1px solid var(--fold-color-border-subtle);
+  }
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  padding-block: var(--fold-space-xs);
+}
+
+.row-label {
+  font-size: var(--fold-text-base);
+  color: var(--fold-color-text);
+}
+
+.row-detail {
+  flex: none;
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}

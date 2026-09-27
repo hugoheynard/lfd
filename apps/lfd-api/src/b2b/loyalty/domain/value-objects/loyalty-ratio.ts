@@ -26,6 +26,15 @@ export class LoyaltyRatio {
     return steps * this.pointsPerStep;
   }
 
+  /**
+   * Le plus grand nombre de paliers qu'un solde couvre — ce que l'écran du
+   * client propose de convertir (plan des points, E1.1). Zéro pour un solde
+   * nul ou négatif.
+   */
+  stepsCoveredBy(balance: number): number {
+    return balance <= 0 ? 0 : Math.floor(balance / this.pointsPerStep);
+  }
+
   /** Les centimes que valent `steps` paliers. */
   valueOf(steps: number): number {
     return steps * this.stepValueCents;

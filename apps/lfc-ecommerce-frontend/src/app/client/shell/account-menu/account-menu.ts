@@ -45,6 +45,7 @@ const DESTINATION_ICONS: Readonly<Record<string, FoldIconName>> = {
   espace: 'home',
   shop: 'store',
   orders: 'package',
+  loyalty: 'star',
   invoices: 'receipt',
   baskets: 'repeat',
   account: 'company',

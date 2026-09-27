@@ -140,7 +140,7 @@ async function holderWithVoucher(
   const voucherId = await ctx.app
     .get(CommandBus)
     .execute<ConvertLoyaltyPointsCommand, string>(
-      new ConvertLoyaltyPointsCommand("user", user.id, user.id, steps),
+      new ConvertLoyaltyPointsCommand("user", user.id, user.id, steps, null),
     );
   return { userId: user.id, voucherId };
 }

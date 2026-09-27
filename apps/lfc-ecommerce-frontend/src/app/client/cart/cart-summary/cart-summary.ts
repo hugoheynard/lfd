@@ -5,6 +5,8 @@ import { formatCents, formatRate } from '../../format-money';
 import { CartProductLine } from '../cart-product-line/cart-product-line';
 import { CartUpsell } from '../cart-upsell.service';
 import { ClientCart } from '../client-cart.service';
+import { ClientLocale } from '../../client-locale.service';
+import { ClientWorkspace } from '../../client-workspace.service';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 
@@ -38,6 +40,8 @@ export class CartSummary {
   protected readonly cart = inject(ClientCart);
   private readonly upsell = inject(CartUpsell);
   private readonly order = inject(OrderContextStore);
+  private readonly locale = inject(ClientLocale);
+  private readonly workspace = inject(ClientWorkspace);
 
   protected readonly totals = this.cart.totals;
 
@@ -122,6 +126,23 @@ export class CartSummary {
       label: fill(c.vat, { rate: formatRate(share.rate) }),
       amount: formatCents(share.amountCents),
     }));
+  });
+
+  /**
+   * « Vous gagnerez N points », seulement si le serveur en annonce plus de
+   * zéro : programme fermé, espace société ou visiteur, la ligne n'existe pas
+   * — rien ne dit « bientôt » (plan des points, E1.3).
+   */
+  protected readonly pointsLabel = computed(() => {
+    const points = this.cart.loyaltyPointsToEarn();
+    // Double verrou : le serveur rend `null` en société, et l'écran ne parle
+    // de fidélité qu'en espace personnel, quoi qu'un devis plus ancien porte.
+    if (points === null || points <= 0 || !this.workspace.isPersonal()) {
+      return null;
+    }
+    return fill(this.t().cart.pointsToEarn, {
+      n: new Intl.NumberFormat(this.locale.current()).format(points),
+    });
   });
 
   protected readonly upsellLabel = computed(() => {

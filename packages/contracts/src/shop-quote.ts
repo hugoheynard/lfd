@@ -163,3 +163,19 @@ export interface ShopQuoteView {
   /** Le total **TTC** — ce qui sera débité. */
   readonly totalCents: number;
 }
+
+/**
+ * Le décompte d'un client **connecté** (`POST /shop/quote/mine`) : celui de la
+ * vitrine, plus ce que la commande rapporterait en points.
+ *
+ * Le devis anonyme ne porte pas la clé — absente, pas nulle : c'est un contrat
+ * servi, et sa forme est gardée par l'e2e `shop-quote` (plan des points, E1.2).
+ */
+export interface MyShopQuoteView extends ShopQuoteView {
+  /**
+   * Les points que cette commande rapporterait, calculés par la même règle que
+   * le crédit (`earningFor`). `null` quand elle ne rapporterait rien : programme
+   * fermé au public, espace société, assiette vide.
+   */
+  readonly loyaltyPointsToEarn: number | null;
+}

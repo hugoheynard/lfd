@@ -3,7 +3,11 @@ import { type Route, type Routes } from '@angular/router';
 import { authenticatedGuard } from './auth/authenticated.guard';
 import { DEV_BYPASS_AUTH } from './auth/dev-flags';
 import { featureAccessGuard } from './client/feature-access/feature-access.guard';
-import { companyWorkspaceGuard, workspaceHomeGuard } from './client/client-workspace.guard';
+import {
+  companyWorkspaceGuard,
+  personalWorkspaceGuard,
+  workspaceHomeGuard,
+} from './client/client-workspace.guard';
 import { ClientShell } from './client/shell/client-shell';
 import { FEATURE_DASHBOARD, FEATURE_PRO_SPACE } from './feature-flags';
 
@@ -232,6 +236,18 @@ export const routes: Routes = [
         title: 'Mon profil — La Folie Coffee',
         loadComponent: () =>
           import('./client/profile/profile-page/profile-page').then((m) => m.ProfilePage),
+      },
+      {
+        // LA FIDÉLITÉ DE LA PERSONNE (plan des points, §12, E1.3). Particulier
+        // seulement : « tant qu'on n'a pas ouvert la fidélité aux pros, on
+        // n'affiche pas de fidélité en pro » (Hugo, 2026-09-27) — un espace
+        // société est renvoyé à son accueil. Programme fermé, la page le dit
+        // sans promettre « bientôt », et le menu n'y mène pas.
+        path: 'ma-fidelite',
+        canActivate: [authenticatedGuard, personalWorkspaceGuard],
+        title: 'Ma fidélité — La Folie Coffee',
+        loadComponent: () =>
+          import('./client/ma-fidelite/fidelite-page/fidelite-page').then((m) => m.FidelitePage),
       },
       {
         // LA BOUTIQUE CLIENTE et ses rayons.

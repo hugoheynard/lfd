@@ -1,5 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import {
@@ -9,6 +10,8 @@ import {
   type SubscriptionView,
 } from '@lfd/contracts';
 
+import { OPEN_LOYALTY } from '../client-loyalty.fixture';
+import { ClientLoyalty } from '../client-loyalty.service';
 import { ClientSubscriptions } from '../client-subscriptions.service';
 
 import { hydrateWith, TEST_CATALOGUE } from '../shop/shop-catalogue.fixture';
@@ -293,5 +296,86 @@ describe('Les destinations du menu, selon l’espace', () => {
    */
   it('les ferme aussi à qui n’a aucune société', () => {
     expect(idsIn(PERSONAL_WORKSPACE, [])).toEqual(['shop', 'orders']);
+  });
+});
+
+/**
+ * « Ma fidélité » (plan des points, §12) : visible seulement si le service dit
+ * le programme ouvert — ce qu'il ne fait qu'en espace personnel connecté (cf.
+ * `client-loyalty.service.spec.ts`, qui éprouve l'espace et l'appel unique).
+ */
+describe('Le lien « Ma fidélité »', () => {
+  function itemsWith(open: boolean): readonly string[] {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(ROUTES),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRecognised(),
+        { provide: ClientLoyalty, useValue: { isOpen: signal(open) } },
+      ],
+    });
+    openShopAt('order');
+    return TestBed.inject(ClientNav)
+      .items()
+      .map((i) => i.id);
+  }
+
+  it('paraît après les commandes quand le programme est ouvert', () => {
+    expect(itemsWith(true)).toEqual([
+      'shop',
+      'orders',
+      'loyalty',
+      'invoices',
+      'baskets',
+      'account',
+    ]);
+  });
+
+  it('n’existe pas quand il est fermé — rien ne dit « bientôt »', () => {
+    expect(itemsWith(false)).toEqual(ORDER);
+  });
+});
+
+describe('Le lien « Ma fidélité », branché sur le vrai service', () => {
+  function boot(current: string): void {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(ROUTES),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRecognised(),
+        provideWorkspace(workspaceDouble(current)),
+      ],
+    });
+    openShopAt('order');
+  }
+
+  it('paraît en espace personnel quand `me/loyalty` le dit ouvert', async () => {
+    boot(PERSONAL_WORKSPACE);
+    const nav = TestBed.inject(ClientNav);
+    TestBed.tick();
+    await Promise.resolve();
+    TestBed.inject(HttpTestingController)
+      .expectOne((r) => r.url.endsWith('/me/loyalty'))
+      .flush(OPEN_LOYALTY);
+    await Promise.resolve();
+
+    expect(nav.items().some((i) => i.id === 'loyalty')).toBe(true);
+  });
+
+  it('reste absent en espace société, sans rien demander', () => {
+    boot('co_1');
+    const nav = TestBed.inject(ClientNav);
+    TestBed.tick();
+
+    expect(nav.items().some((i) => i.id === 'loyalty')).toBe(false);
+    expect(
+      TestBed.inject(HttpTestingController).match((r) => r.url.endsWith('/me/loyalty')),
+    ).toHaveLength(0);
   });
 });

@@ -56,6 +56,10 @@ import { SaveShopCartHandler } from "./application/commands/save-shop-cart.handl
 import { PlaceOrderHandler } from "./application/commands/place-order.handler.js";
 import { QuoteOrderHandler } from "./application/queries/quote-order.handler.js";
 import { QuoteShopCartHandler } from "./application/queries/quote-shop-cart.handler.js";
+import { QuoteMyShopCartHandler } from "./application/queries/quote-my-shop-cart.handler.js";
+import { ShopCartQuoting } from "./application/services/shop-cart-quoting.service.js";
+import { OrderNumberReader } from "./domain/ports/order-number.reader.js";
+import { PrismaOrderNumberReader } from "./infrastructure/prisma-order-number.reader.js";
 import { CartAdjustments } from "./application/services/cart-adjustments.service.js";
 import { CustomerAudiences } from "./application/services/customer-audiences.service.js";
 import { CompanyStatusReader } from "./domain/ports/company-status.reader.js";
@@ -273,7 +277,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ListCustomerSkusHandler,
     QuoteOrderHandler,
     ReadMyShopCatalogueHandler,
+    ShopCartQuoting,
     QuoteShopCartHandler,
+    QuoteMyShopCartHandler,
     GetOrderDraftHandler,
     SaveOrderDraftHandler,
     DiscardOrderDraftHandler,
@@ -310,6 +316,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: OrderReader, useClass: PrismaOrderReader },
     { provide: CompletedOrderReader, useClass: PrismaCompletedOrderReader },
     { provide: VoucherOrderReader, useClass: PrismaVoucherOrderReader },
+    { provide: OrderNumberReader, useClass: PrismaOrderNumberReader },
   ],
   // Le catalogue sort d'ici parce que l'écran de tarification en a besoin : il
   // doit résoudre les prix contre l'autorité que la caisse utilise, pas contre
@@ -332,6 +339,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Les commandes qui portent des bons, que le rattrapage de nuit de la
     // fidélité et son écran lisent (plan des points, C5, §11 bis S4, S6).
     VoucherOrderReader,
+    // Les numéros des commandes qui ont rapporté des points, que l'historique
+    // du client montre (plan des points, E1.1).
+    OrderNumberReader,
   ],
 })
 export class OrdersModule {}
