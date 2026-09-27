@@ -29,12 +29,31 @@ import {
 const LOYALTY_VOUCHER: Noun = { the: 'le bon', a: 'un bon de fidélité' };
 const ORDER: Noun = { the: 'la commande', a: 'une commande' };
 
-/** Le titulaire des points : « le client « X » », ou « un client » sans nom. */
-function holderOf(fact: PhraseFact): Segment[] {
+/** La préposition qui introduit le titulaire, et qui se contracte avec son article. */
+type HolderPreposition = 'de' | 'à' | 'pour';
+
+/** L'article défini ou indéfini, déjà contracté avec la préposition. */
+const HOLDER_ARTICLE: Record<
+  HolderPreposition,
+  { readonly named: string; readonly unnamed: string }
+> = {
+  de: { named: 'du client', unnamed: 'd’un client' },
+  à: { named: 'au client', unnamed: 'à un client' },
+  pour: { named: 'pour le client', unnamed: 'pour un client' },
+};
+
+/**
+ * Le titulaire des points, préposition comprise : « du client « X » », « au
+ * client « X » », ou « d’un client » sans nom. La préposition est portée ici
+ * parce qu'elle se contracte avec l'article — « de le client » s'écrivait tel
+ * quel dans le cycle d'un bon (corrigé le 2026-09-27).
+ */
+function holderOf(fact: PhraseFact, preposition: HolderPreposition): Segment[] {
   const client = subjectLabelOf(fact);
+  const article = HOLDER_ARTICLE[preposition];
   return client === null
-    ? [text('un client')]
-    : [text('le client « '), subject(fact, client), text(' »')];
+    ? [text(article.unnamed)]
+    : [text(`${article.named} « `), subject(fact, client), text(' »')];
 }
 
 function points(raw: unknown): Segment {
@@ -69,7 +88,7 @@ const loyaltySettingsSet: Phrase = (fact) => {
   );
 };
 
-/** « … a ajusté de 500 points le solde du client « X » : « motif » ». */
+/** « … a ajusté de 500 points le solde de fidélité du client « X » : « motif » ». */
 const loyaltyPointsAdjusted: Phrase = (fact) => {
   const voucher = fact.payload['voucher'];
   return byActor(
@@ -77,8 +96,8 @@ const loyaltyPointsAdjusted: Phrase = (fact) => {
     [
       text('a ajusté de '),
       points(fact.payload['points']),
-      text(' le solde de fidélité de '),
-      ...holderOf(fact),
+      text(' le solde de fidélité '),
+      ...holderOf(fact, 'de'),
       ...(voucher === null || voucher === undefined
         ? []
         : [text(', en annulant '), ...cite(LOYALTY_VOUCHER, voucher)]),
@@ -102,8 +121,8 @@ function onVoucher(
       [
         text(`${verb} `),
         ...cite(LOYALTY_VOUCHER, fact.payload['voucher']),
-        text(' de '),
-        ...holderOf(fact),
+        text(' '),
+        ...holderOf(fact, 'de'),
         ...tail(fact),
       ],
       ['subjectLabel', 'voucher', ...consumed],
@@ -118,8 +137,8 @@ export const LOYALTY_PHRASES = {
       [
         text('a crédité '),
         points(fact.payload['points']),
-        text(' de fidélité à '),
-        ...holderOf(fact),
+        text(' de fidélité '),
+        ...holderOf(fact, 'à'),
         text(' pour '),
         ...cite(ORDER, fact.payload['order']),
       ],
@@ -163,8 +182,8 @@ export const LOYALTY_PHRASES = {
       [
         text('a émis le reliquat '),
         ...cite(LOYALTY_VOUCHER, fact.payload['voucher']),
-        text(' pour '),
-        ...holderOf(fact),
+        text(' '),
+        ...holderOf(fact, 'pour'),
         text(', d’une valeur de '),
         inUnit('cents', fact.payload['valueCents']),
         text(', laissé par '),
@@ -184,8 +203,8 @@ export const LOYALTY_PHRASES = {
         inUnit('cents', fact.payload['remainderCents']),
         text(', laissé par '),
         ...cite(LOYALTY_VOUCHER, fact.payload['voucher']),
-        text(' pour '),
-        ...holderOf(fact),
+        text(' '),
+        ...holderOf(fact, 'pour'),
         text(' : le bon était échu quand '),
         ...cite(ORDER, fact.payload['order']),
         text(' est devenue définitive'),
