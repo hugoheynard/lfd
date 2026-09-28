@@ -283,13 +283,37 @@ describe('SupervisionPage', () => {
     const next = shiftServiceDay(DATE, 1);
 
     const buttons = [...root(fixture).querySelectorAll<HTMLButtonElement>('[data-day-nav] button')];
-    buttons.find((button) => button.textContent?.includes('Lendemain'))?.click();
+    buttons.find((button) => button.textContent?.includes('Demain'))?.click();
     await fixture.whenStable();
     fixture.detectChanges();
 
     expect(day).toHaveBeenLastCalledWith(next);
     expect(preparation).toHaveBeenLastCalledWith(next);
-    expect(root(fixture).querySelector('[data-day-nav]')?.textContent).toContain('Aujourd’hui');
+    // Supervision v2, A2 : un autre jour que celui du serveur se DIT.
+    expect(root(fixture).querySelector('[data-day-strip]')?.textContent).toContain(
+      'Demain · à venir',
+    );
+  });
+
+  it('le jour même, aucun bandeau ; « Revenir à aujourd’hui » relit sans date', async () => {
+    const day = vi.fn((date?: string) => Promise.resolve({ ...DAY, date: date ?? DATE }));
+    const fixture = await mount({ day });
+    expect(root(fixture).querySelector('[data-day-strip]')).toBeNull();
+
+    [...root(fixture).querySelectorAll<HTMLButtonElement>('[data-day-nav] button')]
+      .find((button) => button.textContent?.includes('Hier'))
+      ?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(root(fixture).querySelector('[data-day-strip]')?.textContent).toContain(
+      'Hier · relecture',
+    );
+
+    root(fixture).querySelector<HTMLButtonElement>('[data-day-strip] button')?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(day).toHaveBeenLastCalledWith(undefined);
+    expect(root(fixture).querySelector('[data-day-strip]')).toBeNull();
   });
 
   it('montre les trois colonnes, leur unité, et les compteurs', async () => {
@@ -298,9 +322,10 @@ describe('SupervisionPage', () => {
     expect(column(fixture, 'preparation')?.textContent).toContain("l'unité est le produit");
     expect(column(fixture, 'preparation')?.textContent).toContain('Pain au chocolat');
     expect(column(fixture, 'packing')?.textContent).toContain('attend le four');
-    expect(column(fixture, 'packing')?.textContent).toContain('Éclair');
-    expect(column(fixture, 'handover')?.textContent).toContain('créneau dépassé de 102 min');
-    expect(root(fixture).querySelector('[data-counter="preparation"]')?.textContent).toContain('1');
+    expect(column(fixture, 'handover')?.textContent).toContain(', 1 h 42');
+    expect(column(fixture, 'preparation')?.querySelector('[data-count]')?.textContent).toContain(
+      '1',
+    );
     expect(root(fixture).querySelector('[data-stamp]')?.textContent).toContain('à jour à 9 h 42');
   });
 
@@ -411,51 +436,34 @@ describe('SupervisionPage', () => {
     expect(style('.board').overflowY).not.toBe('auto');
   });
 
-  it('pose les trois chiffres et la fraîcheur dans le masthead, sans barre graphite', async () => {
+  it('pose chaque chiffre dans l’en-tête de sa colonne, la fraîcheur au masthead', async () => {
     const fixture = await mount();
     const masthead = root(fixture).querySelector('fold-page-section.masthead');
 
     expect(masthead?.getAttribute('data-surface')).toBe('chrome');
-    const packing = masthead?.querySelector('fold-card[data-counter="packing"]');
-    expect(packing?.textContent).toContain('Colisage');
-    expect(packing?.textContent).toContain('commandes à coliser');
+    // Supervision v2, A1 : les cartes compteurs ont quitté le masthead.
+    expect(masthead?.querySelector('fold-card')).toBeNull();
+    expect(column(fixture, 'packing')?.querySelector('[data-count]')?.textContent).toContain(
+      'à coliser',
+    );
     expect(masthead?.querySelector('[data-stamp]')?.textContent).toContain('à jour à 9 h 42');
     expect(root(fixture).querySelector('.bar')).toBeNull();
   });
 
-  it('garde le segmenté hors du corps qui défile, et bascule la colonne 3', async () => {
+  it('dit un blocage par une pastille d’état dans l’en-tête de la colonne qui le porte', async () => {
     const fixture = await mount();
-    const handover = column(fixture, 'handover');
 
-    const toggle = handover?.querySelector('fold-view-toggle');
-    expect(toggle?.closest('.tools')).not.toBeNull();
-    expect(toggle?.closest('.body')).toBeNull();
-    const segments = Array.from(toggle?.querySelectorAll<HTMLButtonElement>('button') ?? []);
-    expect(segments.map((segment) => segment.textContent?.trim())).toEqual([
-      'Retrait · 1',
-      'Livraison · 0',
-    ]);
-    segments[1]?.click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(handover?.textContent).toContain('Aucune livraison ce jour');
-  });
-
-  it('dit un blocage par une pastille d’état sur la carte qui le porte', async () => {
-    const fixture = await mount();
-    const card = (key: string) => root(fixture).querySelector(`fold-card[data-counter="${key}"]`);
-
-    const oven = card('preparation')?.querySelector('fold-badge');
-    expect(oven?.getAttribute('variant')).toBe('warning');
+    const oven = column(fixture, 'preparation')?.querySelector('[data-blocker="oven"] fold-badge');
+    expect(oven?.classList).toContain('warning');
     expect(oven?.textContent).toContain('1 commande attend le four');
-    const overdue = card('handover')?.querySelector('fold-badge');
-    expect(overdue?.getAttribute('variant')).toBe('alert');
-    expect(overdue?.textContent).toContain('1 créneau dépassé');
-    expect(card('packing')?.querySelector('fold-badge')).toBeNull();
+    // Colonne 3 : une seule pastille, qui ouvre la liste des causes.
+    expect(
+      column(fixture, 'handover')?.querySelector('[data-blocker-menu]')?.textContent,
+    ).toContain('1 blocage');
+    expect(column(fixture, 'packing')?.querySelector('[data-blocker]')).toBeNull();
   });
 
-  it('précise les livraisons dans la carte du retrait, seulement s’il y en a', async () => {
+  it('précise retraits et livraisons dans le sous-titre de la colonne 3', async () => {
     const withDelivery: HandoverQueueView = {
       ...QUEUE,
       entries: [
@@ -463,31 +471,47 @@ describe('SupervisionPage', () => {
         { ...QUEUE.entries[0]!, orderId: 'o-d', reference: 'D', fulfillmentMethod: 'delivery' },
       ],
     };
-    const plain = await mount();
-    expect(
-      root(plain).querySelector('fold-card[data-counter="handover"]')?.textContent,
-    ).not.toContain('dont');
-    TestBed.resetTestingModule();
     const fixture = await mount({ handover: () => Promise.resolve(withDelivery) });
-    expect(
-      root(fixture).querySelector('fold-card[data-counter="handover"]')?.textContent,
-    ).toContain('attendues · dont 1 livraison');
+    expect(column(fixture, 'handover')?.querySelector('[data-subtitle]')?.textContent).toContain(
+      '· 1 livraison',
+    );
+  });
+
+  /** Supervision v2, A5 : une pastille surligne ce qu'elle compte ; re-cliquée, elle s'éteint. */
+  it('une pastille cliquée met en avant ce qu’elle compte, et ✕ efface tout', async () => {
+    const fixture = await mount();
+    const oven = (): HTMLButtonElement | null =>
+      column(fixture, 'preparation')?.querySelector<HTMLButtonElement>('[data-blocker="oven"]') ??
+      null;
+
+    oven()?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(oven()?.classList).toContain('is-on');
+    expect(column(fixture, 'preparation')?.querySelector('[data-hits]')).not.toBeNull();
+    expect(root(fixture).querySelector('[data-hit-pos]')?.textContent).toMatch(/^1 \/ \d+$/u);
+
+    root(fixture).querySelector<HTMLElement>('[data-hit-clear] button')?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(oven()?.classList).not.toContain('is-on');
+    expect(root(fixture).querySelector('[data-hit-nav]')).toBeNull();
   });
 
   /** `plan-controle-qualite.md`, D7 : « N commandes retenues » sur la carte Retrait. */
-  it('dit les commandes retenues au masthead, et la ligne dit « En vérification »', async () => {
+  it('dit les commandes retenues au masthead, et la ligne dit « Retenue »', async () => {
     const held: HandoverQueueView = {
       ...QUEUE,
       entries: [{ ...QUEUE.entries[0]!, heldForQuality: true }],
     };
     const fixture = await mount({ handover: () => Promise.resolve(held) });
 
-    const badge = root(fixture).querySelector(
-      'fold-card[data-counter="handover"] [data-blocker="held"]',
-    );
-    expect(badge?.getAttribute('variant')).toBe('alert');
+    const badge = column(fixture, 'handover')?.querySelector('[data-blocker="held"] fold-badge');
+    expect(badge?.classList).toContain('alert');
     expect(badge?.textContent).toContain('1 commande retenue');
-    expect(column(fixture, 'handover')?.textContent).toContain('En vérification');
+    expect(column(fixture, 'handover')?.textContent).toContain(
+      'Retenue · contrôle qualité bloquant',
+    );
   });
 
   it('ne montre « Contrôler » qu’avec b2b_supervision:write', async () => {

@@ -8,7 +8,15 @@ import type {
   ProductionPackingView,
 } from '@lfd/contracts';
 
-import { PACKING_VISIBLE_MAX, packingBoard, packingStateOf } from './packing-cards';
+import {
+  hourLabel,
+  PACKING_VISIBLE_MAX,
+  packingBoard,
+  packingMeta,
+  packingPoints,
+  pointFilterOptions,
+  packingStateOf,
+} from './packing-cards';
 
 function packingLine(overrides: Partial<PackingLine> = {}): PackingLine {
   return {
@@ -131,11 +139,12 @@ describe('la colonne Colisage', () => {
     expect(board.visible.map((card) => card.reference)).toEqual(['C', 'A']);
   });
 
-  it('replie les colisées et compte au-delà de dix', () => {
+  /** Supervision v2, A4 : la colonne filtre par point AVANT de plafonner. */
+  it('garde toutes les ouvertes et compte au-delà de dix', () => {
     const open = Array.from({ length: PACKING_VISIBLE_MAX + 3 }, (_, i) => sheet(`R${String(i)}`));
     const board = packingBoard(packing([...open, sheet('FERME', { packedAt: 'x' })]), null);
 
-    expect(board.visible).toHaveLength(PACKING_VISIBLE_MAX);
+    expect(board.visible).toHaveLength(PACKING_VISIBLE_MAX + 3);
     expect(board.overflow).toBe(3);
     expect(board.packed.map((card) => card.reference)).toEqual(['FERME']);
     expect(board.toPack).toBe(PACKING_VISIBLE_MAX + 3);
@@ -169,6 +178,48 @@ describe('la colonne Colisage', () => {
     expect(board.packed.map((card) => [card.reference, card.orderId])).toEqual([
       ['A', 'o-A'],
       ['B', null],
+    ]);
+  });
+
+  it('écrit la méta « numéro · retrait 8 h », heures insécables', () => {
+    const board = packingBoard(
+      packing([sheet('A'), sheet('B', { fulfillmentMethod: 'delivery' }), sheet('C')]),
+      queue([entry('A', '08:00'), entry('B', '07:30')]),
+    );
+    const meta = new Map(board.visible.map((card) => [card.reference, packingMeta(card)]));
+
+    expect(meta.get('A')).toBe('A · retrait 8\u00a0h');
+    expect(meta.get('B')).toBe('B · livraison 7\u00a0h\u00a030');
+    expect(meta.get('C')).toBe('C');
+    expect(hourLabel(425)).toBe('7\u00a0h\u00a005');
+  });
+
+  it('compte les commandes par point de destination, colisées comprises', () => {
+    const board = packingBoard(
+      packing([
+        sheet('A', { destination: 'Mairie' }),
+        sheet('B', { destination: 'Boutique' }),
+        sheet('C', { destination: 'Mairie', packedAt: 'x' }),
+      ]),
+      null,
+    );
+
+    expect(packingPoints(board)).toEqual([
+      { destination: 'Boutique', count: 1 },
+      { destination: 'Mairie', count: 2 },
+    ]);
+  });
+
+  it('ouvre le filtre sur « Tous les points », avec le compte de chaque entrée', () => {
+    const board = packingBoard(
+      packing([sheet('A', { destination: 'Mairie' }), sheet('B', { destination: 'Boutique' })]),
+      null,
+    );
+
+    expect(pointFilterOptions(board)).toEqual([
+      { value: '', label: 'Tous les points', count: 2 },
+      { value: 'Boutique', label: 'Boutique', count: 1 },
+      { value: 'Mairie', label: 'Mairie', count: 1 },
     ]);
   });
 });

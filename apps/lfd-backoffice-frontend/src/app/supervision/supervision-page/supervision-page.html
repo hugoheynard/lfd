@@ -1,110 +1,119 @@
 <fold-page-layout>
-  <!-- Le masthead, sur le modèle de Retrait boutique : le header de l'app nomme
-       déjà l'écran, la bande porte les trois chiffres et la fraîcheur. -->
-  <fold-page-section bleed stack class="masthead" foldSurface="chrome">
-    <div class="masthead-head">
+  <!-- Un autre jour que celui du serveur se DIT, au-dessus de tout (A2, B2). -->
+  @if (strip(); as strip) {
+    <fold-page-section bleed class="day-strip" [class.is-past]="strip.past" data-day-strip>
+      <div class="day-strip-row">
+        <span class="day-strip-chip">{{ strip.chip }}</span>
+        @if (!narrow()) {
+          <span>{{ strip.text }}</span>
+        }
+        <button type="button" class="day-strip-back" (click)="goTo(null)">
+          {{ narrow() ? 'Aujourd’hui' : 'Revenir à aujourd’hui' }}
+        </button>
+      </div>
+    </fold-page-section>
+  }
+
+  <!-- Le masthead : une rangée au bureau (A1), une pile au téléphone (B3).
+       Les chiffres ne sont plus ici : ils vivent dans l'en-tête de leur colonne. -->
+  <fold-page-section
+    bleed
+    stack
+    class="masthead"
+    [class.is-other]="relative() !== 0"
+    [class.narrow]="narrow()"
+    foldSurface="chrome"
+  >
+    @if (narrow()) {
+      <div class="bar">
+        <!-- Pas de titre ici : l'en-tête de l'app dit déjà « Supervision du
+             jour », et la maquette le répétait (B1, écart assumé le 2026-09-28). -->
+        <ng-container *ngTemplateOutlet="stampTpl; context: { text: stamp()?.narrow }" />
+      </div>
+    }
+    <div class="masthead-row">
       <div class="day-nav" data-day-nav>
-        <button foldButton emphasis="outline" size="sm" icon="chevron-left" (click)="shift(-1)">
-          Veille
-        </button>
-        <button foldButton emphasis="outline" size="sm" icon="chevron-right" (click)="shift(1)">
-          Lendemain
-        </button>
-        @if (chosen() !== null) {
-          <button foldButton emphasis="outline" size="sm" (click)="goTo(null)">Aujourd’hui</button>
+        <fold-view-toggle
+          class="day-toggle"
+          ariaLabel="Jour regardé"
+          activeStyle="raised"
+          [options]="dayOptions"
+          [value]="dayValue()"
+          (valueChange)="pickDay($event)"
+        />
+        <app-supervision-calendar
+          [selected]="date()"
+          [today]="serverDay()"
+          [custom]="dayValue() === ''"
+          [narrow]="narrow()"
+          (pick)="goTo($event)"
+        />
+      </div>
+      <div class="search">
+        <fold-search
+          placeholder="N° de commande, enseigne, raison sociale…"
+          ariaLabel="Surligner des commandes"
+          [size]="narrow() ? 'md' : 'sm'"
+          [value]="highlight.query()"
+          (valueChange)="highlight.search($event)"
+          data-search
+        />
+        @if (highlight.active()) {
+          <div class="hit-nav" data-hit-nav>
+            <fold-button-icon
+              icon="chevron-left"
+              size="sm"
+              tooltip="Occurrence précédente"
+              [disabled]="highlight.hits().length === 0"
+              (clicked)="step(-1)"
+            />
+            <span class="hit-pos" data-hit-pos>{{ highlight.position() }}</span>
+            <fold-button-icon
+              icon="chevron-right"
+              size="sm"
+              tooltip="Occurrence suivante"
+              [disabled]="highlight.hits().length === 0"
+              (clicked)="step(1)"
+            />
+            <fold-button-icon
+              icon="close"
+              size="sm"
+              tooltip="Effacer la mise en avant"
+              (clicked)="highlight.clear()"
+              data-hit-clear
+            />
+          </div>
         }
       </div>
-      <fold-search
-        placeholder="N° de commande, enseigne, raison sociale…"
-        ariaLabel="Surligner des commandes"
-        size="sm"
-        [(value)]="query"
-        [resultCount]="query() === '' ? null : matches().references.size"
-        [resultLabel]="matches().references.size === 1 ? 'commande' : 'commandes'"
-        data-search
-      />
-      <span class="mc-clock" data-stamp>{{ stamp() }}</span>
+      @if (!narrow()) {
+        <ng-container *ngTemplateOutlet="stampTpl; context: { text: stamp()?.wide }" />
+      }
     </div>
 
-    <!-- Les trois chiffres en cartes — le motif de \`shared/compte-chiffres\`
-         (en-tête d'un compte) : une carte = une mesure, sur le chrome. -->
-    <div class="chiffres">
-      <fold-card class="chiffre" radius="sm" padding="sm" data-counter="preparation">
-        <div class="chiffre-body">
-          <span class="chiffre-label">Préparation</span>
-          <span class="chiffre-value">{{ counters().preparation ?? '—' }}</span>
-          <span class="chiffre-unit">lignes ouvertes</span>
-          @if (blockers().oven > 0) {
-            <fold-badge class="chiffre-flag" variant="warning" [content]="blockers().ovenLabel" />
-          }
-        </div>
-      </fold-card>
-      <fold-card class="chiffre" radius="sm" padding="sm" data-counter="packing">
-        <div class="chiffre-body">
-          <span class="chiffre-label">Colisage</span>
-          <span class="chiffre-value">{{ counters().packing ?? '—' }}</span>
-          <span class="chiffre-unit">commandes à coliser</span>
-          @if (blockers().packing > 0) {
-            <fold-badge
-              class="chiffre-flag"
-              variant="warning"
-              [content]="blockers().packingLabel"
-              data-blocker="packing"
-            />
-          }
-        </div>
-      </fold-card>
-      <fold-card class="chiffre" radius="sm" padding="sm" data-counter="handover">
-        <div class="chiffre-body">
-          <span class="chiffre-label">Retrait / livraison</span>
-          <span class="chiffre-value">{{ counters().handover ?? '—' }}</span>
-          <span class="chiffre-unit"
-            >attendues{{
-              counters().deliveryNote === null ? '' : ' · ' + counters().deliveryNote
-            }}</span
-          >
-          <!-- Deux causes, deux pastilles : le retard du fournil est une alerte,
-               celui du client un avertissement. -->
-          <!-- Retenues par un contrôle qualité : le scan les refusera (D7). -->
-          @if (blockers().held > 0) {
-            <fold-badge
-              class="chiffre-flag"
-              variant="alert"
-              [content]="blockers().heldLabel"
-              data-blocker="held"
-            />
-          }
-          @if (blockers().overdueKitchen > 0) {
-            <fold-badge
-              class="chiffre-flag"
-              variant="alert"
-              [content]="blockers().overdueKitchenLabel"
-              data-blocker="overdue-kitchen"
-            />
-          }
-          @if (blockers().overdueCustomer > 0) {
-            <fold-badge
-              class="chiffre-flag"
-              variant="warning"
-              [content]="blockers().overdueCustomerLabel"
-              data-blocker="overdue-customer"
-            />
-          }
-        </div>
-      </fold-card>
-    </div>
+    @if (narrow()) {
+      <div class="tabs">
+        <fold-view-nav
+          activeStyle="fill"
+          direction="horizontal"
+          justify="stretch"
+          [items]="tabs()"
+          [activeKey]="tab()"
+          (activeKeyChange)="selectTab($event)"
+        />
+      </div>
+    }
 
     <!-- Au masthead et non dans une colonne (Hugo, 2026-09-28) : l'arrêt du plan
          commande la préparation ET le colisage — c'est la journée entière qui
          attend, en lecture seule. -->
     @if (quality.failed()) {
-      <fold-callout variant="alert" class="not-closed" data-quality-failed>
+      <fold-callout variant="alert" data-quality-failed>
         Les contrôles qualité n'ont pas pu être lus : une ligne sans pastille n'est pas forcément
         une ligne jamais contrôlée.
       </fold-callout>
     }
     @if (packingBoard()?.notClosed) {
-      <fold-callout variant="info" class="not-closed" data-not-closed>
+      <fold-callout variant="info" data-not-closed>
         Plan pas encore arrêté : la fabrication et le colisage commenceront à la clôture. D'ici là,
         la journée se lit sans se préparer.
       </fold-callout>
@@ -112,23 +121,18 @@
   </fold-page-section>
 </fold-page-layout>
 
-<!-- Onglets et colonnes vivent HORS du layout, comme la table du Prévisionnel :
+<ng-template #stampTpl let-text="text">
+  @if (stamp(); as stamp) {
+    <span class="stamp" [attr.data-tone]="stamp.tone" data-stamp>
+      <span class="stamp-dot"></span>{{ text }}
+    </span>
+  }
+</ng-template>
+
+<!-- Les colonnes vivent HORS du layout, comme la table du Prévisionnel :
      `.page-body` de fold est en `flex: 0 1 auto` et ne s'étire jamais, donc
      rien de ce qu'il contient ne peut prendre la hauteur restante (vérifié
      dans `production/previsionnel/previsionnel-page.html`, 2026-09-25). -->
-
-@if (narrow()) {
-  <div class="tabs" foldSurface="chrome">
-    <fold-view-nav
-      activeStyle="fill"
-      direction="horizontal"
-      justify="stretch"
-      [items]="tabs()"
-      [activeKey]="tab()"
-      (activeKeyChange)="selectTab($event)"
-    />
-  </div>
-}
 
 <section class="board" [class.narrow]="narrow()" aria-label="Supervision du jour">
   <div class="columns">
@@ -139,16 +143,29 @@
         description="Aucune commande ici. On lit l'avancement de la fournée, produit par produit ; une ligne de commande devient colisable dès qu'assez de pièces sont sorties."
         loadingMessage="Lecture de la fournée…"
         errorTitle="La fournée n'a pas pu être lue"
+        countUnit="lignes ouvertes"
         data-column="preparation"
+        [hitWords]="['ligne', 'lignes']"
         [state]="preparation()"
-        (retry)="retry('preparation')"
+        [count]="counters().preparation"
+        [subtitle]="narrow() ? subtitles().preparation.narrow : subtitles().preparation.wide"
+        [hits]="highlight.active() ? highlight.counts().preparation : null"
+        [blockers]="columnBlockers().preparation"
+        [focus]="highlight.focus()"
+        [narrow]="narrow()"
+        (focusToggle)="highlight.toggleFocus($event)"
+        (retry)="reads.retry('preparation')"
       >
         @if (preparationBoard(); as board) {
+          <app-preparation-band columnBand [board]="board" [(filter)]="shelfFilter" />
+        }
+        @if (preparationBoard(); as board) {
           <app-preparation-column
+            [(shelfFilter)]="shelfFilter"
             [board]="board"
             [showLinks]="showLinks()"
             [narrow]="narrow()"
-            [matches]="matches()"
+            [matches]="highlight.matches()"
             [quality]="quality.lookup()"
             [canCheck]="quality.canCheck()"
             (check)="check($event)"
@@ -163,19 +180,34 @@
         description="Ici et seulement ici, une carte = un client. On voit ce qui est posé dans les bacs, et ce qui attend encore le four."
         loadingMessage="Lecture du colisage…"
         errorTitle="Le colisage n'a pas pu être lu"
+        countUnit="à coliser"
         data-column="packing"
         [state]="packing()"
-        (retry)="retry('packing')"
+        [count]="counters().packing"
+        [subtitle]="narrow() ? subtitles().packing.narrow : subtitles().packing.wide"
+        [hits]="highlight.active() ? highlight.counts().packing : null"
+        [blockers]="columnBlockers().packing"
+        [focus]="highlight.focus()"
+        [narrow]="narrow()"
+        (focusToggle)="highlight.toggleFocus($event)"
+        (retry)="reads.retry('packing')"
       >
         @if (packingBoard(); as board) {
+          <app-packing-band columnBand [board]="board" [(point)]="packShop" />
+        }
+        @if (packingBoard(); as board) {
           <app-packing-column
+            [(point)]="packShop"
             [board]="board"
             [showLinks]="showLinks()"
             [narrow]="narrow()"
-            [matches]="matches()"
+            [matches]="highlight.matches()"
             [quality]="quality.lookup()"
             [canCheck]="quality.canCheck()"
             (check)="check($event)"
+            [awaitedOpen]="highlight.awaitedOpen()"
+            (awaitedToggle)="highlight.toggleAwaited($event)"
+            (showPreparation)="tab.set('preparation')"
           />
         }
       </app-supervision-column>
@@ -187,29 +219,36 @@
         description="Deux métiers dans une colonne : le comptoir attend qu'on vienne, la livraison part. Chacun se lit par tranche horaire."
         loadingMessage="Lecture de la file de retrait…"
         errorTitle="La file de retrait n'a pas pu être lue"
+        countUnit="attendues"
         data-column="handover"
         [state]="handover()"
-        (retry)="retry('handover')"
+        [count]="counters().handover"
+        [subtitle]="narrow() ? subtitles().handover.narrow : subtitles().handover.wide"
+        [hits]="highlight.active() ? highlight.counts().handover : null"
+        [blockers]="columnBlockers().handover"
+        [groupBlockers]="!narrow()"
+        [focus]="highlight.focus()"
+        [narrow]="narrow()"
+        (focusToggle)="highlight.toggleFocus($event)"
+        (retry)="reads.retry('handover')"
       >
-        @if (handoverBoard() !== null) {
-          <div columnTools>
-            <fold-view-toggle
-              ariaLabel="Acheminement"
-              activeStyle="solid"
-              [options]="methodOptions()"
-              [value]="handoverMethod()"
-              (valueChange)="selectMethod($event)"
-            />
-          </div>
+        @if (handoverBoard(); as board) {
+          <app-handover-band
+            columnBand
+            [board]="board"
+            [(method)]="handoverMethod"
+            [(point)]="handoverShop"
+          />
         }
         @if (handoverBoard(); as board) {
           <app-handover-column
-            [method]="handoverMethod()"
+            [(method)]="handoverMethod"
+            [(point)]="handoverShop"
             [board]="board"
             [showLinks]="showLinks()"
             [narrow]="narrow()"
             [latenessUnknown]="latenessUnknown()"
-            [matches]="matches()"
+            [matches]="highlight.matches()"
           />
         }
       </app-supervision-column>

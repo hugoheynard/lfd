@@ -1,4 +1,4 @@
-import { localToInstant } from '@lfd/contracts';
+import { instantToLocal, localToInstant } from '@lfd/contracts';
 import type {
   DaySupervisionView,
   FulfillmentMethod,
@@ -29,8 +29,10 @@ export interface SlotRow {
   readonly time: string | null;
   readonly totalUnits: number;
   readonly pickupLabel: string | null;
-  /** « Retirée à 7 h 04 » — `null` si l'heure est illisible. */
+  /** « Remis 7 h 04 » — `null` si l'heure est illisible. */
   readonly handedOverAt: string | null;
+  /** « Prête depuis 6 h 48 » — l'heure où le sac a été déclaré prêt, `null` sinon. */
+  readonly readyAt: string | null;
   /** Minutes de dépassement, pour « créneau dépassé de 55 min ». */
   readonly overdueMinutes: number | null;
   /**
@@ -64,7 +66,20 @@ export interface SlotGroup {
   /** Hors annulées. */
   readonly expected: number;
   readonly handedOver: number;
+  /** Fin de la tranche, en minutes du jour — `null` hors tranche horaire. */
+  readonly endMinutes: number | null;
   readonly rows: readonly SlotRow[];
+}
+
+/**
+ * **Où en est la journée** (Supervision v2, A8) : l'heure de lecture du
+ * serveur (`asOf`), rapportée au jour montré. Un autre jour n'a pas de repère
+ * « Maintenant » : `minutes` vaut alors ±∞, tout est passé ou tout est à venir.
+ */
+export interface SlotClock {
+  readonly minutes: number;
+  /** « 7 h 55 », ou `null` quand le jour montré n'est pas celui de la lecture. */
+  readonly label: string | null;
 }
 
 export interface HandoverBoard {
@@ -81,9 +96,11 @@ export interface HandoverBoard {
   readonly awaitingPacking: number;
   /** Retenues par un contrôle qualité — la pastille « N commandes retenues ». */
   readonly held: number;
+  /** Absente si `supervision/day` a échoué : ni repère, ni tranche terminée. */
+  readonly clock?: SlotClock | undefined;
 }
 
-const MINUTES_PER_HOUR = 60;
+export const MINUTES_PER_HOUR = 60;
 const MINUTE_MS = 60_000;
 
 /**
@@ -161,7 +178,9 @@ function rowOf(
   return {
     orderId: entry.orderId,
     reference: entry.reference,
-    customerLabel: entry.customerLabel,
+    // L'enseigne d'abord, comme le colisage : la raison sociale (« SAS Refuge du
+    // Fond ») ne se dit qu'à défaut d'enseigne.
+    customerLabel: entry.tradeName ?? entry.customerLabel,
     state,
     time:
       slotKindOf(entry) === 'hour' && window !== null
@@ -170,6 +189,7 @@ function rowOf(
     totalUnits: entry.totalUnits,
     pickupLabel: entry.pickupLabel,
     handedOverAt: entry.handedOverAt === null ? null : clockLabel(entry.handedOverAt),
+    readyAt: entry.readyAt === null ? null : clockLabel(entry.readyAt),
     overdueMinutes:
       state === 'overdue' && window !== null && late !== null
         ? overdueMinutesOf(day, window.end, late.asOf)
@@ -200,27 +220,37 @@ function labelOf(key: string): { kind: SlotKind; label: string } {
   return { kind: 'hour', label: `${String(hour)} h – ${String(hour + 1)} h` };
 }
 
+/** Une tranche, ses comptes recalculés sur les lignes qu'on lui donne. */
+export function groupOf(key: string, rows: readonly SlotRow[]): SlotGroup {
+  const { kind, label } = labelOf(key);
+  return {
+    key,
+    kind,
+    label,
+    expected: rows.filter((row) => row.state !== 'cancelled').length,
+    handedOver: rows.filter((row) => row.state === 'handed_over').length,
+    endMinutes: kind === 'hour' ? (Number(key.slice(1)) + 1) * MINUTES_PER_HOUR : null,
+    rows,
+  };
+}
+
 /** Les tranches horaires dans l'ordre du jour, puis l'heure d'ouverture, puis sans créneau. */
 function groupsOf(rows: readonly { key: string; row: SlotRow }[]): SlotGroup[] {
   const keys = [...new Set(rows.map(({ key }) => key))].sort((a, b) => {
     const rank = (key: string): string => (key === 'opening' ? 'y' : key === 'none' ? 'z' : key);
     return rank(a).localeCompare(rank(b));
   });
-  return keys.map((key) => {
-    // Ce qui attend d'abord, ce qui est remis ou annulé en bas — visible, pas
-    // retiré (Hugo, 2026-09-28). Tri stable : l'ordre du serveur tient dedans.
-    const inGroup = rows
-      .filter((entry) => entry.key === key)
-      .map(({ row }) => row)
-      .sort((a, b) => Number(!isExpected(a)) - Number(!isExpected(b)));
-    return {
+  // Ce qui attend d'abord, ce qui est remis ou annulé en bas — visible, pas
+  // retiré (Hugo, 2026-09-28). Tri stable : l'ordre du serveur tient dedans.
+  return keys.map((key) =>
+    groupOf(
       key,
-      ...labelOf(key),
-      expected: inGroup.filter((row) => row.state !== 'cancelled').length,
-      handedOver: inGroup.filter((row) => row.state === 'handed_over').length,
-      rows: inGroup,
-    };
-  });
+      rows
+        .filter((entry) => entry.key === key)
+        .map(({ row }) => row)
+        .sort((a, b) => Number(!isExpected(a)) - Number(!isExpected(b))),
+    ),
+  );
 }
 
 function isExpected(row: SlotRow): boolean {
@@ -250,5 +280,19 @@ export function handoverBoard(
     overdueKitchen: all.filter((row) => row.overdueCause === 'kitchen').length,
     awaitingPacking: all.filter((row) => row.state === 'not_ready').length,
     held: all.filter((row) => row.heldForQuality).length,
+    ...(late === null ? {} : { clock: clockOf(queue.day, late.asOf) }),
   };
+}
+
+/** L'heure de lecture rapportée au jour montré ; `undefined` si elle est illisible. */
+export function clockOf(day: string, asOf: string): SlotClock | undefined {
+  const instant = new Date(asOf);
+  if (Number.isNaN(instant.getTime())) {
+    return undefined;
+  }
+  const local = instantToLocal(instant);
+  if (local.day !== day) {
+    return { minutes: local.day > day ? Infinity : -Infinity, label: null };
+  }
+  return { minutes: minutesOf(local.time) ?? 0, label: clockLabel(asOf) };
 }

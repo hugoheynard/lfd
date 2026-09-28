@@ -7,7 +7,7 @@ import type {
   LateOrder,
 } from '@lfd/contracts';
 
-import { causeOf, handoverBoard, overdueMinutesOf } from './handover-slots';
+import { causeOf, clockOf, handoverBoard, overdueMinutesOf } from './handover-slots';
 
 const DAY = '2026-09-25';
 
@@ -208,5 +208,17 @@ describe('handoverBoard — le contrôle qualité', () => {
       ['A', true],
       ['C', false],
     ]);
+  });
+});
+
+describe('clockOf (Supervision v2, A8)', () => {
+  it('rapporte l’heure de lecture au jour montré', () => {
+    // 05:55Z = 7 h 55 à Paris en septembre.
+    expect(clockOf(DAY, '2026-09-25T05:55:00.000Z')).toEqual({ minutes: 475, label: '7 h 55' });
+  });
+
+  it('un autre jour n’a pas de repère : tout passé, ou tout à venir', () => {
+    expect(clockOf(DAY, '2026-09-26T05:55:00.000Z')).toEqual({ minutes: Infinity, label: null });
+    expect(clockOf(DAY, '2026-09-24T05:55:00.000Z')).toEqual({ minutes: -Infinity, label: null });
   });
 });

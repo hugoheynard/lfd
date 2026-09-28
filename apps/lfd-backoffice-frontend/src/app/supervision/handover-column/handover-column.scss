@@ -8,14 +8,21 @@
   gap: var(--fold-space-sm);
 }
 
-.slot-head {
+.slot-head,
+.finished-head,
+.now,
+.folded-line {
   display: flex;
   align-items: center;
   gap: var(--fold-space-sm);
+}
+
+.slot-head {
   padding-top: var(--fold-space-xs);
 }
 
-.slot-label {
+.slot-label,
+.finished-label {
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-xs);
   font-weight: var(--fold-weight-bold);
@@ -24,7 +31,8 @@
   color: var(--fold-color-text-muted);
 }
 
-.slot-rule {
+.slot-rule,
+.now-rule {
   flex: 1;
   height: 1px;
   background: var(--fold-color-border);
@@ -130,6 +138,11 @@
   gap: var(--fold-space-sm);
 }
 
+.point {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-secondary);
+}
+
 .reference {
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-xs);
@@ -152,15 +165,15 @@
     color: var(--fold-ref-green-700);
   }
 
+  // Des phrases, pas des sigles : la maquette les écrit en casse normale, teintées
+  // par la cause — nous en alerte, le client en attente.
   &.is-late {
-    font-family: var(--fold-font-mono);
-    font-weight: var(--fold-weight-bold);
-    letter-spacing: var(--fold-tracking-wide);
-    text-transform: uppercase;
+    font-weight: var(--fold-weight-semibold);
     color: var(--fold-color-alert-text);
   }
 
   &.is-waiting {
+    font-weight: var(--fold-weight-semibold);
     color: var(--fold-color-warning-text);
   }
 }
@@ -193,4 +206,72 @@
 .is-match {
   outline: 2px solid var(--fold-color-primary);
   outline-offset: 1px;
+}
+
+// Le repère « Maintenant » (A8) : une puce primaire et un filet de 2 px.
+.now {
+  padding: var(--fold-space-xs) 0 2px;
+}
+
+.now-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--fold-space-sm);
+  border-radius: var(--fold-radius-xs);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.now-rule {
+  height: 2px;
+  background: var(--fold-color-primary);
+}
+
+.finished-head {
+  padding-top: var(--fold-space-md);
+}
+
+.finished-label {
+  font-size: var(--fold-text-2xs);
+  color: var(--fold-color-text-secondary);
+}
+
+// Une tranche terminée, repliée en une ligne verte (A8).
+.slot-folded {
+  background: var(--fold-color-success-surface);
+  border-color: var(--fold-color-success-border);
+  box-shadow: none;
+  color: var(--fold-color-success-text);
+}
+
+.folded-line {
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  font-size: var(--fold-text-xs);
+}
+
+.slot-folded.narrow .folded-line {
+  min-height: 44px;
+  font-size: var(--fold-text-sm);
+}
+
+.folded-label {
+  font-family: var(--fold-font-mono);
+  font-weight: var(--fold-weight-bold);
+}
+
+.folded-action {
+  margin-left: auto;
+  font-weight: var(--fold-weight-semibold);
+}
+
+// Le résultat courant de ‹ n / m › (A5) : le contour, plus un halo.
+.is-current {
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--fold-color-primary) 20%, transparent);
 }

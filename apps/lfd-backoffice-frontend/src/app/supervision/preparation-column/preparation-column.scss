@@ -1,6 +1,6 @@
-// La maquette `handoff-suivi`, par les tokens fold. Chaque valeur qui n'a pas
-// son token exact est inscrite dans « Écarts à la maquette »
-// (documentation/order/plan-supervision-du-jour.md).
+// Supervision v2, A6 — la maquette `design_handoff_supervision_v2`, par les
+// tokens fold. Les écarts (un token au plus près d'une valeur sans token exact)
+// sont nommés en commentaire à l'endroit où ils se posent.
 
 :host {
   display: flex;
@@ -8,21 +8,29 @@
   gap: var(--fold-space-sm);
 }
 
+// ── Le rayon : un fond par état (le bug de la v1 : l'ambre couvrait tout ce
+// qui n'était pas fini). Le compteur le dit aussi en toutes lettres.
 .shelf {
-  --fold-card-padding: var(--fold-space-md);
+  --fold-card-padding: var(--fold-space-md) var(--fold-space-md);
 
+  transition: opacity var(--fold-motion-base);
+}
+
+.shelf.is-idle {
+  background: var(--fold-color-surface-card);
+  border-color: var(--fold-color-border);
   box-shadow: var(--fold-shadow-sm);
 }
 
-// Hugo, 2026-09-28 : ce qui attend en ambre, ce qui est fini en vert — l'état
-// se lit de loin, et le compteur « n / m lignes » le dit aussi en toutes
-// lettres (jamais la couleur seule).
-.shelf.is-waiting {
+.shelf.is-progress {
   background: var(--fold-color-warning-surface);
   border-color: var(--fold-color-warning-border);
+  box-shadow: var(--fold-shadow-sm);
 }
 
 .shelf.is-done {
+  --fold-card-padding: var(--fold-space-sm) var(--fold-space-md);
+
   background: var(--fold-color-success-surface);
   border-color: var(--fold-color-success-border);
   box-shadow: none;
@@ -38,74 +46,88 @@
 .shelf-head {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: var(--fold-space-sm);
 }
 
 .shelf-name {
-  font-size: var(--fold-text-md);
+  font-size: var(--fold-text-base);
   font-weight: var(--fold-weight-bold);
   color: var(--fold-color-text);
 }
 
 .shelf-count {
+  margin-left: auto;
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-xs);
   font-weight: var(--fold-weight-bold);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: var(--fold-color-text-muted);
-
-  &.is-done {
-    color: var(--fold-ref-green-700);
-  }
 
   &.is-progress {
     color: var(--fold-color-warning-text);
   }
+
+  &.is-done {
+    color: var(--fold-color-success-text);
+  }
+}
+
+// Replié, l'en-tête EST le résumé du disclosure : il occupe toute la ligne.
+.done-shelf .shelf-head {
+  flex: 1;
+  align-items: center;
+  min-width: 0;
 }
 
 // Les teintes de barre de la maquette SONT des références fold : on les
 // redonne au mètre plutôt que de dessiner une seconde barre.
 .shelf-meter {
-  --fold-color-success: var(--fold-ref-green-700);
   --fold-color-warning: var(--fold-ref-amber-500);
   --fold-color-surface-raised: var(--fold-ref-paper-200);
-}
-
-.detail-summary {
-  font-size: var(--fold-text-xs);
-  font-weight: var(--fold-weight-bold);
-  color: var(--fold-color-text-secondary);
 }
 
 .lines {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-sm);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 // ── Une ligne du fournil ─────────────────────────────────────────────────────
-// Grille à trois colonnes : [produit + barre] [sorties / prévues] [Contrôler].
-// Les pastilles (surplus, contrôle) passent dessous, sur la largeur du produit.
+// [produit + barre] [sorties / prévues] [Contrôler] ; les notes dessous.
+// La marge négative étend le fond d'une ligne mise en avant jusqu'au bord de la
+// carte sans décaler son texte (chevauchement délibéré).
 .line {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: end;
   column-gap: var(--fold-space-md);
   row-gap: var(--fold-space-xs);
+  margin: 0 calc(-1 * var(--fold-space-xs));
+  padding: var(--fold-space-sm) var(--fold-space-xs);
+  border-radius: var(--fold-radius-xs);
+  transition: opacity var(--fold-motion-base);
+
+  & + & {
+    border-top: 1px solid var(--fold-color-border-subtle);
+  }
 }
 
 // Le nom du produit est le libellé du mètre : on le remonte d'un cran (fold le
 // pose en `xs` secondaire, taille d'une légende) par ses propres tokens.
 .line-meter {
-  --fold-text-xs: var(--fold-text-sm);
+  --fold-text-xs: var(--fold-text-md);
   --fold-color-text-secondary: var(--fold-color-text);
   --fold-color-success: var(--fold-ref-green-700);
   --fold-color-warning: var(--fold-ref-amber-500);
   --fold-color-surface-raised: var(--fold-ref-paper-200);
+}
+
+.line-name {
+  font-size: var(--fold-text-md);
+  color: var(--fold-color-text);
 }
 
 .figure {
@@ -118,7 +140,7 @@
 }
 
 .figure-done {
-  font-size: var(--fold-text-md);
+  font-size: var(--fold-text-base);
   font-weight: var(--fold-weight-bold);
   color: var(--fold-color-text);
 }
@@ -129,7 +151,6 @@
 }
 
 .initials {
-  margin-left: var(--fold-space-xs);
   font-size: var(--fold-text-2xs);
   font-weight: var(--fold-weight-bold);
   letter-spacing: var(--fold-tracking-caps);
@@ -145,13 +166,29 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--fold-space-xs);
+  gap: var(--fold-space-sm);
 }
 
 // « Contrôlé sur 96, compte actuel 120 — à revoir ».
 .quality-detail {
   font-size: var(--fold-text-xs);
   color: var(--fold-color-warning-text);
+}
+
+.quality {
+  flex: none;
+}
+
+// « Attendu · Chalet Marmotte » : ambre plein. Le texte `#2b1d00` de la
+// maquette n'a pas de token : le texte courant, le plus sombre, le remplace.
+.awaited {
+  --fold-color-warning-surface: var(--fold-ref-amber-500);
+  --fold-color-warning-border: var(--fold-ref-amber-500);
+  --fold-color-warning-text: var(--fold-color-text);
+
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
 }
 
 // Une ligne complète recule : elle reste lisible, sans tirer l'œil.
@@ -163,19 +200,34 @@
   }
 }
 
-.lines > .line + .line {
-  padding-top: var(--fold-space-sm);
-  border-top: 1px solid var(--fold-color-border-subtle);
+// ── A5 · la mise en avant ────────────────────────────────────────────────────
+// Recherche ou pastille : un contour primaire, sur fond blanc.
+.line.is-match {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 1px;
+  background: var(--fold-color-surface-card);
 }
 
-// La pastille du contrôle qualité : le mot porte l'état, la teinte le redouble.
-.quality {
-  flex: none;
+// L'occurrence courante de ‹ n / m › : un halo en plus.
+.line.is-current {
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--fold-color-primary) 20%, transparent);
 }
 
-// Sur le rayon, sous son en-tête : la pastille ne s'étire pas sur la carte.
-.stack > .quality {
-  align-self: flex-start;
+// On suit des produits attendus : les lignes visées ressortent…
+.line.is-awaited {
+  background: var(--fold-color-surface-card);
+  box-shadow:
+    inset 3px 0 0 var(--fold-ref-amber-500),
+    0 2px 8px -3px color-mix(in srgb, var(--fold-ref-amber-700) 35%, transparent);
+}
+
+// … et le reste recule.
+.line.is-receded {
+  opacity: 0.35;
+}
+
+.shelf.is-receded {
+  opacity: 0.4;
 }
 
 .renvoi {
@@ -190,75 +242,58 @@
   }
 }
 
+// « Terminés · 2 · à 6 h 10 », suivi d'un filet jusqu'au bord.
 .done-divider {
-  margin: var(--fold-space-sm) 0 0;
-  font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-bold);
-  letter-spacing: var(--fold-tracking-caps);
-  text-transform: uppercase;
-  color: var(--fold-color-text-secondary);
-}
-
-// ── Mobile : bandes de tête et de pied, cibles tactiles relevées ─────────────
-
-.band {
   display: flex;
   align-items: center;
   gap: var(--fold-space-sm);
-  padding: var(--fold-space-sm) var(--fold-space-lg);
-  margin: calc(-1 * var(--fold-space-md)) calc(-1 * var(--fold-space-md)) 0;
-  background: var(--fold-color-surface-band);
-  border-bottom: 1px solid var(--fold-color-border);
-}
-
-.band-title {
+  margin: 0;
+  padding-top: var(--fold-space-sm);
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-2xs);
   font-weight: var(--fold-weight-bold);
   letter-spacing: var(--fold-tracking-caps);
   text-transform: uppercase;
   color: var(--fold-color-text-secondary);
+
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--fold-color-border);
+  }
 }
 
-.band-meta {
-  margin-left: auto;
-  font-size: var(--fold-text-xs);
-  font-variant-numeric: tabular-nums;
-  color: var(--fold-color-text-muted);
-}
-
+// ── B6 · téléphone : cibles relevées ─────────────────────────────────────────
 .shelf.narrow {
-  --fold-card-padding: var(--fold-space-md) var(--fold-space-lg);
-
   .shelf-name {
-    font-size: var(--fold-text-base);
+    font-size: var(--fold-text-lg);
   }
 
-  .shelf-count {
-    font-size: var(--fold-text-sm);
-  }
-
-  .lines {
-    gap: 0;
+  .done-shelf .shelf-head {
+    min-height: 32px;
   }
 
   .line {
-    min-height: 44px;
+    align-items: center;
+    min-height: 52px;
+    margin: 0 calc(-1 * var(--fold-space-sm));
+    padding: var(--fold-space-sm);
   }
 
   .line-meter {
     --fold-text-xs: var(--fold-text-base);
   }
 
+  .line-name {
+    font-size: var(--fold-text-base);
+  }
+
   .figure-done {
     font-size: var(--fold-text-lg);
   }
-}
 
-// La recherche du masthead SURLIGNE (Hugo, 2026-09-28) : un contour à la
-// couleur primaire, sans toucher au fond qui dit l'état.
-.is-match {
-  outline: 2px solid var(--fold-color-primary);
-  outline-offset: 1px;
+  .check {
+    min-height: 40px;
+  }
 }

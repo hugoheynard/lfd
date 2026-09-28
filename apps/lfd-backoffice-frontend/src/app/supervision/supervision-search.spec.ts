@@ -7,7 +7,8 @@ import type {
 } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { NO_MATCHES, supervisionMatches } from './supervision-search';
+import { handoverBoard } from './handover-slots';
+import { awaitedMatches, focusMatches, NO_MATCHES, supervisionMatches } from './supervision-search';
 
 function line(sku: string): PackingLine {
   return {
@@ -113,5 +114,52 @@ describe('supervisionMatches', () => {
 
   it('trouve au colisage seul quand la file de retrait n’a pas pu être lue', () => {
     expect([...supervisionMatches('central', null, PACKING).references]).toEqual(['CMD-102']);
+  });
+});
+
+/** Une fiche dont les lignes `awaited` attendent encore le four. */
+function waiting(reference: string, customer: string, awaited: readonly string[]): PackingSheet {
+  const base = sheet(reference, customer, ['PAI-001', ...awaited]);
+  return {
+    ...base,
+    lines: base.lines.map((l) => ({ ...l, awaitingProduction: awaited.includes(l.sku) })),
+  };
+}
+
+describe('focusMatches — Supervision v2, A5', () => {
+  const OVEN = packing([
+    waiting('CMD-101', 'SARL Marín et fils', ['BRI-001']),
+    waiting('CMD-102', 'Café Central', ['BRI-001', 'ECL-001']),
+    sheet('CMD-103', 'Traiteur', ['VIE-001']),
+  ]);
+
+  it('la pastille du four suit les produits attendus, et nomme qui les attend', () => {
+    const matches = focusMatches('oven', OVEN, QUEUE, null);
+
+    expect(matches.mode).toBe('products');
+    expect([...matches.references].sort()).toEqual(['CMD-101', 'CMD-102']);
+    expect([...matches.skus].sort()).toEqual(['BRI-001', 'ECL-001']);
+    // L'enseigne quand la file la connaît, la raison sociale sinon.
+    expect(matches.awaitedBy.get('BRI-001')).toEqual(['Le Fournil du Lac', 'Café Central']);
+  });
+
+  it('une commande dépliée ne suit que ses propres produits', () => {
+    const matches = awaitedMatches('CMD-101', OVEN, QUEUE);
+
+    expect([...matches.references]).toEqual(['CMD-101']);
+    expect([...matches.skus]).toEqual(['BRI-001']);
+    expect(awaitedMatches('INCONNUE', OVEN, QUEUE)).toBe(NO_MATCHES);
+  });
+
+  it('une pastille du retrait désigne les commandes de sa cause, en contour', () => {
+    const held: HandoverQueueView = {
+      ...QUEUE,
+      entries: QUEUE.entries.map((e, i) => ({ ...e, heldForQuality: i === 1 })),
+    };
+    const matches = focusMatches('held', null, held, handoverBoard(held, null));
+
+    expect(matches.mode).toBe('search');
+    expect([...matches.references]).toEqual(['CMD-102']);
+    expect(matches.skus.size).toBe(0);
   });
 });

@@ -1,28 +1,36 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { FoldBadgeVariant } from 'fold-ng';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCardComponent,
-  FoldDisclosureComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldMeterComponent,
 } from 'fold-ng';
 
-import type { PackingBoard, PackingCard, PackingState, UpcomingOrder } from '../packing-cards';
+import {
+  ALL_POINTS,
+  PACKING_VISIBLE_MAX,
+  packingMeta,
+  type PackingBoard,
+  type PackingCard,
+  type PackingState,
+  type UpcomingOrder,
+} from '../packing-cards';
 import { NO_QUALITY, type QualityBadge, type QualityRequest } from '../quality-badges';
 import { countLabel } from '../supervision-labels';
 import { SUPERVISION_LINKS } from '../supervision-links';
 import { NO_MATCHES } from '../supervision-search';
 
-/** La pastille Mono de chaque état : le libellé porte l'état, jamais la couleur seule. */
-const BADGES: Readonly<Record<PackingState, { label: string; variant: FoldBadgeVariant }>> = {
-  packed: { label: 'colisée', variant: 'success' },
-  awaiting_oven: { label: 'attend le four', variant: 'warning' },
-  in_progress: { label: 'en cours', variant: 'accent' },
-  to_pack: { label: 'à coliser', variant: 'success' },
+/** La pastille Mono de chaque état ouvert : le libellé porte l'état, jamais la couleur seule. */
+const BADGES: Readonly<
+  Record<Exclude<PackingState, 'packed'>, { label: string; variant: FoldBadgeVariant }>
+> = {
+  awaiting_oven: { label: 'Attend le four', variant: 'warning' },
+  in_progress: { label: 'En cours', variant: 'accent' },
+  to_pack: { label: 'À coliser', variant: 'neutral' },
 };
 
 /**
@@ -31,8 +39,11 @@ const BADGES: Readonly<Record<PackingState, { label: string; variant: FoldBadgeV
  * ce sont les gestes du poste, et la carte y renvoie (plan §1).
  *
  * Une commande COLISÉE se juge (`plan-controle-qualite.md`, §5) : elle porte
- * la pastille de son contrôle et, pour qui a le droit, « Contrôler ». Une
- * commande pas encore colisée ne se contrôle pas — rien n'y est fini.
+ * la pastille de son contrôle et, pour qui a le droit, « Contrôler ».
+ *
+ * Supervision v2 (A4, A5, A7, B7) : la colonne ne décide pas de la mise en
+ * avant, elle la DEMANDE (`awaitedToggle`) et la LIT (`matches`, `awaitedOpen`).
+ * Le filtre par point se choisit dans `app-packing-band` et se lit ici.
  */
 @Component({
   selector: 'app-packing-column',
@@ -42,7 +53,6 @@ const BADGES: Readonly<Record<PackingState, { label: string; variant: FoldBadgeV
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCardComponent,
-    FoldDisclosureComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldMeterComponent,
@@ -54,28 +64,82 @@ export class PackingColumn {
   readonly board = input.required<PackingBoard>();
   readonly showLinks = input(false);
   readonly narrow = input(false);
-  /** Ce que la recherche du masthead désigne, par numéro de commande. */
+  /** Ce que la mise en avant désigne (recherche, pastille, commande dépliée). */
   readonly matches = input(NO_MATCHES);
+  /**
+   * La commande « attend le four » dépliée, par numéro — la carte SOURCE de la
+   * mise en avant produits. `matches` ne la distingue pas d'une pastille « four »
+   * qui vise plusieurs commandes : il faut la lire à part.
+   */
+  readonly awaitedOpen = input<string | null>(null);
   /** Les pastilles du contrôle qualité, par numéro de commande. */
   readonly quality = input(NO_QUALITY);
   /** `b2b_supervision:write` : le bouton « Contrôler ». */
   readonly canCheck = input(false);
   readonly check = output<QualityRequest>();
+  /** « n produits attendus du four » ou double-clic : bascule le dépliage de CETTE commande. */
+  readonly awaitedToggle = output<string>();
+  /** Mobile (B7) : « Voir en Préparation → » sur la commande dépliée. */
+  readonly showPreparation = output();
 
   protected readonly link = SUPERVISION_LINKS.packing;
 
-  protected readonly empty = computed(
-    () => this.board().visible.length === 0 && this.board().packed.length === 0,
+  /**
+   * Le point retenu — `[(point)]`, partagé avec `app-packing-band` que la
+   * page pose dans le slot `columnBand` ; `''` = tous.
+   */
+  readonly point = model(ALL_POINTS);
+
+  private readonly open = computed(() => this.inPoint(this.board().visible));
+
+  protected readonly visible = computed(() => this.open().slice(0, PACKING_VISIBLE_MAX));
+
+  protected readonly overflow = computed(() =>
+    Math.max(0, this.open().length - PACKING_VISIBLE_MAX),
   );
 
-  protected readonly packedCount = computed(() =>
-    countLabel(this.board().packed.length, 'commande colisée', 'commandes colisées'),
+  protected readonly packed = computed(() => this.inPoint(this.board().packed));
+
+  protected readonly empty = computed(
+    () => this.visible().length === 0 && this.packed().length === 0,
   );
+
+  protected readonly packedCount = computed(() => `Colisées · ${String(this.packed().length)}`);
 
   protected readonly overflowLabel = computed(
-    () =>
-      `+ ${countLabel(this.board().overflow, 'commande', 'commandes')} · triées par heure de retrait`,
+    () => `+ ${countLabel(this.overflow(), 'commande', 'commandes')} · triées par heure de retrait`,
   );
+
+  /** Une mise en avant PRODUITS : les commandes non visées reculent. */
+  protected readonly productsMode = computed(() => this.matches().mode === 'products');
+
+  protected isHit(reference: string): boolean {
+    return this.matches().references.has(reference);
+  }
+
+  protected isCurrent(reference: string): boolean {
+    return this.matches().current === reference;
+  }
+
+  /** La carte dépliée, source de la mise en avant produits. */
+  protected isSource(card: PackingCard): boolean {
+    return card.state === 'awaiting_oven' && this.awaitedOpen() === card.reference;
+  }
+
+  /** Contour primaire — sauf sur une commande « four » quand on suit des produits. */
+  protected outlined(card: PackingCard): boolean {
+    return this.isHit(card.reference) && !(this.productsMode() && card.state === 'awaiting_oven');
+  }
+
+  protected receded(reference: string): boolean {
+    return this.productsMode() && !this.isHit(reference);
+  }
+
+  protected toggleAwaited(card: PackingCard): void {
+    if (card.state === 'awaiting_oven') {
+      this.awaitedToggle.emit(card.reference);
+    }
+  }
 
   protected qualityOf(card: PackingCard): QualityBadge | null {
     return this.quality().orders.get(card.reference) ?? null;
@@ -93,18 +157,20 @@ export class PackingColumn {
   }
 
   protected badgeLabel(card: PackingCard): string {
-    const label = BADGES[card.state].label;
-    return card.state === 'in_progress' && card.initials.length > 0
-      ? `${label} · ${card.initials.join(' ')}`
-      : label;
+    return card.state === 'packed' ? '' : BADGES[card.state].label;
   }
 
   protected badgeVariant(card: PackingCard): FoldBadgeVariant {
-    return BADGES[card.state].variant;
+    return card.state === 'packed' ? 'success' : BADGES[card.state].variant;
   }
 
   protected meta(card: PackingCard): string {
-    return `${card.reference} · ${String(card.lineCount)} réf. · ${countLabel(card.containers, 'bac', 'bacs')}`;
+    return packingMeta(card);
+  }
+
+  protected awaitedLabel(card: PackingCard): string {
+    const count = card.awaited.length;
+    return `${String(count)} ${count > 1 ? 'produits attendus' : 'produit attendu'} du four`;
   }
 
   protected upcomingUnits(order: UpcomingOrder): string {
@@ -113,5 +179,10 @@ export class PackingColumn {
 
   protected progressLabel(card: PackingCard): string {
     return `${String(card.packedLines)} références sur ${String(card.lineCount)} posées`;
+  }
+
+  private inPoint(cards: readonly PackingCard[]): readonly PackingCard[] {
+    const point = this.point();
+    return point === ALL_POINTS ? cards : cards.filter((card) => card.destination === point);
   }
 }

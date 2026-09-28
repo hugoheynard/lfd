@@ -86,34 +86,109 @@ describe('PreparationColumn', () => {
     expect(element.querySelector('input, fold-checkbox')).toBeNull();
   });
 
-  /** Hugo, 2026-09-28 : repliés en une ligne de noms, on ne voyait plus ce qui était sorti. */
-  it('garde les rayons finis visibles, en bas, sous un séparateur daté', async () => {
-    const element = await mount(BOARD);
-    const shelves = [...element.querySelectorAll('[data-shelf]')].map((shelf) =>
-      shelf.getAttribute('data-shelf'),
-    );
+  /** Supervision v2, A6 : un fond par état — la v1 passait tout ce qui n'était pas fini en ambre. */
+  it('donne un fond à chaque état : pas commencé, en cours, fini', async () => {
+    const element = await mount({
+      ...BOARD,
+      open: [card('Viennoiseries'), card('Tartes', { state: 'not_started' })],
+    });
 
-    expect(element.querySelector('[data-done-divider]')?.textContent).toContain('à 6 h 10');
-    expect(shelves.at(-1)).toBe('Pains');
+    expect(element.querySelector('[data-shelf="Viennoiseries"]')?.classList).toContain(
+      'is-progress',
+    );
+    expect(element.querySelector('[data-shelf="Tartes"]')?.classList).toContain('is-idle');
+    expect(element.querySelector('[data-shelf="Tartes"]')?.textContent).toContain('pas commencé');
     expect(element.querySelector('[data-shelf="Pains"]')?.classList).toContain('is-done');
   });
 
-  it('surligne le rayon et le produit d’une commande cherchée', async () => {
-    const element = await mount(BOARD, true, { references: new Set(), skus: new Set(['cro']) });
-    const shelf = element.querySelector('[data-shelf="Viennoiseries"]');
+  /** Hugo, 2026-09-28 (Supervision v2) : les rayons finis se replient sous « Terminés ». */
+  it('replie les rayons finis sous un séparateur daté, l’en-tête disant son contrôle', async () => {
+    const element = await mount({ ...BOARD, finished: [card('Pains', { state: 'done' })] });
+    const shelves = [...element.querySelectorAll('[data-shelf]')].map((shelf) =>
+      shelf.getAttribute('data-shelf'),
+    );
+    const pains = element.querySelector('[data-shelf="Pains"]');
 
-    expect(shelf?.classList).toContain('is-match');
-    expect(shelf?.querySelector('[data-line-done]')?.classList).toContain('is-match');
-    expect(element.querySelector('[data-shelf="Pains"]')?.classList).not.toContain('is-match');
+    expect(element.querySelector('[data-done-divider]')?.textContent).toContain(
+      'Terminés · 1 · à 6 h 10',
+    );
+    expect(shelves.at(-1)).toBe('Pains');
+    expect(pains?.querySelector('[data-hit-key]')).toBeNull();
+    expect(pains?.querySelector('[data-shelf-quality]')?.textContent).toContain('Contrôle 0/2');
   });
 
-  it('déplie un rayon en cours sur ses lignes sorties, avec leurs initiales', async () => {
+  it('surligne le produit d’une commande cherchée, et le halo sur l’occurrence courante', async () => {
+    const element = await mount(BOARD, true, {
+      ...NO_MATCHES,
+      mode: 'search',
+      skus: new Set(['cro']),
+      current: 'cro',
+    });
+    const hit = element.querySelector('[data-hit-key="cro"]');
+
+    expect(hit?.classList).toContain('is-match');
+    expect(hit?.classList).toContain('is-current');
+    expect(element.querySelector('[data-hit-key="pac"]')?.classList).not.toContain('is-match');
+    expect(element.querySelector('.is-receded')).toBeNull();
+  });
+
+  it('ouvre un rayon fini replié qui porte une occurrence', async () => {
+    const element = await mount({ ...BOARD, finished: [card('Pains', { state: 'done' })] }, true, {
+      ...NO_MATCHES,
+      mode: 'search',
+      skus: new Set(['pac']),
+    });
+
+    expect(element.querySelector('[data-shelf="Pains"] [data-hit-key="pac"]')).not.toBeNull();
+    expect(element.querySelector('[data-shelf="Pains"] [data-shelf-quality]')).toBeNull();
+  });
+
+  /** A5 : on suit des produits attendus du four — ils ressortent, le reste recule. */
+  it('en mode produits, étiquette les lignes attendues et fait reculer le reste', async () => {
+    const element = await mount(
+      { ...BOARD, open: [card('Viennoiseries'), card('Tartes', { pending: [], done: [] })] },
+      true,
+      {
+        ...NO_MATCHES,
+        mode: 'products',
+        skus: new Set(['pac']),
+        awaitedBy: new Map([['pac', ['Chalet Marmotte', 'Traiteur Vermeil']]]),
+      },
+    );
+    const awaited = element.querySelector('[data-hit-key="pac"]');
+
+    expect(awaited?.classList).toContain('is-awaited');
+    expect(awaited?.classList).not.toContain('is-match');
+    expect(element.querySelector('[data-line-awaited="pac"]')?.textContent).toContain(
+      'Attendu · Chalet Marmotte, Traiteur Vermeil',
+    );
+    expect(element.querySelector('[data-hit-key="cro"]')?.classList).toContain('is-receded');
+    expect(element.querySelector('[data-shelf="Tartes"]')?.classList).toContain('is-receded');
+    expect(element.querySelector('[data-shelf="Viennoiseries"]')?.classList).not.toContain(
+      'is-receded',
+    );
+  });
+
+  it('ne montre que le rayon retenu par le filtre de la bande', async () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(PreparationColumn);
+    fixture.componentRef.setInput('board', BOARD);
+    fixture.componentRef.setInput('shelfFilter', 'Pains');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+
+    expect(
+      [...element.querySelectorAll('[data-shelf]')].map((s) => s.getAttribute('data-shelf')),
+    ).toEqual(['Pains']);
+  });
+
+  it('liste les lignes d’un rayon en cours, sorties comprises avec leurs initiales', async () => {
     const element = await mount(BOARD);
-    const done = element.querySelector('[data-detail="Viennoiseries"] [data-line-done]');
+    const done = element.querySelector('[data-shelf="Viennoiseries"] [data-line-done]');
 
     expect(done?.textContent).toContain('Croissant');
     expect(done?.textContent).toContain('HH');
-    expect(element.querySelector('[data-detail="Pains"]')).not.toBeNull();
   });
 
   it('renvoie vers la fournée, seulement si on le lui permet', async () => {
@@ -130,8 +205,8 @@ describe('PreparationColumn', () => {
     expect(element.querySelector('fold-callout')?.textContent).toContain('Rayon inconnu');
   });
 
-  /** `plan-controle-qualite.md`, §5 et D5 : la pastille de chaque ligne, la pire sur le rayon. */
-  it('pose la pastille de chaque ligne, la pire sur le rayon, et dit la péremption', async () => {
+  /** `plan-controle-qualite.md`, §5 et D5 ; v2 A6 : le résumé n/m sur le rayon fini replié. */
+  it('pose la pastille de chaque ligne, dit la péremption, et résume le rayon replié', async () => {
     TestBed.configureTestingModule({ providers: [provideRouter([])] });
     const fixture = TestBed.createComponent(PreparationColumn);
     const lookup: QualityLookup = {
@@ -161,7 +236,10 @@ describe('PreparationColumn', () => {
       ]),
       orders: new Map(),
     };
-    fixture.componentRef.setInput('board', BOARD);
+    fixture.componentRef.setInput('board', {
+      ...BOARD,
+      finished: [card('Pains', { state: 'done' })],
+    });
     fixture.componentRef.setInput('quality', lookup);
     fixture.detectChanges();
     await fixture.whenStable();
@@ -175,8 +253,10 @@ describe('PreparationColumn', () => {
     expect(shelf?.querySelector('[data-line-stale]')?.textContent).toContain(
       'Contrôlé sur 80, compte actuel 96 — à revoir',
     );
-    expect(shelf?.querySelector('[data-shelf-quality]')?.textContent).toContain('À revoir');
-    expect(element.querySelector('[data-shelf="Pains"] [data-shelf-quality]')).toBeNull();
+    expect(shelf?.querySelector('[data-shelf-quality]')).toBeNull();
+    expect(
+      element.querySelector('[data-shelf="Pains"] [data-shelf-quality]')?.textContent,
+    ).toContain('Contrôle 2/2 · À revoir');
   });
 
   it('ne propose « Contrôler » qu’à qui peut juger, sur chaque ligne', async () => {

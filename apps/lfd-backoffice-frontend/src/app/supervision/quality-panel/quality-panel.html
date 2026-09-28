@@ -1,177 +1,250 @@
-<fold-panel-header
-  title="Contrôler"
-  [subtitle]="(data()?.title ?? '') + ' · ' + (data()?.subtitle ?? '')"
-/>
-
-<fold-panel-body>
-  <div class="field">
-    <span class="field-label">Verdict</span>
-    <fold-view-toggle
-      ariaLabel="Verdict"
-      activeStyle="solid"
-      [options]="verdictOptions"
-      [value]="verdict()"
-      (valueChange)="chooseVerdict($event)"
-      data-verdict
-    />
-    @if (verdict() === 'blocking') {
-      <p class="hint" data-blocking-hint>
-        Les commandes concernées seront retenues au retrait jusqu’à un nouveau verdict.
-      </p>
+<fold-panel-header variant="eyebrow" closeLabel="Fermer" [title]="eyebrow()">
+  <div class="head">
+    <div class="head-titles">
+      <span class="head-title">{{ data()?.title }}</span>
+      <span class="head-subtitle">{{ data()?.subtitle }}</span>
+    </div>
+    @if (current(); as badge) {
+      <fold-badge radius="square" [variant]="badge.variant" [content]="badge.label" data-current />
     }
   </div>
+</fold-panel-header>
 
-  <fold-textarea
-    label="Note"
-    [rows]="3"
-    [required]="noteRequired()"
-    [optional]="!noteRequired()"
-    [hint]="noteRequired() ? 'Obligatoire dès la réserve : dites ce qui ne va pas.' : undefined"
-    [value]="note()"
-    (valueChange)="note.set($event)"
-    data-note
-  />
+<fold-panel-body>
+  <div class="panel">
+    <div class="field field--verdict">
+      <span class="field-label">Verdict</span>
+      <div class="verdicts" data-verdict>
+        @for (code of verdicts; track code) {
+          <fold-card
+            interactive
+            radius="sm"
+            padding="none"
+            [ariaLabel]="verdictLabels[code] + ' — ' + consequences[code]"
+            [attr.aria-pressed]="verdict() === code"
+            [attr.data-verdict-choice]="code"
+            (activated)="verdict.set(code)"
+          >
+            <div class="verdict" [attr.data-tone]="code" [class.is-chosen]="verdict() === code">
+              <span class="verdict-glyph" aria-hidden="true">{{ glyphs[code] }}</span>
+              <span class="verdict-label">{{ verdictLabels[code] }}</span>
+              <span class="verdict-consequence">{{ consequences[code] }}</span>
+            </div>
+          </fold-card>
+        }
+      </div>
+      @if (verdict() === 'blocking') {
+        <fold-callout variant="alert" data-blocking-hint>
+          <span class="impact">
+            <strong>Retenu au retrait jusqu’à un nouveau verdict</strong>
+            <span>{{ impact() }}</span>
+          </span>
+        </fold-callout>
+      }
+    </div>
 
-  <div class="field">
-    <span class="field-label">Photos · facultatives, {{ room() }} encore possibles</span>
-    @if (photos().length > 0) {
-      <ul class="photos">
-        @for (photo of photos(); track photo.key) {
-          <li class="photo" [attr.data-photo]="photo.status">
-            <img class="thumb" [src]="photo.preview" alt="Photo choisie" />
-            @switch (photo.status) {
-              @case ('uploading') {
-                <fold-spinner size="sm" label="Dépôt en cours" />
+    <div class="field">
+      @if (noteRequired()) {
+        <div class="tags" data-tags>
+          @for (tag of tags; track tag) {
+            <button
+              foldButton
+              type="button"
+              size="sm"
+              shape="pill"
+              intent="neutral"
+              [emphasis]="note().includes(tag) ? 'solid' : 'outline'"
+              (click)="addTag(tag)"
+            >
+              {{ tag }}
+            </button>
+          }
+        </div>
+      }
+      <fold-textarea
+        label="Note"
+        [rows]="3"
+        [required]="noteRequired()"
+        [optional]="!noteRequired()"
+        optionalLabel="facultative"
+        [placeholder]="
+          noteRequired() ? 'Dites ce qui ne va pas, et ce qu’il faut faire.' : 'Facultatif'
+        "
+        [errors]="noteErrors()"
+        [touched]="true"
+        [value]="note()"
+        (valueChange)="note.set($event)"
+        data-note
+      />
+    </div>
+
+    <div class="field">
+      <span class="field-label">
+        Photos <span class="field-aside">· facultatives, 6 au plus</span>
+      </span>
+      @if (photos().length > 0) {
+        <ul class="photos">
+          @for (photo of photos(); track photo.key) {
+            <li class="photo" [attr.data-photo]="photo.status">
+              <img class="thumb" [src]="photo.preview" alt="Photo choisie" />
+              @switch (photo.status) {
+                @case ('uploading') {
+                  <fold-spinner size="sm" label="Dépôt en cours" />
+                }
+                @case ('ready') {
+                  <fold-badge variant="success" content="Déposée" />
+                }
+                @case ('failed') {
+                  <fold-badge variant="alert" content="Non déposée" />
+                }
               }
-              @case ('ready') {
-                <fold-badge variant="success" content="Déposée" />
-              }
-              @case ('failed') {
-                <fold-badge variant="alert" content="Non déposée" />
-              }
+              <button
+                foldButton
+                size="sm"
+                emphasis="soft"
+                intent="neutral"
+                [disabled]="saving()"
+                (click)="remove(photo.key)"
+              >
+                Retirer
+              </button>
+            </li>
+            @if (photo.status === 'failed') {
+              <li>
+                <fold-callout variant="alert">{{ photo.reason }}</fold-callout>
+              </li>
             }
+          }
+        </ul>
+      }
+      @if (overflow()) {
+        <fold-callout variant="warning" data-overflow>
+          Six photos au plus : les suivantes n’ont pas été ajoutées.
+        </fold-callout>
+      }
+      @if (room() > 0) {
+        <!-- Prendre la photo sur le moment (Hugo, 2026-09-28). La zone de dépôt
+             de fold n'a pas d'attribut `capture` : `image/*` seul laisse le
+             téléphone proposer la galerie d'abord, selon le navigateur. Ce
+             champ caché ouvre l'appareil ARRIÈRE directement ; sur un poste
+             sans caméra, le navigateur ignore `capture` et ouvre le sélecteur. -->
+        <input
+          #camera
+          type="file"
+          accept="image/*"
+          capture="environment"
+          class="camera-input"
+          tabindex="-1"
+          aria-hidden="true"
+          (change)="pickFromCamera(camera)"
+        />
+        <div class="pickers">
+          <button
+            foldButton
+            emphasis="solid"
+            intent="neutral"
+            type="button"
+            class="camera"
+            data-camera
+            [disabled]="saving()"
+            (click)="camera.click()"
+          >
+            <span class="camera-glyph" aria-hidden="true">◉</span>
+            Prendre
+          </button>
+          <fold-file-dropzone
+            accept="image/*"
+            label="Ajouter depuis l’appareil"
+            [multiple]="true"
+            [hint]="'JPEG, PNG, WebP, HEIC · 10 Mo'"
+            [disabled]="saving()"
+            (filesPicked)="pick($event)"
+          />
+        </div>
+      }
+    </div>
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" data-refusal>{{ message }}</fold-callout>
+    }
+
+    <div class="field">
+      <span class="field-eyebrow">Historique · aujourd’hui</span>
+      @switch (history().status) {
+        @case ('loading') {
+          <fold-loading message="Lecture des contrôles…" />
+        }
+        @case ('error') {
+          <fold-callout variant="alert" data-history-error>
+            L’historique n’a pas pu être lu. Le verdict peut quand même être rendu.
             <button
               foldButton
               size="sm"
-              emphasis="soft"
+              emphasis="outline"
               intent="neutral"
-              [disabled]="saving()"
-              (click)="remove(photo.key)"
+              (click)="loadHistory()"
             >
-              Retirer
+              Réessayer
             </button>
-          </li>
-          @if (photo.status === 'failed') {
-            <li>
-              <fold-callout variant="alert">{{ photo.reason }}</fold-callout>
-            </li>
+          </fold-callout>
+        }
+        @case ('ready') {
+          @if (historyChecks().length === 0) {
+            <fold-empty-state title="Jamais contrôlé ce jour.">
+              <fold-icon empty-icon name="clock" />
+            </fold-empty-state>
+          } @else {
+            <fold-timeline
+              ariaLabel="Historique des contrôles"
+              datePlacement="hidden"
+              [nodes]="nodes()"
+            >
+              <ng-template #node let-n>
+                @if (checkOf(n.key); as check) {
+                  <div class="check" [attr.data-check]="check.id">
+                    <div class="check-head">
+                      <fold-badge
+                        radius="square"
+                        [variant]="verdictVariants[check.verdict]"
+                        [content]="verdictLabels[check.verdict]"
+                      />
+                      <span class="byline">{{ byline(check) }}</span>
+                    </div>
+                    @if (check.note !== null) {
+                      <p class="note">{{ check.note }}</p>
+                    }
+                    @if (check.photos.length > 0) {
+                      <div class="check-photos">
+                        @for (photo of check.photos; track photo.position) {
+                          <app-quality-photo [checkId]="check.id" [position]="photo.position" />
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </ng-template>
+            </fold-timeline>
           }
         }
-      </ul>
-    }
-    @if (overflow()) {
-      <fold-callout variant="warning" data-overflow>
-        Six photos au plus : les suivantes n’ont pas été ajoutées.
-      </fold-callout>
-    }
-    @if (room() > 0) {
-      <!-- Prendre la photo sur le moment (Hugo, 2026-09-28). La zone de dépôt
-           de fold n'a pas d'attribut `capture` : `image/*` seul laisse le
-           téléphone proposer la galerie d'abord, selon le navigateur. Ce
-           champ caché ouvre l'appareil ARRIÈRE directement ; sur un poste
-           sans caméra, le navigateur ignore `capture` et ouvre le sélecteur. -->
-      <input
-        #camera
-        type="file"
-        accept="image/*"
-        capture="environment"
-        class="camera-input"
-        tabindex="-1"
-        aria-hidden="true"
-        (change)="pickFromCamera(camera)"
-      />
-      <button
-        foldButton
-        size="sm"
-        emphasis="outline"
-        intent="neutral"
-        type="button"
-        class="camera"
-        data-camera
-        [disabled]="saving()"
-        (click)="camera.click()"
-      >
-        Prendre une photo
-      </button>
-      <fold-file-dropzone
-        accept="image/*"
-        label="Ajouter des photos"
-        [multiple]="true"
-        [hint]="'JPEG, PNG, WebP ou HEIC · 10 Mo au plus'"
-        [disabled]="saving()"
-        (filesPicked)="pick($event)"
-      />
-    }
-  </div>
-
-  @if (refusal(); as message) {
-    <fold-callout variant="alert" data-refusal>{{ message }}</fold-callout>
-  }
-
-  <div class="field">
-    <fold-element-title variant="eyebrow" title="Historique de cette cible" />
-    @switch (history().status) {
-      @case ('loading') {
-        <fold-loading message="Lecture des contrôles…" />
       }
-      @case ('error') {
-        <fold-callout variant="alert" data-history-error>
-          L’historique n’a pas pu être lu. Le verdict peut quand même être rendu.
-          <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="loadHistory()">
-            Réessayer
-          </button>
-        </fold-callout>
-      }
-      @case ('ready') {
-        @if (historyChecks().length === 0) {
-          <fold-empty-state
-            title="Jamais contrôlé"
-            subtitle="Aucun verdict rendu ce jour sur cette cible."
-          >
-            <fold-icon empty-icon name="clock" />
-          </fold-empty-state>
-        }
-        <ol class="history">
-          @for (check of historyChecks(); track check.id) {
-            <li class="check" [attr.data-check]="check.id">
-              <div class="check-head">
-                <fold-badge
-                  [variant]="verdictVariants[check.verdict]"
-                  [content]="verdictLabels[check.verdict]"
-                />
-                <span class="byline">{{ byline(check) }}</span>
-              </div>
-              @if (check.note !== null) {
-                <p class="note">{{ check.note }}</p>
-              }
-              @if (check.photos.length > 0) {
-                <div class="check-photos">
-                  @for (photo of check.photos; track photo.position) {
-                    <app-quality-photo [checkId]="check.id" [position]="photo.position" />
-                  }
-                </div>
-              }
-            </li>
-          }
-        </ol>
-      }
-    }
+    </div>
   </div>
 </fold-panel-body>
 
 <fold-panel-footer>
-  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
-  <button foldButton intent="primary" [disabled]="!canSave()" (click)="save()" data-save>
-    {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
-  </button>
+  <div class="foot">
+    @if (reason(); as why) {
+      <span class="reason" data-reason>{{ why }}</span>
+    }
+    <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+    <button
+      foldButton
+      [intent]="verdict() === 'blocking' ? 'danger' : 'primary'"
+      [disabled]="!canSave()"
+      (click)="save()"
+      data-save
+    >
+      {{ saving() ? 'Enregistrement…' : saveLabel() }}
+    </button>
+  </div>
 </fold-panel-footer>

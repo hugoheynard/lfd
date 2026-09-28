@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import type { ProductionWorksheetView, WorkshopGroup, WorkshopLine } from '@lfd/contracts';
 
-import { lineProgressOf, preparationBoard, shelfStateOf } from './preparation-shelves';
+import {
+  ALL_SHELVES,
+  filterShelves,
+  lineProgressOf,
+  preparationBoard,
+  shelfFilterOptions,
+  shelfStateOf,
+} from './preparation-shelves';
 
 function line(sku: string, done: boolean, doneAt: string | null = null): WorkshopLine {
   return {
@@ -116,5 +123,26 @@ describe('la barre par produit', () => {
       surplus: '+4',
       tone: 'success',
     });
+  });
+});
+
+describe('le filtre de rayon', () => {
+  const board = preparationBoard(
+    view([group('pains', [line('x', true)]), group('vien', [line('y', false), line('z', false)])]),
+  );
+
+  it('propose tous les rayons, chacun avec son nombre de lignes, le premier compte tout', () => {
+    expect(shelfFilterOptions(board)).toEqual([
+      { value: ALL_SHELVES, label: 'Tous les rayons', count: 3 },
+      { value: 'vien', label: 'vien', count: 2 },
+      { value: 'pains', label: 'pains', count: 1 },
+    ]);
+  });
+
+  it('ne retient que le rayon choisi, et rien d’un rayon absent du jour', () => {
+    const cards = [...board.open, ...board.finished];
+    expect(filterShelves(cards, ALL_SHELVES)).toHaveLength(2);
+    expect(filterShelves(cards, 'pains').map((card) => card.key)).toEqual(['pains']);
+    expect(filterShelves(cards, 'disparu')).toEqual([]);
   });
 });

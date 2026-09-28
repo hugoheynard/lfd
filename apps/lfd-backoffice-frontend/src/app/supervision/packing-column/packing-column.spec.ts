@@ -12,6 +12,8 @@ function card(reference: string, overrides: Partial<PackingCard> = {}): PackingC
     reference,
     orderId: `o-${reference}`,
     customerLabel: `Client ${reference}`,
+    method: 'pickup',
+    destination: 'Boutique',
     state: 'in_progress',
     lineCount: 9,
     packedLines: 6,
@@ -40,7 +42,12 @@ const BOARD: PackingBoard = {
 async function mountFixture(
   board: PackingBoard,
   matches: SupervisionMatches = NO_MATCHES,
-  quality: { lookup?: QualityLookup; canCheck?: boolean } = {},
+  quality: {
+    lookup?: QualityLookup;
+    canCheck?: boolean;
+    awaitedOpen?: string;
+    narrow?: boolean;
+  } = {},
 ) {
   TestBed.configureTestingModule({ providers: [provideRouter([])] });
   const fixture = TestBed.createComponent(PackingColumn);
@@ -49,6 +56,8 @@ async function mountFixture(
   fixture.componentRef.setInput('showLinks', true);
   fixture.componentRef.setInput('quality', quality.lookup ?? NO_QUALITY);
   fixture.componentRef.setInput('canCheck', quality.canCheck ?? false);
+  fixture.componentRef.setInput('awaitedOpen', quality.awaitedOpen ?? null);
+  fixture.componentRef.setInput('narrow', quality.narrow ?? false);
   fixture.detectChanges();
   await fixture.whenStable();
   return fixture;
@@ -66,14 +75,24 @@ describe('PackingColumn', () => {
 
     expect(
       element.querySelector('[data-reference="CMD-3"] [data-packed-at]')?.textContent,
-    ).toContain('Déclarée prête à 5 h 12');
+    ).toContain('Prête à 5 h 12');
   });
 
   it('surligne les commandes que la recherche désigne', async () => {
-    const element = await mount(BOARD, { references: new Set(['CMD-3']), skus: new Set() });
+    const element = await mount(BOARD, {
+      ...NO_MATCHES,
+      mode: 'search',
+      references: new Set(['CMD-3', 'CMD-1']),
+      current: 'CMD-3',
+    });
+    const packed = element.querySelector('[data-hit-key="CMD-3"]');
 
-    expect(element.querySelector('[data-reference="CMD-3"]')?.classList).toContain('is-match');
-    expect(element.querySelector('[data-reference="CMD-1"]')?.classList).not.toContain('is-match');
+    expect(packed?.classList).toContain('is-match');
+    expect(packed?.classList).toContain('is-current');
+    expect(element.querySelector('[data-reference="CMD-1"]')?.classList).not.toContain(
+      'is-current',
+    );
+    expect(element.querySelector('[data-reference="CMD-2"]')?.classList).not.toContain('is-match');
   });
 
   it('écrit l’avancement d’un bac en cours, et qui y pose', async () => {
@@ -81,21 +100,95 @@ describe('PackingColumn', () => {
     const inProgress = element.querySelector('[data-reference="CMD-1"]');
 
     expect(inProgress?.textContent).toContain('6 références sur 9 posées');
-    expect(inProgress?.textContent).toContain('en cours · LT');
-    expect(inProgress?.textContent).toContain('CMD-1 · 9 réf. · 1 bac');
+    expect(inProgress?.querySelector('.pastille')?.textContent).toContain('En cours');
+    expect(inProgress?.textContent).toContain('CMD-1 · retrait 7\u00a0h');
   });
 
-  it('nomme ce qui attend le four, sans renvoi — rien à y faire', async () => {
+  it('replié, compte ce qui attend le four, sans renvoi — rien à y faire', async () => {
     const element = await mount(BOARD);
     const waiting = element.querySelector('[data-reference="CMD-2"]');
 
-    expect(waiting?.textContent).toContain('Éclair pistache');
+    expect(waiting?.querySelector('[data-blocked]')?.textContent).toContain(
+      '1 produit attendu du four',
+    );
+    expect(waiting?.textContent).not.toContain('Éclair pistache');
     expect(waiting?.querySelector('a')).toBeNull();
+  });
+
+  /** Supervision v2, A5 : déplier demande la mise en avant, la page la pose. */
+  it('le bouton et le double-clic demandent le dépliage de la commande', async () => {
+    const fixture = await mountFixture(BOARD);
+    const element: HTMLElement = fixture.nativeElement;
+    const asked: string[] = [];
+    fixture.componentInstance.awaitedToggle.subscribe((reference) => asked.push(reference));
+
+    element.querySelector<HTMLButtonElement>('[data-blocked]')?.click();
+    element.querySelector('[data-reference="CMD-2"]')?.dispatchEvent(new MouseEvent('dblclick'));
+    element.querySelector('[data-reference="CMD-1"]')?.dispatchEvent(new MouseEvent('dblclick'));
+
+    expect(asked).toEqual(['CMD-2', 'CMD-2']);
+  });
+
+  it('dépliée, la carte source liste les produits et recule les autres', async () => {
+    const products: SupervisionMatches = {
+      ...NO_MATCHES,
+      mode: 'products',
+      references: new Set(['CMD-2']),
+    };
+    const element: HTMLElement = (await mountFixture(BOARD, products, { awaitedOpen: 'CMD-2' }))
+      .nativeElement;
+    const source = element.querySelector('[data-reference="CMD-2"]');
+
+    expect(source?.classList).toContain('is-source');
+    expect(source?.classList).not.toContain('is-match');
+    expect(source?.textContent).toContain('Éclair pistache');
+    expect(source?.textContent).toContain('← en colonne 1');
+    expect(source?.querySelector('[data-blocked]')?.getAttribute('aria-expanded')).toBe('true');
+    expect(element.querySelector('[data-reference="CMD-1"]')?.classList).toContain('is-receded');
+    expect(element.querySelector('[data-reference="CMD-3"]')?.classList).toContain('is-receded');
+  });
+
+  /** B7 : au téléphone, la commande dépliée renvoie vers l'onglet Préparation. */
+  it('au téléphone, « Voir en Préparation » remplace l’indice de colonne', async () => {
+    const products: SupervisionMatches = {
+      ...NO_MATCHES,
+      mode: 'products',
+      references: new Set(['CMD-2']),
+    };
+    const fixture = await mountFixture(BOARD, products, { awaitedOpen: 'CMD-2', narrow: true });
+    const element: HTMLElement = fixture.nativeElement;
+    let shown = 0;
+    fixture.componentInstance.showPreparation.subscribe(() => (shown += 1));
+
+    expect(element.textContent).not.toContain('← en colonne 1');
+    element.querySelector<HTMLButtonElement>('[data-show-preparation]')?.click();
+    expect(shown).toBe(1);
+  });
+
+  it('filtre par point de destination, colisées comprises', async () => {
+    const board: PackingBoard = {
+      ...BOARD,
+      visible: [...BOARD.visible, card('CMD-4', { destination: 'Mairie' })],
+    };
+    const fixture = await mountFixture(board);
+    const element: HTMLElement = fixture.nativeElement;
+
+    fixture.componentInstance.point.set('Mairie');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(
+      [...element.querySelectorAll('[data-hit-key]')].map((node) =>
+        node.getAttribute('data-hit-key'),
+      ),
+    ).toEqual(['CMD-4']);
+    expect(element.querySelector('[data-done-divider]')).toBeNull();
   });
 
   /** Hugo, 2026-09-28 : les colisées restent visibles, en bas et en vert. */
   it('compte au-delà de dix et garde les colisées en cartes, en bas', async () => {
-    const element = await mount(BOARD);
+    const open = Array.from({ length: 23 }, (_, i) => card(`R${String(i)}`));
+    const element = await mount({ ...BOARD, visible: open });
     const packed = element.querySelector('[data-packing="packed"]');
 
     expect(element.textContent).toContain('+ 13 commandes · triées par heure de retrait');

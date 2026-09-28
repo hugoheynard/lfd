@@ -1,3 +1,43 @@
+// Mesures de la maquette « Supervision v2 » (A9) ; couleurs et pas : tokens fold.
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+
+  fold-badge {
+    flex: none;
+  }
+}
+
+.head-titles {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.head-title {
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+  line-height: var(--fold-leading-tight);
+  letter-spacing: var(--fold-tracking-tight);
+  color: var(--fold-color-text);
+}
+
+.head-subtitle {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-secondary);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xl);
+}
+
 // Le libellé et son contrôle : un flex-column et son gap, jamais une marge.
 .field {
   display: flex;
@@ -7,19 +47,129 @@
 
 .field-label {
   font-size: var(--fold-text-sm);
-  font-weight: var(--fold-weight-semibold);
+  font-weight: var(--fold-weight-bold);
   color: var(--fold-color-text);
 }
 
-.hint,
-.note {
-  margin: 0;
-  font-size: var(--fold-text-sm);
+.field-aside {
+  font-weight: var(--fold-weight-medium);
+  color: var(--fold-color-text-muted);
+}
+
+.field-eyebrow {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+// Trois cartes, jamais moins de 92 px de haut.
+.verdicts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--fold-space-sm);
+}
+
+.verdict {
+  --tone: var(--fold-color-success);
+  --tone-surface: var(--fold-color-success-surface);
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+  min-height: 92px;
+  height: 100%;
+  padding: var(--fold-space-sm);
+  border: 2px solid transparent;
+  border-radius: var(--fold-radius-sm);
+
+  &[data-tone='warning'] {
+    --tone: var(--fold-color-warning);
+    --tone-surface: var(--fold-color-warning-surface);
+  }
+
+  &[data-tone='blocking'] {
+    --tone: var(--fold-color-alert);
+    --tone-surface: var(--fold-color-alert-surface);
+  }
+
+  &.is-chosen {
+    background: var(--tone-surface);
+    border-color: var(--tone);
+  }
+}
+
+.verdict-glyph {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--fold-radius-round);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  background: var(--tone-surface);
+  color: var(--tone);
+
+  .is-chosen & {
+    background: var(--tone);
+    color: var(--fold-color-surface-card);
+  }
+}
+
+.verdict-label {
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text);
+}
+
+.verdict-consequence {
+  font-size: var(--fold-text-xs);
+  line-height: var(--fold-leading-snug);
   color: var(--fold-color-text-secondary);
 }
 
-.photos,
-.history {
+.impact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  line-height: var(--fold-leading-normal);
+  color: var(--fold-color-text-secondary);
+}
+
+// La tuile sombre « Prendre » (92 × 72) à côté de la zone de dépôt.
+.pickers {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--fold-space-sm);
+}
+
+.camera {
+  flex-direction: column;
+  width: 92px;
+  height: 72px;
+}
+
+.camera-glyph {
+  font-size: var(--fold-text-lg);
+  line-height: var(--fold-leading-none);
+}
+
+.photos {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-sm);
@@ -50,8 +200,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-xs);
-  padding-top: var(--fold-space-sm);
-  border-top: 1px solid var(--fold-color-border-subtle);
 }
 
 .check-head {
@@ -72,11 +220,23 @@
   gap: var(--fold-space-sm);
 }
 
-// Le champ natif ne se montre jamais : c'est le bouton qui l'ouvre.
+// Le champ natif ne se montre jamais : c'est la tuile qui l'ouvre.
 .camera-input {
   display: none;
 }
 
-.camera {
-  align-self: flex-start;
+// La raison du blocage sur sa propre ligne, au-dessus d'Annuler / Enregistrer.
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  width: 100%;
+}
+
+.reason {
+  flex: 1 0 100%;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-warning-text);
 }

@@ -1,6 +1,5 @@
-// La maquette `handoff-suivi`, par les tokens fold. Chaque valeur qui n'a pas
-// son token exact est inscrite dans « Écarts à la maquette »
-// (documentation/order/plan-supervision-du-jour.md).
+// La maquette « Supervision v2 » (documentation/order/plan-supervision-v2.md,
+// A3–A4, B5), par les tokens fold. Les écarts de mesure sont inscrits au plan.
 
 :host {
   display: flex;
@@ -17,20 +16,33 @@
   min-height: 0;
 }
 
+// ── L'EN-TÊTE : 88 px, le même dans les trois colonnes ───────────────────
+
 .head {
   display: flex;
   flex: none;
   flex-direction: column;
-  gap: var(--fold-space-xs);
+  justify-content: space-between;
+  box-sizing: border-box;
+  // 88 px (A3) : fixe, pour que les trois corps commencent à la même hauteur.
+  height: 88px;
   padding: var(--fold-space-md) var(--fold-space-lg);
   background: var(--fold-color-surface-band);
   border-bottom: 1px solid var(--fold-color-border);
+}
+
+.head-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
 }
 
 .title-row {
   display: flex;
   align-items: center;
   gap: var(--fold-space-sm);
+  min-width: 0;
 }
 
 .title {
@@ -38,6 +50,7 @@
   font-size: var(--fold-text-base);
   font-weight: var(--fold-weight-bold);
   letter-spacing: var(--fold-tracking-tight);
+  white-space: nowrap;
   color: var(--fold-color-text);
 }
 
@@ -47,19 +60,174 @@
   font-weight: var(--fold-weight-bold);
   letter-spacing: var(--fold-tracking-caps);
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--fold-color-text-muted);
 }
 
-.tools {
+.info {
   flex: none;
-  padding: var(--fold-space-md) var(--fold-space-md) 0;
+}
+
+.count {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+}
+
+.count-value {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--fold-leading-none);
+  color: var(--fold-color-text);
+}
+
+.count-unit {
+  font-size: var(--fold-text-sm);
+  white-space: nowrap;
+  color: var(--fold-color-text-secondary);
+}
+
+// « 3 trouvées » / « rien ici » : le chiffre laisse la place pendant une mise en avant.
+.hits {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  padding: 1px var(--fold-space-sm);
+  border: 1px solid var(--fold-color-primary-border);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-primary-surface);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  white-space: nowrap;
+  color: var(--fold-color-primary-strong);
+
+  &.is-empty {
+    border-color: var(--fold-color-border);
+    background: transparent;
+    color: var(--fold-color-text-muted);
+  }
+}
+
+.sub-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  height: 30px;
+  min-width: 0;
+}
+
+.subtitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+// ── LES PASTILLES DE BLOCAGE : des fold-badge, rendus cliquables ──────────
+
+.blockers {
+  display: flex;
+  flex: none;
+  gap: var(--fold-space-xs);
+  margin-left: auto;
+}
+
+// Le bouton ne dessine rien : c'est la pastille fold qui se voit.
+.blocker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-text-secondary);
+  cursor: pointer;
+
+  fold-badge {
+    font-family: var(--fold-font-mono);
+    font-size: var(--fold-text-2xs);
+    font-weight: var(--fold-weight-bold);
+    min-height: 22px;
+  }
+
+  // Active : la pastille pleine, dans sa teinte (A3).
+  &.is-on[data-tone='warning'] fold-badge {
+    background: var(--fold-color-warning-text);
+    border-color: var(--fold-color-warning-text);
+    color: var(--fold-color-on-alert);
+  }
+
+  &.is-on[data-tone='alert'] fold-badge {
+    background: var(--fold-color-alert-text);
+    border-color: var(--fold-color-alert-text);
+    color: var(--fold-color-on-alert);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: 1px;
+  }
+}
+
+.blocker-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-xs);
+}
+
+// ── LA BANDE : 42 px, remplie par la colonne ──────────────────────────────
+
+.band {
+  display: flex;
+  flex: none;
+  align-items: stretch;
+  box-sizing: border-box;
+  height: 42px;
+  padding: 0 var(--fold-space-md) 0 var(--fold-space-lg);
+  background: var(--fold-color-surface-card);
+  border-bottom: 1px solid var(--fold-color-border);
 
   &:empty {
     display: none;
   }
 }
 
+// ── LE TÉLÉPHONE : pas d'en-tête, une bande blanche en deux rangées ───────
+
+.narrow-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  min-height: 40px;
+  padding: var(--fold-space-xs) var(--fold-space-md);
+  background: var(--fold-color-surface-card);
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+
+  .blocker fold-badge {
+    min-height: 30px;
+  }
+}
+
+.narrow .band {
+  height: 48px;
+  padding: 0 var(--fold-space-md) 0 var(--fold-space-xs);
+}
+
+// ── LE CORPS : seul à défiler ─────────────────────────────────────────────
+
 .body {
+  position: relative;
   display: flex;
   flex: 1 1 0;
   flex-direction: column;

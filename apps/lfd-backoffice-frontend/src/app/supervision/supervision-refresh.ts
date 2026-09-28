@@ -3,7 +3,7 @@ import { refreshWhileVisible } from '../shared/periodic-refresh';
 import { inject } from '@angular/core';
 
 /** Le jour relu quoi qu'il arrive (D5) : deux opérations par minute. */
-const DAY_REFRESH_MS = 60_000;
+export const DAY_REFRESH_MS = 60_000;
 
 /**
  * **Les deux rythmes de la Supervision** (`plan-version-par-journee.md`) :

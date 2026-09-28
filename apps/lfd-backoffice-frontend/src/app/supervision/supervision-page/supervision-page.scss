@@ -1,6 +1,5 @@
-// La maquette `handoff-suivi`, intégrée au design de l'app sur le modèle de
-// Retrait boutique. Chaque écart est inscrit dans « Écarts à la maquette »
-// (documentation/order/plan-supervision-du-jour.md, §10).
+// La maquette « Supervision v2 » (documentation/order/plan-supervision-v2.md,
+// A1–A2, B1–B4), par les tokens fold. Les écarts de mesure sont inscrits au plan.
 
 /* ── PLEINE HAUTEUR, ET LA PAGE NE DÉFILE PAS ──────────────────────────────
    Chaque colonne défile seule ; le masthead et les en-têtes de colonne restent
@@ -25,99 +24,198 @@ fold-page-layout {
   flex: none;
 }
 
-/* ── LE MASTHEAD — le traitement de Retrait boutique ─────────────────────── */
+/* ── LE BANDEAU « AUTRE JOUR » (A2) ──────────────────────────────────────── */
 
-.masthead {
-  // Plus haute qu'une ligne de méta : le motif de la bande du Commercial — le
-  // même écart au-dessus des cartes que sous elles.
-  --fold-page-section-gap: var(--fold-space-md);
-
-  padding: var(--fold-space-md) var(--fold-page-gutter) var(--fold-space-lg);
-  // Le bleu « secondaire » de fold : il n'existe pas de token `secondary` de
-  // couleur ; c'est le fond du rail secondaire, celui des bandes du Commercial,
-  // de la Tarification et du Catalogue.
-  background: var(--fold-color-bg-rail-secondary);
-}
-
-.masthead-head {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-sm);
-  align-items: center;
-  justify-content: space-between;
-}
-
-.day-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-xs);
-}
-
-.mc-clock {
-  font-family: var(--fold-font-mono);
+.day-strip {
+  padding: var(--fold-space-sm) var(--fold-page-gutter);
   font-size: var(--fold-text-sm);
-  color: var(--fold-color-text-muted);
+  background: var(--fold-color-primary-surface);
+  border-bottom: 1px solid var(--fold-color-primary-border);
+  color: var(--fold-color-primary-strong);
+
+  &.is-past {
+    background: var(--fold-color-warning-surface);
+    border-bottom-color: var(--fold-color-warning-border);
+    color: var(--fold-color-warning-text);
+  }
 }
 
-// Le motif de `shared/compte-chiffres` : une grille qui se replie seule, une
-// carte par mesure, un cran plus claire que la bande.
-.chiffres {
-  display: grid;
-  // 14rem : la largeur des pastilles (« 2 créneaux dépassés par nous »), qui
-  // ne passent pas à la ligne. À 9rem, deux cartes tenaient côte à côte sur
-  // un téléphone et la pastille débordait de la sienne (vu le 2026-09-28).
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
-  gap: var(--fold-space-sm);
+.day-strip-row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
 }
 
-.chiffre {
-  background: var(--fold-color-surface-card);
-  border: 1px solid var(--fold-color-border);
-}
-
-.chiffre-label {
+.day-strip-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  padding: 1px var(--fold-space-sm);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-primary);
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-2xs);
   font-weight: var(--fold-weight-bold);
   letter-spacing: var(--fold-tracking-caps);
   text-transform: uppercase;
-  color: var(--fold-color-text-muted);
+  color: var(--fold-color-on-primary);
+
+  .is-past & {
+    background: var(--fold-color-warning-text);
+    color: var(--fold-color-on-alert);
+  }
 }
 
-.chiffre-value {
-  font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-2xl);
+// Un lien souligné : il ramène au jour du serveur, rien d'autre.
+.day-strip-back {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
   font-weight: var(--fold-weight-bold);
-  font-variant-numeric: tabular-nums;
-  line-height: var(--fold-leading-tight);
-  color: var(--fold-color-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: inherit;
+  cursor: pointer;
 }
 
-.chiffre-unit {
-  font-size: var(--fold-text-sm);
-  color: var(--fold-color-text-secondary);
+/* ── LE MASTHEAD : une rangée (A1) ───────────────────────────────────────── */
+
+.masthead {
+  --fold-page-section-gap: var(--fold-space-sm);
+
+  padding: var(--fold-space-sm) var(--fold-page-gutter);
+  background: var(--fold-color-bg-rail-secondary);
+  border-bottom: 1px solid var(--fold-color-bg-header);
+
+  // Un autre jour : le chrome se lève d'un cran.
+  &.is-other {
+    background: var(--fold-ref-graphite-800);
+  }
 }
 
-.chiffre-body {
+.masthead-row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-lg);
+}
+
+.day-nav {
+  display: flex;
+  flex: none;
+  align-items: center;
   gap: var(--fold-space-xs);
 }
 
-.chiffre-flag {
-  align-self: flex-start;
+.search {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+  // 560 px (A1) : au-delà, le champ n'aide plus à lire.
+  max-width: 560px;
+
+  fold-search {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 }
 
-/* ── LES ONGLETS DU MOBILE, sous le masthead ─────────────────────────────── */
+.hit-nav {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  color: var(--fold-ref-navyink-200);
+}
+
+.hit-pos {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--fold-ref-navyink-50);
+}
+
+/* ── LA FRAÎCHEUR : une pastille, et l'ambre quand la relecture tarde ────── */
+
+.stamp {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin-left: auto;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border-radius: var(--fold-radius-sm);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  white-space: nowrap;
+  color: var(--fold-ref-navyink-200);
+
+  &[data-tone='late'] {
+    background: var(--fold-color-warning-surface);
+    color: var(--fold-color-warning-text);
+  }
+}
+
+.stamp-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-success);
+
+  [data-tone='late'] > & {
+    background: var(--fold-color-warning);
+  }
+
+  [data-tone='other'] > & {
+    background: var(--fold-ref-navyink-400);
+  }
+}
+
+/* ── LE TÉLÉPHONE : barre, masthead en pile, onglets (B1–B3) ────────────── */
+
+.masthead.narrow {
+  padding: var(--fold-space-sm) var(--fold-space-md);
+
+  .masthead-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--fold-space-sm);
+  }
+
+  .search {
+    max-width: none;
+  }
+
+  .day-toggle {
+    flex: 1 1 auto;
+  }
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}
 
 .tabs {
   // fold-view-nav pose un écart sous une barre autonome : la bande porte le sien.
   --fold-nav-layout-gap: 0;
 
-  flex: none;
   min-width: 0;
-  padding: var(--fold-space-xs) var(--fold-space-md) var(--fold-space-sm);
-  background: var(--fold-color-bg-rail-secondary);
+}
+
+/* ── LES BANDES DES COLONNES (A4) : posées par la page, projetées ─────── */
+
+// La bande projetée prend toute la largeur de l'emplacement.
+[columnBand] {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 /* ── LES TROIS COLONNES, bord à bord, jusqu'en bas ───────────────────────── */
@@ -153,9 +251,4 @@ fold-page-layout {
   > * + * {
     border-left: none;
   }
-}
-
-// Sous les trois cartes : l'arrêt du plan commande toute la journée.
-.not-closed {
-  margin-top: var(--fold-space-sm);
 }

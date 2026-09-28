@@ -1,0 +1,21 @@
+// Supervision v2, A4 : onglets à gauche, filtre compact à droite — la forme de
+// `preparation-band`.
+:host {
+  display: flex;
+  align-items: stretch;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+}
+
+.filter {
+  align-self: center;
+  margin-left: auto;
+  min-width: 0;
+}
+
+// Filtre actif : la teinte primaire de la maquette, par les tokens du champ.
+.filter.is-active {
+  --fold-color-surface-card: var(--fold-color-primary-surface);
+  --fold-color-text: var(--fold-color-primary-strong);
+  --fold-color-border: var(--fold-color-primary-border);
+}

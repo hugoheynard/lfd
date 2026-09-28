@@ -1,19 +1,66 @@
-<section class="column" [attr.aria-label]="heading()">
-  <header class="head">
-    <div class="title-row">
-      <h2 class="title">{{ heading() }}</h2>
-      <span class="unit">{{ unit() }}</span>
-      <!-- La phrase de lecture se consulte, elle ne se relit pas à chaque
-           coup d'œil : rangée derrière l'unité (Hugo, 2026-09-28). -->
-      <fold-info [text]="description()" [label]="'Lire la colonne ' + heading()" />
+<section class="column" [class.narrow]="narrow()" [attr.aria-label]="heading()">
+  @if (!narrow()) {
+    <header class="head">
+      <div class="head-row">
+        <div class="title-row">
+          <h2 class="title">{{ heading() }}</h2>
+          <span class="unit">{{ unit() }}</span>
+          <!-- La phrase de lecture se consulte, elle ne se relit pas à chaque
+               coup d'œil : rangée derrière l'unité (Hugo, 2026-09-28). -->
+          <fold-info class="info" [text]="description()" [label]="'Lire la colonne ' + heading()" />
+        </div>
+        @if (hits() !== null) {
+          <span class="hits" [class.is-empty]="hits() === 0" data-hits>{{ hitsLabel() }}</span>
+        } @else if (count() !== null) {
+          <span class="count" data-count>
+            <span class="count-value">{{ count() }}</span>
+            <span class="count-unit">{{ countUnit() }}</span>
+          </span>
+        }
+      </div>
+      <div class="sub-row">
+        <span class="subtitle" data-subtitle>{{ subtitle() }}</span>
+        @if (groupBlockers() && blockers().length > 0) {
+          <fold-popover class="blockers" placement="bottom-end" [(open)]="menuOpen">
+            <button
+              type="button"
+              class="blocker"
+              [class.is-on]="menu().on"
+              [attr.data-tone]="menu().tone"
+              foldPopoverTrigger="menu"
+              data-blocker-menu
+            >
+              <fold-badge radius="square" [variant]="menu().tone" [content]="menu().label" />
+              <fold-icon name="chevron-down" size="xs" />
+            </button>
+            <div foldPopoverPanel class="blocker-menu">
+              <ng-container *ngTemplateOutlet="pills; context: { short: false }" />
+            </div>
+          </fold-popover>
+        } @else {
+          <div class="blockers">
+            <ng-container *ngTemplateOutlet="pills; context: { short: false }" />
+          </div>
+        }
+      </div>
+    </header>
+  } @else if (subtitle() !== '' || blockers().length > 0) {
+    <!-- Au téléphone, l'onglet nomme la colonne : la bande garde le sous-titre
+         court et les pastilles, en cibles tactiles (B5). -->
+    <div class="narrow-head">
+      @if (subtitle() !== '') {
+        <span class="subtitle" data-subtitle>{{ subtitle() }}</span>
+      }
+      <div class="blockers">
+        <ng-container *ngTemplateOutlet="pills; context: { short: true }" />
+      </div>
     </div>
-  </header>
+  }
 
-  <!-- Ce qui règle la lecture de la colonne (le segmenté du retrait) reste
-       FIXE avec l'en-tête : seul le corps défile. -->
-  <div class="tools"><ng-content select="[columnTools]" /></div>
+  <!-- La bande : le repère et le filtre de la colonne, FIXES avec l'en-tête. -->
+  <div class="band"><ng-content select="[columnBand]" /></div>
 
-  <div class="body">
+  <div class="body" data-column-body>
     @switch (state().status) {
       @case ('loading') {
         <fold-loading [message]="loadingMessage()" />
@@ -36,3 +83,23 @@
     }
   </div>
 </section>
+
+<ng-template #pills let-short="short">
+  @for (blocker of blockers(); track blocker.key) {
+    <button
+      type="button"
+      class="blocker"
+      [class.is-on]="focus() === blocker.key"
+      [attr.aria-pressed]="focus() === blocker.key"
+      [attr.data-blocker]="blocker.key"
+      [attr.data-tone]="blocker.tone"
+      (click)="pick(blocker.key)"
+    >
+      <fold-badge
+        radius="square"
+        [variant]="blocker.tone"
+        [content]="short ? blocker.shortLabel : blocker.label"
+      />
+    </button>
+  }
+</ng-template>

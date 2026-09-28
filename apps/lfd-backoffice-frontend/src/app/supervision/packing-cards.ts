@@ -27,6 +27,10 @@ export interface PackingCard {
    */
   readonly orderId: string | null;
   readonly customerLabel: string;
+  /** Retrait ou livraison : le mot de la méta (« retrait 8 h »). */
+  readonly method: 'pickup' | 'delivery';
+  /** Le point de destination de la fiche de colis — la clé du filtre « Tous les points ». */
+  readonly destination: string;
   readonly state: PackingState;
   readonly lineCount: number;
   readonly packedLines: number;
@@ -64,9 +68,13 @@ export interface PackingBoard {
    * la cohérence »). Vide une fois la journée arrêtée : les fiches prennent le relais.
    */
   readonly upcoming: readonly UpcomingOrder[];
-  /** Les cartes montrées, dix au plus. */
+  /**
+   * TOUTES les commandes ouvertes, triées (Supervision v2, A4) : la colonne
+   * filtre par point, PUIS montre les dix premières — plafonner ici aurait
+   * perdu, au filtre, les commandes du point rangées au-delà de dix.
+   */
   readonly visible: readonly PackingCard[];
-  /** « + N commandes » au-delà de dix. */
+  /** « + N commandes » au-delà de dix, tous points confondus. */
   readonly overflow: number;
   /** Les bacs fermés, repliés en bas. */
   readonly packed: readonly PackingCard[];
@@ -109,6 +117,8 @@ function cardOf(sheet: PackingSheet, entry: HandoverQueueEntryView | undefined):
     reference: sheet.reference,
     orderId: entry?.orderId ?? null,
     customerLabel: sheet.customerLabel,
+    method: sheet.fulfillmentMethod,
+    destination: sheet.destination,
     state: packingStateOf(sheet),
     lineCount: sheet.lineCount,
     packedLines: sheet.packedLines,
@@ -154,7 +164,7 @@ export function packingBoard(
   return {
     notClosed,
     upcoming: notClosed ? upcomingOf(queue) : [],
-    visible: open.slice(0, PACKING_VISIBLE_MAX),
+    visible: open,
     overflow: Math.max(0, open.length - PACKING_VISIBLE_MAX),
     packed: cards.filter((card) => card.state === 'packed'),
     toPack: open.length,
@@ -173,4 +183,65 @@ function upcomingOf(queue: HandoverQueueView | null): UpcomingOrder[] {
       slotMinutes: slotOf(entry),
     }))
     .sort((a, b) => (a.slotMinutes ?? Infinity) - (b.slotMinutes ?? Infinity));
+}
+
+/** L'espace insécable : « 8 h 30 » ne se coupe jamais en fin de ligne. */
+const NBSP = '\u00a0';
+
+/** 450 → « 7 h 30 », 480 → « 8 h », insécables — l'heure de la méta d'une carte. */
+export function hourLabel(minutes: number): string {
+  const hours = String(Math.floor(minutes / MINUTES_PER_HOUR));
+  const rest = minutes % MINUTES_PER_HOUR;
+  return rest === 0
+    ? `${hours}${NBSP}h`
+    : `${hours}${NBSP}h${NBSP}${String(rest).padStart(2, '0')}`;
+}
+
+/** « CMD-4812 · retrait 8 h » ; sans créneau connu, le numéro seul. */
+export function packingMeta(card: PackingCard): string {
+  if (card.slotMinutes === null) {
+    return card.reference;
+  }
+  const word = card.method === 'delivery' ? 'livraison' : 'retrait';
+  return `${card.reference} · ${word} ${hourLabel(card.slotMinutes)}`;
+}
+
+/** Un point de destination et le nombre de commandes qui y vont. */
+export interface PackingPoint {
+  readonly destination: string;
+  readonly count: number;
+}
+
+/** Les points des cartes (ouvertes puis colisées), par ordre alphabétique. */
+export function packingPoints(board: PackingBoard): readonly PackingPoint[] {
+  const counts = new Map<string, number>();
+  for (const card of [...board.visible, ...board.packed]) {
+    counts.set(card.destination, (counts.get(card.destination) ?? 0) + 1);
+  }
+  return [...counts]
+    .map(([destination, count]) => ({ destination, count }))
+    .sort((a, b) => a.destination.localeCompare(b.destination, 'fr'));
+}
+
+/** La valeur « Tous les points » du filtre de la colonne 2. */
+export const ALL_POINTS = '';
+
+/** Une entrée du filtre de points, avec le compte de ses commandes. */
+export interface PointFilterOption {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+}
+
+/** « Tous les points » en tête, puis chaque point par ordre alphabétique. */
+export function pointFilterOptions(board: PackingBoard): readonly PointFilterOption[] {
+  const points = packingPoints(board);
+  return [
+    {
+      value: ALL_POINTS,
+      label: 'Tous les points',
+      count: board.visible.length + board.packed.length,
+    },
+    ...points.map((p) => ({ value: p.destination, label: p.destination, count: p.count })),
+  ];
 }

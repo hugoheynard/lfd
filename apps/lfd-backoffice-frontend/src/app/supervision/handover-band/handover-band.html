@@ -1,0 +1,20 @@
+<fold-tabs
+  direction="horizontal"
+  size="compact"
+  background="transparent"
+  [tabs]="tabs()"
+  [activeKey]="method()"
+  (activeKeyChange)="method.set($event)"
+/>
+@if (method() === 'pickup' && pointOptions().length > 1) {
+  <fold-listbox
+    class="filter"
+    [class.is-active]="point() !== allPoints"
+    size="sm"
+    ariaLabel="Point de retrait"
+    placement="bottom-end"
+    [options]="pointOptions()"
+    [value]="point()"
+    (selectionChange)="point.set($event)"
+  />
+}

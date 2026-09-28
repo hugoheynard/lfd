@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { asOfLabel, clockLabel, countLabel, slotTimeLabel } from './supervision-labels';
+import {
+  asOfLabel,
+  clockLabel,
+  countLabel,
+  durationLabel,
+  slotTimeLabel,
+} from './supervision-labels';
 
 describe('les mots de la Supervision', () => {
   it('écrit l’heure d’une ligne de file avec ses minutes, pour aligner la colonne', () => {
@@ -22,5 +28,14 @@ describe('les mots de la Supervision', () => {
   it('accorde un compte', () => {
     expect(countLabel(1, 'commande', 'commandes')).toBe('1 commande');
     expect(countLabel(3, 'commande', 'commandes')).toBe('3 commandes');
+  });
+});
+
+describe('durationLabel', () => {
+  it('garde les minutes sous l\u2019heure, passe en heures au-delà', () => {
+    expect(durationLabel(40)).toBe('40 min');
+    expect(durationLabel(60)).toBe('1 h');
+    expect(durationLabel(65)).toBe('1 h 05');
+    expect(durationLabel(900)).toBe('15 h');
   });
 });

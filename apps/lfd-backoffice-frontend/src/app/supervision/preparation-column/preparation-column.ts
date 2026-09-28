@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  model,
+  output,
+  signal,
+} from '@angular/core';
 import type { WorkshopLine } from '@lfd/contracts';
 import { RouterLink } from '@angular/router';
 import {
@@ -13,12 +21,20 @@ import {
 } from 'fold-ng';
 
 import {
+  ALL_SHELVES,
+  filterShelves,
   type LineProgress,
   lineProgressOf,
   type PreparationBoard,
   type ShelfCard,
 } from '../preparation-shelves';
-import { NO_QUALITY, type QualityBadge, type QualityRequest, worstBadge } from '../quality-badges';
+import {
+  type CheckSummary,
+  checkSummary,
+  NO_QUALITY,
+  type QualityBadge,
+  type QualityRequest,
+} from '../quality-badges';
 import { countLabel } from '../supervision-labels';
 import { NO_MATCHES } from '../supervision-search';
 import { SUPERVISION_LINKS } from '../supervision-links';
@@ -69,25 +85,72 @@ export class PreparationColumn {
   readonly canCheck = input(false);
   readonly check = output<QualityRequest>();
 
+  /**
+   * Le rayon retenu par la bande « Tous les rayons ▾ » (A4). État propre à la
+   * colonne ; la bande, projetée dans l'en-tête, le partage en `[(shelfFilter)]`.
+   */
+  readonly shelfFilter = model<string>(ALL_SHELVES);
+
   protected readonly link = SUPERVISION_LINKS.preparation;
   protected readonly empty = computed(
     () => this.board().open.length === 0 && this.board().finished.length === 0,
   );
 
-  /**
-   * Ce qui reste au four, puis les rayons finis — **visibles, en bas** (Hugo,
-   * 2026-09-28). Ils se repliaient en une ligne de noms : on ne voyait plus ce
-   * qui était sorti, ni en quelle quantité.
-   */
+  /** Ce qui reste au four, dans l'ordre du serveur : en cours, puis pas commencés. */
+  protected readonly openCards = computed(() =>
+    filterShelves(this.board().open, this.shelfFilter()),
+  );
+  /** Les rayons finis, en bas, sous « Terminés ». */
+  protected readonly doneCards = computed(() =>
+    filterShelves(this.board().finished, this.shelfFilter()),
+  );
+  /** Une seule suite de cartes : le séparateur « Terminés » se pose à la première finie. */
   protected readonly shown = computed<readonly ShelfCard[]>(() => [
-    ...this.board().open,
-    ...this.board().finished,
+    ...this.openCards(),
+    ...this.doneCards(),
   ]);
 
-  /** Le rayon porte-t-il un produit d'une commande cherchée ? */
+  /**
+   * Les rayons finis que l'on a rouverts. **Repliés par défaut** (Hugo,
+   * 2026-09-28, Supervision v2 A6) : l'en-tête seul, qui dit son contrôle.
+   */
+  private readonly unfolded = signal<ReadonlySet<string>>(new Set());
+
+  /** Mode `products` (A5) : on suit des produits attendus, le reste recule. */
+  protected readonly awaiting = computed(() => this.matches().mode === 'products');
+
+  /** Le rayon porte-t-il une occurrence de la mise en avant ? */
   protected shelfMatches(card: ShelfCard): boolean {
     const skus = this.matches().skus;
     return [...card.pending, ...card.done].some((line) => skus.has(line.sku));
+  }
+
+  /** Un rayon fini s'ouvre à la demande — ou de lui-même s'il porte une occurrence. */
+  protected isUnfolded(card: ShelfCard): boolean {
+    return this.unfolded().has(card.key) || this.shelfMatches(card);
+  }
+
+  protected setUnfolded(key: string, open: boolean): void {
+    const next = new Set(this.unfolded());
+    if (open) {
+      next.add(key);
+    } else {
+      next.delete(key);
+    }
+    this.unfolded.set(next);
+  }
+
+  protected isHit(sku: string): boolean {
+    return this.matches().skus.has(sku);
+  }
+
+  /** « Attendu · Chalet Marmotte, Traiteur Vermeil » — `null` hors mode produits. */
+  protected awaitedLabel(sku: string): string | null {
+    if (!this.awaiting()) {
+      return null;
+    }
+    const names = this.matches().awaitedBy.get(sku) ?? [];
+    return names.length === 0 ? null : `Attendu · ${names.join(', ')}`;
   }
 
   /**
@@ -110,9 +173,12 @@ export class PreparationColumn {
     return this.quality().lines.get(line.sku) ?? null;
   }
 
-  /** La pire pastille des lignes du rayon — ce que dit le rayon replié. */
-  protected shelfBadge(card: ShelfCard): QualityBadge | null {
-    return worstBadge(this.linesOf(card).map(({ line }) => this.lineBadge(line)));
+  /** « Contrôle 1/3 · OK » — ce que dit l'en-tête d'un rayon fini replié. */
+  protected shelfSummary(card: ShelfCard): CheckSummary {
+    return checkSummary(
+      this.linesOf(card).map(({ line }) => this.lineBadge(line)),
+      card.lineCount,
+    );
   }
 
   protected requestCheck(line: WorkshopLine): void {
@@ -124,15 +190,10 @@ export class PreparationColumn {
   }
 
   protected meterLabel(card: ShelfCard): string {
-    return card.state === 'done'
-      ? `Rayon terminé · ${String(card.totalUnits)} pièces sorties`
-      : `${String(card.remainingUnits)} pièces restantes`;
+    return `${String(card.remainingUnits)} pièces restantes`;
   }
 
-  protected meterTone(card: ShelfCard): 'success' | 'warning' | 'accent' {
-    if (card.state === 'done') {
-      return 'success';
-    }
+  protected meterTone(card: ShelfCard): 'warning' | 'accent' {
     return card.state === 'in_progress' ? 'warning' : 'accent';
   }
 }

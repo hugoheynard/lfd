@@ -40,3 +40,19 @@ export function asOfLabel(asOf: string): string {
 export function countLabel(count: number, singular: string, plural: string): string {
   return `${String(count)} ${count === 1 ? singular : plural}`;
 }
+
+const MINUTES_PER_HOUR = 60;
+
+/**
+ * Une durée de retard, lisible d'un coup d'œil : « 40 min » sous l'heure,
+ * « 1 h 05 » ou « 15 h » au-delà (Hugo, 2026-09-28 : « 900 min » ne se lisait
+ * pas).
+ */
+export function durationLabel(minutes: number): string {
+  if (minutes < MINUTES_PER_HOUR) {
+    return `${String(minutes)} min`;
+  }
+  const hours = Math.floor(minutes / MINUTES_PER_HOUR);
+  const rest = minutes % MINUTES_PER_HOUR;
+  return rest === 0 ? `${String(hours)} h` : `${String(hours)} h ${String(rest).padStart(2, '0')}`;
+}

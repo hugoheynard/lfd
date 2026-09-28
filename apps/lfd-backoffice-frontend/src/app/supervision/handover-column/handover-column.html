@@ -4,49 +4,94 @@
   </fold-callout>
 }
 
-@for (group of groups(); track group.key) {
-  <div class="slot-head" [attr.data-slot]="group.key">
-    <span class="slot-label">{{ group.label }}</span>
-    <span class="slot-rule"></span>
-    <span class="slot-count">{{ groupCount(group) }}</span>
-  </div>
-
-  @for (row of group.rows; track row.orderId) {
+@for (item of items(); track track(item)) {
+  @if (item.kind === 'now') {
+    <div class="now" data-now>
+      <span class="now-chip">Maintenant · {{ item.label }}</span>
+      <span class="now-rule"></span>
+    </div>
+  } @else if (item.kind === 'finished') {
+    <div class="finished-head" data-finished>
+      <span class="finished-label">Terminées · {{ item.count }}</span>
+      <span class="slot-rule"></span>
+    </div>
+  } @else if (item.finished && isFolded(item.group)) {
     <fold-card
       radius="sm"
-      class="row"
+      padding="none"
+      class="slot-folded"
       [class.narrow]="narrow()"
-      [class.edge-alert]="row.overdueCause === 'kitchen' || row.heldForQuality"
-      [class.edge-warning]="row.overdueCause === 'customer' && !row.heldForQuality"
-      [class.is-held]="row.heldForQuality"
-      [attr.data-held]="row.heldForQuality ? '' : null"
-      [class.is-past]="row.state === 'cancelled'"
-      [class.is-done]="row.state === 'handed_over'"
-      [class.is-waiting]="row.state === 'not_ready' || row.state === 'ready'"
-      [class.is-match]="matches().references.has(row.reference)"
-      [attr.data-row]="row.state"
-      [attr.data-reference]="row.reference"
+      [interactive]="true"
+      [ariaLabel]="'Déplier ' + item.group.label"
+      [attr.data-slot]="item.group.key"
+      (activated)="toggle(item.group.key)"
     >
-      <div class="row-line">
-        <span class="time">{{ row.time ?? '—' }}</span>
-        <div class="who">
-          <span class="customer-line">
-            <span class="customer">{{ row.customerLabel }}</span>
-            <span class="reference" data-row-reference>{{ row.reference }}</span>
-          </span>
-          <span
-            class="sub"
-            [class.is-done]="row.state === 'handed_over'"
-            [class.is-late]="row.state === 'overdue' || row.heldForQuality"
-            [class.is-waiting]="row.state === 'not_ready' && !row.heldForQuality"
-            >{{ subLine(row) }}</span
-          >
-        </div>
-        @if (linksTo(row)) {
-          <a class="renvoi" [routerLink]="link.path">{{ link.label }} →</a>
-        }
+      <div class="folded-line">
+        <span aria-hidden="true">▸</span>
+        <span class="folded-label">{{ item.group.label }}</span>
+        <span>{{ foldedCount(item.group) }}</span>
+        <span class="folded-action">Déplier</span>
       </div>
     </fold-card>
+  } @else {
+    @let group = item.group;
+    <div class="slot-head" [attr.data-slot]="group.key">
+      <span class="slot-label">{{ group.label }}</span>
+      <span class="slot-rule"></span>
+      <span class="slot-count">{{ groupCount(group) }}</span>
+      @if (item.finished) {
+        <button foldButton type="button" emphasis="soft" size="sm" (click)="toggle(group.key)">
+          Replier
+        </button>
+      }
+    </div>
+
+    @for (row of group.rows; track row.orderId) {
+      <fold-card
+        radius="sm"
+        class="row"
+        [class.narrow]="narrow()"
+        [class.edge-alert]="row.overdueCause === 'kitchen' || row.heldForQuality"
+        [class.edge-warning]="row.overdueCause === 'customer' && !row.heldForQuality"
+        [class.is-held]="row.heldForQuality"
+        [attr.data-held]="row.heldForQuality ? '' : null"
+        [class.is-past]="row.state === 'cancelled'"
+        [class.is-done]="row.state === 'handed_over'"
+        [class.is-waiting]="row.state === 'not_ready' || row.state === 'ready'"
+        [class.is-match]="matches().references.has(row.reference)"
+        [class.is-current]="matches().current === row.reference"
+        [attr.data-hit-key]="row.reference"
+        [attr.data-row]="row.state"
+        [attr.data-reference]="row.reference"
+      >
+        <div class="row-line">
+          <span class="time">{{ row.time ?? '—' }}</span>
+          <div class="who">
+            <span class="customer-line">
+              <span class="customer">{{ row.customerLabel }}</span>
+              <span class="reference" data-row-reference>{{ row.reference }}</span>
+              @if (showPoint() && row.pickupLabel !== null) {
+                <span class="point" data-row-point>{{ row.pickupLabel }}</span>
+              }
+            </span>
+            <span
+              class="sub"
+              [class.is-done]="row.state === 'handed_over'"
+              [class.is-late]="
+                row.heldForQuality || (row.state === 'overdue' && row.overdueCause !== 'customer')
+              "
+              [class.is-waiting]="
+                !row.heldForQuality && row.state === 'overdue' && row.overdueCause === 'customer'
+              "
+              >{{ subLine(row) }}</span
+            >
+          </div>
+          @if (linksTo(row)) {
+            <a class="renvoi" [routerLink]="link.path">{{ link.label }} →</a>
+          }
+        </div>
+      </fold-card>
+    }
   }
 } @empty {
   <fold-empty-state

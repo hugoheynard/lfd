@@ -1,0 +1,18 @@
+<span class="cue">Par heure de remise</span>
+<fold-listbox
+  class="filter"
+  size="sm"
+  ariaLabel="Filtrer par point"
+  placement="bottom-end"
+  [class.is-active]="active()"
+  [options]="options()"
+  [value]="point()"
+  (selectionChange)="point.set($event)"
+>
+  <ng-template #option let-o>
+    <!-- Le compte passe par `::after` : fold-listbox prend le TEXTE de l'option
+         pour libeller son bouton, et un compte écrit en DOM s'y collait
+         (« Tous les rayons25 », vu le 2026-09-28). -->
+    <span class="option" [attr.data-count]="counts().get(o.value)">{{ o.label }}</span>
+  </ng-template>
+</fold-listbox>

@@ -38,10 +38,13 @@ export const VERDICT_VARIANTS: Readonly<Record<QualityVerdictCode, FoldBadgeVari
 
 const RANK = { ok: 0, warning: 1, stale: 2, blocking: 3 } as const;
 
+/** Le préfixe de toute pastille de ligne ou de commande — le rayon replié le dit une fois. */
+const CHECK_PREFIX = 'Contrôle · ';
+
 function verdictBadge(verdict: QualityVerdictCode): QualityBadge {
   return {
     rank: RANK[verdict],
-    label: `Contrôle · ${VERDICT_LABELS[verdict]}`,
+    label: `${CHECK_PREFIX}${VERDICT_LABELS[verdict]}`,
     variant: VERDICT_VARIANTS[verdict],
     detail: null,
   };
@@ -70,13 +73,13 @@ export function lineBadge(status: QualityLineStatus): QualityBadge {
   if (status.verdict === 'blocking') {
     return {
       ...verdictBadge('blocking'),
-      label: 'Contrôle · Bloquant, à revoir',
+      label: `${CHECK_PREFIX}Bloquant, à revoir`,
       detail: staleDetail(status),
     };
   }
   return {
     rank: RANK.stale,
-    label: 'Contrôle · À revoir',
+    label: `${CHECK_PREFIX}À revoir`,
     variant: 'warning',
     detail: staleDetail(status),
   };
@@ -95,6 +98,34 @@ export function worstBadge(badges: readonly (QualityBadge | null)[]): QualityBad
     }
   }
   return worst;
+}
+
+/** Ce que dit l'en-tête d'un rayon replié : « Contrôle 1/3 · OK ». */
+export interface CheckSummary {
+  readonly label: string;
+  /** `null` = rien n'est contrôlé : la pastille reste neutre. */
+  readonly variant: FoldBadgeVariant | null;
+}
+
+/**
+ * **Le résumé d'un rayon replié** (Supervision v2, A6) : combien de ses lignes
+ * sont contrôlées, et le mot de la pire pastille. Sans aucun contrôle, le
+ * compte seul — « Contrôle 0/3 » —, jamais un OK qu'on n'a pas prononcé.
+ */
+export function checkSummary(
+  badges: readonly (QualityBadge | null)[],
+  lineCount: number,
+): CheckSummary {
+  const checked = badges.filter((badge) => badge !== null).length;
+  const count = `Contrôle ${String(checked)}/${String(lineCount)}`;
+  const worst = worstBadge(badges);
+  if (worst === null) {
+    return { label: count, variant: null };
+  }
+  const word = worst.label.startsWith(CHECK_PREFIX)
+    ? worst.label.slice(CHECK_PREFIX.length)
+    : worst.label;
+  return { label: `${count} · ${word}`, variant: worst.variant };
 }
 
 /** Les pastilles d'une journée, indexées pour les colonnes. */

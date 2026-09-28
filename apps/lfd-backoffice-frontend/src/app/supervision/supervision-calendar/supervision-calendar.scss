@@ -1,0 +1,67 @@
+// Le calendrier de la maquette « Supervision v2 » (A1) : 272 px, cases de 32 px.
+
+// Sur le chrome, le bouton reprend le filet et la couleur de texte du masthead.
+.trigger {
+  color: var(--fold-ref-navyink-200);
+}
+
+// Hors ±1, la date en toutes lettres, sur le fond levé du chrome.
+.is-custom {
+  background: var(--fold-ref-graphite-800);
+  border-color: var(--fold-ref-signal-300);
+  color: var(--fold-ref-navyink-50);
+}
+
+.calendar {
+  // 272 px (A1) : sept cases de 32 px et leurs écarts.
+  width: 272px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md);
+}
+
+.calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.calendar-title {
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  text-transform: capitalize;
+  color: var(--fold-color-text);
+}
+
+// La grille d'agenda de fold, resserrée : une ligne de 32 px, pas de bandes.
+.calendar-grid {
+  --fold-calendar-month-row-min-height: 32px;
+  --fold-calendar-month-cell-padding: 0;
+  --fold-calendar-month-daynum-size: 28px;
+
+  border: 0;
+}
+
+.day {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 32px;
+  border-radius: var(--fold-radius-sm);
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+
+  &.is-selected {
+    background: var(--fold-color-bg-header);
+    color: var(--fold-ref-navyink-50);
+    font-weight: var(--fold-weight-bold);
+  }
+}
+
+.calendar-foot {
+  display: flex;
+  justify-content: space-between;
+  padding-top: var(--fold-space-sm);
+  border-top: 1px solid var(--fold-color-border-subtle);
+}

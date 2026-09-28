@@ -3,12 +3,16 @@ import { describe, expect, it } from 'vitest';
 import type { QualityCheckView } from '@lfd/contracts';
 
 import {
+  blockingImpact,
+  blockReason,
   canRender,
   type DraftPhoto,
   historyOf,
   photoRefusal,
   roomFor,
+  saveLabel,
   uploadIdsOf,
+  withTag,
 } from './quality-draft';
 
 const READY: DraftPhoto = { key: 1, preview: 'blob:a', status: 'ready', uploadId: 'up-1' };
@@ -74,5 +78,44 @@ describe('le brouillon d’un contrôle', () => {
 
     expect(historyOf(checks, { kind: 'line', sku: 'cro' }).map((c) => c.id)).toEqual(['1']);
     expect(historyOf(checks, { kind: 'order', orderId: 'o-1' }).map((c) => c.id)).toEqual(['3']);
+  });
+});
+
+describe('le pied du panneau', () => {
+  it('ne présélectionne aucun verdict, et dit ce qui manque', () => {
+    expect(canRender(null, 'note', [])).toBe(false);
+    expect(blockReason(null, '')).toBe('Choisissez un verdict.');
+    expect(blockReason('warning', ' ')).toBe('Une note est nécessaire.');
+    expect(blockReason('ok', '')).toBeNull();
+  });
+
+  it('nomme le geste selon le verdict', () => {
+    expect(saveLabel(null)).toBe('Enregistrer');
+    expect(saveLabel('ok')).toBe('Enregistrer');
+    expect(saveLabel('warning')).toBe('Enregistrer la réserve');
+    expect(saveLabel('blocking')).toBe('Bloquer');
+  });
+});
+
+describe('withTag', () => {
+  it('ouvre la phrase, puis ajoute une étiquette une seule fois', () => {
+    expect(withTag('  ', 'Cuisson')).toBe('Cuisson : ');
+    expect(withTag('Cuisson : brûlé', 'Aspect')).toBe('Cuisson : brûlé · Aspect');
+    expect(withTag('Cuisson : brûlé', 'Cuisson')).toBe('Cuisson : brûlé');
+  });
+});
+
+describe('blockingImpact', () => {
+  it('nomme les commandes qui attendent la ligne, ou le refus du QR', () => {
+    const line = { kind: 'line', sku: 'bri' } as const;
+    expect(blockingImpact(line, 'Brioche', ['Chalet Marmotte'])).toBe(
+      'Commandes concernées : Chalet Marmotte, et toute commande du jour qui contient Brioche.',
+    );
+    expect(blockingImpact(line, 'Brioche', [])).toBe(
+      'Toute commande du jour qui contient Brioche.',
+    );
+    expect(blockingImpact({ kind: 'order', orderId: 'o-1' }, 'Chalet', [])).toBe(
+      'Chalet ne pourra pas être remise : le scan du QR la refusera.',
+    );
   });
 });

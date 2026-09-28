@@ -10,12 +10,13 @@ import {
 } from '@angular/core';
 import type { QualityCheckView, QualityVerdictCode } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
-import type { FoldViewToggleOption } from 'fold-ng';
+import { requiredError } from '@angular/forms/signals';
+import type { FoldTimelineNode } from 'fold-ng';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
-  FoldElementTitleComponent,
+  FoldCardComponent,
   FoldEmptyStateComponent,
   FoldFileDropzoneComponent,
   FoldIconComponent,
@@ -26,29 +27,46 @@ import {
   FoldPanelRef,
   FoldSpinnerComponent,
   FoldTextareaComponent,
-  FoldViewToggleComponent,
+  FoldTimelineComponent,
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
 import { ulid } from '../../shared/ulid';
 import { afterFailure, type ColumnState, LOADING, ready } from '../column-state';
-import { type QualityRequest, VERDICT_LABELS, VERDICT_VARIANTS } from '../quality-badges';
 import {
+  type QualityBadge,
+  type QualityRequest,
+  VERDICT_LABELS,
+  VERDICT_VARIANTS,
+} from '../quality-badges';
+import {
+  blockingImpact,
+  blockReason,
+  bylineOf,
   canRender,
+  currentBadge,
   type DraftPhoto,
   historyOf,
+  NOTE_TAGS,
   noteRequired,
   photoRefusal,
   roomFor,
+  saveLabel,
   uploadIdsOf,
+  VERDICT_CONSEQUENCES,
+  VERDICT_GLYPHS,
+  withTag,
 } from '../quality-draft';
 import { QualityPhoto } from '../quality-photo/quality-photo';
 import { QualityService } from '../quality.service';
-import { clockLabel } from '../supervision-labels';
 
 /** Ce que la page passe au panneau : la journée, la cible et ses mots. */
 export interface QualityPanelData extends QualityRequest {
   readonly serviceDay: string;
+  /** La pastille de la cible À L'ÉCRAN, reprise sans recalcul (cf. `currentBadge`). */
+  readonly current?: QualityBadge | null;
+  /** Les clients dont une commande attend cette ligne — ce qu'un blocage retient. */
+  readonly awaitedBy?: readonly string[];
 }
 
 const VERDICTS: readonly QualityVerdictCode[] = ['ok', 'warning', 'blocking'];
@@ -73,7 +91,7 @@ const VERDICTS: readonly QualityVerdictCode[] = ['ok', 'warning', 'blocking'];
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
-    FoldElementTitleComponent,
+    FoldCardComponent,
     FoldEmptyStateComponent,
     FoldFileDropzoneComponent,
     FoldIconComponent,
@@ -83,7 +101,7 @@ const VERDICTS: readonly QualityVerdictCode[] = ['ok', 'warning', 'blocking'];
     FoldPanelHeaderComponent,
     FoldSpinnerComponent,
     FoldTextareaComponent,
-    FoldViewToggleComponent,
+    FoldTimelineComponent,
     QualityPhoto,
   ],
   templateUrl: './quality-panel.html',
@@ -100,14 +118,15 @@ export class QualityPanel implements OnInit {
   private readonly id = ulid();
   private nextKey = 0;
 
-  protected readonly verdictOptions: readonly FoldViewToggleOption[] = VERDICTS.map((code) => ({
-    value: code,
-    label: VERDICT_LABELS[code],
-  }));
+  protected readonly verdicts = VERDICTS;
   protected readonly verdictLabels = VERDICT_LABELS;
   protected readonly verdictVariants = VERDICT_VARIANTS;
+  protected readonly consequences = VERDICT_CONSEQUENCES;
+  protected readonly tags = NOTE_TAGS;
+  protected readonly glyphs = VERDICT_GLYPHS;
 
-  protected readonly verdict = signal<QualityVerdictCode>('ok');
+  /** Rien d'avance : un OK présélectionné s'enregistre d'un clic distrait. */
+  protected readonly verdict = signal<QualityVerdictCode | null>(null);
   protected readonly note = signal('');
   protected readonly photos = signal<readonly DraftPhoto[]>([]);
   protected readonly saving = signal(false);
@@ -124,6 +143,32 @@ export class QualityPanel implements OnInit {
   });
 
   protected readonly noteRequired = computed(() => noteRequired(this.verdict()));
+  protected readonly reason = computed(() => blockReason(this.verdict(), this.note()));
+  protected readonly saveLabel = computed(() => saveLabel(this.verdict()));
+  /** Le champ vide d'une note obligatoire se dit en alerte, sans attendre le clic. */
+  protected readonly noteErrors = computed(() =>
+    this.noteRequired() && this.note().trim() === ''
+      ? [requiredError({ message: 'Dites ce qui ne va pas.' })]
+      : [],
+  );
+
+  protected readonly eyebrow = computed(
+    () => `Contrôler · ${this.data()?.target.kind === 'order' ? 'commande' : 'ligne du four'}`,
+  );
+  /** La pastille de la cible, « Actuel · … » ; `undefined` : rien à montrer. */
+  protected readonly current = computed(() => currentBadge(this.data()?.current));
+  protected readonly impact = computed(() => {
+    const data = this.data();
+    return data === undefined ? '' : blockingImpact(data.target, data.title, data.awaitedBy ?? []);
+  });
+  protected readonly nodes = computed<readonly FoldTimelineNode[]>(() =>
+    this.historyChecks().map((check) => ({
+      key: check.id,
+      id: null,
+      clickable: false,
+      label: VERDICT_LABELS[check.verdict],
+    })),
+  );
   protected readonly room = computed(() => roomFor(this.photos()));
   protected readonly uploading = computed(() =>
     this.photos().some((photo) => photo.status === 'uploading'),
@@ -143,11 +188,12 @@ export class QualityPanel implements OnInit {
     void this.loadHistory();
   }
 
-  protected chooseVerdict(value: string): void {
-    const code = VERDICTS.find((candidate) => candidate === value);
-    if (code !== undefined) {
-      this.verdict.set(code);
-    }
+  protected addTag(tag: string): void {
+    this.note.update((note) => withTag(note, tag));
+  }
+
+  protected checkOf(key: string): QualityCheckView | undefined {
+    return this.historyChecks().find((check) => check.id === key);
   }
 
   protected async loadHistory(): Promise<void> {
@@ -202,7 +248,8 @@ export class QualityPanel implements OnInit {
 
   protected async save(): Promise<void> {
     const data = this.data();
-    if (data === undefined || !this.canSave()) {
+    const verdict = this.verdict();
+    if (data === undefined || verdict === null || !this.canSave()) {
       return;
     }
     this.saving.set(true);
@@ -213,11 +260,11 @@ export class QualityPanel implements OnInit {
         id: this.id,
         serviceDay: data.serviceDay,
         target: data.target,
-        verdict: this.verdict(),
+        verdict,
         note: note === '' ? null : note,
         uploadIds: uploadIdsOf(this.photos()),
       });
-      this.notify.success(`Contrôle enregistré : ${VERDICT_LABELS[this.verdict()]}.`);
+      this.notify.success(`Contrôle enregistré : ${VERDICT_LABELS[verdict]}.`);
       this.ref.close(true);
     } catch (error) {
       this.refusal.set(httpErrorMessage(error, "Le contrôle n'a pas pu être enregistré."));
@@ -230,13 +277,9 @@ export class QualityPanel implements OnInit {
     this.ref.close();
   }
 
-  /** « par Léa Martin à 7 h 12 · sur 96 pièces ». */
   protected byline(check: QualityCheckView): string {
-    const who = check.checkedByName ?? check.checkedBy;
-    const at = clockLabel(check.checkedAt);
-    const seen =
-      check.target.kind === 'line' ? ` · sur ${String(check.target.quantitySeen)} pièces` : '';
-    return `par ${who}${at === null ? '' : ` à ${at}`}${seen}`;
+    const latest = this.historyChecks()[0]?.id === check.id;
+    return bylineOf(check, latest ? (this.data()?.current?.detail ?? null) : null);
   }
 
   private async deposit(key: number, preview: string, file: File): Promise<void> {

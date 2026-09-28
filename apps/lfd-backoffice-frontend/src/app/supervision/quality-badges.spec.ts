@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import type { QualityBoardView, QualityLineStatus } from '@lfd/contracts';
 
-import { lineBadge, orderBadge, qualityLookup, staleDetail, worstBadge } from './quality-badges';
+import {
+  checkSummary,
+  lineBadge,
+  orderBadge,
+  qualityLookup,
+  staleDetail,
+  worstBadge,
+} from './quality-badges';
 
 function line(overrides: Partial<QualityLineStatus> = {}): QualityLineStatus {
   return {
@@ -59,6 +66,24 @@ describe('les pastilles du contrôle qualité', () => {
     expect(worstBadge([warning, stale])).toBe(stale);
     expect(worstBadge([stale, blocking, ok])).toBe(blocking);
     expect(worstBadge([null, null])).toBeNull();
+  });
+
+  /** Supervision v2, A6 : le rayon replié dit n/m et le mot de la pire pastille. */
+  it('résume un rayon replié : lignes contrôlées sur le compte, et le pire mot', () => {
+    const ok = lineBadge(line());
+    const warning = lineBadge(line({ verdict: 'warning' }));
+    const stale = lineBadge(line({ stale: true }));
+
+    expect(checkSummary([ok, null, null], 3)).toEqual({
+      label: 'Contrôle 1/3 · OK',
+      variant: 'success',
+    });
+    expect(checkSummary([warning, null], 2)).toEqual({
+      label: 'Contrôle 1/2 · Réserve',
+      variant: 'warning',
+    });
+    expect(checkSummary([stale, ok], 2).label).toBe('Contrôle 2/2 · À revoir');
+    expect(checkSummary([null, null], 2)).toEqual({ label: 'Contrôle 0/2', variant: null });
   });
 
   it('indexe les lignes par SKU et les commandes par numéro — sans celles hors plan', () => {

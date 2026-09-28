@@ -1,0 +1,42 @@
+// Supervision v2, A4 : repère à gauche, filtre compact à droite (même forme que la colonne 1).
+:host {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+}
+
+.cue {
+  font-size: var(--fold-text-sm);
+  white-space: nowrap;
+  color: var(--fold-color-text-muted);
+}
+
+.filter {
+  margin-left: auto;
+  min-width: 0;
+}
+
+// Filtre actif : la teinte primaire de la maquette, par les tokens du champ.
+.filter.is-active {
+  --fold-color-surface-card: var(--fold-color-primary-surface);
+  --fold-color-text: var(--fold-color-primary-strong);
+  --fold-color-border: var(--fold-color-primary-border);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  width: 100%;
+}
+
+.option::after {
+  content: attr(data-count);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-faded);
+}

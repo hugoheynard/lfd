@@ -1,10 +1,3 @@
-@if (narrow()) {
-  <div class="band">
-    <span class="band-title">Rayons au four · {{ board().open.length }}</span>
-    <span class="band-meta">{{ board().openLines }} lignes ouvertes</span>
-  </div>
-}
-
 @if (!board().shelvesKnown) {
   <fold-callout variant="warning">
     Les rayons n'ont pas pu être lus : toutes les lignes sont sous « Rayon inconnu ».
@@ -18,69 +11,93 @@
 }
 
 @for (card of shown(); track card.key) {
-  @if (card.state === 'done' && $index === board().open.length) {
+  @let folded = card.state === 'done';
+  @if (folded && $index === openCards().length) {
     <p class="done-divider" data-done-divider>
-      Terminés · {{ board().finished.length
-      }}{{ board().finishedAt === null ? '' : ' · à ' + board().finishedAt }}
+      <span
+        >Terminés · {{ doneCards().length
+        }}{{ board().finishedAt === null ? '' : ' · à ' + board().finishedAt }}</span
+      >
     </p>
   }
   <fold-card
     radius="sm"
     class="shelf"
-    [class.is-done]="card.state === 'done'"
-    [class.is-waiting]="card.state !== 'done'"
+    [class.is-idle]="card.state === 'not_started'"
+    [class.is-progress]="card.state === 'in_progress'"
+    [class.is-done]="folded"
     [class.narrow]="narrow()"
-    [class.is-match]="shelfMatches(card)"
+    [class.is-receded]="awaiting() && !shelfMatches(card)"
     [attr.data-shelf]="card.key"
   >
     <div class="stack">
-      <div class="shelf-head">
-        <span class="shelf-name">{{ card.label }}</span>
-        <span
-          class="shelf-count"
-          [class.is-done]="card.state === 'done'"
-          [class.is-progress]="card.state === 'in_progress'"
-          >{{ card.doneCount }} / {{ card.lineCount }} lignes{{
-            card.state === 'not_started' ? ' · pas commencé' : ''
-          }}</span
+      @if (folded) {
+        <!-- Replié par défaut (Hugo, 2026-09-28) : l'en-tête dit son contrôle ;
+             une occurrence de la mise en avant le rouvre d'elle-même. -->
+        <fold-disclosure
+          class="done-shelf"
+          [open]="isUnfolded(card)"
+          (openChange)="setUnfolded(card.key, $event)"
+          [attr.data-detail]="card.key"
         >
-      </div>
-      @if (shelfBadge(card); as badge) {
-        <fold-badge
-          class="quality"
-          radius="square"
-          [variant]="badge.variant"
-          [content]="badge.label"
-          data-shelf-quality
+          <span summary class="shelf-head">
+            <span class="shelf-name">{{ card.label }}</span>
+            @if (!isUnfolded(card)) {
+              @let summary = shelfSummary(card);
+              <!-- Rien de contrôlé : le compte seul, en neutre — jamais un OK. -->
+              <fold-badge
+                class="quality"
+                radius="square"
+                [variant]="summary.variant ?? 'neutral'"
+                [content]="summary.label"
+                data-shelf-quality
+              />
+            }
+            <span class="shelf-count is-done"
+              >{{ card.doneCount }} / {{ card.lineCount }} lignes</span
+            >
+          </span>
+        </fold-disclosure>
+      } @else {
+        <div class="shelf-head">
+          <span class="shelf-name">{{ card.label }}</span>
+          <span class="shelf-count" [class.is-progress]="card.state === 'in_progress'"
+            >{{ card.doneCount }} / {{ card.lineCount }} lignes{{
+              card.state === 'not_started' ? ' · pas commencé' : ''
+            }}</span
+          >
+        </div>
+        <fold-meter
+          class="shelf-meter"
+          [label]="meterLabel(card)"
+          [value]="card.doneCount"
+          [max]="card.lineCount === 0 ? 1 : card.lineCount"
+          [tone]="meterTone(card)"
         />
       }
-      <fold-meter
-        class="shelf-meter"
-        [label]="meterLabel(card)"
-        [value]="card.doneCount"
-        [max]="card.lineCount === 0 ? 1 : card.lineCount"
-        [tone]="meterTone(card)"
-      />
-      @if (card.lineCount > 0) {
-        <!-- Déplié d'office, fini ou non ; on replie à la demande (Hugo, 2026-09-28). -->
-        <fold-disclosure [open]="true" [attr.data-detail]="card.key">
-          <span summary class="detail-summary">Détail · {{ card.lineCount }} lignes</span>
-          <ul class="lines">
-            <!-- À sortir d'abord, puis sorties avec leurs initiales. -->
-            @for (item of linesOf(card); track item.line.sku) {
-              @let line = item.line;
-              <li
-                class="line"
-                [class.is-done]="item.done"
-                [class.is-match]="matches().skus.has(line.sku)"
-                [attr.data-line-done]="item.done ? '' : null"
-              >
-                <!-- Une ligne = trois choses, dans l'ordre où l'œil les cherche : le
-                     produit et sa barre, où il en est, et le geste. Le nom EST le
-                     libellé de la barre ; le chiffre ne se dit qu'une fois
-                     (repris le 2026-09-28 : quantité, nom, barre et « 0 / 22
-                     sorties » disaient trois fois la même chose). -->
-                @let progress = progressOf(line);
+      @if (!folded || isUnfolded(card)) {
+        <ul class="lines">
+          @for (item of linesOf(card); track item.line.sku) {
+            @let line = item.line;
+            @let hit = isHit(line.sku);
+            @let awaited = awaitedLabel(line.sku);
+            @let badge = lineBadge(line);
+            @let progress = progressOf(line);
+            <li
+              class="line"
+              [class.is-done]="item.done"
+              [class.is-match]="hit && !awaiting()"
+              [class.is-awaited]="hit && awaiting()"
+              [class.is-receded]="!hit && awaiting()"
+              [class.is-current]="matches().current === line.sku"
+              [attr.data-hit-key]="line.sku"
+              [attr.data-line-done]="item.done ? '' : null"
+            >
+              <!-- [produit + barre] [sorties / prévues] [Contrôler] ; les notes
+                   dessous. Un rayon fini ne redessine pas ses barres pleines. -->
+              @if (folded) {
+                <span class="line-name">{{ line.productName }}</span>
+              } @else {
                 <fold-meter
                   class="line-meter"
                   [label]="line.productName"
@@ -89,61 +106,70 @@
                   [tone]="progress.tone"
                   [attr.data-line-progress]="line.sku"
                 />
-                <span
-                  class="figure"
-                  [attr.aria-label]="progress.label"
-                  [attr.data-line-figure]="line.sku"
+              }
+              <span
+                class="figure"
+                [attr.aria-label]="progress.label"
+                [attr.data-line-figure]="line.sku"
+              >
+                <span class="figure-done">{{ line.produced }}</span>
+                <span class="figure-of">/ {{ line.quantity }}</span>
+                @if (item.done && line.initials !== null) {
+                  <span class="initials">{{ line.initials }}</span>
+                }
+              </span>
+              @if (canCheck()) {
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="soft"
+                  intent="neutral"
+                  class="check"
+                  [attr.data-check]="line.sku"
+                  [attr.aria-label]="'Contrôler ' + line.productName"
+                  (click)="requestCheck(line)"
                 >
-                  <span class="figure-done">{{ line.produced }}</span>
-                  <span class="figure-of">/ {{ line.quantity }}</span>
-                  @if (item.done && line.initials !== null) {
-                    <span class="initials">{{ line.initials }}</span>
+                  Contrôler
+                </button>
+              }
+              @if (awaited !== null || progress.surplus !== null || badge !== null) {
+                <span class="line-notes">
+                  @if (awaited !== null) {
+                    <fold-badge
+                      class="awaited"
+                      radius="square"
+                      variant="warning"
+                      [content]="awaited"
+                      [attr.data-line-awaited]="line.sku"
+                    />
+                  }
+                  @if (progress.surplus; as surplus) {
+                    <fold-badge
+                      radius="square"
+                      variant="warning"
+                      [content]="surplus"
+                      [attr.data-line-surplus]="line.sku"
+                    />
+                  }
+                  @if (badge !== null) {
+                    <fold-badge
+                      class="quality"
+                      radius="square"
+                      [variant]="badge.variant"
+                      [content]="badge.label"
+                      data-line-quality
+                    />
+                    @if (badge.detail !== null) {
+                      <span class="quality-detail" data-line-stale>{{ badge.detail }}</span>
+                    }
                   }
                 </span>
-                @if (canCheck()) {
-                  <button
-                    foldButton
-                    size="sm"
-                    emphasis="soft"
-                    intent="neutral"
-                    class="check"
-                    [attr.data-check]="line.sku"
-                    [attr.aria-label]="'Contrôler ' + line.productName"
-                    (click)="requestCheck(line)"
-                  >
-                    Contrôler
-                  </button>
-                }
-                @if (progress.surplus !== null || lineBadge(line) !== null) {
-                  <span class="line-notes">
-                    @if (progress.surplus; as surplus) {
-                      <fold-badge
-                        radius="square"
-                        variant="warning"
-                        [content]="surplus"
-                        [attr.data-line-surplus]="line.sku"
-                      />
-                    }
-                    @if (lineBadge(line); as badge) {
-                      <fold-badge
-                        class="quality"
-                        radius="square"
-                        [variant]="badge.variant"
-                        [content]="badge.label"
-                        data-line-quality
-                      />
-                      @if (badge.detail !== null) {
-                        <span class="quality-detail" data-line-stale>{{ badge.detail }}</span>
-                      }
-                    }
-                  </span>
-                }
-              </li>
-            }
-          </ul>
-        </fold-disclosure>
+              }
+            </li>
+          }
+        </ul>
       }
-      @if (showLinks() && card.state !== 'done') {
+      @if (!folded && showLinks()) {
         @if (narrow()) {
           <a foldButton emphasis="soft" intent="neutral" [routerLink]="link.path">
             {{ link.label }} →

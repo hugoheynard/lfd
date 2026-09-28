@@ -12,45 +12,50 @@
   } @else {
     <!-- Les commandes attendues, en lecture : rien n'est à coliser avant l'arrêt
          (le masthead le dit), mais la colonne dit la même journée que Retrait. -->
-    <p class="done-divider" data-upcoming>Commandes attendues · {{ board().upcoming.length }}</p>
+    <p class="divider" data-upcoming>
+      <span class="divider-label">Commandes attendues · {{ board().upcoming.length }}</span>
+    </p>
     @for (order of board().upcoming; track order.reference) {
       <fold-card
         radius="sm"
         class="order compact"
-        [class.is-match]="matches().references.has(order.reference)"
+        [class.is-match]="isHit(order.reference)"
+        [class.is-current]="isCurrent(order.reference)"
         data-packing="upcoming"
         [attr.data-reference]="order.reference"
+        [attr.data-hit-key]="order.reference"
       >
-        <div class="compact-row">
-          <span class="compact-name">{{ order.customerLabel }}</span>
+        <div class="order-id">
+          <span class="customer">{{ order.customerLabel }}</span>
           <span class="meta">{{ order.reference }} · {{ upcomingUnits(order) }}</span>
         </div>
       </fold-card>
     }
   }
 } @else {
-  @if (narrow()) {
-    <div class="band">
-      <span class="band-title">À coliser · {{ board().toPack }}</span>
-      <span class="band-meta">{{ board().packed.length }} colisées</span>
-    </div>
-  }
-
   @if (empty()) {
     <fold-empty-state title="Aucune commande" subtitle="Rien à coliser ce jour.">
       <fold-icon empty-icon name="package" />
     </fold-empty-state>
   }
 
-  @for (card of board().visible; track card.reference) {
+  @for (card of visible(); track card.reference) {
     <fold-card
       radius="sm"
-      class="order is-waiting"
+      class="order"
       [class.narrow]="narrow()"
-      [class.is-match]="matches().references.has(card.reference)"
+      [class.is-match]="outlined(card)"
+      [class.is-current]="isCurrent(card.reference)"
+      [class.is-receded]="receded(card.reference)"
+      [class.is-source]="isSource(card)"
       [class.edge-warning]="card.state === 'awaiting_oven'"
       [attr.data-packing]="card.state"
       [attr.data-reference]="card.reference"
+      [attr.data-hit-key]="card.reference"
+      [attr.title]="
+        card.state === 'awaiting_oven' ? 'Double-clic : voir ce qu’elle attend en colonne 1' : null
+      "
+      (dblclick)="toggleAwaited(card)"
     >
       <div class="stack">
         <div class="order-head">
@@ -61,6 +66,7 @@
           <fold-badge
             class="pastille"
             radius="square"
+            [attr.data-state]="card.state"
             [content]="badgeLabel(card)"
             [variant]="badgeVariant(card)"
           />
@@ -76,20 +82,44 @@
           />
         }
         @if (card.state === 'awaiting_oven') {
-          <!-- Dix-huit noms en une phrase ne se lisaient plus (2026-09-28) : le
-               compte d'abord, puis les produits en liste qu'on déplie. La
-               pastille « Attend le four » dit déjà qu'il n'y a rien à faire. -->
-          <fold-disclosure class="blocked" data-blocked>
-            <span summary class="blocked-summary"
-              >{{ card.awaited.length }}
-              {{ card.awaited.length > 1 ? 'produits attendus' : 'produit attendu' }} du four</span
+          <!-- A5 : déplier, c'est demander la mise en avant des produits
+               attendus ; la page la pose, la colonne la relit. -->
+          <div class="awaited-block">
+            <button
+              type="button"
+              class="awaited-toggle"
+              data-blocked
+              [attr.aria-expanded]="isSource(card)"
+              (click)="toggleAwaited(card)"
             >
-            <ul class="awaited">
-              @for (name of card.awaited; track name) {
-                <li>{{ name }}</li>
+              <fold-icon [name]="isSource(card) ? 'chevron-down' : 'chevron-right'" size="xs" />
+              <span>{{ awaitedLabel(card) }}</span>
+              @if (isSource(card) && !narrow()) {
+                <span class="awaited-hint">← en colonne 1</span>
               }
-            </ul>
-          </fold-disclosure>
+            </button>
+            @if (isSource(card)) {
+              <ul class="awaited">
+                @for (name of card.awaited; track name) {
+                  <li>{{ name }}</li>
+                }
+              </ul>
+              @if (narrow()) {
+                <button
+                  foldButton
+                  type="button"
+                  emphasis="solid"
+                  intent="neutral"
+                  block
+                  class="to-preparation"
+                  data-show-preparation
+                  (click)="showPreparation.emit()"
+                >
+                  Voir en Préparation →
+                </button>
+              }
+            }
+          </div>
         }
 
         @if (showLinks() && card.state !== 'awaiting_oven') {
@@ -105,30 +135,47 @@
     </fold-card>
   }
 
-  @if (board().overflow > 0) {
+  @if (overflow() > 0) {
     <p class="overflow">{{ overflowLabel() }}</p>
   }
 
-  <!-- Les colisées restent VISIBLES, en bas et en vert (Hugo, 2026-09-28) :
-       repliées en une ligne de noms, on ne savait plus ce qui était prêt. -->
-  @if (board().packed.length > 0) {
-    <p class="done-divider" data-done-divider>{{ packedCount() }}</p>
-    @for (card of board().packed; track card.reference) {
+  <!-- Les colisées restent VISIBLES, en bas et en vert (Hugo, 2026-09-28). -->
+  @if (packed().length > 0) {
+    <p class="divider" data-done-divider>
+      <span class="divider-label">{{ packedCount() }}</span>
+    </p>
+    @for (card of packed(); track card.reference) {
       <fold-card
         radius="sm"
         class="order compact is-done"
-        [class.is-match]="matches().references.has(card.reference)"
+        [class.narrow]="narrow()"
+        [class.is-match]="isHit(card.reference)"
+        [class.is-current]="isCurrent(card.reference)"
+        [class.is-receded]="receded(card.reference)"
         [attr.data-packing]="card.state"
         [attr.data-reference]="card.reference"
+        [attr.data-hit-key]="card.reference"
       >
-        <div class="compact-row">
-          <span class="compact-name">{{ card.customerLabel }}</span>
-          <span class="meta">{{ meta(card) }}</span>
-        </div>
-        @if (card.packedAt !== null) {
-          <span class="packed-at" data-packed-at>Déclarée prête à {{ card.packedAt }}</span>
-        }
-        @if (qualityOf(card) !== null || (canCheck() && card.orderId !== null)) {
+        <div class="done-stack">
+          <!-- Même tête que les cartes ouvertes : le client, sa référence et
+               son heure dessous, l'état en pastille à droite (Hugo, 2026-09-28 :
+               « Déclarée prête » devient une pastille, alignée comme « Attend le
+               four »). -->
+          <div class="order-head">
+            <div class="order-id">
+              <span class="customer">{{ card.customerLabel }}</span>
+              <span class="meta">{{ meta(card) }}</span>
+            </div>
+            @if (card.packedAt !== null) {
+              <fold-badge
+                class="pastille"
+                radius="square"
+                variant="success"
+                data-packed-at
+                [content]="'Prête à ' + card.packedAt"
+              />
+            }
+          </div>
           <div class="quality-row">
             @if (qualityOf(card); as badge) {
               <fold-badge
@@ -141,9 +188,11 @@
             @if (canCheck() && card.orderId !== null) {
               <button
                 foldButton
+                type="button"
                 size="sm"
                 emphasis="outline"
                 intent="neutral"
+                class="check"
                 [attr.data-check]="card.reference"
                 (click)="requestCheck(card)"
               >
@@ -151,7 +200,7 @@
               </button>
             }
           </div>
-        }
+        </div>
       </fold-card>
     }
   }

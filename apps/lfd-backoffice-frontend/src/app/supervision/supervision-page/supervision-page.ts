@@ -1,18 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type {
-  DaySupervisionView,
-  FulfillmentMethod,
-  HandoverQueueView,
-  ProductionPackingView,
-  ProductionWorksheetView,
-} from '@lfd/contracts';
-import { ActivatedRoute, Router } from '@angular/router';
-import type { FoldViewNavItem, FoldViewToggleOption } from 'fold-ng';
+import { NgTemplateOutlet } from '@angular/common';
 import {
-  FoldBadgeComponent,
-  FoldButtonComponent,
+  afterRenderEffect,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  signal,
+} from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import type { FulfillmentMethod } from '@lfd/contracts';
+import type { FoldViewNavItem } from 'fold-ng';
+import {
+  FoldButtonIconComponent,
   FoldCalloutComponent,
-  FoldCardComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
   FoldSearchComponent,
@@ -23,40 +24,40 @@ import {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
-import {
-  afterFailure,
-  type ColumnState,
-  dataOf,
-  FAILED,
-  LOADING,
-  readInto,
-  ready,
-} from '../column-state';
+import { dataOf } from '../column-state';
 import { handoverBoard } from '../handover-slots';
+import { HandoverBand } from '../handover-band/handover-band';
 import { HandoverColumn } from '../handover-column/handover-column';
-import { packingBoard } from '../packing-cards';
+import { ALL_POINTS, packingBoard } from '../packing-cards';
+import { PackingBand } from '../packing-band/packing-band';
 import { PackingColumn } from '../packing-column/packing-column';
-import { preparationBoard } from '../preparation-shelves';
+import { PreparationBand } from '../preparation-band/preparation-band';
 import { PreparationColumn } from '../preparation-column/preparation-column';
+import { ALL_SHELVES, preparationBoard } from '../preparation-shelves';
 import type { QualityRequest } from '../quality-badges';
+import { qualityContextOf } from '../quality-context';
 import { QualityBoardStore } from '../quality-board.store';
+import { SupervisionCalendar } from '../supervision-calendar/supervision-calendar';
 import { SupervisionColumn } from '../supervision-column/supervision-column';
+import { dayDiff, dayStripOf, serviceDayParam, shiftServiceDay, stampOf } from '../supervision-day';
+import { SupervisionHighlight } from '../supervision-highlight';
+import { SupervisionReads } from '../supervision-reads';
+import { scrollToHits } from '../supervision-hits';
 import {
   landingColumnOf,
   LINK_PERMISSION,
   type SupervisionColumn as Column,
 } from '../supervision-links';
-import { watchSupervisionDay } from '../supervision-refresh';
+import { DAY_REFRESH_MS, watchSupervisionDay } from '../supervision-refresh';
 import { SupervisionService } from '../supervision.service';
-import { serviceDayParam, shiftServiceDay } from '../supervision-day';
 import {
   blockersOf,
+  columnBlockersOf,
+  columnSubtitlesOf,
   countersOf,
-  methodOptionsOf,
-  stampOf,
+  DAY_OPTIONS,
   supervisionTabs,
 } from '../supervision-tabs';
-import { supervisionMatches } from '../supervision-search';
 
 /**
  * En dessous, une colonne à la fois (plan §6). 900 px et non le seuil commun
@@ -66,28 +67,22 @@ import { supervisionMatches } from '../supervision-search';
 const BOARD_NARROW = '(max-width: 900px)';
 
 /**
- * **La Supervision du jour** — on voit, on n'agit pas (plan
- * `documentation/order/plan-supervision-du-jour.md`).
+ * **La Supervision du jour** — on voit, on n'agit pas (plans
+ * `plan-supervision-du-jour.md`, puis `plan-supervision-v2.md`).
  *
  * Trois colonnes dont l'unité change — le rayon, la commande, le créneau —,
  * chacune servie par sa propre lecture sous `b2b_supervision:read`, avec son
  * propre état : une lecture qui échoue n'efface pas les autres. Le jour est
- * celui du SERVEUR : `supervision/day` sans date le donne, puis les trois
- * colonnes le lisent.
- *
- * On peut regarder un AUTRE jour (Hugo, 2026-09-28 : « il faudrait que je
- * puisse naviguer dans les dates ») — la veille pour relire, le lendemain pour
- * voir ce qui se prépare. Le jour choisi vit dans l'adresse (`?date=`) ;
- * sans lui, l'écran suit le jour du serveur, minuit compris.
+ * celui du SERVEUR ; on peut en regarder un autre (`?date=`), et un bandeau le
+ * dit. La mise en avant (recherche, pastille, commande dépliée) vit dans
+ * `SupervisionHighlight` ; la page ne fait que la brancher et faire défiler.
  */
 @Component({
   selector: 'app-supervision-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldBadgeComponent,
-    FoldButtonComponent,
+    FoldButtonIconComponent,
     FoldCalloutComponent,
-    FoldCardComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
     FoldSearchComponent,
@@ -95,8 +90,13 @@ const BOARD_NARROW = '(max-width: 900px)';
     FoldViewNavComponent,
     FoldViewToggleComponent,
     HandoverColumn,
+    NgTemplateOutlet,
+    HandoverBand,
+    PackingBand,
     PackingColumn,
+    PreparationBand,
     PreparationColumn,
+    SupervisionCalendar,
     SupervisionColumn,
   ],
   providers: [QualityBoardStore],
@@ -104,9 +104,9 @@ const BOARD_NARROW = '(max-width: 900px)';
   styleUrl: './supervision-page.scss',
 })
 export class SupervisionPage {
-  private readonly service = inject(SupervisionService);
   private readonly permissions = inject(PermissionsStore);
   private readonly router = inject(Router);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   /** Les pastilles du contrôle qualité et son panneau (`plan-controle-qualite.md`). */
   protected readonly quality = inject(QualityBoardStore);
 
@@ -116,13 +116,16 @@ export class SupervisionPage {
   );
 
   protected readonly narrow = narrowViewport(BOARD_NARROW);
-  /** Le jour supervisé, appris du serveur. `null` tant qu'il ne l'a pas dit. */
-  private readonly date = signal<string | null>(null);
-
-  protected readonly day = signal<ColumnState<DaySupervisionView>>(LOADING);
-  protected readonly preparation = signal<ColumnState<ProductionWorksheetView>>(LOADING);
-  protected readonly packing = signal<ColumnState<ProductionPackingView>>(LOADING);
-  protected readonly handover = signal<ColumnState<HandoverQueueView>>(LOADING);
+  /** Les quatre lectures et leurs états — le jour, puis les trois colonnes. */
+  protected readonly reads = new SupervisionReads(inject(SupervisionService), this.quality, () =>
+    this.chosen(),
+  );
+  protected readonly date = this.reads.date;
+  protected readonly serverDay = this.reads.serverDay;
+  protected readonly day = this.reads.day;
+  protected readonly preparation = this.reads.preparation;
+  protected readonly packing = this.reads.packing;
+  protected readonly handover = this.reads.handover;
 
   /** Le rôle choisit l'onglet d'arrivée ; le dernier ouvert ne l'emporte pas. */
   protected readonly tab = signal<Column>(
@@ -152,47 +155,70 @@ export class SupervisionPage {
     return day.status !== 'ready' || day.stale;
   });
 
-  /** « jeudi 25 septembre · à jour à 9 h 42 ». */
-  protected readonly stamp = computed(() => stampOf(dataOf(this.day())));
+  /** L'écart au jour du serveur : −1 hier, 0 aujourd'hui, +1 demain. */
+  protected readonly relative = computed(() => {
+    const date = this.date();
+    const server = this.serverDay();
+    return date === null || server === null ? 0 : dayDiff(date, server);
+  });
+  protected readonly dayOptions = DAY_OPTIONS;
+  /** Aucun segment allumé pour une date hors ±1 : c'est le calendrier qui la dit. */
+  protected readonly dayValue = computed(() =>
+    Math.abs(this.relative()) > 1 ? '' : String(this.relative()),
+  );
+  protected readonly strip = computed(() => {
+    const date = this.date();
+    return date === null ? null : dayStripOf(date, this.relative());
+  });
+
+  protected readonly stamp = computed(() => {
+    const day = this.day();
+    return stampOf(
+      dataOf(day),
+      this.relative(),
+      day.status === 'ready' && day.stale,
+      Date.now(),
+      DAY_REFRESH_MS,
+    );
+  });
 
   protected readonly counters = computed(() =>
     countersOf(this.preparationBoard(), this.packingBoard(), this.handoverBoard()),
   );
-
-  /** La recherche du masthead : elle SURLIGNE dans les trois colonnes, elle ne filtre pas. */
-  protected readonly query = signal('');
-  protected readonly matches = computed(() =>
-    supervisionMatches(this.query(), dataOf(this.handover()), dataOf(this.packing())),
+  protected readonly subtitles = computed(() =>
+    columnSubtitlesOf(this.preparationBoard(), this.packingBoard(), this.handoverBoard()),
   );
+  private readonly blockers = computed(() => blockersOf(this.packingBoard(), this.handoverBoard()));
+  protected readonly columnBlockers = computed(() => columnBlockersOf(this.blockers()));
 
-  /**
-   * Les blocages que porte une carte du masthead — dits par une pastille
-   * d'état, jamais par la couleur seule : les commandes qui attendent le four
-   * (sur Préparation, la colonne qui bloque) et les créneaux dépassés.
-   */
-  protected readonly blockers = computed(() =>
-    blockersOf(this.packingBoard(), this.handoverBoard()),
-  );
+  /** Recherche, pastille, commande dépliée : une seule à la fois (A5). */
+  protected readonly highlight = new SupervisionHighlight({
+    packing: computed(() => dataOf(this.packing())),
+    handover: computed(() => dataOf(this.handover())),
+    preparationBoard: this.preparationBoard,
+    packingBoard: this.packingBoard,
+    handoverBoard: this.handoverBoard,
+  });
 
-  /** Les onglets du mobile : le blocage d'une colonne voisine revient en pastille. */
+  /** Les onglets du mobile : pastille rouge des blocages, ou ce que la mise en avant y trouve. */
   protected readonly tabs = computed<readonly FoldViewNavItem[]>(() =>
-    supervisionTabs(this.counters(), this.blockers()),
+    supervisionTabs(
+      this.counters(),
+      this.blockers(),
+      this.highlight.active() ? this.highlight.counts() : null,
+    ),
   );
 
-  /** L'acheminement lu en colonne 3 : le segmenté vit dans l'en-tête fixe de la colonne. */
+  /** Les filtres des bandes (A4) : la page les tient, les colonnes les lisent. */
+  protected readonly shelfFilter = signal(ALL_SHELVES);
+  protected readonly packShop = signal(ALL_POINTS);
   protected readonly handoverMethod = signal<FulfillmentMethod>('pickup');
-
-  protected readonly methodOptions = computed<readonly FoldViewToggleOption[]>(() =>
-    methodOptionsOf(this.handoverBoard()),
-  );
+  protected readonly handoverShop = signal(ALL_POINTS);
 
   constructor() {
-    void this.load();
-    watchSupervisionDay(this.date, (columns) => this.refresh(columns));
-  }
-
-  protected selectMethod(value: string): void {
-    this.handoverMethod.set(value === 'delivery' ? 'delivery' : 'pickup');
+    void this.reads.load();
+    watchSupervisionDay(this.date, (columns) => this.reads.refresh(columns));
+    this.followHits();
   }
 
   protected selectTab(key: string): void {
@@ -201,99 +227,66 @@ export class SupervisionPage {
     }
   }
 
-  /** Tout relire depuis le jour du serveur — le premier chargement, ou quand il a échoué. */
-  protected async load(): Promise<void> {
-    for (const column of [this.day, this.preparation, this.packing, this.handover]) {
-      column.set(LOADING);
+  /** ‹ › : au téléphone, l'occurrence suivante peut vivre dans un autre onglet. */
+  protected step(delta: number): void {
+    this.highlight.step(delta);
+    const current = this.highlight.current();
+    if (this.narrow() && current !== null) {
+      this.tab.set(current.hit.column);
     }
-    this.quality.reset();
-    let day: DaySupervisionView;
-    try {
-      day = await this.service.day(this.chosen() ?? undefined);
-    } catch {
-      // Sans le jour du serveur, aucune colonne ne sait quoi lire.
-      for (const column of [this.day, this.preparation, this.packing, this.handover]) {
-        column.set(FAILED);
-      }
-      return;
-    }
-    this.day.set(ready(day));
-    this.date.set(day.date);
-    await this.readColumns(day.date);
   }
 
-  /** Le jour d'avant ou d'après celui qu'on regarde. */
-  protected shift(days: number): void {
-    const date = this.date();
-    if (date !== null) {
-      this.goTo(shiftServiceDay(date, days));
+  /** Un segment Hier / Aujourd'hui / Demain. */
+  protected pickDay(value: string): void {
+    const server = this.serverDay();
+    const shift = Number(value);
+    if (shift === 0 || server === null) {
+      this.goTo(null);
+      return;
     }
+    this.goTo(shiftServiceDay(server, shift));
   }
 
   /** `null` = revenir au jour du serveur, et le suivre de nouveau. */
   protected goTo(date: string | null): void {
-    this.chosen.set(date);
-    void this.router.navigate([], { queryParams: { date }, replaceUrl: true });
-    void this.load();
+    this.chosen.set(date === this.serverDay() ? null : date);
+    this.highlight.clear();
+    void this.router.navigate([], { queryParams: { date: this.chosen() }, replaceUrl: true });
+    void this.reads.load();
   }
 
   /** Juger une ligne ou une commande ; un verdict enregistré fait relire la page. */
   protected async check(request: QualityRequest): Promise<void> {
     const date = this.date();
-    if (date !== null && (await this.quality.open(date, request))) {
-      await this.refresh();
+    // Décision de Hugo (2026-09-28) : feuille du bas au téléphone, panneau latéral au bureau.
+    const side = this.narrow() ? 'bottom' : 'right';
+    const context = qualityContextOf(
+      request,
+      this.quality.lookup(),
+      dataOf(this.packing()),
+      dataOf(this.handover()),
+    );
+    if (date !== null && (await this.quality.open(date, context, side))) {
+      await this.reads.refresh();
     }
   }
 
-  /** Réessayer UNE colonne ; sans jour connu, c'est tout l'écran qu'il faut relire. */
-  protected async retry(column: Column): Promise<void> {
-    const date = this.date();
-    if (date === null) {
-      return this.load();
-    }
-    await this.readColumn(column, date, true);
-  }
-
-  /** La relecture périodique : elle ne vide jamais une colonne, elle dit qu'elle a échoué. */
-  /** `on-turn` : le jour seul, et les colonnes seulement si minuit l'a fait tourner. */
-  private async refresh(columns: 'always' | 'on-turn' = 'always'): Promise<void> {
-    const before = this.date();
-    if (before === null) {
-      return;
-    }
-    try {
-      const day = await this.service.day(this.chosen() ?? undefined);
-      this.day.set(ready(day));
-      // Minuit est passé au serveur : l'écran le suit, s'il n'a pas choisi.
-      this.date.set(day.date);
-    } catch {
-      this.day.update(afterFailure);
-    }
-    const date = this.date();
-    if (date !== null && (columns === 'always' || date !== before)) {
-      await this.readColumns(date);
-    }
-  }
-
-  private async readColumns(date: string): Promise<void> {
-    await Promise.all([
-      this.readColumn('preparation', date),
-      this.readColumn('packing', date),
-      this.readColumn('handover', date),
-      this.quality.read(date),
-    ]);
-  }
-
-  private readColumn(column: Column, date: string, reset = false): Promise<void> {
-    // Le jour a pu changer pendant la lecture : on ne pose pas hier sur aujourd'hui.
-    const current = (): boolean => date === this.date();
-    switch (column) {
-      case 'preparation':
-        return readInto(this.preparation, () => this.service.preparation(date), current, reset);
-      case 'packing':
-        return readInto(this.packing, () => this.service.packing(date), current, reset);
-      case 'handover':
-        return readInto(this.handover, () => this.service.handover(date), current, reset);
-    }
+  /**
+   * Chaque colonne défile jusqu'à sa première occurrence, puis jusqu'à la
+   * courante — seulement quand la mise en avant, le curseur ou l'onglet
+   * changent, jamais à chaque relecture : on ne reprend pas la main à qui lit.
+   */
+  private followHits(): void {
+    let last = '';
+    afterRenderEffect(() => {
+      const hits = this.highlight.hits();
+      const current = this.highlight.current();
+      const signature = `${hits.map((hit) => `${hit.column}:${hit.key}`).join('|')}#${String(current?.index ?? -1)}#${this.tab()}`;
+      if (signature === last) {
+        return;
+      }
+      last = signature;
+      scrollToHits(this.host.nativeElement, hits, current?.hit ?? null);
+    });
   }
 }

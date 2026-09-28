@@ -53,7 +53,7 @@ interface Fakes {
   deposit?: (photo: Blob) => Promise<string>;
 }
 
-async function mount(fakes: Fakes = {}) {
+async function mount(fakes: Fakes = {}, data: QualityPanelData = DATA) {
   const sent: RenderQualityCheckPayload[] = [];
   const closed: unknown[] = [];
   TestBed.configureTestingModule({
@@ -74,7 +74,7 @@ async function mount(fakes: Fakes = {}) {
     ],
   });
   const fixture = TestBed.createComponent(QualityPanel);
-  fixture.componentRef.setInput('data', DATA);
+  fixture.componentRef.setInput('data', data);
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
@@ -82,8 +82,8 @@ async function mount(fakes: Fakes = {}) {
   const save = (): HTMLButtonElement | null =>
     element.querySelector<HTMLButtonElement>('[data-save]');
   const choose = async (label: string): Promise<void> => {
-    const segments = element.querySelectorAll<HTMLButtonElement>('[data-verdict] button');
-    [...segments].find((segment) => segment.textContent?.trim() === label)?.click();
+    const cards = element.querySelectorAll<HTMLElement>('[data-verdict-choice]');
+    [...cards].find((card) => card.querySelector('.verdict-label')?.textContent === label)?.click();
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -116,8 +116,9 @@ afterEach(() => {
 
 describe('QualityPanel', () => {
   it('rend un OK sans note, avec un id ULID, et se ferme sur un succès', async () => {
-    const { save, sent, closed, fixture } = await mount();
+    const { save, sent, closed, fixture, choose } = await mount();
 
+    await choose('OK');
     save()?.click();
     await fixture.whenStable();
 
@@ -147,8 +148,9 @@ describe('QualityPanel', () => {
 
   /** D8 : un double clic n'envoie qu'une fois. */
   it('n’envoie qu’une fois sur un double clic', async () => {
-    const { save, sent, fixture } = await mount();
+    const { save, sent, fixture, choose } = await mount();
 
+    await choose('OK');
     save()?.click();
     save()?.click();
     await fixture.whenStable();
@@ -159,13 +161,14 @@ describe('QualityPanel', () => {
   /** D8 : après un échec, l'essai suivant rejoue le MÊME id — le serveur est idempotent. */
   it('garde le refus dans le panneau et rejoue le même id', async () => {
     let attempt = 0;
-    const { save, sent, closed, element, fixture } = await mount({
+    const { save, sent, closed, element, fixture, choose } = await mount({
       render: (payload) => {
         attempt += 1;
         return attempt === 1 ? Promise.reject(new Error('réseau')) : Promise.resolve(payload.id);
       },
     });
 
+    await choose('OK');
     save()?.click();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -183,7 +186,8 @@ describe('QualityPanel', () => {
   /** D8 : chaque photo part dès qu'elle est choisie, puis le verdict la rattache. */
   it('dépose une photo dès le choix et la rattache au verdict ; retirée, elle ne part pas', async () => {
     const deposit = vi.fn(() => Promise.resolve('up-1'));
-    const { fixture, element, save, sent } = await mount({ deposit });
+    const { fixture, element, save, sent, choose } = await mount({ deposit });
+    await choose('OK');
     const dropzone = pickerOf(fixture);
     const photo = new File(['x'], 'bac.jpg', { type: 'image/jpeg' });
 
@@ -221,7 +225,8 @@ describe('QualityPanel', () => {
   });
 
   it('retire une photo avant l’enregistrement', async () => {
-    const { fixture, element, save, sent } = await mount();
+    const { fixture, element, save, sent, choose } = await mount();
+    await choose('OK');
     const dropzone = pickerOf(fixture);
 
     dropzone.filesPicked.emit([new File(['x'], 'a.jpg', { type: 'image/jpeg' })]);
@@ -240,9 +245,10 @@ describe('QualityPanel', () => {
   });
 
   it('bloque Enregistrer sur une photo refusée, jusqu’à ce qu’on la retire', async () => {
-    const { fixture, element, save } = await mount({
+    const { fixture, element, save, choose } = await mount({
       deposit: () => Promise.reject(new Error('415')),
     });
+    await choose('OK');
     const dropzone = pickerOf(fixture);
 
     dropzone.filesPicked.emit([new File(['x'], 'a.jpg', { type: 'image/jpeg' })]);
@@ -260,7 +266,66 @@ describe('QualityPanel', () => {
     expect(checks).toHaveLength(1);
     expect(checks[0]?.textContent).toContain('Bloquant');
     expect(checks[0]?.textContent).toContain('Brûlés dessous');
-    expect(checks[0]?.textContent).toContain('par Léa Martin');
+    expect(checks[0]?.textContent).toContain('Léa Martin');
     expect(checks[0]?.textContent).toContain('sur 80 pièces');
+  });
+
+  it('ne présélectionne aucun verdict, et dit pourquoi Enregistrer attend', async () => {
+    const { element, save, choose } = await mount();
+    const reason = (): string | undefined =>
+      element.querySelector('[data-reason]')?.textContent?.trim();
+
+    expect(save()?.disabled).toBe(true);
+    expect(reason()).toBe('Choisissez un verdict.');
+    await choose('Réserve');
+    expect(reason()).toBe('Une note est nécessaire.');
+    expect(save()?.textContent?.trim()).toBe('Enregistrer la réserve');
+    await choose('Bloquant');
+    expect(save()?.textContent?.trim()).toBe('Bloquer');
+  });
+
+  it('préremplit la note par une étiquette rapide', async () => {
+    const { element, choose, fixture } = await mount();
+
+    await choose('Réserve');
+    const tag = [...element.querySelectorAll<HTMLButtonElement>('[data-tags] button')].find(
+      (button) => button.textContent?.trim() === 'Cuisson',
+    );
+    tag?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(element.querySelector<HTMLTextAreaElement>('[data-note] textarea')?.value).toBe(
+      'Cuisson : ',
+    );
+  });
+
+  it('dit qui un blocage retient : les commandes qui attendent la ligne', async () => {
+    const { element, choose } = await mount({}, { ...DATA, awaitedBy: ['Chalet Marmotte'] });
+
+    await choose('Bloquant');
+
+    expect(element.querySelector('[data-blocking-hint]')?.textContent).toContain(
+      'Commandes concernées : Chalet Marmotte, et toute commande du jour qui contient Croissant.',
+    );
+  });
+
+  /** A9 : l'en-tête reprend la pastille de la cible — jamais un OK qui la contredit. */
+  it('reprend la pastille de la cible en « Actuel · … », ou « Jamais contrôlé »', async () => {
+    const stale = await mount(
+      {},
+      {
+        ...DATA,
+        current: { rank: 2, label: 'Contrôle · À revoir', variant: 'warning', detail: 'x' },
+      },
+    );
+    expect(stale.element.querySelector('[data-current]')?.textContent).toContain(
+      'Actuel · À revoir',
+    );
+    TestBed.resetTestingModule();
+
+    const never = await mount({}, { ...DATA, current: null });
+    expect(never.element.querySelector('[data-current]')?.textContent).toContain('Jamais contrôlé');
   });
 });

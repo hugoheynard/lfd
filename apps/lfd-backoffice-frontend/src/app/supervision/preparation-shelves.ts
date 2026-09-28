@@ -125,3 +125,34 @@ export function preparationBoard(view: ProductionWorksheetView): PreparationBoar
     shelvesKnown: view.shelvesKnown,
   };
 }
+
+/** « Tous les rayons » — la valeur du filtre qui ne retient rien. */
+export const ALL_SHELVES = 'all';
+
+/** Une entrée du filtre de rayon (A4) : le rayon, et son nombre de lignes. */
+export interface ShelfFilterOption {
+  readonly value: string;
+  readonly label: string;
+  readonly count: number;
+}
+
+/**
+ * Le menu « Tous les rayons ▾ » : tous les rayons du jour, dans l'ordre de la
+ * colonne, chacun avec son nombre de lignes — le premier compte tout.
+ */
+export function shelfFilterOptions(board: PreparationBoard): readonly ShelfFilterOption[] {
+  const cards = [...board.open, ...board.finished];
+  return [
+    {
+      value: ALL_SHELVES,
+      label: 'Tous les rayons',
+      count: cards.reduce((sum, card) => sum + card.lineCount, 0),
+    },
+    ...cards.map((card) => ({ value: card.key, label: card.label, count: card.lineCount })),
+  ];
+}
+
+/** Les cartes que le filtre laisse voir — un rayon disparu du jour n'en retient aucune. */
+export function filterShelves(cards: readonly ShelfCard[], filter: string): readonly ShelfCard[] {
+  return filter === ALL_SHELVES ? cards : cards.filter((card) => card.key === filter);
+}

@@ -1,0 +1,65 @@
+<fold-popover
+  [placement]="narrow() ? 'bottom-end' : 'bottom-start'"
+  [open]="open()"
+  (openChange)="toggle($event)"
+>
+  @if (label() !== '') {
+    <button
+      foldButton
+      type="button"
+      emphasis="outline"
+      size="sm"
+      icon="calendar"
+      class="trigger is-custom"
+      foldPopoverTrigger
+      data-calendar
+    >
+      {{ label() }}
+    </button>
+  } @else {
+    <fold-button-icon
+      icon="calendar"
+      tooltip="Choisir une date"
+      class="trigger"
+      [size]="narrow() ? 'lg' : 'md'"
+      foldPopoverTrigger
+      data-calendar
+    />
+  }
+  <div foldPopoverPanel class="calendar">
+    <div class="calendar-head">
+      <fold-button-icon
+        icon="chevron-left"
+        size="sm"
+        tooltip="Mois précédent"
+        (clicked)="page(-1)"
+      />
+      <span class="calendar-title">{{ title() }}</span>
+      <fold-button-icon icon="chevron-right" size="sm" tooltip="Mois suivant" (clicked)="page(1)" />
+    </div>
+    @if (month() !== '') {
+      <fold-calendar-month
+        class="calendar-grid"
+        weekStartsOn="mon"
+        [month]="month()"
+        (monthChange)="follow($event)"
+        [today]="today() ?? undefined"
+        (dayClick)="choose($event)"
+      >
+        <ng-template foldCalendarDay let-day>
+          <span class="day" [class.is-selected]="day.date === selected()">{{
+            day.dayOfMonth
+          }}</span>
+        </ng-template>
+      </fold-calendar-month>
+    }
+    <div class="calendar-foot">
+      <button foldButton type="button" emphasis="soft" size="sm" (click)="choose(null)">
+        Aujourd’hui
+      </button>
+      <button foldButton type="button" emphasis="outline" size="sm" (click)="toggle(false)">
+        Fermer
+      </button>
+    </div>
+  </div>
+</fold-popover>
