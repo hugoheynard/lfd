@@ -1,8 +1,10 @@
 @if (board().notClosed) {
   @if (board().upcoming.length === 0) {
+    <!-- Le « plan pas encore arrêté » est dit au masthead : ici, seulement ce
+         que la colonne montre — rien, puisqu'aucune commande n'est attendue. -->
     <fold-empty-state
-      title="La journée n'est pas encore arrêtée"
-      subtitle="Le colisage commence à la clôture."
+      title="Aucune commande attendue"
+      subtitle="Rien à coliser pour l'instant."
       data-not-closed
     >
       <fold-icon empty-icon name="package" />
