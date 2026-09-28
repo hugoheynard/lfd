@@ -303,3 +303,19 @@ Ce paragraphe remplace R5 sur ce point.
 - Les workflows de déploiement se déclenchent sur `push: staging` avec
   l'environnement GitHub `staging`, sur `push: main` avec `production`
   (groupes `concurrency` distincts, §6 B6).
+
+## 8. Les réponses de Hugo (2026-09-28)
+
+1. **Liste blanche des e-mails : le staff seulement.** Aucun testeur
+   extérieur ; la liste est le domaine du staff, et rien d'autre.
+2. **Sous-domaines : validés** — `staging.lafoliecoffee.info` (boutique),
+   `staging-admin.…` (back-office), et leurs voisins pour la passerelle et
+   les médias, sur le même modèle.
+3. **Coût : accepté** — une seconde base Prisma Postgres et un second
+   conteneur Cloudflare.
+4. **Des clients fictifs semés au départ ?** **Reporté** : « reposes-moi la
+   question plus tard ». À reposer **avant le lot R-C** (la copie), qui est
+   le moment où l'on décide ce que contient le staging à son premier jour.
+
+**Restent ouverts** : la question 4, et l'ordre imposé ou non
+`dev` → `staging` → `main` (§7).
