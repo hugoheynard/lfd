@@ -22,12 +22,14 @@ export interface ShelfCard {
   readonly totalUnits: number;
   /** Les lignes encore à sortir, dans l'ordre de la fiche — sans case à cocher. */
   readonly pending: readonly WorkshopLine[];
+  /** Les lignes sorties, montrées au dépliage du rayon — avec qui les a cochées. */
+  readonly done: readonly WorkshopLine[];
 }
 
 export interface PreparationBoard {
   /** Ce qui reste au four : en cours d'abord, puis pas commencés, dans l'ordre de la vitrine. */
   readonly open: readonly ShelfCard[];
-  /** Les rayons finis, repliés en bas. */
+  /** Les rayons finis, en bas de la colonne. */
   readonly finished: readonly ShelfCard[];
   /** « terminés à 6 h 10 » — la dernière coche des rayons finis, `null` sans heure lisible. */
   readonly finishedAt: string | null;
@@ -54,6 +56,7 @@ function cardOf(group: WorkshopGroup): ShelfCard {
     remainingUnits: group.remainingUnits,
     totalUnits: group.totalUnits,
     pending: group.pending,
+    done: group.done,
   };
 }
 

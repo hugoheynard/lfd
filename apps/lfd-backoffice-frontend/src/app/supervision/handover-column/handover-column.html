@@ -17,7 +17,9 @@
       class="row"
       [class.narrow]="narrow()"
       [class.edge-alert]="row.state === 'overdue'"
-      [class.is-past]="row.state === 'handed_over' || row.state === 'cancelled'"
+      [class.is-past]="row.state === 'cancelled'"
+      [class.is-done]="row.state === 'handed_over'"
+      [class.is-waiting]="row.state === 'not_ready' || row.state === 'ready'"
       [attr.data-row]="row.state"
       [attr.data-reference]="row.reference"
     >

@@ -25,6 +25,17 @@ function card(key: string, overrides: Partial<ShelfCard> = {}): ShelfCard {
         doneAt: null,
       },
     ],
+    done: [
+      {
+        sku: 'cro',
+        productName: 'Croissant',
+        quantity: 50,
+        containerLabel: null,
+        done: true,
+        initials: 'HH',
+        doneAt: null,
+      },
+    ],
     ...overrides,
   };
 }
@@ -58,12 +69,25 @@ describe('PreparationColumn', () => {
     expect(element.querySelector('input, fold-checkbox')).toBeNull();
   });
 
-  it('replie les rayons finis dans un encart daté', async () => {
+  /** Hugo, 2026-09-28 : repliés en une ligne de noms, on ne voyait plus ce qui était sorti. */
+  it('garde les rayons finis visibles, en bas, sous un séparateur daté', async () => {
     const element = await mount(BOARD);
+    const shelves = [...element.querySelectorAll('[data-shelf]')].map((shelf) =>
+      shelf.getAttribute('data-shelf'),
+    );
 
-    expect(element.querySelector('[data-folded]')?.textContent).toContain('Pains');
-    expect(element.querySelector('[data-folded]')?.textContent).toContain('terminés à 6 h 10');
-    expect(element.querySelector('[data-shelf="Pains"]')).toBeNull();
+    expect(element.querySelector('[data-done-divider]')?.textContent).toContain('à 6 h 10');
+    expect(shelves.at(-1)).toBe('Pains');
+    expect(element.querySelector('[data-shelf="Pains"]')?.classList).toContain('is-done');
+  });
+
+  it('déplie un rayon en cours sur ses lignes sorties, avec leurs initiales', async () => {
+    const element = await mount(BOARD);
+    const done = element.querySelector('[data-detail="Viennoiseries"] [data-line-done]');
+
+    expect(done?.textContent).toContain('Croissant');
+    expect(done?.textContent).toContain('HH');
+    expect(element.querySelector('[data-detail="Pains"]')).not.toBeNull();
   });
 
   it('renvoie vers la fournée, seulement si on le lui permet', async () => {

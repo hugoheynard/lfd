@@ -14,6 +14,20 @@
   box-shadow: var(--fold-shadow-sm);
 }
 
+// Hugo, 2026-09-28 : ce qui attend en ambre, ce qui est fini en vert — l'état
+// se lit de loin, et le compteur « n / m lignes » le dit aussi en toutes
+// lettres (jamais la couleur seule).
+.shelf.is-waiting {
+  background: var(--fold-color-warning-surface);
+  border-color: var(--fold-color-warning-border);
+}
+
+.shelf.is-done {
+  background: var(--fold-color-success-surface);
+  border-color: var(--fold-color-success-border);
+  box-shadow: none;
+}
+
 // fold-card ne range pas son contenu : une colonne, et l'écart vient du gap.
 .stack {
   display: flex;
@@ -56,6 +70,27 @@
   --fold-color-success: var(--fold-ref-green-700);
   --fold-color-warning: var(--fold-ref-amber-500);
   --fold-color-surface-raised: var(--fold-ref-paper-200);
+}
+
+.detail-summary {
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text-secondary);
+}
+
+.line.is-done {
+  color: var(--fold-color-text-muted);
+
+  .product {
+    text-decoration: line-through;
+  }
+}
+
+.done-mark {
+  margin-left: auto;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-success-text);
 }
 
 .lines {
@@ -103,40 +138,26 @@
   }
 }
 
-.folded {
-  margin: 0;
-  padding: var(--fold-space-md);
-  font-size: var(--fold-text-xs);
-  line-height: var(--fold-leading-normal);
-  color: var(--fold-color-text-muted);
-  background: var(--fold-color-surface-band);
-  border: 1px dashed var(--fold-color-border);
-  border-radius: var(--fold-radius-sm);
-
-  strong {
-    color: var(--fold-color-text);
-  }
+.done-divider {
+  margin: var(--fold-space-sm) 0 0;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
 }
 
 // ── Mobile : bandes de tête et de pied, cibles tactiles relevées ─────────────
 
-.band,
-.foot {
+.band {
   display: flex;
   align-items: center;
   gap: var(--fold-space-sm);
   padding: var(--fold-space-sm) var(--fold-space-lg);
-  background: var(--fold-color-surface-band);
-}
-
-.band {
   margin: calc(-1 * var(--fold-space-md)) calc(-1 * var(--fold-space-md)) 0;
+  background: var(--fold-color-surface-band);
   border-bottom: 1px solid var(--fold-color-border);
-}
-
-.foot {
-  margin: 0 calc(-1 * var(--fold-space-md)) calc(-1 * var(--fold-space-md));
-  border-top: 1px solid var(--fold-color-border);
 }
 
 .band-title {
@@ -153,20 +174,6 @@
   font-size: var(--fold-text-xs);
   font-variant-numeric: tabular-nums;
   color: var(--fold-color-text-muted);
-}
-
-.foot-names {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  font-size: var(--fold-text-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--fold-color-text-muted);
-}
-
-.foot-toggle {
-  flex: none;
 }
 
 .shelf.narrow {

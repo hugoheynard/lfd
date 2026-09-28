@@ -13,6 +13,19 @@
 
   box-shadow: var(--fold-shadow-sm);
 
+  // Hugo, 2026-09-28 : ce qui attend en ambre, ce qui est colisé en vert ; la
+  // pastille dit l'état en toutes lettres (jamais la couleur seule).
+  &.is-waiting {
+    background: var(--fold-color-warning-surface);
+    border-color: var(--fold-color-warning-border);
+  }
+
+  &.is-done {
+    background: var(--fold-color-success-surface);
+    border-color: var(--fold-color-success-border);
+    box-shadow: none;
+  }
+
   // Le liseré d'état : trois pixels à gauche, le coin gauche redevient droit.
   &.edge-warning {
     border-left: 3px solid var(--fold-ref-amber-500);
@@ -98,23 +111,14 @@
   color: var(--fold-color-text-muted);
 }
 
-.folded {
-  margin: 0;
-  padding: var(--fold-space-md);
-  font-size: var(--fold-text-xs);
-  line-height: var(--fold-leading-normal);
-  color: var(--fold-color-text-muted);
-  background: var(--fold-color-surface-band);
-  border: 1px dashed var(--fold-color-border);
-  border-radius: var(--fold-radius-sm);
-
-  strong {
-    color: var(--fold-color-text);
-  }
-}
-
-.compact {
-  opacity: 0.72;
+.done-divider {
+  margin: var(--fold-space-sm) 0 0;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
 }
 
 .compact-row {
@@ -132,23 +136,14 @@
 
 // ── Mobile ──────────────────────────────────────────────────────────────────
 
-.band,
-.foot {
+.band {
   display: flex;
   align-items: center;
   gap: var(--fold-space-sm);
   padding: var(--fold-space-sm) var(--fold-space-lg);
-  background: var(--fold-color-surface-band);
-}
-
-.band {
   margin: calc(-1 * var(--fold-space-md)) calc(-1 * var(--fold-space-md)) 0;
+  background: var(--fold-color-surface-band);
   border-bottom: 1px solid var(--fold-color-border);
-}
-
-.foot {
-  margin: 0 calc(-1 * var(--fold-space-md)) calc(-1 * var(--fold-space-md));
-  border-top: 1px solid var(--fold-color-border);
 }
 
 .band-title {
@@ -165,20 +160,6 @@
   font-size: var(--fold-text-xs);
   font-variant-numeric: tabular-nums;
   color: var(--fold-color-text-muted);
-}
-
-.foot-names {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  font-size: var(--fold-text-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--fold-color-text-muted);
-}
-
-.foot-toggle {
-  flex: none;
 }
 
 .order.narrow {

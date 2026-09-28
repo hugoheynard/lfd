@@ -50,6 +50,19 @@
     }
   }
 
+  // Hugo, 2026-09-28 : ce qui attend en ambre, ce qui est remis en vert, en bas
+  // du créneau ; la sous-ligne dit l'état en toutes lettres.
+  &.is-waiting {
+    background: var(--fold-color-warning-surface);
+    border-color: var(--fold-color-warning-border);
+  }
+
+  &.is-done {
+    background: var(--fold-color-success-surface);
+    border-color: var(--fold-color-success-border);
+    box-shadow: none;
+  }
+
   &.is-past {
     opacity: 0.68;
 

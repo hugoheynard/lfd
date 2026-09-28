@@ -173,7 +173,12 @@ function groupsOf(rows: readonly { key: string; row: SlotRow }[]): SlotGroup[] {
     return rank(a).localeCompare(rank(b));
   });
   return keys.map((key) => {
-    const inGroup = rows.filter((entry) => entry.key === key).map(({ row }) => row);
+    // Ce qui attend d'abord, ce qui est remis ou annulé en bas — visible, pas
+    // retiré (Hugo, 2026-09-28). Tri stable : l'ordre du serveur tient dedans.
+    const inGroup = rows
+      .filter((entry) => entry.key === key)
+      .map(({ row }) => row)
+      .sort((a, b) => Number(!isExpected(a)) - Number(!isExpected(b)));
     return {
       key,
       ...labelOf(key),

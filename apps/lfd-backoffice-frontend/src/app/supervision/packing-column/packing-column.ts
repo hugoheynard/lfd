@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { FoldBadgeVariant } from 'fold-ng';
 import {
@@ -7,7 +7,6 @@ import {
   FoldCardComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
-  FoldLinkComponent,
   FoldMeterComponent,
 } from 'fold-ng';
 
@@ -38,7 +37,6 @@ const BADGES: Readonly<Record<PackingState, { label: string; variant: FoldBadgeV
     FoldCardComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
-    FoldLinkComponent,
     FoldMeterComponent,
   ],
   templateUrl: './packing-column.html',
@@ -50,16 +48,9 @@ export class PackingColumn {
   readonly narrow = input(false);
 
   protected readonly link = SUPERVISION_LINKS.packing;
-  protected readonly unfolded = signal(false);
 
   protected readonly empty = computed(
     () => this.board().visible.length === 0 && this.board().packed.length === 0,
-  );
-
-  protected readonly packedNames = computed(() =>
-    this.board()
-      .packed.map((card) => card.customerLabel)
-      .join(', '),
   );
 
   protected readonly packedCount = computed(() =>
@@ -88,9 +79,5 @@ export class PackingColumn {
 
   protected progressLabel(card: PackingCard): string {
     return `${String(card.packedLines)} références sur ${String(card.lineCount)} posées`;
-  }
-
-  protected toggle(): void {
-    this.unfolded.update((open) => !open);
   }
 }

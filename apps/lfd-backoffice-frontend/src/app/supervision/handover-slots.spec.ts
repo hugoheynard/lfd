@@ -146,12 +146,13 @@ describe('la colonne Retrait / livraison', () => {
     expect(board.pickupExpected).toBe(1);
     expect(board.deliveryExpected).toBe(1);
     expect(board.pickup[0]).toMatchObject({ expected: 2, handedOver: 1 });
+    // Ce qui attend d'abord, le remis et l'annulé en bas (Hugo, 2026-09-28).
     expect(board.pickup[0]?.rows.map((row) => row.state)).toEqual([
+      'not_ready',
       'handed_over',
       'cancelled',
-      'not_ready',
     ]);
-    expect(board.pickup[0]?.rows[0]?.handedOverAt).toBe('7 h 04');
+    expect(board.pickup[0]?.rows[1]?.handedOverAt).toBe('7 h 04');
   });
 
   it('mesure un dépassement entre la fin du créneau et l’instant du serveur', () => {

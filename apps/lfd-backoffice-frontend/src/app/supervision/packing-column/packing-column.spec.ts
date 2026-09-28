@@ -61,11 +61,15 @@ describe('PackingColumn', () => {
     expect(waiting?.querySelector('a')).toBeNull();
   });
 
-  it('compte au-delà de dix et replie les colisées', async () => {
+  /** Hugo, 2026-09-28 : les colisées restent visibles, en bas et en vert. */
+  it('compte au-delà de dix et garde les colisées en cartes, en bas', async () => {
     const element = await mount(BOARD);
+    const packed = element.querySelector('[data-packing="packed"]');
 
     expect(element.textContent).toContain('+ 13 commandes · triées par heure de retrait');
-    expect(element.querySelector('[data-folded]')?.textContent).toContain('Client CMD-3');
+    expect(element.querySelector('[data-done-divider]')).not.toBeNull();
+    expect(packed?.textContent).toContain('Client CMD-3');
+    expect(packed?.classList).toContain('is-done');
   });
 
   it('dit que la journée n’est pas arrêtée', async () => {

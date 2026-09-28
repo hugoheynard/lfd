@@ -23,7 +23,7 @@
   @for (card of board().visible; track card.reference) {
     <fold-card
       radius="sm"
-      class="order"
+      class="order is-waiting"
       [class.narrow]="narrow()"
       [class.edge-warning]="card.state === 'awaiting_oven'"
       [attr.data-packing]="card.state"
@@ -76,30 +76,22 @@
     <p class="overflow">{{ overflowLabel() }}</p>
   }
 
+  <!-- Les colisées restent VISIBLES, en bas et en vert (Hugo, 2026-09-28) :
+       repliées en une ligne de noms, on ne savait plus ce qui était prêt. -->
   @if (board().packed.length > 0) {
-    @if (narrow() && unfolded()) {
-      @for (card of board().packed; track card.reference) {
-        <fold-card radius="sm" class="order compact" [attr.data-packing]="card.state">
-          <div class="compact-row">
-            <span class="compact-name">{{ card.customerLabel }}</span>
-            <span class="meta">{{ meta(card) }}</span>
-          </div>
-        </fold-card>
-      }
-    }
-    @if (narrow()) {
-      <div class="foot">
-        <span class="band-title">Colisées · {{ board().packed.length }}</span>
-        <span class="foot-names">{{ packedNames() }}</span>
-        <fold-link class="foot-toggle" (clicked)="toggle()">{{
-          unfolded() ? 'Replier ▴' : 'Déplier ▾'
-        }}</fold-link>
-      </div>
-    } @else {
-      <p class="folded" data-folded>
-        {{ packedNames() }} — <strong>{{ packedCount() }}</strong
-        >. Les commandes colisées descendent et se replient.
-      </p>
+    <p class="done-divider" data-done-divider>{{ packedCount() }}</p>
+    @for (card of board().packed; track card.reference) {
+      <fold-card
+        radius="sm"
+        class="order compact is-done"
+        [attr.data-packing]="card.state"
+        [attr.data-reference]="card.reference"
+      >
+        <div class="compact-row">
+          <span class="compact-name">{{ card.customerLabel }}</span>
+          <span class="meta">{{ meta(card) }}</span>
+        </div>
+      </fold-card>
     }
   }
 }
