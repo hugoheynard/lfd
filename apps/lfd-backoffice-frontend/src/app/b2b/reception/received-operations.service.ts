@@ -8,7 +8,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 
 /**
  * **Les opérations reçues du référentiel**, et leur surcharge à la réception
- * (D9 de `documentation/order/architecture-operations-datees.md`).
+ * (D9 de `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Lire relève de `b2b_catalog:read`, écrire de `b2b_catalog:write` — le même
  * droit que la validation des arrivées.

@@ -1,6 +1,6 @@
 /**
  * E2E des **opérations datées** — sur un vrai Postgres
- * (`documentation/order/architecture-operations-datees.md`, lot 1).
+ * (`documentation/operations-datees/architecture-operations-datees.md`, lot 1).
  *
  * Ce que seul ce niveau prouve :
  * - la clé primaire tient la clé d'une opération ARCHIVÉE — `noel-2026` ne

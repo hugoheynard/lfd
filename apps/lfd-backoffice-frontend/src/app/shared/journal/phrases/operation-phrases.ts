@@ -18,7 +18,7 @@ import { onSubject, onSubjectChanges, saidName, theSubject } from './referential
 /**
  * **Les opérations datées** — Noël, Pâques, la galette (famille
  * `referentialOperations` du catalogue des faits, lot 1 du plan
- * `documentation/order/architecture-operations-datees.md`, 2026-09-24).
+ * `documentation/operations-datees/architecture-operations-datees.md`, 2026-09-24).
  *
  * Écrites selon le guide en tête de `phrase-registry.ts`. Les dates ne se
  * récitent pas dans la phrase : elle nomme ce qui a bougé, le détail dit les

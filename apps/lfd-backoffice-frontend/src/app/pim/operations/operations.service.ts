@@ -15,7 +15,7 @@ import { API_BASE_URL } from '../data/api';
 
 /**
  * **Les opérations datées** — Noël, Pâques, la galette
- * (`documentation/order/architecture-operations-datees.md`).
+ * (`documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Un `PUT` par sujet, jamais un `PUT` de l'opération entière : le serveur
  * découpe ses écritures comme l'écran découpe ses cartes, et chaque sujet a sa

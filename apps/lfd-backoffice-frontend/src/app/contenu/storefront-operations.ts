@@ -7,7 +7,7 @@ import {
 
 /**
  * **Les opérations qu'une annonce peut désigner**, telles que l'éditeur les
- * dit (D11 de `documentation/order/architecture-operations-datees.md`).
+ * dit (D11 de `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Des fonctions pures : l'état vient du serveur (`GET /admin/storefront/catalog`,
  * à son horloge), l'éditeur ne fait que le nommer, et calculer la pastille que

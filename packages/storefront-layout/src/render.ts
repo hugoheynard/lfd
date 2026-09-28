@@ -35,7 +35,7 @@ export type RenderableContent =
  * - une **info liée à une opération**, toujours : son titre vide est HÉRITÉ
  *   de l'opération. Que l'opération soit montrée ou non, c'est le serveur
  *   qui le décide à la lecture — il omet l'annonce d'une opération éteinte
- *   (D11 de `documentation/order/architecture-operations-datees.md`), et ce
+ *   (D11 de `documentation/operations-datees/architecture-operations-datees.md`), et ce
  *   qui arrive en boutique porte déjà le titre hérité.
  *
  * 🔴 Jusqu'au 2026-09-24, une info sans image était « vide » et rendait ses

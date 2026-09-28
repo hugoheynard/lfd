@@ -17,7 +17,7 @@
 > sérieuses, toutes reprises ci-dessous — la section « Ce que la contradiction a
 > changé » les liste une par une.
 >
-> Suite de [`boutique-rayon-layout.md`](boutique-rayon-layout.md), section
+> Suite de [`boutique-rayon-layout.md`](../order/boutique-rayon-layout.md), section
 > « Ce que fait une annonce au clic », ligne **Opération**.
 
 ## Ce qu'est une opération, en une phrase

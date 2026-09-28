@@ -30,7 +30,7 @@ export interface ShownOperation {
 
 /**
  * Port de **lecture des opérations pour la vitrine publique** (D11 de
- * `documentation/order/architecture-operations-datees.md`) : de quoi éteindre
+ * `documentation/operations-datees/architecture-operations-datees.md`) : de quoi éteindre
  * une annonce dont l'opération n'est pas montrée, et remplir ce qu'elle hérite.
  *
  * Distinct du lecteur de la page (ISP) : la page se lit dans les tables de la

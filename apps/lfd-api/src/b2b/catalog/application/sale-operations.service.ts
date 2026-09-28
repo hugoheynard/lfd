@@ -23,7 +23,7 @@ export interface ProductSaleAccess {
 /**
  * **Les opérations datées, pour ceux qui vendent par SKU PRODUIT** — la caisse,
  * le devis, les jours proposés (D5, D6 de
- * `documentation/order/architecture-operations-datees.md`).
+ * `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Pourquoi un service et pas un appel direct à `operationAccess` : une
  * opération porte les SKU du **catalogue** (la déclinaison, `PAT-002-1`), et la

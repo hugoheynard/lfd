@@ -19,7 +19,7 @@ import { PrismaOperationRepository } from "./infrastructure/prisma-operation.rep
 
 /**
  * Contexte **operations** — les opérations datées : Noël, Pâques, la galette
- * (`documentation/order/architecture-operations-datees.md`).
+ * (`documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Dans le référentiel parce que préparer Noël, c'est choisir des articles et
  * fixer des dates : le travail du catalogue (D1).

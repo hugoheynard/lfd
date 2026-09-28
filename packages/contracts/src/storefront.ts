@@ -77,7 +77,7 @@ export const storefrontImageSchema = z.object({
 
 /**
  * Ce que fait une annonce au clic (D11 de
- * `documentation/order/architecture-operations-datees.md`) : rien, ouvrir un
+ * `documentation/operations-datees/architecture-operations-datees.md`) : rien, ouvrir un
  * rayon (`linkShelfKey`), ou ouvrir le rayon `op:<key>` d'une opération datée
  * (`operationKey`). Formule et page viendront à leur propre chantier.
  */

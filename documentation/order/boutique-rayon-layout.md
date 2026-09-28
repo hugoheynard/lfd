@@ -181,7 +181,7 @@ boutique — à regarder avant de toucher au code.
 ## Pas encore décidé
 
 - **Dater** : proposé dans
-  [`architecture-operations-datees.md`](architecture-operations-datees.md) —
+  [`architecture-operations-datees.md`](../operations-datees/architecture-operations-datees.md) —
   le contenu s'éteint avec son opération, l'objet ne porte pas de date.
 - **Cibler** : pour quel public — pro, particulier, les deux.
 - **Les gestes de mise en page** — poser en poussant, gérer les rangées,

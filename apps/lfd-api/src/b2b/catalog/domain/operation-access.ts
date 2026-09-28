@@ -23,7 +23,7 @@ export interface OperationClosed {
 }
 
 /**
- * **Vendable maintenant ?** (D4 de `documentation/order/architecture-operations-datees.md`)
+ * **Vendable maintenant ?** (D4 de `documentation/operations-datees/architecture-operations-datees.md`)
  *
  * - `free` — l'article n'est pas `operationOnly` : les opérations ne le
  *   contraignent jamais (D3 — le croissant du 26 décembre) ;

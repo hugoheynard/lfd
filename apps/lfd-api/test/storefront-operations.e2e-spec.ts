@@ -1,6 +1,6 @@
 /**
  * E2E des **annonces liées à une opération datée** — D11 de
- * `documentation/order/architecture-operations-datees.md`, lot 5.
+ * `documentation/operations-datees/architecture-operations-datees.md`, lot 5.
  *
  * Ce que seul ce niveau prouve : une annonce enregistrée par le vrai `PUT`
  * (titre vide, hérité) se relit par la vraie route publique, résolue contre le

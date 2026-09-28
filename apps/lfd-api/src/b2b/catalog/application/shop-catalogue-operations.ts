@@ -12,7 +12,7 @@ import type { ResolvedCatalogItem, ShopAudience } from "../domain/ports/catalog.
 
 /**
  * **Ce que la vitrine sait des opérations datées, à l'instant de la requête**
- * (D5, D8 de `documentation/order/architecture-operations-datees.md`).
+ * (D5, D8 de `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Lu une fois par `ShopCataloguePricing`, puis appliqué ici sans autre
  * lecture : la vitrine est la seule route anonyme du dépôt, et la réponse de

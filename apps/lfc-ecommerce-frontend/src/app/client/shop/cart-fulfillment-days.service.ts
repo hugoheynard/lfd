@@ -7,7 +7,7 @@ import { ShopCatalogue } from './shop-catalogue.store';
 
 /**
  * **Les jours proposés suivent le panier** (D6 de
- * `documentation/order/architecture-operations-datees.md`).
+ * `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Un panier qui porte un article réservé à une opération ne se voit proposer
  * que les jours de retrait de celle-ci : `GET /fulfillment-days` le sait dès

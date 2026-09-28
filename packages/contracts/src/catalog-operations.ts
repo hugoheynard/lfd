@@ -5,7 +5,7 @@ import { z } from "zod";
  *
  * Le référentiel prépare Noël, Pâques, la galette ; la plateforme les REÇOIT
  * par le fil v11 et peut les **restreindre** à la réception, jamais les étendre
- * (D9 de `documentation/order/architecture-operations-datees.md`).
+ * (D9 de `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Routes (surface `b2b_catalog`, le droit du paramétrage du catalogue) :
  *

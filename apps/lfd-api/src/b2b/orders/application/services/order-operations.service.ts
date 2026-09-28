@@ -5,7 +5,7 @@ import { ensureWithinOperation } from "../../domain/services/order-operation-gua
 
 /**
  * **Le garde des opérations datées, pour la caisse et le devis** (D6 de
- * `documentation/order/architecture-operations-datees.md`).
+ * `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Un service plutôt qu'un bloc dans `OrderDrafting`, pour que le devis de la
  * boutique, celui du staff et la passation opposent LA même règle : trois

@@ -17,7 +17,7 @@ export class SetProductOperationOnlyCommand {
 
 /**
  * **Réserve une fiche aux opérations datées** — ou la rend à la vente courante
- * (D3 de `documentation/order/architecture-operations-datees.md`).
+ * (D3 de `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * ⚠️ Jusqu'au lot 3 du même plan, le drapeau traverse le fil mais **ne refuse
  * aucune vente** : la garde et lui partent dans le même merge, et c'est ce qui

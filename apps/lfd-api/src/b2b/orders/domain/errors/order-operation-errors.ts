@@ -4,7 +4,7 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * **Les refus d'une opération datée** (D6 de
- * `documentation/order/architecture-operations-datees.md`).
+ * `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Tous en 409 (`BusinessError`), comme `PastOrderCutoffError` : la demande est
  * bien formée, c'est le calendrier qui la refuse. Chaque message nomme le cas

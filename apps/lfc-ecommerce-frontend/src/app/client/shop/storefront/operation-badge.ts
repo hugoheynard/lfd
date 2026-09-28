@@ -29,7 +29,7 @@ export function daysUntil(orderUntil: string, now: Date): number | null {
 
 /**
  * **La pastille qu'une annonce d'opération se calcule** (D11 de
- * `documentation/order/architecture-operations-datees.md`), quand la vitrine
+ * `documentation/operations-datees/architecture-operations-datees.md`), quand la vitrine
  * n'en a saisi aucune : « Dès le 15 nov. » (annoncée), « J‑18 » (ouverte),
  * « Dernier jour » (ouverte, le jour de la clôture), « Commandes closes ».
  *

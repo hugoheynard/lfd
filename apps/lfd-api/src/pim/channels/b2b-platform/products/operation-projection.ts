@@ -14,7 +14,7 @@ export interface OperationProjection {
 
 /**
  * **Les opérations datées, telles que le fil v11 les porte** (D10 de
- * `documentation/order/architecture-operations-datees.md`). Pure, comme
+ * `documentation/operations-datees/architecture-operations-datees.md`). Pure, comme
  * `projectCatalog` : aucune base, aucune horloge.
  *
  * Deux filtres, et chacun a sa raison :

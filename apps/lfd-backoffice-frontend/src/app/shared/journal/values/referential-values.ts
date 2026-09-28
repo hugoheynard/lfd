@@ -88,7 +88,7 @@ export const PRO_PRICE_METHOD = domain('méthode du prix professionnel (toutes)'
 
 /**
  * La clientèle d'une opération datée (`operation.*`, D7 du plan
- * `documentation/order/architecture-operations-datees.md`, 2026-09-24).
+ * `documentation/operations-datees/architecture-operations-datees.md`, 2026-09-24).
  */
 export const OPERATION_AUDIENCE = domain('clientèle d’une opération', {
   pro: 'Professionnels',

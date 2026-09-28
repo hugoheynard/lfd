@@ -7,7 +7,7 @@ import { SHOP_TIME_ZONE } from '../shop-time-zone';
 
 /**
  * **Les opérations datées, telles que la vitrine les montre** (D8 de
- * `documentation/order/architecture-operations-datees.md`).
+ * `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Un rayon d'opération n'est pas une famille : sa clé est `op:<key>`, la même
  * que le serveur attend pour la vitrine (`GET /shop/storefront/:shelfKey`). Le

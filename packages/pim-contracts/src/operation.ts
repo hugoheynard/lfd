@@ -6,7 +6,7 @@ import type { LocalizedText } from "./shared.js";
 /**
  * **L'opération datée** — Noël, Pâques, la galette : une sélection d'articles
  * du catalogue, bornée dans le temps, qu'on annonce avant de la vendre
- * (`documentation/order/architecture-operations-datees.md`).
+ * (`documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Ce contrat ne valide que la **forme**. Les règles — la clé en minuscules et
  * tirets, l'ordre des cinq dates, un jour qui existe au calendrier, une

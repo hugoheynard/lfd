@@ -10,7 +10,7 @@ import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./
 
 /**
  * **Les opérations datées traversent le fil v11, jusqu'au miroir du commerce**
- * (lot 2 de `documentation/order/architecture-operations-datees.md`).
+ * (lot 2 de `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Ce que seul ce niveau prouve : l'acceptation d'un envoi écrit VRAIMENT le
  * miroir des opérations, un envoi suivant les MARQUE retirées sans rien

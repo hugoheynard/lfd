@@ -73,7 +73,7 @@ export interface ProductSnapshot {
   readonly channelOverride: SalesChannels | null;
   /**
    * **Vendu seulement pendant une opération** — la bûche, pas le croissant
-   * (D3 de `documentation/order/architecture-operations-datees.md`).
+   * (D3 de `documentation/operations-datees/architecture-operations-datees.md`).
    *
    * Un fait de la FICHE et non de la ligne d'opération : retirer la bûche de
    * Noël, masquer ou archiver Noël doit la rendre invisible, jamais la vendre

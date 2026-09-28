@@ -20,7 +20,7 @@ export const OPERATION_SHELF_PREFIX = "op:";
 
 /**
  * **L'opération qu'une annonce désigne** (D11 de
- * `documentation/order/architecture-operations-datees.md`).
+ * `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Seule la FORME est refusée. Une clé que le miroir des opérations ne connaît
  * pas — pas encore reçue, ou retirée depuis — est acceptée : l'opération peut

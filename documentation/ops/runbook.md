@@ -391,7 +391,7 @@ pour changer, remettre `auth0_id` à `NULL` sur la base **locale**.
 
 ## Avant de déployer le fil v11 (les opérations datées)
 
-Lot 2 de [`architecture-operations-datees.md`](../order/architecture-operations-datees.md)
+Lot 2 de [`architecture-operations-datees.md`](../operations-datees/architecture-operations-datees.md)
 (D10, 2026-09-24). Le fil catalogue passe en **v11** : il transporte les
 opérations datées (Noël, Pâques, la galette) et le drapeau « vendu seulement
 pendant une opération » des fiches. Les lots 2 et 3 partent **dans le même

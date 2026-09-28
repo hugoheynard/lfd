@@ -22,7 +22,7 @@ export interface LineOperationAccess {
 
 /**
  * **Refuse ce qu'une opération datée ne laisse pas commander** (D6 de
- * `documentation/order/architecture-operations-datees.md`).
+ * `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Fonction pure, sœur de `ensureWithinOrderCutoff`, appelée APRÈS lui dans
  * `OrderDrafting` : les deux s'appliquent, et c'est le plus tôt qui ferme —

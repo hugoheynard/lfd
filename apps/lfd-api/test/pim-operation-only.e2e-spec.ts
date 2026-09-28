@@ -3,7 +3,7 @@ import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /**
  * **La case « vendu seulement pendant une opération » de la fiche** (D3 du plan
- * `documentation/order/architecture-operations-datees.md`, lot 2).
+ * `documentation/operations-datees/architecture-operations-datees.md`, lot 2).
  *
  * Ce que seul ce niveau prouve : la route écrit la vraie colonne, la trace part
  * dans la même écriture, la fiche la rend à l'écran — et le mur d'accès du

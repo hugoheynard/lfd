@@ -4,7 +4,7 @@ import { renderFact, type FactInput } from '../render-fact';
 
 /**
  * **Les phrases des opérations datées** (`operation.*`, plan
- * `documentation/order/architecture-operations-datees.md`, lot 1). Les dates
+ * `documentation/operations-datees/architecture-operations-datees.md`, lot 1). Les dates
  * ne sont comparées à aucune horloge : ce sont des valeurs de charge.
  */
 function fact(type: FactInput['type'], payload: Record<string, unknown>): FactInput {

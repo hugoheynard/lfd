@@ -391,7 +391,7 @@ export const syncProductSchema = z.object({
    * **Vendu seulement pendant une opération** — la bûche, pas le croissant.
    *
    * 🔴 Un fait de l'ARTICLE, pas de son opération, depuis la v11 (D3 de
-   * `documentation/order/architecture-operations-datees.md`). La première
+   * `documentation/operations-datees/architecture-operations-datees.md`). La première
    * conception le lisait dans la ligne d'opération : retirer la bûche de la
    * sélection, masquer Noël à la réception ou l'archiver au référentiel la
    * faisaient alors sortir de toute opération — donc vendre toute l'année.
@@ -426,7 +426,7 @@ export type SyncLocalizedText = z.infer<typeof syncLocalizedTextSchema>;
 
 /**
  * **Une opération datée** — Noël, Pâques, la galette — telle qu'elle traverse
- * depuis la v11 (D10 de `documentation/order/architecture-operations-datees.md`).
+ * depuis la v11 (D10 de `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Elle naît au référentiel (D1) et la plateforme la **reçoit** : elle peut la
  * restreindre à la réception, jamais l'étendre (D9). Seules les opérations NON

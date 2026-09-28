@@ -140,7 +140,7 @@ export interface ShopItemView {
   /**
    * **L'opération datée qui rend cet article vendable**, pour un article
    * « vendu seulement pendant une opération » (D3, D8 de
-   * `documentation/order/architecture-operations-datees.md`) : la carte dit
+   * `documentation/operations-datees/architecture-operations-datees.md`) : la carte dit
    * « Ouvre le 15 nov. » ou « Commandes closes », et remplace son « + ».
    *
    * La clé renvoie à {@link ShopCatalogueView.operations}, qui porte le nom et

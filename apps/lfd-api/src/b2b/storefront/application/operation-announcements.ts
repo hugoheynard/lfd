@@ -17,7 +17,7 @@ export function hasOperationAnnouncements(page: PublicStorefrontPageView): boole
 
 /**
  * **Les annonces d'une page, résolues contre les opérations montrées** (D11 de
- * `documentation/order/architecture-operations-datees.md`).
+ * `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * - une annonce dont l'opération n'est pas montrée — inconnue, retirée,
  *   masquée, hors fenêtre, ou pour une autre clientèle — est OMISE : elle

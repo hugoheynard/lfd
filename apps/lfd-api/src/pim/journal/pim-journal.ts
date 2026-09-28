@@ -398,7 +398,7 @@ export const PIM_EVENTS = {
 
   /**
    * **Les opérations datées** — Noël, Pâques, la galette (lot 1 du plan
-   * `documentation/order/architecture-operations-datees.md`). Le sujet est
+   * `documentation/operations-datees/architecture-operations-datees.md`). Le sujet est
    * l'opération, son identifiant sa CLÉ : une clé ne se réemploie jamais.
    *
    * Un fait par geste de l'écran de préparation : redater change ce que la

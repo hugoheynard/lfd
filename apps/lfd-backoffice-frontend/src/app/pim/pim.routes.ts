@@ -147,7 +147,7 @@ export const pimRoutes: Routes = [
       },
       {
         // LES OPÉRATIONS DATÉES — Noël, Pâques, la galette
-        // (`documentation/order/architecture-operations-datees.md`, lot 1). Au
+        // (`documentation/operations-datees/architecture-operations-datees.md`, lot 1). Au
         // référentiel parce que préparer une opération, c'est choisir des
         // articles et fixer des dates (D1) : même mur que le catalogue.
         //

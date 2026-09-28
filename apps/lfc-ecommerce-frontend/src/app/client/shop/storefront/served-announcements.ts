@@ -2,7 +2,7 @@ import type { PublicStorefrontContent, PublicStorefrontPageView } from '@lfd/con
 
 /**
  * **Une annonce d'opération ne paraît que si le catalogue sert l'opération**
- * (D11 de `documentation/order/architecture-operations-datees.md`).
+ * (D11 de `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Le serveur de la vitrine omet déjà une annonce hors fenêtre ou hors
  * clientèle ; il ne sait pas, lui, si le rayon `op:<key>` a quelque chose à

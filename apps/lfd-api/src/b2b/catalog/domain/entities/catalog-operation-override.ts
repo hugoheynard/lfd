@@ -3,7 +3,7 @@ import type { CatalogOperationAudience } from "../operation-audience.js";
 
 /**
  * **Ce que la réception décide d'une opération reçue** — restreindre, jamais
- * étendre (D9 de `documentation/order/architecture-operations-datees.md`).
+ * étendre (D9 de `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * `null` sur un champ = on garde ce que le référentiel a dit.
  */

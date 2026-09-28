@@ -18,7 +18,7 @@ import { attachTo, createCompany, createUser } from "./factories.js";
 
 /**
  * **Le drapeau `operationOnly` devient une règle de vente** (lot 3 de
- * `documentation/order/architecture-operations-datees.md`).
+ * `documentation/operations-datees/architecture-operations-datees.md`).
  *
  * Ce que seul ce niveau prouve : une bûche reçue par un VRAI envoi v11 est
  * écartée du rayon et refusée à la caisse hors de son opération, sur le vrai

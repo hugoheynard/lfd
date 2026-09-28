@@ -20,7 +20,7 @@ import { MediaLibraryHttpApi } from '../media-library-http-api';
  * l'espace B2B (`documentation/order/plan-vitrine-enregistrement.md`, D7).
  * Les opérations datées (2026-09-24) mènent à `/pim/operations/<clé>` : la
  * route naît avec l'écran de préparation, au lot front du plan
- * `documentation/order/architecture-operations-datees.md`.
+ * `documentation/operations-datees/architecture-operations-datees.md`.
  */
 const CARRIER_DESTINATIONS: Readonly<
   Record<
