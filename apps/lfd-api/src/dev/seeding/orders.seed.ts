@@ -632,7 +632,10 @@ async function spreadLines(
   skip: number,
 ): Promise<{ readonly sku: string; readonly quantity: number }[]> {
   const items = await context.prisma.catalogItem.findMany({
-    where: { isDefault: true, ...STILL_SOLD },
+    // Hors opération datée : un article « seulement pendant une opération » est
+    // refusé hors de ses jours (`orders.operation.day_outside`), et le semis
+    // s'arrêtait sur la première bûche venue (constaté le 2026-09-28).
+    where: { isDefault: true, operationOnly: false, ...STILL_SOLD },
     select: { productSku: true },
     orderBy: [{ categoryId: "asc" }, { productSku: "asc" }],
   });
@@ -651,7 +654,10 @@ async function wideLines(
   context: SeedContext,
 ): Promise<{ readonly sku: string; readonly quantity: number }[]> {
   const items = await context.prisma.catalogItem.findMany({
-    where: { isDefault: true, ...STILL_SOLD },
+    // Hors opération datée : un article « seulement pendant une opération » est
+    // refusé hors de ses jours (`orders.operation.day_outside`), et le semis
+    // s'arrêtait sur la première bûche venue (constaté le 2026-09-28).
+    where: { isDefault: true, operationOnly: false, ...STILL_SOLD },
     select: { productSku: true },
     orderBy: { productSku: "asc" },
     take: WIDE_LINE_COUNT,

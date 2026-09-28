@@ -2,7 +2,9 @@ import {
   PaymentGateway,
   type CreateIntentParams,
   type CreatedIntent,
+  type IntentCancellation,
   type PaymentWebhookEvent,
+  type RetrievedIntent,
 } from "../../src/b2b/payments/domain/payment-gateway.js";
 
 /**
@@ -24,11 +26,25 @@ export class FakePaymentGateway extends PaymentGateway {
    * dire : `retrieveIntent` a été ajoutée au port sans que le double la suive.
    * Rien ne l'a rougi tant que les seeds tournaient sans vérification de types.
    *
-   * Elle rend l'intention telle qu'elle a été créée — c'est ce que Stripe fait,
-   * et un double qui rendrait autre chose apprendrait au seed des choses fausses.
+   * Elle rend l'intention telle qu'elle a été créée, **en attente de
+   * paiement** : c'est l'état d'une intention que personne n'a réglée, et le seul
+   * que ce double peut affirmer sans inventer un encaissement.
+   *
+   * ⚠️ Le port a gagné `state` et `cancelIntent` (règlement abandonné) sans que
+   * ce double suive — deuxième fois, constaté le 2026-09-28 : `seed:orders` ne
+   * compilait plus.
    */
-  retrieveIntent(paymentIntentId: string): Promise<CreatedIntent> {
-    return Promise.resolve({ paymentIntentId, clientSecret: `${paymentIntentId}_secret` });
+  retrieveIntent(paymentIntentId: string): Promise<RetrievedIntent> {
+    return Promise.resolve({
+      paymentIntentId,
+      clientSecret: `${paymentIntentId}_secret`,
+      state: "awaiting_payment",
+    });
+  }
+
+  /** Aucune intention réelle n'existe : l'annuler réussit toujours. */
+  cancelIntent(_paymentIntentId: string): Promise<IntentCancellation> {
+    return Promise.resolve({ kind: "cancelled" });
   }
 
   publishableKey(): string {
