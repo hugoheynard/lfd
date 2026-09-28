@@ -4,6 +4,7 @@ import type { CommandBus } from "@nestjs/cqrs";
 import { STILL_SOLD } from "../../b2b/catalog/infrastructure/sellable-filter.js";
 import { MarkOrderReadyCommand } from "../../b2b/orders/application/commands/mark-order-ready.command.js";
 import { PlaceOrderCommand } from "../../b2b/orders/application/commands/place-order.command.js";
+import { CloseProductionDayCommand } from "../../production/application/commands/close-production-day.command.js";
 import { ConfirmManualHandoverCommand } from "../../handover/application/commands/confirm-manual-handover.command.js";
 import { PaymentStatus } from "../../platform/database/client/client.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
@@ -211,6 +212,19 @@ const COUNTER: readonly CounterOrder[] = [
 ];
 
 /** L'heure du colisage, et celle de la remise. Le sac sort avant de partir. */
+/**
+ * L'heure du **plan du soir** de la veille : le geste qui arrête le compte du
+ * jour. Le semis le joue pour aujourd'hui, pour que la fournée, la fiche
+ * d'atelier et le colisage du jour soient ouverts dès le chargement.
+ */
+const EVENING_CLOSE_HOUR = 20;
+
+/** Demain : un retrait par comptoir, et une livraison — cf. `seedOrders`. */
+const TOMORROW: readonly Pick<CounterOrder, "point" | "window" | "step">[] = [
+  { point: LABO, window: PICKUP_WINDOW, step: 2 },
+  { point: VILLAGE, window: VILLAGE_MORNING, step: 3 },
+  { point: null, window: null, step: 4 },
+];
 const PACKED_HOUR = 5;
 const HANDED_OVER_HOUR = 6;
 
@@ -248,6 +262,9 @@ export interface OrdersReport {
   readonly today: string;
   /** Combien de lignes la file de remise porte aujourd'hui, tous points confondus. */
   readonly counterToday: number;
+  /** Demain, laissé ouvert pour qu'on arrête son plan à l'écran. */
+  readonly tomorrow: string;
+  readonly tomorrowCount: number;
   /**
    * La journée des deux commandes en attente — **J+2 depuis le 2026-09-17**, et
    * le pic du prévisionnel. Cf. le bloc qui les pose pour la raison du décalage.
@@ -314,6 +331,26 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
   // 🔴 AUJOURD'HUI — la file du comptoir, sur les deux points.
   await seedCounter(context, target, today);
 
+  // 🔴 **DEMAIN — le plan que l'on arrête ce soir** (Hugo, 2026-09-28).
+  //
+  // Le plan du soir arrête la prochaine journée À VENIR qui a des commandes.
+  // Demain vide, il sautait au pic de J+2 : en démonstration, « arrêter le plan
+  // du soir » arrêtait le surlendemain, et la suite du geste — fiche d'atelier,
+  // fournée, colisage de demain — ne se montrait pas. Trois commandes, une par
+  // acheminement et les deux comptoirs, laissées OUVERTES : c'est à l'équipe de
+  // les arrêter, à l'écran.
+  for (const order of TOMORROW) {
+    await place(context, target, {
+      at: today,
+      forDay: isoDay(shiftDays(today, 1)),
+      method: order.point === null ? "delivery" : "pickup",
+      point: order.point,
+      window: order.window,
+      lines: linesFor(order.step),
+      paid: false,
+    });
+  }
+
   // 🔴 **J+2 — et c'est le PIC** (Hugo, 2026-09-17).
   //
   // Deux en attente, une par mode d'acheminement, et **tout le catalogue**
@@ -333,10 +370,9 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
   // long — et l'écran ne montrait aucune montée. À J+2, la colonne teintée est
   // devant, et la fenêtre de sept jours la nomme (`J+2`).
   //
-  // ⚠️ Elles sont DÉPLACÉES, pas ajoutées : le semis pose le même nombre de
-  // commandes qu'avant. Demain reste donc vide de commandes pro, et c'est le
-  // prix assumé de ce choix — la fiche d'atelier de J+1 n'a plus de rayon plein
-  // à montrer, celle de J+2 l'a.
+  // ⚠️ Elles ont été DÉPLACÉES de J+1, pas ajoutées. Demain a retrouvé des
+  // commandes le 2026-09-28 (ci-dessus), mais pas le catalogue entier : le
+  // rayon plein reste celui de J+2, et le pic avec lui.
   const PEAK_AHEAD = 2;
   await place(context, target, {
     at: today,
@@ -360,10 +396,12 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
   return {
     removed: removed.count,
     production,
-    placed: placed + 3 + COUNTER.length,
+    placed: placed + 3 + COUNTER.length + TOMORROW.length,
     yesterday: isoDay(shiftDays(today, -1)),
     today: isoDay(today),
     counterToday: COUNTER.length,
+    tomorrow: isoDay(shiftDays(today, 1)),
+    tomorrowCount: TOMORROW.length,
     peakDay: isoDay(shiftDays(today, PEAK_AHEAD)),
   };
 }
@@ -391,6 +429,8 @@ async function seedCounter(context: SeedContext, target: Target, today: Date): P
   const packedAt = atHour(today, PACKED_HOUR);
   const handedOverAt = atHour(today, HANDED_OVER_HOUR);
 
+  const placedCounter: { readonly reference: string; readonly outcome: CounterOrder["outcome"] }[] =
+    [];
   for (const entry of COUNTER) {
     const reference = await place(context, target, {
       at: orderedAt,
@@ -401,7 +441,20 @@ async function seedCounter(context: SeedContext, target: Target, today: Date): P
       lines: entry.wide === true ? await wideLines(context) : linesFor(entry.step),
       paid: false,
     });
-    if (entry.outcome === "expected") {
+    placedCounter.push({ reference, outcome: entry.outcome });
+  }
+
+  // 🔴 **Le plan du soir d'hier** — sans lui, la fournée du jour refuse chaque
+  // coche (« la journée n'est pas arrêtée ») : le semis vide le fournil et
+  // repose les commandes, mais personne n'avait arrêté leur journée
+  // (constaté le 2026-09-28, en démonstration). Arrêté APRÈS la dernière
+  // commande du jour et AVANT le colisage : l'ordre du fournil réel.
+  await asStaff(atHour(orderedAt, EVENING_CLOSE_HOUR), () =>
+    context.commands.execute(new CloseProductionDayCommand(forDay)),
+  );
+
+  for (const { reference, outcome } of placedCounter) {
+    if (outcome === "expected") {
       continue;
     }
     // Le colisage d'abord, **y compris pour la remise** : un sac sort du fournil
@@ -410,7 +463,7 @@ async function seedCounter(context: SeedContext, target: Target, today: Date): P
     await asStaff(packedAt, () =>
       context.commands.execute(new MarkOrderReadyCommand(reference, SEED_STAFF_SUB, packedAt)),
     );
-    if (entry.outcome === "handed_over") {
+    if (outcome === "handed_over") {
       // `manual` et non `scan` : le semis n'a pas de jeton en main, et une
       // attestation forte qu'aucun code n'a portée serait fausse plutôt que
       // faible. Le type existe précisément pour ne pas les confondre.

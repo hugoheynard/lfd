@@ -31,7 +31,8 @@ async function main(): Promise<void> {
         `· fournil vidé : ${report.production.days} plan(s), ` +
         `${report.production.handovers} attestation(s) de remise.\n` +
         `✔ ${report.placed} commande(s) posées, dont 1 pour hier (${report.yesterday}), ` +
-        `${report.counterToday} au comptoir aujourd'hui (${report.today}, Le Labo + Le Village) ` +
+        `${report.counterToday} au comptoir aujourd'hui (${report.today}, Le Labo + Le Village), ` +
+        `${report.tomorrowCount} pour demain (${report.tomorrow}, plan à arrêter ce soir) ` +
         `et 2 en attente à J+2 (${report.peakDay}, livraison + retrait) — le PIC du prévisionnel.`,
     );
   } finally {
