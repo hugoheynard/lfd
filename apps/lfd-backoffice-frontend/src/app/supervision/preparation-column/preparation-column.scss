@@ -126,6 +126,12 @@
   list-style: none;
 }
 
+// Un filet entre deux lignes (Hugo, 2026-09-28) : sur une fiche de dix-huit
+// produits, l'œil ne savait plus quelle barre suivait quel nom.
+.lines > .line + .line {
+  border-top: 1px solid var(--fold-color-border);
+}
+
 // ── Une ligne du fournil ─────────────────────────────────────────────────────
 // [produit + barre] [sorties / prévues] [Contrôler] ; les notes dessous.
 // La marge négative étend le fond d'une ligne mise en avant jusqu'au bord de la
