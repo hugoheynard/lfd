@@ -22,9 +22,12 @@
   box-shadow: var(--fold-shadow-sm);
 }
 
+// La même crème que la carte suivie du Colisage (Hugo, 2026-09-28) : opaque,
+// parce que `--fold-color-warning-surface` est un ambre transparent qui laisse
+// passer le gris de la colonne.
 .shelf.is-progress {
-  background: var(--fold-color-warning-surface);
-  border-color: var(--fold-color-warning-border);
+  background: color-mix(in srgb, var(--fold-ref-amber-500) 6%, var(--fold-color-surface-card));
+  border-color: color-mix(in srgb, var(--fold-ref-amber-500) 40%, var(--fold-color-surface-card));
   box-shadow: var(--fold-shadow-sm);
 }
 
