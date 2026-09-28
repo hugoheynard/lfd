@@ -125,17 +125,25 @@ l'administrateur l'a : c'est la bonne valeur par défaut.
 dérogation par personne : le contrôle est un MÉTIER, et un métier sans rôle se
 disperse en exceptions que personne ne relit.
 
-Ses droits au premier lot : **`b2b_supervision:write`, et rien d'autre.** Pas
-`b2b_orders` — il porterait les montants et les contacts de toutes les
+🔴 **Il se crée comme une DONNÉE, dans Admin › Rôles — pas dans le code**
+(Hugo, 2026-09-28). Ce paragraphe disait « ajouter le rôle au contrat », et
+c'était faux : depuis le 2026-09-26 les rôles se lisent **en base**
+(`staff_role_definitions`), `ROLE_GRANTS` n'en est que le miroir, et un rôle
+ajouté au seul contrat n'aurait existé pour personne — le test de parité
+(`test/staff-role-grants-parity.e2e-spec.ts`) l'aurait dit. Vu par `batisseur`
+au lot QC1. Un rôle défini à l'écran s'attribue à une fiche (la colonne
+d'enum reste `NULL` pour une clé hors enum, `role-assignment.ts`) — vérifié le
+2026-09-28. **Aucun code, aucune migration** pour le rôle.
+
+Ses droits : **Supervision en écriture** (`b2b_supervision:write`) et
+**Notifications internes** (`staff_notifications:write`) — la cloche est
+ouverte à TOUS les rôles, et le superviseur ne fait pas exception. Pas
+`b2b_orders` : il porterait les montants et les contacts de toutes les
 commandes, ce que juger un sac ne demande pas. Conséquence visible : les
 renvois de la Supervision vers la fournée et le colisage restent cachés au
-superviseur, comme à tout lecteur sans `b2b_orders:read`. Si le métier réclame
-d'ouvrir les postes, c'est un ajout de droit à décider, pas un défaut.
-
-Le rôle s'ajoute à `staffRoleSchema`, à `STAFF_ROLE_LABELS` (« Superviseur »)
-et à `ROLE_GRANTS` dans `packages/contracts/src/staff-access.ts` — un contrat
-servi au back-office, donc un ajout **additif** : aucun rôle existant ne
-change de droits.
+superviseur, et l'onglet d'arrivée mobile est Préparation (le défaut de
+`landingColumnOf` pour un rôle qu'il ne connaît pas). Ouvrir les postes serait
+un droit à ajouter, à l'écran.
 
 🔴 **La note et les photos ne se lisent qu'en `write`.** Une photo de contrôle
 peut montrer une étiquette, un nom, une adresse ; la ressource promet « ni
@@ -332,20 +340,20 @@ sur la ligne, avant qu'on scanne — le refus au scan reste la garantie.
 
 ## 6. Les lots
 
-| Lot     | Contenu                                                                                                                                                                                  | Qui                                   |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| **QC1** | Domaine : l'agrégat du contrôle, ses invariants, la péremption (D5), la règle de retenue (D4, D6). Pur, testé. Le rôle `superviseur` dans le contrat (D3).                               | `batisseur`                           |
-| **QC2** | Migration additive, adaptateur Prisma, dépôt + rattachement des photos, idempotence, balayage des dépôts, journal, routes (`CommandBus` dans le contrôleur).                             | `batisseur` + `lecteur-de-migrations` |
-| **QC3** | `QualityHoldsReader` par lot, en-tête du canal réécrit, `HandoverCandidate.qualityHold` aux trois lecteurs, `heldForQuality` dans la file, e2e : refus, levée, sac déjà parti, coursier. | `batisseur`                           |
-| **QC4** | Supervision : panneau, pastilles, masthead, colonne Retrait.                                                                                                                             | `pablo`                               |
-| **QC5** | Retrait boutique : « En vérification » dans la file.                                                                                                                                     | `pablo`                               |
+| Lot     | Contenu                                                                                                                                                                                       | Qui                                   |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **QC1** | Domaine : l'agrégat du contrôle, ses invariants, la péremption (D5), la règle de retenue (D4, D6). Pur, testé. ✅ Bâti le 2026-09-28 (`c95c81403`). Le rôle se crée à l'écran (D3), hors lot. | `batisseur`                           |
+| **QC2** | Migration additive, adaptateur Prisma, dépôt + rattachement des photos, idempotence, balayage des dépôts, journal, routes (`CommandBus` dans le contrôleur).                                  | `batisseur` + `lecteur-de-migrations` |
+| **QC3** | `QualityHoldsReader` par lot, en-tête du canal réécrit, `HandoverCandidate.qualityHold` aux trois lecteurs, `heldForQuality` dans la file, e2e : refus, levée, sac déjà parti, coursier.      | `batisseur`                           |
+| **QC4** | Supervision : panneau, pastilles, masthead, colonne Retrait.                                                                                                                                  | `pablo`                               |
+| **QC5** | Retrait boutique : « En vérification » dans la file.                                                                                                                                          | `pablo`                               |
 
 ---
 
 ## 7. Questions — toutes tranchées le 2026-09-28
 
-- **Q-A** — **Un rôle `superviseur`**, avec la Supervision en écriture et rien
-  d'autre (D3).
+- **Q-A** — **Un rôle `superviseur`**, créé à l'écran dans Admin › Rôles, avec
+  la Supervision en écriture et les notifications internes (D3).
 - **Q-B** — **Oui** : un blocage de ligne retient toutes les commandes du plan
   qui portent ce produit, y compris celles qu'un retirage ajoute après (D6).
 - **Q-C** — **Sans limite de temps** pour les photos (D8).
