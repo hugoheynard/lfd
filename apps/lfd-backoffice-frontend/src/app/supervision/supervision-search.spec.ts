@@ -7,8 +7,16 @@ import type {
 } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { handoverBoard } from './handover-slots';
-import { awaitedMatches, focusMatches, NO_MATCHES, supervisionMatches } from './supervision-search';
+import { groupOf, handoverBoard } from './handover-slots';
+import type { HandoverBoard, SlotRow } from './handover-slots';
+import {
+  awaitedMatches,
+  awaitedSkusOf,
+  lateSkusOf,
+  focusMatches,
+  NO_MATCHES,
+  supervisionMatches,
+} from './supervision-search';
 
 function line(sku: string): PackingLine {
   return {
@@ -161,5 +169,60 @@ describe('focusMatches — Supervision v2, A5', () => {
     expect(matches.mode).toBe('search');
     expect([...matches.references]).toEqual(['CMD-102']);
     expect(matches.skus.size).toBe(0);
+  });
+});
+
+describe('awaitedSkusOf', () => {
+  /** Hugo, 2026-09-28 : les lignes qu'un sac attend passent en beige en Préparation. */
+  it('rend les SKU encore au four sur les sacs ouverts, pas sur les sacs fermés', () => {
+    const closed = {
+      ...waiting('CMD-9', 'Fermé', ['brioche']),
+      packedAt: '2026-09-28T05:00:00.000Z',
+    };
+    const view = packing([waiting('CMD-1', 'Chalet', ['cro', 'pac']), closed]);
+
+    expect([...awaitedSkusOf(view)].sort()).toEqual(['cro', 'pac']);
+    expect(awaitedSkusOf(null).size).toBe(0);
+  });
+});
+
+describe('lateSkusOf', () => {
+  const late = (reference: string, cause: SlotRow['overdueCause']): SlotRow => ({
+    orderId: `o-${reference}`,
+    reference,
+    customerLabel: reference,
+    state: 'overdue',
+    time: '5 h 30',
+    totalUnits: 1,
+    pickupLabel: 'Le Labo',
+    handedOverAt: null,
+    readyAt: null,
+    overdueMinutes: 40,
+    overdueCause: cause,
+    method: 'pickup',
+    heldForQuality: false,
+  });
+  const board = (rows: readonly SlotRow[]): HandoverBoard => ({
+    pickup: [groupOf('h05', rows)],
+    delivery: [],
+    pickupExpected: rows.length,
+    deliveryExpected: 0,
+    overdue: rows.length,
+    overdueKitchen: 0,
+    awaitingPacking: 0,
+    held: 0,
+  });
+
+  /** Hugo, 2026-09-28 : bord rouge sur ce dont l'absence a mis un retrait dans le rouge. */
+  it('ne garde que les produits attendus par un créneau dépassé PAR NOUS', () => {
+    const view = packing([
+      waiting('CMD-1', 'Refuge', ['cro']),
+      waiting('CMD-2', 'Chalet', ['pac']),
+    ]);
+
+    const skus = lateSkusOf(view, board([late('CMD-1', 'kitchen'), late('CMD-2', 'customer')]));
+
+    expect([...skus]).toEqual(['cro']);
+    expect(lateSkusOf(view, null).size).toBe(0);
   });
 });

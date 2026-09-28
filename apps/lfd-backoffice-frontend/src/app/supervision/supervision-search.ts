@@ -112,6 +112,47 @@ function handoverReferences(
 }
 
 /**
+ * Les SKU qu'une commande **attend encore du four** — ses lignes pas encore
+ * sorties, sur une fiche de colis pas encore fermée. Toujours lus, hors de toute
+ * mise en avant : la Préparation les teinte en beige (Hugo, 2026-09-28), pour
+ * dire qu'un sac attend cette ligne.
+ */
+export function awaitedSkusOf(packing: ProductionPackingView | null): ReadonlySet<string> {
+  const skus = new Set<string>();
+  for (const sheet of packing?.sheets ?? []) {
+    if (sheet.packedAt !== null) {
+      continue;
+    }
+    sheet.lines.filter((line) => line.awaitingProduction).forEach((line) => skus.add(line.sku));
+  }
+  return skus;
+}
+
+/**
+ * Parmi eux, ceux **dont l'absence a mis un retrait dans le rouge** : une
+ * commande au créneau dépassé PAR NOUS (`overdueCause === 'kitchen'`) qui les
+ * attend encore. La Préparation leur met un bord rouge (Hugo, 2026-09-28).
+ */
+export function lateSkusOf(
+  packing: ProductionPackingView | null,
+  board: HandoverBoard | null,
+): ReadonlySet<string> {
+  const late = new Set(
+    [...(board?.pickup ?? []), ...(board?.delivery ?? [])]
+      .flatMap((group) => group.rows)
+      .filter((row) => row.overdueCause === 'kitchen')
+      .map((row) => row.reference),
+  );
+  const skus = new Set<string>();
+  for (const sheet of packing?.sheets ?? []) {
+    if (sheet.packedAt === null && late.has(sheet.reference)) {
+      sheet.lines.filter((line) => line.awaitingProduction).forEach((line) => skus.add(line.sku));
+    }
+  }
+  return skus;
+}
+
+/**
  * Suivre des PRODUITS attendus du four, depuis les commandes qui les attendent
  * — la pastille « four » (toutes) ou une commande dépliée (une seule). Lu dans
  * `lines[].awaitingProduction`, comme la carte de colisage : c'est le fournil

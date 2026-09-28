@@ -22,12 +22,13 @@
   box-shadow: var(--fold-shadow-sm);
 }
 
-// La même crème que la carte suivie du Colisage (Hugo, 2026-09-28) : opaque,
-// parce que `--fold-color-warning-surface` est un ambre transparent qui laisse
-// passer le gris de la colonne.
+// Comme une commande « four » au Colisage (Hugo, 2026-09-28) : fond blanc et
+// liseré ambre à gauche. Le beige est réservé aux LIGNES qu'un sac attend.
 .shelf.is-progress {
-  background: color-mix(in srgb, var(--fold-ref-amber-500) 6%, var(--fold-color-surface-card));
-  border-color: color-mix(in srgb, var(--fold-ref-amber-500) 40%, var(--fold-color-surface-card));
+  background: var(--fold-color-surface-card);
+  border-color: var(--fold-color-border);
+  border-left: 3px solid var(--fold-ref-amber-500);
+  border-radius: 0 var(--fold-radius-sm) var(--fold-radius-sm) 0;
   box-shadow: var(--fold-shadow-sm);
 }
 
@@ -252,6 +253,18 @@
   box-shadow:
     inset 3px 0 0 var(--fold-ref-amber-500),
     0 2px 8px -3px color-mix(in srgb, var(--fold-ref-amber-700) 35%, transparent);
+}
+
+// Une ligne qu'un sac attend encore : la crème opaque de la carte suivie.
+.line.is-blocking {
+  background: color-mix(in srgb, var(--fold-ref-amber-500) 8%, var(--fold-color-surface-card));
+}
+
+// Et si ce sac a déjà fait dépasser un créneau PAR NOUS : bord rouge.
+.line.is-late {
+  box-shadow:
+    inset 3px 0 0 var(--fold-color-alert),
+    inset 0 0 0 1px var(--fold-color-alert);
 }
 
 // … et le reste recule.

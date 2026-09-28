@@ -98,6 +98,8 @@
               [class.is-match]="hit && !awaiting()"
               [class.is-awaited]="hit && awaiting()"
               [class.is-receded]="!hit && awaiting()"
+              [class.is-blocking]="!item.done && awaitedSkus().has(line.sku)"
+              [class.is-late]="!item.done && lateSkus().has(line.sku)"
               [class.is-current]="matches().current === line.sku"
               [attr.data-hit-key]="line.sku"
               [attr.data-line-done]="item.done ? '' : null"
