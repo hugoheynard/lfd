@@ -12,8 +12,9 @@ import { DeferredTerm, UserStatus } from "../../platform/database/client/client.
 import type { ClientContext } from "./client.seed.js";
 
 /**
- * **Deux voisins du client de référence** — pour que la journée de demain ait
- * TROIS clients et non trois commandes d'une même maison (Hugo, 2026-09-28).
+ * **Les voisins du client de référence** — pour que demain ait TROIS clients
+ * et aujourd'hui CINQ, et non des commandes d'une même maison (Hugo,
+ * 2026-09-28).
  *
  * Une Supervision qui ne montre qu'un client ne montre rien de ce qu'elle sait
  * faire : la recherche qui surligne une commande et SES produits, la file qui
@@ -80,6 +81,36 @@ export const NEIGHBOURS: readonly NeighbourClient[] = [
       phone: "06 44 18 72 03",
     },
     address: { ligne1: "Le Lac", codePostal: "73320", ville: "Tignes" },
+  },
+  {
+    raisonSociale: "SARL Les Grangettes",
+    enseigne: "Café des Grangettes",
+    formeJuridique: "SARL",
+    siret: "83456712500010",
+    vatNumber: "FR49834567125",
+    person: {
+      auth0Sub: "seed|cafe-grangettes",
+      email: "bonjour@cafe-grangettes.test",
+      firstName: "Inès",
+      lastName: "Bochet",
+      phone: "06 58 91 23 40",
+    },
+    address: { ligne1: "3 place des Dames", codePostal: "73150", ville: "Val d'Isère" },
+  },
+  {
+    raisonSociale: "SAS Refuge du Fond",
+    enseigne: "Le Refuge du Fond",
+    formeJuridique: "SAS",
+    siret: "79812345100014",
+    vatNumber: "FR55798123451",
+    person: {
+      auth0Sub: "seed|refuge-du-fond",
+      email: "cuisine@refuge-du-fond.test",
+      firstName: "Paul",
+      lastName: "Genoud",
+      phone: "06 77 02 64 15",
+    },
+    address: { ligne1: "Route du Fornet", codePostal: "73150", ville: "Val d'Isère" },
   },
 ];
 

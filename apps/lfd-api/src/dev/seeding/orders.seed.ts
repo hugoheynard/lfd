@@ -174,6 +174,13 @@ interface CounterOrder {
   readonly window: { readonly start: string; readonly end: string } | null;
   /** L'état que la file doit montrer, atteint par les vraies commandes. */
   readonly outcome: "expected" | "ready" | "handed_over";
+  /**
+   * Le client, par rang : 0 = le client de référence, puis `NEIGHBOURS` dans
+   * leur ordre. Aujourd'hui compte CINQ maisons (Hugo, 2026-09-28).
+   */
+  readonly client: number;
+  /** L'heure du retrait quand il n'a pas lieu à l'heure du Labo (le Village ouvre à 8 h). */
+  readonly handedOverHour?: number;
   /** L'échéance dont on reprend les lignes — cf. {@link linesFor}. */
   readonly step: number;
   /**
@@ -185,8 +192,11 @@ interface CounterOrder {
 
 const COUNTER: readonly CounterOrder[] = [
   // Le Labo — le créneau pro, celui d'avant le four.
-  { point: LABO, window: PICKUP_WINDOW, outcome: "handed_over", step: 0 },
-  { point: LABO, window: PICKUP_WINDOW, outcome: "ready", step: 1 },
+  { point: LABO, window: PICKUP_WINDOW, outcome: "handed_over", step: 0, client: 0 },
+  // 🔴 **Le client qui n'est pas venu** : prête à 5 h, bien avant la fin de sa
+  // tranche (6 h 30), et toujours là — la Supervision le compte « client pas
+  // venu », en ambre (Hugo, 2026-09-28).
+  { point: LABO, window: PICKUP_WINDOW, outcome: "ready", step: 1, client: 1 },
   // 🔴 **Sans tranche, et c'est de l'HISTORIQUE** — pas une lacune du semis.
   // Jusqu'au 2026-09-11, l'écran de saisie staff n'envoyait aucune tranche et un
   // retrait ne prend aucun défaut : TOUTE commande prise au téléphone arrivait
@@ -198,21 +208,33 @@ const COUNTER: readonly CounterOrder[] = [
   //
   // ⚠️ Le retirer du semis ferait disparaître des postes de développement le
   // seul exemplaire d'un cas que le comptoir rencontrera pendant des mois.
-  { point: LABO, window: null, outcome: "expected", step: 2 },
+  { point: LABO, window: null, outcome: "expected", step: 2, client: 0 },
   // Le Village — deux tranches, donc un onglet avec son propre compteur.
-  { point: VILLAGE, window: VILLAGE_MORNING, outcome: "ready", step: 3 },
-  { point: VILLAGE, window: VILLAGE_AFTERNOON, outcome: "expected", step: 4 },
+  // Retirée dans sa tranche : le Village a servi à l'heure.
+  {
+    point: VILLAGE,
+    window: VILLAGE_MORNING,
+    outcome: "handed_over",
+    step: 3,
+    client: 2,
+    handedOverHour: 9,
+  },
+  // ⚠️ Après 15 h, elle devient à son tour un retard « par nous ».
+  { point: VILLAGE, window: VILLAGE_AFTERNOON, outcome: "expected", step: 4, client: 3 },
   // 🔴 Une LIVRAISON du même jour. Elle ne paraît plus dans la file de remise
   // depuis le 2026-09-11 — le comptoir ne tend pas un sac qu'un coursier
   // emporte, et la livraison aura son propre écran. Elle reste semée pour lui,
   // et parce qu'une journée sans elle ne ressemblerait à aucune vraie journée.
-  { point: null, window: null, outcome: "ready", step: 5 },
+  { point: null, window: null, outcome: "ready", step: 5, client: 0 },
   // 🔴 Le SAC LONG. Toutes les autres tiennent en six références ou moins, donc
   // aucun poste de développement ne voyait ce que fait le rail quand la liste
   // dépasse la place : elle défile DANS sa carte, sans repousser le bouton de
   // remise. Un comportement qu'on ne peut pas voir est un comportement qu'on
   // casse sans s'en apercevoir.
-  { point: LABO, window: PICKUP_WINDOW, outcome: "ready", step: 1, wide: true },
+  //
+  // 🔴 **Et le retard qui est le nôtre** : sa tranche finit à 6 h 30 et le sac
+  // n'est pas fait — la Supervision le compte « pas prête à temps », en rouge.
+  { point: LABO, window: PICKUP_WINDOW, outcome: "expected", step: 1, wide: true, client: 4 },
 ];
 
 /** L'heure du colisage, et celle de la remise. Le sac sort avant de partir. */
@@ -375,7 +397,7 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
   });
 
   // 🔴 AUJOURD'HUI — la file du comptoir, sur les deux points.
-  await seedCounter(context, target, today);
+  await seedCounter(context, clients, today);
 
   // 🔴 **DEMAIN — le plan que l'on arrête ce soir** (Hugo, 2026-09-28).
   //
@@ -473,18 +495,24 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
  * lit à l'horloge du contexte. Les dater de maintenant ferait apparaître la
  * remise à l'heure du semis — 14 h pour un sac parti à 6 h.
  */
-async function seedCounter(context: SeedContext, target: Target, today: Date): Promise<void> {
+async function seedCounter(
+  context: SeedContext,
+  clients: readonly Target[],
+  today: Date,
+): Promise<void> {
   const forDay = isoDay(today);
   const orderedAt = shiftDays(today, -1);
   const packedAt = atHour(today, PACKED_HOUR);
-  const handedOverAt = atHour(today, HANDED_OVER_HOUR);
 
   // Les produits déjà cochés en fournée ce jour : une ligne ne se coche qu'une fois.
   const baked = new Set<string>();
-  const placedCounter: { readonly reference: string; readonly outcome: CounterOrder["outcome"] }[] =
-    [];
+  const placedCounter: { readonly reference: string; readonly entry: CounterOrder }[] = [];
   for (const entry of COUNTER) {
-    const reference = await place(context, target, {
+    const client = clients[entry.client];
+    if (client === undefined) {
+      throw new Error(`Client de rang ${String(entry.client)} absent du comptoir du jour.`);
+    }
+    const reference = await place(context, client, {
       at: orderedAt,
       forDay,
       method: entry.point === null ? "delivery" : "pickup",
@@ -493,7 +521,7 @@ async function seedCounter(context: SeedContext, target: Target, today: Date): P
       lines: entry.wide === true ? await wideLines(context) : linesFor(entry.step),
       paid: false,
     });
-    placedCounter.push({ reference, outcome: entry.outcome });
+    placedCounter.push({ reference, entry });
   }
 
   // 🔴 **Le plan du soir d'hier** — sans lui, la fournée du jour refuse chaque
@@ -505,8 +533,8 @@ async function seedCounter(context: SeedContext, target: Target, today: Date): P
     context.commands.execute(new CloseProductionDayCommand(forDay)),
   );
 
-  for (const { reference, outcome } of placedCounter) {
-    if (outcome === "expected") {
+  for (const { reference, entry } of placedCounter) {
+    if (entry.outcome === "expected") {
       continue;
     }
     // Le colisage d'abord, **y compris pour la remise** : un sac sort du fournil
@@ -519,7 +547,8 @@ async function seedCounter(context: SeedContext, target: Target, today: Date): P
     // poser dans le bac et fermer le sac rend la commande prête par
     // l'événement du colisage — le chemin réel, donc un seul état partout.
     await asStaff(packedAt, () => packFully(context, forDay, reference, baked));
-    if (outcome === "handed_over") {
+    if (entry.outcome === "handed_over") {
+      const handedOverAt = atHour(today, entry.handedOverHour ?? HANDED_OVER_HOUR);
       // `manual` et non `scan` : le semis n'a pas de jeton en main, et une
       // attestation forte qu'aucun code n'a portée serait fausse plutôt que
       // faible. Le type existe précisément pour ne pas les confondre.
