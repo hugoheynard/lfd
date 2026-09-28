@@ -148,6 +148,11 @@
   font-weight: var(--fold-weight-semibold);
 }
 
+.mc-held {
+  color: var(--fold-color-alert-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
 .mc-clock {
   color: var(--fold-color-text-muted);
   font-family: var(--fold-font-mono);

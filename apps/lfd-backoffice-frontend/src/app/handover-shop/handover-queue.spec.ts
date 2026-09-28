@@ -24,6 +24,9 @@ import {
   outsideTheCounter,
   pickupTabs,
   queueCounters,
+  entryStateLabel,
+  entryStateVariant,
+  heldAtTheCounter,
   rowTone,
   sortedQueue,
   stillRemittable,
@@ -273,11 +276,34 @@ describe('queueCounters', () => {
       // 🔴 Ni les retirées, ni les annulées : « en attente » est ce qu'il reste
       // à TENDRE, pas ce qui reste dans la liste.
       waiting: 2,
+      held: 0,
     });
   });
 
+  it('🔴 une retenue reste « en attente », et se compte EN PLUS à part', () => {
+    const lines = [
+      entry({ orderId: 'a', heldForQuality: true }),
+      entry({ orderId: 'b', state: 'ready', heldForQuality: true }),
+      // Retirée ou annulée : la retenue ne dit plus rien, elle ne compte pas.
+      entry({ orderId: 'c', state: 'handed_over', heldForQuality: true }),
+      entry({ orderId: 'd', state: 'cancelled', heldForQuality: true }),
+      entry({ orderId: 'e', window: null }),
+    ];
+
+    const counters = queueCounters(lines, DAY, new Date(`${DAY}T07:00:00`));
+
+    expect(counters.waiting).toBe(3);
+    expect(counters.held).toBe(2);
+  });
+
   it('une journée vide compte zéro partout', () => {
-    expect(queueCounters([], DAY, at)).toEqual({ total: 0, handedOver: 0, late: 0, waiting: 0 });
+    expect(queueCounters([], DAY, at)).toEqual({
+      total: 0,
+      handedOver: 0,
+      late: 0,
+      waiting: 0,
+      held: 0,
+    });
   });
 });
 
@@ -490,5 +516,42 @@ describe('stillRemittable', () => {
       true;
 
     expect(covered).toBe(true);
+  });
+});
+
+describe('la retenue du contrôle qualité (lot QC5)', () => {
+  it('une commande retenue dit « En vérification », en alerte, même prête', () => {
+    for (const state of ['expected', 'ready'] as const) {
+      const held = entry({ state, heldForQuality: true });
+      expect(heldAtTheCounter(held)).toBe(true);
+      expect(entryStateLabel(held)).toBe('En vérification');
+      expect(entryStateVariant(held)).toBe('alert');
+    }
+  });
+
+  /** D4 : la retenue se lit APRÈS « déjà retirée » — un sac parti ne se cherche pas. */
+  it('🔴 une commande retirée ou annulée ne dit JAMAIS « En vérification »', () => {
+    const gone = entry({ state: 'handed_over', heldForQuality: true });
+    const cancelled = entry({ state: 'cancelled', heldForQuality: true });
+
+    expect(heldAtTheCounter(gone)).toBe(false);
+    expect(entryStateLabel(gone)).toBe('Retirée');
+    expect(entryStateVariant(gone)).toBe('success');
+    expect(heldAtTheCounter(cancelled)).toBe(false);
+    expect(entryStateLabel(cancelled)).toBe('Annulée');
+  });
+
+  it('sans retenue, la pastille reste celle de l’état', () => {
+    expect(entryStateLabel(entry({ state: 'ready' }))).toBe('Prête');
+    expect(entryStateVariant(entry({ state: 'ready' }))).toBe('accent');
+  });
+
+  it('la retenue ne touche ni au tri ni au ton de la ligne', () => {
+    const late = entry({ heldForQuality: true, window: window({ end: '06:30' }) });
+
+    expect(rowTone(late, DAY, new Date(`${DAY}T09:00:00`))).toBe('warning');
+    expect(
+      sortedQueue([entry({ orderId: 'b', placedAt: 'z' }), late]).map((e) => e.orderId),
+    ).toEqual(['ord_1', 'b']);
   });
 });

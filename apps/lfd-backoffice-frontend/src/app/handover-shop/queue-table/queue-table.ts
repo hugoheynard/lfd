@@ -15,6 +15,8 @@ import {
 
 import {
   clockOf,
+  entryStateLabel,
+  entryStateVariant,
   formatHour,
   formatWindow,
   isLate,
@@ -23,9 +25,7 @@ import {
   matchingQueue,
   rowTone,
   sortedQueue,
-  stateLabel,
   stillRemittable,
-  stateVariant,
 } from '../handover-queue';
 
 /**
@@ -222,11 +222,11 @@ export class QueueTable {
   }
 
   protected label(entry: HandoverQueueEntryView): string {
-    return stateLabel(entry.state);
+    return entryStateLabel(entry);
   }
 
   protected variant(entry: HandoverQueueEntryView): FoldBadgeVariant {
-    return stateVariant(entry.state);
+    return entryStateVariant(entry);
   }
 
   /**

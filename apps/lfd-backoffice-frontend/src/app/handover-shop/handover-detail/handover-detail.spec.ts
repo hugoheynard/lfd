@@ -236,6 +236,29 @@ describe('HandoverDetail', () => {
     expect(element.querySelector('[data-action="scan"]')?.classList).toContain('solid');
   });
 
+  /** Lot QC5 : le comptoir le lit AVANT de tendre le lecteur. */
+  it('🔴 une commande retenue l’annonce en alerte et atténue les gestes, sans les désactiver', async () => {
+    const packing = new FakePacking([
+      sheet('CMD-1042', { packedLines: 2, packedAt: '2026-09-28T03:12:00.000Z' }),
+    ]);
+    const fixture = await render(entry({ state: 'ready', heldForQuality: true }), {
+      handovers: new FakeHandovers(),
+      packing,
+    });
+    const element: HTMLElement = fixture.nativeElement;
+
+    expect(text(fixture)).toContain(
+      'Commande en cours de vérification — ne pas remettre avant la levée du contrôle.',
+    );
+    expect(text(fixture)).not.toContain('prête à remettre');
+
+    expect(element.querySelector('[data-muted-note]')?.textContent).toContain('contrôle qualité');
+    const scan = element.querySelector<HTMLButtonElement>('[data-action="scan"]');
+    expect(scan?.classList).toContain('neutral');
+    expect(scan?.disabled).toBe(false);
+    expect(element.querySelector<HTMLButtonElement>('[data-action="remit"]')?.disabled).toBe(false);
+  });
+
   it('sans fiche de colis, le dit et atténue les gestes', async () => {
     const fixture = await render(entry());
 

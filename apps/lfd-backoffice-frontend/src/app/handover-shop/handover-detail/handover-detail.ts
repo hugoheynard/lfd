@@ -29,7 +29,7 @@ import { PackingService } from '../../production/packing.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import { SheetPanel, type SheetPanelData } from '../sheet-panel/sheet-panel';
 import { formatWindow, stillRemittable } from '../handover-queue';
-import { bagReadiness, readyVerdict } from './bag-readiness';
+import { bagReadiness, gestureCaution, readyVerdict } from './bag-readiness';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -190,10 +190,11 @@ export class HandoverDetail {
 
   /**
    * Les gestes passent en retrait tant que le four ou le bac n'a pas fini
-   * (Hugo, 2026-09-28). **Atténués, jamais désactivés** : le client est
+   * (Hugo, 2026-09-28), ou que le contrôle qualité retient la commande (QC5). **Atténués, jamais désactivés** : le client est
    * physiquement là, et le monde réel prime sur l'écran (`handoverBlocker`).
    */
-  protected readonly muted = computed(() => !(this.readiness()?.ready ?? false));
+  protected readonly caution = computed(() => gestureCaution(this.entry(), this.readiness()));
+  protected readonly muted = computed(() => this.caution() !== null);
 
   /** Peut-on encore tendre ce sac ? La règle vit dans `handover-queue.ts`. */
   protected readonly remittable = computed<boolean>(() => {

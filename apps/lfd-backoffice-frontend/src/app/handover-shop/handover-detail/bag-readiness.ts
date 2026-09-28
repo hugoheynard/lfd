@@ -2,6 +2,7 @@ import type { HandoverQueueEntryView, PackingSheet } from '@lfd/contracts';
 import type { FoldCalloutVariant, FoldIconName } from 'fold-ng';
 
 import { clockLabel } from '../../supervision/supervision-labels';
+import { heldAtTheCounter } from '../handover-queue';
 
 /** Une barre du rail : où en est une étape, et ce qu'on en dit à voix haute. */
 export interface ReadinessStep {
@@ -86,6 +87,16 @@ export function readyVerdict(
   if (entry.state === 'handed_over') {
     return { text: 'Déjà retirée. Le sac est parti.', tone: 'success', icon: 'check' };
   }
+  // 🔴 La retenue passe devant le sac (lot QC5) : un bac fermé ne dit PAS
+  // « prête à remettre » tant que le contrôle qualité la retient. Le motif n'est
+  // pas ici — la phrase se lit devant le client ; il est sur la Supervision.
+  if (heldAtTheCounter(entry)) {
+    return {
+      text: 'Commande en cours de vérification — ne pas remettre avant la levée du contrôle.',
+      tone: 'alert',
+      icon: 'shield',
+    };
+  }
   // 🔴 **La fiche de colis fait foi quand elle existe** (constaté le 2026-09-28) :
   // le statut « prête » de la commande et le bac pouvaient se contredire — une
   // commande déclarée prête sans que rien ne soit posé dans le bac affichait
@@ -99,4 +110,26 @@ export function readyVerdict(
   return entry.readyAt === null
     ? { text: 'Pas encore déclarée prête par le fournil.', tone: 'warning', icon: 'clock' }
     : { text: 'Déclarée prête par le fournil.', tone: 'success', icon: 'check' };
+}
+
+/**
+ * **Pourquoi les gestes du comptoir passent en retrait** — ou `null` s'ils
+ * gardent leur poids.
+ *
+ * Deux raisons, une seule règle : **atténués, jamais désactivés**. Le serveur
+ * refuse de toute façon une commande retenue, et c'est lui qui fait foi ; un
+ * bouton grisé côté écran ne ferait que cacher la phrase qu'il rendrait.
+ *
+ * La retenue gagne sur le sac : elle ne se règle pas en regardant dans le bac.
+ */
+export function gestureCaution(
+  entry: HandoverQueueEntryView | null,
+  bag: BagReadiness | null,
+): string | null {
+  if (entry !== null && heldAtTheCounter(entry)) {
+    return 'Le contrôle qualité retient cette commande\u00a0: attendez sa levée.';
+  }
+  return bag?.ready === true
+    ? null
+    : 'Le fournil ou le colisage n\u2019a pas fini\u00a0: vérifiez le sac avant de le remettre.';
 }

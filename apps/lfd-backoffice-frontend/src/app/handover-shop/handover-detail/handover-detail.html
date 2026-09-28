@@ -145,10 +145,8 @@
              lecteur, et la saisie n'est que le repli quand le code manque. -->
         <!-- Atténués tant que le four ou le bac n'a pas fini — jamais désactivés :
              le client est là, et c'est l'équipe qui tranche en regardant le sac. -->
-        @if (muted()) {
-          <p class="hd-muted-note" data-muted-note>
-            Le fournil ou le colisage n'a pas fini&nbsp;: vérifiez le sac avant de le remettre.
-          </p>
+        @if (caution(); as why) {
+          <p class="hd-muted-note" data-muted-note>{{ why }}</p>
         }
         <button
           foldButton

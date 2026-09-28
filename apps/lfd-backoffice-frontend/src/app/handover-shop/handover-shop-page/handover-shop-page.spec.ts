@@ -146,6 +146,26 @@ describe('HandoverShopPage', () => {
     expect(text(fixture)).toContain('1 en attente');
   });
 
+  it('une retenue reste en attente, et la bande ajoute « en vérification »', async () => {
+    const api = new FakeQueue();
+    api.entries = [entry({ orderId: 'a', heldForQuality: true }), entry({ orderId: 'b' })];
+
+    const fixture = await render(api);
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('.mc-waiting')?.textContent).toContain('2 en attente');
+    expect(el.querySelector('.mc-held')?.textContent).toContain('1 en vérification');
+  });
+
+  it('sans retenue, la bande ne parle pas de vérification', async () => {
+    const api = new FakeQueue();
+    api.entries = [entry({ orderId: 'a' })];
+
+    const fixture = await render(api);
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('.mc-held')).toBeNull();
+  });
+
   it('🔴 les trois nombres portent sur le POINT OUVERT, pas sur la journée', async () => {
     // Ils portaient sur la journée entière, et c'était la vue d'un gérant :
     // qui lit cet écran est DANS un point, et « 2 en attente » dont un ailleurs

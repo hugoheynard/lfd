@@ -128,6 +128,27 @@ describe('QueueTable', () => {
     expect(body).toContain('Boulangerie Marin');
   });
 
+  it('🔴 une commande retenue dit « En vérification » AVANT qu’on scanne', () => {
+    const fixture = render([entry({ state: 'ready', heldForQuality: true })]);
+
+    expect(text(fixture)).toContain('En vérification');
+    expect(text(fixture)).not.toContain('Prête');
+  });
+
+  it('🔴 une commande retirée malgré une retenue reste « Retirée », barrée', () => {
+    const fixture = render([
+      entry({
+        state: 'handed_over',
+        heldForQuality: true,
+        handedOverAt: `${DAY}T06:41:00.000Z`,
+      }),
+    ]);
+
+    expect(text(fixture)).not.toContain('En vérification');
+    expect(text(fixture)).toContain('Retirée');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.qt-struck')).not.toBeNull();
+  });
+
   it('🔴 une commande annulée reste dans la file', () => {
     const fixture = render([entry({ state: 'cancelled' })]);
 

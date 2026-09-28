@@ -310,6 +310,16 @@ export interface QueueCounters {
   readonly late: number;
   /** Ni retirées, ni annulées — ce qu'il reste réellement à tendre. */
   readonly waiting: number;
+  /**
+   * Parmi `waiting`, celles que le contrôle qualité retient (lot QC5).
+   *
+   * 🔴 **Un sous-compte, pas un quatrième tiroir.** Une retenue reste « en
+   * attente » : le sac est là, le client viendra, et le contrôle se lève le
+   * plus souvent dans la matinée. La sortir de `waiting` ferait fondre le
+   * compteur au moment où l'on retient — et remonter d'un coup à la levée,
+   * sans qu'aucun sac n'ait bougé.
+   */
+  readonly held: number;
 }
 
 /**
@@ -335,17 +345,21 @@ export function queueCounters(
   let handedOver = 0;
   let late = 0;
   let waiting = 0;
+  let held = 0;
   for (const entry of entries) {
     if (entry.state === 'handed_over') {
       handedOver += 1;
     } else if (entry.state !== 'cancelled') {
       waiting += 1;
     }
+    if (heldAtTheCounter(entry)) {
+      held += 1;
+    }
     if (isLate(entry, day, now)) {
       late += 1;
     }
   }
-  return { total: entries.length, handedOver, late, waiting };
+  return { total: entries.length, handedOver, late, waiting, held };
 }
 
 /** `06:41` d'un instant, en heure locale — de quoi nourrir {@link formatHour}. */
@@ -376,6 +390,40 @@ export function clockOf(date: Date): string {
  */
 export function stillRemittable(state: HandoverQueueState): boolean {
   return state !== 'handed_over' && state !== 'cancelled';
+}
+
+/**
+ * **Le contrôle qualité retient-il ce sac, ICI ?** (plan
+ * `production/plan-controle-qualite.md`, D4 et §5.)
+ *
+ * 🔴 Jamais sur une commande retirée ou annulée : le serveur lit la retenue
+ * APRÈS « déjà retirée » (D4), et l'écran dit la même chose dans le même
+ * ordre. Une retenue posée sur un sac parti est inoffensive — l'afficher ferait
+ * chercher au comptoir un sac qui n'y est plus.
+ *
+ * ⚠️ Un signal AVANT le scan, pas une garde : le refus du serveur reste la
+ * garantie (« Commande en cours de vérification. »).
+ */
+export function heldAtTheCounter(entry: HandoverQueueEntryView): boolean {
+  return entry.heldForQuality && stillRemittable(entry.state);
+}
+
+/** Ce que dit la pastille d'une commande retenue — le mot de la Supervision. */
+export const QUALITY_HOLD_LABEL = 'En vérification';
+
+/**
+ * La pastille d'une LIGNE : la retenue d'abord, l'état sinon.
+ *
+ * La retenue passe devant « Prête » : un sac prêt qu'on ne doit pas tendre est
+ * exactement ce que la pastille doit arrêter avant le scan.
+ */
+export function entryStateLabel(entry: HandoverQueueEntryView): string {
+  return heldAtTheCounter(entry) ? QUALITY_HOLD_LABEL : stateLabel(entry.state);
+}
+
+/** Le ton de la pastille d'une ligne, selon la même préséance. */
+export function entryStateVariant(entry: HandoverQueueEntryView): FoldBadgeVariant {
+  return heldAtTheCounter(entry) ? 'alert' : stateVariant(entry.state);
 }
 
 /** L'état, dans les mots du comptoir. */
