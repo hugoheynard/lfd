@@ -1,18 +1,25 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { Clock } from "../../../platform/time/clock.js";
+import { ProductionBatchRepository } from "../../domain/ports/production-batch.repository.js";
+import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { UnmarkWorksheetLineCommand } from "./unmark-worksheet-line.command.js";
 
 /**
- * **La coche s'enlève.**
+ * **La coche s'enlève** — l'ancienne case, traduite : toutes les fournées de
+ * la ligne sont annulées (plan `plan-fournees-progressives.md`, D3).
  *
- * Même chemin que la coche, et les mêmes deux refus portés par `itemToMark` :
- * décocher une ligne d'une journée ouverte, ou un SKU qui n'est pas au compte du
- * jour, n'a pas plus de sens que de la cocher.
+ * 🔴 **Elle peut désormais être refusée**, et c'est le seul changement de
+ * comportement de l'ancien contrat : si des pièces de cet article sont dans
+ * des sacs, décocher laisserait le colisage mentir. Le refus nomme le geste de
+ * sortie — ressortir du bac d'abord.
  *
- * Aucune horloge ici : on n'écrit pas d'instant, on en retire un. C'est la seule
- * commande du lot qui ne dépende pas du `Clock`.
+ * Sous le verrou de la journée (D4), pour la même raison qu'annuler une
+ * fournée : le refus lit le bac, et un colisage validé entre la lecture et
+ * l'écriture le rendrait faux.
  *
  * @sans-journal geste d'atelier, journalisation laissée au TODO par Hugo le
  * 2026-09-19 (une ligne par coche ou un fait par journée : à trancher —
@@ -23,12 +30,27 @@ export class UnmarkWorksheetLineHandler implements ICommandHandler<
   UnmarkWorksheetLineCommand,
   void
 > {
-  constructor(private readonly days: ProductionDayRepository) {}
+  constructor(
+    private readonly days: ProductionDayRepository,
+    private readonly batches: ProductionBatchRepository,
+    private readonly lock: ProductionDayLock,
+    private readonly clock: Clock,
+    private readonly uow: UnitOfWork,
+  ) {}
 
   async execute(command: UnmarkWorksheetLineCommand): Promise<void> {
     const day = ServiceDay.of(command.serviceDay);
-    const current = await this.days.load(day);
-    current.itemToMark(command.sku);
-    await this.days.markProduced(day, command.sku, null);
+    await this.uow.run(async () => {
+      await this.lock.lock(day);
+      const current = await this.days.load(day);
+      const cancelled = current.batchesToUncheck(command.sku);
+      for (const inherited of current.materialize(command.sku)) {
+        await this.batches.record(day, inherited);
+      }
+      const mark = { at: this.clock.now(), by: command.staffUserId };
+      for (const batch of cancelled) {
+        await this.batches.cancel(day, batch.id, mark);
+      }
+    });
   }
 }

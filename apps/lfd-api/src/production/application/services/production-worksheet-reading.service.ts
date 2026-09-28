@@ -71,9 +71,11 @@ export class ProductionWorksheetReading {
     // d'absorber des pièces déjà comptées.
     const known = new Set(current.orders.map((order) => order.orderId));
     const worksheet = worksheetOf({
+      serviceDay: day.value,
       closedAt: current.closedAt,
       retakenAt: current.retaken?.at ?? null,
       counts: current.counts,
+      batches: current.batches,
       demand: demandOf(expected, day),
       arrivals: producible.filter((order) => !known.has(order.orderId)),
       containers,
@@ -132,6 +134,22 @@ function lineView(line: WorksheetLine): WorkshopLine {
     done: line.done,
     initials: line.initials,
     doneAt: line.doneAt?.toISOString() ?? null,
+    produced: line.produced,
+    remaining: line.remaining,
+    surplus: line.surplus,
+    batches: line.batches.map((batch) => ({
+      id: batch.id,
+      quantity: batch.quantity,
+      recordedAt: batch.recorded.at.toISOString(),
+      initials: batch.recorded.initials === "" ? null : batch.recorded.initials,
+    })),
+    container:
+      line.container === null
+        ? null
+        : {
+            unitsPerContainer: line.container.unitsPerContainer,
+            singular: line.container.singular,
+          },
   };
 }
 

@@ -5,12 +5,13 @@ import {
   DayOrdersReader,
   type ProducibleOrder,
 } from "../../../channels/commerce/day-orders.reader.js";
-import { ProductionDay, type DoneMark } from "../../../domain/entities/production-day.js";
+import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionDayNotClosedError } from "../../../domain/errors/production-errors.js";
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { RetakeProductionDayCommand } from "../retake-production-day.command.js";
 import { RetakeProductionDayHandler } from "../retake-production-day.handler.js";
+import { InMemoryBatches, RecordingDayLock } from "../../__tests__/batch-doubles.js";
 
 /** Deux instants recopiés, jamais comparés à l'horloge — exception étroite du §5. */
 const TIRAGE = new Date("2026-09-13T04:20:00.000Z");
@@ -42,24 +43,25 @@ class Commerce extends DayOrdersReader {
 class Days extends ProductionDayRepository {
   saved: ProductionDay | null = null;
 
-  constructor(private readonly current: ProductionDay) {
+  constructor(
+    private readonly current: ProductionDay,
+    private readonly trace: string[] = [],
+  ) {
     super();
   }
 
   load(): Promise<ProductionDay> {
+    this.trace.push("load");
     return Promise.resolve(this.current);
   }
 
   save(day: ProductionDay): Promise<void> {
+    this.trace.push("save");
     this.saved = day;
     return Promise.resolve();
   }
 
   markPacked(): Promise<boolean> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  markProduced(_day: ServiceDay, _sku: string, _mark: DoneMark | null): Promise<void> {
     return Promise.reject(new Error("non utilisé"));
   }
 
@@ -97,6 +99,8 @@ function subject(
   days: Days,
   rows: readonly ProducibleOrder[],
   events: RecordingPublisher = new RecordingPublisher(),
+  batches: InMemoryBatches = new InMemoryBatches(),
+  lock: RecordingDayLock = new RecordingDayLock(),
 ): RetakeProductionDayHandler {
   return new RetakeProductionDayHandler(
     days,
@@ -104,6 +108,8 @@ function subject(
     new FixedClock(NOW),
     events,
     new DirectUnitOfWork(),
+    batches,
+    lock,
   );
 }
 
@@ -141,17 +147,35 @@ describe("RetakeProductionDayHandler", () => {
     expect(events.published).toEqual(events.traced);
   });
 
-  it("🔴 GARDE la coche d'une ligne dont la quantité monte", async () => {
-    // Un retirage ne décoche rien : le pain sorti du four à 5 h l'est toujours
-    // quand la quantité passe de 30 à 42. C'est le cas que le bandeau nomme
-    // AVANT de proposer le geste.
-    const days = new Days(closedDay("MB"));
-    const handler = subject(days, [order("ord_1", 30), order("ord_2", 12)]);
+  it("🔴 matérialise la coche héritée AVANT d'absorber, et ne la recopie plus", async () => {
+    // Plan des fournées, §5.3–5.4 : 30 cochés puis 30 → 42 ne doivent pas se
+    // lire 42 sortis. La coche devient une fournée de 30 (même id que le
+    // rattrapage), écrite avant la journée ; le compte recréé naît sans coche.
+    const trace: string[] = [];
+    const days = new Days(closedDay("MB"), trace);
+    const batches = new InMemoryBatches(trace);
+    const handler = subject(
+      days,
+      [order("ord_1", 30), order("ord_2", 12)],
+      new RecordingPublisher(),
+      batches,
+      new RecordingDayLock(trace),
+    );
 
     await handler.execute(new RetakeProductionDayCommand(DAY, "staff-1"));
 
-    expect(days.saved?.counts[0]).toMatchObject({ quantity: 42 });
-    expect(days.saved?.counts[0]?.done).toMatchObject({ initials: "MB" });
+    const inherited = `backfill-${DAY}-PAI-SEI`;
+    expect(trace).toEqual([`lock:${DAY}`, "load", `record:${inherited}`, "save"]);
+    expect(batches.batches).toEqual([
+      {
+        id: inherited,
+        sku: "PAI-SEI",
+        quantity: 30,
+        recorded: { at: TIRAGE, by: "staff-1", initials: "MB" },
+        cancelled: null,
+      },
+    ]);
+    expect(days.saved?.counts[0]).toMatchObject({ quantity: 42, done: null });
   });
 
   it("n'écrit RIEN quand rien n'est arrivé, et rend le tirage affiché", async () => {

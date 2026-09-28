@@ -91,11 +91,6 @@ class Days extends ProductionDayRepository {
     return Promise.reject(new Error("non utilisé"));
   }
 
-  /** Idem — la coche est un geste de la fiche d'atelier, pas de la clôture. */
-  markProduced(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
   /** Idem — le colisage est un geste du poste de bacs, pas de la clôture. */
   markPackedLine(): Promise<void> {
     return Promise.reject(new Error("non utilisé"));

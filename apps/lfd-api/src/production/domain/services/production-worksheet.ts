@@ -1,5 +1,6 @@
 import type { ProducibleOrder } from "../../channels/commerce/day-orders.reader.js";
-import type { ProducedItemSnapshot } from "../entities/production-day.js";
+import type { ProducedItemSnapshot, ProductionBatchSnapshot } from "../entities/production-day.js";
+import { activeBatchesOf, implicitBatchesOf, outputOf } from "./production-output.js";
 
 /**
  * **La fiche d'atelier** — le compte à produire d'une journée, rendu cochable,
@@ -31,11 +32,15 @@ export interface DemandedItem {
 
 /** Ce que le handler pose sur la table. */
 export interface WorksheetSources {
+  /** `AAAA-MM-JJ` — l'`id` des fournées implicites en dépend (§5.2 des fournées). */
+  readonly serviceDay: string;
   /** `null` = la journée n'est pas arrêtée. */
   readonly closedAt: Date | null;
   readonly retakenAt: Date | null;
   /** L'instantané. Vide et non pertinent tant que rien n'est arrêté. */
   readonly counts: readonly ProducedItemSnapshot[];
+  /** Les fournées réelles du jour, annulées comprises — les implicites se déduisent ici. */
+  readonly batches: readonly ProductionBatchSnapshot[];
   /** Ce que le commerce annonce pour ce jour — la source des journées ouvertes. */
   readonly demand: readonly DemandedItem[];
   /**
@@ -55,9 +60,18 @@ export interface WorksheetLine {
   readonly productName: string;
   readonly quantity: number;
   readonly containerLabel: string | null;
+  /** Complète (D2 des fournées) — le nom de l'ancienne case, gardé au contrat. */
   readonly done: boolean;
+  /** Celles de la fournée qui a complété la ligne. */
   readonly initials: string | null;
+  /** L'heure de la fournée qui a complété la ligne. */
   readonly doneAt: Date | null;
+  readonly produced: number;
+  readonly remaining: number;
+  readonly surplus: number;
+  /** Les fournées qui comptent, dans l'ordre de sortie. */
+  readonly batches: readonly ProductionBatchSnapshot[];
+  readonly container: ContainerRule | null;
 }
 
 export interface WorksheetDriftLine {
@@ -107,34 +121,90 @@ export interface Worksheet {
  */
 export function worksheetOf(sources: WorksheetSources): Worksheet {
   const closed = sources.closedAt !== null;
+  const batches = closed ? effectiveBatches(sources) : [];
   const lines = closed
-    ? sources.counts.map((item) => line(item, sources.containers))
-    : sources.demand.map((item) => line({ ...item, done: null }, sources.containers));
+    ? [
+        ...sources.counts.map((item) => line(item, sources.containers, batches)),
+        ...outOfCount(sources.counts, batches, sources.containers),
+      ]
+    : sources.demand.map((item) => line(item, sources.containers, []));
   return {
     generatedAt: sources.closedAt,
     retakenAt: sources.retakenAt,
     lines: [...lines].sort(byWeightThenName),
-    drift: closed ? driftOf(sources) : null,
+    drift: closed ? driftOf(sources, batches) : null,
   };
 }
 
-/** Une ligne, avec son libellé de contenant s'il y en a un de réglé. */
+/** Les fournées réelles, et les implicites des coches héritées (§5.2). */
+function effectiveBatches(sources: WorksheetSources): readonly ProductionBatchSnapshot[] {
+  return [
+    ...sources.batches,
+    ...implicitBatchesOf(sources.serviceDay, sources.counts, sources.batches),
+  ];
+}
+
+/**
+ * Une ligne : sa quantité, ses fournées et leurs dérivés (D2), son contenant.
+ *
+ * `done`, `doneAt` et `initials` gardent leurs noms d'avant les fournées : ils
+ * disent désormais « complète », et l'heure et la signature de la fournée qui
+ * l'a complétée (§4).
+ */
 function line(
-  item: ProducedItemSnapshot,
+  item: DemandedItem,
   containers: ReadonlyMap<string, ContainerRule>,
+  batches: readonly ProductionBatchSnapshot[],
 ): WorksheetLine {
+  const active = activeBatchesOf(batches, item.sku);
+  const output = outputOf(item.quantity, active);
+  const rule = containers.get(item.sku);
+  const completing = output.complete ? output.completedBy : null;
   return {
     sku: item.sku,
     productName: item.productName,
     quantity: item.quantity,
-    containerLabel: containerLabelOf(item.quantity, containers.get(item.sku)),
-    done: item.done !== null,
-    // La chaîne vide n'est pas une signature : une ligne cochée sans initiales
-    // rend `null`, comme une ligne pas faite. L'écran n'a alors rien à afficher
-    // dans la colonne, plutôt qu'un blanc qui ressemble à une case à remplir.
-    initials: item.done === null || item.done.initials === "" ? null : item.done.initials,
-    doneAt: item.done?.at ?? null,
+    containerLabel: containerLabelOf(item.quantity, rule),
+    done: output.complete,
+    // La chaîne vide n'est pas une signature : une ligne complétée sans
+    // initiales rend `null`, comme une ligne pas faite.
+    initials:
+      completing === null || completing.recorded.initials === ""
+        ? null
+        : completing.recorded.initials,
+    doneAt: completing?.recorded.at ?? null,
+    produced: output.produced,
+    remaining: output.remaining,
+    surplus: output.surplus,
+    batches: active,
+    container: rule ?? null,
   };
+}
+
+/**
+ * **Le surplus hors compte** (§5 bis des fournées) : un SKU qui a des fournées
+ * mais n'est plus au compte garde ses fournées, et la fiche les montre en ligne
+ * de quantité 0. Le nom est le SKU : une fournée ne porte pas de libellé, et en
+ * inventer un serait pire que de montrer la clé.
+ *
+ * ⚠️ Aucun geste ne retire un SKU du compte à ce jour (le retirage n'ajoute que
+ * des commandes, vérifié le 2026-09-28) : la branche est une garde, pas un cas
+ * courant.
+ */
+function outOfCount(
+  counts: readonly ProducedItemSnapshot[],
+  batches: readonly ProductionBatchSnapshot[],
+  containers: ReadonlyMap<string, ContainerRule>,
+): readonly WorksheetLine[] {
+  const counted = new Set(counts.map((item) => item.sku));
+  const orphans = new Set(
+    batches
+      .filter((batch) => batch.cancelled === null && !counted.has(batch.sku))
+      .map((batch) => batch.sku),
+  );
+  return [...orphans].map((sku) =>
+    line({ sku, productName: sku, quantity: 0 }, containers, batches),
+  );
 }
 
 /**
@@ -158,14 +228,17 @@ function containerLabelOf(quantity: number, rule: ContainerRule | undefined): st
  * **Ce que le retirage absorberait**, ligne par ligne.
  *
  * Il nomme les lignes au lieu de rendre un compteur, et dit lesquelles sont
- * **déjà cochées** : c'est le seul cas réellement dangereux du lot — quelqu'un a
+ * **déjà commencées** : c'est le seul cas réellement dangereux du lot — quelqu'un a
  * déclaré avoir sorti 30 pièces d'un article qui en demande 42, et personne ne
  * s'en apercevra avant le colisage.
  *
  * `null` quand rien n'est arrivé : un bandeau qui s'affiche pour dire « rien »
  * apprend à ne plus le lire.
  */
-function driftOf(sources: WorksheetSources): WorksheetDrift | null {
+function driftOf(
+  sources: WorksheetSources,
+  batches: readonly ProductionBatchSnapshot[],
+): WorksheetDrift | null {
   if (sources.arrivals.length === 0) {
     return null;
   }
@@ -190,7 +263,9 @@ function driftOf(sources: WorksheetSources): WorksheetDrift | null {
       productName: current?.productName ?? item.productName,
       from: current?.quantity ?? 0,
       to: (current?.quantity ?? 0) + item.quantity,
-      done: current?.done != null,
+      // « Déjà commencée » (D2 des fournées) : au moins une pièce sortie. Le cas
+      // dangereux qu'il nommait est celui-là, que la ligne soit complète ou non.
+      done: activeBatchesOf(batches, sku).length > 0,
     };
   });
   return {

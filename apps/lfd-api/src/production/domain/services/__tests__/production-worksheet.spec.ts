@@ -57,9 +57,11 @@ function arrival(orderId: string, lines: readonly [string, string, number][]): P
 /** Les sources, avec le minimum plausible — chaque cas ne pose que ce qu'il éprouve. */
 function sources(overrides: Partial<WorksheetSources> = {}): WorksheetSources {
   return {
+    serviceDay: "2026-09-13",
     closedAt: null,
     retakenAt: null,
     counts: [],
+    batches: [],
     demand: [],
     arrivals: [],
     containers: new Map(),
@@ -311,5 +313,76 @@ describe("worksheetOf — l'ordre des lignes", () => {
 
     expect(sheet.drift?.lines).toHaveLength(2);
     expect(sheet.drift?.lines.map((line) => line.sku)).toEqual(["VIE-CRO", "PAI-SEI"]);
+  });
+});
+
+describe("worksheetOf — les fournées (plan des fournées, D2, §4)", () => {
+  const PLUS_TARD = new Date("2026-09-13T05:40:00.000Z");
+
+  function batch(id: string, quantity: number, at: Date, initials = "MB") {
+    return {
+      id,
+      sku: "VIE-CRO",
+      quantity,
+      recorded: { at, by: "staff-1", initials },
+      cancelled: null,
+    };
+  }
+
+  it("sert sorti, reste, surplus, et date la ligne par la fournée qui l'a COMPLÉTÉE", () => {
+    const sheet = worksheetOf(
+      sources({
+        closedAt: TIRAGE,
+        counts: [count("VIE-CRO", "Croissant", 48)],
+        batches: [batch("a", 24, SORTIE_DU_FOUR, "KA"), batch("b", 28, PLUS_TARD, "")],
+        containers: new Map([["VIE-CRO", TOURNEUSE]]),
+      }),
+    );
+
+    expect(sheet.lines[0]).toMatchObject({
+      produced: 52,
+      remaining: 0,
+      surplus: 4,
+      done: true,
+      doneAt: PLUS_TARD,
+      // La fournée qui complète n'est pas signée : `null`, pas la signature d'avant.
+      initials: null,
+      container: TOURNEUSE,
+    });
+    expect(sheet.lines[0]?.batches.map((entry) => entry.id)).toEqual(["a", "b"]);
+  });
+
+  it("🔴 30 cochés puis 30 → 42 : la ligne n'est PAS complète", () => {
+    const sheet = worksheetOf(
+      sources({
+        closedAt: TIRAGE,
+        counts: [count("VIE-CRO", "Croissant", 42)],
+        batches: [batch("backfill", 30, SORTIE_DU_FOUR)],
+      }),
+    );
+
+    expect(sheet.lines[0]).toMatchObject({ produced: 30, remaining: 12, done: false });
+  });
+
+  it("une coche héritée SANS fournée se lit comme une fournée implicite", () => {
+    const sheet = worksheetOf(
+      sources({ closedAt: TIRAGE, counts: [count("VIE-CRO", "Croissant", 30, "KA")] }),
+    );
+
+    expect(sheet.lines[0]).toMatchObject({ produced: 30, done: true, initials: "KA" });
+    expect(sheet.lines[0]?.batches[0]?.id).toBe("backfill-2026-09-13-VIE-CRO");
+  });
+
+  it("l'écart dit « déjà commencée » dès la première pièce sortie", () => {
+    const sheet = worksheetOf(
+      sources({
+        closedAt: TIRAGE,
+        counts: [count("VIE-CRO", "Croissant", 30)],
+        batches: [batch("a", 6, SORTIE_DU_FOUR)],
+        arrivals: [arrival("ord_9", [["VIE-CRO", "Croissant", 12]])],
+      }),
+    );
+
+    expect(sheet.drift?.lines[0]).toMatchObject({ from: 30, to: 42, done: true });
   });
 });

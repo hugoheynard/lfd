@@ -178,8 +178,9 @@ export interface PackingResource {
    */
   readonly exhausted: boolean;
   /**
-   * L'article attend encore le four — sa ligne de fiche d'atelier n'est pas
-   * cochée.
+   * L'article attend encore le four — ce qui en est sorti, moins ce qui est
+   * déjà au bac, ne couvre pas ce que les bacs ouverts attendent (fournées
+   * progressives, 2026-09-28).
    *
    * Il apparaît quand même dans la marchandise à répartir, et c'est voulu : ce
    * qui est dû existe avant d'être fabriqué. Ce qu'il ne doit pas faire, c'est

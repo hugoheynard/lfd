@@ -46,8 +46,9 @@ model ProductionDay {
   retakenAt DateTime? @map("retaken_at")
   retakenBy String?   @map("retaken_by")
 
-  orders ProductionOrder[]
-  counts ProductionCount[]
+  orders  ProductionOrder[]
+  counts  ProductionCount[]
+  batches ProductionBatch[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -209,6 +210,44 @@ model ProductionCount {
 
   @@unique([serviceDay, sku])
   @@map("production_count")
+  @@schema("production")
+}
+
+/// **Une fournée** — ce que le four a sorti d'un article, à un instant, en ajout
+/// seul (`documentation/production/plan-fournees-progressives.md`, D1).
+///
+/// Sorti(sku) = Σ des fournées NON annulées. Aucun compteur tenu à côté : deux
+/// postes qui déclarent en même temps s'écraseraient, et un compteur ne dit ni
+/// qui, ni quand, ni quoi annuler.
+///
+/// L'`id` vient du CLIENT (ULID) : un double appui ou une requête rejouée ne
+/// compte pas deux fois. Les `id` en `backfill-…` et `mark-…` sont écrits par le
+/// serveur (rattrapage, coche héritée) et sont déterministes pour la même raison.
+///
+/// Jamais supprimée : une erreur de saisie s'ANNULE, tracée par
+/// `cancelled_at` / `cancelled_by` (deux ensemble, tenu par un CHECK).
+model ProductionBatch {
+  id String @id
+
+  serviceDay String        @map("service_day") @db.VarChar(10)
+  day        ProductionDay @relation(fields: [serviceDay], references: [serviceDay], onDelete: Restrict)
+
+  /// Le SKU du compte, opaque. Pas de clé vers `production_count` : chaque
+  /// `save` en régénère les `id`, et un SKU retiré du compte garde ses fournées.
+  sku      String
+  quantity Int
+
+  recordedAt DateTime @map("recorded_at") @db.Timestamptz(6)
+  /// La fiche staff qui a déclaré, figée. Elle ne vient jamais de la charge.
+  recordedBy String   @map("recorded_by")
+  /// Vides autorisées, comme sur la coche : on déclare d'abord, on signe si on veut.
+  initials   String   @default("")
+
+  cancelledAt DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  cancelledBy String?   @map("cancelled_by")
+
+  @@index([serviceDay, sku])
+  @@map("production_batch")
   @@schema("production")
 }
 

@@ -122,6 +122,8 @@
   "test/pricing-budget.e2e-spec.ts": 4217,
   "test/pricing-journal-pages.e2e-spec.ts": 5092,
   "test/production-batch.e2e-spec.ts": 16484,
+  "test/production-batches-transition.e2e-spec.ts": 8600,
+  "test/production-batches.e2e-spec.ts": 11200,
   "test/production-closing-sweep.e2e-spec.ts": 5448,
   "test/production-forecast.e2e-spec.ts": 5285,
   "test/production-journal.e2e-spec.ts": 4045,

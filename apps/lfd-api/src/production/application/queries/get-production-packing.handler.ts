@@ -48,6 +48,7 @@ export class GetProductionPackingHandler implements IQueryHandler<
       closedAt: current.closedAt,
       orders: current.orders,
       counts: current.counts,
+      available: (sku) => current.availableOf(sku),
       now: this.clock.now(),
       authorName: (reference) => authors.nameOf(reference),
     });

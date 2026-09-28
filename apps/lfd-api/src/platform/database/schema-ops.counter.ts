@@ -213,6 +213,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   ProductionOrder: "production",
   ProductionOrderLine: "production",
   ProductionCount: "production",
+  // Les fournées (2026-09-28, plan `plan-fournees-progressives.md`, D1) : une
+  // ligne par sortie de four, lue avec la journée.
+  ProductionBatch: "production",
   // Le paramétrage du four — combien de pièces tiennent dans un contenant. Il
   // n'est lu qu'à l'ouverture d'une fiche d'atelier ; s'il pesait un jour dans
   // le compteur, c'est qu'une lecture le redemande par ligne au lieu d'un coup.

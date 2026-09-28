@@ -1,7 +1,5 @@
 import type { ProducibleOrder } from "../../channels/commerce/day-orders.reader.js";
 import {
-  OrderAlreadyPackedError,
-  ProducedItemNotFoundError,
   ProductionDayAlreadyClosedError,
   ProductionDayEmptyError,
   ProductionDayNotClosedError,
@@ -9,20 +7,23 @@ import {
 import { absorbArrivals, countOf, freezeOrder } from "../services/production-count.js";
 import type { ContainerStep } from "../value-objects/container-step.js";
 import { ServiceDay } from "../value-objects/service-day.value-object.js";
+import * as batching from "./production-day.batches.js";
 import * as packing from "./production-day.packing.js";
 import type {
+  DoneMark,
   PackedMark,
+  ProductionBatchSnapshot,
   ProducedItemSnapshot,
   ProductionDaySnapshot,
   ProductionLineSnapshot,
   ProductionOrderSnapshot,
 } from "./production-day.snapshot.js";
 
-// La forme de la journée vit à côté ; on la réexporte pour que l'agrégat reste
-// le seul point d'entrée — un appelant n'a pas à savoir comment il est rangé.
+// La forme de la journée vit à côté ; réexportée : l'agrégat reste le point d'entrée.
 export type {
   DoneMark,
   PackedLineMark,
+  ProductionBatchSnapshot,
   PackedMark,
   ProducedItemSnapshot,
   ProductionDaySnapshot,
@@ -67,6 +68,7 @@ export class ProductionDay {
     private retakenValue: PackedMark | null,
     private ordersValue: readonly ProductionOrderSnapshot[],
     private countsValue: readonly ProducedItemSnapshot[],
+    private batchesValue: readonly ProductionBatchSnapshot[],
   ) {}
 
   /**
@@ -74,7 +76,7 @@ export class ProductionDay {
    * qu'on puisse fabriquer sans lire la base.
    */
   static open(day: ServiceDay): ProductionDay {
-    return new ProductionDay(day, null, null, [], []);
+    return new ProductionDay(day, null, null, [], [], []);
   }
 
   /** Rehydrate depuis l'adaptateur. Les value objects revalident au passage. */
@@ -85,6 +87,7 @@ export class ProductionDay {
       snapshot.retaken,
       snapshot.orders,
       snapshot.counts,
+      snapshot.batches,
     );
   }
 
@@ -110,45 +113,71 @@ export class ProductionDay {
     return this.countsValue;
   }
 
+  /** Les fournées du jour, annulées comprises — sans les implicites (§5.2). */
+  get batches(): readonly ProductionBatchSnapshot[] {
+    return this.batchesValue;
+  }
+
+  /** Sorti − au bac, bacs fermés compris (D4). Cf. `production-day.batches.ts`. */
+  availableOf(sku: string): number {
+    return batching.availableOf(this, sku);
+  }
+
+  /** La fournée à déclarer, sans muter — refus : `production-day.batches.ts`. */
+  batchToRecord(
+    id: string,
+    sku: string,
+    quantity: number,
+    recorded: DoneMark,
+  ): ProductionBatchSnapshot {
+    return batching.batchToRecord(this, id, sku, quantity, recorded);
+  }
+
+  /** Rejeu ou conflit d'une déclaration (D3) — cf. `assertSameCharge`. */
+  acknowledge(
+    requested: ProductionBatchSnapshot,
+    storedDay: string,
+    stored: ProductionBatchSnapshot,
+  ): void {
+    batching.assertSameCharge(this.day.value, requested, storedDay, stored);
+  }
+
+  /** L'ancien « cocher » : le reste de la ligne, ou `null` si complète (D3). */
+  batchToComplete(sku: string, recorded: DoneMark): ProductionBatchSnapshot | null {
+    return batching.batchToComplete(this, this.itemToMark(sku), recorded);
+  }
+
+  /** Garde de l'annulation, sans muter — refus : `production-day.batches.ts`. */
+  batchToCancel(id: string): ProductionBatchSnapshot | null {
+    return batching.batchToCancel(this, id);
+  }
+
+  /** L'ancien « décocher » : toutes les fournées de la ligne, sans muter (D3). */
+  batchesToUncheck(sku: string): readonly ProductionBatchSnapshot[] {
+    this.itemToMark(sku);
+    return batching.batchesToUncheck(this, sku);
+  }
+
   /**
-   * **Le bac est fait** — le colisage d'une commande de cette journée.
-   *
-   * ## Pourquoi c'est un fait de la PRODUCTION
-   *
-   * C'est le fournil qui ferme le bac : personne d'autre ne peut le constater.
-   * Le commerce en tire le sien — `ready`, « prête pour le client » — par un
-   * événement. Deux faits distincts, chacun chez celui qui l'observe ; les
-   * confondre reviendrait à faire écrire au fournil dans les tables du commerce.
-   *
-   * ## Les trois refus, et ce que chacun évite
-   *
-   * - **journée non arrêtée** : une commande qu'aucune clôture n'a inscrite
-   *   n'est pas à fabriquer aujourd'hui ;
-   * - **référence inconnue** : elle n'est pas dans cette journée-là ;
-   * - **déjà colisée** : deux mains sur la même feuille est le cas NORMAL au
-   *   fournil, et le premier scan est le seul vrai. Le second ne doit pas
-   *   réécrire l'heure ni changer l'identité qui l'a déclaré.
-   *
-   * ⚠️ Aucun refus sur une commande ANNULÉE, et c'est un fait, pas un oubli.
-   * `cancelled` s'écrit depuis le 2026-09-26 (plan
-   * `documentation/order/plan-abandon-du-reglement.md`), mais par deux gestes
-   * seulement, et aucun n'atteint une commande inscrite ici (vérifié le
-   * 2026-09-26) : l'abandon du client et le balayage de la clôture ne touchent
-   * qu'un règlement NON encaissé, que la règle de production n'inscrit jamais,
-   * et le balayage passe AVANT le compte. Le jour où une commande PAYÉE
-   * s'annulera (chantier d'annulation général), l'annulation devra se propager
-   * jusqu'ici, sinon le fournil colisera pour rien.
-   *
-   * @throws {ProductionDayNotClosedError} la journée n'est pas arrêtée.
-   * @throws {AtelierSheetNotFoundError} aucune commande sous cette référence.
-   * @throws {OrderAlreadyPackedError} le bac est déjà fait.
+   * **Matérialise** les coches héritées (§5.3) et les rend pour que l'appelant
+   * les écrive — raisons : `inheritedBatchesOf`, `production-day.batches.ts`.
+   */
+  materialize(sku?: string): readonly ProductionBatchSnapshot[] {
+    const inherited = batching.inheritedBatchesOf(this, sku);
+    this.batchesValue = [...this.batchesValue, ...inherited];
+    return inherited;
+  }
+
+  /**
+   * **Le bac est fait** — le colisage d'une commande de cette journée. Les
+   * trois refus et leurs raisons (dont l'absence de refus sur une commande
+   * annulée) sont sur `sheetToSeal`, dans `production-day.packing.ts`.
    */
   pack(reference: string, at: Date, by: string): ProductionOrderSnapshot {
-    const target = packing.sheetToPack(this, reference);
-    if (target.packed !== null) {
-      throw new OrderAlreadyPackedError(reference);
-    }
-    const packed: ProductionOrderSnapshot = { ...target, packed: { at, by } };
+    const packed: ProductionOrderSnapshot = {
+      ...packing.sheetToSeal(this, reference),
+      packed: { at, by },
+    };
     this.ordersValue = this.ordersValue.map((order) =>
       order.reference === reference ? packed : order,
     );
@@ -170,10 +199,7 @@ export class ProductionDay {
     return packing.lineToFill(this, reference, sku);
   }
 
-  /**
-   * L'article attend-il encore le four ? Cf. `isAwaitingProduction` dans
-   * `production-day.packing.ts`.
-   */
+  /** Rien de disponible pour ce SKU ? Cf. `isAwaitingProduction`, `production-day.packing.ts`. */
   isAwaitingProduction(sku: string): boolean {
     return packing.isAwaitingProduction(this, sku);
   }
@@ -192,18 +218,10 @@ export class ProductionDay {
    * **Annoncer combien de containers la commande occupe** — un TOTAL.
    *
    * @deprecated Depuis le 2026-09-14 — le poste envoie un sens
-   * ({@link containerStepOn}). Garde la route `PUT` servie un déploiement de
-   * plus : elle est en production.
-   *
-   * Refuse tout ce que {@link sheetToCount} refuse, et un nombre qui n'est pas un
-   * nombre de bacs (`assertContainerCount`).
-   *
-   * @throws {InvalidContainerCountError} ce n'est pas un nombre de bacs.
+   * ({@link containerStepOn}). Refus : `containersToDeclare`.
    */
   declareContainers(reference: string, containers: number): ProductionOrderSnapshot {
-    const sheet = packing.sheetToCount(this, reference);
-    packing.assertContainerCount(containers);
-    const counted: ProductionOrderSnapshot = { ...sheet, containers };
+    const counted = packing.containersToDeclare(this, reference, containers);
     this.ordersValue = this.ordersValue.map((order) =>
       order.reference === reference ? counted : order,
     );
@@ -231,48 +249,22 @@ export class ProductionDay {
     this.closedAtValue = at;
   }
 
-  /**
-   * La ligne qu'on s'apprête à cocher — **sans rien muter**.
-   *
-   * Même figure que {@link sheetToPack}, et pour la même raison : elle porte les
-   * deux refus STRUCTURELS — la journée n'est pas arrêtée, ou ce SKU n'est pas
-   * au compte du jour — en un seul endroit plutôt que recopiés chez les deux
-   * appelants (cocher, décocher).
-   *
-   * Elle ne dit rien de l'état de la case. « Déjà cochée » n'est pas un refus
-   * ici, contrairement au colisage : voir la note de l'adaptateur.
-   *
-   * @throws {ProductionDayNotClosedError} rien n'est arrêté, donc rien à cocher.
-   * @throws {ProducedItemNotFoundError} ce SKU n'est pas au compte du jour.
-   */
+  /** La ligne qu'on s'apprête à cocher, sans muter — refus : `production-day.batches.ts`. */
   itemToMark(sku: string): ProducedItemSnapshot {
-    if (!this.isClosed) {
-      throw new ProductionDayNotClosedError(this.day.value);
-    }
-    const target = this.countsValue.find((item) => item.sku === sku);
-    if (target === undefined) {
-      throw new ProducedItemNotFoundError(sku, this.day.value);
-    }
-    return target;
+    return batching.itemToMark(this, sku);
   }
 
   /**
    * **Le retirage** : absorber ce qui est arrivé depuis que le plan est arrêté.
    *
-   * ## Pourquoi ça ne contredit pas l'invariant de l'en-tête
+   * Il ne contredit pas l'invariant de l'en-tête : c'est un recalcul ATTESTÉ,
+   * signé par `retakenBy` — la raison complète est au-dessus d'`absorbArrivals`.
    *
-   * « Une journée arrêtée ne se recalcule pas » vise le recalcul **silencieux**
-   * — celui qui donnerait un autre nombre que celui sur lequel le fournil a
-   * lancé ses fournées, sans que personne l'ait voulu. Le retirage est l'autre
-   * chose : un geste **attesté**, fait par quelqu'un à qui l'écran vient de
-   * montrer les lignes qui changent et de dire laquelle est déjà cochée. D'où
-   * `retakenBy` : sans auteur, ce serait exactement le recalcul qu'on refuse.
-   *
-   * L'invariant n'est donc pas levé, il est nommé — impossible par accident,
-   * possible par décision, et traçable.
-   *
-   * Ce qu'il absorbe exactement — par `orderId`, sans décocher — est calculé par
-   * `absorbArrivals` dans `services/production-count.ts`.
+   * Ce qu'il absorbe exactement — par `orderId` — est calculé par
+   * `absorbArrivals` dans `services/production-count.ts`. Il ne recopie plus
+   * les coches héritées : l'appelant les a matérialisées ({@link materialize})
+   * AVANT, sous le verrou de la journée, et les fournées ne dépendent pas du
+   * compte (§5.3–5.4 des fournées).
    *
    * @returns le nombre de commandes réellement absorbées. Zéro = rien n'était
    *   arrivé, et c'est une information, pas une erreur.
@@ -300,6 +292,7 @@ export class ProductionDay {
       retaken: this.retakenValue,
       orders: this.ordersValue,
       counts: this.countsValue,
+      batches: this.batchesValue,
     };
   }
 }

@@ -73,10 +73,6 @@ export class FixedDays extends ProductionDayRepository {
     return Promise.reject(new Error("non utilisé"));
   }
 
-  markProduced(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
   markPackedLine(): Promise<void> {
     return Promise.reject(new Error("non utilisé"));
   }

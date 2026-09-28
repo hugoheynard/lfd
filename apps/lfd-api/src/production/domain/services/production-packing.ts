@@ -31,6 +31,13 @@ export interface PackingSources {
   /** Le compte à produire : la moitié « ressource » de la balance. */
   readonly counts: readonly ProducedItemSnapshot[];
   /**
+   * **Le disponible** d'un article — sorti moins déjà au bac, bacs fermés
+   * compris (D4 des fournées). Une fonction et non un calcul ici : c'est la
+   * journée qui le sait (`ProductionDay.availableOf`), et la garde de la mise
+   * au bac lit la même. Deux calculs du même disponible divergeraient.
+   */
+  readonly available: (sku: string) => number;
+  /**
    * L'instant du **serveur**, lu par le port `Clock` dans le handler. Il ne sert
    * qu'à dire si la journée lue est aujourd'hui ou demain : l'horloge d'un poste
    * de fournil n'est pas une autorité, et la fonction reste pure.
@@ -76,7 +83,7 @@ export function packingBoardOf(sources: PackingSources): ProductionPackingView {
       relativeDay,
     };
   }
-  const awaiting = awaitingOf(sources.counts);
+  const awaiting = awaitingOf(sources.available);
   const readyCount = sources.orders.filter((order) => order.packed !== null).length;
   return {
     date: sources.date,
@@ -118,25 +125,22 @@ export function canDeclareReady(order: ProductionOrderSnapshot): boolean {
 }
 
 /**
- * **Ce qui attend encore le four**, article par article.
+ * **Ce qui attend encore le four**, pour une quantité donnée d'un article.
  *
- * Deux situations, un seul verdict, et la seconde n'est pas évidente à la
- * relecture :
- *
- * - la ligne du compte à produire **n'est pas cochée** — le fournil ne l'a pas
- *   encore sortie ;
- * - le SKU **n'est pas au compte du tout** — il est arrivé après le tirage,
- *   donc personne ne l'a fabriqué ni même pu le cocher.
- *
- * Les deux mènent au même refus parce qu'ils disent la même chose du monde
- * réel : la marchandise n'existe pas encore. Traiter le second comme
- * disponible, sous prétexte qu'aucune ligne ne dit le contraire, ferait de
- * l'absence d'information une autorisation.
+ * Depuis les fournées (D4) : le disponible ne couvre pas cette quantité. C'est
+ * la même règle que la garde `lineToFill` — la ligne que l'écran grise est
+ * celle que le serveur refuse. Un SKU absent du compte n'a rien de sorti, donc
+ * rien de disponible : arrivé après le tirage, personne ne l'a fabriqué.
  */
-function awaitingOf(counts: readonly ProducedItemSnapshot[]): (sku: string) => boolean {
-  const produced = new Set(counts.filter((item) => item.done !== null).map((item) => item.sku));
-  return (sku) => !produced.has(sku);
+function awaitingOf(available: (sku: string) => number): Awaiting {
+  // Sans garde sur `quantity > 0` : un article dont tous les bons sont au bac
+  // mais dont le disponible est NÉGATIF (colisé plus que sorti — l'ancien
+  // binaire le permettait) reste « en attente », c'est ce qu'il faut voir.
+  return (sku, quantity) => available(sku) < quantity;
 }
+
+/** « Faut-il encore attendre le four pour `quantity` pièces de `sku` ? » */
+type Awaiting = (sku: string, quantity: number) => boolean;
 
 /**
  * Un bac : le bon tel qu'il a été figé, l'état de son remplissage, et ses
@@ -149,7 +153,7 @@ function awaitingOf(counts: readonly ProducedItemSnapshot[]): (sku: string) => b
  */
 function sheetOf(
   order: ProductionOrderSnapshot,
-  awaiting: (sku: string) => boolean,
+  awaiting: Awaiting,
   authorName: PackingSources["authorName"],
 ): PackingSheet {
   const packed = order.lines.filter((line) => line.packed !== null);
@@ -173,10 +177,7 @@ function sheetOf(
 }
 
 /** Les lignes d'un bac, rangées par nom puis SKU. */
-function linesOf(
-  order: ProductionOrderSnapshot,
-  awaiting: (sku: string) => boolean,
-): readonly PackingLine[] {
+function linesOf(order: ProductionOrderSnapshot, awaiting: Awaiting): readonly PackingLine[] {
   return [...order.lines]
     .map((line) => ({
       sku: line.sku,
@@ -188,7 +189,8 @@ function linesOf(
       // alors rien à afficher, plutôt qu'un blanc qui appelle un crayon.
       initials: line.packed === null || line.packed.initials === "" ? null : line.packed.initials,
       packedAt: line.packed?.at.toISOString() ?? null,
-      awaitingProduction: awaiting(line.sku),
+      // Une ligne déjà au bac n'attend plus rien : ses pièces sont dans le sac.
+      awaitingProduction: line.packed === null && awaiting(line.sku, line.quantity),
     }))
     .sort(byNameThenSku);
 }
@@ -212,17 +214,19 @@ function sumOfQuantities(lines: readonly { readonly quantity: number }[]): numbe
  * pièces sont bel et bien prises quelque part. `produced: 0` le dit, et le
  * `remaining` négatif qui s'ensuit crie ce qu'il faut entendre.
  */
-function resourcesOf(
-  sources: PackingSources,
-  awaiting: (sku: string) => boolean,
-): readonly PackingResource[] {
+function resourcesOf(sources: PackingSources, awaiting: Awaiting): readonly PackingResource[] {
   const allocated = new Map<string, number>();
+  // Ce que les bacs OUVERTS attendent encore : c'est ce que le disponible doit
+  // couvrir pour que l'article cesse d'attendre le four.
+  const pending = new Map<string, number>();
   const names = new Map<string, string>();
   for (const order of sources.orders) {
     for (const line of order.lines) {
       names.set(line.sku, names.get(line.sku) ?? line.productName);
       if (line.packed !== null) {
         allocated.set(line.sku, (allocated.get(line.sku) ?? 0) + line.quantity);
+      } else {
+        pending.set(line.sku, (pending.get(line.sku) ?? 0) + line.quantity);
       }
     }
   }
@@ -236,7 +240,9 @@ function resourcesOf(
       const count = produced.get(sku);
       const taken = allocated.get(sku) ?? 0;
       const remaining = (count?.quantity ?? 0) - taken;
-      const awaitingProduction = awaiting(sku);
+      // « Plus rien de disponible » pour ce qui reste à mettre en bac (D4) :
+      // un article dont tous les bons sont servis n'attend plus le four.
+      const awaitingProduction = awaiting(sku, pending.get(sku) ?? 0);
       return {
         sku,
         productName: count?.productName ?? names.get(sku) ?? sku,

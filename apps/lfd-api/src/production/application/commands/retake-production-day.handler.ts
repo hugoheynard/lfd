@@ -6,6 +6,8 @@ import { DomainEventPublisher } from "../../../platform/events/domain-event-publ
 import { Clock } from "../../../platform/time/clock.js";
 import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
 import { ProductionDayRetakenJournalEvent } from "../../domain/events/production-day.events.js";
+import { ProductionBatchRepository } from "../../domain/ports/production-batch.repository.js";
+import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
@@ -33,6 +35,18 @@ import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
  * journal les garde tous. Aucun abonné n'écoute ce fait sur le bus (vérifié le
  * 2026-09-19) : `publishTraced` ne prévient donc personne au commerce.
  *
+ * ## Le verrou, et les coches héritées (plan des fournées, D4, §5.3)
+ *
+ * `save` réécrit le colisage de chaque ligne depuis l'instantané : chargé
+ * AVANT, il effaçait un colisage validé pendant le retirage. La journée est
+ * donc verrouillée puis RECHARGÉE dans l'unité de travail, et c'est cet
+ * agrégat-là qu'on écrit. Les commandes du commerce, elles, sont lues avant :
+ * pas de lecture d'un autre bloc sous un verrou tenu.
+ *
+ * Le retirage est le seul geste qui change une quantité. Avant d'absorber, il
+ * écrit en vraies fournées les coches héritées (même `id` que le rattrapage) :
+ * sans ça, 30 cochés puis 30 → 42 deviendraient 42 sortis.
+ *
  * ## Zéro absorbé
  *
  * Ce n'est pas une erreur — c'est le cas de deux personnes qui pressent le même
@@ -54,30 +68,41 @@ export class RetakeProductionDayHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly batches: ProductionBatchRepository,
+    private readonly lock: ProductionDayLock,
   ) {}
 
   async execute(command: RetakeProductionDayCommand): Promise<ProductionWorksheetRetake> {
     const day = ServiceDay.of(command.serviceDay);
-    const current = await this.days.load(day);
     const producible = await this.orders.producibleFor(day);
 
-    const absorbed = current.retake(producible, this.clock.now(), command.staffUserId);
-    if (absorbed > 0) {
-      await this.uow.run(async () => {
-        await this.days.save(current);
+    const outcome = await this.uow.run(async () => {
+      await this.lock.lock(day);
+      const locked = await this.days.load(day);
+      const inherited = locked.materialize();
+      const absorbed = locked.retake(producible, this.clock.now(), command.staffUserId);
+      if (absorbed > 0) {
+        for (const batch of inherited) {
+          await this.batches.record(day, batch);
+        }
+        await this.days.save(locked);
         await this.events.publishTraced(new ProductionDayRetakenJournalEvent(day.value, absorbed));
-      });
-    }
-
+      }
+      return { day: locked, absorbed };
+    });
     return {
       date: day.value,
-      absorbed,
+      absorbed: outcome.absorbed,
       // Le tirage que la fiche montre MAINTENANT : celui qu'on vient de
       // reprendre, ou le précédent quand il n'y avait rien à absorber. Aucun des
       // deux ne peut manquer — l'agrégat a déjà refusé une journée ouverte — mais
       // on le traite plutôt que de l'affirmer : un `!` dirait au compilateur de
       // se taire sur la seule chose qu'il sait.
-      retakenAt: (current.retaken?.at ?? current.closedAt ?? this.clock.now()).toISOString(),
+      retakenAt: (
+        outcome.day.retaken?.at ??
+        outcome.day.closedAt ??
+        this.clock.now()
+      ).toISOString(),
     };
   }
 }

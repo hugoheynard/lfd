@@ -1,6 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../platform/time/clock.js";
+import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { MarkPackingLineCommand } from "./mark-packing-line.command.js";
@@ -18,6 +20,11 @@ import { MarkPackingLineCommand } from "./mark-packing-line.command.js";
  * réparti ce qui n'existe pas — mais on peut toujours en ressortir une ligne
  * dont la coche d'atelier a été reprise. C'est la commande de décoche qui garde
  * `lineToPack`.
+ *
+ * 🔴 **Sous le verrou de la journée** (D4 des fournées) : mettre au bac
+ * CONSOMME du disponible — sorti moins déjà au bac. Deux postes qui liraient
+ * chacun 12 disponibles pour deux lignes de 12 en mettraient 24. Verrou, PUIS
+ * relecture, PUIS garde et écriture, dans une seule unité de travail.
  *
  * ⚠️ L'écriture est **ciblée** et non un `save` de l'agrégat, et c'est le cas
  * que le §3.1 autorise : deux postes colisent deux bacs différents en même
@@ -39,17 +46,22 @@ import { MarkPackingLineCommand } from "./mark-packing-line.command.js";
 export class MarkPackingLineHandler implements ICommandHandler<MarkPackingLineCommand, void> {
   constructor(
     private readonly days: ProductionDayRepository,
+    private readonly lock: ProductionDayLock,
     private readonly clock: Clock,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: MarkPackingLineCommand): Promise<void> {
     const day = ServiceDay.of(command.serviceDay);
-    const current = await this.days.load(day);
-    current.lineToFill(command.reference, command.sku);
-    await this.days.markPackedLine(day, command.reference, command.sku, {
-      at: this.clock.now(),
-      by: command.staffUserId,
-      initials: command.initials,
+    await this.uow.run(async () => {
+      await this.lock.lock(day);
+      const current = await this.days.load(day);
+      current.lineToFill(command.reference, command.sku);
+      await this.days.markPackedLine(day, command.reference, command.sku, {
+        at: this.clock.now(),
+        by: command.staffUserId,
+        initials: command.initials,
+      });
     });
   }
 }

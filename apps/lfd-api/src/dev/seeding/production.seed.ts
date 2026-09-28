@@ -46,6 +46,7 @@
  * client satisfait cette forme sans rien déclarer.
  */
 export interface ProductionTables {
+  readonly productionBatch: { deleteMany(): Promise<{ readonly count: number }> };
   readonly productionDay: { deleteMany(): Promise<{ readonly count: number }> };
   readonly orderHandover: { deleteMany(): Promise<{ readonly count: number }> };
 }
@@ -62,6 +63,11 @@ export async function resetProduction(prisma: ProductionTables): Promise<Product
   // `ProductionOrder`, ses lignes et `ProductionCount` partent en cascade depuis
   // la journée (`onDelete: Cascade`). Les supprimer un par un ici dupliquerait
   // le schéma, et une table ajoutée demain serait oubliée.
+  // Sauf les fournées : leur clé vers la journée est `Restrict` — en service,
+  // une journée qui a sorti du four ne se supprime pas. La coupe de démo les
+  // emporte donc d'abord, sans quoi elle échouerait dès la première fournée
+  // saisie (lecteur-de-migrations, 2026-09-28).
+  await prisma.productionBatch.deleteMany();
   const days = await prisma.productionDay.deleteMany();
   // La remise, elle, n'appartient à aucune journée — c'est tout l'objet de sa
   // table : une commande passée après la clôture reste remettable sans être au

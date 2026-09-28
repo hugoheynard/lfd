@@ -1,6 +1,5 @@
 import type { ProducibleOrder } from "../../channels/commerce/day-orders.reader.js";
 import type {
-  DoneMark,
   ProducedItemSnapshot,
   ProductionOrderSnapshot,
 } from "../entities/production-day.snapshot.js";
@@ -59,19 +58,7 @@ export function freezeOrder(order: ProducibleOrder): ProductionOrderSnapshot {
  * commandes d'une même journée portent le même catalogue ; si elles divergeaient,
  * c'est le SKU qui ferait foi, pas le libellé.
  */
-export function countOf(
-  orders: readonly ProducibleOrder[],
-  /**
-   * Ce qui était **déjà coché** avant, par SKU.
-   *
-   * 🔴 Un retirage ne décoche rien : le pain de seigle sorti du four à 5 h l'est
-   * toujours quand la quantité passe de 30 à 42. Perdre la coche ferait
-   * refabriquer ce qui est fait ; la garder laisse la ligne cochée sur une
-   * quantité qui a monté — c'est le cas dangereux, et c'est précisément celui
-   * que le bandeau nomme AVANT de proposer le geste.
-   */
-  done: ReadonlyMap<string, DoneMark> = new Map(),
-): readonly ProducedItemSnapshot[] {
+export function countOf(orders: readonly ProducibleOrder[]): readonly ProducedItemSnapshot[] {
   const bySku = new Map<string, ProducedItemSnapshot>();
   for (const order of orders) {
     for (const line of order.lines) {
@@ -80,7 +67,11 @@ export function countOf(
         sku: line.sku,
         productName: known?.productName ?? line.productName,
         quantity: (known?.quantity ?? 0) + line.quantity,
-        done: done.get(line.sku) ?? null,
+        // 🔴 Plus aucune coche recopiée (plan des fournées, §5.4) : « sorti »
+        // vit dans les fournées, qui ne dépendent pas du compte. Recopier une
+        // coche ferait renaître « fait » sur une quantité qui a changé — 30
+        // cochés, puis 30 → 42, lus complets.
+        done: null,
       });
     }
   }
@@ -98,6 +89,18 @@ export interface AbsorbedArrivals {
 /**
  * **Ce que le retirage absorbe**, calculé sans toucher la journée.
  *
+ * ## Pourquoi le retirage ne contredit pas l'invariant de `ProductionDay`
+ *
+ * « Une journée arrêtée ne se recalcule pas » vise le recalcul **silencieux**
+ * — celui qui donnerait un autre nombre que celui sur lequel le fournil a
+ * lancé ses fournées, sans que personne l'ait voulu. Le retirage est l'autre
+ * chose : un geste **attesté**, fait par quelqu'un à qui l'écran vient de
+ * montrer les lignes qui changent et de dire laquelle est déjà cochée. D'où
+ * `retakenBy` : sans auteur, ce serait exactement le recalcul qu'on refuse.
+ *
+ * L'invariant n'est donc pas levé, il est nommé — impossible par accident,
+ * possible par décision, et traçable.
+ *
  * ## Ce qu'il absorbe, et ce qu'il ne touche pas
  *
  * Seules les commandes que la journée ne porte pas encore, **par `orderId`**.
@@ -106,7 +109,9 @@ export interface AbsorbedArrivals {
  * abonné en échec laisse des commandes `placed` DÉJÀ inscrites au plan. Sans le
  * filtre, un retirage les compterait une seconde fois.
  *
- * Les coches survivent, par SKU — cf. {@link countOf}.
+ * Les coches héritées NE sont PAS recopiées (§5.4 des fournées) : l'appelant
+ * les a matérialisées en fournées avant, sous le verrou de la journée. Ce qui
+ * est sorti survit donc au retirage par les fournées, pas par le compte.
  *
  * Le compte se refait depuis TOUTES les commandes de la journée, pas en ajoutant
  * les nouvelles au total précédent : c'est la même fonction qui produit le
@@ -122,11 +127,6 @@ export function absorbArrivals(
   if (arrivals.length === 0) {
     return { orders: known, counts, count: 0 };
   }
-  const done = new Map(
-    counts
-      .filter((item): item is ProducedItemSnapshot & { done: DoneMark } => item.done !== null)
-      .map((item) => [item.sku, item.done] as const),
-  );
   const merged = [...known, ...arrivals.map(freezeOrder)];
   return {
     orders: merged,
@@ -139,7 +139,6 @@ export function absorbArrivals(
         destination: order.destination,
         lines: order.lines,
       })),
-      done,
     ),
     count: arrivals.length,
   };

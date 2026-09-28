@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { CatalogFamilyView } from "./catalog.js";
+import type { WorkshopBatch, WorkshopLineContainer } from "./production-batches.js";
 
 /**
  * **La fiche d'atelier** : ce que le fournil a à sortir aujourd'hui, et ce qui
@@ -68,11 +69,29 @@ export interface WorkshopLine {
    * fiche qui inventerait « 1 plaque » ferait sortir la mauvaise quantité.
    */
   readonly containerLabel: string | null;
+  /**
+   * **La ligne est complète** : sorti ≥ quantité (D2 des fournées). Le nom
+   * reste celui de l'ancienne case, pour qu'un front déployé qui ne connaît
+   * qu'elle continue d'afficher juste.
+   */
   readonly done: boolean;
-  /** `null` quand la ligne n'est pas faite, ou faite sans signature. */
+  /**
+   * Les initiales de la fournée qui a COMPLÉTÉ la ligne. `null` quand la ligne
+   * n'est pas complète, ou que cette fournée n'est pas signée.
+   */
   readonly initials: string | null;
-  /** ISO du moment où la ligne a été cochée. `null` si elle ne l'est pas. */
+  /** ISO de la fournée qui a complété la ligne. `null` si elle ne l'est pas. */
   readonly doneAt: string | null;
+  /** Σ des fournées non annulées. */
+  readonly produced: number;
+  /** `max(0, quantity − produced)`. */
+  readonly remaining: number;
+  /** `max(0, produced − quantity)` — « 52 / 48 » : un écart visible, pas un stock. */
+  readonly surplus: number;
+  /** Les fournées qui comptent, dans l'ordre de sortie ; chacune s'annule. */
+  readonly batches: readonly WorkshopBatch[];
+  /** Le contenant réglé, pour « + 1 plaque » ; `null` = pas de bouton rapide. */
+  readonly container: WorkshopLineContainer | null;
 }
 
 /** Le libellé du groupe des SKU que le catalogue ne connaît pas. */
@@ -111,12 +130,13 @@ export interface WorkshopGroup {
   readonly category: null;
   readonly label: string;
   readonly lineCount: number;
+  /** Les lignes COMPLÈTES. */
   readonly doneCount: number;
   /** Toutes lignes confondues, faites ou non. */
   readonly totalUnits: number;
-  /** Ce qu'il reste à sortir. */
+  /** Ce qu'il reste à sortir : `totalUnits − doneUnits`. */
   readonly remainingUnits: number;
-  /** Ce qui est sorti. */
+  /** Ce qui est sorti, `Σ min(produced, quantity)` : le surplus ne gonfle pas l'avancement. */
   readonly doneUnits: number;
   /** Toutes les lignes, dans l'ordre de la fiche — ce que le poste fixe montre. */
   readonly lines: readonly WorkshopLine[];
@@ -135,12 +155,11 @@ export interface WorkshopDriftLine {
   /** Ce qu'elle afficherait après retirage. */
   readonly to: number;
   /**
-   * 🔴 La ligne est-elle **déjà cochée** ?
+   * 🔴 La ligne est-elle **déjà commencée** — au moins une pièce sortie ?
    *
    * Le seul cas réellement dangereux du lot, et c'est pour lui que cette
-   * structure nomme ses lignes au lieu de rendre un compteur : quelqu'un a
-   * déclaré avoir sorti 30 pièces d'un article qui en demande 42, et personne
-   * ne le saura au colisage.
+   * structure nomme ses lignes au lieu de rendre un compteur. Depuis les
+   * fournées (D2), le nom est resté et le sens s'est élargi : `produced > 0`.
    */
   readonly done: boolean;
 }

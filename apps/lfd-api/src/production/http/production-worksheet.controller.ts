@@ -5,9 +5,13 @@ import {
   type ProductionWorksheetQuery,
   type ProductionWorksheetRetake,
   type ProductionWorksheetView,
+  type RecordWorkshopBatch,
   markWorkshopLineSchema,
   productionContainerSchema,
   productionWorksheetQuerySchema,
+  recordWorkshopBatchSchema,
+  workshopBatchIdSchema,
+  workshopBatchRefSchema,
 } from "@lfd/contracts";
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
@@ -15,6 +19,8 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
+import { CancelBatchCommand } from "../application/commands/cancel-batch.command.js";
+import { RecordBatchCommand } from "../application/commands/record-batch.command.js";
 import { RemoveProductionContainerCommand } from "../application/commands/remove-production-container.command.js";
 import { MarkWorksheetLineCommand } from "../application/commands/mark-worksheet-line.command.js";
 import { RetakeProductionDayCommand } from "../application/commands/retake-production-day.command.js";
@@ -110,17 +116,67 @@ export class ProductionWorksheetController {
   }
 
   /**
-   * **La coche s'enlève.**
+   * **La coche s'enlève** — toutes les fournées de la ligne sont annulées.
    *
    * Autorisé, contrairement au colisage : une case cochée par erreur à 4 h du
-   * matin doit pouvoir se reprendre, et le refuser transformerait un doigt
-   * fariné en incident.
+   * matin doit pouvoir se reprendre. Refusé (409) si des pièces de l'article
+   * sont déjà dans des sacs : il faut les ressortir du bac d'abord.
    */
   @Delete("worksheet/:date/lines/:sku/done")
   @HttpCode(NO_CONTENT)
-  async unmark(@Param("date") date: string, @Param("sku") sku: string): Promise<void> {
+  async unmark(
+    @Param("date") date: string,
+    @Param("sku") sku: string,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
     await this.commands.execute<UnmarkWorksheetLineCommand, void>(
-      new UnmarkWorksheetLineCommand(dayOf(date), sku),
+      new UnmarkWorksheetLineCommand(dayOf(date), sku, staffUserId),
+    );
+  }
+
+  /**
+   * **Une fournée est sortie** (plan des fournées, D3).
+   *
+   * `PUT` sur l'identifiant tiré par l'écran : rejouer la même requête rend le
+   * même état (succès silencieux), un autre contenu sous le même identifiant
+   * est refusé (409). Même droit que la case — c'est le même geste, en
+   * plusieurs fois.
+   */
+  @Put("worksheet/:date/lines/:sku/batches/:batchId")
+  @HttpCode(NO_CONTENT)
+  async recordBatch(
+    @Param("date") date: string,
+    @Param("sku") sku: string,
+    @Param("batchId") batchId: string,
+    @Body(new ZodBody(recordWorkshopBatchSchema)) body: RecordWorkshopBatch,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<RecordBatchCommand, void>(
+      new RecordBatchCommand(
+        dayOf(date),
+        sku,
+        workshopBatchIdSchema.parse(batchId),
+        body.quantity,
+        body.initials,
+        staffUserId,
+      ),
+    );
+  }
+
+  /**
+   * **La fournée ne compte plus** — annulée entière, tracée, jamais supprimée.
+   * Tout poste du fournil peut annuler celle d'un autre (Hugo, 2026-09-28).
+   * Refusée si des pièces sont déjà dans des sacs (409).
+   */
+  @Delete("worksheet/:date/batches/:batchId")
+  @HttpCode(NO_CONTENT)
+  async cancelBatch(
+    @Param("date") date: string,
+    @Param("batchId") batchId: string,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<CancelBatchCommand, void>(
+      new CancelBatchCommand(dayOf(date), workshopBatchRefSchema.parse(batchId), staffUserId),
     );
   }
 

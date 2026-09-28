@@ -61,10 +61,6 @@ class Days extends ProductionDayRepository {
     return Promise.reject(new Error("une lecture n'écrit rien"));
   }
 
-  markProduced(): Promise<void> {
-    return Promise.reject(new Error("une lecture n'écrit rien"));
-  }
-
   markPackedLine(): Promise<void> {
     return Promise.reject(new Error("une lecture n'écrit rien"));
   }

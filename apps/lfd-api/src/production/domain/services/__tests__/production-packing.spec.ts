@@ -85,8 +85,29 @@ function authorName(reference: string | null): string | null {
   return reference === "auth0|karim" ? "Karim Benali" : null;
 }
 
+/**
+ * Le disponible tel que la journée le calcule (D4 des fournées) : une ligne
+ * cochée du compte vaut une fournée de sa quantité, moins ce que TOUS les bacs
+ * ont déjà pris. Un cas qui veut un autre disponible le passe en override.
+ */
+function availableFrom(
+  counts: readonly ProducedItemSnapshot[],
+  orders: readonly ProductionOrderSnapshot[],
+): (sku: string) => number {
+  return (sku) => {
+    const produced = counts
+      .filter((item) => item.sku === sku && item.done !== null)
+      .reduce((total, item) => total + item.quantity, 0);
+    const packed = orders
+      .flatMap((order) => order.lines)
+      .filter((entry) => entry.sku === sku && entry.packed !== null)
+      .reduce((total, entry) => total + entry.quantity, 0);
+    return produced - packed;
+  };
+}
+
 function sources(overrides: Partial<PackingSources> = {}): PackingSources {
-  return {
+  const base = {
     date: DATE,
     closedAt: CLOSED_AT,
     orders: [],
@@ -95,6 +116,7 @@ function sources(overrides: Partial<PackingSources> = {}): PackingSources {
     authorName,
     ...overrides,
   };
+  return { available: availableFrom(base.counts, base.orders), ...base };
 }
 
 describe("une journée qui n'est pas arrêtée", () => {
@@ -461,5 +483,25 @@ describe("les compteurs de la journée", () => {
 describe("la journée relative — selon l'horloge du serveur", () => {
   it("est calculée même sur une journée qui n'est pas arrêtée", () => {
     expect(packingBoardOf(sources({ date: TODAY, closedAt: null })).relativeDay).toBe("today");
+  });
+});
+
+describe("le disponible (plan des fournées, D4)", () => {
+  it("🔴 une ligne n'attend plus le four dès que le disponible couvre SA quantité", () => {
+    const board = packingBoardOf(
+      sources({
+        orders: [
+          sheet("CMD-0001", [line("VIE-001", "Croissant", 12)]),
+          sheet("CMD-0002", [line("VIE-001", "Croissant", 20)]),
+        ],
+        counts: [count("VIE-001", "Croissant", 32, false)],
+        available: () => 12,
+      }),
+    );
+
+    const awaiting = board.sheets.map((entry) => entry.lines[0]?.awaitingProduction);
+    expect(awaiting).toEqual([false, true]);
+    // L'article, lui, attend encore : les bacs ouverts veulent 32, 12 sont là.
+    expect(board.resources[0]).toMatchObject({ awaitingProduction: true, exhausted: false });
   });
 });

@@ -191,16 +191,23 @@ export class InvalidContainerCountError extends DomainError {
  * encore : la balance compterait comme réparti ce qui n'a jamais été fabriqué,
  * et le reste affiché deviendrait faux dans le seul sens qui coûte — optimiste.
  *
+ * Depuis les fournées (plan `plan-fournees-progressives.md`, D4), « sorti »
+ * se compte : la ligne passe dès que le disponible couvre SA quantité, pas
+ * quand tout l'article est sorti.
+ *
  * ⚠️ Le refus ne vaut que dans **un** sens. Ressortir du bac une ligne devenue
- * « en attente » — parce que quelqu'un a repris sa coche sur la fiche d'atelier
- * — reste autorisé : refuser les deux sens enfermerait l'exploitant avec un bac
+ * « en attente » reste autorisé : refuser les deux sens enfermerait l'exploitant avec un bac
  * qu'il ne peut ni compléter ni corriger.
  */
 export class LineNotProducedYetError extends BusinessError {
-  constructor(productName: string) {
+  /**
+   * @param missing combien de pièces sorties manquent pour CETTE ligne — ce que
+   *   le four a sorti moins ce que les bacs ont déjà pris (D4 des fournées).
+   */
+  constructor(productName: string, missing: number) {
     super(
       "production.packing.not_produced_yet",
-      `« ${productName} » n'est pas encore sorti du four. Cochez-le sur la fiche d'atelier avant de le mettre au bac.`,
+      `Il manque ${String(missing)} « ${productName} » sortis du four pour remplir cette ligne. Déclarez la fournée sur la fiche d'atelier avant de la mettre au bac.`,
     );
   }
 }

@@ -25,6 +25,11 @@ function line(sku: string, quantity: number, done = false): WorksheetLine {
     done,
     initials: done ? "MB" : null,
     doneAt: done ? COCHE : null,
+    produced: done ? quantity : 0,
+    remaining: done ? 0 : quantity,
+    surplus: 0,
+    batches: [],
+    container: null,
   };
 }
 
@@ -130,5 +135,25 @@ describe("worksheetGroupsOf", () => {
       "PAI-E",
     ]);
     expect(pain?.done.map((entry) => entry.sku)).toEqual(["PAI-B", "PAI-D"]);
+  });
+
+  it("compte l'avancement en Σ min(sorti, quantité) : le surplus ne le gonfle pas", () => {
+    const started = { ...line("VIE-1", 48), produced: 20, remaining: 28 };
+    const over = { ...line("VIE-2", 10, true), produced: 14, surplus: 4 };
+
+    const [group] = worksheetGroupsOf(
+      [started, over],
+      shelves([
+        ["VIE-1", VIENNOISERIES],
+        ["VIE-2", VIENNOISERIES],
+      ]),
+    );
+
+    expect(group).toMatchObject({
+      totalUnits: 58,
+      doneUnits: 30,
+      remainingUnits: 28,
+      doneCount: 1,
+    });
   });
 });

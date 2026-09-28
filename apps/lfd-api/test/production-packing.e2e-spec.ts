@@ -273,6 +273,10 @@ describe("le remplissage d'un bac", () => {
 
     const second = view.sheets.find((sheet) => sheet.reference !== first);
     expect(second).toBeDefined();
+    // Depuis les fournées (D4), le second bac attend que ses 20 soient sortis :
+    // la coche posée à 12 n'en couvre aucun. Recocher déclare le reste.
+    await mark(second?.reference ?? "", CROISSANT, "MB", 409);
+    await produce(CROISSANT);
     await mark(second?.reference ?? "", CROISSANT);
 
     const balanced = await packing();
@@ -337,24 +341,32 @@ describe("l'article pas encore sorti du four", () => {
     });
   });
 
-  it("laisse RESSORTIR du bac une ligne dont la coche d'atelier a été reprise", async () => {
-    // Refuser les deux sens enfermerait l'exploitant avec un bac qu'il ne peut
-    // ni compléter ni corriger.
+  it("refuse de décocher l'atelier tant que la ligne est au bac, et laisse RESSORTIR", async () => {
+    // Avant les fournées, décocher l'atelier laissait une ligne au bac « en
+    // attente » — le colisage mentait. Depuis (D3), c'est refusé en nommant le
+    // geste de sortie ; ressortir du bac, lui, ne dépend jamais du four.
     await place([{ sku: CROISSANT, quantity: 12 }]);
     await closePlan();
     await produce(CROISSANT);
     const reference = firstSheet(await packing()).reference;
     await mark(reference, CROISSANT);
 
+    const refused = await ctx
+      .asSub(STAFF)
+      .delete(`/admin/production/worksheet/${SERVICE_DAY}/lines/${CROISSANT}/done`)
+      .expect(409);
+    expect(JSON.stringify(refused.body)).toContain("ressortez-les du bac");
+
+    await unmark(reference, CROISSANT);
+    expect(resourceOf(await packing(), CROISSANT).allocated).toBe(0);
     await ctx
       .asSub(STAFF)
       .delete(`/admin/production/worksheet/${SERVICE_DAY}/lines/${CROISSANT}/done`)
       .expect(204);
-
-    const view = await packing();
-    expect(firstSheet(view).lines[0]).toMatchObject({ packed: true, awaitingProduction: true });
-    await unmark(reference, CROISSANT);
-    expect(resourceOf(await packing(), CROISSANT).allocated).toBe(0);
+    expect(firstSheet(await packing()).lines[0]).toMatchObject({
+      packed: false,
+      awaitingProduction: true,
+    });
   });
 });
 

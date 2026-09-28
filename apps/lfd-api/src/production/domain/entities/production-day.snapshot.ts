@@ -95,8 +95,34 @@ export interface ProducedItemSnapshot {
   readonly sku: string;
   readonly productName: string;
   readonly quantity: number;
-  /** `null` = la ligne n'est pas faite. C'est le fait du FOURNIL. */
+  /**
+   * **La coche de l'ANCIEN binaire**, telle que `done_*` la porte encore.
+   *
+   * Depuis les fournées (plan `plan-fournees-progressives.md`, §5), plus rien
+   * ne l'écrit : elle ne sert qu'à lire une ligne cochée avant le déploiement,
+   * ou par un poste resté sur le binaire précédent, comme une **fournée
+   * implicite** de `quantity` — tant qu'aucune fournée réelle n'existe pour ce
+   * SKU. `null` = rien de coché par l'ancien système.
+   */
   readonly done: DoneMark | null;
+}
+
+/**
+ * **Une fournée** : ce que le four a sorti d'un article, à un instant.
+ *
+ * `recorded` a la forme de {@link DoneMark} et c'est le même fait — « c'est
+ * sorti du four », signé — pour une partie de la ligne au lieu de toute.
+ *
+ * `cancelled` : une fournée saisie par erreur s'annule entière, jamais ne se
+ * supprime ni ne se corrige (D3). `null` = elle compte.
+ */
+export interface ProductionBatchSnapshot {
+  /** Donné par le client (ULID), ou déterministe (`backfill-…`, `mark-…`). */
+  readonly id: string;
+  readonly sku: string;
+  readonly quantity: number;
+  readonly recorded: DoneMark;
+  readonly cancelled: PackedMark | null;
 }
 
 /** L'état d'une journée, tel que l'adaptateur l'écrit et le relit. */
@@ -107,4 +133,6 @@ export interface ProductionDaySnapshot {
   readonly retaken: PackedMark | null;
   readonly orders: readonly ProductionOrderSnapshot[];
   readonly counts: readonly ProducedItemSnapshot[];
+  /** Toutes les fournées du jour, annulées comprises, dans l'ordre de la base. */
+  readonly batches: readonly ProductionBatchSnapshot[];
 }

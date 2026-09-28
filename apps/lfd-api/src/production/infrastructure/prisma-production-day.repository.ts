@@ -1,17 +1,14 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
-import {
-  ProductionDay,
-  type DoneMark,
-  type PackedLineMark,
-} from "../domain/entities/production-day.js";
+import { ProductionDay, type PackedLineMark } from "../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../domain/ports/production-day.repository.js";
 import {
   type ContainerStep,
   MAX_CONTAINERS_PER_ORDER,
 } from "../domain/value-objects/container-step.js";
 import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
+import { BATCH_COLUMNS, batchOf } from "./prisma-production-batch.repository.js";
 
 /**
  * L'adaptateur Prisma de la journée de production.
@@ -76,6 +73,9 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             doneInitials: true,
           },
         },
+        // Annulées comprises : « aucune fournée » (qui décide d'une fournée
+        // implicite, §5.2 des fournées) se lit annulées comprises.
+        batches: { select: BATCH_COLUMNS, orderBy: [{ recordedAt: "asc" }, { id: "asc" }] },
       },
     });
     if (row === null) {
@@ -131,6 +131,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             ? null
             : { at: count.doneAt, by: count.doneBy, initials: count.doneInitials },
       })),
+      batches: row.batches.map(batchOf),
     });
   }
 
@@ -151,38 +152,9 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
   }
 
   /**
-   * Coche ou décoche une ligne du compte — **une écriture ciblée**.
-   *
-   * ⚠️ Une écriture nue, comme {@link markPacked}, et la justification est la
-   * même : `save` réécrit la journée entière (elle efface commandes et compte
-   * avant de les recréer). Deux postes qui cochent DEUX LIGNES DIFFÉRENTES au
-   * même moment — le cas normal au fournil, où six personnes travaillent sur
-   * six fiches — verraient le second écrasement effacer le premier. Ici chacune
-   * ne touche que sa ligne.
-   *
-   * Aucun `where` conditionnel sur `done_at`, contrairement au colisage : là-bas
-   * le premier scan est le seul vrai, ici le DERNIER geste est le vrai,
-   * puisqu'une case se décoche et se recoche. Il n'y a donc pas de course à
-   * arbitrer — seulement un ordre à respecter, et c'est celui des requêtes.
-   *
-   * Les invariants restent dans l'agrégat (`itemToMark`) : ce qui passe ici a
-   * déjà été refusé ou accepté par lui.
-   */
-  async markProduced(day: ServiceDay, sku: string, mark: DoneMark | null): Promise<void> {
-    await this.prisma.productionCount.updateMany({
-      where: { serviceDay: day.value, sku },
-      data: {
-        doneAt: mark?.at ?? null,
-        doneBy: mark?.by ?? null,
-        doneInitials: mark?.initials ?? "",
-      },
-    });
-  }
-
-  /**
    * Met une ligne au bac, ou l'en ressort — **une écriture ciblée**.
    *
-   * ⚠️ Une écriture nue, comme {@link markProduced}, et la justification monte
+   * ⚠️ Une écriture nue, comme {@link markPacked}, et la justification monte
    * d'un cran : `save` réécrit la journée entière (elle efface commandes ET
    * lignes avant de les recréer), et deux postes colisent deux bacs différents
    * au même moment — c'est le cas NORMAL du poste, où chacun tient un bon. Le
@@ -194,8 +166,9 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
    * désigne pas une ligne — deux journées peuvent porter la même commande si le
    * commerce la déplace.
    *
-   * Les invariants restent dans l'agrégat (`lineToPack`), bac fermé compris :
-   * ce qui passe ici a déjà été refusé ou accepté par lui.
+   * Les invariants restent dans l'agrégat (`lineToPack`, `lineToFill`), bac
+   * fermé compris : ce qui passe ici a déjà été refusé ou accepté par lui, SOUS
+   * le verrou de la journée que l'appelant a pris (D4 des fournées).
    */
   async markPackedLine(
     day: ServiceDay,
@@ -282,10 +255,23 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
    *
    * Un compte à produire enregistré sans ses commandes décrirait une journée que
    * personne ne pourrait relire ; d'où la transaction, et non trois écritures.
+   *
+   * 🔴 Elle prend d'abord le verrou de la journée (D4 des fournées) — la même
+   * requête que `PrismaProductionDayLock`, écrite ici parce qu'elle doit viser
+   * `tx`. L'appelant a chargé l'agrégat sous ce verrou : le colisage réécrit
+   * ci-dessous est donc celui d'après le dernier geste de bac, pas d'avant.
+   *
+   * Les fournées ne sont ni lues ni écrites ici : elles ne dépendent pas du
+   * compte, et un retirage les laisse intactes. `done_*` n'est plus écrit (§5 :
+   * le nouveau binaire n'y écrit jamais) — le compte recréé naît sans coche.
    */
   async save(day: ProductionDay): Promise<void> {
     const snapshot = day.toSnapshot();
     await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`
+        SELECT "service_day" FROM "production"."production_day"
+         WHERE "service_day" = ${snapshot.serviceDay}
+           FOR UPDATE`;
       await tx.productionDay.upsert({
         where: { serviceDay: snapshot.serviceDay },
         create: {
@@ -322,8 +308,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
                 sku: line.sku,
                 productName: line.productName,
                 quantity: line.quantity,
-                // 🔴 Le remplissage du bac est RÉÉCRIT, pas perdu — même raison
-                // que les coches du compte à produire juste en dessous. Les
+                // 🔴 Le remplissage du bac est RÉÉCRIT, pas perdu. Les
                 // lignes sont effacées puis recréées ici ; sans ces trois
                 // champs, un retirage viderait tous les bacs en cours et le
                 // fournil recommencerait un colisage déjà fait.
@@ -342,13 +327,6 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             sku: count.sku,
             productName: count.productName,
             quantity: count.quantity,
-            // 🔴 Les coches sont RÉÉCRITES, pas perdues. Le compte est effacé
-            // puis recréé juste au-dessus ; sans ces trois lignes, un retirage
-            // décocherait tout ce que le fournil a sorti depuis 4 h, et la
-            // fiche lui redemanderait de refaire ce qui est fait.
-            doneAt: count.done?.at ?? null,
-            doneBy: count.done?.by ?? null,
-            doneInitials: count.done?.initials ?? "",
           })),
         });
       }

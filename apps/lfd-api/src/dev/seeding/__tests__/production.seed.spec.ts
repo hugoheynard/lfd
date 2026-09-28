@@ -24,6 +24,12 @@ import { resetProduction, type ProductionTables } from "../production.seed.js";
 function prismaSpy(counts: { readonly days: number; readonly handovers: number }) {
   const called: string[] = [];
   const prisma: ProductionTables = {
+    productionBatch: {
+      deleteMany: (): Promise<{ count: number }> => {
+        called.push("productionBatch");
+        return Promise.resolve({ count: 0 });
+      },
+    },
     productionDay: {
       deleteMany: (): Promise<{ count: number }> => {
         called.push("productionDay");
@@ -49,7 +55,8 @@ describe("resetProduction", () => {
 
     const report = await resetProduction(prisma);
 
-    expect(called).toEqual(["productionDay", "orderHandover"]);
+    // Les fournées d'abord : leur clé vers la journée est `Restrict`.
+    expect(called).toEqual(["productionBatch", "productionDay", "orderHandover"]);
     expect(report).toEqual({ days: 1, handovers: 3 });
   });
 

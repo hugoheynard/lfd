@@ -1,5 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { UnmarkPackingLineCommand } from "./unmark-packing-line.command.js";
@@ -17,6 +19,10 @@ import { UnmarkPackingLineCommand } from "./unmark-packing-line.command.js";
  * deux sens enfermerait l'exploitant avec un bac qu'il ne peut ni compléter ni
  * corriger. D'où `lineToPack` et non `lineToFill`.
  *
+ * Sous le verrou de la journée (D4 des fournées), comme la mise au bac : un
+ * `save` concurrent (retirage) réécrit le colisage depuis SON instantané, et
+ * c'est le verrou qui ordonne les deux.
+ *
  * Aucune horloge ici : on n'écrit pas d'instant, on en retire un. C'est la seule
  * commande du poste qui ne dépende pas du `Clock`.
  *
@@ -26,12 +32,19 @@ import { UnmarkPackingLineCommand } from "./unmark-packing-line.command.js";
  */
 @CommandHandler(UnmarkPackingLineCommand)
 export class UnmarkPackingLineHandler implements ICommandHandler<UnmarkPackingLineCommand, void> {
-  constructor(private readonly days: ProductionDayRepository) {}
+  constructor(
+    private readonly days: ProductionDayRepository,
+    private readonly lock: ProductionDayLock,
+    private readonly uow: UnitOfWork,
+  ) {}
 
   async execute(command: UnmarkPackingLineCommand): Promise<void> {
     const day = ServiceDay.of(command.serviceDay);
-    const current = await this.days.load(day);
-    current.lineToPack(command.reference, command.sku);
-    await this.days.markPackedLine(day, command.reference, command.sku, null);
+    await this.uow.run(async () => {
+      await this.lock.lock(day);
+      const current = await this.days.load(day);
+      current.lineToPack(command.reference, command.sku);
+      await this.days.markPackedLine(day, command.reference, command.sku, null);
+    });
   }
 }

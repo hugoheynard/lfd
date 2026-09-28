@@ -254,9 +254,14 @@ describe("l'écart et le retirage", () => {
     });
   });
 
-  it("🔴 absorbe l'écart et GARDE la coche déjà posée", async () => {
+  it("🔴 absorbe l'écart et GARDE ce qui est déjà sorti — sans lire la ligne complète", async () => {
     // La journée est effacée puis recréée par `save` : c'est là que les coches
     // se perdraient, et le fournil referait ce qui est déjà sorti du four.
+    //
+    // Depuis les fournées (plan `plan-fournees-progressives.md`, D2, §5.4), la
+    // coche est une fournée de 12 : elle survit au retirage, mais 12 sur 18
+    // n'est plus « fait » — c'est ce que l'ancienne recopie de la coche
+    // cachait, et que le bandeau nommait.
     await place(CROISSANT, 12);
     await closePlan();
     await mark(CROISSANT, "MB");
@@ -271,7 +276,12 @@ describe("l'écart et le retirage", () => {
     expect(view.retakenAt).toBe(retake.retakenAt);
     expect(view.drift).toBeNull();
     expect(view.lines).toHaveLength(1);
-    expect(lineOf(view, CROISSANT)).toMatchObject({ quantity: 18, done: true, initials: "MB" });
+    expect(lineOf(view, CROISSANT)).toMatchObject({
+      quantity: 18,
+      produced: 12,
+      remaining: 6,
+      done: false,
+    });
   });
 
   it("rend `absorbed: 0` au second retirage — une information, pas une erreur", async () => {

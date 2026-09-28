@@ -110,7 +110,12 @@ function groupOf(
   const pending = lines.filter((line) => !line.done);
   const done = lines.filter((line) => line.done);
   const totalUnits = unitsOf(lines);
-  const doneUnits = unitsOf(done);
+  // Σ min(produced, quantity) (§4 des fournées) : une ligne commencée compte
+  // ce qui est sorti, et le surplus ne gonfle pas l'avancement.
+  const doneUnits = lines.reduce(
+    (total, line) => total + Math.min(line.produced, line.quantity),
+    0,
+  );
   return {
     key,
     family,

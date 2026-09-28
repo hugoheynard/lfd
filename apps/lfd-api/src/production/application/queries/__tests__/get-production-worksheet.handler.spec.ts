@@ -16,7 +16,7 @@ import {
   type ExpectedDayProduction,
 } from "../../../channels/commerce/expected-production.reader.js";
 import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
-import { ProductionDay, type DoneMark } from "../../../domain/entities/production-day.js";
+import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionContainerReader } from "../../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import type { ContainerRule } from "../../../domain/services/production-worksheet.js";
@@ -59,10 +59,6 @@ class Days extends ProductionDayRepository {
   }
 
   markPacked(): Promise<boolean> {
-    return Promise.reject(new Error("une lecture n'écrit rien"));
-  }
-
-  markProduced(_day: ServiceDay, _sku: string, _mark: DoneMark | null): Promise<void> {
     return Promise.reject(new Error("une lecture n'écrit rien"));
   }
 

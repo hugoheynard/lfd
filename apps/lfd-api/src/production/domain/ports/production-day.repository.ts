@@ -1,4 +1,4 @@
-import type { DoneMark, PackedLineMark, ProductionDay } from "../entities/production-day.js";
+import type { PackedLineMark, ProductionDay } from "../entities/production-day.js";
 import type { ContainerStep } from "../value-objects/container-step.js";
 import type { ServiceDay } from "../value-objects/service-day.value-object.js";
 
@@ -20,10 +20,16 @@ export abstract class ProductionDayRepository {
   abstract load(day: ServiceDay): Promise<ProductionDay>;
 
   /**
-   * Écrit l'agrégat en entier, commandes et compte compris.
+   * Écrit l'agrégat en entier, commandes et compte compris — **jamais les
+   * fournées**, qui ont leur port (`ProductionBatchRepository`).
    *
    * L'écriture est **atomique** : un compte à produire enregistré sans ses
    * commandes décrirait une journée que personne ne pourrait relire.
+   *
+   * 🔴 Elle prend le verrou de la journée (D4 des fournées), et l'appelant doit
+   * avoir chargé l'agrégat SOUS ce verrou, dans la même unité de travail :
+   * elle réécrit le colisage de chaque ligne depuis l'instantané, et un
+   * instantané lu avant effacerait un colisage validé entre-temps.
    */
   abstract save(day: ProductionDay): Promise<void>;
 
@@ -46,32 +52,21 @@ export abstract class ProductionDayRepository {
   abstract markPacked(day: ServiceDay, reference: string, at: Date, by: string): Promise<boolean>;
 
   /**
-   * Coche (`mark`) ou décoche (`null`) une ligne du **compte à produire**.
-   *
-   * Écriture ciblée pour la même raison que {@link markPacked} — `save` réécrit
-   * la journée entière, et six postes cochent six fiches en même temps — mais
-   * **sans condition en base** : une case se décoche et se recoche, donc le
-   * dernier geste est le vrai et il n'y a pas de course à arbitrer.
-   *
-   * Les deux refus (journée ouverte, SKU hors compte) restent dans l'agrégat,
-   * `itemToMark`. Ce port n'écrit que ce qu'il a déjà laissé passer.
-   */
-  abstract markProduced(day: ServiceDay, sku: string, mark: DoneMark | null): Promise<void>;
-
-  /**
    * Met une ligne **au bac** (`mark`) ou l'en ressort (`null`).
    *
-   * Écriture ciblée pour la raison de {@link markProduced}, aggravée d'un cran :
+   * Écriture ciblée pour la raison de {@link markPacked}, aggravée d'un cran :
    * deux postes colisent DEUX BACS DIFFÉRENTS en même temps, et c'est le cas
    * normal du poste de colisage — chacun tient un bon. Un `save` de l'agrégat
    * réécrit la journée entière (il efface commandes et lignes avant de les
    * recréer) ; le second écrasement effacerait tout le remplissage du premier,
    * et le fournil relirait un bac qu'il vient de finir comme s'il était vide.
    *
-   * Sans condition en base, là encore : une case se décoche et se recoche, donc
-   * le dernier geste est le vrai et il n'y a pas de course à arbitrer.
+   * Sans condition en base : une case se décoche et se recoche, donc le dernier
+   * geste est le vrai. Mais **sous le verrou de la journée** (`ProductionDayLock`,
+   * D4 des fournées) : mettre au bac consomme du disponible, et deux postes qui
+   * liraient 12 disponibles chacun en mettraient 24.
    *
-   * Les quatre refus (journée ouverte, référence hors plan, SKU hors bon, bac
+   * Les refus (journée ouverte, référence hors plan, SKU hors bon, bac
    * fermé) restent dans l'agrégat, `lineToPack`. Ce port n'écrit que ce qu'il a
    * déjà laissé passer.
    */

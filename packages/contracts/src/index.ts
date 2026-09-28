@@ -548,6 +548,16 @@ export type {
   WorkshopGroup,
   WorkshopLine,
 } from "./production-worksheet.js";
+export {
+  recordWorkshopBatchSchema,
+  workshopBatchIdSchema,
+  workshopBatchRefSchema,
+} from "./production-batches.js";
+export type {
+  RecordWorkshopBatch,
+  WorkshopBatch,
+  WorkshopLineContainer,
+} from "./production-batches.js";
 export { deliveryZonePayloadSchema, longestMatchingPrefix } from "./delivery-zone.js";
 export type {
   DeliveryZonePayload,

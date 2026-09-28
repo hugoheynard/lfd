@@ -11,6 +11,8 @@ import { RetakeProductionDayHandler } from "./application/commands/retake-produc
 import { SetProductionContainerHandler } from "./application/commands/set-production-container.handler.js";
 import { UnmarkPackingLineHandler } from "./application/commands/unmark-packing-line.handler.js";
 import { UnmarkWorksheetLineHandler } from "./application/commands/unmark-worksheet-line.handler.js";
+import { CancelBatchHandler } from "./application/commands/cancel-batch.handler.js";
+import { RecordBatchHandler } from "./application/commands/record-batch.handler.js";
 import { DepositQualityPhotoHandler } from "./application/commands/deposit-quality-photo.handler.js";
 import { RenderQualityCheckHandler } from "./application/commands/render-quality-check.handler.js";
 import { PruneProductionDayChangesHandler } from "./application/commands/prune-production-day-changes.handler.js";
@@ -48,6 +50,8 @@ import { ProductionWorksheetReading } from "./application/services/production-wo
 import { ProductionContainerReader } from "./domain/ports/production-container.reader.js";
 import { ProductionContainerRepository } from "./domain/ports/production-container.repository.js";
 import { ProductionDayRepository } from "./domain/ports/production-day.repository.js";
+import { ProductionBatchRepository } from "./domain/ports/production-batch.repository.js";
+import { ProductionDayLock } from "./domain/ports/production-day.lock.js";
 import { ProductionPlanReader } from "./domain/ports/production-plan.reader.js";
 import { ProductionDayController } from "./http/production-day.controller.js";
 import { ProductionPackingController } from "./http/production-packing.controller.js";
@@ -58,6 +62,8 @@ import {
   PrismaProductionContainerRepository,
 } from "./infrastructure/prisma-production-container.repository.js";
 import { PrismaProductionDayRepository } from "./infrastructure/prisma-production-day.repository.js";
+import { PrismaProductionBatchRepository } from "./infrastructure/prisma-production-batch.repository.js";
+import { PrismaProductionDayLock } from "./infrastructure/prisma-production-day.lock.js";
 import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-plan.reader.js";
 
 /**
@@ -89,6 +95,8 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
     PackOrderHandler,
     MarkWorksheetLineHandler,
     UnmarkWorksheetLineHandler,
+    RecordBatchHandler,
+    CancelBatchHandler,
     MarkPackingLineHandler,
     UnmarkPackingLineHandler,
     DeclarePackingContainersHandler,
@@ -109,6 +117,8 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
     // cours » : un handler n'en appelle pas un autre (§4).
     ProductionWorksheetReading,
     { provide: ProductionDayRepository, useClass: PrismaProductionDayRepository },
+    { provide: ProductionBatchRepository, useClass: PrismaProductionBatchRepository },
+    { provide: ProductionDayLock, useClass: PrismaProductionDayLock },
     // La lecture du plan arrêté est un port À PART du dépôt d'écriture, et son
     // adaptateur vit chez la production : c'est SON schéma qu'il interroge.
     { provide: ProductionPlanReader, useClass: PrismaProductionPlanReader },
