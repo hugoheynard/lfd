@@ -123,9 +123,6 @@
               >
                 <span class="figure-done">{{ line.produced }}</span>
                 <span class="figure-of">/ {{ line.quantity }}</span>
-                @if (item.done && line.initials !== null) {
-                  <span class="initials">{{ line.initials }}</span>
-                }
               </span>
               @if (canCheck()) {
                 <button

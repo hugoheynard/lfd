@@ -183,12 +183,13 @@ describe('PreparationColumn', () => {
     ).toEqual(['Pains']);
   });
 
-  it('liste les lignes d’un rayon en cours, sorties comprises avec leurs initiales', async () => {
+  it('liste les lignes d’un rayon en cours, sorties comprises, sans initiales', async () => {
     const element = await mount(BOARD);
     const done = element.querySelector('[data-shelf="Viennoiseries"] [data-line-done]');
 
     expect(done?.textContent).toContain('Croissant');
-    expect(done?.textContent).toContain('HH');
+    // Le surveillant n'a pas l'usage des initiales du préparateur (Hugo, 2026-09-28).
+    expect(done?.textContent).not.toContain('HH');
   });
 
   it('renvoie vers la fournée, seulement si on le lui permet', async () => {
