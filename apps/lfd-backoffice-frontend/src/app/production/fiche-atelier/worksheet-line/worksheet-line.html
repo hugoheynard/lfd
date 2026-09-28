@@ -1,17 +1,8 @@
 <!--
-  L'ordre du DOM est celui du geste, et il ne change d'aucun support : on coche,
-  on lit la quantité, on lit le nom. Le contenant vit DANS le bloc du nom — c'est
-  ce qui lui permet de passer à droite sur un poste fixe et sous le nom sur un
-  téléphone sans qu'une seule balise bouge.
+  L'ordre du DOM est celui du geste, et il ne change d'aucun support : on lit la
+  quantité et le nom, on voit où on en est, on déclare. Les fournées suivent,
+  sur leur propre rangée.
 -->
-<fold-checkbox
-  class="wl-box"
-  [checked]="line().done"
-  [disabled]="busy()"
-  [ariaLabel]="boxLabel()"
-  (checkedChange)="toggled.emit($event)"
-/>
-
 <span class="wl-qty">{{ line().quantity }}</span>
 
 <span class="wl-what">
@@ -23,13 +14,84 @@
   }
 </span>
 
-<!--
-  Qui a fait. Deux lettres, ce que les fournils écrivent déjà au crayon — et la
-  seule trace qui serve quand une ligne manque à 7 h. Cochée sans signature : le
-  trait reste, il n'y a rien à lire.
--->
-@if (line().initials; as initials) {
-  <span class="wl-initials">{{ initials }}</span>
-} @else {
-  <span class="wl-initials wl-initials--blank" aria-hidden="true"></span>
+<!-- Où on en est. La barre plafonne à la quantité ; le surplus se DIT à côté,
+     « 52 / 48 · +4 » : un écart visible, pas un stock. -->
+<span class="wl-progress">
+  <fold-meter
+    class="wl-meter"
+    [label]="meterLabel()"
+    [value]="line().produced"
+    [max]="line().quantity"
+    [tone]="line().surplus > 0 ? 'warning' : line().done ? 'success' : 'accent'"
+  />
+  <span class="wl-figures">{{ line().produced }} / {{ line().quantity }}</span>
+  @if (line().surplus > 0) {
+    <fold-badge class="wl-surplus" variant="warning" [content]="'+' + line().surplus" />
+  }
+</span>
+
+<span class="wl-actions">
+  @if (quickLabel(); as quick) {
+    <button foldButton size="sm" [disabled]="busy()" (click)="addContainer()">
+      {{ quick }}
+    </button>
+  }
+  <button
+    foldButton
+    size="sm"
+    emphasis="outline"
+    intent="neutral"
+    [disabled]="busy()"
+    [attr.aria-expanded]="entering()"
+    (click)="entering() ? closeEntry() : openEntry()"
+  >
+    {{ entering() ? 'Fermer' : 'Saisir' }}
+  </button>
+</span>
+
+@if (entering() || batches().length > 0) {
+  <div class="wl-more">
+    @if (entering()) {
+      <form class="wl-entry" (submit)="submit($event)">
+        <fold-number-input
+          class="wl-entry-field"
+          size="sm"
+          label="Pièces sorties"
+          integer
+          [min]="1"
+          [(value)]="draft"
+        />
+        <button foldButton size="sm" type="submit" [disabled]="busy() || !draftValid()">
+          Déclarer
+        </button>
+      </form>
+    }
+
+    @if (batches().length > 0) {
+      <!-- Les fournées de la ligne, dans l'ordre de sortie. N'importe quel poste
+           annule celle d'un autre (Hugo, 2026-09-28) : le serveur trace qui. -->
+      <ul class="wl-batches" aria-label="Fournées déclarées">
+        @for (shown of batches(); track shown.batch.id) {
+          <li class="wl-batch">
+            <span class="wl-batch-hour">{{ shown.hour }}</span>
+            <span class="wl-batch-initials">{{ shown.batch.initials ?? '—' }}</span>
+            <span class="wl-batch-qty">{{ shown.batch.quantity }}</span>
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              intent="danger"
+              [disabled]="busy()"
+              [attr.aria-label]="
+                'Annuler la fournée de ' + shown.batch.quantity + ' à ' + shown.hour
+              "
+              (click)="cancelled.emit(shown.batch)"
+            >
+              Annuler
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
 }

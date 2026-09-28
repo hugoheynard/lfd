@@ -1,6 +1,6 @@
 # Plan — les fournées progressives : une ligne de fiche qui avance, pas une case
 
-> **État : 📐 plan, rien n'est bâti.** Ouvert le 2026-09-28 (Hugo : « avant les
+> **État : ✅ bâti le 2026-09-28** (F1 à F3, commits suivant `b9055b430`). Ouvert le 2026-09-28 (Hugo : « avant les
 > stores, il faut l'incrémentation progressive d'une ligne de production, au
 > lieu d'une checkbox »). Porte une **migration de données** : `vitruve` avant
 > Hugo. **Contredit par `vitruve` le 2026-09-28** : 4 BLOQUANT, 7 SÉRIEUX,
@@ -180,7 +180,7 @@ qui colisent attendent chacun quelques millisecondes. C'est plus large qu'un
 verrou par produit, et c'est le seul qui tienne face à `save`. Déclarer une
 fournée ne le prend pas : elle ne fait qu'augmenter le disponible.
 
-⚠️ **Non vérifié** : le comportement de `FOR UPDATE` dans une transaction
+⚠️ **Non vérifié (toujours, au 2026-09-28)** : le comportement de `FOR UPDATE` dans une transaction
 interactive à travers Prisma Accelerate (les e2e passent par l'adaptateur `pg`,
 pas par Accelerate). F1 le teste sur `dev` avant de conclure.
 
@@ -288,11 +288,11 @@ compte** sur la fiche, et le bandeau d'écart du retirage prévient avant
 
 ## 6. Les lots
 
-| Lot    | Contenu                                                                                                                                                                                                 | Qui                                   |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| **F1** | Migration M1 + rattrapage ; fournée dans l'agrégat (déclarer, annuler, refus) ; `Record/CancelBatch` ; disponible et verrou du colisage (D4) ; `Mark/Unmark` traduits ; lectures et contrats (§4). e2e. | `batisseur` + `lecteur-de-migrations` |
-| **F2** | Fiche d'atelier : barre, « + 1 plaque », saisie, fournées annulables (D5).                                                                                                                              | `pablo`                               |
-| **F3** | Supervision : barre par produit au détail de préparation ; comptoir vérifié.                                                                                                                            | `pablo`                               |
+| Lot       | Contenu                                                                                                                                                                                                 | Qui                                   |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **F1** ✅ | Migration M1 + rattrapage ; fournée dans l'agrégat (déclarer, annuler, refus) ; `Record/CancelBatch` ; disponible et verrou du colisage (D4) ; `Mark/Unmark` traduits ; lectures et contrats (§4). e2e. | `batisseur` + `lecteur-de-migrations` |
+| **F2** ✅ | Fiche d'atelier : barre, « + 1 plaque », saisie, fournées annulables (D5).                                                                                                                              | `pablo`                               |
+| **F3** ✅ | Supervision : barre par produit au détail de préparation ; comptoir vérifié.                                                                                                                            | `pablo`                               |
 
 L'e2e de F1 porte aussi **le retirage pendant un colisage** (le colisage n'est
 plus effacé), **le rattrapage rejoué deux fois** (aucune fournée doublée, y

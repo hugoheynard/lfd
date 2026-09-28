@@ -27,17 +27,17 @@
   /* ── LES MESURES DU FOURNIL ───────────────────────────────────────────────
      Ce qui reste de la maquette après son passage au thème de l'app : la
      STRUCTURE. La colonne de gauche ne bouge d'aucun support — case, quantité
-     mono alignée à droite, nom —, et les tailles sont celles qui se lisent à un
+     quantité mono alignée à droite, nom —, et les tailles sont celles qui se lisent à un
      mètre du four, pas à quarante centimètres d'un écran.
 
      Elles sont donc écrites en pixels, hors de l'échelle de fold (qui s'arrête à
      24 px) : une quantité de 34 px n'est pas une décision de style, c'est la
      distance de lecture. Déclarées ici et nulle part ailleurs — la ligne et le
      bandeau les LISENT par héritage. */
-  --fa-box: 34px;
   --fa-qty-col: 96px;
-  --fa-initials-col: 74px;
-  --fa-initials-display: block;
+  --fa-progress-col: 280px;
+  --fa-batch-qty-col: 48px;
+  --fa-entry-width: 160px;
   --fa-row-gap: var(--fold-space-2xl);
   --fa-row-pad-x: var(--fold-page-gutter);
   --fa-row-pad-y: var(--fold-space-lg);
@@ -48,7 +48,6 @@
   --fa-size-qty: 34px;
   --fa-size-name: 22px;
   --fa-size-container: var(--fold-text-base);
-  --fa-size-initials: var(--fold-text-base);
 }
 
 /*
@@ -59,10 +58,8 @@
 */
 @media (max-width: 1023px) {
   :host {
-    --fa-box: 44px;
     --fa-qty-col: 52px;
-    --fa-initials-col: 0;
-    --fa-initials-display: none;
+    --fa-progress-col: 100%;
     --fa-row-gap: var(--fold-space-lg);
     --fa-row-pad-x: var(--fold-space-xl);
     --fa-row-pad-y: var(--fold-space-md);

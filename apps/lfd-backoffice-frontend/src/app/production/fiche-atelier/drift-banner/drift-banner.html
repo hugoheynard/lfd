@@ -17,7 +17,7 @@
         changedCount() > 1 ? 's' : ''
       }}
       @if (doneCount() > 0) {
-        , dont {{ doneCount() }} déjà cochée{{ doneCount() > 1 ? 's' : '' }}
+        , dont {{ doneCount() }} déjà commencée{{ doneCount() > 1 ? 's' : '' }}
       }
     </p>
   } @else {
@@ -34,11 +34,12 @@
       }}
       depuis.
       @if (doneCount() > 0) {
-        <!-- Le seul cas réellement dangereux : quelqu'un a déclaré avoir sorti
-             une quantité qui n'est plus la bonne. Écrit en clair, jamais résumé. -->
+        <!-- Le seul cas réellement dangereux : des fournées sont déjà sorties
+             pour une quantité qui n'est plus la bonne. Écrit en clair, jamais résumé. -->
         <strong class="db-danger"
-          >{{ doneCount() }} de ces ligne{{ doneCount() > 1 ? 's' : '' }} est déjà cochée — la
-          quantité sortie n'est plus celle qui est demandée.</strong
+          >{{ doneCount() }} de ces ligne{{ doneCount() > 1 ? 's' : '' }}
+          {{ doneCount() > 1 ? 'sont' : 'est' }} déjà commencée{{ doneCount() > 1 ? 's' : '' }} — la
+          quantité à sortir n'est plus celle sur laquelle on a lancé.</strong
         >
       }
     </p>
@@ -64,7 +65,7 @@
 
   @if (open()) {
     <!-- Les lignes nommées : « Pain de seigle 30 → 42 ». Un compteur ne dirait pas
-         laquelle est déjà cochée, et c'est tout ce qu'on vient chercher ici. -->
+         laquelle est déjà commencée, et c'est tout ce qu'on vient chercher ici. -->
     <ul class="db-lines">
       @for (line of drift().lines; track line.sku) {
         <li class="db-line" [class.is-done]="line.done">
@@ -75,7 +76,7 @@
             <span class="db-line-to">{{ line.to }}</span>
           </span>
           @if (line.done) {
-            <span class="db-line-flag">déjà cochée</span>
+            <span class="db-line-flag">déjà commencée</span>
           }
         </li>
       }

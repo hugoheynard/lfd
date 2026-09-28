@@ -82,6 +82,23 @@
                     >✓{{ line.initials === null ? '' : ' ' + line.initials }}</span
                   >
                 }
+                @let progress = progressOf(line);
+                <fold-meter
+                  class="line-meter"
+                  [label]="progress.label"
+                  [value]="progress.value"
+                  [max]="progress.max"
+                  [tone]="progress.tone"
+                  [attr.data-line-progress]="line.sku"
+                />
+                @if (progress.surplus; as surplus) {
+                  <fold-badge
+                    radius="square"
+                    variant="warning"
+                    [content]="surplus"
+                    [attr.data-line-surplus]="line.sku"
+                  />
+                }
                 @if (lineBadge(line); as badge) {
                   <fold-badge
                     class="quality"

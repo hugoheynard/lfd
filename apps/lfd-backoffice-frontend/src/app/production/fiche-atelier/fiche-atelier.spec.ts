@@ -36,8 +36,8 @@ const fakeWatcher = {
  *   et un chiffre incohérent s'affiche tel quel ;
  * - 🔴 **la journée et son mot viennent du serveur** : les dates des fixtures
  *   sont absolues À DESSEIN, l'écran ne les compare plus à l'horloge du poste ;
- * - une coche se montre AVANT de partir, et la ligne change de liste à la
- *   relecture qui suit ;
+ * - une fournée part avec son ULID, la ligne est désarmée pendant l'envoi, et
+ *   elle change de liste à la relecture qui suit ; un refus se DIT ;
  * - les quatre états passent par fold ; aucun prix, aucun nom de client.
  */
 
@@ -45,7 +45,7 @@ const DAY = '2026-09-15';
 const NEXT_DAY = '2026-09-16';
 
 function line(over: Partial<WorkshopLine> = {}): WorkshopLine {
-  return {
+  const base = {
     sku: 'BAG',
     productName: 'Baguette tradition',
     quantity: 160,
@@ -54,6 +54,15 @@ function line(over: Partial<WorkshopLine> = {}): WorkshopLine {
     initials: null,
     doneAt: null,
     ...over,
+  };
+  // Les champs des fournées (contrat du 2026-09-28), cohérents avec `done`.
+  return {
+    produced: base.done ? base.quantity : 0,
+    remaining: base.done ? 0 : base.quantity,
+    surplus: 0,
+    batches: [],
+    container: { unitsPerContainer: 40, singular: 'tourneuse' },
+    ...base,
   };
 }
 
@@ -110,11 +119,12 @@ function sheet(over: Partial<ProductionWorksheetView> = {}): ProductionWorksheet
   };
 }
 
-/** Une coche telle que le service l'a reçue. */
-interface SentMark {
+/** Une fournée telle que le service l'a reçue. */
+interface SentBatch {
   readonly date: string;
   readonly sku: string;
-  readonly done: boolean;
+  readonly id: string;
+  readonly quantity: number;
   readonly initials: string;
 }
 
@@ -122,13 +132,14 @@ class FakeWorksheetService {
   /** Ce que sert `current()`. `null` = la lecture échoue. */
   view: ProductionWorksheetView | null = sheet();
   reads = 0;
-  readonly marks: SentMark[] = [];
-  /** Ce que le serveur répond aux coches — `null` = il les accepte. */
-  markError: unknown = null;
+  readonly batches: SentBatch[] = [];
+  readonly cancels: { readonly date: string; readonly id: string }[] = [];
+  /** Ce que le serveur répond aux gestes — `null` = il les accepte. */
+  writeError: unknown = null;
   /** Retenir les réponses, pour éprouver ce qui se passe PENDANT un envoi ou une lecture. */
-  holdMarks = false;
+  holdWrites = false;
   holdReads = false;
-  private readonly heldMarks: (() => void)[] = [];
+  private readonly heldWrites: (() => void)[] = [];
   private readonly heldReads: (() => void)[] = [];
 
   async current(): Promise<ProductionWorksheetView> {
@@ -148,19 +159,33 @@ class FakeWorksheetService {
     // Rien : le retirage n'est pas éprouvé ici.
   }
 
-  async mark(date: string, sku: string, done: boolean, initials: string): Promise<void> {
-    this.marks.push({ date, sku, done, initials });
-    if (this.holdMarks) {
-      await new Promise<void>((resolve) => this.heldMarks.push(resolve));
-    }
-    if (this.markError !== null) {
-      throw this.markError;
+  async recordBatch(
+    date: string,
+    sku: string,
+    id: string,
+    payload: { quantity: number; initials: string },
+  ): Promise<void> {
+    this.batches.push({ date, sku, id, ...payload });
+    await this.answer();
+  }
+
+  async cancelBatch(date: string, id: string): Promise<void> {
+    this.cancels.push({ date, id });
+    await this.answer();
+  }
+
+  releaseWrites(): void {
+    for (const resolve of this.heldWrites.splice(0)) {
+      resolve();
     }
   }
 
-  releaseMarks(): void {
-    for (const resolve of this.heldMarks.splice(0)) {
-      resolve();
+  private async answer(): Promise<void> {
+    if (this.holdWrites) {
+      await new Promise<void>((resolve) => this.heldWrites.push(resolve));
+    }
+    if (this.writeError !== null) {
+      throw this.writeError;
     }
   }
 
@@ -213,8 +238,11 @@ const baguette = (el: HTMLElement): Element | undefined =>
 
 const premiere = (el: HTMLElement): boolean => baguette(el)?.classList.contains('is-done') ?? false;
 
-const premiereCase = (el: HTMLElement): HTMLInputElement | null =>
-  baguette(el)?.querySelector('input[type="checkbox"]') ?? null;
+/** Le bouton rapide de la baguette — « + 1 tourneuse ». */
+const plaque = (el: HTMLElement): HTMLButtonElement | null =>
+  [...(baguette(el)?.querySelectorAll('button') ?? [])].find((node) =>
+    (node.textContent ?? '').includes('+ 1 tourneuse'),
+  ) ?? null;
 
 const namesIn = (el: HTMLElement, selector: string): string[] =>
   [...el.querySelectorAll(`${selector} .wl-name`)].map((node) => node.textContent?.trim() ?? '');
@@ -304,68 +332,103 @@ describe('la fiche d’atelier', () => {
     expect(premiere(el)).toBe(true);
   });
 
-  it('envoie la coche, puis relit', async () => {
+  it('déclare une fournée de la taille du contenant, signée, puis relit', async () => {
     const { fixture, el } = await render();
     api.view = sheet({ groups: [painBaguetteDone()] });
 
-    premiereCase(el)?.click();
+    plaque(el)?.click();
     await settle(fixture);
 
-    expect(api.marks).toEqual([{ date: DAY, sku: 'BAG', done: true, initials: 'MJ' }]);
+    expect(api.batches).toHaveLength(1);
+    expect(api.batches[0]).toMatchObject({ date: DAY, sku: 'BAG', quantity: 40, initials: 'MJ' });
+    expect(api.batches[0]?.id).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/u);
     expect(api.reads).toBe(2);
     expect(premiere(el)).toBe(true);
   });
 
-  it('coche à l’écran tout de suite, et désarme la case le temps de l’envoi', async () => {
+  it('🔴 un double appui ne part qu’une fois : la ligne est désarmée pendant l’envoi', async () => {
     const { fixture, el } = await render();
-    api.holdMarks = true;
-    api.view = sheet({ groups: [painBaguetteDone()] });
+    api.holdWrites = true;
 
-    premiereCase(el)?.click();
+    plaque(el)?.click();
     fixture.detectChanges();
+    expect(plaque(el)?.disabled).toBe(true);
+    // Même désarmé à l'écran, un second geste qui passerait est ignoré.
+    plaque(el)?.dispatchEvent(new Event('click'));
 
-    expect(premiere(el)).toBe(true);
-    expect(premiereCase(el)?.disabled).toBe(true);
-
-    api.releaseMarks();
+    api.releaseWrites();
     await settle(fixture);
 
-    expect(premiereCase(el)?.disabled).toBe(false);
-    expect(premiere(el)).toBe(true);
+    expect(api.batches).toHaveLength(1);
+    expect(plaque(el)?.disabled).toBe(false);
   });
 
-  /**
-   * Régression : une coche refusée restait affichée cochée jusqu'au
-   * rechargement, sans que rien ne le dise (constaté en dev le 2026-09-14).
-   */
-  it('🔴 remet la case en arrière quand le serveur refuse, et DIT pourquoi', async () => {
+  it('🔴 rejoue une fournée restée sans réponse sous le MÊME identifiant', async () => {
     const { fixture, el } = await render();
-    api.markError = new HttpErrorResponse({
+    api.writeError = new HttpErrorResponse({ status: 0 });
+    plaque(el)?.click();
+    await settle(fixture);
+    expect(text(el, '.fa-refused')).toContain('la même fournée ne comptera pas deux fois');
+
+    api.writeError = null;
+    plaque(el)?.click();
+    await settle(fixture);
+
+    expect(api.batches).toHaveLength(2);
+    expect(api.batches[1]?.id).toBe(api.batches[0]?.id);
+  });
+
+  it('tire un nouvel identifiant pour chaque fournée acceptée', async () => {
+    const { fixture, el } = await render();
+    plaque(el)?.click();
+    await settle(fixture);
+    plaque(el)?.click();
+    await settle(fixture);
+
+    expect(new Set(api.batches.map((batch) => batch.id)).size).toBe(2);
+  });
+
+  it('🔴 dit le refus du serveur tel qu’il le nomme, sans relire', async () => {
+    const { fixture, el } = await render();
+    api.writeError = new HttpErrorResponse({
       status: 409,
-      error: { message: 'Le plan du jour n’est pas arrêté.' },
+      error: { message: 'Cette fournée existe déjà avec une autre quantité.' },
     });
 
-    premiereCase(el)?.click();
+    plaque(el)?.click();
     await settle(fixture);
 
-    expect(premiere(el)).toBe(false);
     expect(api.reads).toBe(1);
-    const said = text(el, '.fa-mark-failed');
+    const said = text(el, '.fa-refused');
     expect(said).toContain('Baguette tradition');
-    expect(said).toContain('Le plan du jour n’est pas arrêté.');
+    expect(said).toContain('Cette fournée existe déjà avec une autre quantité.');
   });
 
-  it('décocher renvoie un geste inverse, jamais un second geste identique', async () => {
+  it('annule une fournée, et dit le refus « pièces au bac » avec les mots du serveur', async () => {
+    const batch = {
+      id: 'backfill-2026-09-15-BAG',
+      quantity: 160,
+      recordedAt: `${DAY}T04:30:00`,
+      initials: 'MJ',
+    };
+    const started = line({ produced: 160, remaining: 0, done: true, batches: [batch] });
+    api.view = sheet({ groups: [{ ...painTodo(), lines: [started, SEIGLE] }] });
     const { fixture, el } = await render();
-    api.view = sheet({ groups: [painBaguetteDone()] });
-    premiereCase(el)?.click();
+    api.writeError = new HttpErrorResponse({
+      status: 409,
+      error: {
+        message:
+          '24 croissants sont déjà dans des sacs : ressortez-les du bac avant d’annuler cette fournée.',
+      },
+    });
+
+    [...(baguette(el)?.querySelectorAll('button') ?? [])]
+      .find((node) => node.textContent?.trim() === 'Annuler')
+      ?.click();
     await settle(fixture);
 
-    api.view = sheet();
-    premiereCase(el)?.click();
-    await settle(fixture);
-
-    expect(api.marks.map((mark) => mark.done)).toEqual([true, false]);
+    expect(api.cancels).toEqual([{ date: DAY, id: 'backfill-2026-09-15-BAG' }]);
+    expect(text(el, '.fa-refused')).toContain('ressortez-les du bac');
   });
 
   describe('la relecture', () => {
@@ -374,7 +437,7 @@ describe('la fiche d’atelier', () => {
       void watched.at(-1)?.reload();
     }
 
-    it('montre une coche posée sur un autre poste', async () => {
+    it('montre une fournée déclarée sur un autre poste', async () => {
       const { fixture, el } = await render();
       expect(premiere(el)).toBe(false);
 
@@ -386,24 +449,22 @@ describe('la fiche d’atelier', () => {
     });
 
     /**
-     * 🔴 Une relecture partie AVANT une coche acceptée revient avec l'état
-     * d'avant. La laisser gagner décocherait la case sous les doigts de qui
-     * vient de la cocher.
+     * 🔴 Une relecture partie AVANT une fournée acceptée revient avec l'état
+     * d'avant. La laisser gagner effacerait la fournée sous les doigts.
      */
-    it('🔴 jette une relecture partie avant une coche acceptée', async () => {
+    it('🔴 jette une relecture partie avant une fournée acceptée', async () => {
       const { fixture, el } = await render();
-      api.holdMarks = true;
-      premiereCase(el)?.click();
+      api.holdWrites = true;
+      plaque(el)?.click();
       fixture.detectChanges();
 
-      // La relecture périodique part avec la fiche d'AVANT la coche, et reste en vol.
+      // La relecture périodique part avec la fiche d'AVANT, et reste en vol.
       api.holdReads = true;
       relancer();
       api.holdReads = false;
 
-      // La coche est acceptée ; la relecture d'après écriture rend la ligne faite.
       api.view = sheet({ groups: [painBaguetteDone()] });
-      api.releaseMarks();
+      api.releaseWrites();
       await settle(fixture);
       expect(premiere(el)).toBe(true);
 
@@ -411,7 +472,6 @@ describe('la fiche d’atelier', () => {
       await settle(fixture);
       await settle(fixture);
 
-      expect(premiere(el)).toBe(true);
       expect(premiere(el)).toBe(true);
     });
 
@@ -461,7 +521,7 @@ describe('la fiche d’atelier', () => {
     expect(el.querySelector('app-drift-banner')).toBeNull();
   });
 
-  it('affiche le bandeau d’écart, et nomme la ligne déjà cochée', async () => {
+  it('affiche le bandeau d’écart, et nomme la ligne déjà commencée', async () => {
     api.view = sheet({
       drift: {
         orders: 14,
@@ -475,7 +535,7 @@ describe('la fiche d’atelier', () => {
     const { el } = await render();
 
     expect(el.querySelector('app-drift-banner')).not.toBeNull();
-    expect(el.textContent).toContain('déjà cochée');
+    expect(el.textContent).toContain('déjà commencée');
   });
 
   it('laisse la fiche à l’écran quand le serveur n’a pas lu les rayons, et le DIT', async () => {

@@ -12,7 +12,12 @@ import {
   FoldMeterComponent,
 } from 'fold-ng';
 
-import type { PreparationBoard, ShelfCard } from '../preparation-shelves';
+import {
+  type LineProgress,
+  lineProgressOf,
+  type PreparationBoard,
+  type ShelfCard,
+} from '../preparation-shelves';
 import { NO_QUALITY, type QualityBadge, type QualityRequest, worstBadge } from '../quality-badges';
 import { countLabel } from '../supervision-labels';
 import { NO_MATCHES } from '../supervision-search';
@@ -94,6 +99,11 @@ export class PreparationColumn {
       ...card.pending.map((line) => ({ line, done: false })),
       ...card.done.map((line) => ({ line, done: true })),
     ];
+  }
+
+  /** La barre `produced / quantity` de la ligne, et son surplus. */
+  protected progressOf(line: WorkshopLine): LineProgress {
+    return lineProgressOf(line);
   }
 
   protected lineBadge(line: WorkshopLine): QualityBadge | null {

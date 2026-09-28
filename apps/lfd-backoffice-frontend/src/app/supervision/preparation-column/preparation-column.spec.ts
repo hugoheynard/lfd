@@ -25,6 +25,11 @@ function card(key: string, overrides: Partial<ShelfCard> = {}): ShelfCard {
         done: false,
         initials: null,
         doneAt: null,
+        produced: 0,
+        remaining: 96,
+        surplus: 0,
+        batches: [],
+        container: null,
       },
     ],
     done: [
@@ -36,6 +41,11 @@ function card(key: string, overrides: Partial<ShelfCard> = {}): ShelfCard {
         done: true,
         initials: 'HH',
         doneAt: null,
+        produced: 50,
+        remaining: 0,
+        surplus: 0,
+        batches: [],
+        container: null,
       },
     ],
     ...overrides,
@@ -194,5 +204,32 @@ describe('PreparationColumn', () => {
         subtitle: '96 pièces au compte',
       },
     ]);
+  });
+
+  /** Hugo, 2026-09-28 : une barre par produit, et le surplus en avertissement. */
+  it('pose une barre par produit, et le surplus en avertissement', async () => {
+    const base = card('Viennoiseries');
+    const [pending] = base.pending;
+    const [done] = base.done;
+    if (pending === undefined || done === undefined) {
+      throw new Error('fixture incomplète');
+    }
+    const element = await mount({
+      ...BOARD,
+      open: [
+        {
+          ...base,
+          pending: [{ ...pending, produced: 40, remaining: 56 }],
+          done: [{ ...done, produced: 54, surplus: 4 }],
+        },
+      ],
+    });
+
+    expect(element.querySelector('[data-line-progress="pac"]')?.textContent).toContain(
+      '40 / 96 sorties',
+    );
+    expect(element.querySelector('[data-line-progress="cro"]')?.classList).toContain('success');
+    expect(element.querySelector('[data-line-surplus="cro"]')?.textContent).toContain('+4');
+    expect(element.querySelector('[data-line-surplus="pac"]')).toBeNull();
   });
 });

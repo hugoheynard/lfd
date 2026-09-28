@@ -109,6 +109,15 @@
   gap: var(--fold-space-sm);
 }
 
+// La barre par produit : sa propre rangée, sous la quantité et le nom. Les
+// teintes sont celles du mètre du rayon.
+.line-meter {
+  flex: 1 0 60%;
+  --fold-color-success: var(--fold-ref-green-700);
+  --fold-color-warning: var(--fold-ref-amber-500);
+  --fold-color-surface-raised: var(--fold-ref-paper-200);
+}
+
 // La pastille du contrôle qualité : le mot porte l'état, la teinte le redouble.
 .quality {
   flex: none;

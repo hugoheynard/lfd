@@ -20,8 +20,8 @@ type LoadState = 'loading' | 'ready' | 'error';
  * fiches arrivent rangées, séparées et comptées (`groups`). L'horloge du poste ne
  * sert plus qu'à dire « relue à ».
  *
- * Il porte aussi l'état montré des cases et les coches en vol (`shown`, `busy`) :
- * {@link applyRead} les efface, sauf ce qui est encore en vol.
+ * Il porte aussi les lignes dont un geste est en vol (`busy`) : leurs boutons
+ * sont désarmés le temps de l'envoi.
  */
 @Injectable()
 export class WorkshopDayReader {
@@ -90,11 +90,7 @@ export class WorkshopDayReader {
     return day === null ? null : dayLabelOf(day);
   });
 
-  /** L'état montré d'une case le temps de son envoi, par `markKey` — un booléen. */
-  private readonly shownMarks = signal<ReadonlyMap<string, boolean>>(new Map());
-  readonly shown = this.shownMarks.asReadonly();
-
-  /** Les coches en train de partir, même clé — leur case est désarmée. */
+  /** Les lignes dont un geste est en train de partir, par `markKey` — désarmées. */
   private readonly busyMarks = signal<ReadonlySet<string>>(new Set());
   readonly busy = this.busyMarks.asReadonly();
 
@@ -126,8 +122,8 @@ export class WorkshopDayReader {
    * **La relecture silencieuse** — toutes les 15 s tant que l'onglet est visible.
    * Pas d'écran de chargement, la fiche ouverte ne bouge pas.
    *
-   * 🔴 Une réponse est **jetée** si une coche a été acceptée après son départ :
-   * elle rendrait l'état d'avant, et décocherait sous les doigts.
+   * 🔴 Une réponse est **jetée** si une fournée a été acceptée après son départ :
+   * elle rendrait l'état d'avant, et l'effacerait sous les doigts.
    */
   async refresh(): Promise<void> {
     if (this.loadState() !== 'ready') {
@@ -170,18 +166,7 @@ export class WorkshopDayReader {
     this.turnedTo.set(null);
   }
 
-  /** Pose ou retire l'état montré d'une case (`null` = retirer). */
-  setShown(key: string, done: boolean | null): void {
-    const next = new Map(this.shownMarks());
-    if (done === null) {
-      next.delete(key);
-    } else {
-      next.set(key, done);
-    }
-    this.shownMarks.set(next);
-  }
-
-  /** Marque une coche comme partie, ou revenue. */
+  /** Marque un geste d'une ligne comme parti, ou revenu. */
   setBusy(key: string, busy: boolean): void {
     const next = new Set(this.busyMarks());
     if (busy) {
@@ -209,8 +194,7 @@ export class WorkshopDayReader {
 
   /**
    * Inscrit une lecture réussie. La journée est celle de la RÉPONSE ; si elle
-   * diffère de la précédente, l'écran le dit. L'état montré des cases s'efface,
-   * sauf celui des cases dont l'envoi est encore en vol.
+   * diffère de la précédente, l'écran le dit.
    */
   private applyRead(served: ProductionWorksheetView): void {
     const previousDay = this.date();
@@ -220,7 +204,5 @@ export class WorkshopDayReader {
     }
     this.readAt.set(new Date().toISOString());
     this.readFailed.set(false);
-    const inFlight = this.busyMarks();
-    this.shownMarks.set(new Map([...this.shownMarks()].filter(([key]) => inFlight.has(key))));
   }
 }

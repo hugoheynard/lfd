@@ -14,12 +14,12 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 
-import type { WorkshopGroup, WorkshopLine } from '@lfd/contracts';
+import type { WorkshopGroup } from '@lfd/contracts';
 
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
-import { isoDay, markKey } from '../worksheet-day';
+import { isoDay } from '../worksheet-day';
 import { DriftBanner } from './drift-banner/drift-banner';
 import { WorkshopDayReader } from './workshop-day.reader';
 import { WorkshopGestures } from './workshop-gestures';
@@ -48,12 +48,12 @@ const WORKSHOP_NARROW = '(max-width: 1023px)';
  * 🔴 **L'écran ne calcule rien** (décidé le 2026-09-14,
  * `documentation/production/plan-fiche-atelier.md` §10). La journée, les rayons,
  * les deux listes et tous les comptes viennent du serveur ; l'écran relit après
- * chaque coche acceptée.
+ * chaque fournée acceptée.
  *
  * **Trois responsabilités, trois fichiers**, comme le poste de colisage :
  * - {@link WorkshopDayReader} — CE QU'ON LIT : la journée, les relectures,
- *   l'état montré des cases ;
- * - {@link WorkshopGestures} — CE QU'ON FAIT : cocher, retirer ;
+ *   les lignes en vol ;
+ * - {@link WorkshopGestures} — CE QU'ON FAIT : déclarer, annuler, retirer ;
  * - **ce composant — LE CHOIX DE LA FICHE** et sa mise en forme : onglets, rang,
  *   bloc replié du téléphone.
  *
@@ -102,7 +102,7 @@ export class FicheAtelier {
     // 🔴 Une lecture UNIQUE, et pas un `effect` : la journée est choisie au
     // serveur, rien à l'écran ne la fait changer.
     void this.day.load();
-    // Les autres postes cochent aussi : sans relecture, une ligne sortie du four
+    // Les autres postes déclarent aussi : sans relecture, une ligne sortie du four
     // par le voisin resterait « à faire » ici, et on la fabriquerait deux fois.
     // Elle ne relit que si la journée du fournil a bougé (`plan-version-par-journee.md`).
     inject(DayVersionWatcher).watch({
@@ -149,14 +149,14 @@ export class FicheAtelier {
     })),
   );
 
-  /** En cours de production, telle que servie — avec l'état montré des cases en vol. */
   /** Toutes les lignes de la fiche, dans l'ordre servi — le poste fixe. */
-  protected readonly lines = computed(() => this.shownLines(this.current()?.lines ?? []));
+  protected readonly lines = computed(() => this.current()?.lines ?? []);
 
-  protected readonly todo = computed(() => this.shownLines(this.current()?.pending ?? []));
+  /** Ce qui reste à sortir, tel que servi — le téléphone. */
+  protected readonly todo = computed(() => this.current()?.pending ?? []);
 
-  /** Production faite, telle que servie — sur téléphone, dans le bloc replié du pied. */
-  protected readonly done = computed(() => this.shownLines(this.current()?.done ?? []));
+  /** Les lignes complètes, telles que servies — sur téléphone, dans le bloc replié du pied. */
+  protected readonly done = computed(() => this.current()?.done ?? []);
 
   /** Change de fiche, et le retient pour la personne. */
   protected choose(key: string): void {
@@ -167,21 +167,5 @@ export class FicheAtelier {
 
   protected toggleDone(): void {
     this.doneOpen.update((open) => !open);
-  }
-
-  /**
-   * Recouvre la case d'une ligne par l'état montré le temps de son envoi. Seule
-   * la CASE bouge : la ligne reste dans sa liste jusqu'à la relecture.
-   */
-  private shownLines(lines: readonly WorkshopLine[]): readonly WorkshopLine[] {
-    const date = this.day.date();
-    const shown = this.day.shown();
-    if (date === null || shown.size === 0) {
-      return lines;
-    }
-    return lines.map((line) => {
-      const done = shown.get(markKey(date, line.sku));
-      return done === undefined ? line : { ...line, done };
-    });
   }
 }

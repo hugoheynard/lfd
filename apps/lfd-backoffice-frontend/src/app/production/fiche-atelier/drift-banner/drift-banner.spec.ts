@@ -7,7 +7,7 @@ import { DriftBanner } from './drift-banner';
 /**
  * Ce que ces cas tiennent : **le bandeau ne résume jamais le cas dangereux**.
  *
- * Une ligne déjà cochée dont la quantité change veut dire que quelqu'un a
+ * Une ligne déjà commencée dont la quantité change veut dire que quelqu'un a
  * déclaré avoir sorti 30 pièces d'un article qui en demande 42, et que personne
  * ne le saura au colisage. Un compteur ne dit pas laquelle — c'est la seule
  * raison pour laquelle ce bandeau nomme ses lignes.
@@ -41,10 +41,10 @@ describe('le bandeau de version périmée', () => {
     expect(el.textContent?.toLowerCase()).not.toContain('attention');
   });
 
-  it('🔴 écrit en clair qu’une ligne qui change est déjà cochée', () => {
+  it('🔴 écrit en clair qu’une ligne qui change est déjà commencée', () => {
     const el: HTMLElement = render(DRIFT).nativeElement;
 
-    expect(el.textContent).toContain('déjà cochée');
+    expect(el.textContent).toContain('déjà commencée');
   });
 
   it('se tait sur le cas dangereux quand il n’y en a pas', () => {
@@ -53,7 +53,7 @@ describe('le bandeau de version périmée', () => {
       lines: [{ sku: 'BAG', productName: 'Baguette', from: 160, to: 166, done: false }],
     }).nativeElement;
 
-    expect(el.textContent).not.toContain('déjà cochée');
+    expect(el.textContent).not.toContain('déjà commencée');
   });
 
   it('ne nomme les lignes qu’une fois l’écart déplié', () => {
@@ -73,7 +73,7 @@ describe('le bandeau de version périmée', () => {
 
     expect(el.textContent).toContain('+18');
     expect(el.textContent).toContain('Mettre à jour');
-    expect(el.textContent).toContain('déjà cochée');
+    expect(el.textContent).toContain('déjà commencée');
     // Pas de « Voir l'écart » : il n'y a pas la place, et le chiffre suffit à
     // décider de mettre à jour.
     expect(el.querySelectorAll('button')).toHaveLength(1);

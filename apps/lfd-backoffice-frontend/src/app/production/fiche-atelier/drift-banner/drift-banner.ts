@@ -9,10 +9,10 @@ import type { WorkshopDrift } from '@lfd/contracts';
  * Il ne dit jamais « attention » : un chiffre et une action, comme tout bandeau
  * de ce back-office. Les pièces en plus, sur combien de lignes, combien de
  * commandes — et surtout **les lignes nommées**, parce qu'une d'entre elles peut
- * être déjà cochée.
+ * être déjà commencée.
  *
  * 🔴 **Le cas dangereux est écrit en clair, pas résumé en compteur.** Quelqu'un
- * a déclaré avoir sorti 30 pièces d'un article qui en demande 42 ; personne ne
+ * a déjà sorti des fournées d'un article qui passe de 30 à 42 ; personne ne
  * le saura au colisage. C'est la seule raison pour laquelle ce bandeau nomme ses
  * lignes au lieu d'afficher « 2 lignes modifiées ».
  *
@@ -45,8 +45,9 @@ export class DriftBanner {
   protected readonly changedCount = computed(() => this.drift().lines.length);
 
   /**
-   * Combien des lignes qui changent sont **déjà cochées**. Zéro reste une
-   * information : elle dit qu'aucune fournée n'est partie sur un mauvais nombre.
+   * Combien des lignes qui changent sont **déjà commencées** (au moins une
+   * fournée sortie, `done` du contrat depuis les fournées). Zéro reste une
+   * information : aucune fournée n'est partie sur un mauvais nombre.
    */
   protected readonly doneCount = computed(
     () => this.drift().lines.filter((line) => line.done).length,

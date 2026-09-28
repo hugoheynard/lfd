@@ -2,7 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { ProductionWorksheetRetake, ProductionWorksheetView } from '@lfd/contracts';
+import type {
+  ProductionWorksheetRetake,
+  ProductionWorksheetView,
+  RecordWorkshopBatch,
+} from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
 
@@ -41,17 +45,29 @@ export class WorksheetService {
   }
 
   /**
-   * Coche ou décoche une ligne.
+   * **Déclare une fournée** d'une ligne — ce que le four vient de sortir.
    *
-   * Les deux gestes sont ici plutôt que dans deux méthodes : l'appelant est une
-   * file qui rejoue des intentions, et une intention porte son sens (`done`)
-   * comme une donnée. Deux méthodes l'auraient obligée à un `if` à chaque envoi.
+   * L'`id` est tiré par l'écran : c'est la clé d'idempotence. Le même `id`
+   * rejoué avec la même charge rend un succès ; sous une autre charge, le
+   * serveur refuse (409) et nomme le conflit.
    */
-  async mark(date: string, sku: string, done: boolean, initials: string): Promise<void> {
-    const url = `${B2B_API_BASE}/admin/production/worksheet/${encodeURIComponent(date)}/lines/${encodeURIComponent(sku)}/done`;
-    await firstValueFrom(
-      done ? this.http.put<void>(url, { initials }) : this.http.delete<void>(url),
-    );
+  async recordBatch(
+    date: string,
+    sku: string,
+    batchId: string,
+    payload: RecordWorkshopBatch,
+  ): Promise<void> {
+    const url = `${this.worksheetUrl(date)}/lines/${encodeURIComponent(sku)}/batches/${encodeURIComponent(batchId)}`;
+    await firstValueFrom(this.http.put<void>(url, payload));
+  }
+
+  /**
+   * **Annule une fournée**, entière. Refusée par le serveur si ses pièces sont
+   * déjà au bac — le message dit quoi ressortir.
+   */
+  async cancelBatch(date: string, batchId: string): Promise<void> {
+    const url = `${this.worksheetUrl(date)}/batches/${encodeURIComponent(batchId)}`;
+    await firstValueFrom(this.http.delete<void>(url));
   }
 
   /** Le **retirage** : absorber ce qui est arrivé depuis que le plan est arrêté. */
@@ -62,5 +78,9 @@ export class WorksheetService {
         {},
       ),
     );
+  }
+
+  private worksheetUrl(date: string): string {
+    return `${B2B_API_BASE}/admin/production/worksheet/${encodeURIComponent(date)}`;
   }
 }

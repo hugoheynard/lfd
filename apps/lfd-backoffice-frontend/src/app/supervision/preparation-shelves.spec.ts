@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { ProductionWorksheetView, WorkshopGroup, WorkshopLine } from '@lfd/contracts';
 
-import { preparationBoard, shelfStateOf } from './preparation-shelves';
+import { lineProgressOf, preparationBoard, shelfStateOf } from './preparation-shelves';
 
 function line(sku: string, done: boolean, doneAt: string | null = null): WorkshopLine {
   return {
@@ -13,6 +13,11 @@ function line(sku: string, done: boolean, doneAt: string | null = null): Worksho
     done,
     initials: null,
     doneAt,
+    produced: done ? 10 : 0,
+    remaining: done ? 0 : 10,
+    surplus: 0,
+    batches: [],
+    container: null,
   };
 }
 
@@ -74,5 +79,42 @@ describe('la colonne Préparation', () => {
     const board = preparationBoard(view([group('v', [line('fait', true), line('reste', false)])]));
 
     expect(board.open[0]?.pending.map((l) => l.sku)).toEqual(['reste']);
+  });
+
+  /** Fournées progressives : 4 sorties sur 10 ne complètent aucune ligne, mais le rayon est entamé. */
+  it('dit « en cours » un rayon dont une ligne est entamée sans être complète', () => {
+    const partial = { ...line('x', false), produced: 4, remaining: 6 };
+    const shelf = { ...group('a', [partial]), doneUnits: 4, remainingUnits: 6 };
+
+    expect(shelfStateOf(shelf)).toBe('in_progress');
+  });
+});
+
+describe('la barre par produit', () => {
+  it('compte ce qui est sorti sur ce qui est au compte, en attente de teinte tant que rien ne sort', () => {
+    expect(lineProgressOf(line('x', false))).toEqual({
+      value: 0,
+      max: 10,
+      label: '0 / 10 sorties',
+      surplus: null,
+      tone: 'accent',
+    });
+    expect(lineProgressOf({ ...line('x', false), produced: 4, remaining: 6 })).toMatchObject({
+      value: 4,
+      label: '4 / 10 sorties',
+      tone: 'warning',
+    });
+  });
+
+  it('montre le surplus à côté, sans le laisser remplir la barre', () => {
+    const over = { ...line('x', true), produced: 14, surplus: 4 };
+
+    expect(lineProgressOf(over)).toEqual({
+      value: 10,
+      max: 10,
+      label: '14 / 10 sorties',
+      surplus: '+4',
+      tone: 'success',
+    });
   });
 });
