@@ -47,7 +47,7 @@
       [class.is-match]="outlined(card)"
       [class.is-current]="isCurrent(card.reference)"
       [class.is-receded]="receded(card.reference)"
-      [class.is-source]="isSource(card)"
+      [class.is-source]="isSelected(card)"
       [class.edge-warning]="card.state === 'awaiting_oven'"
       [attr.data-packing]="card.state"
       [attr.data-reference]="card.reference"

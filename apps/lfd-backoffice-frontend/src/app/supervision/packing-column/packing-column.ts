@@ -126,6 +126,19 @@ export class PackingColumn {
     return card.state === 'awaiting_oven' && this.awaitedOpen() === card.reference;
   }
 
+  /**
+   * La carte « four » que l'on SUIT — dépliée, ou visée par la pastille du four :
+   * c'est elle qui explique pourquoi les lignes de la colonne 1 ressortent, elle
+   * ressort donc aussi (Hugo, 2026-09-28 : « un jaune plus marqué, une bordure
+   * nette »).
+   */
+  protected isSelected(card: PackingCard): boolean {
+    return (
+      this.isSource(card) ||
+      (this.productsMode() && card.state === 'awaiting_oven' && this.isHit(card.reference))
+    );
+  }
+
   /** Contour primaire — sauf sur une commande « four » quand on suit des produits. */
   protected outlined(card: PackingCard): boolean {
     return this.isHit(card.reference) && !(this.productsMode() && card.state === 'awaiting_oven');
