@@ -204,7 +204,8 @@ R-D attend R-B.
   (`update-staff-user.handler.ts:70` → PATCH Auth0), un lien de mot de passe
   posé en staging devenait celui de la production, et un M2M ne peut **pas**
   être limité à une connexion : ses droits valent pour tout le tenant.
-  **R1 est remplacé : un tenant Auth0 propre au staging**, avec ses deux
+  **R1 est remplacé : un tenant Auth0 propre au staging** (validé par Hugo le
+  2026-09-28), avec ses deux
   applications, ses deux audiences, ses deux connexions et son M2M. Aucun
   geste fait en staging ne peut atteindre une identité de production, et
   les e-mails qu'Auth0 envoie lui-même (vérification, mot de passe oublié)
