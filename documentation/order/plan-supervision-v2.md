@@ -1,4 +1,4 @@
-> **État : 🔨 en construction (2026-09-28).** Le handoff de design, recopié tel
+> **État : ✅ bâti le 2026-09-28** (`cc76512f7`). Le handoff de design, recopié tel
 > quel ; la maquette vit hors dépôt
 > (`OneDrive…/00 Boulangerie/design_handoff_supervision_v2/design/Supervision v2.dc.html`).
 > Hugo : « colle à l'identique » — les libellés _(à valider)_ sont pris tels
@@ -238,3 +238,29 @@ Correspondance avec le dépôt :
 | A8       | `handover-column/*`, `handover-slots.ts` (ordre des tranches, repère maintenant, filtre point)              |
 | A9       | `quality-panel/*`, `quality-draft.ts`                                                                       |
 | B        | les mêmes, branche `narrow()` ; `supervisionTabs()` pour les pastilles d'onglet                             |
+
+---
+
+## Écarts à la maquette, au 2026-09-28
+
+**Dus à fold** (à régler dans fold, puis une version publiée) :
+
+- le déclencheur de `fold-listbox` ne se teinte pas en « filtre actif » ;
+- le point de `fold-timeline` ne prend pas la teinte du verdict ;
+- l'intent `danger` et l'état inactif du bouton suivent fold, pas `#8f2c1f` / `#c5d0f0` ;
+- le champ de note vide en alerte suit le rendu `errors` de fold ;
+- la feuille mobile du panneau ne règle ni `max-height 88 %` ni ses coins ;
+- `FoldViewNavItem.badge` n'a pas de teinte : la pastille des résultats n'est pas bleue ;
+- `fold-listbox` prend le TEXTE d'une option pour libeller son bouton : les
+  comptes du menu passent par `::after`.
+
+**Décidés dans l'app** :
+
+- B1 : pas de titre « Supervision du jour » dans la barre mobile, l'en-tête
+  de l'app le dit déjà ;
+- les rayons finis sont repliés (Hugo : « colle à l'identique ») ;
+- enseigne partout (`tradeName ?? customerLabel`), dans la voix du Retrait ;
+- « Prête à … » du colisage est une pastille alignée comme « Attend le four » ;
+- retard au-delà de 60 min en heures (« 1 h 42 », « 15 h ») ;
+- chiffre d'en-tête en `text-xl` (20 px) au lieu de 22 px ; tailles 10,5 /
+  11,5 / 12,5 arrondies aux tokens `2xs` / `xs` / `sm`.
