@@ -11,6 +11,8 @@ import { OrderHandoverRepository } from "../../domain/ports/order-handover.repos
 import type { HandoverVia } from "../../domain/services/handover.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import { authorsOf, toHandoverView } from "../queries/get-handover.handler.js";
+import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
+import { isHeldForQuality } from "./quality-hold.js";
 
 /**
  * **Graver un retrait** — le geste commun au scan et à la saisie.
@@ -36,6 +38,7 @@ export class HandoverAttestation {
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly staffAuthors: StaffAuthorDirectory,
+    private readonly holds: QualityHoldsReader,
   ) {}
 
   /**
@@ -49,15 +52,23 @@ export class HandoverAttestation {
    * @throws {HandoverRefusedError} l'état l'interdit, ou un autre poste a gagné.
    */
   async attest(subject: HandoverSubject, by: string, via: HandoverVia): Promise<OrderHandoverView> {
-    const existing = await this.handovers.findByOrderId(subject.orderId);
+    // 🔴 La retenue est lue ici, AVANT l'écriture et sans verrou commun avec le
+    // contrôle : un blocage rendu dans l'intervalle laisse partir le sac. C'est
+    // une vérification, pas une interdiction — assumé au plan
+    // (`plan-controle-qualite.md`, D4, « La course »).
+    const [existing, qualityHold] = await Promise.all([
+      this.handovers.findByOrderId(subject.orderId),
+      isHeldForQuality(this.holds, subject),
+    ]);
     const at = this.clock.now();
 
     let handover: OrderHandover;
     try {
-      // L'agrégat refuse ici — commande annulée, pas encore passée, déjà retirée.
+      // L'agrégat refuse ici — commande annulée, pas encore passée, déjà
+      // retirée, retenue au contrôle.
       handover = OrderHandover.attest(
         subject,
-        existing === null ? null : existing.handedOverAt,
+        { handedOverAt: existing === null ? null : existing.handedOverAt, qualityHold },
         at,
         by,
         via,
@@ -93,7 +104,9 @@ export class HandoverAttestation {
     // base en porte exactement une.
     this.events.publish(new OrderHandedOverEvent(handover.reference, at, by, via));
 
-    return toHandoverView(subject, handover, await authorsOf(this.staffAuthors, handover));
+    // Gagnée, l'attestation fait dire « déjà retirée » à la règle : la retenue
+    // n'a plus rien à ajouter à l'accusé.
+    return toHandoverView(subject, handover, false, await authorsOf(this.staffAuthors, handover));
   }
 
   /**

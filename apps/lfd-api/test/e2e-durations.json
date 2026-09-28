@@ -57,6 +57,7 @@
   "test/first-mandate-ledger.e2e-spec.ts": 2645,
   "test/fulfillment-days.e2e-spec.ts": 2536,
   "test/growth-stats.e2e-spec.ts": 2786,
+  "test/handover-quality-hold.e2e-spec.ts": 5200,
   "test/kbis.e2e-spec.ts": 3421,
   "test/leads.e2e-spec.ts": 4679,
   "test/login-methods.e2e-spec.ts": 3657,

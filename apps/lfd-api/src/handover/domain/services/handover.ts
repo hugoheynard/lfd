@@ -31,7 +31,22 @@ export interface HandoverCandidate {
    * qui détient ce fait depuis qu'il le constate.
    */
   readonly handedOverAt: Date | null;
+  /**
+   * La commande est **retenue par un contrôle qualité** — dit par la
+   * production (`QualityHoldsReader`), jamais déduit ici.
+   *
+   * Peut être vrai d'une commande déjà partie : la production ne sait pas ce
+   * qui a été remis. C'est l'ordre des refus qui rend ce cas inoffensif.
+   */
+  readonly qualityHold: boolean;
 }
+
+/**
+ * La phrase d'une retenue au contrôle. Elle ne dit PAS le motif : elle est lue
+ * devant le client, et le motif est sur la Supervision
+ * (`plan-controle-qualite.md`, D4).
+ */
+export const QUALITY_HOLD_REASON = "Commande en cours de vérification.";
 
 /**
  * Ce qui **empêche** le retrait, en clair — ou `null` si rien ne l'empêche.
@@ -50,6 +65,14 @@ export interface HandoverCandidate {
  * montre le code de son courriel et **le coursier scanne** avec sa session
  * staff. Même jeton, même porte, même geste — ce qui reste ferme, c'est qu'il
  * faut être **deux**.
+ *
+ * 🔴 **La retenue qualité est lue EN DERNIER**, après « annulée », « pas
+ * passée » et « déjà retirée » (`plan-controle-qualite.md`, D4). La production
+ * ne peut pas savoir ce qui est parti — `order_handover` n'est pas à elle —, et
+ * un blocage de ligne retient toutes les commandes du plan qui portent le
+ * produit, parties comprises (D6). Lue avant, elle ferait répondre « en
+ * vérification » à un scan rejoué sur un sac déjà remis : un mensonge sur un
+ * fait physique. Lue après, une retenue sur un sac parti est inoffensive.
  */
 export function handoverBlocker(candidate: HandoverCandidate): string | null {
   if (candidate.status === "cancelled") {
@@ -60,6 +83,9 @@ export function handoverBlocker(candidate: HandoverCandidate): string | null {
   }
   if (candidate.handedOverAt !== null) {
     return "Cette commande a déjà été retirée.";
+  }
+  if (candidate.qualityHold) {
+    return QUALITY_HOLD_REASON;
   }
   return null;
 }

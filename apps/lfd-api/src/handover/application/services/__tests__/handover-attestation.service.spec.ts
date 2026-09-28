@@ -5,6 +5,7 @@ import { OrderHandedOverEvent } from "../../../channels/commerce/order-handed-ov
 import { OrderHandover } from "../../../domain/entities/order-handover.js";
 import { HandoverRefusedError } from "../../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../../domain/ports/order-handover.repository.js";
+import { FixedQualityHolds } from "../../__tests__/fixed-quality-holds.js";
 import { HandoverAttestation } from "../handover-attestation.service.js";
 import {
   authorsKnownAs,
@@ -78,10 +79,14 @@ const AUTHORS = new FixedStaffAuthorDirectory(
   authorsKnownAs({ firstName: "Inès", lastName: "Moreau" }, "staff-1"),
 );
 
-function attestationOf(existing: OrderHandover | null, won: boolean) {
+function attestationOf(
+  existing: OrderHandover | null,
+  won: boolean,
+  holds: FixedQualityHolds = new FixedQualityHolds(),
+) {
   const { repository, written } = repositoryOf(existing, won);
   const events = new CollectingPublisher();
-  const service = new HandoverAttestation(repository, new FixedClock(), events, AUTHORS);
+  const service = new HandoverAttestation(repository, new FixedClock(), events, AUTHORS, holds);
   return { service, written, events };
 }
 
@@ -224,7 +229,13 @@ describe("HandoverAttestation", () => {
     );
     const repository = new SequentialOrderHandoverRepository([null, winner], false);
     const events = new CollectingPublisher();
-    const service = new HandoverAttestation(repository, new FixedClock(), events, AUTHORS);
+    const service = new HandoverAttestation(
+      repository,
+      new FixedClock(),
+      events,
+      AUTHORS,
+      new FixedQualityHolds(),
+    );
 
     await expect(service.attest(subject(), "staff-2", "manual")).rejects.toBeInstanceOf(
       HandoverRefusedError,
@@ -238,5 +249,53 @@ describe("HandoverAttestation", () => {
         "scan",
       ),
     ]);
+  });
+
+  describe("la retenue qualité (plan-controle-qualite.md, D4)", () => {
+    // La date demandée range la commande dans un plan : c'est le jour que la
+    // question porte. Elle n'est jamais comparée à l'horloge ici.
+    const planned = (): HandoverSubject => ({
+      ...subject(),
+      requestedDeliveryDate: new Date("2026-09-08T00:00:00.000Z"),
+    });
+
+    it("refuse une commande retenue, sans rien écrire ni publier", async () => {
+      const holds = new FixedQualityHolds(["ord_1"]);
+      const { service, written, events } = attestationOf(null, true, holds);
+
+      await expect(service.attest(planned(), "staff-1", "scan")).rejects.toThrow(
+        "Commande en cours de vérification.",
+      );
+      expect(written).toEqual([]);
+      expect(events.published).toEqual([]);
+      expect(holds.asked).toEqual([{ serviceDay: "2026-09-08", orderIds: ["ord_1"] }]);
+    });
+
+    it("dit « déjà retirée » d'un sac parti puis retenu, et republie le vrai retrait", async () => {
+      const earlier = OrderHandover.rehydrate(
+        "ord_1",
+        "ORD-ABCD-1234",
+        new Date("2026-09-07T15:00:00.000Z"),
+        "staff-0",
+        "scan",
+      );
+      const holds = new FixedQualityHolds(["ord_1"]);
+      const { service, events } = attestationOf(earlier, true, holds);
+
+      await expect(service.attest(planned(), "staff-1", "scan")).rejects.toThrow(
+        /déjà été retirée/u,
+      );
+      expect(events.published).toHaveLength(1);
+    });
+
+    it("ne demande rien pour une commande sans jour demandé — aucun plan ne la porte", async () => {
+      const holds = new FixedQualityHolds(["ord_1"]);
+      const { service, written } = attestationOf(null, true, holds);
+
+      await service.attest(subject(), "staff-1", "manual");
+
+      expect(written).toHaveLength(1);
+      expect(holds.asked).toEqual([]);
+    });
   });
 });

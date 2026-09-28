@@ -135,6 +135,7 @@ const QUEUE: HandoverQueueView = {
       handedOverAt: null,
       handedOverVia: null,
       readyAt: null,
+      heldForQuality: false,
     },
   ],
 };

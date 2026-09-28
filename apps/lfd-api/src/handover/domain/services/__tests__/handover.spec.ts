@@ -1,4 +1,4 @@
-import { handoverBlocker, type HandoverCandidate } from "../handover.js";
+import { QUALITY_HOLD_REASON, handoverBlocker, type HandoverCandidate } from "../handover.js";
 
 /**
  * La règle de retrait, éprouvée là où elle vit maintenant.
@@ -11,7 +11,7 @@ import { handoverBlocker, type HandoverCandidate } from "../handover.js";
  */
 
 function candidate(overrides: Partial<HandoverCandidate> = {}): HandoverCandidate {
-  return { status: "ready", handedOverAt: null, ...overrides };
+  return { status: "ready", handedOverAt: null, qualityHold: false, ...overrides };
 }
 
 describe("handoverBlocker", () => {
@@ -53,5 +53,33 @@ describe("handoverBlocker", () => {
     // c'est celle qui explique la situation à la personne en face.
     const blocker = handoverBlocker(candidate({ status: "cancelled", handedOverAt: new Date() }));
     expect(blocker).toBe("Cette commande est annulée.");
+  });
+
+  describe("la retenue qualité (plan-controle-qualite.md, D4)", () => {
+    it("refuse une commande retenue, avec la phrase lue devant le client", () => {
+      expect(handoverBlocker(candidate({ qualityHold: true }))).toBe(
+        "Commande en cours de vérification.",
+      );
+      expect(QUALITY_HOLD_REASON).toBe("Commande en cours de vérification.");
+    });
+
+    it("dit « déjà retirée » d'un sac parti, même retenu après coup", () => {
+      // Un blocage de ligne retient les commandes du plan, parties comprises
+      // (D6) : c'est l'ordre des refus qui rend ce cas inoffensif.
+      const blocker = handoverBlocker(candidate({ handedOverAt: new Date(), qualityHold: true }));
+      expect(blocker).toBe("Cette commande a déjà été retirée.");
+    });
+
+    it("dit « annulée » d'une commande annulée ET retenue", () => {
+      expect(handoverBlocker(candidate({ status: "cancelled", qualityHold: true }))).toBe(
+        "Cette commande est annulée.",
+      );
+    });
+
+    it("dit « pas encore passée » d'un brouillon retenu", () => {
+      expect(handoverBlocker(candidate({ status: "draft", qualityHold: true }))).toBe(
+        "Cette commande n'est pas encore passée.",
+      );
+    });
   });
 });

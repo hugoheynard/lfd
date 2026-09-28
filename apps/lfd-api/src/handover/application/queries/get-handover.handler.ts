@@ -11,6 +11,8 @@ import type { OrderHandover } from "../../domain/entities/order-handover.js";
 import { HandoverTokenNotFoundError } from "../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../domain/ports/order-handover.repository.js";
 import { handoverBlocker } from "../../domain/services/handover.js";
+import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
+import { isHeldForQuality } from "../services/quality-hold.js";
 import { GetHandoverQuery } from "./get-handover.query.js";
 
 /**
@@ -34,6 +36,7 @@ export class GetHandoverHandler implements IQueryHandler<GetHandoverQuery, Order
     private readonly subjects: HandoverSubjectReader,
     private readonly handovers: OrderHandoverRepository,
     private readonly staffAuthors: StaffAuthorDirectory,
+    private readonly holds: QualityHoldsReader,
   ) {}
 
   async execute(query: GetHandoverQuery): Promise<OrderHandoverView> {
@@ -41,8 +44,12 @@ export class GetHandoverHandler implements IQueryHandler<GetHandoverQuery, Order
     if (subject === null) {
       throw new HandoverTokenNotFoundError();
     }
-    const handover = await this.handovers.findByOrderId(subject.orderId);
-    return toHandoverView(subject, handover, await authorsOf(this.staffAuthors, handover));
+    const [handover, qualityHold] = await Promise.all([
+      this.handovers.findByOrderId(subject.orderId),
+      isHeldForQuality(this.holds, subject),
+    ]);
+    const authors = await authorsOf(this.staffAuthors, handover);
+    return toHandoverView(subject, handover, qualityHold, authors);
   }
 }
 
@@ -58,10 +65,18 @@ export function authorsOf(
   return directory.identify([handover?.handedOverBy ?? null]);
 }
 
-/** Projette la commande et son attestation en vue de comptoir, refus compris. */
+/**
+ * Projette la commande et son attestation en vue de comptoir, refus compris.
+ *
+ * `qualityHold` est exigé, pas optionnel : chaque appelant (scan, rail de la
+ * file, accusé du geste) doit l'avoir demandé à la production, sinon l'écran
+ * dirait « remettable » d'une commande que le scan refuse
+ * (`plan-controle-qualite.md`, D4).
+ */
 export function toHandoverView(
   subject: HandoverSubject,
   handover: OrderHandover | null,
+  qualityHold: boolean,
   authors: StaffAuthors,
 ): OrderHandoverView {
   return {
@@ -85,6 +100,7 @@ export function toHandoverView(
     blockedReason: handoverBlocker({
       status: subject.status,
       handedOverAt: handover === null ? null : handover.handedOverAt,
+      qualityHold,
     }),
   };
 }

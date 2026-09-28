@@ -7,6 +7,8 @@ import { OrderHandoverRepository } from "../../domain/ports/order-handover.repos
 import { GetHandoverByOrderQuery } from "./get-handover-by-order.query.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import { authorsOf, toHandoverView } from "./get-handover.handler.js";
+import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
+import { isHeldForQuality } from "../services/quality-hold.js";
 
 /**
  * **Le sac d'une commande ouverte depuis la file** — mêmes octets que l'écran
@@ -39,6 +41,7 @@ export class GetHandoverByOrderHandler implements IQueryHandler<
     private readonly subjects: HandoverSubjectReader,
     private readonly handovers: OrderHandoverRepository,
     private readonly staffAuthors: StaffAuthorDirectory,
+    private readonly holds: QualityHoldsReader,
   ) {}
 
   async execute(query: GetHandoverByOrderQuery): Promise<OrderHandoverView> {
@@ -49,7 +52,11 @@ export class GetHandoverByOrderHandler implements IQueryHandler<
       // donner deux formulations ne l'aiderait pas.
       throw new HandoverTokenNotFoundError();
     }
-    const handover = await this.handovers.findByOrderId(subject.orderId);
-    return toHandoverView(subject, handover, await authorsOf(this.staffAuthors, handover));
+    const [handover, qualityHold] = await Promise.all([
+      this.handovers.findByOrderId(subject.orderId),
+      isHeldForQuality(this.holds, subject),
+    ]);
+    const authors = await authorsOf(this.staffAuthors, handover);
+    return toHandoverView(subject, handover, qualityHold, authors);
   }
 }

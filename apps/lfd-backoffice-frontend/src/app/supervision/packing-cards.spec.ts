@@ -76,6 +76,7 @@ function entry(reference: string, start: string | null, end = '09:00'): Handover
     handedOverAt: null,
     handedOverVia: null,
     readyAt: null,
+    heldForQuality: false,
   };
 }
 

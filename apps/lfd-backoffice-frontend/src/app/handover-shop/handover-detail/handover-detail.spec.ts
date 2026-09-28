@@ -53,6 +53,7 @@ function entry(over: Partial<HandoverQueueEntryView> = {}): HandoverQueueEntryVi
     handedOverAt: null,
     handedOverVia: null,
     readyAt: null,
+    heldForQuality: false,
     clientele: 'pro',
     ...over,
   };

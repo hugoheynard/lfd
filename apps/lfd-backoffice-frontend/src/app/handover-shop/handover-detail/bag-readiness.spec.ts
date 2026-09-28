@@ -62,6 +62,7 @@ describe('readyVerdict', () => {
       handedOverAt: null,
       handedOverVia: null,
       readyAt: '2026-09-28T03:00:00.000Z',
+      heldForQuality: false,
     };
 
     expect(

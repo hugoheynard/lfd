@@ -5,7 +5,12 @@ import { PrismaHandoverQueueReader } from "../b2b/orders/infrastructure/prisma-h
 import { PrismaHandoverSubjectReader } from "../b2b/orders/infrastructure/prisma-handover-subject.reader.js";
 import { HandoverQueueReader, HandoverSubjectReader } from "../handover/channels/commerce/index.js";
 import { PrismaAttestedHandoversReader } from "../handover/infrastructure/prisma-attested-handovers.reader.js";
-import { AttestedHandoversReader } from "../production/channels/handover/index.js";
+import {
+  AttestedHandoversReader,
+  QualityHoldsReader,
+} from "../production/channels/handover/index.js";
+import { PrismaQualityHoldsReader } from "../production/infrastructure/prisma-quality-holds.reader.js";
+import { ProductionModule } from "../production/production.module.js";
 
 /**
  * **Les deux fils de la remise, reliés.**
@@ -19,6 +24,9 @@ import { AttestedHandoversReader } from "../production/channels/handover/index.j
  * - `AttestedHandoversReader` — la **production déclare**, la remise implémente.
  *   Le fournil a besoin de savoir ce qui a été attesté depuis sa clôture ; il ne
  *   va pas le lire non plus.
+ * - `QualityHoldsReader` — la **production publie ET implémente**, la remise
+ *   lit. Le comptoir demande quelles commandes un contrôle retient ; la
+ *   réponse est un fait de la production (`plan-controle-qualite.md`, D4).
  *
  * 🔴 Aucun des trois contextes ne connaît les deux autres. C'est la racine de
  * composition qui sait, et elle seule — sans quoi la dépendance reviendrait par
@@ -32,12 +40,18 @@ import { AttestedHandoversReader } from "../production/channels/handover/index.j
  */
 @Global()
 @Module({
-  imports: [OrdersModule],
+  imports: [OrdersModule, ProductionModule],
   providers: [
     { provide: HandoverSubjectReader, useClass: PrismaHandoverSubjectReader },
     { provide: HandoverQueueReader, useClass: PrismaHandoverQueueReader },
     { provide: AttestedHandoversReader, useClass: PrismaAttestedHandoversReader },
+    { provide: QualityHoldsReader, useClass: PrismaQualityHoldsReader },
   ],
-  exports: [HandoverSubjectReader, HandoverQueueReader, AttestedHandoversReader],
+  exports: [
+    HandoverSubjectReader,
+    HandoverQueueReader,
+    AttestedHandoversReader,
+    QualityHoldsReader,
+  ],
 })
 export class HandoverFeedModule {}

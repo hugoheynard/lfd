@@ -185,6 +185,15 @@ export interface HandoverQueueEntryView {
   readonly handedOverVia: HandoverVia | null;
   /** ISO du moment où le fournil l'a déclarée prête, ou `null`. */
   readonly readyAt: string | null;
+  /**
+   * **Retenue par un contrôle qualité** : le scan la refusera avec « Commande
+   * en cours de vérification. » (`plan-controle-qualite.md`, D4).
+   *
+   * Toujours `false` sur une ligne `handed_over` ou `cancelled` : la règle du
+   * retrait dit ces refus-là d'abord. Le motif n'est pas ici — il est sur la
+   * Supervision, pas devant le client.
+   */
+  readonly heldForQuality: boolean;
 }
 
 /**

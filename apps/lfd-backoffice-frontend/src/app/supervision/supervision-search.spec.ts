@@ -74,6 +74,7 @@ function entry(
     handedOverAt: null,
     handedOverVia: null,
     readyAt: null,
+    heldForQuality: false,
   };
 }
 

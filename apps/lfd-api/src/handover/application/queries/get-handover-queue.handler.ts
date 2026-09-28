@@ -6,6 +6,7 @@ import {
   HandoverAttestationsReader,
   type AttestedHandover,
 } from "../../domain/ports/handover-attestations.reader.js";
+import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
 import { GetHandoverQueueQuery } from "./get-handover-queue.query.js";
 
 /**
@@ -24,11 +25,12 @@ import { GetHandoverQueueQuery } from "./get-handover-queue.query.js";
  * retrait à joindre `orders` — c'est-à-dire à franchir la frontière que tout ce
  * chantier vient de poser.
  *
- * ## Deux requêtes, jamais N + 1
+ * ## Trois questions, jamais N + 1
  *
- * Une pour la file, une pour les attestations du lot. Demander l'attestation
- * ligne par ligne ferait autant d'allers-retours que de commandes pour peindre
- * un écran — le port des attestations est fait pour ça, et son JSDoc le dit.
+ * Une pour la file, une pour les attestations du lot, une pour les retenues
+ * qualité du lot (`QualityHoldsReader`, publié par la production —
+ * `plan-controle-qualite.md`, D4). Demander ligne par ligne ferait autant
+ * d'allers-retours que de commandes pour peindre un écran.
  */
 @QueryHandler(GetHandoverQueueQuery)
 export class GetHandoverQueueHandler implements IQueryHandler<
@@ -38,14 +40,21 @@ export class GetHandoverQueueHandler implements IQueryHandler<
   constructor(
     private readonly queue: HandoverQueueReader,
     private readonly attestations: HandoverAttestationsReader,
+    private readonly holds: QualityHoldsReader,
   ) {}
 
   async execute(query: GetHandoverQueueQuery): Promise<HandoverQueueView> {
     const expected = await this.queue.expectedOn(query.day);
-    const attested = await this.attestations.forOrders(expected.map((entry) => entry.orderId));
+    const orderIds = expected.map((entry) => entry.orderId);
+    const [attested, held] = await Promise.all([
+      this.attestations.forOrders(orderIds),
+      this.holds.heldOrders(query.day, orderIds),
+    ]);
     return {
       day: query.day,
-      entries: expected.map((entry) => toEntryView(entry, attested.get(entry.orderId))),
+      entries: expected.map((entry) =>
+        toEntryView(entry, attested.get(entry.orderId), held.has(entry.orderId)),
+      ),
     };
   }
 }
@@ -54,7 +63,9 @@ export class GetHandoverQueueHandler implements IQueryHandler<
 function toEntryView(
   entry: HandoverQueueEntry,
   attestation: AttestedHandover | undefined,
+  held: boolean,
 ): HandoverQueueEntryView {
+  const state = stateOf(entry, attestation);
   return {
     orderId: entry.orderId,
     reference: entry.reference,
@@ -66,7 +77,11 @@ function toEntryView(
     window: entry.window,
     totalUnits: entry.totalUnits,
     placedAt: entry.placedAt.toISOString(),
-    state: stateOf(entry, attestation),
+    state,
+    // L'ordre de `handoverBlocker` (D4) : une commande retirée ou annulée dit
+    // cela d'abord, jamais « en vérification » — la production peut retenir
+    // un sac déjà parti sans le savoir.
+    heldForQuality: held && (state === "ready" || state === "expected"),
     handedOverAt: attestation === undefined ? null : attestation.handedOverAt.toISOString(),
     handedOverVia: attestation?.via ?? null,
     readyAt: entry.readyAt === null ? null : entry.readyAt.toISOString(),

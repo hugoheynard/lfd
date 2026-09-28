@@ -125,5 +125,9 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
     { provide: QualityCheckReader, useClass: PrismaQualityCheckReader },
     { provide: QualityUploadRepository, useClass: PrismaQualityUploadRepository },
   ],
+  // La lecture des contrôles sert aussi la retenue que la production PUBLIE au
+  // retrait (`channels/handover/`, QC3) — son adaptateur est relié par la
+  // racine de composition, qui a besoin de ce port pour le construire.
+  exports: [QualityCheckReader],
 })
 export class ProductionModule {}

@@ -3,6 +3,7 @@ import {
   HandoverAttestationsReader,
   type AttestedHandover,
 } from "../../../domain/ports/handover-attestations.reader.js";
+import { FixedQualityHolds } from "../../__tests__/fixed-quality-holds.js";
 import { GetHandoverQueueHandler } from "../get-handover-queue.handler.js";
 import { GetHandoverQueueQuery } from "../get-handover-queue.query.js";
 
@@ -78,11 +79,12 @@ class RecordingHandoverAttestationsReader extends HandoverAttestationsReader {
 function handlerOf(
   entries: readonly HandoverQueueEntry[],
   attested: ReadonlyMap<string, AttestedHandover>,
+  holds: FixedQualityHolds = new FixedQualityHolds(),
 ) {
   const queue = new RecordingHandoverQueueReader(entries);
   const attestations = new RecordingHandoverAttestationsReader(attested);
-  const handler = new GetHandoverQueueHandler(queue, attestations);
-  return { handler, queue, attestations };
+  const handler = new GetHandoverQueueHandler(queue, attestations, holds);
+  return { handler, queue, attestations, holds };
 }
 
 describe("GetHandoverQueueHandler — état d'une ligne (stateOf)", () => {
@@ -207,5 +209,55 @@ describe("GetHandoverQueueHandler — la vue", () => {
     const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
 
     expect(view.entries[0]?.clientele).toBeNull();
+  });
+});
+
+describe("GetHandoverQueueHandler — la retenue qualité (plan-controle-qualite.md, D4)", () => {
+  it("pose UNE question pour toute la file, avec le jour et les ids", async () => {
+    const holds = new FixedQualityHolds(["ord_2"]);
+    const { handler } = handlerOf(
+      [entry({ orderId: "ord_1" }), entry({ orderId: "ord_2" })],
+      new Map(),
+      holds,
+    );
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+
+    expect(holds.asked).toEqual([{ serviceDay: "2026-09-10", orderIds: ["ord_1", "ord_2"] }]);
+    expect(view.entries.map((line) => line.heldForQuality)).toEqual([false, true]);
+  });
+
+  it("retient une commande attendue comme une prête", async () => {
+    const holds = new FixedQualityHolds(["ord_1", "ord_2"]);
+    const { handler } = handlerOf(
+      [
+        entry({ orderId: "ord_1", readyAt: null }),
+        entry({ orderId: "ord_2", readyAt: new Date() }),
+      ],
+      new Map(),
+      holds,
+    );
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+
+    expect(view.entries.map((line) => line.heldForQuality)).toEqual([true, true]);
+  });
+
+  it("🔴 ne dit jamais « en vérification » d'un sac parti ni d'une commande annulée", async () => {
+    // La production peut retenir une commande déjà remise sans le savoir (D6) :
+    // la ligne dit `handed_over`, et rien d'autre.
+    const holds = new FixedQualityHolds(["ord_1", "ord_2"]);
+    const { handler } = handlerOf(
+      [entry({ orderId: "ord_1" }), entry({ orderId: "ord_2", status: "cancelled" })],
+      new Map([["ord_1", attestation()]]),
+      holds,
+    );
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+
+    expect(view.entries.map((line) => [line.state, line.heldForQuality])).toEqual([
+      ["handed_over", false],
+      ["cancelled", false],
+    ]);
   });
 });

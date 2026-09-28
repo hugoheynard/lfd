@@ -2,13 +2,21 @@ import { HandoverRefusedError } from "../errors/handover-errors.js";
 import type { HandoverSubject } from "../../channels/commerce/handover-subject.reader.js";
 import { handoverBlocker, type HandoverVia } from "../services/handover.js";
 
+/** Ce que la règle lit d'une commande et que le commerce ne porte pas. */
+export interface HandoverStanding {
+  /** L'attestation déjà gravée, ou `null`. */
+  readonly handedOverAt: Date | null;
+  /** Retenue par un contrôle qualité, selon la production. */
+  readonly qualityHold: boolean;
+}
+
 /**
  * **L'attestation de retrait** — le fait que le fournil grave, et son gardien.
  *
  * ## Pourquoi un agrégat, alors que c'est une ligne à cinq colonnes
  *
  * Parce qu'une règle peut refuser cette écriture : la commande est annulée, elle
- * n'est pas passée, elle a déjà été retirée. Le critère de tri du dossier est
+ * n'est pas passée, elle a déjà été retirée, elle est retenue au contrôle. Le critère de tri du dossier est
  * exactement celui-là — « existe-t-il une règle qui peut refuser cette
  * écriture ? » —, et il dit agrégat.
  *
@@ -37,20 +45,26 @@ export class OrderHandover {
   /**
    * Atteste le retrait de cette commande, ou **refuse en nommant l'empêchement**.
    *
-   * `alreadyHandedOver` vient de la table du fournil, pas du sujet : le commerce
-   * n'est plus l'autorité sur ce fait, et le lui demander rouvrirait la porte
-   * aux deux vérités.
+   * `standing` porte ce que le sujet ne sait pas : `handedOverAt` vient de la
+   * table du retrait — le commerce n'est plus l'autorité sur ce fait, et le lui
+   * demander rouvrirait la porte aux deux vérités —, `qualityHold` de la
+   * production (`plan-controle-qualite.md`, D4). Les deux passent par la même
+   * règle, dans l'ordre qu'elle fixe.
    *
    * @throws {HandoverRefusedError} l'état interdit le retrait, ou l'auteur manque.
    */
   static attest(
     subject: HandoverSubject,
-    alreadyHandedOver: Date | null,
+    standing: HandoverStanding,
     at: Date,
     by: string,
     via: HandoverVia,
   ): OrderHandover {
-    const blocker = handoverBlocker({ status: subject.status, handedOverAt: alreadyHandedOver });
+    const blocker = handoverBlocker({
+      status: subject.status,
+      handedOverAt: standing.handedOverAt,
+      qualityHold: standing.qualityHold,
+    });
     if (blocker !== null) {
       throw new HandoverRefusedError(blocker);
     }
