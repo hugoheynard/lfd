@@ -1,7 +1,8 @@
-import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 
 import type { StaffNotificationView } from '@lfd/contracts';
 
+import { refreshWhileVisible } from '../periodic-refresh';
 import { StaffNotificationsService } from './staff-notifications.service';
 
 /** Rythme de relance du compteur. Une cloche n'est pas du temps réel. */
@@ -37,8 +38,10 @@ export class StaffNotificationsStore {
 
   constructor() {
     void this.refresh();
-    const timer = setInterval(() => void this.refresh(), POLL_MS);
-    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+    // 🔴 Onglet visible seulement, et tout de suite au retour (2026-09-28) : la
+    // cloche relisait toutes les 60 s même onglet caché — un back-office
+    // oublié derrière une autre fenêtre interrogeait la base toute la nuit.
+    refreshWhileVisible(() => this.refresh(), POLL_MS);
   }
 
   async refresh(): Promise<void> {
