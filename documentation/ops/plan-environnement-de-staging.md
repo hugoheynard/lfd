@@ -281,3 +281,25 @@ bandeau), **R-A2 (CORS et passerelle par environnement)**, R-B (comptes, dont
 un tenant Auth0 neuf), R-C (copie gardée par marqueur, staff sans identité,
 invitations), R-D (workflows, `concurrency`, `ops_*`, environnements GitHub),
 R-E (runbook, dont la remise à zéro).
+
+## 7. Le rythme : une branche `staging` (Hugo, 2026-09-28)
+
+> « j'aime bien 3 » — Hugo, entre trois rythmes : à chaque push sur `dev`, à
+> la demande par un bouton, ou depuis une branche `staging` qu'on avance.
+
+**Un seul staging** (Hugo : « 1 staging ? »). **Il se déploie depuis une
+branche `staging`**, pas depuis `dev` : les testeurs ne subissent pas chaque
+push, et l'historique de `staging` dit exactement quelle version a été testée.
+Ce paragraphe remplace R5 sur ce point.
+
+- On **avance** `staging` en avance rapide depuis `dev`, jamais par un commit
+  propre : `staging` ne contient que ce que `dev` contient déjà. Le hook
+  `pre-push` le vérifie, comme il vérifie aujourd'hui la promotion de `main`
+  (et exige la CI de `dev` verte au même commit).
+- L'ordre naturel devient `dev` → `staging` → `main`, sans l'imposer :
+  `main` peut toujours être promu depuis `dev` pour un correctif urgent. Le
+  forcer transformerait le staging en passage obligé d'un correctif de
+  production — à trancher plus tard si le besoin se fait sentir.
+- Les workflows de déploiement se déclenchent sur `push: staging` avec
+  l'environnement GitHub `staging`, sur `push: main` avec `production`
+  (groupes `concurrency` distincts, §6 B6).
