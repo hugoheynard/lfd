@@ -135,6 +135,11 @@
           </fold-empty-state>
         }
         @default {
+          @if (refreshFailed()) {
+            <fold-callout variant="alert">
+              La file n'a pas pu être relue — elle peut ne plus être à jour.
+            </fold-callout>
+          }
           @if (total() === 0) {
             <fold-empty-state
               icon="package-check"

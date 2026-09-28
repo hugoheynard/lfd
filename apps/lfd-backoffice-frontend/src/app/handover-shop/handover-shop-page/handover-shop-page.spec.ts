@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { HandoverQueueEntryView, HandoverQueueView } from '@lfd/contracts';
 
 import { AdminOrdersService } from '../../commandes/orders.service';
+import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { HandoverQueueService } from '../handover-queue.service';
 import { HandoverShopPage } from './handover-shop-page';
 
@@ -45,6 +46,14 @@ function entry(over: Partial<HandoverQueueEntryView> = {}): HandoverQueueEntryVi
     ...over,
   };
 }
+
+/** Le veilleur doublé : il garde ce que l'écran lui confie, le test déclenche. */
+const watched: DayWatch[] = [];
+const fakeWatcher = {
+  watch: (spec: DayWatch): void => {
+    watched.push(spec);
+  },
+};
 
 class FakeQueue {
   entries: readonly HandoverQueueEntryView[] = [entry()];
@@ -107,6 +116,7 @@ async function render(api: FakeQueue): Promise<ComponentFixture<HandoverShopPage
     providers: [
       { provide: HandoverQueueService, useValue: api },
       { provide: AdminOrdersService, useValue: new FakeOrders() },
+      { provide: DayVersionWatcher, useValue: fakeWatcher },
     ],
   });
   const fixture: ComponentFixture<HandoverShopPage> = TestBed.createComponent(HandoverShopPage);
@@ -433,5 +443,56 @@ describe('HandoverShopPage — changer de journée', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  describe('la relecture quand la journée bouge (D6)', () => {
+    it('suit le commerce ET le fournil, sur le jour affiché', async () => {
+      const api = new FakeQueue();
+      await render(api);
+      const watch = watched.at(-1);
+
+      expect(watch?.journals).toEqual(['orders', 'production']);
+      expect(watch?.date()).toBe(api.days[0]);
+    });
+
+    it('montre une commande arrivée ailleurs, sans repasser par le chargement', async () => {
+      const api = new FakeQueue();
+      api.entries = [entry({ orderId: 'a', customerLabel: 'Boulangerie Marin' })];
+      const fixture = await render(api);
+
+      api.entries = [
+        entry({ orderId: 'a', customerLabel: 'Boulangerie Marin' }),
+        entry({ orderId: 'b', customerLabel: 'Hôtel des Cimes' }),
+      ];
+      const pending = watched.at(-1)?.reload();
+      fixture.detectChanges();
+      expect(text(fixture)).not.toContain('Lecture de la file');
+      await pending;
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(api.days.at(-1)).toBe(watched.at(-1)?.date());
+      expect(rowTexts(fixture).join(' ')).toContain('Hôtel des Cimes');
+    });
+
+    it('une relecture en échec garde la file et le dit', async () => {
+      const api = new FakeQueue();
+      api.entries = [entry({ orderId: 'a', customerLabel: 'Boulangerie Marin' })];
+      const fixture = await render(api);
+
+      api.fails = true;
+      await watched.at(-1)?.reload();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(rowTexts(fixture).join(' ')).toContain('Boulangerie Marin');
+      expect(text(fixture)).toContain("La file n'a pas pu être relue");
+
+      api.fails = false;
+      await watched.at(-1)?.reload();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(text(fixture)).not.toContain("La file n'a pas pu être relue");
+    });
   });
 });

@@ -22,7 +22,6 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { refreshWhileVisible } from '../../shared/periodic-refresh';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import {
   afterFailure,
@@ -47,6 +46,7 @@ import {
   LINK_PERMISSION,
   type SupervisionColumn as Column,
 } from '../supervision-links';
+import { watchSupervisionDay } from '../supervision-refresh';
 import { SupervisionService } from '../supervision.service';
 import { serviceDayParam, shiftServiceDay } from '../supervision-day';
 import {
@@ -188,7 +188,7 @@ export class SupervisionPage {
 
   constructor() {
     void this.load();
-    refreshWhileVisible(() => this.refresh());
+    watchSupervisionDay(this.date, (columns) => this.refresh(columns));
   }
 
   protected selectMethod(value: string): void {
@@ -255,8 +255,10 @@ export class SupervisionPage {
   }
 
   /** La relecture périodique : elle ne vide jamais une colonne, elle dit qu'elle a échoué. */
-  private async refresh(): Promise<void> {
-    if (this.date() === null) {
+  /** `on-turn` : le jour seul, et les colonnes seulement si minuit l'a fait tourner. */
+  private async refresh(columns: 'always' | 'on-turn' = 'always'): Promise<void> {
+    const before = this.date();
+    if (before === null) {
       return;
     }
     try {
@@ -268,7 +270,7 @@ export class SupervisionPage {
       this.day.update(afterFailure);
     }
     const date = this.date();
-    if (date !== null) {
+    if (date !== null && (columns === 'always' || date !== before)) {
       await this.readColumns(date);
     }
   }

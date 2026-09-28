@@ -10,11 +10,23 @@ import {
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
 import { dayLabelOf } from '../worksheet-day';
 import { WorksheetService } from '../worksheet.service';
 import { FicheAtelier } from './fiche-atelier';
+
+/**
+ * Le veilleur de journée, doublé : il garde la relecture que l'écran lui
+ * confie, et le test la déclenche comme le ferait une version qui bouge.
+ */
+const watched: { reload: () => Promise<void> }[] = [];
+const fakeWatcher = {
+  watch: (spec: DayWatch): void => {
+    watched.push(spec);
+  },
+};
 
 /**
  * Ce que ces cas tiennent, et que ni `tsc` ni le build AOT ne peuvent dire :
@@ -217,6 +229,7 @@ describe('la fiche d’atelier', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
+        { provide: DayVersionWatcher, useValue: fakeWatcher },
         { provide: WorksheetService, useValue: api },
         { provide: StaffPrefsService, useValue: prefs },
         { provide: PermissionsStore, useValue: { identity: () => ME } },
@@ -356,16 +369,9 @@ describe('la fiche d’atelier', () => {
   });
 
   describe('la relecture', () => {
-    beforeEach(() => {
-      Object.defineProperty(document, 'visibilityState', {
-        configurable: true,
-        get: () => 'visible',
-      });
-    });
-
-    /** Revenir sur l'onglet relit tout de suite — c'est le déclencheur le plus sûr en test. */
+    /** Une version qui bouge : le veilleur rend la main à la relecture de l'écran. */
     function relancer(): void {
-      document.dispatchEvent(new Event('visibilitychange'));
+      void watched.at(-1)?.reload();
     }
 
     it('montre une coche posée sur un autre poste', async () => {

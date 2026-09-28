@@ -11,6 +11,7 @@ import {
 import { addDays, type HandoverQueueEntryView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldSearchComponent,
@@ -25,6 +26,7 @@ import {
   type FoldTabItem,
 } from 'fold-ng';
 
+import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { NotifyService } from '../../notify.service';
 import { HandoverQueueService } from '../handover-queue.service';
@@ -112,6 +114,7 @@ const TICK_MS = 30_000;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldElementTitleComponent,
     FoldSearchComponent,
     FoldAsideLayoutComponent,
@@ -172,6 +175,13 @@ export class HandoverShopPage {
   protected readonly stacked = narrowViewport('(max-width: 1040px)');
 
   protected readonly state = signal<LoadState>('loading');
+
+  /**
+   * La dernière relecture de fond a échoué : la file affichée est celle d'avant,
+   * et l'écran le DIT au lieu de la présenter comme à jour. Retombe à la
+   * relecture suivante qui aboutit.
+   */
+  protected readonly refreshFailed = signal(false);
   /**
    * Le jour de service affiché.
    *
@@ -369,6 +379,14 @@ export class HandoverShopPage {
       }
     }, TICK_MS);
     inject(DestroyRef).onDestroy(() => window.clearInterval(tick));
+    // 🔴 La file se relit quand l'une des deux journées bouge (D6,
+    // `plan-version-par-journee.md`) : une commande passée au téléphone
+    // (commerce) ou un sac fermé au fournil (production). Filet de 5 min inclus.
+    inject(DayVersionWatcher).watch({
+      journals: ['orders', 'production'],
+      date: this.day,
+      reload: () => this.refresh(),
+    });
   }
 
   protected async load(day: string = this.day()): Promise<void> {
@@ -381,10 +399,32 @@ export class HandoverShopPage {
       // manqué, puisqu'il lit `entries` en direct.
       this.entries.set(atTheCounter(view.entries));
       this.now.set(new Date());
+      this.refreshFailed.set(false);
       this.state.set('ready');
     } catch {
       this.entries.set([]);
       this.state.set('error');
+    }
+  }
+
+  /**
+   * **Relecture de fond**, sans repasser par « Lecture de la file… » : l'écran
+   * reste sous les doigts. Un échec garde la file et le dit ; une réponse d'un
+   * jour qu'on a quitté entre-temps est jetée.
+   */
+  protected async refresh(): Promise<void> {
+    const day = this.day();
+    if (this.state() !== 'ready') {
+      return this.load(day);
+    }
+    try {
+      const view = await this.api.forDay(day);
+      if (day === this.day()) {
+        this.entries.set(atTheCounter(view.entries));
+        this.refreshFailed.set(false);
+      }
+    } catch {
+      this.refreshFailed.set(true);
     }
   }
 

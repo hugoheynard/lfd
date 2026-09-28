@@ -15,7 +15,8 @@ import {
 import type { PackingContainerStep, PackingSheet, ProductionPackingView } from '@lfd/contracts';
 
 import { methodLabel, packingMarkKey, type PackingStack } from '../packing-board';
-import { refreshWhileVisible } from '../../shared/periodic-refresh';
+import { isoDay } from '../worksheet-day';
+import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { PackingDayReader } from './packing-day.reader';
 import { PackingGestures } from './packing-gestures';
 import { PackingOpenOrder, type PackingLineToggle } from './packing-open-order/packing-open-order';
@@ -146,7 +147,13 @@ export class Colisage {
     void this.load();
     // 🔴 Enregistrée par l'ÉCRAN, pas par le lecteur : c'est l'écran qui sait
     // quelle commande est ouverte, et qui compare avant et après.
-    refreshWhileVisible(() => this.refresh());
+    // Seulement si la journée du fournil a bougé (`plan-version-par-journee.md`).
+    inject(DayVersionWatcher).watch({
+      journals: ['production'],
+      date: this.day.date,
+      reload: () => this.refresh(),
+      clockDay: () => isoDay(new Date()),
+    });
   }
 
   /** Ce qui reste à faire. Un tri de la pile, pas un compte. */

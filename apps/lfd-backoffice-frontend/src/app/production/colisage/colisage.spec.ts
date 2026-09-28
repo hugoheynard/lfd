@@ -11,9 +11,21 @@ import type {
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { PackingService } from '../packing.service';
 import { Colisage } from './colisage';
+
+/**
+ * Le veilleur de journée, doublé : il garde la relecture que l'écran lui
+ * confie, et le test la déclenche comme le ferait une version qui bouge.
+ */
+const watched: { reload: () => Promise<void> }[] = [];
+const fakeWatcher = {
+  watch: (spec: DayWatch): void => {
+    watched.push(spec);
+  },
+};
 
 /**
  * Ce que ces cas tiennent, et que ni `tsc` ni le build AOT ne peuvent dire :
@@ -318,6 +330,7 @@ describe('le poste de colisage', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
+        { provide: DayVersionWatcher, useValue: fakeWatcher },
         provideRouter([]),
         { provide: PackingService, useValue: api },
         { provide: PermissionsStore, useValue: { identity: () => ME } },
@@ -572,15 +585,8 @@ describe('le poste de colisage', () => {
   });
 
   describe('la relecture', () => {
-    beforeEach(() => {
-      Object.defineProperty(document, 'visibilityState', {
-        configurable: true,
-        get: () => 'visible',
-      });
-    });
-
     function relancer(): void {
-      document.dispatchEvent(new Event('visibilitychange'));
+      void watched.at(-1)?.reload();
     }
 
     it('montre une ligne mise au bac sur un autre poste', async () => {

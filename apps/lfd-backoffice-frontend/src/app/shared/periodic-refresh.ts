@@ -4,8 +4,10 @@ import { DestroyRef, inject, PLATFORM_ID } from '@angular/core';
 /**
  * **La relecture des écrans qui suivent le jour.**
  *
- * Partagée par la fiche d'atelier, le poste de colisage et la Supervision du jour. Pourquoi une relecture
- * et pas une websocket, et ce qu'il faudrait pour passer à la seconde :
+ * Les écrans d'une journée ne relisent plus tout à ce rythme depuis le
+ * 2026-09-28 : ils passent par `day-version/day-version-watcher.ts`, qui ne
+ * relit que si la version de la journée a changé. Restent ici la cloche et le
+ * jour de la Supervision. Pourquoi une relecture et pas une websocket :
  * `documentation/production/relecture-des-postes.md`.
  */
 

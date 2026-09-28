@@ -15,11 +15,23 @@ import type {
 
 import { FoldPanelHostService } from 'fold-ng';
 
+import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { QualityService } from '../quality.service';
 import { SupervisionService } from '../supervision.service';
 import { shiftServiceDay } from '../supervision-day';
 import { SupervisionPage } from './supervision-page';
+
+/**
+ * Le veilleur de journée, doublé : il garde la relecture que l'écran lui
+ * confie, et le test la déclenche comme le ferait une version qui bouge.
+ */
+const watched: DayWatch[] = [];
+const fakeWatcher = {
+  watch: (spec: DayWatch): void => {
+    watched.push(spec);
+  },
+};
 
 const DATE = '2026-09-25';
 
@@ -165,6 +177,7 @@ async function mount(
   TestBed.configureTestingModule({
     imports: [SupervisionPage],
     providers: [
+      { provide: DayVersionWatcher, useValue: fakeWatcher },
       provideRouter([]),
       {
         provide: SupervisionService,
@@ -229,6 +242,19 @@ describe('SupervisionPage', () => {
     // `undefined` et non une date : le service n'ajoute alors aucun `?date=`.
     expect(day).toHaveBeenCalledWith(undefined);
     expect(preparation).toHaveBeenCalledWith(DATE);
+  });
+
+  it('suit les deux journaux du jour affiché, et relit les colonnes quand l’un bouge', async () => {
+    const preparation = vi.fn(() => Promise.resolve(WORKSHEET));
+    const fixture = await mount({ preparation });
+    const watch = watched.at(-1);
+
+    expect(watch?.journals).toEqual(['commerce', 'supervision-production']);
+    expect(watch?.date()).toBe(DATE);
+
+    await watch?.reload();
+    await fixture.whenStable();
+    expect(preparation).toHaveBeenCalledTimes(2);
   });
 
   /** Hugo, 2026-09-28 : l'écran restait sur le jour du serveur, sans moyen de voir demain. */

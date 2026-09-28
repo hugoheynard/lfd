@@ -18,8 +18,8 @@ import type { WorkshopGroup, WorkshopLine } from '@lfd/contracts';
 
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
-import { refreshWhileVisible } from '../../shared/periodic-refresh';
-import { markKey } from '../worksheet-day';
+import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { isoDay, markKey } from '../worksheet-day';
 import { DriftBanner } from './drift-banner/drift-banner';
 import { WorkshopDayReader } from './workshop-day.reader';
 import { WorkshopGestures } from './workshop-gestures';
@@ -104,7 +104,13 @@ export class FicheAtelier {
     void this.day.load();
     // Les autres postes cochent aussi : sans relecture, une ligne sortie du four
     // par le voisin resterait « à faire » ici, et on la fabriquerait deux fois.
-    refreshWhileVisible(() => this.day.refresh());
+    // Elle ne relit que si la journée du fournil a bougé (`plan-version-par-journee.md`).
+    inject(DayVersionWatcher).watch({
+      journals: ['production'],
+      date: this.day.date,
+      reload: () => this.day.refresh(),
+      clockDay: () => isoDay(new Date()),
+    });
     // La préférence n'arrive pas avant la personne : `GET /admin/me` est déjà en
     // vol pour les droits. Si elle n'arrive jamais, la première fiche suffit.
     void this.prefs.worksheetCategory().then((category) => {

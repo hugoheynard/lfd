@@ -1,6 +1,6 @@
 # Plan — la version par journée : ne relire que ce qui a bougé
 
-> **État : 📐 plan, rien n'est bâti.** Ouvert le 2026-09-28 sur la question de
+> **État : ✅ bâti le 2026-09-28** (V1-V2 `d50a97614`, V3 et la route du comptoir au commit suivant). Ouvert le 2026-09-28 sur la question de
 > Hugo : « combien d'opérations en base pour remplir la Supervision ? », puis
 > « il y a presque un doublon de requêtes avec le fournil et le comptoir ».
 >
@@ -128,7 +128,8 @@ ajouter la table.
 
 Chaque bloc lit son propre journal :
 
-- `b2b` : `GET admin/supervision/version?date=` — `b2b_supervision:read` ;
+- `b2b` : `GET admin/supervision/version?date=` — `b2b_supervision:read` ; et
+  `GET admin/orders/day-version?date=` — `b2b_orders:read`, la même query pour le comptoir (D6, tranché le 2026-09-28) ;
 - `production` : `GET admin/production/version?date=` — `b2b_orders:read`,
   comme les postes du fournil ; et `GET admin/supervision/production-version?date=`
   — `b2b_supervision:read`, la même query pour la Supervision (tranché le 2026-09-28).
@@ -185,6 +186,13 @@ Le retrait boutique ne relit pas sa file aujourd'hui (§2). Il gagne le
 veilleur : une commande passée au téléphone ou un sac fermé au fournil
 apparaît sur le poste du comptoir en 15 s, au prix d'une opération par tick.
 
+> ✅ **Branché le 2026-09-28 (V3).** Le comptoir tient `b2b_orders`, et le
+> journal public n'était lisible que sous `b2b_supervision` : une porte
+> `GET admin/orders/day-version` (`b2b_orders:read`) lui a été ouverte. Il suit
+> le journal public ET celui du fournil (`admin/production/version`) — le sac
+> fermé au fournil n'écrit pas dans `orders`. Une relecture de fond ne repasse
+> pas par « Lecture de la file… » ; un échec garde la file et le dit.
+
 ---
 
 ## 4. Le compte, après
@@ -206,11 +214,11 @@ compte suspendu reste actif une minute) ; hors plan.
 
 ## 5. Les lots
 
-| Lot    | Contenu                                                                                                                                                 | Qui                                   |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| **V1** | Migration : les deux journaux, leurs déclencheurs au niveau de l'instruction, le balayage. e2e : chaque écriture connue avance la version. La porte D7. | `batisseur` + `lecteur-de-migrations` |
-| **V2** | Les deux lectures de version, par le bus, et leurs routes.                                                                                              | `batisseur`                           |
-| **V3** | `DayVersionWatcher`, branché sur la Supervision, la fiche d'atelier, le colisage et le comptoir ; relecture du jour à 60 s, filet à 5 min.              | `pablo`                               |
+| Lot                   | Contenu                                                                                                                                                 | Qui                                   |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **V1** ✅ `d50a97614` | Migration : les deux journaux, leurs déclencheurs au niveau de l'instruction, le balayage. e2e : chaque écriture connue avance la version. La porte D7. | `batisseur` + `lecteur-de-migrations` |
+| **V2** ✅ `d50a97614` | Les deux lectures de version, par le bus, et leurs routes.                                                                                              | `batisseur`                           |
+| **V3** ✅ 2026-09-28  | `DayVersionWatcher`, branché sur la Supervision, la fiche d'atelier, le colisage et le comptoir ; relecture du jour à 60 s, filet à 5 min.              | `pablo`                               |
 
 L'e2e de V1 est le cœur du lot : il passe par **chaque** écrivain connu (passer,
 payer, annuler, clôturer, cocher, poser, fermer, retirer, retirer à nouveau,
