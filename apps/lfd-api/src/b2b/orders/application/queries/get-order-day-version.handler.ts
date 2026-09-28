@@ -2,7 +2,7 @@ import type { DayVersionView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { OrderDayVersionReader } from "../../domain/ports/order-day-version.reader.js";
-import { GetSupervisionDayVersionQuery } from "./get-supervision-day-version.query.js";
+import { GetOrderDayVersionQuery } from "./get-order-day-version.query.js";
 
 /**
  * **Les commandes du jour ont-elles bougé ?** — la question que la Supervision
@@ -12,14 +12,14 @@ import { GetSupervisionDayVersionQuery } from "./get-supervision-day-version.que
  * Une opération. Le numéro avance par les déclencheurs de `orders`, quel que
  * soit l'écrivain — passation, règlement, annulation, retrait (D1).
  */
-@QueryHandler(GetSupervisionDayVersionQuery)
-export class GetSupervisionDayVersionHandler implements IQueryHandler<
-  GetSupervisionDayVersionQuery,
+@QueryHandler(GetOrderDayVersionQuery)
+export class GetOrderDayVersionHandler implements IQueryHandler<
+  GetOrderDayVersionQuery,
   DayVersionView
 > {
   constructor(private readonly versions: OrderDayVersionReader) {}
 
-  async execute(query: GetSupervisionDayVersionQuery): Promise<DayVersionView> {
+  async execute(query: GetOrderDayVersionQuery): Promise<DayVersionView> {
     return { date: query.day, version: await this.versions.versionOf(query.day) };
   }
 }

@@ -387,11 +387,23 @@ describe("les routes de version (V2)", () => {
     await baker.get(`${ROUTE.commerce}?date=${DAY}`).expect(403);
   });
 
+  it("le comptoir lit la version du commerce sous `b2b_orders:read`, la même que la Supervision", async () => {
+    await place([{ sku: CROISSANT, quantity: 2 }]);
+    await allowRead("staff-version-comptoir", "b2b_orders");
+    const counter = ctx.asSub("staff-version-comptoir");
+    const view = jsonBody<DayVersionView>(
+      await counter.get(`/admin/orders/day-version?date=${DAY}`).expect(200),
+    );
+    expect(view).toEqual({ date: DAY, version: await version("commerce") });
+    expect(view.version).toBeGreaterThan(0);
+  });
+
   it("refusent une personne sans aucun des deux droits", async () => {
     await communicationStaff("staff-version-sans-droit");
     const nobody = ctx.asSub("staff-version-sans-droit");
     await nobody.get(`${ROUTE.commerce}?date=${DAY}`).expect(403);
     await nobody.get(`${ROUTE.production}?date=${DAY}`).expect(403);
+    await nobody.get(`/admin/orders/day-version?date=${DAY}`).expect(403);
   });
 
   it("refusent une date absente ou mal formée", async () => {

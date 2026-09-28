@@ -12,7 +12,7 @@ import { QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetDaySupervisionQuery } from "../application/queries/get-day-supervision.query.js";
-import { GetSupervisionDayVersionQuery } from "../application/queries/get-supervision-day-version.query.js";
+import { GetOrderDayVersionQuery } from "../application/queries/get-order-day-version.query.js";
 
 /**
  * La **Supervision du jour** — une vue en lecture seule, à part des postes de
@@ -50,8 +50,8 @@ export class AdminSupervisionController {
   version(
     @Query(new ZodQuery(dayVersionQuerySchema)) query: DayVersionQuery,
   ): Promise<DayVersionView> {
-    return this.queries.execute<GetSupervisionDayVersionQuery, DayVersionView>(
-      new GetSupervisionDayVersionQuery(query.date),
+    return this.queries.execute<GetOrderDayVersionQuery, DayVersionView>(
+      new GetOrderDayVersionQuery(query.date),
     );
   }
 }

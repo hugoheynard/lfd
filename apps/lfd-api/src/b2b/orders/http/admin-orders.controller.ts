@@ -1,4 +1,5 @@
 import { QuoteOrderQuery } from "../application/queries/quote-order.handler.js";
+import { GetOrderDayVersionQuery } from "../application/queries/get-order-day-version.query.js";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import {
   type AdminOrderRow,
@@ -11,6 +12,9 @@ import {
   orderQuotePayloadSchema,
   type OrderQuotePayload,
   type OrderQuoteView,
+  type DayVersionQuery,
+  dayVersionQuerySchema,
+  type DayVersionView,
 } from "@lfd/contracts";
 import {
   Body,
@@ -150,6 +154,23 @@ export class AdminOrdersController {
           totalCents: placed.totalCents,
           paymentUrl: placed.paymentUrl,
         };
+  }
+
+  /**
+   * **La version du jour dans le journal du commerce**, pour le comptoir
+   * (`documentation/caching-usage/plan-version-par-journee.md`, D3/D6) : la même
+   * query que `GET admin/supervision/version`, sous `b2b_orders`.
+   *
+   * ⚠️ Déclarée AVANT `:id` : Nest route dans l'ordre des méthodes, et
+   * `day-version` serait sinon lu comme un identifiant de commande.
+   */
+  @Get("day-version")
+  dayVersion(
+    @Query(new ZodQuery(dayVersionQuerySchema)) query: DayVersionQuery,
+  ): Promise<DayVersionView> {
+    return this.queries.execute<GetOrderDayVersionQuery, DayVersionView>(
+      new GetOrderDayVersionQuery(query.date),
+    );
   }
 
   /** Une commande, dans la même vue que celle du client — délibérément. */
