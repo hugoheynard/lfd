@@ -308,22 +308,25 @@ Ce paragraphe remplace R5 sur ce point.
 
 1. **Liste blanche des e-mails : le staff seulement.** Aucun testeur
    extérieur ; la liste est le domaine du staff, et rien d'autre.
-2. **Adresses : validées, puis corrigées le même jour.** Les fronts de
-   production ne sont **pas** sur `lafoliecoffee.info` : ce sont des adresses
-   Cloudflare Pages (Hugo : le back-office est `lfd-backoffice.pages.dev` ;
-   la boutique `lfc-b2b-eu7.pages.dev`, projet `lfc-ecommerce`,
-   `deploy_lfc_boutique.yml:31`). `lafoliecoffee.info` porte la **passerelle**
-   (route de zone, `gateway/wrangler.toml`). Le staging suit donc le même
-   modèle :
-   - deux **projets Pages neufs**, `lfd-backoffice-staging` et
-     `lfc-ecommerce-staging`, plutôt qu'une branche des projets existants :
-     leurs réglages et leur historique restent séparés, et un
-     `--branch=main` mal tapé ne peut pas écraser la production ;
-   - l'adresse `*.pages.dev` que Cloudflare leur attribue (le suffixe n'est
-     pas choisi : c'est elle qui ira dans les URLs de retour Auth0 et les
-     origines autorisées) ;
-   - la passerelle de staging sur `staging.lafoliecoffee.info` (route de
-     zone), le seul sous-domaine à créer.
+2. **Adresses : validées, puis corrigées deux fois le même jour.**
+   - **La boutique publique est `lafoliecoffee.info`** (Hugo) : la passerelle
+     y tient une route de zone sur toute la zone et sert le front à la racine
+     (`gateway/wrangler.toml`, « élargie à TOUTE la zone le 2026-09-15 »),
+     depuis le projet Pages dont l'adresse `lfc-b2b-eu7.pages.dev` est une
+     constante de `@lfd/endpoints`, la même que la liste CORS. La même
+     passerelle porte l'API sous `/api/lfd`.
+   - **Le back-office est `lfd-backoffice.pages.dev`** (Hugo), sans passerelle
+     devant.
+   - Le staging suit ce modèle :
+     - la **passerelle de staging** sur `staging.lafoliecoffee.info` (route de
+       zone) sert la boutique de staging à la racine et l'API sous `/api/lfd` ;
+     - deux **projets Pages neufs**, `lfc-ecommerce-staging` (derrière la
+       passerelle de staging) et `lfd-backoffice-staging` (servi en direct sur
+       son `*.pages.dev`), plutôt qu'une branche des projets existants : un
+       `--branch=main` mal tapé ne peut pas écraser la production ;
+     - l'origine Pages de la boutique de staging et l'adresse du back-office
+       de staging deviennent des **données d'environnement** : c'est le lot
+       R-A2, puisque `@lfd/endpoints` les écrit aujourd'hui en dur (§6 B5).
 3. **Coût : accepté** — une seconde base Prisma Postgres et un second
    conteneur Cloudflare.
 4. **Des clients fictifs semés au départ ?** **Reporté** : « reposes-moi la
