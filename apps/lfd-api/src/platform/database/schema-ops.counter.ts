@@ -217,6 +217,11 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // le compteur, c'est qu'une lecture le redemande par ligne au lieu d'un coup.
   ProductionContainer: "production",
   OrderHandover: "production",
+  // Le contrôle qualité du superviseur (2026-09-28, plan `plan-controle-qualite.md`,
+  // QC2) : un verdict par ligne, ses photos, et les dépôts qui attendent leur verdict.
+  ProductionQualityCheck: "production",
+  ProductionQualityPhoto: "production",
+  ProductionQualityUpload: "production",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

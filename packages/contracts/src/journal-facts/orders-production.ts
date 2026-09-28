@@ -173,6 +173,26 @@ const dayFactBeforeLabel = () => payload({ serviceDay: day(), absorbed: count() 
 const dayFact = () =>
   payload({ subjectLabel: subjectLabel(), serviceDay: day(), absorbed: count() });
 
+/**
+ * Ce qu'un contrôle qualité juge : une ligne du compte (son SKU et la quantité
+ * vue, D5), ou une commande colisée, citée avec sa référence du moment.
+ */
+const qualityTarget = () =>
+  z.discriminatedUnion("kind", [
+    payload({ kind: z.literal("line"), sku: z.string().min(1), quantitySeen: count() }),
+    payload({ kind: z.literal("order"), order: named("order") }),
+  ]);
+
+/**
+ * Le socle des trois faits du contrôle qualité : le libellé est le SKU d'une
+ * ligne ou la référence d'une commande. ⚠️ Ni la note ni les photos n'y
+ * entrent : elles ne se lisent qu'en `b2b_supervision:write` (plan
+ * `documentation/production/plan-controle-qualite.md`, D3), et le journal a
+ * d'autres lecteurs.
+ */
+const qualityFact = <S extends Record<string, z.ZodType>>(extra: S) =>
+  payload({ subjectLabel: subjectLabel(), serviceDay: day(), target: qualityTarget(), ...extra });
+
 export const ORDERS_PRODUCTION_FACTS = {
   /** Le sujet est le client qui a passé la commande. */
   "order.placed": fact(
@@ -288,6 +308,22 @@ export const ORDERS_PRODUCTION_FACTS = {
     }),
     [containerFactsBeforeLabel.set()],
   ),
+  /**
+   * Un verdict rendu par le superviseur (D9) — l'auteur est l'acteur de la
+   * ligne. `photoCount` : combien de photos le documentent.
+   */
+  "production_quality.checked": fact(
+    qualityFact({ verdict: z.enum(["ok", "warning", "blocking"]), photoCount: count() }),
+  ),
+  /**
+   * Le verdict courant de la cible devient bloquant : la retenue au retrait
+   * commence. `heldOrders` : les commandes retenues À CET INSTANT, sous leur
+   * référence — pour une ligne, celles du plan qui portent le produit (D6) ; le
+   * plan bouge au retirage, le journal garde ce qu'il était.
+   */
+  "production_quality.hold_raised": fact(qualityFact({ heldOrders: z.array(named("order")) })),
+  /** Un nouveau verdict (OK ou réserve) lève le blocage de la cible. */
+  "production_quality.hold_lifted": fact(qualityFact({ verdict: z.enum(["ok", "warning"]) })),
   "production_container.removed": fact(
     payload({ subjectLabel: subjectLabel(), before: containerRule() }),
     [containerFactsBeforeLabel.removed()],

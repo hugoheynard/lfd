@@ -64,12 +64,19 @@ describe("moduleOf — le fournil", () => {
     ["production_day.retaken", "production"],
     ["production_container.set", "production"],
     ["production_container.removed", "production"],
+    ["production_quality.checked", "production"],
+    ["production_quality.hold_raised", "production"],
+    ["production_quality.hold_lifted", "production"],
   ])("%s se range sous %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module production ne ramène que ses deux préfixes", () => {
-    expect(prefixesOf("production")).toEqual(["production_day.", "production_container."]);
+  it("le filtre du module production ne ramène que ses trois préfixes", () => {
+    expect(prefixesOf("production")).toEqual([
+      "production_day.",
+      "production_container.",
+      "production_quality.",
+    ]);
   });
 });
 

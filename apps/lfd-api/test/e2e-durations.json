@@ -123,6 +123,7 @@
   "test/production-forecast.e2e-spec.ts": 5285,
   "test/production-journal.e2e-spec.ts": 4045,
   "test/production-packing.e2e-spec.ts": 7212,
+  "test/production-quality.e2e-spec.ts": 6809,
   "test/production-worksheet.e2e-spec.ts": 6539,
   "test/prospects.e2e-spec.ts": 2507,
   "test/public-pickup-slots-surface.e2e-spec.ts": 2979,

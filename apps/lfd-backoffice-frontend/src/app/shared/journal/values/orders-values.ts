@@ -26,9 +26,25 @@ export const ABANDON_OUTCOME = domain('issue d’un abandon de règlement', {
   failed: 'Commande à régler',
 });
 
+/** Le verdict d'un contrôle qualité ; `warning` se dit « Réserve » à l'écran. */
+export const QUALITY_VERDICT = domain('verdict d’un contrôle qualité', {
+  ok: 'OK',
+  warning: 'Réserve',
+  blocking: 'Bloquant',
+});
+
+/** Le verdict qui lève un blocage : tout sauf un nouveau blocage. */
+export const QUALITY_LIFTING_VERDICT = domain('verdict qui lève un blocage', {
+  ok: 'OK',
+  warning: 'Réserve',
+});
+
 export const ORDERS_VALUES: ValueFamily = {
-  enums: [WEEKDAY, HANDOVER_VIA, ABANDON_OUTCOME],
+  enums: [WEEKDAY, HANDOVER_VIA, ABANDON_OUTCOME, QUALITY_VERDICT, QUALITY_LIFTING_VERDICT],
   literals: {
+    // Ce qu'un contrôle qualité juge (`target.kind`).
+    line: 'Ligne de préparation',
+    order: 'Commande colisée',
     // Le `mode` d'une surtaxe de retard (`CartAdjustment`).
     percent: 'Pourcentage',
     amount: 'Montant',

@@ -109,8 +109,10 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   // L'annuaire staff et ses rôles : qui entre, avec quels droits, et qui l'a décidé.
   equipe: ["staff_user.", "staff_role."],
   // Le fournil : arrêter et reprendre une journée, régler le contenant d'un
-  // article (2026-09-19). Les coches d'atelier n'y écrivent rien encore.
-  production: ["production_day.", "production_container."],
+  // article (2026-09-19). Les coches d'atelier n'y écrivent rien encore. Le
+  // contrôle qualité du superviseur s'y range aussi (2026-09-28, lot QC2) : un
+  // verdict juge ce que le fournil a fabriqué.
+  production: ["production_day.", "production_container.", "production_quality."],
   // Le travail de la comptabilité (Hugo, 2026-09-19). `accounting_rules.` n'y
   // est PAS : il reste sous `pim`, à côté des taux qu'il accompagne.
   comptabilite: [

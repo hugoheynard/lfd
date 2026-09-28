@@ -24,10 +24,22 @@ const VERDICT_LABELS: Readonly<Record<QualityVerdict, string>> = {
 /** Six photos par contrôle, au plus (D8). Zéro est permis à tous les verdicts. */
 export const MAX_QUALITY_PHOTOS = 6;
 
-/** Une photo rattachée : sa place dans l'ordre d'affichage, et où elle est rangée. */
+/**
+ * Une photo rattachée : sa place dans l'ordre d'affichage, où elle est rangée,
+ * et le dépôt dont elle vient (D8).
+ *
+ * `uploadId`, `contentType` et `byteSize` ajoutés au lot QC2 : la ligne de photo
+ * les porte en base, et un agrégat qui ne les tiendrait pas obligerait
+ * l'adaptateur à les chercher ailleurs pour écrire ce que le domaine a décidé.
+ */
 export interface QualityPhotoRef {
   readonly position: number;
   readonly storageKey: string;
+  /** Le dépôt provisoire rattaché — un dépôt ne sert qu'une fois. */
+  readonly uploadId: string;
+  /** Relu dans les octets au dépôt, jamais celui annoncé par le client. */
+  readonly contentType: string;
+  readonly byteSize: number;
 }
 
 /** Ce que l'appelant fournit pour rendre un verdict. */
@@ -141,8 +153,19 @@ function orderedPhotos(photos: readonly QualityPhotoRef[]): readonly QualityPhot
     }
     seen.add(photo.position);
     required(photo.storageKey, "l'emplacement d'une photo");
+    required(photo.uploadId, "le dépôt d'une photo");
+    required(photo.contentType, "le type d'une photo");
+    if (!Number.isInteger(photo.byteSize) || photo.byteSize <= 0) {
+      throw new QualityCheckIncompleteError("le poids d'une photo");
+    }
   }
   return [...photos]
-    .map((photo) => ({ position: photo.position, storageKey: photo.storageKey.trim() }))
+    .map((photo) => ({
+      position: photo.position,
+      storageKey: photo.storageKey.trim(),
+      uploadId: photo.uploadId.trim(),
+      contentType: photo.contentType.trim(),
+      byteSize: photo.byteSize,
+    }))
     .sort((left, right) => left.position - right.position);
 }

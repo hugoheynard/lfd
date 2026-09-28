@@ -11,6 +11,23 @@ import { RetakeProductionDayHandler } from "./application/commands/retake-produc
 import { SetProductionContainerHandler } from "./application/commands/set-production-container.handler.js";
 import { UnmarkPackingLineHandler } from "./application/commands/unmark-packing-line.handler.js";
 import { UnmarkWorksheetLineHandler } from "./application/commands/unmark-worksheet-line.handler.js";
+import { DepositQualityPhotoHandler } from "./application/commands/deposit-quality-photo.handler.js";
+import { RenderQualityCheckHandler } from "./application/commands/render-quality-check.handler.js";
+import { SweepQualityUploadsHandler } from "./application/commands/sweep-quality-uploads.handler.js";
+import { GetQualityBoardHandler } from "./application/queries/get-quality-board.handler.js";
+import { GetQualityPhotoHandler } from "./application/queries/get-quality-photo.handler.js";
+import { ListQualityChecksHandler } from "./application/queries/list-quality-checks.handler.js";
+import { QualityPhotoAttachment } from "./application/services/quality-photo-attachment.service.js";
+import { QualityCheckReader } from "./domain/ports/quality-check.reader.js";
+import { QualityCheckRepository } from "./domain/ports/quality-check.repository.js";
+import { QualityUploadRepository } from "./domain/ports/quality-upload.repository.js";
+import { ProductionQualityController } from "./http/production-quality.controller.js";
+import { QualityUploadSweepController } from "./http/quality-upload-sweep.controller.js";
+import {
+  PrismaQualityCheckReader,
+  PrismaQualityCheckRepository,
+} from "./infrastructure/prisma-quality-check.repository.js";
+import { PrismaQualityUploadRepository } from "./infrastructure/prisma-quality-upload.repository.js";
 import { GetAtelierSheetPdfHandler } from "./application/queries/get-atelier-sheet-pdf.handler.js";
 import { GetCurrentProductionWorksheetHandler } from "./application/queries/get-current-production-worksheet.handler.js";
 import { GetProductionCountPdfHandler } from "./application/queries/get-production-count-pdf.handler.js";
@@ -56,6 +73,8 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
     ProductionWorksheetController,
     ProductionPackingController,
     ProductionSupervisionController,
+    ProductionQualityController,
+    QualityUploadSweepController,
   ],
   providers: [
     CloseProductionDayHandler,
@@ -92,6 +111,19 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
     // classes abstraites.
     { provide: ProductionContainerReader, useClass: PrismaProductionContainerReader },
     { provide: ProductionContainerRepository, useClass: PrismaProductionContainerRepository },
+    // Le contrôle qualité du superviseur (plan `plan-controle-qualite.md`, QC2) :
+    // son schéma est `production`, ses ports se relient donc ici. Lire une
+    // journée et écrire un verdict sont deux ports (ISP), les dépôts un troisième.
+    DepositQualityPhotoHandler,
+    RenderQualityCheckHandler,
+    SweepQualityUploadsHandler,
+    GetQualityBoardHandler,
+    ListQualityChecksHandler,
+    GetQualityPhotoHandler,
+    QualityPhotoAttachment,
+    { provide: QualityCheckRepository, useClass: PrismaQualityCheckRepository },
+    { provide: QualityCheckReader, useClass: PrismaQualityCheckReader },
+    { provide: QualityUploadRepository, useClass: PrismaQualityUploadRepository },
   ],
 })
 export class ProductionModule {}

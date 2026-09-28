@@ -9,6 +9,7 @@ import { LOYALTY_PHRASES } from './loyalty-phrases';
 import { OPERATION_PHRASES } from './operation-phrases';
 import { ORDERS_PHRASES } from './orders-phrases';
 import { PRICING_PHRASES } from './pricing-phrases';
+import { PRODUCTION_QUALITY_PHRASES } from './production-quality-phrases';
 import { REFERENTIAL_PHRASES } from './referential-phrases';
 import { REFERENTIAL_SETTINGS_PHRASES } from './referential-settings-phrases';
 import { SETTINGS_PHRASES } from './settings-phrases';
@@ -144,6 +145,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...COMMERCE_PHRASES,
   ...STOREFRONT_PHRASES,
   ...ORDERS_PHRASES,
+  ...PRODUCTION_QUALITY_PHRASES,
   ...PRICING_PHRASES,
   ...ACCOUNTS_PHRASES,
   ...ACCOUNTING_PHRASES,

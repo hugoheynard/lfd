@@ -30,10 +30,17 @@ function input(overrides: Partial<RenderQualityCheck> = {}): RenderQualityCheck 
 }
 
 function photos(count: number): RenderQualityCheck["photos"] {
-  return Array.from({ length: count }, (_, position) => ({
+  return Array.from({ length: count }, (_, position) => photo(position));
+}
+
+function photo(position: number): RenderQualityCheck["photos"][number] {
+  return {
     position,
     storageKey: `quality/pending/up_${position}`,
-  }));
+    uploadId: `up_${position}`,
+    contentType: "image/jpeg",
+    byteSize: 1024,
+  };
 }
 
 describe("QualityCheck.render — ce qu'il accepte", () => {
@@ -94,20 +101,33 @@ describe("QualityCheck.render — ce qu'il refuse", () => {
 
   it("deux photos à la même position, ou une position négative", () => {
     const twice = [
-      { position: 1, storageKey: "a" },
-      { position: 1, storageKey: "b" },
+      { ...photo(1), storageKey: "a" },
+      { ...photo(1), storageKey: "b" },
     ];
     expect(() => QualityCheck.render(input({ photos: twice }))).toThrow(
       QualityCheckPhotoPositionError,
     );
-    expect(() =>
-      QualityCheck.render(input({ photos: [{ position: -1, storageKey: "a" }] })),
-    ).toThrow(QualityCheckPhotoPositionError);
+    expect(() => QualityCheck.render(input({ photos: [{ ...photo(0), position: -1 }] }))).toThrow(
+      QualityCheckPhotoPositionError,
+    );
+  });
+
+  it("une photo sans dépôt, sans type ou d'un poids impossible (QC2)", () => {
+    for (const broken of [
+      { ...photo(0), uploadId: " " },
+      { ...photo(0), contentType: "" },
+      { ...photo(0), byteSize: 0 },
+      { ...photo(0), byteSize: 1.5 },
+    ]) {
+      expect(() => QualityCheck.render(input({ photos: [broken] }))).toThrow(
+        QualityCheckIncompleteError,
+      );
+    }
   });
 
   it("une photo sans emplacement, un contrôle sans id ou sans auteur", () => {
     expect(() =>
-      QualityCheck.render(input({ photos: [{ position: 0, storageKey: " " }] })),
+      QualityCheck.render(input({ photos: [{ ...photo(0), storageKey: " " }] })),
     ).toThrow(QualityCheckIncompleteError);
     expect(() => QualityCheck.render(input({ id: "" }))).toThrow(QualityCheckIncompleteError);
     expect(() => QualityCheck.render(input({ checkedBy: " " }))).toThrow(

@@ -242,3 +242,102 @@ model ProductionContainer {
   @@map("production_container")
   @@schema("production")
 }
+
+/// **Un contrôle qualité** — un verdict rendu par le superviseur, une ligne par
+/// verdict, JAMAIS modifiée (`documentation/production/plan-controle-qualite.md`, D2).
+///
+/// Le verdict courant d'une cible est le plus récent : lever un blocage, c'est
+/// rendre un nouveau contrôle, pas réécrire celui-ci. « Qui a bloqué, pourquoi,
+/// qui a levé, quand » reste donc lisible sans journal.
+///
+/// Aucune clé étrangère vers `production_day` ni vers `public.orders` : la
+/// cible est désignée par un SKU du compte ou un identifiant de commande
+/// OPAQUE, comme partout dans ce schéma. Les deux CHECK de la migration (une
+/// seule cible ; une note hors `ok`) tiennent en base ce que l'agrégat refuse.
+model ProductionQualityCheck {
+  /// Fourni par l'ÉCRAN (ULID) : c'est la clé d'idempotence du geste (D8).
+  id String @id
+
+  serviceDay String @map("service_day") @db.VarChar(10)
+
+  /// `line` ou `order` — exactement une cible, tenue par un CHECK.
+  targetKind   String  @map("target_kind")
+  /// Le SKU du COMPTE (`production_count.sku`), pour une ligne.
+  sku          String?
+  /// L'identifiant de commande côté commerce, opaque, pour une commande colisée.
+  orderId      String? @map("order_id")
+  /// Le compte de la ligne au moment du contrôle (D5) — `null` pour une commande.
+  quantitySeen Int?    @map("quantity_seen")
+
+  /// `ok`, `warning` (« Réserve ») ou `blocking`.
+  verdict String
+  /// Obligatoire hors `ok`, et non blanche : tenu par un CHECK.
+  note    String?
+
+  /// La fiche staff qui a jugé, figée. Jamais un `sub`.
+  checkedBy String   @map("checked_by")
+  checkedAt DateTime @map("checked_at")
+
+  photos ProductionQualityPhoto[]
+
+  @@index([serviceDay])
+  @@index([orderId])
+  @@map("production_quality_check")
+  @@schema("production")
+}
+
+/// **Une photo rattachée à un contrôle**, déplacée hors du dépôt provisoire
+/// vers `quality/<service_day>/<check_id>/<position>` (D8).
+///
+/// La clé primaire `(check_id, position)` EST l'unicité de position que D2
+/// demande. `upload_id` est unique : un dépôt ne se rattache qu'à UN contrôle,
+/// et c'est la base qui arbitre deux enregistrements simultanés.
+model ProductionQualityPhoto {
+  checkId String                 @map("check_id")
+  check   ProductionQualityCheck @relation(fields: [checkId], references: [id], onDelete: Restrict)
+
+  position Int
+
+  uploadId String                  @unique @map("upload_id")
+  upload   ProductionQualityUpload @relation(fields: [uploadId], references: [id], onDelete: Restrict)
+
+  storageKey  String @unique @map("storage_key")
+  /// Relu dans les octets au dépôt, jamais celui annoncé par le client.
+  contentType String @map("content_type")
+  byteSize    Int    @map("byte_size")
+
+  @@id([checkId, position])
+  @@map("production_quality_photo")
+  @@schema("production")
+}
+
+/// **Un dépôt de photo en attente** — la photo est partie seule, dès qu'elle a
+/// été prise, sous `quality/pending/<id>` ; le verdict la rattachera (D8).
+///
+/// La table existe pour que le rattachement VÉRIFIE ce qu'il reçoit : que le
+/// dépôt existe, qu'il vient de la même personne, qu'il n'est pas déjà
+/// rattaché (l'unique de `production_quality_photo.upload_id`) ni balayé.
+/// Sans elle, un `upload_id` ne serait qu'une clé de stockage devinable.
+///
+/// `released_at` : l'objet provisoire a été retiré du stockage — après
+/// rattachement, ou par le balayage des dépôts de plus de 24 h. La ligne reste :
+/// elle ne coûte rien et dit ce qui a été déposé, par qui.
+model ProductionQualityUpload {
+  /// Tiré par le serveur (`IdGenerator`), jamais par le client.
+  id String @id
+
+  storageKey  String @unique @map("storage_key")
+  contentType String @map("content_type")
+  byteSize    Int    @map("byte_size")
+
+  uploadedBy String   @map("uploaded_by")
+  uploadedAt DateTime @map("uploaded_at")
+
+  releasedAt DateTime? @map("released_at")
+
+  photo ProductionQualityPhoto?
+
+  @@index([releasedAt, uploadedAt])
+  @@map("production_quality_upload")
+  @@schema("production")
+}
