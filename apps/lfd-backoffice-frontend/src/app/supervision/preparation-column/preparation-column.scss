@@ -125,6 +125,9 @@
 .lines {
   display: flex;
   flex-direction: column;
+  // Un écart en plus du filet : les liserés de deux lignes voisines ne se
+  // touchent plus (Hugo, 2026-09-28).
+  gap: var(--fold-space-xs);
   margin: 0;
   padding: 0;
   list-style: none;
