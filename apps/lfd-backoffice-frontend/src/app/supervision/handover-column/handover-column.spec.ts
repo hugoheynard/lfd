@@ -62,6 +62,14 @@ async function mount(board: HandoverBoard) {
 }
 
 describe('HandoverColumn', () => {
+  /** Hugo, 2026-09-28 : le numéro de commande manquait, c'est lui qu'on lit sur le sac. */
+  it('montre le numéro de commande à côté du client', async () => {
+    const element: HTMLElement = (await mount(BOARD)).nativeElement;
+    const reference = element.querySelector('[data-reference="RETIREE"] [data-row-reference]');
+
+    expect(reference?.textContent?.trim()).toBe('RETIREE');
+  });
+
   it('groupe par tranche et dit chaque état en toutes lettres', async () => {
     const fixture = await mount(BOARD);
     const element: HTMLElement = fixture.nativeElement;

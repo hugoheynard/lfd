@@ -102,6 +102,22 @@
   min-width: 0;
 }
 
+// Le numéro de commande à côté du nom (Hugo, 2026-09-28) : c'est lui qu'on
+// cherche sur le sac et qu'on se dit au comptoir.
+.customer-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+}
+
+.reference {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-secondary);
+}
+
 .customer {
   font-size: var(--fold-text-md);
   font-weight: var(--fold-weight-bold);

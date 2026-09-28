@@ -26,7 +26,10 @@
       <div class="row-line">
         <span class="time">{{ row.time ?? '—' }}</span>
         <div class="who">
-          <span class="customer">{{ row.customerLabel }}</span>
+          <span class="customer-line">
+            <span class="customer">{{ row.customerLabel }}</span>
+            <span class="reference" data-row-reference>{{ row.reference }}</span>
+          </span>
           <span
             class="sub"
             [class.is-done]="row.state === 'handed_over'"
