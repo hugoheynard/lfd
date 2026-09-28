@@ -74,10 +74,41 @@
 }
 
 // Replié, l'en-tête EST le résumé du disclosure : il occupe toute la ligne.
-.done-shelf .shelf-head {
-  flex: 1;
+.done-head {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  text-align: start;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.done-title {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
   min-width: 0;
+}
+
+.caret {
+  flex: none;
+  color: var(--fold-color-success-text);
+}
+
+// Une carte finie est plus basse (maquette : 10 px au lieu de 13).
+.shelf.is-done {
+  --fold-card-padding: var(--fold-space-sm) var(--fold-space-md);
 }
 
 // Les teintes de barre de la maquette SONT des références fold : on les
@@ -270,7 +301,7 @@
     font-size: var(--fold-text-lg);
   }
 
-  .done-shelf .shelf-head {
+  .done-head {
     min-height: 32px;
   }
 

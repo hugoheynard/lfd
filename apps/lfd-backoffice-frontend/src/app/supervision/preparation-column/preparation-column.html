@@ -34,13 +34,22 @@
       @if (folded) {
         <!-- Replié par défaut (Hugo, 2026-09-28) : l'en-tête dit son contrôle ;
              une occurrence de la mise en avant le rouvre d'elle-même. -->
-        <fold-disclosure
-          class="done-shelf"
-          [open]="isUnfolded(card)"
-          (openChange)="setUnfolded(card.key, $event)"
+        <!-- L'en-tête EST le bouton, à plat sur la carte verte comme dans la
+             maquette : un fold-disclosure y posait une seconde boîte blanche,
+             chevron à droite (vu le 2026-09-28). -->
+        <button
+          type="button"
+          class="done-head"
+          [attr.aria-expanded]="isUnfolded(card)"
           [attr.data-detail]="card.key"
+          (click)="setUnfolded(card.key, !isUnfolded(card))"
         >
-          <span summary class="shelf-head">
+          <span class="done-title">
+            <fold-icon
+              class="caret"
+              size="xs"
+              [name]="isUnfolded(card) ? 'chevron-down' : 'chevron-right'"
+            />
             <span class="shelf-name">{{ card.label }}</span>
             @if (!isUnfolded(card)) {
               @let summary = shelfSummary(card);
@@ -53,11 +62,11 @@
                 data-shelf-quality
               />
             }
-            <span class="shelf-count is-done"
-              >{{ card.doneCount }} / {{ card.lineCount }} lignes</span
-            >
           </span>
-        </fold-disclosure>
+          <span class="shelf-count is-done"
+            >{{ card.doneCount }} / {{ card.lineCount }} lignes</span
+          >
+        </button>
       } @else {
         <div class="shelf-head">
           <span class="shelf-name">{{ card.label }}</span>
