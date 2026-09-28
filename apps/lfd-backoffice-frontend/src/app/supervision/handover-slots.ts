@@ -57,6 +57,8 @@ export interface HandoverBoard {
   readonly deliveryExpected: number;
   /** Créneaux dépassés — la pastille sur l'onglet Retrait. */
   readonly overdue: number;
+  /** Attendues mais pas encore prêtes — ce que le colisage retient (Hugo, 2026-09-28). */
+  readonly awaitingPacking: number;
 }
 
 const MINUTES_PER_HOUR = 60;
@@ -213,5 +215,6 @@ export function handoverBoard(
     pickupExpected: all.filter((row) => row.method === 'pickup' && isExpected(row)).length,
     deliveryExpected: all.filter((row) => row.method === 'delivery' && isExpected(row)).length,
     overdue: all.filter((row) => row.state === 'overdue').length,
+    awaitingPacking: all.filter((row) => row.state === 'not_ready').length,
   };
 }

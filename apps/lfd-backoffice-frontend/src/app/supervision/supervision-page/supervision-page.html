@@ -44,6 +44,14 @@
           <span class="chiffre-label">Colisage</span>
           <span class="chiffre-value">{{ counters().packing ?? '—' }}</span>
           <span class="chiffre-unit">commandes à coliser</span>
+          @if (blockers().packing > 0) {
+            <fold-badge
+              class="chiffre-flag"
+              variant="warning"
+              [content]="blockers().packingLabel"
+              data-blocker="packing"
+            />
+          }
         </div>
       </fold-card>
       <fold-card class="chiffre" radius="sm" padding="sm" data-counter="handover">

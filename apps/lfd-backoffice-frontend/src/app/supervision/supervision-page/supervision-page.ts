@@ -165,16 +165,12 @@ export class SupervisionPage {
    * (sur Préparation, la colonne qui bloque) et les créneaux dépassés.
    */
   protected readonly blockers = computed(() =>
-    blockersOf(this.packingBoard()?.awaitingOven ?? 0, this.handoverBoard()?.overdue ?? 0),
+    blockersOf(this.packingBoard(), this.handoverBoard()),
   );
 
   /** Les onglets du mobile : le blocage d'une colonne voisine revient en pastille. */
   protected readonly tabs = computed<readonly FoldViewNavItem[]>(() =>
-    supervisionTabs(
-      this.counters(),
-      this.packingBoard()?.awaitingOven ?? 0,
-      this.handoverBoard()?.overdue ?? 0,
-    ),
+    supervisionTabs(this.counters(), this.blockers()),
   );
 
   /** L'acheminement lu en colonne 3 : le segmenté vit dans l'en-tête fixe de la colonne. */

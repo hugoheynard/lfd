@@ -34,26 +34,31 @@ export function countersOf(
 
 /**
  * Les onglets du mobile : une colonne à la fois, et le blocage d'une colonne
- * voisine revient en pastille — le four sur Préparation, les créneaux dépassés
- * sur Retrait. Sortis de la page pour la garder sous les 300 lignes.
+ * voisine revient en pastille — le four sur Préparation, le colisage sur
+ * Colisage, les créneaux dépassés sur Retrait. Sortis de la page pour la
+ * garder sous les 300 lignes.
  */
 export function supervisionTabs(
   counters: SupervisionCounters,
-  awaitingOven: number,
-  overdue: number,
+  blockers: SupervisionBlockers,
 ): readonly FoldViewNavItem[] {
   const count = (value: number | null): string => (value === null ? '—' : String(value));
+  const badge = (value: number): number | null => (value > 0 ? value : null);
   return [
     {
       key: 'preparation',
       label: `Préparation ${count(counters.preparation)}`,
-      badge: awaitingOven > 0 ? awaitingOven : null,
+      badge: badge(blockers.oven),
     },
-    { key: 'packing', label: `Colisage ${count(counters.packing)}` },
+    {
+      key: 'packing',
+      label: `Colisage ${count(counters.packing)}`,
+      badge: badge(blockers.packing),
+    },
     {
       key: 'handover',
       label: `Retrait ${count(counters.handover)}`,
-      badge: overdue > 0 ? overdue : null,
+      badge: badge(blockers.overdue),
     },
   ];
 }
@@ -66,14 +71,40 @@ export function methodOptionsOf(board: HandoverBoard | null): readonly FoldViewT
   ];
 }
 
-/** Les blocages d'une carte du masthead, avec la phrase de leur pastille. */
-export function blockersOf(oven: number, overdue: number) {
+/**
+ * Les blocages que portent les cartes du masthead, avec la phrase de leur
+ * pastille. Chacun est posé sur la colonne qui RETIENT : le four sur
+ * Préparation, le colisage sur Colisage, le créneau dépassé sur Retrait.
+ */
+export interface SupervisionBlockers {
+  readonly oven: number;
+  readonly ovenLabel: string;
+  /**
+   * Les commandes attendues au retrait qui ne sont pas encore prêtes (Hugo,
+   * 2026-09-28). Zéro tant que le plan n'est pas arrêté : avant, TOUTE la
+   * journée « attendrait le colisage », et la pastille ne dirait plus rien.
+   */
+  readonly packing: number;
+  readonly packingLabel: string;
+  readonly overdue: number;
+  readonly overdueLabel: string;
+}
+
+export function blockersOf(
+  packing: PackingBoard | null,
+  handover: HandoverBoard | null,
+): SupervisionBlockers {
+  const oven = packing?.awaitingOven ?? 0;
+  const waiting = packing === null || packing.notClosed ? 0 : (handover?.awaitingPacking ?? 0);
+  const overdue = handover?.overdue ?? 0;
   return {
     oven,
     ovenLabel: `${countLabel(oven, 'commande attend', 'commandes attendent')} le four`,
+    packing: waiting,
+    packingLabel: `${countLabel(waiting, 'commande attend', 'commandes attendent')} le colisage`,
     overdue,
     overdueLabel: countLabel(overdue, 'créneau dépassé', 'créneaux dépassés'),
-  } as const;
+  };
 }
 
 /** « jeudi 25 septembre · à jour à 9 h 42 » — vide tant que le jour n'est pas lu. */

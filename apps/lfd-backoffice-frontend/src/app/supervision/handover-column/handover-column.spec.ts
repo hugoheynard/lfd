@@ -49,6 +49,7 @@ const BOARD: HandoverBoard = {
   pickupExpected: 2,
   deliveryExpected: 1,
   overdue: 1,
+  awaitingPacking: 0,
 };
 
 async function mount(board: HandoverBoard) {
