@@ -13,6 +13,7 @@ import {
 import type { PackingBoard, PackingCard, PackingState } from '../packing-cards';
 import { countLabel } from '../supervision-labels';
 import { SUPERVISION_LINKS } from '../supervision-links';
+import { NO_MATCHES } from '../supervision-search';
 
 /** La pastille Mono de chaque état : le libellé porte l'état, jamais la couleur seule. */
 const BADGES: Readonly<Record<PackingState, { label: string; variant: FoldBadgeVariant }>> = {
@@ -46,6 +47,8 @@ export class PackingColumn {
   readonly board = input.required<PackingBoard>();
   readonly showLinks = input(false);
   readonly narrow = input(false);
+  /** Ce que la recherche du masthead désigne, par numéro de commande. */
+  readonly matches = input(NO_MATCHES);
 
   protected readonly link = SUPERVISION_LINKS.packing;
 

@@ -1,6 +1,8 @@
 import type { FoldViewNavItem, FoldViewToggleOption } from 'fold-ng';
 
 import type { HandoverBoard } from './handover-slots';
+import type { PackingBoard } from './packing-cards';
+import type { PreparationBoard } from './preparation-shelves';
 import { countLabel } from './supervision-labels';
 
 /** Les trois chiffres du masthead, `null` tant que leur colonne n'a pas répondu. */
@@ -8,6 +10,23 @@ export interface SupervisionCounters {
   readonly preparation: number | null;
   readonly packing: number | null;
   readonly handover: number | null;
+  /** « dont 2 livraisons », ou `null` sans livraison attendue. */
+  readonly deliveryNote: string | null;
+}
+
+/** Les trois chiffres du masthead, lus sur les planches des colonnes. */
+export function countersOf(
+  preparation: PreparationBoard | null,
+  packing: PackingBoard | null,
+  handover: HandoverBoard | null,
+): SupervisionCounters {
+  const delivery = handover?.deliveryExpected ?? 0;
+  return {
+    preparation: preparation?.openLines ?? null,
+    packing: packing?.toPack ?? null,
+    handover: handover === null ? null : handover.pickupExpected + delivery,
+    deliveryNote: delivery === 0 ? null : `dont ${countLabel(delivery, 'livraison', 'livraisons')}`,
+  };
 }
 
 /**

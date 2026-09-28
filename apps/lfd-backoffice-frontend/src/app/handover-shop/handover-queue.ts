@@ -7,6 +7,8 @@ import type {
 } from '@lfd/contracts';
 import type { FoldBadgeVariant, FoldTableTone } from 'fold-ng';
 
+import { searchKey } from '../shared/search/search-key';
+
 /**
  * **La logique de la file de retrait**, hors de tout composant : dérivation des
  * onglets, ordre de la file, écriture d'un créneau, et la seule décision qui
@@ -66,34 +68,12 @@ const WITHOUT_WINDOW_RANK = '99:99';
  */
 const REQUESTED_SOURCE: FulfillmentSource = 'override';
 
-/**
- * Plié pour la comparaison : sans casse, sans accent, et **sans variété
- * d'espaces**.
- *
- * 🔴 L'insécable est le piège, et il a été vu à l'écran : `formatWindow` écrit
- * « 14 h 00 » avec des espaces INSÉCABLES, parce que c'est ainsi qu'une heure
- * se compose en français. Personne n'en tape une. Sans ce pli, chercher un
- * créneau ne rendait jamais rien — et la file paraissait vide au lieu de
- * paraître mal cherchée.
- *
- * Les accents suivent la même logique : le comptoir tape vite et sans
- * diacritiques, et « boulangerie marin » doit trouver « Boulangerie Marín ».
- */
-function normalize(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/\s+/gu, ' ')
-    .toLowerCase()
-    .trim();
-}
-
 /** Ce dans quoi on cherche : tout ce que la ligne MONTRE, et rien de plus. */
 function haystack(entry: HandoverQueueEntryView): string {
   // 🔴 Pas l'identifiant technique : on ne cherche pas une commande par son
   // `orderId`, et l'y inclure ferait correspondre des lignes sans que rien à
   // l'écran n'explique pourquoi.
-  return normalize(
+  return searchKey(
     [
       entry.customerLabel,
       entry.tradeName ?? '',
@@ -119,7 +99,7 @@ export function matchingQueue(
   entries: readonly HandoverQueueEntryView[],
   query: string,
 ): readonly HandoverQueueEntryView[] {
-  const needle = normalize(query);
+  const needle = searchKey(query);
   if (needle === '') {
     return entries;
   }

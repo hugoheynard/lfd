@@ -5,6 +5,8 @@ import type {
   ProductionPackingView,
 } from '@lfd/contracts';
 
+import { clockLabel } from './supervision-labels';
+
 /**
  * **La colonne 2 — l'unité est la commande.** Une carte par bac de la vue de
  * colisage (plan §5).
@@ -29,6 +31,11 @@ export interface PackingCard {
   readonly initials: readonly string[];
   /** Minutes depuis minuit du créneau, joint par `reference` ; `null` = pas dans la file ou sans créneau. */
   readonly slotMinutes: number | null;
+  /**
+   * « 5 h 12 » — quand la commande a été DÉCLARÉE prête, ou `null` tant
+   * qu'elle ne l'est pas (Hugo, 2026-09-28 : l'heure manquait aux colisées).
+   */
+  readonly packedAt: string | null;
 }
 
 export interface PackingBoard {
@@ -91,6 +98,7 @@ function cardOf(sheet: PackingSheet, entry: HandoverQueueEntryView | undefined):
       ),
     ],
     slotMinutes: slotOf(entry),
+    packedAt: sheet.packedAt === null ? null : clockLabel(sheet.packedAt),
   };
 }
 

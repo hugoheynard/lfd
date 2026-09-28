@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { describe, expect, it } from 'vitest';
 
 import type { PackingBoard, PackingCard } from '../packing-cards';
+import { NO_MATCHES, type SupervisionMatches } from '../supervision-search';
 import { PackingColumn } from './packing-column';
 
 function card(reference: string, overrides: Partial<PackingCard> = {}): PackingCard {
@@ -16,6 +17,7 @@ function card(reference: string, overrides: Partial<PackingCard> = {}): PackingC
     awaited: [],
     initials: ['LT'],
     slotMinutes: 420,
+    packedAt: null,
     ...overrides,
   };
 }
@@ -27,15 +29,16 @@ const BOARD: PackingBoard = {
     card('CMD-2', { state: 'awaiting_oven', awaited: ['Éclair pistache'], packedLines: 0 }),
   ],
   overflow: 13,
-  packed: [card('CMD-3', { state: 'packed' })],
+  packed: [card('CMD-3', { state: 'packed', packedAt: '5 h 12' })],
   toPack: 15,
   awaitingOven: 1,
 };
 
-async function mount(board: PackingBoard) {
+async function mount(board: PackingBoard, matches: SupervisionMatches = NO_MATCHES) {
   TestBed.configureTestingModule({ providers: [provideRouter([])] });
   const fixture = TestBed.createComponent(PackingColumn);
   fixture.componentRef.setInput('board', board);
+  fixture.componentRef.setInput('matches', matches);
   fixture.componentRef.setInput('showLinks', true);
   fixture.detectChanges();
   await fixture.whenStable();
@@ -44,6 +47,22 @@ async function mount(board: PackingBoard) {
 }
 
 describe('PackingColumn', () => {
+  /** Hugo, 2026-09-28 : l'heure où la commande a été déclarée prête manquait. */
+  it('donne l’heure de déclaration aux commandes colisées', async () => {
+    const element = await mount(BOARD);
+
+    expect(
+      element.querySelector('[data-reference="CMD-3"] [data-packed-at]')?.textContent,
+    ).toContain('Déclarée prête à 5 h 12');
+  });
+
+  it('surligne les commandes que la recherche désigne', async () => {
+    const element = await mount(BOARD, { references: new Set(['CMD-3']), skus: new Set() });
+
+    expect(element.querySelector('[data-reference="CMD-3"]')?.classList).toContain('is-match');
+    expect(element.querySelector('[data-reference="CMD-1"]')?.classList).not.toContain('is-match');
+  });
+
   it('écrit l’avancement d’un bac en cours, et qui y pose', async () => {
     const element = await mount(BOARD);
     const inProgress = element.querySelector('[data-reference="CMD-1"]');

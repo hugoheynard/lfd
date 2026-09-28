@@ -20,6 +20,7 @@
       [class.is-past]="row.state === 'cancelled'"
       [class.is-done]="row.state === 'handed_over'"
       [class.is-waiting]="row.state === 'not_ready' || row.state === 'ready'"
+      [class.is-match]="matches().references.has(row.reference)"
       [attr.data-row]="row.state"
       [attr.data-reference]="row.reference"
     >

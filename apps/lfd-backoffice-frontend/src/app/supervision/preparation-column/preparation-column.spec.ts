@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { describe, expect, it } from 'vitest';
 
 import type { PreparationBoard, ShelfCard } from '../preparation-shelves';
+import { NO_MATCHES, type SupervisionMatches } from '../supervision-search';
 import { PreparationColumn } from './preparation-column';
 
 function card(key: string, overrides: Partial<ShelfCard> = {}): ShelfCard {
@@ -40,10 +41,15 @@ function card(key: string, overrides: Partial<ShelfCard> = {}): ShelfCard {
   };
 }
 
-async function mount(board: PreparationBoard, showLinks = true) {
+async function mount(
+  board: PreparationBoard,
+  showLinks = true,
+  matches: SupervisionMatches = NO_MATCHES,
+) {
   TestBed.configureTestingModule({ providers: [provideRouter([])] });
   const fixture = TestBed.createComponent(PreparationColumn);
   fixture.componentRef.setInput('board', board);
+  fixture.componentRef.setInput('matches', matches);
   fixture.componentRef.setInput('showLinks', showLinks);
   fixture.detectChanges();
   await fixture.whenStable();
@@ -53,7 +59,7 @@ async function mount(board: PreparationBoard, showLinks = true) {
 
 const BOARD: PreparationBoard = {
   open: [card('Viennoiseries')],
-  finished: [card('Pains', { state: 'done', doneCount: 2, pending: [] })],
+  finished: [card('Pains', { state: 'done', doneCount: 2, pending: [], done: [] })],
   finishedAt: '6 h 10',
   openLines: 1,
   shelvesKnown: true,
@@ -79,6 +85,15 @@ describe('PreparationColumn', () => {
     expect(element.querySelector('[data-done-divider]')?.textContent).toContain('à 6 h 10');
     expect(shelves.at(-1)).toBe('Pains');
     expect(element.querySelector('[data-shelf="Pains"]')?.classList).toContain('is-done');
+  });
+
+  it('surligne le rayon et le produit d’une commande cherchée', async () => {
+    const element = await mount(BOARD, true, { references: new Set(), skus: new Set(['cro']) });
+    const shelf = element.querySelector('[data-shelf="Viennoiseries"]');
+
+    expect(shelf?.classList).toContain('is-match');
+    expect(shelf?.querySelector('[data-line-done]')?.classList).toContain('is-match');
+    expect(element.querySelector('[data-shelf="Pains"]')?.classList).not.toContain('is-match');
   });
 
   it('déplie un rayon en cours sur ses lignes sorties, avec leurs initiales', async () => {

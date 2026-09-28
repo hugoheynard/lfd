@@ -212,6 +212,19 @@ describe('SupervisionPage', () => {
   });
 
   /** Hugo, 2026-09-28 : l'écran restait sur le jour du serveur, sans moyen de voir demain. */
+  it('la recherche désigne une commande et la compte', async () => {
+    const fixture = await mount();
+    const search = root(fixture).querySelector<HTMLInputElement>('[data-search] input');
+    const reference = QUEUE.entries[0]?.reference ?? '';
+
+    search!.value = reference;
+    search!.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(root(fixture).querySelector(`[data-reference="${reference}"].is-match`)).not.toBeNull();
+  });
+
   it('passe au lendemain : le jour et les trois colonnes sont relus à cette date', async () => {
     const day = vi.fn((date?: string) => Promise.resolve({ ...DAY, date: date ?? DATE }));
     const preparation = vi.fn(() => Promise.resolve(WORKSHEET));
@@ -287,7 +300,11 @@ describe('SupervisionPage', () => {
   it('n’a aucun bouton d’action : ni geste, ni case à cocher', async () => {
     const fixture = await mount();
 
-    expect(root(fixture).querySelector('input')).toBeNull();
+    // Le seul champ est la recherche du masthead (Hugo, 2026-09-28) : elle
+    // SURLIGNE, elle n'écrit rien. Aucune case, aucun autre champ.
+    const inputs = Array.from(root(fixture).querySelectorAll('input'));
+    expect(inputs.every((input) => input.closest('[data-search]') !== null)).toBe(true);
+    expect(root(fixture).querySelector('input[type="checkbox"]')).toBeNull();
     const controls = Array.from(root(fixture).querySelectorAll('button, a'));
     expect(controls.length).toBeGreaterThan(0);
     for (const control of controls) {

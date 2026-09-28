@@ -168,3 +168,10 @@
     background: var(--fold-color-alert-surface);
   }
 }
+
+// La recherche du masthead SURLIGNE (Hugo, 2026-09-28) : un contour à la
+// couleur primaire, sans toucher au fond qui dit l'état.
+.is-match {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 1px;
+}

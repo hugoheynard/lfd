@@ -30,6 +30,7 @@
     [class.is-done]="card.state === 'done'"
     [class.is-waiting]="card.state !== 'done'"
     [class.narrow]="narrow()"
+    [class.is-match]="shelfMatches(card)"
     [attr.data-shelf]="card.key"
   >
     <div class="stack">
@@ -52,19 +53,22 @@
         [tone]="meterTone(card)"
       />
       @if (card.lineCount > 0) {
-        <!-- Déplié d'office tant qu'il reste à sortir ; un rayon fini se replie
-             et s'ouvre à la demande (Hugo, 2026-09-28). -->
-        <fold-disclosure [open]="card.state !== 'done'" [attr.data-detail]="card.key">
+        <!-- Déplié d'office, fini ou non ; on replie à la demande (Hugo, 2026-09-28). -->
+        <fold-disclosure [open]="true" [attr.data-detail]="card.key">
           <span summary class="detail-summary">Détail · {{ card.lineCount }} lignes</span>
           <ul class="lines">
             @for (line of card.pending; track line.sku) {
-              <li class="line">
+              <li class="line" [class.is-match]="matches().skus.has(line.sku)">
                 <span class="qty">{{ line.quantity }}</span>
                 <span class="product">{{ line.productName }}</span>
               </li>
             }
             @for (line of card.done; track line.sku) {
-              <li class="line is-done" data-line-done>
+              <li
+                class="line is-done"
+                [class.is-match]="matches().skus.has(line.sku)"
+                data-line-done
+              >
                 <span class="qty">{{ line.quantity }}</span>
                 <span class="product">{{ line.productName }}</span>
                 <span class="done-mark"

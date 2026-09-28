@@ -21,6 +21,7 @@ import {
   FoldCardComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
+  FoldSearchComponent,
   FoldSurfaceDirective,
   FoldViewNavComponent,
   FoldViewToggleComponent,
@@ -38,7 +39,7 @@ import { PackingColumn } from '../packing-column/packing-column';
 import { preparationBoard } from '../preparation-shelves';
 import { PreparationColumn } from '../preparation-column/preparation-column';
 import { SupervisionColumn } from '../supervision-column/supervision-column';
-import { asOfLabel, countLabel } from '../supervision-labels';
+import { asOfLabel } from '../supervision-labels';
 import {
   landingColumnOf,
   LINK_PERMISSION,
@@ -46,7 +47,8 @@ import {
 } from '../supervision-links';
 import { SupervisionService } from '../supervision.service';
 import { serviceDayParam, shiftServiceDay } from '../supervision-day';
-import { blockersOf, methodOptionsOf, supervisionTabs } from '../supervision-tabs';
+import { blockersOf, countersOf, methodOptionsOf, supervisionTabs } from '../supervision-tabs';
+import { supervisionMatches } from '../supervision-search';
 
 /**
  * En dessous, une colonne à la fois (plan §6). 900 px et non le seuil commun
@@ -79,6 +81,7 @@ const BOARD_NARROW = '(max-width: 900px)';
     FoldCardComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
+    FoldSearchComponent,
     FoldSurfaceDirective,
     FoldViewNavComponent,
     FoldViewToggleComponent,
@@ -143,17 +146,15 @@ export class SupervisionPage {
     return day === null ? '' : `${dayLabelOf(day.date)} · ${asOfLabel(day.asOf)}`;
   });
 
-  protected readonly counters = computed(() => {
-    const handover = this.handoverBoard();
-    const delivery = handover?.deliveryExpected ?? 0;
-    return {
-      preparation: this.preparationBoard()?.openLines ?? null,
-      packing: this.packingBoard()?.toPack ?? null,
-      handover: handover === null ? null : handover.pickupExpected + delivery,
-      deliveryNote:
-        delivery === 0 ? null : `dont ${countLabel(delivery, 'livraison', 'livraisons')}`,
-    };
-  });
+  protected readonly counters = computed(() =>
+    countersOf(this.preparationBoard(), this.packingBoard(), this.handoverBoard()),
+  );
+
+  /** La recherche du masthead : elle SURLIGNE dans les trois colonnes, elle ne filtre pas. */
+  protected readonly query = signal('');
+  protected readonly matches = computed(() =>
+    supervisionMatches(this.query(), dataOf(this.handover()), dataOf(this.packing())),
+  );
 
   /**
    * Les blocages que porte une carte du masthead — dits par une pastille

@@ -128,6 +128,14 @@
   gap: var(--fold-space-sm);
 }
 
+.packed-at {
+  display: block;
+  margin-top: var(--fold-space-xs);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-success-text);
+}
+
 .compact-name {
   font-size: var(--fold-text-sm);
   font-weight: var(--fold-weight-semibold);
@@ -180,4 +188,11 @@
       color: inherit;
     }
   }
+}
+
+// La recherche du masthead SURLIGNE (Hugo, 2026-09-28) : un contour à la
+// couleur primaire, sans toucher au fond qui dit l'état.
+.is-match {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 1px;
 }

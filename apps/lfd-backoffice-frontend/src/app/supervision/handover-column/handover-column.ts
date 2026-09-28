@@ -11,6 +11,7 @@ import {
 import type { HandoverBoard, SlotGroup, SlotRow } from '../handover-slots';
 import { countLabel } from '../supervision-labels';
 import { SUPERVISION_LINKS } from '../supervision-links';
+import { NO_MATCHES } from '../supervision-search';
 
 /**
  * **Colonne 3 · Retrait / livraison — l'unité est le créneau.** Deux métiers,
@@ -38,6 +39,8 @@ export class HandoverColumn {
   readonly board = input.required<HandoverBoard>();
   readonly showLinks = input(false);
   readonly narrow = input(false);
+  /** Ce que la recherche du masthead désigne, par numéro de commande. */
+  readonly matches = input(NO_MATCHES);
   /** `supervision/day` a échoué : la file reste, mais aucun retard n'est jugé. */
   readonly latenessUnknown = input(false);
 

@@ -25,6 +25,7 @@
       radius="sm"
       class="order is-waiting"
       [class.narrow]="narrow()"
+      [class.is-match]="matches().references.has(card.reference)"
       [class.edge-warning]="card.state === 'awaiting_oven'"
       [attr.data-packing]="card.state"
       [attr.data-reference]="card.reference"
@@ -84,6 +85,7 @@
       <fold-card
         radius="sm"
         class="order compact is-done"
+        [class.is-match]="matches().references.has(card.reference)"
         [attr.data-packing]="card.state"
         [attr.data-reference]="card.reference"
       >
@@ -91,6 +93,9 @@
           <span class="compact-name">{{ card.customerLabel }}</span>
           <span class="meta">{{ meta(card) }}</span>
         </div>
+        @if (card.packedAt !== null) {
+          <span class="packed-at" data-packed-at>Déclarée prête à {{ card.packedAt }}</span>
+        }
       </fold-card>
     }
   }

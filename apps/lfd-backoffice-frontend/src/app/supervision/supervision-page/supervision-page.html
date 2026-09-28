@@ -14,6 +14,15 @@
           <button foldButton emphasis="outline" size="sm" (click)="goTo(null)">Aujourd’hui</button>
         }
       </div>
+      <fold-search
+        placeholder="N° de commande, enseigne, raison sociale…"
+        ariaLabel="Surligner des commandes"
+        size="sm"
+        [(value)]="query"
+        [resultCount]="query() === '' ? null : matches().references.size"
+        [resultLabel]="matches().references.size === 1 ? 'commande' : 'commandes'"
+        data-search
+      />
       <span class="mc-clock" data-stamp>{{ stamp() }}</span>
     </div>
 
@@ -87,7 +96,12 @@
         (retry)="retry('preparation')"
       >
         @if (preparationBoard(); as board) {
-          <app-preparation-column [board]="board" [showLinks]="showLinks()" [narrow]="narrow()" />
+          <app-preparation-column
+            [board]="board"
+            [showLinks]="showLinks()"
+            [narrow]="narrow()"
+            [matches]="matches()"
+          />
         }
       </app-supervision-column>
     }
@@ -103,7 +117,12 @@
         (retry)="retry('packing')"
       >
         @if (packingBoard(); as board) {
-          <app-packing-column [board]="board" [showLinks]="showLinks()" [narrow]="narrow()" />
+          <app-packing-column
+            [board]="board"
+            [showLinks]="showLinks()"
+            [narrow]="narrow()"
+            [matches]="matches()"
+          />
         }
       </app-supervision-column>
     }
@@ -136,6 +155,7 @@
             [showLinks]="showLinks()"
             [narrow]="narrow()"
             [latenessUnknown]="latenessUnknown()"
+            [matches]="matches()"
           />
         }
       </app-supervision-column>

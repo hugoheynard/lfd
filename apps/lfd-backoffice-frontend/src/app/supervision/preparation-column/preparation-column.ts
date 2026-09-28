@@ -11,6 +11,7 @@ import {
 } from 'fold-ng';
 
 import type { PreparationBoard, ShelfCard } from '../preparation-shelves';
+import { NO_MATCHES } from '../supervision-search';
 import { SUPERVISION_LINKS } from '../supervision-links';
 
 /**
@@ -40,6 +41,8 @@ export class PreparationColumn {
   readonly board = input.required<PreparationBoard>();
   readonly showLinks = input(false);
   readonly narrow = input(false);
+  /** Ce que la recherche du masthead désigne — les produits des commandes trouvées. */
+  readonly matches = input(NO_MATCHES);
 
   protected readonly link = SUPERVISION_LINKS.preparation;
   protected readonly empty = computed(
@@ -55,6 +58,12 @@ export class PreparationColumn {
     ...this.board().open,
     ...this.board().finished,
   ]);
+
+  /** Le rayon porte-t-il un produit d'une commande cherchée ? */
+  protected shelfMatches(card: ShelfCard): boolean {
+    const skus = this.matches().skus;
+    return [...card.pending, ...card.done].some((line) => skus.has(line.sku));
+  }
 
   protected meterLabel(card: ShelfCard): string {
     return card.state === 'done'
