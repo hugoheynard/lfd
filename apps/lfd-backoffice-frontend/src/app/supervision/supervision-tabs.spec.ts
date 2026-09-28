@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { HandoverBoard } from './handover-slots';
-import type { PackingBoard } from './packing-cards';
+import type { PackingBoard, PackingCard, PackingState } from './packing-cards';
 import {
   blockersOf,
   columnBlockersOf,
@@ -22,6 +22,24 @@ function packing(overrides: Partial<PackingBoard> = {}): PackingBoard {
   };
 }
 
+function card(reference: string, state: PackingState): PackingCard {
+  return {
+    reference,
+    orderId: null,
+    customerLabel: reference,
+    method: 'pickup',
+    destination: 'Le Labo',
+    state,
+    lineCount: 1,
+    packedLines: 0,
+    containers: 0,
+    awaited: [],
+    initials: [],
+    slotMinutes: null,
+    packedAt: null,
+  };
+}
+
 function handover(overrides: Partial<HandoverBoard> = {}): HandoverBoard {
   return {
     pickup: [],
@@ -39,17 +57,34 @@ function handover(overrides: Partial<HandoverBoard> = {}): HandoverBoard {
 describe('blockersOf', () => {
   /** Hugo, 2026-09-28 : « 3 commandes attendent le four », et rien pour le colisage. */
   it('dit combien de commandes attendent le colisage, une fois le plan arrêté', () => {
-    const blockers = blockersOf(packing(), handover({ awaitingPacking: 2 }));
+    const board = packing({
+      visible: [card('A', 'to_pack'), card('B', 'in_progress'), card('C', 'awaiting_oven')],
+    });
+    const blockers = blockersOf(board, handover());
 
     expect(blockers.packing).toBe(2);
     expect(blockers.packingLabel).toBe('2 commandes attendent le colisage');
   });
 
-  it('se tait avant l’arrêt : toute la journée attendrait le colisage', () => {
-    expect(blockersOf(packing({ notClosed: true }), handover({ awaitingPacking: 7 })).packing).toBe(
-      0,
+  /**
+   * Régression 2026-09-28 : la pastille comptait les commandes « pas prêtes »
+   * de la file de retrait, où un créneau dépassé change d'état — elle disait 0
+   * avec deux commandes à coliser.
+   */
+  it('compte au colisage, même quand le créneau est dépassé côté retrait', () => {
+    const blockers = blockersOf(
+      packing({ visible: [card('A', 'to_pack')] }),
+      handover({ overdue: 1 }),
     );
-    expect(blockersOf(null, handover({ awaitingPacking: 7 })).packing).toBe(0);
+
+    expect(blockers.packing).toBe(1);
+  });
+
+  it('se tait avant l’arrêt : toute la journée attendrait le colisage', () => {
+    const board = packing({ notClosed: true, visible: [card('A', 'to_pack')] });
+
+    expect(blockersOf(board, handover()).packing).toBe(0);
+    expect(blockersOf(null, handover()).packing).toBe(0);
   });
 
   it('garde le four et les créneaux dépassés', () => {
@@ -74,8 +109,8 @@ describe('supervisionTabs', () => {
     const tabs = supervisionTabs(
       { preparation: 4, packing: 5, handover: 6, deliveryNote: null },
       blockersOf(
-        packing({ awaitingOven: 1 }),
-        handover({ awaitingPacking: 2, overdue: 2, held: 1 }),
+        packing({ awaitingOven: 1, visible: [card('A', 'to_pack'), card('B', 'in_progress')] }),
+        handover({ overdue: 2, held: 1 }),
       ),
       null,
     );

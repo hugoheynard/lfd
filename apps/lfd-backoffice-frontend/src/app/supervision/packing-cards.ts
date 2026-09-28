@@ -100,6 +100,17 @@ export function packingStateOf(sheet: PackingSheet): PackingState {
   return sheet.packedLines > 0 ? 'in_progress' : 'to_pack';
 }
 
+/**
+ * **Attend le colisage** : le four a tout sorti, le sac n'est pas fermé — à
+ * coliser ou en cours. Lu sur la fiche de colis, pas sur la file de retrait :
+ * une commande au créneau dépassé y change d'état et n'y comptait plus (la
+ * pastille disait 0 avec deux commandes à coliser, vu le 2026-09-28).
+ */
+export function awaitsPacking(sheet: PackingSheet): boolean {
+  const state = packingStateOf(sheet);
+  return state === 'to_pack' || state === 'in_progress';
+}
+
 /** `07:30` → 450. Une heure illisible ne se trie pas : `null`. */
 export function minutesOf(time: string): number | null {
   const match = /^(\d{1,2}):(\d{2})/u.exec(time);

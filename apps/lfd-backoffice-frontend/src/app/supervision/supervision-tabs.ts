@@ -108,7 +108,11 @@ export function blockersOf(
   handover: HandoverBoard | null,
 ): SupervisionBlockers {
   const oven = packing?.awaitingOven ?? 0;
-  const waiting = packing === null || packing.notClosed ? 0 : (handover?.awaitingPacking ?? 0);
+  const waiting =
+    packing === null || packing.notClosed
+      ? 0
+      : packing.visible.filter((card) => card.state === 'to_pack' || card.state === 'in_progress')
+          .length;
   const overdue = handover?.overdue ?? 0;
   const kitchen = handover?.overdueKitchen ?? 0;
   const held = handover?.held ?? 0;

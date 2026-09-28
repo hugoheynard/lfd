@@ -3,6 +3,7 @@ import type { HandoverQueueView, PackingSheet, ProductionPackingView } from '@lf
 import { searchKey } from '../shared/search/search-key';
 
 import type { HandoverBoard, SlotRow } from './handover-slots';
+import { awaitsPacking } from './packing-cards';
 
 /**
  * **Ce que la recherche de la Supervision désigne** (Hugo, 2026-09-28) : des
@@ -91,7 +92,7 @@ export type SupervisionFocus = 'oven' | 'packing' | 'kitchen' | 'held' | 'custom
 
 /** Les références dont une file de retrait dit qu'elles portent cette cause. */
 function handoverReferences(
-  focus: Exclude<SupervisionFocus, 'oven'>,
+  focus: Exclude<SupervisionFocus, 'oven' | 'packing'>,
   handover: HandoverBoard | null,
 ): Set<string> {
   const rows = [...(handover?.pickup ?? []), ...(handover?.delivery ?? [])].flatMap(
@@ -99,8 +100,6 @@ function handoverReferences(
   );
   const hit = (row: SlotRow): boolean => {
     switch (focus) {
-      case 'packing':
-        return row.state === 'not_ready';
       case 'kitchen':
         return row.overdueCause === 'kitchen';
       case 'customer':
@@ -158,6 +157,12 @@ export function focusMatches(
 ): SupervisionMatches {
   if (focus === 'oven') {
     return productMatches(packing?.sheets ?? [], handover);
+  }
+  if (focus === 'packing') {
+    const references = new Set(
+      (packing?.sheets ?? []).filter(awaitsPacking).map((sheet) => sheet.reference),
+    );
+    return { ...NO_MATCHES, references, mode: 'search' };
   }
   return {
     references: handoverReferences(focus, board),
