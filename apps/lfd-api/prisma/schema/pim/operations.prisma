@@ -1,6 +1,6 @@
 /// **L'opération datée** — Noël, Pâques, la galette : une sélection d'articles,
 /// bornée dans le temps, qu'on annonce avant de la vendre
-/// (`documentation/order/architecture-operations-datees.md`).
+/// (`documentation/operations-datees/architecture-operations-datees.md`).
 ///
 /// La clé est la clé primaire, et c'est tout le mécanisme de D9 : une opération
 /// ne se supprime pas, elle s'archive (`archived_at`), donc `noel-2026` ne peut

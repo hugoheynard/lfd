@@ -60,7 +60,7 @@ const SCAN_ROOTS = [
   "apps/lfd-backoffice-frontend/src/app/fiche-client/tarifs",
   "apps/lfd-api/src/b2b/pricing",
   // Les opérations datées (2026-09-24, lot 1 du plan
-  // `documentation/order/architecture-operations-datees.md`, D2) : leurs cinq
+  // `documentation/operations-datees/architecture-operations-datees.md`, D2) : leurs cinq
   // dates décident de quand on vend, et `fin(pickupUntil)` se compare à
   // l'horloge — la même question que la tarification, la même réponse.
   "apps/lfd-api/src/pim/operations",

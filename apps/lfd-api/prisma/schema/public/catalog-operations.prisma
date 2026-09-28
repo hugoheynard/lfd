@@ -1,6 +1,6 @@
 /// **Le miroir des opérations datées** — ce que le référentiel a livré de
 /// Noël, de Pâques, de la galette (fil v11, D10 de
-/// `documentation/order/architecture-operations-datees.md`).
+/// `documentation/operations-datees/architecture-operations-datees.md`).
 ///
 /// Un miroir, pas une copie de travail : le commerce ne crée pas d'opération
 /// et n'y ajoute rien (D1). Il la RESTREINT à la réception, dans

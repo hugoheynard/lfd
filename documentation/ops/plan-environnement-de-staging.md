@@ -144,7 +144,7 @@ règlement font partie de ce que la beta éprouve, et R2 tient leurs e-mails.
   côté staff, les **invitations en attente** (elles enverraient un lien vers
   la beta) et les **abonnements push** (ils feraient sonner des téléphones
   pour des commandes fictives).
-- **L'outil** : un dérivé de `clone-dev.ts`, `clone-staging.ts`, qui ne lit
+- **L'outil** : un dérivé de `clone-dev.ts`, `clone-staging` (à écrire), qui ne lit
   que la liste blanche. Sa cible est refusée si elle n'est pas **l'hôte de
   staging déclaré** (liste blanche d'un hôte, comme `refuseNonLocalTarget`) ;
   il refuse aussi une source qui n'est pas la production déclarée, pour ne
@@ -179,7 +179,7 @@ avant de bâtir. C'est l'étape 1 du lot R-C.
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
 | R-A | `DEPLOYMENT_ENV`, la liste blanche des e-mails, le refus de la clé Stripe non test, le préfixe mail, le bandeau des fronts. Tests.                    | code        |
 | R-B | Les comptes : base, Auth0 (2 SPA, 2 audiences, 1 connexion clients, 1 M2M), R2, Resend, Stripe test, VAPID, domaines, environnement GitHub `staging`. | Hugo, guidé |
-| R-C | `clone-staging.ts` : l'inventaire des clés étrangères, la liste blanche, les gardes de source et de cible, les objets média.                          | code        |
+| R-C | `clone-staging` (à écrire) : l'inventaire des clés étrangères, la liste blanche, les gardes de source et de cible, les objets média.                  | code        |
 | R-D | Les workflows : déclencheur `dev`, environnement GitHub, migration en staging d'abord.                                                                | code        |
 | R-E | Le runbook : créer, rafraîchir, remettre à zéro le staging.                                                                                           | doc         |
 
@@ -227,7 +227,7 @@ R-D attend R-B.
   toutes deux chez Prisma Postgres (`db.prisma.io`). Et l'outil purge sa
   cible. **La base se déclare elle-même** : une table `ops.deployment_marker`
   à une ligne (`production` ou `staging`), écrite une fois à la création de
-  chaque base. `clone-staging.ts` **refuse** une cible dont le marqueur n'est
+  chaque base. `clone-staging` **refuse** une cible dont le marqueur n'est
   pas `staging`, et une source dont le marqueur n'est pas `production`. Plus
   aucune URL ne décide seule. Pas de repli `DATABASE_LFD_URL` hérité de
   `clone-dev.ts:40`, pas de `dotenv`.
