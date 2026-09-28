@@ -29,7 +29,7 @@
 
 .title-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--fold-space-sm);
 }
 
@@ -48,13 +48,6 @@
   letter-spacing: var(--fold-tracking-caps);
   text-transform: uppercase;
   color: var(--fold-color-text-muted);
-}
-
-.description {
-  margin: 0;
-  font-size: var(--fold-text-xs);
-  line-height: var(--fold-leading-normal);
-  color: var(--fold-color-text-secondary);
 }
 
 .tools {

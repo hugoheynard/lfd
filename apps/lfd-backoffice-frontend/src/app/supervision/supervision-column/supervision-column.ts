@@ -3,6 +3,7 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
+  FoldInfoComponent,
   FoldLoadingStateComponent,
 } from 'fold-ng';
 
@@ -10,7 +11,8 @@ import type { ColumnState } from '../column-state';
 
 /**
  * **Le cadre d'une colonne de la Supervision** : son intitulé (« 1 ·
- * Préparation », « L'UNITÉ EST LE PRODUIT », la phrase qui dit ce qu'on y lit),
+ * Préparation », « L'UNITÉ EST LE PRODUIT », et derrière un `fold-info` la phrase qui dit ce
+ * qu'on y lit),
  * et SES états — chaque colonne a le sien (plan §9).
  *
  * L'en-tête reste en place, SEUL le corps défile : chaque colonne a son propre
@@ -26,6 +28,7 @@ import type { ColumnState } from '../column-state';
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
+    FoldInfoComponent,
     FoldLoadingStateComponent,
   ],
   templateUrl: './supervision-column.html',

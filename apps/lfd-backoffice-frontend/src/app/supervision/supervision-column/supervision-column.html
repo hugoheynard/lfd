@@ -3,8 +3,10 @@
     <div class="title-row">
       <h2 class="title">{{ heading() }}</h2>
       <span class="unit">{{ unit() }}</span>
+      <!-- La phrase de lecture se consulte, elle ne se relit pas à chaque
+           coup d'œil : rangée derrière l'unité (Hugo, 2026-09-28). -->
+      <fold-info [text]="description()" [label]="'Lire la colonne ' + heading()" />
     </div>
-    <p class="description">{{ description() }}</p>
   </header>
 
   <!-- Ce qui règle la lecture de la colonne (le segmenté du retrait) reste
