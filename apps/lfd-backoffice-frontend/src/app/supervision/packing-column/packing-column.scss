@@ -32,10 +32,14 @@
   }
 
   // La carte dépliée, source de la mise en avant produits (A5).
+  // La carte suivie, aux valeurs de la maquette (#fffaf0 / #ecd9a4 / liseré
+  // amber-500). OPAQUE : `--fold-color-warning-surface` est un ambre à 8 %
+  // transparent, qui laissait passer le gris de la colonne (vu le 2026-09-28).
   &.is-source {
-    background: var(--fold-color-warning-surface);
-    border: 1px solid var(--fold-ref-amber-500);
-    border-left-width: 3px;
+    background: color-mix(in srgb, var(--fold-ref-amber-500) 6%, var(--fold-color-surface-card));
+    border: 1px solid
+      color-mix(in srgb, var(--fold-ref-amber-500) 40%, var(--fold-color-surface-card));
+    border-left: 3px solid var(--fold-ref-amber-500);
     box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--fold-ref-amber-700) 45%, transparent);
   }
 
