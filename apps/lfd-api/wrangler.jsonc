@@ -152,6 +152,14 @@
   //    journée. Idempotent — une commande ne sonne qu'une fois. Recopié dans
   //    `SETTLEMENT_REMINDERS_CRON` (worker.ts), à l'identique.
   //
+  // 6. `45 3` — BALAYAGE DES PHOTOS DE CONTRÔLE (POST
+  //    /admin/production/quality/sweep) : retire les photos déposées depuis
+  //    plus de 24 h et jamais rattachées à un verdict, et les fichiers
+  //    provisoires dont la libération a échoué (plan
+  //    `documentation/production/plan-controle-qualite.md`, D8). Un quart
+  //    d'heure après le ramassage des visuels. Recopié dans
+  //    `QUALITY_UPLOAD_SWEEP_CRON` (worker.ts), à l'identique.
+  //
   // ⚠️ Les crons Cloudflare sont en **UTC**. On vise ~04h/12h/20h Europe/Paris ;
   // avec le décalage saisonnier (UTC+1 hiver / UTC+2 été), 03/11/19 UTC tombe à
   // 04/12/20 en hiver et 05/13/21 en été — une dérive d'une heure sans importance
@@ -166,6 +174,7 @@
       "30 3 * * *",
       "0 2 * * *",
       "0 * * * *",
+      "45 3 * * *",
     ],
   },
 

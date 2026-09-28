@@ -296,6 +296,26 @@ async function triggerSettlementReminders(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et déclenche le balayage des photos de contrôle qualité
+ * déposées et jamais rattachées (plan `documentation/production/plan-controle-qualite.md`, D8).
+ *
+ * Même porte et même jeton que le recompute. Idempotent : un tour manqué est
+ * rattrapé au suivant, et une photo abandonnée ne coûte qu'une nuit de stockage.
+ */
+async function triggerQualityUploadSweep(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await backend(env).fetch(
+    new Request("https://internal/admin/production/quality/sweep", {
+      method: "POST",
+      headers: { "x-lfc-recompute-token": token },
+    }),
+  );
+}
+
+/**
  * L'expression exacte du cron de rafraîchissement, telle qu'écrite dans
  * `wrangler.jsonc`. Cloudflare ne transmet que cette chaîne pour distinguer les
  * déclenchements : elle doit rester **identique des deux côtés**, sinon le ping
@@ -325,6 +345,13 @@ const LOYALTY_SWEEP_CRON = "0 2 * * *";
  * partirait en recompute.
  */
 const SETTLEMENT_REMINDERS_CRON = "0 * * * *";
+
+/**
+ * Le balayage des photos de contrôle — une fois par nuit, un quart d'heure
+ * après le ramassage des visuels. Même règle : identique à `wrangler.jsonc`,
+ * sinon il partirait en recompute.
+ */
+const QUALITY_UPLOAD_SWEEP_CRON = "45 3 * * *";
 
 /**
  * Garde l'instance chaude en la sollicitant plus souvent que son `sleepAfter`.
@@ -359,6 +386,8 @@ function dispatchCron(cron: string, env: Env): Promise<void> {
       return triggerLoyaltySweep(env);
     case SETTLEMENT_REMINDERS_CRON:
       return triggerSettlementReminders(env);
+    case QUALITY_UPLOAD_SWEEP_CRON:
+      return triggerQualityUploadSweep(env);
     default:
       return triggerRecompute(env);
   }
@@ -373,12 +402,12 @@ export default {
     return guardedFetch(request, env.RATE_LIMITER, (forwarded) => backend(env).fetch(forwarded));
   },
 
-  // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc). Cinq
+  // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc). Six
   // rythmes sur le même handler, départagés par l'expression (`dispatchCron`) :
   // toutes les 5 min pour garder le container chaud, toutes les heures pour les
   // liens de paiement non réglés à l'heure limite, 3×/jour aux heures creuses
-  // pour le recompute batch, et 1×/nuit pour la fidélité puis pour le ramassage
-  // des visuels orphelins. `waitUntil` garde le Worker vivant jusqu'à la fin de
+  // pour le recompute batch, et 1×/nuit pour la fidélité, le ramassage des
+  // visuels orphelins et le balayage des photos de contrôle. `waitUntil` garde le Worker vivant jusqu'à la fin de
   // l'appel container.
   scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
     ctx.waitUntil(dispatchCron(controller.cron, env));
