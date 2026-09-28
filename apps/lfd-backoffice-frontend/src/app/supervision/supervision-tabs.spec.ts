@@ -25,6 +25,7 @@ function handover(overrides: Partial<HandoverBoard> = {}): HandoverBoard {
     deliveryExpected: 0,
     overdue: 0,
     awaitingPacking: 0,
+    overdueKitchen: 0,
     ...overrides,
   };
 }
@@ -61,5 +62,13 @@ describe('supervisionTabs', () => {
     );
 
     expect(tabs.map((tab) => tab.badge)).toEqual([1, 2, 3]);
+  });
+
+  /** Hugo, 2026-09-28 : le retard du client n'est pas celui du fournil. */
+  it('sépare les créneaux dépassés par nous de ceux dépassés par le client', () => {
+    const blockers = blockersOf(packing(), handover({ overdue: 3, overdueKitchen: 1 }));
+
+    expect(blockers.overdueKitchenLabel).toBe('1 créneau dépassé par nous');
+    expect(blockers.overdueCustomerLabel).toBe('2 clients pas venus');
   });
 });

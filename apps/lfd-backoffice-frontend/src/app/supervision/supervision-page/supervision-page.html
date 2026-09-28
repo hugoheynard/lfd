@@ -63,8 +63,23 @@
               counters().deliveryNote === null ? '' : ' · ' + counters().deliveryNote
             }}</span
           >
-          @if (blockers().overdue > 0) {
-            <fold-badge class="chiffre-flag" variant="alert" [content]="blockers().overdueLabel" />
+          <!-- Deux causes, deux pastilles : le retard du fournil est une alerte,
+               celui du client un avertissement. -->
+          @if (blockers().overdueKitchen > 0) {
+            <fold-badge
+              class="chiffre-flag"
+              variant="alert"
+              [content]="blockers().overdueKitchenLabel"
+              data-blocker="overdue-kitchen"
+            />
+          }
+          @if (blockers().overdueCustomer > 0) {
+            <fold-badge
+              class="chiffre-flag"
+              variant="warning"
+              [content]="blockers().overdueCustomerLabel"
+              data-blocker="overdue-customer"
+            />
           }
         </div>
       </fold-card>

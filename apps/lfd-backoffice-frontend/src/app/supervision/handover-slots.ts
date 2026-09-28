@@ -33,8 +33,21 @@ export interface SlotRow {
   readonly handedOverAt: string | null;
   /** Minutes de dépassement, pour « créneau dépassé de 55 min ». */
   readonly overdueMinutes: number | null;
+  /**
+   * **Qui** a dépassé le créneau (Hugo, 2026-09-28) — `null` hors dépassement.
+   *
+   * - `kitchen` : le sac n'était pas prêt à la fin du créneau — il ne l'est
+   *   toujours pas, ou il l'a été APRÈS. C'est nous.
+   * - `customer` : prêt à temps, et le client n'est pas venu.
+   *
+   * Tranché par `readyAt` contre la fin du créneau, deux faits que la file
+   * porte déjà : aucun nouveau champ serveur.
+   */
+  readonly overdueCause: OverdueCause | null;
   readonly method: FulfillmentMethod;
 }
+
+export type OverdueCause = 'kitchen' | 'customer';
 
 export type SlotKind = 'hour' | 'opening' | 'none';
 
@@ -57,6 +70,8 @@ export interface HandoverBoard {
   readonly deliveryExpected: number;
   /** Créneaux dépassés — la pastille sur l'onglet Retrait. */
   readonly overdue: number;
+  /** Dont ceux que NOUS avons dépassés — le sac n'était pas prêt à temps. */
+  readonly overdueKitchen: number;
   /** Attendues mais pas encore prêtes — ce que le colisage retient (Hugo, 2026-09-28). */
   readonly awaitingPacking: number;
 }
@@ -102,6 +117,14 @@ export function overdueMinutesOf(date: string, end: string, asOf: string): numbe
   return Math.max(0, Math.floor((now - due.getTime()) / MINUTE_MS));
 }
 
+/** Prêt avant la fin du créneau : c'est le client. Sinon — ou illisible —, c'est nous. */
+export function causeOf(entry: HandoverQueueEntryView, day: string, end: string): OverdueCause {
+  const due = localToInstant(day, end);
+  const ready = entry.readyAt === null ? Number.NaN : new Date(entry.readyAt).getTime();
+  // Illisible ⇒ « nous » : dans le doute, le retard se regarde chez soi.
+  return due !== null && !Number.isNaN(ready) && ready <= due.getTime() ? 'customer' : 'kitchen';
+}
+
 function stateOf(entry: HandoverQueueEntryView, overdue: boolean): SlotRowState {
   switch (entry.state) {
     case 'handed_over':
@@ -144,6 +167,7 @@ function rowOf(
       state === 'overdue' && window !== null && late !== null
         ? overdueMinutesOf(day, window.end, late.asOf)
         : null,
+    overdueCause: state === 'overdue' && window !== null ? causeOf(entry, day, window.end) : null,
     method: entry.fulfillmentMethod,
   };
 }
@@ -215,6 +239,7 @@ export function handoverBoard(
     pickupExpected: all.filter((row) => row.method === 'pickup' && isExpected(row)).length,
     deliveryExpected: all.filter((row) => row.method === 'delivery' && isExpected(row)).length,
     overdue: all.filter((row) => row.state === 'overdue').length,
+    overdueKitchen: all.filter((row) => row.overdueCause === 'kitchen').length,
     awaitingPacking: all.filter((row) => row.state === 'not_ready').length,
   };
 }

@@ -16,6 +16,7 @@ function row(reference: string, overrides: Partial<SlotRow> = {}): SlotRow {
     pickupLabel: 'Boutique',
     handedOverAt: null,
     overdueMinutes: null,
+    overdueCause: null,
     method: 'pickup',
     ...overrides,
   };
@@ -32,7 +33,7 @@ const BOARD: HandoverBoard = {
       rows: [
         row('PRETE'),
         row('RETIREE', { state: 'handed_over', handedOverAt: '7 h 04' }),
-        row('TARD', { state: 'overdue', overdueMinutes: 55 }),
+        row('TARD', { state: 'overdue', overdueMinutes: 55, overdueCause: 'kitchen' }),
       ],
     },
   ],
@@ -50,6 +51,7 @@ const BOARD: HandoverBoard = {
   deliveryExpected: 1,
   overdue: 1,
   awaitingPacking: 0,
+  overdueKitchen: 1,
 };
 
 async function mount(board: HandoverBoard) {

@@ -70,10 +70,13 @@ export class HandoverColumn {
       }
       case 'cancelled':
         return 'Annulée';
-      case 'overdue':
-        return row.overdueMinutes === null
-          ? 'créneau dépassé'
-          : `créneau dépassé de ${String(row.overdueMinutes)} min`;
+      case 'overdue': {
+        const late =
+          row.overdueMinutes === null
+            ? 'créneau dépassé'
+            : `créneau dépassé de ${String(row.overdueMinutes)} min`;
+        return `${late} · ${row.overdueCause === 'customer' ? 'client pas venu' : 'pas prête à temps'}`;
+      }
       case 'not_ready':
         return `${units} · encore au colisage`;
       case 'ready':

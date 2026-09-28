@@ -49,6 +49,15 @@
       color: var(--fold-color-alert-text);
     }
   }
+  // Le client n'est pas venu : un avertissement, pas une alerte — le sac est prêt.
+  &.edge-warning {
+    border-left: 3px solid var(--fold-ref-amber-500);
+    border-radius: 0 var(--fold-radius-sm) var(--fold-radius-sm) 0;
+
+    .time {
+      color: var(--fold-color-warning-text);
+    }
+  }
 
   // Hugo, 2026-09-28 : ce qui attend en ambre, ce qui est remis en vert, en bas
   // du créneau ; la sous-ligne dit l'état en toutes lettres.

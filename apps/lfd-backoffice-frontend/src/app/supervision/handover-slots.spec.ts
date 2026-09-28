@@ -7,7 +7,7 @@ import type {
   LateOrder,
 } from '@lfd/contracts';
 
-import { handoverBoard, overdueMinutesOf } from './handover-slots';
+import { causeOf, handoverBoard, overdueMinutesOf } from './handover-slots';
 
 const DAY = '2026-09-25';
 
@@ -158,5 +158,28 @@ describe('la colonne Retrait / livraison', () => {
   it('mesure un dépassement entre la fin du créneau et l’instant du serveur', () => {
     expect(overdueMinutesOf(DAY, '08:00', '2026-09-25T06:30:00.000Z')).toBe(30);
     expect(overdueMinutesOf(DAY, '08:00', 'illisible')).toBeNull();
+  });
+});
+
+describe('causeOf — qui a dépassé le créneau', () => {
+  // 2026-09-25, créneau 07:00–08:00 à Paris : fin = 06:00 UTC (heure d'été).
+  const end = '08:00';
+
+  it('prête avant la fin du créneau : c’est le client', () => {
+    const ready = entry('A', promised('07:00', end), { readyAt: '2026-09-25T05:40:00.000Z' });
+
+    expect(causeOf(ready, DAY, end)).toBe('customer');
+  });
+
+  it('prête APRÈS la fin du créneau : c’est nous', () => {
+    const late = entry('B', promised('07:00', end), { readyAt: '2026-09-25T06:20:00.000Z' });
+
+    expect(causeOf(late, DAY, end)).toBe('kitchen');
+  });
+
+  it('toujours pas prête : c’est nous', () => {
+    expect(causeOf(entry('C', promised('07:00', end), { state: 'expected' }), DAY, end)).toBe(
+      'kitchen',
+    );
   });
 });

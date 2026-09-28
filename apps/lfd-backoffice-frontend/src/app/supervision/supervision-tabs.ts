@@ -88,6 +88,14 @@ export interface SupervisionBlockers {
   readonly packingLabel: string;
   readonly overdue: number;
   readonly overdueLabel: string;
+  /**
+   * Les deux causes, séparées (Hugo, 2026-09-28) : un retard du client n'est
+   * pas une faute du fournil, et les deux ne se traitent pas pareil.
+   */
+  readonly overdueKitchen: number;
+  readonly overdueKitchenLabel: string;
+  readonly overdueCustomer: number;
+  readonly overdueCustomerLabel: string;
 }
 
 export function blockersOf(
@@ -97,6 +105,7 @@ export function blockersOf(
   const oven = packing?.awaitingOven ?? 0;
   const waiting = packing === null || packing.notClosed ? 0 : (handover?.awaitingPacking ?? 0);
   const overdue = handover?.overdue ?? 0;
+  const kitchen = handover?.overdueKitchen ?? 0;
   return {
     oven,
     ovenLabel: `${countLabel(oven, 'commande attend', 'commandes attendent')} le four`,
@@ -104,6 +113,10 @@ export function blockersOf(
     packingLabel: `${countLabel(waiting, 'commande attend', 'commandes attendent')} le colisage`,
     overdue,
     overdueLabel: countLabel(overdue, 'créneau dépassé', 'créneaux dépassés'),
+    overdueKitchen: kitchen,
+    overdueKitchenLabel: `${countLabel(kitchen, 'créneau dépassé', 'créneaux dépassés')} par nous`,
+    overdueCustomer: overdue - kitchen,
+    overdueCustomerLabel: `${countLabel(overdue - kitchen, 'client', 'clients')} pas venu${overdue - kitchen > 1 ? 's' : ''}`,
   };
 }
 
