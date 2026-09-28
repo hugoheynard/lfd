@@ -1,6 +1,6 @@
 # Plan — le contrôle qualité du superviseur
 
-> **État : 📐 plan, rien n'est bâti.** Ouvert le 2026-09-28, sur une demande
+> **État : 📐 plan validé par Hugo le 2026-09-28 (Q-A à Q-D tranchées), rien n'est bâti.** Ouvert le 2026-09-28, sur une demande
 > reçue par Hugo : un contrôle qualité fait par le superviseur. Les réponses de
 > Hugo du même jour sont au §1 ; elles tranchent la forme.
 >
@@ -24,8 +24,8 @@ Trois verdicts, chacun avec sa note et ses photos :
 | Verdict      | Effet                                                | Note        | Photos       |
 | ------------ | ---------------------------------------------------- | ----------- | ------------ |
 | **OK**       | aucun ; trace                                        | facultative | facultatives |
-| **Réserve**  | aucun blocage ; trace **visible**                    | obligatoire | au moins une |
-| **Bloquant** | la commande est **retenue au retrait** jusqu'à levée | obligatoire | au moins une |
+| **Réserve**  | aucun blocage ; trace **visible**                    | obligatoire | facultatives |
+| **Bloquant** | la commande est **retenue au retrait** jusqu'à levée | obligatoire | facultatives |
 
 Le mot « warning » de la demande devient **Réserve** à l'écran : c'est ce que
 dit un superviseur (« je fais une réserve ») ; `warning` reste le nom de code.
@@ -34,14 +34,14 @@ dit un superviseur (« je fais une réserve ») ; `warning` reste le nom de code
 
 ## 1. Les décisions de Hugo (2026-09-28)
 
-| #   | Question                            | Réponse                                                                                |
-| --- | ----------------------------------- | -------------------------------------------------------------------------------------- |
-| Q1  | Que fait un contrôle non conforme ? | **Trace, ET blocage du retrait.** Au comptoir : « commande en cours de vérification ». |
-| Q2  | Obligatoire avant le retrait ?      | **Facultatif.**                                                                        |
-| Q3  | Photo ?                             | **Oui**, une ou plusieurs — gardées **sans limite de temps** (Q-C).                    |
-| Q4  | Tout ou échantillon ?               | **Tout est contrôlable.** Pas de tirage.                                               |
-| —   | Combien d'états ?                   | **Trois** : OK, réserve, bloquant — note et photo(s) dès la réserve.                   |
-| Q5  | Où se fait le geste ?               | **Sur la Supervision.**                                                                |
+| #   | Question                            | Réponse                                                                                                                                      |
+| --- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q1  | Que fait un contrôle non conforme ? | **Trace, ET blocage du retrait.** Au comptoir : « commande en cours de vérification ».                                                       |
+| Q2  | Obligatoire avant le retrait ?      | **Facultatif.**                                                                                                                              |
+| Q3  | Photo ?                             | **Oui**, une ou plusieurs — gardées **sans limite de temps** (Q-C).                                                                          |
+| Q4  | Tout ou échantillon ?               | **Tout est contrôlable.** Pas de tirage.                                                                                                     |
+| —   | Combien d'états ?                   | **Trois** : OK, réserve, bloquant — une **note** dès la réserve ; la **photo** reste facultative (Hugo : « trop rigide pour la vraie vie »). |
+| Q5  | Où se fait le geste ?               | **Sur la Supervision.**                                                                                                                      |
 
 Conséquence de Q5, dite pour qu'elle ne passe pas en douce : la Supervision
 était **une vue qui n'agit pas** (`order/plan-supervision-du-jour.md`, §1). Le
@@ -106,10 +106,11 @@ production_quality_photo
 
 Contraintes **en base**, pas seulement dans l'agrégat : `CHECK` sur la paire
 `target_kind` / `sku` / `order_id` (exactement une cible), `CHECK` sur la note
-non vide hors `ok`, `UNIQUE (check_id, position)`. Le « au moins une photo »
-ne s'exprime pas en `CHECK` entre deux tables : **l'agrégat seul le tient**, et
-c'est assumé — le contrôle et ses lignes de photos s'écrivent dans la même
-transaction, par le seul port d'écriture.
+non vide hors `ok`, `UNIQUE (check_id, position)`. **La photo est
+facultative** à tous les verdicts (Hugo, 2026-09-28 : l'exiger serait « trop
+rigide pour la vraie vie ») : la NOTE porte l'obligation, et elle se tient en
+base. Il n'y a donc plus d'invariant entre deux tables à confier à l'agrégat
+seul.
 
 Migration **purement additive** : deux tables neuves dans le schéma
 `production`, aucune colonne touchée.
@@ -120,11 +121,21 @@ Migration **purement additive** : deux tables neuves dans le schéma
 lecture seule »). Il devient **le droit de juger**. Aujourd'hui seul
 l'administrateur l'a : c'est la bonne valeur par défaut.
 
-« De la part du superviseur » : aucun rôle ne le porte. **À trancher (Q-A)** —
-ouvrir un rôle `superviseur` (Supervision en écriture, commandes en lecture)
-ou accorder le droit par **dérogation** à une personne, mécanisme qui existe
-déjà. Le plan ne crée pas le rôle d'autorité : un rôle se décide, il ne se
-déduit pas.
+**Un rôle `superviseur` est ouvert** (Hugo, 2026-09-28, Q-A), plutôt qu'une
+dérogation par personne : le contrôle est un MÉTIER, et un métier sans rôle se
+disperse en exceptions que personne ne relit.
+
+Ses droits au premier lot : **`b2b_supervision:write`, et rien d'autre.** Pas
+`b2b_orders` — il porterait les montants et les contacts de toutes les
+commandes, ce que juger un sac ne demande pas. Conséquence visible : les
+renvois de la Supervision vers la fournée et le colisage restent cachés au
+superviseur, comme à tout lecteur sans `b2b_orders:read`. Si le métier réclame
+d'ouvrir les postes, c'est un ajout de droit à décider, pas un défaut.
+
+Le rôle s'ajoute à `staffRoleSchema`, à `STAFF_ROLE_LABELS` (« Superviseur »)
+et à `ROLE_GRANTS` dans `packages/contracts/src/staff-access.ts` — un contrat
+servi au back-office, donc un ajout **additif** : aucun rôle existant ne
+change de droits.
 
 🔴 **La note et les photos ne se lisent qu'en `write`.** Une photo de contrôle
 peut montrer une étiquette, un nom, une adresse ; la ressource promet « ni
@@ -216,8 +227,8 @@ Le SKU est celui du **compte** (`production_count.sku`), le même que
 `production_order_line.sku` : une déclinaison n'est jamais comparée à un
 produit.
 
-**À confirmer (Q-B)** : c'est lourd — un blocage de ligne peut retenir vingt
-commandes.
+**Confirmé par Hugo le 2026-09-28 (Q-B)**, en connaissance du poids : un
+blocage de ligne peut retenir vingt commandes.
 
 ### D7 — Facultatif, et visible
 
@@ -308,8 +319,8 @@ sequenceDiagram
   de fini à juger.
 - **Le panneau de contrôle** (`fold-panel`) — trois choix, la note, l'ajout de
   photos (appareil sur mobile), l'historique des verdicts de la cible.
-  **Enregistrer** reste désactivé tant qu'une réserve ou un blocage n'a ni
-  note ni photo.
+  **Enregistrer** reste désactivé tant qu'une réserve ou un blocage n'a pas de
+  note. Les photos s'ajoutent si on veut.
 - **Retrait** — « En vérification », et la recherche trouve les retenues.
 - Le bouton n'apparaît qu'à qui a `b2b_supervision:write` ; le serveur refuse
   de toute façon.
@@ -323,7 +334,7 @@ sur la ligne, avant qu'on scanne — le refus au scan reste la garantie.
 
 | Lot     | Contenu                                                                                                                                                                                  | Qui                                   |
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| **QC1** | Domaine : l'agrégat du contrôle, ses invariants, la péremption (D5), la règle de retenue (D4, D6). Pur, testé.                                                                           | `batisseur`                           |
+| **QC1** | Domaine : l'agrégat du contrôle, ses invariants, la péremption (D5), la règle de retenue (D4, D6). Pur, testé. Le rôle `superviseur` dans le contrat (D3).                               | `batisseur`                           |
 | **QC2** | Migration additive, adaptateur Prisma, dépôt + rattachement des photos, idempotence, balayage des dépôts, journal, routes (`CommandBus` dans le contrôleur).                             | `batisseur` + `lecteur-de-migrations` |
 | **QC3** | `QualityHoldsReader` par lot, en-tête du canal réécrit, `HandoverCandidate.qualityHold` aux trois lecteurs, `heldForQuality` dans la file, e2e : refus, levée, sac déjà parti, coursier. | `batisseur`                           |
 | **QC4** | Supervision : panneau, pastilles, masthead, colonne Retrait.                                                                                                                             | `pablo`                               |
@@ -331,17 +342,18 @@ sur la ligne, avant qu'on scanne — le refus au scan reste la garantie.
 
 ---
 
-## 7. Questions ouvertes
+## 7. Questions — toutes tranchées le 2026-09-28
 
-- **Q-A** — Un rôle `superviseur`, ou une dérogation par personne (le
-  mécanisme existe) ? (D3)
-- **Q-B** — Un blocage de LIGNE retient-il toutes les commandes **du plan**
-  qui portent ce produit, y compris celles qu'un retirage ajoute après ? (D6)
-  Recommandation : **oui**.
-- ~~**Q-C** — Combien de temps garder les photos ?~~ **Tranché (2026-09-28) : sans limite.** (D8)
-- **Q-D** — Le **client** est-il prévenu qu'une commande est retenue ?
-  Recommandation : **non** au premier lot — la retenue est un geste interne,
-  souvent levée dans l'heure ; le comptoir parle au client s'il est là.
+- **Q-A** — **Un rôle `superviseur`**, avec la Supervision en écriture et rien
+  d'autre (D3).
+- **Q-B** — **Oui** : un blocage de ligne retient toutes les commandes du plan
+  qui portent ce produit, y compris celles qu'un retirage ajoute après (D6).
+- **Q-C** — **Sans limite de temps** pour les photos (D8).
+- **Q-D** — **Non** : le client n'est pas prévenu d'une retenue. C'est un geste
+  interne, souvent levé dans l'heure ; le comptoir lui parle s'il est là.
+
+Et une révision : **la photo est facultative** à tous les verdicts ; la note
+seule est obligatoire dès la réserve (§0, D2).
 
 ---
 
