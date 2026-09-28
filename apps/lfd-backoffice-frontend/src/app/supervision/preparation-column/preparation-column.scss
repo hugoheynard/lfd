@@ -260,11 +260,11 @@
   background: color-mix(in srgb, var(--fold-ref-amber-500) 8%, var(--fold-color-surface-card));
 }
 
-// Et si ce sac a déjà fait dépasser un créneau PAR NOUS : bord rouge.
+// Et si ce sac a déjà fait dépasser un créneau PAR NOUS : un bord alerte, et
+// rien d'autre (Hugo, 2026-09-28) — pas de beige par-dessus.
 .line.is-late {
-  box-shadow:
-    inset 3px 0 0 var(--fold-color-alert),
-    inset 0 0 0 1px var(--fold-color-alert);
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--fold-color-alert);
 }
 
 // … et le reste recule.
