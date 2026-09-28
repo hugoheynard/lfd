@@ -38,9 +38,26 @@ export interface PackingCard {
   readonly packedAt: string | null;
 }
 
+/**
+ * Une commande **attendue** d'une journée pas encore arrêtée : lue dans la file
+ * de retrait, parce que le fournil n'a aucune fiche de colis avant l'arrêt.
+ */
+export interface UpcomingOrder {
+  readonly reference: string;
+  readonly customerLabel: string;
+  readonly totalUnits: number;
+  readonly slotMinutes: number | null;
+}
+
 export interface PackingBoard {
   /** La journée n'est pas arrêtée : il n'y a rien à coliser, et la colonne le dit. */
   readonly notClosed: boolean;
+  /**
+   * Avant l'arrêt, les commandes que la journée ATTEND — pour que la colonne
+   * dise la même chose que Retrait / livraison (Hugo, 2026-09-28 : « c'est pour
+   * la cohérence »). Vide une fois la journée arrêtée : les fiches prennent le relais.
+   */
+  readonly upcoming: readonly UpcomingOrder[];
   /** Les cartes montrées, dix au plus. */
   readonly visible: readonly PackingCard[];
   /** « + N commandes » au-delà de dix. */
@@ -126,12 +143,27 @@ export function packingBoard(
     .sort(bySlot);
   const waiting = cards.filter((card) => card.state === 'to_pack').sort(bySlot);
   const open = [...urgent, ...waiting];
+  const notClosed = view.closedAt === null;
   return {
-    notClosed: view.closedAt === null,
+    notClosed,
+    upcoming: notClosed ? upcomingOf(queue) : [],
     visible: open.slice(0, PACKING_VISIBLE_MAX),
     overflow: Math.max(0, open.length - PACKING_VISIBLE_MAX),
     packed: cards.filter((card) => card.state === 'packed'),
     toPack: open.length,
     awaitingOven: cards.filter((card) => card.state === 'awaiting_oven').length,
   };
+}
+
+/** Les commandes attendues, hors annulées, par heure de retrait. */
+function upcomingOf(queue: HandoverQueueView | null): UpcomingOrder[] {
+  return (queue?.entries ?? [])
+    .filter((entry) => entry.state !== 'cancelled')
+    .map((entry) => ({
+      reference: entry.reference,
+      customerLabel: entry.tradeName ?? entry.customerLabel,
+      totalUnits: entry.totalUnits,
+      slotMinutes: slotOf(entry),
+    }))
+    .sort((a, b) => (a.slotMinutes ?? Infinity) - (b.slotMinutes ?? Infinity));
 }

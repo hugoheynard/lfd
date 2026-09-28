@@ -151,3 +151,8 @@ fold-page-layout {
     border-left: none;
   }
 }
+
+// Sous les trois cartes : l'arrêt du plan commande toute la journée.
+.not-closed {
+  margin-top: var(--fold-space-sm);
+}

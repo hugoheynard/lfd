@@ -1,9 +1,12 @@
+import type { DaySupervisionView } from '@lfd/contracts';
 import type { FoldViewNavItem, FoldViewToggleOption } from 'fold-ng';
+
+import { dayLabelOf } from '../production/worksheet-day';
 
 import type { HandoverBoard } from './handover-slots';
 import type { PackingBoard } from './packing-cards';
 import type { PreparationBoard } from './preparation-shelves';
-import { countLabel } from './supervision-labels';
+import { asOfLabel, countLabel } from './supervision-labels';
 
 /** Les trois chiffres du masthead, `null` tant que leur colonne n'a pas répondu. */
 export interface SupervisionCounters {
@@ -71,4 +74,9 @@ export function blockersOf(oven: number, overdue: number) {
     overdue,
     overdueLabel: countLabel(overdue, 'créneau dépassé', 'créneaux dépassés'),
   } as const;
+}
+
+/** « jeudi 25 septembre · à jour à 9 h 42 » — vide tant que le jour n'est pas lu. */
+export function stampOf(day: DaySupervisionView | null): string {
+  return day === null ? '' : `${dayLabelOf(day.date)} · ${asOfLabel(day.asOf)}`;
 }

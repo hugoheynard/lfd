@@ -24,6 +24,7 @@ function card(reference: string, overrides: Partial<PackingCard> = {}): PackingC
 
 const BOARD: PackingBoard = {
   notClosed: false,
+  upcoming: [],
   visible: [
     card('CMD-1'),
     card('CMD-2', { state: 'awaiting_oven', awaited: ['Éclair pistache'], packedLines: 0 }),
@@ -96,5 +97,28 @@ describe('PackingColumn', () => {
 
     expect(element.querySelector('[data-not-closed]')).not.toBeNull();
     expect(element.querySelector('fold-card')).toBeNull();
+  });
+
+  /** Hugo, 2026-09-28 : la colonne se taisait sur des commandes que Retrait montrait. */
+  it('avant l’arrêt, montre les commandes attendues en lecture seule', async () => {
+    const element = await mount({
+      ...BOARD,
+      notClosed: true,
+      upcoming: [
+        {
+          reference: 'CMD-9',
+          customerLabel: 'Le Petit Chaudron',
+          totalUnits: 36,
+          slotMinutes: 540,
+        },
+      ],
+    });
+    const upcoming = element.querySelector('[data-reference="CMD-9"]');
+
+    expect(element.querySelector('[data-upcoming]')?.textContent).toContain(
+      'Commandes attendues · 1',
+    );
+    expect(upcoming?.textContent).toContain('Le Petit Chaudron');
+    expect(upcoming?.querySelector('a, button')).toBeNull();
   });
 });

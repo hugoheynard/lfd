@@ -61,6 +61,16 @@
         </div>
       </fold-card>
     </div>
+
+    <!-- Au masthead et non dans une colonne (Hugo, 2026-09-28) : l'arrêt du plan
+         commande la préparation ET le colisage — c'est la journée entière qui
+         attend, en lecture seule. -->
+    @if (packingBoard()?.notClosed) {
+      <fold-callout variant="info" class="not-closed" data-not-closed>
+        Plan pas encore arrêté : la fabrication et le colisage commenceront à la clôture. D'ici là,
+        la journée se lit sans se préparer.
+      </fold-callout>
+    }
   </fold-page-section>
 </fold-page-layout>
 

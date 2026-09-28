@@ -18,6 +18,7 @@ import type { FoldViewNavItem, FoldViewToggleOption } from 'fold-ng';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldCardComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
@@ -28,7 +29,6 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { dayLabelOf } from '../../production/worksheet-day';
 import { refreshWhileVisible } from '../../shared/periodic-refresh';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { afterFailure, type ColumnState, dataOf, FAILED, LOADING, ready } from '../column-state';
@@ -39,7 +39,6 @@ import { PackingColumn } from '../packing-column/packing-column';
 import { preparationBoard } from '../preparation-shelves';
 import { PreparationColumn } from '../preparation-column/preparation-column';
 import { SupervisionColumn } from '../supervision-column/supervision-column';
-import { asOfLabel } from '../supervision-labels';
 import {
   landingColumnOf,
   LINK_PERMISSION,
@@ -47,7 +46,13 @@ import {
 } from '../supervision-links';
 import { SupervisionService } from '../supervision.service';
 import { serviceDayParam, shiftServiceDay } from '../supervision-day';
-import { blockersOf, countersOf, methodOptionsOf, supervisionTabs } from '../supervision-tabs';
+import {
+  blockersOf,
+  countersOf,
+  methodOptionsOf,
+  stampOf,
+  supervisionTabs,
+} from '../supervision-tabs';
 import { supervisionMatches } from '../supervision-search';
 
 /**
@@ -78,6 +83,7 @@ const BOARD_NARROW = '(max-width: 900px)';
   imports: [
     FoldBadgeComponent,
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldCardComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
@@ -141,10 +147,7 @@ export class SupervisionPage {
   });
 
   /** « jeudi 25 septembre · à jour à 9 h 42 ». */
-  protected readonly stamp = computed(() => {
-    const day = dataOf(this.day());
-    return day === null ? '' : `${dayLabelOf(day.date)} · ${asOfLabel(day.asOf)}`;
-  });
+  protected readonly stamp = computed(() => stampOf(dataOf(this.day())));
 
   protected readonly counters = computed(() =>
     countersOf(this.preparationBoard(), this.packingBoard(), this.handoverBoard()),

@@ -143,4 +143,18 @@ describe('la colonne Colisage', () => {
   it('dit que la journée n’est pas arrêtée', () => {
     expect(packingBoard(packing([], null), null).notClosed).toBe(true);
   });
+
+  it('avant l’arrêt, reprend les commandes attendues de la file, par heure, sans les annulées', () => {
+    const cancelled = { ...entry('ANNULEE', '06:00'), state: 'cancelled' as const };
+    const board = packingBoard(
+      packing([], null),
+      queue([entry('TARD', '10:00'), cancelled, entry('TOT', '07:00')]),
+    );
+
+    expect(board.upcoming.map((order) => order.reference)).toEqual(['TOT', 'TARD']);
+  });
+
+  it('une fois la journée arrêtée, ne montre plus d’attendues : les fiches prennent le relais', () => {
+    expect(packingBoard(packing([]), queue([entry('A', '07:00')])).upcoming).toEqual([]);
+  });
 });

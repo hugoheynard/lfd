@@ -271,13 +271,17 @@ describe('SupervisionPage', () => {
     expect(preparation).not.toHaveBeenCalled();
   });
 
-  it('dit que la journée n’est pas arrêtée plutôt qu’une colonne vide', async () => {
+  it('dit que la journée n’est pas arrêtée, et montre ce qu’elle attend', async () => {
     const fixture = await mount({ packing: () => Promise.resolve(packingView(null)) });
+    const reference = QUEUE.entries[0]?.reference ?? '';
 
-    expect(column(fixture, 'packing')?.textContent).toContain(
-      "La journée n'est pas encore arrêtée",
+    // Au masthead : l'arrêt commande la préparation autant que le colisage.
+    expect(root(fixture).querySelector('.masthead [data-not-closed]')?.textContent).toContain(
+      'pas encore arrêté',
     );
-    expect(column(fixture, 'packing')?.textContent).toContain('Le colisage commence à la clôture.');
+    expect(
+      column(fixture, 'packing')?.querySelector(`[data-reference="${reference}"]`),
+    ).not.toBeNull();
   });
 
   it('montre les renvois à qui peut ouvrir les postes', async () => {

@@ -1,11 +1,31 @@
 @if (board().notClosed) {
-  <fold-empty-state
-    title="La journée n'est pas encore arrêtée"
-    subtitle="Le colisage commence à la clôture."
-    data-not-closed
-  >
-    <fold-icon empty-icon name="package" />
-  </fold-empty-state>
+  @if (board().upcoming.length === 0) {
+    <fold-empty-state
+      title="La journée n'est pas encore arrêtée"
+      subtitle="Le colisage commence à la clôture."
+      data-not-closed
+    >
+      <fold-icon empty-icon name="package" />
+    </fold-empty-state>
+  } @else {
+    <!-- Les commandes attendues, en lecture : rien n'est à coliser avant l'arrêt
+         (le masthead le dit), mais la colonne dit la même journée que Retrait. -->
+    <p class="done-divider" data-upcoming>Commandes attendues · {{ board().upcoming.length }}</p>
+    @for (order of board().upcoming; track order.reference) {
+      <fold-card
+        radius="sm"
+        class="order compact"
+        [class.is-match]="matches().references.has(order.reference)"
+        data-packing="upcoming"
+        [attr.data-reference]="order.reference"
+      >
+        <div class="compact-row">
+          <span class="compact-name">{{ order.customerLabel }}</span>
+          <span class="meta">{{ order.reference }} · {{ upcomingUnits(order) }}</span>
+        </div>
+      </fold-card>
+    }
+  }
 } @else {
   @if (narrow()) {
     <div class="band">

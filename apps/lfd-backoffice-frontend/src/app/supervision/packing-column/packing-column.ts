@@ -10,7 +10,7 @@ import {
   FoldMeterComponent,
 } from 'fold-ng';
 
-import type { PackingBoard, PackingCard, PackingState } from '../packing-cards';
+import type { PackingBoard, PackingCard, PackingState, UpcomingOrder } from '../packing-cards';
 import { countLabel } from '../supervision-labels';
 import { SUPERVISION_LINKS } from '../supervision-links';
 import { NO_MATCHES } from '../supervision-search';
@@ -78,6 +78,10 @@ export class PackingColumn {
 
   protected meta(card: PackingCard): string {
     return `${card.reference} · ${String(card.lineCount)} réf. · ${countLabel(card.containers, 'bac', 'bacs')}`;
+  }
+
+  protected upcomingUnits(order: UpcomingOrder): string {
+    return countLabel(order.totalUnits, 'pièce', 'pièces');
   }
 
   protected progressLabel(card: PackingCard): string {
