@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { describe, expect, it } from 'vitest';
 
 import type { PreparationBoard, ShelfCard } from '../preparation-shelves';
+import { lineBadge, type QualityLookup, type QualityRequest } from '../quality-badges';
 import { NO_MATCHES, type SupervisionMatches } from '../supervision-search';
 import { PreparationColumn } from './preparation-column';
 
@@ -117,5 +118,81 @@ describe('PreparationColumn', () => {
     const element = await mount({ ...BOARD, shelvesKnown: false });
 
     expect(element.querySelector('fold-callout')?.textContent).toContain('Rayon inconnu');
+  });
+
+  /** `plan-controle-qualite.md`, §5 et D5 : la pastille de chaque ligne, la pire sur le rayon. */
+  it('pose la pastille de chaque ligne, la pire sur le rayon, et dit la péremption', async () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(PreparationColumn);
+    const lookup: QualityLookup = {
+      lines: new Map([
+        [
+          'pac',
+          lineBadge({
+            sku: 'pac',
+            verdict: 'ok',
+            checkedAt: 'x',
+            quantitySeen: 80,
+            currentQuantity: 96,
+            stale: true,
+          }),
+        ],
+        [
+          'cro',
+          lineBadge({
+            sku: 'cro',
+            verdict: 'warning',
+            checkedAt: 'x',
+            quantitySeen: 50,
+            currentQuantity: 50,
+            stale: false,
+          }),
+        ],
+      ]),
+      orders: new Map(),
+    };
+    fixture.componentRef.setInput('board', BOARD);
+    fixture.componentRef.setInput('quality', lookup);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const element: HTMLElement = fixture.nativeElement;
+    const shelf = element.querySelector('[data-shelf="Viennoiseries"]');
+    const lines = [...(shelf?.querySelectorAll('[data-line-quality]') ?? [])].map((badge) =>
+      badge.textContent?.trim(),
+    );
+
+    expect(lines).toEqual(['Contrôle · À revoir', 'Contrôle · Réserve']);
+    expect(shelf?.querySelector('[data-line-stale]')?.textContent).toContain(
+      'Contrôlé sur 80, compte actuel 96 — à revoir',
+    );
+    expect(shelf?.querySelector('[data-shelf-quality]')?.textContent).toContain('À revoir');
+    expect(element.querySelector('[data-shelf="Pains"] [data-shelf-quality]')).toBeNull();
+  });
+
+  it('ne propose « Contrôler » qu’à qui peut juger, sur chaque ligne', async () => {
+    const reader = await mount(BOARD);
+    expect(reader.querySelector('[data-check]')).toBeNull();
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(PreparationColumn);
+    fixture.componentRef.setInput('board', BOARD);
+    fixture.componentRef.setInput('canCheck', true);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const asked: QualityRequest[] = [];
+    fixture.componentInstance.check.subscribe((request) => asked.push(request));
+    const element: HTMLElement = fixture.nativeElement;
+
+    // À sortir comme sortie : tout le compte du jour se juge.
+    expect(element.querySelectorAll('[data-shelf="Viennoiseries"] [data-check]')).toHaveLength(2);
+    element.querySelector<HTMLButtonElement>('[data-check="pac"]')?.click();
+    expect(asked).toEqual([
+      {
+        target: { kind: 'line', sku: 'pac' },
+        title: 'Pain au chocolat',
+        subtitle: '96 pièces au compte',
+      },
+    ]);
   });
 });

@@ -96,6 +96,12 @@ export interface SupervisionBlockers {
   readonly overdueKitchenLabel: string;
   readonly overdueCustomer: number;
   readonly overdueCustomerLabel: string;
+  /**
+   * Les commandes retenues par un contrôle qualité (`plan-controle-qualite.md`,
+   * D7) — sur la carte Retrait : c'est la colonne qui retient.
+   */
+  readonly held: number;
+  readonly heldLabel: string;
 }
 
 export function blockersOf(
@@ -106,6 +112,7 @@ export function blockersOf(
   const waiting = packing === null || packing.notClosed ? 0 : (handover?.awaitingPacking ?? 0);
   const overdue = handover?.overdue ?? 0;
   const kitchen = handover?.overdueKitchen ?? 0;
+  const held = handover?.held ?? 0;
   return {
     oven,
     ovenLabel: `${countLabel(oven, 'commande attend', 'commandes attendent')} le four`,
@@ -117,6 +124,8 @@ export function blockersOf(
     overdueKitchenLabel: `${countLabel(kitchen, 'créneau dépassé', 'créneaux dépassés')} par nous`,
     overdueCustomer: overdue - kitchen,
     overdueCustomerLabel: `${countLabel(overdue - kitchen, 'client', 'clients')} pas venu${overdue - kitchen > 1 ? 's' : ''}`,
+    held,
+    heldLabel: countLabel(held, 'commande retenue', 'commandes retenues'),
   };
 }
 

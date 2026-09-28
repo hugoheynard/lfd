@@ -45,6 +45,15 @@
           }}</span
         >
       </div>
+      @if (shelfBadge(card); as badge) {
+        <fold-badge
+          class="quality"
+          radius="square"
+          [variant]="badge.variant"
+          [content]="badge.label"
+          data-shelf-quality
+        />
+      }
       <fold-meter
         class="shelf-meter"
         [label]="meterLabel(card)"
@@ -57,23 +66,46 @@
         <fold-disclosure [open]="true" [attr.data-detail]="card.key">
           <span summary class="detail-summary">Détail · {{ card.lineCount }} lignes</span>
           <ul class="lines">
-            @for (line of card.pending; track line.sku) {
-              <li class="line" [class.is-match]="matches().skus.has(line.sku)">
-                <span class="qty">{{ line.quantity }}</span>
-                <span class="product">{{ line.productName }}</span>
-              </li>
-            }
-            @for (line of card.done; track line.sku) {
+            <!-- À sortir d'abord, puis sorties avec leurs initiales. -->
+            @for (item of linesOf(card); track item.line.sku) {
+              @let line = item.line;
               <li
-                class="line is-done"
+                class="line"
+                [class.is-done]="item.done"
                 [class.is-match]="matches().skus.has(line.sku)"
-                data-line-done
+                [attr.data-line-done]="item.done ? '' : null"
               >
                 <span class="qty">{{ line.quantity }}</span>
                 <span class="product">{{ line.productName }}</span>
-                <span class="done-mark"
-                  >✓{{ line.initials === null ? '' : ' ' + line.initials }}</span
-                >
+                @if (item.done) {
+                  <span class="done-mark"
+                    >✓{{ line.initials === null ? '' : ' ' + line.initials }}</span
+                  >
+                }
+                @if (lineBadge(line); as badge) {
+                  <fold-badge
+                    class="quality"
+                    radius="square"
+                    [variant]="badge.variant"
+                    [content]="badge.label"
+                    data-line-quality
+                  />
+                  @if (badge.detail !== null) {
+                    <span class="quality-detail" data-line-stale>{{ badge.detail }}</span>
+                  }
+                }
+                @if (canCheck()) {
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="outline"
+                    intent="neutral"
+                    [attr.data-check]="line.sku"
+                    (click)="requestCheck(line)"
+                  >
+                    Contrôler
+                  </button>
+                }
               </li>
             }
           </ul>

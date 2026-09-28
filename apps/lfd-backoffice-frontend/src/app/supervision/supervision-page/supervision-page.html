@@ -65,6 +65,15 @@
           >
           <!-- Deux causes, deux pastilles : le retard du fournil est une alerte,
                celui du client un avertissement. -->
+          <!-- Retenues par un contrôle qualité : le scan les refusera (D7). -->
+          @if (blockers().held > 0) {
+            <fold-badge
+              class="chiffre-flag"
+              variant="alert"
+              [content]="blockers().heldLabel"
+              data-blocker="held"
+            />
+          }
           @if (blockers().overdueKitchen > 0) {
             <fold-badge
               class="chiffre-flag"
@@ -88,6 +97,12 @@
     <!-- Au masthead et non dans une colonne (Hugo, 2026-09-28) : l'arrêt du plan
          commande la préparation ET le colisage — c'est la journée entière qui
          attend, en lecture seule. -->
+    @if (quality.failed()) {
+      <fold-callout variant="alert" class="not-closed" data-quality-failed>
+        Les contrôles qualité n'ont pas pu être lus : une ligne sans pastille n'est pas forcément
+        une ligne jamais contrôlée.
+      </fold-callout>
+    }
     @if (packingBoard()?.notClosed) {
       <fold-callout variant="info" class="not-closed" data-not-closed>
         Plan pas encore arrêté : la fabrication et le colisage commenceront à la clôture. D'ici là,
@@ -134,6 +149,9 @@
             [showLinks]="showLinks()"
             [narrow]="narrow()"
             [matches]="matches()"
+            [quality]="quality.lookup()"
+            [canCheck]="quality.canCheck()"
+            (check)="check($event)"
           />
         }
       </app-supervision-column>
@@ -155,6 +173,9 @@
             [showLinks]="showLinks()"
             [narrow]="narrow()"
             [matches]="matches()"
+            [quality]="quality.lookup()"
+            [canCheck]="quality.canCheck()"
+            (check)="check($event)"
           />
         }
       </app-supervision-column>

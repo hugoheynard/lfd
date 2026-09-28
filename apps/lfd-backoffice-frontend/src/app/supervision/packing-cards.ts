@@ -20,6 +20,12 @@ export type PackingState = 'packed' | 'awaiting_oven' | 'in_progress' | 'to_pack
 
 export interface PackingCard {
   readonly reference: string;
+  /**
+   * L'id de la commande, joint par `reference` depuis la file de retrait — la
+   * fiche de colis ne le porte pas. `null` = absente de la file, ou file
+   * illisible : la commande ne peut alors pas être visée par un contrôle.
+   */
+  readonly orderId: string | null;
   readonly customerLabel: string;
   readonly state: PackingState;
   readonly lineCount: number;
@@ -101,6 +107,7 @@ function slotOf(entry: HandoverQueueEntryView | undefined): number | null {
 function cardOf(sheet: PackingSheet, entry: HandoverQueueEntryView | undefined): PackingCard {
   return {
     reference: sheet.reference,
+    orderId: entry?.orderId ?? null,
     customerLabel: sheet.customerLabel,
     state: packingStateOf(sheet),
     lineCount: sheet.lineCount,

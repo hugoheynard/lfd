@@ -136,6 +136,16 @@
   color: var(--fold-color-success-text);
 }
 
+// La pastille du contrôle et son geste, sous la carte colisée. Un retrait
+// intérieur et non une marge : la carte compacte ne range pas son contenu.
+.quality-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding-top: var(--fold-space-xs);
+}
+
 .compact-name {
   font-size: var(--fold-text-sm);
   font-weight: var(--fold-weight-semibold);

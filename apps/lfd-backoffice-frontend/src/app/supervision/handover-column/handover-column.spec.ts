@@ -18,6 +18,7 @@ function row(reference: string, overrides: Partial<SlotRow> = {}): SlotRow {
     overdueMinutes: null,
     overdueCause: null,
     method: 'pickup',
+    heldForQuality: false,
     ...overrides,
   };
 }
@@ -52,6 +53,7 @@ const BOARD: HandoverBoard = {
   overdue: 1,
   awaitingPacking: 0,
   overdueKitchen: 1,
+  held: 0,
 };
 
 async function mount(board: HandoverBoard) {
@@ -108,5 +110,24 @@ describe('HandoverColumn', () => {
     expect(element.querySelector('[data-reference="LIV"]')).not.toBeNull();
     expect(element.querySelector('[data-reference="PRETE"]')).toBeNull();
     expect(element.querySelector('fold-view-toggle')).toBeNull();
+  });
+
+  /** `plan-controle-qualite.md`, D7 : une commande retenue le dit, et sa carte passe en alerte. */
+  it('dit « En vérification » sur une commande retenue, carte en alerte', async () => {
+    const held = row('RETENUE', { heldForQuality: true });
+    const board: HandoverBoard = {
+      ...BOARD,
+      pickup: [{ ...BOARD.pickup[0]!, rows: [held, row('PRETE')] }],
+      held: 1,
+    };
+    const element: HTMLElement = (await mount(board)).nativeElement;
+    const card = element.querySelector('[data-reference="RETENUE"]');
+
+    expect(card?.textContent).toContain('En vérification · 3 pièces · Boutique');
+    expect(card?.classList).toContain('is-held');
+    expect(card?.classList).toContain('edge-alert');
+    expect(element.querySelector('[data-reference="PRETE"]')?.textContent).not.toContain(
+      'En vérification',
+    );
   });
 });

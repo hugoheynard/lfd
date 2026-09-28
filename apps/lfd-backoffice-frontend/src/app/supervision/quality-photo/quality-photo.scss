@@ -1,0 +1,12 @@
+.open {
+  display: block;
+}
+
+.thumb {
+  display: block;
+  width: var(--fold-space-4xl);
+  height: var(--fold-space-4xl);
+  object-fit: cover;
+  border-radius: var(--fold-radius-sm);
+  border: 1px solid var(--fold-color-border);
+}

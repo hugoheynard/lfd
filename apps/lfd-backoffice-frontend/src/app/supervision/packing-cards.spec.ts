@@ -158,4 +158,17 @@ describe('la colonne Colisage', () => {
   it('une fois la journée arrêtée, ne montre plus d’attendues : les fiches prennent le relais', () => {
     expect(packingBoard(packing([]), queue([entry('A', '07:00')])).upcoming).toEqual([]);
   });
+
+  /** `plan-controle-qualite.md`, §5 : la fiche de colis ne porte pas l'id, la file le donne. */
+  it('joint l’id de la commande par son numéro, `null` si la file ne la connaît pas', () => {
+    const board = packingBoard(
+      packing([sheet('A', { packedAt: 'x' }), sheet('B', { packedAt: 'x' })]),
+      queue([entry('A', '07:00')]),
+    );
+
+    expect(board.packed.map((card) => [card.reference, card.orderId])).toEqual([
+      ['A', 'o-A'],
+      ['B', null],
+    ]);
+  });
 });

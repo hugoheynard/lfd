@@ -1,0 +1,73 @@
+// Le libellé et son contrôle : un flex-column et son gap, jamais une marge.
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.field-label {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text);
+}
+
+.hint,
+.note {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.photos,
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photo {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+
+  button {
+    margin-left: auto;
+  }
+}
+
+.thumb {
+  width: var(--fold-space-3xl);
+  height: var(--fold-space-3xl);
+  object-fit: cover;
+  border-radius: var(--fold-radius-sm);
+  border: 1px solid var(--fold-color-border);
+}
+
+.check {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding-top: var(--fold-space-sm);
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.check-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.byline {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.check-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}

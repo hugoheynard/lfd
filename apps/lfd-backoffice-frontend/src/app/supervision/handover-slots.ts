@@ -45,6 +45,11 @@ export interface SlotRow {
    */
   readonly overdueCause: OverdueCause | null;
   readonly method: FulfillmentMethod;
+  /**
+   * Retenue par un contrôle qualité : le scan la refusera (`plan-controle-qualite.md`,
+   * D4, D7). Lu tel quel dans la file — jamais `true` sur une retirée ou une annulée.
+   */
+  readonly heldForQuality: boolean;
 }
 
 export type OverdueCause = 'kitchen' | 'customer';
@@ -74,6 +79,8 @@ export interface HandoverBoard {
   readonly overdueKitchen: number;
   /** Attendues mais pas encore prêtes — ce que le colisage retient (Hugo, 2026-09-28). */
   readonly awaitingPacking: number;
+  /** Retenues par un contrôle qualité — la pastille « N commandes retenues ». */
+  readonly held: number;
 }
 
 const MINUTES_PER_HOUR = 60;
@@ -169,6 +176,7 @@ function rowOf(
         : null,
     overdueCause: state === 'overdue' && window !== null ? causeOf(entry, day, window.end) : null,
     method: entry.fulfillmentMethod,
+    heldForQuality: entry.heldForQuality,
   };
 }
 
@@ -241,5 +249,6 @@ export function handoverBoard(
     overdue: all.filter((row) => row.state === 'overdue').length,
     overdueKitchen: all.filter((row) => row.overdueCause === 'kitchen').length,
     awaitingPacking: all.filter((row) => row.state === 'not_ready').length,
+    held: all.filter((row) => row.heldForQuality).length,
   };
 }

@@ -1,0 +1,150 @@
+<fold-panel-header
+  title="Contrôler"
+  [subtitle]="(data()?.title ?? '') + ' · ' + (data()?.subtitle ?? '')"
+/>
+
+<fold-panel-body>
+  <div class="field">
+    <span class="field-label">Verdict</span>
+    <fold-view-toggle
+      ariaLabel="Verdict"
+      activeStyle="solid"
+      [options]="verdictOptions"
+      [value]="verdict()"
+      (valueChange)="chooseVerdict($event)"
+      data-verdict
+    />
+    @if (verdict() === 'blocking') {
+      <p class="hint" data-blocking-hint>
+        Les commandes concernées seront retenues au retrait jusqu’à un nouveau verdict.
+      </p>
+    }
+  </div>
+
+  <fold-textarea
+    label="Note"
+    [rows]="3"
+    [required]="noteRequired()"
+    [optional]="!noteRequired()"
+    [hint]="noteRequired() ? 'Obligatoire dès la réserve : dites ce qui ne va pas.' : undefined"
+    [value]="note()"
+    (valueChange)="note.set($event)"
+    data-note
+  />
+
+  <div class="field">
+    <span class="field-label">Photos · facultatives, {{ room() }} encore possibles</span>
+    @if (photos().length > 0) {
+      <ul class="photos">
+        @for (photo of photos(); track photo.key) {
+          <li class="photo" [attr.data-photo]="photo.status">
+            <img class="thumb" [src]="photo.preview" alt="Photo choisie" />
+            @switch (photo.status) {
+              @case ('uploading') {
+                <fold-spinner size="sm" label="Dépôt en cours" />
+              }
+              @case ('ready') {
+                <fold-badge variant="success" content="Déposée" />
+              }
+              @case ('failed') {
+                <fold-badge variant="alert" content="Non déposée" />
+              }
+            }
+            <button
+              foldButton
+              size="sm"
+              emphasis="soft"
+              intent="neutral"
+              [disabled]="saving()"
+              (click)="remove(photo.key)"
+            >
+              Retirer
+            </button>
+          </li>
+          @if (photo.status === 'failed') {
+            <li>
+              <fold-callout variant="alert">{{ photo.reason }}</fold-callout>
+            </li>
+          }
+        }
+      </ul>
+    }
+    @if (overflow()) {
+      <fold-callout variant="warning" data-overflow>
+        Six photos au plus : les suivantes n’ont pas été ajoutées.
+      </fold-callout>
+    }
+    @if (room() > 0) {
+      <!-- `image/*` : sur mobile, le sélecteur propose l'appareil photo. -->
+      <fold-file-dropzone
+        accept="image/*"
+        label="Ajouter des photos"
+        [multiple]="true"
+        [hint]="'JPEG, PNG, WebP ou HEIC · 10 Mo au plus'"
+        [disabled]="saving()"
+        (filesPicked)="pick($event)"
+      />
+    }
+  </div>
+
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" data-refusal>{{ message }}</fold-callout>
+  }
+
+  <div class="field">
+    <fold-element-title variant="eyebrow" title="Historique de cette cible" />
+    @switch (history().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture des contrôles…" />
+      }
+      @case ('error') {
+        <fold-callout variant="alert" data-history-error>
+          L’historique n’a pas pu être lu. Le verdict peut quand même être rendu.
+          <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="loadHistory()">
+            Réessayer
+          </button>
+        </fold-callout>
+      }
+      @case ('ready') {
+        @if (historyChecks().length === 0) {
+          <fold-empty-state
+            title="Jamais contrôlé"
+            subtitle="Aucun verdict rendu ce jour sur cette cible."
+          >
+            <fold-icon empty-icon name="clock" />
+          </fold-empty-state>
+        }
+        <ol class="history">
+          @for (check of historyChecks(); track check.id) {
+            <li class="check" [attr.data-check]="check.id">
+              <div class="check-head">
+                <fold-badge
+                  [variant]="verdictVariants[check.verdict]"
+                  [content]="verdictLabels[check.verdict]"
+                />
+                <span class="byline">{{ byline(check) }}</span>
+              </div>
+              @if (check.note !== null) {
+                <p class="note">{{ check.note }}</p>
+              }
+              @if (check.photos.length > 0) {
+                <div class="check-photos">
+                  @for (photo of check.photos; track photo.position) {
+                    <app-quality-photo [checkId]="check.id" [position]="photo.position" />
+                  }
+                </div>
+              }
+            </li>
+          }
+        </ol>
+      }
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton intent="primary" [disabled]="!canSave()" (click)="save()" data-save>
+    {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+  </button>
+</fold-panel-footer>

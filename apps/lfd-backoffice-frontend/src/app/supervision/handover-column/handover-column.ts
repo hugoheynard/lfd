@@ -61,7 +61,16 @@ export class HandoverColumn {
     return `${expected} · ${countLabel(group.handedOver, done[0] ?? '', done[1] ?? '')}`;
   }
 
+  /**
+   * Une commande retenue le dit d'abord (`plan-controle-qualite.md`, D7) ; le
+   * reste de la sous-ligne suit, pour ne rien perdre de son créneau.
+   */
   protected subLine(row: SlotRow): string {
+    const line = this.stateLine(row);
+    return row.heldForQuality ? `En vérification · ${line}` : line;
+  }
+
+  private stateLine(row: SlotRow): string {
     const units = countLabel(row.totalUnits, 'pièce', 'pièces');
     switch (row.state) {
       case 'handed_over': {

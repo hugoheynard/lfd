@@ -104,8 +104,26 @@
 
 .line {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--fold-space-sm);
+}
+
+// La pastille du contrôle qualité : le mot porte l'état, la teinte le redouble.
+.quality {
+  flex: none;
+}
+
+// Sur le rayon, sous son en-tête : la pastille ne s'étire pas sur la carte.
+.stack > .quality {
+  align-self: flex-start;
+}
+
+// « Contrôlé sur 96, compte actuel 120 — à revoir » : toute la largeur, sous la ligne.
+.quality-detail {
+  flex-basis: 100%;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-warning-text);
 }
 
 .qty {

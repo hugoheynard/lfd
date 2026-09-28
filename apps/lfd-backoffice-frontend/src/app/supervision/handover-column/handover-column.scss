@@ -72,6 +72,13 @@
     box-shadow: none;
   }
 
+  // Retenue par un contrôle qualité : la carte passe en alerte, et la
+  // sous-ligne dit « En vérification » en toutes lettres.
+  &.is-held {
+    background: var(--fold-color-alert-surface);
+    border-color: var(--fold-color-alert-border);
+  }
+
   &.is-past {
     opacity: 0.68;
 

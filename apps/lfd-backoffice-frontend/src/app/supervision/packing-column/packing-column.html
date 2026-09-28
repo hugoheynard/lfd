@@ -118,6 +118,30 @@
         @if (card.packedAt !== null) {
           <span class="packed-at" data-packed-at>Déclarée prête à {{ card.packedAt }}</span>
         }
+        @if (qualityOf(card) !== null || (canCheck() && card.orderId !== null)) {
+          <div class="quality-row">
+            @if (qualityOf(card); as badge) {
+              <fold-badge
+                radius="square"
+                [variant]="badge.variant"
+                [content]="badge.label"
+                data-order-quality
+              />
+            }
+            @if (canCheck() && card.orderId !== null) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                intent="neutral"
+                [attr.data-check]="card.reference"
+                (click)="requestCheck(card)"
+              >
+                Contrôler
+              </button>
+            }
+          </div>
+        }
       </fold-card>
     }
   }

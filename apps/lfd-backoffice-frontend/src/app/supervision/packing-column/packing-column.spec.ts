@@ -3,12 +3,14 @@ import { provideRouter } from '@angular/router';
 import { describe, expect, it } from 'vitest';
 
 import type { PackingBoard, PackingCard } from '../packing-cards';
+import { NO_QUALITY, orderBadge, type QualityLookup, type QualityRequest } from '../quality-badges';
 import { NO_MATCHES, type SupervisionMatches } from '../supervision-search';
 import { PackingColumn } from './packing-column';
 
 function card(reference: string, overrides: Partial<PackingCard> = {}): PackingCard {
   return {
     reference,
+    orderId: `o-${reference}`,
     customerLabel: `Client ${reference}`,
     state: 'in_progress',
     lineCount: 9,
@@ -35,15 +37,25 @@ const BOARD: PackingBoard = {
   awaitingOven: 1,
 };
 
-async function mount(board: PackingBoard, matches: SupervisionMatches = NO_MATCHES) {
+async function mountFixture(
+  board: PackingBoard,
+  matches: SupervisionMatches = NO_MATCHES,
+  quality: { lookup?: QualityLookup; canCheck?: boolean } = {},
+) {
   TestBed.configureTestingModule({ providers: [provideRouter([])] });
   const fixture = TestBed.createComponent(PackingColumn);
   fixture.componentRef.setInput('board', board);
   fixture.componentRef.setInput('matches', matches);
   fixture.componentRef.setInput('showLinks', true);
+  fixture.componentRef.setInput('quality', quality.lookup ?? NO_QUALITY);
+  fixture.componentRef.setInput('canCheck', quality.canCheck ?? false);
   fixture.detectChanges();
   await fixture.whenStable();
-  const element: HTMLElement = fixture.nativeElement;
+  return fixture;
+}
+
+async function mount(board: PackingBoard, matches: SupervisionMatches = NO_MATCHES) {
+  const element: HTMLElement = (await mountFixture(board, matches)).nativeElement;
   return element;
 }
 
@@ -120,5 +132,57 @@ describe('PackingColumn', () => {
     );
     expect(upcoming?.textContent).toContain('Le Petit Chaudron');
     expect(upcoming?.querySelector('a, button')).toBeNull();
+  });
+
+  /** `plan-controle-qualite.md`, §5 : seule une commande colisée se juge. */
+  it('ne propose « Contrôler » que sur une colisée, et seulement à qui peut juger', async () => {
+    const fixture = await mountFixture(BOARD, NO_MATCHES, { canCheck: true });
+    const element: HTMLElement = fixture.nativeElement;
+    const asked: QualityRequest[] = [];
+    fixture.componentInstance.check.subscribe((request) => asked.push(request));
+
+    expect(element.querySelector('[data-reference="CMD-1"] [data-check]')).toBeNull();
+    element.querySelector<HTMLButtonElement>('[data-reference="CMD-3"] [data-check]')?.click();
+    expect(asked).toEqual([
+      {
+        target: { kind: 'order', orderId: 'o-CMD-3' },
+        title: 'Client CMD-3',
+        subtitle: 'Commande CMD-3',
+      },
+    ]);
+
+    TestBed.resetTestingModule();
+    const reader: HTMLElement = (await mountFixture(BOARD)).nativeElement;
+    expect(reader.querySelector('[data-check]')).toBeNull();
+  });
+
+  it('sans id de commande (file illisible), la colisée ne se vise pas', async () => {
+    const board = { ...BOARD, packed: [card('CMD-3', { state: 'packed', orderId: null })] };
+    const element: HTMLElement = (await mountFixture(board, NO_MATCHES, { canCheck: true }))
+      .nativeElement;
+
+    expect(element.querySelector('[data-check]')).toBeNull();
+  });
+
+  it('pose la pastille du contrôle sur la colisée, en toutes lettres', async () => {
+    const lookup: QualityLookup = {
+      lines: new Map(),
+      orders: new Map([
+        [
+          'CMD-3',
+          orderBadge({
+            orderId: 'o-CMD-3',
+            reference: 'CMD-3',
+            verdict: 'blocking',
+            checkedAt: 'x',
+          }),
+        ],
+      ]),
+    };
+    const element: HTMLElement = (await mountFixture(BOARD, NO_MATCHES, { lookup })).nativeElement;
+    const badge = element.querySelector('[data-reference="CMD-3"] [data-order-quality]');
+
+    expect(badge?.textContent).toContain('Contrôle · Bloquant');
+    expect(badge?.classList).toContain('alert');
   });
 });

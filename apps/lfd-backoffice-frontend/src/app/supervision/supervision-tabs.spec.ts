@@ -26,6 +26,7 @@ function handover(overrides: Partial<HandoverBoard> = {}): HandoverBoard {
     overdue: 0,
     awaitingPacking: 0,
     overdueKitchen: 0,
+    held: 0,
     ...overrides,
   };
 }
@@ -51,6 +52,15 @@ describe('blockersOf', () => {
 
     expect(blockers.ovenLabel).toBe('1 commande attend le four');
     expect(blockers.overdueLabel).toBe('3 créneaux dépassés');
+  });
+});
+
+describe('blockersOf — le contrôle qualité', () => {
+  /** `plan-controle-qualite.md`, D7 : « N commandes retenues » sur la carte Retrait. */
+  it('compte les commandes retenues', () => {
+    expect(blockersOf(packing(), handover({ held: 2 })).heldLabel).toBe('2 commandes retenues');
+    expect(blockersOf(packing(), handover({ held: 1 })).heldLabel).toBe('1 commande retenue');
+    expect(blockersOf(packing(), null).held).toBe(0);
   });
 });
 

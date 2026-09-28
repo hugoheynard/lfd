@@ -1,18 +1,11 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  signal,
-  type WritableSignal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type {
   DaySupervisionView,
+  FulfillmentMethod,
   HandoverQueueView,
   ProductionPackingView,
   ProductionWorksheetView,
 } from '@lfd/contracts';
-import type { FulfillmentMethod } from '@lfd/contracts';
 import { ActivatedRoute, Router } from '@angular/router';
 import type { FoldViewNavItem, FoldViewToggleOption } from 'fold-ng';
 import {
@@ -31,13 +24,23 @@ import {
 import { PermissionsStore } from '../../auth/permissions.store';
 import { refreshWhileVisible } from '../../shared/periodic-refresh';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
-import { afterFailure, type ColumnState, dataOf, FAILED, LOADING, ready } from '../column-state';
+import {
+  afterFailure,
+  type ColumnState,
+  dataOf,
+  FAILED,
+  LOADING,
+  readInto,
+  ready,
+} from '../column-state';
 import { handoverBoard } from '../handover-slots';
 import { HandoverColumn } from '../handover-column/handover-column';
 import { packingBoard } from '../packing-cards';
 import { PackingColumn } from '../packing-column/packing-column';
 import { preparationBoard } from '../preparation-shelves';
 import { PreparationColumn } from '../preparation-column/preparation-column';
+import type { QualityRequest } from '../quality-badges';
+import { QualityBoardStore } from '../quality-board.store';
 import { SupervisionColumn } from '../supervision-column/supervision-column';
 import {
   landingColumnOf,
@@ -96,6 +99,7 @@ const BOARD_NARROW = '(max-width: 900px)';
     PreparationColumn,
     SupervisionColumn,
   ],
+  providers: [QualityBoardStore],
   templateUrl: './supervision-page.html',
   styleUrl: './supervision-page.scss',
 })
@@ -103,6 +107,8 @@ export class SupervisionPage {
   private readonly service = inject(SupervisionService);
   private readonly permissions = inject(PermissionsStore);
   private readonly router = inject(Router);
+  /** Les pastilles du contrôle qualité et son panneau (`plan-controle-qualite.md`). */
+  protected readonly quality = inject(QualityBoardStore);
 
   /** Le jour choisi à l'écran, ou `null` : on suit le jour du serveur. */
   protected readonly chosen = signal(
@@ -200,6 +206,7 @@ export class SupervisionPage {
     for (const column of [this.day, this.preparation, this.packing, this.handover]) {
       column.set(LOADING);
     }
+    this.quality.reset();
     let day: DaySupervisionView;
     try {
       day = await this.service.day(this.chosen() ?? undefined);
@@ -228,6 +235,14 @@ export class SupervisionPage {
     this.chosen.set(date);
     void this.router.navigate([], { queryParams: { date }, replaceUrl: true });
     void this.load();
+  }
+
+  /** Juger une ligne ou une commande ; un verdict enregistré fait relire la page. */
+  protected async check(request: QualityRequest): Promise<void> {
+    const date = this.date();
+    if (date !== null && (await this.quality.open(date, request))) {
+      await this.refresh();
+    }
   }
 
   /** Réessayer UNE colonne ; sans jour connu, c'est tout l'écran qu'il faut relire. */
@@ -263,37 +278,20 @@ export class SupervisionPage {
       this.readColumn('preparation', date),
       this.readColumn('packing', date),
       this.readColumn('handover', date),
+      this.quality.read(date),
     ]);
   }
 
   private readColumn(column: Column, date: string, reset = false): Promise<void> {
+    // Le jour a pu changer pendant la lecture : on ne pose pas hier sur aujourd'hui.
+    const current = (): boolean => date === this.date();
     switch (column) {
       case 'preparation':
-        return this.readInto(this.preparation, () => this.service.preparation(date), date, reset);
+        return readInto(this.preparation, () => this.service.preparation(date), current, reset);
       case 'packing':
-        return this.readInto(this.packing, () => this.service.packing(date), date, reset);
+        return readInto(this.packing, () => this.service.packing(date), current, reset);
       case 'handover':
-        return this.readInto(this.handover, () => this.service.handover(date), date, reset);
-    }
-  }
-
-  private async readInto<T>(
-    target: WritableSignal<ColumnState<T>>,
-    read: () => Promise<T>,
-    date: string,
-    reset: boolean,
-  ): Promise<void> {
-    if (reset) {
-      target.set(LOADING);
-    }
-    try {
-      const data = await read();
-      // Le jour a pu changer pendant la lecture : on ne pose pas hier sur aujourd'hui.
-      if (date === this.date()) {
-        target.set(ready(data));
-      }
-    } catch {
-      target.update(afterFailure);
+        return readInto(this.handover, () => this.service.handover(date), current, reset);
     }
   }
 }

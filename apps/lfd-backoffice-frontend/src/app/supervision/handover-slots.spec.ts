@@ -184,3 +184,29 @@ describe('causeOf — qui a dépassé le créneau', () => {
     );
   });
 });
+
+describe('handoverBoard — le contrôle qualité', () => {
+  /** `plan-controle-qualite.md`, D7 : la retenue est lue telle quelle dans la file. */
+  it('porte la retenue sur la ligne et la compte, retrait et livraison confondus', () => {
+    const board = handoverBoard(
+      {
+        day: DAY,
+        entries: [
+          entry('A', promised('07:00', '08:00'), { heldForQuality: true }),
+          entry('B', promised('07:00', '08:00'), {
+            heldForQuality: true,
+            fulfillmentMethod: 'delivery',
+          }),
+          entry('C', promised('07:00', '08:00')),
+        ],
+      },
+      null,
+    );
+
+    expect(board.held).toBe(2);
+    expect(board.pickup[0]?.rows.map((row) => [row.reference, row.heldForQuality])).toEqual([
+      ['A', true],
+      ['C', false],
+    ]);
+  });
+});

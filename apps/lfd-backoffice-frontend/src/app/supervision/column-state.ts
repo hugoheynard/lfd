@@ -1,3 +1,5 @@
+import type { WritableSignal } from '@angular/core';
+
 /**
  * **L'état d'UNE colonne de la Supervision.** Chaque lecture a le sien : une
  * lecture qui échoue n'efface pas les autres (plan §9).
@@ -27,4 +29,29 @@ export function dataOf<T>(state: ColumnState<T>): T | null {
 /** Une relecture ratée garde la dernière donnée ; un premier chargement raté devient une erreur. */
 export function afterFailure<T>(state: ColumnState<T>): ColumnState<T> {
   return state.status === 'ready' ? { ...state, stale: true } : FAILED;
+}
+
+/**
+ * Lire dans une colonne. Une réponse qui n'est plus d'actualité (`current`
+ * rend `false` : le jour a changé pendant la lecture) est jetée ; un échec
+ * garde la dernière donnée et le dit. `reset` repasse d'abord en chargement —
+ * le bouton Réessayer.
+ */
+export async function readInto<T>(
+  target: WritableSignal<ColumnState<T>>,
+  read: () => Promise<T>,
+  current: () => boolean,
+  reset = false,
+): Promise<void> {
+  if (reset) {
+    target.set(LOADING);
+  }
+  try {
+    const data = await read();
+    if (current()) {
+      target.set(ready(data));
+    }
+  } catch {
+    target.update(afterFailure);
+  }
 }

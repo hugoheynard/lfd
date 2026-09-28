@@ -6,13 +6,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type {
   DaySupervisionView,
   HandoverQueueView,
+  QualityBoardView,
   ProductionPackingView,
   ProductionWorksheetView,
   StaffPermission,
   StaffRole,
 } from '@lfd/contracts';
 
+import { FoldPanelHostService } from 'fold-ng';
+
 import { PermissionsStore } from '../../auth/permissions.store';
+import { QualityService } from '../quality.service';
 import { SupervisionService } from '../supervision.service';
 import { shiftServiceDay } from '../supervision-day';
 import { SupervisionPage } from './supervision-page';
@@ -140,7 +144,12 @@ const QUEUE: HandoverQueueView = {
   ],
 };
 
+const NO_CHECK: QualityBoardView = { date: DATE, lines: [], orders: [], heldOrderIds: [] };
+
 interface Reads {
+  quality?: () => Promise<QualityBoardView>;
+  /** Ce que le panneau de contrôle rend en se fermant. */
+  panel?: () => Promise<boolean | undefined>;
   day?: () => Promise<DaySupervisionView>;
   preparation?: () => Promise<ProductionWorksheetView>;
   packing?: () => Promise<ProductionPackingView>;
@@ -164,6 +173,16 @@ async function mount(
           preparation: reads.preparation ?? (() => Promise.resolve(WORKSHEET)),
           packing: reads.packing ?? (() => Promise.resolve(packingView())),
           handover: reads.handover ?? (() => Promise.resolve(QUEUE)),
+        },
+      },
+      {
+        provide: QualityService,
+        useValue: { board: reads.quality ?? (() => Promise.resolve(NO_CHECK)) },
+      },
+      {
+        provide: FoldPanelHostService,
+        useValue: {
+          open: () => ({ closed: reads.panel?.() ?? Promise.resolve(undefined) }),
         },
       },
       {
@@ -422,5 +441,59 @@ describe('SupervisionPage', () => {
     expect(
       root(fixture).querySelector('fold-card[data-counter="handover"]')?.textContent,
     ).toContain('attendues · dont 1 livraison');
+  });
+
+  /** `plan-controle-qualite.md`, D7 : « N commandes retenues » sur la carte Retrait. */
+  it('dit les commandes retenues au masthead, et la ligne dit « En vérification »', async () => {
+    const held: HandoverQueueView = {
+      ...QUEUE,
+      entries: [{ ...QUEUE.entries[0]!, heldForQuality: true }],
+    };
+    const fixture = await mount({ handover: () => Promise.resolve(held) });
+
+    const badge = root(fixture).querySelector(
+      'fold-card[data-counter="handover"] [data-blocker="held"]',
+    );
+    expect(badge?.getAttribute('variant')).toBe('alert');
+    expect(badge?.textContent).toContain('1 commande retenue');
+    expect(column(fixture, 'handover')?.textContent).toContain('En vérification');
+  });
+
+  it('ne montre « Contrôler » qu’avec b2b_supervision:write', async () => {
+    const reader = await mount();
+    expect(root(reader).textContent).not.toContain('Contrôler');
+
+    TestBed.resetTestingModule();
+    const judge = await mount({}, ['b2b_supervision:read', 'b2b_supervision:write']);
+    expect(column(judge, 'preparation')?.querySelector('[data-check="pac"]')).not.toBeNull();
+  });
+
+  it('relit la page après un verdict enregistré, pas après une annulation', async () => {
+    const preparation = vi.fn(() => Promise.resolve(WORKSHEET));
+    let saved = false;
+    const fixture = await mount({ preparation, panel: () => Promise.resolve(saved) }, [
+      'b2b_supervision:read',
+      'b2b_supervision:write',
+    ]);
+    const button = (): HTMLButtonElement | null =>
+      root(fixture).querySelector<HTMLButtonElement>('[data-check="pac"]');
+
+    button()?.click();
+    await fixture.whenStable();
+    expect(preparation).toHaveBeenCalledTimes(1);
+
+    saved = true;
+    button()?.click();
+    await fixture.whenStable();
+    expect(preparation).toHaveBeenCalledTimes(2);
+  });
+
+  it('dit quand les pastilles n’ont pas pu être lues, sans vider les colonnes', async () => {
+    const fixture = await mount({ quality: () => Promise.reject(new Error('503')) });
+
+    expect(root(fixture).querySelector('[data-quality-failed]')?.getAttribute('variant')).toBe(
+      'alert',
+    );
+    expect(column(fixture, 'preparation')?.textContent).toContain('Pain au chocolat');
   });
 });
