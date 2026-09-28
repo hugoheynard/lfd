@@ -2,9 +2,12 @@ import type { BillingAddressPayload, PlaceOrderPayload } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
 import { STILL_SOLD } from "../../b2b/catalog/infrastructure/sellable-filter.js";
-import { MarkOrderReadyCommand } from "../../b2b/orders/application/commands/mark-order-ready.command.js";
 import { PlaceOrderCommand } from "../../b2b/orders/application/commands/place-order.command.js";
 import { CloseProductionDayCommand } from "../../production/application/commands/close-production-day.command.js";
+import { DeclarePackingContainersCommand } from "../../production/application/commands/declare-packing-containers.command.js";
+import { MarkPackingLineCommand } from "../../production/application/commands/mark-packing-line.command.js";
+import { MarkWorksheetLineCommand } from "../../production/application/commands/mark-worksheet-line.command.js";
+import { PackOrderCommand } from "../../production/application/commands/pack-order.command.js";
 import { ConfirmManualHandoverCommand } from "../../handover/application/commands/confirm-manual-handover.command.js";
 import { PaymentStatus } from "../../platform/database/client/client.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
@@ -152,7 +155,7 @@ const VILLAGE = "Le Village";
  *
  * ## Les états sont ATTEINTS, jamais écrits
  *
- * `ready` passe par `MarkOrderReadyCommand`, `handed_over` par
+ * `ready` passe par les gestes du colisage (`packFully`), `handed_over` par
  * `ConfirmManualHandoverCommand` — donc par `packingBlocker` et
  * `handoverBlocker`, et par la course que l'unicité en base arbitre. Un
  * `readyAt` posé à la main aurait peint le même écran en n'éprouvant rien, et
@@ -466,7 +469,7 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
  * ## Et pourquoi l'avancement est daté, lui aussi
  *
  * Le colisage et la remise se jouent dans un contexte daté d'**aujourd'hui** :
- * `MarkOrderReadyCommand` prend son instant en paramètre, et l'attestation le
+ * Le colisage prend l'instant du contexte, et l'attestation le
  * lit à l'horloge du contexte. Les dater de maintenant ferait apparaître la
  * remise à l'heure du semis — 14 h pour un sac parti à 6 h.
  */
@@ -476,6 +479,8 @@ async function seedCounter(context: SeedContext, target: Target, today: Date): P
   const packedAt = atHour(today, PACKED_HOUR);
   const handedOverAt = atHour(today, HANDED_OVER_HOUR);
 
+  // Les produits déjà cochés en fournée ce jour : une ligne ne se coche qu'une fois.
+  const baked = new Set<string>();
   const placedCounter: { readonly reference: string; readonly outcome: CounterOrder["outcome"] }[] =
     [];
   for (const entry of COUNTER) {
@@ -507,9 +512,13 @@ async function seedCounter(context: SeedContext, target: Target, today: Date): P
     // Le colisage d'abord, **y compris pour la remise** : un sac sort du fournil
     // avant de changer de mains, et `packingBlocker` refuse de déclarer prête
     // une commande déjà remise. L'ordre inverse marcherait une fois sur deux.
-    await asStaff(packedAt, () =>
-      context.commands.execute(new MarkOrderReadyCommand(reference, SEED_STAFF_SUB, packedAt)),
-    );
+    // 🔴 **Par les gestes du fournil, pas par le statut** (2026-09-28). Le semis
+    // déclarait prête par `MarkOrderReadyCommand` : le statut de la commande
+    // disait « prête » pendant que son bac était vide, et le comptoir affichait
+    // « Déclarée prête » au-dessus de deux barres vides. Cocher en fournée,
+    // poser dans le bac et fermer le sac rend la commande prête par
+    // l'événement du colisage — le chemin réel, donc un seul état partout.
+    await asStaff(packedAt, () => packFully(context, forDay, reference, baked));
     if (outcome === "handed_over") {
       // `manual` et non `scan` : le semis n'a pas de jeton en main, et une
       // attestation forte qu'aucun code n'a portée serait fausse plutôt que
@@ -520,6 +529,39 @@ async function seedCounter(context: SeedContext, target: Target, today: Date): P
     }
   }
 }
+
+/**
+ * **Le sac, fait comme au fournil** : chaque produit coché en fournée (une
+ * fois par jour), chaque ligne posée dans le bac, un bac déclaré, le sac fermé.
+ * Lu dans le plan arrêté : ce sont SES lignes qu'on pose, pas celles du panier.
+ */
+async function packFully(
+  context: SeedContext,
+  serviceDay: string,
+  reference: string,
+  baked: Set<string>,
+): Promise<void> {
+  const lines = await context.prisma.productionOrderLine.findMany({
+    where: { order: { serviceDay, reference } },
+    select: { sku: true },
+  });
+  for (const { sku } of lines) {
+    if (!baked.has(sku)) {
+      await context.commands.execute(
+        new MarkWorksheetLineCommand(serviceDay, sku, SEED_INITIALS, SEED_STAFF_SUB),
+      );
+      baked.add(sku);
+    }
+    await context.commands.execute(
+      new MarkPackingLineCommand(serviceDay, reference, sku, SEED_INITIALS, SEED_STAFF_SUB),
+    );
+  }
+  await context.commands.execute(new DeclarePackingContainersCommand(serviceDay, reference, 1));
+  await context.commands.execute(new PackOrderCommand(serviceDay, reference, SEED_STAFF_SUB));
+}
+
+/** Les initiales du semis sur les coches — deux lettres, comme au crayon. */
+const SEED_INITIALS = "SD";
 
 /** Le contexte de requête d'un geste staff — sans lui, aucun handler ne sait qui agit. */
 function asStaff<T>(now: Date, run: () => Promise<T>): Promise<T> {
