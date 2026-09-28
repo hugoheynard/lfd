@@ -78,21 +78,6 @@
   color: var(--fold-color-text-secondary);
 }
 
-.line.is-done {
-  color: var(--fold-color-text-muted);
-
-  .product {
-    text-decoration: line-through;
-  }
-}
-
-.done-mark {
-  margin-left: auto;
-  font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-success-text);
-}
-
 .lines {
   display: flex;
   flex-direction: column;
@@ -102,20 +87,85 @@
   list-style: none;
 }
 
+// ── Une ligne du fournil ─────────────────────────────────────────────────────
+// Grille à trois colonnes : [produit + barre] [sorties / prévues] [Contrôler].
+// Les pastilles (surplus, contrôle) passent dessous, sur la largeur du produit.
 .line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-sm);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  column-gap: var(--fold-space-md);
+  row-gap: var(--fold-space-xs);
 }
 
-// La barre par produit : sa propre rangée, sous la quantité et le nom. Les
-// teintes sont celles du mètre du rayon.
+// Le nom du produit est le libellé du mètre : on le remonte d'un cran (fold le
+// pose en `xs` secondaire, taille d'une légende) par ses propres tokens.
 .line-meter {
-  flex: 1 0 60%;
+  --fold-text-xs: var(--fold-text-sm);
+  --fold-color-text-secondary: var(--fold-color-text);
   --fold-color-success: var(--fold-ref-green-700);
   --fold-color-warning: var(--fold-ref-amber-500);
   --fold-color-surface-raised: var(--fold-ref-paper-200);
+}
+
+.figure {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+  font-family: var(--fold-font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.figure-done {
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text);
+}
+
+.figure-of {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.initials {
+  margin-left: var(--fold-space-xs);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  color: var(--fold-color-success-text);
+}
+
+.check {
+  align-self: center;
+}
+
+.line-notes {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+// « Contrôlé sur 96, compte actuel 120 — à revoir ».
+.quality-detail {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-warning-text);
+}
+
+// Une ligne complète recule : elle reste lisible, sans tirer l'œil.
+.line.is-done {
+  --fold-color-text: var(--fold-color-text-muted);
+
+  .line-meter {
+    --fold-color-text-secondary: var(--fold-color-text-muted);
+  }
+}
+
+.lines > .line + .line {
+  padding-top: var(--fold-space-sm);
+  border-top: 1px solid var(--fold-color-border-subtle);
 }
 
 // La pastille du contrôle qualité : le mot porte l'état, la teinte le redouble.
@@ -126,31 +176,6 @@
 // Sur le rayon, sous son en-tête : la pastille ne s'étire pas sur la carte.
 .stack > .quality {
   align-self: flex-start;
-}
-
-// « Contrôlé sur 96, compte actuel 120 — à revoir » : toute la largeur, sous la ligne.
-.quality-detail {
-  flex-basis: 100%;
-  font-size: var(--fold-text-xs);
-  color: var(--fold-color-warning-text);
-}
-
-.qty {
-  flex: none;
-  min-width: 4ch;
-  font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-md);
-  font-weight: var(--fold-weight-bold);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-  color: var(--fold-color-text);
-}
-
-.product {
-  flex: 1;
-  min-width: 0;
-  font-size: var(--fold-text-sm);
-  color: var(--fold-color-text);
 }
 
 .renvoi {
@@ -220,19 +245,14 @@
 
   .line {
     min-height: 44px;
-    gap: var(--fold-space-md);
   }
 
-  .line + .line {
-    border-top: 1px solid var(--fold-color-border-subtle);
+  .line-meter {
+    --fold-text-xs: var(--fold-text-base);
   }
 
-  .qty {
+  .figure-done {
     font-size: var(--fold-text-lg);
-  }
-
-  .product {
-    font-size: var(--fold-text-base);
   }
 }
 

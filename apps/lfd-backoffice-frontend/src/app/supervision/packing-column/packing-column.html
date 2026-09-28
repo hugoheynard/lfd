@@ -76,10 +76,20 @@
           />
         }
         @if (card.state === 'awaiting_oven') {
-          <p class="blocked">
-            Bloquée par <strong>{{ card.awaited.join(', ') }}</strong> encore au four. Rien à faire
-            tant que la colonne 1 ne l'a pas libérée.
-          </p>
+          <!-- Dix-huit noms en une phrase ne se lisaient plus (2026-09-28) : le
+               compte d'abord, puis les produits en liste qu'on déplie. La
+               pastille « Attend le four » dit déjà qu'il n'y a rien à faire. -->
+          <fold-disclosure class="blocked" data-blocked>
+            <span summary class="blocked-summary"
+              >{{ card.awaited.length }}
+              {{ card.awaited.length > 1 ? 'produits attendus' : 'produit attendu' }} du four</span
+            >
+            <ul class="awaited">
+              @for (name of card.awaited; track name) {
+                <li>{{ name }}</li>
+              }
+            </ul>
+          </fold-disclosure>
         }
 
         @if (showLinks() && card.state !== 'awaiting_oven') {

@@ -75,53 +75,68 @@
                 [class.is-match]="matches().skus.has(line.sku)"
                 [attr.data-line-done]="item.done ? '' : null"
               >
-                <span class="qty">{{ line.quantity }}</span>
-                <span class="product">{{ line.productName }}</span>
-                @if (item.done) {
-                  <span class="done-mark"
-                    >✓{{ line.initials === null ? '' : ' ' + line.initials }}</span
-                  >
-                }
+                <!-- Une ligne = trois choses, dans l'ordre où l'œil les cherche : le
+                     produit et sa barre, où il en est, et le geste. Le nom EST le
+                     libellé de la barre ; le chiffre ne se dit qu'une fois
+                     (repris le 2026-09-28 : quantité, nom, barre et « 0 / 22
+                     sorties » disaient trois fois la même chose). -->
                 @let progress = progressOf(line);
                 <fold-meter
                   class="line-meter"
-                  [label]="progress.label"
+                  [label]="line.productName"
                   [value]="progress.value"
                   [max]="progress.max"
                   [tone]="progress.tone"
                   [attr.data-line-progress]="line.sku"
                 />
-                @if (progress.surplus; as surplus) {
-                  <fold-badge
-                    radius="square"
-                    variant="warning"
-                    [content]="surplus"
-                    [attr.data-line-surplus]="line.sku"
-                  />
-                }
-                @if (lineBadge(line); as badge) {
-                  <fold-badge
-                    class="quality"
-                    radius="square"
-                    [variant]="badge.variant"
-                    [content]="badge.label"
-                    data-line-quality
-                  />
-                  @if (badge.detail !== null) {
-                    <span class="quality-detail" data-line-stale>{{ badge.detail }}</span>
+                <span
+                  class="figure"
+                  [attr.aria-label]="progress.label"
+                  [attr.data-line-figure]="line.sku"
+                >
+                  <span class="figure-done">{{ line.produced }}</span>
+                  <span class="figure-of">/ {{ line.quantity }}</span>
+                  @if (item.done && line.initials !== null) {
+                    <span class="initials">{{ line.initials }}</span>
                   }
-                }
+                </span>
                 @if (canCheck()) {
                   <button
                     foldButton
                     size="sm"
-                    emphasis="outline"
+                    emphasis="soft"
                     intent="neutral"
+                    class="check"
                     [attr.data-check]="line.sku"
+                    [attr.aria-label]="'Contrôler ' + line.productName"
                     (click)="requestCheck(line)"
                   >
                     Contrôler
                   </button>
+                }
+                @if (progress.surplus !== null || lineBadge(line) !== null) {
+                  <span class="line-notes">
+                    @if (progress.surplus; as surplus) {
+                      <fold-badge
+                        radius="square"
+                        variant="warning"
+                        [content]="surplus"
+                        [attr.data-line-surplus]="line.sku"
+                      />
+                    }
+                    @if (lineBadge(line); as badge) {
+                      <fold-badge
+                        class="quality"
+                        radius="square"
+                        [variant]="badge.variant"
+                        [content]="badge.label"
+                        data-line-quality
+                      />
+                      @if (badge.detail !== null) {
+                        <span class="quality-detail" data-line-stale>{{ badge.detail }}</span>
+                      }
+                    }
+                  </span>
                 }
               </li>
             }

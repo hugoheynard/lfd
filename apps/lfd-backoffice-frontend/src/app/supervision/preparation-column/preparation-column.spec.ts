@@ -225,9 +225,11 @@ describe('PreparationColumn', () => {
       ],
     });
 
-    expect(element.querySelector('[data-line-progress="pac"]')?.textContent).toContain(
-      '40 / 96 sorties',
-    );
+    // Le nom porte la barre ; le chiffre ne se dit qu'une fois, à côté, et se
+    // lit en entier à la voix.
+    const figure = element.querySelector('[data-line-figure="pac"]');
+    expect(figure?.textContent).toMatch(/40\s*\/\s*96/);
+    expect(figure?.getAttribute('aria-label')).toContain('40 / 96 sorties');
     expect(element.querySelector('[data-line-progress="cro"]')?.classList).toContain('success');
     expect(element.querySelector('[data-line-surplus="cro"]')?.textContent).toContain('+4');
     expect(element.querySelector('[data-line-surplus="pac"]')).toBeNull();

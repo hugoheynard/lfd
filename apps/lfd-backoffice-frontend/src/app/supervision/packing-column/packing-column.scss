@@ -81,15 +81,24 @@
   --fold-color-surface-raised: var(--fold-ref-paper-200);
 }
 
-.blocked {
-  margin: 0;
+.blocked-summary {
   font-size: var(--fold-text-sm);
-  line-height: var(--fold-leading-normal);
-  color: var(--fold-color-text-secondary);
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-warning-text);
+}
 
-  strong {
-    color: var(--fold-color-text);
-  }
+// Deux colonnes dès que la carte a la place : une liste de noms courts se
+// parcourt mieux en largeur qu'en une longue colonne.
+.awaited {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fold-text-xs);
+  line-height: var(--fold-leading-normal);
+  color: var(--fold-color-text);
 }
 
 .renvoi {

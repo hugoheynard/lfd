@@ -63,7 +63,10 @@ fold-page-layout {
 // carte par mesure, un cran plus claire que la bande.
 .chiffres {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  // 14rem : la largeur des pastilles (« 2 créneaux dépassés par nous »), qui
+  // ne passent pas à la ligne. À 9rem, deux cartes tenaient côte à côte sur
+  // un téléphone et la pastille débordait de la sienne (vu le 2026-09-28).
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
   gap: var(--fold-space-sm);
 }
 

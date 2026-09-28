@@ -100,11 +100,14 @@
   gap: var(--fold-space-md);
 }
 
+// « 14 h 00 » fait sept caractères : sur 4ch, l'heure se cassait en deux
+// lignes (« 14 h » / « 00 », vu le 2026-09-28).
 .time {
   flex: none;
-  width: 4ch;
+  min-width: 7ch;
+  white-space: nowrap;
   font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-md);
+  font-size: var(--fold-text-sm);
   font-weight: var(--fold-weight-bold);
   font-variant-numeric: tabular-nums;
   color: var(--fold-color-text);
