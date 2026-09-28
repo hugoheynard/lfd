@@ -38,7 +38,7 @@ dit un superviseur (« je fais une réserve ») ; `warning` reste le nom de code
 | --- | ----------------------------------- | -------------------------------------------------------------------------------------- |
 | Q1  | Que fait un contrôle non conforme ? | **Trace, ET blocage du retrait.** Au comptoir : « commande en cours de vérification ». |
 | Q2  | Obligatoire avant le retrait ?      | **Facultatif.**                                                                        |
-| Q3  | Photo ?                             | **Oui**, une ou plusieurs.                                                             |
+| Q3  | Photo ?                             | **Oui**, une ou plusieurs — gardées **sans limite de temps** (Q-C).                    |
 | Q4  | Tout ou échantillon ?               | **Tout est contrôlable.** Pas de tirage.                                               |
 | —   | Combien d'états ?                   | **Trois** : OK, réserve, bloquant — note et photo(s) dès la réserve.                   |
 | Q5  | Où se fait le geste ?               | **Sur la Supervision.**                                                                |
@@ -256,11 +256,13 @@ règle partagée (`CLAUDE.md` §3). Bornes : JPEG / PNG / WebP / HEIC, 10 Mo, si
 photos par contrôle. Lues par une route authentifiée en `write` (D3), jamais
 une URL publique.
 
-**Conservation (Q-C)** : la documentation dit que ce stockage garde « des
-semaines » (`order/architecture-pieces-en-r2.md`), mais **aucune règle
-d'expiration n'a été trouvée dans le dépôt** — ni dans `platform/storage/`,
-ni dans la configuration lue. La question n'est donc pas « faut-il garder plus
-longtemps », mais « combien de temps garder, et qui l'applique ».
+**Conservation — tranchée par Hugo le 2026-09-28 : pas de limite de temps.**
+Une photo de contrôle se garde **indéfiniment**, comme le contrôle lui-même.
+Aucune règle d'expiration n'existe aujourd'hui sur ce bucket (vérifié : ni dans
+`platform/storage/`, ni dans la configuration lue). ⚠️ Le jour où une règle de
+cycle de vie y est posée pour les pièces du fournil (« des semaines », selon
+`order/architecture-pieces-en-r2.md`), elle doit **exclure le préfixe
+`quality/`** — sauf `quality/pending/`, que le balayage nettoie déjà.
 
 ### D9 — Le journal
 
@@ -336,8 +338,7 @@ sur la ligne, avant qu'on scanne — le refus au scan reste la garantie.
 - **Q-B** — Un blocage de LIGNE retient-il toutes les commandes **du plan**
   qui portent ce produit, y compris celles qu'un retirage ajoute après ? (D6)
   Recommandation : **oui**.
-- **Q-C** — Combien de temps garder les photos de contrôle, et qui applique
-  l'expiration ? Aucune n'est en place aujourd'hui. (D8)
+- ~~**Q-C** — Combien de temps garder les photos ?~~ **Tranché (2026-09-28) : sans limite.** (D8)
 - **Q-D** — Le **client** est-il prévenu qu'une commande est retenue ?
   Recommandation : **non** au premier lot — la retenue est un geste interne,
   souvent levée dans l'heure ; le comptoir parle au client s'il est là.
