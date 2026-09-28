@@ -18,7 +18,7 @@ import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
 import { AddressesService } from './legacy/entreprises/addresses.service';
 import { NotifyService } from './notify.service';
 import { provideAuth } from './auth/auth.providers';
-import { provideSentry, provideWebVitals } from '@lfd/front-ops';
+import { provideSentry, provideStaleBundleReload, provideWebVitals } from '@lfd/front-ops';
 
 /** L'identifiant de CE front dans la topologie OPS — la couture avec la carte. */
 const OPS_NODE = 'b2b-front';
@@ -73,5 +73,8 @@ export const appConfig: ApplicationConfig = {
       release: AUTH_CONFIG.appRevision,
       front: OPS_NODE,
     }),
+    // Un onglet ouvert avant un déploiement demande des morceaux retirés : il
+    // se recharge une fois, au lieu d'un écran qui ne s'ouvre plus.
+    provideStaleBundleReload(),
   ],
 };

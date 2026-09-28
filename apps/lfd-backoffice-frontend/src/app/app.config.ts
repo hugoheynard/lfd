@@ -7,7 +7,7 @@ import {
   provideFoldToasts,
 } from 'fold-ng';
 
-import { provideSentry, provideWebVitals } from '@lfd/front-ops';
+import { provideSentry, provideStaleBundleReload, provideWebVitals } from '@lfd/front-ops';
 
 import { APP_REVISION_VALUE, B2B_API_BASE_VALUE, SENTRY_DSN_VALUE } from './api/api.env.generated';
 import { routes } from './app.routes';
@@ -36,6 +36,10 @@ export const appConfig: ApplicationConfig = {
       release: APP_REVISION_VALUE,
       front: OPS_NODE,
     }),
+    // Un onglet ouvert avant un déploiement demande des morceaux retirés : il
+    // se recharge une fois, au lieu de laisser croire au « compte bloqué »
+    // (2026-09-28, aucun journal n'en gardait trace).
+    provideStaleBundleReload(),
     // Les quatre mots que fold dit de lui-même, traduits UNE fois. Sans ce
     // fournisseur, chaque champ répétait `optionalLabel="facultatif"` (25 fois
     // dans 9 fichiers), et « More information » partait en anglais au lecteur

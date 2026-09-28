@@ -1,13 +1,15 @@
 /**
  * `@lfd/front-ops` — **ce que les fronts renvoient d'eux-mêmes.**
  *
- * Deux fournisseurs Angular, et une seule idée derrière : un front est la seule
+ * Trois fournisseurs Angular, et une seule idée derrière : un front est la seule
  * brique dont la santé ne s'observe pas de l'extérieur. Une sonde dit qu'il est
  * *servi* ; elle ne dit ni qu'il démarre, ni qu'il est utilisable, ni que
  * quelque chose vient de casser dans un navigateur.
  *
  * - {@link provideWebVitals} — LCP, INP, CLS renvoyés à notre API ;
- * - {@link provideSentry} — les erreurs, chez un tiers, pour les *source maps*.
+ * - {@link provideSentry} — les erreurs, chez un tiers, pour les *source maps* ;
+ * - {@link provideStaleBundleReload} — un onglet resté sur une version retirée
+ *   se recharge une fois, au lieu de rester muet.
  *
  * **Aucune donnée personnelle ne quitte le navigateur** par ces deux chemins,
  * et c'est vérifiable ici plutôt que dans quatre applications.
@@ -18,4 +20,5 @@
  * adresse en paramètres.
  */
 export { provideSentry } from "./sentry.js";
+export { provideStaleBundleReload } from "./stale-bundle-reload.js";
 export { provideWebVitals } from "./web-vitals.js";
