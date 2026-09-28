@@ -71,3 +71,12 @@
   flex-wrap: wrap;
   gap: var(--fold-space-sm);
 }
+
+// Le champ natif ne se montre jamais : c'est le bouton qui l'ouvre.
+.camera-input {
+  display: none;
+}
+
+.camera {
+  align-self: flex-start;
+}

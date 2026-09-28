@@ -183,6 +183,13 @@ export class QualityPanel implements OnInit {
     }
   }
 
+  /** Une photo prise sur le moment : même chemin que la zone de dépôt. */
+  protected pickFromCamera(input: HTMLInputElement): void {
+    this.pick(Array.from(input.files ?? []));
+    // Vidé, sinon reprendre la même photo ne déclencherait pas `change`.
+    input.value = '';
+  }
+
   /** Retirée avant enregistrement : le dépôt reste orphelin, et le balayage l'efface (D8). */
   protected remove(key: number): void {
     const photo = this.photos().find((candidate) => candidate.key === key);

@@ -198,6 +198,28 @@ describe('QualityPanel', () => {
     expect(sent[0]?.uploadIds).toEqual(['up-1']);
   });
 
+  it('prend une photo avec l’appareil arrière, par le même chemin que la zone de dépôt', async () => {
+    const deposit = vi.fn(() => Promise.resolve('up-1'));
+    const { fixture, element } = await mount({ deposit });
+    const camera = element.querySelector<HTMLInputElement>('input[capture="environment"]');
+    const photo = new File(['x'], 'bac.jpg', { type: 'image/jpeg' });
+    if (camera === null) {
+      throw new Error('champ caméra absent');
+    }
+    const clicked = vi.spyOn(camera, 'click').mockImplementation(() => undefined);
+
+    element.querySelector<HTMLButtonElement>('[data-camera]')?.click();
+    expect(clicked).toHaveBeenCalled();
+
+    Object.defineProperty(camera, 'files', { configurable: true, value: [photo] });
+    camera.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(deposit).toHaveBeenCalledWith(photo);
+    expect(element.querySelector('[data-photo="ready"]')).not.toBeNull();
+  });
+
   it('retire une photo avant l’enregistrement', async () => {
     const { fixture, element, save, sent } = await mount();
     const dropzone = pickerOf(fixture);

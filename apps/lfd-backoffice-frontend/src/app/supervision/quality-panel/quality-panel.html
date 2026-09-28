@@ -75,7 +75,34 @@
       </fold-callout>
     }
     @if (room() > 0) {
-      <!-- `image/*` : sur mobile, le sélecteur propose l'appareil photo. -->
+      <!-- Prendre la photo sur le moment (Hugo, 2026-09-28). La zone de dépôt
+           de fold n'a pas d'attribut `capture` : `image/*` seul laisse le
+           téléphone proposer la galerie d'abord, selon le navigateur. Ce
+           champ caché ouvre l'appareil ARRIÈRE directement ; sur un poste
+           sans caméra, le navigateur ignore `capture` et ouvre le sélecteur. -->
+      <input
+        #camera
+        type="file"
+        accept="image/*"
+        capture="environment"
+        class="camera-input"
+        tabindex="-1"
+        aria-hidden="true"
+        (change)="pickFromCamera(camera)"
+      />
+      <button
+        foldButton
+        size="sm"
+        emphasis="outline"
+        intent="neutral"
+        type="button"
+        class="camera"
+        data-camera
+        [disabled]="saving()"
+        (click)="camera.click()"
+      >
+        Prendre une photo
+      </button>
       <fold-file-dropzone
         accept="image/*"
         label="Ajouter des photos"
