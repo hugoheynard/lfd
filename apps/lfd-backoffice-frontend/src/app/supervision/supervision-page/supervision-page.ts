@@ -13,9 +13,11 @@ import type {
   ProductionWorksheetView,
 } from '@lfd/contracts';
 import type { FulfillmentMethod } from '@lfd/contracts';
+import { ActivatedRoute, Router } from '@angular/router';
 import type { FoldViewNavItem, FoldViewToggleOption } from 'fold-ng';
 import {
   FoldBadgeComponent,
+  FoldButtonComponent,
   FoldCardComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
@@ -43,6 +45,8 @@ import {
   type SupervisionColumn as Column,
 } from '../supervision-links';
 import { SupervisionService } from '../supervision.service';
+import { serviceDayParam, shiftServiceDay } from '../supervision-day';
+import { blockersOf, methodOptionsOf, supervisionTabs } from '../supervision-tabs';
 
 /**
  * En dessous, une colonne à la fois (plan §6). 900 px et non le seuil commun
@@ -60,12 +64,18 @@ const BOARD_NARROW = '(max-width: 900px)';
  * propre état : une lecture qui échoue n'efface pas les autres. Le jour est
  * celui du SERVEUR : `supervision/day` sans date le donne, puis les trois
  * colonnes le lisent.
+ *
+ * On peut regarder un AUTRE jour (Hugo, 2026-09-28 : « il faudrait que je
+ * puisse naviguer dans les dates ») — la veille pour relire, le lendemain pour
+ * voir ce qui se prépare. Le jour choisi vit dans l'adresse (`?date=`) ;
+ * sans lui, l'écran suit le jour du serveur, minuit compris.
  */
 @Component({
   selector: 'app-supervision-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldBadgeComponent,
+    FoldButtonComponent,
     FoldCardComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
@@ -83,6 +93,12 @@ const BOARD_NARROW = '(max-width: 900px)';
 export class SupervisionPage {
   private readonly service = inject(SupervisionService);
   private readonly permissions = inject(PermissionsStore);
+  private readonly router = inject(Router);
+
+  /** Le jour choisi à l'écran, ou `null` : on suit le jour du serveur. */
+  protected readonly chosen = signal(
+    serviceDayParam(inject(ActivatedRoute).snapshot.queryParamMap.get('date')),
+  );
 
   protected readonly narrow = narrowViewport(BOARD_NARROW);
   /** Le jour supervisé, appris du serveur. `null` tant qu'il ne l'a pas dit. */
@@ -144,48 +160,25 @@ export class SupervisionPage {
    * d'état, jamais par la couleur seule : les commandes qui attendent le four
    * (sur Préparation, la colonne qui bloque) et les créneaux dépassés.
    */
-  protected readonly blockers = computed(() => {
-    const oven = this.packingBoard()?.awaitingOven ?? 0;
-    const overdue = this.handoverBoard()?.overdue ?? 0;
-    return {
-      oven,
-      ovenLabel: `${countLabel(oven, 'commande attend', 'commandes attendent')} le four`,
-      overdue,
-      overdueLabel: countLabel(overdue, 'créneau dépassé', 'créneaux dépassés'),
-    };
-  });
+  protected readonly blockers = computed(() =>
+    blockersOf(this.packingBoard()?.awaitingOven ?? 0, this.handoverBoard()?.overdue ?? 0),
+  );
 
   /** Les onglets du mobile : le blocage d'une colonne voisine revient en pastille. */
-  protected readonly tabs = computed<readonly FoldViewNavItem[]>(() => {
-    const counters = this.counters();
-    const oven = this.packingBoard()?.awaitingOven ?? 0;
-    const overdue = this.handoverBoard()?.overdue ?? 0;
-    const count = (value: number | null): string => (value === null ? '—' : String(value));
-    return [
-      {
-        key: 'preparation',
-        label: `Préparation ${count(counters.preparation)}`,
-        badge: oven > 0 ? oven : null,
-      },
-      { key: 'packing', label: `Colisage ${count(counters.packing)}` },
-      {
-        key: 'handover',
-        label: `Retrait ${count(counters.handover)}`,
-        badge: overdue > 0 ? overdue : null,
-      },
-    ];
-  });
+  protected readonly tabs = computed<readonly FoldViewNavItem[]>(() =>
+    supervisionTabs(
+      this.counters(),
+      this.packingBoard()?.awaitingOven ?? 0,
+      this.handoverBoard()?.overdue ?? 0,
+    ),
+  );
 
   /** L'acheminement lu en colonne 3 : le segmenté vit dans l'en-tête fixe de la colonne. */
   protected readonly handoverMethod = signal<FulfillmentMethod>('pickup');
 
-  protected readonly methodOptions = computed<readonly FoldViewToggleOption[]>(() => {
-    const board = this.handoverBoard();
-    return [
-      { value: 'pickup', label: `Retrait · ${String(board?.pickupExpected ?? 0)}` },
-      { value: 'delivery', label: `Livraison · ${String(board?.deliveryExpected ?? 0)}` },
-    ];
-  });
+  protected readonly methodOptions = computed<readonly FoldViewToggleOption[]>(() =>
+    methodOptionsOf(this.handoverBoard()),
+  );
 
   constructor() {
     void this.load();
@@ -209,7 +202,7 @@ export class SupervisionPage {
     }
     let day: DaySupervisionView;
     try {
-      day = await this.service.day();
+      day = await this.service.day(this.chosen() ?? undefined);
     } catch {
       // Sans le jour du serveur, aucune colonne ne sait quoi lire.
       for (const column of [this.day, this.preparation, this.packing, this.handover]) {
@@ -220,6 +213,21 @@ export class SupervisionPage {
     this.day.set(ready(day));
     this.date.set(day.date);
     await this.readColumns(day.date);
+  }
+
+  /** Le jour d'avant ou d'après celui qu'on regarde. */
+  protected shift(days: number): void {
+    const date = this.date();
+    if (date !== null) {
+      this.goTo(shiftServiceDay(date, days));
+    }
+  }
+
+  /** `null` = revenir au jour du serveur, et le suivre de nouveau. */
+  protected goTo(date: string | null): void {
+    this.chosen.set(date);
+    void this.router.navigate([], { queryParams: { date }, replaceUrl: true });
+    void this.load();
   }
 
   /** Réessayer UNE colonne ; sans jour connu, c'est tout l'écran qu'il faut relire. */
@@ -237,9 +245,9 @@ export class SupervisionPage {
       return;
     }
     try {
-      const day = await this.service.day();
+      const day = await this.service.day(this.chosen() ?? undefined);
       this.day.set(ready(day));
-      // Minuit est passé au serveur : l'écran le suit.
+      // Minuit est passé au serveur : l'écran le suit, s'il n'a pas choisi.
       this.date.set(day.date);
     } catch {
       this.day.update(afterFailure);

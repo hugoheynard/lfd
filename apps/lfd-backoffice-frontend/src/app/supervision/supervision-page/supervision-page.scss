@@ -41,7 +41,16 @@ fold-page-layout {
 
 .masthead-head {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.day-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
 }
 
 .mc-clock {

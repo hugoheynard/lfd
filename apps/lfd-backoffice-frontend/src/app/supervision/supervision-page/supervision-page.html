@@ -3,6 +3,17 @@
        déjà l'écran, la bande porte les trois chiffres et la fraîcheur. -->
   <fold-page-section bleed stack class="masthead" foldSurface="chrome">
     <div class="masthead-head">
+      <div class="day-nav" data-day-nav>
+        <button foldButton emphasis="outline" size="sm" icon="chevron-left" (click)="shift(-1)">
+          Veille
+        </button>
+        <button foldButton emphasis="outline" size="sm" icon="chevron-right" (click)="shift(1)">
+          Lendemain
+        </button>
+        @if (chosen() !== null) {
+          <button foldButton emphasis="outline" size="sm" (click)="goTo(null)">Aujourd’hui</button>
+        }
+      </div>
       <span class="mc-clock" data-stamp>{{ stamp() }}</span>
     </div>
 

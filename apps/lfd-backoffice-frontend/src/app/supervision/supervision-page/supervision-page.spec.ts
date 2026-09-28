@@ -14,6 +14,7 @@ import type {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { SupervisionService } from '../supervision.service';
+import { shiftServiceDay } from '../supervision-day';
 import { SupervisionPage } from './supervision-page';
 
 const DATE = '2026-09-25';
@@ -205,8 +206,26 @@ describe('SupervisionPage', () => {
     const preparation = vi.fn(() => Promise.resolve(WORKSHEET));
     await mount({ day, preparation });
 
-    expect(day).toHaveBeenCalledWith();
+    // `undefined` et non une date : le service n'ajoute alors aucun `?date=`.
+    expect(day).toHaveBeenCalledWith(undefined);
     expect(preparation).toHaveBeenCalledWith(DATE);
+  });
+
+  /** Hugo, 2026-09-28 : l'écran restait sur le jour du serveur, sans moyen de voir demain. */
+  it('passe au lendemain : le jour et les trois colonnes sont relus à cette date', async () => {
+    const day = vi.fn((date?: string) => Promise.resolve({ ...DAY, date: date ?? DATE }));
+    const preparation = vi.fn(() => Promise.resolve(WORKSHEET));
+    const fixture = await mount({ day, preparation });
+    const next = shiftServiceDay(DATE, 1);
+
+    const buttons = [...root(fixture).querySelectorAll<HTMLButtonElement>('[data-day-nav] button')];
+    buttons.find((button) => button.textContent?.includes('Lendemain'))?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(day).toHaveBeenLastCalledWith(next);
+    expect(preparation).toHaveBeenLastCalledWith(next);
+    expect(root(fixture).querySelector('[data-day-nav]')?.textContent).toContain('Aujourd’hui');
   });
 
   it('montre les trois colonnes, leur unité, et les compteurs', async () => {
