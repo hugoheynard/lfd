@@ -73,14 +73,28 @@ export interface ReadyVerdict {
  * pire qu'une absence sur un écran qu'on lit avec quelqu'un en face.
  *
  * Sorti du composant le 2026-09-28, avec les barres du sac : les deux disent
- * où en est la commande, et le composant restait sous les 300 lignes.
+ * où en est la commande. Sans fiche de colis — plan pas arrêté, commande hors
+ * plan —, c'est le statut de la commande qui parle, faute de mieux.
  */
-export function readyVerdict(entry: HandoverQueueEntryView | null): ReadyVerdict {
+export function readyVerdict(
+  entry: HandoverQueueEntryView | null,
+  bag: BagReadiness | null,
+): ReadyVerdict {
   if (entry === null) {
     return { text: '', tone: 'neutral', icon: 'check' };
   }
   if (entry.state === 'handed_over') {
     return { text: 'Déjà retirée. Le sac est parti.', tone: 'success', icon: 'check' };
+  }
+  // 🔴 **La fiche de colis fait foi quand elle existe** (constaté le 2026-09-28) :
+  // le statut « prête » de la commande et le bac pouvaient se contredire — une
+  // commande déclarée prête sans que rien ne soit posé dans le bac affichait
+  // « Déclarée prête » au-dessus de deux barres vides. L'écran ne dit qu'une
+  // chose : ce que le bac montre.
+  if (bag !== null) {
+    return bag.ready
+      ? { text: 'Sac fermé : prête à remettre.', tone: 'success', icon: 'check' }
+      : { text: 'Pas encore prête : le sac n’est pas fini.', tone: 'warning', icon: 'clock' };
   }
   return entry.readyAt === null
     ? { text: 'Pas encore déclarée prête par le fournil.', tone: 'warning', icon: 'clock' }

@@ -180,14 +180,13 @@ export class HandoverDetail {
     return entry.fulfillmentMethod === 'delivery' ? 'Livraison' : 'Retrait';
   });
 
-  protected readonly verdict = computed(() => readyVerdict(this.entry()));
-
   /**
    * La fiche de colis de la commande ouverte, relue au colisage du jour —
    * `null` avant l'arrêt du plan ou pour une commande hors plan.
    */
   private readonly sheet = signal<PackingSheet | null>(null);
   protected readonly readiness = computed(() => bagReadiness(this.sheet()));
+  protected readonly verdict = computed(() => readyVerdict(this.entry(), this.readiness()));
 
   /**
    * Les gestes passent en retrait tant que le four ou le bac n'a pas fini
