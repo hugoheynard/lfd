@@ -248,23 +248,20 @@
 }
 
 // On suit des produits attendus : les lignes visées ressortent…
+// Une carte « four » sélectionnée : ses lignes passent en beige (Hugo,
+// 2026-09-28 — seulement quand une carte est sélectionnée, jamais en fond
+// permanent).
 .line.is-awaited {
-  background: var(--fold-color-surface-card);
+  background: color-mix(in srgb, var(--fold-ref-amber-500) 8%, var(--fold-color-surface-card));
   box-shadow:
     inset 3px 0 0 var(--fold-ref-amber-500),
     0 2px 8px -3px color-mix(in srgb, var(--fold-ref-amber-700) 35%, transparent);
 }
 
-// Une ligne qu'un sac attend encore : la crème opaque de la carte suivie.
-.line.is-blocking {
-  background: color-mix(in srgb, var(--fold-ref-amber-500) 8%, var(--fold-color-surface-card));
-}
-
-// Et si ce sac a déjà fait dépasser un créneau PAR NOUS : un bord alerte, et
-// rien d'autre (Hugo, 2026-09-28) — pas de beige par-dessus.
+// Et si ce sac a déjà fait dépasser un créneau PAR NOUS : un liseré alerte
+// épais à gauche, et rien d'autre (Hugo, 2026-09-28).
 .line.is-late {
-  background: none;
-  box-shadow: inset 0 0 0 1px var(--fold-color-alert);
+  box-shadow: inset 3px 0 0 var(--fold-color-alert);
 }
 
 // … et le reste recule.

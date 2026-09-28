@@ -78,8 +78,6 @@ export class PreparationColumn {
   /** Ce que la recherche du masthead désigne — les produits des commandes trouvées. */
   readonly matches = input(NO_MATCHES);
   /** Les pastilles du contrôle qualité, par SKU. */
-  /** Les SKU qu'un sac attend encore du four : leurs lignes passent en beige. */
-  readonly awaitedSkus = input<ReadonlySet<string>>(new Set());
   /** Ceux dont l'absence a fait dépasser un créneau par nous : bord rouge. */
   readonly lateSkus = input<ReadonlySet<string>>(new Set());
   readonly quality = input(NO_QUALITY);

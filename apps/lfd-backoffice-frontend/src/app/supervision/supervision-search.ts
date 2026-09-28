@@ -112,24 +112,7 @@ function handoverReferences(
 }
 
 /**
- * Les SKU qu'une commande **attend encore du four** — ses lignes pas encore
- * sorties, sur une fiche de colis pas encore fermée. Toujours lus, hors de toute
- * mise en avant : la Préparation les teinte en beige (Hugo, 2026-09-28), pour
- * dire qu'un sac attend cette ligne.
- */
-export function awaitedSkusOf(packing: ProductionPackingView | null): ReadonlySet<string> {
-  const skus = new Set<string>();
-  for (const sheet of packing?.sheets ?? []) {
-    if (sheet.packedAt !== null) {
-      continue;
-    }
-    sheet.lines.filter((line) => line.awaitingProduction).forEach((line) => skus.add(line.sku));
-  }
-  return skus;
-}
-
-/**
- * Parmi eux, ceux **dont l'absence a mis un retrait dans le rouge** : une
+ * Les SKU **dont l'absence a mis un retrait dans le rouge** : une
  * commande au créneau dépassé PAR NOUS (`overdueCause === 'kitchen'`) qui les
  * attend encore. La Préparation leur met un bord rouge (Hugo, 2026-09-28).
  */
