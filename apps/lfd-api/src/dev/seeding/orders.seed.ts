@@ -14,6 +14,7 @@ import { runWithRequestContext } from "../../platform/context/request-context.st
 import { newTraceId } from "../../platform/context/trace-context.js";
 import { resetProduction, type ProductionResetReport } from "./production.seed.js";
 import { CLIENT_RAISON_SOCIALE } from "./client.seed.js";
+import { NEIGHBOURS, seedNeighbourClients } from "./neighbour-clients.seed.js";
 
 /**
  * **Les commandes du client de référence**, calées sur l'horloge du jour.
@@ -219,11 +220,46 @@ const COUNTER: readonly CounterOrder[] = [
  */
 const EVENING_CLOSE_HOUR = 20;
 
-/** Demain : un retrait par comptoir, et une livraison — cf. `seedOrders`. */
-const TOMORROW: readonly Pick<CounterOrder, "point" | "window" | "step">[] = [
-  { point: LABO, window: PICKUP_WINDOW, step: 2 },
-  { point: VILLAGE, window: VILLAGE_MORNING, step: 3 },
-  { point: null, window: null, step: 4 },
+/**
+ * Demain : **trois clients**, un retrait par comptoir et une livraison — cf.
+ * `seedOrders`. `client` est un rang : 0 = le client de référence, puis les
+ * voisins de `NEIGHBOURS` dans leur ordre.
+ *
+ * Des paniers qui ne se recoupent PAS (Hugo, 2026-09-28) : chercher une
+ * commande doit surligner SES produits en préparation, et deux paniers qui
+ * portent le même croissant surligneraient le même rayon pour les deux.
+ */
+const TOMORROW: readonly (Pick<CounterOrder, "point" | "window"> & {
+  readonly client: number;
+  readonly lines: readonly { readonly sku: string; readonly quantity: number }[];
+})[] = [
+  {
+    client: 0,
+    point: LABO,
+    window: PICKUP_WINDOW,
+    lines: [
+      { sku: "VIE-001", quantity: 30 },
+      { sku: "PAI-001", quantity: 20 },
+    ],
+  },
+  {
+    client: 1,
+    point: VILLAGE,
+    window: VILLAGE_MORNING,
+    lines: [
+      { sku: "VIE-002", quantity: 24 },
+      { sku: "VIE-005", quantity: 12 },
+    ],
+  },
+  {
+    client: 2,
+    point: null,
+    window: null,
+    lines: [
+      { sku: "PAI-013", quantity: 10 },
+      { sku: "VIE-009", quantity: 36 },
+    ],
+  },
 ];
 const PACKED_HOUR = 5;
 const HANDED_OVER_HOUR = 6;
@@ -289,8 +325,15 @@ export interface SeedContext {
 export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
   const target = await resolveTarget(context);
   await ensureSkusExist(context);
+  // Les deux voisins de demain — semés ici, idempotents, pour que la ligne de
+  // commande `seed:orders` suffise sans rejouer tout le semis.
+  await seedNeighbourClients(context);
+  const neighbours = await Promise.all(
+    NEIGHBOURS.map((neighbour) => resolveTarget(context, neighbour.raisonSociale)),
+  );
+  const clients = [target, ...neighbours];
   const removed = await context.prisma.order.deleteMany({
-    where: { companyId: target.companyId },
+    where: { companyId: { in: clients.map((client) => client.companyId) } },
   });
   // 🔴 Le fournil AUSSI, et dans le même geste. Ses tables portent des copies de
   // ces commandes — un plan du soir, ses fiches, son compte à produire — que
@@ -340,13 +383,17 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
   // acheminement et les deux comptoirs, laissées OUVERTES : c'est à l'équipe de
   // les arrêter, à l'écran.
   for (const order of TOMORROW) {
-    await place(context, target, {
+    const client = clients[order.client];
+    if (client === undefined) {
+      throw new Error(`Client de rang ${String(order.client)} absent du semis de demain.`);
+    }
+    await place(context, client, {
       at: today,
       forDay: isoDay(shiftDays(today, 1)),
       method: order.point === null ? "delivery" : "pickup",
       point: order.point,
       window: order.window,
-      lines: linesFor(order.step),
+      lines: order.lines,
       paid: false,
     });
   }
@@ -483,24 +530,23 @@ function asStaff<T>(now: Date, run: () => Promise<T>): Promise<T> {
 }
 
 /** La société de référence, son acheteur, et le point de retrait par défaut. */
-async function resolveTarget(context: SeedContext): Promise<Target> {
+async function resolveTarget(
+  context: SeedContext,
+  raisonSociale: string = CLIENT_RAISON_SOCIALE,
+): Promise<Target> {
   const company = await context.prisma.company.findFirst({
-    where: { raisonSociale: CLIENT_RAISON_SOCIALE },
+    where: { raisonSociale },
     select: { id: true },
   });
   if (company === null) {
-    throw new Error(
-      `Société « ${CLIENT_RAISON_SOCIALE} » absente : semer le client avant ses commandes.`,
-    );
+    throw new Error(`Société « ${raisonSociale} » absente : semer le client avant ses commandes.`);
   }
   const member = await context.prisma.membership.findFirst({
     where: { companyId: company.id },
     select: { userId: true },
   });
   if (member === null) {
-    throw new Error(
-      `La société « ${CLIENT_RAISON_SOCIALE} » n'a aucun membre : rien à qui porter.`,
-    );
+    throw new Error(`La société « ${raisonSociale} » n'a aucun membre : rien à qui porter.`);
   }
   const labo = await context.prisma.pickupAddress.findFirst({
     where: { isDefault: true },
