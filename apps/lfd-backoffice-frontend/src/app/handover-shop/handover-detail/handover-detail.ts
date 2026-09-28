@@ -8,22 +8,28 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { HandoverQueueEntryView, OrderHandoverLine, OrderHandoverView } from '@lfd/contracts';
+import type {
+  HandoverQueueEntryView,
+  OrderHandoverLine,
+  OrderHandoverView,
+  PackingSheet,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
+  FoldMeterComponent,
   FoldPanelHostService,
   FoldSurfaceDirective,
-  type FoldCalloutVariant,
-  type FoldIconName,
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
+import { PackingService } from '../../production/packing.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import { SheetPanel, type SheetPanelData } from '../sheet-panel/sheet-panel';
 import { formatWindow, stillRemittable } from '../handover-queue';
+import { bagReadiness, readyVerdict } from './bag-readiness';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -72,6 +78,7 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
     FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
+    FoldMeterComponent,
     // 🔴 La directive, pas seulement l'attribut : sans elle `foldSurface` est
     // du HTML inerte, le fond sombre est peint et l'encre reste sombre.
     FoldSurfaceDirective,
@@ -82,6 +89,8 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
 export class HandoverDetail {
   /** La ligne choisie dans la file, ou `null` — le rail existe dans les deux cas. */
   readonly entry = input<HandoverQueueEntryView | null>(null);
+  /** Le jour de service de la file — celui dont on lit le colisage. */
+  readonly day = input.required<string>();
 
   /**
    * Un sac est parti par ici. La file se relit chez son appelant : le serveur
@@ -103,6 +112,7 @@ export class HandoverDetail {
   readonly scanned = output<HandoverQueueEntryView>();
 
   private readonly handovers = inject(HandoverQueueService);
+  private readonly packing = inject(PackingService);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
 
@@ -170,40 +180,21 @@ export class HandoverDetail {
     return entry.fulfillmentMethod === 'delivery' ? 'Livraison' : 'Retrait';
   });
 
+  protected readonly verdict = computed(() => readyVerdict(this.entry()));
+
   /**
-   * Le verdict du fournil, **et rien de plus que ce qu'il a dit**.
-   *
-   * 🔴 Pas de « et complète » : il n'existe ni rupture ni avoir dans le modèle,
-   * donc personne n'a vérifié qu'elle l'était. Une phrase rassurante fausse est
-   * pire qu'une absence sur un écran qu'on lit avec quelqu'un en face.
+   * La fiche de colis de la commande ouverte, relue au colisage du jour —
+   * `null` avant l'arrêt du plan ou pour une commande hors plan.
    */
-  protected readonly readyText = computed<string>(() => {
-    const entry = this.entry();
-    if (entry === null) {
-      return '';
-    }
-    if (entry.state === 'handed_over') {
-      return 'Déjà retirée. Le sac est parti.';
-    }
-    return entry.readyAt === null
-      ? 'Pas encore déclarée prête par le fournil.'
-      : 'Déclarée prête par le fournil.';
-  });
+  private readonly sheet = signal<PackingSheet | null>(null);
+  protected readonly readiness = computed(() => bagReadiness(this.sheet()));
 
-  protected readonly readyTone = computed<FoldCalloutVariant>(() => {
-    const entry = this.entry();
-    if (entry === null) {
-      return 'neutral';
-    }
-    return entry.readyAt === null && entry.state !== 'handed_over' ? 'warning' : 'success';
-  });
-
-  protected readonly readyIcon = computed<FoldIconName>(() => {
-    const entry = this.entry();
-    return entry !== null && entry.readyAt === null && entry.state !== 'handed_over'
-      ? 'clock'
-      : 'check';
-  });
+  /**
+   * Les gestes passent en retrait tant que le four ou le bac n'a pas fini
+   * (Hugo, 2026-09-28). **Atténués, jamais désactivés** : le client est
+   * physiquement là, et le monde réel prime sur l'écran (`handoverBlocker`).
+   */
+  protected readonly muted = computed(() => !(this.readiness()?.ready ?? false));
 
   /** Peut-on encore tendre ce sac ? La règle vit dans `handover-queue.ts`. */
   protected readonly remittable = computed<boolean>(() => {
@@ -225,10 +216,12 @@ export class HandoverDetail {
       const entry = this.entry();
       if (entry === null) {
         this.order.set(null);
+        this.sheet.set(null);
         this.state.set('idle');
         return;
       }
       void this.load();
+      void this.loadSheet(entry.reference, this.day());
     });
   }
 
@@ -247,6 +240,19 @@ export class HandoverDetail {
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+  }
+
+  /** Une fiche illisible se tait : les barres disparaissent, le retrait reste possible. */
+  private async loadSheet(reference: string, day: string): Promise<void> {
+    this.sheet.set(null);
+    try {
+      const packing = await this.packing.packing(day);
+      if (this.entry()?.reference === reference) {
+        this.sheet.set(packing.sheets.find((sheet) => sheet.reference === reference) ?? null);
+      }
+    } catch {
+      this.sheet.set(null);
     }
   }
 

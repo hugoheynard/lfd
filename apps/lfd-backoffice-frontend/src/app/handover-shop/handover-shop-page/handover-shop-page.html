@@ -207,6 +207,7 @@
     <app-handover-detail
       asideRight
       [entry]="selected()"
+      [day]="day()"
       (remitted)="load()"
       (scanned)="scan($event)"
       (cleared)="clearSelection()"

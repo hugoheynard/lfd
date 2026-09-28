@@ -55,9 +55,36 @@
         <!-- Le verdict du fournil, et rien de plus que ce qu'il a dit. Il n'y a
                ni rupture ni avoir dans le modèle : une phrase qui affirmerait
                « complète » inventerait une vérification que personne n'a faite. -->
-        <fold-callout appearance="inset" [variant]="readyTone()" [icon]="readyIcon()">
-          {{ readyText() }}
+        <fold-callout appearance="inset" [variant]="verdict().tone" [icon]="verdict().icon">
+          {{ verdict().text }}
         </fold-callout>
+        <!-- Deux étapes, deux barres (Hugo, 2026-09-28) : le four PUIS le bac.
+             « Déclarée prête » ne disait que la seconde. -->
+        @if (row.state !== 'handed_over') {
+          @if (readiness(); as bag) {
+            <div class="hd-steps" data-bag-steps>
+              <fold-meter
+                [label]="bag.oven.label"
+                [value]="bag.oven.done"
+                [max]="bag.oven.total === 0 ? 1 : bag.oven.total"
+                [tone]="bag.oven.complete ? 'success' : 'warning'"
+                data-step="oven"
+              />
+              <fold-meter
+                [label]="bag.packing.label"
+                [value]="bag.packing.done"
+                [max]="bag.packing.total === 0 ? 1 : bag.packing.total"
+                [tone]="bag.packing.complete ? 'success' : 'warning'"
+                data-step="packing"
+              />
+            </div>
+          } @else {
+            <p class="hd-steps-none" data-bag-steps>
+              Ni fournil ni colisage à suivre : le plan du jour n'est pas arrêté, ou la commande est
+              arrivée après.
+            </p>
+          }
+        }
       }
     </header>
 
@@ -116,12 +143,31 @@
       @if (remittable()) {
         <!-- Le scan EN PREMIER, et c'est l'ordre qui le dit : on tend le
              lecteur, et la saisie n'est que le repli quand le code manque. -->
-        <button foldButton class="hd-scan" block size="lg" icon="qr-code" (click)="scan()">
+        <!-- Atténués tant que le four ou le bac n'a pas fini — jamais désactivés :
+             le client est là, et c'est l'équipe qui tranche en regardant le sac. -->
+        @if (muted()) {
+          <p class="hd-muted-note" data-muted-note>
+            Le fournil ou le colisage n'a pas fini&nbsp;: vérifiez le sac avant de le remettre.
+          </p>
+        }
+        <button
+          foldButton
+          class="hd-scan"
+          block
+          size="lg"
+          icon="qr-code"
+          [emphasis]="muted() ? 'soft' : 'solid'"
+          [intent]="muted() ? 'neutral' : 'primary'"
+          data-action="scan"
+          (click)="scan()"
+        >
           Scanner le code
         </button>
         <button
           foldButton
           emphasis="outline"
+          [intent]="muted() ? 'neutral' : 'primary'"
+          data-action="remit"
           block
           size="lg"
           icon="check"

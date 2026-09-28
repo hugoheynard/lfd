@@ -324,6 +324,19 @@
   gap: var(--fold-space-xs) var(--fold-space-sm);
 }
 
+.hd-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.hd-steps-none,
+.hd-muted-note {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
 .hd-note {
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);

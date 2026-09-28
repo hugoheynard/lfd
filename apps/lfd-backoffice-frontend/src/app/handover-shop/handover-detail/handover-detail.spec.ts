@@ -1,8 +1,16 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import type { HandoverQueueEntryView, OrderHandoverLine, OrderHandoverView } from '@lfd/contracts';
+import type {
+  HandoverQueueEntryView,
+  OrderHandoverLine,
+  OrderHandoverView,
+  PackingLine,
+  PackingSheet,
+  ProductionPackingView,
+} from '@lfd/contracts';
 
+import { PackingService } from '../../production/packing.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import { HandoverDetail } from './handover-detail';
 
@@ -104,8 +112,62 @@ class FakeHandovers {
   }
 }
 
+/** Le colisage du jour, tel que le rail le relit : zéro, une ou plusieurs fiches. */
+class FakePacking {
+  constructor(private readonly sheets: readonly PackingSheet[] = []) {}
+
+  packing(date: string): Promise<ProductionPackingView> {
+    return Promise.resolve({
+      date,
+      closedAt: this.sheets.length === 0 ? null : 'x',
+      sheets: this.sheets,
+      resources: [],
+      orderCount: this.sheets.length,
+      todoCount: 0,
+      readyCount: 0,
+      relativeDay: 'today',
+    });
+  }
+}
+
+function packingLine(sku: string, overrides: Partial<PackingLine> = {}): PackingLine {
+  return {
+    sku,
+    productName: sku,
+    quantity: 1,
+    packed: false,
+    initials: null,
+    packedAt: null,
+    awaitingProduction: false,
+    ...overrides,
+  };
+}
+
+function sheet(reference: string, overrides: Partial<PackingSheet> = {}): PackingSheet {
+  const lines = overrides.lines ?? [packingLine('a'), packingLine('b')];
+  return {
+    reference,
+    containers: 0,
+    customerLabel: reference,
+    fulfillmentMethod: 'pickup',
+    destination: 'Boutique',
+    lines,
+    lineCount: lines.length,
+    packedLines: 0,
+    remainingLines: lines.length,
+    pieces: lines.length,
+    packedPieces: 0,
+    canDeclareReady: false,
+    packedAt: null,
+    packedBy: null,
+    packedByName: null,
+    ...overrides,
+  };
+}
+
 interface Doubles {
   readonly handovers: FakeHandovers;
+  readonly packing?: FakePacking;
 }
 
 async function render(
@@ -114,9 +176,13 @@ async function render(
 ): Promise<ComponentFixture<HandoverDetail>> {
   TestBed.configureTestingModule({
     imports: [HandoverDetail],
-    providers: [{ provide: HandoverQueueService, useValue: doubles.handovers }],
+    providers: [
+      { provide: HandoverQueueService, useValue: doubles.handovers },
+      { provide: PackingService, useValue: doubles.packing ?? new FakePacking() },
+    ],
   });
   const fixture: ComponentFixture<HandoverDetail> = TestBed.createComponent(HandoverDetail);
+  fixture.componentRef.setInput('day', '2026-09-28');
   fixture.componentRef.setInput('entry', selected);
   fixture.detectChanges();
   await fixture.whenStable();
@@ -136,6 +202,48 @@ const buttonSaying = (
   ) ?? null;
 
 describe('HandoverDetail', () => {
+  /** Hugo, 2026-09-28 : « déclarée prête » ne disait pas où en était le bac. */
+  it('montre le fournil PUIS le colisage, et atténue les gestes tant que le sac n’est pas fini', async () => {
+    const packing = new FakePacking([
+      sheet('CMD-1042', {
+        lines: [packingLine('a'), packingLine('b', { awaitingProduction: true })],
+        packedLines: 1,
+      }),
+    ]);
+    const fixture = await render(entry(), { handovers: new FakeHandovers(), packing });
+    const element: HTMLElement = fixture.nativeElement;
+
+    expect(text(fixture)).toContain('Fournil · 1 / 2 produits sortis');
+    expect(text(fixture)).toContain('Colisage · 1 / 2 posés dans le bac');
+    expect(element.querySelector('[data-muted-note]')).not.toBeNull();
+    const scan = element.querySelector<HTMLButtonElement>('[data-action="scan"]');
+    expect(scan?.classList).toContain('neutral');
+    // Atténué, JAMAIS désactivé : le client est là.
+    expect(scan?.disabled).toBe(false);
+  });
+
+  it('rend leur poids aux gestes quand le four et le bac ont fini', async () => {
+    const packing = new FakePacking([
+      sheet('CMD-1042', { packedLines: 2, packedAt: '2026-09-28T03:12:00.000Z' }),
+    ]);
+    const fixture = await render(entry(), { handovers: new FakeHandovers(), packing });
+    const element: HTMLElement = fixture.nativeElement;
+
+    expect(text(fixture)).toContain('Fournil · tout est sorti');
+    expect(text(fixture)).toContain('Colisage · sac fermé à 5 h 12');
+    expect(element.querySelector('[data-muted-note]')).toBeNull();
+    expect(element.querySelector('[data-action="scan"]')?.classList).toContain('solid');
+  });
+
+  it('sans fiche de colis, le dit et atténue les gestes', async () => {
+    const fixture = await render(entry());
+
+    expect(text(fixture)).toContain('Ni fournil ni colisage à suivre');
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('[data-muted-note]'),
+    ).not.toBeNull();
+  });
+
   it('montre ce qu’il y a dans le sac', async () => {
     const fixture = await render(entry());
 
