@@ -341,3 +341,26 @@ model ProductionQualityUpload {
   @@map("production_quality_upload")
   @@schema("production")
 }
+
+/// **Le journal des journées touchées** par une écriture du fournil — la
+/// version par journée (`documentation/caching-usage/plan-version-par-journee.md`,
+/// D2 et D3).
+///
+/// 🔴 Aucun code ne l'écrit : des déclencheurs AU NIVEAU DE L'INSTRUCTION sur
+/// chaque table de ce schéma qui porte une journée l'alimentent (migration
+/// `20260928140000_la_version_par_journee`). La liste des tables qui n'en
+/// portent pas, avec leur raison, est tenue par
+/// `test/day-change-triggers.e2e-spec.ts` : une table neuve sans déclencheur
+/// y échoue en se nommant (D7).
+///
+/// La version d'une journée est `max(id)` pour son `service_day`. Son pendant
+/// du commerce vit dans `public.day_change` — aucun SQL ne traverse (D3).
+model ProductionDayChange {
+  id         BigInt   @id @default(autoincrement())
+  serviceDay String   @map("service_day") @db.VarChar(10)
+  changedAt  DateTime @default(now()) @map("changed_at") @db.Timestamptz(6)
+
+  @@index([serviceDay, id])
+  @@map("day_change")
+  @@schema("production")
+}

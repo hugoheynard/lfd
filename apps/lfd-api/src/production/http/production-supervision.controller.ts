@@ -1,4 +1,7 @@
 import {
+  type DayVersionQuery,
+  type DayVersionView,
+  dayVersionQuerySchema,
   type ProductionPackingQuery,
   type ProductionPackingView,
   type ProductionWorksheetQuery,
@@ -11,6 +14,7 @@ import { QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
+import { GetProductionDayVersionQuery } from "../application/queries/get-production-day-version.query.js";
 import { GetProductionPackingQuery } from "../application/queries/get-production-packing.query.js";
 import { GetProductionWorksheetQuery } from "../application/queries/get-production-worksheet.query.js";
 
@@ -48,6 +52,19 @@ export class ProductionSupervisionController {
   ): Promise<ProductionPackingView> {
     return this.queries.execute<GetProductionPackingQuery, ProductionPackingView>(
       new GetProductionPackingQuery(query.date),
+    );
+  }
+
+  /**
+   * La version du journal du fournil, comme `GET admin/production/version` —
+   * la même query, sous `b2b_supervision` (`plan-version-par-journee.md`, D3/D4).
+   */
+  @Get("production-version")
+  productionVersion(
+    @Query(new ZodQuery(dayVersionQuerySchema)) query: DayVersionQuery,
+  ): Promise<DayVersionView> {
+    return this.queries.execute<GetProductionDayVersionQuery, DayVersionView>(
+      new GetProductionDayVersionQuery(query.date),
     );
   }
 }

@@ -126,6 +126,12 @@ import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-c
 import { GetDaySupervisionHandler } from "./application/queries/get-day-supervision.handler.js";
 import { DaySupervisionReader } from "./domain/ports/day-supervision.reader.js";
 import { PrismaDaySupervisionReader } from "./infrastructure/prisma-day-supervision.reader.js";
+import { GetSupervisionDayVersionHandler } from "./application/queries/get-supervision-day-version.handler.js";
+import { PruneOrderDayChangesHandler } from "./application/commands/prune-order-day-changes.handler.js";
+import { OrderDayVersionReader } from "./domain/ports/order-day-version.reader.js";
+import { OrderDayChangePruner } from "./domain/ports/order-day-change.pruner.js";
+import { PrismaOrderDayVersionReader } from "./infrastructure/prisma-order-day-version.reader.js";
+import { PrismaOrderDayChangePruner } from "./infrastructure/prisma-order-day-change.pruner.js";
 import { AdminSupervisionController } from "./http/admin-supervision.controller.js";
 
 /**
@@ -257,6 +263,12 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ListOrdersAwaitingPaymentHandler,
     { provide: DaySupervisionReader, useClass: PrismaDaySupervisionReader },
     GetDaySupervisionHandler,
+    // La version par journée (`plan-version-par-journee.md`, V1-V2) : lire et
+    // balayer le journal du commerce sont deux ports (ISP).
+    GetSupervisionDayVersionHandler,
+    PruneOrderDayChangesHandler,
+    { provide: OrderDayVersionReader, useClass: PrismaOrderDayVersionReader },
+    { provide: OrderDayChangePruner, useClass: PrismaOrderDayChangePruner },
     ResendOrderPaymentLinkHandler,
     { provide: OrderRecipientReader, useClass: PrismaOrderRecipientReader },
     {

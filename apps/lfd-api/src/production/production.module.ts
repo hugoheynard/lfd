@@ -13,6 +13,13 @@ import { UnmarkPackingLineHandler } from "./application/commands/unmark-packing-
 import { UnmarkWorksheetLineHandler } from "./application/commands/unmark-worksheet-line.handler.js";
 import { DepositQualityPhotoHandler } from "./application/commands/deposit-quality-photo.handler.js";
 import { RenderQualityCheckHandler } from "./application/commands/render-quality-check.handler.js";
+import { PruneProductionDayChangesHandler } from "./application/commands/prune-production-day-changes.handler.js";
+import { GetProductionDayVersionHandler } from "./application/queries/get-production-day-version.handler.js";
+import { ProductionDayChangePruner } from "./domain/ports/production-day-change.pruner.js";
+import { ProductionDayVersionReader } from "./domain/ports/production-day-version.reader.js";
+import { ProductionDayVersionController } from "./http/production-day-version.controller.js";
+import { PrismaProductionDayChangePruner } from "./infrastructure/prisma-production-day-change.pruner.js";
+import { PrismaProductionDayVersionReader } from "./infrastructure/prisma-production-day-version.reader.js";
 import { SweepQualityUploadsHandler } from "./application/commands/sweep-quality-uploads.handler.js";
 import { GetQualityBoardHandler } from "./application/queries/get-quality-board.handler.js";
 import { GetQualityPhotoHandler } from "./application/queries/get-quality-photo.handler.js";
@@ -75,6 +82,7 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
     ProductionSupervisionController,
     ProductionQualityController,
     QualityUploadSweepController,
+    ProductionDayVersionController,
   ],
   providers: [
     CloseProductionDayHandler,
@@ -124,6 +132,12 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
     { provide: QualityCheckRepository, useClass: PrismaQualityCheckRepository },
     { provide: QualityCheckReader, useClass: PrismaQualityCheckReader },
     { provide: QualityUploadRepository, useClass: PrismaQualityUploadRepository },
+    // La version par journée (`plan-version-par-journee.md`, V1-V2) : lire et
+    // balayer le journal sont deux ports (ISP), sur le schéma `production`.
+    GetProductionDayVersionHandler,
+    PruneProductionDayChangesHandler,
+    { provide: ProductionDayVersionReader, useClass: PrismaProductionDayVersionReader },
+    { provide: ProductionDayChangePruner, useClass: PrismaProductionDayChangePruner },
   ],
   // La lecture des contrôles sert aussi la retenue que la production PUBLIE au
   // retrait (`channels/handover/`, QC3) — son adaptateur est relié par la

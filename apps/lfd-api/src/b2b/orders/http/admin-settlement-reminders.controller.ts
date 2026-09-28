@@ -3,6 +3,7 @@ import { CommandBus } from "@nestjs/cqrs";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { RecomputeGuard } from "../../../platform/auth/recompute.guard.js";
+import { PruneOrderDayChangesCommand } from "../application/commands/prune-order-day-changes.command.js";
 import {
   SendSettlementRemindersCommand,
   type SettlementRemindersReport,
@@ -16,6 +17,14 @@ import {
  * Même porte machine-à-machine que `admin/loyalty/sweep` — le `RecomputeGuard`
  * et son jeton, présentés par le Worker sur un Cron Trigger horaire
  * (`SETTLEMENT_REMINDERS_CRON`, `container/worker.ts`).
+ *
+ * **La même passe balaie le journal des journées du commerce**
+ * (`documentation/caching-usage/plan-version-par-journee.md`, D2) : c'est la
+ * passe machine du contexte qui possède `orders`, et un cron de plus serait un
+ * réglage Cloudflare pour une suppression de quelques centaines de lignes.
+ * Deux commandes, deux handlers — seule la porte est partagée. Le compte
+ * rendu reste celui du rappel : sa forme est lue telle quelle, et un balayage
+ * de numéros d'affichage n'a rien à y annoncer.
  */
 @Controller("admin/orders/settlement-reminders")
 @Public()
@@ -25,9 +34,14 @@ export class SettlementRemindersController {
 
   @Post()
   @HttpCode(200)
-  remind(): Promise<SettlementRemindersReport> {
-    return this.commands.execute<SendSettlementRemindersCommand, SettlementRemindersReport>(
-      new SendSettlementRemindersCommand(),
+  async remind(): Promise<SettlementRemindersReport> {
+    const report = await this.commands.execute<
+      SendSettlementRemindersCommand,
+      SettlementRemindersReport
+    >(new SendSettlementRemindersCommand());
+    await this.commands.execute<PruneOrderDayChangesCommand, number>(
+      new PruneOrderDayChangesCommand(),
     );
+    return report;
   }
 }

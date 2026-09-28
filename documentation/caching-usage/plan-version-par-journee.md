@@ -130,7 +130,8 @@ Chaque bloc lit son propre journal :
 
 - `b2b` : `GET admin/supervision/version?date=` — `b2b_supervision:read` ;
 - `production` : `GET admin/production/version?date=` — `b2b_orders:read`,
-  comme les postes du fournil.
+  comme les postes du fournil ; et `GET admin/supervision/production-version?date=`
+  — `b2b_supervision:read`, la même query pour la Supervision (tranché le 2026-09-28).
 
 ### D4 — Côté écran : un veilleur partagé
 
@@ -138,7 +139,7 @@ Un service `DayVersionWatcher` dans `shared/` remplace `refreshWhileVisible`
 pour les écrans d'une journée :
 
 - toutes les 15 s, onglet visible : il lit les versions **des journaux dont
-  l'écran dépend** (Supervision : les deux ; fiche d'atelier et colisage :
+  l'écran dépend** (Supervision : les deux, par `supervision/version` et `supervision/production-version` ; fiche d'atelier et colisage :
   production ; comptoir : public) ;
 - si l'une a bougé depuis la dernière lecture, il appelle le rechargement de
   l'écran ;
@@ -156,6 +157,27 @@ ne le verra jamais. Deux gestes :
 - **tous** les écrans font une relecture complète toutes les **5 minutes** :
   le filet contre un changement qu'aucun journal n'aurait vu (une donnée du
   référentiel, un chemin oublié au §3).
+
+### D7 — Une table oubliée fait rougir la CI
+
+Le déclencheur est posé par table : une table NEUVE qui porte une journée
+devrait recevoir le sien. Plutôt que d'y penser, on renverse le défaut (Hugo,
+2026-09-28) — **ne pas l'avoir se justifie**.
+
+Un e2e lit le catalogue Postgres (`pg_trigger`) sur la base migrée :
+
+- **toute** table du schéma `production` porte le déclencheur de journal ;
+- toute table de `public` qui a une colonne de jour (`requested_delivery_date`,
+  `service_day`) le porte aussi ;
+- les exceptions sont une liste écrite, chacune avec sa raison (le journal
+  lui-même, les dépôts de photos en attente…).
+
+Une table créée sans déclencheur échoue en CI en se nommant.
+
+_À vérifier au bâti :_ un `EVENT TRIGGER` sur `CREATE TABLE` poserait le
+déclencheur tout seul, mais demande en général un superutilisateur — sans doute
+refusé par Prisma Postgres. S'il passe, il s'ajoute à la porte, il ne la
+remplace pas.
 
 ### D6 — Le comptoir se met à jour, enfin
 
@@ -184,11 +206,11 @@ compte suspendu reste actif une minute) ; hors plan.
 
 ## 5. Les lots
 
-| Lot    | Contenu                                                                                                                                    | Qui                                   |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------- |
-| **V1** | Migration : les deux journaux, leurs déclencheurs au niveau de l'instruction, le balayage. e2e : chaque écriture connue avance la version. | `batisseur` + `lecteur-de-migrations` |
-| **V2** | Les deux lectures de version, par le bus, et leurs routes.                                                                                 | `batisseur`                           |
-| **V3** | `DayVersionWatcher`, branché sur la Supervision, la fiche d'atelier, le colisage et le comptoir ; relecture du jour à 60 s, filet à 5 min. | `pablo`                               |
+| Lot    | Contenu                                                                                                                                                 | Qui                                   |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **V1** | Migration : les deux journaux, leurs déclencheurs au niveau de l'instruction, le balayage. e2e : chaque écriture connue avance la version. La porte D7. | `batisseur` + `lecteur-de-migrations` |
+| **V2** | Les deux lectures de version, par le bus, et leurs routes.                                                                                              | `batisseur`                           |
+| **V3** | `DayVersionWatcher`, branché sur la Supervision, la fiche d'atelier, le colisage et le comptoir ; relecture du jour à 60 s, filet à 5 min.              | `pablo`                               |
 
 L'e2e de V1 est le cœur du lot : il passe par **chaque** écrivain connu (passer,
 payer, annuler, clôturer, cocher, poser, fermer, retirer, retirer à nouveau,
@@ -212,7 +234,7 @@ manque.
 
 ## 7. Hors du plan
 
-La cloche des notifications (60 s, onglet caché compris), le cache du droit
+La cloche des notifications (réglée à part le 2026-09-28 : elle ne relit plus qu'onglet visible), le cache du droit
 d'accès, le prévisionnel (il porte une semaine, pas un jour — il pourra lire
 sept versions d'un coup plus tard), la boutique.
 

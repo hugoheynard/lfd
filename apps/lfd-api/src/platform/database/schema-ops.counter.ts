@@ -209,6 +209,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // tables n'a de clé étrangère vers `public`, et c'est ce qui rend le compteur
   // par schéma lisible — un pic ici est un pic de production, pas de commerce.
   ProductionDay: "production",
+  ProductionDayChange: "production",
   ProductionOrder: "production",
   ProductionOrderLine: "production",
   ProductionCount: "production",

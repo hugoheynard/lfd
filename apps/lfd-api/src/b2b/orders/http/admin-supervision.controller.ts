@@ -2,6 +2,9 @@ import {
   type DaySupervisionQuery,
   daySupervisionQuerySchema,
   type DaySupervisionView,
+  type DayVersionQuery,
+  dayVersionQuerySchema,
+  type DayVersionView,
 } from "@lfd/contracts";
 import { Controller, Get, Query } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
@@ -9,6 +12,7 @@ import { QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetDaySupervisionQuery } from "../application/queries/get-day-supervision.query.js";
+import { GetSupervisionDayVersionQuery } from "../application/queries/get-supervision-day-version.query.js";
 
 /**
  * La **Supervision du jour** — une vue en lecture seule, à part des postes de
@@ -33,6 +37,21 @@ export class AdminSupervisionController {
   ): Promise<DaySupervisionView> {
     return this.queries.execute<GetDaySupervisionQuery, DaySupervisionView>(
       new GetDaySupervisionQuery(query.date),
+    );
+  }
+
+  /**
+   * **La version du jour dans le journal du commerce**
+   * (`documentation/caching-usage/plan-version-par-journee.md`, V2) : l'écran
+   * ne relit `day` que si elle a changé. La date est OBLIGATOIRE — l'écran la
+   * tient de la réponse de `day`, qui la rend toujours.
+   */
+  @Get("version")
+  version(
+    @Query(new ZodQuery(dayVersionQuerySchema)) query: DayVersionQuery,
+  ): Promise<DayVersionView> {
+    return this.queries.execute<GetSupervisionDayVersionQuery, DayVersionView>(
+      new GetSupervisionDayVersionQuery(query.date),
     );
   }
 }

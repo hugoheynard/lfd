@@ -1,0 +1,28 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// La version par journée, côté COMMERCE —
+// `documentation/caching-usage/plan-version-par-journee.md`, D2 et D3.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Le journal des journées touchées** par une écriture sur `orders`.
+///
+/// 🔴 Aucun code ne l'écrit : trois déclencheurs AU NIVEAU DE L'INSTRUCTION sur
+/// `orders` l'alimentent (migration `20260928140000_la_version_par_journee`).
+/// Un écrivain de commande n'a donc rien à penser — et ne peut rien oublier.
+///
+/// La version d'une journée est `max(id)` pour son `service_day`. Une table en
+/// ajout seul plutôt qu'un compteur : un compteur verrouillerait la ligne du
+/// jour, et deux écritures sans rapport s'attendraient l'une l'autre (D2).
+/// Les lignes de plus de sept jours se balaient ; seule la plus récente compte.
+///
+/// Son pendant du fournil vit dans `production.day_change` — deux journaux, un
+/// par schéma, et aucun SQL ne traverse (D3).
+model OrderDayChange {
+  id         BigInt   @id @default(autoincrement())
+  /// Le jour `AAAA-MM-JJ` de `orders.requested_delivery_date`.
+  serviceDay String   @map("service_day") @db.VarChar(10)
+  changedAt  DateTime @default(now()) @map("changed_at") @db.Timestamptz(6)
+
+  @@index([serviceDay, id])
+  @@map("day_change")
+  @@schema("public")
+}

@@ -1256,3 +1256,5 @@ export type {
   LateOrder,
   DaySupervisionView,
 } from "./day-supervision.js";
+export { dayVersionQuerySchema, dayVersionViewSchema } from "./day-version.js";
+export type { DayVersionQuery, DayVersionView } from "./day-version.js";
