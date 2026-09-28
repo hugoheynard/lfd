@@ -95,6 +95,10 @@ const ADMITTED = new Map([
   ],
   ["apps/lfd-api/src/dev/seeding/client.seed.ts", "le semis de développement crée des comptes"],
   [
+    "apps/lfd-api/src/dev/seeding/neighbour-clients.seed.ts",
+    "le semis de développement crée les comptes des clients voisins, même raison",
+  ],
+  [
     `${STAFF_DIR}directory/domain/staff-user-state.ts`,
     "l'état d'une fiche porte son `sub` pour la seule propagation d'adresse",
   ],
