@@ -6,6 +6,7 @@
 #   pnpm dev:infra              # démarre (docker compose up -d)
 #   pnpm dev:infra:down         # arrête, garde les données
 #   pnpm dev:infra:nuke         # arrête ET détruit les volumes (repart de zéro)
+#   pnpm dev:map:refresh        # refabrique graphe OSRM + tuiles de la carte
 #
 # Miroir prod : Neon (Postgres managé, ADR-09). Même contrat de connexion via
 # `DATABASE_URL` — seule l'URL change. En dev :
@@ -125,6 +126,49 @@ services:
              mc mb --ignore-existing lfd/lfc-media-dev &&
              mc anonymous set download lfd/lfc-media-dev &&
              echo 'buckets lfc-b2b-dev + lfc-customers-dev + lfc-production-dev (privés) et lfc-media-dev (lecture publique) prêts'"
+
+  # Calcul routier (plan de tournée) — le MÊME osrm-routed que `lfd-osrm` en
+  # production, sur le graphe que `dev-toolbox/ensure-map-data.mjs` prépare
+  # une fois par poste dans ~/.cache/lfd-map/graph. L'API le lit par
+  # `OSRM_URL=http://localhost:5055`.
+  #
+  # `OSRM_IMAGE` vient de `apps/lfd-osrm/osrm-version.env`, passé en
+  # `--env-file` par les scripts `dev:infra*` : une seule copie du digest, un
+  # graphe préparé par une version ne se charge pas dans une autre. amd64 :
+  # c'est le seul manifeste épinglé ; sur Mac il tourne en émulation.
+  #
+  # Graphe absent (poste hors ligne au premier lancement) : le conteneur sort
+  # en le disant, et `restart: unless-stopped` le relance avec un recul
+  # croissant — il démarre de lui-même dès que le graphe apparaît. Choisi
+  # plutôt qu'un profil, qui obligerait `dev:infra` à décider du profil hors
+  # de compose et laisserait le service éteint jusqu'au prochain lancement.
+  # Aucun autre service n'en dépend : Postgres et MinIO montent quoi qu'il arrive.
+  osrm:
+    # Le repli n'est pas une image : c'est un nom qui dit quoi faire. Il
+    # permet aux commandes nues (`docker compose -f … exec postgres`, lancé
+    # par `dev-toolbox/migrate-dev-db.mjs`) de lire ce fichier sans l'env-file.
+    image: ${OSRM_IMAGE:-lfd-dev/osrm-image-absente-lancer-pnpm-dev-infra}
+    platform: linux/amd64
+    container_name: lfd-dev-osrm
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        if [ ! -f /data/savoie.osrm.cell_metrics ]; then
+        echo "graphe absent de ~/.cache/lfd-map/graph : lancer pnpm dev:map:refresh"; exit 1; fi;
+        exec osrm-routed --algorithm mld --max-table-size 200 /data/savoie.osrm
+    ports:
+      - "5055:5000"
+    volumes:
+      - ${HOME}/.cache/lfd-map/graph:/data:ro
+    # Ni curl ni wget dans l'image : bash ouvre la socket, ça suffit à dire
+    # qu'osrm-routed a fini de charger le graphe et écoute.
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/5000"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 60s
 
 volumes:
   postgres-data:

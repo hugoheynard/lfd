@@ -229,13 +229,41 @@ version se charge mal dans une autre. C'est pourquoi la version est dans le tag.
   de vol d'oiseau) et le journal de l'API porte `OSRM ne répond pas (…)` à
   chaque essai. L'échec du mensuel, lui, ne coupe rien : l'ancienne carte sert.
 
-## Préparer une carte en local
+## Préparer une carte en local — c'est automatique
+
+`pnpm dev:infra` s'en charge, sans geste à la main, y compris sur un poste neuf
+(2026-09-29). Avant `docker compose up`, `dev-toolbox/ensure-map-data.mjs` :
+
+1. fabrique le **graphe** s'il manque, par `build-graph.sh`, dans
+   `~/.cache/lfd-map/graph/` (hors du dépôt) — l'extrait se télécharge une
+   fois, 2 à 5 minutes, et le script le dit ;
+2. fabrique les **tuiles de dev** si `apps/lfd-backoffice-frontend/map-tiles/`
+   ne les a pas : `build-tiles.sh` sur le `savoie.osm.pbf` du cache
+   (`~/.cache/lfd-map/tiles/`), puis `pmtiles extract` au cadre de la
+   Haute-Tarentaise (`6.62,45.40,7.06,45.67`, rues z14, relief z11 →
+   `rues.pmtiles` + `relief.pmtiles`, ~10 Mo : le front les lit en entier en
+   mémoire).
+
+Rien n'est refait si tout est là. Sans réseau ou sans Docker, il avertit et
+rend la main : Postgres et MinIO montent quoi qu'il arrive.
+
+Le service `osrm` de `docker-compose.dev.yml` (`lfd-dev-osrm`, port **5055**)
+sert ce graphe avec l'image de `osrm-version.env` (même digest, amd64 — en
+émulation sur Mac) ; l'API le lit par `OSRM_URL=http://localhost:5055`
+(`apps/lfd-api/.env.example`). Graphe absent : le conteneur sort en le disant
+et redémarre de lui-même dès qu'il apparaît.
 
 ```bash
-apps/lfd-osrm/scripts/build-graph.sh /tmp/osrm-graph   # HORS du dépôt
+pnpm dev:map:refresh   # refabrique graphe + tuiles (ou LFD_MAP_REFRESH=1 pnpm dev:infra)
+curl 'http://localhost:5055/route/v1/driving/6.988,45.4481;6.7713,45.5724?overview=false'
+```
+
+Pour éprouver l'**image** de production elle-même :
+
+```bash
 source apps/lfd-osrm/osrm-version.env
 docker build --platform linux/amd64 --build-arg OSRM_IMAGE="$OSRM_IMAGE" \
-  -f apps/lfd-osrm/Dockerfile -t lfd-osrm:local /tmp/osrm-graph
+  -f apps/lfd-osrm/Dockerfile -t lfd-osrm:local ~/.cache/lfd-map/graph
 docker run --rm -p 5000:5000 lfd-osrm:local
 ```
 

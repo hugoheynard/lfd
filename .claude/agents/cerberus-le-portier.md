@@ -108,7 +108,7 @@ couvre `packages/**` ; `pnpm --filter lfd-api test` ne les couvre pas.
 par défaut). Elles ont besoin d'un Postgres :
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d   # si rien n'écoute sur 5433
+pnpm dev:infra   # si rien n'écoute sur 5433
 pnpm --filter lfd-api db:test:setup              # après toute migration nouvelle
 ```
 

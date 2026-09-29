@@ -1081,6 +1081,7 @@ Les deux se complètent : le hook interdit, Cerbère informe.
 pnpm dev:infra          # Postgres de dev (localhost:5433) — requis pour les e2e
 pnpm dev:infra:down     # arrêt, données conservées
 pnpm dev:infra:nuke     # arrêt + destruction du volume
+pnpm dev:map:refresh    # refabrique graphe OSRM + tuiles (dev:infra les fait une fois)
 
 pnpm --filter lfd-api dev        # Nest en watch
 pnpm --filter lfd-api lint
