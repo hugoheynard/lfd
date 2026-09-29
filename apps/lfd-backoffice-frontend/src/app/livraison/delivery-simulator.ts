@@ -2,11 +2,12 @@ import {
   type DeliveryRoutingSettingsPayload,
   type DeliverySimulationPayload,
   deliverySimulationPayloadSchema,
+  SIMULATION_MAX_STOP_MINUTES,
   SIMULATION_MAX_STOPS,
   SIMULATION_MAX_VEHICLES,
+  SIMULATION_MIN_STOP_MINUTES,
+  SIMULATION_SCENARIO_NAME_MAX,
 } from '@lfd/contracts';
-
-import { detourFactorOf, detourPercentOf } from './delivery-routing';
 
 /**
  * Les dérivations pures du **simulateur de tournée**
@@ -18,7 +19,13 @@ import { detourFactorOf, detourPercentOf } from './delivery-routing';
  * zod, et n'est lu que par l'écran du simulateur, chargé à part.
  */
 
-export { SIMULATION_MAX_STOPS, SIMULATION_MAX_VEHICLES };
+export {
+  SIMULATION_MAX_STOP_MINUTES,
+  SIMULATION_MAX_STOPS,
+  SIMULATION_MAX_VEHICLES,
+  SIMULATION_MIN_STOP_MINUTES,
+  SIMULATION_SCENARIO_NAME_MAX,
+};
 
 export interface GpsPoint {
   readonly lat: number;
@@ -85,16 +92,23 @@ export interface StopDraft {
   readonly windowStart: string;
   /** `HH:MM`, ou vide : pas de fenêtre. */
   readonly windowEnd: string;
+  /** Le temps sur place propre à l'arrêt ; `null` : celui des réglages (L9-C8). */
+  readonly stopMinutes: number | null;
 }
 
 /** Les réglages en cours de saisie ; `null` : champ vidé, ou réglages illisibles. */
+/**
+ * Les réglages en cours de saisie ; `null` : champ vidé, ou réglages illisibles.
+ * Ni détour ni vitesse : le calcul ne les lit plus depuis le lot 10 bis
+ * (L10b-C5), et le contrat les rend optionnels.
+ */
 export interface SettingsDraft {
-  /** Le facteur tel qu'on le lit (1,4), pas les centièmes du contrat. */
-  readonly detourFactor: number | null;
-  readonly averageSpeedKmh: number | null;
   readonly earliestDeparture: string;
   readonly maxRoundMinutes: number | null;
+  /** Le « temps de livraison sur place » par défaut (lot 7 ter, L7t-C3). */
   readonly stopMinutes: number | null;
+  /** La marge avant la fin d'un créneau (L7t-C1). */
+  readonly safetyMarginMinutes: number | null;
   readonly multiplePassages: boolean;
 }
 
@@ -109,23 +123,20 @@ export interface ScenarioDraft {
 }
 
 export const EMPTY_SETTINGS: SettingsDraft = {
-  detourFactor: null,
-  averageSpeedKmh: null,
   earliestDeparture: '',
   maxRoundMinutes: null,
   stopMinutes: null,
+  safetyMarginMinutes: null,
   multiplePassages: false,
 };
 
 export function settingsDraftOf(settings: DeliveryRoutingSettingsPayload): SettingsDraft {
   return {
-    // Dépréciés depuis le lot 10 bis (L10b-C5) : un serveur peut ne plus les rendre.
-    detourFactor:
-      settings.detourPercent === undefined ? null : detourFactorOf(settings.detourPercent),
-    averageSpeedKmh: settings.averageSpeedKmh ?? null,
     earliestDeparture: settings.earliestDeparture,
     maxRoundMinutes: settings.maxRoundMinutes,
     stopMinutes: settings.stopMinutes,
+    // Optionnelle au contrat : un fichier exporté avant le lot 7 ter ne l'a pas.
+    safetyMarginMinutes: settings.safetyMarginMinutes ?? null,
     multiplePassages: settings.multiplePassages,
   };
 }
@@ -143,7 +154,14 @@ export function nextStopId(stops: readonly StopDraft[]): string {
 }
 
 export function emptyStop(stops: readonly StopDraft[]): StopDraft {
-  return { id: nextStopId(stops), label: '', coordinates: '', windowStart: '', windowEnd: '' };
+  return {
+    id: nextStopId(stops),
+    label: '',
+    coordinates: '',
+    windowStart: '',
+    windowEnd: '',
+    stopMinutes: null,
+  };
 }
 
 /**
@@ -170,6 +188,7 @@ export function exampleScenario(
       coordinates,
       windowStart: '',
       windowEnd: '',
+      stopMinutes: null,
     })),
     vehicles,
     settings,
@@ -210,7 +229,18 @@ function buildStop(
   if (start !== '' && end !== '' && start >= end) {
     errors.push(`${name} : la fenêtre finit avant de commencer.`);
   }
-  if (!gps.ok || stop.label.trim() === '') {
+  const minutes = stop.stopMinutes;
+  const minutesValid =
+    minutes === null ||
+    (Number.isInteger(minutes) &&
+      minutes >= SIMULATION_MIN_STOP_MINUTES &&
+      minutes <= SIMULATION_MAX_STOP_MINUTES);
+  if (!minutesValid) {
+    errors.push(
+      `${name} : temps sur place entre ${String(SIMULATION_MIN_STOP_MINUTES)} et ${String(SIMULATION_MAX_STOP_MINUTES)} minutes, ou vide pour celui des réglages.`,
+    );
+  }
+  if (!gps.ok || stop.label.trim() === '' || !minutesValid) {
     return null;
   }
   return {
@@ -218,6 +248,7 @@ function buildStop(
     label: stop.label.trim(),
     gps: gps.gps,
     window: end === '' ? null : { start: start === '' ? null : start, end },
+    ...(minutes === null ? {} : { stopMinutes: minutes }),
   };
 }
 
@@ -226,28 +257,25 @@ function buildSettings(
   errors: string[],
 ): DeliveryRoutingSettingsPayload | null {
   const missing = [
-    draft.detourFactor === null ? 'facteur de détour' : null,
-    draft.averageSpeedKmh === null ? 'vitesse moyenne' : null,
     draft.earliestDeparture === '' ? 'départ au plus tôt' : null,
     draft.maxRoundMinutes === null ? 'durée maximale' : null,
-    draft.stopMinutes === null ? 'temps d’arrêt' : null,
+    draft.stopMinutes === null ? 'temps de livraison sur place' : null,
+    draft.safetyMarginMinutes === null ? 'marge de sécurité' : null,
   ].filter((field) => field !== null);
   if (
     missing.length > 0 ||
-    draft.detourFactor === null ||
-    draft.averageSpeedKmh === null ||
     draft.maxRoundMinutes === null ||
-    draft.stopMinutes === null
+    draft.stopMinutes === null ||
+    draft.safetyMarginMinutes === null
   ) {
     errors.push(`Réglages incomplets : ${missing.join(', ')}.`);
     return null;
   }
   return {
-    detourPercent: detourPercentOf(draft.detourFactor),
-    averageSpeedKmh: draft.averageSpeedKmh,
     earliestDeparture: draft.earliestDeparture.slice(0, 5),
     maxRoundMinutes: draft.maxRoundMinutes,
     stopMinutes: draft.stopMinutes,
+    safetyMarginMinutes: draft.safetyMarginMinutes,
     // Ignoré par le simulateur, toujours en tournées neuves (L9-C5) : le
     // contrat le demande, on y met la seule valeur qui ait un sens ici.
     defaultMode: 'new_rounds',
@@ -257,8 +285,8 @@ function buildSettings(
 
 /**
  * Le scénario saisi, rendu au contrat — ou TOUTES ses fautes d'un coup,
- * chacune nommant l'arrêt qu'elle vise. Les bornes du domaine (un détour
- * sous ×1…) restent au serveur, qui dit sa phrase.
+ * chacune nommant l'arrêt qu'elle vise. Les bornes du domaine (une marge
+ * au-delà de 90 minutes…) restent au serveur, qui dit sa phrase.
  */
 export function buildPayload(draft: ScenarioDraft): PayloadBuild {
   const errors: string[] = [];
@@ -339,21 +367,87 @@ export function importScenario(text: string): ScenarioImport {
           : `Ce fichier n’est pas un scénario de tournée — ${issuePath(issue.path)} : ${issue.message}.`,
     };
   }
-  const payload = parsed.data;
+  return { ok: true, draft: scenarioDraftOf(parsed.data) };
+}
+
+/**
+ * Un scénario du contrat, rendu à l'écran : un fichier importé, un scénario
+ * rouvert (L9-C7), une journée copiée (L9-C8) passent tous par ici.
+ */
+export function scenarioDraftOf(payload: DeliverySimulationPayload): ScenarioDraft {
   return {
-    ok: true,
-    draft: {
-      stops: payload.stops.map((stop) => ({
-        id: stop.id,
-        label: stop.label,
-        coordinates: gpsText(stop.gps),
-        windowStart: stop.window?.start ?? '',
-        windowEnd: stop.window?.end ?? '',
-      })),
-      vehicles: payload.vehicles,
-      settings: settingsDraftOf(payload.settings),
-      departure: payload.departure === null ? 'configured' : 'custom',
-      departureCoordinates: payload.departure === null ? '' : gpsText(payload.departure),
-    },
+    stops: payload.stops.map((stop) => ({
+      id: stop.id,
+      label: stop.label,
+      coordinates: gpsText(stop.gps),
+      windowStart: stop.window?.start ?? '',
+      windowEnd: stop.window?.end ?? '',
+      stopMinutes: stop.stopMinutes ?? null,
+    })),
+    vehicles: payload.vehicles,
+    settings: settingsDraftOf(payload.settings),
+    departure: payload.departure === null ? 'configured' : 'custom',
+    departureCoordinates: payload.departure === null ? '' : gpsText(payload.departure),
   };
+}
+
+// ─── Les scénarios enregistrés (L9-C7) ─────────────────────────────────────
+
+/**
+ * L'empreinte d'un brouillon, pour dire « modifié depuis l'enregistrement » :
+ * deux brouillons de même empreinte enverraient le même scénario.
+ */
+export function draftKey(draft: ScenarioDraft): string {
+  return JSON.stringify({
+    stops: draft.stops.map((stop) => [
+      stop.id,
+      stop.label.trim(),
+      stop.coordinates.trim(),
+      stop.windowStart,
+      stop.windowEnd,
+      stop.stopMinutes,
+    ]),
+    vehicles: draft.vehicles.map((name) => name.trim()),
+    settings: {
+      ...draft.settings,
+      earliestDeparture: draft.settings.earliestDeparture.slice(0, 5),
+    },
+    departure: draft.departure,
+    departureCoordinates: draft.departure === 'custom' ? draft.departureCoordinates.trim() : '',
+  });
+}
+
+/** La faute d'un nom de scénario, ou `null`. L'unicité reste au serveur. */
+export function scenarioNameError(name: string): string | null {
+  const trimmed = name.trim();
+  if (trimmed === '') {
+    return 'Donnez un nom au scénario.';
+  }
+  if (trimmed.length > SIMULATION_SCENARIO_NAME_MAX) {
+    return `${String(SIMULATION_SCENARIO_NAME_MAX)} caractères au plus.`;
+  }
+  return null;
+}
+
+/** Le nom proposé pour « Enregistrer sous… » : jamais celui qu'on vient de quitter. */
+export function copyNameOf(name: string | null): string {
+  return name === null ? '' : `${name} (copie)`.slice(0, SIMULATION_SCENARIO_NAME_MAX);
+}
+
+/** « 12 arrêts · 3 véhicules ». */
+export function scenarioSizeLabel(stops: number, vehicles: number): string {
+  const plural = (n: number, word: string): string => `${String(n)} ${word}${n > 1 ? 's' : ''}`;
+  return `${plural(stops, 'arrêt')} · ${plural(vehicles, 'véhicule')}`;
+}
+
+const UPDATED_AT = new Intl.DateTimeFormat('fr-FR', {
+  dateStyle: 'short',
+  timeStyle: 'short',
+  timeZone: 'Europe/Paris',
+});
+
+/** « 29/09/2026 14:05 · Marie » — qui a enregistré en dernier, et quand. */
+export function scenarioUpdatedLabel(updatedAt: string, updatedBy: string | null): string {
+  const when = UPDATED_AT.format(new Date(updatedAt));
+  return updatedBy === null ? when : `${when} · ${updatedBy}`;
 }

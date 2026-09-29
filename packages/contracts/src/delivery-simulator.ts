@@ -16,6 +16,9 @@ import {
 
 export const SIMULATION_MAX_STOPS = 60;
 export const SIMULATION_MAX_VEHICLES = 10;
+export const SIMULATION_MIN_STOP_MINUTES = 1;
+export const SIMULATION_MAX_STOP_MINUTES = 120;
+export const SIMULATION_SCENARIO_NAME_MAX = 80;
 
 const clockTimeField = z
   .string()
@@ -34,6 +37,16 @@ export const simulatedStopSchema = z.object({
   gps: gpsField,
   /** `start` nul = « dès l'ouverture ». Absente : pas de fenêtre. */
   window: z.object({ start: clockTimeField.nullable(), end: clockTimeField }).nullable(),
+  /**
+   * Le temps sur place propre à cet arrêt, en minutes (L9-C8 : celui de
+   * l'adresse copiée). Absent : le `stopMinutes` des réglages du scénario.
+   */
+  stopMinutes: z
+    .number()
+    .int("minutes entières attendues")
+    .min(SIMULATION_MIN_STOP_MINUTES, `au moins ${SIMULATION_MIN_STOP_MINUTES} minute sur place`)
+    .max(SIMULATION_MAX_STOP_MINUTES, `${SIMULATION_MAX_STOP_MINUTES} minutes sur place au plus`)
+    .optional(),
 });
 export type SimulatedStop = z.infer<typeof simulatedStopSchema>;
 
@@ -80,4 +93,55 @@ export interface DeliverySimulationView {
   readonly rounds: readonly SimulatedRoundView[];
   /** Les arrêts qu'aucune tournée ne tient dans la durée maximale. */
   readonly overflow: readonly { readonly stopId: string; readonly label: string }[];
+}
+
+/* ── L9-C7 — les scénarios enregistrés ─────────────────────────────────── */
+
+/**
+ * Enregistrer (créer ou remplacer) un scénario. Le scénario est revalidé par
+ * le même schéma que la simulation, à l'écriture ET à la relecture.
+ */
+export const saveDeliverySimulationScenarioPayloadSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "nom du scénario requis")
+    .max(SIMULATION_SCENARIO_NAME_MAX, `${SIMULATION_SCENARIO_NAME_MAX} caractères au plus`),
+  scenario: deliverySimulationPayloadSchema,
+});
+export type SaveDeliverySimulationScenarioPayload = z.infer<
+  typeof saveDeliverySimulationScenarioPayloadSchema
+>;
+
+/** Une ligne de la liste des scénarios (non archivés, triés par nom). */
+export interface DeliverySimulationScenarioSummaryView {
+  readonly id: string;
+  readonly name: string;
+  readonly stops: number;
+  readonly vehicles: number;
+  readonly updatedAt: string;
+  /** Le nom lisible du staff qui l'a enregistré en dernier ; `null` s'il n'est plus connu. */
+  readonly updatedBy: string | null;
+}
+
+/** Un scénario rouvert : de quoi remplir l'écran tel quel. */
+export interface DeliverySimulationScenarioView {
+  readonly id: string;
+  readonly name: string;
+  readonly scenario: DeliverySimulationPayload;
+  readonly updatedAt: string;
+}
+
+/* ── L9-C8 — partir d'une vraie journée ────────────────────────────────── */
+
+/**
+ * Une journée réelle COPIÉE en scénario : aucun identifiant de commande, rien
+ * ne peut écrire dans la vraie composition. `departure` est toujours `null`
+ * (le point de départ réglé).
+ */
+export interface DeliverySimulationFromDayView {
+  readonly day: string;
+  readonly scenario: DeliverySimulationPayload;
+  /** Les livraisons du jour sans point : listées, non chargées. */
+  readonly withoutPoint: readonly { readonly reference: string; readonly label: string }[];
 }

@@ -1,11 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type {
   DeliveryRoutingSettingsPayload,
+  DeliverySimulationFromDayView,
   DeliverySimulationView,
+  SaveDeliverySimulationScenarioPayload,
   VehiclesView,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldButtonIconComponent,
   FoldCalloutComponent,
@@ -28,10 +31,14 @@ import {
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { saveBlob } from '../../shared/download/save-blob';
+import { DayImport } from '../day-import/day-import';
 import { DeliveryRoutingService } from '../delivery-routing.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
+import { DeliverySimulationScenariosService } from '../delivery-simulation-scenarios.service';
 import {
   buildPayload,
+  copyNameOf,
+  draftKey,
   type DepartureChoice,
   EMPTY_SETTINGS,
   emptyStop,
@@ -41,13 +48,24 @@ import {
   SCENARIO_FILE_NAME,
   scenarioFileContent,
   type ScenarioDraft,
+  scenarioDraftOf,
+  scenarioNameError,
   type SettingsDraft,
+  SIMULATION_MAX_STOP_MINUTES,
   SIMULATION_MAX_STOPS,
   SIMULATION_MAX_VEHICLES,
+  SIMULATION_MIN_STOP_MINUTES,
   settingsDraftOf,
   type StopDraft,
 } from '../delivery-simulator';
 import { SimulationResult } from '../simulation-result/simulation-result';
+import { SimulationScenarios } from '../simulation-scenarios/simulation-scenarios';
+
+/** Le scénario enregistré d'où vient l'écran (L9-C7). */
+interface CurrentScenario {
+  readonly id: string;
+  readonly name: string;
+}
 
 /** Ce que la flotte et les réglages ont pu donner au premier affichage. */
 interface Prefill {
@@ -74,8 +92,9 @@ const DEPARTURE_OPTIONS: readonly FoldViewToggleOption[] = [
  *
  * Rien n'est écrit : ni commande, ni tournée, ni réglage. Les véhicules sont
  * des noms (pré-remplis par la flotte active), les réglages partent de ceux
- * en vigueur et ne s'enregistrent jamais d'ici. Le scénario vit dans l'écran
- * et s'exporte en fichier JSON, qui se réimporte.
+ * en vigueur et ne s'enregistrent jamais d'ici. Le scénario s'enregistre
+ * (L9-C7, sous `delivery_rounds:write` — les boutons disparaissent sans), part
+ * d'une vraie journée copiée (L9-C8), et s'exporte toujours en fichier JSON.
  *
  * La flotte et les réglages se lisent sous `delivery_settings:read`, que la
  * page (sous `delivery_rounds:read`) n'exige pas : sans eux, les champs
@@ -85,6 +104,8 @@ const DEPARTURE_OPTIONS: readonly FoldViewToggleOption[] = [
   selector: 'app-simulator-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DayImport,
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldCalloutComponent,
@@ -102,6 +123,7 @@ const DEPARTURE_OPTIONS: readonly FoldViewToggleOption[] = [
     FoldTimeComponent,
     FoldViewToggleComponent,
     SimulationResult,
+    SimulationScenarios,
   ],
   templateUrl: './simulator-page.html',
   styleUrl: './simulator-page.scss',
@@ -111,6 +133,7 @@ export class SimulatorPage {
   private readonly fleet = inject(DeliverySettingsService);
   private readonly permissions = inject(PermissionsStore);
   private readonly notify = inject(NotifyService);
+  private readonly scenarios = inject(DeliverySimulationScenariosService);
 
   protected readonly prefill = signal<Prefill | null>(null);
   protected readonly draft = signal<ScenarioDraft>(exampleScenario([], EMPTY_SETTINGS));
@@ -119,6 +142,19 @@ export class SimulatorPage {
   protected readonly refusal = signal<string | null>(null);
   protected readonly importRefusal = signal<string | null>(null);
   protected readonly result = signal<Simulated | null>(null);
+
+  protected readonly canWrite = computed(() => this.permissions.can('delivery_rounds:write'));
+  protected readonly current = signal<CurrentScenario | null>(null);
+  /** L'empreinte du dernier état enregistré, ouvert ou chargé. */
+  private readonly baseline = signal('');
+  protected readonly modified = computed(() => draftKey(this.draft()) !== this.baseline());
+  protected readonly revision = signal(0);
+  protected readonly saveAsOpen = signal(false);
+  protected readonly saveName = signal('');
+  protected readonly saving = signal(false);
+  protected readonly saveRefusal = signal<string | null>(null);
+  protected readonly minStopMinutes = SIMULATION_MIN_STOP_MINUTES;
+  protected readonly maxStopMinutes = SIMULATION_MAX_STOP_MINUTES;
 
   protected readonly departureOptions = DEPARTURE_OPTIONS;
   protected readonly maxStops = SIMULATION_MAX_STOPS;
@@ -189,9 +225,62 @@ export class SimulatorPage {
   /** Revenir au scénario d'exemple, pré-rempli comme au premier affichage. */
   protected reset(): void {
     const prefill = this.prefill();
-    this.draft.set(exampleScenario(prefill?.vehicles ?? [], prefill?.settings ?? EMPTY_SETTINGS));
+    this.replaceDraft(
+      exampleScenario(prefill?.vehicles ?? [], prefill?.settings ?? EMPTY_SETTINGS),
+      null,
+    );
     this.clearMessages();
-    this.result.set(null);
+  }
+
+  /** « Enregistrer » : remplace le scénario ouvert ; sans lui, c'est « Enregistrer sous… ». */
+  protected async save(): Promise<void> {
+    const current = this.current();
+    if (current === null) {
+      this.openSaveAs();
+      return;
+    }
+    await this.write(current.name, (payload) =>
+      this.scenarios.replace(current.id, payload).then(() => current.id),
+    );
+  }
+
+  protected openSaveAs(): void {
+    this.saveName.set(copyNameOf(this.current()?.name ?? null));
+    this.saveRefusal.set(null);
+    this.saveAsOpen.set(true);
+  }
+
+  protected async saveAs(): Promise<void> {
+    const name = this.saveName().trim();
+    const fault = scenarioNameError(name);
+    if (fault !== null) {
+      this.saveRefusal.set(fault);
+      return;
+    }
+    await this.write(name, (payload) => this.scenarios.create(payload));
+  }
+
+  protected async openScenario(id: string): Promise<void> {
+    this.clearMessages();
+    try {
+      const view = await this.scenarios.open(id);
+      this.replaceDraft(scenarioDraftOf(view.scenario), { id: view.id, name: view.name });
+    } catch (error) {
+      this.refusal.set(httpErrorMessage(error, 'Ce scénario n’a pas pu être ouvert.'));
+    }
+  }
+
+  /** Archivé, le scénario ouvert n'existe plus pour l'équipe : l'écran l'oublie. */
+  protected forget(id: string): void {
+    if (this.current()?.id === id) {
+      this.current.set(null);
+    }
+  }
+
+  protected startFromDay(view: DeliverySimulationFromDayView): void {
+    this.clearMessages();
+    this.replaceDraft(scenarioDraftOf(view.scenario), null);
+    this.notify.success(`Journée du ${view.day} copiée dans le simulateur.`);
   }
 
   protected async propose(): Promise<void> {
@@ -240,9 +329,52 @@ export class SimulatorPage {
       this.importRefusal.set(imported.message);
       return;
     }
-    this.draft.set(imported.draft);
-    this.result.set(null);
+    this.replaceDraft(imported.draft, null);
     this.notify.success(`Scénario « ${file.name} » importé.`);
+  }
+
+  /** Un scénario neuf à l'écran : il devient l'état de référence. */
+  private replaceDraft(draft: ScenarioDraft, current: CurrentScenario | null): void {
+    this.draft.set(draft);
+    this.baseline.set(draftKey(draft));
+    this.current.set(current);
+    this.result.set(null);
+    this.saveAsOpen.set(false);
+  }
+
+  private async write(
+    name: string,
+    send: (payload: SaveDeliverySimulationScenarioPayload) => Promise<string>,
+  ): Promise<void> {
+    if (this.saving()) {
+      return;
+    }
+    this.clearMessages();
+    this.saveRefusal.set(null);
+    const draft = this.draft();
+    const built = buildPayload(draft);
+    if (!built.ok) {
+      this.errors.set(built.errors);
+      return;
+    }
+    this.saving.set(true);
+    try {
+      const id = await send({ name, scenario: built.payload });
+      this.current.set({ id, name });
+      this.baseline.set(draftKey(draft));
+      this.saveAsOpen.set(false);
+      this.revision.update((n) => n + 1);
+      this.notify.success(`Scénario « ${name} » enregistré.`);
+    } catch (error) {
+      const message = httpErrorMessage(error, 'Le scénario n’a pas pu être enregistré.');
+      if (this.saveAsOpen()) {
+        this.saveRefusal.set(message);
+      } else {
+        this.refusal.set(message);
+      }
+    } finally {
+      this.saving.set(false);
+    }
   }
 
   private patch(patch: Partial<ScenarioDraft>): void {
@@ -268,7 +400,7 @@ export class SimulatorPage {
       settingsUnread: settings.status === 'rejected',
     };
     this.prefill.set(prefill);
-    this.draft.set(exampleScenario(prefill.vehicles, prefill.settings));
+    this.replaceDraft(exampleScenario(prefill.vehicles, prefill.settings), null);
   }
 }
 

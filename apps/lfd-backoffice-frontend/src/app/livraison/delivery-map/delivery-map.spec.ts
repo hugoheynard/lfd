@@ -3,8 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { PlannedRound } from '../delivery-planning';
 import { MAP_TILES } from '../map-tiles.config';
-import { stopOf } from '../run-sheet.fixture';
-import { DeliveryMap, townsOf } from './delivery-map';
+import { DeliveryMap } from './delivery-map';
 
 function round(stops: PlannedRound['stops']): PlannedRound {
   return {
@@ -20,33 +19,6 @@ function round(stops: PlannedRound['stops']): PlannedRound {
     timing: null,
     geometry: null,
     stops,
-  };
-}
-
-function stopAt(
-  orderId: string,
-  ville: string,
-  lat: number,
-  lng: number,
-): PlannedRound['stops'][number] {
-  const sheet = stopOf({ orderId });
-  return {
-    orderId,
-    reference: orderId,
-    arrival: null,
-    window: null,
-    windowMissed: false,
-    sheet: {
-      ...sheet,
-      address: sheet.address === null ? null : { ...sheet.address, ville },
-      addressBook: {
-        companyId: 'co-1',
-        addressId: 'a-1',
-        note: '',
-        gps: { lat, lng },
-        procedure: [],
-      },
-    },
   };
 }
 
@@ -67,19 +39,5 @@ describe('DeliveryMap', () => {
     const element = fixture.nativeElement as HTMLElement;
     expect(element.querySelector('[data-map-absent]')).not.toBeNull();
     expect(element.querySelector('.delivery-map__canvas')?.hasAttribute('hidden')).toBe(true);
-  });
-
-  it('place chaque ville desservie au centre de ses arrêts, et seulement celles-là', () => {
-    const towns = townsOf([
-      round([
-        stopAt('o-1', 'Val d’Isère', 45.44, 6.98),
-        stopAt('o-2', 'Val d’Isère', 45.46, 7.0),
-        stopAt('o-3', 'Tignes', 45.47, 6.9),
-      ]),
-    ]);
-
-    expect(towns.map((town) => town.name)).toEqual(['Val d’Isère', 'Tignes']);
-    expect(towns[0]?.at.lat).toBeCloseTo(45.45);
-    expect(towns[0]?.at.lng).toBeCloseTo(6.99);
   });
 });

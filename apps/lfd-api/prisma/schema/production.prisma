@@ -699,3 +699,36 @@ model DeliveryGeocode {
   @@map("delivery_geocode")
   @@schema("production")
 }
+
+/// **Un scénario du simulateur de tournée** (lot 9, L9-C7) — des arrêts
+/// INVENTÉS, des noms de véhicules et des réglages, enregistrés pour être
+/// rejoués. Une donnée de réglage : aucun client, aucune commande, **aucune
+/// journée** — exception écrite dans `test/day-change-triggers.e2e-spec.ts`.
+///
+/// Jamais supprimé : archivé, à une date. Le nom est unique parmi les
+/// scénarios NON archivés — index unique partiel, écrit à la main dans la
+/// migration `20260929210000_les_scenarios_du_simulateur` (Prisma ne sait pas
+/// le dire).
+model DeliverySimulationScenario {
+  /// Assigné par la commande (`IdGenerator`), jamais par la base.
+  id       String @id
+  name     String
+  /// Le scénario tel que `deliverySimulationPayloadSchema` l'a accepté ;
+  /// revalidé à chaque relecture — un scénario devenu invalide se refuse
+  /// en le nommant, il ne se rend jamais en 500.
+  scenario Json
+
+  /// Instants du geste, lus du `Clock`.
+  createdAt        DateTime  @map("created_at")
+  createdByStaffId String    @map("created_by_staff_id")
+  updatedAt        DateTime  @map("updated_at")
+  /// Le dernier geste — enregistrer, remplacer, archiver : l'id de fiche
+  /// survit à tout, le nom et le rôle sont un instantané.
+  updatedByStaffId String    @map("updated_by_staff_id")
+  updatedByName    String    @map("updated_by_name")
+  updatedByRole    String    @map("updated_by_role")
+  archivedAt       DateTime? @map("archived_at")
+
+  @@map("delivery_simulation_scenario")
+  @@schema("production")
+}

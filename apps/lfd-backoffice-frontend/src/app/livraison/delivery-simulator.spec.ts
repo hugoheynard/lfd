@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildPayload,
+  copyNameOf,
+  draftKey,
   EMPTY_SETTINGS,
   emptyStop,
   exampleScenario,
@@ -10,17 +12,19 @@ import {
   nextStopId,
   parseGps,
   type ScenarioDraft,
+  scenarioDraftOf,
   scenarioFileContent,
+  scenarioNameError,
+  scenarioSizeLabel,
   SIMULATION_MAX_STOPS,
   type SettingsDraft,
 } from './delivery-simulator';
 
 const SETTINGS: SettingsDraft = {
-  detourFactor: 1.4,
-  averageSpeedKmh: 35,
   earliestDeparture: '07:00',
   maxRoundMinutes: 240,
   stopMinutes: 5,
+  safetyMarginMinutes: 20,
   multiplePassages: false,
 };
 
@@ -94,7 +98,14 @@ describe('le simulateur — construire le corps de « Proposer »', () => {
       window: null,
     });
     expect(built.payload.departure).toBeNull();
-    expect(built.payload.settings).toMatchObject({ detourPercent: 140, defaultMode: 'new_rounds' });
+    expect(built.payload.settings).toEqual({
+      earliestDeparture: '07:00',
+      maxRoundMinutes: 240,
+      stopMinutes: 5,
+      safetyMarginMinutes: 20,
+      defaultMode: 'new_rounds',
+      multiplePassages: false,
+    });
   });
 
   it('pose une fenêtre « avant » quand seul la fin est saisie, et une fenêtre pleine sinon', () => {
@@ -130,7 +141,16 @@ describe('le simulateur — construire le corps de « Proposer »', () => {
 
   it('rend toutes les fautes d’un coup : nom, coordonnées, véhicules, réglages', () => {
     const built = buildPayload({
-      stops: [{ id: 'arret-1', label: '', coordinates: 'ici', windowStart: '', windowEnd: '' }],
+      stops: [
+        {
+          id: 'arret-1',
+          label: '',
+          coordinates: 'ici',
+          windowStart: '',
+          windowEnd: '',
+          stopMinutes: null,
+        },
+      ],
       vehicles: [],
       settings: EMPTY_SETTINGS,
       departure: 'configured',
@@ -138,7 +158,9 @@ describe('le simulateur — construire le corps de « Proposer »', () => {
     });
     expect(!built.ok && built.errors).toHaveLength(4);
     expect(!built.ok && built.errors[0]).toBe('Arrêt n° 1 : nom requis.');
-    expect(!built.ok && built.errors[3]).toContain('Réglages incomplets : facteur de détour');
+    expect(!built.ok && built.errors[3]).toContain(
+      'Réglages incomplets : départ au plus tôt, durée maximale, temps de livraison sur place, marge de sécurité.',
+    );
   });
 
   it('refuse un véhicule sans nom', () => {
@@ -213,5 +235,97 @@ describe('le simulateur — exporter puis réimporter', () => {
     expect(imported.ok).toBe(false);
     expect(!imported.ok && imported.message).toContain('arrêt n° 3');
     expect(!imported.ok && imported.message).toContain('latitude hors bornes');
+  });
+});
+
+describe('le simulateur — le temps sur place par arrêt (L9-C8)', () => {
+  it('ne l’envoie que s’il est saisi', () => {
+    const draft = example();
+    const stops = draft.stops.map((stop, index) =>
+      index === 0 ? { ...stop, stopMinutes: 12 } : stop,
+    );
+    const built = buildPayload({ ...draft, stops });
+    expect(built.ok && built.payload.stops[0]?.stopMinutes).toBe(12);
+    expect(built.ok && 'stopMinutes' in (built.payload.stops[1] ?? {})).toBe(false);
+  });
+
+  it('refuse un temps hors bornes en nommant l’arrêt', () => {
+    const draft = example();
+    const stops = draft.stops.map((stop, index) =>
+      index === 1 ? { ...stop, stopMinutes: 0 } : stop,
+    );
+    const built = buildPayload({ ...draft, stops });
+    expect(built.ok).toBe(false);
+    expect(!built.ok && built.errors[0]).toContain(
+      '« Arrêt Val d’Isère centre » : temps sur place',
+    );
+  });
+
+  it('refuse des réglages sans marge de sécurité, en la nommant', () => {
+    const built = buildPayload({
+      ...example(),
+      settings: { ...SETTINGS, safetyMarginMinutes: null },
+    });
+    expect(!built.ok && built.errors).toContain('Réglages incomplets : marge de sécurité.');
+  });
+
+  it('relit un fichier d’avant la marge : champ vide, rien d’inventé', () => {
+    const built = buildPayload(example());
+    if (!built.ok) {
+      throw new Error('exemple invalide');
+    }
+    const { safetyMarginMinutes: _dropped, ...older } = built.payload.settings;
+    const draft = scenarioDraftOf({ ...built.payload, settings: older });
+    expect(draft.settings.safetyMarginMinutes).toBeNull();
+  });
+});
+
+describe('le simulateur — modifié depuis l’enregistrement (L9-C7)', () => {
+  it('un scénario rouvert a l’empreinte de celui qu’on a enregistré', () => {
+    const built = buildPayload({
+      ...example(),
+      stops: example().stops.map((s) => ({ ...s, stopMinutes: 7 })),
+    });
+    if (!built.ok) {
+      throw new Error('exemple invalide');
+    }
+    const reopened = scenarioDraftOf(built.payload);
+    const again = buildPayload(reopened);
+    expect(again).toEqual(built);
+    expect(draftKey(scenarioDraftOf(built.payload))).toBe(draftKey(reopened));
+  });
+
+  it('change d’empreinte au moindre changement, pas sur des espaces', () => {
+    const draft = example();
+    const renamed = { ...draft, vehicles: ['Camionnette 2'] };
+    const padded = { ...draft, vehicles: ['  Camionnette '] };
+    expect(draftKey(renamed)).not.toBe(draftKey(draft));
+    expect(draftKey(padded)).toBe(draftKey(draft));
+    expect(draftKey({ ...draft, settings: { ...SETTINGS, safetyMarginMinutes: 30 } })).not.toBe(
+      draftKey(draft),
+    );
+  });
+
+  it('ignore des coordonnées de départ quand le départ est le point réglé', () => {
+    const draft = example();
+    expect(draftKey({ ...draft, departureCoordinates: '45, 6' })).toBe(draftKey(draft));
+  });
+});
+
+describe('le simulateur — nommer un scénario', () => {
+  it('refuse un nom vide ou trop long', () => {
+    expect(scenarioNameError('   ')).toBe('Donnez un nom au scénario.');
+    expect(scenarioNameError('x'.repeat(81))).toBe('80 caractères au plus.');
+    expect(scenarioNameError('Hiver, une camionnette de moins')).toBeNull();
+  });
+
+  it('propose une copie pour « Enregistrer sous… », rien pour un scénario neuf', () => {
+    expect(copyNameOf('Samedi de février')).toBe('Samedi de février (copie)');
+    expect(copyNameOf(null)).toBe('');
+  });
+
+  it('dit la taille d’un scénario', () => {
+    expect(scenarioSizeLabel(1, 1)).toBe('1 arrêt · 1 véhicule');
+    expect(scenarioSizeLabel(12, 3)).toBe('12 arrêts · 3 véhicules');
   });
 });

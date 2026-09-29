@@ -33,6 +33,7 @@ import {
   MAP_PALETTE_TOKENS,
   type MapPalette,
   type MapRoute,
+  glyphsUrlOf,
   mapStyleOf,
   ROUTES_SOURCE,
   routesGeoJson,
@@ -61,7 +62,7 @@ const FIT_PADDING = 40;
 /**
  * **La carte de l'écran « Planifier »** (lot 10 bis, L10b-C1, C4, C6) :
  * les tracés par la route, un repère numéroté par arrêt à la couleur de sa
- * camionnette, le labo, et les villes traversées.
+ * camionnette, le labo ; les noms de lieux sont dessinés par la carte.
  *
  * MapLibre et pmtiles sont chargés à la demande, jamais au démarrage (L10b-C6).
  * Sans URL de tuiles (production, tant que le bucket n'existe pas), la carte
@@ -175,7 +176,13 @@ export class DeliveryMap {
       const { gps } = this.departure();
       const map = new library.Map({
         container: this.canvas().nativeElement,
-        style: mapStyleOf(this.palette(), `pmtiles://${streets}`, `pmtiles://${relief}`, []),
+        style: mapStyleOf(
+          this.palette(),
+          `pmtiles://${streets}`,
+          `pmtiles://${relief}`,
+          glyphsUrlOf(this.document.baseURI),
+          [],
+        ),
         center: [gps.lng, gps.lat],
         zoom: INITIAL_ZOOM,
         attributionControl: { compact: true },
@@ -273,6 +280,8 @@ export class DeliveryMap {
       shade: color('shade'),
       light: color('light'),
       halo: color('halo'),
+      label: color('label'),
+      labelMinor: color('labelMinor'),
     };
   }
 
@@ -300,9 +309,6 @@ export class DeliveryMap {
 
     const departure = this.departure();
     add(this.element('delivery-map__lab', 'L', `${departure.label} — départ`), departure.gps, null);
-    for (const town of townsOf(rounds)) {
-      add(this.element('delivery-map__town', town.name, ''), town.at, null);
-    }
     for (const round of rounds) {
       const color = colorOf(rounds, round.key);
       round.stops.forEach((stop, index) => {
@@ -367,29 +373,4 @@ export class DeliveryMap {
     map.fitBounds(bounds, { padding: FIT_PADDING, duration: 0 });
     this.fitted = true;
   }
-}
-
-/**
- * Les villes traversées, placées au centre de leurs arrêts : pas de glyphes
- * dans les tuiles, donc un marqueur HTML par ville (comme la maquette), et
- * seulement celles qu'on dessert — jamais une liste de villes écrite en dur.
- */
-export function townsOf(
-  rounds: readonly PlannedRound[],
-): readonly { readonly name: string; readonly at: GpsPoint }[] {
-  const byTown = new Map<string, GpsPoint[]>();
-  for (const stop of rounds.flatMap((round) => round.stops)) {
-    const town = stop.sheet?.address?.ville.trim() ?? '';
-    const point = stopPointOf(stop);
-    if (town !== '' && point !== null) {
-      byTown.set(town, [...(byTown.get(town) ?? []), point]);
-    }
-  }
-  return [...byTown].map(([name, points]) => ({
-    name,
-    at: {
-      lat: points.reduce((sum, point) => sum + point.lat, 0) / points.length,
-      lng: points.reduce((sum, point) => sum + point.lng, 0) / points.length,
-    },
-  }));
 }

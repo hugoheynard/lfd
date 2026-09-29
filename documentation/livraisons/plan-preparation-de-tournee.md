@@ -1762,6 +1762,42 @@ actifs ce jour-là (par leur nom). Aucun lien vers les commandes : rien ne peut
 part, non chargées. Lecture sous `delivery_rounds:read` (le droit qui montre
 déjà ces noms). Enregistré, le scénario garde ces noms — assumé.
 
+**Serveur bâti le 2026-09-29** (L9-C7 et L9-C8, non commité à l'écriture) :
+
+- **Contrat** (`packages/contracts/src/delivery-simulator.ts`) :
+  `saveDeliverySimulationScenarioPayloadSchema`, `DeliverySimulationScenarioSummaryView`,
+  `DeliverySimulationScenarioView`, `DeliverySimulationFromDayView` ;
+  `simulatedStopSchema` gagne `stopMinutes` facultatif (1 à 120), que le
+  calcul du simulateur compte comme le temps sur place de l'arrêt.
+- **Table** `production.delivery_simulation_scenario` (migration additive
+  `20260929210000_les_scenarios_du_simulateur`, index unique partiel sur
+  `name WHERE archived_at IS NULL`, auteur figé comme les réglages :
+  id de fiche, nom, rôle) ; exception D7 écrite dans
+  `apps/lfd-api/test/day-change-triggers.e2e-spec.ts`.
+- **Agrégat léger** `SimulationScenario` plutôt qu'un CRUD : des règles
+  refusent des écritures (nom borné, pas d'archivage en double, pas de copie
+  d'un contenu illisible). L'unicité du nom est lue avant d'écrire et tenue
+  par l'index, comme la plaque d'un véhicule. Le `jsonb` repasse par
+  `deliverySimulationPayloadSchema` à chaque relecture : un scénario devenu
+  invalide se rouvre en 409 qui le nomme, reste listé (zéro arrêt) et
+  s'archive.
+- **Routes** sous `admin/livraison/simulateur/scenarios` (lister, rouvrir,
+  créer, remplacer, `…/dupliquer` — « X (copie) », « X (copie 2) »… —,
+  `…/archiver`), lecture `delivery_rounds:read`, écriture
+  `delivery_rounds:write` ; quatre faits `delivery_simulation_scenario.*`
+  au journal. `GET admin/livraison/simulateur/depuis-journee?jour=` lit la
+  journée par le canal `DeliveryOrdersReader` (`expectedOn`, `byIds`,
+  `stopPointsOf`), le point par le carnet puis le cache du géocodage (comme
+  « Proposer », sans réseau), la flotte active ce jour-là et les réglages en
+  vigueur. Aucun identifiant de commande ne sort ; les arrêts s'appellent
+  `j1`, `j2`… Les bornes du simulateur (60 arrêts, 10 véhicules) ne sont pas
+  appliquées à la copie : « Proposer » refuse en le disant.
+- **Tests** : domaine (agrégat, nom de copie), application (handlers des
+  scénarios, journée copiée, `stopMinutes` au simulateur), relecture du
+  `jsonb`, e2e `apps/lfd-api/test/delivery-simulation-scenarios.e2e-spec.ts`
+  (parcours, 409 doublon, archiver puis recréer, contenu invalide, 400, 403
+  en lecture seule, journée copiée).
+
 ### Lot 10 — La carte des tournées, belle
 
 > **Ouvert le 2026-09-29.** Hugo : « je veux que ça soit beau ». 📐 Rien n'est

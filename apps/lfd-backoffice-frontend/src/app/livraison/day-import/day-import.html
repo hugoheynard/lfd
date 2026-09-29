@@ -1,0 +1,45 @@
+<div class="day-import">
+  <div class="bar">
+    <fold-date label="Journée" [value]="day()" (valueChange)="day.set($event)" data-from-day-date />
+    @if (modified()) {
+      <fold-inline-confirm
+        intent="warning"
+        message="Le scénario à l’écran a des changements non enregistrés : il sera remplacé."
+        [labels]="{ confirm: 'Remplacer' }"
+        [loading]="loading()"
+        (confirmed)="load()"
+        data-from-day-confirm
+      >
+        <button foldButton emphasis="outline" icon="calendar" [disabled]="day() === ''">
+          {{ buttonLabel() }}
+        </button>
+      </fold-inline-confirm>
+    } @else {
+      <button
+        foldButton
+        emphasis="outline"
+        icon="calendar"
+        [loading]="loading()"
+        [disabled]="day() === '' || loading()"
+        (click)="load()"
+        data-from-day
+      >
+        {{ buttonLabel() }}
+      </button>
+    }
+  </div>
+
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-from-day-refusal>{{ message }}</fold-callout>
+  }
+  @if (withoutPoint().length > 0) {
+    <fold-callout variant="warning" data-without-point>
+      Livraisons sans point, non chargées&nbsp;:
+      <ul class="list">
+        @for (delivery of withoutPoint(); track delivery.reference) {
+          <li>{{ delivery.reference }} — {{ delivery.label }}</li>
+        }
+      </ul>
+    </fold-callout>
+  }
+</div>

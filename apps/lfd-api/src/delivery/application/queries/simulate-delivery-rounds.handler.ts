@@ -18,6 +18,7 @@ import {
 } from "../delivery-routing-support.js";
 import { SimulateDeliveryRoundsQuery } from "./simulate-delivery-rounds.query.js";
 
+const SECONDS_PER_MINUTE = 60;
 /** L'identifiant du départ dans la matrice. */
 const DEPOT_ID = "depot";
 /** Le libellé d'un départ saisi dans le scénario, qui n'est aucun point de retrait. */
@@ -114,8 +115,12 @@ function entryOf(byId: ReadonlyMap<string, ScenarioStop>, id: string): ScenarioS
   return entry;
 }
 
+/** Le temps sur place de l'arrêt compte quand il est donné (L9-C8) ; sinon le réglage. */
 function plannableOf(entry: ScenarioStop): PlannableStop {
-  return { id: entry.internalId, window: timeWindowOf(entry.stop.window), homeRoundId: null };
+  const base = { id: entry.internalId, window: timeWindowOf(entry.stop.window), homeRoundId: null };
+  return entry.stop.stopMinutes === undefined
+    ? base
+    : { ...base, stopSeconds: entry.stop.stopMinutes * SECONDS_PER_MINUTE };
 }
 
 function simulatedRoundOf(

@@ -144,6 +144,27 @@ describe("SimulateDeliveryRoundsHandler — le simulateur (L9-C1 à C5)", () => 
     expect(view.rounds.flatMap((round) => round.stops)).toHaveLength(2);
   });
 
+  it("le temps sur place d'un arrêt (L9-C8) retarde l'arrêt suivant, sans toucher les autres", async () => {
+    const oneVehicle = { vehicles: ["Kangoo"] };
+    const plain = await handlerWith({}).execute(scenario(oneVehicle));
+    const first = plain.rounds[0]?.stops[0]?.stopId ?? "";
+    const slow = await handlerWith({}).execute(
+      scenario({
+        ...oneVehicle,
+        stops: [stop("a", 45.6, 5.9), stop("b", 45.61, 5.91), stop("c", 45.5, 6.0)].map((s) =>
+          s.id === first ? { ...s, stopMinutes: 65 } : s,
+        ),
+      }),
+    );
+
+    const arrivals = (view: typeof plain) =>
+      new Map((view.rounds[0]?.stops ?? []).map((s) => [s.stopId, s.arrival]));
+    const [before, after] = [arrivals(plain), arrivals(slow)];
+    expect(after.get(first)).toBe(before.get(first));
+    const others = [...before.keys()].filter((id) => id !== first);
+    expect(others.every((id) => (after.get(id) ?? "") > (before.get(id) ?? ""))).toBe(true);
+  });
+
   it("refuse un réglage hors bornes comme au lot 7", async () => {
     await expect(
       handlerWith({}).execute(scenario({ settings: { ...SETTINGS, averageSpeedKmh: 500 } })),

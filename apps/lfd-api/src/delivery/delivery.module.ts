@@ -7,6 +7,18 @@ import { SetRoutingSettingsHandler } from "./application/commands/set-routing-se
 import { GetDeliveryRoundProposalHandler } from "./application/queries/get-delivery-round-proposal.handler.js";
 import { TimeDeliveryRoundsHandler } from "./application/queries/time-delivery-rounds.handler.js";
 import { SimulateDeliveryRoundsHandler } from "./application/queries/simulate-delivery-rounds.handler.js";
+import { ArchiveSimulationScenarioHandler } from "./application/commands/archive-simulation-scenario.handler.js";
+import { DuplicateSimulationScenarioHandler } from "./application/commands/duplicate-simulation-scenario.handler.js";
+import { RecordSimulationScenarioHandler } from "./application/commands/record-simulation-scenario.handler.js";
+import { ReplaceSimulationScenarioHandler } from "./application/commands/replace-simulation-scenario.handler.js";
+import { GetSimulationFromDayHandler } from "./application/queries/get-simulation-from-day.handler.js";
+import { GetSimulationScenarioHandler } from "./application/queries/get-simulation-scenario.handler.js";
+import { ListSimulationScenariosHandler } from "./application/queries/list-simulation-scenarios.handler.js";
+import { SimulationScenarioReader } from "./domain/ports/simulation-scenario.reader.js";
+import { SimulationScenarioRepository } from "./domain/ports/simulation-scenario.repository.js";
+import { DeliverySimulationScenariosController } from "./http/delivery-simulation-scenarios.controller.js";
+import { PrismaSimulationScenarioReader } from "./infrastructure/prisma-simulation-scenario.reader.js";
+import { PrismaSimulationScenarioRepository } from "./infrastructure/prisma-simulation-scenario.repository.js";
 import { GetRoutingSettingsHandler } from "./application/queries/get-routing-settings.handler.js";
 import { DeliveryProposalRepository } from "./domain/ports/delivery-proposal.repository.js";
 import { DistanceMatrix } from "./domain/ports/distance-matrix.js";
@@ -114,6 +126,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     RoutingSettingsController,
     DeliveryProposalController,
     DeliverySimulatorController,
+    DeliverySimulationScenariosController,
   ],
   providers: [
     AddVehicleHandler,
@@ -144,6 +157,15 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     GetDeliveryRoundProposalHandler,
     ApplyDeliveryProposalHandler,
     SimulateDeliveryRoundsHandler,
+    RecordSimulationScenarioHandler,
+    ReplaceSimulationScenarioHandler,
+    DuplicateSimulationScenarioHandler,
+    ArchiveSimulationScenarioHandler,
+    ListSimulationScenariosHandler,
+    GetSimulationScenarioHandler,
+    GetSimulationFromDayHandler,
+    { provide: SimulationScenarioRepository, useClass: PrismaSimulationScenarioRepository },
+    { provide: SimulationScenarioReader, useClass: PrismaSimulationScenarioReader },
     TimeDeliveryRoundsHandler,
     { provide: VehicleRepository, useClass: PrismaVehicleRepository },
     { provide: FleetReader, useClass: PrismaFleetReader },

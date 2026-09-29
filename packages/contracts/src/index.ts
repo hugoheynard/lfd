@@ -800,8 +800,12 @@ export type {
 export {
   SIMULATION_MAX_STOPS,
   SIMULATION_MAX_VEHICLES,
+  SIMULATION_MIN_STOP_MINUTES,
+  SIMULATION_MAX_STOP_MINUTES,
+  SIMULATION_SCENARIO_NAME_MAX,
   simulatedStopSchema,
   deliverySimulationPayloadSchema,
+  saveDeliverySimulationScenarioPayloadSchema,
 } from "./delivery-simulator.js";
 export type {
   SimulatedStop,
@@ -809,6 +813,10 @@ export type {
   SimulatedProposedStopView,
   SimulatedRoundView,
   DeliverySimulationView,
+  SaveDeliverySimulationScenarioPayload,
+  DeliverySimulationScenarioSummaryView,
+  DeliverySimulationScenarioView,
+  DeliverySimulationFromDayView,
 } from "./delivery-simulator.js";
 export {
   recurrenceSchema,

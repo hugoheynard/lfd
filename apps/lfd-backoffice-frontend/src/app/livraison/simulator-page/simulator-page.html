@@ -5,6 +5,21 @@
   </p>
 
   <div pageActions class="bar">
+    @if (canWrite()) {
+      <button
+        foldButton
+        icon="save"
+        [loading]="saving() && !saveAsOpen()"
+        [disabled]="saving() || (current() !== null && !modified())"
+        (click)="save()"
+        data-save
+      >
+        Enregistrer
+      </button>
+      <button foldButton emphasis="outline" (click)="openSaveAs()" data-save-as>
+        Enregistrer sous…
+      </button>
+    }
     <button foldButton emphasis="outline" icon="download" (click)="exportScenario()" data-export>
       Exporter le scénario
     </button>
@@ -13,6 +28,53 @@
 
   @if (prefill(); as prefill) {
     <div class="simulator">
+      <app-simulation-scenarios
+        [revision]="revision()"
+        [currentId]="current()?.id ?? null"
+        [canWrite]="canWrite()"
+        (opened)="openScenario($event)"
+        (archived)="forget($event)"
+      />
+
+      @if (current(); as current) {
+        <div class="status" data-current-scenario>
+          <fold-badge variant="neutral" [content]="'Scénario « ' + current.name + ' »'" />
+          @if (modified()) {
+            <fold-badge variant="warning" content="Modifié depuis l’enregistrement" data-modified />
+          }
+        </div>
+      }
+
+      @if (saveAsOpen()) {
+        <fold-card data-save-as-form>
+          <div class="section">
+            <fold-element-title variant="title" icon="save" title="Enregistrer sous…" />
+            <div class="bar">
+              <fold-input
+                label="Nom du scénario"
+                [value]="saveName()"
+                (valueChange)="saveName.set($event)"
+                data-save-name
+              />
+              <button
+                foldButton
+                [loading]="saving()"
+                [disabled]="saving()"
+                (click)="saveAs()"
+                data-save-as-confirm
+              >
+                Enregistrer
+              </button>
+              <button foldButton emphasis="soft" (click)="saveAsOpen.set(false)">Annuler</button>
+            </div>
+            @if (saveRefusal(); as message) {
+              <fold-callout variant="alert" announce data-save-refusal>{{ message }}</fold-callout>
+            }
+          </div>
+        </fold-card>
+      }
+
+      <app-day-import [modified]="modified()" (loaded)="startFromDay($event)" />
       @if (prefill.fleetUnread) {
         <fold-callout variant="warning" data-fleet-unread>
           La flotte n’a pas pu être lue : ajoutez les véhicules du scénario à la main.
@@ -87,6 +149,17 @@
                 [value]="stop.windowEnd"
                 (valueChange)="updateStop(index, { windowEnd: $event })"
                 data-stop-end
+              />
+              <fold-number-input
+                label="Sur place (min)"
+                optional
+                integer
+                placeholder="Réglage"
+                [value]="stop.stopMinutes"
+                [min]="minStopMinutes"
+                [max]="maxStopMinutes"
+                (valueChange)="updateStop(index, { stopMinutes: $event })"
+                data-stop-own-minutes
               />
               <fold-button-icon
                 icon="bin"
@@ -173,24 +246,6 @@
           <span summary>Réglages du calcul — pré-remplis, jamais enregistrés d’ici</span>
           <div class="section">
             <div class="fields">
-              <fold-number-input
-                label="Facteur de détour"
-                hint="La route contre le vol d’oiseau : 1,4 = 40 % de plus."
-                [value]="draft().settings.detourFactor"
-                [min]="1"
-                [step]="0.05"
-                [decimals]="2"
-                (valueChange)="updateSettings({ detourFactor: $event })"
-                data-detour
-              />
-              <fold-number-input
-                label="Vitesse moyenne (km/h)"
-                integer
-                [value]="draft().settings.averageSpeedKmh"
-                [min]="1"
-                (valueChange)="updateSettings({ averageSpeedKmh: $event })"
-                data-speed
-              />
               <fold-time
                 label="Départ au plus tôt"
                 [value]="draft().settings.earliestDeparture"
@@ -207,13 +262,22 @@
                 data-max-round
               />
               <fold-number-input
-                label="Temps d’arrêt (min)"
-                hint="Se garer, porter, revenir."
+                label="Temps de livraison sur place (min)"
+                hint="Se garer, décharger, faire signer, revenir — pour les arrêts qui n’ont pas le leur."
                 integer
                 [value]="draft().settings.stopMinutes"
                 [min]="0"
                 (valueChange)="updateSettings({ stopMinutes: $event })"
                 data-stop-minutes
+              />
+              <fold-number-input
+                label="Marge de sécurité (min)"
+                hint="Arriver dans ces dernières minutes d’un créneau coûte au calcul."
+                integer
+                [value]="draft().settings.safetyMarginMinutes"
+                [min]="0"
+                (valueChange)="updateSettings({ safetyMarginMinutes: $event })"
+                data-safety-margin
               />
             </div>
             <fold-checkbox

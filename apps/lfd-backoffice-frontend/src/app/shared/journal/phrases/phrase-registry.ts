@@ -8,6 +8,7 @@ import { COMMERCE_PHRASES } from './commerce-phrases';
 import { DELIVERY_LOADING_PHRASES } from './delivery-loading-phrases';
 import { DELIVERY_ROUND_PHRASES } from './delivery-round-phrases';
 import { DELIVERY_ROUTING_PHRASES } from './delivery-routing-phrases';
+import { DELIVERY_SIMULATION_PHRASES } from './delivery-simulation-phrases';
 import { LOYALTY_PHRASES } from './loyalty-phrases';
 import { OPERATION_PHRASES } from './operation-phrases';
 import { ORDERS_PHRASES } from './orders-phrases';
@@ -151,6 +152,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...DELIVERY_ROUND_PHRASES,
   ...DELIVERY_LOADING_PHRASES,
   ...DELIVERY_ROUTING_PHRASES,
+  ...DELIVERY_SIMULATION_PHRASES,
   ...PRODUCTION_QUALITY_PHRASES,
   ...PRICING_PHRASES,
   ...ACCOUNTS_PHRASES,

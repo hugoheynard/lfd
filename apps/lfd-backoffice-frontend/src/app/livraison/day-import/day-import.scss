@@ -1,0 +1,17 @@
+.day-import {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+.list {
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+}

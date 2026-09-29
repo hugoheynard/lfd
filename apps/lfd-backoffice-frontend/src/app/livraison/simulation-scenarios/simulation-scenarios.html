@@ -1,0 +1,89 @@
+<fold-card data-scenarios>
+  <div class="scenarios">
+    <fold-element-title
+      variant="title"
+      icon="folder"
+      title="Scénarios enregistrés"
+      subtitle="Visibles de toute l’équipe des tournées"
+    />
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-scenario-refusal>{{ message }}</fold-callout>
+    }
+
+    @let list = state();
+    @if (list.status === 'loading') {
+      <fold-loading message="Lecture des scénarios…" />
+    } @else if (list.status === 'error') {
+      <fold-empty-state tone="alert" title="Les scénarios n’ont pas pu être lus">
+        <button foldButton emphasis="outline" (click)="retry()" data-scenarios-retry>
+          Réessayer
+        </button>
+      </fold-empty-state>
+    } @else if (list.rows.length === 0) {
+      <fold-empty-state
+        title="Aucun scénario enregistré"
+        subtitle="Un scénario enregistré se rouvre, se duplique et se partage avec l’équipe."
+        data-scenarios-empty
+      >
+        <fold-icon empty-icon name="folder" />
+      </fold-empty-state>
+    } @else {
+      <fold-data-table
+        caption="Scénarios enregistrés"
+        narrowLayout="cards"
+        [columns]="columns"
+        [rows]="list.rows"
+        [rowKey]="rowKey"
+      >
+        <ng-template foldCell="name" let-row>
+          <span class="name" data-scenario-name>
+            {{ row.name }}
+            @if (row.id === currentId()) {
+              <fold-badge variant="info" content="À l’écran" />
+            }
+          </span>
+        </ng-template>
+        <ng-template foldCell="size" let-row>{{ sizeOf(row) }}</ng-template>
+        <ng-template foldCell="updated" let-row>{{ updatedOf(row) }}</ng-template>
+        <ng-template foldCell="actions" let-row>
+          <div class="actions">
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              [disabled]="pending() !== null"
+              (click)="opened.emit(row.id)"
+              data-scenario-open
+            >
+              Ouvrir
+            </button>
+            @if (canWrite()) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="soft"
+                [loading]="pending() === row.id"
+                [disabled]="pending() !== null"
+                (click)="duplicate(row)"
+                data-scenario-duplicate
+              >
+                Dupliquer
+              </button>
+              <fold-inline-confirm
+                intent="danger"
+                message="Le scénario quitte la liste de l’équipe. Rien d’autre n’est touché."
+                [labels]="{ confirm: 'Archiver' }"
+                [loading]="pending() === row.id"
+                (confirmed)="archive(row)"
+                data-scenario-archive
+              >
+                <button foldButton size="sm" emphasis="soft" intent="danger">Archiver</button>
+              </fold-inline-confirm>
+            }
+          </div>
+        </ng-template>
+      </fold-data-table>
+    }
+  </div>
+</fold-card>

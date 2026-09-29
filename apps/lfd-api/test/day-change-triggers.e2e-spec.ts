@@ -45,6 +45,10 @@ const UNWATCHED: Readonly<Record<string, string>> = {
     "les réglages du calcul de tournée, un réglage unique sans journée",
   "production.delivery_geocode":
     "le cache du géocodage, clé d'une adresse et non d'un jour — une proposition appliquée s'écrit dans `delivery_round`, surveillée",
+  // Le simulateur (lot 9, L9-C7, 2026-09-29) : des arrêts INVENTÉS, sans
+  // client ni commande. « Partir d'une journée » COPIE un jour, il n'y écrit rien.
+  "production.delivery_simulation_scenario":
+    "les scénarios du simulateur, des essais sans client ni journée — rien de ce qu'ils portent n'entre dans une tournée",
 };
 
 /** Les colonnes qui disent « cette ligne appartient à une journée », côté `public`. */
