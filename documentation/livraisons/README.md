@@ -23,7 +23,7 @@ documents sont déplacés tels quels, et leurs renvois repointés.
 | Doc                                                                                  | État déclaré                   | De quoi ça parle                                                                                                                                                            |
 | ------------------------------------------------------------------------------------ | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`conception-retrait-en-livraison.md`](conception-retrait-en-livraison.md)           | 📐 v1 contredite par `vitruve` | Le retrait (le geste) chez le client : le code qui n'atteint pas la personne qui réceptionne, la réconciliation au chargement, la tentative ratée. Huit questions ouvertes. |
-| [`architecture-road-livraison-tournees.md`](architecture-road-livraison-tournees.md) | 📐 note du 2026-08-06          | ROAD, l'application des livreurs et des tournées. Antérieure au bloc `handover` : à relire à la lumière de la conception ci-dessus.                                         |
+| [`architecture-road-livraison-tournees.md`](architecture-road-livraison-tournees.md) | 📐 réécrit le 2026-09-29       | Les tournées : un bloc de `lfd-api` et l'écran `/livraison`, plus une app séparée. Composer, charger, rouler, consigner un échec.                                           |
 
 ## Ailleurs, et laissé où il est
 

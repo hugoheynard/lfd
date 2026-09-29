@@ -1,41 +1,65 @@
-# ROAD — application de livraison & optimisation de tournées
+# Tournées de livraison — un contexte du back-office, plus une application
 
-> **Statut** : note de conception (doc-first). Rien n'est codé tant que cette
-> note n'est pas validée. Écrite le 2026-08-06, durcie après **deux** revues
-> adversariales (les contradictions introduites par la 1re ronde sont corrigées).
+> 🔴 **Réécrit le 2026-09-29 : ROAD n'est plus une application séparée.**
+>
+> La note du 2026-08-06 décrivait une app de plus dans une « suite » : un
+> backend NestJS à lui, sa base, son audience Auth0, son front en iframe dans un
+> shell, et un flux HTTP signé depuis le backend B2B. **Rien de ce décor
+> n'existe plus** (vérifié le 2026-09-29) :
+>
+> - la fédération est abandonnée et le shell retiré le 2026-08-20
+>   ([`../suite/architecture-topologie-apps.md`](../suite/architecture-topologie-apps.md)) ;
+> - il n'y a qu'**un** backend, `apps/lfd-api`, découpé en **blocs**
+>   (`CLAUDE.md` §3), et **une** base à plusieurs schémas Postgres ;
+> - il n'y a que trois apps : `lfd-api`, `lfd-backoffice-frontend`,
+>   `lfc-ecommerce-frontend` ;
+> - le back-office réserve déjà la route `/livraison`, vide exprès
+>   ([`livraison-page.ts`](../../apps/lfd-backoffice-frontend/src/app/livraison/livraison-page/livraison-page.ts)) ;
+> - le statut `ready` (« fabrication finie, en attente de retrait ») existe et
+>   s'écrit au scan du QR de colisage.
+>
+> Et la [conception du retrait en livraison](conception-retrait-en-livraison.md)
+> (2026-09-11) a tranché deux points que cette note contredisait : **un humain
+> compose la tournée** (l'algorithme propose, il n'attribue pas), et **le geste
+> chez le client appartient au bloc `handover`**. Ce document ne couvre donc
+> plus que la **logistique** : composer, charger, rouler, consigner un échec.
+>
+> **Réécrit** : §1, §2 (deux lignes), §3, §4, §5, §8, §9, §10, §11 (point 4),
+> §12, §13 (une hypothèse), §14, et `DeliveryJob` au §6. **Gardé tel quel** : les autres agrégats (§6), les ports et l'algorithme
+> (§7), la résolution du point (§8.1) — ils ne dépendaient pas de la
+> topologie. Toujours **rien de codé**.
 
 ## 1. Intention
 
-**ROAD** est une nouvelle app de la suite interne LFC (au même titre que le PIM et
-le B2B admin : NestJS + Prisma + Angular/fold, hébergée en **iframe** dans le
-shell). Elle sert **les livreurs et le responsable des tournées**, pas les clients.
-
-**Qui attaque ROAD** (déclencheur) : le **backend B2B**, et lui seul. Sur la
-transition d'une commande vers **prête à livrer**, B2B émet une **demande de
-livraison** (`DeliveryRequest`, id **`deliveryRequestId`** généré par B2B) et la
-pousse à ROAD. Une commande peut engendrer **plusieurs** demandes dans le temps (ré-essai
-après échec) → l'identité qui compte côté ROAD est `deliveryRequestId`, **pas**
-`sourceOrderId`. ROAD n'est jamais appelé par le client ni par l'atelier.
+La tournée sert **les livreurs et le responsable des tournées**, pas les
+clients. Elle vit **dans `lfd-api`**, comme un bloc de plus, et **dans le
+back-office**, sous `/livraison`.
 
 Le fil conducteur :
 
-1. Côté B2B, commande **prête** → **demande de livraison** (`deliveryRequestId`).
-2. B2B **pousse** la demande à ROAD (**flux idempotent** : `requested` / `amended` /
-   `cancelled`). ROAD la **traduit** (ACL) en `DeliveryJob` (statut `open`).
-3. Le soir/à la demande, un **`DayPlan(date)`** rassemble les jobs `open` du jour et
-   les **répartit** sur les **véhicules disponibles ce jour-là** → des tournées.
-4. Pour chaque tournée, ROAD **résout le point** (§8.1), construit la **fonction de
-   coût** et **ordonne** les arrêts (ATSP).
-5. Le **livreur** suit **sa** tournée sur mobile ; chaque arrêt remonte un **résultat**
-   (livré / échec + motif) qui **referme la boucle** côté commande.
+1. Une commande livrée passe `ready` au scan du colisage ; elle porte son jour
+   et, depuis la conception v1, une **tranche d'une heure** demandée.
+2. Le contexte de livraison **lit** « ce qui part le jour J » par un port que le
+   commerce implémente — pas de flux poussé, pas de copie à amender (§8).
+3. Le matin, le responsable **compose** les tournées. `DayPlan` lui **propose**
+   une répartition sur les véhicules disponibles et un ordre des arrêts ; il
+   garde le dernier mot (conception v1, §3).
+4. Au dépôt, le chargement est une **réconciliation d'ensemble** (« ai-je
+   tout ? », conception v1, §4).
+5. Le livreur suit **sa** tournée. Le retrait réussi s'atteste dans `handover`
+   (le même chemin qu'au comptoir) ; l'échec se consigne ici, jamais dans
+   `OrderHandover` (§9).
+
+⚠️ **Tant qu'il n'y a qu'un véhicule, la journée EST la tournée** (conception
+v1, §3). Tout ce qui suit sur la répartition ne se bâtit qu'au deuxième.
 
 ## 2. Ce qui est facile vs ce qui est dur
 
 | Brique                                                                     | Difficulté      | Pourquoi                                                                                      |
 | -------------------------------------------------------------------------- | --------------- | --------------------------------------------------------------------------------------------- |
-| App dans la suite (shell iframe, Auth0 audience, backend+front)            | **Facile**      | Pattern déjà appliqué 3× (PIM, B2B admin, ops).                                               |
+| Bloc dans `lfd-api` + écran `/livraison` du back-office                    | **Facile**      | Même forme que `production` et `handover`. Pas de nouvelle app, pas d'audience.               |
 | Domaine `DeliveryJob` / `Vehicle` / `Driver` / agrégats `Tour` & `DayPlan` | **Moyen**       | **Pas** du CRUD : invariants forts (§6).                                                      |
-| Ingestion PROD→ROAD (flux idempotent + ACL + annulation/amendement)        | **Moyen**       | §8. La boucle de retour exige un changement B2B (§9).                                         |
+| Lecture du jour par un canal que le commerce implémente                    | **Petit**       | §8. Plus d'ingestion : même processus, même base, lecture à la demande.                       |
 | Répartir K véhicules + ordonner chaque tournée                             | **Moyen**       | Clustering sur les **coûts** (k-medoids) + ATSP par véhicule. Pas d'OR-Tools à cette échelle. |
 | Distances réelles                                                          | **Petit→Moyen** | Vol d'oiseau au MVP, OSRM self-host **sur hôte dédié** ensuite (§7, §11).                     |
 | Carte livreur                                                              | **Petit**       | Leaflet + tuiles OSM (gratuit).                                                               |
@@ -46,95 +70,102 @@ ne devient utile que pour des **fenêtres horaires** ou une **capacité** dures 
 
 ## 3. Périmètre
 
-**MVP**
+**MVP (un véhicule)**
 
-- Ingestion **flux** (idempotent : requested/amended/cancelled ; ACL → `DeliveryJob`).
-- CRUD `Vehicle` + `Driver` ; **disponibilité par jour** ; attribution manuelle **et**
-  répartition auto sur les véhicules disponibles.
-- `DayPlan(date)` : résolution du point (§8.1) + **coûts vol d'oiseau** + **répartition
-  k-medoids** + **ordonnancement ATSP** par tournée + **débordement** (spill) géré.
-- Vue livreur mobile : **sa** tournée (liste + carte Leaflet) + **livré / échec**
-  (file **offline** + sync).
-- Boucle de retour vers la commande (succès **et** échec — cf. §9).
+- Lecture de « ce qui part le jour J » par le canal du commerce (§8).
+- Réconciliation au chargement, retardataire compris (conception v1, §4).
+- Vue livreur : **sa** liste du jour (+ carte Leaflet) ; retrait attesté par
+  `handover`, échec consigné ici (§9).
+- Résolution du point (§8.1), pour la carte.
 
-**Plus tard (hors MVP)**
+**Au deuxième véhicule**
 
-- **OSRM Savoie** (distances routières réelles) en swap de la matrice **et** du
-  clustering (l'affectation en profite, pas que l'ordre).
-- **OR-Tools** _si_ fenêtres horaires / capacités deviennent contraignantes.
-- Live tracking, ETA client, preuve de livraison (photo/signature — **mise de côté**),
-  re-planification **en cours** de tournée.
+- `Vehicle` + `Driver` + **disponibilité par jour**.
+- `DayPlan(date)` : coûts vol d'oiseau + **proposition** de répartition
+  (k-medoids) + ordre ATSP par tournée + débordement. Le responsable valide ou
+  déplace.
+- Les **tranches demandées** affichées pendant la composition, et un véhicule
+  qui ne peut pas les tenir signalé (conception v1, §7).
+
+**Plus tard**
+
+- **OSRM Savoie** ou service managé (distances routières réelles).
+- **OR-Tools** _si_ fenêtres horaires / capacités deviennent contraignantes —
+  les tranches d'une heure en sont déjà une.
+- Live tracking, ETA client, re-planification **en cours** de tournée.
 
 ## 4. Flux de bout en bout
 
 ```mermaid
 sequenceDiagram
-    participant B2B as Backend B2B (orders)
-    participant ROAD as Backend ROAD
-    participant ACL as ACL ingestion
-    participant Day as DayPlan(date)
-    participant Plan as FleetPlanner + RouteOptimizer
+    participant Com as b2b/orders (commerce)
+    participant Liv as bloc livraison
+    participant Ho as handover
     actor Resp as Responsable
     actor Livreur
 
-    Note over B2B: commande « prête »<br/>DeliveryRequest(deliveryRequestId)
-    B2B->>ROAD: POST /delivery-requests (requested)<br/>idempotent: deliveryRequestId
-    ROAD->>ACL: traduire
-    ACL-->>ROAD: DeliveryJob (status=open)
-    opt Amendement / annulation (tant que non parti)
-        B2B->>ROAD: amended / cancelled (même deliveryRequestId)
-    end
-    Note over Day: le soir / bouton « planifier »
-    Resp->>Day: planifier le jour D (véhicules dispo)
-    Day->>Plan: jobs open de D + K véhicules + CostFn
-    Plan-->>Day: K tournées ordonnées + spill (débordement)
-    Day-->>ROAD: Tours matérialisés (jobs → scheduled)
-    ROAD->>Livreur: SA tournée (liste + carte)
-    Livreur->>ROAD: arrêt livré / échec (offline → sync)
-    ROAD->>ROAD: TourStop (agrégat Tour) possède l'état
-    ROAD->>B2B: DeliveryOutcome(deliveryRequestId, livré/échec+motif)<br/>idempotent
-    B2B->>B2B: fulfilled / delivery_failed → nouvelle DeliveryRequest un autre jour
+    Note over Com: commande livrée « ready »<br/>(scan du colisage)
+    Resp->>Liv: composer le jour D
+    Liv->>Com: ce qui part le jour D ? (port, lecture)
+    Com-->>Liv: commandes + adresse + tranche
+    Liv-->>Resp: proposition : K tournées ordonnées + débordement
+    Resp->>Liv: valide / déplace des arrêts
+    Livreur->>Liv: chargement : scan des feuilles 1..N
+    Liv-->>Livreur: il manque X (retardataire compris)
+    Livreur->>Ho: retrait attesté (même chemin qu'au comptoir)
+    Livreur->>Liv: échec + motif (jamais dans OrderHandover)
 ```
 
-## 5. Architecture (dans la suite)
+## 5. Architecture (dans le monorepo)
 
 ```mermaid
 flowchart TB
-    subgraph Shell["lfc-suite-shell (hôte)"]
-        ROADui[iframe ROAD<br/>+ vue livreur mobile]
+    subgraph BO["lfd-backoffice-frontend"]
+        UI["/livraison<br/>composition + vue livreur"]
     end
 
-    B2Bback[(Backend B2B<br/>orders)] -->|requested / amended / cancelled<br/>idempotent| ACL[ACL ingestion]
-
-    subgraph ROADback["Backend ROAD (NestJS + Prisma) — origine stateless"]
-        ACL --> Jobs[(delivery_jobs<br/>clé deliveryRequestId)]
-        Fleet[(vehicles / drivers<br/>+ dispo par jour)]
-        Day{{DayPlan date<br/>orchestrateur}}
-        Jobs --> Day
-        Fleet --> Day
-        Day --> Planner{{FleetPlanner<br/>k-medoids sur CostFn}}
-        Planner --> Opt{{RouteOptimizer<br/>ATSP par tournée}}
-        Cost{{DistanceMatrix<br/>CostFn par id}}
-        Cost -.-> Planner
-        Cost -.-> Opt
-        Opt --> Tours[(agrégat Tour<br/>tours + tour_stops)]
-        Dir{{Directions<br/>polyline}}
+    subgraph API["lfd-api — un processus, une base"]
+        subgraph B2B["b2b/orders"]
+            Impl["implémente<br/>le canal commerce"]
+        end
+        subgraph LIV["bloc livraison (nom à trancher)"]
+            Port["channels/commerce/<br/>ce qui part le jour J"]
+            Day{{DayPlan<br/>propose}}
+            Planner{{FleetPlanner<br/>k-medoids sur CostFn}}
+            Opt{{RouteOptimizer<br/>ATSP par tournée}}
+            Tours[(agrégat Tour<br/>schéma Postgres dédié)]
+            Port --> Day --> Planner --> Opt --> Tours
+        end
+        HO["handover<br/>le retrait, au comptoir<br/>comme à la porte"]
+        Impl -.->|implémente| Port
     end
 
-    Cost -.->|haversine → OSRM| OSRM[(OSRM Savoie<br/>hôte dédié stateful)]
-    Dir -.-> OSRM
-    Tours -->|DeliveryOutcome idempotent| B2Bback
-    ROADui --> ROADback
-    ROADback --> Geo[(Géocodeur + cache<br/>repli §8.1)]
+    UI --> API
+    Tours -.->|coûts| Geo[(Géocodeur + cache<br/>puis OSRM / HERE)]
 ```
+
+**Où ça vit** — repris de la conception v1, §9, **non tranché** :
+
+- le **retrait** (le geste) reste dans `handover/`, quel que soit
+  l'acheminement ;
+- la **logistique** est neuve et prend son bloc (la conception v1 l'appelle
+  `delivery/`). Il faut le déclarer dans `BLOCK_OF` de
+  `lint:context-boundaries`, sinon la porte échoue au premier commit ;
+- la flèche est **`b2b → livraison`** (le commerce implémente le canal), jamais
+  l'inverse — même forme que `production/channels/commerce/`, qui existe ;
+- `livraison → handover` : à autoriser, ou à remplacer par un port ;
+- son **schéma Postgres** est à choisir explicitement
+  (`lint:prisma-model-ownership`, `lint:prisma-schema-layout`), et aucune clé
+  étrangère ne le traverse.
 
 ## 6. Agrégats & invariants (ce n'est pas du CRUD)
 
-- **`DeliveryJob`** — la demande **ingérée** (via ACL, §8). Clé **`deliveryRequestId`**
-  (pas `sourceOrderId` : une commande a 0..N demandes). Adresse **snapshot** + point
-  résolu, `requestedDate`, résumé colis. Statut **grossier** :
-  `open` → `scheduled` → `departed` → `closed` | `cancelled`. **Il ne stocke jamais
-  l'état fin de livraison** (I1). Amendable/annulable **tant que non `departed`** (§8, N2).
+- **`DeliveryJob`** — l'arrêt **lu** par le canal commerce (§8), une commande à
+  une tentative donnée (clé : commande + numéro de tentative). Adresse + point
+  résolu, tranche demandée, résumé colis, **figés au départ**. Statut
+  **grossier** : `open` → `scheduled` → `departed` → `closed` | `cancelled`.
+  **Il ne stocke jamais l'état fin de livraison** (I1). Tant que non `departed`,
+  il suit la commande par relecture — plus d'amendement à recevoir.
 - **`Vehicle`** — plaque, dépôt, capacité _(mode capacité, §7/§8)_. **`Driver`** —
   identité + **disponibilité par jour** (véhicule affecté ce jour, ou absent).
 - **`DayPlan(date)`** _(orchestrateur)_ — rassemble les jobs `open` de la date,
@@ -319,40 +350,36 @@ l'unité de compte du Tour Planning. Réserve commune : en managé, les **adress
 clients partent chez un tiers** (HERE = **UE**, plus doux pour le RGPD que l'US) — le
 self-host OSRM/VROOM reste l'option « PII 100 % maison ».
 
-## 8. Contrat d'ingestion (flux) + ACL + idempotence
+## 8. Lire le jour, au lieu de l'ingérer
 
-DTO partagés (`@lfd/road-contract`, type-only côté front). L'adresse est **figée**
-(snapshot au push). Trois messages, tous **idempotents sur `deliveryRequestId`** :
+La note de 2026-08 poussait des messages `requested` / `amended` / `cancelled`,
+idempotents sur un `deliveryRequestId`, par un POST signé entre deux bases.
+**Tout ce mécanisme servait à franchir une frontière réseau qui n'existe
+plus.** Dans un seul processus, il reviendrait à maintenir une copie de la
+commande qu'il faudrait ensuite tenir à jour.
 
-```ts
-export interface DeliveryRequested {
-  deliveryRequestId: string;   // ← identité + clé d'idempotence (par tentative)
-  sourceOrderId: string;       // traçabilité (N..1)
-  orderNumber: string;
-  address: { ligne1: string; ligne2: string; codePostal: string; ville: string };
-  gps?: { lat: number; lng: number };      // point exact FACULTATIF (§8.1)
-  requestedDate: string;                    // AAAA-MM-JJ (J+1 des paniers récurrents)
-  parcel: { count: number; weightKg?: number }; // PAS les SKU (minimisation, ISP)
-}
-export interface DeliveryAmended { deliveryRequestId: string; address?: /*…*/; gps?: /*…*/; requestedDate?: string; }
-export interface DeliveryCancelled { deliveryRequestId: string; reason: string; }
-```
+À la place, un **canal** que le bloc livraison déclare et que le commerce
+implémente, comme `production/channels/commerce/` le fait déjà
+(`day-orders.reader.ts`, `pending-orders.reader.ts`) :
 
-- **Idempotence** : upsert/patch/annulation sur **`deliveryRequestId`**. Un retry réseau
-  ne crée **jamais** de doublon. _(Résout la contradiction clé-vs-ré-essai : la commande
-  peut avoir N demandes, chacune idempotente.)_
-- **Annulation / amendement** (N2) : `cancelled` ⇒ job → `cancelled` **tant qu'il n'est
-  pas `departed`** ; `amended` ⇒ met à jour le **snapshot** avant départ. Après départ,
-  refus + alerte responsable (le livreur est déjà parti).
-- **Résumé colis, pas les SKU** (N9) : ROAD n'a pas besoin du catalogue B2B pour router.
-  `parcel { count, weightKg }` suffit ; les SKU restent chez B2B.
-- **Capacité = mode** (N11) : si `Vehicle.capacityMode` est activé, `weightKg` **requis**
-  et validé à l'ingestion ; sinon best-effort, capacité ignorée. Pas de champ
-  « requis-sous-condition » flou.
-- **ACL** : mapper d'anti-corruption → **VO ROAD** `DeliveryJob` à la frontière. Un
-  changement de modèle B2B ne fuit pas dans ROAD.
-- **Transport** : POST backend→backend **signé** (comme le webhook Stripe), ou file.
-  Bases **séparées**.
+- **lecture à la demande** de ce qui part le jour J : référence, adresse livrée,
+  contact, tranche demandée, résumé colis. **Pas les SKU**, et **pas de
+  montant** — un livreur n'en voit pas plus qu'un opérateur de comptoir
+  (conception v1, §8) ;
+- **pas d'amendement ni d'annulation à propager** : tant que la tournée n'est
+  pas partie, on relit. Une commande annulée disparaît de la lecture suivante ;
+- **snapshot au départ** : quand la tournée part, elle fige ce qu'elle
+  transporte (adresse, point, tranche). Après départ, une correction côté
+  commerce ne la modifie plus — même règle que la note d'origine, sans le flux ;
+- ⚠️ **ne pas dupliquer le lecteur de file** : `handover-queue.reader.ts` rend
+  déjà toute la journée, livraisons comprises. La conception v1 (§8) demande
+  d'**étendre** ce port plutôt que d'en créer un jumeau ; le choix est à faire
+  à la conception du lot.
+
+L'identité d'un arrêt est la **commande** (+ un numéro de tentative, §9), plus
+un `deliveryRequestId` fabriqué par le commerce. Le §6 garde ce nom
+historique : `DeliveryJob` y désigne désormais l'arrêt lu, pas une demande
+ingérée.
 
 ### 8.1 Résolution du point : livreur > client > géocodage
 
@@ -374,26 +401,37 @@ Garde-fous : point **plausible** (bbox Savoie) ; OSRM **snappe** à la route ; p
 (N12) : l'adresse fige au push ; une correction B2B tardive passe par `amended` avant
 départ, sinon elle ne s'applique qu'à la **prochaine** demande.
 
-## 9. Boucle de retour (⚠ changement requis côté B2B)
+## 9. Retrait et échec
 
-L'échec **n'a nulle part où atterrir** dans le modèle B2B actuel (`OrderStatus` =
-draft/placed/confirmed/in_production/fulfilled/cancelled). **Prérequis** :
-
-- Côté B2B, un agrégat **`DeliveryAttempt`** rattaché à la commande : `deliveryRequestId`,
-  date, résultat (`delivered`/`failed`), motif, n° de tentative. La commande dérive
-  `fulfilled` (une tentative livrée) ou `delivery_failed` (échec en cours).
-- `DeliveryOutcome` (ROAD→B2B) **idempotent** sur `deliveryRequestId`.
-- Échec ⇒ B2B émet **une nouvelle `DeliveryRequest`** (nouveau `deliveryRequestId`) pour
-  un autre jour. _(Cohérent avec §8 : une commande = N demandes ; pas de collision de clé.)_
-
-Tant que ce prérequis n'est pas fait, le MVP ne referme **honnêtement** que le **succès**.
+- **Le retrait réussi** s'atteste par le chemin de `handover`, déjà commun au
+  comptoir et à la livraison. La tournée l'apprend, elle ne l'écrit pas. **Le
+  problème non résolu est en amont** : le code de retrait n'atteint pas la
+  personne qui réceptionne (conception v1, §2, trois sorties à trancher).
+- **L'échec** se consigne dans le bloc livraison, sur l'arrêt (`TourStop`
+  `failed` + motif). 🔴 Jamais dans `OrderHandover`, qui dit « le sac est parti,
+  voici qui l'atteste ».
+- **Ce que devient une livraison ratée reste ouvert** (conception v1, §6 et
+  question 4) : la file filtre sur la date demandée, figée à la passation et qui
+  a déjà alimenté un plan de production. La note de 2026-08 proposait un agrégat
+  `DeliveryAttempt` côté commerce et un statut `delivery_failed` ; `OrderStatus`
+  n'en a toujours pas (vérifié le 2026-09-29), et la conception v1 refuse d'y
+  mettre la logistique (« chargé » n'est pas un statut de commande). La
+  tentative vivrait donc plutôt dans le bloc livraison — à trancher avec la
+  question 4.
 
 ## 10. Identité & mur du livreur
 
-- **Principal `driver`** (audience Auth0 dédiée, ou rôle dans l'audience suite),
-  distinct du staff bureau.
-- **Mur** : un livreur ne lit/écrit **que sa** tournée du jour (`Tour.driverId ==
-principal`). Le responsable voit toute la flotte. Distinct de l'`AdminAuthGuard` B2B.
+- **Pas d'audience Auth0 dédiée** : le back-office n'a qu'une audience staff,
+  et les droits passent par les permissions staff (`staff/permissions/`).
+- 🔴 **Il n'existe pas de rôle livreur** : les cinq rôles sont `admin`,
+  `commercial`, `comptabilite`, `support`, `dev`. Donner le scan à un coursier
+  aujourd'hui revient à lui donner `commercial` (conception v1, §10).
+  Frontière de sécurité, donc `vitruve` d'office.
+- **Mur** : un livreur ne lit et n'écrit que **sa** tournée du jour ; le
+  responsable voit toute la flotte.
+- **Appareil** : la vue livreur tourne sur un téléphone, dehors. La règle de
+  topologie découpe le front « par audience × appareil » : rester une route du
+  back-office ou devenir un front à part est une question ouverte.
 
 ## 11. Dépendances externes à trancher
 
@@ -406,25 +444,28 @@ principal`). Le responsable voit toute la flotte. Distinct de l'`AdminAuthGuard`
 3. **Répartition/ordre** _(décidé, si solveur maison)_ : **k-medoids (coûts) + ATSP
    (NN+Or-opt+2-opt)** ; sinon VRP managé (HERE Tour Planning / ORS-VROOM) remplace les
    deux ports. OR-Tools seulement si fenêtres/capacités dures et solveur maison.
-4. **Rétention / PII** _(à trancher)_ : ROAD recopie adresses + GPS clients → durée de
-   conservation + **effacement coordonné** avec B2B (cascade d'erasure SH3PHERD). Un
-   `cancelled`/`closed` déclenche la purge du snapshot après délai.
+4. **Rétention / PII** _(à trancher)_ : la tournée fige adresses + points au
+   départ → durée de conservation, et effacement à brancher sur la suppression
+   de compte du commerce. Même base, mais pas de clé étrangère entre schémas :
+   l'effacement ne cascade pas tout seul.
 
 ## 12. Découpage en slices
 
-| Slice  | Contenu                                                                                                                                                                                                   | Résultat                                                           |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| **1**  | Scaffolder ROAD (backend+front+iframe), **auth livreur** (§10), agrégat `DeliveryJob` (clé `deliveryRequestId`), **ingestion flux ACL** (requested/amended/cancelled, idempotents), listing d'attribution | Les demandes arrivent, sans doublon, amendables/annulables, murées |
-| **2**  | `Vehicle`/`Driver` + **dispo par jour**, résolution du point (§8.1) + cache, attribution manuelle                                                                                                         | Adresses situées, attribution à la main                            |
-| **3**  | `HaversineDistanceMatrix` (`CostFn`), **`DayPlan`**, `KMedoidsFleetPlanner` (+ spill), `AtspRouteOptimizer`, vue livreur mobile (Leaflet), **livré/échec offline + sync** (respecte I4/I6)                | K tournées ordonnées, boucle **succès** fermée                     |
-| **3b** | **Changement B2B** : agrégat `DeliveryAttempt` + `delivery_failed` (§9), `DeliveryOutcome` idempotent, ré-émission d'une nouvelle `DeliveryRequest`                                                       | Boucle **échec** fermée honnêtement                                |
-| **4+** | Swap `OsrmDistanceMatrix` + `OsrmDirections` (hôte dédié) — l'affectation gagne aussi ; live tracking ; preuve de livraison ; **OR-Tools si** fenêtres/capacités                                          | Optimisation « pro »                                               |
+| Slice  | Contenu                                                                                                                                                                        | Résultat                                              |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| **0**  | Trancher : comment le code atteint la porte, le rôle livreur, le nombre de véhicules, le sort d'une livraison ratée (conception v1, §12, questions 1 à 4)                      | Rien ne se dessine avant                              |
+| **1**  | Bloc déclaré (porte, schéma), canal commerce (§8), écran `/livraison` : ce qui part aujourd'hui, réconciliation au chargement, retardataire compris                            | La journée est la tournée, rien n'est oublié au dépôt |
+| **2**  | Vue livreur mobile : liste + carte, retrait par `handover`, échec consigné ici, hors-ligne                                                                                     | La boucle se ferme à la porte                         |
+| **3**  | Au deuxième véhicule : `Vehicle`/`Driver` + dispo, `DayPlan` qui **propose**, `KMedoidsFleetPlanner` (+ débordement), `AtspRouteOptimizer`, tranches visibles à la composition | K tournées composées par un humain                    |
+| **4+** | OSRM ou service managé, OR-Tools si les tranches deviennent dures, live tracking                                                                                               | Optimisation « pro »                                  |
 
 ## 13. Hypothèses & non-buts
 
 - **Hypothèses** : ATSP (coûts asymétriques) ; tournée = aller-retour dépôt ; fenêtres
-  horaires **ignorées** hors OR-Tools ; capacité = **mode** explicite (poids requis si
-  activé) ; **snapshot** d'adresse figé au push (correction via `amended` avant départ) ;
+  horaires **ignorées** hors OR-Tools — ⚠️ à revoir : la conception v1 rend la tranche
+  d'une heure **obligatoire et demandée**, donc c'est une promesse, pas un souhait ;
+  capacité = **mode** explicite (poids requis si activé) ; **snapshot** d'adresse figé au
+  **départ** de la tournée (relecture avant) ;
   **K véhicules variable** = disponibles du jour, débordement = `spill`.
 - **Cohérence des sync offline** : la remontée `livré/échec` respecte **I4** (arrêt
   exécuté immuable) et **I6** (tour parti gelé) — pas de last-write-wins qui ressuscite
@@ -434,8 +475,8 @@ principal`). Le responsable voit toute la flotte. Distinct de l'`AdminAuthGuard`
 
 ## 14. Liens
 
-- Déclencheur côté commande : [flux commande & PROD](../order/architecture-flux-commande-prod.md),
-  [zéro friction](../order/architecture-flux-commande-zero-friction.md).
-- Intégration suite / iframe : [scaling gateway](../suite/architecture-suite-gateway-scaling.md).
-- Paniers récurrents (produisent des livraisons J+1) : contexte `subscriptions`
-  (le planificateur alimentera aussi ROAD à terme).
+- [Conception du retrait en livraison](conception-retrait-en-livraison.md) — le geste, le chargement, les huit questions ouvertes.
+- [Cycle de vie d'une commande](../order/architecture-cycle-de-vie-commande.md) — le statut `ready`.
+- [Topologie des apps](../suite/architecture-topologie-apps.md) — pourquoi il n'y a plus de suite.
+- [Créneaux de retrait](../order/plan-creneaux-de-retrait.md) — la découpe horaire que la tranche de livraison copie.
+- Paniers récurrents (produisent des livraisons J+1) : contexte `b2b/subscriptions`.
