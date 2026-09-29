@@ -512,19 +512,15 @@ les relit **ensemble**, au même moment : pas de jointure entre deux instants.
 `journal-tracked` accepte **un** fait (`.stop_moved`) pour l'écriture de deux
 tournées.
 
-#### Ce qui reste à Hugo — avant la migration
+#### Les décisions de Hugo — ✅ tranchées le 2026-09-29
 
-- **Q11** — Une commande annulée, ou qui n'est plus de ce jour, reste signalée
-  dans sa tournée : on la **retire à la main** (recommandé : le geste se voit
-  et se journalise), ou le départ (lot 4) la sort seul ? ⚠️ Tant qu'elle n'est
-  pas retirée, l'index (C12) l'empêche d'être répartie ailleurs : c'est voulu,
-  c'est ce qui interdit de la charger deux fois.
-- **Q12** — **Qui compose ?** `admin` seul en écriture, ou le comptoir aussi ?
-  Les attributions sont semées dans la migration du droit : une réponse
-  tardive coûte une migration de plus.
-- **Q13** — Deux tournées pour un même véhicule dans la journée : la
-  conception le **permet** (numéro de passage). Confirmer que c'est utile, ou
-  on le garde fermé à un passage par véhicule, sans rien retirer au schéma.
+- **Q11 — à la main.** Une commande annulée, ou qui n'est plus de ce jour,
+  reste signalée dans sa tournée jusqu'à ce qu'on l'en retire. Tant qu'elle
+  n'est pas retirée, l'index (C12) l'empêche d'être répartie ailleurs.
+- **Q12 — le comptoir compose aussi.** `delivery_rounds` : lecture et
+  écriture pour `admin` et `comptoir`.
+- **Q13 — oui.** Un véhicule peut faire plusieurs tournées dans la journée
+  (numéro de passage, unique par `(service_day, vehicle_id, passage)`).
 
 ### Lot 4 — Le chargement, véhicule par véhicule
 
