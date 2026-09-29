@@ -78,7 +78,11 @@ describe('renderPrivacyPage', () => {
   it('rend 503 pour un document sans paragraphe : une politique vide n’est pas une politique', () => {
     const page = renderPrivacyPage(view([]));
 
-    expect(page).toEqual(privacyPageUnavailable());
+    expect(page.status).toBe(503);
+    expect(page.html).toBe(privacyPageUnavailable().html);
+    expect(page.warnings).toContain(
+      'Politique de confidentialité sans aucun paragraphe : page servie en 503.',
+    );
   });
 
   it.each([

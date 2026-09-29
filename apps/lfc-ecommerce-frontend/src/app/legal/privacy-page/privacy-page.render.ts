@@ -9,17 +9,35 @@
  *
  * ⚠️ Ce fichier vit sous `src/` pour être éprouvé par `ng test`, mais aucune
  * page Angular ne l'importe : il n'entre donc pas dans le bundle de la boutique.
- * Il n'importe rien, et surtout pas `@lfd/contracts` en valeur — ce serait zod.
+ * Il n'importe du contrat QUE l'entrée sans zod (`content-values`) — le baril
+ * tirerait zod dans la Function.
+ *
+ * **L'ancre de la section requise** (plan §4.2, §4.5 S6) : le paragraphe qui
+ * porte `section: "dataDeletion"` prend `id="suppression-des-donnees"`, dérivé
+ * de la clé par le contrat — c'est l'URL donnée à Meta. Les autres gardent leur
+ * ULID.
  *
  * **Rien de ce qui vient du back-office n'est interprété** : titre, titres de
  * paragraphe, corps et identifiants sont échappés. Le corps garde ses retours à
  * la ligne par `white-space: pre-line`, pas par un `<br>` fabriqué.
  */
 
-/** Ce que la Function renvoie : un statut et une page, toujours lisible. */
+import {
+  legalSectionKeys,
+  requiredSections,
+  sectionAnchor,
+  type LegalSectionKey,
+} from '@lfd/contracts/content-values';
+
+/**
+ * Ce que la Function renvoie : un statut, une page toujours lisible, et ce
+ * qu'elle doit JOURNALISER (§4.5, S5) — la fonction reste pure, c'est
+ * l'adaptateur qui écrit dans les journaux Pages.
+ */
 export interface PrivacyPage {
   readonly status: 200 | 503;
   readonly html: string;
+  readonly warnings: readonly string[];
 }
 
 /** Ce que la page lit du document — le sous-ensemble français de `LegalDocumentView`. */
@@ -27,6 +45,13 @@ interface PrivacyParagraph {
   readonly id: string;
   readonly title: string;
   readonly body: string;
+  readonly section: LegalSectionKey | undefined;
+}
+
+/** La lecture d'un document : ce qui s'affiche, et ce qui a été écarté. */
+interface PrivacyReading {
+  readonly document: PrivacyDocument | undefined;
+  readonly warnings: readonly string[];
 }
 
 interface PrivacyDocument {
@@ -78,26 +103,57 @@ export function formatParisDate(instant: Date): string {
  * **503** : une politique vide servie en 200 serait prise pour la politique.
  */
 export function renderPrivacyPage(payload: unknown): PrivacyPage {
-  const document = readPrivacyDocument(payload);
+  const { document, warnings } = readPrivacyDocument(payload);
   if (document === undefined || document.paragraphs.length === 0) {
-    return privacyPageUnavailable();
+    return { ...privacyPageUnavailable(), warnings: [...warnings, ...emptyWarning(document)] };
   }
   const sections = document.paragraphs.map(
     (paragraph) =>
-      `<section><h2 id="${escapeHtml(paragraph.id)}">${escapeHtml(paragraph.title)}</h2>` +
+      `<section><h2 id="${escapeHtml(anchorOf(paragraph))}">${escapeHtml(paragraph.title)}</h2>` +
       `<p class="body">${escapeHtml(paragraph.body)}</p></section>`,
   );
   const main =
     `<h1>${escapeHtml(document.title)}</h1>` +
     `<p class="updated">Dernière mise à jour : ${escapeHtml(formatParisDate(document.updatedAt))}</p>` +
     sections.join('');
-  return { status: 200, html: page(document.title, main) };
+  return {
+    status: 200,
+    html: page(document.title, main),
+    warnings: missingSectionWarnings(document),
+  };
+}
+
+/** L'ancre publique : dérivée de la clé de section s'il y en a une, l'ULID sinon. */
+function anchorOf(paragraph: PrivacyParagraph): string {
+  return paragraph.section === undefined ? paragraph.id : sectionAnchor(paragraph.section);
+}
+
+/**
+ * Une section exigée par la politique et absente : le lien donné à Meta ne
+ * mène nulle part (§4.4). La page se sert quand même — c'est la politique —,
+ * mais les journaux le disent.
+ */
+function missingSectionWarnings(document: PrivacyDocument): string[] {
+  return requiredSections('privacy')
+    .filter((key) => !document.paragraphs.some((paragraph) => paragraph.section === key))
+    .map(
+      (key) =>
+        `Politique de confidentialité sans sa section requise « ${key} » : ` +
+        `l'ancre #${sectionAnchor(key)} ne mène nulle part. Créez-la au back-office.`,
+    );
+}
+
+function emptyWarning(document: PrivacyDocument | undefined): string[] {
+  return document === undefined
+    ? []
+    : ['Politique de confidentialité sans aucun paragraphe : page servie en 503.'];
 }
 
 /** La page de l'API injoignable ou en échec : 503, et une phrase qu'on comprend. */
 export function privacyPageUnavailable(): PrivacyPage {
   return {
     status: 503,
+    warnings: [],
     html: page(UNAVAILABLE_TITLE, `<h1>${UNAVAILABLE_TITLE}</h1><p>${UNAVAILABLE_MESSAGE}</p>`),
   };
 }
@@ -115,27 +171,36 @@ function page(title: string, main: string): string {
  * Lit la réponse sans zod. Ne vérifie QUE ce que la page affiche — le reste du
  * contrat n'est pas son affaire, et le resserrer ferait tomber la page pour un
  * champ qu'elle ne lit pas.
+ *
+ * Un paragraphe illisible fait tomber la page ENTIÈRE en 503 — servir une
+ * politique amputée d'une clause serait pire que ne rien servir —, et il est
+ * nommé dans les avertissements (§4.5, S5) : sans quoi le 503 ne dirait pas
+ * lequel corriger.
  */
-function readPrivacyDocument(payload: unknown): PrivacyDocument | undefined {
+function readPrivacyDocument(payload: unknown): PrivacyReading {
   if (!isRecord(payload) || !isRecord(payload['content'])) {
-    return undefined;
+    return { document: undefined, warnings: ['Réponse de l’API illisible : page servie en 503.'] };
   }
   const content = payload['content'];
   const title = isRecord(content['title']) ? nonEmptyText(content['title']['fr']) : undefined;
   const updatedAt = readInstant(payload['updatedAt']);
   const rawParagraphs = content['paragraphs'];
   if (title === undefined || updatedAt === undefined || !Array.isArray(rawParagraphs)) {
-    return undefined;
+    return { document: undefined, warnings: ['Document illisible : page servie en 503.'] };
   }
-  const paragraphs: PrivacyParagraph[] = [];
-  for (const raw of rawParagraphs) {
-    const paragraph = readParagraph(raw);
-    if (paragraph === undefined) {
-      return undefined;
-    }
-    paragraphs.push(paragraph);
+  const paragraphs = rawParagraphs.map(readParagraph);
+  const discarded = paragraphs.flatMap((paragraph, index) =>
+    paragraph === undefined
+      ? [`Paragraphe n°${index + 1} écarté (titre, corps ou identifiant français manquant).`]
+      : [],
+  );
+  if (discarded.length > 0) {
+    return { document: undefined, warnings: [...discarded, 'Page servie en 503.'] };
   }
-  return { title, paragraphs, updatedAt };
+  return {
+    document: { title, paragraphs: paragraphs.filter(isDefined), updatedAt },
+    warnings: [],
+  };
 }
 
 function readParagraph(raw: unknown): PrivacyParagraph | undefined {
@@ -148,7 +213,16 @@ function readParagraph(raw: unknown): PrivacyParagraph | undefined {
   if (id === undefined || title === undefined || body === undefined) {
     return undefined;
   }
-  return { id, title, body };
+  return { id, title, body, section: readSection(raw['section']) };
+}
+
+/** Une clé hors vocabulaire se lit comme une absence : le paragraphe garde son ULID. */
+function readSection(value: unknown): LegalSectionKey | undefined {
+  return legalSectionKeys.find((key) => key === value);
+}
+
+function isDefined<T>(value: T | undefined): value is T {
+  return value !== undefined;
 }
 
 function readInstant(value: unknown): Date | undefined {

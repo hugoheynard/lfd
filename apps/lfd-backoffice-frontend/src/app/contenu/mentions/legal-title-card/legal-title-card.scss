@@ -1,0 +1,11 @@
+/* Le titre et son bouton sur une ligne : le bouton s'aligne sur la BOÎTE et non
+   sur le bloc — sans quoi il se centre sur l'étiquette. */
+.title-row {
+  display: flex;
+  align-items: end;
+  gap: var(--fold-space-sm);
+}
+
+.title-row fold-input {
+  flex: 1;
+}

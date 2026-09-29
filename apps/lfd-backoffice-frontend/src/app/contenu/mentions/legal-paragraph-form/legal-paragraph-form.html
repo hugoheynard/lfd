@@ -1,0 +1,24 @@
+<div class="languages">
+  @for (field of fields(); track field.code) {
+    <fold-fieldset [legend]="field.name">
+      <fold-input
+        label="Titre de l’article"
+        [value]="field.prose.title"
+        (valueChange)="set(field.code, 'title', $event)"
+      />
+      <fold-textarea
+        label="Corps"
+        [rows]="6"
+        [value]="field.prose.body"
+        (valueChange)="set(field.code, 'body', $event)"
+      />
+    </fold-fieldset>
+  }
+</div>
+<div class="actions">
+  <span class="status">{{ status() }}</span>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancelled.emit()">Annuler</button>
+  <button foldButton [disabled]="!complete()" [loading]="busy()" (click)="submit()">
+    {{ submitLabel() }}
+  </button>
+</div>

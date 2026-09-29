@@ -8,6 +8,7 @@ import type {
   LegalDocumentParagraphPayload,
   LegalDocumentView,
   LegalMention,
+  LegalSectionKey,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -74,11 +75,20 @@ export class PlatformContentService {
    *
    * ⚠️ Rend `void`, comme toutes les écritures d'un document : une commande ne
    * rend pas de modèle de lecture. L'écran RELIT derrière, plutôt que de
-   * recoudre une vue de son côté — c'est la seule façon qu'il voie aussi ce
-   * qu'un autre rédacteur a enregistré entre-temps.
+   * recoudre une vue de son côté.
+   *
+   * Toutes les écritures portent `expectedRevision`, la révision LUE : le
+   * serveur refuse (409 `legal_document.revision.stale`) si quelqu'un a
+   * enregistré entre-temps, au lieu de réécrire le document sans son geste.
    */
-  async renameLegalDocument(mention: LegalMention, title: LegalDocumentHeading): Promise<void> {
-    await firstValueFrom(this.http.put<void>(`${legalBase(mention)}/title`, title));
+  async renameLegalDocument(
+    mention: LegalMention,
+    title: LegalDocumentHeading,
+    expectedRevision: number,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${legalBase(mention)}/title`, { ...title, expectedRevision }),
+    );
   }
 
   /** Ajoute un article, dans les trois langues. Rend son identifiant — le seul
@@ -86,25 +96,62 @@ export class PlatformContentService {
   async addLegalParagraph(
     mention: LegalMention,
     payload: LegalDocumentParagraphPayload,
+    expectedRevision: number,
   ): Promise<LegalDocumentParagraphCreated> {
     return firstValueFrom(
-      this.http.post<LegalDocumentParagraphCreated>(`${legalBase(mention)}/paragraphs`, payload),
+      this.http.post<LegalDocumentParagraphCreated>(`${legalBase(mention)}/paragraphs`, {
+        ...payload,
+        expectedRevision,
+      }),
+    );
+  }
+
+  /**
+   * Crée une **section requise** (la suppression des données de la politique
+   * de confidentialité) avec le texte saisi par le rédacteur — le serveur n'en
+   * pose aucun de départ. Seule route qui pose une clé de section.
+   */
+  async addLegalRequiredSection(
+    mention: LegalMention,
+    section: LegalSectionKey,
+    payload: LegalDocumentParagraphPayload,
+    expectedRevision: number,
+  ): Promise<LegalDocumentParagraphCreated> {
+    return firstValueFrom(
+      this.http.post<LegalDocumentParagraphCreated>(`${legalBase(mention)}/sections`, {
+        ...payload,
+        section,
+        expectedRevision,
+      }),
     );
   }
 
   /** Réécrit un article ENTIER — les trois langues, celles qu'on ne touche pas
-   *  comprises : la route remplace la charge utile, elle ne la rapièce pas. */
+   *  comprises : la route remplace la charge utile, elle ne la rapièce pas. La
+   *  clé de section, elle, n'y figure pas : le serveur la garde. */
   async editLegalParagraph(
     mention: LegalMention,
     paragraphId: string,
     payload: LegalDocumentParagraphPayload,
+    expectedRevision: number,
   ): Promise<void> {
-    await firstValueFrom(this.http.put<void>(paragraphPath(mention, paragraphId), payload));
+    await firstValueFrom(
+      this.http.put<void>(paragraphPath(mention, paragraphId), { ...payload, expectedRevision }),
+    );
   }
 
-  /** Retire un article du document. */
-  async removeLegalParagraph(mention: LegalMention, paragraphId: string): Promise<void> {
-    await firstValueFrom(this.http.delete<void>(paragraphPath(mention, paragraphId)));
+  /** Retire un article du document. La route `DELETE` n'a pas de corps : la
+   *  révision lue voyage en chaîne de requête. */
+  async removeLegalParagraph(
+    mention: LegalMention,
+    paragraphId: string,
+    expectedRevision: number,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(paragraphPath(mention, paragraphId), {
+        params: { expectedRevision },
+      }),
+    );
   }
 
   /** Déplace un article au rang demandé, compté à partir de zéro. */
@@ -112,9 +159,13 @@ export class PlatformContentService {
     mention: LegalMention,
     paragraphId: string,
     position: number,
+    expectedRevision: number,
   ): Promise<void> {
     await firstValueFrom(
-      this.http.put<void>(`${paragraphPath(mention, paragraphId)}/position`, { position }),
+      this.http.put<void>(`${paragraphPath(mention, paragraphId)}/position`, {
+        position,
+        expectedRevision,
+      }),
     );
   }
 }

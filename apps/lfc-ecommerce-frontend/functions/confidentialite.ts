@@ -33,6 +33,11 @@ const FAILURE_CACHE_CONTROL = 'no-store';
 
 export async function onRequestGet(): Promise<Response> {
   const page = await loadPrivacyPage();
+  // Lu dans les journaux Pages (plan §4.5, S5) : une section requise absente
+  // ou un paragraphe écarté ne doit pas rester invisible derrière la page.
+  for (const warning of page.warnings) {
+    console.warn(`[confidentialite] ${warning}`);
+  }
   return new Response(page.html, {
     status: page.status,
     headers: {

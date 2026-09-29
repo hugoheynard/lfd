@@ -6,6 +6,11 @@ export class MoveLegalDocumentParagraphCommand {
     readonly mention: LegalMention,
     readonly paragraphId: string,
     readonly position: number,
+    /**
+     * La révision que l'écran a lue : l'écriture lui est conditionnée (B2).
+     * `undefined` = pas de contrôle, le temps que le back-office l'envoie.
+     */
+    readonly expectedRevision: number | undefined,
     readonly staffUserId: string,
   ) {}
 }

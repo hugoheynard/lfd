@@ -1,0 +1,35 @@
+/* Les gestes d'un article, serrés : ils vivent dans l'en-tête de la carte et
+   n'ont pas à peser autant que son titre. */
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+/* Le badge et l'ancre publique sur une ligne : l'ancre est ce qu'on donne à
+   Meta, elle se lit en petit sous le badge qui dit pourquoi. */
+.section {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+.anchor {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+/* Les retours à la ligne du rédacteur sont du contenu, pas de la mise en forme. */
+.article-body {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--fold-color-text-muted);
+  line-height: var(--fold-leading-relaxed);
+}

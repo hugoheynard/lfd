@@ -1,0 +1,25 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* LES TROIS LANGUES CÔTE À CÔTE tant que l'écran le permet : c'est la forme du
+   formulaire qui dit qu'on les écrit ensemble. */
+.languages {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--fold-space-md);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+.status {
+  flex: 1;
+  color: var(--fold-color-text-muted);
+}

@@ -28,7 +28,7 @@ function document(...ids: readonly string[]): LegalDocument {
     title: HEADING,
     paragraphs: ids.map((id) => ({ id, ...prose(id) })),
   };
-  return LegalDocument.reconstitute(content);
+  return LegalDocument.reconstitute("salesTerms", content, 1);
 }
 
 const order = (subject: LegalDocument): string[] =>
@@ -164,7 +164,7 @@ describe("le cliché", () => {
       title: HEADING,
       paragraphs: [{ id: "a", ...prose("a") }],
     };
-    const subject = LegalDocument.reconstitute(content);
+    const subject = LegalDocument.reconstitute("salesTerms", content, 1);
 
     content.paragraphs.push({ id: "intrus", ...prose("intrus") });
     subject.snapshot().paragraphs.push({ id: "autre-intrus", ...prose("x") });

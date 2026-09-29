@@ -13,6 +13,10 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { LegalDocument } from "../domain/entities/legal-document.js";
+import {
+  LegalDocumentChangedError,
+  UnreadableLegalDocumentError,
+} from "../domain/errors/legal-document-errors.js";
 import { PlatformContentRepository } from "../domain/platform-content.repository.js";
 
 /** La clé du bloc. Une constante et pas une chaîne en ligne : elle est un identifiant. */
@@ -115,10 +119,10 @@ export class PrismaPlatformContentRepository extends PlatformContentRepository {
   }
 
   /**
-   * Charge l'agrégat d'une mention.
+   * Charge l'agrégat d'une mention, pour ÉCRIRE.
    *
    * Un document jamais enregistré se charge tel que la lecture le rend : le
-   * titre de départ, et aucun article.
+   * titre de départ, aucun article, révision 0.
    *
    * ⚠️ **Ce repli doit rester le MÊME que celui de {@link readLegalDocument}.**
    * Ils ont divergé le temps d'une écriture — affichage sur la démonstration,
@@ -127,17 +131,40 @@ export class PrismaPlatformContentRepository extends PlatformContentRepository {
    * supprimer, parce qu'ils n'avaient jamais existé (corrigé le 2026-09-13).
    * `DEFAULT_LEGAL_DOCUMENT` ne porte donc aucun article, et la démonstration
    * n'entre en base que par le semis.
+   *
+   * 🔴 En revanche, une ligne ILLISIBLE ne retombe pas sur ce repli ici, à la
+   * différence de la lecture (plan `legal/plan-page-confidentialite.md` §4.5,
+   * B3) : on réécrirait le document de production vide. Refus, rien n'est écrit.
    */
-  async loadLegalDocument(mention: LegalMention): Promise<LegalDocument> {
+  async loadLegalDocument(
+    mention: LegalMention,
+    expectedRevision: number | undefined,
+  ): Promise<LegalDocument> {
     const row = await this.prisma.platformContent.findUnique({
       where: { key: LEGAL_DOCUMENT_KEYS[mention] },
     });
-    if (row === null) {
-      return LegalDocument.reconstitute(DEFAULT_LEGAL_DOCUMENT(mention));
+    const content =
+      row === null ? DEFAULT_LEGAL_DOCUMENT(mention) : this.parseForWrite(mention, row.content);
+    if (expectedRevision === undefined) {
+      // Transition : aucune révision annoncée, écriture non conditionnée.
+      return LegalDocument.reconstitute(mention, content, null);
     }
-    return LegalDocument.reconstitute(this.parseLegalDocument(mention, row.content));
+    const revision = row?.revision ?? 0;
+    if (revision !== expectedRevision) {
+      throw new LegalDocumentChangedError(expectedRevision, content.title.fr);
+    }
+    return LegalDocument.reconstitute(mention, content, revision);
   }
 
+  /**
+   * Enregistre, conditionné à la révision chargée — un seul ordre SQL par cas.
+   *
+   * - révision 0 : le document n'existait pas. `createMany` + `skipDuplicates`
+   *   n'insère rien si un collègue l'a créé entre-temps (`count` 0 → refus).
+   * - sinon : `updateMany` sur `revision = chargée`. Deux enregistrements
+   *   concurrents sur la même révision : Postgres sérialise, le second relit la
+   *   ligne à jour et ne touche rien (`count` 0 → refus).
+   */
   async saveLegalDocument(
     mention: LegalMention,
     document: LegalDocument,
@@ -145,16 +172,25 @@ export class PrismaPlatformContentRepository extends PlatformContentRepository {
   ): Promise<void> {
     const key = LEGAL_DOCUMENT_KEYS[mention];
     const content = document.snapshot();
-    await this.prisma.platformContent.upsert({
-      where: { key },
-      create: { key, content, revision: 1, updatedBy: staffUserId },
-      update: {
-        content,
-        // Comme le pied de page : la révision date un GESTE, pas un contenu.
-        revision: { increment: 1 },
-        updatedBy: staffUserId,
-      },
-    });
+    const expected = document.revision;
+    if (expected === null) {
+      await this.upsertUnconditioned(key, content, staffUserId);
+      return;
+    }
+    const written =
+      expected === 0
+        ? await this.prisma.platformContent.createMany({
+            data: [{ key, content, revision: 1, updatedBy: staffUserId }],
+            skipDuplicates: true,
+          })
+        : await this.prisma.platformContent.updateMany({
+            where: { key, revision: expected },
+            // Comme le pied de page : la révision date un GESTE, pas un contenu.
+            data: { content, revision: expected + 1, updatedBy: staffUserId },
+          });
+    if (written.count === 0) {
+      throw new LegalDocumentChangedError(expected, content.title.fr);
+    }
   }
 
   /**
@@ -194,5 +230,30 @@ export class PrismaPlatformContentRepository extends PlatformContentRepository {
       `Contenu « ${LEGAL_DOCUMENT_KEYS[mention]} » illisible en base, repli sur le contenu de départ : ${parsed.error.message}`,
     );
     return DEFAULT_LEGAL_DOCUMENT(mention);
+  }
+
+  /**
+   * L'écriture d'AVANT la révision attendue, gardée le temps que le
+   * back-office en ligne l'envoie (2026-09-29). À retirer au resserrement.
+   */
+  private async upsertUnconditioned(
+    key: string,
+    content: LegalDocumentContent,
+    staffUserId: string,
+  ): Promise<void> {
+    await this.prisma.platformContent.upsert({
+      where: { key },
+      create: { key, content, revision: 1, updatedBy: staffUserId },
+      update: { content, revision: { increment: 1 }, updatedBy: staffUserId },
+    });
+  }
+
+  /** La relecture pour ÉCRIRE : même schéma, mais un refus là où la lecture se replie. */
+  private parseForWrite(mention: LegalMention, raw: unknown): LegalDocumentContent {
+    const parsed = legalDocumentSchema.safeParse(raw);
+    if (!parsed.success) {
+      throw new UnreadableLegalDocumentError(LEGAL_DOCUMENT_KEYS[mention], parsed.error.message);
+    }
+    return parsed.data;
   }
 }

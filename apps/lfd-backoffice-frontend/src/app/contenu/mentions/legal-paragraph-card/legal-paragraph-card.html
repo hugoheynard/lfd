@@ -1,0 +1,70 @@
+<fold-card>
+  <fold-element-title variant="title" [title]="heading()">
+    <div titleAction class="row-actions">
+      <fold-button-icon
+        icon="chevron-up"
+        size="sm"
+        tooltip="Monter d’un rang"
+        [disabled]="first() || busy()"
+        (clicked)="moved.emit(index() - 1)"
+      />
+      <fold-button-icon
+        icon="chevron-down"
+        size="sm"
+        tooltip="Descendre d’un rang"
+        [disabled]="last() || busy()"
+        (clicked)="moved.emit(index() + 1)"
+      />
+      <fold-button-icon
+        icon="edit"
+        size="sm"
+        tooltip="Modifier cet article"
+        [disabled]="busy()"
+        (clicked)="startEdit()"
+      />
+      <!-- Une section requise ne se supprime pas : le serveur le refuserait. La
+           suppression des autres est gardée SUR PLACE. -->
+      @if (section() === null) {
+        <fold-inline-confirm
+          message="L’article part des trois langues à la fois."
+          [loading]="busy()"
+          (confirmed)="removed.emit()"
+        >
+          <fold-button-icon icon="bin" size="sm" tone="critical" tooltip="Supprimer" />
+        </fold-inline-confirm>
+      }
+    </div>
+  </fold-element-title>
+
+  @if (section(); as required) {
+    <div class="section">
+      <fold-badge variant="warning" [content]="required.label" />
+      <code class="anchor">{{ required.anchor }}</code>
+    </div>
+    <fold-callout variant="info" data-section-reason>{{ required.reason }}</fold-callout>
+  }
+
+  @if (editing()) {
+    <fold-input
+      label="Titre de l’article"
+      [value]="draft().title"
+      (valueChange)="setDraft('title', $event)"
+    />
+    <fold-textarea
+      label="Corps"
+      [rows]="8"
+      [value]="draft().body"
+      (valueChange)="setDraft('body', $event)"
+    />
+    <div class="actions">
+      <button foldButton emphasis="outline" intent="neutral" (click)="editCancelled.emit()">
+        Annuler
+      </button>
+      <button foldButton [disabled]="!complete()" [loading]="busy()" (click)="save()">
+        Enregistrer cette langue
+      </button>
+    </div>
+  } @else {
+    <p class="article-body">{{ prose().body }}</p>
+  }
+</fold-card>

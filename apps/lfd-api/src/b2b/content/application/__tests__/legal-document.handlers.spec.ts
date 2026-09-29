@@ -1,21 +1,11 @@
-import {
-  DEFAULT_FOOTER_CONTENT,
-  DEFAULT_LEGAL_DOCUMENT,
-  type FooterContent,
-  type FooterContentView,
-  type LegalDocument as LegalDocumentContent,
-  type LegalDocumentParagraphPayload,
-  type LegalDocumentView,
-  type LegalMention,
-} from "@lfd/contracts";
+import { DEFAULT_LEGAL_DOCUMENT, type LegalMention } from "@lfd/contracts";
 
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
-import { LegalDocument } from "../../domain/entities/legal-document.js";
 import {
+  LegalDocumentChangedError,
   LegalDocumentPositionOutOfRangeError,
   UnknownLegalDocumentParagraphError,
 } from "../../domain/errors/legal-document-errors.js";
-import { PlatformContentRepository } from "../../domain/platform-content.repository.js";
 import { AddLegalDocumentParagraphCommand } from "../add-legal-document-paragraph.command.js";
 import { AddLegalDocumentParagraphHandler } from "../add-legal-document-paragraph.handler.js";
 import { EditLegalDocumentParagraphCommand } from "../edit-legal-document-paragraph.command.js";
@@ -28,84 +18,7 @@ import { RemoveLegalDocumentParagraphCommand } from "../remove-legal-document-pa
 import { RemoveLegalDocumentParagraphHandler } from "../remove-legal-document-paragraph.handler.js";
 import { SetLegalDocumentTitleCommand } from "../set-legal-document-title.command.js";
 import { SetLegalDocumentTitleHandler } from "../set-legal-document-title.handler.js";
-
-/** La mention par défaut des cas qui n'en éprouvent qu'une seule. */
-const SALES_TERMS: LegalMention = "salesTerms";
-
-/** Un article reconnaissable à son mot-clé, dans les trois langues. */
-function prose(word: string): LegalDocumentParagraphPayload {
-  return {
-    fr: { title: word, body: `Corps ${word}` },
-    en: { title: word, body: `Body ${word}` },
-    it: { title: word, body: `Corpo ${word}` },
-  };
-}
-
-/**
- * Un double du port — une classe qui étend l'abstraite, pas un module moqué.
- *
- * Il tient l'état **par mention**, chacune sous la forme d'un document du
- * contrat, exactement comme l'adaptateur tient une ligne par clé : c'est ce qui
- * fait que `load → save` s'y comporte comme en base, révision comprise, et que
- * deux mentions ne peuvent pas se marcher dessus par accident du double.
- */
-class FakeContentRepository extends PlatformContentRepository {
-  private readonly stored = new Map<LegalMention, LegalDocumentContent>();
-  private readonly counts = new Map<LegalMention, number>();
-  saves = 0;
-  lastAuthor: string | null = null;
-
-  content(mention: LegalMention = SALES_TERMS): LegalDocumentContent {
-    return this.stored.get(mention) ?? DEFAULT_LEGAL_DOCUMENT(mention);
-  }
-
-  readFooter(): Promise<FooterContentView> {
-    return Promise.resolve({
-      content: DEFAULT_FOOTER_CONTENT,
-      revision: 0,
-      updatedAt: new Date(0).toISOString(),
-      updatedBy: null,
-    });
-  }
-
-  saveFooter(content: FooterContent, staffUserId: string): Promise<FooterContentView> {
-    return Promise.resolve({
-      content,
-      revision: 1,
-      updatedAt: new Date(0).toISOString(),
-      updatedBy: staffUserId,
-    });
-  }
-
-  readLegalDocument(mention: LegalMention): Promise<LegalDocumentView> {
-    return Promise.resolve({
-      // Le repli d'AFFICHAGE : jamais `null`, jamais sans titre.
-      content: this.content(mention),
-      revision: this.counts.get(mention) ?? 0,
-      updatedAt: new Date(0).toISOString(),
-      updatedBy: this.lastAuthor,
-    });
-  }
-
-  loadLegalDocument(mention: LegalMention): Promise<LegalDocument> {
-    return Promise.resolve(LegalDocument.reconstitute(this.content(mention)));
-  }
-
-  saveLegalDocument(
-    mention: LegalMention,
-    document: LegalDocument,
-    staffUserId: string,
-  ): Promise<void> {
-    this.stored.set(mention, document.snapshot());
-    this.counts.set(mention, (this.counts.get(mention) ?? 0) + 1);
-    this.saves += 1;
-    this.lastAuthor = staffUserId;
-    return Promise.resolve();
-  }
-}
-
-const ids = (repository: FakeContentRepository, mention: LegalMention = SALES_TERMS): string[] =>
-  repository.content(mention).paragraphs.map((paragraph) => paragraph.id);
+import { FakeContentRepository, SALES_TERMS, ids, prose } from "./fake-content.repository.js";
 
 describe("lire un document légal", () => {
   it("aboutit toujours — il n'y a pas de cas « pas de document » à traiter", async () => {
@@ -138,6 +51,7 @@ describe("renommer le document", () => {
       new SetLegalDocumentTitleCommand(
         SALES_TERMS,
         { fr: "CGV", en: "T&C", it: "CGV it" },
+        repository.revision(SALES_TERMS),
         "staff_42",
       ),
     );
@@ -153,7 +67,12 @@ describe("ajouter un article", () => {
     const handler = new AddLegalDocumentParagraphHandler(repository, new FixedIdGenerator("art"));
 
     const id = await handler.execute(
-      new AddLegalDocumentParagraphCommand(SALES_TERMS, prose("objet"), "staff_42"),
+      new AddLegalDocumentParagraphCommand(
+        SALES_TERMS,
+        prose("objet"),
+        repository.revision(SALES_TERMS),
+        "staff_42",
+      ),
     );
 
     // L'écran a besoin de désigner ce qu'il vient d'ajouter ; le document, lui,
@@ -167,10 +86,20 @@ describe("ajouter un article", () => {
     const handler = new AddLegalDocumentParagraphHandler(repository, new FixedIdGenerator("art"));
 
     await handler.execute(
-      new AddLegalDocumentParagraphCommand(SALES_TERMS, prose("objet"), "staff_42"),
+      new AddLegalDocumentParagraphCommand(
+        SALES_TERMS,
+        prose("objet"),
+        repository.revision(SALES_TERMS),
+        "staff_42",
+      ),
     );
     await handler.execute(
-      new AddLegalDocumentParagraphCommand(SALES_TERMS, prose("objet"), "staff_42"),
+      new AddLegalDocumentParagraphCommand(
+        SALES_TERMS,
+        prose("objet"),
+        repository.revision(SALES_TERMS),
+        "staff_42",
+      ),
     );
 
     // Deux articles homonymes : c'est exactement le cas qu'un identifiant
@@ -183,7 +112,12 @@ describe("ajouter un article", () => {
     const handler = new AddLegalDocumentParagraphHandler(repository, new FixedIdGenerator("art"));
 
     await handler.execute(
-      new AddLegalDocumentParagraphCommand(SALES_TERMS, prose("objet"), "staff_42"),
+      new AddLegalDocumentParagraphCommand(
+        SALES_TERMS,
+        prose("objet"),
+        repository.revision(SALES_TERMS),
+        "staff_42",
+      ),
     );
 
     // Le repli de lecture ne porte aucun article ; en charger un à l'écriture
@@ -200,7 +134,14 @@ describe("modifier, retirer, déplacer", () => {
   ): Promise<FakeContentRepository> {
     const handler = new AddLegalDocumentParagraphHandler(repository, new FixedIdGenerator("art"));
     for (const word of ["objet", "commandes", "litiges"]) {
-      await handler.execute(new AddLegalDocumentParagraphCommand(mention, prose(word), "staff_42"));
+      await handler.execute(
+        new AddLegalDocumentParagraphCommand(
+          mention,
+          prose(word),
+          repository.revision(mention),
+          "staff_42",
+        ),
+      );
     }
     return repository;
   }
@@ -212,6 +153,7 @@ describe("modifier, retirer, déplacer", () => {
         SALES_TERMS,
         "art_000002",
         prose("commandes-v2"),
+        repository.revision(SALES_TERMS),
         "staff_7",
       ),
     );
@@ -228,7 +170,12 @@ describe("modifier, retirer, déplacer", () => {
 
     await expect(
       new RemoveLegalDocumentParagraphHandler(repository).execute(
-        new RemoveLegalDocumentParagraphCommand(SALES_TERMS, "inconnu", "staff_42"),
+        new RemoveLegalDocumentParagraphCommand(
+          SALES_TERMS,
+          "inconnu",
+          repository.revision(SALES_TERMS),
+          "staff_42",
+        ),
       ),
     ).rejects.toBeInstanceOf(UnknownLegalDocumentParagraphError);
   });
@@ -239,7 +186,13 @@ describe("modifier, retirer, déplacer", () => {
 
     await expect(
       new MoveLegalDocumentParagraphHandler(repository).execute(
-        new MoveLegalDocumentParagraphCommand(SALES_TERMS, "art_000001", 3, "staff_42"),
+        new MoveLegalDocumentParagraphCommand(
+          SALES_TERMS,
+          "art_000001",
+          3,
+          repository.revision(SALES_TERMS),
+          "staff_42",
+        ),
       ),
     ).rejects.toBeInstanceOf(LegalDocumentPositionOutOfRangeError);
 
@@ -251,10 +204,21 @@ describe("modifier, retirer, déplacer", () => {
   it("déplace, puis retire, et l'ordre suit", async () => {
     const repository = await seeded();
     await new MoveLegalDocumentParagraphHandler(repository).execute(
-      new MoveLegalDocumentParagraphCommand(SALES_TERMS, "art_000003", 0, "staff_42"),
+      new MoveLegalDocumentParagraphCommand(
+        SALES_TERMS,
+        "art_000003",
+        0,
+        repository.revision(SALES_TERMS),
+        "staff_42",
+      ),
     );
     await new RemoveLegalDocumentParagraphHandler(repository).execute(
-      new RemoveLegalDocumentParagraphCommand(SALES_TERMS, "art_000001", "staff_42"),
+      new RemoveLegalDocumentParagraphCommand(
+        SALES_TERMS,
+        "art_000001",
+        repository.revision(SALES_TERMS),
+        "staff_42",
+      ),
     );
 
     expect(ids(repository)).toEqual(["art_000003", "art_000002"]);
@@ -272,12 +236,18 @@ describe("modifier, retirer, déplacer", () => {
     await seeded("privacy", repository);
 
     await new RemoveLegalDocumentParagraphHandler(repository).execute(
-      new RemoveLegalDocumentParagraphCommand("cookies", "art_000001", "staff_42"),
+      new RemoveLegalDocumentParagraphCommand(
+        "cookies",
+        "art_000001",
+        repository.revision("cookies"),
+        "staff_42",
+      ),
     );
     await new SetLegalDocumentTitleHandler(repository).execute(
       new SetLegalDocumentTitleCommand(
         "cookies",
         { fr: "Traceurs", en: "Trackers", it: "Traccianti" },
+        repository.revision("cookies"),
         "staff_42",
       ),
     );
@@ -288,5 +258,35 @@ describe("modifier, retirer, déplacer", () => {
     expect(ids(repository, "cookies")).toEqual(["art_000002", "art_000003"]);
     expect(ids(repository, "privacy")).toEqual(["art_000001", "art_000002", "art_000003"]);
     expect(repository.content("privacy").title.fr).toBe(DEFAULT_LEGAL_DOCUMENT("privacy").title.fr);
+  });
+});
+
+describe("la révision lue (plan confidentialité §4.5, B2)", () => {
+  /**
+   * Régression : un écran ouvert AVANT le geste d'un collègue réécrivait le
+   * document entier sans ce geste — une section requise créée entre-temps
+   * disparaissait en silence.
+   */
+  it("refuse une écriture sur une révision périmée, et n'enregistre rien", async () => {
+    const repository = new FakeContentRepository();
+    const add = new AddLegalDocumentParagraphHandler(repository, new FixedIdGenerator("art"));
+    const staleRevision = repository.revision();
+    await add.execute(
+      new AddLegalDocumentParagraphCommand(SALES_TERMS, prose("objet"), staleRevision, "staff_1"),
+    );
+    const savesBefore = repository.saves;
+
+    await expect(
+      new RemoveLegalDocumentParagraphHandler(repository).execute(
+        new RemoveLegalDocumentParagraphCommand(
+          SALES_TERMS,
+          "art_000001",
+          staleRevision,
+          "staff_2",
+        ),
+      ),
+    ).rejects.toBeInstanceOf(LegalDocumentChangedError);
+    expect(repository.saves).toBe(savesBefore);
+    expect(ids(repository)).toEqual(["art_000001"]);
   });
 });

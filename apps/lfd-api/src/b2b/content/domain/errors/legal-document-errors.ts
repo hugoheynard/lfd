@@ -2,6 +2,7 @@ import {
   BusinessError,
   DomainError,
   ResourceNotFoundError,
+  TechnicalError,
 } from "../../../../platform/shared/errors/app-error.js";
 
 /**
@@ -112,6 +113,104 @@ export class UnknownLegalMentionError extends ResourceNotFoundError {
       "legal_document.mention.unknown",
       `Aucune mention légale « ${mention} » : les mentions connues sont ` +
         `${known.join(", ")}. Vérifiez l'adresse ou repartez du menu Contenu.`,
+    );
+  }
+}
+
+/**
+ * On supprimerait une **section requise** — **409**.
+ *
+ * Plan `legal/plan-page-confidentialite.md` §4.2 : Meta pointe l'ancre de cette
+ * section. La supprimer tuerait le lien donné sans que rien ne le dise ; on en
+ * corrige le texte, on la déplace, on ne la retire pas.
+ */
+export class RequiredLegalSectionRemovalError extends BusinessError {
+  constructor(
+    readonly paragraphId: string,
+    readonly documentTitle: string,
+  ) {
+    super(
+      "legal_document.section.required",
+      `Cette section est exigée par « ${documentTitle} » : modifiez son texte, elle ne se supprime pas.`,
+    );
+  }
+}
+
+/**
+ * La section demandée n'est pas exigée par ce document — **400**.
+ *
+ * Le vocabulaire des sections est fermé, et chaque mention dit lesquelles elle
+ * exige : poser une section qu'elle n'exige pas créerait un paragraphe
+ * insupprimable sans raison.
+ */
+export class LegalSectionNotRequiredError extends DomainError {
+  constructor(
+    readonly section: string,
+    readonly documentTitle: string,
+  ) {
+    super(
+      "legal_document.section.not_required",
+      `« ${documentTitle} » n'exige pas de section « ${section} » : ` +
+        "ajoutez plutôt un article ordinaire.",
+    );
+  }
+}
+
+/**
+ * La section requise existe déjà — **409**.
+ *
+ * Deux paragraphes de même clé porteraient deux fois la même ancre publique,
+ * et le lien donné à Meta mènerait au premier au hasard de l'ordre.
+ */
+export class LegalSectionAlreadyPresentError extends BusinessError {
+  constructor(
+    readonly section: string,
+    readonly documentTitle: string,
+  ) {
+    super(
+      "legal_document.section.already_present",
+      `« ${documentTitle} » porte déjà sa section « ${section} » : ` +
+        "rechargez l'écran et modifiez son texte plutôt que d'en créer une seconde.",
+    );
+  }
+}
+
+/**
+ * Le document a changé depuis que l'écran l'a lu — **409** (§4.5, B2).
+ *
+ * Le document est UNE ligne réécrite en entière : écrire par-dessus la
+ * révision d'un collègue effacerait son geste en silence — une section requise
+ * créée entre-temps, par exemple.
+ */
+export class LegalDocumentChangedError extends BusinessError {
+  constructor(
+    readonly expectedRevision: number,
+    readonly documentTitle: string,
+  ) {
+    super(
+      "legal_document.revision.stale",
+      `Quelqu'un a modifié « ${documentTitle} » pendant que vous l'aviez ouvert : rechargez-le.`,
+    );
+  }
+}
+
+/**
+ * Le contenu stocké ne se relit plus, et on voulait ÉCRIRE — **500** (§4.5, B3).
+ *
+ * La lecture publique retombe sur le document de départ pour ne jamais rendre
+ * une page cassée. L'écriture, elle, ne le peut pas : partir de ce repli
+ * réécrirait le document de production VIDE. On refuse, rien n'est écrit.
+ */
+export class UnreadableLegalDocumentError extends TechnicalError {
+  constructor(
+    readonly storageKey: string,
+    readonly details: string,
+  ) {
+    super(
+      "legal_document.content.unreadable",
+      `Le document « ${storageKey} » ne se relit plus en base : aucune modification n'a été ` +
+        "enregistrée, pour ne pas l'écraser. Prévenez l'équipe technique avant toute nouvelle saisie.",
+      details,
     );
   }
 }

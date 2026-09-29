@@ -10,6 +10,7 @@ import type {
   LegalDocumentParagraphPayload,
   LegalDocumentView,
   LegalMention,
+  LegalSectionKey,
 } from '@lfd/contracts';
 
 import { NotifyService } from '../../notify.service';
@@ -56,8 +57,22 @@ function legalView(name: string, mark: string): LegalDocumentView {
   };
 }
 
+/** Le refus que le serveur rend quand la révision lue a été dépassée. */
+const STALE_ERROR = {
+  status: 409,
+  error: {
+    code: 'legal_document.revision.stale',
+    message: 'Quelqu’un a modifié ce document pendant que vous l’aviez ouvert : rechargez.',
+  },
+};
+
 class FakeContent {
   reads: LegalMention[] = [];
+  /** La révision portée par chaque écriture, dans l'ordre. */
+  revisions: number[] = [];
+  sections: readonly [LegalMention, LegalSectionKey, LegalDocumentParagraphPayload][] = [];
+  /** La prochaine écriture échoue avec cette erreur. */
+  failNextWrite: unknown = null;
   moved: readonly [LegalMention, string, number][] = [];
   removed: readonly [LegalMention, string][] = [];
   added: readonly [LegalMention, LegalDocumentParagraphPayload][] = [];
@@ -70,7 +85,7 @@ class FakeContent {
    * menu ne doivent pas éditer le même document. Un double à un seul document
    * aurait laissé passer un écran qui ignore son segment de route.
    */
-  readonly views: Readonly<Record<LegalMention, LegalDocumentView>> = {
+  views: Readonly<Record<LegalMention, LegalDocumentView>> = {
     legalNotice: legalView('Mentions', 'ml'),
     salesTerms: legalView('Conditions', 'cgv'),
     privacy: legalView('Confidentialité', 'conf'),
@@ -86,14 +101,30 @@ class FakeContent {
     return this.views[mention];
   }
 
-  async renameLegalDocument(mention: LegalMention, title: LegalDocumentHeading): Promise<void> {
+  private written(revision: number): void {
+    this.revisions = [...this.revisions, revision];
+    const failure = this.failNextWrite;
+    if (failure !== null) {
+      this.failNextWrite = null;
+      throw failure;
+    }
+  }
+
+  async renameLegalDocument(
+    mention: LegalMention,
+    title: LegalDocumentHeading,
+    revision: number,
+  ): Promise<void> {
+    this.written(revision);
     this.renamed = [...this.renamed, [mention, title]];
   }
 
   async addLegalParagraph(
     mention: LegalMention,
     payload: LegalDocumentParagraphPayload,
+    revision: number,
   ): Promise<LegalDocumentParagraphCreated> {
+    this.written(revision);
     this.added = [...this.added, [mention, payload]];
     return { id: 'p3' };
   }
@@ -102,15 +133,35 @@ class FakeContent {
     mention: LegalMention,
     id: string,
     payload: LegalDocumentParagraphPayload,
+    revision: number,
   ): Promise<void> {
+    this.written(revision);
     this.edited = [...this.edited, [mention, id, payload]];
   }
 
-  async removeLegalParagraph(mention: LegalMention, id: string): Promise<void> {
+  async addLegalRequiredSection(
+    mention: LegalMention,
+    section: LegalSectionKey,
+    payload: LegalDocumentParagraphPayload,
+    revision: number,
+  ): Promise<LegalDocumentParagraphCreated> {
+    this.written(revision);
+    this.sections = [...this.sections, [mention, section, payload]];
+    return { id: 'p9' };
+  }
+
+  async removeLegalParagraph(mention: LegalMention, id: string, revision: number): Promise<void> {
+    this.written(revision);
     this.removed = [...this.removed, [mention, id]];
   }
 
-  async moveLegalParagraph(mention: LegalMention, id: string, position: number): Promise<void> {
+  async moveLegalParagraph(
+    mention: LegalMention,
+    id: string,
+    position: number,
+    revision: number,
+  ): Promise<void> {
+    this.written(revision);
     this.moved = [...this.moved, [mention, id, position]];
   }
 }
@@ -272,7 +323,7 @@ describe('MentionsPage', () => {
     expect(text(fixture)).toContain('English');
     expect(text(fixture)).toContain('Italiano');
 
-    const fieldsets = [...host(fixture).querySelectorAll('.languages fold-fieldset')];
+    const fieldsets = [...host(fixture).querySelectorAll('app-legal-paragraph-form fold-fieldset')];
     expect(fieldsets).toHaveLength(3);
 
     expect(button(fixture, 'Ajouter l’article').disabled).toBe(true);
@@ -374,5 +425,131 @@ describe('MentionsPage', () => {
     expect(text(fixture)).toContain('peut dater');
     // Le contenu reste à l'écran : c'est un échec PARTIEL.
     expect(text(fixture)).toContain('1. Titre cgv un FR');
+  });
+
+  /** Plan `legal/plan-page-confidentialite.md` §4.5, B2 : la révision lue, partout. */
+  it('envoie la révision LUE avec chaque écriture, puis relit la nouvelle', async () => {
+    const api = new FakeContent();
+    const fixture = await render(api);
+
+    await click(fixture, 'Descendre d’un rang');
+    expect(api.revisions).toEqual([3]);
+
+    api.views = { ...api.views, salesTerms: { ...api.views.salesTerms, revision: 4 } };
+    await click(fixture, 'Descendre d’un rang');
+    expect(api.revisions).toEqual([3, 3]);
+
+    // La deuxième relecture a vu 4 : l'écriture suivante la porte.
+    await click(fixture, 'Supprimer');
+    await click(fixture, 'Confirmer');
+    expect(api.revisions).toEqual([3, 3, 4]);
+  });
+
+  it('sur une révision périmée, affiche le message du serveur, recharge sans perdre la saisie', async () => {
+    const api = new FakeContent();
+    const fixture = await render(api);
+
+    await click(fixture, 'Écrire un article dans les trois langues');
+    const fieldsets = [...host(fixture).querySelectorAll('app-legal-paragraph-form fold-fieldset')];
+    fieldsets.forEach((block, index) => {
+      fill(block.querySelector('input'), `T${index}`);
+      fill(block.querySelector('textarea'), `C${index}`);
+    });
+    await settle(fixture);
+
+    api.failNextWrite = STALE_ERROR;
+    await click(fixture, 'Ajouter l’article');
+
+    expect(text(fixture)).toContain('Quelqu’un a modifié ce document');
+    expect(api.added).toEqual([]);
+
+    api.views = { ...api.views, salesTerms: { ...api.views.salesTerms, revision: 7 } };
+    await click(fixture, 'Recharger');
+
+    expect(text(fixture)).not.toContain('Quelqu’un a modifié ce document');
+    const kept = host(fixture).querySelector('app-legal-paragraph-form fold-fieldset input');
+    expect(kept instanceof HTMLInputElement ? kept.value : '').toBe('T0');
+
+    await click(fixture, 'Ajouter l’article');
+    expect(api.added).toHaveLength(1);
+    expect(api.revisions.at(-1)).toBe(7);
+  });
+
+  it('une section requise porte son badge et son ancre, et n’a pas de bouton Supprimer', async () => {
+    const api = new FakeContent();
+    const view = api.views.privacy;
+    api.views = {
+      ...api.views,
+      privacy: {
+        ...view,
+        content: {
+          ...view.content,
+          paragraphs: [{ ...paragraph('p1', 'conf un'), section: 'dataDeletion' }],
+        },
+      },
+    };
+    const fixture = await render(api, 'privacy');
+
+    expect(text(fixture)).toContain('Requis — Suppression des données');
+    expect(text(fixture)).toContain('#suppression-des-donnees');
+    // Hugo, 2026-09-29 : dire pourquoi elle est exigée — la connexion Facebook.
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('[data-section-reason]')?.textContent,
+    ).toContain('connexion avec Facebook');
+    expect(() => button(fixture, 'Supprimer')).toThrow();
+    // Elle se modifie toujours.
+    expect(button(fixture, 'Modifier cet article').disabled).toBe(false);
+    // Présente : aucun encadré « manquante ».
+    expect(text(fixture)).not.toContain('Section requise manquante');
+  });
+
+  it('une section requise absente s’annonce, et se crée pré-remplie du SEUL titre français', async () => {
+    const api = new FakeContent();
+    const fixture = await render(api, 'privacy');
+
+    expect(text(fixture)).toContain('Section requise manquante');
+    expect(text(fixture)).toContain('Suppression des données');
+
+    await click(fixture, 'Créer la section');
+    const fieldsets = [...host(fixture).querySelectorAll('app-legal-paragraph-form fold-fieldset')];
+    const values = fieldsets.map((block) => {
+      const input = block.querySelector('input');
+      const area = block.querySelector('textarea');
+      return [
+        input instanceof HTMLInputElement ? input.value : '?',
+        area instanceof HTMLTextAreaElement ? area.value : '?',
+      ];
+    });
+    // Aucun corps inventé, anglais et italien à écrire.
+    expect(values).toEqual([
+      ['Suppression des données', ''],
+      ['', ''],
+      ['', ''],
+    ]);
+
+    fieldsets.forEach((block, index) => {
+      fill(block.querySelector('input'), `T${index}`);
+      fill(block.querySelector('textarea'), `C${index}`);
+    });
+    await settle(fixture);
+    const submit = [...host(fixture).querySelectorAll('app-legal-paragraph-form button')].find(
+      (candidate) => (candidate.textContent ?? '').includes('Créer la section'),
+    );
+    if (!(submit instanceof HTMLButtonElement)) {
+      throw new Error('Bouton de création introuvable.');
+    }
+    submit.click();
+    await settle(fixture);
+
+    expect(api.sections).toHaveLength(1);
+    expect(api.sections[0]?.[0]).toBe('privacy');
+    expect(api.sections[0]?.[1]).toBe('dataDeletion');
+    expect(api.sections[0]?.[2].fr).toEqual({ title: 'T0', body: 'C0' });
+    expect(api.revisions).toEqual([3]);
+  });
+
+  it('une mention sans section exigée n’annonce rien', async () => {
+    const fixture = await render(new FakeContent(), 'salesTerms');
+    expect(text(fixture)).not.toContain('Section requise manquante');
   });
 });

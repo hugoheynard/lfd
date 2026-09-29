@@ -1,0 +1,32 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    title="Titre du document"
+    subtitle="Il nomme le document, et c’est lui que la boutique affiche en tête du dialogue."
+  >
+    <fold-view-toggle
+      titleAction
+      ariaLabel="Langue affichée"
+      [options]="localeOptions"
+      [value]="locale()"
+      (valueChange)="localeChange.emit($event)"
+    />
+  </fold-element-title>
+
+  <div class="title-row">
+    <fold-input
+      label="Titre"
+      hint="Chaque langue a le sien — le sélecteur ci-dessus dit lequel vous écrivez."
+      [value]="draft()[locale()]"
+      (valueChange)="set($event)"
+    />
+    <button
+      foldButton
+      [disabled]="!changed() || !complete()"
+      [loading]="busy()"
+      (click)="submitted.emit(draft())"
+    >
+      Enregistrer le titre
+    </button>
+  </div>
+</fold-card>

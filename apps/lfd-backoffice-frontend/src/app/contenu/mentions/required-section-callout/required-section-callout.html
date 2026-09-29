@@ -1,0 +1,24 @@
+@if (open()) {
+  <fold-card>
+    <fold-element-title
+      variant="title"
+      [title]="'Créer la section « ' + label() + ' »'"
+      subtitle="Elle est exigée : une fois créée, elle se corrige et se déplace, mais ne se supprime pas. Écrivez-la dans les trois langues."
+    />
+    <app-legal-paragraph-form
+      submitLabel="Créer la section"
+      [initial]="initial()"
+      [busy]="busy()"
+      (submitted)="submit($event)"
+      (cancelled)="open.set(false)"
+    />
+  </fold-card>
+} @else {
+  <fold-callout variant="warning">
+    Section requise manquante&nbsp;: {{ label() }}. {{ reason() }} Tant qu’elle n’existe pas, le
+    lien public qui y mène ouvre la page en haut.
+    <button actions foldButton emphasis="outline" intent="neutral" (click)="open.set(true)">
+      Créer la section
+    </button>
+  </fold-callout>
+}

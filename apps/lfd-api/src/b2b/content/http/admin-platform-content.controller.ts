@@ -1,24 +1,29 @@
 import {
   footerContentPayloadSchema,
-  legalDocumentHeadingSchema,
-  legalDocumentParagraphPayloadSchema,
+  legalDocumentParagraphWritePayloadSchema,
   legalDocumentPositionPayloadSchema,
+  legalDocumentRevisionQuerySchema,
+  legalDocumentTitlePayloadSchema,
+  legalRequiredSectionPayloadSchema,
   type FooterContentPayload,
   type FooterContentView,
-  type LegalDocumentHeading,
   type LegalDocumentParagraphCreated,
-  type LegalDocumentParagraphPayload,
+  type LegalDocumentParagraphWritePayload,
   type LegalDocumentPositionPayload,
+  type LegalDocumentRevisionQuery,
+  type LegalDocumentTitlePayload,
   type LegalDocumentView,
   type LegalMention,
+  type LegalRequiredSectionPayload,
 } from "@lfd/contracts";
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
-import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AddLegalDocumentParagraphCommand } from "../application/add-legal-document-paragraph.command.js";
+import { AddRequiredLegalSectionCommand } from "../application/add-required-legal-section.command.js";
 import { EditLegalDocumentParagraphCommand } from "../application/edit-legal-document-paragraph.command.js";
 import { GetFooterContentQuery } from "../application/get-footer-content.query.js";
 import { GetLegalDocumentQuery } from "../application/get-legal-document.query.js";
@@ -86,11 +91,12 @@ export class AdminPlatformContentController {
   @HttpCode(204)
   async setLegalDocumentTitle(
     @Param("mention", LegalMentionParam) mention: LegalMention,
-    @Body(new ZodBody(legalDocumentHeadingSchema)) payload: LegalDocumentHeading,
+    @Body(new ZodBody(legalDocumentTitlePayloadSchema)) payload: LegalDocumentTitlePayload,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
+    const { expectedRevision, ...heading } = payload;
     await this.commands.execute<SetLegalDocumentTitleCommand, void>(
-      new SetLegalDocumentTitleCommand(mention, payload, staffUserId),
+      new SetLegalDocumentTitleCommand(mention, heading, expectedRevision, staffUserId),
     );
   }
 
@@ -104,11 +110,31 @@ export class AdminPlatformContentController {
   @Post("legal/:mention/paragraphs")
   async addLegalDocumentParagraph(
     @Param("mention", LegalMentionParam) mention: LegalMention,
-    @Body(new ZodBody(legalDocumentParagraphPayloadSchema)) payload: LegalDocumentParagraphPayload,
+    @Body(new ZodBody(legalDocumentParagraphWritePayloadSchema))
+    payload: LegalDocumentParagraphWritePayload,
     @StaffUserId() staffUserId: string,
   ): Promise<LegalDocumentParagraphCreated> {
+    const { expectedRevision, ...prose } = payload;
     const id = await this.commands.execute<AddLegalDocumentParagraphCommand, string>(
-      new AddLegalDocumentParagraphCommand(mention, payload, staffUserId),
+      new AddLegalDocumentParagraphCommand(mention, prose, expectedRevision, staffUserId),
+    );
+    return { id };
+  }
+
+  /**
+   * Crée une **section requise** (plan `legal/plan-page-confidentialite.md`
+   * §4.2) avec le texte saisi, et rend son identifiant. Même droit que les
+   * autres écritures : c'est un article de plus, qu'on ne pourra pas retirer.
+   */
+  @Post("legal/:mention/sections")
+  async addRequiredLegalSection(
+    @Param("mention", LegalMentionParam) mention: LegalMention,
+    @Body(new ZodBody(legalRequiredSectionPayloadSchema)) payload: LegalRequiredSectionPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<LegalDocumentParagraphCreated> {
+    const { expectedRevision, section, ...prose } = payload;
+    const id = await this.commands.execute<AddRequiredLegalSectionCommand, string>(
+      new AddRequiredLegalSectionCommand(mention, section, prose, expectedRevision, staffUserId),
     );
     return { id };
   }
@@ -118,23 +144,38 @@ export class AdminPlatformContentController {
   async editLegalDocumentParagraph(
     @Param("mention", LegalMentionParam) mention: LegalMention,
     @Param("paragraphId") paragraphId: string,
-    @Body(new ZodBody(legalDocumentParagraphPayloadSchema)) payload: LegalDocumentParagraphPayload,
+    @Body(new ZodBody(legalDocumentParagraphWritePayloadSchema))
+    payload: LegalDocumentParagraphWritePayload,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
+    const { expectedRevision, ...prose } = payload;
     await this.commands.execute<EditLegalDocumentParagraphCommand, void>(
-      new EditLegalDocumentParagraphCommand(mention, paragraphId, payload, staffUserId),
+      new EditLegalDocumentParagraphCommand(
+        mention,
+        paragraphId,
+        prose,
+        expectedRevision,
+        staffUserId,
+      ),
     );
   }
 
+  /** La révision lue passe en chaîne de requête : un `DELETE` n'a pas de corps. */
   @Delete("legal/:mention/paragraphs/:paragraphId")
   @HttpCode(204)
   async removeLegalDocumentParagraph(
     @Param("mention", LegalMentionParam) mention: LegalMention,
     @Param("paragraphId") paragraphId: string,
+    @Query(new ZodQuery(legalDocumentRevisionQuerySchema)) query: LegalDocumentRevisionQuery,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<RemoveLegalDocumentParagraphCommand, void>(
-      new RemoveLegalDocumentParagraphCommand(mention, paragraphId, staffUserId),
+      new RemoveLegalDocumentParagraphCommand(
+        mention,
+        paragraphId,
+        query.expectedRevision,
+        staffUserId,
+      ),
     );
   }
 
@@ -151,7 +192,13 @@ export class AdminPlatformContentController {
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<MoveLegalDocumentParagraphCommand, void>(
-      new MoveLegalDocumentParagraphCommand(mention, paragraphId, payload.position, staffUserId),
+      new MoveLegalDocumentParagraphCommand(
+        mention,
+        paragraphId,
+        payload.position,
+        payload.expectedRevision,
+        staffUserId,
+      ),
     );
   }
 }

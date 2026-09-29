@@ -1,3 +1,4 @@
+import type { LegalSectionKey } from "./legal-document.sections.js";
 import type { LegalMention } from "./platform-content.defaults.js";
 import type {
   LegalDocument,
@@ -60,6 +61,19 @@ interface DemoLegalDocument {
   readonly title: LegalDocumentHeading;
   readonly paragraphs: readonly LegalDocumentParagraphPayload[];
 }
+
+/**
+ * Le texte de démonstration de chaque **section requise** — pour le SEUL semis
+ * de développement, qui la crée par la vraie commande (plan
+ * `legal/plan-page-confidentialite.md` §4.5, S4).
+ *
+ * 🔴 Jamais un « texte de départ » servi en production (S3) : la commande n'en
+ * a pas, et ce corps dit lui-même qu'il n'a aucune valeur juridique.
+ */
+export const DEMO_LEGAL_SECTIONS: Readonly<Record<LegalSectionKey, LegalDocumentParagraphPayload>> =
+  {
+    dataDeletion: article("Suppression des données", "Data deletion", "Cancellazione dei dati"),
+  };
 
 /**
  * Les cinq documents de démonstration, **par mention**.

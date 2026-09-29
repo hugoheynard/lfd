@@ -335,7 +335,20 @@ export const DEFAULT_FOOTER_CONTENT: FooterContent = {
  * savoir lequel des deux porte la valeur qu'il cherche. Ce module n'importe que
  * des types, celui qu'il réexporte aussi : la garantie de poids tient.
  */
-export { DEFAULT_LEGAL_DOCUMENT, DEMO_LEGAL_DOCUMENTS } from "./legal-document.defaults.js";
+export {
+  DEFAULT_LEGAL_DOCUMENT,
+  DEMO_LEGAL_DOCUMENTS,
+  DEMO_LEGAL_SECTIONS,
+} from "./legal-document.defaults.js";
 
 /** Les bornes d'un document légal, par la même entrée sans zod que le reste des valeurs. */
 export { MAX_LEGAL_DOCUMENT_BODY, MAX_LEGAL_DOCUMENT_PARAGRAPHS } from "./legal-document.bounds.js";
+
+/** Les sections requises d'un document légal, par la même entrée sans zod. */
+export {
+  legalSectionKeys,
+  legalSectionLabels,
+  requiredSections,
+  sectionAnchor,
+} from "./legal-document.sections.js";
+export type { LegalSectionKey } from "./legal-document.sections.js";

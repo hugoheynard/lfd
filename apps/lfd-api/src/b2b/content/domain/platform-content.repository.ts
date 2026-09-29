@@ -57,17 +57,34 @@ export abstract class PlatformContentRepository {
   /**
    * Le document d'une mention, pour l'ÉCRITURE — l'agrégat, pas la vue.
    *
-   * Un document jamais enregistré se charge sur le contenu de départ : c'est ce
-   * qui permet d'écrire son premier article sans avoir eu à « créer » quoi que
-   * ce soit d'abord.
+   * Un document jamais enregistré se charge sur le contenu de départ, en
+   * révision 0 : c'est ce qui permet d'écrire son premier article sans avoir eu
+   * à « créer » quoi que ce soit d'abord.
+   *
+   * 🔴 Deux refus, là où la lecture a des replis (§4.5 du plan
+   * `legal/plan-page-confidentialite.md`) :
+   *
+   * @throws {LegalDocumentChangedError} la révision courante n'est pas celle que
+   *   l'écran a lue (B2), quand il en annonce une (facultative jusqu'au
+   *   resserrement, `documentation/todos/todo-legal-expected-revision.md`) — refusé avant tout geste, pour qu'un écran périmé lise
+   *   « rechargez » et non l'erreur de ce qu'il ne voit plus.
+   * @throws {UnreadableLegalDocumentError} le contenu stocké ne se relit plus
+   *   (B3) : partir du repli réécrirait le document VIDE.
    */
-  abstract loadLegalDocument(mention: LegalMention): Promise<LegalDocument>;
+  abstract loadLegalDocument(
+    mention: LegalMention,
+    expectedRevision: number | undefined,
+  ): Promise<LegalDocument>;
 
   /**
-   * Enregistre le document de la mention et fait monter sa révision d'un cran.
+   * Enregistre le document de la mention et fait monter sa révision d'un cran,
+   * **à condition** qu'elle soit encore celle chargée (`document.revision`) —
+   * en un seul ordre atomique, pour fermer la course entre deux onglets.
    *
    * Rend `void` : une commande ne rend pas de modèle de lecture (§4), et le
    * front relit.
+   *
+   * @throws {LegalDocumentChangedError} quelqu'un a écrit depuis le chargement.
    */
   abstract saveLegalDocument(
     mention: LegalMention,

@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AddLegalDocumentParagraphHandler } from "./application/add-legal-document-paragraph.handler.js";
+import { AddRequiredLegalSectionHandler } from "./application/add-required-legal-section.handler.js";
 import { EditLegalDocumentParagraphHandler } from "./application/edit-legal-document-paragraph.handler.js";
 import { GetFooterContentHandler } from "./application/get-footer-content.handler.js";
 import { GetLegalDocumentHandler } from "./application/get-legal-document.handler.js";
@@ -33,6 +34,7 @@ import { PrismaPlatformContentRepository } from "./infrastructure/prisma-platfor
     EditLegalDocumentParagraphHandler,
     RemoveLegalDocumentParagraphHandler,
     MoveLegalDocumentParagraphHandler,
+    AddRequiredLegalSectionHandler,
   ],
 })
 export class PlatformContentModule {}

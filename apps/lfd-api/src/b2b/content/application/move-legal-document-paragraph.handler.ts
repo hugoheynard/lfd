@@ -17,7 +17,10 @@ export class MoveLegalDocumentParagraphHandler implements ICommandHandler<
   constructor(private readonly content: PlatformContentRepository) {}
 
   async execute(command: MoveLegalDocumentParagraphCommand): Promise<void> {
-    const document = await this.content.loadLegalDocument(command.mention);
+    const document = await this.content.loadLegalDocument(
+      command.mention,
+      command.expectedRevision,
+    );
     document.moveParagraph(command.paragraphId, command.position);
     await this.content.saveLegalDocument(command.mention, document, command.staffUserId);
   }

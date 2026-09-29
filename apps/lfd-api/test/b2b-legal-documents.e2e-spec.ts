@@ -18,14 +18,13 @@
 import {
   DEFAULT_LEGAL_DOCUMENT,
   legalMentionOrder,
-  type LegalDocumentParagraphCreated,
-  type LegalDocumentParagraphPayload,
   type LegalDocumentView,
   type LegalMention,
 } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
+import { legalDocumentWrites, prose } from "./legal-document-writes.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -55,22 +54,12 @@ const staff = () => ctx.asSub(E2E_STAFF_SUB);
 /** La mention de référence des cas qui n'en éprouvent qu'une. */
 const SALES_TERMS: LegalMention = "salesTerms";
 
-/** Un article reconnaissable à son mot-clé, dans les trois langues. */
-function prose(word: string): LegalDocumentParagraphPayload {
-  return {
-    fr: { title: `Article ${word}`, body: `Corps français — ${word} · accentué` },
-    en: { title: `Clause ${word}`, body: `English body — ${word}` },
-    it: { title: `Articolo ${word}`, body: `Corpo italiano — ${word}` },
-  };
-}
+const writes = legalDocumentWrites(staff);
+const { revisionOf, withRevision } = writes;
 
 /** Ajoute un article par la route staff et rend l'identifiant frappé par le serveur. */
-async function addParagraph(word: string, mention: LegalMention = SALES_TERMS): Promise<string> {
-  const created = jsonBody<LegalDocumentParagraphCreated>(
-    await staff().post(`/admin/content/legal/${mention}/paragraphs`).send(prose(word)).expect(201),
-  );
-  return created.id;
-}
+const addParagraph = (word: string, mention: LegalMention = SALES_TERMS): Promise<string> =>
+  writes.addParagraph(word, mention);
 
 const publicView = async (mention: LegalMention = SALES_TERMS): Promise<LegalDocumentView> =>
   jsonBody<LegalDocumentView>(await ctx.http().get(`/content/legal/${mention}`).expect(200));
@@ -125,7 +114,7 @@ describe("l'écriture staff", () => {
     await ctx
       .http()
       .post("/admin/content/legal/salesTerms/paragraphs")
-      .send(prose("un"))
+      .send(await withRevision(prose("un"), "salesTerms"))
       .expect(401);
   });
 
@@ -133,13 +122,15 @@ describe("l'écriture staff", () => {
     await staff().get("/admin/content/legal/charte-maison").expect(404);
     await staff()
       .put("/admin/content/legal/charte-maison/title")
-      .send({ fr: "a", en: "b", it: "c" })
+      .send({ fr: "a", en: "b", it: "c", expectedRevision: 0 })
       .expect(404);
     await staff()
       .post("/admin/content/legal/charte-maison/paragraphs")
-      .send(prose("un"))
+      .send({ ...prose("un"), expectedRevision: 0 })
       .expect(404);
-    await staff().delete("/admin/content/legal/charte-maison/paragraphs/art_1").expect(404);
+    await staff()
+      .delete("/admin/content/legal/charte-maison/paragraphs/art_1?expectedRevision=0")
+      .expect(404);
   });
 
   it("parcourt le cycle complet, et la surface publique suit", async () => {
@@ -153,20 +144,29 @@ describe("l'écriture staff", () => {
 
     await staff()
       .put("/admin/content/legal/salesTerms/title")
-      .send({ fr: "Nos CGV", en: "Our terms", it: "Le nostre condizioni" })
+      .send(
+        await withRevision(
+          { fr: "Nos CGV", en: "Our terms", it: "Le nostre condizioni" },
+          "salesTerms",
+        ),
+      )
       .expect(204);
 
     await staff()
       .put(`/admin/content/legal/salesTerms/paragraphs/${second}`)
-      .send(prose("deux-corrigé"))
+      .send(await withRevision(prose("deux-corrigé"), "salesTerms"))
       .expect(204);
 
     await staff()
       .put(`/admin/content/legal/salesTerms/paragraphs/${third}/position`)
-      .send({ position: 0 })
+      .send(await withRevision({ position: 0 }, "salesTerms"))
       .expect(204);
 
-    await staff().delete(`/admin/content/legal/salesTerms/paragraphs/${first}`).expect(204);
+    await staff()
+      .delete(
+        `/admin/content/legal/salesTerms/paragraphs/${first}?expectedRevision=${await revisionOf("salesTerms")}`,
+      )
+      .expect(204);
 
     const view = await publicView();
     expect(view.content.title.it).toBe("Le nostre condizioni");
@@ -190,7 +190,7 @@ describe("l'écriture staff", () => {
     const inCookies = await addParagraph("traceurs", "cookies");
     await staff()
       .put("/admin/content/legal/cookies/title")
-      .send({ fr: "Traceurs", en: "Trackers", it: "Traccianti" })
+      .send(await withRevision({ fr: "Traceurs", en: "Trackers", it: "Traccianti" }, "cookies"))
       .expect(204);
 
     const cookies = await publicView("cookies");
@@ -206,7 +206,7 @@ describe("l'écriture staff", () => {
     // ce n'est pas le même document, donc l'identifiant n'y existe pas.
     await staff()
       .put(`/admin/content/legal/privacy/paragraphs/${inCookies}`)
-      .send(prose("volé"))
+      .send(await withRevision(prose("volé"), "privacy"))
       .expect(404);
 
     // Une ligne par mention écrite, et pas une de plus.
@@ -255,7 +255,7 @@ describe("l'écriture staff", () => {
     for (const paragraph of served) {
       await staff()
         .put(`/admin/content/legal/salesTerms/paragraphs/${paragraph.id}`)
-        .send(prose("relu"))
+        .send(await withRevision(prose("relu"), "salesTerms"))
         .expect(204);
     }
   });
@@ -264,9 +264,13 @@ describe("l'écriture staff", () => {
     await addParagraph("un");
     await staff()
       .put("/admin/content/legal/salesTerms/paragraphs/art_inexistant")
-      .send(prose("deux"))
+      .send(await withRevision(prose("deux"), "salesTerms"))
       .expect(404);
-    await staff().delete("/admin/content/legal/salesTerms/paragraphs/art_inexistant").expect(404);
+    await staff()
+      .delete(
+        `/admin/content/legal/salesTerms/paragraphs/art_inexistant?expectedRevision=${await revisionOf("salesTerms")}`,
+      )
+      .expect(404);
   });
 
   it("rend 400 sur un rang hors du document", async () => {
@@ -276,11 +280,11 @@ describe("l'écriture staff", () => {
     // vivre dans le schéma, elle dépend du document.
     await staff()
       .put(`/admin/content/legal/salesTerms/paragraphs/${id}/position`)
-      .send({ position: 4 })
+      .send(await withRevision({ position: 4 }, "salesTerms"))
       .expect(400);
     await staff()
       .put(`/admin/content/legal/salesTerms/paragraphs/${id}/position`)
-      .send({ position: -1 })
+      .send(await withRevision({ position: -1 }, "salesTerms"))
       .expect(400);
   });
 
@@ -288,13 +292,19 @@ describe("l'écriture staff", () => {
     const incomplete: Record<string, unknown> = { ...prose("un") };
     delete incomplete["it"];
 
-    await staff().post("/admin/content/legal/salesTerms/paragraphs").send(incomplete).expect(400);
+    await staff()
+      .post("/admin/content/legal/salesTerms/paragraphs")
+      .send(await withRevision(incomplete, "salesTerms"))
+      .expect(400);
   });
 
   it("refuse en 400 un corps vide", async () => {
     const empty = prose("un");
     const wrong = { ...empty, fr: { title: empty.fr.title, body: "   " } };
 
-    await staff().post("/admin/content/legal/salesTerms/paragraphs").send(wrong).expect(400);
+    await staff()
+      .post("/admin/content/legal/salesTerms/paragraphs")
+      .send(await withRevision(wrong, "salesTerms"))
+      .expect(400);
   });
 });

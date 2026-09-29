@@ -1,7 +1,15 @@
-import { DEMO_LEGAL_DOCUMENTS, legalMentionOrder, type LegalMention } from "@lfd/contracts";
+import {
+  DEMO_LEGAL_DOCUMENTS,
+  DEMO_LEGAL_SECTIONS,
+  legalDocumentSchema,
+  legalMentionOrder,
+  requiredSections,
+  type LegalMention,
+} from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
 import { AddLegalDocumentParagraphCommand } from "../../b2b/content/application/add-legal-document-paragraph.command.js";
+import { AddRequiredLegalSectionCommand } from "../../b2b/content/application/add-required-legal-section.command.js";
 import { SetLegalDocumentTitleCommand } from "../../b2b/content/application/set-legal-document-title.command.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
 
@@ -85,7 +93,13 @@ export async function seedLegalDocuments({
   }
 }
 
-/** Sème une mention si sa ligne est absente. */
+/**
+ * Sème une mention si sa ligne est absente, puis ses sections requises.
+ *
+ * Chaque commande porte la révision qu'elle a « lue » : le semis est le seul
+ * écrivain du document pendant qu'il tourne, donc elle se compte — une écriture,
+ * un cran.
+ */
 async function seedOne(
   { prisma, commands }: LegalDocumentsContext,
   mention: LegalMention,
@@ -96,13 +110,51 @@ async function seedOne(
   });
   if (existing) {
     console.log(`· ${demo.title.fr} — déjà présentes, inchangées.`);
+    await seedRequiredSections({ prisma, commands }, mention);
     return;
   }
 
-  await commands.execute(new SetLegalDocumentTitleCommand(mention, demo.title, SEED_AUTHOR));
+  let revision = 0;
+  await commands.execute(
+    new SetLegalDocumentTitleCommand(mention, demo.title, revision++, SEED_AUTHOR),
+  );
   for (const prose of demo.paragraphs) {
-    await commands.execute(new AddLegalDocumentParagraphCommand(mention, prose, SEED_AUTHOR));
+    await commands.execute(
+      new AddLegalDocumentParagraphCommand(mention, prose, revision++, SEED_AUTHOR),
+    );
   }
-
   console.log(`✓ ${demo.title.fr} — ${demo.paragraphs.length} articles de démonstration semés.`);
+  await seedRequiredSections({ prisma, commands }, mention);
+}
+
+/**
+ * Crée, **par la vraie commande**, les sections requises qui manquent (plan
+ * `legal/plan-page-confidentialite.md` §4.5, S4) — y compris sur un poste semé
+ * avant qu'elles existent. Ajouter une section absente n'écrase aucun article
+ * corrigé : c'est la seule reprise que le « tout ou rien » admet.
+ *
+ * Le constat de présence relit la colonne par le schéma du contrat : il ne
+ * décide que de TENTER la commande, et c'est l'agrégat qui refuse un doublon.
+ */
+async function seedRequiredSections(
+  { prisma, commands }: LegalDocumentsContext,
+  mention: LegalMention,
+): Promise<void> {
+  for (const section of requiredSections(mention)) {
+    const row = await prisma.platformContent.findUnique({ where: { key: SEED_KEYS[mention] } });
+    const paragraphs = legalDocumentSchema.safeParse(row?.content).data?.paragraphs ?? [];
+    if (paragraphs.some((paragraph) => paragraph.section === section)) {
+      continue;
+    }
+    await commands.execute(
+      new AddRequiredLegalSectionCommand(
+        mention,
+        section,
+        DEMO_LEGAL_SECTIONS[section],
+        row?.revision ?? 0,
+        SEED_AUTHOR,
+      ),
+    );
+    console.log(`✓ ${DEMO_LEGAL_DOCUMENTS[mention].title.fr} — section « ${section} » créée.`);
+  }
 }

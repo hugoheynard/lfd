@@ -27,7 +27,10 @@ export class AddLegalDocumentParagraphHandler implements ICommandHandler<
   ) {}
 
   async execute(command: AddLegalDocumentParagraphCommand): Promise<string> {
-    const document = await this.content.loadLegalDocument(command.mention);
+    const document = await this.content.loadLegalDocument(
+      command.mention,
+      command.expectedRevision,
+    );
     const id = this.ids.next();
     document.addParagraph(id, command.prose);
     await this.content.saveLegalDocument(command.mention, document, command.staffUserId);

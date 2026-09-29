@@ -44,6 +44,25 @@
         </fold-callout>
       }
 
+      <!-- CONFLIT DE RÉVISION : quelqu'un a enregistré entre-temps. Le message
+           du serveur tel quel, et « Recharger » relit SANS fermer les saisies
+           ouvertes : elles se renvoient ensuite contre la révision relue. -->
+      @if (conflict(); as message) {
+        <fold-callout variant="alert" announce>
+          {{ message }} Vos saisies en cours restent ouvertes&nbsp;: rechargez, relisez, puis
+          enregistrez-les à nouveau.
+          <button
+            actions
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            (click)="reloadAfterConflict()"
+          >
+            Recharger
+          </button>
+        </fold-callout>
+      }
+
       @if (revision() === 0) {
         <fold-callout variant="info">
           Personne n’a encore enregistré cette mention&nbsp;: ce que vous lisez est le document de
@@ -52,42 +71,23 @@
         </fold-callout>
       }
 
-      <fold-card>
-        <fold-element-title
-          variant="title"
-          title="Titre du document"
-          subtitle="Il nomme le document, et c’est lui que la boutique affiche en tête du dialogue."
-        >
-          <fold-view-toggle
-            titleAction
-            ariaLabel="Langue affichée"
-            [options]="localeOptions"
-            [value]="locale()"
-            (valueChange)="pickLocale($event)"
-          />
-        </fold-element-title>
+      @for (section of missingSections(); track section) {
+        <app-required-section-callout
+          [section]="section"
+          [busy]="busy()"
+          (submitted)="submitSection($event)"
+        />
+      }
 
-        <div class="title-row">
-          <fold-input
-            label="Titre"
-            hint="Chaque langue a le sien — le sélecteur ci-dessus dit lequel vous écrivez."
-            [value]="titleDraft()[locale()]"
-            (valueChange)="setTitle($event)"
-          />
-          <button
-            foldButton
-            [disabled]="!titleChanged() || !titleComplete()"
-            [loading]="busy()"
-            (click)="saveTitle()"
-          >
-            Enregistrer le titre
-          </button>
-        </div>
-      </fold-card>
+      <app-legal-title-card
+        [saved]="document().title"
+        [locale]="locale()"
+        [busy]="busy()"
+        (localeChange)="pickLocale($event)"
+        (submitted)="saveTitle($event)"
+      />
 
-      <!-- LES ARTICLES, dans l'ordre de lecture. Le numéro n'est pas décoratif :
-           c'est celui que le client verra, et c'est lui que les deux chevrons
-           changent. -->
+      <!-- LES ARTICLES, dans l'ordre de lecture. -->
       @if (paragraphs().length === 0) {
         <fold-empty-state
           title="Aucun article"
@@ -97,111 +97,42 @@
         </fold-empty-state>
       } @else {
         @for (paragraph of paragraphs(); track paragraph.id; let i = $index) {
-          <fold-card>
-            <fold-element-title variant="title" [title]="i + 1 + '. ' + prose(paragraph).title">
-              <div titleAction class="row-actions">
-                <fold-button-icon
-                  icon="chevron-up"
-                  size="sm"
-                  tooltip="Monter d’un rang"
-                  [disabled]="$first || busy()"
-                  (clicked)="move(paragraph.id, i - 1)"
-                />
-                <fold-button-icon
-                  icon="chevron-down"
-                  size="sm"
-                  tooltip="Descendre d’un rang"
-                  [disabled]="$last || busy()"
-                  (clicked)="move(paragraph.id, i + 1)"
-                />
-                <fold-button-icon
-                  icon="edit"
-                  size="sm"
-                  tooltip="Modifier cet article"
-                  [disabled]="busy()"
-                  (clicked)="startEdit(paragraph)"
-                />
-                <!-- La suppression est gardée SUR PLACE : un dialogue ferait
-                     perdre de vue l'article qu'on retire, et c'est justement ce
-                     qu'on veut relire avant de confirmer. -->
-                <fold-inline-confirm
-                  message="L’article part des trois langues à la fois."
-                  [loading]="busy()"
-                  (confirmed)="remove(paragraph.id)"
-                >
-                  <fold-button-icon icon="bin" size="sm" tone="critical" tooltip="Supprimer" />
-                </fold-inline-confirm>
-              </div>
-            </fold-element-title>
-
-            @if (editingId() === paragraph.id) {
-              <fold-input
-                label="Titre de l’article"
-                [value]="editDraft().title"
-                (valueChange)="setEdit('title', $event)"
-              />
-              <fold-textarea
-                label="Corps"
-                [rows]="8"
-                [value]="editDraft().body"
-                (valueChange)="setEdit('body', $event)"
-              />
-              <div class="actions">
-                <button foldButton emphasis="outline" intent="neutral" (click)="cancelEdit()">
-                  Annuler
-                </button>
-                <button
-                  foldButton
-                  [disabled]="!editComplete()"
-                  [loading]="busy()"
-                  (click)="saveEdit(paragraph)"
-                >
-                  Enregistrer cette langue
-                </button>
-              </div>
-            } @else {
-              <p class="article-body">{{ prose(paragraph).body }}</p>
-            }
-          </fold-card>
+          <app-legal-paragraph-card
+            [paragraph]="paragraph"
+            [index]="i"
+            [first]="$first"
+            [last]="$last"
+            [locale]="locale()"
+            [busy]="busy()"
+            [editing]="editingId() === paragraph.id"
+            (moved)="move(paragraph.id, $event)"
+            (removed)="remove(paragraph.id)"
+            (editStarted)="editingId.set(paragraph.id)"
+            (editCancelled)="editingId.set(null)"
+            (saved)="saveEdit(paragraph, $event)"
+          />
         }
       }
 
-      <!-- L'AJOUT, hors du sélecteur de langue et le disant : un article naît
-           dans les trois langues ou n'existe pas. La contrainte se voit dans la
-           FORME du formulaire — trois blocs ouverts ensemble — plutôt que dans
-           un refus du serveur après la saisie. -->
+      <!-- L'AJOUT, hors du sélecteur de langue : un article naît dans les trois
+           langues ou n'existe pas. -->
       <fold-card>
-        <fold-element-title variant="title" title="Ajouter un article" [subtitle]="addSubtitle()" />
+        <fold-element-title
+          variant="title"
+          title="Ajouter un article"
+          subtitle="Un article naît dans les trois langues à la fois : le document n’en accepte pas d’à moitié traduit."
+        />
 
         @if (adding()) {
-          <div class="languages">
-            @for (field of addFields(); track field.code) {
-              <fold-fieldset [legend]="field.name">
-                <fold-input
-                  label="Titre de l’article"
-                  [value]="field.prose.title"
-                  (valueChange)="setAdd(field.code, 'title', $event)"
-                />
-                <fold-textarea
-                  label="Corps"
-                  [rows]="6"
-                  [value]="field.prose.body"
-                  (valueChange)="setAdd(field.code, 'body', $event)"
-                />
-              </fold-fieldset>
-            }
-          </div>
-          <div class="actions">
-            <button foldButton emphasis="outline" intent="neutral" (click)="cancelAdd()">
-              Annuler
-            </button>
-            <button foldButton [disabled]="!addComplete()" [loading]="busy()" (click)="submitAdd()">
-              Ajouter l’article
-            </button>
-          </div>
+          <app-legal-paragraph-form
+            submitLabel="Ajouter l’article"
+            [busy]="busy()"
+            (submitted)="submitAdd($event)"
+            (cancelled)="adding.set(false)"
+          />
         } @else {
           <div class="actions">
-            <button foldButton emphasis="outline" intent="neutral" (click)="openAdd()">
+            <button foldButton emphasis="outline" intent="neutral" (click)="adding.set(true)">
               Écrire un article dans les trois langues
             </button>
           </div>

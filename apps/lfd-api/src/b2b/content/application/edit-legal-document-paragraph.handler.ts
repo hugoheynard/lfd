@@ -12,7 +12,10 @@ export class EditLegalDocumentParagraphHandler implements ICommandHandler<
   constructor(private readonly content: PlatformContentRepository) {}
 
   async execute(command: EditLegalDocumentParagraphCommand): Promise<void> {
-    const document = await this.content.loadLegalDocument(command.mention);
+    const document = await this.content.loadLegalDocument(
+      command.mention,
+      command.expectedRevision,
+    );
     document.editParagraph(command.paragraphId, command.prose);
     await this.content.saveLegalDocument(command.mention, document, command.staffUserId);
   }

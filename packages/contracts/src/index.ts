@@ -1012,6 +1012,12 @@ export {
   legalDocumentHeadingSchema,
   legalDocumentSchema,
   legalDocumentPositionPayloadSchema,
+  legalDocumentExpectedRevisionSchema,
+  legalDocumentTitlePayloadSchema,
+  legalDocumentParagraphWritePayloadSchema,
+  legalRequiredSectionPayloadSchema,
+  legalDocumentRevisionQuerySchema,
+  legalSectionKeySchema,
   legalMentionSchema,
 } from "./legal-document.js";
 export type {
@@ -1023,7 +1029,18 @@ export type {
   LegalDocumentPositionPayload,
   LegalDocumentView,
   LegalDocumentParagraphCreated,
+  LegalDocumentTitlePayload,
+  LegalDocumentParagraphWritePayload,
+  LegalRequiredSectionPayload,
+  LegalDocumentRevisionQuery,
 } from "./legal-document.js";
+export {
+  legalSectionKeys,
+  legalSectionLabels,
+  requiredSections,
+  sectionAnchor,
+} from "./legal-document.sections.js";
+export type { LegalSectionKey } from "./legal-document.sections.js";
 
 export {
   contentLocales,
@@ -1034,6 +1051,7 @@ export {
   DEFAULT_FOOTER_CONTENT,
   DEFAULT_LEGAL_DOCUMENT,
   DEMO_LEGAL_DOCUMENTS,
+  DEMO_LEGAL_SECTIONS,
 } from "./platform-content.defaults.js";
 
 export {

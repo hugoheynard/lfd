@@ -20,6 +20,7 @@
   "test/admin-subscriptions.e2e-spec.ts": 1873,
   "test/appointments.e2e-spec.ts": 8407,
   "test/b2b-legal-documents.e2e-spec.ts": 4874,
+  "test/b2b-legal-sections.e2e-spec.ts": 6089,
   "test/catalog-delivery-review.e2e-spec.ts": 7803,
   "test/catalog-delivery.e2e-spec.ts": 2450,
   "test/catalog-ingest-facts.e2e-spec.ts": 3489,

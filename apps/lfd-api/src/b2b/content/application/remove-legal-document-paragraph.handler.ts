@@ -12,7 +12,10 @@ export class RemoveLegalDocumentParagraphHandler implements ICommandHandler<
   constructor(private readonly content: PlatformContentRepository) {}
 
   async execute(command: RemoveLegalDocumentParagraphCommand): Promise<void> {
-    const document = await this.content.loadLegalDocument(command.mention);
+    const document = await this.content.loadLegalDocument(
+      command.mention,
+      command.expectedRevision,
+    );
     document.removeParagraph(command.paragraphId);
     await this.content.saveLegalDocument(command.mention, document, command.staffUserId);
   }

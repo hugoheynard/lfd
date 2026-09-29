@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { MAX_LEGAL_DOCUMENT_BODY, MAX_LEGAL_DOCUMENT_PARAGRAPHS } from "./legal-document.bounds.js";
+import { legalSectionKeys } from "./legal-document.sections.js";
 import { legalMentionOrder } from "./platform-content.defaults.js";
 
 /**
@@ -66,6 +67,9 @@ export const legalDocumentParagraphPayloadSchema = z.object({
 });
 export type LegalDocumentParagraphPayload = z.infer<typeof legalDocumentParagraphPayloadSchema>;
 
+/** Le vocabulaire fermé des sections requises, en schéma. Dérivé, pas recopié. */
+export const legalSectionKeySchema = z.enum(legalSectionKeys);
+
 /**
  * Un **paragraphe** enregistré : sa charge utile, plus l'identifiant que le
  * serveur lui a donné.
@@ -78,6 +82,23 @@ export type LegalDocumentParagraphPayload = z.infer<typeof legalDocumentParagrap
  */
 export const legalDocumentParagraphSchema = legalDocumentParagraphPayloadSchema.extend({
   id: z.string().trim().min(1).max(40),
+  /**
+   * La **section requise** que ce paragraphe porte, s'il en porte une (plan
+   * `legal/plan-page-confidentialite.md` §4.2).
+   *
+   * 🔴 FACULTATIVE, et c'est une question de survie : obligatoire, elle ferait
+   * échouer la relecture des lignes déjà en base, et le document de production
+   * s'afficherait vide.
+   *
+   * 🔴 Présente sur le paragraphe STOCKÉ et sur la vue, **jamais** sur
+   * {@link legalDocumentParagraphPayloadSchema} (§4.5, S2) : sinon n'importe quel
+   * appel d'ajout ou d'édition poserait ou retirerait la clé. Seule la commande
+   * « créer la section requise » la pose.
+   *
+   * ⚠️ Aucun refus de doublon ici (§4.5, B3) : il vit dans l'agrégat. Posé à la
+   * relecture, il rendrait le document illisible — donc vide en public.
+   */
+  section: legalSectionKeySchema.optional(),
 });
 export type LegalDocumentParagraph = z.infer<typeof legalDocumentParagraphSchema>;
 
@@ -117,13 +138,71 @@ export const legalDocumentSchema = z.object({
 export type LegalDocument = z.infer<typeof legalDocumentSchema>;
 
 /**
- * Où placer un paragraphe qu'on déplace — un rang, à partir de zéro.
+ * La **révision que l'écran a lue** — portée par TOUTE écriture d'un document
+ * légal (plan `legal/plan-page-confidentialite.md` §4.5, B2).
+ *
+ * Le document est une seule ligne réécrite en entier : sans elle, un onglet
+ * ouvert avant un geste d'un collègue le réécrirait sans ce geste, en silence.
+ * L'écriture est conditionnée à cette révision, et refusée (409) sinon.
+ *
+ * ⚠️ FACULTATIVE sur les cinq écritures déjà servies (décidé le 2026-09-29,
+ * CLAUDE.md §0 : étendre → basculer → resserrer) : le back-office en ligne ne
+ * l'envoie pas encore. Absente, pas de contrôle — le comportement d'avant.
+ * À resserrer en obligatoire une fois le back-office déployé
+ * (`documentation/todos/todo-legal-expected-revision.md`).
+ */
+export const legalDocumentExpectedRevisionSchema = z.number().int().min(0);
+
+/** Renommer le document : le titre dans les trois langues, et la révision lue. */
+export const legalDocumentTitlePayloadSchema = legalDocumentHeadingSchema.extend({
+  expectedRevision: legalDocumentExpectedRevisionSchema.optional(),
+});
+export type LegalDocumentTitlePayload = z.infer<typeof legalDocumentTitlePayloadSchema>;
+
+/**
+ * Ajouter ou réécrire un paragraphe : son texte, et la révision lue.
+ *
+ * Un schéma DISTINCT de {@link legalDocumentParagraphPayloadSchema}, qui reste la
+ * charge utile d'un paragraphe et dont le paragraphe stocké hérite — la révision
+ * n'a rien à faire dans le JSON enregistré.
+ */
+export const legalDocumentParagraphWritePayloadSchema = legalDocumentParagraphPayloadSchema.extend({
+  expectedRevision: legalDocumentExpectedRevisionSchema.optional(),
+});
+export type LegalDocumentParagraphWritePayload = z.infer<
+  typeof legalDocumentParagraphWritePayloadSchema
+>;
+
+/**
+ * Créer une **section requise** : la clé, son texte saisi par le rédacteur
+ * (aucun texte de départ — §4.5, S3), et la révision lue.
+ */
+export const legalRequiredSectionPayloadSchema = legalDocumentParagraphPayloadSchema.extend({
+  section: legalSectionKeySchema,
+  // OBLIGATOIRE ici, dès maintenant : aucun front en ligne n'appelle cette route.
+  expectedRevision: legalDocumentExpectedRevisionSchema,
+});
+export type LegalRequiredSectionPayload = z.infer<typeof legalRequiredSectionPayloadSchema>;
+
+/**
+ * La révision lue, en **chaîne de requête** — pour la suppression, dont la
+ * route `DELETE` n'a pas de corps. Coercée : un paramètre d'URL est une chaîne.
+ */
+export const legalDocumentRevisionQuerySchema = z.object({
+  expectedRevision: z.coerce.number().int().min(0).optional(),
+});
+export type LegalDocumentRevisionQuery = z.infer<typeof legalDocumentRevisionQuerySchema>;
+
+/**
+ * Où placer un paragraphe qu'on déplace — un rang, à partir de zéro, et la
+ * révision lue.
  *
  * La borne haute dépend du document et n'est donc pas dans le schéma : elle est
  * un invariant de l'agrégat, qui seul sait combien d'articles il porte.
  */
 export const legalDocumentPositionPayloadSchema = z.object({
   position: z.number().int().min(0),
+  expectedRevision: legalDocumentExpectedRevisionSchema.optional(),
 });
 export type LegalDocumentPositionPayload = z.infer<typeof legalDocumentPositionPayloadSchema>;
 
