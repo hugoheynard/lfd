@@ -1468,6 +1468,27 @@ l'écran des tournées.
 jeton, hors du contexte Docker), une version OSRM unique par digest, un repli
 qui remonte à la carte de santé, le runbook.
 
+**✅ Tranché par Hugo le 2026-09-29 : B-ter.**
+
+#### L8-C11 — B-ter, précisé pour le bâtir
+
+- **Ce qu'il coûte** (tarifs lus le 2026-09-29 sur
+  `developers.cloudflare.com/containers/pricing/`) : un conteneur n'est
+  facturé **que lorsqu'il tourne** ; endormi, rien. Le Durable Object qui le
+  pilote ne force pas l'éveil : l'API reste chaude par **choix** (cron `*/5`),
+  OSRM n'aura pas de cron. À 30 minutes par jour sur `lite`, quelques
+  **centimes par mois**.
+- **La carte se prépare dans le build de `lfd-osrm` lui-même** : le workflow
+  télécharge l'extrait, découpe la Savoie, prépare le graphe **dans la même
+  exécution**, et le met dans l'image. Plus de bucket ni de jeton R2 pour la
+  carte : la question « la carte au build » disparaît. **L'image est la carte
+  épinglée** : son tag porte la date et la version d'OSRM ; revenir à la carte
+  précédente, c'est redéployer le tag précédent.
+- **Où il vit** : `apps/lfd-osrm/` — `Dockerfile` (depuis l'image officielle
+  `osrm-backend`, épinglée par digest, amd64), `wrangler.jsonc`, Worker d'entrée
+  minimal, et un workflow à lui (mensuel + manuel), filtré sur son dossier.
+  Il ne partage **rien** avec `lfd-api`, qui ne change pas à cette étape.
+
 #### Questions à Hugo
 
 - **L8-Q1 — ✅ la Savoie seule** (Hugo, 2026-09-29) : « je vais jusqu'à La
