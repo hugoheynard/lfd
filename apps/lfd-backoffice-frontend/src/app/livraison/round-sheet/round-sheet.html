@@ -38,6 +38,9 @@
             <span class="who">
               <span class="num" [style.background]="swatch()">{{ index + 1 }}</span>
               <span data-stop-name>{{ nameOf(stop) }}</span>
+              @if (companyOf(stop); as company) {
+                <small class="reference" data-stop-company>{{ company }}</small>
+              }
               <small class="reference">{{ stop.reference }}</small>
             </span>
             <span class="where">

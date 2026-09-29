@@ -351,6 +351,15 @@ export class RoutePlanner {
     this.timingRefusal.set(null);
     this.highlighted.set(null);
     this.dragging.set(null);
+    // Les tournées gardées n'ont pas d'heures dans la proposition : un seul
+    // appel les chronomètre toutes, chargées comprises (composition inchangée),
+    // pour qu'une tournée chargée qui arrivera en retard le dise.
+    const kept = this.plan()
+      .filter((round) => round.kept && round.vehicleId !== '')
+      .map((round) => round.key);
+    if (kept.length > 0) {
+      void this.retime(kept);
+    }
   }
 
   /** Sans les réglages, le serveur prend leur défaut lui-même : rien à inventer ici. */

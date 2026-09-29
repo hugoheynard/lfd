@@ -13,6 +13,7 @@ import {
   type PlannedStop,
   planOf,
   planSummary,
+  stopCompanyOf,
   stopFlags,
   stopNameOf,
   stopPlaceOf,
@@ -118,7 +119,19 @@ const COMPOSED: ComposedDay = {
   unassigned: [
     {
       order: { orderId: 'o-1', reference: 'CMD-1' },
-      sheet: stopOf({ orderId: 'o-1', reference: 'CMD-1', tradeName: 'Chalet du Laisinant' }),
+      sheet: stopOf({
+        orderId: 'o-1',
+        reference: 'CMD-1',
+        tradeName: 'La Folie Douce Val d’Isère',
+        address: {
+          label: 'Le Chalet',
+          ligne1: '3 rue des Lilas',
+          ligne2: '',
+          codePostal: '73700',
+          ville: 'Paris',
+          pays: 'FR',
+        },
+      }),
     },
   ],
 };
@@ -142,7 +155,9 @@ describe('planOf', () => {
     const [first] = plan();
     const joined = first!.stops[0]!;
 
-    expect(stopNameOf(joined)).toBe('Chalet du Laisinant');
+    // Régression : « Le Chalet » (seconde adresse du client) s'affichait du nom de la société.
+    expect(stopNameOf(joined)).toBe('Le Chalet');
+    expect(stopCompanyOf(joined)).toBe('La Folie Douce Val d’Isère');
     expect(stopPlaceOf(joined)).toBe('3 rue des Lilas, Paris');
     // Absente de la feuille de route : la référence, faute de mieux.
     expect(stopNameOf(first!.stops[1]!)).toBe('CMD-2');
@@ -153,6 +168,15 @@ describe('planOf', () => {
 
     expect(loaded).toMatchObject({ lock: 'loaded', kept: true, timing: null, vehicleId: 'v-3' });
     expect(loaded?.stops.map((line) => line.orderId)).toEqual(['o-9']);
+  });
+});
+
+describe('stopNameOf', () => {
+  it('sans libellé d’adresse : la raison sociale, sans la répéter en second', () => {
+    const line = stop({ sheet: stopOf({ customerLabel: 'SARL Le Comptoir' }) });
+
+    expect(stopNameOf(line)).toBe('SARL Le Comptoir');
+    expect(stopCompanyOf(line)).toBeNull();
   });
 });
 

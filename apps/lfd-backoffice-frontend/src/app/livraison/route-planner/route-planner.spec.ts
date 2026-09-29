@@ -84,6 +84,32 @@ const COMPOSED = {
   rounds: [
     {
       round: {
+        id: 'r-8',
+        vehicleId: 'v-2',
+        vehicleName: 'Trafic',
+        passage: 2,
+        version: 9,
+        vehicleRetired: false,
+        departedAt: null,
+        stops: [],
+      },
+      stops: [
+        {
+          stop: {
+            stopId: 's-8',
+            orderId: 'o-8',
+            reference: 'CMD-8',
+            position: 1,
+            signals: [],
+            orderDay: '2026-10-01',
+          },
+          sheet: stopOf({ orderId: 'o-8', reference: 'CMD-8', customerLabel: 'La Folie Douce' }),
+          windowClash: null,
+        },
+      ],
+    },
+    {
+      round: {
         id: 'r-3',
         vehicleId: 'v-3',
         vehicleName: 'Jumpy',
@@ -99,7 +125,7 @@ const COMPOSED = {
   unassigned: [
     {
       order: { orderId: 'o-2', reference: 'CMD-2' },
-      sheet: stopOf({ orderId: 'o-2', reference: 'CMD-2', tradeName: 'Le Petit Chaudron' }),
+      sheet: stopOf({ orderId: 'o-2', reference: 'CMD-2', customerLabel: 'Le Petit Chaudron' }),
     },
   ],
 };
@@ -173,7 +199,7 @@ async function boot(canWrite = true): Promise<ComponentFixture<RoutePlanner>> {
                   reference: orderId.toUpperCase(),
                   arrival: '06:45',
                   window: null,
-                  windowMissed: false,
+                  windowMissed: orderId === 'o-8',
                 })),
               })),
             });
@@ -242,8 +268,8 @@ describe('RoutePlanner', () => {
     const [first, second] = Array.from(sheet?.querySelectorAll('[data-planned-stop]') ?? []);
 
     expect(element.querySelector('[data-plan-title]')?.textContent).toContain('Départ · Labo');
-    expect(element.querySelector('[data-plan-summary]')?.textContent).toContain('2 livraisons');
-    expect(element.querySelector('[data-summary-late]')?.textContent).toContain('1 hors créneau');
+    expect(element.querySelector('[data-plan-summary]')?.textContent).toContain('3 livraisons');
+    expect(element.querySelector('[data-summary-late]')?.textContent).toContain('2 hors créneau');
     expect(sheet?.textContent).toContain('2 arrêts · 42,0 km · 2 h 10');
     expect(sheet?.querySelector('[data-over-duration]')).not.toBeNull();
     expect(first?.textContent).toContain('7 h 20');
@@ -255,6 +281,22 @@ describe('RoutePlanner', () => {
     // Plus de vol d'oiseau (L10b-C5) : l'écran ne dit plus d'où viennent les durées.
     expect(element.textContent).not.toContain('vol d’oiseau');
     expect(element.querySelector('[data-map-absent]')).not.toBeNull();
+  });
+
+  it('chronomètre d’un seul appel les tournées gardées, chargée ou partie comprise', async () => {
+    const fixture = await boot();
+    await click(fixture, '[data-propose]');
+    const locked = host(fixture).querySelector('[data-round-sheet][data-locked="departed"]');
+
+    // La tournée vide (Jumpy) n'a rien à chronométrer.
+    expect(wire.timed).toEqual([
+      {
+        day: '2026-10-01',
+        rounds: [{ roundId: 'r-8', vehicleId: 'v-2', orderIds: ['o-8'] }],
+      },
+    ]);
+    expect(locked?.querySelector('[data-planned-stop]')?.textContent).toContain('6 h 45');
+    expect(locked?.textContent).toContain('Arrive après son créneau');
   });
 
   it('montre la tournée partie, verrouillée : on ne la glisse pas', async () => {
@@ -277,7 +319,7 @@ describe('RoutePlanner', () => {
     jumpy?.triggerEventHandler('dropped', 0);
     await settle(fixture);
 
-    expect(wire.timed).toEqual([
+    expect(wire.timed.slice(1)).toEqual([
       {
         day: '2026-10-01',
         rounds: [

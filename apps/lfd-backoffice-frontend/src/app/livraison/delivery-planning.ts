@@ -363,9 +363,26 @@ export function stopFlags(stop: PlannedStop): readonly StopFlag[] {
   return flags;
 }
 
-/** Le nom du client : l'enseigne, sinon la raison sociale, sinon la référence seule. */
+/**
+ * Le nom d'un arrêt : le LIBELLÉ DE L'ADRESSE livrée (« Le Chalet »), parce
+ * qu'un client peut être livré à plusieurs endroits et que c'est l'endroit
+ * qu'on cherche ; sinon la raison sociale ; sinon la référence seule.
+ */
 export function stopNameOf(stop: PlannedStop): string {
-  return stop.sheet === null ? stop.reference : (stop.sheet.tradeName ?? stop.sheet.customerLabel);
+  if (stop.sheet === null) {
+    return stop.reference;
+  }
+  const label = stop.sheet.address?.label.trim() ?? '';
+  return label === '' ? stop.sheet.customerLabel : label;
+}
+
+/** La société, en second, quand elle diffère du nom affiché ; `null` sinon. */
+export function stopCompanyOf(stop: PlannedStop): string | null {
+  if (stop.sheet === null) {
+    return null;
+  }
+  const company = stop.sheet.tradeName ?? stop.sheet.customerLabel;
+  return company === stopNameOf(stop) ? null : company;
 }
 
 /** « 3 rue des Lilas, Paris », ou `null` sans adresse. */

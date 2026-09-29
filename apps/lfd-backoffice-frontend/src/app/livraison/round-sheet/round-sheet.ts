@@ -9,6 +9,7 @@ import {
 import {
   type PlannedRound,
   type PlannedStop,
+  stopCompanyOf,
   stopFlags,
   stopNameOf,
   stopPlaceOf,
@@ -98,6 +99,7 @@ export class RoundSheet {
   protected readonly flags = stopFlags;
   protected readonly timeLabel = timeLabel;
   protected readonly nameOf = stopNameOf;
+  protected readonly companyOf = stopCompanyOf;
   protected readonly placeOf = stopPlaceOf;
 
   /** « créneau 8 h 00 – 10 h 00 », ou « sans créneau ». */
