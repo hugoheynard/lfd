@@ -1154,6 +1154,108 @@ chaque tournée touchée : son identifiant, son véhicule, la liste des arrêts
 - **L7-Q5** — Une première valeur pour la **durée maximale** d'une tournée et
   pour le **temps d'arrêt** moyen ?
 
+### Lot 8 — OSRM Savoie : des durées par la route
+
+> **Ouvert le 2026-09-29.** Hugo : « à un moment on avait parlé de faire OSRM
+> Savoie » — prévu par l'architecture (§7, « OSRM Savoie — mise en place »),
+> renvoyé à « ensuite » par le lot 7. 📐 Rien n'est bâti. **La première étape
+> est une mesure, pas du code.**
+
+#### Pourquoi, et pourquoi avant de se fier aux propositions
+
+Le lot 7 calcule à vol d'oiseau, avec un facteur de détour. En montagne, c'est
+faux au mauvais endroit : deux clients à 3 km l'un de l'autre peuvent être à
+40 minutes de route, de part et d'autre d'un col. Or ces coûts ne servent pas
+qu'à **ordonner** une tournée : ils servent à **répartir** les arrêts entre les
+véhicules (k-medoids sur les coûts). Avec des coûts faux, le calculateur
+met une vallée et sa voisine dans la même camionnette. **Les propositions du
+lot 7 ne sont pas à suivre en production sans ce lot.**
+
+#### Ce qui ne change pas
+
+Le lot 7 ne connaît que le port `CostFn` / `DistanceMatrix`. Remplacer le vol
+d'oiseau par OSRM, c'est **un adaptateur de plus**, `OsrmDistanceMatrix` :
+l'algorithme, « Proposer », « Appliquer » et l'écran ne bougent pas.
+L'affectation gagne en justesse, pas seulement l'ordre (architecture §7).
+
+#### L8-C1 — Où ça tourne : un second conteneur Cloudflare
+
+Pas un Worker : OSRM est un programme natif (C++) qui tient le réseau routier
+en mémoire ; un Worker est borné à 128 Mo et n'exécute que du JS ou du WASM.
+Un **Cloudflare Container**, comme `lfd-api` (`apps/lfd-api/wrangler.jsonc`,
+classe `Backend`) :
+
+- image `osrm-backend`, **graphe Savoie précalculé dedans** — extrait
+  Auvergne-Rhône-Alpes (Geofabrik), découpé au polygone de la Savoie
+  (`osmium extract`), puis `osrm-extract` → `osrm-partition` →
+  `osrm-customize` (profil `car`, algorithme MLD) ;
+- **appelé par `lfd-api` seul**, jamais depuis un navigateur, et jamais
+  exposé par la passerelle ;
+- **pas besoin d'être allumé en permanence** : le calcul se fait le matin, à
+  « Proposer ». Il s'endort, se réveille au premier appel (le temps de charger
+  le graphe), et reste chaud tant qu'on compose. Son `sleepAfter` se règle
+  si le réveil gêne ;
+- **aucune adresse n'en sort** : OSRM ne reçoit que des coordonnées, et c'est
+  notre service. La page de confidentialité n'a rien à ajouter pour lui.
+
+**Le repli**, si Cloudflare ne le permet pas (mémoire, taille d'image, coût) :
+un petit serveur dédié (VPS, 2 à 4 Go), même image. Et en dernier recours un
+service managé (HERE, OpenRouteService), où les coordonnées partent chez un
+tiers — architecture §7, « Option managée ».
+
+#### L8-C2 — Les services utilisés
+
+- **`/table`** — la matrice de durées et de distances entre le départ et tous
+  les arrêts. C'est tout ce dont `OsrmDistanceMatrix` a besoin. ⚠️ Plafonné par
+  `--max-table-size` (100 points par défaut) : largement au-dessus de quelques
+  dizaines d'arrêts, mais à régler et à **refuser nommément** au-delà.
+- **`/route`** — plus tard, pour tracer une tournée sur une carte (port
+  `Directions`, architecture §7). Hors de ce lot.
+- Les coûts deviennent **asymétriques** (sens uniques, montées) : l'ordonnanceur
+  du lot 7 est déjà ATSP, rien à changer.
+
+#### L8-C3 — Quand OSRM ne répond pas
+
+« Proposer » ne doit pas tomber avec lui. Délai court (`AbortSignal`) ; en cas
+d'échec, **retour au vol d'oiseau**, et l'écran le dit (« estimation à vol
+d'oiseau : le calcul routier ne répond pas »). Jamais une proposition routière
+annoncée qui n'en est pas une. L'URL vit dans `AppConfig` ; sans URL, vol
+d'oiseau (dev, e2e sans réseau).
+
+#### L8-C4 — Tenir la carte à jour
+
+L'image se **reconstruit chaque mois** par la CI : télécharger l'extrait,
+découper, précalculer, publier. Les routes de montagne changent peu, mais une
+route fermée ou ouverte change des tournées. Un workflow planifié de plus :
+`documentation/ci-cd/` le décrit, et la mémoire du dépôt le rappelle — un
+workflow YAML n'est lu que par GitHub, aucune porte locale ne le vérifie.
+
+#### L8-C5 — La mesure, d'abord (étape 0)
+
+Rien ne se bâtit avant d'avoir **mesuré**, en local :
+
+1. construire le graphe Savoie (Docker `osrm-backend`) ;
+2. mesurer la **mémoire** de `osrm-routed` chargé, la **taille** des fichiers
+   `.osrm*`, le **temps de chargement** (le réveil), et le temps d'un `/table`
+   à 50 points ;
+3. confronter aux **limites de Cloudflare Containers** — types d'instance et
+   leur mémoire, taille maximale d'image, coût — dans leur documentation, datée
+   au jour de la lecture ;
+4. comparer une dizaine de trajets réels connus de l'équipe avec ce qu'OSRM
+   annonce, et avec le vol d'oiseau × 1,4 : c'est ce qui dira si le lot vaut
+   son coût.
+
+⚠️ **Rien de ce qui précède n'est vérifié** (2026-09-29) : ni la mémoire d'OSRM
+sur la Savoie, ni les types d'instance Cloudflare, ni la taille d'image
+admise. Les ordres de grandeur écrits ici sont des estimations.
+
+#### Questions à Hugo
+
+- **L8-Q1** — Le polygone : la **Savoie** seule, ou Savoie + Haute-Savoie (et
+  l'Isère limitrophe) si des tournées passent la frontière du département ?
+- **L8-Q2** — Si Cloudflare ne tient pas : d'accord pour un petit serveur
+  dédié, et chez quel hébergeur ?
+
 ### Plus tard, et seulement sur décision
 
 - **Lot 6 — La porte** — ⏸ **en dette** (Hugo, 2026-09-29 : « met le 6 en dette
