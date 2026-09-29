@@ -1000,6 +1000,31 @@ n'est corrigé ; tout est à reprendre avec les deux sources de fenêtre.
     réseau à la porte : faut-il que les gestes s'enregistrent hors ligne et se
     synchronisent au retour ?
 
+  **Tranché par Hugo le 2026-09-29** :
+
+  - **L6-Q1 — un membre avec compte, ou un livreur sans compte.** Le second
+    est une **frontière de sécurité** neuve : un accès sans compte Auth0, borné
+    à **une** tournée d'**un** jour, révocable (un lien à jeton envoyé au
+    téléphone du livreur, par exemple). `vitruve` d'office.
+  - **L6-Q2 — (a) d'abord, (b) quand personne n'accueille.** Le code de
+    retrait part au **contact de livraison** — qui n'a aujourd'hui qu'un nom et
+    un téléphone : il faut recueillir son e-mail (le carnet, `address.ts`) ou
+    envoyer par SMS, que rien n'envoie encore. Sans personne pour recevoir :
+    le livreur atteste, avec une **photo de dépôt**.
+    🔴 Hugo proposait qu'un code présent sur le sac ne pose pas de problème
+    « si un livreur qui le scanne ne déclenche rien ». Ce n'est pas tenable :
+    le serveur ne voit que le code scanné, pas d'où il vient ; un code sur le
+    sac et un code sur le téléphone du client sont le même geste. La preuve
+    tient parce qu'il faut être **deux** — donc le code n'est **jamais** sur le
+    sac. Le QR du sac (lot 4) porte l'identifiant du sac, pas le code.
+  - **L6-Q3 — le scan du code vaut signature, sinon un tracé au doigt.** Une
+    adresse qui exige la signature est satisfaite par le code présenté par le
+    client ; en (b), le livreur fait signer au doigt, nom tapé.
+  - **L6-Q4 — l'admin choisit**, livraison ratée par livraison ratée :
+    relivrer un autre jour, retrait au comptoir, ou annulation. Le changement
+    de jour est un avenant du commerce (`documentation/order/`).
+  - **L6-Q5 — pas de hors-ligne pour l'instant.**
+
 - **Lot 7 — La proposition automatique** : l'algorithme de l'architecture
   (k-medoids puis ordre ATSP) **propose** une répartition que l'humain corrige.
   Seulement si composer à la main prend trop de temps chaque matin.
