@@ -339,6 +339,42 @@ C'est le précédent de `order_handover` : code dans son bloc
 `lint:cross-schema-join` sur une jointure SQL écrite à la main entre une
 tournée et une table du fournil — la limite qu'a déjà le retrait.
 
+### Lot 2 bis — Le chargement d'un véhicule : dimensions et froid
+
+> **Tranché le 2026-09-29.** Hugo : « ajouter aux véhicules des dimensions de
+> stockage hauteur largeur longueur, capacité frigorifique » ; « intérieur en
+> cm » ; froid « 2c » (réfrigéré ou non, volume réfrigéré, plage de
+> température).
+
+**L2b-C1 — Les dimensions** : longueur, largeur et hauteur **utiles**
+(l'intérieur de l'espace de chargement), en **centimètres**, entiers,
+facultatives mais toutes les trois ou aucune (1 à 1 000 cm). Le volume utile
+en litres est **dérivé** (jamais saisi, jamais stocké à part) et affiché
+(« 3,3 m³ »).
+
+**L2b-C2 — Le froid** : un véhicule est sec (`null`) ou porte une **caisse
+réfrigérée** : volume réfrigéré en litres (1 à 20 000, jamais au-dessus du
+volume utile quand celui-ci est connu) et plage de température en °C,
+minimum et maximum (−30 à +15, minimum ≤ maximum). Le value object du domaine
+refuse, avec la phrase à lire.
+
+**L2b-C3 — Où ça se voit** : la fiche véhicule (saisie), la liste de la
+flotte (dimensions, volume, « ❄ 400 L · 0 à +4 °C »), l'en-tête de chaque
+camionnette dans l'écran Planifier et le simulateur (lecture).
+
+**L2b-C4 — Ce que le calcul n'en fait PAS encore** : le calculateur n'a aucun
+volume de commande — un sac n'a pas de dimensions, un produit pas de volume
+au catalogue, une commande ne dit pas si elle demande le froid. La capacité
+n'entre donc dans aucune contrainte. Étape suivante, à décider : un volume
+par sac (déclaré au colisage) ou par produit (catalogue), et « froid requis »
+par produit — alors seulement « ça ne rentre pas » et « celle-ci doit partir
+dans la camionnette frigo » pourront être calculés.
+
+**L2b-C5 — Persistance** : colonnes nullables sur
+`production.delivery_vehicle` (migration additive), contrainte CHECK pour
+« les trois dimensions ou aucune » et pour la plage de température ; la
+correction d'un véhicule garde sa trace au journal comme aujourd'hui.
+
 ### Lot 3 — Composer : répartir, puis ordonner — ✅ bâti le 2026-09-29
 
 **Ce que l'équipe obtient** : sur `/livraison/tournees`, pour le jour J, une colonne par
