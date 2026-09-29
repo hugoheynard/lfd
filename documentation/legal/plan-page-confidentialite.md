@@ -1,6 +1,7 @@
 # Plan — la page publique « Politique de confidentialité »
 
-> **État : 📐 plan, rien n'est bâti.** Ouvert le 2026-09-29 : la soumission de
+> **État : 🔨 P3 bâti (`3cbc2c4d4`), P2 à bâtir.** Contredit par `vitruve` le
+> 2026-09-29 (§4.5). Ouvert le 2026-09-29 : la soumission de
 > l'app sur Meta for Developers (connexion Facebook) refuse sans **URL de
 > politique de confidentialité** ni **suppression des données utilisateur**.
 > Le texte à publier part du modèle que Hugo a collé le même jour ; ce plan dit
@@ -35,7 +36,7 @@ Ouvert le 2026-09-29.
 | La politique de confidentialité **existe comme document légal** : un des cinq (`legalNotice`, `salesTerms`, `privacy`, `cookies`, `accessibility`), rédigé dans le back-office. | `apps/lfd-api/src/b2b/content/`, `packages/contracts/src/legal-document.ts` |
 | Un document = un **titre** et des **paragraphes** (titre + corps), en **fr / en / it**. Chaque paragraphe a un **id ULID** donné par le serveur, jamais dérivé du titre.        | `legalDocumentSchema`, `legalDocumentParagraphSchema`                       |
 | Il est servi **en public**, sans jeton : `GET /content/legal/:mention` (throttle 60/min, mention inconnue → 404).                                                               | `platform-content.controller.ts`                                            |
-| La boutique l'affiche **dans une fenêtre** ouverte depuis le pied de page — **aucune adresse** ne l'ouvre directement.                                                          | `client/legal-document-panel/`, `client/foot/`                              |
+| La boutique l'affiche **dans une fenêtre** ouverte depuis le pied de page ; depuis P3, `/confidentialite` le rend aussi en HTML.                                                | `client/legal-document-panel/`, `client/foot/`                              |
 | La boutique est un **SPA statique** sur Cloudflare Pages (`outputMode: static`, `ssr: false`), avec un repli `_redirects` vers `index.html`.                                    | `angular.json`, `DEPLOYMENT-CLOUDFLARE.md`, `public/_redirects`             |
 | Connexion client : **Auth0**, par **passkey** ; **Google** comme méthode sociale. **Facebook est reporté** : sa ligne est prête, activée « le jour où le tenant l'active ».     | `auth/auth.config.ts`, `account/login-methods.ts` (`ADDABLE_PROVIDERS`)     |
 | **Aucun bouton « Supprimer mon compte »** dans la boutique, ni commande côté API (cherché : `deleteAccount`, « supprimer mon compte »).                                         | —                                                                           |
@@ -80,24 +81,89 @@ La page rendue par la Function :
 - `Cache-Control` court (quelques minutes) : un correctif doit se voir vite ;
 - si l'API ne répond pas : **503** avec un message lisible, jamais une page vide en 200.
 
-## 4. L'ancre `#suppression-des-donnees`
+## 4. L'ancre `#suppression-des-donnees` — une section REQUISE, pas un champ libre
 
-Meta pointe une section précise. Or les paragraphes n'ont qu'un **id ULID**
-(`01J…`), et c'est voulu : un id dérivé du titre mentirait au premier
-renommage. Deux façons d'avoir une ancre stable :
+> Révisé le 2026-09-29 (Hugo : « on aurait pas mieux fait d'avoir un
+> paragraphe obligatoire pour la suppression des données ? »). La première
+> version proposait un champ `anchor` libre, saisi au back-office : il se
+> vide, il se supprime avec son paragraphe, et le lien donné à Meta meurt sans
+> que rien ne le dise. Meta ne pointe pas « une ancre que quelqu'un a tapée »,
+> il pointe **la section de suppression** — une obligation, donc une structure.
 
-- **(a) un champ `anchor` facultatif** sur le paragraphe, saisi au back-office
-  (`suppression-des-donnees`), validé en slug, unique dans le document. Stable,
-  explicite, et utile aux autres documents (un lien vers « Droit de
-  rétractation » des CGV). Demande une évolution du contrat, **additive** : un
-  document sans ancre se lit comme avant.
-- **(b) une URL dédiée** `/confidentialite/suppression-des-donnees` qui ne rend
-  que le paragraphe dont le titre commence par « Suppression » — fragile, c'est
-  le titre-clé que le contrat a écarté.
+### 4.1 Ce qui existe et contraint la forme
 
-**Recommandation : (a).** Tant qu'il n'est pas bâti, la page peut rendre
-l'`id` ULID comme ancre et Meta recevoir `…/confidentialite#<ulid>` : ça tient
-tant qu'on ne supprime pas ce paragraphe pour le recréer.
+Ouvert le 2026-09-29.
+
+- Le document est une colonne **JSON** (`platform_content.content`), relue par
+  `legalDocumentSchema` ; un contenu **illisible retombe en silence** sur
+  `DEFAULT_LEGAL_DOCUMENT` — un titre, **zéro paragraphe**
+  (`prisma-platform-content.repository.ts`, `parseLegalDocument`). Un champ
+  ajouté doit donc être **facultatif** au schéma : obligatoire, il ferait
+  échouer la relecture des lignes existantes, et le document de production
+  s'afficherait **vide**.
+- Un document sans ligne en base se lit aussi comme ce contenu de départ vide.
+- L'agrégat `LegalDocument` (`b2b/content/domain/entities/legal-document.ts`)
+  porte `removeParagraph` : c'est là qu'un refus se pose.
+
+### 4.2 La conception
+
+- **Une clé de section**, facultative, sur le paragraphe : `section?:
+LegalSectionKey`. Vocabulaire **fermé**, dans le contrat : aujourd'hui
+  `dataDeletion` seul.
+- **Des sections requises par mention**, écrites une fois dans le contrat :
+  `privacy → [dataDeletion]`, les autres → `[]`. Les CGV pourront exiger
+  `withdrawal` (droit de rétractation) le jour venu, sans nouveau mécanisme.
+- **L'ancre dérive de la clé**, jamais de la saisie :
+  `dataDeletion → suppression-des-donnees`. Elle ne change pas avec la langue
+  (la page publique est en français, et Meta reçoit une URL).
+- **L'agrégat refuse** de supprimer un paragraphe qui porte une clé requise
+  (`BusinessError`, message qui dit quoi faire : « Cette section est exigée
+  par la politique de confidentialité : modifiez son texte, elle ne se
+  supprime pas. »). Il refuse aussi **deux paragraphes de même clé**.
+- **Créer la section** : une commande `AddRequiredSection(mention, section)`,
+  qui pose le paragraphe avec un texte de départ dans les trois langues, et
+  refuse si elle existe déjà. Le back-office montre, tant qu'elle manque, un
+  encadré « Section requise manquante : Suppression des données » avec le
+  bouton qui la crée. Un paragraphe requis s'affiche avec un badge « Requis »
+  et sans bouton Supprimer ; son texte se modifie, il se déplace.
+- **La page publique** met `id="suppression-des-donnees"` sur ce paragraphe ;
+  les autres gardent leur id ULID.
+
+### 4.3 Pourquoi pas une migration de données
+
+Poser la section **par migration** (réécrire le JSON de production pour y
+ajouter le paragraphe) garantirait sa présence dès le déploiement. Mais :
+
+- c'est du SQL qui réécrit une colonne JSON validée par un schéma TypeScript :
+  la moindre forme fausse fait retomber le document de production sur **zéro
+  paragraphe**, en silence (§4.1) ;
+- le texte à y mettre est **juridique** : un texte de migration serait un
+  texte provisoire publié.
+
+Le geste explicite du back-office (« Créer la section ») coûte un clic à
+Hugo, une fois, et n'écrit que par l'agrégat. **Pas de migration de données.**
+Ce qui est structurel, c'est l'**impossibilité de la retirer** une fois posée.
+
+### 4.4 Ce qui reste un risque, dit
+
+Tant que la section n'a pas été créée, `#suppression-des-donnees` ne mène
+nulle part : la page s'ouvre en haut. Le back-office le dit ; la Function peut
+aussi journaliser l'absence. Meta ne doit recevoir l'URL qu'**après** la
+création de la section.
+
+### 4.5 Les objections de `vitruve` (2026-09-29), et ce qu'elles changent
+
+| #   | Objection                                                                                                                                                                                   | Reprise                                                                                                                                                                                                                                                                                 |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1  | `editParagraph` reconstruit le paragraphe depuis la charge utile (`legal-document.ts:92`) : la première correction du texte **efface la clé**, la section redevient supprimable.            | `editParagraph` **garde** `section`. Test de non-régression : éditer une section requise la laisse requise.                                                                                                                                                                             |
+| B2  | Aucune concurrence optimiste : `saveLegalDocument` fait un `upsert` du JSON entier sans condition de révision. Un onglet ouvert AVANT la création de la section la réécrit sans elle.       | **Chaque commande porte la révision qu'elle a lue** ; l'enregistrement est conditionné (`WHERE revision = attendue`), refus 409 lisible sinon (« Quelqu'un a modifié ce document pendant que vous l'aviez ouvert : rechargez »). Vaut pour les cinq documents, pas seulement `privacy`. |
+| B3  | Le repli silencieux sur un document vide existe aussi au **chargement pour écrire** (`loadLegalDocument`) : un contenu illisible + une commande = la politique de production réécrite vide. | Charger **pour écrire** un contenu illisible **refuse** (`TechnicalError`, rien n'est écrit). La lecture publique garde son repli. Le refus « deux paragraphes de même clé » vit dans l'**agrégat**, jamais dans le `refine` de relecture.                                              |
+| S1  | Retour arrière : Zod retire les clés inconnues ; une ancienne instance ou un P2 annulé réécrit le document sans `section`.                                                                  | Dit : **irréversible** une fois une écriture faite par une version antérieure. Après un retour arrière, recréer la section avant toute autre modification. Le déploiement de l'API n'est pas vérifié progressif — à vérifier au bâti.                                                   |
+| S2  | Où vit `section` : sur la charge utile, les routes POST/PUT permettraient à tout client de poser ou retirer la clé.                                                                         | `section` est au **schéma stocké et à la vue seulement**, jamais dans `legalDocumentParagraphPayloadSchema`. Seule `AddRequiredSection` la pose.                                                                                                                                        |
+| S3  | `AddRequiredSection` poserait un « texte de départ » : un texte juridique provisoire publié — l'objection même faite à la migration.                                                        | **Pas de texte de départ.** Le bouton ouvre le formulaire d'un paragraphe (titre + corps, trois langues) ; la section naît avec le texte que le rédacteur saisit.                                                                                                                       |
+| S4  | Le semis ne rejoue que `SetTitle` / `AddParagraph` : une base de développement n'aura jamais la section.                                                                                    | Le semis crée la section `dataDeletion` de `privacy` par `AddRequiredSection`.                                                                                                                                                                                                          |
+| S5  | L'URL d'instructions de Meta doit décrire un **geste réel**, et aucun n'existe (§6) ; la Function ignore en silence un paragraphe incomplet.                                                | La soumission à Meta **dépend aussi de Q1** (§7). La Function journalise (`console.warn`, lu dans les journaux Pages) une politique **sans** section `dataDeletion` et tout paragraphe écarté.                                                                                          |
+| S6  | Le rendu de P3 pose `id=ULID` ; il doit lire `section`.                                                                                                                                     | Le rendu fait partie de P2 : `id="suppression-des-donnees"` sur la section, ULID ailleurs.                                                                                                                                                                                              |
 
 ---
 
@@ -187,15 +253,16 @@ plan.
 
 ## 7. Les lots
 
-| Lot                  | Contenu                                                                                                                                  | Qui                          |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| **P1**               | Le texte : remplir les crochets (§5.5), corriger le modèle (§5.1–5.4), le saisir au back-office dans le document `privacy`, en fr/en/it. | Hugo (+ relecture juridique) |
-| **P2**               | Champ `anchor` facultatif sur un paragraphe (contrat, domaine, back-office) (§4a).                                                       | `batisseur` + `pablo`        |
-| **P3** ✅ 2026-09-29 | La Pages Function `/confidentialite` (§3A) ; vérification sans JavaScript (`curl`) et en navigation privée.                              | `batisseur`                  |
-| **P4**               | La route Angular `/confidentialite` et le lien du pied de page (§3B).                                                                    | `pablo`                      |
+| Lot                  | Contenu                                                                                                                                                                                                                                                                                                                                      | Qui                          |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| **P1**               | Le texte : remplir les crochets (§5.5), corriger le modèle (§5.1–5.4), le saisir au back-office dans le document `privacy`, en fr/en/it.                                                                                                                                                                                                     | Hugo (+ relecture juridique) |
+| **P2**               | Sections requises (§4.2, §4.5) : clé `section` au schéma stocké, `editParagraph` qui la garde, refus dans l'agrégat, révision attendue sur toutes les commandes, chargement pour écrire qui refuse l'illisible, `AddRequiredSection` sans texte de départ, semis, badge et encadré au back-office, ancre et journalisation dans la Function. | `batisseur` + `pablo`        |
+| **P3** ✅ 2026-09-29 | La Pages Function `/confidentialite` (§3A) ; vérification sans JavaScript (`curl`) et en navigation privée.                                                                                                                                                                                                                                  | `batisseur`                  |
+| **P4**               | La route Angular `/confidentialite` et le lien du pied de page (§3B).                                                                                                                                                                                                                                                                        | `pablo`                      |
 
-P1 ne dépend de rien. Pour soumettre à Meta au plus vite : P1 puis P3, avec
-l'ancre ULID en attendant P2.
+P1 ne dépend de rien. Pour soumettre à Meta : **Q1 tranchée et la procédure
+de suppression réellement exécutable**, P2 déployé, la section créée au
+back-office avec son texte (P1), puis l'URL donnée à Meta.
 
 ---
 
