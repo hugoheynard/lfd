@@ -1499,6 +1499,112 @@ qui remonte à la carte de santé, le runbook.
 - **L8-Q2** — Si Cloudflare ne tient pas : d'accord pour un petit serveur
   dédié, et chez quel hébergeur ?
 
+### Lot 9 — Le simulateur de tournée
+
+> **Ouvert le 2026-09-29.** Hugo : « un simulateur dans le back-office où on
+> met des horaires et des adresses pour tester ». 📐 Rien n'est bâti.
+
+**Ce que l'équipe obtient** : un écran de l'espace Livraison où l'on saisit
+des arrêts **inventés** — une adresse ou un point GPS, une fenêtre horaire —,
+on choisit des véhicules et les réglages du calcul, et on clique « Proposer » :
+les tournées s'affichent comme au lot 7 (durées, kilomètres, heures
+d'arrivée, fenêtres manquées). **Rien n'est écrit** : ni commande, ni tournée.
+
+**Pourquoi maintenant** : c'est l'outil pour **régler** le calculateur avant de
+lui confier de vraies commandes — durée maximale, temps d'arrêt, heure de
+départ — et pour **voir la différence** entre vol d'oiseau et route dès
+qu'OSRM (lot 8) est déployé. Un scénario peut s'enregistrer et se rejouer.
+
+**Comment** :
+
+- le calculateur du lot 7 est fait de **fonctions pures** (`delivery/domain/services/`) :
+  le simulateur les appelle avec des arrêts saisis au lieu des commandes du
+  jour. Aucun agrégat, aucune composition touchée ;
+- situer une adresse saisie passe par le même géocodeur et **remplit le même
+  cache** (une empreinte, jamais l'adresse) — accepté, c'est le même service ;
+  un point GPS saisi n'est jamais géocodé ;
+- les scénarios enregistrés sont des **données de réglage**, sans client : une
+  table du bloc `delivery`, sans journée (exception D7 écrite) ;
+- droit : lire et simuler sous `delivery_rounds:read` ; enregistrer un
+  scénario sous `delivery_rounds:write`. Pas de droit neuf.
+
+**Question à Hugo** : un scénario peut-il **partir** d'une journée réelle
+(« rejouer demain avec un véhicule de moins ») ? Recommandé : oui, copié en
+arrêts inventés, pour ne jamais écrire dans la vraie composition.
+
+### Lot 10 — La carte des tournées, belle
+
+> **Ouvert le 2026-09-29.** Hugo : « je veux que ça soit beau ». 📐 Rien n'est
+> bâti. **La première étape est une maquette, pas du code.**
+
+**Ce que l'équipe obtient** : sur l'écran des tournées (et dans le
+simulateur), une carte de la Savoie avec le **relief**, chaque tournée tracée
+**par la route** dans sa couleur, les arrêts numérotés avec leur heure
+d'arrivée, le labo marqué ; clair et sombre.
+
+**L10-C1 — Ce qui la rend belle** :
+
+- le **relief** : un ombrage des pentes rend lisibles vallées, cols et
+  stations — et explique à lui seul pourquoi Courchevel est loin de Val
+  d'Isère. MapLibre le dessine à partir d'un modèle d'altitude ; une
+  inclinaison légère (terrain 3D) en option ;
+- **un style à nous**, dérivé des tokens fold du back-office : un fond calme et
+  désaturé pour que les tournées ressortent, une couleur par véhicule, une
+  typographie qui ne concurrence pas les tracés ;
+- le **tracé réel** de chaque tournée (`/route` d'OSRM, lot 8), des
+  transitions douces, un mode sombre soigné.
+
+**L10-C2 — Les tuiles, hébergées par nous** (Hugo, 2026-09-29 : « on peut
+héberger des tuiles ? ») :
+
+- tuiles **vectorielles** de la Savoie en **un seul fichier PMTiles**,
+  fabriqué à partir du **même extrait** OpenStreetMap que le graphe OSRM
+  (Planetiler ou tilemaker), posé dans **R2** ; aucun serveur de tuiles : le
+  navigateur lit par requêtes partielles ;
+- le **relief** en second fichier (modèle d'altitude public — IGN ou
+  Copernicus), même stockage ;
+- **mis à jour par le workflow mensuel** du lot 8 : même extrait, une étape de
+  plus ;
+- MapLibre **chargé par le seul écran carte**, jamais au démarrage du
+  back-office (dont le budget initial est déjà dépassé) ;
+- mention **« © OpenStreetMap »** à l'écran (ODbL), toujours ;
+- ⚠️ tailles **non mesurées** : quelques dizaines de Mo pour les rues, sans
+  doute quelques centaines pour le relief — à mesurer comme OSRM l'a été.
+
+**L10-C3 — Une alternative à garder** : les fonds de l'**IGN** (Géoplateforme),
+beaux, libres de tout usage, mais servis par l'État — il voit les zones
+affichées, et on dépend de sa disponibilité. En second fond (« vue terrain »),
+pas en fond principal.
+
+**L10-C4 — L'ordre** : (1) une **maquette** validée par Hugo (relief,
+tournées, arrêts, heures, clair et sombre) ; (2) la mesure des fichiers ; (3)
+le bâti. Suppose le lot 8 déployé pour les tracés.
+
+### Lot 11 — Le suivi des camionnettes en direct
+
+> **Ouvert le 2026-09-29.** Hugo : « une carte pour suivre les livraisons et
+> les camionnettes ». 📐 Rien n'est bâti ; **suppose le lot 6** (en dette).
+
+**Ce qu'il faut, qui n'existe pas** :
+
+- **la position du véhicule** : c'est le téléphone du livreur qui l'envoie, donc
+  la **vue livreur du lot 6** ;
+- **le cadre CNIL de la géolocalisation des salariés** : information préalable
+  des livreurs, finalité limitée au travail (suivre une tournée), **aucun
+  suivi hors des heures de tournée** (le suivi démarre à « Partir » et
+  s'arrête au retour), conservation courte des positions. À écrire et
+  annoncer **avant** la première position enregistrée, comme la page de
+  confidentialité ;
+- **l'affichage en continu** : le back-office reçoit les positions sans
+  recharger la page — une brique légère de plus (connexion maintenue, ou
+  interrogation régulière), à concevoir ;
+- la carte du **lot 10**, qui porte les tracés prévus : le suivi y ajoute la
+  position réelle et l'avance ou le retard sur l'horaire estimé.
+
+**Ce qu'il rendra** : où est chaque camionnette, quels arrêts sont faits
+(remise attestée au lot 6), et l'heure d'arrivée révisée chez les clients
+suivants.
+
 ### Plus tard, et seulement sur décision
 
 - **Lot 6 — La porte** — ⏸ **en dette** (Hugo, 2026-09-29 : « met le 6 en dette
