@@ -291,14 +291,42 @@ répondre le jour d'une tournée manquée.
 - la **capacité** : aucune donnée de poids n'existe sur une commande ;
 - l'**heure de départ** : elle dépend des fenêtres promises (lot 5).
 
-#### Les quatre décisions de Hugo
+#### Les décisions de Hugo — ✅ tranchées le 2026-09-29
 
-| #   | Question                                          | Recommandation                                                                                                                                                                                                      |
-| --- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Q7  | **Un seul droit pour tout le module Livraison ?** | Oui, `delivery_rounds`. La feuille de route y passe aussi : un espace, un mur.                                                                                                                                      |
-| Q8  | **Quels rôles le lisent, lesquels l'écrivent ?**  | `admin` en écriture. Pour la lecture : `comptoir`, qui prépare aujourd'hui les sacs. `support` et `commercial` perdent l'accès aux adresses et contacts de livraison — à confirmer, c'est un retrait de droit.      |
-| Q9  | **D'où partent les tournées ?**                   | Du **point de retrait par défaut** (le labo), référencé et non recopié, avec un point GPS **ajouté au point de retrait**. Ça ouvre un canal `b2b → delivery` dès ce lot, que le lot 3 aurait ouvert de toute façon. |
-| Q10 | **Le schéma Postgres du bloc ?**                  | Un schéma `delivery`, fichier `delivery.prisma` à la racine du dossier comme `production.prisma` : un schéma par bloc, et `order_handover` reste où il est.                                                         |
+**Q7 / Q8 — un droit par geste, créé quand son écran existe.** Une valeur de
+`StaffResource` ne se retire pas : un droit créé pour un lot jamais bâti
+resterait pour toujours. Le lot 2 en crée **deux** ; les autres naissent avec
+leur lot.
+
+| Droit                | Ce qu'il ouvre                     | Lot | Lecture                                  | Écriture          |
+| -------------------- | ---------------------------------- | --- | ---------------------------------------- | ----------------- |
+| `delivery_run_sheet` | la feuille de route du jour        | 2   | admin, comptoir, **support, commercial** | admin             |
+| `delivery_settings`  | véhicules, point de départ         | 2   | admin, comptoir                          | admin             |
+| `delivery_rounds`    | composer les tournées              | 3   | admin, comptoir                          | admin             |
+| `delivery_loading`   | le chargement au dépôt             | 4   | admin, comptoir                          | admin, comptoir   |
+| `delivery_doorstep`  | les gestes à la porte (voir lot 6) | 6   | —                                        | le rôle `livreur` |
+
+`support` et `commercial` gardent la lecture de la feuille de route qu'ils
+avaient par `b2b_orders` (Hugo). La feuille de route n'écrit rien :
+l'écriture de `delivery_run_sheet` n'ouvre aucun geste aujourd'hui, elle
+n'est donnée qu'à `admin` par cohérence.
+
+**Q9 — le départ est un réglage que Hugo choisit** : « du labo, mais il faut
+que je puisse le définir ». Un réglage unique « point de départ des
+tournées » **référence** un point de retrait (`PickupAddress`), le point par
+défaut tant que personne n'a choisi ; l'adresse n'est jamais recopiée. Les
+points de retrait gagnent un **point GPS** facultatif, éditable sur leur
+écran. Le bloc `delivery` lit les points de retrait par un canal que le
+commerce implémente (`delivery/channels/commerce/`) : l'arête `b2b → delivery`
+s'ouvre dès ce lot.
+
+**Q10 — pas de schéma Postgres neuf : les tables vont dans `production`.**
+C'est le précédent de `order_handover` : code dans son bloc
+(`src/handover/`), table dans le schéma `production`. Rien ne se désarme :
+`lint:prisma-model-ownership` établit le propriétaire par le bloc qui
+**écrit**, pas par le schéma. On perd seulement la vue de
+`lint:cross-schema-join` sur une jointure SQL écrite à la main entre une
+tournée et une table du fournil — la limite qu'a déjà le retrait.
 
 ### Lot 3 — Composer : répartir, puis ordonner
 
@@ -357,9 +385,23 @@ boutique en ligne, qui se fait en ajout (`CLAUDE.md` §0).
 
 ### Plus tard, et seulement sur décision
 
-- **Lot 6 — La porte** : vue livreur, retrait attesté par `handover`, échec
-  consigné. Suppose D2, D4, D5. Avec trois véhicules, un livreur ne doit voir
-  que **sa** tournée : le rôle `livreur` (D2) cesse d'être optionnel.
+- **Lot 6 — La porte** : la vue livreur, qui ne montre que **sa** tournée, et
+  les gestes qu'on y écrit, sous un droit à eux, `delivery_doorstep` (Hugo,
+  2026-09-29 : la feuille de route est en lecture seule, les gestes du
+  livreur n'y passent pas) :
+  - le **retrait attesté** — il existe dans `handover`, mais sous
+    `b2b_orders:write`, qui ouvrirait au livreur la prise de commande et les
+    prix négociés. Question : le comptoir garde-t-il `b2b_orders` pour le
+    sien ?
+  - la **signature** — l'exigence est figée sur la commande, rien ne la
+    recueille, et sa valeur est juridique avant d'être technique (conception
+    v1, question 5) ;
+  - l'**échec et son motif** — suppose D5 ;
+  - le **commentaire** sur un arrêt (« laissé à l'accueil ») — un fait neuf,
+    sur l'arrêt de la tournée.
+
+  Suppose D2 (rôle `livreur`), D4, D5.
+
 - **Lot 7 — La proposition automatique** : l'algorithme de l'architecture
   (k-medoids puis ordre ATSP) **propose** une répartition que l'humain corrige.
   Seulement si composer à la main prend trop de temps chaque matin.
