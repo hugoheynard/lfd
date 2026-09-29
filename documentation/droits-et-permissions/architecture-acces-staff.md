@@ -204,6 +204,7 @@ ressource et action.
 |                  | `b2b_payments`               | le mandat SEPA **d'un client**                                                                                  |
 |                  | `b2b_accounting`             | **notre** identité d'émetteur : entités, identifiant créancier, compte qui reçoit l'argent                      |
 |                  | `b2b_deferred_payment_block` | bloquer / débloquer le prélèvement d'une société au crédit (2026-09-25)                                         |
+|                  | `b2b_late_fee`               | la surtaxe de retard : son montant et son taux (2026-09-29)                                                     |
 |                  | `b2b_alerts`                 | les alertes, de compte et globales                                                                              |
 |                  | `b2b_order_waivers`          | les dérogations d'heure limite — accepter une commande en retard                                                |
 |                  | `b2b_feature_access`         | ouvrir, fermer ou mettre en vitrine la boutique                                                                 |
@@ -259,6 +260,7 @@ propre `RecomputeGuard`, et aucune personne ne s'y authentifie.
 | `b2b_accounting`             | w       | —            | **w**          | —         | —     |
 | `b2b_deferred_payment_block` | w       | —            | **w**          | —         | —     |
 | `lfc_price_limits`           | w       | —            | **w**          | —         | —     |
+| `b2b_late_fee`               | w       | —            | **w**          | —         | —     |
 | `b2b_alerts`                 | w       | w            | —              | —         | —     |
 | `b2b_order_waivers`          | w       | w            | —              | —         | —     |
 | `b2b_feature_access`         | w       | r            | —              | —         | —     |
@@ -293,6 +295,12 @@ Les choix qui ne se devinent pas :
   répond 403. Préfixe `lfc_` (Hugo, 2026-09-25) : la limite vaut pour toute
   la vente LFC, pros et particuliers — première ressource de cette famille,
   rangée sous « Vente LFC » à l'écran des rôles.
+- **`b2b_late_fee` n'est qu'à `admin` et `comptabilite`, en écriture**
+  (Hugo, 2026-09-29 : « c'est très spécifique ça »). Les trois routes de
+  `/admin/order-late-fee` sont passées de `b2b_settings` à ce droit, et l'écran
+  des Réglages à la Comptabilité : le commercial, qui lit `b2b_settings`, ne
+  voit plus le montant de la surtaxe à régler — il la voit toujours sur les
+  commandes, qui n'en dépendent pas.
 - **`commercial` lit `b2b_feature_access` sans l'écrire** : il doit pouvoir dire
   à un client si la boutique est ouverte, pas l'ouvrir.
 - **`staff_notifications` est ouvert à tous** : la cloche n'est pas un

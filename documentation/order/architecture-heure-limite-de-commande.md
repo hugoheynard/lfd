@@ -9,8 +9,8 @@
 > `order-time-limitation` porte l'échelle avec son héritage champ par champ, le
 > fil les raccorde, et l'écran existe.
 >
-> ✅ **Le lot 7 est livré en entier** : la surtaxe se règle depuis « Réglages →
-> Surtaxe de retard », se facture, se taxe au taux choisi, se fige sur la
+> ✅ **Le lot 7 est livré en entier** : la surtaxe se règle depuis « Comptabilité →
+> Surtaxe de retard » (« Réglages » jusqu'au 2026-09-29, voir §8), se facture, se taxe au taux choisi, se fige sur la
 > commande — et s'y **lit**, avec son ajustement et son taux, sur la même page
 > côté client et côté comptoir. Restent la boutique (8) et le démontage de
 > l'ancienne règle (9).
@@ -628,8 +628,20 @@ bug dans le calcul de TVA.
 
 ### L'écran, et pourquoi il est là où il est
 
-Le réglage vit sous **« Réglages → Surtaxe de retard »**
-(`/reglages/surtaxe-de-retard`), un onglet à lui.
+Le réglage vit sous **« Comptabilité → Surtaxe de retard »**
+(`/comptabilite/surtaxe-de-retard`), une vue à lui, gardée par **son propre
+droit, `b2b_late_fee`** — lecture pour l'écran et `GET /admin/order-late-fee`,
+écriture pour `PUT` et `DELETE`. Accordé à `admin` et `comptabilite`, à eux
+seuls.
+
+⚠️ **Il a vécu sous « Réglages » et sous `b2b_settings` jusqu'au 2026-09-29.**
+Hugo l'en a sorti (« c'est très spécifique ça ») : `b2b_settings` édite toutes
+les règles de la plateforme et le commercial le lit, alors que le montant d'une
+pénalité facturée relève de la comptabilité. L'ancienne adresse
+`/reglages/surtaxe-de-retard` redirige vers la nouvelle. Afficher la surtaxe
+sur une commande, un bon ou un mail n'en dépend pas : seul le **réglage** est
+muré par ce droit. Le paragraphe ci-dessous sur « les Réglages plutôt que
+l'espace B2B » est historique.
 
 Les deux autres ajustements de panier vivent pourtant sous « Retraits &
 livraisons », et y poser le troisième aurait été le geste facile. Mais ces
@@ -1038,7 +1050,8 @@ Deux écarts subsistent, et ils sont assumés :
 | Elle s'affiche APRÈS la remise et la livraison, jamais avant                 | `orderTotalRows` ; `packages/b2b-ui/src/order/__tests__/order-totals.spec.ts`                     |
 | Aucune ligne quand il n'y a pas de surtaxe                                   | même spec — trois lignes seulement : sous-total, TVA, total                                       |
 | Le taux est rendu en pourcentage, pas en fraction                            | `formatLateFeeTerms` ; même spec (« 0,2 % » se lit comme un montant plausible)                    |
-| L'écran n'envoie jamais un montant sans taux                                 | `reglages/order-late-fee/__tests__/order-late-fee-page.spec.ts` (admin front)                     |
+| L'écran n'envoie jamais un montant sans taux                                 | `comptabilite/order-late-fee/__tests__/order-late-fee-page.spec.ts` (admin front)                 |
+| Le réglage n'est lu et écrit que sous `b2b_late_fee`                         | `test/late-fee-access.e2e-spec.ts` ; `test/staff-roles.e2e-spec.ts`                               |
 | « Aucune » retire le réglage au lieu d'écrire un montant nul                 | même spec — `clear()` appelé, `save()` non                                                        |
 | Un taux disparu du référentiel reste proposé, et signalé                     | même spec — `orphanRate`, et le choix reste dans la liste                                         |
 | L'écran survit à des taux qui ne répondent pas                               | même spec — `state` reste `ready`, `orphanRate` reste faux                                        |

@@ -7,7 +7,8 @@ import { permissionGuard } from '../auth/permission.guard';
  *
  * Un seul droit à l'entrée (`b2b_accounting:read`), et une garde par vue là
  * seulement où la vue relève d'un autre mur — les limites de prix
- * (`lfc_price_limits:read`, 2026-09-25). Le reste n'en porte pas :
+ * (`lfc_price_limits:read`, 2026-09-25) et la surtaxe de retard
+ * (`b2b_late_fee:read`, 2026-09-29). Le reste n'en porte pas :
  * contrairement à l'Admin, dont les écrans relèvent de deux murs différents,
  * tout ce qui vit ici relève du même — l'identité d'émetteur, ses coordonnées,
  * et bientôt ses factures. Le jour où une vue demandera autre chose, elle
@@ -80,6 +81,17 @@ export const comptabiliteRoutes: Routes = [
         title: 'Limites de prix — LFC B2B admin',
         loadComponent: () =>
           import('./limites-de-prix/limites-de-prix-page').then((m) => m.LimitesDePrixPage),
+      },
+      {
+        // La surtaxe de retard — ce qu'une dérogation coûte. Venue des Réglages
+        // le 2026-09-29 avec son propre droit, `b2b_late_fee` (Hugo) : ni
+        // `b2b_settings`, ni `b2b_accounting`. Enregistrer demande
+        // `b2b_late_fee:write` ; l'écran masque le bouton sans lui.
+        path: 'surtaxe-de-retard',
+        canActivate: [permissionGuard('b2b_late_fee:read')],
+        title: 'Surtaxe de retard — LFC B2B admin',
+        loadComponent: () =>
+          import('./order-late-fee/order-late-fee-page').then((m) => m.OrderLateFeePage),
       },
       {
         // La FICHE d'une entité — tout ce qui se règle sur un émetteur. Elle

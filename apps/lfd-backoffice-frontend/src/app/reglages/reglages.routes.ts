@@ -10,7 +10,7 @@ export const reglagesRoutes: Routes = [
     title: 'Réglages — LFC B2B admin',
     loadComponent: () => import('./reglages-page').then((m) => m.ReglagesPage),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'surtaxe-de-retard' },
+      { path: '', pathMatch: 'full', redirectTo: 'facturation' },
 
       // Le catalogue et la tarification B2B ont DÉMÉNAGÉ dans l'espace B2B : on
       // ne va pas dans les réglages pour travailler. Les anciennes adresses
@@ -28,18 +28,11 @@ export const reglagesRoutes: Routes = [
       // « E-commerce LFC → Réglages ». L'ancienne adresse mène à la première.
       { path: 'retraits-livraisons', redirectTo: '/b2b/reglages/points-de-retrait' },
 
-      {
-        // 🔴 PAS une carte des réglages de l'e-commerce, où vivent pourtant les
-        // deux autres ajustements de panier (la remise d'un point, le frais
-        // d'une zone). Ces deux-là appartiennent à un objet d'acheminement ; la
-        // surtaxe n'appartient à rien de tel. L'heure limite globale a vécu là
-        // et a enseigné pendant des mois qu'elle était une affaire
-        // d'acheminement — on ne recommence pas avec ce qu'elle coûte.
-        path: 'surtaxe-de-retard',
-        title: 'Surtaxe de retard — LFC B2B admin',
-        loadComponent: () =>
-          import('./order-late-fee/order-late-fee-page').then((m) => m.OrderLateFeePage),
-      },
+      // La surtaxe de retard est partie en Comptabilité, sous son propre droit
+      // `b2b_late_fee` (Hugo, 2026-09-29). Absolue, sans quoi elle resterait
+      // sous le mur `b2b_settings` de ce parent.
+      { path: 'surtaxe-de-retard', redirectTo: '/comptabilite/surtaxe-de-retard' },
+
       {
         path: 'facturation',
         title: 'Facturation — LFC B2B admin',

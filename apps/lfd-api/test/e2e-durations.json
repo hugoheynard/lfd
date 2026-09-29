@@ -62,6 +62,7 @@
   "test/growth-stats.e2e-spec.ts": 2786,
   "test/handover-quality-hold.e2e-spec.ts": 5200,
   "test/kbis.e2e-spec.ts": 3421,
+  "test/late-fee-access.e2e-spec.ts": 9235,
   "test/leads.e2e-spec.ts": 4679,
   "test/login-methods.e2e-spec.ts": 3657,
   "test/loyalty-earning.e2e-spec.ts": 4838,

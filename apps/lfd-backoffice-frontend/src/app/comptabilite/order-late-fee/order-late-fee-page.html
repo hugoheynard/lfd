@@ -74,11 +74,13 @@
         }
       </div>
 
-      <div cardFooter class="foot">
-        <button foldButton [disabled]="missingRate() || saving()" (click)="submit()">
-          Enregistrer
-        </button>
-      </div>
+      @if (canWrite()) {
+        <div cardFooter class="foot">
+          <button foldButton [disabled]="missingRate() || saving()" (click)="submit()">
+            Enregistrer
+          </button>
+        </div>
+      }
     </fold-card>
 
     <!-- Où se règle l'autre moitié du sujet. La surtaxe n'a de sens que face à

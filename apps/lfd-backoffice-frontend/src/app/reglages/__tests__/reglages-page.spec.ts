@@ -29,7 +29,6 @@ function tabsFor(permissions: readonly StaffPermission[]): string[] {
 describe('les onglets de Réglages', () => {
   it("n'offre à un administrateur aucune porte de moins", () => {
     expect(tabsFor(['b2b_settings:read', 'b2b_growth:read', 'staff_access:read'])).toEqual([
-      'surtaxe-de-retard',
       'facturation',
       'commercial',
     ]);
@@ -39,6 +38,12 @@ describe('les onglets de Réglages', () => {
     // Catalogue et Tarification n'y sont plus : ils ont leur espace, sous le
     // même droit. On ne va pas dans les Réglages pour travailler. Retraits et
     // livraisons ont suivi, dans « E-commerce LFC → Réglages ».
-    expect(tabsFor(['b2b_settings:read'])).toEqual(['surtaxe-de-retard', 'facturation']);
+    expect(tabsFor(['b2b_settings:read'])).toEqual(['facturation']);
+  });
+
+  it('n’offre plus la surtaxe de retard, partie en Comptabilité', () => {
+    // Sortie des Réglages le 2026-09-29 avec son propre droit, `b2b_late_fee` :
+    // même l'avoir ne la fait pas revenir ici.
+    expect(tabsFor(['b2b_settings:read', 'b2b_late_fee:read'])).not.toContain('surtaxe-de-retard');
   });
 });

@@ -191,6 +191,23 @@ export const staffResourceSchema = z.enum([
    */
   "lfc_price_limits",
   /**
+   * **La surtaxe de retard** — combien coûte une commande passée après l'heure
+   * limite, et à quel taux de TVA (`GET`/`PUT`/`DELETE /admin/order-late-fee`).
+   *
+   * Détachée de `b2b_settings` le 2026-09-29 (Hugo : « c'est très spécifique
+   * ça »). `b2b_settings` édite TOUTES les règles de la plateforme — contenu,
+   * points de retrait, zones — et le commercial le lit : le montant d'une
+   * pénalité facturée n'a rien à faire dans ce lot. Elle n'est pas non plus
+   * `b2b_accounting`, qui ouvre tout l'espace comptable (entité émettrice,
+   * liens de paiement) : qui règle la surtaxe n'en reçoit pas le reste, et
+   * l'inverse. L'écran vit dans la Comptabilité ; le droit reste à lui seul.
+   *
+   * Accordée à l'administrateur et à la comptabilité, en écriture, à elles
+   * seules. Afficher la surtaxe sur une commande ou un devis n'en dépend pas :
+   * seul le RÉGLAGE est muré par elle.
+   */
+  "b2b_late_fee",
+  /**
    * Les **alertes** — de compte et globales.
    *
    * Leurs trois écrans étaient répartis sur trois ressources différentes
@@ -355,6 +372,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_accounting: "Comptabilité",
   b2b_deferred_payment_block: "Blocage du prélèvement",
   lfc_price_limits: "Limites de prix",
+  b2b_late_fee: "Surtaxe de retard",
   b2b_alerts: "Alertes",
   b2b_order_waivers: "Dérogations d'heure limite",
   b2b_feature_access: "Accès aux fonctionnalités",
@@ -437,6 +455,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_accounting: "write",
     b2b_deferred_payment_block: "write",
     lfc_price_limits: "write",
+    b2b_late_fee: "write",
     b2b_alerts: "write",
     b2b_order_waivers: "write",
     b2b_feature_access: "write",
@@ -511,6 +530,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // Poser les limites de prix, pro et publiques : c'est elle qui les tient
     // (Hugo, 2026-09-26), et pas le commercial qui négocie au-dessus.
     lfc_price_limits: "write",
+    // Régler la surtaxe de retard : un montant facturé, sorti des réglages de
+    // la plateforme pour elle (Hugo, 2026-09-29).
+    b2b_late_fee: "write",
     b2b_orders: "write",
     // Même reconduction que pour le commercial : elle commandait pour un pro
     // depuis le Comptoir, elle le peut toujours (2026-09-25).

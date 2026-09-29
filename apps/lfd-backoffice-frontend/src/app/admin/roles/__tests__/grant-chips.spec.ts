@@ -71,8 +71,11 @@ describe('grantGroups', () => {
    *
    * `lfc_price_limits` l'a fait passer à 29 le 2026-09-26 : poser une limite de
    * prix n'est pas négocier un prix (plan-limites-de-prix.md §5).
+   *
+   * `b2b_late_fee` l'a fait passer à 30 le 2026-09-29 : régler la surtaxe de
+   * retard n'est pas régler la plateforme.
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(29);
+    expect(RESOURCE_COUNT).toBe(30);
   });
 });

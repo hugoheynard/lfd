@@ -48,17 +48,10 @@ export class ReglagesPage {
    * Montré sans le droit, un onglet offre une porte fermée à clé — on clique,
    * la page s’ouvre, et chaque appel rend 403.
    *
-   * Ces quatre-là portent tous sur le COMMERCE. Ce qui porte sur les GENS — qui
+   * Ces onglets portent tous sur le COMMERCE. Ce qui porte sur les GENS — qui
    * entre, qui tient l'outil — a quitté ces réglages pour le module Admin.
    */
   private readonly allTabs: readonly (FoldViewNavItem & { readonly needs: StaffPermission })[] = [
-    {
-      key: 'surtaxe-de-retard',
-      label: 'Surtaxe de retard',
-      link: 'surtaxe-de-retard',
-      icon: 'clock',
-      needs: 'b2b_settings:read',
-    },
     {
       key: 'facturation',
       label: 'Facturation',

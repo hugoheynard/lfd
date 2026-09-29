@@ -67,6 +67,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptabilite/liens-de-paiement': null,
   'comptabilite/fidelite': null,
   'comptabilite/limites-de-prix': 'lfc_price_limits:read',
+  // Son propre droit, venu des Réglages le 2026-09-29 : ni `b2b_settings`, que
+  // le commercial lit, ni `b2b_accounting`.
+  'comptabilite/surtaxe-de-retard': 'b2b_late_fee:read',
 
   'comptes-clients/:id': 'b2b_companies:read',
   'comptes-clients/:id/dashboard': null,
@@ -114,11 +117,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   sante: 'ops_health:read',
 
   reglages: 'b2b_settings:read',
-  // Hérite du mur de `reglages` (`b2b_settings:read`) : ce que coûte une
-  // dérogation est une politique tarifaire de la maison, au même rang que le
-  // frais d'une zone. Décider COMBIEN n'est pas décider QUI peut en accorder
-  // une — ce second droit-là est `b2b_order_waivers`, et il vit au comptoir.
-  'reglages/surtaxe-de-retard': null,
   // Page de DOCUMENTATION : elle explique la tarification, elle ne la règle pas.
   // Même mur que l'onglet qu'elle commente.
   'reglages/facturation': null,
@@ -354,12 +352,14 @@ describe("l'arbre de routes du back-office", () => {
       .map((child) => [child.path, child.redirectTo]);
 
     expect(moved).toEqual([
-      ['', 'surtaxe-de-retard'],
+      ['', 'facturation'],
       ['catalogue', '/b2b/catalogue'],
       ['tarification', '/b2b/tarification'],
       ['tarification/frise', '/b2b/tarification/frise'],
       ['tarification/simulateur', '/b2b/tarification/simulateur'],
       ['retraits-livraisons', '/b2b/reglages/points-de-retrait'],
+      // Partie en Comptabilité sous son propre droit (2026-09-29).
+      ['surtaxe-de-retard', '/comptabilite/surtaxe-de-retard'],
     ]);
   });
 

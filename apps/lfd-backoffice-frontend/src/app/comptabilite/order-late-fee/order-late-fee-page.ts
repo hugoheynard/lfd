@@ -19,6 +19,7 @@ import {
   type PriceAlteration,
 } from '@lfd/b2b-ui/pricing';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { OrderLateFeeService } from './order-late-fee.service';
 // Le référentiel n'est lu que pour PROPOSER des choix : ce qui s'enregistre est
@@ -36,7 +37,15 @@ function percentLabel(percent: number): string {
 }
 
 /**
- * Sous-page **Surtaxe de retard** des Réglages — ce qu'une dérogation coûte.
+ * Vue **Surtaxe de retard** de la Comptabilité — ce qu'une dérogation coûte.
+ *
+ * ## Pourquoi dans la Comptabilité, sous son propre droit
+ *
+ * Elle a vécu dans les Réglages, sous `b2b_settings`, jusqu'au 2026-09-29.
+ * Hugo l'en a sortie avec un droit à elle, `b2b_late_fee` : le montant d'une
+ * pénalité facturée n'est pas une règle de la plateforme parmi d'autres, et
+ * `b2b_settings` s'ouvre au commercial. Le bouton d'enregistrement suit
+ * `b2b_late_fee:write` ; sans lui, l'écran se lit seulement.
  *
  * ## Pourquoi elle n'est pas dans « Retraits & livraisons »
  *
@@ -50,12 +59,6 @@ function percentLabel(percent: number): string {
  * corrige : l'heure limite globale a vécu sous « Retraits & livraisons » et a
  * enseigné pendant des mois — sans jamais l'écrire — qu'elle était une affaire
  * d'acheminement. L'emplacement d'un écran est une affirmation sur le modèle.
- *
- * ## Pourquoi dans les Réglages et non dans l'espace B2B
- *
- * On ne va pas dans les Réglages pour travailler, on y va pour paramétrer une
- * fois. Le catalogue et la tarification B2B se reprennent tous les jours ; le
- * prix d'un rattrapage se décide une fois par an.
  *
  * ## Le taux n'a pas de défaut, et l'écran le dit
  *
@@ -85,6 +88,10 @@ export class OrderLateFeePage {
   private readonly api = inject(OrderLateFeeService);
   private readonly vatRates = inject(VatRateHttpApi);
   private readonly notify = inject(NotifyService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /** Enregistrer demande `b2b_late_fee:write` ; sans lui, tout se lit seulement. */
+  protected readonly canWrite = computed(() => this.permissions.can('b2b_late_fee:write'));
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly saving = signal(false);
@@ -203,7 +210,7 @@ export class OrderLateFeePage {
   protected async submit(): Promise<void> {
     const fee = this.fee();
     const percent = this.vatRatePercent();
-    if (this.saving() || this.missingRate()) {
+    if (!this.canWrite() || this.saving() || this.missingRate()) {
       return;
     }
     this.saving.set(true);

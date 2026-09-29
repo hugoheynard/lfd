@@ -1,7 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import type { OrderLateFeePayload, OrderLateFeeView } from '@lfd/contracts';
+import type { OrderLateFeePayload, OrderLateFeeView, StaffPermission } from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import type { VatRate } from '../../../pim/data/models';
 import { VatRateHttpApi } from '../../../pim/catalogue/vat-rates/vat-http-api';
@@ -19,7 +20,13 @@ interface Harness {
   readonly clear: ReturnType<typeof vi.fn>;
 }
 
-async function mount(setting: OrderLateFeeView, rates: VatRate[] | Error = []): Promise<Harness> {
+const WRITE: readonly StaffPermission[] = ['b2b_late_fee:read', 'b2b_late_fee:write'];
+
+async function mount(
+  setting: OrderLateFeeView,
+  rates: VatRate[] | Error = [],
+  permissions: readonly StaffPermission[] = WRITE,
+): Promise<Harness> {
   const save = vi.fn(async () => undefined);
   const clear = vi.fn(async () => undefined);
   TestBed.configureTestingModule({
@@ -40,6 +47,10 @@ async function mount(setting: OrderLateFeeView, rates: VatRate[] | Error = []): 
         },
       },
       { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
+      {
+        provide: PermissionsStore,
+        useValue: { can: (p: StaffPermission): boolean => permissions.includes(p) },
+      },
     ],
   });
   const page = TestBed.runInInjectionContext(() => new OrderLateFeePage());
@@ -52,6 +63,22 @@ async function mount(setting: OrderLateFeeView, rates: VatRate[] | Error = []): 
 describe("l'écran de surtaxe de retard", () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
+  });
+
+  it('se lit seulement sans `b2b_late_fee:write` : ni bouton, ni envoi', async () => {
+    // Le droit est détaché de `b2b_settings` (2026-09-29) : qui le lit sans
+    // l'écrire voit le réglage, et le serveur refuserait de toute façon.
+    const { page, save, clear } = await mount(
+      { fee: { mode: 'amount', cents: 1500 }, vatRatePercent: 20 },
+      [rate('Normal', 20)],
+      ['b2b_late_fee:read'],
+    );
+
+    expect(page['canWrite']()).toBe(false);
+    page['setFee'](null);
+    await page['submit']();
+    expect(clear).not.toHaveBeenCalled();
+    expect(save).not.toHaveBeenCalled();
   });
 
   it("n'envoie jamais un montant sans taux", async () => {

@@ -28,10 +28,13 @@ import { SaveOrderLateFeeCommand } from "../application/save-order-late-fee.comm
 /**
  * **La surtaxe de commande tardive** — un réglage, une seule valeur.
  *
- * Murée par `b2b_settings` et non par `b2b_order_waivers` : décider **combien**
- * coûte un retard n'est pas décider **qui** peut en accorder un. Le second est
- * un geste de comptoir, pris au téléphone ; le premier est une politique
- * tarifaire de la maison, au même rang que le frais d'une zone de livraison.
+ * Murée par sa propre ressource, `b2b_late_fee` (Hugo, 2026-09-29), et non par
+ * `b2b_order_waivers` : décider **combien** coûte un retard n'est pas décider
+ * **qui** peut en accorder un — le second est un geste de comptoir, pris au
+ * téléphone. Ni par `b2b_settings`, qui la portait jusque-là : ce droit édite
+ * toutes les règles de la plateforme et le commercial le lit, alors que le
+ * montant d'une pénalité facturée relève de la comptabilité. La lecture
+ * (`GET`) demande `b2b_late_fee:read`, l'écriture `b2b_late_fee:write`.
  *
  * Il n'injecte que des **bus**, comme toute surface staff. Le réglage n'a ni
  * invariant ni transition — trois handlers pour un CRUD ressemblent à de la
@@ -40,7 +43,7 @@ import { SaveOrderLateFeeCommand } from "../application/save-order-late-fee.comm
  * dette qui n'est censée que décroître.
  */
 @Controller("admin/order-late-fee")
-@AdminSurface("b2b_settings")
+@AdminSurface("b2b_late_fee")
 export class AdminOrderLateFeeController {
   constructor(
     private readonly commands: CommandBus,

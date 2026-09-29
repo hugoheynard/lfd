@@ -586,6 +586,15 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     icon: 'shield',
     needs: 'lfc_price_limits:read',
   },
+  {
+    // Son propre droit aussi : la surtaxe de retard relève de `b2b_late_fee`,
+    // sortie des Réglages le 2026-09-29 (Hugo).
+    key: 'surtaxe-de-retard',
+    label: 'Surtaxe de retard',
+    link: '/comptabilite/surtaxe-de-retard',
+    icon: 'clock',
+    needs: 'b2b_late_fee:read',
+  },
 ];
 
 /**

@@ -85,6 +85,11 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
    * comptabilité les lit, le commercial non (plan-limites-de-prix.md §5).
    */
   { resource: "lfc_price_limits", path: "/admin/pricing/floors?clientele=pro" },
+  /**
+   * La SURTAXE DE RETARD (2026-09-29) — sortie de `b2b_settings` : le
+   * commercial, qui lit les réglages, ne la lit plus.
+   */
+  { resource: "b2b_late_fee", path: "/admin/order-late-fee" },
 ];
 
 /** Le produit cartésien rôle × surface : tout ce qu'il y a à vérifier. */
