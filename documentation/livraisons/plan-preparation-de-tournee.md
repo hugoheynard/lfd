@@ -1323,7 +1323,9 @@ choix à faire en second, une fois A retenu.
 Ce choix touche le **déploiement** et finira dans le runbook : **`vitruve`
 d'office** avant de bâtir.
 
-**✅ Tranché par Hugo le 2026-09-29 : A, OSRM dans l'image de `lfd-api`.**
+~~**Tranché par Hugo le 2026-09-29 : A, OSRM dans l'image de `lfd-api`.**~~
+Remplacé le même jour : voir L8-C9 puis L8-C10 (Hugo : « il n'y a pas plus
+propre ? »).
 
 #### L8-C8 — La forme retenue, avant `vitruve`
 
@@ -1420,6 +1422,51 @@ Relue le 2026-09-29, avant la redirection vers B-bis : trois `BLOQUANT` sur A.
   ce jour-là.
 - Un workflow mensuel n'est lu que par GitHub : son échec doit prévenir
   quelqu'un, sinon la carte vieillit en silence.
+
+#### L8-C10 — Seconde passe de `vitruve` : B-bis n'était pas séparé, B-ter l'est
+
+Relu le 2026-09-29 dans `@cloudflare/containers` 0.3.7 (`dist/lib/container.js`) :
+
+- ✅ **Les appels sortants actuels ne bougent pas.** Un `outboundByHost`
+  statique n'intercepte que l'hôte nommé, en HTTP ; Stripe, Resend, Auth0 et
+  R2 (HTTPS) et la base (TCP) passent comme aujourd'hui. **Deux interdits à
+  écrire** dans le code : jamais `outbound`, `allowedHosts`, `deniedHosts` ni
+  `setOutboundByHost` sur `Backend` (un seul fait tout intercepter), et
+  `enableInternet` reste vrai. L'hôte est nommé exactement, en `http://`.
+- 🔴 **B-bis n'avait qu'une vie** : un conteneur `Osrm` dans le même
+  `wrangler.jsonc`, c'est le même Worker et le même `wrangler deploy` ; la
+  carte mensuelle aurait repassé par tout le déploiement de l'API.
+- 🔴 **L'interception demande `ContainerProxy`** exporté par le Worker de
+  `lfd-api`, et une date de compatibilité plus récente que `2025-06-01` : un
+  changement du Worker de toute l'API, à déployer **seul, d'abord**.
+
+**B-ter, la vraie séparation** : un **Worker à part**, `lfd-osrm`, avec son
+conteneur, son `wrangler.jsonc`, son image et son workflow (mensuel + manuel),
+**sans adresse publique** (`workers_dev: false`). `lfd-api` le joint ainsi :
+le handler `outboundByHost` de `Backend`, qui tourne dans le runtime Workers,
+appelle `lfd-osrm` par un **service binding** — la forme même qui relie la
+passerelle à `lfd-api`. Deux Workers, deux déploiements, deux vies ; aucune
+porte ouverte.
+
+L'ordre, chaque étape seule :
+
+1. **`lfd-osrm`** : image OSRM (tag épinglé par digest, amd64), graphe de la
+   CI, `lite`, `max_instances: 1`, `WEUR`, `sleepAfter`, port 5000. Déployé
+   seul ; personne ne l'appelle encore.
+2. **Le Worker de `lfd-api`** : export `ContainerProxy`, date de
+   compatibilité, service binding vers `lfd-osrm`. Rien n'est encore
+   intercepté : un déploiement neutre, vérifié en production.
+3. **L'interception** `osrm.internal` et l'adaptateur `OsrmDistanceMatrix` du
+   calculateur.
+
+**Ce qui reste à mesurer en production** : le démarrage **à froid** d'une
+instance `lite` — le premier « Proposer » du matin le paiera, et le délai de
+repli (L8-C3) doit le tolérer, ou le Worker réveille OSRM à l'ouverture de
+l'écran des tournées.
+
+**Ce qui reste des contradictions précédentes** : la carte au build (bucket,
+jeton, hors du contexte Docker), une version OSRM unique par digest, un repli
+qui remonte à la carte de santé, le runbook.
 
 #### Questions à Hugo
 
