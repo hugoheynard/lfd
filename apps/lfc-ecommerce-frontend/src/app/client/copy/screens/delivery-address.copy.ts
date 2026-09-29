@@ -38,8 +38,8 @@ export interface DeliveryAddressCopy {
    * l'adresse n'en déclare aucune : une adresse sans créneau se livre dans la
    * tournée, et annoncer une heure serait la promesse qu'on refuse d'écrire.
    *
-   * ⚠️ Elle est ce que le carnet PROMET, pas ce qui sera exécuté :
-   * `deliveryAddressId` ne part pas encore avec la commande (cf. le composant).
+   * Le serveur l'applique à la commande à partir de `deliveryAddressId`, qui
+   * part avec elle depuis le 2026-09-29 (cf. le composant).
    */
   readonly window: string;
 

@@ -81,14 +81,12 @@ interface Entry {
  * Ce que les rangées montrent à la place est vrai : la fenêtre que le CARNET
  * déclare pour cette adresse, quand il en déclare une.
  *
- * ⚠️ **Elle n'est pas pour autant APPLIQUÉE, et il faut le dire.** Le
- * commentaire de `client-orders.service.ts` annonce que « le serveur la lit à
- * partir de `deliveryAddressId` » — c'est une INTENTION : `payloadOf` envoie
- * `deliveryAddressId: null`, en dur, pour toutes les commandes (vérifié le
- * 2026-09-20). Tant que cet identifiant ne part pas, aucune fenêtre de
- * livraison n'atteint la commande. Ce que cet écran affiche est donc ce que le
- * carnet PROMET, pas ce qui sera exécuté — et c'est déjà mieux qu'une grille
- * inventée, qui ne promettait rien de vrai du tout.
+ * Elle atteint la commande par le serveur : le choix porte l'`id` de
+ * l'adresse du carnet, `payloadOf` l'envoie en `deliveryAddressId`, et le
+ * serveur en lit la fenêtre, le contact et la signature (vérifié le
+ * 2026-09-29 ; jusque-là l'identifiant partait à `null` en dur et la fenêtre
+ * affichée n'était qu'une promesse). Le front, lui, n'envoie toujours aucune
+ * heure de livraison.
  *
  * 🔴 **Aucune saisie libre.** Cette porte est celle d'un pro, dont le carnet
  * appartient à sa société et se tient dans « Mon compte ». Un champ libre y
@@ -252,8 +250,8 @@ export class DeliveryAddressDialog {
    *
    * 🔴 `window: null`, et c'est délibéré : une heure envoyée d'ici s'écrirait
    * sur un bon de commande opposable, et aucune heure de livraison n'a de
-   * source. Ni celle du carnet — voir l'avertissement en tête de classe :
-   * `deliveryAddressId` ne part pas.
+   * source ici. Celle du carnet, le serveur la lit lui-même à partir de
+   * `deliveryAddressId` (2026-09-29).
    *
    * 🔴 Le CODE POSTAL, jamais le tarif : la zone s'en déduit côté serveur, qui
    * applique alors le même barème que la facture.
@@ -283,6 +281,7 @@ export class DeliveryAddressDialog {
       // rien, et l'écran qui l'affiche ne dira que la journée.
       slot: windowOf(address, '{window}'),
       date,
+      deliveryAddressId: address.id,
       deliveryAddress: {
         label: entry.name,
         ligne1: address.ligne1,
@@ -319,6 +318,7 @@ export class DeliveryAddressDialog {
       codePostal,
       slot: '',
       date,
+      deliveryAddressId: null,
       deliveryAddress: {
         label: ligne1,
         ligne1,

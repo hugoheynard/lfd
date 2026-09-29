@@ -82,6 +82,17 @@ export type ServiceChoice =
        * mal aux deux.
        */
       readonly deliveryAddress: BillingAddressPayload;
+      /**
+       * L'adresse **du carnet** d'où vient `deliveryAddress`, ou `null` quand
+       * elle n'en vient pas (saisie libre, visiteur, choix stocké avant ce
+       * champ).
+       *
+       * Le snapshot postal ne dit pas de quelle ligne du carnet il est la
+       * copie : sans l'identité, le serveur ne peut pas en tirer le contact, la
+       * signature ni la fenêtre, et la feuille de route dit « adresse non
+       * reliée au carnet ». Elle se perdait ici jusqu'au 2026-09-29.
+       */
+      readonly deliveryAddressId: string | null;
     });
 
 /**
@@ -134,7 +145,10 @@ export function parseChoice(raw: unknown): ServiceChoice | null {
     if (codePostal === null || deliveryAddress === null) {
       return null;
     }
-    return { ...base, mode, codePostal, deliveryAddress };
+    // Absent sur un choix stocké avant le 2026-09-29 : vaut « non relié au
+    // carnet », jamais un refus — le choix reste bon à livrer.
+    const deliveryAddressId = readString(raw['deliveryAddressId']);
+    return { ...base, mode, codePostal, deliveryAddress, deliveryAddressId };
   }
   return null;
 }

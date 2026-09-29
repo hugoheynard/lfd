@@ -610,7 +610,8 @@ export class ClientOrders {
  * La livraison, elle, n'envoie toujours rien : `DELIVERY_SLOTS` dit lui-même
  * n'affirmer rien de vrai, et le bon de commande imprimerait cette heure sur un
  * document opposable. Sa fenêtre légitime est celle du CARNET, que le serveur
- * lit à partir de `deliveryAddressId`.
+ * lit à partir de `deliveryAddressId` — qui part effectivement depuis le
+ * 2026-09-29 (il était envoyé à `null` en dur auparavant, cf. `payloadOf`).
  *
  * Absente veut dire « aucune tranche demandée », ce qui reste exact.
  */
@@ -640,7 +641,11 @@ function payloadOf(
     requestedDeliveryDate: service.date,
     note: '',
     lines: lines.map((line) => ({ sku: line.product.sku, quantity: line.quantity })),
-    deliveryAddressId: null,
+    // L'adresse du CARNET choisie, que le serveur confirme sous le mur de la
+    // société. Régression : elle partait à `null` en dur pour toutes les
+    // commandes, et la feuille de route ne reliait aucune livraison de la
+    // boutique à son carnet (corrigé le 2026-09-29).
+    deliveryAddressId: service.mode === 'delivery' ? service.deliveryAddressId : null,
     // 🔴 **La clé est OMISE quand il n'y a pas de tranche choisie**, jamais mise
     // à `null` : le serveur lit l'absence comme « prends le défaut » (celui du
     // carnet, en livraison) et un `null` explicite comme « le client n'en veut
@@ -684,7 +689,9 @@ function guestContentOf(
   idempotencyKey: string,
 ): Omit<PlaceOrderPayload, 'settlement'> {
   const { settlement, ...content } = payloadOf(service, lines, idempotencyKey, null);
-  return content;
+  // Un visiteur n'a pas de carnet : aucun identifiant d'adresse ne part d'ici,
+  // quoi que porte le choix stocké.
+  return { ...content, deliveryAddressId: null };
 }
 
 /** Le serveur a répondu, et il refuse : un 4xx. Un réseau coupé (0) ou un 5xx n'en est pas un. */

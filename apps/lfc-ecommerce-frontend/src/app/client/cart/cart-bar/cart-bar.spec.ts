@@ -88,6 +88,7 @@ describe('CartBar — le pied collé', () => {
         window: today.window,
         date: today.date,
         codePostal: '73150',
+        deliveryAddressId: null,
         deliveryAddress: {
           label: 'Hôtel',
           ligne1: 'Route de la Balme',

@@ -42,6 +42,7 @@ const LIVRE: ServiceChoice = {
   // Le dialogue d'adresse n'en envoie AUCUNE — cf. le cas qui l'éprouve.
   window: null,
   date: '2026-09-07',
+  deliveryAddressId: 'adr_four',
   deliveryAddress: {
     label: "Val d'Isère",
     ligne1: '12 rue du Four',
@@ -154,6 +155,60 @@ describe('passer commande', () => {
     // la fenêtre du carnet, ce que la première version faisait vraiment.
     expect(body.requestedWindow).toBeUndefined();
     expect('requestedWindow' in body).toBe(false);
+  });
+
+  /**
+   * Régression : `payloadOf` envoyait `deliveryAddressId: null` en dur, et la
+   * feuille de route disait « adresse non reliée au carnet » pour toutes les
+   * livraisons de la boutique (corrigé le 2026-09-29).
+   */
+  it('la commande de livraison part avec l’id de l’adresse choisie au carnet', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(LIVRE);
+    TestBed.inject(ClientCart).add('VIE-001');
+
+    const placing = TestBed.inject(ClientOrders).place();
+    await Promise.resolve();
+    await Promise.resolve();
+    const body = sentBody(http);
+    await placing;
+
+    expect(body.deliveryAddressId).toBe('adr_four');
+  });
+
+  it('n’envoie aucun id d’adresse en retrait', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+
+    const placing = TestBed.inject(ClientOrders).place();
+    await Promise.resolve();
+    await Promise.resolve();
+    const body = sentBody(http);
+    await placing;
+
+    expect(body.deliveryAddressId).toBeNull();
+  });
+
+  /** Un visiteur n'a pas de carnet : quoi que porte le choix, rien ne part. */
+  it('un visiteur envoie `deliveryAddressId: null`', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(LIVRE);
+    TestBed.inject(ClientCart).add('VIE-001');
+
+    const placing = TestBed.inject(ClientOrders).placeAsGuest({
+      firstName: 'Jean',
+      email: 'jean@example.com',
+      phone: '0600000000',
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    const request = http.expectOne((r) => r.url.endsWith('/shop/orders'));
+    const body = request.request.body as PlaceOrderPayload;
+    request.flush({ id: 'ord_1', orderNumber: 'CMD-0007' });
+    await placing;
+
+    expect(body.deliveryAddressId).toBeNull();
   });
 
   /** Le numéro vient du SERVEUR : c'est celui qu'on lira au téléphone. */

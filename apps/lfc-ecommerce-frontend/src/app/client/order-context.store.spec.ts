@@ -12,7 +12,7 @@ import {
   workspaceDouble,
   type WorkspaceDouble,
 } from './client-workspace.fixture';
-import { OrderContextStore, type ServiceChoice } from './order-context.store';
+import { OrderContextStore, parseChoice, type ServiceChoice } from './order-context.store';
 
 const AU_LABO: ServiceChoice = {
   mode: 'pickup',
@@ -93,6 +93,7 @@ const LIVRE: ServiceChoice = {
   slot: '9 h – 10 h',
   window: null,
   date: '2026-09-07',
+  deliveryAddressId: 'adr_four',
   deliveryAddress: {
     label: "Val d'Isère",
     ligne1: '12 rue du Four',
@@ -161,5 +162,24 @@ describe('OrderContextStore — la livraison et la clientèle', () => {
     workspace.current.set(ACTIVE.id);
     TestBed.tick();
     expect(store.choice()?.mode).toBe('delivery');
+  });
+});
+
+/** Un choix stocké avant le 2026-09-29 n'a pas `deliveryAddressId`. */
+describe('parseChoice — l’adresse du carnet', () => {
+  it('relit un stockage ancien, sans l’id, en `null` et non en erreur', () => {
+    const older = Object.fromEntries(
+      Object.entries(LIVRE).filter(([key]) => key !== 'deliveryAddressId'),
+    );
+    const parsed = parseChoice(older);
+
+    expect(parsed?.mode).toBe('delivery');
+    expect(parsed?.mode === 'delivery' ? parsed.deliveryAddressId : 'absent').toBeNull();
+  });
+
+  it('relit l’id quand il est stocké', () => {
+    const parsed = parseChoice(JSON.parse(JSON.stringify(LIVRE)));
+
+    expect(parsed?.mode === 'delivery' ? parsed.deliveryAddressId : null).toBe('adr_four');
   });
 });

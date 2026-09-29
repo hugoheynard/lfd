@@ -108,7 +108,7 @@ describe('DeliveryAddressDialog', () => {
   /**
    * 🔴 AUCUNE FENÊTRE N'EST ENVOYÉE. Une heure partie d'ici s'écrirait sur un
    * bon de commande opposable, et aucune heure de livraison n'a de source — pas
-   * même celle du carnet, dont l'identifiant ne part pas encore.
+   * même celle du carnet, que le serveur lit lui-même depuis l'identifiant.
    */
   it('rend le mode complet, SANS fenêtre', () => {
     const { fixture, closed } = boot([address({ id: 'a', isDefault: true })]);
@@ -121,6 +121,8 @@ describe('DeliveryAddressDialog', () => {
       window: null,
       codePostal: '73150',
       date: '2026-09-21',
+      // L'identité du carnet part avec le choix (2026-09-29).
+      deliveryAddressId: 'a',
     });
   });
 
