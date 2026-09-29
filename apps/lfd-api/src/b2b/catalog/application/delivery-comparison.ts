@@ -45,6 +45,8 @@ export function deliveredItems(snapshot: StoredCatalogSnapshot): DeliveredItem[]
       // `?? false` couvre une arrivée d'avant la v11, comme à l'ingestion : les
       // deux côtés doivent lire la même absence.
       operationOnly: product.operationOnly ?? false,
+      // `?? false` couvre une arrivée d'avant la v12, comme à l'ingestion.
+      requiresCold: product.requiresCold ?? false,
     })),
   );
 }
@@ -72,5 +74,6 @@ export function mirrorItems(items: readonly CatalogItem[]): DeliveredItem[] {
     image: item.image,
     thumbnail: item.thumbnail,
     operationOnly: item.operationOnly,
+    requiresCold: item.requiresCold,
   }));
 }

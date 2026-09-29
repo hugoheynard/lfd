@@ -245,6 +245,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'livraison/sac/:bagId': 'delivery_loading:read',
   'livraison/etiquettes/:orderId': 'delivery_loading:read',
   'livraison/vehicules': 'delivery_settings:read',
+  'livraison/bacs': 'delivery_settings:read',
+  'livraison/contenances': 'delivery_settings:read',
   'livraison/depart': 'delivery_settings:read',
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.
   'app-mobile': OPEN,

@@ -20,6 +20,7 @@ import type { Product, ProductKind, Variant } from '../data/models';
 import type { CreatedIdResponse } from '@lfd/contracts';
 import type {
   SetProductOperationOnlyPayload,
+  SetProductColdRequirementPayload,
   UpdateVariantPricingPayload,
 } from '@lfd/pim-contracts';
 
@@ -186,6 +187,7 @@ export function backendToProduct(
     channelsOverride: product.channelOverride,
     vatByContext: product.vatByContext,
     operationOnly: product.operationOnly,
+    requiresCold: product.requiresCold,
     slug: product.slug,
     ...(price === null || price === undefined ? {} : { priceEur: price / 100 }),
     ...(weight === null || weight === undefined ? {} : { weightGrams: weight }),
@@ -506,6 +508,15 @@ export class ProductHttpApi {
   async setOperationOnly(id: string, operationOnly: boolean): Promise<void> {
     const payload: SetProductOperationOnlyPayload = { operationOnly };
     await this.put(`products/${id}/operation-only`, payload);
+  }
+
+  /**
+   * **Demande le froid** — une écriture à part, journalisée par le serveur
+   * (`product.cold_requirement_changed`), hors de l'enregistrement des sections.
+   */
+  async setColdRequirement(id: string, requiresCold: boolean): Promise<void> {
+    const payload: SetProductColdRequirementPayload = { requiresCold };
+    await this.put(`products/${id}/cold-requirement`, payload);
   }
 
   private async put(path: string, body: unknown): Promise<void> {

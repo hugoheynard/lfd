@@ -108,6 +108,12 @@ const archivedFactsSchema = z.object({
     .boolean()
     .optional()
     .transform((value) => value ?? false),
+  // Même règle pour le froid (fil v12) : une version archivée avant n'en
+  // portait pas, et aucun article n'était alors déclaré froid.
+  requiresCold: z
+    .boolean()
+    .optional()
+    .transform((value) => value ?? false),
   // Écrit en ISO dans le `jsonb` : `Date` n'est pas une valeur JSON, et la
   // conversion doit être explicite plutôt que subie du sérialiseur.
   receivedAt: z.coerce.date(),
@@ -195,6 +201,7 @@ function toJson(facts: PimFacts): Prisma.InputJsonObject {
     image: facts.image === null ? null : { ...facts.image },
     thumbnail: facts.thumbnail === null ? null : { ...facts.thumbnail },
     operationOnly: facts.operationOnly,
+    requiresCold: facts.requiresCold,
     receivedAt: facts.receivedAt.toISOString(),
   };
 }

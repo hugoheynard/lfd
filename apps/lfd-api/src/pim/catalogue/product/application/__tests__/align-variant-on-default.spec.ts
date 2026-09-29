@@ -45,6 +45,7 @@ function snapshot(second: Partial<VariantSnapshot> = {}): ProductSnapshot {
     vatByContext: {},
     channelOverride: null,
     operationOnly: false,
+    requiresCold: false,
     variants: [
       aVariant(),
       aVariant({

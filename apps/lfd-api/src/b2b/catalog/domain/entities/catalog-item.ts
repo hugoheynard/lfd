@@ -162,6 +162,14 @@ export interface PimFacts {
    * le lit : le drapeau et la garde partent dans le même merge.
    */
   readonly operationOnly: boolean;
+  /**
+   * **Demande le froid** (fil v12, lot 4 bis du plan de préparation de
+   * tournée, v2-2) — un fait de la fiche, descendu sur chaque article. Le
+   * commerce ne s'en sert pas pour vendre : il le relaie à la livraison.
+   *
+   * `false` pour tout article reçu avant la v12 : aucun n'était déclaré froid.
+   */
+  readonly requiresCold: boolean;
   readonly receivedAt: Date;
 }
 
@@ -372,6 +380,10 @@ export class CatalogItem {
 
   get operationOnly(): boolean {
     return this.facts.operationOnly;
+  }
+
+  get requiresCold(): boolean {
+    return this.facts.requiresCold;
   }
 
   get vatRatePercent(): number | null {

@@ -288,6 +288,15 @@ model CatalogItem {
   /// sert pour refuser une vente : le drapeau et sa garde partent ensemble.
   operationOnly Boolean @default(false) @map("operation_only")
 
+  /// **Demande le froid** — conservation réfrigérée, telle que le référentiel
+  /// le dit de la fiche (fil v12, lot 4 bis du plan de préparation de tournée,
+  /// v2-2). Relayé à la livraison, qui ne lit pas cette table : un produit
+  /// froid ne va qu'en bac isotherme.
+  ///
+  /// `false` sur toute ligne d'avant la v12, et c'est ce que la fiche disait
+  /// alors : un produit n'est pas froid tant que personne ne l'a déclaré.
+  requiresCold Boolean @default(false) @map("requires_cold")
+
   override CatalogItemOverride?
 
   @@index([categoryId])

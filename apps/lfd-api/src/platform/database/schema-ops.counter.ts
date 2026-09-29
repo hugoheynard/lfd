@@ -243,6 +243,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   DeliveryGeocode: "production",
   // Les scénarios du simulateur (L9-C7) : réglage, sans journée ni client.
   DeliverySimulationScenario: "production",
+  // Les bacs et leurs contenances (lot 4 bis, tranche A) : un réglage, une case à la fois.
+  DeliveryBinType: "production",
+  DeliveryBinCapacity: "production",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

@@ -209,6 +209,20 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     needs: 'delivery_settings:read',
   },
   {
+    key: 'bacs',
+    label: 'Bacs',
+    link: '/livraison/bacs',
+    icon: 'archive',
+    needs: 'delivery_settings:read',
+  },
+  {
+    key: 'contenances',
+    label: 'Contenances',
+    link: '/livraison/contenances',
+    icon: 'grid',
+    needs: 'delivery_settings:read',
+  },
+  {
     key: 'depart',
     label: 'Point de départ',
     link: '/livraison/depart',

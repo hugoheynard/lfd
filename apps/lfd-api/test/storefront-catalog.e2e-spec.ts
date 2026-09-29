@@ -79,6 +79,7 @@ function product(id: string, sku: string, name: string): CatalogSnapshot["produc
     image: null,
     thumbnail: null,
     operationOnly: false,
+    requiresCold: false,
   };
 }
 

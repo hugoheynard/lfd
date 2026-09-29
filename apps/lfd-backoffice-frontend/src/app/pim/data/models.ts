@@ -190,6 +190,11 @@ export interface Product {
    * commandable. `false` = article courant.
    */
   operationOnly: boolean;
+  /**
+   * **Demande le froid** (lot 4 bis du plan de préparation de tournée) : la
+   * livraison ne le charge qu'en bac isotherme. `false` = rien de déclaré.
+   */
+  requiresCold: boolean;
   /** Pilote l'URL publique — jamais changé après création (SEO). */
   slug?: LocalizedText;
   /** Prix de vente TTC, en euros. */

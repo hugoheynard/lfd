@@ -91,6 +91,7 @@ function snapshot(
       image: null,
       thumbnail: null,
       operationOnly: false,
+      requiresCold: false,
     })),
     orderTimeLimits: [],
     operations: [],

@@ -99,6 +99,7 @@ function snapshot(skus: readonly string[]): CatalogSnapshot {
       image: null,
       thumbnail: null,
       operationOnly: false,
+      requiresCold: false,
     })),
     orderTimeLimits: [],
     operations: [],

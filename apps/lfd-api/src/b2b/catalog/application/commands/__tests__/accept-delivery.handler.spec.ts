@@ -58,6 +58,7 @@ const snapshot = (skus: readonly string[]): CatalogSnapshot => ({
     image: null,
     thumbnail: null,
     operationOnly: false,
+    requiresCold: false,
   })),
   orderTimeLimits: [],
   operations: [],
@@ -109,6 +110,7 @@ function mirrorItem(sku: string, priceMillicents = 210_000): CatalogItem {
     image: null,
     thumbnail: null,
     operationOnly: false,
+    requiresCold: false,
     orderTimeLimit: null,
     receivedAt: new Date("2026-01-01T00:00:00.000Z"),
   };

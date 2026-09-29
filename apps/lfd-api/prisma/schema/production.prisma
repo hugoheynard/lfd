@@ -752,3 +752,62 @@ model DeliverySimulationScenario {
   @@map("delivery_simulation_scenario")
   @@schema("production")
 }
+
+/// Un **type de bac** (lot 4 bis, v2-1, tranche A) : un réglage de la
+/// livraison. Jamais supprimé : archivé, il n'est plus proposé mais reste
+/// lisible sur ce qui le cite (v2-7).
+///
+/// Deux types NON archivés ne portent pas le même nom : index unique PARTIEL
+/// (`WHERE archived_at IS NULL`) écrit à la main dans la migration
+/// `20260929230000_les_types_de_bacs`, comme la plaque d'un véhicule. Les
+/// CHECK (dimensions positives, intérieur ≤ extérieur, pile ≥ 1) y sont aussi ;
+/// les bornes restent au domaine, qui refuse avec la phrase à lire.
+model DeliveryBinType {
+  /// Assigné par la commande (`IdGenerator`), jamais par la base.
+  id   String @id
+  /// « Bac M » — ce qu'on dit au labo.
+  name String
+
+  /// Dimensions EXTÉRIEURES, en cm — celles du chargement.
+  outerLengthCm Int @map("outer_length_cm")
+  outerWidthCm  Int @map("outer_width_cm")
+  outerHeightCm Int @map("outer_height_cm")
+  /// Dimensions INTÉRIEURES, en cm — informatives ; le volume en est dérivé.
+  innerLengthCm Int @map("inner_length_cm")
+  innerWidthCm  Int @map("inner_width_cm")
+  innerHeightCm Int @map("inner_height_cm")
+
+  isotherm  Boolean
+  /// Le nombre maximal de bacs de ce type dans une pile.
+  maxStack  Int     @map("max_stack")
+  /// Accepte une cloison : deux demi-bacs.
+  divisible Boolean
+
+  /// Instants du geste, lus du `Clock`.
+  createdAt  DateTime  @map("created_at")
+  updatedAt  DateTime  @map("updated_at")
+  archivedAt DateTime? @map("archived_at")
+
+  capacities DeliveryBinCapacity[]
+
+  @@map("delivery_bin_type")
+  @@schema("production")
+}
+
+/// **Une contenance** (lot 4 bis, v2-2) : un bac ENTIER de ce type contient
+/// `units` unités de ce produit. Le SKU est un identifiant OPAQUE du catalogue
+/// B2B — aucune clé vers le référentiel ni vers le commerce. Une case sans
+/// ligne n'a pas de contenance ; la retirer supprime la ligne : c'est un
+/// réglage d'une grille, pas un agrégat métier, et le journal garde l'avant.
+model DeliveryBinCapacity {
+  binTypeId String   @map("bin_type_id")
+  sku       String
+  units     Int
+  updatedAt DateTime @map("updated_at")
+
+  binType DeliveryBinType @relation(fields: [binTypeId], references: [id], onDelete: Restrict)
+
+  @@id([binTypeId, sku])
+  @@map("delivery_bin_capacity")
+  @@schema("production")
+}

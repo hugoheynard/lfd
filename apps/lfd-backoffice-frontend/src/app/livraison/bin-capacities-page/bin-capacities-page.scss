@@ -1,0 +1,45 @@
+/* Le rappel, les filtres et la grille, empilés : l'écart vient du `gap`. */
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* La recherche et le filtre sur une ligne, qui passe à la ligne au téléphone. */
+.grid-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+/* La recherche prend la place que le filtre lui laisse. */
+.grid-search {
+  flex: 1 1 16rem;
+}
+
+/* Le nom, et le SKU dessous. */
+.grid-product {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Le nom et sa marque de froid, côte à côte. */
+.grid-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.grid-sku {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* Le tiroir d'une ligne : un champ par type, qui passent à la ligne. */
+.grid-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}

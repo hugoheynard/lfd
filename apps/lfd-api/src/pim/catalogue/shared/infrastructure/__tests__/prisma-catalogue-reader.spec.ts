@@ -36,6 +36,7 @@ function product(vatByContext: Readonly<Record<string, string>> = {}): ProductSn
     vatByContext,
     channelOverride: null,
     operationOnly: false,
+    requiresCold: false,
   };
 }
 

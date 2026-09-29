@@ -366,6 +366,25 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/vehicles-page/vehicles-page').then((m) => m.VehiclesPage),
       },
+      // LES BACS (lot 4 bis, tranche A) : des RÉGLAGES, sous le droit des
+      // réglages comme les véhicules. Le serveur ouvre aussi leur lecture à
+      // `delivery_rounds:read` pour les écrans qui la consomment ; ces deux
+      // écrans-ci sont ceux où l'on règle.
+      {
+        path: 'bacs',
+        canActivate: [permissionGuard('delivery_settings:read')],
+        title: 'Bacs — LFC B2B admin',
+        loadComponent: () => import('./livraison/bins-page/bins-page').then((m) => m.BinsPage),
+      },
+      {
+        path: 'contenances',
+        canActivate: [permissionGuard('delivery_settings:read')],
+        title: 'Contenances — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/bin-capacities-page/bin-capacities-page').then(
+            (m) => m.BinCapacitiesPage,
+          ),
+      },
       {
         path: 'depart',
         canActivate: [permissionGuard('delivery_settings:read')],

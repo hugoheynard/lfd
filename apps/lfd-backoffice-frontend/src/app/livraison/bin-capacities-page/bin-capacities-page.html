@@ -1,0 +1,142 @@
+<fold-page-layout icon="grid" title="Contenances">
+  <p description>
+    Combien d’unités de chaque produit tient un bac entier de chaque type. Une case vide n’a pas de
+    contenance&nbsp;: rien n’est deviné, et le colisage signalera le produit.
+  </p>
+
+  @switch (state().status) {
+    @case ('loading') {
+      <fold-loading message="Lecture des contenances…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Contenances illisibles"
+        subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+        data-grid-error
+      >
+        <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (types().length === 0) {
+        <fold-empty-state
+          title="Aucun type de bac proposé"
+          subtitle="Une contenance se dit pour un type de bac : ajoutez d’abord les bacs."
+          data-no-types
+        >
+          <fold-icon empty-icon name="archive" />
+          <a foldButton emphasis="outline" routerLink="/livraison/bacs">Voir les bacs</a>
+        </fold-empty-state>
+      } @else if (products().length === 0) {
+        <fold-empty-state
+          title="Aucun produit vendu"
+          subtitle="La grille liste les produits du catalogue professionnel ; il n’en publie aucun."
+          data-no-products
+        >
+          <fold-icon empty-icon name="grid" />
+        </fold-empty-state>
+      } @else {
+        <div class="grid">
+          <fold-callout variant="info" data-half-bin>
+            Une contenance se compte pour un bac entier. Un demi-bac contient la moitié de la place.
+          </fold-callout>
+
+          @if (refusal(); as message) {
+            <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
+          }
+
+          <div class="grid-filters">
+            <fold-search
+              class="grid-search"
+              placeholder="Nom ou SKU"
+              ariaLabel="Chercher un produit"
+              resultLabel="produits"
+              placement="end"
+              [resultCount]="rows().length"
+              [(value)]="term"
+            />
+            <fold-checkbox
+              label="Seulement les produits à compléter"
+              hint="Sans aucune contenance, ou froids sans bac isotherme."
+              [checked]="onlyGaps()"
+              (checkedChange)="onlyGaps.set($event)"
+              data-only-gaps
+            />
+          </div>
+
+          @if (missingCount(); as label) {
+            <fold-callout variant="warning" data-missing>
+              {{ label }} — le colisage les signalera sans rien proposer.
+            </fold-callout>
+          }
+
+          @if (coldGapCount(); as label) {
+            <fold-callout variant="warning" data-cold-gap>
+              {{ label }} — ils demandent le froid, et n’ont de contenance que dans des bacs non
+              isothermes.
+            </fold-callout>
+          }
+
+          <!-- Une colonne par type proposé : la case se LIT dans la grille, et se
+               SAISIT dans le tiroir de sa ligne, une case par type. -->
+          <fold-data-table
+            caption="Contenances par produit et par type de bac"
+            density="compact"
+            stickyFirst
+            [columns]="columns()"
+            [rows]="rows()"
+            [rowKey]="rowKey"
+            [rowTone]="toneOf"
+            [empty]="nothingFound()"
+            [labels]="tableLabels"
+          >
+            <ng-template foldCell="product" let-row>
+              <span class="grid-product">
+                <span class="grid-name">
+                  <span>{{ productName(row) }}</span>
+                  @if (isColdGap(row)) {
+                    <fold-badge
+                      variant="warning"
+                      content="❄ sans bac isotherme"
+                      data-cold-gap-badge
+                    />
+                  } @else if (isCold(row)) {
+                    <fold-badge variant="info" content="❄ froid" data-cold-badge />
+                  }
+                </span>
+                <span class="grid-sku">{{ productSku(row) }}</span>
+              </span>
+            </ng-template>
+
+            @if (canWrite()) {
+              <ng-template foldRowDetail let-row>
+                <div class="grid-editor" data-editor>
+                  @for (type of types(); track type.id) {
+                    <div
+                      data-cell
+                      (focusout)="commit(type, row)"
+                      (keydown.enter)="commit(type, row)"
+                    >
+                      <fold-number-input
+                        spinner="none"
+                        integer
+                        placeholder="Non renseignée"
+                        [label]="type.name"
+                        [min]="bounds.min"
+                        [max]="bounds.max"
+                        [disabled]="isSaving(type, row)"
+                        [value]="cellValue(type, row)"
+                        (valueChange)="edit(type, row, $event)"
+                      />
+                    </div>
+                  }
+                </div>
+              </ng-template>
+            }
+          </fold-data-table>
+        </div>
+      }
+    }
+  }
+</fold-page-layout>

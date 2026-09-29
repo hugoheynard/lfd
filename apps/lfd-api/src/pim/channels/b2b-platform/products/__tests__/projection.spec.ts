@@ -48,6 +48,7 @@ function product(over: Partial<ProductRecord> = {}): ProductRecord {
     status: "published",
     channelOverride: null,
     operationOnly: false,
+    requiresCold: false,
     variants: [variant()],
     vatByContext: {},
     ...over,
@@ -837,6 +838,19 @@ describe("le fil v11 — les opérations datées et le drapeau de la fiche", () 
     const { snapshot } = project([product({ operationOnly: true })], NO_OPERATIONS);
 
     expect(snapshot.products[0]?.operationOnly).toBe(true);
+  });
+
+  it("porte le froid de la fiche sur le produit (fil v12)", () => {
+    const { snapshot } = project([product({ requiresCold: true })], NO_OPERATIONS);
+
+    expect(snapshot.products[0]?.requiresCold).toBe(true);
+    expect(snapshot.products[0]?.operationOnly).toBe(false);
+  });
+
+  it("n'invente pas le froid d'une fiche qui ne l'a pas déclaré", () => {
+    const { snapshot } = project([product()], NO_OPERATIONS);
+
+    expect(snapshot.products[0]?.requiresCold).toBe(false);
   });
 
   /**

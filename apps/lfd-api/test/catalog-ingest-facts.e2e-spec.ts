@@ -68,6 +68,24 @@ describe("le taux de TVA arrive sur l’ARTICLE", () => {
   });
 });
 
+describe("le froid de la fiche arrive sur l’ARTICLE (fil v12)", () => {
+  /** Lot 4 bis, v2-2 : la livraison le lira par son canal, jamais ici. */
+  it("écrit le froid reçu, et laisse sec ce qui ne l’a pas déclaré", async () => {
+    await push(
+      snapshotOf([
+        { sku: "TAR-001", priceMillicents: 350_000, requiresCold: true },
+        { sku: "VIE-004", priceMillicents: 220_000 },
+      ]),
+    );
+
+    const cold = await ctx.prisma.catalogItem.findUniqueOrThrow({ where: { sku: "TAR-001-1" } });
+    const dry = await ctx.prisma.catalogItem.findUniqueOrThrow({ where: { sku: "VIE-004-1" } });
+
+    expect(cold.requiresCold).toBe(true);
+    expect(dry.requiresCold).toBe(false);
+  });
+});
+
 describe("les allergènes traversent le fil", () => {
   /**
    * Les trois états doivent arriver DISTINCTS jusqu'à la colonne. C'est la

@@ -1,0 +1,7 @@
+<fold-checkbox
+  label="Demande le froid (conservation réfrigérée)"
+  hint="En livraison, l'article ne part qu'en bac isotherme. Publié au catalogue professionnel au prochain envoi."
+  [checked]="store.requiresCold()"
+  [disabled]="busy()"
+  (checkedChange)="onChange($event)"
+/>

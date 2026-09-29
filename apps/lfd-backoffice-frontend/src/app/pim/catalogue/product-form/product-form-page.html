@@ -236,6 +236,25 @@
                   <app-operation-only-form />
                 </fold-page-section>
               </fold-card>
+              <!-- LOGISTIQUE — la conservation de l'article, telle que la
+               livraison la lit (lot 4 bis du plan de préparation de tournée).
+               Même mécanique que la vente en opération : seule, sur sa route,
+               hors de « Tout enregistrer ». -->
+              <fold-card>
+                <fold-page-section
+                  title="Logistique"
+                  separator
+                  collapsible
+                  [open]="sectionOpen('logistique')()"
+                  (openChange)="setSectionOpen('logistique', $event)"
+                >
+                  <span sectionSubtitle>
+                    Comment l'article se conserve et se transporte. S'applique à toutes ses
+                    déclinaisons.
+                  </span>
+                  <app-cold-requirement-form />
+                </fold-page-section>
+              </fold-card>
             }
           }
           @if (section.key === 'nutrition') {

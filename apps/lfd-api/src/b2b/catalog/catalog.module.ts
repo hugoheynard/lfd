@@ -55,11 +55,13 @@ import { CatalogOperationRepository } from "./domain/ports/catalog-operation.rep
 import { CatalogOperationOverrideRepository } from "./domain/ports/catalog-operation-override.repository.js";
 import { CatalogOperationsReader } from "./domain/ports/catalog-operations.reader.js";
 import { ReceivedOperationsReader } from "./domain/ports/received-operations.reader.js";
+import { CatalogColdReader } from "./domain/ports/catalog-cold.reader.js";
 import { AdminCatalogOperationsController } from "./http/admin-catalog-operations.controller.js";
 import { PrismaCatalogOperationRepository } from "./infrastructure/prisma-catalog-operation.repository.js";
 import { PrismaCatalogOperationOverrideRepository } from "./infrastructure/prisma-catalog-operation-override.repository.js";
 import { PrismaCatalogOperationsReader } from "./infrastructure/prisma-catalog-operations.reader.js";
 import { PrismaReceivedOperationsReader } from "./infrastructure/prisma-received-operations.reader.js";
+import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.reader.js";
 
 /**
  * **Le catalogue de la plateforme** : ce que le PIM pousse, plus ce qu'on décide
@@ -174,6 +176,9 @@ import { PrismaReceivedOperationsReader } from "./infrastructure/prisma-received
     SaleOperations,
     SetOperationOverrideHandler,
     ListReceivedOperationsHandler,
+    // Le froid des produits (fil v12, lot 4 bis) : un lecteur à lui, que seul
+    // le relais vers la livraison lit.
+    { provide: CatalogColdReader, useClass: PrismaCatalogColdReader },
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.
@@ -187,6 +192,8 @@ import { PrismaReceivedOperationsReader } from "./infrastructure/prisma-received
     // Pour la caisse, le tarificateur et la projection : tous trois résolvent un
     // SKU avant de tarifer, et aucun n'a de raison de passer par `orders` pour ça.
     ProductCatalogReader,
+    // Pour le relais des produits vers la livraison (lot 4 bis) : le froid.
+    CatalogColdReader,
     // Pour `orders/`, qui sert la même vitrine à un client reconnu. Le sens est
     // le seul possible : `OrdersModule` importe déjà `CatalogModule`, et
     // l'inverse serait un cycle — c'est aussi pourquoi la table des rayons est

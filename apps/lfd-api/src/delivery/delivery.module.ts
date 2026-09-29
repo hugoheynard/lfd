@@ -1,5 +1,20 @@
 import { Module } from "@nestjs/common";
 
+import { AddBinTypeHandler } from "./application/commands/add-bin-type.handler.js";
+import { ArchiveBinTypeHandler } from "./application/commands/archive-bin-type.handler.js";
+import { CorrectBinTypeHandler } from "./application/commands/correct-bin-type.handler.js";
+import { ReactivateBinTypeHandler } from "./application/commands/reactivate-bin-type.handler.js";
+import { SetBinCapacityHandler } from "./application/commands/set-bin-capacity.handler.js";
+import { GetBinCapacitiesHandler } from "./application/queries/get-bin-capacities.handler.js";
+import { ListBinTypesHandler } from "./application/queries/list-bin-types.handler.js";
+import { BinCapacityRepository } from "./domain/ports/bin-capacity.repository.js";
+import { BinCatalogReader } from "./domain/ports/bin-catalog.reader.js";
+import { BinTypeRepository } from "./domain/ports/bin-type.repository.js";
+import { BinCapacitiesController } from "./http/bin-capacities.controller.js";
+import { BinTypesController } from "./http/bin-types.controller.js";
+import { PrismaBinCapacityRepository } from "./infrastructure/prisma-bin-capacity.repository.js";
+import { PrismaBinCatalogReader } from "./infrastructure/prisma-bin-catalog.reader.js";
+import { PrismaBinTypeRepository } from "./infrastructure/prisma-bin-type.repository.js";
 import { AppConfig } from "../platform/config/app-config.js";
 import { ApplyDeliveryProposalHandler } from "./application/commands/apply-delivery-proposal.handler.js";
 import { LocateDeliveryStopsHandler } from "./application/commands/locate-delivery-stops.handler.js";
@@ -103,11 +118,13 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
  * **La livraison** — les bases paramétrables des tournées (la flotte et le
  * point de départ, lot 2), la composition des tournées (lot 3), puis les
  * sacs, leur chargement et le départ (lot 4), puis le calculateur de tournée
- * (lot 7), par la route (lot 8), et « Chronométrer » (lot 10 bis)
+ * (lot 7), par la route (lot 8), « Chronométrer » (lot 10 bis), et le
+ * catalogue des bacs avec leurs contenances (lot 4 bis, tranche A)
  * (`documentation/livraisons/plan-preparation-de-tournee.md`). Code ici, tables
  * dans le schéma `production` (Q10).
  *
- * Il ne déclare PAS `DepartureCandidatesReader` ni `DeliveryOrdersReader` : ce
+ * Il ne déclare PAS `DepartureCandidatesReader`, `DeliveryOrdersReader` ni
+ * `DeliveryProductsReader` : ce
  * sont les ports qu'il publie et que le commerce implémente, relié dans la racine de composition
  * (`appBootstrap/delivery-feed.module.ts`). Le brancher ici obligerait ce
  * module à connaître `b2b`, ce que la matrice interdit.
@@ -127,6 +144,8 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     DeliveryProposalController,
     DeliverySimulatorController,
     DeliverySimulationScenariosController,
+    BinTypesController,
+    BinCapacitiesController,
   ],
   providers: [
     AddVehicleHandler,
@@ -167,6 +186,16 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     { provide: SimulationScenarioRepository, useClass: PrismaSimulationScenarioRepository },
     { provide: SimulationScenarioReader, useClass: PrismaSimulationScenarioReader },
     TimeDeliveryRoundsHandler,
+    AddBinTypeHandler,
+    CorrectBinTypeHandler,
+    ArchiveBinTypeHandler,
+    ReactivateBinTypeHandler,
+    SetBinCapacityHandler,
+    ListBinTypesHandler,
+    GetBinCapacitiesHandler,
+    { provide: BinTypeRepository, useClass: PrismaBinTypeRepository },
+    { provide: BinCapacityRepository, useClass: PrismaBinCapacityRepository },
+    { provide: BinCatalogReader, useClass: PrismaBinCatalogReader },
     { provide: VehicleRepository, useClass: PrismaVehicleRepository },
     { provide: FleetReader, useClass: PrismaFleetReader },
     { provide: DepartureRepository, useClass: PrismaDepartureRepository },

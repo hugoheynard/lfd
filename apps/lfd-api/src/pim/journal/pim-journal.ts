@@ -107,6 +107,12 @@ export const PIM_EVENTS = {
    */
   productOperationOnlyChanged: "product.operation_only_changed",
   /**
+   * Une fiche est déclarée **froide** — ou ne l'est plus (lot 4 bis du plan de
+   * préparation de tournée, v2-2). Un fait à part : il change le bac où la
+   * livraison la charge, et « qui l'a déclarée froide » se cherche d'un regard.
+   */
+  productColdRequirementChanged: "product.cold_requirement_changed",
+  /**
    * **Quelqu'un affirme que la fiche est juste.** Distinct de `published` :
    * l'un est une signature sur un contenu, l'autre une mise en vente. Un
    * historique qui les confondrait ne saurait plus répondre à « qui a validé ce

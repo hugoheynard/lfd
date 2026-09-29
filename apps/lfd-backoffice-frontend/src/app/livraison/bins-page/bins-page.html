@@ -1,0 +1,117 @@
+<fold-page-layout icon="archive" title="Bacs">
+  <p description>
+    Les types de bacs dans lesquels la marchandise part en livraison. Un type ne se supprime
+    pas&nbsp;: on l’archive, et il reste réactivable.
+  </p>
+
+  @if (canWrite() && state().status === 'ready') {
+    <div pageActions>
+      <button foldButton icon="plus" data-add (click)="add()">Ajouter un type de bac</button>
+    </div>
+  }
+
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
+  }
+
+  @switch (state().status) {
+    @case ('loading') {
+      <fold-loading message="Lecture des bacs…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Bacs illisibles"
+        subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+        data-bins-error
+      >
+        <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      <div class="bins">
+        @if (catalogue().active.length === 0) {
+          <fold-empty-state
+            title="Aucun type de bac proposé"
+            subtitle="Ajoutez les bacs que vous utilisez : les contenances et le colisage les liront ici."
+            data-bins-empty
+          >
+            <fold-icon empty-icon name="archive" />
+          </fold-empty-state>
+        } @else {
+          <fold-element-title variant="caps" title="Proposés" [subtitle]="activeCount()" />
+          @for (bin of catalogue().active; track bin.id) {
+            <fold-card data-active-bin>
+              <div class="bins-type">
+                <fold-element-title variant="title" [title]="bin.name" [subtitle]="traits(bin)">
+                  @if (canWrite()) {
+                    <div titleAction class="bins-actions">
+                      <button
+                        foldButton
+                        emphasis="outline"
+                        size="sm"
+                        data-correct
+                        [disabled]="busyId() !== null"
+                        (click)="correct(bin)"
+                      >
+                        Corriger
+                      </button>
+                      <button
+                        foldButton
+                        emphasis="soft"
+                        intent="neutral"
+                        size="sm"
+                        data-archive
+                        [disabled]="busyId() !== null"
+                        [loading]="busyId() === bin.id"
+                        (click)="archive(bin)"
+                      >
+                        Archiver
+                      </button>
+                    </div>
+                  }
+                </fold-element-title>
+                <span data-outer>Extérieur&nbsp;: {{ dimensions(bin.outer) }}</span>
+                <span data-inner>
+                  Intérieur&nbsp;: {{ dimensions(bin.inner) }} · {{ liters(bin.innerVolumeLiters) }}
+                </span>
+              </div>
+            </fold-card>
+          }
+        }
+
+        @if (catalogue().archived.length > 0) {
+          <fold-element-title
+            variant="caps"
+            title="Archivés"
+            subtitle="Ils ne sont plus proposés ; les bacs déjà déclarés les gardent."
+          />
+          @for (bin of catalogue().archived; track bin.id) {
+            <fold-card data-archived-bin>
+              <fold-element-title
+                variant="title"
+                [title]="bin.name"
+                [subtitle]="dimensions(bin.outer) + ' · ' + archivedOn(bin.archivedAt ?? '')"
+              >
+                @if (canWrite()) {
+                  <button
+                    titleAction
+                    foldButton
+                    emphasis="outline"
+                    size="sm"
+                    data-reactivate
+                    [disabled]="busyId() !== null"
+                    [loading]="busyId() === bin.id"
+                    (click)="reactivate(bin)"
+                  >
+                    Réactiver
+                  </button>
+                }
+              </fold-element-title>
+            </fold-card>
+          }
+        }
+      </div>
+    }
+  }
+</fold-page-layout>

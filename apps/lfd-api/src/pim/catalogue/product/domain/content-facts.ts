@@ -90,6 +90,10 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   // canaux changent OÙ : un signataire qui l'a relue courante voudrait la
   // revoir exclusive (lot 2 du plan des opérations datées, 2026-09-24).
   [PIM_EVENTS.productOperationOnlyChanged]: true,
+  // Le froid est une condition de CONSERVATION, et elle s'étiquette : un
+  // signataire qui a relu la fiche sèche voudrait la revoir froide (lot 4 bis
+  // du plan de préparation de tournée, 2026-09-29).
+  [PIM_EVENTS.productColdRequirementChanged]: true,
   // Changer de famille change les taux et les canaux hérités. Le même geste
   // écrit aussi `identity_saved`, déjà compté : ce fait-ci ne périme donc
   // rien de plus, mais la table est exhaustive et il y a sa place.

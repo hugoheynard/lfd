@@ -68,6 +68,8 @@ const snapshot = {
       },
       // Traverse depuis la v11 : le croissant est un article courant.
       operationOnly: false,
+      // Traverse depuis la v12 : le croissant se conserve au sec.
+      requiresCold: false,
     },
   ],
   // L'échelle traverse depuis la v7 — vide est le cas courant, et il est net.
@@ -549,5 +551,39 @@ describe("les opérations datées, depuis la v11", () => {
 
     expect(parsed.success).toBe(true);
     expect(parsed.data?.operations?.[0]?.skus).toEqual(["VIE-001-1"]);
+  });
+});
+
+describe("le froid des produits (fil v12)", () => {
+  it("accepte un produit qui demande le froid", () => {
+    const cold = { ...snapshot, products: [{ ...snapshot.products[0], requiresCold: true }] };
+
+    expect(catalogSnapshotSchema.safeParse(cold).success).toBe(true);
+  });
+
+  /** Le fil reste STRICT : un émetteur qui tait le froid échoue à l'émission. */
+  it("REFUSE une émission dont un produit tait `requiresCold`", () => {
+    const product: Record<string, unknown> = { ...snapshot.products[0] };
+    delete product["requiresCold"];
+
+    expect(catalogSnapshotSchema.safeParse({ ...snapshot, products: [product] }).success).toBe(
+      false,
+    );
+  });
+
+  /**
+   * 🔴 Une arrivée v11 mise en file AVANT le déploiement reste lisible, et le
+   * froid y MANQUE, sans valeur de remplacement : c'est la version qui dit
+   * comment lire.
+   */
+  it("relit une arrivée v11 stockée, sans le froid", () => {
+    const product: Record<string, unknown> = { ...snapshot.products[0] };
+    delete product["requiresCold"];
+    const v11 = { ...snapshot, version: 11, products: [product] };
+
+    const parsed = storedCatalogSnapshotSchema.safeParse(v11);
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.products[0]?.requiresCold).toBeUndefined();
   });
 });

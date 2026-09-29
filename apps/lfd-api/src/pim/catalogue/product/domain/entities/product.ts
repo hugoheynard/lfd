@@ -80,6 +80,15 @@ export interface ProductSnapshot {
    * toute l'année.
    */
   readonly operationOnly: boolean;
+  /**
+   * **Demande le froid** — se conserve au réfrigérateur (lot 4 bis du plan de
+   * préparation de tournée, v2-2). La livraison ne le charge qu'en bac
+   * isotherme.
+   *
+   * `false` n'affirme rien : c'est l'état de toute fiche tant que personne n'a
+   * dit qu'elle était froide, pas une déclaration « se conserve au sec ».
+   */
+  readonly requiresCold: boolean;
 }
 
 /**
@@ -128,6 +137,7 @@ export class Product {
     private vatByContextValue: ContextVat,
     private channelOverrideValue: SalesChannels | null,
     private operationOnlyValue: boolean,
+    private requiresColdValue: boolean,
   ) {}
 
   static open(input: NewProductInput): Product {
@@ -148,6 +158,8 @@ export class Product {
       // Un produit naît COURANT : le réserver aux opérations est une décision
       // qu'on prend en le sachant, et qui se lit au journal.
       false,
+      // Un produit naît SANS froid déclaré : le froid se dit, il ne se devine pas.
+      false,
     );
   }
 
@@ -165,6 +177,7 @@ export class Product {
       snapshot.vatByContext,
       snapshot.channelOverride,
       snapshot.operationOnly,
+      snapshot.requiresCold,
     );
   }
 
@@ -281,6 +294,29 @@ export class Product {
       return false;
     }
     this.operationOnlyValue = operationOnly;
+    return true;
+  }
+
+  /** Demande le froid ? */
+  get requiresCold(): boolean {
+    return this.requiresColdValue;
+  }
+
+  /**
+   * **Déclare que la fiche demande le froid** — ou le retire.
+   *
+   * Aucune règle ne refuse le geste : une fiche en brouillon ou archivée se
+   * prépare comme les autres. Ce que le froid change se juge chez ceux qui
+   * CHARGENT (la livraison), pas ici.
+   *
+   * @returns `false` quand la fiche le disait déjà — rien à écrire au journal
+   * ({@link StatusChanged}).
+   */
+  declareColdRequirement(requiresCold: boolean): boolean {
+    if (this.requiresColdValue === requiresCold) {
+      return false;
+    }
+    this.requiresColdValue = requiresCold;
     return true;
   }
 
@@ -605,6 +641,7 @@ export class Product {
       vatByContext: this.vatByContextValue,
       channelOverride: this.channelOverrideValue,
       operationOnly: this.operationOnlyValue,
+      requiresCold: this.requiresColdValue,
     };
   }
 }

@@ -1,0 +1,13 @@
+/* Les champs et les messages, empilés : l'écart vient du `gap`. */
+.bd-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* Trois dimensions côte à côte, qui passent à la ligne au téléphone. */
+.bd-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}

@@ -39,6 +39,7 @@ const item = (sku: string, over: Partial<DeliveredItem> = {}): DeliveredItem => 
   image: null,
   thumbnail: null,
   operationOnly: false,
+  requiresCold: false,
   ...over,
 });
 
@@ -55,6 +56,15 @@ describe("le diff d'une arrivée", () => {
 
     expect(changes).toEqual([
       expect.objectContaining({ sku: "A", kind: "changed", fields: ["operationOnly"] }),
+    ]);
+  });
+
+  /** Fil v12 : le froid change le bac où la livraison charge l'article. */
+  it("nomme un article devenu froid", () => {
+    const changes = diffDelivery([item("A", { requiresCold: true })], [item("A")]);
+
+    expect(changes).toEqual([
+      expect.objectContaining({ sku: "A", kind: "changed", fields: ["requiresCold"] }),
     ]);
   });
 

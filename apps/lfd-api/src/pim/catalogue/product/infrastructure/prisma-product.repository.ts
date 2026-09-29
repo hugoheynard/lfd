@@ -64,6 +64,7 @@ interface ProductRow {
   categoryId: string;
   status: ProductStatus;
   operationOnly: boolean;
+  requiresCold: boolean;
   variants: VariantRow[];
   contextVat: readonly { vatRateId: string; context: { key: string } }[];
   channelOverrideRows: {
@@ -162,6 +163,7 @@ function toProduct(row: ProductRow): Product {
     categoryId: row.categoryId,
     status: row.status,
     operationOnly: row.operationOnly,
+    requiresCold: row.requiresCold,
     variants: row.variants.map(toVariant),
     vatByContext: Object.fromEntries(
       row.contextVat.map((line) => [line.context.key, line.vatRateId]),
@@ -205,6 +207,7 @@ function toColumns(snapshot: ProductSnapshot) {
     categoryId: snapshot.categoryId,
     status: snapshot.status,
     operationOnly: snapshot.operationOnly,
+    requiresCold: snapshot.requiresCold,
   };
 }
 

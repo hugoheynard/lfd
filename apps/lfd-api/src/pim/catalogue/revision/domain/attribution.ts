@@ -76,6 +76,9 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   // de révision (`RevisionItemInput`, vérifié le 2026-09-24) : il traverse le
   // fil v11, pas l'ancre. Le jour où il y entre, cette ligne citera son champ.
   [PIM_EVENTS.productOperationOnlyChanged]: [],
+  // Le froid n'est dans aucun champ de révision non plus (`RevisionItemInput`,
+  // vérifié le 2026-09-29) : il traverse le fil v12, pas l'ancre.
+  [PIM_EVENTS.productColdRequirementChanged]: [],
 };
 
 /** Les champs de révision qu'un fait touche. Vide = il n'en touche aucun. */

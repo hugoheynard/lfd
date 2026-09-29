@@ -412,3 +412,45 @@ describe("réservée aux opérations datées (D3)", () => {
     expect(Product.reconstitute(product.snapshot()).operationOnly).toBe(true);
   });
 });
+
+describe("demande le froid (lot 4 bis, v2-2)", () => {
+  it("naît sans froid déclaré : le froid se dit, il ne se devine pas", () => {
+    expect(open().snapshot().requiresCold).toBe(false);
+  });
+
+  it("se déclare froide, et dit qu'elle a changé", () => {
+    const product = open();
+
+    expect(product.declareColdRequirement(true)).toBe(true);
+    expect(product.snapshot().requiresCold).toBe(true);
+    expect(product.persistenceSnapshot().requiresCold).toBe(true);
+  });
+
+  it("ne dit rien changé quand elle l'était déjà — pas de fait à journaliser", () => {
+    const product = open();
+    product.declareColdRequirement(true);
+
+    expect(product.declareColdRequirement(true)).toBe(false);
+  });
+
+  it("se déclare froide même archivée : le geste prépare, il ne vend pas", () => {
+    const product = open();
+    product.archive();
+
+    expect(product.declareColdRequirement(true)).toBe(true);
+  });
+
+  it("n'a aucun effet sur la réservation aux opérations", () => {
+    const product = open();
+    product.declareColdRequirement(true);
+
+    expect(product.operationOnly).toBe(false);
+  });
+
+  it("garde le froid à la reconstitution", () => {
+    const product = open();
+    product.declareColdRequirement(true);
+
+    expect(Product.reconstitute(product.snapshot()).requiresCold).toBe(true);
+  });
+});

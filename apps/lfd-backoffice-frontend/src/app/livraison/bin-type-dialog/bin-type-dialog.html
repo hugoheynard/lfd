@@ -1,0 +1,107 @@
+<fold-panel-header
+  [title]="title()"
+  subtitle="Ses dimensions, le froid, la pile et la cloison"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <div class="bd-fields">
+    <fold-input
+      label="Nom"
+      placeholder="Bac M"
+      [value]="draft().name"
+      (valueChange)="setName($event)"
+      data-name
+    />
+
+    @for (side of sides; track side.key) {
+      <fold-fieldset [legend]="side.legend" [hint]="side.hint">
+        <div class="bd-row">
+          <fold-number-input
+            label="Longueur"
+            spinner="none"
+            integer
+            [min]="bounds.cmMin"
+            [max]="bounds.cmMax"
+            [value]="draft()[side.key].lengthCm"
+            (valueChange)="setDimension(side.key, 'lengthCm', $event)"
+          />
+          <fold-number-input
+            label="Largeur"
+            spinner="none"
+            integer
+            [min]="bounds.cmMin"
+            [max]="bounds.cmMax"
+            [value]="draft()[side.key].widthCm"
+            (valueChange)="setDimension(side.key, 'widthCm', $event)"
+          />
+          <fold-number-input
+            label="Hauteur"
+            spinner="none"
+            integer
+            [min]="bounds.cmMin"
+            [max]="bounds.cmMax"
+            [value]="draft()[side.key].heightCm"
+            (valueChange)="setDimension(side.key, 'heightCm', $event)"
+          />
+        </div>
+        @if (side.key === 'inner') {
+          @if (volume(); as label) {
+            <fold-badge variant="neutral" [content]="label" data-volume />
+          }
+        }
+      </fold-fieldset>
+    }
+
+    <fold-number-input
+      label="Bacs par pile, au plus"
+      spinner="none"
+      integer
+      [min]="bounds.stackMin"
+      [max]="bounds.stackMax"
+      [value]="draft().maxStack"
+      (valueChange)="setMaxStack($event)"
+      data-max-stack
+    />
+
+    <fold-checkbox
+      label="Isotherme"
+      hint="Un produit qui demande le froid ne va que dans un bac isotherme."
+      [checked]="draft().isotherm"
+      (checkedChange)="setIsotherm($event)"
+      data-isotherm
+    />
+    <fold-checkbox
+      label="Cloisonnable"
+      hint="Accepte une cloison : un bac fait alors deux demi-bacs."
+      [checked]="draft().divisible"
+      (checkedChange)="setDivisible($event)"
+      data-divisible
+    />
+
+    @if (issue(); as message) {
+      <fold-callout variant="warning" data-issue>{{ message }}</fold-callout>
+    }
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    intent="primary"
+    type="button"
+    data-submit
+    [disabled]="!canSubmit()"
+    [loading]="saving()"
+    (click)="submit()"
+  >
+    {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
+  </button>
+</fold-panel-footer>

@@ -630,6 +630,8 @@ export class ProductFormStore {
    * l'écrit seule, sur sa propre route, comme la limite de commande.
    */
   readonly operationOnly = signal(false);
+  /** Demande le froid (lot 4 bis). Hors des sections, comme la réservation. */
+  readonly requiresCold = signal(false);
   readonly weightGrams = signal<number | null>(null);
   /**
    * **La déclaration d'allergènes — un seul signal, et c'est le sujet.**
@@ -2100,6 +2102,7 @@ export class ProductFormStore {
     this.vatOverride.set(product.vatByContext);
     this.channelsOverride.set(product.channelsOverride);
     this.operationOnly.set(product.operationOnly);
+    this.requiresCold.set(product.requiresCold);
 
     this.editorial.set(detail.editorial);
     this.media.set([...detail.media]);

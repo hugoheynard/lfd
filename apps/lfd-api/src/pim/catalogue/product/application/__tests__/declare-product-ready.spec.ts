@@ -42,6 +42,7 @@ function snapshot(status: ProductSnapshot["status"]): ProductSnapshot {
     vatByContext: {},
     channelOverride: null,
     operationOnly: false,
+    requiresCold: false,
     variants: [
       {
         id: "prd_1_v1",

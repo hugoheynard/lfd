@@ -282,6 +282,23 @@ function operationOnlyChanged(fact: PhraseFact): Said {
   );
 }
 
+/**
+ * « … a déclaré que « Tarte citron » demande le froid » / « … ne demande plus
+ * le froid » (lot 4 bis du plan de préparation de tournée, 2026-09-29).
+ */
+function coldRequirementChanged(fact: PhraseFact): Said {
+  const cold = fact.payload['to'] === true;
+  return byActor(
+    fact,
+    [
+      text('a déclaré que '),
+      ...theSubject(fact, PRODUCT),
+      text(cold ? ' demande le froid' : ' ne demande plus le froid'),
+    ],
+    ['subjectLabel', 'from', 'to'],
+  );
+}
+
 function channelsChanged(fact: PhraseFact): Said {
   const p = fact.payload;
   if (p['to'] === 'inherited') {
@@ -335,6 +352,7 @@ export const REFERENTIAL_PHRASES = {
   'product.media_saved': sectionSaved('les visuels', OF_PRODUCT, 'none'),
   'product.channels_changed': channelsChanged,
   'product.operation_only_changed': operationOnlyChanged,
+  'product.cold_requirement_changed': coldRequirementChanged,
   'product.declared_ready': onProduct('a déclaré', ' prête à publier'),
   'product.published': onSale('a publié', ' au catalogue'),
   'product.unpublished': onSale('a retiré de la vente', ''),

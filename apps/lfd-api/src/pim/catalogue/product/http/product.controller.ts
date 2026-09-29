@@ -15,12 +15,14 @@ import {
   setProductMediaPayloadSchema,
   setProductChannelsPayloadSchema,
   setProductOperationOnlyPayloadSchema,
+  setProductColdRequirementPayloadSchema,
   setProductVatPayloadSchema,
   addProductVariantPayloadSchema,
   alignVariantPayloadSchema,
   type SetProductMediaPayload,
   type SetProductChannelsPayload,
   type SetProductOperationOnlyPayload,
+  type SetProductColdRequirementPayload,
   type SetProductVatPayload,
   type AddProductVariantPayload,
   renameProductVariantPayloadSchema,
@@ -51,6 +53,7 @@ import { UnpublishProductCommand } from "../application/unpublish-product.js";
 import { SetProductMediaCommand } from "../application/set-product-media.js";
 import { SetProductChannelsCommand } from "../application/set-product-channels.js";
 import { SetProductOperationOnlyCommand } from "../application/set-product-operation-only.js";
+import { SetProductColdRequirementCommand } from "../application/set-product-cold-requirement.js";
 import { SetProductVatCommand } from "../application/set-product-vat.js";
 import { UpdateProductEditorialCommand } from "../application/update-product-editorial.js";
 import { UpdateProductIdentityCommand } from "../application/update-product-identity.js";
@@ -165,6 +168,22 @@ export class ProductController {
   ) {
     await this.commands.execute<SetProductOperationOnlyCommand, void>(
       new SetProductOperationOnlyCommand(id, body.operationOnly),
+    );
+    return { id };
+  }
+
+  /**
+   * **Demande le froid** — la case de la fiche (lot 4 bis du plan de
+   * préparation de tournée). L'état entier, comme les autres sections.
+   */
+  @Put(":id/cold-requirement")
+  async setProductColdRequirement(
+    @Param("id") id: string,
+    @Body(new ZodBody(setProductColdRequirementPayloadSchema))
+    body: SetProductColdRequirementPayload,
+  ) {
+    await this.commands.execute<SetProductColdRequirementCommand, void>(
+      new SetProductColdRequirementCommand(id, body.requiresCold),
     );
     return { id };
   }

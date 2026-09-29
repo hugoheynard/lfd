@@ -80,6 +80,8 @@ export interface IngestedSku {
   } | null;
   /** Réservé aux opérations datées (v11) — non par défaut, comme tout article courant. */
   readonly operationOnly?: boolean;
+  /** Demande le froid (v12) — non par défaut, comme toute fiche non déclarée. */
+  readonly requiresCold?: boolean;
   /** La vignette de rayon (v10) — absente par défaut, comme la plupart des fiches. */
   readonly thumbnail?: {
     url: string;
@@ -117,6 +119,7 @@ export function snapshotOf(
         thumbnail = null,
         publicPrice = PUBLIC_LABEL,
         operationOnly = false,
+        requiresCold = false,
       }) => ({
         id: `prd_${sku}`,
         sku,
@@ -127,6 +130,7 @@ export function snapshotOf(
         image,
         thumbnail,
         operationOnly,
+        requiresCold,
         variants: [
           {
             id: `var_${sku}`,

@@ -38,6 +38,7 @@ function product(name: string, variants: readonly Variant[], operationOnly = fal
     channelsOverride: null,
     vatByContext: {},
     operationOnly,
+    requiresCold: false,
   };
 }
 

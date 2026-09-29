@@ -386,6 +386,9 @@ export function projectCatalog(
       // Le drapeau de la FICHE (D3) : le récepteur le descend sur chacun de
       // ses articles, comme la ligne et les visuels.
       operationOnly: product.operationOnly,
+      // Le froid de la FICHE (fil v12) : le récepteur le descend sur ses
+      // articles et le relaie à la livraison.
+      requiresCold: product.requiresCold,
     });
   }
 

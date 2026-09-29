@@ -110,6 +110,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "delivery_routing.",
     // Les scénarios du simulateur (lot 9, L9-C7, 2026-09-29) : même famille.
     "delivery_simulation_scenario.",
+    // Les bacs et leurs contenances (lot 4 bis, tranche A, 2026-09-29) : même famille.
+    "delivery_bin_type.",
+    "delivery_bin_capacity.",
     // L'heure limite posée sur un produit : même famille que celle d'un point.
     "order_time_limit.",
   ],

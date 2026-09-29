@@ -287,6 +287,12 @@ export interface ProductView {
    * datées). `false` = article courant, le cas de toute fiche d'avant le lot 2.
    */
   readonly operationOnly: boolean;
+  /**
+   * **Demande le froid** — conservation réfrigérée (lot 4 bis du plan de
+   * préparation de tournée, v2-2). `false` = personne ne l'a déclaré, pas
+   * « se conserve au sec ».
+   */
+  readonly requiresCold: boolean;
 }
 
 /**
@@ -427,6 +433,18 @@ export const setProductOperationOnlyPayloadSchema = z.strictObject({
   operationOnly: z.boolean(),
 });
 export type SetProductOperationOnlyPayload = z.infer<typeof setProductOperationOnlyPayloadSchema>;
+
+/**
+ * **Déclarer que la fiche demande le froid** — ou le retirer
+ * (`PUT /pim/catalogue/products/:id/cold-requirement`). L'état de la case,
+ * comme pour la réservation aux opérations.
+ */
+export const setProductColdRequirementPayloadSchema = z.strictObject({
+  requiresCold: z.boolean(),
+});
+export type SetProductColdRequirementPayload = z.infer<
+  typeof setProductColdRequirementPayloadSchema
+>;
 
 export const setProductVatPayloadSchema = z.object({
   vatByContext: z.record(z.string(), z.string()),

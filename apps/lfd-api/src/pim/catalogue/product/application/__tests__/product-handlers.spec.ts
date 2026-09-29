@@ -69,6 +69,7 @@ function seedProduct(): ProductSnapshot {
     vatByContext: {},
     channelOverride: null,
     operationOnly: false,
+    requiresCold: false,
     variants: [
       {
         id: VARIANT_ID,

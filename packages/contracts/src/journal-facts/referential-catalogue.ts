@@ -407,6 +407,13 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
   "product.operation_only_changed": fact(
     payload({ subjectLabel: subjectLabel(), from: z.boolean(), to: z.boolean() }),
   ),
+  /**
+   * La fiche est déclarée froide (`to: true`), ou ne l'est plus (`to: false`)
+   * — lot 4 bis du plan de préparation de tournée.
+   */
+  "product.cold_requirement_changed": fact(
+    payload({ subjectLabel: subjectLabel(), from: z.boolean(), to: z.boolean() }),
+  ),
   "product.vat_changed": fact(vatChanged(), [vatByContextV1(), vatChangedLotB()]),
   "product.declared_ready": labelled(skuAndName()),
   "product.published": labelled(productOnSale()),

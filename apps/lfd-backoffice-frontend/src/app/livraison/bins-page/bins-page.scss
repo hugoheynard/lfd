@@ -1,0 +1,20 @@
+/* Les titres de groupe et les cartes, empilés : l'écart vient du `gap`. */
+.bins {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* Corriger et Archiver, côte à côte dans l'en-tête de la carte. */
+.bins-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+/* L'en-tête d'un type et ses deux lignes de dimensions. */
+.bins-type {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}

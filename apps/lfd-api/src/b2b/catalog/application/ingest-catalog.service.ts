@@ -204,6 +204,8 @@ function factsOf(snapshot: StoredCatalogSnapshot, receivedAt: Date): PimFacts[] 
       // Absent avant la v11 : aucun article n'était réservé aux opérations, et
       // `false` le dit — c'est la version qui décide de la lecture (D10).
       operationOnly: product.operationOnly ?? false,
+      // Absent avant la v12 : aucun article n'était déclaré froid.
+      requiresCold: product.requiresCold ?? false,
       receivedAt,
     })),
   );

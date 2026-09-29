@@ -48,6 +48,7 @@ function product(over: Partial<ProductRecord> = {}): ProductRecord {
     vatByContext: {},
     channelOverride: null,
     operationOnly: false,
+    requiresCold: false,
     variants: [
       {
         id: "var_1",

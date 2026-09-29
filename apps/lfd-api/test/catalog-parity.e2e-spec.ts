@@ -82,6 +82,7 @@ class StubFeed extends B2bCatalogFeedPreview {
         image: null,
         thumbnail: null,
         operationOnly: variant.operationOnly ?? false,
+        requiresCold: false,
       })),
       orderTimeLimits: [],
       operations: [...this.operations],

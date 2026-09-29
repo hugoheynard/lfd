@@ -39,6 +39,8 @@ const FIELDS: Readonly<Record<string, string>> = {
   orderLimit: 'limite de commande',
   // Depuis la v11 : l'article n'est vendu que pendant une opération datée.
   operationOnly: 'réservé aux opérations',
+  // Depuis la v12 : l'article demande le froid (lot 4 bis, livraison).
+  requiresCold: 'froid',
 };
 
 /** Ce que l'arrivée fait à un article, dit comme on le lit. */

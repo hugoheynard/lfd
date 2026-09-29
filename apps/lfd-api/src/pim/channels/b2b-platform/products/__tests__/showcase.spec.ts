@@ -24,6 +24,7 @@ const product = (id: string): ProductRecord => ({
   vatByContext: {},
   channelOverride: null,
   operationOnly: false,
+  requiresCold: false,
 });
 
 const media = (over: Partial<ProductMediaRecord> = {}): ProductMediaRecord => ({

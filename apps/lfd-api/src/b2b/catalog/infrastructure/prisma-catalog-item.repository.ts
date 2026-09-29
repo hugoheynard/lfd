@@ -40,6 +40,7 @@ interface ItemRow {
   readonly orderLimitTime: string | null;
   readonly orderLimitGraceMinutes: number | null;
   readonly operationOnly: boolean;
+  readonly requiresCold: boolean;
   readonly receivedAt: Date;
   readonly withdrawnAt: Date | null;
   readonly override: {
@@ -317,6 +318,7 @@ function toDomain(row: ItemRow): CatalogItem {
       image: imageOf(row),
       thumbnail: thumbnailOf(row),
       operationOnly: row.operationOnly,
+      requiresCold: row.requiresCold,
       receivedAt: row.receivedAt,
     },
     withdrawnAt: row.withdrawnAt,
@@ -396,6 +398,7 @@ function factsRow(state: CatalogItemState) {
             incomplete: facts.allergenLabels.incomplete,
           },
     operationOnly: facts.operationOnly,
+    requiresCold: facts.requiresCold,
     receivedAt: facts.receivedAt,
     // 🔴 Écrit à CHAQUE upsert, et c'est ce qui remet en rayon un article qui
     // revient. Le miroir ne rend plus les retirés, donc un SKU réintroduit

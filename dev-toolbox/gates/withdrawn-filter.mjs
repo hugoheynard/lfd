@@ -48,6 +48,9 @@ const ALLOWED = new Set([
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog.reader.ts",
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-admin.reader.ts",
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-item.repository.ts",
+  // Le froid relayé à la livraison (lot 4 bis, 2026-09-29) : il PORTE le
+  // filtre (`...STILL_SOLD`) — un article retiré n'a plus à être chargé froid.
+  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-cold.reader.ts",
   // Le semis de développement, et il PORTE le filtre : sa lecture demande
   // `withdrawnAt: null` explicitement (`ensureSkusExist`). Elle ne sert pas à
   // vendre — elle vérifie AVANT d'écrire que les SKU du corpus existent, pour

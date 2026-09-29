@@ -49,6 +49,7 @@ const snapshot: CatalogSnapshot = {
       image: null,
       thumbnail: null,
       operationOnly: false,
+      requiresCold: false,
     },
   ],
   orderTimeLimits: [],

@@ -1068,6 +1068,38 @@ le 2026-09-29). Si le lot 4 est promu avant, trois déploiements.
 bacs déjà déclarés, et n'est plus proposé ; « le calcul » de C8 est le
 calculateur de tournée, hors de ce lot.
 
+> **(A) serveur bâti le 2026-09-29** (non commité à l'écriture de cette
+> ligne) : tables `production.delivery_bin_type` et
+> `production.delivery_bin_capacity` (migration additive
+> `20260929230000_les_types_de_bacs`, nom unique parmi les non archivés par
+> index partiel, CHECK intérieur ≤ extérieur) ; routes `admin/livraison/bacs`
+> (liste, création, correction, `archiver`, `reactiver`) et
+> `admin/livraison/contenances` (grille, `PUT` d'une case, `null` la vide) ;
+> la liste des produits arrive par `DeliveryProductsReader`
+> (`delivery/channels/commerce/`), que le catalogue B2B implémente. Contrat :
+> `packages/contracts/src/delivery-bins.ts`. Faits : `delivery_bin_type.added`
+> / `.corrected` / `.archived` / `.reactivated`, `delivery_bin_capacity.set`.
+> Tranché au bâti, sans le plan : une contenance ne se POSE pas sur un type
+> archivé (elle s'y vide) ; une case vidée est une ligne supprimée (réglage de
+> grille, pas un agrégat), le journal garde l'avant.
+
+> **(A) froid bâti le 2026-09-29** (non commité à l'écriture de cette ligne) :
+> `pim.product.requires_cold` et `public.catalog_items.requires_cold`
+> (migration additive `20260929234500_le_froid_des_produits`, `NOT NULL
+DEFAULT false` — une fiche n'est pas froide tant qu'on ne l'a pas dit) ;
+> `Product.declareColdRequirement`, route `PUT
+/pim/catalogue/products/:id/cold-requirement`, fait
+> `product.cold_requirement_changed` (compte comme contenu : périme une
+> signature) ; case « Demande le froid (conservation réfrigérée) » dans une
+> carte « Logistique » de la fiche. Le **fil catalogue passe en v12**
+> (`requiresCold` strict à l'émission, absent toléré dans une arrivée v11
+> stockée), comparé au diff de réception. Relayé par `requiresCold` sur
+> `DeliveryProduct` — le port PAR PRODUIT : le froid est un fait du produit,
+> et aucun port par ligne de commande n'existe encore ; le colisage (C) le
+> croisera au SKU produit des lignes. Côté commerce, un port à lui
+> (`CatalogColdReader`) plutôt qu'un champ sur `ProductCatalogReader`,
+> l'autorité de prix du checkout.
+
 **Tranches, dans l'ordre de bâti** : (A) catalogue des bacs + contenances
 (`delivery`) et le froid sur la fiche produit (`pim` → canal) ; (B) le bac
 remplace le sac (renommage, type, moitiés, scan, « Partir ») ; (C) le

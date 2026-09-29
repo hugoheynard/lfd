@@ -49,6 +49,12 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   // client ni commande. « Partir d'une journée » COPIE un jour, il n'y écrit rien.
   "production.delivery_simulation_scenario":
     "les scénarios du simulateur, des essais sans client ni journée — rien de ce qu'ils portent n'entre dans une tournée",
+  // Les bacs (lot 4 bis, tranche A, 2026-09-29) : un catalogue et une grille
+  // de réglage. Ce qui portera un jour — le bac déclaré, son chargement — vit
+  // ailleurs et aura ses déclencheurs.
+  "production.delivery_bin_type": "le catalogue des types de bacs, un réglage sans journée",
+  "production.delivery_bin_capacity":
+    "la grille des contenances bacs × produits, un réglage sans journée",
 };
 
 /** Les colonnes qui disent « cette ligne appartient à une journée », côté `public`. */

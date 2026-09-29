@@ -36,6 +36,7 @@ import { IdentityForm } from './form-sections/identity/identity-form';
 import { IntegrationsForm } from './form-sections/integrations/integrations-form';
 import { PricingForm } from './form-sections/pricing/pricing-form';
 import { OperationOnlyForm } from './form-sections/operation-only/operation-only-form';
+import { ColdRequirementForm } from './form-sections/cold-requirement/cold-requirement-form';
 import { OrderLimitForm } from './form-sections/order-limit/order-limit-form';
 import { IngredientsForm } from './form-sections/ingredients/ingredients-form';
 import { AllergensForm } from './form-sections/allergens/allergens-form';
@@ -125,6 +126,7 @@ interface PageSection {
     IdentityForm,
     PricingForm,
     OperationOnlyForm,
+    ColdRequirementForm,
     OrderLimitForm,
     AllergensForm,
     NutritionForm,

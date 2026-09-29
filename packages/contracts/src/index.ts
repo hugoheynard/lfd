@@ -749,6 +749,28 @@ export type {
   DeparturePointView,
 } from "./delivery-settings.js";
 export {
+  binDimensionsSchema,
+  binTypePayloadSchema,
+  setBinCapacityPayloadSchema,
+  BIN_TYPE_NAME_MAX_LENGTH,
+  BIN_DIMENSION_MIN_CM,
+  BIN_DIMENSION_MAX_CM,
+  BIN_MAX_STACK_MIN,
+  BIN_MAX_STACK_MAX,
+  BIN_CAPACITY_MIN_UNITS,
+  BIN_CAPACITY_MAX_UNITS,
+} from "./delivery-bins.js";
+export type {
+  BinDimensions,
+  BinTypePayload,
+  BinTypeView,
+  BinTypesView,
+  BinProductView,
+  BinCapacityView,
+  BinCapacitiesView,
+  SetBinCapacityPayload,
+} from "./delivery-bins.js";
+export {
   openDeliveryRoundPayloadSchema,
   assignDeliveryStopPayloadSchema,
   moveDeliveryStopPayloadSchema,

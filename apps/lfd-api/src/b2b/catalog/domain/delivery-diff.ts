@@ -101,6 +101,12 @@ export interface DeliveredItem {
    * « inchangée ».
    */
   readonly operationOnly: boolean;
+  /**
+   * **Demande le froid** (fil v12). Comparé pour la même raison : il change
+   * le bac où la livraison charge l'article, et un diff qui l'ignorerait
+   * l'annoncerait « inchangé ».
+   */
+  readonly requiresCold: boolean;
 }
 
 /** Ce qu'une arrivée fait à un SKU. */
@@ -119,6 +125,7 @@ export type ChangedField =
   | "image"
   | "thumbnail"
   | "operationOnly"
+  | "requiresCold"
   /**
    * **L'étiquette a bougé** — ce qu'un particulier paie, taxe comprise.
    *
@@ -264,6 +271,9 @@ function changedFields(incoming: DeliveredItem, mirror: DeliveredItem): readonly
   }
   if (incoming.operationOnly !== mirror.operationOnly) {
     fields.push("operationOnly");
+  }
+  if (incoming.requiresCold !== mirror.requiresCold) {
+    fields.push("requiresCold");
   }
   return fields;
 }

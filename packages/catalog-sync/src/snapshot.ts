@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 11;
+export const CATALOG_SNAPSHOT_VERSION = 12;
 
 /**
  * Une famille de produits, **à plat**.
@@ -405,6 +405,16 @@ export const syncProductSchema = z.object({
    * produire un article qu'on lirait « courant » par défaut.
    */
   operationOnly: z.boolean(),
+  /**
+   * **Demande le froid** — conservation réfrigérée, depuis la v12 (lot 4 bis du
+   * plan de préparation de tournée, v2-2 : une propriété du PRODUIT, une seule
+   * vérité). Le récepteur le descend sur ses articles et le relaie à la
+   * livraison, qui ne charge un produit froid qu'en bac isotherme.
+   *
+   * Obligatoire, comme `operationOnly` : un émetteur qui l'oublie échoue à
+   * l'émission plutôt que de produire un article qu'on lirait « sec ».
+   */
+  requiresCold: z.boolean(),
 });
 export type SyncProduct = z.infer<typeof syncProductSchema>;
 
@@ -534,6 +544,7 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
     z.literal(9),
     z.literal(10),
     z.literal(11),
+    z.literal(12),
   ]),
   products: z.array(
     syncProductSchema.extend({
@@ -542,6 +553,9 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
       // « aucun article exclusif » — ce qui était vrai. Pas de `false` de
       // remplacement ici : c'est la VERSION qui dit comment lire.
       operationOnly: z.boolean().optional(),
+      // Absent avant la v12 : le froid ne traversait pas, et aucun article
+      // n'était déclaré froid. C'est la VERSION qui dit comment lire.
+      requiresCold: z.boolean().optional(),
       // Absents avant la v8 : l'éditorial et le visuel ne traversaient pas. Une
       // arrivée d'avant la bascule reste lisible, et se lit alors « ni ligne ni
       // visuel » — ce qui est exact : elle n'en portait pas.

@@ -97,6 +97,15 @@ model Product {
   /// colonne, et c'est celle de tout article courant.
   operationOnly Boolean @default(false) @map("operation_only")
 
+  /// **Demande le froid** — la fiche se conserve au réfrigérateur (lot 4 bis
+  /// du plan de préparation de tournée, v2-2 : une propriété du PRODUIT, une
+  /// seule vérité). Publiée dans le catalogue B2B, relayée à la livraison, qui
+  /// ne la charge qu'en bac isotherme.
+  ///
+  /// `false` par défaut, et ce n'est PAS une affirmation : une fiche existante
+  /// n'est pas froide tant que personne ne l'a dit sur la fiche.
+  requiresCold Boolean @default(false) @map("requires_cold")
+
   /// ⚠️ **AUCUN LECTEUR, AUCUN ÉCRIVAIN** — constaté le 2026-09-02 sur tout le
   /// dépôt : backend, les deux fronts, `packages/*`, le seed. La colonne existe
   /// depuis sa migration de création (20260820160000) et vaut `{}` partout.

@@ -61,6 +61,7 @@ function detailWith(variants: readonly Variant[]): ProductDetail {
       channelsOverride: null,
       vatByContext: {},
       operationOnly: false,
+      requiresCold: false,
     },
     editorial: {
       descriptionShort: null,
