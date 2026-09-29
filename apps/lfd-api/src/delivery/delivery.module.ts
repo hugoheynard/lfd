@@ -163,13 +163,14 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     { provide: GeocodeCacheReader, useClass: PrismaGeocodeCacheReader },
     { provide: GeocodeCacheRepository, useClass: PrismaGeocodeCacheRepository },
     { provide: DeliveryProposalRepository, useClass: PrismaDeliveryProposalRepository },
-    // Sans URL, le calcul routier REFUSE (L10b-C5) : plus de vol d'oiseau.
+    // Sans adresse (ou, en production, sans jeton ni https — L8b-C4), le calcul
+    // routier REFUSE (L10b-C5) : plus de vol d'oiseau.
     {
       provide: DistanceMatrix,
       inject: [AppConfig],
       useFactory: (config: AppConfig): DistanceMatrix => {
-        const url = config.osrmUrl();
-        return url === null ? new DisabledDistanceMatrix() : new OsrmDistanceMatrix(url);
+        const endpoint = config.osrmEndpoint();
+        return endpoint === null ? new DisabledDistanceMatrix() : new OsrmDistanceMatrix(endpoint);
       },
     },
     // Sans URL, pas de tracé : la carte montre les repères seuls (L10b-C4).
@@ -177,8 +178,8 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
       provide: RouteGeometry,
       inject: [AppConfig],
       useFactory: (config: AppConfig): RouteGeometry => {
-        const url = config.osrmUrl();
-        return url === null ? new DisabledRouteGeometry() : new OsrmRouteGeometry(url);
+        const endpoint = config.osrmEndpoint();
+        return endpoint === null ? new DisabledRouteGeometry() : new OsrmRouteGeometry(endpoint);
       },
     },
     // Sans URL, le géocodage est DÉSACTIVÉ (L7-C9) : les e2e ne sortent pas sur le réseau.

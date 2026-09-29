@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { S3StorageConfig } from "@lfd/storage";
 
 import { normalizeBootstrapEmail } from "./bootstrap-admin-email.js";
+import { type OsrmEndpoint, resolveOsrmEndpoint } from "./osrm-endpoint.js";
 
 import {
   optionalAdminDevBypass,
@@ -80,7 +81,7 @@ export class AppConfig {
   private readonly recomputeTokenValue: string | null;
   private readonly adminBaseUrlValue: string | null;
   private readonly geocoderUrlValue: string | null;
-  private readonly osrmUrlValue: string | null;
+  private readonly osrmEndpointValue: OsrmEndpoint | null;
   private readonly exposeDetail: boolean;
   private readonly production: boolean;
   private readonly fieldKey: Buffer;
@@ -114,9 +115,13 @@ export class AppConfig {
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
     this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
     this.geocoderUrlValue = optionalString("BAN_GEOCODER_URL");
-    this.osrmUrlValue = optionalString("OSRM_URL");
     this.revisionValue = optionalString("APP_REVISION") ?? "inconnue";
     this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
+    this.osrmEndpointValue = resolveOsrmEndpoint({
+      url: optionalString("OSRM_URL"),
+      token: optionalString("OSRM_TOKEN"),
+      production: this.production,
+    });
     this.exposeDetail = !this.production;
     const configuredFieldKey = optionalFieldEncryptionKey();
     this.fieldKeyIsConfigured = configuredFieldKey !== null;
@@ -232,16 +237,16 @@ export class AppConfig {
   }
 
   /**
-   * L'adresse du **calcul routier** (plan de tournée, lot 8) —
-   * `http://osrm.internal` en production, un nom que seul le Worker de
-   * `lfd-api` intercepte et passe à `lfd-osrm` par son service binding
-   * (`container/osrm-bridge.ts`) —, ou `null` : « Proposer », « Chronométrer »
-   * et le simulateur refusent (L10b-C5, plus de vol d'oiseau). Sans défaut,
-   * comme la BAN : ni le poste de
+   * Où joindre le **calcul routier** (plan de tournée, lot 8 bis) — en
+   * production `https://lafoliecoffee.info/api/osrm`, par la passerelle, avec
+   * le jeton `OSRM_TOKEN` —, ou `null` : « Proposer », « Chronométrer » et le
+   * simulateur refusent (L10b-C5, plus de vol d'oiseau). En production, une
+   * adresse sans `https://` ou sans jeton vaut `null` (L8b-C4, voir
+   * {@link resolveOsrmEndpoint}). Sans défaut, comme la BAN : ni le poste de
    * dev ni les e2e ne sortent sur le réseau sans qu'on l'ait écrit.
    */
-  osrmUrl(): string | null {
-    return this.osrmUrlValue;
+  osrmEndpoint(): OsrmEndpoint | null {
+    return this.osrmEndpointValue;
   }
 
   /**

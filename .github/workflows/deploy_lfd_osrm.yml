@@ -28,6 +28,12 @@ name: deploy_lfd_osrm
 #     du compte ; il couvre tout Worker du compte, donc celui-ci.
 #   CLOUDFLARE_ACCOUNT_ID — injecté dans `wrangler.jsonc` au déploiement.
 # Aucun secret RUNTIME : OSRM ne lit rien de l'environnement.
+#
+# AUCUNE ADRESSE PUBLIQUE (`workers_dev: false`) : son seul appelant est la
+# passerelle, par service binding, sous `/api/osrm` et derrière un jeton
+# qu'ELLE vérifie (lot 8 bis). ⚠️ `wrangler` résout chaque service binding au
+# moment de publier : ce Worker doit être déployé AVANT la passerelle qui le
+# nomme (documentation/ops/carte-routiere-osrm.md, « Mettre en service »).
 
 on:
   schedule:

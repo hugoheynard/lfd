@@ -1,5 +1,7 @@
 import { frontHeaders, PRO_FRONT_ORIGIN, resolveTarget } from "./routes";
 import type { BackendKey, Target } from "./routes";
+import { guardTarget } from "./osrm-guard";
+import type { OsrmGuardEnv } from "./osrm-guard";
 import { formatTrafficPoint, trafficPoint } from "./traffic";
 import type { TrafficObservation } from "./traffic";
 
@@ -43,8 +45,10 @@ const X_LFC_REQUEST_TIME = "x-lfc-request-time";
 const TRACEPARENT_FORMAT = /^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/;
 
 /** Les backends joignables par service binding. Absents en `wrangler dev`. */
-interface Env {
+interface Env extends OsrmGuardEnv {
   LFD_BACKEND?: Fetcher;
+  /** `lfd-osrm`, le calcul routier — derrière la garde de `osrm-guard.ts`. */
+  OSRM?: Fetcher;
   /**
    * Le dataset Analytics Engine (`TRAFFIC_DATASET` dans `traffic.ts`). Optionnel comme
    * les bindings : absent en `wrangler dev`, et son absence ne doit jamais
@@ -84,6 +88,13 @@ async function handle(request: Request, url: URL, env: Env): Promise<Handled> {
   }
   const node = nodeOf(target);
   const forwardedPath = target.kind === "url" ? url.pathname : target.path;
+  const admitted = await guardTarget(target, request, env);
+  if (admitted instanceof Response) {
+    return {
+      response: admitted,
+      observation: { node, status: admitted.status, forwardedPath, origin: "gateway" },
+    };
+  }
   const destination = destinationFor(target, url, env);
   if (destination === undefined) {
     // Binding déclaré nulle part : c'est une ERREUR DE CONFIGURATION, pas un
@@ -93,7 +104,7 @@ async function handle(request: Request, url: URL, env: Env): Promise<Handled> {
   }
   try {
     const forward = withTraceContext(
-      withClientIp(new Request(destination.url, request), request),
+      withClientIp(new Request(destination.url, admitted), request),
       request,
     );
     const response = await destination.send(forward);
@@ -232,14 +243,15 @@ function destinationFor(target: Forwardable, url: URL, env: Env): Destination | 
 }
 
 /**
- * Le binding d'un backend. Un seul aujourd'hui — mais la fonction reste, et
- * reste typée sur `BackendKey` : c'est le compilateur qui réclamera le cas
- * manquant le jour où un deuxième backend rejoint `API_PREFIXES`.
+ * Le binding d'un backend, typé sur `BackendKey` : c'est le compilateur qui a
+ * réclamé le cas `osrm` quand il a rejoint `API_PREFIXES`.
  */
 function bindingFor(backend: BackendKey, env: Env): Fetcher | undefined {
   switch (backend) {
     case "lfd":
       return env.LFD_BACKEND;
+    case "osrm":
+      return env.OSRM;
   }
 }
 

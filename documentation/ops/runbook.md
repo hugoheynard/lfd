@@ -266,14 +266,17 @@ le 1er décembre 2026.
 ## Mettre en service le calcul routier (OSRM)
 
 Trois déploiements séparés, dans cet ordre, chacun vérifié avant le suivant :
-**(1)** `lfd-osrm` par son workflow ; **(2)** `lfd-api` avec le binding et
-l'interception — il échoue à la publication si `lfd-osrm` n'existe pas ;
-**(3)** la variable `OSRM_URL`, puis un redéploiement de l'API. Contrôles et
-retour arrière :
+**(1)** `lfd-osrm` par son workflow ; **(2)** la passerelle, qui gagne
+`/api/osrm` et pose le jeton `OSRM_TOKEN` — elle échoue à la publication si
+`lfd-osrm` n'existe pas ; contrôle `curl` : 401 sans jeton, 200 avec ;
+**(3)** la variable `OSRM_URL=https://lafoliecoffee.info/api/osrm`, puis un
+redéploiement de l'API, qui lit le même secret `OSRM_TOKEN`. Contrôles,
+retour arrière et rotation du jeton :
 [`carte-routiere-osrm.md`](carte-routiere-osrm.md#mettre-en-service--lordre-une-étape-à-la-fois).
 
-⚠️ Retirer `OSRM_URL` des variables GitHub ne la retire pas du Worker : c'est
-un secret posé par le workflow. Le geste complet est dans la même page.
+⚠️ Retirer `OSRM_URL` (ou `OSRM_TOKEN_NEXT`) des réglages GitHub ne le retire
+pas du Worker : les workflows ne font que poser. Le geste complet
+(`wrangler secret delete`) est dans la même page.
 
 ## Savoir ce que l'instance en ligne sait faire
 

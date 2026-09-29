@@ -1,5 +1,21 @@
 import type { FetchFn } from "./ban-geocoder.js";
 
+/**
+ * Présente le jeton de la passerelle à chaque appel (lot 8 bis, L8b-C2) :
+ * `Authorization: Bearer`, jamais dans l'URL — une URL finit dans les
+ * journaux, un en-tête non. Sans jeton (OSRM local nu), l'appel part tel quel.
+ */
+export function withBearer(fetchFn: FetchFn, token: string | null): FetchFn {
+  if (token === null) {
+    return fetchFn;
+  }
+  return (url, init) => {
+    const headers = new Headers(init.headers);
+    headers.set("authorization", `Bearer ${token}`);
+    return fetchFn(url, { ...init, headers });
+  };
+}
+
 /** Ce qu'un appel à OSRM a rendu : la valeur lue, ou la raison de l'échec (pour le journal). */
 export type OsrmFetchOutcome<T> = { readonly value: T } | { readonly failure: string };
 

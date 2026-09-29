@@ -22,6 +22,15 @@ import {
  */
 
 describe("resolveTarget — préfixes d'API vers les backends", () => {
+  it("route `/api/osrm` vers `lfd-osrm`, préfixe retiré, sans le confondre avec `/api/lfd`", () => {
+    expect(resolveTarget("lafoliecoffee.info", `${API_PREFIXES.osrm}/table/v1/driving/x`)).toEqual({
+      kind: "backend",
+      backend: "osrm",
+      path: "/table/v1/driving/x",
+    });
+    expect(resolveTarget("gw.example", `${API_PREFIXES.osrm}xyz/table`)).toBeUndefined();
+  });
+
   it("route vers le backend et retire le préfixe", () => {
     expect(resolveTarget("gw.example", `${API_PREFIXES.lfd}/platform-settings`)).toEqual({
       kind: "backend",

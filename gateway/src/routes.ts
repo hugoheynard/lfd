@@ -44,14 +44,16 @@ import {
  * ops, staff — et laissait croire qu'il existait ailleurs une autre API pour le
  * reste. La boutique ET le back-office passent par celui-ci.
  *
- * **Un seul**, depuis que le référentiel est un module du back-office (B6) :
- * son backend a fondu dans celui-ci (B2c) et `/api/pim` ne menait plus qu'à un
- * Worker que personne n'appelait. La table reste une TABLE, et non une
- * constante : c'est elle qui rend l'ajout du deuxième backend mécanique, et
- * `stripPrefix` garde sa garde de frontière pour ce jour-là.
+ * `/api/pim` a disparu quand le référentiel est devenu un module du
+ * back-office (B6, B2c). La table est restée une TABLE, et c'est elle qui a
+ * rendu mécanique l'ajout du deuxième déployable, `lfd-osrm` (lot 8 bis) ;
+ * `stripPrefix` garde sa garde de frontière entre eux.
  */
 export const API_PREFIXES = {
   lfd: "/api/lfd",
+  // Le calcul routier (`lfd-osrm`, lot 8 bis) : appelé par l'API seule, derrière
+  // un jeton que la passerelle vérifie AVANT de router (`osrm-guard.ts`).
+  osrm: "/api/osrm",
 } as const;
 
 export type BackendKey = keyof typeof API_PREFIXES;

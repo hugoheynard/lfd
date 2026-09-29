@@ -3,7 +3,8 @@ import { Logger } from "@nestjs/common";
 import { RouteGeometry, type RouteLine } from "../domain/ports/route-geometry.js";
 import type { GeoPoint } from "../domain/value-objects/geo-point.js";
 import type { FetchFn } from "./ban-geocoder.js";
-import { osrmGet } from "./osrm-fetch.js";
+import type { OsrmEndpoint } from "../../platform/config/osrm-endpoint.js";
+import { osrmGet, withBearer } from "./osrm-fetch.js";
 
 /**
  * Le délai d'un tracé. Plus court que celui de la table : quand on trace,
@@ -23,12 +24,17 @@ export const OSRM_ROUTE_TIMEOUT_MS = 10_000;
 export class OsrmRouteGeometry extends RouteGeometry {
   private readonly logger = new Logger("Tracé des tournées");
 
+  private readonly baseUrl: string;
+  private readonly fetchFn: FetchFn;
+
   constructor(
-    private readonly baseUrl: string,
-    private readonly fetchFn: FetchFn = (url, init) => fetch(url, init),
+    endpoint: OsrmEndpoint,
+    fetchFn: FetchFn = (url, init) => fetch(url, init),
     private readonly timeoutMs: number = OSRM_ROUTE_TIMEOUT_MS,
   ) {
     super();
+    this.baseUrl = endpoint.url;
+    this.fetchFn = withBearer(fetchFn, endpoint.token);
   }
 
   async trace(waypoints: readonly GeoPoint[]): Promise<RouteLine | null> {

@@ -1525,9 +1525,9 @@ premier déploiement dira (démarrage à froid, jeton, rétention des images).
 #### Étapes 2 et 3 bâties le 2026-09-29 — le pont et l'adaptateur
 
 Le Worker de `lfd-api` exporte `ContainerProxy`, porte le binding `OSRM →
-lfd-osrm` et intercepte `osrm.internal` seul (`container/osrm-bridge.ts`, 503
-net sur échec) ; les interdits de L8-C10 sont tenus par
-`apps/lfd-api/container/__tests__/outbound-interception.spec.ts`. `ctx.exports` passe par
+lfd-osrm` et intercepte `osrm.internal` seul (le pont `container/osrm-bridge`,
+503 net sur échec) ; les interdits de L8-C10 sont tenus par le test
+d'interception du conteneur (pont et test retirés au lot 8 bis). `ctx.exports` passe par
 le **drapeau** `enable_ctx_exports`, pas par la date : avancer la date aurait
 allumé tous les changements du runtime de juin à novembre 2025 sur toute
 l'API. `OsrmDistanceMatrix` : un `/table` par proposition, délai 10 s, repli vol
@@ -1551,6 +1551,108 @@ configuration) ; le démarrage à froid à mesurer contre le délai.
   sont eux que le vol d'oiseau sous-estime le plus.
 - **L8-Q2** — Si Cloudflare ne tient pas : d'accord pour un petit serveur
   dédié, et chez quel hébergeur ?
+
+### Lot 8 bis — Joindre OSRM par HTTPS et un jeton, sans interception
+
+> **Tranché le 2026-09-29.** Hugo : « oui bascule sur le jeton ». Remplace
+> la forme « B-ter » des étapes 2–3 du lot 8 (interception `outboundByHost`
+> de `osrm.internal` dans le Worker de l'API + service binding), jamais
+> déployée.
+
+**Pourquoi** : l'interception exigeait une fonction récente de Cloudflare
+(`ctx.exports`, drapeau `enable_ctx_exports`) jamais éprouvée chez nous, et
+installée AVANT le démarrage du conteneur : si elle ratait, toute l'API
+tombait. Un appel HTTPS ordinaire est ce que l'API fait déjà vers Stripe,
+Resend et Auth0 ; s'il rate, seul « Proposer » refuse.
+
+**v2 du 2026-09-29, après `vitruve`** (3 BLOQUANTS, 5 SÉRIEUX, tous intégrés
+ci-dessous). Le plus lourd : donner une adresse `workers.dev` à `lfd-osrm`
+ouvrait une **seconde porte publique**, alors que la passerelle est « le SEUL
+chemin public vers les backends » (CLAUDE.md) et que `lfd-osrm` justifie
+dans son code l'absence d'adresse. **La porte est donc la passerelle.**
+
+**L8b-C1 — Par la passerelle.** `lfd-gateway` gagne le préfixe `/api/osrm`,
+routé par **service binding** vers `lfd-osrm` (Worker → Worker, le mécanisme
+que la passerelle emploie déjà pour `lfd-api` — rien à voir avec
+l'interception écartée). `lfd-osrm` garde `workers_dev: false` : **aucune
+adresse publique**. L'API appelle `https://lafoliecoffee.info/api/osrm/…`.
+
+**L8b-C2 — Le jeton, vérifié par la passerelle, FERMÉ PAR DÉFAUT** :
+
+- vérifié AVANT tout routage et toute réponse qui décrirait la surface :
+  sans jeton valide, un **401 uniforme** (même corps, sans chemin ni liste
+  des services) ; ensuite seulement le filtre `/table` `/route` de
+  `lfd-osrm` ;
+- **un jeton absent, vide ou trop court n'est JAMAIS valide** — ni côté
+  requête, ni côté secret : sans secret posé, `/api/osrm` refuse tout.
+  Test qui le prouve (secret absent, secret vide, `Bearer ` vide) ;
+- comparaison à temps constant ; jamais dans l'URL, jamais journalisé,
+  jamais renvoyé ;
+- une **limite de débit** Cloudflare (binding `ratelimit`, comme le
+  `RATE_LIMITER` de l'API) bornée sur `/api/osrm` : un bombardement coûte
+  des invocations de passerelle bornées, jamais un réveil du conteneur.
+
+**L8b-C3 — La rotation, vraiment sans coupure et vraiment fermée** : la
+passerelle accepte `OSRM_TOKEN` et, s'il existe, `OSRM_TOKEN_NEXT`. Geste :
+(1) poser `OSRM_TOKEN_NEXT` sur la passerelle ; (2) poser la nouvelle valeur
+dans `OSRM_TOKEN` de l'API et la redéployer ; (3) basculer la passerelle
+(`OSRM_TOKEN` ← nouvelle) puis **`wrangler secret delete OSRM_TOKEN_NEXT`**
+— les workflows ne suppriment jamais un secret, ils ne font que `put` ;
+un secret vidé dans GitHub reste sur le Worker. Chaque étape a son contrôle.
+
+**L8b-C4 — L'API** : `OSRM_TOKEN` entre aux TROIS endroits tenus à la main
+— `RUNTIME_KEYS` (`apps/lfd-api/container/worker.ts`, couvert par
+`runtime-keys.spec.ts`), l'`env:` du pas de secrets et la boucle `for name in`
+de `deploy_lfd_api.yml` (couverts par aucune porte : relus à la main).
+Configuration : en production, `OSRM_TOKEN` présent **et** `OSRM_URL` en
+`https://` exigés ; sinon capacité dégradée et dite (Proposer refuse), jamais
+un Bearer envoyé en clair. En développement (`http://localhost:5055`, OSRM
+nu), pas de jeton.
+
+**L8b-C5 — On retire**, dans le même passage : l'interception,
+le pont `osrm-bridge`, `ContainerProxy`, le drapeau `enable_ctx_exports`, le
+binding `OSRM` de l'API et leurs tests — et les commentaires qui les
+décrivent (`apps/lfd-osrm/src/worker.ts`, `wrangler.jsonc` des deux,
+`deploy_lfd_osrm.yml`, `deploy_lfd_api.yml`). Retour arrière vers B-ter =
+rouvrir le code ; acceptable, B-ter n'a jamais été déployé.
+
+**L8b-C6 — Mise en service** : (1) déployer `lfd-osrm` (inchangé, sans
+adresse) ; (2) poser `OSRM_TOKEN` sur la passerelle et la déployer —
+`/api/osrm` répond 401 sans jeton, 200 avec (contrôle `curl` écrit) ;
+(3) poser `OSRM_URL=https://lafoliecoffee.info/api/osrm` et `OSRM_TOKEN`
+pour l'API, déployer. ⚠️ Si une ancienne `OSRM_URL=http://osrm.internal` a
+été posée sur le Worker de l'API, elle y PERSISTE : la remplacer (nouvelle
+valeur posée par le déploiement) — à vérifier par Hugo, que personne d'autre
+ne peut lire.
+
+**L8b-C7 — Le geste de Hugo** : générer le jeton en local et le ranger sans
+l'afficher, lu sur l'entrée standard :
+`openssl rand -base64 48 | tr -d '\n' | gh secret set OSRM_TOKEN`
+(48 octets aléatoires). Aucune adresse à choisir : la passerelle existe.
+
+**Bâti le 2026-09-29** (non commité à l'écriture ; rien n'est déployé) :
+
+- **passerelle** — préfixe `/api/osrm` → binding `OSRM` (`lfd-osrm`) ; garde
+  `gateway/src/osrm-guard.ts` : limite de débit par IP (`OSRM_RATE_LIMITER`,
+  120/min, avant le jeton), puis jeton comparé à temps constant (condensés
+  SHA-256) à `OSRM_TOKEN` ou `OSRM_TOKEN_NEXT`, fermé par défaut (secret
+  absent, vide ou de moins de 32 caractères : tout 401), 401 uniforme, en-tête
+  `Authorization` retiré avant transmission ; le workflow pose les deux secrets
+  s'ils sont non vides. Tests : `gateway/src/__tests__/osrm-guard.spec.ts`
+  (20) à travers le vrai `fetch` de la passerelle ;
+- **API** — `resolveOsrmEndpoint` (`apps/lfd-api/src/platform/config/osrm-endpoint.ts`) :
+  en production, `https://` ET jeton exigés, sinon `DisabledDistanceMatrix`
+  et la ligne « Calcul routier des tournées » (réglage
+  `OSRM_URL (https:// en production) / OSRM_TOKEN`) ; `withBearer` sur les
+  deux adaptateurs OSRM ; `OSRM_TOKEN` dans `RUNTIME_KEYS`, l'`env:` et la
+  boucle de `deploy_lfd_api.yml` (le **même** secret GitHub que la
+  passerelle) ;
+- **retiré** (L8b-C5) — le pont `container/osrm-bridge`, ses deux specs,
+  `export { ContainerProxy }`, le bloc `outboundByHost`, le drapeau
+  `enable_ctx_exports` et le binding `OSRM` de `lfd-api` : le Worker de l'API
+  est revenu à son état d'avant le lot 8, `RUNTIME_KEYS` en plus ;
+- **doc** — `documentation/ops/carte-routiere-osrm.md` réécrit (schéma, mise en
+  service avec contrôles `curl`, rotation, retour arrière), runbook.
 
 ### Lot 9 — Le simulateur de tournée
 
@@ -2260,12 +2362,16 @@ réversible ; chaque point dit ce qui a été fait en attendant.
    (Hugo, 2026-09-29) : plus de vol d'oiseau ; au-delà de 200 points, la table
    passe par blocs recollés, et un bloc en échec fait refuser le tout.
    Serveur bâti le 2026-09-29.
-2. **Lot 8 — date de compatibilité.** Le drapeau `enable_ctx_exports` a été
+2. **Lot 8 — date de compatibilité.** ~~Le drapeau `enable_ctx_exports` a été
    préféré à une date avancée (qui activerait d'un coup six mois de
-   changements du runtime sur toute l'API). À confirmer.
-3. **Lot 8 — mise en service.** L'étape 2 touche le démarrage de toute
+   changements du runtime sur toute l'API). À confirmer.~~ **Sans objet :
+   l'interception est retirée** (lot 8 bis, bâti le 2026-09-29) — plus de
+   drapeau, la date de `lfd-api` reste `2025-06-01`.
+3. **Lot 8 — mise en service.** ~~L'étape 2 touche le démarrage de toute
    l'API : à faire hors des heures d'usage, avec `wrangler rollback` prêt
-   (jamais éprouvé sur un Worker à conteneur — l'essayer une fois à froid ?).
+   (jamais éprouvé sur un Worker à conteneur — l'essayer une fois à froid ?).~~
+   Plus vrai depuis le lot 8 bis (2026-09-29) : l'étape 2 est la passerelle,
+   et l'API ne change plus son démarrage.
    ⚠️ **Depuis L10b-C5, l'ordre compte aussi pour le lot 10 bis** : OSRM en
    service (les trois étapes de `documentation/ops/carte-routiere-osrm.md`)
    AVANT de déployer le lot 10 bis, sinon « Proposer » refuse en production.

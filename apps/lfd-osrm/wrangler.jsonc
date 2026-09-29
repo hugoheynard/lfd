@@ -5,8 +5,9 @@
   // Consommé par .github/workflows/deploy_lfd_osrm.yml (wrangler deploy).
   //
   // Il ne partage RIEN avec `lfd-api` : ni Worker, ni image, ni déploiement.
-  // C'est tout l'objet de B-ter — la carte se refait chaque mois sans toucher
-  // à l'API.
+  // La carte se refait chaque mois sans toucher à l'API. Depuis le lot 8 bis,
+  // l'API le joint par la passerelle (`/api/osrm`, jeton vérifié par elle), et
+  // non plus par une interception dans son propre Worker.
   "name": "lfd-osrm",
   "main": "src/worker.ts",
   "compatibility_date": "2026-09-29",
@@ -27,7 +28,7 @@
       // Une instance : OSRM est sans état et son trafic tient en quelques
       // appels par matin. Plusieurs instances n'apporteraient que des réveils.
       "max_instances": 1,
-      // Même placement que `lfd-api`, son seul appelant : Europe de l'Ouest.
+      // Même placement que `lfd-api`, qui seul l'interroge : Europe de l'Ouest.
       "constraints": { "regions": ["WEUR"] },
     },
   ],
@@ -37,9 +38,10 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Osrm"] }],
 
-  // AUCUNE ADRESSE PUBLIQUE, ni `workers.dev` ni route : le seul appelant sera
-  // `lfd-api`, par un service binding (étape 2 du lot). Une adresse ici serait
-  // une seconde porte ouverte au monde à côté de la passerelle.
+  // AUCUNE ADRESSE PUBLIQUE, ni `workers.dev` ni route : le seul appelant est
+  // la passerelle, par son service binding `OSRM` (`gateway/wrangler.toml`),
+  // qui exige le jeton avant de router. Une adresse ici serait une seconde
+  // porte ouverte au monde, sans jeton, à côté de la passerelle.
   "workers_dev": false,
 
   // AUCUN cron, délibérément : `lfd-api` en a un pour rester chaud, OSRM non.

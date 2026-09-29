@@ -42,8 +42,11 @@ export interface CapabilitySnapshot {
   readonly hasAdminBaseUrl: boolean;
   /** L'adresse de la Base Adresse Nationale : « Situer les arrêts » (livraison, lot 7). */
   readonly hasGeocoderUrl: boolean;
-  /** L'adresse du calcul routier : des durées par la route (livraison, lot 8). */
-  readonly hasOsrmUrl: boolean;
+  /**
+   * Le calcul routier joignable : une adresse, et en production un jeton et
+   * `https://` (livraison, lots 8 et 8 bis).
+   */
+  readonly hasRoadRouting: boolean;
 }
 
 /**
@@ -244,11 +247,11 @@ const CHECKS: readonly Check[] = [
   },
   {
     capability: "Calcul routier des tournées",
-    setting: "OSRM_URL",
+    setting: "OSRM_URL (https:// en production) / OSRM_TOKEN (exigé en production)",
     consequence:
       "« Proposer », « Chronométrer » et le simulateur de tournée sont refusés : il n'y a plus de repli à vol d'oiseau (L10b-C5), les tournées existantes restent composables à la main",
     severity: "degraded",
-    present: (s) => s.hasOsrmUrl,
+    present: (s) => s.hasRoadRouting,
   },
 ];
 

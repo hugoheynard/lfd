@@ -7,7 +7,8 @@ import {
 import { type CostFn, DistanceMatrix } from "../domain/ports/distance-matrix.js";
 import type { GeoPoint } from "../domain/value-objects/geo-point.js";
 import type { FetchFn } from "./ban-geocoder.js";
-import { type OsrmFetchOutcome, osrmGet } from "./osrm-fetch.js";
+import type { OsrmEndpoint } from "../../platform/config/osrm-endpoint.js";
+import { type OsrmFetchOutcome, osrmGet, withBearer } from "./osrm-fetch.js";
 
 /**
  * Le délai d'un appel à `/table`, puis UN nouvel essai (L10b-C5). Large parce
@@ -70,12 +71,12 @@ export class OsrmDistanceMatrix extends DistanceMatrix {
   private readonly blockPoints: number;
   private readonly parallelBlocks: number;
 
-  constructor(
-    private readonly baseUrl: string,
-    options: OsrmTableOptions = {},
-  ) {
+  private readonly baseUrl: string;
+
+  constructor(endpoint: OsrmEndpoint, options: OsrmTableOptions = {}) {
     super();
-    this.fetchFn = options.fetchFn ?? ((url, init) => fetch(url, init));
+    this.baseUrl = endpoint.url;
+    this.fetchFn = withBearer(options.fetchFn ?? ((url, init) => fetch(url, init)), endpoint.token);
     this.timeoutMs = options.timeoutMs ?? OSRM_TIMEOUT_MS;
     this.maxTablePoints = options.maxTablePoints ?? OSRM_MAX_TABLE_POINTS;
     this.blockPoints = options.blockPoints ?? OSRM_BLOCK_POINTS;

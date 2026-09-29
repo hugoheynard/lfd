@@ -30,7 +30,7 @@ const FOUR: ReadonlyMap<string, GeoPoint> = new Map([
   ["meribel", geoPoint(45.3969, 6.566)],
 ]);
 
-const BASE = "http://osrm.internal/table/v1/driving/";
+const BASE = "http://localhost:5055/table/v1/driving/";
 
 /** Un `fetch` enregistré : il note ce qu'on lui demande, et rend la réponse donnée. */
 class RecordedFetch {
@@ -63,7 +63,10 @@ const blocks = (failing: string | null = null) =>
   });
 
 function matrix(recorded: RecordedFetch, options: OsrmTableOptions = {}): OsrmDistanceMatrix {
-  return new OsrmDistanceMatrix("http://osrm.internal/", { fetchFn: recorded.fetch, ...options });
+  return new OsrmDistanceMatrix(
+    { url: "http://localhost:5055/", token: null },
+    { fetchFn: recorded.fetch, ...options },
+  );
 }
 
 /** Deux points par bloc : quatre points font quatre blocs 2 × 2. */
@@ -92,6 +95,33 @@ describe("les coûts par la route — OSRM /table (lot 8)", () => {
     );
     expect(call?.init.method).toBe("GET");
     expect(call?.init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  /** Lot 8 bis (L8b-C2) : la passerelle refuse tout appel sans le jeton. */
+  it("présente le jeton en `Authorization: Bearer`, jamais dans l'URL", async () => {
+    const recorded = new RecordedFetch(json(OSRM_TABLE_SAVOIE));
+    const token = "t".repeat(64);
+
+    await new OsrmDistanceMatrix(
+      { url: "https://lafoliecoffee.info/api/osrm", token },
+      { fetchFn: recorded.fetch },
+    ).build(POINTS);
+
+    const [call] = recorded.calls;
+    expect(new Headers(call?.init.headers).get("authorization")).toBe(`Bearer ${token}`);
+    expect(call?.url.startsWith("https://lafoliecoffee.info/api/osrm/table/v1/driving/")).toBe(
+      true,
+    );
+    expect(call?.url).not.toContain(token);
+    expect(call?.init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("n'envoie aucun en-tête d'autorisation sans jeton (OSRM local nu)", async () => {
+    const recorded = new RecordedFetch(json(OSRM_TABLE_SAVOIE));
+
+    await matrix(recorded).build(POINTS);
+
+    expect(new Headers(recorded.calls[0]?.init.headers).has("authorization")).toBe(false);
   });
 
   it("refuse un point qu'il ne connaît pas", async () => {

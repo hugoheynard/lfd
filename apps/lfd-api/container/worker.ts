@@ -8,22 +8,10 @@
 //
 // ⚠️ Hors de `src/` : pas typé par le tsconfig Nest ; wrangler/esbuild le bundle.
 // Types éditeur : container/tsconfig.json.
-import { Container, ContainerProxy } from "@cloudflare/containers";
+import { Container } from "@cloudflare/containers";
 
 import { guardedFetch } from "./edge-guard";
 import type { RateLimiter } from "./edge-guard";
-import { bridgeToOsrm, OSRM_INTERNAL_HOST } from "./osrm-bridge";
-import type { OsrmService } from "./osrm-bridge";
-
-/**
- * Exigé par l'interception de sortie (`Backend.outboundByHost`) : la
- * bibliothèque construit son proxy par `ctx.exports.ContainerProxy` et lève
- * au démarrage du conteneur s'il n'est pas exporté ici
- * (`@cloudflare/containers` 0.3.7, `applyOutboundInterception`, lu le
- * 2026-09-29). `ctx.exports` lui-même demande le drapeau `enable_ctx_exports`
- * (`wrangler.jsonc`).
- */
-export { ContainerProxy };
 
 /**
  * Variables runtime forwardées au container. `PORT`/`NODE_ENV` viennent de l'image.
@@ -70,10 +58,11 @@ const RUNTIME_KEYS = [
   // La Base Adresse Nationale, pour « Situer les arrêts » de livraison (lot 7).
   // Absente, le géocodage est éteint : seuls les points GPS du carnet situent.
   "BAN_GEOCODER_URL",
-  // Le calcul routier (lot 8) : `http://osrm.internal`, que ce Worker intercepte
-  // (`Backend.outboundByHost`). Absente, les propositions restent à vol
-  // d'oiseau — et l'écran le dit.
+  // Le calcul routier (lots 8 et 8 bis) : `https://lafoliecoffee.info/api/osrm`,
+  // par la passerelle, et le jeton qu'elle exige. En production, l'un sans
+  // l'autre éteint « Proposer » — et le bulletin de démarrage le dit.
   "OSRM_URL",
+  "OSRM_TOKEN",
   // Courrier : sans la clé, le mailer rend les gabarits et n'envoie rien.
   "RESEND_MAILER_B2B_API_KEY",
   "RESEND_API_KEY",
@@ -166,11 +155,6 @@ type RuntimeKey = (typeof RUNTIME_KEYS)[number];
 interface Env extends Partial<Record<RuntimeKey, string>> {
   BACKEND: DurableObjectNamespace<Backend>;
   RATE_LIMITER: RateLimiter;
-  /**
-   * Le service binding vers `lfd-osrm`. Optionnel au TYPE : un Worker publié
-   * sans lui rend un 503 net sur `osrm.internal`, jamais une exception.
-   */
-  OSRM?: OsrmService;
 }
 
 /** Ne garde que les variables réellement définies (optionnelles absentes = feature off). */
@@ -194,31 +178,6 @@ export class Backend extends Container<Env> {
   // cette ligne n'est que le filet quand le cron ne passe plus.
   sleepAfter = "1h";
   envVars = pickEnv(this.env); // secrets du Worker → env du container.
-
-  // 🔴 L'INTERCEPTION DE SORTIE — un seul hôte, exact, en HTTP (L8-C10).
-  //
-  // Deux interdits, et `container/__tests__/outbound-interception.spec.ts`
-  // échoue si l'un revient :
-  //   1. JAMAIS `outbound`, `outboundHandlers`, `allowedHosts`, `deniedHosts`,
-  //      `setOutboundByHost`, `setAllowedHosts`, `setDeniedHosts`,
-  //      `interceptHttps` sur `Backend`. Chacun fait passer la bibliothèque en
-  //      « tout intercepter » (`shouldInterceptAllOutbound`) : Stripe, Resend,
-  //      Auth0 et R2 passeraient alors par ce Worker — ou se verraient
-  //      refusés en 520.
-  //   2. `enableInternet` reste VRAI (défaut de la bibliothèque) : c'est lui
-  //      qui laisse sortir tout ce qui n'est pas `osrm.internal`.
-  //
-  // Posé par AFFECTATION dans un bloc statique, pas comme champ `static
-  // outboundByHost = …` : un champ de classe DÉFINIT une propriété propre
-  // (sémantique ES2022) et court-circuite le setter hérité, qui range le
-  // handler dans le registre que `ContainerProxy` consulte. Le conteneur
-  // intercepterait l'hôte, le proxy n'y trouverait rien, et la requête
-  // partirait sur Internet vers un nom qui n'existe pas.
-  static {
-    this.outboundByHost = {
-      [OSRM_INTERNAL_HOST]: (request: Request, env: Env) => bridgeToOsrm(request, env.OSRM),
-    };
-  }
 }
 
 /**

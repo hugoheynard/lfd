@@ -262,12 +262,15 @@ describe("GetDeliveryRoundProposalHandler — par la route (lot 8, L8-C3)", () =
   /** L10b-C5 : le vol d'oiseau a disparu — un OSRM muet refuse, il ne retombe plus. */
   it("refuse quand OSRM ne répond pas, après un nouvel essai — plus de vol d'oiseau", async () => {
     let calls = 0;
-    const silent = new OsrmDistanceMatrix("http://osrm.internal", {
-      fetchFn: () => {
-        calls += 1;
-        return Promise.resolve(new Response("indisponible", { status: 503 }));
+    const silent = new OsrmDistanceMatrix(
+      { url: "http://localhost:5055", token: null },
+      {
+        fetchFn: () => {
+          calls += 1;
+          return Promise.resolve(new Response("indisponible", { status: 503 }));
+        },
       },
-    });
+    );
     const { handler } = scene({ matrix: silent });
 
     await expect(

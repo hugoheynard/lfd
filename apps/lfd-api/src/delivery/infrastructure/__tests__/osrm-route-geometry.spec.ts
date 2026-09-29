@@ -12,7 +12,7 @@ function geometry(answer: () => Promise<Response>, calls: string[] = []): OsrmRo
     calls.push(url);
     return answer();
   };
-  return new OsrmRouteGeometry("http://osrm.internal/", fetchFn, 20);
+  return new OsrmRouteGeometry({ url: "http://localhost:5055/", token: null }, fetchFn, 20);
 }
 
 describe("le tracé par la route — OSRM /route (L10b-C4)", () => {
@@ -25,10 +25,27 @@ describe("le tracé par la route — OSRM /route (L10b-C4)", () => {
     ).trace([VAL, ARC, VAL]);
 
     expect(calls).toEqual([
-      "http://osrm.internal/route/v1/driving/6.9797,45.4486;6.7713,45.5724;6.9797,45.4486?overview=simplified&geometries=geojson",
+      "http://localhost:5055/route/v1/driving/6.9797,45.4486;6.7713,45.5724;6.9797,45.4486?overview=simplified&geometries=geojson",
     ]);
     expect(line).toEqual(OSRM_ROUTE_VAL_ARC.routes[0].geometry.coordinates);
     expect(line?.[0]).toEqual([6.979732, 45.448598]);
+  });
+
+  it("présente le jeton en `Authorization: Bearer` quand il y en a un (L8b-C2)", async () => {
+    const seen: RequestInit[] = [];
+    const token = "t".repeat(64);
+    const traced = new OsrmRouteGeometry(
+      { url: "https://lafoliecoffee.info/api/osrm", token },
+      (_url, init) => {
+        seen.push(init);
+        return Promise.resolve(Response.json(OSRM_ROUTE_VAL_ARC));
+      },
+      20,
+    );
+
+    await traced.trace([VAL, ARC]);
+
+    expect(new Headers(seen[0]?.headers).get("authorization")).toBe(`Bearer ${token}`);
   });
 
   it.each([

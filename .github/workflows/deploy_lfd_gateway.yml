@@ -17,6 +17,12 @@ name: deploy_lfd_gateway
 #     de zone (`lafoliecoffee.info/*` depuis le 2026-09-15, `/pro*` avant) — sans lui, le déploiement échoue.
 #     (+ « Zone · Workers Routes · Edit » le jour où on posera les routes prod).
 #   CLOUDFLARE_ACCOUNT_ID — l'account id partagé.
+#   OSRM_TOKEN — le jeton qu'exige `/api/osrm` (lot 8 bis). Le MÊME secret
+#     GitHub que lit deploy_lfd_api.yml : une seule source. Absent, `/api/osrm`
+#     refuse tout — fermé par défaut.
+#   OSRM_TOKEN_NEXT — FACULTATIF, et absent hors d'une rotation : le second jeton
+#     accepté pendant qu'on tourne (documentation/ops/carte-routiere-osrm.md,
+#     « Tourner le jeton »).
 
 on:
   push:
@@ -80,6 +86,31 @@ jobs:
         uses: ./.github/actions/attendre-un-run
         with:
           workflow: ci.yml
+
+      # Les jetons de `/api/osrm`, posés SEULEMENT s'ils sont non vides — le
+      # même geste que deploy_lfd_api.yml : la valeur passe par l'entrée
+      # standard, jamais par la ligne de commande ni par un `echo`.
+      #
+      # ⚠️ Ce pas ne SUPPRIME jamais un secret : vider `OSRM_TOKEN_NEXT` dans
+      # GitHub le laisse sur le Worker. La fin d'une rotation est un
+      # `wrangler secret delete OSRM_TOKEN_NEXT` fait à la main (L8b-C3).
+      #
+      # AVANT le déploiement : le nouveau code trouve son jeton dès sa
+      # première requête.
+      - name: Synchroniser les jetons de /api/osrm
+        working-directory: gateway
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_GATEWAY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          OSRM_TOKEN: ${{ secrets.OSRM_TOKEN }}
+          OSRM_TOKEN_NEXT: ${{ secrets.OSRM_TOKEN_NEXT }}
+        run: |
+          for name in OSRM_TOKEN OSRM_TOKEN_NEXT; do
+            value="${!name}"
+            if [ -n "$value" ]; then
+              printf '%s' "$value" | pnpm exec wrangler secret put "$name"
+            fi
+          done
 
       # wrangler est installé dans le paquet gateway (devDep) — on l'invoque via
       # `exec` (pas `dlx`) pour utiliser la version pinnée. Il lit le token et

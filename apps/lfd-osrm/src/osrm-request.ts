@@ -38,7 +38,8 @@ export function admit(request: Request): Admission {
 /**
  * Réponse quand le conteneur n'a pas pu répondre (démarrage refusé, instance
  * indisponible, coupure). Un 503 NET, jamais un corps d'OSRM déguisé : le
- * client (`lfd-api`) retombe alors sur le vol d'oiseau et le DIT (L8-C3).
+ * client (`lfd-api`) le rejoue une fois (réveil), puis refuse « Proposer » en
+ * le disant (L10b-C5 — le vol d'oiseau a disparu).
  */
 export function unavailable(cause: string): Response {
   return refusal(

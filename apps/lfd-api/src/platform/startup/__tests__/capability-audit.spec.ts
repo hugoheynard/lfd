@@ -24,7 +24,7 @@ const ALL_PRESENT: CapabilitySnapshot = {
   hasClientBaseUrl: true,
   hasAdminBaseUrl: true,
   hasGeocoderUrl: true,
-  hasOsrmUrl: true,
+  hasRoadRouting: true,
 };
 
 function without(...keys: readonly (keyof CapabilitySnapshot)[]): CapabilitySnapshot {
@@ -95,10 +95,11 @@ describe("auditCapabilities", () => {
     expect(missing?.severity).toBe("degraded");
   });
 
-  it("dit que « Proposer » refuse sans OSRM_URL, en dégradé (plus de vol d'oiseau)", () => {
-    const [missing] = auditCapabilities(without("hasOsrmUrl"));
+  it("dit que « Proposer » refuse sans calcul routier joignable, en dégradé (plus de vol d'oiseau)", () => {
+    const [missing] = auditCapabilities(without("hasRoadRouting"));
 
-    expect(missing?.setting).toBe("OSRM_URL");
+    expect(missing?.setting).toContain("OSRM_URL");
+    expect(missing?.setting).toContain("OSRM_TOKEN");
     expect(missing?.consequence).toMatch(/« Proposer ».*refusés/);
     expect(missing?.severity).toBe("degraded");
   });

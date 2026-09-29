@@ -7,10 +7,12 @@
 // tout le déploiement de l'API (B-bis n'avait qu'une vie). Deux Workers, deux
 // déploiements, deux vies.
 //
-// POURQUOI aucune adresse publique : son seul appelant est `lfd-api`, qui le
-// joindra par un service binding (étape 2 du lot, pas encore bâtie). La
-// passerelle reste la seule porte d'entrée du compte ; ouvrir celle-ci en
-// ferait une seconde (forme C, écartée).
+// POURQUOI aucune adresse publique : son seul appelant est la passerelle
+// (`lfd-gateway`), par un service binding sous `/api/osrm` — et c'est ELLE qui
+// vérifie le jeton, avant tout routage (lot 8 bis, L8b-C1/C2). `lfd-api` passe
+// par elle en HTTPS, comme n'importe quel appel sortant. La passerelle reste
+// la seule porte d'entrée du compte ; une adresse ici en ferait une seconde,
+// sans jeton (forme C, écartée).
 //
 // POURQUOI aucun cron : OSRM ne sert qu'au matin, à « Proposer ». Endormi, un
 // conteneur ne coûte rien ; il se réveille au premier appel (0,6 s mesurées en
