@@ -63,6 +63,7 @@ import {
 import { RunSheetService } from '../run-sheet.service';
 import { RoutePlanner } from '../route-planner/route-planner';
 import { RunSheetStop } from '../run-sheet-stop/run-sheet-stop';
+import { vehicleBadgeLabel } from '../vehicle-load';
 
 type ComposeState =
   | { readonly status: 'loading' }
@@ -192,6 +193,24 @@ export class RoundsPage {
         }))
       : [];
   });
+
+  /** Le chargement de chaque véhicule connu, par identifiant — lecture seule (L2b-C3). */
+  private readonly loadBadges = computed(() => {
+    const fleet = this.fleet();
+    return new Map(
+      Array.isArray(fleet)
+        ? fleet.map((vehicle) => [vehicle.id, vehicleBadgeLabel(vehicle)] as const)
+        : [],
+    );
+  });
+
+  /**
+   * « 5,5 m³ ❄ » dans l'en-tête d'une tournée. Aucune capacité n'est comparée
+   * aux commandes : le calcul n'a pas de volume de commande (L2b-C4).
+   */
+  protected loadBadge(vehicleId: string): string | null {
+    return this.loadBadges().get(vehicleId) ?? null;
+  }
 
   protected readonly printedRound = computed(() => {
     const id = this.printing();

@@ -1,6 +1,6 @@
 import type { VehiclePayload } from "@lfd/contracts";
 
-/** Corriger le nom et la plaque d'un véhicule. */
+/** Corriger la fiche entière d'un véhicule — absent vaut `null` (voir `vehiclePayloadSchema`). */
 export class CorrectVehicleCommand {
   constructor(
     readonly vehicleId: string,

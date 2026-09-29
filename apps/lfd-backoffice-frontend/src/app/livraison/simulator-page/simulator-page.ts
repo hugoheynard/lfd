@@ -4,6 +4,7 @@ import type {
   DeliverySimulationFromDayView,
   DeliverySimulationView,
   SaveDeliverySimulationScenarioPayload,
+  VehicleView,
   VehiclesView,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
@@ -60,6 +61,7 @@ import {
   type StopDraft,
 } from '../delivery-simulator';
 import { SimulationResult } from '../simulation-result/simulation-result';
+import { vehicleBadgeLabel } from '../vehicle-load';
 import { SimulationScenarios } from '../simulation-scenarios/simulation-scenarios';
 
 /** Le scénario enregistré d'où vient l'écran (L9-C7). */
@@ -138,6 +140,8 @@ export class SimulatorPage {
   private readonly scenarios = inject(DeliverySimulationScenariosService);
 
   protected readonly prefill = signal<Prefill | null>(null);
+  /** La flotte active lue au chargement : de quoi badger un nom qui en vient. */
+  private readonly fleetVehicles = signal<readonly VehicleView[]>([]);
   protected readonly draft = signal<ScenarioDraft>(exampleScenario([], EMPTY_SETTINGS));
   protected readonly proposing = signal(false);
   protected readonly errors = signal<readonly string[]>([]);
@@ -379,6 +383,16 @@ export class SimulatorPage {
     }
   }
 
+  /**
+   * Le chargement d'un véhicule du scénario, quand son nom est celui d'un
+   * véhicule actif de la flotte — un nom inventé n'en a pas. Lecture seule :
+   * le simulateur ne compare aucune capacité (L2b-C4).
+   */
+  protected loadBadge(name: string): string | null {
+    const vehicle = this.fleetVehicles().find((v) => v.name === name.trim());
+    return vehicle === undefined ? null : vehicleBadgeLabel(vehicle);
+  }
+
   private patch(patch: Partial<ScenarioDraft>): void {
     this.draft.set({ ...this.draft(), ...patch });
   }
@@ -395,6 +409,9 @@ export class SimulatorPage {
       readable ? this.fleet.vehicles() : Promise.reject(new Error('sans droit')),
       readable ? this.routing.settings() : Promise.reject(new Error('sans droit')),
     ]);
+    if (fleet.status === 'fulfilled') {
+      this.fleetVehicles.set(fleet.value.vehicles.filter((v) => v.retiredAt === null));
+    }
     const prefill: Prefill = {
       vehicles: fleet.status === 'fulfilled' ? activeNames(fleet.value) : [],
       settings: settings.status === 'fulfilled' ? settingsDraftOf(settings.value) : EMPTY_SETTINGS,

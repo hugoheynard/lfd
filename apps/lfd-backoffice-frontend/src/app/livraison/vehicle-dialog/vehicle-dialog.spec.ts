@@ -1,7 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { VehiclePayload, VehicleView } from '@lfd/contracts';
-import { FoldPanelRef } from 'fold-ng';
+import { By } from '@angular/platform-browser';
+import type { VehicleEnergy, VehiclePayload, VehicleView } from '@lfd/contracts';
+import { FoldListboxComponent, FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { DeliverySettingsService } from '../delivery-settings.service';
@@ -23,6 +24,18 @@ const KANGOO: VehicleView = {
   plate: 'AB-123-CD',
   retiredAt: null,
   createdAt: '2026-01-01T08:00:00.000Z',
+  cargo: null,
+  refrigeration: null,
+  energy: null,
+};
+
+const FRIGO: VehicleView = {
+  ...KANGOO,
+  id: 'veh_2',
+  name: 'Frigo',
+  cargo: { lengthCm: 250, widthCm: 170, heightCm: 130, volumeLiters: 5525 },
+  refrigeration: { volumeLiters: 400, minTempC: 0, maxTempC: 4 },
+  energy: 'electric',
 };
 
 function write(): Promise<void> {
@@ -79,6 +92,15 @@ function type(fixture: ComponentFixture<VehicleDialog>, index: number, value: st
   fixture.detectChanges();
 }
 
+/** Saisit dans le n-ième `fold-number-input` (0-2 = dimensions, 3-5 = froid). */
+function typeNumber(fixture: ComponentFixture<VehicleDialog>, index: number, value: string): void {
+  const input = host(fixture).querySelectorAll('fold-number-input input')[index];
+  if (!(input instanceof HTMLInputElement)) throw new Error('Champ numérique absent.');
+  input.value = value;
+  input.dispatchEvent(new Event('input'));
+  fixture.detectChanges();
+}
+
 async function submit(fixture: ComponentFixture<VehicleDialog>): Promise<void> {
   submitButton(fixture).click();
   await fixture.whenStable();
@@ -104,7 +126,9 @@ describe('VehicleDialog', () => {
     await submit(fixture);
 
     // La plaque n'est pas normalisée ici : c'est le serveur qui fait foi.
-    expect(wire.adds).toEqual([{ name: 'Kangoo blanc', plate: 'ab 123 cd' }]);
+    expect(wire.adds).toEqual([
+      { name: 'Kangoo blanc', plate: 'ab 123 cd', cargo: null, refrigeration: null, energy: null },
+    ]);
     expect(wire.closes).toEqual([true]);
   });
 
@@ -130,8 +154,105 @@ describe('VehicleDialog', () => {
     await submit(fixture);
 
     expect(wire.updates).toEqual([
-      { id: 'veh_1', payload: { name: 'Kangoo blanc', plate: 'AB-123-CD' } },
+      {
+        id: 'veh_1',
+        payload: {
+          name: 'Kangoo blanc',
+          plate: 'AB-123-CD',
+          cargo: null,
+          refrigeration: null,
+          energy: null,
+        },
+      },
     ]);
     expect(wire.closes).toEqual([true]);
+  });
+
+  it('les dimensions : volume en direct, et les trois ou aucune', async () => {
+    const fixture = await boot({});
+    type(fixture, 0, 'Trafic');
+    type(fixture, 1, 'AB123CD');
+    typeNumber(fixture, 0, '250');
+    expect(host(fixture).querySelector('[data-load-issue]')?.textContent).toContain(
+      'les trois, ou aucune',
+    );
+    expect(submitButton(fixture).disabled).toBe(true);
+
+    typeNumber(fixture, 1, '170');
+    typeNumber(fixture, 2, '130');
+    expect(host(fixture).querySelector('[data-volume]')?.textContent).toContain('5,5 m³');
+    expect(submitButton(fixture).disabled).toBe(false);
+
+    await submit(fixture);
+    expect(wire.adds).toEqual([
+      {
+        name: 'Trafic',
+        plate: 'AB123CD',
+        cargo: { lengthCm: 250, widthCm: 170, heightCm: 130 },
+        refrigeration: null,
+        energy: null,
+      },
+    ]);
+  });
+
+  it('le froid : refuse min > max, envoie une plage négative', async () => {
+    const fixture = await boot({ vehicle: KANGOO });
+    const box = host(fixture).querySelector('[data-refrigerated] input');
+    if (!(box instanceof HTMLInputElement)) throw new Error('Case absente.');
+    box.click();
+    fixture.detectChanges();
+
+    typeNumber(fixture, 3, '300');
+    typeNumber(fixture, 4, '-18');
+    typeNumber(fixture, 5, '-20');
+    expect(host(fixture).querySelector('[data-load-issue]')?.textContent).toContain(
+      'minimale ne peut pas dépasser',
+    );
+    expect(submitButton(fixture).disabled).toBe(true);
+
+    typeNumber(fixture, 4, '-22');
+    await submit(fixture);
+    expect(wire.updates[0]?.payload.refrigeration).toEqual({
+      volumeLiters: 300,
+      minTempC: -22,
+      maxTempC: -20,
+    });
+  });
+
+  it('🔴 corriger le nom garde l’énergie : absente, elle serait effacée', async () => {
+    const fixture = await boot({ vehicle: FRIGO });
+    type(fixture, 0, 'Frigo bleu');
+    await submit(fixture);
+    expect(wire.updates[0]?.payload.energy).toBe('electric');
+  });
+
+  it('l’énergie choisie part dans la charge ; effacée, elle part à null', async () => {
+    const fixture = await boot({ vehicle: FRIGO });
+    const listbox = fixture.debugElement.query(By.directive(FoldListboxComponent))
+      .componentInstance as FoldListboxComponent<VehicleEnergy>;
+    listbox.value.set('diesel');
+    fixture.detectChanges();
+    await submit(fixture);
+    expect(wire.updates[0]?.payload.energy).toBe('diesel');
+
+    listbox.value.set(null);
+    fixture.detectChanges();
+    await submit(fixture);
+    expect(wire.updates[1]?.payload.energy).toBeNull();
+  });
+
+  it('🔴 corriger le nom renvoie la fiche entière : absent effacerait le chargement', async () => {
+    const fixture = await boot({ vehicle: FRIGO });
+    expect(submitButton(fixture).disabled).toBe(true);
+    type(fixture, 0, 'Frigo blanc');
+    await submit(fixture);
+
+    expect(wire.updates[0]?.payload).toEqual({
+      name: 'Frigo blanc',
+      plate: 'AB-123-CD',
+      cargo: { lengthCm: 250, widthCm: 170, heightCm: 130 },
+      refrigeration: { volumeLiters: 400, minTempC: 0, maxTempC: 4 },
+      energy: 'electric',
+    });
   });
 });

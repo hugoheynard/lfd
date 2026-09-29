@@ -29,7 +29,13 @@ abstract class VehicleGestureEvent implements JournaledEvent {
       type: this.type,
       subjectType: SUBJECT_TYPE,
       subjectId: this.vehicle.id,
-      payload: { subjectLabel: this.vehicle.name, plate: this.vehicle.plate.value },
+      payload: {
+        subjectLabel: this.vehicle.name,
+        plate: this.vehicle.plate.value,
+        cargo: this.vehicle.identity.cargo ?? null,
+        refrigeration: this.vehicle.identity.refrigeration ?? null,
+        energy: this.vehicle.energy,
+      },
     };
   }
 }
@@ -46,6 +52,17 @@ export class VehicleReactivatedEvent extends VehicleGestureEvent {
   protected readonly type = VEHICLE_FACTS.reactivated;
 }
 
+/** Une fiche au journal : `cargo`, `refrigeration` et `energy` toujours présents, `null` si absents. */
+function journaledIdentity(identity: VehicleIdentity): Readonly<Record<string, unknown>> {
+  return {
+    name: identity.name,
+    plate: identity.plate,
+    cargo: identity.cargo ?? null,
+    refrigeration: identity.refrigeration ?? null,
+    energy: identity.energy ?? null,
+  };
+}
+
 /** La charge dit l'avant ET l'après : « la plaque a changé » sans l'ancienne n'apprend rien. */
 export class VehicleCorrectedEvent implements JournaledEvent {
   constructor(
@@ -60,8 +77,8 @@ export class VehicleCorrectedEvent implements JournaledEvent {
       subjectId: this.vehicle.id,
       payload: {
         subjectLabel: this.vehicle.name,
-        before: { name: this.before.name, plate: this.before.plate },
-        after: { name: this.vehicle.name, plate: this.vehicle.plate.value },
+        before: journaledIdentity(this.before),
+        after: journaledIdentity(this.vehicle.identity),
       },
     };
   }

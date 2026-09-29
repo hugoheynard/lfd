@@ -17,6 +17,8 @@ import { AddVehicleCommand } from "./add-vehicle.command.js";
  *
  * @throws {InvalidLicensePlateError} @throws {InvalidVehicleNameError}
  * @throws {LicensePlateAlreadyInServiceError}
+ * @throws {InvalidCargoDimensionsError} @throws {InvalidRefrigerationError}
+ * @throws {RefrigeratedVolumeExceedsCargoError} @throws {InvalidVehicleEnergyError}
  */
 @CommandHandler(AddVehicleCommand)
 export class AddVehicleHandler implements ICommandHandler<AddVehicleCommand, string> {
@@ -33,6 +35,9 @@ export class AddVehicleHandler implements ICommandHandler<AddVehicleCommand, str
       id: this.ids.next(),
       name: command.payload.name,
       plate: command.payload.plate,
+      cargo: command.payload.cargo,
+      refrigeration: command.payload.refrigeration,
+      energy: command.payload.energy,
       at: this.clock.now(),
     });
     await this.uow.run(async () => {

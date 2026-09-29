@@ -17,6 +17,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import { activeCountLabel, retiredOnLabel, splitFleet } from '../fleet';
+import { energyLabel, vehicleLoadLine } from '../vehicle-load';
 import { VehicleDialog, type VehicleDialogData } from '../vehicle-dialog/vehicle-dialog';
 
 type FleetState =
@@ -74,6 +75,8 @@ export class VehiclesPage {
   protected readonly activeCount = computed(() => activeCountLabel(this.fleet().active.length));
 
   protected readonly retiredOn = retiredOnLabel;
+  protected readonly loadLine = vehicleLoadLine;
+  protected readonly energyLine = energyLabel;
 
   constructor() {
     void this.load();

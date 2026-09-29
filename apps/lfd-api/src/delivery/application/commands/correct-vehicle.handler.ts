@@ -9,7 +9,7 @@ import { ensurePlateFree, loadVehicle } from "../vehicle-support.js";
 import { CorrectVehicleCommand } from "./correct-vehicle.command.js";
 
 /**
- * Corrige le nom et la plaque d'un véhicule. Le fait porte l'avant et l'après.
+ * Corrige la fiche d'un véhicule (nom, plaque, dimensions, froid). Le fait porte l'avant et l'après.
  *
  * @throws {VehicleNotFoundError} @throws {InvalidLicensePlateError}
  * @throws {InvalidVehicleNameError} @throws {LicensePlateAlreadyInServiceError}
@@ -26,7 +26,7 @@ export class CorrectVehicleHandler implements ICommandHandler<CorrectVehicleComm
   async execute(command: CorrectVehicleCommand): Promise<void> {
     await this.uow.run(async () => {
       const vehicle = await loadVehicle(this.vehicles, command.vehicleId);
-      const before = { name: vehicle.name, plate: vehicle.plate.value };
+      const before = vehicle.identity;
       vehicle.correct(command.payload, this.clock.now());
       await ensurePlateFree(this.vehicles, vehicle);
       await this.vehicles.save(vehicle);

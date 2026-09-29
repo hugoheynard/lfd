@@ -1,6 +1,10 @@
 import {
   InvalidLicensePlateError,
+  InvalidCargoDimensionsError,
+  InvalidRefrigerationError,
+  InvalidVehicleEnergyError,
   InvalidVehicleNameError,
+  RefrigeratedVolumeExceedsCargoError,
   VehicleAlreadyRetiredError,
   VehicleNotRetiredError,
 } from "../../errors/delivery-errors.js";
@@ -24,6 +28,9 @@ describe("Vehicle", () => {
       retiredAt: null,
       createdAt: CREATED,
       updatedAt: CREATED,
+      cargo: null,
+      refrigeration: null,
+      energy: null,
     });
     expect(vehicle.inService).toBe(true);
   });
@@ -71,6 +78,79 @@ describe("Vehicle", () => {
     const state = { ...kangoo().toState(), plate: "n'importe quoi" };
     expect(() => Vehicle.restore(state)).toThrow(InvalidLicensePlateError);
     expect(Vehicle.restore(kangoo().toState()).toState()).toEqual(kangoo().toState());
+  });
+});
+
+describe("Vehicle — le chargement (lot 2 bis)", () => {
+  const CARGO = { lengthCm: 200, widthCm: 150, heightCm: 100 }; // 3 000 L
+  const COLD = { volumeLiters: 400, minTempC: 0, maxTempC: 4 };
+  const base = { id: "v_1", name: "Master", plate: "AB-123-CD", at: CREATED };
+
+  it("porte ses dimensions et sa caisse réfrigérée, et le volume utile s'en dérive", () => {
+    const vehicle = Vehicle.register({ ...base, cargo: CARGO, refrigeration: COLD });
+    expect(vehicle.cargo?.volumeLiters).toBe(3000);
+    expect(vehicle.toState()).toMatchObject({ cargo: CARGO, refrigeration: COLD });
+    expect(Vehicle.restore(vehicle.toState()).toState()).toEqual(vehicle.toState());
+  });
+
+  it("un volume réfrigéré égal au volume utile passe ; au-dessus, refusé en nommant les deux", () => {
+    expect(() =>
+      Vehicle.register({ ...base, cargo: CARGO, refrigeration: { ...COLD, volumeLiters: 3000 } }),
+    ).not.toThrow();
+    const over = () =>
+      Vehicle.register({ ...base, cargo: CARGO, refrigeration: { ...COLD, volumeLiters: 3001 } });
+    expect(over).toThrow(RefrigeratedVolumeExceedsCargoError);
+    expect(over).toThrow(/3001 L.*3000 L/u);
+  });
+
+  it("sans dimensions connues, le volume réfrigéré n'est borné que par lui-même", () => {
+    const vehicle = Vehicle.register({ ...base, refrigeration: { ...COLD, volumeLiters: 20_000 } });
+    expect(vehicle.cargo).toBeNull();
+    expect(vehicle.refrigeration?.volumeLiters).toBe(20_000);
+  });
+
+  it("une correction refusée ne laisse pas la fiche à moitié corrigée", () => {
+    const vehicle = Vehicle.register({ ...base, cargo: CARGO });
+    expect(() =>
+      vehicle.correct(
+        { name: "Autre", plate: "EF-456-GH", cargo: { ...CARGO, heightCm: 0 } },
+        LATER,
+      ),
+    ).toThrow(InvalidCargoDimensionsError);
+    expect(vehicle.name).toBe("Master");
+    expect(vehicle.plate.value).toBe("AB-123-CD");
+    expect(vehicle.updatedAt).toEqual(CREATED);
+  });
+
+  it("absent vaut null : une correction sans chargement l'efface", () => {
+    const vehicle = Vehicle.register({ ...base, cargo: CARGO, refrigeration: COLD });
+    vehicle.correct({ name: "Master", plate: "AB-123-CD" }, LATER);
+    expect(vehicle.toState()).toMatchObject({ cargo: null, refrigeration: null });
+  });
+
+  it("se réhydrate en revalidant le froid", () => {
+    const state = { ...kangoo().toState(), refrigeration: { ...COLD, minTempC: 9, maxTempC: 4 } };
+    expect(() => Vehicle.restore(state)).toThrow(InvalidRefrigerationError);
+  });
+});
+
+describe("Vehicle — l'énergie (L2b-C6)", () => {
+  const base = { id: "v_1", name: "e-Kangoo", plate: "AB-123-CD", at: CREATED };
+
+  it("la porte, et une correction sans énergie la remet à non renseignée", () => {
+    const vehicle = Vehicle.register({ ...base, energy: "electric" });
+    expect(vehicle.energy).toBe("electric");
+    expect(Vehicle.restore(vehicle.toState()).energy).toBe("electric");
+    vehicle.correct({ name: "e-Kangoo", plate: "AB-123-CD" }, LATER);
+    expect(vehicle.energy).toBeNull();
+  });
+
+  it("refuse une énergie inconnue, à la saisie comme à la réhydratation", () => {
+    expect(() => Vehicle.register({ ...base, energy: "hydrogen" })).toThrow(
+      InvalidVehicleEnergyError,
+    );
+    const state = { ...Vehicle.register(base).toState(), energy: "hydrogen" };
+    expect(() => Vehicle.restore(state)).toThrow(InvalidVehicleEnergyError);
   });
 });
 

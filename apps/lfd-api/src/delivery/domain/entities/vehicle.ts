@@ -2,10 +2,17 @@ import { instantToLocal } from "@lfd/contracts";
 
 import {
   InvalidVehicleNameError,
+  RefrigeratedVolumeExceedsCargoError,
   VehicleAlreadyRetiredError,
   VehicleNotRetiredError,
 } from "../errors/delivery-errors.js";
+import { type CargoDimensions, CargoSpace } from "../value-objects/cargo-space.js";
 import { LicensePlate } from "../value-objects/license-plate.js";
+import {
+  RefrigeratedCompartment,
+  type RefrigerationSpec,
+} from "../value-objects/refrigerated-compartment.js";
+import { type VehicleEnergy, vehicleEnergyOf } from "../value-objects/vehicle-energy.js";
 
 /** Le nom tient sur une étiquette de tableau : la borne du contrat, reprise ici. */
 export const VEHICLE_NAME_MAX_LENGTH = 60;
@@ -18,12 +25,31 @@ export interface VehicleState {
   readonly retiredAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
+  readonly cargo: CargoDimensions | null;
+  readonly refrigeration: RefrigerationSpec | null;
+  /** Texte comme la plaque : `restore` le revalide. */
+  readonly energy: string | null;
 }
 
-/** Ce qu'une création ou une correction dit d'un véhicule. */
+/**
+ * Ce qu'une création ou une correction dit d'un véhicule. La fiche est
+ * COMPLÈTE : `cargo`, `refrigeration` ou `energy` absents valent `null` — des
+ * dimensions inconnues, un véhicule sec, une énergie non renseignée — et jamais
+ * « inchangé ».
+ */
 export interface VehicleIdentity {
   readonly name: string;
   readonly plate: string;
+  readonly cargo?: CargoDimensions | null | undefined;
+  readonly refrigeration?: RefrigerationSpec | null | undefined;
+  readonly energy?: string | null | undefined;
+}
+
+/** Le chargement d'un véhicule et son énergie, validés — ses parties et la règle qui les lie. */
+interface LoadSpace {
+  readonly cargo: CargoSpace | null;
+  readonly refrigeration: RefrigeratedCompartment | null;
+  readonly energy: VehicleEnergy | null;
 }
 
 /**
@@ -45,11 +71,14 @@ export class Vehicle {
     private currentRetiredAt: Date | null,
     readonly createdAt: Date,
     private currentUpdatedAt: Date,
+    private currentLoad: LoadSpace,
   ) {}
 
   /**
    * Un véhicule entre dans la flotte, en service.
    * @throws {InvalidVehicleNameError} @throws {InvalidLicensePlateError}
+   * @throws {InvalidCargoDimensionsError} @throws {InvalidRefrigerationError}
+   * @throws {RefrigeratedVolumeExceedsCargoError}
    */
   static register(input: VehicleIdentity & { readonly id: string; readonly at: Date }): Vehicle {
     return new Vehicle(
@@ -59,10 +88,11 @@ export class Vehicle {
       null,
       input.at,
       input.at,
+      loadSpaceOf(input),
     );
   }
 
-  /** Réhydrate un véhicule lu en base ; la plaque se revalide. */
+  /** Réhydrate un véhicule lu en base ; la plaque et le chargement se revalident. */
   static restore(state: VehicleState): Vehicle {
     return new Vehicle(
       state.id,
@@ -71,6 +101,7 @@ export class Vehicle {
       state.retiredAt,
       state.createdAt,
       state.updatedAt,
+      loadSpaceOf(state),
     );
   }
 
@@ -84,6 +115,32 @@ export class Vehicle {
 
   get retiredAt(): Date | null {
     return this.currentRetiredAt;
+  }
+
+  /** Dimensions utiles, ou `null` si inconnues. */
+  get cargo(): CargoSpace | null {
+    return this.currentLoad.cargo;
+  }
+
+  /** Caisse réfrigérée, ou `null` pour un véhicule sec. */
+  get refrigeration(): RefrigeratedCompartment | null {
+    return this.currentLoad.refrigeration;
+  }
+
+  /** Énergie, ou `null` si non renseignée. */
+  get energy(): VehicleEnergy | null {
+    return this.currentLoad.energy;
+  }
+
+  /** La fiche telle qu'une correction la décrit — l'« avant » du journal. */
+  get identity(): VehicleIdentity {
+    return {
+      name: this.currentName,
+      plate: this.currentPlate.value,
+      cargo: this.currentLoad.cargo?.toDimensions() ?? null,
+      refrigeration: this.currentLoad.refrigeration?.toSpec() ?? null,
+      energy: this.currentLoad.energy,
+    };
   }
 
   get updatedAt(): Date {
@@ -100,12 +157,18 @@ export class Vehicle {
   }
 
   /**
-   * Corrige le nom et la plaque. Permis sur un véhicule retiré : corriger une
-   * faute de saisie ne le remet pas en service.
+   * Corrige la fiche ENTIÈRE — nom, plaque, dimensions, froid. Permis sur un
+   * véhicule retiré : corriger une faute de saisie ne le remet pas en service.
+   * Tout est validé avant la moindre affectation : un refus ne laisse pas une
+   * fiche à moitié corrigée.
    */
   correct(identity: VehicleIdentity, at: Date): void {
-    this.currentName = nameOf(identity.name);
-    this.currentPlate = LicensePlate.of(identity.plate);
+    const name = nameOf(identity.name);
+    const plate = LicensePlate.of(identity.plate);
+    const load = loadSpaceOf(identity);
+    this.currentName = name;
+    this.currentPlate = plate;
+    this.currentLoad = load;
     this.currentUpdatedAt = at;
   }
 
@@ -135,6 +198,9 @@ export class Vehicle {
       retiredAt: this.currentRetiredAt,
       createdAt: this.createdAt,
       updatedAt: this.currentUpdatedAt,
+      cargo: this.currentLoad.cargo?.toDimensions() ?? null,
+      refrigeration: this.currentLoad.refrigeration?.toSpec() ?? null,
+      energy: this.currentLoad.energy,
     };
   }
 }
@@ -159,4 +225,31 @@ function nameOf(raw: string): string {
     throw new InvalidVehicleNameError(VEHICLE_NAME_MAX_LENGTH);
   }
   return name;
+}
+
+/**
+ * Valide les deux parties du chargement, puis la règle qui les lie ; l'énergie
+ * suit le même chemin, parce qu'elle vit dans la même fiche complète : le volume
+ * réfrigéré ne dépasse pas le volume utile quand celui-ci est connu (L2b-C2).
+ *
+ * @throws {InvalidCargoDimensionsError} @throws {InvalidRefrigerationError}
+ * @throws {RefrigeratedVolumeExceedsCargoError} @throws {InvalidVehicleEnergyError}
+ */
+function loadSpaceOf(
+  input: Pick<VehicleIdentity, "cargo" | "refrigeration" | "energy">,
+): LoadSpace {
+  const cargoInput = input.cargo ?? null;
+  const refrigerationInput = input.refrigeration ?? null;
+  const cargo = cargoInput === null ? null : CargoSpace.of(cargoInput);
+  const refrigeration =
+    refrigerationInput === null ? null : RefrigeratedCompartment.of(refrigerationInput);
+  if (cargo !== null && refrigeration !== null && refrigeration.volumeLiters > cargo.volumeLiters) {
+    throw new RefrigeratedVolumeExceedsCargoError(refrigeration.volumeLiters, cargo.volumeLiters);
+  }
+  const energyInput = input.energy ?? null;
+  return {
+    cargo,
+    refrigeration,
+    energy: energyInput === null ? null : vehicleEnergyOf(energyInput),
+  };
 }

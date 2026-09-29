@@ -5,6 +5,7 @@ import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   InvalidLicensePlateError,
   LicensePlateAlreadyInServiceError,
+  RefrigeratedVolumeExceedsCargoError,
   VehicleAlreadyRetiredError,
   VehicleNotFoundError,
 } from "../../../domain/errors/delivery-errors.js";
@@ -20,6 +21,13 @@ import { VehicleHasUpcomingRoundsError } from "../../../domain/errors/delivery-r
 import { CREATED, FixedVehicleRounds, InMemoryVehicles, vehicle } from "./fleet-doubles.js";
 
 const NOW = new Date(CREATED.getTime() + 3_600_000);
+
+/** Un grand fourgon (≈ 9,9 m³) et sa caisse frigorifique de 400 L. */
+const LOADED = {
+  cargo: { lengthCm: 330, widthCm: 170, heightCm: 176 },
+  refrigeration: { volumeLiters: 400, minTempC: 0, maxTempC: 4 },
+  energy: "diesel" as const,
+};
 
 function tools(): { clock: FixedClock; events: RecordingPublisher; uow: DirectUnitOfWork } {
   return {
@@ -49,7 +57,42 @@ describe("AddVehicleHandler", () => {
     expect(events.traced[0]?.journalFact().payload).toEqual({
       subjectLabel: "Kangoo",
       plate: "AB-123-CD",
+      cargo: null,
+      refrigeration: null,
+      energy: null,
     });
+  });
+
+  it("porte les dimensions et le froid jusqu'à l'agrégat et au journal (lot 2 bis)", async () => {
+    const vehicles = new InMemoryVehicles();
+    const { clock, events, uow } = tools();
+    const handler = new AddVehicleHandler(vehicles, new FixedIdGenerator(), clock, events, uow);
+
+    await handler.execute(
+      new AddVehicleCommand({ name: "Master frigo", plate: "AB-123-CD", ...LOADED }),
+    );
+
+    expect(vehicles.saved[0]?.toState()).toMatchObject(LOADED);
+    expect(events.traced[0]?.journalFact().payload).toMatchObject(LOADED);
+  });
+
+  it("refuse un volume réfrigéré au-dessus du volume utile, sans rien écrire", async () => {
+    const vehicles = new InMemoryVehicles();
+    const { clock, events, uow } = tools();
+    const handler = new AddVehicleHandler(vehicles, new FixedIdGenerator(), clock, events, uow);
+
+    const adding = handler.execute(
+      new AddVehicleCommand({
+        name: "Kangoo",
+        plate: "AB-123-CD",
+        cargo: { lengthCm: 100, widthCm: 100, heightCm: 100 },
+        refrigeration: { volumeLiters: 1001, minTempC: 0, maxTempC: 4 },
+      }),
+    );
+
+    await expect(adding).rejects.toThrow(RefrigeratedVolumeExceedsCargoError);
+    expect(vehicles.saved).toEqual([]);
+    expect(events.traced).toEqual([]);
   });
 
   it("refuse une plaque déjà portée par un véhicule en service, en le nommant", async () => {
@@ -90,8 +133,45 @@ describe("CorrectVehicleHandler", () => {
 
     expect(events.traced[0]?.journalFact().payload).toEqual({
       subjectLabel: "Kangoo gris",
-      before: { name: "Kangoo", plate: "AB-123-CD" },
-      after: { name: "Kangoo gris", plate: "EF-456-GH" },
+      before: {
+        name: "Kangoo",
+        plate: "AB-123-CD",
+        cargo: null,
+        refrigeration: null,
+        energy: null,
+      },
+      after: {
+        name: "Kangoo gris",
+        plate: "EF-456-GH",
+        cargo: null,
+        refrigeration: null,
+        energy: null,
+      },
+    });
+  });
+
+  it("la fiche est complète : ajouter le froid le trace, l'omettre ensuite l'efface", async () => {
+    const vehicles = new InMemoryVehicles(vehicle("v_1", "Kangoo", "AB-123-CD"));
+    const { clock, events, uow } = tools();
+    const handler = new CorrectVehicleHandler(vehicles, clock, events, uow);
+
+    await handler.execute(
+      new CorrectVehicleCommand("v_1", { name: "Kangoo", plate: "AB-123-CD", ...LOADED }),
+    );
+    await handler.execute(new CorrectVehicleCommand("v_1", { name: "Kangoo", plate: "AB-123-CD" }));
+
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+      before: { cargo: null, refrigeration: null },
+      after: LOADED,
+    });
+    expect(events.traced[1]?.journalFact().payload).toMatchObject({
+      before: LOADED,
+      after: { cargo: null, refrigeration: null, energy: null },
+    });
+    expect(vehicles.saved.at(-1)?.toState()).toMatchObject({
+      cargo: null,
+      refrigeration: null,
+      energy: null,
     });
   });
 

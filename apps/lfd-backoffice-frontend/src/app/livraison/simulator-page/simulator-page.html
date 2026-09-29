@@ -206,6 +206,9 @@
                 (valueChange)="updateVehicle(index, $event)"
                 data-vehicle-name
               />
+              @if (loadBadge(name); as load) {
+                <fold-badge variant="neutral" [content]="load" data-vehicle-load />
+              }
               <fold-button-icon
                 icon="bin"
                 size="sm"

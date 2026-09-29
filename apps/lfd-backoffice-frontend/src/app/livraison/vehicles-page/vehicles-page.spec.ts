@@ -11,7 +11,16 @@ import { VehicleDialog } from '../vehicle-dialog/vehicle-dialog';
 import { VehiclesPage } from './vehicles-page';
 
 function vehicle(id: string, name: string, retiredAt: string | null = null): VehicleView {
-  return { id, name, plate: `PL-${id}`, retiredAt, createdAt: '2026-01-01T08:00:00.000Z' };
+  return {
+    id,
+    name,
+    plate: `PL-${id}`,
+    retiredAt,
+    createdAt: '2026-01-01T08:00:00.000Z',
+    cargo: null,
+    refrigeration: null,
+    energy: null,
+  };
 }
 
 interface Wire {
@@ -135,6 +144,30 @@ describe('VehiclesPage', () => {
     expect(retired).toHaveLength(1);
     expect(retired[0]?.textContent).toContain('retiré le 1 février 2026');
     expect(host(fixture).textContent).toContain('2 véhicules actifs');
+  });
+
+  it('dit le chargement : dimensions et volume, le froid, « Sec » sinon', async () => {
+    const fixture = await boot([
+      {
+        ...vehicle('1', 'Frigo'),
+        cargo: { lengthCm: 250, widthCm: 170, heightCm: 130, volumeLiters: 5525 },
+        refrigeration: { volumeLiters: 400, minTempC: 0, maxTempC: 4 },
+      },
+      vehicle('3', 'Jumpy'),
+    ]);
+    expect(all(fixture, '[data-load]').map((line) => line.textContent.trim())).toEqual([
+      '250 × 170 × 130 cm · 5,5 m³ · ❄ 400 L · 0 à +4 °C',
+    ]);
+  });
+
+  it('dit l’énergie quand elle est renseignée, rien sinon', async () => {
+    const fixture = await boot([
+      { ...vehicle('1', 'Zoé'), energy: 'electric' },
+      vehicle('3', 'Jumpy'),
+    ]);
+    expect(all(fixture, '[data-energy]').map((line) => line.textContent.trim())).toEqual([
+      'Électrique',
+    ]);
   });
 
   it('dit la flotte vide sans inventer de nombre', async () => {

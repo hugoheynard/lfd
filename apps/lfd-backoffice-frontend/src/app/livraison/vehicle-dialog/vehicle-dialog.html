@@ -1,6 +1,6 @@
 <fold-panel-header
   [title]="title()"
-  subtitle="Un nom pour s'y retrouver, la plaque pour l'identifier"
+  subtitle="Un nom pour s'y retrouver, la plaque pour l'identifier, et ce qu'il emporte"
   closeLabel="Fermer"
 />
 
@@ -19,6 +19,94 @@
       [value]="plate()"
       (valueChange)="plate.set($event)"
     />
+    <fold-listbox
+      label="Énergie"
+      placeholder="Non renseignée"
+      clearLabel="Effacer l’énergie"
+      allowClear
+      hint="Facultatif — l'électrique et l'hybride sont signalés dans Planifier."
+      [options]="energyOptions"
+      [value]="energy()"
+      (valueChange)="energy.set($event)"
+      data-energy
+    />
+
+    <fold-fieldset
+      legend="Espace de chargement (intérieur, cm)"
+      hint="Facultatif — les trois dimensions, ou aucune."
+      data-cargo
+    >
+      <div class="vd-row">
+        <fold-number-input
+          label="Longueur"
+          spinner="none"
+          [min]="bounds.cmMin"
+          [max]="bounds.cmMax"
+          [value]="load().lengthCm"
+          (valueChange)="setLoad('lengthCm', $event)"
+        />
+        <fold-number-input
+          label="Largeur"
+          spinner="none"
+          [min]="bounds.cmMin"
+          [max]="bounds.cmMax"
+          [value]="load().widthCm"
+          (valueChange)="setLoad('widthCm', $event)"
+        />
+        <fold-number-input
+          label="Hauteur"
+          spinner="none"
+          [min]="bounds.cmMin"
+          [max]="bounds.cmMax"
+          [value]="load().heightCm"
+          (valueChange)="setLoad('heightCm', $event)"
+        />
+      </div>
+      @if (volume(); as label) {
+        <fold-badge variant="neutral" [content]="'Volume utile : ' + label" data-volume />
+      }
+    </fold-fieldset>
+
+    <fold-fieldset legend="Froid" data-cold>
+      <fold-checkbox
+        label="Caisse réfrigérée"
+        [checked]="load().refrigerated"
+        (checkedChange)="setLoad('refrigerated', $event)"
+        data-refrigerated
+      />
+      @if (load().refrigerated) {
+        <div class="vd-row">
+          <fold-number-input
+            label="Volume réfrigéré (L)"
+            spinner="none"
+            [min]="bounds.litersMin"
+            [max]="bounds.litersMax"
+            [value]="load().coldLiters"
+            (valueChange)="setLoad('coldLiters', $event)"
+          />
+          <fold-number-input
+            label="Température min (°C)"
+            spinner="none"
+            [min]="bounds.tempMin"
+            [max]="bounds.tempMax"
+            [value]="load().minTempC"
+            (valueChange)="setLoad('minTempC', $event)"
+          />
+          <fold-number-input
+            label="Température max (°C)"
+            spinner="none"
+            [min]="bounds.tempMin"
+            [max]="bounds.tempMax"
+            [value]="load().maxTempC"
+            (valueChange)="setLoad('maxTempC', $event)"
+          />
+        </div>
+      }
+    </fold-fieldset>
+
+    @if (loadIssue(); as message) {
+      <fold-callout variant="warning" data-load-issue>{{ message }}</fold-callout>
+    }
 
     @if (refusal(); as message) {
       <fold-callout variant="alert" announce>{{ message }}</fold-callout>

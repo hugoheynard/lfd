@@ -55,10 +55,40 @@ const adjustment = () =>
   ]);
 
 /** Le nom et la plaque d'un véhicule de la flotte, tels qu'écrits. */
-const vehicleIdentity = () => payload({ name: z.string().min(1), plate: z.string().min(1) });
+const vehicleIdentity = () =>
+  payload({
+    name: z.string().min(1),
+    plate: z.string().min(1),
+    ...vehicleLoadSpace(),
+  });
+
+/**
+ * Le chargement d'un véhicule (lot 2 bis) : dimensions utiles en cm et caisse
+ * réfrigérée, `null` si inconnues ou sec. OPTIONNELS : les faits écrits avant
+ * le 2026-09-29 ne les portent pas.
+ */
+const vehicleLoadSpace = () => ({
+  cargo: payload({
+    lengthCm: z.number().int(),
+    widthCm: z.number().int(),
+    heightCm: z.number().int(),
+  })
+    .nullable()
+    .optional(),
+  refrigeration: payload({
+    volumeLiters: z.number().int(),
+    minTempC: z.number().int(),
+    maxTempC: z.number().int(),
+  })
+    .nullable()
+    .optional(),
+  /** L'énergie (L2b-C6) — texte libre ici : le journal garde ce qui a été écrit. */
+  energy: z.string().min(1).nullable().optional(),
+});
 
 /** Un geste sur un véhicule : son nom en libellé, et sa plaque. */
-const vehicleFact = () => payload({ subjectLabel: subjectLabel(), plate: z.string().min(1) });
+const vehicleFact = () =>
+  payload({ subjectLabel: subjectLabel(), plate: z.string().min(1), ...vehicleLoadSpace() });
 
 /** Un point de retrait, et la remise qu'on y consent — avant le lot B. */
 const pickupPointBeforeLabel = () =>

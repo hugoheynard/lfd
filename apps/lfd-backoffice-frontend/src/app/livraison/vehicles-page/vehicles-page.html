@@ -42,34 +42,46 @@
           <fold-element-title variant="caps" title="En service" [subtitle]="activeCount()" />
           @for (vehicle of fleet().active; track vehicle.id) {
             <fold-card data-active-vehicle>
-              <fold-element-title variant="title" [title]="vehicle.name" [subtitle]="vehicle.plate">
-                @if (canWrite()) {
-                  <div titleAction class="fleet-actions">
-                    <button
-                      foldButton
-                      emphasis="outline"
-                      size="sm"
-                      data-correct
-                      [disabled]="busyId() !== null"
-                      (click)="correct(vehicle)"
-                    >
-                      Corriger
-                    </button>
-                    <button
-                      foldButton
-                      emphasis="soft"
-                      intent="neutral"
-                      size="sm"
-                      data-retire
-                      [disabled]="busyId() !== null"
-                      [loading]="busyId() === vehicle.id"
-                      (click)="retire(vehicle)"
-                    >
-                      Retirer
-                    </button>
-                  </div>
+              <div class="fleet-vehicle">
+                <fold-element-title
+                  variant="title"
+                  [title]="vehicle.name"
+                  [subtitle]="vehicle.plate"
+                >
+                  @if (canWrite()) {
+                    <div titleAction class="fleet-actions">
+                      <button
+                        foldButton
+                        emphasis="outline"
+                        size="sm"
+                        data-correct
+                        [disabled]="busyId() !== null"
+                        (click)="correct(vehicle)"
+                      >
+                        Corriger
+                      </button>
+                      <button
+                        foldButton
+                        emphasis="soft"
+                        intent="neutral"
+                        size="sm"
+                        data-retire
+                        [disabled]="busyId() !== null"
+                        [loading]="busyId() === vehicle.id"
+                        (click)="retire(vehicle)"
+                      >
+                        Retirer
+                      </button>
+                    </div>
+                  }
+                </fold-element-title>
+                @if (loadLine(vehicle); as line) {
+                  <span data-load>{{ line }}</span>
                 }
-              </fold-element-title>
+                @if (energyLine(vehicle.energy); as energy) {
+                  <span data-energy>{{ energy }}</span>
+                }
+              </div>
             </fold-card>
           }
         }

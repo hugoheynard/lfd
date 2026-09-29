@@ -129,7 +129,16 @@ export function vehicleView(
   name: string,
   retiredAt: string | null = null,
 ): VehicleView {
-  return { id, name, plate: "AB-123-CD", retiredAt, createdAt: new Date(0).toISOString() };
+  return {
+    id,
+    name,
+    plate: "AB-123-CD",
+    retiredAt,
+    createdAt: new Date(0).toISOString(),
+    cargo: null,
+    refrigeration: null,
+    energy: null,
+  };
 }
 
 /** La vue du jour lue sur les tournées en mémoire — la même source que l'écriture. */

@@ -152,6 +152,9 @@ describe('vehiclesActiveOn (C14)', () => {
     plate: id,
     retiredAt,
     createdAt: '2026-01-01T08:00:00.000Z',
+    cargo: null,
+    refrigeration: null,
+    energy: null,
   });
 
   it('propose un véhicule retiré le jour même ou après, pas avant', () => {

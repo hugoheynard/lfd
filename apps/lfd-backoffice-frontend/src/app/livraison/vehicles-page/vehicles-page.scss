@@ -11,3 +11,10 @@
   flex-wrap: wrap;
   gap: var(--fold-space-sm);
 }
+
+/* L'en-tête d'un véhicule et sa ligne de chargement. */
+.fleet-vehicle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}

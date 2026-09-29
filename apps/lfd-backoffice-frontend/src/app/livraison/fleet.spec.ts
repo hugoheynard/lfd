@@ -10,6 +10,9 @@ function vehicle(id: string, retiredAt: string | null = null): VehicleView {
     plate: `AB-${id}-CD`,
     retiredAt,
     createdAt: '2026-01-01T08:00:00.000Z',
+    cargo: null,
+    refrigeration: null,
+    energy: null,
   };
 }
 

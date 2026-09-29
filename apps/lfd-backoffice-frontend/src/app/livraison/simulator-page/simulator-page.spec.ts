@@ -33,8 +33,26 @@ const SETTINGS: DeliveryRoutingSettingsView = {
 
 const FLEET: VehiclesView = {
   vehicles: [
-    { id: 'v1', name: 'Kangoo', plate: 'AA-123-AA', retiredAt: null, createdAt: '' },
-    { id: 'v2', name: 'Ancien', plate: 'BB-123-BB', retiredAt: '2026-01-01', createdAt: '' },
+    {
+      id: 'v1',
+      name: 'Kangoo',
+      plate: 'AA-123-AA',
+      retiredAt: null,
+      createdAt: '',
+      cargo: null,
+      refrigeration: { volumeLiters: 400, minTempC: 0, maxTempC: 4 },
+      energy: null,
+    },
+    {
+      id: 'v2',
+      name: 'Ancien',
+      plate: 'BB-123-BB',
+      retiredAt: '2026-01-01',
+      createdAt: '',
+      cargo: null,
+      refrigeration: null,
+      energy: null,
+    },
   ],
 };
 
@@ -195,6 +213,8 @@ describe('SimulatorPage', () => {
     const fixture = await boot();
     expect(host(fixture).querySelectorAll('[data-stop]')).toHaveLength(6);
     expect(host(fixture).querySelectorAll('[data-vehicle]')).toHaveLength(1);
+    // Le nom vient de la flotte : son chargement se lit à côté (L2b-C3).
+    expect(host(fixture).querySelector('[data-vehicle-load]')?.textContent).toContain('❄');
     expect(host(fixture).querySelector('[data-fleet-unread]')).toBeNull();
   });
 

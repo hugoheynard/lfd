@@ -132,6 +132,9 @@
                       [subtitle]="stopCountLabel(column.stops.length)"
                     >
                       <span titleAction class="actions">
+                        @if (loadBadge(column.round.vehicleId); as load) {
+                          <fold-badge variant="neutral" [content]="load" data-load />
+                        }
                         @if (column.round.departedAt; as departedAt) {
                           <fold-badge
                             variant="info"

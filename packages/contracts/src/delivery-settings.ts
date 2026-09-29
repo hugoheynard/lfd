@@ -10,11 +10,51 @@ import type { BillingAddressPayload, GpsPoint } from "./address.js";
  */
 
 /**
+ * Dimensions UTILES de l'espace de chargement, en centimètres entiers
+ * (lot 2 bis, L2b-C1). Les bornes (1 à 1 000 cm) sont tenues par le domaine,
+ * qui refuse avec la phrase à lire : le schéma ne vérifie que la forme.
+ */
+export const vehicleCargoPayloadSchema = z.object({
+  lengthCm: z.number().int(),
+  widthCm: z.number().int(),
+  heightCm: z.number().int(),
+});
+export type VehicleCargoPayload = z.infer<typeof vehicleCargoPayloadSchema>;
+
+/**
+ * La caisse réfrigérée (lot 2 bis, L2b-C2) : volume en litres, plage en °C
+ * entiers — négatifs permis. Bornes, `min ≤ max` et « pas plus que le volume
+ * utile » sont tenus par le domaine.
+ */
+export const vehicleRefrigerationPayloadSchema = z.object({
+  volumeLiters: z.number().int(),
+  minTempC: z.number().int(),
+  maxTempC: z.number().int(),
+});
+export type VehicleRefrigerationPayload = z.infer<typeof vehicleRefrigerationPayloadSchema>;
+
+/**
+ * L'énergie d'un véhicule (lot 2 bis, L2b-C6). `gas` = GNV ou GPL ;
+ * `hybrid` = hybride thermique-électrique. Affichée, pas encore lue par le
+ * calcul. Ces valeurs sont des DONNÉES rangées en base : elles s'ajoutent, elles
+ * ne se renomment pas.
+ */
+export const VEHICLE_ENERGIES = ["electric", "hybrid", "diesel", "petrol", "gas"] as const;
+export const vehicleEnergySchema = z.enum(VEHICLE_ENERGIES);
+export type VehicleEnergy = z.infer<typeof vehicleEnergySchema>;
+
+/**
  * Charge d'un véhicule, à la création comme à la correction.
  *
  * La plaque n'est validée ici que dans sa FORME large : c'est le value object du
  * domaine qui la normalise (`AB-123-CD`, `ab 123 cd` et `AB123CD` sont la même)
  * et qui refuse une plaque mal formée, avec la phrase à lire.
+ *
+ * ⚠️ **La charge est COMPLÈTE, à la correction comme à la création.** `cargo`,
+ * `refrigeration` et `energy` sont optionnels pour ne casser aucun appelant d'avant le
+ * lot 2 bis, mais **absent vaut `null`** : une correction qui ne les envoie pas
+ * EFFACE les dimensions, la caisse réfrigérée ou l'énergie. Absent ne veut jamais dire
+ * « inchangé » — l'écran renvoie toujours la fiche entière.
  */
 export const vehiclePayloadSchema = z.object({
   name: z
@@ -23,6 +63,12 @@ export const vehiclePayloadSchema = z.object({
     .min(1, "nom du véhicule requis")
     .max(60, "nom trop long (60 caractères au plus)"),
   plate: z.string().trim().min(1, "plaque requise").max(20, "plaque trop longue"),
+  /** Dimensions utiles ; `null` ou absent = inconnues (voir la mise en garde ci-dessus). */
+  cargo: vehicleCargoPayloadSchema.nullable().optional(),
+  /** Caisse réfrigérée ; `null` ou absent = véhicule sec. */
+  refrigeration: vehicleRefrigerationPayloadSchema.nullable().optional(),
+  /** Énergie ; `null` ou absent = non renseignée (même règle : absent efface). */
+  energy: vehicleEnergySchema.nullable().optional(),
 });
 export type VehiclePayload = z.infer<typeof vehiclePayloadSchema>;
 
@@ -39,6 +85,31 @@ export interface VehicleView {
    */
   readonly retiredAt: string | null;
   readonly createdAt: string;
+  /** Dimensions utiles, ou `null` si inconnues (lot 2 bis). */
+  readonly cargo: VehicleCargoView | null;
+  /** Caisse réfrigérée, ou `null` pour un véhicule sec (lot 2 bis). */
+  readonly refrigeration: VehicleRefrigerationView | null;
+  /** Énergie, ou `null` si non renseignée (L2b-C6). */
+  readonly energy: VehicleEnergy | null;
+}
+
+/**
+ * Les dimensions utiles, et le volume en litres qu'on en DÉRIVE
+ * (longueur × largeur × hauteur / 1 000, arrondi à l'entier inférieur) :
+ * jamais saisi, jamais stocké.
+ */
+export interface VehicleCargoView {
+  readonly lengthCm: number;
+  readonly widthCm: number;
+  readonly heightCm: number;
+  readonly volumeLiters: number;
+}
+
+/** La caisse réfrigérée : volume en litres, plage en °C. */
+export interface VehicleRefrigerationView {
+  readonly volumeLiters: number;
+  readonly minTempC: number;
+  readonly maxTempC: number;
 }
 
 /** La flotte, actifs et retirés, dans l'ordre de création. */

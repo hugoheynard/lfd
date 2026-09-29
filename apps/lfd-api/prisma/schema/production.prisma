@@ -438,6 +438,26 @@ model DeliveryVehicle {
   createdAt DateTime @map("created_at")
   updatedAt DateTime @map("updated_at")
 
+  /// Dimensions UTILES de l'espace de chargement, en cm (lot 2 bis, L2b-C1) :
+  /// les trois ou aucune — CHECK écrit à la main dans la migration
+  /// `20260929220000_le_chargement_d_un_vehicule`. Le volume en est dérivé,
+  /// jamais stocké.
+  cargoLengthCm Int? @map("cargo_length_cm")
+  cargoWidthCm  Int? @map("cargo_width_cm")
+  cargoHeightCm Int? @map("cargo_height_cm")
+
+  /// La caisse réfrigérée (L2b-C2) : les trois ou aucun, min ≤ max — CHECK
+  /// dans la même migration. Tout `NULL` = véhicule sec.
+  refrigeratedVolumeLiters Int? @map("refrigerated_volume_liters")
+  refrigeratedMinTempC     Int? @map("refrigerated_min_temp_c")
+  refrigeratedMaxTempC     Int? @map("refrigerated_max_temp_c")
+
+  /// L'énergie (L2b-C6) : `electric`, `hybrid`, `diesel`, `petrol`, `gas`, ou
+  /// `NULL` si non renseignée. Texte + CHECK (migration
+  /// `20260929223000_l_energie_d_un_vehicule`), pas d'enum Postgres : le
+  /// schéma `production` n'en a aucun, et une valeur d'enum ne se retire pas.
+  energy String?
+
   rounds DeliveryRound[]
 
   @@map("delivery_vehicle")

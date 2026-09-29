@@ -5,6 +5,7 @@ import { Vehicle } from "../domain/entities/vehicle.js";
 import { LicensePlateAlreadyInServiceError } from "../domain/errors/delivery-errors.js";
 import { VehicleRepository } from "../domain/ports/vehicle.repository.js";
 import type { LicensePlate } from "../domain/value-objects/license-plate.js";
+import { cargoOfRow, loadColumnsOf, refrigerationOfRow } from "./delivery-vehicle-load.mapper.js";
 
 /** Code Prisma d'une violation d'unicité — ici, l'index partiel sur la plaque. */
 const UNIQUE_VIOLATION = "P2002";
@@ -18,20 +19,25 @@ export class PrismaVehicleRepository extends VehicleRepository {
 
   async load(id: string): Promise<Vehicle | null> {
     const row = await this.prisma.deliveryVehicle.findUnique({ where: { id } });
-    return row === null ? null : Vehicle.restore(row);
+    return row === null
+      ? null
+      : Vehicle.restore({ ...row, cargo: cargoOfRow(row), refrigeration: refrigerationOfRow(row) });
   }
 
   async save(vehicle: Vehicle): Promise<void> {
-    const { id, ...row } = vehicle.toState();
+    const { id, cargo, refrigeration, energy, ...row } = vehicle.toState();
+    const load = loadColumnsOf(cargo, refrigeration);
     try {
       await this.prisma.deliveryVehicle.upsert({
         where: { id },
-        create: { id, ...row },
+        create: { id, ...row, ...load, energy },
         update: {
           name: row.name,
           plate: row.plate,
           retiredAt: row.retiredAt,
           updatedAt: row.updatedAt,
+          ...load,
+          energy,
         },
       });
     } catch (error: unknown) {

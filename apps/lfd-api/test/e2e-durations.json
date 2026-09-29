@@ -64,6 +64,7 @@
   "test/delivery-settings.e2e-spec.ts": 8806,
   "test/delivery-simulation-scenarios.e2e-spec.ts": 7803,
   "test/delivery-simulator.e2e-spec.ts": 5197,
+  "test/delivery-vehicle-load.e2e-spec.ts": 6215,
   "test/devis-comptable.e2e-spec.ts": 3666,
   "test/direct-debit-blocks.e2e-spec.ts": 4964,
   "test/families-in-data-migration.e2e-spec.ts": 3943,
