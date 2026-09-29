@@ -1741,6 +1741,17 @@ dans les questions de fin) :
   (`apps/lfd-api/test/delivery-simulator.e2e-spec.ts` — 200 sans écriture, 409, 400 ×2, 403).
   Front : à bâtir.
 
+**L9-C7 — Enregistrer les scénarios** (Hugo, 2026-09-29, § 6 question 4 :
+« B »). Une liste de scénarios dans l'onglet Simulateur : nommer, enregistrer,
+rouvrir, dupliquer, archiver. Visibles de toute l'équipe qui lit les
+tournées ; écrire demande `delivery_rounds:write`, lire `delivery_rounds:read`.
+Une table `production.delivery_simulation_scenario` (nom, le scénario en
+`jsonb` validé par `deliverySimulationPayloadSchema` à l'écriture ET à la
+lecture, auteur staff, dates, `archived_at` — **pas de DELETE physique**),
+**sans journée** : exception D7 écrite (ce n'est pas du travail d'un jour, et
+aucun client n'y figure). Migration additive. L'export/import de fichier
+reste. Un nom unique parmi les scénarios non archivés, refus lisible.
+
 ### Lot 10 — La carte des tournées, belle
 
 > **Ouvert le 2026-09-29.** Hugo : « je veux que ça soit beau ». 📐 Rien n'est
