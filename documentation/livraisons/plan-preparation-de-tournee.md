@@ -1025,6 +1025,78 @@ n'est corrigé ; tout est à reprendre avec les deux sources de fenêtre.
     de jour est un avenant du commerce (`documentation/order/`).
   - **L6-Q5 — pas de hors-ligne pour l'instant.**
 
+  **Q2 précisée (Hugo, 2026-09-29) : par e-mail.** Le contact de livraison
+  gagne une adresse e-mail.
+
+  #### Conception du lot 6 (2026-09-29, avant `vitruve`)
+
+  **L6-C1 — Le code part au contact de livraison, au départ.** Relevé ce
+  jour : le courriel de passation (`send-order-placed-mail.handler.ts`) envoie
+  le jeton au **compte qui a commandé** ; `deliveryContactSchema` n'a que
+  prénom, nom, téléphone.
+
+  - le contact de livraison gagne un **e-mail facultatif** (carnet et
+    commande) — champ **ajouté** à un contrat servi, donc la boutique et le
+    back-office le proposent sans l'exiger ;
+  - à **« Partir »** (lot 4), pour chaque arrêt dont le contact figé a un
+    e-mail différent de celui du compte, un courriel « votre livraison arrive »
+    porte le **même** jeton que la passation — pas un second secret ;
+  - la page de confidentialité (`documentation/legal/`) nomme cette donnée et
+    cet usage.
+
+  **L6-C2 — La vue livreur** `/livraison/ma-tournee` : **sa** tournée du jour,
+  dans l'ordre, avec ce que le départ a figé (adresse, contact, fenêtre,
+  consignes, procédure). Une tournée gagne un **livreur affecté** (écrivain :
+  la tournée ; affecté à la composition ou au départ).
+
+  **L6-C3 — Les gestes à la porte**, sous `delivery_doorstep` :
+
+  | Geste                                 | Ce qui l'atteste                                                                               | Ce qu'il écrit                                                                |
+  | ------------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+  | **Remis, code présenté**              | le livreur scanne le code **du client** (e-mail ou téléphone)                                  | un retrait `scan` dans `handover`, auteur = livreur ; vaut **signature** (Q3) |
+  | **Remis sans code**, signature exigée | tracé au doigt + nom tapé                                                                      | un retrait avec la signature jointe                                           |
+  | **Déposé sans personne** (Q2 b)       | **photo de dépôt**, obligatoire                                                                | un retrait `deposit` (valeur **ajoutée** à `HandoverVia`), la photo jointe    |
+  | **Raté**                              | motif (absent, adresse introuvable, accès impossible, refus, autre + texte), photo facultative | l'arrêt clos en échec, **aucun** retrait                                      |
+  | **Commentaire**                       | texte libre                                                                                    | un fait sur l'arrêt                                                           |
+
+  🔴 **Le retrait reste dans `handover`** (conception v1, §9) : la porte
+  appelle la même attestation que le comptoir, sous un droit à elle. La
+  tournée apprend la remise par l'événement `OrderHandedOverEvent` et **clôt
+  l'arrêt** (`closeStop`, qui resserre les positions — note du lot 3). Il faut
+  une arête `delivery → handover`, par un canal.
+
+  🔴 **Un geste ne vaut que pour un arrêt de SA tournée** : le mur du livreur est
+  dans la requête, comme `company_id` au B2B.
+
+  **L6-C4 — Le rôle `livreur`** (Q1, premier cas) : un rôle staff neuf, qui n'a
+  que `delivery_doorstep` et la lecture de sa tournée. Migration de la
+  définition de rôle, comme les grants des lots 2 à 4.
+
+  **L6-C5 — Le livreur sans compte** (Q1, second cas) — **lot à part, 6 b** : un
+  lien à jeton par tournée, affiché en QR au départ pour que le livreur le
+  scanne, valable jusqu'à la fin du jour de la tournée, révocable, qui
+  n'ouvre que les gestes de la porte sur **cette** tournée. C'est un **principal
+  neuf** dans `platform/auth` (ni staff, ni client) : la plus grosse frontière
+  de sécurité du chantier. On le fait après le 6 a, pas avec.
+
+  **L6-C6 — Les livraisons ratées** (Q4) : un écran admin liste les arrêts
+  ratés, et l'admin choisit — **relivrer** un autre jour, **retrait au
+  comptoir**, ou **annuler**. ⚠️ Les trois touchent la commande (le jour, le
+  mode d'acheminement) et deux touchent **l'argent** (frais de livraison d'un
+  retrait, remboursement d'une annulation) : ce sont des **avenants du
+  commerce** (`documentation/order/architecture-commande-immuable-avenants.md`),
+  à concevoir dans `order/`, avec `vitruve`. La tournée n'en fait qu'une
+  **demande**. Lot à part, 6 c.
+
+  **Questions à Hugo** :
+
+  - **L6-Q6** — Le courriel au contact part **au départ** de la tournée
+    (recommandé : c'est là que l'heure devient réelle), ou la **veille** ?
+  - **L6-Q7** — Qui affecte le livreur à une tournée : celui qui compose, ou le
+    livreur qui « prend » sa tournée au départ ?
+  - **L6-Q8** — La photo de dépôt : obligatoire pour « déposé sans personne »
+    (recommandé), et facultative pour un échec ?
+
 - **Lot 7 — La proposition automatique** : l'algorithme de l'architecture
   (k-medoids puis ordre ATSP) **propose** une répartition que l'humain corrige.
   Seulement si composer à la main prend trop de temps chaque matin.
