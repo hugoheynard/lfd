@@ -1,0 +1,64 @@
+<fold-page-layout icon="truck" title="Chargement">
+  <p description>
+    Choisir le véhicule, puis scanner ses sacs : l’écran dit ce qui manque encore à ce véhicule.
+  </p>
+
+  <div class="lp-page">
+    <div class="lp-bar" data-day-bar>
+      <fold-view-toggle
+        ariaLabel="Jour de livraison"
+        [options]="dayOptions"
+        [value]="dayChoice()"
+        (valueChange)="pickChoice($event)"
+      />
+      <fold-date label="Date" [value]="day()" (valueChange)="pickDate($event)" />
+    </div>
+
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture des tournées…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Tournées illisibles"
+          subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+          data-rounds-error
+        >
+          <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        <div class="lp-rounds">
+          @for (round of dayRounds(); track round.roundId) {
+            <fold-card data-round>
+              <fold-element-title
+                variant="title"
+                [title]="roundLabel(round)"
+                [subtitle]="summaryOf(round)"
+              >
+                <a
+                  foldButton
+                  titleAction
+                  size="sm"
+                  [routerLink]="['/livraison/chargement', round.roundId]"
+                  [queryParams]="{ jour: day() }"
+                  data-open-round
+                >
+                  {{ round.departedAt === null ? 'Charger' : 'Voir' }}
+                </a>
+              </fold-element-title>
+            </fold-card>
+          } @empty {
+            <fold-empty-state
+              icon="truck"
+              title="Aucune tournée ce jour-là"
+              subtitle="Les tournées se composent depuis l’écran Tournées : il n’y a rien à charger."
+              data-no-round
+            />
+          }
+        </div>
+      }
+    }
+  </div>
+</fold-page-layout>

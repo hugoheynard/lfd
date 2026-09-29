@@ -54,6 +54,14 @@ const BARE_REFS: Readonly<Record<string, string>> = {
     "nommées par leur numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
   "delivery_round.reordered:after[]":
     "nommées par leur numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
+  "delivery_bag.voided:order":
+    "nommée par son numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
+  "delivery_bag.loaded:order":
+    "nommée par son numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
+  "delivery_bag.unloaded:order":
+    "nommée par son numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
+  "delivery_bag.unloaded:loadedBy":
+    "nommé par l'annuaire ; une fiche staff que l'annuaire ne sait plus nommer n'a plus de nom à donner",
   "company.fulfillment_preference_set:pickupAddressId":
     "les comptes ne lisent pas les points de retrait, rangés dans leur contexte",
   "company.client_note_edited_by_staff:noteId":

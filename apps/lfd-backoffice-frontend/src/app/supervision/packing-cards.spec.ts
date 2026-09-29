@@ -34,6 +34,7 @@ function packingLine(overrides: Partial<PackingLine> = {}): PackingLine {
 function sheet(reference: string, overrides: Partial<PackingSheet> = {}): PackingSheet {
   return {
     reference,
+    orderId: `o-${reference}`,
     containers: 0,
     customerLabel: `Client ${reference}`,
     fulfillmentMethod: 'pickup',

@@ -80,6 +80,7 @@ describe('les domaines rangés par outil', () => {
     expect(toolOf('delivery_run_sheet')).toBe('delivery');
     expect(toolOf('delivery_settings')).toBe('delivery');
     expect(toolOf('delivery_rounds')).toBe('delivery');
+    expect(toolOf('delivery_loading')).toBe('delivery');
   });
 
   it('rattache le journal au transverse — il traverse les outils', () => {

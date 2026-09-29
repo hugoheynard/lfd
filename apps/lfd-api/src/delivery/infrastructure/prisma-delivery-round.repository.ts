@@ -4,6 +4,7 @@ import type { Prisma } from "../../platform/database/client/client.js";
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import type { AppError } from "../../platform/shared/errors/app-error.js";
 import { DeliveryRound, type DeliveryStopState } from "../domain/entities/delivery-round.js";
+import { LoadedStopMoveError } from "../domain/errors/delivery-loading-errors.js";
 import {
   DeliveryRoundStaleError,
   type LiveStopHolder,
@@ -28,6 +29,10 @@ const LIVE_STOP = { removedAt: null, closedAt: null } as const;
  * La tournée est le SEUL écrivain de `delivery_round_stop` : `round_id`,
  * `position`, `removed_at`, `closed_at`, et `order_id`, `service_day`,
  * `created_at` à la création. Aucune ligne n'est supprimée.
+ *
+ * Sur `delivery_round`, il écrit aussi `departed_at` (lot 4, « Partir ») —
+ * écrivain : la tournée. Il LIT et VERROUILLE `delivery_bag_load` (`saveMove`),
+ * sans jamais l'écrire : l'écrivain en est l'exécution.
  *
  * `closed_at` — écrivain : la tournée ; posé au lot 6 par `closeStop`, quand
  * l'exécution rapporte livré ou raté. Rien ne le pose à ce lot, mais il est
@@ -65,6 +70,16 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
     });
   }
 
+  /**
+   * `SELECT … FOR UPDATE`, puis la lecture ordinaire. Appelé DANS l'unité de
+   * travail du départ : hors transaction, le verrou tomberait aussitôt.
+   */
+  async loadForDeparture(id: string): Promise<DeliveryRound | null> {
+    await this.prisma.$queryRaw`
+      SELECT "id" FROM "production"."delivery_round" WHERE "id" = ${id} FOR UPDATE`;
+    return this.load(id);
+  }
+
   async save(round: DeliveryRound): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       await this.writeRound(tx, round);
@@ -77,8 +92,14 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
    * déplacements croisés, A → B et B → A, prennent les verrous dans le même
    * ordre et ne s'interbloquent pas. Puis chaque version est vérifiée, et les
    * deux tournées s'écrivent dans la même transaction.
+   *
+   * Puis, APRÈS les tournées, les lignes de chargement de leurs arrêts, dans
+   * l'ordre de leur identifiant (lot 4, L4-C18) : un sac chargé dans l'arrêt
+   * déplacé entre la lecture du handler et ce verrou refuse le déplacement
+   * (L4-C5). Un chargement verrouille la tournée en partage : s'il est passé
+   * avant, on le voit ici ; s'il vient après, il attend.
    */
-  async saveMove(from: DeliveryRound, to: DeliveryRound): Promise<void> {
+  async saveMove(from: DeliveryRound, to: DeliveryRound, stopId: string): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       const ids = [from.id, to.id].sort();
       await tx.$queryRaw`
@@ -86,6 +107,7 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
          WHERE "id" IN (${ids[0]}, ${ids[1]})
          ORDER BY "id"
            FOR UPDATE`;
+      await ensureStopNotLoaded(tx, [from, to], stopId, from.vehicleName);
       await this.writeRound(tx, from);
       await this.writeRound(tx, to);
       // La tournée quittée d'abord : ses positions se resserrent avant que
@@ -127,6 +149,7 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
               vehicleName: snapshot.vehicleName,
               passage: snapshot.passage,
               version: snapshot.version,
+              departedAt: snapshot.departedAt,
               createdAt: snapshot.createdAt,
               updatedAt: snapshot.updatedAt,
             },
@@ -136,7 +159,11 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
     }
     const written = await tx.deliveryRound.updateMany({
       where: { id: snapshot.id, version: round.loadedVersion },
-      data: { version: snapshot.version, updatedAt: snapshot.updatedAt },
+      data: {
+        version: snapshot.version,
+        departedAt: snapshot.departedAt,
+        updatedAt: snapshot.updatedAt,
+      },
     });
     if (written.count === 0) {
       throw new DeliveryRoundStaleError(snapshot.vehicleName);
@@ -175,6 +202,29 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
           }),
       );
     }
+  }
+}
+
+/**
+ * Verrouille les lignes de chargement des arrêts des tournées, dans l'ordre de
+ * leur identifiant, et refuse si l'arrêt déplacé porte un sac chargé.
+ * @throws {LoadedStopMoveError}
+ */
+async function ensureStopNotLoaded(
+  tx: Tx,
+  rounds: readonly DeliveryRound[],
+  stopId: string,
+  vehicleName: string,
+): Promise<void> {
+  const stopIds = rounds.flatMap((round) => round.toSnapshot().stops.map((stop) => stop.id));
+  const loads = await tx.$queryRaw<{ stop_id: string; loaded: boolean }[]>`
+    SELECT "stop_id", "loaded_at" IS NOT NULL AS "loaded"
+      FROM "production"."delivery_bag_load"
+     WHERE "stop_id" = ANY(${stopIds})
+     ORDER BY "id"
+       FOR UPDATE`;
+  if (loads.some((load) => load.stop_id === stopId && load.loaded)) {
+    throw new LoadedStopMoveError(vehicleName);
   }
 }
 

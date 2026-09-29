@@ -108,6 +108,7 @@ function packingView(closedAt: string | null = 'x'): ProductionPackingView {
         ? []
         : [
             {
+              orderId: 'o-CMD-1',
               reference: 'CMD-1',
               containers: 2,
               customerLabel: 'Traiteur Vermeil',

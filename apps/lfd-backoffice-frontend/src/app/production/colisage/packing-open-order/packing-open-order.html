@@ -46,6 +46,12 @@
           <fold-icon name="package-check" size="sm" />
           Commande déclarée prête — le commerce l'a appris. Rien ne revient dessus.
         </p>
+        <!-- Lot 4 : les sacs d'une livraison se déclarent ici, une fois le bac
+             fermé. Le composant décide seul de ce qu'il montre selon le droit
+             `delivery_loading:write` ; « Prête » n'en dépend pas. -->
+        @if (order.fulfillmentMethod === 'delivery') {
+          <app-packing-bags [orderId]="order.orderId" />
+        }
       } @else {
         <!-- Le MODE est dans le libellé : « retrait » sur une commande livrée
              serait faux. 🔴 Actif selon `canDeclareReady`, la règle du SERVEUR,

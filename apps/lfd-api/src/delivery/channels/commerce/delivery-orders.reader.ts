@@ -1,7 +1,10 @@
+import type { DepartureSheet } from "../../domain/entities/departure-sheet.js";
+
 /**
  * Ce que la livraison sait d'une commande : de quoi la répartir et la
  * signaler, rien d'autre. Aucun montant, aucune adresse — le détail d'un arrêt
- * est celui de la feuille de route (plan de tournée, lot 3, C4).
+ * est celui de la feuille de route (plan de tournée, lot 3, C4), sauf au départ,
+ * où il se fige (`departureSheetsOf`, lot 4).
  *
  * `status` est RÉDUIT à ce que la composition distingue : `cancelled` ou
  * `active`. L'énuméré des statuts reste au commerce.
@@ -14,6 +17,11 @@ export interface DeliveryOrderRef {
 
 /** Une commande relue par son identifiant, où qu'elle en soit aujourd'hui. */
 export interface DeliveryOrderFacts extends DeliveryOrderRef {
+  /**
+   * La raison sociale, ou le nom de qui a commandé — la règle de la file du
+   * comptoir. Ce qu'on lit sur l'étiquette d'un sac (lot 4).
+   */
+  readonly customerLabel: string;
   /** Son jour demandé aujourd'hui (`AAAA-MM-JJ`), ou `null`. */
   readonly day: string | null;
   /** Encore en livraison, ou passée en retrait au comptoir. */
@@ -38,4 +46,11 @@ export abstract class DeliveryOrdersReader {
 
   /** Ces commandes, quel que soit leur jour, leur mode ou leur statut. Les inconnues sont absentes. */
   abstract byIds(orderIds: readonly string[]): Promise<readonly DeliveryOrderFacts[]>;
+
+  /**
+   * **Ce que verra le livreur**, lu au moment de « Partir » pour être FIGÉ
+   * (lot 4, « snapshot au départ ») : adresse livrée, contact, fenêtre,
+   * signature, note — aucun montant. Les inconnues sont absentes.
+   */
+  abstract departureSheetsOf(orderIds: readonly string[]): Promise<readonly DepartureSheet[]>;
 }

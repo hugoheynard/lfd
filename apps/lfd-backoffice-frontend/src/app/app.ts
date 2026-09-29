@@ -172,14 +172,16 @@ export class App {
 
   protected readonly canSeeProduction = computed(() => this.permissions.can('b2b_orders:read'));
   /**
-   * La Livraison s'ouvre à qui lit la feuille de route, les tournées OU ses
-   * réglages : ses vues relèvent de trois droits, et en exiger un fermerait
-   * l'espace à qui ne tient qu'un autre (plan-preparation-de-tournee.md, lots 2-3).
+   * La Livraison s'ouvre à qui lit la feuille de route, les tournées, le
+   * chargement OU ses réglages : ses vues relèvent de quatre droits, et en
+   * exiger un fermerait l'espace à qui ne tient qu'un autre
+   * (plan-preparation-de-tournee.md, lots 2-4).
    */
   protected readonly canSeeDelivery = computed(
     () =>
       this.permissions.can('delivery_run_sheet:read') ||
       this.permissions.can('delivery_rounds:read') ||
+      this.permissions.can('delivery_loading:read') ||
       this.permissions.can('delivery_settings:read'),
   );
 

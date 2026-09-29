@@ -102,6 +102,11 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
    * et écriture pour l'administrateur et le comptoir.
    */
   { resource: "delivery_rounds", path: "/admin/livraison/tournees?jour=2026-01-01" },
+  /**
+   * LE CHARGEMENT (2026-09-29, plan de tournée lot 4, Q21) — lecture et
+   * écriture pour l'administrateur et le comptoir.
+   */
+  { resource: "delivery_loading", path: "/admin/livraison/chargement?jour=2026-01-01" },
 ];
 
 /** Le produit cartésien rôle × surface : tout ce qu'il y a à vérifier. */

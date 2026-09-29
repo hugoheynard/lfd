@@ -157,7 +157,7 @@ function toStep(step: RunSheetProcedureRow["steps"][number]): DeliveryRunSheetSt
  * sur UNE commande ne doit pas faire tomber la feuille de toute la tournée —
  * l'arrêt s'affiche sans adresse, et l'écran le dit.
  */
-function snapshotOf(value: Prisma.JsonValue | null): BillingAddressPayload | null {
+export function snapshotOf(value: Prisma.JsonValue | null): BillingAddressPayload | null {
   if (value === null) {
     return null;
   }

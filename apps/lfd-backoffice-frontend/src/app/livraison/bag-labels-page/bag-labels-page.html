@@ -1,0 +1,59 @@
+<fold-page-layout>
+  <div class="blp-page">
+    <div class="no-print blp-head">
+      <fold-back-link label="Colisage" routerLink="/production/colisage" />
+      <fold-element-title
+        variant="title"
+        [title]="reference() === null ? 'Étiquettes des sacs' : 'Étiquettes · ' + reference()"
+        subtitle="Une étiquette par sac, une par page. Imprimer ne crée aucun sac."
+      >
+        @if (liveBags().length > 0) {
+          <button foldButton titleAction icon="print" (click)="print()" data-print-all>
+            Imprimer les {{ liveBags().length }} étiquettes
+          </button>
+        }
+      </fold-element-title>
+    </div>
+
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture des sacs…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Sacs illisibles"
+          subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+          data-labels-error
+        >
+          <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @for (bag of printed(); track bag.bagId) {
+          <div class="blp-item">
+            <app-bag-label [bag]="bag" [url]="urlOf(bag)" />
+            <button
+              foldButton
+              class="no-print"
+              size="sm"
+              emphasis="outline"
+              icon="print"
+              (click)="print(bag.bagId)"
+              data-print-one
+            >
+              Réimprimer celle-ci
+            </button>
+          </div>
+        } @empty {
+          <fold-empty-state
+            icon="package"
+            title="Aucun sac déclaré"
+            subtitle="Les sacs se déclarent au colisage, sur la commande prête."
+            data-no-bag
+          />
+        }
+      }
+    }
+  </div>
+</fold-page-layout>

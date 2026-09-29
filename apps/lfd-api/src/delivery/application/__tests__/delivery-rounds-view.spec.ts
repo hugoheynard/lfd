@@ -21,6 +21,7 @@ const round = {
   passage: 1,
   version: 3,
   vehicleRetiredAt: null,
+  departedAt: null,
   stops: [{ stopId: "s_1", orderId: "o_1", position: 1 }],
 };
 
@@ -49,6 +50,7 @@ describe("deliveryRoundsDayView", () => {
     const order = {
       orderId: "o_1",
       reference: "A",
+      customerLabel: "Maison A",
       status: "active" as const,
       day: DAY,
       delivery: true,
@@ -79,5 +81,14 @@ describe("deliveryRoundsDayView", () => {
     );
 
     expect(view.rounds.map((entry) => entry.vehicleRetired)).toEqual([true, false]);
+  });
+
+  it("rend le départ d'une tournée partie (lot 4) : l'écran la montre en lecture seule", () => {
+    const departedAt = new Date(0);
+    const view = deliveryRoundsDayView(
+      inputs({ rounds: [round, { ...round, id: "r_2", departedAt }] }),
+    );
+
+    expect(view.rounds.map((entry) => entry.departedAt)).toEqual([null, departedAt.toISOString()]);
   });
 });

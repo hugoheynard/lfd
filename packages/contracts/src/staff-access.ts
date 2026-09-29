@@ -295,6 +295,18 @@ export const staffResourceSchema = z.enum([
    * `delivery_settings` : celui-là règle la flotte, que le comptoir ne règle pas.
    */
   "delivery_rounds",
+  /**
+   * **Le chargement, véhicule par véhicule** — déclarer les sacs d'une
+   * commande, les charger dans la tournée, faire partir le véhicule
+   * (`/admin/livraison/sacs`, `/admin/livraison/chargement`, plan de tournée,
+   * lot 4).
+   *
+   * Lecture ET écriture pour `admin` et `comptoir` (Hugo, 2026-09-29, Q21) :
+   * c'est au dépôt, et au comptoir, qu'on déclare les sacs et qu'on charge.
+   * Pas `delivery_rounds` : composer et charger sont deux gestes, et ouvrir
+   * l'un ne doit pas ouvrir l'autre.
+   */
+  "delivery_loading",
 
   // ── `staff.` — LE SOCLE ─────────────────────────────────────────────────
   /**
@@ -398,6 +410,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   delivery_run_sheet: "Feuille de route",
   delivery_settings: "Réglages de livraison",
   delivery_rounds: "Tournées de livraison",
+  delivery_loading: "Chargement",
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
   b2b_counter: "Comptoir",
@@ -507,6 +520,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     delivery_run_sheet: "write",
     delivery_settings: "write",
     delivery_rounds: "write",
+    delivery_loading: "write",
     staff_access: "write",
     staff_notifications: "write",
     ops_health: "write",
@@ -649,6 +663,8 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     delivery_settings: "read",
     // Il compose aussi les tournées (Hugo, 2026-09-29, Q12) : lecture et écriture.
     delivery_rounds: "write",
+    // Il déclare les sacs et charge les véhicules (Hugo, 2026-09-29, Q21).
+    delivery_loading: "write",
     staff_notifications: "write",
   },
   support: {

@@ -24,7 +24,6 @@
   "private": true,
   "packageManager": "pnpm@10.12.1",
   "dependencies": {
-    "@lfd/money": "workspace:*",
     "@angular/common": "catalog:",
     "@angular/compiler": "catalog:",
     "@angular/core": "catalog:",
@@ -41,6 +40,7 @@
     "@lfd/contracts": "workspace:*",
     "@lfd/endpoints": "workspace:*",
     "@lfd/front-ops": "workspace:*",
+    "@lfd/money": "workspace:*",
     "@lfd/ops-contract": "workspace:*",
     "@lfd/pim-contracts": "workspace:*",
     "@lfd/storefront-layout": "workspace:*",
@@ -50,6 +50,7 @@
     "d3-sankey": "^0.12.3",
     "echarts": "^6.1.0",
     "fold-ng": "catalog:",
+    "jsqr": "1.4.0",
     "qrcode-generator": "catalog:",
     "rxjs": "catalog:",
     "tslib": "catalog:",

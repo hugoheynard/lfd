@@ -120,6 +120,13 @@
                       [subtitle]="stopCountLabel(column.stops.length)"
                     >
                       <span titleAction class="actions">
+                        @if (column.round.departedAt; as departedAt) {
+                          <fold-badge
+                            variant="info"
+                            [content]="'Partie à ' + timeOf(departedAt)"
+                            data-departed
+                          />
+                        }
                         @if (column.round.vehicleRetired) {
                           <fold-badge variant="alert" content="Véhicule retiré" data-retired />
                         }
@@ -165,7 +172,8 @@
                               }
                             </div>
                           }
-                          @if (canWrite()) {
+                          <!-- Une tournée partie est gelée (lot 4, I6) : lecture seule. -->
+                          @if (canWrite() && column.round.departedAt === null) {
                             <div class="controls">
                               <fold-listbox
                                 size="sm"

@@ -1,0 +1,27 @@
+.lrp-page,
+.lrp-stops,
+.lrp-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.lrp-block {
+  gap: var(--fold-space-sm);
+}
+
+.lrp-typed,
+.lrp-bag {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+.lrp-bag {
+  align-items: center;
+}
+
+.lrp-missing {
+  margin: 0;
+}

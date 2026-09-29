@@ -17,6 +17,7 @@ function round(id: string, serviceDay: string, orderIds: readonly string[]): Del
     vehicleName: `Véhicule ${id}`,
     passage: 1,
     version: 2,
+    departedAt: null,
     createdAt: AT,
     updatedAt: AT,
     stops: orderIds.map((orderId, index) => ({
@@ -33,7 +34,7 @@ describe("moveDeliveryStop — I7", () => {
     const from = round("a", "2030-03-12", ["o_1", "o_2"]);
     const to = round("b", "2030-03-12", ["o_3"]);
 
-    const moved = moveDeliveryStop(from, to, "a_s1", LATER);
+    const moved = moveDeliveryStop(from, to, "a_s1", LATER, false);
 
     expect(moved).toEqual({ id: "a_s1", orderId: "o_1" });
     expect(from.orderIds).toEqual(["o_2"]);
@@ -46,14 +47,14 @@ describe("moveDeliveryStop — I7", () => {
   it("refuse la même tournée", () => {
     const same = round("a", "2030-03-12", ["o_1"]);
 
-    expect(() => moveDeliveryStop(same, same, "a_s1", LATER)).toThrow(SameRoundMoveError);
+    expect(() => moveDeliveryStop(same, same, "a_s1", LATER, false)).toThrow(SameRoundMoveError);
   });
 
   it("refuse un autre jour", () => {
     const from = round("a", "2030-03-12", ["o_1"]);
     const to = round("b", "2030-03-13", []);
 
-    expect(() => moveDeliveryStop(from, to, "a_s1", LATER)).toThrow(CrossDayMoveError);
+    expect(() => moveDeliveryStop(from, to, "a_s1", LATER, false)).toThrow(CrossDayMoveError);
     expect(from.orderIds).toEqual(["o_1"]);
   });
 
@@ -61,6 +62,8 @@ describe("moveDeliveryStop — I7", () => {
     const from = round("a", "2030-03-12", ["o_1"]);
     const to = round("b", "2030-03-12", ["o_1"]);
 
-    expect(() => moveDeliveryStop(from, to, "a_s1", LATER)).toThrow(OrderAlreadyInRoundError);
+    expect(() => moveDeliveryStop(from, to, "a_s1", LATER, false)).toThrow(
+      OrderAlreadyInRoundError,
+    );
   });
 });

@@ -36,6 +36,7 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { parisTimeOf } from '../delivery-loading';
 import { DeliveryRoundsService } from '../delivery-rounds.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import {
@@ -163,11 +164,17 @@ export class RoundsPage {
     return state.status === 'ready' ? state.composed : null;
   });
 
+  /**
+   * Les tournées où l'on peut encore affecter ou déplacer : une tournée partie
+   * est gelée (lot 4, I6) — le serveur refuse, l'écran ne la propose pas.
+   */
   protected readonly roundOptions = computed<readonly FoldSelectOption<string>[]>(() =>
-    (this.composed()?.rounds ?? []).map(({ round }) => ({
-      value: round.id,
-      label: roundLabel(round),
-    })),
+    (this.composed()?.rounds ?? [])
+      .filter(({ round }) => round.departedAt === null)
+      .map(({ round }) => ({
+        value: round.id,
+        label: roundLabel(round),
+      })),
   );
 
   protected readonly vehicleOptions = computed<readonly FoldSelectOption<string>[]>(() => {
@@ -188,6 +195,7 @@ export class RoundsPage {
   protected readonly dayLabel = computed(() => serviceDayLabel(this.day()));
 
   protected readonly roundLabel = roundLabel;
+  protected readonly timeOf = parisTimeOf;
   protected readonly stopCountLabel = stopCountLabel;
   protected readonly signalLabel = signalLabel;
   protected readonly windowLabel = windowLabel;

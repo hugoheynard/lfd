@@ -14,6 +14,8 @@ export interface RoundRow {
   readonly version: number;
   /** Le retrait du véhicule, pour signaler une tournée sur un véhicule retiré (C14). */
   readonly vehicleRetiredAt: Date | null;
+  /** Partie le (lot 4), ou `null`. */
+  readonly departedAt: Date | null;
   /** Arrêts vivants (ni retirés, ni clos), dans l'ordre de passage. */
   readonly stops: readonly RoundStopRow[];
 }

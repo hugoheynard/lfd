@@ -1,0 +1,37 @@
+@if (canDeclare()) {
+  <div class="pb-bags">
+    <button foldButton emphasis="outline" icon="package" (click)="toggle()" data-bags-toggle>
+      Sacs
+    </button>
+    @if (open()) {
+      <div class="pb-form">
+        <fold-number-input
+          label="Sacs à déclarer"
+          [min]="1"
+          [max]="maxBags"
+          [integer]="true"
+          [value]="count()"
+          (valueChange)="count.set($event)"
+          data-bags-count
+        />
+        <button
+          foldButton
+          [disabled]="declarable() === null || busy()"
+          [loading]="busy()"
+          (click)="declare()"
+          data-bags-declare
+        >
+          Déclarer et imprimer
+        </button>
+        <a foldButton emphasis="soft" icon="print" [routerLink]="labelsLink()" data-bags-labels>
+          Réimprimer les étiquettes
+        </a>
+      </div>
+      @if (refusal(); as refusal) {
+        <fold-callout variant="alert" data-bags-refusal>{{ refusal }}</fold-callout>
+      }
+    }
+  </div>
+} @else {
+  <p class="pb-said" data-bags-counter>Les sacs se déclarent au comptoir.</p>
+}

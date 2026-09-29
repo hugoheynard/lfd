@@ -87,6 +87,13 @@ export interface PackingLine {
  * client ne se déclare pas non prêt par une case décochée.
  */
 export interface PackingSheet {
+  /**
+   * L'identifiant de la commande (ajouté le 2026-09-29, plan de tournée lot 4) :
+   * déclarer les sacs d'une commande (`POST admin/livraison/sacs`) et les lire
+   * (`GET admin/livraison/sacs?commande=`) le demandent, et le colisage n'avait
+   * que la référence.
+   */
+  readonly orderId: string;
   readonly reference: string;
   /**
    * **Combien de containers cette commande occupe.** Zéro tant que personne ne

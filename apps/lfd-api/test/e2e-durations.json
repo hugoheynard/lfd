@@ -50,6 +50,8 @@
   "test/day-version.e2e-spec.ts": 12000,
   "test/deferred-payment-block-roles-migration.e2e-spec.ts": 1698,
   "test/delivery-availability.e2e-spec.ts": 2769,
+  "test/delivery-loading-guards.e2e-spec.ts": 5016,
+  "test/delivery-loading.e2e-spec.ts": 7167,
   "test/delivery-procedure-refusals.e2e-spec.ts": 7606,
   "test/delivery-procedure.e2e-spec.ts": 4847,
   "test/delivery-rounds-guards.e2e-spec.ts": 4900,

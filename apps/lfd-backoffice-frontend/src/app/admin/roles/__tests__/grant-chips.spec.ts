@@ -81,8 +81,11 @@ describe('grantGroups', () => {
    *
    * `delivery_rounds` l'a fait passer à 33 le même jour : composer les tournées
    * est un droit créé avec son écran (lot 3, Q12).
+   *
+   * `delivery_loading` l'a fait passer à 34 le même jour : charger un véhicule
+   * n'est pas composer sa tournée (lot 4, Q21).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(33);
+    expect(RESOURCE_COUNT).toBe(34);
   });
 });

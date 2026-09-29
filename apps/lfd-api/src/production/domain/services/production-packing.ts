@@ -158,6 +158,7 @@ function sheetOf(
 ): PackingSheet {
   const packed = order.lines.filter((line) => line.packed !== null);
   return {
+    orderId: order.orderId,
     reference: order.reference,
     containers: order.containers,
     customerLabel: order.customerLabel,

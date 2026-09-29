@@ -1,0 +1,154 @@
+<fold-page-layout icon="truck" [title]="title()">
+  <fold-back-link pageActions label="Toutes les tournées" routerLink="/livraison/chargement" />
+  @if (view(); as view) {
+    <p description>
+      {{ dayLabel(view.day) }} — chaque sac scanné se charge dans ce véhicule, et le bas de l’écran
+      dit ce qui manque encore.
+    </p>
+  }
+
+  <div class="lrp-page">
+    @if (notice(); as notice) {
+      <fold-callout [variant]="notice.variant" data-notice>{{ notice.text }}</fold-callout>
+    }
+
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture du chargement…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Chargement illisible"
+          subtitle="Cette tournée est introuvable, ou le serveur n’a pas répondu."
+          data-round-error
+        >
+          <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @if (view(); as view) {
+          @if (view.departedAt; as departedAt) {
+            <fold-callout variant="info" data-departed>
+              Partie à {{ timeOf(departedAt) }} : plus rien ne se charge, ne se décharge ni ne se
+              compose sur cette tournée.
+            </fold-callout>
+          }
+
+          @if (canLoad()) {
+            <fold-card data-scan>
+              <div class="lrp-block">
+                <fold-element-title
+                  variant="title"
+                  title="Scanner"
+                  subtitle="Chaque sac lu se charge dans ce véhicule."
+                />
+                <app-bag-scanner [paused]="busy()" (scanned)="onScanned($event)" />
+                <form class="lrp-typed" (submit)="$event.preventDefault(); loadTyped()">
+                  <fold-input
+                    label="Code du sac"
+                    hint="Les six caractères sous le QR, quand il est illisible."
+                    autocomplete="off"
+                    [value]="typed()"
+                    (valueChange)="typed.set($event)"
+                    data-typed-code
+                  />
+                  <button
+                    foldButton
+                    type="submit"
+                    emphasis="outline"
+                    [disabled]="busy() || typed().trim() === ''"
+                    data-load-typed
+                  >
+                    Charger
+                  </button>
+                </form>
+              </div>
+            </fold-card>
+          }
+
+          <div class="lrp-stops">
+            @for (stop of view.stops; track stop.stopId) {
+              <fold-card data-stop>
+                <div class="lrp-block">
+                  <fold-element-title
+                    variant="title"
+                    [title]="stop.position + '. ' + stop.reference + ' · ' + stop.customerLabel"
+                    [subtitle]="bagCountLabel(stop)"
+                  >
+                    <fold-badge
+                      titleAction
+                      [variant]="stateLabel(stop.state).variant"
+                      [content]="stateLabel(stop.state).label"
+                      data-stop-state
+                    />
+                  </fold-element-title>
+                  @for (bag of stop.bags; track bag.bagId) {
+                    <div class="lrp-bag" data-bag>
+                      <span>Sac {{ bag.index }} · {{ bag.code }}</span>
+                      @if (bag.loadedAt; as loadedAt) {
+                        <span>chargé à {{ timeOf(loadedAt) }}</span>
+                        @if (canLoad()) {
+                          <button
+                            foldButton
+                            size="sm"
+                            emphasis="outline"
+                            [disabled]="busy()"
+                            (click)="unload(bag.bagId)"
+                            data-unload
+                          >
+                            Décharger
+                          </button>
+                        }
+                      } @else {
+                        <span>à charger</span>
+                      }
+                    </div>
+                  }
+                </div>
+              </fold-card>
+            } @empty {
+              <fold-empty-state
+                icon="truck"
+                title="Tournée vide"
+                subtitle="Aucun arrêt n’y est affecté : rien à charger."
+              />
+            }
+          </div>
+
+          <fold-card data-missing>
+            <div class="lrp-block">
+              <fold-element-title
+                variant="title"
+                title="Ce qui manque encore"
+                [subtitle]="
+                  missing().length === 0
+                    ? 'Tout est chargé.'
+                    : 'Ce véhicule ne part pas tant que ces arrêts ne sont pas chargés, ou retirés.'
+                "
+              />
+              @for (line of missing(); track line.stopId) {
+                <p class="lrp-missing" data-missing-stop>
+                  {{ line.reference }} · {{ line.customerLabel }} — {{ line.detail }}
+                </p>
+              }
+              @if (canLoad()) {
+                <button
+                  foldButton
+                  size="lg"
+                  icon="truck"
+                  [loading]="busy()"
+                  [disabled]="busy()"
+                  (click)="depart()"
+                  data-depart
+                >
+                  Partir
+                </button>
+              }
+            </div>
+          </fold-card>
+        }
+      }
+    }
+  </div>
+</fold-page-layout>

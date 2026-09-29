@@ -2,6 +2,8 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { PackingContainerStep, PackingLine, PackingSheet } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
+import { DeliveryLoadingService } from '../../../livraison/delivery-loading.service';
 import { PackingOpenOrder, type PackingLineToggle } from './packing-open-order';
 
 /**
@@ -26,6 +28,7 @@ function line(over: Partial<PackingLine> = {}): PackingLine {
 function sheet(over: Partial<PackingSheet> = {}): PackingSheet {
   return {
     reference: 'CMD-001',
+    orderId: 'o-CMD-001',
     containers: 0,
     customerLabel: 'Hôtel du Parc',
     fulfillmentMethod: 'delivery',
@@ -57,6 +60,35 @@ function render(inputs: Readonly<Record<string, unknown>>): ComponentFixture<Pac
 function said(element: Element | null | undefined): string {
   return (element?.textContent ?? '').replace(/\s+/gu, ' ').trim();
 }
+
+describe('les sacs d’une commande prête (lot 4)', () => {
+  function renderWithBags(over: Partial<PackingSheet>): HTMLElement {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: PermissionsStore, useValue: { can: () => false } },
+        { provide: DeliveryLoadingService, useValue: {} },
+      ],
+    });
+    const fixture = TestBed.createComponent(PackingOpenOrder);
+    fixture.componentRef.setInput(
+      'sheet',
+      sheet({ packedAt: '2026-10-01T05:00:00.000Z', ...over }),
+    );
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('se déclarent sur une livraison prête', () => {
+    expect(renderWithBags({}).querySelector('app-packing-bags')).not.toBeNull();
+  });
+
+  it('pas sur un retrait', () => {
+    expect(
+      renderWithBags({ fulfillmentMethod: 'pickup' }).querySelector('app-packing-bags'),
+    ).toBeNull();
+  });
+});
 
 describe('la commande ouverte du colisage', () => {
   it('affiche les lignes dans le bac telles que servies, même incohérentes', () => {

@@ -1,0 +1,7 @@
+<section class="bl-label" [attr.aria-label]="'Étiquette ' + indexLabel(bag())" data-bag-label>
+  <p class="bl-reference">{{ bag().reference }}</p>
+  <p class="bl-customer">{{ bag().customerLabel }}</p>
+  <p class="bl-index">{{ indexLabel(bag()) }}</p>
+  <app-qr-code class="bl-qr" [url]="url()" />
+  <p class="bl-code" data-bag-code>{{ bag().code }}</p>
+</section>

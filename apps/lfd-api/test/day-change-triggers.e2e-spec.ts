@@ -34,6 +34,10 @@ const UNWATCHED: Readonly<Record<string, string>> = {
     "la flotte, un réglage sans journée — une tournée qui recopie le véhicule, elle, en portera une",
   "production.delivery_departure":
     "le point de départ des tournées, un réglage unique sans journée",
+  // Le sac (lot 4, L4-C18, 2026-09-29) appartient à la COMMANDE, pas à une
+  // journée : son CHARGEMENT en a une, et `delivery_bag_load` a ses déclencheurs.
+  "production.delivery_bag":
+    "un sac n'a pas de jour, son chargement en a un — `delivery_bag_load` porte la journée et ses déclencheurs",
 };
 
 /** Les colonnes qui disent « cette ligne appartient à une journée », côté `public`. */

@@ -21,6 +21,9 @@ import { RoundsPage } from './rounds-page';
 
 const WRITE: readonly StaffPermission[] = ['delivery_rounds:read', 'delivery_rounds:write'];
 
+/** Le départ de la première tournée — `null` sauf dans le test qui la fait partir. */
+let firstDeparted: string | null = null;
+
 function composition(day: string): DeliveryRoundsDayView {
   return {
     day,
@@ -32,6 +35,7 @@ function composition(day: string): DeliveryRoundsDayView {
         passage: 1,
         version: 4,
         vehicleRetired: false,
+        departedAt: firstDeparted,
         stops: [
           {
             stopId: 's-1',
@@ -58,6 +62,7 @@ function composition(day: string): DeliveryRoundsDayView {
         passage: 2,
         version: 7,
         vehicleRetired: true,
+        departedAt: null,
         stops: [],
       },
     ],
@@ -185,6 +190,23 @@ afterEach(() => {
 });
 
 describe('RoundsPage', () => {
+  it('une tournée partie est en lecture seule, et dit son heure de départ (lot 4)', async () => {
+    firstDeparted = '2026-10-01T05:42:00.000Z';
+    try {
+      const { element } = await boot();
+      const first = element.querySelector('[data-round]');
+      expect(first?.querySelector('[data-departed]')?.textContent).toContain('Partie à 7 h 42');
+      expect(first?.querySelector('[data-remove]')).toBeNull();
+      expect(first?.querySelector('[data-move]')).toBeNull();
+      // L'autre tournée garde ses gestes, et la partie n'est plus proposée.
+      expect(
+        element.querySelectorAll('[data-round]')[1]?.querySelector('[data-departed]'),
+      ).toBeNull();
+    } finally {
+      firstDeparted = null;
+    }
+  });
+
   it('lit demain par défaut, composition ET feuille de route ensemble (C16)', async () => {
     await boot();
     const tomorrow = shiftDay(parisDayOf(new Date()), 1);

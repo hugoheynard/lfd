@@ -27,6 +27,7 @@ function line(over: Partial<PackingLine> = {}): PackingLine {
 function sheet(reference: string, lines: readonly PackingLine[]): PackingSheet {
   return {
     reference,
+    orderId: `o-${reference}`,
     containers: 0,
     customerLabel: reference,
     fulfillmentMethod: 'delivery',

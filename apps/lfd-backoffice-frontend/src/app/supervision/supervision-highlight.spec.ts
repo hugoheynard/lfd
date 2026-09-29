@@ -8,6 +8,7 @@ function sheet(reference: string, awaited: readonly string[]): PackingSheet {
   const skus = ['PAI', ...awaited];
   return {
     reference,
+    orderId: `o-${reference}`,
     containers: 0,
     customerLabel: reference,
     fulfillmentMethod: 'pickup',

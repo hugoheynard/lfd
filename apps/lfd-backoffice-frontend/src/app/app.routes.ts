@@ -316,6 +316,40 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/rounds-page/rounds-page').then((m) => m.RoundsPage),
       },
+      // LE CHARGEMENT (lot 4) : tout se LIT sous `delivery_loading:read` —
+      // ouvrir un sac, une tournée, les étiquettes n'écrit rien (L4-C13, L4-C16).
+      // Charger, décharger, partir, déclarer : des gestes, que chaque écran ne
+      // montre qu'avec `delivery_loading:write`, et que le serveur refuse sans.
+      {
+        path: 'chargement',
+        canActivate: [permissionGuard('delivery_loading:read')],
+        title: 'Chargement — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/loading-page/loading-page').then((m) => m.LoadingPage),
+      },
+      {
+        path: 'chargement/:roundId',
+        canActivate: [permissionGuard('delivery_loading:read')],
+        title: 'Chargement d’une tournée — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/loading-round-page/loading-round-page').then(
+            (m) => m.LoadingRoundPage,
+          ),
+      },
+      {
+        // L'adresse qu'encode le QR d'un sac : un appareil photo natif l'ouvre.
+        path: 'sac/:bagId',
+        canActivate: [permissionGuard('delivery_loading:read')],
+        title: 'Sac — LFC B2B admin',
+        loadComponent: () => import('./livraison/bag-page/bag-page').then((m) => m.BagPage),
+      },
+      {
+        path: 'etiquettes/:orderId',
+        canActivate: [permissionGuard('delivery_loading:read')],
+        title: 'Étiquettes des sacs — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/bag-labels-page/bag-labels-page').then((m) => m.BagLabelsPage),
+      },
       {
         path: 'vehicules',
         canActivate: [permissionGuard('delivery_settings:read')],

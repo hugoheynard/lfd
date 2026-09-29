@@ -148,6 +148,7 @@ function sheet(reference: string, overrides: Partial<PackingSheet> = {}): Packin
   const lines = overrides.lines ?? [packingLine('a'), packingLine('b')];
   return {
     reference,
+    orderId: `o-${reference}`,
     containers: 0,
     customerLabel: reference,
     fulfillmentMethod: 'pickup',

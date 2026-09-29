@@ -1,0 +1,18 @@
+.blp-page,
+.blp-head,
+.blp-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.blp-item {
+  align-items: center;
+}
+
+/* Sur papier : les étiquettes seules. */
+@media print {
+  .no-print {
+    display: none;
+  }
+}

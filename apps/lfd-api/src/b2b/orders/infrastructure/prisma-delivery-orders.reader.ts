@@ -4,9 +4,14 @@ import {
   type DeliveryOrderFacts,
   type DeliveryOrderRef,
   DeliveryOrdersReader,
+  type DepartureSheet,
 } from "../../../delivery/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { expectedOnWhere } from "./handover-order.query.js";
+import { deliverySpecsSchema } from "@lfd/contracts";
+
+import { type AddressLink, snapshotOf } from "./delivery-run-sheet.query.js";
+import { customerLabelOf, expectedOnWhere } from "./handover-order.query.js";
+import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
 
 /** Ce que la composition lit d'une commande : ni montant, ni adresse. */
 const DELIVERY_ORDER_SELECT = {
@@ -15,6 +20,28 @@ const DELIVERY_ORDER_SELECT = {
   status: true,
   fulfillmentMethod: true,
   requestedDeliveryDate: true,
+} as const;
+
+/** Le nom du client — la règle de la file du comptoir (`customerLabelOf`). */
+const CUSTOMER_SELECT = {
+  company: { select: { raisonSociale: true } },
+  placedBy: { select: { email: true, firstName: true, lastName: true } },
+} as const;
+
+/**
+ * Ce que le départ fige (lot 4). 🔴 **Aucun montant** : un total servi au
+ * livreur serait lu comme une somme à encaisser à la porte.
+ */
+const DEPARTURE_SHEET_SELECT = {
+  id: true,
+  orderNumber: true,
+  status: true,
+  companyId: true,
+  deliveryAddressId: true,
+  fulfillment: true,
+  note: true,
+  deliveryAddressSnapshot: true,
+  ...CUSTOMER_SELECT,
 } as const;
 
 interface DeliveryOrderRow {
@@ -26,8 +53,8 @@ interface DeliveryOrderRow {
 }
 
 /**
- * **Ce que le commerce rend pour la composition des tournées** — l'adaptateur
- * de `DeliveryOrdersReader` (plan de tournée, lot 3, C4, C15).
+ * **Ce que le commerce rend pour la livraison** — l'adaptateur de
+ * `DeliveryOrdersReader` (plan de tournée, lot 3, C4, C15 ; lot 4).
  *
  * « Attendue ce jour » est `expectedOnWhere`, le filtre de la file du comptoir
  * et de la feuille de route, restreint au coursier comme la feuille de route :
@@ -36,6 +63,10 @@ interface DeliveryOrderRow {
  *
  * Le jour demandé est une clé de journée écrite en minuit UTC
  * (`expectedOnWhere`) : il se relit de la même façon, jamais comme un instant.
+ *
+ * La feuille du départ reprend les lectures de la feuille de route
+ * (`snapshotOf`, `fulfillmentOf`, `windowOf`) : ce que le livreur voit figé est
+ * ce qu'il voyait vivant la veille.
  */
 @Injectable()
 export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
@@ -58,13 +89,70 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
     }
     const rows = await this.prisma.order.findMany({
       where: { id: { in: [...orderIds] } },
-      select: DELIVERY_ORDER_SELECT,
+      select: { ...DELIVERY_ORDER_SELECT, ...CUSTOMER_SELECT },
     });
     return rows.map((row) => ({
       ...refOf(row),
+      customerLabel: customerLabelOf(row),
       day: row.requestedDeliveryDate?.toISOString().slice(0, 10) ?? null,
       delivery: row.fulfillmentMethod === "delivery",
     }));
+  }
+
+  async departureSheetsOf(orderIds: readonly string[]): Promise<readonly DepartureSheet[]> {
+    if (orderIds.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.order.findMany({
+      where: { id: { in: [...orderIds] } },
+      select: DEPARTURE_SHEET_SELECT,
+    });
+    const notes = await this.addressNotesOf(
+      rows.flatMap((row) =>
+        row.deliveryAddressId === null || row.companyId === null
+          ? []
+          : [{ addressId: row.deliveryAddressId, companyId: row.companyId }],
+      ),
+    );
+    return rows.map((row) => {
+      const agreed = fulfillmentOf(row.fulfillment);
+      const note = row.deliveryAddressId === null ? undefined : notes.get(row.deliveryAddressId);
+      return {
+        orderId: row.id,
+        reference: row.orderNumber,
+        customerLabel: customerLabelOf(row),
+        address: snapshotOf(row.deliveryAddressSnapshot),
+        contact: agreed.contact.value,
+        window: windowOf(agreed),
+        signatureRequired: agreed.signatureRequired.value,
+        note: row.note,
+        addressNote: note?.companyId === row.companyId ? note.note : null,
+        status: row.status === "cancelled" ? "cancelled" : "active",
+      };
+    });
+  }
+
+  /**
+   * La note livreurs des adresses du carnet, lue SOUS LE MUR comme la feuille
+   * de route : chaque couple `(adresse, société)` entre dans le `where`, et le
+   * mapper revérifie la société. Validée, jamais castée.
+   */
+  private async addressNotesOf(
+    links: readonly AddressLink[],
+  ): Promise<ReadonlyMap<string, { readonly companyId: string; readonly note: string }>> {
+    if (links.length === 0) {
+      return new Map();
+    }
+    const rows = await this.prisma.address.findMany({
+      where: { OR: links.map((link) => ({ id: link.addressId, companyId: link.companyId })) },
+      select: { id: true, companyId: true, deliverySpecs: true },
+    });
+    return new Map(
+      rows.map((row) => {
+        const specs = deliverySpecsSchema.safeParse(row.deliverySpecs);
+        return [row.id, { companyId: row.companyId, note: specs.success ? specs.data.note : "" }];
+      }),
+    );
   }
 }
 

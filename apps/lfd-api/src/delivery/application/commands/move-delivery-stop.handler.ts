@@ -6,6 +6,7 @@ import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
 import { citeOrder, DeliveryStopMovedEvent } from "../../domain/events/delivery-round.events.js";
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
+import { LoadedStopsReader } from "../../domain/ports/loaded-stops.reader.js";
 import { VehicleRepository } from "../../domain/ports/vehicle.repository.js";
 import { moveDeliveryStop } from "../../domain/services/move-delivery-stop.js";
 import { ensureRoundVehicleActive, loadRoundAt, referencesOf } from "../delivery-round-support.js";
@@ -21,12 +22,15 @@ import { MoveDeliveryStopCommand } from "./move-delivery-stop.command.js";
  * @throws {DeliveryStopNotFoundError} @throws {DeliveryStopClosedError}
  * @throws {SameRoundMoveError} @throws {CrossDayMoveError}
  * @throws {VehicleInactiveOnDayError} @throws {OrderAlreadyInRoundError}
+ * @throws {LoadedStopMoveError} un sac de l'arrêt est chargé (lot 4, L4-C5).
+ * @throws {DeliveryRoundDepartedError} l'une des deux tournées est partie (I6).
  */
 @CommandHandler(MoveDeliveryStopCommand)
 export class MoveDeliveryStopHandler implements ICommandHandler<MoveDeliveryStopCommand, void> {
   constructor(
     private readonly rounds: DeliveryRoundRepository,
     private readonly vehicles: VehicleRepository,
+    private readonly loadedStops: LoadedStopsReader,
     private readonly orders: DeliveryOrdersReader,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
@@ -38,9 +42,10 @@ export class MoveDeliveryStopHandler implements ICommandHandler<MoveDeliveryStop
     await this.uow.run(async () => {
       const from = await loadRoundAt(this.rounds, command.roundId, fromVersion);
       const to = await loadRoundAt(this.rounds, toRoundId, toVersion);
-      const stop = moveDeliveryStop(from, to, command.stopId, this.clock.now());
+      const stopLoaded = await this.loadedStops.hasLoadedBag(command.stopId);
+      const stop = moveDeliveryStop(from, to, command.stopId, this.clock.now(), stopLoaded);
       await ensureRoundVehicleActive(this.vehicles, to);
-      await this.rounds.saveMove(from, to);
+      await this.rounds.saveMove(from, to, stop.id);
       const references = await referencesOf(this.orders, [stop.orderId]);
       await this.events.publishTraced(
         new DeliveryStopMovedEvent(

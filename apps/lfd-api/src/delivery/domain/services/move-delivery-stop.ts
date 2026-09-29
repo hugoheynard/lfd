@@ -1,4 +1,5 @@
 import type { DeliveryRound, DetachedStop } from "../entities/delivery-round.js";
+import { LoadedStopMoveError } from "../errors/delivery-loading-errors.js";
 import { CrossDayMoveError, SameRoundMoveError } from "../errors/delivery-round-errors.js";
 
 /**
@@ -12,21 +13,33 @@ import { CrossDayMoveError, SameRoundMoveError } from "../errors/delivery-round-
  * (`DeliveryRoundRepository.saveMove`) : un service de domaine n'ouvre pas de
  * transaction.
  *
+ * **Un arrêt qui a un sac chargé ne se déplace pas** (lot 4, L4-C5) : la même
+ * ligne changerait de tournée avec ses chargements, et le sac serait dans la
+ * mauvaise camionnette. `stopLoaded` est lu par le handler ; `saveMove` le
+ * revérifie sous verrou.
+ *
  * @throws {SameRoundMoveError} @throws {CrossDayMoveError}
  * @throws {DeliveryStopNotFoundError} @throws {DeliveryStopClosedError}
- * @throws {OrderAlreadyInRoundError}
+ * @throws {OrderAlreadyInRoundError} @throws {LoadedStopMoveError}
+ * @throws {DeliveryRoundDepartedError}
  */
 export function moveDeliveryStop(
   from: DeliveryRound,
   to: DeliveryRound,
   stopId: string,
   at: Date,
+  stopLoaded: boolean,
 ): DetachedStop {
   if (from.id === to.id) {
     throw new SameRoundMoveError();
   }
   if (from.serviceDay !== to.serviceDay) {
     throw new CrossDayMoveError(from.serviceDay, to.serviceDay);
+  }
+  from.ensureAtDepot();
+  to.ensureAtDepot();
+  if (stopLoaded) {
+    throw new LoadedStopMoveError(from.vehicleName);
   }
   const stop = from.detach(stopId, at);
   to.attach(stop, at);

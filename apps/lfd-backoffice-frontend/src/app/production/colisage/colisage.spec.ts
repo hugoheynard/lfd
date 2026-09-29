@@ -12,6 +12,7 @@ import type {
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { DeliveryLoadingService } from '../../livraison/delivery-loading.service';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { PackingService } from '../packing.service';
 import { Colisage } from './colisage';
@@ -79,6 +80,7 @@ function line(over: Partial<PackingLine> = {}): PackingLine {
 function bac(over: Partial<PackingSheet> = {}): PackingSheet {
   return {
     reference: 'CMD-001',
+    orderId: 'o-CMD-001',
     containers: 0,
     customerLabel: 'Hôtel du Parc',
     fulfillmentMethod: 'delivery',
@@ -333,7 +335,10 @@ describe('le poste de colisage', () => {
         { provide: DayVersionWatcher, useValue: fakeWatcher },
         provideRouter([]),
         { provide: PackingService, useValue: api },
-        { provide: PermissionsStore, useValue: { identity: () => ME } },
+        // `can` : les sacs d'une livraison prête (lot 4) demandent un droit que
+        // ce poste de test n'a pas — il montre la phrase, sans service.
+        { provide: PermissionsStore, useValue: { identity: () => ME, can: () => false } },
+        { provide: DeliveryLoadingService, useValue: {} },
       ],
     });
   });

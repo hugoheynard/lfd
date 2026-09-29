@@ -8,6 +8,7 @@ import type {
 } from '@lfd/contracts';
 
 import type { PackingStack } from '../../packing-board';
+import { PackingBags } from '../packing-bags/packing-bags';
 import { PackingContainers } from '../packing-containers/packing-containers';
 import { PackingLine } from '../packing-line/packing-line';
 
@@ -28,6 +29,11 @@ export interface PackingLineToggle {
  * est en vol. Le composant émet trois gestes, et c'est `Colisage` qui les écrit
  * puis relit. Découpé du poste le 2026-09-14.
  *
+ * Seule exception, et elle est un composant à part : {@link PackingBags} (lot 4),
+ * qui déclare les sacs d'une livraison prête. Ce geste-là n'est pas du colisage
+ * — il relève du bloc livraison et de son droit — et il n'y a rien que le poste
+ * doive relire après lui.
+ *
  * ⚠️ « Prête » à l'écran, `packed` dans le code : le serveur publie
  * `OrderPackedEvent` (« colisé »), le commerce en tire `ready`. Voir `Colisage`.
  */
@@ -38,6 +44,7 @@ export interface PackingLineToggle {
     FoldButtonComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
+    PackingBags,
     PackingContainers,
     PackingLine,
   ],

@@ -35,6 +35,11 @@ export interface DeliveryRoundView {
    * simultanés ont pu passer tous les deux (C14). Signalé, jamais silencieux.
    */
   readonly vehicleRetired: boolean;
+  /**
+   * Partie le (lot 4, L4-C4), ou `null` : au dépôt. Partie, elle ne se compose
+   * plus (I6) — l'écran la montre en lecture seule, et le serveur refuse.
+   */
+  readonly departedAt: string | null;
   /** Les arrêts vivants, dans l'ordre de passage. */
   readonly stops: readonly DeliveryRoundStopView[];
 }

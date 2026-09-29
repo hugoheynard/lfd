@@ -69,14 +69,19 @@ function deliveryViewKeys(role: StaffRole): string[] {
 }
 
 describe("l'espace Livraison", () => {
-  it('ouvre les quatre vues au comptoir, qui prépare les départs et compose (Q12)', async () => {
+  it('ouvre les cinq vues au comptoir, qui prépare les départs, compose et charge (Q12, Q21)', async () => {
     expect(deliveryViewKeys('comptoir')).toEqual([
       'feuille-de-route',
       'tournees',
+      'chargement',
       'vehicules',
       'depart',
     ]);
     expect(await opens('comptoir', 'tournees')).toBe(true);
+    expect(await opens('comptoir', 'chargement')).toBe(true);
+    expect(await opens('comptoir', 'chargement/:roundId')).toBe(true);
+    expect(await opens('comptoir', 'sac/:bagId')).toBe(true);
+    expect(await opens('comptoir', 'etiquettes/:orderId')).toBe(true);
     expect(await opens('comptoir', 'vehicules')).toBe(true);
     expect(await opens('comptoir', 'depart')).toBe(true);
   });
@@ -86,6 +91,14 @@ describe("l'espace Livraison", () => {
     expect(await opens('support', 'feuille-de-route')).toBe(true);
     expect(await opens('support', 'vehicules')).toBe(false);
     expect(await opens('support', 'tournees')).toBe(false);
+    expect(await opens('support', 'chargement')).toBe(false);
+    expect(await opens('support', 'sac/:bagId')).toBe(false);
+  });
+
+  it('ne montre ni n’ouvre le chargement au commercial (Q21 : admin et comptoir)', async () => {
+    expect(deliveryViewKeys('commercial')).not.toContain('chargement');
+    expect(await opens('commercial', 'chargement')).toBe(false);
+    expect(await opens('commercial', 'etiquettes/:orderId')).toBe(false);
   });
 
   it('ne montre ni n’ouvre les tournées au commercial', async () => {

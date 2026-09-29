@@ -32,6 +32,7 @@ function line(sku: string): PackingLine {
 function sheet(reference: string, customerLabel: string, skus: readonly string[]): PackingSheet {
   return {
     reference,
+    orderId: `o-${reference}`,
     containers: 0,
     customerLabel,
     fulfillmentMethod: 'pickup',

@@ -237,6 +237,12 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   livraison: OPEN,
   'livraison/feuille-de-route': 'delivery_run_sheet:read',
   'livraison/tournees': 'delivery_rounds:read',
+  // Le chargement (lot 4) : ouvrir un sac, une tournée, des étiquettes est une
+  // LECTURE ; les gestes demandent l'écriture, que l'écran seul propose.
+  'livraison/chargement': 'delivery_loading:read',
+  'livraison/chargement/:roundId': 'delivery_loading:read',
+  'livraison/sac/:bagId': 'delivery_loading:read',
+  'livraison/etiquettes/:orderId': 'delivery_loading:read',
   'livraison/vehicules': 'delivery_settings:read',
   'livraison/depart': 'delivery_settings:read',
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.

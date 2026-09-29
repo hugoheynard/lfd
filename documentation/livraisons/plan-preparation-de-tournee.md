@@ -538,7 +538,7 @@ Trois décisions prises en bâtissant, que le plan ne disait pas :
   que l'agrégat refuse comme corrompu (I2). Le `closeStop` du lot 6 devra
   **resserrer** les positions restantes.
 
-### Lot 4 — Le chargement, véhicule par véhicule
+### Lot 4 — Le chargement, véhicule par véhicule — ✅ bâti le 2026-09-29, sans les étiquettes physiques (Q22)
 
 **Ce que l'équipe obtient** : au dépôt, on choisit le véhicule, on scanne ses
 feuilles d'atelier, et l'écran dit **ce qui manque à ce véhicule** — et crie si
@@ -833,6 +833,23 @@ déclarent au comptoir ». Aucun droit n'est élargi.
 L4-C13 (l'URL du sac montre, un geste charge) tient. La connexion sur une URL
 profonde existe déjà (`staff-login.ts`, restauration de la cible dans
 `staff-auth.ts`) : à vérifier en navigateur, pas à concevoir.
+
+#### Ce que la construction et la relecture ont tranché (2026-09-29)
+
+- Au départ, sont figées : adresse, contact, fenêtre, signature, note de la
+  commande **et note livreur de l'adresse**. La **procédure** (étapes, photos)
+  ne l'est pas : limite assumée, écrite dans
+  `departure-sheet.ts` ; le lot 6 la
+  lira en direct.
+- « Partir » refuse une tournée **vide**, et une commande **annulée** entre la
+  composition et le départ (le refus nomme la référence).
+- Déclarer des sacs est refusé pour une commande dont la tournée est partie,
+  annulée, ou passée en retrait.
+- Annuler et charger un même sac se sérialisent (verrou sur le sac) ; deux
+  scans simultanés n'écrivent qu'une fois.
+- Reste à vérifier **en navigateur, sur un vrai téléphone** : qu'un lien
+  `/livraison/sac/…` survit à la connexion, et que la lecture des QR marche
+  sur un iPhone.
 
 ### Lot 5 — La tranche d'une heure en livraison (côté commande)
 

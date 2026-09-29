@@ -92,6 +92,8 @@ enum StaffResource {
   delivery_settings
   /// COMPOSER LES TOURNÉES — répartir et ordonner (2026-09-29, lot 3, Q12).
   delivery_rounds
+  /// LE CHARGEMENT — déclarer les sacs, charger, partir (2026-09-29, lot 4, Q21).
+  delivery_loading
 
   staff_access
   staff_notifications

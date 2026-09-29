@@ -1,0 +1,18 @@
+.lp-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.lp-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+.lp-rounds {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--fold-space-md);
+}

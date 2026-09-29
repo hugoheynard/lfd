@@ -1,0 +1,16 @@
+.bs-scanner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Carré, posé par le ratio : un QR l'est, et un flux de caméra change de
+   dimensions d'un appareil à l'autre. */
+.bs-preview {
+  width: 100%;
+  max-width: 28rem;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-sunken);
+  object-fit: cover;
+}

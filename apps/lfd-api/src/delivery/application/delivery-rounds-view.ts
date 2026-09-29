@@ -55,6 +55,7 @@ function roundView(round: RoundRow, inputs: DeliveryRoundsDayInputs): DeliveryRo
     passage: round.passage,
     version: round.version,
     vehicleRetired: !activeOnDay(round.vehicleRetiredAt, inputs.day),
+    departedAt: round.departedAt?.toISOString() ?? null,
     stops: round.stops.map((stop) => stopView(stop, inputs)),
   };
 }

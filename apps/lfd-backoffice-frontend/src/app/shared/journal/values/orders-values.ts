@@ -20,6 +20,12 @@ export const HANDOVER_VIA = domain('manière de remettre une commande', {
   manual: 'Saisie à la main',
 });
 
+/** Comment un sac a été chargé (`delivery_bag.loaded`) : son QR lu, ou son code court tapé. */
+export const BAG_LOAD_VIA = domain('manière de charger un sac', {
+  scan: 'QR scanné',
+  code: 'Code tapé',
+});
+
 /** Ce que l'abandon du règlement a fait de la commande (`order.abandoned`). */
 export const ABANDON_OUTCOME = domain('issue d’un abandon de règlement', {
   cancelled: 'Commande annulée',
@@ -40,7 +46,14 @@ export const QUALITY_LIFTING_VERDICT = domain('verdict qui lève un blocage', {
 });
 
 export const ORDERS_VALUES: ValueFamily = {
-  enums: [WEEKDAY, HANDOVER_VIA, ABANDON_OUTCOME, QUALITY_VERDICT, QUALITY_LIFTING_VERDICT],
+  enums: [
+    WEEKDAY,
+    HANDOVER_VIA,
+    BAG_LOAD_VIA,
+    ABANDON_OUTCOME,
+    QUALITY_VERDICT,
+    QUALITY_LIFTING_VERDICT,
+  ],
   literals: {
     // Ce qu'un contrôle qualité juge (`target.kind`).
     line: 'Ligne de préparation',

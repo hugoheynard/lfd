@@ -35,6 +35,7 @@ function loaded(
     vehicleName: "Kangoo blanc",
     passage: 1,
     version: 4,
+    departedAt: null,
     createdAt: AT,
     updatedAt: AT,
     stops,

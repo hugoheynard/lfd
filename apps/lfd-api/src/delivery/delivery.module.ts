@@ -1,5 +1,28 @@
 import { Module } from "@nestjs/common";
 
+import { DeclareDeliveryBagsHandler } from "./application/commands/declare-delivery-bags.handler.js";
+import { DepartDeliveryRoundHandler } from "./application/commands/depart-delivery-round.handler.js";
+import { LoadDeliveryBagHandler } from "./application/commands/load-delivery-bag.handler.js";
+import { UnloadDeliveryBagHandler } from "./application/commands/unload-delivery-bag.handler.js";
+import { VoidDeliveryBagHandler } from "./application/commands/void-delivery-bag.handler.js";
+import { GetDeliveryBagHandler } from "./application/queries/get-delivery-bag.handler.js";
+import { GetDeliveryLoadingDayHandler } from "./application/queries/get-delivery-loading-day.handler.js";
+import { GetDeliveryLoadingRoundHandler } from "./application/queries/get-delivery-loading-round.handler.js";
+import { GetDeliveryOrderBagsHandler } from "./application/queries/get-delivery-order-bags.handler.js";
+import { BagCodeDrawer } from "./domain/ports/bag-code-drawer.js";
+import { DeliveryBagRepository } from "./domain/ports/delivery-bag.repository.js";
+import { DeliveryLoadingReader } from "./domain/ports/delivery-loading.reader.js";
+import { DepartedStopRepository } from "./domain/ports/departed-stop.repository.js";
+import { LoadedStopsReader } from "./domain/ports/loaded-stops.reader.js";
+import { StopLoadingRepository } from "./domain/ports/stop-loading.repository.js";
+import { DeliveryBagsController } from "./http/delivery-bags.controller.js";
+import { DeliveryLoadingController } from "./http/delivery-loading.controller.js";
+import { CryptoBagCodeDrawer } from "./infrastructure/crypto-bag-code-drawer.js";
+import { PrismaDeliveryBagRepository } from "./infrastructure/prisma-delivery-bag.repository.js";
+import { PrismaDeliveryLoadingReader } from "./infrastructure/prisma-delivery-loading.reader.js";
+import { PrismaDepartedStopRepository } from "./infrastructure/prisma-departed-stop.repository.js";
+import { PrismaLoadedStopsReader } from "./infrastructure/prisma-loaded-stops.reader.js";
+import { PrismaStopLoadingRepository } from "./infrastructure/prisma-stop-loading.repository.js";
 import { AddVehicleHandler } from "./application/commands/add-vehicle.handler.js";
 import { AssignDeliveryStopHandler } from "./application/commands/assign-delivery-stop.handler.js";
 import { ChooseDepartureHandler } from "./application/commands/choose-departure.handler.js";
@@ -33,7 +56,8 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
 
 /**
  * **La livraison** — les bases paramétrables des tournées (la flotte et le
- * point de départ, lot 2), puis la composition des tournées (lot 3)
+ * point de départ, lot 2), la composition des tournées (lot 3), puis les
+ * sacs, leur chargement et le départ (lot 4)
  * (`documentation/livraisons/plan-preparation-de-tournee.md`). Code ici, tables
  * dans le schéma `production` (Q10).
  *
@@ -47,7 +71,13 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
  * est celui du seul PIM (`CLAUDE.md` §4).
  */
 @Module({
-  controllers: [VehiclesController, DepartureController, DeliveryRoundsController],
+  controllers: [
+    VehiclesController,
+    DepartureController,
+    DeliveryRoundsController,
+    DeliveryBagsController,
+    DeliveryLoadingController,
+  ],
   providers: [
     AddVehicleHandler,
     CorrectVehicleHandler,
@@ -62,6 +92,15 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     ReorderDeliveryRoundHandler,
     RemoveDeliveryStopHandler,
     GetDeliveryRoundsDayHandler,
+    DeclareDeliveryBagsHandler,
+    VoidDeliveryBagHandler,
+    LoadDeliveryBagHandler,
+    UnloadDeliveryBagHandler,
+    DepartDeliveryRoundHandler,
+    GetDeliveryOrderBagsHandler,
+    GetDeliveryBagHandler,
+    GetDeliveryLoadingRoundHandler,
+    GetDeliveryLoadingDayHandler,
     { provide: VehicleRepository, useClass: PrismaVehicleRepository },
     { provide: FleetReader, useClass: PrismaFleetReader },
     { provide: DepartureRepository, useClass: PrismaDepartureRepository },
@@ -69,6 +108,12 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     { provide: DeliveryRoundRepository, useClass: PrismaDeliveryRoundRepository },
     { provide: DeliveryRoundsReader, useClass: PrismaDeliveryRoundsReader },
     { provide: VehicleRoundsReader, useClass: PrismaVehicleRoundsReader },
+    { provide: DeliveryBagRepository, useClass: PrismaDeliveryBagRepository },
+    { provide: StopLoadingRepository, useClass: PrismaStopLoadingRepository },
+    { provide: DepartedStopRepository, useClass: PrismaDepartedStopRepository },
+    { provide: LoadedStopsReader, useClass: PrismaLoadedStopsReader },
+    { provide: DeliveryLoadingReader, useClass: PrismaDeliveryLoadingReader },
+    { provide: BagCodeDrawer, useClass: CryptoBagCodeDrawer },
   ],
 })
 export class DeliveryModule {}

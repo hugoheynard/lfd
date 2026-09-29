@@ -486,6 +486,9 @@ model DeliveryRound {
   /// Avance d'une unité par écriture de la composition ; une écriture qui ne
   /// présente pas la version lue est refusée.
   version     Int
+  /// Partie le (lot 4, L4-C4) — écrivain : la tournée, par `depart`. Nulle tant
+  /// qu'elle est au dépôt ; posée, plus rien ne se compose ni ne se charge (I6).
+  departedAt  DateTime? @map("departed_at")
 
   createdAt DateTime @map("created_at")
   updatedAt DateTime @map("updated_at")
@@ -533,10 +536,106 @@ model DeliveryRoundStop {
   closedAt   DateTime? @map("closed_at")
   createdAt  DateTime  @map("created_at")
 
-  round DeliveryRound @relation(fields: [roundId], references: [id], onDelete: Restrict)
+  round     DeliveryRound          @relation(fields: [roundId], references: [id], onDelete: Restrict)
+  bagLoads  DeliveryBagLoad[]
+  execution DeliveryStopExecution?
 
   @@index([roundId])
   @@index([orderId])
   @@map("delivery_round_stop")
+  @@schema("production")
+}
+
+/// Un **sac** de livraison (lot 4, L4-C16, L4-C18) : il appartient à la
+/// COMMANDE, et naît quand on le DÉCLARE — imprimer son étiquette est une
+/// lecture. Le nombre de sacs d'une commande EST le nombre de ses sacs non
+/// annulés.
+///
+/// Écrivain : le chargement (`delivery/`). **Aucune journée** : un sac n'a pas
+/// de jour, son chargement en a un — d'où son absence de déclencheur
+/// `day_change`, écrite dans `test/day-change-triggers.e2e-spec.ts`. Jamais
+/// supprimé : un sac de trop s'annule (`voided_at`).
+///
+/// `order_id` est OPAQUE : aucune clé étrangère vers `public.orders`.
+model DeliveryBag {
+  /// Assigné par la commande (`IdGenerator`) ; c'est lui que porte le QR.
+  id        String    @id
+  orderId   String    @map("order_id")
+  /// Six caractères Crockford base 32, tirés au sort (L4-C20) : ce qu'on tape
+  /// quand le QR est illisible. Unique sur TOUS les sacs, annulés compris.
+  code      String    @unique @db.VarChar(6)
+  voidedAt  DateTime? @map("voided_at")
+  createdAt DateTime  @map("created_at")
+
+  loads DeliveryBagLoad[]
+
+  @@index([orderId])
+  @@map("delivery_bag")
+  @@schema("production")
+}
+
+/// Le **chargement d'un sac dans un arrêt** (lot 4, L4-C18) : il appartient à
+/// l'ARRÊT, pas au sac. Un arrêt retiré emporte ses chargements ; la commande
+/// recomposée repart de zéro.
+///
+/// Écrivain : l'exécution seule (C10) — jamais l'adaptateur de la tournée, qui
+/// ne fait qu'en VERROUILLER les lignes (`saveMove`, « Partir »). Décharger
+/// remet `loaded_at`, `loaded_by`, `loaded_via` à nul : la ligne reste, le
+/// journal garde qui avait chargé. Trois déclencheurs `day_change` sur
+/// `service_day`, recopié de l'arrêt.
+model DeliveryBagLoad {
+  /// Assigné par la commande (`IdGenerator`) : l'ordre des verrous.
+  id         String    @id
+  stopId     String    @map("stop_id")
+  bagId      String    @map("bag_id")
+  serviceDay String    @map("service_day") @db.VarChar(10)
+  loadedAt   DateTime? @map("loaded_at")
+  /// La fiche staff (`staff_users.id`) de qui a chargé — opaque, sans clé étrangère.
+  loadedBy   String?   @map("loaded_by")
+  /// `scan` (le QR) ou `code` (le code court tapé).
+  loadedVia  String?   @map("loaded_via") @db.VarChar(8)
+  createdAt  DateTime  @map("created_at")
+
+  stop DeliveryRoundStop @relation(fields: [stopId], references: [id], onDelete: Restrict)
+  bag  DeliveryBag       @relation(fields: [bagId], references: [id], onDelete: Restrict)
+
+  @@unique([stopId, bagId])
+  @@index([bagId])
+  @@map("delivery_bag_load")
+  @@schema("production")
+}
+
+/// **Ce que verra le livreur, figé au départ** (lot 4, L4-C4, snapshot au
+/// départ) — une ligne par arrêt d'une tournée partie. Adresse livrée,
+/// contact, fenêtre, signature, note : lus par le canal du commerce au moment
+/// de « Partir », et plus jamais relus. **Aucun montant.**
+///
+/// Écrivain : l'exécution seule (C10), dans la transaction du départ. Le lot 6
+/// y ajoutera le livré ou le raté. Trois déclencheurs `day_change`.
+model DeliveryStopExecution {
+  stopId            String   @id @map("stop_id")
+  roundId           String   @map("round_id")
+  orderId           String   @map("order_id")
+  serviceDay        String   @map("service_day") @db.VarChar(10)
+  departedAt        DateTime @map("departed_at")
+  reference         String
+  customerLabel     String   @map("customer_label")
+  /// L'adresse livrée figée à la commande (`BillingAddressPayload`), ou nul.
+  address           Json?    @db.JsonB
+  /// Le contact convenu (`DeliveryContact`), ou nul.
+  contact           Json?    @db.JsonB
+  /// La fenêtre convenue, avec sa provenance, ou nulle.
+  deliveryWindow    Json?    @map("delivery_window") @db.JsonB
+  signatureRequired Boolean  @map("signature_required")
+  /// La note laissée sur la commande. `""` sans note.
+  note              String
+  /// La note livreurs de l'adresse du carnet, lue au départ ; nulle sans
+  /// adresse reliée. La procédure n'est PAS figée (le lot 6 la lit en direct).
+  addressNote       String?  @map("address_note")
+
+  stop DeliveryRoundStop @relation(fields: [stopId], references: [id], onDelete: Restrict)
+
+  @@index([roundId])
+  @@map("delivery_stop_execution")
   @@schema("production")
 }

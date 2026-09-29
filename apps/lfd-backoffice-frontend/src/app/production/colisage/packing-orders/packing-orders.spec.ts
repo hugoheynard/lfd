@@ -26,6 +26,7 @@ function line(over: Partial<PackingLine> = {}): PackingLine {
 function sheet(over: Partial<PackingSheet> = {}): PackingSheet {
   return {
     reference: 'CMD-001',
+    orderId: 'o-CMD-001',
     containers: 0,
     customerLabel: 'Hôtel du Parc',
     fulfillmentMethod: 'delivery',

@@ -1,6 +1,7 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { LoadedStopMoveError } from "../../../domain/errors/delivery-loading-errors.js";
 import {
   DeliveryRoundStaleError,
   InvalidStopOrderError,
@@ -16,6 +17,7 @@ import { InMemoryVehicles, vehicle } from "./fleet-doubles.js";
 import {
   deliveryOn,
   FixedDeliveryOrders,
+  FixedLoadedStops,
   InMemoryDeliveryRounds,
   roundWith,
 } from "./round-doubles.js";
@@ -121,7 +123,15 @@ describe("MoveDeliveryStopHandler — I7", () => {
         vehicle("v_2", "Trafic", "EF-456-GH"),
       );
     return {
-      handler: new MoveDeliveryStopHandler(rounds, fleet, ORDERS, clock, events, uow),
+      handler: new MoveDeliveryStopHandler(
+        rounds,
+        fleet,
+        new FixedLoadedStops(),
+        ORDERS,
+        clock,
+        events,
+        uow,
+      ),
       events,
     };
   }
@@ -141,7 +151,7 @@ describe("MoveDeliveryStopHandler — I7", () => {
       }),
     );
 
-    expect(rounds.moves).toEqual([["r_1", "r_2"]]);
+    expect(rounds.moves).toEqual([["r_1", "r_2", "r_1_s1"]]);
     expect(rounds.saved).toEqual([]);
     expect(rounds.stored("r_1")?.orderIds).toEqual(["o_2"]);
     expect(rounds.stored("r_2")?.orderIds).toEqual(["o_3", "o_1"]);
@@ -156,6 +166,38 @@ describe("MoveDeliveryStopHandler — I7", () => {
     });
   });
 
+  /** Lot 4, L4-C5 : le sac serait dans la mauvaise camionnette. */
+  it("refuse de déplacer un arrêt qui a un sac chargé, sans rien écrire", async () => {
+    const rounds = new InMemoryDeliveryRounds(
+      roundWith("r_1", DAY, "v_1", ["o_1"]),
+      roundWith("r_2", DAY, "v_2", []),
+    );
+    const { clock, events, uow } = tools();
+    const handler = new MoveDeliveryStopHandler(
+      rounds,
+      new InMemoryVehicles(
+        vehicle("v_1", "Kangoo", "AB-123-CD"),
+        vehicle("v_2", "Trafic", "EF-456-GH"),
+      ),
+      new FixedLoadedStops(["r_1_s1"]),
+      ORDERS,
+      clock,
+      events,
+      uow,
+    );
+
+    await expect(
+      handler.execute(
+        new MoveDeliveryStopCommand("r_1", "r_1_s1", {
+          toRoundId: "r_2",
+          fromVersion: 1,
+          toVersion: 1,
+        }),
+      ),
+    ).rejects.toThrow(LoadedStopMoveError);
+    expect(rounds.moves).toEqual([]);
+    expect(events.traced).toEqual([]);
+  });
   it("refuse si l'une des deux versions est périmée", async () => {
     const rounds = new InMemoryDeliveryRounds(
       roundWith("r_1", DAY, "v_1", ["o_1"]),

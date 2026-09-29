@@ -2,6 +2,7 @@ import {
   type DeliveryOrderFacts,
   type DeliveryOrderRef,
   DeliveryOrdersReader,
+  type DepartureSheet,
 } from "../../../channels/commerce/index.js";
 import { DeliveryRound } from "../../../domain/entities/delivery-round.js";
 import {
@@ -9,6 +10,7 @@ import {
   type LiveStopHolder,
 } from "../../../domain/errors/delivery-round-errors.js";
 import { DeliveryRoundRepository } from "../../../domain/ports/delivery-round.repository.js";
+import { LoadedStopsReader } from "../../../domain/ports/loaded-stops.reader.js";
 
 /**
  * Des tournées en mémoire, stockées par leur instantané comme en base : la
@@ -16,7 +18,7 @@ import { DeliveryRoundRepository } from "../../../domain/ports/delivery-round.re
  */
 export class InMemoryDeliveryRounds extends DeliveryRoundRepository {
   readonly saved: string[] = [];
-  readonly moves: (readonly [string, string])[] = [];
+  readonly moves: (readonly [string, string, string])[] = [];
   private readonly byId = new Map<string, DeliveryRound>();
 
   constructor(...rounds: readonly DeliveryRound[]) {
@@ -31,16 +33,21 @@ export class InMemoryDeliveryRounds extends DeliveryRoundRepository {
     return Promise.resolve(found === undefined ? null : copy(found));
   }
 
+  /** Aucun verrou en mémoire : une lecture ordinaire. */
+  loadForDeparture(id: string): Promise<DeliveryRound | null> {
+    return this.load(id);
+  }
+
   save(round: DeliveryRound): Promise<void> {
     this.write(round);
     this.saved.push(round.id);
     return Promise.resolve();
   }
 
-  saveMove(from: DeliveryRound, to: DeliveryRound): Promise<void> {
+  saveMove(from: DeliveryRound, to: DeliveryRound, stopId: string): Promise<void> {
     this.write(from);
     this.write(to);
-    this.moves.push([from.id, to.id]);
+    this.moves.push([from.id, to.id, stopId]);
     return Promise.resolve();
   }
 
@@ -100,6 +107,26 @@ export class FixedDeliveryOrders extends DeliveryOrdersReader {
   byIds(orderIds: readonly string[]): Promise<readonly DeliveryOrderFacts[]> {
     return Promise.resolve(this.orders.filter((order) => orderIds.includes(order.orderId)));
   }
+
+  /** Une feuille par commande connue : ce que le départ fige. */
+  departureSheetsOf(orderIds: readonly string[]): Promise<readonly DepartureSheet[]> {
+    return Promise.resolve(
+      this.orders
+        .filter((order) => orderIds.includes(order.orderId))
+        .map((order) => ({
+          orderId: order.orderId,
+          reference: order.reference,
+          customerLabel: order.customerLabel,
+          address: null,
+          contact: null,
+          window: null,
+          signatureRequired: false,
+          note: `note ${order.reference}`,
+          addressNote: null,
+          status: order.status,
+        })),
+    );
+  }
 }
 
 /** Une livraison attendue ce jour-là, active. */
@@ -111,6 +138,7 @@ export function deliveryOn(
   return {
     orderId,
     reference: `CMD-${orderId}`,
+    customerLabel: `Maison ${orderId}`,
     status: "active",
     day,
     delivery: true,
@@ -133,6 +161,7 @@ export function roundWith(
     vehicleName: `Véhicule ${vehicleId}`,
     passage,
     version: 1,
+    departedAt: null,
     createdAt: new Date(0),
     updatedAt: new Date(0),
     stops: orderIds.map((orderId, index) => ({
@@ -142,4 +171,15 @@ export function roundWith(
       closedAt: null,
     })),
   });
+}
+
+/** Les arrêts qui ont un sac chargé, donnés d'avance. */
+export class FixedLoadedStops extends LoadedStopsReader {
+  constructor(private readonly loaded: readonly string[] = []) {
+    super();
+  }
+
+  hasLoadedBag(stopId: string): Promise<boolean> {
+    return Promise.resolve(this.loaded.includes(stopId));
+  }
 }

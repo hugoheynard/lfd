@@ -6,6 +6,7 @@ import { bagReadiness, gestureCaution, readyVerdict } from './bag-readiness';
 function sheet(overrides: Partial<PackingSheet> = {}): PackingSheet {
   return {
     reference: 'CMD-1',
+    orderId: 'o-CMD-1',
     containers: 0,
     customerLabel: 'Client',
     fulfillmentMethod: 'pickup',
