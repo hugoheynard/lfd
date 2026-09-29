@@ -977,6 +977,29 @@ n'est corrigé ; tout est à reprendre avec les deux sources de fenêtre.
 
   Suppose D2 (rôle `livreur`), D4, D5.
 
+  **Questions préalables, posées à Hugo le 2026-09-29** — rien ne se dessine
+  avant :
+
+  - **L6-Q1 — Qui livre ?** Des employés avec un compte, un coursier externe,
+    ou les deux ? Un rôle `livreur` qui ne voit que **sa** tournée du jour et
+    n'écrit que `delivery_doorstep`, jamais les prix ni le carnet clients.
+  - **L6-Q2 — Qu'est-ce qui prouve la remise ?** (conception v1, §2 : le code
+    de retrait n'atteint pas la personne qui réceptionne). (a) recueillir
+    l'e-mail du contact de livraison et lui envoyer le code ; (b) le livreur
+    atteste lui-même, preuve faible mais honnête, auteur enregistré — avec une
+    **photo de dépôt** (le socle `photo-cards` existe) ; (c) un code par site,
+    affiché chez le client. Jamais le jeton imprimé sur le colis.
+  - **L6-Q3 — La signature**, promise sur certaines adresses et recueillie
+    nulle part : un tracé au doigt sur le téléphone avec le nom tapé, ou on
+    cesse de la promettre ?
+  - **L6-Q4 — Une livraison ratée** (absent, adresse fausse, refus) : relivrée
+    un autre jour, à retirer au comptoir, ou annulée ? Changer le jour d'une
+    commande déjà produite est un avenant du commerce (`order/`), pas un geste
+    de tournée.
+  - **L6-Q5 — Le réseau sur les routes.** En montagne, un téléphone sans
+    réseau à la porte : faut-il que les gestes s'enregistrent hors ligne et se
+    synchronisent au retour ?
+
 - **Lot 7 — La proposition automatique** : l'algorithme de l'architecture
   (k-medoids puis ordre ATSP) **propose** une répartition que l'humain corrige.
   Seulement si composer à la main prend trop de temps chaque matin.
