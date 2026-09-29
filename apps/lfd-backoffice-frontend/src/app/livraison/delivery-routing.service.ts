@@ -6,6 +6,8 @@ import type {
   DeliveryRoundProposalView,
   DeliveryRoutingSettingsPayload,
   DeliveryRoutingSettingsView,
+  DeliverySimulationPayload,
+  DeliverySimulationView,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -13,6 +15,7 @@ import { B2B_API_BASE } from '../api/api-config';
 
 const ROUNDS = `${B2B_API_BASE}/admin/livraison/tournees`;
 const SETTINGS = `${B2B_API_BASE}/admin/livraison/calcul`;
+const SIMULATOR = `${B2B_API_BASE}/admin/livraison/simulateur`;
 
 /** Ce qu'on demande au calculateur. `vehicleIds: null` : ceux qui roulent ce jour-là. */
 export interface ProposalRequest {
@@ -65,5 +68,13 @@ export class DeliveryRoutingService {
 
   async saveSettings(payload: DeliveryRoutingSettingsPayload): Promise<void> {
     await firstValueFrom(this.http.put(SETTINGS, payload));
+  }
+
+  /**
+   * Le simulateur (lot 9, L9-C1) : un POST parce que le scénario est un
+   * corps, mais une LECTURE — rien n'est écrit, sous `delivery_rounds:read`.
+   */
+  simulate(payload: DeliverySimulationPayload): Promise<DeliverySimulationView> {
+    return firstValueFrom(this.http.post<DeliverySimulationView>(SIMULATOR, payload));
   }
 }

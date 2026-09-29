@@ -790,6 +790,19 @@ export type {
   ApplyDeliveryProposalPayload,
 } from "./delivery-routing.js";
 export {
+  SIMULATION_MAX_STOPS,
+  SIMULATION_MAX_VEHICLES,
+  simulatedStopSchema,
+  deliverySimulationPayloadSchema,
+} from "./delivery-simulator.js";
+export type {
+  SimulatedStop,
+  DeliverySimulationPayload,
+  SimulatedProposedStopView,
+  SimulatedRoundView,
+  DeliverySimulationView,
+} from "./delivery-simulator.js";
+export {
   recurrenceSchema,
   subscriptionStatusSchema,
   setSubscriptionStatusPayloadSchema,

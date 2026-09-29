@@ -188,6 +188,13 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     needs: 'delivery_rounds:read',
   },
   {
+    key: 'simulateur',
+    label: 'Simulateur',
+    link: '/livraison/simulateur',
+    icon: 'play',
+    needs: 'delivery_rounds:read',
+  },
+  {
     key: 'chargement',
     label: 'Chargement',
     link: '/livraison/chargement',

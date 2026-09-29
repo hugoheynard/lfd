@@ -1,0 +1,59 @@
+<div class="result" data-simulation-result>
+  <fold-element-title
+    variant="caps"
+    title="Proposition simulée"
+    [subtitle]="'Départ de ' + view().departure.label"
+  />
+  @if (view().estimate === 'crow_flies') {
+    <fold-callout variant="info" data-crow-flies>{{ estimate() }}</fold-callout>
+  } @else {
+    <fold-callout variant="info" data-road>{{ estimate() }}</fold-callout>
+  }
+
+  @for (round of view().rounds; track $index) {
+    <fold-card surface="sunken" padding="sm" data-simulated-round>
+      <div class="round">
+        <fold-element-title
+          variant="title"
+          [title]="roundTitle(round)"
+          [subtitle]="roundSummary(round)"
+        >
+          @if (round.overDuration) {
+            <fold-badge
+              titleAction
+              variant="warning"
+              content="Dépasse la durée maximale"
+              data-over-duration
+            />
+          }
+        </fold-element-title>
+        <ol class="stops">
+          @for (stop of round.stops; track stop.stopId) {
+            <li data-simulated-stop>
+              <span>{{ stop.label }} · arrivée vers {{ timeLabel(stop.arrival) }}</span>
+              @if (stop.window; as window) {
+                <span>· {{ windowLabel(window) }}</span>
+              }
+              @if (stop.windowMissed) {
+                <fold-badge variant="alert" content="Fenêtre manquée" data-window-missed />
+              }
+            </li>
+          }
+        </ol>
+      </div>
+    </fold-card>
+  } @empty {
+    <fold-callout variant="neutral" data-no-simulated-round>
+      Aucune tournée proposée : rien ne tient dans les réglages choisis.
+    </fold-callout>
+  }
+
+  @if (view().overflow.length > 0) {
+    <fold-callout variant="warning" data-overflow>
+      Aucune tournée ne tient ces arrêts dans la durée maximale — ils restent à répartir&nbsp;:
+      @for (stop of view().overflow; track stop.stopId; let last = $last) {
+        {{ stop.label }}{{ last ? '.' : ',' }}
+      }
+    </fold-callout>
+  }
+</div>

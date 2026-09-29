@@ -316,6 +316,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/rounds-page/rounds-page').then((m) => m.RoundsPage),
       },
+      // LE SIMULATEUR (lot 9, L9-C1) : une LECTURE, sous le même droit que
+      // « Proposer » au lot 7 — rien n'est écrit.
+      {
+        path: 'simulateur',
+        canActivate: [permissionGuard('delivery_rounds:read')],
+        title: 'Simulateur de tournée — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/simulator-page/simulator-page').then((m) => m.SimulatorPage),
+      },
       // LE CHARGEMENT (lot 4) : tout se LIT sous `delivery_loading:read` —
       // ouvrir un sac, une tournée, les étiquettes n'écrit rien (L4-C13, L4-C16).
       // Charger, décharger, partir, déclarer : des gestes, que chaque écran ne

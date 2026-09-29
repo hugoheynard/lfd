@@ -1522,6 +1522,26 @@ Reste : un job de CI générale pour le paquet (comme `gateway`), le point de
 départ de contrôle à fixer sur l'adresse exacte du labo, et ce que seul le
 premier déploiement dira (démarrage à froid, jeton, rétention des images).
 
+#### Étapes 2 et 3 bâties le 2026-09-29 — le pont et l'adaptateur
+
+Le Worker de `lfd-api` exporte `ContainerProxy`, porte le binding `OSRM →
+lfd-osrm` et intercepte `osrm.internal` seul (`container/osrm-bridge.ts`, 503
+net sur échec) ; les interdits de L8-C10 sont tenus par
+`apps/lfd-api/container/__tests__/outbound-interception.spec.ts`. `ctx.exports` passe par
+le **drapeau** `enable_ctx_exports`, pas par la date : avancer la date aurait
+allumé tous les changements du runtime de juin à novembre 2025 sur toute
+l'API. `OsrmDistanceMatrix` : un `/table` par proposition, délai 10 s, repli vol
+d'oiseau au-delà de 200 points comme sur tout échec (un refus nommé au départ,
+retiré le même jour : il faisait tomber « Proposer », § 6 question 1) ;
+`estimate` vaut `road` ou `crow_flies`. `OSRM_URL` suit le chemin de
+`BAN_GEOCODER_URL` (variable GitHub → secret du Worker → conteneur) ; son
+absence est une capacité dégradée. **Rien n'est déployé** — ordre et retour
+arrière : [`carte-routiere-osrm.md`](../ops/carte-routiere-osrm.md).
+
+Reste : l'échec **à l'exécution** d'OSRM ne remonte qu'au journal et à
+l'écran, pas à la carte de santé `ops` (dont l'inventaire ne lit que la
+configuration) ; le démarrage à froid à mesurer contre le délai.
+
 #### Questions à Hugo
 
 - **L8-Q1 — ✅ la Savoie seule** (Hugo, 2026-09-29) : « je vais jusqu'à La
@@ -1565,6 +1585,53 @@ qu'OSRM (lot 8) est déployé. Un scénario peut s'enregistrer et se rejouer.
 (« rejouer demain avec un véhicule de moins ») ? Recommandé : oui, copié en
 arrêts inventés, pour ne jamais écrire dans la vraie composition.
 
+**Tranché le 2026-09-29, pour bâtir sans attendre** (Hugo absent, « on
+avance » ; les choix ci-dessous sont les plus réversibles, et restent ouverts
+dans les questions de fin) :
+
+- **L9-C1 — Une LECTURE, sans table.** `POST admin/livraison/simulateur` prend
+  le scénario entier (arrêts, véhicules, réglages) et rend une proposition au
+  format du lot 7 (`DeliveryRoundProposalView` réduit : pas de `versions`, pas
+  de `kept`, pas d'identifiant de commande — un **libellé** d'arrêt). POST parce
+  que le scénario est un corps, pas parce qu'on écrit : rien n'est écrit, et
+  la route est sous `delivery_rounds:read`. **L'enregistrement des scénarios
+  est reporté** : il demande une table (exception D7, migration), et rien ne
+  presse tant que le simulateur n'a pas servi. Le scénario vit dans l'écran,
+  et s'exporte/s'importe en fichier JSON.
+- **L9-C2 — Un arrêt inventé = un libellé, un point GPS, une fenêtre
+  facultative.** Pas d'adresse à géocoder en v1 : c'est le seul chemin qui
+  sortirait sur le réseau et remplirait le cache. On colle des coordonnées
+  (`45.4485, 6.9823`, comme les donne une carte). Partir d'une journée réelle
+  ou du carnet d'adresses reste une question (§ questions de fin). Bornes :
+  1 à 60 arrêts, 1 à 10 véhicules — au-delà, ce n'est plus un essai.
+- **L9-C3 — Les véhicules du scénario sont des noms**, pas la flotte : on
+  simule « et avec quatre camionnettes ? » sans en créer une. L'écran part de
+  la flotte active.
+- **L9-C4 — Les réglages du scénario** reprennent ceux du lot 7 (même schéma,
+  mêmes refus du domaine), pré-remplis avec les réglages en vigueur, jamais
+  écrits.
+- **L9-C5 — Même calcul, même matrice** : `proposeRounds` (mode
+  `new_rounds`) sur la `DistanceMatrix` injectée — donc par la route dès
+  qu'OSRM est branché, et `estimate` le dit. Le point de départ est le point
+  de départ réglé (lot 2), ou un point saisi.
+- **L9-C6 — Front** : un onglet « Simulateur » de l'espace Livraison — une
+  liste d'arrêts éditable, les véhicules, les réglages repliés, « Proposer »,
+  et le résultat au format du lot 7 (réutiliser sa présentation). La carte
+  viendra du lot 10.
+
+**Back bâti le 2026-09-29** (non commité à l'écriture) : `SimulateDeliveryRoundsQuery`
+
+- handler (`delivery/application/queries/`) — réglages par `RoutingSettings.define`
+  (`defaultMode` forcé à `new_rounds`), départ saisi sinon le point réglé
+  (`DepartureNotLocatedError` sinon), `DistanceMatrix` injectée, `proposeRounds`
+  en tournées neuves, véhicules `v1..vn`, arrêts sous des identifiants internes
+  (ceux de l'écran peuvent se répéter). Mise en forme `HH:MM` partagée avec le
+  lot 7 (`tourTimesView`, `stopTimesView`, `timeWindowOf`). Route
+  `POST admin/livraison/simulateur` (`apps/lfd-api/src/delivery/http/delivery-simulator.controller.ts`,
+  `delivery_rounds:read`). Tests : 9 unitaires du handler, 5 e2e
+  (`apps/lfd-api/test/delivery-simulator.e2e-spec.ts` — 200 sans écriture, 409, 400 ×2, 403).
+  Front : à bâtir.
+
 ### Lot 10 — La carte des tournées, belle
 
 > **Ouvert le 2026-09-29.** Hugo : « je veux que ça soit beau ». 📐 Rien n'est
@@ -1601,8 +1668,13 @@ héberger des tuiles ? ») :
 - MapLibre **chargé par le seul écran carte**, jamais au démarrage du
   back-office (dont le budget initial est déjà dépassé) ;
 - mention **« © OpenStreetMap »** à l'écran (ODbL), toujours ;
-- ⚠️ tailles **non mesurées** : quelques dizaines de Mo pour les rues, sans
-  doute quelques centaines pour le relief — à mesurer comme OSRM l'a été.
+- ✅ **mesuré le 2026-09-29** (`apps/lfd-osrm/scripts/build-tiles.sh`, outils
+  épinglés par digest) : **rues 36 Mo** (tilemaker, schéma OpenMapTiles,
+  z0–14, 11 s) et **relief 60 Mo** (Mapterhorn, terrarium webp, z0–12, 6 s —
+  63 Mo transférés par requêtes partielles, jamais le fichier planétaire). Le
+  relief vient de **Mapterhorn** (données publiques ouvertes, mention
+  « © Mapterhorn » requise) plutôt que de l'IGN ou de Copernicus brut : il est
+  déjà en tuiles, donc aucun outil de conversion à maintenir.
 
 **L10-C3 — Une alternative à garder** : les fonds de l'**IGN** (Géoplateforme),
 beaux, libres de tout usage, mais servis par l'État — il voit les zones
@@ -1612,6 +1684,24 @@ pas en fond principal.
 **L10-C4 — L'ordre** : (1) une **maquette** validée par Hugo (relief,
 tournées, arrêts, heures, clair et sombre) ; (2) la mesure des fichiers ; (3)
 le bâti. Suppose le lot 8 déployé pour les tracés.
+
+> **2026-09-29 — (1) et (2) faits, en attente de Hugo.** La maquette est
+> publiée (artefact privé « Tournées de Haute-Tarentaise ») : les deux
+> tournées du scénario de démonstration, tracées par le **vrai** graphe OSRM
+> local, sur un découpage Haute-Tarentaise des deux fichiers (4,5 Mo + 5,8
+> Mo), relief ombré, bascule 3D, clair et sombre dérivés des mêmes jetons.
+> Leçons pour le bâti :
+>
+> - **les libellés de la carte** (noms de rues, de villes) demandent des
+>   **glyphes** de police servis à MapLibre : la maquette les remplace par des
+>   marqueurs HTML. Au bâti : héberger les glyphes à côté des tuiles (R2), ou
+>   garder les villes en marqueurs — à trancher sur la maquette ;
+> - la **feuille de style de MapLibre** doit être embarquée avec le
+>   composant, sans quoi les marqueurs s'empilent sous la carte ;
+> - le tracé par la route demande `/route` d'OSRM (géométrie), en plus du
+>   `/table` du lot 8 : un appel par tournée, à l'affichage seulement ;
+> - **R2 n'existe pas encore** pour ces fichiers : un bucket, son domaine en
+>   lecture et le CORS (`Range`) — question de fin.
 
 ### Lot 11 — Le suivi des camionnettes en direct
 
@@ -1895,3 +1985,38 @@ existent, au lieu de naître avec des constantes à remplacer.
   choisir une heure de livraison (le texte parle de « créneau que vous
   choisissez ») n'a pas été confronté au serveur, qui ne contrôle pas cette
   fenêtre.
+
+## 6. Questions ouvertes pour Hugo — séance du 2026-09-29 (après-midi)
+
+Hugo s'est absenté une heure (« fais tout ce que tu peux, note les questions
+pour la fin »). Ce qui a été tranché sans lui l'a été dans le sens le plus
+réversible ; chaque point dit ce qui a été fait en attendant.
+
+1. **Lot 8 — plus de 200 points par la route.** Le constructeur refusait (409),
+   ce qui contredit L8-C3 « Proposer ne doit pas tomber » (relevé par
+   `vitruve`). **Fait en attendant** : repli au vol d'oiseau, dit à l'écran,
+   comme toute autre panne. À confirmer.
+2. **Lot 8 — date de compatibilité.** Le drapeau `enable_ctx_exports` a été
+   préféré à une date avancée (qui activerait d'un coup six mois de
+   changements du runtime sur toute l'API). À confirmer.
+3. **Lot 8 — mise en service.** L'étape 2 touche le démarrage de toute
+   l'API : à faire hors des heures d'usage, avec `wrangler rollback` prêt
+   (jamais éprouvé sur un Worker à conteneur — l'essayer une fois à froid ?).
+4. **Lot 9 — enregistrer les scénarios** : reporté (table, migration). En
+   attendant, export/import en fichier. Faut-il une table ?
+5. **Lot 9 — partir d'une journée réelle, ou du carnet d'adresses** (« rejouer
+   demain avec un véhicule de moins ») : non bâti. Recommandé : oui, copié en
+   arrêts inventés.
+6. **Lot 10 — la maquette** (artefact « Tournées de Haute-Tarentaise ») :
+   valider le style, le relief, la 3D, le clair et le sombre.
+7. **Lot 10 — les libellés de la carte** : héberger des glyphes (noms de rues
+   et de lieux dessinés par la carte) ou garder quelques villes en marqueurs ?
+8. **Lot 10 — R2** : créer un bucket pour les deux fichiers (96 Mo), un
+   domaine de lecture et le CORS `Range`. Geste de compte Cloudflare, à toi.
+9. **Lot 10 — le relief Mapterhorn** : mention « © Mapterhorn » à l'écran ;
+   ses sources sont ouvertes, mais la page d'attribution n'a pas été relue
+   ligne à ligne.
+10. **Lot 9 — droits de l'écran.** Le simulateur est sous `delivery_rounds:read`,
+    mais la flotte et les réglages qu'il pré-remplit se lisent sous
+    `delivery_settings:read`. Sans ce second droit, les champs restent vides et
+    l'écran le dit (aucune valeur inventée). Faut-il ouvrir la lecture ?

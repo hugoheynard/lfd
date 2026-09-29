@@ -1,0 +1,266 @@
+<fold-page-layout icon="play" title="Simulateur">
+  <p description>
+    Des arrêts inventés, des véhicules, des réglages : « Proposer » montre les tournées que le
+    calculateur composerait. Rien n’est écrit — ni commande, ni tournée, ni réglage.
+  </p>
+
+  <div pageActions class="bar">
+    <button foldButton emphasis="outline" icon="download" (click)="exportScenario()" data-export>
+      Exporter le scénario
+    </button>
+    <button foldButton emphasis="soft" (click)="reset()" data-reset>Revenir à l’exemple</button>
+  </div>
+
+  @if (prefill(); as prefill) {
+    <div class="simulator">
+      @if (prefill.fleetUnread) {
+        <fold-callout variant="warning" data-fleet-unread>
+          La flotte n’a pas pu être lue : ajoutez les véhicules du scénario à la main.
+        </fold-callout>
+      }
+      @if (prefill.settingsUnread) {
+        <fold-callout variant="warning" data-settings-unread>
+          Les réglages du calcul n’ont pas pu être lus : saisissez-les, ou importez un scénario.
+        </fold-callout>
+      }
+
+      <fold-file-dropzone
+        accept="application/json,.json"
+        label="Importer un scénario"
+        hint="Un fichier exporté depuis cet écran (.json)."
+        (filesPicked)="importFiles($event)"
+        data-import
+      />
+      @if (importRefusal(); as message) {
+        <fold-callout variant="alert" announce data-import-refusal>{{ message }}</fold-callout>
+      }
+
+      <fold-card data-stops>
+        <div class="section">
+          <fold-element-title
+            variant="title"
+            icon="map-pin"
+            title="Arrêts"
+            [subtitle]="draft().stops.length + ' sur ' + maxStops + ' au plus'"
+          >
+            <button
+              titleAction
+              foldButton
+              size="sm"
+              emphasis="soft"
+              icon="plus"
+              [disabled]="!canAddStop()"
+              (click)="addStop()"
+              data-add-stop
+            >
+              Ajouter un arrêt
+            </button>
+          </fold-element-title>
+
+          @for (stop of draft().stops; track stop.id; let index = $index) {
+            <div class="stop" data-stop>
+              <fold-input
+                label="Nom"
+                placeholder="Arrêt La Daille"
+                [value]="stop.label"
+                (valueChange)="updateStop(index, { label: $event })"
+                data-stop-label
+              />
+              <fold-input
+                label="Coordonnées"
+                placeholder="45.4485, 6.9823"
+                [hint]="gpsHint(stop.coordinates)"
+                [value]="stop.coordinates"
+                (valueChange)="updateStop(index, { coordinates: $event })"
+                data-stop-gps
+              />
+              <fold-time
+                label="Pas avant"
+                optional
+                [value]="stop.windowStart"
+                (valueChange)="updateStop(index, { windowStart: $event })"
+                data-stop-start
+              />
+              <fold-time
+                label="Au plus tard"
+                optional
+                [value]="stop.windowEnd"
+                (valueChange)="updateStop(index, { windowEnd: $event })"
+                data-stop-end
+              />
+              <fold-button-icon
+                icon="bin"
+                size="sm"
+                tooltip="Retirer cet arrêt"
+                (clicked)="removeStop(index)"
+                data-remove-stop
+              />
+            </div>
+          } @empty {
+            <fold-empty-state title="Aucun arrêt" subtitle="Ajoutez-en au moins un pour proposer.">
+              <fold-icon empty-icon name="map-pin" />
+            </fold-empty-state>
+          }
+        </div>
+      </fold-card>
+
+      <fold-card data-vehicles>
+        <div class="section">
+          <fold-element-title
+            variant="title"
+            icon="truck"
+            title="Véhicules"
+            subtitle="Des noms, pas la flotte : « et avec quatre camionnettes ? »"
+          >
+            <button
+              titleAction
+              foldButton
+              size="sm"
+              emphasis="soft"
+              icon="plus"
+              [disabled]="!canAddVehicle()"
+              (click)="addVehicle()"
+              data-add-vehicle
+            >
+              Ajouter un véhicule
+            </button>
+          </fold-element-title>
+          @for (name of draft().vehicles; track $index; let index = $index) {
+            <div class="vehicle" data-vehicle>
+              <fold-input
+                [label]="'Véhicule ' + (index + 1)"
+                [value]="name"
+                (valueChange)="updateVehicle(index, $event)"
+                data-vehicle-name
+              />
+              <fold-button-icon
+                icon="bin"
+                size="sm"
+                tooltip="Retirer ce véhicule"
+                (clicked)="removeVehicle(index)"
+                data-remove-vehicle
+              />
+            </div>
+          }
+        </div>
+      </fold-card>
+
+      <fold-card data-departure>
+        <div class="section">
+          <fold-element-title variant="title" icon="map-pin" title="Départ" />
+          <fold-view-toggle
+            ariaLabel="Point de départ"
+            [options]="departureOptions"
+            [value]="draft().departure"
+            (valueChange)="pickDeparture($event)"
+            data-departure-choice
+          />
+          @if (draft().departure === 'custom') {
+            <fold-input
+              label="Coordonnées du départ"
+              placeholder="45.4485, 6.9823"
+              [hint]="departureHint()"
+              [value]="draft().departureCoordinates"
+              (valueChange)="setDepartureCoordinates($event)"
+              data-departure-gps
+            />
+          }
+        </div>
+      </fold-card>
+
+      <fold-card data-settings>
+        <fold-disclosure>
+          <span summary>Réglages du calcul — pré-remplis, jamais enregistrés d’ici</span>
+          <div class="section">
+            <div class="fields">
+              <fold-number-input
+                label="Facteur de détour"
+                hint="La route contre le vol d’oiseau : 1,4 = 40 % de plus."
+                [value]="draft().settings.detourFactor"
+                [min]="1"
+                [step]="0.05"
+                [decimals]="2"
+                (valueChange)="updateSettings({ detourFactor: $event })"
+                data-detour
+              />
+              <fold-number-input
+                label="Vitesse moyenne (km/h)"
+                integer
+                [value]="draft().settings.averageSpeedKmh"
+                [min]="1"
+                (valueChange)="updateSettings({ averageSpeedKmh: $event })"
+                data-speed
+              />
+              <fold-time
+                label="Départ au plus tôt"
+                [value]="draft().settings.earliestDeparture"
+                (valueChange)="updateSettings({ earliestDeparture: $event })"
+                data-earliest
+              />
+              <fold-number-input
+                label="Durée maximale d’une tournée (min)"
+                hint="Aller, arrêts et retour."
+                integer
+                [value]="draft().settings.maxRoundMinutes"
+                [min]="1"
+                (valueChange)="updateSettings({ maxRoundMinutes: $event })"
+                data-max-round
+              />
+              <fold-number-input
+                label="Temps d’arrêt (min)"
+                hint="Se garer, porter, revenir."
+                integer
+                [value]="draft().settings.stopMinutes"
+                [min]="0"
+                (valueChange)="updateSettings({ stopMinutes: $event })"
+                data-stop-minutes
+              />
+            </div>
+            <fold-checkbox
+              label="Plusieurs passages par véhicule"
+              hint="Sinon, ce qui ne tient pas dans une tournée reste à répartir."
+              [checked]="draft().settings.multiplePassages"
+              (checkedChange)="updateSettings({ multiplePassages: $event })"
+              data-multiple-passages
+            />
+          </div>
+        </fold-disclosure>
+      </fold-card>
+
+      <div class="bar">
+        <button
+          foldButton
+          icon="truck"
+          [loading]="proposing()"
+          [disabled]="proposing()"
+          (click)="propose()"
+          data-propose
+        >
+          Proposer
+        </button>
+      </div>
+
+      @if (errors().length > 0) {
+        <fold-callout variant="alert" announce data-draft-errors>
+          Le scénario n’est pas complet&nbsp;:
+          <ul class="errors">
+            @for (error of errors(); track $index) {
+              <li>{{ error }}</li>
+            }
+          </ul>
+        </fold-callout>
+      }
+      @if (refusal(); as message) {
+        <fold-callout variant="alert" announce data-simulation-refusal>{{ message }}</fold-callout>
+      }
+      @if (proposing()) {
+        <fold-loading message="Calcul de la simulation…" />
+      }
+      @if (result(); as result) {
+        <app-simulation-result [view]="result.view" [settings]="result.settings" />
+      }
+    </div>
+  } @else {
+    <fold-loading message="Lecture de la flotte et des réglages…" />
+  }
+</fold-page-layout>

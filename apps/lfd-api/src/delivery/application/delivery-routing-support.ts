@@ -99,13 +99,16 @@ export async function locateFromCache(
       reference: point.reference,
       point: located,
       unlocated: located !== null ? null : point.address === null ? "no_address" : "not_geocoded",
-      window: windowOf(point.window),
+      window: timeWindowOf(point.window),
     };
   });
 }
 
-/** La fenêtre `HH:MM` en secondes depuis minuit ; illisible, elle ne compte pas. */
-function windowOf(window: DeliveryStopPoint["window"]): TimeWindow | null {
+/**
+ * La fenêtre `HH:MM` en secondes depuis minuit ; illisible, elle ne compte pas.
+ * Partagée avec le simulateur (lot 9), dont les arrêts inventés ont la même forme.
+ */
+export function timeWindowOf(window: DeliveryStopPoint["window"]): TimeWindow | null {
   if (window === null) {
     return null;
   }
