@@ -1365,7 +1365,7 @@ les **outbound handlers**, des proxys de sortie qui tournent sur la même
 machine que le conteneur et ont accès à tous les bindings du Worker ;
 `outboundByHost` route un nom d'hôte vers une fonction du Worker. Et la
 version installée, `@cloudflare/containers` 0.3.7, l'expose déjà
-(`outboundByHost` présent dans `dist/lib/container.d.ts`).
+(`outboundByHost` présent dans les types livrés du paquet, le fichier de types container.d.ts du paquet installé).
 
 **La forme B-bis** :
 
@@ -1425,7 +1425,7 @@ Relue le 2026-09-29, avant la redirection vers B-bis : trois `BLOQUANT` sur A.
 
 #### L8-C10 — Seconde passe de `vitruve` : B-bis n'était pas séparé, B-ter l'est
 
-Relu le 2026-09-29 dans `@cloudflare/containers` 0.3.7 (`dist/lib/container.js`) :
+Relu le 2026-09-29 dans `@cloudflare/containers` 0.3.7 (son container.js livré, dans node_modules) :
 
 - ✅ **Les appels sortants actuels ne bougent pas.** Un `outboundByHost`
   statique n'intercepte que l'hôte nommé, en HTTP ; Stripe, Resend, Auth0 et
