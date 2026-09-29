@@ -197,7 +197,7 @@ Défilement : une colonne défile de sorte que l'élément soit à ~60 px du hau
 
 ## Design Tokens
 
-Tous issus de `navi-2-handoff.md` / `01-tokens-fold.md`.
+Valeurs relevées dans la maquette ; dans le dépôt, les tokens fold font foi.
 
 | Rôle                                  | Token                                                         | Valeur                                        |
 | ------------------------------------- | ------------------------------------------------------------- | --------------------------------------------- |
