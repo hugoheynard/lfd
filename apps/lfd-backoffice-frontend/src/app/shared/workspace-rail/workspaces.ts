@@ -258,17 +258,9 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     section: 'Catalogue',
   },
 
-  // DIFFUSION — ce qui sort d'ici, et par où. Ces trois-là n'avaient pas été
+  // DIFFUSION — ce qui sort d'ici, et par où. Ces vues-là n'avaient pas été
   // citées dans le regroupement demandé ; les laisser sans section les aurait
   // fait flotter sous des groupes titrés, ce qui se lit comme un oubli.
-  {
-    key: 'collections',
-    needsPublication: true,
-    label: 'Collections',
-    link: '/pim/collections',
-    icon: 'collections',
-    section: 'Diffusion',
-  },
   {
     key: 'publication',
     needsPublication: true,
@@ -646,13 +638,6 @@ export const DOCUMENTATION_VIEWS: readonly WorkspaceView[] = [
     label: 'Les briques',
     link: '/documentation/briques',
     icon: 'grid',
-    section: 'PIM',
-  },
-  {
-    key: 'flow',
-    label: 'Flux des collections',
-    link: '/documentation/flux-des-collections',
-    icon: 'sliders',
     section: 'PIM',
   },
   {

@@ -30,7 +30,6 @@ describe('le rail du référentiel face au drapeau de publication', () => {
   it('retire les vues de Diffusion quand la publication est fermée', () => {
     const keys = views(false);
 
-    expect(keys).not.toContain('collections');
     expect(keys).not.toContain('publication');
     expect(keys).not.toContain('integration');
   });
@@ -52,7 +51,6 @@ describe('le rail du référentiel face au drapeau de publication', () => {
     const keys = views(true);
 
     expect(keys).toContain('publication');
-    expect(keys).toContain('collections');
   });
 
   /**

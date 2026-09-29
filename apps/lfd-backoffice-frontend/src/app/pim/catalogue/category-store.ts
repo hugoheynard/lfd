@@ -21,7 +21,7 @@ function sameText(a: LocalizedText, b: LocalizedText): boolean {
 
 /**
  * Source **réactive** unique des familles — remplace le signal LocalDb. Les
- * lecteurs (pages, collections, publication) lisent `items()` ; toute mutation
+ * lecteurs (pages, formulaires, agent) lisent `items()` ; toute mutation
  * passe par ce store, qui écrit au backend puis relit, si bien que la liste se
  * met à jour partout. En SSR (démo statique sans backend) on ne fetch pas.
  */

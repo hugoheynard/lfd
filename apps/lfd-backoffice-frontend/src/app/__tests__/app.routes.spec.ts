@@ -258,7 +258,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'documentation/remplir-une-fiche-produit': OPEN,
   'documentation/vue-d-ensemble': OPEN,
   'documentation/briques': OPEN,
-  'documentation/flux-des-collections': OPEN,
   'documentation/segmentation-web': OPEN,
 
   commercial: 'b2b_companies:read',

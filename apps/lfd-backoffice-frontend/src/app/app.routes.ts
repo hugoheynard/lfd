@@ -277,14 +277,6 @@ export const routes: Routes = [
           import('./documentation/pim/bricks-page/bricks-page').then((m) => m.DocBricksPage),
       },
       {
-        path: 'flux-des-collections',
-        title: 'Flux des collections — LFC B2B admin',
-        loadComponent: () =>
-          import('./documentation/pim/collections-flow-page/collections-flow-page').then(
-            (m) => m.DocCollectionsFlowPage,
-          ),
-      },
-      {
         path: 'segmentation-web',
         title: 'Segmentation web — LFC B2B admin',
         loadComponent: () =>
