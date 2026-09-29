@@ -802,6 +802,8 @@ export type {
   DeliveryBinHalf,
   DeclareDeliveryBinsPayload,
   ShareDeliveryBinPayload,
+  DeclaredDeliveryBinsResponse,
+  SharedDeliveryBinResponse,
   DeliveryBinTypeRef,
   DeliveryBinPartnerView,
   DeliveryLoadingBinView,
@@ -816,6 +818,17 @@ export type {
   LoadDeliveryBinPayload,
   DepartDeliveryRoundPayload,
 } from "./delivery-loading.js";
+export type {
+  DeliveryPackingLineView,
+  DeliveryPackingBinView,
+  DeliveryPackingUnplacedReason,
+  DeliveryPackingUnplacedView,
+  DeliveryPackingShareCandidateView,
+  DeliveryPackingProposalView,
+  DeliveryOrderRoundPlaceView,
+  DeliveryBinFreeHalfView,
+  DeliveryBinFreeHalvesView,
+} from "./delivery-packing.js";
 export {
   deliveryRoutingSettingsPayloadSchema,
   deliveryProposalModeSchema,

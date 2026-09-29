@@ -15,8 +15,8 @@ import { z } from "zod";
  *
  * Routes (`admin/livraison/…`, sous `delivery_loading`) :
  *
- * - `POST colisage/bacs` ({@link DeclareDeliveryBinsPayload}) → `{ binIds }` ;
- * - `POST colisage/bacs/partage` ({@link ShareDeliveryBinPayload}) → `{ binId }` ;
+ * - `POST colisage/bacs` ({@link DeclareDeliveryBinsPayload}) → {@link DeclaredDeliveryBinsResponse} ;
+ * - `POST colisage/bacs/partage` ({@link ShareDeliveryBinPayload}) → {@link SharedDeliveryBinResponse} ;
  * - `GET colisage/bacs?commande=` → {@link DeliveryOrderBinsView} ;
  * - `GET colisage/bacs/:binId` → {@link DeliveryBinDetailView} (le QR ouvert) ;
  * - `POST colisage/bacs/:binId/annulation` → 204 ;
@@ -66,6 +66,19 @@ export const shareDeliveryBinPayloadSchema = z.object({
   innerBags: z.number().int("un nombre entier de sacs"),
 });
 export type ShareDeliveryBinPayload = z.infer<typeof shareDeliveryBinPayloadSchema>;
+
+/**
+ * Ce que rend une déclaration : les bacs créés, dans l'ordre de déclaration
+ * (les entiers, puis la moitié) — de quoi ouvrir leurs étiquettes sans relire.
+ */
+export interface DeclaredDeliveryBinsResponse {
+  readonly binIds: readonly string[];
+}
+
+/** Ce que rend un partage : la moitié créée pour la commande. */
+export interface SharedDeliveryBinResponse {
+  readonly binId: string;
+}
 
 /** Le type d'un bac déclaré, tel qu'on l'imprime. Archivé : toujours lisible (v2-7). */
 export interface DeliveryBinTypeRef {

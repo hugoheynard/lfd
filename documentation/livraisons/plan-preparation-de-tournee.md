@@ -1150,6 +1150,31 @@ innerBags }` → `{ binId }`), `colisage/bacs/:binId` (le QR ouvert),
 > typés, dont un demi-Bac M partagé entre Le Refuge du Fond et Le Petit
 > Chaudron (arrêts 2 et 3).
 
+> **(C) serveur bâti le 2026-09-29** (non commité à l'écriture de cette
+> ligne) — le colisage PROPOSÉ, une lecture ; la déclaration (B) reste le
+> geste qui fait foi. Aucune migration. Routes (`delivery_loading`) :
+> `GET admin/livraison/colisage/proposition?commande=` →
+> `DeliveryPackingProposalView` et `GET …/colisage/bacs/partenaires?commande=`
+> → `DeliveryBinFreeHalvesView` (la place de la commande dans sa tournée, et
+> les moitiés libres de ses arrêts consécutifs — remplace la recherche front
+> « une requête par tournée ») ; les réponses `{ binIds }` / `{ binId }` des
+> déclarations sont typées au contrat (`DeclaredDeliveryBinsResponse`,
+> `SharedDeliveryBinResponse`). Contrat : `packages/contracts/src/delivery-packing.ts`.
+> Les lignes arrivent par un port NEUF du canal, `DeliveryOrderLinesReader`
+> (SKU, nom figé, quantité — aucun montant), implémenté par le commerce ; le
+> froid par `DeliveryProductsReader` (tranche A). Le cœur est pur, dans
+> `apps/lfd-api/src/delivery/domain/services/` (`proposePacking`,
+> `packGroup`, `pickShareCandidate`, `freeHalvesAround`). Tranché au bâti, sans le plan :
+> trois groupes qui ne partagent jamais un bac — le froid en isotherme, le
+> sec hors isotherme, et le sec qu'aucun type non isotherme ne contient, en
+> isotherme plutôt que sans bac ; l'heuristique : si tout le reste tient
+> dans un bac (ou une moitié ≤ 0,5 d'un type cloisonnable), le plus petit en
+> volume intérieur (une moitié compte pour la moitié) ; sinon un bac entier du
+> type qui demanderait le moins de bacs pour tout le reste (à égalité, le
+> moins de volume), et on recommence. Le partage proposé exige une moitié du
+> MÊME genre (isotherme pour isotherme) et désigne l'entrée qu'il remplace
+> (`replacesBinIndex`).
+
 **Tranches, dans l'ordre de bâti** : (A) catalogue des bacs + contenances
 (`delivery`) et le froid sur la fiche produit (`pim` → canal) ; (B) le bac
 remplace le sac (renommage, type, moitiés, scan, « Partir ») ; (C) le

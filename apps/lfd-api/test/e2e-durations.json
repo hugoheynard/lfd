@@ -54,6 +54,7 @@
   "test/delivery-bins.e2e-spec.ts": 6767,
   "test/delivery-loading-guards.e2e-spec.ts": 5016,
   "test/delivery-loading.e2e-spec.ts": 7167,
+  "test/delivery-packing.e2e-spec.ts": 8223,
   "test/delivery-procedure-refusals.e2e-spec.ts": 7606,
   "test/delivery-procedure.e2e-spec.ts": 4847,
   "test/delivery-road-routing.e2e-spec.ts": 6699,

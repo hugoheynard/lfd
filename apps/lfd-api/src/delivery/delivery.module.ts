@@ -71,6 +71,9 @@ import { GetDeliveryBinHandler } from "./application/queries/get-delivery-bin.ha
 import { GetDeliveryLoadingDayHandler } from "./application/queries/get-delivery-loading-day.handler.js";
 import { GetDeliveryLoadingRoundHandler } from "./application/queries/get-delivery-loading-round.handler.js";
 import { GetDeliveryOrderBinsHandler } from "./application/queries/get-delivery-order-bins.handler.js";
+import { GetDeliveryBinFreeHalvesHandler } from "./application/queries/get-delivery-bin-free-halves.handler.js";
+import { GetDeliveryPackingProposalHandler } from "./application/queries/get-delivery-packing-proposal.handler.js";
+import { DeliveryPackingController } from "./http/delivery-packing.controller.js";
 import { BinCodeDrawer } from "./domain/ports/bin-code-drawer.js";
 import { DeliveryBinRepository } from "./domain/ports/delivery-bin.repository.js";
 import { DeliveryLoadingReader } from "./domain/ports/delivery-loading.reader.js";
@@ -141,6 +144,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     DepartureController,
     DeliveryRoundsController,
     DeliveryBinsController,
+    DeliveryPackingController,
     DeliveryLoadingController,
     RoutingSettingsController,
     DeliveryProposalController,
@@ -170,6 +174,8 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     UnloadDeliveryBinHandler,
     DepartDeliveryRoundHandler,
     GetDeliveryOrderBinsHandler,
+    GetDeliveryBinFreeHalvesHandler,
+    GetDeliveryPackingProposalHandler,
     GetDeliveryBinHandler,
     GetDeliveryLoadingRoundHandler,
     GetDeliveryLoadingDayHandler,

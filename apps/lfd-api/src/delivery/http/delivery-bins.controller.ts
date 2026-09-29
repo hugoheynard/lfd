@@ -1,8 +1,11 @@
 import {
+  type DeclaredDeliveryBinsResponse,
   type DeclareDeliveryBinsPayload,
+  type DeliveryBinFreeHalvesView,
   declareDeliveryBinsPayloadSchema,
   type DeliveryBinDetailView,
   type DeliveryOrderBinsView,
+  type SharedDeliveryBinResponse,
   type ShareDeliveryBinPayload,
   shareDeliveryBinPayloadSchema,
 } from "@lfd/contracts";
@@ -15,22 +18,13 @@ import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { DeclareDeliveryBinsCommand } from "../application/commands/declare-delivery-bins.command.js";
 import { ShareDeliveryBinCommand } from "../application/commands/share-delivery-bin.command.js";
 import { VoidDeliveryBinCommand } from "../application/commands/void-delivery-bin.command.js";
+import { GetDeliveryBinFreeHalvesQuery } from "../application/queries/get-delivery-bin-free-halves.query.js";
 import { GetDeliveryBinQuery } from "../application/queries/get-delivery-bin.query.js";
 import { GetDeliveryOrderBinsQuery } from "../application/queries/get-delivery-order-bins.query.js";
 
 /** La commande dont on lit les bacs, validée dans sa FORME. */
 const orderQuerySchema = z.object({ commande: z.string().trim().min(1, "commande requise") });
 type OrderQuery = z.infer<typeof orderQuerySchema>;
-
-/** Ce que rend une déclaration : les bacs créés, pour imprimer leurs étiquettes. */
-interface DeclaredBinsResponse {
-  readonly binIds: readonly string[];
-}
-
-/** Ce que rend un partage : la moitié créée. */
-interface SharedBinResponse {
-  readonly binId: string;
-}
 
 /**
  * **Les bacs déclarés** — déclarer, partager, lire, annuler
@@ -42,7 +36,8 @@ interface SharedBinResponse {
  * colisage d'une commande.
  *
  * Sous `delivery_loading` : lecture et écriture pour `admin` et `comptoir`
- * (Q21). Lire un bac ou les bacs d'une commande — la page imprimable, le QR
+ * (Q21). `GET partenaires?commande=` : les moitiés libres autour d'une
+ * commande (tranche C). Lire un bac ou les bacs d'une commande — la page imprimable, le QR
  * ouvert — n'écrit rien. Il n'injecte que les bus.
  */
 @Controller("admin/livraison/colisage/bacs")
@@ -57,7 +52,7 @@ export class DeliveryBinsController {
   @HttpCode(HttpStatus.CREATED)
   async declare(
     @Body(new ZodBody(declareDeliveryBinsPayloadSchema)) payload: DeclareDeliveryBinsPayload,
-  ): Promise<DeclaredBinsResponse> {
+  ): Promise<DeclaredDeliveryBinsResponse> {
     const binIds = await this.commands.execute<DeclareDeliveryBinsCommand, readonly string[]>(
       new DeclareDeliveryBinsCommand(payload),
     );
@@ -68,7 +63,7 @@ export class DeliveryBinsController {
   @HttpCode(HttpStatus.CREATED)
   async share(
     @Body(new ZodBody(shareDeliveryBinPayloadSchema)) payload: ShareDeliveryBinPayload,
-  ): Promise<SharedBinResponse> {
+  ): Promise<SharedDeliveryBinResponse> {
     const binId = await this.commands.execute<ShareDeliveryBinCommand, string>(
       new ShareDeliveryBinCommand(payload),
     );
@@ -81,6 +76,20 @@ export class DeliveryBinsController {
   ): Promise<DeliveryOrderBinsView> {
     return this.queries.execute<GetDeliveryOrderBinsQuery, DeliveryOrderBinsView>(
       new GetDeliveryOrderBinsQuery(query.commande),
+    );
+  }
+
+  /**
+   * Les moitiés libres des arrêts consécutifs de la tournée de la commande
+   * (v2-4, tranche C). Déclarée AVANT `:binId`, qui la prendrait sinon pour
+   * un identifiant de bac.
+   */
+  @Get("partenaires")
+  freeHalves(
+    @Query(new ZodQuery(orderQuerySchema)) query: OrderQuery,
+  ): Promise<DeliveryBinFreeHalvesView> {
+    return this.queries.execute<GetDeliveryBinFreeHalvesQuery, DeliveryBinFreeHalvesView>(
+      new GetDeliveryBinFreeHalvesQuery(query.commande),
     );
   }
 
