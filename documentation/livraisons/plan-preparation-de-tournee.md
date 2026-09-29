@@ -763,6 +763,65 @@ comme la feuille d'atelier, et **réimprimables** (étiquette abîmée).
 des étiquettes décide du gabarit du PDF (planche A4 ou rouleau). Tout le reste
 du lot 4 peut se bâtir ; l'étiquette attend la réponse.
 
+#### Quatrième contradiction — v4 du lot 4 (2026-09-29), celle qu'on bâtit
+
+La v3 a été contredite : trois `BLOQUANT`, cinq `SÉRIEUX`. Les réponses, qui
+**remplacent** L4-C11 à L4-C14 là où elles les contredisent :
+
+**L4-C16 — Un sac naît quand on le DÉCLARE, pas quand on l'imprime.** Bâtir
+« sans les étiquettes » (Hugo) aurait laissé le lot sans aucun sac ; et faire
+naître le sac à l'impression aurait fait **créer** des sacs à chaque
+réimpression. Donc :
+
+- `DeclareDeliveryBags(orderId, n)`, sous `delivery_loading:write`, crée n sacs
+  et écrit un fait ; ajouter un sac plus tard, c'est déclarer 1 de plus ;
+- imprimer est une **lecture** : une page HTML imprimable (une étiquette par
+  page, QR + code court + « sac 2 / 3 ») que le front sert dès maintenant ;
+  réimprimer ne crée rien et n'écrit rien. Quand Q22 sera tranchée, seul ce
+  gabarit change.
+
+**L4-C17 — Zéro sac n'est pas « chargé ».** « Tous ses sacs chargés » est vrai
+sur un ensemble vide : une commande jamais étiquetée serait passée, et le
+contournement du bouton manuel serait revenu par le vide. Un arrêt sans sac
+non annulé est **« non étiqueté »**, et « Partir » le refuse comme un sac non
+chargé (Q14).
+
+**L4-C18 — Le sac appartient à la commande ; le CHARGEMENT appartient à
+l'arrêt.** Un `loaded_at` posé sur le sac survivait au retrait de l'arrêt : une
+commande recomposée plus tard serait apparue déjà chargée. Donc deux tables :
+
+- `delivery_bag` : identifiant, commande, code court, `voided_at`. **Aucune
+  journée** : un sac n'a pas de jour, son chargement en a un. Inscrit aux
+  exceptions de la porte D7 avec cette raison ;
+- `delivery_bag_load` : **(arrêt, sac)**, `loaded_at`, `loaded_by`,
+  `loaded_via` (scan ou code tapé), `service_day` de l'arrêt, les trois
+  déclencheurs `day_change`. Écrite par l'exécution seule (C10).
+
+Un chargement ne compte que pour **son** arrêt : un arrêt retiré emporte ses
+chargements avec lui, et la commande recomposée repart de zéro. Déplacer garde
+la même ligne d'arrêt (C11), donc ses chargements — et c'est pourquoi déplacer
+un arrêt qui a un sac chargé est refusé (L4-C5). `saveMove` et « Partir »
+verrouillent, après les tournées, les lignes de `delivery_bag_load` de leurs
+arrêts, dans l'ordre des identifiants.
+
+**L4-C19 — Annuler un sac** est refusé s'il est chargé (décharger d'abord) et
+après le départ.
+
+**L4-C20 — Le code court.** Six caractères en base 32 de Crockford (sans 0/O,
+1/I/L, U), tirés par un port d'aléa injecté — jamais `Math.random()`
+(`lint:clock-port`). **Unique sur tous les sacs**, par un index unique : un
+milliard de combinaisons, une nouvelle tirée en cas de collision.
+
+**L4-C21 — Qui étiquette.** Le colisage est ouvert à `admin`, `commercial`,
+`comptabilite` et `comptoir` (`b2b_orders:write`) ; l'étiquetage demande
+`delivery_loading:write`, qu'ont `admin` et `comptoir` (Q21). Le bouton
+« Sacs » n'apparaît qu'avec ce droit ; sans lui, le colisage dit « les sacs se
+déclarent au comptoir ». Aucun droit n'est élargi.
+
+L4-C13 (l'URL du sac montre, un geste charge) tient. La connexion sur une URL
+profonde existe déjà (`staff-login.ts`, restauration de la cible dans
+`staff-auth.ts`) : à vérifier en navigateur, pas à concevoir.
+
 ### Lot 5 — La tranche d'une heure en livraison (côté commande)
 
 Côté **commerce** et **boutique** : la tranche d'une heure devient une vraie
