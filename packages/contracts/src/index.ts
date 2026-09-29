@@ -819,6 +819,15 @@ export type {
   DepartDeliveryRoundPayload,
 } from "./delivery-loading.js";
 export type {
+  DeliveryLoadingPlanBinView,
+  DeliveryLoadingPlanStepView,
+  DeliveryLoadingPlanStackView,
+  DeliveryLoadingPlanVolumeView,
+  DeliveryLoadingPlanWarningKind,
+  DeliveryLoadingPlanWarningView,
+  DeliveryLoadingPlanView,
+} from "./delivery-loading-plan.js";
+export type {
   DeliveryPackingLineView,
   DeliveryPackingBinView,
   DeliveryPackingUnplacedReason,

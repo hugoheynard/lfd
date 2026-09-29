@@ -69,6 +69,7 @@ import { UnloadDeliveryBinHandler } from "./application/commands/unload-delivery
 import { VoidDeliveryBinHandler } from "./application/commands/void-delivery-bin.handler.js";
 import { GetDeliveryBinHandler } from "./application/queries/get-delivery-bin.handler.js";
 import { GetDeliveryLoadingDayHandler } from "./application/queries/get-delivery-loading-day.handler.js";
+import { GetDeliveryLoadingPlanHandler } from "./application/queries/get-delivery-loading-plan.handler.js";
 import { GetDeliveryLoadingRoundHandler } from "./application/queries/get-delivery-loading-round.handler.js";
 import { GetDeliveryOrderBinsHandler } from "./application/queries/get-delivery-order-bins.handler.js";
 import { GetDeliveryBinFreeHalvesHandler } from "./application/queries/get-delivery-bin-free-halves.handler.js";
@@ -76,6 +77,7 @@ import { GetDeliveryPackingProposalHandler } from "./application/queries/get-del
 import { DeliveryPackingController } from "./http/delivery-packing.controller.js";
 import { BinCodeDrawer } from "./domain/ports/bin-code-drawer.js";
 import { DeliveryBinRepository } from "./domain/ports/delivery-bin.repository.js";
+import { LoadingPlanReader } from "./domain/ports/loading-plan.reader.js";
 import { DeliveryLoadingReader } from "./domain/ports/delivery-loading.reader.js";
 import { DepartedStopRepository } from "./domain/ports/departed-stop.repository.js";
 import { LoadedStopsReader } from "./domain/ports/loaded-stops.reader.js";
@@ -84,6 +86,7 @@ import { DeliveryBinsController } from "./http/delivery-bins.controller.js";
 import { DeliveryLoadingController } from "./http/delivery-loading.controller.js";
 import { CryptoBinCodeDrawer } from "./infrastructure/crypto-bin-code-drawer.js";
 import { PrismaDeliveryBinRepository } from "./infrastructure/prisma-delivery-bin.repository.js";
+import { PrismaLoadingPlanReader } from "./infrastructure/prisma-loading-plan.reader.js";
 import { PrismaDeliveryLoadingReader } from "./infrastructure/prisma-delivery-loading.reader.js";
 import { PrismaDepartedStopRepository } from "./infrastructure/prisma-departed-stop.repository.js";
 import { PrismaLoadedStopsReader } from "./infrastructure/prisma-loaded-stops.reader.js";
@@ -178,6 +181,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     GetDeliveryPackingProposalHandler,
     GetDeliveryBinHandler,
     GetDeliveryLoadingRoundHandler,
+    GetDeliveryLoadingPlanHandler,
     GetDeliveryLoadingDayHandler,
     GetRoutingSettingsHandler,
     SetRoutingSettingsHandler,
@@ -218,6 +222,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     { provide: DepartedStopRepository, useClass: PrismaDepartedStopRepository },
     { provide: LoadedStopsReader, useClass: PrismaLoadedStopsReader },
     { provide: DeliveryLoadingReader, useClass: PrismaDeliveryLoadingReader },
+    { provide: LoadingPlanReader, useClass: PrismaLoadingPlanReader },
     { provide: BinCodeDrawer, useClass: CryptoBinCodeDrawer },
     { provide: RoutingSettingsReader, useClass: PrismaRoutingSettingsReader },
     { provide: RoutingSettingsRepository, useClass: PrismaRoutingSettingsRepository },

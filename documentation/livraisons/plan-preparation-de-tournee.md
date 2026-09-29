@@ -1175,6 +1175,25 @@ innerBags }` → `{ binId }`), `colisage/bacs/:binId` (le QR ouvert),
 > MÊME genre (isotherme pour isotherme) et désigne l'entrée qu'il remplace
 > (`replacesBinIndex`).
 
+> **(D) serveur bâti le 2026-09-29** (non commité à l'écriture de cette
+> ligne) — le plan de chargement v1, une lecture ; aucune migration. Route
+> `GET admin/livraison/chargement/:roundId/plan` → `DeliveryLoadingPlanView`
+> (`packages/contracts/src/delivery-loading-plan.ts`), sous
+> `delivery_loading:read` comme les autres lectures du chargement. Cœur pur :
+> `planLoading` (`apps/lfd-api/src/delivery/domain/services/loading-plan.ts`,
+> volume et alertes à côté). La forme des bacs et la charge du véhicule
+> arrivent par un port à elles, `LoadingPlanReader`. Tranché au bâti, sans le
+> plan : les deux moitiés d'un bac partagé sont listées à l'étape du premier
+> arrêt (chacune avec sa référence), en dernier ; un partage dont l'autre
+> commande n'est pas dans la tournée reste à son arrêt (et alerte `bin_to_redo`) ;
+> piles — chaque bac physique va sur la dernière pile ouverte de son type
+> tant qu'elle n'a pas `maxStack`, sinon il en ouvre une, si bien qu'un arrêt
+> partage une pile avec le suivant chargé ; volume EXTÉRIEUR arrondi
+> au-dessus, un bac partagé compté une fois ; le sec disponible est l'utile
+> MOINS la caisse réfrigérée (qui y est, L2b-C2) ; `unknown_cargo` est émis
+> même sur un plan vide. Le plan SUGGÈRE l'ordre de scan, il ne l'impose pas :
+> le scan ne vérifie toujours que la tournée.
+
 **Tranches, dans l'ordre de bâti** : (A) catalogue des bacs + contenances
 (`delivery`) et le froid sur la fiche produit (`pim` → canal) ; (B) le bac
 remplace le sac (renommage, type, moitiés, scan, « Partir ») ; (C) le

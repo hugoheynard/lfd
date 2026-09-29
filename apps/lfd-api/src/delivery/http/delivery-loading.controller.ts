@@ -1,5 +1,6 @@
 import {
   type DeliveryLoadingDayView,
+  type DeliveryLoadingPlanView,
   type DeliveryLoadingRoundView,
   type DepartDeliveryRoundPayload,
   departDeliveryRoundPayloadSchema,
@@ -16,6 +17,7 @@ import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { DepartDeliveryRoundCommand } from "../application/commands/depart-delivery-round.command.js";
 import { LoadDeliveryBinCommand } from "../application/commands/load-delivery-bin.command.js";
 import { UnloadDeliveryBinCommand } from "../application/commands/unload-delivery-bin.command.js";
+import { GetDeliveryLoadingPlanQuery } from "../application/queries/get-delivery-loading-plan.query.js";
 import { GetDeliveryLoadingDayQuery } from "../application/queries/get-delivery-loading-day.query.js";
 import { GetDeliveryLoadingRoundQuery } from "../application/queries/get-delivery-loading-round.query.js";
 
@@ -54,6 +56,14 @@ export class DeliveryLoadingController {
   round(@Param("roundId") roundId: string): Promise<DeliveryLoadingRoundView> {
     return this.queries.execute<GetDeliveryLoadingRoundQuery, DeliveryLoadingRoundView>(
       new GetDeliveryLoadingRoundQuery(roundId),
+    );
+  }
+
+  /** Le plan de chargement (lot 4 bis, v2-5) : il suggère l'ordre de scan, sans l'imposer. */
+  @Get("chargement/:roundId/plan")
+  plan(@Param("roundId") roundId: string): Promise<DeliveryLoadingPlanView> {
+    return this.queries.execute<GetDeliveryLoadingPlanQuery, DeliveryLoadingPlanView>(
+      new GetDeliveryLoadingPlanQuery(roundId),
     );
   }
 
