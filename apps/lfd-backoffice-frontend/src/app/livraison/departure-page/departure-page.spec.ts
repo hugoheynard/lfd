@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
+import { DeliveryRoutingService } from '../delivery-routing.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import { DeparturePage } from './departure-page';
 
@@ -80,6 +81,11 @@ async function boot(
         useValue: { can: (permission: StaffPermission) => grants.includes(permission) },
       },
       { provide: NotifyService, useValue: { success: (m: string) => wire.said.push(m) } },
+      // Les réglages du calcul ont leur propre spec : ici, lus en échec, ils ne gênent rien.
+      {
+        provide: DeliveryRoutingService,
+        useValue: { settings: () => Promise.reject(new Error('hors sujet')) },
+      },
     ],
   });
   const fixture = TestBed.createComponent(DeparturePage);

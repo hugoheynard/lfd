@@ -38,6 +38,13 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   // journée : son CHARGEMENT en a une, et `delivery_bag_load` a ses déclencheurs.
   "production.delivery_bag":
     "un sac n'a pas de jour, son chargement en a un — `delivery_bag_load` porte la journée et ses déclencheurs",
+  // Le calculateur de tournée (lot 7, 2026-09-29) : un réglage, et un cache
+  // d'adresses. Ce qu'il ÉCRIT dans une journée passe par la tournée, qui a
+  // ses déclencheurs.
+  "production.delivery_routing_settings":
+    "les réglages du calcul de tournée, un réglage unique sans journée",
+  "production.delivery_geocode":
+    "le cache du géocodage, clé d'une adresse et non d'un jour — une proposition appliquée s'écrit dans `delivery_round`, surveillée",
 };
 
 /** Les colonnes qui disent « cette ligne appartient à une journée », côté `public`. */

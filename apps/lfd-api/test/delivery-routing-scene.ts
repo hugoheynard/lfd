@@ -1,0 +1,129 @@
+/**
+ * Les fixtures partagées par les deux suites e2e du **calculateur de tournée**
+ * (plan de tournée, lot 7) : le parcours (`delivery-routing.e2e-spec.ts`) et
+ * les gardes (`delivery-routing-guards.e2e-spec.ts`). Elles s'appuient sur
+ * celles de la composition : on propose sur ce qu'on sait composer.
+ *
+ * 🔴 Aucun réseau : sans `BAN_GEOCODER_URL`, le géocodeur est éteint. Les
+ * points viennent du CARNET — une adresse de société avec son point GPS, que
+ * la commande relie —, et le point de départ est un point de retrait situé.
+ */
+import type { ApplyDeliveryProposalPayload, DeliveryRoundProposalView } from "@lfd/contracts";
+import type request from "supertest";
+
+import { CustomerRole } from "../src/platform/database/client/client.js";
+import { jsonBody, type E2eContext } from "./e2e-harness.js";
+import { admin, ROUNDS } from "./delivery-rounds-scene.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
+
+export const PROPOSAL = `${ROUNDS}/proposition`;
+
+/** Le laboratoire, à Chambéry : le départ de toutes les tournées. */
+export async function seedDeparture(ctx: E2eContext, gps: boolean = true): Promise<void> {
+  await ctx.prisma.pickupAddress.create({
+    data: {
+      label: "Laboratoire",
+      ligne1: "1 rue du Four",
+      codePostal: "73000",
+      ville: "Chambéry",
+      pays: "France",
+      isDefault: true,
+      ...(gps ? { gps: { lat: 45.5646, lng: 5.9178 } } : {}),
+    },
+  });
+}
+
+let sequence = 0;
+
+/** Oublie les numéros semés : `ctx.reset()` a tout effacé. */
+export function forgetRoutingScene(): void {
+  sequence = 0;
+}
+
+/**
+ * Une commande en livraison ce jour-là, reliée à une adresse du carnet de SA
+ * société — avec un point GPS (`gps`), ou sans (`null`). Rend son id.
+ */
+export async function seedLocatedDelivery(
+  ctx: E2eContext,
+  day: string,
+  gps: { readonly lat: number; readonly lng: number } | null,
+): Promise<string> {
+  sequence += 1;
+  const n = String(sequence);
+  const owner = await createUser(ctx.prisma, {
+    auth0Sub: `auth0|routing-${n}`,
+    email: `r${n}@col.fr`,
+  });
+  const company = await createCompany(ctx.prisma, {
+    status: "active",
+    raisonSociale: `Maison ${n}`,
+  });
+  await attachTo(ctx.prisma, owner.id, company.id, CustomerRole.owner);
+  const site = {
+    label: `Site ${n}`,
+    ligne1: `${n} rue des Alpes`,
+    ligne2: "",
+    codePostal: "73000",
+    ville: "Chambéry",
+    pays: "France",
+  };
+  const address = await ctx.prisma.address.create({
+    data: {
+      ...site,
+      companyId: company.id,
+      kind: "delivery",
+      isDefault: true,
+      deliverySpecs: {
+        note: "",
+        slots: { mode: "everyday", slot: null },
+        deliveryContact: null,
+        gps,
+        signatureRequired: null,
+      },
+    },
+    select: { id: true },
+  });
+  const order = await ctx.prisma.order.create({
+    data: {
+      orderNumber: `TRN-${n.padStart(4, "0")}`,
+      placedByUserId: owner.id,
+      companyId: company.id,
+      clientele: "pro",
+      status: "placed",
+      paymentStatus: "not_required",
+      // La clé de journée du commerce : minuit UTC, comme `expectedOnWhere`.
+      requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
+      fulfillmentMethod: "delivery",
+      deliveryAddressId: address.id,
+      deliveryAddressSnapshot: site,
+      subtotalCents: 1000,
+      totalCents: 1200,
+    },
+    select: { id: true },
+  });
+  return order.id;
+}
+
+export async function propose(ctx: E2eContext, query: string): Promise<DeliveryRoundProposalView> {
+  return jsonBody<DeliveryRoundProposalView>(
+    await admin(ctx).get(`${PROPOSAL}?${query}`).expect(200),
+  );
+}
+
+/** La proposition renvoyée TELLE QU'ON L'A VUE : ce que ferait l'écran. */
+export function payloadOf(view: DeliveryRoundProposalView): ApplyDeliveryProposalPayload {
+  return {
+    day: view.day,
+    rounds: view.rounds.map((round) => ({
+      roundId: round.roundId,
+      vehicleId: round.vehicleId,
+      orderIds: round.stops.map((stop) => stop.orderId),
+    })),
+    versions: view.versions.map(({ roundId, version }) => ({ roundId, version })),
+  };
+}
+
+export function apply(ctx: E2eContext, payload: ApplyDeliveryProposalPayload): request.Test {
+  return admin(ctx).post(PROPOSAL).send(payload);
+}

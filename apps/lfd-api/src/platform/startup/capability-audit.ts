@@ -40,6 +40,8 @@ export interface CapabilitySnapshot {
   readonly hasStripe: boolean;
   readonly hasClientBaseUrl: boolean;
   readonly hasAdminBaseUrl: boolean;
+  /** L'adresse de la Base Adresse Nationale : « Situer les arrêts » (livraison, lot 7). */
+  readonly hasGeocoderUrl: boolean;
 }
 
 /**
@@ -229,6 +231,14 @@ const CHECKS: readonly Check[] = [
     consequence: "même chose pour l'équipe, côté back-office",
     severity: "degraded",
     present: (s) => s.hasAdminBaseUrl,
+  },
+  {
+    capability: "Géocodage des arrêts de livraison",
+    setting: "BAN_GEOCODER_URL",
+    consequence:
+      "« Situer les arrêts » est refusé : seuls les points GPS du carnet situent une livraison, les autres restent à répartir à la main",
+    severity: "degraded",
+    present: (s) => s.hasGeocoderUrl,
   },
 ];
 

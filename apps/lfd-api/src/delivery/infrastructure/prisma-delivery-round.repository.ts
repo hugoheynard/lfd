@@ -1,24 +1,14 @@
 import { Injectable } from "@nestjs/common";
 
-import type { Prisma } from "../../platform/database/client/client.js";
 import { PrismaService } from "../../platform/database/prisma.service.js";
-import type { AppError } from "../../platform/shared/errors/app-error.js";
-import { DeliveryRound, type DeliveryStopState } from "../domain/entities/delivery-round.js";
+import { DeliveryRound } from "../domain/entities/delivery-round.js";
 import { LoadedStopMoveError } from "../domain/errors/delivery-loading-errors.js";
 import {
   DeliveryRoundStaleError,
   type LiveStopHolder,
-  OrderAlreadyInRoundError,
 } from "../domain/errors/delivery-round-errors.js";
 import { DeliveryRoundRepository } from "../domain/ports/delivery-round.repository.js";
-
-/** Code Prisma d'une violation d'unicité : l'index I3, ou `(jour, véhicule, passage)`. */
-const UNIQUE_VIOLATION = "P2002";
-
-type Tx = Prisma.TransactionClient;
-
-/** Un arrêt vivant : ni retiré, ni clos — la définition de l'index I3 (C12). */
-const LIVE_STOP = { removedAt: null, closedAt: null } as const;
+import { LIVE_STOP, type Tx, writeRound, writeStops } from "./delivery-round.writes.js";
 
 /**
  * **Adaptateur Prisma de la composition.** `toDomain` par
@@ -82,8 +72,9 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
 
   async save(round: DeliveryRound): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
-      await this.writeRound(tx, round);
-      await this.writeStops(tx, round);
+      // Une autre ouverture vient de prendre ce passage : on relit.
+      await writeRound(tx, round, staleOnOpen);
+      await writeStops(tx, round);
     });
   }
 
@@ -108,12 +99,12 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
          ORDER BY "id"
            FOR UPDATE`;
       await ensureStopNotLoaded(tx, [from, to], stopId, from.vehicleName);
-      await this.writeRound(tx, from);
-      await this.writeRound(tx, to);
+      await writeRound(tx, from, staleOnOpen);
+      await writeRound(tx, to, staleOnOpen);
       // La tournée quittée d'abord : ses positions se resserrent avant que
       // l'arrêt ne rejoigne l'autre.
-      await this.writeStops(tx, from);
-      await this.writeStops(tx, to);
+      await writeStops(tx, from);
+      await writeStops(tx, to);
     });
   }
 
@@ -131,77 +122,6 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
       select: { round: { select: { vehicleName: true, serviceDay: true, passage: true } } },
     });
     return stop?.round ?? null;
-  }
-
-  /** @throws {DeliveryRoundStaleError} @throws {OrderAlreadyInRoundError} */
-  private async writeRound(tx: Tx, round: DeliveryRound): Promise<void> {
-    const snapshot = round.toSnapshot();
-    if (round.loadedVersion === null) {
-      // Une autre ouverture vient de prendre ce passage : on relit.
-      await guard(
-        () => new DeliveryRoundStaleError(snapshot.vehicleName),
-        () =>
-          tx.deliveryRound.create({
-            data: {
-              id: snapshot.id,
-              serviceDay: snapshot.serviceDay,
-              vehicleId: snapshot.vehicleId,
-              vehicleName: snapshot.vehicleName,
-              passage: snapshot.passage,
-              version: snapshot.version,
-              departedAt: snapshot.departedAt,
-              createdAt: snapshot.createdAt,
-              updatedAt: snapshot.updatedAt,
-            },
-          }),
-      );
-      return;
-    }
-    const written = await tx.deliveryRound.updateMany({
-      where: { id: snapshot.id, version: round.loadedVersion },
-      data: {
-        version: snapshot.version,
-        departedAt: snapshot.departedAt,
-        updatedAt: snapshot.updatedAt,
-      },
-    });
-    if (written.count === 0) {
-      throw new DeliveryRoundStaleError(snapshot.vehicleName);
-    }
-  }
-
-  private async writeStops(tx: Tx, round: DeliveryRound): Promise<void> {
-    const snapshot = round.toSnapshot();
-    const rows: readonly (DeliveryStopState & { readonly removedAt: Date | null })[] = [
-      ...snapshot.stops.map((stop) => ({ ...stop, removedAt: null })),
-      ...snapshot.removedStops,
-    ];
-    for (const stop of rows) {
-      // L'index I3 a vu une course que la lecture préalable n'a pas vue.
-      await guard(
-        () => new OrderAlreadyInRoundError(null, null),
-        () =>
-          tx.deliveryRoundStop.upsert({
-            where: { id: stop.id },
-            create: {
-              id: stop.id,
-              roundId: snapshot.id,
-              orderId: stop.orderId,
-              serviceDay: snapshot.serviceDay,
-              position: stop.position,
-              removedAt: stop.removedAt,
-              closedAt: stop.closedAt,
-              createdAt: snapshot.updatedAt,
-            },
-            update: {
-              roundId: snapshot.id,
-              position: stop.position,
-              removedAt: stop.removedAt,
-              closedAt: stop.closedAt,
-            },
-          }),
-      );
-    }
   }
 }
 
@@ -228,17 +148,7 @@ async function ensureStopNotLoaded(
   }
 }
 
-/**
- * Traduit une violation d'unicité en le refus que l'appelant nomme. La
- * transaction est perdue : on ne peut plus rien relire pour préciser.
- */
-async function guard(conflict: () => AppError, write: () => Promise<unknown>): Promise<void> {
-  try {
-    await write();
-  } catch (error: unknown) {
-    if (error instanceof Error && Reflect.get(error, "code") === UNIQUE_VIOLATION) {
-      throw conflict();
-    }
-    throw error;
-  }
+/** Une ouverture qui bute sur `(jour, véhicule, passage)` : une autre vient de le prendre. */
+function staleOnOpen(round: DeliveryRound): DeliveryRoundStaleError {
+  return new DeliveryRoundStaleError(round.vehicleName);
 }

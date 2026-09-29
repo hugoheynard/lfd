@@ -106,6 +106,8 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "delivery_round.",
     // Les sacs et leur chargement (lot 4, 2026-09-29) : même famille.
     "delivery_bag.",
+    // Le calculateur de tournée (lot 7, 2026-09-29) : ses réglages.
+    "delivery_routing.",
     // L'heure limite posée sur un produit : même famille que celle d'un point.
     "order_time_limit.",
   ],

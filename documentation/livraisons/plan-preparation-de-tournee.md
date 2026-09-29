@@ -975,7 +975,7 @@ n'est corrigé ; tout est à reprendre avec les deux sources de fenêtre.
   abonnements ne génèrent aucune commande aujourd'hui ; le devis n'a pas de
   tranche et ne doit pas en exiger.
 
-### Lot 7 — Le calculateur de tournée
+### Lot 7 — Le calculateur de tournée — ✅ bâti le 2026-09-29 (vol d'oiseau ; OSRM au lot 8)
 
 > **Ouvert le 2026-09-29.** Hugo : « je veux qu'on arrive au calculateur de
 > tournée ». 📐 Conception avant `vitruve` ; rien n'est bâti. L'algorithme est
@@ -1153,6 +1153,25 @@ chaque tournée touchée : son identifiant, son véhicule, la liste des arrêts
   coup, ou tu les saisiras adresse par adresse dans le carnet ?
 - **L7-Q5** — Une première valeur pour la **durée maximale** d'une tournée et
   pour le **temps d'arrêt** moyen ?
+
+#### Ce que la construction a tranché (2026-09-29)
+
+- **Deux modes, choix du back-office** (Hugo : « ça dépend, je ne sais pas
+  encore si on livre plusieurs fois ») : **insérer** dans les tournées
+  existantes, au moindre surcoût, sans jamais changer l'ordre fait à la main ;
+  ou **nouvelles tournées**. Un défaut dans les réglages du calcul, que le
+  choix au moment de proposer emporte, et un réglage « plusieurs passages par
+  véhicule » : sans lui, ce qui ne tient pas déborde. Défauts d'usine :
+  nouvelles tournées, plusieurs passages.
+- En mode insérer, une tournée **non partie** reste éligible même si des sacs y
+  sont chargés : l'arrêt ajouté n'a pas de sac, « Partir » le signalera. Une
+  tournée dont un arrêt n'est pas situé est exclue : impossible de chronométrer
+  ce qu'on y ajoute.
+- « Tout recomposer » garde entière une tournée dont un arrêt est signalé ou non
+  situé : la proposition ne défait pas ce qu'elle ne sait pas refaire.
+- Le géocodage n'envoie que la voie, le code postal et la ville ; en dessous d'un
+  score de 0,5, l'adresse reste non située.
+- Ce qui reste hors du code : [`todo-calculateur.md`](todo-calculateur.md).
 
 ### Lot 8 — OSRM Savoie : des durées par la route
 
@@ -1488,6 +1507,20 @@ qui remonte à la carte de santé, le runbook.
   `osrm-backend`, épinglée par digest, amd64), `wrangler.jsonc`, Worker d'entrée
   minimal, et un workflow à lui (mensuel + manuel), filtré sur son dossier.
   Il ne partage **rien** avec `lfd-api`, qui ne change pas à cette étape.
+
+#### Étape 1 bâtie le 2026-09-29 — le service `lfd-osrm`
+
+`apps/lfd-osrm/` : une seule source de version (`osrm-version.env`, image
+OSRM v5.27.1 épinglée par digest amd64) ; un script qui prépare la carte de la
+Savoie et **échoue** si Val d'Isère → Arc 1800 ne répond pas ; un Worker qui ne
+sert que `/table` et `/route`, sans adresse publique ni cron, et rend un refus
+net quand OSRM ne répond pas ; un workflow mensuel et manuel ; la page
+`documentation/ops/carte-routiere-osrm.md`. Essai local : carte en 2 min 30,
+image de 227 Mo, réveil 0,6 s, 63 Mo de mémoire. **Rien n'est déployé.**
+
+Reste : un job de CI générale pour le paquet (comme `gateway`), le point de
+départ de contrôle à fixer sur l'adresse exacte du labo, et ce que seul le
+premier déploiement dira (démarrage à froid, jeton, rétention des images).
 
 #### Questions à Hugo
 

@@ -2,6 +2,7 @@ import {
   type DeliveryOrderFacts,
   type DeliveryOrderRef,
   DeliveryOrdersReader,
+  type DeliveryStopPoint,
   type DepartureSheet,
 } from "../../../channels/commerce/index.js";
 import { DeliveryRound } from "../../../domain/entities/delivery-round.js";
@@ -71,6 +72,11 @@ export class InMemoryDeliveryRounds extends DeliveryRoundRepository {
     );
   }
 
+  /** Toutes les tournées « en base ». */
+  all(): readonly DeliveryRound[] {
+    return [...this.byId.values()];
+  }
+
   /** La tournée telle qu'elle est « en base ». */
   stored(id: string): DeliveryRound | undefined {
     return this.byId.get(id);
@@ -108,6 +114,21 @@ export class FixedDeliveryOrders extends DeliveryOrdersReader {
     return Promise.resolve(this.orders.filter((order) => orderIds.includes(order.orderId)));
   }
 
+  /** Aucun point : le lot 7 a son double, {@link LocatedDeliveryOrders}. */
+  stopPointsOf(orderIds: readonly string[]): Promise<readonly DeliveryStopPoint[]> {
+    return Promise.resolve(
+      this.orders
+        .filter((order) => orderIds.includes(order.orderId))
+        .map((order) => ({
+          orderId: order.orderId,
+          reference: order.reference,
+          gps: null,
+          address: null,
+          window: null,
+        })),
+    );
+  }
+
   /** Une feuille par commande connue : ce que le départ fige. */
   departureSheetsOf(orderIds: readonly string[]): Promise<readonly DepartureSheet[]> {
     return Promise.resolve(
@@ -126,6 +147,20 @@ export class FixedDeliveryOrders extends DeliveryOrdersReader {
           status: order.status,
         })),
     );
+  }
+}
+
+/** Le commerce, figé, AVEC les points des arrêts (lot 7) : GPS du carnet, adresse, fenêtre. */
+export class LocatedDeliveryOrders extends FixedDeliveryOrders {
+  constructor(
+    orders: readonly DeliveryOrderFacts[],
+    private readonly points: readonly DeliveryStopPoint[],
+  ) {
+    super(orders);
+  }
+
+  override stopPointsOf(orderIds: readonly string[]): Promise<readonly DeliveryStopPoint[]> {
+    return Promise.resolve(this.points.filter((point) => orderIds.includes(point.orderId)));
   }
 }
 
@@ -181,5 +216,9 @@ export class FixedLoadedStops extends LoadedStopsReader {
 
   hasLoadedBag(stopId: string): Promise<boolean> {
     return Promise.resolve(this.loaded.includes(stopId));
+  }
+
+  loadedAmong(stopIds: readonly string[]): Promise<ReadonlySet<string>> {
+    return Promise.resolve(new Set(stopIds.filter((stopId) => this.loaded.includes(stopId))));
   }
 }

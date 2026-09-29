@@ -238,6 +238,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   DeliveryBag: "production",
   DeliveryBagLoad: "production",
   DeliveryStopExecution: "production",
+  // Le calculateur de tournée (lot 7) : un réglage, et le cache du géocodage.
+  DeliveryRoutingSettings: "production",
+  DeliveryGeocode: "production",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

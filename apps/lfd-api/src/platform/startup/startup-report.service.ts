@@ -119,6 +119,7 @@ export class StartupReport implements OnApplicationBootstrap {
       hasStripe: this.config.stripeConfig() !== null,
       hasClientBaseUrl: this.config.clientBaseUrl() !== null,
       hasAdminBaseUrl: this.config.adminBaseUrl() !== null,
+      hasGeocoderUrl: this.config.geocoderUrl() !== null,
     };
   }
 }

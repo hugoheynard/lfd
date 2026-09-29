@@ -45,6 +45,17 @@
         <fold-callout variant="alert" data-refusal>{{ refusal }}</fold-callout>
       }
 
+      <app-route-planner
+        [day]="day()"
+        [vehicles]="vehicleOptions()"
+        [canWrite]="canWrite()"
+        [disabled]="busy()"
+        [companies]="companies()"
+        [canOpenClients]="canSeePhotos()"
+        [canReadSettings]="canReadSettings()"
+        (changed)="retry()"
+      />
+
       @switch (state().status) {
         @case ('loading') {
           <fold-loading message="Lecture des tournées…" />

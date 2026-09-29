@@ -17,4 +17,16 @@ export class PrismaLoadedStopsReader extends LoadedStopsReader {
     });
     return found !== null;
   }
+
+  async loadedAmong(stopIds: readonly string[]): Promise<ReadonlySet<string>> {
+    if (stopIds.length === 0) {
+      return new Set();
+    }
+    const rows = await this.prisma.deliveryBagLoad.findMany({
+      where: { stopId: { in: [...stopIds] }, loadedAt: { not: null } },
+      select: { stopId: true },
+      distinct: ["stopId"],
+    });
+    return new Set(rows.map((row) => row.stopId));
+  }
 }

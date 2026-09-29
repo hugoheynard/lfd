@@ -26,6 +26,12 @@ export const BAG_LOAD_VIA = domain('manière de charger un sac', {
   code: 'Code tapé',
 });
 
+/** Le mode de « Proposer » par défaut du calculateur de tournée (`delivery_routing.settings_updated`). */
+export const PROPOSAL_MODE = domain('mode de proposition des tournées', {
+  insert: 'Insérer dans les tournées existantes',
+  new_rounds: 'Nouvelles tournées',
+});
+
 /** Ce que l'abandon du règlement a fait de la commande (`order.abandoned`). */
 export const ABANDON_OUTCOME = domain('issue d’un abandon de règlement', {
   cancelled: 'Commande annulée',
@@ -50,6 +56,7 @@ export const ORDERS_VALUES: ValueFamily = {
     WEEKDAY,
     HANDOVER_VIA,
     BAG_LOAD_VIA,
+    PROPOSAL_MODE,
     ABANDON_OUTCOME,
     QUALITY_VERDICT,
     QUALITY_LIFTING_VERDICT,

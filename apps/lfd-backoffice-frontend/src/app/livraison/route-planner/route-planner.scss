@@ -1,0 +1,28 @@
+.planner,
+.proposal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.proposal {
+  gap: var(--fold-space-md);
+}
+
+.choices,
+.actions,
+.unlocated,
+.stops li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.stops {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+}

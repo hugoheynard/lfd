@@ -55,6 +55,9 @@ const RUNTIME_KEYS = [
   // boutons des e-mails.
   "CLIENT_BASE_URL",
   "ADMIN_BASE_URL",
+  // La Base Adresse Nationale, pour « Situer les arrêts » de livraison (lot 7).
+  // Absente, le géocodage est éteint : seuls les points GPS du carnet situent.
+  "BAN_GEOCODER_URL",
   // Courrier : sans la clé, le mailer rend les gabarits et n'envoie rien.
   "RESEND_MAILER_B2B_API_KEY",
   "RESEND_API_KEY",

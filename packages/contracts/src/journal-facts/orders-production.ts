@@ -3,6 +3,7 @@ import { z } from "zod";
 import { weekdaySchema } from "../address.js";
 import { DELIVERY_LOADING_FACTS } from "./delivery-loading.js";
 import { DELIVERY_ROUND_FACTS } from "./delivery-rounds.js";
+import { DELIVERY_ROUTING_FACTS } from "./delivery-routing.js";
 import {
   basisPoints,
   cents,
@@ -326,6 +327,8 @@ export const ORDERS_PRODUCTION_FACTS = {
   ...DELIVERY_ROUND_FACTS,
   /** **Le chargement** (lot 4) — dans son propre fichier, même famille. */
   ...DELIVERY_LOADING_FACTS,
+  /** **Le calculateur de tournée** (lot 7) — dans son propre fichier, même famille. */
+  ...DELIVERY_ROUTING_FACTS,
 
   /**
    * `absorbed` : les commandes que la journée a absorbées en se fermant. Le

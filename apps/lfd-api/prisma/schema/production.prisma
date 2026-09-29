@@ -639,3 +639,59 @@ model DeliveryStopExecution {
   @@map("delivery_stop_execution")
   @@schema("production")
 }
+
+/// **Les réglages du calcul de tournée** (lot 7, L7-C13, L7-C15) — UNE ligne,
+/// clé naturelle, auteur figé, comme `DeliveryDeparture`.
+///
+/// Ligne absente = personne n'a réglé : le calcul prend ses défauts (détour
+/// ×1,4, 35 km/h, départ au plus tôt 06:00, 240 min au plus, 5 min par arrêt,
+/// tournées neuves, plusieurs passages permis),
+/// précédent `DeliveryAvailability`. Pas `delivery_settings`, qui est une table
+/// du commerce. **Aucune journée** : exception écrite dans
+/// `test/day-change-triggers.e2e-spec.ts`.
+model DeliveryRoutingSettings {
+  /// Toujours `routing` : il n'y a qu'un réglage.
+  key               String @id
+  /// Le facteur de détour, en CENTIÈMES : 140 = ×1,4. Un entier, pour qu'une
+  /// valeur saisie se relise à l'identique.
+  detourPercent     Int    @map("detour_percent")
+  averageSpeedKmh   Int    @map("average_speed_kmh")
+  /// `HH:MM`, heure de Paris : une heure de journée, pas un instant.
+  earliestDeparture String @map("earliest_departure") @db.VarChar(5)
+  maxRoundMinutes   Int    @map("max_round_minutes")
+  stopMinutes       Int    @map("stop_minutes")
+  /// `insert` : insérer dans les tournées existantes ; `new_rounds` : ouvrir
+  /// des tournées neuves. Le défaut de « Proposer », qu'un paramètre surcharge.
+  defaultMode       String @map("default_mode") @db.VarChar(16)
+  /// Un véhicule peut-il faire plusieurs tournées dans la journée (Q13) ?
+  multiplePassages  Boolean @map("multiple_passages")
+
+  updatedAt        DateTime @map("updated_at")
+  updatedByStaffId String   @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+  updatedByRole    String   @map("updated_by_role")
+
+  @@map("delivery_routing_settings")
+  @@schema("production")
+}
+
+/// **Le cache du géocodage** (lot 7, L7-C9, L7-C10) — une adresse livrée,
+/// réduite à son EMPREINTE, et le point que la Base Adresse Nationale en a
+/// rendu.
+///
+/// 🔴 **Aucune adresse en clair** : la clé est le SHA-256 de l'adresse
+/// normalisée. Une entrée de plus de 365 jours n'est plus lue ; « Situer »
+/// la rejoue. Écrivain : « Situer » seul — « Proposer » ne fait que lire.
+/// **Aucune journée** : exception écrite dans `test/day-change-triggers.e2e-spec.ts`.
+model DeliveryGeocode {
+  /// SHA-256 hexadécimal de l'adresse normalisée.
+  fingerprint String   @id @db.Char(64)
+  lat         Float
+  lng         Float
+  /// Le score de la BAN, entre 0 et 1.
+  score       Float
+  geocodedAt  DateTime @map("geocoded_at")
+
+  @@map("delivery_geocode")
+  @@schema("production")
+}

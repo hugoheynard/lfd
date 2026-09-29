@@ -1,0 +1,104 @@
+<fold-card data-routing-settings>
+  <div class="settings">
+    <fold-element-title variant="title" title="Calcul des tournées" [subtitle]="provenance()">
+      @if (canWrite() && state().status === 'ready') {
+        <button
+          titleAction
+          foldButton
+          size="sm"
+          [loading]="saving()"
+          [disabled]="!canSave()"
+          (click)="save()"
+          data-save-routing
+        >
+          Enregistrer
+        </button>
+      }
+    </fold-element-title>
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-routing-refusal>{{ message }}</fold-callout>
+    }
+
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture des réglages du calcul…" />
+      }
+      @case ('error') {
+        <fold-callout variant="alert" data-routing-error>
+          Les réglages du calcul n’ont pas pu être lus.
+          <button actions foldButton size="sm" emphasis="outline" (click)="retry()">
+            Réessayer
+          </button>
+        </fold-callout>
+      }
+      @case ('ready') {
+        <div class="fields">
+          <fold-number-input
+            label="Facteur de détour"
+            hint="La route contre le vol d’oiseau : 1,4 = 40 % de plus."
+            [value]="detour()"
+            [min]="1"
+            [step]="0.05"
+            [decimals]="2"
+            [readOnly]="!canWrite()"
+            (valueChange)="detour.set($event)"
+            data-detour
+          />
+          <fold-number-input
+            label="Vitesse moyenne (km/h)"
+            integer
+            [value]="speed()"
+            [min]="1"
+            [readOnly]="!canWrite()"
+            (valueChange)="speed.set($event)"
+            data-speed
+          />
+          <fold-time
+            label="Départ au plus tôt"
+            [value]="earliest()"
+            [readOnly]="!canWrite()"
+            (valueChange)="earliest.set($event)"
+            data-earliest
+          />
+          <fold-number-input
+            label="Durée maximale d’une tournée (min)"
+            hint="Aller, arrêts et retour."
+            integer
+            [value]="maxRound()"
+            [min]="1"
+            [readOnly]="!canWrite()"
+            (valueChange)="maxRound.set($event)"
+            data-max-round
+          />
+          <fold-number-input
+            label="Temps d’arrêt (min)"
+            hint="Se garer, porter, revenir."
+            integer
+            [value]="stop()"
+            [min]="0"
+            [readOnly]="!canWrite()"
+            (valueChange)="stop.set($event)"
+            data-stop-minutes
+          />
+          <fold-listbox
+            label="Proposer par défaut en"
+            [options]="modeOptions"
+            [value]="mode()"
+            [disabled]="!canWrite()"
+            (selectionChange)="mode.set($event)"
+            data-default-mode
+          />
+        </div>
+        <fold-checkbox
+          label="Plusieurs passages par véhicule"
+          hint="Sinon, ce qui ne tient pas dans une tournée reste à répartir."
+          [checked]="multiplePassages()"
+          [disabled]="!canWrite()"
+          (checkedChange)="multiplePassages.set($event)"
+          data-multiple-passages
+        />
+      }
+    }
+  </div>
+</fold-card>

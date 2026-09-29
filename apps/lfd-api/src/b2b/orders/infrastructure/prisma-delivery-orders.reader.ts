@@ -4,6 +4,7 @@ import {
   type DeliveryOrderFacts,
   type DeliveryOrderRef,
   DeliveryOrdersReader,
+  type DeliveryStopPoint,
   type DepartureSheet,
 } from "../../../delivery/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -43,6 +44,23 @@ const DEPARTURE_SHEET_SELECT = {
   deliveryAddressSnapshot: true,
   ...CUSTOMER_SELECT,
 } as const;
+
+/** Ce que le calculateur lit d'une commande (lot 7) : le lien, l'adresse figée, la fenêtre. */
+const STOP_POINT_SELECT = {
+  id: true,
+  orderNumber: true,
+  companyId: true,
+  deliveryAddressId: true,
+  fulfillment: true,
+  deliveryAddressSnapshot: true,
+} as const;
+
+/** Les consignes d'une adresse du carnet, telles que le mur les rend. */
+interface AddressSpecs {
+  readonly companyId: string;
+  readonly note: string;
+  readonly gps: { readonly lat: number; readonly lng: number } | null;
+}
 
 interface DeliveryOrderRow {
   readonly id: string;
@@ -107,13 +125,7 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
       where: { id: { in: [...orderIds] } },
       select: DEPARTURE_SHEET_SELECT,
     });
-    const notes = await this.addressNotesOf(
-      rows.flatMap((row) =>
-        row.deliveryAddressId === null || row.companyId === null
-          ? []
-          : [{ addressId: row.deliveryAddressId, companyId: row.companyId }],
-      ),
-    );
+    const notes = await this.addressNotesOf(linksOf(rows));
     return rows.map((row) => {
       const agreed = fulfillmentOf(row.fulfillment);
       const note = row.deliveryAddressId === null ? undefined : notes.get(row.deliveryAddressId);
@@ -133,13 +145,40 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
   }
 
   /**
-   * La note livreurs des adresses du carnet, lue SOUS LE MUR comme la feuille
-   * de route : chaque couple `(adresse, société)` entre dans le `where`, et le
-   * mapper revérifie la société. Validée, jamais castée.
+   * Le point GPS du carnet, lu SOUS LE MUR comme la note ; l'adresse livrée
+   * FIGÉE à la passation, jamais le carnet vivant (lot 7, L7-C8).
+   */
+  async stopPointsOf(orderIds: readonly string[]): Promise<readonly DeliveryStopPoint[]> {
+    if (orderIds.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.order.findMany({
+      where: { id: { in: [...orderIds] } },
+      select: STOP_POINT_SELECT,
+    });
+    const specs = await this.addressNotesOf(linksOf(rows));
+    return rows.map((row) => {
+      const linked = row.deliveryAddressId === null ? undefined : specs.get(row.deliveryAddressId);
+      const window = windowOf(fulfillmentOf(row.fulfillment));
+      return {
+        orderId: row.id,
+        reference: row.orderNumber,
+        gps: linked?.companyId === row.companyId ? linked.gps : null,
+        address: snapshotOf(row.deliveryAddressSnapshot),
+        window: window === null ? null : { start: window.start, end: window.end },
+      };
+    });
+  }
+
+  /**
+   * Les consignes des adresses du carnet — note et point GPS —, lues SOUS LE
+   * MUR comme la feuille de route : chaque couple `(adresse, société)` entre
+   * dans le `where`, et le mapper revérifie la société. Validées, jamais
+   * castées.
    */
   private async addressNotesOf(
     links: readonly AddressLink[],
-  ): Promise<ReadonlyMap<string, { readonly companyId: string; readonly note: string }>> {
+  ): Promise<ReadonlyMap<string, AddressSpecs>> {
     if (links.length === 0) {
       return new Map();
     }
@@ -150,10 +189,31 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
     return new Map(
       rows.map((row) => {
         const specs = deliverySpecsSchema.safeParse(row.deliverySpecs);
-        return [row.id, { companyId: row.companyId, note: specs.success ? specs.data.note : "" }];
+        return [
+          row.id,
+          {
+            companyId: row.companyId,
+            note: specs.success ? specs.data.note : "",
+            gps: specs.success ? specs.data.gps : null,
+          },
+        ];
       }),
     );
   }
+}
+
+/** Les liens d'adresse à relire ; une commande sans société n'en a aucun. */
+function linksOf(
+  rows: readonly {
+    readonly deliveryAddressId: string | null;
+    readonly companyId: string | null;
+  }[],
+): readonly AddressLink[] {
+  return rows.flatMap((row) =>
+    row.deliveryAddressId === null || row.companyId === null
+      ? []
+      : [{ addressId: row.deliveryAddressId, companyId: row.companyId }],
+  );
 }
 
 function refOf(row: DeliveryOrderRow): DeliveryOrderRef {

@@ -11,5 +11,7 @@ export {
   DeliveryOrdersReader,
   type DeliveryOrderFacts,
   type DeliveryOrderRef,
+  type DeliveryStopPoint,
+  type DeliveryStopWindow,
 } from "./delivery-orders.reader.js";
 export type { DepartureSheet, DepartureWindow } from "../../domain/entities/departure-sheet.js";

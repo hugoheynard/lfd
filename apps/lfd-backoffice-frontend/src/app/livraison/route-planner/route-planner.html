@@ -1,0 +1,232 @@
+<fold-card data-planner>
+  <div class="planner">
+    <fold-element-title
+      variant="title"
+      icon="truck"
+      title="Calculer"
+      subtitle="Une proposition en aperçu : rien n’est écrit tant qu’on n’a pas appliqué."
+    >
+      <a titleAction foldButton size="sm" emphasis="soft" [routerLink]="settingsLink">
+        Réglages du calcul
+      </a>
+    </fold-element-title>
+
+    <div class="choices">
+      @for (vehicle of vehicles(); track vehicle.value) {
+        <fold-checkbox
+          [label]="vehicle.label"
+          [checked]="isChecked(vehicle.value)"
+          [disabled]="busy()"
+          (checkedChange)="toggle(vehicle.value, $event)"
+          data-vehicle
+        />
+      }
+      <fold-listbox
+        size="sm"
+        label="Proposer en"
+        placeholder="Mode des réglages"
+        [options]="modeOptions"
+        [value]="mode()"
+        [disabled]="busy() || recomposeAll()"
+        (valueChange)="mode.set($event)"
+        data-mode
+      />
+      <fold-checkbox
+        label="Tout recomposer"
+        hint="Reprendre aussi les tournées composées à la main, sans tenir compte du mode (jamais une tournée partie ou chargée)."
+        [checked]="recomposeAll()"
+        [disabled]="busy()"
+        (checkedChange)="recomposeAll.set($event)"
+        data-recompose-all
+      />
+    </div>
+
+    <div class="actions">
+      @if (canWrite()) {
+        <button
+          foldButton
+          emphasis="outline"
+          icon="map-pin"
+          [loading]="phase() === 'locating'"
+          [disabled]="busy()"
+          (click)="locate()"
+          data-locate
+        >
+          Situer les arrêts
+        </button>
+      }
+      <button
+        foldButton
+        icon="truck"
+        [loading]="phase() === 'proposing'"
+        [disabled]="busy() || nothingChosen()"
+        (click)="propose()"
+        data-propose
+      >
+        Proposer
+      </button>
+    </div>
+
+    @if (phase() === 'locating') {
+      <fold-loading message="Situation des arrêts… cela peut prendre quelques secondes." />
+    }
+    @if (phase() === 'proposing') {
+      <fold-loading message="Calcul de la proposition…" />
+    }
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-planner-refusal>{{ message }}</fold-callout>
+    }
+
+    @if (proposal(); as proposal) {
+      <div class="proposal" data-proposal>
+        <fold-element-title
+          variant="caps"
+          [title]="'Proposition · ' + modeLabel(proposal.mode)"
+          data-proposal-mode
+        />
+        @if (proposal.estimate === 'crow_flies') {
+          <fold-callout variant="info" data-crow-flies>{{ estimateLabel(proposal) }}</fold-callout>
+        }
+
+        @for (round of proposal.rounds; track $index) {
+          <fold-card surface="sunken" padding="sm" data-proposed-round>
+            <div class="planner">
+              <fold-element-title
+                variant="title"
+                [title]="roundLabel(round) + (round.roundId === null ? ' · à ouvrir' : '')"
+                [subtitle]="roundSummary(round)"
+              >
+                @if (round.overDuration) {
+                  <fold-badge
+                    titleAction
+                    variant="warning"
+                    content="Dépasse la durée maximale"
+                    data-over-duration
+                  />
+                }
+              </fold-element-title>
+              <ol class="stops">
+                @for (stop of round.stops; track stop.orderId) {
+                  <li data-proposed-stop>
+                    <span>{{ stop.reference }} · arrivée vers {{ timeLabel(stop.arrival) }}</span>
+                    @if (stop.window; as window) {
+                      <span>· {{ windowLabel(window) }}</span>
+                    }
+                    @if (stop.windowMissed) {
+                      <fold-badge variant="alert" content="Fenêtre manquée" data-window-missed />
+                    }
+                  </li>
+                }
+              </ol>
+            </div>
+          </fold-card>
+        } @empty {
+          <fold-callout variant="neutral" data-no-proposed-round>
+            Aucune tournée à proposer : rien de situé à répartir sur les véhicules choisis.
+          </fold-callout>
+        }
+
+        @if (proposal.unlocated.length > 0) {
+          <fold-card surface="sunken" padding="sm" data-unlocated>
+            <div class="planner">
+              <fold-element-title
+                variant="title"
+                title="Non situées"
+                subtitle="Exclues de la proposition : à situer, ou à répartir à la main."
+              >
+                <fold-badge
+                  titleAction
+                  variant="warning"
+                  [content]="proposal.unlocated.length + ''"
+                />
+              </fold-element-title>
+              @for (order of proposal.unlocated; track order.orderId) {
+                <div class="unlocated" data-unlocated-order>
+                  <span>{{ order.reference }} · {{ unlocatedReasonLabel(order.reason) }}</span>
+                  @if (order.reason === 'not_geocoded' && canWrite()) {
+                    <button
+                      foldButton
+                      size="sm"
+                      emphasis="outline"
+                      [disabled]="busy()"
+                      (click)="locate()"
+                      data-locate-again
+                    >
+                      Situer
+                    </button>
+                  }
+                  @if (companyLink(order.orderId); as link) {
+                    <a foldButton size="sm" emphasis="soft" [routerLink]="link" data-company-link>
+                      Compléter le GPS dans le carnet
+                    </a>
+                  } @else {
+                    <a
+                      foldButton
+                      size="sm"
+                      emphasis="soft"
+                      [routerLink]="orderLink(order.orderId)"
+                      data-order-link
+                    >
+                      Ouvrir la commande
+                    </a>
+                  }
+                </div>
+              }
+            </div>
+          </fold-card>
+        }
+
+        @if (proposal.overflow.length > 0) {
+          <fold-callout variant="warning" data-overflow>
+            Aucune tournée ne tient ces commandes dans la durée maximale — elles restent à
+            répartir&nbsp;:
+            @for (order of proposal.overflow; track order.orderId; let last = $last) {
+              {{ order.reference }}{{ last ? '.' : ',' }}
+            }
+          </fold-callout>
+        }
+
+        @if (proposal.kept.length > 0) {
+          <fold-card surface="sunken" padding="sm" data-kept>
+            <div class="planner">
+              <fold-element-title
+                variant="title"
+                title="Gardées telles quelles"
+                subtitle="La proposition ne les touche pas."
+              />
+              @for (kept of proposal.kept; track kept.roundId) {
+                <span data-kept-round>
+                  {{ roundLabel(kept) }} · {{ keptReasonLabel(kept.reason) }}
+                </span>
+              }
+            </div>
+          </fold-card>
+        }
+
+        <div class="actions">
+          @if (canWrite()) {
+            <button
+              foldButton
+              icon="check"
+              [loading]="phase() === 'applying'"
+              [disabled]="busy() || proposal.rounds.length === 0"
+              (click)="apply()"
+              data-apply
+            >
+              Appliquer
+            </button>
+          }
+          <button
+            foldButton
+            emphasis="outline"
+            [disabled]="busy()"
+            (click)="discard()"
+            data-discard
+          >
+            Jeter
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</fold-card>

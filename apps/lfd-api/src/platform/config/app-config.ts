@@ -79,6 +79,7 @@ export class AppConfig {
   private readonly adminBypass: boolean;
   private readonly recomputeTokenValue: string | null;
   private readonly adminBaseUrlValue: string | null;
+  private readonly geocoderUrlValue: string | null;
   private readonly exposeDetail: boolean;
   private readonly production: boolean;
   private readonly fieldKey: Buffer;
@@ -111,6 +112,7 @@ export class AppConfig {
     this.journalStrictFactsValue = optionalJournalStrictFacts();
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
     this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
+    this.geocoderUrlValue = optionalString("BAN_GEOCODER_URL");
     this.revisionValue = optionalString("APP_REVISION") ?? "inconnue";
     this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
     this.exposeDetail = !this.production;
@@ -213,6 +215,18 @@ export class AppConfig {
    */
   clientBaseUrl(): string | null {
     return this.clientBaseUrlValue;
+  }
+
+  /**
+   * L'adresse de la **Base Adresse Nationale** pour « Situer les arrêts »
+   * (plan de tournée, lot 7, L7-C9) — `https://api-adresse.data.gouv.fr` en
+   * production —, ou `null` : le géocodage est alors DÉSACTIVÉ, et les points
+   * ne viennent que du carnet. Délibérément sans défaut : les e2e et le poste
+   * de dev ne doivent pas envoyer d'adresses de clients sur le réseau sans
+   * qu'on l'ait écrit.
+   */
+  geocoderUrl(): string | null {
+    return this.geocoderUrlValue;
   }
 
   /**

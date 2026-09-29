@@ -12,7 +12,9 @@ import type {
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { NotifyService } from '../../notify.service';
 import { DeliveryRoundsService } from '../delivery-rounds.service';
+import { DeliveryRoutingService } from '../delivery-routing.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import { parisDayOf, shiftDay } from '../run-sheet';
 import { stopOf } from '../run-sheet.fixture';
@@ -157,6 +159,9 @@ async function boot(
             }),
         },
       },
+      // Le calculateur a sa propre spec : ici, il ne doit que tenir dans la page.
+      { provide: DeliveryRoutingService, useValue: {} },
+      { provide: NotifyService, useValue: { success: () => undefined } },
       {
         provide: PermissionsStore,
         useValue: { can: (permission: StaffPermission) => grants.includes(permission) },

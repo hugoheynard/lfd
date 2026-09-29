@@ -21,6 +21,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import { pointAddressLine } from '../fleet';
+import { RoutingSettingsCard } from '../routing-settings-card/routing-settings-card';
 
 type DepartureState =
   | { readonly status: 'loading' }
@@ -38,7 +39,9 @@ const PICKUP_POINTS = '/b2b/reglages/points-de-retrait';
  * personne n'a choisi, c'est le point par défaut, et l'écran le dit. Un point
  * sans GPS est signalé : aucune distance ne partira de là.
  *
- * Le choix n'apparaît qu'avec `delivery_settings:write`.
+ * Le choix n'apparaît qu'avec `delivery_settings:write`. Les réglages du
+ * calcul de tournée (lot 7, L7-C13) vivent sous le point : c'est d'ici que
+ * partent les distances.
  */
 @Component({
   selector: 'app-departure-page',
@@ -56,6 +59,7 @@ const PICKUP_POINTS = '/b2b/reglages/points-de-retrait';
     FoldListboxComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    RoutingSettingsCard,
   ],
   templateUrl: './departure-page.html',
   styleUrl: './departure-page.scss',

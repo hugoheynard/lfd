@@ -1,5 +1,29 @@
 import { Module } from "@nestjs/common";
 
+import { AppConfig } from "../platform/config/app-config.js";
+import { ApplyDeliveryProposalHandler } from "./application/commands/apply-delivery-proposal.handler.js";
+import { LocateDeliveryStopsHandler } from "./application/commands/locate-delivery-stops.handler.js";
+import { SetRoutingSettingsHandler } from "./application/commands/set-routing-settings.handler.js";
+import { GetDeliveryRoundProposalHandler } from "./application/queries/get-delivery-round-proposal.handler.js";
+import { GetRoutingSettingsHandler } from "./application/queries/get-routing-settings.handler.js";
+import { DeliveryProposalRepository } from "./domain/ports/delivery-proposal.repository.js";
+import { DistanceMatrix } from "./domain/ports/distance-matrix.js";
+import { GeocodeCacheReader } from "./domain/ports/geocode-cache.reader.js";
+import { GeocodeCacheRepository } from "./domain/ports/geocode-cache.repository.js";
+import { Geocoder } from "./domain/ports/geocoder.js";
+import { RoutingSettingsReader } from "./domain/ports/routing-settings.reader.js";
+import { RoutingSettingsRepository } from "./domain/ports/routing-settings.repository.js";
+import { CrowFliesDistanceMatrix } from "./domain/services/crow-flies-distance-matrix.js";
+import { DeliveryProposalController } from "./http/delivery-proposal.controller.js";
+import { RoutingSettingsController } from "./http/routing-settings.controller.js";
+import { BanGeocoder } from "./infrastructure/ban-geocoder.js";
+import { DisabledGeocoder } from "./infrastructure/disabled-geocoder.js";
+import { PrismaDeliveryProposalRepository } from "./infrastructure/prisma-delivery-proposal.repository.js";
+import { PrismaGeocodeCacheReader } from "./infrastructure/prisma-geocode-cache.reader.js";
+import { PrismaGeocodeCacheRepository } from "./infrastructure/prisma-geocode-cache.repository.js";
+import { PrismaRoutingSettingsReader } from "./infrastructure/prisma-routing-settings.reader.js";
+import { PrismaRoutingSettingsRepository } from "./infrastructure/prisma-routing-settings.repository.js";
+
 import { DeclareDeliveryBagsHandler } from "./application/commands/declare-delivery-bags.handler.js";
 import { DepartDeliveryRoundHandler } from "./application/commands/depart-delivery-round.handler.js";
 import { LoadDeliveryBagHandler } from "./application/commands/load-delivery-bag.handler.js";
@@ -57,7 +81,8 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
 /**
  * **La livraison** — les bases paramétrables des tournées (la flotte et le
  * point de départ, lot 2), la composition des tournées (lot 3), puis les
- * sacs, leur chargement et le départ (lot 4)
+ * sacs, leur chargement et le départ (lot 4), puis le calculateur de tournée
+ * (lot 7)
  * (`documentation/livraisons/plan-preparation-de-tournee.md`). Code ici, tables
  * dans le schéma `production` (Q10).
  *
@@ -77,6 +102,8 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     DeliveryRoundsController,
     DeliveryBagsController,
     DeliveryLoadingController,
+    RoutingSettingsController,
+    DeliveryProposalController,
   ],
   providers: [
     AddVehicleHandler,
@@ -101,6 +128,11 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     GetDeliveryBagHandler,
     GetDeliveryLoadingRoundHandler,
     GetDeliveryLoadingDayHandler,
+    GetRoutingSettingsHandler,
+    SetRoutingSettingsHandler,
+    LocateDeliveryStopsHandler,
+    GetDeliveryRoundProposalHandler,
+    ApplyDeliveryProposalHandler,
     { provide: VehicleRepository, useClass: PrismaVehicleRepository },
     { provide: FleetReader, useClass: PrismaFleetReader },
     { provide: DepartureRepository, useClass: PrismaDepartureRepository },
@@ -114,6 +146,21 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     { provide: LoadedStopsReader, useClass: PrismaLoadedStopsReader },
     { provide: DeliveryLoadingReader, useClass: PrismaDeliveryLoadingReader },
     { provide: BagCodeDrawer, useClass: CryptoBagCodeDrawer },
+    { provide: RoutingSettingsReader, useClass: PrismaRoutingSettingsReader },
+    { provide: RoutingSettingsRepository, useClass: PrismaRoutingSettingsRepository },
+    { provide: GeocodeCacheReader, useClass: PrismaGeocodeCacheReader },
+    { provide: GeocodeCacheRepository, useClass: PrismaGeocodeCacheRepository },
+    { provide: DeliveryProposalRepository, useClass: PrismaDeliveryProposalRepository },
+    { provide: DistanceMatrix, useClass: CrowFliesDistanceMatrix },
+    // Sans URL, le géocodage est DÉSACTIVÉ (L7-C9) : les e2e ne sortent pas sur le réseau.
+    {
+      provide: Geocoder,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): Geocoder => {
+        const url = config.geocoderUrl();
+        return url === null ? new DisabledGeocoder() : new BanGeocoder(url);
+      },
+    },
   ],
 })
 export class DeliveryModule {}

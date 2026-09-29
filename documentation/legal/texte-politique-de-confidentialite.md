@@ -21,6 +21,16 @@
 >   Soit on bâtit ces purges, soit on ajuste les durées à ce qui est tenu ;
 > - **la suppression** : le texte décrit la voie par e-mail, la seule qui
 >   existe. Il ne promet pas de bouton « Supprimer mon compte » ;
+> - **le géocodage** (ajouté le 2026-09-29, plan de tournée, lot 7) : le
+>   paragraphe sur la Base Adresse Nationale et la ligne de conservation sont
+>   dans ce fichier ; **le texte publié vit en base** (document légal
+>   `privacy`), il faut l'y reporter au back-office. Une empreinte SHA-256
+>   d'une adresse se retrouve en essayant des adresses : c'est une
+>   pseudonymisation, pas une anonymisation — le texte ne dit pas
+>   « irréversible » pour cette raison. ⚠️ **Les 365 jours ne sont pas une
+>   purge** : passé ce délai, une position n'est plus LUE et se rejoue au
+>   prochain « Situer », mais la ligne reste en base tant que personne ne la
+>   rejoue. Soit on bâtit la purge, soit on écrit la durée réellement tenue ;
 > - faire **relire par un juriste** : l'application traite des paiements et des
 >   coordonnées bancaires. Ce texte n'est pas un avis juridique.
 
@@ -88,7 +98,7 @@ Pour exécuter le contrat qui nous lie, ou les démarches préalables à sa conc
 
 - créer et gérer votre compte, vous permettre de vous connecter ;
 - ouvrir et gérer le compte de votre entreprise ;
-- prendre, préparer, facturer et vous remettre ou vous livrer vos commandes ;
+- prendre, préparer, facturer et vous remettre ou vous livrer vos commandes, y compris organiser nos tournées de livraison et situer votre adresse de livraison sur une carte ;
 - encaisser vos paiements, y compris par prélèvement ;
 - gérer votre programme de fidélité ;
 - vous adresser les messages liés à votre compte et à vos commandes (confirmation, disponibilité, facture, retrait).
@@ -125,6 +135,8 @@ Elles sont aussi traitées, pour notre compte et sur nos instructions, par les p
 - Google — connexion avec Google, si vous choisissez cette méthode ;
 - Meta Platforms Ireland Limited — connexion avec Facebook, si vous choisissez cette méthode.
 
+Pour situer une adresse de livraison sur une carte lorsque vous ne nous en avez pas donné le point GPS, nous interrogeons la Base Adresse Nationale, le service public de géocodage de l'État (api-adresse.data.gouv.fr) — [À VÉRIFIER : opérateur du service]. Seules la voie, le code postal et la ville de l'adresse de livraison lui sont transmis : ni votre nom, ni vos coordonnées, ni le contenu de votre commande. Si vous avez renseigné le point GPS de votre adresse, elle n'est jamais transmise.
+
 Nous pouvons enfin communiquer vos données aux autorités administratives ou judiciaires lorsque la loi l'exige, ainsi qu'à notre expert-comptable et à nos commissaires aux comptes pour les besoins de la tenue et du contrôle de la comptabilité.
 
 ## Transferts hors de l'Union européenne
@@ -143,6 +155,7 @@ Nous conservons vos données le temps nécessaire aux finalités décrites ci-de
 - Coordonnées bancaires et mandat de prélèvement : pendant la durée du mandat, puis 13 mois après le dernier prélèvement pour permettre les contestations prévues par la réglementation bancaire.
 - Données de prospection des professionnels : 3 ans après le dernier contact de votre part.
 - Journaux techniques et de sécurité : [À VÉRIFIER : 12 mois].
+- Position géographique d'une adresse de livraison obtenue par géocodage : [À VÉRIFIER : 365 jours — voir l'avertissement en tête], puis elle est redemandée. Nous ne la conservons pas avec l'adresse en clair : seul un condensé de l'adresse (une empreinte calculée, qui ne se relit pas comme une adresse) lui est associé.
 - Données nécessaires à la gestion d'une demande d'exercice de vos droits : le temps de la traiter, puis la durée de prescription applicable.
 
 ## Vos droits

@@ -56,7 +56,7 @@ function atPosition(raw: unknown): Segment[] {
 }
 
 /** « CMD-1, CMD-2 » — les commandes dans l'ordre, par leur numéro ou leur identifiant. */
-function orderList(raw: unknown): Segment[] {
+export function orderList(raw: unknown): Segment[] {
   const orders: readonly unknown[] = Array.isArray(raw) ? raw : [];
   if (orders.length === 0) {
     return [text('—')];

@@ -60,6 +60,7 @@ import {
   windowLabel,
 } from '../run-sheet';
 import { RunSheetService } from '../run-sheet.service';
+import { RoutePlanner } from '../route-planner/route-planner';
 import { RunSheetStop } from '../run-sheet-stop/run-sheet-stop';
 
 type ComposeState =
@@ -107,6 +108,7 @@ const CONFLICT = 409;
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldViewToggleComponent,
+    RoutePlanner,
     RunSheetStop,
   ],
   templateUrl: './rounds-page.html',
@@ -145,6 +147,9 @@ export class RoundsPage {
   private readonly reload = signal(0);
 
   protected readonly canWrite = computed(() => this.permissions.can('delivery_rounds:write'));
+  protected readonly canReadSettings = computed(() =>
+    this.permissions.can('delivery_settings:read'),
+  );
   protected readonly canSeePhotos = computed(() => this.permissions.can('b2b_companies:read'));
 
   /** Le dernier refus du serveur — la composition reste à l'écran. */
@@ -190,6 +195,23 @@ export class RoundsPage {
   protected readonly printedRound = computed(() => {
     const id = this.printing();
     return this.composed()?.rounds.find(({ round }) => round.id === id) ?? null;
+  });
+
+  /**
+   * La société de chaque commande, lue sur la feuille de route jointe : le
+   * calculateur y renvoie pour compléter un point GPS dans le carnet.
+   */
+  protected readonly companies = computed(() => {
+    const composed = this.composed();
+    const lines = [
+      ...(composed?.unassigned ?? []),
+      ...(composed?.rounds.flatMap((round) => round.stops) ?? []),
+    ];
+    return new Map(
+      lines.flatMap(({ sheet }) =>
+        sheet?.addressBook ? [[sheet.orderId, sheet.addressBook.companyId] as const] : [],
+      ),
+    );
   });
 
   protected readonly dayLabel = computed(() => serviceDayLabel(this.day()));

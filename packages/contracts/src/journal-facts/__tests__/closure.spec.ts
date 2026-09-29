@@ -50,6 +50,10 @@ const BARE_REFS: Readonly<Record<string, string>> = {
     "nommée par son numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
   "delivery_round.stop_removed:order":
     "nommée par son numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
+  "delivery_round.proposal_applied:rounds[].before[]":
+    "nommées par leur numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
+  "delivery_round.proposal_applied:rounds[].after[]":
+    "nommées par leur numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
   "delivery_round.reordered:before[]":
     "nommées par leur numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
   "delivery_round.reordered:after[]":

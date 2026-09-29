@@ -769,6 +769,26 @@ export type {
   DepartDeliveryRoundPayload,
 } from "./delivery-loading.js";
 export {
+  deliveryRoutingSettingsPayloadSchema,
+  deliveryProposalModeSchema,
+  applyDeliveryProposalPayloadSchema,
+} from "./delivery-routing.js";
+export type {
+  DeliveryRoutingSettingsPayload,
+  DeliveryProposalMode,
+  DeliveryRoutingSettingsView,
+  DeliveryProposalWindow,
+  DeliveryProposedStopView,
+  DeliveryProposedRoundView,
+  DeliveryUnlocatedReason,
+  DeliveryUnlocatedOrderView,
+  DeliveryKeptRoundReason,
+  DeliveryKeptRoundView,
+  DeliveryRoundVersionRef,
+  DeliveryRoundProposalView,
+  ApplyDeliveryProposalPayload,
+} from "./delivery-routing.js";
+export {
   recurrenceSchema,
   subscriptionStatusSchema,
   setSubscriptionStatusPayloadSchema,
