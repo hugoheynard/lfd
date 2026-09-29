@@ -331,7 +331,7 @@ tournée et une table du fournil — la limite qu'a déjà le retrait.
 ### Lot 3 — Composer : répartir, puis ordonner
 
 **Ce que l'équipe obtient** : sur `/livraison/tournees`, pour le jour J, une colonne par
-véhicule actif et une colonne « à répartir ». On **glisse** chaque commande dans
+véhicule actif et une colonne « à répartir ». On **affecte** chaque commande à
 un véhicule, puis on range les arrêts dans l'ordre de passage. Chaque tournée
 s'imprime seule. L'écran signale :
 
@@ -348,16 +348,183 @@ s'imprime seule. L'écran signale :
 > une journée : elle aura son déclencheur**, faute de quoi la version par
 > journée servira une composition périmée.
 
-**Comment** :
+#### Conception v2 (2026-09-29, après `vitruve`)
 
-- c'est le **premier agrégat** : la tournée (un véhicule, un jour), avec les
-  invariants de l'[architecture](architecture-road-livraison-tournees.md) — I2
-  positions contiguës, I3 une commande dans au plus une tournée, I7 déplacer
-  entre deux tournées est tout-ou-rien ;
-- la commande n'y est connue que par sa **référence** : la flèche est
-  `b2b → delivery`, par un canal ;
-- **un humain répartit**. Regrouper par zone ou par code postal peut
-  **proposer** un point de départ ; jamais imposer (conception v1, §3).
+> La v1 a été contredite le même jour : **deux `BLOQUANT`**, sept `SÉRIEUX`.
+> La v1 prenait la **journée** pour racine et relisait les commandes par la
+> feuille de route. Les deux tombent :
+>
+> - la feuille de route vit dans `handover/`, et `delivery` n'a le droit de
+>   lire que `staff` et `platform` (`context-boundaries.mjs`) : le chemin
+>   suggéré était interdit ;
+> - une racine « journée » à version unique met en conflit des écritures sans
+>   rapport : chaque scan au dépôt (lot 4) et chaque geste à la porte (lot 6)
+>   aurait incrémenté la version du jour, et trois camionnettes chargées en
+>   parallèle se seraient refusées mutuellement. Le problème n'était pas la
+>   taille de l'agrégat, c'était la **contention**.
+
+**C1 — La racine est la TOURNÉE.** `DeliveryRound` : un jour de service, un
+véhicule, un **numéro de passage** (1, 2… : un véhicule peut faire deux
+tournées dans la journée, et l'interdire plus tard coûterait une migration de
+données), le nom du véhicule recopié, la liste ordonnée des arrêts, une
+**version** propre. Composer une tournée ne verrouille pas les deux autres.
+
+**C2 — Ce qu'on fait d'un arrêt, hors de la tournée.** « Chargé » (lot 4) et
+« livré / raté » (lot 6) ne s'écrivent **pas** dans la tournée : ils vivent
+sur l'**arrêt**, avec sa propre version. La tournée dit **qui passe où et
+dans quel ordre** ; l'arrêt dit **ce qui lui est arrivé**. Un scan au dépôt
+n'invalide jamais la composition, et inversement. C'est aussi ce qui rendra I6
+(« une tournée partie est gelée ») tenable **par tournée**.
+
+**C3 — Les invariants, et où ils tiennent :**
+
+- **I2** positions contiguës et uniques : dans l'agrégat ;
+- **I3** une commande est dans **au plus une tournée vivante**, tous jours
+  confondus (`architecture-road-livraison-tournees.md` §6 dit « au plus un Tour
+  actif », pas « du jour » — la v1 l'avait réduit sans le dire). Tenu **en
+  base** par un index unique partiel sur `order_id` des arrêts non retirés. Une
+  commande dont la date a changé reste donc dans sa tournée d'origine, signalée,
+  et **ne peut pas** être répartie ailleurs tant qu'on ne l'y a pas retirée :
+  jamais chargée deux fois ;
+- **I7** déplacer vers un autre véhicule : la seule écriture qui touche deux
+  tournées. Un service de domaine charge les deux, applique le retrait et
+  l'ajout, et les enregistre dans **une** transaction avec leurs deux versions.
+  C'est l'exception écrite, pas la règle.
+
+**C4 — Par où `delivery` lit les commandes.** Un **canal** que le bloc déclare
+et que le commerce implémente, dans `delivery/channels/commerce/` (qui porte
+déjà les points de départ) : `DeliveryOrdersReader`, qui rend pour un jour les
+livraisons attendues — **identifiant, statut, jour demandé**, rien d'autre — et
+pour une liste d'identifiants, leur jour et leur statut. L'adaptateur, dans
+`b2b/orders/infrastructure/`, **réutilise `expectedOnWhere`** : c'est le même
+filtre que la file du comptoir et la feuille de route, écrit une fois. Deux
+lecteurs, une vérité.
+
+Ce que le serveur calcule avec ce canal : la colonne « à répartir » (du jour,
+dans aucune tournée), et les signaux « annulée » et « n'est plus de ce jour »
+sur les arrêts. Ce que l'écran **ne** calcule pas.
+
+**Le détail d'un arrêt** (adresse, fenêtre, contact, procédure, état du bac)
+reste celui de la feuille de route : l'écran lit les deux routes et les joint
+par `orderId`. Il ne décide rien avec : il affiche.
+
+**C5 — « Actif ce jour-là ».** Un véhicule peut recevoir une tournée du jour J
+si `retired_at` est nul ou **postérieur à la fin de J** (minuit, heure de
+Paris). La règle vit dans le domaine, le jour en paramètre, sans horloge. Et
+l'on **ne peut pas retirer** un véhicule qui a une tournée vivante à venir :
+le refus nomme les jours, et dit de réaffecter d'abord. Interdire plutôt que
+signaler.
+
+**C6 — Le jour et ses déclencheurs.** Tournées **et** arrêts portent
+`service_day` (dénormalisé sur l'arrêt) : chacune prend les trois déclencheurs
+`record_day_change_by_service_day`, telle quelle. Une variante par jointure
+perdrait le jour sur une suppression en cascade (avertissement écrit dans la
+migration `20260928140000_la_version_par_journee`). ⚠️ Ces déclencheurs
+avancent la version de journée **du fournil** (`production.day_change`) :
+l'écran de composition la suit ; la feuille de route, qui lit des commandes,
+suit `public.day_change`.
+
+**C7 — Le droit `delivery_rounds`**, semé dans sa migration **avec des
+attributions tranchées avant** (Q12). Le journal : un fait par geste, avec son
+acteur et sa charge — `delivery_round.stop_assigned`, `.stop_moved` (un seul
+fait, pas un retrait suivi d'un ajout), `.stop_removed`, `.reordered` (l'ordre
+**avant et après** ; un réordonnancement qui ne change rien n'écrit rien).
+
+**C8 — Ce que le lot 3 NE fait PAS** : aucune proposition automatique ; aucune
+distance ; aucun état « partie » (lot 4). Le seul signal de fenêtre est celui
+qui se voit sans carte, et **avant le lot 5 il porte sur des fenêtres par
+défaut du carnet** : l'écran dit « horaire par défaut » comme la feuille de
+route.
+
+**C9 — L'écran** `/livraison/tournees` : une colonne par tournée du jour et une
+colonne « à répartir » ; sur une ligne, **choisir** la tournée dans une liste
+(au téléphone comme au clavier — on ne glisse pas) ; monter / descendre, qui
+envoient la permutation complète ; « nouvelle tournée » pour un véhicule
+(second passage) ; nombre d'arrêts par tournée ; impression d'une tournée
+seule, dans l'ordre, avec les consignes de la feuille de route.
+
+#### Seconde passe de `vitruve` — ce qui est tranché (v3)
+
+La v2 résout les deux `BLOQUANT` de la v1. La seconde passe en a trouvé deux
+autres, un niveau plus bas ; les voici fermés, avec les `SÉRIEUX`.
+
+**C10 — Deux tables, deux écrivains, aucune colonne partagée.** Sans cette
+règle, enregistrer une tournée réordonnée (supprimer puis réinsérer, ou tout
+réécrire) effacerait « chargé » : les deux versions se seraient marché dessus
+comme en v1.
+
+- `delivery_round_stop` : écrite **par la tournée seule** — `round_id`,
+  `position`, `removed_at`, plus `order_id` et `service_day` à la création.
+  Aucune suppression physique : retirer pose `removed_at`.
+- l'état d'exécution (chargé au lot 4, livré ou raté au lot 6) vit dans une
+  **autre table**, écrite par l'arrêt seul. Aucun adaptateur n'écrit une
+  colonne de l'autre.
+
+**C11 — Déplacer garde la même ligne.** I7 change le `round_id` et la position
+de l'arrêt existant ; il ne crée pas d'arrêt neuf. Une seule ligne porte donc
+la commande, et l'index unique n'est jamais violé en cours de transaction.
+⚠️ Au lot 4, un arrêt **chargé** qui change de véhicule est dans la mauvaise
+camionnette : le lot 4 devra le **refuser** (recommandé) ou remettre
+« chargé » à zéro, par écrit.
+
+**C12 — « Vivant » est défini maintenant, et la colonne réservée.** L'index
+unique partiel porte sur `order_id` des arrêts `removed_at IS NULL AND
+closed_at IS NULL`. `closed_at` existe dès ce lot, nul, et c'est le lot 6 qui
+le pose quand un arrêt se termine (livré **ou raté**). Une livraison ratée
+libère donc la commande pour un autre jour **sans reconstruire l'index en
+production**. `closed_at` appartient à l'écrivain de l'exécution, pas à la
+tournée (C10).
+
+**C13 — La transaction de I7 appartient à l'infrastructure.** Un service de
+domaine ne peut pas en ouvrir. Le port d'écriture expose `saveMove(from, to)` ;
+l'adaptateur verrouille les deux tournées **dans l'ordre de leur identifiant**
+(deux déplacements croisés ne s'interbloquent pas) et vérifie leurs deux
+versions. Le service de domaine, lui, reste pur : il rend les deux tournées
+modifiées.
+
+**C14 — Retirer un véhicule, corrigé.** La v2 s'enfermait : un retrait le soir
+de la dernière tournée était impossible. Désormais :
+
+- un véhicule peut porter une tournée du jour J si `retired_at` est nul, ou si
+  le **jour (Paris) de son retrait** est J ou après. Le retirer aujourd'hui
+  laisse vivre la tournée d'aujourd'hui ;
+- retirer est refusé s'il a une tournée vivante **après** aujourd'hui ; le
+  refus nomme les jours ;
+- ⚠️ c'est **vérifié dans le handler**, pas interdit en base : une affectation
+  et un retrait strictement simultanés passeraient tous les deux. Le cas est
+  **signalé** à la lecture (« tournée sur un véhicule retiré »), jamais
+  silencieux. On l'écrit plutôt que de promettre une interdiction.
+
+**C15 — Le filtre du canal, complet.** `expectedOnWhere` rend les annulées et
+ne filtre pas le mode. Le canal `DeliveryOrdersReader` y ajoute
+`fulfillmentMethod = delivery`, comme la feuille de route, et rend le
+**statut** : « à répartir » exclut les annulées, les arrêts les signalent. Il
+rend aussi la **référence** et le **jour** de chaque commande composée, pour
+qu'un arrêt « qui n'est plus de ce jour », absent de la feuille du jour,
+s'affiche encore avec son numéro. Vérifier que `lint:business-day` admet déjà
+`handover-order.query.ts` avant d'en élargir l'usage.
+
+**C16 — L'écran recharge ses deux lectures ensemble.** Composition et feuille
+de route suivent deux versions différentes (`production` et `public`). L'écran
+les relit **ensemble**, au même moment : pas de jointure entre deux instants.
+
+**C17** — Contrainte unique `(service_day, vehicle_id, passage)`. Vérifier que
+`journal-tracked` accepte **un** fait (`.stop_moved`) pour l'écriture de deux
+tournées.
+
+#### Ce qui reste à Hugo — avant la migration
+
+- **Q11** — Une commande annulée, ou qui n'est plus de ce jour, reste signalée
+  dans sa tournée : on la **retire à la main** (recommandé : le geste se voit
+  et se journalise), ou le départ (lot 4) la sort seul ? ⚠️ Tant qu'elle n'est
+  pas retirée, l'index (C12) l'empêche d'être répartie ailleurs : c'est voulu,
+  c'est ce qui interdit de la charger deux fois.
+- **Q12** — **Qui compose ?** `admin` seul en écriture, ou le comptoir aussi ?
+  Les attributions sont semées dans la migration du droit : une réponse
+  tardive coûte une migration de plus.
+- **Q13** — Deux tournées pour un même véhicule dans la journée : la
+  conception le **permet** (numéro de passage). Confirmer que c'est utile, ou
+  on le garde fermé à un passage par véhicule, sans rien retirer au schéma.
 
 ### Lot 4 — Le chargement, véhicule par véhicule
 
