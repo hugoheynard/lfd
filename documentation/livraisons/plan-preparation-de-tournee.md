@@ -1879,7 +1879,7 @@ le carnet), servi au calculateur par `DeliveryOrdersReader.stopPointsOf` et à
 la feuille de route (`addressBook.stopMinutes`, absent quand l'adresse suit le
 réglage).
 
-⚠️ **Non traité, à trancher** : la tournée chargée gardée n'occupe pas son
+⚠️ **Non traité, à trancher** (traité au lot 7 ter, L7t-C2, le 2026-09-29) : la tournée chargée gardée n'occupe pas son
 véhicule dans le calcul. Ici, la camionnette qui fait Val d'Isère de 6 h à
 7 h 48 reçoit aussi la tournée proposée de 6 h 22 — l'ancien calcul faisait la
 même chose. Le calculateur ne connaît que les tournées qu'il compose.
@@ -1918,6 +1918,54 @@ plafonds `max_travel_time`, `max_distance`, `max_tasks`, pauses — **l'attente
 n'est pas coûtée**, et aucune notion de marge avant la fin d'un créneau. Pour
 « d'abord le client », notre calculateur est mieux placé. VROOM redevient la
 bonne piste le jour où l'on veut capacités, pauses, froid ou ramassage de bacs.
+
+**Serveur bâti le 2026-09-29** (non commité à l'écriture ; l'écran suit, en
+parallèle, sur le même contrat) :
+
+- **C1** — `apps/lfd-api/src/delivery/domain/services/vehicle-plan.ts` : le retard n'est plus un poids (`LATE_WEIGHT`,
+  ×100) mais un **ordre** — `VehicleScore.lateSeconds` est comparé avant le
+  reste (`isBetterScore`), donc aucune économie d'heures ne rachète une
+  minute hors créneau. Puis la marge : chaque seconde servie dans les
+  `safetyMarginMinutes` dernières minutes d'un créneau coûte
+  `MARGIN_WEIGHT` = 10 secondes de livreur. Puis heures et tournées, comme
+  avant. Le réglage : `safetyMarginMinutes`, 0 à 90, 20 par défaut —
+  colonne `safety_margin_minutes` (migration additive
+  `20260929200000_la_marge_de_securite`, `NOT NULL DEFAULT 20`) ; optionnel
+  dans le contrat d'écriture (un écran qui ne l'envoie pas garde la valeur
+  posée), toujours rendu dans la vue.
+- **C2** — `apps/lfd-api/src/delivery/domain/services/vehicle-availability.ts` (`busyStarts`) chronomètre les tournées
+  gardées **chargées ou parties** avec `timeComposition` ; leur camionnette
+  n'est libre qu'au retour estimé (repoussé si elle est partie plus tard que
+  l'heure chronométrée, jamais avancé), et sa prochaine tournée y est un
+  passage de plus — qui coûte donc la pénalité de second passage. Un seul
+  passage permis : elle ne reçoit rien (`passageLimitsOf`, inchangé). Choix
+  fait : **une tournée chargée ou partie dont un arrêt n'est pas situé écarte
+  sa camionnette de la proposition** (`fleetOccupationOf`) — sans point, son
+  retour serait inventé. « Chronométrer » refuse une tournée rangée AVANT la
+  tournée chargée ou partie de son véhicule (`VehicleRoundsOverlapError`).
+- **C3 (serveur)** — la vue n'a pas changé de forme : `passage` compte
+  désormais les tournées gardées (« 2ᵉ passage »), `departureTime` dit
+  l'heure, et `kept[].reason` (`loaded` / `departed`) + `vehicleName` disent
+  « chargée ».
+
+La journée du jeu de données, mêmes onze livraisons, mêmes réglages d'usine
+(`recorded-day.spec.ts`) — **les chiffres bougent** :
+
+| Onze livraisons à répartir    | Lot 7 bis | 7 ter, marge 0 | 7 ter, marge 20 | 7 ter, marge 20, Camionnette 1 chargée jusqu'à 7 h 48 |
+| ----------------------------- | --------- | -------------- | --------------- | ----------------------------------------------------- |
+| Tournées proposées            | 2         | 2              | 3               | 3                                                     |
+| dont passages d'un seul arrêt | 0         | 0              | 0               | 1 (Camionnette 1, 2ᵉ passage, 7 h 48)                 |
+| Kilomètres                    | 261       | 261            | 305             | 304                                                   |
+| Minutes (cumulées)            | 396       | 396            | 465             | 467                                                   |
+| Attente devant un créneau     | 0         | 0              | 7 min           | 7 min                                                 |
+| Arrêts hors créneau           | 0         | 0              | 0               | 0                                                     |
+| Arrêts servis dans la marge   | 2         | 2              | 1               | 1                                                     |
+
+Lecture : un arrêt servi dans les vingt dernières minutes de moins coûte ici
+une tournée, 44 km et 69 minutes de livreur de plus — c'est l'ordre tranché
+(« on maximise pour le client »), et `MARGIN_WEIGHT` en règle le prix. Le
+lot 7 bis rendait, avec la camionnette chargée ignorée, une tournée de
+Camionnette 1 à 6 h 23 : le test de régression porte ce symptôme.
 
 ### Lot 11 — Le suivi des camionnettes en direct
 

@@ -21,6 +21,7 @@ const PAYLOAD = {
   stopMinutes: 7,
   defaultMode: "insert" as const,
   multiplePassages: false,
+  safetyMarginMinutes: 25,
 };
 
 function setter(settings: InMemoryRoutingSettings, events: RecordingPublisher) {
@@ -104,6 +105,20 @@ describe("les réglages du calcul de tournée", () => {
     expect(await new GetRoutingSettingsHandler(settings).execute()).toMatchObject({
       detourPercent: 160,
       averageSpeedKmh: 40,
+      stopMinutes: 9,
+    });
+  });
+
+  it("sans marge (écran d'avant le lot 7 ter), garde la marge déjà posée", async () => {
+    const settings = new InMemoryRoutingSettings(RoutingSettings.define(PAYLOAD));
+    const { safetyMarginMinutes: _margin, ...withoutMargin } = PAYLOAD;
+
+    await setter(settings, new RecordingPublisher()).execute(
+      new SetRoutingSettingsCommand({ ...withoutMargin, stopMinutes: 9 }, "staff_1"),
+    );
+
+    expect(await new GetRoutingSettingsHandler(settings).execute()).toMatchObject({
+      safetyMarginMinutes: 25,
       stopMinutes: 9,
     });
   });

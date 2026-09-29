@@ -4,6 +4,7 @@ import {
   deliveryDraftFrom,
   deliveryIssueOf,
   EMPTY_DELIVERY_DRAFT,
+  stopMinutesIssueOf,
   toDeliveryPayload,
 } from '../delivery-draft.model';
 import {
@@ -112,5 +113,31 @@ describe('Le brouillon de livraison', () => {
     };
 
     expect(deliveryIssueOf(draft)).toBe('');
+  });
+
+  /**
+   * L7b-C4 : le carnet réécrit les consignes en bloc. Le client ne voit pas le
+   * temps sur place, mais son brouillon le porte — sinon sa correction
+   * effacerait ce que le staff a réglé.
+   */
+  it('renvoie le temps sur place d’une adresse, même quand personne ne l’a touché', () => {
+    const view = { ...VIEW, specs: { ...VIEW.specs, stopMinutes: 20 } };
+
+    expect(toDeliveryPayload(deliveryDraftFrom(view)).specs.stopMinutes).toBe(20);
+  });
+
+  it('n’écrit pas de temps sur place pour une adresse qui suit le réglage général', () => {
+    expect('stopMinutes' in toDeliveryPayload(deliveryDraftFrom(VIEW)).specs).toBe(false);
+  });
+
+  it('borne le temps sur place de 1 à 120 min, vide admis', () => {
+    const draft = (stopMinutes: number | null) => ({ ...EMPTY_DELIVERY_DRAFT, stopMinutes });
+
+    expect(stopMinutesIssueOf(draft(null))).toBe('');
+    expect(stopMinutesIssueOf(draft(1))).toBe('');
+    expect(stopMinutesIssueOf(draft(120))).toBe('');
+    expect(stopMinutesIssueOf(draft(0))).not.toBe('');
+    expect(stopMinutesIssueOf(draft(121))).not.toBe('');
+    expect(stopMinutesIssueOf(draft(7.5))).not.toBe('');
   });
 });

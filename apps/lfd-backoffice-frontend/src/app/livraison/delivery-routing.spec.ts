@@ -21,6 +21,7 @@ const SETTINGS = {
   earliestDeparture: '07:00',
   maxRoundMinutes: 240,
   stopMinutes: 5,
+  safetyMarginMinutes: 20,
   defaultMode: 'insert' as const,
   multiplePassages: true,
 };
@@ -53,6 +54,7 @@ describe('le calculateur de tournée — dérivations pures', () => {
   it('compare deux réglages champ par champ', () => {
     expect(sameSettings(SETTINGS, { ...SETTINGS })).toBe(true);
     expect(sameSettings(SETTINGS, { ...SETTINGS, stopMinutes: 6 })).toBe(false);
+    expect(sameSettings(SETTINGS, { ...SETTINGS, safetyMarginMinutes: 30 })).toBe(false);
     expect(sameSettings(SETTINGS, { ...SETTINGS, defaultMode: 'new_rounds' })).toBe(false);
     expect(sameSettings(SETTINGS, { ...SETTINGS, multiplePassages: false })).toBe(false);
   });

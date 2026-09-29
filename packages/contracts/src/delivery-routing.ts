@@ -58,14 +58,23 @@ export const deliveryRoutingSettingsPayloadSchema = z.object({
   defaultMode: deliveryProposalModeSchema,
   /** Un véhicule peut-il faire plusieurs tournées dans la journée ? Non : ce qui ne tient pas déborde. */
   multiplePassages: z.boolean(),
+  /**
+   * La marge de sécurité avant la fin d'un créneau, en minutes (lot 7 ter,
+   * L7t-C1) : arriver dans ces minutes-là coûte au calcul, proportionnellement.
+   * Optionnelle pour ne casser aucun écran en ligne ; absente, la valeur en
+   * place est gardée. Bornes (0 à 90) au domaine.
+   */
+  safetyMarginMinutes: z.number().int().optional(),
 });
 export type DeliveryRoutingSettingsPayload = z.infer<typeof deliveryRoutingSettingsPayloadSchema>;
 
 /** Les réglages tels qu'ils valent maintenant. */
 export interface DeliveryRoutingSettingsView extends Omit<
   DeliveryRoutingSettingsPayload,
-  "detourPercent" | "averageSpeedKmh"
+  "detourPercent" | "averageSpeedKmh" | "safetyMarginMinutes"
 > {
+  /** La marge avant la fin d'un créneau (L7t-C1) — toujours rendue, 20 par défaut. */
+  readonly safetyMarginMinutes: number;
   /** @deprecated rendu tant qu'un écran en ligne le lit ; le calcul ne s'en sert plus (L10b-C5). */
   readonly detourPercent: number;
   /** @deprecated comme `detourPercent`. */

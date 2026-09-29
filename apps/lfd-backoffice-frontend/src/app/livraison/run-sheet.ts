@@ -93,6 +93,15 @@ export function timeLabel(time: string): string {
   return match === null ? time : `${String(Number(match[1]))} h ${match[2] ?? '00'}`;
 }
 
+/**
+ * « 20 min sur place » quand l'adresse a son propre temps de livraison
+ * (L7b-C4) ; `null` quand elle suit le réglage général — rien à signaler.
+ */
+export function onSiteLabelOf(stop: DeliveryRunSheetStopView): string | null {
+  const minutes = stop.addressBook?.stopMinutes;
+  return minutes === undefined ? null : `${String(minutes)} min sur place`;
+}
+
 /** « 8 h 00 – 10 h 00 », « avant 10 h 00 », ou « Sans créneau ». */
 export function windowLabel(window: HandoverQueueWindowView | null): string {
   if (window === null) {

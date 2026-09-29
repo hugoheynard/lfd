@@ -477,11 +477,11 @@ model DeliveryDeparture {
 /// migration `20260929140200_les_tournees`.
 model DeliveryRound {
   /// Assigné par la commande (`IdGenerator`).
-  id          String @id
-  serviceDay  String @map("service_day") @db.VarChar(10)
-  vehicleId   String @map("vehicle_id")
+  id          String    @id
+  serviceDay  String    @map("service_day") @db.VarChar(10)
+  vehicleId   String    @map("vehicle_id")
   /// Le nom du véhicule RECOPIÉ à l'ouverture : un renommage ne réécrit pas l'historique.
-  vehicleName String @map("vehicle_name")
+  vehicleName String    @map("vehicle_name")
   passage     Int
   /// Avance d'une unité par écriture de la composition ; une écriture qui ne
   /// présente pas la version lue est refusée.
@@ -651,20 +651,24 @@ model DeliveryStopExecution {
 /// `test/day-change-triggers.e2e-spec.ts`.
 model DeliveryRoutingSettings {
   /// Toujours `routing` : il n'y a qu'un réglage.
-  key               String @id
+  key                 String  @id
   /// Le facteur de détour, en CENTIÈMES : 140 = ×1,4. Un entier, pour qu'une
   /// valeur saisie se relise à l'identique.
-  detourPercent     Int    @map("detour_percent")
-  averageSpeedKmh   Int    @map("average_speed_kmh")
+  detourPercent       Int     @map("detour_percent")
+  averageSpeedKmh     Int     @map("average_speed_kmh")
   /// `HH:MM`, heure de Paris : une heure de journée, pas un instant.
-  earliestDeparture String @map("earliest_departure") @db.VarChar(5)
-  maxRoundMinutes   Int    @map("max_round_minutes")
-  stopMinutes       Int    @map("stop_minutes")
+  earliestDeparture   String  @map("earliest_departure") @db.VarChar(5)
+  maxRoundMinutes     Int     @map("max_round_minutes")
+  stopMinutes         Int     @map("stop_minutes")
   /// `insert` : insérer dans les tournées existantes ; `new_rounds` : ouvrir
   /// des tournées neuves. Le défaut de « Proposer », qu'un paramètre surcharge.
-  defaultMode       String @map("default_mode") @db.VarChar(16)
+  defaultMode         String  @map("default_mode") @db.VarChar(16)
   /// Un véhicule peut-il faire plusieurs tournées dans la journée (Q13) ?
-  multiplePassages  Boolean @map("multiple_passages")
+  multiplePassages    Boolean @map("multiple_passages")
+  /// La marge de sécurité avant la fin d'un créneau, en minutes (lot 7 ter,
+  /// L7t-C1) : une arrivée dans ces minutes-là coûte au calcul. 20 par défaut,
+  /// valeur de Hugo — la ligne déjà posée la reçoit à la migration.
+  safetyMarginMinutes Int     @default(20) @map("safety_margin_minutes")
 
   updatedAt        DateTime @map("updated_at")
   updatedByStaffId String   @map("updated_by_staff_id")

@@ -20,6 +20,8 @@ import { RouteGeometry } from "../../domain/ports/route-geometry.js";
 import { insertIntoRounds } from "../../domain/services/insert-into-rounds.js";
 import type { PlanningVehicle, Proposal } from "../../domain/services/proposal.js";
 import { type PlannableStop, proposeRounds } from "../../domain/services/propose-rounds.js";
+import { busyStarts } from "../../domain/services/vehicle-availability.js";
+import type { VehicleStart } from "../../domain/services/vehicle-plan.js";
 import type { RoutingSettings } from "../../domain/value-objects/routing-settings.js";
 import type { GeoPoint } from "../../domain/value-objects/geo-point.js";
 import {
@@ -31,6 +33,7 @@ import {
 } from "../delivery-proposal-support.js";
 import { proposalViewOf } from "../delivery-proposal-view.js";
 import { routeLinesOf } from "../delivery-route-lines.js";
+import { fleetOccupationOf } from "../delivery-vehicle-availability.js";
 import {
   type LocatedDeparture,
   locatedDeparture,
@@ -76,6 +79,10 @@ interface DayReading {
  * les commandes à répartir ; « tout recomposer » y ajoute les tournées non
  * parties, sans sac chargé, sans arrêt signalé ni non situé. Elle rend les
  * versions de toutes les tournées lues : l'application les exigera.
+ *
+ * Une camionnette qui porte une tournée chargée ou partie n'est libre qu'à
+ * son retour estimé (L7t-C2) ; si un arrêt de cette tournée n'est pas situé,
+ * elle ne reçoit rien (`fleetOccupationOf`).
  *
  * @throws {DepartureNotLocatedError} @throws {NoVehicleForProposalError}
  * @throws {RoutingVehicleNotFoundError} @throws {VehicleInactiveOnDayError}
@@ -142,14 +149,15 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       recomposeAll: query.recomposeAll,
     });
     const pool = poolOf(ctx.day.unassigned, recomposable, ctx.stops);
-    const cost = await this.costOf(
-      ctx,
-      pool.map((stop) => stop.id),
-    );
+    const occupation = fleetOccupationOf(kept, ctx.stops);
+    const cost = await this.costOf(ctx, [
+      ...pool.map((stop) => stop.id),
+      ...occupation.busy.flatMap((round) => round.stops.map((stop) => stop.id)),
+    ]);
     const proposal = proposeRounds({
       depotId: DEPOT_ID,
       stops: pool,
-      vehicles: ctx.vehicles,
+      vehicles: ctx.vehicles.filter((vehicle) => !occupation.unknownReturn.has(vehicle.id)),
       recomposable: recomposable.map(({ id, vehicleId, vehicleName, passage }) => ({
         ...{ roundId: id, vehicleId, vehicleName, passage },
       })),
@@ -160,6 +168,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
         ctx.vehicles,
         kept.map(({ round }) => round),
       ),
+      starts: startsOf(ctx.settings, cost, occupation.busy),
     });
     return { proposal, kept };
   }
@@ -172,12 +181,16 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       located: ctx.stops,
     });
     const pool = poolOf(ctx.day.unassigned, [], ctx.stops);
-    const roundStops = insertable.flatMap((round) => round.stops.map((stop) => stop.orderId));
+    const occupation = fleetOccupationOf(kept, ctx.stops);
+    const roundStops = [
+      ...insertable.flatMap((round) => round.stops.map((stop) => stop.orderId)),
+      ...occupation.busy.flatMap((round) => round.stops.map((stop) => stop.id)),
+    ];
     const cost = await this.costOf(ctx, [...pool.map((stop) => stop.id), ...roundStops]);
     const proposal = insertIntoRounds({
       depotId: DEPOT_ID,
       stops: pool,
-      vehicles: ctx.vehicles,
+      vehicles: ctx.vehicles.filter((vehicle) => !occupation.unknownReturn.has(vehicle.id)),
       rounds: insertable.map((round) => ({
         ...{ roundId: round.id, vehicleId: round.vehicleId, vehicleName: round.vehicleName },
         passage: round.passage,
@@ -186,6 +199,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       cost,
       settings: ctx.settings,
       passageLimits: passageLimitsOf(ctx.settings.multiplePassages, ctx.vehicles, ctx.day.rounds),
+      starts: startsOf(ctx.settings, cost, occupation.busy),
     });
     const touched = new Set(proposal.tours.map((tour) => tour.roundId));
     const unchanged = insertable
@@ -262,4 +276,13 @@ function pointsOf(
     }
   }
   return points;
+}
+
+/** D'où part chaque camionnette occupée par une tournée chargée ou partie (L7t-C2). */
+function startsOf(
+  settings: RoutingSettings,
+  cost: CostFn,
+  busy: Parameters<typeof busyStarts>[1],
+): ReadonlyMap<string, VehicleStart> {
+  return busyStarts({ depotId: DEPOT_ID, cost, settings }, busy);
 }

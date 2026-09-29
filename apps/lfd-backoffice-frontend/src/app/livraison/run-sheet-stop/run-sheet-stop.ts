@@ -13,6 +13,7 @@ import {
   addressLinesOf,
   contactNameOf,
   mapHrefOf,
+  onSiteLabelOf,
   stateLabelOf,
   stopTitleOf,
   telHrefOf,
@@ -55,4 +56,5 @@ export class RunSheetStop {
   protected readonly contactNameOf = contactNameOf;
   protected readonly telHrefOf = telHrefOf;
   protected readonly mapHrefOf = mapHrefOf;
+  protected readonly onSiteLabelOf = onSiteLabelOf;
 }

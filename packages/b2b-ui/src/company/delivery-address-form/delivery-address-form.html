@@ -22,3 +22,21 @@
   [knownContacts]="knownContacts()"
   [labels]="labels().specs"
 />
+
+<!-- Staff seulement (L7b-C4) : en français en dur, le client ne le voit jamais. -->
+@if (showStopMinutes()) {
+  <fold-number-input
+    label="Temps de livraison sur place (min)"
+    hint="Vide : le réglage général du calcul de tournée."
+    integer
+    [value]="value().stopMinutes"
+    [min]="stopMinutesMin"
+    [max]="stopMinutesMax"
+    optional
+    (valueChange)="setStopMinutes($event)"
+    data-stop-minutes
+  />
+  @if (stopMinutesError(); as message) {
+    <fold-callout variant="alert">{{ message }}</fold-callout>
+  }
+}

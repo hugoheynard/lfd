@@ -22,6 +22,9 @@
     @if (item.withoutAtelierSheet) {
       <fold-badge variant="alert" content="Sans feuille d’atelier" data-no-sheet />
     }
+    @if (onSiteLabelOf(item); as onSite) {
+      <fold-badge variant="neutral" [content]="onSite" data-on-site />
+    }
     @if (item.addressBook === null) {
       <fold-badge variant="warning" content="Adresse non reliée au carnet" data-unlinked />
     }

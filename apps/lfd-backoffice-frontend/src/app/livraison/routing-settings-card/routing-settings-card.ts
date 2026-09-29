@@ -66,10 +66,17 @@ export class RoutingSettingsCard {
   protected readonly earliest = signal('');
   protected readonly maxRound = signal<number | null>(null);
   protected readonly stop = signal<number | null>(null);
+  protected readonly safetyMargin = signal<number | null>(null);
   protected readonly mode = signal<DeliveryProposalMode | null>(null);
   protected readonly multiplePassages = signal(false);
 
   protected readonly modeOptions = MODE_OPTIONS;
+
+  /** L7t-C1 : l'aide reprend la valeur saisie, pour que N se lise en minutes. */
+  protected readonly safetyMarginHint = computed(() => {
+    const margin = this.safetyMargin();
+    return `Le calcul préfère arriver au moins ${margin === null ? 'N' : String(margin)} minutes avant la fin du créneau du client.`;
+  });
 
   protected readonly provenance = computed(() => {
     const state = this.state();
@@ -83,12 +90,14 @@ export class RoutingSettingsCard {
     const state = this.state();
     const maxRound = this.maxRound();
     const stop = this.stop();
+    const safetyMargin = this.safetyMargin();
     const mode = this.mode();
     const earliest = this.earliest();
     if (
       state.status !== 'ready' ||
       maxRound === null ||
       stop === null ||
+      safetyMargin === null ||
       mode === null ||
       earliest === ''
     ) {
@@ -101,6 +110,7 @@ export class RoutingSettingsCard {
       earliestDeparture: earliest,
       maxRoundMinutes: maxRound,
       stopMinutes: stop,
+      safetyMarginMinutes: safetyMargin,
       defaultMode: mode,
       multiplePassages: this.multiplePassages(),
     };
@@ -155,6 +165,7 @@ export class RoutingSettingsCard {
       this.earliest.set(view.earliestDeparture);
       this.maxRound.set(view.maxRoundMinutes);
       this.stop.set(view.stopMinutes);
+      this.safetyMargin.set(view.safetyMarginMinutes);
       this.mode.set(view.defaultMode);
       this.multiplePassages.set(view.multiplePassages);
     } catch {

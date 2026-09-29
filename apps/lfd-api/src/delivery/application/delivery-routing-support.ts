@@ -47,9 +47,13 @@ export async function routingSettingsOf(
  * base jusqu'au resserrement.
  */
 export function withDeprecatedFields(
-  typed: Omit<RoutingSettingsValues, "detourPercent" | "averageSpeedKmh"> & {
+  typed: Omit<
+    RoutingSettingsValues,
+    "detourPercent" | "averageSpeedKmh" | "safetyMarginMinutes"
+  > & {
     readonly detourPercent?: number | undefined;
     readonly averageSpeedKmh?: number | undefined;
+    readonly safetyMarginMinutes?: number | undefined;
   },
   base: RoutingSettingsValues,
 ): RoutingSettingsValues {
@@ -57,6 +61,7 @@ export function withDeprecatedFields(
     ...typed,
     detourPercent: typed.detourPercent ?? base.detourPercent,
     averageSpeedKmh: typed.averageSpeedKmh ?? base.averageSpeedKmh,
+    safetyMarginMinutes: typed.safetyMarginMinutes ?? base.safetyMarginMinutes,
   };
 }
 

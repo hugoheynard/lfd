@@ -63,10 +63,16 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
       stopMinutes: 5,
       defaultMode: "new_rounds",
       multiplePassages: true,
+      safetyMarginMinutes: 20,
       source: "default",
     });
 
-    const posed = { ...before, averageSpeedKmh: 40, earliestDeparture: "05:30" };
+    const posed = {
+      ...before,
+      averageSpeedKmh: 40,
+      earliestDeparture: "05:30",
+      safetyMarginMinutes: 30,
+    };
     const { source: _source, ...payload } = posed;
     await admin(ctx).put(SETTINGS).send(payload).expect(204);
 
@@ -101,6 +107,13 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
       .expect(400);
 
     expect(jsonBody<{ message: string }>(refused).message).toContain("vitesse moyenne");
+    const margin = await admin(ctx)
+      .put(SETTINGS)
+      .send({ ...valid, safetyMarginMinutes: 91 })
+      .expect(400);
+    expect(jsonBody<{ message: string }>(margin).message).toContain(
+      "la marge de sécurité avant la fin d'un créneau tient entre 0 et 90 minutes",
+    );
     expect(await ctx.prisma.deliveryRoutingSettings.count()).toBe(0);
   });
 });

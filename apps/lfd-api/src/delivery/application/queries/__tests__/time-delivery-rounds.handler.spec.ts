@@ -14,6 +14,7 @@ import {
   RoadRoutingUnavailableError,
   RoutingVehicleNotFoundError,
   StopNotLocatedError,
+  VehicleRoundsOverlapError,
 } from "../../../domain/errors/delivery-routing-errors.js";
 import {
   StraightLineDistanceMatrix,
@@ -184,6 +185,29 @@ describe("TimeDeliveryRoundsHandler — « Chronométrer » (L10b-C2)", () => {
     ]);
   });
 
+  it("une tournée rangée APRÈS la tournée chargée de son véhicule part à son retour (L7t-C2)", async () => {
+    const { handler } = scene();
+
+    const view = await time(handler, [
+      { roundId: "r_loaded", vehicleId: "v2", orderIds: ["o5"] },
+      { roundId: null, vehicleId: "v2", orderIds: ["o1"] },
+    ]);
+
+    expect(view.rounds.map((round) => round.passage)).toEqual([1, 2]);
+    expect(view.rounds[1]?.departureTime).toBe(view.rounds[0]?.returnTime);
+  });
+
+  it("le refus d'un chevauchement nomme la camionnette et le geste de sortie", async () => {
+    await expect(
+      time(scene().handler, [
+        { roundId: null, vehicleId: "v2", orderIds: ["o1"] },
+        { roundId: "r_loaded", vehicleId: "v2", orderIds: ["o5"] },
+      ]),
+    ).rejects.toThrow(
+      "« Véhicule v2 » porte une tournée chargée : elle n'est libre qu'à son retour.",
+    );
+  });
+
   it("garde une tournée chargée telle quelle : même composition, même ordre", async () => {
     const { handler } = scene();
 
@@ -248,6 +272,14 @@ describe("TimeDeliveryRoundsHandler — « Chronométrer » (L10b-C2)", () => {
         "un arrêt sorti d'une tournée chargée",
         [{ roundId: null, vehicleId: "v1", orderIds: ["o5"] }],
         LockedRoundRecomposedError,
+      ],
+      [
+        "une tournée de Trafic rangée AVANT sa tournée chargée (L7t-C2)",
+        [
+          { roundId: null, vehicleId: "v2", orderIds: ["o1"] },
+          { roundId: "r_loaded", vehicleId: "v2", orderIds: ["o5"] },
+        ],
+        VehicleRoundsOverlapError,
       ],
       [
         "un arrêt non situé",

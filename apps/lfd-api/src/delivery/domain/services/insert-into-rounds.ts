@@ -2,9 +2,9 @@ import { compareIds } from "./compare-ids.js";
 import { improvePlans } from "./improve-plans.js";
 import { insertCheapest } from "./insert-cheapest.js";
 import type { PlanningContext, PlanningVehicle, Proposal, ProposedTour } from "./proposal.js";
-import { tourOf } from "./propose-rounds.js";
+import { startOf, tourOf } from "./propose-rounds.js";
 import type { RoutingStop } from "./route-timing.js";
-import { openingOf, timeVehicle, type VehiclePlan } from "./vehicle-plan.js";
+import { timeVehicle, type VehiclePlan, type VehicleStart } from "./vehicle-plan.js";
 
 /** Une tournée existante, au dépôt, dont chaque arrêt est situé : on peut y insérer. */
 export interface InsertableRound {
@@ -23,6 +23,8 @@ export interface InsertionInput extends PlanningContext {
   readonly rounds: readonly InsertableRound[];
   /** Combien de tournées NEUVES chaque véhicule peut recevoir ; absent : autant qu'il en faut. */
   readonly passageLimits?: ReadonlyMap<string, number>;
+  /** D'où part chaque véhicule occupé par une tournée PARTIE (L7t-C2) ; absent : l'heure réglée. */
+  readonly starts?: ReadonlyMap<string, VehicleStart>;
 }
 
 /**
@@ -51,6 +53,7 @@ export function insertIntoRounds(input: InsertionInput): Proposal {
     return {
       vehicle,
       maxRoutes: own.length + (input.passageLimits?.get(vehicle.id) ?? Infinity),
+      ...startOf(input, vehicle.id),
       routes: own.map((round) => ({ roundId: round.roundId, stops: round.stops })),
     };
   });
@@ -70,12 +73,21 @@ function toursOf(
   plan: VehiclePlan,
   pinned: ReadonlySet<string>,
 ): readonly ProposedTour[] {
-  const timed = timeVehicle(input, plan.routes, openingOf(input));
+  const timed = timeVehicle(input, plan.routes, plan.availableFrom);
   return plan.routes.flatMap((route, index) => {
     const received = route.stops.some((stop) => !pinned.has(stop.id));
     const clock = timed[index];
     return received && clock !== undefined
-      ? [tourOf(input, plan.vehicle, index + 1, route.roundId, route.stops, clock)]
+      ? [
+          tourOf(
+            input,
+            plan.vehicle,
+            plan.passagesBefore + index + 1,
+            route.roundId,
+            route.stops,
+            clock,
+          ),
+        ]
       : [];
   });
 }

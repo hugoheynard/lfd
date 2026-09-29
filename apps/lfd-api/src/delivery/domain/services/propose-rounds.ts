@@ -5,7 +5,14 @@ import { improvePlans } from "./improve-plans.js";
 import { insertCheapest } from "./insert-cheapest.js";
 import type { PlanningContext, PlanningVehicle, Proposal, ProposedTour } from "./proposal.js";
 import { durationOf, type RoutingStop, type TimedRoute, timeRoute } from "./route-timing.js";
-import { clockOf, maxSecondsOf, openingOf, timeVehicle, type VehiclePlan } from "./vehicle-plan.js";
+import {
+  clockOf,
+  freeStart,
+  maxSecondsOf,
+  timeVehicle,
+  type VehiclePlan,
+  type VehicleStart,
+} from "./vehicle-plan.js";
 
 /** Un arrêt à placer : la commande (son id est celui de la matrice), sa fenêtre, sa tournée actuelle. */
 export interface PlannableStop extends RoutingStop {
@@ -34,6 +41,19 @@ export interface ProposalInput {
    * tournée déjà gardée : 0.
    */
   readonly passageLimits?: ReadonlyMap<string, number>;
+  /**
+   * D'où part chaque véhicule OCCUPÉ par une tournée gardée chargée ou partie
+   * (L7t-C2, `busyStarts`) ; absent : libre dès l'heure réglée.
+   */
+  readonly starts?: ReadonlyMap<string, VehicleStart>;
+}
+
+/** D'où part ce véhicule : son retour estimé s'il est occupé, sinon l'heure réglée. */
+export function startOf(
+  input: PlanningContext & { readonly starts?: ReadonlyMap<string, VehicleStart> },
+  vehicleId: string,
+): VehicleStart {
+  return input.starts?.get(vehicleId) ?? freeStart(input);
 }
 
 /**
@@ -52,7 +72,9 @@ export interface ProposalInput {
  * jamais un placement qu'elle ne sait pas refaire.
  *
  * Les passages d'un véhicule reprennent ses tournées recomposables dans
- * l'ordre de leur passage ; au-delà, des tournées à ouvrir.
+ * l'ordre de leur passage ; au-delà, des tournées à ouvrir. Un véhicule
+ * occupé par une tournée chargée ou partie (`starts`, L7t-C2) ne part qu'à
+ * son retour estimé, et ses passages se numérotent après elle.
  *
  * Pure et déterministe (L7-C12) : même entrée, même proposition.
  */
@@ -63,6 +85,7 @@ export function proposeRounds(input: ProposalInput): Proposal {
   const initial: readonly VehiclePlan[] = vehicles.map((vehicle) => ({
     vehicle,
     maxRoutes: input.passageLimits?.get(vehicle.id) ?? Infinity,
+    ...startOf(input, vehicle.id),
     routes: [],
   }));
   const built = insertCheapest(input, initial, stops, "anywhere");
@@ -83,12 +106,13 @@ function toursOf(input: ProposalInput, plan: VehiclePlan): readonly ProposedTour
   const rounds = input.recomposable
     .filter((round) => round.vehicleId === plan.vehicle.id)
     .sort((a, b) => a.passage - b.passage);
-  const timed = timeVehicle(input, plan.routes, openingOf(input));
+  const timed = timeVehicle(input, plan.routes, plan.availableFrom);
   return plan.routes.flatMap(({ stops }, index) => {
     const route = timed[index];
+    const rank = plan.passagesBefore + index + 1;
     return route === undefined
       ? []
-      : [tourOf(input, plan.vehicle, index + 1, rounds[index]?.roundId ?? null, stops, route)];
+      : [tourOf(input, plan.vehicle, rank, rounds[index]?.roundId ?? null, stops, route)];
   });
 }
 
@@ -120,10 +144,12 @@ function keepAtHome(
       continue;
     }
     const own = result.filter((tour) => tour.vehicleId === round.vehicleId);
-    const earliest = Math.max(openingOf(input), ...own.map((tour) => tour.timed.return));
+    const start = startOf(input, round.vehicleId);
+    const earliest = Math.max(start.availableFrom, ...own.map((tour) => tour.timed.return));
     const vehicle = { id: round.vehicleId, name: round.vehicleName };
     const timed = timeRoute(input.depotId, staying, input.cost, clockOf(input, earliest));
-    result.push(tourOf(input, vehicle, own.length + 1, roundId, staying, timed));
+    const rank = start.passagesBefore + own.length + 1;
+    result.push(tourOf(input, vehicle, rank, roundId, staying, timed));
   }
   return result;
 }

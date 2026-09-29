@@ -152,6 +152,21 @@ export class LockedRoundRecomposedError extends BusinessError {
   }
 }
 
+/**
+ * **Deux tournées d'une camionnette qui se chevauchent** (lot 7 ter, L7t-C2) :
+ * une tournée chargée ou partie occupe son véhicule jusqu'à son retour — une
+ * autre tournée du même véhicule, rangée AVANT elle, partirait pendant
+ * qu'elle roule.
+ */
+export class VehicleRoundsOverlapError extends BusinessError {
+  constructor(vehicleName: string, reason: "departed" | "loaded") {
+    super(
+      "delivery.vehicle_rounds_overlap",
+      `« ${vehicleName} » porte une tournée ${reason === "departed" ? "partie" : "chargée"} : elle n'est libre qu'à son retour. Placez l'autre tournée de ce véhicule après elle (2ᵉ passage), ou confiez-la à une autre camionnette, puis rechronométrez.`,
+    );
+  }
+}
+
 /** Un arrêt à chronométrer sans point GPS (L7-C1) : on ne sait pas y aller. */
 export class StopNotLocatedError extends BusinessError {
   constructor(reference: string) {

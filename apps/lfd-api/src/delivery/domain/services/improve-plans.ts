@@ -1,10 +1,14 @@
 import type { PlanningContext } from "./proposal.js";
 import { type MoveScope, nearnessOf } from "./move-scope.js";
 import { intraRouteMoves, type Move, relocations, swaps, tailExchanges } from "./route-moves.js";
-import { type Routes, scoreVehicle, type VehiclePlan, type VehicleScore } from "./vehicle-plan.js";
-
-/** Une amélioration plus petite que ça est du bruit de virgule flottante. */
-const EPSILON = 1e-6;
+import {
+  freeStart,
+  isBetterScore,
+  type Routes,
+  scoreVehicle,
+  type VehiclePlan,
+  type VehicleScore,
+} from "./vehicle-plan.js";
 
 /**
  * Garde-fou de durée (L7b-C2) : chaque geste retenu baisse STRICTEMENT le
@@ -19,7 +23,8 @@ const NEIGHBOURHOODS = [intraRouteMoves, relocations, swaps, tailExchanges] as c
 /**
  * **Améliorer** (L7b-C2) : tant qu'un geste baisse le coût, on le prend —
  * dans une tournée (Or-opt, 2-opt), puis entre tournées et entre véhicules
- * (déplacer un arrêt, permuter deux arrêts, 2-opt*). Un geste qui ferait
+ * (déplacer un arrêt, permuter deux arrêts, 2-opt*). « Baisser » se lit
+ * dans l'ordre de L7t-C1 : moins de retard d'abord, puis moins cher. Un geste qui ferait
  * dépasser davantage la durée maximale est refusé, quel que soit son gain.
  *
  * Les gestes se cherchent par PAIRE de véhicules — un véhicule seul (ses
@@ -37,7 +42,7 @@ export function improvePlans(
   pinned: ReadonlySet<string>,
 ): readonly VehiclePlan[] {
   const current = [...plans];
-  const scores = current.map((plan) => scoreVehicle(ctx, plan.routes));
+  const scores = current.map((plan) => scoreVehicle(ctx, plan.routes, plan));
   const clean = new WeakMap<Routes, WeakSet<Routes>>();
   const near = nearnessOf(ctx, current);
   let moves = 0;
@@ -93,7 +98,9 @@ function firstImprovement(
   const subScores = members.flatMap((index) => scores[index] ?? []);
   for (const neighbourhood of NEIGHBOURHOODS) {
     for (const move of neighbourhood(sub, scope)) {
-      const after = move.map(({ routes }) => scoreVehicle(ctx, routes));
+      const after = move.map(({ vehicle, routes }) =>
+        scoreVehicle(ctx, routes, sub[vehicle] ?? freeStart(ctx)),
+      );
       const before = move.map(({ vehicle }) => subScores[vehicle]);
       if (improves(before, after)) {
         return { move, scores: after };
@@ -127,8 +134,12 @@ function improves(
 ): boolean {
   const sum = (list: readonly (VehicleScore | undefined)[], key: keyof VehicleScore): number =>
     list.reduce((total, score) => total + (score?.[key] ?? 0), 0);
+  const total = (list: readonly (VehicleScore | undefined)[]) => ({
+    lateSeconds: sum(list, "lateSeconds"),
+    cost: sum(list, "cost"),
+  });
   return (
     sum(after, "overSeconds") <= sum(before, "overSeconds") &&
-    sum(after, "cost") < sum(before, "cost") - EPSILON
+    isBetterScore(total(after), total(before))
   );
 }

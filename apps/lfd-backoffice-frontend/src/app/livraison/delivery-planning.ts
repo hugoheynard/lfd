@@ -11,6 +11,7 @@ import type {
 } from '@lfd/contracts';
 
 import type { ComposedDay } from './delivery-rounds';
+import { timeLabel } from './run-sheet';
 
 /**
  * Les dérivations pures de l'écran « Planifier »
@@ -74,6 +75,31 @@ export interface PlannedRound {
   readonly timing: PlannedTiming | null;
   readonly geometry: readonly (readonly [number, number])[] | null;
   readonly stops: readonly PlannedStop[];
+}
+
+/**
+ * **Le titre d'une colonne** (lot 7 ter, L7t-C3) : une camionnette qui
+ * apparaît deux fois doit dire pourquoi. « Camionnette 1 · chargée » (ou
+ * « · partie ») pour une tournée gardée verrouillée ; « Camionnette 1 · 2ᵉ
+ * passage · départ 8 h 05 » à partir du second passage — l'heure seulement
+ * quand elle est chronométrée ; « · à ouvrir » pour une tournée neuve.
+ */
+export function plannedRoundTitle(
+  round: Pick<PlannedRound, 'vehicleName' | 'passage' | 'roundId' | 'lock' | 'timing'>,
+): string {
+  const parts = [round.vehicleName];
+  if (round.passage > 1) {
+    parts.push(`${String(round.passage)}ᵉ passage`);
+    if (round.timing !== null) {
+      parts.push(`départ ${timeLabel(round.timing.departureTime)}`);
+    }
+  }
+  if (round.lock !== null) {
+    parts.push(round.lock === 'departed' ? 'partie' : 'chargée');
+  } else if (round.roundId === null) {
+    parts.push('à ouvrir');
+  }
+  return parts.join(' · ');
 }
 
 /** Une place dans la composition : la colonne, et le rang dans la colonne. */

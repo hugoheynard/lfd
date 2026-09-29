@@ -98,6 +98,7 @@ function scene(
     readonly settings?: RoutingSettings;
     readonly matrix?: DistanceMatrix;
     readonly geometry?: StraightRouteGeometry;
+    readonly points?: readonly DeliveryStopPoint[];
   } = {},
 ) {
   const rounds = new InMemoryDeliveryRounds(
@@ -107,7 +108,7 @@ function scene(
   );
   const orders = new LocatedDeliveryOrders(
     POINTS.map((p) => deliveryOn(p.orderId, DAY)),
-    POINTS,
+    options.points ?? POINTS,
   );
   const handler = new GetDeliveryRoundProposalHandler(
     new InMemoryRoutingSettings(options.settings ?? null),
@@ -241,8 +242,10 @@ describe("GetDeliveryRoundProposalHandler — par la route (lot 8, L8-C3)", () =
 
     expect(view.estimate).toBe("road");
     expect(placed(view)).toEqual(["o1", "o2", "o3", "o4", "o7"]);
-    // UNE matrice par proposition : départ + les cinq arrêts situés.
-    expect(matrix.built).toEqual([6]);
+    // UNE matrice par proposition : départ + les cinq arrêts situés + les deux
+    // arrêts des tournées partie et chargée, chronométrées pour savoir quand
+    // leurs camionnettes reviennent (L7t-C2).
+    expect(matrix.built).toEqual([8]);
   });
 
   it("annonce `road` aussi en mode « insérer »", async () => {
@@ -298,5 +301,36 @@ describe("GetDeliveryRoundProposalHandler — le tracé (L10b-C4)", () => {
     expect(view.rounds.length).toBeGreaterThan(0);
     expect(view.rounds.every((round) => round.geometry === null)).toBe(true);
     expect(placed(view)).toEqual(["o1", "o2", "o3", "o4", "o7"]);
+  });
+});
+
+describe("GetDeliveryRoundProposalHandler — les camionnettes occupées (lot 7 ter, L7t-C2)", () => {
+  it("une camionnette chargée ou partie ne reçoit une tournée qu'à son retour, en 2ᵉ passage", async () => {
+    const { handler } = scene();
+
+    const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
+
+    expect(view.rounds.length).toBeGreaterThan(0);
+    expect(view.rounds.every((round) => round.passage >= 2)).toBe(true);
+    // Les tournées gardées partent à 06:00 : rien de neuf ne part avec elles.
+    expect(view.rounds.every((round) => round.departureTime > "06:00")).toBe(true);
+    expect(view.kept.map(({ roundId, reason }) => [roundId, reason])).toEqual(
+      expect.arrayContaining([
+        ["r_gone", "departed"],
+        ["r_loaded", "loaded"],
+      ]),
+    );
+  });
+
+  it("un arrêt non situé dans une tournée chargée écarte sa camionnette : on ne sait pas quand elle revient", async () => {
+    const points = POINTS.map((point) =>
+      point.orderId === "o9" ? { ...point, gps: null, address: null } : point,
+    );
+    const { handler } = scene({ points });
+
+    const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
+
+    expect(view.rounds.some((round) => round.vehicleId === "v2")).toBe(false);
+    expect(view.rounds.some((round) => round.vehicleId === "v1")).toBe(true);
   });
 });

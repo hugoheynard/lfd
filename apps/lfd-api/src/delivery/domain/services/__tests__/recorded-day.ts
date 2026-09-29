@@ -57,10 +57,14 @@ export interface DayMeasure {
   readonly waitMinutes: number;
   readonly lateStops: number;
   readonly singleStopTours: number;
+  /** Arrêts servis dans les `marginMinutes` dernières minutes de leur créneau, sans retard (L7t-C1). */
+  readonly marginStops: number;
 }
 
 /** Mesure une proposition : attente = arrivée avant l'ouverture d'un créneau, jusqu'à l'ouverture. */
-export function measure(tours: readonly ProposedTour[]): DayMeasure {
+export function measure(tours: readonly ProposedTour[], marginMinutes = 20): DayMeasure {
+  const margin = marginMinutes * SECONDS_PER_MINUTE;
+  let inMargin = 0;
   let meters = 0;
   let seconds = 0;
   let wait = 0;
@@ -72,6 +76,9 @@ export function measure(tours: readonly ProposedTour[]): DayMeasure {
       const arrival = tour.timed.arrivals[index] ?? 0;
       wait += Math.max(0, (stop.window?.start ?? arrival) - arrival);
       late += tour.timed.missed[index] === true ? 1 : 0;
+      const served = Math.max(arrival, stop.window?.start ?? arrival);
+      const end = stop.window?.end;
+      inMargin += end !== undefined && served <= end && served > end - margin ? 1 : 0;
     });
   }
   return {
@@ -81,5 +88,6 @@ export function measure(tours: readonly ProposedTour[]): DayMeasure {
     waitMinutes: Math.round(wait / SECONDS_PER_MINUTE),
     lateStops: late,
     singleStopTours: tours.filter((tour) => tour.stops.length === 1).length,
+    marginStops: inMargin,
   };
 }

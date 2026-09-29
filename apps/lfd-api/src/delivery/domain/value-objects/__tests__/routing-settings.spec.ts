@@ -13,6 +13,7 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
       stopMinutes: 5,
       defaultMode: "new_rounds",
       multiplePassages: true,
+      safetyMarginMinutes: 20,
     });
     expect(settings.earliestDepartureMinute).toBe(360);
   });
@@ -25,6 +26,9 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
     ["maxRoundMinutes", 29, "durée maximale"],
     ["stopMinutes", -1, "temps d'arrêt"],
     ["stopMinutes", 2.5, "temps d'arrêt"],
+    ["safetyMarginMinutes", -1, "marge de sécurité"],
+    ["safetyMarginMinutes", 91, "marge de sécurité"],
+    ["safetyMarginMinutes", 7.5, "marge de sécurité"],
   ] as const)("refuse %s = %s en nommant le réglage", (field, value, words) => {
     const define = () => RoutingSettings.define({ ...RoutingSettings.DEFAULTS, [field]: value });
 
@@ -56,8 +60,13 @@ describe("les réglages du calcul (L7-C13, L7-C15)", () => {
       stopMinutes: 0,
       defaultMode: "insert",
       multiplePassages: false,
+      safetyMarginMinutes: 90,
     });
 
     expect(settings.earliestDepartureMinute).toBe(0);
+    expect(
+      RoutingSettings.define({ ...RoutingSettings.DEFAULTS, safetyMarginMinutes: 0 })
+        .safetyMarginMinutes,
+    ).toBe(0);
   });
 });

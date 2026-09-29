@@ -44,6 +44,14 @@ export interface DeliverySpecsDraft {
    * n'a rien décidé ne doit pas figer ce que la société décidera demain.
    */
   readonly signatureRequired: boolean | null;
+  /**
+   * Le **temps de livraison sur place** de ce site, en minutes (plan de
+   * tournée, L7b-C4). `null` = le réglage général du calcul. Réglage
+   * d'organisation, saisi par le staff seul ; le brouillon le porte quand même
+   * côté client pour le RENVOYER tel quel : le carnet réécrit les consignes en
+   * bloc, et une correction du client l'effacerait sinon.
+   */
+  readonly stopMinutes: number | null;
 }
 
 /** Le brouillon complet d'une adresse de livraison : le lieu, et les consignes. */
@@ -81,6 +89,7 @@ export const EMPTY_DELIVERY_SPECS: DeliverySpecsDraft = {
   contactNom: '',
   contactTel: '',
   signatureRequired: null,
+  stopMinutes: null,
 };
 
 /** Brouillon de livraison vierge. */
@@ -105,6 +114,7 @@ export function deliveryDraftFrom(view: DeliveryAddressView): DeliveryDraft {
     contactNom: contact?.nom ?? '',
     contactTel: contact?.telephone ?? '',
     signatureRequired: view.specs.signatureRequired,
+    stopMinutes: view.specs.stopMinutes ?? null,
   };
 }
 
@@ -184,6 +194,21 @@ export function signatureIssueOf(draft: DeliverySpecsDraft): string {
     : '';
 }
 
+/** Les bornes du temps sur place, celles que le carnet tient à l'écriture (L7b-C4). */
+export const STOP_MINUTES_MIN = 1;
+export const STOP_MINUTES_MAX = 120;
+
+/** Message d'erreur du temps sur place (`''` si valide ou laissé au réglage général). */
+export function stopMinutesIssueOf(draft: DeliverySpecsDraft): string {
+  const minutes = draft.stopMinutes;
+  if (minutes === null) {
+    return '';
+  }
+  return Number.isInteger(minutes) && minutes >= STOP_MINUTES_MIN && minutes <= STOP_MINUTES_MAX
+    ? ''
+    : `Le temps de livraison sur place va de ${String(STOP_MINUTES_MIN)} à ${String(STOP_MINUTES_MAX)} min — ou se laisse vide.`;
+}
+
 /**
  * Coche ou décoche « pas de contact ».
  *
@@ -217,6 +242,7 @@ export function deliveryIssueOf(draft: DeliveryDraft): string {
     slotIssueOf(draft) ||
     contactIssueOf(draft) ||
     signatureIssueOf(draft) ||
+    stopMinutesIssueOf(draft) ||
     gpsIssueOf(draft) ||
     ''
   );
@@ -235,6 +261,9 @@ export function toDeliveryPayload(draft: DeliveryDraft): DeliveryAddressPayload 
       slots: buildSlots(draft),
       deliveryContact: buildContact(draft),
       gps: buildGps(draft),
+      // Absent plutôt que `null` : le `jsonb` garde sa forme d'avant pour les
+      // adresses qui suivent le réglage général.
+      ...(draft.stopMinutes === null ? {} : { stopMinutes: draft.stopMinutes }),
     },
   };
 }

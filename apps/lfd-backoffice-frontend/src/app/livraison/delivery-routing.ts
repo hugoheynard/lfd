@@ -85,6 +85,7 @@ export function sameSettings(
     a.earliestDeparture === b.earliestDeparture &&
     a.maxRoundMinutes === b.maxRoundMinutes &&
     a.stopMinutes === b.stopMinutes &&
+    a.safetyMarginMinutes === b.safetyMarginMinutes &&
     a.defaultMode === b.defaultMode &&
     a.multiplePassages === b.multiplePassages
   );

@@ -9,6 +9,7 @@ import {
   InvalidProposalError,
   LockedRoundRecomposedError,
   StopNotLocatedError,
+  VehicleRoundsOverlapError,
 } from "../domain/errors/delivery-routing-errors.js";
 import type { RoundRow } from "../domain/ports/delivery-rounds.reader.js";
 import type { LocatedStop } from "./delivery-routing-support.js";
@@ -54,10 +55,12 @@ export function ensureOrdersTimeable(
 /**
  * Une tournée nommée existe ce jour-là, sur le véhicule annoncé ; une tournée
  * **partie ou chargée** garde exactement sa composition — aucun arrêt n'y
- * entre, n'en sort ni n'y change de place (I6).
+ * entre, n'en sort ni n'y change de place (I6) — et elle occupe son véhicule
+ * jusqu'à son retour : aucune autre tournée de ce véhicule ne se range avant
+ * elle (L7t-C2).
  *
  * @throws {DeliveryRoundNotFoundError} @throws {InvalidProposalError}
- * @throws {LockedRoundRecomposedError}
+ * @throws {LockedRoundRecomposedError} @throws {VehicleRoundsOverlapError}
  */
 export function ensureRoundsTimeable(
   payload: TimeDeliveryRoundsPayload,
@@ -77,6 +80,7 @@ export function ensureRoundsTimeable(
       round.stops.forEach((stop) => lockedHolder.set(stop.orderId, round));
     }
   }
+  const unlockedBefore = new Set<string>();
   for (const item of payload.rounds) {
     const existing = item.roundId === null ? null : namedRound(byId, item);
     const lock = existing === null ? null : lockOf(existing);
@@ -84,8 +88,12 @@ export function ensureRoundsTimeable(
       if (!sameSequence(existing, item.orderIds)) {
         throw new LockedRoundRecomposedError(existing.vehicleName, lock);
       }
+      if (unlockedBefore.has(item.vehicleId)) {
+        throw new VehicleRoundsOverlapError(existing.vehicleName, lock);
+      }
       continue;
     }
+    unlockedBefore.add(item.vehicleId);
     const taken = item.orderIds.map((id) => lockedHolder.get(id)).find((r) => r !== undefined);
     if (taken !== undefined) {
       throw new LockedRoundRecomposedError(taken.vehicleName, lockOf(taken) ?? "loaded");

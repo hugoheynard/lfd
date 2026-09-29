@@ -41,6 +41,11 @@ export interface DeliveryAddressPanelData {
    * on choisit au hasard. Facultatif, il se serait oublié — et il l'était.
    */
   readonly signatureFloor: boolean;
+  /**
+   * Montrer le temps de livraison sur place (L7b-C4). Absent = masqué : le
+   * panneau sert aussi l'app cliente, qui ne doit pas le proposer.
+   */
+  readonly showStopMinutes?: boolean;
 }
 
 /**

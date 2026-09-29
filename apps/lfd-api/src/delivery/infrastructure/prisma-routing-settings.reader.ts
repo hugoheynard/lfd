@@ -28,6 +28,7 @@ export class PrismaRoutingSettingsReader extends RoutingSettingsReader {
         stopMinutes: true,
         defaultMode: true,
         multiplePassages: true,
+        safetyMarginMinutes: true,
       },
     });
     if (row === null) {

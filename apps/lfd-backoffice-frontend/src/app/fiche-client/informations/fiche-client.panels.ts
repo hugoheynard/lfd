@@ -192,6 +192,8 @@ function deliveryData(
     address,
     knownContacts: knownContactsOf(company),
     signatureFloor: company.fulfillmentPreference.signatureRequired,
+    // Réglage d'organisation (L7b-C4) : le staff le voit, le client jamais.
+    showStopMinutes: true,
   };
 }
 

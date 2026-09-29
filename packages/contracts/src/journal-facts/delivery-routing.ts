@@ -30,6 +30,8 @@ const routingSettings = () =>
     stopMinutes: minutes(),
     defaultMode: z.enum(["insert", "new_rounds"]),
     multiplePassages: z.boolean(),
+    /** Lot 7 ter (L7t-C1) : absente des faits écrits avant son arrivée. */
+    safetyMarginMinutes: minutes().optional(),
   });
 
 /** Une tournée touchée par une proposition appliquée : ses arrêts AVANT et APRÈS. */

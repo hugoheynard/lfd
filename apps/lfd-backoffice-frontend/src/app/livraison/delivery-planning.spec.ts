@@ -11,6 +11,7 @@ import {
   moveStop,
   type PlannedRound,
   type PlannedStop,
+  plannedRoundTitle,
   planOf,
   planSummary,
   roundColor,
@@ -30,6 +31,7 @@ const SETTINGS: DeliveryRoutingSettingsView = {
   earliestDeparture: '07:00',
   maxRoundMinutes: 240,
   stopMinutes: 5,
+  safetyMarginMinutes: 20,
   defaultMode: 'insert',
   multiplePassages: true,
   source: 'default',
@@ -169,6 +171,56 @@ describe('planOf', () => {
 
     expect(loaded).toMatchObject({ lock: 'loaded', kept: true, timing: null, vehicleId: 'v-3' });
     expect(loaded?.stops.map((line) => line.orderId)).toEqual(['o-9']);
+  });
+});
+
+describe('plannedRoundTitle', () => {
+  const base = {
+    vehicleName: 'Camionnette 1',
+    passage: 1,
+    roundId: null,
+    lock: null,
+    timing: null,
+  } as const;
+  const timing = {
+    departureTime: '08:05',
+    returnTime: '10:00',
+    meters: 0,
+    minutes: 0,
+    overDuration: false,
+  };
+
+  /** Constaté le 2026-09-29 : deux colonnes « Camionnette 1 » sans rien pour les distinguer. */
+  it('dit qu’une tournée gardée est chargée, ou partie', () => {
+    expect(plannedRoundTitle({ ...base, roundId: 'r-1', lock: 'loaded' })).toBe(
+      'Camionnette 1 · chargée',
+    );
+    expect(plannedRoundTitle({ ...base, roundId: 'r-1', lock: 'departed' })).toBe(
+      'Camionnette 1 · partie',
+    );
+  });
+
+  it('numérote un second passage et donne son départ', () => {
+    expect(plannedRoundTitle({ ...base, roundId: 'r-2', passage: 2, timing })).toBe(
+      'Camionnette 1 · 2ᵉ passage · départ 8 h 05',
+    );
+  });
+
+  it('tait le départ d’un passage pas encore chronométré', () => {
+    expect(plannedRoundTitle({ ...base, roundId: 'r-2', passage: 3 })).toBe(
+      'Camionnette 1 · 3ᵉ passage',
+    );
+  });
+
+  it('garde « à ouvrir » pour une tournée neuve', () => {
+    expect(plannedRoundTitle({ ...base, timing })).toBe('Camionnette 1 · à ouvrir');
+    expect(plannedRoundTitle({ ...base, passage: 2, timing })).toBe(
+      'Camionnette 1 · 2ᵉ passage · départ 8 h 05 · à ouvrir',
+    );
+  });
+
+  it('ne dit rien de plus pour un premier passage gardé et libre', () => {
+    expect(plannedRoundTitle({ ...base, roundId: 'r-1' })).toBe('Camionnette 1');
   });
 });
 

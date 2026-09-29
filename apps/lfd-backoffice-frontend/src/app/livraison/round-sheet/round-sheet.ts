@@ -9,13 +9,14 @@ import {
 import {
   type PlannedRound,
   type PlannedStop,
+  plannedRoundTitle,
   stopCompanyOf,
   stopFlags,
   stopNameOf,
   stopPlaceOf,
 } from '../delivery-planning';
 import { distanceLabel, durationLabel, keptReasonLabel } from '../delivery-routing';
-import { roundLabel, stopCountLabel } from '../delivery-rounds';
+import { stopCountLabel } from '../delivery-rounds';
 import { timeLabel } from '../run-sheet';
 
 /** Le type de donnée du glisser : une place de la composition, jamais du texte du client. */
@@ -56,10 +57,7 @@ export class RoundSheet {
   protected readonly draggable = computed(() => this.editable() && this.round().lock === null);
   protected readonly swatch = computed(() => this.color());
 
-  protected readonly title = computed(() => {
-    const round = this.round();
-    return round.roundId === null ? `${roundLabel(round)} · à ouvrir` : roundLabel(round);
-  });
+  protected readonly title = computed(() => plannedRoundTitle(this.round()));
 
   protected readonly facts = computed(() => {
     const round = this.round();

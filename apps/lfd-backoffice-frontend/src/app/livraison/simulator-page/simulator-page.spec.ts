@@ -21,6 +21,7 @@ const SETTINGS: DeliveryRoutingSettingsView = {
   earliestDeparture: '07:00',
   maxRoundMinutes: 240,
   stopMinutes: 5,
+  safetyMarginMinutes: 20,
   defaultMode: 'insert',
   multiplePassages: false,
   source: 'explicit',

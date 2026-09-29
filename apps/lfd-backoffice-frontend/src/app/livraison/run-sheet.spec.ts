@@ -4,6 +4,7 @@ import {
   addressLinesOf,
   dayOfQuery,
   mapHrefOf,
+  onSiteLabelOf,
   parisDayOf,
   shiftDay,
   sortStops,
@@ -74,6 +75,27 @@ describe('libellés', () => {
     expect(mapHrefOf({ lat: 48.85, lng: 2.35 })).toBe(
       'https://www.google.com/maps/search/?api=1&query=48.85,2.35',
     );
+  });
+});
+
+describe('onSiteLabelOf', () => {
+  const book = {
+    companyId: 'c-1',
+    addressId: 'a-1',
+    note: '',
+    gps: null,
+    procedure: [],
+  };
+
+  it('dit le temps sur place propre à l’adresse', () => {
+    expect(onSiteLabelOf(stopOf({ addressBook: { ...book, stopMinutes: 20 } }))).toBe(
+      '20 min sur place',
+    );
+  });
+
+  it('se tait quand l’adresse suit le réglage, ou n’est pas reliée', () => {
+    expect(onSiteLabelOf(stopOf({ addressBook: book }))).toBeNull();
+    expect(onSiteLabelOf(stopOf())).toBeNull();
   });
 });
 

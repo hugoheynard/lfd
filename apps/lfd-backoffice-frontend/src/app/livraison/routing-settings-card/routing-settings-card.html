@@ -52,14 +52,24 @@
             data-max-round
           />
           <fold-number-input
-            label="Temps d’arrêt (min)"
-            hint="Se garer, porter, revenir."
+            label="Temps de livraison sur place (min)"
+            hint="Se garer, décharger, faire signer, revenir — par défaut pour toutes les adresses ; une adresse peut avoir le sien dans le carnet."
             integer
             [value]="stop()"
             [min]="0"
             [readOnly]="!canWrite()"
             (valueChange)="stop.set($event)"
             data-stop-minutes
+          />
+          <fold-number-input
+            label="Marge de sécurité (min)"
+            [hint]="safetyMarginHint()"
+            integer
+            [value]="safetyMargin()"
+            [min]="0"
+            [readOnly]="!canWrite()"
+            (valueChange)="safetyMargin.set($event)"
+            data-safety-margin
           />
           <fold-listbox
             label="Proposer par défaut en"

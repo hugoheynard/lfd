@@ -15,6 +15,7 @@ const FACTORY: DeliveryRoutingSettingsView = {
   earliestDeparture: '07:00',
   maxRoundMinutes: 240,
   stopMinutes: 5,
+  safetyMarginMinutes: 20,
   defaultMode: 'insert',
   multiplePassages: true,
   source: 'default',
@@ -53,6 +54,7 @@ async function boot(canWrite = true): Promise<ComponentFixture<RoutingSettingsCa
               ...payload,
               detourPercent: payload.detourPercent ?? wire.view.detourPercent,
               averageSpeedKmh: payload.averageSpeedKmh ?? wire.view.averageSpeedKmh,
+              safetyMarginMinutes: payload.safetyMarginMinutes ?? wire.view.safetyMarginMinutes,
               source: 'explicit',
             };
             return Promise.resolve();
@@ -123,12 +125,42 @@ describe('RoutingSettingsCard', () => {
         earliestDeparture: '07:00',
         maxRoundMinutes: 240,
         stopMinutes: 7,
+        safetyMarginMinutes: 20,
         defaultMode: 'insert',
         multiplePassages: true,
       },
     ]);
     expect(wire.reads).toBe(2);
     expect(host(fixture).textContent).toContain('Réglé par l’équipe');
+  });
+
+  /** Lot 7 ter (L7t-C3) : le réglage s'appelle comme ce qu'il mesure. */
+  it('nomme le temps « de livraison sur place »', async () => {
+    const fixture = await boot();
+
+    expect(host(fixture).textContent).toContain('Temps de livraison sur place (min)');
+    expect(host(fixture).textContent).not.toContain('Temps d’arrêt');
+  });
+
+  /** Lot 7 ter (L7t-C1) : la marge avant la fin du créneau se règle et s'envoie. */
+  it('règle la marge de sécurité, et l’aide reprend la valeur', async () => {
+    const fixture = await boot();
+    expect(host(fixture).textContent).toContain('au moins 20 minutes avant la fin du créneau');
+    numberInput(fixture, '[data-safety-margin]').triggerEventHandler('valueChange', 30);
+    await settle(fixture);
+    expect(host(fixture).textContent).toContain('au moins 30 minutes avant la fin du créneau');
+    saveButton(fixture)?.click();
+    await settle(fixture);
+
+    expect(wire.writes[0]?.safetyMarginMinutes).toBe(30);
+  });
+
+  it('n’enregistre pas une marge vidée', async () => {
+    const fixture = await boot();
+    numberInput(fixture, '[data-safety-margin]').triggerEventHandler('valueChange', null);
+    await settle(fixture);
+
+    expect(saveButton(fixture)?.disabled).toBe(true);
   });
 
   it('affiche le refus du serveur tel quel', async () => {

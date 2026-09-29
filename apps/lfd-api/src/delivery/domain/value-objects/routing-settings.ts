@@ -27,6 +27,11 @@ export interface RoutingSettingsValues {
   readonly defaultMode: ProposalMode;
   /** Un véhicule peut-il faire plusieurs tournées dans la journée (Q13) ? */
   readonly multiplePassages: boolean;
+  /**
+   * La marge de sécurité avant la fin d'un créneau, en minutes (lot 7 ter,
+   * L7t-C1) : une arrivée dans ces minutes-là coûte au calcul.
+   */
+  readonly safetyMarginMinutes: number;
 }
 
 /** Une borne entière, avec la phrase qui la dit. */
@@ -41,6 +46,7 @@ const BOUNDED_FIELDS = [
   "averageSpeedKmh",
   "maxRoundMinutes",
   "stopMinutes",
+  "safetyMarginMinutes",
 ] as const;
 
 const BOUNDS: Readonly<Record<(typeof BOUNDED_FIELDS)[number], IntegerBound>> = {
@@ -56,6 +62,11 @@ const BOUNDS: Readonly<Record<(typeof BOUNDED_FIELDS)[number], IntegerBound>> = 
     words: "la durée maximale d'une tournée tient entre 30 minutes et 12 heures",
   },
   stopMinutes: { min: 0, max: 60, words: "le temps d'arrêt tient entre 0 et 60 minutes" },
+  safetyMarginMinutes: {
+    min: 0,
+    max: 90,
+    words: "la marge de sécurité avant la fin d'un créneau tient entre 0 et 90 minutes",
+  },
 };
 
 /**
@@ -64,7 +75,10 @@ const BOUNDS: Readonly<Record<(typeof BOUNDED_FIELDS)[number], IntegerBound>> = 
  *
  * Les défauts sont ceux de Hugo (2026-09-29) : ×1,4 et 35 km/h « comme point
  * de départ, à recaler sur les premières tournées réelles », départ au plus
- * tôt 06:00, 240 minutes au plus, 5 minutes par livraison. Le mode par défaut
+ * tôt 06:00, 240 minutes au plus, 5 minutes par livraison ; la marge de
+ * sécurité de 20 minutes avant la fin d'un créneau est de Hugo aussi (lot 7
+ * ter, L7t-C1 : « un bouchon au pied d'une station en hiver mange un quart
+ * d'heure »). Le mode par défaut
  * (tournées neuves, plusieurs passages permis) est celui qui existait avant le
  * choix — Hugo ne sait pas encore s'il livrera plusieurs fois. Ils VALENT tant que
  * personne n'a réglé — précédent `DeliveryAvailability`.
@@ -78,6 +92,7 @@ export class RoutingSettings implements RoutingSettingsValues {
     stopMinutes: 5,
     defaultMode: "new_rounds",
     multiplePassages: true,
+    safetyMarginMinutes: 20,
   };
 
   private constructor(
@@ -88,6 +103,7 @@ export class RoutingSettings implements RoutingSettingsValues {
     readonly stopMinutes: number,
     readonly defaultMode: ProposalMode,
     readonly multiplePassages: boolean,
+    readonly safetyMarginMinutes: number,
     /** Minutes depuis minuit de l'heure au plus tôt. */
     readonly earliestDepartureMinute: number,
   ) {}
@@ -125,11 +141,12 @@ export class RoutingSettings implements RoutingSettingsValues {
       values.stopMinutes,
       values.defaultMode,
       values.multiplePassages,
+      values.safetyMarginMinutes,
       earliest,
     );
   }
 
-  /** Les cinq valeurs, sans rien de dérivé. */
+  /** Les valeurs saisies, sans rien de dérivé. */
   values(): RoutingSettingsValues {
     return {
       detourPercent: this.detourPercent,
@@ -139,6 +156,7 @@ export class RoutingSettings implements RoutingSettingsValues {
       stopMinutes: this.stopMinutes,
       defaultMode: this.defaultMode,
       multiplePassages: this.multiplePassages,
+      safetyMarginMinutes: this.safetyMarginMinutes,
     };
   }
 }

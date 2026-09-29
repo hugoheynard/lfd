@@ -1,10 +1,13 @@
 import { compareIds } from "./compare-ids.js";
 import type { PlanningContext } from "./proposal.js";
 import type { RoutingStop } from "./route-timing.js";
-import { openingOf, type Routes, scoreVehicle, type VehiclePlan } from "./vehicle-plan.js";
-
-/** Une amélioration plus petite que ça est du bruit de virgule flottante. */
-const EPSILON = 1e-6;
+import {
+  isBetterScore,
+  openingOf,
+  type Routes,
+  scoreVehicle,
+  type VehiclePlan,
+} from "./vehicle-plan.js";
 
 /** Où une tournée neuve peut s'ouvrir parmi celles d'un véhicule. */
 export type NewRoutePlacement = "anywhere" | "after_existing";
@@ -13,15 +16,17 @@ export type NewRoutePlacement = "anywhere" | "after_existing";
 interface Placement {
   readonly vehicle: number;
   readonly routes: Routes;
-  readonly delta: number;
+  /** Le surcoût : retard ajouté d'abord, puis le reste (L7t-C1). */
+  readonly delta: { readonly lateSeconds: number; readonly cost: number };
 }
 
 /**
  * **Construire avec les créneaux** (L7b-C1) — insertion au moindre surcoût
  * sur TOUS les véhicules à la fois (famille Solomon I1). Chaque arrêt, dans
  * l'ordre `byPriority`, va à la place — tournée existante ou tournée neuve,
- * sur n'importe quel véhicule — dont le surcoût (route, attente, retards
- * pénalisés, tournée ouverte : `scoreVehicle`) est le plus petit, sans
+ * sur n'importe quel véhicule — dont le surcoût est le plus petit : le moins
+ * de retard ajouté d'abord, puis marge, route, attente, tournée ouverte
+ * (`scoreVehicle`, L7t-C1), sans
  * qu'aucune tournée dépasse davantage la durée maximale.
  *
  * Une tournée neuve n'est permise que sous `maxRoutes` ; `after_existing`
@@ -77,13 +82,16 @@ function cheapestPlacement(
 ): Placement | null {
   let best: Placement | null = null;
   for (const [vehicle, plan] of plans.entries()) {
-    const before = scoreVehicle(ctx, plan.routes);
+    const before = scoreVehicle(ctx, plan.routes, plan);
     for (const routes of placementsOf(plan, stop, newRoutes)) {
-      const after = scoreVehicle(ctx, routes);
-      const delta = after.cost - before.cost;
+      const after = scoreVehicle(ctx, routes, plan);
+      const delta = {
+        lateSeconds: after.lateSeconds - before.lateSeconds,
+        cost: after.cost - before.cost,
+      };
       if (
         after.overSeconds <= before.overSeconds &&
-        (best === null || delta < best.delta - EPSILON)
+        (best === null || isBetterScore(delta, best.delta))
       ) {
         best = { vehicle, routes, delta };
       }
