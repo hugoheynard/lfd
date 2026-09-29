@@ -1388,6 +1388,39 @@ instance.
 **Recommandation : B-bis, à la place de A**, si Hugo confirme. A reste le repli
 si l'interception ne tient pas à l'essai.
 
+#### Contradiction de `vitruve` sur la forme A — et ce qu'elle dit de B-bis
+
+Relue le 2026-09-29, avant la redirection vers B-bis : trois `BLOQUANT` sur A.
+**La plupart tombent avec B-bis**, et c'est l'argument qui manquait :
+
+- ~~le binaire copié dans `node:22-slim` sans ses bibliothèques (Boost, TBB)~~ :
+  en B-bis, OSRM garde **son** image officielle ;
+- ~~PID 1 et signaux, deux processus~~ : un processus par conteneur ;
+- ~~1/4 de vCPU partagé entre l'API et OSRM~~ : une instance chacun ;
+- ~~la carte dans l'image de l'API, qui bloque un correctif urgent~~ : l'API
+  ne dépend plus de la carte pour se déployer.
+
+**Ce qui vaut pour les deux formes, et que le lot doit écrire** :
+
+- **La carte au build** : aucun bucket ni jeton n'existe pour elle
+  (`architecture-stockage-r2.md`). Le workflow télécharge le graphe **avant**
+  `docker build`, hors du contexte (`.dockerignore` est à la racine) ; jamais
+  un jeton dans un `ARG`, qui resterait dans l'historique de l'image.
+- **Épingler une carte nommée**, pas « la dernière » : date + version OSRM dans
+  le nom, **une seule** version d'OSRM partagée par le workflow mensuel et le
+  Dockerfile (par digest), et une vérification au build que le graphe se
+  charge. Le repli est la carte précédente, jamais aucune carte.
+- **Voir qu'OSRM est tombé** : le repli vol d'oiseau n'est pas muet — un état
+  remonté à la carte de santé `ops`, pas seulement à l'écran de celui qui
+  clique « Proposer ».
+- **Seul le graphe produit par la CI** (amd64, l'architecture de Cloudflare)
+  est publié ; celui de la mesure sur le poste ne l'est jamais.
+- **ODbL** : les données OpenStreetMap exigent une attribution dès qu'on
+  **affiche** un tracé sur une carte (`/route`, hors de ce lot) — à noter pour
+  ce jour-là.
+- Un workflow mensuel n'est lu que par GitHub : son échec doit prévenir
+  quelqu'un, sinon la carte vieillit en silence.
+
 #### Questions à Hugo
 
 - **L8-Q1 — ✅ la Savoie seule** (Hugo, 2026-09-29) : « je vais jusqu'à La
