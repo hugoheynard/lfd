@@ -2133,6 +2133,45 @@ une tournée, 44 km et 69 minutes de livreur de plus — c'est l'ordre tranché
 lot 7 bis rendait, avec la camionnette chargée ignorée, une tournée de
 Camionnette 1 à 6 h 23 : le test de régression porte ce symptôme.
 
+### Lot 10 ter — Les tuiles en production, servies par le planificateur
+
+> **Tranché le 2026-09-29** (§ 6 question 8). Hugo a ajouté « Workers R2
+> Storage : Edit » au jeton `CLOUDFLARE_LFD_ROUTE_PLANNER`.
+
+**L10t-C1 — Le stockage** : un bucket R2 `lfd-map-tiles`, **créé par le
+workflow** `deploy_lfd_route_planner` s'il n'existe pas (idempotent : « existe
+déjà » n'est pas une erreur). Aucune clé d'accès : le Worker le lit par
+**liaison** (binding R2), seul lecteur.
+
+**L10t-C2 — La fabrication** : le même workflow (manuel, push sur `main`,
+mensuel) fabrique `savoie.pmtiles` et `savoie-relief.pmtiles` avec
+`build-tiles.sh` depuis l'extrait du graphe, vérifie qu'ils se lisent, les
+dépose sous un préfixe DATÉ (`AAAA-MM-JJ/…`), puis écrit un petit
+`current.json` qui désigne ce préfixe — la bascule est l'écriture de ce seul
+fichier ; une fabrication ratée ne touche jamais `current.json`. Les deux
+derniers préfixes sont gardés (retour arrière = réécrire `current.json`).
+
+**L10t-C3 — Servir** : `lfd-route-planner` sert `GET /tiles/{rues|relief}.pmtiles`
+en lisant `current.json` puis l'objet R2, **avec les requêtes partielles**
+(`Range` → 206, `Content-Range`, `Accept-Ranges`, `ETag`), cache HTTP long
+sur la version datée. **Sans jeton** : ce sont des données OpenStreetMap et
+IGN publiques. La passerelle expose `/api/route-planner/tiles/…` hors de la
+garde du jeton (seul ce sous-chemin, GET/HEAD seulement), sous la même limite
+de débit (plus large pour les tuiles : une carte fait des dizaines de
+requêtes partielles). Le calcul (`/table`, `/route`) reste derrière le jeton.
+Servir une tuile ne réveille JAMAIS le conteneur OSRM : le Worker répond
+seul.
+
+**L10t-C4 — Le back-office** en production lit
+`/api/route-planner/tiles/` (même origine que la passerelle, donc aucun CORS),
+par plages (`wholeFile: false`). En dev, rien ne change (fichiers locaux).
+
+**L10t-C5 — Mise en service** : déployer `lfd-route-planner` (le workflow
+crée le bucket, fabrique, dépose, déploie), puis la passerelle, puis le
+back-office. Contrôle : `curl -I …/api/route-planner/tiles/rues.pmtiles`
+rend 200 avec `Accept-Ranges: bytes`, et une requête `Range: bytes=0-16383`
+rend 206.
+
 ### Lot 11 — Le suivi des camionnettes en direct
 
 > **Ouvert le 2026-09-29.** Hugo : « une carte pour suivre les livraisons et
