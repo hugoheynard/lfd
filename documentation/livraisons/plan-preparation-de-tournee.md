@@ -639,19 +639,64 @@ Deux `BLOQUANT`, six `SÉRIEUX`. Les corrections, et ce qui reste à trancher :
   l'arrêt, et le geste se voit.
 - **Q15 — le scan seul.** Pas d'étiquette « véhicule ».
 
-**Questions à Hugo** — les trois premières **avant** de bâtir :
+**Tranché par Hugo le 2026-09-29 (suite)** :
 
-- **Q14** — Partir avec des sacs non chargés : **refusé** (recommandé : on
-  retire l'arrêt, le geste se voit), ou permis avec confirmation ?
-- **Q16** — Sur quel appareil charge-t-on ? Un téléphone Android ou une
-  tablette avec Chrome lit le QR dans l'écran ; un **iPhone** ne le peut pas,
-  et son appareil photo ouvrirait le colisage. Et le dépôt a-t-il du réseau ?
-- **Q20** — Une commande part-elle parfois en **plusieurs sacs** ? Si oui, il
-  faut un QR par sac, donc changer la feuille d'atelier.
-- **Q15** — Une étiquette « véhicule » sur les sacs, ou le scan suffit
-  (recommandé) ?
-- **Q21** — `delivery_loading` : `admin` et `comptoir` en écriture, comme
-  prévu ?
+- **Q16 — n'importe quel appareil qui a un appareil photo.** iPhone compris.
+- **Q20 — oui, une commande part parfois en plusieurs sacs**, « à prévoir ».
+- **Q21 — oui** : `delivery_loading` en lecture et écriture pour `admin` et
+  `comptoir`.
+
+#### Ce que Q16 et Q20 changent (v2 du lot 4)
+
+**L4-C8 — Un sac, un QR.** Aujourd'hui, la feuille d'atelier porte **un** QR
+par commande (`atelier-sheet-pdf.ts`), imprimé à la clôture de la production,
+avant qu'on sache combien de sacs il y aura. Le compte de sacs n'est connu
+qu'**au colisage**. Donc :
+
+- le geste « Prête » du colisage demande **le nombre de sacs** (1 par défaut) ;
+  c'est un fait de la **production** (`production_order`), écrit par elle ;
+- le colisage imprime alors **une étiquette par sac** : référence, enseigne,
+  « sac 2 / 3 », et un QR propre au sac ;
+- au chargement, un arrêt est **chargé quand tous ses sacs sont scannés** ;
+  l'écran dit « 2 sacs sur 3 ». Scanner deux fois le même sac ne compte
+  qu'une fois ;
+- la retardataire, sans feuille ni colisage, se déclare à la main **avec son
+  nombre de sacs**.
+
+⚠️ Le compte de sacs vit chez la production, et `delivery` le lit par le canal
+`delivery → production` déjà prévu (le « à la main » refusé sur un sac qui a
+sa feuille).
+
+**L4-C9 — Où mène le QR d'un sac.** Il n'encode **pas** `/colisage/…` : il
+encode `/livraison/sac/{référence}/{n}`. Deux raisons :
+
+- un **iPhone** scanne avec l'appareil photo natif, qui ouvre l'adresse. Avec
+  `/colisage/…`, le livreur tomberait sur l'écran du fournil. Vérifié le
+  2026-09-29 : ouvrir le colisage ne coche rien tout seul, un geste est
+  nécessaire — le risque est une confusion, pas une écriture ;
+- une adresse de sac propre permet d'**ouvrir directement le chargement** de la
+  bonne tournée, sac coché ou refusé selon C2.
+
+La feuille d'atelier garde son QR de colisage : c'est l'outil du fournil.
+
+**L4-C10 — Lire un QR sur n'importe quel appareil.** `BarcodeDetector` n'existe
+ni sous Safari ni sous Firefox. Deux chemins, qui se complètent :
+
+- dans l'écran de chargement, un **décodeur en JavaScript**, chargé
+  **seulement** par cet écran (pas au démarrage du back-office), pour que la
+  lecture marche partout. `qr-reader.ts` avait écarté cette option pour un
+  poste de comptoir dont on choisit le navigateur ; ici, on ne le choisit
+  plus. Dépendance à un seul consommateur : hors du catalogue pnpm ;
+- l'**appareil photo natif** : il ouvre `/livraison/sac/…` (L4-C9), ce qui
+  marche sur tout téléphone sans rien installer.
+
+Saisie de la référence en dernier recours.
+
+**Question à Hugo** :
+
+- **Q22** — Les étiquettes de sac : sur quoi les imprime-t-on ? Une
+  imprimante d'étiquettes au colisage, ou une planche A4 d'étiquettes
+  adhésives sur l'imprimante existante ?
 
 ### Lot 5 — La tranche d'une heure en livraison (côté commande)
 
