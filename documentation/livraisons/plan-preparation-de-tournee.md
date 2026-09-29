@@ -1245,9 +1245,54 @@ Rien ne se bâtit avant d'avoir **mesuré**, en local :
    annonce, et avec le vol d'oiseau × 1,4 : c'est ce qui dira si le lot vaut
    son coût.
 
-⚠️ **Rien de ce qui précède n'est vérifié** (2026-09-29) : ni la mémoire d'OSRM
-sur la Savoie, ni les types d'instance Cloudflare, ni la taille d'image
-admise. Les ordres de grandeur écrits ici sont des estimations.
+✅ **Mesuré le jour même** : voir L8-C6. Les ordres de grandeur estimés
+ci-dessus (un gigaoctet de mémoire) étaient faux, dans le bon sens.
+
+#### L8-C6 — L'étape 0, mesurée le 2026-09-29
+
+Sur le poste de Hugo, Docker, `osrm-backend` v5.27.1, profil `car`, MLD.
+Extrait Geofabrik Rhône-Alpes du 2026-09-29 (530 Mo), découpé au polygone de
+la Savoie (relation OSM 7425).
+
+| Mesure                                                           | Valeur                           |
+| ---------------------------------------------------------------- | -------------------------------- |
+| Extrait Savoie (`.osm.pbf`)                                      | 53 Mo                            |
+| Graphe précalculé (`.osrm*`)                                     | **78 Mo**                        |
+| Image `osrm-backend`                                             | 141 Mo (≈ 220 Mo avec le graphe) |
+| Mémoire d'`osrm-routed` chargé                                   | **47 à 51 Mo**                   |
+| Réveil (démarrage → première réponse)                            | **0,6 s**                        |
+| `/table` à 50 points                                             | **18 à 30 ms**                   |
+| Préparation complète (découpe + extract + partition + customize) | environ 2 min                    |
+
+**Les estimations de ce plan étaient fausses d'un ordre de grandeur** (on
+parlait d'un gigaoctet) : la Savoie est petite. **Cloudflare tient sans
+effort** — limites lues le 2026-09-29 sur
+`developers.cloudflare.com/containers/platform-details/limits/` : le plus petit
+type, `lite` (256 MiB, 2 Go de disque, image ≤ disque), suffit. Et un réveil à
+0,6 s rend inutile de le garder allumé.
+
+**Le vol d'oiseau, confronté à la route** — départ Val d'Isère (le labo) :
+
+| Vers            | Vol d'oiseau | Lot 7 (× 1,4 ; 35 km/h) | OSRM                 | Réalité (Hugo) |
+| --------------- | ------------ | ----------------------- | -------------------- | -------------- |
+| Arc 1800        | 20,8 km      | 50 min                  | 46,7 km · **58 min** | **55 min**     |
+| Courchevel 1850 | 27,1 km      | 65 min                  | 82,7 km · **96 min** | —              |
+| Méribel         | 32,7 km      | 78 min                  | 75,9 km · **89 min** | —              |
+| La Rosière      | 22,4 km      | 54 min                  | 32,1 km · **45 min** | —              |
+
+Ce que ça dit :
+
+- OSRM tombe à **3 minutes** du seul trajet réel connu, un peu pessimiste —
+  le bon sens, pour une promesse ;
+- le vol d'oiseau se trompe **dans les deux sens** : Courchevel est **31
+  minutes** plus loin qu'il ne le croit (la route fait trois fois la distance à
+  vol d'oiseau, par Moûtiers), La Rosière **9 minutes** plus près. Aucun
+  facteur de détour unique ne corrige les deux : c'est la preuve que la
+  **répartition** du lot 7 serait fausse sans OSRM, pas seulement l'ordre.
+
+**Verdict** : le lot 8 vaut son coût, et il coûte peu. Les réglages de
+facteur de détour et de vitesse du lot 7 ne servent plus qu'au **repli** quand
+OSRM ne répond pas.
 
 #### Questions à Hugo
 
