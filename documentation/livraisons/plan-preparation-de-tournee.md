@@ -1884,6 +1884,41 @@ véhicule dans le calcul. Ici, la camionnette qui fait Val d'Isère de 6 h à
 7 h 48 reçoit aussi la tournée proposée de 6 h 22 — l'ancien calcul faisait la
 même chose. Le calculateur ne connaît que les tournées qu'il compose.
 
+### Lot 7 ter — D'abord le client : disponibilité, marge, et VROOM évalué
+
+> **Tranché le 2026-09-29.** Hugo : « on maximise pour le client ».
+
+**L7t-C1 — L'ordre des priorités du calcul** : (1) jamais hors créneau —
+pénalité absolue, une proposition hors créneau n'est retenue que faute de
+toute autre, et l'écran le dit ; (2) une **marge de sécurité** avant la fin
+de chaque créneau (réglage « Marge de sécurité », **20 min par défaut**,
+Hugo : « oui » — un bouchon au pied d'une station en hiver mange un quart
+d'heure) : arriver dans les 20 dernières minutes coûte, proportionnellement ;
+(3) ensuite seulement, heures de livreur et kilomètres.
+
+**L7t-C2 — La disponibilité des camionnettes** : une camionnette qui porte
+une tournée chargée ou partie n'est libre qu'à son retour estimé (tournée
+chronométrée) ; elle ne reçoit une tournée neuve qu'après, et seulement si
+`multiplePassages` le permet. Constaté le 2026-09-29 : « Camionnette 1 »
+chargée jusqu'à 7 h 48 recevait une tournée à 6 h 23 (« pourquoi dans la démo
+j'ai deux fois camionnette 1 ? »).
+
+**L7t-C3 — Lisible à l'écran** : « Camionnette 1 · chargée », « Camionnette
+1 · 2ᵉ passage · départ 8 h 05 » ; le réglage global devient « Temps de
+livraison sur place », et le carnet d'adresses gagne le champ par adresse
+(L7b-C4, serveur déjà bâti).
+
+**L7t-C4 — VROOM, évalué et écarté pour l'instant.** Mesuré le 2026-09-29
+(v1.14.0, OSRM local, les 11 livraisons à répartir de la journée du jeu de
+données) : 198 km contre 261, mais 529 min de livreur contre 396, et **150 min
+d'attente** devant des clients fermés contre 0 ; il laisse bien la camionnette
+chargée sans code. Sa documentation (v1.15.0, mars 2024, dernière version) :
+coûts `fixed`, `per_hour` (temps de ROUTE), `per_task_hour`, `per_km`,
+plafonds `max_travel_time`, `max_distance`, `max_tasks`, pauses — **l'attente
+n'est pas coûtée**, et aucune notion de marge avant la fin d'un créneau. Pour
+« d'abord le client », notre calculateur est mieux placé. VROOM redevient la
+bonne piste le jour où l'on veut capacités, pauses, froid ou ramassage de bacs.
+
 ### Lot 11 — Le suivi des camionnettes en direct
 
 > **Ouvert le 2026-09-29.** Hugo : « une carte pour suivre les livraisons et
