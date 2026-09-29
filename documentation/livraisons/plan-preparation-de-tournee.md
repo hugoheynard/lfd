@@ -2421,3 +2421,15 @@ réversible ; chaque point dit ce qui a été fait en attendant.
     mais la flotte et les réglages qu'il pré-remplit se lisent sous
     `delivery_settings:read`. Sans ce second droit, les champs restent vides et
     l'écran le dit (aucune valeur inventée). Faut-il ouvrir la lecture ?
+
+**Réponses de Hugo, 2026-09-29 (soir)** : Q1 vol d'oiseau supprimé (lots 10
+bis, 7 bis) · Q2 sans objet (interception retirée, lot 8 bis) · Q3 mise en
+service par étapes, OSRM d'abord (planificateur-de-tournees.md) · Q4 **B**,
+scénarios enregistrés (L9-C7) · Q5 **A**, partir d'une vraie journée avec les
+noms (L9-C8) · Q6 validée (écran Planifier) · Q7 **B maintenant**, polices
+hébergées par le back-office · Q8 bucket `lfd-map-tiles` créé et rempli par
+le workflow de `lfd-route-planner` (permission R2 ajoutée au jeton) ·
+Q10 **A**, la lecture de la flotte et des réglages est ouverte à qui lit les
+tournées. Prix de la marge et glisser-déposer tactile : **TODO**
+(`todo-calculateur.md`). Q22 (support des étiquettes) : rien pour l'instant.
+RGD Savoie Mont Blanc : abandonné.

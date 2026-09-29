@@ -28,3 +28,17 @@
   (0,489 pour une place de Chambéry, seuil 0,5) : elles restent « non
   situées ». Le remède est le point GPS saisi dans le carnet, pas un seuil
   abaissé.
+
+## À juger à l'usage (Hugo, 2026-09-29)
+
+- **Le prix de la marge de sécurité.** Sur la journée du jeu de données, avec
+  la marge à 20 min, protéger UN arrêt de plus dans la marge coûtait une
+  tournée, 44 km et 69 min de livreur de plus (lot 7 ter, tableau sous
+  L7t-C4). C'est l'ordre tranché (« d'abord le client ») ; le prix est fixé
+  par `MARGIN_WEIGHT` (`apps/lfd-api/src/delivery/domain/services/vehicle-plan.ts`).
+  À revoir quand l'équipe aura planifié de vraies journées : garder, rendre la
+  marge moins chère, ou baisser la marge par défaut.
+- **Le glisser-déposer au doigt et au clavier** (écran Planifier). Il est en
+  HTML5 natif : souris seulement. Remède : `@angular/cdk` (drag-drop), qui
+  n'est pas encore une dépendance du dépôt. Les listes de composition, sous le
+  planificateur, restent la voie clavier en attendant.
