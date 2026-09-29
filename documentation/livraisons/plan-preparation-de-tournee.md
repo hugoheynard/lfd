@@ -66,8 +66,8 @@ manque, c'est l'écran qui les rassemble et les gestes qui s'appuient dessus.
   part.
 - **Aucun échec de livraison** : ni motif, ni chemin de retour (une commande
   ratée ne reparaît dans aucune file du lendemain).
-- **Aucun véhicule, aucun livreur** : ni modèle, ni rôle staff (les cinq rôles
-  sont `admin`, `commercial`, `comptabilite`, `support`, `dev`).
+- **Aucun véhicule, aucun livreur** : ni modèle, ni rôle staff (les rôles
+  sont `admin`, `commercial`, `comptabilite`, `communication`, `comptoir`, `support`, `dev` (sept, recompté le 2026-09-29)).
 - **Aucun géocodage** : le point GPS n'existe que si quelqu'un l'a saisi sur
   l'adresse.
 - **La retardataire** (commande passée après la clôture) n'a **pas de feuille
@@ -159,30 +159,150 @@ aussi (le shell fold n'a pas de règle d'impression, et aucune règle globale
 n'existe) ; le jour choisi n'est pas dans l'URL ; le lien carte ouvre Google
 Maps.
 
-### Lot 2 — Les véhicules, en données
+### Lot 2 — Les bases paramétrables de la livraison
 
-**Ce que l'équipe obtient** : dans les réglages, la liste des véhicules — un
-nom lisible (« Kangoo blanc »), une plaque, actif ou retiré. On en ajoute un
-sans rien demander à personne.
+> **Revu le 2026-09-29.** Hugo : « on doit poser les bases paramétrables avant
+> d'organiser les tournées ». Ce lot pose **tout ce que la composition lira
+> comme un réglage**, avant la première tournée ; le lot 3 ne contient aucune
+> constante.
+>
+> **Contredit par `vitruve` le même jour** : trois `BLOQUANT`, six `SÉRIEUX`.
+> Tous sont intégrés ci-dessous. Quatre décisions en sortent, qui sont à Hugo
+> (Q7 à Q10, fin de ce lot) — **rien ne se bâtit avant**.
 
-**Comment** :
+#### Où ça se range
 
-- c'est le premier modèle du **bloc logistique** : déclaré dans
-  `lint:context-boundaries`, schéma Postgres choisi explicitement. D6 se
-  tranche ici ;
-- **pas de suppression** : un véhicule vendu est **retiré**, parce que les
-  tournées passées le citent (`CLAUDE.md` §3 : pas de DELETE physique) ;
-- un CRUD honnête : aucune transition ne s'y refuse (`CLAUDE.md` §3.1, « où NE
-  PAS mettre d'agrégat »).
+**Pas dans l'espace e-commerce.** Sa section Réglages → Livraison
+(`/b2b/reglages/livraison`) porte **l'offre** faite au client : à qui on livre,
+les zones, leurs frais. La flotte porte **l'exploitation** : avec quoi on tient
+cette offre.
 
-**Question ouverte à ce lot** : un véhicule peut-il être **indisponible un
-jour donné** (garage, panne) ? Si oui, la composition doit le savoir. Ma
-recommandation : pas de calendrier au premier passage ; on compose avec les
-véhicules actifs, et on laisse une tournée vide.
+**Un espace « Livraison » dans le rail**, qui n'existe pas : le rail compte huit
+espaces (`WORKSPACES`, `workspace-rail/workspaces.ts`) et `/livraison` n'est
+dans aucun. C'est une entrée de rail à créer (`WorkspaceKey`, vues, specs), pas
+une page de plus.
+
+| Entrée           | Adresse                 | Lot  |
+| ---------------- | ----------------------- | ---- |
+| Feuille de route | `/livraison`            | 1 ✅ |
+| Véhicules        | `/livraison/vehicules`  | 2    |
+| Tournées         | `/livraison/tournees`   | 3    |
+| Chargement       | `/livraison/chargement` | 4    |
+
+`/livraison` est aujourd'hui une route **feuille**, gardée par
+`b2b_orders:read` (`app.routes.ts`). Elle devient un parent à enfants, et le
+droit qui la garde est la question Q7.
+
+#### Le droit — un seul pour tout le module
+
+Un droit nommé d'après la **flotte** mentirait dès le lot 3 (composer n'est pas
+de la flotte) et obligerait à en ajouter un par lot : trois droits pour un même
+espace. Et une valeur d'enum `StaffResource` **ne se retire pas**. Le nom doit
+donc porter le module entier : **`delivery_rounds`** (« Tournées de
+livraison »), préfixé par le bloc comme `pim_`, `media_`, `staff_`.
+
+- **lecture** : voir la feuille de route, les véhicules, les tournées ;
+- **écriture** : paramétrer la flotte, composer, charger.
+
+Ce que ça coûte, d'après le précédent `b2b_late_fee` (377008f85) :
+
+- la valeur ajoutée **seule** dans sa migration (irréversible) ;
+- une migration de données qui **complète** `staff_role_definitions.grants`
+  sans écraser une définition éditée à l'écran ;
+- `ROLE_GRANTS` tenu au même état (`staff-role-grants-parity.e2e-spec.ts`),
+  libellé, `grant-chips.spec.ts`, `app.routes.spec.ts`, `staff-roles.e2e-spec.ts` ;
+- `pnpm test` à la racine, puisque `packages/contracts` bouge.
+
+⚠️ **La feuille de route change de mur.** Elle est servie sous `b2b_orders`
+(front **et** `delivery-run-sheet.controller.ts`). Aujourd'hui, `comptoir` et
+`support` lisent donc les adresses et contacts de **toutes** les livraisons.
+Passer le module sous `delivery_rounds` retire cet accès à qui ne le reçoit
+pas : c'est voulu, mais c'est un changement pour ces rôles (Q8).
+
+#### Ouvrir le bloc `delivery/`
+
+Le coût d'entrée, compté porte par porte :
+
+- `context-boundaries.mjs` : `BLOCK_OF`, **et** une entrée `ALLOWED.delivery`
+  (`staff`, `platform`), **et** `delivery` ajouté à `ALLOWED.root`, sans quoi
+  `appBootstrap` ne peut pas câbler le module ;
+- 🔴 `prisma-model-ownership.mjs` tient **sa propre liste en dur** (`BLOCKS`) :
+  un `src/delivery/` qui n'y figure pas est **ignoré**, ni écrivain ni lecteur.
+  C'est le piège déjà raconté pour `media`. L'y inscrire dans le même commit ;
+- `journal-tracked.mjs` ne couvre que `src/pim/**`, la médiathèque et
+  `src/b2b/account/**` : y ajouter `src/delivery/**` (voir « journal ») ;
+- le **schéma Postgres** : ajouté à `datasource.prisma`, `CREATE SCHEMA` dans
+  la migration, fichier selon `prisma-schema-layout.mjs` (Q10) ;
+- la matrice de `CLAUDE.md` §3 : une colonne et une ligne `delivery`.
+
+Aucun canal vers le commerce n'est ouvert à ce lot, **sauf** si Q9 relie le
+départ à un point de retrait.
+
+#### 2a — Les véhicules
+
+- un **nom** (« Kangoo blanc ») et une **plaque** ;
+- **`retired_at` daté**, pas un booléen : le lot 3 devra lire « actif **ce
+  jour-là** », et un drapeau sans date retirerait le véhicule des tournées déjà
+  composées pour la semaine ;
+- **le nom est recopié dans la tournée** quand elle est composée (lot 3) :
+  renommer un véhicule ne réécrit pas l'historique ;
+- **pas de suppression** (`CLAUDE.md` §3) ;
+- ⚠️ pas de nombre de véhicules stocké : le nombre **est** la liste des actifs.
+
+**La plaque est une règle qui refuse**, donc ce n'est pas un CRUD sans
+invariant :
+
+- un value object `LicensePlate` **normalise** (`AB-123-CD`, `ab 123 cd` et
+  `AB123CD` sont la même plaque) et refuse une forme invalide ;
+- l'unicité tient **en base**, par un index unique partiel sur la forme
+  normalisée des véhicules non retirés — écrit à la main dans le SQL, Prisma
+  ne le connaît pas (précédent : `20260927100000_le_bon_sur_la_commande`) ;
+- plaque **obligatoire** : `NULL` échapperait à l'unicité ;
+- réactiver un véhicule retiré peut buter sur l'index : le conflit se traduit
+  en un refus qui nomme le véhicule actif qui porte déjà cette plaque
+  (`CLAUDE.md` §0), jamais en 500.
+
+#### 2b — Le point de départ
+
+🔴 **Corrigé** : ce plan affirmait qu'aucun modèle ne dit d'où l'on part. Or
+`PickupAddress` est défini comme « un point de retrait (**laboratoire**) »
+(`settings.prisma`), avec son adresse complète ; `LegalEntity` en porte une
+aussi. Recopier l'adresse du labo dans `delivery` ferait deux vérités, qui
+divergeraient au premier déménagement. Aucune des deux n'a de point GPS.
+C'est Q9.
+
+#### 2c — Les livreurs
+
+Hors de ce lot. La composition affecte un véhicule sans nommer de conducteur ;
+le lien personne → tournée arrive avec la vue livreur (lot 6), le jour où il
+sert à murer ce qu'elle voit. Il dépend de D2 (rôle `livreur`).
+
+#### Le journal
+
+Ajouter, retirer, réactiver un véhicule et changer sa plaque sont des **faits**,
+avec leur acteur (`publishTraced`, comme `DeliveryAvailability`), leur phrase
+française, et la porte `journal-tracked` étendue au bloc. Un véhicule retiré
+sans trace de qui l'a retiré est une question à laquelle personne ne pourra
+répondre le jour d'une tournée manquée.
+
+#### Ce que le lot ne paramètre PAS encore
+
+- la **disponibilité par jour** (garage, panne) : on compose avec les actifs ;
+- la **capacité** : aucune donnée de poids n'existe sur une commande ;
+- l'**heure de départ** : elle dépend des fenêtres promises (lot 5).
+
+#### Les quatre décisions de Hugo
+
+| #   | Question                                          | Recommandation                                                                                                                                                                                                      |
+| --- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q7  | **Un seul droit pour tout le module Livraison ?** | Oui, `delivery_rounds`. La feuille de route y passe aussi : un espace, un mur.                                                                                                                                      |
+| Q8  | **Quels rôles le lisent, lesquels l'écrivent ?**  | `admin` en écriture. Pour la lecture : `comptoir`, qui prépare aujourd'hui les sacs. `support` et `commercial` perdent l'accès aux adresses et contacts de livraison — à confirmer, c'est un retrait de droit.      |
+| Q9  | **D'où partent les tournées ?**                   | Du **point de retrait par défaut** (le labo), référencé et non recopié, avec un point GPS **ajouté au point de retrait**. Ça ouvre un canal `b2b → delivery` dès ce lot, que le lot 3 aurait ouvert de toute façon. |
+| Q10 | **Le schéma Postgres du bloc ?**                  | Un schéma `delivery`, fichier `delivery.prisma` à la racine du dossier comme `production.prisma` : un schéma par bloc, et `order_handover` reste où il est.                                                         |
 
 ### Lot 3 — Composer : répartir, puis ordonner
 
-**Ce que l'équipe obtient** : sur `/livraison`, pour le jour J, une colonne par
+**Ce que l'équipe obtient** : sur `/livraison/tournees`, pour le jour J, une colonne par
 véhicule actif et une colonne « à répartir ». On **glisse** chaque commande dans
 un véhicule, puis on range les arrêts dans l'ordre de passage. Chaque tournée
 s'imprime seule. L'écran signale :
@@ -246,11 +366,11 @@ boutique en ligne, qui se fait en ajout (`CLAUDE.md` §0).
 
 ## 4. Par où commencer
 
-**Le lot 1**, puis **2 et 3 ensemble**. Le lot 1 ne demande aucune décision
-coûteuse, ne touche ni l'argent ni le schéma, et donne dès le premier matin une
-feuille de route que personne n'a aujourd'hui. Les lots 2 et 3 ouvrent le bloc
-logistique : c'est là que se paie le coût d'entrée (porte, schéma, migration),
-une fois.
+**Le lot 1** (✅ bâti le 2026-09-29), puis **le lot 2 seul**, puis le lot 3.
+Hugo (2026-09-29) : les bases paramétrables d'abord. Le lot 2 paie le coût
+d'entrée du bloc logistique (porte, schéma, droit, migrations) sans encore
+lire une seule commande ; le lot 3 compose ensuite sur des réglages qui
+existent, au lieu de naître avec des constantes à remplacer.
 
 ## 5. Ce que ce plan n'a pas vérifié
 
