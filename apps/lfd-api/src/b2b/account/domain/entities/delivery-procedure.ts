@@ -161,7 +161,7 @@ export class DeliveryProcedure {
    * que Hugo l'a demandé explicitement le 2026-09-15 (« possibilité de supprimer
    * définitivement »). Une consigne d'accès périmée n'a rien d'opposable, et la
    * garder mettrait sous les yeux du livreur un code de portail changé. Plan
-   * `documentation/b2b/plan-procedure-de-livraison.md` §2.2.
+   * `documentation/livraisons/plan-procedure-de-livraison.md` §2.2.
    *
    * @throws {DeliveryStepNotFoundError} l'étape n'est pas dans la procédure.
    */

@@ -82,7 +82,7 @@ du point choisi, zone déduite du code postal — une seconde implémentation au
 fini par diverger, et sur le chemin qu'on teste le moins.
 
 La **clientèle** suit la même règle que pour le client (depuis le 2026-09-15,
-`b2b/plan-remise-et-livraison-par-clientele.md`) : B2B si la société portée est
+`livraisons/plan-remise-et-livraison-par-clientele.md`) : B2B si la société portée est
 **active**, B2C sinon. Une remise réservée à l'autre clientèle n'est pas
 appliquée, et une livraison fermée aux pros est refusée en 409 — le staff ne
 livre pas là où le client ne le pourrait pas (Q1).
@@ -206,7 +206,7 @@ La famille d'un produit se lit dans son préfixe de SKU (`VIE`/`PAI`/`PAT`/`SAL`
   remplacé la constante `DELIVERY_SERVICE_OPEN`. Une commande saisie par
   l'équipe suit la clientèle de la société — B2B si elle est active, B2C sinon —
   et « Coursier » se grise quand la livraison y est fermée
-  (`documentation/b2b/plan-remise-et-livraison-par-clientele.md`).
+  (`livraisons/plan-remise-et-livraison-par-clientele.md`).
 
 - **Modifier une commande passée.** Ajouter un fait n'est pas en réécrire un.
   Faire avancer ou annuler viendront avec les avenants.

@@ -16,7 +16,7 @@ import { B2B_API_BASE } from '../../api/api-config';
  *
  * Le serveur rend une vue même quand personne n'a rien réglé : ouverte aux deux,
  * `updatedAt` et `updatedBy` à `null`. Il n'y a donc pas de « réglage absent »
- * à traiter ici. Cf. `documentation/b2b/plan-remise-et-livraison-par-clientele.md`, D4.
+ * à traiter ici. Cf. `documentation/livraisons/plan-remise-et-livraison-par-clientele.md`, D4.
  */
 @Injectable({ providedIn: 'root' })
 export class DeliveryAvailabilityService {

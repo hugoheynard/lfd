@@ -6,7 +6,7 @@
 
 ## Le point de départ
 
-Le plan [`../b2b/plan-remise-et-livraison-par-clientele.md`](../b2b/plan-remise-et-livraison-par-clientele.md)
+Le plan [`plan-remise-et-livraison-par-clientele.md`](./plan-remise-et-livraison-par-clientele.md)
 range une société dans la clientèle **B2B seulement si elle est active** (Q3,
 tranchée par Hugo le 2026-09-15). Une société `pending`, `suspended` ou
 `terminated` est B2C : pas de remise pro au retrait, et la livraison suit la

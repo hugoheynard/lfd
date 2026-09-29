@@ -52,7 +52,7 @@ const CLIENTELE: Readonly<Record<CustomerAudience, string>> = {
  *
  * Le serveur lit le réglage au devis comme à la commande, et refuse une
  * livraison fermée (409). L'écran ne décide rien : il pose le réglage.
- * Cf. `documentation/b2b/plan-remise-et-livraison-par-clientele.md`, D4 et D6.
+ * Cf. `documentation/livraisons/plan-remise-et-livraison-par-clientele.md`, D4 et D6.
  */
 @Component({
   selector: 'app-delivery-availability-page',

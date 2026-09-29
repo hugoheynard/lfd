@@ -17,7 +17,7 @@ import type { CustomerAudience } from "./customer-audience.js";
 /**
  * Contrat de fil du **réglage de livraison** : à quelles clientèles la livraison
  * est proposée. Un réglage global, posé dans « E-commerce LFC → Réglages →
- * Livraison ». Cf. `documentation/b2b/plan-remise-et-livraison-par-clientele.md`, D4.
+ * Livraison ». Cf. `documentation/livraisons/plan-remise-et-livraison-par-clientele.md`, D4.
  */
 export interface DeliveryAvailabilityView {
   readonly openToB2b: boolean;

@@ -175,7 +175,7 @@ export interface R2StorageState {
  * Il ne figure toujours PAS dans le bulletin de démarrage, et ce n'est plus
  * justifié : un `R2_PRODUCTION_*` à moitié posé se découvre désormais au premier
  * tirage, devant un four, et non au démarrage. Noté dans
- * `documentation/todos/todo-etrangetes-procedure-de-livraison.md`, point 25.
+ * `documentation/livraisons/todo-etrangetes-procedure-de-livraison.md`, point 25.
  *
  * Ce qui protège un client d'un autre n'est jamais le bucket : c'est le préfixe
  * de clé, dérivé d'identifiants vérifiés, et le mur de la société côté API.

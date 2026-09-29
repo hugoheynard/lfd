@@ -4,7 +4,7 @@ import type { CompanyStatus } from "./customer-sheet.js";
  * **La clientèle d'une requête** : les pros (`b2b`) ou les particuliers (`b2c`).
  *
  * Elle règle ce que l'admin ouvre à l'une ou à l'autre — la remise d'un point de
- * retrait, la livraison. Cf. `documentation/b2b/plan-remise-et-livraison-par-clientele.md`.
+ * retrait, la livraison. Cf. `documentation/livraisons/plan-remise-et-livraison-par-clientele.md`.
  */
 export type CustomerAudience = "b2b" | "b2c";
 

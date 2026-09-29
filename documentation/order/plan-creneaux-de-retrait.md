@@ -11,7 +11,7 @@
 > table de règles). **Elle n'en porte plus.** Ce plan est **purement additif** :
 > rien n'est converti, rien n'est supprimé, le retrait pro n'est pas touché.
 >
-> Lu avant, et cité : [`plan-remise-et-livraison-par-clientele.md`](../b2b/plan-remise-et-livraison-par-clientele.md)
+> Lu avant, et cité : [`plan-remise-et-livraison-par-clientele.md`](../livraisons/plan-remise-et-livraison-par-clientele.md)
 > (le voisin immédiat, sur le même écran),
 > [`architecture-prise-de-rendez-vous.md`](../b2b/architecture-prise-de-rendez-vous.md)
 > §2.1 (le précédent « règle, pas liste »),

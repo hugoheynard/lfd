@@ -7,7 +7,7 @@ import { z } from "zod";
  * Les vues, le défaut, `deliveryOpenTo` et le code de refus vivent dans
  * `delivery-availability.values.ts`, sans zod, pour que la boutique les charge
  * au démarrage sans embarquer le baril (voir l'en-tête de ce module).
- * Cf. `documentation/b2b/plan-remise-et-livraison-par-clientele.md`, D4.
+ * Cf. `documentation/livraisons/plan-remise-et-livraison-par-clientele.md`, D4.
  */
 export {
   DEFAULT_DELIVERY_AVAILABILITY,

@@ -156,4 +156,4 @@ flowchart TD
   entrent au compte de production) est décrit ici :
   [`architecture-reglement-et-compte-de-production.md`](architecture-reglement-et-compte-de-production.md).
 - **La livraison** — l'application de tournées :
-  [`../b2b/architecture-road-livraison-tournees.md`](../b2b/architecture-road-livraison-tournees.md).
+  [`livraisons/architecture-road-livraison-tournees.md`](../livraisons/architecture-road-livraison-tournees.md).

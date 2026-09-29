@@ -464,7 +464,7 @@ model Address {
 }
 
 // La procédure de livraison d'une adresse — plan
-// `documentation/b2b/plan-procedure-de-livraison.md` §2.1.
+// `documentation/livraisons/plan-procedure-de-livraison.md` §2.1.
 //
 // Racine d'agrégat (`DeliveryProcedure`) : elle naît à la première étape et ne
 // se supprime jamais. Ses étapes, elles, se suppriment physiquement (§2.2).

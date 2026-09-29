@@ -22,7 +22,7 @@
 ### 1.1 La procédure de livraison — la référence, EN PRODUCTION
 
 Migration `20260915160000_procedure_de_livraison` présente sur `origin/main`.
-Plan : [`plan-procedure-de-livraison.md`](plan-procedure-de-livraison.md).
+Plan : [`plan-procedure-de-livraison.md`](../livraisons/plan-procedure-de-livraison.md).
 
 - **Agrégat** `DeliveryProcedure` (`src/b2b/account/domain/entities/delivery-procedure.ts`,
   213 lignes) : `addStep` **en fin**, `reviseStep`, `attachPhoto` /

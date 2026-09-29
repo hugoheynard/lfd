@@ -279,7 +279,7 @@ l'usage s'éteint, le bulletin de démarrage nomme ce qui manque, le reste sert.
 elle ne l'est plus depuis `985d21bf` (les deux papiers du fournil sont archivés).
 Aujourd'hui, un `R2_PRODUCTION_*` mal posé se découvre au premier tirage, pas au
 démarrage. C'est noté dans
-[`../todos/todo-etrangetes-procedure-de-livraison.md`](../todos/todo-etrangetes-procedure-de-livraison.md).
+[`livraisons/todo-etrangetes-procedure-de-livraison.md`](../livraisons/todo-etrangetes-procedure-de-livraison.md).
 
 ---
 

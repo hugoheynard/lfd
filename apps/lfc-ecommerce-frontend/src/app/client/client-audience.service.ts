@@ -9,7 +9,7 @@ import { ClientWorkspace } from './client-workspace.service';
  * **La clientèle de l'écran** — les pros (`b2b`) ou les particuliers (`b2c`).
  *
  * Elle règle ce que la boutique ANNONCE : la remise d'un point de retrait, la
- * livraison proposée (`documentation/b2b/plan-remise-et-livraison-par-clientele.md`,
+ * livraison proposée (`documentation/livraisons/plan-remise-et-livraison-par-clientele.md`,
  * D1 et D7). Le serveur, lui, DÉCIDE — il relit la société agissante au devis
  * comme à la commande. Ce service n'a donc aucun pouvoir : il évite seulement
  * d'afficher une remise que la caisse refusera.
