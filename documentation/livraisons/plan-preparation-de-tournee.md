@@ -375,6 +375,40 @@ dans la camionnette frigo » pourront être calculés.
 « les trois dimensions ou aucune » et pour la plage de température ; la
 correction d'un véhicule garde sa trace au journal comme aujourd'hui.
 
+**L2b-C6 — L'énergie** : électrique, hybride, diesel, essence, gaz (GNV/GPL),
+ou non renseignée ; affichée, pas encore utilisée par le calcul (autonomie
+d'un électrique en montagne : étape suivante possible).
+
+> **Serveur bâti le 2026-09-29** (non commité à l'écriture de ce bandeau).
+>
+> - **Contrat** (`packages/contracts/src/delivery-settings.ts`) :
+>   `vehiclePayloadSchema` gagne `cargo` et `refrigeration`, entiers,
+>   `nullable().optional()`. ⚠️ **La charge reste complète** : à la correction,
+>   un champ absent vaut `null` et EFFACE — jamais « inchangé ». `VehicleView`
+>   gagne `cargo` (avec `volumeLiters` dérivé, arrondi à l'entier inférieur) et
+>   `refrigeration`, `null` quand inconnus ; c'est la même vue que lisent
+>   l'écran Véhicules, Planifier et le simulateur (`GET /admin/livraison/vehicules`).
+> - **Domaine** : `CargoSpace` (1–1 000 cm, volume dérivé) et
+>   `RefrigeratedCompartment` (1–20 000 L, −30..+15 °C, min ≤ max) ; « réfrigéré
+>   ≤ utile » est tenu par `Vehicle`, qui valide toute la fiche avant d'en
+>   affecter la moindre partie. Trois refus `DomainError` (400) :
+>   `delivery.cargo_dimensions_invalid`, `delivery.refrigeration_invalid`,
+>   `delivery.refrigerated_volume_exceeds_cargo`. La plaque en double reste 409.
+> - **Persistance** : migration additive
+>   `20260929220000_le_chargement_d_un_vehicule` — six colonnes nullables et
+>   trois CHECK (dimensions tout ou rien, froid tout ou rien, min ≤ max). Les
+>   bornes restent au domaine seul.
+> - **Journal** : `delivery_vehicle.*` portent `cargo` et `refrigeration`
+>   (avant/après pour `corrected`), optionnels au contrat pour les faits
+>   antérieurs.
+> - **L'énergie (L2b-C6)**, ajoutée au lot par Hugo le même jour : `energy`
+>   (`electric`, `hybrid`, `diesel`, `petrol`, `gas`) au contrat, à la vue et
+>   au journal, `null` = non renseignée, même règle « absent efface ». Colonne
+>   texte + CHECK dans une SECONDE migration,
+>   `20260929223000_l_energie_d_un_vehicule` : la première était déjà
+>   appliquée. Pas d'enum Postgres, comme le reste du schéma `production`.
+> - Tests : VO, entité, handlers, `apps/lfd-api/test/delivery-vehicle-load.e2e-spec.ts`.
+
 ### Lot 3 — Composer : répartir, puis ordonner — ✅ bâti le 2026-09-29
 
 **Ce que l'équipe obtient** : sur `/livraison/tournees`, pour le jour J, une colonne par
@@ -897,6 +931,89 @@ profonde existe déjà (`staff-login.ts`, restauration de la cible dans
 - Reste à vérifier **en navigateur, sur un vrai téléphone** : qu'un lien
   `/livraison/sac/…` survit à la connexion, et que la lecture des QR marche
   sur un iPhone.
+
+### Lot 4 bis — Les bacs : colisage typé, scan au bac, plan de chargement
+
+> **Ouvert le 2026-09-29.** Hugo : « des bacs fermés superposables de
+> différentes tailles, dans lesquels on saura combien on peut mettre de chaque
+> item […] optimiser colisage / rangement dans les véhicules en fonction de
+> l'ordre des tournées ». 📐 Conception — rien n'est bâti.
+
+**Réponses de Hugo (2026-09-29)** : Q1 — **tout part en bac**, et on scanne
+le bac ; un bac peut contenir des sacs (emballage intérieur, sans QR). Une
+**cloison** fait d'un bac deux **demi-bacs** ; Q1 bis — **a** : un demi-bac
+par client, un QR par moitié. Q2 — un bac = un client ; deux clients (un par
+moitié cloisonnée) **en dernier recours** seulement, pour optimiser. Q3 —
+oui, on mélange les produits d'un même client en comptant la place. Q4 — **à
+trancher** (où se renseigne la contenance). Q5 — le retour des bacs au labo :
+plus tard. Q6 — **oui** : bacs isothermes et produits qui demandent le froid.
+
+**Ce qui existe et que ce lot touche** (vérifié le 2026-09-29) :
+
+- au **fournil**, le colisage déclare un NOMBRE de « containers » par commande
+  (`DeclarePackingContainersCommand`, plafond 99) — un compte, sans type ;
+- en **livraison**, le lot 4 déclare des **sacs** (QR, code court) par
+  commande, les charge par scan dans une tournée, et « Partir » refuse un
+  arrêt dont un sac manque (`delivery_bag`, `delivery_bag_load`) ;
+- les véhicules portent leurs dimensions utiles et leur caisse réfrigérée
+  (lot 2 bis).
+
+**L4b-C1 — Le catalogue des bacs** (réglage, `delivery_settings`) : un type de
+bac a un nom (« Bac M »), ses dimensions **extérieures** (cm, pour le
+chargement) et **intérieures** (cm, informatives), `isotherm` (oui/non), le
+nombre maximal dans une pile, et `divisible` (accepte une cloison). Un type
+n'est jamais supprimé : archivé.
+
+**L4b-C2 — La contenance** : pour un type de bac et un produit (SKU, identifiant
+opaque, jamais une jointure vers le référentiel), le nombre d'unités qu'un bac
+ENTIER contient. Un demi-bac contient la moitié (arrondie à l'inférieur). Un
+produit sans contenance pour AUCUN type est signalé au colisage, jamais deviné.
+**Q4 à trancher — où se renseigne-t-elle ?** (a) dans l'espace Livraison, une
+grille bacs × produits ; (b) sur la fiche produit du référentiel, publiée par
+le canal B2B. Recommandé : **a**, c'est une donnée logistique qui dépend de NOS
+bacs ; le référentiel décrit le produit.
+
+**L4b-C3 — Le froid des produits** (Q6) : un produit « demande le froid » — même
+question d'emplacement que Q4, même recommandation. Un produit qui demande le
+froid ne va que dans un bac isotherme ; une commande qui en contient demande
+une tournée dont le véhicule a une caisse réfrigérée — **signalé** au calcul
+d'abord, contrainte ensuite.
+
+**L4b-C4 — Le colisage calculé** (proposé, jamais imposé) : pour une commande,
+le moins de bacs possible, en remplissant par la place (Q3 : une unité occupe
+1/contenance du bac), froid séparé du sec. Un reste qui tient dans un
+demi-bac est proposé en demi-bac. Le fournil voit la proposition au colisage
+(« 2 bacs M + ½ bac S ») et **déclare ce qu'il a réellement fait** : c'est la
+déclaration qui fait foi, comme aujourd'hui le nombre de containers.
+
+**L4b-C5 — L'unité scannée devient le bac (ou le demi-bac)** : ce qui s'appelle
+« sac » au lot 4 devient « bac » — même mécanique (QR, code court, déclaration,
+chargement par scan, « Partir » qui refuse un arrêt incomplet), plus un type
+et, pour un demi-bac, sa moitié et le bac physique qu'il partage. ⚠️ Le
+modèle `delivery_bag` n'a jamais servi en production : on peut le renommer et
+l'étendre en place, par migration, sans bascule en trois temps — à vérifier
+au moment du bâti (aucune ligne en base de production).
+
+**L4b-C6 — Deux clients dans un bac, en dernier recours** (Q2) : le colisage
+ne le propose que si les deux commandes sont dans la **même tournée**, à des
+arrêts **consécutifs**, et que chacune tient dans un demi-bac. Deux QR, un par
+moitié ; le bac descend au premier arrêt, remonte, et part au second.
+
+**L4b-C7 — Le plan de chargement** : pour une tournée composée, l'ordre de
+chargement est l'**inverse de l'ordre de passage** (le dernier arrêt au fond,
+en bas) ; les bacs sont empilés par arrêt dans la limite de leur pile, les
+isothermes dans la caisse réfrigérée ; le plan dit si tout tient dans le
+volume utile du véhicule, et sinon ce qui déborde. Affiché à l'écran de
+chargement (lot 4) comme un **schéma du plancher** (piles numérotées par
+arrêt), et l'ordre de scan au chargement suit ce plan.
+
+**L4b-C8 — Plus tard** : le calculateur de tournée tient compte du volume et du
+froid (une tournée qui ne rentre pas, une commande froide dans une camionnette
+sèche) ; le retour des bacs vides (Q5) avec la vue livreur (lot 6).
+
+**Découpage** : (a) catalogue des bacs + contenances + froid des produits
+(réglages) ; (b) colisage proposé + déclaration typée au fournil ; (c) le bac
+remplace le sac au scan ; (d) le plan de chargement ; (e) le calcul.
 
 ### Lot 5 — La tranche d'une heure en livraison (côté commande)
 
