@@ -185,6 +185,12 @@ export class DeliveryMap {
       this.map = map;
       this.fitted = false;
       map.once('load', () => this.state.set('ready'));
+      // Un style refusé n'émet que `error` : sans ceci, « Chargement » à vie.
+      map.on('error', () => {
+        if (this.state() === 'loading') {
+          this.state.set('error');
+        }
+      });
     } catch {
       this.state.set('error');
     }
@@ -230,7 +236,27 @@ export class DeliveryMap {
     this.host.nativeElement.append(probe);
     const color = getComputedStyle(probe).color;
     probe.remove();
-    return color;
+    return this.toRgba(color);
+  }
+
+  /**
+   * Les tokens fold sont souvent des `color-mix()`, que le navigateur rend en
+   * `color(srgb …)` : MapLibre refuse cette forme et le style entier avec, la
+   * carte restait sur « Chargement » sans rien dire (vu le 2026-09-29). Un
+   * pixel peint par le canevas 2D rend toujours des octets sRGB.
+   */
+  private toRgba(color: string): string {
+    const context = this.document.createElement('canvas').getContext('2d', {
+      willReadFrequently: true,
+    });
+    if (context === null) {
+      return color;
+    }
+    context.clearRect(0, 0, 1, 1);
+    context.fillStyle = color;
+    context.fillRect(0, 0, 1, 1);
+    const [red = 0, green = 0, blue = 0, alpha = 0] = context.getImageData(0, 0, 1, 1).data;
+    return `rgba(${String(red)}, ${String(green)}, ${String(blue)}, ${String(Math.round((alpha / 255) * 1000) / 1000)})`;
   }
 
   private palette(): MapPalette {
