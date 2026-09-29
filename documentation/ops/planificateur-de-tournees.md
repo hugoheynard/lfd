@@ -378,22 +378,102 @@ CI part au registre.
 **affiche** un tracé sur une carte (`/route`) — à écrire le jour où un écran
 le fera.
 
-## Les tuiles de la carte des tournées (lot 10) — ⚠️ fabriquées, pas encore servies
+## Les tuiles de la carte des tournées (lot 10 ter) — ✅ bâties le 2026-09-29, pas encore déployées
 
-Même extrait, second usage : `apps/lfd-route-planner/scripts/build-tiles.sh` fabrique
-les deux fichiers PMTiles de la carte du back-office à partir du
+Même extrait, second usage : `apps/lfd-route-planner/scripts/build-tiles.sh`
+fabrique les deux fichiers PMTiles de la carte du back-office à partir du
 `savoie.osm.pbf` que `build-graph.sh` laisse dans son dossier de sortie.
 
 ```bash
 apps/lfd-route-planner/scripts/build-tiles.sh <sortie-du-graphe>/savoie.osm.pbf <dossier-hors-du-dépôt>
 ```
 
-| Fichier                 | Contenu                                 | Taille (2026-09-29) |
-| ----------------------- | --------------------------------------- | ------------------- |
-| `savoie.pmtiles`        | rues, eau, couverture du sol — z0–14    | 36 Mo               |
-| `savoie-relief.pmtiles` | altitude Mapterhorn (terrarium) — z0–12 | 60 Mo               |
+| Fabriqué                | Déposé sous                 | Servi sous                                | Taille (2026-09-29) |
+| ----------------------- | --------------------------- | ----------------------------------------- | ------------------- |
+| `savoie.pmtiles`        | `AAAA-MM-JJ/rues.pmtiles`   | `/api/route-planner/tiles/rues.pmtiles`   | 36 Mo               |
+| `savoie-relief.pmtiles` | `AAAA-MM-JJ/relief.pmtiles` | `/api/route-planner/tiles/relief.pmtiles` | 60 Mo               |
 
-**État au 2026-09-29** : fabriqués et contrôlés en local (une maquette les
-lit), **mais ni bucket R2, ni workflow, ni écran** : le mensuel ne les
-refait pas encore. Le bâti attend la validation de la maquette
-(`documentation/livraisons/plan-preparation-de-tournee.md`, lot 10, L10-C4).
+**État au 2026-09-29** : bâti, non commité à l'écriture, **rien n'est déployé
+et le bucket n'existe pas encore**.
+
+### Le cycle
+
+- **Stockage** : le bucket R2 `lfd-map-tiles`, lu par **liaison** (`MAP_TILES`
+  dans `apps/lfd-route-planner/wrangler.jsonc`) — aucune clé d'accès, le Worker
+  est son seul lecteur.
+- **Fabrication** : `deploy_lfd_route_planner` (mensuel, manuel, push sur
+  `main`), dans cet ordre, **avant** `wrangler deploy` :
+  1. `wrangler r2 bucket create lfd-map-tiles` — « existe déjà » est un succès,
+     toute autre erreur arrête le déploiement ;
+  2. `build-tiles.sh` sur l'extrait du graphe ; il échoue si un fichier ne se
+     relit pas (`pmtiles show`) ;
+  3. dépôt des deux fichiers sous le préfixe du jour `AAAA-MM-JJ/` ;
+  4. **puis** current.json réécrit — `{"prefix": "<ce jour>", "previous":
+"<le préfixe d'avant>"}`. C'est la bascule : une fabrication ratée
+     n'atteint jamais cette étape ;
+  5. **après** la bascule, le préfixe qui précédait `previous` est supprimé :
+     deux sont gardés. `wrangler` ne sait pas lister un bucket, c'est donc la
+     chaîne `previous` qui dit quoi supprimer ; sans elle (premier passage),
+     rien n'est supprimé.
+- **Service** : `lfd-route-planner` sert `GET|HEAD /tiles/{rues,relief}.pmtiles`
+  en lisant current.json à chaque requête, puis l'objet — requêtes
+  partielles (`Range` → 206 + `Content-Range`, hors bornes → 416),
+  `Accept-Ranges`, `ETag`, `Cache-Control: public, max-age=86400`. Tout autre
+  chemin sous `/tiles` : 404 nu. **Aucune tuile ne réveille le conteneur OSRM**
+  (`apps/lfd-route-planner/src/dispatch.ts`, prouvé par
+  `apps/lfd-route-planner/src/__tests__/tiles.spec.ts`).
+- **Passerelle** : `GET|HEAD /api/route-planner/tiles/…` passe **sans jeton**,
+  sous sa propre limite (`ROUTE_PLANNER_TILES_RATE_LIMITER`, 1200/min par IP) ;
+  une autre méthode, `/tilesX`, `/table`, `/route` restent derrière le jeton.
+- **Back-office** : lit `https://lafoliecoffee.info/api/route-planner/tiles/`
+  par plages (`map-tiles.config.ts`). En dev, rien ne change (fichiers locaux).
+
+**Le back-office est servi par Pages (`lfd-backoffice.pages.dev`), pas par la
+zone** : sa lecture des tuiles est d'une AUTRE origine. Le Worker pose donc
+`Access-Control-Allow-Origin: *` et expose `ETag`, `Content-Range`,
+`Content-Length`, `Accept-Ranges` (données publiques, sans cookie ni jeton ;
+une plage simple ne déclenche pas de requête OPTIONS). Contrôle : les deux
+`curl` ci-dessous montrent `access-control-allow-origin: *`.
+
+### Mettre en service (L10t-C5)
+
+Dans cet ordre — la passerelle résout le binding `ROUTE_PLANNER` en publiant :
+
+1. déployer `lfd-route-planner` (workflow manuel) : il crée le bucket,
+   fabrique, dépose, bascule, déploie ;
+2. déployer la passerelle (la limite des tuiles est neuve) ;
+3. déployer le back-office.
+
+Contrôle :
+
+```bash
+# 200, avec « accept-ranges: bytes » et un etag
+curl -sI https://lafoliecoffee.info/api/route-planner/tiles/rues.pmtiles
+
+# 206, avec « content-range: bytes 0-16383/<taille> »
+curl -s -o /dev/null -D - -H 'Range: bytes=0-16383' \
+  https://lafoliecoffee.info/api/route-planner/tiles/rues.pmtiles
+```
+
+Un 503 « Carte indisponible. » : current.json manque ou ne désigne pas un
+préfixe daté — la fabrication n'est pas allée jusqu'à la bascule.
+
+### Revenir aux tuiles précédentes
+
+Réécrire current.json, rien d'autre : le Worker le relit à chaque requête,
+sans redéploiement. Depuis `apps/lfd-route-planner`, avec un `wrangler` connecté
+au compte :
+
+```bash
+# lire le préfixe en service et le précédent
+pnpm exec wrangler r2 object get lfd-map-tiles/current.json --pipe --remote
+
+# revenir à <PRÉCÉDENT> ; garder le fautif dans « previous » pour que le
+# prochain mensuel le supprime
+printf '{"prefix":"%s","previous":"%s"}' <PRÉCÉDENT> <FAUTIF> > "$TMPDIR/current.json"
+pnpm exec wrangler r2 object put lfd-map-tiles/current.json \
+  --file "$TMPDIR/current.json" --content-type application/json --remote
+```
+
+⚠️ `--remote` est obligatoire : sans lui, `wrangler r2 object` écrit dans le
+stockage LOCAL et ne touche pas la production.

@@ -38,6 +38,12 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Osrm"] }],
 
+  // Les tuiles de la carte des tournées (lot 10 ter, L10t-C1) : lues par
+  // LIAISON, sans aucune clé d'accès — ce Worker est le seul lecteur du bucket.
+  // Le bucket est créé par le workflow s'il manque ; `wrangler deploy` échoue
+  // sur une liaison vers un bucket absent, d'où la création AVANT le déploiement.
+  "r2_buckets": [{ "binding": "MAP_TILES", "bucket_name": "lfd-map-tiles" }],
+
   // AUCUNE ADRESSE PUBLIQUE, ni `workers.dev` ni route : le seul appelant est
   // la passerelle, par son service binding `OSRM` (`gateway/wrangler.toml`),
   // qui exige le jeton avant de router. Une adresse ici serait une seconde

@@ -6,10 +6,18 @@ name: deploy_lfd_route_planner
 #
 # L'IMAGE EST LA CARTE. Chaque exécution télécharge l'extrait OpenStreetMap du
 # jour, découpe la Savoie, prépare le graphe, le vérifie, et le met dans
-# l'image : aucun bucket, aucun jeton pour la carte. Le tag
+# l'image. Le tag
 # `savoie-AAAAMMJJ-osrm<version>` dit laquelle tourne ; revenir à la carte
 # précédente = redéployer son tag (documentation/ops/runbook.md, « La carte
 # routière »).
+#
+# LES TUILES DE LA CARTE (lot 10 ter, L10t-C1/C2) partent, elles, dans le
+# bucket R2 `lfd-map-tiles`, fabriquées depuis LE MÊME extrait que le graphe :
+# déposées sous un préfixe daté `AAAA-MM-JJ/`, puis `current.json` réécrit EN
+# DERNIER — la bascule est l'écriture de ce seul fichier, et une fabrication
+# ratée ne l'atteint jamais. Deux préfixes sont gardés ; le plus ancien n'est
+# supprimé qu'APRÈS la bascule. Tout cela AVANT `wrangler deploy`, qui refuse
+# une liaison vers un bucket absent.
 #
 # Trois déclencheurs :
 #   · MENSUEL — les routes de montagne changent peu, mais une route fermée ou
@@ -28,7 +36,9 @@ name: deploy_lfd_route_planner
 #     Hugo le 2026-09-29) : « Workers Scripts · Edit », « Account Settings ·
 #     Read », « Cloudflare Images · Edit » (ce dernier couvre le registre de
 #     conteneurs, malgré son nom) — les permissions du jeton de l'API,
-#     relevées sur lui. Un jeton par déploiement : une fuite n'ouvre que son
+#     relevées sur lui — plus « Workers R2 Storage · Edit » (ajoutée par Hugo
+#     le 2026-09-29, lot 10 ter) pour créer le bucket et y déposer les tuiles.
+#     Un jeton par déploiement : une fuite n'ouvre que son
 #     service.
 #   CLOUDFLARE_ACCOUNT_ID — injecté dans `wrangler.jsonc` au déploiement.
 # Aucun secret RUNTIME : OSRM ne lit rien de l'environnement.
@@ -102,6 +112,16 @@ jobs:
       - name: Préparer et vérifier le graphe
         run: apps/lfd-route-planner/scripts/build-graph.sh "$RUNNER_TEMP/osrm-graph"
 
+      # Les tuiles depuis l'extrait que l'étape précédente a laissé dans son
+      # dossier. Le script échoue si l'un des deux fichiers ne se relit pas
+      # (`pmtiles show` sans zooms) : rien n'est alors déposé.
+      - name: Fabriquer et vérifier les tuiles
+        run: |
+          apps/lfd-route-planner/scripts/build-tiles.sh \
+            "$RUNNER_TEMP/osrm-graph/savoie.osm.pbf" "$RUNNER_TEMP/map-tiles"
+          test -s "$RUNNER_TEMP/map-tiles/savoie.pmtiles"
+          test -s "$RUNNER_TEMP/map-tiles/savoie-relief.pmtiles"
+
       - name: Construire l'image (linux/amd64)
         run: |
           docker build --platform linux/amd64 \
@@ -124,6 +144,68 @@ jobs:
         uses: ./.github/actions/attendre-un-run
         with:
           workflow: ci.yml
+
+      # Idempotent : « existe déjà » (code 10004) est un succès, toute autre
+      # erreur arrête le déploiement.
+      - name: Créer le bucket des tuiles s'il manque
+        working-directory: apps/lfd-route-planner
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_ROUTE_PLANNER }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if output="$(pnpm exec wrangler r2 bucket create lfd-map-tiles 2>&1)"; then
+            echo "Bucket lfd-map-tiles créé."
+          elif grep -qiE "already exists|10004" <<<"$output"; then
+            echo "Bucket lfd-map-tiles déjà présent."
+          else
+            echo "$output" >&2
+            exit 1
+          fi
+
+      # Dépôt sous le préfixe daté, puis bascule, puis ménage — dans cet ordre.
+      # `current.json` porte aussi le préfixe PRÉCÉDENT (`previous`) : `wrangler`
+      # ne sait pas lister un bucket, et c'est cette chaîne qui dit lequel
+      # supprimer. Sans elle (première fois, lecture impossible), on ne
+      # supprime rien : on perd de la place, jamais une carte.
+      - name: Déposer les tuiles, puis basculer current.json
+        working-directory: apps/lfd-route-planner
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_ROUTE_PLANNER }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TILES: ${{ runner.temp }}/map-tiles
+        run: |
+          prefix="$(date -u +%Y-%m-%d)"
+          put() {
+            pnpm exec wrangler r2 object put "lfd-map-tiles/$1" --file "$2" \
+              --content-type "$3" --remote
+          }
+          put "${prefix}/rues.pmtiles" "$TILES/savoie.pmtiles" application/vnd.pmtiles
+          put "${prefix}/relief.pmtiles" "$TILES/savoie-relief.pmtiles" application/vnd.pmtiles
+
+          old_json="$(pnpm exec wrangler r2 object get lfd-map-tiles/current.json \
+            --pipe --remote 2>/dev/null || true)"
+          old="$(jq -r '.prefix // empty' <<<"$old_json" 2>/dev/null || true)"
+          older="$(jq -r '.previous // empty' <<<"$old_json" 2>/dev/null || true)"
+          if [ "$old" = "$prefix" ]; then
+            previous="$older"; stale=""   # même jour, refabriqué : la chaîne ne bouge pas
+          else
+            previous="$old"; stale="$older"
+          fi
+
+          jq -n --arg prefix "$prefix" --arg previous "$previous" \
+            '{prefix: $prefix, previous: (if $previous == "" then null else $previous end)}' \
+            > "$RUNNER_TEMP/current.json"
+          put current.json "$RUNNER_TEMP/current.json" application/json
+          echo "### Tuiles en service : \`${prefix}\` (précédentes : \`${previous:-aucune}\`)" >> "$GITHUB_STEP_SUMMARY"
+
+          # APRÈS la bascule, et seulement un préfixe daté distinct des deux gardés.
+          if [[ "$stale" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] \
+            && [ "$stale" != "$prefix" ] && [ "$stale" != "$previous" ]; then
+            for file in rues.pmtiles relief.pmtiles; do
+              pnpm exec wrangler r2 object delete "lfd-map-tiles/${stale}/${file}" --remote
+            done
+            echo "Préfixe ${stale} supprimé."
+          fi
 
       - name: Déployer le Worker
         working-directory: apps/lfd-route-planner

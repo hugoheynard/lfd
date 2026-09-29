@@ -311,6 +311,17 @@ avaient par `b2b_orders` (Hugo). La feuille de route n'écrit rien :
 l'écriture de `delivery_run_sheet` n'ouvre aucun geste aujourd'hui, elle
 n'est donnée qu'à `admin` par cohérence.
 
+**Q10 « A » (Hugo, 2026-09-29, bâtie le 2026-09-29)** : les trois `GET` de la
+flotte, du point de départ et des réglages du calcul se lisent sous
+`delivery_settings:read` **ou** `delivery_rounds:read` (`@RequireAnyPermission`,
+extension du mur staff) ; leur écriture reste `delivery_settings:write`. Côté
+back-office, `canReadDeliverySettings` porte la même règle pour le simulateur
+et l'écran Planifier ; les écrans Véhicules et Point de départ gardent leur
+droit. **Aucun rôle du contrat ne gagne rien** : `admin` et `comptoir`, seuls
+à lire les tournées, lisaient déjà les réglages (vérifié le 2026-09-29) — ce
+qui s'ouvre, c'est une lecture des tournées donnée par dérogation ou par un
+rôle composé à l'écran.
+
 **Q9 — le départ est un réglage que Hugo choisit** : « du labo, mais il faut
 que je puisse le définir ». Un réglage unique « point de départ des
 tournées » **référence** un point de retrait (`PickupAddress`), le point par
@@ -2147,12 +2158,12 @@ déjà » n'est pas une erreur). Aucune clé d'accès : le Worker le lit par
 mensuel) fabrique `savoie.pmtiles` et `savoie-relief.pmtiles` avec
 `build-tiles.sh` depuis l'extrait du graphe, vérifie qu'ils se lisent, les
 dépose sous un préfixe DATÉ (`AAAA-MM-JJ/…`), puis écrit un petit
-`current.json` qui désigne ce préfixe — la bascule est l'écriture de ce seul
-fichier ; une fabrication ratée ne touche jamais `current.json`. Les deux
-derniers préfixes sont gardés (retour arrière = réécrire `current.json`).
+current.json qui désigne ce préfixe — la bascule est l'écriture de ce seul
+fichier ; une fabrication ratée ne touche jamais current.json. Les deux
+derniers préfixes sont gardés (retour arrière = réécrire current.json).
 
 **L10t-C3 — Servir** : `lfd-route-planner` sert `GET /tiles/{rues|relief}.pmtiles`
-en lisant `current.json` puis l'objet R2, **avec les requêtes partielles**
+en lisant current.json puis l'objet R2, **avec les requêtes partielles**
 (`Range` → 206, `Content-Range`, `Accept-Ranges`, `ETag`), cache HTTP long
 sur la version datée. **Sans jeton** : ce sont des données OpenStreetMap et
 IGN publiques. La passerelle expose `/api/route-planner/tiles/…` hors de la
@@ -2171,6 +2182,31 @@ crée le bucket, fabrique, dépose, déploie), puis la passerelle, puis le
 back-office. Contrôle : `curl -I …/api/route-planner/tiles/rues.pmtiles`
 rend 200 avec `Accept-Ranges: bytes`, et une requête `Range: bytes=0-16383`
 rend 206.
+
+**Bâti le 2026-09-29** (non commité à l'écriture ; rien n'est déployé, aucun
+bucket créé) :
+
+- **Worker** — `apps/lfd-route-planner/src/tiles.ts` (lecture de
+  current.json, préfixe daté exigé, plages simples/ouvertes/suffixes → 206,
+  hors bornes → 416, `Range` illisible ignoré → 200, 404 nu ailleurs sous
+  `/tiles`) et `apps/lfd-route-planner/src/dispatch.ts` (les tuiles AVANT le filtre OSRM ; le
+  conteneur n'est demandé que hors `/tiles`) ; liaison R2 `MAP_TILES` →
+  `lfd-map-tiles`. Tests : `apps/lfd-route-planner/src/__tests__/tiles.spec.ts` (bucket et conteneur
+  doublés ; le conteneur n'est jamais appelé pour une tuile).
+- **Passerelle** — `GET|HEAD …/tiles/…` sans jeton sous
+  `ROUTE_PLANNER_TILES_RATE_LIMITER` (1200/min, `namespace_id` 1005) ;
+  `gateway/src/__tests__/route-planner-tiles.spec.ts`.
+- **Workflow** — bucket créé s'il manque, tuiles fabriquées depuis l'extrait
+  du graphe, déposées sous `AAAA-MM-JJ/`, current.json écrit en dernier avec
+  le préfixe précédent (`previous`) : `wrangler` ne liste pas un bucket, c'est
+  cette chaîne qui désigne le préfixe à supprimer après la bascule.
+- **Back-office** — `https://lafoliecoffee.info/api/route-planner/tiles/`,
+  `wholeFile: false`.
+- **L10t-C4 était faux sur un point, corrigé le même jour** : le back-office
+  est servi par Pages (`lfd-backoffice.pages.dev`), pas par la zone — la
+  lecture des tuiles est d'une AUTRE origine. Le Worker pose
+  `Access-Control-Allow-Origin: *` (données publiques) et expose les en-têtes
+  que pmtiles lit ; test de régression dans `apps/lfd-route-planner`.
 
 ### Lot 11 — Le suivi des camionnettes en direct
 
@@ -2505,6 +2541,6 @@ noms (L9-C8) · Q6 validée (écran Planifier) · Q7 **B maintenant**, polices
 hébergées par le back-office · Q8 bucket `lfd-map-tiles` créé et rempli par
 le workflow de `lfd-route-planner` (permission R2 ajoutée au jeton) ·
 Q10 **A**, la lecture de la flotte et des réglages est ouverte à qui lit les
-tournées. Prix de la marge et glisser-déposer tactile : **TODO**
+tournées (bâtie le 2026-09-29, voir Q7 / Q8). Prix de la marge et glisser-déposer tactile : **TODO**
 (`todo-calculateur.md`). Q22 (support des étiquettes) : rien pour l'instant.
 RGD Savoie Mont Blanc : abandonné.

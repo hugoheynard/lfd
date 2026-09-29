@@ -14,16 +14,25 @@
 // la seule porte d'entrée du compte ; une adresse ici en ferait une seconde,
 // sans jeton (forme C, écartée).
 //
+// Les TUILES de la carte (lot 10 ter) passent aussi par ici, sous `/tiles`,
+// mais ne touchent jamais le conteneur : le Worker les lit seul dans R2
+// (`dispatch.ts`, `tiles.ts`).
+//
 // POURQUOI aucun cron : OSRM ne sert qu'au matin, à « Proposer ». Endormi, un
 // conteneur ne coûte rien ; il se réveille au premier appel (0,6 s mesurées en
 // local, L8-C6 — le démarrage à froid d'une instance `lite` reste à mesurer
 // en production).
 import { Container } from "@cloudflare/containers";
 
-import { admit, isContainerFailure, unavailable } from "./osrm-request";
+import { dispatch } from "./dispatch";
 
 interface Env {
   readonly OSRM: DurableObjectNamespace<Osrm>;
+  /**
+   * Le bucket `lfd-map-tiles` (lot 10 ter, L10t-C1), lu par liaison : aucune
+   * clé d'accès, ce Worker est son seul lecteur.
+   */
+  readonly MAP_TILES: R2Bucket;
 }
 
 /** Le conteneur OSRM : `osrm-routed` sur le port 5000, graphe dans l'image. */
@@ -44,20 +53,10 @@ export class Osrm extends Container<Env> {
 const INSTANCE = "savoie";
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const admission = admit(request);
-    if (!admission.admitted) {
-      return admission.response;
-    }
-    try {
-      const stub = env.OSRM.get(env.OSRM.idFromName(INSTANCE));
-      const response = await stub.fetch(request);
-      if (isContainerFailure(response.status)) {
-        return unavailable(`le conteneur a rendu ${response.status}`);
-      }
-      return response;
-    } catch (error) {
-      return unavailable(error instanceof Error ? error.message : "coupure inattendue");
-    }
+  fetch(request: Request, env: Env): Promise<Response> {
+    return dispatch(request, {
+      tiles: env.MAP_TILES,
+      container: () => env.OSRM.get(env.OSRM.idFromName(INSTANCE)),
+    });
   },
 } satisfies ExportedHandler<Env>;

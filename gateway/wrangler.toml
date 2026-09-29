@@ -124,8 +124,9 @@ service = "lfd-api"
 #
 # 🔴 FERMÉ PAR DÉFAUT : `src/route-planner-guard.ts` exige `Authorization: Bearer` égal
 # au secret `ROUTE_PLANNER_TOKEN` (ou `ROUTE_PLANNER_TOKEN_NEXT` pendant une rotation) AVANT de
-# router. Sans secret posé, `/api/route-planner` refuse tout en 401. Les secrets se
-# posent par deploy_lfd_gateway.yml, jamais ici.
+# router. Sans secret posé, `/api/route-planner` refuse tout en 401 — sauf
+# `GET|HEAD /api/route-planner/tiles/…`, les tuiles publiques de la carte
+# (lot 10 ter). Les secrets se posent par deploy_lfd_gateway.yml, jamais ici.
 #
 # ⚠️ `wrangler` résout chaque service binding AU MOMENT DE PUBLIER : `lfd-route-planner`
 # doit être déployé AVANT cette passerelle, sinon son déploiement échoue —
@@ -150,6 +151,21 @@ service = "lfd-route-planner"
 name = "ROUTE_PLANNER_RATE_LIMITER"
 namespace_id = "1004"
 simple = { limit = 120, period = 60 }
+
+# Les TUILES de la carte (lot 10 ter, L10t-C3) : `GET|HEAD /api/route-planner/tiles/…`
+# passe SANS jeton (données OpenStreetMap et IGN publiques) et a SON compteur,
+# distinct de celui du calcul : une carte fait des dizaines de requêtes
+# partielles à chaque déplacement, et elles ne doivent ni épuiser la limite
+# de « Proposer », ni être bornées par elle.
+#
+# 1200 par minute et par IP : un bureau entier derrière une seule adresse, qui
+# fait glisser la carte, reste loin dessous ; un flood est coupé. Aucune tuile
+# ne réveille le conteneur OSRM — le Worker les lit seul dans R2 —, la limite
+# borne donc des lectures R2, pas un conteneur. `namespace_id` distinct (1005).
+[[ratelimits]]
+name = "ROUTE_PLANNER_TILES_RATE_LIMITER"
+namespace_id = "1005"
+simple = { limit = 1200, period = 60 }
 
 # ── Observation du trafic (OPS J1) ─────────────────────────────────────────────
 # La passerelle est le SEUL chemin : elle est donc le seul endroit qui puisse

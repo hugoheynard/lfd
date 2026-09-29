@@ -15,6 +15,14 @@
  *   3. le jeton ne va **pas plus loin** : l'en-tête est retiré avant de
  *      transmettre, `lfd-route-planner` n'en a pas l'usage.
  *
+ * **Une exception, une seule : les tuiles de la carte** (lot 10 ter, L10t-C3).
+ * `GET|HEAD /api/route-planner/tiles/…` passe SANS jeton — ce sont des données
+ * OpenStreetMap et IGN publiques, que le navigateur du back-office lit par
+ * plages. Tout le reste (une autre méthode, `/tilesX`, `/table`, `/route`)
+ * reste derrière le jeton. Les tuiles ont leur PROPRE limite, plus large : une
+ * carte fait des dizaines de requêtes partielles, et elles ne doivent pas
+ * épuiser le compteur du calcul.
+ *
  * Deux secrets acceptés, pour tourner sans coupure (L8b-C3) : `ROUTE_PLANNER_TOKEN` et,
  * pendant une rotation seulement, `ROUTE_PLANNER_TOKEN_NEXT`.
  *
@@ -41,6 +49,8 @@ export interface RoutePlannerGuardEnv {
   readonly ROUTE_PLANNER_TOKEN_NEXT?: string;
   /** Absent en `wrangler dev` : on ne limite alors rien, le jeton garde seul. */
   readonly ROUTE_PLANNER_RATE_LIMITER?: RoutePlannerRateLimiter;
+  /** La limite des tuiles, distincte (L10t-C3). Absente en `wrangler dev`. */
+  readonly ROUTE_PLANNER_TILES_RATE_LIMITER?: RoutePlannerRateLimiter;
 }
 
 /** L'issue : la requête à transmettre (jeton retiré), ou le refus à rendre. */
@@ -70,8 +80,36 @@ export async function guardTarget(
   if (target.kind !== "backend" || target.backend !== "routePlanner") {
     return request;
   }
-  const admission = await admitRoutePlanner(request, env);
+  const admission = isPublicTiles(target.path, request.method)
+    ? await admitTiles(request, env)
+    : await admitRoutePlanner(request, env);
   return admission.admitted ? admission.request : admission.response;
+}
+
+/** Le chemin (préfixe retiré) sous `/tiles/`, préfixe du Worker : `/tiles/…` seul. */
+const TILES_PATH_PREFIX = "/tiles/";
+
+/**
+ * La requête vise-t-elle les tuiles publiques ? `GET` ou `HEAD`, et un chemin
+ * qui commence par `/tiles/` — pas `/tilesX`, pas `/tiles` nu.
+ */
+export function isPublicTiles(path: string, method: string): boolean {
+  return (method === "GET" || method === "HEAD") && path.startsWith(TILES_PATH_PREFIX);
+}
+
+/**
+ * Admet une requête de tuile : la limite des tuiles, et rien d'autre. Un
+ * `Authorization` éventuel est retiré comme ailleurs — il n'a rien à faire
+ * chez `lfd-route-planner`.
+ */
+export async function admitTiles(
+  request: Request,
+  env: RoutePlannerGuardEnv,
+): Promise<RoutePlannerAdmission> {
+  if (!(await withinRate(request, env.ROUTE_PLANNER_TILES_RATE_LIMITER, "route-planner-tiles"))) {
+    return { admitted: false, response: tooManyRequests() };
+  }
+  return { admitted: true, request: withoutAuthorization(request) };
 }
 
 /** Admet ou refuse une requête vers `/api/route-planner`. */
@@ -79,7 +117,7 @@ export async function admitRoutePlanner(
   request: Request,
   env: RoutePlannerGuardEnv,
 ): Promise<RoutePlannerAdmission> {
-  if (!(await withinRate(request, env.ROUTE_PLANNER_RATE_LIMITER))) {
+  if (!(await withinRate(request, env.ROUTE_PLANNER_RATE_LIMITER, "route-planner"))) {
     return { admitted: false, response: tooManyRequests() };
   }
   const presented = presentedToken(request);
@@ -87,9 +125,13 @@ export async function admitRoutePlanner(
   if (presented === null || !(await matchesAny(presented, accepted))) {
     return { admitted: false, response: unauthorized() };
   }
+  return { admitted: true, request: withoutAuthorization(request) };
+}
+
+function withoutAuthorization(request: Request): Request {
   const headers = new Headers(request.headers);
   headers.delete("authorization");
-  return { admitted: true, request: new Request(request, { headers }) };
+  return new Request(request, { headers });
 }
 
 /** Un secret vide, absent ou trop court n'est JAMAIS un secret valide. */
@@ -140,12 +182,13 @@ function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
 async function withinRate(
   request: Request,
   limiter: RoutePlannerRateLimiter | undefined,
+  scope: string,
 ): Promise<boolean> {
   if (limiter === undefined) {
     return true;
   }
   const ip = request.headers.get("cf-connecting-ip");
-  const key = ip !== null && ip !== "" ? `route-planner:${ip}` : "route-planner:sans-ip";
+  const key = ip !== null && ip !== "" ? `${scope}:${ip}` : `${scope}:sans-ip`;
   const { success } = await limiter.limit({ key });
   return success;
 }

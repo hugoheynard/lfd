@@ -52,7 +52,8 @@ import {
 export const API_PREFIXES = {
   lfd: "/api/lfd",
   // Le calcul routier (`lfd-route-planner`, lot 8 bis) : appelé par l'API seule, derrière
-  // un jeton que la passerelle vérifie AVANT de router (`route-planner-guard.ts`).
+  // un jeton que la passerelle vérifie AVANT de router (`route-planner-guard.ts`) —
+  // sauf `GET|HEAD …/tiles/…`, les tuiles publiques de la carte (lot 10 ter).
   routePlanner: "/api/route-planner",
 } as const;
 
