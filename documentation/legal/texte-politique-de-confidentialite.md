@@ -50,7 +50,8 @@ Votre identité et vos coordonnées :
 Votre connexion au service :
 
 - l'identifiant technique que nous attribue notre prestataire d'authentification ;
-- si vous créez une clé d'accès (« passkey ») : uniquement sa partie publique. La clé privée reste sur votre appareil et ne nous est jamais transmise. Nous ne vous demandons, ne recevons et ne conservons aucun mot de passe ;
+- si vous choisissez un mot de passe : il est confié à notre prestataire d'authentification, qui le conserve sous une forme chiffrée et irréversible (hachage). Nous n'y avons jamais accès et ne pouvons pas le lire ;
+- si vous créez une clé d'accès (« passkey ») : uniquement sa partie publique. La clé privée reste sur votre appareil et ne nous est jamais transmise ;
 - si vous vous connectez avec Google ou avec Facebook : les seules informations que vous acceptez de partager au moment de la connexion, à savoir vos nom, prénom, adresse électronique et, le cas échéant, votre photo de profil, ainsi qu'un identifiant propre à notre service. Nous n'avons accès ni à votre mot de passe Google ou Facebook, ni à vos publications, ni à vos contacts, et nous ne publions jamais rien en votre nom.
 
 Si vous commandez pour une entreprise (compte professionnel) :
@@ -168,7 +169,7 @@ Si vous estimez, après nous avoir contactés, que vos droits ne sont pas respec
 > Le saisir dans le paragraphe créé par « Créer la section », pas dans un
 > paragraphe ordinaire.
 
-Vous pouvez demander à tout moment la suppression de votre compte et des données qui s'y rattachent, que vous vous soyez inscrit avec une clé d'accès, avec Google ou avec Facebook.
+Vous pouvez demander à tout moment la suppression de votre compte et des données qui s'y rattachent, que vous vous soyez inscrit avec un mot de passe, une clé d'accès, Google ou Facebook.
 
 Pour le faire, écrivez-nous à [À COMPLÉTER : adresse dédiée] depuis l'adresse électronique associée à votre compte, en indiquant pour objet « Suppression de mes données ». Si vous écrivez depuis une autre adresse, nous vous demanderons de confirmer votre identité avant d'agir.
 
@@ -191,7 +192,7 @@ Nous n'utilisons aucun cookie publicitaire ni aucun outil de suivi à des fins d
 Nous mettons en œuvre des mesures techniques et organisationnelles adaptées pour protéger vos données contre la perte, l'accès non autorisé, la divulgation ou l'altération, notamment :
 
 - le chiffrement des échanges (HTTPS) ;
-- une connexion sans mot de passe, par clé d'accès ou par fournisseur d'identité ;
+- une authentification confiée à un prestataire spécialisé : les mots de passe y sont conservés sous forme hachée, jamais par nous, et la connexion par clé d'accès ne transmet aucun secret ;
 - un accès aux données limité aux seules personnes qui en ont besoin, selon des droits définis par rôle ;
 - le cloisonnement des données de chaque entreprise cliente ;
 - la traçabilité des opérations sensibles.

@@ -31,16 +31,16 @@ et supprime d'elle-même — est écartée pour l'instant (§6).
 
 Ouvert le 2026-09-29.
 
-| Fait                                                                                                                                                                            | Où                                                                          |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| La politique de confidentialité **existe comme document légal** : un des cinq (`legalNotice`, `salesTerms`, `privacy`, `cookies`, `accessibility`), rédigé dans le back-office. | `apps/lfd-api/src/b2b/content/`, `packages/contracts/src/legal-document.ts` |
-| Un document = un **titre** et des **paragraphes** (titre + corps), en **fr / en / it**. Chaque paragraphe a un **id ULID** donné par le serveur, jamais dérivé du titre.        | `legalDocumentSchema`, `legalDocumentParagraphSchema`                       |
-| Il est servi **en public**, sans jeton : `GET /content/legal/:mention` (throttle 60/min, mention inconnue → 404).                                                               | `platform-content.controller.ts`                                            |
-| La boutique l'affiche **dans une fenêtre** ouverte depuis le pied de page ; depuis P3, `/confidentialite` le rend aussi en HTML.                                                | `client/legal-document-panel/`, `client/foot/`                              |
-| La boutique est un **SPA statique** sur Cloudflare Pages (`outputMode: static`, `ssr: false`), avec un repli `_redirects` vers `index.html`.                                    | `angular.json`, `DEPLOYMENT-CLOUDFLARE.md`, `public/_redirects`             |
-| Connexion client : **Auth0**, par **passkey** ; **Google** comme méthode sociale. **Facebook est reporté** : sa ligne est prête, activée « le jour où le tenant l'active ».     | `auth/auth.config.ts`, `account/login-methods.ts` (`ADDABLE_PROVIDERS`)     |
-| **Aucun bouton « Supprimer mon compte »** dans la boutique, ni commande côté API (cherché : `deleteAccount`, « supprimer mon compte »).                                         | —                                                                           |
-| **Aucun bandeau de consentement aux cookies** trouvé dans la boutique.                                                                                                          | —                                                                           |
+| Fait                                                                                                                                                                                                                                                 | Où                                                                          |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| La politique de confidentialité **existe comme document légal** : un des cinq (`legalNotice`, `salesTerms`, `privacy`, `cookies`, `accessibility`), rédigé dans le back-office.                                                                      | `apps/lfd-api/src/b2b/content/`, `packages/contracts/src/legal-document.ts` |
+| Un document = un **titre** et des **paragraphes** (titre + corps), en **fr / en / it**. Chaque paragraphe a un **id ULID** donné par le serveur, jamais dérivé du titre.                                                                             | `legalDocumentSchema`, `legalDocumentParagraphSchema`                       |
+| Il est servi **en public**, sans jeton : `GET /content/legal/:mention` (throttle 60/min, mention inconnue → 404).                                                                                                                                    | `platform-content.controller.ts`                                            |
+| La boutique l'affiche **dans une fenêtre** ouverte depuis le pied de page ; depuis P3, `/confidentialite` le rend aussi en HTML.                                                                                                                     | `client/legal-document-panel/`, `client/foot/`                              |
+| La boutique est un **SPA statique** sur Cloudflare Pages (`outputMode: static`, `ssr: false`), avec un repli `_redirects` vers `index.html`.                                                                                                         | `angular.json`, `DEPLOYMENT-CLOUDFLARE.md`, `public/_redirects`             |
+| Connexion client : **Auth0**, par **passkey** ou **mot de passe** (Hugo, 2026-09-29 — tenu par Auth0, jamais par nous) ; **Google** comme méthode sociale. **Facebook est reporté** : sa ligne est prête, activée « le jour où le tenant l'active ». | `auth/auth.config.ts`, `account/login-methods.ts` (`ADDABLE_PROVIDERS`)     |
+| **Aucun bouton « Supprimer mon compte »** dans la boutique, ni commande côté API (cherché : `deleteAccount`, « supprimer mon compte »).                                                                                                              | —                                                                           |
+| **Aucun bandeau de consentement aux cookies** trouvé dans la boutique.                                                                                                                                                                               | —                                                                           |
 
 ---
 
@@ -174,25 +174,25 @@ l'app** et doit être corrigé avant publication.
 
 ### 5.1 Ce qui est faux pour l'app
 
-| Passage du modèle                                                | Réalité                                                                                                                                                                                |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| « Création de compte classique — mot de passe (stocké chiffré) » | **Pas de mot de passe** : inscription par **passkey** via Auth0. Écrire « clé d'accès (passkey) — la clé privée reste sur votre appareil, nous n'en recevons que la partie publique ». |
-| « Connexion avec Facebook »                                      | **Pas encore active** (reportée). La garder, puisque la soumission Meta sert à l'activer ; ajouter **Google**, qui l'est déjà.                                                         |
-| « Depuis l'app : Mon compte > Supprimer mon compte »             | **Le bouton n'existe pas** (§1). Retirer cette voie, ou la bâtir d'abord (§6).                                                                                                         |
-| « mots de passe stockés de façon sécurisée » (section sécurité)  | Même correction : aucun mot de passe n'est stocké.                                                                                                                                     |
-| « L'app utilise uniquement les cookies nécessaires »             | **À vérifier** : aucun bandeau trouvé ; confirmer qu'aucun outil de mesure d'audience ne tourne sur la boutique avant de l'écrire.                                                     |
+| Passage du modèle                                                | Réalité                                                                                                                                       |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| « Création de compte classique — mot de passe (stocké chiffré) » | Le mot de passe existe, mais c'est **Auth0** qui le conserve (haché), jamais nous ; la **passkey** aussi. Écrire les deux, et qui garde quoi. |
+| « Connexion avec Facebook »                                      | **Pas encore active** (reportée). La garder, puisque la soumission Meta sert à l'activer ; ajouter **Google**, qui l'est déjà.                |
+| « Depuis l'app : Mon compte > Supprimer mon compte »             | **Le bouton n'existe pas** (§1). Retirer cette voie, ou la bâtir d'abord (§6).                                                                |
+| « mots de passe stockés de façon sécurisée » (section sécurité)  | Même correction : aucun mot de passe n'est stocké **par nous**.                                                                               |
+| « L'app utilise uniquement les cookies nécessaires »             | **À vérifier** : aucun bandeau trouvé ; confirmer qu'aucun outil de mesure d'audience ne tourne sur la boutique avant de l'écrire.            |
 
 ### 5.2 Les prestataires réels
 
-| Prestataire              | Rôle                                                                        | Localisation                                 |
-| ------------------------ | --------------------------------------------------------------------------- | -------------------------------------------- |
-| Auth0 (Okta)             | Authentification : passkey, connexion Google (et Facebook une fois activée) | **à confirmer** (région du tenant)           |
-| Meta Platforms Ireland   | Connexion avec Facebook, une fois activée                                   | UE, transferts possibles vers les États-Unis |
-| Google                   | Connexion avec Google                                                       | **à confirmer**                              |
-| Cloudflare               | Hébergement de la boutique, de l'API et des documents (R2)                  | **à confirmer**                              |
-| Prisma (Prisma Postgres) | Base de données                                                             | **à confirmer** (région)                     |
-| Resend                   | Envoi des e-mails                                                           | **à confirmer**                              |
-| Stripe                   | Paiement en ligne                                                           | **à confirmer**                              |
+| Prestataire              | Rôle                                                                                      | Localisation                                 |
+| ------------------------ | ----------------------------------------------------------------------------------------- | -------------------------------------------- |
+| Auth0 (Okta)             | Authentification : mot de passe, passkey, connexion Google (et Facebook une fois activée) | **à confirmer** (région du tenant)           |
+| Meta Platforms Ireland   | Connexion avec Facebook, une fois activée                                                 | UE, transferts possibles vers les États-Unis |
+| Google                   | Connexion avec Google                                                                     | **à confirmer**                              |
+| Cloudflare               | Hébergement de la boutique, de l'API et des documents (R2)                                | **à confirmer**                              |
+| Prisma (Prisma Postgres) | Base de données                                                                           | **à confirmer** (région)                     |
+| Resend                   | Envoi des e-mails                                                                         | **à confirmer**                              |
+| Stripe                   | Paiement en ligne                                                                         | **à confirmer**                              |
 
 ### 5.3 Les données réellement collectées — à confirmer avec Hugo
 
