@@ -13,6 +13,7 @@ import {
   type PlannedStop,
   planOf,
   planSummary,
+  roundColor,
   stopCompanyOf,
   stopFlags,
   stopNameOf,
@@ -327,5 +328,19 @@ describe('stopFlags', () => {
 describe('planSummary', () => {
   it('compte livraisons, camionnettes, hors créneau et pas prêtes', () => {
     expect(planSummary(plan())).toEqual({ deliveries: 4, vans: 3, late: 1, notReady: 2 });
+  });
+});
+
+describe('roundColor', () => {
+  it('partage la roue également : trois véhicules sont à 120° les uns des autres', () => {
+    const hues = [0, 1, 2].map((rank) =>
+      Number(roundColor(rank, 3).split(' ')[2]?.replace(')', '')),
+    );
+    expect(hues).toEqual([45, 165, 285]);
+  });
+
+  it('garde luminosité et saturation fixes : aucune tournée ne domine', () => {
+    expect(roundColor(0, 2)).toMatch(/^oklch\(0\.63 0\.17 /u);
+    expect(roundColor(1, 2)).toMatch(/^oklch\(0\.63 0\.17 225\.0\)$/u);
   });
 });

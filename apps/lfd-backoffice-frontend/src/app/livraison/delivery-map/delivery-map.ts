@@ -123,7 +123,7 @@ export class DeliveryMap {
         return [];
       }
       seen.add(round.vehicleName);
-      return [{ name: round.vehicleName, color: `var(${colorOf(rounds, round.key)})` }];
+      return [{ name: round.vehicleName, color: colorOf(rounds, round.key) }];
     });
   });
 
@@ -285,7 +285,7 @@ export class DeliveryMap {
     const routes: MapRoute[] = rounds.flatMap((round) =>
       round.geometry === null
         ? []
-        : [{ color: this.resolve(colorOf(rounds, round.key)), coordinates: round.geometry }],
+        : [{ color: this.toRgba(colorOf(rounds, round.key)), coordinates: round.geometry }],
     );
     map.getSource<GeoJSONSource>(ROUTES_SOURCE)?.setData(routesGeoJson(routes));
 
@@ -304,7 +304,7 @@ export class DeliveryMap {
       add(this.element('delivery-map__town', town.name, ''), town.at, null);
     }
     for (const round of rounds) {
-      const color = `var(${colorOf(rounds, round.key)})`;
+      const color = colorOf(rounds, round.key);
       round.stops.forEach((stop, index) => {
         const point = stopPointOf(stop);
         if (point === null) {

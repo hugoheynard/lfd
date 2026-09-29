@@ -54,7 +54,7 @@ export class RoundSheet {
   readonly dropped = output<number>();
 
   protected readonly draggable = computed(() => this.editable() && this.round().lock === null);
-  protected readonly swatch = computed(() => `var(${this.color()})`);
+  protected readonly swatch = computed(() => this.color());
 
   protected readonly title = computed(() => {
     const round = this.round();

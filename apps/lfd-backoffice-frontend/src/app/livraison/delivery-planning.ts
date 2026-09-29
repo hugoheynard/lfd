@@ -420,21 +420,31 @@ export function planSummary(rounds: readonly PlannedRound[]): PlanSummary {
 }
 
 /**
- * Une couleur par véhicule, prise dans les tokens fold (jamais une couleur en
- * dur) : l'alerte est réservée au « hors créneau », elle n'est pas du lot.
+ * La roue des teintes partagée ÉGALEMENT entre les véhicules du jour (Hugo,
+ * 2026-09-29 : « des circuits très contrastés »). Deux tokens fold voisins
+ * (primaire et info) sortaient en deux bleus que la carte ne séparait pas.
+ *
+ * En OKLCH, luminosité et saturation fixes : seules les teintes changent, donc
+ * aucune tournée ne paraît plus importante qu'une autre, et l'écart perçu
+ * entre deux teintes est le même partout sur la roue — ce que HSL ne tient pas.
+ * Une luminosité moyenne se lit sur le fond clair comme sur le sombre.
  */
-export const ROUND_COLORS: readonly string[] = [
-  '--fold-color-primary',
-  '--fold-color-info',
-  '--fold-color-success',
-  '--fold-color-warning',
-  '--fold-color-text-secondary',
-];
+const ROUND_LIGHTNESS = 0.63;
+const ROUND_CHROMA = 0.17;
+/** Départ de la roue : un orangé, loin du rouge réservé au « hors créneau ». */
+const ROUND_FIRST_HUE = 45;
+const FULL_TURN = 360;
 
-/** La couleur d'une colonne : le rang de son véhicule dans l'ordre d'apparition. */
+/** La couleur d'un rang parmi `count` véhicules : une couleur CSS complète. */
+export function roundColor(rank: number, count: number): string {
+  const hue = (ROUND_FIRST_HUE + (rank * FULL_TURN) / Math.max(count, 1)) % FULL_TURN;
+  return `oklch(${String(ROUND_LIGHTNESS)} ${String(ROUND_CHROMA)} ${hue.toFixed(1)})`;
+}
+
+/** La couleur d'une colonne : le rang de son véhicule parmi les véhicules du jour. */
 export function colorOf(rounds: readonly PlannedRound[], key: string): string {
   const vehicles = [...new Set(rounds.map((round) => round.vehicleName))];
   const round = rounds.find((candidate) => candidate.key === key);
   const rank = round === undefined ? 0 : vehicles.indexOf(round.vehicleName);
-  return ROUND_COLORS[rank % ROUND_COLORS.length] ?? '--fold-color-primary';
+  return roundColor(rank, vehicles.length);
 }

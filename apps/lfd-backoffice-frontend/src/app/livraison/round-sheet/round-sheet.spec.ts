@@ -48,7 +48,7 @@ async function boot(round: PlannedRound, editable = true): Promise<ComponentFixt
   TestBed.configureTestingModule({ imports: [RoundSheet] });
   const fixture = TestBed.createComponent(RoundSheet);
   fixture.componentRef.setInput('round', round);
-  fixture.componentRef.setInput('color', '--fold-color-primary');
+  fixture.componentRef.setInput('color', 'oklch(0.63 0.17 45.0)');
   fixture.componentRef.setInput('departureLabel', 'Labo');
   fixture.componentRef.setInput('editable', editable);
   fixture.detectChanges();
