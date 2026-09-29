@@ -1791,6 +1791,51 @@ chargés par le seul écran, jamais au démarrage.
   tracé), e2e (`delivery-routing*`, `delivery-simulator` par un double de la
   carte routière ; `apps/lfd-api/test/delivery-road-routing.e2e-spec.ts` : les trois refus).
 
+### Lot 7 bis — Un calculateur qui tient compte des créneaux
+
+> **Ouvert le 2026-09-29.** Sur la journée du jeu de données (17 livraisons,
+> 3 camionnettes), « Proposer » rendait 5 tournées dont des passages d'un ou
+> deux arrêts : deux allers-retours aux Arcs pour la même camionnette, un
+> aller à La Rosière pour un seul arrêt suivi d'un second à 10 h, 55 min
+> d'attente devant un hôtel fermé. Hugo : « oui améliore le calculateur ».
+
+**Pourquoi** : le calcul répartit d'abord par PROXIMITÉ (k-medoids), sans
+regarder les créneaux, puis ordonne chaque camionnette, puis coupe toute
+tournée de plus de `maxRoundMinutes` (240) en passages. Les créneaux n'entrent
+qu'à la fin, quand la répartition est déjà faite.
+
+**L7b-C1 — Construire avec les créneaux** : une insertion au moindre surcoût
+sur TOUTES les camionnettes à la fois (famille Solomon I1) — chaque arrêt est
+placé là où il coûte le moins en temps de route **et** en attente, sans rendre
+une arrivée hors créneau quand une autre place l'évite. Les arrêts aux
+créneaux les plus serrés d'abord.
+
+**L7b-C2 — Améliorer** : échanges entre camionnettes (déplacer un arrêt,
+permuter deux arrêts, 2-opt*) et dans une camionnette (Or-opt, 2-opt), tant
+que le coût baisse. Coût = minutes de route + attente + une pénalité forte par
+minute hors créneau + une pénalité par tournée ouverte. Déterministe (aucun
+aléa), borné en temps (≤ 2 s pour 60 arrêts).
+
+**L7b-C3 — Les passages** : un second passage n'est ouvert que si la journée
+ne tient pas autrement (durée maximale, ou créneaux incompatibles) — jamais
+pour un arrêt que la tournée existante pouvait prendre. Une tournée chargée ou
+partie reste intouchable ; en mode `insert`, les arrêts placés à la main
+gardent leur ordre relatif (inchangé).
+
+**L7b-C4 — Le temps de livraison sur place** (Hugo : « un réglage temps de
+livraison qui correspond à combien de temps il faut pour décharger, signer
+etc ») : le réglage global existe (`stopMinutes`, « Temps d'arrêt ») et se
+renomme « Temps de livraison sur place ». Il gagne une **valeur par adresse**
+dans le carnet (`deliverySpecs.stopMinutes`, facultative, dans le `jsonb` déjà
+là — aucune migration) : une fromagerie à procédure en trois étapes et
+signature ne se livre pas en même temps qu'un café. L'arrêt prend la valeur de
+son adresse, sinon le réglage global.
+
+**L7b-C5 — La preuve** : la matrice réelle de la journée du jeu de données,
+enregistrée contre l'OSRM local, sert de cas de régression : avant / après en
+tournées, kilomètres, minutes, attente et arrêts hors créneau, écrit dans ce
+plan.
+
 ### Lot 11 — Le suivi des camionnettes en direct
 
 > **Ouvert le 2026-09-29.** Hugo : « une carte pour suivre les livraisons et
