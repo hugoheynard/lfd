@@ -4,6 +4,10 @@
 /out-tsc
 /bazel-out
 
+# Tuiles de la carte « Planifier » en développement (~10 Mo, jamais suivies) :
+# servies par la seule configuration `development` (L10b-C6).
+/map-tiles/
+
 # Node
 /node_modules
 npm-debug.log

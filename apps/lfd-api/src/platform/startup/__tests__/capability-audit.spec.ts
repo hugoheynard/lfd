@@ -95,11 +95,11 @@ describe("auditCapabilities", () => {
     expect(missing?.severity).toBe("degraded");
   });
 
-  it("dit qu'une proposition sans OSRM_URL est à vol d'oiseau, en dégradé", () => {
+  it("dit que « Proposer » refuse sans OSRM_URL, en dégradé (plus de vol d'oiseau)", () => {
     const [missing] = auditCapabilities(without("hasOsrmUrl"));
 
     expect(missing?.setting).toBe("OSRM_URL");
-    expect(missing?.consequence).toMatch(/vol d'oiseau/);
+    expect(missing?.consequence).toMatch(/« Proposer ».*refusés/);
     expect(missing?.severity).toBe("degraded");
   });
 

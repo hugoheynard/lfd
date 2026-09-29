@@ -1,5 +1,4 @@
 import type { GeoPoint } from "../value-objects/geo-point.js";
-import type { RoutingSettings } from "../value-objects/routing-settings.js";
 
 /**
  * **Ce que coûte un trajet** entre deux points connus, par leur identifiant
@@ -13,30 +12,19 @@ export interface CostFn {
 }
 
 /**
- * **D'où vient un coût** (L8-C3) : `road` quand la carte routière (OSRM) a
- * répondu, `crow_flies` sinon — sans URL configurée, ou quand elle n'a pas
- * répondu à temps. L'écran le dit : jamais une proposition routière annoncée
- * qui n'en est pas une.
- */
-export type CostEstimate = "road" | "crow_flies";
-
-/** Une fonction de coût, et ce qu'elle vaut. Les services du domaine n'en lisent que {@link CostFn}. */
-export interface EstimatedCost extends CostFn {
-  readonly estimate: CostEstimate;
-}
-
-/**
  * **Port des distances** (L7-C2) — l'algorithme ne connaît pas les routes, il
- * ne connaît que des coûts. Au premier passage, le vol d'oiseau × détour ÷
- * vitesse ; la distance routière (OSRM, lot 8) se branche ici SANS toucher à
- * la répartition ni à l'ordre.
+ * ne connaît que des coûts.
+ *
+ * Depuis le lot 10 bis (L10b-C5), les coûts sont **par la route, ou rien** :
+ * le vol d'oiseau se trompait de trente minutes en montagne, dans les deux
+ * sens, et aucun facteur de détour ne corrigeait les deux (L8-C6). Une
+ * implémentation qui ne peut pas rendre la route LÈVE — elle ne rend jamais
+ * une estimation d'une autre nature.
  *
  * Asynchrone parce qu'une matrice routière l'est (OSRM `/table`) ; la
  * fonction rendue, elle, est synchrone.
  */
 export abstract class DistanceMatrix {
-  abstract build(
-    points: ReadonlyMap<string, GeoPoint>,
-    settings: RoutingSettings,
-  ): Promise<EstimatedCost>;
+  /** @throws {RoadRoutingUnavailableError} le calcul routier ne répond pas, ou n'est pas branché. */
+  abstract build(points: ReadonlyMap<string, GeoPoint>): Promise<CostFn>;
 }

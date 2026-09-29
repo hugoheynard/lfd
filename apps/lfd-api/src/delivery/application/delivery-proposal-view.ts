@@ -7,7 +7,7 @@ import type {
 } from "@lfd/contracts";
 
 import type { RoundRow } from "../domain/ports/delivery-rounds.reader.js";
-import type { CostEstimate } from "../domain/ports/distance-matrix.js";
+import type { RouteLine } from "../domain/ports/route-geometry.js";
 import type { Proposal, ProposedTour } from "../domain/services/propose-rounds.js";
 import type { TimeWindow } from "../domain/services/route-timing.js";
 import { clockTimeOf } from "../domain/value-objects/clock-time.js";
@@ -20,7 +20,6 @@ const SECONDS_PER_MINUTE = 60;
 export interface ProposalViewInputs {
   readonly day: string;
   readonly mode: DeliveryProposalMode;
-  readonly estimate: CostEstimate;
   readonly departure: LocatedDeparture;
   readonly settings: DeliveryRoutingSettingsView;
   readonly proposal: Proposal;
@@ -30,7 +29,15 @@ export interface ProposalViewInputs {
   readonly stops: ReadonlyMap<string, LocatedStop>;
   /** Les commandes non situées, dans l'ordre où on les a lues. */
   readonly unlocated: readonly LocatedStop[];
+  /** Le tracé de chaque tournée de `proposal.tours`, dans le même ordre (L10b-C4). */
+  readonly lines: readonly (RouteLine | null)[];
 }
+
+/**
+ * `estimate` du contrat, figé : sans calcul routier, on refuse (L10b-C5). Le
+ * champ reste rendu tant qu'un écran en ligne le lit.
+ */
+export const ROAD_ESTIMATE = "road";
 
 /**
  * **La proposition, pour l'écran** (L7-C6) : des heures `HH:MM`, des minutes,
@@ -41,7 +48,7 @@ export function proposalViewOf(inputs: ProposalViewInputs): DeliveryRoundProposa
   const reference = (orderId: string): string => inputs.stops.get(orderId)?.reference ?? "";
   return {
     day: inputs.day,
-    estimate: inputs.estimate,
+    estimate: ROAD_ESTIMATE,
     mode: inputs.mode,
     departurePoint: {
       pickupAddressId: inputs.departure.pickupAddressId,
@@ -49,7 +56,9 @@ export function proposalViewOf(inputs: ProposalViewInputs): DeliveryRoundProposa
       gps: { lat: inputs.departure.point.lat, lng: inputs.departure.point.lng },
     },
     settings: inputs.settings,
-    rounds: inputs.proposal.tours.map((tour) => roundView(tour, reference)),
+    rounds: inputs.proposal.tours.map((tour, index) =>
+      proposedRoundView(tour, reference, inputs.lines[index] ?? null),
+    ),
     unlocated: inputs.unlocated.map((stop) => ({
       orderId: stop.orderId,
       reference: stop.reference,
@@ -69,9 +78,11 @@ export function proposalViewOf(inputs: ProposalViewInputs): DeliveryRoundProposa
   };
 }
 
-function roundView(
+/** Une tournée proposée ou chronométrée, pour l'écran : partagée avec « Chronométrer » (lot 10 bis). */
+export function proposedRoundView(
   tour: ProposedTour,
   reference: (orderId: string) => string,
+  line: RouteLine | null,
 ): DeliveryProposedRoundView {
   return {
     roundId: tour.roundId,
@@ -83,6 +94,7 @@ function roundView(
       reference: reference(stop.id),
       ...stopTimesView(tour, index),
     })),
+    geometry: line,
   };
 }
 

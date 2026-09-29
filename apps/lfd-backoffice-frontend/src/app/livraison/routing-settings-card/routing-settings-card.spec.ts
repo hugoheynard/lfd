@@ -49,7 +49,12 @@ async function boot(canWrite = true): Promise<ComponentFixture<RoutingSettingsCa
                 new HttpErrorResponse({ status: 400, error: { message: wire.refuse } }),
               );
             }
-            wire.view = { ...payload, source: 'explicit' };
+            wire.view = {
+              ...payload,
+              detourPercent: payload.detourPercent ?? wire.view.detourPercent,
+              averageSpeedKmh: payload.averageSpeedKmh ?? wire.view.averageSpeedKmh,
+              source: 'explicit',
+            };
             return Promise.resolve();
           },
         } satisfies Partial<Record<keyof DeliveryRoutingService, unknown>>,
@@ -84,13 +89,18 @@ function numberInput(fixture: ComponentFixture<RoutingSettingsCard>, selector: s
 }
 
 describe('RoutingSettingsCard', () => {
-  it('dit « par défaut » tant que personne n’a réglé, et lit le détour en facteur', async () => {
+  it('dit « par défaut » tant que personne n’a réglé', async () => {
     const fixture = await boot();
 
     expect(host(fixture).textContent).toContain('Par défaut');
-    const detour = numberInput(fixture, '[data-detour]')
-      .componentInstance as FoldNumberInputComponent;
-    expect(detour.value()).toBe(1.4);
+  });
+
+  /** Lot 10 bis (L10b-C5) : le vol d'oiseau a disparu, ses deux réglages avec lui. */
+  it('ne montre plus ni détour ni vitesse moyenne', async () => {
+    const fixture = await boot();
+
+    expect(host(fixture).querySelector('[data-detour]')).toBeNull();
+    expect(host(fixture).querySelector('[data-speed]')).toBeNull();
   });
 
   it('n’enregistre rien tant que rien n’a changé', async () => {
@@ -99,20 +109,20 @@ describe('RoutingSettingsCard', () => {
     expect(saveButton(fixture)?.disabled).toBe(true);
   });
 
-  it('enregistre le détour en centièmes, puis relit la provenance', async () => {
+  it('renvoie détour et vitesse lus inchangés, puis relit la provenance', async () => {
     const fixture = await boot();
-    numberInput(fixture, '[data-detour]').triggerEventHandler('valueChange', 1.35);
+    numberInput(fixture, '[data-stop-minutes]').triggerEventHandler('valueChange', 7);
     await settle(fixture);
     saveButton(fixture)?.click();
     await settle(fixture);
 
     expect(wire.writes).toEqual([
       {
-        detourPercent: 135,
+        detourPercent: 140,
         averageSpeedKmh: 35,
         earliestDeparture: '07:00',
         maxRoundMinutes: 240,
-        stopMinutes: 5,
+        stopMinutes: 7,
         defaultMode: 'insert',
         multiplePassages: true,
       },
@@ -123,14 +133,14 @@ describe('RoutingSettingsCard', () => {
 
   it('affiche le refus du serveur tel quel', async () => {
     const fixture = await boot();
-    wire.refuse = 'Le facteur de détour ne descend pas sous ×1.';
-    numberInput(fixture, '[data-speed]').triggerEventHandler('valueChange', 40);
+    wire.refuse = 'La durée maximale ne descend pas sous 30 min.';
+    numberInput(fixture, '[data-max-round]').triggerEventHandler('valueChange', 10);
     await settle(fixture);
     saveButton(fixture)?.click();
     await settle(fixture);
 
     expect(host(fixture).querySelector('[data-routing-refusal]')?.textContent).toContain(
-      'Le facteur de détour ne descend pas sous ×1.',
+      'La durée maximale ne descend pas sous 30 min.',
     );
   });
 
@@ -146,8 +156,8 @@ describe('RoutingSettingsCard', () => {
     const fixture = await boot(false);
 
     expect(saveButton(fixture)).toBeNull();
-    const detour = numberInput(fixture, '[data-detour]')
+    const maxRound = numberInput(fixture, '[data-max-round]')
       .componentInstance as FoldNumberInputComponent;
-    expect(detour.readOnly()).toBe(true);
+    expect(maxRound.readOnly()).toBe(true);
   });
 });

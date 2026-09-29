@@ -2,17 +2,21 @@ import {
   type ApplyDeliveryProposalPayload,
   applyDeliveryProposalPayloadSchema,
   type DeliveryRoundProposalView,
+  type DeliveryRoundTimingView,
   deliveryProposalModeSchema,
+  type TimeDeliveryRoundsPayload,
+  timeDeliveryRoundsPayloadSchema,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
-import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surface.decorator.js";
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { ApplyDeliveryProposalCommand } from "../application/commands/apply-delivery-proposal.command.js";
 import { LocateDeliveryStopsCommand } from "../application/commands/locate-delivery-stops.command.js";
 import { GetDeliveryRoundProposalQuery } from "../application/queries/get-delivery-round-proposal.query.js";
+import { TimeDeliveryRoundsQuery } from "../application/queries/time-delivery-rounds.query.js";
 
 const dayField = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "jour attendu au format AAAA-MM-JJ");
 
@@ -81,6 +85,22 @@ export class DeliveryProposalController {
         query.toutRecomposer,
         query.mode,
       ),
+    );
+  }
+
+  /**
+   * **Chronométrer** une composition glissée à la main (L10b-C2). POST parce
+   * que la composition est un corps ; c'est une LECTURE — rien n'est écrit —,
+   * donc sous le droit de lecture.
+   */
+  @Post("proposition/chronometrer")
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission("delivery_rounds:read")
+  time(
+    @Body(new ZodBody(timeDeliveryRoundsPayloadSchema)) payload: TimeDeliveryRoundsPayload,
+  ): Promise<DeliveryRoundTimingView> {
+    return this.queries.execute<TimeDeliveryRoundsQuery, DeliveryRoundTimingView>(
+      new TimeDeliveryRoundsQuery(payload),
     );
   }
 

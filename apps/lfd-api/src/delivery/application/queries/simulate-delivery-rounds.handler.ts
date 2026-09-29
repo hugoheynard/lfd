@@ -14,8 +14,12 @@ import {
 import { type GeoPoint, geoPoint } from "../../domain/value-objects/geo-point.js";
 import { RoutingSettings } from "../../domain/value-objects/routing-settings.js";
 import { passageLimitsOf } from "../delivery-proposal-support.js";
-import { stopTimesView, tourTimesView } from "../delivery-proposal-view.js";
-import { locatedDeparture, timeWindowOf } from "../delivery-routing-support.js";
+import { ROAD_ESTIMATE, stopTimesView, tourTimesView } from "../delivery-proposal-view.js";
+import {
+  locatedDeparture,
+  timeWindowOf,
+  withDeprecatedFields,
+} from "../delivery-routing-support.js";
 import { SimulateDeliveryRoundsQuery } from "./simulate-delivery-rounds.query.js";
 
 /** L'identifiant du départ dans la matrice. */
@@ -32,13 +36,14 @@ interface ScenarioStop {
 
 /**
  * **Le simulateur** (L9-C1 à C5) : `proposeRounds` en tournées neuves, sur la
- * `DistanceMatrix` injectée — la route dès qu'OSRM est branché, et `estimate`
- * le dit. Les véhicules sont des noms (L9-C3) ; les réglages passent par le
+ * `DistanceMatrix` injectée — la route, ou un refus : plus de vol d'oiseau
+ * (L10b-C5). Les véhicules sont des noms (L9-C3) ; les réglages passent par le
  * value object et en subissent les refus (L9-C4). Rien n'est lu du jour, rien
  * n'est écrit.
  *
  * @throws {InvalidRoutingSettingError} @throws {InvalidGeoPointError}
  * @throws {DepartureNotLocatedError} aucun départ saisi, et aucun point réglé situé.
+ * @throws {RoadRoutingUnavailableError} le calcul routier ne répond pas.
  */
 @QueryHandler(SimulateDeliveryRoundsQuery)
 export class SimulateDeliveryRoundsHandler implements IQueryHandler<
@@ -52,7 +57,10 @@ export class SimulateDeliveryRoundsHandler implements IQueryHandler<
   ) {}
 
   async execute({ scenario }: SimulateDeliveryRoundsQuery): Promise<DeliverySimulationView> {
-    const settings = RoutingSettings.define({ ...scenario.settings, defaultMode: "new_rounds" });
+    const settings = RoutingSettings.define({
+      ...withDeprecatedFields(scenario.settings, RoutingSettings.DEFAULTS),
+      defaultMode: "new_rounds",
+    });
     const departure = await this.departureOf(scenario.departure);
     const stops = scenario.stops.map((stop, index) => ({
       internalId: `stop-${index}`,
@@ -68,7 +76,7 @@ export class SimulateDeliveryRoundsHandler implements IQueryHandler<
       [DEPOT_ID, departure.point],
       ...stops.map((entry): [string, GeoPoint] => [entry.internalId, entry.point]),
     ]);
-    const cost = await this.matrix.build(points, settings);
+    const cost = await this.matrix.build(points);
     const proposal = proposeRounds({
       depotId: DEPOT_ID,
       stops: stops.map(plannableOf),
@@ -79,7 +87,7 @@ export class SimulateDeliveryRoundsHandler implements IQueryHandler<
       passageLimits: passageLimitsOf(settings.multiplePassages, vehicles, []),
     });
     return {
-      estimate: cost.estimate,
+      estimate: ROAD_ESTIMATE,
       departure: { label: departure.label, lat: departure.point.lat, lng: departure.point.lng },
       rounds: proposal.tours.map((tour) => simulatedRoundOf(tour, byId)),
       overflow: proposal.overflow.map((id) => {

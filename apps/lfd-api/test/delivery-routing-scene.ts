@@ -8,15 +8,39 @@
  * points viennent du CARNET — une adresse de société avec son point GPS, que
  * la commande relie —, et le point de départ est un point de retrait situé.
  */
-import type { ApplyDeliveryProposalPayload, DeliveryRoundProposalView } from "@lfd/contracts";
+import type {
+  ApplyDeliveryProposalPayload,
+  DeliveryRoundProposalView,
+  DeliveryRoundTimingView,
+  TimeDeliveryRoundsPayload,
+} from "@lfd/contracts";
 import type request from "supertest";
 
+import {
+  StraightLineDistanceMatrix,
+  StraightRouteGeometry,
+} from "../src/delivery/domain/ports/__tests__/road-routing-doubles.js";
+import { DistanceMatrix } from "../src/delivery/domain/ports/distance-matrix.js";
+import { RouteGeometry } from "../src/delivery/domain/ports/route-geometry.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
-import { jsonBody, type E2eContext } from "./e2e-harness.js";
+import { type E2eOverride, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { admin, ROUNDS } from "./delivery-rounds-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 export const PROPOSAL = `${ROUNDS}/proposition`;
+export const TIMING = `${PROPOSAL}/chronometrer`;
+
+/**
+ * **La carte routière, doublée** (L10b-C5) — une frontière SORTANTE, comme
+ * Auth0 et R2 : OSRM est un service distant, et ce n'est pas ce qu'un e2e
+ * éprouve. Sans elle, « Proposer » refuse depuis que le vol d'oiseau a
+ * disparu (`delivery-road-routing.e2e-spec.ts` le prouve). Tout le reste —
+ * lectures, murs, versions, écriture — reste le vrai SQL.
+ */
+export const ROAD_ROUTING_OVERRIDES: readonly E2eOverride[] = [
+  { token: DistanceMatrix, value: new StraightLineDistanceMatrix() },
+  { token: RouteGeometry, value: new StraightRouteGeometry() },
+];
 
 /** Le laboratoire, à Chambéry : le départ de toutes les tournées. */
 export async function seedDeparture(ctx: E2eContext, gps: boolean = true): Promise<void> {
@@ -126,4 +150,16 @@ export function payloadOf(view: DeliveryRoundProposalView): ApplyDeliveryProposa
 
 export function apply(ctx: E2eContext, payload: ApplyDeliveryProposalPayload): request.Test {
   return admin(ctx).post(PROPOSAL).send(payload);
+}
+
+/** « Chronométrer » une composition — ce que fait l'écran après un glisser-déposer. */
+export function time(ctx: E2eContext, payload: TimeDeliveryRoundsPayload): request.Test {
+  return admin(ctx).post(TIMING).send(payload);
+}
+
+export async function timed(
+  ctx: E2eContext,
+  payload: TimeDeliveryRoundsPayload,
+): Promise<DeliveryRoundTimingView> {
+  return jsonBody<DeliveryRoundTimingView>(await time(ctx, payload).expect(200));
 }

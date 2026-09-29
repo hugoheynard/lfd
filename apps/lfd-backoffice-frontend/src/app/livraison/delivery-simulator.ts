@@ -119,8 +119,10 @@ export const EMPTY_SETTINGS: SettingsDraft = {
 
 export function settingsDraftOf(settings: DeliveryRoutingSettingsPayload): SettingsDraft {
   return {
-    detourFactor: detourFactorOf(settings.detourPercent),
-    averageSpeedKmh: settings.averageSpeedKmh,
+    // Dépréciés depuis le lot 10 bis (L10b-C5) : un serveur peut ne plus les rendre.
+    detourFactor:
+      settings.detourPercent === undefined ? null : detourFactorOf(settings.detourPercent),
+    averageSpeedKmh: settings.averageSpeedKmh ?? null,
     earliestDeparture: settings.earliestDeparture,
     maxRoundMinutes: settings.maxRoundMinutes,
     stopMinutes: settings.stopMinutes,

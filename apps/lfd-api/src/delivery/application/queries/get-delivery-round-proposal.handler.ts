@@ -15,7 +15,8 @@ import { FleetReader } from "../../domain/ports/fleet.reader.js";
 import { GeocodeCacheReader } from "../../domain/ports/geocode-cache.reader.js";
 import { LoadedStopsReader } from "../../domain/ports/loaded-stops.reader.js";
 import { RoutingSettingsReader } from "../../domain/ports/routing-settings.reader.js";
-import type { CostEstimate, EstimatedCost } from "../../domain/ports/distance-matrix.js";
+import type { CostFn } from "../../domain/ports/distance-matrix.js";
+import { RouteGeometry } from "../../domain/ports/route-geometry.js";
 import { insertIntoRounds } from "../../domain/services/insert-into-rounds.js";
 import {
   type PlannableStop,
@@ -33,6 +34,7 @@ import {
   passageLimitsOf,
 } from "../delivery-proposal-support.js";
 import { proposalViewOf } from "../delivery-proposal-view.js";
+import { routeLinesOf } from "../delivery-route-lines.js";
 import {
   type LocatedDeparture,
   locatedDeparture,
@@ -58,8 +60,6 @@ interface PlanInputs {
 interface Planned {
   readonly proposal: Proposal;
   readonly kept: readonly KeptRound[];
-  /** D'où viennent les coûts de CETTE proposition : l'écran le dit (L8-C3). */
-  readonly estimate: CostEstimate;
 }
 
 /** Ce que la proposition a lu du jour. */
@@ -81,6 +81,7 @@ interface DayReading {
  *
  * @throws {DepartureNotLocatedError} @throws {NoVehicleForProposalError}
  * @throws {RoutingVehicleNotFoundError} @throws {VehicleInactiveOnDayError}
+ * @throws {RoadRoutingUnavailableError} le calcul routier ne répond pas (L10b-C5).
  */
 @QueryHandler(GetDeliveryRoundProposalQuery)
 export class GetDeliveryRoundProposalHandler implements IQueryHandler<
@@ -97,6 +98,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
     private readonly loadedStops: LoadedStopsReader,
     private readonly cache: GeocodeCacheReader,
     private readonly matrix: DistanceMatrix,
+    private readonly geometry: RouteGeometry,
     private readonly clock: Clock,
   ) {}
 
@@ -115,10 +117,16 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       const stop = stops.get(id);
       return stop !== undefined && stop.point === null ? [stop] : [];
     });
+    const lines = await routeLinesOf(
+      this.geometry,
+      departure.point,
+      planned.proposal.tours,
+      (id) => stops.get(id)?.point,
+    );
     return proposalViewOf({
       ...{ day: query.day, mode, departure, settings: { ...settings.values(), source } },
-      estimate: planned.estimate,
       ...{ proposal: planned.proposal, rounds: day.rounds, kept: planned.kept, stops, unlocated },
+      lines,
     });
   }
 
@@ -155,7 +163,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
         kept.map(({ round }) => round),
       ),
     });
-    return { proposal, kept, estimate: cost.estimate };
+    return { proposal, kept };
   }
 
   /** `insert` : dans les tournées existantes, sans réordonner ce qui est placé à la main. */
@@ -188,11 +196,11 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
     const unchanged = insertable
       .filter((round) => !touched.has(round.id))
       .map((round) => ({ round, reason: "unchanged" as const }));
-    return { proposal, kept: [...kept, ...unchanged], estimate: cost.estimate };
+    return { proposal, kept: [...kept, ...unchanged] };
   }
 
-  private costOf(ctx: PlanInputs, orderIds: readonly string[]): Promise<EstimatedCost> {
-    return this.matrix.build(pointsOf(ctx.departure.point, orderIds, ctx.stops), ctx.settings);
+  private costOf(ctx: PlanInputs, orderIds: readonly string[]): Promise<CostFn> {
+    return this.matrix.build(pointsOf(ctx.departure.point, orderIds, ctx.stops));
   }
 
   /** Situe les commandes à répartir et celles des tournées — carnet, puis cache. */

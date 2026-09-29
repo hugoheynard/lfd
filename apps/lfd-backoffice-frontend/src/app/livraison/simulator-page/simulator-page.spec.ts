@@ -149,7 +149,7 @@ describe('SimulatorPage', () => {
     expect(result).toContain('Départ de Labo');
     expect(result).toContain('Arrêt La Daille · arrivée vers 7 h 20');
     expect(host(fixture).querySelector('[data-window-missed]')).not.toBeNull();
-    expect(host(fixture).querySelector('[data-crow-flies]')?.textContent).toContain('×1,4');
+    expect(host(fixture).querySelector('[data-crow-flies]')?.textContent).toContain('vol d’oiseau');
     expect(host(fixture).querySelector('[data-overflow]')?.textContent).toContain(
       'Arrêt La Rosière.',
     );

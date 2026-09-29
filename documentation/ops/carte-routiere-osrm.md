@@ -6,6 +6,15 @@
 > Worker de `lfd-api`, l'adaptateur `OsrmDistanceMatrix`. **Rien n'est
 > déployé** : l'ordre de mise en service est plus bas, et aucune de ses étapes
 > n'a encore été jouée.
+>
+> 🔴 **Depuis le lot 10 bis (serveur bâti le 2026-09-29, non déployé) : plus
+> de vol d'oiseau** (L10b-C5). Sans OSRM, « Proposer », « Chronométrer » et le
+> simulateur **refusent** (409, « Le calcul routier ne répond pas : réessayez
+> dans une minute. Les tournées existantes ne sont pas touchées. »).
+> **Mettre OSRM en service — les trois étapes ci-dessous — AVANT de déployer le
+> lot 10 bis** : dans l'autre ordre, « Proposer » refuse en production dès le
+> déploiement (personne ne s'en sert encore, mais c'est le geste qu'on
+> teste en premier).
 
 `lfd-osrm` calcule des durées **par la route** entre des points de la Savoie
 (`/table`, `/route`). C'est un Worker Cloudflare à part, avec son conteneur
@@ -27,7 +36,7 @@ sequenceDiagram
   C-->>O: 200, durées et distances
   O-->>W: réponse telle quelle, ou 503 net
   W-->>N: réponse telle quelle, ou 503 net
-  Note over N: délai 10 s, 503, JSON illisible → vol d'oiseau, et l'écran le dit
+  Note over N: délai 20 s · délai ou 503 → UN nouvel essai<br/>sinon, ou 400, JSON illisible → refus nommé (409)
 ```
 
 | Pièce                                                              | Rôle                                                                             |
@@ -35,8 +44,9 @@ sequenceDiagram
 | `apps/lfd-api/wrangler.jsonc`                                      | `services: OSRM → lfd-osrm` ; drapeau `enable_ctx_exports`                       |
 | `apps/lfd-api/container/worker.ts`                                 | `export { ContainerProxy }` ; `Backend.outboundByHost` pour `osrm.internal` seul |
 | `apps/lfd-api/container/osrm-bridge.ts`                            | passe au binding, 503 net si binding absent ou coupure                           |
-| `apps/lfd-api/src/delivery/infrastructure/osrm-distance-matrix.ts` | un `/table` par proposition ; au-delà de 200 points ou sur tout échec : repli    |
-| `OSRM_URL` (variable GitHub → secret du Worker → conteneur)        | `http://osrm.internal` ; absente, vol d'oiseau                                   |
+| `apps/lfd-api/src/delivery/infrastructure/osrm-distance-matrix.ts` | un `/table` par calcul ; au-delà de 200 points, blocs 100 × 100 ; échec : refus  |
+| `apps/lfd-api/src/delivery/infrastructure/osrm-route-geometry.ts`  | un `/route` par tournée, en parallèle ; échec : tournée sans tracé, jamais refus |
+| `OSRM_URL` (variable GitHub → secret du Worker → conteneur)        | `http://osrm.internal` ; absente, le calcul refuse                               |
 
 ## Ce qu'il y a où
 
@@ -74,8 +84,8 @@ datée d'aujourd'hui. Le Worker n'a pas d'adresse publique : on ne peut pas le
 
 Une promotion ordinaire (runbook, « Déployer ») qui porte le commit du lot 8,
 **hors des heures d'usage du back-office**. Sans `OSRM_URL`, le NestJS
-n'appelle jamais `osrm.internal` et les propositions restent à vol d'oiseau —
-mais ce déploiement n'est **pas** neutre pour autant : il change le démarrage
+n'appelle jamais `osrm.internal` — et, si le lot 10 bis est déjà déployé,
+« Proposer » refuse (voir le bandeau) —, mais ce déploiement n'est **pas** neutre pour autant : il change le démarrage
 du conteneur de toute l'API (voir 🔴 plus bas).
 
 ⚠️ **`wrangler` résout chaque service binding au moment de publier** : si
@@ -132,39 +142,40 @@ gh workflow run deploy_lfd_api.yml --ref main
 **Contrôle** :
 
 - `/admin/ops/capabilities` ne liste plus « Calcul routier des tournées » ;
-- dans le back-office, Livraison → Proposer : le bandeau dit « Durées par la
-  route », et plus « Estimation à vol d'oiseau ». Le premier « Proposer » du
-  matin réveille `lfd-osrm` ; s'il retombe au vol d'oiseau et que le suivant
-  passe par la route, c'est le démarrage à froid qui dépasse le délai (10 s,
-  `OSRM_TIMEOUT_MS`) — à mesurer, puis à régler ;
+- dans le back-office, Livraison → Proposer rend des tournées, tracées sur la
+  carte. Le premier « Proposer » du matin réveille `lfd-osrm` ; s'il est
+  refusé (« Le calcul routier ne répond pas ») et que le suivant passe, c'est
+  le démarrage à froid qui dépasse deux fois le délai (20 s,
+  `OSRM_TIMEOUT_MS`, puis un nouvel essai) — à mesurer, puis à régler ;
 - le journal de l'API (`wrangler tail lfd-api`) ne porte pas
   `OSRM ne répond pas (…)`.
 
-### Revenir au vol d'oiseau
+### Quand OSRM tombe — il n'y a plus de vol d'oiseau
 
-**Un OSRM en panne ne demande aucun geste** : sur tout échec — délai, 503,
-réponse illisible —, la proposition retombe d'elle-même au vol d'oiseau, et
-l'écran le dit. Le retour arrière ne sert que si OSRM **répond faux**.
+« Revenir au vol d'oiseau » n'existe plus depuis le lot 10 bis (L10b-C5 :
+« le vol d'oiseau doit disparaître, c'est trop faux en montagne »).
 
-⚠️ `OSRM_URL` n'est pas une variable du Worker mais un **secret** posé par le
-workflow (`wrangler secret put`), et la boucle du workflow ne pose que ce qui
-est présent : **retirer la variable GitHub ne retire rien.** Il faut les deux,
-puis redémarrer le conteneur, qui lit son environnement au démarrage :
+**Ce qui se passe** : un délai dépassé (20 s) ou un 503 — le réveil — a droit
+à UN nouvel essai. Au-delà, ou sur tout autre échec (refus 400, réponse
+illisible, trajet introuvable, un seul bloc manquant au-delà de 200 points),
+« Proposer », « Chronométrer » et le simulateur refusent en 409 : « Le calcul
+routier ne répond pas : réessayez dans une minute. Les tournées existantes ne
+sont pas touchées. » **Rien n'est écrit** — ce sont des lectures. Le journal
+de l'API porte `OSRM ne répond pas (…) : proposition refusée.`, sans aucune
+coordonnée.
 
-```bash
-# 1. GitHub → Settings → Variables : supprimer OSRM_URL (sinon le prochain
-#    déploiement la reposerait)
-# 2. retirer le secret du Worker
-pnpm --filter lfd-api exec wrangler secret delete OSRM_URL
-# 3. redéployer, pour que le conteneur redémarre sans elle
-gh workflow run deploy_lfd_api.yml --ref main
-```
+**Ce qui continue** : composer à la main (Livraison → Tournées : placer,
+déplacer, réordonner), charger, partir. Seul le calcul manque. Un tracé
+qu'OSRM ne rend pas n'est jamais un refus : la carte montre les repères sans
+ligne.
 
-**Contrôle** : `/admin/ops/capabilities` liste de nouveau « Calcul routier des
-tournées », et « Proposer » dit « Estimation à vol d'oiseau ».
+**Le geste** : lire pourquoi `lfd-osrm` ne répond pas (`wrangler tail
+lfd-osrm`, puis les déploiements), et le remettre en service — redéployer
+l'image de la carte en cours, ou revenir à la précédente (plus bas).
+Retirer `OSRM_URL` ne rend **rien** : sans elle, le calcul refuse aussi.
 
-⚠️ Non vérifié au 2026-09-29 : si `wrangler secret delete` redémarre à lui
-seul le conteneur. On ne compte pas dessus — le redéploiement le garantit.
+Si OSRM **répond faux** (une carte mal préparée) : revenir à la carte
+précédente, plus bas — c'est le seul retour arrière.
 
 ## Redéployer une carte (la refaire aujourd'hui)
 
@@ -214,9 +225,9 @@ version se charge mal dans une autre. C'est pourquoi la version est dans le tag.
   graphe ou ne trouve pas d'itinéraire (lire les journaux de l'étape : un
   extrait tronqué ou un polygone vide) ; jeton Cloudflare expiré (étape
   « Pousser l'image »).
-- Tant qu'OSRM ne répond pas du tout, `lfd-api` retombe sur le **vol d'oiseau**
-  et le dit (L8-C3) : l'écran l'affiche, et le journal de l'API porte
-  `OSRM ne répond pas (…)` à chaque « Proposer ».
+- Tant qu'OSRM ne répond pas du tout, « Proposer » **refuse** (L10b-C5, plus
+  de vol d'oiseau) et le journal de l'API porte `OSRM ne répond pas (…)` à
+  chaque essai. L'échec du mensuel, lui, ne coupe rien : l'ancienne carte sert.
 
 ## Préparer une carte en local
 

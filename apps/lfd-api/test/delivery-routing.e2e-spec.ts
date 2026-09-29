@@ -23,10 +23,12 @@ import {
 import {
   apply,
   forgetRoutingScene,
+  ROAD_ROUTING_OVERRIDES,
   payloadOf,
   propose,
   seedDeparture,
   seedLocatedDelivery,
+  timed,
 } from "./delivery-routing-scene.js";
 
 const DAY = serviceDay();
@@ -35,7 +37,7 @@ const SETTINGS = "/admin/livraison/calcul";
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [ADMIN_VERIFIER_OVERRIDE] });
+  ctx = await bootstrapE2e({ overrides: [ADMIN_VERIFIER_OVERRIDE, ...ROAD_ROUTING_OVERRIDES] });
 });
 
 afterAll(async () => {
@@ -213,5 +215,32 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
 
   it("refuse un jour mal formé (400)", async () => {
     await admin(ctx).get(`${ROUNDS}/proposition?jour=demain`).expect(400);
+  });
+});
+
+describe("chronométrer une composition glissée à la main (L10b-C2)", () => {
+  it("chronomètre dans l'ordre donné, trace chaque tournée, et n'écrit rien", async () => {
+    await seedDeparture(ctx);
+    const kangoo = await addVehicle(ctx, "Kangoo");
+    const roundId = await openRound(ctx, DAY, kangoo);
+    const placed = await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
+    await assign(ctx, DAY, roundId, placed);
+    const dragged = await seedLocatedDelivery(ctx, DAY, { lat: 45.5, lng: 6.05 });
+    const before = await ctx.prisma.deliveryRound.findMany({ select: { id: true, version: true } });
+
+    const view = await timed(ctx, {
+      day: DAY,
+      rounds: [{ roundId, vehicleId: kangoo, orderIds: [dragged, placed] }],
+    });
+
+    expect(view.day).toBe(DAY);
+    expect(view.rounds[0]?.stops.map((stop) => stop.orderId)).toEqual([dragged, placed]);
+    expect(view.rounds[0]?.departureTime).toBe("06:00");
+    // Départ, deux arrêts, retour : le double trace la ligne brisée.
+    expect(view.rounds[0]?.geometry).toHaveLength(4);
+    expect(
+      await ctx.prisma.deliveryRound.findMany({ select: { id: true, version: true } }),
+    ).toEqual(before);
+    expect(await ctx.prisma.deliveryRoundStop.count()).toBe(1);
   });
 });

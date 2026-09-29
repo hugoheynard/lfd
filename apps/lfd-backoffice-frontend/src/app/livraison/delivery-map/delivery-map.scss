@@ -1,0 +1,117 @@
+// Encapsulation levée (voir le composant) : toutes les classes sont préfixées
+// `delivery-map`, parce que les repères sont posés par MapLibre hors de la
+// portée des styles émulés.
+
+app-delivery-map {
+  display: block;
+  height: 100%;
+}
+
+.delivery-map {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  height: 100%;
+}
+
+.delivery-map__canvas {
+  position: relative;
+  flex: 1;
+  min-height: 30rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg);
+  overflow: hidden;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.delivery-map__legend {
+  position: absolute;
+  inset-inline-start: var(--fold-space-sm);
+  inset-block-end: var(--fold-space-xl);
+  z-index: 2;
+  display: grid;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  list-style: none;
+  font-size: var(--fold-text-xs);
+  background: var(--fold-color-surface-card);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: var(--fold-space-xs);
+  }
+}
+
+.delivery-map__dot {
+  inline-size: var(--fold-space-sm);
+  block-size: var(--fold-space-sm);
+  border-radius: var(--fold-radius-round);
+}
+
+.delivery-map__dot--late {
+  box-shadow: 0 0 0 2px var(--fold-color-alert);
+}
+
+.delivery-map__pin {
+  display: grid;
+  place-items: center;
+  inline-size: var(--fold-space-lg);
+  block-size: var(--fold-space-lg);
+  font: 600 var(--fold-text-2xs) / 1 var(--fold-font-sans);
+  color: var(--fold-color-on-primary);
+  background: var(--delivery-map-pin);
+  border: 2px solid var(--fold-color-surface-card);
+  border-radius: var(--fold-radius-round);
+  box-shadow: var(--fold-shadow-sm);
+  transition: transform 0.15s;
+  cursor: default;
+}
+
+.delivery-map__pin--late {
+  box-shadow:
+    0 0 0 3px var(--fold-color-alert),
+    var(--fold-shadow-sm);
+}
+
+.delivery-map__pin--highlighted {
+  z-index: 3;
+  transform: scale(1.35);
+}
+
+.delivery-map__lab {
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  inline-size: var(--fold-space-xl);
+  block-size: var(--fold-space-xl);
+  font: 700 var(--fold-text-xs) / 1 var(--fold-font-sans);
+  color: var(--fold-color-surface-card);
+  background: var(--fold-color-text);
+  border: 2px solid var(--fold-color-surface-card);
+  border-radius: var(--fold-radius-md);
+  box-shadow: var(--fold-shadow-md);
+}
+
+.delivery-map__town {
+  font: 600 var(--fold-text-2xs) / 1 var(--fold-font-sans);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+  text-shadow:
+    0 0 3px var(--fold-color-bg-page),
+    0 0 3px var(--fold-color-bg-page);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .delivery-map__pin {
+    transition: none;
+  }
+}

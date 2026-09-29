@@ -1,5 +1,4 @@
 import type {
-  ApplyDeliveryProposalPayload,
   DeliveryKeptRoundReason,
   DeliveryProposalMode,
   DeliveryProposalWindow,
@@ -58,29 +57,21 @@ export function detourPercentOf(factor: number): number {
   return Math.round(factor * PERCENT);
 }
 
-/** « ×1,4 », « ×1,35 ». */
-export function detourLabel(percent: number): string {
-  return `×${detourFactorOf(percent).toLocaleString('fr-FR', { maximumFractionDigits: 2 })}`;
-}
-
 /**
- * Ce que valent les heures d'une proposition (lot 8, L8-C3) : par la route
- * quand le calcul routier a répondu, à vol d'oiseau sinon — et l'écran le
- * dit, jamais une proposition routière annoncée qui n'en est pas une.
+ * Ce que valent les heures d'une simulation (lot 8, L8-C3). Depuis le lot 10
+ * bis (L10b-C5), le serveur refuse au lieu de retomber sur le vol d'oiseau :
+ * `estimate` est déprécié et vaut toujours `road`. La branche `crow_flies`
+ * reste pour un serveur plus ancien, sans chiffres — détour et vitesse ne se
+ * règlent plus.
  *
- * Ne lit que l'estimation et les réglages : le simulateur (lot 9) les a sans
- * avoir de journée, et dit la même phrase.
+ * Seul le simulateur (lot 9) l'affiche encore ; l'écran « Planifier » n'en dit
+ * plus rien.
  */
-export function estimateLabel(
-  proposal: Pick<DeliveryRoundProposalView, 'estimate'> & {
-    readonly settings: Pick<DeliveryRoutingSettingsPayload, 'detourPercent' | 'averageSpeedKmh'>;
-  },
-): string {
+export function estimateLabel(proposal: Pick<DeliveryRoundProposalView, 'estimate'>): string {
   if (proposal.estimate === 'road') {
     return 'Durées par la route (carte de la Savoie) : les heures restent indicatives, pas des promesses.';
   }
-  const { detourPercent, averageSpeedKmh } = proposal.settings;
-  return `Estimation à vol d’oiseau (${detourLabel(detourPercent)}, ${String(averageSpeedKmh)} km/h) — le calcul routier ne répond pas ou n’est pas branché : les heures et les durées sont indicatives, pas des promesses.`;
+  return 'Estimation à vol d’oiseau — le calcul routier ne répond pas ou n’est pas branché : les heures et les durées sont indicatives, pas des promesses.';
 }
 
 /** Deux réglages sont-ils les mêmes ? — « Enregistrer » n'est cliquable que s'ils diffèrent. */
@@ -138,20 +129,3 @@ export const MODE_OPTIONS: readonly {
   { value: 'insert', label: MODES.insert },
   { value: 'new_rounds', label: MODES.new_rounds },
 ];
-
-/**
- * Ce qu'« Appliquer » renvoie : la proposition TELLE QU'ON L'A VUE — chaque
- * tournée avec la liste complète de ses commandes dans l'ordre, et les
- * versions de toutes les tournées lues (L7-C6). Rien n'est recalculé ici.
- */
-export function applyPayloadOf(proposal: DeliveryRoundProposalView): ApplyDeliveryProposalPayload {
-  return {
-    day: proposal.day,
-    rounds: proposal.rounds.map((round) => ({
-      roundId: round.roundId,
-      vehicleId: round.vehicleId,
-      orderIds: round.stops.map((stop) => stop.orderId),
-    })),
-    versions: proposal.versions.map(({ roundId, version }) => ({ roundId, version })),
-  };
-}

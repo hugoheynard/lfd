@@ -2,7 +2,7 @@ import type { ProposalMode } from "../../domain/value-objects/routing-settings.j
 
 /**
  * **Proposer** une composition pour un jour (lot 7, L7-C3 à C6) — une
- * LECTURE : elle n'écrit rien et ne sort jamais sur le réseau.
+ * LECTURE : elle n'écrit rien, et ne sort que vers la carte routière.
  */
 export class GetDeliveryRoundProposalQuery {
   constructor(

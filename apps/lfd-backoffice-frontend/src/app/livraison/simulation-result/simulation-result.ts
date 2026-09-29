@@ -38,9 +38,7 @@ export class SimulationResult {
   /** Les réglages envoyés : l'estimation à vol d'oiseau les cite. */
   readonly settings = input.required<DeliveryRoutingSettingsPayload>();
 
-  protected readonly estimate = computed(() =>
-    estimateLabel({ estimate: this.view().estimate, settings: this.settings() }),
-  );
+  protected readonly estimate = computed(() => estimateLabel({ estimate: this.view().estimate }));
 
   protected readonly timeLabel = timeLabel;
   protected readonly windowLabel = proposalWindowLabel;

@@ -18,7 +18,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
-import { detourFactorOf, detourPercentOf, MODE_OPTIONS, sameSettings } from '../delivery-routing';
+import { MODE_OPTIONS, sameSettings } from '../delivery-routing';
 import { DeliveryRoutingService } from '../delivery-routing.service';
 
 type SettingsState =
@@ -30,9 +30,11 @@ type SettingsState =
  * **Les réglages du calcul de tournée** (`plan-preparation-de-tournee.md`,
  * lot 7, L7-C13 et L7-C15) — une carte de l'écran « Point de départ ».
  *
- * Le détour se lit en facteur (×1,4) et part en centièmes (140), comme le
- * contrat. Tant que personne n'a réglé, ce sont les valeurs d'usine, et la
- * carte le dit. Sans `delivery_settings:write`, tout est en lecture seule.
+ * Le détour et la vitesse moyenne ne se règlent plus : le vol d'oiseau a
+ * disparu (lot 10 bis, L10b-C5). Le contrat les accepte encore, dépréciés ;
+ * la carte renvoie les valeurs lues, inchangées. Tant que personne n'a réglé,
+ * ce sont les valeurs d'usine, et la carte le dit. Sans
+ * `delivery_settings:write`, tout est en lecture seule.
  */
 @Component({
   selector: 'app-routing-settings-card',
@@ -61,8 +63,6 @@ export class RoutingSettingsCard {
   protected readonly saving = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
-  protected readonly detour = signal<number | null>(null);
-  protected readonly speed = signal<number | null>(null);
   protected readonly earliest = signal('');
   protected readonly maxRound = signal<number | null>(null);
   protected readonly stop = signal<number | null>(null);
@@ -80,15 +80,13 @@ export class RoutingSettingsCard {
 
   /** Le brouillon complet, ou `null` tant qu'un champ manque. */
   private readonly draft = computed((): DeliveryRoutingSettingsPayload | null => {
-    const detour = this.detour();
-    const speed = this.speed();
+    const state = this.state();
     const maxRound = this.maxRound();
     const stop = this.stop();
     const mode = this.mode();
     const earliest = this.earliest();
     if (
-      detour === null ||
-      speed === null ||
+      state.status !== 'ready' ||
       maxRound === null ||
       stop === null ||
       mode === null ||
@@ -97,8 +95,9 @@ export class RoutingSettingsCard {
       return null;
     }
     return {
-      detourPercent: detourPercentOf(detour),
-      averageSpeedKmh: speed,
+      // Dépréciés (L10b-C5) : renvoyés tels qu'on les a lus, jamais réglés ici.
+      detourPercent: state.view.detourPercent,
+      averageSpeedKmh: state.view.averageSpeedKmh,
       earliestDeparture: earliest,
       maxRoundMinutes: maxRound,
       stopMinutes: stop,
@@ -153,8 +152,6 @@ export class RoutingSettingsCard {
     try {
       const view = await this.api.settings();
       this.state.set({ status: 'ready', view });
-      this.detour.set(detourFactorOf(view.detourPercent));
-      this.speed.set(view.averageSpeedKmh);
       this.earliest.set(view.earliestDeparture);
       this.maxRound.set(view.maxRoundMinutes);
       this.stop.set(view.stopMinutes);

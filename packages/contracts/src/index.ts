@@ -777,6 +777,7 @@ export {
   deliveryRoutingSettingsPayloadSchema,
   deliveryProposalModeSchema,
   applyDeliveryProposalPayloadSchema,
+  timeDeliveryRoundsPayloadSchema,
 } from "./delivery-routing.js";
 export type {
   DeliveryRoutingSettingsPayload,
@@ -793,6 +794,8 @@ export type {
   DeliveryRoundVersionRef,
   DeliveryRoundProposalView,
   ApplyDeliveryProposalPayload,
+  TimeDeliveryRoundsPayload,
+  DeliveryRoundTimingView,
 } from "./delivery-routing.js";
 export {
   SIMULATION_MAX_STOPS,

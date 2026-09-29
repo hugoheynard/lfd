@@ -34,26 +34,6 @@
       }
       @case ('ready') {
         <div class="fields">
-          <fold-number-input
-            label="Facteur de détour"
-            hint="La route contre le vol d’oiseau : 1,4 = 40 % de plus."
-            [value]="detour()"
-            [min]="1"
-            [step]="0.05"
-            [decimals]="2"
-            [readOnly]="!canWrite()"
-            (valueChange)="detour.set($event)"
-            data-detour
-          />
-          <fold-number-input
-            label="Vitesse moyenne (km/h)"
-            integer
-            [value]="speed()"
-            [min]="1"
-            [readOnly]="!canWrite()"
-            (valueChange)="speed.set($event)"
-            data-speed
-          />
           <fold-time
             label="Départ au plus tôt"
             [value]="earliest()"

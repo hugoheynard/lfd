@@ -9,7 +9,10 @@ import { addressKeyOf } from "../domain/services/address-key.js";
 import type { TimeWindow } from "../domain/services/route-timing.js";
 import { minutesOfDay } from "../domain/value-objects/clock-time.js";
 import { type GeoPoint, geoPoint } from "../domain/value-objects/geo-point.js";
-import { RoutingSettings } from "../domain/value-objects/routing-settings.js";
+import {
+  RoutingSettings,
+  type RoutingSettingsValues,
+} from "../domain/value-objects/routing-settings.js";
 import { departureViewOf } from "./departure-view.js";
 
 /**
@@ -35,6 +38,26 @@ export async function routingSettingsOf(
   return current === null
     ? { settings: RoutingSettings.defaults(), source: "default" }
     : { settings: current, source: "explicit" };
+}
+
+/**
+ * Les réglages saisis, complétés des deux champs dépréciés (L10b-C5) :
+ * détour et vitesse ne sont plus lus par le calcul, l'écran ne les envoie
+ * plus ; absents, ils gardent la valeur de `base` — les colonnes restent en
+ * base jusqu'au resserrement.
+ */
+export function withDeprecatedFields(
+  typed: Omit<RoutingSettingsValues, "detourPercent" | "averageSpeedKmh"> & {
+    readonly detourPercent?: number | undefined;
+    readonly averageSpeedKmh?: number | undefined;
+  },
+  base: RoutingSettingsValues,
+): RoutingSettingsValues {
+  return {
+    ...typed,
+    detourPercent: typed.detourPercent ?? base.detourPercent,
+    averageSpeedKmh: typed.averageSpeedKmh ?? base.averageSpeedKmh,
+  };
 }
 
 /** Le point de départ et sa position. */

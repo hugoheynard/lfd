@@ -235,8 +235,9 @@ export class AppConfig {
    * L'adresse du **calcul routier** (plan de tournée, lot 8) —
    * `http://osrm.internal` en production, un nom que seul le Worker de
    * `lfd-api` intercepte et passe à `lfd-osrm` par son service binding
-   * (`container/osrm-bridge.ts`) —, ou `null` : les propositions restent à vol
-   * d'oiseau, et l'écran le dit. Sans défaut, comme la BAN : ni le poste de
+   * (`container/osrm-bridge.ts`) —, ou `null` : « Proposer », « Chronométrer »
+   * et le simulateur refusent (L10b-C5, plus de vol d'oiseau). Sans défaut,
+   * comme la BAN : ni le poste de
    * dev ni les e2e ne sortent sur le réseau sans qu'on l'ait écrit.
    */
   osrmUrl(): string | null {

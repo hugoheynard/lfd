@@ -119,3 +119,45 @@ export class UnknownCostPointError extends TechnicalError {
     );
   }
 }
+
+/**
+ * **Le calcul routier ne répond pas** (L10b-C5) — OSRM muet après un nouvel
+ * essai, un bloc de la table en échec, ou pas branché du tout. Il n'y a plus
+ * de repli à vol d'oiseau : proposer faux en montagne coûtait plus cher que
+ * ne rien proposer. Rien n'est écrit, rien n'est touché.
+ *
+ * `BusinessError` (409), comme {@link GeocoderUnavailableError} : le dépôt
+ * n'a pas de catégorie « service indisponible » (503), et une
+ * `TechnicalError` masquerait la phrase au personnel qui doit la lire.
+ */
+export class RoadRoutingUnavailableError extends BusinessError {
+  constructor() {
+    super(
+      "delivery.road_routing_unavailable",
+      "Le calcul routier ne répond pas : réessayez dans une minute. Les tournées existantes ne sont pas touchées.",
+    );
+  }
+}
+
+/**
+ * **Une tournée partie ou chargée recomposée** (I6, L10b-C2) : on ne
+ * chronomètre pas une composition qu'on ne pourrait pas appliquer.
+ */
+export class LockedRoundRecomposedError extends BusinessError {
+  constructor(vehicleName: string, reason: "departed" | "loaded") {
+    super(
+      "delivery.locked_round_recomposed",
+      `La tournée « ${vehicleName} » est ${reason === "departed" ? "partie" : "déjà chargée"} : sa composition ne se modifie plus. Remettez ses arrêts comme ils étaient, ou rechargez la proposition.`,
+    );
+  }
+}
+
+/** Un arrêt à chronométrer sans point GPS (L7-C1) : on ne sait pas y aller. */
+export class StopNotLocatedError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "delivery.stop_not_located",
+      `La commande ${reference} n'est pas située : lancez « Situer les arrêts », ou saisissez le point GPS de son adresse dans le carnet du client, puis rechronométrez.`,
+    );
+  }
+}

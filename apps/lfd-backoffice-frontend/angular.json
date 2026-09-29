@@ -29,8 +29,15 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"],
-            "allowedCommonJsDependencies": ["jsqr"]
+            "styles": [
+              "src/styles.scss",
+              {
+                "input": "node_modules/maplibre-gl/dist/maplibre-gl.css",
+                "bundleName": "maplibre-gl",
+                "inject": false
+              }
+            ],
+            "allowedCommonJsDependencies": ["jsqr", "maplibre-gl"]
           },
           "configurations": {
             "production": {
@@ -52,6 +59,17 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "public"
+                },
+                {
+                  "glob": "*.pmtiles",
+                  "input": "map-tiles",
+                  "output": "map-tiles"
+                }
+              ],
               "fileReplacements": [
                 {
                   "replace": "src/app/api/api-config.ts",
@@ -60,6 +78,10 @@
                 {
                   "replace": "src/app/dev/dev-tools.ts",
                   "with": "src/app/dev/dev-tools.dev.ts"
+                },
+                {
+                  "replace": "src/app/livraison/map-tiles.config.ts",
+                  "with": "src/app/livraison/map-tiles.config.dev.ts"
                 }
               ]
             },

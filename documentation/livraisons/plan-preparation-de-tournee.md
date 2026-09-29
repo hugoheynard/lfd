@@ -1754,6 +1754,43 @@ créer, question § 6-8) ; en développement, un découpage Haute-Tarentaise
 (~10 Mo) servi par le back-office et lu en entier. MapLibre et la carte sont
 chargés par le seul écran, jamais au démarrage.
 
+**Serveur bâti le 2026-09-29** (non commité à l'écriture ; front en parallèle) :
+
+- **Chronométrer** (L10b-C2) — `TimeDeliveryRoundsQuery` + handler
+  (`delivery/application/queries/`), route
+  `POST admin/livraison/tournees/proposition/chronometrer` sous
+  `delivery_rounds:read`, contrat `timeDeliveryRoundsPayloadSchema` →
+  `DeliveryRoundTimingView`. Service pur `timeComposition`
+  (`apps/lfd-api/src/delivery/domain/services/time-composition.ts`) : l'ordre donné, `timeRoute`,
+  le passage suivant d'un véhicule part à son retour. Gardes
+  (`apps/lfd-api/src/delivery/application/delivery-timing-support.ts`) : commande inconnue / annulée / d'un autre
+  jour / au comptoir (`OrderNotAssignableError`), en double, tournée inconnue
+  ou sur un autre véhicule, tournée partie ou chargée recomposée
+  (`LockedRoundRecomposedError`, I6), véhicule inconnu ou retiré, arrêt non
+  situé (`StopNotLocatedError`). N'écrit rien.
+- **Le tracé** (L10b-C4) — port `RouteGeometry`, adaptateur
+  `OsrmRouteGeometry` (`/route`, `overview=simplified&geometries=geojson`, une
+  requête par tournée, en parallèle) ; échec → `geometry: null`, jamais une
+  erreur. Rempli par « Proposer » et « Chronométrer » ; le simulateur n'en
+  porte pas (son contrat n'a pas le champ).
+- **Plus de vol d'oiseau** (L10b-C5) — `CrowFliesDistanceMatrix` supprimée (plus
+  aucun appelant) ; `OsrmDistanceMatrix` sans repli : 20 s, UN nouvel essai
+  sur délai ou 503, blocs `sources`/`destinations` de taille ÉGALE ≤ 100
+  au-delà de 200 points (3 en parallèle) — égale parce qu'OSRM refuse une
+  table à un seul point (`InvalidOptions`, constaté contre l'image locale).
+  Recollage vérifié contre OSRM local : 100 points en 9 blocs = la table
+  unique, 10 000 cases identiques. Échec → `RoadRoutingUnavailableError`
+  (409 : le dépôt n'a pas de catégorie 503, et une `TechnicalError` cacherait
+  la phrase). Sans `OSRM_URL`, `DisabledDistanceMatrix` lève la même. La
+  carte de santé le dit (« Calcul routier des tournées »). `estimate` vaut
+  toujours `road`, déprécié ; `detourPercent`/`averageSpeedKmh` optionnels
+  à l'écriture (gardent la valeur posée), toujours rendus.
+- Tests : domaine (`apps/lfd-api/src/delivery/domain/services/__tests__/time-composition.spec.ts`), application (chronométrer 19,
+  proposition et simulateur mis à jour, réglages sans champs dépréciés),
+  infrastructure (réponses OSRM enregistrées : blocs, nouvel essai, refus,
+  tracé), e2e (`delivery-routing*`, `delivery-simulator` par un double de la
+  carte routière ; `apps/lfd-api/test/delivery-road-routing.e2e-spec.ts` : les trois refus).
+
 ### Lot 11 — Le suivi des camionnettes en direct
 
 > **Ouvert le 2026-09-29.** Hugo : « une carte pour suivre les livraisons et
@@ -2043,16 +2080,19 @@ Hugo s'est absenté une heure (« fais tout ce que tu peux, note les questions
 pour la fin »). Ce qui a été tranché sans lui l'a été dans le sens le plus
 réversible ; chaque point dit ce qui a été fait en attendant.
 
-1. **Lot 8 — plus de 200 points par la route.** Le constructeur refusait (409),
-   ce qui contredit L8-C3 « Proposer ne doit pas tomber » (relevé par
-   `vitruve`). **Fait en attendant** : repli au vol d'oiseau, dit à l'écran,
-   comme toute autre panne. À confirmer.
+1. **Lot 8 — plus de 200 points par la route.** ✅ **Tranché par L10b-C5**
+   (Hugo, 2026-09-29) : plus de vol d'oiseau ; au-delà de 200 points, la table
+   passe par blocs recollés, et un bloc en échec fait refuser le tout.
+   Serveur bâti le 2026-09-29.
 2. **Lot 8 — date de compatibilité.** Le drapeau `enable_ctx_exports` a été
    préféré à une date avancée (qui activerait d'un coup six mois de
    changements du runtime sur toute l'API). À confirmer.
 3. **Lot 8 — mise en service.** L'étape 2 touche le démarrage de toute
    l'API : à faire hors des heures d'usage, avec `wrangler rollback` prêt
    (jamais éprouvé sur un Worker à conteneur — l'essayer une fois à froid ?).
+   ⚠️ **Depuis L10b-C5, l'ordre compte aussi pour le lot 10 bis** : OSRM en
+   service (les trois étapes de `documentation/ops/carte-routiere-osrm.md`)
+   AVANT de déployer le lot 10 bis, sinon « Proposer » refuse en production.
 4. **Lot 9 — enregistrer les scénarios** : reporté (table, migration). En
    attendant, export/import en fichier. Faut-il une table ?
 5. **Lot 9 — partir d'une journée réelle, ou du carnet d'adresses** (« rejouer

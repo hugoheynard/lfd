@@ -3,11 +3,12 @@ import type { DeliverySimulationPayload } from "@lfd/contracts";
 import {
   DepartureNotLocatedError,
   InvalidRoutingSettingError,
+  RoadRoutingUnavailableError,
 } from "../../../domain/errors/delivery-routing-errors.js";
-import { DistanceMatrix, type EstimatedCost } from "../../../domain/ports/distance-matrix.js";
-import { CrowFliesDistanceMatrix } from "../../../domain/services/crow-flies-distance-matrix.js";
+import { StraightLineDistanceMatrix } from "../../../domain/ports/__tests__/road-routing-doubles.js";
+import type { DistanceMatrix } from "../../../domain/ports/distance-matrix.js";
 import type { GeoPoint } from "../../../domain/value-objects/geo-point.js";
-import type { RoutingSettings } from "../../../domain/value-objects/routing-settings.js";
+import { DisabledDistanceMatrix } from "../../../infrastructure/disabled-road-routing.js";
 import { FixedDeparture } from "../../commands/__tests__/routing-doubles.js";
 import { SimulateDeliveryRoundsHandler } from "../simulate-delivery-rounds.handler.js";
 import { SimulateDeliveryRoundsQuery } from "../simulate-delivery-rounds.query.js";
@@ -34,24 +35,6 @@ const stop = (id: string, lat: number, lng: number, window: Stop["window"] = nul
   window,
 });
 
-/** Une matrice qui se dit routière, et note les points qu'on lui demande. */
-class RecordingRoadMatrix extends DistanceMatrix {
-  readonly asked: ReadonlyMap<string, GeoPoint>[] = [];
-
-  async build(
-    points: ReadonlyMap<string, GeoPoint>,
-    settings: RoutingSettings,
-  ): Promise<EstimatedCost> {
-    this.asked.push(points);
-    const crow = await new CrowFliesDistanceMatrix().build(points, settings);
-    return {
-      meters: (from, to) => crow.meters(from, to),
-      seconds: (from, to) => crow.seconds(from, to),
-      estimate: "road",
-    };
-  }
-}
-
 function handlerWith(options: {
   readonly configured?: GeoPoint | null;
   readonly matrix?: DistanceMatrix;
@@ -62,7 +45,7 @@ function handlerWith(options: {
   return new SimulateDeliveryRoundsHandler(
     departure.reader,
     departure,
-    options.matrix ?? new CrowFliesDistanceMatrix(),
+    options.matrix ?? new StraightLineDistanceMatrix(),
   );
 }
 
@@ -97,7 +80,7 @@ describe("SimulateDeliveryRoundsHandler — le simulateur (L9-C1 à C5)", () => 
   });
 
   it("part du point saisi, même sans point réglé", async () => {
-    const matrix = new RecordingRoadMatrix();
+    const matrix = new StraightLineDistanceMatrix();
     const typed = { lat: 45.6, lng: 6.7 };
 
     const view = await handlerWith({ configured: null, matrix }).execute(
@@ -105,7 +88,7 @@ describe("SimulateDeliveryRoundsHandler — le simulateur (L9-C1 à C5)", () => 
     );
 
     expect(view.departure).toEqual({ label: "Point de départ saisi", ...typed });
-    expect(matrix.asked[0]?.get("depot")).toEqual(typed);
+    expect(matrix.requested[0]?.get("depot")).toEqual(typed);
   });
 
   it("sans départ saisi ni réglé situé : le refus renvoie au réglage", async () => {
@@ -135,10 +118,22 @@ describe("SimulateDeliveryRoundsHandler — le simulateur (L9-C1 à C5)", () => 
     expect(view.overflow).toEqual([{ stopId: "val", label: "Chez val" }]);
   });
 
-  it("dit d'où viennent les coûts : la route si la matrice est routière", async () => {
-    expect((await handlerWith({}).execute(scenario())).estimate).toBe("crow_flies");
-    const road = await handlerWith({ matrix: new RecordingRoadMatrix() }).execute(scenario());
-    expect(road.estimate).toBe("road");
+  it("annonce toujours la route — `estimate` est déprécié, et vaut `road` (L10b-C5)", async () => {
+    expect((await handlerWith({}).execute(scenario())).estimate).toBe("road");
+  });
+
+  it("refuse sans calcul routier, comme « Proposer » : plus de vol d'oiseau (L10b-C5)", async () => {
+    await expect(
+      handlerWith({ matrix: new DisabledDistanceMatrix() }).execute(scenario()),
+    ).rejects.toBeInstanceOf(RoadRoutingUnavailableError);
+  });
+
+  it("accepte des réglages sans détour ni vitesse, dépréciés (L10b-C5)", async () => {
+    const { detourPercent: _detour, averageSpeedKmh: _speed, ...current } = SETTINGS;
+
+    const view = await handlerWith({}).execute(scenario({ settings: current }));
+
+    expect(view.rounds.length).toBeGreaterThan(0);
   });
 
   it("des identifiants d'arrêt répétés à l'écran restent deux arrêts distincts", async () => {

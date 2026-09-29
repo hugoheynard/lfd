@@ -7,14 +7,18 @@ import type { DeliverySimulationPayload, DeliverySimulationView, StaffRole } fro
 
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin, forgetCustomer } from "./delivery-rounds-scene.js";
-import { forgetRoutingScene, seedDeparture } from "./delivery-routing-scene.js";
+import {
+  forgetRoutingScene,
+  ROAD_ROUTING_OVERRIDES,
+  seedDeparture,
+} from "./delivery-routing-scene.js";
 
 const SIMULATOR = "/admin/livraison/simulateur";
 
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [ADMIN_VERIFIER_OVERRIDE] });
+  ctx = await bootstrapE2e({ overrides: [ADMIN_VERIFIER_OVERRIDE, ...ROAD_ROUTING_OVERRIDES] });
 });
 
 afterAll(async () => {
@@ -71,7 +75,7 @@ describe("POST admin/livraison/simulateur (L9-C1)", () => {
     const response = await admin(ctx).post(SIMULATOR).send(scenario(3)).expect(200);
 
     const view = jsonBody<DeliverySimulationView>(response);
-    expect(view.estimate).toBe("crow_flies");
+    expect(view.estimate).toBe("road"); // déprécié, toujours `road` (L10b-C5)
     expect(view.departure).toEqual({ label: "Laboratoire", lat: 45.5646, lng: 5.9178 });
     const placed = view.rounds.flatMap((round) => round.stops.map((stop) => stop.stopId));
     expect([...placed, ...view.overflow.map((o) => o.stopId)].sort()).toEqual(["a0", "a1", "a2"]);

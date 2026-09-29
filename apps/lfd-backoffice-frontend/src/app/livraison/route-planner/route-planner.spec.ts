@@ -5,13 +5,18 @@ import { provideRouter } from '@angular/router';
 import type {
   ApplyDeliveryProposalPayload,
   DeliveryRoundProposalView,
+  DeliveryRoundTimingView,
   DeliveryRoutingSettingsView,
+  TimeDeliveryRoundsPayload,
 } from '@lfd/contracts';
 import { FoldCheckboxComponent, FoldListboxComponent } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { NotifyService } from '../../notify.service';
 import { type ProposalRequest, DeliveryRoutingService } from '../delivery-routing.service';
+import { MAP_TILES } from '../map-tiles.config';
+import { RoundSheet } from '../round-sheet/round-sheet';
+import { stopOf } from '../run-sheet.fixture';
 import { RoutePlanner } from './route-planner';
 
 const SETTINGS: DeliveryRoutingSettingsView = {
@@ -27,7 +32,7 @@ const SETTINGS: DeliveryRoutingSettingsView = {
 
 const PROPOSAL: DeliveryRoundProposalView = {
   day: '2026-10-01',
-  estimate: 'crow_flies',
+  estimate: 'road',
   mode: 'insert',
   departurePoint: { pickupAddressId: 'p-1', label: 'Labo', gps: { lat: 45.5, lng: 6.4 } },
   settings: SETTINGS,
@@ -42,6 +47,10 @@ const PROPOSAL: DeliveryRoundProposalView = {
       meters: 42_000,
       minutes: 130,
       overDuration: true,
+      geometry: [
+        [6.4, 45.5],
+        [6.41, 45.51],
+      ],
       stops: [
         {
           orderId: 'o-2',
@@ -59,15 +68,46 @@ const PROPOSAL: DeliveryRoundProposalView = {
     { orderId: 'o-6', reference: 'CMD-6', reason: 'no_address' },
   ],
   overflow: [{ orderId: 'o-7', reference: 'CMD-7' }],
-  kept: [{ roundId: 'r-8', vehicleName: 'Trafic', passage: 2, reason: 'departed' }],
+  kept: [
+    { roundId: 'r-8', vehicleName: 'Trafic', passage: 2, reason: 'departed' },
+    { roundId: 'r-3', vehicleName: 'Jumpy', passage: 1, reason: 'unchanged' },
+  ],
   versions: [
     { roundId: 'r-1', version: 4 },
     { roundId: 'r-8', version: 9 },
+    { roundId: 'r-3', version: 1 },
+  ],
+};
+
+/** La composition du jour, jointe à la feuille de route : les noms, et les tournées gardées. */
+const COMPOSED = {
+  rounds: [
+    {
+      round: {
+        id: 'r-3',
+        vehicleId: 'v-3',
+        vehicleName: 'Jumpy',
+        passage: 1,
+        version: 1,
+        vehicleRetired: false,
+        departedAt: null,
+        stops: [],
+      },
+      stops: [],
+    },
+  ],
+  unassigned: [
+    {
+      order: { orderId: 'o-2', reference: 'CMD-2' },
+      sheet: stopOf({ orderId: 'o-2', reference: 'CMD-2', tradeName: 'Le Petit Chaudron' }),
+    },
   ],
 };
 
 interface Wire {
   proposals: ProposalRequest[];
+  timed: TimeDeliveryRoundsPayload[];
+  refuseTiming: string | null;
   writes: string[];
   applied: ApplyDeliveryProposalPayload[];
   refuse: HttpErrorResponse | null;
@@ -81,7 +121,15 @@ function refusedOr(): Promise<void> {
 }
 
 async function boot(canWrite = true): Promise<ComponentFixture<RoutePlanner>> {
-  wire = { proposals: [], writes: [], applied: [], refuse: null, changed: 0 };
+  wire = {
+    proposals: [],
+    timed: [],
+    refuseTiming: null,
+    writes: [],
+    applied: [],
+    refuse: null,
+    changed: 0,
+  };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [RoutePlanner],
@@ -104,9 +152,37 @@ async function boot(canWrite = true): Promise<ComponentFixture<RoutePlanner>> {
             return refusedOr();
           },
           settings: () => Promise.resolve(SETTINGS),
+          time: (payload: TimeDeliveryRoundsPayload): Promise<DeliveryRoundTimingView> => {
+            wire.timed.push(payload);
+            if (wire.refuseTiming !== null) {
+              return Promise.reject(
+                new HttpErrorResponse({ status: 503, error: { message: wire.refuseTiming } }),
+              );
+            }
+            const [round] = PROPOSAL.rounds;
+            return Promise.resolve({
+              day: payload.day,
+              rounds: payload.rounds.map((line) => ({
+                ...round!,
+                roundId: line.roundId,
+                vehicleId: line.vehicleId,
+                departureTime: '06:30',
+                geometry: null,
+                stops: line.orderIds.map((orderId) => ({
+                  orderId,
+                  reference: orderId.toUpperCase(),
+                  arrival: '06:45',
+                  window: null,
+                  windowMissed: false,
+                })),
+              })),
+            });
+          },
         } satisfies Partial<Record<keyof DeliveryRoutingService, unknown>>,
       },
       { provide: NotifyService, useValue: { success: () => undefined } },
+      // Pas de tuiles : la carte le dit, et MapLibre n'est jamais chargé en test.
+      { provide: MAP_TILES, useValue: { baseUrl: '', wholeFile: false } },
     ],
   });
   const fixture = TestBed.createComponent(RoutePlanner);
@@ -119,6 +195,7 @@ async function boot(canWrite = true): Promise<ComponentFixture<RoutePlanner>> {
   fixture.componentRef.setInput('canReadSettings', true);
   fixture.componentRef.setInput('companies', new Map([['o-5', 'co-1']]));
   fixture.componentRef.setInput('canOpenClients', true);
+  fixture.componentRef.setInput('composed', COMPOSED);
   fixture.componentInstance.changed.subscribe(() => {
     wire.changed += 1;
   });
@@ -157,24 +234,83 @@ describe('RoutePlanner', () => {
     expect(wire.changed).toBe(0);
   });
 
-  it('montre la proposition en aperçu : durées, dépassement, fenêtre manquée, vol d’oiseau', async () => {
+  it('montre une feuille de route par camionnette : heure, nom du client, problèmes sur la ligne', async () => {
     const fixture = await boot();
     await click(fixture, '[data-propose]');
     const element = host(fixture);
-    const round = element.querySelector('[data-proposed-round]')?.textContent ?? '';
+    const [sheet] = Array.from(element.querySelectorAll('[data-round-sheet]'));
+    const [first, second] = Array.from(sheet?.querySelectorAll('[data-planned-stop]') ?? []);
 
-    expect(element.querySelector('[data-crow-flies]')?.textContent).toContain(
-      'Estimation à vol d’oiseau (×1,4, 35 km/h)',
-    );
-    expect(round).toContain('Départ 7 h 00 · retour 9 h 10 · 42,0 km · 2 h 10');
-    expect(round).toContain('CMD-2 · arrivée vers 7 h 20');
-    expect(round).toContain('fenêtre 8 h 00 – 9 h 00');
-    expect(element.querySelector('[data-over-duration]')).not.toBeNull();
-    expect(element.querySelectorAll('[data-window-missed]')).toHaveLength(1);
+    expect(element.querySelector('[data-plan-title]')?.textContent).toContain('Départ · Labo');
+    expect(element.querySelector('[data-plan-summary]')?.textContent).toContain('2 livraisons');
+    expect(element.querySelector('[data-summary-late]')?.textContent).toContain('1 hors créneau');
+    expect(sheet?.textContent).toContain('2 arrêts · 42,0 km · 2 h 10');
+    expect(sheet?.querySelector('[data-over-duration]')).not.toBeNull();
+    expect(first?.textContent).toContain('7 h 20');
+    expect(first?.querySelector('[data-stop-name]')?.textContent).toContain('Le Petit Chaudron');
+    expect(first?.textContent).toContain('créneau 8 h 00 – 9 h 00');
+    expect(first?.textContent).toContain('Attend 40 min l’ouverture');
+    expect(second?.textContent).toContain('Arrive après son créneau');
     expect(element.querySelector('[data-overflow]')?.textContent).toContain('CMD-7');
-    expect(element.querySelector('[data-kept]')?.textContent).toContain(
-      'Trafic · passage 2 · Déjà partie',
+    // Plus de vol d'oiseau (L10b-C5) : l'écran ne dit plus d'où viennent les durées.
+    expect(element.textContent).not.toContain('vol d’oiseau');
+    expect(element.querySelector('[data-map-absent]')).not.toBeNull();
+  });
+
+  it('montre la tournée partie, verrouillée : on ne la glisse pas', async () => {
+    const fixture = await boot();
+    await click(fixture, '[data-propose]');
+    const locked = host(fixture).querySelector('[data-round-sheet][data-locked="departed"]');
+
+    expect(locked?.textContent).toContain('Partie · ne bouge plus');
+    expect(locked?.querySelector('[draggable="true"]')).toBeNull();
+  });
+
+  it('glisser un arrêt re-chronomètre les colonnes touchées, puis Appliquer envoie la composition éditée', async () => {
+    const fixture = await boot();
+    await click(fixture, '[data-propose]');
+    const sheets = fixture.debugElement.queryAll(By.directive(RoundSheet));
+    const jumpy = sheets.find((sheet) =>
+      (sheet.nativeElement as HTMLElement).textContent.includes('Jumpy'),
     );
+    sheets[0]?.triggerEventHandler('picked', 1);
+    jumpy?.triggerEventHandler('dropped', 0);
+    await settle(fixture);
+
+    expect(wire.timed).toEqual([
+      {
+        day: '2026-10-01',
+        rounds: [
+          { roundId: 'r-1', vehicleId: 'v-1', orderIds: ['o-2'] },
+          { roundId: 'r-3', vehicleId: 'v-3', orderIds: ['o-1'] },
+        ],
+      },
+    ]);
+    expect(wire.writes).toEqual([]);
+    expect((jumpy?.nativeElement as HTMLElement).textContent).toContain('6 h 45');
+
+    await click(fixture, '[data-apply]');
+    expect(wire.applied[0]?.rounds).toEqual([
+      { roundId: 'r-1', vehicleId: 'v-1', orderIds: ['o-2'] },
+      { roundId: 'r-3', vehicleId: 'v-3', orderIds: ['o-1'] },
+    ]);
+  });
+
+  it('affiche le refus du chronométrage tel quel, et garde la composition', async () => {
+    const fixture = await boot();
+    await click(fixture, '[data-propose]');
+    wire.refuseTiming = 'Le calcul routier ne répond pas : réessayez dans une minute.';
+    fixture.debugElement.queryAll(By.directive(RoundSheet))[0]?.triggerEventHandler('picked', 1);
+    fixture.debugElement.queryAll(By.directive(RoundSheet))[0]?.triggerEventHandler('dropped', 0);
+    await settle(fixture);
+
+    expect(host(fixture).querySelector('[data-timing-refusal]')?.textContent).toContain(
+      'Le calcul routier ne répond pas : réessayez dans une minute.',
+    );
+    const names = Array.from(host(fixture).querySelectorAll('[data-stop-name]')).map((name) =>
+      name.textContent.trim(),
+    );
+    expect(names.slice(0, 2)).toEqual(['CMD-1', 'Le Petit Chaudron']);
   });
 
   it('dit les non situées, leur raison, et où compléter leur point', async () => {
@@ -220,6 +356,7 @@ describe('RoutePlanner', () => {
         versions: [
           { roundId: 'r-1', version: 4 },
           { roundId: 'r-8', version: 9 },
+          { roundId: 'r-3', version: 1 },
         ],
       },
     ]);

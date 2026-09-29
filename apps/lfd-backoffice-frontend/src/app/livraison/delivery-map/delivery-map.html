@@ -1,0 +1,65 @@
+<div class="delivery-map" data-delivery-map>
+  @switch (state()) {
+    @case ('absent') {
+      <fold-empty-state
+        title="Pas de carte"
+        subtitle="Les tuiles de la carte ne sont pas encore publiées. Les feuilles de route restent justes sans elle."
+        data-map-absent
+      >
+        <fold-icon empty-icon name="map-pin" />
+      </fold-empty-state>
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Carte illisible"
+        subtitle="Les tuiles n’ont pas pu être chargées. Les feuilles de route restent justes."
+        data-map-error
+      >
+        <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('loading') {
+      <fold-loading message="Chargement de la carte…" />
+    }
+  }
+
+  <div
+    #canvas
+    class="delivery-map__canvas"
+    role="region"
+    aria-label="Carte des tournées"
+    [hidden]="state() === 'absent' || state() === 'error'"
+  >
+    @if (state() === 'ready' && legend().length > 0) {
+      <ul class="delivery-map__legend" data-map-legend>
+        @for (entry of legend(); track entry.name) {
+          <li>
+            <span class="delivery-map__dot" [style.background]="entry.color"></span>
+            {{ entry.name }}
+          </li>
+        }
+        <li>
+          <span class="delivery-map__dot delivery-map__dot--late"></span>
+          Hors créneau
+        </li>
+      </ul>
+    }
+  </div>
+
+  @if (state() === 'ready' && untraced().length > 0) {
+    <fold-callout variant="neutral" data-map-untraced>
+      Pas de tracé par la route pour {{ untraced().join(', ') }} : les repères seuls.
+    </fold-callout>
+  }
+  @if (state() === 'ready' && unplaced() > 0) {
+    <fold-callout variant="neutral" data-map-unplaced>
+      {{
+        unplaced() === 1
+          ? 'Un arrêt n’a pas de point GPS dans le carnet d’adresses : il n’est pas sur la carte.'
+          : unplaced() +
+            ' arrêts n’ont pas de point GPS dans le carnet d’adresses : ils ne sont pas sur la carte.'
+      }}
+    </fold-callout>
+  }
+</div>

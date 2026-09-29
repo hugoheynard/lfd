@@ -92,4 +92,33 @@ describe("les réglages du calcul de tournée", () => {
     expect(settings.written).toEqual([]);
     expect(events.traced).toEqual([]);
   });
+
+  it("sans détour ni vitesse (dépréciés, L10b-C5), garde les valeurs déjà posées", async () => {
+    const settings = new InMemoryRoutingSettings(RoutingSettings.define(PAYLOAD));
+    const { detourPercent: _detour, averageSpeedKmh: _speed, ...current } = PAYLOAD;
+
+    await setter(settings, new RecordingPublisher()).execute(
+      new SetRoutingSettingsCommand({ ...current, stopMinutes: 9 }, "staff_1"),
+    );
+
+    expect(await new GetRoutingSettingsHandler(settings).execute()).toMatchObject({
+      detourPercent: 160,
+      averageSpeedKmh: 40,
+      stopMinutes: 9,
+    });
+  });
+
+  it("sans détour ni vitesse et sans réglage posé, prend les valeurs d'usine", async () => {
+    const settings = new InMemoryRoutingSettings();
+    const { detourPercent: _detour, averageSpeedKmh: _speed, ...current } = PAYLOAD;
+
+    await setter(settings, new RecordingPublisher()).execute(
+      new SetRoutingSettingsCommand(current, "staff_1"),
+    );
+
+    expect(await new GetRoutingSettingsHandler(settings).execute()).toMatchObject({
+      detourPercent: RoutingSettings.DEFAULTS.detourPercent,
+      averageSpeedKmh: RoutingSettings.DEFAULTS.averageSpeedKmh,
+    });
+  });
 });

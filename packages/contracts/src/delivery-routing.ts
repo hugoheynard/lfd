@@ -9,7 +9,8 @@ import type { DeliveryRoundOrderRef } from "./delivery-rounds.js";
  * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 7, L7-C1 à
  * L7-C15).
  *
- * Proposer est une LECTURE : elle n'écrit rien et ne sort jamais sur le réseau.
+ * Proposer est une LECTURE : elle n'écrit rien, et ne sort que vers la carte
+ * routière (OSRM, notre service).
  * Appliquer renvoie la proposition telle qu'on l'a vue, avec les versions des
  * tournées lues : une composition changée entre-temps est refusée,
  * « reproposez ».
@@ -37,9 +38,16 @@ export type DeliveryProposalMode = z.infer<typeof deliveryProposalModeSchema>;
  * avec la phrase à lire.
  */
 export const deliveryRoutingSettingsPayloadSchema = z.object({
-  /** Le facteur de détour en centièmes : 140 = « ×1,4 ». */
-  detourPercent: z.number().int(),
-  averageSpeedKmh: z.number().int(),
+  /**
+   * Le facteur de détour en centièmes : 140 = « ×1,4 ».
+   *
+   * @deprecated depuis le lot 10 bis (L10b-C5) : le vol d'oiseau a disparu, le
+   * calcul ne le lit plus. Accepté (un écran en ligne l'envoie encore), gardé
+   * tel quel sinon ; la colonne reste en base (étendre, basculer, resserrer).
+   */
+  detourPercent: z.number().int().optional(),
+  /** @deprecated comme `detourPercent` (L10b-C5). */
+  averageSpeedKmh: z.number().int().optional(),
   /** L'heure de départ au plus tôt, `HH:MM`, heure de Paris. */
   earliestDeparture: clockTimeField,
   /** La durée maximale d'une tournée — aller, arrêts, retour. */
@@ -54,7 +62,14 @@ export const deliveryRoutingSettingsPayloadSchema = z.object({
 export type DeliveryRoutingSettingsPayload = z.infer<typeof deliveryRoutingSettingsPayloadSchema>;
 
 /** Les réglages tels qu'ils valent maintenant. */
-export interface DeliveryRoutingSettingsView extends DeliveryRoutingSettingsPayload {
+export interface DeliveryRoutingSettingsView extends Omit<
+  DeliveryRoutingSettingsPayload,
+  "detourPercent" | "averageSpeedKmh"
+> {
+  /** @deprecated rendu tant qu'un écran en ligne le lit ; le calcul ne s'en sert plus (L10b-C5). */
+  readonly detourPercent: number;
+  /** @deprecated comme `detourPercent`. */
+  readonly averageSpeedKmh: number;
   /** `default` : personne n'a encore réglé, ce sont les valeurs d'usine. */
   readonly source: "explicit" | "default";
 }
@@ -76,7 +91,7 @@ export interface DeliveryProposalWindow {
 export interface DeliveryProposedStopView {
   readonly orderId: string;
   readonly reference: string;
-  /** L'heure d'arrivée ESTIMÉE (`HH:MM`) — à vol d'oiseau, pas une promesse. */
+  /** L'heure d'arrivée ESTIMÉE (`HH:MM`) — par la route, pas une promesse. */
   readonly arrival: string;
   readonly window: DeliveryProposalWindow | null;
   /** L'arrivée estimée tombe après la fin de la fenêtre : signalé, pas refusé (L7-C4). */
@@ -105,6 +120,12 @@ export interface DeliveryProposedRoundView {
   /** Dépasse la durée maximale (un arrêt qu'on ne pouvait pas déplacer). */
   readonly overDuration: boolean;
   readonly stops: readonly DeliveryProposedStopView[];
+  /**
+   * Le tracé par la route (`/route` d'OSRM, `overview=simplified`), en paires
+   * `[lng, lat]` — l'ordre de GeoJSON. `null` si OSRM ne l'a pas rendu : la
+   * carte montre les repères sans tracé (L10b-C4). Jamais une erreur.
+   */
+  readonly geometry: readonly (readonly [number, number])[] | null;
 }
 
 /** Pourquoi une commande n'est pas située (L7-C1). */
@@ -136,16 +157,21 @@ export interface DeliveryRoundVersionRef {
   readonly version: number;
 }
 
-/** D'où viennent les durées d'une proposition (L8-C3). */
+/**
+ * D'où viennent les durées d'une proposition (L8-C3).
+ *
+ * @deprecated depuis le lot 10 bis (L10b-C5) : toujours `road` — sans calcul
+ * routier, Proposer refuse. Le type reste pour ne pas casser un écran en ligne.
+ */
 export type DeliveryCostEstimate = "road" | "crow_flies";
 
 /** **La proposition** : un aperçu calculé, jamais écrit. */
 export interface DeliveryRoundProposalView {
   readonly day: string;
   /**
-   * D'où viennent les durées : `road` quand le calcul routier (OSRM, lot 8) a
-   * répondu, `crow_flies` sinon — vol d'oiseau × détour ÷ vitesse, parce qu'il
-   * n'est pas branché ou n'a pas répondu à temps. L'écran le dit (L8-C3).
+   * @deprecated vaut toujours `road` depuis le lot 10 bis (L10b-C5) : sans
+   * calcul routier, Proposer refuse au lieu de retomber sur le vol d'oiseau.
+   * Rendu tant qu'un écran en ligne le lit.
    */
   readonly estimate: DeliveryCostEstimate;
   /** Le mode effectivement appliqué : le paramètre `mode`, sinon le réglage. */
@@ -197,3 +223,30 @@ export const applyDeliveryProposalPayloadSchema = z.object({
   versions: z.array(z.object({ roundId: idField("tournée"), version: z.number().int().min(0) })),
 });
 export type ApplyDeliveryProposalPayload = z.infer<typeof applyDeliveryProposalPayloadSchema>;
+
+// ─── Chronométrer (lot 10 bis, L10b-C2) ────────────────────────────────────
+
+/**
+ * Chronométrer une composition éditée à la main (glisser-déposer) : chaque
+ * tournée avec ses commandes DANS l'ordre voulu. Une LECTURE : rien n'est
+ * écrit, la composition est chronométrée telle quelle, sans réordonner.
+ */
+export const timeDeliveryRoundsPayloadSchema = z.object({
+  day: dayField,
+  rounds: z
+    .array(
+      z.object({
+        roundId: idField("tournée").nullable(),
+        vehicleId: idField("véhicule"),
+        orderIds: z.array(idField("commande")).min(1, "au moins une commande par tournée"),
+      }),
+    )
+    .min(1, "au moins une tournée"),
+});
+export type TimeDeliveryRoundsPayload = z.infer<typeof timeDeliveryRoundsPayloadSchema>;
+
+/** La composition chronométrée, dans l'ordre reçu. */
+export interface DeliveryRoundTimingView {
+  readonly day: string;
+  readonly rounds: readonly DeliveryProposedRoundView[];
+}

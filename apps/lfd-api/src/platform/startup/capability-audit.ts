@@ -246,7 +246,7 @@ const CHECKS: readonly Check[] = [
     capability: "Calcul routier des tournées",
     setting: "OSRM_URL",
     consequence:
-      "« Proposer » estime les trajets à vol d'oiseau : en montagne, la répartition entre véhicules peut mettre deux vallées dans la même camionnette",
+      "« Proposer », « Chronométrer » et le simulateur de tournée sont refusés : il n'y a plus de repli à vol d'oiseau (L10b-C5), les tournées existantes restent composables à la main",
     severity: "degraded",
     present: (s) => s.hasOsrmUrl,
   },

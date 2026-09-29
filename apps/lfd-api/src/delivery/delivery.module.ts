@@ -5,6 +5,7 @@ import { ApplyDeliveryProposalHandler } from "./application/commands/apply-deliv
 import { LocateDeliveryStopsHandler } from "./application/commands/locate-delivery-stops.handler.js";
 import { SetRoutingSettingsHandler } from "./application/commands/set-routing-settings.handler.js";
 import { GetDeliveryRoundProposalHandler } from "./application/queries/get-delivery-round-proposal.handler.js";
+import { TimeDeliveryRoundsHandler } from "./application/queries/time-delivery-rounds.handler.js";
 import { SimulateDeliveryRoundsHandler } from "./application/queries/simulate-delivery-rounds.handler.js";
 import { GetRoutingSettingsHandler } from "./application/queries/get-routing-settings.handler.js";
 import { DeliveryProposalRepository } from "./domain/ports/delivery-proposal.repository.js";
@@ -14,13 +15,18 @@ import { GeocodeCacheRepository } from "./domain/ports/geocode-cache.repository.
 import { Geocoder } from "./domain/ports/geocoder.js";
 import { RoutingSettingsReader } from "./domain/ports/routing-settings.reader.js";
 import { RoutingSettingsRepository } from "./domain/ports/routing-settings.repository.js";
-import { CrowFliesDistanceMatrix } from "./domain/services/crow-flies-distance-matrix.js";
+import { RouteGeometry } from "./domain/ports/route-geometry.js";
 import { DeliveryProposalController } from "./http/delivery-proposal.controller.js";
 import { DeliverySimulatorController } from "./http/delivery-simulator.controller.js";
 import { RoutingSettingsController } from "./http/routing-settings.controller.js";
 import { BanGeocoder } from "./infrastructure/ban-geocoder.js";
 import { DisabledGeocoder } from "./infrastructure/disabled-geocoder.js";
+import {
+  DisabledDistanceMatrix,
+  DisabledRouteGeometry,
+} from "./infrastructure/disabled-road-routing.js";
 import { OsrmDistanceMatrix } from "./infrastructure/osrm-distance-matrix.js";
+import { OsrmRouteGeometry } from "./infrastructure/osrm-route-geometry.js";
 import { PrismaDeliveryProposalRepository } from "./infrastructure/prisma-delivery-proposal.repository.js";
 import { PrismaGeocodeCacheReader } from "./infrastructure/prisma-geocode-cache.reader.js";
 import { PrismaGeocodeCacheRepository } from "./infrastructure/prisma-geocode-cache.repository.js";
@@ -85,7 +91,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
  * **La livraison** — les bases paramétrables des tournées (la flotte et le
  * point de départ, lot 2), la composition des tournées (lot 3), puis les
  * sacs, leur chargement et le départ (lot 4), puis le calculateur de tournée
- * (lot 7)
+ * (lot 7), par la route (lot 8), et « Chronométrer » (lot 10 bis)
  * (`documentation/livraisons/plan-preparation-de-tournee.md`). Code ici, tables
  * dans le schéma `production` (Q10).
  *
@@ -138,6 +144,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     GetDeliveryRoundProposalHandler,
     ApplyDeliveryProposalHandler,
     SimulateDeliveryRoundsHandler,
+    TimeDeliveryRoundsHandler,
     { provide: VehicleRepository, useClass: PrismaVehicleRepository },
     { provide: FleetReader, useClass: PrismaFleetReader },
     { provide: DepartureRepository, useClass: PrismaDepartureRepository },
@@ -156,14 +163,22 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     { provide: GeocodeCacheReader, useClass: PrismaGeocodeCacheReader },
     { provide: GeocodeCacheRepository, useClass: PrismaGeocodeCacheRepository },
     { provide: DeliveryProposalRepository, useClass: PrismaDeliveryProposalRepository },
-    // Sans URL, vol d'oiseau (L8-C3) ; avec, la route — et le vol d'oiseau en repli.
+    // Sans URL, le calcul routier REFUSE (L10b-C5) : plus de vol d'oiseau.
     {
       provide: DistanceMatrix,
       inject: [AppConfig],
       useFactory: (config: AppConfig): DistanceMatrix => {
         const url = config.osrmUrl();
-        const crowFlies = new CrowFliesDistanceMatrix();
-        return url === null ? crowFlies : new OsrmDistanceMatrix(url, crowFlies);
+        return url === null ? new DisabledDistanceMatrix() : new OsrmDistanceMatrix(url);
+      },
+    },
+    // Sans URL, pas de tracé : la carte montre les repères seuls (L10b-C4).
+    {
+      provide: RouteGeometry,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): RouteGeometry => {
+        const url = config.osrmUrl();
+        return url === null ? new DisabledRouteGeometry() : new OsrmRouteGeometry(url);
       },
     },
     // Sans URL, le géocodage est DÉSACTIVÉ (L7-C9) : les e2e ne sortent pas sur le réseau.

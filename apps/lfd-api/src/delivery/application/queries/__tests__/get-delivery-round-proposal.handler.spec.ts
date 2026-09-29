@@ -1,9 +1,15 @@
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { DeliveryStopPoint } from "../../../channels/commerce/index.js";
 import { DeliveryRound } from "../../../domain/entities/delivery-round.js";
-import { DepartureNotLocatedError } from "../../../domain/errors/delivery-routing-errors.js";
-import { DistanceMatrix, type EstimatedCost } from "../../../domain/ports/distance-matrix.js";
-import { CrowFliesDistanceMatrix } from "../../../domain/services/crow-flies-distance-matrix.js";
+import {
+  DepartureNotLocatedError,
+  RoadRoutingUnavailableError,
+} from "../../../domain/errors/delivery-routing-errors.js";
+import {
+  StraightLineDistanceMatrix,
+  StraightRouteGeometry,
+} from "../../../domain/ports/__tests__/road-routing-doubles.js";
+import { type CostFn, DistanceMatrix } from "../../../domain/ports/distance-matrix.js";
 import type { GeoPoint } from "../../../domain/value-objects/geo-point.js";
 import { OsrmDistanceMatrix } from "../../../infrastructure/osrm-distance-matrix.js";
 import { addressKeyOf } from "../../../domain/services/address-key.js";
@@ -68,23 +74,19 @@ function departed(): DeliveryRound {
 }
 
 /**
- * Une matrice « routière » : les coûts du vol d'oiseau, ALOURDIS au retour
- * vers le dépôt — asymétrique, comme une montée —, annoncés `road`.
+ * Une matrice « routière » : la ligne droite doublée, ALOURDIE au retour vers
+ * le dépôt — asymétrique, comme une montée.
  */
 class RoadDistanceMatrix extends DistanceMatrix {
   readonly built: number[] = [];
 
-  async build(
-    points: ReadonlyMap<string, GeoPoint>,
-    settings: RoutingSettings,
-  ): Promise<EstimatedCost> {
+  async build(points: ReadonlyMap<string, GeoPoint>): Promise<CostFn> {
     this.built.push(points.size);
-    const crow = await new CrowFliesDistanceMatrix().build(points, settings);
+    const straight = await new StraightLineDistanceMatrix().build(points);
     const uphill = (toId: string): number => (toId === "depot" ? 2 : 1);
     return {
-      meters: (from, to) => crow.meters(from, to) * uphill(to),
-      seconds: (from, to) => crow.seconds(from, to) * uphill(to),
-      estimate: "road",
+      meters: (from, to) => straight.meters(from, to) * uphill(to),
+      seconds: (from, to) => straight.seconds(from, to) * uphill(to),
     };
   }
 }
@@ -94,6 +96,7 @@ function scene(
     readonly labo?: typeof LABO | null;
     readonly settings?: RoutingSettings;
     readonly matrix?: DistanceMatrix;
+    readonly geometry?: StraightRouteGeometry;
   } = {},
 ) {
   const rounds = new InMemoryDeliveryRounds(
@@ -114,7 +117,8 @@ function scene(
     orders,
     new FixedLoadedStops(["r_loaded_s1"]),
     new InMemoryGeocodeCache({ [addressKeyOf(address("en cache"))]: { lat: 45.55, lng: 5.95 } }),
-    options.matrix ?? new CrowFliesDistanceMatrix(),
+    options.matrix ?? new StraightLineDistanceMatrix(),
+    options.geometry ?? new StraightRouteGeometry(),
     new FixedClock(new Date(0)),
   );
   return { handler, rounds };
@@ -135,7 +139,7 @@ describe("GetDeliveryRoundProposalHandler — « Proposer » (L7-C3 à C6)", () 
       { orderId: "o6", reference: "CMD-o6", reason: "not_geocoded" },
     ]);
     expect(view.rounds.every((round) => round.roundId === null)).toBe(true);
-    expect(view.estimate).toBe("crow_flies");
+    expect(view.estimate).toBe("road"); // déprécié, toujours `road` (L10b-C5)
     expect(view.departurePoint.pickupAddressId).toBe("labo");
   });
 
@@ -251,17 +255,47 @@ describe("GetDeliveryRoundProposalHandler — par la route (lot 8, L8-C3)", () =
     expect(view.estimate).toBe("road");
   });
 
-  it("dit `crow_flies` quand OSRM ne répond pas — la proposition ne tombe pas", async () => {
-    const silent = new OsrmDistanceMatrix(
-      "http://osrm.internal",
-      new CrowFliesDistanceMatrix(),
-      () => Promise.resolve(new Response("indisponible", { status: 503 })),
-    );
+  /** L10b-C5 : le vol d'oiseau a disparu — un OSRM muet refuse, il ne retombe plus. */
+  it("refuse quand OSRM ne répond pas, après un nouvel essai — plus de vol d'oiseau", async () => {
+    let calls = 0;
+    const silent = new OsrmDistanceMatrix("http://osrm.internal", {
+      fetchFn: () => {
+        calls += 1;
+        return Promise.resolve(new Response("indisponible", { status: 503 }));
+      },
+    });
     const { handler } = scene({ matrix: silent });
+
+    await expect(
+      handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false)),
+    ).rejects.toThrow(RoadRoutingUnavailableError);
+    expect(calls).toBe(2);
+  });
+});
+
+describe("GetDeliveryRoundProposalHandler — le tracé (L10b-C4)", () => {
+  it("trace chaque tournée par la route : départ, arrêts dans l'ordre, retour", async () => {
+    const geometry = new StraightRouteGeometry();
+    const { handler } = scene({ geometry });
 
     const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
 
-    expect(view.estimate).toBe("crow_flies");
+    expect(geometry.requested).toHaveLength(view.rounds.length);
+    for (const round of view.rounds) {
+      const line = round.geometry ?? [];
+      expect(line[0]).toEqual([LABO.lng, LABO.lat]);
+      expect(line[line.length - 1]).toEqual([LABO.lng, LABO.lat]);
+      expect(line).toHaveLength(round.stops.length + 2);
+    }
+  });
+
+  it("rend `geometry: null` quand la carte ne trace pas — la proposition, elle, tient", async () => {
+    const { handler } = scene({ geometry: new StraightRouteGeometry(true) });
+
+    const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
+
+    expect(view.rounds.length).toBeGreaterThan(0);
+    expect(view.rounds.every((round) => round.geometry === null)).toBe(true);
     expect(placed(view)).toEqual(["o1", "o2", "o3", "o4", "o7"]);
   });
 });

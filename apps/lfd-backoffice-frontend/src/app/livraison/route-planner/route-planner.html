@@ -79,50 +79,93 @@
 
     @if (proposal(); as proposal) {
       <div class="proposal" data-proposal>
-        <fold-element-title
-          variant="caps"
-          [title]="'Proposition · ' + modeLabel(proposal.mode)"
-          data-proposal-mode
-        />
-        @if (proposal.estimate === 'crow_flies') {
-          <fold-callout variant="info" data-crow-flies>{{ estimateLabel(proposal) }}</fold-callout>
-        } @else {
-          <fold-callout variant="info" data-road>{{ estimateLabel(proposal) }}</fold-callout>
+        <div class="plan-head">
+          <fold-element-title
+            variant="title"
+            [title]="'Tournées · ' + dayLabel()"
+            [subtitle]="'Départ · ' + proposal.departurePoint.label"
+            data-plan-title
+          />
+          <div class="summary" data-plan-summary>
+            <fold-badge [content]="summary().deliveries + ' livraisons'" />
+            <fold-badge [content]="summary().vans + ' camionnettes'" />
+            @if (summary().late > 0) {
+              <fold-badge
+                variant="alert"
+                [content]="summary().late + ' hors créneau'"
+                data-summary-late
+              />
+            }
+            @if (summary().notReady > 0) {
+              <fold-badge
+                variant="warning"
+                [content]="summary().notReady + ' pas encore prêtes'"
+                data-summary-not-ready
+              />
+            }
+          </div>
+          <div class="actions">
+            @if (canWrite()) {
+              <button
+                foldButton
+                icon="check"
+                [loading]="phase() === 'applying'"
+                [disabled]="!canApply()"
+                (click)="apply()"
+                data-apply
+              >
+                Appliquer
+              </button>
+            }
+            <button
+              foldButton
+              emphasis="outline"
+              [disabled]="busy()"
+              (click)="discard()"
+              data-discard
+            >
+              Jeter
+            </button>
+          </div>
+        </div>
+
+        <fold-callout variant="info" data-proposal-mode>
+          {{ modeLabel(proposal.mode) }} — rien n’est enregistré tant que vous n’appliquez pas.
+          Glissez un arrêt d’une camionnette à l’autre, ou dans sa colonne : les heures se
+          recalculent.
+        </fold-callout>
+
+        @if (timingRefusal(); as message) {
+          <fold-callout variant="alert" announce data-timing-refusal>{{ message }}</fold-callout>
         }
 
-        @for (round of proposal.rounds; track $index) {
-          <fold-card surface="sunken" padding="sm" data-proposed-round>
-            <div class="planner">
-              <fold-element-title
-                variant="title"
-                [title]="roundLabel(round) + (round.roundId === null ? ' · à ouvrir' : '')"
-                [subtitle]="roundSummary(round)"
-              >
-                @if (round.overDuration) {
-                  <fold-badge
-                    titleAction
-                    variant="warning"
-                    content="Dépasse la durée maximale"
-                    data-over-duration
-                  />
-                }
-              </fold-element-title>
-              <ol class="stops">
-                @for (stop of round.stops; track stop.orderId) {
-                  <li data-proposed-stop>
-                    <span>{{ stop.reference }} · arrivée vers {{ timeLabel(stop.arrival) }}</span>
-                    @if (stop.window; as window) {
-                      <span>· {{ windowLabel(window) }}</span>
-                    }
-                    @if (stop.windowMissed) {
-                      <fold-badge variant="alert" content="Fenêtre manquée" data-window-missed />
-                    }
-                  </li>
-                }
-              </ol>
+        @if (plan().length > 0) {
+          <div class="layout">
+            <div class="map">
+              <app-delivery-map
+                [rounds]="plan()"
+                [departure]="proposal.departurePoint"
+                [highlighted]="highlighted()"
+                (hovered)="highlighted.set($event)"
+              />
             </div>
-          </fold-card>
-        } @empty {
+            <div class="columns">
+              @for (round of plan(); track round.key) {
+                <app-round-sheet
+                  [round]="round"
+                  [color]="colorOf(round.key)"
+                  [departureLabel]="proposal.departurePoint.label"
+                  [editable]="!busy()"
+                  [pending]="isTiming(round.key)"
+                  [highlighted]="highlighted()"
+                  (hovered)="highlighted.set($event)"
+                  (picked)="pick(round.key, $event)"
+                  (dropped)="drop(round.key, $event)"
+                />
+              }
+            </div>
+          </div>
+        } @else {
           <fold-callout variant="neutral" data-no-proposed-round>
             Aucune tournée à proposer : rien de situé à répartir sur les véhicules choisis.
           </fold-callout>
@@ -187,47 +230,6 @@
             }
           </fold-callout>
         }
-
-        @if (proposal.kept.length > 0) {
-          <fold-card surface="sunken" padding="sm" data-kept>
-            <div class="planner">
-              <fold-element-title
-                variant="title"
-                title="Gardées telles quelles"
-                subtitle="La proposition ne les touche pas."
-              />
-              @for (kept of proposal.kept; track kept.roundId) {
-                <span data-kept-round>
-                  {{ roundLabel(kept) }} · {{ keptReasonLabel(kept.reason) }}
-                </span>
-              }
-            </div>
-          </fold-card>
-        }
-
-        <div class="actions">
-          @if (canWrite()) {
-            <button
-              foldButton
-              icon="check"
-              [loading]="phase() === 'applying'"
-              [disabled]="busy() || proposal.rounds.length === 0"
-              (click)="apply()"
-              data-apply
-            >
-              Appliquer
-            </button>
-          }
-          <button
-            foldButton
-            emphasis="outline"
-            [disabled]="busy()"
-            (click)="discard()"
-            data-discard
-          >
-            Jeter
-          </button>
-        </div>
       </div>
     }
   </div>

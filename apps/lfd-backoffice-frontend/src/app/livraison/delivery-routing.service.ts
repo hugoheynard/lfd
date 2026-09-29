@@ -8,6 +8,8 @@ import type {
   DeliveryRoutingSettingsView,
   DeliverySimulationPayload,
   DeliverySimulationView,
+  DeliveryRoundTimingView,
+  TimeDeliveryRoundsPayload,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -60,6 +62,18 @@ export class DeliveryRoutingService {
 
   async apply(payload: ApplyDeliveryProposalPayload): Promise<void> {
     await firstValueFrom(this.http.post(`${ROUNDS}/proposition`, payload));
+  }
+
+  /**
+   * Chronométrer une composition éditée à la main (lot 10 bis, L10b-C2) : un
+   * POST parce que la composition est un corps, mais une LECTURE — rien n'est
+   * écrit, sous `delivery_rounds:read`. Sans calcul routier, le serveur refuse
+   * (L10b-C5) : son message s'affiche tel quel.
+   */
+  time(payload: TimeDeliveryRoundsPayload): Promise<DeliveryRoundTimingView> {
+    return firstValueFrom(
+      this.http.post<DeliveryRoundTimingView>(`${ROUNDS}/proposition/chronometrer`, payload),
+    );
   }
 
   settings(): Promise<DeliveryRoutingSettingsView> {

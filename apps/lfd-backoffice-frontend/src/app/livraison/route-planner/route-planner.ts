@@ -11,11 +11,7 @@ import {
   untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type {
-  DeliveryProposalMode,
-  DeliveryProposedRoundView,
-  DeliveryRoundProposalView,
-} from '@lfd/contracts';
+import type { DeliveryProposalMode, DeliveryRoundProposalView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBadgeComponent,
@@ -29,21 +25,24 @@ import {
   type FoldSelectOption,
 } from 'fold-ng';
 
-import { NotifyService } from '../../notify.service';
+import { DeliveryMap } from '../delivery-map/delivery-map';
 import {
-  applyPayloadOf,
-  distanceLabel,
-  durationLabel,
-  estimateLabel,
-  keptReasonLabel,
-  MODE_OPTIONS,
-  modeLabel,
-  proposalWindowLabel,
-  unlocatedReasonLabel,
-} from '../delivery-routing';
-import { roundLabel } from '../delivery-rounds';
+  applyPayloadOfPlan,
+  colorOf,
+  moveStop,
+  type PlannedRound,
+  type PlanSlot,
+  planOf,
+  planSummary,
+  timingPayloadOf,
+  withTimings,
+} from '../delivery-planning';
+import { type ComposedDay, serviceDayLabel } from '../delivery-rounds';
+import { RoundSheet } from '../round-sheet/round-sheet';
+
+import { NotifyService } from '../../notify.service';
+import { MODE_OPTIONS, modeLabel, unlocatedReasonLabel } from '../delivery-routing';
 import { DeliveryRoutingService } from '../delivery-routing.service';
-import { timeLabel } from '../run-sheet';
 
 /** Un geste en vol : un seul à la fois. */
 type Phase = 'idle' | 'locating' | 'proposing' | 'applying';
@@ -56,11 +55,19 @@ const SETTINGS_LINK = '/livraison/depart';
 
 /**
  * **Le calculateur de tournée** — « Situer les arrêts », « Proposer »,
- * « Appliquer » (`plan-preparation-de-tournee.md`, lot 7).
+ * « Appliquer » (`plan-preparation-de-tournee.md`, lot 7) — et, depuis le
+ * lot 10 bis, **l'écran « Planifier »** : la carte à gauche, une feuille de
+ * route par camionnette à droite, les arrêts qu'on glisse de l'une à l'autre.
  *
  * Proposer est une LECTURE : la proposition s'affiche en aperçu, rien n'est
- * écrit tant qu'on n'a pas appliqué (L7-C6). Appliquer renvoie ce qu'on a vu,
- * avec les versions lues ; un refus s'affiche tel quel, et la page relit.
+ * écrit tant qu'on n'a pas appliqué (L7-C6). Glisser un arrêt ne l'est pas
+ * davantage : les deux colonnes touchées sont re-chronométrées par le serveur
+ * (L10b-C2), qui peut refuser (L10b-C5) — son message s'affiche tel quel.
+ * Appliquer renvoie la composition ÉDITÉE, avec les versions lues ; un refus
+ * s'affiche tel quel, et la page relit.
+ *
+ * Les noms, lieux et états viennent de la feuille de route du jour que la page
+ * a lue avec la composition, jointe par commande (L10b-C3).
  */
 @Component({
   selector: 'app-route-planner',
@@ -75,6 +82,8 @@ const SETTINGS_LINK = '/livraison/depart';
     FoldElementTitleComponent,
     FoldListboxComponent,
     FoldLoadingStateComponent,
+    DeliveryMap,
+    RoundSheet,
   ],
   templateUrl: './route-planner.html',
   styleUrl: './route-planner.scss',
@@ -94,6 +103,8 @@ export class RoutePlanner {
   readonly canOpenClients = input(false);
   /** `delivery_settings:read` : le mode se préremplit par le défaut des réglages. */
   readonly canReadSettings = input(false);
+  /** La composition du jour jointe à sa feuille de route — les noms, les lieux, les tournées gardées. */
+  readonly composed = input<ComposedDay | null>(null);
 
   /** Une proposition appliquée, ou refusée : la page relit. */
   readonly changed = output();
@@ -108,6 +119,28 @@ export class RoutePlanner {
   protected readonly proposal = signal<DeliveryRoundProposalView | null>(null);
   protected readonly phase = signal<Phase>('idle');
   protected readonly refusal = signal<string | null>(null);
+
+  /** La composition affichée, éditée par glisser-déposer. */
+  protected readonly plan = signal<readonly PlannedRound[]>([]);
+  /** L'arrêt qu'on a pris, le temps du geste. */
+  private readonly dragging = signal<PlanSlot | null>(null);
+  /** L'arrêt survolé — une ligne ou son repère. */
+  protected readonly highlighted = signal<string | null>(null);
+  /** Le dernier refus de « chronométrer » : la composition reste, sans heures. */
+  protected readonly timingRefusal = signal<string | null>(null);
+  /** Les colonnes en cours de chronométrage, et combien d'appels chacune attend. */
+  private readonly inflight = signal<ReadonlyMap<string, number>>(new Map());
+
+  protected readonly timing = computed(() => this.inflight().size > 0);
+  protected readonly summary = computed(() => planSummary(this.plan()));
+  /** Ce qu'« Appliquer » enverrait — vide : rien à appliquer. */
+  private readonly applyPayload = computed(() => {
+    const proposal = this.proposal();
+    return proposal === null ? null : applyPayloadOfPlan(proposal, this.plan());
+  });
+  protected readonly canApply = computed(
+    () => !this.busy() && !this.timing() && (this.applyPayload()?.rounds.length ?? 0) > 0,
+  );
 
   protected readonly busy = computed(() => this.phase() !== 'idle' || this.disabled());
 
@@ -125,18 +158,15 @@ export class RoutePlanner {
   protected readonly modeOptions = MODE_OPTIONS;
   protected readonly modeLabel = modeLabel;
   protected readonly settingsLink = SETTINGS_LINK;
-  protected readonly roundLabel = roundLabel;
-  protected readonly timeLabel = timeLabel;
-  protected readonly windowLabel = proposalWindowLabel;
   protected readonly unlocatedReasonLabel = unlocatedReasonLabel;
-  protected readonly keptReasonLabel = keptReasonLabel;
+  protected readonly dayLabel = computed(() => serviceDayLabel(this.day()));
 
   constructor() {
     // Un autre jour : la proposition et les choix de l'autre jour ne valent plus.
     effect(() => {
       this.day();
       untracked(() => {
-        this.proposal.set(null);
+        this.show(null);
         this.refusal.set(null);
         this.unchecked.set(new Set());
         this.recomposeAll.set(false);
@@ -164,20 +194,6 @@ export class RoutePlanner {
     this.unchecked.set(next);
   }
 
-  /** « Départ 7 h 00 · retour 9 h 10 · 42,0 km · 2 h 10 ». */
-  protected roundSummary(round: DeliveryProposedRoundView): string {
-    return [
-      `Départ ${timeLabel(round.departureTime)}`,
-      `retour ${timeLabel(round.returnTime)}`,
-      distanceLabel(round.meters),
-      durationLabel(round.minutes),
-    ].join(' · ');
-  }
-
-  protected estimateLabel(proposal: DeliveryRoundProposalView): string {
-    return estimateLabel(proposal);
-  }
-
   protected companyLink(orderId: string): string | null {
     const company = this.companies().get(orderId);
     return company === undefined || !this.canOpenClients()
@@ -198,7 +214,7 @@ export class RoutePlanner {
       this.notify.success('Arrêts situés. Proposez pour voir la répartition.');
       // Une proposition affichée ignorait ces points : on la jette plutôt
       // que de laisser croire qu'elle en tient compte.
-      this.proposal.set(null);
+      this.show(null);
     } catch (error) {
       this.refusal.set(httpErrorMessage(error, 'Les arrêts n’ont pas pu être situés.'));
     } finally {
@@ -219,10 +235,10 @@ export class RoutePlanner {
         mode: this.mode(),
       });
       if (day === this.day()) {
-        this.proposal.set(proposal);
+        this.show(proposal);
       }
     } catch (error) {
-      this.proposal.set(null);
+      this.show(null);
       this.refusal.set(httpErrorMessage(error, 'La proposition n’a pas pu être calculée.'));
     } finally {
       this.phase.set('idle');
@@ -230,19 +246,19 @@ export class RoutePlanner {
   }
 
   protected async apply(): Promise<void> {
-    const proposal = this.proposal();
-    if (proposal === null || proposal.rounds.length === 0 || !this.start('applying')) {
+    const payload = this.applyPayload();
+    if (payload === null || !this.canApply() || !this.start('applying')) {
       return;
     }
     try {
-      await this.routing.apply(applyPayloadOf(proposal));
-      this.proposal.set(null);
+      await this.routing.apply(payload);
+      this.show(null);
       this.notify.success('Proposition appliquée : elle se corrige à la main comme avant.');
     } catch (error) {
       const changed = error instanceof HttpErrorResponse && error.status === CONFLICT;
       // Jamais rejouée : elle écraserait ce qu'un collègue vient de composer.
       if (changed) {
-        this.proposal.set(null);
+        this.show(null);
       }
       this.refusal.set(
         httpErrorMessage(error, changed ? CHANGED : 'La proposition n’a pas pu être appliquée.'),
@@ -254,8 +270,87 @@ export class RoutePlanner {
   }
 
   protected discard(): void {
-    this.proposal.set(null);
+    this.show(null);
     this.refusal.set(null);
+  }
+
+  protected colorOf(key: string): string {
+    return colorOf(this.plan(), key);
+  }
+
+  protected pick(key: string, index: number): void {
+    this.dragging.set({ key, index });
+  }
+
+  /**
+   * Lâcher un arrêt : la composition change ici, puis les deux colonnes
+   * touchées partent au chronométrage. Rien n'est écrit (L10b-C2).
+   */
+  protected drop(key: string, index: number): void {
+    const from = this.dragging();
+    this.dragging.set(null);
+    if (from === null || this.busy()) {
+      return;
+    }
+    // Le rang visé est compté AVANT le retrait : dans la même colonne, plus bas, il recule d'un.
+    const at = from.key === key && index > from.index ? index - 1 : index;
+    const next = moveStop(this.plan(), from, { key, index: at });
+    if (next === null) {
+      return;
+    }
+    this.plan.set(next);
+    void this.retime([...new Set([from.key, key])]);
+  }
+
+  private async retime(keys: readonly string[]): Promise<void> {
+    const proposal = this.proposal();
+    const payload = proposal === null ? null : timingPayloadOf(proposal.day, this.plan(), keys);
+    if (payload === null) {
+      return;
+    }
+    this.track(keys, 1);
+    this.timingRefusal.set(null);
+    try {
+      const view = await this.routing.time(payload);
+      // Une autre proposition entre-temps : ces heures ne la concernent pas.
+      if (proposal === this.proposal()) {
+        this.plan.update((plan) => withTimings(plan, payload, view));
+      }
+    } catch (error) {
+      if (proposal === this.proposal()) {
+        this.timingRefusal.set(
+          httpErrorMessage(error, 'Les nouvelles heures n’ont pas pu être calculées.'),
+        );
+      }
+    } finally {
+      this.track(keys, -1);
+    }
+  }
+
+  private track(keys: readonly string[], delta: 1 | -1): void {
+    const next = new Map(this.inflight());
+    for (const key of keys) {
+      const count = (next.get(key) ?? 0) + delta;
+      if (count > 0) {
+        next.set(key, count);
+      } else {
+        next.delete(key);
+      }
+    }
+    this.inflight.set(next);
+  }
+
+  protected isTiming(key: string): boolean {
+    return this.inflight().has(key);
+  }
+
+  /** Une proposition neuve (ou aucune) : la composition éditée repart d'elle. */
+  private show(proposal: DeliveryRoundProposalView | null): void {
+    this.proposal.set(proposal);
+    this.plan.set(proposal === null ? [] : planOf(proposal, this.composed()));
+    this.timingRefusal.set(null);
+    this.highlighted.set(null);
+    this.dragging.set(null);
   }
 
   /** Sans les réglages, le serveur prend leur défaut lui-même : rien à inventer ici. */
