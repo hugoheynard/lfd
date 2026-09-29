@@ -16,9 +16,14 @@ Le matin, avant que le véhicule parte, quatre gestes :
 3. **Mettre les arrêts dans un ordre.**
 4. **Charger sans rien oublier.**
 
-Tout le reste (plusieurs véhicules, algorithme, carte routière) vient après, et
-seulement si le volume l'exige. Tant qu'il n'y a qu'un véhicule, la journée est
-la tournée ([conception v1](conception-retrait-en-livraison.md), §3).
+✅ **Trois véhicules, et on doit pouvoir en ajouter** (Hugo, 2026-09-29). Le
+geste 3 devient donc « **répartir** les commandes entre les véhicules, puis
+ordonner chaque tournée », et le geste 4 se fait **par véhicule**. La réserve de
+la [conception v1](conception-retrait-en-livraison.md) (§3 : « la tournée devient
+nécessaire au deuxième véhicule ») est levée : la tournée est à bâtir.
+
+Ce qui vient toujours après : l'algorithme qui **propose** une répartition, et
+la carte routière.
 
 ## 1. État des lieux
 
@@ -73,16 +78,16 @@ manque, c'est l'écran qui les rassemble et les gestes qui s'appuient dessus.
 
 Chacune porte ma recommandation. Aucune n'est prise.
 
-| #   | Question                                                             | Ce qu'elle bloque | Recommandation                                                                                                                                                                                                            |
-| --- | -------------------------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D1  | **Combien de livraisons par jour, combien de véhicules ?**           | tout le reste     | Le dire en chiffres. Sous ~30 arrêts et un véhicule, les lots 1 à 3 suffisent ; l'algorithme de l'[architecture](architecture-road-livraison-tournees.md) attend.                                                         |
-| D2  | **Qui prépare, qui conduit ?** Le livreur a-t-il un compte ?         | lots 2 et 5       | Pour préparer et charger : un compte staff existant suffit. Pour la vue livreur : un **rôle `livreur`** qui ne voit ni prix ni carnet clients. C'est une frontière de sécurité, à passer par `vitruve` avant de la bâtir. |
-| D3  | **La tranche d'une heure, obligatoire en livraison ?**               | lot 4             | Oui, comme tranché le 2026-09-11 : sans elle, la colonne « en retard » reste vide pour toute la livraison. Elle doit tenir dans les créneaux de réception de l'adresse.                                                   |
-| D4  | **Comment le code de retrait atteint la personne qui réceptionne ?** | lot 5             | Hors préparation : c'est le geste à la porte. Trois sorties dans la conception v1 (§2). Ne pas imprimer le jeton sur le colis.                                                                                            |
-| D5  | **Que devient une livraison ratée ?**                                | lot 5             | Hors préparation. Décision métier (conception v1, question 4).                                                                                                                                                            |
-| D6  | **Où vit le code ?**                                                 | lot 3             | Les lots 1 et 2 **lisent** et n'ont besoin d'aucun bloc neuf : ils étendent le lecteur de file de `handover`. Le bloc logistique (`delivery/`) ne naît qu'au lot 3, quand il faut **stocker** un ordre.                   |
+| #   | Question                                                             | Ce qu'elle bloque | Recommandation                                                                                                                                                                                                                                           |
+| --- | -------------------------------------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | **Combien de véhicules ?**                                           | tout le reste     | ✅ **Tranché le 2026-09-29 : trois, et on doit pouvoir en ajouter.** Le véhicule est donc une **donnée** (une liste qu'on gère), jamais une constante ; on en ajoute ou on en retire sans déploiement. Reste inconnu : le nombre de livraisons par jour. |
+| D2  | **Qui prépare, qui conduit ?** Le livreur a-t-il un compte ?         | lots 4 et 6       | Pour préparer et charger : un compte staff existant suffit. Pour la vue livreur : un **rôle `livreur`** qui ne voit ni prix ni carnet clients. C'est une frontière de sécurité, à passer par `vitruve` avant de la bâtir.                                |
+| D3  | **La tranche d'une heure, obligatoire en livraison ?**               | lot 5             | Oui, comme tranché le 2026-09-11 : sans elle, la colonne « en retard » reste vide pour toute la livraison. Elle doit tenir dans les créneaux de réception de l'adresse.                                                                                  |
+| D4  | **Comment le code de retrait atteint la personne qui réceptionne ?** | lot 6             | Hors préparation : c'est le geste à la porte. Trois sorties dans la conception v1 (§2). Ne pas imprimer le jeton sur le colis.                                                                                                                           |
+| D5  | **Que devient une livraison ratée ?**                                | lot 6             | Hors préparation. Décision métier (conception v1, question 4).                                                                                                                                                                                           |
+| D6  | **Où vit le code ?**                                                 | lot 2             | Le lot 1 **lit** et n'a besoin d'aucun bloc neuf : il étend le lecteur de file de `handover`. Le bloc logistique (`delivery/`) naît au lot 2, avec le premier véhicule stocké.                                                                           |
 
-**La préparation (lots 1 à 3) ne dépend que de D1, D2 et D6.** D4 et D5
+**La préparation (lots 1 à 4) ne dépend que de D1, D2 et D6.** D4 et D5
 concernent la porte, pas le dépôt : on peut préparer des tournées avant de les
 avoir tranchées.
 
@@ -118,45 +123,76 @@ Imprimable, lisible sur téléphone. **Aucun montant.**
 commande livrée demain apparaît avec sa procédure, et une commande au comptoir
 n'apparaît pas.
 
-### Lot 2 — Le chargement : « ai-je tout ? »
+### Lot 2 — Les véhicules, en données
 
-**Ce que l'équipe obtient** : au dépôt, on scanne les feuilles d'atelier une à
-une ; l'écran barre chaque commande scannée et dit **ce qui manque**.
+**Ce que l'équipe obtient** : dans les réglages, la liste des véhicules — un
+nom lisible (« Kangoo blanc »), une plaque, actif ou retiré. On en ajoute un
+sans rien demander à personne.
+
+**Comment** :
+
+- c'est le premier modèle du **bloc logistique** : déclaré dans
+  `lint:context-boundaries`, schéma Postgres choisi explicitement. D6 se
+  tranche ici ;
+- **pas de suppression** : un véhicule vendu est **retiré**, parce que les
+  tournées passées le citent (`CLAUDE.md` §3 : pas de DELETE physique) ;
+- un CRUD honnête : aucune transition ne s'y refuse (`CLAUDE.md` §3.1, « où NE
+  PAS mettre d'agrégat »).
+
+**Question ouverte à ce lot** : un véhicule peut-il être **indisponible un
+jour donné** (garage, panne) ? Si oui, la composition doit le savoir. Ma
+recommandation : pas de calendrier au premier passage ; on compose avec les
+véhicules actifs, et on laisse une tournée vide.
+
+### Lot 3 — Composer : répartir, puis ordonner
+
+**Ce que l'équipe obtient** : sur `/livraison`, pour le jour J, une colonne par
+véhicule actif et une colonne « à répartir ». On **glisse** chaque commande dans
+un véhicule, puis on range les arrêts dans l'ordre de passage. Chaque tournée
+s'imprime seule. L'écran signale :
+
+- les commandes **encore à répartir** — aucune ne doit partir oubliée ;
+- les fenêtres qu'un ordre ne peut pas tenir (deux 8 h – 9 h à vingt
+  kilomètres l'un de l'autre) ;
+- le nombre d'arrêts par véhicule, pour voir un déséquilibre.
+
+**Comment** :
+
+- c'est le **premier agrégat** : la tournée (un véhicule, un jour), avec les
+  invariants de l'[architecture](architecture-road-livraison-tournees.md) — I2
+  positions contiguës, I3 une commande dans au plus une tournée, I7 déplacer
+  entre deux tournées est tout-ou-rien ;
+- la commande n'y est connue que par sa **référence** : la flèche est
+  `b2b → delivery`, par un canal ;
+- **un humain répartit**. Regrouper par zone ou par code postal peut
+  **proposer** un point de départ ; jamais imposer (conception v1, §3).
+
+### Lot 4 — Le chargement, véhicule par véhicule
+
+**Ce que l'équipe obtient** : au dépôt, on choisit le véhicule, on scanne ses
+feuilles d'atelier, et l'écran dit **ce qui manque à ce véhicule** — et crie si
+un sac scanné appartient à **un autre** véhicule. Avec trois véhicules, c'est
+l'erreur probable : le bon sac, dans la mauvaise camionnette.
 
 **Comment** (conception v1, §4) :
 
 - un second lecteur de QR, `referenceOf`, pour `/colisage/{référence}`. Ne pas
   assouplir `tokenOf`, dont le refus est voulu ;
 - la retardataire, sans feuille, se coche à la main, en cas nommé ;
-- saisie manuelle de la référence en repli : `BarcodeDetector` n'existe pas
-  partout (à vérifier sur l'iPhone du livreur, conception v1, §13).
+- saisie manuelle en repli : `BarcodeDetector` n'existe pas partout (à vérifier
+  sur les téléphones des livreurs, conception v1, §13) ;
+- la feuille d'atelier gagnerait à **imprimer le véhicule** — mais elle sort
+  quand la production clôt la journée, souvent avant la composition. À
+  trancher à ce lot : réimprimer, ou étiqueter à part.
 
-**Question ouverte à ce lot** : « chargé » est-il **stocké** ? Sans stockage,
-l'écran sert le matin et s'oublie ; avec, il faut une table, donc le bloc du
-lot 3 avancé d'un cran. Ma recommandation : **ne pas stocker** au premier
-passage, voir si l'équipe s'en sert.
+« Chargé » se **stocke** sur l'arrêt de la tournée : la table existe depuis le
+lot 3.
 
-### Lot 3 — L'ordre des arrêts
-
-**Ce que l'équipe obtient** : sur la feuille de route, on **glisse** les arrêts
-dans l'ordre de passage ; l'ordre est gardé et imprimé ; les fenêtres qui ne
-peuvent pas tenir dans cet ordre sont signalées (deux 8 h – 9 h à vingt
-kilomètres l'un de l'autre).
-
-**Comment** :
-
-- c'est le **premier agrégat** : la tournée du jour (un véhicule), avec ses
-  arrêts ordonnés et l'invariant « positions contiguës et uniques » (I2 de
-  l'[architecture](architecture-road-livraison-tournees.md)) ;
-- d'où le bloc logistique : déclaré dans `lint:context-boundaries`, avec son
-  schéma Postgres choisi explicitement, et la flèche `b2b → delivery` par un
-  canal. C'est là que D6 se tranche pour de bon ;
-- **un humain range**. Un tri par proximité peut proposer un ordre de départ,
-  jamais l'imposer (conception v1, §3).
+### Lot 5 — La tranche d'une heure en livraison (côté commande)
 
 ### Lot 4 — La tranche d'une heure en livraison (côté commande)
 
-Indépendant des trois premiers, et côté **commerce** : rendre la tranche
+Indépendant des autres, et côté **commerce** : rendre la tranche
 obligatoire en livraison, la découper par heure comme `pickupSlots`, et la
 contrôler contre les créneaux de réception de l'adresse (y compris `perDay`).
 Sans ce lot, la feuille de route du lot 1 affiche les fenêtres **par défaut**
@@ -167,21 +203,24 @@ boutique en ligne, qui se fait en ajout (`CLAUDE.md` §0).
 
 ### Plus tard, et seulement sur décision
 
-- **Lot 5 — La porte** : vue livreur, retrait attesté par `handover`, échec
-  consigné. Suppose D2, D4, D5.
-- **Lot 6 — Plusieurs véhicules** : `Vehicle`, `Driver`, et l'algorithme qui
-  **propose** une répartition. Suppose D1 = plus d'un véhicule.
+- **Lot 6 — La porte** : vue livreur, retrait attesté par `handover`, échec
+  consigné. Suppose D2, D4, D5. Avec trois véhicules, un livreur ne doit voir
+  que **sa** tournée : le rôle `livreur` (D2) cesse d'être optionnel.
+- **Lot 7 — La proposition automatique** : l'algorithme de l'architecture
+  (k-medoids puis ordre ATSP) **propose** une répartition que l'humain corrige.
+  Seulement si composer à la main prend trop de temps chaque matin.
 
 ## 4. Par où commencer
 
-**Le lot 1.** Il ne demande aucune décision coûteuse, ne touche ni l'argent ni
-le schéma, et donne dès le premier matin une feuille de route que personne n'a
-aujourd'hui. Il dira aussi, par l'usage, si l'ordre (lot 3) et le chargement
-(lot 2) sont les vrais manques, ou s'il y en a un autre.
+**Le lot 1**, puis **2 et 3 ensemble**. Le lot 1 ne demande aucune décision
+coûteuse, ne touche ni l'argent ni le schéma, et donne dès le premier matin une
+feuille de route que personne n'a aujourd'hui. Les lots 2 et 3 ouvrent le bloc
+logistique : c'est là que se paie le coût d'entrée (porte, schéma, migration),
+une fois.
 
 ## 5. Ce que ce plan n'a pas vérifié
 
-- **Le volume réel** (D1) : rien dans le code ne le dit.
+- **Le nombre de livraisons par jour** : rien dans le code ne le dit. Il décide si le lot 7 sert un jour.
 - **Si le lecteur de file de `handover` peut être étendu sans alourdir le
   comptoir**, qui le lit aussi : à mesurer à la conception du lot 1.
 - **La taille des photos de procédure** servies sur téléphone en extérieur.
