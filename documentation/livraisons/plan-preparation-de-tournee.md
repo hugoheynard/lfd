@@ -298,13 +298,13 @@ répondre le jour d'une tournée manquée.
 resterait pour toujours. Le lot 2 en crée **deux** ; les autres naissent avec
 leur lot.
 
-| Droit                | Ce qu'il ouvre                     | Lot | Lecture                                  | Écriture          |
-| -------------------- | ---------------------------------- | --- | ---------------------------------------- | ----------------- |
-| `delivery_run_sheet` | la feuille de route du jour        | 2   | admin, comptoir, **support, commercial** | admin             |
-| `delivery_settings`  | véhicules, point de départ         | 2   | admin, comptoir                          | admin             |
-| `delivery_rounds`    | composer les tournées              | 3   | admin, comptoir                          | admin             |
-| `delivery_loading`   | le chargement au dépôt             | 4   | admin, comptoir                          | admin, comptoir   |
-| `delivery_doorstep`  | les gestes à la porte (voir lot 6) | 6   | —                                        | le rôle `livreur` |
+| Droit                | Ce qu'il ouvre                     | Lot | Lecture                                  | Écriture              |
+| -------------------- | ---------------------------------- | --- | ---------------------------------------- | --------------------- |
+| `delivery_run_sheet` | la feuille de route du jour        | 2   | admin, comptoir, **support, commercial** | admin                 |
+| `delivery_settings`  | véhicules, point de départ         | 2   | admin, comptoir                          | admin                 |
+| `delivery_rounds`    | composer les tournées              | 3   | admin, comptoir                          | admin, comptoir (Q12) |
+| `delivery_loading`   | le chargement au dépôt             | 4   | admin, comptoir                          | admin, comptoir       |
+| `delivery_doorstep`  | les gestes à la porte (voir lot 6) | 6   | —                                        | le rôle `livreur`     |
 
 `support` et `commercial` gardent la lecture de la feuille de route qu'ils
 avaient par `b2b_orders` (Hugo). La feuille de route n'écrit rien :
