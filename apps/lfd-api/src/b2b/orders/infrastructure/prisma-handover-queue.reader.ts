@@ -5,7 +5,7 @@ import {
   type HandoverQueueEntry,
 } from "../../../handover/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { HANDOVER_QUEUE_SELECT, toQueueEntry } from "./handover-order.query.js";
+import { expectedOnWhere, HANDOVER_QUEUE_SELECT, toQueueEntry } from "./handover-order.query.js";
 
 /**
  * **Ce que le commerce rend au comptoir pour peindre sa file.**
@@ -48,10 +48,7 @@ export class PrismaHandoverQueueReader extends HandoverQueueReader {
 
   async expectedOn(day: string): Promise<readonly HandoverQueueEntry[]> {
     const rows = await this.prisma.order.findMany({
-      where: {
-        requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
-        status: { not: "draft" },
-      },
+      where: expectedOnWhere(day),
       orderBy: { createdAt: "asc" },
       select: HANDOVER_QUEUE_SELECT,
     });

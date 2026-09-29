@@ -21,6 +21,17 @@ export interface OrderFulfillmentInput {
   readonly method: FulfillmentMethod;
   readonly deliveryZoneId: string | null;
   readonly deliveryAddress: BillingAddressPayload | null;
+  /**
+   * L'adresse du CARNET dont vient `deliveryAddress`, ou `null` si elle a été
+   * dictée à la volée. Le snapshot reste ce qui est livré ; le lien sert à
+   * relire ce que l'adresse dit AUJOURD'HUI — consignes, procédure, GPS —
+   * sur la feuille de route (`plan-preparation-de-tournee.md`, lot 1).
+   *
+   * L'appelant ne la passe qu'après l'avoir lue sous le mur de la société
+   * (`DeliveryDefaults.bookAddressId`) ; l'agrégat refuse, lui, un lien sans
+   * société ou hors coursier.
+   */
+  readonly deliveryAddressId: string | null;
   readonly pickupAddress: BillingAddressPayload | null;
 }
 
@@ -97,6 +108,8 @@ export interface OrderToPlace {
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly deliveryZoneId: string | null;
   readonly deliveryAddress: BillingAddressPayload | null;
+  /** Le lien vers le carnet (cf. {@link OrderFulfillmentInput.deliveryAddressId}). */
+  readonly deliveryAddressId: string | null;
   readonly pickupAddress: BillingAddressPayload | null;
   /** L'acheminement convenu, figé (cf. {@link DraftOrderInput.agreed}). */
   readonly agreed: AgreedFulfillment;

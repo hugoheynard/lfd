@@ -3,8 +3,8 @@
  *
  * Deux sens y passent, et ce n'est pas une incohérence :
  *
- * - `HandoverSubjectReader` est une classe **abstraite que le commerce
- *   implémente** — le retrait déclare ce dont il a besoin pour afficher et
+ * - `HandoverSubjectReader`, `HandoverQueueReader` et `DeliveryRunSheetReader`
+ *   sont des classes **abstraites que le commerce implémente** — le retrait déclare ce dont il a besoin pour afficher et
  *   pour juger, il ne va pas le chercher ;
  * - `OrderHandedOverEvent` est un **fait qu'elle publie**, et que le commerce
  *   consomme pour basculer la commande en `fulfilled`.
@@ -15,6 +15,12 @@
  *
  * `lint:context-boundaries` n'autorise `b2b → handover` que par ce chemin.
  */
+export {
+  DeliveryRunSheetReader,
+  type DeliveryRunSheetAddressBook,
+  type DeliveryRunSheetEntry,
+  type DeliveryRunSheetStep,
+} from "./delivery-run-sheet.reader.js";
 export {
   HandoverQueueReader,
   type HandoverQueueEntry,

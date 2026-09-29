@@ -52,7 +52,7 @@ interface NameableRow {
  * personne, par son nom si on le connaît et par son e-mail sinon — jamais un
  * identifiant technique, qui ne dit rien au téléphone ni au comptoir.
  */
-function customerLabelOf(row: NameableRow): string {
+export function customerLabelOf(row: NameableRow): string {
   if (row.company !== null && row.company.raisonSociale !== "") {
     return row.company.raisonSociale;
   }
@@ -73,7 +73,7 @@ function customerLabelOf(row: NameableRow): string {
  * La comparaison est faite ici, au seul endroit qui lit la colonne. Laissée à
  * l'écran, elle serait refaite par chaque écran, et oubliée par un.
  */
-function tradeNameOf(
+export function tradeNameOf(
   company: { readonly enseigne: string } | null,
   customerLabel: string,
 ): string | null {
@@ -97,6 +97,24 @@ function pickupLabelOf(value: Prisma.JsonValue | null): string | null {
 /** Valide un snapshot d'adresse postale figée (retrait ou coursier), ou `null`. */
 function parseAddress(value: Prisma.JsonValue | null): BillingAddressPayload | null {
   return value === null ? null : billingAddressPayloadSchema.parse(value);
+}
+
+/**
+ * **« Attendue ce jour-là »** — le filtre que la file du comptoir et la feuille
+ * de route partagent, écrit UNE fois.
+ *
+ * Deux règles, et elles lisent l'énuméré des statuts du commerce, donc elles
+ * vivent ici : les **brouillons sont écartés** (une commande jamais passée
+ * n'attend personne), les **annulées sont rendues** (c'est à l'état de le dire,
+ * pas à une liste qui les cache). Recopiées dans chaque adaptateur, elles
+ * divergeraient le jour où l'une se corrige — et le comptoir et le livreur
+ * verraient deux journées différentes.
+ */
+export function expectedOnWhere(day: string): Prisma.OrderWhereInput {
+  return {
+    requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
+    status: { not: "draft" },
+  };
 }
 
 /** Ce que la remise lit d'UNE commande. Aucun montant : on ne facture pas ici. */

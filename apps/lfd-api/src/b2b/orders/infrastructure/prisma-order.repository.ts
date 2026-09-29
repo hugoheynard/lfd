@@ -86,6 +86,9 @@ export class PrismaOrderRepository extends OrderRepository {
         fulfillmentMethod: state.fulfillmentMethod,
         deliveryZoneId: state.deliveryZoneId,
         deliveryAddressSnapshot: state.deliveryAddress ?? Prisma.DbNull,
+        // Le lien vers le carnet, confirmé sous le mur avant d'entrer dans
+        // l'agrégat : la feuille de route y relit consignes et procédure.
+        deliveryAddressId: state.deliveryAddressId,
         pickupAddress: state.pickupAddress ?? Prisma.DbNull,
         // L'acheminement convenu, figé avec sa provenance — plus jamais relu.
         fulfillment: toFulfillmentJson(state.agreed),

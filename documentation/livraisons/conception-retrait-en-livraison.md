@@ -301,6 +301,13 @@ seul endroit où le commerce et le retrait se rencontrent ; en écrire un second
 rouvrirait les deux vérités que le chantier vient de fermer. La livraison
 **étend** ce port, elle n'en crée pas un jumeau.
 
+> ⚠️ **Tenu autrement le 2026-09-29** (lot 1 de
+> [`plan-preparation-de-tournee.md`](plan-preparation-de-tournee.md)) : la
+> feuille de route a son propre port, `DeliveryRunSheetReader`, pour que le
+> comptoir ne paie pas adresses et procédures. Ce qui fondait l'interdiction
+> est gardé : le filtre « attendu ce jour » (`expectedOnWhere`) et l'état
+> (`queueStateOf`) sont **partagés**, écrits une seule fois.
+
 ---
 
 ## 9. Où ça vit — 🔴 corrigé

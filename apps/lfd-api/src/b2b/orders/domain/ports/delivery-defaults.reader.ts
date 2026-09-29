@@ -13,6 +13,17 @@ export interface DeliveryDefaults {
   readonly contact: DeliveryContact | null;
   readonly signatureRequired: boolean;
   readonly window: FulfillmentWindow | null;
+  /**
+   * L'adresse du carnet, **confirmée sous le mur** de la société — ou `null`
+   * quand elle n'y est pas (inconnue, ou d'une autre maison).
+   *
+   * 🔴 C'est ce qui rend le lien `orders.delivery_address_id` sûr à écrire :
+   * l'identifiant vient du corps de la commande, et seul un identifiant rendu
+   * ICI a été lu avec `company_id` dans le `where`. Écrire celui du corps
+   * relierait la commande d'un client aux consignes et à la procédure d'une
+   * autre maison, que la feuille de route servirait ensuite au livreur.
+   */
+  readonly bookAddressId: string | null;
 }
 
 /** Aucun réglage : adresse dictée à la volée, ou adresse sans consignes. */
@@ -20,6 +31,7 @@ export const NO_DELIVERY_DEFAULTS: DeliveryDefaults = {
   contact: null,
   signatureRequired: false,
   window: null,
+  bookAddressId: null,
 };
 
 export abstract class DeliveryDefaultsReader {

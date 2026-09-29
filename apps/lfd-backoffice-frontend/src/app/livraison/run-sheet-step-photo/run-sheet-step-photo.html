@@ -1,0 +1,13 @@
+@switch (state().status) {
+  @case ('loading') {
+    <fold-spinner size="sm" label="Lecture de la photo" />
+  }
+  @case ('error') {
+    <fold-callout variant="alert" data-photo-error>Photo illisible.</fold-callout>
+  }
+  @case ('ready') {
+    <a class="open" [href]="url()" target="_blank" rel="noopener">
+      <img class="photo" [src]="url()" [alt]="'Photo de l’étape « ' + stepTitle() + ' »'" />
+    </a>
+  }
+}

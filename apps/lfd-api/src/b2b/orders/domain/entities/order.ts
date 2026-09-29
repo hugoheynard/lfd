@@ -73,7 +73,7 @@ export class Order {
     if (input.discountCents < 0 || input.deliveryFeeCents < 0 || input.lateFeeCents < 0) {
       throw new InvalidOrderPaymentError("Remise, frais et surtaxe doivent être positifs.");
     }
-    const fulfillment = normalizeFulfillment(input.fulfillment);
+    const fulfillment = normalizeFulfillment(input.fulfillment, input.companyId);
     // 🔴 **L'audience est décidée UNE fois, ici** — le seul endroit qui la
     // connaisse au moment où elle est encore vraie. Chaque ligne scelle alors
     // son taxe compris, ou ne le scelle pas ; le document, plus tard, n'a plus
@@ -171,6 +171,7 @@ export class Order {
       fulfillmentMethod: this.fulfillment.method,
       deliveryZoneId: this.fulfillment.deliveryZoneId,
       deliveryAddress: this.fulfillment.deliveryAddress,
+      deliveryAddressId: this.fulfillment.deliveryAddressId,
       pickupAddress: this.fulfillment.pickupAddress,
       agreed: this.agreed,
       requestedDeliveryDate: this.requestedDeliveryDate,

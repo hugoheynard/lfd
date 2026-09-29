@@ -33,16 +33,20 @@ export class PrismaDeliveryDefaultsReader extends DeliveryDefaultsReader {
     const row = await this.prisma.address.findFirst({
       where: { id: addressId, companyId },
       select: {
+        id: true,
         deliverySpecs: true,
         company: { select: { deliverySignatureRequired: true } },
       },
     });
-    const floor = row?.company.deliverySignatureRequired ?? false;
-    const specs = deliverySpecsSchema.safeParse(row?.deliverySpecs);
+    if (row === null) {
+      return NO_DELIVERY_DEFAULTS;
+    }
+    const floor = row.company.deliverySignatureRequired;
+    const specs = deliverySpecsSchema.safeParse(row.deliverySpecs);
     if (!specs.success) {
       // Une adresse sans consignes lisibles hérite : elle n'a jamais rien
       // décidé, et le socle de la société est ce qu'il reste de vrai.
-      return { ...NO_DELIVERY_DEFAULTS, signatureRequired: floor };
+      return { ...NO_DELIVERY_DEFAULTS, signatureRequired: floor, bookAddressId: row.id };
     }
     return {
       contact: specs.data.deliveryContact,
@@ -56,6 +60,7 @@ export class PrismaDeliveryDefaultsReader extends DeliveryDefaultsReader {
       // de faire dépendre le défaut de la date — à faire le jour où le besoin
       // se présente, pas à deviner ici.
       window: specs.data.slots.mode === "everyday" ? specs.data.slots.slot : null,
+      bookAddressId: row.id,
     };
   }
 }

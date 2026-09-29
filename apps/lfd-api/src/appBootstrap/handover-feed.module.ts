@@ -1,14 +1,21 @@
 import { Global, Module } from "@nestjs/common";
 
 import { OrdersModule } from "../b2b/orders/orders.module.js";
+import { PrismaDeliveryRunSheetReader } from "../b2b/orders/infrastructure/prisma-delivery-run-sheet.reader.js";
 import { PrismaHandoverQueueReader } from "../b2b/orders/infrastructure/prisma-handover-queue.reader.js";
 import { PrismaHandoverSubjectReader } from "../b2b/orders/infrastructure/prisma-handover-subject.reader.js";
-import { HandoverQueueReader, HandoverSubjectReader } from "../handover/channels/commerce/index.js";
+import {
+  DeliveryRunSheetReader,
+  HandoverQueueReader,
+  HandoverSubjectReader,
+} from "../handover/channels/commerce/index.js";
 import { PrismaAttestedHandoversReader } from "../handover/infrastructure/prisma-attested-handovers.reader.js";
 import {
+  AtelierSheetsReader,
   AttestedHandoversReader,
   QualityHoldsReader,
 } from "../production/channels/handover/index.js";
+import { PrismaAtelierSheetsReader } from "../production/infrastructure/prisma-atelier-sheets.reader.js";
 import { PrismaQualityHoldsReader } from "../production/infrastructure/prisma-quality-holds.reader.js";
 import { ProductionModule } from "../production/production.module.js";
 
@@ -18,14 +25,15 @@ import { ProductionModule } from "../production/production.module.js";
  * Ce module est le seul du dossier à brancher un port **dans chaque sens**, et
  * c'est ce qui le rend instructif :
  *
- * - `HandoverSubjectReader` et `HandoverQueueReader` — la **remise déclare**, le
- *   commerce implémente. Le comptoir a besoin de la commande derrière un jeton,
- *   et de la file du jour ; il ne va lire ni l'une ni l'autre.
+ * - `HandoverSubjectReader`, `HandoverQueueReader` et `DeliveryRunSheetReader`
+ *   — la **remise déclare**, le commerce implémente. Le comptoir a besoin de la
+ *   commande derrière un jeton, de la file du jour, et la feuille de route des
+ *   livraisons ; il ne va lire aucune des trois.
  * - `AttestedHandoversReader` — la **production déclare**, la remise implémente.
  *   Le fournil a besoin de savoir ce qui a été attesté depuis sa clôture ; il ne
  *   va pas le lire non plus.
- * - `QualityHoldsReader` — la **production publie ET implémente**, la remise
- *   lit. Le comptoir demande quelles commandes un contrôle retient ; la
+ * - `QualityHoldsReader` et `AtelierSheetsReader` — la **production publie ET
+ *   implémente**, la remise lit. Le comptoir demande quelles commandes un contrôle retient ; la
  *   réponse est un fait de la production (`plan-controle-qualite.md`, D4).
  *
  * 🔴 Aucun des trois contextes ne connaît les deux autres. C'est la racine de
@@ -46,12 +54,16 @@ import { ProductionModule } from "../production/production.module.js";
     { provide: HandoverQueueReader, useClass: PrismaHandoverQueueReader },
     { provide: AttestedHandoversReader, useClass: PrismaAttestedHandoversReader },
     { provide: QualityHoldsReader, useClass: PrismaQualityHoldsReader },
+    { provide: DeliveryRunSheetReader, useClass: PrismaDeliveryRunSheetReader },
+    { provide: AtelierSheetsReader, useClass: PrismaAtelierSheetsReader },
   ],
   exports: [
     HandoverSubjectReader,
     HandoverQueueReader,
     AttestedHandoversReader,
     QualityHoldsReader,
+    DeliveryRunSheetReader,
+    AtelierSheetsReader,
   ],
 })
 export class HandoverFeedModule {}

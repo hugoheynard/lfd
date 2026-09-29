@@ -95,7 +95,7 @@ avoir tranchées.
 
 Chaque lot est utilisable seul, le matin même où il est livré.
 
-### Lot 1 — La feuille de route du jour (lecture seule)
+### Lot 1 — La feuille de route du jour (lecture seule) — ✅ bâti le 2026-09-29
 
 **Ce que l'équipe obtient** : sur `/livraison`, pour un jour donné, la liste des
 livraisons, triées par fenêtre, avec pour chacune :
@@ -110,18 +110,54 @@ livraisons, triées par fenêtre, avec pour chacune :
 
 Imprimable, lisible sur téléphone. **Aucun montant.**
 
-**Comment** :
+> 🔴 **Découvert en ouvrant le lot (2026-09-29) : une commande ne sait pas à
+> quelle adresse du carnet elle va.** Elle ne garde que la copie postale figée
+> (`delivery_address_snapshot`). La colonne `orders.delivery_address_id` existe,
+> mais rien ne l'écrit : la passation lit `deliveryAddressId` pour préremplir
+> contact et fenêtre, puis l'oublie. Sans ce lien, la feuille de route ne peut
+> pas atteindre la procédure, la note ni le point GPS de l'adresse. Le lot 1
+> écrit donc ce lien à la passation, sans migration puisque la colonne existe.
+> **Les commandes déjà passées restent sans lien** : l'écran le dit
+> (« adresse non reliée au carnet ») plutôt que de deviner l'adresse en
+> comparant des textes.
+>
+> Décidé au même moment : une route à part (`GET admin/livraison/feuille-de-route`),
+> sous le droit `b2b_orders` qui garde déjà `/livraison`. Un port séparé du
+> lecteur de file, pour que le comptoir ne paie pas adresses et procédures, mais
+> qui **partage** le filtre « attendu ce jour » : pas de seconde vérité sur ce
+> qui part. Les photos de procédure passent par la route existante, gardée par
+> `b2b_companies` : qui n'a pas ce droit voit les étapes sans photo.
 
-- côté serveur, **étendre** le port de lecture de la file du jour de `handover`
-  (conception v1, §8 : pas de lecteur jumeau) avec ce qui manque pour une
-  livraison : adresse, contact, consignes, procédure ;
-- la procédure vit dans `b2b/account` : le commerce l'expose par le même canal
-  (`handover/channels/commerce/`), `handover` ne lit pas le compte ;
-- côté front, remplir `livraison-page.ts`.
+**Ce qui a été bâti** (2026-09-29) :
 
-**Pas de schéma, pas de migration, pas de bloc neuf.** Fini quand : une
-commande livrée demain apparaît avec sa procédure, et une commande au comptoir
-n'apparaît pas.
+- **le lien d'adresse** est écrit à la passation, par l'agrégat, pour les trois
+  portes (client, équipe, boutique) : `delivery-defaults.reader` rend
+  l'adresse du carnet **confirmée sous le mur** de la société, `null` sinon.
+  Une adresse d'une autre société ne fait pas refuser la commande : elle n'est
+  simplement pas reliée, comme les consignes l'étaient déjà ;
+- **un port séparé**, `DeliveryRunSheetReader` (`handover/channels/commerce/`),
+  et non une extension du lecteur de file comme ce plan le disait d'abord. Il
+  partage avec la file le **filtre** « attendu ce jour » (`expectedOnWhere`) et
+  l'**état** (`queueStateOf`) : pas de seconde vérité sur ce qui part, et le
+  comptoir ne paie pas adresses et procédures ;
+- **consignes et procédure lues sous le mur** `(id, company_id)`, jamais par la
+  relation `deliveryAddress`, qui ne porte pas de `where` ;
+- **« sans feuille d'atelier »** vient de la production (`AtelierSheetsReader`,
+  câblé comme `QualityHoldsReader`). Il n'est vrai **que si la journée de
+  production est close** et que la commande n'est pas dans son plan : journée
+  ouverte, toutes les livraisons du lendemain crieraient ;
+- `GET admin/livraison/feuille-de-route?jour=`, sous `b2b_orders` ; la photo
+  d'étape porte sa révision (`photoRevision`, la même que la vue de procédure
+  staff), donc le cache sert d'une lecture à l'autre ;
+- l'écran `/livraison` : choix du jour (Demain par défaut), en-tête chiffré,
+  arrêts triés par fenêtre, bouton Imprimer.
+
+**Pas de schéma, pas de migration, pas de bloc neuf.**
+
+**Ce qui reste de ce lot** : à l'impression, le menu du back-office s'imprime
+aussi (le shell fold n'a pas de règle d'impression, et aucune règle globale
+n'existe) ; le jour choisi n'est pas dans l'URL ; le lien carte ouvre Google
+Maps.
 
 ### Lot 2 — Les véhicules, en données
 
@@ -189,8 +225,6 @@ l'erreur probable : le bon sac, dans la mauvaise camionnette.
 lot 3.
 
 ### Lot 5 — La tranche d'une heure en livraison (côté commande)
-
-### Lot 4 — La tranche d'une heure en livraison (côté commande)
 
 Indépendant des autres, et côté **commerce** : rendre la tranche
 obligatoire en livraison, la découper par heure comme `pickupSlots`, et la

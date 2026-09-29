@@ -2,12 +2,14 @@ import { Module } from "@nestjs/common";
 
 import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
 import { ConfirmManualHandoverHandler } from "./application/commands/confirm-manual-handover.handler.js";
+import { GetDeliveryRunSheetHandler } from "./application/queries/get-delivery-run-sheet.handler.js";
 import { GetHandoverByOrderHandler } from "./application/queries/get-handover-by-order.handler.js";
 import { GetHandoverQueueHandler } from "./application/queries/get-handover-queue.handler.js";
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { HandoverAttestation } from "./application/services/handover-attestation.service.js";
 import { HandoverAttestationsReader } from "./domain/ports/handover-attestations.reader.js";
 import { OrderHandoverRepository } from "./domain/ports/order-handover.repository.js";
+import { DeliveryRunSheetController } from "./http/delivery-run-sheet.controller.js";
 import { HandoverController } from "./http/handover.controller.js";
 import { HandoverSupervisionController } from "./http/handover-supervision.controller.js";
 import { PrismaHandoverAttestationsReader } from "./infrastructure/prisma-handover-attestations.reader.js";
@@ -28,10 +30,11 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
  * comme implémentation du port d'un autre.
  */
 @Module({
-  controllers: [HandoverController, HandoverSupervisionController],
+  controllers: [HandoverController, HandoverSupervisionController, DeliveryRunSheetController],
   providers: [
     ConfirmHandoverHandler,
     ConfirmManualHandoverHandler,
+    GetDeliveryRunSheetHandler,
     GetHandoverByOrderHandler,
     GetHandoverHandler,
     GetHandoverQueueHandler,

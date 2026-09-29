@@ -50,6 +50,7 @@ function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
       method: "pickup",
       deliveryZoneId: null,
       deliveryAddress: null,
+      deliveryAddressId: null,
       pickupAddress: ADDRESS,
     },
     requestedDeliveryDate: null,
@@ -122,6 +123,7 @@ describe("Order.draft — calcul monétaire", () => {
         method: "delivery",
         deliveryZoneId: "z1",
         deliveryAddress: ADDRESS,
+        deliveryAddressId: null,
         pickupAddress: null,
       },
       deliveryFeeCents: 2000,
@@ -299,6 +301,7 @@ describe("Order.draft — acheminement", () => {
             method: "pickup",
             deliveryZoneId: null,
             deliveryAddress: null,
+            deliveryAddressId: null,
             pickupAddress: null,
           },
         }),
@@ -313,6 +316,7 @@ describe("Order.draft — acheminement", () => {
         method: "delivery",
         deliveryZoneId: "z1",
         deliveryAddress: ADDRESS,
+        deliveryAddressId: null,
         pickupAddress: ADDRESS,
       },
     });
@@ -327,11 +331,58 @@ describe("Order.draft — acheminement", () => {
             method: "delivery",
             deliveryZoneId: "z1",
             deliveryAddress: null,
+            deliveryAddressId: null,
             pickupAddress: null,
           },
         }),
       ),
     ).toThrow(InvalidOrderFulfillmentError);
+  });
+});
+
+describe("Order — le lien vers le carnet d'adresses", () => {
+  const delivered = (deliveryAddressId: string | null): DraftOrderInput["fulfillment"] => ({
+    method: "delivery",
+    deliveryZoneId: "z1",
+    deliveryAddress: ADDRESS,
+    deliveryAddressId,
+    pickupAddress: null,
+  });
+
+  /**
+   * Régression : `orders.delivery_address_id` n'était écrit par RIEN — la
+   * feuille de route ne pouvait atteindre ni la procédure ni la note de
+   * l'adresse livrée (constaté le 2026-09-29).
+   */
+  it("🔴 porte le lien jusqu'à la persistance sur une livraison de société", () => {
+    const state = deferred({ companyId: "cmp_1", fulfillment: delivered("addr_1") });
+    expect(state.deliveryAddressId).toBe("addr_1");
+  });
+
+  it("coupe le lien sur un retrait", () => {
+    const state = deferred({
+      companyId: "cmp_1",
+      fulfillment: {
+        method: "pickup",
+        deliveryZoneId: null,
+        deliveryAddress: null,
+        deliveryAddressId: "addr_1",
+        pickupAddress: ADDRESS,
+      },
+    });
+    expect(state.deliveryAddressId).toBeNull();
+  });
+
+  it("refuse un lien sur une commande sans société : il ne désignerait que le carnet d'un autre", () => {
+    expect(() =>
+      Order.draft(draftInput({ companyId: null, fulfillment: delivered("addr_1") })),
+    ).toThrow(InvalidOrderFulfillmentError);
+  });
+
+  it("laisse `null` une adresse dictée à la volée", () => {
+    expect(
+      deferred({ companyId: "cmp_1", fulfillment: delivered(null) }).deliveryAddressId,
+    ).toBeNull();
   });
 });
 
@@ -433,6 +484,7 @@ describe("Order — le bon de fidélité", () => {
         method: "delivery",
         deliveryZoneId: "zone_1",
         deliveryAddress: ADDRESS,
+        deliveryAddressId: null,
         pickupAddress: null,
       },
       deliveryFeeCents: 1_000,

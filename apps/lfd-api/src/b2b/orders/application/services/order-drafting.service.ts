@@ -14,14 +14,11 @@ import { CartAdjustments } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
 import { type DeliveryContact, type FulfillmentWindow } from "@lfd/contracts";
 import {
+  type DeliveryDefaults,
   DeliveryDefaultsReader,
   NO_DELIVERY_DEFAULTS,
 } from "../../domain/ports/delivery-defaults.reader.js";
-import {
-  agreeFulfillment,
-  type FulfillmentDefaults,
-  windowFitsPickup,
-} from "../../domain/services/agreed-fulfillment.js";
+import { agreeFulfillment, windowFitsPickup } from "../../domain/services/agreed-fulfillment.js";
 import { Order, type OrderVoucher } from "../../domain/entities/order.js";
 import {
   InvalidOrderFulfillmentError,
@@ -172,13 +169,14 @@ export class OrderDrafting {
     // sur chaque commande, pour un réglage que la plupart des maisons n'ont pas,
     // se paierait sur toutes les commandes à l'heure.
     const late = await this.lateFeeFor(waiverUsed, subtotalCents);
+    const defaults = await this.defaultsFor(content, parties);
     const agreed = agreeFulfillment(
       {
         window: content.requestedWindow,
         contact: content.deliveryContact,
         signatureRequired: content.signatureRequired,
       },
-      await this.defaultsFor(content, parties),
+      defaults,
     );
     const order = Order.draft({
       agreed,
@@ -189,6 +187,10 @@ export class OrderDrafting {
         method: content.fulfillmentMethod,
         deliveryZoneId: acheminement.deliveryZoneId,
         deliveryAddress: acheminement.deliveryAddress,
+        // 🔴 Jamais `content.deliveryAddressId` : celui-là vient du corps de la
+        // requête. Seul l'identifiant relu sous le mur de la société est lié —
+        // une adresse d'une autre maison retombe sur `null`, sans refus.
+        deliveryAddressId: defaults.bookAddressId,
         pickupAddress: acheminement.pickupAddress,
       },
       requestedDeliveryDate: content.requestedDeliveryDate
@@ -331,7 +333,7 @@ export class OrderDrafting {
   private async defaultsFor(
     content: OrderContent,
     parties: OrderParties,
-  ): Promise<FulfillmentDefaults> {
+  ): Promise<DeliveryDefaults> {
     if (
       content.fulfillmentMethod === "pickup" ||
       content.deliveryAddressId === null ||

@@ -1,4 +1,4 @@
-import type { HandoverQueueEntryView, HandoverQueueState, HandoverQueueView } from "@lfd/contracts";
+import type { HandoverQueueEntryView, HandoverQueueView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { HandoverQueueReader, type HandoverQueueEntry } from "../../channels/commerce/index.js";
@@ -6,6 +6,7 @@ import {
   HandoverAttestationsReader,
   type AttestedHandover,
 } from "../../domain/ports/handover-attestations.reader.js";
+import { queueStateOf } from "../../domain/services/queue-state.js";
 import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
 import { GetHandoverQueueQuery } from "./get-handover-queue.query.js";
 
@@ -65,7 +66,7 @@ function toEntryView(
   attestation: AttestedHandover | undefined,
   held: boolean,
 ): HandoverQueueEntryView {
-  const state = stateOf(entry, attestation);
+  const state = queueStateOf(entry, attestation);
   return {
     orderId: entry.orderId,
     reference: entry.reference,
@@ -86,32 +87,4 @@ function toEntryView(
     handedOverVia: attestation?.via ?? null,
     readyAt: entry.readyAt === null ? null : entry.readyAt.toISOString(),
   };
-}
-
-/**
- * **L'état tel que le comptoir le lit**, et non le statut brut du commerce.
- *
- * L'ordre des tests est la règle métier, pas une commodité :
- *
- * 1. 🔴 **`handed_over` gagne sur tout**, y compris sur une annulation. Une
- *    commande retirée est retirée — le sac est parti. Laisser une annulation
- *    postérieure repeindre la ligne ferait mentir l'écran sur un fait physique,
- *    et c'est exactement le jour où on a besoin de le relire.
- * 2. `cancelled` ensuite : rien ne partira, et il faut pouvoir le dire à
- *    quelqu'un qui se présente.
- * 3. `ready` quand le fournil l'a déclarée prête.
- * 4. `expected` sinon — y compris pour une commande jamais colisée, qui reste
- *    remettable (`handoverBlocker` est volontairement permissif).
- */
-function stateOf(
-  entry: HandoverQueueEntry,
-  attestation: AttestedHandover | undefined,
-): HandoverQueueState {
-  if (attestation !== undefined) {
-    return "handed_over";
-  }
-  if (entry.status === "cancelled") {
-    return "cancelled";
-  }
-  return entry.readyAt === null ? "expected" : "ready";
 }

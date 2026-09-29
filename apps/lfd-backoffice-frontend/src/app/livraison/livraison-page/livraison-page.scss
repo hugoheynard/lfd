@@ -1,0 +1,51 @@
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.day-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+.flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.flags:empty {
+  display: none;
+}
+
+.line {
+  display: block;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding-inline-start: var(--fold-space-lg);
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+/* Une feuille propre : ni choix du jour, ni bouton, et un arrêt ne se coupe
+   pas entre deux pages — on perdrait son adresse en tournant la feuille. */
+@media print {
+  .no-print {
+    display: none;
+  }
+
+  .stop {
+    break-inside: avoid;
+  }
+}

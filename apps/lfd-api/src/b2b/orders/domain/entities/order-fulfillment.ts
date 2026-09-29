@@ -25,16 +25,30 @@ export function clienteleOf(companyId: string | null): OrderClientele {
 /**
  * Coursier ⇒ zone + adresse requises, pas de point ; retrait ⇒ point requis, pas
  * de zone ni d'adresse. Coupe le résidu pour ne rien figer d'incohérent.
+ *
+ * Le lien vers le carnet suit la même règle : coupé en retrait, et REFUSÉ sur
+ * une commande sans société — une adresse du carnet appartient toujours à une
+ * société, et un lien sans elle ne pourrait désigner que celle d'un autre.
  */
-export function normalizeFulfillment(fulfillment: OrderFulfillmentInput): OrderFulfillmentInput {
+export function normalizeFulfillment(
+  fulfillment: OrderFulfillmentInput,
+  companyId: string | null,
+): OrderFulfillmentInput {
   if (fulfillment.method === "delivery") {
     if (fulfillment.deliveryZoneId === null || fulfillment.deliveryAddress === null) {
       throw new InvalidOrderFulfillmentError("Un coursier exige une zone et une adresse.");
+    }
+    if (fulfillment.deliveryAddressId !== null && companyId === null) {
+      throw new InvalidOrderFulfillmentError(
+        "Une commande sans société ne peut pas être reliée à une adresse du carnet : " +
+          "saisir l'adresse de livraison à la volée, ou passer la commande pour la société.",
+      );
     }
     return {
       method: "delivery",
       deliveryZoneId: fulfillment.deliveryZoneId,
       deliveryAddress: fulfillment.deliveryAddress,
+      deliveryAddressId: fulfillment.deliveryAddressId,
       pickupAddress: null,
     };
   }
@@ -45,6 +59,7 @@ export function normalizeFulfillment(fulfillment: OrderFulfillmentInput): OrderF
     method: fulfillment.method,
     deliveryZoneId: null,
     deliveryAddress: null,
+    deliveryAddressId: null,
     pickupAddress: fulfillment.pickupAddress,
   };
 }

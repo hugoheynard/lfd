@@ -52,6 +52,7 @@
   "test/delivery-availability.e2e-spec.ts": 2769,
   "test/delivery-procedure-refusals.e2e-spec.ts": 7606,
   "test/delivery-procedure.e2e-spec.ts": 4847,
+  "test/delivery-run-sheet.e2e-spec.ts": 9000,
   "test/devis-comptable.e2e-spec.ts": 3666,
   "test/direct-debit-blocks.e2e-spec.ts": 4964,
   "test/families-in-data-migration.e2e-spec.ts": 3943,

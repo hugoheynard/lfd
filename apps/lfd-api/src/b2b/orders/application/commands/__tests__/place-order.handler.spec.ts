@@ -80,6 +80,26 @@ import { CatalogVersionReader } from "../../../../catalog/domain/ports/catalog-v
  * Les cas de préremplissage sont couverts par `agreed-fulfillment.spec` — ici on
  * exerce le handler, pas la règle de provenance.
  */
+/**
+ * Un carnet d'adresses MURÉ : ne rend l'adresse que pour la société qui la
+ * possède, comme l'adaptateur Prisma (`company_id` dans le `where`).
+ */
+class WalledAddressBook extends DeliveryDefaultsReader {
+  constructor(
+    private readonly addressId: string,
+    private readonly ownerCompanyId: string,
+  ) {
+    super();
+  }
+
+  of(addressId: string, companyId: string): Promise<DeliveryDefaults> {
+    const owned = addressId === this.addressId && companyId === this.ownerCompanyId;
+    return Promise.resolve(
+      owned ? { ...NO_DELIVERY_DEFAULTS, bookAddressId: addressId } : NO_DELIVERY_DEFAULTS,
+    );
+  }
+}
+
 function noDeliveryDefaults(): DeliveryDefaultsReader {
   return { of: (): Promise<DeliveryDefaults> => Promise.resolve(NO_DELIVERY_DEFAULTS) };
 }
@@ -377,6 +397,7 @@ function drafting(
     readonly status?: CompanyStatusOf | null;
     readonly delivery?: DeliveryAvailabilityView;
     readonly sale?: SaleOperations;
+    readonly book?: DeliveryDefaultsReader;
   } = {},
 ): OrderDrafting {
   return new OrderDrafting(
@@ -402,7 +423,7 @@ function drafting(
     ),
     versions,
     new CartAdjustments(pickupsDouble, zonesDouble, deliveryAvailability(audience.delivery)),
-    noDeliveryDefaults(),
+    audience.book ?? noDeliveryDefaults(),
     noOrderCutoffs,
     new FixedClock(PRICED_AT),
     catalog,
@@ -952,6 +973,55 @@ describe("PlaceOrderHandler", () => {
     expect(sink.placed?.deliveryFeeCents).toBe(2000);
     expect(sink.placed?.vatCents).toBe(400);
     expect(sink.placed?.totalCents).toBe(2800);
+  });
+
+  describe("le lien vers le carnet d'adresses", () => {
+    async function placeDeliveryFor(companyId: string): Promise<OrderToPlace | null> {
+      const sink = { placed: null as OrderToPlace | null };
+      const handler = new PlaceOrderHandler(
+        guard("orders", "active"),
+        drafting(pickups(), zones(TARENTAISE), versionsAt(CURRENT_VERSION), {
+          book: new WalledAddressBook("addr_c1", "c1"),
+        }),
+        capturingRepo(sink),
+        payments(),
+        events(),
+        noWaivers,
+        new FixedClock(PRICED_AT),
+        freeKeys,
+        noReader,
+        directWork,
+        new FixedVoucherQuotes(),
+        new RecordingRedemption(),
+      );
+      await handler.execute(
+        new PlaceOrderCommand(
+          "u1",
+          payload({
+            fulfillmentMethod: "delivery",
+            deliveryAddress: COURIER_ADDR,
+            deliveryAddressId: "addr_c1",
+          }),
+          companyId,
+        ),
+      );
+      return sink.placed;
+    }
+
+    /**
+     * Régression : `orders.delivery_address_id` n'était écrit par RIEN, et la
+     * feuille de route ne pouvait atteindre ni la procédure ni la note de
+     * l'adresse livrée (constaté le 2026-09-29).
+     */
+    it("🔴 écrit le lien quand l'adresse est dans le carnet de la société", async () => {
+      expect((await placeDeliveryFor("c1"))?.deliveryAddressId).toBe("addr_c1");
+    });
+
+    it("🔴 n'écrit PAS le lien vers l'adresse d'une autre société — la commande passe quand même", async () => {
+      const placed = await placeDeliveryFor("c2");
+      expect(placed?.deliveryAddressId).toBeNull();
+      expect(placed?.deliveryAddress).toEqual(COURIER_ADDR);
+    });
   });
 
   it("refuse le COURSIER vers un code postal qu'AUCUNE zone ne dessert, sans rien écrire", async () => {
