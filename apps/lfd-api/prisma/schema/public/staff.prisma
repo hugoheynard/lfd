@@ -85,6 +85,11 @@ enum StaffResource {
   /// La VITRINE — composer les pages de la boutique (2026-09-24,
   /// `plan-vitrine-enregistrement.md`, D7).
   b2b_storefront
+  /// La FEUILLE DE ROUTE du jour, sortie de `b2b_orders` (2026-09-29,
+  /// `plan-preparation-de-tournee.md`, Q7/Q8).
+  delivery_run_sheet
+  /// Les RÉGLAGES DE LIVRAISON — véhicules et point de départ (2026-09-29).
+  delivery_settings
 
   staff_access
   staff_notifications

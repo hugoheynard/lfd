@@ -38,7 +38,7 @@ export class UpdatePickupAddressHandler implements ICommandHandler<
    * @throws {PickupDiscountWithoutAudienceError} la remise ne vise personne.
    */
   async execute(command: UpdatePickupAddressCommand): Promise<void> {
-    const { discount, discountAudiences, ...fields } = command.payload;
+    const { discount, discountAudiences, gps, ...fields } = command.payload;
     await this.uow.run(async () => {
       const current = await this.pickups.resolve(command.id);
       if (current === null) {
@@ -47,6 +47,9 @@ export class UpdatePickupAddressHandler implements ICommandHandler<
       const point: PickupAddressWrite = {
         ...fields,
         discount: PickupDiscount.of(discount, discountAudiences ?? current.discountAudiences),
+        // Absent = inchangé, comme les clientèles : un onglet ouvert avant le
+        // champ n'efface pas une position saisie.
+        gps: gps === undefined ? (current.gps ?? null) : gps,
       };
       await this.pickups.update(command.id, point);
       await this.events.publishTraced(new PickupAddressUpdatedEvent(command.id, point));

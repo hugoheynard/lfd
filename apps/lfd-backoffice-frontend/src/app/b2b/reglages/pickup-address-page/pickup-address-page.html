@@ -100,6 +100,41 @@
       </fold-page-section>
     </fold-card>
 
+    <!-- LE POINT GPS, facultatif : d'ici partent les distances quand ce point
+         est le départ des tournées. Sous l'adresse qu'il précise, dans sa
+         propre carte parce qu'il ne se lit pas comme une ligne d'adresse. -->
+    <fold-card>
+      <fold-page-section title="Point GPS" separator>
+        <p class="pa-said">
+          Facultatif. Il sert au départ des tournées de livraison&nbsp;: sans lui, aucune distance
+          ne part de ce point. Degrés décimaux, par exemple 48,8566 et 2,3522.
+        </p>
+        <div class="pa-gps">
+          <fold-number-input
+            label="Latitude"
+            optional
+            [min]="-90"
+            [max]="90"
+            [step]="0.000001"
+            [value]="gps().lat"
+            (valueChange)="setGps('lat', $event)"
+          />
+          <fold-number-input
+            label="Longitude"
+            optional
+            [min]="-180"
+            [max]="180"
+            [step]="0.000001"
+            [value]="gps().lng"
+            (valueChange)="setGps('lng', $event)"
+          />
+        </div>
+        @if (gpsIssue(); as issue) {
+          <fold-callout variant="warning">{{ issue }}</fold-callout>
+        }
+      </fold-page-section>
+    </fold-card>
+
     <!-- Les créneaux PUBLICS, juste après les heures PRO : deux horaires qui se
          lisent l'un après l'autre, et qui ne se mélangent jamais. La carte a
          son propre enregistrement — son refus (le chevauchement) ne doit pas

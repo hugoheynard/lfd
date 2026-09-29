@@ -244,6 +244,41 @@ const orderAbandoned: Phrase = (fact) => {
   );
 };
 
+/** « le véhicule « Kangoo blanc » (AB-123-CD) » — le nom du moment, puis la plaque. */
+function vehicle(fact: PhraseFact): Segment[] {
+  const label = subjectLabelOf(fact);
+  const plate = optional(fact.payload['plate']);
+  return [
+    ...(label === null
+      ? [text('un véhicule')]
+      : [text('le véhicule « '), subject(fact, label), text(' »')]),
+    ...(plate === null ? [] : [text(' ('), value(plate), text(')')]),
+  ];
+}
+
+/** « Kangoo blanc (AB-123-CD) » — une identité de véhicule, avant ou après. */
+function vehicleIdentity(raw: unknown): Segment[] {
+  const identity = recordOf(raw);
+  return [
+    value(orDash(identity?.['name'])),
+    text(' ('),
+    value(orDash(identity?.['plate'])),
+    text(')'),
+  ];
+}
+
+/** Un geste nommé sur un véhicule : « a retiré le véhicule « … » (…) de la flotte ». */
+function onVehicle(verb: string, tail = ''): Phrase {
+  return (fact) =>
+    byActor(
+      fact,
+      [text(`${verb} `), ...vehicle(fact), ...(tail === '' ? [] : [text(tail)])],
+      ['subjectLabel', 'plate'],
+    );
+}
+
+const PICKUP_POINT: Noun = { the: 'le point de retrait', a: 'un point de retrait' };
+
 export const ORDERS_PHRASES = {
   'order.placed': orderPlaced,
   'order.ready': orderReady,
@@ -284,6 +319,40 @@ export const ORDERS_PHRASES = {
       ],
       ['before'],
     ),
+
+  // LA FLOTTE ET LE DÉPART (plan-preparation-de-tournee.md, lot 2).
+  'delivery_vehicle.added': onVehicle('a ajouté', ' à la flotte'),
+  'delivery_vehicle.corrected': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a corrigé '),
+        ...vehicle(fact),
+        text(' : '),
+        ...fromTo(vehicleIdentity(fact.payload['before']), vehicleIdentity(fact.payload['after'])),
+      ],
+      ['subjectLabel', 'before', 'after'],
+    ),
+  'delivery_vehicle.retired': onVehicle('a retiré', ' de la flotte'),
+  'delivery_vehicle.reactivated': onVehicle('a remis en service'),
+  // Le départ n'est jamais recopié : on cite le point de retrait, nommé au
+  // moment du choix. Sans choix précédent, c'était le point par défaut.
+  'delivery_departure.chosen': (fact) => {
+    const previous = fact.payload['previous'];
+    const point = cite(PICKUP_POINT, fact.payload['point']);
+    return byActor(
+      fact,
+      [
+        text('a choisi '),
+        ...point,
+        text(' comme départ des tournées ; '),
+        ...(previous === null || previous === undefined
+          ? [text('c’était le point par défaut')]
+          : [text('c’était '), ...cite(PICKUP_POINT, previous)]),
+      ],
+      ['subjectLabel', 'point', 'previous'],
+    );
+  },
 
   'production_day.closed': productionDay('a arrêté', 'commande inscrite', 'commandes inscrites'),
   'production_day.retaken': productionDay('a repris', 'commande ajoutée', 'commandes ajoutées'),

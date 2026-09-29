@@ -1,0 +1,6 @@
+/* La carte du point, son signalement et le choix, empilés par le `gap`. */
+.departure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}

@@ -1,0 +1,44 @@
+<fold-panel-header
+  [title]="title()"
+  subtitle="Un nom pour s'y retrouver, la plaque pour l'identifier"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <div class="vd-fields">
+    <fold-input
+      label="Nom"
+      placeholder="Kangoo blanc"
+      [value]="name()"
+      (valueChange)="name.set($event)"
+    />
+    <fold-input
+      label="Plaque"
+      placeholder="AB-123-CD"
+      hint="Avec ou sans tirets : AB-123-CD et AB123CD sont la même plaque."
+      [value]="plate()"
+      (valueChange)="plate.set($event)"
+    />
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    class="vd-submit"
+    intent="primary"
+    type="button"
+    [disabled]="!canSubmit()"
+    [loading]="saving()"
+    (click)="submit()"
+  >
+    {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
+  </button>
+</fold-panel-footer>

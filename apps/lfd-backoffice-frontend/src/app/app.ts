@@ -129,6 +129,7 @@ export class App {
   protected readonly commercialViews = this.catalogue.views('commercial');
   protected readonly productionViews = this.catalogue.views('production');
   protected readonly comptoirViews = this.catalogue.views('comptoir');
+  protected readonly livraisonViews = this.catalogue.views('livraison');
   protected readonly pimViews = this.catalogue.views('pim');
   protected readonly b2bViews = this.catalogue.views('b2b');
   protected readonly adminViews = this.catalogue.views('admin');
@@ -170,6 +171,16 @@ export class App {
   protected readonly canSeeAnalytics = computed(() => this.permissions.can('b2b_growth:read'));
 
   protected readonly canSeeProduction = computed(() => this.permissions.can('b2b_orders:read'));
+  /**
+   * La Livraison s'ouvre à qui lit la feuille de route OU ses réglages : ses
+   * vues relèvent de deux droits, et exiger l'un fermerait l'espace à qui ne
+   * tient que l'autre (plan-preparation-de-tournee.md, lot 2).
+   */
+  protected readonly canSeeDelivery = computed(
+    () =>
+      this.permissions.can('delivery_run_sheet:read') ||
+      this.permissions.can('delivery_settings:read'),
+  );
 
   /**
    * La Supervision a son droit à elle : elle montre le nom des clients du jour

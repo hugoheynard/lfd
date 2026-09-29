@@ -1,0 +1,80 @@
+<fold-page-layout icon="map-pin" title="Point de départ">
+  <p description>
+    D’où partent les tournées. C’est un point de retrait&nbsp;: son adresse et son point GPS se
+    règlent sur l’écran des points de retrait, jamais ici.
+  </p>
+
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
+  }
+
+  @switch (state().status) {
+    @case ('loading') {
+      <fold-loading message="Lecture du point de départ…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Point de départ illisible"
+        subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+        data-departure-error
+      >
+        <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (point(); as current) {
+        <div class="departure">
+          <fold-card data-departure-point>
+            <fold-element-title
+              variant="title"
+              icon="map-pin"
+              [title]="current.label || current.address.ville"
+              [subtitle]="provenance()"
+            />
+            <fold-field-list>
+              <fold-field label="Adresse">{{ addressLine() }}</fold-field>
+              <fold-field label="Point GPS" [empty]="current.gps === null" placeholder="Aucun">
+                {{ gpsLine() }}
+              </fold-field>
+            </fold-field-list>
+          </fold-card>
+
+          @if (current.gps === null) {
+            <fold-callout variant="warning" data-no-gps>
+              Ce point n’a pas de coordonnées GPS&nbsp;: aucune distance ne pourra partir de là.
+              @if (canOpenPickupPoints()) {
+                <a actions foldButton size="sm" emphasis="outline" [routerLink]="pointLink()">
+                  Poser son point GPS
+                </a>
+              }
+            </fold-callout>
+          }
+
+          @if (canWrite()) {
+            <fold-listbox
+              label="Partir de"
+              [options]="options()"
+              [value]="current.pickupAddressId"
+              [disabled]="saving()"
+              (selectionChange)="choose($event)"
+            />
+          }
+        </div>
+      } @else {
+        <fold-empty-state
+          title="Aucun point de retrait"
+          subtitle="Le point de départ est un point de retrait : créez-en un d’abord."
+          data-departure-empty
+        >
+          <fold-icon empty-icon name="map-pin" />
+          @if (canOpenPickupPoints()) {
+            <a foldButton emphasis="outline" [routerLink]="pickupPointsLink">
+              Ouvrir les points de retrait
+            </a>
+          }
+        </fold-empty-state>
+      }
+    }
+  }
+</fold-page-layout>

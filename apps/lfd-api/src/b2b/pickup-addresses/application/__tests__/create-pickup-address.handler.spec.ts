@@ -26,3 +26,32 @@ describe("CreatePickupAddressHandler — les clientèles de la remise", () => {
     expect(points.written).toBeNull();
   });
 });
+
+describe("CreatePickupAddressHandler — le point GPS", () => {
+  function create(points: StoredPoints, gps?: { lat: number; lng: number }): Promise<string> {
+    return new CreatePickupAddressHandler(
+      points,
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+    ).execute(
+      new CreatePickupAddressCommand({
+        ...FIELDS,
+        discount: null,
+        discountAudiences: { b2b: true, b2c: true },
+        ...(gps === undefined ? {} : { gps }),
+      }),
+    );
+  }
+
+  it("absent : aucun point saisi", async () => {
+    const points = new StoredPoints(null);
+    await create(points);
+    expect(points.written?.gps).toBeNull();
+  });
+
+  it("présent : l'écrit", async () => {
+    const points = new StoredPoints(null);
+    await create(points, { lat: 45.9, lng: 6.1 });
+    expect(points.written?.gps).toEqual({ lat: 45.9, lng: 6.1 });
+  });
+});

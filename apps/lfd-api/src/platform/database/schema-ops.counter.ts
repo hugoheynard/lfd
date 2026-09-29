@@ -226,6 +226,11 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   ProductionQualityCheck: "production",
   ProductionQualityPhoto: "production",
   ProductionQualityUpload: "production",
+  // La livraison (2026-09-29, plan de tournée, Q10) : son code vit dans
+  // `src/delivery/`, ses tables dans ce schéma — comme le retrait. Un pic ici
+  // est un geste de réglage de la flotte, rare par nature.
+  DeliveryVehicle: "production",
+  DeliveryDeparture: "production",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

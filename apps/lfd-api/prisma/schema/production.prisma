@@ -403,3 +403,64 @@ model ProductionDayChange {
   @@map("day_change")
   @@schema("production")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LA LIVRAISON — code dans `src/delivery/`, tables ici (2026-09-29)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Pas de schéma Postgres neuf (Hugo, `plan-preparation-de-tournee.md`, Q10) :
+// c'est le précédent d'`order_handover`, code dans son bloc, table dans
+// `production`. `lint:prisma-model-ownership` établit le propriétaire par le
+// bloc qui ÉCRIT, pas par le schéma : ces deux tables sont à `delivery`.
+
+/// Un **véhicule de la flotte**. Jamais supprimé : retiré, à une date.
+///
+/// ## L'unicité de la plaque n'est pas ici
+///
+/// Deux véhicules ACTIFS ne portent pas la même plaque ; un véhicule retiré
+/// libère la sienne. C'est un index unique PARTIEL (`WHERE retired_at IS
+/// NULL`), que Prisma ne sait pas dire : il est écrit à la main dans la
+/// migration `20260929120200_la_flotte_et_le_depart`.
+model DeliveryVehicle {
+  /// Assigné par la commande (`IdGenerator`), jamais par la base.
+  id    String @id
+  /// « Kangoo blanc » — ce qu'on dit au dépôt.
+  name  String
+  /// La forme NORMALISÉE (`AB-123-CD`) : c'est elle que l'index compare.
+  plate String
+
+  /// Retiré le, ou `NULL` s'il roule. Une DATE et non un drapeau : la
+  /// composition lira « actif ce jour-là ».
+  retiredAt DateTime? @map("retired_at")
+
+  /// Instants du geste, lus du `Clock` — pas `@default(now())` ni
+  /// `@updatedAt`, qui liraient l'horloge de la base.
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @map("updated_at")
+
+  @@map("delivery_vehicle")
+  @@schema("production")
+}
+
+/// **D'où partent les tournées** — un réglage global, UNE ligne.
+///
+/// Ligne absente = personne n'a choisi : le départ est le point de retrait par
+/// défaut. Clé NATURELLE et auteur figé, comme `DeliveryAvailability`.
+/// `pickup_address_id` est OPAQUE : les points de retrait vivent dans le
+/// commerce (`public.pickup_addresses`), et aucune clé étrangère ne traverse —
+/// la livraison les lit par le canal `delivery/channels/commerce/`.
+model DeliveryDeparture {
+  /// Toujours `departure` : il n'y a qu'un réglage, et son nom est connu d'avance.
+  key             String @id
+  pickupAddressId String @map("pickup_address_id")
+
+  updatedAt        DateTime @map("updated_at")
+  /// Qui l'a posé, figé à l'instant du geste : l'id de fiche survit à tout, le
+  /// nom et le rôle sont un instantané.
+  updatedByStaffId String   @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+  updatedByRole    String   @map("updated_by_role")
+
+  @@map("delivery_departure")
+  @@schema("production")
+}

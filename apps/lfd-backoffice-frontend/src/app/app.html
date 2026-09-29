@@ -87,11 +87,10 @@
         ></a>
       }
 
-      @if (canSeeProduction()) {
-        <!-- LIVRAISON — la place réservée. Le module n'existe pas encore ;
-             l'entrée si, pour que personne ne range ses premiers écrans dans
-             « Production » en attendant. Même droit : c'est la même commande,
-             vue au bout. -->
+      @if (canSeeDelivery()) {
+        <!-- LIVRAISON — un espace : la feuille de route, la flotte, le point de
+             départ. Ouvert à qui lit l'une OU les autres, qui relèvent de deux
+             droits distincts. -->
         <a
           fold-menu-item
           icon="truck"
@@ -552,18 +551,23 @@
           }
         </fold-nav-group>
       }
-      @if (canSeeProduction()) {
-        <a
-          fold-nav-tile
-          icon="truck"
-          label="Livraison"
-          badge="app"
-          routerLink="/livraison"
-          routerLinkActive
-          #livraisonTile="routerLinkActive"
-          [active]="livraisonTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
+      @if (canSeeDelivery()) {
+        <!-- La MÊME table que le rail secondaire : une vue ajoutée à
+             `LIVRAISON_VIEWS` paraît des deux côtés. -->
+        <fold-nav-group icon="truck" label="Livraison" badge="app" [entryCountLabel]="entriesLabel">
+          @for (view of livraisonViews(); track view.key) {
+            <a
+              fold-nav-tile
+              [icon]="view.icon"
+              [label]="view.label"
+              [routerLink]="view.link"
+              routerLinkActive
+              #livraisonTile="routerLinkActive"
+              [active]="livraisonTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-nav-group>
       }
       @if (canSeePim()) {
         <fold-nav-group icon="catalog" label="PIM" [entryCountLabel]="entriesLabel">

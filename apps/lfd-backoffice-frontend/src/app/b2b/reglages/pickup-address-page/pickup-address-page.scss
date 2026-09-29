@@ -14,3 +14,11 @@
   font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);
 }
+
+/* Latitude et longitude côte à côte ; elles passent l'une sous l'autre quand
+   la place manque. */
+.pa-gps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}

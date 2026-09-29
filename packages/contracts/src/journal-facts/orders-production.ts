@@ -50,6 +50,12 @@ const adjustment = () =>
     payload({ mode: z.literal("amount"), cents: cents() }),
   ]);
 
+/** Le nom et la plaque d'un véhicule de la flotte, tels qu'écrits. */
+const vehicleIdentity = () => payload({ name: z.string().min(1), plate: z.string().min(1) });
+
+/** Un geste sur un véhicule : son nom en libellé, et sa plaque. */
+const vehicleFact = () => payload({ subjectLabel: subjectLabel(), plate: z.string().min(1) });
+
 /** Un point de retrait, et la remise qu'on y consent — avant le lot B. */
 const pickupPointBeforeLabel = () =>
   payload({
@@ -286,6 +292,33 @@ export const ORDERS_PRODUCTION_FACTS = {
   "order_late_fee.cleared": fact(payload({ before: lateFee() })),
   "delivery_availability.updated": fact(
     payload({ openToB2b: z.boolean(), openToB2c: z.boolean(), previous: openings() }),
+  ),
+
+  /**
+   * **La flotte** (2026-09-29, `plan-preparation-de-tournee.md`, lot 2). Le
+   * libellé est le nom du véhicule au moment du geste ; la plaque est sa forme
+   * normalisée. Un véhicule retiré sans trace de qui l'a retiré est une
+   * question à laquelle personne ne pourra répondre le jour d'une tournée
+   * manquée.
+   */
+  "delivery_vehicle.added": fact(vehicleFact()),
+  "delivery_vehicle.corrected": fact(
+    payload({ subjectLabel: subjectLabel(), before: vehicleIdentity(), after: vehicleIdentity() }),
+  ),
+  "delivery_vehicle.retired": fact(vehicleFact()),
+  "delivery_vehicle.reactivated": fact(vehicleFact()),
+  /**
+   * **Le point de départ des tournées**, choisi parmi les points de retrait.
+   * `previous` : le choix remplacé — nommé s'il est encore un point de retrait,
+   * nu sinon (un point supprimé depuis n'a plus de nom à donner) ; `null` si
+   * personne n'avait choisi.
+   */
+  "delivery_departure.chosen": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      point: named("pickup_address"),
+      previous: namedOrBare("pickup_address").nullable(),
+    }),
   ),
 
   /**

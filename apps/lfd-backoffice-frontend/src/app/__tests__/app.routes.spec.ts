@@ -230,7 +230,14 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // La MÊME saisie que `comptes-clients/:id/nouvelle-commande`, montée sous le
   // comptoir pour que la navigation n'en sorte pas.
   'comptoir/nouvelle-commande/:id': ['b2b_counter:read', 'b2b_orders:write'],
-  livraison: 'b2b_orders:read',
+  // LA LIVRAISON est un ESPACE dont la coquille n'est PAS gardée : ses vues
+  // relèvent de deux droits distincts, et un garde commun fermerait l'une à qui
+  // ne tient que l'autre (plan-preparation-de-tournee.md, lot 2). La coquille ne
+  // montre rien d'elle-même ; chaque vue porte son garde.
+  livraison: OPEN,
+  'livraison/feuille-de-route': 'delivery_run_sheet:read',
+  'livraison/vehicules': 'delivery_settings:read',
+  'livraison/depart': 'delivery_settings:read',
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.
   'app-mobile': OPEN,
   // 🔴 **L'outillage de développement**, et son absence de garde est le point.

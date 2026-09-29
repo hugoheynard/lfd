@@ -28,10 +28,12 @@ export class CreatePickupAddressHandler implements ICommandHandler<
   ) {}
 
   async execute(command: CreatePickupAddressCommand): Promise<string> {
-    const { discount, discountAudiences, ...fields } = command.payload;
+    const { discount, discountAudiences, gps, ...fields } = command.payload;
     const point: PickupAddressWrite = {
       ...fields,
       discount: PickupDiscount.of(discount, discountAudiences),
+      // Absent à la création : aucun point GPS saisi.
+      gps: gps ?? null,
     };
     return await this.uow.run(async () => {
       const pickupId = await this.pickups.create(point);

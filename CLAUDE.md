@@ -246,6 +246,10 @@ src/
 │                   sorti du fournil le 2026-09-10 : sa clé est la COMMANDE,
 │                   pas la journée. Le SEUL bloc à déclarer un canal ET à en
 │                   implémenter un autre (cf. plus bas)
+├── delivery/     ▸ LA LIVRAISON — la flotte, le départ des tournées, puis
+│                   les tournées. Ouvert le 2026-09-29 (plan de tournée,
+│                   lot 2) : tables dans le schéma `production` (Q10),
+│                   canal `channels/commerce/` que le commerce implémente
 ├── ops/          ▸ LA CARTE DE SANTÉ — health, sondes, journal, trafic, vitals
 │                   il OBSERVE et ne possède rien
 ├── platform/     ▸ TECHNIQUE PURE — zéro connaissance métier
@@ -257,18 +261,19 @@ src/
 └── main.ts
 ```
 
-| Depuis ↓ vers →    | `staff`          | `pim`               | `media`             | `b2b` | `production`        | `handover`          | `ops` | `platform` |
-| ------------------ | ---------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ----- | ---------- |
-| **`staff`**        | —                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✓          |
-| **`pim`**          | ✓ (autorisation) | —                   | **port uniquement** | ✗     | ✗                   | ✗                   | ✗     | ✓          |
-| **`media`**        | ✓ (autorisation) | **port uniquement** | —                   | ✗     | ✗                   | ✗                   | ✗     | ✓          |
-| **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | ✓          |
-| **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✓          |
-| **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | ✓          |
-| **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✓          |
-| **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | —          |
-| **`appBootstrap`** | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓          |
-| **`dev`**          | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓          |
+| Depuis ↓ vers →    | `staff`          | `pim`               | `media`             | `b2b` | `production`        | `handover`          | `ops` | `delivery`          | `platform` |
+| ------------------ | ---------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ----- | ------------------- | ---------- |
+| **`staff`**        | —                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✓          |
+| **`pim`**          | ✓ (autorisation) | —                   | **port uniquement** | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✓          |
+| **`media`**        | ✓ (autorisation) | **port uniquement** | —                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✓          |
+| **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | ✓          |
+| **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✗                   | ✓          |
+| **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | ✗                   | ✓          |
+| **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | ✗                   | ✗                   | ✗     | —                   | ✓          |
+| **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✗                   | ✓          |
+| **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | —          |
+| **`appBootstrap`** | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓          |
+| **`dev`**          | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓          |
 
 🔴 **`pim` et `media` sont les deux aux DEUX CÔTÉS d'un canal** — le cas que
 `handover` était seul à connaître. Chacun déclare ce dont il a besoin et

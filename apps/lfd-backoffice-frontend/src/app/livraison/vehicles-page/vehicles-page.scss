@@ -1,0 +1,13 @@
+/* Les titres de groupe et les cartes, empilés : l'écart vient du `gap`. */
+.fleet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* Corriger et Retirer, côte à côte dans l'en-tête de la carte. */
+.fleet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}

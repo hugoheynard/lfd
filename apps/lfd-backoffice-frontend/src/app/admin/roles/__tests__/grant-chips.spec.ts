@@ -74,8 +74,12 @@ describe('grantGroups', () => {
    *
    * `b2b_late_fee` l'a fait passer à 30 le 2026-09-29 : régler la surtaxe de
    * retard n'est pas régler la plateforme.
+   *
+   * `delivery_run_sheet` et `delivery_settings` l'ont fait passer à 32 le
+   * 2026-09-29 : lire la feuille de route n'est pas régler la flotte
+   * (plan-preparation-de-tournee.md, lot 2, Q7).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(30);
+    expect(RESOURCE_COUNT).toBe(32);
   });
 });

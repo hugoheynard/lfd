@@ -108,3 +108,26 @@ describe("UpdatePickupAddressHandler — les clientèles de la remise", () => {
     });
   });
 });
+
+describe("UpdatePickupAddressHandler — le point GPS", () => {
+  const LOCATED: PickupAddressView = { ...PROS_ONLY, gps: { lat: 45.9, lng: 6.1 } };
+
+  /** Un onglet ouvert avant le champ (2026-09-29) n'efface pas une position saisie. */
+  it("absent : garde celui de la base", async () => {
+    const points = new StoredPoints(LOCATED);
+
+    await update(points, { ...FIELDS, discount: null });
+
+    expect(points.written?.gps).toEqual({ lat: 45.9, lng: 6.1 });
+  });
+
+  it("présent : l'écrit, et `null` l'efface", async () => {
+    const points = new StoredPoints(LOCATED);
+
+    await update(points, { ...FIELDS, discount: null, gps: { lat: 1, lng: 2 } });
+    expect(points.written?.gps).toEqual({ lat: 1, lng: 2 });
+
+    await update(points, { ...FIELDS, discount: null, gps: null });
+    expect(points.written?.gps).toBeNull();
+  });
+});

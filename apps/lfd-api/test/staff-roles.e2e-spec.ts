@@ -90,6 +90,13 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
    * commercial, qui lit les réglages, ne la lit plus.
    */
   { resource: "b2b_late_fee", path: "/admin/order-late-fee" },
+  /**
+   * La LIVRAISON (2026-09-29, plan de tournée Q7/Q8) — la feuille de route
+   * sortie de `b2b_orders`, et les réglages de la flotte et du départ.
+   */
+  { resource: "delivery_run_sheet", path: "/admin/livraison/feuille-de-route?jour=2026-01-01" },
+  { resource: "delivery_settings", path: "/admin/livraison/vehicules" },
+  { resource: "delivery_settings", path: "/admin/livraison/depart" },
 ];
 
 /** Le produit cartésien rôle × surface : tout ce qu'il y a à vérifier. */

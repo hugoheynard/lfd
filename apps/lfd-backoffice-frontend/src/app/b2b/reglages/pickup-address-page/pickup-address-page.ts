@@ -27,6 +27,7 @@ import {
   FoldEmptyStateComponent,
   FoldFieldsetComponent,
   FoldLoadingStateComponent,
+  FoldNumberInputComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
 } from 'fold-ng';
@@ -50,6 +51,7 @@ import {
 
 import { NotifyService } from '../../../notify.service';
 import { PickupAddressesService } from '../pickup-addresses.service';
+import { EMPTY_GPS, gpsDraftFrom, gpsIssue, toGps, type GpsDraft } from '../pickup-gps';
 import { EMPTY_OPENING, openingEntries, toPickupOpening } from '../pickup-opening.model';
 import { PublicSlotsCard } from './public-slots-card/public-slots-card';
 
@@ -95,6 +97,7 @@ const LIST_PATH = '/b2b/reglages/points-de-retrait';
     FoldEmptyStateComponent,
     FoldFieldsetComponent,
     FoldLoadingStateComponent,
+    FoldNumberInputComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
   ],
@@ -126,6 +129,13 @@ export class PickupAddressPage {
   protected readonly audiences = signal<PickupDiscountAudiences>(ALL_DISCOUNT_AUDIENCES);
   /** Heures d'ouverture du point — deux fenêtres nommées, jamais fusionnées. */
   protected readonly opening = signal<readonly HoursEntry[]>(openingEntries(EMPTY_OPENING));
+  /**
+   * Le point GPS du lieu, facultatif — d'où partira le calcul des distances
+   * quand ce point est le départ des tournées (plan-preparation-de-tournee.md,
+   * Q9). Deux vides : le point n'a pas de GPS.
+   */
+  protected readonly gps = signal<GpsDraft>(EMPTY_GPS);
+  protected readonly gpsIssue = computed(() => gpsIssue(this.gps()));
 
   /**
    * Le refus du serveur, en clair. Il reste SUR LA PAGE, au-dessus des cartes :
@@ -189,7 +199,10 @@ export class PickupAddressPage {
   /** Une adresse postable, des heures cohérentes, une réduction qui vise quelqu'un. */
   protected readonly canSubmit = computed(
     () =>
-      postalIssue(this.draft()) === '' && this.openingIssue() === '' && this.audienceIssue() === '',
+      postalIssue(this.draft()) === '' &&
+      this.openingIssue() === '' &&
+      this.audienceIssue() === '' &&
+      this.gpsIssue() === '',
   );
 
   /**
@@ -254,6 +267,11 @@ export class PickupAddressPage {
     this.discount.set(point.discount);
     this.audiences.set(point.discountAudiences);
     this.opening.set(openingEntries(point.opening));
+    this.gps.set(gpsDraftFrom(point.gps));
+  }
+
+  protected setGps(axis: keyof GpsDraft, value: number | null): void {
+    this.gps.update((current) => ({ ...current, [axis]: value }));
   }
 
   protected setDiscount(alteration: PriceAlteration | null): void {
@@ -281,6 +299,7 @@ export class PickupAddressPage {
       discount: this.discount(),
       discountAudiences: this.audiences(),
       opening: toPickupOpening(this.opening()),
+      gps: toGps(this.gps()),
     };
     try {
       if (id === undefined) {

@@ -259,6 +259,33 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_storefront",
 
+  // ── `delivery.` — LA LIVRAISON ──────────────────────────────────────────
+  // Un droit par geste, créé quand son écran existe (Hugo, 2026-09-29 —
+  // `documentation/livraisons/plan-preparation-de-tournee.md`, Q7/Q8) : une
+  // valeur de cette liste ne se retire pas, un droit créé pour un lot jamais
+  // bâti resterait pour toujours.
+  /**
+   * **La feuille de route du jour** — les livraisons d'une journée, en lecture
+   * (`GET /admin/livraison/feuille-de-route`).
+   *
+   * Sortie de `b2b_orders` le 2026-09-29 : elle montre les adresses et les
+   * contacts de TOUTES les livraisons, et c'est désormais un droit qu'on donne
+   * en connaissance de cause. `support` et `commercial` gardent la lecture
+   * qu'ils avaient par `b2b_orders` (Hugo). Elle n'écrit rien : l'écriture
+   * n'ouvre aucun geste aujourd'hui, elle n'est qu'à `admin`, par cohérence.
+   */
+  "delivery_run_sheet",
+  /**
+   * **Les réglages de la livraison** — la flotte (véhicules, plaques, retraits)
+   * et le point de départ des tournées (`/admin/livraison/vehicules`,
+   * `/admin/livraison/depart`).
+   *
+   * Pas `b2b_settings` : celui-là règle l'OFFRE faite au client (zones, frais,
+   * à qui l'on livre) ; celui-ci l'EXPLOITATION — avec quoi l'on tient cette
+   * offre. Lecture pour `comptoir`, écriture pour `admin` seul.
+   */
+  "delivery_settings",
+
   // ── `staff.` — LE SOCLE ─────────────────────────────────────────────────
   /**
    * L'annuaire, les invitations et **les rôles**.
@@ -358,6 +385,8 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   pim_tax: "Référentiel — Fiscalité",
   media_library: "Médiathèque",
   b2b_storefront: "Vitrine",
+  delivery_run_sheet: "Feuille de route",
+  delivery_settings: "Réglages de livraison",
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
   b2b_counter: "Comptoir",
@@ -463,6 +492,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_settings: "write",
     media_library: "write",
     b2b_storefront: "write",
+    // `write` sur une lecture seule : l'administrateur couvre tout, sans trou.
+    delivery_run_sheet: "write",
+    delivery_settings: "write",
     staff_access: "write",
     staff_notifications: "write",
     ops_health: "write",
@@ -515,6 +547,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // référentiel et le catalogue vendu.
     pim_catalog: "read",
     pim_tax: "read",
+    // Il gardait la feuille de route par `b2b_orders` : elle a son droit depuis
+    // le 2026-09-29, il la lit toujours (Hugo, Q8).
+    delivery_run_sheet: "read",
     staff_notifications: "write",
   },
   comptabilite: {
@@ -596,6 +631,10 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
   comptoir: {
     b2b_counter: "read",
     b2b_orders: "write",
+    // Le comptoir prépare les départs : il lit la feuille de route, la flotte
+    // et le point de départ ; il ne les règle pas (Hugo, 2026-09-29, Q7).
+    delivery_run_sheet: "read",
+    delivery_settings: "read",
     staff_notifications: "write",
   },
   support: {
@@ -604,6 +643,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_subscriptions: "read",
     b2b_appointments: "write",
     b2b_support: "write",
+    // Reconduit de `b2b_orders:read` le 2026-09-29 (Hugo, Q8) : le support
+    // répond « où en est ma livraison ».
+    delivery_run_sheet: "read",
     staff_notifications: "write",
   },
   dev: {

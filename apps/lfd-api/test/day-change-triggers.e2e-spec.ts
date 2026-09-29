@@ -27,6 +27,13 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   "production.production_container": "un réglage par SKU, sans journée",
   "production.production_quality_upload":
     "un dépôt de photo en attente, sans journée — il n'y entre qu'en devenant une photo, surveillée",
+  // Les bases de la livraison (lot 2, 2026-09-29) vivent dans `production` sans
+  // appartenir à une journée. ⚠️ La TOURNÉE (lot 3) en portera une : elle aura
+  // son déclencheur, et n'entrera pas dans cette liste.
+  "production.delivery_vehicle":
+    "la flotte, un réglage sans journée — une tournée qui recopie le véhicule, elle, en portera une",
+  "production.delivery_departure":
+    "le point de départ des tournées, un réglage unique sans journée",
 };
 
 /** Les colonnes qui disent « cette ligne appartient à une journée », côté `public`. */

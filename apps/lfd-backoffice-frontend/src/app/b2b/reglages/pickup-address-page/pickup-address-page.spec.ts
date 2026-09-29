@@ -290,3 +290,35 @@ describe('PickupAddressPage — la zone dangereuse', () => {
     expect(alert?.textContent).toContain('Point encore utilisé.');
   });
 });
+
+describe('PickupAddressPage — le point GPS', () => {
+  it('reprend le point GPS enregistré, et le renvoie à la modification', async () => {
+    const { fixture, pickups } = await mount('pick_1', [
+      { ...LABO, gps: { lat: 48.85, lng: 2.37 } },
+      VILLAGE,
+    ]);
+
+    await fixture.componentInstance['submit']();
+
+    expect(pickups.updated[0]?.gps).toEqual({ lat: 48.85, lng: 2.37 });
+  });
+
+  it('un point sans GPS envoie `null`, jamais un point inventé', async () => {
+    const { fixture, pickups } = await mount('pick_1');
+
+    await fixture.componentInstance['submit']();
+
+    expect(pickups.updated[0]?.gps).toBeNull();
+  });
+
+  it('refuse d’envoyer une latitude sans longitude, et le dit', async () => {
+    const { fixture, pickups } = await mount('pick_1');
+    fixture.componentInstance['setGps']('lat', 48.85);
+    fixture.detectChanges();
+
+    await fixture.componentInstance['submit']();
+
+    expect(pickups.updated).toEqual([]);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('ET la longitude');
+  });
+});

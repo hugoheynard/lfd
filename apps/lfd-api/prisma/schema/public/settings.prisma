@@ -39,6 +39,11 @@ model PickupAddress {
   // requête jamais par heure.
   opening Json?
 
+  /// Le point GPS du lieu (`{ lat, lng }`, `gpsPointSchema`), ou `NULL` s'il
+  /// n'est pas saisi. C'est d'ici que partira le calcul des distances quand le
+  /// point est le départ des tournées (2026-09-29, `plan-preparation-de-tournee.md`, Q9).
+  gps Json?
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

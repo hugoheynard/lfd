@@ -1,7 +1,13 @@
-import { type PickupAddressView, type PickupOpening, pickupOpeningSchema } from "@lfd/contracts";
+import {
+  type GpsPoint,
+  gpsPointSchema,
+  type PickupAddressView,
+  type PickupOpening,
+  pickupOpeningSchema,
+} from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import type { Prisma } from "../../../platform/database/client/client.js";
+import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   fromAdjustmentColumns,
@@ -26,6 +32,7 @@ function writable(point: PickupAddressWrite): {
   discountForB2b: boolean;
   discountForB2c: boolean;
   opening: Prisma.InputJsonValue;
+  gps: Prisma.InputJsonValue | typeof Prisma.DbNull;
 } {
   const discount = toAdjustmentColumns(point.discount.adjustment);
   return {
@@ -36,6 +43,8 @@ function writable(point: PickupAddressWrite): {
     ville: point.ville,
     pays: point.pays,
     opening: point.opening,
+    // `DbNull` : l'ABSENCE de point, pas un `null` JSON.
+    gps: point.gps === null ? Prisma.DbNull : point.gps,
     discountMode: discount.mode,
     discountValue: discount.value,
     discountForB2b: point.discount.audiences.b2b,
@@ -57,6 +66,7 @@ interface PickupRow {
   readonly discountForB2b: boolean;
   readonly discountForB2c: boolean;
   readonly opening: Prisma.JsonValue | null;
+  readonly gps: Prisma.JsonValue | null;
 }
 
 /**
@@ -67,6 +77,12 @@ interface PickupRow {
 function openingOf(value: Prisma.JsonValue | null): PickupOpening {
   const parsed = pickupOpeningSchema.safeParse(value);
   return parsed.success ? parsed.data : { publicOpening: null, proPickup: null };
+}
+
+/** Le point GPS, validé plutôt que casté : une forme illisible se lit « non saisi ». */
+function gpsOf(value: Prisma.JsonValue | null): GpsPoint | null {
+  const parsed = gpsPointSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
 }
 
 function toView(row: PickupRow): PickupAddressView {
@@ -82,6 +98,7 @@ function toView(row: PickupRow): PickupAddressView {
     isDefault: row.isDefault,
     discount: fromAdjustmentColumns(row.discountMode, row.discountValue),
     discountAudiences: { b2b: row.discountForB2b, b2c: row.discountForB2c },
+    gps: gpsOf(row.gps),
   };
 }
 
@@ -99,6 +116,7 @@ const SELECT = {
   discountForB2b: true,
   discountForB2c: true,
   opening: true,
+  gps: true,
 } as const;
 
 /** Adaptateur Prisma des points de retrait (globaux). Tient les invariants ≥1/défaut. */

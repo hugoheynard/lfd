@@ -722,6 +722,15 @@ export type {
   DeliveryRunSheetStopView,
   DeliveryRunSheetView,
 } from "./delivery-run-sheet.js";
+export { vehiclePayloadSchema, departurePayloadSchema } from "./delivery-settings.js";
+export type {
+  VehiclePayload,
+  VehicleView,
+  VehiclesView,
+  DeparturePayload,
+  DepartureView,
+  DeparturePointView,
+} from "./delivery-settings.js";
 export {
   recurrenceSchema,
   subscriptionStatusSchema,

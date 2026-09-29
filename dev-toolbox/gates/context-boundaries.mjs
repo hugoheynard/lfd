@@ -63,6 +63,13 @@ const BLOCK_OF = {
   //   demande) — le seul bloc du dossier à faire les deux.
   handover: "handover",
 
+  // ▸ LA LIVRAISON — la flotte, le départ des tournées, puis les tournées
+  //   elles-mêmes (2026-09-29, `plan-preparation-de-tournee.md`, lot 2). Ses
+  //   tables vivent dans le schéma `production` (Q10), son code ici. Elle
+  //   déclare `channels/commerce/` — les points de retrait que le commerce
+  //   lui sert — et n'atteint rien d'autre que le socle et la plateforme.
+  delivery: "delivery",
+
   // ▸ LA RACINE DE COMPOSITION — le seul endroit qui a le droit de connaître
   //   tout le monde, parce que son unique travail est de relier les blocs
   //   entre eux. Personne ne l'importe en retour : un contexte qui remonte
@@ -126,12 +133,25 @@ const ALLOWED = {
   // ⚠️ Le référentiel, lui, n'atteint PAS `media` : il déclare son port et ne
   // sait pas qui le branche. C'est `appBootstrap` qui relie.
   media: new Set(["staff", "platform", "pim"]),
-  b2b: new Set(["staff", "pim", "platform", "production", "handover"]),
+  b2b: new Set(["staff", "pim", "platform", "production", "handover", "delivery"]),
   production: new Set(["staff", "platform"]),
   handover: new Set(["staff", "platform", "production"]),
+  // Le socle (l'auteur d'un geste) et la plateforme, rien d'autre : ce dont
+  // elle a besoin du commerce, elle le DÉCLARE (2026-09-29).
+  delivery: new Set(["staff", "platform"]),
   platform: new Set([]),
   ops: new Set(["platform"]),
-  root: new Set(["staff", "pim", "b2b", "platform", "ops", "production", "handover", "media"]),
+  root: new Set([
+    "staff",
+    "pim",
+    "b2b",
+    "platform",
+    "ops",
+    "production",
+    "handover",
+    "media",
+    "delivery",
+  ]),
 };
 
 /**
@@ -180,6 +200,10 @@ const PORT_SURFACE = {
   // ⚠️ `production → handover` reste INTERDIT : le fournil ne sait pas que la
   // remise existe, et c'est ce qui l'empêche de se mettre à en dépendre.
   "handover→production": "production/channels/handover/",
+  // Le commerce implémente ce que la LIVRAISON déclare : les points de retrait
+  // candidats au départ des tournées (2026-09-29, plan de tournée, Q9). Il ne
+  // voit ni la flotte, ni ses tables, ni ses règles.
+  "b2b→delivery": "delivery/channels/commerce/",
   // La MÉDIATHÈQUE implémente ce que le référentiel déclare : « décris-moi ces
   // URL », « cette image existe-t-elle ». Elle ne voit rien d'autre de lui —
   // ni ses tables, ni ses règles, ni son vocabulaire.

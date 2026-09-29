@@ -96,6 +96,12 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "order_cutoff_waiver.",
     "order_late_fee.",
     "delivery_availability.",
+    // La flotte et le départ des tournées (2026-09-29) : avec quoi et d'où
+    // part une livraison. Sous `commandes` faute d'un module « livraison » —
+    // en créer un est un changement du contrat `ActivityModule`, que le lot 2
+    // n'a pas pris.
+    "delivery_vehicle.",
+    "delivery_departure.",
     // L'heure limite posée sur un produit : même famille que celle d'un point.
     "order_time_limit.",
   ],

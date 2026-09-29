@@ -287,15 +287,43 @@ export const routes: Routes = [
     ],
   },
   {
-    // LIVRAISON — la place réservée, et rien d'autre pour l'instant. L'entrée
-    // existe avant le module pour que personne ne range ses premiers écrans
-    // dans « Production » en attendant, d'où plus personne ne les sortirait.
-    // Même mur que la production : c'est la même commande, vue au bout.
+    // LA LIVRAISON est un ESPACE (plan-preparation-de-tournee.md, lot 2). La
+    // coquille ne porte AUCUN garde : chaque vue relève de son propre droit, et
+    // un garde commun fermerait la flotte à qui ne lit que la feuille de route
+    // — ou l'inverse. Le garde est donc sur chaque enfant.
     path: 'livraison',
-    canActivate: [permissionGuard('b2b_orders:read')],
-    title: 'Livraison — LFC B2B admin',
     loadComponent: () =>
-      import('./livraison/livraison-page/livraison-page').then((m) => m.DeliveryPage),
+      import('./livraison/livraison-workspace/livraison-workspace-page').then(
+        (m) => m.LivraisonWorkspacePage,
+      ),
+    children: [
+      // `/livraison` reste l'adresse de la feuille de route : elle vit dans des
+      // favoris. Une redirection et non un écran à vide : le rail marque actif
+      // tout lien dont l'URL est le préfixe, et un lien `/livraison` le serait
+      // resté sur les deux autres vues.
+      { path: '', pathMatch: 'full', redirectTo: 'feuille-de-route' },
+      {
+        path: 'feuille-de-route',
+        canActivate: [permissionGuard('delivery_run_sheet:read')],
+        title: 'Feuille de route — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/livraison-page/livraison-page').then((m) => m.DeliveryPage),
+      },
+      {
+        path: 'vehicules',
+        canActivate: [permissionGuard('delivery_settings:read')],
+        title: 'Véhicules — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/vehicles-page/vehicles-page').then((m) => m.VehiclesPage),
+      },
+      {
+        path: 'depart',
+        canActivate: [permissionGuard('delivery_settings:read')],
+        title: 'Point de départ — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/departure-page/departure-page').then((m) => m.DeparturePage),
+      },
+    ],
   },
   {
     // L'APP MOBILE — il n'y en a pas à télécharger : c'est cette adresse-ci,

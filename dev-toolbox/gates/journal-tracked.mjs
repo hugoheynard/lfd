@@ -66,6 +66,9 @@
  * `@CommandHandler` doit APPELER `publishTraced` sous `UnitOfWork` — cf.
  * `PRODUCTION_ZONE` plus bas.
  *
+ * **La livraison** (`delivery/**`, depuis le 2026-09-29) : même discipline —
+ * cf. `DELIVERY_ZONE` plus bas.
+ *
  * Usage : `pnpm lint:journal-tracked` (branché en CI).
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -247,6 +250,15 @@ const SUBSCRIPTIONS_ZONE = "subscriptions";
  * `@sans-journal` avec leur raison (vérifié le 2026-09-19, onze handlers).
  */
 const PRODUCTION_ZONE = "production";
+
+/**
+ * **La livraison** (2026-09-29, `plan-preparation-de-tournee.md`, lot 2) :
+ * ajouter, corriger, retirer, réactiver un véhicule, choisir le départ. Un
+ * BLOC entier, comme le fournil. Tous ses handlers, sans tri par nom : un
+ * véhicule retiré sans trace de qui l'a retiré est une question à laquelle
+ * personne ne pourra répondre le jour d'une tournée manquée.
+ */
+const DELIVERY_ZONE = "delivery";
 
 /** Ce qui ouvre l'unité de travail pour une délégation — sans journaliser pour elle. */
 const TRANSACTION_OPENERS = new Map([
@@ -448,6 +460,10 @@ const ZONES = [
   },
   {
     root: join(SRC, PRODUCTION_ZONE),
+    audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
+  },
+  {
+    root: join(SRC, DELIVERY_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   {

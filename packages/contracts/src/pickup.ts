@@ -4,6 +4,8 @@ import {
   billingAddressPayloadSchema,
   type FulfillmentWindow,
   fulfillmentWindowSchema,
+  type GpsPoint,
+  gpsPointSchema,
 } from "./address.js";
 import { cartAdjustmentSchema, type CartAdjustment } from "./cart-adjustment.js";
 import { minutesOfDay, timeOfMinutes } from "./paris-time.js";
@@ -83,6 +85,17 @@ export const pickupAddressPayloadSchema = billingAddressPayloadSchema.extend({
   discount: cartAdjustmentSchema.nullable().default(null),
   discountAudiences: pickupDiscountAudiencesSchema.default(ALL_DISCOUNT_AUDIENCES),
   opening: pickupOpeningSchema.default({ publicOpening: null, proPickup: null }),
+  /**
+   * Le point GPS du lieu (`plan-preparation-de-tournee.md`, Q9, 2026-09-29) :
+   * d'ici partira le calcul des distances quand le point est le départ des
+   * tournées. `null` l'efface.
+   *
+   * **Facultatif, et absent = inchangé** : le champ est arrivé sur un contrat
+   * déjà servi, et un écran ouvert avant lui ne l'envoie pas. À la création,
+   * absent vaut `null` ; à la modification, il laisse le point tel quel —
+   * sans quoi un onglet ancien effacerait en silence une position saisie.
+   */
+  gps: gpsPointSchema.nullable().optional(),
 });
 export type PickupAddressPayload = z.infer<typeof pickupAddressPayloadSchema>;
 
@@ -113,6 +126,13 @@ export interface PickupAddressView {
   readonly discountAudiences: PickupDiscountAudiences;
   /** Quand on peut venir — cf. {@link pickupOpeningSchema}. */
   readonly opening: PickupOpening;
+  /**
+   * Le point GPS du lieu, `null` s'il n'est pas saisi. Toujours rendu par le
+   * serveur depuis le 2026-09-29 ; facultatif dans le TYPE pour que les vues
+   * construites à la main avant lui (fixtures des fronts) restent valides —
+   * un absent se lit comme `null`.
+   */
+  readonly gps?: GpsPoint | null | undefined;
 }
 
 /** Réponse de création d'un point de retrait. */

@@ -381,3 +381,59 @@ describe('l’ouverture de la livraison par clientèle', () => {
     expect(row(partial, 'Ouverte aux professionnels')).toBeDefined();
   });
 });
+
+describe('la flotte et le départ des tournées (delivery_vehicle.*, delivery_departure.*)', () => {
+  it('nomme le véhicule et sa plaque à l’ajout comme au retrait', () => {
+    const payload = { subjectLabel: 'Kangoo blanc', plate: 'AB-123-CD' };
+    expect(sentence(fact({ type: 'delivery_vehicle.added', payload }))).toBe(
+      'Colette Martin a ajouté le véhicule « Kangoo blanc » (AB-123-CD) à la flotte',
+    );
+    expect(sentence(fact({ type: 'delivery_vehicle.retired', payload }))).toBe(
+      'Colette Martin a retiré le véhicule « Kangoo blanc » (AB-123-CD) de la flotte',
+    );
+    expect(sentence(fact({ type: 'delivery_vehicle.reactivated', payload }))).toBe(
+      'Colette Martin a remis en service le véhicule « Kangoo blanc » (AB-123-CD)',
+    );
+  });
+
+  it('dit la correction d’un véhicule, de l’ancienne identité à la nouvelle', () => {
+    expect(
+      sentence(
+        fact({
+          type: 'delivery_vehicle.corrected',
+          payload: {
+            subjectLabel: 'Kangoo blanc',
+            before: { name: 'Kangoo', plate: 'AB-123-CD' },
+            after: { name: 'Kangoo blanc', plate: 'AB-123-CE' },
+          },
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a corrigé le véhicule « Kangoo blanc » : de Kangoo (AB-123-CD) à Kangoo blanc (AB-123-CE)',
+    );
+  });
+
+  it('dit le premier choix du départ, puis son déplacement', () => {
+    const point = { id: 'pa_2', name: 'Labo Bastille' };
+    expect(
+      sentence(
+        fact({
+          type: 'delivery_departure.chosen',
+          payload: { subjectLabel: 'Labo Bastille', point, previous: null },
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a choisi le point de retrait « Labo Bastille » comme départ des tournées ; c’était le point par défaut',
+    );
+    expect(
+      sentence(
+        fact({
+          type: 'delivery_departure.chosen',
+          payload: { subjectLabel: 'Labo Bastille', point, previous: 'pa_1' },
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a choisi le point de retrait « Labo Bastille » comme départ des tournées ; c’était un point de retrait (identifiant pa_1)',
+    );
+  });
+});

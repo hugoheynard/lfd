@@ -17,12 +17,14 @@ type RunSheetQuery = z.infer<typeof runSheetQuerySchema>;
  * **La feuille de route des livraisons** — lecture seule
  * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 1).
  *
- * Sous `b2b_orders`, la surface que garde la route `/livraison` du back-office
- * (`b2b_orders:read`) : la feuille ne montre que des commandes, et aucun
- * montant. Il n'injecte que le `QueryBus`.
+ * Sous `delivery_run_sheet` depuis le 2026-09-29 (plan, Q7/Q8) : elle était
+ * servie sous `b2b_orders`, qui ouvrait les adresses et contacts de TOUTES les
+ * livraisons à quiconque prend une commande. `support` et `commercial` en
+ * gardent la lecture ; `comptabilite` la perd. Aucun montant. Il n'injecte que
+ * le `QueryBus`.
  */
 @Controller("admin/livraison")
-@AdminSurface("b2b_orders")
+@AdminSurface("delivery_run_sheet")
 export class DeliveryRunSheetController {
   constructor(private readonly queries: QueryBus) {}
 

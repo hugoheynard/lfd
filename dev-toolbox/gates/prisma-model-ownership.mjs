@@ -72,6 +72,11 @@ const BLOCKS = new Set([
   //   déménagement l'aurait DÉSARMÉE au lieu de l'invoquer. C'est `vitruve` qui
   //   l'a relevé sur le plan, avant qu'une ligne soit écrite.
   "media",
+  // ▸ LA LIVRAISON (2026-09-29). Ses tables sont dans le schéma `production`,
+  //   mais le propriétaire se lit par le bloc qui ÉCRIT : sans cette ligne,
+  //   `src/delivery/` serait ignoré, et n'importe quel bloc pourrait écrire
+  //   la flotte sans que rien ne rougisse — le piège déjà raconté pour `media`.
+  "delivery",
 ]);
 
 /**

@@ -26,6 +26,8 @@ import { PimModule } from "../pim/pim.module.js";
 import { HandoverModule } from "../handover/handover.module.js";
 import { ProductionModule } from "../production/production.module.js";
 import { HandoverFeedModule } from "./handover-feed.module.js";
+import { DeliveryModule } from "../delivery/delivery.module.js";
+import { DeliveryFeedModule } from "./delivery-feed.module.js";
 import { DebtorMandateModule } from "./debtor-mandate.module.js";
 import { LoyaltyVoucherModule } from "./loyalty-voucher.module.js";
 import { IssuedMandatesModule } from "./issued-mandates.module.js";
@@ -141,6 +143,10 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     ProductionFeedModule,
     HandoverModule,
     HandoverFeedModule,
+    // La livraison : la flotte et le départ des tournées (lot 2 du plan de
+    // tournée). Le fil relie les points de retrait du commerce à son port.
+    DeliveryModule,
+    DeliveryFeedModule,
     DebtorMandateModule,
     LoyaltyVoucherModule,
     IssuedMandatesModule,

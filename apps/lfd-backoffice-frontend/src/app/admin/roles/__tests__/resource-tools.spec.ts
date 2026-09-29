@@ -24,6 +24,7 @@ describe('les domaines rangés par outil', () => {
       'pim',
       'lfc',
       'b2b',
+      'delivery',
       'staff',
       'ops',
       'transverse',
@@ -72,6 +73,12 @@ describe('les domaines rangés par outil', () => {
   /** La seule ressource sans préfixe, et c'est écrit dans son contrat. */
   it('rattache les limites de prix à la vente LFC — pros et particuliers', () => {
     expect(toolOf('lfc_price_limits')).toBe('lfc');
+  });
+
+  /** Régression : les droits de livraison tombaient sous « Transverse » (2026-09-29). */
+  it('range les droits de livraison dans leur propre groupe', () => {
+    expect(toolOf('delivery_run_sheet')).toBe('delivery');
+    expect(toolOf('delivery_settings')).toBe('delivery');
   });
 
   it('rattache le journal au transverse — il traverse les outils', () => {

@@ -163,6 +163,39 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
 ];
 
 /**
+ * Les vues de la **Livraison** — l'exploitation : ce qui part, avec quoi, et
+ * d'où (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 2).
+ *
+ * Chaque vue porte son droit, et c'est ici obligatoire, pas une précaution :
+ * la coquille n'est pas gardée, parce que la feuille de route et les réglages
+ * relèvent de deux murs (`delivery_run_sheet`, `delivery_settings`) — le
+ * support lit l'une sans voir les autres.
+ */
+export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
+  {
+    key: 'feuille-de-route',
+    label: 'Feuille de route',
+    link: '/livraison/feuille-de-route',
+    icon: 'list',
+    needs: 'delivery_run_sheet:read',
+  },
+  {
+    key: 'vehicules',
+    label: 'Véhicules',
+    link: '/livraison/vehicules',
+    icon: 'truck',
+    needs: 'delivery_settings:read',
+  },
+  {
+    key: 'depart',
+    label: 'Point de départ',
+    link: '/livraison/depart',
+    icon: 'map-pin',
+    needs: 'delivery_settings:read',
+  },
+];
+
+/**
  * Les vues du **Comptoir** — ce qui se passe quand un client est DEVANT nous.
  *
  * Deux gestes, et c'est ce qui les réunit : rendre une commande déjà faite, et
@@ -672,6 +705,12 @@ export const WORKSPACES = {
     title: 'Comptoir',
     icon: 'package-check',
     views: COMPTOIR_VIEWS,
+  },
+  livraison: {
+    key: 'livraison',
+    title: 'Livraison',
+    icon: 'truck',
+    views: LIVRAISON_VIEWS,
   },
   pim: { key: 'pim', title: 'PIM', icon: 'catalog', views: PIM_VIEWS },
   // « E-commerce LFC » : le libellé seul. La clé et les adresses `/b2b/…`

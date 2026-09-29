@@ -1,4 +1,4 @@
-import type { PickupAddressPayload, PickupAddressView } from "@lfd/contracts";
+import type { GpsPoint, PickupAddressPayload, PickupAddressView } from "@lfd/contracts";
 
 import type { PickupDiscount } from "./pickup-discount.js";
 
@@ -9,8 +9,13 @@ import type { PickupDiscount } from "./pickup-discount.js";
  * une réduction qui ne vise aucune clientèle ne peut donc pas atteindre
  * l'adaptateur, quel que soit le handler qui écrit.
  */
-export type PickupAddressWrite = Omit<PickupAddressPayload, "discount" | "discountAudiences"> & {
+export type PickupAddressWrite = Omit<
+  PickupAddressPayload,
+  "discount" | "discountAudiences" | "gps"
+> & {
   readonly discount: PickupDiscount;
+  /** Résolu par le handler : jamais « absent » une fois arrivé ici. */
+  readonly gps: GpsPoint | null;
 };
 
 /**

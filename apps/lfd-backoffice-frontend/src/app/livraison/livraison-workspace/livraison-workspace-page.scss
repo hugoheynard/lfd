@@ -1,0 +1,9 @@
+/* Une coquille qui ne dessine rien laisse passer la HAUTEUR : fold chaîne des
+   colonnes flex jusqu'à `fold-page-layout`, et un hôte en `display: block` au
+   milieu la romprait (même raison que la coquille de la Production). */
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  min-height: 0;
+}

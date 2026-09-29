@@ -159,7 +159,7 @@ aussi (le shell fold n'a pas de règle d'impression, et aucune règle globale
 n'existe) ; le jour choisi n'est pas dans l'URL ; le lien carte ouvre Google
 Maps.
 
-### Lot 2 — Les bases paramétrables de la livraison
+### Lot 2 — Les bases paramétrables de la livraison — ✅ bâti le 2026-09-29
 
 > **Revu le 2026-09-29.** Hugo : « on doit poser les bases paramétrables avant
 > d'organiser les tournées ». Ce lot pose **tout ce que la composition lira
@@ -339,6 +339,14 @@ s'imprime seule. L'écran signale :
 - les fenêtres qu'un ordre ne peut pas tenir (deux 8 h – 9 h à vingt
   kilomètres l'un de l'autre) ;
 - le nombre d'arrêts par véhicule, pour voir un déséquilibre.
+
+> ⚠️ **Appris au lot 2 (2026-09-29)** : toute table du schéma `production` a un
+> déclencheur de journal de journée (`day_change`, D7 de
+> `documentation/caching-usage/plan-version-par-journee.md`), ou une raison
+> écrite de ne pas en avoir (`test/day-change-triggers.e2e-spec.ts`). Véhicules
+> et départ y sont inscrits comme réglages sans journée. **La tournée, elle, porte
+> une journée : elle aura son déclencheur**, faute de quoi la version par
+> journée servira une composition périmée.
 
 **Comment** :
 
