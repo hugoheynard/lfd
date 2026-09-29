@@ -633,6 +633,12 @@ Deux `BLOQUANT`, six `SÉRIEUX`. Les corrections, et ce qui reste à trancher :
 **Ce que le lot 4 ne fait pas** : aucune vue livreur, aucun geste à la porte
 (lot 6).
 
+**Tranché par Hugo le 2026-09-29** :
+
+- **Q14 — refusé.** On ne part pas avec un sac non chargé : on retire d'abord
+  l'arrêt, et le geste se voit.
+- **Q15 — le scan seul.** Pas d'étiquette « véhicule ».
+
 **Questions à Hugo** — les trois premières **avant** de bâtir :
 
 - **Q14** — Partir avec des sacs non chargés : **refusé** (recommandé : on
@@ -709,14 +715,23 @@ champ** qui décide : `override` dès qu'il est là. Écrit dans
 feuille de route n'écrit plus « horaire par défaut » ; le signal de fenêtre du
 lot 3 porte sur des heures promises.
 
-**Questions à Hugo** :
+**⏸ En suspens (Hugo, 2026-09-29)** : « soit les clients choisissent leur
+horaire à la commande, soit le commercial définit une plage en fonction du
+besoin et de la localisation ». Deux sources de la fenêtre, et non une grille
+unique :
 
-- **Q17** — Les heures de livraison de l'entreprise : une plage unique pour
-  tous les jours, ou par jour de la semaine ?
-- **Q18** — Une adresse du carnet sans créneau de réception : on propose toutes
-  les heures de livraison, ou on demande d'abord de remplir le carnet ?
-- **Q19** — Une tranche d'**une heure** pour tous, pro comme particulier ? (Le
-  retrait découpe par heure ; la livraison pourrait vouloir plus large.)
+- **le client choisit** à la commande, dans ce que l'offre permet ;
+- **le commercial fixe une plage** pour un client, selon son besoin et sa
+  localisation — un réglage du compte, pas un choix à chaque commande.
+
+**Q19 — une plage.** « Avoir un range me paraît bien » : la fenêtre de
+livraison est une **plage** (7 h – 9 h), pas nécessairement une heure pleine.
+⚠️ À confirmer à la reprise : plage libre, ou plages découpées comme le
+retrait ?
+
+Le lot reste conçu (L5-C2 : deux déploiements ; L5-C3 : la provenance), mais
+sa source des heures (L5-C1) est à réécrire autour de ces deux modes. Q17 et
+Q18 sont suspendues avec lui.
 
 ### Plus tard, et seulement sur décision
 
