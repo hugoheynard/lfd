@@ -4,6 +4,7 @@ import { ActivateCompanyByStaffCommand } from "../../b2b/account/application/com
 import { GrantTermsCommand } from "../../b2b/account/application/commands/grant-terms.command.js";
 import {
   AddDeliveryAddressCommand,
+  UpdateDeliveryAddressCommand,
   SaveBillingAddressCommand,
 } from "../../b2b/account/application/commands/address-commands.js";
 import { PreferFulfillmentCommand } from "../../b2b/account/application/commands/company-settings-commands.js";
@@ -154,6 +155,7 @@ export async function seedClient(
     // reçoit. Passer son tour sur la seule existence de la société laisserait
     // les postes semés avant cette version définitivement incomplets.
     await seedBankAccount(context, existing.id, existing.reference);
+    await completeDeliveryAddresses(context, owner, existing.id);
     return { userId: owner, companyId: existing.id, reference: existing.reference };
   }
 
@@ -412,6 +414,35 @@ async function seedAddresses(
     }
   });
   console.log("✓ Carnet d'adresses semé (1 facturation, 2 livraisons, 2 zones).");
+}
+
+/**
+ * **Le carnet, remis à l'état semé** quand la société existe déjà.
+ *
+ * La coupe épargne le client de référence, donc son carnet vivait tel qu'il
+ * avait été semé la première fois. Un poste semé avant les points GPS du
+ * scénario (2026-09-29) gardait La Daille et Le Chalet SANS point — et Le
+ * Chalet à Tignes —, et aucun rechargement ne les corrigeait : le calculateur
+ * les disait « non situées ». Chaque adresse semée est retrouvée par son
+ * libellé et REMPLACÉE par le vrai geste ; une adresse absente est ajoutée.
+ */
+async function completeDeliveryAddresses(
+  { commands, now, prisma }: ClientContext,
+  userId: string,
+  companyId: string,
+): Promise<void> {
+  const current = await prisma.address.findMany({
+    where: { companyId, kind: "delivery", archivedAt: null },
+    select: { id: true, label: true },
+  });
+  await asCustomer(now, userId, async () => {
+    for (const address of DELIVERIES) {
+      const found = current.find((row) => row.label === address.label);
+      await (found === undefined
+        ? commands.execute(new AddDeliveryAddressCommand(userId, companyId, address))
+        : commands.execute(new UpdateDeliveryAddressCommand(userId, companyId, found.id, address)));
+    }
+  });
 }
 
 /** Les deux livraisons. La première est le défaut — le repository le tient. */

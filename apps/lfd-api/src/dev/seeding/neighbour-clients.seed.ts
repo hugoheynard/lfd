@@ -3,6 +3,7 @@ import {
   AddDeliveryAddressCommand,
   SaveBillingAddressCommand,
 } from "../../b2b/account/application/commands/address-commands.js";
+import { AddDeliveryStepCommand } from "../../b2b/account/application/commands/delivery-procedure-commands.js";
 import { CreateCompanyCommand } from "../../b2b/account/application/commands/create-company.command.js";
 import { GrantTermsCommand } from "../../b2b/account/application/commands/grant-terms.command.js";
 import { UpdateMyProfileCommand } from "../../b2b/account/application/commands/update-my-profile.command.js";
@@ -50,7 +51,38 @@ export interface NeighbourClient {
   };
   /** Le point GPS de la livraison — le scénario de tournées de Hugo (2026-09-29). */
   readonly gps: { readonly lat: number; readonly lng: number };
+  /**
+   * Les consignes du carnet quand elles s'écartent du défaut des voisins
+   * ({@link DEFAULT_SITE}) — les clients de la journée de livraison en portent
+   * (`delivery-clients.seed.ts`).
+   */
+  readonly site?: DeliverySite;
 }
+
+/** Les consignes d'une adresse de livraison, et sa procédure s'il y en a une. */
+export interface DeliverySite {
+  /** Le créneau du carnet, tous les jours ; `null` = aucun créneau convenu. */
+  readonly slot: { readonly start: string; readonly end: string } | null;
+  readonly note: string;
+  readonly contact: {
+    readonly prenom: string;
+    readonly nom: string;
+    readonly telephone: string;
+  } | null;
+  /** `true` exige un contact : le contrat refuse une signature sans personne pour signer. */
+  readonly signatureRequired: boolean | null;
+  /** Les étapes de la procédure de livraison, dans l'ordre — sans photo. */
+  readonly steps: readonly { readonly title: string; readonly body: string }[];
+}
+
+/** Ce que les voisins portent depuis toujours : 07:00–09:00, sans consigne. */
+const DEFAULT_SITE: DeliverySite = {
+  slot: { start: "07:00", end: "09:00" },
+  note: "",
+  contact: null,
+  signatureRequired: null,
+  steps: [],
+};
 
 /** SIRET et TVA intracommunautaire VALIDES (clé de Luhn, clé TVA du SIREN). */
 export const NEIGHBOURS: readonly NeighbourClient[] = [
@@ -129,13 +161,30 @@ const SEED_STAFF_SUB = "seed|dev";
 
 /** Idempotent par raison sociale : une maison déjà semée est laissée telle quelle. */
 export async function seedNeighbourClients(context: ClientContext): Promise<void> {
-  for (const neighbour of NEIGHBOURS) {
+  await seedFictiveClients(context, NEIGHBOURS);
+}
+
+/**
+ * **Sème des clients fictifs**, chacun par les gestes du client de référence.
+ *
+ * Exportée pour la journée de livraison (`delivery-clients.seed.ts`) : onze
+ * maisons de plus, semées par le MÊME chemin — une copie de ce chemin
+ * dériverait au premier durcissement de la porte d'activation, et ce serait
+ * alors le semis de livraison seul qui cesserait de l'éprouver.
+ *
+ * Idempotent par raison sociale : une maison déjà semée est laissée telle quelle.
+ */
+export async function seedFictiveClients(
+  context: ClientContext,
+  clients: readonly NeighbourClient[],
+): Promise<void> {
+  for (const client of clients) {
     const existing = await context.prisma.company.findFirst({
-      where: { raisonSociale: neighbour.raisonSociale },
+      where: { raisonSociale: client.raisonSociale },
       select: { id: true },
     });
     if (existing === null) {
-      await seedNeighbour(context, neighbour);
+      await seedNeighbour(context, client);
     }
   }
 }
@@ -180,20 +229,26 @@ async function seedNeighbour(context: ClientContext, neighbour: NeighbourClient)
     await commands.execute(
       new SaveBillingAddressCommand(userId, id, { label: "Siège", ...postal }),
     );
-    await commands.execute(
+    const site = neighbour.site ?? DEFAULT_SITE;
+    const addressId = await commands.execute<AddDeliveryAddressCommand, string>(
       new AddDeliveryAddressCommand(userId, id, {
         label: neighbour.enseigne,
         ...postal,
         isDefault: true,
         specs: {
-          note: "",
-          slots: { mode: "everyday", slot: { start: "07:00", end: "09:00" } },
-          deliveryContact: null,
+          note: site.note,
+          slots: { mode: "everyday", slot: site.slot },
+          deliveryContact: site.contact,
           gps: neighbour.gps,
-          signatureRequired: null,
+          signatureRequired: site.signatureRequired,
         },
       }),
     );
+    // La procédure par la commande du gestionnaire, étape par étape, sans
+    // photo : c'est le chemin de l'écran, et le seul qui en tient l'ordre.
+    for (const step of site.steps) {
+      await commands.execute(new AddDeliveryStepCommand(userId, id, addressId, step, null));
+    }
     return id;
   });
 

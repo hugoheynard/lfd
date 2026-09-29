@@ -74,6 +74,19 @@
           <fold-field label="En attente à J+2 (le pic)">
             {{ done.orders.peakDay }} · livraison + retrait
           </fold-field>
+          <!-- La journée de livraison (2026-09-29) : de quoi ouvrir la feuille
+               de route, les tournées et le chargement. Comptée par le serveur,
+               comme le comptoir. -->
+          <fold-field label="Livraisons aujourd'hui">
+            {{ done.delivery.day }} · {{ done.delivery.deliveries }} livraisons, dont
+            {{ done.delivery.notReady }} pas encore prêtes
+          </fold-field>
+          <fold-field label="Tournées">
+            {{ done.delivery.vehicles }} véhicules · {{ done.delivery.rounds }} tournée chargée ({{
+              done.delivery.loadedBags
+            }}
+            sacs, pas partie) · {{ done.delivery.unassigned }} à répartir par « Proposer »
+          </fold-field>
         </fold-field-list>
       </fold-card>
     </fold-page-section>

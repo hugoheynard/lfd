@@ -33,7 +33,12 @@ async function main(): Promise<void> {
         `✔ ${report.placed} commande(s) posées, dont 1 pour hier (${report.yesterday}), ` +
         `${report.counterToday} au comptoir aujourd'hui (${report.today}, Le Labo + Le Village), ` +
         `${report.tomorrowCount} pour demain (${report.tomorrow}, plan à arrêter ce soir) ` +
-        `et 2 en attente à J+2 (${report.peakDay}, livraison + retrait) — le PIC du prévisionnel.`,
+        `et 2 en attente à J+2 (${report.peakDay}, livraison + retrait) — le PIC du prévisionnel.\n` +
+        `· livraison vidée : ${report.rounds.rounds} tournée(s), ${report.rounds.bags} sac(s).\n` +
+        `✔ Journée de livraison ${report.delivery.day} : ${report.delivery.deliveriesToday} livraison(s) ` +
+        `(${report.delivery.notReady} pas encore prête(s)), ${report.delivery.vehicles} véhicule(s), ` +
+        `${report.delivery.rounds} tournée chargée (${report.delivery.stopsInRound} arrêts, ` +
+        `${report.delivery.loadedBags} sacs, pas partie), ${report.delivery.unassigned} à répartir — « Proposer ».`,
     );
   } finally {
     await harness.close();

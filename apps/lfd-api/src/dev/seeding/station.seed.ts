@@ -48,7 +48,6 @@ import type { PrismaClient } from "../../platform/database/client/client.js";
  * l'autre est ce qui évite qu'un point semé se fasse retirer au reset suivant.
  */
 export const SEEDED_POINT_LABELS: readonly string[] = ["Le Labo", "Le Village"];
-export const SEEDED_ZONE_LABELS: readonly string[] = ["Val d'Isère", "Tignes"];
 
 /** Les deux fenêtres du labo/** Les deux fenêtres du labo : les pros avant le four, le public après. */
 const LABO_OPENING: PickupOpening = {
@@ -127,6 +126,17 @@ const ZONES: readonly SeedZone[] = [
     fee: { mode: "amount", cents: 1_500 },
   },
 ];
+
+/**
+ * Les zones que la coupe du rechargement épargne — DÉRIVÉES de `ZONES`.
+ *
+ * 🔴 C'était une seconde liste écrite à la main, et « Haute-Tarentaise » y
+ * manquait (constaté le 2026-09-29) : la zone du 73700 était semée puis
+ * RETIRÉE par `resetToSeed`, et le rechargement mourait sur la première
+ * livraison des Arcs. Deux listes qui doivent coïncider finissent par
+ * diverger ; une liste dérivée ne le peut pas.
+ */
+export const SEEDED_ZONE_LABELS: readonly string[] = ZONES.map((zone) => zone.label);
 
 /**
  * Sème la station si elle est absente. Chaque bloc se décide seul : un poste qui

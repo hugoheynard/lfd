@@ -153,6 +153,10 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
   await prisma.orderCutoffWaiver.deleteMany({ where: { companyId: { in: companyIds } } });
   await prisma.orderDraft.deleteMany({ where: { companyId: { in: companyIds } } });
   await prisma.paymentMandate.deleteMany({ where: { companyId: { in: companyIds } } });
+  // Le carnet du commercial pointe la société (clé `Restrict`) ; ses notes
+  // suivent en cascade. Absent jusqu'au 2026-09-29 : une société d'essai dotée
+  // d'un carnet faisait échouer tout le rechargement sur la clé étrangère.
+  await prisma.clientNotebook.deleteMany({ where: { companyId: { in: companyIds } } });
   await prisma.order.deleteMany({
     where: { OR: [{ companyId: { in: companyIds } }, { placedByUserId: { in: userIds } }] },
   });
@@ -162,6 +166,13 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
   await prisma.company.updateMany({
     where: { id: { in: companyIds } },
     data: { preferredDeliveryAddressId: null, preferredPickupAddressId: null },
+  });
+  // Les procédures de livraison pointent leur adresse (clé `Restrict`) ; leurs
+  // étapes suivent en cascade. Les clients de la journée de livraison en
+  // portent depuis le 2026-09-29 — sans cette ligne, le rechargement suivant
+  // échouait sur la clé étrangère.
+  await prisma.deliveryProcedure.deleteMany({
+    where: { address: { companyId: { in: companyIds } } },
   });
   await prisma.address.deleteMany({ where: { companyId: { in: companyIds } } });
   await prisma.membership.deleteMany({

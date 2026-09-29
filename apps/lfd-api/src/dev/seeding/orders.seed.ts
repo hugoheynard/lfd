@@ -1,23 +1,31 @@
-import type { BillingAddressPayload, PlaceOrderPayload } from "@lfd/contracts";
-import type { CommandBus } from "@nestjs/cqrs";
-
 import { STILL_SOLD } from "../../b2b/catalog/infrastructure/sellable-filter.js";
-import { PlaceOrderCommand } from "../../b2b/orders/application/commands/place-order.command.js";
-import { CloseProductionDayCommand } from "../../production/application/commands/close-production-day.command.js";
-import { DeclarePackingContainersCommand } from "../../production/application/commands/declare-packing-containers.command.js";
-import { MarkPackingLineCommand } from "../../production/application/commands/mark-packing-line.command.js";
-import { MarkWorksheetLineCommand } from "../../production/application/commands/mark-worksheet-line.command.js";
-import { PackOrderCommand } from "../../production/application/commands/pack-order.command.js";
 import { ConfirmManualHandoverCommand } from "../../handover/application/commands/confirm-manual-handover.command.js";
-import { PaymentStatus } from "../../platform/database/client/client.js";
-import type { PrismaClient } from "../../platform/database/client/client.js";
-import { randomUUID } from "node:crypto";
-
-import { runWithRequestContext } from "../../platform/context/request-context.store.js";
-import { newTraceId } from "../../platform/context/trace-context.js";
-import { resetProduction, type ProductionResetReport } from "./production.seed.js";
-import { CLIENT_RAISON_SOCIALE } from "./client.seed.js";
+import { CloseProductionDayCommand } from "../../production/application/commands/close-production-day.command.js";
+import { CLIENT_ENSEIGNE } from "./client.seed.js";
+import { DELIVERY_CLIENTS, seedDeliveryClients } from "./delivery-clients.seed.js";
+import { resetDeliveryRounds, type DeliveryRoundsResetReport } from "./delivery-rounds.seed.js";
 import { NEIGHBOURS, seedNeighbourClients } from "./neighbour-clients.seed.js";
+import {
+  advanceDeliveryDay,
+  placeDeliveryDay,
+  type DeliveryDayReport,
+} from "./delivery-day.seed.js";
+import {
+  asStaff,
+  atHour,
+  isoDay,
+  packFully,
+  place,
+  type PlacedOrder,
+  resolveTarget,
+  SEED_STAFF_SUB,
+  type SeedContext,
+  shiftDays,
+  type Target,
+} from "./order-placing.seed.js";
+import { resetProduction, type ProductionResetReport } from "./production.seed.js";
+
+export type { SeedContext } from "./order-placing.seed.js";
 
 /**
  * **Les commandes du client de référence**, calées sur l'horloge du jour.
@@ -58,8 +66,6 @@ import { NEIGHBOURS, seedNeighbourClients } from "./neighbour-clients.seed.js";
  * ni le `Clock` ni le contexte de requête ne devancent.
  */
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 /** Neuf heures du matin : une heure de commande plausible, et avant toute limite. */
 const ORDER_HOUR = 9;
 
@@ -96,16 +102,6 @@ const ABANDONED = { sku: "VIE-016", untilStep: 2 }; // Sablé suisse
 
 /** Un produit **récent** : rien au début, puis à chaque fois. */
 const NEWCOMER = { sku: "VIE-019", fromStep: 4 }; // Gros cookie
-
-/** L'adresse de livraison, telle que la commande la fige. */
-const DELIVERY: BillingAddressPayload = {
-  label: "La Folie Douce",
-  ligne1: "Sommet du téléphérique de La Daille",
-  ligne2: "",
-  codePostal: "73150",
-  ville: "Val d'Isère",
-  pays: "France",
-};
 
 /**
  * La tranche demandée sur une commande de RETRAIT au Labo.
@@ -237,7 +233,6 @@ const COUNTER: readonly CounterOrder[] = [
   { point: LABO, window: PICKUP_WINDOW, outcome: "expected", step: 1, wide: true, client: 4 },
 ];
 
-/** L'heure du colisage, et celle de la remise. Le sac sort avant de partir. */
 /**
  * L'heure du **plan du soir** de la veille : le geste qui arrête le compte du
  * jour. Le semis le joue pour aujourd'hui, pour que la fournée, la fiche
@@ -286,38 +281,19 @@ const TOMORROW: readonly (Pick<CounterOrder, "point" | "window"> & {
     ],
   },
 ];
+/** L'heure du colisage, et celle de la remise. Le sac sort avant de partir. */
 const PACKED_HOUR = 5;
 const HANDED_OVER_HOUR = 6;
-
-/**
- * Qui a colisé, qui a remis — au journal comme sur l'attestation.
- *
- * Le même sujet que l'activation de la société (`client.seed.ts`) : un semis qui
- * attesterait anonymement mentirait sur l'auteur, et l'agrégat refuse de toute
- * façon un auteur vide.
- */
-const SEED_STAFF_SUB = "seed|dev";
-
-interface Target {
-  readonly companyId: string;
-  readonly buyerUserId: string;
-  readonly pickupAddressId: string | null;
-  /**
-   * Les points de retrait **par libellé** — la file du comptoir en vise deux.
-   *
-   * Par libellé et non par rang : `findMany` ne promet aucun ordre, et « le
-   * second point » aurait désigné celui que la base rendait ce jour-là.
-   */
-  readonly pickupIds: ReadonlyMap<string, string>;
-  /** L'adresse **du carnet** que la livraison reprend, quand il y en a une. */
-  readonly deliveryAddressId: string | null;
-}
 
 /** Ce que le semis a posé — de quoi le raconter à qui l'a demandé. */
 export interface OrdersReport {
   readonly removed: number;
   /** Ce que la coupe a emporté chez le fournil — plans et attestations. */
   readonly production: ProductionResetReport;
+  /** Ce que la coupe a emporté à la livraison — tournées, arrêts, sacs. */
+  readonly rounds: DeliveryRoundsResetReport;
+  /** La journée de livraison d'aujourd'hui, telle que les écrans la montreront. */
+  readonly delivery: DeliveryDayReport;
   readonly placed: number;
   readonly yesterday: string;
   readonly today: string;
@@ -333,38 +309,41 @@ export interface OrdersReport {
   readonly peakDay: string;
 }
 
-/** Le minimum dont ce module a besoin : la base, le bus, et de quoi dater. */
-export interface SeedContext {
-  readonly prisma: PrismaClient;
-  readonly commands: CommandBus;
-  /**
-   * **L'instant du semis**, posé par l'appelant — et non lu au mur ici.
-   *
-   * C'est l'ancre de TOUT l'historique posé : chaque commande est datée par
-   * décalage depuis lui. Le lire au fond de cette fonction rendait le semis
-   * ni gelable ni rejouable, et la porte `clock-port` le refusait.
-   */
-  readonly now: Date;
-}
-
 export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
   const target = await resolveTarget(context);
   await ensureSkusExist(context);
-  // Les deux voisins de demain — semés ici, idempotents, pour que la ligne de
-  // commande `seed:orders` suffise sans rejouer tout le semis.
+  // Les voisins et les clients de la journée de livraison — semés ici,
+  // idempotents, pour que la ligne de commande `seed:orders` suffise sans
+  // rejouer tout le semis.
   await seedNeighbourClients(context);
+  await seedDeliveryClients(context);
   const neighbours = await Promise.all(
     NEIGHBOURS.map((neighbour) => resolveTarget(context, neighbour.raisonSociale)),
   );
+  const deliveryClients = await Promise.all(
+    DELIVERY_CLIENTS.map((client) => resolveTarget(context, client.raisonSociale)),
+  );
   const clients = [target, ...neighbours];
   const removed = await context.prisma.order.deleteMany({
-    where: { companyId: { in: clients.map((client) => client.companyId) } },
+    where: {
+      companyId: { in: [...clients, ...deliveryClients].map((client) => client.companyId) },
+    },
   });
   // 🔴 Le fournil AUSSI, et dans le même geste. Ses tables portent des copies de
   // ces commandes — un plan du soir, ses fiches, son compte à produire — que
   // rien ne rattache par clé étrangère : la coupe ci-dessus les laisserait
   // derrière, à parler de commandes qui n'existent plus. Cf. `production.seed`.
   const production = await resetProduction(context.prisma);
+  // Et la livraison, pour la même raison : ses tournées désignent les commandes
+  // par identifiant opaque, sans clé étrangère. Les véhicules restent.
+  const rounds = await resetDeliveryRounds(context.prisma);
+  const byEnseigne = new Map<string, Target>(
+    [
+      [CLIENT_ENSEIGNE, target],
+      ...NEIGHBOURS.map((neighbour, rank) => [neighbour.enseigne, neighbours[rank]] as const),
+      ...DELIVERY_CLIENTS.map((client, rank) => [client.enseigne, deliveryClients[rank]] as const),
+    ].filter((entry): entry is readonly [string, Target] => entry[1] !== undefined),
+  );
 
   const today = atHour(context.now, ORDER_HOUR);
   let placed = 0;
@@ -396,8 +375,9 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
     paid: false,
   });
 
-  // 🔴 AUJOURD'HUI — la file du comptoir, sur les deux points.
-  await seedCounter(context, clients, today);
+  // 🔴 AUJOURD'HUI — la file du comptoir, sur les deux points, et la journée
+  // de livraison : ses commandes, ses sacs, sa flotte, sa tournée chargée.
+  const delivery = await seedToday(context, clients, byEnseigne, today);
 
   // 🔴 **DEMAIN — le plan que l'on arrête ce soir** (Hugo, 2026-09-28).
   //
@@ -468,7 +448,9 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
   return {
     removed: removed.count,
     production,
-    placed: placed + 3 + COUNTER.length + TOMORROW.length,
+    rounds,
+    delivery,
+    placed: placed + 3 + COUNTER.length + delivery.deliveries + TOMORROW.length,
     yesterday: isoDay(shiftDays(today, -1)),
     today: isoDay(today),
     counterToday: COUNTER.length,
@@ -479,7 +461,7 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
 }
 
 /**
- * **La file du comptoir, posée puis avancée par les vraies commandes.**
+ * **Aujourd'hui : poser, arrêter le plan, avancer.**
  *
  * ## Pourquoi les commandes sont passées HIER
  *
@@ -488,41 +470,30 @@ export async function seedOrders(context: SeedContext): Promise<OrdersReport> {
  * Elles sont posées à l'heure habituelle de la veille, ce qui est aussi le
  * parcours réel : on commande le jour d'avant pour retirer le matin.
  *
+ * ## Pourquoi la livraison est posée AVANT le plan du soir
+ *
+ * Le plan du soir est un instantané : une commande posée après lui n'est pas au
+ * plan, donc ni en fournée ni au colisage — la feuille de route la montrerait
+ * sans sac possible. Comptoir ET livraison sont donc posés, puis le plan est
+ * arrêté une fois, puis chacun avance.
+ *
  * ## Et pourquoi l'avancement est daté, lui aussi
  *
  * Le colisage et la remise se jouent dans un contexte daté d'**aujourd'hui** :
- * Le colisage prend l'instant du contexte, et l'attestation le
- * lit à l'horloge du contexte. Les dater de maintenant ferait apparaître la
- * remise à l'heure du semis — 14 h pour un sac parti à 6 h.
+ * le colisage prend l'instant du contexte, et l'attestation le lit à l'horloge
+ * du contexte. Les dater de maintenant ferait apparaître la remise à l'heure du
+ * semis — 14 h pour un sac parti à 6 h.
  */
-async function seedCounter(
+async function seedToday(
   context: SeedContext,
   clients: readonly Target[],
+  byEnseigne: ReadonlyMap<string, Target>,
   today: Date,
-): Promise<void> {
+): Promise<DeliveryDayReport> {
   const forDay = isoDay(today);
   const orderedAt = shiftDays(today, -1);
-  const packedAt = atHour(today, PACKED_HOUR);
-
-  // Les produits déjà cochés en fournée ce jour : une ligne ne se coche qu'une fois.
-  const baked = new Set<string>();
-  const placedCounter: { readonly reference: string; readonly entry: CounterOrder }[] = [];
-  for (const entry of COUNTER) {
-    const client = clients[entry.client];
-    if (client === undefined) {
-      throw new Error(`Client de rang ${String(entry.client)} absent du comptoir du jour.`);
-    }
-    const reference = await place(context, client, {
-      at: orderedAt,
-      forDay,
-      method: entry.point === null ? "delivery" : "pickup",
-      point: entry.point,
-      window: entry.window,
-      lines: entry.wide === true ? await wideLines(context) : linesFor(entry.step),
-      paid: false,
-    });
-    placedCounter.push({ reference, entry });
-  }
+  const counter = await placeCounter(context, clients, orderedAt, forDay);
+  const deliveries = await placeDeliveryDay(context, byEnseigne, orderedAt, forDay);
 
   // 🔴 **Le plan du soir d'hier** — sans lui, la fournée du jour refuse chaque
   // coche (« la journée n'est pas arrêtée ») : le semis vide le fournil et
@@ -533,112 +504,78 @@ async function seedCounter(
     context.commands.execute(new CloseProductionDayCommand(forDay)),
   );
 
-  for (const { reference, entry } of placedCounter) {
+  // Les produits déjà cochés en fournée ce jour, comptoir et livraison
+  // confondus : une ligne de fournée ne se coche qu'une fois.
+  const baked = new Set<string>();
+  await advanceCounter(context, counter, today, baked);
+  const counterDelivery = counter.find((placed) => placed.entry.point === null);
+  return advanceDeliveryDay(context, {
+    today,
+    placed: deliveries,
+    // La livraison du comptoir (La Daille) est déjà colisée ci-dessus : elle
+    // rejoint la tournée de Val d'Isère sans repasser au colisage.
+    alreadyPacked: counterDelivery === undefined ? [] : [counterDelivery.order],
+    baked,
+  });
+}
+
+/** La file du comptoir, posée la veille. */
+async function placeCounter(
+  context: SeedContext,
+  clients: readonly Target[],
+  orderedAt: Date,
+  forDay: string,
+): Promise<readonly { readonly order: PlacedOrder; readonly entry: CounterOrder }[]> {
+  const placed: { readonly order: PlacedOrder; readonly entry: CounterOrder }[] = [];
+  for (const entry of COUNTER) {
+    const client = clients[entry.client];
+    if (client === undefined) {
+      throw new Error(`Client de rang ${String(entry.client)} absent du comptoir du jour.`);
+    }
+    const order = await place(context, client, {
+      at: orderedAt,
+      forDay,
+      method: entry.point === null ? "delivery" : "pickup",
+      point: entry.point,
+      window: entry.window,
+      lines: entry.wide === true ? await wideLines(context) : linesFor(entry.step),
+      paid: false,
+    });
+    placed.push({ order, entry });
+  }
+  return placed;
+}
+
+/** La file du comptoir, avancée par les gestes du fournil puis du comptoir. */
+async function advanceCounter(
+  context: SeedContext,
+  counter: readonly { readonly order: PlacedOrder; readonly entry: CounterOrder }[],
+  today: Date,
+  baked: Set<string>,
+): Promise<void> {
+  const forDay = isoDay(today);
+  const packedAt = atHour(today, PACKED_HOUR);
+  for (const { order, entry } of counter) {
     if (entry.outcome === "expected") {
       continue;
     }
     // Le colisage d'abord, **y compris pour la remise** : un sac sort du fournil
     // avant de changer de mains, et `packingBlocker` refuse de déclarer prête
     // une commande déjà remise. L'ordre inverse marcherait une fois sur deux.
-    // 🔴 **Par les gestes du fournil, pas par le statut** (2026-09-28). Le semis
-    // déclarait prête par `MarkOrderReadyCommand` : le statut de la commande
-    // disait « prête » pendant que son bac était vide, et le comptoir affichait
-    // « Déclarée prête » au-dessus de deux barres vides. Cocher en fournée,
-    // poser dans le bac et fermer le sac rend la commande prête par
+    // 🔴 **Par les gestes du fournil, pas par le statut** (2026-09-28). Cocher
+    // en fournée, poser dans le bac et fermer le sac rend la commande prête par
     // l'événement du colisage — le chemin réel, donc un seul état partout.
-    await asStaff(packedAt, () => packFully(context, forDay, reference, baked));
+    await asStaff(packedAt, () => packFully(context, forDay, order.reference, baked));
     if (entry.outcome === "handed_over") {
       const handedOverAt = atHour(today, entry.handedOverHour ?? HANDED_OVER_HOUR);
       // `manual` et non `scan` : le semis n'a pas de jeton en main, et une
       // attestation forte qu'aucun code n'a portée serait fausse plutôt que
       // faible. Le type existe précisément pour ne pas les confondre.
       await asStaff(handedOverAt, () =>
-        context.commands.execute(new ConfirmManualHandoverCommand(reference, SEED_STAFF_SUB)),
+        context.commands.execute(new ConfirmManualHandoverCommand(order.reference, SEED_STAFF_SUB)),
       );
     }
   }
-}
-
-/**
- * **Le sac, fait comme au fournil** : chaque produit coché en fournée (une
- * fois par jour), chaque ligne posée dans le bac, un bac déclaré, le sac fermé.
- * Lu dans le plan arrêté : ce sont SES lignes qu'on pose, pas celles du panier.
- */
-async function packFully(
-  context: SeedContext,
-  serviceDay: string,
-  reference: string,
-  baked: Set<string>,
-): Promise<void> {
-  const lines = await context.prisma.productionOrderLine.findMany({
-    where: { order: { serviceDay, reference } },
-    select: { sku: true },
-  });
-  for (const { sku } of lines) {
-    if (!baked.has(sku)) {
-      await context.commands.execute(
-        new MarkWorksheetLineCommand(serviceDay, sku, SEED_INITIALS, SEED_STAFF_SUB),
-      );
-      baked.add(sku);
-    }
-    await context.commands.execute(
-      new MarkPackingLineCommand(serviceDay, reference, sku, SEED_INITIALS, SEED_STAFF_SUB),
-    );
-  }
-  await context.commands.execute(new DeclarePackingContainersCommand(serviceDay, reference, 1));
-  await context.commands.execute(new PackOrderCommand(serviceDay, reference, SEED_STAFF_SUB));
-}
-
-/** Les initiales du semis sur les coches — deux lettres, comme au crayon. */
-const SEED_INITIALS = "SD";
-
-/** Le contexte de requête d'un geste staff — sans lui, aucun handler ne sait qui agit. */
-function asStaff<T>(now: Date, run: () => Promise<T>): Promise<T> {
-  return runWithRequestContext(
-    { now, traceId: newTraceId(), actor: { type: "staff", id: SEED_STAFF_SUB } },
-    run,
-  );
-}
-
-/** La société de référence, son acheteur, et le point de retrait par défaut. */
-async function resolveTarget(
-  context: SeedContext,
-  raisonSociale: string = CLIENT_RAISON_SOCIALE,
-): Promise<Target> {
-  const company = await context.prisma.company.findFirst({
-    where: { raisonSociale },
-    select: { id: true },
-  });
-  if (company === null) {
-    throw new Error(`Société « ${raisonSociale} » absente : semer le client avant ses commandes.`);
-  }
-  const member = await context.prisma.membership.findFirst({
-    where: { companyId: company.id },
-    select: { userId: true },
-  });
-  if (member === null) {
-    throw new Error(`La société « ${raisonSociale} » n'a aucun membre : rien à qui porter.`);
-  }
-  const labo = await context.prisma.pickupAddress.findFirst({
-    where: { isDefault: true },
-    select: { id: true },
-  });
-  const points = await context.prisma.pickupAddress.findMany({ select: { id: true, label: true } });
-  const carnet = await context.prisma.address.findFirst({
-    where: { companyId: company.id, kind: "delivery", isDefault: true },
-    select: { id: true },
-  });
-  return {
-    companyId: company.id,
-    buyerUserId: member.userId,
-    // `null` = le point par DÉFAUT, résolu par le domaine. On le passe explicite
-    // quand il existe pour que la commande fige le bon libellé.
-    pickupAddressId: labo?.id ?? null,
-    pickupIds: new Map(points.map((point) => [point.label, point.id])),
-    // L'IDENTITÉ de l'adresse, en plus de son instantané postal : sans elle le
-    // serveur ne sait pas de quelles consignes de site la commande s'écarte.
-    deliveryAddressId: carnet?.id ?? null,
-  };
 }
 
 /**
@@ -674,89 +611,6 @@ async function ensureSkusExist(context: SeedContext): Promise<void> {
         "Le miroir n'a peut-être jamais été poussé — lancer : pnpm --filter lfd-api seed:pim",
     );
   }
-}
-
-/**
- * Pose une commande par le vrai handler, recale sa date de création, et rend
- * son **numéro** — la clé par laquelle le colisage et la remise la reprennent.
- */
-async function place(
-  context: SeedContext,
-  target: Target,
-  order: {
-    readonly at: Date;
-    readonly forDay: string;
-    readonly method: "pickup" | "delivery";
-    /** Le point de retrait par libellé ; `null` = celui par défaut. */
-    readonly point: string | null;
-    /** La tranche demandée ; `null` = aucune, et la clé est alors OMISE. */
-    readonly window: { readonly start: string; readonly end: string } | null;
-    readonly lines: readonly { readonly sku: string; readonly quantity: number }[];
-    readonly paid: boolean;
-  },
-): Promise<string> {
-  const pickupAddressId =
-    order.point === null ? target.pickupAddressId : (target.pickupIds.get(order.point) ?? null);
-  if (order.point !== null && pickupAddressId === null) {
-    throw new Error(
-      `Point de retrait « ${order.point} » absent : semer la station avant les commandes.`,
-    );
-  }
-  const payload: PlaceOrderPayload = {
-    // Chaque commande du semis est une tentative DISTINCTE : une clé par
-    // commande, sinon la seconde serait rendue comme un rejeu de la première et
-    // le semis poserait une seule ligne au lieu de son historique.
-    idempotencyKey: randomUUID(),
-    // Le semis ne choisit pas son règlement : il laisse le serveur décider comme
-    // il l'a toujours fait — au compte si les termes sont accordés, carte sinon.
-    settlement: null,
-    fulfillmentMethod: order.method,
-    deliveryAddress: order.method === "delivery" ? DELIVERY : null,
-    deliveryAddressId: order.method === "delivery" ? target.deliveryAddressId : null,
-    pickupAddressId: order.method === "pickup" ? pickupAddressId : null,
-    // 🔴 Aucune commande semée ne demandait de tranche horaire, donc le bon de
-    // commande — qui affiche la fenêtre convenue — n'avait rien à montrer sur un
-    // poste. En RETRAIT elle se demande explicitement ; en LIVRAISON elle vient
-    // du carnet, que `defaultsFor` lit à partir de `deliveryAddressId`. Deux
-    // provenances différentes, et c'est le sujet : la commande dit laquelle.
-    //
-    // ⚠️ La tranche doit tenir dans UNE fenêtre d'ouverture du point, jamais
-    // dans leur union — le serveur refuse sinon, et il a raison : entre le
-    // créneau pro et l'ouverture publique du Labo, il y a porte close.
-    //
-    // 🔴 **`undefined` et `null` ne disent PAS la même chose**, et les confondre
-    // a coûté un aller-retour : `agreeFulfillment` lit l'absence comme « prends
-    // le défaut » et un `null` explicite comme « le client n'en veut aucune ».
-    // Envoyer `null` en livraison ÉCRASAIT donc la fenêtre du carnet, et la
-    // commande sortait avec `source: "override"` et `value: null`. La clé est
-    // omise, pas mise à `null`.
-    ...(order.window === null ? {} : { requestedWindow: order.window }),
-    requestedDeliveryDate: order.forDay,
-    note: "",
-    lines: [...order.lines],
-  };
-  const placed = await runWithRequestContext(
-    // Le contexte DATÉ : le `Clock` y lit `order.at`, donc l'heure limite se juge
-    // comme elle se jugerait ce jour-là — pas comme aujourd'hui.
-    { now: order.at, traceId: newTraceId(), actor: { type: "customer", id: target.buyerUserId } },
-    () =>
-      context.commands.execute<PlaceOrderCommand, { id: string }>(
-        // Le semis passe la société EXPLICITEMENT : il n'y a pas de requête HTTP
-        // derrière lui, donc pas de guard pour la résoudre. C'est précisément
-        // pour ça qu'elle est un paramètre de la commande et pas une lecture du
-        // contexte au fond du handler.
-        new PlaceOrderCommand(target.buyerUserId, payload, target.companyId),
-      ),
-  );
-  const row = await context.prisma.order.update({
-    where: { id: placed.id },
-    data: {
-      createdAt: order.at,
-      ...(order.paid ? { paymentStatus: PaymentStatus.paid } : {}),
-    },
-    select: { orderNumber: true },
-  });
-  return row.orderNumber;
 }
 
 /**
@@ -873,31 +727,4 @@ function linesFor(step: number): { readonly sku: string; readonly quantity: numb
     lines.push({ sku: NEWCOMER.sku, quantity: 3 });
   }
   return lines;
-}
-
-/**
- * Le même jour, à l'heure dite.
- *
- * ⚠️ **`setHours` et non une soustraction de millisecondes.** Retrancher des
- * multiples de 24 h traverse un changement d'heure, et la journée obtenue glisse
- * alors d'une heure — c'est ce glissement qui avait produit dix doublons dans le
- * seed témoin.
- */
-function atHour(date: Date, hour: number): Date {
-  const copy = new Date(date);
-  copy.setHours(hour, 0, 0, 0);
-  return copy;
-}
-
-/** Le jour décalé, l'heure reposée — cf. {@link atHour}. */
-function shiftDays(from: Date, days: number): Date {
-  return atHour(new Date(from.getTime() + days * DAY_MS), from.getHours());
-}
-
-function isoDay(date: Date): string {
-  // Composé à la main : `toISOString` bascule en UTC et rend la veille pour
-  // toute heure locale avant 02 h en été.
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
 }

@@ -73,10 +73,33 @@ export interface DevSeedStorageReport {
   readonly objects: number;
 }
 
+/**
+ * **La journée de livraison d'aujourd'hui**, telle que le semis l'a posée
+ * (2026-09-29) : des nombres comptés par le serveur, pour que l'écran de
+ * rechargement ne décrive pas de mémoire ce que le semis a fait.
+ */
+export interface DevSeedDeliveryReport {
+  /** `AAAA-MM-JJ` — la journée de livraison. */
+  readonly day: string;
+  /** Les livraisons du jour, celle du comptoir comprise. */
+  readonly deliveries: number;
+  /** Celles qui ne sont pas encore colisées. */
+  readonly notReady: number;
+  /** Les véhicules de la flotte semée — ceux ajoutés à la main ne sont pas comptés. */
+  readonly vehicles: number;
+  /** Les tournées composées et chargées, pas parties. */
+  readonly rounds: number;
+  /** Les sacs chargés dans ces tournées. */
+  readonly loadedBags: number;
+  /** Les livraisons laissées hors tournée — ce que « Proposer » a à placer. */
+  readonly unassigned: number;
+}
+
 /** La réponse de `POST /admin/dev/seed/reload`. */
 export interface DevSeedReport {
   readonly reset: DevSeedResetReport;
   readonly orders: DevSeedOrdersReport;
+  readonly delivery: DevSeedDeliveryReport;
   /** Vide si aucun bucket n'est configuré sur ce poste. */
   readonly storage: readonly DevSeedStorageReport[];
 }

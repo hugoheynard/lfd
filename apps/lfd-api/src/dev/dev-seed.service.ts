@@ -92,8 +92,26 @@ export class DevSeedService {
       this.config.r2Storage("customers"),
       this.config.r2Storage("production"),
     ]);
+    // Les commandes, ET la journée de livraison qu'elles portent : clients de
+    // livraison, flotte, départ, tournée chargée — les mêmes fonctions que
+    // `pnpm seed:orders`, pour que le bouton et la ligne de commande posent le
+    // même jeu de données.
     const orders = await seedOrders(context);
-    return { reset, orders, storage };
+    const { delivery } = orders;
+    return {
+      reset,
+      orders,
+      storage,
+      delivery: {
+        day: delivery.day,
+        deliveries: delivery.deliveriesToday,
+        notReady: delivery.notReady,
+        vehicles: delivery.vehicles,
+        rounds: delivery.rounds,
+        loadedBags: delivery.loadedBags,
+        unassigned: delivery.unassigned,
+      },
+    };
   }
 
   /**
