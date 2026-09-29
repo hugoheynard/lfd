@@ -698,6 +698,71 @@ Saisie de la référence en dernier recours.
   imprimante d'étiquettes au colisage, ou une planche A4 d'étiquettes
   adhésives sur l'imprimante existante ?
 
+#### Troisième contradiction — v3 du lot 4 (2026-09-29)
+
+La v2 a été contredite : deux `BLOQUANT`, sept `SÉRIEUX`. Le nombre de sacs,
+gravé au colisage par une écriture nue et sans « décolisage »
+(`pack-order.handler.ts`, `markPacked`), ne pouvait plus être corrigé ; et un
+sac n'avait pas d'identité — `(référence, n)` ne tient que si `n` ne bouge
+jamais. La v3 change de modèle plutôt que de rapiécer :
+
+**L4-C11 — Le sac est un objet de la LIVRAISON, avec son identifiant.**
+Table `delivery_bag` du bloc `delivery` : identifiant opaque (`IdGenerator`),
+commande, `service_day`, `voided_at`, `loaded_at` / `loaded_by`. Un sac naît
+quand on **imprime son étiquette** ; il ne dépend d'aucun compte déclaré à
+l'avance. Le nombre de sacs d'une commande **est** le nombre de ses sacs non
+annulés — comme le nombre de véhicules est la liste des actifs.
+
+- **Un sac de plus** : on imprime une étiquette de plus. Rien à corriger.
+- **Un sac de trop** : on **annule** son étiquette (`voided_at`, au journal).
+- Un arrêt est **chargé** quand tous ses sacs non annulés sont chargés.
+- **Décharger** porte sur **un** sac.
+
+Ce que ça ferme : la production n'écrit **rien** de neuf (`markPacked` reste
+tel quel) ; **aucun canal `delivery → production`** n'est plus nécessaire pour
+les sacs.
+
+**L4-C12 — Tout sac a une étiquette, retardataire compris.** Il n'y a plus de
+« cocher à la main » : on étiquette la commande arrivée après la clôture comme
+les autres, puis on scanne. Le contournement que la première contradiction
+avait trouvé disparaît avec le bouton. La saisie reste possible **pour lire** un
+sac dont le QR est illisible (on tape son code court), pas pour cocher une
+commande.
+
+**L4-C13 — Le QR porte l'identifiant du sac, et l'ouvrir ne charge rien.**
+`/livraison/sac/{identifiant}` : pas la référence de commande. Ouvrir l'adresse
+**montre** le sac (commande, enseigne, tournée, sac 2 sur 3) et propose
+**« Charger dans le Kangoo blanc »** ; c'est ce **geste** qui écrit. Un aperçu de
+lien, un historique ou un curieux qui scanne ne chargent rien — la règle que le
+colisage suit déjà. La route porte `permissionGuard('delivery_loading:read')` ;
+charger demande l'écriture. ⚠️ À vérifier : qu'une URL profonde survit à la
+connexion Auth0 du back-office.
+
+**L4-C14 — Où l'on étiquette.** Au colisage, au moment où le bac est fait —
+c'est là qu'on voit les sacs. L'écran du colisage appelle la route d'étiquetage
+du bloc `delivery` ; le droit d'étiqueter est `delivery_loading:write`, que le
+comptoir a déjà (Q21). Les étiquettes sont un **PDF produit par le serveur**,
+comme la feuille d'atelier, et **réimprimables** (étiquette abîmée).
+
+**L4-C15 — Ce qui reste à mesurer, écrit** :
+
+- `delivery_bag` porte une journée : elle aura ses trois déclencheurs
+  `day_change`. Chaque scan fera avancer la version du fournil, donc recharger
+  Supervision et colisage : **à mesurer au premier essai réel** ; si c'est trop,
+  les tables de la livraison changent de schéma (une exception D7 ne suffirait
+  pas : ces tables portent une journée) ;
+- le décodeur JS : librairie nommée, licence et poids mesurés **avant** de bâtir,
+  importé dynamiquement **dans** le composant de l'écran de chargement, jamais
+  dans un service racine ;
+- `lint:prisma-model-ownership` doit attribuer `delivery_bag` au bloc
+  `delivery` : les tables de la livraison vivent dans le schéma du fournil, et
+  une lecture Prisma directe de `production_order` depuis `delivery` serait
+  invisible à la porte d'imports.
+
+**Bloqué par Q22** (Hugo, 2026-09-29 : « je ne sais pas encore ») : le support
+des étiquettes décide du gabarit du PDF (planche A4 ou rouleau). Tout le reste
+du lot 4 peut se bâtir ; l'étiquette attend la réponse.
+
 ### Lot 5 — La tranche d'une heure en livraison (côté commande)
 
 Côté **commerce** et **boutique** : la tranche d'une heure devient une vraie
