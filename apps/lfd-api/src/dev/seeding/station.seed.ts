@@ -119,6 +119,13 @@ const ZONES: readonly SeedZone[] = [
   // contenu du panier.
   { label: "Val d'Isère", postalPrefixes: ["73150"], fee: { mode: "amount", cents: 800 } },
   { label: "Tignes", postalPrefixes: ["73320"], fee: { mode: "amount", cents: 1_500 } },
+  // Bourg-Saint-Maurice, Les Arcs et La Rosière partagent le 73700 : une zone,
+  // sinon le scénario de tournées (2026-09-29) y verrait ses commandes refusées.
+  {
+    label: "Haute-Tarentaise",
+    postalPrefixes: ["73700"],
+    fee: { mode: "amount", cents: 1_500 },
+  },
 ];
 
 /**

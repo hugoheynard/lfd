@@ -48,6 +48,8 @@ export interface NeighbourClient {
     readonly codePostal: string;
     readonly ville: string;
   };
+  /** Le point GPS de la livraison — le scénario de tournées de Hugo (2026-09-29). */
+  readonly gps: { readonly lat: number; readonly lng: number };
 }
 
 /** SIRET et TVA intracommunautaire VALIDES (clé de Luhn, clé TVA du SIREN). */
@@ -66,6 +68,7 @@ export const NEIGHBOURS: readonly NeighbourClient[] = [
       phone: "06 21 34 55 90",
     },
     address: { ligne1: "12 rue de la Poste", codePostal: "73150", ville: "Val d'Isère" },
+    gps: { lat: 45.4496, lng: 6.9787 },
   },
   {
     raisonSociale: "SAS Hôtellerie du Lac",
@@ -80,7 +83,12 @@ export const NEIGHBOURS: readonly NeighbourClient[] = [
       lastName: "Vuillet",
       phone: "06 44 18 72 03",
     },
-    address: { ligne1: "Le Lac", codePostal: "73320", ville: "Tignes" },
+    address: {
+      ligne1: "Charmettoger, Arc 1800",
+      codePostal: "73700",
+      ville: "Bourg-Saint-Maurice",
+    },
+    gps: { lat: 45.5734, lng: 6.7788 },
   },
   {
     raisonSociale: "SARL Les Grangettes",
@@ -95,7 +103,8 @@ export const NEIGHBOURS: readonly NeighbourClient[] = [
       lastName: "Bochet",
       phone: "06 58 91 23 40",
     },
-    address: { ligne1: "3 place des Dames", codePostal: "73150", ville: "Val d'Isère" },
+    address: { ligne1: "Grande Rue", codePostal: "73700", ville: "Bourg-Saint-Maurice" },
+    gps: { lat: 45.6186, lng: 6.7695 },
   },
   {
     raisonSociale: "SAS Refuge du Fond",
@@ -111,6 +120,7 @@ export const NEIGHBOURS: readonly NeighbourClient[] = [
       phone: "06 77 02 64 15",
     },
     address: { ligne1: "Route du Fornet", codePostal: "73150", ville: "Val d'Isère" },
+    gps: { lat: 45.4503, lng: 7.0111 },
   },
 ];
 
@@ -179,7 +189,7 @@ async function seedNeighbour(context: ClientContext, neighbour: NeighbourClient)
           note: "",
           slots: { mode: "everyday", slot: { start: "07:00", end: "09:00" } },
           deliveryContact: null,
-          gps: null,
+          gps: neighbour.gps,
           signatureRequired: null,
         },
       }),

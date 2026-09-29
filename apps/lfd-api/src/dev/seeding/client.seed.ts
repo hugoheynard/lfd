@@ -434,16 +434,19 @@ const DELIVERIES = [
       // Celui-ci s'accorde avec la note : avant l'ouverture des remontées.
       slots: { mode: "everyday" as const, slot: { start: "06:00", end: "07:30" } },
       deliveryContact: null,
-      gps: null,
+      // Les points du scénario : Val d'Isère, Bourg-Saint-Maurice, Arc 1800, La
+      // Rosière (Hugo, 2026-09-29), relus sur Nominatim le même jour. Sans
+      // eux, le calculateur n'a rien à situer en dev sans géocodeur.
+      gps: { lat: 45.4602, lng: 6.9649 },
       signatureRequired: null,
     },
   },
   {
     label: "Le Chalet",
-    ligne1: "18 chemin des Barmettes",
+    ligne1: "Route de la Rosière",
     ligne2: "",
-    codePostal: "73320",
-    ville: "Tignes",
+    codePostal: "73700",
+    ville: "Montvalezan",
     pays: "France",
     isDefault: false,
     specs: {
@@ -453,7 +456,8 @@ const DELIVERIES = [
       // qui les alignerait ne montrerait jamais que la fenêtre suit l'adresse.
       slots: { mode: "everyday" as const, slot: { start: "07:00", end: "09:00" } },
       deliveryContact: null,
-      gps: null,
+      // La Rosière : la station la plus au nord du scénario (Hugo, 2026-09-29).
+      gps: { lat: 45.6286, lng: 6.8478 },
       signatureRequired: null,
     },
   },
