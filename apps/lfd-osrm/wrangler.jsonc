@@ -1,0 +1,52 @@
+{
+  // `lfd-osrm` : le calcul d'itinéraires routiers de la Savoie, en Cloudflare
+  // Container derrière un Worker d'entrée minimal (plan de tournée, lot 8,
+  // forme B-ter — documentation/livraisons/plan-preparation-de-tournee.md).
+  // Consommé par .github/workflows/deploy_lfd_osrm.yml (wrangler deploy).
+  //
+  // Il ne partage RIEN avec `lfd-api` : ni Worker, ni image, ni déploiement.
+  // C'est tout l'objet de B-ter — la carte se refait chaque mois sans toucher
+  // à l'API.
+  "name": "lfd-osrm",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-29",
+
+  "containers": [
+    {
+      "class_name": "Osrm",
+      // Image pré-poussée sur le registre Cloudflare par le workflow. Deux
+      // placeholders, remplacés au déploiement : `__CF_ACCOUNT_ID__` par le
+      // secret CLOUDFLARE_ACCOUNT_ID (jamais commité), `__IMAGE_TAG__` par le
+      // tag de la CARTE — `savoie-AAAAMMJJ-osrm<version>`. Jamais `latest` :
+      // Cloudflare le refuse, et l'image EST la carte — son tag est ce qui dit
+      // laquelle tourne, et ce qu'on redéploie pour revenir à la précédente.
+      "image": "registry.cloudflare.com/__CF_ACCOUNT_ID__/lfd-osrm:__IMAGE_TAG__",
+      // `lite` (1/16 vCPU, 256 MiB, 2 Go de disque) : `osrm-routed` chargé tient
+      // en 47 à 51 Mo, l'image en ≈ 220 Mo (mesuré le 2026-09-29, L8-C6).
+      "instance_type": "lite",
+      // Une instance : OSRM est sans état et son trafic tient en quelques
+      // appels par matin. Plusieurs instances n'apporteraient que des réveils.
+      "max_instances": 1,
+      // Même placement que `lfd-api`, son seul appelant : Europe de l'Ouest.
+      "constraints": { "regions": ["WEUR"] },
+    },
+  ],
+
+  "durable_objects": {
+    "bindings": [{ "name": "OSRM", "class_name": "Osrm" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Osrm"] }],
+
+  // AUCUNE ADRESSE PUBLIQUE, ni `workers.dev` ni route : le seul appelant sera
+  // `lfd-api`, par un service binding (étape 2 du lot). Une adresse ici serait
+  // une seconde porte ouverte au monde à côté de la passerelle.
+  "workers_dev": false,
+
+  // AUCUN cron, délibérément : `lfd-api` en a un pour rester chaud, OSRM non.
+  // Endormi, un conteneur n'est pas facturé (L8-C11) ; il se réveille au
+  // premier appel du matin.
+
+  "observability": {
+    "enabled": true,
+  },
+}

@@ -1,0 +1,128 @@
+name: deploy_lfd_osrm
+
+# Déploie `lfd-osrm` — le calcul d'itinéraires routiers de la Savoie — sur
+# Cloudflare Containers (plan de tournée, lot 8, forme B-ter :
+# documentation/livraisons/plan-preparation-de-tournee.md, L8-C10/C11).
+#
+# L'IMAGE EST LA CARTE. Chaque exécution télécharge l'extrait OpenStreetMap du
+# jour, découpe la Savoie, prépare le graphe, le vérifie, et le met dans
+# l'image : aucun bucket, aucun jeton pour la carte. Le tag
+# `savoie-AAAAMMJJ-osrm<version>` dit laquelle tourne ; revenir à la carte
+# précédente = redéployer son tag (documentation/ops/runbook.md, « La carte
+# routière »).
+#
+# Trois déclencheurs :
+#   · MENSUEL — les routes de montagne changent peu, mais une route fermée ou
+#     ouverte change des tournées (L8-C4) ;
+#   · MANUEL — refaire la carte tout de suite, ou après un échec du mensuel ;
+#   · PUSH sur `main` filtré sur `apps/lfd-osrm/**` — un changement du Worker,
+#     du Dockerfile ou de la version d'OSRM.
+#
+# ⚠️ Un workflow n'est lu que par GitHub : aucune porte locale ne le vérifie.
+# Si le MENSUEL échoue, il échoue VISIBLEMENT (aucun `continue-on-error`) :
+# GitHub prévient l'auteur du dernier changement de ce fichier, et la carte
+# précédente continue de servir — elle vieillit, elle ne disparaît pas.
+#
+# Secrets GitHub : les MÊMES que deploy_lfd_api.yml, aucun neuf.
+#   CLOUDFLARE_LFD_API_WORKER — jeton « Workers Scripts · Edit » + « Containers · Edit »
+#     du compte ; il couvre tout Worker du compte, donc celui-ci.
+#   CLOUDFLARE_ACCOUNT_ID — injecté dans `wrangler.jsonc` au déploiement.
+# Aucun secret RUNTIME : OSRM ne lit rien de l'environnement.
+
+on:
+  schedule:
+    # Le 3 de chaque mois, 02:17 UTC : hors des heures de tournée, et loin de
+    # l'heure pile où les exécutions planifiées de GitHub s'embouteillent.
+    - cron: "17 2 3 * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "apps/lfd-osrm/**"
+      - ".github/workflows/deploy_lfd_osrm.yml"
+
+concurrency:
+  group: deploy_lfd_osrm
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read # lire le verdict de la CI
+
+jobs:
+  deploy_lfd_osrm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # La CI (`ci.yml`) ne connaît pas encore ce paquet (son périmètre est une
+      # liste nommée, `dev-toolbox/ci/affected.mjs`) : ses contrôles tournent
+      # donc ICI, avant tout geste vers Cloudflare.
+      - name: Typecheck, lint et tests du Worker
+        run: |
+          pnpm --filter lfd-osrm exec tsc --noEmit
+          pnpm --filter lfd-osrm lint
+          pnpm --filter lfd-osrm test
+
+      # Le tag de la CARTE : date de l'extrait (UTC) + version d'OSRM. La
+      # version vient de `osrm-version.env`, la seule source — celle que lisent
+      # aussi le script de préparation et le Dockerfile.
+      - name: Nommer la carte
+        id: map
+        run: |
+          source apps/lfd-osrm/osrm-version.env
+          tag="savoie-$(date -u +%Y%m%d)-osrm${OSRM_VERSION}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "osrm_image=${OSRM_IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "Carte : ${tag}"
+
+      # Le graphe HORS du dépôt (`$RUNNER_TEMP`) : il sert de contexte au
+      # `docker build`, et le `.dockerignore` racine ne le connaît pas. Le
+      # script échoue si `osrm-routed` ne charge pas le graphe ou ne rend pas
+      # l'itinéraire Val d'Isère → Arc 1800.
+      - name: Préparer et vérifier le graphe
+        run: apps/lfd-osrm/scripts/build-graph.sh "$RUNNER_TEMP/osrm-graph"
+
+      - name: Construire l'image (linux/amd64)
+        run: |
+          docker build --platform linux/amd64 \
+            --build-arg OSRM_IMAGE="${{ steps.map.outputs.osrm_image }}" \
+            -f apps/lfd-osrm/Dockerfile \
+            -t lfd-osrm:"${{ steps.map.outputs.tag }}" \
+            "$RUNNER_TEMP/osrm-graph"
+
+      - name: Pousser l'image → registre Cloudflare
+        working-directory: apps/lfd-osrm
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_API_WORKER }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm exec wrangler containers push lfd-osrm:"${{ steps.map.outputs.tag }}"
+
+      # Sur un push, on attend la CI comme `lfd-api` : un commit rouge ne se
+      # déploie pas. Le mensuel et le manuel n'ont pas de commit neuf à juger.
+      - name: Attendre que la CI soit verte
+        if: github.event_name == 'push'
+        uses: ./.github/actions/attendre-un-run
+        with:
+          workflow: ci.yml
+
+      - name: Déployer le Worker
+        working-directory: apps/lfd-osrm
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_API_WORKER }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          MAP_TAG: ${{ steps.map.outputs.tag }}
+        run: |
+          sed -i "s/__CF_ACCOUNT_ID__/${CLOUDFLARE_ACCOUNT_ID}/" wrangler.jsonc
+          sed -i "s/__IMAGE_TAG__/${MAP_TAG}/" wrangler.jsonc
+          pnpm exec wrangler deploy
+          echo "### Carte déployée : \`${MAP_TAG}\`" >> "$GITHUB_STEP_SUMMARY"

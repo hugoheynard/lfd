@@ -1,0 +1,27 @@
+{
+  "name": "lfd-osrm",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "build-graph": "bash scripts/build-graph.sh"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@eslint/js": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
+    "globals": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vitest": "catalog:",
+    "wrangler": "catalog:"
+  }
+}

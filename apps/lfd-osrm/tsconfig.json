@@ -1,0 +1,17 @@
+{
+  // Worker Cloudflare (workerd) : globals fetch/Request/Response/URL + types
+  // Cloudflare. wrangler bundle avec esbuild ; ici on ne fait que type-checker.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "WebWorker"],
+    "types": ["@cloudflare/workers-types"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src"]
+}

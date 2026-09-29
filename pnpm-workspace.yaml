@@ -121,6 +121,10 @@ catalog:
   "@aws-sdk/client-s3": 3.1097.0
   "@aws-sdk/s3-request-presigner": 3.1097.0
   "@cloudflare/workers-types": 5.20260804.1
+  # Le pilote des conteneurs Cloudflare, lu par les DEUX Workers à conteneur
+  # (`lfd-api`, `lfd-osrm`) : deux versions feraient deux comportements de
+  # réveil et de proxy pour la même plateforme.
+  "@cloudflare/containers": 0.3.7
   wrangler: 4.118.0
 
 # `@angular/build` déclare @angular/platform-server et @angular/ssr en pairs
