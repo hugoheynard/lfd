@@ -1015,6 +1015,65 @@ sèche) ; le retour des bacs vides (Q5) avec la vue livreur (lot 6).
 (réglages) ; (b) colisage proposé + déclaration typée au fournil ; (c) le bac
 remplace le sac au scan ; (d) le plan de chargement ; (e) le calcul.
 
+#### Lot 4 bis — v2 après `vitruve` (2026-09-29) — c'est CETTE version qu'on bâtit
+
+`vitruve` : 3 BLOQUANTS, 4 SÉRIEUX, tous tranchés ci-dessous. Hugo : « fais
+les bacs d'abord en entier » — les propositions présentées le même soir sont
+retenues.
+
+**v2-1 — Le bac appartient à la LIVRAISON** (bloc `delivery`, schéma
+`production`, tables à lui ; jamais la table commerce `delivery_settings`).
+Catalogue, contenances, colisage proposé, déclaration, scan, chargement :
+tout dans `delivery`. Le **poste de colisage** du fournil affiche, pour une
+commande livrée, un panneau « Bacs » servi par les routes de `delivery` :
+c'est l'ÉCRAN qui compose les deux blocs, aucun serveur ne lit l'autre. Le
+compte `containers` du fournil (`DeclarePackingContainersCommand`) reste pour
+les retraits au comptoir et n'est plus lu pour une livraison ; la déclaration
+des bacs de `delivery` fait foi (une seule vérité par mode d'acheminement).
+
+**v2-2 — Q4 tranchée** : la **contenance** (bacs × produits) est une donnée de
+`delivery` (table à elle, SKU opaque). La liste des produits et leurs noms
+arrivent par le canal commerce de `delivery` (`delivery/channels/commerce/`),
+que le commerce implémente en relayant le catalogue B2B — un port nommé,
+jamais une jointure. Le **froid** est une propriété du PRODUIT : un champ de la
+fiche produit du **référentiel** (`pim`), publié dans le catalogue B2B, relayé
+par le même canal. Une seule vérité, côté produit.
+
+**v2-3 — Une seule règle de place** : une unité d'un produit occupe
+`1 / contenance(type, produit)` d'un bac entier ; un demi-bac offre **0,5**.
+(« La moitié arrondie » de la v1 est retirée : elle contredisait le mélange.)
+
+**v2-4 — Le demi-bac partagé** : un bac physique cloisonné a exactement deux
+moitiés, `left` et `right`, chacune liée à UNE commande (unicité en base :
+bac × moitié). Proposé seulement si les deux commandes sont dans la même
+tournée à des arrêts consécutifs. Toute recomposition qui casse cette
+condition (retrait, déplacement, réordonnancement) met le bac **« à refaire »**
+et « Partir » refuse l'arrêt concerné avec la phrase qui le dit. Au
+chargement, le bac partagé va **en haut de la pile du premier des deux
+arrêts**.
+
+**v2-5 — Le plan de chargement v1 est un plan d'ORDRE et de VOLUME**, pas une
+géométrie : l'ordre de chargement (inverse de la tournée), les piles par arrêt
+dans la limite de hauteur du type, le volume utilisé sec / froid comparé au
+volume utile et au volume réfrigéré du véhicule, et une alerte de
+dépassement. Pas de schéma du plancher en v1 (il demanderait un rangement 2D
+et les dimensions de la caisse froide, inconnues).
+
+**v2-6 — La fenêtre du renommage** : `delivery_bag` → bac se fait en place,
+sans bascule, **tant que le lot 4 n'est pas promu vers `main`** (sa migration
+`20260929160200_les_sacs_et_le_depart` est sur `dev`, pas sur `main`, vérifié
+le 2026-09-29). Si le lot 4 est promu avant, trois déploiements.
+
+**v2-7 — Petits trous fermés** : un type de bac archivé reste lisible sur les
+bacs déjà déclarés, et n'est plus proposé ; « le calcul » de C8 est le
+calculateur de tournée, hors de ce lot.
+
+**Tranches, dans l'ordre de bâti** : (A) catalogue des bacs + contenances
+(`delivery`) et le froid sur la fiche produit (`pim` → canal) ; (B) le bac
+remplace le sac (renommage, type, moitiés, scan, « Partir ») ; (C) le
+colisage proposé + la déclaration au poste de colisage ; (D) le plan de
+chargement v1.
+
 ### Lot 5 — La tranche d'une heure en livraison (côté commande)
 
 Côté **commerce** et **boutique** : la tranche d'une heure devient une vraie
