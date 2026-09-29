@@ -1703,6 +1703,57 @@ le bâti. Suppose le lot 8 déployé pour les tracés.
 > - **R2 n'existe pas encore** pour ces fichiers : un bucket, son domaine en
 >   lecture et le CORS (`Range`) — question de fin.
 
+### Lot 10 bis — L'écran « Planifier » : carte, feuilles de route, glisser-déposer
+
+> **Ouvert le 2026-09-29.** Hugo, devant l'écran du lot 7 : « absolument
+> incompréhensible à regarder ». Maquette validée le même jour (« oui ça me
+> parle, glisser les arrêts entre camionnettes ») — artefact privé
+> « Planifier les tournées ». 📐 En cours de bâti.
+
+**Ce qui était faux dans l'écran du lot 7** : des numéros de commande sans nom
+de client ni lieu, une liste par tournée sans carte, et un bandeau technique
+(« ×1,4, 35 km/h ») en tête. Rien ne se lisait sans recouper de tête.
+
+**L10b-C1 — Disposition** (la maquette) : en tête, le jour, le départ et un
+résumé qui compte ce qui demande l'attention (livraisons, camionnettes, hors
+créneau, pas prêtes). À gauche la carte, à droite une **feuille de route par
+camionnette** : départ, puis chaque arrêt — heure d'arrivée, **nom du client**,
+lieu, créneau — et le retour. Les problèmes sont écrits SUR la ligne : « Arrive
+après son créneau », « Attend 56 min l'ouverture », « Pas encore prête »,
+signature, procédure. Le survol relie une ligne et son repère.
+
+**L10b-C2 — Glisser-déposer** : on glisse un arrêt d'une camionnette à l'autre
+ou dans sa colonne. Ce n'est pas écrit : la proposition est **re-chronométrée**
+par le serveur (`POST admin/livraison/tournees/proposition/chronometrer`,
+lecture, `delivery_rounds:read`) avec la composition éditée, et « Appliquer »
+envoie la composition éditée — même contrat et mêmes versions que le lot 7.
+Une tournée **partie ou chargée** ne se glisse pas (I6), ni vers elle ni hors
+d'elle : elle est montrée, verrouillée.
+
+**L10b-C3 — Les noms, les lieux** : l'écran les joint par `orderId` depuis la
+feuille de route du jour, qu'il lit déjà (C16 du lot 3) — le contrat de
+proposition ne porte toujours que des références.
+
+**L10b-C4 — Le tracé** : chaque tournée proposée ou chronométrée porte sa
+géométrie (`/route` d'OSRM, `overview=simplified`), `null` si OSRM ne l'a pas
+rendue — la carte montre alors les repères sans tracé, et le dit.
+
+**L10b-C5 — Plus de vol d'oiseau** (Hugo, 2026-09-29 : « le vol d'oiseau doit
+disparaître, c'est trop faux en montagne ») : sans OSRM, « Proposer » et
+« Chronométrer » **refusent** (« Le calcul routier ne répond pas : réessayez
+dans une minute ; les tournées existantes ne sont pas touchées »), après un
+délai de 20 s et un nouvel essai (réveil à froid). Les tables de plus de 200
+points passent **par lots** (`sources`/`destinations`), recollées ; un lot en
+échec fait échouer le tout. Détour et vitesse moyenne disparaissent de l'écran
+des réglages ; leurs colonnes restent en base, dépréciées (étendre, basculer,
+resserrer). ⚠️ En production, OSRM doit être mis en service AVANT ce
+déploiement, sinon « Proposer » refuse (personne ne s'en sert encore).
+
+**L10b-C6 — Les tuiles** : en production, lues par plages depuis R2 (bucket à
+créer, question § 6-8) ; en développement, un découpage Haute-Tarentaise
+(~10 Mo) servi par le back-office et lu en entier. MapLibre et la carte sont
+chargés par le seul écran, jamais au démarrage.
+
 ### Lot 11 — Le suivi des camionnettes en direct
 
 > **Ouvert le 2026-09-29.** Hugo : « une carte pour suivre les livraisons et
