@@ -1,5 +1,5 @@
 import { UnknownCostPointError } from "../errors/delivery-routing-errors.js";
-import { type CostFn, DistanceMatrix } from "../ports/distance-matrix.js";
+import { type CostFn, DistanceMatrix, type EstimatedCost } from "../ports/distance-matrix.js";
 import type { GeoPoint } from "../value-objects/geo-point.js";
 import type { RoutingSettings } from "../value-objects/routing-settings.js";
 
@@ -30,8 +30,8 @@ export function haversineMeters(from: GeoPoint, to: GeoPoint): number {
  * paires.
  */
 export class CrowFliesDistanceMatrix extends DistanceMatrix {
-  build(points: ReadonlyMap<string, GeoPoint>, settings: RoutingSettings): Promise<CostFn> {
-    return Promise.resolve(crowFliesCost(points, settings));
+  build(points: ReadonlyMap<string, GeoPoint>, settings: RoutingSettings): Promise<EstimatedCost> {
+    return Promise.resolve({ ...crowFliesCost(points, settings), estimate: "crow_flies" });
   }
 }
 

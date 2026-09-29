@@ -263,6 +263,18 @@ Contrôle : `/health` publie `"database":"accelerate"`. Ce retour n'est possible
 que **tant que la clé Accelerate n'est pas révoquée** (geste 8), et au plus tard
 le 1er décembre 2026.
 
+## Mettre en service le calcul routier (OSRM)
+
+Trois déploiements séparés, dans cet ordre, chacun vérifié avant le suivant :
+**(1)** `lfd-osrm` par son workflow ; **(2)** `lfd-api` avec le binding et
+l'interception — il échoue à la publication si `lfd-osrm` n'existe pas ;
+**(3)** la variable `OSRM_URL`, puis un redéploiement de l'API. Contrôles et
+retour arrière :
+[`carte-routiere-osrm.md`](carte-routiere-osrm.md#mettre-en-service--lordre-une-étape-à-la-fois).
+
+⚠️ Retirer `OSRM_URL` des variables GitHub ne la retire pas du Worker : c'est
+un secret posé par le workflow. Le geste complet est dans la même page.
+
 ## Savoir ce que l'instance en ligne sait faire
 
 Un réglage absent n'est pas une erreur : c'est une **capacité éteinte**, et

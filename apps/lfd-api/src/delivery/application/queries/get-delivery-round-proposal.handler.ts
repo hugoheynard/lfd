@@ -15,7 +15,7 @@ import { FleetReader } from "../../domain/ports/fleet.reader.js";
 import { GeocodeCacheReader } from "../../domain/ports/geocode-cache.reader.js";
 import { LoadedStopsReader } from "../../domain/ports/loaded-stops.reader.js";
 import { RoutingSettingsReader } from "../../domain/ports/routing-settings.reader.js";
-import type { CostFn } from "../../domain/ports/distance-matrix.js";
+import type { CostEstimate, EstimatedCost } from "../../domain/ports/distance-matrix.js";
 import { insertIntoRounds } from "../../domain/services/insert-into-rounds.js";
 import {
   type PlannableStop,
@@ -58,6 +58,8 @@ interface PlanInputs {
 interface Planned {
   readonly proposal: Proposal;
   readonly kept: readonly KeptRound[];
+  /** D'où viennent les coûts de CETTE proposition : l'écran le dit (L8-C3). */
+  readonly estimate: CostEstimate;
 }
 
 /** Ce que la proposition a lu du jour. */
@@ -115,6 +117,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
     });
     return proposalViewOf({
       ...{ day: query.day, mode, departure, settings: { ...settings.values(), source } },
+      estimate: planned.estimate,
       ...{ proposal: planned.proposal, rounds: day.rounds, kept: planned.kept, stops, unlocated },
     });
   }
@@ -133,6 +136,10 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       recomposeAll: query.recomposeAll,
     });
     const pool = poolOf(ctx.day.unassigned, recomposable, ctx.stops);
+    const cost = await this.costOf(
+      ctx,
+      pool.map((stop) => stop.id),
+    );
     const proposal = proposeRounds({
       depotId: DEPOT_ID,
       stops: pool,
@@ -140,10 +147,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       recomposable: recomposable.map(({ id, vehicleId, vehicleName, passage }) => ({
         ...{ roundId: id, vehicleId, vehicleName, passage },
       })),
-      cost: await this.costOf(
-        ctx,
-        pool.map((stop) => stop.id),
-      ),
+      cost,
       settings: ctx.settings,
       passageLimits: passageLimitsOf(
         ctx.settings.multiplePassages,
@@ -151,7 +155,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
         kept.map(({ round }) => round),
       ),
     });
-    return { proposal, kept };
+    return { proposal, kept, estimate: cost.estimate };
   }
 
   /** `insert` : dans les tournées existantes, sans réordonner ce qui est placé à la main. */
@@ -163,6 +167,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
     });
     const pool = poolOf(ctx.day.unassigned, [], ctx.stops);
     const roundStops = insertable.flatMap((round) => round.stops.map((stop) => stop.orderId));
+    const cost = await this.costOf(ctx, [...pool.map((stop) => stop.id), ...roundStops]);
     const proposal = insertIntoRounds({
       depotId: DEPOT_ID,
       stops: pool,
@@ -175,7 +180,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
           window: ctx.stops.get(stop.orderId)?.window ?? null,
         })),
       })),
-      cost: await this.costOf(ctx, [...pool.map((stop) => stop.id), ...roundStops]),
+      cost,
       settings: ctx.settings,
       passageLimits: passageLimitsOf(ctx.settings.multiplePassages, ctx.vehicles, ctx.day.rounds),
     });
@@ -183,10 +188,10 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
     const unchanged = insertable
       .filter((round) => !touched.has(round.id))
       .map((round) => ({ round, reason: "unchanged" as const }));
-    return { proposal, kept: [...kept, ...unchanged] };
+    return { proposal, kept: [...kept, ...unchanged], estimate: cost.estimate };
   }
 
-  private costOf(ctx: PlanInputs, orderIds: readonly string[]): Promise<CostFn> {
+  private costOf(ctx: PlanInputs, orderIds: readonly string[]): Promise<EstimatedCost> {
     return this.matrix.build(pointsOf(ctx.departure.point, orderIds, ctx.stops), ctx.settings);
   }
 

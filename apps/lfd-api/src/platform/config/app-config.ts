@@ -80,6 +80,7 @@ export class AppConfig {
   private readonly recomputeTokenValue: string | null;
   private readonly adminBaseUrlValue: string | null;
   private readonly geocoderUrlValue: string | null;
+  private readonly osrmUrlValue: string | null;
   private readonly exposeDetail: boolean;
   private readonly production: boolean;
   private readonly fieldKey: Buffer;
@@ -113,6 +114,7 @@ export class AppConfig {
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
     this.adminBaseUrlValue = optionalString("ADMIN_BASE_URL");
     this.geocoderUrlValue = optionalString("BAN_GEOCODER_URL");
+    this.osrmUrlValue = optionalString("OSRM_URL");
     this.revisionValue = optionalString("APP_REVISION") ?? "inconnue";
     this.production = (process.env["NODE_ENV"]?.trim() ?? "") === "production";
     this.exposeDetail = !this.production;
@@ -227,6 +229,18 @@ export class AppConfig {
    */
   geocoderUrl(): string | null {
     return this.geocoderUrlValue;
+  }
+
+  /**
+   * L'adresse du **calcul routier** (plan de tournée, lot 8) —
+   * `http://osrm.internal` en production, un nom que seul le Worker de
+   * `lfd-api` intercepte et passe à `lfd-osrm` par son service binding
+   * (`container/osrm-bridge.ts`) —, ou `null` : les propositions restent à vol
+   * d'oiseau, et l'écran le dit. Sans défaut, comme la BAN : ni le poste de
+   * dev ni les e2e ne sortent sur le réseau sans qu'on l'ait écrit.
+   */
+  osrmUrl(): string | null {
+    return this.osrmUrlValue;
   }
 
   /**

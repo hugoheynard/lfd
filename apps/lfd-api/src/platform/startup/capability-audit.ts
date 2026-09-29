@@ -42,6 +42,8 @@ export interface CapabilitySnapshot {
   readonly hasAdminBaseUrl: boolean;
   /** L'adresse de la Base Adresse Nationale : « Situer les arrêts » (livraison, lot 7). */
   readonly hasGeocoderUrl: boolean;
+  /** L'adresse du calcul routier : des durées par la route (livraison, lot 8). */
+  readonly hasOsrmUrl: boolean;
 }
 
 /**
@@ -239,6 +241,14 @@ const CHECKS: readonly Check[] = [
       "« Situer les arrêts » est refusé : seuls les points GPS du carnet situent une livraison, les autres restent à répartir à la main",
     severity: "degraded",
     present: (s) => s.hasGeocoderUrl,
+  },
+  {
+    capability: "Calcul routier des tournées",
+    setting: "OSRM_URL",
+    consequence:
+      "« Proposer » estime les trajets à vol d'oiseau : en montagne, la répartition entre véhicules peut mettre deux vallées dans la même camionnette",
+    severity: "degraded",
+    present: (s) => s.hasOsrmUrl,
   },
 ];
 

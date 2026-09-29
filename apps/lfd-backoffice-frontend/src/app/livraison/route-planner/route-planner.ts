@@ -32,9 +32,9 @@ import {
 import { NotifyService } from '../../notify.service';
 import {
   applyPayloadOf,
-  detourLabel,
   distanceLabel,
   durationLabel,
+  estimateLabel,
   keptReasonLabel,
   MODE_OPTIONS,
   modeLabel,
@@ -175,8 +175,7 @@ export class RoutePlanner {
   }
 
   protected estimateLabel(proposal: DeliveryRoundProposalView): string {
-    const { detourPercent, averageSpeedKmh } = proposal.settings;
-    return `Estimation à vol d’oiseau (${detourLabel(detourPercent)}, ${String(averageSpeedKmh)} km/h) : les heures et les durées sont indicatives, pas des promesses.`;
+    return estimateLabel(proposal);
   }
 
   protected companyLink(orderId: string): string | null {

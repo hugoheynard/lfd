@@ -1,11 +1,13 @@
 import type {
   DeliveryProposalMode,
+  DeliveryProposalWindow,
   DeliveryProposedRoundView,
   DeliveryRoundProposalView,
   DeliveryRoutingSettingsView,
 } from "@lfd/contracts";
 
 import type { RoundRow } from "../domain/ports/delivery-rounds.reader.js";
+import type { CostEstimate } from "../domain/ports/distance-matrix.js";
 import type { Proposal, ProposedTour } from "../domain/services/propose-rounds.js";
 import type { TimeWindow } from "../domain/services/route-timing.js";
 import { clockTimeOf } from "../domain/value-objects/clock-time.js";
@@ -18,6 +20,7 @@ const SECONDS_PER_MINUTE = 60;
 export interface ProposalViewInputs {
   readonly day: string;
   readonly mode: DeliveryProposalMode;
+  readonly estimate: CostEstimate;
   readonly departure: LocatedDeparture;
   readonly settings: DeliveryRoutingSettingsView;
   readonly proposal: Proposal;
@@ -38,7 +41,7 @@ export function proposalViewOf(inputs: ProposalViewInputs): DeliveryRoundProposa
   const reference = (orderId: string): string => inputs.stops.get(orderId)?.reference ?? "";
   return {
     day: inputs.day,
-    estimate: "crow_flies",
+    estimate: inputs.estimate,
     mode: inputs.mode,
     departurePoint: {
       pickupAddressId: inputs.departure.pickupAddressId,
@@ -74,23 +77,53 @@ function roundView(
     roundId: tour.roundId,
     vehicleId: tour.vehicleId,
     vehicleName: tour.vehicleName,
+    ...tourTimesView(tour),
+    stops: tour.stops.map((stop, index) => ({
+      orderId: stop.id,
+      reference: reference(stop.id),
+      ...stopTimesView(tour, index),
+    })),
+  };
+}
+
+/** Ce qu'une tournée proposée dit de son horaire, à l'écran : partagé avec le simulateur (lot 9). */
+export interface TourTimesView {
+  readonly passage: number;
+  readonly departureTime: string;
+  readonly returnTime: string;
+  readonly meters: number;
+  readonly minutes: number;
+  readonly overDuration: boolean;
+}
+
+export function tourTimesView(tour: ProposedTour): TourTimesView {
+  return {
     passage: tour.rank,
     departureTime: clockTimeOf(tour.timed.departure / SECONDS_PER_MINUTE),
     returnTime: clockTimeOf(tour.timed.return / SECONDS_PER_MINUTE),
     meters: Math.round(tour.timed.meters),
     minutes: Math.round((tour.timed.return - tour.timed.departure) / SECONDS_PER_MINUTE),
     overDuration: tour.overDuration,
-    stops: tour.stops.map((stop, index) => ({
-      orderId: stop.id,
-      reference: reference(stop.id),
-      arrival: clockTimeOf((tour.timed.arrivals[index] ?? 0) / SECONDS_PER_MINUTE),
-      window: windowView(stop.window),
-      windowMissed: tour.timed.missed[index] ?? false,
-    })),
   };
 }
 
-function windowView(window: TimeWindow | null): { start: string | null; end: string } | null {
+/** L'arrivée au `index`-ième arrêt, sa fenêtre et si elle est manquée. */
+export function stopTimesView(
+  tour: ProposedTour,
+  index: number,
+): {
+  readonly arrival: string;
+  readonly window: DeliveryProposalWindow | null;
+  readonly windowMissed: boolean;
+} {
+  return {
+    arrival: clockTimeOf((tour.timed.arrivals[index] ?? 0) / SECONDS_PER_MINUTE),
+    window: windowView(tour.stops[index]?.window ?? null),
+    windowMissed: tour.timed.missed[index] ?? false,
+  };
+}
+
+function windowView(window: TimeWindow | null): DeliveryProposalWindow | null {
   if (window === null) {
     return null;
   }

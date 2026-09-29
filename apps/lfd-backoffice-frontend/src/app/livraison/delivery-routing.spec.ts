@@ -8,6 +8,7 @@ import {
   detourPercentOf,
   distanceLabel,
   durationLabel,
+  estimateLabel,
   keptReasonLabel,
   MODE_OPTIONS,
   modeLabel,
@@ -58,6 +59,29 @@ describe('le calculateur de tournée — dérivations pures', () => {
     expect(sameSettings(SETTINGS, { ...SETTINGS, stopMinutes: 6 })).toBe(false);
     expect(sameSettings(SETTINGS, { ...SETTINGS, defaultMode: 'new_rounds' })).toBe(false);
     expect(sameSettings(SETTINGS, { ...SETTINGS, multiplePassages: false })).toBe(false);
+  });
+
+  it('dit d’où viennent les durées : la route, ou le vol d’oiseau et pourquoi', () => {
+    const proposal = (
+      estimate: DeliveryRoundProposalView['estimate'],
+    ): DeliveryRoundProposalView => ({
+      day: '2026-10-01',
+      estimate,
+      mode: 'new_rounds',
+      departurePoint: { pickupAddressId: 'p-1', label: 'Labo', gps: { lat: 45.5, lng: 6.4 } },
+      settings: { ...SETTINGS, source: 'default' },
+      rounds: [],
+      unlocated: [],
+      overflow: [],
+      kept: [],
+      versions: [],
+    });
+
+    expect(estimateLabel(proposal('road'))).toMatch(/^Durées par la route/);
+    expect(estimateLabel(proposal('road'))).not.toMatch(/vol d’oiseau/);
+    expect(estimateLabel(proposal('crow_flies'))).toMatch(
+      /^Estimation à vol d’oiseau \(×1,4, 35 km\/h\) — le calcul routier ne répond pas/,
+    );
   });
 
   it('nomme chaque raison, en français', () => {

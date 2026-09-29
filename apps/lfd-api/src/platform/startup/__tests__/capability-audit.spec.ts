@@ -24,6 +24,7 @@ const ALL_PRESENT: CapabilitySnapshot = {
   hasClientBaseUrl: true,
   hasAdminBaseUrl: true,
   hasGeocoderUrl: true,
+  hasOsrmUrl: true,
 };
 
 function without(...keys: readonly (keyof CapabilitySnapshot)[]): CapabilitySnapshot {
@@ -91,6 +92,14 @@ describe("auditCapabilities", () => {
     const [missing] = auditCapabilities(without("hasCustomerClientId"));
 
     expect(missing?.setting).toBe("AUTH0_CUSTOMER_CLIENT_ID");
+    expect(missing?.severity).toBe("degraded");
+  });
+
+  it("dit qu'une proposition sans OSRM_URL est à vol d'oiseau, en dégradé", () => {
+    const [missing] = auditCapabilities(without("hasOsrmUrl"));
+
+    expect(missing?.setting).toBe("OSRM_URL");
+    expect(missing?.consequence).toMatch(/vol d'oiseau/);
     expect(missing?.severity).toBe("degraded");
   });
 

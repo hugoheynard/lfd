@@ -5,6 +5,7 @@ import { ApplyDeliveryProposalHandler } from "./application/commands/apply-deliv
 import { LocateDeliveryStopsHandler } from "./application/commands/locate-delivery-stops.handler.js";
 import { SetRoutingSettingsHandler } from "./application/commands/set-routing-settings.handler.js";
 import { GetDeliveryRoundProposalHandler } from "./application/queries/get-delivery-round-proposal.handler.js";
+import { SimulateDeliveryRoundsHandler } from "./application/queries/simulate-delivery-rounds.handler.js";
 import { GetRoutingSettingsHandler } from "./application/queries/get-routing-settings.handler.js";
 import { DeliveryProposalRepository } from "./domain/ports/delivery-proposal.repository.js";
 import { DistanceMatrix } from "./domain/ports/distance-matrix.js";
@@ -15,9 +16,11 @@ import { RoutingSettingsReader } from "./domain/ports/routing-settings.reader.js
 import { RoutingSettingsRepository } from "./domain/ports/routing-settings.repository.js";
 import { CrowFliesDistanceMatrix } from "./domain/services/crow-flies-distance-matrix.js";
 import { DeliveryProposalController } from "./http/delivery-proposal.controller.js";
+import { DeliverySimulatorController } from "./http/delivery-simulator.controller.js";
 import { RoutingSettingsController } from "./http/routing-settings.controller.js";
 import { BanGeocoder } from "./infrastructure/ban-geocoder.js";
 import { DisabledGeocoder } from "./infrastructure/disabled-geocoder.js";
+import { OsrmDistanceMatrix } from "./infrastructure/osrm-distance-matrix.js";
 import { PrismaDeliveryProposalRepository } from "./infrastructure/prisma-delivery-proposal.repository.js";
 import { PrismaGeocodeCacheReader } from "./infrastructure/prisma-geocode-cache.reader.js";
 import { PrismaGeocodeCacheRepository } from "./infrastructure/prisma-geocode-cache.repository.js";
@@ -104,6 +107,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     DeliveryLoadingController,
     RoutingSettingsController,
     DeliveryProposalController,
+    DeliverySimulatorController,
   ],
   providers: [
     AddVehicleHandler,
@@ -133,6 +137,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     LocateDeliveryStopsHandler,
     GetDeliveryRoundProposalHandler,
     ApplyDeliveryProposalHandler,
+    SimulateDeliveryRoundsHandler,
     { provide: VehicleRepository, useClass: PrismaVehicleRepository },
     { provide: FleetReader, useClass: PrismaFleetReader },
     { provide: DepartureRepository, useClass: PrismaDepartureRepository },
@@ -151,7 +156,16 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     { provide: GeocodeCacheReader, useClass: PrismaGeocodeCacheReader },
     { provide: GeocodeCacheRepository, useClass: PrismaGeocodeCacheRepository },
     { provide: DeliveryProposalRepository, useClass: PrismaDeliveryProposalRepository },
-    { provide: DistanceMatrix, useClass: CrowFliesDistanceMatrix },
+    // Sans URL, vol d'oiseau (L8-C3) ; avec, la route — et le vol d'oiseau en repli.
+    {
+      provide: DistanceMatrix,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): DistanceMatrix => {
+        const url = config.osrmUrl();
+        const crowFlies = new CrowFliesDistanceMatrix();
+        return url === null ? crowFlies : new OsrmDistanceMatrix(url, crowFlies);
+      },
+    },
     // Sans URL, le géocodage est DÉSACTIVÉ (L7-C9) : les e2e ne sortent pas sur le réseau.
     {
       provide: Geocoder,

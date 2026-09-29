@@ -86,6 +86,8 @@
         />
         @if (proposal.estimate === 'crow_flies') {
           <fold-callout variant="info" data-crow-flies>{{ estimateLabel(proposal) }}</fold-callout>
+        } @else {
+          <fold-callout variant="info" data-road>{{ estimateLabel(proposal) }}</fold-callout>
         }
 
         @for (round of proposal.rounds; track $index) {

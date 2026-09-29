@@ -782,6 +782,7 @@ export type {
   DeliveryProposedRoundView,
   DeliveryUnlocatedReason,
   DeliveryUnlocatedOrderView,
+  DeliveryCostEstimate,
   DeliveryKeptRoundReason,
   DeliveryKeptRoundView,
   DeliveryRoundVersionRef,

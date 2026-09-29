@@ -63,6 +63,26 @@ export function detourLabel(percent: number): string {
   return `×${detourFactorOf(percent).toLocaleString('fr-FR', { maximumFractionDigits: 2 })}`;
 }
 
+/**
+ * Ce que valent les heures d'une proposition (lot 8, L8-C3) : par la route
+ * quand le calcul routier a répondu, à vol d'oiseau sinon — et l'écran le
+ * dit, jamais une proposition routière annoncée qui n'en est pas une.
+ *
+ * Ne lit que l'estimation et les réglages : le simulateur (lot 9) les a sans
+ * avoir de journée, et dit la même phrase.
+ */
+export function estimateLabel(
+  proposal: Pick<DeliveryRoundProposalView, 'estimate'> & {
+    readonly settings: Pick<DeliveryRoutingSettingsPayload, 'detourPercent' | 'averageSpeedKmh'>;
+  },
+): string {
+  if (proposal.estimate === 'road') {
+    return 'Durées par la route (carte de la Savoie) : les heures restent indicatives, pas des promesses.';
+  }
+  const { detourPercent, averageSpeedKmh } = proposal.settings;
+  return `Estimation à vol d’oiseau (${detourLabel(detourPercent)}, ${String(averageSpeedKmh)} km/h) — le calcul routier ne répond pas ou n’est pas branché : les heures et les durées sont indicatives, pas des promesses.`;
+}
+
 /** Deux réglages sont-ils les mêmes ? — « Enregistrer » n'est cliquable que s'ils diffèrent. */
 export function sameSettings(
   a: DeliveryRoutingSettingsPayload,

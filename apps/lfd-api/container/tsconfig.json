@@ -10,5 +10,5 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["worker.ts", "edge-guard.ts"]
+  "include": ["worker.ts", "edge-guard.ts", "osrm-bridge.ts"]
 }

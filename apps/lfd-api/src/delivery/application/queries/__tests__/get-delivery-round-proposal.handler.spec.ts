@@ -2,7 +2,10 @@ import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { DeliveryStopPoint } from "../../../channels/commerce/index.js";
 import { DeliveryRound } from "../../../domain/entities/delivery-round.js";
 import { DepartureNotLocatedError } from "../../../domain/errors/delivery-routing-errors.js";
+import { DistanceMatrix, type EstimatedCost } from "../../../domain/ports/distance-matrix.js";
 import { CrowFliesDistanceMatrix } from "../../../domain/services/crow-flies-distance-matrix.js";
+import type { GeoPoint } from "../../../domain/value-objects/geo-point.js";
+import { OsrmDistanceMatrix } from "../../../infrastructure/osrm-distance-matrix.js";
 import { addressKeyOf } from "../../../domain/services/address-key.js";
 import { RoutingSettings } from "../../../domain/value-objects/routing-settings.js";
 import {
@@ -64,8 +67,34 @@ function departed(): DeliveryRound {
   return DeliveryRound.restore({ ...round.toSnapshot(), departedAt: new Date(0) });
 }
 
+/**
+ * Une matrice « routière » : les coûts du vol d'oiseau, ALOURDIS au retour
+ * vers le dépôt — asymétrique, comme une montée —, annoncés `road`.
+ */
+class RoadDistanceMatrix extends DistanceMatrix {
+  readonly built: number[] = [];
+
+  async build(
+    points: ReadonlyMap<string, GeoPoint>,
+    settings: RoutingSettings,
+  ): Promise<EstimatedCost> {
+    this.built.push(points.size);
+    const crow = await new CrowFliesDistanceMatrix().build(points, settings);
+    const uphill = (toId: string): number => (toId === "depot" ? 2 : 1);
+    return {
+      meters: (from, to) => crow.meters(from, to) * uphill(to),
+      seconds: (from, to) => crow.seconds(from, to) * uphill(to),
+      estimate: "road",
+    };
+  }
+}
+
 function scene(
-  options: { readonly labo?: typeof LABO | null; readonly settings?: RoutingSettings } = {},
+  options: {
+    readonly labo?: typeof LABO | null;
+    readonly settings?: RoutingSettings;
+    readonly matrix?: DistanceMatrix;
+  } = {},
 ) {
   const rounds = new InMemoryDeliveryRounds(
     departed(),
@@ -85,7 +114,7 @@ function scene(
     orders,
     new FixedLoadedStops(["r_loaded_s1"]),
     new InMemoryGeocodeCache({ [addressKeyOf(address("en cache"))]: { lat: 45.55, lng: 5.95 } }),
-    new CrowFliesDistanceMatrix(),
+    options.matrix ?? new CrowFliesDistanceMatrix(),
     new FixedClock(new Date(0)),
   );
   return { handler, rounds };
@@ -195,5 +224,44 @@ describe("GetDeliveryRoundProposalHandler — « Proposer » (L7-C3 à C6)", () 
         ["o1", "o2", "o3", "o4", "o7"].sort(),
       );
     });
+  });
+});
+
+describe("GetDeliveryRoundProposalHandler — par la route (lot 8, L8-C3)", () => {
+  it("annonce `road` quand la matrice routière a répondu, en nouvelles tournées", async () => {
+    const matrix = new RoadDistanceMatrix();
+    const { handler } = scene({ matrix });
+
+    const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
+
+    expect(view.estimate).toBe("road");
+    expect(placed(view)).toEqual(["o1", "o2", "o3", "o4", "o7"]);
+    // UNE matrice par proposition : départ + les cinq arrêts situés.
+    expect(matrix.built).toEqual([6]);
+  });
+
+  it("annonce `road` aussi en mode « insérer »", async () => {
+    const { handler } = scene({ matrix: new RoadDistanceMatrix() });
+
+    const view = await handler.execute(
+      new GetDeliveryRoundProposalQuery(DAY, null, false, "insert"),
+    );
+
+    expect(view.mode).toBe("insert");
+    expect(view.estimate).toBe("road");
+  });
+
+  it("dit `crow_flies` quand OSRM ne répond pas — la proposition ne tombe pas", async () => {
+    const silent = new OsrmDistanceMatrix(
+      "http://osrm.internal",
+      new CrowFliesDistanceMatrix(),
+      () => Promise.resolve(new Response("indisponible", { status: 503 })),
+    );
+    const { handler } = scene({ matrix: silent });
+
+    const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
+
+    expect(view.estimate).toBe("crow_flies");
+    expect(placed(view)).toEqual(["o1", "o2", "o3", "o4", "o7"]);
   });
 });

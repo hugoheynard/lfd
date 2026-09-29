@@ -23,6 +23,19 @@
   "name": "lfd-api",
   "main": "container/worker.ts",
   "compatibility_date": "2025-06-01",
+  // `ctx.exports` — exigé par l'interception de sortie vers `osrm.internal`
+  // (lot 8, L8-C10) : `@cloudflare/containers` construit son proxy par
+  // `ctx.exports.ContainerProxy`, et lève au démarrage du conteneur s'il manque.
+  // Le runtime ne l'active d'office qu'à partir de la date 2025-11-17
+  // (`enable_ctx_exports`, lu dans la table de workerd 1.20260730 le
+  // 2026-09-29).
+  //
+  // POURQUOI le drapeau et pas la date : avancer `compatibility_date` activerait
+  // d'un coup TOUS les changements de comportement du runtime entre juin et
+  // novembre 2025, sur le Worker qui porte toute l'API — pour n'en vouloir
+  // qu'un. Le drapeau n'allume que celui-là. La date avancera pour elle-même,
+  // dans un déploiement qui ne fera que ça.
+  "compatibility_flags": ["enable_ctx_exports"],
 
   // L'image NestJS tourne dans un container ; le Worker ne fait que router.
   "containers": [
@@ -81,6 +94,16 @@
   "durable_objects": {
     "bindings": [{ "name": "BACKEND", "class_name": "Backend" }],
   },
+
+  // Le calcul routier de la Savoie (lot 8, forme B-ter) : un Worker À PART,
+  // sans adresse publique, que seul ce binding joint. Le conteneur de l'API ne
+  // le voit pas directement : il appelle `http://osrm.internal`, que
+  // `Backend.outboundByHost` intercepte et passe ici (`container/osrm-bridge.ts`).
+  //
+  // ⚠️ `wrangler` résout chaque service binding AU MOMENT DE PUBLIER : tant que
+  // `lfd-osrm` n'est pas déployé, le déploiement de CE Worker échoue. L'ordre
+  // est dans `documentation/ops/carte-routiere-osrm.md` — `lfd-osrm` d'abord.
+  "services": [{ "binding": "OSRM", "service": "lfd-osrm" }],
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Backend"] }],
 
   // PLUS AUCUNE ADRESSE PUBLIQUE. Ce Worker n'est joignable que par le service

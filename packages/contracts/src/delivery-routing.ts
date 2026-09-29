@@ -136,11 +136,18 @@ export interface DeliveryRoundVersionRef {
   readonly version: number;
 }
 
+/** D'où viennent les durées d'une proposition (L8-C3). */
+export type DeliveryCostEstimate = "road" | "crow_flies";
+
 /** **La proposition** : un aperçu calculé, jamais écrit. */
 export interface DeliveryRoundProposalView {
   readonly day: string;
-  /** L'estimation est à vol d'oiseau × détour ÷ vitesse : l'écran le dit (L7-C2). */
-  readonly estimate: "crow_flies";
+  /**
+   * D'où viennent les durées : `road` quand le calcul routier (OSRM, lot 8) a
+   * répondu, `crow_flies` sinon — vol d'oiseau × détour ÷ vitesse, parce qu'il
+   * n'est pas branché ou n'a pas répondu à temps. L'écran le dit (L8-C3).
+   */
+  readonly estimate: DeliveryCostEstimate;
   /** Le mode effectivement appliqué : le paramètre `mode`, sinon le réglage. */
   readonly mode: DeliveryProposalMode;
   readonly departurePoint: {
