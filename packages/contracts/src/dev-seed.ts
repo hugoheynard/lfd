@@ -89,8 +89,8 @@ export interface DevSeedDeliveryReport {
   readonly vehicles: number;
   /** Les tournées composées et chargées, pas parties. */
   readonly rounds: number;
-  /** Les sacs chargés dans ces tournées. */
-  readonly loadedBags: number;
+  /** Les bacs chargés dans ces tournées. */
+  readonly loadedBins: number;
   /** Les livraisons laissées hors tournée — ce que « Proposer » a à placer. */
   readonly unassigned: number;
 }

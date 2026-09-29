@@ -3,6 +3,7 @@ import type { PackingContainerStep, PackingLine, PackingSheet } from '@lfd/contr
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
+import { DeliveryBinsService } from '../../../livraison/delivery-bins.service';
 import { DeliveryLoadingService } from '../../../livraison/delivery-loading.service';
 import { PackingOpenOrder, type PackingLineToggle } from './packing-open-order';
 
@@ -50,7 +51,11 @@ function sheet(over: Partial<PackingSheet> = {}): PackingSheet {
 function render(inputs: Readonly<Record<string, unknown>>): ComponentFixture<PackingOpenOrder> {
   TestBed.resetTestingModule();
   const fixture = TestBed.createComponent(PackingOpenOrder);
-  for (const [name, value] of Object.entries({ canSetContainers: true, ...inputs })) {
+  for (const [name, value] of Object.entries({
+    canSetContainers: true,
+    day: '2026-10-01',
+    ...inputs,
+  })) {
     fixture.componentRef.setInput(name, value);
   }
   fixture.detectChanges();
@@ -61,16 +66,18 @@ function said(element: Element | null | undefined): string {
   return (element?.textContent ?? '').replace(/\s+/gu, ' ').trim();
 }
 
-describe('les sacs d’une commande prête (lot 4)', () => {
-  function renderWithBags(over: Partial<PackingSheet>): HTMLElement {
+describe('les bacs d’une commande prête (lot 4 bis)', () => {
+  function renderWithBins(over: Partial<PackingSheet>): HTMLElement {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         { provide: PermissionsStore, useValue: { can: () => false } },
         { provide: DeliveryLoadingService, useValue: {} },
+        { provide: DeliveryBinsService, useValue: {} },
       ],
     });
     const fixture = TestBed.createComponent(PackingOpenOrder);
+    fixture.componentRef.setInput('day', '2026-10-01');
     fixture.componentRef.setInput(
       'sheet',
       sheet({ packedAt: '2026-10-01T05:00:00.000Z', ...over }),
@@ -80,12 +87,12 @@ describe('les sacs d’une commande prête (lot 4)', () => {
   }
 
   it('se déclarent sur une livraison prête', () => {
-    expect(renderWithBags({}).querySelector('app-packing-bags')).not.toBeNull();
+    expect(renderWithBins({}).querySelector('app-packing-bins')).not.toBeNull();
   });
 
   it('pas sur un retrait', () => {
     expect(
-      renderWithBags({ fulfillmentMethod: 'pickup' }).querySelector('app-packing-bags'),
+      renderWithBins({ fulfillmentMethod: 'pickup' }).querySelector('app-packing-bins'),
     ).toBeNull();
   });
 });

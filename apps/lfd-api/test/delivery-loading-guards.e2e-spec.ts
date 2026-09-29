@@ -2,8 +2,8 @@
  * E2E du **chargement** — les gardes
  * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 4, v4).
  *
- * Le bon sac dans la mauvaise camionnette (L4-C2), la commande à répartir
- * d'abord, l'annulation d'un sac chargé (L4-C19), le déplacement d'un arrêt
+ * Le bon bac dans la mauvaise camionnette (L4-C2), la commande à répartir
+ * d'abord, l'annulation d'un bac chargé (L4-C19), le déplacement d'un arrêt
  * chargé (L4-C5), « Partir » refusé tant qu'un arrêt n'est pas chargé (Q14,
  * L4-C17), et le droit `delivery_loading` (Q21).
  */
@@ -21,7 +21,15 @@ import {
   roundOf,
   seedDelivery,
 } from "./delivery-rounds-scene.js";
-import { composedOrder, declareBags, depart, LOADING, loadBag } from "./delivery-loading-scene.js";
+import {
+  BINS,
+  binTypeId,
+  composedOrder,
+  declareBins,
+  depart,
+  LOADING,
+  loadBin,
+} from "./delivery-loading-scene.js";
 
 const DAY = serviceDay();
 
@@ -46,23 +54,23 @@ function messageOf(response: Response): string {
 }
 
 describe("charger dans le bon véhicule", () => {
-  it("refuse un sac d'une autre tournée en NOMMANT son véhicule et son jour", async () => {
+  it("refuse un bac d'une autre tournée en NOMMANT son véhicule et son jour", async () => {
     const kangoo = await composedOrder(ctx, DAY, "Kangoo blanc");
     const trafic = await composedOrder(ctx, DAY, "Trafic");
-    const [bagId] = await declareBags(ctx, kangoo.order.id, 1);
+    const [binId] = await declareBins(ctx, kangoo.order.id, 1);
 
-    const refused = await loadBag(ctx, trafic.roundId, { bagId: bagId ?? "" }).expect(409);
+    const refused = await loadBin(ctx, trafic.roundId, { binId: binId ?? "" }).expect(409);
 
     expect(messageOf(refused)).toContain(`« Kangoo blanc », le ${DAY}`);
-    expect(await ctx.prisma.deliveryBagLoad.count()).toBe(0);
+    expect(await ctx.prisma.deliveryBinLoad.count()).toBe(0);
   });
 
-  it("refuse un sac dont la commande n'est dans aucune tournée : « à répartir d'abord »", async () => {
+  it("refuse un bac dont la commande n'est dans aucune tournée : « à répartir d'abord »", async () => {
     const { roundId } = await composedOrder(ctx, DAY, "Kangoo");
     const loose = await seedDelivery(ctx, DAY);
-    const [bagId] = await declareBags(ctx, loose.id, 1);
+    const [binId] = await declareBins(ctx, loose.id, 1);
 
-    const refused = await loadBag(ctx, roundId, { bagId: bagId ?? "" }).expect(409);
+    const refused = await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(409);
 
     expect(messageOf(refused)).toContain("répartissez-la d'abord");
   });
@@ -70,64 +78,64 @@ describe("charger dans le bon véhicule", () => {
   it("un code inconnu répond 404, un code mal formé 400", async () => {
     const { roundId } = await composedOrder(ctx, DAY, "Kangoo");
 
-    await loadBag(ctx, roundId, { code: "ZZZZZZ" }).expect(404);
-    await loadBag(ctx, roundId, { code: "ILOU" }).expect(400);
+    await loadBin(ctx, roundId, { code: "ZZZZZZ" }).expect(404);
+    await loadBin(ctx, roundId, { code: "ILOU" }).expect(400);
   });
 });
 
-describe("les gestes concurrents sur un même sac", () => {
-  /** Relecture vitruve (2026-09-29) : sans verrou sur le sac, « annulé ET chargé » passait. */
-  it("annuler et charger en même temps : jamais un sac annulé ET chargé", async () => {
+describe("les gestes concurrents sur un même bac", () => {
+  /** Relecture vitruve (2026-09-29) : sans verrou sur le bac, « annulé ET chargé » passait. */
+  it("annuler et charger en même temps : jamais un bac annulé ET chargé", async () => {
     const { roundId, order } = await composedOrder(ctx, DAY, "Kangoo");
-    const [bagId] = await declareBags(ctx, order.id, 1);
+    const [binId] = await declareBins(ctx, order.id, 1);
 
     await Promise.all([
-      admin(ctx).post(`${LOADING}/sacs/${bagId ?? ""}/annulation`),
-      loadBag(ctx, roundId, { bagId: bagId ?? "" }),
+      admin(ctx).post(`${BINS}/${binId ?? ""}/annulation`),
+      loadBin(ctx, roundId, { binId: binId ?? "" }),
     ]);
 
-    const bag = await ctx.prisma.deliveryBag.findFirstOrThrow();
-    const loaded = await ctx.prisma.deliveryBagLoad.count({ where: { loadedAt: { not: null } } });
-    expect(bag.voidedAt !== null && loaded > 0).toBe(false);
+    const bin = await ctx.prisma.deliveryBin.findFirstOrThrow();
+    const loaded = await ctx.prisma.deliveryBinLoad.count({ where: { loadedAt: { not: null } } });
+    expect(bin.voidedAt !== null && loaded > 0).toBe(false);
   });
 
   /** Relecture vitruve (2026-09-29) : le second scan violait l'unicité (500). */
-  it("deux scans simultanés du même sac : deux 204, une seule ligne, un seul fait", async () => {
+  it("deux scans simultanés du même bac : deux 204, une seule ligne, un seul fait", async () => {
     const { roundId, order } = await composedOrder(ctx, DAY, "Kangoo");
-    const [bagId] = await declareBags(ctx, order.id, 1);
+    const [binId] = await declareBins(ctx, order.id, 1);
 
     const responses = await Promise.all([
-      loadBag(ctx, roundId, { bagId: bagId ?? "" }),
-      loadBag(ctx, roundId, { bagId: bagId ?? "" }),
+      loadBin(ctx, roundId, { binId: binId ?? "" }),
+      loadBin(ctx, roundId, { binId: binId ?? "" }),
     ]);
 
     expect(responses.map((response) => response.status)).toEqual([204, 204]);
-    expect(await ctx.prisma.deliveryBagLoad.count()).toBe(1);
-    expect(await ctx.prisma.activityEvent.count({ where: { type: "delivery_bag.loaded" } })).toBe(
+    expect(await ctx.prisma.deliveryBinLoad.count()).toBe(1);
+    expect(await ctx.prisma.activityEvent.count({ where: { type: "delivery_bin.loaded" } })).toBe(
       1,
     );
   });
 });
 
-describe("les sacs chargés ne bougent pas en silence", () => {
-  it("refuse d'annuler un sac chargé (L4-C19)", async () => {
+describe("les bacs chargés ne bougent pas en silence", () => {
+  it("refuse d'annuler un bac chargé (L4-C19)", async () => {
     const { roundId, order } = await composedOrder(ctx, DAY, "Kangoo");
-    const [bagId] = await declareBags(ctx, order.id, 1);
-    await loadBag(ctx, roundId, { bagId: bagId ?? "" }).expect(204);
+    const [binId] = await declareBins(ctx, order.id, 1);
+    await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
 
     const refused = await admin(ctx)
-      .post(`${LOADING}/sacs/${bagId ?? ""}/annulation`)
+      .post(`${BINS}/${binId ?? ""}/annulation`)
       .expect(409);
 
     expect(messageOf(refused)).toContain("déchargez-le d'abord");
-    expect((await ctx.prisma.deliveryBag.findFirstOrThrow()).voidedAt).toBeNull();
+    expect((await ctx.prisma.deliveryBin.findFirstOrThrow()).voidedAt).toBeNull();
   });
 
-  it("refuse de déplacer un arrêt qui a un sac chargé (L4-C5)", async () => {
+  it("refuse de déplacer un arrêt qui a un bac chargé (L4-C5)", async () => {
     const from = await composedOrder(ctx, DAY, "Kangoo");
     const to = await composedOrder(ctx, DAY, "Trafic");
-    const [bagId] = await declareBags(ctx, from.order.id, 1);
-    await loadBag(ctx, from.roundId, { bagId: bagId ?? "" }).expect(204);
+    const [binId] = await declareBins(ctx, from.order.id, 1);
+    await loadBin(ctx, from.roundId, { binId: binId ?? "" }).expect(204);
 
     const refused = await admin(ctx)
       .post(`${ROUNDS}/${from.roundId}/arrets/${from.stopId}/deplacement`)
@@ -153,7 +161,7 @@ describe("« Partir » refusé tant qu'un arrêt n'est pas chargé (Q14)", () =>
     const refused = await depart(ctx, roundId);
 
     expect(refused.status).toBe(409);
-    expect(messageOf(refused)).toContain(`sans sac déclaré : ${order.reference}`);
+    expect(messageOf(refused)).toContain(`sans bac déclaré : ${order.reference}`);
     expect(
       (await ctx.prisma.deliveryRound.findUniqueOrThrow({ where: { id: roundId } })).departedAt,
     ).toBeNull();
@@ -162,8 +170,8 @@ describe("« Partir » refusé tant qu'un arrêt n'est pas chargé (Q14)", () =>
 
   it("refuse un arrêt partiel, en citant sa référence", async () => {
     const { roundId, order } = await composedOrder(ctx, DAY, "Kangoo");
-    const [bagId] = await declareBags(ctx, order.id, 2);
-    await loadBag(ctx, roundId, { bagId: bagId ?? "" }).expect(204);
+    const [binId] = await declareBins(ctx, order.id, 2);
+    await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
 
     const refused = await depart(ctx, roundId);
 
@@ -173,8 +181,8 @@ describe("« Partir » refusé tant qu'un arrêt n'est pas chargé (Q14)", () =>
 
   it("refuse une commande annulée depuis la composition, et une tournée vide", async () => {
     const { roundId, order } = await composedOrder(ctx, DAY, "Kangoo");
-    const [bagId] = await declareBags(ctx, order.id, 1);
-    await loadBag(ctx, roundId, { bagId: bagId ?? "" }).expect(204);
+    const [binId] = await declareBins(ctx, order.id, 1);
+    await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
     await ctx.prisma.order.update({ where: { id: order.id }, data: { status: "cancelled" } });
 
     const refused = await depart(ctx, roundId);
@@ -187,13 +195,13 @@ describe("« Partir » refusé tant qu'un arrêt n'est pas chargé (Q14)", () =>
     expect(messageOf(vide)).toContain("tournée vide");
   });
 
-  it("un sac annulé ne manque pas : on part avec les autres", async () => {
+  it("un bac annulé ne manque pas : on part avec les autres", async () => {
     const { roundId, order } = await composedOrder(ctx, DAY, "Kangoo");
-    const [kept, extra] = await declareBags(ctx, order.id, 2);
+    const [kept, extra] = await declareBins(ctx, order.id, 2);
     await admin(ctx)
-      .post(`${LOADING}/sacs/${extra ?? ""}/annulation`)
+      .post(`${BINS}/${extra ?? ""}/annulation`)
       .expect(204);
-    await loadBag(ctx, roundId, { bagId: kept ?? "" }).expect(204);
+    await loadBin(ctx, roundId, { binId: kept ?? "" }).expect(204);
 
     expect((await depart(ctx, roundId)).status).toBe(204);
   });
@@ -221,9 +229,18 @@ describe("le droit `delivery_loading` (Q21)", () => {
 
     await support.get(`${LOADING}/chargement/${roundId}`).expect(403);
     await support.get(`${LOADING}/chargement?jour=${DAY}`).expect(403);
-    await support.post(`${LOADING}/sacs`).send({ orderId: order.id, count: 1 }).expect(403);
+    await support
+      .post(BINS)
+      .send({
+        orderId: order.id,
+        binTypeId: await binTypeId(ctx),
+        whole: 1,
+        half: false,
+        innerBags: 0,
+      })
+      .expect(403);
     await support.post(`${LOADING}/tournees/${roundId}/depart`).send({ version: 1 }).expect(403);
-    expect(await ctx.prisma.deliveryBag.count()).toBe(0);
+    expect(await ctx.prisma.deliveryBin.count()).toBe(0);
   });
 
   it("le comptoir déclare et charge", async () => {
@@ -231,10 +248,16 @@ describe("le droit `delivery_loading` (Q21)", () => {
     const counter = await asRole("comptoir");
 
     const declared = await counter
-      .post(`${LOADING}/sacs`)
-      .send({ orderId: order.id, count: 1 })
+      .post(BINS)
+      .send({
+        orderId: order.id,
+        binTypeId: await binTypeId(ctx),
+        whole: 1,
+        half: false,
+        innerBags: 0,
+      })
       .expect(201);
-    const [bagId] = jsonBody<{ bagIds: string[] }>(declared).bagIds;
-    await counter.post(`${LOADING}/chargement/${roundId}/sacs`).send({ bagId }).expect(204);
+    const [binId] = jsonBody<{ binIds: string[] }>(declared).binIds;
+    await counter.post(`${LOADING}/chargement/${roundId}/bacs`).send({ binId }).expect(204);
   });
 });

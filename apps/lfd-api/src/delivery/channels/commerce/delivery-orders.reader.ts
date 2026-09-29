@@ -28,7 +28,7 @@ export interface DeliveryOrderRef {
 export interface DeliveryOrderFacts extends DeliveryOrderRef {
   /**
    * La raison sociale, ou le nom de qui a commandé — la règle de la file du
-   * comptoir. Ce qu'on lit sur l'étiquette d'un sac (lot 4).
+   * comptoir. Ce qu'on lit sur l'étiquette d'un bac (lot 4).
    */
   readonly customerLabel: string;
   /** Son jour demandé aujourd'hui (`AAAA-MM-JJ`), ou `null`. */

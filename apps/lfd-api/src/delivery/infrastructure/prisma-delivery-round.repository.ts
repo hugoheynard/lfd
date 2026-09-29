@@ -21,7 +21,7 @@ import { LIVE_STOP, type Tx, writeRound, writeStops } from "./delivery-round.wri
  * `created_at` à la création. Aucune ligne n'est supprimée.
  *
  * Sur `delivery_round`, il écrit aussi `departed_at` (lot 4, « Partir ») —
- * écrivain : la tournée. Il LIT et VERROUILLE `delivery_bag_load` (`saveMove`),
+ * écrivain : la tournée. Il LIT et VERROUILLE `delivery_bin_load` (`saveMove`),
  * sans jamais l'écrire : l'écrivain en est l'exécution.
  *
  * `closed_at` — écrivain : la tournée ; posé au lot 6 par `closeStop`, quand
@@ -85,7 +85,7 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
    * deux tournées s'écrivent dans la même transaction.
    *
    * Puis, APRÈS les tournées, les lignes de chargement de leurs arrêts, dans
-   * l'ordre de leur identifiant (lot 4, L4-C18) : un sac chargé dans l'arrêt
+   * l'ordre de leur identifiant (lot 4, L4-C18) : un bac chargé dans l'arrêt
    * déplacé entre la lecture du handler et ce verrou refuse le déplacement
    * (L4-C5). Un chargement verrouille la tournée en partage : s'il est passé
    * avant, on le voit ici ; s'il vient après, il attend.
@@ -127,7 +127,7 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
 
 /**
  * Verrouille les lignes de chargement des arrêts des tournées, dans l'ordre de
- * leur identifiant, et refuse si l'arrêt déplacé porte un sac chargé.
+ * leur identifiant, et refuse si l'arrêt déplacé porte un bac chargé.
  * @throws {LoadedStopMoveError}
  */
 async function ensureStopNotLoaded(
@@ -139,7 +139,7 @@ async function ensureStopNotLoaded(
   const stopIds = rounds.flatMap((round) => round.toSnapshot().stops.map((stop) => stop.id));
   const loads = await tx.$queryRaw<{ stop_id: string; loaded: boolean }[]>`
     SELECT "stop_id", "loaded_at" IS NOT NULL AS "loaded"
-      FROM "production"."delivery_bag_load"
+      FROM "production"."delivery_bin_load"
      WHERE "stop_id" = ANY(${stopIds})
      ORDER BY "id"
        FOR UPDATE`;

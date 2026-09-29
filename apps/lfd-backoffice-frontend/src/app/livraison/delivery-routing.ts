@@ -102,7 +102,7 @@ export function unlocatedReasonLabel(reason: DeliveryUnlocatedReason): string {
 
 const KEPT: Readonly<Record<DeliveryKeptRoundReason, string>> = {
   departed: 'Déjà partie',
-  loaded: 'Un sac y est chargé',
+  loaded: 'Un bac y est chargé',
   unlocated_stop: 'Un de ses arrêts n’est pas situé',
   signaled_stop: 'Un de ses arrêts est signalé',
   not_requested: 'Non demandée — véhicule décoché, ou composée à la main sans « Tout recomposer »',

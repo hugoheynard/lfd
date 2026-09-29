@@ -7,7 +7,7 @@
  * posé en base par « Partir » et la feuille figée dans la même transaction,
  * l'acteur des faits.
  */
-import type { DeliveryBagDetailView, DeliveryLoadingDayView } from "@lfd/contracts";
+import type { DeliveryBinDetailView, DeliveryLoadingDayView } from "@lfd/contracts";
 
 import {
   bootstrapE2e,
@@ -25,13 +25,15 @@ import {
   roundOf,
 } from "./delivery-rounds-scene.js";
 import {
+  BINS,
+  binTypeId,
   composedOrder,
-  declareBags,
+  declareBins,
   depart,
   LOADING,
-  loadBag,
+  loadBin,
   loadingOf,
-  orderBags,
+  orderBins,
 } from "./delivery-loading-scene.js";
 
 const DAY = serviceDay();
@@ -52,24 +54,24 @@ beforeEach(async () => {
 });
 
 describe("déclarer, puis charger", () => {
-  it("déclare des sacs à codes uniques ; lire et réimprimer n'écrivent rien", async () => {
+  it("déclare des bacs à codes uniques ; lire et réimprimer n'écrivent rien", async () => {
     const { order } = await composedOrder(ctx, DAY, "Kangoo");
 
-    const bagIds = await declareBags(ctx, order.id, 3);
-    const first = await orderBags(ctx, order.id);
-    const again = await orderBags(ctx, order.id);
+    const binIds = await declareBins(ctx, order.id, 3);
+    const first = await orderBins(ctx, order.id);
+    const again = await orderBins(ctx, order.id);
 
     expect(again).toEqual(first);
-    expect(first.bags.map(({ index, total }) => `${String(index)}/${String(total)}`)).toEqual([
+    expect(first.bins.map(({ index, total }) => `${String(index)}/${String(total)}`)).toEqual([
       "1/3",
       "2/3",
       "3/3",
     ]);
-    expect(new Set(first.bags.map((bag) => bag.code)).size).toBe(3);
-    expect(first.bags.every((bag) => /^[0-9A-HJKMNP-TV-Z]{6}$/u.test(bag.code))).toBe(true);
-    expect(await ctx.prisma.deliveryBag.count()).toBe(bagIds.length);
+    expect(new Set(first.bins.map((bin) => bin.code)).size).toBe(3);
+    expect(first.bins.every((bin) => /^[0-9A-HJKMNP-TV-Z]{6}$/u.test(bin.code))).toBe(true);
+    expect(await ctx.prisma.deliveryBin.count()).toBe(binIds.length);
     const declared = await ctx.prisma.activityEvent.findMany({
-      where: { type: "delivery_bag.declared" },
+      where: { type: "delivery_bin.declared" },
       select: { subjectId: true, actorId: true },
     });
     expect(declared).toEqual([{ subjectId: order.id, actorId: E2E_STAFF_ID }]);
@@ -77,73 +79,81 @@ describe("déclarer, puis charger", () => {
 
   it("charge par le QR puis par le code tapé : l'arrêt passe de partiel à chargé", async () => {
     const { roundId, order } = await composedOrder(ctx, DAY, "Kangoo");
-    const [first, second] = await declareBags(ctx, order.id, 2);
-    const { bags } = await orderBags(ctx, order.id);
+    const [first, second] = await declareBins(ctx, order.id, 2);
+    const { bins } = await orderBins(ctx, order.id);
 
-    await loadBag(ctx, roundId, { bagId: first ?? "" }).expect(204);
+    await loadBin(ctx, roundId, { binId: first ?? "" }).expect(204);
     expect((await loadingOf(ctx, roundId)).stops[0]?.state).toBe("partial");
-    await loadBag(ctx, roundId, { code: (bags[1]?.code ?? "").toLowerCase() }).expect(204);
+    await loadBin(ctx, roundId, { code: (bins[1]?.code ?? "").toLowerCase() }).expect(204);
 
     const view = await loadingOf(ctx, roundId);
     expect(view.stops[0]?.state).toBe("loaded");
-    const rows = await ctx.prisma.deliveryBagLoad.findMany({
-      orderBy: { bagId: "asc" },
-      select: { bagId: true, loadedVia: true, loadedBy: true, serviceDay: true },
+    const rows = await ctx.prisma.deliveryBinLoad.findMany({
+      orderBy: { binId: "asc" },
+      select: { binId: true, loadedVia: true, loadedBy: true, serviceDay: true },
     });
     expect(rows).toEqual(
       [
-        { bagId: first, loadedVia: "scan", loadedBy: E2E_STAFF_ID, serviceDay: DAY },
-        { bagId: second, loadedVia: "code", loadedBy: E2E_STAFF_ID, serviceDay: DAY },
-      ].sort((a, b) => (a.bagId ?? "").localeCompare(b.bagId ?? "")),
+        { binId: first, loadedVia: "scan", loadedBy: E2E_STAFF_ID, serviceDay: DAY },
+        { binId: second, loadedVia: "code", loadedBy: E2E_STAFF_ID, serviceDay: DAY },
+      ].sort((a, b) => (a.binId ?? "").localeCompare(b.binId ?? "")),
     );
   });
 
-  it("charger deux fois le même sac ne compte, n'écrit et ne trace qu'une fois", async () => {
+  it("charger deux fois le même bac ne compte, n'écrit et ne trace qu'une fois", async () => {
     const { roundId, order } = await composedOrder(ctx, DAY, "Kangoo");
-    const [bagId] = await declareBags(ctx, order.id, 1);
+    const [binId] = await declareBins(ctx, order.id, 1);
 
-    await loadBag(ctx, roundId, { bagId: bagId ?? "" }).expect(204);
-    await loadBag(ctx, roundId, { bagId: bagId ?? "" }).expect(204);
+    await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
+    await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
 
-    expect(await ctx.prisma.deliveryBagLoad.count()).toBe(1);
-    expect(await ctx.prisma.activityEvent.count({ where: { type: "delivery_bag.loaded" } })).toBe(
+    expect(await ctx.prisma.deliveryBinLoad.count()).toBe(1);
+    expect(await ctx.prisma.activityEvent.count({ where: { type: "delivery_bin.loaded" } })).toBe(
       1,
     );
   });
 
-  it("ouvrir le QR d'un sac montre sa tournée, et ne charge rien", async () => {
+  it("ouvrir le QR d'un bac montre sa tournée, et ne charge rien", async () => {
     const { roundId, order } = await composedOrder(ctx, DAY, "Kangoo blanc");
-    const [bagId] = await declareBags(ctx, order.id, 1);
+    const [binId] = await declareBins(ctx, order.id, 1);
 
-    const detail = jsonBody<DeliveryBagDetailView>(
+    const detail = jsonBody<DeliveryBinDetailView>(
       await admin(ctx)
-        .get(`${LOADING}/sac/${bagId ?? ""}`)
+        .get(`${BINS}/${binId ?? ""}`)
         .expect(200),
     );
 
     expect(detail.round).toMatchObject({ roundId, vehicleName: "Kangoo blanc", day: DAY });
     expect(detail.loadedAt).toBeNull();
-    expect(await ctx.prisma.deliveryBagLoad.count()).toBe(0);
+    expect(await ctx.prisma.deliveryBinLoad.count()).toBe(0);
   });
 
   it("les tournées du jour vues du dépôt comptent les arrêts chargés", async () => {
     const { roundId, order } = await composedOrder(ctx, DAY, "Kangoo");
-    const [bagId] = await declareBags(ctx, order.id, 1);
-    await loadBag(ctx, roundId, { bagId: bagId ?? "" }).expect(204);
+    const [binId] = await declareBins(ctx, order.id, 1);
+    await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
 
     const view = jsonBody<DeliveryLoadingDayView>(
       await admin(ctx).get(`${LOADING}/chargement?jour=${DAY}`).expect(200),
     );
 
     expect(view.rounds).toEqual([
-      { roundId, vehicleName: "Kangoo", passage: 1, departedAt: null, stops: 1, loadedStops: 1 },
+      {
+        roundId,
+        vehicleName: "Kangoo",
+        passage: 1,
+        departedAt: null,
+        stops: 1,
+        loadedStops: 1,
+        stopsWithBinToRedo: 0,
+      },
     ]);
   });
 
   it("un arrêt retiré emporte ses chargements : la commande recomposée repart de zéro", async () => {
     const { roundId, stopId, order } = await composedOrder(ctx, DAY, "Kangoo");
-    const [bagId] = await declareBags(ctx, order.id, 1);
-    await loadBag(ctx, roundId, { bagId: bagId ?? "" }).expect(204);
+    const [binId] = await declareBins(ctx, order.id, 1);
+    await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
     const { version } = await roundOf(ctx, DAY, roundId);
     await admin(ctx)
       .post(`${ROUNDS}/${roundId}/arrets/${stopId}/retrait`)
@@ -155,22 +165,22 @@ describe("déclarer, puis charger", () => {
     const view = await loadingOf(ctx, roundId);
     expect(view.stops).toHaveLength(1);
     expect(view.stops[0]?.state).toBe("partial");
-    expect(view.stops[0]?.bags[0]?.loadedAt).toBeNull();
+    expect(view.stops[0]?.bins[0]?.loadedAt).toBeNull();
   });
 
   it("décharger efface le chargement ; le fait garde qui avait chargé", async () => {
     const { roundId, order } = await composedOrder(ctx, DAY, "Kangoo");
-    const [bagId] = await declareBags(ctx, order.id, 1);
-    await loadBag(ctx, roundId, { bagId: bagId ?? "" }).expect(204);
+    const [binId] = await declareBins(ctx, order.id, 1);
+    await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
 
     await admin(ctx)
-      .post(`${LOADING}/chargement/${roundId}/sacs/${bagId ?? ""}/dechargement`)
+      .post(`${LOADING}/chargement/${roundId}/bacs/${binId ?? ""}/dechargement`)
       .expect(204);
 
-    const row = await ctx.prisma.deliveryBagLoad.findFirstOrThrow();
+    const row = await ctx.prisma.deliveryBinLoad.findFirstOrThrow();
     expect(row).toMatchObject({ loadedAt: null, loadedBy: null, loadedVia: null });
     const unloaded = await ctx.prisma.activityEvent.findFirstOrThrow({
-      where: { type: "delivery_bag.unloaded" },
+      where: { type: "delivery_bin.unloaded" },
       select: { payload: true },
     });
     // `loadedBy` : la fiche de qui avait chargé, nommée ou nue selon l'annuaire.
@@ -182,8 +192,8 @@ describe("partir (Q14, L4-C4)", () => {
   it("fige la feuille du livreur et gèle composition et chargement", async () => {
     const { roundId, stopId, order } = await composedOrder(ctx, DAY, "Kangoo");
     await ctx.prisma.order.update({ where: { id: order.id }, data: { note: "par la cour" } });
-    const [bagId] = await declareBags(ctx, order.id, 1);
-    await loadBag(ctx, roundId, { bagId: bagId ?? "" }).expect(204);
+    const [binId] = await declareBins(ctx, order.id, 1);
+    await loadBin(ctx, roundId, { binId: binId ?? "" }).expect(204);
 
     expect((await depart(ctx, roundId)).status).toBe(204);
     await ctx.prisma.order.update({ where: { id: order.id }, data: { note: "corrigée après" } });
@@ -201,16 +211,25 @@ describe("partir (Q14, L4-C4)", () => {
     expect((await roundOf(ctx, DAY, roundId)).departedAt).toBe(view.departedAt);
 
     await admin(ctx)
-      .post(`${LOADING}/chargement/${roundId}/sacs/${bagId ?? ""}/dechargement`)
+      .post(`${LOADING}/chargement/${roundId}/bacs/${binId ?? ""}/dechargement`)
       .expect(409);
     await admin(ctx)
-      .post(`${LOADING}/sacs/${bagId ?? ""}/annulation`)
+      .post(`${BINS}/${binId ?? ""}/annulation`)
       .expect(409);
     await admin(ctx)
       .post(`${ROUNDS}/${roundId}/arrets/${stopId}/retrait`)
       .send({ version: view.version })
       .expect(409);
-    await admin(ctx).post(`${LOADING}/sacs`).send({ orderId: order.id, count: 1 }).expect(409);
+    await admin(ctx)
+      .post(BINS)
+      .send({
+        orderId: order.id,
+        binTypeId: await binTypeId(ctx),
+        whole: 1,
+        half: false,
+        innerBags: 0,
+      })
+      .expect(409);
     expect((await depart(ctx, roundId)).status).toBe(409);
 
     const departed = await ctx.prisma.activityEvent.findMany({

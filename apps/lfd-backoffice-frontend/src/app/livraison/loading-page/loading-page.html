@@ -1,6 +1,6 @@
 <fold-page-layout icon="truck" title="Chargement">
   <p description>
-    Choisir le véhicule, puis scanner ses sacs : l’écran dit ce qui manque encore à ce véhicule.
+    Choisir le véhicule, puis scanner ses bacs : l’écran dit ce qui manque encore à ce véhicule.
   </p>
 
   <div class="lp-page">
@@ -37,6 +37,14 @@
                 [title]="roundLabel(round)"
                 [subtitle]="summaryOf(round)"
               >
+                @if (round.departedAt === null && round.stopsWithBinToRedo > 0) {
+                  <fold-badge
+                    titleAction
+                    variant="alert"
+                    [content]="toRedoOf(round)"
+                    data-round-to-redo
+                  />
+                }
                 <a
                   foldButton
                   titleAction

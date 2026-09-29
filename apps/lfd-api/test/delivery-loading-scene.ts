@@ -5,7 +5,12 @@
  * composition (`delivery-rounds-scene.ts`) : on ne charge que ce qu'on a
  * composé.
  */
-import type { DeliveryLoadingRoundView, DeliveryOrderBagsView } from "@lfd/contracts";
+import type {
+  BinTypesView,
+  DeclareDeliveryBinsPayload,
+  DeliveryLoadingRoundView,
+  DeliveryOrderBinsView,
+} from "@lfd/contracts";
 import type request from "supertest";
 
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -13,19 +18,64 @@ import { addVehicle, admin, assign, openRound, seedDelivery } from "./delivery-r
 
 export const LOADING = "/admin/livraison";
 
-/** Déclare `count` sacs ; rend leurs identifiants. */
-export async function declareBags(
+/** Les bacs déclarés d'une commande : le colisage, pas le catalogue des types. */
+export const BINS = `${LOADING}/colisage/bacs`;
+
+/** Le type de bac cloisonnable des suites, créé au premier besoin (la base est remise à zéro par suite). */
+export const E2E_BIN_TYPE = "Bac M e2e";
+
+/**
+ * Un type du catalogue, par son nom : relu s'il existe, ajouté sinon — par la
+ * vraie route du catalogue (tranche A), jamais en Prisma.
+ */
+export async function binTypeId(
+  ctx: E2eContext,
+  name: string = E2E_BIN_TYPE,
+  options: { readonly divisible?: boolean } = {},
+): Promise<string> {
+  const { types } = jsonBody<BinTypesView>(await admin(ctx).get(`${LOADING}/bacs`).expect(200));
+  const found = types.find((binType) => binType.name === name && binType.archivedAt === null);
+  if (found !== undefined) {
+    return found.id;
+  }
+  const response = await admin(ctx)
+    .post(`${LOADING}/bacs`)
+    .send({
+      name,
+      outer: { lengthCm: 60, widthCm: 40, heightCm: 22 },
+      inner: { lengthCm: 57, widthCm: 37, heightCm: 20 },
+      isotherm: false,
+      maxStack: 5,
+      divisible: options.divisible ?? true,
+    })
+    .expect(201);
+  return jsonBody<{ id: string }>(response).id;
+}
+
+/** Déclare `count` bacs ENTIERS du type des suites ; rend leurs identifiants. */
+export async function declareBins(
   ctx: E2eContext,
   orderId: string,
   count: number,
 ): Promise<readonly string[]> {
-  const response = await admin(ctx).post(`${LOADING}/sacs`).send({ orderId, count }).expect(201);
-  return jsonBody<{ bagIds: string[] }>(response).bagIds;
+  return declareTypedBins(ctx, { orderId, whole: count, half: false, innerBags: 0 });
 }
 
-export async function orderBags(ctx: E2eContext, orderId: string): Promise<DeliveryOrderBagsView> {
-  return jsonBody<DeliveryOrderBagsView>(
-    await admin(ctx).get(`${LOADING}/sacs?commande=${orderId}`).expect(200),
+/** Déclare des bacs typés ; le type par défaut est celui des suites. */
+export async function declareTypedBins(
+  ctx: E2eContext,
+  payload: Omit<DeclareDeliveryBinsPayload, "binTypeId"> & { readonly binTypeId?: string },
+): Promise<readonly string[]> {
+  const response = await admin(ctx)
+    .post(BINS)
+    .send({ ...payload, binTypeId: payload.binTypeId ?? (await binTypeId(ctx)) })
+    .expect(201);
+  return jsonBody<{ binIds: string[] }>(response).binIds;
+}
+
+export async function orderBins(ctx: E2eContext, orderId: string): Promise<DeliveryOrderBinsView> {
+  return jsonBody<DeliveryOrderBinsView>(
+    await admin(ctx).get(`${BINS}?commande=${orderId}`).expect(200),
   );
 }
 
@@ -38,13 +88,13 @@ export async function loadingOf(
   );
 }
 
-/** Charge un sac ; rend la réponse pour que le test choisisse son statut. */
-export function loadBag(
+/** Charge un bac ; rend la réponse pour que le test choisisse son statut. */
+export function loadBin(
   ctx: E2eContext,
   roundId: string,
-  body: { readonly bagId: string } | { readonly code: string },
+  body: { readonly binId: string } | { readonly code: string },
 ): request.Test {
-  return admin(ctx).post(`${LOADING}/chargement/${roundId}/sacs`).send(body);
+  return admin(ctx).post(`${LOADING}/chargement/${roundId}/bacs`).send(body);
 }
 
 /** « Partir » à la version courante de la tournée. */

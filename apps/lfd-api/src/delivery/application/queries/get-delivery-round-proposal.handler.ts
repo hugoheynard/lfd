@@ -77,7 +77,7 @@ interface DayReading {
  * **Proposer** (L7-C3 à C6, C12, C15) — ne lit que le cache du géocodage et
  * le carnet, jamais le réseau ; n'écrit rien. Par défaut, elle ne place que
  * les commandes à répartir ; « tout recomposer » y ajoute les tournées non
- * parties, sans sac chargé, sans arrêt signalé ni non situé. Elle rend les
+ * parties, sans bac chargé, sans arrêt signalé ni non situé. Elle rend les
  * versions de toutes les tournées lues : l'application les exigera.
  *
  * Une camionnette qui porte une tournée chargée ou partie n'est libre qu'à

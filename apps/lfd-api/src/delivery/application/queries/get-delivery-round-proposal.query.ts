@@ -9,7 +9,7 @@ export class GetDeliveryRoundProposalQuery {
     readonly day: string,
     /** Les véhicules cochés ; `null` : tous ceux qui roulent ce jour-là. */
     readonly vehicleIds: readonly string[] | null,
-    /** « Tout recomposer » (L7-Q2) : aussi les tournées non parties et sans sac chargé. */
+    /** « Tout recomposer » (L7-Q2) : aussi les tournées non parties et sans bac chargé. */
     readonly recomposeAll: boolean,
     /** `insert` ou `new_rounds` ; `null` : le mode par défaut des réglages. Ignoré si l'on recompose. */
     readonly mode: ProposalMode | null = null,

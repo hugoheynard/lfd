@@ -84,7 +84,7 @@ describe('le calculateur de tournée — dérivations pures', () => {
 
   it('nomme chaque raison, en français', () => {
     expect(unlocatedReasonLabel('not_geocoded')).toBe('Adresse pas encore située');
-    expect(keptReasonLabel('loaded')).toBe('Un sac y est chargé');
+    expect(keptReasonLabel('loaded')).toBe('Un bac y est chargé');
     expect(keptReasonLabel('unchanged')).toBe('Rien à y insérer');
     expect(modeLabel('new_rounds')).toBe('Nouvelles tournées');
     expect(MODE_OPTIONS.map((option) => option.value)).toEqual(['insert', 'new_rounds']);

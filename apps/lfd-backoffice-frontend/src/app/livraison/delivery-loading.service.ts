@@ -1,26 +1,29 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
-  DeclareDeliveryBagsPayload,
-  DeliveryBagDetailView,
+  DeclareDeliveryBinsPayload,
+  DeliveryBinDetailView,
   DeliveryLoadingDayView,
   DeliveryLoadingRoundView,
-  DeliveryOrderBagsView,
-  LoadDeliveryBagPayload,
+  DeliveryOrderBinsView,
+  LoadDeliveryBinPayload,
+  ShareDeliveryBinPayload,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
 const BASE = `${B2B_API_BASE}/admin/livraison`;
+/** Les bacs DÉCLARÉS — `admin/livraison/bacs` est le catalogue des types (tranche A). */
+const BINS = `${BASE}/colisage/bacs`;
 
 function id(value: string): string {
   return encodeURIComponent(value);
 }
 
 /**
- * **Les sacs et le chargement** (`plan-preparation-de-tournee.md`, lot 4, v4),
- * sous `delivery_loading`.
+ * **Les bacs déclarés et le chargement** (`plan-preparation-de-tournee.md`,
+ * lot 4, v4 ; lot 4 bis, tranche B), sous `delivery_loading`.
  *
  * Aucun état, aucun nouvel essai : un refus remonte tel quel, et c'est l'écran
  * qui le dit puis relit. ⚠️ Aucun décodeur ni générateur de QR ici — ce service
@@ -30,25 +33,33 @@ function id(value: string): string {
 export class DeliveryLoadingService {
   private readonly http = inject(HttpClient);
 
-  /** Déclare `count` sacs de plus : ce qui les fait naître (L4-C16). */
-  async declareBags(payload: DeclareDeliveryBagsPayload): Promise<void> {
-    await firstValueFrom(this.http.post(`${BASE}/sacs`, payload));
+  /**
+   * Déclare des bacs d'un type : `whole` entiers, et une moitié si `half`. Ce
+   * qui les fait naître (L4-C16). Le serveur rend `{ binIds }`, que l'écran ne
+   * lit pas — il relit les étiquettes de la commande — et que le contrat ne
+   * type pas : on ne le redéclare pas ici.
+   */
+  async declareBins(payload: DeclareDeliveryBinsPayload): Promise<void> {
+    await firstValueFrom(this.http.post(BINS, payload));
   }
 
-  /** Les sacs d'une commande — pour l'étiquetage. Une lecture : imprimer ne crée rien. */
-  orderBags(orderId: string): Promise<DeliveryOrderBagsView> {
-    return firstValueFrom(
-      this.http.get<DeliveryOrderBagsView>(`${BASE}/sacs?commande=${id(orderId)}`),
-    );
+  /** Déclare l'AUTRE moitié d'un bac déjà à moitié pris par un arrêt voisin (v2-4). */
+  async shareBin(payload: ShareDeliveryBinPayload): Promise<void> {
+    await firstValueFrom(this.http.post(`${BINS}/partage`, payload));
   }
 
-  /** Ce qu'on voit en ouvrant le QR d'un sac. Ouvrir n'écrit rien (L4-C13). */
-  bag(bagId: string): Promise<DeliveryBagDetailView> {
-    return firstValueFrom(this.http.get<DeliveryBagDetailView>(`${BASE}/sac/${id(bagId)}`));
+  /** Les bacs d'une commande — pour l'étiquetage. Une lecture : imprimer ne crée rien. */
+  orderBins(orderId: string): Promise<DeliveryOrderBinsView> {
+    return firstValueFrom(this.http.get<DeliveryOrderBinsView>(`${BINS}?commande=${id(orderId)}`));
   }
 
-  async voidBag(bagId: string): Promise<void> {
-    await firstValueFrom(this.http.post(`${BASE}/sacs/${id(bagId)}/annulation`, {}));
+  /** Ce qu'on voit en ouvrant le QR d'un bac. Ouvrir n'écrit rien (L4-C13). */
+  bin(binId: string): Promise<DeliveryBinDetailView> {
+    return firstValueFrom(this.http.get<DeliveryBinDetailView>(`${BINS}/${id(binId)}`));
+  }
+
+  async voidBin(binId: string): Promise<void> {
+    await firstValueFrom(this.http.post(`${BINS}/${id(binId)}/annulation`, {}));
   }
 
   /** Les tournées d'un jour, vues du dépôt — sous `delivery_loading:read` seul. */
@@ -64,13 +75,13 @@ export class DeliveryLoadingService {
     );
   }
 
-  async load(roundId: string, payload: LoadDeliveryBagPayload): Promise<void> {
-    await firstValueFrom(this.http.post(`${BASE}/chargement/${id(roundId)}/sacs`, payload));
+  async load(roundId: string, payload: LoadDeliveryBinPayload): Promise<void> {
+    await firstValueFrom(this.http.post(`${BASE}/chargement/${id(roundId)}/bacs`, payload));
   }
 
-  async unload(roundId: string, bagId: string): Promise<void> {
+  async unload(roundId: string, binId: string): Promise<void> {
     await firstValueFrom(
-      this.http.post(`${BASE}/chargement/${id(roundId)}/sacs/${id(bagId)}/dechargement`, {}),
+      this.http.post(`${BASE}/chargement/${id(roundId)}/bacs/${id(binId)}/dechargement`, {}),
     );
   }
 

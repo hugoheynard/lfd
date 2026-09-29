@@ -9,6 +9,7 @@ import { GetBinCapacitiesHandler } from "./application/queries/get-bin-capacitie
 import { ListBinTypesHandler } from "./application/queries/list-bin-types.handler.js";
 import { BinCapacityRepository } from "./domain/ports/bin-capacity.repository.js";
 import { BinCatalogReader } from "./domain/ports/bin-catalog.reader.js";
+import { BinTypeLookup } from "./domain/ports/bin-type-lookup.js";
 import { BinTypeRepository } from "./domain/ports/bin-type.repository.js";
 import { BinCapacitiesController } from "./http/bin-capacities.controller.js";
 import { BinTypesController } from "./http/bin-types.controller.js";
@@ -60,25 +61,26 @@ import { PrismaGeocodeCacheRepository } from "./infrastructure/prisma-geocode-ca
 import { PrismaRoutingSettingsReader } from "./infrastructure/prisma-routing-settings.reader.js";
 import { PrismaRoutingSettingsRepository } from "./infrastructure/prisma-routing-settings.repository.js";
 
-import { DeclareDeliveryBagsHandler } from "./application/commands/declare-delivery-bags.handler.js";
+import { DeclareDeliveryBinsHandler } from "./application/commands/declare-delivery-bins.handler.js";
+import { ShareDeliveryBinHandler } from "./application/commands/share-delivery-bin.handler.js";
 import { DepartDeliveryRoundHandler } from "./application/commands/depart-delivery-round.handler.js";
-import { LoadDeliveryBagHandler } from "./application/commands/load-delivery-bag.handler.js";
-import { UnloadDeliveryBagHandler } from "./application/commands/unload-delivery-bag.handler.js";
-import { VoidDeliveryBagHandler } from "./application/commands/void-delivery-bag.handler.js";
-import { GetDeliveryBagHandler } from "./application/queries/get-delivery-bag.handler.js";
+import { LoadDeliveryBinHandler } from "./application/commands/load-delivery-bin.handler.js";
+import { UnloadDeliveryBinHandler } from "./application/commands/unload-delivery-bin.handler.js";
+import { VoidDeliveryBinHandler } from "./application/commands/void-delivery-bin.handler.js";
+import { GetDeliveryBinHandler } from "./application/queries/get-delivery-bin.handler.js";
 import { GetDeliveryLoadingDayHandler } from "./application/queries/get-delivery-loading-day.handler.js";
 import { GetDeliveryLoadingRoundHandler } from "./application/queries/get-delivery-loading-round.handler.js";
-import { GetDeliveryOrderBagsHandler } from "./application/queries/get-delivery-order-bags.handler.js";
-import { BagCodeDrawer } from "./domain/ports/bag-code-drawer.js";
-import { DeliveryBagRepository } from "./domain/ports/delivery-bag.repository.js";
+import { GetDeliveryOrderBinsHandler } from "./application/queries/get-delivery-order-bins.handler.js";
+import { BinCodeDrawer } from "./domain/ports/bin-code-drawer.js";
+import { DeliveryBinRepository } from "./domain/ports/delivery-bin.repository.js";
 import { DeliveryLoadingReader } from "./domain/ports/delivery-loading.reader.js";
 import { DepartedStopRepository } from "./domain/ports/departed-stop.repository.js";
 import { LoadedStopsReader } from "./domain/ports/loaded-stops.reader.js";
 import { StopLoadingRepository } from "./domain/ports/stop-loading.repository.js";
-import { DeliveryBagsController } from "./http/delivery-bags.controller.js";
+import { DeliveryBinsController } from "./http/delivery-bins.controller.js";
 import { DeliveryLoadingController } from "./http/delivery-loading.controller.js";
-import { CryptoBagCodeDrawer } from "./infrastructure/crypto-bag-code-drawer.js";
-import { PrismaDeliveryBagRepository } from "./infrastructure/prisma-delivery-bag.repository.js";
+import { CryptoBinCodeDrawer } from "./infrastructure/crypto-bin-code-drawer.js";
+import { PrismaDeliveryBinRepository } from "./infrastructure/prisma-delivery-bin.repository.js";
 import { PrismaDeliveryLoadingReader } from "./infrastructure/prisma-delivery-loading.reader.js";
 import { PrismaDepartedStopRepository } from "./infrastructure/prisma-departed-stop.repository.js";
 import { PrismaLoadedStopsReader } from "./infrastructure/prisma-loaded-stops.reader.js";
@@ -117,7 +119,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
 /**
  * **La livraison** — les bases paramétrables des tournées (la flotte et le
  * point de départ, lot 2), la composition des tournées (lot 3), puis les
- * sacs, leur chargement et le départ (lot 4), puis le calculateur de tournée
+ * bacs, leur chargement et le départ (lot 4), puis le calculateur de tournée
  * (lot 7), par la route (lot 8), « Chronométrer » (lot 10 bis), et le
  * catalogue des bacs avec leurs contenances (lot 4 bis, tranche A)
  * (`documentation/livraisons/plan-preparation-de-tournee.md`). Code ici, tables
@@ -138,7 +140,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     VehiclesController,
     DepartureController,
     DeliveryRoundsController,
-    DeliveryBagsController,
+    DeliveryBinsController,
     DeliveryLoadingController,
     RoutingSettingsController,
     DeliveryProposalController,
@@ -161,13 +163,14 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     ReorderDeliveryRoundHandler,
     RemoveDeliveryStopHandler,
     GetDeliveryRoundsDayHandler,
-    DeclareDeliveryBagsHandler,
-    VoidDeliveryBagHandler,
-    LoadDeliveryBagHandler,
-    UnloadDeliveryBagHandler,
+    DeclareDeliveryBinsHandler,
+    ShareDeliveryBinHandler,
+    VoidDeliveryBinHandler,
+    LoadDeliveryBinHandler,
+    UnloadDeliveryBinHandler,
     DepartDeliveryRoundHandler,
-    GetDeliveryOrderBagsHandler,
-    GetDeliveryBagHandler,
+    GetDeliveryOrderBinsHandler,
+    GetDeliveryBinHandler,
     GetDeliveryLoadingRoundHandler,
     GetDeliveryLoadingDayHandler,
     GetRoutingSettingsHandler,
@@ -194,6 +197,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     ListBinTypesHandler,
     GetBinCapacitiesHandler,
     { provide: BinTypeRepository, useClass: PrismaBinTypeRepository },
+    { provide: BinTypeLookup, useExisting: BinTypeRepository },
     { provide: BinCapacityRepository, useClass: PrismaBinCapacityRepository },
     { provide: BinCatalogReader, useClass: PrismaBinCatalogReader },
     { provide: VehicleRepository, useClass: PrismaVehicleRepository },
@@ -203,12 +207,12 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     { provide: DeliveryRoundRepository, useClass: PrismaDeliveryRoundRepository },
     { provide: DeliveryRoundsReader, useClass: PrismaDeliveryRoundsReader },
     { provide: VehicleRoundsReader, useClass: PrismaVehicleRoundsReader },
-    { provide: DeliveryBagRepository, useClass: PrismaDeliveryBagRepository },
+    { provide: DeliveryBinRepository, useClass: PrismaDeliveryBinRepository },
     { provide: StopLoadingRepository, useClass: PrismaStopLoadingRepository },
     { provide: DepartedStopRepository, useClass: PrismaDepartedStopRepository },
     { provide: LoadedStopsReader, useClass: PrismaLoadedStopsReader },
     { provide: DeliveryLoadingReader, useClass: PrismaDeliveryLoadingReader },
-    { provide: BagCodeDrawer, useClass: CryptoBagCodeDrawer },
+    { provide: BinCodeDrawer, useClass: CryptoBinCodeDrawer },
     { provide: RoutingSettingsReader, useClass: PrismaRoutingSettingsReader },
     { provide: RoutingSettingsRepository, useClass: PrismaRoutingSettingsRepository },
     { provide: GeocodeCacheReader, useClass: PrismaGeocodeCacheReader },

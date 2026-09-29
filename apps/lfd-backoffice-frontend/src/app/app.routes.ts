@@ -346,18 +346,20 @@ export const routes: Routes = [
           ),
       },
       {
-        // L'adresse qu'encode le QR d'un sac : un appareil photo natif l'ouvre.
-        path: 'sac/:bagId',
+        // L'adresse qu'encode le QR d'un bac (ou d'une moitié) : un appareil
+        // photo natif l'ouvre. `sac/:bagId` n'existe plus (lot 4 bis, v2-6 :
+        // le lot 4 n'a jamais été servi, le renommage est franc).
+        path: 'bac/:binId',
         canActivate: [permissionGuard('delivery_loading:read')],
-        title: 'Sac — LFC B2B admin',
-        loadComponent: () => import('./livraison/bag-page/bag-page').then((m) => m.BagPage),
+        title: 'Bac — LFC B2B admin',
+        loadComponent: () => import('./livraison/bin-page/bin-page').then((m) => m.BinPage),
       },
       {
         path: 'etiquettes/:orderId',
         canActivate: [permissionGuard('delivery_loading:read')],
-        title: 'Étiquettes des sacs — LFC B2B admin',
+        title: 'Étiquettes des bacs — LFC B2B admin',
         loadComponent: () =>
-          import('./livraison/bag-labels-page/bag-labels-page').then((m) => m.BagLabelsPage),
+          import('./livraison/bin-labels-page/bin-labels-page').then((m) => m.BinLabelsPage),
       },
       {
         path: 'vehicules',

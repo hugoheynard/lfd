@@ -11,6 +11,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { DeliveryLoadingRoundSummaryView } from '@lfd/contracts';
 import type { FoldViewToggleOption } from 'fold-ng';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCardComponent,
   FoldDateComponent,
@@ -45,6 +46,7 @@ const TOMORROW = '1';
   selector: 'app-loading-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCardComponent,
     FoldDateComponent,
@@ -94,6 +96,12 @@ export class LoadingPage {
   protected readonly timeOf = parisTimeOf;
 
   /** « 3 arrêts chargés sur 5 », ou l'heure de départ : ce qu'on lit avant d'ouvrir. */
+  /** « 1 arrêt à refaire » — un bac partagé qui n'est plus entre deux arrêts consécutifs (v2-4). */
+  protected toRedoOf(round: DeliveryLoadingRoundSummaryView): string {
+    const count = round.stopsWithBinToRedo;
+    return `${String(count)} arrêt${count > 1 ? 's' : ''} à refaire`;
+  }
+
   protected summaryOf(round: DeliveryLoadingRoundSummaryView): string {
     if (round.departedAt !== null) {
       return `Partie à ${parisTimeOf(round.departedAt)}`;

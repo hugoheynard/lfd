@@ -1,11 +1,11 @@
 /**
  * Où en est le chargement d'un arrêt (plan de tournée, lot 4, L4-C17) :
  *
- * - `unlabelled` — aucun sac non annulé. 🔴 « Tous ses sacs chargés » serait
+ * - `unlabelled` — aucun bac non annulé. 🔴 « Tous ses bacs chargés » serait
  *   VRAI sur un ensemble vide : une commande jamais étiquetée passerait. Zéro
- *   sac n'est donc pas « chargé » ;
- * - `partial` — des sacs restent à charger ;
- * - `loaded` — tous ses sacs non annulés sont chargés.
+ *   bac n'est donc pas « chargé » ;
+ * - `partial` — des bacs restent à charger ;
+ * - `loaded` — tous ses bacs non annulés sont chargés.
  */
 export type StopLoadingState = "unlabelled" | "partial" | "loaded";
 
@@ -14,26 +14,48 @@ export interface StopReadiness {
   readonly stopId: string;
   readonly reference: string;
   readonly state: StopLoadingState;
+  /** Les codes de ses bacs partagés « à refaire » (v2-4) — vide le plus souvent. */
+  readonly binsToRedo: readonly string[];
 }
 
 /**
- * L'état d'un arrêt, d'après ses sacs non annulés et ceux qui y sont chargés.
+ * L'état d'un arrêt, d'après ses bacs non annulés et ceux qui y sont chargés.
  * La SEULE définition : l'écran de chargement et « Partir » la lisent tous deux.
  */
 export function loadingStateOf(
-  liveBagIds: readonly string[],
-  loadedBagIds: ReadonlySet<string>,
+  liveBinIds: readonly string[],
+  loadedBinIds: ReadonlySet<string>,
 ): StopLoadingState {
-  if (liveBagIds.length === 0) {
+  if (liveBinIds.length === 0) {
     return "unlabelled";
   }
-  return liveBagIds.every((bagId) => loadedBagIds.has(bagId)) ? "loaded" : "partial";
+  return liveBinIds.every((binId) => loadedBinIds.has(binId)) ? "loaded" : "partial";
+}
+
+/** Un bac partagé à refaire, nommé pour le refus : son code, et la commande de l'arrêt. */
+export interface BinToRedo {
+  readonly code: string;
+  readonly reference: string;
+}
+
+/**
+ * Les bacs partagés à refaire des arrêts vivants (v2-4) — « Partir » refuse
+ * l'arrêt qui en porte un.
+ */
+export function sharedBinsToRedo(
+  liveStops: readonly { readonly id: string }[],
+  readiness: readonly StopReadiness[],
+): readonly BinToRedo[] {
+  const live = new Set(liveStops.map((stop) => stop.id));
+  return readiness
+    .filter((stop) => live.has(stop.stopId))
+    .flatMap((stop) => stop.binsToRedo.map((code) => ({ code, reference: stop.reference })));
 }
 
 /**
  * Les références des arrêts vivants qui empêchent de partir, rangées par
  * cause. Un arrêt que `readiness` ne cite pas est tenu pour non étiqueté —
- * jamais pour chargé : l'absence d'information ne fait pas partir un sac.
+ * jamais pour chargé : l'absence d'information ne fait pas partir un bac.
  */
 export function unreadyStops(
   liveStops: readonly { readonly id: string; readonly orderId: string }[],

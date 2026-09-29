@@ -20,6 +20,7 @@ function day(value: string): DeliveryLoadingDayView {
         departedAt: null,
         stops: 5,
         loadedStops: 3,
+        stopsWithBinToRedo: 1,
       },
       {
         roundId: 'r-2',
@@ -28,6 +29,7 @@ function day(value: string): DeliveryLoadingDayView {
         departedAt: '2026-10-01T05:42:00.000Z',
         stops: 2,
         loadedStops: 2,
+        stopsWithBinToRedo: 0,
       },
     ],
   };
@@ -82,6 +84,11 @@ describe('LoadingPage', () => {
     expect(card?.textContent).toContain('Kangoo · passage 2');
     expect(card?.textContent).toContain('3 arrêts chargés sur 5');
     expect(element.querySelectorAll('[data-round]')[1]?.textContent).toContain('Partie à 7 h 42');
+    // 🔴 un bac partagé à refaire se voit dès la liste (v2-4) ; la tournée partie n'en dit rien.
+    expect(card?.querySelector('[data-round-to-redo]')?.textContent).toContain('1 arrêt à refaire');
+    expect(
+      element.querySelectorAll('[data-round]')[1]?.querySelector('[data-round-to-redo]'),
+    ).toBeNull();
     expect(card?.querySelector('a[data-open-round]')?.getAttribute('href')).toBe(
       '/livraison/chargement/r-1?jour=2026-10-01',
     );

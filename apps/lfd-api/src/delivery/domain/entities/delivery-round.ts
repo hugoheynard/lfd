@@ -15,7 +15,8 @@ import {
   VehicleInactiveOnDayError,
 } from "../errors/delivery-round-errors.js";
 import { isCalendarDay } from "../value-objects/service-day.js";
-import { type StopReadiness, unreadyStops } from "./departure-readiness.js";
+import { SharedBinToRedoError } from "../errors/delivery-bin-declaration-errors.js";
+import { sharedBinsToRedo, type StopReadiness, unreadyStops } from "./departure-readiness.js";
 import type { Vehicle } from "./vehicle.js";
 
 /**
@@ -301,8 +302,8 @@ export class DeliveryRound {
   /**
    * **Partir** (L4-C4, Q14) : la tournée quitte le dépôt, et plus rien ne s'y
    * compose (I6). Refusé tant qu'un arrêt vivant n'est pas chargé — un arrêt
-   * sans sac (« non étiqueté », L4-C17) comme un arrêt dont un sac manque. On
-   * ne part pas avec un sac non chargé : on retire d'abord l'arrêt, et le
+   * sans bac (« non étiqueté », L4-C17) comme un arrêt dont un bac manque. On
+   * ne part pas avec un bac non chargé : on retire d'abord l'arrêt, et le
    * geste se voit.
    *
    * `readiness` dit l'état de chargement de chaque arrêt ; un arrêt vivant
@@ -312,6 +313,8 @@ export class DeliveryRound {
    * @throws {EmptyDeliveryRoundError} aucun arrêt vivant : une tournée vide ne part pas.
    * @throws {DeliveryRoundNotReadyError} un arrêt n'est pas chargé ; le refus
    *   liste les références.
+   * @throws {SharedBinToRedoError} un bac partagé n'est plus entre deux arrêts
+   *   consécutifs (lot 4 bis, v2-4).
    */
   depart(at: Date, readiness: readonly StopReadiness[]): void {
     this.ensureAtDepot();
@@ -321,6 +324,10 @@ export class DeliveryRound {
     const { unlabelled, partial } = unreadyStops(this.open, readiness);
     if (unlabelled.length > 0 || partial.length > 0) {
       throw new DeliveryRoundNotReadyError(this.state.vehicleName, unlabelled, partial);
+    }
+    const toRedo = sharedBinsToRedo(this.open, readiness);
+    if (toRedo.length > 0) {
+      throw new SharedBinToRedoError(this.state.vehicleName, toRedo);
     }
     this.currentDepartedAt = at;
     this.touch(at);

@@ -13,7 +13,7 @@ class UnknownLoadViaError extends TechnicalError {
 
 /**
  * `loaded_via` relu : `scan`, `code`, ou nul. La contrainte
- * `delivery_bag_load_via` le garantit en base ; on le revérifie plutôt que de
+ * `delivery_bin_load_via` le garantit en base ; on le revérifie plutôt que de
  * caster.
  */
 export function loadViaOf(value: string | null): LoadVia | null {

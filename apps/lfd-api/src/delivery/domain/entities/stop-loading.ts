@@ -1,34 +1,40 @@
 import {
-  BagInOtherRoundError,
-  BagVoidedError,
-  DeliveryBagNotFoundError,
+  BinInOtherRoundError,
+  BinVoidedError,
+  DeliveryBinNotFoundError,
   DeliveryRoundDepartedError,
 } from "../errors/delivery-loading-errors.js";
 import { loadingStateOf, type StopLoadingState } from "./departure-readiness.js";
+import { areConsecutive, isSharedBinToRedo, placesInRound, type StopPlace } from "./shared-bin.js";
 
-/** Par où un sac a été chargé : le QR, ou le code court tapé. */
+/** Par où un bac a été chargé : le QR, ou le code court tapé. */
 export type LoadVia = "scan" | "code";
 
-/** Un sac de la commande, tel que le chargement le connaît. */
-export interface LoadingBag {
+/** Un bac de la commande, tel que le chargement le connaît. */
+export interface LoadingBin {
   readonly id: string;
   readonly code: string;
   readonly voided: boolean;
+  /**
+   * La commande de l'autre moitié NON annulée du même bac physique, quand
+   * elle est à une autre commande — un bac PARTAGÉ (v2-4). `null` sinon.
+   */
+  readonly partnerOrderId: string | null;
 }
 
-/** Une ligne de chargement (arrêt, sac). Déchargée : les trois `loaded*` nuls. */
-export interface BagLoadState {
+/** Une ligne de chargement (arrêt, bac). Déchargée : les trois `loaded*` nuls. */
+export interface BinLoadState {
   readonly id: string;
-  readonly bagId: string;
+  readonly binId: string;
   readonly loadedAt: Date | null;
   readonly loadedBy: string | null;
   readonly loadedVia: LoadVia | null;
-  /** Le premier chargement de ce sac dans cet arrêt. */
+  /** Le premier chargement de ce bac dans cet arrêt. */
   readonly createdAt: Date;
 }
 
 /** Un chargement effectif — ce que « décharger » rend au journal. */
-export interface BagLoadRecord {
+export interface BinLoadRecord {
   readonly loadedAt: Date;
   readonly loadedBy: string;
   readonly loadedVia: LoadVia;
@@ -43,22 +49,24 @@ export interface StopLoadingSnapshot {
   readonly vehicleName: string;
   readonly passage: number;
   readonly departedAt: Date | null;
-  /** Tous les sacs de la commande, annulés compris, dans l'ordre de déclaration. */
-  readonly bags: readonly LoadingBag[];
+  /** Les commandes des arrêts vivants de la tournée, dans l'ordre de passage. */
+  readonly roundOrderIds: readonly string[];
+  /** Tous les bacs de la commande, annulés compris, dans l'ordre de déclaration. */
+  readonly bins: readonly LoadingBin[];
   /** Les lignes de chargement de CET arrêt. */
-  readonly loads: readonly BagLoadState[];
+  readonly loads: readonly BinLoadState[];
 }
 
 /**
  * **Le chargement d'un arrêt** (plan de tournée, lot 4, L4-C18) — le
- * chargement appartient à l'ARRÊT, pas au sac : un arrêt retiré emporte ses
+ * chargement appartient à l'ARRÊT, pas au bac : un arrêt retiré emporte ses
  * chargements, et la commande recomposée repart de zéro.
  *
  * Invariants tenus ici :
- * - on ne charge que dans la tournée de l'arrêt : un sac d'une autre tournée
+ * - on ne charge que dans la tournée de l'arrêt : un bac d'une autre tournée
  *   est refusé en NOMMANT son véhicule et son jour (L4-C2) ;
- * - ni sac annulé, ni tournée partie (I6) ;
- * - charger deux fois le même sac ne compte qu'une fois (L4-C8) ;
+ * - ni bac annulé, ni tournée partie (I6) ;
+ * - charger deux fois le même bac ne compte qu'une fois (L4-C8) ;
  * - décharger est refusé après le départ.
  *
  * L'écrivain de ses lignes est l'exécution seule (C10) ; l'adaptateur verrouille
@@ -66,12 +74,12 @@ export interface StopLoadingSnapshot {
  * passe pas entre la lecture et l'écriture.
  */
 export class StopLoading {
-  private readonly loads: Map<string, BagLoadState>;
+  private readonly loads: Map<string, BinLoadState>;
   private readonly changed = new Set<string>();
   private readonly persisted: ReadonlySet<string>;
 
   private constructor(private readonly snapshot: StopLoadingSnapshot) {
-    this.loads = new Map(snapshot.loads.map((load) => [load.bagId, load]));
+    this.loads = new Map(snapshot.loads.map((load) => [load.binId, load]));
     this.persisted = new Set(snapshot.loads.map((load) => load.id));
   }
 
@@ -109,57 +117,84 @@ export class StopLoading {
 
   /** L4-C17 : non étiqueté, partiel, ou chargé. */
   get state(): StopLoadingState {
-    const live = this.snapshot.bags.filter((bag) => !bag.voided).map((bag) => bag.id);
+    const live = this.snapshot.bins.filter((bin) => !bin.voided).map((bin) => bin.id);
     const loaded = new Set(
-      [...this.loads.values()].filter((load) => load.loadedAt !== null).map((load) => load.bagId),
+      [...this.loads.values()].filter((load) => load.loadedAt !== null).map((load) => load.binId),
     );
     return loadingStateOf(live, loaded);
   }
 
-  /** Le nombre de sacs non annulés de la commande. */
-  get liveBagCount(): number {
-    return this.snapshot.bags.filter((bag) => !bag.voided).length;
+  /** Le nombre de bacs non annulés de la commande. */
+  get liveBinCount(): number {
+    return this.snapshot.bins.filter((bin) => !bin.voided).length;
   }
 
-  /** Au moins un sac chargé dans cet arrêt — ce qui interdit de le déplacer (L4-C5). */
-  get hasLoadedBag(): boolean {
+  /** Au moins un bac chargé dans cet arrêt — ce qui interdit de le déplacer (L4-C5). */
+  get hasLoadedBin(): boolean {
     return [...this.loads.values()].some((load) => load.loadedAt !== null);
   }
 
-  isLoaded(bagId: string): boolean {
-    return (this.loads.get(bagId)?.loadedAt ?? null) !== null;
+  /**
+   * Cette commande est-elle à l'arrêt juste avant ou juste après le sien, dans
+   * la même tournée ? Ce qui permet de partager un bac (v2-4).
+   */
+  isConsecutiveTo(orderId: string): boolean {
+    const places = this.places();
+    return areConsecutive(places.get(this.snapshot.orderId) ?? null, places.get(orderId) ?? null);
   }
 
   /**
-   * Charge un sac dans cet arrêt. Rend `false` s'il y était déjà : rien ne
+   * Les codes des bacs PARTAGÉS non annulés dont l'autre commande n'est plus à
+   * un arrêt consécutif de cette tournée — « à refaire » (v2-4). Calculé,
+   * jamais écrit : voir `shared-bin.ts`.
+   */
+  get binsToRedo(): readonly string[] {
+    const places = this.places();
+    const own = places.get(this.snapshot.orderId) ?? null;
+    return this.snapshot.bins
+      .filter(
+        (bin) =>
+          !bin.voided &&
+          bin.partnerOrderId !== null &&
+          isSharedBinToRedo(own, places.get(bin.partnerOrderId) ?? null),
+      )
+      .map((bin) => bin.code);
+  }
+
+  isLoaded(binId: string): boolean {
+    return (this.loads.get(binId)?.loadedAt ?? null) !== null;
+  }
+
+  /**
+   * Charge un bac dans cet arrêt. Rend `false` s'il y était déjà : rien ne
    * s'écrit, rien ne se compte deux fois.
    *
-   * `loadId` sert si le sac n'a encore jamais été chargé ici ; une ligne
+   * `loadId` sert si le bac n'a encore jamais été chargé ici ; une ligne
    * déchargée est réutilisée.
    *
-   * @throws {BagInOtherRoundError} @throws {DeliveryRoundDepartedError}
-   * @throws {BagVoidedError} @throws {DeliveryBagNotFoundError}
+   * @throws {BinInOtherRoundError} @throws {DeliveryRoundDepartedError}
+   * @throws {BinVoidedError} @throws {DeliveryBinNotFoundError}
    */
   load(input: {
     readonly roundId: string;
-    readonly bagId: string;
+    readonly binId: string;
     readonly loadId: string;
     readonly via: LoadVia;
     readonly by: string;
     readonly at: Date;
   }): boolean {
-    const bag = this.gesture(input.roundId, input.bagId);
-    if (bag.voided) {
-      throw new BagVoidedError(bag.code);
+    const bin = this.gesture(input.roundId, input.binId);
+    if (bin.voided) {
+      throw new BinVoidedError(bin.code);
     }
-    if (this.isLoaded(bag.id)) {
+    if (this.isLoaded(bin.id)) {
       return false;
     }
-    const existing = this.loads.get(bag.id);
+    const existing = this.loads.get(bin.id);
     this.write({
       id: existing?.id ?? input.loadId,
       createdAt: existing?.createdAt ?? input.at,
-      bagId: bag.id,
+      binId: bin.id,
       loadedAt: input.at,
       loadedBy: input.by,
       loadedVia: input.via,
@@ -168,16 +203,16 @@ export class StopLoading {
   }
 
   /**
-   * Décharge un sac : sa ligne reste, ses trois `loaded*` redeviennent nuls.
+   * Décharge un bac : sa ligne reste, ses trois `loaded*` redeviennent nuls.
    * Rend le chargement effacé — le journal garde qui avait chargé — ou `null`
    * s'il n'était pas chargé ici : rien ne s'écrit.
    *
-   * @throws {BagInOtherRoundError} @throws {DeliveryRoundDepartedError}
-   * @throws {DeliveryBagNotFoundError}
+   * @throws {BinInOtherRoundError} @throws {DeliveryRoundDepartedError}
+   * @throws {DeliveryBinNotFoundError}
    */
-  unload(input: { readonly roundId: string; readonly bagId: string }): BagLoadRecord | null {
-    const bag = this.gesture(input.roundId, input.bagId);
-    const current = this.loads.get(bag.id);
+  unload(input: { readonly roundId: string; readonly binId: string }): BinLoadRecord | null {
+    const bin = this.gesture(input.roundId, input.binId);
+    const current = this.loads.get(bin.id);
     if (
       current === undefined ||
       current.loadedAt === null ||
@@ -190,9 +225,9 @@ export class StopLoading {
     return { loadedAt: current.loadedAt, loadedBy: current.loadedBy, loadedVia: current.loadedVia };
   }
 
-  /** Le code d'un sac de la commande. @throws {DeliveryBagNotFoundError} */
-  codeOf(bagId: string): string {
-    return this.bagOf(bagId).code;
+  /** Le code d'un bac de la commande. @throws {DeliveryBinNotFoundError} */
+  codeOf(binId: string): string {
+    return this.binOf(binId).code;
   }
 
   /** Cette ligne existait-elle à la lecture ? Sinon, elle est neuve. */
@@ -201,35 +236,39 @@ export class StopLoading {
   }
 
   /** Les lignes changées par ce geste — ce que l'adaptateur écrit. */
-  changedLoads(): readonly BagLoadState[] {
-    return [...this.changed].flatMap((bagId) => {
-      const load = this.loads.get(bagId);
+  changedLoads(): readonly BinLoadState[] {
+    return [...this.changed].flatMap((binId) => {
+      const load = this.loads.get(binId);
       return load === undefined ? [] : [load];
     });
   }
 
   /** Le geste vise-t-il cet arrêt, encore au dépôt ? */
-  private gesture(roundId: string, bagId: string): LoadingBag {
-    const bag = this.bagOf(bagId);
+  private gesture(roundId: string, binId: string): LoadingBin {
+    const bin = this.binOf(binId);
     if (roundId !== this.snapshot.roundId) {
-      throw new BagInOtherRoundError(bag.code, this.snapshot);
+      throw new BinInOtherRoundError(bin.code, this.snapshot);
     }
     if (this.departed) {
       throw new DeliveryRoundDepartedError(this.snapshot.vehicleName, this.snapshot.serviceDay);
     }
-    return bag;
+    return bin;
   }
 
-  private bagOf(bagId: string): LoadingBag {
-    const bag = this.snapshot.bags.find((candidate) => candidate.id === bagId);
-    if (bag === undefined) {
-      throw new DeliveryBagNotFoundError(bagId);
+  private places(): ReadonlyMap<string, StopPlace> {
+    return placesInRound(this.snapshot.roundId, this.snapshot.roundOrderIds);
+  }
+
+  private binOf(binId: string): LoadingBin {
+    const bin = this.snapshot.bins.find((candidate) => candidate.id === binId);
+    if (bin === undefined) {
+      throw new DeliveryBinNotFoundError(binId);
     }
-    return bag;
+    return bin;
   }
 
-  private write(load: BagLoadState): void {
-    this.loads.set(load.bagId, load);
-    this.changed.add(load.bagId);
+  private write(load: BinLoadState): void {
+    this.loads.set(load.binId, load);
+    this.changed.add(load.binId);
   }
 }

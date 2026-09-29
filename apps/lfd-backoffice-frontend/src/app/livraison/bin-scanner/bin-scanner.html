@@ -1,0 +1,25 @@
+<div class="bs-scanner">
+  @if (stage() === 'starting' || stage() === 'scanning') {
+    <!-- La vidéo vit dans les DEUX états : la détruire entre eux redemanderait
+         le flux, donc une seconde invite d'autorisation. -->
+    <video #preview class="bs-preview" muted playsinline></video>
+    @if (stage() === 'starting') {
+      <fold-loading message="Ouverture de la caméra…" />
+    }
+    <button foldButton emphasis="outline" icon="close" (click)="stop()" data-camera-off>
+      Éteindre la caméra
+    </button>
+  } @else if (cameraAvailable) {
+    @if (stage() === 'denied') {
+      <fold-callout variant="warning" data-camera-denied>
+        Pas d’accès à la caméra : l’autorisation a été refusée, ou cet appareil n’en a pas. Le code
+        court imprimé sous le QR se tape ci-dessous.
+      </fold-callout>
+    }
+    <button foldButton icon="qr-code" (click)="start()" data-camera-on>Scanner les bacs</button>
+  } @else {
+    <fold-callout variant="info" data-no-camera>
+      Cet appareil n’offre pas de caméra à la page : tapez le code court imprimé sous le QR.
+    </fold-callout>
+  }
+</div>

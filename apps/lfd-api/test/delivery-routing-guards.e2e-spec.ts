@@ -11,7 +11,7 @@ import type { StaffRole } from "@lfd/contracts";
 import type { Response } from "supertest";
 
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
-import { declareBags, depart, loadBag } from "./delivery-loading-scene.js";
+import { declareBins, depart, loadBin } from "./delivery-loading-scene.js";
 import {
   addVehicle,
   ADMIN_VERIFIER_OVERRIDE,
@@ -89,8 +89,8 @@ describe("ce que la proposition ne touche jamais (L7-C5)", () => {
   it("une tournée partie : gardée, ses arrêts ne sont proposés nulle part", async () => {
     await seedDeparture(ctx);
     const gone = await composed("Kangoo", NORTH);
-    const [bagId] = await declareBags(ctx, gone.orderId, 1);
-    await loadBag(ctx, gone.roundId, { bagId: bagId ?? "" }).expect(204);
+    const [binId] = await declareBins(ctx, gone.orderId, 1);
+    await loadBin(ctx, gone.roundId, { binId: binId ?? "" }).expect(204);
     expect((await depart(ctx, gone.roundId)).status).toBe(204);
     await addVehicle(ctx, "Trafic");
     await seedLocatedDelivery(ctx, DAY, SOUTH);
@@ -107,8 +107,8 @@ describe("ce que la proposition ne touche jamais (L7-C5)", () => {
   it("un arrêt chargé : sa tournée est gardée, et l'y déplacer quand même est refusé", async () => {
     await seedDeparture(ctx);
     const loaded = await composed("Kangoo", NORTH);
-    const [bagId] = await declareBags(ctx, loaded.orderId, 1);
-    await loadBag(ctx, loaded.roundId, { bagId: bagId ?? "" }).expect(204);
+    const [binId] = await declareBins(ctx, loaded.orderId, 1);
+    await loadBin(ctx, loaded.roundId, { binId: binId ?? "" }).expect(204);
     const traficId = await addVehicle(ctx, "Trafic");
 
     const view = await propose(ctx, `jour=${DAY}&toutRecomposer=true`);
@@ -133,8 +133,8 @@ describe("chronométrer refuse ce qu'appliquer refuserait (L10b-C2)", () => {
   it("un arrêt glissé HORS d'une tournée chargée : 409, rien d'écrit (I6)", async () => {
     await seedDeparture(ctx);
     const loaded = await composed("Kangoo", NORTH);
-    const [bagId] = await declareBags(ctx, loaded.orderId, 1);
-    await loadBag(ctx, loaded.roundId, { bagId: bagId ?? "" }).expect(204);
+    const [binId] = await declareBins(ctx, loaded.orderId, 1);
+    await loadBin(ctx, loaded.roundId, { binId: binId ?? "" }).expect(204);
     const traficId = await addVehicle(ctx, "Trafic");
 
     const refused = await time(ctx, {

@@ -1,0 +1,59 @@
+<fold-page-layout>
+  <div class="blp-page">
+    <div class="no-print blp-head">
+      <fold-back-link label="Colisage" routerLink="/production/colisage" />
+      <fold-element-title
+        variant="title"
+        [title]="reference() === null ? 'Étiquettes des bacs' : 'Étiquettes · ' + reference()"
+        subtitle="Une étiquette par bac ou demi-bac, une par page. Imprimer ne crée aucun bac."
+      >
+        @if (liveBins().length > 0) {
+          <button foldButton titleAction icon="print" (click)="print()" data-print-all>
+            Imprimer les {{ liveBins().length }} étiquettes
+          </button>
+        }
+      </fold-element-title>
+    </div>
+
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture des bacs…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Bacs illisibles"
+          subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+          data-labels-error
+        >
+          <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @for (bin of printed(); track bin.binId) {
+          <div class="blp-item">
+            <app-bin-label [bin]="bin" [url]="urlOf(bin)" />
+            <button
+              foldButton
+              class="no-print"
+              size="sm"
+              emphasis="outline"
+              icon="print"
+              (click)="print(bin.binId)"
+              data-print-one
+            >
+              Réimprimer celle-ci
+            </button>
+          </div>
+        } @empty {
+          <fold-empty-state
+            icon="package"
+            title="Aucun bac déclaré"
+            subtitle="Les bacs se déclarent au colisage, sur la commande prête."
+            data-no-bin
+          />
+        }
+      }
+    }
+  </div>
+</fold-page-layout>

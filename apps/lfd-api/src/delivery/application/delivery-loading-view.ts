@@ -1,75 +1,138 @@
 import type {
-  DeliveryBagDetailView,
-  DeliveryBagView,
+  DeliveryBinDetailView,
+  DeliveryBinView,
+  DeliveryLoadingBinView,
   DeliveryLoadingDayView,
   DeliveryLoadingRoundView,
   DeliveryLoadingStopView,
-  DeliveryOrderBagsView,
+  DeliveryOrderBinsView,
 } from "@lfd/contracts";
 
 import type { DeliveryOrderFacts } from "../channels/commerce/index.js";
 import { loadingStateOf, type StopLoadingState } from "../domain/entities/departure-readiness.js";
+import { isSharedBinToRedo, type StopPlace } from "../domain/entities/shared-bin.js";
 import type {
-  BagDestinationRow,
-  BagRow,
+  BinDestinationRow,
+  BinRow,
   LoadingRoundRow,
   LoadingStopRow,
 } from "../domain/ports/delivery-loading.reader.js";
 
 /**
- * Les vues du chargement (plan de tournée, lot 4), calculées par le serveur :
- * le rang « sac 2 / 3 » et l'état d'un arrêt (L4-C17) ne se décident pas à
- * l'écran.
+ * Les vues du chargement (plan de tournée, lot 4 ; lot 4 bis, tranche B),
+ * calculées par le serveur : le rang « bac 2 / 3 », l'état d'un arrêt
+ * (L4-C17) et « à refaire » (v2-4) ne se décident pas à l'écran.
  *
  * Une commande que le commerce ne connaît plus n'a ni numéro ni nom : on n'en
  * invente pas (`""`, comme la composition).
  */
 
-/** Ce qu'on lit d'une commande pour nommer ses sacs. */
-interface OrderNames {
+/** Ce qu'on lit d'une commande pour nommer ses bacs. */
+export interface OrderNames {
   readonly reference: string;
   readonly customerLabel: string;
+}
+
+/** Ce qu'il faut pour dire d'un bac s'il est partagé, et avec qui, et s'il est à refaire. */
+export interface BinContext {
+  readonly names: ReadonlyMap<string, OrderNames>;
+  /** Où est l'arrêt vivant de chaque commande ; absente = dans aucune tournée. */
+  readonly places: ReadonlyMap<string, StopPlace>;
 }
 
 export function orderNamesOf(order: DeliveryOrderFacts | undefined): OrderNames {
   return { reference: order?.reference ?? "", customerLabel: order?.customerLabel ?? "" };
 }
 
-/** Les sacs d'une commande, rangés : rang et total ne comptent que les non annulés. */
-export function bagViewsOf(bags: readonly BagRow[], names: OrderNames): readonly DeliveryBagView[] {
-  const live = bags.filter((bag) => bag.voidedAt === null);
-  return bags.map((bag) => {
-    const index = live.indexOf(bag);
-    return {
-      bagId: bag.id,
-      code: bag.code,
-      orderId: bag.orderId,
-      reference: names.reference,
-      customerLabel: names.customerLabel,
-      index: index < 0 ? null : index + 1,
-      total: live.length,
-      voidedAt: bag.voidedAt?.toISOString() ?? null,
-    };
+/** Les noms de ces commandes, par identifiant. */
+export function namesByOrder(
+  orders: readonly DeliveryOrderFacts[],
+): ReadonlyMap<string, OrderNames> {
+  return new Map(orders.map((order) => [order.orderId, orderNamesOf(order)]));
+}
+
+/** Les commandes que ces bacs citent : la leur, et celle de leur moitié partenaire. */
+export function ordersCitedBy(bins: readonly BinRow[]): readonly string[] {
+  return [
+    ...new Set(
+      bins.flatMap((bin) => [bin.orderId, ...(bin.partner === null ? [] : [bin.partner.orderId])]),
+    ),
+  ];
+}
+
+/** Le bac partagé est-il à refaire ? Jamais pour un bac non partagé. */
+export function binToRedo(bin: BinRow, places: ReadonlyMap<string, StopPlace>): boolean {
+  if (bin.partner === null || bin.voidedAt !== null) {
+    return false;
+  }
+  return isSharedBinToRedo(
+    places.get(bin.orderId) ?? null,
+    places.get(bin.partner.orderId) ?? null,
+  );
+}
+
+/** Les bacs d'une commande, rangés : rang et total ne comptent que les non annulés. */
+export function binViewsOf(
+  bins: readonly BinRow[],
+  context: BinContext,
+): readonly DeliveryBinView[] {
+  const live = bins.filter((bin) => bin.voidedAt === null);
+  return bins.map((bin) => {
+    const index = live.indexOf(bin);
+    return binViewOf(bin, context, index < 0 ? null : index + 1, live.length);
   });
 }
 
-export function orderBagsView(
-  orderId: string,
-  bags: readonly BagRow[],
-  names: OrderNames,
-): DeliveryOrderBagsView {
-  return { orderId, reference: names.reference, bags: bagViewsOf(bags, names) };
+function binViewOf(
+  bin: BinRow,
+  context: BinContext,
+  index: number | null,
+  total: number,
+): DeliveryBinView {
+  const names = context.names.get(bin.orderId) ?? orderNamesOf(undefined);
+  const partnerNames =
+    bin.partner === null
+      ? null
+      : (context.names.get(bin.partner.orderId) ?? orderNamesOf(undefined));
+  return {
+    binId: bin.id,
+    code: bin.code,
+    orderId: bin.orderId,
+    reference: names.reference,
+    customerLabel: names.customerLabel,
+    index,
+    total,
+    voidedAt: bin.voidedAt?.toISOString() ?? null,
+    binType: { ...bin.binType },
+    half: bin.half,
+    physicalBinId: bin.physicalBinId,
+    innerBags: bin.innerBags,
+    sharedWith:
+      bin.partner === null || partnerNames === null
+        ? null
+        : { binId: bin.partner.binId, orderId: bin.partner.orderId, ...partnerNames },
+    toRedo: binToRedo(bin, context.places),
+  };
 }
 
-export function bagDetailView(
-  bag: BagRow,
-  orderBags: readonly BagRow[],
-  names: OrderNames,
-  destination: BagDestinationRow | null,
-): DeliveryBagDetailView {
-  const view = bagViewsOf(orderBags, names).find((candidate) => candidate.bagId === bag.id);
+export function orderBinsView(
+  orderId: string,
+  bins: readonly BinRow[],
+  context: BinContext,
+): DeliveryOrderBinsView {
+  const reference = context.names.get(orderId)?.reference ?? "";
+  return { orderId, reference, bins: binViewsOf(bins, context) };
+}
+
+export function binDetailView(
+  bin: BinRow,
+  orderBins: readonly BinRow[],
+  context: BinContext,
+  destination: BinDestinationRow | null,
+): DeliveryBinDetailView {
+  const view = binViewsOf(orderBins, context).find((candidate) => candidate.binId === bin.id);
   return {
-    bag: view ?? missingView(bag, names),
+    bin: view ?? binViewOf(bin, context, null, 0),
     round:
       destination === null
         ? null
@@ -86,7 +149,7 @@ export function bagDetailView(
 
 export function loadingRoundView(
   round: LoadingRoundRow,
-  orders: ReadonlyMap<string, DeliveryOrderFacts>,
+  context: BinContext,
 ): DeliveryLoadingRoundView {
   return {
     roundId: round.id,
@@ -95,14 +158,15 @@ export function loadingRoundView(
     passage: round.passage,
     version: round.version,
     departedAt: round.departedAt?.toISOString() ?? null,
-    stops: round.stops.map((stop) => loadingStopView(stop, orderNamesOf(orders.get(stop.orderId)))),
+    stops: round.stops.map((stop) => loadingStopView(stop, context)),
   };
 }
 
-/** Les tournées d'un jour vues du dépôt : combien d'arrêts, combien chargés. */
+/** Les tournées d'un jour vues du dépôt : combien d'arrêts, combien chargés, combien à refaire. */
 export function loadingDayView(
   day: string,
   rounds: readonly LoadingRoundRow[],
+  places: ReadonlyMap<string, StopPlace>,
 ): DeliveryLoadingDayView {
   return {
     day,
@@ -113,19 +177,23 @@ export function loadingDayView(
       departedAt: round.departedAt?.toISOString() ?? null,
       stops: round.stops.length,
       loadedStops: round.stops.filter((stop) => stopStateOf(stop) === "loaded").length,
+      stopsWithBinToRedo: round.stops.filter((stop) =>
+        stop.bins.some((bin) => binToRedo(bin, places)),
+      ).length,
     })),
   };
 }
 
 function stopStateOf(stop: LoadingStopRow): StopLoadingState {
   return loadingStateOf(
-    stop.bags.filter((bag) => bag.voidedAt === null).map((bag) => bag.id),
+    stop.bins.filter((bin) => bin.voidedAt === null).map((bin) => bin.id),
     new Set(stop.loaded.keys()),
   );
 }
 
-function loadingStopView(stop: LoadingStopRow, names: OrderNames): DeliveryLoadingStopView {
-  const live = stop.bags.filter((bag) => bag.voidedAt === null);
+function loadingStopView(stop: LoadingStopRow, context: BinContext): DeliveryLoadingStopView {
+  const names = context.names.get(stop.orderId) ?? orderNamesOf(undefined);
+  const live = stop.bins.filter((bin) => bin.voidedAt === null);
   return {
     stopId: stop.stopId,
     orderId: stop.orderId,
@@ -133,25 +201,17 @@ function loadingStopView(stop: LoadingStopRow, names: OrderNames): DeliveryLoadi
     customerLabel: names.customerLabel,
     position: stop.position,
     state: stopStateOf(stop),
-    bags: live.map((bag, index) => ({
-      bagId: bag.id,
-      code: bag.code,
+    bins: live.map((bin, index): DeliveryLoadingBinView => ({
+      binId: bin.id,
+      code: bin.code,
       index: index + 1,
-      loadedAt: stop.loaded.get(bag.id)?.toISOString() ?? null,
+      binTypeName: bin.binType.name,
+      half: bin.half,
+      innerBags: bin.innerBags,
+      sharedWithReference:
+        bin.partner === null ? null : (context.names.get(bin.partner.orderId)?.reference ?? ""),
+      toRedo: binToRedo(bin, context.places),
+      loadedAt: stop.loaded.get(bin.id)?.toISOString() ?? null,
     })),
-  };
-}
-
-/** Le sac seul, quand la liste de sa commande ne le contient pas (lue à un autre instant). */
-function missingView(bag: BagRow, names: OrderNames): DeliveryBagView {
-  return {
-    bagId: bag.id,
-    code: bag.code,
-    orderId: bag.orderId,
-    reference: names.reference,
-    customerLabel: names.customerLabel,
-    index: null,
-    total: 0,
-    voidedAt: bag.voidedAt?.toISOString() ?? null,
   };
 }

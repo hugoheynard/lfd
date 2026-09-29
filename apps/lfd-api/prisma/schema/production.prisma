@@ -557,7 +557,7 @@ model DeliveryRoundStop {
   createdAt  DateTime  @map("created_at")
 
   round     DeliveryRound          @relation(fields: [roundId], references: [id], onDelete: Restrict)
-  bagLoads  DeliveryBagLoad[]
+  binLoads  DeliveryBinLoad[]
   execution DeliveryStopExecution?
 
   @@index([roundId])
@@ -566,36 +566,57 @@ model DeliveryRoundStop {
   @@schema("production")
 }
 
-/// Un **sac** de livraison (lot 4, L4-C16, L4-C18) : il appartient à la
-/// COMMANDE, et naît quand on le DÉCLARE — imprimer son étiquette est une
-/// lecture. Le nombre de sacs d'une commande EST le nombre de ses sacs non
-/// annulés.
+/// Un **bac déclaré** de livraison — un bac ENTIER, ou une MOITIÉ de bac
+/// cloisonné (lot 4, L4-C16, L4-C18 ; lot 4 bis, v2-4, tranche B). C'est
+/// l'unité qu'on scanne : un QR par bac entier, un QR par moitié. Il
+/// appartient à la COMMANDE, et naît quand on le DÉCLARE — imprimer son
+/// étiquette est une lecture. Ex-`delivery_bag`, renommé en place tant que le
+/// lot 4 n'était pas promu (v2-6).
 ///
-/// Écrivain : le chargement (`delivery/`). **Aucune journée** : un sac n'a pas
+/// Écrivain : le chargement (`delivery/`). **Aucune journée** : un bac n'a pas
 /// de jour, son chargement en a un — d'où son absence de déclencheur
 /// `day_change`, écrite dans `test/day-change-triggers.e2e-spec.ts`. Jamais
-/// supprimé : un sac de trop s'annule (`voided_at`).
+/// supprimé : un bac de trop s'annule (`voided_at`).
 ///
 /// `order_id` est OPAQUE : aucune clé étrangère vers `public.orders`.
-model DeliveryBag {
+///
+/// ⚠️ Tenu en base et invisible ici (Prisma n'exprime ni CHECK ni index
+/// partiel) : `half` ∈ {`left`, `right`} ; une moitié porte un bac physique,
+/// un bac entier n'en porte pas (`delivery_bin_half_has_physical_bin`) ; et
+/// l'index unique partiel `delivery_bin_physical_half_key` sur
+/// `(physical_bin_id, half)` des bacs NON annulés — deux moitiés au plus par
+/// bac physique, jamais deux fois la même.
+model DeliveryBin {
   /// Assigné par la commande (`IdGenerator`) ; c'est lui que porte le QR.
-  id        String    @id
-  orderId   String    @map("order_id")
+  id            String    @id
+  orderId       String    @map("order_id")
+  /// Le type du catalogue (v2-1). Un type archivé reste lisible ici (v2-7).
+  binTypeId     String    @map("bin_type_id")
+  /// `left` ou `right` pour une moitié de bac cloisonné ; nul pour un bac entier.
+  half          String?   @db.VarChar(5)
+  /// Le bac PHYSIQUE d'une moitié : les deux moitiés d'un même bac le
+  /// partagent. Nul pour un bac entier — qui est son propre bac physique.
+  physicalBinId String?   @map("physical_bin_id")
+  /// Les sacs posés dedans pour CETTE commande — informatif, imprimé.
+  innerBags     Int       @map("inner_bags")
   /// Six caractères Crockford base 32, tirés au sort (L4-C20) : ce qu'on tape
-  /// quand le QR est illisible. Unique sur TOUS les sacs, annulés compris.
-  code      String    @unique @db.VarChar(6)
-  voidedAt  DateTime? @map("voided_at")
-  createdAt DateTime  @map("created_at")
+  /// quand le QR est illisible. Unique sur TOUS les bacs, annulés compris.
+  code          String    @unique @db.VarChar(6)
+  voidedAt      DateTime? @map("voided_at")
+  createdAt     DateTime  @map("created_at")
 
-  loads DeliveryBagLoad[]
+  binType DeliveryBinType   @relation(fields: [binTypeId], references: [id], onDelete: Restrict)
+  loads   DeliveryBinLoad[]
 
   @@index([orderId])
-  @@map("delivery_bag")
+  @@index([physicalBinId])
+  @@index([binTypeId])
+  @@map("delivery_bin")
   @@schema("production")
 }
 
-/// Le **chargement d'un sac dans un arrêt** (lot 4, L4-C18) : il appartient à
-/// l'ARRÊT, pas au sac. Un arrêt retiré emporte ses chargements ; la commande
+/// Le **chargement d'un bac dans un arrêt** (lot 4, L4-C18) : il appartient à
+/// l'ARRÊT, pas au bac. Un arrêt retiré emporte ses chargements ; la commande
 /// recomposée repart de zéro.
 ///
 /// Écrivain : l'exécution seule (C10) — jamais l'adaptateur de la tournée, qui
@@ -603,11 +624,11 @@ model DeliveryBag {
 /// remet `loaded_at`, `loaded_by`, `loaded_via` à nul : la ligne reste, le
 /// journal garde qui avait chargé. Trois déclencheurs `day_change` sur
 /// `service_day`, recopié de l'arrêt.
-model DeliveryBagLoad {
+model DeliveryBinLoad {
   /// Assigné par la commande (`IdGenerator`) : l'ordre des verrous.
   id         String    @id
   stopId     String    @map("stop_id")
-  bagId      String    @map("bag_id")
+  binId      String    @map("bin_id")
   serviceDay String    @map("service_day") @db.VarChar(10)
   loadedAt   DateTime? @map("loaded_at")
   /// La fiche staff (`staff_users.id`) de qui a chargé — opaque, sans clé étrangère.
@@ -617,11 +638,11 @@ model DeliveryBagLoad {
   createdAt  DateTime  @map("created_at")
 
   stop DeliveryRoundStop @relation(fields: [stopId], references: [id], onDelete: Restrict)
-  bag  DeliveryBag       @relation(fields: [bagId], references: [id], onDelete: Restrict)
+  bin  DeliveryBin       @relation(fields: [binId], references: [id], onDelete: Restrict)
 
-  @@unique([stopId, bagId])
-  @@index([bagId])
-  @@map("delivery_bag_load")
+  @@unique([stopId, binId])
+  @@index([binId])
+  @@map("delivery_bin_load")
   @@schema("production")
 }
 
@@ -789,6 +810,7 @@ model DeliveryBinType {
   archivedAt DateTime? @map("archived_at")
 
   capacities DeliveryBinCapacity[]
+  bins       DeliveryBin[]
 
   @@map("delivery_bin_type")
   @@schema("production")

@@ -150,7 +150,11 @@ describe("la grille des contenances", () => {
 
     const view = await grid();
 
-    expect(view.products).toContainEqual({ sku: CROISSANT, name: "Croissant" });
+    expect(view.products).toContainEqual({
+      sku: CROISSANT,
+      name: "Croissant",
+      requiresCold: false,
+    });
     expect(view.types.map((type) => type.id)).toEqual([kept]);
     expect(view.capacities).toEqual([]);
   });

@@ -20,10 +20,16 @@ export const HANDOVER_VIA = domain('manière de remettre une commande', {
   manual: 'Saisie à la main',
 });
 
-/** Comment un sac a été chargé (`delivery_bag.loaded`) : son QR lu, ou son code court tapé. */
-export const BAG_LOAD_VIA = domain('manière de charger un sac', {
+/** Comment un bac a été chargé (`delivery_bin.loaded`) : son QR lu, ou son code court tapé. */
+export const BIN_LOAD_VIA = domain('manière de charger un bac', {
   scan: 'QR scanné',
   code: 'Code tapé',
+});
+
+/** La moitié d'un bac cloisonné (`delivery_bin.declared`, `delivery_bin.shared`). */
+export const BIN_HALF = domain('moitié d’un bac', {
+  left: '½ gauche',
+  right: '½ droite',
 });
 
 /** Le mode de « Proposer » par défaut du calculateur de tournée (`delivery_routing.settings_updated`). */
@@ -55,7 +61,8 @@ export const ORDERS_VALUES: ValueFamily = {
   enums: [
     WEEKDAY,
     HANDOVER_VIA,
-    BAG_LOAD_VIA,
+    BIN_LOAD_VIA,
+    BIN_HALF,
     PROPOSAL_MODE,
     ABANDON_OUTCOME,
     QUALITY_VERDICT,

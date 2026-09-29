@@ -3,18 +3,34 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import type {
+  DeliveryLoadingBinView,
   DeliveryLoadingRoundView,
-  LoadDeliveryBagPayload,
+  LoadDeliveryBinPayload,
   StaffPermission,
 } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { BagScanner } from '../bag-scanner/bag-scanner';
+import { BinScanner } from '../bin-scanner/bin-scanner';
 import { DeliveryLoadingService } from '../delivery-loading.service';
 import { LoadingRoundPage, loadedNotice } from './loading-round-page';
 
 const WRITE: readonly StaffPermission[] = ['delivery_loading:read', 'delivery_loading:write'];
+
+function bin(overrides: Partial<DeliveryLoadingBinView> = {}): DeliveryLoadingBinView {
+  return {
+    binId: 'b-1',
+    code: 'ABC234',
+    index: 1,
+    binTypeName: 'Bac M',
+    half: null,
+    innerBags: 0,
+    sharedWithReference: null,
+    toRedo: false,
+    loadedAt: null,
+    ...overrides,
+  };
+}
 
 function round(overrides: Partial<DeliveryLoadingRoundView> = {}): DeliveryLoadingRoundView {
   return {
@@ -32,9 +48,9 @@ function round(overrides: Partial<DeliveryLoadingRoundView> = {}): DeliveryLoadi
         customerLabel: 'Le Comptoir',
         position: 1,
         state: 'partial',
-        bags: [
-          { bagId: 'b-1', code: 'ABC234', index: 1, loadedAt: '2026-10-01T05:00:00.000Z' },
-          { bagId: 'b-2', code: 'ABC235', index: 2, loadedAt: null },
+        bins: [
+          bin({ binId: 'b-1', code: 'ABC234', index: 1, loadedAt: '2026-10-01T05:00:00.000Z' }),
+          bin({ binId: 'b-2', code: 'ABC235', index: 2, half: 'left', innerBags: 2 }),
         ],
       },
       {
@@ -44,7 +60,7 @@ function round(overrides: Partial<DeliveryLoadingRoundView> = {}): DeliveryLoadi
         customerLabel: 'Chez Paul',
         position: 2,
         state: 'unlabelled',
-        bags: [],
+        bins: [],
       },
     ],
     ...overrides,
@@ -83,9 +99,9 @@ async function boot(
         provide: DeliveryLoadingService,
         useValue: {
           round: () => Promise.resolve(wire.view),
-          load: (roundId: string, payload: LoadDeliveryBagPayload) =>
+          load: (roundId: string, payload: LoadDeliveryBinPayload) =>
             outcome(`load ${roundId} ${JSON.stringify(payload)}`),
-          unload: (roundId: string, bagId: string) => outcome(`unload ${roundId} ${bagId}`),
+          unload: (roundId: string, binId: string) => outcome(`unload ${roundId} ${binId}`),
           depart: (roundId: string, version: number) =>
             outcome(`depart ${roundId} ${String(version)}`),
         } satisfies Partial<Record<keyof DeliveryLoadingService, unknown>>,
@@ -104,57 +120,57 @@ async function boot(
 }
 
 function scan(fixture: ComponentFixture<LoadingRoundPage>, raw: string): void {
-  fixture.debugElement.query(By.directive(BagScanner)).triggerEventHandler('scanned', raw);
+  fixture.debugElement.query(By.directive(BinScanner)).triggerEventHandler('scanned', raw);
 }
 
 describe('LoadingRoundPage', () => {
-  it('dit « 1 sac sur 2 » par arrêt, met l’arrêt sans sac en rouge, et liste ce qui manque', async () => {
+  it('dit « 1 bac sur 2 » par arrêt, met l’arrêt sans bac en rouge, et liste ce qui manque', async () => {
     const { element } = await boot();
     const stops = [...element.querySelectorAll('[data-stop]')];
-    expect(stops[0]?.textContent).toContain('1 sac sur 2');
-    expect(stops[1]?.textContent).toContain('Aucun sac déclaré');
+    expect(stops[0]?.textContent).toContain('1 bac sur 2');
+    expect(stops[1]?.textContent).toContain('Aucun bac déclaré');
     const missing = [...element.querySelectorAll('[data-missing-stop]')].map((line) =>
       line.textContent?.trim(),
     );
     expect(missing).toEqual([
-      'CMD-1 · Le Comptoir — 1 sac sur 2',
-      'CMD-2 · Chez Paul — aucun sac déclaré',
+      'CMD-1 · Le Comptoir — 1 bac sur 2',
+      'CMD-2 · Chez Paul — aucun bac déclaré',
     ]);
   });
 
-  it('charge un sac scanné par son identifiant — le scan est le geste', async () => {
+  it('charge un bac scanné par son identifiant — le scan est le geste', async () => {
     const { fixture, element } = await boot();
-    scan(fixture, 'https://bo.example/livraison/sac/b-2');
+    scan(fixture, 'https://bo.example/livraison/bac/b-2');
     await settle(fixture);
-    expect(wire.calls).toEqual(['load r-1 {"bagId":"b-2"}']);
+    expect(wire.calls).toEqual(['load r-1 {"binId":"b-2"}']);
     expect(element.querySelector('[data-notice]')?.textContent).toContain(
-      'CMD-1 · Le Comptoir — sac 2 chargé',
+      'CMD-1 · Le Comptoir — bac 2 (Bac M · ½ gauche · 2 sacs dedans) chargé',
     );
   });
 
-  it('🔴 n’envoie rien pour un code qui n’est pas un sac', async () => {
+  it('🔴 n’envoie rien pour un code qui n’est pas un bac', async () => {
     const { fixture, element } = await boot();
     scan(fixture, 'https://bo.example/colisage/CMD-1');
     await settle(fixture);
     expect(wire.calls).toEqual([]);
-    expect(element.querySelector('[data-notice]')?.textContent).toContain('ne désigne pas un sac');
+    expect(element.querySelector('[data-notice]')?.textContent).toContain('ne désigne pas un bac');
   });
 
-  it('affiche le refus du serveur tel quel — un sac d’une autre tournée nomme le véhicule', async () => {
+  it('affiche le refus du serveur tel quel — un bac d’une autre tournée nomme le véhicule', async () => {
     const { fixture, element } = await boot();
     wire.refuse = new HttpErrorResponse({
       status: 409,
-      error: { message: 'Ce sac part dans le Master bleu.' },
+      error: { message: 'Ce bac part dans le Master bleu.' },
     });
     scan(fixture, 'abc 236');
     await settle(fixture);
     expect(wire.calls).toEqual(['load r-1 {"code":"ABC236"}']);
     expect(element.querySelector('[data-notice]')?.textContent?.trim()).toBe(
-      'Ce sac part dans le Master bleu.',
+      'Ce bac part dans le Master bleu.',
     );
   });
 
-  it('décharge un sac chargé', async () => {
+  it('décharge un bac chargé', async () => {
     const { fixture, element } = await boot();
     element.querySelector<HTMLButtonElement>('button[data-unload]')?.click();
     await settle(fixture);
@@ -181,6 +197,42 @@ describe('LoadingRoundPage', () => {
     expect(element.querySelector('[data-depart]')).toBeNull();
   });
 
+  it('🔴 un bac partagé à refaire se dit en alerte, et « Partir » dit le refus tel quel', async () => {
+    const view = round();
+    const [first, second] = view.stops;
+    if (first === undefined || second === undefined) {
+      throw new Error('fixture');
+    }
+    const redo = bin({
+      binId: 'h-1',
+      code: 'ABC299',
+      half: 'left',
+      sharedWithReference: 'CMD-9',
+      toRedo: true,
+      loadedAt: '2026-10-01T05:00:00.000Z',
+    });
+    const { fixture, element } = await boot(
+      WRITE,
+      round({ stops: [{ ...first, state: 'loaded', bins: [redo] }, second] }),
+    );
+    const stop = element.querySelector('[data-stop]');
+    expect(stop?.querySelector('[data-stop-to-redo]')).not.toBeNull();
+    expect(stop?.querySelector('[data-bin-to-redo]')).not.toBeNull();
+    expect(stop?.querySelector('[data-bin-shared]')?.textContent?.trim()).toBe(
+      'partagé avec CMD-9',
+    );
+    expect(element.querySelector('[data-to-redo]')?.textContent).toContain('Un arrêt porte');
+    expect(element.querySelector('[data-missing-stop]')?.textContent?.trim()).toBe(
+      'CMD-1 · Le Comptoir — bac partagé à refaire · 1 bac sur 1',
+    );
+    const refusal =
+      'Le bac partagé ABC299 n’est plus entre deux arrêts consécutifs : recolisez-le ou remettez les arrêts côte à côte.';
+    wire.refuse = new HttpErrorResponse({ status: 409, error: { message: refusal } });
+    element.querySelector<HTMLButtonElement>('button[data-depart]')?.click();
+    await settle(fixture);
+    expect(element.querySelector('[data-notice]')?.textContent?.trim()).toBe(refusal);
+  });
+
   it('sans écriture, on lit le chargement sans aucun geste', async () => {
     const { element } = await boot(['delivery_loading:read']);
     expect(element.querySelectorAll('[data-stop]')).toHaveLength(2);
@@ -190,9 +242,9 @@ describe('LoadingRoundPage', () => {
 });
 
 describe('loadedNotice', () => {
-  it('nomme la commande et le rang du sac chargé', () => {
+  it('nomme la commande, le rang et le type du bac chargé', () => {
     expect(loadedNotice(round(), { code: 'ABC235' })).toBe(
-      'CMD-1 · Le Comptoir — sac 2 chargé (1 sac sur 2).',
+      'CMD-1 · Le Comptoir — bac 2 (Bac M · ½ gauche · 2 sacs dedans) chargé (1 bac sur 2).',
     );
   });
 });

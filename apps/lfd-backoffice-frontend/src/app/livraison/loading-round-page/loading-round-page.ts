@@ -9,7 +9,7 @@ import {
   untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { DeliveryLoadingRoundView, LoadDeliveryBagPayload } from '@lfd/contracts';
+import type { DeliveryLoadingRoundView, LoadDeliveryBinPayload } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBackLinkComponent,
@@ -25,12 +25,14 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { BagScanner } from '../bag-scanner/bag-scanner';
+import { BinScanner } from '../bin-scanner/bin-scanner';
 import {
-  bagCountLabel,
+  binCountLabel,
+  binKindLabel,
+  hasBinToRedo,
   missingStops,
   parisTimeOf,
-  scannedBag,
+  scannedBin,
   stopStateLabel,
 } from '../delivery-loading';
 import { DeliveryLoadingService } from '../delivery-loading.service';
@@ -47,36 +49,37 @@ export interface LoadingNotice {
   readonly text: string;
 }
 
-/** Ce qu'on dit d'un code lu qui n'est pas un sac — il n'atteint jamais le réseau. */
-const NOT_A_BAG =
-  'Ce code ne désigne pas un sac : ni l’adresse d’un sac, ni un code court de six caractères.';
+/** Ce qu'on dit d'un code lu qui n'est pas un bac — il n'atteint jamais le réseau. */
+const NOT_A_BIN =
+  'Ce code ne désigne pas un bac : ni l’adresse d’un bac, ni un code court de six caractères.';
 
-/** Le sac qu'un chargement accepté désigne, relu dans la tournée : « CMD-12 · sac 2 ». */
+/** Le bac qu'un chargement accepté désigne, relu dans la tournée : « CMD-12 · bac 2 ». */
 export function loadedNotice(
   view: DeliveryLoadingRoundView,
-  payload: LoadDeliveryBagPayload,
+  payload: LoadDeliveryBinPayload,
 ): string {
   for (const stop of view.stops) {
-    const bag = stop.bags.find((candidate) =>
-      'bagId' in payload ? candidate.bagId === payload.bagId : candidate.code === payload.code,
+    const bin = stop.bins.find((candidate) =>
+      'binId' in payload ? candidate.binId === payload.binId : candidate.code === payload.code,
     );
-    if (bag !== undefined) {
-      return `${stop.reference} · ${stop.customerLabel} — sac ${String(bag.index)} chargé (${bagCountLabel(stop)}).`;
+    if (bin !== undefined) {
+      return `${stop.reference} · ${stop.customerLabel} — bac ${String(bin.index)} (${binKindLabel(bin)}) chargé (${binCountLabel(stop)}).`;
     }
   }
-  return 'Sac chargé.';
+  return 'Bac chargé.';
 }
 
 /**
  * **Charger UN véhicule** (`/livraison/chargement/:roundId`, lot 4, L4-C2).
  *
- * L'écran compare un ensemble de sacs à un véhicule : chaque arrêt dit « 2 sacs
- * sur 3 », l'arrêt sans sac déclaré est en rouge (L4-C17), et le bas de l'écran
- * dit ce qui manque encore.
+ * L'écran compare un ensemble de bacs à un véhicule : chaque arrêt dit « 2 bacs
+ * sur 3 », l'arrêt sans bac déclaré est en rouge (L4-C17), un bac partagé
+ * « à refaire » l'est aussi (v2-4), et le bas de l'écran dit ce qui manque
+ * encore.
  *
- * 🔴 **Ici, le scan EST le geste** — à la différence de la page d'un sac, qu'on
+ * 🔴 **Ici, le scan EST le geste** — à la différence de la page d'un bac, qu'on
  * ouvre sans rien écrire : on a choisi ce véhicule, et chaque QR lu charge. Le
- * serveur tranche tout le reste, et ses refus s'affichent tels quels (un sac
+ * serveur tranche tout le reste, et ses refus s'affichent tels quels (un bac
  * d'une autre tournée : il nomme le véhicule).
  *
  * Après « Partir », la tournée est gelée : l'écran passe en lecture seule.
@@ -85,7 +88,7 @@ export function loadedNotice(
   selector: 'app-loading-round-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    BagScanner,
+    BinScanner,
     FoldBackLinkComponent,
     FoldBadgeComponent,
     FoldButtonComponent,
@@ -110,7 +113,7 @@ export class LoadingRoundPage {
   protected readonly state = signal<RoundState>({ status: 'loading' });
   private readonly reload = signal(0);
 
-  /** Ce qui vient de se passer : un sac chargé, un code étranger, un refus. */
+  /** Ce qui vient de se passer : un bac chargé, un code étranger, un refus. */
   protected readonly notice = signal<LoadingNotice | null>(null);
   protected readonly busy = signal(false);
   /** Le code court tapé, quand le QR est illisible. */
@@ -134,12 +137,19 @@ export class LoadingRoundPage {
     return view === null ? [] : missingStops(view);
   });
 
+  /** Les arrêts qui portent un bac partagé à refaire (v2-4) — dits en alerte. */
+  protected readonly toRedoCount = computed(
+    () => this.view()?.stops.filter((stop) => hasBinToRedo(stop)).length ?? 0,
+  );
+
   protected readonly title = computed(() => {
     const view = this.view();
     return view === null ? 'Chargement' : `Chargement · ${roundLabel(view)}`;
   });
 
-  protected readonly bagCountLabel = bagCountLabel;
+  protected readonly binCountLabel = binCountLabel;
+  protected readonly binKindLabel = binKindLabel;
+  protected readonly hasBinToRedo = hasBinToRedo;
   protected readonly stateLabel = stopStateLabel;
   protected readonly timeOf = parisTimeOf;
   protected readonly dayLabel = serviceDayLabel;
@@ -167,35 +177,39 @@ export class LoadingRoundPage {
   }
 
   private async loadFrom(raw: string): Promise<void> {
-    const payload = scannedBag(raw);
+    const payload = scannedBin(raw);
     if (payload === null) {
-      this.notice.set({ variant: 'warning', text: NOT_A_BAG });
+      this.notice.set({ variant: 'warning', text: NOT_A_BIN });
       return;
     }
     const roundId = this.roundId();
     const accepted = await this.write(
       () => this.service.load(roundId, payload),
-      'Le sac n’a pas pu être chargé.',
+      'Le bac n’a pas pu être chargé.',
     );
     if (accepted) {
       this.typed.set('');
       const view = this.view();
       this.notice.set({
         variant: 'success',
-        text: view === null ? 'Sac chargé.' : loadedNotice(view, payload),
+        text: view === null ? 'Bac chargé.' : loadedNotice(view, payload),
       });
     }
   }
 
-  protected unload(bagId: string): Promise<boolean> {
+  protected unload(binId: string): Promise<boolean> {
     const roundId = this.roundId();
     return this.write(
-      () => this.service.unload(roundId, bagId),
-      'Le sac n’a pas pu être déchargé.',
+      () => this.service.unload(roundId, binId),
+      'Le bac n’a pas pu être déchargé.',
     );
   }
 
-  /** « Partir » — refusé par le serveur tant qu'un arrêt n'est pas chargé (Q14, L4-C17). */
+  /**
+   * « Partir » — refusé par le serveur tant qu'un arrêt n'est pas chargé (Q14,
+   * L4-C17) ou porte un bac partagé à refaire (v2-4). Le refus s'affiche tel
+   * quel : c'est lui qui nomme le bac et le geste de sortie.
+   */
   protected async depart(): Promise<void> {
     const view = this.view();
     if (view === null) {

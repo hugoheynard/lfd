@@ -162,7 +162,7 @@ describe("GetDeliveryRoundProposalHandler — « Proposer » (L7-C3 à C6)", () 
     ]);
   });
 
-  it("« tout recomposer » reprend la tournée au dépôt sans sac chargé", async () => {
+  it("« tout recomposer » reprend la tournée au dépôt sans bac chargé", async () => {
     const { handler } = scene();
 
     const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, ["v1"], true));

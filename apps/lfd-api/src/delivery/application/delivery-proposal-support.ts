@@ -55,7 +55,7 @@ export interface KeptRound {
 
 /**
  * **Ce que la proposition a le droit de toucher** (L7-C5, L7-Q2). Jamais une
- * tournée partie, jamais une tournée où un sac est chargé. Sans « tout
+ * tournée partie, jamais une tournée où un bac est chargé. Sans « tout
  * recomposer », aucune autre non plus. Et une tournée dont un arrêt est signalé
  * (à retirer à la main, Q11) ou non situé reste telle quelle : la proposition
  * ne défait pas un placement qu'elle ne saurait pas refaire.
@@ -116,7 +116,7 @@ function keptReason(
  * **Où insérer** (mode `insert`) : les tournées au dépôt des véhicules cochés,
  * dont chaque arrêt est situé — sans quoi on ne saurait pas chronométrer ce
  * qu'on y ajoute. Une tournée chargée reste éligible : Hugo a dit « non
- * parties » (2026-09-29) ; l'arrêt inséré n'a pas de sac, et « Partir » le dira.
+ * parties » (2026-09-29) ; l'arrêt inséré n'a pas de bac, et « Partir » le dira.
  */
 export function insertableRounds(input: {
   readonly rounds: readonly RoundRow[];

@@ -238,11 +238,11 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'livraison/feuille-de-route': 'delivery_run_sheet:read',
   'livraison/tournees': 'delivery_rounds:read',
   'livraison/simulateur': 'delivery_rounds:read',
-  // Le chargement (lot 4) : ouvrir un sac, une tournée, des étiquettes est une
+  // Le chargement (lot 4) : ouvrir un bac, une tournée, des étiquettes est une
   // LECTURE ; les gestes demandent l'écriture, que l'écran seul propose.
   'livraison/chargement': 'delivery_loading:read',
   'livraison/chargement/:roundId': 'delivery_loading:read',
-  'livraison/sac/:bagId': 'delivery_loading:read',
+  'livraison/bac/:binId': 'delivery_loading:read',
   'livraison/etiquettes/:orderId': 'delivery_loading:read',
   'livraison/vehicules': 'delivery_settings:read',
   'livraison/bacs': 'delivery_settings:read',

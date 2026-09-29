@@ -3,8 +3,8 @@ import {
   type DeliveryLoadingRoundView,
   type DepartDeliveryRoundPayload,
   departDeliveryRoundPayloadSchema,
-  type LoadDeliveryBagPayload,
-  loadDeliveryBagPayloadSchema,
+  type LoadDeliveryBinPayload,
+  loadDeliveryBinPayloadSchema,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
@@ -14,8 +14,8 @@ import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { DepartDeliveryRoundCommand } from "../application/commands/depart-delivery-round.command.js";
-import { LoadDeliveryBagCommand } from "../application/commands/load-delivery-bag.command.js";
-import { UnloadDeliveryBagCommand } from "../application/commands/unload-delivery-bag.command.js";
+import { LoadDeliveryBinCommand } from "../application/commands/load-delivery-bin.command.js";
+import { UnloadDeliveryBinCommand } from "../application/commands/unload-delivery-bin.command.js";
 import { GetDeliveryLoadingDayQuery } from "../application/queries/get-delivery-loading-day.query.js";
 import { GetDeliveryLoadingRoundQuery } from "../application/queries/get-delivery-loading-round.query.js";
 
@@ -57,23 +57,23 @@ export class DeliveryLoadingController {
     );
   }
 
-  @Post("chargement/:roundId/sacs")
+  @Post("chargement/:roundId/bacs")
   @HttpCode(HttpStatus.NO_CONTENT)
   async load(
     @Param("roundId") roundId: string,
-    @Body(new ZodBody(loadDeliveryBagPayloadSchema)) payload: LoadDeliveryBagPayload,
+    @Body(new ZodBody(loadDeliveryBinPayloadSchema)) payload: LoadDeliveryBinPayload,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
-    await this.commands.execute<LoadDeliveryBagCommand, void>(
-      new LoadDeliveryBagCommand(roundId, payload, staffUserId),
+    await this.commands.execute<LoadDeliveryBinCommand, void>(
+      new LoadDeliveryBinCommand(roundId, payload, staffUserId),
     );
   }
 
-  @Post("chargement/:roundId/sacs/:bagId/dechargement")
+  @Post("chargement/:roundId/bacs/:binId/dechargement")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async unload(@Param("roundId") roundId: string, @Param("bagId") bagId: string): Promise<void> {
-    await this.commands.execute<UnloadDeliveryBagCommand, void>(
-      new UnloadDeliveryBagCommand(roundId, bagId),
+  async unload(@Param("roundId") roundId: string, @Param("binId") binId: string): Promise<void> {
+    await this.commands.execute<UnloadDeliveryBinCommand, void>(
+      new UnloadDeliveryBinCommand(roundId, binId),
     );
   }
 

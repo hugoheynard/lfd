@@ -1,16 +1,21 @@
-import type { LoadDeliveryBagPayload } from "@lfd/contracts";
+import type { LoadDeliveryBinPayload } from "@lfd/contracts";
 
-import type { DeliveryOrdersReader } from "../channels/commerce/index.js";
-import type { DeliveryBag } from "../domain/entities/delivery-bag.js";
+import type { DeliveryOrderFacts, DeliveryOrdersReader } from "../channels/commerce/index.js";
+import type { BinType } from "../domain/entities/bin-type.js";
+import type { DeliveryBin } from "../domain/entities/delivery-bin.js";
 import type { LoadVia } from "../domain/entities/stop-loading.js";
+import { BinTypeNotFoundError } from "../domain/errors/delivery-bin-errors.js";
 import {
-  BagCodeExhaustedError,
-  DeliveryBagNotFoundError,
+  BinCodeExhaustedError,
+  BinsNotDeclarableError,
+  DeliveryBinNotFoundError,
+  type UndeclarableReason,
 } from "../domain/errors/delivery-loading-errors.js";
 import { citeOrder, type CitedOrder } from "../domain/events/delivery-round.events.js";
-import type { BagCodeDrawer } from "../domain/ports/bag-code-drawer.js";
-import type { DeliveryBagRepository } from "../domain/ports/delivery-bag.repository.js";
-import { bagCodeOf } from "../domain/value-objects/bag-code.js";
+import type { BinCodeDrawer } from "../domain/ports/bin-code-drawer.js";
+import type { BinTypeLookup } from "../domain/ports/bin-type-lookup.js";
+import type { DeliveryBinRepository } from "../domain/ports/delivery-bin.repository.js";
+import { binCodeOf } from "../domain/value-objects/bin-code.js";
 import { referencesOf } from "./delivery-round-support.js";
 
 /**
@@ -21,14 +26,14 @@ import { referencesOf } from "./delivery-round-support.js";
 const MAX_DRAWS = 5;
 
 /**
- * Tire `count` codes libres (L4-C20) : distincts entre eux, et d'aucun sac
+ * Tire `count` codes libres (L4-C20) : distincts entre eux, et d'aucun bac
  * existant, annulé compris. Un code déjà pris est retiré.
  *
- * @throws {BagCodeExhaustedError}
+ * @throws {BinCodeExhaustedError}
  */
-export async function drawBagCodes(
-  drawer: BagCodeDrawer,
-  bags: DeliveryBagRepository,
+export async function drawBinCodes(
+  drawer: BinCodeDrawer,
+  bins: DeliveryBinRepository,
   count: number,
 ): Promise<readonly string[]> {
   const kept = new Set<string>();
@@ -44,7 +49,7 @@ export async function drawBagCodes(
         candidates.add(code);
       }
     }
-    const taken = await bags.codesTaken([...candidates]);
+    const taken = await bins.codesTaken([...candidates]);
     for (const code of candidates) {
       if (!taken.has(code)) {
         kept.add(code);
@@ -52,44 +57,89 @@ export async function drawBagCodes(
     }
   }
   if (kept.size < count) {
-    throw new BagCodeExhaustedError(MAX_DRAWS);
+    throw new BinCodeExhaustedError(MAX_DRAWS);
   }
   return [...kept];
 }
 
+/** Un seul code libre. @throws {BinCodeExhaustedError} */
+export async function drawBinCode(
+  drawer: BinCodeDrawer,
+  bins: DeliveryBinRepository,
+): Promise<string> {
+  const [code] = await drawBinCodes(drawer, bins, 1);
+  if (code === undefined) {
+    throw new BinCodeExhaustedError(MAX_DRAWS);
+  }
+  return code;
+}
+
+/** Le type de bac à déclarer, ou 404. @throws {BinTypeNotFoundError} */
+export async function lookUpBinType(types: BinTypeLookup, id: string): Promise<BinType> {
+  const binType = await types.load(id);
+  if (binType === null) {
+    throw new BinTypeNotFoundError(id);
+  }
+  return binType;
+}
+
 /**
- * Le sac désigné par son QR ou par son code tapé, et le moyen du geste.
- * @throws {DeliveryBagNotFoundError} @throws {InvalidBagCodeError}
+ * Le numéro d'une commande qui peut recevoir des bacs : connue du commerce,
+ * en livraison, non annulée — lue au moment du geste.
+ * @throws {BinsNotDeclarableError}
  */
-export async function resolveBag(
-  bags: DeliveryBagRepository,
-  payload: LoadDeliveryBagPayload,
-): Promise<{ readonly bag: DeliveryBag; readonly via: LoadVia }> {
-  if ("bagId" in payload) {
-    const bag = await bags.load(payload.bagId);
-    if (bag === null) {
-      throw new DeliveryBagNotFoundError(payload.bagId);
+export async function declarableReference(
+  orders: DeliveryOrdersReader,
+  orderId: string,
+): Promise<string> {
+  const [order] = await orders.byIds([orderId]);
+  const reason = order === undefined ? "unknown" : undeclarableReason(order);
+  if (order === undefined || reason !== null) {
+    throw new BinsNotDeclarableError(order?.reference ?? orderId, reason ?? "unknown");
+  }
+  return order.reference;
+}
+
+function undeclarableReason(order: DeliveryOrderFacts): UndeclarableReason | null {
+  if (order.status === "cancelled") {
+    return "cancelled";
+  }
+  return order.delivery ? null : "not_delivery";
+}
+
+/**
+ * Le bac désigné par son QR ou par son code tapé, et le moyen du geste.
+ * @throws {DeliveryBinNotFoundError} @throws {InvalidBinCodeError}
+ */
+export async function resolveBin(
+  bins: DeliveryBinRepository,
+  payload: LoadDeliveryBinPayload,
+): Promise<{ readonly bin: DeliveryBin; readonly via: LoadVia }> {
+  if ("binId" in payload) {
+    const bin = await bins.load(payload.binId);
+    if (bin === null) {
+      throw new DeliveryBinNotFoundError(payload.binId);
     }
-    return { bag, via: "scan" };
+    return { bin, via: "scan" };
   }
-  const code = bagCodeOf(payload.code);
-  const bag = await bags.findByCode(code);
-  if (bag === null) {
-    throw new DeliveryBagNotFoundError(code);
+  const code = binCodeOf(payload.code);
+  const bin = await bins.findByCode(code);
+  if (bin === null) {
+    throw new DeliveryBinNotFoundError(code);
   }
-  return { bag, via: "code" };
+  return { bin, via: "code" };
 }
 
-/** Le sac, ou 404. @throws {DeliveryBagNotFoundError} */
-export async function loadBag(bags: DeliveryBagRepository, bagId: string): Promise<DeliveryBag> {
-  const bag = await bags.load(bagId);
-  if (bag === null) {
-    throw new DeliveryBagNotFoundError(bagId);
+/** Le bac, ou 404. @throws {DeliveryBinNotFoundError} */
+export async function loadBin(bins: DeliveryBinRepository, binId: string): Promise<DeliveryBin> {
+  const bin = await bins.load(binId);
+  if (bin === null) {
+    throw new DeliveryBinNotFoundError(binId);
   }
-  return bag;
+  return bin;
 }
 
-/** La commande d'un sac citée au journal : par son numéro, ou par son id nu. */
+/** La commande d'un bac citée au journal : par son numéro, ou par son id nu. */
 export async function citedOrderOf(
   orders: DeliveryOrdersReader,
   orderId: string,

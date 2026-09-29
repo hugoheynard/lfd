@@ -1,0 +1,132 @@
+<fold-page-layout icon="package" title="Bac">
+  <p description>Ce que porte ce bac, et où il part. Ouvrir cette page ne charge rien.</p>
+
+  <div class="bp-page">
+    @if (refusal(); as refusal) {
+      <fold-callout variant="alert" data-refusal>{{ refusal }}</fold-callout>
+    }
+
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture du bac…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Bac illisible"
+          subtitle="Ce bac est introuvable, ou le serveur n’a pas répondu."
+          data-bin-error
+        >
+          <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @if (view(); as view) {
+          <fold-card data-bin>
+            <div class="bp-card">
+              <fold-element-title
+                variant="title"
+                [title]="view.bin.reference + ' · ' + view.bin.customerLabel"
+                [subtitle]="indexLabel(view.bin) + ' · code ' + view.bin.code"
+              />
+
+              <p class="bp-line" data-bin-kind>{{ kind() }}</p>
+              @if (view.bin.sharedWith; as partner) {
+                <p class="bp-line" data-bin-shared>{{ sharedWith(partner) }}</p>
+              }
+              @if (view.bin.toRedo) {
+                <fold-callout variant="alert" data-to-redo>
+                  Bac partagé à refaire : les deux commandes ne sont plus à des arrêts consécutifs
+                  d’une même tournée. « Partir » refuse l’arrêt tant qu’il n’est pas recolisé, ou
+                  que les arrêts ne sont pas remis côte à côte.
+                </fold-callout>
+              }
+
+              @if (view.round; as round) {
+                <p class="bp-line" data-round>
+                  {{ roundLabel(round) }} · {{ dayLabel(round.day) }}
+                </p>
+              }
+
+              @switch (situation()) {
+                @case ('voided') {
+                  <fold-callout variant="warning" data-voided>
+                    Ce bac a été annulé : son étiquette ne compte plus, il ne se charge pas.
+                  </fold-callout>
+                }
+                @case ('unassigned') {
+                  <fold-callout variant="warning" data-unassigned>
+                    À répartir d’abord : la commande n’est dans aucune tournée. Le bac se chargera
+                    une fois la commande affectée à un véhicule.
+                    @if (canCompose()) {
+                      <a foldButton size="sm" emphasis="outline" routerLink="/livraison/tournees">
+                        Ouvrir les tournées
+                      </a>
+                    }
+                  </fold-callout>
+                }
+                @case ('departed') {
+                  <fold-callout variant="info" data-departed>
+                    {{ view.round?.vehicleName }} est parti à
+                    {{ timeOf(view.round?.departedAt ?? '') }} : plus rien ne se charge ni ne se
+                    décharge.
+                  </fold-callout>
+                }
+                @case ('loaded') {
+                  <fold-callout variant="success" data-loaded>
+                    Chargé dans {{ view.round?.vehicleName }} à {{ timeOf(view.loadedAt ?? '') }}.
+                  </fold-callout>
+                }
+                @case ('loadable') {
+                  @if (canWrite()) {
+                    <button
+                      foldButton
+                      size="lg"
+                      icon="truck"
+                      [loading]="busy()"
+                      [disabled]="busy()"
+                      (click)="loadBin()"
+                      data-load
+                    >
+                      Charger dans {{ view.round?.vehicleName }}
+                    </button>
+                  } @else {
+                    <fold-callout variant="info" data-read-only>
+                      Pas encore chargé. Le chargement se fait au dépôt, par le comptoir.
+                    </fold-callout>
+                  }
+                }
+              }
+
+              @if (view.round; as round) {
+                <a
+                  foldButton
+                  emphasis="outline"
+                  [routerLink]="['/livraison/chargement', round.roundId]"
+                  data-open-loading
+                >
+                  Voir le chargement de {{ round.vehicleName }}
+                </a>
+              }
+            </div>
+          </fold-card>
+
+          @if (canWrite() && (situation() === 'loadable' || situation() === 'unassigned')) {
+            <fold-danger-zone
+              appearance="section"
+              title="Annuler ce bac"
+              actionLabel="Annuler le bac"
+              (confirmed)="voidBin()"
+              data-void
+            >
+              <p>
+                Un bac de trop : son étiquette cesse de compter, et la commande en porte un de
+                moins. Une moitié annulée libère son côté du bac. Un bac chargé se décharge d’abord.
+              </p>
+            </fold-danger-zone>
+          }
+        }
+      }
+    }
+  </div>
+</fold-page-layout>

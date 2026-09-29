@@ -84,7 +84,7 @@ describe("l'espace Livraison", () => {
     expect(await opens('comptoir', 'simulateur')).toBe(true);
     expect(await opens('comptoir', 'chargement')).toBe(true);
     expect(await opens('comptoir', 'chargement/:roundId')).toBe(true);
-    expect(await opens('comptoir', 'sac/:bagId')).toBe(true);
+    expect(await opens('comptoir', 'bac/:binId')).toBe(true);
     expect(await opens('comptoir', 'etiquettes/:orderId')).toBe(true);
     expect(await opens('comptoir', 'vehicules')).toBe(true);
     expect(await opens('comptoir', 'bacs')).toBe(true);
@@ -98,7 +98,7 @@ describe("l'espace Livraison", () => {
     expect(await opens('support', 'vehicules')).toBe(false);
     expect(await opens('support', 'tournees')).toBe(false);
     expect(await opens('support', 'chargement')).toBe(false);
-    expect(await opens('support', 'sac/:bagId')).toBe(false);
+    expect(await opens('support', 'bac/:binId')).toBe(false);
   });
 
   it('ne montre ni n’ouvre le chargement au commercial (Q21 : admin et comptoir)', async () => {

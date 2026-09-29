@@ -1,6 +1,7 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
-import { count, optional } from '../payload-read';
+import { count, optional, recordOf } from '../payload-read';
+import { BIN_HALF } from '../values/orders-values';
 import {
   byActor,
   cite,
@@ -11,6 +12,7 @@ import {
   subjectLabelOf,
   text,
   value,
+  valueIn,
   type Noun,
   type Phrase,
   type PhraseFact,
@@ -18,24 +20,34 @@ import {
 } from '../phrase';
 
 /**
- * **Le chargement** (`plan-preparation-de-tournee.md`, lot 4, v4) — le miroir
- * de `DELIVERY_LOADING_FACTS` dans `@lfd/contracts`.
+ * **Le chargement** (`plan-preparation-de-tournee.md`, lot 4, v4 ; lot 4 bis,
+ * tranche B) — le miroir de `DELIVERY_LOADING_FACTS` dans `@lfd/contracts`.
  *
- * Le sujet d'un fait de sac est le sac, nommé par son code court — celui
- * qu'on lit sous le QR. La déclaration, elle, a la commande pour sujet : elle
- * crée plusieurs sacs d'un coup. Le départ a la tournée.
+ * Le sujet d'un fait de bac est le bac, nommé par son code court — celui
+ * qu'on lit sous le QR. La déclaration et le partage, eux, ont la commande
+ * pour sujet : la déclaration crée plusieurs bacs d'un coup. Le départ a la
+ * tournée.
  */
 
 const ORDER: Noun = { the: 'de la commande', a: 'd’une commande' };
-const BAG: Noun = { the: '', a: 'un sac' };
+const BIN: Noun = { the: '', a: 'un bac' };
+const BIN_TYPE: Noun = { the: 'de type', a: 'd’un type' };
 
-/** « le sac « ABC234 » » — le code court, en gras. */
-function bag(fact: PhraseFact): Segment[] {
+/** « le bac « ABC234 » » — le code court, en gras. */
+function bin(fact: PhraseFact): Segment[] {
   const label = subjectLabelOf(fact);
-  return label === null ? [text('un sac')] : [text('le sac « '), subject(fact, label), text(' »')];
+  return label === null ? [text('un bac')] : [text('le bac « '), subject(fact, label), text(' »')];
 }
 
-/** « la tournée « Kangoo » du 1 octobre 2026, passage 2 » — citée depuis un sac. */
+/** « la commande « CMD-1 » » — la commande sujet d'une déclaration ou d'un partage. */
+function theOrder(fact: PhraseFact): Segment[] {
+  const label = subjectLabelOf(fact);
+  return label === null
+    ? [text('une commande')]
+    : [text('la commande « '), subject(fact, label), text(' »')];
+}
+
+/** « la tournée « Kangoo » du 1 octobre 2026, passage 2 » — citée depuis un bac. */
 function roundOf(fact: PhraseFact): Segment[] {
   const day = optional(fact.payload['day']);
   const passage = count(fact.payload['passage']);
@@ -46,15 +58,34 @@ function roundOf(fact: PhraseFact): Segment[] {
   ];
 }
 
-const BAG_ROUND_KEYS = ['subjectLabel', 'order', 'round', 'day', 'passage'] as const;
+const BIN_ROUND_KEYS = ['subjectLabel', 'order', 'round', 'day', 'passage'] as const;
 
-/** « « ABC234 », « ABC235 » » — les sacs créés, par leur code. */
-function bagList(raw: unknown): Segment[] {
-  const bags: readonly unknown[] = Array.isArray(raw) ? raw : [];
-  return bags.flatMap((cited, index) => {
-    const said = cite(BAG, cited);
+/** « ½ gauche » — le côté d'une moitié, par son mot ; rien pour un bac entier. */
+function halfOf(raw: unknown): Segment[] {
+  return optional(raw) === null ? [] : [text(' '), valueIn(BIN_HALF, raw, { inSentence: true })];
+}
+
+/** « « ABC234 », « ABC235 » ½ gauche » — les bacs créés, par leur code et leur moitié. */
+function binList(raw: unknown): Segment[] {
+  const bins: readonly unknown[] = Array.isArray(raw) ? raw : [];
+  return bins.flatMap((entry, index) => {
+    const item = recordOf(entry);
+    const said = [...cite(BIN, item?.['bin']), ...halfOf(item?.['half'])];
     return index === 0 ? said : [text(', '), ...said];
   });
+}
+
+/** « , 2 sacs dans chacun » — rien quand aucun sac n'y est posé. */
+function innerBagsOf(raw: unknown, each: boolean): Segment[] {
+  const bags = count(raw);
+  if (bags === null || bags === 0) {
+    return [];
+  }
+  return [
+    text(', '),
+    value(`${String(bags)} sac${bags > 1 ? 's' : ''}`),
+    text(each ? ' dans chacun' : ' dedans'),
+  ];
 }
 
 /** Par le QR, ou par le code tapé : l'attestation n'est pas la même. */
@@ -70,50 +101,69 @@ function via(raw: unknown): Segment[] {
 }
 
 export const DELIVERY_LOADING_PHRASES = {
-  'delivery_bag.declared': (fact) => {
-    const bags: readonly unknown[] = Array.isArray(fact.payload['bags'])
-      ? fact.payload['bags']
+  'delivery_bin.declared': (fact) => {
+    const bins: readonly unknown[] = Array.isArray(fact.payload['bins'])
+      ? fact.payload['bins']
       : [];
-    const label = subjectLabelOf(fact);
     return byActor(
       fact,
       [
-        text(`a déclaré ${bags.length > 1 ? `${String(bags.length)} sacs` : 'un sac'} pour `),
-        ...(label === null
-          ? [text('une commande')]
-          : [text('la commande « '), subject(fact, label), text(' »')]),
-        ...(bags.length === 0 ? [] : [text(' : '), ...bagList(bags)]),
+        text(`a déclaré ${bins.length > 1 ? `${String(bins.length)} bacs` : 'un bac'} `),
+        ...cite(BIN_TYPE, fact.payload['binType']),
+        text(' pour '),
+        ...theOrder(fact),
+        ...innerBagsOf(fact.payload['innerBags'], bins.length > 1),
+        ...(bins.length === 0 ? [] : [text(' : '), ...binList(bins)]),
       ],
-      ['subjectLabel', 'bags'],
+      ['subjectLabel', 'binType', 'innerBags', 'bins'],
     );
   },
-  'delivery_bag.voided': (fact) =>
+  'delivery_bin.shared': (fact) =>
     byActor(
       fact,
-      [text('a annulé '), ...bag(fact), text(' '), ...cite(ORDER, fact.payload['order'])],
+      [
+        text('a partagé un bac '),
+        ...cite(BIN_TYPE, fact.payload['binType']),
+        text(' entre '),
+        ...theOrder(fact),
+        text(' et '),
+        ...cite({ the: 'la commande', a: 'une commande' }, fact.payload['partnerOrder']),
+        text(' : '),
+        ...cite(BIN, fact.payload['bin']),
+        ...halfOf(fact.payload['half']),
+        text(', face à '),
+        ...cite(BIN, fact.payload['partner']),
+        ...innerBagsOf(fact.payload['innerBags'], false),
+      ],
+      ['subjectLabel', 'binType', 'innerBags', 'bin', 'half', 'partner', 'partnerOrder'],
+    ),
+  'delivery_bin.voided': (fact) =>
+    byActor(
+      fact,
+      [text('a annulé '), ...bin(fact), text(' '), ...cite(ORDER, fact.payload['order'])],
       ['subjectLabel', 'order'],
     ),
-  'delivery_bag.loaded': (fact) =>
+  'delivery_bin.loaded': (fact) =>
     byActor(
       fact,
       [
         text('a chargé '),
-        ...bag(fact),
+        ...bin(fact),
         text(' '),
         ...cite(ORDER, fact.payload['order']),
         text(' dans '),
         ...roundOf(fact),
         ...via(fact.payload['via']),
       ],
-      [...BAG_ROUND_KEYS, 'via'],
+      [...BIN_ROUND_KEYS, 'via'],
     ),
   // Le fait garde qui avait chargé, et quand : décharger efface la ligne.
-  'delivery_bag.unloaded': (fact) =>
+  'delivery_bin.unloaded': (fact) =>
     byActor(
       fact,
       [
         text('a déchargé '),
-        ...bag(fact),
+        ...bin(fact),
         text(' '),
         ...cite(ORDER, fact.payload['order']),
         text(' de '),
@@ -123,14 +173,14 @@ export const DELIVERY_LOADING_PHRASES = {
         text(' par '),
         ...citePerson(fact.payload['loadedBy'], 'quelqu’un'),
       ],
-      [...BAG_ROUND_KEYS, 'loadedAt', 'loadedBy'],
+      [...BIN_ROUND_KEYS, 'loadedAt', 'loadedBy'],
     ),
   'delivery_round.departed': (fact) => {
     const label = subjectLabelOf(fact);
     const day = optional(fact.payload['day']);
     const passage = count(fact.payload['passage']);
     const stops = countOf(fact.payload['stops'], 'arrêt', 'arrêts');
-    const bags = countOf(fact.payload['bags'], 'sac', 'sacs');
+    const bins = countOf(fact.payload['bins'], 'bac', 'bacs');
     return byActor(
       fact,
       [
@@ -141,9 +191,9 @@ export const DELIVERY_LOADING_PHRASES = {
         ...(day === null ? [] : [text(' du '), inUnit('day', day)]),
         ...(passage === null || passage <= 1 ? [] : [text(', passage '), value(String(passage))]),
         ...(stops === null ? [] : [text(' : '), stops]),
-        ...(bags === null ? [] : [text(', '), bags]),
+        ...(bins === null ? [] : [text(', '), bins]),
       ],
-      ['subjectLabel', 'day', 'passage', 'stops', 'bags'],
+      ['subjectLabel', 'day', 'passage', 'stops', 'bins'],
     );
   },
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

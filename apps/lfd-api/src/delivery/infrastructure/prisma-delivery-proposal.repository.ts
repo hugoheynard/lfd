@@ -25,7 +25,7 @@ import { type Tx, writeRound, writeStops } from "./delivery-round.writes.js";
  * même ordre et ne s'interbloquent pas.
  *
  * Sous verrou, il revérifie ce que le handler a lu sans verrou : la version,
- * la tournée au dépôt, l'arrêt déplacé sans sac chargé. Puis il écrit : les
+ * la tournée au dépôt, l'arrêt déplacé sans bac chargé. Puis il écrit : les
  * tournées ouvertes (une collision sur `(jour, véhicule, passage)` devient
  * « reproposez »), les tournées existantes sous leur version, et les arrêts.
  * Tout dans la transaction de l'appelant — un seul refus annule tout.
@@ -85,7 +85,7 @@ async function lockRounds(tx: Tx, rounds: readonly DeliveryRound[]): Promise<voi
 
 /**
  * Verrouille les chargements des arrêts déplacés, dans l'ordre de leur
- * identifiant, et refuse si l'un d'eux porte un sac chargé (L4-C5).
+ * identifiant, et refuse si l'un d'eux porte un bac chargé (L4-C5).
  * @throws {LoadedStopMoveError}
  */
 async function ensureNotLoaded(tx: Tx, moved: readonly MovedStop[]): Promise<void> {
@@ -95,7 +95,7 @@ async function ensureNotLoaded(tx: Tx, moved: readonly MovedStop[]): Promise<voi
   const movedStopIds = moved.map((stop) => stop.stopId);
   const loads = await tx.$queryRaw<{ stop_id: string; loaded: boolean }[]>`
     SELECT "stop_id", "loaded_at" IS NOT NULL AS "loaded"
-      FROM "production"."delivery_bag_load"
+      FROM "production"."delivery_bin_load"
      WHERE "stop_id" = ANY(${movedStopIds})
      ORDER BY "id"
        FOR UPDATE`;

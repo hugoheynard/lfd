@@ -2,7 +2,7 @@
   <fold-back-link pageActions label="Toutes les tournées" routerLink="/livraison/chargement" />
   @if (view(); as view) {
     <p description>
-      {{ dayLabel(view.day) }} — chaque sac scanné se charge dans ce véhicule, et le bas de l’écran
+      {{ dayLabel(view.day) }} — chaque bac scanné se charge dans ce véhicule, et le bas de l’écran
       dit ce qui manque encore.
     </p>
   }
@@ -41,12 +41,12 @@
                 <fold-element-title
                   variant="title"
                   title="Scanner"
-                  subtitle="Chaque sac lu se charge dans ce véhicule."
+                  subtitle="Chaque bac ou demi-bac lu se charge dans ce véhicule."
                 />
-                <app-bag-scanner [paused]="busy()" (scanned)="onScanned($event)" />
+                <app-bin-scanner [paused]="busy()" (scanned)="onScanned($event)" />
                 <form class="lrp-typed" (submit)="$event.preventDefault(); loadTyped()">
                   <fold-input
-                    label="Code du sac"
+                    label="Code du bac"
                     hint="Les six caractères sous le QR, quand il est illisible."
                     autocomplete="off"
                     [value]="typed()"
@@ -74,7 +74,7 @@
                   <fold-element-title
                     variant="title"
                     [title]="stop.position + '. ' + stop.reference + ' · ' + stop.customerLabel"
-                    [subtitle]="bagCountLabel(stop)"
+                    [subtitle]="binCountLabel(stop)"
                   >
                     <fold-badge
                       titleAction
@@ -82,11 +82,25 @@
                       [content]="stateLabel(stop.state).label"
                       data-stop-state
                     />
+                    @if (hasBinToRedo(stop)) {
+                      <fold-badge
+                        titleAction
+                        variant="alert"
+                        content="Bac à refaire"
+                        data-stop-to-redo
+                      />
+                    }
                   </fold-element-title>
-                  @for (bag of stop.bags; track bag.bagId) {
-                    <div class="lrp-bag" data-bag>
-                      <span>Sac {{ bag.index }} · {{ bag.code }}</span>
-                      @if (bag.loadedAt; as loadedAt) {
+                  @for (bin of stop.bins; track bin.binId) {
+                    <div class="lrp-bin" data-bin>
+                      <span>Bac {{ bin.index }} · {{ bin.code }} · {{ binKindLabel(bin) }}</span>
+                      @if (bin.sharedWithReference; as partner) {
+                        <span data-bin-shared>partagé avec {{ partner }}</span>
+                      }
+                      @if (bin.toRedo) {
+                        <fold-badge variant="alert" content="À refaire" data-bin-to-redo />
+                      }
+                      @if (bin.loadedAt; as loadedAt) {
                         <span>chargé à {{ timeOf(loadedAt) }}</span>
                         @if (canLoad()) {
                           <button
@@ -94,7 +108,7 @@
                             size="sm"
                             emphasis="outline"
                             [disabled]="busy()"
-                            (click)="unload(bag.bagId)"
+                            (click)="unload(bin.binId)"
                             data-unload
                           >
                             Décharger
@@ -127,6 +141,14 @@
                     : 'Ce véhicule ne part pas tant que ces arrêts ne sont pas chargés, ou retirés.'
                 "
               />
+              @if (toRedoCount() > 0) {
+                <fold-callout variant="alert" data-to-redo>
+                  {{ toRedoCount() === 1 ? 'Un arrêt porte' : toRedoCount() + ' arrêts portent' }}
+                  un bac partagé à refaire : ses deux commandes ne sont plus à des arrêts
+                  consécutifs. « Partir » le refuse tant qu’il n’est pas recolisé, ou que les arrêts
+                  ne sont pas remis côte à côte.
+                </fold-callout>
+              }
               @for (line of missing(); track line.stopId) {
                 <p class="lrp-missing" data-missing-stop>
                   {{ line.reference }} · {{ line.customerLabel }} — {{ line.detail }}

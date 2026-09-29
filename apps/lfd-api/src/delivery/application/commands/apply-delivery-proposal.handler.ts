@@ -101,7 +101,7 @@ export class ApplyDeliveryProposalHandler implements ICommandHandler<
     });
   }
 
-  /** Un arrêt déplacé n'a aucun sac chargé (L4-C5) — nommé ici, revérifié sous verrou. */
+  /** Un arrêt déplacé n'a aucun bac chargé (L4-C5) — nommé ici, revérifié sous verrou. */
   private async ensureMovable(
     moved: readonly { readonly stopId: string; readonly fromVehicleName: string }[],
   ): Promise<void> {

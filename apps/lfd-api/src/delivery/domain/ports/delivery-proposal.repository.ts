@@ -26,7 +26,7 @@ export interface ProposalWrite {
  *
  * @throws {DeliveryRoundStaleError} une version n'est plus celle lue.
  * @throws {DeliveryRoundDepartedError} une tournée est partie entre-temps.
- * @throws {LoadedStopMoveError} un arrêt déplacé a un sac chargé.
+ * @throws {LoadedStopMoveError} un arrêt déplacé a un bac chargé.
  * @throws {ProposalOutdatedError} un passage a été pris par une autre ouverture.
  * @throws {OrderAlreadyInRoundError} l'index I3 a vu une commande placée ailleurs.
  */

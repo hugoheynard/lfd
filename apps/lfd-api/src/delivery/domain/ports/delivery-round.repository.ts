@@ -29,7 +29,7 @@ export abstract class DeliveryRoundRepository {
    * **I7** — écrit les deux tournées d'un déplacement ensemble (C13) : verrous
    * pris dans l'ordre des identifiants, deux versions vérifiées, une seule
    * transaction. Puis, APRÈS les tournées, les lignes de chargement de leurs
-   * arrêts, dans l'ordre des identifiants (lot 4, L4-C18) : un sac chargé
+   * arrêts, dans l'ordre des identifiants (lot 4, L4-C18) : un bac chargé
    * entre la lecture et l'écriture refuse le déplacement.
    *
    * @throws {DeliveryRoundStaleError} @throws {LoadedStopMoveError}

@@ -209,13 +209,13 @@ export function roundWith(
   });
 }
 
-/** Les arrêts qui ont un sac chargé, donnés d'avance. */
+/** Les arrêts qui ont un bac chargé, donnés d'avance. */
 export class FixedLoadedStops extends LoadedStopsReader {
   constructor(private readonly loaded: readonly string[] = []) {
     super();
   }
 
-  hasLoadedBag(stopId: string): Promise<boolean> {
+  hasLoadedBin(stopId: string): Promise<boolean> {
     return Promise.resolve(this.loaded.includes(stopId));
   }
 

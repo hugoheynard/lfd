@@ -166,8 +166,8 @@ describe("MoveDeliveryStopHandler — I7", () => {
     });
   });
 
-  /** Lot 4, L4-C5 : le sac serait dans la mauvaise camionnette. */
-  it("refuse de déplacer un arrêt qui a un sac chargé, sans rien écrire", async () => {
+  /** Lot 4, L4-C5 : le bac serait dans la mauvaise camionnette. */
+  it("refuse de déplacer un arrêt qui a un bac chargé, sans rien écrire", async () => {
     const rounds = new InMemoryDeliveryRounds(
       roundWith("r_1", DAY, "v_1", ["o_1"]),
       roundWith("r_2", DAY, "v_2", []),

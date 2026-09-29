@@ -3,7 +3,7 @@ import type { StopLoading } from "../entities/stop-loading.js";
 
 /**
  * Port d'**écriture** du chargement (lot 4, L4-C18) — l'exécution est le SEUL
- * écrivain de `delivery_bag_load` (C10).
+ * écrivain de `delivery_bin_load` (C10).
  *
  * Les deux lectures VERROUILLENT, dans la transaction en cours, et toujours
  * APRÈS la tournée : c'est l'ordre que suivent aussi `saveMove` et « Partir »,
@@ -16,14 +16,14 @@ export abstract class StopLoadingRepository {
    * (I3), ou `null` si elle n'est dans aucune tournée. Sa tournée est
    * verrouillée en partage : un « Partir » concurrent attend la fin du geste.
    *
-   * `lockBagId` : le sac que le geste vise est verrouillé en EXCLUSIF, APRÈS
-   * la tournée — annuler et charger le même sac en même temps se sérialisent,
+   * `lockBinId` : le bac que le geste vise est verrouillé en EXCLUSIF, APRÈS
+   * la tournée — annuler et charger le même bac en même temps se sérialisent,
    * et le second relit ce que le premier a écrit (jamais « annulé ET chargé »).
-   * Le sac est verrouillé même si la commande n'est dans aucune tournée.
+   * Le bac est verrouillé même si la commande n'est dans aucune tournée.
    *
    * @throws {DeliveryLoadingStaleError} l'arrêt a bougé entre la lecture et le verrou.
    */
-  abstract forOrder(orderId: string, lockBagId?: string): Promise<StopLoading | null>;
+  abstract forOrder(orderId: string, lockBinId?: string): Promise<StopLoading | null>;
 
   /**
    * Le chargement de chaque arrêt vivant d'une tournée DÉJÀ verrouillée par

@@ -8,7 +8,7 @@ import type {
 } from '@lfd/contracts';
 
 import type { PackingStack } from '../../packing-board';
-import { PackingBags } from '../packing-bags/packing-bags';
+import { PackingBins } from '../packing-bins/packing-bins';
 import { PackingContainers } from '../packing-containers/packing-containers';
 import { PackingLine } from '../packing-line/packing-line';
 
@@ -29,8 +29,8 @@ export interface PackingLineToggle {
  * est en vol. Le composant émet trois gestes, et c'est `Colisage` qui les écrit
  * puis relit. Découpé du poste le 2026-09-14.
  *
- * Seule exception, et elle est un composant à part : {@link PackingBags} (lot 4),
- * qui déclare les sacs d'une livraison prête. Ce geste-là n'est pas du colisage
+ * Seule exception, et elle est un composant à part : {@link PackingBins} (lot 4
+ * bis), qui déclare les bacs d'une livraison prête. Ce geste-là n'est pas du colisage
  * — il relève du bloc livraison et de son droit — et il n'y a rien que le poste
  * doive relire après lui.
  *
@@ -44,7 +44,7 @@ export interface PackingLineToggle {
     FoldButtonComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
-    PackingBags,
+    PackingBins,
     PackingContainers,
     PackingLine,
   ],
@@ -83,6 +83,9 @@ export class PackingOpenOrder {
 
   /** Une déclaration en vol, relecture comprise. */
   readonly closing = input(false);
+
+  /** La journée ouverte au poste (`AAAA-MM-JJ`) — où les bacs cherchent la tournée. */
+  readonly day = input.required<string>();
 
   /** « Déclarer prête pour le retrait » / « … pour la livraison ». */
   readonly readyLabel = input('Déclarer prête');

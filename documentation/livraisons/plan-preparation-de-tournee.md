@@ -1100,6 +1100,56 @@ DEFAULT false` — une fiche n'est pas froide tant qu'on ne l'a pas dit) ;
 > (`CatalogColdReader`) plutôt qu'un champ sur `ProductCatalogReader`,
 > l'autorité de prix du checkout.
 
+> **(B) serveur bâti le 2026-09-29** (non commité à l'écriture de cette
+> ligne) — le bac remplace le sac. **v2-6 vérifiée au bâti** : le lot 4
+> n'est pas promu (`git ls-tree origin/main` ne porte pas
+> `20260929160200_les_sacs_et_le_depart`), donc renommage FRANC, sans bascule
+> ni chemin de compatibilité : migration `20260930000000_les_bacs_remplacent_les_sacs`
+> — `delivery_bag` → `production.delivery_bin`, `delivery_bag_load` →
+> `delivery_bin_load` (`bag_id` → `bin_id`, index, contraintes et
+> déclencheurs renommés), et le bac gagne `bin_type_id` (FK
+> `delivery_bin_type`), `half` (`left`/`right`, nul = entier), `physical_bin_id`
+> (nul pour un bac entier : CHECK `(half IS NULL) = (physical_bin_id IS NULL)`
+> — un bac entier ne peut pas partager, c'est inexprimable) et `inner_bags`
+> (≥ 0, informatif). Index unique PARTIEL `(physical_bin_id, half)` des bacs
+> non annulés : deux moitiés au plus, jamais deux fois la même, et une moitié
+> annulée libère son côté. 🔴 La migration **s'arrête** si la table porte un
+> seul sac : elle vérifie v2-6 au lieu de la croire (en local, les 8 sacs
+> semés ont été effacés avant d'appliquer — le semis les recrée).
+>
+> Routes (`admin/livraison/…`, `delivery_loading`) : `colisage/bacs` (POST
+> déclarer `{ orderId, binTypeId, whole, half, innerBags }` → `{ binIds }` ;
+> GET `?commande=`), `colisage/bacs/partage` (POST `{ orderId, partnerBinId,
+innerBags }` → `{ binId }`), `colisage/bacs/:binId` (le QR ouvert),
+> `colisage/bacs/:binId/annulation`, `chargement/:roundId/bacs` (scan,
+> inchangé : un QR = une moitié ou un bac entier) et
+> `…/bacs/:binId/dechargement`. `admin/livraison/bacs` reste le CATALOGUE des
+> types (tranche A) — d'où `colisage/` pour les bacs déclarés. Contrat :
+> `packages/contracts/src/delivery-loading.ts`. Faits : `delivery_bin.declared`
+> (`binType`, `innerBags`, `bins[] = { bin, half }`), `delivery_bin.shared`
+> (neuf), `delivery_bin.voided` / `.loaded` / `.unloaded`, et
+> `delivery_round.departed` dont `bags` devient `bins`.
+>
+> **« À refaire » est CALCULÉ à la lecture, jamais écrit**
+> (`apps/lfd-api/src/delivery/domain/entities/shared-bin.ts`) : la contiguïté dépend de la
+> composition, dont l'écrivain est la tournée ; un drapeau écrit obligerait
+> les cinq gestes de composition (affecter, déplacer, réordonner, retirer,
+> appliquer une proposition) à écrire aussi dans une table du chargement —
+> un second écrivain, et le premier qui l'oublie fait mentir le bac. Calculé
+> depuis le RANG des arrêts vivants, il ne dérive pas, et remettre les arrêts
+> côte à côte le répare sans geste. « Partir » refuse l'arrêt : « Le bac
+> partagé … n'est plus entre deux arrêts consécutifs : recolisez-le ou
+> remettez les arrêts côte à côte. »
+>
+> Tranché au bâti, sans le plan : `innerBags` s'applique à chaque bac d'UNE
+> déclaration (0–50) ; une déclaration pose au plus 20 bacs entiers et une
+> moitié, la GAUCHE d'un bac physique neuf ; le partage prend le côté opposé
+> et le type de la moitié partenaire ; une tournée partie ne reçoit ni bac ni
+> partage. Semis : trois types (Bac S isotherme, Bac M et Bac L
+> cloisonnables), neuf contenances, et la tournée de Camionnette 1 en bacs
+> typés, dont un demi-Bac M partagé entre Le Refuge du Fond et Le Petit
+> Chaudron (arrêts 2 et 3).
+
 **Tranches, dans l'ordre de bâti** : (A) catalogue des bacs + contenances
 (`delivery`) et le froid sur la fiche produit (`pim` → canal) ; (B) le bac
 remplace le sac (renommage, type, moitiés, scan, « Partir ») ; (C) le

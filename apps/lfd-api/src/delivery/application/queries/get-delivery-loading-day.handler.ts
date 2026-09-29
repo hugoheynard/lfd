@@ -2,7 +2,7 @@ import type { DeliveryLoadingDayView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { DeliveryLoadingReader } from "../../domain/ports/delivery-loading.reader.js";
-import { loadingDayView } from "../delivery-loading-view.js";
+import { loadingDayView, ordersCitedBy } from "../delivery-loading-view.js";
 import { GetDeliveryLoadingDayQuery } from "./get-delivery-loading-day.query.js";
 
 /**
@@ -17,6 +17,8 @@ export class GetDeliveryLoadingDayHandler implements IQueryHandler<
   constructor(private readonly loading: DeliveryLoadingReader) {}
 
   async execute(query: GetDeliveryLoadingDayQuery): Promise<DeliveryLoadingDayView> {
-    return loadingDayView(query.day, await this.loading.roundsOn(query.day));
+    const rounds = await this.loading.roundsOn(query.day);
+    const bins = rounds.flatMap((round) => round.stops.flatMap((stop) => stop.bins));
+    return loadingDayView(query.day, rounds, await this.loading.placesOf(ordersCitedBy(bins)));
   }
 }

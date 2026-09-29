@@ -12,7 +12,7 @@ import { type DeliveryRoundTables, resetDeliveryRounds } from "../delivery-round
  */
 
 /** Le doublé, sans cast : la coupe déclare la forme étroite dont elle a besoin. */
-function prismaSpy(counts: { readonly rounds: number; readonly bags: number }) {
+function prismaSpy(counts: { readonly rounds: number; readonly bins: number }) {
   const called: string[] = [];
   const table = (name: string, count: number) => ({
     deleteMany: (): Promise<{ count: number }> => {
@@ -22,8 +22,8 @@ function prismaSpy(counts: { readonly rounds: number; readonly bags: number }) {
   });
   const prisma: DeliveryRoundTables = {
     deliveryStopExecution: table("deliveryStopExecution", 0),
-    deliveryBagLoad: table("deliveryBagLoad", 0),
-    deliveryBag: table("deliveryBag", counts.bags),
+    deliveryBinLoad: table("deliveryBinLoad", 0),
+    deliveryBin: table("deliveryBin", counts.bins),
     deliveryRoundStop: table("deliveryRoundStop", 0),
     deliveryRound: table("deliveryRound", counts.rounds),
   };
@@ -32,28 +32,28 @@ function prismaSpy(counts: { readonly rounds: number; readonly bags: number }) {
 
 describe("resetDeliveryRounds", () => {
   it("emporte les tournées enfants d'abord, sans toucher aux véhicules", async () => {
-    const { prisma, called } = prismaSpy({ rounds: 1, bags: 8 });
+    const { prisma, called } = prismaSpy({ rounds: 1, bins: 8 });
 
     const report = await resetDeliveryRounds(prisma);
 
-    // Exécutions et chargements pointent l'arrêt, le chargement pointe le sac,
+    // Exécutions et chargements pointent l'arrêt, le chargement pointe le bac,
     // l'arrêt pointe la tournée : toutes `Restrict`. Les véhicules ne sont pas
     // dans la forme — la coupe ne PEUT pas les atteindre.
     expect(called).toEqual([
       "deliveryStopExecution",
-      "deliveryBagLoad",
-      "deliveryBag",
+      "deliveryBinLoad",
+      "deliveryBin",
       "deliveryRoundStop",
       "deliveryRound",
     ]);
-    expect(report).toEqual({ rounds: 1, bags: 8 });
+    expect(report).toEqual({ rounds: 1, bins: 8 });
   });
 
   it("rend des zéros sur un poste sans tournée, sans échouer", async () => {
     // Le premier rechargement d'un poste passe ici avant qu'aucune tournée
     // n'existe : une coupe qui refuserait le vide rendrait le semis non rejouable.
-    const { prisma } = prismaSpy({ rounds: 0, bags: 0 });
+    const { prisma } = prismaSpy({ rounds: 0, bins: 0 });
 
-    await expect(resetDeliveryRounds(prisma)).resolves.toEqual({ rounds: 0, bags: 0 });
+    await expect(resetDeliveryRounds(prisma)).resolves.toEqual({ rounds: 0, bins: 0 });
   });
 });

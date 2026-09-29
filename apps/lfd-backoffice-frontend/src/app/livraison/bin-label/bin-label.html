@@ -1,0 +1,14 @@
+<section class="bl-label" [attr.aria-label]="'Étiquette ' + indexLabel(bin())" data-bin-label>
+  <p class="bl-reference">{{ bin().reference }}</p>
+  <p class="bl-customer">{{ bin().customerLabel }}</p>
+  <p class="bl-index">{{ indexLabel(bin()) }}</p>
+  <p class="bl-kind" data-bin-kind>{{ kind() }}</p>
+  @if (bin().sharedWith; as partner) {
+    <p class="bl-shared" data-bin-shared>{{ sharedWith(partner) }}</p>
+  }
+  @if (innerBags(); as innerBags) {
+    <p class="bl-inner" data-bin-inner>{{ innerBags }}</p>
+  }
+  <app-qr-code class="bl-qr" [url]="url()" />
+  <p class="bl-code" data-bin-code>{{ bin().code }}</p>
+</section>

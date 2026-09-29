@@ -1,0 +1,125 @@
+import { DOCUMENT } from '@angular/common';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  Injector,
+  input,
+  signal,
+  untracked,
+} from '@angular/core';
+import type { DeliveryBinView, DeliveryOrderBinsView } from '@lfd/contracts';
+import {
+  FoldBackLinkComponent,
+  FoldButtonComponent,
+  FoldElementTitleComponent,
+  FoldEmptyStateComponent,
+  FoldLoadingStateComponent,
+  FoldPageLayoutComponent,
+} from 'fold-ng';
+
+import { BinLabel } from '../bin-label/bin-label';
+import { binUrl } from '../delivery-loading';
+import { DeliveryLoadingService } from '../delivery-loading.service';
+
+type LabelsState =
+  | { readonly status: 'loading' }
+  | { readonly status: 'error' }
+  | { readonly status: 'ready'; readonly view: DeliveryOrderBinsView };
+
+/**
+ * **Les étiquettes des bacs d'une commande, à imprimer**
+ * (`/livraison/etiquettes/:orderId`, L4-C16).
+ *
+ * 🔴 **Imprimer est une LECTURE.** Les bacs sont nés à leur déclaration ; cette
+ * page ne fait que les relire et les mettre en page. Réimprimer — tout, ou une
+ * seule étiquette abîmée — ne crée rien et n'écrit rien.
+ *
+ * Le gabarit d'une étiquette vit dans {@link BinLabel}, isolé : Q22 le
+ * changera sans toucher à cette page.
+ */
+@Component({
+  selector: 'app-bin-labels-page',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    BinLabel,
+    FoldBackLinkComponent,
+    FoldButtonComponent,
+    FoldElementTitleComponent,
+    FoldEmptyStateComponent,
+    FoldLoadingStateComponent,
+    FoldPageLayoutComponent,
+  ],
+  templateUrl: './bin-labels-page.html',
+  styleUrl: './bin-labels-page.scss',
+})
+export class BinLabelsPage {
+  private readonly service = inject(DeliveryLoadingService);
+  private readonly injector = inject(Injector);
+  private readonly origin = inject(DOCUMENT).location.origin;
+
+  /** La commande, lue dans l'adresse. */
+  readonly orderId = input.required<string>();
+
+  protected readonly state = signal<LabelsState>({ status: 'loading' });
+  private readonly reload = signal(0);
+
+  /** L'étiquette qu'on réimprime seule, ou `null` : toutes. */
+  private readonly only = signal<string | null>(null);
+
+  /** Les bacs vivants : un bac annulé n'a plus d'étiquette. */
+  protected readonly liveBins = computed<readonly DeliveryBinView[]>(() => {
+    const state = this.state();
+    return state.status === 'ready' ? state.view.bins.filter((bin) => bin.voidedAt === null) : [];
+  });
+
+  protected readonly printed = computed(() => {
+    const only = this.only();
+    return only === null ? this.liveBins() : this.liveBins().filter((bin) => bin.binId === only);
+  });
+
+  protected readonly reference = computed(() => {
+    const state = this.state();
+    return state.status === 'ready' ? state.view.reference : null;
+  });
+
+  constructor() {
+    effect(() => {
+      const orderId = this.orderId();
+      this.reload();
+      untracked(() => void this.load(orderId));
+    });
+  }
+
+  protected urlOf(bin: DeliveryBinView): string {
+    return binUrl(this.origin, bin.binId);
+  }
+
+  protected retry(): void {
+    this.reload.update((n) => n + 1);
+  }
+
+  /** Imprime toutes les étiquettes, ou la seule demandée. N'écrit rien. */
+  protected print(binId: string | null = null): void {
+    this.only.set(binId);
+    afterNextRender(
+      () => {
+        window.print();
+        this.only.set(null);
+      },
+      { injector: this.injector },
+    );
+  }
+
+  private async load(orderId: string): Promise<void> {
+    this.state.set({ status: 'loading' });
+    try {
+      this.state.set({ status: 'ready', view: await this.service.orderBins(orderId) });
+    } catch {
+      this.state.set({ status: 'error' });
+    }
+  }
+}

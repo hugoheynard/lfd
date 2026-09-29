@@ -1,8 +1,18 @@
 import { CLIENT_ENSEIGNE } from "./client.seed.js";
 import {
+  BIN_L,
+  BIN_M,
+  BIN_S,
+  type DayBins,
+  DEFAULT_BINS,
+  resolveBins,
+  seedBinTypes,
+} from "./delivery-bins.seed.js";
+import {
   chooseLaboDeparture,
   composeLoadedRound,
   FLEET,
+  type RoundStop,
   seedFleet,
 } from "./delivery-rounds.seed.js";
 import {
@@ -56,8 +66,13 @@ interface DeliveryDayEntry {
    * sortie.
    */
   readonly stop: number | null;
-  /** Combien de sacs, quand elle est dans la tournée. */
-  readonly bags?: number;
+  /**
+   * Ses bacs, quand elle est dans la tournée — par NOM de type. Absent : un
+   * Bac M entier, deux sacs dedans.
+   */
+  readonly bins?: readonly DayBins[];
+  /** Prend l'autre moitié du demi-bac de l'arrêt précédent (v2-4) : les sacs de sa moitié. */
+  readonly sharesPreviousHalf?: { readonly innerBags: number };
   readonly lines: readonly SeedLine[];
 }
 
@@ -68,6 +83,11 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     window: null,
     ready: true,
     stop: 0,
+    // Les viennoiseries au frais : un petit isotherme, le pain en Bac M.
+    bins: [
+      { type: BIN_M, whole: 1, half: false, innerBags: 1 },
+      { type: BIN_S, whole: 1, half: false, innerBags: 0 },
+    ],
     lines: [
       { sku: "PAI-001", quantity: 6 },
       { sku: "VIE-001", quantity: 12 },
@@ -78,6 +98,12 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     window: null,
     ready: true,
     stop: 1,
+    // Un Bac L, et un reste qui tient dans un demi-Bac M — dont l'autre moitié
+    // part à l'arrêt suivant, le Petit Chaudron (v2-4, dernier recours).
+    bins: [
+      { type: BIN_L, whole: 1, half: false, innerBags: 2 },
+      { type: BIN_M, whole: 0, half: true, innerBags: 1 },
+    ],
     lines: [
       { sku: "PAI-013", quantity: 8 },
       { sku: "PAI-001", quantity: 15 },
@@ -89,6 +115,8 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     window: { start: "06:30", end: "07:30" },
     ready: true,
     stop: 2,
+    bins: [{ type: BIN_L, whole: 1, half: false, innerBags: 3 }],
+    sharesPreviousHalf: { innerBags: 1 },
     lines: [
       { sku: "VIE-001", quantity: 24 },
       { sku: "VIE-002", quantity: 24 },
@@ -100,7 +128,7 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     window: null,
     ready: true,
     stop: 3,
-    bags: 2,
+    bins: [{ type: BIN_L, whole: 2, half: false, innerBags: 2 }],
     lines: [
       { sku: "PAI-001", quantity: 30 },
       { sku: "PAI-013", quantity: 12 },
@@ -152,7 +180,7 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
   {
     enseigne: "Brasserie des Marmottes",
     // Plus tard que le carnet, et pas encore prête : la feuille de route doit
-    // montrer un sac qui manque sans alarmer pour rien.
+    // montrer un bac qui manque sans alarmer pour rien.
     window: { start: "10:30", end: "11:30" },
     ready: false,
     stop: null,
@@ -267,7 +295,9 @@ export interface DeliveryDayReport {
   readonly vehicles: number;
   readonly rounds: number;
   readonly stopsInRound: number;
-  readonly loadedBags: number;
+  readonly loadedBins: number;
+  /** Les bacs partagés entre deux arrêts consécutifs (v2-4). */
+  readonly sharedBins: number;
   /** Ce qui reste à répartir — ce que « Proposer » a à placer. */
   readonly unassigned: number;
 }
@@ -330,7 +360,8 @@ export async function advanceDeliveryDay(
   if (vehicleId === undefined) {
     throw new Error(`Véhicule « ${ROUND_VEHICLE} » absent de la flotte semée.`);
   }
-  const stops = roundStops(day.placed, day.alreadyPacked);
+  const binTypes = await seedBinTypes(context);
+  const stops = roundStops(day.placed, day.alreadyPacked, binTypes);
   const round = await composeLoadedRound(
     context,
     { day: forDay, vehicleId, at: atHour(day.today, LOADING_HOUR, LOADING_MINUTE) },
@@ -345,7 +376,8 @@ export async function advanceDeliveryDay(
     vehicles: FLEET.length,
     rounds: 1,
     stopsInRound: round.stops,
-    loadedBags: round.loadedBags,
+    loadedBins: round.loadedBins,
+    sharedBins: round.sharedBins,
     unassigned: deliveriesToday - round.stops,
   };
 }
@@ -354,17 +386,29 @@ export async function advanceDeliveryDay(
 function roundStops(
   placed: readonly PlacedDelivery[],
   alreadyPacked: readonly PlacedOrder[],
-): readonly { readonly orderId: string; readonly bags: number }[] {
+  binTypes: ReadonlyMap<string, string>,
+): readonly RoundStop[] {
   const ranked = placed.flatMap(({ order, entry }) =>
-    entry.stop === null ? [] : [{ rank: entry.stop, orderId: order.id, bags: entry.bags ?? 1 }],
+    entry.stop === null
+      ? []
+      : [
+          {
+            rank: entry.stop,
+            orderId: order.id,
+            bins: entry.bins ?? DEFAULT_BINS,
+            ...(entry.sharesPreviousHalf === undefined
+              ? {}
+              : { sharesPreviousHalf: entry.sharesPreviousHalf }),
+          },
+        ],
   );
-  // La Folie Douce commande large : deux sacs.
+  // La Folie Douce commande large : deux Bacs L.
   const counter = alreadyPacked.map((order) => ({
     rank: COUNTER_DELIVERY_STOP,
     orderId: order.id,
-    bags: 2,
+    bins: [{ type: BIN_L, whole: 2, half: false, innerBags: 3 }],
   }));
   return [...ranked, ...counter]
     .sort((left, right) => left.rank - right.rank)
-    .map(({ orderId, bags }) => ({ orderId, bags }));
+    .map(({ rank: _rank, bins, ...stop }) => ({ ...stop, bins: resolveBins(binTypes, bins) }));
 }

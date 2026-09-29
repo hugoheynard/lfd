@@ -13,8 +13,8 @@ import { CrossDayMoveError, SameRoundMoveError } from "../errors/delivery-round-
  * (`DeliveryRoundRepository.saveMove`) : un service de domaine n'ouvre pas de
  * transaction.
  *
- * **Un arrêt qui a un sac chargé ne se déplace pas** (lot 4, L4-C5) : la même
- * ligne changerait de tournée avec ses chargements, et le sac serait dans la
+ * **Un arrêt qui a un bac chargé ne se déplace pas** (lot 4, L4-C5) : la même
+ * ligne changerait de tournée avec ses chargements, et le bac serait dans la
  * mauvaise camionnette. `stopLoaded` est lu par le handler ; `saveMove` le
  * revérifie sous verrou.
  *

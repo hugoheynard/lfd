@@ -790,21 +790,30 @@ export type {
   RemoveDeliveryStopPayload,
 } from "./delivery-rounds.js";
 export {
-  declareDeliveryBagsPayloadSchema,
-  loadDeliveryBagPayloadSchema,
+  DELIVERY_BINS_PER_DECLARATION_MAX,
+  DELIVERY_BIN_INNER_BAGS_MAX,
+  deliveryBinHalfSchema,
+  declareDeliveryBinsPayloadSchema,
+  shareDeliveryBinPayloadSchema,
+  loadDeliveryBinPayloadSchema,
   departDeliveryRoundPayloadSchema,
 } from "./delivery-loading.js";
 export type {
-  DeclareDeliveryBagsPayload,
-  DeliveryBagView,
-  DeliveryOrderBagsView,
-  DeliveryBagDetailView,
+  DeliveryBinHalf,
+  DeclareDeliveryBinsPayload,
+  ShareDeliveryBinPayload,
+  DeliveryBinTypeRef,
+  DeliveryBinPartnerView,
+  DeliveryLoadingBinView,
+  DeliveryBinView,
+  DeliveryOrderBinsView,
+  DeliveryBinDetailView,
   DeliveryLoadingStopState,
   DeliveryLoadingStopView,
   DeliveryLoadingRoundView,
   DeliveryLoadingRoundSummaryView,
   DeliveryLoadingDayView,
-  LoadDeliveryBagPayload,
+  LoadDeliveryBinPayload,
   DepartDeliveryRoundPayload,
 } from "./delivery-loading.js";
 export {

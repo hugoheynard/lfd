@@ -1,3 +1,4 @@
+import { SharedBinToRedoError } from "../../errors/delivery-bin-declaration-errors.js";
 import { DeliveryRound } from "../delivery-round.js";
 import type { StopReadiness } from "../departure-readiness.js";
 import {
@@ -31,8 +32,8 @@ function round(departedAt: Date | null = null): DeliveryRound {
 
 function ready(overrides: Partial<Record<string, StopReadiness["state"]>> = {}): StopReadiness[] {
   return [
-    { stopId: "s_1", reference: "C-1", state: overrides["s_1"] ?? "loaded" },
-    { stopId: "s_2", reference: "C-2", state: overrides["s_2"] ?? "loaded" },
+    { stopId: "s_1", reference: "C-1", state: overrides["s_1"] ?? "loaded", binsToRedo: [] },
+    { stopId: "s_2", reference: "C-2", state: overrides["s_2"] ?? "loaded", binsToRedo: [] },
   ];
 }
 
@@ -51,10 +52,26 @@ describe("DeliveryRound — partir (lot 4, L4-C4, Q14)", () => {
     const subject = round();
 
     expect(() => subject.depart(LATER, ready({ s_1: "unlabelled", s_2: "partial" }))).toThrow(
-      /sans sac déclaré : C-1.*restent à charger : C-2/u,
+      /sans bac déclaré : C-1.*restent à charger : C-2/u,
     );
     expect(subject.departedAt).toBeNull();
     expect(subject.version).toBe(3);
+  });
+
+  /** Lot 4 bis, v2-4 : un bac partagé séparé par une recomposition ne part pas. */
+  it("refuse un arrêt dont un bac partagé est à refaire, avec la phrase qui le dit", () => {
+    const subject = round();
+    const [first, second] = ready();
+    const readiness = [
+      { ...(first ?? ready()[0]!), binsToRedo: ["HHHHHH"] },
+      ...(second === undefined ? [] : [second]),
+    ];
+
+    expect(() => subject.depart(LATER, readiness)).toThrow(SharedBinToRedoError);
+    expect(() => subject.depart(LATER, readiness)).toThrow(
+      "« Kangoo blanc » ne peut pas partir — le bac partagé HHHHHH (C-1) n'est plus entre deux arrêts consécutifs : recolisez-le ou remettez les arrêts côte à côte.",
+    );
+    expect(subject.departedAt).toBeNull();
   });
 
   /** L4-C17 : « tous chargés » est vrai sur un ensemble vide — l'absence ne fait pas partir. */

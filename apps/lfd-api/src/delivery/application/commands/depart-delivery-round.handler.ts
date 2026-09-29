@@ -18,10 +18,11 @@ import { DepartDeliveryRoundCommand } from "./depart-delivery-round.command.js";
  * **« Partir »** (lot 4, L4-C4, Q14) — une seule transaction :
  *
  * 1. la tournée est verrouillée, puis — après elle — les lignes de chargement
- *    de ses arrêts, dans l'ordre de leur identifiant : aucun sac ne se charge,
+ *    de ses arrêts, dans l'ordre de leur identifiant : aucun bac ne se charge,
  *    ne se décharge ni ne s'annule pendant qu'on décide ;
  * 2. la tournée refuse de partir tant qu'un arrêt vivant n'est pas chargé
- *    (non étiqueté ou partiel, L4-C17), en listant les références ;
+ *    (non étiqueté ou partiel, L4-C17), en listant les références — ou qu'il
+ *    porte un bac partagé « à refaire » (lot 4 bis, v2-4), en le nommant ;
  * 3. elle pose `departed_at` (écrivain : la tournée) ; l'exécution FIGE, pour
  *    chaque arrêt, ce que verra le livreur, lu au commerce à cet instant.
  *
@@ -30,7 +31,7 @@ import { DepartDeliveryRoundCommand } from "./depart-delivery-round.command.js";
  * @throws {DeliveryRoundNotFoundError} @throws {DeliveryRoundStaleError}
  * @throws {DeliveryRoundDepartedError} @throws {DeliveryRoundNotReadyError}
  * @throws {DepartureSheetMissingError} @throws {DepartureOrderCancelledError}
- * @throws {EmptyDeliveryRoundError}
+ * @throws {EmptyDeliveryRoundError} @throws {SharedBinToRedoError}
  */
 @CommandHandler(DepartDeliveryRoundCommand)
 export class DepartDeliveryRoundHandler implements ICommandHandler<
@@ -63,7 +64,7 @@ export class DepartDeliveryRoundHandler implements ICommandHandler<
       await this.rounds.save(round);
       await this.departedStops.record(departed);
       await this.events.publishTraced(
-        new DeliveryRoundDepartedEvent(round, liveBagCount(loadings)),
+        new DeliveryRoundDepartedEvent(round, liveBinCount(loadings)),
       );
     });
   }
@@ -77,10 +78,11 @@ function readinessOf(
     stopId: loading.stopId,
     reference: references.get(loading.orderId) ?? loading.orderId,
     state: loading.state,
+    binsToRedo: loading.binsToRedo,
   }));
 }
 
-/** Les sacs non annulés qui partent — tous chargés, puisque la tournée est partie. */
-function liveBagCount(loadings: readonly StopLoading[]): number {
-  return loadings.reduce((sum, loading) => sum + loading.liveBagCount, 0);
+/** Les bacs non annulés qui partent — tous chargés, puisque la tournée est partie. */
+function liveBinCount(loadings: readonly StopLoading[]): number {
+  return loadings.reduce((sum, loading) => sum + loading.liveBinCount, 0);
 }

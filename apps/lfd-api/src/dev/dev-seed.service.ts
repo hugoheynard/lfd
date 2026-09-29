@@ -108,7 +108,7 @@ export class DevSeedService {
         notReady: delivery.notReady,
         vehicles: delivery.vehicles,
         rounds: delivery.rounds,
-        loadedBags: delivery.loadedBags,
+        loadedBins: delivery.loadedBins,
         unassigned: delivery.unassigned,
       },
     };

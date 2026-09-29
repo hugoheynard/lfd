@@ -134,7 +134,7 @@ describe("ApplyDeliveryProposalHandler — « Appliquer » (L7-C6, L7-C11, L7-C1
     ).rejects.toThrow("Reproposez");
   });
 
-  it("ne déplace jamais un arrêt dont un sac est chargé", async () => {
+  it("ne déplace jamais un arrêt dont un bac est chargé", async () => {
     const { handler, proposals } = scene(["r1_s2"]);
 
     await expect(handler.execute(new ApplyDeliveryProposalCommand(PROPOSAL))).rejects.toThrow(
