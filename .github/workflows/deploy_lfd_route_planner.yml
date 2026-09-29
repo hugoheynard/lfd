@@ -23,9 +23,13 @@ name: deploy_lfd_route_planner
 # GitHub prévient l'auteur du dernier changement de ce fichier, et la carte
 # précédente continue de servir — elle vieillit, elle ne disparaît pas.
 #
-# Secrets GitHub : les MÊMES que deploy_lfd_api.yml, aucun neuf.
-#   CLOUDFLARE_LFD_API_WORKER — jeton « Workers Scripts · Edit » + « Containers · Edit »
-#     du compte ; il couvre tout Worker du compte, donc celui-ci.
+# Secrets GitHub :
+#   CLOUDFLARE_LFD_ROUTE_PLANNER — le jeton de CE déploiement seul (créé par
+#     Hugo le 2026-09-29) : « Workers Scripts · Edit », « Account Settings ·
+#     Read », « Cloudflare Images · Edit » (ce dernier couvre le registre de
+#     conteneurs, malgré son nom) — les permissions du jeton de l'API,
+#     relevées sur lui. Un jeton par déploiement : une fuite n'ouvre que son
+#     service.
 #   CLOUDFLARE_ACCOUNT_ID — injecté dans `wrangler.jsonc` au déploiement.
 # Aucun secret RUNTIME : OSRM ne lit rien de l'environnement.
 #
@@ -109,7 +113,7 @@ jobs:
       - name: Pousser l'image → registre Cloudflare
         working-directory: apps/lfd-route-planner
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_API_WORKER }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_ROUTE_PLANNER }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm exec wrangler containers push lfd-osrm:"${{ steps.map.outputs.tag }}"
 
@@ -124,7 +128,7 @@ jobs:
       - name: Déployer le Worker
         working-directory: apps/lfd-route-planner
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_API_WORKER }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_ROUTE_PLANNER }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           MAP_TAG: ${{ steps.map.outputs.tag }}
         run: |
