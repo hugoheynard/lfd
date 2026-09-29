@@ -10,13 +10,18 @@ export interface TimeWindow {
 export interface RoutingStop {
   readonly id: string;
   readonly window: TimeWindow | null;
+  /**
+   * Le temps de livraison sur place de CET arrêt, en secondes — la valeur de
+   * son adresse (L7b-C4) ; absent : celui de l'horloge, le réglage global.
+   */
+  readonly stopSeconds?: number | undefined;
 }
 
 /** Ce que le calcul sait de l'horloge d'une tournée, en secondes. */
 export interface RouteClock {
   /** On ne part pas avant (l'heure au plus tôt, ou le retour du passage précédent). */
   readonly earliestDeparture: number;
-  /** Le temps passé à chaque livraison. */
+  /** Le temps passé à une livraison dont l'adresse ne dit rien (le réglage global). */
   readonly stopSeconds: number;
 }
 
@@ -32,13 +37,6 @@ export interface TimedRoute {
   /** La somme des retards sur les fins de fenêtre. */
   readonly lateSeconds: number;
 }
-
-/**
- * Un retard compte DIX fois une seconde de route : un arrêt dont la fenêtre
- * finit tôt passe devant (L7-C4), sans que la fenêtre devienne une contrainte
- * dure — OR-Tools n'entre que le jour où elle le devient.
- */
-export const LATE_WEIGHT = 10;
 
 /**
  * **Chronomètre une tournée** (L7-C15) : départ et retour au point de départ,
@@ -78,7 +76,7 @@ export function timeRoute(
     const late = stop.window === null ? 0 : Math.max(0, at - stop.window.end);
     missed.push(late > 0);
     lateSeconds += late;
-    at = Math.max(at, stop.window?.start ?? at) + clock.stopSeconds;
+    at = Math.max(at, stop.window?.start ?? at) + (stop.stopSeconds ?? clock.stopSeconds);
     previous = stop.id;
   }
   meters += cost.meters(previous, depotId);
@@ -90,11 +88,6 @@ export function timeRoute(
     missed,
     lateSeconds,
   };
-}
-
-/** Ce qu'une tournée coûte à l'ordonnanceur : sa durée, plus ses retards pondérés. */
-export function routeScore(route: TimedRoute): number {
-  return route.return - route.departure + LATE_WEIGHT * route.lateSeconds;
 }
 
 /** La durée d'une tournée, départ → retour. */

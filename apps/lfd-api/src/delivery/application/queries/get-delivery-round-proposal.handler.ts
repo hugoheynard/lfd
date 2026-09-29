@@ -18,12 +18,8 @@ import { RoutingSettingsReader } from "../../domain/ports/routing-settings.reade
 import type { CostFn } from "../../domain/ports/distance-matrix.js";
 import { RouteGeometry } from "../../domain/ports/route-geometry.js";
 import { insertIntoRounds } from "../../domain/services/insert-into-rounds.js";
-import {
-  type PlannableStop,
-  type PlanningVehicle,
-  type Proposal,
-  proposeRounds,
-} from "../../domain/services/propose-rounds.js";
+import type { PlanningVehicle, Proposal } from "../../domain/services/proposal.js";
+import { type PlannableStop, proposeRounds } from "../../domain/services/propose-rounds.js";
 import type { RoutingSettings } from "../../domain/value-objects/routing-settings.js";
 import type { GeoPoint } from "../../domain/value-objects/geo-point.js";
 import {
@@ -41,6 +37,8 @@ import {
   locateFromCache,
   type LocatedStop,
   routingSettingsOf,
+  routingStopFor,
+  routingStopOf,
 } from "../delivery-routing-support.js";
 import { GetDeliveryRoundProposalQuery } from "./get-delivery-round-proposal.query.js";
 
@@ -183,10 +181,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       rounds: insertable.map((round) => ({
         ...{ roundId: round.id, vehicleId: round.vehicleId, vehicleName: round.vehicleName },
         passage: round.passage,
-        stops: round.stops.map((stop) => ({
-          id: stop.orderId,
-          window: ctx.stops.get(stop.orderId)?.window ?? null,
-        })),
+        stops: round.stops.map((stop) => routingStopFor(stop.orderId, ctx.stops)),
       })),
       cost,
       settings: ctx.settings,
@@ -244,7 +239,7 @@ function poolOf(
 ): readonly PlannableStop[] {
   const plannable = (orderId: string, homeRoundId: string | null): PlannableStop[] => {
     const stop = stops.get(orderId);
-    return stop?.point == null ? [] : [{ id: orderId, window: stop.window, homeRoundId }];
+    return stop?.point == null ? [] : [{ ...routingStopOf(stop), homeRoundId }];
   };
   return [
     ...unassigned.flatMap((orderId) => plannable(orderId, null)),

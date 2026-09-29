@@ -92,6 +92,7 @@ function toAddressBookView(book: DeliveryRunSheetAddressBook): DeliveryRunSheetA
     addressId: book.addressId,
     note: book.note,
     gps: book.gps,
+    ...(book.stopMinutes === null ? {} : { stopMinutes: book.stopMinutes }),
     procedure: book.procedure.map((step) => ({ ...step })),
   };
 }

@@ -52,6 +52,7 @@ function at(orderId: string, lat: number, lng: number): DeliveryStopPoint {
     gps: { lat, lng },
     address: address(orderId),
     window: null,
+    stopMinutes: null,
   };
 }
 

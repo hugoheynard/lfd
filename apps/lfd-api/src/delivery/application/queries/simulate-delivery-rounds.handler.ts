@@ -5,12 +5,8 @@ import { DepartureCandidatesReader } from "../../channels/commerce/index.js";
 import { UnknownCostPointError } from "../../domain/errors/delivery-routing-errors.js";
 import { DepartureReader } from "../../domain/ports/departure.reader.js";
 import { DistanceMatrix } from "../../domain/ports/distance-matrix.js";
-import {
-  type PlannableStop,
-  type PlanningVehicle,
-  type ProposedTour,
-  proposeRounds,
-} from "../../domain/services/propose-rounds.js";
+import type { PlanningVehicle, ProposedTour } from "../../domain/services/proposal.js";
+import { type PlannableStop, proposeRounds } from "../../domain/services/propose-rounds.js";
 import { type GeoPoint, geoPoint } from "../../domain/value-objects/geo-point.js";
 import { RoutingSettings } from "../../domain/value-objects/routing-settings.js";
 import { passageLimitsOf } from "../delivery-proposal-support.js";

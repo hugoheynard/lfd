@@ -136,6 +136,7 @@ function addressBookOf(
     addressId: address.id,
     note: specs.success ? specs.data.note : "",
     gps: specs.success ? specs.data.gps : null,
+    stopMinutes: specs.success ? (specs.data.stopMinutes ?? null) : null,
     procedure: (procedures.get(address.id)?.steps ?? []).map(toStep),
   };
 }

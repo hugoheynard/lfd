@@ -60,6 +60,7 @@ interface AddressSpecs {
   readonly companyId: string;
   readonly note: string;
   readonly gps: { readonly lat: number; readonly lng: number } | null;
+  readonly stopMinutes: number | null;
 }
 
 interface DeliveryOrderRow {
@@ -160,10 +161,12 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
     return rows.map((row) => {
       const linked = row.deliveryAddressId === null ? undefined : specs.get(row.deliveryAddressId);
       const window = windowOf(fulfillmentOf(row.fulfillment));
+      const walled = linked?.companyId === row.companyId ? linked : undefined;
       return {
         orderId: row.id,
         reference: row.orderNumber,
-        gps: linked?.companyId === row.companyId ? linked.gps : null,
+        gps: walled?.gps ?? null,
+        stopMinutes: walled?.stopMinutes ?? null,
         address: snapshotOf(row.deliveryAddressSnapshot),
         window: window === null ? null : { start: window.start, end: window.end },
       };
@@ -171,7 +174,8 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
   }
 
   /**
-   * Les consignes des adresses du carnet — note et point GPS —, lues SOUS LE
+   * Les consignes des adresses du carnet — note, point GPS, temps de livraison
+   * sur place —, lues SOUS LE
    * MUR comme la feuille de route : chaque couple `(adresse, société)` entre
    * dans le `where`, et le mapper revérifie la société. Validées, jamais
    * castées.
@@ -195,6 +199,7 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
             companyId: row.companyId,
             note: specs.success ? specs.data.note : "",
             gps: specs.success ? specs.data.gps : null,
+            stopMinutes: specs.success ? (specs.data.stopMinutes ?? null) : null,
           },
         ];
       }),

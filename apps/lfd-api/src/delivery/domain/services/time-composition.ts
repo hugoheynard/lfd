@@ -1,6 +1,6 @@
 import type { CostFn } from "../ports/distance-matrix.js";
 import type { RoutingSettings } from "../value-objects/routing-settings.js";
-import type { PlanningVehicle, ProposedTour } from "./propose-rounds.js";
+import type { PlanningVehicle, ProposedTour } from "./proposal.js";
 import { durationOf, type RoutingStop, timeRoute } from "./route-timing.js";
 
 const SECONDS_PER_MINUTE = 60;

@@ -61,6 +61,11 @@ export interface DeliveryStopPoint {
   readonly address: BillingAddressPayload | null;
   /** La fenêtre convenue (un défaut du carnet n'est pas une promesse, lot 1). */
   readonly window: DeliveryStopWindow | null;
+  /**
+   * Le temps de livraison sur place de l'adresse du carnet RELIÉE, en minutes,
+   * lu sous le même mur que le point GPS ; `null` : le réglage global (L7b-C4).
+   */
+  readonly stopMinutes: number | null;
 }
 
 /**
@@ -91,7 +96,8 @@ export abstract class DeliveryOrdersReader {
 
   /**
    * **Où livrer ces commandes** (lot 7, L7-C8) : point GPS du carnet, adresse
-   * livrée figée, fenêtre. Les inconnues sont absentes.
+   * livrée figée, fenêtre, temps de livraison sur place (L7b-C4). Les
+   * inconnues sont absentes.
    */
   abstract stopPointsOf(orderIds: readonly string[]): Promise<readonly DeliveryStopPoint[]>;
 }

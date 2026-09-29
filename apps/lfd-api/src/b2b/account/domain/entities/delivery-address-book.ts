@@ -1,6 +1,7 @@
 import type { DeliveryAddressPayload, DeliverySpecs } from "@lfd/contracts";
 
 import { CompanyAddressNotFoundError } from "../errors/account-errors.js";
+import { deliveryStopMinutesOf } from "../value-objects/delivery-stop-minutes.js";
 
 /**
  * Les lignes postales d'une adresse. La **forme** est déjà garantie à la
@@ -111,13 +112,16 @@ export class DeliveryAddressBook {
    *
    * Elle devient le défaut si elle le demande — ou si le carnet était vide, car
    * un carnet non vide sans défaut n'a pas de sens pour la suite.
+   *
+   * @throws {InvalidDeliveryStopMinutesError} un temps de livraison sur place hors bornes.
    */
   add(id: string, payload: DeliveryAddressPayload, createdAt: Date): void {
+    const specs = specsOf(payload);
     const first = this.active().length === 0;
     this.entries.push({
       id,
       lines: linesOf(payload),
-      specs: payload.specs,
+      specs,
       createdAt,
       archivedAt: null,
     });
@@ -135,11 +139,13 @@ export class DeliveryAddressBook {
    * autre, jamais en enlevant celui-là.
    *
    * @throws {CompanyAddressNotFoundError} l'adresse n'est pas à ce carnet.
+   * @throws {InvalidDeliveryStopMinutesError} un temps de livraison sur place hors bornes.
    */
   edit(addressId: string, payload: DeliveryAddressPayload): void {
     const entry = this.require(addressId);
+    const specs = specsOf(payload);
     entry.lines = linesOf(payload);
-    entry.specs = payload.specs;
+    entry.specs = specs;
     if (payload.isDefault) {
       this.defaultIdValue = addressId;
     }
@@ -220,6 +226,17 @@ interface BookEntry {
   specs: DeliverySpecs;
   readonly createdAt: Date;
   archivedAt: Date | null;
+}
+
+/**
+ * Les consignes à écrire : la charge, son temps de livraison sur place passé
+ * par le carnet (L7b-C4). Non saisi, il n'est pas écrit — le `jsonb` garde sa
+ * forme d'avant pour toutes les adresses qui suivent le réglage.
+ */
+function specsOf(payload: DeliveryAddressPayload): DeliverySpecs {
+  const { stopMinutes, ...rest } = payload.specs;
+  const checked = deliveryStopMinutesOf(stopMinutes);
+  return checked === null ? rest : { ...rest, stopMinutes: checked };
 }
 
 /** Les seules colonnes postales, extraites d'une charge validée. */

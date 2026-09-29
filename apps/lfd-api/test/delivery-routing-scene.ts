@@ -66,12 +66,14 @@ export function forgetRoutingScene(): void {
 
 /**
  * Une commande en livraison ce jour-là, reliée à une adresse du carnet de SA
- * société — avec un point GPS (`gps`), ou sans (`null`). Rend son id.
+ * société — avec un point GPS (`gps`), ou sans (`null`), et, si on le donne,
+ * un temps de livraison sur place propre à l'adresse (L7b-C4). Rend son id.
  */
 export async function seedLocatedDelivery(
   ctx: E2eContext,
   day: string,
   gps: { readonly lat: number; readonly lng: number } | null,
+  stopMinutes?: number,
 ): Promise<string> {
   sequence += 1;
   const n = String(sequence);
@@ -104,6 +106,7 @@ export async function seedLocatedDelivery(
         deliveryContact: null,
         gps,
         signatureRequired: null,
+        ...(stopMinutes === undefined ? {} : { stopMinutes }),
       },
     },
     select: { id: true },

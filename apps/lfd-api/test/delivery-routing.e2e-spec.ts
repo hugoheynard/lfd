@@ -144,8 +144,12 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
 
     const view = await propose(ctx, `jour=${DAY}`);
 
-    const groups = view.rounds.map((round) => round.stops.map((stop) => stop.orderId).sort());
-    expect(groups.sort()).toEqual([[...north].sort(), [...south].sort()].sort());
+    // Réécrit le 2026-09-29 (lot 7 bis) : l'attente était « une vallée par
+    // véhicule », ce que faisait la répartition par proximité. Les quatre
+    // livraisons tiennent en UNE tournée : le calcul n'en ouvre pas une seconde.
+    const placed = view.rounds.flatMap((round) => round.stops.map((stop) => stop.orderId));
+    expect(view.rounds).toHaveLength(1);
+    expect([...placed].sort()).toEqual([...north, ...south].sort());
     expect(view.unlocated).toEqual([
       expect.objectContaining({ orderId: lost, reason: "not_geocoded" }),
     ]);
@@ -242,5 +246,24 @@ describe("chronométrer une composition glissée à la main (L10b-C2)", () => {
       await ctx.prisma.deliveryRound.findMany({ select: { id: true, version: true } }),
     ).toEqual(before);
     expect(await ctx.prisma.deliveryRoundStop.count()).toBe(1);
+  });
+
+  it("compte chez un arrêt le temps de livraison de SON adresse, lu par le canal (L7b-C4)", async () => {
+    await seedDeparture(ctx);
+    const kangoo = await addVehicle(ctx, "Kangoo");
+    const usual = await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
+    const slow = await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 }, 45);
+
+    const view = await timed(ctx, {
+      day: DAY,
+      rounds: [
+        { roundId: null, vehicleId: kangoo, orderIds: [usual] },
+        { roundId: null, vehicleId: kangoo, orderIds: [slow] },
+      ],
+    });
+
+    // Même lieu : seul le temps sur place diffère — 45 minutes contre les 5 du réglage.
+    const [first, second] = view.rounds;
+    expect((second?.minutes ?? 0) - (first?.minutes ?? 0)).toBe(40);
   });
 });

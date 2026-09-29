@@ -69,6 +69,11 @@ export interface DeliveryRunSheetAddressBookView {
   /** La note livreurs de l'adresse. `""` sans note. */
   readonly note: string;
   readonly gps: GpsPoint | null;
+  /**
+   * Le temps de livraison sur place propre à cette adresse, en minutes
+   * (plan de tournée, L7b-C4) ; absent : elle suit le réglage de la livraison.
+   */
+  readonly stopMinutes?: number;
   /** Les étapes de la procédure, dans l'ordre. Vide sans procédure. */
   readonly procedure: readonly DeliveryRunSheetStepView[];
 }

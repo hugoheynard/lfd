@@ -35,6 +35,7 @@ function point(orderId: string, overrides: Partial<DeliveryStopPoint> = {}): Del
     gps: null,
     address: address(`${orderId} rue du Pont`),
     window: null,
+    stopMinutes: null,
     ...overrides,
   };
 }

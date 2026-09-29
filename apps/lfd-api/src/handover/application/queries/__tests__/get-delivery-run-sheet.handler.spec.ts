@@ -44,6 +44,7 @@ function entry(overrides: Partial<DeliveryRunSheetEntry> = {}): DeliveryRunSheet
       addressId: "addr_1",
       note: "sonner deux fois",
       gps: { lat: 45.44, lng: 6.98 },
+      stopMinutes: 25,
       procedure: [
         {
           id: "step_1",
@@ -135,6 +136,7 @@ describe("GetDeliveryRunSheetHandler", () => {
       addressBook: {
         note: "sonner deux fois",
         gps: { lat: 45.44, lng: 6.98 },
+        stopMinutes: 25,
         procedure: [
           {
             id: "step_1",
@@ -146,6 +148,17 @@ describe("GetDeliveryRunSheetHandler", () => {
         ],
       },
     });
+  });
+
+  it("tait le temps de livraison sur place quand l'adresse suit le réglage (L7b-C4)", async () => {
+    const book = entry().addressBook;
+    const { handler } = handlerOf([
+      entry({ addressBook: book === null ? null : { ...book, stopMinutes: null } }),
+    ]);
+
+    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY));
+
+    expect(view.stops[0]?.addressBook).not.toHaveProperty("stopMinutes");
   });
 
   it("🔴 ne sert AUCUN champ monétaire", async () => {

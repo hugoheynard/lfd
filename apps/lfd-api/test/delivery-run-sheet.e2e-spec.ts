@@ -45,6 +45,7 @@ const SPECS = {
   deliveryContact: { prenom: "Camille", nom: "Rousseau", telephone: "0142710844" },
   gps: { lat: 45.448, lng: 6.98 },
   signatureRequired: true,
+  stopMinutes: 20,
 };
 
 const stubAdminVerifier = {
@@ -201,6 +202,7 @@ describe("la feuille de route du jour", () => {
         addressId,
         note: SPECS.note,
         gps: SPECS.gps,
+        stopMinutes: SPECS.stopMinutes,
         procedure: [
           { title: "Portail", body: "", hasPhoto: true },
           { title: "Cour", body: "", hasPhoto: false, photoRevision: null },

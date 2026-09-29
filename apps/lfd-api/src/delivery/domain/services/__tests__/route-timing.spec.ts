@@ -26,6 +26,24 @@ describe("chronométrer une tournée (L7-C15)", () => {
     expect(route.meters).toBe(40_000);
   });
 
+  it("prend le temps de livraison de l'arrêt quand son adresse en donne un (L7b-C4)", () => {
+    const clock: RouteClock = { earliestDeparture: SIX, stopSeconds: 5 * MINUTE };
+
+    const route = timeRoute(
+      "depot",
+      [
+        { id: "a", window: null, stopSeconds: 20 * MINUTE },
+        { id: "b", window: null },
+      ],
+      cost,
+      clock,
+    );
+
+    // 10 + 20 sur place (l'adresse) + 10 + 5 (le réglage) + 20 de retour.
+    expect(route.arrivals).toEqual([SIX + 10 * MINUTE, SIX + 40 * MINUTE]);
+    expect(durationOf(route)).toBe(65 * MINUTE);
+  });
+
   it("part PLUS TARD si la première fenêtre le permet, jamais plus tôt que l'heure au plus tôt", () => {
     const clock: RouteClock = { earliestDeparture: SIX, stopSeconds: 0 };
     const eight = 8 * 3600;

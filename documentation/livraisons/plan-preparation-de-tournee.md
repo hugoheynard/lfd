@@ -1836,6 +1836,54 @@ enregistrée contre l'OSRM local, sert de cas de régression : avant / après en
 tournées, kilomètres, minutes, attente et arrêts hors créneau, écrit dans ce
 plan.
 
+**Mesuré le 2026-09-29** (serveur bâti, non commité à l'écriture ; l'écran
+suivra). Matrice routière enregistrée contre l'OSRM local — départ du labo,
+dix-sept livraisons, dont six dans la tournée chargée de Val d'Isère, gardée
+telle quelle dans les deux cas (6 h 00 → 7 h 48, 17 km). Les onze autres,
+trois camionnettes, réglages d'usine (départ au plus tôt 6 h, 240 min au plus,
+5 min par livraison). L'avant est recalculé avec l'ancien algorithme sur la
+même matrice, juste avant sa suppression ; il reproduit l'écran observé.
+
+| Onze livraisons à répartir          | Avant (k-medoids → ordre → découpe) | Après (insertion + amélioration) |
+| ----------------------------------- | ----------------------------------- | -------------------------------- |
+| Tournées proposées                  | 5                                   | 2                                |
+| dont passages d'un seul arrêt       | 2                                   | 0                                |
+| dont seconds passages               | 2                                   | 0                                |
+| Kilomètres                          | 409                                 | 261                              |
+| Minutes (départ → retour, cumulées) | 656                                 | 396                              |
+| Attente devant un créneau fermé     | 55 min                              | 0                                |
+| Arrêts hors créneau                 | 0                                   | 0                                |
+
+Après : une camionnette fait les sept livraisons du matin, créneaux entre
+6 h 30 et 9 h (Montvalezan, Bourg-Saint-Maurice, Séez ; 6 h 22 → 9 h 51) ;
+une autre part à 9 h 12 pour les trois de 10 h – 11 h 30 et celle sans
+créneau (→ 12 h 19). Figé par
+`apps/lfd-api/src/delivery/domain/services/__tests__/recorded-day.spec.ts`
+— fixture à côté, `apps/lfd-api/src/delivery/domain/services/__tests__/recorded-day.fixture.ts`, identifiants neutres, sans
+nom de client.
+
+Ce qui a été bâti :
+
+- `apps/lfd-api/src/delivery/domain/services/insert-cheapest.ts` (C1) — insertion au moindre surcoût sur tous les
+  véhicules, créneaux les plus étroits d'abord ;
+- `apps/lfd-api/src/delivery/domain/services/improve-plans.ts` et `apps/lfd-api/src/delivery/domain/services/route-moves.ts` (C2) — Or-opt, 2-opt, déplacer,
+  permuter, 2-opt\*, par paire de véhicules, liste granulaire de dix voisins
+  (`apps/lfd-api/src/delivery/domain/services/move-scope.ts`) ; 60 arrêts sur 4 véhicules : ≈ 0,2 s de calcul ;
+- `apps/lfd-api/src/delivery/domain/services/vehicle-plan.ts` (C2, C3) — le coût : route et attente, cent fois chaque
+  seconde hors créneau, une heure par tournée ouverte, et la durée maximale
+  en plus pour un second passage.
+
+La répartition par k-medoids et l'ordonnancement ATSP sont supprimés : plus
+d'appelant. C4 : `deliverySpecs.stopMinutes` (facultatif, 1 à 120, refusé par
+le carnet), servi au calculateur par `DeliveryOrdersReader.stopPointsOf` et à
+la feuille de route (`addressBook.stopMinutes`, absent quand l'adresse suit le
+réglage).
+
+⚠️ **Non traité, à trancher** : la tournée chargée gardée n'occupe pas son
+véhicule dans le calcul. Ici, la camionnette qui fait Val d'Isère de 6 h à
+7 h 48 reçoit aussi la tournée proposée de 6 h 22 — l'ancien calcul faisait la
+même chose. Le calculateur ne connaît que les tournées qu'il compose.
+
 ### Lot 11 — Le suivi des camionnettes en direct
 
 > **Ouvert le 2026-09-29.** Hugo : « une carte pour suivre les livraisons et

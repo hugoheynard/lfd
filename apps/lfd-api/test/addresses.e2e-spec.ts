@@ -243,6 +243,28 @@ describe("livraison — défaut, tri, archivage", () => {
       .expect(400);
   });
 
+  it("garde le temps de livraison sur place de l'adresse, et refuse ce qui sort des bornes (L7b-C4)", async () => {
+    const base = delivery().specs;
+    const created = await ctx
+      .asSub(ADMIN)
+      .post(`/companies/${companyId}/delivery-addresses`)
+      .send(delivery({ specs: { ...base, stopMinutes: 25 } }))
+      .expect(201);
+    const id = jsonBody<{ id: string }>(created).id;
+
+    const view = await addressesOf(ADMIN);
+    expect(view.deliveries.find((d) => d.id === id)?.specs.stopMinutes).toBe(25);
+
+    const refused = await ctx
+      .asSub(ADMIN)
+      .patch(`/companies/${companyId}/delivery-addresses/${id}`)
+      .send(delivery({ specs: { ...base, stopMinutes: 121 } }))
+      .expect(400);
+    expect(JSON.stringify(refused.body)).toContain("entre 1 et 120 minutes");
+    const after = await addressesOf(ADMIN);
+    expect(after.deliveries.find((d) => d.id === id)?.specs.stopMinutes).toBe(25);
+  });
+
   it("une écriture ne touche pas l'entreprise d'à côté (isolation)", async () => {
     const other = await createCompany(ctx.prisma, { siret: "99999999900017" });
     // Le gestionnaire de `companyId` n'est pas membre de `other`.

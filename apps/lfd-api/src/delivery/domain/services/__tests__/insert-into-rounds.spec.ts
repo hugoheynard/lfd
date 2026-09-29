@@ -78,6 +78,77 @@ describe("insérer dans les tournées existantes (mode insert)", () => {
     ]);
   });
 
+  it("insère dans la tournée d'un AUTRE véhicule quand elle coûte moins (L7b-C1)", () => {
+    // Le Kangoo tourne à l'ouest ; le Trafic, à l'est, passe déjà à côté de « east ».
+    const proposal = insertIntoRounds(
+      input({
+        cost: lineCost({ depot: 0, a: -5, b: -7, c: -10, east: 12, e1: 10, e2: 14 }),
+        stops: [stop("east")],
+        vehicles: [
+          { id: "v1", name: "Kangoo" },
+          { id: "v2", name: "Trafic" },
+        ],
+        rounds: [
+          {
+            roundId: "r1",
+            vehicleId: "v1",
+            vehicleName: "Kangoo",
+            passage: 1,
+            stops: [stop("c"), stop("a")],
+          },
+          {
+            roundId: "r2",
+            vehicleId: "v2",
+            vehicleName: "Trafic",
+            passage: 1,
+            stops: [stop("e2"), stop("e1")],
+          },
+        ],
+      }),
+    );
+
+    expect(proposal.tours.map((tour) => tour.roundId)).toEqual(["r2"]);
+    const order = ids(proposal.tours[0]?.stops ?? []);
+    expect(order).toContain("east");
+    expect(order.filter((id) => id !== "east")).toEqual(["e2", "e1"]);
+  });
+
+  it("l'amélioration ne déplace ni ne réordonne jamais un arrêt placé à la main (L7b-C3)", () => {
+    // « e1 » est à la main dans la tournée de l'ouest, où il coûte cher : un
+    // calcul libre le rendrait à l'est. Épinglé, il reste, dans son ordre.
+    const proposal = insertIntoRounds(
+      input({
+        cost: lineCost({ depot: 0, a: -5, c: -10, e1: 10, e2: 14, east: 12 }),
+        stops: [stop("east")],
+        vehicles: [
+          { id: "v1", name: "Kangoo" },
+          { id: "v2", name: "Trafic" },
+        ],
+        rounds: [
+          {
+            roundId: "r1",
+            vehicleId: "v1",
+            vehicleName: "Kangoo",
+            passage: 1,
+            stops: [stop("c"), stop("e1"), stop("a")],
+          },
+          {
+            roundId: "r2",
+            vehicleId: "v2",
+            vehicleName: "Trafic",
+            passage: 1,
+            stops: [stop("e2")],
+          },
+        ],
+      }),
+    );
+
+    const r1 = proposal.tours.find((tour) => tour.roundId === "r1");
+    const r2 = proposal.tours.find((tour) => tour.roundId === "r2");
+    expect(r1).toBeUndefined();
+    expect(ids(r2?.stops ?? []).filter((id) => id !== "east")).toEqual(["e2"]);
+  });
+
   it("est déterministe", () => {
     const many = input({ stops: [stop("b"), stop("far")], settings: settings(240) });
 

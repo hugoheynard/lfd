@@ -73,6 +73,8 @@ export interface DeliveryRunSheetAddressBook {
   /** `""` sans note, ou quand les consignes stockées sont illisibles. */
   readonly note: string;
   readonly gps: GpsPoint | null;
+  /** Le temps de livraison sur place de l'adresse, en minutes ; `null` : le réglage global (L7b-C4). */
+  readonly stopMinutes: number | null;
   /** Dans l'ordre de passage. Vide sans procédure. */
   readonly procedure: readonly DeliveryRunSheetStep[];
 }

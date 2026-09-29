@@ -1,5 +1,5 @@
 import type { RouteGeometry, RouteLine } from "../domain/ports/route-geometry.js";
-import type { ProposedTour } from "../domain/services/propose-rounds.js";
+import type { ProposedTour } from "../domain/services/proposal.js";
 import type { GeoPoint } from "../domain/value-objects/geo-point.js";
 
 /**

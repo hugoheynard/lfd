@@ -45,7 +45,14 @@ const OTHER_DAY = "2030-03-13";
 const LABO = { lat: 45.5646, lng: 5.9178 };
 
 function at(orderId: string, lat: number, lng: number): DeliveryStopPoint {
-  return { orderId, reference: `CMD-${orderId}`, gps: { lat, lng }, address: null, window: null };
+  return {
+    orderId,
+    reference: `CMD-${orderId}`,
+    gps: { lat, lng },
+    address: null,
+    window: null,
+    stopMinutes: null,
+  };
 }
 
 const POINTS: readonly DeliveryStopPoint[] = [
@@ -58,7 +65,13 @@ const POINTS: readonly DeliveryStopPoint[] = [
   at("late", 45.4, 6.4),
 ];
 
-function scene(options: { readonly matrix?: DistanceMatrix; readonly departed?: boolean } = {}) {
+function scene(
+  options: {
+    readonly matrix?: DistanceMatrix;
+    readonly departed?: boolean;
+    readonly points?: readonly DeliveryStopPoint[];
+  } = {},
+) {
   const loadedRound = roundWith("r_loaded", DAY, "v2", ["o5"]);
   const open = roundWith("r_open", DAY, "v1", ["o6"]);
   const rounds = new InMemoryDeliveryRounds(
@@ -74,7 +87,7 @@ function scene(options: { readonly matrix?: DistanceMatrix; readonly departed?: 
       deliveryOn("counter", DAY, { delivery: false }),
       deliveryOn("gone", DAY, { status: "cancelled" }),
     ],
-    POINTS,
+    options.points ?? POINTS,
   );
   const geometry = new StraightRouteGeometry();
   const handler = new TimeDeliveryRoundsHandler(
@@ -118,6 +131,23 @@ describe("TimeDeliveryRoundsHandler — « Chronométrer » (L10b-C2)", () => {
       { roundId: null, vehicleId: "v1", orderIds: ["o1", "o2", "o3"] },
     ]);
     expect(forward.rounds[0]?.meters).toBeGreaterThan(straight.rounds[0]?.meters ?? 0);
+  });
+
+  it("compte à l'arrêt le temps de livraison de son adresse, sinon le réglage (L7b-C4)", async () => {
+    const slow = POINTS.map((point) =>
+      point.orderId === "o1" ? { ...point, stopMinutes: 45 } : point,
+    );
+    const rounds: Rounds = [{ roundId: null, vehicleId: "v1", orderIds: ["o1", "o2"] }];
+
+    const usual = await time(scene().handler, rounds);
+    const long = await time(scene({ points: slow }).handler, rounds);
+
+    // 45 minutes chez o1 au lieu des 5 du réglage : o2 et le retour, 40 minutes plus tard.
+    const minutes = (clock: string | undefined): number => {
+      const [hours, mins] = (clock ?? "00:00").split(":").map(Number);
+      return (hours ?? 0) * 60 + (mins ?? 0);
+    };
+    expect(minutes(long.rounds[0]?.returnTime) - minutes(usual.rounds[0]?.returnTime)).toBe(40);
   });
 
   it("le second passage d'un véhicule part à son retour du premier", async () => {

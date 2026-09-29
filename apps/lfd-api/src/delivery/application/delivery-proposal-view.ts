@@ -8,7 +8,7 @@ import type {
 
 import type { RoundRow } from "../domain/ports/delivery-rounds.reader.js";
 import type { RouteLine } from "../domain/ports/route-geometry.js";
-import type { Proposal, ProposedTour } from "../domain/services/propose-rounds.js";
+import type { Proposal, ProposedTour } from "../domain/services/proposal.js";
 import type { TimeWindow } from "../domain/services/route-timing.js";
 import { clockTimeOf } from "../domain/value-objects/clock-time.js";
 import type { KeptRound } from "./delivery-proposal-support.js";

@@ -6,7 +6,7 @@ import type { DepartureReader } from "../domain/ports/departure.reader.js";
 import type { GeocodeCacheReader } from "../domain/ports/geocode-cache.reader.js";
 import type { RoutingSettingsReader } from "../domain/ports/routing-settings.reader.js";
 import { addressKeyOf } from "../domain/services/address-key.js";
-import type { TimeWindow } from "../domain/services/route-timing.js";
+import type { RoutingStop, TimeWindow } from "../domain/services/route-timing.js";
 import { minutesOfDay } from "../domain/value-objects/clock-time.js";
 import { type GeoPoint, geoPoint } from "../domain/value-objects/geo-point.js";
 import {
@@ -97,6 +97,8 @@ export interface LocatedStop {
   readonly point: GeoPoint | null;
   readonly unlocated: DeliveryUnlocatedReason | null;
   readonly window: TimeWindow | null;
+  /** Le temps de livraison sur place de son adresse, en secondes ; `null` : le réglage (L7b-C4). */
+  readonly stopSeconds: number | null;
 }
 
 /**
@@ -123,8 +125,28 @@ export async function locateFromCache(
       point: located,
       unlocated: located !== null ? null : point.address === null ? "no_address" : "not_geocoded",
       window: timeWindowOf(point.window),
+      stopSeconds: point.stopMinutes === null ? null : point.stopMinutes * SECONDS_PER_MINUTE,
     };
   });
+}
+
+/**
+ * L'arrêt tel que le calcul le lit : son identifiant, sa fenêtre, et son temps
+ * de livraison sur place quand son adresse en donne un (L7b-C4).
+ */
+export function routingStopOf(stop: LocatedStop): RoutingStop {
+  return stop.stopSeconds === null
+    ? { id: stop.orderId, window: stop.window }
+    : { id: stop.orderId, window: stop.window, stopSeconds: stop.stopSeconds };
+}
+
+/** L'arrêt d'une commande relue ; inconnue, sans fenêtre ni temps propre. */
+export function routingStopFor(
+  orderId: string,
+  stops: ReadonlyMap<string, LocatedStop>,
+): RoutingStop {
+  const stop = stops.get(orderId);
+  return stop === undefined ? { id: orderId, window: null } : routingStopOf(stop);
 }
 
 /**

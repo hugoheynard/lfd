@@ -124,6 +124,14 @@ export const deliverySpecsSchema = z.object({
    * seconde le jour où l'habitude change.
    */
   signatureRequired: z.boolean().nullable().default(null),
+  /**
+   * **Temps de livraison sur place** de CETTE adresse, en minutes — décharger,
+   * porter, faire signer (plan de tournée, L7b-C4). Absent ou `null` : le
+   * réglage global du calcul de tournée. Facultatif, et sans borne ici : les
+   * lectures réutilisent ce schéma, et la borne (1 à 120) est une règle du
+   * carnet, qui la refuse à l'écriture en la nommant.
+   */
+  stopMinutes: z.number().int().nullable().optional(),
 });
 export type DeliverySpecs = z.infer<typeof deliverySpecsSchema>;
 

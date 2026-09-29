@@ -1,6 +1,9 @@
 import type { DeliveryAddressPayload } from "@lfd/contracts";
 
-import { CompanyAddressNotFoundError } from "../../errors/account-errors.js";
+import {
+  CompanyAddressNotFoundError,
+  InvalidDeliveryStopMinutesError,
+} from "../../errors/account-errors.js";
 import { DeliveryAddressBook, type DeliveryAddress } from "../delivery-address-book.js";
 
 /**
@@ -237,5 +240,53 @@ describe("le carnet d'adresses de livraison", () => {
     const book = bookOf([entry("a3", NEWEST), entry("a1", OLDEST), entry("a2", MIDDLE)], "a1");
 
     expect(book.deliveries().map((address) => address.id)).toEqual(["a1", "a2", "a3"]);
+  });
+});
+
+describe("le temps de livraison sur place d'une adresse (plan de tournée, L7b-C4)", () => {
+  const withMinutes = (stopMinutes: number | null | undefined): DeliveryAddressPayload => {
+    const base = payload(false);
+    return stopMinutes === undefined ? base : { ...base, specs: { ...base.specs, stopMinutes } };
+  };
+  const emptyBook = (): DeliveryAddressBook =>
+    DeliveryAddressBook.reconstitute({ companyId: "cmp_1", entries: [], defaultId: null });
+
+  it("garde la valeur saisie de l'adresse", () => {
+    const book = emptyBook();
+
+    book.add("addr_1", withMinutes(25), OLDEST);
+
+    expect(book.deliveries()[0]?.specs.stopMinutes).toBe(25);
+  });
+
+  it("n'écrit rien quand l'adresse suit le réglage — le jsonb garde sa forme", () => {
+    const book = emptyBook();
+
+    book.add("addr_1", withMinutes(null), OLDEST);
+    book.add("addr_2", withMinutes(undefined), MIDDLE);
+
+    expect(book.deliveries().map((address) => "stopMinutes" in address.specs)).toEqual([
+      false,
+      false,
+    ]);
+  });
+
+  it.each([0, 121, 12.5, -3])("refuse %p minutes, en nommant les bornes", (minutes) => {
+    const book = emptyBook();
+
+    expect(() => book.add("addr_1", withMinutes(minutes), OLDEST)).toThrow(
+      InvalidDeliveryStopMinutesError,
+    );
+    expect(() => book.add("addr_1", withMinutes(minutes), OLDEST)).toThrow(
+      /entre 1 et 120 minutes/u,
+    );
+  });
+
+  it("refuse aussi à la modification, sans rien changer", () => {
+    const book = emptyBook();
+    book.add("addr_1", withMinutes(10), OLDEST);
+
+    expect(() => book.edit("addr_1", withMinutes(500))).toThrow(InvalidDeliveryStopMinutesError);
+    expect(book.deliveries()[0]?.specs.stopMinutes).toBe(10);
   });
 });

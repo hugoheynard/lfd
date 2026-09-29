@@ -12,7 +12,7 @@ import { LoadedStopsReader } from "../../domain/ports/loaded-stops.reader.js";
 import { RouteGeometry } from "../../domain/ports/route-geometry.js";
 import { RoutingSettingsReader } from "../../domain/ports/routing-settings.reader.js";
 import { RoutingVehicleNotFoundError } from "../../domain/errors/delivery-routing-errors.js";
-import type { PlanningVehicle } from "../../domain/services/propose-rounds.js";
+import type { PlanningVehicle } from "../../domain/services/proposal.js";
 import { type ComposedRound, timeComposition } from "../../domain/services/time-composition.js";
 import type { GeoPoint } from "../../domain/value-objects/geo-point.js";
 import { chosenVehicles } from "../delivery-proposal-support.js";
@@ -23,6 +23,7 @@ import {
   locateFromCache,
   type LocatedStop,
   routingSettingsOf,
+  routingStopFor,
 } from "../delivery-routing-support.js";
 import {
   ensureOrdersTimeable,
@@ -130,7 +131,7 @@ function composedRounds(
     return {
       roundId: round.roundId,
       vehicle,
-      stops: round.orderIds.map((id) => ({ id, window: stops.get(id)?.window ?? null })),
+      stops: round.orderIds.map((id) => routingStopFor(id, stops)),
     };
   });
 }

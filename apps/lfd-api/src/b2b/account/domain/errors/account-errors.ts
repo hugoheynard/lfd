@@ -526,3 +526,17 @@ export class LoginMethodAlreadyLinkedError extends BusinessError {
 }
 
 // ─── Panne technique (500) ───────────────────────────────────────────────────
+
+/** Le temps de livraison sur place d'une adresse, hors de ses bornes (plan de tournée, L7b-C4). */
+export class InvalidDeliveryStopMinutesError extends DomainError {
+  constructor(
+    readonly raw: number,
+    readonly min: number,
+    readonly max: number,
+  ) {
+    super(
+      "account.delivery_stop_minutes.invalid",
+      `Le temps de livraison sur place tient entre ${String(min)} et ${String(max)} minutes, en minutes entières (saisi : ${String(raw)}). Corrigez-le, ou laissez-le vide pour reprendre le réglage de la livraison.`,
+    );
+  }
+}

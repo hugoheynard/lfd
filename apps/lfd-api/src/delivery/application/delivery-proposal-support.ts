@@ -9,7 +9,7 @@ import {
 } from "../domain/errors/delivery-routing-errors.js";
 import type { RoundRow } from "../domain/ports/delivery-rounds.reader.js";
 import type { FleetReader } from "../domain/ports/fleet.reader.js";
-import type { PlanningVehicle } from "../domain/services/propose-rounds.js";
+import type { PlanningVehicle } from "../domain/services/proposal.js";
 import type { LocatedStop } from "./delivery-routing-support.js";
 
 /**

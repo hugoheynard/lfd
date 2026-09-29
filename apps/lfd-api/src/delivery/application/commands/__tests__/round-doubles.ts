@@ -125,6 +125,7 @@ export class FixedDeliveryOrders extends DeliveryOrdersReader {
           gps: null,
           address: null,
           window: null,
+          stopMinutes: null,
         })),
     );
   }
