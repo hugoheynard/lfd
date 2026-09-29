@@ -1040,6 +1040,69 @@ refus « la composition a changé, reproposez ». Un fait au journal :
 écrit sous `delivery_rounds:write` : c'est de la composition. **Pas de droit
 neuf.**
 
+#### Contradiction de `vitruve` — v2 du calculateur (2026-09-29)
+
+Trois `BLOQUANT`, sept `SÉRIEUX`. La v2 **remplace** L7-C1, C5, C6 là où elles
+se contredisent.
+
+**L7-C8 — Le point d'un arrêt passe par le canal, élargi et daté.** Le canal
+`DeliveryOrdersReader` s'était engagé à ne servir « aucune adresse » avant le
+départ. Le calculateur en a besoin : une méthode **ajoutée**, `stopPointsOf(orderIds)`,
+rend pour chaque commande le point GPS du carnet (si la commande y est reliée)
+et l'**adresse livrée figée à la passation** (`orders.delivery_address_snapshot`
+— elle existe dès la commande ; `vitruve` la croyait créée au départ). Le
+commentaire du canal est réécrit, daté. Aucune lecture de `public.address`
+depuis `delivery`.
+
+**L7-C9 — Géocoder est un GESTE, pas une lecture.** Un `GET` qui remplirait le
+cache violerait `CLAUDE.md` §4. Donc :
+
+- **« Situer les arrêts »** (`POST`, `delivery_rounds:write`) géocode ce qui
+  manque, **par lot** (`/search/csv` de la BAN), plafonné, et remplit le
+  cache ;
+- **« Proposer »** (`GET`) ne lit **que** le cache et le carnet : il ne sort
+  jamais sur le réseau, coûte l'algorithme seul, et peut se rejouer ;
+- le port `Geocoder` est déclaré par le domaine de `delivery`, implémenté dans
+  son infrastructure ; son URL se lit dans `AppConfig` ; chaque appel porte un
+  **délai** (`AbortSignal`, 5 s) ; BAN indisponible → refus nommé, rien
+  d'écrit ;
+- **e2e sans réseau** : sans URL configurée, le géocodeur est **désactivé** et
+  les points ne viennent que du carnet ; l'adaptateur BAN est testé en
+  unitaire contre des réponses enregistrées. Le harnais ne double toujours
+  qu'Auth0 (`CLAUDE.md` §5).
+
+**L7-C10 — Le cache ne garde pas d'adresse.** Clé : l'**empreinte** (SHA-256)
+de l'adresse normalisée ; valeur : latitude, longitude, score de la BAN, date.
+Aucune adresse en clair, et une durée de vie (365 jours, puis rejoué). La page
+de confidentialité nomme le géocodage **dans ce lot** : c'est un préalable,
+pas une option (`documentation/legal/`).
+
+**L7-C11 — Appliquer : N tournées, un ordre, tout revérifié.** Un port
+`applyProposal` : il verrouille **toutes** les tournées touchées, triées par
+identifiant, puis les chargements de **tous** les arrêts déplacés, dans
+l'ordre des identifiants ; puis il revérifie, sous verrou, pour chacun :
+version lue, tournée **non partie**, arrêt **non chargé**, commande non placée
+ailleurs entre-temps (l'index partiel refuse de toute façon). Les tournées à
+ouvrir tirent leur passage **sous verrou** ; une collision sur
+`(jour, véhicule, passage)` devient « reproposez ». Un seul refus annule tout.
+
+**L7-C12 — Déterministe, vraiment.** Entrée triée par identifiant de commande ;
+k-medoids initialisé par le **plus éloigné** d'abord (depuis le départ, puis
+le plus loin des médoïdes choisis), égalités départagées par identifiant ;
+aucun aléa. Deux « Proposer » sur le même état rendent la même proposition —
+**à cache égal** : le cache diffère entre production et dev, c'est dit.
+
+**L7-C13 — Les réglages du calcul ont leur table.** Pas `delivery_settings`
+(une table du commerce). Une ligne à clé naturelle dans le bloc `delivery`
+(schéma `production`) : facteur de détour, vitesse moyenne, et **heure de
+départ habituelle** — sans elle, pas d'heure d'arrivée, donc pas de pénalité
+de fenêtre (L7-C4). Éditée sur l'écran « Point de départ » du lot 2, sous
+`delivery_settings:write`.
+
+**L7-C14 — Le fait `delivery_round.proposal_applied`** porte le jour, et pour
+chaque tournée touchée : son identifiant, son véhicule, la liste des arrêts
+**avant** et **après**. Figé dès le premier en production.
+
 **Questions à Hugo** :
 
 - **L7-Q1** — D'accord pour géocoder par la Base Adresse Nationale (adresses
