@@ -732,6 +732,25 @@ export type {
   DeparturePointView,
 } from "./delivery-settings.js";
 export {
+  openDeliveryRoundPayloadSchema,
+  assignDeliveryStopPayloadSchema,
+  moveDeliveryStopPayloadSchema,
+  reorderDeliveryRoundPayloadSchema,
+  removeDeliveryStopPayloadSchema,
+} from "./delivery-rounds.js";
+export type {
+  DeliveryRoundsDayView,
+  DeliveryRoundView,
+  DeliveryRoundStopView,
+  DeliveryRoundStopSignal,
+  DeliveryRoundOrderRef,
+  OpenDeliveryRoundPayload,
+  AssignDeliveryStopPayload,
+  MoveDeliveryStopPayload,
+  ReorderDeliveryRoundPayload,
+  RemoveDeliveryStopPayload,
+} from "./delivery-rounds.js";
+export {
   recurrenceSchema,
   subscriptionStatusSchema,
   setSubscriptionStatusPayloadSchema,

@@ -285,6 +285,16 @@ export const staffResourceSchema = z.enum([
    * offre. Lecture pour `comptoir`, écriture pour `admin` seul.
    */
   "delivery_settings",
+  /**
+   * **Composer les tournées** — répartir les livraisons d'un jour entre les
+   * véhicules, puis ordonner chaque tournée (`/admin/livraison/tournees`,
+   * plan de tournée, lot 3).
+   *
+   * Lecture ET écriture pour `admin` et `comptoir` (Hugo, 2026-09-29, Q12) :
+   * c'est le comptoir qui prépare les départs, il compose aussi. Pas
+   * `delivery_settings` : celui-là règle la flotte, que le comptoir ne règle pas.
+   */
+  "delivery_rounds",
 
   // ── `staff.` — LE SOCLE ─────────────────────────────────────────────────
   /**
@@ -387,6 +397,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_storefront: "Vitrine",
   delivery_run_sheet: "Feuille de route",
   delivery_settings: "Réglages de livraison",
+  delivery_rounds: "Tournées de livraison",
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
   b2b_counter: "Comptoir",
@@ -495,6 +506,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // `write` sur une lecture seule : l'administrateur couvre tout, sans trou.
     delivery_run_sheet: "write",
     delivery_settings: "write",
+    delivery_rounds: "write",
     staff_access: "write",
     staff_notifications: "write",
     ops_health: "write",
@@ -635,6 +647,8 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // et le point de départ ; il ne les règle pas (Hugo, 2026-09-29, Q7).
     delivery_run_sheet: "read",
     delivery_settings: "read",
+    // Il compose aussi les tournées (Hugo, 2026-09-29, Q12) : lecture et écriture.
+    delivery_rounds: "write",
     staff_notifications: "write",
   },
   support: {

@@ -46,6 +46,14 @@ const BARE_REFS: Readonly<Record<string, string>> = {
   "company.bank_account_changed:bankAccountId": "le RIB est décrit par `before` / `after`",
   "delivery_departure.chosen:previous":
     "nommé tant que le point existe ; un point de retrait supprimé depuis n'a plus de nom à donner",
+  "delivery_round.stop_moved:order":
+    "nommée par son numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
+  "delivery_round.stop_removed:order":
+    "nommée par son numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
+  "delivery_round.reordered:before[]":
+    "nommées par leur numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
+  "delivery_round.reordered:after[]":
+    "nommées par leur numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
   "company.fulfillment_preference_set:pickupAddressId":
     "les comptes ne lisent pas les points de retrait, rangés dans leur contexte",
   "company.client_note_edited_by_staff:noteId":

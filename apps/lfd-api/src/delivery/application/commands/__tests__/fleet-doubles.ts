@@ -1,4 +1,5 @@
 import { Vehicle } from "../../../domain/entities/vehicle.js";
+import { VehicleRoundsReader } from "../../../domain/ports/vehicle-rounds.reader.js";
 import { VehicleRepository } from "../../../domain/ports/vehicle.repository.js";
 import type { LicensePlate } from "../../../domain/value-objects/license-plate.js";
 
@@ -37,4 +38,22 @@ export const CREATED = new Date(0);
 
 export function vehicle(id: string, name: string, plate: string): Vehicle {
   return Vehicle.register({ id, name, plate, at: CREATED });
+}
+
+/**
+ * Les jours à venir où chaque véhicule porte une tournée vivante — et le jour
+ * « aujourd'hui » que le handler a demandé, pour vérifier qu'il est de Paris.
+ */
+export class FixedVehicleRounds extends VehicleRoundsReader {
+  readonly askedAfter: string[] = [];
+
+  constructor(private readonly daysByVehicle: Readonly<Record<string, readonly string[]>> = {}) {
+    super();
+  }
+
+  liveDaysAfter(vehicleId: string, afterDay: string): Promise<readonly string[]> {
+    this.askedAfter.push(afterDay);
+    const days = this.daysByVehicle[vehicleId] ?? [];
+    return Promise.resolve(days.filter((day) => day > afterDay));
+  }
 }

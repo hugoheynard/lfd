@@ -167,9 +167,9 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
  * d'où (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 2).
  *
  * Chaque vue porte son droit, et c'est ici obligatoire, pas une précaution :
- * la coquille n'est pas gardée, parce que la feuille de route et les réglages
- * relèvent de deux murs (`delivery_run_sheet`, `delivery_settings`) — le
- * support lit l'une sans voir les autres.
+ * la coquille n'est pas gardée, parce que la feuille de route, les tournées et
+ * les réglages relèvent de trois murs (`delivery_run_sheet`, `delivery_rounds`,
+ * `delivery_settings`) — le support lit la première sans voir les autres.
  */
 export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
   {
@@ -178,6 +178,13 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     link: '/livraison/feuille-de-route',
     icon: 'list',
     needs: 'delivery_run_sheet:read',
+  },
+  {
+    key: 'tournees',
+    label: 'Tournées',
+    link: '/livraison/tournees',
+    icon: 'places',
+    needs: 'delivery_rounds:read',
   },
   {
     key: 'vehicules',

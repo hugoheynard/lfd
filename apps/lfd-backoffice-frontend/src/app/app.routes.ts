@@ -310,6 +310,13 @@ export const routes: Routes = [
           import('./livraison/livraison-page/livraison-page').then((m) => m.DeliveryPage),
       },
       {
+        path: 'tournees',
+        canActivate: [permissionGuard('delivery_rounds:read')],
+        title: 'Tournées — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/rounds-page/rounds-page').then((m) => m.RoundsPage),
+      },
+      {
         path: 'vehicules',
         canActivate: [permissionGuard('delivery_settings:read')],
         title: 'Véhicules — LFC B2B admin',

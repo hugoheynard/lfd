@@ -1,0 +1,262 @@
+<fold-page-layout icon="truck" title="Tournées">
+  <p description>
+    Répartir les livraisons du jour entre les véhicules, puis ranger chaque tournée dans l’ordre de
+    passage.
+  </p>
+
+  <div class="compose">
+    <div class="no-print compose">
+      <div class="bar" data-day-bar>
+        <fold-view-toggle
+          ariaLabel="Jour de livraison"
+          [options]="dayOptions"
+          [value]="dayChoice()"
+          (valueChange)="pickChoice($event)"
+        />
+        <fold-date label="Date" [value]="day()" (valueChange)="pickDate($event)" />
+        @if (canWrite()) {
+          <fold-listbox
+            label="Nouvelle tournée"
+            placeholder="Choisir un véhicule"
+            [options]="vehicleOptions()"
+            [value]="chosenVehicle()"
+            [disabled]="busy()"
+            (valueChange)="chosenVehicle.set($event)"
+            data-vehicle-choice
+          />
+          <button
+            foldButton
+            icon="plus"
+            [disabled]="chosenVehicle() === null || busy()"
+            (click)="openRound()"
+            data-open-round
+          >
+            Ouvrir la tournée
+          </button>
+        }
+      </div>
+
+      @if (fleetUnreadable()) {
+        <fold-callout variant="alert" data-fleet-error>
+          La flotte n’a pas pu être lue : aucune tournée ne peut être ouverte pour l’instant.
+        </fold-callout>
+      }
+      @if (refusal(); as refusal) {
+        <fold-callout variant="alert" data-refusal>{{ refusal }}</fold-callout>
+      }
+
+      @switch (state().status) {
+        @case ('loading') {
+          <fold-loading message="Lecture des tournées…" />
+        }
+        @case ('error') {
+          <fold-empty-state
+            tone="alert"
+            title="Tournées illisibles"
+            subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+            data-compose-error
+          >
+            <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+          </fold-empty-state>
+        }
+        @case ('ready') {
+          @if (composed(); as composed) {
+            <div class="board">
+              <fold-card data-unassigned>
+                <div class="column">
+                  <fold-element-title
+                    variant="title"
+                    title="À répartir"
+                    [subtitle]="
+                      composed.unassigned.length === 0
+                        ? 'Tout est réparti'
+                        : 'Dans aucune tournée : aucune ne doit partir oubliée'
+                    "
+                  >
+                    @if (composed.unassigned.length > 0) {
+                      <fold-badge
+                        titleAction
+                        variant="warning"
+                        [content]="composed.unassigned.length + ' à répartir'"
+                      />
+                    }
+                  </fold-element-title>
+
+                  @for (line of composed.unassigned; track line.order.orderId) {
+                    <fold-card surface="sunken" padding="sm" data-order>
+                      <div class="line">
+                        <fold-element-title
+                          variant="title"
+                          [title]="titleOf(line.order.reference, line.sheet)"
+                          [subtitle]="windowOf(line.sheet)"
+                        />
+                        @if (shortAddressOf(line.sheet); as address) {
+                          <span>{{ address }}</span>
+                        }
+                        @if (canWrite()) {
+                          <fold-listbox
+                            size="sm"
+                            label="Tournée"
+                            placeholder="Choisir une tournée"
+                            [options]="roundOptions()"
+                            [value]="null"
+                            [disabled]="busy() || roundOptions().length === 0"
+                            (selectionChange)="assign(line.order, $event)"
+                            data-assign
+                          />
+                        }
+                      </div>
+                    </fold-card>
+                  }
+                </div>
+              </fold-card>
+
+              @for (column of composed.rounds; track column.round.id) {
+                <fold-card data-round>
+                  <div class="column">
+                    <fold-element-title
+                      variant="title"
+                      [title]="roundLabel(column.round)"
+                      [subtitle]="stopCountLabel(column.stops.length)"
+                    >
+                      <span titleAction class="actions">
+                        @if (column.round.vehicleRetired) {
+                          <fold-badge variant="alert" content="Véhicule retiré" data-retired />
+                        }
+                        <fold-button-icon
+                          icon="print"
+                          size="sm"
+                          tooltip="Imprimer cette tournée"
+                          [disabled]="column.stops.length === 0"
+                          (clicked)="print(column.round.id)"
+                          data-print
+                        />
+                      </span>
+                    </fold-element-title>
+
+                    @for (line of column.stops; track line.stop.stopId; let index = $index) {
+                      <fold-card surface="sunken" padding="sm" data-stop>
+                        <div class="line">
+                          <fold-element-title
+                            variant="title"
+                            [title]="
+                              line.stop.position + '. ' + titleOf(line.stop.reference, line.sheet)
+                            "
+                            [subtitle]="windowOf(line.sheet)"
+                          />
+                          @if (shortAddressOf(line.sheet); as address) {
+                            <span>{{ address }}</span>
+                          }
+                          @if (line.stop.signals.length > 0 || line.windowClash !== null) {
+                            <div class="flags">
+                              @for (signal of line.stop.signals; track signal) {
+                                <fold-badge
+                                  variant="alert"
+                                  [content]="signalLabel(signal, line.stop.orderDay)"
+                                  data-signal
+                                />
+                              }
+                              @if (line.windowClash; as clash) {
+                                <fold-badge
+                                  variant="warning"
+                                  [content]="'Fenêtre intenable après ' + clash"
+                                  data-window-clash
+                                />
+                              }
+                            </div>
+                          }
+                          @if (canWrite()) {
+                            <div class="controls">
+                              <fold-listbox
+                                size="sm"
+                                label="Tournée"
+                                [options]="roundOptions()"
+                                [value]="column.round.id"
+                                [disabled]="busy()"
+                                (selectionChange)="move(column.round, line.stop, $event)"
+                                data-move
+                              />
+                              <fold-button-icon
+                                icon="chevron-up"
+                                size="sm"
+                                tooltip="Monter"
+                                [disabled]="busy() || index === 0"
+                                (clicked)="shift(column, index, -1)"
+                                data-up
+                              />
+                              <fold-button-icon
+                                icon="chevron-down"
+                                size="sm"
+                                tooltip="Descendre"
+                                [disabled]="busy() || index === column.stops.length - 1"
+                                (clicked)="shift(column, index, 1)"
+                                data-down
+                              />
+                              <button
+                                foldButton
+                                size="sm"
+                                [emphasis]="line.stop.signals.length > 0 ? 'solid' : 'outline'"
+                                [intent]="line.stop.signals.length > 0 ? 'danger' : 'neutral'"
+                                [disabled]="busy()"
+                                (click)="remove(column.round, line.stop)"
+                                data-remove
+                              >
+                                Retirer
+                              </button>
+                            </div>
+                          }
+                        </div>
+                      </fold-card>
+                    } @empty {
+                      <fold-empty-state
+                        icon="truck"
+                        title="Tournée vide"
+                        subtitle="Choisissez-la sur une commande à répartir."
+                      />
+                    }
+                  </div>
+                </fold-card>
+              }
+            </div>
+
+            @if (composed.rounds.length === 0) {
+              <fold-empty-state
+                icon="truck"
+                title="Aucune tournée ce jour-là"
+                [subtitle]="
+                  canWrite()
+                    ? 'Ouvrez une tournée pour un véhicule, puis répartissez les commandes.'
+                    : 'Personne n’a encore composé les tournées de ce jour.'
+                "
+                data-no-round
+              />
+            }
+          }
+        }
+      }
+    </div>
+
+    @if (printedRound(); as printed) {
+      <section class="print-only compose" data-print-sheet>
+        <fold-element-title
+          variant="title"
+          [title]="roundLabel(printed.round)"
+          [subtitle]="dayLabel() + ' · ' + stopCountLabel(printed.stops.length)"
+        />
+        @for (line of printed.stops; track line.stop.stopId) {
+          @if (line.sheet; as sheet) {
+            <app-run-sheet-stop [stop]="sheet" [canSeePhotos]="canSeePhotos()" />
+          } @else {
+            <fold-card>
+              <fold-element-title
+                variant="title"
+                [title]="line.stop.reference"
+                subtitle="Absente de la feuille de route du jour"
+              />
+            </fold-card>
+          }
+        }
+      </section>
+    }
+  </div>
+</fold-page-layout>

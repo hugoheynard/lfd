@@ -231,6 +231,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // est un geste de réglage de la flotte, rare par nature.
   DeliveryVehicle: "production",
   DeliveryDeparture: "production",
+  // La composition (lot 3) : quelques écritures par geste, un matin.
+  DeliveryRound: "production",
+  DeliveryRoundStop: "production",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

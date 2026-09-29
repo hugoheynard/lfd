@@ -1,0 +1,54 @@
+.compose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+/* Une colonne par tournée, plus « à répartir » ; elles passent à la ligne au
+   téléphone plutôt que de défiler de côté. */
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  align-items: start;
+  gap: var(--fold-space-md);
+}
+
+.column,
+.line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.actions,
+.flags,
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.controls {
+  align-items: flex-end;
+}
+
+/* Sur papier, la seule tournée choisie ; à l'écran, jamais. */
+@media screen {
+  .print-only {
+    display: none;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none;
+  }
+}

@@ -41,6 +41,22 @@ export function isServiceDay(raw: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/u.test(raw);
 }
 
+/** Le paramètre d'URL qui porte le jour affiché — `?jour=AAAA-MM-JJ`. */
+export const DAY_QUERY_PARAM = 'jour';
+
+/**
+ * Le jour lu dans l'URL, ou `null` s'il n'y en a pas ou qu'il ne désigne pas
+ * un vrai jour du calendrier (`2026-13-45` a la forme et pas le sens) : la page
+ * retombe alors sur son défaut, sans erreur — un lien abîmé ouvre quand même.
+ */
+export function dayOfQuery(raw: string | null | undefined): string | null {
+  if (raw === null || raw === undefined || !isServiceDay(raw)) {
+    return null;
+  }
+  // Un jour qui déborde (31 février) est normalisé par `Date` : il ne se relit pas à l'identique.
+  return shiftDay(raw, 0) === raw ? raw : null;
+}
+
 function minutesOf(time: string): number {
   const match = /^(\d{1,2}):(\d{2})/u.exec(time);
   return match === null

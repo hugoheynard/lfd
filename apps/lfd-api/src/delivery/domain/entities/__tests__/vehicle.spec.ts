@@ -4,7 +4,7 @@ import {
   VehicleAlreadyRetiredError,
   VehicleNotRetiredError,
 } from "../../errors/delivery-errors.js";
-import { Vehicle } from "../vehicle.js";
+import { activeOnDay, Vehicle } from "../vehicle.js";
 
 const CREATED = new Date(0);
 const LATER = new Date(60_000);
@@ -71,5 +71,32 @@ describe("Vehicle", () => {
     const state = { ...kangoo().toState(), plate: "n'importe quoi" };
     expect(() => Vehicle.restore(state)).toThrow(InvalidLicensePlateError);
     expect(Vehicle.restore(kangoo().toState()).toState()).toEqual(kangoo().toState());
+  });
+});
+
+describe("« actif ce jour-là » (C5, corrigé par C14)", () => {
+  // Des jours comparés à une date de retrait écrite dans le test, jamais à l'horloge.
+  it("un véhicule en service est actif tous les jours", () => {
+    expect(activeOnDay(null, "2030-03-12")).toBe(true);
+  });
+
+  it("retiré le jour J (Paris) : actif J, plus J+1", () => {
+    const retiredAt = new Date("2030-03-12T15:00:00.000Z");
+    expect(activeOnDay(retiredAt, "2030-03-11")).toBe(true);
+    expect(activeOnDay(retiredAt, "2030-03-12")).toBe(true);
+    expect(activeOnDay(retiredAt, "2030-03-13")).toBe(false);
+  });
+
+  it("lit le jour du retrait À PARIS : 23 h 30 UTC un 12 mars est déjà le 13", () => {
+    const retiredAt = new Date("2030-03-12T23:30:00.000Z");
+    expect(activeOnDay(retiredAt, "2030-03-13")).toBe(true);
+    expect(activeOnDay(retiredAt, "2030-03-14")).toBe(false);
+  });
+
+  it("l'entité délègue à la même règle", () => {
+    const vehicle = kangoo();
+    vehicle.retire(new Date("2030-03-12T15:00:00.000Z"));
+    expect(vehicle.activeOn("2030-03-12")).toBe(true);
+    expect(vehicle.activeOn("2030-03-13")).toBe(false);
   });
 });

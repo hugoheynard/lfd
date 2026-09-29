@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import type { DeliveryRunSheetView } from '@lfd/contracts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -8,10 +10,19 @@ import { stopOf } from '../run-sheet.fixture';
 import { RunSheetService } from '../run-sheet.service';
 import { DeliveryPage } from './livraison-page';
 
-async function mount(read: (day: string) => Promise<DeliveryRunSheetView>, canSeePhotos = false) {
+async function mount(
+  read: (day: string) => Promise<DeliveryRunSheetView>,
+  canSeePhotos = false,
+  query: Record<string, string> = {},
+) {
   const asked: string[] = [];
+  TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      {
+        provide: ActivatedRoute,
+        useValue: { snapshot: { queryParamMap: convertToParamMap(query) } },
+      },
       {
         provide: RunSheetService,
         useValue: {
@@ -109,5 +120,28 @@ describe('DeliveryPage', () => {
     expect(element.querySelector('[data-procedure]')?.textContent).toContain('Par la cour');
     expect(element.querySelector('app-run-sheet-step-photo')).toBeNull();
     expect(element.textContent).toContain('Sonner deux fois');
+  });
+
+  it('rouvre le jour de l’URL, et retombe sur demain si le paramètre est mal formé', async () => {
+    const empty = (day: string) => Promise.resolve({ day, stops: [] });
+    expect((await mount(empty, false, { jour: '2026-10-24' })).asked).toEqual(['2026-10-24']);
+    expect((await mount(empty, false, { jour: 'hier' })).asked).toEqual([
+      shiftDay(parisDayOf(new Date()), 1),
+    ]);
+  });
+
+  it('écrit le jour choisi dans l’URL sans empiler l’historique', async () => {
+    const { fixture, asked } = await mount((day) => Promise.resolve({ day, stops: [] }));
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    fixture.debugElement
+      .query(By.css('fold-date'))
+      .triggerEventHandler('valueChange', '2026-10-24');
+    await fixture.whenStable();
+
+    expect(asked.at(-1)).toBe('2026-10-24');
+    expect(navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({ queryParams: { jour: '2026-10-24' }, replaceUrl: true }),
+    );
   });
 });

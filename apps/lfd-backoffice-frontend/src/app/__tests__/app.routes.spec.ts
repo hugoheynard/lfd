@@ -236,6 +236,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // montre rien d'elle-même ; chaque vue porte son garde.
   livraison: OPEN,
   'livraison/feuille-de-route': 'delivery_run_sheet:read',
+  'livraison/tournees': 'delivery_rounds:read',
   'livraison/vehicules': 'delivery_settings:read',
   'livraison/depart': 'delivery_settings:read',
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.

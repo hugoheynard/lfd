@@ -79,6 +79,7 @@ describe('les domaines rangés par outil', () => {
   it('range les droits de livraison dans leur propre groupe', () => {
     expect(toolOf('delivery_run_sheet')).toBe('delivery');
     expect(toolOf('delivery_settings')).toBe('delivery');
+    expect(toolOf('delivery_rounds')).toBe('delivery');
   });
 
   it('rattache le journal au transverse — il traverse les outils', () => {

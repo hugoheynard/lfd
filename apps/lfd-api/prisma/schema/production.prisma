@@ -438,6 +438,8 @@ model DeliveryVehicle {
   createdAt DateTime @map("created_at")
   updatedAt DateTime @map("updated_at")
 
+  rounds DeliveryRound[]
+
   @@map("delivery_vehicle")
   @@schema("production")
 }
@@ -462,5 +464,79 @@ model DeliveryDeparture {
   updatedByRole    String   @map("updated_by_role")
 
   @@map("delivery_departure")
+  @@schema("production")
+}
+
+/// Une **tournée** — la racine de la composition (lot 3, C1) : un jour, un
+/// véhicule, un numéro de passage, et la liste ordonnée de ses arrêts.
+///
+/// Sa `version` est la SIENNE : composer une tournée ne verrouille pas les
+/// autres. Unique par `(service_day, vehicle_id, passage)` (C17) — un véhicule
+/// fait plusieurs tournées dans la journée (Q13), jamais deux fois la même.
+/// Jamais supprimée. Trois déclencheurs de journal de journée (C6), dans la
+/// migration `20260929140200_les_tournees`.
+model DeliveryRound {
+  /// Assigné par la commande (`IdGenerator`).
+  id          String @id
+  serviceDay  String @map("service_day") @db.VarChar(10)
+  vehicleId   String @map("vehicle_id")
+  /// Le nom du véhicule RECOPIÉ à l'ouverture : un renommage ne réécrit pas l'historique.
+  vehicleName String @map("vehicle_name")
+  passage     Int
+  /// Avance d'une unité par écriture de la composition ; une écriture qui ne
+  /// présente pas la version lue est refusée.
+  version     Int
+
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @map("updated_at")
+
+  vehicle DeliveryVehicle     @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  stops   DeliveryRoundStop[]
+
+  @@unique([serviceDay, vehicleId, passage])
+  @@index([vehicleId, serviceDay])
+  @@map("delivery_round")
+  @@schema("production")
+}
+
+/// Un **arrêt** de tournée : une commande, à une place.
+///
+/// ## Un seul écrivain : la tournée (C10, corrigé le 2026-09-29)
+///
+/// La TOURNÉE écrit `round_id`, `position`, `removed_at`, `closed_at` — et
+/// `order_id`, `service_day`, `created_at` à la création. Retirer pose
+/// `removed_at` : jamais de suppression physique. Déplacer (I7) change
+/// `round_id` et `position` de la MÊME ligne (C11). L'état d'exécution (chargé,
+/// livré, raté) vivra dans une AUTRE table, écrite par l'arrêt seul.
+///
+/// `closed_at` — écrivain : la tournée ; posé au lot 6 par `closeStop`, quand
+/// l'exécution rapporte livré ou raté. Nul à ce lot, mais relu et réécrit tel
+/// quel par l'adaptateur : deux écrivains sur une ligne, et un `save` de tournée
+/// l'écraserait. Il existe dès maintenant pour que « vivant » soit défini une
+/// fois (C12) : l'index unique partiel `delivery_round_stop_live_order_key` sur
+/// `order_id` des arrêts `removed_at IS NULL AND closed_at IS NULL` — écrit à la
+/// main, Prisma ne sait pas le dire. Une commande est dans au plus une tournée
+/// vivante, tous jours confondus (I3). Un arrêt clos n'est plus vivant : il ne
+/// se réordonne, ne se déplace ni ne se retire (I4).
+///
+/// `order_id` est OPAQUE : aucune clé étrangère vers `public.orders`.
+model DeliveryRoundStop {
+  id         String    @id
+  roundId    String    @map("round_id")
+  orderId    String    @map("order_id")
+  /// Dénormalisé depuis la tournée : le déclencheur de journée le lit ici (C6).
+  serviceDay String    @map("service_day") @db.VarChar(10)
+  /// 1..n, contigu parmi les arrêts vivants de la tournée (I2, tenu par l'agrégat).
+  position   Int
+  removedAt  DateTime? @map("removed_at")
+  /// Écrivain : la tournée ; posé au lot 6 par `closeStop`. Nul à ce lot.
+  closedAt   DateTime? @map("closed_at")
+  createdAt  DateTime  @map("created_at")
+
+  round DeliveryRound @relation(fields: [roundId], references: [id], onDelete: Restrict)
+
+  @@index([roundId])
+  @@index([orderId])
+  @@map("delivery_round_stop")
   @@schema("production")
 }

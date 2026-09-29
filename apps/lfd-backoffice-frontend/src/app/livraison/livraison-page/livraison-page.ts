@@ -7,18 +7,15 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import type { DeliveryRunSheetView } from '@lfd/contracts';
 import type { FoldViewToggleOption } from 'fold-ng';
 import {
-  FoldBadgeComponent,
   FoldButtonComponent,
-  FoldCardComponent,
   FoldDateComponent,
-  FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldFieldComponent,
   FoldFieldListComponent,
-  FoldLinkComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldViewToggleComponent,
@@ -26,21 +23,16 @@ import {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import {
-  addressLinesOf,
-  contactNameOf,
+  DAY_QUERY_PARAM,
+  dayOfQuery,
   isServiceDay,
-  mapHrefOf,
   parisDayOf,
   shiftDay,
   sortStops,
-  stateLabelOf,
-  stopTitleOf,
   summaryOf,
-  telHrefOf,
-  windowLabel,
 } from '../run-sheet';
 import { RunSheetService } from '../run-sheet.service';
-import { RunSheetStepPhoto } from '../run-sheet-step-photo/run-sheet-step-photo';
+import { RunSheetStop } from '../run-sheet-stop/run-sheet-stop';
 
 type SheetState =
   | { readonly status: 'loading' }
@@ -71,19 +63,15 @@ const TOMORROW = '1';
   selector: 'app-livraison-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldBadgeComponent,
     FoldButtonComponent,
-    FoldCardComponent,
     FoldDateComponent,
-    FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldFieldComponent,
     FoldFieldListComponent,
-    FoldLinkComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldViewToggleComponent,
-    RunSheetStepPhoto,
+    RunSheetStop,
   ],
   templateUrl: './livraison-page.html',
   styleUrl: './livraison-page.scss',
@@ -100,7 +88,13 @@ export class DeliveryPage {
     { value: TOMORROW, label: 'Demain' },
   ];
 
-  protected readonly day = signal(shiftDay(this.today, 1));
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+
+  /** Le jour de l'URL (`?jour=`) s'il est lisible, sinon demain. */
+  protected readonly day = signal(
+    dayOfQuery(this.route.snapshot.queryParamMap.get(DAY_QUERY_PARAM)) ?? shiftDay(this.today, 1),
+  );
   protected readonly dayChoice = computed(() => {
     const day = this.day();
     if (day === this.today) {
@@ -123,14 +117,6 @@ export class DeliveryPage {
   });
   protected readonly canSeePhotos = computed(() => this.permissions.can('b2b_companies:read'));
 
-  protected readonly windowLabel = windowLabel;
-  protected readonly stateLabelOf = stateLabelOf;
-  protected readonly stopTitleOf = stopTitleOf;
-  protected readonly addressLinesOf = addressLinesOf;
-  protected readonly contactNameOf = contactNameOf;
-  protected readonly telHrefOf = telHrefOf;
-  protected readonly mapHrefOf = mapHrefOf;
-
   /** Un numéro par lecture : une réponse lente d'un autre jour n'écrase pas la bonne. */
   private request = 0;
 
@@ -143,13 +129,28 @@ export class DeliveryPage {
   }
 
   protected pickChoice(value: string): void {
-    this.day.set(shiftDay(this.today, value === TODAY ? 0 : 1));
+    this.showDay(shiftDay(this.today, value === TODAY ? 0 : 1));
   }
 
   protected pickDate(value: string): void {
     if (isServiceDay(value)) {
-      this.day.set(value);
+      this.showDay(value);
     }
+  }
+
+  /**
+   * Le jour choisi s'écrit dans l'URL — un lien partagé ou une page rechargée
+   * rouvre le même. `replaceUrl` : parcourir dix jours n'empile pas dix pages
+   * à dépiler avec « retour ».
+   */
+  private showDay(day: string): void {
+    this.day.set(day);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { [DAY_QUERY_PARAM]: day },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   protected retry(): void {

@@ -90,6 +90,8 @@ enum StaffResource {
   delivery_run_sheet
   /// Les RÉGLAGES DE LIVRAISON — véhicules et point de départ (2026-09-29).
   delivery_settings
+  /// COMPOSER LES TOURNÉES — répartir et ordonner (2026-09-29, lot 3, Q12).
+  delivery_rounds
 
   staff_access
   staff_notifications

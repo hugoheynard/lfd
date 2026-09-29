@@ -78,8 +78,11 @@ describe('grantGroups', () => {
    * `delivery_run_sheet` et `delivery_settings` l'ont fait passer à 32 le
    * 2026-09-29 : lire la feuille de route n'est pas régler la flotte
    * (plan-preparation-de-tournee.md, lot 2, Q7).
+   *
+   * `delivery_rounds` l'a fait passer à 33 le même jour : composer les tournées
+   * est un droit créé avec son écran (lot 3, Q12).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(32);
+    expect(RESOURCE_COUNT).toBe(33);
   });
 });

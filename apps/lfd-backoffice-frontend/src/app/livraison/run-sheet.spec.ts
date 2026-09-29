@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   addressLinesOf,
+  dayOfQuery,
   mapHrefOf,
   parisDayOf,
   shiftDay,
@@ -99,5 +100,25 @@ describe('jours', () => {
 
   it('lit le jour à Paris, pas en UTC', () => {
     expect(parisDayOf(new Date('2026-09-29T22:30:00.000Z'))).toBe('2026-09-30');
+  });
+
+  it('lit le jour de l’URL quand c’est un vrai jour du calendrier', () => {
+    expect(dayOfQuery('2026-10-24')).toBe('2026-10-24');
+    expect(dayOfQuery('2028-02-29')).toBe('2028-02-29');
+  });
+
+  it('refuse sans erreur un jour absent, mal formé ou impossible', () => {
+    for (const raw of [
+      null,
+      undefined,
+      '',
+      'demain',
+      '2026-1-5',
+      '2026-13-01',
+      '2026-02-30',
+      '2026-10-24x',
+    ]) {
+      expect(dayOfQuery(raw)).toBeNull();
+    }
   });
 });

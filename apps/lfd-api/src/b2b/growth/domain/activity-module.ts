@@ -102,6 +102,8 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // n'a pas pris.
     "delivery_vehicle.",
     "delivery_departure.",
+    // La composition des tournées (lot 3, 2026-09-29) : même famille.
+    "delivery_round.",
     // L'heure limite posée sur un produit : même famille que celle d'un point.
     "order_time_limit.",
   ],

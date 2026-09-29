@@ -1,0 +1,38 @@
+:host {
+  display: block;
+}
+
+.flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.flags:empty {
+  display: none;
+}
+
+.line {
+  display: block;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding-inline-start: var(--fold-space-lg);
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+/* Un arrêt ne se coupe pas entre deux pages — on perdrait son adresse en
+   tournant la feuille. */
+@media print {
+  :host {
+    break-inside: avoid;
+  }
+}

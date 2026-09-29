@@ -13,8 +13,9 @@ import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
 /**
  * **Qui entre dans l'espace Livraison, et par quelle porte**
  * (plan-preparation-de-tournee.md, lot 2, Q7/Q8) : la feuille de route sous
- * `delivery_run_sheet`, la flotte et le départ sous `delivery_settings`. Le
- * rail et les gardes doivent dire la même chose, rôle par rôle.
+ * `delivery_run_sheet`, la flotte et le départ sous `delivery_settings`, et
+ * depuis le lot 3 les tournées sous `delivery_rounds` (Q12). Le rail et les
+ * gardes doivent dire la même chose, rôle par rôle.
  *
  * Les droits viennent de `resolveStaffPermissions`, pas d'une liste recopiée.
  */
@@ -68,8 +69,14 @@ function deliveryViewKeys(role: StaffRole): string[] {
 }
 
 describe("l'espace Livraison", () => {
-  it('ouvre les trois vues au comptoir, qui prépare les départs', async () => {
-    expect(deliveryViewKeys('comptoir')).toEqual(['feuille-de-route', 'vehicules', 'depart']);
+  it('ouvre les quatre vues au comptoir, qui prépare les départs et compose (Q12)', async () => {
+    expect(deliveryViewKeys('comptoir')).toEqual([
+      'feuille-de-route',
+      'tournees',
+      'vehicules',
+      'depart',
+    ]);
+    expect(await opens('comptoir', 'tournees')).toBe(true);
     expect(await opens('comptoir', 'vehicules')).toBe(true);
     expect(await opens('comptoir', 'depart')).toBe(true);
   });
@@ -78,6 +85,12 @@ describe("l'espace Livraison", () => {
     expect(deliveryViewKeys('support')).toEqual(['feuille-de-route']);
     expect(await opens('support', 'feuille-de-route')).toBe(true);
     expect(await opens('support', 'vehicules')).toBe(false);
+    expect(await opens('support', 'tournees')).toBe(false);
+  });
+
+  it('ne montre ni n’ouvre les tournées au commercial', async () => {
+    expect(deliveryViewKeys('commercial')).not.toContain('tournees');
+    expect(await opens('commercial', 'tournees')).toBe(false);
   });
 
   it('🔴 la coquille ne ferme aucune vue : ni la flotte à qui ne lit qu’elle, ni l’inverse', () => {

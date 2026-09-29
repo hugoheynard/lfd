@@ -1,0 +1,86 @@
+@let item = stop();
+<fold-card>
+  <fold-element-title
+    variant="title"
+    [title]="item.reference + ' · ' + stopTitleOf(item)"
+    [subtitle]="windowLabel(item.window)"
+  >
+    <fold-badge
+      titleAction
+      [variant]="stateLabelOf(item.state).variant"
+      [content]="stateLabelOf(item.state).label"
+    />
+  </fold-element-title>
+
+  <div class="flags">
+    @if (item.window?.source === 'default') {
+      <fold-badge variant="neutral" content="Horaire par défaut" data-default-window />
+    }
+    @if (item.signatureRequired) {
+      <fold-badge variant="accent" content="Signature exigée" data-signature />
+    }
+    @if (item.withoutAtelierSheet) {
+      <fold-badge variant="alert" content="Sans feuille d’atelier" data-no-sheet />
+    }
+    @if (item.addressBook === null) {
+      <fold-badge variant="warning" content="Adresse non reliée au carnet" data-unlinked />
+    }
+  </div>
+
+  <fold-field-list>
+    <fold-field
+      label="Adresse"
+      placeholder="Aucune adresse sur la commande"
+      [empty]="item.address === null"
+    >
+      @for (line of addressLinesOf(item); track $index) {
+        <span class="line">{{ line }}</span>
+      }
+      @if (item.addressBook?.gps; as gps) {
+        <fold-link icon="map-pin" [href]="mapHrefOf(gps)" target="_blank" rel="noopener">
+          Ouvrir la carte
+        </fold-link>
+      }
+    </fold-field>
+    <fold-field label="Contact" placeholder="Aucun contact" [empty]="item.contact === null">
+      @if (item.contact; as contact) {
+        {{ contactNameOf(contact) }} ·
+        <fold-link icon="phone" [href]="telHrefOf(contact.telephone)">
+          {{ contact.telephone }}
+        </fold-link>
+      }
+    </fold-field>
+    @if (item.orderNote !== '') {
+      <fold-field label="Note de commande">{{ item.orderNote }}</fold-field>
+    }
+    @if (item.addressBook; as book) {
+      @if (book.note !== '') {
+        <fold-field label="Note de l’adresse">{{ book.note }}</fold-field>
+      }
+    }
+  </fold-field-list>
+
+  @if (item.addressBook; as book) {
+    @if (book.procedure.length > 0) {
+      <ol class="steps" data-procedure>
+        @for (step of book.procedure; track step.id) {
+          <li class="step">
+            <strong>{{ step.title }}</strong>
+            @if (step.body !== '') {
+              <span class="line">{{ step.body }}</span>
+            }
+            @if (step.photoRevision !== null && canSeePhotos()) {
+              <app-run-sheet-step-photo
+                [companyId]="book.companyId"
+                [addressId]="book.addressId"
+                [stepId]="step.id"
+                [stepTitle]="step.title"
+                [revision]="step.photoRevision"
+              />
+            }
+          </li>
+        }
+      </ol>
+    }
+  }
+</fold-card>

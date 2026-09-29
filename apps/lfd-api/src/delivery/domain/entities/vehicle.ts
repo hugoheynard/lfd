@@ -1,3 +1,5 @@
+import { instantToLocal } from "@lfd/contracts";
+
 import {
   InvalidVehicleNameError,
   VehicleAlreadyRetiredError,
@@ -92,6 +94,11 @@ export class Vehicle {
     return this.currentRetiredAt === null;
   }
 
+  /** Peut-il porter une tournée du jour `day` (`AAAA-MM-JJ`) ? Cf. {@link activeOnDay}. */
+  activeOn(day: string): boolean {
+    return activeOnDay(this.currentRetiredAt, day);
+  }
+
   /**
    * Corrige le nom et la plaque. Permis sur un véhicule retiré : corriger une
    * faute de saisie ne le remet pas en service.
@@ -130,6 +137,19 @@ export class Vehicle {
       updatedAt: this.currentUpdatedAt,
     };
   }
+}
+
+/**
+ * **« Actif ce jour-là »** (plan de tournée, lot 3, C5 corrigé par C14) : un
+ * véhicule peut porter une tournée du jour J s'il n'est pas retiré, ou si le
+ * jour **de Paris** de son retrait est J ou après. Le retirer aujourd'hui laisse
+ * donc vivre la tournée d'aujourd'hui.
+ *
+ * Le jour en paramètre, sans horloge : la règle est pure. Les jours
+ * `AAAA-MM-JJ` se comparent comme des chaînes.
+ */
+export function activeOnDay(retiredAt: Date | null, day: string): boolean {
+  return retiredAt === null || instantToLocal(retiredAt).day >= day;
 }
 
 /** @throws {InvalidVehicleNameError} vide ou trop long. */

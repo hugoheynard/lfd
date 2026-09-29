@@ -328,7 +328,7 @@ C'est le précédent de `order_handover` : code dans son bloc
 `lint:cross-schema-join` sur une jointure SQL écrite à la main entre une
 tournée et une table du fournil — la limite qu'a déjà le retrait.
 
-### Lot 3 — Composer : répartir, puis ordonner
+### Lot 3 — Composer : répartir, puis ordonner — ✅ bâti le 2026-09-29
 
 **Ce que l'équipe obtient** : sur `/livraison/tournees`, pour le jour J, une colonne par
 véhicule actif et une colonne « à répartir ». On **affecte** chaque commande à
@@ -525,6 +525,18 @@ tournées.
   écriture pour `admin` et `comptoir`.
 - **Q13 — oui.** Un véhicule peut faire plusieurs tournées dans la journée
   (numéro de passage, unique par `(service_day, vehicle_id, passage)`).
+
+#### Ce que la construction a tranché (2026-09-29)
+
+Trois décisions prises en bâtissant, que le plan ne disait pas :
+
+- **Une tournée « vivante »** (qui empêche de retirer son véhicule) a au moins
+  un arrêt ni retiré ni clos. Une tournée ne se supprime pas : vidée, elle
+  aurait retenu son véhicule pour toujours.
+- **Affecter refuse une commande d'un autre jour** que celui de la tournée.
+- ⚠️ **Clore un arrêt au milieu laisse un trou** dans les positions vivantes,
+  que l'agrégat refuse comme corrompu (I2). Le `closeStop` du lot 6 devra
+  **resserrer** les positions restantes.
 
 ### Lot 4 — Le chargement, véhicule par véhicule
 
