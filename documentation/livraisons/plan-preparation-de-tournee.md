@@ -1290,6 +1290,10 @@ Ce que ça dit :
   facteur de détour unique ne corrige les deux : c'est la preuve que la
   **répartition** du lot 7 serait fausse sans OSRM, pas seulement l'ordre.
 
+**Recoupé par Hugo le même jour** : comparé à Google Maps sur ces trajets,
+OSRM tombe « à 4 minutes près ». Deux sources indépendantes — un trajet vécu,
+un calculateur de référence — disent la même chose.
+
 **Verdict** : le lot 8 vaut son coût, et il coûte peu. Les réglages de
 facteur de détour et de vitesse du lot 7 ne servent plus qu'au **repli** quand
 OSRM ne répond pas.
