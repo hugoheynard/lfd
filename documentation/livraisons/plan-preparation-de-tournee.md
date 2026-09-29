@@ -1298,6 +1298,31 @@ un calculateur de référence — disent la même chose.
 facteur de détour et de vitesse du lot 7 ne servent plus qu'au **repli** quand
 OSRM ne répond pas.
 
+#### L8-C7 — Comment `lfd-api` joint OSRM (relu le 2026-09-29)
+
+⚠️ **L8-C1 supposait un second conteneur « appelé par `lfd-api` seul ». Il
+n'a pas dit comment**, et c'est la vraie question : `lfd-api` n'a **aucune
+adresse publique** (`apps/lfd-api/wrangler.jsonc` : `workers_dev: false`, joint
+par le seul service binding de la passerelle — c'est ce qui fait d'elle une
+frontière). Un conteneur OSRM à part a donc besoin d'être joignable depuis
+l'intérieur du conteneur `lfd-api`, sans ouvrir de porte au monde. Trois
+formes :
+
+|       | Forme                                                                                                | Pour                                                                                                                       | Contre                                                                                                                                  |
+| ----- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **A** | **OSRM dans l'image de `lfd-api`**, un second processus sur `localhost`                              | aucune adresse, aucun déploiement de plus ; 50 Mo de mémoire tiennent dans l'instance `basic` (1 Gio) ; aucun appel réseau | l'image grossit d'environ 220 Mo ; refaire la carte chaque mois = redéployer `lfd-api` ; deux processus dans un conteneur, à surveiller |
+| **B** | **Second conteneur** derrière son propre Worker, sans adresse publique, joint par un service binding | deux vies séparées, la carte se refait sans toucher l'API                                                                  | un conteneur ne tient pas de service binding : l'appel sortant de `lfd-api` devrait repasser par un Worker. **Mécanisme non vérifié**   |
+| **C** | **Second conteneur à adresse publique**, protégé par un secret partagé                               | simple à câbler                                                                                                            | une porte de plus ouverte au monde, à côté de la passerelle : l'inverse du principe tenu depuis le 2026-08-13                           |
+
+**Recommandation : A**, parce qu'il n'ouvre rien et ne dépend d'aucun
+mécanisme non vérifié. La carte peut ne pas être dans l'image : téléchargée au
+démarrage depuis le bucket privé (R2), elle se met à jour sans redéployer — au
+prix d'un démarrage plus lent de quelques secondes, **à mesurer**. C'est le
+choix à faire en second, une fois A retenu.
+
+Ce choix touche le **déploiement** et finira dans le runbook : **`vitruve`
+d'office** avant de bâtir.
+
 #### Questions à Hugo
 
 - **L8-Q1 — ✅ la Savoie seule** (Hugo, 2026-09-29) : « je vais jusqu'à La
