@@ -1352,6 +1352,42 @@ d'office** avant de bâtir.
 - **En dev et en e2e** : pas d'OSRM, URL absente → vol d'oiseau. Un
   `docker compose` optionnel lance OSRM à côté pour qui veut le tester.
 
+#### L8-C9 — Plus propre : un service à part, joint sans adresse (2026-09-29)
+
+Hugo : « il n'y a pas plus propre plutôt que de l'embarquer dans l'image de
+l'API ? ». Si : la forme B de L8-C7 était écartée faute de savoir comment un
+conteneur en joint un autre sans adresse publique. **Le mécanisme existe** —
+lu le 2026-09-29 dans la documentation Cloudflare
+(`developers.cloudflare.com/containers/platform-details/outbound-traffic/`) :
+les **outbound handlers**, des proxys de sortie qui tournent sur la même
+machine que le conteneur et ont accès à tous les bindings du Worker ;
+`outboundByHost` route un nom d'hôte vers une fonction du Worker. Et la
+version installée, `@cloudflare/containers` 0.3.7, l'expose déjà
+(`outboundByHost` présent dans `dist/lib/container.d.ts`).
+
+**La forme B-bis** :
+
+- un **second conteneur** `Osrm`, déclaré dans le **même** `wrangler.jsonc` que
+  `lfd-api` (une seconde classe de conteneur, sa propre image) ;
+- `lfd-api` appelle `http://osrm.internal/table/…` ; le Worker de `lfd-api`
+  l'intercepte par `outboundByHost` et le passe au conteneur `Osrm` par son
+  binding. **Aucune adresse publique, aucun passage par Internet**, la
+  passerelle reste la seule porte d'entrée ;
+- **deux vies séparées** : l'image OSRM (binaire + graphe) se reconstruit
+  chaque mois **sans toucher** à l'image de l'API ; l'API ne grossit pas et ne
+  porte qu'un processus ; OSRM a son propre type d'instance (`lite` suffit) et
+  s'endort seul ;
+- ⚠️ ports 80/443 seulement pour l'interception : OSRM écoute sur 5000 dans
+  son conteneur, c'est le Worker qui fait le pont.
+
+**Ce qui n'est pas vérifié** : l'interception en conditions réelles (un essai
+de déploiement la prouvera), le comportement quand le conteneur `Osrm` dort
+(premier appel = réveil, 0,6 s mesurés en local), et le coût d'une seconde
+instance.
+
+**Recommandation : B-bis, à la place de A**, si Hugo confirme. A reste le repli
+si l'interception ne tient pas à l'essai.
+
 #### Questions à Hugo
 
 - **L8-Q1 — ✅ la Savoie seule** (Hugo, 2026-09-29) : « je vais jusqu'à La
