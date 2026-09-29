@@ -39,6 +39,9 @@ const AREAS = {
   front_admin: (name) => name === "lfd-backoffice-frontend",
   front_platform: (name) => name === "lfc-ecommerce-frontend",
   gateway: (name) => name === "lfd-gateway",
+  // Le Worker de la carte routière (plan de tournée, lot 8) : un paquet sans
+  // dépendance interne, donc aucun autre job ne le couvrait.
+  osrm: (name) => name === "lfd-osrm",
 };
 
 const ALL = Object.fromEntries(Object.keys(AREAS).map((key) => [key, true]));
