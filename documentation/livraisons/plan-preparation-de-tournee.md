@@ -1103,16 +1103,39 @@ de fenêtre (L7-C4). Éditée sur l'écran « Point de départ » du lot 2, sous
 chaque tournée touchée : son identifiant, son véhicule, la liste des arrêts
 **avant** et **après**. Figé dès le premier en production.
 
+#### Tranché par Hugo le 2026-09-29
+
+- **L7-Q1 — oui, la Base Adresse Nationale**, et « si j'ai moi-même les points
+  GPS ? » : ils **passent avant** le géocodage (L7-C1). Vérifié le
+  2026-09-29 : le formulaire d'adresse de livraison du carnet
+  (`packages/b2b-ui/src/company/delivery-address-form/`, utilisé par la fiche
+  client du back-office et par « Mon compte ») a **déjà** ses champs latitude
+  et longitude. Un point saisi là n'est jamais géocodé. S'ils existent en
+  liste, un import en masse est possible (**L7-Q4**).
+- **L7-Q2 — oui** : « Proposer » complète ce qui n'est pas placé ; une case
+  « tout recomposer » pour le reste.
+- **L7-Q3 — la montagne, et deux contraintes au lieu d'une heure.** Hugo : peu
+  de villes ; « l'heure la plus tôt à laquelle un départ peut se faire », et
+  « la contrainte dépend aussi de la distance max de la tournée ». Donc
+  **L7-C15** :
+  - le réglage devient **l'heure de départ au plus tôt**, pas une heure fixe :
+    chaque tournée part au plus tôt à cette heure, et **plus tard** si sa
+    première fenêtre le permet (départ = début de la première fenêtre moins le
+    trajet, sans descendre sous l'heure au plus tôt) ;
+  - une **durée maximale d'une tournée** (aller, arrêts, retour) : le
+    calculateur n'en compose pas de plus longue. Ce qui ne tient pas passe à un
+    **second passage** du même véhicule (Q13), ou reste à répartir, signalé ;
+  - un **temps d'arrêt** moyen par livraison (se garer, porter, revenir), sans
+    lequel la durée d'une tournée à vingt arrêts est fausse d'une heure ;
+  - vitesse et facteur de détour restent des réglages : 1,4 et 35 km/h comme
+    point de départ, à recaler sur les premières tournées réelles.
+
 **Questions à Hugo** :
 
-- **L7-Q1** — D'accord pour géocoder par la Base Adresse Nationale (adresses
-  envoyées à un service public français), avec le cache ?
-- **L7-Q2** — « Proposer » recompose-t-il **aussi** ce qu'un humain a déjà placé
-  (recommandé : non par défaut, une case « tout recomposer »), ou ne fait-il
-  que compléter ?
-- **L7-Q3** — Le facteur de détour et la vitesse moyenne : une première valeur
-  (recommandé : 1,4 et 35 km/h en montagne), à ajuster à l'usage dans les
-  réglages de livraison ?
+- **L7-Q4** — Tes points GPS, tu les as **en liste** (tableur) à importer d'un
+  coup, ou tu les saisiras adresse par adresse dans le carnet ?
+- **L7-Q5** — Une première valeur pour la **durée maximale** d'une tournée et
+  pour le **temps d'arrêt** moyen ?
 
 ### Plus tard, et seulement sur décision
 
