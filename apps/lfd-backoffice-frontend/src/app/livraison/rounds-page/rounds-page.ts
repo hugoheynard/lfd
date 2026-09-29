@@ -36,6 +36,7 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { canReadDeliverySettings } from '../delivery-settings-access';
 import { parisTimeOf } from '../delivery-loading';
 import { DeliveryRoundsService } from '../delivery-rounds.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
@@ -148,7 +149,7 @@ export class RoundsPage {
 
   protected readonly canWrite = computed(() => this.permissions.can('delivery_rounds:write'));
   protected readonly canReadSettings = computed(() =>
-    this.permissions.can('delivery_settings:read'),
+    canReadDeliverySettings((permission) => this.permissions.can(permission)),
   );
   protected readonly canSeePhotos = computed(() => this.permissions.can('b2b_companies:read'));
 

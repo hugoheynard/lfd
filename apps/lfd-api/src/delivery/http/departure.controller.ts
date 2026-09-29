@@ -2,7 +2,7 @@ import { type DeparturePayload, departurePayloadSchema, type DepartureView } fro
 import { Body, Controller, Get, HttpCode, HttpStatus, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface, RequireAnyPermission } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { ChooseDepartureCommand } from "../application/commands/choose-departure.command.js";
@@ -21,7 +21,12 @@ export class DepartureController {
     private readonly queries: QueryBus,
   ) {}
 
+  /**
+   * La lecture s'ouvre aussi à qui lit les tournées (Q10 « A ») : préparer un
+   * départ demande de voir ce réglage, jamais de le modifier.
+   */
   @Get()
+  @RequireAnyPermission("delivery_settings:read", "delivery_rounds:read")
   read(): Promise<DepartureView> {
     return this.queries.execute<GetDepartureQuery, DepartureView>(new GetDepartureQuery());
   }

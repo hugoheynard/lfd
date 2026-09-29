@@ -14,7 +14,7 @@
 /** Clé de la ressource déclarée par un contrôleur admin. */
 export const ADMIN_RESOURCE_KEY = "admin:resource";
 
-/** Clé de la permission explicitement exigée par une route. */
+/** Clé des permissions explicitement exigées par une route — l'une suffit. */
 export const ADMIN_PERMISSION_KEY = "admin:permission";
 
 /** Clé d'une surface qui ne parle que de **soi**. */

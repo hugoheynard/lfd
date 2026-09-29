@@ -29,6 +29,7 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { canReadDeliverySettings } from '../delivery-settings-access';
 import { NotifyService } from '../../notify.service';
 import { saveBlob } from '../../shared/download/save-blob';
 import { DayImport } from '../day-import/day-import';
@@ -96,9 +97,10 @@ const DEPARTURE_OPTIONS: readonly FoldViewToggleOption[] = [
  * (L9-C7, sous `delivery_rounds:write` — les boutons disparaissent sans), part
  * d'une vraie journée copiée (L9-C8), et s'exporte toujours en fichier JSON.
  *
- * La flotte et les réglages se lisent sous `delivery_settings:read`, que la
- * page (sous `delivery_rounds:read`) n'exige pas : sans eux, les champs
- * restent vides et l'écran le dit — aucune valeur n'est inventée.
+ * La flotte et les réglages se lisent sous `delivery_settings:read` OU
+ * `delivery_rounds:read` (Q10 « A ») — donc sous le droit même de la page.
+ * Si leur lecture échoue, les champs restent vides et l'écran le dit — aucune
+ * valeur n'est inventée.
  */
 @Component({
   selector: 'app-simulator-page',
@@ -388,7 +390,7 @@ export class SimulatorPage {
   }
 
   private async load(): Promise<void> {
-    const readable = this.permissions.can('delivery_settings:read');
+    const readable = canReadDeliverySettings((permission) => this.permissions.can(permission));
     const [fleet, settings] = await Promise.allSettled([
       readable ? this.fleet.vehicles() : Promise.reject(new Error('sans droit')),
       readable ? this.routing.settings() : Promise.reject(new Error('sans droit')),

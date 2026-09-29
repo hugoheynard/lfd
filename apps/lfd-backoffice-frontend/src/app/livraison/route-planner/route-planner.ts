@@ -101,7 +101,7 @@ export class RoutePlanner {
   /** La société de chaque commande, quand la feuille de route la connaît. */
   readonly companies = input<ReadonlyMap<string, string>>(new Map());
   readonly canOpenClients = input(false);
-  /** `delivery_settings:read` : le mode se préremplit par le défaut des réglages. */
+  /** Lecture des réglages (`canReadDeliverySettings`) : le mode se préremplit par leur défaut. */
   readonly canReadSettings = input(false);
   /** La composition du jour jointe à sa feuille de route — les noms, les lieux, les tournées gardées. */
   readonly composed = input<ComposedDay | null>(null);

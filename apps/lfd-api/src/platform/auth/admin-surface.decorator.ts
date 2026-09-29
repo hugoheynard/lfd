@@ -41,7 +41,26 @@ export function AdminSurface(resource: StaffResource): ClassDecorator {
  * HTTP impliquerait. À réserver aux cas où le verbe ment sur l'intention.
  */
 export function RequirePermission(permission: StaffPermission): MethodDecorator {
-  return SetMetadata(ADMIN_PERMISSION_KEY, permission);
+  return SetMetadata(ADMIN_PERMISSION_KEY, [permission]);
+}
+
+/**
+ * Exige **l'une OU l'autre** des permissions listées sur une route.
+ *
+ * Pour une lecture qu'un second métier doit voir sans recevoir la ressource
+ * entière : la flotte, le départ et les réglages du calcul se lisent sous
+ * `delivery_settings:read` **ou** `delivery_rounds:read`, parce que préparer
+ * une tournée demande de les voir, jamais de les modifier (plan de préparation
+ * de tournée, Q10 « A »). L'écriture, elle, reste déduite du verbe.
+ *
+ * Au moins une permission est exigée par la signature : une liste vide
+ * n'exprimerait rien, et « aucune exigence » est le travail d'`AdminSelfSurface`.
+ */
+export function RequireAnyPermission(
+  first: StaffPermission,
+  ...others: readonly StaffPermission[]
+): MethodDecorator {
+  return SetMetadata(ADMIN_PERMISSION_KEY, [first, ...others]);
 }
 
 /**

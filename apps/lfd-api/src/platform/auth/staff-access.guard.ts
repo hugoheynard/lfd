@@ -59,10 +59,10 @@ export class StaffAccessGuard implements CanActivate {
     // Une permission déclarée explicitement l'emporte sur le caractère réflexif :
     // sinon `@RequirePermission` posée sur `/admin/me` serait ignorée en silence,
     // et on croirait avoir restreint une route qui ne l'est pas.
-    const explicit = this.declaredPermission(context);
-    const required =
+    const explicit = this.declaredPermissions(context);
+    const required: readonly StaffPermission[] | null =
       explicit ??
-      (this.isReflexive(context) ? null : this.resourcePermission(context, request.method));
+      (this.isReflexive(context) ? null : [this.resourcePermission(context, request.method)]);
 
     const access = await this.resolver.resolve(principal);
     if (access === null) {
@@ -70,7 +70,7 @@ export class StaffAccessGuard implements CanActivate {
       // distingue pas l'inconnu du non-autorisé.
       throw new ForbiddenException("Accès refusé.");
     }
-    if (required !== null && !hasStaffPermission(access.permissions, required)) {
+    if (required !== null && !required.some((p) => hasStaffPermission(access.permissions, p))) {
       throw new ForbiddenException("Accès refusé.");
     }
     request.access = access;
@@ -88,12 +88,12 @@ export class StaffAccessGuard implements CanActivate {
     );
   }
 
-  /** La permission que la route déclare explicitement, s'il y en a une. */
-  private declaredPermission(context: ExecutionContext): StaffPermission | undefined {
-    return this.reflector.getAllAndOverride<StaffPermission | undefined>(ADMIN_PERMISSION_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+  /** Les permissions que la route déclare explicitement (l'une suffit), s'il y en a. */
+  private declaredPermissions(context: ExecutionContext): readonly StaffPermission[] | undefined {
+    return this.reflector.getAllAndOverride<readonly StaffPermission[] | undefined>(
+      ADMIN_PERMISSION_KEY,
+      [context.getHandler(), context.getClass()],
+    );
   }
 
   /** À défaut de déclaration : la ressource de la surface, et le verbe pour l'action. */

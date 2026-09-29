@@ -109,7 +109,9 @@ const WRITER: readonly StaffPermission[] = [
 
 async function boot(
   grants: readonly StaffPermission[] = ['delivery_rounds:read', 'delivery_settings:read'],
+  settingsDown = false,
 ): Promise<ComponentFixture<SimulatorPage>> {
+  const down = (): Promise<never> => Promise.reject(new Error('lecture refusée'));
   wire = { sent: [], refuse: null, created: [], replaced: [], saved: [], fromDay: [] };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -117,15 +119,14 @@ async function boot(
     providers: [
       {
         provide: DeliverySettingsService,
-        useValue: { vehicles: () => Promise.resolve(FLEET) } satisfies Pick<
-          DeliverySettingsService,
-          'vehicles'
-        >,
+        useValue: {
+          vehicles: () => (settingsDown ? down() : Promise.resolve(FLEET)),
+        } satisfies Pick<DeliverySettingsService, 'vehicles'>,
       },
       {
         provide: DeliveryRoutingService,
         useValue: {
-          settings: () => Promise.resolve(SETTINGS),
+          settings: () => (settingsDown ? down() : Promise.resolve(SETTINGS)),
           simulate: (payload: DeliverySimulationPayload) => {
             wire.sent.push(payload);
             return wire.refuse === null
@@ -218,8 +219,15 @@ describe('SimulatorPage', () => {
     );
   });
 
-  it('sans droit sur les réglages, laisse les champs vides, le dit, et refuse de proposer', async () => {
+  it('avec la seule lecture des tournées, pré-remplit la flotte et les réglages (Q10 « A »)', async () => {
     const fixture = await boot(['delivery_rounds:read']);
+    expect(host(fixture).querySelectorAll('[data-vehicle]')).toHaveLength(1);
+    expect(host(fixture).querySelector('[data-fleet-unread]')).toBeNull();
+    expect(host(fixture).querySelector('[data-settings-unread]')).toBeNull();
+  });
+
+  it('si la lecture des réglages échoue, laisse les champs vides, le dit, et refuse de proposer', async () => {
+    const fixture = await boot(['delivery_rounds:read'], true);
     expect(host(fixture).querySelector('[data-fleet-unread]')).not.toBeNull();
     expect(host(fixture).querySelector('[data-settings-unread]')).not.toBeNull();
 

@@ -6,7 +6,7 @@ import {
 import { Body, Controller, Get, HttpCode, HttpStatus, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface, RequireAnyPermission } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { SetRoutingSettingsCommand } from "../application/commands/set-routing-settings.command.js";
@@ -26,7 +26,12 @@ export class RoutingSettingsController {
     private readonly queries: QueryBus,
   ) {}
 
+  /**
+   * La lecture s'ouvre aussi à qui lit les tournées (Q10 « A ») : préparer un
+   * départ demande de voir ce réglage, jamais de le modifier.
+   */
   @Get()
+  @RequireAnyPermission("delivery_settings:read", "delivery_rounds:read")
   read(): Promise<DeliveryRoutingSettingsView> {
     return this.queries.execute<GetRoutingSettingsQuery, DeliveryRoutingSettingsView>(
       new GetRoutingSettingsQuery(),

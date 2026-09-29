@@ -7,7 +7,7 @@ import {
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface, RequireAnyPermission } from "../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { AddVehicleCommand } from "../application/commands/add-vehicle.command.js";
 import { CorrectVehicleCommand } from "../application/commands/correct-vehicle.command.js";
@@ -31,7 +31,12 @@ export class VehiclesController {
     private readonly queries: QueryBus,
   ) {}
 
+  /**
+   * La lecture s'ouvre aussi à qui lit les tournées (Q10 « A ») : préparer un
+   * départ demande de voir ce réglage, jamais de le modifier.
+   */
   @Get()
+  @RequireAnyPermission("delivery_settings:read", "delivery_rounds:read")
   list(): Promise<VehiclesView> {
     return this.queries.execute<ListVehiclesQuery, VehiclesView>(new ListVehiclesQuery());
   }

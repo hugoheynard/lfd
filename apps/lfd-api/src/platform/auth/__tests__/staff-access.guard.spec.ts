@@ -7,7 +7,12 @@ import type { App } from "supertest/types";
 import { AppConfig } from "../../config/app-config.js";
 import { AdminAuthGuard } from "../admin-auth.guard.js";
 import { AdminTokenVerifier } from "../admin-token.verifier.js";
-import { AdminSelfSurface, AdminSurface, RequirePermission } from "../admin-surface.decorator.js";
+import {
+  AdminSelfSurface,
+  AdminSurface,
+  RequireAnyPermission,
+  RequirePermission,
+} from "../admin-surface.decorator.js";
 import { Public } from "../public.decorator.js";
 import { StaffAccessGuard } from "../staff-access.guard.js";
 import { StaffAccessResolver } from "../staff-access.resolver.js";
@@ -52,6 +57,22 @@ class ProbeOrdersController {
   }
 }
 
+/** Une lecture ouverte à deux métiers : l'une OU l'autre permission suffit. */
+@Controller("admin/probe-fleet")
+@AdminSurface("delivery_settings")
+class ProbeEitherController {
+  @Get()
+  @RequireAnyPermission("delivery_settings:read", "delivery_rounds:read")
+  read(): string {
+    return "read";
+  }
+
+  @Post()
+  write(): string {
+    return "write";
+  }
+}
+
 /** Surface réflexive AVEC une exigence explicite : la plus stricte l'emporte. */
 @Controller("admin/probe-me")
 @AdminSelfSurface()
@@ -85,7 +106,12 @@ async function bootWith(permissions: readonly StaffPermission[]): Promise<INestA
       Promise.resolve({ staffUserId: "s1", role: "comptabilite", permissions }),
   };
   const moduleRef = await Test.createTestingModule({
-    controllers: [ProbeOrdersController, ProbeReflexiveController, ProbeUndeclaredController],
+    controllers: [
+      ProbeOrdersController,
+      ProbeEitherController,
+      ProbeReflexiveController,
+      ProbeUndeclaredController,
+    ],
     providers: [
       StaffAccessGuard,
       AdminAuthGuard,
@@ -150,6 +176,34 @@ describe("StaffAccessGuard — la déclaration explicite gagne", () => {
 
     await request(app.getHttpServer()).get("/admin/probe-me").expect(200);
     await request(app.getHttpServer()).get("/admin/probe-me/restreint").expect(403);
+  });
+});
+
+describe("StaffAccessGuard — l'une OU l'autre permission", () => {
+  let app: INestApplication<App>;
+
+  afterEach(async () => {
+    await app.close();
+  });
+
+  it("laisse lire avec la première permission seule", async () => {
+    app = await bootWith(["delivery_settings:read"]);
+
+    await request(app.getHttpServer()).get("/admin/probe-fleet").expect(200);
+  });
+
+  it("laisse lire avec la seconde seule, sans ouvrir l'écriture", async () => {
+    // Q10 « A » : qui lit les tournées lit la flotte, et ne la modifie pas.
+    app = await bootWith(["delivery_rounds:read", "delivery_rounds:write"]);
+
+    await request(app.getHttpServer()).get("/admin/probe-fleet").expect(200);
+    await request(app.getHttpServer()).post("/admin/probe-fleet").expect(403);
+  });
+
+  it("refuse qui n'a aucune des deux", async () => {
+    app = await bootWith(["b2b_orders:read", "delivery_loading:read"]);
+
+    await request(app.getHttpServer()).get("/admin/probe-fleet").expect(403);
   });
 });
 
