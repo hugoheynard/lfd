@@ -1251,8 +1251,11 @@ admise. Les ordres de grandeur écrits ici sont des estimations.
 
 #### Questions à Hugo
 
-- **L8-Q1** — Le polygone : la **Savoie** seule, ou Savoie + Haute-Savoie (et
-  l'Isère limitrophe) si des tournées passent la frontière du département ?
+- **L8-Q1 — ✅ la Savoie seule** (Hugo, 2026-09-29) : « je vais jusqu'à La
+  Rosière, Les Arcs, peut-être Méribel, Courchevel » — toutes en Savoie, en
+  Tarentaise. L'extrait se découpe au polygone du département (73). La mesure
+  de l'étape 0 comparera en priorité des trajets de **vallée à station** : ce
+  sont eux que le vol d'oiseau sous-estime le plus.
 - **L8-Q2** — Si Cloudflare ne tient pas : d'accord pour un petit serveur
   dédié, et chez quel hébergeur ?
 
