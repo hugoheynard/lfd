@@ -1175,6 +1175,13 @@ chaque tournée touchée : son identifiant, son véhicule, la liste des arrêts
 
 ### Lot 8 — OSRM Savoie : des durées par la route
 
+> **Renommé `lfd-route-planner` le 2026-09-29, jamais déployé sous l'ancien
+> nom.** Le texte des lots 8 et 8 bis garde `lfd-osrm`, `/api/osrm`,
+> `OSRM_URL`, `OSRM_TOKEN` : c'est l'historique. Les noms en vigueur
+> (`apps/lfd-route-planner`, `/api/route-planner`, `ROUTE_PLANNER_URL`,
+> `ROUTE_PLANNER_TOKEN`, binding `ROUTE_PLANNER`) sont dans
+> [`planificateur-de-tournees.md`](../ops/planificateur-de-tournees.md).
+
 > **Ouvert le 2026-09-29.** Hugo : « à un moment on avait parlé de faire OSRM
 > Savoie » — prévu par l'architecture (§7, « OSRM Savoie — mise en place »),
 > renvoyé à « ensuite » par le lot 7. 📐 Rien n'est bâti. **La première étape
@@ -1515,7 +1522,7 @@ OSRM v5.27.1 épinglée par digest amd64) ; un script qui prépare la carte de l
 Savoie et **échoue** si Val d'Isère → Arc 1800 ne répond pas ; un Worker qui ne
 sert que `/table` et `/route`, sans adresse publique ni cron, et rend un refus
 net quand OSRM ne répond pas ; un workflow mensuel et manuel ; la page
-`documentation/ops/carte-routiere-osrm.md`. Essai local : carte en 2 min 30,
+`documentation/ops/planificateur-de-tournees.md`. Essai local : carte en 2 min 30,
 image de 227 Mo, réveil 0,6 s, 63 Mo de mémoire. **Rien n'est déployé.**
 
 Reste : un job de CI générale pour le paquet (comme `gateway`), le point de
@@ -1536,7 +1543,7 @@ retiré le même jour : il faisait tomber « Proposer », § 6 question 1) ;
 `estimate` vaut `road` ou `crow_flies`. `OSRM_URL` suit le chemin de
 `BAN_GEOCODER_URL` (variable GitHub → secret du Worker → conteneur) ; son
 absence est une capacité dégradée. **Rien n'est déployé** — ordre et retour
-arrière : [`carte-routiere-osrm.md`](../ops/carte-routiere-osrm.md).
+arrière : [`planificateur-de-tournees.md`](../ops/planificateur-de-tournees.md).
 
 Reste : l'échec **à l'exécution** d'OSRM ne remonte qu'au journal et à
 l'écran, pas à la carte de santé `ops` (dont l'inventaire ne lit que la
@@ -1612,8 +1619,8 @@ nu), pas de jeton.
 **L8b-C5 — On retire**, dans le même passage : l'interception,
 le pont `osrm-bridge`, `ContainerProxy`, le drapeau `enable_ctx_exports`, le
 binding `OSRM` de l'API et leurs tests — et les commentaires qui les
-décrivent (`apps/lfd-osrm/src/worker.ts`, `wrangler.jsonc` des deux,
-`deploy_lfd_osrm.yml`, `deploy_lfd_api.yml`). Retour arrière vers B-ter =
+décrivent (`apps/lfd-route-planner/src/worker.ts`, `wrangler.jsonc` des deux,
+`deploy_lfd_route_planner.yml`, `deploy_lfd_api.yml`). Retour arrière vers B-ter =
 rouvrir le code ; acceptable, B-ter n'a jamais été déployé.
 
 **L8b-C6 — Mise en service** : (1) déployer `lfd-osrm` (inchangé, sans
@@ -1633,14 +1640,14 @@ l'afficher, lu sur l'entrée standard :
 **Bâti le 2026-09-29** (non commité à l'écriture ; rien n'est déployé) :
 
 - **passerelle** — préfixe `/api/osrm` → binding `OSRM` (`lfd-osrm`) ; garde
-  `gateway/src/osrm-guard.ts` : limite de débit par IP (`OSRM_RATE_LIMITER`,
+  `gateway/src/route-planner-guard.ts` : limite de débit par IP (`OSRM_RATE_LIMITER`,
   120/min, avant le jeton), puis jeton comparé à temps constant (condensés
   SHA-256) à `OSRM_TOKEN` ou `OSRM_TOKEN_NEXT`, fermé par défaut (secret
   absent, vide ou de moins de 32 caractères : tout 401), 401 uniforme, en-tête
   `Authorization` retiré avant transmission ; le workflow pose les deux secrets
-  s'ils sont non vides. Tests : `gateway/src/__tests__/osrm-guard.spec.ts`
+  s'ils sont non vides. Tests : `gateway/src/__tests__/route-planner-guard.spec.ts`
   (20) à travers le vrai `fetch` de la passerelle ;
-- **API** — `resolveOsrmEndpoint` (`apps/lfd-api/src/platform/config/osrm-endpoint.ts`) :
+- **API** — `resolveRoutePlannerEndpoint` (`apps/lfd-api/src/platform/config/route-planner-endpoint.ts`) :
   en production, `https://` ET jeton exigés, sinon `DisabledDistanceMatrix`
   et la ligne « Calcul routier des tournées » (réglage
   `OSRM_URL (https:// en production) / OSRM_TOKEN`) ; `withBearer` sur les
@@ -1651,7 +1658,7 @@ l'afficher, lu sur l'entrée standard :
   `export { ContainerProxy }`, le bloc `outboundByHost`, le drapeau
   `enable_ctx_exports` et le binding `OSRM` de `lfd-api` : le Worker de l'API
   est revenu à son état d'avant le lot 8, `RUNTIME_KEYS` en plus ;
-- **doc** — `documentation/ops/carte-routiere-osrm.md` réécrit (schéma, mise en
+- **doc** — `documentation/ops/planificateur-de-tournees.md` réécrit (schéma, mise en
   service avec contrôles `curl`, rotation, retour arrière), runbook.
 
 ### Lot 9 — Le simulateur de tournée
@@ -2373,7 +2380,7 @@ réversible ; chaque point dit ce qui a été fait en attendant.
    Plus vrai depuis le lot 8 bis (2026-09-29) : l'étape 2 est la passerelle,
    et l'API ne change plus son démarrage.
    ⚠️ **Depuis L10b-C5, l'ordre compte aussi pour le lot 10 bis** : OSRM en
-   service (les trois étapes de `documentation/ops/carte-routiere-osrm.md`)
+   service (les trois étapes de `documentation/ops/planificateur-de-tournees.md`)
    AVANT de déployer le lot 10 bis, sinon « Proposer » refuse en production.
 4. **Lot 9 — enregistrer les scénarios** : reporté (table, migration). En
    attendant, export/import en fichier. Faut-il une table ?

@@ -1,14 +1,14 @@
 {
-  // `lfd-osrm` : le calcul d'itinéraires routiers de la Savoie, en Cloudflare
+  // `lfd-route-planner` : le calcul d'itinéraires routiers de la Savoie, en Cloudflare
   // Container derrière un Worker d'entrée minimal (plan de tournée, lot 8,
   // forme B-ter — documentation/livraisons/plan-preparation-de-tournee.md).
-  // Consommé par .github/workflows/deploy_lfd_osrm.yml (wrangler deploy).
+  // Consommé par .github/workflows/deploy_lfd_route_planner.yml (wrangler deploy).
   //
   // Il ne partage RIEN avec `lfd-api` : ni Worker, ni image, ni déploiement.
   // La carte se refait chaque mois sans toucher à l'API. Depuis le lot 8 bis,
-  // l'API le joint par la passerelle (`/api/osrm`, jeton vérifié par elle), et
+  // l'API le joint par la passerelle (`/api/route-planner`, jeton vérifié par elle), et
   // non plus par une interception dans son propre Worker.
-  "name": "lfd-osrm",
+  "name": "lfd-route-planner",
   "main": "src/worker.ts",
   "compatibility_date": "2026-09-29",
 

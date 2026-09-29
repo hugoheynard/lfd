@@ -103,15 +103,15 @@ describe("les coûts par la route — OSRM /table (lot 8)", () => {
     const token = "t".repeat(64);
 
     await new OsrmDistanceMatrix(
-      { url: "https://lafoliecoffee.info/api/osrm", token },
+      { url: "https://lafoliecoffee.info/api/route-planner", token },
       { fetchFn: recorded.fetch },
     ).build(POINTS);
 
     const [call] = recorded.calls;
     expect(new Headers(call?.init.headers).get("authorization")).toBe(`Bearer ${token}`);
-    expect(call?.url.startsWith("https://lafoliecoffee.info/api/osrm/table/v1/driving/")).toBe(
-      true,
-    );
+    expect(
+      call?.url.startsWith("https://lafoliecoffee.info/api/route-planner/table/v1/driving/"),
+    ).toBe(true);
     expect(call?.url).not.toContain(token);
     expect(call?.init.signal).toBeInstanceOf(AbortSignal);
   });
@@ -256,7 +256,7 @@ describe("plus de vol d'oiseau : refuse, en le nommant (L10b-C5)", () => {
     expect(silent.calls).toHaveLength(2);
   });
 
-  it("sans OSRM_URL, la matrice injectée refuse de la même façon", async () => {
+  it("sans ROUTE_PLANNER_URL, la matrice injectée refuse de la même façon", async () => {
     await expect(new DisabledDistanceMatrix().build()).rejects.toThrow(RoadRoutingUnavailableError);
   });
 });

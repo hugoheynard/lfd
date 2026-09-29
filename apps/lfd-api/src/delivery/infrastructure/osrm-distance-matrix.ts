@@ -7,19 +7,19 @@ import {
 import { type CostFn, DistanceMatrix } from "../domain/ports/distance-matrix.js";
 import type { GeoPoint } from "../domain/value-objects/geo-point.js";
 import type { FetchFn } from "./ban-geocoder.js";
-import type { OsrmEndpoint } from "../../platform/config/osrm-endpoint.js";
+import type { RoutePlannerEndpoint } from "../../platform/config/route-planner-endpoint.js";
 import { type OsrmFetchOutcome, osrmGet, withBearer } from "./osrm-fetch.js";
 
 /**
  * Le délai d'un appel à `/table`, puis UN nouvel essai (L10b-C5). Large parce
  * que le premier « Proposer » du matin réveille une instance `lite` endormie
- * (`sleepAfter = "10m"`, `apps/lfd-osrm/src/worker.ts`) : 0,6 s mesurées en
+ * (`sleepAfter = "10m"`, `apps/lfd-route-planner/src/worker.ts`) : 0,6 s mesurées en
  * local (L8-C6), le démarrage à froid sur Cloudflare n'est PAS encore mesuré
  * (L8-C10).
  */
 export const OSRM_TIMEOUT_MS = 20_000;
 
-/** `--max-table-size` d'`osrm-routed` (`apps/lfd-osrm/Dockerfile`) : jusque-là, une seule requête. */
+/** `--max-table-size` d'`osrm-routed` (`apps/lfd-route-planner/Dockerfile`) : jusque-là, une seule requête. */
 export const OSRM_MAX_TABLE_POINTS = 200;
 
 /** Au-delà, la table passe par blocs d'au plus 100 départs × 100 arrivées (100² ≤ 200²). */
@@ -73,7 +73,7 @@ export class OsrmDistanceMatrix extends DistanceMatrix {
 
   private readonly baseUrl: string;
 
-  constructor(endpoint: OsrmEndpoint, options: OsrmTableOptions = {}) {
+  constructor(endpoint: RoutePlannerEndpoint, options: OsrmTableOptions = {}) {
     super();
     this.baseUrl = endpoint.url;
     this.fetchFn = withBearer(options.fetchFn ?? ((url, init) => fetch(url, init)), endpoint.token);

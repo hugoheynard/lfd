@@ -65,6 +65,7 @@ apps/lfd-api/                    NestJS · UN processus, DEUX bases Prisma  ← 
 apps/lfc-ecommerce-frontend/  Angular 22 zoneless SSR · fold-ng      ─┐ frontends :
 apps/lfd-backoffice-frontend/     Angular 22 · back-office staff         ─┘ CLAUDE.md de l'app
                                    src/app/pim/ = le référentiel (greffé)
+apps/lfd-route-planner/          le planificateur de tournées (OSRM) — joint par la passerelle seulement
 gateway/                         frontière de confiance : SEUL chemin public vers les backends
 packages/                        contracts · b2b-ui · endpoints · mailer · storage · …
 ```

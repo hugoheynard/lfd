@@ -118,23 +118,23 @@ service = "lfd-api"
 
 
 # Le calcul routier de la Savoie (plan de tournée, lot 8 bis, L8b-C1) : le
-# préfixe `/api/osrm` part chez `lfd-osrm`, qui n'a AUCUNE adresse publique —
+# préfixe `/api/route-planner` part chez `lfd-route-planner`, qui n'a AUCUNE adresse publique —
 # ce binding est son seul chemin d'entrée. L'appelant est `lfd-api`, en HTTPS
 # ordinaire, comme vers Stripe ou Auth0.
 #
-# 🔴 FERMÉ PAR DÉFAUT : `src/osrm-guard.ts` exige `Authorization: Bearer` égal
-# au secret `OSRM_TOKEN` (ou `OSRM_TOKEN_NEXT` pendant une rotation) AVANT de
-# router. Sans secret posé, `/api/osrm` refuse tout en 401. Les secrets se
+# 🔴 FERMÉ PAR DÉFAUT : `src/route-planner-guard.ts` exige `Authorization: Bearer` égal
+# au secret `ROUTE_PLANNER_TOKEN` (ou `ROUTE_PLANNER_TOKEN_NEXT` pendant une rotation) AVANT de
+# router. Sans secret posé, `/api/route-planner` refuse tout en 401. Les secrets se
 # posent par deploy_lfd_gateway.yml, jamais ici.
 #
-# ⚠️ `wrangler` résout chaque service binding AU MOMENT DE PUBLIER : `lfd-osrm`
+# ⚠️ `wrangler` résout chaque service binding AU MOMENT DE PUBLIER : `lfd-route-planner`
 # doit être déployé AVANT cette passerelle, sinon son déploiement échoue —
-# ordre dans documentation/ops/carte-routiere-osrm.md, « Mettre en service ».
+# ordre dans documentation/ops/planificateur-de-tournees.md, « Mettre en service ».
 [[services]]
-binding = "OSRM"
-service = "lfd-osrm"
+binding = "ROUTE_PLANNER"
+service = "lfd-route-planner"
 
-# La limite de débit de `/api/osrm`, par IP cliente, AVANT le jeton : un
+# La limite de débit de `/api/route-planner`, par IP cliente, AVANT le jeton : un
 # bombardement coûte des invocations de passerelle bornées, jamais un réveil du
 # conteneur OSRM, et les essais de jeton sont bornés du même coup.
 #
@@ -147,7 +147,7 @@ service = "lfd-osrm"
 # sans s'appliquer (mesuré sur l'API le 2026-08-13). `namespace_id` distinct de
 # celui de l'API (1003) : deux compteurs, deux usages. `period` : 10 ou 60.
 [[ratelimits]]
-name = "OSRM_RATE_LIMITER"
+name = "ROUTE_PLANNER_RATE_LIMITER"
 namespace_id = "1004"
 simple = { limit = 120, period = 60 }
 

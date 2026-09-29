@@ -35,8 +35,8 @@ const CACHE = join(homedir(), ".cache", "lfd-map");
 const GRAPH_DIR = join(CACHE, "graph");
 const TILES_DIR = join(CACHE, "tiles");
 const DEV_TILES_DIR = join(REPO_ROOT, "apps", "lfd-backoffice-frontend", "map-tiles");
-const BUILD_GRAPH = join(REPO_ROOT, "apps", "lfd-osrm", "scripts", "build-graph.sh");
-const BUILD_TILES = join(REPO_ROOT, "apps", "lfd-osrm", "scripts", "build-tiles.sh");
+const BUILD_GRAPH = join(REPO_ROOT, "apps", "lfd-route-planner", "scripts", "build-graph.sh");
+const BUILD_TILES = join(REPO_ROOT, "apps", "lfd-route-planner", "scripts", "build-tiles.sh");
 const OSRM_CONTAINER = "lfd-dev-osrm";
 
 /** Haute-Tarentaise : le découpage que le front sait tenir en mémoire (~10 Mo). */

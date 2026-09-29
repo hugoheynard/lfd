@@ -1,5 +1,5 @@
 {
-  "name": "lfd-osrm",
+  "name": "lfd-route-planner",
   "version": "0.0.0",
   "private": true,
   "type": "module",

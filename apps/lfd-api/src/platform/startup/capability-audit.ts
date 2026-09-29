@@ -246,8 +246,9 @@ const CHECKS: readonly Check[] = [
     present: (s) => s.hasGeocoderUrl,
   },
   {
-    capability: "Calcul routier des tournées",
-    setting: "OSRM_URL (https:// en production) / OSRM_TOKEN (exigé en production)",
+    capability: "Planificateur de tournées (calcul routier)",
+    setting:
+      "ROUTE_PLANNER_URL (https:// en production) / ROUTE_PLANNER_TOKEN (exigé en production)",
     consequence:
       "« Proposer », « Chronométrer » et le simulateur de tournée sont refusés : il n'y a plus de repli à vol d'oiseau (L10b-C5), les tournées existantes restent composables à la main",
     severity: "degraded",

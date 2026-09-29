@@ -62,7 +62,7 @@ jobs:
       front_admin: ${{ steps.scope.outputs.front_admin }}
       front_platform: ${{ steps.scope.outputs.front_platform }}
       gateway: ${{ steps.scope.outputs.gateway }}
-      osrm: ${{ steps.scope.outputs.osrm }}
+      route_planner: ${{ steps.scope.outputs.route_planner }}
     steps:
       # `fetch-depth: 0` — sans l'historique, aucune base n'est résoluble et le
       # script rendrait « tout » à chaque fois. Le filtrage serait inerte, et
@@ -584,14 +584,14 @@ jobs:
       - name: Tests
         run: pnpm --filter lfd-gateway test
 
-  # Le Worker `lfd-osrm` (plan de tournée, lot 8) : le transfert vers le
+  # Le Worker `lfd-route-planner` (plan de tournée, lot 8) : le transfert vers le
   # conteneur OSRM. Le graphe, lui, est vérifié par son propre workflow de
   # déploiement — ici, seulement le code du Worker.
-  osrm:
-    name: Carte routière (Worker)
+  route-planner:
+    name: Planificateur de tournées (Worker)
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.osrm == 'true'
+    if: needs.changes.outputs.route_planner == 'true'
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -601,11 +601,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Typecheck
-        run: pnpm --filter lfd-osrm typecheck
+        run: pnpm --filter lfd-route-planner typecheck
       - name: Lint
-        run: pnpm --filter lfd-osrm lint
+        run: pnpm --filter lfd-route-planner lint
       - name: Tests
-        run: pnpm --filter lfd-osrm test
+        run: pnpm --filter lfd-route-planner test
 
   ci-gate:
     name: ci-gate
@@ -620,7 +620,7 @@ jobs:
         front-admin,
         front-platform,
         gateway,
-        osrm,
+        route-planner,
       ]
     if: always()
     steps:
@@ -641,7 +641,7 @@ jobs:
           echo "front-admin   : ${{ needs.front-admin.result }}"
           echo "front-platform: ${{ needs.front-platform.result }}"
           echo "gateway       : ${{ needs.gateway.result }}"
-          echo "osrm          : ${{ needs.osrm.result }}"
+          echo "route-planner : ${{ needs.route-planner.result }}"
 
           echo "gates         : ${{ needs.gates.result }}"
 
@@ -663,7 +663,7 @@ jobs:
             "${{ needs.front-admin.result }}" \
             "${{ needs.front-platform.result }}" \
             "${{ needs.gateway.result }}" \
-            "${{ needs.osrm.result }}"; do
+            "${{ needs.route-planner.result }}"; do
             case "$etat" in
               success | skipped) ;;
               *) rouge=1 ;;

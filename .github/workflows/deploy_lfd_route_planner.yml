@@ -1,6 +1,6 @@
-name: deploy_lfd_osrm
+name: deploy_lfd_route_planner
 
-# Déploie `lfd-osrm` — le calcul d'itinéraires routiers de la Savoie — sur
+# Déploie `lfd-route-planner` — le calcul d'itinéraires routiers de la Savoie — sur
 # Cloudflare Containers (plan de tournée, lot 8, forme B-ter :
 # documentation/livraisons/plan-preparation-de-tournee.md, L8-C10/C11).
 #
@@ -15,7 +15,7 @@ name: deploy_lfd_osrm
 #   · MENSUEL — les routes de montagne changent peu, mais une route fermée ou
 #     ouverte change des tournées (L8-C4) ;
 #   · MANUEL — refaire la carte tout de suite, ou après un échec du mensuel ;
-#   · PUSH sur `main` filtré sur `apps/lfd-osrm/**` — un changement du Worker,
+#   · PUSH sur `main` filtré sur `apps/lfd-route-planner/**` — un changement du Worker,
 #     du Dockerfile ou de la version d'OSRM.
 #
 # ⚠️ Un workflow n'est lu que par GitHub : aucune porte locale ne le vérifie.
@@ -30,10 +30,10 @@ name: deploy_lfd_osrm
 # Aucun secret RUNTIME : OSRM ne lit rien de l'environnement.
 #
 # AUCUNE ADRESSE PUBLIQUE (`workers_dev: false`) : son seul appelant est la
-# passerelle, par service binding, sous `/api/osrm` et derrière un jeton
+# passerelle, par service binding, sous `/api/route-planner` et derrière un jeton
 # qu'ELLE vérifie (lot 8 bis). ⚠️ `wrangler` résout chaque service binding au
 # moment de publier : ce Worker doit être déployé AVANT la passerelle qui le
-# nomme (documentation/ops/carte-routiere-osrm.md, « Mettre en service »).
+# nomme (documentation/ops/planificateur-de-tournees.md, « Mettre en service »).
 
 on:
   schedule:
@@ -44,11 +44,11 @@ on:
   push:
     branches: [main]
     paths:
-      - "apps/lfd-osrm/**"
-      - ".github/workflows/deploy_lfd_osrm.yml"
+      - "apps/lfd-route-planner/**"
+      - ".github/workflows/deploy_lfd_route_planner.yml"
 
 concurrency:
-  group: deploy_lfd_osrm
+  group: deploy_lfd_route_planner
   cancel-in-progress: false
 
 permissions:
@@ -56,7 +56,7 @@ permissions:
   actions: read # lire le verdict de la CI
 
 jobs:
-  deploy_lfd_osrm:
+  deploy_lfd_route_planner:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -75,9 +75,9 @@ jobs:
       # donc ICI, avant tout geste vers Cloudflare.
       - name: Typecheck, lint et tests du Worker
         run: |
-          pnpm --filter lfd-osrm exec tsc --noEmit
-          pnpm --filter lfd-osrm lint
-          pnpm --filter lfd-osrm test
+          pnpm --filter lfd-route-planner exec tsc --noEmit
+          pnpm --filter lfd-route-planner lint
+          pnpm --filter lfd-route-planner test
 
       # Le tag de la CARTE : date de l'extrait (UTC) + version d'OSRM. La
       # version vient de `osrm-version.env`, la seule source — celle que lisent
@@ -85,7 +85,7 @@ jobs:
       - name: Nommer la carte
         id: map
         run: |
-          source apps/lfd-osrm/osrm-version.env
+          source apps/lfd-route-planner/osrm-version.env
           tag="savoie-$(date -u +%Y%m%d)-osrm${OSRM_VERSION}"
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
           echo "osrm_image=${OSRM_IMAGE}" >> "$GITHUB_OUTPUT"
@@ -96,18 +96,18 @@ jobs:
       # script échoue si `osrm-routed` ne charge pas le graphe ou ne rend pas
       # l'itinéraire Val d'Isère → Arc 1800.
       - name: Préparer et vérifier le graphe
-        run: apps/lfd-osrm/scripts/build-graph.sh "$RUNNER_TEMP/osrm-graph"
+        run: apps/lfd-route-planner/scripts/build-graph.sh "$RUNNER_TEMP/osrm-graph"
 
       - name: Construire l'image (linux/amd64)
         run: |
           docker build --platform linux/amd64 \
             --build-arg OSRM_IMAGE="${{ steps.map.outputs.osrm_image }}" \
-            -f apps/lfd-osrm/Dockerfile \
+            -f apps/lfd-route-planner/Dockerfile \
             -t lfd-osrm:"${{ steps.map.outputs.tag }}" \
             "$RUNNER_TEMP/osrm-graph"
 
       - name: Pousser l'image → registre Cloudflare
-        working-directory: apps/lfd-osrm
+        working-directory: apps/lfd-route-planner
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_API_WORKER }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -122,7 +122,7 @@ jobs:
           workflow: ci.yml
 
       - name: Déployer le Worker
-        working-directory: apps/lfd-osrm
+        working-directory: apps/lfd-route-planner
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_API_WORKER }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -5,7 +5,7 @@ import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended"
 import globals from "globals";
 
 /**
- * Lint du Worker d'entrée de lfd-osrm. Autonome (calqué sur les autres packages). Globals
+ * Lint du Worker d'entrée de lfd-route-planner. Autonome (calqué sur les autres packages). Globals
  * de worker (fetch/Request/Response/URL) ; `tsc --noEmit` est la porte de types.
  */
 export default tslint.config(

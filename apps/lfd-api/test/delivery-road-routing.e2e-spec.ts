@@ -4,8 +4,8 @@
  * « Chronométrer » et le simulateur refusent en 409 avec la phrase à lire, et
  * n'écrivent rien.
  *
- * La matrice posée est celle que le module injecte sans `OSRM_URL` — posée
- * explicitement, parce que le poste de dev peut porter une `OSRM_URL` locale
+ * La matrice posée est celle que le module injecte sans `ROUTE_PLANNER_URL` — posée
+ * explicitement, parce que le poste de dev peut porter une `ROUTE_PLANNER_URL` locale
  * dans son `.env` (constaté le 2026-09-29) : sans ça, la suite dépendrait du
  * conteneur OSRM allumé ou non.
  */

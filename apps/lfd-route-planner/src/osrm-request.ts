@@ -1,5 +1,5 @@
 /**
- * Ce que `lfd-osrm` accepte de transmettre au conteneur, et ce qu'il répond
+ * Ce que `lfd-route-planner` accepte de transmettre au conteneur, et ce qu'il répond
  * quand le conteneur ne répond pas. Fonctions pures, sous tests : le Worker
  * d'entrée (`worker.ts`) ne fait que les exécuter.
  */

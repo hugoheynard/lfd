@@ -46,14 +46,14 @@ import {
  *
  * `/api/pim` a disparu quand le référentiel est devenu un module du
  * back-office (B6, B2c). La table est restée une TABLE, et c'est elle qui a
- * rendu mécanique l'ajout du deuxième déployable, `lfd-osrm` (lot 8 bis) ;
+ * rendu mécanique l'ajout du deuxième déployable, `lfd-route-planner` (lot 8 bis) ;
  * `stripPrefix` garde sa garde de frontière entre eux.
  */
 export const API_PREFIXES = {
   lfd: "/api/lfd",
-  // Le calcul routier (`lfd-osrm`, lot 8 bis) : appelé par l'API seule, derrière
-  // un jeton que la passerelle vérifie AVANT de router (`osrm-guard.ts`).
-  osrm: "/api/osrm",
+  // Le calcul routier (`lfd-route-planner`, lot 8 bis) : appelé par l'API seule, derrière
+  // un jeton que la passerelle vérifie AVANT de router (`route-planner-guard.ts`).
+  routePlanner: "/api/route-planner",
 } as const;
 
 export type BackendKey = keyof typeof API_PREFIXES;

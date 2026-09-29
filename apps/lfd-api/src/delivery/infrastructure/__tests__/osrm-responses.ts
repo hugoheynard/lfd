@@ -1,7 +1,7 @@
 /**
  * Une réponse `/table` **réelle**, enregistrée le 2026-09-29 contre l'image
  * locale d'`osrm-backend` v5.27.1 et la carte de la Savoie préparée par
- * `apps/lfd-osrm/scripts/build-graph.sh` :
+ * `apps/lfd-route-planner/scripts/build-graph.sh` :
  *
  *   GET /table/v1/driving/6.9797,45.4486;6.7713,45.5724;6.6327,45.4130
  *       ?annotations=duration,distance

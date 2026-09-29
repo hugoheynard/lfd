@@ -58,11 +58,11 @@ const RUNTIME_KEYS = [
   // La Base Adresse Nationale, pour « Situer les arrêts » de livraison (lot 7).
   // Absente, le géocodage est éteint : seuls les points GPS du carnet situent.
   "BAN_GEOCODER_URL",
-  // Le calcul routier (lots 8 et 8 bis) : `https://lafoliecoffee.info/api/osrm`,
+  // Le calcul routier (lots 8 et 8 bis) : `https://lafoliecoffee.info/api/route-planner`,
   // par la passerelle, et le jeton qu'elle exige. En production, l'un sans
   // l'autre éteint « Proposer » — et le bulletin de démarrage le dit.
-  "OSRM_URL",
-  "OSRM_TOKEN",
+  "ROUTE_PLANNER_URL",
+  "ROUTE_PLANNER_TOKEN",
   // Courrier : sans la clé, le mailer rend les gabarits et n'envoie rien.
   "RESEND_MAILER_B2B_API_KEY",
   "RESEND_API_KEY",

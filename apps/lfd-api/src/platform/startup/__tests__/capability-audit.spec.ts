@@ -98,8 +98,8 @@ describe("auditCapabilities", () => {
   it("dit que « Proposer » refuse sans calcul routier joignable, en dégradé (plus de vol d'oiseau)", () => {
     const [missing] = auditCapabilities(without("hasRoadRouting"));
 
-    expect(missing?.setting).toContain("OSRM_URL");
-    expect(missing?.setting).toContain("OSRM_TOKEN");
+    expect(missing?.setting).toContain("ROUTE_PLANNER_URL");
+    expect(missing?.setting).toContain("ROUTE_PLANNER_TOKEN");
     expect(missing?.consequence).toMatch(/« Proposer ».*refusés/);
     expect(missing?.severity).toBe("degraded");
   });

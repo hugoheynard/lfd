@@ -2,7 +2,7 @@
 # Fabrique les deux fichiers de la carte des tournées (plan de tournée, lot 10
 # — L10-C2) : les rues de la Savoie en tuiles vectorielles, et le relief.
 #
-#   apps/lfd-osrm/scripts/build-tiles.sh <savoie.osm.pbf> <dossier-de-sortie>
+#   apps/lfd-route-planner/scripts/build-tiles.sh <savoie.osm.pbf> <dossier-de-sortie>
 #
 # L'extrait est LE MÊME que celui du graphe OSRM (`build-graph.sh` le laisse
 # dans son dossier de sortie) : la carte et les durées lisent la même route.

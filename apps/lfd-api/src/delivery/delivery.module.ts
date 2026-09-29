@@ -169,7 +169,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
       provide: DistanceMatrix,
       inject: [AppConfig],
       useFactory: (config: AppConfig): DistanceMatrix => {
-        const endpoint = config.osrmEndpoint();
+        const endpoint = config.routePlannerEndpoint();
         return endpoint === null ? new DisabledDistanceMatrix() : new OsrmDistanceMatrix(endpoint);
       },
     },
@@ -178,7 +178,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
       provide: RouteGeometry,
       inject: [AppConfig],
       useFactory: (config: AppConfig): RouteGeometry => {
-        const endpoint = config.osrmEndpoint();
+        const endpoint = config.routePlannerEndpoint();
         return endpoint === null ? new DisabledRouteGeometry() : new OsrmRouteGeometry(endpoint);
       },
     },

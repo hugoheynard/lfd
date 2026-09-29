@@ -1,7 +1,7 @@
 import { frontHeaders, PRO_FRONT_ORIGIN, resolveTarget } from "./routes";
 import type { BackendKey, Target } from "./routes";
-import { guardTarget } from "./osrm-guard";
-import type { OsrmGuardEnv } from "./osrm-guard";
+import { guardTarget } from "./route-planner-guard";
+import type { RoutePlannerGuardEnv } from "./route-planner-guard";
 import { formatTrafficPoint, trafficPoint } from "./traffic";
 import type { TrafficObservation } from "./traffic";
 
@@ -45,10 +45,10 @@ const X_LFC_REQUEST_TIME = "x-lfc-request-time";
 const TRACEPARENT_FORMAT = /^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/;
 
 /** Les backends joignables par service binding. Absents en `wrangler dev`. */
-interface Env extends OsrmGuardEnv {
+interface Env extends RoutePlannerGuardEnv {
   LFD_BACKEND?: Fetcher;
-  /** `lfd-osrm`, le calcul routier — derrière la garde de `osrm-guard.ts`. */
-  OSRM?: Fetcher;
+  /** `lfd-route-planner`, le calcul routier — derrière la garde de `route-planner-guard.ts`. */
+  ROUTE_PLANNER?: Fetcher;
   /**
    * Le dataset Analytics Engine (`TRAFFIC_DATASET` dans `traffic.ts`). Optionnel comme
    * les bindings : absent en `wrangler dev`, et son absence ne doit jamais
@@ -244,14 +244,14 @@ function destinationFor(target: Forwardable, url: URL, env: Env): Destination | 
 
 /**
  * Le binding d'un backend, typé sur `BackendKey` : c'est le compilateur qui a
- * réclamé le cas `osrm` quand il a rejoint `API_PREFIXES`.
+ * réclamé le cas `routePlanner` quand il a rejoint `API_PREFIXES`.
  */
 function bindingFor(backend: BackendKey, env: Env): Fetcher | undefined {
   switch (backend) {
     case "lfd":
       return env.LFD_BACKEND;
-    case "osrm":
-      return env.OSRM;
+    case "routePlanner":
+      return env.ROUTE_PLANNER;
   }
 }
 

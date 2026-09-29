@@ -35,7 +35,7 @@ describe("le tracé par la route — OSRM /route (L10b-C4)", () => {
     const seen: RequestInit[] = [];
     const token = "t".repeat(64);
     const traced = new OsrmRouteGeometry(
-      { url: "https://lafoliecoffee.info/api/osrm", token },
+      { url: "https://lafoliecoffee.info/api/route-planner", token },
       (_url, init) => {
         seen.push(init);
         return Promise.resolve(Response.json(OSRM_ROUTE_VAL_ARC));
@@ -84,7 +84,7 @@ describe("le tracé par la route — OSRM /route (L10b-C4)", () => {
     expect(calls).toEqual([]);
   });
 
-  it("sans OSRM_URL, aucun tracé", async () => {
+  it("sans ROUTE_PLANNER_URL, aucun tracé", async () => {
     await expect(new DisabledRouteGeometry().trace()).resolves.toBeNull();
   });
 });

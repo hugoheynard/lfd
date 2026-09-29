@@ -127,12 +127,12 @@ services:
              mc anonymous set download lfd/lfc-media-dev &&
              echo 'buckets lfc-b2b-dev + lfc-customers-dev + lfc-production-dev (privés) et lfc-media-dev (lecture publique) prêts'"
 
-  # Calcul routier (plan de tournée) — le MÊME osrm-routed que `lfd-osrm` en
+  # Calcul routier (plan de tournée) — le MÊME osrm-routed que `lfd-route-planner` en
   # production, sur le graphe que `dev-toolbox/ensure-map-data.mjs` prépare
   # une fois par poste dans ~/.cache/lfd-map/graph. L'API le lit par
-  # `OSRM_URL=http://localhost:5055`.
+  # `ROUTE_PLANNER_URL=http://localhost:5055`.
   #
-  # `OSRM_IMAGE` vient de `apps/lfd-osrm/osrm-version.env`, passé en
+  # `OSRM_IMAGE` vient de `apps/lfd-route-planner/osrm-version.env`, passé en
   # `--env-file` par les scripts `dev:infra*` : une seule copie du digest, un
   # graphe préparé par une version ne se charge pas dans une autre. amd64 :
   # c'est le seul manifeste épinglé ; sur Mac il tourne en émulation.

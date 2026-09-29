@@ -19,7 +19,7 @@ export function withBearer(fetchFn: FetchFn, token: string | null): FetchFn {
 /** Ce qu'un appel à OSRM a rendu : la valeur lue, ou la raison de l'échec (pour le journal). */
 export type OsrmFetchOutcome<T> = { readonly value: T } | { readonly failure: string };
 
-/** Le statut qu'`lfd-osrm` rend quand l'instance se réveille ou refuse (`apps/lfd-osrm/src/worker.ts`). */
+/** Le statut qu'`lfd-route-planner` rend quand l'instance se réveille ou refuse (`apps/lfd-route-planner/src/worker.ts`). */
 const SERVICE_UNAVAILABLE = 503;
 
 /** Une tentative : la valeur, ou l'échec — et s'il vaut un nouvel essai. */

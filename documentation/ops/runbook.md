@@ -263,18 +263,24 @@ Contrôle : `/health` publie `"database":"accelerate"`. Ce retour n'est possible
 que **tant que la clé Accelerate n'est pas révoquée** (geste 8), et au plus tard
 le 1er décembre 2026.
 
-## Mettre en service le calcul routier (OSRM)
+## Mettre en service le planificateur de tournées (`lfd-route-planner`)
+
+Préalable, depuis le renommage du 2026-09-29 (ex-`lfd-osrm`, jamais déployé) :
+créer le secret GitHub `ROUTE_PLANNER_TOKEN`
+(`openssl rand -base64 48 | tr -d '\n' | gh secret set ROUTE_PLANNER_TOKEN`),
+puis supprimer l'ancien (`gh secret delete OSRM_TOKEN`) — un secret GitHub ne
+se renomme pas et ne se relit pas.
 
 Trois déploiements séparés, dans cet ordre, chacun vérifié avant le suivant :
-**(1)** `lfd-osrm` par son workflow ; **(2)** la passerelle, qui gagne
-`/api/osrm` et pose le jeton `OSRM_TOKEN` — elle échoue à la publication si
-`lfd-osrm` n'existe pas ; contrôle `curl` : 401 sans jeton, 200 avec ;
-**(3)** la variable `OSRM_URL=https://lafoliecoffee.info/api/osrm`, puis un
-redéploiement de l'API, qui lit le même secret `OSRM_TOKEN`. Contrôles,
+**(1)** `lfd-route-planner` par son workflow ; **(2)** la passerelle, qui gagne
+`/api/route-planner` et pose le jeton `ROUTE_PLANNER_TOKEN` — elle échoue à la publication si
+`lfd-route-planner` n'existe pas ; contrôle `curl` : 401 sans jeton, 200 avec ;
+**(3)** la variable `ROUTE_PLANNER_URL=https://lafoliecoffee.info/api/route-planner`, puis un
+redéploiement de l'API, qui lit le même secret `ROUTE_PLANNER_TOKEN`. Contrôles,
 retour arrière et rotation du jeton :
-[`carte-routiere-osrm.md`](carte-routiere-osrm.md#mettre-en-service--lordre-une-étape-à-la-fois).
+[`planificateur-de-tournees.md`](planificateur-de-tournees.md#mettre-en-service--lordre-une-étape-à-la-fois).
 
-⚠️ Retirer `OSRM_URL` (ou `OSRM_TOKEN_NEXT`) des réglages GitHub ne le retire
+⚠️ Retirer `ROUTE_PLANNER_URL` (ou `ROUTE_PLANNER_TOKEN_NEXT`) des réglages GitHub ne le retire
 pas du Worker : les workflows ne font que poser. Le geste complet
 (`wrangler secret delete`) est dans la même page.
 

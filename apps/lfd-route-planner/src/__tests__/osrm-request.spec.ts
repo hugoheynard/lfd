@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { admit, isContainerFailure, unavailable } from "../osrm-request";
 
-const BASE = "http://lfd-osrm.internal";
+const BASE = "http://lfd-route-planner.internal";
 const TABLE = "/table/v1/driving/6.9797,45.4486;6.7713,45.5724";
 const ROUTE = "/route/v1/driving/6.9797,45.4486;6.7713,45.5724?overview=false";
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Prépare le graphe routier de la Savoie pour `lfd-osrm` (plan de tournée,
+# Prépare le graphe routier de la Savoie pour `lfd-route-planner` (plan de tournée,
 # lot 8 — L8-C4, L8-C6, L8-C11).
 #
-#   apps/lfd-osrm/scripts/build-graph.sh <dossier-de-sortie>
+#   apps/lfd-route-planner/scripts/build-graph.sh <dossier-de-sortie>
 #
 # Le dossier de sortie doit être HORS du dépôt : le `.dockerignore` racine ne
 # le connaît pas, et c'est lui qui sert de contexte au `docker build` de

@@ -1,4 +1,4 @@
-# Image de `lfd-osrm` : le calcul d'itinéraires routiers de la Savoie
+# Image de `lfd-route-planner` : le calcul d'itinéraires routiers de la Savoie
 # (plan de tournée, lot 8, forme B-ter — L8-C10/C11).
 #
 # L'IMAGE EST LA CARTE : le graphe `.osrm*` est copié dedans, préparé dans la
@@ -8,10 +8,10 @@
 #
 # Construction — le CONTEXTE est le dossier du graphe, jamais le dépôt :
 #
-#   source apps/lfd-osrm/osrm-version.env
+#   source apps/lfd-route-planner/osrm-version.env
 #   docker build --platform linux/amd64 \
 #     --build-arg OSRM_IMAGE="$OSRM_IMAGE" \
-#     -f apps/lfd-osrm/Dockerfile <dossier-du-graphe>
+#     -f apps/lfd-route-planner/Dockerfile <dossier-du-graphe>
 #
 # `OSRM_IMAGE` n'a volontairement AUCUN défaut : sa seule source est
 # `osrm-version.env`, partagée avec la préparation du graphe. Un défaut ici

@@ -1,8 +1,15 @@
-# La carte routière — `lfd-osrm`
+# Le planificateur de tournées — `lfd-route-planner`
+
+> **Renommé le 2026-09-29** : `lfd-osrm` → `lfd-route-planner`, jamais déployé
+> sous l'ancien nom (ce document s'appelait « carte routière OSRM »). Le
+> service est « le planificateur de tournées » : OSRM aujourd'hui, un
+> optimiseur (OR-Tools, VROOM) demain. Ce qui désigne OSRM lui-même garde son
+> nom : l'image `lfd-osrm`, `osrm-version.env`, `build-graph.sh`, les
+> adaptateurs `Osrm*` de l'API, le service de dev `lfd-dev-osrm`.
 
 > **État au 2026-09-29 : 🟡 bâti, jamais déployé.** Lot 8 bis du
 > [plan de tournée](../livraisons/plan-preparation-de-tournee.md) (L8b-C1 à
-> C7) : l'API joint `lfd-osrm` **par la passerelle**, en HTTPS, avec un jeton
+> C7) : l'API joint `lfd-route-planner` **par la passerelle**, en HTTPS, avec un jeton
 > que la passerelle vérifie. Cette forme remplace l'interception
 > `outboundByHost` du lot 8 (forme B-ter), **jamais déployée et retirée du
 > code** le 2026-09-29. **Rien n'est déployé** : l'ordre de mise en service
@@ -17,11 +24,11 @@
 > déploiement (personne ne s'en sert encore, mais c'est le geste qu'on
 > teste en premier).
 
-`lfd-osrm` calcule des durées **par la route** entre des points de la Savoie
+`lfd-route-planner` calcule des durées **par la route** entre des points de la Savoie
 (`/table`, `/route`). C'est un Worker Cloudflare à part, avec son conteneur
 `osrm-routed`, **sans adresse publique** (`workers_dev: false`, aucune route,
-aucun cron). Son seul chemin d'entrée est le service binding `OSRM` de la
-passerelle, sous `/api/osrm`, derrière un jeton.
+aucun cron). Son seul chemin d'entrée est le service binding `ROUTE_PLANNER` de la
+passerelle, sous `/api/route-planner`, derrière un jeton.
 
 ## Comment `lfd-api` le joint
 
@@ -29,11 +36,11 @@ passerelle, sous `/api/osrm`, derrière un jeton.
 sequenceDiagram
   participant N as NestJS (conteneur lfd-api)
   participant G as lfd-gateway (lafoliecoffee.info)
-  participant O as Worker lfd-osrm
+  participant O as Worker lfd-route-planner
   participant C as conteneur osrm-routed
-  N->>G: GET https://lafoliecoffee.info/api/osrm/table/v1/driving/…<br/>Authorization: Bearer <OSRM_TOKEN>
-  Note over G: 1. limite de débit par IP (120/min) → 429<br/>2. jeton comparé à temps constant à OSRM_TOKEN<br/>(ou OSRM_TOKEN_NEXT) → sinon 401 uniforme<br/>3. préfixe /api/osrm et jeton retirés
-  G->>O: service binding OSRM
+  N->>G: GET https://lafoliecoffee.info/api/route-planner/table/v1/driving/…<br/>Authorization: Bearer <ROUTE_PLANNER_TOKEN>
+  Note over G: 1. limite de débit par IP (120/min) → 429<br/>2. jeton comparé à temps constant à ROUTE_PLANNER_TOKEN<br/>(ou ROUTE_PLANNER_TOKEN_NEXT) → sinon 401 uniforme<br/>3. préfixe /api/route-planner et jeton retirés
+  G->>O: service binding ROUTE_PLANNER
   O->>C: port 5000 (réveil si endormi)
   C-->>O: 200, durées et distances
   O-->>G: réponse telle quelle, ou 503 net
@@ -45,30 +52,30 @@ C'est un appel HTTPS ordinaire, comme ceux que l'API fait déjà vers Stripe,
 Resend et Auth0. S'il rate, seul « Proposer » refuse : le démarrage de l'API
 n'en dépend pas — c'est ce que l'interception retirée ne garantissait pas.
 
-| Pièce                                                                 | Rôle                                                                                             |
-| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `gateway/src/routes.ts`                                               | préfixe `/api/osrm` → backend `osrm`, retiré avant transmission                                  |
-| `gateway/src/osrm-guard.ts`                                           | limite de débit, puis jeton fermé par défaut (secret absent, vide ou < 32 caractères : tout 401) |
-| `gateway/wrangler.toml`                                               | `[[services]] OSRM → lfd-osrm` ; `[[ratelimits]] OSRM_RATE_LIMITER` (120/min, `1004`)            |
-| `.github/workflows/deploy_lfd_gateway.yml`                            | pose `OSRM_TOKEN` et `OSRM_TOKEN_NEXT` s'ils sont non vides — ne supprime jamais                 |
-| `apps/lfd-api/src/platform/config/osrm-endpoint.ts`                   | en production : `https://` ET jeton exigés, sinon calcul éteint et dit                           |
-| `apps/lfd-api/src/delivery/infrastructure/osrm-fetch.ts`              | `withBearer` : le jeton en `Authorization`, jamais dans l'URL                                    |
-| `apps/lfd-api/src/delivery/infrastructure/osrm-distance-matrix.ts`    | un `/table` par calcul ; au-delà de 200 points, blocs 100 × 100 ; échec : refus                  |
-| `apps/lfd-api/src/delivery/infrastructure/osrm-route-geometry.ts`     | un `/route` par tournée, en parallèle ; échec : tournée sans tracé, jamais refus                 |
-| `OSRM_URL` (variable GitHub → secret du Worker `lfd-api` → conteneur) | `https://lafoliecoffee.info/api/osrm` en production ; `http://localhost:5055` en dev             |
-| `OSRM_TOKEN` (secret GitHub **unique** → passerelle ET `lfd-api`)     | le même secret GitHub lu par les deux workflows : une seule source, jamais deux valeurs à égaler |
-| `OSRM_TOKEN_NEXT` (secret GitHub facultatif → passerelle seule)       | absent hors d'une rotation                                                                       |
+| Pièce                                                                          | Rôle                                                                                                             |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `gateway/src/routes.ts`                                                        | préfixe `/api/route-planner` → backend `osrm`, retiré avant transmission                                         |
+| `gateway/src/route-planner-guard.ts`                                           | limite de débit, puis jeton fermé par défaut (secret absent, vide ou < 32 caractères : tout 401)                 |
+| `gateway/wrangler.toml`                                                        | `[[services]] ROUTE_PLANNER → lfd-route-planner` ; `[[ratelimits]] ROUTE_PLANNER_RATE_LIMITER` (120/min, `1004`) |
+| `.github/workflows/deploy_lfd_gateway.yml`                                     | pose `ROUTE_PLANNER_TOKEN` et `ROUTE_PLANNER_TOKEN_NEXT` s'ils sont non vides — ne supprime jamais               |
+| `apps/lfd-api/src/platform/config/route-planner-endpoint.ts`                   | en production : `https://` ET jeton exigés, sinon calcul éteint et dit                                           |
+| `apps/lfd-api/src/delivery/infrastructure/osrm-fetch.ts`                       | `withBearer` : le jeton en `Authorization`, jamais dans l'URL                                                    |
+| `apps/lfd-api/src/delivery/infrastructure/osrm-distance-matrix.ts`             | un `/table` par calcul ; au-delà de 200 points, blocs 100 × 100 ; échec : refus                                  |
+| `apps/lfd-api/src/delivery/infrastructure/osrm-route-geometry.ts`              | un `/route` par tournée, en parallèle ; échec : tournée sans tracé, jamais refus                                 |
+| `ROUTE_PLANNER_URL` (variable GitHub → secret du Worker `lfd-api` → conteneur) | `https://lafoliecoffee.info/api/route-planner` en production ; `http://localhost:5055` en dev                    |
+| `ROUTE_PLANNER_TOKEN` (secret GitHub **unique** → passerelle ET `lfd-api`)     | le même secret GitHub lu par les deux workflows : une seule source, jamais deux valeurs à égaler                 |
+| `ROUTE_PLANNER_TOKEN_NEXT` (secret GitHub facultatif → passerelle seule)       | absent hors d'une rotation                                                                                       |
 
 ## Ce qu'il y a où
 
-| Fichier                                 | Rôle                                                                                  |
-| --------------------------------------- | ------------------------------------------------------------------------------------- |
-| `apps/lfd-osrm/osrm-version.env`        | **La** version d'OSRM, par digest amd64 — lue par la préparation ET par le Dockerfile |
-| `apps/lfd-osrm/scripts/build-graph.sh`  | Extrait Geofabrik → découpe Savoie → extract/partition/customize → vérification       |
-| `apps/lfd-osrm/Dockerfile`              | Image officielle + graphe ; contexte = dossier du graphe, jamais le dépôt             |
-| `apps/lfd-osrm/src/worker.ts`           | N'admet que `GET /table/…` et `GET /route/…` ; 503 net si le conteneur ne répond pas  |
-| `apps/lfd-osrm/wrangler.jsonc`          | Classe `Osrm`, `lite`, une instance, `WEUR`, `sleepAfter` 10 min, port 5000           |
-| `.github/workflows/deploy_lfd_osrm.yml` | Mensuel (le 3, 02:17 UTC) + manuel + push `main` filtré sur `apps/lfd-osrm/**`        |
+| Fichier                                          | Rôle                                                                                    |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `apps/lfd-route-planner/osrm-version.env`        | **La** version d'OSRM, par digest amd64 — lue par la préparation ET par le Dockerfile   |
+| `apps/lfd-route-planner/scripts/build-graph.sh`  | Extrait Geofabrik → découpe Savoie → extract/partition/customize → vérification         |
+| `apps/lfd-route-planner/Dockerfile`              | Image officielle + graphe ; contexte = dossier du graphe, jamais le dépôt               |
+| `apps/lfd-route-planner/src/worker.ts`           | N'admet que `GET /table/…` et `GET /route/…` ; 503 net si le conteneur ne répond pas    |
+| `apps/lfd-route-planner/wrangler.jsonc`          | Classe `Osrm`, `lite`, une instance, `WEUR`, `sleepAfter` 10 min, port 5000             |
+| `.github/workflows/deploy_lfd_route_planner.yml` | Mensuel (le 3, 02:17 UTC) + manuel + push `main` filtré sur `apps/lfd-route-planner/**` |
 
 **L'image est la carte.** Son tag, `savoie-AAAAMMJJ-osrm5.27.1`, dit de quel
 jour date l'extrait OpenStreetMap et quelle version d'OSRM l'a préparé.
@@ -79,48 +86,58 @@ jour date l'extrait OpenStreetMap et quelle version d'OSRM l'a préparé.
 n'est pas une préférence : l'étape 2 échoue si l'étape 1 manque, et l'étape 3
 ne sert à rien sans l'étape 2.
 
-**Préalable (Hugo, L8b-C7)** : le secret GitHub `OSRM_TOKEN`, généré en local
+**Préalable (Hugo, L8b-C7)** : le secret GitHub `ROUTE_PLANNER_TOKEN`, généré en local
 et rangé sans jamais l'afficher, lu sur l'entrée standard :
 
 ```bash
-openssl rand -base64 48 | tr -d '\n' | gh secret set OSRM_TOKEN
+openssl rand -base64 48 | tr -d '\n' | gh secret set ROUTE_PLANNER_TOKEN
 ```
 
-✅ Posé le 2026-09-29 (un seul secret, au niveau du dépôt). `OSRM_TOKEN_NEXT`
-n'existe pas, et n'existe que pendant une rotation.
+⚠️ **À refaire après le renommage du 2026-09-29.** Le secret posé ce jour-là
+s'appelait `OSRM_TOKEN`, que plus aucun workflow ne lit. Un secret GitHub ne se
+renomme pas et ne se relit pas : on en **crée** un nouveau, puis on supprime
+l'ancien (Hugo) :
 
-### 1. Déployer `lfd-osrm`
+```bash
+openssl rand -base64 48 | tr -d '\n' | gh secret set ROUTE_PLANNER_TOKEN
+gh secret delete OSRM_TOKEN
+```
 
-GitHub → Actions → `deploy_lfd_osrm` → **Run workflow** sur `main` (ou le push
-qui touche `apps/lfd-osrm/**`). Personne ne l'appelle encore : rien ne change
+Contrôle : `gh secret list` montre `ROUTE_PLANNER_TOKEN` et plus `OSRM_TOKEN`.
+`ROUTE_PLANNER_TOKEN_NEXT` n'existe pas, et n'existe que pendant une rotation.
+
+### 1. Déployer `lfd-route-planner`
+
+GitHub → Actions → `deploy_lfd_route_planner` → **Run workflow** sur `main` (ou le push
+qui touche `apps/lfd-route-planner/**`). Personne ne l'appelle encore : rien ne change
 pour personne.
 
 **Contrôle** : l'étape « Préparer et vérifier le graphe » affiche
 `✅ Graphe chargé — Val d'Isère → Arc 1800 : …`, et
-`pnpm --filter lfd-osrm exec wrangler deployments list` montre une version
+`pnpm --filter lfd-route-planner exec wrangler deployments list` montre une version
 datée d'aujourd'hui. Le Worker n'a pas d'adresse publique : on ne peut pas le
 `curl` d'ici, et c'est voulu.
 
 ### 2. Déployer la passerelle, avec le jeton
 
 Un push sur `main` qui touche `gateway/**` (ou GitHub → Actions →
-`deploy_lfd_gateway` → **Run workflow**). Le workflow pose `OSRM_TOKEN` sur
+`deploy_lfd_gateway` → **Run workflow**). Le workflow pose `ROUTE_PLANNER_TOKEN` sur
 le Worker `lfd-gateway` AVANT de le déployer.
 
 ⚠️ **`wrangler` résout chaque service binding au moment de publier** : si
-`lfd-osrm` n'existe pas encore, l'étape « Deploy Worker » **échoue** (et rien
+`lfd-route-planner` n'existe pas encore, l'étape « Deploy Worker » **échoue** (et rien
 n'est remplacé — l'ancienne passerelle sert toujours). C'est l'étape 1 qu'il
 manque.
 
 Ce déploiement ne touche ni `/api/lfd` ni le front : la garde ne s'applique
-qu'à `/api/osrm` (test `gateway/src/__tests__/osrm-guard.spec.ts`, « ne
+qu'à `/api/route-planner` (test `gateway/src/__tests__/route-planner-guard.spec.ts`, « ne
 touche pas `/api/lfd` »).
 
 **Contrôle** — le jeton lu depuis un fichier local, jamais tapé en clair dans
 l'historique du shell :
 
 ```bash
-T='https://lafoliecoffee.info/api/osrm/route/v1/driving/6.9797,45.4486;6.7713,45.5724?overview=false'
+T='https://lafoliecoffee.info/api/route-planner/route/v1/driving/6.9797,45.4486;6.7713,45.5724?overview=false'
 
 # sans jeton : 401, corps « Gateway LFC : accès refusé. »
 curl -s -o /dev/null -w '%{http_code}\n' "$T"
@@ -128,38 +145,38 @@ curl -s -o /dev/null -w '%{http_code}\n' "$T"
 # mauvais jeton : 401, même corps
 curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $(openssl rand -hex 32)" "$T"
 
-# bon jeton : 200 (le premier appel réveille lfd-osrm — le rejouer s'il rend 503)
-curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $(cat ~/.lfd-osrm-token)" "$T"
+# bon jeton : 200 (le premier appel réveille lfd-route-planner — le rejouer s'il rend 503)
+curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $(cat ~/.lfd-route-planner-token)" "$T"
 ```
 
 ⚠️ Le secret GitHub ne se relit pas : pour le troisième contrôle, il faut la
 valeur. Soit la garder au moment de la générer
-(`openssl rand -base64 48 | tr -d '\n' | tee ~/.lfd-osrm-token | gh secret set OSRM_TOKEN`,
+(`openssl rand -base64 48 | tr -d '\n' | tee ~/.lfd-route-planner-token | gh secret set ROUTE_PLANNER_TOKEN`,
 puis `chmod 600`, et `rm` une fois la mise en service faite), soit sauter ce
 contrôle et laisser l'étape 3 le faire.
 
 **Retour arrière** : `pnpm --filter lfd-gateway exec wrangler rollback`. La
-passerelle est un Worker sans conteneur : le geste est immédiat. `/api/osrm`
+passerelle est un Worker sans conteneur : le geste est immédiat. `/api/route-planner`
 redevient 404, rien d'autre ne bouge.
 
-### 3. Poser `OSRM_URL` pour l'API, et la déployer
+### 3. Poser `ROUTE_PLANNER_URL` pour l'API, et la déployer
 
-GitHub → Settings → Variables → `OSRM_URL` =
-`https://lafoliecoffee.info/api/osrm` (exact : `https`, sans `/` final). Le
-secret `OSRM_TOKEN` est déjà là (préalable) : le workflow de l'API lit **le
+GitHub → Settings → Variables → `ROUTE_PLANNER_URL` =
+`https://lafoliecoffee.info/api/route-planner` (exact : `https`, sans `/` final). Le
+secret `ROUTE_PLANNER_TOKEN` est déjà là (préalable) : le workflow de l'API lit **le
 même**. Puis :
 
 ```bash
 gh workflow run deploy_lfd_api.yml --ref main
 ```
 
-⚠️ **Une ancienne `OSRM_URL=http://osrm.internal` persiste sur le Worker
+⚠️ **Une ancienne `ROUTE_PLANNER_URL=http://osrm.internal` persiste sur le Worker
 `lfd-api` si elle y a été posée** (forme B-ter) : un secret n'en sort que par
 `wrangler secret delete`. Le déploiement ci-dessus la **remplace** par la
 nouvelle valeur. En production, une adresse en `http://` éteint le calcul
-(« Calcul routier des tournées » dans la carte de santé) : jamais un Bearer
+(« Planificateur de tournées (calcul routier) » dans la carte de santé) : jamais un Bearer
 envoyé en clair. À vérifier par Hugo : `pnpm --filter lfd-api exec wrangler
-secret list` montre `OSRM_URL` et `OSRM_TOKEN` (les valeurs ne s'affichent
+secret list` montre `ROUTE_PLANNER_URL` et `ROUTE_PLANNER_TOKEN` (les valeurs ne s'affichent
 pas).
 
 Ce déploiement ne change **pas** le démarrage du conteneur de l'API : le
@@ -169,9 +186,9 @@ Worker `lfd-api` est revenu à son état d'avant le lot 8 (plus d'export
 
 **Contrôle** :
 
-- `/admin/ops/capabilities` ne liste plus « Calcul routier des tournées » ;
+- `/admin/ops/capabilities` ne liste plus « Planificateur de tournées (calcul routier) » ;
 - dans le back-office, Livraison → Proposer rend des tournées, tracées sur la
-  carte. Le premier « Proposer » du matin réveille `lfd-osrm` ; s'il est
+  carte. Le premier « Proposer » du matin réveille `lfd-route-planner` ; s'il est
   refusé (« Le calcul routier ne répond pas ») et que le suivant passe, c'est
   le démarrage à froid qui dépasse deux fois le délai (20 s,
   `OSRM_TIMEOUT_MS`, puis un nouvel essai) — à mesurer, puis à régler ;
@@ -189,7 +206,7 @@ chemin-là.
 revenir en arrière, c'est **éteindre le calcul**, pas redéployer :
 
 ```bash
-pnpm --filter lfd-api exec wrangler secret delete OSRM_URL
+pnpm --filter lfd-api exec wrangler secret delete ROUTE_PLANNER_URL
 ```
 
 (et retirer la variable GitHub, sans quoi le prochain déploiement la
@@ -202,32 +219,32 @@ Sans coupure, et **fermé à la fin** (L8b-C3). Les workflows ne font que
 sur le Worker** — la dernière étape est donc un geste à la main.
 
 1. **Ouvrir le second jeton sur la passerelle** : générer la nouvelle valeur
-   dans le secret GitHub `OSRM_TOKEN_NEXT`
-   (`openssl rand -base64 48 | tr -d '\n' | gh secret set OSRM_TOKEN_NEXT`),
+   dans le secret GitHub `ROUTE_PLANNER_TOKEN_NEXT`
+   (`openssl rand -base64 48 | tr -d '\n' | gh secret set ROUTE_PLANNER_TOKEN_NEXT`),
    puis relancer `deploy_lfd_gateway`. La passerelle accepte désormais
    l'ancien ET le nouveau.
    _Contrôle_ : `curl` avec l'ancien jeton → 200 ; avec le nouveau → 200.
 2. **Basculer l'API** : poser la **même** nouvelle valeur dans le secret
-   GitHub `OSRM_TOKEN` (l'API ne lit que lui), puis relancer
+   GitHub `ROUTE_PLANNER_TOKEN` (l'API ne lit que lui), puis relancer
    `deploy_lfd_api`.
    _Contrôle_ : Livraison → Proposer rend des tournées ; le journal de l'API
    ne porte pas `statut 401`.
-3. **Basculer la passerelle et refermer** : `OSRM_TOKEN` porte déjà la
+3. **Basculer la passerelle et refermer** : `ROUTE_PLANNER_TOKEN` porte déjà la
    nouvelle valeur (étape 2) — relancer `deploy_lfd_gateway`, qui la pose sur
-   la passerelle ; puis supprimer le secret GitHub `OSRM_TOKEN_NEXT` **et**
+   la passerelle ; puis supprimer le secret GitHub `ROUTE_PLANNER_TOKEN_NEXT` **et**
    celui du Worker :
 
    ```bash
-   gh secret delete OSRM_TOKEN_NEXT
-   pnpm --filter lfd-gateway exec wrangler secret delete OSRM_TOKEN_NEXT
+   gh secret delete ROUTE_PLANNER_TOKEN_NEXT
+   pnpm --filter lfd-gateway exec wrangler secret delete ROUTE_PLANNER_TOKEN_NEXT
    ```
 
    _Contrôle_ : `curl` avec l'ancien jeton → **401** ; avec le nouveau → 200 ;
-   `wrangler secret list` sur la passerelle ne montre plus `OSRM_TOKEN_NEXT`.
+   `wrangler secret list` sur la passerelle ne montre plus `ROUTE_PLANNER_TOKEN_NEXT`.
 
-⚠️ Entre la pose du nouveau `OSRM_TOKEN` dans GitHub (étape 2) et la fin du
+⚠️ Entre la pose du nouveau `ROUTE_PLANNER_TOKEN` dans GitHub (étape 2) et la fin du
 déploiement de l'API, **ne pas déployer la passerelle** : elle prendrait la
-nouvelle valeur pour `OSRM_TOKEN`, n'accepterait plus l'ancienne que l'API
+nouvelle valeur pour `ROUTE_PLANNER_TOKEN`, n'accepterait plus l'ancienne que l'API
 présente encore, et « Proposer » rendrait 401 jusqu'à la fin du déploiement
 de l'API. Une fois l'API basculée, l'ordre ne coûte plus rien.
 
@@ -253,11 +270,11 @@ déplacer, réordonner), charger, partir. Seul le calcul manque. Un tracé
 qu'OSRM ne rend pas n'est jamais un refus : la carte montre les repères sans
 ligne.
 
-**Le geste** : lire pourquoi `lfd-osrm` ne répond pas (`wrangler tail
-lfd-osrm`, `wrangler tail lfd-gateway`, puis les déploiements), et le remettre
+**Le geste** : lire pourquoi `lfd-route-planner` ne répond pas (`wrangler tail
+lfd-route-planner`, `wrangler tail lfd-gateway`, puis les déploiements), et le remettre
 en service — redéployer l'image de la carte en cours, ou revenir à la
 précédente (plus bas). `statut 401` dans le journal de l'API : les deux côtés
-n'ont pas le même jeton — voir « Tourner le jeton ». Retirer `OSRM_URL` ne
+n'ont pas le même jeton — voir « Tourner le jeton ». Retirer `ROUTE_PLANNER_URL` ne
 rend **rien** : sans elle, le calcul refuse aussi.
 
 Si OSRM **répond faux** (une carte mal préparée) : revenir à la carte
@@ -265,7 +282,7 @@ précédente, plus bas — c'est le seul retour arrière.
 
 ## Redéployer une carte (la refaire aujourd'hui)
 
-GitHub → Actions → `deploy_lfd_osrm` → **Run workflow** sur `main`. Le
+GitHub → Actions → `deploy_lfd_route_planner` → **Run workflow** sur `main`. Le
 workflow télécharge l'extrait du jour, prépare et vérifie le graphe, pousse
 l'image `lfd-osrm:savoie-<date du jour>-osrm<version>` et déploie. Le tag
 déployé est écrit dans le résumé de l'exécution.
@@ -281,9 +298,9 @@ L'ancienne image reste dans le registre Cloudflare. On redéploie son tag,
 
 ```bash
 # lister les tags disponibles
-pnpm --filter lfd-osrm exec wrangler containers images list
+pnpm --filter lfd-route-planner exec wrangler containers images list
 
-# depuis apps/lfd-osrm, sur une copie de travail propre
+# depuis apps/lfd-route-planner, sur une copie de travail propre
 sed -i '' "s/__CF_ACCOUNT_ID__/<account id>/; s/__IMAGE_TAG__/savoie-AAAAMMJJ-osrm5.27.1/" wrangler.jsonc
 pnpm exec wrangler deploy
 git checkout wrangler.jsonc   # ne jamais committer l'account id
@@ -335,9 +352,9 @@ rend la main : Postgres et MinIO montent quoi qu'il arrive.
 
 Le service `osrm` de `docker-compose.dev.yml` (`lfd-dev-osrm`, port **5055**)
 sert ce graphe avec l'image de `osrm-version.env` (même digest, amd64 — en
-émulation sur Mac) ; l'API le lit par `OSRM_URL=http://localhost:5055`
+émulation sur Mac) ; l'API le lit par `ROUTE_PLANNER_URL=http://localhost:5055`
 (`apps/lfd-api/.env.example`), **sans jeton** : hors production, ni `https://`
-ni `OSRM_TOKEN` ne sont exigés. Graphe absent : le conteneur sort en le disant
+ni `ROUTE_PLANNER_TOKEN` ne sont exigés. Graphe absent : le conteneur sort en le disant
 et redémarre de lui-même dès qu'il apparaît.
 
 ```bash
@@ -348,9 +365,9 @@ curl 'http://localhost:5055/route/v1/driving/6.988,45.4481;6.7713,45.5724?overvi
 Pour éprouver l'**image** de production elle-même :
 
 ```bash
-source apps/lfd-osrm/osrm-version.env
+source apps/lfd-route-planner/osrm-version.env
 docker build --platform linux/amd64 --build-arg OSRM_IMAGE="$OSRM_IMAGE" \
-  -f apps/lfd-osrm/Dockerfile -t lfd-osrm:local ~/.cache/lfd-map/graph
+  -f apps/lfd-route-planner/Dockerfile -t lfd-osrm:local ~/.cache/lfd-map/graph
 docker run --rm -p 5000:5000 lfd-osrm:local
 ```
 
@@ -363,12 +380,12 @@ le fera.
 
 ## Les tuiles de la carte des tournées (lot 10) — ⚠️ fabriquées, pas encore servies
 
-Même extrait, second usage : `apps/lfd-osrm/scripts/build-tiles.sh` fabrique
+Même extrait, second usage : `apps/lfd-route-planner/scripts/build-tiles.sh` fabrique
 les deux fichiers PMTiles de la carte du back-office à partir du
 `savoie.osm.pbf` que `build-graph.sh` laisse dans son dossier de sortie.
 
 ```bash
-apps/lfd-osrm/scripts/build-tiles.sh <sortie-du-graphe>/savoie.osm.pbf <dossier-hors-du-dépôt>
+apps/lfd-route-planner/scripts/build-tiles.sh <sortie-du-graphe>/savoie.osm.pbf <dossier-hors-du-dépôt>
 ```
 
 | Fichier                 | Contenu                                 | Taille (2026-09-29) |

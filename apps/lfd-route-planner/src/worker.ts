@@ -1,4 +1,4 @@
-// Worker d'entrée de `lfd-osrm` : le calcul d'itinéraires routiers de la
+// Worker d'entrée de `lfd-route-planner` : le calcul d'itinéraires routiers de la
 // Savoie, dans son propre conteneur (plan de tournée, lot 8, forme B-ter —
 // documentation/livraisons/plan-preparation-de-tournee.md, L8-C10/C11).
 //
@@ -8,7 +8,7 @@
 // déploiements, deux vies.
 //
 // POURQUOI aucune adresse publique : son seul appelant est la passerelle
-// (`lfd-gateway`), par un service binding sous `/api/osrm` — et c'est ELLE qui
+// (`lfd-gateway`), par un service binding sous `/api/route-planner` — et c'est ELLE qui
 // vérifie le jeton, avant tout routage (lot 8 bis, L8b-C1/C2). `lfd-api` passe
 // par elle en HTTPS, comme n'importe quel appel sortant. La passerelle reste
 // la seule porte d'entrée du compte ; une adresse ici en ferait une seconde,

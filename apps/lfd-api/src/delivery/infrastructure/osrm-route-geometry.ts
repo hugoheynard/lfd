@@ -3,7 +3,7 @@ import { Logger } from "@nestjs/common";
 import { RouteGeometry, type RouteLine } from "../domain/ports/route-geometry.js";
 import type { GeoPoint } from "../domain/value-objects/geo-point.js";
 import type { FetchFn } from "./ban-geocoder.js";
-import type { OsrmEndpoint } from "../../platform/config/osrm-endpoint.js";
+import type { RoutePlannerEndpoint } from "../../platform/config/route-planner-endpoint.js";
 import { osrmGet, withBearer } from "./osrm-fetch.js";
 
 /**
@@ -28,7 +28,7 @@ export class OsrmRouteGeometry extends RouteGeometry {
   private readonly fetchFn: FetchFn;
 
   constructor(
-    endpoint: OsrmEndpoint,
+    endpoint: RoutePlannerEndpoint,
     fetchFn: FetchFn = (url, init) => fetch(url, init),
     private readonly timeoutMs: number = OSRM_ROUTE_TIMEOUT_MS,
   ) {

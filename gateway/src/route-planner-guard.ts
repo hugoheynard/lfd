@@ -1,8 +1,8 @@
 /**
- * La garde de `/api/osrm` — le calcul routier, joint par l'API **à travers**
+ * La garde de `/api/route-planner` — le calcul routier, joint par l'API **à travers**
  * la passerelle (plan de tournée, lot 8 bis, L8b-C1 à C3).
  *
- * `lfd-osrm` n'a aucune adresse publique : cette garde est donc la SEULE
+ * `lfd-route-planner` n'a aucune adresse publique : cette garde est donc la SEULE
  * serrure devant lui. Trois règles, dans cet ordre :
  *
  *   1. **une limite de débit par IP**, avant tout — un bombardement coûte des
@@ -13,10 +13,10 @@
  *      rien ne passe. Un **401 uniforme**, même corps pour tous les refus, ni
  *      chemin ni liste des services ;
  *   3. le jeton ne va **pas plus loin** : l'en-tête est retiré avant de
- *      transmettre, `lfd-osrm` n'en a pas l'usage.
+ *      transmettre, `lfd-route-planner` n'en a pas l'usage.
  *
- * Deux secrets acceptés, pour tourner sans coupure (L8b-C3) : `OSRM_TOKEN` et,
- * pendant une rotation seulement, `OSRM_TOKEN_NEXT`.
+ * Deux secrets acceptés, pour tourner sans coupure (L8b-C3) : `ROUTE_PLANNER_TOKEN` et,
+ * pendant une rotation seulement, `ROUTE_PLANNER_TOKEN_NEXT`.
  *
  * Aucun import du monde Workers : des fonctions sur `Request`/`Response`,
  * exécutables sous Node pour les tests.
@@ -26,25 +26,25 @@ import type { Target } from "./routes";
 /**
  * En deçà, un secret n'en est pas un : un jeton vide ou de trois lettres ne
  * doit JAMAIS ouvrir la porte, même posé par erreur. `openssl rand -base64 48`
- * en donne 64 (L8b-C7). Même borne que `apps/lfd-api/src/platform/config/osrm-endpoint.ts`.
+ * en donne 64 (L8b-C7). Même borne que `apps/lfd-api/src/platform/config/route-planner-endpoint.ts`.
  */
-export const OSRM_TOKEN_MIN_LENGTH = 32;
+export const ROUTE_PLANNER_TOKEN_MIN_LENGTH = 32;
 
 /** Contrat minimal du binding Rate Limiting de Cloudflare (`ratelimits`). */
-export interface OsrmRateLimiter {
+export interface RoutePlannerRateLimiter {
   limit(options: { key: string }): Promise<{ success: boolean }>;
 }
 
 /** Ce que la garde lit dans l'environnement du Worker. */
-export interface OsrmGuardEnv {
-  readonly OSRM_TOKEN?: string;
-  readonly OSRM_TOKEN_NEXT?: string;
+export interface RoutePlannerGuardEnv {
+  readonly ROUTE_PLANNER_TOKEN?: string;
+  readonly ROUTE_PLANNER_TOKEN_NEXT?: string;
   /** Absent en `wrangler dev` : on ne limite alors rien, le jeton garde seul. */
-  readonly OSRM_RATE_LIMITER?: OsrmRateLimiter;
+  readonly ROUTE_PLANNER_RATE_LIMITER?: RoutePlannerRateLimiter;
 }
 
 /** L'issue : la requête à transmettre (jeton retiré), ou le refus à rendre. */
-export type OsrmAdmission =
+export type RoutePlannerAdmission =
   | { readonly admitted: true; readonly request: Request }
   | { readonly admitted: false; readonly response: Response };
 
@@ -59,28 +59,31 @@ const BEARER = /^Bearer (\S+)$/i;
 /**
  * La garde propre à une destination, AVANT tout routage — même avant de savoir
  * si son binding existe : un refus ne doit rien dire de ce qui se trouve
- * derrière. Rend la requête à transmettre, ou le refus. Seul `/api/osrm` en a
+ * derrière. Rend la requête à transmettre, ou le refus. Seul `/api/route-planner` en a
  * une ; `lfd-api` porte ses propres gardes.
  */
 export async function guardTarget(
   target: Target,
   request: Request,
-  env: OsrmGuardEnv,
+  env: RoutePlannerGuardEnv,
 ): Promise<Request | Response> {
-  if (target.kind !== "backend" || target.backend !== "osrm") {
+  if (target.kind !== "backend" || target.backend !== "routePlanner") {
     return request;
   }
-  const admission = await admitOsrm(request, env);
+  const admission = await admitRoutePlanner(request, env);
   return admission.admitted ? admission.request : admission.response;
 }
 
-/** Admet ou refuse une requête vers `/api/osrm`. */
-export async function admitOsrm(request: Request, env: OsrmGuardEnv): Promise<OsrmAdmission> {
-  if (!(await withinRate(request, env.OSRM_RATE_LIMITER))) {
+/** Admet ou refuse une requête vers `/api/route-planner`. */
+export async function admitRoutePlanner(
+  request: Request,
+  env: RoutePlannerGuardEnv,
+): Promise<RoutePlannerAdmission> {
+  if (!(await withinRate(request, env.ROUTE_PLANNER_RATE_LIMITER))) {
     return { admitted: false, response: tooManyRequests() };
   }
   const presented = presentedToken(request);
-  const accepted = [env.OSRM_TOKEN, env.OSRM_TOKEN_NEXT].filter(isUsableSecret);
+  const accepted = [env.ROUTE_PLANNER_TOKEN, env.ROUTE_PLANNER_TOKEN_NEXT].filter(isUsableSecret);
   if (presented === null || !(await matchesAny(presented, accepted))) {
     return { admitted: false, response: unauthorized() };
   }
@@ -91,7 +94,7 @@ export async function admitOsrm(request: Request, env: OsrmGuardEnv): Promise<Os
 
 /** Un secret vide, absent ou trop court n'est JAMAIS un secret valide. */
 function isUsableSecret(secret: string | undefined): secret is string {
-  return secret !== undefined && secret.length >= OSRM_TOKEN_MIN_LENGTH;
+  return secret !== undefined && secret.length >= ROUTE_PLANNER_TOKEN_MIN_LENGTH;
 }
 
 /** Le jeton de `Authorization: Bearer …`, ou `null` s'il manque ou est trop court. */
@@ -136,13 +139,13 @@ function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
  */
 async function withinRate(
   request: Request,
-  limiter: OsrmRateLimiter | undefined,
+  limiter: RoutePlannerRateLimiter | undefined,
 ): Promise<boolean> {
   if (limiter === undefined) {
     return true;
   }
   const ip = request.headers.get("cf-connecting-ip");
-  const key = ip !== null && ip !== "" ? `osrm:${ip}` : "osrm:sans-ip";
+  const key = ip !== null && ip !== "" ? `route-planner:${ip}` : "route-planner:sans-ip";
   const { success } = await limiter.limit({ key });
   return success;
 }
