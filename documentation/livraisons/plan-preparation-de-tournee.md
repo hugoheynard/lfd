@@ -958,6 +958,99 @@ n'est corrigé ; tout est à reprendre avec les deux sources de fenêtre.
   abonnements ne génèrent aucune commande aujourd'hui ; le devis n'a pas de
   tranche et ne doit pas en exiger.
 
+### Lot 7 — Le calculateur de tournée
+
+> **Ouvert le 2026-09-29.** Hugo : « je veux qu'on arrive au calculateur de
+> tournée ». 📐 Conception avant `vitruve` ; rien n'est bâti. L'algorithme est
+> celui de [`architecture-road-livraison-tournees.md`](architecture-road-livraison-tournees.md)
+> §7, gardé tel quel à la réécriture du 2026-09-29 ; ce qui change est **où il
+> se branche** : sur la composition du lot 3, qui existe.
+
+**Ce que l'équipe obtient** : sur `/livraison/tournees`, un bouton
+**« Proposer »**. Le calculateur répartit les commandes du jour entre les
+véhicules choisis et ordonne chaque tournée ; la proposition s'affiche **en
+aperçu**, avec les kilomètres et la durée estimée de chaque tournée. On
+l'**applique**, ou on la jette. Appliquée, elle devient une composition
+ordinaire, que l'on corrige à la main comme avant. **Un humain a le dernier
+mot** (conception v1, §3) : le calculateur n'écrit jamais seul.
+
+#### Conception (2026-09-29, avant `vitruve`)
+
+**L7-C1 — Situer chaque arrêt.** Un point par commande, dans cet ordre
+(architecture §8.1, sans le point livreur qui attend le lot 6) :
+
+1. le **point GPS du carnet** (`deliverySpecs.gps`), relu par le lien d'adresse
+   du lot 1 ;
+2. sinon, le **géocodage** de l'adresse livrée figée, par la Base Adresse
+   Nationale (`api-adresse.data.gouv.fr` : gratuite, sans clé, française),
+   **mis en cache** par adresse normalisée dans une table du bloc `delivery` ;
+3. sinon : l'arrêt est **« non situé »**, exclu de la proposition, et reste à
+   répartir à la main. L'écran le dit ; on ne l'invente pas.
+
+Le **départ** est le point GPS du point de retrait choisi au lot 2 ; sans lui,
+pas de proposition (l'écran renvoie au réglage).
+
+⚠️ Le géocodage **envoie des adresses de clients** à un service de l'État :
+la page de confidentialité le nomme (L7-Q1).
+
+**L7-C2 — Ce qu'un trajet coûte.** Au premier passage, **à vol d'oiseau**
+(haversine) multiplié par un **facteur de détour** et divisé par une vitesse
+moyenne — deux réglages de la livraison, pas des constantes. C'est grossier en
+montagne, et c'est dit à l'écran (« estimation à vol d'oiseau »). Le port
+`DistanceMatrix` / `CostFn` de l'architecture §7 permet de brancher plus tard
+une vraie distance routière (OSRM, ou un service managé) **sans toucher** à
+l'algorithme.
+
+**L7-C3 — Répartir, puis ordonner** (architecture §7, gardé) :
+
+- **répartir** les arrêts entre K véhicules par **k-medoids sur les coûts**,
+  jamais par l'angle autour du dépôt — une vallée fait diverger proximité
+  angulaire et routière ;
+- **ordonner** chaque tournée en **ATSP** : plus proche voisin, puis Or-opt et
+  2-opt, départ et retour au point de départ ;
+- **débordement** : si les véhicules ne suffisent pas, l'excédent reste
+  « à répartir », signalé ; jamais tronqué en silence.
+
+Fonctions **pures**, déterministes (même entrée, même proposition : pas
+d'aléa, ou un aléa à graine fixe), dans `delivery/domain/services/`. À
+l'échelle réelle (trois véhicules, quelques dizaines d'arrêts), le calcul tient
+en quelques millisecondes : pas de file d'attente, pas de service externe.
+
+**L7-C4 — Les fenêtres, en contrainte douce.** Tant que le lot 5 n'existe pas,
+les fenêtres sont les **défauts du carnet**, pas des promesses (lot 1). Le
+calculateur les prend en **pénalité** (un arrêt dont la fenêtre finit tôt
+passe devant), jamais en contrainte dure ; il signale ce qu'il ne peut pas
+tenir. OR-Tools n'entre que si les fenêtres deviennent dures.
+
+**L7-C5 — Sur quoi il travaille.** Par défaut : les commandes **à répartir** du
+jour, et les tournées **non parties** et **sans sac chargé** — il ne déplace
+jamais un sac déjà dans une camionnette (lot 4, L4-C5). Les véhicules : ceux
+qu'on coche (par défaut les actifs du jour). (**L7-Q2** : recomposer aussi ce
+qu'un humain a déjà placé, ou seulement compléter ?)
+
+**L7-C6 — Proposer n'écrit rien ; appliquer écrit tout ou rien.** « Proposer »
+est une **lecture** (`GET`) : elle rend la proposition calculée, avec les
+versions des tournées qu'elle a lues. « Appliquer » est **une** commande qui
+ouvre les tournées manquantes, affecte, déplace et réordonne **dans une seule
+transaction**, en vérifiant ces versions : si quelqu'un a composé entre-temps,
+refus « la composition a changé, reproposez ». Un fait au journal :
+`delivery_round.proposal_applied`, avec ce qui a changé.
+
+**L7-C7 — Le droit.** Proposer se lit sous `delivery_rounds:read` ; appliquer
+écrit sous `delivery_rounds:write` : c'est de la composition. **Pas de droit
+neuf.**
+
+**Questions à Hugo** :
+
+- **L7-Q1** — D'accord pour géocoder par la Base Adresse Nationale (adresses
+  envoyées à un service public français), avec le cache ?
+- **L7-Q2** — « Proposer » recompose-t-il **aussi** ce qu'un humain a déjà placé
+  (recommandé : non par défaut, une case « tout recomposer »), ou ne fait-il
+  que compléter ?
+- **L7-Q3** — Le facteur de détour et la vitesse moyenne : une première valeur
+  (recommandé : 1,4 et 35 km/h en montagne), à ajuster à l'usage dans les
+  réglages de livraison ?
+
 ### Plus tard, et seulement sur décision
 
 - **Lot 6 — La porte** — ⏸ **en dette** (Hugo, 2026-09-29 : « met le 6 en dette
@@ -1191,9 +1284,9 @@ n'est corrigé ; tout est à reprendre avec les deux sources de fenêtre.
   concevoir dans `order/`, ou un écran provisoire qui liste les ratées
   (L6-C14). Le 6 b (livreur sans compte) attend.
 
-- **Lot 7 — La proposition automatique** : l'algorithme de l'architecture
-  (k-medoids puis ordre ATSP) **propose** une répartition que l'humain corrige.
-  Seulement si composer à la main prend trop de temps chaque matin.
+- **Lot 7 — Le calculateur de tournée** : remonté en tête par Hugo le
+  2026-09-29 (« je veux qu'on arrive au calculateur de tournée »). Sa
+  conception est désormais un lot à part entière : voir **Lot 7** ci-dessous.
 
 ## 4. Par où commencer
 
