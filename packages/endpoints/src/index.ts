@@ -209,6 +209,20 @@ const LEGACY_B2B_ADMIN_FRONT = "https://lfc-b2b-admin.pages.dev";
 export const ZONE_CLIENT_FRONT = "https://lafoliecoffee.info";
 
 /**
+ * Le domaine propre du back-office (Hugo, 2026-09-29), branché sur le projet
+ * Pages `lfd-backoffice` par un CNAME à la racine. Il REJOINT
+ * `PROD_FRONT_ORIGINS.b2bAdminFront` le temps de la bascule : les deux
+ * adresses servent le même projet, et des onglets restent ouverts sur
+ * l'ancienne. Quand Cloudflare Access le protège et que `pages.dev` est
+ * redirigé, c'est lui qui deviendra `b2bAdminFront`.
+ *
+ * ⚠️ Auth0 : ce domaine doit figurer dans les URL de rappel ET les origines
+ * web autorisées de l'application du back-office — oublié, la connexion
+ * échoue au retour.
+ */
+export const BACKOFFICE_DOMAIN_FRONT = "https://lfd-backoffice.com";
+
+/**
  * Origines CORS autorisées **en prod**. Une seule liste, pour la même raison
  * qu'en dev : une seule API, trois fronts. Liste **fermée** → un site tiers
  * reste refusé.
@@ -216,6 +230,7 @@ export const ZONE_CLIENT_FRONT = "https://lafoliecoffee.info";
 export const PROD_CORS_ORIGINS: string[] = [
   PROD_FRONT_ORIGINS.b2bFront,
   PROD_FRONT_ORIGINS.b2bAdminFront,
+  BACKOFFICE_DOMAIN_FRONT,
   PROD_FRONT_ORIGINS.pimFront,
   LEGACY_B2B_FRONT,
   LEGACY_B2B_ADMIN_FRONT,
