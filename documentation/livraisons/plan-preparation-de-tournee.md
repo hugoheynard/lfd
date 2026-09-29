@@ -1323,6 +1323,35 @@ choix à faire en second, une fois A retenu.
 Ce choix touche le **déploiement** et finira dans le runbook : **`vitruve`
 d'office** avant de bâtir.
 
+**✅ Tranché par Hugo le 2026-09-29 : A, OSRM dans l'image de `lfd-api`.**
+
+#### L8-C8 — La forme retenue, avant `vitruve`
+
+- **Deux processus dans le conteneur** : `osrm-routed` sur `localhost` (port
+  interne, jamais exposé par `EXPOSE`), et Node. Un petit lanceur démarre OSRM,
+  attend qu'il réponde, puis démarre Node ; **si OSRM meurt, Node continue**
+  (repli vol d'oiseau, L8-C3) et le lanceur le relance. Le conteneur ne doit
+  jamais tomber à cause d'OSRM.
+- **Le binaire** vient de l'image officielle `osrm-backend` (étape de build
+  multi-étapes), à la **même version** que le graphe (v5.27.1 mesurée) : un
+  graphe préparé par une version se charge mal dans une autre.
+- **La carte, dans l'image, préparée ailleurs** : un workflow **mensuel**
+  télécharge l'extrait, découpe la Savoie, prépare le graphe et le publie dans
+  le bucket privé (R2), daté. Le build de `lfd-api` **récupère le dernier
+  graphe** et le copie dans l'image. Ainsi : aucun téléchargement au démarrage
+  (le réveil reste rapide), aucun redéploiement forcé chaque mois — l'API
+  prend la carte la plus récente à son prochain déploiement, qui arrive de
+  toute façon plus souvent. Si le graphe manque au build, le build **échoue**
+  plutôt que de livrer une API sans carte en silence.
+- **Taille** : l'image grossit d'environ 220 Mo (binaire + graphe). Dans
+  l'instance `basic` (1 Gio, 4 Go de disque) : Node + 50 Mo d'OSRM.
+- **La porte `lint:deployed-app-files`** et le filtre de chemins du workflow
+  de déploiement doivent connaître les nouveaux fichiers (lanceur, étape
+  OSRM) : un filtre qui les ignore ne redéploierait pas l'API quand ils
+  changent (mémoire du dépôt : « vert ne veut pas dire déployé »).
+- **En dev et en e2e** : pas d'OSRM, URL absente → vol d'oiseau. Un
+  `docker compose` optionnel lance OSRM à côté pour qui veut le tester.
+
 #### Questions à Hugo
 
 - **L8-Q1 — ✅ la Savoie seule** (Hugo, 2026-09-29) : « je vais jusqu'à La
