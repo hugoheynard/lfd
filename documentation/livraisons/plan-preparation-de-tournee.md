@@ -1175,6 +1175,20 @@ n'est corrigé ; tout est à reprendre avec les deux sources de fenêtre.
   - **L6-Q9** — Combien de temps garder ce que le départ a figé (adresses,
     contacts, e-mails) ? Recommandé : 90 jours, puis effacé.
 
+  **Tranché par Hugo le 2026-09-29** :
+
+  - **L6-Q6 — au départ.** Le courriel au contact part quand la tournée part.
+  - **L6-Q7 — celui qui compose** affecte le livreur à la tournée (lot 3 :
+    écran des tournées, sous `delivery_rounds:write`).
+  - **L6-Q8 — la photo est obligatoire** pour « déposé sans personne ».
+  - **L6-Q9 — 90 jours**, puis effacé : ce que le départ a figé (adresses,
+    contacts, e-mails). Un balayage quotidien, comme celui des traces de
+    journée ; la page de confidentialité le dit.
+
+  **Ce qu'il reste avant de bâtir le 6 a** : le 6 c (livraisons ratées) à
+  concevoir dans `order/`, ou un écran provisoire qui liste les ratées
+  (L6-C14). Le 6 b (livreur sans compte) attend.
+
 - **Lot 7 — La proposition automatique** : l'algorithme de l'architecture
   (k-medoids puis ordre ATSP) **propose** une répartition que l'humain corrige.
   Seulement si composer à la main prend trop de temps chaque matin.
