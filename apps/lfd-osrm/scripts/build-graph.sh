@@ -40,9 +40,10 @@ esac
 
 EXTRACT_URL="https://download.geofabrik.de/europe/france/rhone-alpes-latest.osm.pbf"
 POLYGON_URL="https://polygons.openstreetmap.fr/get_poly.py?id=7425&params=0"
-# Val d'Isère (le labo) → Arc 1800 : le trajet de la mesure L8-C6
-# (OSRM 46,7 km · 58 min ; réalité 55 min). Longitude,latitude.
-PROBE_ROUTE="6.9797,45.4486;6.7713,45.5724"
+# Le labo (Val d'Isère, point donné par Hugo le 2026-09-29) → Arc 1800.
+# Longitude,latitude. Sur la carte du 2026-09-29 : 42,0 km · 51 min ; la
+# réalité vécue est de 55 min, Google Maps à 4 min près (plan, L8-C6).
+PROBE_ROUTE="6.9823,45.4485;6.7713,45.5724"
 PLATFORM="linux/amd64"
 
 run_osrm() {

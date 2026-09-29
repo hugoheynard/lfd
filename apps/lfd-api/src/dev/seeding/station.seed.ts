@@ -72,6 +72,11 @@ interface SeedPoint {
   readonly codePostal: string;
   readonly isDefault: boolean;
   readonly opening: PickupOpening;
+  /**
+   * Le point GPS, ou `null`. Sans lui, le point de départ des tournées n'a pas
+   * de position, et le calculateur refuse de proposer (plan de livraison, L7-C1).
+   */
+  readonly gps: { readonly lat: number; readonly lng: number } | null;
   /** La remise du contrat, pas une paire mode/valeur : c'est ce que le fil porte. */
   readonly discount: CartAdjustment | null;
 }
@@ -84,6 +89,8 @@ const POINTS: readonly SeedPoint[] = [
     codePostal: "73150",
     isDefault: true,
     opening: LABO_OPENING,
+    // Le vrai point du labo, donné par Hugo le 2026-09-29.
+    gps: { lat: 45.4485, lng: 6.9823 },
     // 10 %, en **points de base**. Le second point n'en porte aucune, à dessein
     // — un écran qui n'aurait vu que des points remisés ne montrerait jamais le
     // renoncement.
@@ -96,6 +103,7 @@ const POINTS: readonly SeedPoint[] = [
     codePostal: "73150",
     isDefault: false,
     opening: VILLAGE_OPENING,
+    gps: null,
     discount: null,
   },
 ];
@@ -150,6 +158,7 @@ async function seedPickupPoints({ prisma, commands }: StationContext): Promise<v
       discount: point.discount,
       discountAudiences: ALL_DISCOUNT_AUDIENCES,
       opening: point.opening,
+      gps: point.gps,
     };
     await commands.execute(new CreatePickupAddressCommand(payload));
     console.log(`✓ Point de retrait « ${point.label} » semé.`);
