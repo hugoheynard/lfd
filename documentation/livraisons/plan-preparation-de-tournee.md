@@ -1097,6 +1097,84 @@ n'est corrigé ; tout est à reprendre avec les deux sources de fenêtre.
   - **L6-Q8** — La photo de dépôt : obligatoire pour « déposé sans personne »
     (recommandé), et facultative pour un échec ?
 
+  #### Contradiction de `vitruve` — v2 du lot 6 (2026-09-29)
+
+  Cinq `BLOQUANT`, sept `SÉRIEUX`. La v1 laissait la porte entre deux blocs
+  reliés par un événement. La v2 choisit une forme ; elle **remplace** L6-C1 à
+  L6-C3 là où elles se contredisent.
+
+  **L6-C7 — Un geste, une transaction, pas d'événement.** La v1 attestait chez
+  `handover` puis comptait sur `OrderHandedOverEvent` pour clore l'arrêt. Or
+  cet événement n'est ni persisté ni rejoué, et porte la référence, pas l'id :
+  un abonné qui échoue laissait l'arrêt ouvert, et l'index de C12 retenait la
+  commande **pour toujours**. Désormais :
+
+  - `delivery` **déclare** un port `delivery/channels/handover/`
+    (« atteste cette remise »), que `handover` **implémente** — la forme de
+    `production/channels/handover/` ; l'arête `handover → delivery` par ce
+    canal, et c'est tout ;
+  - le geste du livreur, dans **une** unité de travail : vérifier que l'arrêt
+    est dans **sa** tournée, appeler le port (qui écrit `order_handover`), puis
+    `closeStop`. Tout passe, ou rien ;
+  - « Raté » ne passe pas par `handover` : il clôt l'arrêt seul.
+
+  **L6-C8 — `deposit` dans `HandoverVia`, et tout ce qu'il touche.** Deux
+  mappers ramènent aujourd'hui toute valeur autre que `scan` à `manual`
+  (`prisma-order-handover.repository.ts`, `prisma-handover-attestations.reader.ts`) :
+  un dépôt relu serait devenu une « saisie à la main », et `republish()` l'aurait
+  propagé. Le type existe aussi en copie dans le commerce
+  (`b2b/orders/domain/services/handover.ts`) et dans le journal
+  (`z.enum(["scan","manual"])`, `journal-facts/orders-production.ts`). Tous
+  sont mis à jour ensemble ; les fronts affichent une valeur inconnue comme
+  « autre », jamais comme `scan`. ⚠️ **Irréversible** dès le premier dépôt écrit
+  en production.
+
+  **L6-C9 — Les preuves appartiennent au retrait.** Photo de dépôt et tracé de
+  signature prouvent une **remise** : une table de `handover`
+  (`order_handover_proof` : clé de stockage, type, auteur), fichiers dans le
+  bucket privé des pièces (R2). Pas le socle `photo-cards`, qui est interne à
+  `b2b` (`CLAUDE.md` §3) et sert des listes ordonnées de cartes, pas une pièce
+  unique. La remise « sans code, signature exigée » pose `via = manual` avec
+  sa signature jointe.
+
+  **L6-C10 — Le mur, et ce qu'il ne couvre pas.** Le rôle `livreur` n'a **que**
+  `delivery_doorstep` — jamais `b2b_orders`. Le mur « sa tournée » tient pour
+  lui. ⚠️ Tout porteur de `b2b_orders` peut toujours attester n'importe quel
+  jeton au comptoir (`handover.controller.ts`) : c'est voulu, et ce n'est pas le
+  mur du livreur.
+
+  **L6-C11 — Clore pendant la tournée.** `closeStop` est l'**exception écrite** à
+  I6 (une tournée partie ne se modifie plus) : c'est le seul geste permis après
+  le départ. La vue livreur lit **l'ordre figé au départ**, pas `position` :
+  les numéros d'arrêt ne bougent pas pendant la tournée. Une commande retirée
+  **au comptoir** alors qu'elle était en tournée : la vue livreur le montre
+  (« déjà retirée »), et le livreur clôt l'arrêt sans attester.
+
+  **L6-C12 — Le courriel au contact, envoyé par le commerce.** Le jeton et
+  l'e-mail vivent au commerce : un secret n'a rien à faire dans le bloc
+  logistique. `delivery` publie un fait de départ dans son canal commerce ; le
+  commerce l'écoute et envoie. L'événement n'étant pas rejoué, un bouton
+  **« Renvoyer le code »** existe sur l'arrêt : un livreur ne se retrouve
+  jamais devant une porte sans recours.
+
+  **L6-C13 — L'e-mail du contact, dans un contrat servi.** Trois états sur les
+  lignes stockées : clé absente (avant), vide, valeur. La lecture traite
+  « absent » et « vide » pareil ; l'écriture ne pose jamais de chaîne vide.
+  Le snapshot du départ le recopie ; la vue livreur **ne l'affiche pas** (il
+  n'en a pas besoin). La page de confidentialité le nomme, avec une durée de
+  conservation du snapshot (**L6-Q9**).
+
+  **L6-C14 — Sans le 6 c, une livraison ratée reste bloquée.** « Raté » libère
+  l'index, mais la commande reste du jour J : l'affectation refuse une
+  commande d'un autre jour (lot 3). Elle ne réapparaît nulle part tant que
+  l'admin ne peut pas choisir (6 c). **Le 6 a ne se livre pas en production
+  sans le 6 c**, ou sans un écran provisoire qui au moins liste les ratées.
+
+  Questions à Hugo, en plus de L6-Q6 à Q8 :
+
+  - **L6-Q9** — Combien de temps garder ce que le départ a figé (adresses,
+    contacts, e-mails) ? Recommandé : 90 jours, puis effacé.
+
 - **Lot 7 — La proposition automatique** : l'algorithme de l'architecture
   (k-medoids puis ordre ATSP) **propose** une répartition que l'humain corrige.
   Seulement si composer à la main prend trop de temps chaque matin.
