@@ -472,8 +472,12 @@ unique partiel porte sur `order_id` des arrêts `removed_at IS NULL AND
 closed_at IS NULL`. `closed_at` existe dès ce lot, nul, et c'est le lot 6 qui
 le pose quand un arrêt se termine (livré **ou raté**). Une livraison ratée
 libère donc la commande pour un autre jour **sans reconstruire l'index en
-production**. `closed_at` appartient à l'écrivain de l'exécution, pas à la
-tournée (C10).
+production**. 🔴 **Corrigé le 2026-09-29** (contradiction du lot 4) : `closed_at`
+appartient à la **tournée**, pas à l'exécution. Le confier à l'exécution
+aurait mis deux écrivains sur une même ligne — un `save` de tournée l'aurait
+écrasé, la panne même que C10 ferme. Au lot 6, l'exécution rapporte livré ou
+raté, et c'est la tournée qui pose `closed_at` par `closeStop` ; un arrêt clos
+ne se réordonne, ne se déplace ni ne se retire plus (I4).
 
 **C13 — La transaction de I7 appartient à l'infrastructure.** Un service de
 domaine ne peut pas en ouvrir. Le port d'écriture expose `saveMove(from, to)` ;
@@ -529,30 +533,190 @@ feuilles d'atelier, et l'écran dit **ce qui manque à ce véhicule** — et cri
 un sac scanné appartient à **un autre** véhicule. Avec trois véhicules, c'est
 l'erreur probable : le bon sac, dans la mauvaise camionnette.
 
-**Comment** (conception v1, §4) :
+#### Conception (2026-09-29, avant `vitruve`)
 
-- un second lecteur de QR, `referenceOf`, pour `/colisage/{référence}`. Ne pas
-  assouplir `tokenOf`, dont le refus est voulu ;
-- la retardataire, sans feuille, se coche à la main, en cas nommé ;
-- saisie manuelle en repli : `BarcodeDetector` n'existe pas partout (à vérifier
-  sur les téléphones des livreurs, conception v1, §13) ;
-- la feuille d'atelier gagnerait à **imprimer le véhicule** — mais elle sort
-  quand la production clôt la journée, souvent avant la composition. À
-  trancher à ce lot : réimprimer, ou étiqueter à part.
+**L4-C1 — L'exécution d'un arrêt, dans sa table.** C'est la table que le lot 3
+a annoncée sans la créer (C10) : `delivery_stop_execution`, une ligne par
+arrêt, écrite **par l'exécution seule**. Au lot 4 : `loaded_at`, `loaded_by`,
+`loaded_via` (`scan` ou `manual`). Au lot 6, s'y ajouteront le livré ou le
+raté, et c'est elle qui posera `closed_at` sur l'arrêt (C12). Elle porte
+`service_day` et les trois déclencheurs `day_change` (D7).
 
-« Chargé » se **stocke** sur l'arrêt de la tournée : la table existe depuis le
-lot 3.
+**L4-C2 — Le geste : choisir le véhicule, puis scanner.** L'écran
+`/livraison/chargement` montre les tournées du jour ; on en ouvre une, et
+chaque scan d'une feuille d'atelier coche son arrêt. L'écran compare **un
+ensemble à un véhicule** (conception v1, §4) :
+
+- ✅ le sac est dans cette tournée → coché ;
+- 🔴 le sac est dans **une autre tournée** → alarme qui **nomme** le bon
+  véhicule (« ce sac part dans le Kangoo blanc ») ; rien n'est coché ;
+- 🔴 le sac n'est dans **aucune tournée** → « à répartir d'abord » ;
+- ⚠️ la **retardataire** (sans feuille d'atelier, lot 1) se coche à la main,
+  `loaded_via = manual`, et l'écran la montre à part tant qu'elle n'est pas
+  cochée : c'est le sac qu'on oublie ;
+- le bas de l'écran dit **ce qui manque encore**, par référence et enseigne.
+
+**L4-C3 — Lire le QR.** Un second lecteur, `referenceOf`, accepte
+`/colisage/{référence}` ; `tokenOf` reste tel quel, son refus est voulu.
+Saisie de la référence en repli. ⚠️ `BarcodeDetector` : son support sur les
+téléphones réels n'est pas vérifié (conception v1, §13) — à mesurer sur
+l'appareil du dépôt avant de bâtir l'écran.
+
+**L4-C4 — Le départ gèle la tournée.** Un bouton **« Partir »** par tournée :
+il pose `departed_at` sur la tournée (écrivain : la tournée), et à partir de
+là :
+
+- composer (affecter, déplacer, réordonner, retirer) est **refusé** sur une
+  tournée partie (I6) — les autres restent modifiables, puisque chacune a son
+  verrou (C1) ;
+- partir avec des arrêts **non chargés** : refusé, sauf à les **retirer**
+  d'abord (Q11 : à la main) — ou autorisé avec confirmation ? (**Q14**) ;
+- ce que le livreur verra à la porte (adresse, fenêtre, contact, consignes)
+  est **figé au départ** : une correction du carnet après le départ ne change
+  plus la feuille d'une camionnette déjà sur la route (architecture §8,
+  « snapshot au départ »).
+
+**L4-C5 — Déplacer un arrêt chargé est refusé** (C11) : le sac est dans la
+mauvaise camionnette. Le refus dit de le décharger d'abord : « Décharger »
+efface `loaded_at` (fait au journal).
+
+**L4-C6 — Le droit `delivery_loading`** (tableau Q7/Q8) : lecture et écriture
+pour `admin` et `comptoir`. Journal : `delivery_stop.loaded`, `.unloaded`,
+`delivery_round.departed`.
+
+**L4-C7 — L'étiquette du véhicule.** La feuille d'atelier sort à la clôture de
+la production, souvent **avant** la composition : elle ne peut pas imprimer le
+véhicule. Recommandation : **ne rien réimprimer** ; c'est le scan qui dit où va
+le sac. (**Q15** si l'équipe veut une étiquette.)
+
+#### Contradiction de `vitruve` (2026-09-29) — ce qu'elle change
+
+Deux `BLOQUANT`, six `SÉRIEUX`. Les corrections, et ce qui reste à trancher :
+
+- 🔴 **Le « snapshot au départ » n'avait ni source ni auteur.** Le serveur
+  `delivery` ne lit que des références ; l'adresse et le contact viennent de la
+  feuille de route, jointe **par l'écran**. Correction : au départ, le canal
+  commerce (`DeliveryOrdersReader`) rend aussi, pour les arrêts de la tournée,
+  **adresse livrée, contact, fenêtre, signature et note** — sans montant — et
+  « Partir » les **recopie** dans l'exécution, écrite par l'exécution. C'est ce
+  que lira la vue livreur (lot 6).
+- 🔴 **« À la main » était contournable.** Le serveur `delivery` ne sait pas
+  quelle commande est sans feuille d'atelier (c'est la production, et
+  `delivery → production` est fermé). Correction : ouvrir **un** canal
+  `delivery → production`, sur le modèle de celui que la production publie
+  déjà pour le retrait (`AtelierSheetsReader`), et **refuser** `manual` sur un
+  arrêt qui a une feuille. La matrice de `CLAUDE.md` §3 gagne une case.
+- **Un QR par commande, pas par sac** (`atelier-sheet-pdf.ts`). Une commande en
+  deux sacs se coche au premier scan. **Q20.**
+- **L'iPhone ouvre le colisage.** `BarcodeDetector` n'existe pas sous Safari ;
+  l'appareil photo natif ouvrirait `/colisage/{référence}`, l'écran qui
+  **déclare la commande prête** (`b2b_orders:write`). Un livreur qui scanne de
+  réflexe ferait un geste de colisage. **Q16 devient bloquante.**
+- **Déplacer un arrêt chargé, et partir pendant un chargement** : ce sont des
+  vérifications entre deux tables. Correction : `saveMove` et « Partir »
+  **verrouillent aussi les lignes d'exécution** de la tournée dans leur
+  transaction, après les tournées, dans l'ordre des identifiants.
+- **Après le départ, l'exécution se gèle aussi** : scanner ou décharger sur une
+  tournée partie est refusé.
+- **Un sac d'une autre tournée, peut-être d'un autre jour** : la résolution
+  référence → arrêt vivant se fait **tous jours confondus** (I3), par une
+  lecture du dépôt de `delivery` ; une référence inconnue est demandée au
+  canal commerce.
+- **Décharger** efface `loaded_at`, `loaded_by` et `loaded_via` ; le fait au
+  journal garde qui avait chargé.
+- ⚠️ **Chaque scan fait avancer `production.day_change`** : Supervision,
+  colisage et comptoir se rechargeront à chaque sac. À mesurer ; si c'est trop,
+  l'exécution passe dans un schéma à elle (une exception D7 écrite ne suffit
+  pas : la table porte bien une journée).
+- `delivery_loading` : attributions à trancher **avant** la migration.
+
+**Ce que le lot 4 ne fait pas** : aucune vue livreur, aucun geste à la porte
+(lot 6).
+
+**Questions à Hugo** — les trois premières **avant** de bâtir :
+
+- **Q14** — Partir avec des sacs non chargés : **refusé** (recommandé : on
+  retire l'arrêt, le geste se voit), ou permis avec confirmation ?
+- **Q16** — Sur quel appareil charge-t-on ? Un téléphone Android ou une
+  tablette avec Chrome lit le QR dans l'écran ; un **iPhone** ne le peut pas,
+  et son appareil photo ouvrirait le colisage. Et le dépôt a-t-il du réseau ?
+- **Q20** — Une commande part-elle parfois en **plusieurs sacs** ? Si oui, il
+  faut un QR par sac, donc changer la feuille d'atelier.
+- **Q15** — Une étiquette « véhicule » sur les sacs, ou le scan suffit
+  (recommandé) ?
+- **Q21** — `delivery_loading` : `admin` et `comptoir` en écriture, comme
+  prévu ?
 
 ### Lot 5 — La tranche d'une heure en livraison (côté commande)
 
-Indépendant des autres, et côté **commerce** : rendre la tranche
-obligatoire en livraison, la découper par heure comme `pickupSlots`, et la
-contrôler contre les créneaux de réception de l'adresse (y compris `perDay`).
-Sans ce lot, la feuille de route du lot 1 affiche les fenêtres **par défaut**
-du carnet, pas des heures promises.
+Côté **commerce** et **boutique** : la tranche d'une heure devient une vraie
+promesse, choisie à la commande. Décidé le 2026-09-11 (conception v1, §7) ;
+rien n'est bâti.
 
-⚠️ Il change ce que le client choisit à la commande : un contrat servi à la
-boutique en ligne, qui se fait en ajout (`CLAUDE.md` §0).
+#### État des lieux, relevé le 2026-09-29
+
+- **La boutique n'envoie aucune heure de livraison.** `requestedWindow` ne part
+  qu'en retrait (`client-orders.service.ts`). La grille d'heures de
+  `/nouvelle-commande` en livraison est **décorative** (`DELIVERY_SLOTS`, qui
+  dit lui-même n'affirmer rien de vrai).
+- 🔴 **Elle n'envoyait pas non plus l'adresse du carnet** :
+  `deliveryAddressId: null` en dur, pour toutes les commandes. Le lien du lot 1
+  n'était donc écrit que pour les commandes saisies par l'équipe, et contact,
+  signature et fenêtre du carnet ne préremplissaient jamais une commande de la
+  boutique. **Corrigé à part, avant ce lot** (2026-09-29).
+- Le serveur ne contrôle **aucune** fenêtre de livraison ; au retrait,
+  `windowFitsPickup` refuse une tranche hors des heures du point.
+- Le carnet déclare des créneaux de réception `everyday` ou `perDay` ; seul
+  `everyday` est lu (`prisma-delivery-defaults.reader.ts`).
+- 🔴 **La provenance est déduite par comparaison** (`agreeFulfillment`) : une
+  fenêtre égale au défaut du carnet est enregistrée `default`. Or `default`
+  veut dire « pas une promesse », et la règle de retard se tait dessus. Un
+  client qui choisit **exactement** l'heure de son carnet ferait donc une
+  promesse que personne ne surveille.
+
+#### Conception (2026-09-29, avant `vitruve`)
+
+**L5-C1 — D'où viennent les heures proposées.** Au retrait, des heures
+d'ouverture du point. En livraison, de **deux** sources, croisées :
+
+- les **heures de livraison** de l'entreprise, un réglage neuf dans les
+  réglages de Livraison (lot 2, `delivery_settings`) : « on livre de 6 h à
+  11 h », éventuellement par jour de la semaine ;
+- les **créneaux de réception** de l'adresse du carnet, `everyday` **et**
+  `perDay` enfin lus, pour le jour demandé.
+
+La grille = les heures pleines des premières, **dans** les secondes. Sans
+carnet (visiteur, saisie libre), seules les premières. Une fonction pure dans
+le contrat, comme `pickupSlots`, lue par la boutique et le serveur.
+
+**L5-C2 — Obligatoire, en deux déploiements.** Un serveur qui exigerait la
+tranche dès demain refuserait toutes les commandes des onglets de boutique déjà
+ouverts, qui ne l'envoient pas (`CLAUDE.md` §0 : un contrat servi ne se casse
+pas). Donc :
+
+1. la boutique **propose et envoie** la tranche ; le serveur la **contrôle**
+   quand elle est là (hors grille → refus qui nomme les heures possibles) ;
+2. un déploiement plus tard, le serveur l'**exige** en livraison.
+
+**L5-C3 — La provenance d'une tranche demandée.** En livraison, une tranche
+**envoyée** est une promesse, qu'elle égale ou non le défaut du carnet. La
+règle « provenance déduite, jamais envoyée » reste vraie — le client n'envoie
+pas de drapeau —, mais pour la fenêtre de livraison, **c'est la présence du
+champ** qui décide : `override` dès qu'il est là. Écrit dans
+`agreeFulfillment`, avec le cas nommé en test.
+
+**L5-C4 — Ce que ça rallume** : `isLate` parle enfin en livraison ; la
+feuille de route n'écrit plus « horaire par défaut » ; le signal de fenêtre du
+lot 3 porte sur des heures promises.
+
+**Questions à Hugo** :
+
+- **Q17** — Les heures de livraison de l'entreprise : une plage unique pour
+  tous les jours, ou par jour de la semaine ?
+- **Q18** — Une adresse du carnet sans créneau de réception : on propose toutes
+  les heures de livraison, ou on demande d'abord de remplir le carnet ?
+- **Q19** — Une tranche d'**une heure** pour tous, pro comme particulier ? (Le
+  retrait découpe par heure ; la livraison pourrait vouloir plus large.)
 
 ### Plus tard, et seulement sur décision
 
