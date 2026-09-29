@@ -733,6 +733,50 @@ Le lot reste conçu (L5-C2 : deux déploiements ; L5-C3 : la provenance), mais
 sa source des heures (L5-C1) est à réécrire autour de ces deux modes. Q17 et
 Q18 sont suspendues avec lui.
 
+#### À la reprise — ce que `vitruve` a trouvé (2026-09-29)
+
+Contredit pendant la mise en suspens : deux `BLOQUANT`, sept `SÉRIEUX`. Rien
+n'est corrigé ; tout est à reprendre avec les deux sources de fenêtre.
+
+- 🔴 **La saisie par l'équipe serait refusée** à l'étape 2 : le back-office pose
+  `window: null` en dur en coursier (`acheminement-commande.ts`, « jamais de
+  tranche en coursier : celle qui vaut est au carnet »). Il faut un sélecteur
+  au back-office **avant** d'exiger quoi que ce soit, et vérifier la boutique
+  invitée (`POST /shop/orders`, même `draft`). La porte à étendre :
+  `hasWindowWhenPickedUp` (`admin-order.ts`).
+- 🔴 **« `delivery_settings` » désigne deux choses** : une ressource de droit, et
+  la table **`public.delivery_settings`** (`DeliveryAvailability`), propriété
+  du commerce. Un réglage d'heures de livraison possédé par `delivery` et lu
+  par le commerce et la boutique demande un canal publié par `delivery` et une
+  route publique — rien n'est écrit. Avec les deux sources de Hugo (client ou
+  commercial), la plage fixée par le commercial est un réglage **du compte**,
+  donc du commerce : la question change de forme.
+- **`isLate` ne parlerait pas, il crierait.** `latenessOf` juge « en retard »
+  toute livraison non retirée après sa fenêtre, et rien ne fait passer une
+  livraison à « retirée » avant le lot 6. Et « prêt avant la fenêtre » est
+  calibré pour le comptoir : en livraison, prêt doit précéder le **départ**.
+  Rallumer le signal avant le lot 6 le rendrait faux tous les jours.
+- **La provenance** : L5-C3 fait coexister deux règles pour trois champs frères
+  (contact et signature restent comparés) ; le JSDoc du contrat et
+  `order.reader.ts` deviendraient faux ; et si la boutique **présélectionne**
+  l'heure du carnet, tout devient `override` sans geste humain. À trancher :
+  la boutique présélectionne-t-elle ?
+- **`perDay`** : le port `DeliveryDefaultsReader.of` ne reçoit pas de date ; il
+  faudra la lui passer (jour de la semaine à l'heure de Paris, `weekdayOf`). Et
+  un jour à `null` en `perDay` veut dire « on ne reçoit pas » ou « pas de
+  préférence » : à trancher.
+- **Un modèle existe déjà** : les créneaux publics de retrait
+  (`public-pickup-slots.ts`, `plan-creneaux-de-retrait.md`) — règles par jour,
+  pas, capacité, fermetures, servis par le serveur. Le choisir ou dire
+  pourquoi pas ; ne pas fabriquer un troisième système.
+- **Budget de la boutique** : une fonction de grille dans un fichier qui importe
+  zod l'embarquerait au démarrage. Un fichier `*.values.ts` sans zod.
+- **Irréversible** : les commandes `override` écrites à l'étape 1 ne se
+  requalifieront pas sans migration de données.
+- Fermé : l'heure limite et la surtaxe ne lisent pas la tranche ; les
+  abonnements ne génèrent aucune commande aujourd'hui ; le devis n'a pas de
+  tranche et ne doit pas en exiger.
+
 ### Plus tard, et seulement sur décision
 
 - **Lot 6 — La porte** : la vue livreur, qui ne montre que **sa** tournée, et
