@@ -1,0 +1,14 @@
+{
+  // Typecheck de la Pages Function : `tsc -p functions/tsconfig.json`.
+  // Hors de `tsconfig.app.json` (qui ne lit que `src/`) : ce code n'est pas de
+  // l'app Angular, il tourne dans le runtime Workers de Pages. Les globales
+  // `fetch`/`Response` viennent de la lib DOM, qui les décrit à l'identique.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ES2022", "DOM"],
+    "types": []
+  },
+  "files": [],
+  "include": ["./**/*.ts"]
+}

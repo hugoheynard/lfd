@@ -187,12 +187,12 @@ plan.
 
 ## 7. Les lots
 
-| Lot    | Contenu                                                                                                                                  | Qui                          |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| **P1** | Le texte : remplir les crochets (§5.5), corriger le modèle (§5.1–5.4), le saisir au back-office dans le document `privacy`, en fr/en/it. | Hugo (+ relecture juridique) |
-| **P2** | Champ `anchor` facultatif sur un paragraphe (contrat, domaine, back-office) (§4a).                                                       | `batisseur` + `pablo`        |
-| **P3** | La Pages Function `/confidentialite` (§3A) ; vérification sans JavaScript (`curl`) et en navigation privée.                              | `batisseur`                  |
-| **P4** | La route Angular `/confidentialite` et le lien du pied de page (§3B).                                                                    | `pablo`                      |
+| Lot                  | Contenu                                                                                                                                  | Qui                          |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| **P1**               | Le texte : remplir les crochets (§5.5), corriger le modèle (§5.1–5.4), le saisir au back-office dans le document `privacy`, en fr/en/it. | Hugo (+ relecture juridique) |
+| **P2**               | Champ `anchor` facultatif sur un paragraphe (contrat, domaine, back-office) (§4a).                                                       | `batisseur` + `pablo`        |
+| **P3** ✅ 2026-09-29 | La Pages Function `/confidentialite` (§3A) ; vérification sans JavaScript (`curl`) et en navigation privée.                              | `batisseur`                  |
+| **P4**               | La route Angular `/confidentialite` et le lien du pied de page (§3B).                                                                    | `pablo`                      |
 
 P1 ne dépend de rien. Pour soumettre à Meta au plus vite : P1 puis P3, avec
 l'ancre ULID en attendant P2.
@@ -203,8 +203,9 @@ l'ancre ULID en attendant P2.
 
 - **Q1** — La voie de suppression tient-elle par e-mail seul au lancement, en
   s'engageant à bâtir l'anonymisation (§6) ? Ou attend-on l'outil ?
-- **Q2** — Le domaine public de la boutique : `lfc-b2b.pages.dev` ou un domaine
-  personnalisé ? L'URL donnée à Meta ne doit plus changer ensuite.
+- ~~**Q2** — Le domaine public~~ : la boutique est servie à la racine de
+  `lafoliecoffee.info` depuis le 2026-09-15 — URL Meta :
+  `https://lafoliecoffee.info/confidentialite`.
 - **Q3** — Aucun outil de mesure d'audience sur la boutique ? (§5.1, cookies)
 - **Q4** — Le texte en anglais et en italien : traduit par nous, ou la page
   Meta ne sert que le français ?
