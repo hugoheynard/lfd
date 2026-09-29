@@ -1752,6 +1752,16 @@ lecture, auteur staff, dates, `archived_at` — **pas de DELETE physique**),
 aucun client n'y figure). Migration additive. L'export/import de fichier
 reste. Un nom unique parmi les scénarios non archivés, refus lisible.
 
+**L9-C8 — Partir d'une vraie journée** (Hugo, 2026-09-29, § 6 question 5 :
+« A »). Un bouton « Partir de la journée du … » charge dans le simulateur les
+livraisons non annulées de ce jour qui ont un point, **copiées** en arrêts
+inventés (libellé = nom de l'adresse livrée, sinon le client ; point ;
+créneau convenu ; temps sur place de l'adresse s'il existe), et les véhicules
+actifs ce jour-là (par leur nom). Aucun lien vers les commandes : rien ne peut
+écrire dans la vraie composition. Les livraisons sans point sont listées à
+part, non chargées. Lecture sous `delivery_rounds:read` (le droit qui montre
+déjà ces noms). Enregistré, le scénario garde ces noms — assumé.
+
 ### Lot 10 — La carte des tournées, belle
 
 > **Ouvert le 2026-09-29.** Hugo : « je veux que ça soit beau ». 📐 Rien n'est
