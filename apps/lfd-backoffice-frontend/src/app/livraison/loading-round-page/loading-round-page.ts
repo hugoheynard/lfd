@@ -26,6 +26,7 @@ import {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { BinScanner } from '../bin-scanner/bin-scanner';
+import { LoadingPlan } from '../loading-plan/loading-plan';
 import {
   binCountLabel,
   binKindLabel,
@@ -99,6 +100,7 @@ export function loadedNotice(
     FoldInputComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    LoadingPlan,
     RouterLink,
   ],
   templateUrl: './loading-round-page.html',

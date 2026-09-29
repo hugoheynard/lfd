@@ -1,0 +1,48 @@
+.lp-block,
+.lp-section,
+.lp-step,
+.lp-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.lp-block {
+  gap: var(--fold-space-md);
+}
+
+.lp-step {
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-sm);
+  border-radius: var(--fold-radius-md);
+}
+
+.lp-step--current {
+  background: var(--fold-color-primary-surface);
+  outline: 1px solid var(--fold-color-primary-border);
+}
+
+.lp-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.lp-stacks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+.lp-stack {
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  font-size: var(--fold-text-sm);
+}
+
+.lp-line {
+  margin: 0;
+}

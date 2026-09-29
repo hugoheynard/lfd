@@ -1,0 +1,98 @@
+<fold-card data-plan>
+  <div class="lp-block">
+    <fold-element-title
+      variant="title"
+      title="Plan de chargement"
+      subtitle="Un ordre SUGGÉRÉ : charger un bac hors de son étape reste accepté."
+    />
+
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture du plan de chargement…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Plan illisible"
+          subtitle="Le serveur n’a pas rendu le plan de cette tournée."
+          data-plan-error
+        >
+          <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @if (plan(); as plan) {
+          @for (warning of plan.warnings; track warning.kind + warning.message) {
+            <fold-callout
+              [variant]="warning.kind === 'unknown_cargo' ? 'warning' : 'alert'"
+              data-plan-warning
+              >{{ warning.message }}</fold-callout
+            >
+          }
+
+          <div class="lp-section" data-plan-volume>
+            <fold-element-title variant="caps" [title]="'Volume · ' + plan.vehicleName" />
+            @for (gauge of gauges(); track gauge.label) {
+              @if (gauge.capacityLiters !== null) {
+                <fold-meter
+                  [label]="gauge.label + ' — ' + gauge.detail"
+                  [value]="gauge.usedLiters"
+                  [max]="gauge.capacityLiters"
+                  [tone]="gauge.tone"
+                  data-volume-gauge
+                />
+              } @else {
+                <p class="lp-line" data-volume-unknown>{{ gauge.label }} : {{ gauge.detail }}</p>
+              }
+            }
+          </div>
+
+          <div class="lp-section" data-plan-order>
+            <fold-element-title variant="caps" title="Ordre de chargement" />
+            @for (step of plan.order; track step.step) {
+              <div
+                class="lp-step"
+                [class.lp-step--current]="step.step === current()"
+                data-plan-step
+                [attr.data-current]="step.step === current() ? '' : null"
+              >
+                <div class="lp-row">
+                  <strong>{{ headline(step, plan.order.length) }}</strong>
+                  @if (step.step === current()) {
+                    <fold-badge variant="accent" content="À charger maintenant" />
+                  } @else if (step.bins.length > 0 && stepLoaded(step, loaded())) {
+                    <fold-badge variant="success" content="Chargé" />
+                  }
+                </div>
+                @for (bin of step.bins; track binKey(bin)) {
+                  <div class="lp-row" data-plan-bin>
+                    <span>{{ binLabel(bin) }}</span>
+                    @if (loaded().has(binKey(bin))) {
+                      <fold-badge variant="success" content="✓ scanné" data-plan-bin-loaded />
+                    }
+                  </div>
+                }
+              </div>
+            } @empty {
+              <p class="lp-line">Aucun arrêt : rien à charger.</p>
+            }
+          </div>
+
+          @if (plan.stacks.length > 0) {
+            <div class="lp-section" data-plan-stacks>
+              <fold-element-title variant="caps" title="Piles" />
+              <div class="lp-stacks">
+                @for (stack of plan.stacks; track stack.stackIndex) {
+                  <div class="lp-stack" data-plan-stack>
+                    <strong>{{ stackTitle(stack) }}</strong>
+                    <span>{{ stackStops(stack) }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        }
+      }
+    }
+  </div>
+</fold-card>

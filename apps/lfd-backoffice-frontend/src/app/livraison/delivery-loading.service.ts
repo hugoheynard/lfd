@@ -6,6 +6,7 @@ import type {
   DeliveryBinDetailView,
   DeliveryBinFreeHalvesView,
   DeliveryLoadingDayView,
+  DeliveryLoadingPlanView,
   DeliveryLoadingRoundView,
   DeliveryOrderBinsView,
   DeliveryPackingProposalView,
@@ -91,6 +92,13 @@ export class DeliveryLoadingService {
   round(roundId: string): Promise<DeliveryLoadingRoundView> {
     return firstValueFrom(
       this.http.get<DeliveryLoadingRoundView>(`${BASE}/chargement/${id(roundId)}`),
+    );
+  }
+
+  /** Le plan de chargement (L4b-C7, v2-5) : un ordre SUGGÉRÉ et un volume. Une lecture. */
+  plan(roundId: string): Promise<DeliveryLoadingPlanView> {
+    return firstValueFrom(
+      this.http.get<DeliveryLoadingPlanView>(`${BASE}/chargement/${id(roundId)}/plan`),
     );
   }
 

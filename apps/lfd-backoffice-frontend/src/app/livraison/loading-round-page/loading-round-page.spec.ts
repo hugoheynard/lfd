@@ -99,6 +99,7 @@ async function boot(
         provide: DeliveryLoadingService,
         useValue: {
           round: () => Promise.resolve(wire.view),
+          plan: () => Promise.reject(new Error('plan hors sujet ici')),
           load: (roundId: string, payload: LoadDeliveryBinPayload) =>
             outcome(`load ${roundId} ${JSON.stringify(payload)}`),
           unload: (roundId: string, binId: string) => outcome(`unload ${roundId} ${binId}`),
