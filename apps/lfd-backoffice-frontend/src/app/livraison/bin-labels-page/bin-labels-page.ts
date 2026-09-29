@@ -15,6 +15,7 @@ import type { DeliveryBinView, DeliveryOrderBinsView } from '@lfd/contracts';
 import {
   FoldBackLinkComponent,
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
@@ -48,6 +49,7 @@ type LabelsState =
     BinLabel,
     FoldBackLinkComponent,
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
@@ -63,6 +65,14 @@ export class BinLabelsPage {
 
   /** La commande, lue dans l'adresse. */
   readonly orderId = input.required<string>();
+  /**
+   * `?bacs=id1,id2` : les bacs qu'une déclaration vient de créer (tranche C) —
+   * on n'imprime qu'eux, les autres ont déjà leur étiquette. Absent : tous.
+   */
+  readonly bacs = input<string | undefined>();
+
+  /** Tous les bacs vivants, même avec une sélection dans l'adresse. */
+  protected readonly showAll = signal(false);
 
   protected readonly state = signal<LabelsState>({ status: 'loading' });
   private readonly reload = signal(0);
@@ -76,9 +86,24 @@ export class BinLabelsPage {
     return state.status === 'ready' ? state.view.bins.filter((bin) => bin.voidedAt === null) : [];
   });
 
+  private readonly selection = computed<readonly string[]>(() =>
+    (this.bacs() ?? '').split(',').filter((binId) => binId !== ''),
+  );
+
+  /** Les bacs à l'écran : la sélection de l'adresse, ou tous. */
+  protected readonly shown = computed<readonly DeliveryBinView[]>(() => {
+    const selection = this.selection();
+    return selection.length === 0 || this.showAll()
+      ? this.liveBins()
+      : this.liveBins().filter((bin) => selection.includes(bin.binId));
+  });
+
+  /** Une sélection restreint l'écran — de quoi proposer « toutes ». */
+  protected readonly selective = computed(() => this.shown().length < this.liveBins().length);
+
   protected readonly printed = computed(() => {
     const only = this.only();
-    return only === null ? this.liveBins() : this.liveBins().filter((bin) => bin.binId === only);
+    return only === null ? this.shown() : this.shown().filter((bin) => bin.binId === only);
   });
 
   protected readonly reference = computed(() => {

@@ -53,7 +53,7 @@ async function settle(fixture: ComponentFixture<BinLabelsPage>): Promise<void> {
   fixture.detectChanges();
 }
 
-async function boot(): Promise<HTMLElement> {
+async function boot(bacs?: string): Promise<HTMLElement> {
   calls = [];
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -72,12 +72,28 @@ async function boot(): Promise<HTMLElement> {
   });
   const fixture = TestBed.createComponent(BinLabelsPage);
   fixture.componentRef.setInput('orderId', 'o-1');
+  if (bacs !== undefined) {
+    fixture.componentRef.setInput('bacs', bacs);
+  }
   fixture.detectChanges();
   await settle(fixture);
   return fixture.nativeElement as HTMLElement;
 }
 
 describe('BinLabelsPage', () => {
+  it('n’imprime que les bacs tout juste déclarés, et dit que les autres existent', async () => {
+    const element = await boot('b-2');
+    expect(element.querySelectorAll('app-bin-label')).toHaveLength(1);
+    expect(element.querySelector('[data-labels-selection]')?.textContent).toContain('1 sur');
+    expect(element.querySelector('[data-labels-all]')).not.toBeNull();
+  });
+
+  it('sans sélection, toutes les étiquettes, sans rappel', async () => {
+    const element = await boot();
+    expect(element.querySelectorAll('app-bin-label')).toHaveLength(2);
+    expect(element.querySelector('[data-labels-selection]')).toBeNull();
+  });
+
   it('🔴 une LECTURE : imprimer ne déclare rien', async () => {
     await boot();
     expect(calls).toEqual(['read o-1']);

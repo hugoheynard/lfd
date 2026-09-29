@@ -13,7 +13,6 @@ import {
   parisTimeOf,
   scannedBin,
   sharedWithLabel,
-  sharePartners,
   stopStateLabel,
 } from './delivery-loading';
 
@@ -162,55 +161,6 @@ describe('missingStops', () => {
       ],
     });
     expect(missing.map((line) => line.detail)).toEqual(['bac partagé à refaire · 1 bac sur 1']);
-  });
-});
-
-describe('sharePartners', () => {
-  const FREE = bin({ binId: 'h-free', half: 'left' });
-  const TAKEN = bin({ binId: 'h-taken', half: 'left', sharedWithReference: 'CMD-9' });
-  const WHOLE = bin({ binId: 'w-1' });
-  const round = {
-    stops: [
-      stop({
-        stopId: 's-1',
-        orderId: 'o-1',
-        reference: 'CMD-1',
-        position: 1,
-        state: 'loaded',
-        bins: [FREE],
-      }),
-      stop({ stopId: 's-2', orderId: 'o-2', reference: 'CMD-2', position: 3, state: 'unlabelled' }),
-      stop({
-        stopId: 's-3',
-        orderId: 'o-3',
-        reference: 'CMD-3',
-        position: 7,
-        state: 'partial',
-        bins: [TAKEN, WHOLE, { ...FREE, binId: 'h-3' }],
-      }),
-      stop({
-        stopId: 's-4',
-        orderId: 'o-4',
-        reference: 'CMD-4',
-        position: 8,
-        state: 'partial',
-        bins: [{ ...FREE, binId: 'h-far' }],
-      }),
-    ],
-  };
-
-  it('ne propose que les moitiés LIBRES des arrêts voisins, par rang', () => {
-    expect(sharePartners(round, 'o-2').map((partner) => partner.binId)).toEqual(['h-free', 'h-3']);
-  });
-
-  it('dit la commande, le bac et l’arrêt', () => {
-    expect(sharePartners(round, 'o-2')[0]?.label).toBe(
-      'CMD-1 · Le Comptoir — Bac M · ½ gauche (arrêt 1)',
-    );
-  });
-
-  it('rien si la commande n’est pas dans la tournée', () => {
-    expect(sharePartners(round, 'o-x')).toEqual([]);
   });
 });
 

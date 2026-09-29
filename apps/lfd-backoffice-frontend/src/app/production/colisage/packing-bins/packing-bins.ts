@@ -3,7 +3,10 @@ import { Router, RouterLink } from '@angular/router';
 import type {
   BinTypeView,
   DeclareDeliveryBinsPayload,
-  DeliveryLoadingRoundView,
+  DeliveryBinFreeHalvesView,
+  DeliveryBinView,
+  DeliveryPackingBinView,
+  DeliveryPackingProposalView,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import type { FoldSelectItem } from 'fold-ng';
@@ -11,16 +14,34 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCheckboxComponent,
+  FoldCardComponent,
+  FoldElementTitleComponent,
   FoldEmptyStateComponent,
+  FoldFieldComponent,
+  FoldFieldListComponent,
   FoldListboxComponent,
   FoldLoadingStateComponent,
+  FoldMeterComponent,
   FoldNumberInputComponent,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { DeliveryBinsService } from '../../../livraison/delivery-bins.service';
-import { sharePartners, type SharePartner } from '../../../livraison/delivery-loading';
 import { DeliveryLoadingService } from '../../../livraison/delivery-loading.service';
+import {
+  declaredDiffersFromProposal,
+  declaredSummary,
+  freeHalfLabel,
+  hasProposedBins,
+  packingBinLabel,
+  packingContentLabel,
+  packingFillLabel,
+  proposalDeclarations,
+  proposalSummary,
+  shareCandidateLabel,
+  unplacedReasonLabel,
+  withoutReplacedBin,
+} from '../../../livraison/delivery-packing';
 
 /**
  * Au plus tant de bacs entiers par déclaration, et tant de sacs par bac — les
@@ -78,13 +99,11 @@ type TypesState =
   | { readonly status: 'error' }
   | { readonly status: 'ready'; readonly types: readonly BinTypeView[] };
 
-type PartnersState =
-  | { readonly status: 'closed' }
+/** Une lecture du panneau : la proposition, ou les moitiés libres. */
+type Loadable<T> =
   | { readonly status: 'loading' }
   | { readonly status: 'error' }
-  /** La commande n'est dans aucune tournée vivante de la journée : rien à partager. */
-  | { readonly status: 'unassigned' }
-  | { readonly status: 'ready'; readonly partners: readonly SharePartner[] };
+  | { readonly status: 'ready'; readonly view: T };
 
 /**
  * **Déclarer les bacs d'une commande prête** (lot 4, L4-C16 et L4-C21 ; lot 4
@@ -95,9 +114,16 @@ type PartnersState =
  * les sacs posés dedans ne sont qu'un compte imprimé sur l'étiquette. Puis la
  * page d'étiquettes s'ouvre. Imprimer n'en crée aucun.
  *
+ * En tête, le **colisage proposé** (L4b-C4, tranche C) : ce que le serveur
+ * calcule, son contenu, et ce qu'il ne sait pas placer. « Déclarer comme
+ * proposé » envoie une déclaration par entrée ; « Autre colisage » ouvre la
+ * saisie libre. La déclaration fait foi : un écart avec la proposition se
+ * RAPPELLE, il ne se refuse pas.
+ *
  * Dernier recours (v2-4) : **partager une moitié** avec un demi-bac d'un arrêt
- * VOISIN de la même tournée. Les moitiés proposées sont lues au chargement de
- * la journée ; le serveur tranche, et son refus s'affiche tel quel.
+ * VOISIN de la même tournée — proposé par le serveur (`shareCandidate`), ou
+ * choisi parmi les moitiés libres (`colisage/bacs/partenaires`). Le serveur
+ * tranche, et son refus s'affiche tel quel.
  *
  * 🔴 Le colisage est ouvert à qui écrit les commandes ; déclarer des bacs
  * demande `delivery_loading:write`, que seuls `admin` et `comptoir` ont (Q21).
@@ -110,9 +136,14 @@ type PartnersState =
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCheckboxComponent,
+    FoldCardComponent,
+    FoldElementTitleComponent,
     FoldEmptyStateComponent,
+    FoldFieldComponent,
+    FoldFieldListComponent,
     FoldListboxComponent,
     FoldLoadingStateComponent,
+    FoldMeterComponent,
     FoldNumberInputComponent,
     RouterLink,
   ],
@@ -127,10 +158,11 @@ export class PackingBins {
 
   /** La commande — l'identifiant du commerce, que porte la feuille de colisage. */
   readonly orderId = input.required<string>();
-  /** La journée ouverte au poste (`AAAA-MM-JJ`) : où chercher la tournée de la commande. */
-  readonly day = input.required<string>();
-
   protected readonly canDeclare = computed(() => this.permissions.can('delivery_loading:write'));
+  /** Renseigner une contenance est un réglage : le lien n'est offert qu'à qui peut l'écrire. */
+  protected readonly canSetCapacities = computed(() =>
+    this.permissions.can('delivery_settings:write'),
+  );
 
   protected readonly open = signal(false);
   protected readonly types = signal<TypesState>({ status: 'loading' });
@@ -141,8 +173,20 @@ export class PackingBins {
   protected readonly busy = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
-  protected readonly partners = signal<PartnersState>({ status: 'closed' });
+  protected readonly proposal = signal<Loadable<DeliveryPackingProposalView>>({
+    status: 'loading',
+  });
+  protected readonly halves = signal<Loadable<DeliveryBinFreeHalvesView>>({ status: 'loading' });
+  /** Les bacs déjà déclarés — `null` tant qu'ils ne sont pas lus (ou illisibles : aucun rappel). */
+  protected readonly declared = signal<readonly DeliveryBinView[] | null>(null);
+  /** La saisie libre de la tranche B, derrière « Autre colisage ». */
+  protected readonly manual = signal(false);
+  protected readonly sharing = signal(false);
   protected readonly partnerBinId = signal<string | null>(null);
+
+  protected readonly binLabel = packingBinLabel;
+  protected readonly fillLabel = packingFillLabel;
+  protected readonly reasonLabel = unplacedReasonLabel;
 
   protected readonly maxWhole = MAX_WHOLE;
   protected readonly maxInnerBags = MAX_INNER_BAGS;
@@ -176,16 +220,97 @@ export class PackingBins {
     ),
   );
 
+  protected readonly summary = computed(() => {
+    const state = this.proposal();
+    return state.status === 'ready' ? proposalSummary(state.view.bins) : '';
+  });
+
+  /**
+   * Des bacs non annulés existent déjà pour cette commande : « Déclarer comme
+   * proposé » les DOUBLERAIT (relevé au bâti, 2026-09-29). La déclaration fait
+   * foi — pour la refaire, on annule d'abord ; « Autre colisage » reste ouvert
+   * pour ajouter un bac à la main.
+   */
+  protected readonly alreadyDeclared = computed(() =>
+    (this.declared() ?? []).some((bin) => bin.voidedAt === null),
+  );
+
+  protected readonly proposable = computed(() => {
+    const state = this.proposal();
+    return (
+      !this.alreadyDeclared() &&
+      state.status === 'ready' &&
+      hasProposedBins(state.view) &&
+      inRange(this.innerBags(), 0, MAX_INNER_BAGS)
+    );
+  });
+
+  /** Un produit sans contenance : le seul non-placé qu'un réglage répare. */
+  protected readonly missingCapacity = computed(() => {
+    const state = this.proposal();
+    return (
+      state.status === 'ready' && state.view.unplaced.some((item) => item.reason === 'no_capacity')
+    );
+  });
+
+  /** La saisie libre s'ouvre d'elle-même quand il n'y a rien à suivre. */
+  protected readonly showManual = computed(() => {
+    const state = this.proposal();
+    return (
+      this.manual() ||
+      state.status === 'error' ||
+      (state.status === 'ready' && !hasProposedBins(state.view))
+    );
+  });
+
+  /** « Déclaré : … » quand les bacs déclarés diffèrent de la proposition, sinon `null`. */
+  protected readonly gap = computed(() => {
+    const state = this.proposal();
+    const declared = this.declared();
+    if (state.status !== 'ready' || declared === null) {
+      return null;
+    }
+    return declaredDiffersFromProposal(declared, state.view.bins)
+      ? declaredSummary(declared)
+      : null;
+  });
+
+  protected readonly shareSuggestion = computed(() => {
+    const state = this.proposal();
+    const halves = this.halves();
+    if (state.status !== 'ready' || state.view.shareCandidate === null) {
+      return null;
+    }
+    return shareCandidateLabel(
+      state.view.shareCandidate,
+      halves.status === 'ready' ? halves.view.halves : [],
+    );
+  });
+
   protected readonly partnerOptions = computed<readonly FoldSelectItem<string>[]>(() => {
-    const state = this.partners();
+    const state = this.halves();
     return state.status === 'ready'
-      ? state.partners.map((partner) => ({ value: partner.binId, label: partner.label }))
+      ? state.view.halves.map((half) => ({ value: half.binId, label: freeHalfLabel(half) }))
       : [];
+  });
+
+  /** La commande n'est dans aucune tournée non partie : rien à partager. */
+  protected readonly unassigned = computed(() => {
+    const state = this.halves();
+    return (
+      state.status === 'ready' &&
+      (state.view.round === null || state.view.round.departedAt !== null)
+    );
   });
 
   protected readonly sharable = computed(
     () => this.partnerBinId() !== null && inRange(this.innerBags(), 0, MAX_INNER_BAGS),
   );
+
+  protected contentOf(bin: DeliveryPackingBinView): string {
+    const state = this.proposal();
+    return state.status === 'ready' ? packingContentLabel(bin, state.view.lines) : '';
+  }
 
   protected labelsLink(): string[] {
     return ['/livraison/etiquettes', this.orderId()];
@@ -194,9 +319,27 @@ export class PackingBins {
   protected toggle(): void {
     this.open.update((open) => !open);
     this.refusal.set(null);
-    if (this.open() && this.types().status !== 'ready') {
+    if (!this.open()) {
+      return;
+    }
+    if (this.types().status !== 'ready') {
       void this.loadTypes();
     }
+    void this.loadProposal();
+    void this.loadHalves();
+    void this.loadDeclared();
+  }
+
+  protected retryProposal(): void {
+    void this.loadProposal();
+  }
+
+  protected retryHalves(): void {
+    void this.loadHalves();
+  }
+
+  protected toggleManual(): void {
+    this.manual.update((manual) => !manual);
   }
 
   protected retryTypes(): void {
@@ -217,29 +360,55 @@ export class PackingBins {
       return;
     }
     await this.write(
-      () => this.service.declareBins(payload),
+      async () => (await this.service.declareBins(payload)).binIds,
       'Les bacs n’ont pas pu être déclarés.',
     );
   }
 
-  /** Ouvre le partage : cherche la tournée de la commande, et ses moitiés voisines libres. */
-  protected async openSharing(): Promise<void> {
-    this.partners.set({ status: 'loading' });
-    this.partnerBinId.set(null);
-    try {
-      const round = await this.roundOfOrder();
-      this.partners.set(
-        round === null
-          ? { status: 'unassigned' }
-          : { status: 'ready', partners: sharePartners(round, this.orderId()) },
-      );
-    } catch {
-      this.partners.set({ status: 'error' });
+  /**
+   * Déclare la proposition telle quelle — une déclaration par entrée, dans
+   * l'ordre — ou, en dernier recours, la proposition moins le bac remplacé,
+   * puis le partage de la moitié voisine.
+   */
+  protected async declareProposal(withShare: boolean): Promise<void> {
+    const state = this.proposal();
+    const innerBags = this.innerBags();
+    if (state.status !== 'ready' || !inRange(innerBags, 0, MAX_INNER_BAGS)) {
+      return;
     }
+    const candidate = withShare ? state.view.shareCandidate : null;
+    if (withShare && candidate === null) {
+      return;
+    }
+    const bins =
+      candidate === null
+        ? state.view.bins
+        : withoutReplacedBin(state.view.bins, candidate.replacesBinIndex);
+    const payloads = proposalDeclarations(this.orderId(), bins, innerBags);
+    await this.write(async () => {
+      const binIds: string[] = [];
+      for (const payload of payloads) {
+        binIds.push(...(await this.service.declareBins(payload)).binIds);
+      }
+      if (candidate !== null) {
+        const shared = await this.service.shareBin({
+          orderId: this.orderId(),
+          partnerBinId: candidate.partnerBinId,
+          innerBags,
+        });
+        binIds.push(shared.binId);
+      }
+      return binIds;
+    }, 'Les bacs proposés n’ont pas tous pu être déclarés.');
+  }
+
+  protected openSharing(): void {
+    this.sharing.set(true);
+    this.partnerBinId.set(null);
   }
 
   protected closeSharing(): void {
-    this.partners.set({ status: 'closed' });
+    this.sharing.set(false);
     this.partnerBinId.set(null);
   }
 
@@ -250,24 +419,63 @@ export class PackingBins {
       return;
     }
     await this.write(
-      () => this.service.shareBin({ orderId: this.orderId(), partnerBinId, innerBags }),
+      async () => [
+        (await this.service.shareBin({ orderId: this.orderId(), partnerBinId, innerBags })).binId,
+      ],
       'La moitié n’a pas pu être partagée.',
     );
   }
 
-  private async write(gesture: () => Promise<void>, fallback: string): Promise<void> {
+  /**
+   * Écrit, puis ouvre les étiquettes des SEULS bacs créés. Un refus reste ici,
+   * tel quel — et l'on relit : une suite de déclarations interrompue a pu en
+   * poser une partie, que le rappel d'écart dira.
+   */
+  private async write(gesture: () => Promise<readonly string[]>, fallback: string): Promise<void> {
     if (this.busy()) {
       return;
     }
     this.busy.set(true);
     this.refusal.set(null);
     try {
-      await gesture();
-      await this.router.navigate(this.labelsLink());
+      const binIds = await gesture();
+      await this.router.navigate(this.labelsLink(), { queryParams: { bacs: binIds.join(',') } });
     } catch (error) {
       this.refusal.set(httpErrorMessage(error, fallback));
+      void this.loadDeclared();
+      void this.loadHalves();
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  private async loadProposal(): Promise<void> {
+    this.proposal.set({ status: 'loading' });
+    try {
+      this.proposal.set({
+        status: 'ready',
+        view: await this.service.packingProposal(this.orderId()),
+      });
+    } catch {
+      this.proposal.set({ status: 'error' });
+    }
+  }
+
+  private async loadHalves(): Promise<void> {
+    this.halves.set({ status: 'loading' });
+    try {
+      this.halves.set({ status: 'ready', view: await this.service.freeHalves(this.orderId()) });
+    } catch {
+      this.halves.set({ status: 'error' });
+    }
+  }
+
+  private async loadDeclared(): Promise<void> {
+    try {
+      this.declared.set((await this.service.orderBins(this.orderId())).bins);
+    } catch {
+      // Le rappel d'écart est un confort : sans les bacs déclarés, il se tait.
+      this.declared.set(null);
     }
   }
 
@@ -279,24 +487,5 @@ export class PackingBins {
     } catch {
       this.types.set({ status: 'error' });
     }
-  }
-
-  /**
-   * La tournée vivante (pas partie) du jour qui porte la commande, ou `null`.
-   * Le contrat n'a pas de lecture « la tournée d'une commande » : on relit les
-   * tournées du jour une à une — une par véhicule et passage, quelques-unes.
-   */
-  private async roundOfOrder(): Promise<DeliveryLoadingRoundView | null> {
-    const { rounds } = await this.service.day(this.day());
-    for (const summary of rounds) {
-      if (summary.departedAt !== null || summary.stops === 0) {
-        continue;
-      }
-      const round = await this.service.round(summary.roundId);
-      if (round.stops.some((stop) => stop.orderId === this.orderId())) {
-        return round;
-      }
-    }
-    return null;
   }
 }

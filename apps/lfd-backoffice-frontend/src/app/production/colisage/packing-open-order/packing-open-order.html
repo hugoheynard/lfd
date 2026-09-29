@@ -50,7 +50,7 @@
              la commande prête. Le composant décide seul de ce qu'il montre selon le droit
              `delivery_loading:write` ; « Prête » n'en dépend pas. -->
         @if (order.fulfillmentMethod === 'delivery') {
-          <app-packing-bins [orderId]="order.orderId" [day]="day()" />
+          <app-packing-bins [orderId]="order.orderId" />
         }
       } @else {
         <!-- Le MODE est dans le libellé : « retrait » sur une commande livrée

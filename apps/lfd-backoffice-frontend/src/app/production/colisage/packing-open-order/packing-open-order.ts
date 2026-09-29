@@ -84,9 +84,6 @@ export class PackingOpenOrder {
   /** Une déclaration en vol, relecture comprise. */
   readonly closing = input(false);
 
-  /** La journée ouverte au poste (`AAAA-MM-JJ`) — où les bacs cherchent la tournée. */
-  readonly day = input.required<string>();
-
   /** « Déclarer prête pour le retrait » / « … pour la livraison ». */
   readonly readyLabel = input('Déclarer prête');
 

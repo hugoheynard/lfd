@@ -53,7 +53,6 @@ function render(inputs: Readonly<Record<string, unknown>>): ComponentFixture<Pac
   const fixture = TestBed.createComponent(PackingOpenOrder);
   for (const [name, value] of Object.entries({
     canSetContainers: true,
-    day: '2026-10-01',
     ...inputs,
   })) {
     fixture.componentRef.setInput(name, value);
@@ -77,7 +76,6 @@ describe('les bacs d’une commande prête (lot 4 bis)', () => {
       ],
     });
     const fixture = TestBed.createComponent(PackingOpenOrder);
-    fixture.componentRef.setInput('day', '2026-10-01');
     fixture.componentRef.setInput(
       'sheet',
       sheet({ packedAt: '2026-10-01T05:00:00.000Z', ...over }),

@@ -7,12 +7,28 @@
         [title]="reference() === null ? 'Étiquettes des bacs' : 'Étiquettes · ' + reference()"
         subtitle="Une étiquette par bac ou demi-bac, une par page. Imprimer ne crée aucun bac."
       >
-        @if (liveBins().length > 0) {
+        @if (shown().length > 0) {
           <button foldButton titleAction icon="print" (click)="print()" data-print-all>
-            Imprimer les {{ liveBins().length }} étiquettes
+            Imprimer les {{ shown().length }} étiquettes
           </button>
         }
       </fold-element-title>
+      @if (selective()) {
+        <fold-callout variant="info" data-labels-selection>
+          Seulement les bacs qui viennent d’être déclarés ({{ shown().length }} sur
+          {{ liveBins().length }}).
+          <button
+            foldButton
+            actions
+            size="sm"
+            emphasis="outline"
+            (click)="showAll.set(true)"
+            data-labels-all
+          >
+            Toutes les étiquettes
+          </button>
+        </fold-callout>
+      }
     </div>
 
     @switch (state().status) {

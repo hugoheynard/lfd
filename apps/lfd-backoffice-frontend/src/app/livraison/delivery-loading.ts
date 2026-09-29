@@ -185,41 +185,6 @@ export function missingStops(
     }));
 }
 
-/** Une moitié libre qu'une commande peut partager — ce que propose le colisage. */
-export interface SharePartner {
-  readonly binId: string;
-  /** « CMD-12 · Le Refuge — Bac M ½ gauche · 2 sacs dedans (arrêt 3) » */
-  readonly label: string;
-}
-
-/**
- * **Les moitiés qu'une commande peut partager dans une tournée** (v2-4) : les
- * demi-bacs encore seuls (sans partenaire, pas à refaire) des arrêts VOISINS
- * de celui de la commande — le serveur refuse tout autre partage, on ne le
- * propose donc pas. Vide si la commande n'est pas dans la tournée.
- */
-export function sharePartners(
-  round: Pick<DeliveryLoadingRoundView, 'stops'>,
-  orderId: string,
-): readonly SharePartner[] {
-  // Voisins par RANG parmi les arrêts servis (dans l'ordre de passage), pas
-  // par `position` : c'est le rang des arrêts vivants que le serveur compare.
-  const at = round.stops.findIndex((stop) => stop.orderId === orderId);
-  if (at === -1) {
-    return [];
-  }
-  return [round.stops[at - 1], round.stops[at + 1]]
-    .filter((stop): stop is DeliveryLoadingStopView => stop !== undefined)
-    .flatMap((stop) =>
-      stop.bins
-        .filter((bin) => bin.half !== null && bin.sharedWithReference === null && !bin.toRedo)
-        .map((bin) => ({
-          binId: bin.binId,
-          label: `${stop.reference} · ${stop.customerLabel} — ${binKindLabel(bin)} (arrêt ${String(stop.position)})`,
-        })),
-    );
-}
-
 const PARIS_TIME = new Intl.DateTimeFormat('fr-FR', {
   timeZone: 'Europe/Paris',
   hour: 'numeric',

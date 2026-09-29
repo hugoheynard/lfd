@@ -2,12 +2,16 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
   DeclareDeliveryBinsPayload,
+  DeclaredDeliveryBinsResponse,
   DeliveryBinDetailView,
+  DeliveryBinFreeHalvesView,
   DeliveryLoadingDayView,
   DeliveryLoadingRoundView,
   DeliveryOrderBinsView,
+  DeliveryPackingProposalView,
   LoadDeliveryBinPayload,
   ShareDeliveryBinPayload,
+  SharedDeliveryBinResponse,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -35,17 +39,32 @@ export class DeliveryLoadingService {
 
   /**
    * Déclare des bacs d'un type : `whole` entiers, et une moitié si `half`. Ce
-   * qui les fait naître (L4-C16). Le serveur rend `{ binIds }`, que l'écran ne
-   * lit pas — il relit les étiquettes de la commande — et que le contrat ne
-   * type pas : on ne le redéclare pas ici.
+   * qui les fait naître (L4-C16). Rend les bacs créés, dans l'ordre de
+   * déclaration — de quoi n'imprimer que leurs étiquettes.
    */
-  async declareBins(payload: DeclareDeliveryBinsPayload): Promise<void> {
-    await firstValueFrom(this.http.post(BINS, payload));
+  declareBins(payload: DeclareDeliveryBinsPayload): Promise<DeclaredDeliveryBinsResponse> {
+    return firstValueFrom(this.http.post<DeclaredDeliveryBinsResponse>(BINS, payload));
   }
 
   /** Déclare l'AUTRE moitié d'un bac déjà à moitié pris par un arrêt voisin (v2-4). */
-  async shareBin(payload: ShareDeliveryBinPayload): Promise<void> {
-    await firstValueFrom(this.http.post(`${BINS}/partage`, payload));
+  shareBin(payload: ShareDeliveryBinPayload): Promise<SharedDeliveryBinResponse> {
+    return firstValueFrom(this.http.post<SharedDeliveryBinResponse>(`${BINS}/partage`, payload));
+  }
+
+  /** Le colisage PROPOSÉ d'une commande (L4b-C4). Une lecture : la déclaration fait foi. */
+  packingProposal(orderId: string): Promise<DeliveryPackingProposalView> {
+    return firstValueFrom(
+      this.http.get<DeliveryPackingProposalView>(
+        `${BASE}/colisage/proposition?commande=${id(orderId)}`,
+      ),
+    );
+  }
+
+  /** Les moitiés libres aux arrêts consécutifs de la commande, dans sa tournée non partie (v2-4). */
+  freeHalves(orderId: string): Promise<DeliveryBinFreeHalvesView> {
+    return firstValueFrom(
+      this.http.get<DeliveryBinFreeHalvesView>(`${BINS}/partenaires?commande=${id(orderId)}`),
+    );
   }
 
   /** Les bacs d'une commande — pour l'étiquetage. Une lecture : imprimer ne crée rien. */
