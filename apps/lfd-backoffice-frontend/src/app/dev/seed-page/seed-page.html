@@ -5,7 +5,32 @@
     recalées sur aujourd’hui.
   </p>
 
-  <fold-page-section title="Recharger">
+  <fold-page-section title="Le scénario de commandes seul">
+    <p>
+      Rejoue les commandes habituelles — l’historique, hier, le comptoir et la journée de livraison
+      d’aujourd’hui, demain, le pic de J+2 — et repart de zéro sur le fournil et les tournées. Les
+      clients du scénario sont reposés à l’identique&nbsp;; les autres sociétés, la station et les
+      décisions tarifaires ne bougent pas.
+    </p>
+    <button
+      foldButton
+      emphasis="solid"
+      intent="primary"
+      size="lg"
+      type="button"
+      [disabled]="running() !== null"
+      (click)="reloadOrders()"
+    >
+      @if (running() === 'orders') {
+        <fold-spinner size="sm" />
+        Rechargement…
+      } @else {
+        Recharger les commandes
+      }
+    </button>
+  </fold-page-section>
+
+  <fold-page-section title="Tout recharger">
     <fold-callout variant="alert" title="Ce geste supprime">
       <p>
         Toute société et toute personne qui ne sont pas le client de référence, avec leurs commandes
@@ -27,14 +52,14 @@
 
     <button
       foldButton
-      emphasis="solid"
       intent="primary"
       size="lg"
       type="button"
-      [disabled]="running()"
+      emphasis="outline"
+      [disabled]="running() !== null"
       (click)="reload()"
     >
-      @if (running()) {
+      @if (running() === 'all') {
         <fold-spinner size="sm" />
         Rechargement…
       } @else {
@@ -50,13 +75,15 @@
              entrée `[value]` : un attribut inconnu ne lève rien à la
              compilation d'un template, mais l'AOT, lui, le refuse. -->
         <fold-field-list>
-          <fold-field
-            label="Supprimé"
-            [empty]="removed() === null"
-            placeholder="Rien — la base était déjà propre."
-          >
-            {{ removed() }}
-          </fold-field>
+          @if ('reset' in done) {
+            <fold-field
+              label="Supprimé"
+              [empty]="removed() === null"
+              placeholder="Rien — la base était déjà propre."
+            >
+              {{ removed() }}
+            </fold-field>
+          }
           <fold-field label="Commandes reposées">{{ done.orders.placed }}</fold-field>
           <!-- Les deux journées qui font l'invariant : elles doivent TOUJOURS
                exister, quel que soit le jour où l'on sème. -->

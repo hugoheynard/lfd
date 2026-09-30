@@ -103,3 +103,9 @@ export interface DevSeedReport {
   /** Vide si aucun bucket n'est configuré sur ce poste. */
   readonly storage: readonly DevSeedStorageReport[];
 }
+
+/**
+ * La réponse de `POST /admin/dev/seed/reload/orders` : le scénario de commandes
+ * seul (2026-09-30). Pas de `reset` — rien n'est coupé hors des commandes.
+ */
+export type DevSeedOrdersOnlyReport = Omit<DevSeedReport, "reset">;

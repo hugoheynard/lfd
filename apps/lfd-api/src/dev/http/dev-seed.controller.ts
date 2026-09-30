@@ -1,4 +1,4 @@
-import type { DevSeedReport } from "@lfd/contracts";
+import type { DevSeedOrdersOnlyReport, DevSeedReport } from "@lfd/contracts";
 import { Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
@@ -7,10 +7,11 @@ import { DevSeedService } from "../dev-seed.service.js";
 /**
  * **Recharger le jeu de données de développement**, depuis le back-office.
  *
- * Une seule route, et un seul geste : tout remettre dans l'état que le seed
- * déclare. Pas de bouton « juste les commandes » ni « juste la station » — les
- * trois étapes dépendent l'une de l'autre, et offrir de n'en jouer qu'une
- * produirait des états intermédiaires que personne n'a décrits.
+ * Deux gestes : tout remettre dans l'état que le seed déclare (`reload`), ou
+ * ne rejouer que le scénario de commandes (`reload/orders`, 2026-09-30). Le
+ * second est admis parce qu'il est déjà un tout décrit : c'est exactement
+ * `pnpm seed:orders`, qui repose lui-même ses clients. « Juste la station »
+ * n'existe toujours pas — elle ne se rejoue pas sans ses commandes.
  *
  * Murée par `b2b_settings`, comme les points de retrait et les heures limites :
  * c'est le même périmètre — le paramétrage de la plateforme. Le service, lui,
@@ -27,5 +28,11 @@ export class DevSeedController {
   @HttpCode(HttpStatus.OK)
   reload(): Promise<DevSeedReport> {
     return this.seeding.reload();
+  }
+
+  @Post("reload/orders")
+  @HttpCode(HttpStatus.OK)
+  reloadOrders(): Promise<DevSeedOrdersOnlyReport> {
+    return this.seeding.reloadOrders();
   }
 }

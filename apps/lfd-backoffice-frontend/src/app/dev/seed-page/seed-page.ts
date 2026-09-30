@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { DevSeedReport } from '@lfd/contracts';
+import type { DevSeedOrdersOnlyReport, DevSeedReport } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -32,12 +32,13 @@ import { DevSeedService } from '../dev-seed.service';
  * Ce qu'elle ne détruit pas mérite d'être dit aussi : le catalogue, le
  * référentiel, l'annuaire de l'équipe et les règles de prix ne bougent pas.
  *
- * ## Pourquoi un seul bouton
+ * ## Deux boutons, pas quatre
  *
- * Effacer, semer la station, le client, puis ses commandes : les quatre étapes
- * dépendent l'une de l'autre — les commandes visent des adresses et des points
- * que les précédentes posent. Offrir de n'en jouer qu'une produirait des états
- * intermédiaires que personne n'a décrits.
+ * Tout recharger, ou **le seul scénario de commandes** (2026-09-30) : celui-ci
+ * est un tout déjà décrit — `pnpm seed:orders` — qui repose ses clients et
+ * recoupe commandes, fournil et tournées, sans toucher au reste de la base.
+ * La station seule ou le client seul n'existent pas : ils ne se rejouent pas
+ * sans leurs commandes.
  *
  * ## Cet écran n'existe pas en production
  *
@@ -64,8 +65,10 @@ export class DevSeedPage {
   private readonly seeding = inject(DevSeedService);
   private readonly notify = inject(NotifyService);
 
-  protected readonly running = signal(false);
-  protected readonly report = signal<DevSeedReport | null>(null);
+  /** Le geste en cours — un seul à la fois, les deux coupent les commandes. */
+  protected readonly running = signal<'all' | 'orders' | null>(null);
+  /** `reset` absent : seul le scénario de commandes a été rejoué. */
+  protected readonly report = signal<DevSeedReport | DevSeedOrdersOnlyReport | null>(null);
 
   /**
    * Ce que la coupe a emporté, en une phrase.
@@ -74,7 +77,8 @@ export class DevSeedPage {
    * échec, alors que c'est le cas NORMAL d'une base déjà propre.
    */
   protected readonly removed = computed(() => {
-    const reset = this.report()?.reset;
+    const report = this.report();
+    const reset = report !== null && 'reset' in report ? report.reset : undefined;
     if (reset === undefined) {
       return null;
     }
@@ -92,21 +96,33 @@ export class DevSeedPage {
     return parts.length === 0 ? null : parts.join(', ');
   });
 
-  protected async reload(): Promise<void> {
-    if (this.running()) {
+  protected reload(): Promise<void> {
+    return this.run('all', () => this.seeding.reload(), 'Jeu de données rechargé.');
+  }
+
+  protected reloadOrders(): Promise<void> {
+    return this.run('orders', () => this.seeding.reloadOrders(), 'Scénario de commandes rechargé.');
+  }
+
+  private async run(
+    which: 'all' | 'orders',
+    call: () => Promise<DevSeedReport | DevSeedOrdersOnlyReport>,
+    done: string,
+  ): Promise<void> {
+    if (this.running() !== null) {
       return;
     }
-    this.running.set(true);
+    this.running.set(which);
     try {
-      this.report.set(await this.seeding.reload());
-      this.notify.success('Jeu de données rechargé.');
+      this.report.set(await call());
+      this.notify.success(done);
     } catch (error: unknown) {
       // Le message du serveur, pas le nôtre : c'est lui qui sait si la base
       // n'est pas locale, si le catalogue manque, ou si la porte d'activation
       // a refusé. Le réécrire ici perdrait la seule information utile.
       this.notify.error(error, 'Le rechargement a échoué.');
     } finally {
-      this.running.set(false);
+      this.running.set(null);
     }
   }
 }

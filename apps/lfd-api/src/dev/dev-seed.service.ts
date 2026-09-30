@@ -1,4 +1,4 @@
-import type { DevSeedReport } from "@lfd/contracts";
+import type { DevSeedDeliveryReport, DevSeedOrdersOnlyReport, DevSeedReport } from "@lfd/contracts";
 import { Injectable, ServiceUnavailableException } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
@@ -7,7 +7,7 @@ import { PrismaService } from "../platform/database/prisma.service.js";
 import { Clock } from "../platform/time/clock.js";
 import { seedAccounting } from "./seeding/accounting.seed.js";
 import { seedClient, seedImpersonatedAccess, seedPendingCompany } from "./seeding/client.seed.js";
-import { seedOrders } from "./seeding/orders.seed.js";
+import { type OrdersReport, seedOrders } from "./seeding/orders.seed.js";
 import { resetToSeed } from "./seeding/reset.seed.js";
 import { seedLegalDocuments } from "./seeding/legal-documents.seed.js";
 import { seedStation } from "./seeding/station.seed.js";
@@ -97,21 +97,32 @@ export class DevSeedService {
     // `pnpm seed:orders`, pour que le bouton et la ligne de commande posent le
     // même jeu de données.
     const orders = await seedOrders(context);
-    const { delivery } = orders;
-    return {
-      reset,
-      orders,
-      storage,
-      delivery: {
-        day: delivery.day,
-        deliveries: delivery.deliveriesToday,
-        notReady: delivery.notReady,
-        vehicles: delivery.vehicles,
-        rounds: delivery.rounds,
-        loadedBins: delivery.loadedBins,
-        unassigned: delivery.unassigned,
-      },
-    };
+    return { reset, orders, storage, delivery: deliveryOf(orders) };
+  }
+
+  /**
+   * **Recharger le scénario de commandes, et lui seul** (Hugo, 2026-09-30).
+   *
+   * Les mêmes fonctions que `pnpm seed:orders` : le client, ses voisins et les
+   * clients de livraison sont remis à l'identique (semis idempotent), leurs
+   * commandes, le fournil et les tournées repartent de zéro. Rien d'autre
+   * n'est coupé — ni les sociétés d'essai, ni la station, ni les décisions
+   * tarifaires : c'est ce qui le distingue de {@link reload}.
+   *
+   * ⚠️ Il suppose le décor posé (station, client de référence) : sur une base
+   * vierge, `seedOrders` refuse faute de client, et le message le dit.
+   */
+  async reloadOrders(): Promise<DevSeedOrdersOnlyReport> {
+    this.refuseUnlessLocalDevelopment();
+    const context = { prisma: this.prisma, commands: this.commands, now: this.clock.now() };
+    // Les bons tirés appartiennent aux commandes qu'on va supprimer : mêmes
+    // buckets, même raison que dans `reload`.
+    const storage = await clearSeededBuckets([
+      this.config.r2Storage("customers"),
+      this.config.r2Storage("production"),
+    ]);
+    const orders = await seedOrders(context);
+    return { orders, storage, delivery: deliveryOf(orders) };
   }
 
   /**
@@ -148,3 +159,16 @@ export class DevSeedService {
  * être refusé, y compris ce qu'on n'a pas pensé à interdire.
  */
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+
+/** La journée de livraison, dans la forme que l'écran lit. */
+function deliveryOf({ delivery }: OrdersReport): DevSeedDeliveryReport {
+  return {
+    day: delivery.day,
+    deliveries: delivery.deliveriesToday,
+    notReady: delivery.notReady,
+    vehicles: delivery.vehicles,
+    rounds: delivery.rounds,
+    loadedBins: delivery.loadedBins,
+    unassigned: delivery.unassigned,
+  };
+}
