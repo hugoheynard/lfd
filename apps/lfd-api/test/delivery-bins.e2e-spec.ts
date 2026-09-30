@@ -216,19 +216,19 @@ describe("les bacs — les CHECK en base", () => {
 
     await expect(
       ctx.prisma.$executeRawUnsafe(
-        `UPDATE "production"."delivery_bin_type" SET "inner_height_cm" = 23 WHERE "id" = $1`,
+        `UPDATE "delivery"."delivery_bin_type" SET "inner_height_cm" = 23 WHERE "id" = $1`,
         id,
       ),
     ).rejects.toThrow(/delivery_bin_type_dimensions/u);
     await expect(
       ctx.prisma.$executeRawUnsafe(
-        `UPDATE "production"."delivery_bin_type" SET "max_stack" = 0 WHERE "id" = $1`,
+        `UPDATE "delivery"."delivery_bin_type" SET "max_stack" = 0 WHERE "id" = $1`,
         id,
       ),
     ).rejects.toThrow(/delivery_bin_type_max_stack/u);
     await expect(
       ctx.prisma.$executeRawUnsafe(
-        `INSERT INTO "production"."delivery_bin_capacity" ("bin_type_id", "sku", "units", "updated_at") VALUES ($1, 'X', 0, now())`,
+        `INSERT INTO "delivery"."delivery_bin_capacity" ("bin_type_id", "sku", "units", "updated_at") VALUES ($1, 'X', 0, now())`,
         id,
       ),
     ).rejects.toThrow(/delivery_bin_capacity_units/u);

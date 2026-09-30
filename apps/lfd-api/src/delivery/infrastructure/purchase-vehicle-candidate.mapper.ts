@@ -3,7 +3,7 @@ import type { PurchaseVehicleCandidateView } from "@lfd/contracts";
 import type { PurchaseVehicleCandidateState } from "../domain/entities/purchase-vehicle-candidate.js";
 import { CargoSpace } from "../domain/value-objects/cargo-space.js";
 
-/** Une ligne `production.delivery_purchase_vehicle_candidate`, telle que l'adaptateur la lit. */
+/** Une ligne `delivery.delivery_purchase_vehicle_candidate`, telle que l'adaptateur la lit. */
 export interface PurchaseVehicleCandidateRow {
   readonly id: string;
   readonly name: string;

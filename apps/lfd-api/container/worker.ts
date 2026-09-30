@@ -305,7 +305,10 @@ async function triggerSettlementReminders(env: Env): Promise<void> {
 
 /**
  * Réveille le container et déclenche le balayage des photos de contrôle qualité
- * déposées et jamais rattachées (plan `documentation/production/plan-controle-qualite.md`, D8).
+ * déposées et jamais rattachées (plan `documentation/production/plan-controle-qualite.md`, D8),
+ * qui balaie aussi le journal des journées du fournil — puis celui de la
+ * livraison (`documentation/livraisons/plan-schema-delivery.md`, SD-D3), par sa
+ * propre route : le fournil ne connaît pas la livraison.
  *
  * Même porte et même jeton que le recompute. Idempotent : un tour manqué est
  * rattrapé au suivant, et une photo abandonnée ne coûte qu'une nuit de stockage.
@@ -315,12 +318,14 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
   if (!token) {
     return;
   }
-  await backend(env).fetch(
-    new Request("https://internal/admin/production/quality/sweep", {
-      method: "POST",
-      headers: { "x-lfc-recompute-token": token },
-    }),
-  );
+  for (const path of ["admin/production/quality/sweep", "admin/livraison/journal/sweep"]) {
+    await backend(env).fetch(
+      new Request(`https://internal/${path}`, {
+        method: "POST",
+        headers: { "x-lfc-recompute-token": token },
+      }),
+    );
+  }
 }
 
 /**

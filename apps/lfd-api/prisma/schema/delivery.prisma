@@ -1,0 +1,546 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// LA LIVRAISON — code dans `src/delivery/`, tables dans le schéma `delivery`
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Schéma À PART depuis le 2026-09-30 (`documentation/livraisons/plan-schema-
+// delivery.md`, SD-D1) : ces quatorze tables vivaient dans `production` (Q10 du
+// plan de tournée, qui en visait trois). La migration
+// `20260930140000_la_livraison_a_son_schema` les a déplacées par `SET SCHEMA`
+// — aucune ligne réécrite — et laisse, pour la fenêtre de déploiement, une VUE
+// `production.<table>` par table déplacée. Ces vues ne sont déclarées ici
+// nulle part, et c'est voulu : un déploiement suivant les supprime (SD5).
+//
+// La livraison a son PROPRE journal de journée (`delivery.day_change`, SD-D3) :
+// aucune de ses tables n'écrit plus dans celui du fournil.
+
+/// Le **journal des journées de la livraison** — le pendant de
+/// `production.day_change`, dans son propre schéma (plan-schema-delivery, SD-D3).
+///
+/// 🔴 Aucun code ne l'écrit : les déclencheurs d'instruction de
+/// `delivery_round`, `delivery_round_stop`, `delivery_stop_execution` et
+/// `delivery_bin_load` l'alimentent, par `delivery.record_day_change_by_service_day()`.
+/// Seul le balayage de `src/delivery/` y efface. La version d'une journée est
+/// `max(id)` pour son `service_day`.
+model DeliveryDayChange {
+  id         BigInt   @id @default(autoincrement())
+  serviceDay String   @map("service_day") @db.VarChar(10)
+  changedAt  DateTime @default(now()) @map("changed_at") @db.Timestamptz(6)
+
+  @@index([serviceDay, id])
+  @@map("day_change")
+  @@schema("delivery")
+}
+
+/// Un **véhicule de la flotte**. Jamais supprimé : retiré, à une date.
+///
+/// ## L'unicité de la plaque n'est pas ici
+///
+/// Deux véhicules ACTIFS ne portent pas la même plaque ; un véhicule retiré
+/// libère la sienne. C'est un index unique PARTIEL (`WHERE retired_at IS
+/// NULL`), que Prisma ne sait pas dire : il est écrit à la main dans la
+/// migration `20260929120200_la_flotte_et_le_depart`.
+model DeliveryVehicle {
+  /// Assigné par la commande (`IdGenerator`), jamais par la base.
+  id    String @id
+  /// « Kangoo blanc » — ce qu'on dit au dépôt.
+  name  String
+  /// La forme NORMALISÉE (`AB-123-CD`) : c'est elle que l'index compare.
+  plate String
+
+  /// Retiré le, ou `NULL` s'il roule. Une DATE et non un drapeau : la
+  /// composition lira « actif ce jour-là ».
+  retiredAt DateTime? @map("retired_at")
+
+  /// Instants du geste, lus du `Clock` — pas `@default(now())` ni
+  /// `@updatedAt`, qui liraient l'horloge de la base.
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @map("updated_at")
+
+  /// Dimensions UTILES de l'espace de chargement, en cm (lot 2 bis, L2b-C1) :
+  /// les trois ou aucune — CHECK écrit à la main dans la migration
+  /// `20260929220000_le_chargement_d_un_vehicule`. Le volume en est dérivé,
+  /// jamais stocké.
+  cargoLengthCm Int? @map("cargo_length_cm")
+  cargoWidthCm  Int? @map("cargo_width_cm")
+  cargoHeightCm Int? @map("cargo_height_cm")
+
+  /// La caisse réfrigérée (L2b-C2) : les trois ou aucun, min ≤ max — CHECK
+  /// dans la même migration. Tout `NULL` = véhicule sec.
+  refrigeratedVolumeLiters Int? @map("refrigerated_volume_liters")
+  refrigeratedMinTempC     Int? @map("refrigerated_min_temp_c")
+  refrigeratedMaxTempC     Int? @map("refrigerated_max_temp_c")
+
+  /// Les passages de roue (plan-geometrie-du-plancher, G-D2) : UNE paire
+  /// symétrique, en cm — longueur, saillie de CHAQUE côté, distance depuis le
+  /// fond, hauteur (on empile par-dessus). Les quatre ou aucune, et jamais sans `cargo` : CHECK dans la
+  /// migration `20260930100000_les_passages_de_roue`.
+  wheelArchLengthCm     Int? @map("wheel_arch_length_cm")
+  wheelArchProtrusionCm Int? @map("wheel_arch_protrusion_cm")
+  wheelArchFromBackCm   Int? @map("wheel_arch_from_back_cm")
+  wheelArchHeightCm     Int? @map("wheel_arch_height_cm")
+
+  /// L'énergie (L2b-C6) : `electric`, `hybrid`, `diesel`, `petrol`, `gas`, ou
+  /// `NULL` si non renseignée. Texte + CHECK (migration
+  /// `20260929223000_l_energie_d_un_vehicule`), pas d'enum Postgres : le
+  /// schéma `production` n'en a aucun, et une valeur d'enum ne se retire pas.
+  energy String?
+
+  rounds DeliveryRound[]
+
+  @@map("delivery_vehicle")
+  @@schema("delivery")
+}
+
+/// **D'où partent les tournées** — un réglage global, UNE ligne.
+///
+/// Ligne absente = personne n'a choisi : le départ est le point de retrait par
+/// défaut. Clé NATURELLE et auteur figé, comme `DeliveryAvailability`.
+/// `pickup_address_id` est OPAQUE : les points de retrait vivent dans le
+/// commerce (`public.pickup_addresses`), et aucune clé étrangère ne traverse —
+/// la livraison les lit par le canal `delivery/channels/commerce/`.
+model DeliveryDeparture {
+  /// Toujours `departure` : il n'y a qu'un réglage, et son nom est connu d'avance.
+  key             String @id
+  pickupAddressId String @map("pickup_address_id")
+
+  updatedAt        DateTime @map("updated_at")
+  /// Qui l'a posé, figé à l'instant du geste : l'id de fiche survit à tout, le
+  /// nom et le rôle sont un instantané.
+  updatedByStaffId String   @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+  updatedByRole    String   @map("updated_by_role")
+
+  @@map("delivery_departure")
+  @@schema("delivery")
+}
+
+/// Une **tournée** — la racine de la composition (lot 3, C1) : un jour, un
+/// véhicule, un numéro de passage, et la liste ordonnée de ses arrêts.
+///
+/// Sa `version` est la SIENNE : composer une tournée ne verrouille pas les
+/// autres. Unique par `(service_day, vehicle_id, passage)` (C17) — un véhicule
+/// fait plusieurs tournées dans la journée (Q13), jamais deux fois la même.
+/// Jamais supprimée. Trois déclencheurs de journal de journée (C6), dans la
+/// migration `20260929140200_les_tournees`.
+model DeliveryRound {
+  /// Assigné par la commande (`IdGenerator`).
+  id          String    @id
+  serviceDay  String    @map("service_day") @db.VarChar(10)
+  vehicleId   String    @map("vehicle_id")
+  /// Le nom du véhicule RECOPIÉ à l'ouverture : un renommage ne réécrit pas l'historique.
+  vehicleName String    @map("vehicle_name")
+  passage     Int
+  /// Avance d'une unité par écriture de la composition ; une écriture qui ne
+  /// présente pas la version lue est refusée.
+  version     Int
+  /// Partie le (lot 4, L4-C4) — écrivain : la tournée, par `depart`. Nulle tant
+  /// qu'elle est au dépôt ; posée, plus rien ne se compose ni ne se charge (I6).
+  departedAt  DateTime? @map("departed_at")
+
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @map("updated_at")
+
+  vehicle DeliveryVehicle     @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  stops   DeliveryRoundStop[]
+
+  @@unique([serviceDay, vehicleId, passage])
+  @@index([vehicleId, serviceDay])
+  @@map("delivery_round")
+  @@schema("delivery")
+}
+
+/// Un **arrêt** de tournée : une commande, à une place.
+///
+/// ## Un seul écrivain : la tournée (C10, corrigé le 2026-09-29)
+///
+/// La TOURNÉE écrit `round_id`, `position`, `removed_at`, `closed_at` — et
+/// `order_id`, `service_day`, `created_at` à la création. Retirer pose
+/// `removed_at` : jamais de suppression physique. Déplacer (I7) change
+/// `round_id` et `position` de la MÊME ligne (C11). L'état d'exécution (chargé,
+/// livré, raté) vivra dans une AUTRE table, écrite par l'arrêt seul.
+///
+/// `closed_at` — écrivain : la tournée ; posé au lot 6 par `closeStop`, quand
+/// l'exécution rapporte livré ou raté. Nul à ce lot, mais relu et réécrit tel
+/// quel par l'adaptateur : deux écrivains sur une ligne, et un `save` de tournée
+/// l'écraserait. Il existe dès maintenant pour que « vivant » soit défini une
+/// fois (C12) : l'index unique partiel `delivery_round_stop_live_order_key` sur
+/// `order_id` des arrêts `removed_at IS NULL AND closed_at IS NULL` — écrit à la
+/// main, Prisma ne sait pas le dire. Une commande est dans au plus une tournée
+/// vivante, tous jours confondus (I3). Un arrêt clos n'est plus vivant : il ne
+/// se réordonne, ne se déplace ni ne se retire (I4).
+///
+/// `order_id` est OPAQUE : aucune clé étrangère vers `public.orders`.
+model DeliveryRoundStop {
+  id         String    @id
+  roundId    String    @map("round_id")
+  orderId    String    @map("order_id")
+  /// Dénormalisé depuis la tournée : le déclencheur de journée le lit ici (C6).
+  serviceDay String    @map("service_day") @db.VarChar(10)
+  /// 1..n, contigu parmi les arrêts vivants de la tournée (I2, tenu par l'agrégat).
+  position   Int
+  removedAt  DateTime? @map("removed_at")
+  /// Écrivain : la tournée ; posé au lot 6 par `closeStop`. Nul à ce lot.
+  closedAt   DateTime? @map("closed_at")
+  createdAt  DateTime  @map("created_at")
+
+  round     DeliveryRound          @relation(fields: [roundId], references: [id], onDelete: Restrict)
+  binLoads  DeliveryBinLoad[]
+  execution DeliveryStopExecution?
+
+  @@index([roundId])
+  @@index([orderId])
+  @@map("delivery_round_stop")
+  @@schema("delivery")
+}
+
+/// Un **bac déclaré** de livraison — un bac ENTIER, ou une MOITIÉ de bac
+/// cloisonné (lot 4, L4-C16, L4-C18 ; lot 4 bis, v2-4, tranche B). C'est
+/// l'unité qu'on scanne : un QR par bac entier, un QR par moitié. Il
+/// appartient à la COMMANDE, et naît quand on le DÉCLARE — imprimer son
+/// étiquette est une lecture. Ex-`delivery_bag`, renommé en place tant que le
+/// lot 4 n'était pas promu (v2-6).
+///
+/// Écrivain : le chargement (`delivery/`). **Aucune journée** : un bac n'a pas
+/// de jour, son chargement en a un — d'où son absence de déclencheur
+/// `day_change`, écrite dans `test/day-change-triggers.e2e-spec.ts`. Jamais
+/// supprimé : un bac de trop s'annule (`voided_at`).
+///
+/// `order_id` est OPAQUE : aucune clé étrangère vers `public.orders`.
+///
+/// ⚠️ Tenu en base et invisible ici (Prisma n'exprime ni CHECK ni index
+/// partiel) : `half` ∈ {`left`, `right`} ; une moitié porte un bac physique,
+/// un bac entier n'en porte pas (`delivery_bin_half_has_physical_bin`) ; et
+/// l'index unique partiel `delivery_bin_physical_half_key` sur
+/// `(physical_bin_id, half)` des bacs NON annulés — deux moitiés au plus par
+/// bac physique, jamais deux fois la même.
+model DeliveryBin {
+  /// Assigné par la commande (`IdGenerator`) ; c'est lui que porte le QR.
+  id            String    @id
+  orderId       String    @map("order_id")
+  /// Le type du catalogue (v2-1). Un type archivé reste lisible ici (v2-7).
+  binTypeId     String    @map("bin_type_id")
+  /// `left` ou `right` pour une moitié de bac cloisonné ; nul pour un bac entier.
+  half          String?   @db.VarChar(5)
+  /// Le bac PHYSIQUE d'une moitié : les deux moitiés d'un même bac le
+  /// partagent. Nul pour un bac entier — qui est son propre bac physique.
+  physicalBinId String?   @map("physical_bin_id")
+  /// Les sacs posés dedans pour CETTE commande — informatif, imprimé.
+  innerBags     Int       @map("inner_bags")
+  /// Six caractères Crockford base 32, tirés au sort (L4-C20) : ce qu'on tape
+  /// quand le QR est illisible. Unique sur TOUS les bacs, annulés compris.
+  code          String    @unique @db.VarChar(6)
+  voidedAt      DateTime? @map("voided_at")
+  createdAt     DateTime  @map("created_at")
+
+  binType DeliveryBinType   @relation(fields: [binTypeId], references: [id], onDelete: Restrict)
+  loads   DeliveryBinLoad[]
+
+  @@index([orderId])
+  @@index([physicalBinId])
+  @@index([binTypeId])
+  @@map("delivery_bin")
+  @@schema("delivery")
+}
+
+/// Le **chargement d'un bac dans un arrêt** (lot 4, L4-C18) : il appartient à
+/// l'ARRÊT, pas au bac. Un arrêt retiré emporte ses chargements ; la commande
+/// recomposée repart de zéro.
+///
+/// Écrivain : l'exécution seule (C10) — jamais l'adaptateur de la tournée, qui
+/// ne fait qu'en VERROUILLER les lignes (`saveMove`, « Partir »). Décharger
+/// remet `loaded_at`, `loaded_by`, `loaded_via` à nul : la ligne reste, le
+/// journal garde qui avait chargé. Trois déclencheurs `day_change` sur
+/// `service_day`, recopié de l'arrêt.
+model DeliveryBinLoad {
+  /// Assigné par la commande (`IdGenerator`) : l'ordre des verrous.
+  id         String    @id
+  stopId     String    @map("stop_id")
+  binId      String    @map("bin_id")
+  serviceDay String    @map("service_day") @db.VarChar(10)
+  loadedAt   DateTime? @map("loaded_at")
+  /// La fiche staff (`staff_users.id`) de qui a chargé — opaque, sans clé étrangère.
+  loadedBy   String?   @map("loaded_by")
+  /// `scan` (le QR) ou `code` (le code court tapé).
+  loadedVia  String?   @map("loaded_via") @db.VarChar(8)
+  createdAt  DateTime  @map("created_at")
+
+  stop DeliveryRoundStop @relation(fields: [stopId], references: [id], onDelete: Restrict)
+  bin  DeliveryBin       @relation(fields: [binId], references: [id], onDelete: Restrict)
+
+  @@unique([stopId, binId])
+  @@index([binId])
+  @@map("delivery_bin_load")
+  @@schema("delivery")
+}
+
+/// **Ce que verra le livreur, figé au départ** (lot 4, L4-C4, snapshot au
+/// départ) — une ligne par arrêt d'une tournée partie. Adresse livrée,
+/// contact, fenêtre, signature, note : lus par le canal du commerce au moment
+/// de « Partir », et plus jamais relus. **Aucun montant.**
+///
+/// Écrivain : l'exécution seule (C10), dans la transaction du départ. Le lot 6
+/// y ajoutera le livré ou le raté. Trois déclencheurs `day_change`.
+model DeliveryStopExecution {
+  stopId            String   @id @map("stop_id")
+  roundId           String   @map("round_id")
+  orderId           String   @map("order_id")
+  serviceDay        String   @map("service_day") @db.VarChar(10)
+  departedAt        DateTime @map("departed_at")
+  reference         String
+  customerLabel     String   @map("customer_label")
+  /// L'adresse livrée figée à la commande (`BillingAddressPayload`), ou nul.
+  address           Json?    @db.JsonB
+  /// Le contact convenu (`DeliveryContact`), ou nul.
+  contact           Json?    @db.JsonB
+  /// La fenêtre convenue, avec sa provenance, ou nulle.
+  deliveryWindow    Json?    @map("delivery_window") @db.JsonB
+  signatureRequired Boolean  @map("signature_required")
+  /// La note laissée sur la commande. `""` sans note.
+  note              String
+  /// La note livreurs de l'adresse du carnet, lue au départ ; nulle sans
+  /// adresse reliée. La procédure n'est PAS figée (le lot 6 la lit en direct).
+  addressNote       String?  @map("address_note")
+
+  stop DeliveryRoundStop @relation(fields: [stopId], references: [id], onDelete: Restrict)
+
+  @@index([roundId])
+  @@map("delivery_stop_execution")
+  @@schema("delivery")
+}
+
+/// **Les réglages du calcul de tournée** (lot 7, L7-C13, L7-C15) — UNE ligne,
+/// clé naturelle, auteur figé, comme `DeliveryDeparture`.
+///
+/// Ligne absente = personne n'a réglé : le calcul prend ses défauts (détour
+/// ×1,4, 35 km/h, départ au plus tôt 06:00, 240 min au plus, 5 min par arrêt,
+/// tournées neuves, plusieurs passages permis),
+/// précédent `DeliveryAvailability`. Pas `delivery_settings`, qui est une table
+/// du commerce. **Aucune journée** : exception écrite dans
+/// `test/day-change-triggers.e2e-spec.ts`.
+model DeliveryRoutingSettings {
+  /// Toujours `routing` : il n'y a qu'un réglage.
+  key                 String  @id
+  /// Le facteur de détour, en CENTIÈMES : 140 = ×1,4. Un entier, pour qu'une
+  /// valeur saisie se relise à l'identique.
+  detourPercent       Int     @map("detour_percent")
+  averageSpeedKmh     Int     @map("average_speed_kmh")
+  /// `HH:MM`, heure de Paris : une heure de journée, pas un instant.
+  earliestDeparture   String  @map("earliest_departure") @db.VarChar(5)
+  maxRoundMinutes     Int     @map("max_round_minutes")
+  stopMinutes         Int     @map("stop_minutes")
+  /// `insert` : insérer dans les tournées existantes ; `new_rounds` : ouvrir
+  /// des tournées neuves. Le défaut de « Proposer », qu'un paramètre surcharge.
+  defaultMode         String  @map("default_mode") @db.VarChar(16)
+  /// Un véhicule peut-il faire plusieurs tournées dans la journée (Q13) ?
+  multiplePassages    Boolean @map("multiple_passages")
+  /// La marge de sécurité avant la fin d'un créneau, en minutes (lot 7 ter,
+  /// L7t-C1) : une arrivée dans ces minutes-là coûte au calcul. 20 par défaut,
+  /// valeur de Hugo — la ligne déjà posée la reçoit à la migration.
+  safetyMarginMinutes Int     @default(20) @map("safety_margin_minutes")
+
+  updatedAt        DateTime @map("updated_at")
+  updatedByStaffId String   @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+  updatedByRole    String   @map("updated_by_role")
+
+  @@map("delivery_routing_settings")
+  @@schema("delivery")
+}
+
+/// **Le cache du géocodage** (lot 7, L7-C9, L7-C10) — une adresse livrée,
+/// réduite à son EMPREINTE, et le point que la Base Adresse Nationale en a
+/// rendu.
+///
+/// 🔴 **Aucune adresse en clair** : la clé est le SHA-256 de l'adresse
+/// normalisée. Une entrée de plus de 365 jours n'est plus lue ; « Situer »
+/// la rejoue. Écrivain : « Situer » seul — « Proposer » ne fait que lire.
+/// **Aucune journée** : exception écrite dans `test/day-change-triggers.e2e-spec.ts`.
+model DeliveryGeocode {
+  /// SHA-256 hexadécimal de l'adresse normalisée.
+  fingerprint String   @id @db.Char(64)
+  lat         Float
+  lng         Float
+  /// Le score de la BAN, entre 0 et 1.
+  score       Float
+  geocodedAt  DateTime @map("geocoded_at")
+
+  @@map("delivery_geocode")
+  @@schema("delivery")
+}
+
+/// **Un scénario du simulateur de tournée** (lot 9, L9-C7) — des arrêts
+/// INVENTÉS, des noms de véhicules et des réglages, enregistrés pour être
+/// rejoués. Une donnée de réglage : aucun client, aucune commande, **aucune
+/// journée** — exception écrite dans `test/day-change-triggers.e2e-spec.ts`.
+///
+/// Jamais supprimé : archivé, à une date. Le nom est unique parmi les
+/// scénarios NON archivés — index unique partiel, écrit à la main dans la
+/// migration `20260929210000_les_scenarios_du_simulateur` (Prisma ne sait pas
+/// le dire).
+model DeliverySimulationScenario {
+  /// Assigné par la commande (`IdGenerator`), jamais par la base.
+  id       String @id
+  name     String
+  /// Le scénario tel que `deliverySimulationPayloadSchema` l'a accepté ;
+  /// revalidé à chaque relecture — un scénario devenu invalide se refuse
+  /// en le nommant, il ne se rend jamais en 500.
+  scenario Json
+
+  /// Instants du geste, lus du `Clock`.
+  createdAt        DateTime  @map("created_at")
+  createdByStaffId String    @map("created_by_staff_id")
+  updatedAt        DateTime  @map("updated_at")
+  /// Le dernier geste — enregistrer, remplacer, archiver : l'id de fiche
+  /// survit à tout, le nom et le rôle sont un instantané.
+  updatedByStaffId String    @map("updated_by_staff_id")
+  updatedByName    String    @map("updated_by_name")
+  updatedByRole    String    @map("updated_by_role")
+  archivedAt       DateTime? @map("archived_at")
+
+  @@map("delivery_simulation_scenario")
+  @@schema("delivery")
+}
+
+/// Un **type de bac** (lot 4 bis, v2-1, tranche A) : un réglage de la
+/// livraison. Jamais supprimé : archivé, il n'est plus proposé mais reste
+/// lisible sur ce qui le cite (v2-7).
+///
+/// Deux types NON archivés ne portent pas le même nom : index unique PARTIEL
+/// (`WHERE archived_at IS NULL`) écrit à la main dans la migration
+/// `20260929230000_les_types_de_bacs`, comme la plaque d'un véhicule. Les
+/// CHECK (dimensions positives, intérieur ≤ extérieur, pile ≥ 1) y sont aussi ;
+/// les bornes restent au domaine, qui refuse avec la phrase à lire.
+model DeliveryBinType {
+  /// Assigné par la commande (`IdGenerator`), jamais par la base.
+  id   String @id
+  /// « Bac M » — ce qu'on dit au labo.
+  name String
+
+  /// Dimensions EXTÉRIEURES, en cm — celles du chargement.
+  outerLengthCm Int @map("outer_length_cm")
+  outerWidthCm  Int @map("outer_width_cm")
+  outerHeightCm Int @map("outer_height_cm")
+  /// Dimensions INTÉRIEURES, en cm — informatives ; le volume en est dérivé.
+  innerLengthCm Int @map("inner_length_cm")
+  innerWidthCm  Int @map("inner_width_cm")
+  innerHeightCm Int @map("inner_height_cm")
+
+  isotherm  Boolean
+  /// Le nombre maximal de bacs de ce type dans une pile.
+  maxStack  Int     @map("max_stack")
+  /// Accepte une cloison : deux demi-bacs.
+  divisible Boolean
+
+  /// Instants du geste, lus du `Clock`.
+  createdAt  DateTime  @map("created_at")
+  updatedAt  DateTime  @map("updated_at")
+  archivedAt DateTime? @map("archived_at")
+
+  capacities DeliveryBinCapacity[]
+  bins       DeliveryBin[]
+
+  @@map("delivery_bin_type")
+  @@schema("delivery")
+}
+
+/// **Une contenance** (lot 4 bis, v2-2) : un bac ENTIER de ce type contient
+/// `units` unités de ce produit. Le SKU est un identifiant OPAQUE du catalogue
+/// B2B — aucune clé vers le référentiel ni vers le commerce. Une case sans
+/// ligne n'a pas de contenance ; la retirer supprime la ligne : c'est un
+/// réglage d'une grille, pas un agrégat métier, et le journal garde l'avant.
+model DeliveryBinCapacity {
+  binTypeId String   @map("bin_type_id")
+  sku       String
+  units     Int
+  updatedAt DateTime @map("updated_at")
+
+  binType DeliveryBinType @relation(fields: [binTypeId], references: [id], onDelete: Restrict)
+
+  @@id([binTypeId, sku])
+  @@map("delivery_bin_capacity")
+  @@schema("delivery")
+}
+
+/// **Un véhicule candidat** de la bibliothèque d'achat
+/// (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D1, lot B1) :
+/// une camionnette qu'on envisage d'acheter. SÉPARÉ de `delivery_vehicle` —
+/// aucune lecture de la flotte ne le voit, c'est ce qui rend « proposer une
+/// tournée à un véhicule fictif » inexprimable. Aucun client, aucune journée.
+///
+/// Jamais supprimé : archivé. Le nom est unique parmi les candidats NON
+/// archivés — index partiel écrit à la main dans la migration
+/// `20260930120000_la_bibliotheque_d_achat`.
+model DeliveryPurchaseVehicleCandidate {
+  /// Assigné par la commande (`IdGenerator`), jamais par la base.
+  id   String @id
+  name String
+
+  /// Dimensions utiles du chargement, en cm — toujours connues : un candidat
+  /// sans plancher ne se compare à rien.
+  cargoLengthCm Int @map("cargo_length_cm")
+  cargoWidthCm  Int @map("cargo_width_cm")
+  cargoHeightCm Int @map("cargo_height_cm")
+
+  /// Passages de roue (G-D2), hauteur comprise. Les quatre ou aucune : CHECK
+  /// dans la migration.
+  wheelArchLengthCm     Int? @map("wheel_arch_length_cm")
+  wheelArchProtrusionCm Int? @map("wheel_arch_protrusion_cm")
+  wheelArchFromBackCm   Int? @map("wheel_arch_from_back_cm")
+  wheelArchHeightCm     Int? @map("wheel_arch_height_cm")
+
+  /// Ce qui permet de l'acheter : tout est facultatif. Prix HT indicatif, en
+  /// centimes entiers (B-D3) — aucun prix ne quitte la bibliothèque.
+  reference         String?
+  purchaseUrl       String? @map("purchase_url")
+  priceCentsExclVat Int?    @map("price_cents_excl_vat")
+
+  /// Instants du geste, lus du `Clock` ; l'auteur du dernier geste est figé.
+  createdAt        DateTime  @map("created_at")
+  createdByStaffId String    @map("created_by_staff_id")
+  updatedAt        DateTime  @map("updated_at")
+  updatedByStaffId String    @map("updated_by_staff_id")
+  updatedByName    String    @map("updated_by_name")
+  updatedByRole    String    @map("updated_by_role")
+  archivedAt       DateTime? @map("archived_at")
+
+  @@map("delivery_purchase_vehicle_candidate")
+  @@schema("delivery")
+}
+
+/// **Un format de bac candidat** de la bibliothèque d'achat (B-D1, lot B1) :
+/// SÉPARÉ de `delivery_bin_type` — jamais proposé au colisage ni dans les
+/// contenances. Mêmes règles de géométrie qu'un type de bac (`BinFormat`).
+///
+/// Jamais supprimé : archivé. Nom unique parmi les NON archivés — index
+/// partiel écrit à la main dans `20260930120000_la_bibliotheque_d_achat`.
+model DeliveryPurchaseBinCandidate {
+  /// Assigné par la commande (`IdGenerator`), jamais par la base.
+  id   String @id
+  name String
+
+  outerLengthCm Int     @map("outer_length_cm")
+  outerWidthCm  Int     @map("outer_width_cm")
+  outerHeightCm Int     @map("outer_height_cm")
+  innerLengthCm Int     @map("inner_length_cm")
+  innerWidthCm  Int     @map("inner_width_cm")
+  innerHeightCm Int     @map("inner_height_cm")
+  isotherm      Boolean
+  maxStack      Int     @map("max_stack")
+
+  supplier              String?
+  reference             String?
+  purchaseUrl           String? @map("purchase_url")
+  /// Prix unitaire HT indicatif, en centimes entiers (B-D3, B-Q2).
+  unitPriceCentsExclVat Int?    @map("unit_price_cents_excl_vat")
+
+  createdAt        DateTime  @map("created_at")
+  createdByStaffId String    @map("created_by_staff_id")
+  updatedAt        DateTime  @map("updated_at")
+  updatedByStaffId String    @map("updated_by_staff_id")
+  updatedByName    String    @map("updated_by_name")
+  updatedByRole    String    @map("updated_by_role")
+  archivedAt       DateTime? @map("archived_at")
+
+  @@map("delivery_purchase_bin_candidate")
+  @@schema("delivery")
+}

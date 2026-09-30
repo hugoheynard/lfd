@@ -67,7 +67,7 @@ async function lockRounds(tx: Tx, rounds: readonly DeliveryRound[]): Promise<voi
   }
   const ids = rounds.map((round) => round.id);
   const locked = await tx.$queryRaw<{ id: string; version: number; departed_at: Date | null }[]>`
-    SELECT "id", "version", "departed_at" FROM "production"."delivery_round"
+    SELECT "id", "version", "departed_at" FROM "delivery"."delivery_round"
      WHERE "id" = ANY(${ids})
      ORDER BY "id"
        FOR UPDATE`;
@@ -95,7 +95,7 @@ async function ensureNotLoaded(tx: Tx, moved: readonly MovedStop[]): Promise<voi
   const movedStopIds = moved.map((stop) => stop.stopId);
   const loads = await tx.$queryRaw<{ stop_id: string; loaded: boolean }[]>`
     SELECT "stop_id", "loaded_at" IS NOT NULL AS "loaded"
-      FROM "production"."delivery_bin_load"
+      FROM "delivery"."delivery_bin_load"
      WHERE "stop_id" = ANY(${movedStopIds})
      ORDER BY "id"
        FOR UPDATE`;

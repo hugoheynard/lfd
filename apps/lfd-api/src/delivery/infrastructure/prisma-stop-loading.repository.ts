@@ -63,7 +63,7 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
       return null;
     }
     await this.prisma.$queryRaw`
-      SELECT "id" FROM "production"."delivery_round" WHERE "id" = ${live.roundId} FOR SHARE`;
+      SELECT "id" FROM "delivery"."delivery_round" WHERE "id" = ${live.roundId} FOR SHARE`;
     await this.lockBin(lockBinId);
     const stop = await this.prisma.deliveryRoundStop.findUniqueOrThrow({
       where: { id: live.id },
@@ -107,7 +107,7 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
     const loads = await this.prisma.$queryRaw<LoadRow[]>`
       SELECT "id", "stop_id" AS "stopId", "bin_id" AS "binId", "loaded_at" AS "loadedAt",
              "loaded_by" AS "loadedBy", "loaded_via" AS "loadedVia", "created_at" AS "createdAt"
-        FROM "production"."delivery_bin_load"
+        FROM "delivery"."delivery_bin_load"
        WHERE "stop_id" = ANY(${stopIds})
        ORDER BY "id"
          FOR UPDATE`;
@@ -167,7 +167,7 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
   private async lockBin(binId: string | undefined): Promise<void> {
     if (binId !== undefined) {
       await this.prisma.$queryRaw`
-        SELECT "id" FROM "production"."delivery_bin" WHERE "id" = ${binId} FOR UPDATE`;
+        SELECT "id" FROM "delivery"."delivery_bin" WHERE "id" = ${binId} FOR UPDATE`;
     }
   }
 

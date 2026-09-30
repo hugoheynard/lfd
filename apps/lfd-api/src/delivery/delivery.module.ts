@@ -123,6 +123,7 @@ import { PrismaDepartureRepository } from "./infrastructure/prisma-departure.rep
 import { PrismaFleetReader } from "./infrastructure/prisma-fleet.reader.js";
 import { PrismaVehicleRoundsReader } from "./infrastructure/prisma-vehicle-rounds.reader.js";
 import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.repository.js";
+import { DAY_JOURNAL_CONTROLLERS, DAY_JOURNAL_PROVIDERS } from "./day-journal.providers.js";
 import {
   PURCHASE_LIBRARY_CONTROLLERS,
   PURCHASE_LIBRARY_PROVIDERS,
@@ -135,7 +136,8 @@ import {
  * (lot 7), par la route (lot 8), « Chronométrer » (lot 10 bis), et le
  * catalogue des bacs avec leurs contenances (lot 4 bis, tranche A)
  * (`documentation/livraisons/plan-preparation-de-tournee.md`). Code ici, tables
- * dans le schéma `production` (Q10).
+ * dans le schéma `delivery` depuis le 2026-09-30 (`plan-schema-delivery.md`,
+ * qui revient sur Q10).
  *
  * Il ne déclare PAS `DepartureCandidatesReader`, `DeliveryOrdersReader` ni
  * `DeliveryProductsReader` : ce
@@ -163,6 +165,7 @@ import {
     BinTypesController,
     BinCapacitiesController,
     ...PURCHASE_LIBRARY_CONTROLLERS,
+    ...DAY_JOURNAL_CONTROLLERS,
   ],
   providers: [
     AddVehicleHandler,
@@ -216,6 +219,7 @@ import {
     ListBinTypesHandler,
     GetBinCapacitiesHandler,
     ...PURCHASE_LIBRARY_PROVIDERS,
+    ...DAY_JOURNAL_PROVIDERS,
     { provide: BinTypeRepository, useClass: PrismaBinTypeRepository },
     { provide: BinTypeLookup, useExisting: BinTypeRepository },
     { provide: BinCapacityRepository, useClass: PrismaBinCapacityRepository },

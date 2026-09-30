@@ -190,7 +190,7 @@ describe("le chargement d'un véhicule — refus", () => {
 describe("le chargement d'un véhicule — les CHECK en base", () => {
   async function write(id: string, assignments: string): Promise<unknown> {
     return ctx.prisma.$executeRawUnsafe(
-      `UPDATE "production"."delivery_vehicle" SET ${assignments} WHERE "id" = $1`,
+      `UPDATE "delivery"."delivery_vehicle" SET ${assignments} WHERE "id" = $1`,
       id,
     );
   }

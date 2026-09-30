@@ -3,7 +3,7 @@ import type { PurchaseBinCandidateView } from "@lfd/contracts";
 import type { PurchaseBinCandidateState } from "../domain/entities/purchase-bin-candidate.js";
 import { BinDimensions } from "../domain/value-objects/bin-dimensions.js";
 
-/** Une ligne `production.delivery_purchase_bin_candidate`, telle que l'adaptateur la lit. */
+/** Une ligne `delivery.delivery_purchase_bin_candidate`, telle que l'adaptateur la lit. */
 export interface PurchaseBinCandidateRow {
   readonly id: string;
   readonly name: string;

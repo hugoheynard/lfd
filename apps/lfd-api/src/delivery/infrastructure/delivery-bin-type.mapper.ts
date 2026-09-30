@@ -3,7 +3,7 @@ import type { BinTypeView } from "@lfd/contracts";
 import type { BinTypeState } from "../domain/entities/bin-type.js";
 import { BinDimensions } from "../domain/value-objects/bin-dimensions.js";
 
-/** Une ligne `production.delivery_bin_type`, telle que l'adaptateur la lit. */
+/** Une ligne `delivery.delivery_bin_type`, telle que l'adaptateur la lit. */
 export interface BinTypeRow {
   readonly id: string;
   readonly name: string;

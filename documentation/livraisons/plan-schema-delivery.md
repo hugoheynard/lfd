@@ -70,7 +70,7 @@ requêtes tomberaient**, en 500.
 
 - `datasource.prisma` : `schemas = ["public", "growth", "ops", "pim", "production", "media", "delivery"]`
   (liste actuelle relue le 2026-09-30, plus `delivery`).
-- Un fichier `prisma/schema/delivery.prisma` (`prisma-schema-layout.mjs` admet
+- Un fichier `apps/lfd-api/prisma/schema/delivery.prisma` (`prisma-schema-layout.mjs` admet
   un fichier comme un dossier), les quatorze modèles en `@@schema("delivery")`.
 - `schema-ops.counter.ts` : les modèles `Delivery*` passent sous `"delivery"`,
   et `DeliveryDayChange` s'y ajoute.
@@ -140,12 +140,33 @@ Côté code, tout dans `src/delivery/` (jamais dans le fournil) :
 Aujourd'hui, **quatre écrans** suivent la version de journée du fournil, et
 voient donc bouger les tournées par l'effet des déclencheurs :
 
-| Écran                                            | Lit                                    | A besoin de la livraison ?                                                  |
-| ------------------------------------------------ | -------------------------------------- | --------------------------------------------------------------------------- |
-| Colisage (`production/colisage/colisage.ts:152`) | `admin/production/version`             | **Oui** : les bacs déclarés (`delivery_bin`), chargés (`delivery_bin_load`) |
-| Fiche d'atelier (`fiche-atelier.ts:109`)         | idem                                   | À établir en ouvrant le code                                                |
-| Comptoir (`handover-shop-page.ts:386`)           | idem                                   | Probablement non                                                            |
-| Supervision (`supervision-refresh.ts:25`)        | `admin/supervision/production-version` | À établir                                                                   |
+| Écran                                            | Lit                                    | A besoin de la livraison ?                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------------------------ | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Colisage (`production/colisage/colisage.ts:151`) | `admin/production/version`             | **Non pour ce qu'il suit.** La lecture veillée (`PackingDayReader` → `admin/production/packing`) ne lit que le fournil. Les bacs s'affichent dans le panneau `packing-bins`, qui lit `admin/livraison/colisage/…` et `admin/livraison/bacs` (`delivery_loading`) **à l'ouverture**, pas au rythme de la version : le composer est un choix d'écran, pas une régression. |
+| Fiche d'atelier (`fiche-atelier.ts:108`)         | idem                                   | **Non.** Elle lit la journée du fournil ; `delivery` n'y paraît que comme mode d'acheminement copié dans le snapshot (`fulfillmentMethod`).                                                                                                                                                                                                                             |
+| Comptoir (`handover-shop-page.ts:385`)           | `admin/orders/day-version` + idem      | **Non.** `admin/handover/file` lit le commerce et le fournil par leurs canaux ; aucune table de livraison.                                                                                                                                                                                                                                                              |
+| Supervision (`supervision-refresh.ts:24`)        | `admin/supervision/production-version` | **Non.** Ses colonnes (`preparation`, `packing`, `handover`, `quality`, `day`) ne lisent aucune table de livraison.                                                                                                                                                                                                                                                     |
+
+> **Relevé SD1 (2026-09-30), code ouvert** : hors de `src/delivery/`, aucun
+> `prisma.delivery*` ni SQL sur `delivery_*` dans `src/` (grep). Aucun des
+> quatre écrans n'a donc besoin de composer pour rester juste : jusqu'ici, un
+> scan de bac ou une tournée composée les faisait relire **pour rien**. Les
+> lecteurs naturels de `admin/livraison/version` sont les écrans de la
+> livraison eux-mêmes (tournées, chargement), qui ne suivent aucune version
+> aujourd'hui — hors de ce plan.
+>
+> **Déclencheur d'élagage** : il n'y en a pas UN. Le fournil balaie son journal
+> dans `POST admin/production/quality/sweep` (cron `45 3 * * *`,
+> `QUALITY_UPLOAD_SWEEP_CRON`), le commerce dans
+> `POST admin/orders/settlement-reminders` (cron `0 * * * *`). La livraison a sa
+> route, `POST admin/livraison/journal/sweep`, appelée par le Worker dans le
+> **même cron nocturne que le fournil**, juste après lui — aucun cron neuf.
+>
+> **`migrate diff`** (base de dev migrée → `prisma/schema`, 2026-09-30) : aucune
+> ligne ne cite `delivery`, une vue ni `day_change` ; les vues de compatibilité
+> sont ignorées. **`FOR UPDATE` à travers une vue** : essayé en dev par Hugo le
+> 2026-09-30 (vue simple : `FOR UPDATE`, `UPDATE`, `INSERT`, `DELETE` passent) ;
+> `\dT production.*` vide.
 
 Le service commun (`shared/day-version/day-version.service.ts`) gagne une
 valeur de journal (`delivery`), sous le droit des tournées
@@ -181,14 +202,14 @@ C'est la porte que la v1 voulait créer : elle existe, on la corrige.
 
 ## 3. Les lots
 
-| Lot     | Contenu                                                                                                                                                                                                                                                                                                                                                               |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **SD1** | Relevés code ouvert, **écrits dans ce plan** : le tableau SD-D4 rempli ; le déclencheur d'élagage nommé ; `FOR UPDATE` à travers une vue essayé en dev ; `migrate diff` face aux vues                                                                                                                                                                                 |
-| **SD2** | Migration du déploiement 1 (schéma, `SET SCHEMA` ×14, vues, journal et fonction de la livraison, déclencheurs) ; `delivery.prisma` ; les huit requêtes réécrites ; e2e et JSDoc ; `schema-ops.counter.ts` ; gardes de `day-change-triggers` (SD-D5). Sortie : `grep -rn '"production"\."delivery_' apps/lfd-api/src apps/lfd-api/test` **vide** ; `migrate diff` vide |
-| **SD3** | Version et élagage de la livraison (SD-D3) ; les écrans composent (SD-D4)                                                                                                                                                                                                                                                                                             |
-| **SD4** | Migration de retour arrière écrite et essayée en dev, puis gardée hors du dépôt tant qu'on ne s'en sert pas                                                                                                                                                                                                                                                           |
-| **SD5** | Déploiement 2 : `DROP VIEW` ×14                                                                                                                                                                                                                                                                                                                                       |
-| **SD6** | Doc : ce plan rayé, Q10 annotée, `chargement-les-bacs.md` § 10, le tableau des blocs du CLAUDE.md                                                                                                                                                                                                                                                                     |
+| Lot     | Contenu                                                                                                                                                                                                                                                                                                                                                                         |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **SD1** | Relevés code ouvert, **écrits dans ce plan** : le tableau SD-D4 rempli ; le déclencheur d'élagage nommé ; `FOR UPDATE` à travers une vue essayé en dev ; `migrate diff` face aux vues                                                                                                                                                                                           |
+| **SD2** | Migration du déploiement 1 (schéma, `SET SCHEMA` ×14, vues, journal et fonction de la livraison, déclencheurs) ; le fichier Prisma du schéma ; les huit requêtes réécrites ; e2e et JSDoc ; `schema-ops.counter.ts` ; gardes de `day-change-triggers` (SD-D5). Sortie : `grep -rn '"production"\."delivery_' apps/lfd-api/src apps/lfd-api/test` **vide** ; `migrate diff` vide |
+| **SD3** | Version et élagage de la livraison (SD-D3) ; les écrans composent (SD-D4)                                                                                                                                                                                                                                                                                                       |
+| **SD4** | Migration de retour arrière écrite et essayée en dev, puis gardée hors du dépôt tant qu'on ne s'en sert pas                                                                                                                                                                                                                                                                     |
+| **SD5** | Déploiement 2 : `DROP VIEW` ×14                                                                                                                                                                                                                                                                                                                                                 |
+| **SD6** | Doc : ce plan rayé, Q10 annotée, `chargement-les-bacs.md` § 10, le tableau des blocs du CLAUDE.md                                                                                                                                                                                                                                                                               |
 
 **Avant B3, la porte et les positions** : ils créent des tables, qui naîtront
 directement dans `delivery`.

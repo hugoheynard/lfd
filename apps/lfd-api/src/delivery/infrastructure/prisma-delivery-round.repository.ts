@@ -66,7 +66,7 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
    */
   async loadForDeparture(id: string): Promise<DeliveryRound | null> {
     await this.prisma.$queryRaw`
-      SELECT "id" FROM "production"."delivery_round" WHERE "id" = ${id} FOR UPDATE`;
+      SELECT "id" FROM "delivery"."delivery_round" WHERE "id" = ${id} FOR UPDATE`;
     return this.load(id);
   }
 
@@ -94,7 +94,7 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
     await this.prisma.$transaction(async (tx) => {
       const ids = [from.id, to.id].sort();
       await tx.$queryRaw`
-        SELECT "id" FROM "production"."delivery_round"
+        SELECT "id" FROM "delivery"."delivery_round"
          WHERE "id" IN (${ids[0]}, ${ids[1]})
          ORDER BY "id"
            FOR UPDATE`;
@@ -139,7 +139,7 @@ async function ensureStopNotLoaded(
   const stopIds = rounds.flatMap((round) => round.toSnapshot().stops.map((stop) => stop.id));
   const loads = await tx.$queryRaw<{ stop_id: string; loaded: boolean }[]>`
     SELECT "stop_id", "loaded_at" IS NOT NULL AS "loaded"
-      FROM "production"."delivery_bin_load"
+      FROM "delivery"."delivery_bin_load"
      WHERE "stop_id" = ANY(${stopIds})
      ORDER BY "id"
        FOR UPDATE`;

@@ -226,29 +226,31 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   ProductionQualityCheck: "production",
   ProductionQualityPhoto: "production",
   ProductionQualityUpload: "production",
-  // La livraison (2026-09-29, plan de tournée, Q10) : son code vit dans
-  // `src/delivery/`, ses tables dans ce schéma — comme le retrait. Un pic ici
-  // est un geste de réglage de la flotte, rare par nature.
-  DeliveryVehicle: "production",
-  DeliveryDeparture: "production",
+  // La livraison : son code vit dans `src/delivery/`, ses tables dans son
+  // propre schéma depuis le 2026-09-30 (`plan-schema-delivery.md`, SD-D1). Un
+  // pic sur la flotte est un geste de réglage, rare par nature.
+  // Son journal de journée — alimenté par les déclencheurs, balayé la nuit.
+  DeliveryDayChange: "delivery",
+  DeliveryVehicle: "delivery",
+  DeliveryDeparture: "delivery",
   // La composition (lot 3) : quelques écritures par geste, un matin.
-  DeliveryRound: "production",
-  DeliveryRoundStop: "production",
+  DeliveryRound: "delivery",
+  DeliveryRoundStop: "delivery",
   // Le chargement (lot 4) : une écriture par bac scanné, un matin, au dépôt.
-  DeliveryBin: "production",
-  DeliveryBinLoad: "production",
-  DeliveryStopExecution: "production",
+  DeliveryBin: "delivery",
+  DeliveryBinLoad: "delivery",
+  DeliveryStopExecution: "delivery",
   // Le calculateur de tournée (lot 7) : un réglage, et le cache du géocodage.
-  DeliveryRoutingSettings: "production",
-  DeliveryGeocode: "production",
+  DeliveryRoutingSettings: "delivery",
+  DeliveryGeocode: "delivery",
   // Les scénarios du simulateur (L9-C7) : réglage, sans journée ni client.
-  DeliverySimulationScenario: "production",
+  DeliverySimulationScenario: "delivery",
   // Les bacs et leurs contenances (lot 4 bis, tranche A) : un réglage, une case à la fois.
-  DeliveryBinType: "production",
-  DeliveryBinCapacity: "production",
+  DeliveryBinType: "delivery",
+  DeliveryBinCapacity: "delivery",
   // La bibliothèque d'achat (lot B1) : des candidats, saisis à la main, rarement.
-  DeliveryPurchaseVehicleCandidate: "production",
-  DeliveryPurchaseBinCandidate: "production",
+  DeliveryPurchaseVehicleCandidate: "delivery",
+  DeliveryPurchaseBinCandidate: "delivery",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

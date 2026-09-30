@@ -52,6 +52,7 @@
   "test/delivery-availability.e2e-spec.ts": 2769,
   "test/delivery-bins-sharing.e2e-spec.ts": 5698,
   "test/delivery-bins.e2e-spec.ts": 6767,
+  "test/delivery-day-version.e2e-spec.ts": 7047,
   "test/delivery-loading-guards.e2e-spec.ts": 5016,
   "test/delivery-loading-plan.e2e-spec.ts": 5715,
   "test/delivery-loading.e2e-spec.ts": 7167,
