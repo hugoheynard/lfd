@@ -74,3 +74,10 @@
 .swatch.arch {
   background: var(--fold-color-text-faded);
 }
+
+fold-card.best {
+  display: block;
+  border-radius: var(--fold-radius-md);
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: -1px;
+}
