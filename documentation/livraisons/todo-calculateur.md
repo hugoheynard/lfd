@@ -42,3 +42,23 @@
   HTML5 natif : souris seulement. Remède : `@angular/cdk` (drag-drop), qui
   n'est pas encore une dépendance du dépôt. Les listes de composition, sous le
   planificateur, restent la voie clavier en attendant.
+
+## Le planificateur de tournées (lfd-route-planner) — à faire (Hugo, 2026-09-30)
+
+- **Séparer « refaire la carte » et « redéployer le Worker ».** Aujourd'hui le
+  même workflow (`deploy_lfd_route_planner.yml`) télécharge l'extrait,
+  reconstruit le graphe OSRM et les tuiles, repousse l'image PUIS déploie le
+  Worker — à chaque modification du code du planificateur, alors que la carte
+  n'a pas changé. Cible : deux déclencheurs — la carte (mensuel + manuel)
+  publie une image et des tuiles datées ; le Worker (push du code) redéploie
+  en réutilisant la dernière image publiée.
+- **Télécharger la Savoie seule, pas Rhône-Alpes.** Geofabrik ne publie pas
+  d'extrait par département : le workflow tire Rhône-Alpes (≈ 530 Mo) puis
+  découpe au polygone de la Savoie (≈ 53 Mo). OpenStreetMap France publie
+  l'extrait du département, mis à jour chaque jour :
+  `https://download.openstreetmap.fr/extracts/europe/france/rhone_alpes/savoie.osm.pbf`
+  (66 Mo, vérifié le 2026-09-30). Le prendre directement supprimerait le
+  téléchargement de 530 Mo et l'étape de découpe ; à vérifier : la frontière
+  exacte (La Rosière, les Arcs, Val d'Isère y sont) et la tenue du service
+  (miroir associatif, sans engagement de disponibilité — garder Geofabrik en
+  repli).
