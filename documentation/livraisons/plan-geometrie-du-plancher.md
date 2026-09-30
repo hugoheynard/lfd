@@ -85,6 +85,15 @@ largeur : un bac serré contre son voisin ne se sort pas.
 Le bac reste **debout** : seules deux orientations au sol (dans la longueur,
 tourné). Coucher un bac n'est pas modélisé, et c'est voulu.
 
+**Tranché le 2026-09-30 (Hugo) : on ne couche jamais un bac.** « Si on a des
+ratios proportionnels entre les containers, ça finit par redevenir des cubes
+si on se projette assez loin. » Les formats sont **modulaires** : deux bacs
+S (40 × 30) couvrent exactement l'empreinte d'un M ou d'un L (60 × 40). Des
+formats qui s'emboîtent au sol remplissent le plancher sans qu'on ait besoin de
+les coucher ; c'est le choix des formats, pas leur orientation, qui gagne la
+place. Ni case « peut voyager couché » sur le type, ni interdiction sur le
+produit.
+
 ### G-D3 — Stratégie A, l'assistant : des rangées, le meilleur sens pour chacune
 
 Le calcul de la maquette, porté au domaine :
