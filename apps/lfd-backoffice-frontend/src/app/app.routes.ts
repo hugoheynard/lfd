@@ -325,6 +325,17 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/simulator-page/simulator-page').then((m) => m.SimulatorPage),
       },
+      // L'ASSISTANT D'ACHAT (plan-geometrie-du-plancher.md, G3) : une LECTURE,
+      // sous le droit du simulateur (G-D3 : « pas de droit neuf »).
+      {
+        path: 'assistant-achat',
+        canActivate: [permissionGuard('delivery_rounds:read')],
+        title: 'Assistant d’achat — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/purchase-assistant-page/purchase-assistant-page').then(
+            (m) => m.PurchaseAssistantPage,
+          ),
+      },
       // LE CHARGEMENT (lot 4) : tout se LIT sous `delivery_loading:read` —
       // ouvrir un sac, une tournée, les étiquettes n'écrit rien (L4-C13, L4-C16).
       // Charger, décharger, partir, déclarer : des gestes, que chaque écran ne

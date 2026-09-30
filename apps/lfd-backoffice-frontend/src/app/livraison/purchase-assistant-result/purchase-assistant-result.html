@@ -1,0 +1,78 @@
+<fold-card [surface]="best() ? 'accent' : 'card'" data-result>
+  <div class="result">
+    <fold-element-title variant="title" [title]="format().name" [subtitle]="subtitle()">
+      @if (best()) {
+        <fold-badge titleAction variant="success" content="Le plus de volume utile" data-best />
+      }
+    </fold-element-title>
+
+    <p class="total" data-total>
+      <strong>{{ format().total }}</strong> bac{{ format().total > 1 ? 's' : '' }}
+    </p>
+
+    <fold-field-list>
+      <fold-field label="Volume utile">{{ usefulVolume() }}</fold-field>
+      <fold-field label="Hauteur">{{ heightLimit() }}</fold-field>
+    </fold-field-list>
+
+    <fold-meter
+      label="Part du volume du véhicule"
+      [value]="format().vehiclePercent"
+      [min]="0"
+      [max]="100"
+      showValue
+      data-percent
+    />
+
+    <svg class="plan" [attr.viewBox]="viewBox()" role="img" [attr.aria-label]="planLabel()">
+      <rect
+        class="floor"
+        [attr.x]="padding"
+        [attr.y]="padding"
+        [attr.width]="floor().lengthCm"
+        [attr.height]="floor().widthCm"
+      />
+      @if (floor().wheelArches; as arches) {
+        <rect
+          class="arch"
+          data-arch
+          [attr.x]="padding + arches.fromBackCm"
+          [attr.y]="padding"
+          [attr.width]="arches.lengthCm"
+          [attr.height]="arches.protrusionCm"
+        />
+        <rect
+          class="arch"
+          data-arch
+          [attr.x]="padding + arches.fromBackCm"
+          [attr.y]="padding + floor().widthCm - arches.protrusionCm"
+          [attr.width]="arches.lengthCm"
+          [attr.height]="arches.protrusionCm"
+        />
+      }
+      @for (bin of bins(); track $index) {
+        <rect
+          class="bin"
+          [class.turned]="bin.turned"
+          data-bin
+          rx="1.5"
+          [attr.x]="padding + bin.x"
+          [attr.y]="padding + bin.y"
+          [attr.width]="bin.depth"
+          [attr.height]="bin.across"
+        />
+      }
+    </svg>
+
+    <ul class="legend">
+      <li><span class="swatch bin"></span>dans la longueur</li>
+      @if (hasTurned()) {
+        <li><span class="swatch bin turned"></span>tourné</li>
+      }
+      @if (floor().wheelArches) {
+        <li><span class="swatch arch"></span>passage de roue</li>
+      }
+      <li>fond ← → portes</li>
+    </ul>
+  </div>
+</fold-card>

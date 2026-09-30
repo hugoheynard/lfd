@@ -1,0 +1,76 @@
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  min-width: 0;
+}
+
+.total {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.total strong {
+  color: var(--fold-color-text);
+  font-size: var(--fold-text-2xl);
+}
+
+.plan {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.floor {
+  fill: var(--fold-color-surface-sunken);
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+}
+
+.arch {
+  fill: var(--fold-color-text-faded);
+}
+
+.bin {
+  fill: var(--fold-color-primary);
+}
+
+.bin.turned {
+  fill: var(--fold-color-warning);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.swatch {
+  display: inline-block;
+  width: var(--fold-space-sm);
+  height: var(--fold-space-sm);
+  border-radius: var(--fold-radius-xs);
+}
+
+.swatch.bin {
+  background: var(--fold-color-primary);
+}
+
+.swatch.bin.turned {
+  background: var(--fold-color-warning);
+}
+
+.swatch.arch {
+  background: var(--fold-color-text-faded);
+}

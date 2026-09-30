@@ -1,0 +1,243 @@
+<fold-page-layout icon="shopping-cart" title="Assistant d’achat">
+  <p description>
+    L’espace utile d’un véhicule et des formats de bacs : l’assistant compte ce qui tient au sol, en
+    hauteur, et le volume utile que chaque format donne. Rien n’est écrit — ni véhicule, ni type de
+    bac.
+  </p>
+
+  @if (prefill(); as prefill) {
+    <div class="assistant">
+      <div class="inputs">
+        @if (prefill.fleetUnread) {
+          <fold-callout variant="warning" data-fleet-unread>
+            La flotte n’a pas pu être lue : saisissez les dimensions du véhicule.
+          </fold-callout>
+        }
+        @if (prefill.binsUnread) {
+          <fold-callout variant="warning" data-bins-unread>
+            Les types de bacs n’ont pas pu être lus : ajoutez les formats à la main.
+          </fold-callout>
+        }
+
+        <fold-card data-vehicle>
+          <div class="section">
+            <fold-element-title variant="title" icon="truck" title="Le véhicule" />
+            <fold-listbox
+              label="Partir d’un véhicule de la flotte"
+              hint="Seuls les véhicules dont l’espace utile est renseigné."
+              [options]="vehicleOptions()"
+              [value]="vehicleChoice()"
+              (selectionChange)="pickVehicle($event)"
+              data-vehicle-choice
+            />
+            <div class="dims">
+              <fold-number-input
+                label="Longueur (cm)"
+                integer
+                [value]="draft().floor.lengthCm"
+                (valueChange)="setVehicleDimension({ lengthCm: $event })"
+                data-floor-length
+              />
+              <fold-number-input
+                label="Largeur (cm)"
+                integer
+                [value]="draft().floor.widthCm"
+                (valueChange)="setVehicleDimension({ widthCm: $event })"
+                data-floor-width
+              />
+              <fold-number-input
+                label="Hauteur (cm)"
+                integer
+                [value]="draft().floor.heightCm"
+                (valueChange)="setVehicleDimension({ heightCm: $event })"
+                data-floor-height
+              />
+            </div>
+            <fold-checkbox
+              label="Passages de roue"
+              hint="Aucun bac n’est posé sur un passage de roue : à leur hauteur, la largeur tombe à largeur − 2 × saillie."
+              [checked]="draft().floor.arches"
+              (checkedChange)="setArches({ arches: $event })"
+              data-arches
+            />
+            @if (draft().floor.arches) {
+              <div class="dims">
+                <fold-number-input
+                  label="Longueur (cm)"
+                  integer
+                  [value]="draft().floor.archLengthCm"
+                  (valueChange)="setArches({ archLengthCm: $event })"
+                  data-arch-length
+                />
+                <fold-number-input
+                  label="Saillie par côté (cm)"
+                  integer
+                  [value]="draft().floor.archProtrusionCm"
+                  (valueChange)="setArches({ archProtrusionCm: $event })"
+                  data-arch-protrusion
+                />
+                <fold-number-input
+                  label="Depuis le fond (cm)"
+                  integer
+                  [value]="draft().floor.archFromBackCm"
+                  (valueChange)="setArches({ archFromBackCm: $event })"
+                  data-arch-from-back
+                />
+              </div>
+            }
+            <fold-number-input
+              label="Jeu entre bacs (cm)"
+              hint="Ajouté à chaque bac, en longueur et en largeur : il faut pouvoir les sortir."
+              integer
+              [value]="draft().gapCm"
+              (valueChange)="setGap($event)"
+              data-gap
+            />
+          </div>
+        </fold-card>
+
+        <fold-card data-formats>
+          <div class="section">
+            <fold-element-title
+              variant="title"
+              icon="archive"
+              title="Les formats"
+              [subtitle]="draft().formats.length + ' sur ' + maxFormats + ' au plus'"
+            >
+              <button
+                titleAction
+                foldButton
+                size="sm"
+                emphasis="soft"
+                icon="plus"
+                [disabled]="!canAddFormat()"
+                (click)="addFormat()"
+                data-add-format
+              >
+                Un format à comparer
+              </button>
+            </fold-element-title>
+
+            @for (format of draft().formats; track format.key) {
+              <div class="format" data-format>
+                <div class="format-head">
+                  <fold-input
+                    label="Nom du format"
+                    [value]="format.name"
+                    (valueChange)="updateFormat(format.key, { name: $event })"
+                    data-format-name
+                  />
+                  <fold-button-icon
+                    icon="bin"
+                    size="sm"
+                    tooltip="Retirer ce format"
+                    (clicked)="removeFormat(format.key)"
+                    data-remove-format
+                  />
+                </div>
+                <div class="dims">
+                  <fold-number-input
+                    label="Ext. longueur"
+                    integer
+                    [value]="format.outer.lengthCm"
+                    (valueChange)="updateOuter(format, { lengthCm: $event })"
+                    data-outer-length
+                  />
+                  <fold-number-input
+                    label="Ext. largeur"
+                    integer
+                    [value]="format.outer.widthCm"
+                    (valueChange)="updateOuter(format, { widthCm: $event })"
+                    data-outer-width
+                  />
+                  <fold-number-input
+                    label="Ext. hauteur"
+                    integer
+                    [value]="format.outer.heightCm"
+                    (valueChange)="updateOuter(format, { heightCm: $event })"
+                    data-outer-height
+                  />
+                  <fold-number-input
+                    label="Int. longueur"
+                    integer
+                    [value]="format.inner.lengthCm"
+                    (valueChange)="updateInner(format, { lengthCm: $event })"
+                    data-inner-length
+                  />
+                  <fold-number-input
+                    label="Int. largeur"
+                    integer
+                    [value]="format.inner.widthCm"
+                    (valueChange)="updateInner(format, { widthCm: $event })"
+                    data-inner-width
+                  />
+                  <fold-number-input
+                    label="Int. hauteur"
+                    integer
+                    [value]="format.inner.heightCm"
+                    (valueChange)="updateInner(format, { heightCm: $event })"
+                    data-inner-height
+                  />
+                  <fold-number-input
+                    label="Pile maximale"
+                    integer
+                    [value]="format.maxStack"
+                    (valueChange)="updateFormat(format.key, { maxStack: $event })"
+                    data-max-stack
+                  />
+                </div>
+              </div>
+            } @empty {
+              <fold-empty-state
+                title="Aucun format"
+                subtitle="Ajoutez un format de bac pour compter ce qui tient."
+              >
+                <fold-icon empty-icon name="archive" />
+              </fold-empty-state>
+            }
+          </div>
+        </fold-card>
+
+        @if (refusal(); as message) {
+          <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
+        }
+      </div>
+
+      <section class="results" aria-live="polite">
+        <fold-callout variant="info" data-method>
+          Le calcul est exact parmi les rangements par rangées, d’un fond à l’autre ; les bacs
+          restent debout, on ne les tourne qu’à plat.
+        </fold-callout>
+
+        @if (!built().ok) {
+          <fold-empty-state
+            title="Des cotes manquent"
+            [subtitle]="'À compléter : ' + missingText() + '.'"
+            data-missing
+          >
+            <fold-icon empty-icon name="sliders" />
+          </fold-empty-state>
+        } @else if (result(); as result) {
+          <p class="summary" data-summary>
+            Volume du véhicule <strong>{{ vehicleVolume() }}</strong>
+          </p>
+          <div class="cards">
+            @for (card of cards(); track $index) {
+              <app-purchase-assistant-result
+                [format]="card.format"
+                [sent]="card.sent"
+                [floor]="result.payload.floor"
+                [gapCm]="result.payload.gapCm"
+                [best]="card.best"
+              />
+            }
+          </div>
+        } @else if (calculating()) {
+          <fold-loading message="Calcul du rangement…" />
+        }
+      </section>
+    </div>
+  } @else {
+    <fold-loading message="Lecture de la flotte et des bacs…" />
+  }
+</fold-page-layout>

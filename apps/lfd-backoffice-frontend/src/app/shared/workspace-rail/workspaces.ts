@@ -195,6 +195,13 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     needs: 'delivery_rounds:read',
   },
   {
+    key: 'assistant-achat',
+    label: 'Assistant d’achat',
+    link: '/livraison/assistant-achat',
+    icon: 'shopping-cart',
+    needs: 'delivery_rounds:read',
+  },
+  {
     key: 'chargement',
     label: 'Chargement',
     link: '/livraison/chargement',

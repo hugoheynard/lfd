@@ -4,6 +4,8 @@ import type {
   BinCapacitiesView,
   BinTypePayload,
   BinTypesView,
+  PurchaseAssistantPayload,
+  PurchaseAssistantView,
   SetBinCapacityPayload,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
@@ -12,6 +14,7 @@ import { B2B_API_BASE } from '../api/api-config';
 
 const BINS = `${B2B_API_BASE}/admin/livraison/bacs`;
 const CAPACITIES = `${B2B_API_BASE}/admin/livraison/contenances`;
+const PURCHASE_ASSISTANT = `${B2B_API_BASE}/admin/livraison/assistant-achat`;
 
 /**
  * **Les bacs de la livraison** — le catalogue des types et la grille des
@@ -52,5 +55,14 @@ export class DeliveryBinsService {
 
   async setCapacity(payload: SetBinCapacityPayload): Promise<void> {
     await firstValueFrom(this.http.put(CAPACITIES, payload));
+  }
+
+  /**
+   * L'assistant d'achat (`plan-geometrie-du-plancher.md`, G-D3) : un POST
+   * parce que le scénario est un corps, mais une LECTURE — rien n'est écrit,
+   * sous `delivery_rounds:read`. Les refus 400 remontent tels quels.
+   */
+  assistPurchase(payload: PurchaseAssistantPayload): Promise<PurchaseAssistantView> {
+    return firstValueFrom(this.http.post<PurchaseAssistantView>(PURCHASE_ASSISTANT, payload));
   }
 }
