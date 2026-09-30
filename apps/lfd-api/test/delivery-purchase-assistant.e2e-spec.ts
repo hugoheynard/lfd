@@ -72,6 +72,24 @@ describe("POST admin/livraison/assistant-achat (G-D3)", () => {
     expect(await counts()).toEqual(before);
   });
 
+  it("empile par-dessus des passages hauts de 30 cm : 70 bacs, 16 au sol (G-D2 bis)", async () => {
+    const floor = {
+      ...SCENARIO.floor,
+      wheelArches: { lengthCm: 90, protrusionCm: 20, fromBackCm: 60, heightCm: 30 },
+    };
+
+    const response = await admin(ctx)
+      .post(ASSISTANT)
+      .send({ ...SCENARIO, floor })
+      .expect(200);
+
+    // Calcul fait à la main dans maximize-format.spec.ts : 8 + 15 + 15 + 16 + 16.
+    const [format] = jsonBody<PurchaseAssistantView>(response).formats;
+    expect(format).toMatchObject({ floorCount: 16, levels: 4, total: 70 });
+    const lateral = format!.rows.filter((row) => row.overArchCount > 0);
+    expect(lateral.map((row) => row.overArchFromLevel)).toEqual([1, 1]);
+  });
+
   it("refuse onze formats (400), avant tout calcul", async () => {
     const formats = Array.from({ length: 11 }, () => SCENARIO.formats[0]!);
 

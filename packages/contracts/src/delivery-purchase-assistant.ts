@@ -19,8 +19,8 @@ export const PURCHASE_ASSISTANT_MAX_FORMATS = 10;
 
 /**
  * Une paire symétrique de passages de roue, mesurée au sol depuis le fond —
- * celle du véhicule, la HAUTEUR en moins d'obligation : le calcul par rangées
- * ne la lit pas (G4, 2026-09-30), et l'écran de l'assistant ne l'envoie pas.
+ * celle du véhicule, la HAUTEUR en moins d'obligation. Connue, des bacs
+ * s'empilent par-dessus (G-D2 bis) ; absente, aucun (le calcul d'avant).
  */
 export const wheelArchesPayloadSchema = vehicleWheelArchesPayloadSchema.extend({
   heightCm: z.number().int().optional(),
@@ -63,16 +63,29 @@ export interface PurchaseAssistantRowView {
   readonly fromCm: number;
   /** Profondeur occupée, jeu compris. */
   readonly depthCm: number;
+  /** Bacs en travers AU SOL. */
   readonly count: number;
   /** `length` : la longueur du bac dans celle du véhicule ; `turned` : tourné. */
   readonly orientation: "length" | "turned";
+  /**
+   * Bacs en travers AU-DESSUS des passages de roue (G-D2 bis), portés par la
+   * colonne centrale. 0 sans hauteur de passage, hors passage, ou sans étage libre.
+   */
+  readonly overArchCount: number;
+  /** Étage où ils commencent (0 = le sol), `⌈passage ÷ bac⌉` ; `null` si aucun. */
+  readonly overArchFromLevel: number | null;
+  /** Bacs de la rangée, tous étages. */
+  readonly total: number;
 }
 
 /** Le meilleur rangement PAR RANGÉES d'un format — pas le meilleur de tous. */
 export interface PurchaseAssistantFormatView {
   readonly name: string;
+  /** Bacs au sol. */
   readonly floorCount: number;
+  /** Étages des colonnes centrales. */
   readonly levels: number;
+  /** Tous étages, bacs latéraux compris : plus `floorCount × levels` dès qu'il y en a. */
   readonly total: number;
   /** Volume INTÉRIEUR des bacs posés, litres arrondis à l'inférieur. */
   readonly usefulLiters: number;

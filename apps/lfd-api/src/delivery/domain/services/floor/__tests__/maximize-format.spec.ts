@@ -14,6 +14,21 @@ const format = (
     maxStack,
   });
 
+/** Une rangée sans bac au-dessus d'un passage — le cas de tout plancher sans hauteur de passage. */
+const plain = (
+  fromCm: number,
+  depthCm: number,
+  count: number,
+  orientation: "length" | "turned",
+) => ({
+  fromCm,
+  depthCm,
+  count,
+  orientation,
+  overArchCount: 0,
+  overArchFromLevel: null,
+});
+
 describe("maximizeFormat — calculs faits à la main", () => {
   it("tourner la dernière rangée gagne un bac", () => {
     // 100 × 100, bac 60 × 40, jeu 0.
@@ -27,8 +42,8 @@ describe("maximizeFormat — calculs faits à la main", () => {
     );
     expect(layout.floorCount).toBe(3);
     expect(layout.rows).toEqual([
-      { fromCm: 0, depthCm: 60, count: 2, orientation: "length" },
-      { fromCm: 60, depthCm: 40, count: 1, orientation: "turned" },
+      { ...plain(0, 60, 2, "length"), total: 2 },
+      { ...plain(60, 40, 1, "turned"), total: 1 },
     ]);
   });
 
@@ -46,7 +61,7 @@ describe("maximizeFormat — calculs faits à la main", () => {
     expect(maximizeFormat(rectangle, format([50, 50, 30], 1), 0).floorCount).toBe(4);
     const layout = maximizeFormat(arched, format([50, 50, 30], 1), 0);
     expect(layout.floorCount).toBe(2);
-    expect(layout.rows).toEqual([{ fromCm: 60, depthCm: 50, count: 2, orientation: "length" }]);
+    expect(layout.rows).toEqual([{ ...plain(60, 50, 2, "length"), total: 2 }]);
   });
 
   it("rien ne tient : un bac plus long que le plancher dans les deux sens", () => {
@@ -113,11 +128,11 @@ describe("maximizeFormat — calculs faits à la main", () => {
     // celui qui commence contre la cloison — 3 + 3 contre le passage, un tourné
     // [122, 163) contre lui (2), puis deux en long hors passage (4 + 4).
     expect(layout.rows).toEqual([
-      { fromCm: 0, depthCm: 61, count: 3, orientation: "length" },
-      { fromCm: 61, depthCm: 61, count: 3, orientation: "length" },
-      { fromCm: 122, depthCm: 41, count: 2, orientation: "turned" },
-      { fromCm: 163, depthCm: 61, count: 4, orientation: "length" },
-      { fromCm: 224, depthCm: 61, count: 4, orientation: "length" },
+      { ...plain(0, 61, 3, "length"), total: 12 },
+      { ...plain(61, 61, 3, "length"), total: 12 },
+      { ...plain(122, 41, 2, "turned"), total: 8 },
+      { ...plain(163, 61, 4, "length"), total: 16 },
+      { ...plain(224, 61, 4, "length"), total: 16 },
     ]);
   });
 
@@ -128,5 +143,102 @@ describe("maximizeFormat — calculs faits à la main", () => {
       1,
     );
     expect(layout).toMatchObject({ levels: 3, heightLimit: "stack" });
+  });
+});
+
+describe("maximizeFormat — par-dessus les passages de roue (G-D2 bis)", () => {
+  const van = (archHeightCm: number | null): CargoFloor =>
+    floorOf({
+      lengthCm: 290,
+      widthCm: 166,
+      heightCm: 139,
+      wheelArches: { lengthCm: 90, protrusionCm: 20, fromBackCm: 60, heightCm: archHeightCm },
+    });
+  const binL = format([60, 40, 32], 5, [56, 36, 30]);
+
+  it("la camionnette 290 × 166 × 139, passages hauts de 30 : 70 bacs au lieu de 64", () => {
+    // Étages ⌊139 ÷ 32⌋ = 4 (la pile 5 ne limite pas). k₀ = ⌈30 ÷ 32⌉ = 1 : le jeu
+    // ne compte pas en hauteur, un bac de 32 dépasse déjà le passage au premier étage.
+    // Par rangée (empreinte 61 × 41, jeu 1) :
+    //   en long hors passage : 4 × 4 = 16 ;
+    //   en long contre lui   : 3 × 4 + (4 − 3) × (4 − 1) = 15 ;
+    //   tourné hors passage  : 2 × 4 = 8 ;  tourné contre lui : 2 × 4 + 0 = 8.
+    // Au plus ⌊290 ÷ 61⌋ = 4 rangées en long (244 cm) ; il reste 46 cm, un tourné (41).
+    // Seules deux rangées en long évitent le passage ([150, 290) = 140 cm) ;
+    // le tourné tient avant lui ([0, 41) ⊂ [0, 60)). Total 8 + 15 + 15 + 16 + 16 = 70.
+    // Trois en long + deux tournés : au plus 16 + 16 + 15 + 8 + 8 = 63. Moins.
+    // Au sol : 2 + 3 + 3 + 4 + 4 = 16, comme avant — seul le total monte.
+    // Intérieur 70 × 60 480 = 4 233 600 cm³ → 4 233 L ; ÷ 6 691 460 → ⌊63,27 %⌋ = 63 %.
+    const layout = maximizeFormat(van(30), binL, 1);
+    expect(layout).toMatchObject({
+      floorCount: 16,
+      levels: 4,
+      total: 70,
+      usefulLiters: 4233,
+      vehiclePercent: 63,
+    });
+    expect(layout.rows.reduce((sum, row) => sum + row.overArchCount, 0)).toBe(2);
+    for (const row of layout.rows.filter((r) => r.overArchCount > 0)) {
+      expect(row).toMatchObject({
+        orientation: "length",
+        count: 3,
+        overArchFromLevel: 1,
+        total: 15,
+      });
+    }
+  });
+
+  // Une rangée seule, en long, sur un passage qui court tout le plancher :
+  // 61 × 166 × 139, saillie 20 → 3 au sol, 1 au-dessus ; 4 étages. Tourné : 2 × 4 = 8.
+  const strip = (archHeightCm: number | null): CargoFloor =>
+    floorOf({
+      lengthCm: 61,
+      widthCm: 166,
+      heightCm: 139,
+      wheelArches: { lengthCm: 61, protrusionCm: 20, fromBackCm: 0, heightCm: archHeightCm },
+    });
+
+  it("un passage haut d'exactement deux bacs : le latéral commence au troisième étage", () => {
+    // k₀ = ⌈64 ÷ 32⌉ = 2 : le bac latéral pose sur le passage à 64 cm pile.
+    // 3 × 4 + 1 × (4 − 2) = 14. À 65 cm, k₀ = 3 → 3 × 4 + 1 × 1 = 13.
+    const exact = maximizeFormat(strip(64), binL, 1);
+    expect(exact.total).toBe(14);
+    expect(exact.rows).toEqual([
+      {
+        fromCm: 0,
+        depthCm: 61,
+        count: 3,
+        orientation: "length",
+        overArchCount: 1,
+        overArchFromLevel: 2,
+        total: 14,
+      },
+    ]);
+    expect(maximizeFormat(strip(65), binL, 1).total).toBe(13);
+  });
+
+  it("un passage trop haut : aucun latéral ne commence", () => {
+    // k₀ = ⌈128 ÷ 32⌉ = 4 = étages → max(0, 4 − 4) = 0 : 3 × 4 = 12, rien au-dessus.
+    const layout = maximizeFormat(strip(128), binL, 1);
+    expect(layout).toMatchObject({ floorCount: 3, levels: 4, total: 12 });
+    expect(layout.rows[0]).toMatchObject({ overArchCount: 0, overArchFromLevel: null, total: 12 });
+  });
+
+  /** Régression : sans hauteur mesurée, rien ne doit monter au-dessus du passage. */
+  it("sans hauteur de passage, le résultat d'avant : 16 × 4 = 64, aucun latéral", () => {
+    const layout = maximizeFormat(van(null), binL, 1);
+    expect(layout).toMatchObject({ floorCount: 16, levels: 4, total: 64, usefulLiters: 3870 });
+    expect(
+      layout.rows.map(({ fromCm, count, orientation }) => ({ fromCm, count, orientation })),
+    ).toEqual([
+      { fromCm: 0, count: 3, orientation: "length" },
+      { fromCm: 61, count: 3, orientation: "length" },
+      { fromCm: 122, count: 2, orientation: "turned" },
+      { fromCm: 163, count: 4, orientation: "length" },
+      { fromCm: 224, count: 4, orientation: "length" },
+    ]);
+    expect(
+      layout.rows.every((row) => row.overArchCount === 0 && row.overArchFromLevel === null),
+    ).toBe(true);
   });
 });
