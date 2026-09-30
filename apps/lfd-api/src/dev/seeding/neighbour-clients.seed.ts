@@ -9,7 +9,7 @@ import { GrantTermsCommand } from "../../b2b/account/application/commands/grant-
 import { UpdateMyProfileCommand } from "../../b2b/account/application/commands/update-my-profile.command.js";
 import { runWithRequestContext } from "../../platform/context/request-context.store.js";
 import { newTraceId } from "../../platform/context/trace-context.js";
-import { DeferredTerm, UserStatus } from "../../platform/database/client/client.js";
+import { CompanyStatus, DeferredTerm, UserStatus } from "../../platform/database/client/client.js";
 import type { ClientContext } from "./client.seed.js";
 
 /**
@@ -172,7 +172,12 @@ export async function seedNeighbourClients(context: ClientContext): Promise<void
  * dériverait au premier durcissement de la porte d'activation, et ce serait
  * alors le semis de livraison seul qui cesserait de l'éprouver.
  *
- * Idempotent par raison sociale : une maison déjà semée est laissée telle quelle.
+ * Idempotent par raison sociale : une maison déjà semée est laissée telle quelle
+ * — sauf si elle est restée **en attente**. Un semis interrompu entre la
+ * création et l'activation laissait des maisons `pending` que le passage
+ * suivant sautait pour toujours : comptées comme particuliers, leurs
+ * livraisons tombaient sur « la livraison n'est pas proposée pour cet espace »
+ * (constaté le 2026-09-30, treize maisons sur quinze).
  */
 export async function seedFictiveClients(
   context: ClientContext,
@@ -181,10 +186,13 @@ export async function seedFictiveClients(
   for (const client of clients) {
     const existing = await context.prisma.company.findFirst({
       where: { raisonSociale: client.raisonSociale },
-      select: { id: true },
+      select: { id: true, status: true },
     });
     if (existing === null) {
       await seedNeighbour(context, client);
+    } else if (existing.status === CompanyStatus.pending) {
+      await activate(context, existing.id);
+      console.log(`✓ Client voisin « ${client.enseigne} » resté en attente — activé.`);
     }
   }
 }
@@ -252,11 +260,16 @@ async function seedNeighbour(context: ClientContext, neighbour: NeighbourClient)
     return id;
   });
 
+  await activate(context, companyId);
+  console.log(`✓ Client voisin « ${neighbour.enseigne} » semé et activé.`);
+}
+
+/** Le terme mensuel, puis la porte d'activation — les gestes du staff. */
+async function activate({ commands, now }: ClientContext, companyId: string): Promise<void> {
   await asStaff(now, async () => {
     await commands.execute(new GrantTermsCommand(companyId, [DeferredTerm.monthly]));
     await commands.execute(new ActivateCompanyByStaffCommand(companyId, SEED_STAFF_SUB));
   });
-  console.log(`✓ Client voisin « ${neighbour.enseigne} » semé et activé.`);
 }
 
 function asCustomer<T>(now: Date, userId: string, run: () => Promise<T>): Promise<T> {
