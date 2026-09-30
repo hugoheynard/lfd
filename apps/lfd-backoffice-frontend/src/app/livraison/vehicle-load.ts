@@ -6,6 +6,8 @@ import type {
   VehicleRefrigerationPayload,
   VehicleRefrigerationView,
   VehicleView,
+  VehicleWheelArchesPayload,
+  VehicleWheelArchesView,
 } from '@lfd/contracts';
 
 /**
@@ -37,12 +39,19 @@ export interface VehicleLoadDraft {
   readonly coldLiters: number | null;
   readonly minTempC: number | null;
   readonly maxTempC: number | null;
+  /** Passages de roue (G4) : lus seulement si l'espace utile est renseigné. */
+  readonly arches: boolean;
+  readonly archLengthCm: number | null;
+  readonly archProtrusionCm: number | null;
+  readonly archFromBackCm: number | null;
+  readonly archHeightCm: number | null;
 }
 
 export type VehicleLoadReading =
   | {
       readonly ok: true;
       readonly cargo: VehicleCargoPayload | null;
+      readonly wheelArches: VehicleWheelArchesPayload | null;
       readonly refrigeration: VehicleRefrigerationPayload | null;
     }
   | { readonly ok: false; readonly issue: string };
@@ -51,6 +60,7 @@ export type VehicleLoadReading =
 export function loadDraftOf(vehicle: VehicleView | undefined): VehicleLoadDraft {
   const cargo = vehicle?.cargo ?? null;
   const cold = vehicle?.refrigeration ?? null;
+  const arches = vehicle?.wheelArches ?? null;
   return {
     lengthCm: cargo?.lengthCm ?? null,
     widthCm: cargo?.widthCm ?? null,
@@ -59,6 +69,11 @@ export function loadDraftOf(vehicle: VehicleView | undefined): VehicleLoadDraft 
     coldLiters: cold?.volumeLiters ?? null,
     minTempC: cold?.minTempC ?? null,
     maxTempC: cold?.maxTempC ?? null,
+    arches: arches !== null,
+    archLengthCm: arches?.lengthCm ?? null,
+    archProtrusionCm: arches?.protrusionCm ?? null,
+    archFromBackCm: arches?.fromBackCm ?? null,
+    archHeightCm: arches?.heightCm ?? null,
   };
 }
 
@@ -95,6 +110,11 @@ export function temperatureLabel(celsius: number): string {
 /** « 300 × 170 × 130 cm · 6,6 m³ » */
 export function cargoLabel(cargo: VehicleCargoView): string {
   return `${String(cargo.lengthCm)} × ${String(cargo.widthCm)} × ${String(cargo.heightCm)} cm · ${volumeLabel(cargo.volumeLiters)}`;
+}
+
+/** « Passages de roue : 90 cm de long, 20 cm par côté, à 60 cm du fond, 30 cm de haut » */
+export function wheelArchesLabel(arches: VehicleWheelArchesView): string {
+  return `Passages de roue : ${String(arches.lengthCm)} cm de long, ${String(arches.protrusionCm)} cm par côté, à ${String(arches.fromBackCm)} cm du fond, ${String(arches.heightCm)} cm de haut`;
 }
 
 /** « ❄ 400 L · 0 à +4 °C » pour une caisse réfrigérée ; « Sec » sinon. */
@@ -158,7 +178,7 @@ function outOf(value: number, min: number, max: number): boolean {
 function readCargo(draft: VehicleLoadDraft): VehicleLoadReading {
   const { lengthCm, widthCm, heightCm } = draft;
   const given = [lengthCm, widthCm, heightCm].filter((value) => value !== null);
-  if (given.length === 0) return { ok: true, cargo: null, refrigeration: null };
+  if (given.length === 0) return { ok: true, cargo: null, wheelArches: null, refrigeration: null };
   if (lengthCm === null || widthCm === null || heightCm === null) {
     return {
       ok: false,
@@ -171,7 +191,12 @@ function readCargo(draft: VehicleLoadDraft): VehicleLoadReading {
       issue: `Chaque dimension est un nombre entier de centimètres, de ${String(CARGO_CM_MIN)} à ${String(CARGO_CM_MAX)}.`,
     };
   }
-  return { ok: true, cargo: { lengthCm, widthCm, heightCm }, refrigeration: null };
+  return {
+    ok: true,
+    cargo: { lengthCm, widthCm, heightCm },
+    wheelArches: null,
+    refrigeration: null,
+  };
 }
 
 function readCold(
@@ -212,6 +237,34 @@ function readCold(
 }
 
 /**
+ * Les passages de roue : les quatre cotes, ou aucune. Sans espace utile, ils
+ * ne partent pas — le serveur les refuserait, et la case est cachée.
+ */
+function readArches(
+  draft: VehicleLoadDraft,
+  hasCargo: boolean,
+): { ok: true; wheelArches: VehicleWheelArchesPayload | null } | { ok: false; issue: string } {
+  if (!hasCargo || !draft.arches) return { ok: true, wheelArches: null };
+  const {
+    archLengthCm: lengthCm,
+    archProtrusionCm: protrusionCm,
+    archFromBackCm: fromBackCm,
+    archHeightCm: heightCm,
+  } = draft;
+  if (lengthCm === null || protrusionCm === null || fromBackCm === null || heightCm === null) {
+    return {
+      ok: false,
+      issue:
+        'Saisissez la longueur, la saillie, la distance depuis le fond et la hauteur des passages de roue — les quatre.',
+    };
+  }
+  if ([lengthCm, protrusionCm, fromBackCm, heightCm].some((cm) => !Number.isInteger(cm))) {
+    return { ok: false, issue: 'Les passages de roue se mesurent en centimètres entiers.' };
+  }
+  return { ok: true, wheelArches: { lengthCm, protrusionCm, fromBackCm, heightCm } };
+}
+
+/**
  * Lit la saisie : la charge à envoyer, ou le premier refus, dans les mots de
  * l'équipe. Une case « Caisse réfrigérée » décochée envoie `null` — les champs
  * restés remplis ne partent pas.
@@ -219,9 +272,16 @@ function readCold(
 export function readLoad(draft: VehicleLoadDraft): VehicleLoadReading {
   const cargo = readCargo(draft);
   if (!cargo.ok) return cargo;
+  const arches = readArches(draft, cargo.cargo !== null);
+  if (!arches.ok) return arches;
   const cold = readCold(draft, draftVolumeLiters(draft));
   if (!cold.ok) return cold;
-  return { ok: true, cargo: cargo.cargo, refrigeration: cold.refrigeration };
+  return {
+    ok: true,
+    cargo: cargo.cargo,
+    wheelArches: arches.wheelArches,
+    refrigeration: cold.refrigeration,
+  };
 }
 
 /**

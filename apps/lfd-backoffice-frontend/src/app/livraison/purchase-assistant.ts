@@ -36,6 +36,8 @@ export interface FloorDraft extends DimensionsDraft {
   readonly archLengthCm: number | null;
   readonly archProtrusionCm: number | null;
   readonly archFromBackCm: number | null;
+  /** Facultative : sans elle, rien n'est empilé au-dessus des passages (G-D2 bis). */
+  readonly archHeightCm: number | null;
 }
 
 export interface FormatDraft {
@@ -66,6 +68,7 @@ export const EMPTY_FLOOR: FloorDraft = {
   archLengthCm: null,
   archProtrusionCm: null,
   archFromBackCm: null,
+  archHeightCm: null,
 };
 
 /** Les véhicules actifs dont on connaît l'espace utile — les seuls qui pré-remplissent. */
@@ -74,8 +77,8 @@ export function measuredVehicles(vehicles: readonly VehicleView[]): readonly Veh
 }
 
 /**
- * Le plancher d'un véhicule de la flotte. Les passages de roue ne sont pas
- * portés par le véhicule avant G4 : on garde ceux déjà saisis.
+ * Le plancher d'un véhicule de la flotte, passages de roue compris (G4) : un
+ * véhicule sans passages décoche la case, les cotes saisies restent.
  */
 export function floorOfVehicle(vehicle: VehicleView, current: FloorDraft): FloorDraft {
   const cargo = vehicle.cargo;
@@ -87,6 +90,33 @@ export function floorOfVehicle(vehicle: VehicleView, current: FloorDraft): Floor
     lengthCm: cargo.lengthCm,
     widthCm: cargo.widthCm,
     heightCm: cargo.heightCm,
+    ...archesOfVehicle(vehicle, current),
+  };
+}
+
+function archesOfVehicle(
+  vehicle: VehicleView,
+  current: FloorDraft,
+): Pick<
+  FloorDraft,
+  'arches' | 'archLengthCm' | 'archProtrusionCm' | 'archFromBackCm' | 'archHeightCm'
+> {
+  const arches = vehicle.wheelArches;
+  if (arches === null) {
+    return {
+      arches: false,
+      archLengthCm: current.archLengthCm,
+      archProtrusionCm: current.archProtrusionCm,
+      archFromBackCm: current.archFromBackCm,
+      archHeightCm: current.archHeightCm,
+    };
+  }
+  return {
+    arches: true,
+    archLengthCm: arches.lengthCm,
+    archProtrusionCm: arches.protrusionCm,
+    archFromBackCm: arches.fromBackCm,
+    archHeightCm: arches.heightCm,
   };
 }
 
@@ -132,6 +162,7 @@ export function buildPayload(draft: AssistantDraft): BuiltPayload {
         lengthCm: need(floor.archLengthCm, 'longueur des passages de roue', missing),
         protrusionCm: need(floor.archProtrusionCm, 'saillie des passages de roue', missing),
         fromBackCm: need(floor.archFromBackCm, 'distance des passages de roue au fond', missing),
+        ...(floor.archHeightCm === null ? {} : { heightCm: floor.archHeightCm }),
       }
     : null;
   const gapCm = need(draft.gapCm, 'jeu entre bacs', missing);
@@ -211,6 +242,58 @@ export function placeBins(
       turned,
     }));
   });
+}
+
+/** Une bande latérale d'une rangée sur passage : là où des bacs sont empilés au-dessus. */
+export interface OverArchBand {
+  readonly x: number;
+  readonly y: number;
+  readonly depth: number;
+  readonly across: number;
+}
+
+/**
+ * Les bandes latérales des rangées qui portent des bacs au-dessus des passages
+ * de roue (G-D2 bis) : de chaque côté, la largeur que les colonnes centrales
+ * laissent libre au sol. Les bacs eux-mêmes ne sont pas dessinés — seulement
+ * la place qu'ils prennent, à un étage que le plan de dessus ne montre pas.
+ */
+export function overArchBands(
+  rows: readonly PurchaseAssistantRowView[],
+  outer: { readonly lengthCm: number; readonly widthCm: number },
+  floorWidthCm: number,
+  gapCm: number,
+): readonly OverArchBand[] {
+  return rows
+    .filter((row) => row.overArchCount > 0)
+    .flatMap((row) => {
+      const across = (row.orientation === 'turned' ? outer.lengthCm : outer.widthCm) + gapCm;
+      const side = Math.max(0, (floorWidthCm - row.count * across) / 2);
+      return [
+        { x: row.fromCm, y: 0, depth: row.depthCm, across: side },
+        { x: row.fromCm, y: floorWidthCm - side, depth: row.depthCm, across: side },
+      ];
+    });
+}
+
+/** Le premier étage (0 = le sol) où commencent les bacs au-dessus des passages, ou `null`. */
+export function overArchFirstLevel(rows: readonly PurchaseAssistantRowView[]): number | null {
+  const levels = rows
+    .filter((row) => row.overArchCount > 0)
+    .map((row) => row.overArchFromLevel)
+    .filter((level): level is number => level !== null);
+  return levels.length === 0 ? null : Math.min(...levels);
+}
+
+/**
+ * « 16 au sol × 6 étages », et « + 8 au-dessus des passages » dès que des bacs
+ * latéraux s'ajoutent : le total n'est plus alors le produit des deux.
+ */
+export function resultSubtitle(view: PurchaseAssistantFormatView): string {
+  const levels = `${view.levels} étage${view.levels > 1 ? 's' : ''}`;
+  const base = `${view.floorCount} au sol × ${levels}`;
+  const overArch = view.total - view.floorCount * view.levels;
+  return overArch > 0 ? `${base} + ${overArch} au-dessus des passages` : base;
 }
 
 function label(format: FormatDraft): string {

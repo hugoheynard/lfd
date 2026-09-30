@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import type {
   BinTypesView,
   PurchaseAssistantPayload,
@@ -33,6 +34,17 @@ const FLEET: VehiclesView = {
       createdAt: '',
       cargo: { lengthCm: 290, widthCm: 166, heightCm: 139, volumeLiters: 6691 },
       wheelArches: null,
+      refrigeration: null,
+      energy: null,
+    },
+    {
+      id: 'v-master',
+      name: 'Master',
+      plate: 'DD-123-DD',
+      retiredAt: null,
+      createdAt: '',
+      cargo: { lengthCm: 370, widthCm: 176, heightCm: 189, volumeLiters: 12308 },
+      wheelArches: { lengthCm: 90, protrusionCm: 22, fromBackCm: 80, heightCm: 30 },
       refrigeration: null,
       energy: null,
     },
@@ -89,8 +101,24 @@ const VIEW: PurchaseAssistantView = {
       vehiclePercent: 60,
       heightLimit: 'ceiling',
       rows: [
-        { fromCm: 0, depthCm: 61, count: 4, orientation: 'length' },
-        { fromCm: 61, depthCm: 41, count: 2, orientation: 'turned' },
+        {
+          fromCm: 0,
+          depthCm: 61,
+          count: 4,
+          orientation: 'length',
+          overArchCount: 0,
+          overArchFromLevel: null,
+          total: 24,
+        },
+        {
+          fromCm: 61,
+          depthCm: 41,
+          count: 2,
+          orientation: 'turned',
+          overArchCount: 0,
+          overArchFromLevel: null,
+          total: 12,
+        },
       ],
     },
   ],
@@ -175,6 +203,47 @@ function click(fixture: ComponentFixture<PurchaseAssistantPage>, selector: strin
 }
 
 describe('PurchaseAssistantPage', () => {
+  it('choisir un véhicule à passages de roue les pré-remplit, hauteur comprise', async () => {
+    const fixture = await boot();
+    fixture.debugElement
+      .query(By.css('[data-vehicle-choice]'))
+      .triggerEventHandler('selectionChange', 'v-master');
+    await settle(fixture);
+
+    expect(host(fixture).querySelector<HTMLInputElement>('[data-arches] input')?.checked).toBe(
+      true,
+    );
+    expect(wire.sent.at(-1)?.floor).toEqual({
+      lengthCm: 370,
+      widthCm: 176,
+      heightCm: 189,
+      wheelArches: { lengthCm: 90, protrusionCm: 22, fromBackCm: 80, heightCm: 30 },
+    });
+  });
+
+  it('la hauteur des passages ne part que si elle est remplie', async () => {
+    const fixture = await boot();
+    click(fixture, '[data-arches] input');
+    typeIn(fixture, '[data-arch-length]', '90');
+    typeIn(fixture, '[data-arch-protrusion]', '20');
+    typeIn(fixture, '[data-arch-from-back]', '60');
+    await settle(fixture);
+    expect(wire.sent.at(-1)?.floor.wheelArches).toEqual({
+      lengthCm: 90,
+      protrusionCm: 20,
+      fromBackCm: 60,
+    });
+
+    typeIn(fixture, '[data-arch-height]', '30');
+    await settle(fixture);
+    expect(wire.sent.at(-1)?.floor.wheelArches).toEqual({
+      lengthCm: 90,
+      protrusionCm: 20,
+      fromBackCm: 60,
+      heightCm: 30,
+    });
+  });
+
   it('pré-remplit par le premier véhicule mesuré et les bacs en service, puis calcule seul', async () => {
     const fixture = await boot();
 

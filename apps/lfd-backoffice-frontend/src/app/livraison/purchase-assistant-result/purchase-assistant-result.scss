@@ -31,6 +31,13 @@
   fill: var(--fold-color-text-faded);
 }
 
+.over-arch {
+  fill: none;
+  stroke: var(--fold-color-primary);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}
+
 .bin {
   fill: var(--fold-color-primary);
 }
@@ -69,6 +76,10 @@
 
 .swatch.bin.turned {
   background: var(--fold-color-warning);
+}
+
+.swatch.over-arch {
+  border: 1px dashed var(--fold-color-primary);
 }
 
 .swatch.arch {

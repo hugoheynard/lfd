@@ -161,6 +161,20 @@ describe('VehiclesPage', () => {
     ]);
   });
 
+  it('dit les passages de roue quand ils existent, rien sinon', async () => {
+    const fixture = await boot([
+      {
+        ...vehicle('1', 'Frigo'),
+        cargo: { lengthCm: 250, widthCm: 170, heightCm: 130, volumeLiters: 5525 },
+        wheelArches: { lengthCm: 90, protrusionCm: 20, fromBackCm: 60, heightCm: 30 },
+      },
+      vehicle('3', 'Jumpy'),
+    ]);
+    expect(all(fixture, '[data-arches]').map((line) => line.textContent.trim())).toEqual([
+      'Passages de roue : 90 cm de long, 20 cm par côté, à 60 cm du fond, 30 cm de haut',
+    ]);
+  });
+
   it('dit l’énergie quand elle est renseignée, rien sinon', async () => {
     const fixture = await boot([
       { ...vehicle('1', 'Zoé'), energy: 'electric' },

@@ -15,6 +15,7 @@ import {
   vehicleLoadLine,
   volumeLabel,
   type VehicleLoadDraft,
+  wheelArchesLabel,
 } from './vehicle-load';
 
 const EMPTY: VehicleLoadDraft = {
@@ -25,6 +26,11 @@ const EMPTY: VehicleLoadDraft = {
   coldLiters: null,
   minTempC: null,
   maxTempC: null,
+  arches: false,
+  archLengthCm: null,
+  archProtrusionCm: null,
+  archFromBackCm: null,
+  archHeightCm: null,
 };
 
 const TRAFIC: VehicleLoadDraft = { ...EMPTY, lengthCm: 250, widthCm: 170, heightCm: 130 };
@@ -149,7 +155,12 @@ describe('vehicleLoadLine', () => {
 
 describe('readLoad', () => {
   it('rien de saisi : ni dimensions, ni froid', () => {
-    expect(readLoad(EMPTY)).toEqual({ ok: true, cargo: null, refrigeration: null });
+    expect(readLoad(EMPTY)).toEqual({
+      ok: true,
+      cargo: null,
+      wheelArches: null,
+      refrigeration: null,
+    });
   });
 
   it('les trois dimensions ou aucune', () => {
@@ -157,8 +168,35 @@ describe('readLoad', () => {
     expect(readLoad(TRAFIC)).toEqual({
       ok: true,
       cargo: { lengthCm: 250, widthCm: 170, heightCm: 130 },
+      wheelArches: null,
       refrigeration: null,
     });
+  });
+
+  it('les passages de roue : les quatre cotes ou aucune, et jamais sans espace utile', () => {
+    const arches = {
+      arches: true,
+      archLengthCm: 90,
+      archProtrusionCm: 20,
+      archFromBackCm: 60,
+      archHeightCm: 30,
+    };
+    expect(issueOf({ ...TRAFIC, ...arches, archHeightCm: null })).toContain('les quatre');
+    expect(readLoad({ ...TRAFIC, ...arches })).toMatchObject({
+      ok: true,
+      wheelArches: { lengthCm: 90, protrusionCm: 20, fromBackCm: 60, heightCm: 30 },
+    });
+    expect(readLoad({ ...EMPTY, ...arches })).toMatchObject({ ok: true, wheelArches: null });
+    expect(readLoad({ ...TRAFIC, ...arches, arches: false })).toMatchObject({
+      ok: true,
+      wheelArches: null,
+    });
+  });
+
+  it('dit les passages de roue en une ligne', () => {
+    expect(wheelArchesLabel({ lengthCm: 90, protrusionCm: 20, fromBackCm: 60, heightCm: 30 })).toBe(
+      'Passages de roue : 90 cm de long, 20 cm par côté, à 60 cm du fond, 30 cm de haut',
+    );
   });
 
   it('refuse une dimension hors de 1 à 1 000 cm, ou non entière', () => {
@@ -171,6 +209,7 @@ describe('readLoad', () => {
     expect(readLoad({ ...COLD, minTempC: -20, maxTempC: -18 })).toEqual({
       ok: true,
       cargo: { lengthCm: 250, widthCm: 170, heightCm: 130 },
+      wheelArches: null,
       refrigeration: { volumeLiters: 400, minTempC: -20, maxTempC: -18 },
     });
   });

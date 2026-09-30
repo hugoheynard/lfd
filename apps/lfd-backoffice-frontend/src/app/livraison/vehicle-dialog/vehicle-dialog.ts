@@ -62,7 +62,7 @@ const PLATE_MAX = 20;
  * qu'on corrige sans ressaisir. La plaque n'est pas normalisée ici : c'est le
  * value object du serveur qui fait foi, et le dupliquer ferait deux règles.
  *
- * La charge part toujours COMPLÈTE : absent vaut `null` côté serveur, donc
+ * La charge part toujours COMPLÈTE — passages de roue compris (G4) : absent vaut `null` côté serveur, donc
  * une correction qui omettrait les dimensions ou l'énergie les effacerait.
  */
 @Component({
@@ -115,6 +115,9 @@ export class VehicleDialog implements FoldPanelContent<VehicleDialogData> {
     const reading = this.reading();
     return reading.ok ? '' : reading.issue;
   });
+
+  /** Les passages de roue ne se proposent qu'avec l'espace utile : le serveur les refuse sans. */
+  protected readonly hasCargo = computed(() => draftVolumeLiters(this.load()) !== null);
 
   /** « 5,5 m³ », en direct — ou `null` tant que les trois dimensions manquent. */
   protected readonly volume = computed(() => {
@@ -184,6 +187,8 @@ export class VehicleDialog implements FoldPanelContent<VehicleDialogData> {
       name: this.name().trim(),
       plate: this.plate().trim(),
       cargo: reading.cargo,
+      // Toujours envoyés : absent EFFACE côté serveur (G4).
+      wheelArches: reading.wheelArches,
       refrigeration: reading.refrigeration,
       energy: this.energy(),
     };

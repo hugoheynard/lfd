@@ -13,7 +13,13 @@ import {
   FoldMeterComponent,
 } from 'fold-ng';
 
-import { formatLiters, placeBins } from '../purchase-assistant';
+import {
+  formatLiters,
+  overArchBands,
+  overArchFirstLevel,
+  placeBins,
+  resultSubtitle,
+} from '../purchase-assistant';
 
 /** Marge du dessin autour du plancher, en cm du plan. */
 const PLAN_PADDING = 4;
@@ -51,10 +57,14 @@ export class PurchaseAssistantResult {
 
   protected readonly padding = PLAN_PADDING;
   protected readonly usefulVolume = computed(() => formatLiters(this.format().usefulLiters));
-  protected readonly subtitle = computed(() => {
-    const view = this.format();
-    const levels = `${view.levels} étage${view.levels > 1 ? 's' : ''}`;
-    return `${view.floorCount} au sol × ${levels}`;
+  protected readonly subtitle = computed(() => resultSubtitle(this.format()));
+  protected readonly overArch = computed(() =>
+    overArchBands(this.format().rows, this.sent().outer, this.floor().widthCm, this.gapCm()),
+  );
+  /** « dès l'étage N+1 » : l'étage 0 est le sol, l'équipe compte à partir de 1. */
+  protected readonly overArchLegend = computed(() => {
+    const level = overArchFirstLevel(this.format().rows);
+    return level === null ? null : `empilés au-dessus du passage, dès l’étage ${String(level + 1)}`;
   });
   protected readonly heightLimit = computed(() => {
     const view = this.format();

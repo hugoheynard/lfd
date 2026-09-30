@@ -64,6 +64,16 @@
           [attr.height]="bin.across"
         />
       }
+      @for (band of overArch(); track $index) {
+        <rect
+          class="over-arch"
+          data-over-arch
+          [attr.x]="padding + band.x"
+          [attr.y]="padding + band.y"
+          [attr.width]="band.depth"
+          [attr.height]="band.across"
+        />
+      }
     </svg>
 
     <ul class="legend">
@@ -73,6 +83,9 @@
       }
       @if (floor().wheelArches) {
         <li><span class="swatch arch"></span>passage de roue</li>
+      }
+      @if (overArchLegend(); as legend) {
+        <li><span class="swatch over-arch"></span>{{ legend }}</li>
       }
       <li>fond ← → portes</li>
     </ul>

@@ -78,6 +78,9 @@
                 @if (loadLine(vehicle); as line) {
                   <span data-load>{{ line }}</span>
                 }
+                @if (vehicle.wheelArches; as arches) {
+                  <span data-arches>{{ archesLine(arches) }}</span>
+                }
                 @if (energyLine(vehicle.energy); as energy) {
                   <span data-energy>{{ energy }}</span>
                 }

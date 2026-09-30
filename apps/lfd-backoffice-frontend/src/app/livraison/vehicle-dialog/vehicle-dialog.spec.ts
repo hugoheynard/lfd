@@ -128,7 +128,14 @@ describe('VehicleDialog', () => {
 
     // La plaque n'est pas normalisée ici : c'est le serveur qui fait foi.
     expect(wire.adds).toEqual([
-      { name: 'Kangoo blanc', plate: 'ab 123 cd', cargo: null, refrigeration: null, energy: null },
+      {
+        name: 'Kangoo blanc',
+        plate: 'ab 123 cd',
+        cargo: null,
+        wheelArches: null,
+        refrigeration: null,
+        energy: null,
+      },
     ]);
     expect(wire.closes).toEqual([true]);
   });
@@ -161,6 +168,7 @@ describe('VehicleDialog', () => {
           name: 'Kangoo blanc',
           plate: 'AB-123-CD',
           cargo: null,
+          wheelArches: null,
           refrigeration: null,
           energy: null,
         },
@@ -190,6 +198,7 @@ describe('VehicleDialog', () => {
         name: 'Trafic',
         plate: 'AB123CD',
         cargo: { lengthCm: 250, widthCm: 170, heightCm: 130 },
+        wheelArches: null,
         refrigeration: null,
         energy: null,
       },
@@ -252,8 +261,67 @@ describe('VehicleDialog', () => {
       name: 'Frigo blanc',
       plate: 'AB-123-CD',
       cargo: { lengthCm: 250, widthCm: 170, heightCm: 130 },
+      wheelArches: null,
       refrigeration: { volumeLiters: 400, minTempC: 0, maxTempC: 4 },
       energy: 'electric',
     });
+  });
+
+  /**
+   * Régression (G4) : le dialogue n'envoyait pas `wheelArches`, et absent vaut
+   * effacement côté serveur — toute correction depuis l'écran effaçait les
+   * passages de roue du véhicule.
+   */
+  it('🔴 corriger le nom renvoie les passages de roue existants', async () => {
+    const arches = { lengthCm: 90, protrusionCm: 20, fromBackCm: 60, heightCm: 30 };
+    const fixture = await boot({ vehicle: { ...FRIGO, wheelArches: arches } });
+    expect(submitButton(fixture).disabled).toBe(true);
+    type(fixture, 0, 'Frigo blanc');
+    await submit(fixture);
+    expect(wire.updates[0]?.payload.wheelArches).toEqual(arches);
+  });
+
+  it('les passages de roue : proposés avec l’espace utile seulement, les quatre ou aucun', async () => {
+    const fixture = await boot({});
+    type(fixture, 0, 'Trafic');
+    type(fixture, 1, 'AB123CD');
+    expect(host(fixture).querySelector('[data-arches]')).toBeNull();
+
+    typeNumber(fixture, 0, '250');
+    typeNumber(fixture, 1, '170');
+    typeNumber(fixture, 2, '130');
+    const box = host(fixture).querySelector('[data-arches] input');
+    if (!(box instanceof HTMLInputElement)) throw new Error('Case absente.');
+    box.click();
+    fixture.detectChanges();
+
+    typeNumber(fixture, 3, '90');
+    typeNumber(fixture, 4, '20');
+    typeNumber(fixture, 5, '60');
+    expect(host(fixture).querySelector('[data-load-issue]')?.textContent).toContain('les quatre');
+    expect(submitButton(fixture).disabled).toBe(true);
+
+    typeNumber(fixture, 6, '30');
+    await submit(fixture);
+    expect(wire.adds[0]?.wheelArches).toEqual({
+      lengthCm: 90,
+      protrusionCm: 20,
+      fromBackCm: 60,
+      heightCm: 30,
+    });
+  });
+
+  it('un refus 400 des passages de roue s’affiche avec le message du serveur', async () => {
+    const fixture = await boot({
+      vehicle: {
+        ...FRIGO,
+        wheelArches: { lengthCm: 90, protrusionCm: 20, fromBackCm: 60, heightCm: 30 },
+      },
+    });
+    wire.refuse = 'Les passages de roue dépassent le plancher.';
+    type(fixture, 0, 'Frigo blanc');
+    await submit(fixture);
+    expect(host(fixture).textContent).toContain('dépassent le plancher');
+    expect(wire.closes).toEqual([]);
   });
 });

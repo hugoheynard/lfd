@@ -65,6 +65,47 @@
       @if (volume(); as label) {
         <fold-badge variant="neutral" [content]="'Volume utile : ' + label" data-volume />
       }
+      @if (hasCargo()) {
+        <fold-checkbox
+          label="Passages de roue"
+          hint="Facultatif — les quatre cotes, en cm entiers."
+          [checked]="load().arches"
+          (checkedChange)="setLoad('arches', $event)"
+          data-arches
+        />
+        @if (load().arches) {
+          <div class="vd-row">
+            <fold-number-input
+              label="Longueur"
+              spinner="none"
+              [value]="load().archLengthCm"
+              (valueChange)="setLoad('archLengthCm', $event)"
+              data-arch-length
+            />
+            <fold-number-input
+              label="Saillie par côté"
+              spinner="none"
+              [value]="load().archProtrusionCm"
+              (valueChange)="setLoad('archProtrusionCm', $event)"
+              data-arch-protrusion
+            />
+            <fold-number-input
+              label="Depuis le fond"
+              spinner="none"
+              [value]="load().archFromBackCm"
+              (valueChange)="setLoad('archFromBackCm', $event)"
+              data-arch-from-back
+            />
+            <fold-number-input
+              label="Hauteur"
+              spinner="none"
+              [value]="load().archHeightCm"
+              (valueChange)="setLoad('archHeightCm', $event)"
+              data-arch-height
+            />
+          </div>
+        }
+      }
     </fold-fieldset>
 
     <fold-fieldset legend="Froid" data-cold>

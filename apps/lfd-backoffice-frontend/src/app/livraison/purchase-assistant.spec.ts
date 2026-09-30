@@ -7,7 +7,10 @@ import {
   EMPTY_FLOOR,
   emptyFormat,
   formatLiters,
+  overArchBands,
+  overArchFirstLevel,
   placeBins,
+  resultSubtitle,
 } from './purchase-assistant';
 
 const DRAFT: AssistantDraft = {
@@ -74,6 +77,41 @@ describe('l’assistant d’achat — le rendu', () => {
     expect(bestFormatIndex([view(0), view(0)])).toBeNull();
   });
 
+  it('dit les bacs au-dessus des passages dans le sous-titre, et seulement s’il y en a', () => {
+    const view = {
+      name: 'Bac M',
+      floorCount: 16,
+      levels: 6,
+      total: 96,
+      usefulLiters: 0,
+      vehiclePercent: 0,
+      heightLimit: 'ceiling' as const,
+      rows: [],
+    };
+    expect(resultSubtitle(view)).toBe('16 au sol × 6 étages');
+    expect(resultSubtitle({ ...view, total: 104 })).toBe(
+      '16 au sol × 6 étages + 8 au-dessus des passages',
+    );
+  });
+
+  it('les bandes au-dessus des passages : de chaque côté des colonnes centrales', () => {
+    const row = {
+      fromCm: 80,
+      depthCm: 61,
+      count: 2,
+      orientation: 'length' as const,
+      overArchCount: 2,
+      overArchFromLevel: 2,
+      total: 14,
+    };
+    expect(overArchBands([row], { lengthCm: 60, widthCm: 40 }, 166, 1)).toEqual([
+      { x: 80, y: 0, depth: 61, across: 42 },
+      { x: 80, y: 124, depth: 61, across: 42 },
+    ]);
+    expect(overArchFirstLevel([row])).toBe(2);
+    expect(overArchFirstLevel([{ ...row, overArchCount: 0, overArchFromLevel: null }])).toBeNull();
+  });
+
   it('écrit les litres, puis les mètres cubes', () => {
     expect(formatLiters(432)).toBe('432 L');
     expect(formatLiters(6691)).toBe('6,69 m³');
@@ -81,7 +119,17 @@ describe('l’assistant d’achat — le rendu', () => {
 
   it('centre les bacs d’une rangée, jeu retiré, et tourne ceux qui le sont', () => {
     const bins = placeBins(
-      [{ fromCm: 61, depthCm: 41, count: 2, orientation: 'turned' }],
+      [
+        {
+          fromCm: 61,
+          depthCm: 41,
+          count: 2,
+          orientation: 'turned',
+          overArchCount: 0,
+          overArchFromLevel: null,
+          total: 2,
+        },
+      ],
       { lengthCm: 60, widthCm: 40 },
       166,
       1,

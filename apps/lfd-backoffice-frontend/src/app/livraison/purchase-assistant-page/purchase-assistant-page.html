@@ -55,7 +55,7 @@
             </div>
             <fold-checkbox
               label="Passages de roue"
-              hint="Aucun bac n’est posé sur un passage de roue : à leur hauteur, la largeur tombe à largeur − 2 × saillie."
+              hint="Au sol, aucun bac n’est posé sur un passage de roue : la largeur tombe à largeur − 2 × saillie."
               [checked]="draft().floor.arches"
               (checkedChange)="setArches({ arches: $event })"
               data-arches
@@ -82,6 +82,14 @@
                   [value]="draft().floor.archFromBackCm"
                   (valueChange)="setArches({ archFromBackCm: $event })"
                   data-arch-from-back
+                />
+                <fold-number-input
+                  label="Hauteur (cm)"
+                  hint="Facultative. Avec la hauteur, on empile au-dessus des passages, portés par les colonnes centrales."
+                  integer
+                  [value]="draft().floor.archHeightCm"
+                  (valueChange)="setArches({ archHeightCm: $event })"
+                  data-arch-height
                 />
               </div>
             }
