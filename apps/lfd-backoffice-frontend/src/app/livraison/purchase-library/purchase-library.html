@@ -1,0 +1,260 @@
+<div class="library">
+  <fold-checkbox
+    label="Afficher les archivés"
+    [checked]="showArchived()"
+    (checkedChange)="toggleArchived($event)"
+    data-show-archived
+  />
+
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
+  }
+
+  <section class="library-list" data-vehicle-candidates>
+    <fold-element-title
+      variant="caps"
+      title="Véhicules candidats"
+      subtitle="Jamais proposés dans Planifier, les tournées ni le chargement."
+    >
+      @if (canWrite()) {
+        <button
+          titleAction
+          foldButton
+          size="sm"
+          emphasis="soft"
+          icon="plus"
+          (click)="editVehicle()"
+          data-add-vehicle
+        >
+          Ajouter un véhicule
+        </button>
+      }
+    </fold-element-title>
+
+    @switch (vehicles().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture des véhicules candidats…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Véhicules candidats illisibles"
+          subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+          data-vehicles-error
+        >
+          <button foldButton emphasis="outline" (click)="retryVehicles()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @let list = vehicles();
+        @if (list.status === 'ready') {
+          @for (candidate of list.candidates; track candidate.id) {
+            <fold-card data-vehicle-candidate>
+              <div class="library-item">
+                <fold-element-title
+                  variant="title"
+                  [title]="candidate.name"
+                  [subtitle]="
+                    candidate.archivedAt === null
+                      ? price(candidate.priceCentsExclVat)
+                      : price(candidate.priceCentsExclVat) +
+                        ' · ' +
+                        archivedOn(candidate.archivedAt)
+                  "
+                >
+                  @if (canWrite()) {
+                    <div titleAction class="library-actions">
+                      @if (candidate.archivedAt === null) {
+                        <button
+                          foldButton
+                          emphasis="outline"
+                          size="sm"
+                          [disabled]="busyId() !== null"
+                          (click)="editVehicle(candidate)"
+                          data-correct
+                        >
+                          Corriger
+                        </button>
+                        <button
+                          foldButton
+                          emphasis="soft"
+                          intent="neutral"
+                          size="sm"
+                          [disabled]="busyId() !== null"
+                          [loading]="busyId() === candidate.id"
+                          (click)="archiveVehicle(candidate)"
+                          data-archive
+                        >
+                          Archiver
+                        </button>
+                      } @else {
+                        <button
+                          foldButton
+                          emphasis="outline"
+                          size="sm"
+                          [disabled]="busyId() !== null"
+                          [loading]="busyId() === candidate.id"
+                          (click)="reactivateVehicle(candidate)"
+                          data-reactivate
+                        >
+                          Réactiver
+                        </button>
+                      }
+                    </div>
+                  }
+                </fold-element-title>
+                <span data-cargo>{{ cargo(candidate.cargo) }}</span>
+                @if (candidate.wheelArches; as wheelArches) {
+                  <span data-arches>{{ arches(wheelArches) }}</span>
+                }
+                @if (candidate.reference; as reference) {
+                  <span data-reference>Réf. {{ reference }}</span>
+                }
+                @if (candidate.purchaseUrl; as url) {
+                  <fold-link [href]="url" target="_blank" rel="noopener noreferrer" data-url>
+                    Voir chez le vendeur
+                  </fold-link>
+                }
+              </div>
+            </fold-card>
+          } @empty {
+            <fold-empty-state
+              title="Aucun véhicule candidat"
+              subtitle="Ajoutez un véhicule qu’on envisage d’acheter pour le comparer dans le tableau."
+              data-vehicles-empty
+            >
+              <fold-icon empty-icon name="truck" />
+            </fold-empty-state>
+          }
+        }
+      }
+    }
+  </section>
+
+  <section class="library-list" data-bin-candidates>
+    <fold-element-title
+      variant="caps"
+      title="Formats de bacs candidats"
+      subtitle="Jamais proposés au colisage ni dans les contenances."
+    >
+      @if (canWrite()) {
+        <button
+          titleAction
+          foldButton
+          size="sm"
+          emphasis="soft"
+          icon="plus"
+          (click)="editBin()"
+          data-add-bin
+        >
+          Ajouter un format
+        </button>
+      }
+    </fold-element-title>
+
+    @switch (bins().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture des formats candidats…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Formats candidats illisibles"
+          subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+          data-bins-error
+        >
+          <button foldButton emphasis="outline" (click)="retryBins()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @let list = bins();
+        @if (list.status === 'ready') {
+          @for (candidate of list.candidates; track candidate.id) {
+            <fold-card data-bin-candidate>
+              <div class="library-item">
+                <fold-element-title
+                  variant="title"
+                  [title]="candidate.name"
+                  [subtitle]="
+                    candidate.archivedAt === null
+                      ? price(candidate.unitPriceCentsExclVat) + ' l’unité'
+                      : price(candidate.unitPriceCentsExclVat) +
+                        ' l’unité · ' +
+                        archivedOn(candidate.archivedAt)
+                  "
+                >
+                  @if (canWrite()) {
+                    <div titleAction class="library-actions">
+                      @if (candidate.archivedAt === null) {
+                        <button
+                          foldButton
+                          emphasis="outline"
+                          size="sm"
+                          [disabled]="busyId() !== null"
+                          (click)="editBin(candidate)"
+                          data-correct
+                        >
+                          Corriger
+                        </button>
+                        <button
+                          foldButton
+                          emphasis="soft"
+                          intent="neutral"
+                          size="sm"
+                          [disabled]="busyId() !== null"
+                          [loading]="busyId() === candidate.id"
+                          (click)="archiveBin(candidate)"
+                          data-archive
+                        >
+                          Archiver
+                        </button>
+                      } @else {
+                        <button
+                          foldButton
+                          emphasis="outline"
+                          size="sm"
+                          [disabled]="busyId() !== null"
+                          [loading]="busyId() === candidate.id"
+                          (click)="reactivateBin(candidate)"
+                          data-reactivate
+                        >
+                          Réactiver
+                        </button>
+                      }
+                    </div>
+                  }
+                </fold-element-title>
+                <span data-dimensions>
+                  Ext. {{ cm(candidate.outer) }} · int. {{ cm(candidate.inner) }} ·
+                  {{ candidate.innerVolumeLiters }} L
+                </span>
+                <span data-stack>
+                  Pile de {{ candidate.maxStack }}{{ candidate.isotherm ? ' · isotherme' : '' }}
+                </span>
+                @if (candidate.supplier; as supplier) {
+                  <span data-supplier>{{ supplier }}</span>
+                }
+                @if (candidate.reference; as reference) {
+                  <span data-reference>Réf. {{ reference }}</span>
+                }
+                @if (candidate.purchaseUrl; as url) {
+                  <fold-link [href]="url" target="_blank" rel="noopener noreferrer" data-url>
+                    Voir chez le fournisseur
+                  </fold-link>
+                }
+              </div>
+            </fold-card>
+          } @empty {
+            <fold-empty-state
+              title="Aucun format candidat"
+              subtitle="Ajoutez un format de bac qu’on envisage d’acheter pour le comparer dans le tableau."
+              data-bins-empty
+            >
+              <fold-icon empty-icon name="archive" />
+            </fold-empty-state>
+          }
+        }
+      }
+    }
+  </section>
+</div>

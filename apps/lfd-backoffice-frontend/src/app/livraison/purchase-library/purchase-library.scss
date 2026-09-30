@@ -1,0 +1,26 @@
+/* Les deux listes, et chacune ses cartes, empilées : l'écart vient du `gap`. */
+.library,
+.library-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  min-width: 0;
+}
+
+.library {
+  gap: var(--fold-space-lg);
+}
+
+/* L'en-tête d'un candidat et ses lignes. */
+.library-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+/* Corriger et Archiver, côte à côte dans l'en-tête de la carte. */
+.library-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}

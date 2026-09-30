@@ -1,0 +1,140 @@
+<fold-panel-header
+  [title]="title()"
+  subtitle="Un véhicule qu’on envisage d’acheter : il n’entre jamais dans la flotte"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <div class="pvc-fields">
+    <fold-input
+      label="Nom"
+      placeholder="Trafic L2H1"
+      [value]="draft().name"
+      (valueChange)="set('name', $event)"
+      data-name
+    />
+
+    <fold-fieldset legend="Plancher (intérieur, cm)" data-cargo>
+      <div class="pvc-row">
+        <fold-number-input
+          label="Longueur"
+          spinner="none"
+          integer
+          [value]="draft().cargo.lengthCm"
+          (valueChange)="setCargo({ lengthCm: $event })"
+          data-cargo-length
+        />
+        <fold-number-input
+          label="Largeur"
+          spinner="none"
+          integer
+          [value]="draft().cargo.widthCm"
+          (valueChange)="setCargo({ widthCm: $event })"
+          data-cargo-width
+        />
+        <fold-number-input
+          label="Hauteur"
+          spinner="none"
+          integer
+          [value]="draft().cargo.heightCm"
+          (valueChange)="setCargo({ heightCm: $event })"
+          data-cargo-height
+        />
+      </div>
+    </fold-fieldset>
+
+    <fold-fieldset
+      legend="Passages de roue (cm)"
+      hint="Facultatif — les quatre cotes, ou aucune."
+      data-arches
+    >
+      <div class="pvc-row">
+        <fold-number-input
+          label="Longueur"
+          spinner="none"
+          integer
+          [value]="draft().archLengthCm"
+          (valueChange)="set('archLengthCm', $event)"
+          data-arch-length
+        />
+        <fold-number-input
+          label="Saillie par côté"
+          spinner="none"
+          integer
+          [value]="draft().archProtrusionCm"
+          (valueChange)="set('archProtrusionCm', $event)"
+          data-arch-protrusion
+        />
+        <fold-number-input
+          label="Depuis le fond"
+          spinner="none"
+          integer
+          [value]="draft().archFromBackCm"
+          (valueChange)="set('archFromBackCm', $event)"
+          data-arch-from-back
+        />
+        <fold-number-input
+          label="Hauteur"
+          spinner="none"
+          integer
+          [value]="draft().archHeightCm"
+          (valueChange)="set('archHeightCm', $event)"
+          data-arch-height
+        />
+      </div>
+    </fold-fieldset>
+
+    <fold-fieldset legend="L’achat" hint="Facultatif — indicatif, jamais une facture.">
+      <div class="pvc-purchase">
+        <fold-input
+          label="Référence"
+          [value]="draft().reference"
+          (valueChange)="set('reference', $event)"
+          data-reference
+        />
+        <fold-input
+          label="Lien d’achat"
+          type="url"
+          placeholder="https://"
+          hint="Une adresse https."
+          [value]="draft().purchaseUrl"
+          (valueChange)="set('purchaseUrl', $event)"
+          data-url
+        />
+        <fold-input
+          label="Prix HT (€)"
+          placeholder="12 500,00"
+          hint="Vide = prix inconnu."
+          [value]="draft().price"
+          (valueChange)="set('price', $event)"
+          data-price
+        />
+      </div>
+    </fold-fieldset>
+
+    @if (shownIssue(); as message) {
+      <fold-callout variant="warning" data-issue>{{ message }}</fold-callout>
+    }
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    class="pvc-submit"
+    intent="primary"
+    type="button"
+    [disabled]="!canSubmit()"
+    [loading]="saving()"
+    (click)="submit()"
+  >
+    {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
+  </button>
+</fold-panel-footer>

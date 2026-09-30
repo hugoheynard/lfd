@@ -1,0 +1,124 @@
+@if (choices(); as choices) {
+  <div class="table">
+    @if (choices.unread.length > 0) {
+      <fold-callout variant="warning" data-unread>
+        N’ont pas pu être lus : {{ choices.unread.join(', ') }}. Le reste se compare quand même.
+      </fold-callout>
+    }
+
+    <div class="table-pick">
+      <fold-card data-vehicle-choices>
+        <div class="table-section">
+          <fold-element-title
+            variant="title"
+            icon="truck"
+            title="Les véhicules"
+            [subtitle]="vehicleKeys().length + ' sur ' + maxVehicles + ' au plus'"
+          />
+          @for (choice of choices.vehicles; track choice.key) {
+            <fold-checkbox
+              [label]="choice.name"
+              [hint]="choice.detail"
+              [checked]="isVehiclePicked(choice.key)"
+              [disabled]="vehiclesFull() && !isVehiclePicked(choice.key)"
+              (checkedChange)="pickVehicle(choice.key, $event)"
+              data-vehicle-choice
+            />
+          } @empty {
+            <fold-empty-state
+              title="Aucun véhicule"
+              subtitle="Ajoutez un véhicule candidat à la bibliothèque, ou renseignez l’espace utile d’un véhicule de la flotte."
+            >
+              <fold-icon empty-icon name="truck" />
+            </fold-empty-state>
+          }
+        </div>
+      </fold-card>
+
+      <fold-card data-format-choices>
+        <div class="table-section">
+          <fold-element-title
+            variant="title"
+            icon="archive"
+            title="Les formats"
+            [subtitle]="formatKeys().length + ' sur ' + maxFormats + ' au plus'"
+          />
+          @for (choice of choices.formats; track choice.key) {
+            <fold-checkbox
+              [label]="choice.name"
+              [hint]="choice.detail"
+              [checked]="isFormatPicked(choice.key)"
+              [disabled]="formatsFull() && !isFormatPicked(choice.key)"
+              (checkedChange)="pickFormat(choice.key, $event)"
+              data-format-choice
+            />
+          } @empty {
+            <fold-empty-state
+              title="Aucun format"
+              subtitle="Ajoutez un format candidat à la bibliothèque, ou un type de bac en service."
+            >
+              <fold-icon empty-icon name="archive" />
+            </fold-empty-state>
+          }
+        </div>
+      </fold-card>
+    </div>
+
+    <div class="table-controls">
+      <fold-number-input
+        label="Jeu entre bacs (cm)"
+        hint="Ajouté à chaque bac, en longueur et en largeur."
+        integer
+        [value]="gapCm()"
+        (valueChange)="gapCm.set($event)"
+        data-gap
+      />
+      <fold-listbox
+        label="Critère"
+        [options]="criterionOptions()"
+        [value]="criterion()"
+        (selectionChange)="criterion.set($event)"
+        data-criterion
+      />
+      <fold-checkbox
+        label="Afficher le coût par litre"
+        hint="Prix du véhicule et des bacs, par litre utile."
+        [checked]="showCostPerLiter()"
+        (checkedChange)="setShowCostPerLiter($event)"
+        data-show-cost-per-liter
+      />
+      <button
+        foldButton
+        icon="grid"
+        [disabled]="payload() === null"
+        [loading]="calculating()"
+        (click)="compute()"
+        data-compute
+      >
+        Calculer le tableau
+      </button>
+    </div>
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
+    }
+
+    @if (result(); as view) {
+      <app-purchase-table-grid
+        [view]="view"
+        [criterion]="criterion()"
+        [showCostPerLiter]="showCostPerLiter()"
+      />
+    } @else if (!calculating()) {
+      <fold-empty-state
+        title="Pas encore de tableau"
+        subtitle="Cochez au moins un véhicule et un format, puis calculez."
+        data-no-result
+      >
+        <fold-icon empty-icon name="grid" />
+      </fold-empty-state>
+    }
+  </div>
+} @else {
+  <fold-loading message="Lecture de la bibliothèque, de la flotte et des bacs…" />
+}

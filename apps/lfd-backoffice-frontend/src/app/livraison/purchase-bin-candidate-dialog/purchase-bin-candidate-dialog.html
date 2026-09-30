@@ -1,0 +1,151 @@
+<fold-panel-header
+  [title]="title()"
+  subtitle="Un format qu’on envisage d’acheter : il n’entre jamais au colisage"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <div class="pbc-fields">
+    <fold-input
+      label="Nom"
+      placeholder="Caisse Dupont 50"
+      [value]="draft().name"
+      (valueChange)="set('name', $event)"
+      data-name
+    />
+
+    <fold-fieldset legend="Extérieur (cm)" hint="Ce qui occupe le plancher.">
+      <div class="pbc-row">
+        <fold-number-input
+          label="Longueur"
+          spinner="none"
+          integer
+          [value]="draft().outer.lengthCm"
+          (valueChange)="setOuter({ lengthCm: $event })"
+          data-outer-length
+        />
+        <fold-number-input
+          label="Largeur"
+          spinner="none"
+          integer
+          [value]="draft().outer.widthCm"
+          (valueChange)="setOuter({ widthCm: $event })"
+          data-outer-width
+        />
+        <fold-number-input
+          label="Hauteur"
+          spinner="none"
+          integer
+          [value]="draft().outer.heightCm"
+          (valueChange)="setOuter({ heightCm: $event })"
+          data-outer-height
+        />
+      </div>
+    </fold-fieldset>
+
+    <fold-fieldset legend="Intérieur (cm)" hint="Ce qu’il contient : le volume utile.">
+      <div class="pbc-row">
+        <fold-number-input
+          label="Longueur"
+          spinner="none"
+          integer
+          [value]="draft().inner.lengthCm"
+          (valueChange)="setInner({ lengthCm: $event })"
+          data-inner-length
+        />
+        <fold-number-input
+          label="Largeur"
+          spinner="none"
+          integer
+          [value]="draft().inner.widthCm"
+          (valueChange)="setInner({ widthCm: $event })"
+          data-inner-width
+        />
+        <fold-number-input
+          label="Hauteur"
+          spinner="none"
+          integer
+          [value]="draft().inner.heightCm"
+          (valueChange)="setInner({ heightCm: $event })"
+          data-inner-height
+        />
+      </div>
+    </fold-fieldset>
+
+    <div class="pbc-row">
+      <fold-number-input
+        label="Pile maximale"
+        spinner="none"
+        integer
+        [value]="draft().maxStack"
+        (valueChange)="set('maxStack', $event)"
+        data-max-stack
+      />
+    </div>
+    <fold-checkbox
+      label="Isotherme"
+      [checked]="draft().isotherm"
+      (checkedChange)="set('isotherm', $event)"
+      data-isotherm
+    />
+
+    <fold-fieldset legend="L’achat" hint="Facultatif — indicatif, jamais une facture.">
+      <div class="pbc-purchase">
+        <fold-input
+          label="Fournisseur"
+          [value]="draft().supplier"
+          (valueChange)="set('supplier', $event)"
+          data-supplier
+        />
+        <fold-input
+          label="Référence"
+          [value]="draft().reference"
+          (valueChange)="set('reference', $event)"
+          data-reference
+        />
+        <fold-input
+          label="Lien d’achat"
+          type="url"
+          placeholder="https://"
+          hint="Une adresse https."
+          [value]="draft().purchaseUrl"
+          (valueChange)="set('purchaseUrl', $event)"
+          data-url
+        />
+        <fold-input
+          label="Prix unitaire HT (€)"
+          placeholder="12,50"
+          hint="Vide = prix inconnu."
+          [value]="draft().price"
+          (valueChange)="set('price', $event)"
+          data-price
+        />
+      </div>
+    </fold-fieldset>
+
+    @if (shownIssue(); as message) {
+      <fold-callout variant="warning" data-issue>{{ message }}</fold-callout>
+    }
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    class="pbc-submit"
+    intent="primary"
+    type="button"
+    [disabled]="!canSubmit()"
+    [loading]="saving()"
+    (click)="submit()"
+  >
+    {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
+  </button>
+</fold-panel-footer>

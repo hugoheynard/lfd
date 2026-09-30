@@ -20,9 +20,13 @@ import {
   FoldInputComponent,
   FoldListboxComponent,
   FoldLoadingStateComponent,
+  FoldNavLayoutComponent,
   FoldNumberInputComponent,
   FoldPageLayoutComponent,
   type FoldSelectItem,
+  FoldTabPanelComponent,
+  FoldTabsComponent,
+  type FoldTabItem,
 } from 'fold-ng';
 
 import { DeliveryBinsService } from '../delivery-bins.service';
@@ -44,12 +48,23 @@ import {
   PURCHASE_ASSISTANT_MAX_FORMATS,
 } from '../purchase-assistant';
 import { PurchaseAssistantResult } from '../purchase-assistant-result/purchase-assistant-result';
+import { PurchaseLibrary } from '../purchase-library/purchase-library';
+import { PurchaseTable } from '../purchase-table/purchase-table';
 
 /** Le temps de repos de la saisie avant de reposer la question au serveur. */
 export const RECOMPUTE_DEBOUNCE_MS = 300;
 
 /** La valeur du choix « Saisie libre » : aucun véhicule de la flotte. */
 const FREE_ENTRY = '';
+
+/** Les trois sujets de l'assistant : compter, la bibliothèque, le tableau croisé. */
+export type PurchaseAssistantTab = 'calcul' | 'bibliotheque' | 'tableau';
+
+const TABS: readonly FoldTabItem<PurchaseAssistantTab>[] = [
+  { key: 'calcul', label: 'Calcul', icon: 'sliders' },
+  { key: 'bibliotheque', label: 'Bibliothèque', icon: 'library' },
+  { key: 'tableau', label: 'Tableau', icon: 'grid' },
+];
 
 /** Ce que la flotte et les bacs ont pu donner au premier affichage. */
 interface Prefill {
@@ -76,6 +91,11 @@ export interface Computed {
  * Pré-rempli par un véhicule mesuré de la flotte et par les types de bacs en
  * service, lus sous `delivery_rounds:read` comme la page. Si leur lecture
  * échoue, les champs restent vides et l'écran le dit — aucune cote inventée.
+ *
+ * La bibliothèque d'achat et son tableau croisé (`plan-bibliotheque-d-achat.md`,
+ * B4 et B5) sont deux ONGLETS de la même page, pas deux routes : c'est ce que
+ * fait le dépôt pour les sous-sujets d'un écran (Fidélité, Liens de paiement),
+ * et l'entrée de rail reste une.
  */
 @Component({
   selector: 'app-purchase-assistant-page',
@@ -92,9 +112,14 @@ export interface Computed {
     FoldInputComponent,
     FoldListboxComponent,
     FoldLoadingStateComponent,
+    FoldNavLayoutComponent,
     FoldNumberInputComponent,
     FoldPageLayoutComponent,
+    FoldTabPanelComponent,
+    FoldTabsComponent,
     PurchaseAssistantResult,
+    PurchaseLibrary,
+    PurchaseTable,
   ],
   templateUrl: './purchase-assistant-page.html',
   styleUrl: './purchase-assistant-page.scss',
@@ -102,6 +127,9 @@ export interface Computed {
 export class PurchaseAssistantPage {
   private readonly bins = inject(DeliveryBinsService);
   private readonly fleet = inject(DeliverySettingsService);
+
+  protected readonly tabs = TABS;
+  protected readonly tab = signal<PurchaseAssistantTab>('calcul');
 
   protected readonly prefill = signal<Prefill | null>(null);
   protected readonly vehicleChoice = signal<string>(FREE_ENTRY);

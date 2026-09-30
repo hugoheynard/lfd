@@ -1,0 +1,28 @@
+/* Au téléphone, c'est la grille qui défile, jamais la page. */
+.grid-scroll {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.grid-vehicle,
+.grid-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+  white-space: nowrap;
+}
+
+.grid-muted {
+  color: var(--fold-color-text-muted);
+}
+
+/* La meilleure case de la ligne, désignée par le serveur. */
+.grid-best {
+  padding: var(--fold-space-xs);
+  border: 1px solid var(--fold-color-success-border);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-success-surface);
+  color: var(--fold-color-success-text);
+}

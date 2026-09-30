@@ -1,0 +1,80 @@
+<div class="grid-scroll" data-grid>
+  <fold-data-table
+    caption="Tableau croisé véhicules × formats"
+    narrowLayout="scroll"
+    density="compact"
+    stickyFirst
+    [columns]="columns()"
+    [rows]="rows()"
+    [rowKey]="rowKey"
+  >
+    <ng-template foldCell="vehicle" let-row>
+      @let vehicle = asRow(row);
+      <span class="grid-vehicle" data-row>
+        <strong>{{ vehicle.name }}</strong>
+        <span class="grid-muted">{{ vehicle.detail }}</span>
+        @if (vehicle.bestRow) {
+          <fold-badge variant="success" content="Meilleur véhicule au litre" data-best-row />
+        }
+      </span>
+    </ng-template>
+
+    <!-- Une case, pour la colonne `index`. -->
+    <ng-template #formatCell let-row let-index="index">
+      @if (cellAt(row, index); as cell) {
+        <span
+          class="grid-cell"
+          [class.grid-best]="cell.best"
+          [attr.data-best]="cell.best || null"
+          data-cell
+        >
+          <strong>{{ cell.total }}</strong>
+          <span>{{ cell.occupation }} · {{ cell.volume }}</span>
+          <span class="grid-muted">Équipement {{ cell.equipmentCost }}</span>
+          <span class="grid-muted">Total {{ cell.totalCost }}</span>
+          @if (showCostPerLiter()) {
+            <span data-cost-per-liter>{{ cell.costPerLiter }}</span>
+          }
+          @if (cell.best) {
+            <fold-badge variant="success" content="Meilleur" />
+          }
+        </span>
+      }
+    </ng-template>
+
+    <!-- 🔴 Une clé LIÉE (`[foldCell]="…"`, dans un @for) n'est pas encore posée
+         quand la table lit ses gabarits : NG0950 (fold-ng 0.27.2, vérifié le
+         2026-09-30). D'où une clé ÉCRITE par colonne possible — dix, la borne
+         du contrat (PURCHASE_TABLE_MAX_FORMATS). -->
+    <ng-template foldCell="format-0" let-row>
+      <ng-container *ngTemplateOutlet="formatCell; context: { $implicit: row, index: 0 }" />
+    </ng-template>
+    <ng-template foldCell="format-1" let-row>
+      <ng-container *ngTemplateOutlet="formatCell; context: { $implicit: row, index: 1 }" />
+    </ng-template>
+    <ng-template foldCell="format-2" let-row>
+      <ng-container *ngTemplateOutlet="formatCell; context: { $implicit: row, index: 2 }" />
+    </ng-template>
+    <ng-template foldCell="format-3" let-row>
+      <ng-container *ngTemplateOutlet="formatCell; context: { $implicit: row, index: 3 }" />
+    </ng-template>
+    <ng-template foldCell="format-4" let-row>
+      <ng-container *ngTemplateOutlet="formatCell; context: { $implicit: row, index: 4 }" />
+    </ng-template>
+    <ng-template foldCell="format-5" let-row>
+      <ng-container *ngTemplateOutlet="formatCell; context: { $implicit: row, index: 5 }" />
+    </ng-template>
+    <ng-template foldCell="format-6" let-row>
+      <ng-container *ngTemplateOutlet="formatCell; context: { $implicit: row, index: 6 }" />
+    </ng-template>
+    <ng-template foldCell="format-7" let-row>
+      <ng-container *ngTemplateOutlet="formatCell; context: { $implicit: row, index: 7 }" />
+    </ng-template>
+    <ng-template foldCell="format-8" let-row>
+      <ng-container *ngTemplateOutlet="formatCell; context: { $implicit: row, index: 8 }" />
+    </ng-template>
+    <ng-template foldCell="format-9" let-row>
+      <ng-container *ngTemplateOutlet="formatCell; context: { $implicit: row, index: 9 }" />
+    </ng-template>
+  </fold-data-table>
+</div>
