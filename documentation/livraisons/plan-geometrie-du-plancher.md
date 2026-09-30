@@ -75,9 +75,41 @@ Et deux fonctions pures, testées seules (`sonic-unit-tester`) :
 
 - `freeWidthCm(floor, fromCm, depthCm)` — la largeur posable sur la tranche
   `[x, x + d)` : toute la largeur, ou `largeur − 2 × saillie` si la tranche
-  touche un passage de roue. **Aucun bac n'est posé sur un passage de roue** :
-  plus haut, la largeur est pleine, mais un bac ne vole pas.
+  touche un passage de roue. Au **sol**, aucun bac n'est posé sur un passage
+  de roue.
 - `stackLevels(floor, binType)` — `min(maxStack, ⌊hauteur ÷ hauteur extérieure⌋)`.
+
+### G-D2 bis — Empiler par-dessus un passage de roue (2026-09-30)
+
+> Hugo : « on doit pouvoir stacker par-dessus un passage de roue, dans la
+> mesure où la colonne centrale va tenir l'ensemble ».
+
+Le passage de roue a donc une **hauteur** (quatrième cote, `heightCm`, prise en
+G4). Dans une rangée qui touche un passage :
+
+- les colonnes **centrales** (la largeur réduite) montent depuis le sol,
+  comme ailleurs ;
+- les colonnes **latérales** (au-dessus des passages) commencent au premier
+  étage dont la base est **au-dessus** du passage, `k₀ = ⌈hauteur du passage ÷
+hauteur du bac⌉`, et montent jusqu'au même étage que les colonnes centrales.
+  Un bac latéral repose sur le passage et sur ses voisins centraux ;
+
+```
+compte d'une rangée sur passage =
+    n_réduit × étages
+  + (n_plein − n_réduit) × max(0, étages − k₀)
+```
+
+`n_plein` et `n_réduit` sont le nombre de bacs en travers sur la largeur pleine
+et sur la largeur réduite. Le sol reste celui de la programmation dynamique ;
+seul le **compte par rangée** change, et la dynamique compare donc des rangées
+entières (`nombre × étages` par rangée), plus des bacs au sol.
+
+⚠️ **Hypothèse retenue** : la colonne centrale tient l'ensemble — on ne vérifie
+ni le recouvrement minimal d'un bac latéral sur ses voisins, ni le poids. Un bac
+latéral pourrait n'avoir qu'une étroite portée sur la colonne centrale ; ce
+plan ne l'interdit pas. **Lot G2 bis** : porter ce calcul dans
+`maximize-format`, et le rendu (bacs latéraux dessinés au-dessus du passage).
 
 Le **jeu entre bacs** (défaut 1 cm) s'ajoute à l'empreinte, en longueur et en
 largeur : un bac serré contre son voisin ne se sort pas.
@@ -162,14 +194,15 @@ nouvelles clés (`onVehicle`, comme `cargo` le 2026-09-30).
 
 ## 3. Les lots
 
-| Lot    | Contenu                                                                                                                                                            | Qui                               |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
-| **G1** | `CargoFloor`, `WheelArches`, `freeWidthCm`, `stackLevels` — pur, tests aux bords (saillie ≥ demi-largeur, passage au ras du fond, tranche qui effleure le passage) | `batisseur` + `sonic-unit-tester` |
-| **G2** | Stratégie A + `POST admin/livraison/assistant-achat` + contrat + e2e (200 sans écriture, 400 bornes, 403)                                                          | `batisseur`                       |
-| **G3** | Onglet **« Assistant d'achat »** de l'espace Livraison : la maquette, reliée à l'API, pré-remplie par les véhicules et les types en service                        | `pablo`                           |
-| **G4** | Passages de roue sur le véhicule : migration additive, écran Véhicules, journal                                                                                    | `batisseur` + `pablo`             |
-| **G5** | Stratégie B dans `planLoading` : positions des piles, alerte `floor_over`                                                                                          | `batisseur`                       |
-| **G6** | Le plancher vu de dessus sur l'écran du plan de chargement, couleur par arrêt                                                                                      | `pablo`                           |
+| Lot        | Contenu                                                                                                                                                            | Qui                               |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| **G1**     | `CargoFloor`, `WheelArches`, `freeWidthCm`, `stackLevels` — pur, tests aux bords (saillie ≥ demi-largeur, passage au ras du fond, tranche qui effleure le passage) | `batisseur` + `sonic-unit-tester` |
+| **G2**     | Stratégie A + `POST admin/livraison/assistant-achat` + contrat + e2e (200 sans écriture, 400 bornes, 403)                                                          | `batisseur`                       |
+| **G3**     | Onglet **« Assistant d'achat »** de l'espace Livraison : la maquette, reliée à l'API, pré-remplie par les véhicules et les types en service                        | `pablo`                           |
+| **G4**     | Passages de roue sur le véhicule : migration additive, écran Véhicules, journal                                                                                    | `batisseur` + `pablo`             |
+| **G2 bis** | Empiler par-dessus les passages de roue (G-D2 bis) : `maximize-format`, contrat, plancher de l'écran                                                               | `batisseur` + `pablo`             |
+| **G5**     | Stratégie B dans `planLoading` : positions des piles, alerte `floor_over`                                                                                          | `batisseur`                       |
+| **G6**     | Le plancher vu de dessus sur l'écran du plan de chargement, couleur par arrêt                                                                                      | `pablo`                           |
 
 G1 → G2 → G3 donnent l'assistant **sans migration**, sur des dimensions saisies.
 G4 est le seul lot qui touche au schéma. G5 attend G1, pas G4 : sans passages
