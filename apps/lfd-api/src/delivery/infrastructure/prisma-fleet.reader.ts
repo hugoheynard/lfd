@@ -5,7 +5,11 @@ import { PrismaService } from "../../platform/database/prisma.service.js";
 import { CargoSpace } from "../domain/value-objects/cargo-space.js";
 import { FleetReader } from "../domain/ports/fleet.reader.js";
 import { vehicleEnergyOf } from "../domain/value-objects/vehicle-energy.js";
-import { cargoOfRow, refrigerationOfRow } from "./delivery-vehicle-load.mapper.js";
+import {
+  cargoOfRow,
+  refrigerationOfRow,
+  wheelArchesOfRow,
+} from "./delivery-vehicle-load.mapper.js";
 
 /** Adaptateur Prisma de la lecture de la flotte. */
 @Injectable()
@@ -29,6 +33,7 @@ export class PrismaFleetReader extends FleetReader {
         // Le volume se dérive par le value object : une seule formule, celle du domaine.
         cargo:
           cargo === null ? null : { ...cargo, volumeLiters: CargoSpace.of(cargo).volumeLiters },
+        wheelArches: wheelArchesOfRow(row),
         refrigeration: refrigerationOfRow(row),
         energy: row.energy === null ? null : vehicleEnergyOf(row.energy),
       };

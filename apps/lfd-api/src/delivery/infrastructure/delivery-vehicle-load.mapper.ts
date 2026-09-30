@@ -1,7 +1,8 @@
 import type { CargoDimensions } from "../domain/value-objects/cargo-space.js";
 import type { RefrigerationSpec } from "../domain/value-objects/refrigerated-compartment.js";
+import type { MeasuredWheelArches } from "../domain/value-objects/wheel-arches.js";
 
-/** Les six colonnes du chargement, telles que la ligne les porte. */
+/** Les dix colonnes du chargement, telles que la ligne les porte. */
 export interface VehicleLoadColumns {
   readonly cargoLengthCm: number | null;
   readonly cargoWidthCm: number | null;
@@ -9,6 +10,10 @@ export interface VehicleLoadColumns {
   readonly refrigeratedVolumeLiters: number | null;
   readonly refrigeratedMinTempC: number | null;
   readonly refrigeratedMaxTempC: number | null;
+  readonly wheelArchLengthCm: number | null;
+  readonly wheelArchProtrusionCm: number | null;
+  readonly wheelArchFromBackCm: number | null;
+  readonly wheelArchHeightCm: number | null;
 }
 
 /**
@@ -40,9 +45,29 @@ export function refrigerationOfRow(row: VehicleLoadColumns): RefrigerationSpec |
   };
 }
 
-/** Dimensions et froid → les six colonnes, `NULL` pour ce qui manque. */
+/** Colonnes → passages de roue ; « tout ou rien » tenu par un CHECK, comme les dimensions. */
+export function wheelArchesOfRow(row: VehicleLoadColumns): MeasuredWheelArches | null {
+  const { wheelArchLengthCm, wheelArchProtrusionCm, wheelArchFromBackCm, wheelArchHeightCm } = row;
+  if (
+    wheelArchLengthCm === null ||
+    wheelArchProtrusionCm === null ||
+    wheelArchFromBackCm === null ||
+    wheelArchHeightCm === null
+  ) {
+    return null;
+  }
+  return {
+    lengthCm: wheelArchLengthCm,
+    protrusionCm: wheelArchProtrusionCm,
+    fromBackCm: wheelArchFromBackCm,
+    heightCm: wheelArchHeightCm,
+  };
+}
+
+/** Dimensions, passages et froid → les dix colonnes, `NULL` pour ce qui manque. */
 export function loadColumnsOf(
   cargo: CargoDimensions | null,
+  wheelArches: MeasuredWheelArches | null,
   refrigeration: RefrigerationSpec | null,
 ): VehicleLoadColumns {
   return {
@@ -52,5 +77,9 @@ export function loadColumnsOf(
     refrigeratedVolumeLiters: refrigeration?.volumeLiters ?? null,
     refrigeratedMinTempC: refrigeration?.minTempC ?? null,
     refrigeratedMaxTempC: refrigeration?.maxTempC ?? null,
+    wheelArchLengthCm: wheelArches?.lengthCm ?? null,
+    wheelArchProtrusionCm: wheelArches?.protrusionCm ?? null,
+    wheelArchFromBackCm: wheelArches?.fromBackCm ?? null,
+    wheelArchHeightCm: wheelArches?.heightCm ?? null,
   };
 }

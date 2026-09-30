@@ -15,6 +15,8 @@ describe("WheelArches", () => {
     [{ lengthCm: 90, protrusionCm: 0, fromBackCm: 60 }, /saillie vaut 0 cm/u],
     [{ lengthCm: 90, protrusionCm: 20, fromBackCm: -1 }, /depuis le fond vaut -1 cm/u],
     [{ lengthCm: 90, protrusionCm: 20.5, fromBackCm: 60 }, /saillie vaut 20.5 cm/u],
+    [{ lengthCm: 90, protrusionCm: 20, fromBackCm: 60, heightCm: 0 }, /hauteur vaut 0 cm/u],
+    [{ lengthCm: 90, protrusionCm: 20, fromBackCm: 60, heightCm: 12.5 }, /hauteur vaut 12.5 cm/u],
   ])("refuse %j en nommant la cote", (input, detail) => {
     expect(() => WheelArches.of(input)).toThrow(InvalidWheelArchesError);
     expect(() => WheelArches.of(input)).toThrow(detail);
@@ -63,5 +65,24 @@ describe("CargoFloor", () => {
       CargoFloor.of({ ...VAN, wheelArches: { lengthCm: 90, protrusionCm: 20, fromBackCm } });
     expect(at(200).wheelArches?.endCm).toBe(290);
     expect(() => at(201)).toThrow(/sort d'un plancher de 290 cm de long/u);
+  });
+  it("accepte un passage juste sous le plafond, refuse celui qui le touche", () => {
+    const high = (heightCm: number): CargoFloor =>
+      CargoFloor.of({
+        ...VAN,
+        wheelArches: { lengthCm: 90, protrusionCm: 20, fromBackCm: 60, heightCm },
+      });
+    expect(high(138).wheelArches?.heightCm).toBe(138);
+    expect(() => high(139)).toThrow(InvalidWheelArchesError);
+    expect(() => high(139)).toThrow(/139 cm de haut touche le plafond d'un espace de 139 cm/u);
+  });
+
+  it("une hauteur absente reste inconnue : l'assistant d'achat ne la lit pas", () => {
+    const floor = CargoFloor.of({
+      ...VAN,
+      wheelArches: { lengthCm: 90, protrusionCm: 20, fromBackCm: 60 },
+    });
+    expect(floor.wheelArches?.heightCm).toBeNull();
+    expect(floor.wheelArches?.measured()).toBeNull();
   });
 });

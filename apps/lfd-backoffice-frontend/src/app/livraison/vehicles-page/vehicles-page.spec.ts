@@ -18,6 +18,7 @@ function vehicle(id: string, name: string, retiredAt: string | null = null): Veh
     retiredAt,
     createdAt: '2026-01-01T08:00:00.000Z',
     cargo: null,
+    wheelArches: null,
     refrigeration: null,
     energy: null,
   };

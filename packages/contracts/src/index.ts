@@ -731,6 +731,7 @@ export type {
 export {
   vehiclePayloadSchema,
   vehicleCargoPayloadSchema,
+  vehicleWheelArchesPayloadSchema,
   vehicleRefrigerationPayloadSchema,
   vehicleEnergySchema,
   VEHICLE_ENERGIES,
@@ -741,6 +742,8 @@ export type {
   VehicleCargoPayload,
   VehicleRefrigerationPayload,
   VehicleCargoView,
+  VehicleWheelArchesPayload,
+  VehicleWheelArchesView,
   VehicleRefrigerationView,
   VehicleEnergy,
   VehicleView,

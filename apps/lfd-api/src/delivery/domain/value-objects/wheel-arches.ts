@@ -8,6 +8,17 @@ export interface WheelArchesInput {
   readonly protrusionCm: number;
   /** Distance entre le fond (la cloison) et le début du passage. */
   readonly fromBackCm: number;
+  /**
+   * Hauteur du passage : des bacs s'empilent PAR-DESSUS, portés par la colonne
+   * centrale (G4, Hugo 2026-09-30). Facultative ici, parce que l'assistant
+   * d'achat ne la lit pas ; un véhicule, lui, l'exige (`MeasuredWheelArches`).
+   */
+  readonly heightCm?: number | null | undefined;
+}
+
+/** Des passages mesurés en entier, hauteur comprise — ce qu'un véhicule range. */
+export interface MeasuredWheelArches extends WheelArchesInput {
+  readonly heightCm: number;
 }
 
 /**
@@ -23,14 +34,18 @@ export class WheelArches implements WheelArchesInput {
     readonly lengthCm: number,
     readonly protrusionCm: number,
     readonly fromBackCm: number,
+    /** `null` : non mesurée — seul l'assistant d'achat s'en passe. */
+    readonly heightCm: number | null,
   ) {}
 
   /** @throws {InvalidWheelArchesError} une cote non entière, nulle ou négative. */
   static of(input: WheelArchesInput): WheelArches {
+    const heightCm = input.heightCm ?? null;
     return new WheelArches(
       measure("la longueur", input.lengthCm, 1),
       measure("la saillie", input.protrusionCm, 1),
       measure("la distance depuis le fond", input.fromBackCm, 0),
+      heightCm === null ? null : measure("la hauteur", heightCm, 1),
     );
   }
 
@@ -49,7 +64,16 @@ export class WheelArches implements WheelArchesInput {
       lengthCm: this.lengthCm,
       protrusionCm: this.protrusionCm,
       fromBackCm: this.fromBackCm,
+      heightCm: this.heightCm,
     };
+  }
+
+  /** Les cotes complètes, ou `null` si la hauteur n'a pas été mesurée. */
+  measured(): MeasuredWheelArches | null {
+    if (this.heightCm === null) {
+      return null;
+    }
+    return { ...this.toInput(), heightCm: this.heightCm };
   }
 }
 

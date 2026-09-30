@@ -224,6 +224,7 @@ describe('loadDraftOf', () => {
         retiredAt: null,
         createdAt: '2026-01-01T08:00:00.000Z',
         cargo: { lengthCm: 250, widthCm: 170, heightCm: 130, volumeLiters: 5525 },
+        wheelArches: null,
         refrigeration: { volumeLiters: 400, minTempC: 0, maxTempC: 4 },
         energy: null,
       }),

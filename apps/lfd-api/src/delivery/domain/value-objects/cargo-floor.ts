@@ -24,7 +24,7 @@ export class CargoFloor implements CargoDimensions {
   /**
    * @throws {InvalidCargoDimensionsError} une dimension hors 1–1 000 cm.
    * @throws {InvalidWheelArchesError} une saillie qui ferme le plancher, un
-   *   passage qui sort du véhicule.
+   *   passage qui sort du véhicule ou qui touche le plafond.
    */
   static of(input: CargoFloorInput): CargoFloor {
     const space = CargoSpace.of(input);
@@ -40,6 +40,11 @@ export class CargoFloor implements CargoDimensions {
     if (arches.endCm > space.lengthCm) {
       throw new InvalidWheelArchesError(
         `un passage de ${arches.lengthCm} cm à ${arches.fromBackCm} cm du fond sort d'un plancher de ${space.lengthCm} cm de long`,
+      );
+    }
+    if (arches.heightCm !== null && arches.heightCm >= space.heightCm) {
+      throw new InvalidWheelArchesError(
+        `un passage de ${arches.heightCm} cm de haut touche le plafond d'un espace de ${space.heightCm} cm`,
       );
     }
     return new CargoFloor(space, arches);

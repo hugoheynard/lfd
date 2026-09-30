@@ -76,6 +76,15 @@ const vehicleLoadSpace = () => ({
   })
     .nullable()
     .optional(),
+  /** Les passages de roue (G4) — absents des faits écrits avant le 2026-09-30. */
+  wheelArches: payload({
+    lengthCm: z.number().int(),
+    protrusionCm: z.number().int(),
+    fromBackCm: z.number().int(),
+    heightCm: z.number().int(),
+  })
+    .nullable()
+    .optional(),
   refrigeration: payload({
     volumeLiters: z.number().int(),
     minTempC: z.number().int(),

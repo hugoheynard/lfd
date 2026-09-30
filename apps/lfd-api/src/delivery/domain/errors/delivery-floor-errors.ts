@@ -17,6 +17,16 @@ export class InvalidWheelArchesError extends DomainError {
   }
 }
 
+/** Des passages de roue sur un véhicule dont on ne connaît pas le plancher. */
+export class WheelArchesWithoutCargoError extends DomainError {
+  constructor() {
+    super(
+      "delivery.wheel_arches_without_cargo",
+      "Passages de roue refusés : le véhicule n'a pas de dimensions utiles. Saisissez d'abord la longueur, la largeur et la hauteur du chargement, ou retirez les passages.",
+    );
+  }
+}
+
 /** Un jeu entre bacs hors bornes. */
 export class InvalidBinGapError extends DomainError {
   constructor(value: number, min: number, max: number) {

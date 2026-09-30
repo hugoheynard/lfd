@@ -9,6 +9,10 @@ import {
   VehicleAlreadyRetiredError,
   VehicleNotFoundError,
 } from "../../../domain/errors/delivery-errors.js";
+import {
+  InvalidWheelArchesError,
+  WheelArchesWithoutCargoError,
+} from "../../../domain/errors/delivery-floor-errors.js";
 import { AddVehicleCommand } from "../add-vehicle.command.js";
 import { AddVehicleHandler } from "../add-vehicle.handler.js";
 import { CorrectVehicleCommand } from "../correct-vehicle.command.js";
@@ -28,6 +32,9 @@ const LOADED = {
   refrigeration: { volumeLiters: 400, minTempC: 0, maxTempC: 4 },
   energy: "diesel" as const,
 };
+
+/** Une paire de passages de roue qui tient dans `LOADED` (330 × 170 × 176). */
+const ARCHES = { lengthCm: 90, protrusionCm: 22, fromBackCm: 100, heightCm: 30 };
 
 function tools(): { clock: FixedClock; events: RecordingPublisher; uow: DirectUnitOfWork } {
   return {
@@ -58,6 +65,7 @@ describe("AddVehicleHandler", () => {
       subjectLabel: "Kangoo",
       plate: "AB-123-CD",
       cargo: null,
+      wheelArches: null,
       refrigeration: null,
       energy: null,
     });
@@ -91,6 +99,33 @@ describe("AddVehicleHandler", () => {
     );
 
     await expect(adding).rejects.toThrow(RefrigeratedVolumeExceedsCargoError);
+    expect(vehicles.saved).toEqual([]);
+    expect(events.traced).toEqual([]);
+  });
+
+  it("porte les passages de roue jusqu'à l'agrégat et au journal (G4)", async () => {
+    const vehicles = new InMemoryVehicles();
+    const { clock, events, uow } = tools();
+    const handler = new AddVehicleHandler(vehicles, new FixedIdGenerator(), clock, events, uow);
+
+    await handler.execute(
+      new AddVehicleCommand({ name: "Trafic", plate: "AB-123-CD", ...LOADED, wheelArches: ARCHES }),
+    );
+
+    expect(vehicles.saved[0]?.toState().wheelArches).toEqual(ARCHES);
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({ wheelArches: ARCHES });
+  });
+
+  it("refuse des passages sans dimensions utiles, sans rien écrire (G4)", async () => {
+    const vehicles = new InMemoryVehicles();
+    const { clock, events, uow } = tools();
+    const handler = new AddVehicleHandler(vehicles, new FixedIdGenerator(), clock, events, uow);
+
+    await expect(
+      handler.execute(
+        new AddVehicleCommand({ name: "Trafic", plate: "AB-123-CD", wheelArches: ARCHES }),
+      ),
+    ).rejects.toThrow(WheelArchesWithoutCargoError);
     expect(vehicles.saved).toEqual([]);
     expect(events.traced).toEqual([]);
   });
@@ -137,6 +172,7 @@ describe("CorrectVehicleHandler", () => {
         name: "Kangoo",
         plate: "AB-123-CD",
         cargo: null,
+        wheelArches: null,
         refrigeration: null,
         energy: null,
       },
@@ -144,6 +180,7 @@ describe("CorrectVehicleHandler", () => {
         name: "Kangoo gris",
         plate: "EF-456-GH",
         cargo: null,
+        wheelArches: null,
         refrigeration: null,
         energy: null,
       },
@@ -173,6 +210,26 @@ describe("CorrectVehicleHandler", () => {
       refrigeration: null,
       energy: null,
     });
+  });
+
+  it("trace les passages de roue ajoutés, et refuse ceux qui sortent du plancher (G4)", async () => {
+    const vehicles = new InMemoryVehicles(vehicle("v_1", "Trafic", "AB-123-CD"));
+    const { clock, events, uow } = tools();
+    const handler = new CorrectVehicleHandler(vehicles, clock, events, uow);
+    const identity = { name: "Trafic", plate: "AB-123-CD", ...LOADED };
+
+    await handler.execute(new CorrectVehicleCommand("v_1", { ...identity, wheelArches: ARCHES }));
+    const outside = { ...ARCHES, fromBackCm: 300 };
+    await expect(
+      handler.execute(new CorrectVehicleCommand("v_1", { ...identity, wheelArches: outside })),
+    ).rejects.toThrow(InvalidWheelArchesError);
+
+    expect(events.traced).toHaveLength(1);
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+      before: { wheelArches: null },
+      after: { wheelArches: ARCHES },
+    });
+    expect(vehicles.saved.at(-1)?.toState().wheelArches).toEqual(ARCHES);
   });
 
   it("garder sa propre plaque n'est pas un doublon", async () => {

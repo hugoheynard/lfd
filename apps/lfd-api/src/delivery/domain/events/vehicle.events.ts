@@ -33,6 +33,7 @@ abstract class VehicleGestureEvent implements JournaledEvent {
         subjectLabel: this.vehicle.name,
         plate: this.vehicle.plate.value,
         cargo: this.vehicle.identity.cargo ?? null,
+        wheelArches: this.vehicle.identity.wheelArches ?? null,
         refrigeration: this.vehicle.identity.refrigeration ?? null,
         energy: this.vehicle.energy,
       },
@@ -52,12 +53,13 @@ export class VehicleReactivatedEvent extends VehicleGestureEvent {
   protected readonly type = VEHICLE_FACTS.reactivated;
 }
 
-/** Une fiche au journal : `cargo`, `refrigeration` et `energy` toujours présents, `null` si absents. */
+/** Une fiche au journal : `cargo`, `wheelArches`, `refrigeration` et `energy` toujours présents, `null` si absents. */
 function journaledIdentity(identity: VehicleIdentity): Readonly<Record<string, unknown>> {
   return {
     name: identity.name,
     plate: identity.plate,
     cargo: identity.cargo ?? null,
+    wheelArches: identity.wheelArches ?? null,
     refrigeration: identity.refrigeration ?? null,
     energy: identity.energy ?? null,
   };

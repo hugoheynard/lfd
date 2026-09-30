@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { BIN_TYPE_NAME_MAX_LENGTH, binDimensionsSchema } from "./delivery-bins.js";
-import { vehicleCargoPayloadSchema } from "./delivery-settings.js";
+import { vehicleCargoPayloadSchema, vehicleWheelArchesPayloadSchema } from "./delivery-settings.js";
 
 /**
  * **L'assistant d'achat** (`documentation/livraisons/plan-geometrie-du-plancher.md`,
@@ -17,11 +17,13 @@ import { vehicleCargoPayloadSchema } from "./delivery-settings.js";
 /** Au plus dix formats comparés côte à côte. */
 export const PURCHASE_ASSISTANT_MAX_FORMATS = 10;
 
-/** Une paire symétrique de passages de roue, mesurée au sol depuis le fond. */
-export const wheelArchesPayloadSchema = z.object({
-  lengthCm: z.number().int(),
-  protrusionCm: z.number().int(),
-  fromBackCm: z.number().int(),
+/**
+ * Une paire symétrique de passages de roue, mesurée au sol depuis le fond —
+ * celle du véhicule, la HAUTEUR en moins d'obligation : le calcul par rangées
+ * ne la lit pas (G4, 2026-09-30), et l'écran de l'assistant ne l'envoie pas.
+ */
+export const wheelArchesPayloadSchema = vehicleWheelArchesPayloadSchema.extend({
+  heightCm: z.number().int().optional(),
 });
 export type WheelArchesPayload = z.infer<typeof wheelArchesPayloadSchema>;
 

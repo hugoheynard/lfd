@@ -452,6 +452,15 @@ model DeliveryVehicle {
   refrigeratedMinTempC     Int? @map("refrigerated_min_temp_c")
   refrigeratedMaxTempC     Int? @map("refrigerated_max_temp_c")
 
+  /// Les passages de roue (plan-geometrie-du-plancher, G-D2) : UNE paire
+  /// symétrique, en cm — longueur, saillie de CHAQUE côté, distance depuis le
+  /// fond, hauteur (on empile par-dessus). Les quatre ou aucune, et jamais sans `cargo` : CHECK dans la
+  /// migration `20260930100000_les_passages_de_roue`.
+  wheelArchLengthCm     Int? @map("wheel_arch_length_cm")
+  wheelArchProtrusionCm Int? @map("wheel_arch_protrusion_cm")
+  wheelArchFromBackCm   Int? @map("wheel_arch_from_back_cm")
+  wheelArchHeightCm     Int? @map("wheel_arch_height_cm")
+
   /// L'énergie (L2b-C6) : `electric`, `hybrid`, `diesel`, `petrol`, `gas`, ou
   /// `NULL` si non renseignée. Texte + CHECK (migration
   /// `20260929223000_l_energie_d_un_vehicule`), pas d'enum Postgres : le

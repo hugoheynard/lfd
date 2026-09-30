@@ -136,6 +136,7 @@ export function vehicleView(
     retiredAt,
     createdAt: new Date(0).toISOString(),
     cargo: null,
+    wheelArches: null,
     refrigeration: null,
     energy: null,
   };

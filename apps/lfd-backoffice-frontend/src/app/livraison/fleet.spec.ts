@@ -11,6 +11,7 @@ function vehicle(id: string, retiredAt: string | null = null): VehicleView {
     retiredAt,
     createdAt: '2026-01-01T08:00:00.000Z',
     cargo: null,
+    wheelArches: null,
     refrigeration: null,
     energy: null,
   };

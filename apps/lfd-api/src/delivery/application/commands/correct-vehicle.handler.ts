@@ -9,10 +9,12 @@ import { ensurePlateFree, loadVehicle } from "../vehicle-support.js";
 import { CorrectVehicleCommand } from "./correct-vehicle.command.js";
 
 /**
- * Corrige la fiche d'un véhicule (nom, plaque, dimensions, froid). Le fait porte l'avant et l'après.
+ * Corrige la fiche d'un véhicule (nom, plaque, dimensions, passages de roue,
+ * froid). Le fait porte l'avant et l'après.
  *
  * @throws {VehicleNotFoundError} @throws {InvalidLicensePlateError}
  * @throws {InvalidVehicleNameError} @throws {LicensePlateAlreadyInServiceError}
+ * @throws {InvalidWheelArchesError} @throws {WheelArchesWithoutCargoError}
  */
 @CommandHandler(CorrectVehicleCommand)
 export class CorrectVehicleHandler implements ICommandHandler<CorrectVehicleCommand, void> {

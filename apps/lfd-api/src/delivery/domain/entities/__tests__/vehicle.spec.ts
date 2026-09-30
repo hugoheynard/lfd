@@ -8,6 +8,10 @@ import {
   VehicleAlreadyRetiredError,
   VehicleNotRetiredError,
 } from "../../errors/delivery-errors.js";
+import {
+  InvalidWheelArchesError,
+  WheelArchesWithoutCargoError,
+} from "../../errors/delivery-floor-errors.js";
 import { activeOnDay, Vehicle } from "../vehicle.js";
 
 const CREATED = new Date(0);
@@ -29,6 +33,7 @@ describe("Vehicle", () => {
       createdAt: CREATED,
       updatedAt: CREATED,
       cargo: null,
+      wheelArches: null,
       refrigeration: null,
       energy: null,
     });
@@ -131,6 +136,52 @@ describe("Vehicle — le chargement (lot 2 bis)", () => {
   it("se réhydrate en revalidant le froid", () => {
     const state = { ...kangoo().toState(), refrigeration: { ...COLD, minTempC: 9, maxTempC: 4 } };
     expect(() => Vehicle.restore(state)).toThrow(InvalidRefrigerationError);
+  });
+});
+
+describe("Vehicle — les passages de roue (G4)", () => {
+  const CARGO = { lengthCm: 290, widthCm: 166, heightCm: 139 };
+  const ARCHES = { lengthCm: 90, protrusionCm: 20, fromBackCm: 60, heightCm: 30 };
+  const base = { id: "v_1", name: "Trafic", plate: "AB-123-CD", at: CREATED };
+
+  it("les porte avec leur hauteur, et se réhydrate à l'identique", () => {
+    const vehicle = Vehicle.register({ ...base, cargo: CARGO, wheelArches: ARCHES });
+    expect(vehicle.wheelArches?.endCm).toBe(150);
+    expect(vehicle.toState().wheelArches).toEqual(ARCHES);
+    expect(vehicle.identity.wheelArches).toEqual(ARCHES);
+    expect(Vehicle.restore(vehicle.toState()).toState()).toEqual(vehicle.toState());
+  });
+
+  it("refuse des passages sur un véhicule sans dimensions utiles", () => {
+    expect(() => Vehicle.register({ ...base, wheelArches: ARCHES })).toThrow(
+      WheelArchesWithoutCargoError,
+    );
+  });
+
+  it.each([
+    ["une saillie ≥ demi-largeur", { ...ARCHES, protrusionCm: 83 }, /ne laisse rien/u],
+    ["un passage qui sort du plancher", { ...ARCHES, fromBackCm: 201 }, /sort d'un plancher/u],
+    ["un passage qui touche le plafond", { ...ARCHES, heightCm: 139 }, /touche le plafond/u],
+  ])("refuse %s, confronté au plancher", (_case, wheelArches, detail) => {
+    const register = () => Vehicle.register({ ...base, cargo: CARGO, wheelArches });
+    expect(register).toThrow(InvalidWheelArchesError);
+    expect(register).toThrow(detail);
+  });
+
+  it("une correction qui rétrécit le plancher sous les passages est refusée, fiche intacte", () => {
+    const vehicle = Vehicle.register({ ...base, cargo: CARGO, wheelArches: ARCHES });
+    const narrow = { ...CARGO, widthCm: 40 };
+    expect(() => vehicle.correct({ ...base, cargo: narrow, wheelArches: ARCHES }, LATER)).toThrow(
+      InvalidWheelArchesError,
+    );
+    expect(vehicle.cargo?.widthCm).toBe(166);
+    expect(vehicle.updatedAt).toEqual(CREATED);
+  });
+
+  it("absent vaut null : une correction sans passages les efface", () => {
+    const vehicle = Vehicle.register({ ...base, cargo: CARGO, wheelArches: ARCHES });
+    vehicle.correct({ name: "Trafic", plate: "AB-123-CD", cargo: CARGO }, LATER);
+    expect(vehicle.wheelArches).toBeNull();
   });
 });
 

@@ -273,10 +273,10 @@ function onVehicle(verb: string, tail = ''): Phrase {
     byActor(
       fact,
       [text(`${verb} `), ...vehicle(fact), ...(tail === '' ? [] : [text(tail)])],
-      // Le chargement, le froid et l'énergie (lot 2 bis) sont LUS et tus : la
+      // Le chargement, les passages de roue (G4), le froid et l'énergie sont LUS et tus : la
       // phrase dit quel véhicule, la fiche dit comment il est équipé. Les
       // taire sans les déclarer faisait rougir la clôture du journal.
-      ['subjectLabel', 'plate', 'cargo', 'refrigeration', 'energy'],
+      ['subjectLabel', 'plate', 'cargo', 'wheelArches', 'refrigeration', 'energy'],
     );
 }
 

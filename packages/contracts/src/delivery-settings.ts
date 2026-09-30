@@ -22,6 +22,21 @@ export const vehicleCargoPayloadSchema = z.object({
 export type VehicleCargoPayload = z.infer<typeof vehicleCargoPayloadSchema>;
 
 /**
+ * Les passages de roue (`plan-geometrie-du-plancher.md`, G-D2) : UNE paire
+ * symétrique, en centimètres entiers — longueur le long du véhicule, saillie de
+ * CHAQUE côté, distance depuis le fond, hauteur (des bacs s'empilent
+ * par-dessus). Qu'ils tiennent dans le plancher, et
+ * qu'il y ait un plancher, est tenu par le domaine.
+ */
+export const vehicleWheelArchesPayloadSchema = z.object({
+  lengthCm: z.number().int(),
+  protrusionCm: z.number().int(),
+  fromBackCm: z.number().int(),
+  heightCm: z.number().int(),
+});
+export type VehicleWheelArchesPayload = z.infer<typeof vehicleWheelArchesPayloadSchema>;
+
+/**
  * La caisse réfrigérée (lot 2 bis, L2b-C2) : volume en litres, plage en °C
  * entiers — négatifs permis. Bornes, `min ≤ max` et « pas plus que le volume
  * utile » sont tenus par le domaine.
@@ -65,6 +80,8 @@ export const vehiclePayloadSchema = z.object({
   plate: z.string().trim().min(1, "plaque requise").max(20, "plaque trop longue"),
   /** Dimensions utiles ; `null` ou absent = inconnues (voir la mise en garde ci-dessus). */
   cargo: vehicleCargoPayloadSchema.nullable().optional(),
+  /** Passages de roue ; `null` ou absent = plancher rectangle (même règle : absent efface). */
+  wheelArches: vehicleWheelArchesPayloadSchema.nullable().optional(),
   /** Caisse réfrigérée ; `null` ou absent = véhicule sec. */
   refrigeration: vehicleRefrigerationPayloadSchema.nullable().optional(),
   /** Énergie ; `null` ou absent = non renseignée (même règle : absent efface). */
@@ -87,6 +104,8 @@ export interface VehicleView {
   readonly createdAt: string;
   /** Dimensions utiles, ou `null` si inconnues (lot 2 bis). */
   readonly cargo: VehicleCargoView | null;
+  /** Passages de roue, ou `null` : le plancher est un rectangle (G4). Jamais posés sans `cargo`. */
+  readonly wheelArches: VehicleWheelArchesView | null;
   /** Caisse réfrigérée, ou `null` pour un véhicule sec (lot 2 bis). */
   readonly refrigeration: VehicleRefrigerationView | null;
   /** Énergie, ou `null` si non renseignée (L2b-C6). */
@@ -103,6 +122,14 @@ export interface VehicleCargoView {
   readonly widthCm: number;
   readonly heightCm: number;
   readonly volumeLiters: number;
+}
+
+/** Les passages de roue, en cm. */
+export interface VehicleWheelArchesView {
+  readonly lengthCm: number;
+  readonly protrusionCm: number;
+  readonly fromBackCm: number;
+  readonly heightCm: number;
 }
 
 /** La caisse réfrigérée : volume en litres, plage en °C. */
