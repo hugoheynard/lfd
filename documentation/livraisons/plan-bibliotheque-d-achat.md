@@ -1,6 +1,6 @@
 # La bibliothèque d'achat — véhicules et bacs candidats, scénarios, tableau croisé
 
-> 📐 **Plan, rien n'est bâti** (2026-09-30). Suite de
+> 🟡 **Plan, partiellement bâti** (2026-09-30) : B1 et B2 côté serveur, aucun écran. Suite de
 > [`plan-geometrie-du-plancher.md`](plan-geometrie-du-plancher.md) : l'assistant
 > d'achat (G1-G3) calcule, mais tout se ressaisit à chaque ouverture.
 >
@@ -154,14 +154,14 @@ Ceux du simulateur (Q1), sans droit neuf :
 
 ## 2. Les lots
 
-| Lot    | Contenu                                                                                                                         | Qui                   |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| **B1** | Candidats : migration additive (2 tables), agrégats, CRUD + archivage, contrats, e2e (mur de droits, refus d'URL, prix négatif) | `batisseur`           |
-| **B2** | Tableau croisé : query, bornes 10 × 10, coûts, e2e                                                                              | `batisseur`           |
-| **B3** | Scénarios : table, enregistrer / relire / archiver, e2e                                                                         | `batisseur`           |
-| **B4** | Écran « Bibliothèque » (onglet de l'assistant) : listes, fiches, lien d'achat, prix HT                                          | `pablo`               |
-| **B5** | Écran « Tableau » : sélection, critère, mise en avant, coût par litre à la demande ; enregistrer un scénario                    | `pablo`               |
-| **B6** | « Ajouter à la flotte », « Mettre en service »                                                                                  | `batisseur` + `pablo` |
+| Lot                                | Contenu                                                                                                                                                                                                                                        | Qui                   |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
+| **B1** ✅ 2026-09-30 (`19a1eb59e`) | Candidats : migration additive (2 tables), agrégats, CRUD + archivage, contrats, e2e (mur de droits, refus d'URL, prix négatif)                                                                                                                | `batisseur`           |
+| **B2** ✅ 2026-09-30               | Tableau croisé : query, bornes 10 × 10, coûts, e2e — coût par litre arrondi au centime le plus proche (moitié vers le haut), meilleures cases calculées au serveur, un véhicule retiré de la flotte refusé comme un archivé ; 10 × 10 en 35 ms | `batisseur`           |
+| **B3**                             | Scénarios : table, enregistrer / relire / archiver, e2e                                                                                                                                                                                        | `batisseur`           |
+| **B4**                             | Écran « Bibliothèque » (onglet de l'assistant) : listes, fiches, lien d'achat, prix HT                                                                                                                                                         | `pablo`               |
+| **B5**                             | Écran « Tableau » : sélection, critère, mise en avant, coût par litre à la demande ; enregistrer un scénario                                                                                                                                   | `pablo`               |
+| **B6**                             | « Ajouter à la flotte », « Mettre en service »                                                                                                                                                                                                 | `batisseur` + `pablo` |
 
 B1 → B2 → B5 donnent le tableau ; B3 et B6 viennent ensuite.
 
