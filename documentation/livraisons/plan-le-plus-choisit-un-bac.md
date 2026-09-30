@@ -126,15 +126,13 @@ une livraison. Aucune colonne supprimée, aucune migration.
 ## 3. L'écran
 
 ```mermaid
-stateDiagram-v2
-  direction LR
-  [*] --> SansBac: commande livrée ouverte
-  SansBac --> AvecBacs: « + format »
-  AvecBacs --> AvecBacs: « + format » / « − »
-  AvecBacs --> SansBac: « − » du dernier
-  AvecBacs --> Prete: « Prête » (avertit si froid sans ❄)
-  SansBac --> Prete: « Prête » (avertit : aucun bac)
-  Prete --> [*]
+flowchart LR
+  start(("commande livrée ouverte")) --> sans["Sans bac"]
+  sans -- "+ format" --> avec["Avec bacs"]
+  avec -- "+ format, ou − sur un bac" --> avec
+  avec -- "− sur le dernier" --> sans
+  avec -- "Prête, avertit si froid sans bac isotherme" --> prete(["Prête"])
+  sans -- "Prête, avertit : aucun bac" --> prete
 ```
 
 ```
