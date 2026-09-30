@@ -117,11 +117,18 @@ et un refus serveur demanderait au fournil de lire les bacs de la livraison —
 l'import que D1 interdit. « Partir » refuse déjà une tournée incomplète : le
 filet dur est là, au chargement.
 
-### D4 — Le comptoir garde son compte anonyme
+### D4 — Le comptoir garde son compte anonyme, pour l'instant — porte ouverte
 
-Une commande en retrait ne monte dans aucun véhicule : le « + / − » anonyme reste
-pour elle, inchangé. `production_orders.containers` n'est **plus écrit** pour
-une livraison. Aucune colonne supprimée, aucune migration.
+Une commande en retrait garde le « + / − » anonyme, inchangé.
+`production_orders.containers` n'est **plus écrit** pour une livraison. Aucune
+colonne supprimée, aucune migration.
+
+Hugo (2026-09-30) : « on doit pouvoir aussi, j'imagine ». Rien dans ce plan ne
+ferme la porte, et c'est voulu : la rangée « + format » est un composant qui
+reçoit une commande et une liste de formats, **sans condition sur le mode
+d'acheminement**. Le jour où le comptoir passe en bacs typés, c'est le choix
+de l'afficher qui change, pas le composant. Ce qui manquerait alors côté
+serveur est dit en Q1.
 
 ## 3. L'écran
 
@@ -151,19 +158,28 @@ flowchart LR
 | Lot   | Contenu                                                                                                                                                   | Bloc            |
 | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
 | **A** | Poste de colisage : rangée « + format », « − » sur le dernier bac, compte = bacs ; masquer le « + / − » anonyme pour une livraison ; avertissements de D3 | front (`pablo`) |
-| **B** | Retirer du panneau « Bacs » la saisie libre devenue doublon, selon Q2                                                                                     | front           |
+| **B** | ⏸ attend Q2 — retirer du panneau « Bacs » la saisie libre devenue doublon                                                                                 | front           |
 | **C** | Mettre à jour `chargement-les-bacs.md` §5 et l'index                                                                                                      | doc             |
 
 Aucun lot backend si Q4 reste « − puis + ». Le serveur a déjà tout.
 
-## 5. Questions ouvertes — une réponse proposée pour chacune
+## 5. Questions ouvertes — aucune tranchée (2026-09-30)
 
-| #      | Question                                                                                                    | Proposé                                                                                          |
-| ------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **Q1** | Le retrait au comptoir passe-t-il aussi en bacs typés ?                                                     | **Non** (D4) : pas de véhicule, pas de format.                                                   |
-| **Q2** | La proposition calculée : retirée, ou elle **met en avant** un format (bouton en couleur, rien déclaré) ?   | **Mise en avant** : elle aide sans décider.                                                      |
-| **Q3** | Le demi-bac **partagé** entre deux commandes : au poste, ou réservé au chargement ?                         | **Au poste, inchangé** : il demande deux arrêts consécutifs, ce que le poste sait déjà vérifier. |
-| **Q4** | Changer M en L : « − » puis « + » (nouvelle étiquette), ou un geste « changer la taille » qui garde le QR ? | **« − » puis « + »** : aucune route neuve ; une étiquette annulée ne vaut plus.                  |
+Hugo : Q1 « je ne sais pas pour l'instant, on doit pouvoir aussi j'imagine » ;
+Q2 à Q4 « je ne sais pas encore ».
+
+**Le lot A se bâtit sans elles**, en gardant pour chacune le comportement
+d'aujourd'hui — le seul qui n'engage rien :
+
+| #      | Question                                                                                                    | En attendant, le lot A…                                                              | Ce que coûterait chaque réponse                                                                                                                                                                                |
+| ------ | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Q1** | Le retrait au comptoir passe-t-il aussi en bacs typés ?                                                     | garde le compte anonyme au comptoir (D4)                                             | **Oui** : un lot serveur — `delivery.bins_not_declarable` (409) refuse aujourd'hui une commande en retrait ; le bac est à la livraison, il faudrait lui dire qu'un bac peut ne jamais monter dans un véhicule. |
+| **Q2** | La proposition calculée : retirée, ou elle **met en avant** un format (bouton en couleur, rien déclaré) ?   | la laisse **où elle est**, dans le panneau « Bacs », avec « Déclarer comme proposé » | Retirée : un lot front. Mise en avant : un lot front, la proposition est déjà servie.                                                                                                                          |
+| **Q3** | Le demi-bac **partagé** entre deux commandes : au poste, ou réservé au chargement ?                         | le laisse **au poste**, inchangé                                                     | Réservé au chargement : un geste neuf à l'écran de chargement, la route `partage` existe.                                                                                                                      |
+| **Q4** | Changer M en L : « − » puis « + » (nouvelle étiquette), ou un geste « changer la taille » qui garde le QR ? | fait « − » puis « + » — c'est ce que les routes permettent déjà                      | Garder le QR : une commande serveur neuve, et un fait de journal.                                                                                                                                              |
+
+Le lot B (retirer la saisie libre) **attend Q2** : il n'a de sens qu'une fois
+la place de la proposition décidée.
 
 ## 6. Ce que ce plan n'a pas vérifié
 
