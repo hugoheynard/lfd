@@ -249,8 +249,10 @@ src/
 │                   implémenter un autre (cf. plus bas)
 ├── delivery/     ▸ LA LIVRAISON — la flotte, le départ des tournées, puis
 │                   les tournées. Ouvert le 2026-09-29 (plan de tournée,
-│                   lot 2) : tables dans le schéma `production` (Q10),
-│                   canal `channels/commerce/` que le commerce implémente
+│                   lot 2). SON schéma `delivery` depuis le 2026-09-30
+│                   (Q10 révisée) ; canal `channels/commerce/` que le
+│                   commerce implémente. Cf. livraisons/architecture-
+│                   isolation-livraison.md
 ├── ops/          ▸ LA CARTE DE SANTÉ — health, sondes, journal, trafic, vitals
 │                   il OBSERVE et ne possède rien
 ├── platform/     ▸ TECHNIQUE PURE — zéro connaissance métier
