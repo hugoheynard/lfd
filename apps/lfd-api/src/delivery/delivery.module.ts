@@ -46,6 +46,8 @@ import { RoutingSettingsRepository } from "./domain/ports/routing-settings.repos
 import { RouteGeometry } from "./domain/ports/route-geometry.js";
 import { DeliveryProposalController } from "./http/delivery-proposal.controller.js";
 import { DeliverySimulatorController } from "./http/delivery-simulator.controller.js";
+import { DeliveryPurchaseAssistantController } from "./http/delivery-purchase-assistant.controller.js";
+import { AssistBinPurchaseHandler } from "./application/queries/assist-bin-purchase.handler.js";
 import { RoutingSettingsController } from "./http/routing-settings.controller.js";
 import { BanGeocoder } from "./infrastructure/ban-geocoder.js";
 import { DisabledGeocoder } from "./infrastructure/disabled-geocoder.js";
@@ -152,6 +154,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     RoutingSettingsController,
     DeliveryProposalController,
     DeliverySimulatorController,
+    DeliveryPurchaseAssistantController,
     DeliverySimulationScenariosController,
     BinTypesController,
     BinCapacitiesController,
@@ -189,6 +192,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     GetDeliveryRoundProposalHandler,
     ApplyDeliveryProposalHandler,
     SimulateDeliveryRoundsHandler,
+    AssistBinPurchaseHandler,
     RecordSimulationScenarioHandler,
     ReplaceSimulationScenarioHandler,
     DuplicateSimulationScenarioHandler,

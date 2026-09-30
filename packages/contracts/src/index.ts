@@ -885,6 +885,22 @@ export type {
   DeliverySimulationFromDayView,
 } from "./delivery-simulator.js";
 export {
+  PURCHASE_ASSISTANT_MAX_FORMATS,
+  wheelArchesPayloadSchema,
+  cargoFloorPayloadSchema,
+  purchaseAssistantFormatSchema,
+  purchaseAssistantPayloadSchema,
+} from "./delivery-purchase-assistant.js";
+export type {
+  WheelArchesPayload,
+  CargoFloorPayload,
+  PurchaseAssistantFormat,
+  PurchaseAssistantPayload,
+  PurchaseAssistantRowView,
+  PurchaseAssistantFormatView,
+  PurchaseAssistantView,
+} from "./delivery-purchase-assistant.js";
+export {
   recurrenceSchema,
   subscriptionStatusSchema,
   setSubscriptionStatusPayloadSchema,

@@ -208,8 +208,11 @@ function validSpecOf(input: BinTypeSpec): ValidSpec {
   };
 }
 
-/** @throws {BinInnerExceedsOuterError} la première dimension qui déborde. */
-function ensureInnerFits(inner: BinDimensions, outer: BinDimensions): void {
+/**
+ * @throws {BinInnerExceedsOuterError} la première dimension qui déborde.
+ * Exportée pour le format de l'assistant d'achat (G-D3) : la règle n'a qu'un endroit.
+ */
+export function ensureInnerFits(inner: BinDimensions, outer: BinDimensions): void {
   const pairs: readonly (readonly [string, number, number])[] = [
     ["La longueur", inner.lengthCm, outer.lengthCm],
     ["La largeur", inner.widthCm, outer.widthCm],
