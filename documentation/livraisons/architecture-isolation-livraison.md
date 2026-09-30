@@ -226,9 +226,9 @@ suit les deux versions. Jamais un déclencheur qui écrit chez l'autre.
   `handover` implémente, dans la même transaction). C'est confortable tant
   qu'il n'y a qu'une base ; une extraction demanderait une boîte d'envoi
   (_outbox_) et des événements.
-- **Les vues de compatibilité** `production.delivery_*` existent jusqu'au
-  déploiement suivant le déménagement (SD5 du plan) : elles servent l'ancien
-  binaire pendant les quelques secondes du remplacement, puis partent.
+- _(Les vues de compatibilité `production.delivery_*` qui ont servi l'ancien
+  binaire pendant le remplacement sont parties au déploiement suivant,
+  migration `20260930200000_les_vues_de_compatibilite_partent`.)_
 
 ## 8. Pour le développeur — ajouter quelque chose à la livraison
 

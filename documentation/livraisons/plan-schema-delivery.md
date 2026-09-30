@@ -1,6 +1,6 @@
 # Le schéma `delivery` — la livraison chez elle, et rien qu'en passant par des ports
 
-> 📐 **Plan, rien n'est bâti** (2026-09-30), **v2 après `vitruve`** (4
+> ✅ **Bâti et déployé le 2026-09-30** : déploiement 1 `618940a3b` (migrations appliquées en production à 19 h 52), déploiement 2 `20260930200000_les_vues_de_compatibilite_partent`. Référence : [`architecture-isolation-livraison.md`](architecture-isolation-livraison.md). **v2 après `vitruve`** (4
 > bloquants, 4 sérieux — tous corrigés ci-dessous, cf. § 5). Hugo : « je me
 > demande si delivery ne devrait pas avoir son schéma à part », puis « toutes
 > les tables qu'on a faites pour chargement, simulations, etc., tout part dans
