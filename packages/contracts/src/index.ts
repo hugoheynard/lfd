@@ -904,6 +904,23 @@ export type {
   PurchaseAssistantView,
 } from "./delivery-purchase-assistant.js";
 export {
+  PURCHASE_TABLE_MAX_VEHICLES,
+  PURCHASE_TABLE_MAX_FORMATS,
+  purchaseTableVehicleRefSchema,
+  purchaseTableFormatRefSchema,
+  purchaseTablePayloadSchema,
+} from "./delivery-purchase-table.js";
+export type {
+  PurchaseTableVehicleRef,
+  PurchaseTableFormatRef,
+  PurchaseTablePayload,
+  PurchaseTableFormatView,
+  PurchaseTableCellView,
+  PurchaseTableRowBestView,
+  PurchaseTableRowView,
+  PurchaseTableView,
+} from "./delivery-purchase-table.js";
+export {
   PURCHASE_CANDIDATE_NAME_MAX_LENGTH,
   PURCHASE_CANDIDATE_TEXT_MAX_LENGTH,
   PURCHASE_URL_MAX_LENGTH,

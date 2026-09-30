@@ -2,6 +2,9 @@ import {
   type PurchaseAssistantPayload,
   purchaseAssistantPayloadSchema,
   type PurchaseAssistantView,
+  type PurchaseTablePayload,
+  purchaseTablePayloadSchema,
+  type PurchaseTableView,
 } from "@lfd/contracts";
 import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
@@ -9,6 +12,7 @@ import { QueryBus } from "@nestjs/cqrs";
 import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { AssistBinPurchaseQuery } from "../application/queries/assist-bin-purchase.query.js";
+import { CrossPurchaseTableQuery } from "../application/queries/cross-purchase-table.query.js";
 
 /**
  * **L'assistant d'achat** — combien de bacs de tel format tiennent dans tel
@@ -32,6 +36,22 @@ export class DeliveryPurchaseAssistantController {
   ): Promise<PurchaseAssistantView> {
     return this.queries.execute<AssistBinPurchaseQuery, PurchaseAssistantView>(
       new AssistBinPurchaseQuery(payload),
+    );
+  }
+
+  /**
+   * Le tableau croisé de la bibliothèque d'achat (`plan-bibliotheque-d-achat.md`,
+   * B-D4) : une sélection de véhicules et de formats, candidats ou réels,
+   * relus par identifiant. Rien n'est écrit.
+   */
+  @Post("tableau")
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission("delivery_rounds:read")
+  table(
+    @Body(new ZodBody(purchaseTablePayloadSchema)) payload: PurchaseTablePayload,
+  ): Promise<PurchaseTableView> {
+    return this.queries.execute<CrossPurchaseTableQuery, PurchaseTableView>(
+      new CrossPurchaseTableQuery(payload),
     );
   }
 }

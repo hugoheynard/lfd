@@ -8,6 +8,7 @@ import { DeclarePurchaseBinCandidateHandler } from "./application/commands/decla
 import { DeclarePurchaseVehicleCandidateHandler } from "./application/commands/declare-purchase-vehicle-candidate.handler.js";
 import { ReactivatePurchaseBinCandidateHandler } from "./application/commands/reactivate-purchase-bin-candidate.handler.js";
 import { ReactivatePurchaseVehicleCandidateHandler } from "./application/commands/reactivate-purchase-vehicle-candidate.handler.js";
+import { CrossPurchaseTableHandler } from "./application/queries/cross-purchase-table.handler.js";
 import { ListPurchaseBinCandidatesHandler } from "./application/queries/list-purchase-bin-candidates.handler.js";
 import { ListPurchaseVehicleCandidatesHandler } from "./application/queries/list-purchase-vehicle-candidates.handler.js";
 import { PurchaseBinCandidateRepository } from "./domain/ports/purchase-bin-candidate.repository.js";
@@ -24,8 +25,9 @@ import { PrismaPurchaseVehicleCandidatesReader } from "./infrastructure/prisma-p
 /**
  * **La bibliothèque d'achat** (`plan-bibliotheque-d-achat.md`, lot B1), rangée
  * à part pour que `delivery.module.ts` reste lisible : ses contrôleurs, ses
- * handlers, ses ports et leurs adaptateurs. Rien ici ne touche la flotte ni
- * le catalogue des bacs (B-D1).
+ * handlers, ses ports et leurs adaptateurs. Rien ici n'ÉCRIT la flotte ni le
+ * catalogue des bacs (B-D1) ; le tableau croisé (B2) les LIT, par leurs ports
+ * de lecture liés dans `delivery.module.ts`.
  */
 export const PURCHASE_LIBRARY_CONTROLLERS: readonly Type[] = [
   PurchaseVehicleCandidatesController,
@@ -43,6 +45,7 @@ export const PURCHASE_LIBRARY_PROVIDERS: readonly Provider[] = [
   ArchivePurchaseBinCandidateHandler,
   ReactivatePurchaseBinCandidateHandler,
   ListPurchaseBinCandidatesHandler,
+  CrossPurchaseTableHandler,
   {
     provide: PurchaseVehicleCandidateRepository,
     useClass: PrismaPurchaseVehicleCandidateRepository,
