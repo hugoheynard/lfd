@@ -183,10 +183,10 @@ dimensions (G-Q3). Les bacs isothermes n'entrent pas dans le plancher sec.
 
 ### G-D5 — Les données : ce qu'il faut ajouter
 
-| Champ                                                                                       | Table                                  | Migration                                                             |
-| ------------------------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------- |
-| passages de roue : longueur, saillie, distance depuis le fond (cm, tous nuls ou tous posés) | `production.delivery_vehicle`          | **additive**, trois colonnes nullables + un `CHECK` « tous ou aucun » |
-| jeu entre bacs (cm)                                                                         | `production.delivery_routing_settings` | additive, défaut 1                                                    |
+| Champ                                                                                                    | Table                                  | Migration                                                                                                                                                                                          |
+| -------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| passages de roue : longueur, saillie, distance depuis le fond, **hauteur** (cm, tous nuls ou tous posés) | `production.delivery_vehicle`          | **additive**, quatre colonnes nullables + `CHECK` « tous ou aucun » + `CHECK` « jamais sans espace utile » — **bâti le 2026-09-30** (`4715142a7`, migration `20260930100000_les_passages_de_roue`) |
+| jeu entre bacs (cm)                                                                                      | `production.delivery_routing_settings` | additive, défaut 1                                                                                                                                                                                 |
 
 Aucune donnée existante n'est convertie. Un véhicule sans passages de roue se
 lit comme aujourd'hui : un rectangle. Le journal des véhicules déclare les
