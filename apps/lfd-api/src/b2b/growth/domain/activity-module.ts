@@ -113,6 +113,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // Les bacs et leurs contenances (lot 4 bis, tranche A, 2026-09-29) : même famille.
     "delivery_bin_type.",
     "delivery_bin_capacity.",
+    // La bibliothèque d'achat (lot B1, 2026-09-30) : même famille.
+    "delivery_purchase_vehicle_candidate.",
+    "delivery_purchase_bin_candidate.",
     // L'heure limite posée sur un produit : même famille que celle d'un point.
     "order_time_limit.",
   ],

@@ -59,6 +59,7 @@
   "test/delivery-procedure-refusals.e2e-spec.ts": 7606,
   "test/delivery-procedure.e2e-spec.ts": 4847,
   "test/delivery-purchase-assistant.e2e-spec.ts": 4500,
+  "test/delivery-purchase-library.e2e-spec.ts": 6900,
   "test/delivery-road-routing.e2e-spec.ts": 6699,
   "test/delivery-rounds-guards.e2e-spec.ts": 4900,
   "test/delivery-rounds.e2e-spec.ts": 8547,

@@ -55,6 +55,12 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   "production.delivery_bin_type": "le catalogue des types de bacs, un réglage sans journée",
   "production.delivery_bin_capacity":
     "la grille des contenances bacs × produits, un réglage sans journée",
+  // La bibliothèque d'achat (lot B1, 2026-09-30) : des véhicules et des bacs
+  // qu'on n'a PAS achetés, dans leurs propres tables — aucune tournée ne les lit.
+  "production.delivery_purchase_vehicle_candidate":
+    "les véhicules candidats de la bibliothèque d'achat, sans journée ni tournée",
+  "production.delivery_purchase_bin_candidate":
+    "les formats de bacs candidats de la bibliothèque d'achat, sans journée ni colisage",
 };
 
 /** Les colonnes qui disent « cette ligne appartient à une journée », côté `public`. */

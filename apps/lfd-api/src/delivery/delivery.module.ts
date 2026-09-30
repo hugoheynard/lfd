@@ -123,6 +123,10 @@ import { PrismaDepartureRepository } from "./infrastructure/prisma-departure.rep
 import { PrismaFleetReader } from "./infrastructure/prisma-fleet.reader.js";
 import { PrismaVehicleRoundsReader } from "./infrastructure/prisma-vehicle-rounds.reader.js";
 import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.repository.js";
+import {
+  PURCHASE_LIBRARY_CONTROLLERS,
+  PURCHASE_LIBRARY_PROVIDERS,
+} from "./purchase-library.providers.js";
 
 /**
  * **La livraison** — les bases paramétrables des tournées (la flotte et le
@@ -158,6 +162,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     DeliverySimulationScenariosController,
     BinTypesController,
     BinCapacitiesController,
+    ...PURCHASE_LIBRARY_CONTROLLERS,
   ],
   providers: [
     AddVehicleHandler,
@@ -210,6 +215,7 @@ import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.reposit
     SetBinCapacityHandler,
     ListBinTypesHandler,
     GetBinCapacitiesHandler,
+    ...PURCHASE_LIBRARY_PROVIDERS,
     { provide: BinTypeRepository, useClass: PrismaBinTypeRepository },
     { provide: BinTypeLookup, useExisting: BinTypeRepository },
     { provide: BinCapacityRepository, useClass: PrismaBinCapacityRepository },

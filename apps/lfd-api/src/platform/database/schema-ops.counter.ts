@@ -246,6 +246,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // Les bacs et leurs contenances (lot 4 bis, tranche A) : un réglage, une case à la fois.
   DeliveryBinType: "production",
   DeliveryBinCapacity: "production",
+  // La bibliothèque d'achat (lot B1) : des candidats, saisis à la main, rarement.
+  DeliveryPurchaseVehicleCandidate: "production",
+  DeliveryPurchaseBinCandidate: "production",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { weekdaySchema } from "../address.js";
 import { DELIVERY_BIN_FACTS } from "./delivery-bins.js";
 import { DELIVERY_LOADING_FACTS } from "./delivery-loading.js";
+import { DELIVERY_PURCHASE_LIBRARY_FACTS } from "./delivery-purchase-library.js";
 import { DELIVERY_ROUND_FACTS } from "./delivery-rounds.js";
 import { DELIVERY_ROUTING_FACTS } from "./delivery-routing.js";
 import { DELIVERY_SIMULATION_FACTS } from "./delivery-simulation.js";
@@ -373,6 +374,8 @@ export const ORDERS_PRODUCTION_FACTS = {
   /** **Les scénarios du simulateur** (lot 9) — dans son propre fichier, même famille. */
   ...DELIVERY_SIMULATION_FACTS,
   ...DELIVERY_BIN_FACTS,
+  /** **La bibliothèque d'achat** (lot B1) — dans son propre fichier, même famille. */
+  ...DELIVERY_PURCHASE_LIBRARY_FACTS,
 
   /**
    * `absorbed` : les commandes que la journée a absorbées en se fermant. Le

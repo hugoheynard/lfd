@@ -842,3 +842,87 @@ model DeliveryBinCapacity {
   @@map("delivery_bin_capacity")
   @@schema("production")
 }
+
+/// **Un véhicule candidat** de la bibliothèque d'achat
+/// (`documentation/livraisons/plan-bibliotheque-d-achat.md`, B-D1, lot B1) :
+/// une camionnette qu'on envisage d'acheter. SÉPARÉ de `delivery_vehicle` —
+/// aucune lecture de la flotte ne le voit, c'est ce qui rend « proposer une
+/// tournée à un véhicule fictif » inexprimable. Aucun client, aucune journée.
+///
+/// Jamais supprimé : archivé. Le nom est unique parmi les candidats NON
+/// archivés — index partiel écrit à la main dans la migration
+/// `20260930120000_la_bibliotheque_d_achat`.
+model DeliveryPurchaseVehicleCandidate {
+  /// Assigné par la commande (`IdGenerator`), jamais par la base.
+  id   String @id
+  name String
+
+  /// Dimensions utiles du chargement, en cm — toujours connues : un candidat
+  /// sans plancher ne se compare à rien.
+  cargoLengthCm Int @map("cargo_length_cm")
+  cargoWidthCm  Int @map("cargo_width_cm")
+  cargoHeightCm Int @map("cargo_height_cm")
+
+  /// Passages de roue (G-D2), hauteur comprise. Les quatre ou aucune : CHECK
+  /// dans la migration.
+  wheelArchLengthCm     Int? @map("wheel_arch_length_cm")
+  wheelArchProtrusionCm Int? @map("wheel_arch_protrusion_cm")
+  wheelArchFromBackCm   Int? @map("wheel_arch_from_back_cm")
+  wheelArchHeightCm     Int? @map("wheel_arch_height_cm")
+
+  /// Ce qui permet de l'acheter : tout est facultatif. Prix HT indicatif, en
+  /// centimes entiers (B-D3) — aucun prix ne quitte la bibliothèque.
+  reference         String?
+  purchaseUrl       String? @map("purchase_url")
+  priceCentsExclVat Int?    @map("price_cents_excl_vat")
+
+  /// Instants du geste, lus du `Clock` ; l'auteur du dernier geste est figé.
+  createdAt        DateTime  @map("created_at")
+  createdByStaffId String    @map("created_by_staff_id")
+  updatedAt        DateTime  @map("updated_at")
+  updatedByStaffId String    @map("updated_by_staff_id")
+  updatedByName    String    @map("updated_by_name")
+  updatedByRole    String    @map("updated_by_role")
+  archivedAt       DateTime? @map("archived_at")
+
+  @@map("delivery_purchase_vehicle_candidate")
+  @@schema("production")
+}
+
+/// **Un format de bac candidat** de la bibliothèque d'achat (B-D1, lot B1) :
+/// SÉPARÉ de `delivery_bin_type` — jamais proposé au colisage ni dans les
+/// contenances. Mêmes règles de géométrie qu'un type de bac (`BinFormat`).
+///
+/// Jamais supprimé : archivé. Nom unique parmi les NON archivés — index
+/// partiel écrit à la main dans `20260930120000_la_bibliotheque_d_achat`.
+model DeliveryPurchaseBinCandidate {
+  /// Assigné par la commande (`IdGenerator`), jamais par la base.
+  id   String @id
+  name String
+
+  outerLengthCm Int     @map("outer_length_cm")
+  outerWidthCm  Int     @map("outer_width_cm")
+  outerHeightCm Int     @map("outer_height_cm")
+  innerLengthCm Int     @map("inner_length_cm")
+  innerWidthCm  Int     @map("inner_width_cm")
+  innerHeightCm Int     @map("inner_height_cm")
+  isotherm      Boolean
+  maxStack      Int     @map("max_stack")
+
+  supplier              String?
+  reference             String?
+  purchaseUrl           String? @map("purchase_url")
+  /// Prix unitaire HT indicatif, en centimes entiers (B-D3, B-Q2).
+  unitPriceCentsExclVat Int?    @map("unit_price_cents_excl_vat")
+
+  createdAt        DateTime  @map("created_at")
+  createdByStaffId String    @map("created_by_staff_id")
+  updatedAt        DateTime  @map("updated_at")
+  updatedByStaffId String    @map("updated_by_staff_id")
+  updatedByName    String    @map("updated_by_name")
+  updatedByRole    String    @map("updated_by_role")
+  archivedAt       DateTime? @map("archived_at")
+
+  @@map("delivery_purchase_bin_candidate")
+  @@schema("production")
+}
