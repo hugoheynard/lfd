@@ -481,3 +481,11 @@ donc pas ; la question du § 10 bis disparaît, et deux règles la remplacent :
 
 **Ordre de bâti** : B0 → BQ → B1 → B2 → B3 + B5 → B4. Un lot à la fois sur
 la base de test partagée.
+
+**LB-Q5 tranché par Hugo le 2026-10-01** : « le commercial l'emporte ». Une
+autorisation de dépôt donnée par un commercial (B3) ouvre « Déposé avec
+preuve » **même si la signature est exigée** — AP-Q6 vaut pour le livreur
+seul, pas pour une décision tracée du commercial. Point d'extension :
+`DoorstepStop.ensureDepositPermitted()` (B2). Hugo ajoute : « le commercial
+doit pouvoir le définir de manière automatique en réglage de livraison » —
+forme à préciser (LB-Q6).
