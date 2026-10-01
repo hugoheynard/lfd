@@ -1,6 +1,11 @@
 # Des droits par geste, et des rôles réglés à l'écran
 
-> 📐 **Plan, rien n'est bâti** (2026-10-01). Hugo : « `b2b_orders` doit être
+> ✅ **Bâti le 2026-10-01** : DG0 à DG6 (`8b424bb2f`, `80fc1f56a`) ; DG7, les
+> tests des dérogations, existait déjà (`fb274494e`). Le texte ci-dessous est
+> le plan d'origine ; ce qui reste est le réglage des rôles **à l'écran**
+> (`tableau-droits-livraison.md`), jamais par migration.
+
+> 📐 **Plan** (2026-10-01) — _bâti, voir le bandeau ci-dessus_. Hugo : « `b2b_orders` doit être
 > découpé en actions granulaires, et il faut que j'arrête de hardcoder des
 > bouts de rôle dans la base, ça doit être du paramétrage admin ».
 >

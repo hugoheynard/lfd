@@ -1,6 +1,11 @@
 # Le droit des procédures de livraison — `delivery_procedures`
 
-> 📐 **Plan, rien n'est bâti** (2026-10-01). Hugo : « procédure de livraison
+> 🔁 **Remplacé par [`plan-droits-par-geste.md`](plan-droits-par-geste.md) et
+> bâti** (2026-10-01) : la décision DG-D1 (le droit `delivery_procedures`) et
+> DG6 (`80fc1f56a`, la procédure ne part plus à qui n'a pas ce droit). Le texte
+> ci-dessous est conservé comme historique.
+
+> 📐 **Plan** (2026-10-01) — _remplacé, voir le bandeau ci-dessus_. Hugo : « procédure de livraison
 > read/write devrait être un droit à part », puis « comptoir en read, c'est
 > commercial qui fait les write, seulement commercial ».
 >

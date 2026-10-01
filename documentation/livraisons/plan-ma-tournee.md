@@ -1,6 +1,19 @@
 # « Ma tournée » — la page du livreur, son rôle, son départ, sa navigation
 
-> 📐 **Plan, rien n'est bâti** (2026-10-01). Hugo : « j'ai besoin qu'on fasse
+> ✅ **Bâti le 2026-10-01** (relevé dans le code le même jour) : MT1 à MT4 —
+> le droit `delivery_driving`, l'affectation du livreur (`assignDriver`), les
+> routes « ma tournée » (`my-delivery-round.controller.ts`) et la page
+> `/livraison/ma-tournee` — plus PL1 et PL4 (`06522cdac`, `7a96fba28`).
+> **MT1 a été livré SANS migration de rôle** : le texte ci-dessous parle de
+> « deux migrations », de `ROLE_GRANTS` en miroir et d'un test de parité ; tout
+> cela est retiré (`packages/contracts/src/staff-access.ts`, doc de
+> `delivery_driving` ; `lint:no-role-grants-in-migrations`). Le rôle `livreur`
+> n'a pas de valeur `StaffRole` : il se crée **à l'écran** avec
+> `delivery_driving` (et `delivery_doorstep`), cf.
+> [`plan-droits-par-geste.md`](plan-droits-par-geste.md). Les sections 2, 4 et
+> 6 restent le texte d'origine.
+
+> 📐 **Plan** (2026-10-01) — _bâti, voir le bandeau ci-dessus_. Hugo : « j'ai besoin qu'on fasse
 > la page d'une tournée côté livreur, avec vraiment commencer ma tournée, le
 > bouton qui ouvre Google Maps avec les étapes ».
 >

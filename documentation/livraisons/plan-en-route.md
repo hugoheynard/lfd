@@ -1,5 +1,7 @@
 # « Votre livraison est en route » — lot PL3
 
+> ✅ **Bâti le 2026-10-01** (`2932bb364`, PL3).
+
 > 📐 **Plan** (2026-10-01). Hugo, étape 5 du
 > [parcours du livreur](parcours-du-livreur.md) : « oui, "votre livraison est
 > en route" au départ ». Ni argent, ni migration de données, ni frontière de

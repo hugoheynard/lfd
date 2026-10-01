@@ -1,6 +1,14 @@
 # Les droits de la livraison et du colisage — tableau de refonte
 
-> 📐 **Proposition, rien n'est bâti** (2026-10-01). Point de départ du plan de
+> 🔁 **Devenu une feuille de réglage** (2026-10-01) : le plan
+> [`plan-droits-par-geste.md`](plan-droits-par-geste.md) est bâti ; ce tableau
+> est à **appliquer à l'écran** (`/admin/staff-roles`), pas par migration.
+> Ligne ajoutée depuis : `delivery_doorstep` (les gestes à la porte) —
+> livreur et admin en **écriture** ; l'admin l'a dans la graine du contrat
+> (`staff-access.ts`), celle du livreur se règle à l'écran, comme
+> `delivery_driving`.
+
+> 📐 **Proposition** (2026-10-01) — _voir le bandeau ci-dessus_. Point de départ du plan de
 > refonte des droits, à faire contredire par `vitruve` avant de bâtir.
 >
 > Hugo : « comptoir ne gère plus les livraisons vu qu'on a delivery » ; « le
