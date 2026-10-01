@@ -240,3 +240,12 @@ existe déjà (`DeliveryStopExecution.departedAt`).
 | --------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | **AP-Q5** | Un **dépôt** a-t-il les mêmes effets qu'une remise (commande terminée, points, volume tarifaire, chiffre d'affaires) ? | Oui : c'est une livraison faite, avec preuve, que le client a autorisée. Une contestation passera par les avenants (6 c). |
 | **AP-Q6** | Une adresse « dépôt autorisé » dont la commande exige une **signature** : dépôt possible ?                             | **Non** : la signature exigée l'emporte (elle est plus précise — elle peut venir de la commande elle-même).               |
+
+**Tranché par Hugo le 2026-10-01 :**
+
+- **AP-Q5 — oui** : un dépôt a les effets d'une remise (commande terminée,
+  points, volume tarifaire, chiffre d'affaires).
+- **AP-Q6 — la signature l'emporte** : « dépôt veut vraiment dire je ne pose
+  pas de signature ». Une commande dont la signature est exigée (figée au
+  départ) ne propose **jamais** « Déposé avec preuve », même si l'adresse
+  autorise le dépôt.
