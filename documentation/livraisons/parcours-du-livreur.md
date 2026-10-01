@@ -63,6 +63,8 @@ Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
 
 🔑 `delivery_driving:read` — voir « Ma tournée », sa fiche, son avancement et sa version.
 
+🖥️ **Écran** « Ma tournée » (`/livraison/ma-tournee`) — ✅ bâti : liste de ses tournées, compteur « n arrêts prêts sur m », avancement et fiche sur chaque arrêt, mise à jour d'elle-même. Aucun bouton.
+
 - ✅ Le coliseur a **déclaré les bacs** de chaque commande au poste de colisage
   (panneau « Bacs »), chacun avec son **étiquette QR** ; un demi-bac peut être
   partagé entre deux arrêts consécutifs.
@@ -79,6 +81,8 @@ Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
 
 🔑 aucun — pas de geste (tranché : le scan au chargement suffit).
 
+🖥️ Ni écran ni bouton.
+
 - ❌ Rien n'existe. Aujourd'hui, le livreur passe directement au chargement.
 - ❓ **Faut-il un geste « je prends en charge »** (transfert de garde du
   coliseur au livreur) ? Utile si un bac disparaît entre la pièce et le
@@ -89,6 +93,8 @@ Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
 ### 3 · Charger le véhicule
 
 🔑 `delivery_driving:read` pour le plan et l'état du chargement ; `delivery_driving:write` pour scanner et décharger un bac. Jamais `delivery_loading` (l'écran du dépôt, toutes tournées : admin seul).
+
+🖥️ **Bouton** « Charger » sur la tournée (non partie) → **vue** de chargement dans « Ma tournée » : plan, champ « Code du bac » (scan), « Décharger » par bac — ✅ bâti.
 
 - ✅ **Plan de chargement** de la tournée : l'ordre (le dernier arrêt au fond),
   les piles, le volume sec et froid.
@@ -104,6 +110,8 @@ Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
 
 🔑 `delivery_driving:read` — l'état du chargement le dit ; le refus vient au départ.
 
+🖥️ Pas de bouton : la vue de chargement montre « Ce qui manque encore » — ✅ bâti.
+
 - ✅ « Commencer ma tournée » **refuse** tant qu'un bac n'est pas chargé ou
   qu'un demi-bac partagé est « à refaire », et nomme les arrêts en cause.
 - ❓ **Partir sans un arrêt** : si un bac manque, le livreur peut-il retirer
@@ -114,6 +122,8 @@ Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
 
 🔑 `delivery_driving:write` — « Commencer ma tournée ».
 
+🖥️ **Bouton** « Commencer ma tournée » — ✅ bâti ; il refuse en nommant les arrêts en cause.
+
 - ✅ Le départ fige la tournée, l'ordre et le point GPS de chaque arrêt.
 - 🟡 Le **code de retrait envoyé au client au départ** (lot 6, L6-C12) : pas
   bâti.
@@ -122,6 +132,8 @@ Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
 ### 6 · Rouler
 
 🔑 `delivery_driving:read` — liens « Y aller » / « Toute la tournée », et la procédure de SES arrêts (texte et photos) par sa route murée. Pas besoin de `delivery_procedures`, qui est le droit d'éditer côté staff.
+
+🖥️ **Boutons** « Y aller » sur chaque arrêt (Google Maps, Waze, Plans) et « Toute la tournée » (tronçons) — ✅ bâtis. Procédure dépliable sur la carte de l'arrêt.
 
 - ✅ « Y aller » (Google Maps, Waze, Plans), « Toute la tournée » en tronçons de
   trois étapes.
@@ -132,11 +144,15 @@ Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
 
 🔑 `delivery_doorstep:write` — « Je suis arrivé ».
 
+🖥️ **Bouton** « Je suis arrivé » sur l'arrêt — ✅ bâti.
+
 - 🟡 Lot A d'« À la porte » : l'heure d'arrivée ; la position suivra (YA4).
 
 ### 8 · Sortir les bacs de cet arrêt
 
 🔑 aucun — pas de geste (tranché : pas de scan à la sortie).
+
+🖥️ Ni écran ni bouton.
 
 - ❌ Rien n'existe. Le plan de chargement sait quels bacs sont à quel arrêt.
 - ❓ **Scanner les bacs à la sortie du véhicule** pour être sûr de laisser les
@@ -149,6 +165,8 @@ Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
 
 🔑 `delivery_doorstep:write` — signaler un problème, clore sans remise ; lot B : « Remis au client », « Déposé avec preuve ». `delivery_doorstep:read` pour revoir la photo d'un signalement.
 
+🖥️ **Boutons** sur l'arrêt : « Déclarer un problème » (✅, formulaire avec photo), « Clore sans remise » (✅, avec confirmation) ; ❌ lot B : « Remis au client » (photo + nom, signature si exigée) et « Déposé avec preuve » (photo).
+
 - 🟡 Lot A : « Déclarer un problème », « Clore sans remise ».
 - 🟡 Lot B : « Remis au client » (nom, signature si exigée), « Déposé avec
   preuve » (photo, seulement si autorisé et sans signature exigée).
@@ -159,6 +177,8 @@ Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
 
 🔑 `delivery_driving:read`.
 
+🖥️ Pas de bouton : la liste des arrêts restants — ✅.
+
 - ✅ La page montre les arrêts restants dans l'ordre.
 - ❓ **Changer l'ordre en route** (un client absent qu'on repasse voir plus
   tard) : permis au livreur, ou jamais ?
@@ -167,6 +187,8 @@ Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
 
 🔑 `delivery_driving:read` — le lien « Rentrer ».
 
+🖥️ **Bouton** « Rentrer » quand il ne reste plus d'arrêt — ✅ bâti.
+
 - ✅ « Rentrer » mène au point de départ quand il ne reste rien.
 - ❓ Un arrêt resté ouvert (problème) : le livreur **rapporte** la marchandise.
   Comment le dépôt le sait-il ?
@@ -174,6 +196,8 @@ Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
 ### 12 · Au dépôt : décharger
 
 🔑 aucun geste propre : « Tournée terminée » (13) signifie le retour des bacs.
+
+🖥️ Ni écran ni bouton (« Tournée terminée » en tient lieu).
 
 - ❌ Rien n'existe : ni **retour des bacs vides**, ni **marchandise rapportée**
   (non remise), ni **invendus**.
@@ -184,6 +208,8 @@ Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
 ### 13 · Clôturer ma tournée
 
 🔑 `delivery_doorstep:write` — « Tournée terminée ».
+
+🖥️ **Bouton** « Tournée terminée » — ✅ bâti ; ❌ il ne vérifie pas encore que chaque arrêt a une livraison ou une décision (lot B). Les « Non remis » sont un écran du **staff**, pas du livreur.
 
 - ❌ Une tournée n'a **aucun état « rentrée »** : elle part, et c'est tout.
 - ❓ Faut-il un geste « **Tournée terminée** » (heure de retour, kilométrage,
