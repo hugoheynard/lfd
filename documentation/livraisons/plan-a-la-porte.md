@@ -422,3 +422,24 @@ donc pas ; la question du § 10 bis disparaît, et deux règles la remplacent :
   livreur) reste de côté.
 - **LB-Q4 — oui** : le lot A part en production **avant** que B soit bâti
   sur `dev`.
+
+### 10 ter. Le chemin de LB-Q1, et l'ordre de bâti (2026-10-01)
+
+**BQ — la garde passe au livreur au départ.** C'est le geste de `handover`
+(le transfert de garde, sa clé est la commande) :
+
+- `delivery` ouvre son canal `delivery/channels/handover/` (déclaré par
+  `delivery`, implémenté par `handover` — la case `handover → delivery` que
+  B1 ouvre de toute façon), avec deux questions/annonces :
+  `heldOrders(orderIds)` (lu par `handover` sur `QualityHoldsReader`, comme
+  `attest`) et `ordersDeparted(orderIds, at)`.
+- **Le départ refuse** une commande retenue (`heldOrders`), en nommant
+  l'arrêt ; puis, après validation (B0), **annonce** ses commandes parties.
+- `handover` garde « partie en livraison » par commande, et l'offre au
+  fournil par `production/channels/handover/` (qu'il implémente déjà) : **le
+  contrôle qualité refuse un verdict** sur une commande partie ou déjà
+  retirée, avec la phrase « La commande est partie : le produit n'est plus
+  là. »
+
+**Ordre de bâti** : B0 → BQ → B1 → B2 → B3 + B5 → B4. Un lot à la fois sur
+la base de test partagée.
