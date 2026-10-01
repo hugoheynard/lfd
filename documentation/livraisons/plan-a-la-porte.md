@@ -1,0 +1,115 @@
+# À la porte — arriver, remettre ou déposer, signaler un problème
+
+> 📐 **Plan, rien n'est bâti** (2026-10-01). Hugo : « sur la carte d'une
+> livraison, signaler si aucune personne n'est là pour réceptionner — le client
+> a explicitement notifié sans signature — donc le bouton remise doit être soit
+> “remise au client” soit “déposer avec preuve” ; il faut un bouton “je suis
+> arrivé”, j'ai besoin d'accumuler de la donnée sur combien de temps on met à
+> livrer ; ensuite déclarer un problème : problème à la remise, problème
+> technique, problème routier ».
+>
+> C'est le **lot 6 a** (« la porte »), conçu et contredit le 2026-09-29
+> (`plan-preparation-de-tournee.md`, L6-C1 à L6-C14 ; [`todo-la-porte.md`](todo-la-porte.md)),
+> **réduit** : sans le code de retrait par e-mail (L6-C12/C13), et sans
+> clore une livraison ratée (L6-C14 : elle suppose le 6 c et les avenants).
+> Ce qui est repris tel quel est cité ; ce qui change est dit.
+>
+> Suit « Ma tournée » ([`plan-ma-tournee.md`](plan-ma-tournee.md)) : la page,
+> le rôle, le mur « sa tournée ». Frontière d'accès et preuve de remise :
+> **`vitruve` avant de bâtir**.
+
+## 1. Les gestes, sur la carte d'un arrêt (tournée partie, SA tournée)
+
+```mermaid
+stateDiagram-v2
+  direction LR
+  [*] --> EnRoute
+  EnRoute --> Arrive: « Je suis arrivé »
+  Arrive --> Remis: « Remis au client »
+  Arrive --> Depose: « Déposé avec preuve »
+  EnRoute --> Remis: remise sans arrivée déclarée
+  Arrive --> Arrive: « Déclarer un problème »
+  EnRoute --> EnRoute: « Déclarer un problème »
+  Remis --> [*]
+  Depose --> [*]
+```
+
+| Geste                    | Quand                                                                   | Ce qu'il écrit                                                                                                                                                                        |
+| ------------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Je suis arrivé**       | une fois par arrêt, avant la remise                                     | l'instant d'arrivée sur l'arrêt (`arrived_at`)                                                                                                                                        |
+| **Remis au client**      | toujours                                                                | une remise chez `handover` (`via = manual`, auteur = le livreur), **signature au doigt + nom tapé** si l'adresse exige une signature ; puis `closeStop` — **une transaction** (L6-C7) |
+| **Déposé avec preuve**   | **seulement si l'adresse n'exige pas de signature** (le client l'a dit) | une remise `via = deposit` (L6-C8), **photo obligatoire** (L6-Q8), jointe comme pièce du retrait (L6-C9) ; puis `closeStop`                                                           |
+| **Déclarer un problème** | à tout moment, avant ou après l'arrivée                                 | un **signalement** (§ 3) ; l'arrêt **reste ouvert**                                                                                                                                   |
+
+« Remise sans arrivée déclarée » est permise : un livreur qui oublie
+« Je suis arrivé » doit pouvoir remettre ; la donnée manque, elle n'est pas
+inventée (l'arrivée reste nulle, la durée sur place est « inconnue »).
+
+## 2. Le temps : ce qu'on accumule
+
+Par arrêt : `departed_at` (le départ de la tournée), `arrived_at`,
+`closed_at` (remise ou dépôt). Par différence :
+
+| Mesure                 | Calcul                                              | Sert à                                                                                                                           |
+| ---------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| **Trajet**             | arrivée − (clôture de l'arrêt précédent, ou départ) | comparer au trajet prévu par OSRM                                                                                                |
+| **Sur place**          | clôture − arrivée                                   | régler la **durée de livraison** du calculateur (le réglage « temps pour décharger, signer », lot 7) par adresse puis en moyenne |
+| **Écart à la fenêtre** | arrivée − début ou fin de la fenêtre promise        | la ponctualité                                                                                                                   |
+
+Rien n'est calculé à l'écriture : on stocke des **instants** (`Clock`), les
+durées se lisent. Un écran de statistiques viendra quand il y aura de la
+donnée ; ce plan ne l'écrit pas.
+
+## 3. Déclarer un problème
+
+Trois familles, puis un motif, puis un texte et une photo facultatifs :
+
+| Famille                  | Motifs proposés                                                                                          | Porte sur                                                 |
+| ------------------------ | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| **Problème à la remise** | personne pour réceptionner · refus · adresse introuvable · accès impossible · marchandise abîmée · autre | **l'arrêt**                                               |
+| **Problème technique**   | panne du véhicule · froid défaillant · téléphone ou application · bac endommagé · autre                  | **la tournée** (l'arrêt en cours est noté s'il y en a un) |
+| **Problème routier**     | route fermée · accident · conditions (neige, verglas) · bouchon · autre                                  | **la tournée** (idem)                                     |
+
+- Un signalement est un **fait daté**, auteur = le livreur. Il **ne clôt rien**
+  et ne touche pas la commande : clore une livraison ratée (relivrer, basculer
+  au comptoir, annuler) est le 6 c, qui suppose les avenants du commerce.
+- Il est **visible** tout de suite sur l'écran Tournées (un pictogramme sur la
+  tournée et l'arrêt, le détail au survol ou au clic) et part au **journal**.
+- **À la fin de la tournée**, un arrêt resté ouvert apparaît dans une liste
+  « Non remis » côté admin, avec ses signalements : c'est l'**écran provisoire**
+  que L6-C14 demandait pour livrer le 6 a sans le 6 c.
+
+## 4. Où ça vit
+
+- **Dans `delivery`** (schéma `delivery`) : `arrived_at` sur l'arrêt ;
+  une table `delivery_incident` (tournée, arrêt facultatif, famille, motif,
+  note, clé de photo facultative, instant, auteur).
+- **Dans `handover`** (L6-C7 à C9, inchangés) : la remise, sa valeur `deposit`,
+  ses preuves (`order_handover_proof` : signature, photo), par un port que
+  `delivery` déclare (`delivery/channels/handover/`) et que `handover`
+  implémente. Le geste du livreur fait **une** unité de travail : vérifier le
+  mur, attester, clore.
+- **Photos** (dépôt, problème) : le bucket privé des pièces, servies par des
+  routes murées du livreur (comme la photo de procédure) et sous
+  `delivery_rounds` pour l'admin.
+- **Droit** : `delivery_driving` porte aussi ces gestes. Le lot 6 prévoyait une
+  ressource `delivery_doorstep` à part ; avec les rôles réglés à l'écran, la
+  scinder plus tard ne coûte qu'une ressource. _(À contredire.)_
+
+## 5. Ce que ce plan ne fait pas
+
+- Le **code de retrait** envoyé au contact au départ et scanné à la porte
+  (L6-C12/C13) : un lot suivant. « Remis au client » repose ici sur la
+  signature quand elle est exigée, et sur l'attestation du livreur sinon.
+- **Clore une livraison ratée** (6 c).
+- La **position** relevée aux gestes (YA4 de
+  [`plan-y-aller-et-position.md`](plan-y-aller-et-position.md)) : voir Q3.
+
+## 6. Questions
+
+| #         | Question                                                                                                                                                                                     | Proposé                                                                                                                                                                                          |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **AP-Q1** | « Le client a explicitement notifié sans signature » : c'est le champ **« signature exigée »** de l'adresse (existe déjà, carnet du client), ou un réglage **« dépôt autorisé »** distinct ? | Distinct : « pas de signature » (on peut remettre sans signer) n'est pas « vous pouvez laisser sans personne ». Un champ `depositAllowed` sur l'adresse, que le client et le commercial règlent. |
+| **AP-Q2** | « Remis au client » sans signature exigée : un simple appui, ou toujours le nom de qui a réceptionné ?                                                                                       | Le **nom tapé**, toujours : sans lui, une remise contestée n'a aucune trace.                                                                                                                     |
+| **AP-Q3** | Relever la **position** au moment de « Je suis arrivé » et de la remise ?                                                                                                                    | Oui, aux deux gestes seulement (YA4) : elle valide l'arrivée et corrige le point du carnet. Cadre CNIL de YA4.                                                                                   |
+| **AP-Q4** | Un problème **technique ou routier** peut-il **arrêter** la tournée (rentrer avec des arrêts non faits) ?                                                                                    | Oui, par « Rentrer » : les arrêts ouverts passent dans « Non remis » avec le signalement.                                                                                                        |
