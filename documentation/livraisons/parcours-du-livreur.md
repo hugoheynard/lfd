@@ -154,3 +154,21 @@ flowchart TD
 Avec ces instants : temps de chargement, temps de trajet par arrêt, temps sur
 place, temps de tournée complet — de quoi régler la durée de livraison du
 calculateur sur la réalité.
+
+## Tranché par Hugo le 2026-10-01
+
+| Étape                             | Décision                                                                                                                                                                                        |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **8 · Sortir les bacs**           | **Les bacs repartent avec le livreur** : la marchandise est laissée chez le client, le bac revient. **Pas de scan** à la sortie du véhicule.                                                    |
+| **10 · Changer l'ordre en route** | **En attente.**                                                                                                                                                                                 |
+| **12-13 · Retour et clôture**     | Un geste **« Tournée terminée »** : il **signifie le retour des bacs vides** (et ferme la mesure du temps de tournée). **Pas de scan** des bacs au retour — « un peu excessif pour le moment ». |
+| **Bacs abîmés ou perdus**         | **Mis de côté** : on part du principe que **rien ne s'abîme et rien ne se perd**. Plus tard, le **logisticien** devra pouvoir dire « bac abîmé », etc. (la piste du parc de bacs).              |
+
+Conséquence pour le modèle : un bac déclaré est un objet **de la commande le
+temps d'une tournée** ; « Tournée terminée » le rend disponible, sans qu'on
+suive son état. La tournée gagne un état **rentrée** (instant de retour,
+auteur), que « Non remis » peut lire.
+
+Questions encore ouvertes : la prise en charge (2), où le livreur scanne au
+chargement (3), « votre livraison est en route » au départ (5), la procédure
+affichée en roulant ou à l'arrivée (9), changer l'ordre (10).
