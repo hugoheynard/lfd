@@ -9,7 +9,10 @@ import type { FulfillmentSource } from "./order.js";
  * Routes (`admin/livraison/ma-tournee…`, sous `delivery_driving`) :
  * - `GET ?date=AAAA-MM-JJ` → {@link MyDeliveryRoundsView} ;
  * - `GET /:roundId` → {@link MyDeliveryRoundView} ;
- * - `POST /:roundId/depart` (corps `DepartDeliveryRoundPayload`) → 204.
+ * - `POST /:roundId/depart` (corps `DepartDeliveryRoundPayload`) → 204 ;
+ * - `GET /:roundId/arrets/:stopId/procedure/:stepId/photo` → l'image (octets,
+ *   `Content-Type` relu dans les octets, `private, immutable`) — l'écran y
+ *   ajoute `?rev=` + {@link MyDeliveryStepView.photoRevision}.
  *
  * Le mur est dans la requête : seules les tournées où la personne qui appelle
  * est le livreur AFFECTÉ existent pour elle — une autre rend 404, la liste et

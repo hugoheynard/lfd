@@ -21,4 +21,5 @@ export {
   type DeliveryOrderProcedure,
   type DeliveryProcedureStep,
 } from "./delivery-procedures.reader.js";
+export { DeliveryStepPhotosReader } from "./delivery-step-photos.reader.js";
 export type { DepartureSheet, DepartureWindow } from "../../domain/entities/departure-sheet.js";

@@ -4,16 +4,31 @@ import {
   type MyDeliveryRoundsView,
   type MyDeliveryRoundView,
 } from "@lfd/contracts";
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  Res,
+  StreamableFile,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
+import type { Response } from "express";
 import { z } from "zod";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
+import type { StoredDocument } from "../../platform/storage/document-store.js";
 import { DepartMyRoundCommand } from "../application/commands/depart-my-round.command.js";
 import { GetMyDeliveryRoundQuery } from "../application/queries/get-my-delivery-round.query.js";
 import { GetMyDeliveryRoundsQuery } from "../application/queries/get-my-delivery-rounds.query.js";
+import { GetMyStopStepPhotoQuery } from "../application/queries/get-my-stop-step-photo.query.js";
+import { serveStepPhoto } from "./step-photo-http.js";
 
 /** Le jour, validé dans sa FORME — le message nomme le paramètre. */
 const dateQuerySchema = z.object({
@@ -73,5 +88,23 @@ export class MyDeliveryRoundController {
     await this.commands.execute<DepartMyRoundCommand, void>(
       new DepartMyRoundCommand(staffUserId, roundId, payload),
     );
+  }
+
+  /**
+   * La photo d'une étape de la procédure d'un arrêt de MA tournée — mêmes
+   * en-têtes que la route du staff (`serveStepPhoto`) : l'écran porte `?rev=`.
+   */
+  @Get(":roundId/arrets/:stopId/procedure/:stepId/photo")
+  async stepPhoto(
+    @StaffUserId() staffUserId: string,
+    @Param("roundId") roundId: string,
+    @Param("stopId") stopId: string,
+    @Param("stepId") stepId: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const photo = await this.queries.execute<GetMyStopStepPhotoQuery, StoredDocument>(
+      new GetMyStopStepPhotoQuery(staffUserId, roundId, stopId, stepId),
+    );
+    return serveStepPhoto(res, photo);
   }
 }

@@ -32,6 +32,20 @@ export class DriverRoundNotFoundError extends ResourceNotFoundError {
   }
 }
 
+/**
+ * La photo demandée n'est pas celle d'une étape de la procédure d'un arrêt de
+ * MA tournée — arrêt absent ou retiré, étape d'une autre adresse, ou étape
+ * sans photo. 404 sans distinguer : on ne confirme rien.
+ */
+export class DriverStepPhotoNotFoundError extends ResourceNotFoundError {
+  constructor() {
+    super(
+      "delivery.driver_step_photo_not_found",
+      "Cette photo n'est plus dans la procédure de cet arrêt : rechargez la page de votre tournée, ou appelez le dépôt.",
+    );
+  }
+}
+
 /** Un arrêt n'est pas chargé : le livreur ne charge pas, il appelle (MT-D3 v2). */
 export class DriverRoundNotReadyError extends BusinessError {
   constructor(customers: readonly string[]) {

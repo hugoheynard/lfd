@@ -1,10 +1,12 @@
 import { Global, Module } from "@nestjs/common";
 
+import { AccountModule } from "../b2b/account/account.module.js";
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { CatalogDeliveryProductsReader } from "../b2b/catalog/infrastructure/catalog-delivery-products.reader.js";
 import { PrismaDeliveryOrderLinesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-lines.reader.js";
 import { PrismaDeliveryOrdersReader } from "../b2b/orders/infrastructure/prisma-delivery-orders.reader.js";
 import { PrismaDeliveryProceduresReader } from "../b2b/orders/infrastructure/prisma-delivery-procedures.reader.js";
+import { PrismaDeliveryStepPhotosReader } from "../b2b/orders/infrastructure/prisma-delivery-step-photos.reader.js";
 import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.module.js";
 import { PickupDepartureCandidatesReader } from "../b2b/pickup-addresses/infrastructure/pickup-departure-candidates.reader.js";
 import {
@@ -12,6 +14,7 @@ import {
   DeliveryOrdersReader,
   DeliveryProceduresReader,
   DeliveryProductsReader,
+  DeliveryStepPhotosReader,
   DepartureCandidatesReader,
 } from "../delivery/channels/commerce/index.js";
 
@@ -30,7 +33,10 @@ import {
  * - `DeliveryOrderLinesReader` — les lignes d'une commande (SKU, nom figé,
  *   quantité), pour le colisage proposé (lot 4 bis, L4b-C4) ;
  * - `DeliveryProceduresReader` — la procédure de l'adresse d'une commande, lue
- *   vivante pour le livreur (plan « Ma tournée », MT-D5 v2).
+ *   vivante pour le livreur (plan « Ma tournée », MT-D5 v2) ;
+ * - `DeliveryStepPhotosReader` — la photo d'une étape de cette procédure,
+ *   par le chemin de lecture de la route du staff : d'où `AccountModule`,
+ *   qui exporte `DeliveryStepPhotoLocator`.
  *
  * `@Global` pour la raison des autres fils : le consommateur est `delivery/`,
  * qui ne peut pas importer le module qui fournit le port sans dépendre du
@@ -38,13 +44,14 @@ import {
  */
 @Global()
 @Module({
-  imports: [PickupAddressesModule, CatalogModule],
+  imports: [PickupAddressesModule, CatalogModule, AccountModule],
   providers: [
     { provide: DepartureCandidatesReader, useClass: PickupDepartureCandidatesReader },
     { provide: DeliveryOrdersReader, useClass: PrismaDeliveryOrdersReader },
     { provide: DeliveryProductsReader, useClass: CatalogDeliveryProductsReader },
     { provide: DeliveryOrderLinesReader, useClass: PrismaDeliveryOrderLinesReader },
     { provide: DeliveryProceduresReader, useClass: PrismaDeliveryProceduresReader },
+    { provide: DeliveryStepPhotosReader, useClass: PrismaDeliveryStepPhotosReader },
   ],
   exports: [
     DepartureCandidatesReader,
@@ -52,6 +59,7 @@ import {
     DeliveryProductsReader,
     DeliveryOrderLinesReader,
     DeliveryProceduresReader,
+    DeliveryStepPhotosReader,
   ],
 })
 export class DeliveryFeedModule {}

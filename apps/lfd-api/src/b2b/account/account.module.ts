@@ -359,6 +359,6 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
   ],
   // `StaffDirectory` : l'accès aux fonctionnalités fige l'auteur d'un écart par
   // le même port que la certification d'un KBIS (2026-09-14).
-  exports: [ImpersonationSubjects, PrincipalResolver, StaffDirectory],
+  exports: [ImpersonationSubjects, PrincipalResolver, StaffDirectory, DeliveryStepPhotoLocator],
 })
 export class AccountModule {}
