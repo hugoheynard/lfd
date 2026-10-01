@@ -122,7 +122,7 @@ describe("GetDeliveryRunSheetHandler", () => {
   it("rend chaque arrêt avec ses consignes, sa procédure et ses dates en ISO", async () => {
     const { handler } = handlerOf([entry()]);
 
-    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY));
+    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, true));
 
     expect(view.day).toBe(DAY);
     expect(view.stops[0]).toMatchObject({
@@ -156,7 +156,7 @@ describe("GetDeliveryRunSheetHandler", () => {
       entry({ addressBook: book === null ? null : { ...book, stopMinutes: null } }),
     ]);
 
-    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY));
+    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, true));
 
     expect(view.stops[0]?.addressBook).not.toHaveProperty("stopMinutes");
   });
@@ -164,7 +164,7 @@ describe("GetDeliveryRunSheetHandler", () => {
   it("🔴 ne sert AUCUN champ monétaire", async () => {
     const { handler } = handlerOf([entry()]);
 
-    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY));
+    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, true));
 
     const keys = Object.keys(view.stops[0] ?? {});
     expect(keys.filter((key) => /cents|price|total(?!Units)|amount/iu.test(key))).toEqual([]);
@@ -173,7 +173,7 @@ describe("GetDeliveryRunSheetHandler", () => {
   it("garde `addressBook: null` quand la commande n'est pas reliée au carnet", async () => {
     const { handler } = handlerOf([entry({ addressBook: null })]);
 
-    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY));
+    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, true));
 
     expect(view.stops[0]?.addressBook).toBeNull();
   });
@@ -186,7 +186,7 @@ describe("GetDeliveryRunSheetHandler", () => {
       ]),
     );
 
-    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY));
+    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, true));
 
     expect(view.stops[0]?.state).toBe("handed_over");
   });
@@ -198,7 +198,7 @@ describe("GetDeliveryRunSheetHandler", () => {
       new Set(["ord_late"]),
     );
 
-    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY));
+    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, true));
 
     expect(view.stops.map((stop) => [stop.orderId, stop.withoutAtelierSheet])).toEqual([
       ["ord_1", false],
@@ -212,10 +212,24 @@ describe("GetDeliveryRunSheetHandler", () => {
       entry({ orderId: "b" }),
     ]);
 
-    await handler.execute(new GetDeliveryRunSheetQuery(DAY));
+    await handler.execute(new GetDeliveryRunSheetQuery(DAY, true));
 
     expect(sheet.calls).toEqual([DAY]);
     expect(attestations.calls).toEqual([["a", "b"]]);
     expect(sheets.calls).toEqual([{ day: DAY, orderIds: ["a", "b"] }]);
+  });
+
+  it("🔴 sans `delivery_procedures:read`, la procédure part vide et le reste du carnet demeure (DG-D8)", async () => {
+    const { handler } = handlerOf([entry()]);
+
+    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, false));
+
+    expect(view.stops[0]?.addressBook).toMatchObject({
+      note: "sonner deux fois",
+      gps: { lat: 45.44, lng: 6.98 },
+      stopMinutes: 25,
+      procedure: [],
+    });
+    expect(JSON.stringify(view)).not.toMatch(/code 1234|Portail|01JREV/u);
   });
 });

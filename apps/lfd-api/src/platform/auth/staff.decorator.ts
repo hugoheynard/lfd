@@ -1,4 +1,5 @@
 import { createParamDecorator, ForbiddenException, type ExecutionContext } from "@nestjs/common";
+import type { StaffPermission } from "@lfd/contracts";
 
 import type { AuthenticatedStaffRequest } from "./staff-principal.js";
 
@@ -25,5 +26,28 @@ export const StaffUserId = createParamDecorator(
       throw new ForbiddenException("Accès staff non résolu.");
     }
     return staffUserId;
+  },
+);
+
+/**
+ * Les permissions **résolues** de la personne qui appelle, posées par
+ * `StaffAccessGuard` — pour une route dont la surface est ouverte mais dont
+ * une PARTIE de la réponse relève d'un autre droit (la procédure de livraison
+ * sur la feuille de route, `plan-droits-par-geste.md`, DG-D8).
+ *
+ * Le contrôleur en tire une intention (« avec ou sans procédure ») qu'il passe
+ * à la query : le masquage se fait au serveur, dans la lecture — pas à l'écran.
+ *
+ * Même refus que {@link StaffUserId} sans accès résolu : un montage cassé, pas
+ * un lecteur sans droit, et on ne lui invente pas une liste vide.
+ */
+export const StaffPermissions = createParamDecorator(
+  (_data: unknown, context: ExecutionContext): readonly StaffPermission[] => {
+    const request = context.switchToHttp().getRequest<AuthenticatedStaffRequest>();
+    const permissions = request.access?.permissions;
+    if (permissions === undefined) {
+      throw new ForbiddenException("Accès staff non résolu.");
+    }
+    return permissions;
   },
 );

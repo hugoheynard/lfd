@@ -46,7 +46,11 @@ import { RunSheetStepPhoto } from '../run-sheet-step-photo/run-sheet-step-photo'
 })
 export class RunSheetStop {
   readonly stop = input.required<DeliveryRunSheetStopView>();
-  /** Les photos de procédure se lisent sous `delivery_procedures:read` : sans lui, le texte seul. */
+  /**
+   * Les photos de procédure se lisent sous `delivery_procedures:read`. Sans ce
+   * droit, le serveur sert déjà la procédure vide (DG-D8) : ce drapeau ne fait
+   * qu'éviter une lecture de photo qui serait refusée.
+   */
   readonly canSeePhotos = input(false);
 
   protected readonly windowLabel = windowLabel;

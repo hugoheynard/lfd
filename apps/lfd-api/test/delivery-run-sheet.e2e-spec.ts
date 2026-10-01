@@ -10,7 +10,12 @@ import { randomUUID } from "node:crypto";
  * (retrait et brouillon écartés), aucun montant ne sort, et la production dit
  * quelle commande n'a pas de feuille d'atelier.
  */
-import type { DeliveryProcedureView, DeliveryRunSheetView } from "@lfd/contracts";
+import type {
+  AdminCompanyDetailView,
+  DeliveryProcedureView,
+  DeliveryRunSheetView,
+  StaffRole,
+} from "@lfd/contracts";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -288,5 +293,96 @@ describe("la feuille de route du jour", () => {
         [planned, false],
       ].sort(),
     );
+  });
+});
+
+/**
+ * La procédure sous son propre droit (`plan-droits-par-geste.md`, DG-D8) : la
+ * feuille s'ouvre sous `delivery_run_sheet` et la fiche sous `b2b_companies`,
+ * mais le texte, les photos et le nombre d'étapes ne sortent qu'avec
+ * `delivery_procedures:read`. Le masquage est AU SERVEUR : la réponse elle-même
+ * ne les porte pas.
+ */
+describe("la procédure, sous `delivery_procedures`", () => {
+  /** Une fiche du rôle donné ; `withoutProcedures` lui retire la lecture des procédures. */
+  async function staffAs(
+    role: StaffRole,
+    withoutProcedures = false,
+  ): Promise<ReturnType<E2eContext["asSub"]>> {
+    const sub = `staff-${role}-procedures`;
+    const row = await ctx.prisma.staffUser.create({
+      data: {
+        firstName: "Test",
+        lastName: role,
+        email: `${role}-procedures@lfc.test`,
+        role,
+        status: "active",
+        auth0Id: sub,
+      },
+    });
+    if (withoutProcedures) {
+      // Le réglage visé à l'écran (DG-D7) : le support lit la feuille, pas les procédures.
+      await ctx.prisma.staffPermissionOverride.create({
+        data: {
+          staffUserId: row.id,
+          resource: "delivery_procedures",
+          action: "read",
+          effect: "deny",
+        },
+      });
+    }
+    return ctx.asSub(sub);
+  }
+
+  async function seedProcedure(): Promise<{ companyId: string; orderId: string }> {
+    const { companyId, addressId } = await seedCompany(OWNER, "Boulangerie du Col");
+    await addStep(OWNER, companyId, addressId, "Code secret du portail", pngOf(40, 30));
+    await addStep(OWNER, companyId, addressId, "Cour");
+    const orderId = await place(OWNER, "delivery", addressId);
+    return { companyId, orderId };
+  }
+
+  it("🔴 le support sans `delivery_procedures:read` lit la feuille de route SANS procédure", async () => {
+    const { orderId } = await seedProcedure();
+    const support = await staffAs("support", true);
+
+    const view = jsonBody<DeliveryRunSheetView>(
+      await support.get(`/admin/livraison/feuille-de-route?jour=${DAY}`).expect(200),
+    );
+
+    const stop = view.stops.find((entry) => entry.orderId === orderId);
+    expect(stop?.addressBook).toMatchObject({ note: SPECS.note, procedure: [] });
+    expect(JSON.stringify(view)).not.toContain("Code secret du portail");
+  });
+
+  it("le commercial lit la feuille de route AVEC la procédure", async () => {
+    const { orderId } = await seedProcedure();
+    const commercial = await staffAs("commercial");
+
+    const view = jsonBody<DeliveryRunSheetView>(
+      await commercial.get(`/admin/livraison/feuille-de-route?jour=${DAY}`).expect(200),
+    );
+
+    const stop = view.stops.find((entry) => entry.orderId === orderId);
+    expect(stop?.addressBook?.procedure.map((step) => step.title)).toEqual([
+      "Code secret du portail",
+      "Cour",
+    ]);
+  });
+
+  it("🔴 le carnet de la fiche client tait le nombre d'étapes au support, le sert au commercial", async () => {
+    const { companyId } = await seedProcedure();
+    const support = await staffAs("support", true);
+    const commercial = await staffAs("commercial");
+
+    const masked = jsonBody<AdminCompanyDetailView>(
+      await support.get(`/admin/companies/${companyId}`).expect(200),
+    );
+    const served = jsonBody<AdminCompanyDetailView>(
+      await commercial.get(`/admin/companies/${companyId}`).expect(200),
+    );
+
+    expect(masked.addresses.deliveries.map((address) => address.procedureStepCount)).toEqual([0]);
+    expect(served.addresses.deliveries.map((address) => address.procedureStepCount)).toEqual([2]);
   });
 });

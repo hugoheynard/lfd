@@ -68,7 +68,7 @@ describe("GetCompanyForStaffHandler", () => {
     // peut plus contredire la porte serveur.
     const handler = new GetCompanyForStaffHandler(reader(detail));
 
-    const fiche = await handler.execute(new GetCompanyForStaffQuery("company_1"));
+    const fiche = await handler.execute(new GetCompanyForStaffQuery("company_1", true));
 
     expect(fiche).toMatchObject(detail);
     expect(fiche.gate.canActivate).toBe(false);
@@ -80,8 +80,56 @@ describe("GetCompanyForStaffHandler", () => {
   it("lève CompanyNotFoundError quand aucune société ne porte l'id", async () => {
     const handler = new GetCompanyForStaffHandler(reader(null));
 
-    await expect(handler.execute(new GetCompanyForStaffQuery("company_unknown"))).rejects.toThrow(
-      CompanyNotFoundError,
-    );
+    await expect(
+      handler.execute(new GetCompanyForStaffQuery("company_unknown", true)),
+    ).rejects.toThrow(CompanyNotFoundError);
+  });
+
+  describe("le nombre d'étapes de procédure (DG-D8)", () => {
+    const withProcedure: AdminCompanyDetailView = {
+      ...detail,
+      addresses: {
+        billing: null,
+        deliveries: [
+          {
+            id: "addr_1",
+            label: "Chalet",
+            ligne1: "12 rue du Test",
+            ligne2: "",
+            codePostal: "73150",
+            ville: "Val d'Isère",
+            pays: "France",
+            isDefault: true,
+            specs: {
+              note: "",
+              slots: { mode: "everyday", slot: null },
+              deliveryContact: null,
+              gps: null,
+              signatureRequired: false,
+            },
+            procedureStepCount: 3,
+            depositAllowed: false,
+          },
+        ],
+      },
+    };
+
+    it("le sert à qui lit les procédures", async () => {
+      const handler = new GetCompanyForStaffHandler(reader(withProcedure));
+
+      const fiche = await handler.execute(new GetCompanyForStaffQuery("company_1", true));
+
+      expect(fiche.addresses.deliveries[0]?.procedureStepCount).toBe(3);
+    });
+
+    it("🔴 le rend à zéro sans `delivery_procedures:read`, le reste du carnet intact", async () => {
+      const handler = new GetCompanyForStaffHandler(reader(withProcedure));
+
+      const fiche = await handler.execute(new GetCompanyForStaffQuery("company_1", false));
+
+      expect(fiche.addresses.deliveries).toEqual([
+        { ...withProcedure.addresses.deliveries[0], procedureStepCount: 0 },
+      ]);
+    });
   });
 });

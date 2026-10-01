@@ -1,9 +1,14 @@
-import type { DeliveryRunSheetView } from "@lfd/contracts";
+import {
+  hasStaffPermission,
+  type DeliveryRunSheetView,
+  type StaffPermission,
+} from "@lfd/contracts";
 import { Controller, Get, Query } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import { StaffPermissions } from "../../platform/auth/staff.decorator.js";
 import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { GetDeliveryRunSheetQuery } from "../application/queries/get-delivery-run-sheet.query.js";
 
@@ -22,6 +27,10 @@ type RunSheetQuery = z.infer<typeof runSheetQuerySchema>;
  * livraisons à quiconque prend une commande. `support` et `commercial` en
  * gardent la lecture ; `comptabilite` la perd. Aucun montant. Il n'injecte que
  * le `QueryBus`.
+ *
+ * La procédure de livraison (texte et photos) relève de `delivery_procedures`
+ * depuis le 2026-10-01 (`plan-droits-par-geste.md`, DG-D8) : sans ce droit, la
+ * feuille part avec des procédures vides.
  */
 @Controller("admin/livraison")
 @AdminSurface("delivery_run_sheet")
@@ -31,9 +40,13 @@ export class DeliveryRunSheetController {
   @Get("feuille-de-route")
   runSheet(
     @Query(new ZodQuery(runSheetQuerySchema)) query: RunSheetQuery,
+    @StaffPermissions() permissions: readonly StaffPermission[],
   ): Promise<DeliveryRunSheetView> {
     return this.queries.execute<GetDeliveryRunSheetQuery, DeliveryRunSheetView>(
-      new GetDeliveryRunSheetQuery(query.jour),
+      new GetDeliveryRunSheetQuery(
+        query.jour,
+        hasStaffPermission(permissions, "delivery_procedures:read"),
+      ),
     );
   }
 }

@@ -54,8 +54,9 @@ const TOMORROW = '1';
  * dit en toutes lettres plutôt que de laisser un trou muet.
  *
  * Les photos de procédure se lisent par la route de la fiche client, sous
- * `delivery_procedures:read` : sans ce droit, on garde le texte des étapes et on ne
- * tente pas une lecture qui serait refusée.
+ * `delivery_procedures:read`. Sans ce droit, le serveur sert la procédure vide
+ * (`plan-droits-par-geste.md`, DG-D8) — ni texte ni photo — et l'écran ne tente
+ * pas une lecture qui serait refusée.
  *
  * Imprimable : le choix du jour et le bouton disparaissent sur papier.
  */

@@ -32,6 +32,10 @@ import { GetDeliveryRunSheetQuery } from "./get-delivery-run-sheet.query.js";
  *
  * Les livraisons du jour, puis — en parallèle, pour le lot entier — les
  * attestations et les commandes sans feuille d'atelier.
+ *
+ * ## La procédure, sous son propre droit
+ *
+ * Masquée ici, dans la lecture, quand la query le dit (DG-D8) — pas à l'écran.
  */
 @QueryHandler(GetDeliveryRunSheetQuery)
 export class GetDeliveryRunSheetHandler implements IQueryHandler<
@@ -54,7 +58,12 @@ export class GetDeliveryRunSheetHandler implements IQueryHandler<
     return {
       day: query.day,
       stops: entries.map((entry) =>
-        toStopView(entry, attested.get(entry.orderId), withoutSheet.has(entry.orderId)),
+        toStopView(
+          entry,
+          attested.get(entry.orderId),
+          withoutSheet.has(entry.orderId),
+          query.withProcedures,
+        ),
       ),
     };
   }
@@ -65,6 +74,7 @@ function toStopView(
   entry: DeliveryRunSheetEntry,
   attestation: AttestedHandover | undefined,
   withoutAtelierSheet: boolean,
+  withProcedures: boolean,
 ): DeliveryRunSheetStopView {
   return {
     orderId: entry.orderId,
@@ -77,7 +87,8 @@ function toStopView(
     contact: entry.contact,
     signatureRequired: entry.signatureRequired,
     orderNote: entry.orderNote,
-    addressBook: entry.addressBook === null ? null : toAddressBookView(entry.addressBook),
+    addressBook:
+      entry.addressBook === null ? null : toAddressBookView(entry.addressBook, withProcedures),
     totalUnits: entry.totalUnits,
     state: queueStateOf(entry, attestation),
     readyAt: entry.readyAt === null ? null : entry.readyAt.toISOString(),
@@ -86,13 +97,22 @@ function toStopView(
   };
 }
 
-function toAddressBookView(book: DeliveryRunSheetAddressBook): DeliveryRunSheetAddressBookView {
+/**
+ * Les consignes du carnet. Sans `delivery_procedures:read`, la procédure part
+ * vide (DG-D8) : le champ reste — un front en ligne le lit comme un tableau —,
+ * mais ni titre, ni texte, ni présence de photo ne sortent. Les consignes
+ * générales (note, GPS, temps sur place) restent : elles relèvent de la feuille.
+ */
+function toAddressBookView(
+  book: DeliveryRunSheetAddressBook,
+  withProcedures: boolean,
+): DeliveryRunSheetAddressBookView {
   return {
     companyId: book.companyId,
     addressId: book.addressId,
     note: book.note,
     gps: book.gps,
     ...(book.stopMinutes === null ? {} : { stopMinutes: book.stopMinutes }),
-    procedure: book.procedure.map((step) => ({ ...step })),
+    procedure: withProcedures ? book.procedure.map((step) => ({ ...step })) : [],
   };
 }

@@ -4,7 +4,7 @@ import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js"
 import { Body, Controller, Get, Header, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { StaffPermissions, StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AttachAccountHolderCommand } from "../application/commands/attach-account-holder.command.js";
 import type { HolderAttached } from "../application/commands/attach-account-holder.handler.js";
@@ -20,7 +20,12 @@ import type {
   AdminCompanyFicheView,
   AdminCompanyView,
 } from "../domain/ports/admin-company.reader.js";
-import { accountHolderPayloadSchema, type AccountHolderPayload } from "@lfd/contracts";
+import {
+  accountHolderPayloadSchema,
+  hasStaffPermission,
+  type AccountHolderPayload,
+  type StaffPermission,
+} from "@lfd/contracts";
 import { adminCreateCompanyPayload, type AdminCreateCompanyPayload } from "./payloads.js";
 
 /**
@@ -95,10 +100,20 @@ export class AdminCompaniesController {
     );
   }
 
+  /**
+   * La fiche staff. Le nombre d'étapes de procédure du carnet n'y sort qu'avec
+   * `delivery_procedures:read` (`plan-droits-par-geste.md`, DG-D8).
+   */
   @Get(":companyId")
-  getOne(@Param("companyId") companyId: string): Promise<AdminCompanyFicheView> {
+  getOne(
+    @Param("companyId") companyId: string,
+    @StaffPermissions() permissions: readonly StaffPermission[],
+  ): Promise<AdminCompanyFicheView> {
     return this.queries.execute<GetCompanyForStaffQuery, AdminCompanyFicheView>(
-      new GetCompanyForStaffQuery(companyId),
+      new GetCompanyForStaffQuery(
+        companyId,
+        hasStaffPermission(permissions, "delivery_procedures:read"),
+      ),
     );
   }
 
