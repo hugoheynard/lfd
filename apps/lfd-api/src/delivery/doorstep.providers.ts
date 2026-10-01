@@ -2,10 +2,12 @@ import type { Provider, Type } from "@nestjs/common";
 
 import { CloseStopWithoutHandoverHandler } from "./application/commands/close-stop-without-handover.handler.js";
 import { DeclareStopArrivalHandler } from "./application/commands/declare-stop-arrival.handler.js";
+import { DepositStopHandler } from "./application/commands/deposit-stop.handler.js";
 import { HandOverStopHandler } from "./application/commands/hand-over-stop.handler.js";
 import { ReportDeliveryIncidentHandler } from "./application/commands/report-delivery-incident.handler.js";
 import { ReturnDeliveryRoundHandler } from "./application/commands/return-delivery-round.handler.js";
 import { ReturnMyRoundHandler } from "./application/commands/return-my-round.handler.js";
+import { DoorstepHandover } from "./application/doorstep-handover.js";
 import { GetDeliveryIncidentsDayHandler } from "./application/queries/get-delivery-incidents-day.handler.js";
 import { GetIncidentPhotoHandler } from "./application/queries/get-incident-photo.handler.js";
 import { GetMyIncidentPhotoHandler } from "./application/queries/get-my-incident-photo.handler.js";
@@ -33,7 +35,8 @@ import { PrismaUndeliveredStopsReader } from "./infrastructure/prisma-undelivere
  * (signalements, « Non remis »). Le retour par l'admin vit sur
  * `DeliveryRoundsController` (PL2).
  *
- * « Remis au client » (lot B, B1) s'y ajoute : `DoorstepHandoverAttestor`
+ * « Remis au client » (B1) et « Déposé avec preuve » (B2) s'y ajoutent, sur
+ * un même `DoorstepHandover` : `DoorstepHandoverAttestor`
  * vient du fil du retrait (`appBootstrap/delivery-handover-feed.module.ts`).
  *
  * `DeliveryOrderStatesReader` vient du fil du commerce
@@ -50,6 +53,8 @@ export const DOORSTEP_PROVIDERS: readonly Provider[] = [
   ReportDeliveryIncidentHandler,
   CloseStopWithoutHandoverHandler,
   HandOverStopHandler,
+  DepositStopHandler,
+  DoorstepHandover,
   ReturnMyRoundHandler,
   ReturnDeliveryRoundHandler,
   GetDeliveryIncidentsDayHandler,

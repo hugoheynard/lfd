@@ -1,8 +1,11 @@
 import {
   DeliveryRoundReturnedError,
+  DepositNotAllowedError,
+  DepositSignatureRequiredError,
   DoorstepRoundNotDepartedError,
   DoorstepStopClosedError,
 } from "../errors/delivery-doorstep-errors.js";
+import { depositPermitted } from "../services/deposit-rule.js";
 
 /** La tournée d'un arrêt, telle que le journal la cite : véhicule, jour, passage. */
 export interface DoorstepRoundKey {
@@ -31,6 +34,11 @@ export interface DoorstepStopState {
    * `false` au dépôt — aucune exécution n'existe encore.
    */
   readonly signatureRequired: boolean;
+  /**
+   * Le dépôt autorisé par le client à l'adresse, FIGÉ au départ (AP-D5) ;
+   * `false` au dépôt.
+   */
+  readonly depositAllowed: boolean;
 }
 
 /**
@@ -72,6 +80,11 @@ export class DoorstepStop {
     return this.state.signatureRequired;
   }
 
+  /** Le numéro figé au départ, ou l'id nu sans instantané — tel que le livreur le lit. */
+  get label(): string {
+    return this.state.reference === "" ? this.state.orderId : this.state.reference;
+  }
+
   get arrivedAt(): Date | null {
     return this.currentArrivedAt;
   }
@@ -101,5 +114,28 @@ export class DoorstepStop {
     }
     this.currentArrivedAt = at;
     return true;
+  }
+
+  /**
+   * **« Déposé avec preuve » est-il permis ICI ?** (`plan-a-la-porte.md`, B2,
+   * AP-D4, AP-D5, AP-Q6) — la règle de `depositPermitted`, sur les valeurs
+   * figées au départ ; le refus nomme laquelle manque, la signature d'abord :
+   * elle l'emporte toujours.
+   *
+   * 🔴 **Point d'extension de B3** (« ou autorisé par un commercial pour cet
+   * arrêt », § 10 bis) : la décision vivante s'ajoutera ICI, et nulle part
+   * ailleurs — l'écran lit `canDeposit`, qu'il faudra étendre du même pas.
+   *
+   * @throws {DepositSignatureRequiredError} la signature est exigée.
+   * @throws {DepositNotAllowedError} le client n'a pas autorisé le dépôt.
+   */
+  ensureDepositPermitted(): void {
+    if (depositPermitted(this.state)) {
+      return;
+    }
+    if (this.state.signatureRequired) {
+      throw new DepositSignatureRequiredError(this.label);
+    }
+    throw new DepositNotAllowedError(this.label);
   }
 }

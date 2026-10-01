@@ -12,6 +12,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import { FoldButtonComponent, FoldCalloutComponent, FoldInputComponent } from 'fold-ng';
 
 import { MyDeliveryRoundService } from '../my-delivery-round.service';
+import { ProofPhoto } from '../proof-photo/proof-photo';
 import { SignaturePad } from '../signature-pad/signature-pad';
 
 /**
@@ -25,7 +26,13 @@ import { SignaturePad } from '../signature-pad/signature-pad';
 @Component({
   selector: 'app-handover-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, FoldCalloutComponent, FoldInputComponent, SignaturePad],
+  imports: [
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldInputComponent,
+    ProofPhoto,
+    SignaturePad,
+  ],
   templateUrl: './handover-form.html',
   styleUrl: './handover-form.scss',
 })
@@ -63,17 +70,6 @@ export class HandoverForm {
       this.nameValid() &&
       (!this.signatureRequired() || this.signature() !== null),
   );
-
-  protected pickPhoto(event: Event): void {
-    const target = event.target;
-    if (target instanceof HTMLInputElement) {
-      this.photo.set(target.files?.item(0) ?? null);
-    }
-  }
-
-  protected removePhoto(): void {
-    this.photo.set(null);
-  }
 
   protected async send(): Promise<void> {
     const photo = this.photo();

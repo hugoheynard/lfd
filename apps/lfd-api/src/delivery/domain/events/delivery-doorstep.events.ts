@@ -18,6 +18,7 @@ export const DOORSTEP_FACTS = {
   incidentReported: "delivery_round.incident_reported",
   stopClosedWithoutHandover: "delivery_round.stop_closed_without_handover",
   stopHandedOver: "delivery_round.stop_handed_over",
+  stopDeposited: "delivery_round.stop_deposited",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /** Pourquoi un arrêt se clôt sans remise : la commande l'était déjà, ou elle est annulée. */
@@ -131,6 +132,23 @@ export class DeliveryStopHandedOverEvent implements JournaledEvent {
     return doorstepFact(DOORSTEP_FACTS.stopHandedOver, roundKeyOf(this.round), {
       order: this.order,
       signed: this.signed,
+    });
+  }
+}
+
+/**
+ * « Déposé avec preuve » (B2) — le dépôt attesté au retrait (`deposit`),
+ * l'arrêt clos. Personne n'a réceptionné : la photo est la seule pièce.
+ */
+export class DeliveryStopDepositedEvent implements JournaledEvent {
+  constructor(
+    readonly round: DeliveryRound,
+    readonly order: CitedOrder,
+  ) {}
+
+  journalFact(): JournalFact {
+    return doorstepFact(DOORSTEP_FACTS.stopDeposited, roundKeyOf(this.round), {
+      order: this.order,
     });
   }
 }

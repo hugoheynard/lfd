@@ -1,32 +1,5 @@
 <div class="form" data-handover-form>
-  <!-- L'appareil photo du téléphone, directement : `capture` ouvre la caméra arrière. -->
-  <input
-    #camera
-    class="camera"
-    type="file"
-    accept="image/*"
-    capture="environment"
-    (change)="pickPhoto($event)"
-    data-handover-photo-input
-  />
-  @if (photo(); as picked) {
-    <div class="row">
-      <span>Photo jointe : {{ picked.name }}</span>
-      <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="removePhoto()">
-        Retirer
-      </button>
-    </div>
-  } @else {
-    <button
-      foldButton
-      emphasis="outline"
-      icon="upload"
-      (click)="camera.click()"
-      data-handover-photo
-    >
-      Prendre la photo de la remise
-    </button>
-  }
+  <app-proof-photo prompt="Prendre la photo de la remise" [(photo)]="photo" />
 
   <fold-input
     label="Nom de qui réceptionne"

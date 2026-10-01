@@ -247,4 +247,17 @@ export const DELIVERY_ROUND_PHRASES = {
       ],
       [...ROUND_KEYS, 'order', 'signed'],
     ),
+  // Plan « À la porte », lot B (B2) : le dépôt sans personne, sa photo au retrait.
+  'delivery_round.stop_deposited': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a déposé avec preuve '),
+        ...cite(ORDER, fact.payload['order']),
+        text(' ('),
+        ...round(fact),
+        text(') : photo, sans personne pour réceptionner'),
+      ],
+      [...ROUND_KEYS, 'order'],
+    ),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

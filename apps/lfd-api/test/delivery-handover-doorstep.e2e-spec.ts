@@ -8,7 +8,6 @@
  * validation (la commande `fulfilled`), et une validation qui échoue ne laisse
  * ni commande `fulfilled`, ni point, ni pièce.
  */
-import type { MyDeliveryRoundView } from "@lfd/contracts";
 import type request from "supertest";
 import type { Response } from "supertest";
 
@@ -16,40 +15,20 @@ import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { currentTransaction } from "../src/platform/database/transaction.store.js";
 import { PrismaUnitOfWork, UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { ProductionDocumentStore } from "../src/platform/storage/production-document-store.js";
-import { declareBins, loadBin } from "./delivery-loading-scene.js";
 import { MY_ROUND, staffWithRole } from "./delivery-driver-scene.js";
 import {
-  ADMIN_VERIFIER_OVERRIDE,
-  addVehicle,
-  admin,
-  assign,
-  forgetCustomer,
-  openRound,
-  ROUNDS,
-  roundOf,
-} from "./delivery-rounds-scene.js";
-import { forgetRoutingScene, seedLocatedDelivery } from "./delivery-routing-scene.js";
-import {
-  bootstrapE2e,
-  E2E_STAFF_SUB,
-  jsonBody,
-  serviceDay,
-  type E2eContext,
-} from "./e2e-harness.js";
-
-const DAY = serviceDay();
-const POINT = { lat: 45.6, lng: 6.1 };
-const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
-const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00]);
-
-const DOOR_ROLE = {
-  key: "livreur",
-  label: "Livreur",
-  grants: [
-    { resource: "delivery_driving", action: "write" },
-    { resource: "delivery_doorstep", action: "write" },
-  ],
-} as const;
+  departedStop as departedStopOf,
+  type DepartedStop,
+  type DoorDriver,
+  DOOR_ROLE,
+  JPEG,
+  myRound,
+  orderStatus as orderStatusOf,
+  PNG,
+} from "./delivery-handover-scene.js";
+import { ADMIN_VERIFIER_OVERRIDE, forgetCustomer } from "./delivery-rounds-scene.js";
+import { forgetRoutingScene } from "./delivery-routing-scene.js";
+import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /**
  * La vraie unité de travail, que le test fait échouer APRÈS le travail de
@@ -104,34 +83,8 @@ function messageOf(response: Response): string {
   return jsonBody<{ message: string }>(response).message;
 }
 
-/** Une tournée d'un arrêt chargé, affectée à `driver`, partie par lui. */
-async function departedStop(driver: {
-  readonly id: string;
-  readonly agent: Agent;
-}): Promise<{ readonly roundId: string; readonly orderId: string; readonly stopId: string }> {
-  const roundId = await openRound(ctx, DAY, await addVehicle(ctx, "Kangoo"));
-  const orderId = await seedLocatedDelivery(ctx, DAY, POINT);
-  await assign(ctx, DAY, roundId, orderId);
-  const bins = await declareBins(ctx, orderId, 1);
-  await loadBin(ctx, roundId, { binId: bins[0] ?? "" }).expect(204);
-  const { version } = await roundOf(ctx, DAY, roundId);
-  await admin(ctx)
-    .put(`${ROUNDS}/${roundId}/livreur`)
-    .send({ staffUserId: driver.id, version })
-    .expect(204);
-  await driver.agent
-    .post(`${MY_ROUND}/${roundId}/depart`)
-    .send({ version: (await myRound(driver.agent, roundId)).version })
-    .expect(204);
-  const stop = await ctx.prisma.deliveryRoundStop.findFirstOrThrow({
-    where: { orderId },
-    select: { id: true },
-  });
-  return { roundId, orderId, stopId: stop.id };
-}
-
-async function myRound(agent: Agent, roundId: string): Promise<MyDeliveryRoundView> {
-  return jsonBody<MyDeliveryRoundView>(await agent.get(`${MY_ROUND}/${roundId}`).expect(200));
+function departedStop(driver: DoorDriver): Promise<DepartedStop> {
+  return departedStopOf(ctx, driver);
 }
 
 async function handOver(
@@ -154,12 +107,8 @@ async function handOver(
   return call;
 }
 
-async function orderStatus(orderId: string): Promise<string> {
-  const order = await ctx.prisma.order.findUniqueOrThrow({
-    where: { id: orderId },
-    select: { status: true },
-  });
-  return order.status;
+function orderStatus(orderId: string): Promise<string> {
+  return orderStatusOf(ctx, orderId);
 }
 
 describe("« Remis au client » (B1)", () => {

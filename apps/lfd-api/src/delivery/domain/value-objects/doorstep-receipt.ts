@@ -65,8 +65,8 @@ export class DoorstepReceipt {
     }
     return new DoorstepReceipt(
       name,
-      picture("photo", input.photo),
-      input.signature === null ? null : picture("signature", input.signature),
+      receiptPicture("photo", input.photo),
+      input.signature === null ? null : receiptPicture("signature", input.signature),
     );
   }
 
@@ -87,7 +87,13 @@ export class DoorstepReceipt {
   }
 }
 
-function picture(piece: "photo" | "signature", bytes: Buffer): ReceiptPicture {
+/**
+ * Une image de la porte, relue dans ses octets — la même porte pour la remise
+ * et le dépôt (`DoorstepDeposit`) : le téléphone est le même.
+ *
+ * @throws {InvalidHandoverPictureError}
+ */
+export function receiptPicture(piece: "photo" | "signature", bytes: Buffer): ReceiptPicture {
   if (bytes.length === 0) {
     throw new InvalidHandoverPictureError(piece, "aucune image reçue.");
   }

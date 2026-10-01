@@ -198,3 +198,35 @@ export class StopClosedWithoutHandoverError extends BusinessError {
     );
   }
 }
+
+// ── « Déposé avec preuve » (`plan-a-la-porte.md`, B2, AP-D4, AP-Q6) ──
+
+/** Un dépôt sans photo n'existe pas (§ 9) : la photo est la seule preuve qu'il porte. */
+export class DepositPhotoMissingError extends DomainError {
+  constructor() {
+    super(
+      "delivery.deposit_photo_missing",
+      "Un dépôt porte toujours une photo : photographiez la marchandise à l'endroit où vous la laissez, puis validez.",
+    );
+  }
+}
+
+/** Le client n'a pas autorisé le dépôt à cette adresse (figé au départ, AP-D5). */
+export class DepositNotAllowedError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "delivery.deposit_not_allowed",
+      `L'adresse de la commande ${reference} n'autorise pas le dépôt sans personne : ne la laissez pas. Remettez-la en main propre, ou déclarez un problème « personne pour réceptionner ».`,
+    );
+  }
+}
+
+/** La signature exigée l'emporte : une commande signée ne se dépose jamais (AP-Q6). */
+export class DepositSignatureRequiredError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "delivery.deposit_signature_required",
+      `La commande ${reference} exige une signature : elle ne se dépose pas. Remettez-la en main propre contre signature, ou déclarez un problème « personne pour réceptionner ».`,
+    );
+  }
+}

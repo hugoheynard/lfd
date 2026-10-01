@@ -106,4 +106,10 @@ export const DELIVERY_ROUND_FACTS = {
   "delivery_round.stop_handed_over": fact(
     payload({ ...roundKey(), order: namedOrBare("order"), signed: z.boolean() }),
   ),
+  /**
+   * « Déposé avec preuve » (`plan-a-la-porte.md`, B2) : le dépôt sans
+   * personne est attesté au retrait (`deposit`) et l'arrêt clos, dans la même
+   * transaction. Une photo, toujours ; ni nom ni signature.
+   */
+  "delivery_round.stop_deposited": fact(payload({ ...roundKey(), order: namedOrBare("order") })),
 } as const;

@@ -44,6 +44,14 @@ export interface DoorstepHandover {
   readonly signature: Blob | null;
 }
 
+/** Un dépôt avec preuve, tel que l'écran le compose (`plan-a-la-porte.md`, B2). */
+export interface DoorstepDeposit {
+  /** La version de la tournée lue par l'écran. */
+  readonly version: number;
+  /** Prise par l'appareil — toujours : c'est la seule preuve du dépôt. */
+  readonly photo: Blob;
+}
+
 /**
  * **« Ma tournée »** (`plan-ma-tournee.md`, MT-D4), sous `delivery_driving`.
  *
@@ -137,6 +145,17 @@ export class MyDeliveryRoundService {
       body.append('signature', handover.signature, 'signature.png');
     }
     await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/remise`, body));
+  }
+
+  /**
+   * « Déposé avec preuve » (B2) — en multipart : la photo sous `photo`. Le
+   * serveur refuse si l'arrêt ne l'autorise pas. Rejouée, la route répond pareil.
+   */
+  async deposit(roundId: string, stopId: string, deposit: DoorstepDeposit): Promise<void> {
+    const body = new FormData();
+    body.append('version', String(deposit.version));
+    body.append('photo', deposit.photo, 'depot.jpg');
+    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/depot`, body));
   }
 
   /** « Tournée terminée » (PL2) — rejouée, la route répond pareil. */

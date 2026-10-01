@@ -20,9 +20,11 @@ import { HandoverAttestation } from "./handover-attestation.service.js";
 
 /**
  * Une remise « sans code » : le livreur l'atteste seul, la signature jointe
- * quand elle est exigée (L6-C9). `deposit` est le dépôt sans personne (B2).
+ * quand elle est exigée (L6-C9). Sans personne pour réceptionner, c'est le
+ * dépôt avec preuve (B2, AP-D8) — mêmes effets au commerce (AP-Q5).
  */
-const DOORSTEP_VIA: HandoverVia = "manual";
+const HANDED_VIA: HandoverVia = "manual";
+const DEPOSIT_VIA: HandoverVia = "deposit";
 
 /** Les pièces d'une remise, sous le préfixe du retrait. */
 function proofKey(stagingId: string, piece: "photo" | "signature"): string {
@@ -78,7 +80,11 @@ export class HandoverDoorstepAttestor extends DoorstepHandoverAttestor {
         "Cette commande n'existe plus côté commerce : ne la remettez pas, et appelez le dépôt.",
       );
     }
-    const { publish } = await this.attestation.attestQuietly(subject, request.by, DOORSTEP_VIA);
+    const { publish } = await this.attestation.attestQuietly(
+      subject,
+      request.by,
+      request.receiverName === null ? DEPOSIT_VIA : HANDED_VIA,
+    );
     await this.proofs.record(
       HandoverProof.attach({
         orderId: request.orderId,

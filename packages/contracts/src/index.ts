@@ -825,6 +825,7 @@ export {
   HANDOVER_RECEIVER_NAME_MIN,
   HANDOVER_RECEIVER_NAME_MAX,
   handOverStopFieldsSchema,
+  depositStopFieldsSchema,
 } from "./delivery-doorstep.js";
 export type {
   DeliveryIncidentFamily,
@@ -833,6 +834,7 @@ export type {
   ReportedDeliveryIncidentResponse,
   CloseStopWithoutHandoverPayload,
   HandOverStopFields,
+  DepositStopFields,
   DeliveryStopOrderState,
   DeliveryIncidentView,
   DeliveryIncidentAuthorView,

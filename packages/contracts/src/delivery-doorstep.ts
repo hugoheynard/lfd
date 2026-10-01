@@ -15,6 +15,9 @@ import { z } from "zod";
  * - `POST /arrets/:stopId/remise` (multipart : {@link handOverStopFieldsSchema}
  *   + `photo` obligatoire + `signature` quand la signature est exigée) → 204,
  *   idempotente — « Remis au client » (lot B, B1) ;
+ * - `POST /arrets/:stopId/depot` (multipart : {@link depositStopFieldsSchema}
+ *   + `photo` obligatoire) → 204, idempotente — « Déposé avec preuve » (B2),
+ *   refusé si le dépôt n'est pas autorisé ou la signature exigée ;
  * - `GET /incidents/:incidentId/photo` → l'image ;
  * - `POST /retour` → 204, idempotente — « Tournée terminée »
  *   (`parcours-du-livreur.md`, PL2).
@@ -104,6 +107,17 @@ export const handOverStopFieldsSchema = z.object({
   receiverName: z.string().default(""),
 });
 export type HandOverStopFields = z.infer<typeof handOverStopFieldsSchema>;
+
+/**
+ * **« Déposé avec preuve »** (`plan-a-la-porte.md`, B2) — les champs du
+ * multipart ; la photo (champ `photo`, toujours) est un fichier. Ni nom ni
+ * signature : personne n'a réceptionné. La permission du dépôt et la photo
+ * exigée, c'est le domaine qui les refuse, avec ses mots.
+ */
+export const depositStopFieldsSchema = z.object({
+  version: z.coerce.number().int().nonnegative(),
+});
+export type DepositStopFields = z.infer<typeof depositStopFieldsSchema>;
 
 /**
  * Où en est la commande d'un arrêt, vue du commerce :

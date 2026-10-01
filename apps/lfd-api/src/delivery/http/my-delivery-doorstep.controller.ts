@@ -1,6 +1,8 @@
 import {
   type CloseStopWithoutHandoverPayload,
   closeStopWithoutHandoverPayloadSchema,
+  type DepositStopFields,
+  depositStopFieldsSchema,
   type HandOverStopFields,
   handOverStopFieldsSchema,
   type ReportDeliveryIncidentFields,
@@ -30,6 +32,7 @@ import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import type { StoredDocument } from "../../platform/storage/document-store.js";
 import { CloseStopWithoutHandoverCommand } from "../application/commands/close-stop-without-handover.command.js";
 import { DeclareStopArrivalCommand } from "../application/commands/declare-stop-arrival.command.js";
+import { DepositStopCommand } from "../application/commands/deposit-stop.command.js";
 import { HandOverStopCommand } from "../application/commands/hand-over-stop.command.js";
 import { ReportDeliveryIncidentCommand } from "../application/commands/report-delivery-incident.command.js";
 import { ReturnMyRoundCommand } from "../application/commands/return-my-round.command.js";
@@ -127,6 +130,26 @@ export class MyDeliveryDoorstepController {
         pictures?.photo?.[0]?.buffer ?? null,
         pictures?.signature?.[0]?.buffer ?? null,
       ),
+    );
+  }
+
+  /**
+   * « Déposé avec preuve » (B2) — multipart : la version, la photo (toujours).
+   * Refusé si l'arrêt ne l'autorise pas (dépôt non autorisé au départ, ou
+   * signature exigée). 204, même rejoué.
+   */
+  @Post(":roundId/arrets/:stopId/depot")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseInterceptors(incidentPhotoUpload())
+  async deposit(
+    @StaffUserId() staffUserId: string,
+    @Param("roundId") roundId: string,
+    @Param("stopId") stopId: string,
+    @Body(new ZodBody(depositStopFieldsSchema)) fields: DepositStopFields,
+    @UploadedFile() photo: UploadedIncidentPhoto | undefined,
+  ): Promise<void> {
+    await this.commands.execute<DepositStopCommand, void>(
+      new DepositStopCommand(staffUserId, roundId, stopId, fields, photo?.buffer ?? null),
     );
   }
 

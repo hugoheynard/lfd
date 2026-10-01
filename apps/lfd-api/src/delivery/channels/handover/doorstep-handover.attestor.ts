@@ -1,7 +1,8 @@
 /**
  * **« Atteste cette remise à la porte »** — ce que la livraison demande au
- * retrait quand le livreur appuie sur « Remis au client »
- * (`documentation/livraisons/plan-a-la-porte.md`, B1, § 10 bis, AP-D1, L6-C7).
+ * retrait quand le livreur appuie sur « Remis au client » ou « Déposé avec
+ * preuve » (`documentation/livraisons/plan-a-la-porte.md`, B1, B2, § 10 bis,
+ * AP-D1, L6-C7).
  *
  * Déclaré par la livraison, implémenté par le retrait, qui garde la remise et
  * ses pièces (L6-C9) — et la règle de l'attestation, la même qu'au comptoir.
@@ -67,8 +68,11 @@ export interface DoorstepHandoverRequest {
   readonly orderId: string;
   /** La fiche staff du livreur. */
   readonly by: string;
-  /** Le nom tapé de qui a réceptionné. */
-  readonly receiverName: string;
+  /**
+   * Le nom tapé de qui a réceptionné — « Remis au client » ; `null` : personne,
+   * « Déposé avec preuve » (B2), attesté `deposit` au retrait (AP-D8).
+   */
+  readonly receiverName: string | null;
   readonly proofs: StagedHandoverProofs;
 }
 

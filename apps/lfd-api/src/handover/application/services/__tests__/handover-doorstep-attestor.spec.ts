@@ -203,6 +203,25 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
     expect(events.published).toEqual([new OrderHandedOverEvent("ORD-o_1", AT, "paul", "manual")]);
   });
 
+  it("🔴 un dépôt sans personne (B2) : attesté `deposit`, sans nom, mêmes effets publiés", async () => {
+    const { attestor, handovers, proofs, events } = attestorOf();
+
+    const publish = await attestor.attest({
+      orderId: "o_1",
+      by: "paul",
+      receiverName: null,
+      proofs: STAGED,
+    });
+
+    expect(handovers.rows.get("o_1")?.via).toBe("deposit");
+    expect(proofs.rows.get("o_1")?.state.receiverName).toBeNull();
+    expect(events.published).toEqual([]);
+
+    publish();
+
+    expect(events.published).toEqual([new OrderHandedOverEvent("ORD-o_1", AT, "paul", "deposit")]);
+  });
+
   it("refuse avec la phrase du comptoir — et ne republie rien, l'unité va échouer", async () => {
     const { attestor, handovers, proofs, events } = attestorOf([subjectOf("o_1", "cancelled")]);
 

@@ -1,6 +1,8 @@
 import { DoorstepStop, type DoorstepStopState } from "../doorstep-stop.js";
 import {
   DeliveryRoundReturnedError,
+  DepositNotAllowedError,
+  DepositSignatureRequiredError,
   DoorstepRoundNotDepartedError,
   DoorstepStopClosedError,
 } from "../../errors/delivery-doorstep-errors.js";
@@ -21,6 +23,7 @@ function stop(overrides: Partial<DoorstepStopState> = {}): DoorstepStop {
     closedAt: null,
     arrivedAt: null,
     signatureRequired: false,
+    depositAllowed: false,
     ...overrides,
   });
 }
@@ -56,5 +59,32 @@ describe("DoorstepStop.arrive — « Je suis arrivé » (AP-D6)", () => {
 
   it("refuse un arrêt clos sans arrivée déclarée", () => {
     expect(() => stop({ closedAt: LATER }).arrive(ARRIVED)).toThrow(DoorstepStopClosedError);
+  });
+});
+
+describe("DoorstepStop.ensureDepositPermitted — « Déposé avec preuve » (B2, AP-Q6)", () => {
+  it("permis quand le dépôt est autorisé au départ et qu'aucune signature n'est exigée", () => {
+    expect(() => stop({ depositAllowed: true }).ensureDepositPermitted()).not.toThrow();
+  });
+
+  it("refuse un dépôt que le client n'a pas autorisé, en nommant la commande", () => {
+    expect(() => stop().ensureDepositPermitted()).toThrow(DepositNotAllowedError);
+    expect(() => stop().ensureDepositPermitted()).toThrow(/CMD-1/);
+  });
+
+  it("🔴 la signature exigée l'emporte, même dépôt autorisé (AP-Q6)", () => {
+    expect(() =>
+      stop({ depositAllowed: true, signatureRequired: true }).ensureDepositPermitted(),
+    ).toThrow(DepositSignatureRequiredError);
+  });
+
+  it("signature exigée sans dépôt autorisé : c'est la signature qui est nommée", () => {
+    expect(() => stop({ signatureRequired: true }).ensureDepositPermitted()).toThrow(
+      DepositSignatureRequiredError,
+    );
+  });
+
+  it("sans instantané, la commande est nommée par son id", () => {
+    expect(() => stop({ reference: "" }).ensureDepositPermitted()).toThrow(/o_1/);
   });
 });

@@ -1,0 +1,22 @@
+<!-- L'appareil photo du téléphone, directement : `capture` ouvre la caméra arrière. -->
+<input
+  #camera
+  class="camera"
+  type="file"
+  accept="image/*"
+  capture="environment"
+  (change)="pick($event)"
+  data-handover-photo-input
+/>
+@if (photo(); as picked) {
+  <div class="row">
+    <span>Photo jointe : {{ picked.name }}</span>
+    <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="photo.set(null)">
+      Retirer
+    </button>
+  </div>
+} @else {
+  <button foldButton emphasis="outline" icon="upload" (click)="camera.click()" data-handover-photo>
+    {{ prompt() }}
+  </button>
+}

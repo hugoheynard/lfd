@@ -417,14 +417,47 @@ describe('MyRoundPage — à la porte (lot A, PL2)', () => {
     expect(wire.calls).toContain('close r-1 s-2 {"version":3}');
   });
 
-  // Le lot A interdisait aussi « Remis au client » ici : la remise est arrivée
-  // avec B1 (2026-10-01). Le dépôt, lui, reste une information jusqu'à B2.
-  it('« Dépôt autorisé » s’affiche comme une information, sans geste de dépôt', async () => {
-    const { element } = await boot({
-      round: myRoundOf({ departedAt, stops: [myStopOf({ rank: 1, canDeposit: true })] }),
+  it('« Déposé avec preuve » : offert seulement quand l’arrêt le permet, et ouvre le dépôt (B2)', async () => {
+    const { fixture, element } = await boot({
+      round: myRoundOf({
+        departedAt,
+        stops: [
+          myStopOf({ rank: 1, depositAllowed: true, canDeposit: true }),
+          // Dépôt autorisé à l'adresse, mais signature exigée : `canDeposit` est faux (AP-Q6).
+          myStopOf({
+            rank: 2,
+            depositAllowed: true,
+            signatureRequired: true,
+            canDeposit: false,
+          }),
+          myStopOf({ rank: 3 }),
+        ],
+      }),
     });
-    expect(element.querySelector('[data-can-deposit]')?.textContent).toContain('Dépôt autorisé');
-    expect(element.textContent).not.toContain('Déposé avec preuve');
+    const cards = element.querySelectorAll('[data-my-stop]');
+    expect(cards[0]?.querySelector('[data-can-deposit]')?.textContent).toContain('Dépôt autorisé');
+    expect(cards[0]?.querySelector('[data-deposit]')?.textContent).toContain('Déposé avec preuve');
+    expect(cards[1]?.querySelector('[data-deposit]')).toBeNull();
+    expect(cards[2]?.querySelector('[data-deposit]')).toBeNull();
+
+    cards[0]?.querySelector<HTMLElement>('[data-deposit]')?.click();
+    await settle(fixture);
+    expect(cards[0]?.querySelector('[data-deposit-form]')).not.toBeNull();
+    expect(cards[0]?.querySelector('[data-hand-over]')).toBeNull();
+  });
+
+  it('« Déposé avec preuve » n’est pas offert sur une commande annulée, ni au dépôt', async () => {
+    const cancelled = await boot({
+      round: myRoundOf({
+        departedAt,
+        stops: [myStopOf({ rank: 1, canDeposit: true, orderState: 'cancelled' })],
+      }),
+    });
+    expect(cancelled.element.querySelector('[data-deposit]')).toBeNull();
+    const atDepot = await boot({
+      round: myRoundOf({ departedAt: null, stops: [myStopOf({ rank: 1, canDeposit: true })] }),
+    });
+    expect(atDepot.element.querySelector('[data-deposit]')).toBeNull();
   });
 
   it('« Remis au client » : seulement sur une commande à remettre, et ouvre la remise (B1)', async () => {

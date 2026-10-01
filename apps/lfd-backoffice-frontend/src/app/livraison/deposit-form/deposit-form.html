@@ -1,0 +1,31 @@
+<div class="form" data-deposit-form>
+  <span class="label"
+    >Personne pour réceptionner : photographiez la marchandise là où vous la laissez</span
+  >
+  <app-proof-photo prompt="Prendre la photo du dépôt" [(photo)]="photo" />
+
+  @if (refusal(); as refusal) {
+    <fold-callout variant="alert" data-deposit-refusal>{{ refusal }}</fold-callout>
+  }
+
+  <div class="row">
+    <button
+      foldButton
+      emphasis="outline"
+      intent="neutral"
+      [disabled]="sending()"
+      (click)="cancelled.emit()"
+    >
+      Annuler
+    </button>
+    <button
+      foldButton
+      [loading]="sending()"
+      [disabled]="!canSend()"
+      (click)="send()"
+      data-send-deposit
+    >
+      Valider le dépôt
+    </button>
+  </div>
+</div>

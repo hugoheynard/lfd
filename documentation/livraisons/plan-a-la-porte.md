@@ -343,6 +343,19 @@ dont la validation échouerait. B0 ajoute « exécuter après la validation »
 - Photo obligatoire ; `HandoverVia = deposit` ; mêmes effets qu'une remise
   (AP-Q5).
 
+> 🔨 **B2 bâti le 2026-10-01 (non commité à l'écriture de cette ligne).**
+> Route `POST admin/livraison/ma-tournee/:roundId/arrets/:stopId/depot`
+> (multipart, `photo` seule, sous `delivery_doorstep:write`),
+> `DepositStopHandler`. Le geste commun à B1 et B2 (mur, rejeu qui republie,
+> version, attestation sans publier, `closeStop`, `AfterCommit`) est sorti de
+> `HandOverStopHandler` dans `apps/lfd-api/src/delivery/application/doorstep-handover.ts` ;
+> chaque handler n'apporte que ses pièces, sa règle et son fait. Le canal ne
+> change que d'un type : `receiverName: null` = personne, que le retrait
+> atteste `deposit` (même ligne `order_handover_proof`, nom nul). La
+> permission vit dans `DoorstepStop.ensureDepositPermitted` (figée au départ ;
+> la signature l'emporte, refusée en premier) — **le point d'extension de
+> B3**. Fait `delivery_round.stop_deposited`. Aucune migration.
+
 ### B3 — Le commercial décide
 
 - Un signalement « à la remise » (personne, dépôt interdit, refus, accès)

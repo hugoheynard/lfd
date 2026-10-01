@@ -14,6 +14,7 @@ import {
 
 import { parisTimeOf } from '../delivery-loading';
 import { closeWithoutHandoverLabel } from '../delivery-incidents';
+import { DepositForm } from '../deposit-form/deposit-form';
 import { HandoverForm } from '../handover-form/handover-form';
 import { IncidentReportForm } from '../incident-report-form/incident-report-form';
 import {
@@ -46,7 +47,10 @@ import { contactNameOf, telHrefOf, windowLabel } from '../run-sheet';
  * l'arrêt suivant, « Déclarer un problème », et « Clore sans remise » quand le
  * commerce dit la commande déjà retirée ou annulée. **« Remis au client »**
  * (lot B, B1) : sur un arrêt ouvert dont la commande reste à remettre — la
- * photo, le nom, la signature si l'arrêt l'exige ; le dépôt est B2. La page
+ * photo, le nom, la signature si l'arrêt l'exige. **« Déposé avec preuve »**
+ * (B2) : au même endroit, seulement si `canDeposit` (dépôt autorisé figé au
+ * départ, et aucune signature exigée — la règle est celle du serveur, lue
+ * telle quelle ; B3 l'étendra à l'autorisation d'un commercial). La page
  * décide si les gestes existent (droit, tournée partie et non rentrée) ;
  * l'arrêt n'écrit que le signalement et la remise, qui ont leur formulaire.
  */
@@ -63,6 +67,7 @@ import { contactNameOf, telHrefOf, windowLabel } from '../run-sheet';
     FoldFieldListComponent,
     FoldInlineConfirmComponent,
     FoldLinkComponent,
+    DepositForm,
     HandoverForm,
     IncidentReportForm,
     MyRoundStepPhoto,
@@ -88,12 +93,13 @@ export class MyRoundStop {
   readonly closeWithoutHandover = output();
   /** Un signalement vient d'être enregistré : la page relit la tournée. */
   readonly reported = output();
-  /** La remise vient d'être enregistrée — ou refusée sur un état changé : la page relit. */
+  /** La remise ou le dépôt vient d'être enregistré : la page relit. */
   readonly handedOver = output();
 
   protected readonly doorstep: readonly DeliveryIncidentFamily[] = ['doorstep'];
   protected readonly reporting = signal(false);
   protected readonly handingOver = signal(false);
+  protected readonly depositing = signal(false);
   /** « Remis au client » : l'arrêt est ouvert, et la commande reste à remettre. */
   protected readonly canHandOver = computed(
     () => this.stop().closedAt === null && this.stop().orderState === 'open',
@@ -127,8 +133,10 @@ export class MyRoundStop {
   /** « Déjà retirée au comptoir », « Annulée » — ou `null` : le geste n'existe pas. */
   protected readonly closeLabel = computed(() => closeWithoutHandoverLabel(this.stop().orderState));
 
+  /** Remis ou déposé : la page relit la tournée. */
   protected onHandedOver(): void {
     this.handingOver.set(false);
+    this.depositing.set(false);
     this.handedOver.emit();
   }
 

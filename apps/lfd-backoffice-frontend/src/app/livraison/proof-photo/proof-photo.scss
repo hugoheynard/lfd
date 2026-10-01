@@ -1,0 +1,15 @@
+:host {
+  display: contents;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+/* Le champ natif est caché : c'est le bouton « Prendre la photo » qui l'ouvre. */
+.camera {
+  display: none;
+}

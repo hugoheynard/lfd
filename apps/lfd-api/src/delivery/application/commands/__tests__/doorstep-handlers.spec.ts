@@ -57,6 +57,7 @@ function doorstep(overrides: Partial<DoorstepStopState> = {}): DoorstepStopState
     closedAt: null,
     arrivedAt: null,
     signatureRequired: false,
+    depositAllowed: false,
     ...overrides,
   };
 }
