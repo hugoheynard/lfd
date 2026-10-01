@@ -45,7 +45,8 @@ export interface NavigationTarget {
 
 /**
  * Les arrêts restants (YA-D1) : dans l'ordre de passage, sans ceux qui sont
- * clos. Personne n'écrit `closedAt` avant le lot 6 : aujourd'hui, tous restent.
+ * clos. `closedAt` est écrit par `closeStop` : la clôture sans remise (lot A
+ * de « À la porte ») et « Remis au client » (B1) — vérifié le 2026-10-01.
  */
 export function remainingStops(
   stops: readonly MyDeliveryStopView[],

@@ -164,6 +164,32 @@ model OrderDeparture {
   @@schema("production")
 }
 
+/// Les **pièces d'une remise à la porte** (`documentation/livraisons/plan-a-la-porte.md`,
+/// B1, § 9, L6-C9) : la photo (toujours), la signature au doigt (quand
+/// l'arrêt l'exigeait au départ), le nom tapé de qui a réceptionné.
+///
+/// Elles appartiennent au RETRAIT, qui atteste la remise : une ligne par
+/// commande, écrite dans la même transaction que `order_handover`. Les images
+/// sont au bucket des pièces (`ProductionDocumentStore`), sous ces clés.
+///
+/// Une remise au comptoir n'en a pas : la présence d'une ligne est ce qui dit
+/// « remise à la porte » — le rejeu du livreur s'y lit (§ 10 bis).
+///
+/// `order_id` est OPAQUE : aucune clé étrangère, comme `order_handover`.
+model OrderHandoverProof {
+  orderId      String   @id @map("order_id")
+  /// Nul pour une remise sans personne (le dépôt, B2) ; 2 à 80 sinon.
+  receiverName String?  @map("receiver_name")
+  photoKey     String   @map("photo_key")
+  signatureKey String?  @map("signature_key")
+  /// La fiche staff du livreur, figée.
+  recordedBy   String   @map("recorded_by")
+  recordedAt   DateTime @map("recorded_at")
+
+  @@map("order_handover_proof")
+  @@schema("production")
+}
+
 /// Une ligne à fabriquer. **Aucun montant** — le fournil ne facture pas.
 model ProductionOrderLine {
   id String @id @default(cuid())

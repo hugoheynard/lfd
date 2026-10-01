@@ -97,4 +97,13 @@ export const DELIVERY_ROUND_FACTS = {
       cause: z.enum(["handed_over", "cancelled"]),
     }),
   ),
+  /**
+   * « Remis au client » (`plan-a-la-porte.md`, B1) : la remise est attestée au
+   * retrait et l'arrêt clos, dans la même transaction. `signed` : une
+   * signature au doigt est jointe. Le nom de qui a réceptionné n'est PAS ici :
+   * un texte libre reste sur sa pièce, au retrait.
+   */
+  "delivery_round.stop_handed_over": fact(
+    payload({ ...roundKey(), order: namedOrBare("order"), signed: z.boolean() }),
+  ),
 } as const;

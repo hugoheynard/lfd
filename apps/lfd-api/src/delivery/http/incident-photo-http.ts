@@ -1,5 +1,5 @@
 import type { NestInterceptor, Type } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
+import { FileFieldsInterceptor, FileInterceptor } from "@nestjs/platform-express";
 
 import { INCIDENT_PHOTO_MAX_BYTES } from "../domain/value-objects/incident-photo.js";
 
@@ -28,4 +28,25 @@ export interface UploadedIncidentPhoto {
 
 export function incidentPhotoUpload(): Type<NestInterceptor> {
   return FileInterceptor(PHOTO_FIELD, { limits: { fileSize: INCIDENT_UPLOAD_HARD_LIMIT } });
+}
+
+/** Les deux images d'une remise (`plan-a-la-porte.md`, B1) : la photo, la signature. */
+const HANDOVER_PHOTO_FIELD = "photo";
+const HANDOVER_SIGNATURE_FIELD = "signature";
+
+/** Ce que Multer rend pour une remise : au plus une image par champ. */
+export interface UploadedHandoverPictures {
+  readonly photo?: readonly UploadedIncidentPhoto[];
+  readonly signature?: readonly UploadedIncidentPhoto[];
+}
+
+/** La même borne que la photo d'un signalement : le téléphone est le même. */
+export function handoverPicturesUpload(): Type<NestInterceptor> {
+  return FileFieldsInterceptor(
+    [
+      { name: HANDOVER_PHOTO_FIELD, maxCount: 1 },
+      { name: HANDOVER_SIGNATURE_FIELD, maxCount: 1 },
+    ],
+    { limits: { fileSize: INCIDENT_UPLOAD_HARD_LIMIT } },
+  );
 }

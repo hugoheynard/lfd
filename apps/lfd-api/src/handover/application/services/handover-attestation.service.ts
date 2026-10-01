@@ -31,6 +31,12 @@ import { isHeldForQuality } from "./quality-hold.js";
  * Chaque handler garde donc **sa** responsabilité — résoudre le sujet, par jeton
  * ou par numéro, et refuser si le sujet n'existe pas —, et délègue le reste.
  */
+/** Une attestation gravée, et sa publication — pas encore partie. */
+export interface Attested {
+  readonly handover: OrderHandover;
+  readonly publish: () => void;
+}
+
 @Injectable()
 export class HandoverAttestation {
   constructor(
@@ -42,7 +48,7 @@ export class HandoverAttestation {
   ) {}
 
   /**
-   * Atteste, publie, et rend l'attestation obtenue.
+   * Atteste, publie, et rend l'attestation obtenue — au comptoir.
    *
    * Rendre une vue depuis une écriture est assumé, comme au comptoir d'avant :
    * la confirmation doit s'afficher dans la seconde où le client attend son sac,
@@ -52,6 +58,43 @@ export class HandoverAttestation {
    * @throws {HandoverRefusedError} l'état l'interdit, ou un autre poste a gagné.
    */
   async attest(subject: HandoverSubject, by: string, via: HandoverVia): Promise<OrderHandoverView> {
+    const { handover, publish } = await this.engrave(subject, by, via, true);
+    // Publié APRÈS l'écriture, et seulement par le GAGNANT : le perdant a levé
+    // plus haut. Le commerce reçoit donc exactement un fait par retrait, comme la
+    // base en porte exactement une.
+    publish();
+
+    // Gagnée, l'attestation fait dire « déjà retirée » à la règle : la retenue
+    // n'a plus rien à ajouter à l'accusé.
+    return toHandoverView(subject, handover, false, await authorsOf(this.staffAuthors, handover));
+  }
+
+  /**
+   * **Atteste sans publier** (`plan-a-la-porte.md`, B1, AP-D1) — la remise à
+   * la porte, dans l'unité de travail du livreur : la même règle, le même
+   * arbitrage de course, mais la publication est RENDUE, pour partir après
+   * la validation. Un refus ne republie rien ici : l'unité échoue, et ce
+   * qu'elle inscrirait pour « après » ne partirait pas.
+   *
+   * @throws {HandoverRefusedError} l'état l'interdit, ou un autre poste a gagné.
+   */
+  async attestQuietly(subject: HandoverSubject, by: string, via: HandoverVia): Promise<Attested> {
+    return this.engrave(subject, by, via, false);
+  }
+
+  /** La publication d'une attestation déjà gravée — rejouer sans rien réécrire. */
+  publicationOf(handover: OrderHandover): () => void {
+    return () => {
+      this.republish(handover);
+    };
+  }
+
+  private async engrave(
+    subject: HandoverSubject,
+    by: string,
+    via: HandoverVia,
+    repairOnRefusal: boolean,
+  ): Promise<Attested> {
     // 🔴 La retenue est lue ici, AVANT l'écriture et sans verrou commun avec le
     // contrôle : un blocage rendu dans l'intervalle laisse partir le sac. C'est
     // une vérification, pas une interdiction — assumé au plan
@@ -85,7 +128,9 @@ export class HandoverAttestation {
       // l'auteur sont ceux du vrai retrait —, puis on laisse le refus partir
       // tel quel : c'est l'agrégat qui choisit le mot, et « annulée » explique
       // la situation mieux que « déjà remise » quand les deux sont vraies.
-      this.republish(existing);
+      if (repairOnRefusal) {
+        this.republish(existing);
+      }
       throw error;
     }
 
@@ -94,19 +139,21 @@ export class HandoverAttestation {
       // Perdu la course : un autre poste a scanné, ou saisi, entre notre lecture
       // et notre écriture. On ne réécrit rien — l'attestation de l'autre est la
       // seule vraie, et elle est peut-être la FORTE —, mais on la RELIT pour la
-      // réannoncer : le perdant est justement celui qui peut réparer.
-      this.republish(await this.handovers.findByOrderId(subject.orderId));
+      // réannoncer : le perdant est justement celui qui peut réparer. À la
+      // porte, la transaction est déjà condamnée par la violation d'unicité :
+      // on ne relit rien, on refuse.
+      if (repairOnRefusal) {
+        this.republish(await this.handovers.findByOrderId(subject.orderId));
+      }
       throw new HandoverRefusedError("Cette commande vient d'être retirée à un autre poste.");
     }
 
-    // Publié APRÈS l'écriture, et seulement par le GAGNANT : le perdant a levé
-    // plus haut. Le commerce reçoit donc exactement un fait par retrait, comme la
-    // base en porte exactement une.
-    this.events.publish(new OrderHandedOverEvent(handover.reference, at, by, via));
-
-    // Gagnée, l'attestation fait dire « déjà retirée » à la règle : la retenue
-    // n'a plus rien à ajouter à l'accusé.
-    return toHandoverView(subject, handover, false, await authorsOf(this.staffAuthors, handover));
+    return {
+      handover,
+      publish: () => {
+        this.events.publish(new OrderHandedOverEvent(handover.reference, at, by, via));
+      },
+    };
   }
 
   /**

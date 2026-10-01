@@ -17,6 +17,7 @@ export const DOORSTEP_FACTS = {
   stopArrived: "delivery_round.stop_arrived",
   incidentReported: "delivery_round.incident_reported",
   stopClosedWithoutHandover: "delivery_round.stop_closed_without_handover",
+  stopHandedOver: "delivery_round.stop_handed_over",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /** Pourquoi un arrêt se clôt sans remise : la commande l'était déjà, ou elle est annulée. */
@@ -110,6 +111,26 @@ export class DeliveryStopClosedWithoutHandoverEvent implements JournaledEvent {
     return doorstepFact(DOORSTEP_FACTS.stopClosedWithoutHandover, roundKeyOf(this.round), {
       order: this.order,
       cause: this.cause,
+    });
+  }
+}
+
+/**
+ * « Remis au client » (B1) — la remise attestée au retrait, l'arrêt clos. Le
+ * nom de qui a réceptionné reste sur sa pièce : un texte libre n'entre pas au
+ * journal.
+ */
+export class DeliveryStopHandedOverEvent implements JournaledEvent {
+  constructor(
+    readonly round: DeliveryRound,
+    readonly order: CitedOrder,
+    readonly signed: boolean,
+  ) {}
+
+  journalFact(): JournalFact {
+    return doorstepFact(DOORSTEP_FACTS.stopHandedOver, roundKeyOf(this.round), {
+      order: this.order,
+      signed: this.signed,
     });
   }
 }

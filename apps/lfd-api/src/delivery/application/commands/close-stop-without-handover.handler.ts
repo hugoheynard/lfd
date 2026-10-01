@@ -6,18 +6,17 @@ import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryOrderStatesReader, DeliveryOrdersReader } from "../../channels/commerce/index.js";
 import type { DeliveryRound } from "../../domain/entities/delivery-round.js";
 import {
-  DoorstepRoundStaleError,
   DoorstepStopNotFoundError,
   StopStillToHandOverError,
 } from "../../domain/errors/delivery-doorstep-errors.js";
 import { DriverRoundNotFoundError } from "../../domain/errors/delivery-driver-errors.js";
-import { DeliveryRoundStaleError } from "../../domain/errors/delivery-round-errors.js";
 import {
   citeStopOrder,
   type ClosedWithoutHandoverCause,
   DeliveryStopClosedWithoutHandoverEvent,
 } from "../../domain/events/delivery-doorstep.events.js";
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
+import { ensureFreshForDriver } from "../doorstep-support.js";
 import { CloseStopWithoutHandoverCommand } from "./close-stop-without-handover.command.js";
 
 /**
@@ -67,7 +66,7 @@ export class CloseStopWithoutHandoverHandler implements ICommandHandler<
       // Rentrée, la tournée ne prend plus de geste (PL2) — dit avant la version,
       // que le retour a fait avancer.
       round.ensureOnTheRoad();
-      ensureFresh(round, command.payload.version);
+      ensureFreshForDriver(round, command.payload.version);
       const orderId = orderOfLiveStop(round, command.stopId);
       const [cause, reference] = await this.causeOf(orderId);
       round.closeStop(command.stopId, this.clock.now());
@@ -90,15 +89,6 @@ export class CloseStopWithoutHandoverHandler implements ICommandHandler<
       throw new StopStillToHandOverError(reference === "" ? orderId : reference);
     }
     return [state, reference];
-  }
-}
-
-/** La version lue par l'écran ; le refus du domaine, redit pour le livreur. */
-function ensureFresh(round: DeliveryRound, version: number): void {
-  try {
-    round.ensureVersion(version);
-  } catch (error) {
-    throw error instanceof DeliveryRoundStaleError ? new DoorstepRoundStaleError() : error;
   }
 }
 

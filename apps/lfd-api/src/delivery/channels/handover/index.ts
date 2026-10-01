@@ -6,9 +6,18 @@
  * | ------------------------- | ------------------------------------------- |
  * | `DepartureHoldsReader`    | « lesquelles sont retenues ? », au départ   |
  * | `DepartedOrdersAnnouncer` | « elles sont parties », après la validation |
+ * | `DoorstepHandoverAttestor`| « atteste cette remise », à la porte (B1)   |
  *
  * `lint:context-boundaries` n'autorise `handover → delivery` que par ce
  * chemin ; `delivery → handover` reste interdit.
  */
 export { DepartureHoldsReader } from "./departure-holds.reader.js";
 export { DepartedOrdersAnnouncer } from "./departed-orders.announcer.js";
+export {
+  DoorstepHandoverAttestor,
+  type DoorstepHandoverRequest,
+  type DoorstepProofImage,
+  type DoorstepProofImages,
+  type HandoverPublication,
+  type StagedHandoverProofs,
+} from "./doorstep-handover.attestor.js";

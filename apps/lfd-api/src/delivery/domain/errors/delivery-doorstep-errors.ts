@@ -141,3 +141,60 @@ export class IncidentPhotoNotFoundError extends ResourceNotFoundError {
     );
   }
 }
+
+// ── « Remis au client » (`plan-a-la-porte.md`, B1, § 9) ──
+
+/** Une remise sans photo n'existe pas (§ 9, Hugo : « même le happy path signé »). */
+export class HandoverPhotoMissingError extends DomainError {
+  constructor() {
+    super(
+      "delivery.handover_photo_missing",
+      "Une remise porte toujours une photo : photographiez la marchandise remise, puis validez.",
+    );
+  }
+}
+
+/** Une pièce de la remise refusée — vide, trop lourde, ou d'un format inconnu. */
+export class InvalidHandoverPictureError extends DomainError {
+  constructor(piece: "photo" | "signature", detail: string) {
+    super(
+      "delivery.invalid_handover_picture",
+      piece === "photo"
+        ? `Photo de la remise : ${detail} Reprenez la photo, puis validez.`
+        : `Signature : ${detail} Effacez-la, faites signer à nouveau, puis validez.`,
+    );
+  }
+}
+
+/** Le nom tapé de qui réceptionne, hors bornes (AP-Q2 : toujours le nom). */
+export class ReceiverNameLengthError extends DomainError {
+  constructor(length: number, min: number, max: number) {
+    super(
+      "delivery.receiver_name_length",
+      `Le nom de qui réceptionne fait ${String(length)} caractère(s) : il en faut de ${String(min)} à ${String(max)}. Demandez-lui son nom et tapez-le.`,
+    );
+  }
+}
+
+/** La signature exigée au départ manque (AP-D4). */
+export class HandoverSignatureMissingError extends DomainError {
+  constructor(reference: string) {
+    super(
+      "delivery.handover_signature_missing",
+      `La commande ${reference} exige une signature : faites signer la personne au doigt dans le cadre, puis validez.`,
+    );
+  }
+}
+
+/**
+ * « Remis » rejoué sur un arrêt clos AUTREMENT — sans remise (§ 10 bis) : le
+ * livreur ne doit pas croire avoir remis.
+ */
+export class StopClosedWithoutHandoverError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "delivery.stop_closed_without_handover",
+      `L'arrêt de la commande ${reference} a été clos sans remise (déjà retirée, ou annulée) : rien n'a été remis ici. Rechargez la page ; si la marchandise est encore dans le véhicule, appelez le dépôt.`,
+    );
+  }
+}

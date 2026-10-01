@@ -56,6 +56,7 @@ function doorstep(overrides: Partial<DoorstepStopState> = {}): DoorstepStopState
     reference: "CMD-1",
     closedAt: null,
     arrivedAt: null,
+    signatureRequired: false,
     ...overrides,
   };
 }

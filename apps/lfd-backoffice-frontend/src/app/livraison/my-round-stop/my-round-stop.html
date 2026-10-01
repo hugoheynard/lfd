@@ -124,6 +124,30 @@
           Je suis arrivé
         </button>
       }
+      @if (canHandOver()) {
+        @if (handingOver()) {
+          <app-handover-form
+            [roundId]="roundId()"
+            [stopId]="item.stopId"
+            [version]="version()"
+            [signatureRequired]="item.signatureRequired"
+            (handedOver)="onHandedOver()"
+            (cancelled)="handingOver.set(false)"
+          />
+        } @else {
+          <button
+            foldButton
+            block
+            size="lg"
+            icon="check"
+            [disabled]="busy()"
+            (click)="handingOver.set(true)"
+            data-hand-over
+          >
+            Remis au client
+          </button>
+        }
+      }
       @if (closeLabel(); as state) {
         <fold-inline-confirm
           intent="primary"

@@ -12,6 +12,9 @@ import { z } from "zod";
  *   + `photo` facultative) → {@link ReportedDeliveryIncidentResponse} ;
  * - `POST /arrets/:stopId/cloture-sans-remise` (corps
  *   {@link closeStopWithoutHandoverPayloadSchema}) → 204, idempotente ;
+ * - `POST /arrets/:stopId/remise` (multipart : {@link handOverStopFieldsSchema}
+ *   + `photo` obligatoire + `signature` quand la signature est exigée) → 204,
+ *   idempotente — « Remis au client » (lot B, B1) ;
  * - `GET /incidents/:incidentId/photo` → l'image ;
  * - `POST /retour` → 204, idempotente — « Tournée terminée »
  *   (`parcours-du-livreur.md`, PL2).
@@ -83,6 +86,24 @@ export const closeStopWithoutHandoverPayloadSchema = z.object({
   version: z.number().int().nonnegative(),
 });
 export type CloseStopWithoutHandoverPayload = z.infer<typeof closeStopWithoutHandoverPayloadSchema>;
+
+/** Le nom tapé de qui réceptionne : au moins, au plus (`plan-a-la-porte.md`, Mineurs). */
+export const HANDOVER_RECEIVER_NAME_MIN = 2;
+export const HANDOVER_RECEIVER_NAME_MAX = 80;
+
+/**
+ * **« Remis au client »** (`plan-a-la-porte.md`, B1, § 9) — les champs du
+ * multipart ; la photo (champ `photo`, toujours) et la signature au doigt
+ * (champ `signature`, une image, quand l'arrêt l'exige au départ) sont des
+ * fichiers. La FORME seulement : la longueur du nom, la photo et la signature
+ * exigées, c'est le domaine qui les refuse, avec ses mots. `version` : celle
+ * de la tournée lue par l'écran — un champ de formulaire est une chaîne.
+ */
+export const handOverStopFieldsSchema = z.object({
+  version: z.coerce.number().int().nonnegative(),
+  receiverName: z.string().default(""),
+});
+export type HandOverStopFields = z.infer<typeof handOverStopFieldsSchema>;
 
 /**
  * Où en est la commande d'un arrêt, vue du commerce :

@@ -58,6 +58,7 @@
   "test/delivery-doorstep.e2e-spec.ts": 8700,
   "test/delivery-driver-role.e2e-spec.ts": 5300,
   "test/delivery-en-route.e2e-spec.ts": 6800,
+  "test/delivery-handover-doorstep.e2e-spec.ts": 6200,
   "test/delivery-loading-guards.e2e-spec.ts": 5016,
   "test/delivery-loading-plan.e2e-spec.ts": 5715,
   "test/delivery-loading.e2e-spec.ts": 7167,

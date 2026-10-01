@@ -1,0 +1,69 @@
+<div class="form" data-handover-form>
+  <!-- L'appareil photo du téléphone, directement : `capture` ouvre la caméra arrière. -->
+  <input
+    #camera
+    class="camera"
+    type="file"
+    accept="image/*"
+    capture="environment"
+    (change)="pickPhoto($event)"
+    data-handover-photo-input
+  />
+  @if (photo(); as picked) {
+    <div class="row">
+      <span>Photo jointe : {{ picked.name }}</span>
+      <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="removePhoto()">
+        Retirer
+      </button>
+    </div>
+  } @else {
+    <button
+      foldButton
+      emphasis="outline"
+      icon="upload"
+      (click)="camera.click()"
+      data-handover-photo
+    >
+      Prendre la photo de la remise
+    </button>
+  }
+
+  <fold-input
+    label="Nom de qui réceptionne"
+    placeholder="Tel qu’il le dit"
+    [hint]="'De ' + nameMin + ' à ' + nameMax + ' caractères'"
+    [value]="receiverName()"
+    (valueChange)="receiverName.set($event)"
+    data-receiver-name
+  />
+
+  @if (signatureRequired()) {
+    <span class="label">Signature exigée : faites signer au doigt</span>
+    <app-signature-pad (signed)="signature.set($event)" />
+  }
+
+  @if (refusal(); as refusal) {
+    <fold-callout variant="alert" data-handover-refusal>{{ refusal }}</fold-callout>
+  }
+
+  <div class="row">
+    <button
+      foldButton
+      emphasis="outline"
+      intent="neutral"
+      [disabled]="sending()"
+      (click)="cancelled.emit()"
+    >
+      Annuler
+    </button>
+    <button
+      foldButton
+      [loading]="sending()"
+      [disabled]="!canSend()"
+      (click)="send()"
+      data-send-handover
+    >
+      Valider la remise
+    </button>
+  </div>
+</div>

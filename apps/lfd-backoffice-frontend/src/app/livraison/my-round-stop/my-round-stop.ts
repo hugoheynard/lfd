@@ -14,6 +14,7 @@ import {
 
 import { parisTimeOf } from '../delivery-loading';
 import { closeWithoutHandoverLabel } from '../delivery-incidents';
+import { HandoverForm } from '../handover-form/handover-form';
 import { IncidentReportForm } from '../incident-report-form/incident-report-form';
 import {
   declaredBinsLabelOf,
@@ -43,10 +44,11 @@ import { contactNameOf, telHrefOf, windowLabel } from '../run-sheet';
  *
  * **À la porte** (`plan-a-la-porte.md`, lot A) : « Je suis arrivé » sur
  * l'arrêt suivant, « Déclarer un problème », et « Clore sans remise » quand le
- * commerce dit la commande déjà retirée ou annulée — rien d'autre (la remise
- * et le dépôt sont le lot B). La page décide si les gestes existent (droit,
- * tournée partie et non rentrée) ; l'arrêt n'écrit que le signalement, qui a
- * son formulaire.
+ * commerce dit la commande déjà retirée ou annulée. **« Remis au client »**
+ * (lot B, B1) : sur un arrêt ouvert dont la commande reste à remettre — la
+ * photo, le nom, la signature si l'arrêt l'exige ; le dépôt est B2. La page
+ * décide si les gestes existent (droit, tournée partie et non rentrée) ;
+ * l'arrêt n'écrit que le signalement et la remise, qui ont leur formulaire.
  */
 @Component({
   selector: 'app-my-round-stop',
@@ -61,6 +63,7 @@ import { contactNameOf, telHrefOf, windowLabel } from '../run-sheet';
     FoldFieldListComponent,
     FoldInlineConfirmComponent,
     FoldLinkComponent,
+    HandoverForm,
     IncidentReportForm,
     MyRoundStepPhoto,
   ],
@@ -78,14 +81,23 @@ export class MyRoundStop {
   readonly next = input(false);
   /** Une écriture de la page est en vol. */
   readonly busy = input(false);
+  /** La version de la tournée lue par la page — la remise la présente. */
+  readonly version = input(0);
 
   readonly arrive = output();
   readonly closeWithoutHandover = output();
   /** Un signalement vient d'être enregistré : la page relit la tournée. */
   readonly reported = output();
+  /** La remise vient d'être enregistrée — ou refusée sur un état changé : la page relit. */
+  readonly handedOver = output();
 
   protected readonly doorstep: readonly DeliveryIncidentFamily[] = ['doorstep'];
   protected readonly reporting = signal(false);
+  protected readonly handingOver = signal(false);
+  /** « Remis au client » : l'arrêt est ouvert, et la commande reste à remettre. */
+  protected readonly canHandOver = computed(
+    () => this.stop().closedAt === null && this.stop().orderState === 'open',
+  );
 
   protected readonly title = computed(
     () => `${String(this.stop().rank)}. ${this.stop().customerLabel}`,
@@ -114,6 +126,11 @@ export class MyRoundStop {
   });
   /** « Déjà retirée au comptoir », « Annulée » — ou `null` : le geste n'existe pas. */
   protected readonly closeLabel = computed(() => closeWithoutHandoverLabel(this.stop().orderState));
+
+  protected onHandedOver(): void {
+    this.handingOver.set(false);
+    this.handedOver.emit();
+  }
 
   protected onReported(): void {
     this.reporting.set(false);

@@ -321,6 +321,21 @@ dont la validation échouerait. B0 ajoute « exécuter après la validation »
   une commande retenue ne se remet pas, la carte le dit.
 - Écran : bouton « Remis au client » sur l'arrêt (photo, nom, signature).
 
+> 🔨 **B1 bâti le 2026-10-01 (non commité à l'écriture de cette ligne).**
+> Route `POST admin/livraison/ma-tournee/:roundId/arrets/:stopId/remise`
+> (multipart, sous `delivery_doorstep:write`), `HandOverStopHandler`, port
+> `DoorstepHandoverAttestor` dans `delivery/channels/handover/` (ranger les
+> images, attester sans publier, republier au rejeu, retirer), implémenté par
+> `HandoverDoorstepAttestor` sur `HandoverAttestation.attestQuietly` — la règle
+> du comptoir, sans copie. `via = manual` (L6-C9). Table
+> `production.order_handover_proof` (migration `20261001170000_les_pieces_de_la_remise`),
+> **une ligne par commande** et non une par pièce : sa présence dit « remise à
+> la porte », et c'est ce que lit le rejeu. Fait `delivery_round.stop_handed_over`.
+> ⚠️ Les photos ne sont **pas** « déposées d'abord, rattachées ensuite » : les
+> signalements ne le font pas non plus (un seul multipart, le stockage avant la
+> ligne, l'objet retiré si la ligne échoue) — B1 suit cette mécanique-là ; aucun
+> balayage n'existe donc, ni pour l'un ni pour l'autre.
+
 ### B2 — « Déposé avec preuve »
 
 - Proposé seulement si `canDeposit` (dépôt autorisé figé **et** pas de

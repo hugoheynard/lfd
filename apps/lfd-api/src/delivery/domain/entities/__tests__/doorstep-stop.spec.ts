@@ -20,6 +20,7 @@ function stop(overrides: Partial<DoorstepStopState> = {}): DoorstepStop {
     reference: "CMD-1",
     closedAt: null,
     arrivedAt: null,
+    signatureRequired: false,
     ...overrides,
   });
 }

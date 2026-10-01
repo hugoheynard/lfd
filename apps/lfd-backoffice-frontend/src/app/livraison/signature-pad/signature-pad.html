@@ -1,0 +1,23 @@
+<div class="pad">
+  <canvas
+    #canvas
+    class="surface"
+    aria-label="Cadre de signature : signez au doigt"
+    (pointerdown)="start($event)"
+    (pointermove)="move($event)"
+    (pointerup)="end()"
+    (pointercancel)="end()"
+    data-signature-surface
+  ></canvas>
+  <button
+    foldButton
+    size="sm"
+    emphasis="outline"
+    intent="neutral"
+    [disabled]="!drawn()"
+    (click)="clear()"
+    data-signature-clear
+  >
+    Effacer
+  </button>
+</div>

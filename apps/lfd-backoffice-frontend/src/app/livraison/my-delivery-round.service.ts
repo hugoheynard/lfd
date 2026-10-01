@@ -33,6 +33,17 @@ export interface IncidentReport {
   readonly photo: Blob | null;
 }
 
+/** Une remise au client, telle que l'écran la compose (`plan-a-la-porte.md`, B1). */
+export interface DoorstepHandover {
+  /** La version de la tournée lue par l'écran. */
+  readonly version: number;
+  readonly receiverName: string;
+  /** Prise par l'appareil — toujours. */
+  readonly photo: Blob;
+  /** Le tracé au doigt, en PNG ; `null` quand il n'est pas exigé et pas fait. */
+  readonly signature: Blob | null;
+}
+
 /**
  * **« Ma tournée »** (`plan-ma-tournee.md`, MT-D4), sous `delivery_driving`.
  *
@@ -111,6 +122,21 @@ export class MyDeliveryRoundService {
     await firstValueFrom(
       this.http.post(`${stopUrl(roundId, stopId)}/cloture-sans-remise`, payload),
     );
+  }
+
+  /**
+   * « Remis au client » (B1) — en multipart : la photo sous `photo`, la
+   * signature sous `signature`. Rejouée, la route répond pareil.
+   */
+  async handOver(roundId: string, stopId: string, handover: DoorstepHandover): Promise<void> {
+    const body = new FormData();
+    body.append('version', String(handover.version));
+    body.append('receiverName', handover.receiverName);
+    body.append('photo', handover.photo, 'remise.jpg');
+    if (handover.signature !== null) {
+      body.append('signature', handover.signature, 'signature.png');
+    }
+    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/remise`, body));
   }
 
   /** « Tournée terminée » (PL2) — rejouée, la route répond pareil. */

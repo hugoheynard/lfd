@@ -234,4 +234,17 @@ export const DELIVERY_ROUND_PHRASES = {
       ],
       [...ROUND_KEYS, 'order', 'cause'],
     ),
+  // Plan « À la porte », lot B (B1) : la remise au client, ses pièces au retrait.
+  'delivery_round.stop_handed_over': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a remis au client '),
+        ...cite(ORDER, fact.payload['order']),
+        text(' ('),
+        ...round(fact),
+        text(fact.payload['signed'] === true ? ') : photo et signature' : ') : photo'),
+      ],
+      [...ROUND_KEYS, 'order', 'signed'],
+    ),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

@@ -224,6 +224,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // La garde passée au livreur (2026-10-01, `plan-a-la-porte.md`, BQ) : écrite
   // par le retrait après un départ, lue par le fournil avant un verdict.
   OrderDeparture: "production",
+  // Les pièces d'une remise à la porte (2026-10-01, `plan-a-la-porte.md`, B1) :
+  // écrites par le retrait avec l'attestation, relues au rejeu du livreur.
+  OrderHandoverProof: "production",
   // Le contrôle qualité du superviseur (2026-09-28, plan `plan-controle-qualite.md`,
   // QC2) : un verdict par ligne, ses photos, et les dépôts qui attendent leur verdict.
   ProductionQualityCheck: "production",

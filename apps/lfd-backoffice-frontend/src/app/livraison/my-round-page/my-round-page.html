@@ -273,9 +273,11 @@
                       [gestures]="gestures()"
                       [next]="stop.stopId === nextStop()?.stopId"
                       [busy]="busy()"
+                      [version]="round.version"
                       (arrive)="arrive(stop)"
                       (closeWithoutHandover)="closeWithoutHandover(stop)"
                       (reported)="retryRound()"
+                      (handedOver)="retryRound()"
                     />
                   }
                 }

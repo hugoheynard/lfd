@@ -26,6 +26,11 @@ export interface DoorstepStopState {
   /** Clos par la tournée (`closeStop`), ou `null`. */
   readonly closedAt: Date | null;
   readonly arrivedAt: Date | null;
+  /**
+   * La signature exigée, FIGÉE au départ (`plan-a-la-porte.md`, AP-D4) ;
+   * `false` au dépôt — aucune exécution n'existe encore.
+   */
+  readonly signatureRequired: boolean;
 }
 
 /**
@@ -61,6 +66,10 @@ export class DoorstepStop {
 
   get round(): DoorstepRoundKey {
     return this.state.round;
+  }
+
+  get signatureRequired(): boolean {
+    return this.state.signatureRequired;
   }
 
   get arrivedAt(): Date | null {

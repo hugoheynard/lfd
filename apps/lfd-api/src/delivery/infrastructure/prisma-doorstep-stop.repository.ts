@@ -44,7 +44,7 @@ export class PrismaDoorstepStopRepository extends DoorstepStopRepository {
             returnedAt: true,
           },
         },
-        execution: { select: { reference: true, arrivedAt: true } },
+        execution: { select: { reference: true, arrivedAt: true, signatureRequired: true } },
       },
     });
     if (row === null) {
@@ -64,6 +64,7 @@ export class PrismaDoorstepStopRepository extends DoorstepStopRepository {
       reference: row.execution?.reference ?? "",
       closedAt: row.closedAt,
       arrivedAt: row.execution?.arrivedAt ?? null,
+      signatureRequired: row.execution?.signatureRequired ?? false,
     });
   }
 

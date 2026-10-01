@@ -1,6 +1,8 @@
 import {
   type CloseStopWithoutHandoverPayload,
   closeStopWithoutHandoverPayloadSchema,
+  type HandOverStopFields,
+  handOverStopFieldsSchema,
   type ReportDeliveryIncidentFields,
   reportDeliveryIncidentFieldsSchema,
   type ReportedDeliveryIncidentResponse,
@@ -16,6 +18,7 @@ import {
   Res,
   StreamableFile,
   UploadedFile,
+  UploadedFiles,
   UseInterceptors,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
@@ -27,10 +30,16 @@ import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import type { StoredDocument } from "../../platform/storage/document-store.js";
 import { CloseStopWithoutHandoverCommand } from "../application/commands/close-stop-without-handover.command.js";
 import { DeclareStopArrivalCommand } from "../application/commands/declare-stop-arrival.command.js";
+import { HandOverStopCommand } from "../application/commands/hand-over-stop.command.js";
 import { ReportDeliveryIncidentCommand } from "../application/commands/report-delivery-incident.command.js";
 import { ReturnMyRoundCommand } from "../application/commands/return-my-round.command.js";
 import { GetMyIncidentPhotoQuery } from "../application/queries/get-my-incident-photo.query.js";
-import { incidentPhotoUpload, type UploadedIncidentPhoto } from "./incident-photo-http.js";
+import {
+  handoverPicturesUpload,
+  incidentPhotoUpload,
+  type UploadedHandoverPictures,
+  type UploadedIncidentPhoto,
+} from "./incident-photo-http.js";
 import { serveStepPhoto } from "./step-photo-http.js";
 
 /**
@@ -92,6 +101,32 @@ export class MyDeliveryDoorstepController {
   ): Promise<void> {
     await this.commands.execute<CloseStopWithoutHandoverCommand, void>(
       new CloseStopWithoutHandoverCommand(staffUserId, roundId, stopId, payload),
+    );
+  }
+
+  /**
+   * « Remis au client » (B1) — multipart : le nom et la version, la photo
+   * (toujours), la signature (quand l'arrêt l'exige). 204, même rejouée.
+   */
+  @Post(":roundId/arrets/:stopId/remise")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseInterceptors(handoverPicturesUpload())
+  async handOver(
+    @StaffUserId() staffUserId: string,
+    @Param("roundId") roundId: string,
+    @Param("stopId") stopId: string,
+    @Body(new ZodBody(handOverStopFieldsSchema)) fields: HandOverStopFields,
+    @UploadedFiles() pictures: UploadedHandoverPictures | undefined,
+  ): Promise<void> {
+    await this.commands.execute<HandOverStopCommand, void>(
+      new HandOverStopCommand(
+        staffUserId,
+        roundId,
+        stopId,
+        fields,
+        pictures?.photo?.[0]?.buffer ?? null,
+        pictures?.signature?.[0]?.buffer ?? null,
+      ),
     );
   }
 

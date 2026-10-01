@@ -2,6 +2,7 @@ import type { Provider, Type } from "@nestjs/common";
 
 import { CloseStopWithoutHandoverHandler } from "./application/commands/close-stop-without-handover.handler.js";
 import { DeclareStopArrivalHandler } from "./application/commands/declare-stop-arrival.handler.js";
+import { HandOverStopHandler } from "./application/commands/hand-over-stop.handler.js";
 import { ReportDeliveryIncidentHandler } from "./application/commands/report-delivery-incident.handler.js";
 import { ReturnDeliveryRoundHandler } from "./application/commands/return-delivery-round.handler.js";
 import { ReturnMyRoundHandler } from "./application/commands/return-my-round.handler.js";
@@ -32,6 +33,9 @@ import { PrismaUndeliveredStopsReader } from "./infrastructure/prisma-undelivere
  * (signalements, « Non remis »). Le retour par l'admin vit sur
  * `DeliveryRoundsController` (PL2).
  *
+ * « Remis au client » (lot B, B1) s'y ajoute : `DoorstepHandoverAttestor`
+ * vient du fil du retrait (`appBootstrap/delivery-handover-feed.module.ts`).
+ *
  * `DeliveryOrderStatesReader` vient du fil du commerce
  * (`appBootstrap/delivery-feed.module.ts`) ; `ProductionDocumentStore` du
  * `ContextModule` global ; `DriverRoundsReader` de `driver.providers.ts`.
@@ -45,6 +49,7 @@ export const DOORSTEP_PROVIDERS: readonly Provider[] = [
   DeclareStopArrivalHandler,
   ReportDeliveryIncidentHandler,
   CloseStopWithoutHandoverHandler,
+  HandOverStopHandler,
   ReturnMyRoundHandler,
   ReturnDeliveryRoundHandler,
   GetDeliveryIncidentsDayHandler,

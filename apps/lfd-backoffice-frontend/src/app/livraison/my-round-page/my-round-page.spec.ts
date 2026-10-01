@@ -363,6 +363,7 @@ describe('MyRoundPage — à la porte (lot A, PL2)', () => {
     expect(element.querySelector('[data-return]')).toBeNull();
     expect(element.querySelector('[data-arrive]')).toBeNull();
     expect(element.querySelector('[data-report-stop]')).toBeNull();
+    expect(element.querySelector('[data-hand-over]')).toBeNull();
   });
 
   it('« Je suis arrivé » sur l’arrêt suivant seulement, puis relit et affiche l’heure', async () => {
@@ -416,13 +417,39 @@ describe('MyRoundPage — à la porte (lot A, PL2)', () => {
     expect(wire.calls).toContain('close r-1 s-2 {"version":3}');
   });
 
-  it('« Dépôt autorisé » s’affiche comme une information, sans geste', async () => {
+  // Le lot A interdisait aussi « Remis au client » ici : la remise est arrivée
+  // avec B1 (2026-10-01). Le dépôt, lui, reste une information jusqu'à B2.
+  it('« Dépôt autorisé » s’affiche comme une information, sans geste de dépôt', async () => {
     const { element } = await boot({
       round: myRoundOf({ departedAt, stops: [myStopOf({ rank: 1, canDeposit: true })] }),
     });
     expect(element.querySelector('[data-can-deposit]')?.textContent).toContain('Dépôt autorisé');
     expect(element.textContent).not.toContain('Déposé avec preuve');
-    expect(element.textContent).not.toContain('Remis au client');
+  });
+
+  it('« Remis au client » : seulement sur une commande à remettre, et ouvre la remise (B1)', async () => {
+    const { fixture, element } = await boot({
+      round: myRoundOf({
+        departedAt,
+        stops: [myStopOf({ rank: 1 }), myStopOf({ rank: 2, orderState: 'cancelled' })],
+      }),
+    });
+    const cards = element.querySelectorAll('[data-my-stop]');
+    expect(cards[0]?.querySelector('[data-hand-over]')).not.toBeNull();
+    expect(cards[1]?.querySelector('[data-hand-over]')).toBeNull();
+
+    cards[0]?.querySelector<HTMLElement>('[data-hand-over]')?.click();
+    await settle(fixture);
+    expect(cards[0]?.querySelector('[data-handover-form]')).not.toBeNull();
+  });
+
+  it('au dépôt, ou tournée rentrée, « Remis au client » n’est pas offert', async () => {
+    const atDepot = await boot({ round: myRoundOf({ departedAt: null }) });
+    expect(atDepot.element.querySelector('[data-hand-over]')).toBeNull();
+    const returned = await boot({
+      round: myRoundOf({ departedAt, returnedAt: '2026-10-01T10:30:00.000Z' }),
+    });
+    expect(returned.element.querySelector('[data-hand-over]')).toBeNull();
   });
 
   it('un refus du serveur s’affiche tel quel', async () => {

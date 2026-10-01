@@ -1,6 +1,13 @@
 import type { StoredDocument } from "../../../../platform/storage/document-store.js";
 import { ProductionDocumentStore } from "../../../../platform/storage/production-document-store.js";
 import {
+  DoorstepHandoverAttestor,
+  type DoorstepHandoverRequest,
+  type DoorstepProofImages,
+  type HandoverPublication,
+  type StagedHandoverProofs,
+} from "../../../channels/handover/index.js";
+import {
   type DeliveryOrderState,
   DeliveryOrderStatesReader,
 } from "../../../channels/commerce/index.js";
@@ -128,5 +135,55 @@ export class FixedDriverRounds extends DriverRoundsReader {
   roundOf(staffUserId: string, roundId: string): Promise<DriverRoundRow | null> {
     const mine = staffUserId === this.driver && roundId === this.round.id;
     return Promise.resolve(mine ? this.round : null);
+  }
+}
+
+/**
+ * Le retrait, doublé : il range, atteste, republie — et note tout. `refusal` :
+ * l'attestation est refusée avec ce message ; `doorstep` : les commandes déjà
+ * remises À LA PORTE, que le rejeu republie. Une publication rendue n'écrit
+ * que dans `published` : c'est elle qui doit attendre la validation.
+ */
+export class ScriptedDoorstepAttestor extends DoorstepHandoverAttestor {
+  readonly staged: DoorstepProofImages[] = [];
+  readonly attested: DoorstepHandoverRequest[] = [];
+  readonly discarded: StagedHandoverProofs[] = [];
+  readonly published: string[] = [];
+  refusal: string | null = null;
+  readonly doorstep = new Set<string>();
+
+  stageProofs(images: DoorstepProofImages): Promise<StagedHandoverProofs> {
+    this.staged.push(images);
+    const n = String(this.staged.length);
+    return Promise.resolve({
+      photoKey: `proofs/${n}/photo`,
+      signatureKey: images.signature === null ? null : `proofs/${n}/signature`,
+    });
+  }
+
+  attest(request: DoorstepHandoverRequest): Promise<HandoverPublication> {
+    if (this.refusal !== null) {
+      return Promise.reject(new RangeError(this.refusal));
+    }
+    this.attested.push(request);
+    this.doorstep.add(request.orderId);
+    return Promise.resolve(() => {
+      this.published.push(`attested:${request.orderId}`);
+    });
+  }
+
+  republication(orderId: string): Promise<HandoverPublication | null> {
+    return Promise.resolve(
+      this.doorstep.has(orderId)
+        ? () => {
+            this.published.push(`replayed:${orderId}`);
+          }
+        : null,
+    );
+  }
+
+  discardProofs(staged: StagedHandoverProofs): Promise<void> {
+    this.discarded.push(staged);
+    return Promise.resolve();
   }
 }
