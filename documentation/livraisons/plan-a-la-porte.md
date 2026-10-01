@@ -393,3 +393,18 @@ handover/` rend une **fonction de publication opaque** (`() => void`), pas
 | **LB-Q2** | « **Rapporter** » : l'arrêt reste ouvert pour toujours (la commande ne peut plus aller dans une autre tournée, AP-D7).                      | « Rapporter » **clôt** l'arrêt (« rapporté ») : la commande reste prête, non livrée, sort de l'index des arrêts vivants, et peut être remise dans une **autre tournée** un autre jour, sans changer le prix. Les remboursements (6 c) restent hors du lot. |
 | **LB-Q3** | B4 bloque « Tournée terminée » tant qu'un signalement n'est pas décidé ; sans notification, le livreur peut attendre au dépôt.              | Garder le blocage, **et** rouvrir la notification (B5) pour les seuls commerciaux. Sinon : le livreur peut terminer, et les arrêts non décidés passent « Non remis ».                                                                                      |
 | **LB-Q4** | **L'ordre A puis B** : merger dans `main` déploie tout `dev`. Si B est bâti sur `dev` avant que A soit en production, ils partent ensemble. | **Déployer le lot A d'abord** (relu par `lecteur-de-migrations`), puis bâtir B sur `dev`.                                                                                                                                                                  |
+
+**LB-Q1 tranché par Hugo le 2026-10-01** : « on ne peut pas faire de
+contrôle qualité sur les commandes d'une tournée partie, car nous ne sommes
+plus en présence du produit ». Une retenue **pendant** la tournée n'existe
+donc pas ; la question du § 10 bis disparaît, et deux règles la remplacent :
+
+- **Le départ refuse une commande retenue** — aujourd'hui il ne lit pas la
+  retenue (relevé le 2026-10-01 : seul `handover` la lit). Le refus nomme
+  l'arrêt, comme pour une commande annulée ; la sortie est de lever la retenue
+  ou de retirer l'arrêt.
+- **Un verdict sur une commande partie est refusé** au contrôle qualité. Le
+  fournil ne connaît pas la livraison (`production → delivery` ✗) : le
+  chemin par lequel il apprend « partie » est **à concevoir** (par le
+  commerce, qui connaît les deux par leurs ports), et se décide avant B1.
+- B1 n'a donc plus de cas « retenue » à la porte.
