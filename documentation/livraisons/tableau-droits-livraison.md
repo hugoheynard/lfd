@@ -66,3 +66,18 @@
   leur migration seule : Postgres ne les retire plus jamais.
 - **Cache des droits** : jusqu'à 30 s après la mise en ligne, un refus peut
   encore tomber sur l'ancien droit. Ce n'est pas une panne.
+
+## 5. Ajouté le 2026-10-01 — passer une commande pour un client pro
+
+| Rôle                                 | Passer pour un client (**neuf**)<br/>`b2b_place_order` |
+| ------------------------------------ | ------------------------------------------------------ |
+| **admin**                            | écrit                                                  |
+| **commercial**                       | **écrit**                                              |
+| **comptoir**                         | **écrit**                                              |
+| comptabilité                         | — _(la reçoit à la bascule, à retirer à l'écran)_      |
+| support, communication, dev, livreur | —                                                      |
+
+> Ce tableau est désormais une **feuille de réglage** à appliquer à l'écran
+> (`/admin/staff-roles`) après la bascule de
+> [`plan-droits-par-geste.md`](plan-droits-par-geste.md) — plus un contenu de
+> migration.

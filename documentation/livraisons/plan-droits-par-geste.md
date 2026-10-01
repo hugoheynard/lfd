@@ -229,6 +229,30 @@ Côté écran, en plus des lignes de § 1.1 : `auth/permission.guard.ts:20`
 `app.routes.ts:169`. Chacun prend la ressource du geste qu'il ouvre ;
 `LANDINGS` gagne une entrée par ressource du fournil.
 
+### 5.1 bis — `b2b_place_order` : passer une commande pour un client pro
+
+> Hugo, 2026-10-01 : « il me faut aussi un droit `b2b_place_order`, qui est la
+> capacité à poser une commande pour un client pro — commercial et comptoir ».
+> Tranche DG-Q1 (« faut-il découper les commandes ? ») : **oui, ce geste-là**.
+
+| Route                                                                                                                                  | Ressource cible          |
+| -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `POST admin/orders` (passer pour un client)                                                                                            | `b2b_place_order`        |
+| `POST admin/orders/quote` (le devis qui précède)                                                                                       | `b2b_place_order`        |
+| `GET/PUT/DELETE admin/order-drafts/:companyId` (le brouillon)                                                                          | `b2b_place_order`        |
+| `GET admin/catalog/sellable` · `GET admin/catalog/companies/:companyId` (ce qu'on peut vendre, l'historique du client — pour composer) | `b2b_place_order`        |
+| `GET admin/orders` · `GET :id` · `GET :id/bon.pdf` · traçabilité tarifaire · `POST :id/rappel-retrait`                                 | **restent** `b2b_orders` |
+
+Ressource à **une action** utile (`write`) : il n'y a rien à « lire » dans le
+geste de passer une commande ; lire les commandes reste `b2b_orders:read`.
+Côté écran : la page « Nouvelle commande » (`app.routes.ts` l. 43 et 134) et
+son entrée de menu passent à `b2b_place_order:write`.
+
+**Bascule** : une source, `b2b_orders:write` → `b2b_place_order:write`. La
+comptabilité, qui tient `b2b_orders:write`, la reçoit le jour J ; Hugo la lui
+retire à l'écran (feuille de réglage). Réglage visé : **commercial et comptoir**
+(et l'admin).
+
 ### 5.2 BLOQUANT 1 — `ROLE_GRANTS` est encore une source en production
 
 Une fiche dont `role_key` est nul résout ses droits par
@@ -276,8 +300,10 @@ dérogations contradictoires sans règle. **Retiré.**
 
 ### 5.4 L'admin calculé sort de ce plan
 
-DG-D3 croise la garde anti-verrouillage (`staff-role-support.ts:44`,
-`keepsDirectory`, l. 146-179, qui raisonnent sur les `grants`) et ferait de
+DG-D3 croise la garde anti-verrouillage (`keepsDirectory` et la comparaison
+des dérogations, dans `staff/permissions/staff-access.policy.ts`, qui
+raisonnent sur les `grants` — localisé le 2026-10-01 ; la v1 de ce relevé
+citait une ligne d'un autre fichier) et ferait de
 `"admin"` une clé magique. Il mérite son propre plan. **Ici**, l'admin reçoit
 les quatre ressources par la bascule, comme tout rôle qui a `b2b_orders`.
 
