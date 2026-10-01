@@ -172,3 +172,20 @@ auteur), que « Non remis » peut lire.
 Questions encore ouvertes : la prise en charge (2), où le livreur scanne au
 chargement (3), « votre livraison est en route » au départ (5), la procédure
 affichée en roulant ou à l'arrivée (9), changer l'ordre (10).
+
+**Suite, tranché par Hugo le 2026-10-01 :**
+
+| Étape                      | Décision                                            | Ce que ça demande                                                                                                                                                                                                                                                          |
+| -------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **2 · Prise en charge**    | **Non** — le scan au chargement suffit              | rien                                                                                                                                                                                                                                                                       |
+| **3 · Charger**            | **Oui, dans « Ma tournée »**                        | un bouton « Charger » qui ouvre le scan et le plan de chargement de **sa** tournée, murés comme le reste (droit du livreur) ; l'écran de chargement actuel reste celui de l'admin                                                                                          |
+| **5 · Prévenir le client** | **Oui, « votre livraison est en route » au départ** | le départ publie un fait par le canal du commerce ; le **commerce** envoie le courriel (L6-C12 : un message au client vit au commerce). ⚠️ Le contact de livraison n'a pas d'e-mail (L6-C13) : le message part au **compte qui a commandé** tant que ce champ n'existe pas |
+| **9 · La procédure**       | **En roulant**                                      | déjà le cas : la carte de chaque arrêt la porte, dépliable, dès la liste (lot MT4)                                                                                                                                                                                         |
+
+### Les lots qui en sortent
+
+| Lot                                     | Contenu                                                                                               |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| **PL1 — Charger depuis « Ma tournée »** | scan et plan de chargement de **sa** tournée, sous le droit du livreur, avec le mur `driver_staff_id` |
+| **PL2 — « Tournée terminée »**          | un état **rentrée** de la tournée (instant, auteur) ; « Non remis » le lit ; les bacs sont libérés    |
+| **PL3 — « En route »**                  | le courriel au client au départ, envoyé par le commerce                                               |
