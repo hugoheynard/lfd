@@ -50,6 +50,11 @@ function round(fact: PhraseFact): Segment[] {
 
 const ROUND_KEYS = ['subjectLabel', 'day', 'passage'] as const;
 
+/** « , réglé d'avance » — une décision venue d'un réglage de livraison (B3 bis), pas d'un commercial. */
+function fromSetting(fact: PhraseFact): Segment[] {
+  return fact.payload['source'] === 'setting' ? [text(', réglé d’avance')] : [];
+}
+
 /** « en position 3 » — rien si la charge n'a pas figé de rang. */
 function atPosition(raw: unknown): Segment[] {
   const position = count(raw);
@@ -259,5 +264,34 @@ export const DELIVERY_ROUND_PHRASES = {
         text(') : photo, sans personne pour réceptionner'),
       ],
       [...ROUND_KEYS, 'order'],
+    ),
+  // Plan « À la porte », lot B (B3) : la décision du commercial sur un arrêt
+  // signalé — « Autoriser le dépôt cette fois », même signature exigée (LB-Q5).
+  'delivery_round.stop_deposit_authorized': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a autorisé le dépôt de '),
+        ...cite(ORDER, fact.payload['order']),
+        text(' ('),
+        ...round(fact),
+        text(') : cette fois, sans personne pour réceptionner'),
+        ...fromSetting(fact),
+      ],
+      [...ROUND_KEYS, 'order', 'source'],
+    ),
+  // B3, LB-Q2 : « Rapporter » — l'arrêt clos sans livraison, la commande revient.
+  'delivery_round.stop_brought_back': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a fait rapporter '),
+        ...cite(ORDER, fact.payload['order']),
+        text(' ('),
+        ...round(fact),
+        text(') : l’arrêt est clos sans livraison'),
+        ...fromSetting(fact),
+      ],
+      [...ROUND_KEYS, 'order', 'source'],
     ),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

@@ -25,6 +25,7 @@ import {
 } from '../my-round-packing';
 import { MyRoundStepPhoto } from '../my-round-step-photo/my-round-step-photo';
 import { contactNameOf, telHrefOf, windowLabel } from '../run-sheet';
+import { decisionBadgeOf } from '../stop-decisions';
 
 /**
  * **Un arrêt de « Ma tournée »** — ce qu'il faut savoir à la porte
@@ -130,6 +131,8 @@ export class MyRoundStop {
     const arrivedAt = this.stop().arrivedAt;
     return arrivedAt === null ? null : `Arrivé à ${parisTimeOf(arrivedAt)}`;
   });
+  /** La décision du commercial (B3) — « Autorisé : déposer », « Rapporté » —, ou `null`. */
+  protected readonly decision = computed(() => decisionBadgeOf(this.stop().decision));
   /** « Déjà retirée au comptoir », « Annulée » — ou `null` : le geste n'existe pas. */
   protected readonly closeLabel = computed(() => closeWithoutHandoverLabel(this.stop().orderState));
 

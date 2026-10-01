@@ -24,6 +24,7 @@ function stop(overrides: Partial<DoorstepStopState> = {}): DoorstepStop {
     arrivedAt: null,
     signatureRequired: false,
     depositAllowed: false,
+    decision: null,
     ...overrides,
   });
 }
@@ -86,5 +87,31 @@ describe("DoorstepStop.ensureDepositPermitted — « Déposé avec preuve » (B2
 
   it("sans instantané, la commande est nommée par son id", () => {
     expect(() => stop({ reference: "" }).ensureDepositPermitted()).toThrow(/o_1/);
+  });
+});
+
+describe("DoorstepStop.ensureDepositPermitted — la décision du commercial (B3, LB-Q5)", () => {
+  it("🔴 une autorisation du commercial l'emporte sur la signature exigée", () => {
+    const door = stop({ signatureRequired: true, decision: "authorize_deposit" });
+
+    expect(() => door.ensureDepositPermitted()).not.toThrow();
+  });
+
+  it("une autorisation du commercial suffit sans « dépôt autorisé » à l'adresse", () => {
+    expect(() => stop({ decision: "authorize_deposit" }).ensureDepositPermitted()).not.toThrow();
+  });
+
+  it("🔴 une décision qui attend, ou « Rapporter », n'ouvre pas le dépôt", () => {
+    expect(() => stop({ decision: "pending" }).ensureDepositPermitted()).toThrow(
+      DepositNotAllowedError,
+    );
+    expect(() =>
+      stop({ signatureRequired: true, decision: "bring_back" }).ensureDepositPermitted(),
+    ).toThrow(DepositSignatureRequiredError);
+  });
+
+  it("« rapportée » se lit sur l'arrêt", () => {
+    expect(stop({ decision: "bring_back" }).broughtBack).toBe(true);
+    expect(stop({ decision: "authorize_deposit" }).broughtBack).toBe(false);
   });
 });

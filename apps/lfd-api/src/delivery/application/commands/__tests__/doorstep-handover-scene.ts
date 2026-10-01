@@ -54,6 +54,7 @@ export function doorstep(overrides: Partial<DoorstepStopState> = {}): DoorstepSt
     arrivedAt: null,
     signatureRequired: false,
     depositAllowed: false,
+    decision: null,
     ...overrides,
   };
 }

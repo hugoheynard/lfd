@@ -349,9 +349,19 @@ model StaffNotification {
   /// identifiant, pas un nom.
   readBy String?   @map("read_by")
 
+  /// L'AUDIENCE d'une notification adressée par droit (`resource:action`, ex.
+  /// `b2b_companies:write` — plan « À la porte », B5) : visible et poussée
+  /// seulement à qui tient ce droit, résolu à la lecture et à l'envoi. Nulle :
+  /// le fil partagé, sous `staff_notifications:read`. 🔴 Chaque requête du fil
+  /// partagé porte `audience IS NULL` ; chaque requête « mes notifications »
+  /// porte `audience IN (mes droits)`. La lecture d'une notice d'audience est
+  /// commune à son audience : le premier qui la lit fait foi, comme au fil.
+  audience String?
+
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([readAt, occurredAt])
+  @@index([audience, readAt])
   @@map("staff_notifications")
   @@schema("public")
 }

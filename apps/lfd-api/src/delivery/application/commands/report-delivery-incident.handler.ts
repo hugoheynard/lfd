@@ -20,6 +20,7 @@ import {
 } from "../../domain/ports/driver-rounds.reader.js";
 import { IncidentPhoto } from "../../domain/value-objects/incident-photo.js";
 import { deliveryAuthorOf } from "../delivery-author.js";
+import { StopDecisionOpening } from "../stop-decision-opening.js";
 import { ReportDeliveryIncidentCommand } from "./report-delivery-incident.command.js";
 
 const logger = new Logger("ReportDeliveryIncident");
@@ -38,6 +39,11 @@ const logger = new Logger("ReportDeliveryIncident");
  * celui des pièces du fournil (`ProductionDocumentStore`) : opérationnel,
  * sans montant, gardé des semaines.
  *
+ * Un problème « à la remise » qui dit que le client ne respecte pas les
+ * conditions convenues OUVRE, dans la même unité, une décision du commercial
+ * sur l'arrêt — et la notification des commerciaux part après la validation
+ * (`StopDecisionOpening`, B3, B5).
+ *
  * @throws {DriverRoundNotFoundError} @throws {InvalidIncidentPhotoError}
  * @throws ceux de `DeliveryIncident.report`.
  */
@@ -55,6 +61,7 @@ export class ReportDeliveryIncidentHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly decisions: StopDecisionOpening,
   ) {}
 
   async execute(command: ReportDeliveryIncidentCommand): Promise<string> {
@@ -98,6 +105,7 @@ export class ReportDeliveryIncidentHandler implements ICommandHandler<
     try {
       await this.uow.run(async () => {
         await this.incidents.record(incident);
+        await this.decisions.openFor(incident, round, incident.toSnapshot().reportedAt);
         await this.events.publishTraced(
           new DeliveryIncidentReportedEvent(
             {

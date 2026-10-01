@@ -24,7 +24,7 @@ class SubscriptionsDouble extends StaffPushSubscriptions {
     this.forgotten.push(endpoint);
     return Promise.resolve();
   }
-  all(): Promise<readonly StaffPushTarget[]> {
+  ofStaff(): Promise<readonly StaffPushTarget[]> {
     return Promise.resolve([]);
   }
   markSent(): Promise<void> {

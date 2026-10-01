@@ -446,6 +446,42 @@ describe('MyRoundPage — à la porte (lot A, PL2)', () => {
     expect(cards[0]?.querySelector('[data-hand-over]')).toBeNull();
   });
 
+  it('la décision du commercial se lit sur la carte ; autorisé, le dépôt s’offre même signé (B3)', async () => {
+    const decided = {
+      source: 'staff',
+      decidedAt: '2030-03-12T08:12:00.000Z',
+      decidedByName: 'Léa Martin',
+    } as const;
+    const { element } = await boot({
+      round: myRoundOf({
+        departedAt,
+        stops: [
+          // Le serveur calcule `canDeposit` : l'autorisation l'emporte sur la signature (LB-Q5).
+          myStopOf({
+            rank: 1,
+            signatureRequired: true,
+            canDeposit: true,
+            decision: { state: 'authorize_deposit', ...decided },
+          }),
+          myStopOf({
+            rank: 2,
+            decision: { state: 'pending', source: null, decidedAt: null, decidedByName: null },
+          }),
+          myStopOf({ rank: 3, decision: { state: 'bring_back', ...decided } }),
+        ],
+      }),
+    });
+    const cards = element.querySelectorAll('[data-my-stop]');
+
+    expect(cards[0]?.querySelector('[data-decision]')?.textContent).toContain('Autorisé : déposer');
+    expect(cards[0]?.querySelector('[data-deposit]')).not.toBeNull();
+    expect(cards[1]?.querySelector('[data-decision]')?.textContent).toContain(
+      'En attente du commercial',
+    );
+    expect(cards[1]?.querySelector('[data-deposit]')).toBeNull();
+    expect(cards[2]?.querySelector('[data-decision]')?.textContent).toContain('Rapporté');
+  });
+
   it('« Déposé avec preuve » n’est pas offert sur une commande annulée, ni au dépôt', async () => {
     const cancelled = await boot({
       round: myRoundOf({

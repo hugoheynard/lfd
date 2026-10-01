@@ -238,6 +238,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'livraison/ma-tournee': 'delivery_driving:read',
   'livraison/tournees': 'delivery_rounds:read',
   'livraison/non-remis': 'delivery_rounds:read',
+  // « À décider » (plan-a-la-porte.md, B3) : le droit des commerciaux, pas des tournées.
+  'livraison/a-decider': 'b2b_companies:write',
   'livraison/simulateur': 'delivery_rounds:read',
   'livraison/assistant-achat': 'delivery_rounds:read',
   // Le chargement (lot 4) : ouvrir un bac, une tournée, des étiquettes est une

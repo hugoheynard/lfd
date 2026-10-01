@@ -154,11 +154,15 @@ model OrderHandover {
 /// sur une commande partie est refusé — le produit n'est plus là.
 ///
 /// Une ligne par commande ; un second départ (une commande rapportée qui
-/// repart un autre jour) réécrit l'instant.
+/// repart un autre jour) réécrit l'instant et efface le retour.
 model OrderDeparture {
   /// L'identifiant de la commande côté COMMERCE, opaque.
-  orderId    String   @id @map("order_id")
-  departedAt DateTime @map("departed_at")
+  orderId    String    @id @map("order_id")
+  departedAt DateTime  @map("departed_at")
+  /// « Rapportée » (plan « À la porte », B3, LB-Q2) : l'arrêt est clos sans
+  /// livraison, la commande est revenue — elle redevient contrôlable. Nul :
+  /// partie, et pas revenue. Posé seulement sur un départ antérieur ou égal.
+  returnedAt DateTime? @map("returned_at")
 
   @@map("order_departure")
   @@schema("production")

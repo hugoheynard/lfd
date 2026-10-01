@@ -8,6 +8,7 @@ import {
   DoorstepStopNotFoundError,
   StopClosedWithoutHandoverError,
 } from "../../../domain/errors/delivery-doorstep-errors.js";
+import { StopBroughtBackError } from "../../../domain/errors/delivery-decision-errors.js";
 import { DriverRoundNotFoundError } from "../../../domain/errors/delivery-driver-errors.js";
 import { DepositStopCommand } from "../deposit-stop.command.js";
 import { DepositStopHandler } from "../deposit-stop.handler.js";
@@ -169,6 +170,36 @@ describe("DepositStopHandler — « Déposé avec preuve » (B2)", () => {
     await expect(handler.execute(depose({ stopId: "s_9" }))).rejects.toThrow(
       DoorstepStopNotFoundError,
     );
+    expect(attestor.attested).toEqual([]);
+  });
+
+  it("🔴 B3 / LB-Q5 : autorisé par un commercial, le dépôt passe MÊME signature exigée", async () => {
+    const { handler, attestor, rounds } = scene({
+      stop: { signatureRequired: true, decision: "authorize_deposit" },
+    });
+
+    await handler.execute(depose());
+
+    expect(attestor.attested[0]).toMatchObject({ orderId: "o_1", receiverName: null });
+    expect(rounds.stored("r_1")?.hasClosed("s_1")).toBe(true);
+  });
+
+  it("🔴 la décision n'est plus « Autoriser » : le dépôt est refusé", async () => {
+    const { handler, attestor } = scene({ stop: { decision: "pending" } });
+
+    await expect(handler.execute(depose())).rejects.toThrow(DepositNotAllowedError);
+    expect(attestor.attested).toEqual([]);
+  });
+
+  it("🔴 rejoué sur un arrêt RAPPORTÉ par un commercial : refusé en le disant", async () => {
+    const round = roundState();
+    round.closeStop("s_1", NOW);
+    const { handler, attestor } = scene({
+      rounds: new InMemoryDeliveryRounds(round),
+      stop: { depositAllowed: true, decision: "bring_back" },
+    });
+
+    await expect(handler.execute(depose({ version: 3 }))).rejects.toThrow(StopBroughtBackError);
     expect(attestor.attested).toEqual([]);
   });
 });

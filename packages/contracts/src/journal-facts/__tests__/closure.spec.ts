@@ -60,6 +60,10 @@ const BARE_REFS: Readonly<Record<string, string>> = {
     "nommée par son numéro figé au départ ; un arrêt sans instantané n'a pas de nom à donner",
   "delivery_round.stop_deposited:order":
     "nommée par son numéro figé au départ ; un arrêt sans instantané n'a pas de nom à donner",
+  "delivery_round.stop_deposit_authorized:order":
+    "nommée par son numéro figé au départ ; un arrêt sans instantané n'a pas de nom à donner",
+  "delivery_round.stop_brought_back:order":
+    "nommée par son numéro figé au départ ; un arrêt sans instantané n'a pas de nom à donner",
   "delivery_round.stop_closed_without_handover:order":
     "nommée par son numéro lu au commerce ; une commande qu'il ne connaît plus n'a plus de nom à donner",
   "delivery_round.proposal_applied:rounds[].before[]":

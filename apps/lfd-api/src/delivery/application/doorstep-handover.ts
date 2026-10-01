@@ -13,6 +13,7 @@ import {
   DoorstepStopNotFoundError,
   StopClosedWithoutHandoverError,
 } from "../domain/errors/delivery-doorstep-errors.js";
+import { StopBroughtBackError } from "../domain/errors/delivery-decision-errors.js";
 import { DriverRoundNotFoundError } from "../domain/errors/delivery-driver-errors.js";
 import type { CitedOrder } from "../domain/events/delivery-round.events.js";
 import { citeStopOrder } from "../domain/events/delivery-doorstep.events.js";
@@ -107,7 +108,8 @@ export class DoorstepHandover {
    * porte — l'attestation existante est republiée.
    *
    * @throws {DriverRoundNotFoundError} @throws {DoorstepStopNotFoundError}
-   * @throws {StopClosedWithoutHandoverError} @throws {DoorstepRoundStaleError}
+   * @throws {StopClosedWithoutHandoverError} @throws {StopBroughtBackError}
+   * @throws {DoorstepRoundStaleError}
    * @throws ceux de `admit`, du retrait, et de `closeStop`.
    */
   async closeAtDoor(
@@ -153,9 +155,13 @@ export class DoorstepHandover {
   /**
    * Rejoué sur un arrêt clos (§ 10 bis) : remis ou déposé à la porte,
    * l'attestation existante repart vers le commerce — c'est ce qui répare un
-   * `fulfilled` manqué ; clos sans remise, le livreur l'apprend.
+   * `fulfilled` manqué ; rapporté par un commercial (B3) ou clos sans remise,
+   * le livreur l'apprend, nommé.
    */
   private async replay(stop: DoorstepStop): Promise<void> {
+    if (stop.broughtBack) {
+      throw new StopBroughtBackError(stop.label);
+    }
     const publish = await this.attestor.republication(stop.orderId);
     if (publish === null) {
       throw new StopClosedWithoutHandoverError(stop.label);

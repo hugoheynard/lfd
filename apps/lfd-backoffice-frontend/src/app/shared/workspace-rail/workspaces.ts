@@ -209,6 +209,15 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     needs: 'delivery_rounds:read',
   },
   {
+    // Le COMMERCIAL répond aux problèmes à la porte (plan-a-la-porte.md, B3) :
+    // son droit, pas celui des tournées.
+    key: 'a-decider',
+    label: 'À décider',
+    link: '/livraison/a-decider',
+    icon: 'help',
+    needs: 'b2b_companies:write',
+  },
+  {
     key: 'simulateur',
     label: 'Simulateur',
     link: '/livraison/simulateur',

@@ -1,3 +1,4 @@
+import type { StopDecisionSource } from "@lfd/contracts";
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
@@ -19,6 +20,8 @@ export const DOORSTEP_FACTS = {
   stopClosedWithoutHandover: "delivery_round.stop_closed_without_handover",
   stopHandedOver: "delivery_round.stop_handed_over",
   stopDeposited: "delivery_round.stop_deposited",
+  stopDepositAuthorized: "delivery_round.stop_deposit_authorized",
+  stopBroughtBack: "delivery_round.stop_brought_back",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /** Pourquoi un arrêt se clôt sans remise : la commande l'était déjà, ou elle est annulée. */
@@ -149,6 +152,42 @@ export class DeliveryStopDepositedEvent implements JournaledEvent {
   journalFact(): JournalFact {
     return doorstepFact(DOORSTEP_FACTS.stopDeposited, roundKeyOf(this.round), {
       order: this.order,
+    });
+  }
+}
+
+/**
+ * « Autoriser le dépôt cette fois » (B3, LB-Q5) — la décision d'un commercial
+ * sur un arrêt signalé. L'acteur, le commercial, est sur la ligne. La tournée
+ * n'est pas mutée : sa clé suffit.
+ */
+export class DeliveryStopDepositAuthorizedEvent implements JournaledEvent {
+  constructor(
+    readonly round: DoorstepRoundKey,
+    readonly order: CitedOrder,
+    readonly source: StopDecisionSource,
+  ) {}
+
+  journalFact(): JournalFact {
+    return doorstepFact(DOORSTEP_FACTS.stopDepositAuthorized, this.round, {
+      order: this.order,
+      source: this.source,
+    });
+  }
+}
+
+/** « Rapporter » (B3, LB-Q2) — l'arrêt clos « rapporté » ; la commande n'est pas livrée. */
+export class DeliveryStopBroughtBackEvent implements JournaledEvent {
+  constructor(
+    readonly round: DoorstepRoundKey,
+    readonly order: CitedOrder,
+    readonly source: StopDecisionSource,
+  ) {}
+
+  journalFact(): JournalFact {
+    return doorstepFact(DOORSTEP_FACTS.stopBroughtBack, this.round, {
+      order: this.order,
+      source: this.source,
     });
   }
 }

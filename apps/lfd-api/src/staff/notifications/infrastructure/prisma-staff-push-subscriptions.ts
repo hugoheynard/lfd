@@ -21,8 +21,8 @@ export class PrismaStaffPushSubscriptions extends StaffPushSubscriptions {
   }
 
   async save(target: StaffPushTarget, staffUserId: string): Promise<void> {
-    // Une trace de qui a abonné l'installation, pas un ciblage (plan de
-    // l'auteur, D9) : `all()` pousse à toutes.
+    // La clé de routage (B5) : l'installation reçoit ce que son dernier
+    // abonné a le droit de recevoir.
     await this.prisma.staffPushSubscription.upsert({
       where: { endpoint: target.endpoint },
       create: { id: this.ids.next(), ...target, staffUserId },
@@ -35,8 +35,13 @@ export class PrismaStaffPushSubscriptions extends StaffPushSubscriptions {
     await this.prisma.staffPushSubscription.deleteMany({ where: { endpoint } });
   }
 
-  async all(): Promise<readonly StaffPushTarget[]> {
+  /** 🔴 Le mur de la poussée : `staff_user_id IN (…)`, jamais toutes les lignes. */
+  async ofStaff(staffUserIds: readonly string[]): Promise<readonly StaffPushTarget[]> {
+    if (staffUserIds.length === 0) {
+      return [];
+    }
     return this.prisma.staffPushSubscription.findMany({
+      where: { staffUserId: { in: [...staffUserIds] } },
       select: { endpoint: true, p256dh: true, auth: true },
     });
   }

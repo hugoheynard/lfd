@@ -1,6 +1,7 @@
 import type { BillingAddressPayload, DeliveryContact, GpsPoint } from "./address.js";
 import type { DeliveryIncidentView, DeliveryStopOrderState } from "./delivery-doorstep.js";
 import type { DeparturePointView } from "./delivery-settings.js";
+import type { StopDecisionView } from "./delivery-stop-decision.js";
 import type { FulfillmentSource } from "./order.js";
 
 /**
@@ -154,10 +155,18 @@ export interface MyDeliveryStopView {
   readonly depositAllowed: boolean;
   /**
    * « Déposé avec preuve » est-il permis ? Calculé par le serveur : le dépôt
-   * autorisé ET aucune signature exigée — la signature l'emporte toujours
-   * (AP-Q6). L'écran ne refait pas la règle.
+   * autorisé ET aucune signature exigée — la signature l'emporte (AP-Q6) —,
+   * OU l'autorisation d'un commercial pour cet arrêt, qui l'emporte sur la
+   * signature (B3, LB-Q5). L'écran ne refait pas la règle.
    */
   readonly canDeposit: boolean;
+  /**
+   * La décision du commercial sur cet arrêt (`plan-a-la-porte.md`, B3), ou
+   * `null` : aucun signalement n'en a ouvert. « Autorisé : déposer » ouvre
+   * {@link canDeposit} même signature exigée (LB-Q5) ; « Rapporté » clôt
+   * l'arrêt.
+   */
+  readonly decision: StopDecisionView | null;
   /**
    * Où en est la commande, lue vivante au commerce : une commande déjà
    * retirée ou annulée se clôt sans remise (AP-D2).

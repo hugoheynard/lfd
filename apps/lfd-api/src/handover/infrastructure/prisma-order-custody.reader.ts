@@ -26,8 +26,9 @@ export class PrismaOrderCustodyReader extends OrderCustodyReader {
     }
     const ids = [...orderIds];
     const [departed, handedOver] = await Promise.all([
+      // Une commande « rapportée » (B3) est revenue : elle n'est plus partie.
       this.prisma.orderDeparture.findMany({
-        where: { orderId: { in: ids } },
+        where: { orderId: { in: ids }, returnedAt: null },
         select: { orderId: true },
       }),
       this.prisma.orderHandover.findMany({

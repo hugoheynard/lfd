@@ -7,12 +7,14 @@
  * | `DepartureHoldsReader`    | « lesquelles sont retenues ? », au départ   |
  * | `DepartedOrdersAnnouncer` | « elles sont parties », après la validation |
  * | `DoorstepHandoverAttestor`| « atteste cette remise », à la porte (B1)   |
+ * | `BroughtBackOrdersAnnouncer` | « elles sont revenues », rapportées (B3) |
  *
  * `lint:context-boundaries` n'autorise `handover → delivery` que par ce
  * chemin ; `delivery → handover` reste interdit.
  */
 export { DepartureHoldsReader } from "./departure-holds.reader.js";
 export { DepartedOrdersAnnouncer } from "./departed-orders.announcer.js";
+export { BroughtBackOrdersAnnouncer } from "./brought-back-orders.announcer.js";
 export {
   DoorstepHandoverAttestor,
   type DoorstepHandoverRequest,

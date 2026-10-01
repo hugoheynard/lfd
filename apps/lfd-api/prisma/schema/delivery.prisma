@@ -379,6 +379,51 @@ model DeliveryIncident {
   @@schema("delivery")
 }
 
+/// **La décision du commercial sur un arrêt** (plan « À la porte », § 10 B3,
+/// § 10 bis « La décision a un propriétaire », LB-Q2, LB-Q5) — UNE ligne par
+/// arrêt : la décision VIVANTE ; son histoire (qui, quand, chaque réponse) est
+/// au journal.
+///
+/// Ouverte par un signalement « à la remise » (personne, refus, accès
+/// impossible) ; `outcome` nul : à décider. Écrivain : `delivery/` seul — le
+/// signalement qui l'ouvre, le commercial qui répond (B3) ; un réglage
+/// décidé d'avance l'écrira (`source = setting`, B3 bis). Elle ne touche PAS
+/// la version de la tournée que présente le livreur : « Autoriser » n'écrit
+/// qu'ici. « Rapporter » clôt aussi l'arrêt, par la tournée (LB-Q2).
+///
+/// Les courses se tiennent par le VERROU de la tournée (`SELECT … FOR
+/// UPDATE`), que le dépôt du livreur prend aussi, puis par `version` dans le
+/// `where` de chaque écriture.
+///
+/// ⚠️ Tenu en base et invisible ici : `outcome` ∈ {`authorize_deposit`,
+/// `bring_back`}, `source` ∈ {`staff`, `setting`}, et une décision prise porte
+/// sa source, son instant et son auteur — une décision ouverte n'en porte
+/// aucun. `service_day` : trois déclencheurs `day_change` le lisent, et
+/// « Ma tournée » voit la décision arriver.
+model DeliveryStopDecision {
+  stopId             String    @id @map("stop_id")
+  roundId            String    @map("round_id")
+  orderId            String    @map("order_id")
+  serviceDay         String    @map("service_day") @db.VarChar(10)
+  /// Le premier signalement qui l'a ouverte.
+  openedByIncidentId String    @map("opened_by_incident_id")
+  openedAt           DateTime  @map("opened_at")
+  /// Nul : à décider.
+  outcome            String?   @db.VarChar(24)
+  source             String?   @db.VarChar(8)
+  decidedAt          DateTime? @map("decided_at")
+  /// La fiche staff qui a répondu en dernier ; nulle pour un réglage, ou à décider.
+  decidedBy          String?   @map("decided_by")
+  /// Son nom FIGÉ à la réponse ; `""` quand l'annuaire n'en connaissait pas.
+  decidedByName      String?   @map("decided_by_name")
+  version            Int       @default(1)
+
+  @@index([roundId])
+  @@index([serviceDay])
+  @@map("stop_decision")
+  @@schema("delivery")
+}
+
 /// **Les réglages du calcul de tournée** (lot 7, L7-C13, L7-C15) — UNE ligne,
 /// clé naturelle, auteur figé, comme `DeliveryDeparture`.
 ///

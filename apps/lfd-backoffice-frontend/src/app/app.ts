@@ -41,7 +41,6 @@ import { DEV_TOOLS } from './dev/dev-tools';
 import { StaffAuth } from './auth/staff-auth';
 import { StaffLoginPage } from './auth/staff-login/staff-login';
 import { PushNotificationsService } from './shared/push/push-notifications.service';
-import { CanDirective } from './shared/can/can.directive';
 import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
 import { groupRailItems, WorkspaceRailStore } from './shared/workspace-rail/workspace-rail.store';
 import { WorkspaceCatalogue } from './shared/workspace-rail/workspaces';
@@ -83,7 +82,6 @@ import { WorkspaceCatalogue } from './shared/workspace-rail/workspaces';
     FoldToastContainerComponent,
     NotificationBell,
     StaffLoginPage,
-    CanDirective,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -202,7 +200,9 @@ export class App {
       this.permissions.can('delivery_rounds:read') ||
       this.permissions.can('delivery_loading:read') ||
       this.permissions.can('delivery_settings:read') ||
-      this.permissions.can('delivery_driving:read'),
+      this.permissions.can('delivery_driving:read') ||
+      // « À décider » (plan-a-la-porte.md, B3) : le commercial y répond.
+      this.permissions.can('b2b_companies:write'),
   );
 
   /**
@@ -279,6 +279,9 @@ export class App {
   protected readonly noAccess = computed(
     () => this.permissions.loaded() && this.permissions.permissions().length === 0,
   );
+
+  /** Les droits sont lus — la cloche les attend pour savoir quels fils interroger. */
+  protected readonly permissionsLoaded = this.permissions.loaded;
 
   /** Session en cours de résolution : on ne montre ni la porte ni l'app. */
   protected readonly resolving = this.auth.isLoading;

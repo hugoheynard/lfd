@@ -25,6 +25,9 @@ import { DeclareStopArrivalCommand } from "../declare-stop-arrival.command.js";
 import { DeclareStopArrivalHandler } from "../declare-stop-arrival.handler.js";
 import { ReportDeliveryIncidentCommand } from "../report-delivery-incident.command.js";
 import { ReportDeliveryIncidentHandler } from "../report-delivery-incident.handler.js";
+import { StopDecisionOpening } from "../../stop-decision-opening.js";
+import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
+import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { ReturnDeliveryRoundCommand } from "../return-delivery-round.command.js";
 import { ReturnDeliveryRoundHandler } from "../return-delivery-round.handler.js";
 import { ReturnMyRoundCommand } from "../return-my-round.command.js";
@@ -36,6 +39,7 @@ import {
   InMemoryDoorstepStops,
   InMemoryIncidents,
 } from "./doorstep-doubles.js";
+import { InMemoryStopDecisions, openDecision, RecordingStaffNotifier } from "./decision-doubles.js";
 import { deliveryOn, FixedDeliveryOrders, InMemoryDeliveryRounds } from "./round-doubles.js";
 
 // Des instants comparés entre eux seulement, jamais à l'horloge.
@@ -58,6 +62,7 @@ function doorstep(overrides: Partial<DoorstepStopState> = {}): DoorstepStopState
     arrivedAt: null,
     signatureRequired: false,
     depositAllowed: false,
+    decision: null,
     ...overrides,
   };
 }
@@ -253,7 +258,9 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
     ],
   };
 
-  function reporting() {
+  function reporting(decisions = new InMemoryStopDecisions()) {
+    const notifier = new RecordingStaffNotifier();
+    const afterCommit = new HeldAfterCommit();
     const incidents = new InMemoryIncidents();
     const store = new InMemoryDocuments();
     const events = new RecordingPublisher();
@@ -268,8 +275,9 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
       new FixedClock(NOW),
       events,
       new DirectUnitOfWork(),
+      new StopDecisionOpening(decisions, notifier, afterCommit, new BackgroundWork()),
     );
-    return { handler, incidents, store, events };
+    return { handler, incidents, store, events, decisions, notifier, afterCommit };
   }
 
   const FIELDS = { family: "doorstep", reason: "nobody_present", note: "", stopId: "s_1" } as const;
@@ -334,6 +342,98 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
     ).rejects.toThrow("base en panne");
     expect(store.objects.size).toBe(0);
     expect(store.deleted).toEqual(["delivery/incidents/r_1/inc_000001"]);
+  });
+
+  it("🔴 B3 : « personne » ouvre une décision ; les commerciaux sont prévenus APRÈS la validation", async () => {
+    const { handler, decisions, notifier, afterCommit } = reporting();
+
+    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, null));
+
+    expect(decisions.stored("s_1")).toMatchObject({
+      roundId: "r_1",
+      orderId: "o_1",
+      serviceDay: DAY,
+      openedByIncidentId: "inc_000001",
+      openedAt: NOW,
+      outcome: null,
+    });
+    expect(notifier.notified).toEqual([]);
+
+    await afterCommit.commit();
+
+    expect(notifier.notified).toEqual([
+      expect.objectContaining({
+        kind: "delivery.stop_decision",
+        audience: "b2b_companies:write",
+        idempotencyKey: "delivery.stop_decision:inc_000001",
+        link: "/livraison/a-decider",
+      }),
+    ]);
+  });
+
+  it("🔴 la transaction qui échoue n'ouvre rien et ne prévient personne", async () => {
+    const { handler, incidents, notifier, afterCommit } = reporting();
+    incidents.failing = true;
+
+    await expect(
+      handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, null)),
+    ).rejects.toThrow("base en panne");
+    afterCommit.discard();
+    await afterCommit.commit();
+
+    expect(notifier.notified).toEqual([]);
+  });
+
+  it("un second signalement garde la décision ouverte et prévient encore — une notice par signalement", async () => {
+    const decisions = new InMemoryStopDecisions(openDecision({ openedByIncidentId: "inc_0" }));
+    const { handler, notifier, afterCommit } = reporting(decisions);
+
+    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, null));
+    await afterCommit.commit();
+
+    expect(decisions.stored("s_1")?.openedByIncidentId).toBe("inc_0");
+    expect(notifier.notified.map((notice) => notice.idempotencyKey)).toEqual([
+      "delivery.stop_decision:inc_000001",
+    ]);
+  });
+
+  it("une autorisation déjà donnée ne se redemande pas", async () => {
+    const decisions = new InMemoryStopDecisions(
+      openDecision({
+        outcome: "authorize_deposit",
+        source: "staff",
+        decidedAt: NOW,
+        decidedBy: "staff_lea",
+        decidedByName: "Léa",
+      }),
+    );
+    const { handler, notifier, afterCommit } = reporting(decisions);
+
+    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", FIELDS, null));
+    await afterCommit.commit();
+
+    expect(notifier.notified).toEqual([]);
+    expect(decisions.saves).toEqual([]);
+  });
+
+  it("un problème qui n'est pas du client (marchandise abîmée, technique) n'ouvre rien", async () => {
+    const { handler, decisions, notifier, afterCommit } = reporting();
+
+    await handler.execute(
+      new ReportDeliveryIncidentCommand(PAUL, "r_1", { ...FIELDS, reason: "goods_damaged" }, null),
+    );
+    await handler.execute(
+      new ReportDeliveryIncidentCommand(
+        PAUL,
+        "r_1",
+        { family: "technical", reason: "cold_failure", note: "", stopId: "s_1" },
+        null,
+      ),
+    );
+    await afterCommit.commit();
+
+    expect(decisions.stored("s_1")).toBeUndefined();
+    expect(notifier.notified).toEqual([]);
   });
 
   it("🔴 le mur : la tournée d'un autre livreur prend 404", async () => {

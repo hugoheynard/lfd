@@ -100,6 +100,11 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
     return this.loadForDriverDeparture(id, staffUserId);
   }
 
+  /** Le verrou du départ, sans mur, pour la décision d'un commercial (B3). Voir le port. */
+  async loadForDecision(id: string): Promise<DeliveryRound | null> {
+    return this.loadForDeparture(id);
+  }
+
   async save(round: DeliveryRound): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       // Une autre ouverture vient de prendre ce passage : on relit.

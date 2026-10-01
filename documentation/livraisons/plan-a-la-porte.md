@@ -368,16 +368,51 @@ dont la validation échouerait. B0 ajoute « exécuter après la validation »
 - Écran staff : une liste « À décider » (signalements de remise ouverts, du
   jour). **Prévenir** les commerciaux : voir B5.
 
+> 🔨 **B3 bâti le 2026-10-01 (non commité à l'écriture de cette ligne)**, avec
+> LB-Q2 et LB-Q5. Table `delivery.stop_decision` (migration
+> `20261001190000_la_decision_du_commercial`, trois déclencheurs `day_change` :
+> « Ma tournée » relit) : une ligne par arrêt, ouverte par un signalement
+> `doorstep` « personne », « refus » ou « accès impossible » (`opensDecision` ;
+> « dépôt interdit » n'est pas un motif du contrat, il qualifie « personne »).
+> Routes `admin/livraison/a-decider` (`GET`, `POST /:stopId/autoriser-depot`,
+> `POST /:stopId/rapporter`), sous `b2b_companies:write` lecture comprise
+> (`STOP_DECISION_PERMISSION` : commercial et admin dans la graine). La réponse
+> lit la tournée sous son verrou (`loadForDecision`, celui que prend le dépôt),
+> relit la décision, l'écrit conditionnée par sa `version` ; « Autoriser »
+> n'écrit pas la tournée. « Rapporter » la CLÔT par `closeStop` (la version du
+> livreur avance) et annonce au retrait, après validation,
+> `BroughtBackOrdersAnnouncer` → `order_departure.returned_at` : le contrôle
+> qualité reprend la commande. `DoorstepStop.ensureDepositPermitted` lit la
+> décision vivante (l'autorisation l'emporte sur la signature) ; un rejeu sur
+> un arrêt rapporté est refusé (`StopBroughtBackError`). Colonne `source`
+> (`staff` | `setting`) posée pour B3 bis, que rien n'écrit encore. Faits
+> `delivery_round.stop_deposit_authorized` / `stop_brought_back`. Écran
+> `/livraison/a-decider` ; la carte du livreur porte la décision.
+
 ### B4 — « Tournée terminée » exige un sort pour chaque arrêt
 
 Refus tant qu'un arrêt n'a ni livraison (remis, déposé), ni décision actée
 (clos sans remise, « Rapporter ») — nommé, comme au départ.
 
-### B5 — Prévenir les commerciaux — ⏸️ en attente
+### B5 — Prévenir les commerciaux
 
 Demande une notification adressée par droit : c'est le chantier mis de côté
 avec PL5 ([`plan-tournee-prete.md`](plan-tournee-prete.md)). Sans lui, la
 liste « À décider » (B3) est la seule entrée.
+
+> 🔨 **B5 bâti le 2026-10-01 (non commité à l'écriture de cette ligne)**, rouvert
+> par LB-Q3. Colonne `staff_notifications.audience` (migration
+> `20261001190100_les_notifications_par_droit`) : nulle, le fil partagé ;
+> renseignée, un droit `resource:action`. Le fil partagé porte
+> `audience IS NULL` dans ses quatre requêtes ; « mes notifications »
+> (`admin/me/notifications`, authentification seule) porte
+> `audience IN (mes droits)`. La poussée résout À L'ENVOI qui tient
+> `staff_notifications:read` (notice partagée) ou le droit visé
+> (`StaffPermissionHolders`), et n'écrit qu'à leurs appareils
+> (`StaffPushSubscriptions.ofStaff`) ; route d'abonnement
+> `admin/me/notifications/push`. Notice « Livraison à décider », une par
+> signalement, émise après validation. La cloche du front est celle de tout
+> staff, et n'appelle le fil partagé qu'avec `staff_notifications:read`.
 
 ### 10 bis. Après `vitruve` (2026-10-01) — 3 BLOQUANT, 7 SÉRIEUX
 

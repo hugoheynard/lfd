@@ -1,5 +1,8 @@
+import type { StaffPermission } from "@lfd/contracts";
+
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { FixedStaffPermissionHolders } from "../../../directory/domain/__tests__/fixed-staff-permission-holders.js";
 import { StaffNoticeStore, type StaffNotice } from "../../domain/ports/staff-notifier.js";
 import {
   StaffPushSender,
@@ -25,6 +28,32 @@ function notice(key: string): StaffNotice {
 const PHONE: StaffPushTarget = { endpoint: "https://push.example/1", p256dh: "k", auth: "a" };
 const TABLET: StaffPushTarget = { endpoint: "https://push.example/2", p256dh: "k", auth: "a" };
 
+/** Une installation, et la fiche qui l'a abonnée — la clé de routage (B5). */
+interface Owned {
+  readonly target: StaffPushTarget;
+  readonly staffUserId: string;
+}
+
+/** Ana tient la cloche partagée ; c'est elle qui a abonné les appareils par défaut. */
+const ANA = "staff_ana";
+const owned = (target: StaffPushTarget, staffUserId = ANA): Owned => ({ target, staffUserId });
+
+/** Qui tient quoi, au moment de l'envoi : Ana, la cloche partagée. */
+function holders(
+  entries: readonly (readonly [StaffPermission, readonly string[]])[] = [
+    ["staff_notifications:read", [ANA]],
+  ],
+): FixedStaffPermissionHolders {
+  return new FixedStaffPermissionHolders(
+    new Map(
+      entries.map(([permission, ids]) => [
+        permission,
+        ids.map((staffUserId) => ({ staffUserId, firstName: staffUserId, lastName: "" })),
+      ]),
+    ),
+  );
+}
+
 const NOTHING: PushOutcome = { gone: [], rejected: [] };
 
 class StoreDouble extends StaffNoticeStore {
@@ -43,7 +72,9 @@ class SubscriptionsDouble extends StaffPushSubscriptions {
   sent: string[] = [];
   failing: string[] = [];
   expiredBefore: Date | null = null;
-  constructor(private readonly targets: readonly StaffPushTarget[] = [PHONE]) {
+  /** Les fiches dont on a demandé les installations, envoi par envoi. */
+  readonly askedFor: (readonly string[])[] = [];
+  constructor(private readonly targets: readonly Owned[] = [owned(PHONE)]) {
     super();
   }
   save(): Promise<void> {
@@ -53,8 +84,13 @@ class SubscriptionsDouble extends StaffPushSubscriptions {
     this.forgotten.push(endpoint);
     return Promise.resolve();
   }
-  all(): Promise<readonly StaffPushTarget[]> {
-    return Promise.resolve(this.targets);
+  ofStaff(staffUserIds: readonly string[]): Promise<readonly StaffPushTarget[]> {
+    this.askedFor.push(staffUserIds);
+    return Promise.resolve(
+      this.targets
+        .filter((entry) => staffUserIds.includes(entry.staffUserId))
+        .map((entry) => entry.target),
+    );
   }
   markSent(endpoints: readonly string[]): Promise<void> {
     this.sent.push(...endpoints);
@@ -105,10 +141,11 @@ function build(
   store: StoreDouble,
   subs: SubscriptionsDouble,
   sender: SenderDouble,
+  who: FixedStaffPermissionHolders = holders(),
 ): { notifier: PushingStaffNotifier; settled: () => Promise<void> } {
   const work = new BackgroundWork();
   return {
-    notifier: new PushingStaffNotifier(store, subs, sender, new FixedClock(AT), work),
+    notifier: new PushingStaffNotifier(store, subs, sender, new FixedClock(AT), work, who),
     settled: () => work.whenIdle(),
   };
 }
@@ -119,8 +156,9 @@ async function notifyAndSettle(
   subs: SubscriptionsDouble,
   sender: SenderDouble,
   notices: readonly StaffNotice[],
+  who?: FixedStaffPermissionHolders,
 ): Promise<void> {
-  const { notifier, settled } = build(store, subs, sender);
+  const { notifier, settled } = build(store, subs, sender, who);
   await notifier.notify(notices);
   await settled();
 }
@@ -203,7 +241,7 @@ describe("la cloche qui pousse", () => {
       gone: [PHONE.endpoint],
       rejected: [TABLET.endpoint],
     });
-    const subs = new SubscriptionsDouble([PHONE, TABLET]);
+    const subs = new SubscriptionsDouble([owned(PHONE), owned(TABLET)]);
     await notifyAndSettle(new StoreDouble([created]), subs, sender, [created]);
 
     expect(subs.forgotten).toEqual([PHONE.endpoint]);
@@ -216,5 +254,68 @@ describe("la cloche qui pousse", () => {
     await notifyAndSettle(new StoreDouble([created]), subs, new SenderDouble(null), [created]);
 
     expect(subs.sent).toEqual([]);
+  });
+});
+
+/**
+ * Le mur de la poussée, dans les deux sens (`plan-a-la-porte.md`, B5 ;
+ * `plan-tournee-prete.md`, PL5-D2). Régression : la poussée partait à TOUS
+ * les abonnements (`all()`) — un livreur qui abonnait son téléphone aurait
+ * reçu toutes les alertes partagées.
+ */
+describe("la poussée suit le mur de la lecture", () => {
+  const DRIVER = "staff_paul";
+  const SALES = "staff_lea";
+  const DRIVER_PHONE: StaffPushTarget = {
+    endpoint: "https://push.example/paul",
+    p256dh: "k",
+    auth: "a",
+  };
+  const SALES_PHONE: StaffPushTarget = {
+    endpoint: "https://push.example/lea",
+    p256dh: "k",
+    auth: "a",
+  };
+  const devices = (): SubscriptionsDouble =>
+    new SubscriptionsDouble([owned(PHONE), owned(DRIVER_PHONE, DRIVER), owned(SALES_PHONE, SALES)]);
+  const who = (): FixedStaffPermissionHolders =>
+    holders([
+      ["staff_notifications:read", [ANA, SALES]],
+      ["b2b_companies:write", [SALES]],
+    ]);
+
+  it("🔴 une notice PARTAGÉE ne part qu'à qui tient encore la cloche — jamais au livreur", async () => {
+    const created = notice("k1");
+    const subs = devices();
+    await notifyAndSettle(new StoreDouble([created]), subs, new SenderDouble(), [created], who());
+
+    expect(subs.askedFor).toEqual([[ANA, SALES]]);
+    expect(subs.sent).toEqual([PHONE.endpoint, SALES_PHONE.endpoint]);
+  });
+
+  it("🔴 une notice d'AUDIENCE ne part qu'à qui tient le droit visé", async () => {
+    const created: StaffNotice = { ...notice("k2"), audience: "b2b_companies:write" };
+    const subs = devices();
+    const permissions = who();
+    await notifyAndSettle(
+      new StoreDouble([created]),
+      subs,
+      new SenderDouble(),
+      [created],
+      permissions,
+    );
+
+    expect(permissions.asked).toEqual(["b2b_companies:write"]);
+    expect(subs.sent).toEqual([SALES_PHONE.endpoint]);
+  });
+
+  it("personne ne tient le droit : rien ne part, aucun appareil n'est lu", async () => {
+    const created: StaffNotice = { ...notice("k3"), audience: "b2b_companies:write" };
+    const sender = new SenderDouble();
+    const subs = devices();
+    await notifyAndSettle(new StoreDouble([created]), subs, sender, [created], holders([]));
+
+    expect(sender.pushed).toEqual([]);
+    expect(subs.askedFor).toEqual([[]]);
   });
 });

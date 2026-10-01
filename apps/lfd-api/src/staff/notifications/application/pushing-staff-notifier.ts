@@ -1,7 +1,9 @@
+import type { StaffPermission } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { BackgroundWork } from "../../../platform/events/background-work.js";
 import { Clock } from "../../../platform/time/clock.js";
+import { StaffPermissionHolders } from "../../directory/domain/staff-permission-holders.js";
 import {
   StaffNoticeStore,
   StaffNotifier,
@@ -27,6 +29,9 @@ import {
  */
 const REJECTION_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
 
+/** Le droit qui ouvre le fil PARTAGÉ — et donc sa poussée. */
+const SHARED_FEED: StaffPermission = "staff_notifications:read";
+
 /**
  * La cloche, **plus** la vibration du téléphone.
  *
@@ -34,7 +39,7 @@ const REJECTION_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
  * où un second canal s'ajoute (un webhook Slack, disons), il se compose ici sans
  * toucher à la persistance.
  *
- * Trois garanties tiennent tout :
+ * Quatre garanties tiennent tout :
  *
  * 1. **On ne pousse que du nouveau.** `save` rend les notices réellement créées ;
  *    un fait rejoué n'en produit aucune, donc aucun téléphone ne vibre. Sans
@@ -46,7 +51,14 @@ const REJECTION_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
  *    l'affiche, et le téléphone reste muet. L'inverse, perdre la notification
  *    parce qu'un téléphone est éteint, serait absurde ; la faire attendre par
  *    un commercial au téléphone le serait presque autant.
- * 3. **Un refus ne désabonne pas tout de suite.** Cf. {@link REJECTION_GRACE_MS} :
+ * 3. **La poussée suit le mur de la lecture, dans les deux sens**
+ *    (`plan-a-la-porte.md`, B5 ; `plan-tournee-prete.md`, PL5-D2). Une notice
+ *    partagée ne part qu'aux installations de qui tient ENCORE
+ *    `staff_notifications:read` ; une notice adressée par droit, qu'à celles
+ *    de qui tient ce droit. Les deux se résolvent À L'ENVOI par le port
+ *    d'accès du socle (`StaffPermissionHolders`, la résolution du guard) :
+ *    quelqu'un qui perd un droit cesse aussitôt de vibrer pour lui.
+ * 4. **Un refus ne désabonne pas tout de suite.** Cf. {@link REJECTION_GRACE_MS} :
  *    une paire VAPID mal posée refuse exactement comme un abonnement périmé, et
  *    oublier au premier 403 viderait la table sur une erreur de configuration —
  *    chaque téléphone devrait réactiver à la main, sans que personne comprenne.
@@ -61,6 +73,7 @@ export class PushingStaffNotifier extends StaffNotifier {
     private readonly sender: StaffPushSender,
     private readonly clock: Clock,
     private readonly work: BackgroundWork,
+    private readonly holders: StaffPermissionHolders,
   ) {
     super();
   }
@@ -84,15 +97,20 @@ export class PushingStaffNotifier extends StaffNotifier {
   }
 
   private async push(notices: readonly StaffNotice[]): Promise<void> {
-    const targets = await this.subscriptions.all();
-    if (targets.length === 0) {
-      return;
-    }
     const at = this.clock.now();
     for (const notice of notices) {
-      await this.pushOne(targets, notice, at);
+      const targets = await this.targetsOf(notice);
+      if (targets.length > 0) {
+        await this.pushOne(targets, notice, at);
+      }
     }
     await this.expireRejected(at);
+  }
+
+  /** Les installations de qui tient, maintenant, le droit que la notice vise. */
+  private async targetsOf(notice: StaffNotice): Promise<readonly StaffPushTarget[]> {
+    const holders = await this.holders.holdersOf(notice.audience ?? SHARED_FEED);
+    return this.subscriptions.ofStaff(holders.map((holder) => holder.staffUserId));
   }
 
   private async pushOne(

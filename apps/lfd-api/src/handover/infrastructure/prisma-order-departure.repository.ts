@@ -9,7 +9,7 @@ import { OrderDepartureRepository } from "../domain/ports/order-departure.reposi
  *
  * Un `upsert` par commande, dans une transaction : l'annonce d'une tournée
  * s'écrit entière ou pas du tout. Un second départ de la même commande (un
- * autre jour) réécrit l'instant.
+ * autre jour) réécrit l'instant et efface le retour.
  */
 @Injectable()
 export class PrismaOrderDepartureRepository extends OrderDepartureRepository {
@@ -26,9 +26,20 @@ export class PrismaOrderDepartureRepository extends OrderDepartureRepository {
         this.prisma.orderDeparture.upsert({
           where: { orderId },
           create: { orderId, departedAt: at },
-          update: { departedAt: at },
+          update: { departedAt: at, returnedAt: null },
         }),
       ),
     );
+  }
+
+  /** `departed_at <= at` dans le `where` : une annonce tardive ne ramène pas un départ plus récent. */
+  async recordReturned(orderIds: readonly string[], at: Date): Promise<void> {
+    if (orderIds.length === 0) {
+      return;
+    }
+    await this.prisma.orderDeparture.updateMany({
+      where: { orderId: { in: [...orderIds] }, departedAt: { lte: at } },
+      data: { returnedAt: at },
+    });
   }
 }

@@ -121,4 +121,20 @@ describe('la composition des tournées (delivery_round.*)', () => {
       'Colette Martin a retiré le livreur Paul Roux de la tournée « Kangoo » du 1 octobre 2026',
     );
   });
+
+  it('dit la décision du commercial : autoriser le dépôt, ou rapporter (B3)', () => {
+    const order = { id: 'o_1', name: 'CMD-1' };
+    expect(
+      sentence(
+        fact('delivery_round.stop_deposit_authorized', { ...ROUND, order, source: 'staff' }),
+      ),
+    ).toBe(
+      'Colette Martin a autorisé le dépôt de la commande « CMD-1 » (la tournée « Kangoo » du 1 octobre 2026, passage 2) : cette fois, sans personne pour réceptionner',
+    );
+    expect(
+      sentence(fact('delivery_round.stop_brought_back', { ...ROUND, order, source: 'setting' })),
+    ).toBe(
+      'Colette Martin a fait rapporter la commande « CMD-1 » (la tournée « Kangoo » du 1 octobre 2026, passage 2) : l’arrêt est clos sans livraison, réglé d’avance',
+    );
+  });
 });

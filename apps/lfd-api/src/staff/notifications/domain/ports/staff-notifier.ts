@@ -1,4 +1,4 @@
-import type { StaffNotificationView } from "@lfd/contracts";
+import type { StaffNotificationView, StaffPermission } from "@lfd/contracts";
 
 /** Un fait à annoncer à l'équipe. Tout y est **déjà figé**, prêt à afficher. */
 export interface StaffNotice {
@@ -12,6 +12,14 @@ export interface StaffNotice {
   /** Anti-doublon : un fait rejoué ne sonne pas deux fois. */
   readonly idempotencyKey: string;
   readonly occurredAt: Date;
+  /**
+   * **Adressée par droit** (`plan-a-la-porte.md`, B5) : visible et poussée
+   * seulement à qui tient ce droit — résolu à la lecture et à l'envoi, jamais
+   * figé. Absente : le fil PARTAGÉ, sous `staff_notifications:read`. Une
+   * notice d'audience n'entre jamais dans le fil partagé, même pour qui a les
+   * deux droits : elle se lit dans « mes notifications ».
+   */
+  readonly audience?: StaffPermission;
 }
 
 /**
@@ -47,11 +55,47 @@ export abstract class StaffNoticeStore {
  */
 export type StoredStaffNotification = Omit<StaffNotificationView, "readByName">;
 
-/** La lecture de la cloche — séparée de l'émission (ISP). */
+/**
+ * La lecture du **fil partagé** — séparée de l'émission (ISP).
+ *
+ * 🔴 Le mur est dans CHAQUE requête de l'adaptateur, marquage par id compris :
+ * seules les notices SANS audience existent ici. Un lecteur du fil ne peut ni
+ * voir, ni compter, ni marquer lue — même en connaissant son id — une notice
+ * adressée par droit.
+ */
 export abstract class StaffNotificationReader {
   abstract recent(limit: number): Promise<StoredStaffNotification[]>;
   abstract countUnread(): Promise<number>;
   /** Marquer lu est idempotent : le premier lecteur fait foi. */
   abstract markRead(id: string, staffUserId: string, at: Date): Promise<void>;
   abstract markAllRead(staffUserId: string, at: Date): Promise<number>;
+}
+
+/**
+ * La lecture de **mes notifications** — celles adressées à un droit que je
+ * tiens (`plan-a-la-porte.md`, B5). Un port à part du fil partagé (ISP) : ni
+ * le même mur, ni le même lecteur.
+ *
+ * 🔴 `audiences` est l'effectif de la personne qui appelle, résolu par le
+ * guard — jamais une liste reçue du client. Chaque requête porte `audience IN
+ * (audiences)` ; une liste vide ne rend rien et ne marque rien. La lecture est
+ * commune à l'audience : le premier qui lit fait foi, comme au fil partagé.
+ */
+export abstract class AudienceNotificationReader {
+  abstract recent(
+    audiences: readonly StaffPermission[],
+    limit: number,
+  ): Promise<StoredStaffNotification[]>;
+  abstract countUnread(audiences: readonly StaffPermission[]): Promise<number>;
+  abstract markRead(
+    id: string,
+    audiences: readonly StaffPermission[],
+    staffUserId: string,
+    at: Date,
+  ): Promise<void>;
+  abstract markAllRead(
+    audiences: readonly StaffPermission[],
+    staffUserId: string,
+    at: Date,
+  ): Promise<number>;
 }

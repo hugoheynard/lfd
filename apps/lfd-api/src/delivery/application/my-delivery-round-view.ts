@@ -13,8 +13,10 @@ import type { DeliveryProcedureStep } from "../channels/commerce/index.js";
 import type { DepartureSheet } from "../domain/entities/departure-sheet.js";
 import type { DeliveryIncidentRow } from "../domain/ports/delivery-incidents.reader.js";
 import type { DriverRoundRow, DriverStopRow } from "../domain/ports/driver-rounds.reader.js";
+import type { StopDecisionRow } from "../domain/ports/stop-decisions.reader.js";
 import { depositPermitted } from "../domain/services/deposit-rule.js";
 import { deliveryIncidentView } from "./delivery-incident-view.js";
+import { stopDecisionView } from "./stop-decision-view.js";
 import type { StopSheet } from "./stop-sheets.js";
 
 /** Ce que la vue du livreur assemble — les lectures faites au même moment. */
@@ -36,6 +38,8 @@ export interface MyDeliveryRoundInputs {
   readonly stopSheets: ReadonlyMap<string, StopSheet>;
   /** Les commandes que le commerce dit prêtes (PL4). */
   readonly readyOrders: ReadonlySet<string>;
+  /** La décision vivante du commercial, par arrêt (B3) ; un arrêt absent n'en a pas. */
+  readonly decisions: ReadonlyMap<string, StopDecisionRow>;
 }
 
 /** Ce qu'un arrêt affiche à la porte — figé au départ, ou lu vivant au dépôt. */
@@ -78,7 +82,8 @@ const UNKNOWN_DOOR: DoorFacts = {
  * - **procédure** : toujours vivante ; **bacs** : les tables de la livraison ;
  * - **à la porte** (`plan-a-la-porte.md`) : l'arrivée et le dépôt autorisé
  *   figés à l'exécution, `canDeposit` calculé ICI par la règle du domaine
- *   (AP-Q6), l'état de la commande lu vivant, les signalements de la tournée ;
+ *   (AP-Q6 ; l'autorisation d'un commercial l'emporte, LB-Q5), la décision
+ *   du commercial (B3), l'état de la commande lu vivant, les signalements ;
  * - **la fiche et l'avancement du colisage** (PL4) : les produits de la
  *   commande sans montant, « prête » lue au commerce, les bacs déclarés
  *   (tables de la livraison) et attendus (la proposition, quand elle le dit).
@@ -128,6 +133,8 @@ function stopView(
   const frozenPoint = stop.departed !== null && stop.departed.departureRank !== null;
   const door = doorFactsOf(stop, inputs.sheets.get(stop.orderId));
   const sheet = inputs.stopSheets.get(stop.orderId);
+  const decision = inputs.decisions.get(stop.stopId) ?? null;
+  const depositAuthorized = decision?.outcome === "authorize_deposit";
   return {
     stopId: stop.stopId,
     rank,
@@ -140,7 +147,8 @@ function stopView(
     coldBins: stop.coldBins,
     closedAt: stop.closedAt?.toISOString() ?? null,
     arrivedAt: stop.departed?.arrivedAt?.toISOString() ?? null,
-    canDeposit: depositPermitted(door),
+    canDeposit: depositPermitted({ ...door, depositAuthorized }),
+    decision: decision === null ? null : stopDecisionView(decision),
     orderState: inputs.orderStates.get(stop.orderId) ?? "open",
     sheet: (sheet?.lines ?? []).map(sheetLineView),
     packing: inputs.readyOrders.has(stop.orderId) ? "ready" : "in_progress",

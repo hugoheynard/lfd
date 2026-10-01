@@ -3,11 +3,13 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { DoorstepStop } from "../domain/entities/doorstep-stop.js";
 import { DoorstepStopRepository } from "../domain/ports/doorstep-stop.repository.js";
+import { outcomeOf } from "./stop-decision.mapper.js";
 
 /**
  * **Adaptateur Prisma de l'arrêt à la porte** (`plan-a-la-porte.md`, AP-D6).
  *
- * Il LIT l'arrêt, sa tournée et son exécution ; il n'ÉCRIT que `arrived_at`
+ * Il LIT l'arrêt, sa tournée, son exécution et la décision vivante du
+ * commercial (B3) ; il n'ÉCRIT que `arrived_at`
  * de `delivery_stop_execution` — l'exécution, jamais la tournée (C10).
  *
  * 🔴 **Le mur est dans la requête** : `driver_staff_id` de la tournée entre
@@ -57,6 +59,12 @@ export class PrismaDoorstepStopRepository extends DoorstepStopRepository {
     if (row === null) {
       return null;
     }
+    // Lue APRÈS la ligne murée, et seulement pour elle : la décision d'un
+    // arrêt qui n'est pas au livreur n'est jamais lue ici.
+    const decision = await this.prisma.deliveryStopDecision.findUnique({
+      where: { stopId: row.id },
+      select: { outcome: true },
+    });
     return DoorstepStop.restore({
       stopId: row.id,
       orderId: row.orderId,
@@ -73,6 +81,7 @@ export class PrismaDoorstepStopRepository extends DoorstepStopRepository {
       arrivedAt: row.execution?.arrivedAt ?? null,
       signatureRequired: row.execution?.signatureRequired ?? false,
       depositAllowed: row.execution?.depositAllowed ?? false,
+      decision: decision === null ? null : (outcomeOf(decision.outcome) ?? "pending"),
     });
   }
 

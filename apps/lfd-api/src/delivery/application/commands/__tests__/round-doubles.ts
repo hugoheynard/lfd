@@ -49,6 +49,10 @@ export class InMemoryDeliveryRounds extends DeliveryRoundRepository {
     return this.loadForDriverDeparture(id, staffUserId);
   }
 
+  loadForDecision(id: string): Promise<DeliveryRound | null> {
+    return this.load(id);
+  }
+
   save(round: DeliveryRound): Promise<void> {
     this.write(round);
     this.saved.push(round.id);

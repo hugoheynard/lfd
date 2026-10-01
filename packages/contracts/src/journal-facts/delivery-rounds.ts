@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { DELIVERY_INCIDENT_FAMILIES } from "../delivery-doorstep.js";
+import { STOP_DECISION_SOURCES } from "../delivery-stop-decision.js";
 import { count, day, fact, named, namedOrBare, payload, subjectLabel } from "./fact.js";
 
 /**
@@ -112,4 +113,20 @@ export const DELIVERY_ROUND_FACTS = {
    * transaction. Une photo, toujours ; ni nom ni signature.
    */
   "delivery_round.stop_deposited": fact(payload({ ...roundKey(), order: namedOrBare("order") })),
+  /**
+   * « Autoriser le dépôt cette fois » (`plan-a-la-porte.md`, B3, LB-Q5) : la
+   * décision d'un commercial sur un arrêt signalé — la carte du livreur
+   * propose « Déposé avec preuve », même signature exigée. `source` : un
+   * commercial (`staff`), ou un réglage décidé d'avance (`setting`, B3 bis).
+   */
+  "delivery_round.stop_deposit_authorized": fact(
+    payload({ ...roundKey(), order: namedOrBare("order"), source: z.enum(STOP_DECISION_SOURCES) }),
+  ),
+  /**
+   * « Rapporter » (B3, LB-Q2) : l'arrêt se clôt « rapporté » ; la commande
+   * reste prête, non livrée, et peut repartir dans une autre tournée.
+   */
+  "delivery_round.stop_brought_back": fact(
+    payload({ ...roundKey(), order: namedOrBare("order"), source: z.enum(STOP_DECISION_SOURCES) }),
+  ),
 } as const;

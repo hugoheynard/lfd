@@ -1,3 +1,5 @@
+import type { StopDecisionState } from "@lfd/contracts";
+
 import {
   DeliveryRoundReturnedError,
   DepositNotAllowedError,
@@ -39,6 +41,11 @@ export interface DoorstepStopState {
    * `false` au dépôt.
    */
   readonly depositAllowed: boolean;
+  /**
+   * La décision VIVANTE du commercial sur cet arrêt (B3), lue sous le verrou
+   * de la tournée ; `null` : aucun signalement n'en a ouvert.
+   */
+  readonly decision: StopDecisionState | null;
 }
 
 /**
@@ -116,21 +123,28 @@ export class DoorstepStop {
     return true;
   }
 
+  /** Un commercial a décidé de rapporter cette commande (B3, LB-Q2). */
+  get broughtBack(): boolean {
+    return this.state.decision === "bring_back";
+  }
+
   /**
    * **« Déposé avec preuve » est-il permis ICI ?** (`plan-a-la-porte.md`, B2,
-   * AP-D4, AP-D5, AP-Q6) — la règle de `depositPermitted`, sur les valeurs
-   * figées au départ ; le refus nomme laquelle manque, la signature d'abord :
-   * elle l'emporte toujours.
+   * B3, AP-D4, AP-D5, AP-Q6, LB-Q5) — la règle de `depositPermitted` : les
+   * valeurs figées au départ, OU la décision vivante d'un commercial qui
+   * autorise le dépôt — elle l'emporte sur la signature (LB-Q5). L'écran lit
+   * `canDeposit`, calculé par la même règle. Le refus nomme ce qui manque, la
+   * signature d'abord.
    *
-   * 🔴 **Point d'extension de B3** (« ou autorisé par un commercial pour cet
-   * arrêt », § 10 bis) : la décision vivante s'ajoutera ICI, et nulle part
-   * ailleurs — l'écran lit `canDeposit`, qu'il faudra étendre du même pas.
+   * Une décision qui n'est plus « Autoriser » (« Rapporter » l'a remplacée)
+   * n'ouvre plus rien — et « Rapporter » a de toute façon clos l'arrêt.
    *
    * @throws {DepositSignatureRequiredError} la signature est exigée.
    * @throws {DepositNotAllowedError} le client n'a pas autorisé le dépôt.
    */
   ensureDepositPermitted(): void {
-    if (depositPermitted(this.state)) {
+    const authorized = this.state.decision === "authorize_deposit";
+    if (depositPermitted({ ...this.state, depositAuthorized: authorized })) {
       return;
     }
     if (this.state.signatureRequired) {

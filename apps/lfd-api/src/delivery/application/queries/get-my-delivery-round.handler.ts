@@ -12,6 +12,7 @@ import type { DepartureSheet } from "../../domain/entities/departure-sheet.js";
 import { DriverRoundNotFoundError } from "../../domain/errors/delivery-driver-errors.js";
 import { DeliveryIncidentsReader } from "../../domain/ports/delivery-incidents.reader.js";
 import { DepartureReader } from "../../domain/ports/departure.reader.js";
+import { StopDecisionsReader } from "../../domain/ports/stop-decisions.reader.js";
 import {
   DriverRoundsReader,
   type DriverRoundRow,
@@ -29,7 +30,8 @@ import { GetMyDeliveryRoundQuery } from "./get-my-delivery-round.query.js";
  * les feuilles vivantes et les points du carnet du commerce (seulement pour
  * ce que le départ n'a pas figé), la procédure vivante, le point de départ,
  * l'état de chaque commande et les signalements de la tournée (plan « À la
- * porte »), et la fiche de chaque arrêt avec l'avancement du colisage (PL4).
+ * porte »), la fiche de chaque arrêt avec l'avancement du colisage (PL4), et
+ * les décisions des commerciaux sur ses arrêts (B3).
  * Une lecture : elle n'écrit rien.
  *
  * @throws {DriverRoundNotFoundError}
@@ -48,6 +50,7 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
     private readonly states: DeliveryOrderStatesReader,
     private readonly incidents: DeliveryIncidentsReader,
     private readonly stopSheets: StopSheets,
+    private readonly decisions: StopDecisionsReader,
   ) {}
 
   async execute(query: GetMyDeliveryRoundQuery): Promise<MyDeliveryRoundView> {
@@ -67,6 +70,8 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
         this.incidents.ofRounds([round.id]),
         this.stopSheets.of(orderIds),
       ]);
+    // Lues pour CETTE tournée, déjà lue sous le mur du livreur.
+    const decisions = await this.decisions.ofRound(round.id);
     return myDeliveryRoundView({
       round,
       sheets,
@@ -81,6 +86,7 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
       incidents,
       stopSheets,
       readyOrders: new Set(states.filter((state) => state.ready).map((state) => state.orderId)),
+      decisions: new Map(decisions.map((row) => [row.stopId, row])),
     });
   }
 

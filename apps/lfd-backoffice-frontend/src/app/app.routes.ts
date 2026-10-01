@@ -339,6 +339,16 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/undelivered-page/undelivered-page').then((m) => m.UndeliveredPage),
       },
+      // « À DÉCIDER » (plan-a-la-porte.md, B3) : la réponse du COMMERCIAL à un
+      // problème à la porte, sous son droit (`b2b_companies:write`, lecture
+      // comprise) — la cible du lien de la notification « arrêt à décider ».
+      {
+        path: 'a-decider',
+        canActivate: [permissionGuard('b2b_companies:write')],
+        title: 'À décider — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/decisions-page/decisions-page').then((m) => m.DecisionsPage),
+      },
       // LE SIMULATEUR (lot 9, L9-C1) : une LECTURE, sous le même droit que
       // « Proposer » au lot 7 — rien n'est écrit.
       {

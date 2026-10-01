@@ -1,0 +1,105 @@
+<fold-page-layout icon="help" title="À décider">
+  <p description>
+    Les arrêts où le livreur a trouvé porte close, un refus ou un accès impossible. Il continue sa
+    tournée : votre réponse lui parvient sur sa carte.
+  </p>
+
+  <div class="page">
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture des arrêts à décider…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="« À décider » illisible"
+          subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+          data-error
+        >
+          <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @for (decision of decisions(); track decision.stopId) {
+          <fold-card data-decision>
+            <div class="stack">
+              <fold-element-title
+                variant="title"
+                [title]="titleOf(decision)"
+                [subtitle]="roundOf(decision)"
+              >
+                @if (decision.signatureRequired) {
+                  <fold-badge titleAction variant="accent" content="Signature exigée" />
+                }
+              </fold-element-title>
+
+              <span data-decision-status>{{ statusOf(decision.decision) }}</span>
+
+              @for (incident of decision.incidents; track incident.id) {
+                <fold-card surface="sunken" padding="sm" data-decision-incident>
+                  <div class="stack">
+                    <fold-element-title
+                      variant="title"
+                      [title]="incidentTitleOf(incident)"
+                      [subtitle]="incidentSubtitleOf(incident)"
+                    />
+                    @if (incident.note !== '') {
+                      <span>{{ incident.note }}</span>
+                    }
+                    @if (incident.hasPhoto) {
+                      <app-incident-photo [incidentId]="incident.id" [load]="incidentPhoto" />
+                    }
+                  </div>
+                </fold-card>
+              }
+
+              @if (refusalOf(decision.stopId); as message) {
+                <fold-callout variant="alert" data-decision-refusal>{{ message }}</fold-callout>
+              }
+
+              <div class="actions">
+                @if (decision.decision.state !== 'authorize_deposit') {
+                  <button
+                    foldButton
+                    icon="package-check"
+                    [loading]="busy() === decision.stopId"
+                    [disabled]="busy() !== null"
+                    (click)="authorize(decision.stopId)"
+                    data-authorize
+                  >
+                    Autoriser le dépôt cette fois
+                  </button>
+                }
+                <fold-inline-confirm
+                  intent="primary"
+                  message="L’arrêt sera clos sans livraison : la commande revient au dépôt."
+                  [labels]="{ confirm: 'Rapporter' }"
+                  [loading]="busy() === decision.stopId"
+                  (confirmed)="bringBack(decision.stopId)"
+                >
+                  <button
+                    foldButton
+                    emphasis="outline"
+                    icon="package-return"
+                    [disabled]="busy() !== null"
+                    data-bring-back
+                  >
+                    Rapporter
+                  </button>
+                </fold-inline-confirm>
+              </div>
+            </div>
+          </fold-card>
+        } @empty {
+          <fold-empty-state
+            title="Rien à décider"
+            subtitle="Aucun livreur n’attend de réponse sur une tournée en cours."
+            data-empty
+          >
+            <fold-icon empty-icon name="check-circle" />
+          </fold-empty-state>
+        }
+      }
+    }
+  </div>
+</fold-page-layout>

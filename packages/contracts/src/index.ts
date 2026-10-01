@@ -843,6 +843,19 @@ export type {
   UndeliveredStopView,
 } from "./delivery-doorstep.js";
 export {
+  STOP_DECISION_OUTCOMES,
+  STOP_DECISION_SOURCES,
+  STOP_DECISION_PERMISSION,
+} from "./delivery-stop-decision.js";
+export type {
+  StopDecisionOutcome,
+  StopDecisionSource,
+  StopDecisionState,
+  StopDecisionView,
+  PendingStopDecisionView,
+  PendingStopDecisionsView,
+} from "./delivery-stop-decision.js";
+export {
   DELIVERY_BINS_PER_DECLARATION_MAX,
   DELIVERY_BIN_INNER_BAGS_MAX,
   deliveryBinHalfSchema,

@@ -38,6 +38,15 @@ export const CLOSED_WITHOUT_HANDOVER_CAUSE = domain('raison d’une clôture san
   cancelled: 'Commande annulée',
 });
 
+/**
+ * D'où vient la décision sur un arrêt signalé (`delivery_round.stop_deposit_authorized`,
+ * `delivery_round.stop_brought_back` — `plan-a-la-porte.md`, B3, B3 bis).
+ */
+export const STOP_DECISION_SOURCE = domain('origine d’une décision sur un arrêt', {
+  staff: 'Un commercial',
+  setting: 'Le réglage de livraison',
+});
+
 /** Comment un bac a été chargé (`delivery_bin.loaded`) : son QR lu, ou son code court tapé. */
 export const BIN_LOAD_VIA = domain('manière de charger un bac', {
   scan: 'QR scanné',
@@ -87,6 +96,7 @@ export const ORDERS_VALUES: ValueFamily = {
     HANDOVER_VIA,
     INCIDENT_FAMILY,
     CLOSED_WITHOUT_HANDOVER_CAUSE,
+    STOP_DECISION_SOURCE,
     BIN_LOAD_VIA,
     BIN_HALF,
     PROPOSAL_MODE,

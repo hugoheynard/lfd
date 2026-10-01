@@ -58,6 +58,13 @@ class RecordingDepartures extends OrderDepartureRepository {
     this.recorded.push({ orderIds, at });
     return Promise.resolve();
   }
+
+  readonly returned: { readonly orderIds: readonly string[]; readonly at: Date }[] = [];
+
+  recordReturned(orderIds: readonly string[], at: Date): Promise<void> {
+    this.returned.push({ orderIds, at });
+    return Promise.resolve();
+  }
 }
 
 describe("HandoverDepartureHolds — « lesquelles sont retenues ? »", () => {
@@ -99,5 +106,17 @@ describe("HandoverDepartedOrders — « elles sont parties »", () => {
     await new HandoverDepartedOrders(departures).ordersDeparted(["o_1", "o_2"], DEPARTED);
 
     expect(departures.recorded).toEqual([{ orderIds: ["o_1", "o_2"], at: DEPARTED }]);
+  });
+});
+
+describe("HandoverDepartedOrders — « elles sont revenues » (B3, LB-Q2)", () => {
+  it("marque revenues les commandes rapportées, à l'instant de la décision", async () => {
+    const departures = new RecordingDepartures();
+    const broughtBack = new Date(90_000);
+
+    await new HandoverDepartedOrders(departures).ordersBroughtBack(["o_1"], broughtBack);
+
+    expect(departures.returned).toEqual([{ orderIds: ["o_1"], at: broughtBack }]);
+    expect(departures.recorded).toEqual([]);
   });
 });

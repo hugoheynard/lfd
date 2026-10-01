@@ -1,6 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 
 import {
+  BroughtBackOrdersAnnouncer,
   DepartedOrdersAnnouncer,
   DepartureHoldsReader,
   DoorstepHandoverAttestor,
@@ -18,7 +19,9 @@ import { HandoverModule } from "../handover/handover.module.js";
  * - `DepartedOrdersAnnouncer` — après la validation du départ, « elles sont
  *   parties » ;
  * - `DoorstepHandoverAttestor` — à la porte, « atteste cette remise », sans
- *   publier (B1).
+ *   publier (B1) ;
+ * - `BroughtBackOrdersAnnouncer` — après une décision « Rapporter », « elles
+ *   sont revenues » (B3) : le même adaptateur que le départ.
  *
  * Les deux adaptateurs vivent dans `HandoverModule`, qui a ses ports : d'où
  * l'import, et `useExisting`. `@Global` pour la raison des autres fils : le
@@ -30,8 +33,14 @@ import { HandoverModule } from "../handover/handover.module.js";
   providers: [
     { provide: DepartureHoldsReader, useExisting: HandoverDepartureHolds },
     { provide: DepartedOrdersAnnouncer, useExisting: HandoverDepartedOrders },
+    { provide: BroughtBackOrdersAnnouncer, useExisting: HandoverDepartedOrders },
     { provide: DoorstepHandoverAttestor, useExisting: HandoverDoorstepAttestor },
   ],
-  exports: [DepartureHoldsReader, DepartedOrdersAnnouncer, DoorstepHandoverAttestor],
+  exports: [
+    DepartureHoldsReader,
+    DepartedOrdersAnnouncer,
+    BroughtBackOrdersAnnouncer,
+    DoorstepHandoverAttestor,
+  ],
 })
 export class DeliveryHandoverFeedModule {}

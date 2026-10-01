@@ -416,10 +416,14 @@
         @if (email(); as who) {
           <span class="app-user" [title]="who">{{ who }}</span>
         }
-        <!-- La cloche interroge `/admin/notifications` : sans ce garde, elle
-             partirait en boucle pour qui n'a pas le périmètre, et n'afficherait
-             qu'une erreur silencieuse. -->
-        <app-notification-bell *appCan="'b2b_support:read'" />
+        <!-- La cloche est celle de TOUT staff connecté (plan-a-la-porte.md, B5) :
+             elle lit « mes notifications », adressées par droit, et le fil
+             partagé seulement avec `staff_notifications:read` — le magasin
+             le décide, sans quoi l'appel partirait en 403 toutes les minutes.
+             Elle attend les droits : une fiche refusée n'a pas de cloche. -->
+        @if (permissionsLoaded() && !noAccess()) {
+          <app-notification-bell />
+        }
       </div>
     </div>
 

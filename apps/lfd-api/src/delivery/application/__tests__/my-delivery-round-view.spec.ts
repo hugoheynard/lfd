@@ -87,6 +87,7 @@ function inputs(overrides: Partial<MyDeliveryRoundInputs>): MyDeliveryRoundInput
     incidents: [],
     stopSheets: new Map(),
     readyOrders: new Set(),
+    decisions: new Map(),
     ...overrides,
   };
 }
@@ -176,6 +177,8 @@ describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
         "coldBins",
         "contact",
         "customerLabel",
+        // Plan « À la porte », B3 : la décision du commercial, décidée.
+        "decision",
         "depositAllowed",
         "gps",
         "orderNote",
@@ -237,6 +240,61 @@ describe("myDeliveryRoundView — à la porte (plan « À la porte », lot A)", 
       [true, false],
       [true, true],
       [false, false],
+    ]);
+  });
+
+  it("🔴 B3 / LB-Q5 : l'autorisation d'un commercial ouvre `canDeposit`, même signature exigée", () => {
+    const view = myDeliveryRoundView(
+      inputs({
+        round: round(
+          [
+            stop("a", 1, { departed: frozen(1, { depositAllowed: false }) }),
+            stop("b", 2, { departed: frozen(2) }),
+            stop("c", 3, { departed: frozen(3) }),
+          ],
+          AT,
+        ),
+        decisions: new Map([
+          [
+            "a",
+            {
+              stopId: "a",
+              roundId: "r_1",
+              outcome: "authorize_deposit",
+              source: "staff",
+              decidedAt: AT,
+              decidedByName: "Léa Martin",
+            },
+          ],
+          [
+            "b",
+            {
+              stopId: "b",
+              roundId: "r_1",
+              outcome: null,
+              source: null,
+              decidedAt: null,
+              decidedByName: null,
+            },
+          ],
+        ]),
+      }),
+    );
+
+    expect(view.stops.map((s) => [s.signatureRequired, s.canDeposit])).toEqual([
+      [true, true],
+      [true, false],
+      [true, false],
+    ]);
+    expect(view.stops.map((s) => s.decision)).toEqual([
+      {
+        state: "authorize_deposit",
+        source: "staff",
+        decidedAt: AT.toISOString(),
+        decidedByName: "Léa Martin",
+      },
+      { state: "pending", source: null, decidedAt: null, decidedByName: null },
+      null,
     ]);
   });
 

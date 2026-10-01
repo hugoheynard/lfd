@@ -35,6 +35,15 @@ export abstract class DeliveryRoundRepository {
   abstract loadForDriver(id: string, staffUserId: string): Promise<DeliveryRound | null>;
 
   /**
+   * Le verrou du départ, SANS mur de livreur, pour la décision d'un commercial
+   * sur un arrêt (`plan-a-la-porte.md`, B3, § 10 bis) : le commercial décide
+   * pour toutes les tournées. Le dépôt du livreur prend le même verrou —
+   * décider et déposer ne se croisent pas. Distinct du départ par son
+   * intention, pas par son SQL.
+   */
+  abstract loadForDecision(id: string): Promise<DeliveryRound | null>;
+
+  /**
    * Écrit une tournée (ouverture ou changement).
    * @throws {DeliveryRoundStaleError} la version en base n'est plus celle lue.
    * @throws {OrderAlreadyInRoundError} l'index I3 a vu une course.

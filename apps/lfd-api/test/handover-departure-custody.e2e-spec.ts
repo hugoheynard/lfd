@@ -13,6 +13,7 @@ import { randomUUID } from "node:crypto";
 import type request from "supertest";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { BroughtBackOrdersAnnouncer } from "../src/delivery/channels/handover/index.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { currentTransaction } from "../src/platform/database/transaction.store.js";
 import { PrismaUnitOfWork, UnitOfWork } from "../src/platform/database/unit-of-work.js";
@@ -21,6 +22,7 @@ import { ADMIN_VERIFIER_OVERRIDE, addVehicle, assign, openRound } from "./delive
 import { declareBins, depart, loadBin } from "./delivery-loading-scene.js";
 import {
   bootstrapE2e,
+  daysAgo,
   E2E_STAFF_SUB,
   jsonBody,
   serviceDay,
@@ -224,6 +226,19 @@ describe("la garde passe au livreur au départ (BQ)", () => {
 
     const refused = await judge(orderId, "blocking").expect(409);
     expect(messageOf(refused)).toMatch(new RegExp(`^${DEPARTED}`, "u"));
+  });
+
+  it("🔴 B3 : une commande RAPPORTÉE est revenue — le verdict est de nouveau permis", async () => {
+    const { orderId, roundId } = await loadedDelivery();
+    expect((await depart(ctx, roundId)).status).toBe(204);
+    await ctx.drain();
+
+    // L'annonce que « Rapporter » fait après sa validation, par le canal relié.
+    await ctx.app
+      .get(BroughtBackOrdersAnnouncer)
+      .ordersBroughtBack([orderId], new Date(daysAgo(0)));
+
+    await judge(orderId, "ok").expect(201);
   });
 
   it("un départ dont la transaction échoue n'annonce rien : le verdict reste permis", async () => {

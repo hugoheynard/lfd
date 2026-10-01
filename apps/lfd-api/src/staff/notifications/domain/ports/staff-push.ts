@@ -15,14 +15,20 @@ export interface StaffPushTarget {
  */
 export abstract class StaffPushSubscriptions {
   /**
-   * Idempotent par `endpoint` : un navigateur qui se réabonne remplace.
-   * `staffUserId` est une **trace** — qui a abonné cette installation — et non
-   * un ciblage : toute notification part vers tout abonnement (plan de
-   * l'auteur, D9).
+   * Idempotent par `endpoint` : un navigateur qui se réabonne remplace — et
+   * l'installation passe à son DERNIER abonné (un appareil partagé reçoit
+   * pour lui : assumé, `plan-tournee-prete.md` PL5-D2).
+   *
+   * `staffUserId` est une **clé de routage** depuis le 2026-10-01
+   * (`plan-a-la-porte.md`, B5) : une notification ne part qu'aux
+   * installations des personnes qui tiennent, AU MOMENT DE L'ENVOI, le droit
+   * qu'elle vise. Ce n'était qu'une trace auparavant (plan de l'auteur, D9) —
+   * et quelqu'un qui perdait la cloche continuait de vibrer.
    */
   abstract save(target: StaffPushTarget, staffUserId: string): Promise<void>;
   abstract forget(endpoint: string): Promise<void>;
-  abstract all(): Promise<readonly StaffPushTarget[]>;
+  /** Les installations abonnées par ces fiches ; une liste vide n'en rend aucune. */
+  abstract ofStaff(staffUserIds: readonly string[]): Promise<readonly StaffPushTarget[]>;
   /**
    * Marque les envois acceptés — et **efface** la marque de refus : un
    * abonnement qui repasse est un abonnement guéri, pas un sursis.

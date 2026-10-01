@@ -9,8 +9,15 @@ import {
   type StoredStaffNotification,
 } from "../domain/ports/staff-notifier.js";
 
+/**
+ * 🔴 **Le mur du fil partagé** (`plan-a-la-porte.md`, B5) — dans CHAQUE
+ * `where` de {@link PrismaStaffNotificationReader}, marquage par id compris :
+ * une notice adressée par droit n'existe pas pour le fil.
+ */
+const SHARED = { audience: null } as const;
+
 /** Une ligne `staff_notifications`, vue d'ici seulement. */
-interface NotificationRow {
+export interface NotificationRow {
   readonly id: string;
   readonly kind: string;
   readonly subject: string;
@@ -52,7 +59,10 @@ export class PrismaStaffNoticeStore extends StaffNoticeStore {
   }
 }
 
-/** Lecture et marquage — l'autre moitié du port, séparée exprès (ISP). */
+/**
+ * Lecture et marquage du fil PARTAGÉ — l'autre moitié du port, séparée exprès
+ * (ISP). Chaque requête porte {@link SHARED}.
+ */
 @Injectable()
 export class PrismaStaffNotificationReader extends StaffNotificationReader {
   constructor(private readonly prisma: PrismaService) {
@@ -61,6 +71,7 @@ export class PrismaStaffNotificationReader extends StaffNotificationReader {
 
   async recent(limit: number): Promise<StoredStaffNotification[]> {
     const rows = await this.prisma.staffNotification.findMany({
+      where: SHARED,
       orderBy: { occurredAt: "desc" },
       take: limit,
     });
@@ -68,27 +79,27 @@ export class PrismaStaffNotificationReader extends StaffNotificationReader {
   }
 
   async countUnread(): Promise<number> {
-    return this.prisma.staffNotification.count({ where: { readAt: null } });
+    return this.prisma.staffNotification.count({ where: { ...SHARED, readAt: null } });
   }
 
   /** `updateMany` avec `readAt: null` : le premier lecteur fait foi. */
   async markRead(id: string, staffUserId: string, at: Date): Promise<void> {
     await this.prisma.staffNotification.updateMany({
-      where: { id, readAt: null },
+      where: { ...SHARED, id, readAt: null },
       data: { readAt: at, readBy: staffUserId },
     });
   }
 
   async markAllRead(staffUserId: string, at: Date): Promise<number> {
     const marked = await this.prisma.staffNotification.updateMany({
-      where: { readAt: null },
+      where: { ...SHARED, readAt: null },
       data: { readAt: at, readBy: staffUserId },
     });
     return marked.count;
   }
 }
 
-function toView(row: NotificationRow): StoredStaffNotification {
+export function toView(row: NotificationRow): StoredStaffNotification {
   return {
     id: row.id,
     kind: row.kind,

@@ -20,6 +20,9 @@
       @if (item.canDeposit) {
         <fold-badge variant="info" content="Dépôt autorisé" data-can-deposit />
       }
+      @if (decision(); as decided) {
+        <fold-badge [variant]="decided.variant" [content]="decided.label" data-decision />
+      }
       @if (arrivedLabel(); as arrived) {
         <fold-badge variant="success" [content]="arrived" data-arrived />
       }

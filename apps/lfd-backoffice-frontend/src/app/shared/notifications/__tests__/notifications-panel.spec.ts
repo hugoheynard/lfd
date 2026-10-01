@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 
 import type { StaffNotificationsSummary, StaffNotificationView } from '@lfd/contracts';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
+import { MyStaffNotificationsService } from '../my-staff-notifications.service';
 import { NotificationsPanel } from '../notifications-panel/notifications-panel';
 import { StaffNotificationsService } from '../staff-notifications.service';
 
@@ -65,11 +67,24 @@ async function render(fake: FakeNotifications): Promise<ComponentFixture<Notific
       // sans cible échouerait après la fin du test.
       provideRouter([{ path: '**', children: [] }]),
       { provide: StaffNotificationsService, useValue: fake satisfies NotificationsPort },
+      // « Mes notifications » vide, et le droit du fil partagé : ce panneau-ci
+      // éprouve le fil partagé ; les deux fils ensemble, le magasin.
+      { provide: MyStaffNotificationsService, useValue: new FakeNotifications() },
+      {
+        provide: PermissionsStore,
+        useValue: {
+          ensureLoaded: () => Promise.resolve(),
+          can: (permission: string) => permission === 'staff_notifications:read',
+        } satisfies Pick<PermissionsStore, 'ensureLoaded' | 'can'>,
+      },
       { provide: FoldPanelRef, useValue: PANEL_REF },
     ],
   });
   const fixture = TestBed.createComponent(NotificationsPanel);
   fixture.detectChanges();
+  // La relecture attend les droits, puis les deux fils : un tour de plus que
+  // ce que `whenStable` suit.
+  await new Promise((resolve) => setTimeout(resolve));
   await fixture.whenStable();
   fixture.detectChanges();
   return fixture;

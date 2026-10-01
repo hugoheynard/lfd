@@ -33,6 +33,7 @@ export function myStopOf(overrides: Partial<MyDeliveryStopView> = {}): MyDeliver
     arrivedAt: null,
     depositAllowed: false,
     canDeposit: false,
+    decision: null,
     orderState: 'open',
     sheet: [],
     packing: 'in_progress',
