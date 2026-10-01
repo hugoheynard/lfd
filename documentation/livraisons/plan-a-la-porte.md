@@ -285,3 +285,111 @@ existe déjà (`DeliveryStopExecution.departedAt`).
 - **« Laisser en vrac » = un dépôt avec photo**, comme les autres : la
   décision du commercial ouvre « Déposé avec preuve » pour **cet** arrêt, pour
   **cette** fois.
+
+## 10. Lot B — découpage (2026-10-01)
+
+> 📐 **Plan, rien n'est bâti.** Touche l'argent (une remise rend la commande
+> `fulfilled` : points, volume tarifaire, chiffre d'affaires) et une frontière
+> (`handover → delivery`) : `vitruve` avant Hugo.
+
+🔴 **Ordre de déploiement, pas de bâti** : le lot A apprend `deposit` à tous
+les lecteurs (AP-D8) ; le lot B l'**écrit**. Les deux ne partent **jamais**
+dans le même déploiement. Le lot B se bâtit maintenant ; il ne se déploie
+qu'**après** un déploiement qui porte le lot A.
+
+### B0 — `afterCommit` dans l'unité de travail (socle)
+
+Aucune publication n'est différée aujourd'hui (`PrismaUnitOfWork`, relu le
+2026-10-01) ; PL3 s'en est sorti en sortant de la transaction
+(`outsideTransaction()`), ce qui laisse partir un courriel pour un départ
+dont la validation échouerait. B0 ajoute « exécuter après la validation »
+(rien si l'unité échoue), et s'en sert pour : la remise (AP-D1), le départ
+(PL3). Test : une unité qui échoue après l'inscription n'exécute rien.
+
+### B1 — « Remis au client » : photo + nom (+ signature)
+
+- `delivery` déclare `delivery/channels/handover/` (attester sans publier,
+  rendre l'événement) ; `handover` l'implémente. La matrice ouvre
+  `handover → delivery` (port uniquement), `lint:context-boundaries` l'arme.
+- Pièces du retrait (L6-C9) : photo **obligatoire**, nom tapé (2 à 80),
+  signature au doigt **si** `signatureRequired` (figée au départ). Photos
+  déposées d'abord, rattachées ensuite (même mécanique que les signalements).
+- `closeStop` par l'agrégat, version présentée, idempotent au rejeu (AP-D6).
+- `OrderHandedOverEvent` publié **après commit** (B0) ; un `closeStop` qui
+  échoue ne laisse ni commande `fulfilled` ni point (test).
+- La retenue qualité (`plan-controle-qualite.md` D4) lue par ce même canal :
+  une commande retenue ne se remet pas, la carte le dit.
+- Écran : bouton « Remis au client » sur l'arrêt (photo, nom, signature).
+
+### B2 — « Déposé avec preuve »
+
+- Proposé seulement si `canDeposit` (dépôt autorisé figé **et** pas de
+  signature exigée) **ou** si un commercial l'a autorisé pour cet arrêt (B3).
+- Photo obligatoire ; `HandoverVia = deposit` ; mêmes effets qu'une remise
+  (AP-Q5).
+
+### B3 — Le commercial décide
+
+- Un signalement « à la remise » (personne, dépôt interdit, refus, accès)
+  ouvre une **décision** sur l'arrêt : « Autoriser le dépôt cette fois » ou
+  « Rapporter ». Le premier qui décide l'emporte (conditionné en base),
+  tracé (qui, quand). Droit : `b2b_companies:write` (à confirmer).
+- « Autoriser » ouvre B2 pour cet arrêt ; « Rapporter » laisse l'arrêt ouvert
+  → « Non remis », et compte comme **décision actée** pour « Tournée
+  terminée ».
+- Écran staff : une liste « À décider » (signalements de remise ouverts, du
+  jour). **Prévenir** les commerciaux : voir B5.
+
+### B4 — « Tournée terminée » exige un sort pour chaque arrêt
+
+Refus tant qu'un arrêt n'a ni livraison (remis, déposé), ni décision actée
+(clos sans remise, « Rapporter ») — nommé, comme au départ.
+
+### B5 — Prévenir les commerciaux — ⏸️ en attente
+
+Demande une notification adressée par droit : c'est le chantier mis de côté
+avec PL5 ([`plan-tournee-prete.md`](plan-tournee-prete.md)). Sans lui, la
+liste « À décider » (B3) est la seule entrée.
+
+### 10 bis. Après `vitruve` (2026-10-01) — 3 BLOQUANT, 7 SÉRIEUX
+
+Là où cette section contredit le § 10, **elle l'emporte**.
+
+**Repris dans le plan (technique) :**
+
+- **B0 tient l'imbrication.** `PrismaUnitOfWork.run` rejoint une transaction
+  en cours (`unit-of-work.ts:45-48`) : la file des rappels vit dans le store
+  de transaction, s'accroche à l'unité **la plus externe**, et s'exécute après
+  sa validation **hors** du contexte de transaction (`storage.exit`). Un
+  rappel qui échoue est journalisé ; la réparation est le **rejeu** du geste
+  (ci-dessous). `BackgroundWork.track` reçoit une promesse déjà lancée : un
+  abonné lancé dans une transaction en hérite aujourd'hui — B0 le corrige pour
+  la remise **et** pour le départ (PL3), avec un test pour chacun.
+- **Le rejeu republie.** Comme `attest` au comptoir (qui republie sur chaque
+  refus, `handover-attestation.service.ts:84-97`) : « Remis » rejoué sur un
+  arrêt **remis** republie l'attestation existante — c'est ce qui répare un
+  `MarkOrderFulfilled` en échec. Rejoué sur un arrêt clos **autrement**
+  (sans remise, rapporté), il est **refusé** en le nommant : le livreur ne
+  croit pas avoir remis.
+- **L'événement ne traverse pas la frontière.** Le port `delivery/channels/
+handover/` rend une **fonction de publication opaque** (`() => void`), pas
+  `OrderHandedOverEvent` (déclaré par `handover/channels/commerce/`, que
+  `delivery` ne peut pas importer). Seule la case `handover → delivery` s'ouvre.
+- **La décision a un propriétaire.** Une table `delivery.stop_decision`
+  (un arrêt, une décision vivante, auteur, instant) écrite par le commercial ;
+  elle ne touche **pas** la version de l'exécution que présente le livreur.
+  Courses : décision refusée sur un arrêt clos ou une tournée rentrée ;
+  « Autoriser » puis « Rapporter » permis tant que le livreur n'a pas déposé
+  (la dernière l'emporte, tout est tracé) ; dépôt refusé si la décision
+  vivante n'est plus « Autoriser ».
+- `canDeposit` vit dans l'exécution de l'arrêt (déjà figée au départ) ; une
+  photo déposée jamais rattachée est balayée comme celles des signalements.
+
+**À trancher par Hugo :**
+
+| #         | Question                                                                                                                                    | Proposé                                                                                                                                                                                                                                                    |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **LB-Q1** | Une commande **retenue au contrôle qualité** pendant la tournée : comment l'arrêt se ferme-t-il ?                                           | La carte dit « Retenue — ne pas remettre », et le livreur clôt l'arrêt **« Rapporté »** (comme un « Rapporter » du commercial, sans attendre de décision).                                                                                                 |
+| **LB-Q2** | « **Rapporter** » : l'arrêt reste ouvert pour toujours (la commande ne peut plus aller dans une autre tournée, AP-D7).                      | « Rapporter » **clôt** l'arrêt (« rapporté ») : la commande reste prête, non livrée, sort de l'index des arrêts vivants, et peut être remise dans une **autre tournée** un autre jour, sans changer le prix. Les remboursements (6 c) restent hors du lot. |
+| **LB-Q3** | B4 bloque « Tournée terminée » tant qu'un signalement n'est pas décidé ; sans notification, le livreur peut attendre au dépôt.              | Garder le blocage, **et** rouvrir la notification (B5) pour les seuls commerciaux. Sinon : le livreur peut terminer, et les arrêts non décidés passent « Non remis ».                                                                                      |
+| **LB-Q4** | **L'ordre A puis B** : merger dans `main` déploie tout `dev`. Si B est bâti sur `dev` avant que A soit en production, ils partent ensemble. | **Déployer le lot A d'abord** (relu par `lecteur-de-migrations`), puis bâtir B sur `dev`.                                                                                                                                                                  |
