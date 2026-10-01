@@ -271,3 +271,17 @@ existe déjà (`DeliveryStopExecution.departedAt`).
   reste ouvert → « Non remis ») ; le livreur continue sans attendre.
   Questions : quel commercial (attitré ou tous) ; délai d'attente sur place ;
   « laisser en vrac » toujours avec photo (proposé : oui).
+
+**Tranché par Hugo le 2026-10-01 (lot B) :**
+
+- **Qui est prévenu** : **tous les commerciaux** — tout staff qui a le droit de
+  décider (proposé : `b2b_companies:write`, à confirmer au bâti), par la cloche
+  du back-office. Aucun commercial attitré n'existe dans le code (relevé le
+  2026-10-01) ; le premier qui répond décide, la décision est tracée (qui,
+  quand). ⚠️ La cloche ne filtre aucun destinataire (`plan-ma-tournee.md`,
+  § 6) : une notification ciblée par droit est à concevoir au bâti.
+- **Le livreur continue** sa tournée sans attendre ; si l'autorisation arrive
+  pendant qu'il est encore sur place, sa carte propose « Déposé avec preuve ».
+- **« Laisser en vrac » = un dépôt avec photo**, comme les autres : la
+  décision du commercial ouvre « Déposé avec preuve » pour **cet** arrêt, pour
+  **cette** fois.
