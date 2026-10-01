@@ -272,7 +272,7 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
    */
   private async intendedRole(target: LoadedTarget, key: string): Promise<AssignableRole> {
     if (target.policy.isRoot && isSuperAdminRoleKey(key)) {
-      return { key: target.policy.roleKey ?? "", label: target.roleLabel, grants: {} };
+      return { key: target.policy.roleKey, label: target.roleLabel, grants: {} };
     }
     return assignableRole(this.prisma, key);
   }

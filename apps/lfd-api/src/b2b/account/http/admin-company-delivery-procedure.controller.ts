@@ -51,13 +51,15 @@ const PROCEDURE = ":companyId/delivery-addresses/:addressId/procedure";
 /**
  * **La procédure de livraison** d'une adresse, côté staff.
  *
- * Mêmes chemins que la surface client sous `admin/companies`, même préfixe et
- * même ressource que {@link AdminCompanyPiecesController} (`b2b_companies`) :
- * c'est un geste sur les adresses d'un client. Aucun mur membership ; chaque
- * écriture inscrit son fait au journal, dans sa transaction.
+ * Mêmes chemins que la surface client sous `admin/companies`, même préfixe
+ * que {@link AdminCompanyPiecesController} — mais plus sa ressource :
+ * `delivery_procedures` depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`, DG-D1).
+ * La bascule l'a donnée au même niveau à chaque rôle qui tenait
+ * `b2b_companies`. Aucun mur membership ; chaque écriture inscrit son fait au
+ * journal, dans sa transaction.
  */
 @Controller("admin/companies")
-@AdminSurface("b2b_companies")
+@AdminSurface("delivery_procedures")
 export class AdminCompanyDeliveryProcedureController {
   constructor(
     private readonly commands: CommandBus,

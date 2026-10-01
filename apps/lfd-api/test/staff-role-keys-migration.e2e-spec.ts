@@ -9,7 +9,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { legacyRoleSeeds } from "@lfd/contracts";
+import { staffRoleSchema } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
@@ -50,7 +50,23 @@ function statement(pattern: RegExp): string {
 }
 
 const SEED_DEFINITIONS = /^INSERT INTO "public"\."staff_role_definitions"[^;]*;/mu;
-const BACKFILL_KEYS = /^UPDATE "public"\."staff_users" SET "role_key"[^;]*;/mu;
+
+/**
+ * Ce que la migration semait pour `dev`, FIGÉ ici le 2026-10-01
+ * (`documentation/livraisons/plan-droits-par-geste.md`, 5.6) : la graine
+ * `ROLE_GRANTS` peut évoluer, une migration appliquée non. Les comparer
+ * gèlerait la graine.
+ */
+const DEV_AS_MIGRATED = {
+  label: "Technique",
+  grants: [
+    { resource: "pim_catalog", action: "read" },
+    { resource: "pim_tax", action: "read" },
+    { resource: "b2b_settings", action: "read" },
+    { resource: "staff_notifications", action: "write" },
+    { resource: "ops_health", action: "read" },
+  ],
+};
 
 describe("la migration des clés de rôle", () => {
   it("crée depuis le contrat une définition manquante, sans toucher les autres", async () => {
@@ -64,8 +80,7 @@ describe("la migration des clés de rôle", () => {
     await ctx.prisma.$executeRawUnsafe(statement(SEED_DEFINITIONS));
 
     const dev = await ctx.prisma.staffRoleDefinition.findUniqueOrThrow({ where: { key: "dev" } });
-    const expected = legacyRoleSeeds().find((seed) => seed.key === "dev");
-    expect(dev).toMatchObject({ label: expected?.label, grants: expected?.grants });
+    expect(dev).toMatchObject(DEV_AS_MIGRATED);
     // `DO NOTHING` : une édition faite à l'écran reste une décision.
     const support = await ctx.prisma.staffRoleDefinition.findUniqueOrThrow({
       where: { key: "support" },
@@ -76,23 +91,8 @@ describe("la migration des clés de rôle", () => {
   it("sème une définition pour CHAQUE valeur de l'enum", () => {
     const sql = statement(SEED_DEFINITIONS);
 
-    for (const seed of legacyRoleSeeds()) {
-      expect(sql).toContain(`('${seed.key}', `);
+    for (const key of staffRoleSchema.options) {
+      expect(sql).toContain(`('${key}', `);
     }
-  });
-
-  it("remplit la clé depuis l'enum : chaque fiche a sa `role_key` égale à son `role`", async () => {
-    await ctx.prisma.staffUser.create({
-      data: { firstName: "A", lastName: "B", email: "a@lfc.test", role: "comptoir" },
-    });
-    // L'état d'avant : la colonne vient d'être ajoutée, vide. Le déclencheur ne
-    // réagit qu'à une écriture de `role`, pas à celle-ci.
-    await ctx.prisma.$executeRaw`UPDATE "public"."staff_users" SET "role_key" = NULL`;
-
-    await ctx.prisma.$executeRawUnsafe(statement(BACKFILL_KEYS));
-
-    const rows = await ctx.prisma.staffUser.findMany({ select: { role: true, roleKey: true } });
-    expect(rows.length).toBeGreaterThan(1);
-    expect(rows.every((row) => row.role !== null && row.roleKey === row.role)).toBe(true);
   });
 });

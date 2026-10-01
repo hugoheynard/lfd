@@ -4,44 +4,29 @@
  * (`delivery-driver-role.e2e-spec.ts`), l'affectation et la page
  * (`delivery-my-round.e2e-spec.ts`).
  *
- * Le rôle `livreur` n'a pas de valeur `StaffRole` : le harnais ne le sème pas
- * (`legacyRoleSeeds`). On le sème ici par **l'ordre même de la migration** qui
- * le pose en production, relu dans son fichier — un double recopié dériverait
- * au premier droit changé, et l'e2e passerait sur un rôle que la production ne
- * connaît pas.
+ * 🔴 Le rôle `livreur` NAÎT À L'ÉCRAN (2026-10-01,
+ * `documentation/livraisons/plan-droits-par-geste.md`, DG-D6) : la migration
+ * qui le posait (`20261001120100_le_role_livreur`) a été retirée avant toute
+ * mise en ligne — une migration ajoute une ressource, jamais un droit à un
+ * rôle. On le crée donc ici par le geste même d'Hugo : `POST
+ * /admin/staff-roles`, en administrateur, par le vrai handler.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import type request from "supertest";
 
-import type { E2eContext } from "./e2e-harness.js";
+import { E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 
 export const MY_ROUND = "/admin/livraison/ma-tournee";
 
-/** La migration qui pose le rôle `livreur` et le droit de conduire de l'admin. */
-const DRIVER_ROLE_MIGRATION = "20261001120100_le_role_livreur";
+/** Le rôle tel qu'Hugo le crée à l'écran : le droit de conduire, et lui seul. */
+export const DRIVER_ROLE = {
+  key: "livreur",
+  label: "Livreur",
+  grants: [{ resource: "delivery_driving", action: "write" }],
+} as const;
 
-/** Les ordres de la migration sur `staff_role_definitions` — le format que relit la parité. */
-function driverRoleStatements(): readonly string[] {
-  const sql = readFileSync(
-    join(process.cwd(), "prisma/migrations", DRIVER_ROLE_MIGRATION, "migration.sql"),
-    "utf8",
-  );
-  return sql.match(/^(?:INSERT INTO|UPDATE) "public"\."staff_role_definitions"[^;]*;/gmu) ?? [];
-}
-
-/** Rejoue la migration du rôle : `ctx.reset()` ne re-sème que les rôles du contrat. */
+/** Crée le rôle `livreur` à l'écran — `ctx.reset()` ne sème que les rôles de la graine. */
 export async function seedDriverRole(ctx: E2eContext): Promise<void> {
-  const statements = driverRoleStatements();
-  if (statements.length !== 2) {
-    throw new TypeError(
-      `${DRIVER_ROLE_MIGRATION} : deux ordres attendus, ${String(statements.length)} lus`,
-    );
-  }
-  for (const statement of statements) {
-    await ctx.prisma.$executeRawUnsafe(statement);
-  }
+  await ctx.asSub(E2E_STAFF_SUB).post("/admin/staff-roles").send(DRIVER_ROLE).expect(201);
 }
 
 /** Une fiche active au rôle `roleKey` (défaut : `livreur`), liée au `sub` ; rend son id et son agent. */

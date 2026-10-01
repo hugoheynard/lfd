@@ -139,11 +139,11 @@ export function fromRoleGrants(grants: RoleGrants): readonly RoleGrant[] {
 /**
  * Les cinq rôles historiques, tels qu'ils doivent être **semés** en base.
  *
- * `ROLE_GRANTS` cesse d'être l'autorité et devient une graine : après la
- * migration, ces lignes s'éditent comme n'importe quel autre rôle, et le
- * tableau du code n'est plus lu. Il reste là le temps de la bascule, puis s'en
- * va — le supprimer avant aurait fait perdre les justifications qu'il porte,
- * qui sont ce que quelqu'un relira en modifiant une de ces lignes.
+ * `ROLE_GRANTS` n'est plus qu'une graine : ces lignes s'éditent à l'écran
+ * comme n'importe quel autre rôle, et le runtime ne lit plus le tableau du
+ * code — le repli `ROLE_GRANTS[role]` est retiré depuis que `role_key` est
+ * `NOT NULL` (2026-10-01, `plan-droits-par-geste.md`, 5.2). Elle sème une base
+ * vierge (dev, e2e) ; elle ne dit pas ce que la production accorde.
  */
 export function legacyRoleSeeds(): readonly {
   readonly key: StaffRole;

@@ -176,7 +176,12 @@ interface Reads {
 
 async function mount(
   reads: Reads = {},
-  permissions: readonly StaffPermission[] = ['b2b_supervision:read', 'b2b_orders:read'],
+  permissions: readonly StaffPermission[] = [
+    'b2b_supervision:read',
+    'production_worksheet:read',
+    'production_packing:read',
+    'handover_counter:read',
+  ],
   role: StaffRole = 'admin',
 ) {
   const granted = signal(permissions);
@@ -371,11 +376,25 @@ describe('SupervisionPage', () => {
     expect(targets).toContain('/comptoir/retrait');
   });
 
-  it('masque les renvois sans b2b_orders:read', async () => {
+  it('masque les renvois sans aucun droit de geste', async () => {
     const fixture = await mount({}, ['b2b_supervision:read']);
 
     expect(root(fixture).querySelectorAll('a')).toHaveLength(0);
     expect(root(fixture).textContent).not.toContain('Ouvrir');
+  });
+
+  /**
+   * Chaque renvoi a son droit depuis le 2026-10-01 (plan-droits-par-geste.md,
+   * 5.1) : qui ne tient que le retrait ne voit pas le renvoi vers la fournée.
+   */
+  it('ne montre que les renvois dont on tient le geste', async () => {
+    const fixture = await mount({}, ['b2b_supervision:read', 'handover_counter:read']);
+
+    const targets = Array.from(root(fixture).querySelectorAll('a')).map((a) =>
+      a.getAttribute('href'),
+    );
+    expect(targets).toContain('/comptoir/retrait');
+    expect(targets).not.toContain('/production/journee');
   });
 
   it('n’a aucun bouton d’action : ni geste, ni case à cocher', async () => {

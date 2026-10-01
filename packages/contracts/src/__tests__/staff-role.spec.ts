@@ -79,6 +79,30 @@ describe("les graines", () => {
   it("ne sèment pas le sommet", () => {
     expect(legacyRoleSeeds().map((seed) => seed.key)).not.toContain(SUPER_ADMIN_ROLE_KEY);
   });
+
+  /**
+   * La graine est VALIDE (plan `plan-droits-par-geste.md`, DG-D5) : elle ne
+   * mire plus la production — c'est l'écran qui règle les rôles —, mais une
+   * base vierge semée avec elle doit passer le schéma que l'écran applique.
+   */
+  it("passent le schéma des droits que l'écran applique : ressources connues, pas de doublon", () => {
+    for (const seed of legacyRoleSeeds()) {
+      expect(roleGrantsSchema.safeParse(seed.grants).success).toBe(true);
+      const resources = seed.grants.map((grant) => grant.resource);
+      expect(new Set(resources).size).toBe(resources.length);
+      for (const resource of resources) {
+        expect(staffResourceSchema.options).toContain(resource);
+      }
+    }
+  });
+
+  it("sèment une clé distincte par rôle, chacune acceptée comme clé de rôle", () => {
+    const keys = legacyRoleSeeds().map((seed) => seed.key);
+    expect(new Set(keys).size).toBe(keys.length);
+    for (const key of keys) {
+      expect(staffRoleKeySchema.safeParse(key).success).toBe(true);
+    }
+  });
 });
 
 describe("la clé", () => {

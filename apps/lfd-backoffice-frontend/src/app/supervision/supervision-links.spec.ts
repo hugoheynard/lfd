@@ -5,7 +5,7 @@ import type { StaffPermission } from '@lfd/contracts';
 
 import { routes } from '../app.routes';
 import type { PermissionGuard } from '../auth/permission.guard';
-import { landingColumnOf, LINK_PERMISSION, SUPERVISION_LINKS } from './supervision-links';
+import { landingColumnOf, LINK_PERMISSIONS, SUPERVISION_LINKS } from './supervision-links';
 
 function carriesPermission(guard: unknown): guard is PermissionGuard {
   return typeof guard === 'function' && 'permission' in guard;
@@ -41,8 +41,10 @@ function effectiveGuard(path: string): readonly StaffPermission[] | undefined {
 describe('les renvois de la Supervision', () => {
   it.each(Object.entries(SUPERVISION_LINKS))(
     'le renvoi %s mène à une route gardée par le droit qui l’affiche',
-    (_, link) => {
-      expect(effectiveGuard(link.path)).toEqual([LINK_PERMISSION]);
+    (column, link) => {
+      expect(effectiveGuard(link.path)).toEqual([
+        LINK_PERMISSIONS[column as keyof typeof LINK_PERMISSIONS],
+      ]);
     },
   );
 

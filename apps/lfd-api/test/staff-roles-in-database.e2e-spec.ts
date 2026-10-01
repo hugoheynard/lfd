@@ -295,6 +295,22 @@ describe("le déclencheur tient `role_key` en phase de l'ancien code", () => {
     expect(stored.roleKey).toBe("dev");
   });
 
+  /**
+   * Régression évitée (plan `plan-droits-par-geste.md`, 5.2) : une fiche sans
+   * clé résolvait ses droits par `ROLE_GRANTS[role]`, tableau du code. Depuis
+   * le 2026-10-01, `role_key` est `NOT NULL` : sans `role` ni `role_key`, la
+   * base refuse la fiche plutôt que d'inventer un rôle.
+   */
+  it("refuse une fiche sans `role` ni `role_key` — aucune clé n'est inventée", async () => {
+    await expect(
+      ctx.prisma.$executeRaw`
+        INSERT INTO "public"."staff_users" ("id", "first_name", "last_name", "email", "role", "updated_at")
+        VALUES ('fiche-sans-role', 'Sans', 'Role', 'sans-role@lfc.test', NULL, CURRENT_TIMESTAMP)`,
+    ).rejects.toThrow(/role_key/u);
+
+    expect(await ctx.prisma.staffUser.findUnique({ where: { id: "fiche-sans-role" } })).toBeNull();
+  });
+
   it("ne touche pas une fiche qui porte un rôle hors enum", async () => {
     await defineRole("vendeur-marche", [{ resource: "b2b_counter", action: "read" }]);
     const id = await person("marche", "vendeur-marche");

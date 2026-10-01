@@ -12,7 +12,7 @@ import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
 import type { Response } from "express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surface.decorator.js";
 import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { CloseProductionDayCommand } from "../application/commands/close-production-day.command.js";
@@ -37,9 +37,14 @@ import type { ProductionPaper } from "../application/services/production-paper.s
  *
  * Le contrôleur n'injecte qu'un **bus**, comme tous les autres : ni service, ni
  * dépôt, ni port de lecture. `lint:controller-buses` le tient.
+ *
+ * `production_plan` — l'état, l'arrêt, le prévisionnel, le compte à produire
+ * —, sauf deux routes qui servent d'autres postes et portent leur garde
+ * (2026-10-01, `documentation/livraisons/plan-droits-par-geste.md`, 5.1) : la fiche d'atelier imprimable
+ * (`production_worksheet`) et « prête » (`production_packing`).
  */
 @Controller("admin/production")
-@AdminSurface("b2b_orders")
+@AdminSurface("production_plan")
 export class ProductionDayController {
   constructor(
     private readonly commands: CommandBus,
@@ -79,6 +84,7 @@ export class ProductionDayController {
    * `ProductionPackingAck`.
    */
   @Post("batch/:date/sheets/:reference/packed")
+  @RequirePermission("production_packing:write")
   async pack(
     @Param("date") date: string,
     @Param("reference") reference: string,
@@ -123,6 +129,7 @@ export class ProductionDayController {
    * est déjà écrite en toutes lettres au-dessus.
    */
   @Get("batch/:date/sheets/:reference.pdf")
+  @RequirePermission("production_worksheet:read")
   async sheet(
     @Param("date") date: string,
     @Param("reference") reference: string,

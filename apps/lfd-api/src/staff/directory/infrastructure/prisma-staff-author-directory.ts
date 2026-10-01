@@ -129,7 +129,7 @@ function toAuthor(row: AuthorRow): StaffAuthor {
     staffUserId: row.id,
     firstName: row.firstName,
     lastName: row.lastName,
-    role: heldRoleKey(row) ?? "",
+    role: heldRoleKey(row),
     roleLabel: heldRoleLabel(row),
     jobTitle: row.jobTitle,
   };

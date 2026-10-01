@@ -6,7 +6,8 @@ import { staffResourceSchema, STAFF_RESOURCE_LABELS, type StaffResource } from '
  * 🔴 **Il n'y a plus de table.** L'outil se lit dans la clé : `pim_catalog`
  * appartient au PIM, `b2b_pricing` à la plateforme, `staff_access` au socle,
  * `lfc_price_limits` à la vente LFC entière — pros et particuliers (2026-09-25),
- * `delivery_settings` à la livraison (2026-09-29). La
+ * `delivery_settings` à la livraison (2026-09-29), `production_packing` au
+ * fournil et `handover_counter` au retrait (2026-10-01). La
  * version précédente de ce fichier portait un `Record<StaffResource, StaffTool>`
  * écrit à la main — une seconde déclaration de la même vérité, qu'il fallait
  * tenir d'accord avec le contrat.
@@ -20,13 +21,16 @@ import { staffResourceSchema, STAFF_RESOURCE_LABELS, type StaffResource } from '
  * ⚠️ Reste **une** exception, et elle est nommée : `activity` n'a pas de
  * préfixe, parce que le journal ne se range dans aucun outil.
  */
-export type StaffTool = 'pim' | 'lfc' | 'b2b' | 'delivery' | 'staff' | 'ops' | 'transverse';
+export type StaffTool =
+  'pim' | 'lfc' | 'b2b' | 'production' | 'handover' | 'delivery' | 'staff' | 'ops' | 'transverse';
 
 /** L'ordre des groupes à l'écran — du métier vers la plomberie. */
 const TOOL_ORDER: readonly StaffTool[] = [
   'pim',
   'lfc',
   'b2b',
+  'production',
+  'handover',
   'delivery',
   'staff',
   'ops',
@@ -37,6 +41,8 @@ const TOOL_LABELS: Readonly<Record<StaffTool, string>> = {
   pim: 'Référentiel produit',
   lfc: 'Vente LFC',
   b2b: 'Plateforme B2B',
+  production: 'Fournil',
+  handover: 'Retrait',
   delivery: 'Livraison',
   staff: 'Équipe et accès',
   ops: 'Exploitation',
@@ -48,6 +54,8 @@ const TOOL_HINTS: Readonly<Record<StaffTool, string>> = {
   pim: 'ce que le catalogue contient, et ce qui en sort',
   lfc: 'ce qui vaut pour la vente aux pros comme aux particuliers',
   b2b: 'les clients, les commandes, la vente',
+  production: 'le plan du soir, la fiche d’atelier, le colisage',
+  handover: 'la file de retrait et le scan du QR au comptoir',
   delivery: 'la feuille de route, la flotte, le départ des tournées',
   staff: 'qui est qui, et qui peut quoi',
   ops: 'la santé de l’écosystème',
@@ -82,6 +90,8 @@ export function toolOf(resource: StaffResource): StaffTool {
     case 'pim':
     case 'lfc':
     case 'b2b':
+    case 'production':
+    case 'handover':
     case 'delivery':
     case 'staff':
     case 'ops':

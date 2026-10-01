@@ -46,7 +46,7 @@ import { RunSheetStepPhoto } from '../run-sheet-step-photo/run-sheet-step-photo'
 })
 export class RunSheetStop {
   readonly stop = input.required<DeliveryRunSheetStopView>();
-  /** Les photos de procédure se lisent sous `b2b_companies:read` : sans lui, le texte seul. */
+  /** Les photos de procédure se lisent sous `delivery_procedures:read` : sans lui, le texte seul. */
   readonly canSeePhotos = input(false);
 
   protected readonly windowLabel = windowLabel;

@@ -13,7 +13,8 @@ import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
 /**
  * **Qui prend une commande pro au comptoir** (plan-commande-au-comptoir.md) :
  * il faut lire les clients du comptoir (`b2b_counter:read`) ET commander
- * (`b2b_orders:write`). Le rail et les gardes disent la même chose.
+ * (`b2b_place_order:write`, sorti de `b2b_orders` le 2026-10-01). Le rail et
+ * les gardes disent la même chose.
  *
  * Les droits viennent de `resolveStaffPermissions`, pas d'une liste recopiée :
  * le jour où un rôle gagne ou perd l'un des deux, ces cas le disent.

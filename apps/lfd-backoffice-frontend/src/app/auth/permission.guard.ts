@@ -18,6 +18,13 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
   { permission: 'b2b_companies:read', path: '/commercial/comptes-clients' },
   { permission: 'b2b_growth:read', path: '/commercial' },
   { permission: 'b2b_orders:read', path: '/commandes' },
+  // Une entrée par geste du fournil et du retrait (2026-10-01,
+  // `documentation/livraisons/plan-droits-par-geste.md`, 5.1) : sans elles, qui ne tient que le colisage
+  // serait laissé passer de 403 en 403, comme le livreur avant sa ligne.
+  { permission: 'production_worksheet:read', path: '/production/journee' },
+  { permission: 'production_plan:read', path: '/production/previsionnel' },
+  { permission: 'production_packing:read', path: '/production/colisage' },
+  { permission: 'handover_counter:read', path: '/comptoir/retrait' },
   { permission: 'b2b_settings:read', path: '/reglages' },
 ];
 

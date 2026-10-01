@@ -45,7 +45,11 @@
 >   `lint:no-shelf-literals` : une table de rayons en dur a mis le catalogue pro
 >   en 500 le jour où le référentiel a créé une famille qu'elle ne connaissait
 >   pas ; la famille est désormais une donnée, et la porte refuse le retour des
->   noms retirés comme d'un code de rayon écrit dans le commerce. C'est la
+>   noms retirés comme d'un code de rayon écrit dans le commerce. Et **40**
+>   depuis le 2026-10-01 avec `lint:no-role-grants-in-migrations` : seize
+>   migrations avaient accordé des droits à des rôles, contre l'écran censé
+>   les régler ; après la bascule des droits par geste, une migration n'écrit
+>   plus ni `staff_role_definitions` ni `staff_permission_overrides`. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -369,6 +373,16 @@ Règles non négociables :
   `Principal`, résolu **en base** — le token n'atteste que le `sub`) dans le
   `where`, y compris les agrégats et les `count`. Un `where` sans le mur est un
   bug de sécurité, pas un oubli de filtre.
+- **Une migration ajoute une ressource, jamais un droit à un rôle.** Elle peut
+  ajouter une valeur à `StaffResource` ; elle n'écrit **jamais** dans
+  `staff_role_definitions` ni dans `staff_permission_overrides`. Qui a quel
+  droit se règle à l'écran (`/admin/staff-roles`). Une ressource neuve
+  s'accorde à l'admin **à l'écran** tant que l'admin n'est pas calculé.
+  `ROLE_GRANTS` n'est qu'une graine (base vierge, dev, e2e), plus une source :
+  le runtime ne la lit pas. Seule exception, datée : la bascule des droits par
+  geste (`20261001130200`, plan
+  [`documentation/livraisons/plan-droits-par-geste.md`](documentation/livraisons/plan-droits-par-geste.md)).
+  `lint:no-role-grants-in-migrations` le tient.
 - **L'environnement se lit uniquement via `AppConfig`** (`src/platform/config/`) —
   interdiction ESLint de `process.env` partout ailleurs, allowlist explicite.
 
@@ -1100,7 +1114,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 39 portes du dépôt, d'un coup
+pnpm lint:gates         # les 40 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

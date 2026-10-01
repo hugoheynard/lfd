@@ -60,7 +60,7 @@ export async function loadMutationTarget(
       email: existing.email,
       phone: existing.phone,
       jobTitle: existing.jobTitle,
-      role: roleKey ?? "",
+      role: roleKey,
       status: existing.status,
       auth0Id: existing.auth0Id,
     },

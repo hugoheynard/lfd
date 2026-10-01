@@ -46,7 +46,7 @@ import { lateSkusOf } from '../supervision-search';
 import { scrollToHits } from '../supervision-hits';
 import {
   landingColumnOf,
-  LINK_PERMISSION,
+  LINK_PERMISSIONS,
   type SupervisionColumn as Column,
 } from '../supervision-links';
 import { DAY_REFRESH_MS, watchSupervisionDay } from '../supervision-refresh';
@@ -133,8 +133,15 @@ export class SupervisionPage {
     landingColumnOf(this.permissions.identity()?.role ?? null),
   );
 
-  /** Lu à chaque rendu : un droit accordé en cours de session ouvre les renvois. */
-  protected readonly showLinks = computed(() => this.permissions.can(LINK_PERMISSION));
+  /**
+   * Lu à chaque rendu : un droit accordé en cours de session ouvre les renvois.
+   * Par colonne — chaque cible a son droit depuis le 2026-10-01.
+   */
+  protected readonly showLinks = computed(() => ({
+    preparation: this.permissions.can(LINK_PERMISSIONS.preparation),
+    packing: this.permissions.can(LINK_PERMISSIONS.packing),
+    handover: this.permissions.can(LINK_PERMISSIONS.handover),
+  }));
 
   protected readonly preparationBoard = computed(() => {
     const view = dataOf(this.preparation());

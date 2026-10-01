@@ -1,7 +1,8 @@
 /**
  * E2E du **rôle `livreur`** (`documentation/livraisons/plan-ma-tournee.md`,
- * MT1, MT-D1 v2) — le rôle est semé par sa VRAIE migration, et ce qu'il ouvre
- * se lit sur les vraies routes.
+ * MT1, MT-D1 v2) — le rôle est créé À L'ÉCRAN, par la vraie route des rôles
+ * (sa migration a été retirée le 2026-10-01, `plan-droits-par-geste.md`,
+ * DG-D6), et ce qu'il ouvre se lit sur les vraies routes.
  *
  * 🔴 Le livreur n'a QUE `delivery_driving:write` : pas même la cloche, qui ne
  * filtre aucun destinataire — il y lirait les alertes de compte et les
@@ -31,7 +32,7 @@ beforeEach(async () => {
   await seedDriverRole(ctx);
 });
 
-describe("le rôle `livreur` posé par sa migration", () => {
+describe("le rôle `livreur`, créé à l'écran", () => {
   it("n'accorde que `delivery_driving:write` — ni cloche, ni commandes, ni chargement", async () => {
     const role = await ctx.prisma.staffRoleDefinition.findUniqueOrThrow({
       where: { key: "livreur" },
@@ -45,41 +46,28 @@ describe("le rôle `livreur` posé par sa migration", () => {
     expect([...me.permissions].sort()).toEqual(["delivery_driving:read", "delivery_driving:write"]);
   });
 
-  it("l'admin reçoit le droit de conduire ; le comptoir non", async () => {
-    const admin = await ctx.prisma.staffRoleDefinition.findUniqueOrThrow({
-      where: { key: "admin" },
-    });
+  it("le comptoir de la graine n'a pas le droit de conduire", async () => {
     const counter = await ctx.prisma.staffRoleDefinition.findUniqueOrThrow({
       where: { key: "comptoir" },
     });
 
-    expect(roleGrantsSchema.parse(admin.grants)).toContainEqual({
-      resource: "delivery_driving",
-      action: "write",
-    });
     expect(
       roleGrantsSchema.parse(counter.grants).some((grant) => grant.resource === "delivery_driving"),
     ).toBe(false);
   });
 
-  it("rejouée, la migration ne duplique rien et ne réécrit pas un rôle existant", async () => {
-    await ctx.prisma.staffRoleDefinition.update({
-      where: { key: "livreur" },
-      data: { label: "Livreur (édité à l'écran)" },
-    });
+  /**
+   * Régression évitée (plan `plan-droits-par-geste.md`, DG-D6) : le rôle était
+   * posé par une migration, ce que la règle « une migration ajoute une
+   * ressource, jamais un droit à un rôle » interdit désormais. Une base semée
+   * ne le connaît pas — il naît à l'écran.
+   */
+  it("n'existe pas dans une base semée : aucune migration ni graine ne le pose", async () => {
+    await ctx.reset();
 
-    await seedDriverRole(ctx);
-
-    const role = await ctx.prisma.staffRoleDefinition.findUniqueOrThrow({
-      where: { key: "livreur" },
-    });
-    const admin = await ctx.prisma.staffRoleDefinition.findUniqueOrThrow({
-      where: { key: "admin" },
-    });
-    expect(role.label).toBe("Livreur (édité à l'écran)");
     expect(
-      roleGrantsSchema.parse(admin.grants).filter((grant) => grant.resource === "delivery_driving"),
-    ).toHaveLength(1);
+      await ctx.prisma.staffRoleDefinition.findUnique({ where: { key: "livreur" } }),
+    ).toBeNull();
   });
 });
 

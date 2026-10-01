@@ -1,6 +1,6 @@
 import { QuoteOrderQuery } from "../application/queries/quote-order.handler.js";
 import { GetOrderDayVersionQuery } from "../application/queries/get-order-day-version.query.js";
-import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import {
   type AdminOrderRow,
   type AdminOrdersQuery,
@@ -62,6 +62,9 @@ import { ListAdminOrdersQuery } from "../application/queries/list-admin-orders.q
  * cela : on ajoute un fait, on n'en réécrit aucun.
  */
 @Controller("admin/orders")
+// `b2b_orders` pour lire les commandes, le bon, la traçabilité et le rappel ;
+// passer une commande et son devis exigent `b2b_place_order:write`
+// (2026-10-01, `documentation/livraisons/plan-droits-par-geste.md`, 5.1 bis).
 @AdminSurface("b2b_orders")
 export class AdminOrdersController {
   constructor(
@@ -99,7 +102,9 @@ export class AdminOrdersController {
     );
   }
 
+  // Le devis précède la passation : même geste, même droit (5.1 bis).
   @Post("quote")
+  @RequirePermission("b2b_place_order:write")
   @HttpCode(HttpStatus.OK)
   async quote(
     @Req() request: AuthenticatedStaffRequest,
@@ -129,6 +134,7 @@ export class AdminOrdersController {
    * choisit pas.
    */
   @Post()
+  @RequirePermission("b2b_place_order:write")
   @HttpCode(HttpStatus.CREATED)
   async place(
     @Req() request: AuthenticatedStaffRequest,

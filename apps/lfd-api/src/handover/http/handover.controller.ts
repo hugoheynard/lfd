@@ -55,13 +55,13 @@ const HANDOVER_ROUTES = ["admin/handover", "admin/production/handover"];
  * Sans elle, quiconque a vu un QR par-dessus une épaule pourrait attester son
  * propre retrait.
  *
- * `b2b_orders` reste la ressource, inchangée : le fournil partage celle du
- * contrôleur de journée. Déplacer le code ne doit retirer le geste à personne —
- * le commercial qui prend la commande est souvent celui qui remet le sac, et
- * c'est un droit qu'on lui a donné explicitement.
+ * `handover_counter` depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`, 5.1) : il
+ * était sous `b2b_orders`, qui ouvrait aussi la passation. La bascule l'a
+ * donné, au même niveau, à chaque rôle qui tenait `b2b_orders` — le commercial
+ * qui remet le sac le garde ; qui le perd se règle à l'écran.
  */
 @Controller(HANDOVER_ROUTES)
-@AdminSurface("b2b_orders")
+@AdminSurface("handover_counter")
 export class HandoverController {
   constructor(
     private readonly queries: QueryBus,

@@ -24,6 +24,8 @@ describe('les domaines rangés par outil', () => {
       'pim',
       'lfc',
       'b2b',
+      'production',
+      'handover',
       'delivery',
       'staff',
       'ops',
@@ -56,6 +58,8 @@ describe('les domaines rangés par outil', () => {
     expect(toolOf('pim_catalog')).toBe('pim');
     expect(toolOf('pim_channels')).toBe('pim');
     expect(toolOf('b2b_pricing')).toBe('b2b');
+    expect(toolOf('production_packing')).toBe('production');
+    expect(toolOf('handover_counter')).toBe('handover');
     expect(toolOf('staff_access')).toBe('staff');
     expect(toolOf('ops_health')).toBe('ops');
   });

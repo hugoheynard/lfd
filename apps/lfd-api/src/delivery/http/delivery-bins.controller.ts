@@ -13,7 +13,7 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from 
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
-import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface, RequireAnyPermission } from "../../platform/auth/admin-surface.decorator.js";
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { DeclareDeliveryBinsCommand } from "../application/commands/declare-delivery-bins.command.js";
 import { ShareDeliveryBinCommand } from "../application/commands/share-delivery-bin.command.js";
@@ -39,6 +39,13 @@ type OrderQuery = z.infer<typeof orderQuerySchema>;
  * (Q21). `GET partenaires?commande=` : les moitiés libres autour d'une
  * commande (tranche C). Lire un bac ou les bacs d'une commande — la page imprimable, le QR
  * ouvert — n'écrit rien. Il n'injecte que les bus.
+ *
+ * 🔴 La porte s'ouvre AUSSI au colisage (2026-10-01, `documentation/livraisons/plan-droits-par-geste.md`,
+ * 5.3) : chaque route exige `production_packing:write` OU
+ * `delivery_loading:write` — lectures comprises, comme le plan l'écrit : le
+ * panneau est un geste d'écriture, et qui ne fait que lire le colisage
+ * (le support) n'a rien à y faire. On élargit la porte, on ne déplace aucun
+ * droit — aucune dérogation n'a donc à fusionner.
  */
 @Controller("admin/livraison/colisage/bacs")
 @AdminSurface("delivery_loading")
@@ -49,6 +56,7 @@ export class DeliveryBinsController {
   ) {}
 
   @Post()
+  @RequireAnyPermission("production_packing:write", "delivery_loading:write")
   @HttpCode(HttpStatus.CREATED)
   async declare(
     @Body(new ZodBody(declareDeliveryBinsPayloadSchema)) payload: DeclareDeliveryBinsPayload,
@@ -60,6 +68,7 @@ export class DeliveryBinsController {
   }
 
   @Post("partage")
+  @RequireAnyPermission("production_packing:write", "delivery_loading:write")
   @HttpCode(HttpStatus.CREATED)
   async share(
     @Body(new ZodBody(shareDeliveryBinPayloadSchema)) payload: ShareDeliveryBinPayload,
@@ -71,6 +80,7 @@ export class DeliveryBinsController {
   }
 
   @Get()
+  @RequireAnyPermission("production_packing:write", "delivery_loading:write")
   orderBins(
     @Query(new ZodQuery(orderQuerySchema)) query: OrderQuery,
   ): Promise<DeliveryOrderBinsView> {
@@ -85,6 +95,7 @@ export class DeliveryBinsController {
    * un identifiant de bac.
    */
   @Get("partenaires")
+  @RequireAnyPermission("production_packing:write", "delivery_loading:write")
   freeHalves(
     @Query(new ZodQuery(orderQuerySchema)) query: OrderQuery,
   ): Promise<DeliveryBinFreeHalvesView> {
@@ -94,6 +105,7 @@ export class DeliveryBinsController {
   }
 
   @Get(":binId")
+  @RequireAnyPermission("production_packing:write", "delivery_loading:write")
   bin(@Param("binId") binId: string): Promise<DeliveryBinDetailView> {
     return this.queries.execute<GetDeliveryBinQuery, DeliveryBinDetailView>(
       new GetDeliveryBinQuery(binId),
@@ -101,6 +113,7 @@ export class DeliveryBinsController {
   }
 
   @Post(":binId/annulation")
+  @RequireAnyPermission("production_packing:write", "delivery_loading:write")
   @HttpCode(HttpStatus.NO_CONTENT)
   async void(@Param("binId") binId: string): Promise<void> {
     await this.commands.execute<VoidDeliveryBinCommand, void>(new VoidDeliveryBinCommand(binId));

@@ -6,7 +6,7 @@
  *   clientèle — toutes celles d'avant — est `pro`, et deux pro qui se
  *   chevauchent restent refusées par la nouvelle contrainte ;
  * - `20260926130200_les_limites_de_prix_sont_accordees` : rejouée depuis
- *   l'état d'avant, elle met la table d'accord avec `ROLE_GRANTS` — admin et
+ *   l'état d'avant, elle accorde — admin et
  *   comptabilité en écriture, PERSONNE d'autre, pas même un rôle composé qui
  *   porte `b2b_pricing` (Hugo, 2026-09-25 : les commerciaux n'ont pas accès au
  *   bloc Comptabilité).
@@ -17,7 +17,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { ROLE_GRANTS, staffRoleSchema } from "@lfd/contracts";
+import { staffRoleSchema, type StaffAction, type StaffRole } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
@@ -26,6 +26,17 @@ const GRANTS_MIGRATION = join(
   process.cwd(),
   "prisma/migrations/20260926130200_les_limites_de_prix_sont_accordees/migration.sql",
 );
+
+/**
+ * Ce que la migration accordait, FIGÉ ici le 2026-10-01
+ * (`documentation/livraisons/plan-droits-par-geste.md`, 5.6) : `ROLE_GRANTS`
+ * n'est plus qu'une graine, et comparer une migration appliquée à la graine
+ * interdirait de faire évoluer celle-ci.
+ */
+const LIMITS_GRANTED: Readonly<Partial<Record<StaffRole, StaffAction>>> = {
+  admin: "write",
+  comptabilite: "write",
+};
 
 /** Un rôle composé à l'écran qui price : il ne gagne RIEN. */
 const PRICER = "tarifeur_compose";
@@ -142,7 +153,7 @@ async function limitGrants(): Promise<Record<string, readonly string[]>> {
 }
 
 describe("la migration accorde `lfc_price_limits` — à l'administrateur et à la comptabilité seuls", () => {
-  it("met la table d'accord avec le contrat, pour chaque rôle connu", async () => {
+  it("accorde à chaque rôle connu ce qu'elle accordait le jour de son déploiement", async () => {
     await beforeGrants();
     // Sans ce point de départ, le test passerait même si la migration n'accordait rien.
     expect((await limitGrants())["comptabilite"]).toEqual([]);
@@ -151,7 +162,7 @@ describe("la migration accorde `lfc_price_limits` — à l'administrateur et à 
 
     const grants = await limitGrants();
     for (const role of staffRoleSchema.options) {
-      const expected = ROLE_GRANTS[role].lfc_price_limits;
+      const expected = LIMITS_GRANTED[role];
       expect({ role, actions: grants[role] ?? [] }).toEqual({
         role,
         actions: expected === undefined ? [] : [expected],

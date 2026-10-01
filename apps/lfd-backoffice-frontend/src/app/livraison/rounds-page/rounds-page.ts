@@ -155,7 +155,9 @@ export class RoundsPage {
   protected readonly canReadSettings = computed(() =>
     canReadDeliverySettings((permission) => this.permissions.can(permission)),
   );
-  protected readonly canSeePhotos = computed(() => this.permissions.can('b2b_companies:read'));
+  protected readonly canSeePhotos = computed(() =>
+    this.permissions.can('delivery_procedures:read'),
+  );
 
   /** Le dernier refus du serveur — la composition reste à l'écran. */
   protected readonly refusal = signal<string | null>(null);

@@ -20,7 +20,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { ROLE_GRANTS, staffRoleSchema } from "@lfd/contracts";
+import { staffRoleSchema, type StaffAction, type StaffRole } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
@@ -29,6 +29,19 @@ const MIGRATION = join(
   process.cwd(),
   "prisma/migrations/20260926100100_le_comptoir_est_accorde/migration.sql",
 );
+
+/**
+ * Ce que la migration accordait de `b2b_counter`, FIGÉ ici le 2026-10-01
+ * (`documentation/livraisons/plan-droits-par-geste.md`, 5.6) : `ROLE_GRANTS`
+ * n'est plus qu'une graine, que l'on peut faire évoluer sans rouvrir une
+ * migration appliquée. Comparer la migration à la graine figerait la graine.
+ */
+const COUNTER_GRANTED: Readonly<Partial<Record<StaffRole, StaffAction>>> = {
+  admin: "write",
+  commercial: "read",
+  comptabilite: "read",
+  comptoir: "read",
+};
 
 /** Un rôle composé à l'écran : il commande pour un pro sans être nommé nulle part. */
 const COMPOSED = "vendeur_mixte";
@@ -143,7 +156,7 @@ async function counterOverridesOf(staffUserId: string): Promise<readonly unknown
 }
 
 describe("la migration accorde `b2b_counter` — par le contenu, pas par la clé", () => {
-  it("met la table d'accord avec le contrat, pour chaque rôle connu", async () => {
+  it("accorde à chaque rôle connu ce qu'elle accordait le jour de son déploiement", async () => {
     await beforeMigration();
     // Le point de départ n'est pas vide par hasard : sans lui, le test
     // passerait même si la migration n'accordait rien.
@@ -153,7 +166,7 @@ describe("la migration accorde `b2b_counter` — par le contenu, pas par la clé
 
     const grants = await counterGrants();
     for (const role of staffRoleSchema.options) {
-      const expected = ROLE_GRANTS[role].b2b_counter;
+      const expected = COUNTER_GRANTED[role];
       expect({ role, actions: grants[role] ?? [] }).toEqual({
         role,
         actions: expected === undefined ? [] : [expected],

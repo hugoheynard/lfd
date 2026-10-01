@@ -128,8 +128,10 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
  * item d'un menu n'est pas la même question que la page qu'ouvre un raccourci
  * posé sur un écran de fournil.
  *
- * Aucune ne porte de `needs` : `b2b_orders:read` ouvre déjà l'espace, et le
- * répéter sur les deux serait une condition toujours vraie, donc jamais relue.
+ * Chaque vue porte son `needs` depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`,
+ * DG-D1) : le prévisionnel est le plan du soir, la fournée la fiche d'atelier,
+ * le colisage le sien. La coquille n'est plus gardée — comme la Livraison —,
+ * parce qu'un garde commun fermerait une vue à qui ne tient que l'autre.
  */
 export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
   {
@@ -137,6 +139,7 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
     label: 'Prévisionnel',
     link: '/production/previsionnel',
     icon: 'calendar',
+    needs: 'production_plan:read',
   },
   {
     // L'adresse reste `journee`, alors que le libellé dit « Fournée du jour ».
@@ -146,6 +149,7 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
     label: 'Fournée du jour',
     link: '/production/journee',
     icon: 'production',
+    needs: 'production_worksheet:read',
   },
   {
     // APRÈS la fournée, parce que c'est l'ordre du fournil : on sort du four,
@@ -159,6 +163,7 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
     // 2026-09-13, 0.27.2), et `package` EST le carton. `basket` disait le
     // panier d'achat, c'est-à-dire le geste du client, pas celui du fournil.
     icon: 'package',
+    needs: 'production_packing:read',
   },
 ];
 
@@ -255,10 +260,11 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
  * même `comptes-clients/:id/nouvelle-commande` que le Commercial — deux saisies
  * divergeraient au premier changement de règle.
  *
- * `needs` sur la seule nouvelle commande : `b2b_orders:read` ouvre l'espace et
- * suffit à la file de retrait, mais la commande pro exige de lire les clients
- * du comptoir ET d'écrire une commande — les deux gardes de sa route. Sans eux,
- * un poste verrait l'entrée, pour un refus du garde.
+ * Chaque vue porte son `needs` depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`) :
+ * la file de retrait demande `handover_counter:read` ; la commande pro exige
+ * de lire les clients du comptoir ET de passer une commande
+ * (`b2b_place_order:write`) — les deux gardes de sa route. Sans eux, un poste
+ * verrait l'entrée, pour un refus du garde.
  */
 export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
   {
@@ -266,13 +272,14 @@ export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
     label: 'Retrait boutique',
     link: '/comptoir/retrait',
     icon: 'package-check',
+    needs: 'handover_counter:read',
   },
   {
     key: 'nouvelle-commande',
     label: 'Nouvelle commande pro',
     link: '/comptoir/nouvelle-commande',
     icon: 'basket',
-    needs: ['b2b_counter:read', 'b2b_orders:write'],
+    needs: ['b2b_counter:read', 'b2b_place_order:write'],
   },
 ];
 

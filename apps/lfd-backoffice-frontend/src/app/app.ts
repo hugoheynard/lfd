@@ -170,7 +170,26 @@ export class App {
    */
   protected readonly canSeeAnalytics = computed(() => this.permissions.can('b2b_growth:read'));
 
-  protected readonly canSeeProduction = computed(() => this.permissions.can('b2b_orders:read'));
+  /**
+   * La Production s'ouvre à qui tient L'UN des trois gestes du fournil — le
+   * plan du soir, la fiche d'atelier, le colisage (2026-10-01,
+   * `documentation/livraisons/plan-droits-par-geste.md`, DG-D1). Ils étaient tous sous `b2b_orders:read`.
+   */
+  protected readonly canSeeProduction = computed(
+    () =>
+      this.permissions.can('production_plan:read') ||
+      this.permissions.can('production_worksheet:read') ||
+      this.permissions.can('production_packing:read'),
+  );
+  /**
+   * Le Comptoir s'ouvre à qui sert la file de retrait OU passe une commande
+   * pour un pro : ses deux vues relèvent de deux droits depuis le 2026-10-01.
+   */
+  protected readonly canSeeCounter = computed(
+    () =>
+      this.permissions.can('handover_counter:read') ||
+      (this.permissions.can('b2b_counter:read') && this.permissions.can('b2b_place_order:write')),
+  );
   /**
    * La Livraison s'ouvre à qui lit la feuille de route, les tournées, le
    * chargement, ses réglages OU conduit sa tournée : ses vues relèvent de cinq

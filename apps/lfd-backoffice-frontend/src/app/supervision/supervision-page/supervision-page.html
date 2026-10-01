@@ -163,7 +163,7 @@
           <app-preparation-column
             [(shelfFilter)]="shelfFilter"
             [board]="board"
-            [showLinks]="showLinks()"
+            [showLinks]="showLinks().preparation"
             [narrow]="narrow()"
             [matches]="highlight.matches()"
             [lateSkus]="lateSkus()"
@@ -200,7 +200,7 @@
           <app-packing-column
             [(point)]="packShop"
             [board]="board"
-            [showLinks]="showLinks()"
+            [showLinks]="showLinks().packing"
             [narrow]="narrow()"
             [matches]="highlight.matches()"
             [quality]="quality.lookup()"
@@ -246,7 +246,7 @@
             [(method)]="handoverMethod"
             [(point)]="handoverShop"
             [board]="board"
-            [showLinks]="showLinks()"
+            [showLinks]="showLinks().handover"
             [narrow]="narrow()"
             [latenessUnknown]="latenessUnknown()"
             [matches]="highlight.matches()"

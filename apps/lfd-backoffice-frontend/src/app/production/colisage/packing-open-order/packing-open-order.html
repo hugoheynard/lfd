@@ -48,7 +48,7 @@
         </p>
         <!-- Lot 4 bis : les bacs d'une livraison se déclarent ici, une fois
              la commande prête. Le composant décide seul de ce qu'il montre selon le droit
-             `delivery_loading:write` ; « Prête » n'en dépend pas. -->
+             `production_packing:write` ou `delivery_loading:write` ; « Prête » n'en dépend pas. -->
         @if (order.fulfillmentMethod === 'delivery') {
           <app-packing-bins [orderId]="order.orderId" />
         }

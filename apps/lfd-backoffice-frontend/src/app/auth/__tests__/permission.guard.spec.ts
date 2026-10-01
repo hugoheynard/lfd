@@ -59,6 +59,21 @@ describe('permissionGuard — redirige plutôt que de bloquer', () => {
     expect(redirectPath(result)).toBe('/livraison/ma-tournee');
   });
 
+  /**
+   * Plan `plan-droits-par-geste.md`, 5.1 : qui ne tient qu'un geste du
+   * fournil ou du retrait atterrit sur SA vue, au lieu de passer de 403 en 403.
+   */
+  it.each([
+    ['production_worksheet:read', '/production/journee'],
+    ['production_plan:read', '/production/previsionnel'],
+    ['production_packing:read', '/production/colisage'],
+    ['handover_counter:read', '/comptoir/retrait'],
+  ] as const)('renvoie qui ne tient que %s vers %s', async (permission, path) => {
+    const result = await guardWith([permission]);
+
+    expect(redirectPath(result)).toBe(path);
+  });
+
   it('descend dans la liste quand les premières portes sont fermées', async () => {
     const result = await guardWith(['b2b_settings:read']);
 

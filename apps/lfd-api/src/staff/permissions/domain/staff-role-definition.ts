@@ -18,7 +18,7 @@ import {
 /** Une personne qui tient l'annuaire (`staff_access:write`) par son rôle. */
 export interface DirectoryKeeper {
   readonly staffUserId: string;
-  readonly roleKey: string | null;
+  readonly roleKey: string;
 }
 
 /**

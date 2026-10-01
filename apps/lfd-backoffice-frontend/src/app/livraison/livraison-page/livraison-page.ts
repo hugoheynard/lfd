@@ -54,7 +54,7 @@ const TOMORROW = '1';
  * dit en toutes lettres plutôt que de laisser un trou muet.
  *
  * Les photos de procédure se lisent par la route de la fiche client, sous
- * `b2b_companies:read` : sans ce droit, on garde le texte des étapes et on ne
+ * `delivery_procedures:read` : sans ce droit, on garde le texte des étapes et on ne
  * tente pas une lecture qui serait refusée.
  *
  * Imprimable : le choix du jour et le bouton disparaissent sur papier.
@@ -115,7 +115,9 @@ export class DeliveryPage {
     const view = this.view();
     return view === null ? null : summaryOf(view);
   });
-  protected readonly canSeePhotos = computed(() => this.permissions.can('b2b_companies:read'));
+  protected readonly canSeePhotos = computed(() =>
+    this.permissions.can('delivery_procedures:read'),
+  );
 
   /** Un numéro par lecture : une réponse lente d'un autre jour n'écrase pas la bonne. */
   private request = 0;

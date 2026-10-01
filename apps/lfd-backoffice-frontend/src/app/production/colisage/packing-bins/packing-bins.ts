@@ -125,9 +125,10 @@ type Loadable<T> =
  * choisi parmi les moitiés libres (`colisage/bacs/partenaires`). Le serveur
  * tranche, et son refus s'affiche tel quel.
  *
- * 🔴 Le colisage est ouvert à qui écrit les commandes ; déclarer des bacs
- * demande `delivery_loading:write`, que seuls `admin` et `comptoir` ont (Q21).
- * Sans lui, pas de bouton : une phrase dit où ça se fait.
+ * 🔴 Déclarer des bacs demande `production_packing:write` OU
+ * `delivery_loading:write` — la porte du panneau s'ouvre aux deux depuis le
+ * 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`, 5.3).
+ * Sans l'un ni l'autre, pas de bouton : une phrase dit où ça se fait.
  */
 @Component({
   selector: 'app-packing-bins',
@@ -158,7 +159,11 @@ export class PackingBins {
 
   /** La commande — l'identifiant du commerce, que porte la feuille de colisage. */
   readonly orderId = input.required<string>();
-  protected readonly canDeclare = computed(() => this.permissions.can('delivery_loading:write'));
+  protected readonly canDeclare = computed(
+    () =>
+      this.permissions.can('production_packing:write') ||
+      this.permissions.can('delivery_loading:write'),
+  );
   /** Renseigner une contenance est un réglage : le lien n'est offert qu'à qui peut l'écrire. */
   protected readonly canSetCapacities = computed(() =>
     this.permissions.can('delivery_settings:write'),

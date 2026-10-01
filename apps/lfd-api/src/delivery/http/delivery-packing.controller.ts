@@ -3,7 +3,7 @@ import { Controller, Get, Query } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
-import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface, RequireAnyPermission } from "../../platform/auth/admin-surface.decorator.js";
 import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { GetDeliveryPackingProposalQuery } from "../application/queries/get-delivery-packing-proposal.query.js";
 
@@ -19,6 +19,13 @@ type OrderQuery = z.infer<typeof orderQuerySchema>;
  * Sous `delivery_loading`, comme la déclaration qu'elle précède : qui peut
  * déclarer des bacs peut lire ce qu'on lui propose. Une LECTURE, jamais
  * imposée. Il n'injecte que le bus des requêtes.
+ *
+ * 🔴 La porte s'ouvre AUSSI au colisage (2026-10-01, `documentation/livraisons/plan-droits-par-geste.md`,
+ * 5.3) : chaque route exige `production_packing:write` OU
+ * `delivery_loading:write` — lectures comprises, comme le plan l'écrit : le
+ * panneau est un geste d'écriture, et qui ne fait que lire le colisage
+ * (le support) n'a rien à y faire. On élargit la porte, on ne déplace aucun
+ * droit — aucune dérogation n'a donc à fusionner.
  */
 @Controller("admin/livraison/colisage")
 @AdminSurface("delivery_loading")
@@ -26,6 +33,7 @@ export class DeliveryPackingController {
   constructor(private readonly queries: QueryBus) {}
 
   @Get("proposition")
+  @RequireAnyPermission("production_packing:write", "delivery_loading:write")
   proposal(
     @Query(new ZodQuery(orderQuerySchema)) query: OrderQuery,
   ): Promise<DeliveryPackingProposalView> {

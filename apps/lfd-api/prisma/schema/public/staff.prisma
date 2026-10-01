@@ -54,6 +54,9 @@ enum StaffResource {
 
   b2b_companies
   b2b_orders
+  /// PASSER UNE COMMANDE pour un client pro — sortie de `b2b_orders` le
+  /// 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`, 5.1 bis).
+  b2b_place_order
   /// Le COMPTOIR — la carte et le détail d'un client, taillés pour la prise de
   /// commande (2026-09-25, `plan-commande-au-comptoir.md`).
   b2b_counter
@@ -85,6 +88,14 @@ enum StaffResource {
   /// La VITRINE — composer les pages de la boutique (2026-09-24,
   /// `plan-vitrine-enregistrement.md`, D7).
   b2b_storefront
+  /// LE FOURNIL, un droit par geste — sortis de `b2b_orders` le 2026-10-01
+  /// (`documentation/livraisons/plan-droits-par-geste.md`, DG-D1) : le plan du
+  /// soir, la fiche d'atelier, le colisage.
+  production_plan
+  production_worksheet
+  production_packing
+  /// LE RETRAIT AU COMPTOIR — la file, la remise, le scan (même plan).
+  handover_counter
   /// La FEUILLE DE ROUTE du jour, sortie de `b2b_orders` (2026-09-29,
   /// `plan-preparation-de-tournee.md`, Q7/Q8).
   delivery_run_sheet
@@ -97,6 +108,9 @@ enum StaffResource {
   /// CONDUIRE SA TOURNÉE — lire la tournée qui vous est affectée, la commencer
   /// (2026-10-01, `documentation/livraisons/plan-ma-tournee.md`, MT-D1 v2).
   delivery_driving
+  /// LES PROCÉDURES DE LIVRAISON côté staff — sorties de `b2b_companies` le
+  /// 2026-10-01 (même plan).
+  delivery_procedures
 
   staff_access
   staff_notifications
@@ -148,11 +162,16 @@ model StaffUser {
   role StaffRole? @default(commercial)
 
   /// **La** clé du rôle porté, celle que le résolveur lit (plan
-  /// `plan-roles-lus-en-base.md` §3.1). Nulle seulement pour une fiche d'avant
-  /// la migration que rien n'aurait remplie — repli sur `role`, retiré au
-  /// « resserrer ».
-  roleKey        String?              @map("role_key")
-  roleDefinition StaffRoleDefinition? @relation(fields: [roleKey], references: [key], onDelete: Restrict)
+  /// `plan-roles-lus-en-base.md` §3.1). `NOT NULL` depuis le 2026-10-01
+  /// (`plan-droits-par-geste.md`, 5.2) : le repli sur `ROLE_GRANTS[role]` est
+  /// retiré, une fiche n'a de droits que par sa définition.
+  ///
+  /// `dbgenerated()` sans expression : la colonne n'a PAS de défaut en base,
+  /// c'est le déclencheur `staff_users_role_key_sync` qui la remplit depuis
+  /// `role` quand une écriture ne la donne pas. Sans `role` ni `role_key`,
+  /// l'insertion échoue sur le `NOT NULL` — rien n'est inventé.
+  roleKey        String              @default(dbgenerated()) @map("role_key")
+  roleDefinition StaffRoleDefinition @relation(fields: [roleKey], references: [key], onDelete: Restrict)
 
   /// L'état de la connexion. La fiche précède le compte, donc `pending` par
   /// défaut : créer quelqu'un ne lui ouvre aucune porte.

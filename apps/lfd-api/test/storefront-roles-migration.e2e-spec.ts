@@ -11,7 +11,7 @@
  * ⚠️ Le plan (D7) présente la table comme la source du GUARD. Elle ne l'est
  * pas : le guard résout depuis `ROLE_GRANTS` (`resolveStaffPermissions`,
  * `staff/permissions/prisma-staff-access.resolver.ts`, vérifié le 2026-09-24).
- * Ce test garde donc l'accord table ↔ contrat, pas l'ouverture de la route —
+ * Ce test garde donc ce que la migration accordait, pas l'ouverture de la route —
  * que `storefront.e2e-spec.ts` éprouve par HTTP.
  *
  * ⚠️ Pourquoi on REJOUE plutôt qu'on ne lit la table « avant tout reset » :
@@ -26,10 +26,21 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { ROLE_GRANTS, staffRoleSchema } from "@lfd/contracts";
+import { staffRoleSchema, type StaffAction, type StaffRole } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
+
+/**
+ * Ce que la migration accordait, FIGÉ ici le 2026-10-01
+ * (`documentation/livraisons/plan-droits-par-geste.md`, 5.6) : `ROLE_GRANTS`
+ * n'est plus qu'une graine, que l'on doit pouvoir faire évoluer sans rouvrir
+ * une migration appliquée. La comparer à la migration gèlerait la graine.
+ */
+const STOREFRONT_GRANTED: Readonly<Partial<Record<StaffRole, StaffAction>>> = {
+  admin: "write",
+  communication: "write",
+};
 
 const MIGRATION = join(
   process.cwd(),
@@ -97,7 +108,7 @@ async function storefrontGrants(): Promise<Record<string, readonly string[]>> {
 }
 
 describe("la migration accorde `b2b_storefront` — la table, pas seulement le code", () => {
-  it("donne `storefront: write` à admin et communication, et à eux seuls — comme le contrat", async () => {
+  it("donne `storefront: write` à admin et communication, et à eux seuls — comme au déploiement", async () => {
     await beforeMigration();
     // Le point de départ n'est pas vide par hasard : sans lui, le test
     // passerait même si la migration n'accordait rien.
@@ -107,7 +118,7 @@ describe("la migration accorde `b2b_storefront` — la table, pas seulement le c
 
     const grants = await storefrontGrants();
     for (const role of staffRoleSchema.options) {
-      const expected = ROLE_GRANTS[role].b2b_storefront;
+      const expected = STOREFRONT_GRANTED[role];
       expect({ role, actions: grants[role] ?? [] }).toEqual({
         role,
         actions: expected === undefined ? [] : [expected],

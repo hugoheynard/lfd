@@ -196,10 +196,15 @@ function listbox(fixture: ComponentFixture<PackingBins>, index: number) {
 }
 
 describe('PackingBins', () => {
-  it('🔴 sans `delivery_loading:write`, pas de bouton : les bacs se déclarent au comptoir', async () => {
-    const { element } = await boot(['b2b_orders:write']);
+  it('🔴 sans `production_packing:write` ni `delivery_loading:write`, pas de bouton : les bacs se déclarent au comptoir', async () => {
+    const { element } = await boot(['b2b_orders:write', 'production_packing:read']);
     expect(element.querySelector('[data-bins-toggle]')).toBeNull();
     expect(element.querySelector('[data-bins-counter]')?.textContent).toContain('au comptoir');
+  });
+
+  it('ouvre la déclaration au colisage seul (`production_packing:write`), comme la porte du serveur', async () => {
+    const { element } = await boot(['production_packing:write']);
+    expect(element.querySelector('[data-bins-toggle]')).not.toBeNull();
   });
 
   it('ne propose que les types non archivés (v2-7)', async () => {

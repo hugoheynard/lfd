@@ -57,7 +57,7 @@ export interface StaffMutationTarget {
    */
   readonly isRoot: boolean;
   /** La clé du rôle porté aujourd'hui. */
-  readonly roleKey: string | null;
+  readonly roleKey: string;
   /** Les écarts en base — la fiche de secours ne doit pas les voir changer. */
   readonly currentOverrides: readonly StaffOverride[];
   /**

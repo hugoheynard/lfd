@@ -21,7 +21,7 @@ type PhotoState =
 /**
  * **La photo d'une étape de procédure**, sur la feuille de route. Elle se lit
  * par la route staff de la procédure (`admin/companies/…/steps/:id/photo`,
- * sous `b2b_companies:read`) — la page ne la monte que si l'on a ce droit.
+ * sous `delivery_procedures:read`) — la page ne la monte que si l'on a ce droit.
  *
  * `revision` part dans l'URL : la route répond `immutable`, et c'est la
  * révision de la photo (`photoRevision` de la feuille, la même valeur que la

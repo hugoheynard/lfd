@@ -99,7 +99,27 @@ export const staffResourceSchema = z.enum([
 
   // ── `b2b.` — LA PLATEFORME MARCHANDE ────────────────────────────────────
   "b2b_companies",
+  /**
+   * **Les commandes du commerce** — les lister, les lire, leur bon, leur
+   * traçabilité tarifaire, le rappel de retrait.
+   *
+   * 🔴 Elle ouvrait cinq métiers jusqu'au 2026-10-01 : les commandes, le plan
+   * du soir, la fiche d'atelier, le colisage et le retrait au comptoir — si
+   * bien que coliser emportait le droit de passer une commande. Chaque geste a
+   * désormais sa ressource (`documentation/livraisons/plan-droits-par-geste.md`).
+   */
   "b2b_orders",
+  /**
+   * **Passer une commande pour un client pro** — le devis, le brouillon, ce
+   * qu'on peut lui vendre et son historique pour composer, puis la passation
+   * (`POST /admin/orders`). Sortie de `b2b_orders` le 2026-10-01 (plan
+   * `plan-droits-par-geste.md`, 5.1 bis).
+   *
+   * Une ressource à **une action utile** : `write`. Il n'y a rien à « lire »
+   * dans le geste de passer une commande — les routes de lecture qu'il ouvre
+   * exigent l'écriture ; lire les commandes reste `b2b_orders:read`.
+   */
+  "b2b_place_order",
   /**
    * **Le Comptoir** — ce qu'il faut voir d'un client pour lui vendre, rien de
    * plus : une carte de recherche, et au détail ses adresses, ses acheteurs et
@@ -259,6 +279,25 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_storefront",
 
+  // ── `production.` — LE FOURNIL ──────────────────────────────────────────
+  // Sortis de `b2b_orders` le 2026-10-01, un par geste
+  // (`documentation/livraisons/plan-droits-par-geste.md`, DG-D1 et 5.1). La
+  // version de journée du fournil s'ouvre à n'importe lequel des quatre.
+  /** **Le plan du soir** — l'état de la journée, l'arrêter, le lot du jour, le prévisionnel. */
+  "production_plan",
+  /** **La fiche d'atelier** — la lire, cocher, reprendre, régler les contenants du four. */
+  "production_worksheet",
+  /**
+   * **Le colisage** — le poste, les lignes, les contenants, « prête », la
+   * fiche derrière le QR ; et le panneau « Bacs », qui s'ouvre AUSSI à
+   * `delivery_loading` (une porte élargie, aucun droit déplacé — plan 5.3).
+   */
+  "production_packing",
+
+  // ── `handover.` — LE RETRAIT ────────────────────────────────────────────
+  /** **Le retrait au comptoir** — la file, la remise manuelle, le scan du QR. */
+  "handover_counter",
+
   // ── `delivery.` — LA LIVRAISON ──────────────────────────────────────────
   // Un droit par geste, créé quand son écran existe (Hugo, 2026-09-29 —
   // `documentation/livraisons/plan-preparation-de-tournee.md`, Q7/Q8) : une
@@ -312,12 +351,19 @@ export const staffResourceSchema = z.enum([
    * commencer (`/admin/livraison/ma-tournee`, plan « Ma tournée », MT-D1 v2).
    *
    * Le seul droit du rôle `livreur`, qui n'a pas de valeur `StaffRole` : il
-   * vit par sa clé en base (migration `20261001120100_le_role_livreur`). Pas
+   * vit par sa clé en base, créé à l'écran — sa migration a été retirée avant
+   * la mise en ligne (2026-10-01, `plan-droits-par-geste.md`, DG-D6). Pas
    * `delivery_loading` : celui-là ouvre le scan et le plan de chargement, donc
    * le dépôt. Pas `delivery_doorstep` non plus, que le lot 6 réserve aux gestes
    * à la porte — ce sera une ressource DE PLUS sur le même rôle.
    */
   "delivery_driving",
+  /**
+   * **Les procédures de livraison**, côté staff — les étapes et leurs photos
+   * sur la fiche d'un client. Sorties de `b2b_companies` le 2026-10-01 (plan
+   * `plan-droits-par-geste.md`, DG-D1).
+   */
+  "delivery_procedures",
 
   // ── `staff.` — LE SOCLE ─────────────────────────────────────────────────
   /**
@@ -423,8 +469,14 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   delivery_rounds: "Tournées de livraison",
   delivery_loading: "Chargement",
   delivery_driving: "Conduire sa tournée",
+  delivery_procedures: "Procédures de livraison",
+  production_plan: "Production — Plan du soir",
+  production_worksheet: "Production — Fiche d'atelier",
+  production_packing: "Production — Colisage",
+  handover_counter: "Retrait au comptoir",
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
+  b2b_place_order: "Passer une commande pro",
   b2b_counter: "Comptoir",
   b2b_supervision: "Supervision",
   b2b_subscriptions: "Paniers récurrents",
@@ -497,6 +549,21 @@ export type RoleGrants = Partial<Readonly<Record<StaffResource, StaffAction>>>;
  * `pim_channels` se referme sur `admin` (il était ouvert à qui avait
  * `catalog:write`, c'est-à-dire au seul `admin` déjà), et rien d'autre ne se
  * resserre. Tout le reste est un élargissement ou une reconduction.
+ *
+ * 🔴 **Une GRAINE, plus une source ni un miroir** (2026-10-01,
+ * `documentation/livraisons/plan-droits-par-geste.md`, DG-D5 et 5.2). Le
+ * runtime ne la lit plus : une fiche résout ses droits par la définition de
+ * son rôle en base (`staff_users.role_key` est `NOT NULL`). Elle ne sert qu'à
+ * semer une base vierge — dev, e2e (`legacyRoleSeeds`). Ce qu'un rôle de
+ * PRODUCTION accorde se règle à l'écran (`/admin/staff-roles`), et ce
+ * tableau ne le dit pas.
+ *
+ * Les droits par geste du 2026-10-01 y sont posés comme la bascule les a
+ * posés en base (migration `20261001130200`) : chaque rôle qui tenait
+ * `b2b_orders` tient le plan, la fiche, le colisage et le retrait au même
+ * niveau ; `b2b_orders:write` donne `b2b_place_order:write` ;
+ * `b2b_companies` donne `delivery_procedures` au même niveau. Le réglage
+ * visé (feuille `tableau-droits-livraison.md`) se fait à l'écran, pas ici.
  */
 export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
   admin: {
@@ -506,6 +573,12 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     pim_tax: "write",
     b2b_companies: "write",
     b2b_orders: "write",
+    b2b_place_order: "write",
+    production_plan: "write",
+    production_worksheet: "write",
+    production_packing: "write",
+    handover_counter: "write",
+    delivery_procedures: "write",
     b2b_counter: "write",
     // `write` sur une vue en lecture seule : l'administrateur couvre tout, sans
     // trou — l'invariant qu'un test du contrat exige (2026-09-25).
@@ -554,6 +627,14 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // Il ne couvre TOUJOURS PAS la modification d'une commande passée : aucune
     // route ne l'expose, et ce sont les avenants qui la porteront.
     b2b_orders: "write",
+    // Les gestes sortis de `b2b_orders` le 2026-10-01, reçus par la bascule.
+    b2b_place_order: "write",
+    production_plan: "write",
+    production_worksheet: "write",
+    production_packing: "write",
+    handover_counter: "write",
+    // Sortie de `b2b_companies`, au même niveau.
+    delivery_procedures: "write",
     // Qui commande pour un pro garde le Comptoir, qui en est une porte de plus
     // (2026-09-25) : personne ne perd la saisie que `afa81ae34` lui ouvrait.
     b2b_counter: "read",
@@ -608,6 +689,15 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // la plateforme pour elle (Hugo, 2026-09-29).
     b2b_late_fee: "write",
     b2b_orders: "write",
+    // Reçus par la bascule du 2026-10-01, comme tout rôle qui tenait
+    // `b2b_orders:write` — le colisage compris (DG-Q3 : Hugo le retire à
+    // l'écran s'il le veut).
+    b2b_place_order: "write",
+    production_plan: "write",
+    production_worksheet: "write",
+    production_packing: "write",
+    handover_counter: "write",
+    delivery_procedures: "read",
     // Même reconduction que pour le commercial : elle commandait pour un pro
     // depuis le Comptoir, elle le peut toujours (2026-09-25).
     b2b_counter: "read",
@@ -670,6 +760,12 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
   comptoir: {
     b2b_counter: "read",
     b2b_orders: "write",
+    // Reçus par la bascule du 2026-10-01.
+    b2b_place_order: "write",
+    production_plan: "write",
+    production_worksheet: "write",
+    production_packing: "write",
+    handover_counter: "write",
     // Le comptoir prépare les départs : il lit la feuille de route, la flotte
     // et le point de départ ; il ne les règle pas (Hugo, 2026-09-29, Q7).
     delivery_run_sheet: "read",
@@ -683,6 +779,12 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
   support: {
     b2b_companies: "read",
     b2b_orders: "read",
+    // Reçus par la bascule du 2026-10-01, au même niveau — en lecture.
+    production_plan: "read",
+    production_worksheet: "read",
+    production_packing: "read",
+    handover_counter: "read",
+    delivery_procedures: "read",
     b2b_subscriptions: "read",
     b2b_appointments: "write",
     b2b_support: "write",

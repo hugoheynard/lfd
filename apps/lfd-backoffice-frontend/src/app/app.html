@@ -70,10 +70,10 @@
         ></a>
       }
 
-      @if (canSeeProduction()) {
+      @if (canSeeCounter()) {
         <!-- LE COMPTOIR — la file de retrait et la commande pro. Juste après la
              production parce que c'est la suite du même flux : on fabrique, on
-             rend. Même droit, c'est la même commande vue plus tard. -->
+             rend. Ses deux vues ont chacune leur droit depuis le 2026-10-01. -->
         <a
           fold-menu-item
           icon="package-check"
@@ -526,7 +526,7 @@
           }
         </fold-nav-group>
       }
-      @if (canSeeProduction()) {
+      @if (canSeeCounter()) {
         <!-- La MÊME entrée qu'au rail, et il faut la poser deux fois : les
              deux arbres ne partagent pas leur modèle. Comme la production, le
              lanceur montre les vues de l'espace, lues dans le MÊME catalogue

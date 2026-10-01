@@ -2,7 +2,6 @@ import {
   ALL_STAFF_PERMISSIONS,
   ROLE_GRANTS,
   legacyRoleSeeds,
-  resolveStaffPermissions,
   SUPER_ADMIN_ROLE_KEY,
 } from "@lfd/contracts";
 import { Test } from "@nestjs/testing";
@@ -25,12 +24,12 @@ interface StaffRow {
   readonly lastName: string;
   readonly email: string;
   readonly role: "admin" | "commercial" | "comptabilite" | "support" | "dev" | null;
-  readonly roleKey: string | null;
+  readonly roleKey: string;
   readonly roleDefinition: {
     readonly label: string;
     readonly grants: unknown;
     readonly archivedAt: Date | null;
-  } | null;
+  };
   readonly status: "pending" | "invited" | "active" | "suspended";
   readonly auth0Id: string | null;
   readonly overrides: { resource: string; action: string; effect: string }[];
@@ -160,7 +159,10 @@ function fakePrisma(
 /** La définition semée d'un rôle du contrat, telle que la jointure la rend. */
 function seeded(key: string): StaffRow["roleDefinition"] {
   const seed = legacyRoleSeeds().find((entry) => entry.key === key);
-  return seed === undefined ? null : { label: seed.label, grants: seed.grants, archivedAt: null };
+  if (seed === undefined) {
+    throw new TypeError(`aucune graine pour le rôle ${key}`);
+  }
+  return { label: seed.label, grants: seed.grants, archivedAt: null };
 }
 
 function row(overrides: Partial<StaffRow> = {}): StaffRow {
@@ -577,14 +579,26 @@ describe("PrismaStaffAccessResolver — les droits viennent de la définition en
     expect(resolver.unreadable).toEqual(["comptabilite"]);
   });
 
-  it("clé nulle (fiche d'avant la migration) : repli de transition sur ROLE_GRANTS", async () => {
+  /**
+   * Régression évitée (plan `plan-droits-par-geste.md`, 5.2) : le repli
+   * `ROLE_GRANTS[role]` faisait de la graine du code une source de droits en
+   * production, que la bascule des droits par geste ne couvrait pas. Retiré
+   * le 2026-10-01 avec `role_key NOT NULL` : l'ancien enum ne donne plus rien.
+   */
+  it("🔴 ne lit plus ROLE_GRANTS : l'enum `role` ne rend aucun droit que la définition n'accorde pas", async () => {
+    const emptied = { label: "Comptabilité", grants: [], archivedAt: null };
     const { prisma } = fakePrisma(
-      row({ ...linked, roleKey: null, roleDefinition: null, overrides: [{ ...DENY_TAX }] }),
+      row({
+        ...linked,
+        role: "comptabilite",
+        roleDefinition: emptied,
+        overrides: [{ ...DENY_TAX }],
+      }),
     );
 
     const access = await (await buildResolver(prisma, new MovableClock(NOW))).resolve(TOKEN);
 
-    expect(access?.permissions).toEqual(resolveStaffPermissions("comptabilite", [{ ...DENY_TAX }]));
+    expect(access?.permissions).toEqual([]);
     expect(ROLE_GRANTS.comptabilite.pim_tax).toBe("write");
   });
 });

@@ -30,12 +30,12 @@ export interface Row {
   readonly phone: string;
   readonly jobTitle: string;
   readonly role: StaffRole | null;
-  readonly roleKey: string | null;
+  readonly roleKey: string;
   readonly roleDefinition: {
     readonly label: string;
     readonly grants: readonly RoleGrant[];
     readonly archivedAt: Date | null;
-  } | null;
+  };
   readonly status: StaffStatus;
   readonly auth0Id: string | null;
   readonly overrides: readonly StaffOverride[];
@@ -53,11 +53,13 @@ export function seededDefinition(key: string): {
 /** Les colonnes de rôle d'une fiche qui porte ce rôle du contrat, définition jointe. */
 export function holding(role: StaffRole): Pick<Row, "role" | "roleKey" | "roleDefinition"> {
   const seed = seededDefinition(role);
+  if (seed === null) {
+    throw new TypeError(`aucune graine pour le rôle ${role}`);
+  }
   return {
     role,
     roleKey: role,
-    roleDefinition:
-      seed === null ? null : { label: seed.label, grants: seed.grants, archivedAt: null },
+    roleDefinition: { label: seed.label, grants: seed.grants, archivedAt: null },
   };
 }
 

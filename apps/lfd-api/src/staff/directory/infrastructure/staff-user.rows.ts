@@ -75,7 +75,7 @@ export function toView(
     email: row.email,
     phone: row.phone,
     jobTitle: row.jobTitle,
-    role: isRescue ? effective.key : (heldRoleKey(row) ?? ""),
+    role: isRescue ? effective.key : heldRoleKey(row),
     roleLabel: isRescue ? effective.label : heldRoleLabel(row),
     isRescue,
     status: row.status,

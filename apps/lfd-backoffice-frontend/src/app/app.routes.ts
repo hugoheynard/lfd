@@ -32,7 +32,8 @@ import { reglagesRoutes } from './reglages/reglages.routes';
  */
 /**
  * Les gardes de la commande pro au comptoir : LIRE les clients du comptoir
- * (`b2b_counter:read`) ET passer une commande (`b2b_orders:write`). L'un sans
+ * (`b2b_counter:read`) ET passer une commande (`b2b_place_order:write`, sortie
+ * de `b2b_orders` le 2026-10-01 — `documentation/livraisons/plan-droits-par-geste.md`, 5.1 bis). L'un sans
  * l'autre ouvrirait un écran dont la moitié des appels répondrait 403
  * (`documentation/order/plan-commande-au-comptoir.md`, Front). Deux gardes
  * plutôt qu'un garde composé : chacun porte sa permission, que la table des
@@ -40,7 +41,7 @@ import { reglagesRoutes } from './reglages/reglages.routes';
  */
 const COUNTER_ORDER_GUARDS = [
   permissionGuard('b2b_counter:read'),
-  permissionGuard('b2b_orders:write'),
+  permissionGuard('b2b_place_order:write'),
 ];
 
 export const routes: Routes = [
@@ -131,7 +132,7 @@ export const routes: Routes = [
     // colonnes réclament toute la largeur. Des onglets à côté inviteraient à en
     // sortir en cours de saisie — et le panier ne survit pas à la navigation.
     path: 'comptes-clients/:id/nouvelle-commande',
-    canActivate: [permissionGuard('b2b_orders:write')],
+    canActivate: [permissionGuard('b2b_place_order:write')],
     title: 'Nouvelle commande — LFC B2B admin',
     loadComponent: () =>
       import('./commandes/nouvelle-commande/nouvelle-commande-page').then(
@@ -166,8 +167,8 @@ export const routes: Routes = [
     // l'ignorance du code — et ça suffit, parce que le colisage est un fait
     // interne, sans seconde partie à représenter.
     //
-    // Même mur que ses voisines de production : `b2b_orders:read` ouvre déjà
-    // l'espace du fournil, et scanner une feuille n'est pas un droit de plus.
+    // Le mur du colisage (`production_packing`, sorti de `b2b_orders` le
+    // 2026-10-01) : scanner une feuille n'est pas un droit de plus.
     path: 'colisage/:reference',
     // 🔴 `:write`, et pas `:read` comme les vues voisines du fournil. Ce n'est
     // pas une incohérence à lisser : le poste de colisage ÉCRIT — il coche des
@@ -175,7 +176,7 @@ export const routes: Routes = [
     // porte en lecture y laisserait entrer quelqu'un à qui l'écran offrirait
     // des gestes que chaque appel refuserait ensuite (rétabli le 2026-09-13,
     // c'était la garde d'origine de cette route).
-    canActivate: [permissionGuard('b2b_orders:write')],
+    canActivate: [permissionGuard('production_packing:write')],
     title: 'Colisage — LFC B2B admin',
     loadComponent: () => import('./production/colisage/colisage').then((m) => m.Colisage),
   },
@@ -185,7 +186,7 @@ export const routes: Routes = [
     // caméra refuse de lire. Chaque caractère de plus densifie les modules, donc
     // fragilise le scan — ce n'est pas de la coquetterie d'URL.
     path: 'retrait/:token',
-    canActivate: [permissionGuard('b2b_orders:write')],
+    canActivate: [permissionGuard('handover_counter:write')],
     title: 'Retrait — LFC B2B admin',
     loadComponent: () => import('./retrait/retrait-page/retrait-page').then((m) => m.PickupPage),
   },
@@ -459,10 +460,11 @@ export const routes: Routes = [
     // devant nous. Rendre une commande (la file de retrait) et en prendre une
     // pour un pro (recherche du compte, puis l'écran de saisie du Commercial).
     //
-    // Le garde est sur la coquille, comme pour la production : un favori ne
-    // passe pas par le rail. La saisie ajoute les siens (`COUNTER_ORDER_GUARDS`).
+    // La coquille n'est PAS gardée depuis le 2026-10-01, comme la Livraison :
+    // ses deux gestes relèvent de deux droits (`handover_counter`,
+    // `b2b_place_order`), et un garde commun fermerait l'un à qui ne tient que
+    // l'autre. Chaque vue porte le sien — un favori atterrit sur une vue.
     path: 'comptoir',
-    canActivate: [permissionGuard('b2b_orders:read')],
     loadComponent: () =>
       import('./comptoir/comptoir-workspace/comptoir-workspace-page').then(
         (m) => m.ComptoirWorkspacePage,
@@ -471,6 +473,7 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'retrait' },
       {
         path: 'retrait',
+        canActivate: [permissionGuard('handover_counter:read')],
         title: 'Retrait boutique — LFC B2B admin',
         loadComponent: () =>
           import('./handover-shop/handover-shop-page/handover-shop-page').then(
@@ -508,11 +511,12 @@ export const routes: Routes = [
     // prévisionnel dit quand ça tombe. La coquille ne dessine rien ; elle
     // publie le rail secondaire, et chaque vue garde son propre sommet.
     //
-    // Le garde est ICI, sur la coquille : une URL tapée ou un favori ne passent
-    // pas par le rail, et un poste du labo ouvrira exactement ça. Les deux vues
-    // en héritent — elles lisent la même donnée, vue à deux distances.
+    // La coquille n'est PAS gardée depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`,
+    // DG-D1), comme la Livraison : le plan du soir, la fiche d'atelier et le
+    // colisage sont trois droits, et un garde commun fermerait une vue à qui
+    // ne tient que l'autre. Chaque vue porte le sien — une URL tapée ou un
+    // favori de poste de labo atterrit toujours sur une vue gardée.
     path: 'production',
-    canActivate: [permissionGuard('b2b_orders:read')],
     loadComponent: () =>
       import('./production/production-workspace/production-workspace-page').then(
         (m) => m.ProductionWorkspacePage,
@@ -524,12 +528,14 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'journee' },
       {
         path: 'journee',
+        canActivate: [permissionGuard('production_worksheet:read')],
         title: 'Fournée du jour — LFC B2B admin',
         loadComponent: () =>
           import('./production/fiche-atelier/fiche-atelier').then((m) => m.FicheAtelier),
       },
       {
         path: 'previsionnel',
+        canActivate: [permissionGuard('production_plan:read')],
         title: 'Prévisionnel — LFC B2B admin',
         loadComponent: () =>
           import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
@@ -539,6 +545,7 @@ export const routes: Routes = [
         // le poste, ouvert sur la liste des commandes plutôt que sur l'une d'elles. Deux
         // portes, un seul écran — on y entre par le rail ou par un QR.
         path: 'colisage',
+        canActivate: [permissionGuard('production_packing:read')],
         title: 'Colisage — LFC B2B admin',
         loadComponent: () => import('./production/colisage/colisage').then((m) => m.Colisage),
       },

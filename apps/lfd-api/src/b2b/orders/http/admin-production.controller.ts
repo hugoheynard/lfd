@@ -7,7 +7,7 @@ import {
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
-import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetPackingQuery } from "../application/queries/get-packing.query.js";
 import { GetProductionBatchQuery } from "../application/queries/get-production-batch.query.js";
@@ -20,12 +20,13 @@ import { GetProductionBatchQuery } from "../application/queries/get-production-b
  * ici on sert une journée de production entière, avec ses lignes, et sans un
  * seul montant. Deux publics, deux surfaces.
  *
- * Ressource `orders` malgré tout au sens des permissions : ce sont les mêmes
- * données, en lecture. Inventer un périmètre `production` aurait obligé à
- * l'accorder à quelqu'un avant que le premier écran existe.
+ * Une garde PAR ROUTE depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`, 5.1) :
+ * le lot du jour est le plan du soir (`production_plan`), la fiche derrière le
+ * QR est le colisage (`production_packing`). Elles étaient toutes deux sous
+ * `b2b_orders`, qui ouvrait aussi la passation.
  */
 @Controller("admin/production")
-@AdminSurface("b2b_orders")
+@AdminSurface("production_plan")
 export class AdminProductionController {
   constructor(private readonly queries: QueryBus) {}
 
@@ -49,6 +50,7 @@ export class AdminProductionController {
    * farineuse.
    */
   @Get("packing/:reference")
+  @RequirePermission("production_packing:read")
   async packing(@Param("reference") reference: string): Promise<OrderPackingView> {
     return this.queries.execute<GetPackingQuery, OrderPackingView>(new GetPackingQuery(reference));
   }

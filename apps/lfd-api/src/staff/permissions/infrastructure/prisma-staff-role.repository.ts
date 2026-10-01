@@ -87,9 +87,7 @@ export class PrismaStaffRoleReader extends StaffRoleReader {
       this.prisma.staffUser.groupBy({ by: ["roleKey"], _count: { _all: true } }),
     ]);
     const membersByKey = new Map(
-      counts.flatMap((entry) =>
-        entry.roleKey === null ? [] : [[entry.roleKey, entry._count._all] as const],
-      ),
+      counts.map((entry) => [entry.roleKey, entry._count._all] as const),
     );
 
     const defined = rows.map((row): StaffRoleView => {

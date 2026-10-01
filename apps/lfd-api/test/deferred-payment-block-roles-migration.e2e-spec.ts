@@ -11,7 +11,7 @@
  *
  * Le guard résout depuis `ROLE_GRANTS`, pas depuis cette table (même constat
  * que `storefront-roles-migration.e2e-spec.ts`, 2026-09-24) : ce test garde
- * l'accord table ↔ contrat, l'ouverture de la route est éprouvée par
+ * ce que la migration accordait, l'ouverture de la route est éprouvée par
  * `direct-debit-blocks.e2e-spec.ts`.
  *
  * On REJOUE les ordres lus dans le fichier de migration plutôt que de lire la
@@ -20,10 +20,21 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { ROLE_GRANTS, staffRoleSchema } from "@lfd/contracts";
+import { staffRoleSchema, type StaffAction, type StaffRole } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
+
+/**
+ * Ce que la migration accordait, FIGÉ ici le 2026-10-01
+ * (`documentation/livraisons/plan-droits-par-geste.md`, 5.6) : `ROLE_GRANTS`
+ * n'est plus qu'une graine, que l'on doit pouvoir faire évoluer sans rouvrir
+ * une migration appliquée. La comparer à la migration gèlerait la graine.
+ */
+const BLOCK_GRANTED: Readonly<Partial<Record<StaffRole, StaffAction>>> = {
+  admin: "write",
+  comptabilite: "write",
+};
 
 const MIGRATION = join(
   process.cwd(),
@@ -91,7 +102,7 @@ async function blockGrants(): Promise<Record<string, readonly string[]>> {
 }
 
 describe("la migration accorde `b2b_deferred_payment_block` — la table, pas seulement le code", () => {
-  it("donne `b2b_deferred_payment_block: write` à admin et comptabilite, et à eux seuls — comme le contrat", async () => {
+  it("donne `b2b_deferred_payment_block: write` à admin et comptabilite, et à eux seuls — comme au déploiement", async () => {
     await beforeMigration();
     // Le point de départ n'est pas vide par hasard : sans lui, le test
     // passerait même si la migration n'accordait rien.
@@ -101,7 +112,7 @@ describe("la migration accorde `b2b_deferred_payment_block` — la table, pas se
 
     const grants = await blockGrants();
     for (const role of staffRoleSchema.options) {
-      const expected = ROLE_GRANTS[role].b2b_deferred_payment_block;
+      const expected = BLOCK_GRANTED[role];
       expect({ role, actions: grants[role] ?? [] }).toEqual({
         role,
         actions: expected === undefined ? [] : [expected],

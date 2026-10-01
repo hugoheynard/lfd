@@ -86,9 +86,12 @@ describe('grantGroups', () => {
    * n'est pas composer sa tournée (lot 4, Q21).
    *
    * `delivery_driving` l'a fait passer à 35 le 2026-10-01 : conduire sa
-   * tournée n'est pas la charger (plan-ma-tournee.md, MT-D1 v2).
+   * tournée n'est pas la charger (plan-ma-tournee.md, MT-D1 v2). Puis à 41 le
+   * même jour : `b2b_orders` découpé par geste (`b2b_place_order`, le plan,
+   * la fiche, le colisage, le retrait) et les procédures de livraison
+   * (plan-droits-par-geste.md, DG-D1).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(35);
+    expect(RESOURCE_COUNT).toBe(41);
   });
 });

@@ -47,9 +47,12 @@ const NO_CONTENT = 204;
  *
  * L'identité staff vient du guard, jamais de la charge utile — une coche sans
  * auteur ne se conteste pas, elle s'efface.
+ *
+ * `production_worksheet` depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`, 5.1),
+ * contenants du four compris : c'est du matériel de four, pas d'expédition.
  */
 @Controller("admin/production")
-@AdminSurface("b2b_orders")
+@AdminSurface("production_worksheet")
 export class ProductionWorksheetController {
   constructor(
     private readonly commands: CommandBus,

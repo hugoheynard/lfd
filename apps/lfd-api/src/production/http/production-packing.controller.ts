@@ -40,9 +40,11 @@ const NO_CONTENT = 204;
  *
  * Il n'injecte que des **bus**, comme tous les autres : ni service, ni dépôt, ni
  * port de lecture. `lint:controller-buses` le tient.
+ *
+ * `production_packing` depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`, 5.1).
  */
 @Controller("admin/production")
-@AdminSurface("b2b_orders")
+@AdminSurface("production_packing")
 export class ProductionPackingController {
   constructor(
     private readonly commands: CommandBus,

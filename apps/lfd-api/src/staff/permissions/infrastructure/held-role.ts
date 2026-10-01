@@ -1,7 +1,5 @@
 import {
   ALL_STAFF_PERMISSIONS,
-  ROLE_GRANTS,
-  STAFF_ROLE_LABELS,
   SUPER_ADMIN_ROLE_KEY,
   SUPER_ADMIN_ROLE_LABEL,
   resolvePermissionsFromGrants,
@@ -33,15 +31,22 @@ export const HELD_ROLE_SELECT = {
   roleDefinition: { select: { label: true, grants: true, archivedAt: true } },
 } as const;
 
-/** La forme lue — un sous-ensemble de la ligne, sans type Prisma. */
+/**
+ * La forme lue — un sous-ensemble de la ligne, sans type Prisma.
+ *
+ * `roleKey` et sa définition ne sont jamais nuls depuis le 2026-10-01
+ * (`staff_users.role_key NOT NULL`, clé étrangère vers la définition —
+ * `documentation/livraisons/plan-droits-par-geste.md`, 5.2). `role`, l'ancien
+ * enum, n'est plus lu pour décider.
+ */
 export interface HeldRoleRow {
   readonly role: StaffRole | null;
-  readonly roleKey: string | null;
+  readonly roleKey: string;
   readonly roleDefinition: {
     readonly label: string;
     readonly grants: unknown;
     readonly archivedAt: Date | null;
-  } | null;
+  };
 }
 
 /** Le rôle résolu : sa clé, son libellé, et l'effectif qu'il donne avec les écarts. */
@@ -64,17 +69,14 @@ export function isRescueFiche(ficheEmail: string, rescueEmail: string): boolean 
   return ficheEmail === rescueEmail;
 }
 
-/** La clé portée. `role_key` d'abord ; l'enum n'est qu'un repli de transition. */
-export function heldRoleKey(row: HeldRoleRow): string | null {
-  return row.roleKey ?? row.role;
+/** La clé portée — `role_key`, la seule que le résolveur lit. */
+export function heldRoleKey(row: HeldRoleRow): string {
+  return row.roleKey;
 }
 
-/** Le libellé : celui de la définition, sinon celui du contrat, sinon la clé. */
+/** Le libellé, celui de la définition. */
 export function heldRoleLabel(row: HeldRoleRow): string {
-  if (row.roleDefinition !== null) {
-    return row.roleDefinition.label;
-  }
-  return row.role === null ? (row.roleKey ?? "") : STAFF_ROLE_LABELS[row.role];
+  return row.roleDefinition.label;
 }
 
 /**
@@ -84,16 +86,14 @@ export function heldRoleLabel(row: HeldRoleRow): string {
  * - définition archivée → **aucun** droit par le rôle ;
  * - `grants` illisibles → **aucun** droit par le rôle, et l'erreur est
  *   rapportée avec la clé : une ligne corrompue ne fait tomber que ce rôle ;
- * - `role_key` nul → `ROLE_GRANTS[role]`, repli de transition retiré au
- *   « resserrer » (§4) ;
- * - ni l'un ni l'autre → rien.
+ *
+ * Le repli `role_key` nul → `ROLE_GRANTS[role]` est RETIRÉ (2026-10-01,
+ * `plan-droits-par-geste.md`, 5.2) : la colonne est `NOT NULL`, et
+ * `ROLE_GRANTS` n'est plus qu'une graine. Plus aucun droit ne vient du code.
  */
 export function heldRoleGrants(row: HeldRoleRow, report: UnreadableGrantsReporter): RoleGrants {
-  if (row.roleKey === null) {
-    return row.role === null ? {} : ROLE_GRANTS[row.role];
-  }
   const definition = row.roleDefinition;
-  if (definition === null || definition.archivedAt !== null) {
+  if (definition.archivedAt !== null) {
     return {};
   }
   const parsed = roleGrantsSchema.safeParse(definition.grants);
@@ -126,7 +126,7 @@ export function resolveHeldRole(
     };
   }
   return {
-    key: heldRoleKey(row) ?? "",
+    key: heldRoleKey(row),
     label: heldRoleLabel(row),
     permissions: resolvePermissionsFromGrants(heldRoleGrants(row, report), overrides),
   };

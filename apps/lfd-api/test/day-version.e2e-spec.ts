@@ -348,7 +348,16 @@ describe("les routes de version (V2)", () => {
     return row.id;
   }
 
-  async function allowRead(sub: string, resource: "b2b_supervision" | "b2b_orders") {
+  async function allowRead(
+    sub: string,
+    resource:
+      | "b2b_supervision"
+      | "b2b_orders"
+      | "production_plan"
+      | "production_worksheet"
+      | "production_packing"
+      | "handover_counter",
+  ) {
     const staffUserId = await communicationStaff(sub);
     await ctx.prisma.staffPermissionOverride.create({
       data: { staffUserId, resource, action: "read", effect: "allow" },
@@ -380,11 +389,30 @@ describe("les routes de version (V2)", () => {
     await supervisor.get(`${ROUTE.production}?date=${DAY}`).expect(403);
   });
 
-  it("la version du fournil se lit sous `b2b_orders:read`, pas celle du commerce", async () => {
-    await allowRead("staff-version-fournil", "b2b_orders");
-    const baker = ctx.asSub("staff-version-fournil");
-    await baker.get(`${ROUTE.production}?date=${DAY}`).expect(200);
-    await baker.get(`${ROUTE.commerce}?date=${DAY}`).expect(403);
+  /**
+   * Depuis le 2026-10-01 (`plan-droits-par-geste.md`, DG-D1), la version du
+   * fournil s'ouvre à n'importe lequel des quatre gestes du fournil et du
+   * retrait — et plus à `b2b_orders:read`, qui ne les porte plus.
+   */
+  it.each([
+    "production_plan",
+    "production_worksheet",
+    "production_packing",
+    "handover_counter",
+  ] as const)(
+    "la version du fournil se lit sous `%s:read`, pas celle du commerce",
+    async (resource) => {
+      await allowRead(`staff-version-${resource}`, resource);
+      const baker = ctx.asSub(`staff-version-${resource}`);
+      await baker.get(`${ROUTE.production}?date=${DAY}`).expect(200);
+      await baker.get(`${ROUTE.commerce}?date=${DAY}`).expect(403);
+    },
+  );
+
+  it("🔴 `b2b_orders:read` n'ouvre plus la version du fournil", async () => {
+    await allowRead("staff-version-commandes", "b2b_orders");
+    const reader = ctx.asSub("staff-version-commandes");
+    await reader.get(`${ROUTE.production}?date=${DAY}`).expect(403);
   });
 
   it("le comptoir lit la version du commerce sous `b2b_orders:read`, la même que la Supervision", async () => {

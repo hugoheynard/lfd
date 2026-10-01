@@ -10,10 +10,11 @@ import { B2B_API_BASE } from '../../api/api-config';
  *
  * Deux journaux côté API (un par schéma, D3 de
  * `documentation/caching-usage/plan-version-par-journee.md`), mais QUATRE
- * portes : chacun se lit sous deux droits — `b2b_orders` pour les postes
- * (`orders`, `production`), `b2b_supervision` pour la Supervision
- * (`commerce`, `supervision-production`). Le droit se choisit par la
- * porte, pas par le journal.
+ * portes : chacun se lit sous deux familles de droits — celles des postes
+ * (`orders` sous `b2b_orders` ; `production` sous l'un des quatre gestes du
+ * fournil et du retrait, depuis le 2026-10-01), `b2b_supervision` pour la
+ * Supervision (`commerce`, `supervision-production`). Le droit se choisit par
+ * la porte, pas par le journal.
  */
 export type DayJournal = 'commerce' | 'orders' | 'production' | 'supervision-production';
 

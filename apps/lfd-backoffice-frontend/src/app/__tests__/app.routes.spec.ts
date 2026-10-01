@@ -43,7 +43,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'commercial/comptes-clients': 'b2b_companies:read',
   'comptes-clients/nouveau': 'b2b_companies:write',
   'commandes/:orderId': 'b2b_orders:read',
-  'comptes-clients/:id/nouvelle-commande': 'b2b_orders:write',
+  'comptes-clients/:id/nouvelle-commande': 'b2b_place_order:write',
   // Cible du QR de colisage imprimé sur la fiche d'atelier — c'est une VALEUR
   // encodée dans du papier en circulation, pas un choix d'arborescence, d'où le
   // premier niveau.
@@ -52,8 +52,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // incohérence à lisser : le poste ÉCRIT — il coche des lignes, il compte des
   // containers, il déclare une commande prête. En `:read`, on serait entré dans
   // un écran dont chaque appel aurait répondu non.
-  'colisage/:reference': 'b2b_orders:write',
-  'retrait/:token': 'b2b_orders:write',
+  'colisage/:reference': 'production_packing:write',
+  'retrait/:token': 'handover_counter:write',
 
   // COMPTABILITÉ — l'entité qui ÉMET : notre ICS, notre compte créancier. Le
   // droit lui est propre et n'est PAS `b2b_settings` : un commercial a
@@ -207,29 +207,28 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/produits/nouveau': null,
   'pim/produits/:id': null,
   'pim/produits': null,
-  // LA PRODUCTION est un ESPACE : la coquille porte le garde, ses trois vues en
-  // héritent. C'est la même donnée — le lot du jour, le mur qui arrive, les bacs
-  // qu'on remplit —, et lui poser trois fois le même droit serait une condition
-  // toujours vraie.
-  production: 'b2b_orders:read',
-  'production/journee': null,
-  'production/previsionnel': null,
-  'production/colisage': null,
-  // LE COMPTOIR est un ESPACE : la coquille porte la lecture, la file de
-  // retrait en hérite — attester un retrait passe par `retrait/:token`, qui
-  // exige l'écriture. La commande pro ÉCRIT, d'où son propre garde.
+  // LA PRODUCTION est un ESPACE dont la coquille n'est PAS gardée depuis le
+  // 2026-10-01 (plan-droits-par-geste.md, DG-D1) : le plan du soir, la fiche
+  // d'atelier et le colisage sont trois droits, et chaque vue porte le sien.
+  production: OPEN,
+  'production/journee': 'production_worksheet:read',
+  'production/previsionnel': 'production_plan:read',
+  'production/colisage': 'production_packing:read',
+  // LE COMPTOIR non plus : la file de retrait (`handover_counter`) et la
+  // commande pro (`b2b_place_order`) sont deux droits. Attester un retrait
+  // passe par `retrait/:token`, qui exige l'écriture.
   // UNE VUE à part des espaces, sous son propre droit : elle montre le nom des
   // clients du jour sans ouvrir les commandes (plan-supervision-du-jour.md).
   supervision: 'b2b_supervision:read',
-  comptoir: 'b2b_orders:read',
-  'comptoir/retrait': null,
+  comptoir: OPEN,
+  'comptoir/retrait': 'handover_counter:read',
   // Lire les clients du comptoir ET commander : deux gardes, deux droits
   // (plan-commande-au-comptoir.md). `b2b_companies` n'y apparaît pas — c'est le
   // point : le vendeur de comptoir n'a pas la fiche client.
-  'comptoir/nouvelle-commande': ['b2b_counter:read', 'b2b_orders:write'],
+  'comptoir/nouvelle-commande': ['b2b_counter:read', 'b2b_place_order:write'],
   // La MÊME saisie que `comptes-clients/:id/nouvelle-commande`, montée sous le
   // comptoir pour que la navigation n'en sorte pas.
-  'comptoir/nouvelle-commande/:id': ['b2b_counter:read', 'b2b_orders:write'],
+  'comptoir/nouvelle-commande/:id': ['b2b_counter:read', 'b2b_place_order:write'],
   // LA LIVRAISON est un ESPACE dont la coquille n'est PAS gardée : ses vues
   // relèvent de deux droits distincts, et un garde commun fermerait l'une à qui
   // ne tient que l'autre (plan-preparation-de-tournee.md, lot 2). La coquille ne

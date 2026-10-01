@@ -17,13 +17,18 @@ export const SUPERVISION_LINKS = {
 export type SupervisionColumn = keyof typeof SUPERVISION_LINKS;
 
 /**
- * Le droit qui ouvre les trois cibles : la garde héritée des coquilles
- * `production` et `comptoir`, leurs routes enfants déclarant `null`. Un test
- * (`supervision-links.spec.ts`) confronte chaque renvoi à la garde EFFECTIVE de
- * sa cible dans la table de routes — un droit propre à la Production
- * (TODO `todo-comptoir-statuts-et-droit-production.md`) le fera rougir.
+ * Le droit qui ouvre CHAQUE cible — la garde de sa vue. Un seul droit les
+ * ouvrait toutes (`b2b_orders:read`, la garde des coquilles) jusqu'au
+ * 2026-10-01 ; chaque geste a désormais le sien
+ * (`documentation/livraisons/plan-droits-par-geste.md`, 5.1). Un test (`supervision-links.spec.ts`)
+ * confronte chaque renvoi à la garde EFFECTIVE de sa cible dans la table de
+ * routes.
  */
-export const LINK_PERMISSION: StaffPermission = 'b2b_orders:read';
+export const LINK_PERMISSIONS: Readonly<Record<SupervisionColumn, StaffPermission>> = {
+  preparation: 'production_worksheet:read',
+  packing: 'production_packing:read',
+  handover: 'handover_counter:read',
+};
 
 /**
  * **L'onglet d'arrivée en mobile, choisi par le rôle** — pas par le dernier
