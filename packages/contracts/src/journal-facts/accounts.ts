@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { deferredTermSchema } from "../company.js";
+import { DOORSTEP_RULES } from "../delivery-doorstep-rule.js";
 import { companyMemberRoleSchema } from "../company-member.js";
 import { fulfillmentMethodSchema } from "../order.js";
 import { recurrenceSchema, subscriptionStatusSchema } from "../subscription.js";
@@ -212,6 +213,19 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
       subjectLabel: subjectLabel(),
       address: deliveryAddress(),
       depositAllowed: z.boolean(),
+    }),
+  ),
+  /**
+   * La décision réglée d'avance sur un problème à la porte, redéfinie — ou
+   * rendue au réglage global (`rule: null`) — sur une adresse de livraison,
+   * par le commercial (`plan-a-la-porte.md`, B3 bis, LB-Q6). Né le
+   * 2026-10-01 : aucune forme d'avant.
+   */
+  "company.delivery_doorstep_rule_set": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      address: deliveryAddress(),
+      rule: z.enum(DOORSTEP_RULES).nullable(),
     }),
   ),
   /** La société est le sujet : la forme d'avant la répétait en `companyId`. */

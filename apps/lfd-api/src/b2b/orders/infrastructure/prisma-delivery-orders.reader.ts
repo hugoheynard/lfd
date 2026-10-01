@@ -8,7 +8,7 @@ import {
   type DepartureSheet,
 } from "../../../delivery/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { deliverySpecsSchema } from "@lfd/contracts";
+import { deliverySpecsSchema, type DoorstepRule, doorstepRuleSchema } from "@lfd/contracts";
 
 import { type AddressLink, snapshotOf } from "./delivery-run-sheet.query.js";
 import { customerLabelOf, expectedOnWhere } from "./handover-order.query.js";
@@ -63,6 +63,8 @@ interface AddressSpecs {
   readonly stopMinutes: number | null;
   /** « Dépôt autorisé » (`plan-a-la-porte.md`, AP-D5) — une colonne, pas une consigne. */
   readonly depositAllowed: boolean;
+  /** La décision réglée d'avance de l'adresse (B3 bis) ; `null` : elle hérite. */
+  readonly doorstepRule: DoorstepRule | null;
 }
 
 interface DeliveryOrderRow {
@@ -145,6 +147,8 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
         addressNote: note === undefined ? null : note.note,
         // Sans adresse du carnet reliée (sous le mur), rien n'est autorisé.
         depositAllowed: note?.depositAllowed ?? false,
+        // Sans adresse reliée, rien n'est redéfini : la livraison applique son réglage.
+        doorstepRule: note?.doorstepRule ?? null,
         status: row.status === "cancelled" ? "cancelled" : "active",
       };
     });
@@ -193,7 +197,13 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
     }
     const rows = await this.prisma.address.findMany({
       where: { OR: links.map((link) => ({ id: link.addressId, companyId: link.companyId })) },
-      select: { id: true, companyId: true, deliverySpecs: true, depositAllowed: true },
+      select: {
+        id: true,
+        companyId: true,
+        deliverySpecs: true,
+        depositAllowed: true,
+        doorstepRule: true,
+      },
     });
     return new Map(
       rows.map((row) => {
@@ -206,6 +216,8 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
             gps: specs.success ? specs.data.gps : null,
             stopMinutes: specs.success ? (specs.data.stopMinutes ?? null) : null,
             depositAllowed: row.depositAllowed,
+            doorstepRule:
+              row.doorstepRule === null ? null : doorstepRuleSchema.parse(row.doorstepRule),
           },
         ];
       }),

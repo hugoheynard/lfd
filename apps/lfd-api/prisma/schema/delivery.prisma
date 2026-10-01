@@ -330,6 +330,11 @@ model DeliveryStopExecution {
   /// porte », AP-D5) : ce que le client permettait quand la tournée est partie.
   /// `false` sans adresse reliée — et pour un arrêt parti avant la migration.
   depositAllowed    Boolean   @default(false) @map("deposit_allowed")
+  /// La décision réglée d'avance sur un problème à la porte, RÉSOLUE et FIGÉE
+  /// au départ (B3 bis, LB-Q6) : l'adresse si elle la redéfinit, sinon le
+  /// réglage global, sinon `ask`. Une tournée partie ne change pas de règle.
+  /// `ask` pour un arrêt parti avant la migration — ce qui se faisait alors.
+  doorstepRule      String    @default("ask") @map("doorstep_rule") @db.VarChar(16)
   /// « Je suis arrivé » (AP-D6) — écrit une fois par l'exécution, jamais par la
   /// tournée ; nul tant que le livreur ne l'a pas déclaré. La donnée manque,
   /// elle ne s'invente pas.
@@ -460,6 +465,28 @@ model DeliveryRoutingSettings {
   updatedByRole    String   @map("updated_by_role")
 
   @@map("delivery_routing_settings")
+  @@schema("delivery")
+}
+
+/// **La décision réglée d'avance à la porte** — le réglage GLOBAL (plan « À la
+/// porte », B3 bis, LB-Q6) : UNE ligne, clé naturelle, auteur figé, comme
+/// `DeliveryRoutingSettings`. Ligne absente : « Me demander ». Une adresse du
+/// carnet peut la redéfinir (`public.addresses.doorstep_rule`) ; le départ
+/// résout les deux et FIGE le résultat dans `delivery_stop_execution`.
+///
+/// ⚠️ Tenu en base et invisible ici : `rule` ∈ {`ask`, `deposit`,
+/// `bring_back`}. **Aucune journée** : exception écrite dans
+/// `test/day-change-triggers.e2e-spec.ts`.
+model DeliveryDoorstepSettings {
+  /// Toujours `doorstep` : il n'y a qu'un réglage.
+  key              String   @id
+  rule             String   @db.VarChar(16)
+  updatedAt        DateTime @map("updated_at")
+  updatedByStaffId String   @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+  updatedByRole    String   @map("updated_by_role")
+
+  @@map("delivery_doorstep_settings")
   @@schema("delivery")
 }
 

@@ -47,6 +47,7 @@ function bookWith(depositAllowed: boolean): DeliveryAddressBook {
         },
         specs: payload().specs,
         depositAllowed,
+        doorstepRule: null,
         createdAt: CREATED,
         archivedAt: null,
       },
@@ -88,6 +89,45 @@ describe("« dépôt autorisé » sur une adresse du carnet (AP-D5)", () => {
 
   it("refuse une adresse qui n'est pas à ce carnet", () => {
     expect(() => bookWith(false).allowDeposit("ailleurs", true)).toThrow(
+      CompanyAddressNotFoundError,
+    );
+  });
+});
+
+describe("la décision réglée d'avance à la porte, redéfinie par adresse (B3 bis)", () => {
+  it("une adresse ajoutée hérite du réglage global", () => {
+    const book = DeliveryAddressBook.reconstitute({
+      companyId: "c1",
+      entries: [],
+      defaultId: null,
+    });
+
+    book.add("a2", payload(), CREATED);
+
+    expect(book.deliveries()[0]?.doorstepRule).toBeNull();
+  });
+
+  it("se redéfinit, se rend au réglage global, et dit quand rien ne change", () => {
+    const book = bookWith(false);
+
+    expect(book.setDoorstepRule("a1", "bring_back")).toBe(true);
+    expect(book.setDoorstepRule("a1", "bring_back")).toBe(false);
+    expect(book.toPersistence().entries[0]?.doorstepRule).toBe("bring_back");
+    expect(book.setDoorstepRule("a1", null)).toBe(true);
+    expect(book.deliveries()[0]?.doorstepRule).toBeNull();
+  });
+
+  it("🔴 modifier l'adresse ne la touche pas — ni le dépôt autorisé", () => {
+    const book = bookWith(true);
+    book.setDoorstepRule("a1", "deposit");
+
+    book.edit("a1", payload());
+
+    expect(book.deliveries()[0]).toMatchObject({ doorstepRule: "deposit", depositAllowed: true });
+  });
+
+  it("refuse une adresse qui n'est pas à ce carnet", () => {
+    expect(() => bookWith(false).setDoorstepRule("ailleurs", "ask")).toThrow(
       CompanyAddressNotFoundError,
     );
   });

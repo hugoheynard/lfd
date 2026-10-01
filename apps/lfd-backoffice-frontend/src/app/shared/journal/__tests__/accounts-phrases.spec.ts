@@ -652,3 +652,33 @@ describe('l’accès aux fonctionnalités', () => {
     );
   });
 });
+
+describe('la décision réglée d’avance à la porte, par adresse (B3 bis)', () => {
+  const ADDRESS = { id: 'adr_1', ville: 'Paris', codePostal: '75011' };
+
+  it('dit la règle posée, l’adresse par son lieu, et le client', () => {
+    const said = sentence(
+      company('company.delivery_doorstep_rule_set', {
+        subjectLabel: CAFE,
+        address: ADDRESS,
+        rule: 'bring_back',
+      }),
+    );
+
+    expect(said).toContain('Colette Martin a réglé la décision à la porte sur rapporter');
+    expect(said).toContain('Paris');
+    expect(said).toContain(CAFE);
+  });
+
+  it('dit une adresse rendue au réglage de livraison', () => {
+    expect(
+      sentence(
+        company('company.delivery_doorstep_rule_set', {
+          subjectLabel: CAFE,
+          address: ADDRESS,
+          rule: null,
+        }),
+      ),
+    ).toContain('a rendu au réglage de livraison la décision à la porte');
+  });
+});

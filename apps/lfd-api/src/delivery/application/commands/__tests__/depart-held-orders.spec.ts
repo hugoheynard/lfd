@@ -16,6 +16,7 @@ import {
   InMemoryDeliveryRounds,
   roundWith,
 } from "./round-doubles.js";
+import { FixedDoorstepSettings } from "./decision-doubles.js";
 
 /*
  * « Partir » du dépôt refuse une commande retenue au contrôle qualité
@@ -54,6 +55,7 @@ function depart(holds: FixedDepartureHolds) {
     departed,
     new FixedDeliveryOrders([deliveryOn("o_1", DAY), deliveryOn("o_2", DAY)]),
     holds,
+    new FixedDoorstepSettings(),
     new FixedClock(NOW),
     events,
     new DirectUnitOfWork(),

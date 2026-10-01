@@ -1,4 +1,4 @@
-import type { BillingAddressPayload, DeliverySpecs } from "@lfd/contracts";
+import { type BillingAddressPayload, type DeliverySpecs, doorstepRuleSchema } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { AddressKind } from "../../../platform/database/client/client.js";
@@ -39,6 +39,7 @@ interface DeliveryRow {
   readonly pays: string;
   readonly deliverySpecs: unknown;
   readonly depositAllowed: boolean;
+  readonly doorstepRule: string | null;
   readonly isDefault: boolean;
   readonly archivedAt: Date | null;
   readonly createdAt: Date;
@@ -67,6 +68,8 @@ function toDomain(row: DeliveryRow): DeliveryAddress {
     },
     specs: isSpecs(row.deliverySpecs) ? row.deliverySpecs : NO_SPECS,
     depositAllowed: row.depositAllowed,
+    // Un CHECK tient la valeur en base : une autre lève plutôt que d'être devinée.
+    doorstepRule: row.doorstepRule === null ? null : doorstepRuleSchema.parse(row.doorstepRule),
     createdAt: row.createdAt,
     archivedAt: row.archivedAt,
   };
@@ -130,6 +133,7 @@ export class PrismaCompanyAddressRepository extends CompanyAddressRepository {
         pays: true,
         deliverySpecs: true,
         depositAllowed: true,
+        doorstepRule: true,
         isDefault: true,
         archivedAt: true,
         createdAt: true,
@@ -152,6 +156,8 @@ export class PrismaCompanyAddressRepository extends CompanyAddressRepository {
           deliverySpecs: entry.specs,
           // Relu au chargement, réécrit tel quel : seul `allowDeposit` le change.
           depositAllowed: entry.depositAllowed,
+          // De même : seul `setDoorstepRule` le change (B3 bis).
+          doorstepRule: entry.doorstepRule,
           // L'unique source du défaut : le carnet, jamais la ligne.
           isDefault: entry.id === state.defaultId,
           archivedAt: entry.archivedAt,

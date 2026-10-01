@@ -17,6 +17,7 @@ import { GetDecisionIncidentPhotoHandler } from "./application/queries/get-decis
 import { GetPendingStopDecisionsHandler } from "./application/queries/get-pending-stop-decisions.handler.js";
 import { GetUndeliveredStopsHandler } from "./application/queries/get-undelivered-stops.handler.js";
 import { StopDecisionDesk } from "./application/stop-decision-desk.js";
+import { StopDecisionBySetting } from "./application/stop-decision-by-setting.js";
 import { StopDecisionOpening } from "./application/stop-decision-opening.js";
 import { DeliveryIncidentRepository } from "./domain/ports/delivery-incident.repository.js";
 import { DeliveryIncidentsReader } from "./domain/ports/delivery-incidents.reader.js";
@@ -59,7 +60,8 @@ import { PrismaUndeliveredStopsReader } from "./infrastructure/prisma-undelivere
  * La décision du commercial (B3) s'y ajoute : son ouverture au signalement,
  * la liste « À décider » et les deux réponses, sous `b2b_companies:write`
  * (`StopDecisionsController`) ; `StaffNotifier` vient du module global de la
- * cloche, `BroughtBackOrdersAnnouncer` du fil du retrait.
+ * cloche, `BroughtBackOrdersAnnouncer` du fil du retrait. La décision réglée
+ * d'avance (B3 bis, `StopDecisionBySetting`) s'applique au signalement même.
  *
  * `DeliveryOrderStatesReader` vient du fil du commerce
  * (`appBootstrap/delivery-feed.module.ts`) ; `ProductionDocumentStore` du
@@ -90,6 +92,7 @@ export const DOORSTEP_PROVIDERS: readonly Provider[] = [
   { provide: IncidentPhotosReader, useClass: PrismaIncidentPhotosReader },
   { provide: UndeliveredStopsReader, useClass: PrismaUndeliveredStopsReader },
   StopDecisionOpening,
+  StopDecisionBySetting,
   StopDecisionDesk,
   AuthorizeStopDepositHandler,
   BringStopBackHandler,

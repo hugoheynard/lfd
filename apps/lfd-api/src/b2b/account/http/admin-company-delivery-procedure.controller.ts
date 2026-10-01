@@ -1,4 +1,7 @@
 import {
+  type AddressDoorstepRulePayload,
+  addressDoorstepRulePayloadSchema,
+  type AddressDoorstepRuleView,
   type CreatedDeliveryStepResponse,
   type DeliveryDepositPayload,
   deliveryDepositPayloadSchema,
@@ -39,6 +42,8 @@ import {
 } from "../application/commands/admin-delivery-procedure-commands.js";
 import type { DeliveryStepPhotoDownload } from "../application/queries/delivery-procedure-reading.js";
 import { SetDeliveryDepositByStaffCommand } from "../application/commands/set-delivery-deposit-by-staff.command.js";
+import { SetDeliveryDoorstepRuleByStaffCommand } from "../application/commands/set-delivery-doorstep-rule-by-staff.command.js";
+import { GetDeliveryDoorstepRuleForStaffQuery } from "../application/queries/get-delivery-doorstep-rule-for-staff.query.js";
 import { GetDeliveryProcedureForStaffQuery } from "../application/queries/get-delivery-procedure-for-staff.query.js";
 import { GetDeliveryStepPhotoForStaffQuery } from "../application/queries/get-delivery-step-photo-for-staff.query.js";
 import {
@@ -51,6 +56,7 @@ import { DELIVERY_STEP_UPLOAD_HARD_LIMIT } from "./delivery-procedure-http.js";
 
 const PROCEDURE = ":companyId/delivery-addresses/:addressId/procedure";
 const DEPOSIT = ":companyId/delivery-addresses/:addressId/deposit";
+const DOORSTEP_RULE = ":companyId/delivery-addresses/:addressId/doorstep-rule";
 
 /**
  * **La procédure de livraison** d'une adresse, côté staff.
@@ -65,6 +71,8 @@ const DEPOSIT = ":companyId/delivery-addresses/:addressId/deposit";
  * Depuis le 2026-10-01, il règle aussi **« dépôt autorisé »** sur l'adresse
  * (`plan-a-la-porte.md`, AP-D5) : le commercial le règle comme la procédure,
  * et la route d'édition de l'adresse — sous `b2b_companies` — ne le touche pas.
+ * Et, du même jour, la **décision réglée d'avance à la porte** de l'adresse
+ * (B3 bis, LB-Q6) : le commercial seul, le client ne la règle ni ne la lit.
  */
 @Controller("admin/companies")
 @AdminSurface("delivery_procedures")
@@ -93,6 +101,28 @@ export class AdminCompanyDeliveryProcedureController {
   ): Promise<void> {
     await this.commands.execute<SetDeliveryDepositByStaffCommand, void>(
       new SetDeliveryDepositByStaffCommand(companyId, addressId, payload.depositAllowed),
+    );
+  }
+
+  @Get(DOORSTEP_RULE)
+  async readDoorstepRule(
+    @Param("companyId") companyId: string,
+    @Param("addressId") addressId: string,
+  ): Promise<AddressDoorstepRuleView> {
+    return this.queries.execute<GetDeliveryDoorstepRuleForStaffQuery, AddressDoorstepRuleView>(
+      new GetDeliveryDoorstepRuleForStaffQuery(companyId, addressId),
+    );
+  }
+
+  @Put(DOORSTEP_RULE)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setDoorstepRule(
+    @Param("companyId") companyId: string,
+    @Param("addressId") addressId: string,
+    @Body(new ZodBody(addressDoorstepRulePayloadSchema)) payload: AddressDoorstepRulePayload,
+  ): Promise<void> {
+    await this.commands.execute<SetDeliveryDoorstepRuleByStaffCommand, void>(
+      new SetDeliveryDoorstepRuleByStaffCommand(companyId, addressId, payload.rule),
     );
   }
 

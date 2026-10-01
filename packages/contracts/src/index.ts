@@ -843,6 +843,20 @@ export type {
   UndeliveredStopView,
 } from "./delivery-doorstep.js";
 export {
+  DOORSTEP_RULES,
+  DEFAULT_DOORSTEP_RULE,
+  doorstepRuleSchema,
+  doorstepSettingsPayloadSchema,
+  addressDoorstepRulePayloadSchema,
+} from "./delivery-doorstep-rule.js";
+export type {
+  DoorstepRule,
+  DoorstepSettingsPayload,
+  DoorstepSettingsView,
+  AddressDoorstepRulePayload,
+  AddressDoorstepRuleView,
+} from "./delivery-doorstep-rule.js";
+export {
   STOP_DECISION_OUTCOMES,
   STOP_DECISION_SOURCES,
   STOP_DECISION_PERMISSION,

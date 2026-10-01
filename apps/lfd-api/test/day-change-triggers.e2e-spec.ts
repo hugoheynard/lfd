@@ -50,6 +50,11 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   // ses déclencheurs.
   "delivery.delivery_routing_settings":
     "les réglages du calcul de tournée, un réglage unique sans journée",
+  // La décision réglée d'avance à la porte (B3 bis, 2026-10-01) : un réglage.
+  // Ce qu'il fait d'un arrêt est figé au départ dans `delivery_stop_execution`,
+  // surveillée.
+  "delivery.delivery_doorstep_settings":
+    "le réglage global de la décision d'avance à la porte, un réglage unique sans journée",
   "delivery.delivery_geocode":
     "le cache du géocodage, clé d'une adresse et non d'un jour — une proposition appliquée s'écrit dans `delivery_round`, surveillée",
   // Le simulateur (lot 9, L9-C7, 2026-09-29) : des arrêts INVENTÉS, sans

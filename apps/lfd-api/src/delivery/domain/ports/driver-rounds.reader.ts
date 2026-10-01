@@ -1,4 +1,9 @@
-import type { BillingAddressPayload, DeliveryContact, GpsPoint } from "@lfd/contracts";
+import type {
+  BillingAddressPayload,
+  DeliveryContact,
+  DoorstepRule,
+  GpsPoint,
+} from "@lfd/contracts";
 
 import type { DepartureWindow } from "../entities/departure-sheet.js";
 
@@ -26,6 +31,8 @@ export interface DepartedStopRow {
   readonly gps: GpsPoint | null;
   /** « Dépôt autorisé », figé au départ (AP-D5) ; `false` avant la migration qui l'a ajouté. */
   readonly depositAllowed: boolean;
+  /** La décision réglée d'avance, résolue et figée au départ (B3 bis) ; `ask` avant la migration. */
+  readonly doorstepRule: DoorstepRule;
   /** « Je suis arrivé » (AP-D6), ou `null`. */
   readonly arrivedAt: Date | null;
 }

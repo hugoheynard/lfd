@@ -94,3 +94,36 @@ describe("StopDecision — le commercial décide (B3, § 10 bis)", () => {
     expect(decision.state).toBe("pending");
   });
 });
+
+describe("StopDecision.settle — le réglage décide d'avance (B3 bis)", () => {
+  it("naît prise : source `setting`, un instant, ni auteur ni nom", () => {
+    const decision = opened();
+
+    expect(decision.settle("bring_back", OPEN_STOP, FIRST)).toBe(true);
+    expect(decision.state).toBe("bring_back");
+    expect(decision.toSnapshot()).toMatchObject({
+      outcome: "bring_back",
+      source: "setting",
+      decidedAt: FIRST,
+      decidedBy: null,
+      decidedByName: null,
+    });
+  });
+
+  it("un commercial peut encore répondre ensuite, et la source devient la sienne", () => {
+    const decision = opened();
+    decision.settle("authorize_deposit", OPEN_STOP, FIRST);
+
+    expect(decision.bringBack(OPEN_STOP, LEA, LATER)).toBe(true);
+    expect(decision.toSnapshot()).toMatchObject({ source: "staff", decidedBy: LEA.staffUserId });
+  });
+
+  it("refuse un arrêt clos ou une tournée rentrée, comme le commercial", () => {
+    expect(() => opened().settle("bring_back", { ...OPEN_STOP, closed: true }, FIRST)).toThrow(
+      StopDecisionOnClosedStopError,
+    );
+    expect(() =>
+      opened().settle("authorize_deposit", { ...OPEN_STOP, returned: true }, FIRST),
+    ).toThrow(StopDecisionOnReturnedRoundError);
+  });
+});

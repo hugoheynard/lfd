@@ -16,6 +16,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { AdminDeliveryDepositService } from '../../../comptes-clients/admin-delivery-deposit.service';
+import { AdminDeliveryDoorstepRuleService } from '../../../comptes-clients/admin-delivery-doorstep-rule.service';
 import { AdminDeliveryProcedurePanel } from './delivery-procedure-panel';
 
 /**
@@ -128,6 +129,14 @@ describe('AdminDeliveryProcedurePanel', () => {
         { provide: FoldPanelRef, useValue: new FoldPanelRef(1, () => undefined) },
         { provide: PermissionsStore, useValue: { can: () => true } },
         { provide: AdminDeliveryDepositService, useValue: { set: () => Promise.resolve() } },
+        // La décision à la porte de l'adresse a sa propre spec (B3 bis).
+        {
+          provide: AdminDeliveryDoorstepRuleService,
+          useValue: {
+            read: () => Promise.resolve({ rule: null }),
+            set: () => Promise.resolve(),
+          },
+        },
         // Comme `app.config.ts` : fold parle anglais par défaut.
         provideFoldInlineConfirmLabels({ confirm: 'Confirmer', cancel: 'Annuler' }),
       ],

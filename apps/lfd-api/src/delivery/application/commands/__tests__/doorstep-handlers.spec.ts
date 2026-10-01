@@ -25,6 +25,7 @@ import { DeclareStopArrivalCommand } from "../declare-stop-arrival.command.js";
 import { DeclareStopArrivalHandler } from "../declare-stop-arrival.handler.js";
 import { ReportDeliveryIncidentCommand } from "../report-delivery-incident.command.js";
 import { ReportDeliveryIncidentHandler } from "../report-delivery-incident.handler.js";
+import { StopDecisionBySetting } from "../../stop-decision-by-setting.js";
 import { StopDecisionOpening } from "../../stop-decision-opening.js";
 import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
@@ -39,7 +40,12 @@ import {
   InMemoryDoorstepStops,
   InMemoryIncidents,
 } from "./doorstep-doubles.js";
-import { InMemoryStopDecisions, openDecision, RecordingStaffNotifier } from "./decision-doubles.js";
+import {
+  InMemoryStopDecisions,
+  openDecision,
+  RecordingBroughtBack,
+  RecordingStaffNotifier,
+} from "./decision-doubles.js";
 import { deliveryOn, FixedDeliveryOrders, InMemoryDeliveryRounds } from "./round-doubles.js";
 
 // Des instants comparés entre eux seulement, jamais à l'horloge.
@@ -275,7 +281,19 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
       new FixedClock(NOW),
       events,
       new DirectUnitOfWork(),
-      new StopDecisionOpening(decisions, notifier, afterCommit, new BackgroundWork()),
+      new StopDecisionOpening(
+        decisions,
+        notifier,
+        afterCommit,
+        new BackgroundWork(),
+        new StopDecisionBySetting(
+          new InMemoryDeliveryRounds(),
+          decisions,
+          new RecordingBroughtBack(),
+          afterCommit,
+          new BackgroundWork(),
+        ),
+      ),
     );
     return { handler, incidents, store, events, decisions, notifier, afterCommit };
   }

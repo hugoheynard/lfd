@@ -534,5 +534,26 @@ global**, que le commercial **redéfinit par adresse** (Hugo : « par adresse »
 s'applique aussitôt, **tracée comme venant du réglage** ; « Me demander »
 ouvre la décision manuelle (B3). Défaut global : « Me demander ».
 
+> 🔨 **B3 bis bâti le 2026-10-01 (non commité à l'écriture de cette ligne).**
+> Migration `20261001200000_la_decision_reglee` (additive) : table
+> `delivery.delivery_doorstep_settings` (le global, une ligne, clé `doorstep`,
+> sans journée), colonne `public.addresses.doorstep_rule` (nulle = hérite),
+> colonne `delivery.delivery_stop_execution.doorstep_rule` (`NOT NULL DEFAULT
+'ask'`, la règle RÉSOLUE au départ). Valeurs `ask` | `deposit` | `bring_back`,
+> tenues par trois `CHECK`. Global : `GET|PUT admin/livraison/a-la-porte` sous
+> `delivery_settings`, carte « Décision à la porte » sur l'écran « Point de
+> départ ». Adresse : `GET|PUT admin/companies/:c/delivery-addresses/:a/doorstep-rule`
+> sous `delivery_procedures`, à côté de « dépôt autorisé » dans le panneau de
+> la procédure ; la vue des adresses (lue aussi par le client) ne la porte pas.
+> Le départ lit le global (`DoorstepSettingsReader`) et l'adresse (feuille du
+> commerce, `DepartureSheet.doorstepRule`), résout (`resolveDoorstepRule`) et
+> fige. Au signalement qui ouvre une décision, une règle autre que `ask`
+> s'applique sous le verrou de la tournée (`StopDecisionBySetting`) : décision
+> née prise, `source = setting`, sans auteur ; « Rapporter » clôt l'arrêt et
+> annonce le retour après validation ; **aucune notification**. Une décision
+> déjà ouverte, un arrêt clos ou une tournée rentrée retombent sur B3. Faits
+> `delivery_doorstep.settings_updated` et `company.delivery_doorstep_rule_set`.
+> La carte dit « Autorisé par réglage : déposer » / « Rapporté par réglage ».
+
 Découpage : **B3** décision manuelle + **B5** notification des commerciaux ;
 **B3 bis** la décision réglée (global → adresse) ; **B4** ensuite.

@@ -33,6 +33,7 @@ import {
   SUPPORT_CHANNEL,
 } from '../values/accounts-values';
 import { labelIn } from '../values';
+import { DOORSTEP_RULE } from '../values/orders-values';
 
 /**
  * **Les comptes et les paniers** — une société, les personnes qui y entrent,
@@ -402,6 +403,31 @@ const deliveryProcedureEdited: Phrase = (fact) =>
   );
 
 /**
+ * « … a réglé la décision à la porte sur « rapporter » à l'adresse à Paris
+ * (75011) du client « X » » — ou l'a rendue au réglage de livraison
+ * (`plan-a-la-porte.md`, B3 bis).
+ */
+const deliveryDoorstepRuleSet: Phrase = (fact) => {
+  const rule = fact.payload['rule'];
+  return byActor(
+    fact,
+    [
+      ...(rule === null || rule === undefined
+        ? [text('a rendu au réglage de livraison la décision à la porte ')]
+        : [
+            text('a réglé la décision à la porte sur '),
+            valueIn(DOORSTEP_RULE, rule, { inSentence: true }),
+            text(' '),
+          ]),
+      ...deliveryAddress(fact.payload, true),
+      text(' '),
+      ...client(fact, 'of'),
+    ],
+    ['subjectLabel', 'rule', ...ADDRESS_KEYS],
+  );
+};
+
+/**
  * « … a autorisé le dépôt sans personne à l'adresse à Paris (75011) du client
  * « X » » — ou l'a retiré (`plan-a-la-porte.md`, AP-D5). Le client sur son
  * carnet ou le staff : l'auteur de la ligne les distingue.
@@ -699,6 +725,7 @@ export const ACCOUNTS_PHRASES = {
   'company.default_delivery_set': onDeliveryAddress('a fait de', 'of', ' l’adresse par défaut'),
   'company.delivery_procedure_edited': deliveryProcedureEdited,
   'company.delivery_deposit_set': deliveryDepositSet,
+  'company.delivery_doorstep_rule_set': deliveryDoorstepRuleSet,
   'company.delivery_procedure_edited_by_staff': deliveryProcedureEdited,
   'company.fulfillment_preference_set': fulfillmentPreferenceSet,
   'company.contact_added': onContact('a ajouté', 'to'),

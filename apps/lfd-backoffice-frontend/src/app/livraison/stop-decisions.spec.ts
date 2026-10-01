@@ -32,4 +32,18 @@ describe('la décision du commercial, en mots (B3)', () => {
       /^Rapporté à [^p]+$/u,
     );
   });
+
+  it('B3 bis : une décision prise par le réglage le dit, sur la carte comme dans la liste', () => {
+    const settled = { source: 'setting' as const, decidedAt: AT };
+
+    expect(decisionBadgeOf(decision({ ...settled, state: 'authorize_deposit' }))?.label).toBe(
+      'Autorisé par réglage : déposer',
+    );
+    expect(decisionBadgeOf(decision({ ...settled, state: 'bring_back' }))?.label).toBe(
+      'Rapporté par réglage',
+    );
+    expect(decisionStatusOf(decision({ ...settled, state: 'bring_back' }))).toMatch(
+      /^Rapporté à .+ par le réglage de livraison$/u,
+    );
+  });
 });

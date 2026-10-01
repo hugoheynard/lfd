@@ -108,6 +108,8 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "delivery_bin.",
     // Le calculateur de tournée (lot 7, 2026-09-29) : ses réglages.
     "delivery_routing.",
+    // La décision réglée d'avance à la porte, globale (B3 bis, 2026-10-01) : même famille.
+    "delivery_doorstep.",
     // Les scénarios du simulateur (lot 9, L9-C7, 2026-09-29) : même famille.
     "delivery_simulation_scenario.",
     // Les bacs et leurs contenances (lot 4 bis, tranche A, 2026-09-29) : même famille.

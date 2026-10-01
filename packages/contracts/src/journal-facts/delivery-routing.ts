@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { DOORSTEP_RULES } from "../delivery-doorstep-rule.js";
+
 import {
   clockTime,
   count,
@@ -55,6 +57,19 @@ export const DELIVERY_ROUTING_FACTS = {
       subjectLabel: subjectLabel(),
       before: routingSettings().nullable(),
       after: routingSettings(),
+    }),
+  ),
+  /**
+   * La décision réglée d'avance sur un problème à la porte a changé — le
+   * réglage GLOBAL (`plan-a-la-porte.md`, B3 bis, LB-Q6). `before` est `null`
+   * quand personne n'avait réglé : c'était « Me demander », par défaut. Né le
+   * 2026-10-01 : aucune forme d'avant.
+   */
+  "delivery_doorstep.settings_updated": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      before: z.enum(DOORSTEP_RULES).nullable(),
+      after: z.enum(DOORSTEP_RULES),
     }),
   ),
   /**

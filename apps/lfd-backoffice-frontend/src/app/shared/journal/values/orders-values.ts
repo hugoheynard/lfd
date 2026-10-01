@@ -47,6 +47,16 @@ export const STOP_DECISION_SOURCE = domain('origine d’une décision sur un arr
   setting: 'Le réglage de livraison',
 });
 
+/**
+ * La décision réglée d'avance à la porte (`delivery_doorstep.settings_updated`,
+ * `company.delivery_doorstep_rule_set` — `plan-a-la-porte.md`, B3 bis).
+ */
+export const DOORSTEP_RULE = domain('décision réglée d’avance à la porte', {
+  ask: 'Me demander',
+  deposit: 'Déposer avec photo, même si la signature est exigée',
+  bring_back: 'Rapporter',
+});
+
 /** Comment un bac a été chargé (`delivery_bin.loaded`) : son QR lu, ou son code court tapé. */
 export const BIN_LOAD_VIA = domain('manière de charger un bac', {
   scan: 'QR scanné',
@@ -97,6 +107,7 @@ export const ORDERS_VALUES: ValueFamily = {
     INCIDENT_FAMILY,
     CLOSED_WITHOUT_HANDOVER_CAUSE,
     STOP_DECISION_SOURCE,
+    DOORSTEP_RULE,
     BIN_LOAD_VIA,
     BIN_HALF,
     PROPOSAL_MODE,

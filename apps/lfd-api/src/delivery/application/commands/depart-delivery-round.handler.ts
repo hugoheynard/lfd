@@ -7,6 +7,7 @@ import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
 import { DepartureHoldsReader } from "../../channels/handover/index.js";
 import { DeliveryRoundNotFoundError } from "../../domain/errors/delivery-round-errors.js";
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
+import { DoorstepSettingsReader } from "../../domain/ports/doorstep-settings.reader.js";
 import { DepartedStopRepository } from "../../domain/ports/departed-stop.repository.js";
 import { StopLoadingRepository } from "../../domain/ports/stop-loading.repository.js";
 import { departAndFreeze } from "../delivery-departure-support.js";
@@ -49,6 +50,7 @@ export class DepartDeliveryRoundHandler implements ICommandHandler<
     private readonly departedStops: DepartedStopRepository,
     private readonly orders: DeliveryOrdersReader,
     private readonly holds: DepartureHoldsReader,
+    private readonly doorstepSettings: DoorstepSettingsReader,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
@@ -67,6 +69,7 @@ export class DepartDeliveryRoundHandler implements ICommandHandler<
         departedStops: this.departedStops,
         orders: this.orders,
         holds: this.holds,
+        doorstepSettings: this.doorstepSettings,
         clock: this.clock,
       });
       await this.events.publishTraced(departed);

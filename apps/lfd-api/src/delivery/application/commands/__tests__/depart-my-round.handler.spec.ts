@@ -23,6 +23,7 @@ import {
   LocatedDeliveryOrders,
   roundWith,
 } from "./round-doubles.js";
+import { FixedDoorstepSettings } from "./decision-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -68,6 +69,7 @@ function departMine(
   round: DeliveryRound,
   loadings = new InMemoryStopLoadings(LOADED()),
   holds = new FixedDepartureHolds(),
+  doorstepSettings = new FixedDoorstepSettings(),
 ) {
   const rounds = new InMemoryDeliveryRounds(round);
   const departed = new RecordingDepartedStops();
@@ -78,6 +80,7 @@ function departMine(
     departed,
     ORDERS,
     holds,
+    doorstepSettings,
     new FixedClock(NOW),
     events,
     new DirectUnitOfWork(),
@@ -96,6 +99,19 @@ describe("DepartMyRoundHandler — « Commencer ma tournée » (MT-D3 v2)", () =
       ["r_1_s1", 1, POINT],
     ]);
     expect(events.traced[0]?.journalFact().type).toBe("delivery_round.departed");
+  });
+
+  it("fige la règle d'avance à la porte résolue au départ : le réglage global à défaut d'adresse (B3 bis)", async () => {
+    const { handler, departed } = departMine(
+      roundOf("staff_paul"),
+      new InMemoryStopLoadings(LOADED()),
+      new FixedDepartureHolds(),
+      new FixedDoorstepSettings("bring_back"),
+    );
+
+    await handler.execute(new DepartMyRoundCommand("staff_paul", "r_1", { version: 1 }));
+
+    expect(departed.recorded.map((stop) => stop.doorstepRule)).toEqual(["bring_back"]);
   });
 
   it("la tournée d'un AUTRE livreur : introuvable — on ne confirme pas qu'elle existe", async () => {

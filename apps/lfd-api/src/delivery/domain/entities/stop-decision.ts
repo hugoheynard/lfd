@@ -148,14 +148,28 @@ export class StopDecision {
     return this.decide("bring_back", stop, by, at);
   }
 
+  /**
+   * La réponse d'un **réglage décidé d'avance** (B3 bis, LB-Q6) : la règle
+   * figée au départ répond à la place du commercial, au signalement même.
+   * Mêmes refus qu'une réponse du commercial ; ni auteur ni nom — c'est le
+   * réglage qui a décidé, `source = setting`.
+   *
+   * @returns `false` : c'était déjà la réponse en vigueur.
+   * @throws {StopDecisionOnReturnedRoundError} @throws {StopDecisionOnClosedStopError}
+   */
+  settle(outcome: StopDecisionOutcome, stop: DecidedStop, at: Date): boolean {
+    return this.decide(outcome, stop, null, at);
+  }
+
   toSnapshot(): StopDecisionSnapshot {
     return { ...this.current };
   }
 
+  /** `by` nul : le réglage décide (`setting`) ; sinon un commercial (`staff`). */
   private decide(
     outcome: StopDecisionOutcome,
     stop: DecidedStop,
-    by: DecisionAuthor,
+    by: DecisionAuthor | null,
     at: Date,
   ): boolean {
     if (stop.returned) {
@@ -170,10 +184,10 @@ export class StopDecision {
     this.current = {
       ...this.current,
       outcome,
-      source: "staff",
+      source: by === null ? "setting" : "staff",
       decidedAt: at,
-      decidedBy: by.staffUserId,
-      decidedByName: by.name,
+      decidedBy: by?.staffUserId ?? null,
+      decidedByName: by?.name ?? null,
     };
     return true;
   }

@@ -74,6 +74,12 @@ export const ACCOUNT_FACTS = {
    */
   deliveryDepositSet: "company.delivery_deposit_set",
   /**
+   * La décision réglée d'avance à la porte, redéfinie sur une adresse par le
+   * commercial (`plan-a-la-porte.md`, B3 bis) : elle peut faire déposer ou
+   * rapporter sans qu'on demande à personne — « qui l'a réglé » doit répondre.
+   */
+  deliveryDoorstepRuleSet: "company.delivery_doorstep_rule_set",
+  /**
    * La procédure de livraison d'une adresse a été modifiée — ajouté,
    * refait, supprimé ou réordonné une étape. Un livreur envoyé à la mauvaise
    * porte se remonte à qui a écrit la consigne. Préfixé `company.` comme les

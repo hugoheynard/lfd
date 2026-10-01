@@ -10,6 +10,7 @@ import type { StopLoading } from "../domain/entities/stop-loading.js";
 import { DeliveryRoundDepartedEvent } from "../domain/events/delivery-loading.events.js";
 import type { DeliveryRoundRepository } from "../domain/ports/delivery-round.repository.js";
 import type { DepartedStopRepository } from "../domain/ports/departed-stop.repository.js";
+import type { DoorstepSettingsReader } from "../domain/ports/doorstep-settings.reader.js";
 import type { StopLoadingRepository } from "../domain/ports/stop-loading.repository.js";
 
 /** Les ports du départ — ceux des deux portes (chargeur et livreur). */
@@ -19,6 +20,7 @@ export interface DepartureDeps {
   readonly departedStops: DepartedStopRepository;
   readonly orders: DeliveryOrdersReader;
   readonly holds: DepartureHoldsReader;
+  readonly doorstepSettings: DoorstepSettingsReader;
   readonly clock: Clock;
 }
 
@@ -32,7 +34,9 @@ export interface DepartureDeps {
  * 1. les lignes de chargement sont verrouillées APRÈS la tournée ;
  * 2. la tournée refuse ou part (`depart`) ;
  * 3. l'exécution fige, pour chaque arrêt, la feuille du commerce, son rang de
- *    passage et son point GPS du carnet (MT-D5 v2), lus à cet instant ;
+ *    passage et son point GPS du carnet (MT-D5 v2), lus à cet instant — et
+ *    la décision réglée d'avance à la porte, résolue avec le réglage global
+ *    (B3 bis) : une tournée partie ne change plus de règle ;
  * 4. une commande retenue au contrôle qualité arrête tout, en nommant l'arrêt
  *    (`plan-a-la-porte.md`, BQ) — lue au retrait, dans la transaction.
  *
@@ -45,16 +49,17 @@ export async function departAndFreeze(
   deps: DepartureDeps,
 ): Promise<DeliveryRoundDepartedEvent> {
   const loadings = await deps.loadings.forRound(round);
-  const [sheets, points, held] = await Promise.all([
+  const [sheets, points, held, globalRule] = await Promise.all([
     deps.orders.departureSheetsOf(round.orderIds),
     deps.orders.stopPointsOf(round.orderIds),
     deps.holds.heldOrders(round.orderIds),
+    deps.doorstepSettings.current(),
   ]);
   const references = new Map(sheets.map((sheet) => [sheet.orderId, sheet.reference]));
   const at = deps.clock.now();
   round.depart(at, readinessOf(loadings, references));
   const gps = new Map<string, GpsPoint | null>(points.map((point) => [point.orderId, point.gps]));
-  const departed = departedStopsOf(round, at, sheets, gps);
+  const departed = departedStopsOf(round, at, sheets, gps, globalRule);
   refuseHeldOrders(round, sheets, held);
   await deps.rounds.save(round);
   await deps.departedStops.record(departed);

@@ -11,6 +11,7 @@ import {
 import { DeliveryProcedureEditor } from '@lfd/b2b-ui/company';
 
 import { DeliveryDepositToggle } from '../delivery-deposit-toggle/delivery-deposit-toggle';
+import { DeliveryDoorstepRule } from '../delivery-doorstep-rule/delivery-doorstep-rule';
 
 /** Charge d'ouverture : l'adresse, et de quoi prévenir la fiche que son compteur a bougé. */
 export interface AdminDeliveryProcedurePanelData {
@@ -28,6 +29,8 @@ export interface AdminDeliveryProcedurePanelData {
  * dans un panneau. Le commercial la règle au téléphone, comme le reste de
  * l'adresse — d'où l'écriture ouverte. « Dépôt autorisé » y vit aussi
  * (`plan-a-la-porte.md`, AP-D5) : même droit, même interlocuteur, même moment.
+ * Et la décision réglée d'avance à la porte de l'adresse (B3 bis), pour la
+ * même raison.
  *
  * La passerelle n'est pas injectée à la racine : elle arrive par les
  * `providers` de l'ouverture, liée à la société de la fiche.
@@ -41,6 +44,7 @@ export interface AdminDeliveryProcedurePanelData {
     FoldPanelFooterComponent,
     FoldButtonComponent,
     DeliveryDepositToggle,
+    DeliveryDoorstepRule,
     DeliveryProcedureEditor,
   ],
   templateUrl: './delivery-procedure-panel.html',

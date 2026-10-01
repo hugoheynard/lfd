@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 
 import { AfterCommit } from "../../platform/database/after-commit.js";
 import { BackgroundWork } from "../../platform/events/background-work.js";
+import type { JournaledEvent } from "../../platform/journal/journal-fact.js";
 import {
   type StaffNotice,
   StaffNotifier,
@@ -10,8 +11,10 @@ import {
 import type { DeliveryIncident } from "../domain/entities/delivery-incident.js";
 import { StopDecision } from "../domain/entities/stop-decision.js";
 import { opensDecision } from "../domain/services/decision-opening.js";
+import { settledOutcomeOf } from "../domain/services/doorstep-rule.js";
 import { StopDecisionRepository } from "../domain/ports/stop-decision.repository.js";
 import type { DriverRoundRow } from "../domain/ports/driver-rounds.reader.js";
+import { StopDecisionBySetting } from "./stop-decision-by-setting.js";
 
 /** Ce que la notice dit du motif — des mots pour le commercial, pas les valeurs. */
 const REASON_WORDS: Readonly<Record<string, string>> = {
@@ -40,6 +43,14 @@ const DECISIONS_LINK = "/livraison/a-decider";
  * Un signalement annulé ne prévient personne. L'émission est SUIVIE
  * (`BackgroundWork.track`) : son échec est journalisé, jamais avalé, et les
  * tests l'attendent.
+ *
+ * Sauf quand la règle FIGÉE au départ répond d'avance (B3 bis, LB-Q6) :
+ * « Déposer » ou « Rapporter » s'applique aussitôt (`StopDecisionBySetting`),
+ * et personne n'est prévenu — il n'y a rien à décider. « Me demander », ou
+ * une règle qui n'a rien à trancher, retombe sur ce qui précède.
+ *
+ * Rend le fait de la décision réglée, à publier par le handler après celui
+ * du signalement ; `null` sinon.
  */
 @Injectable()
 export class StopDecisionOpening {
@@ -48,16 +59,35 @@ export class StopDecisionOpening {
     private readonly notifier: StaffNotifier,
     private readonly afterCommit: AfterCommit,
     private readonly work: BackgroundWork,
+    private readonly setting: StopDecisionBySetting,
   ) {}
 
-  async openFor(incident: DeliveryIncident, round: DriverRoundRow, at: Date): Promise<void> {
+  async openFor(
+    incident: DeliveryIncident,
+    round: DriverRoundRow,
+    at: Date,
+  ): Promise<JournaledEvent | null> {
     const stop = round.stops.find((row) => row.stopId === incident.stopId);
     if (stop === undefined || !opensDecision(incident.family, incident.reason)) {
-      return;
+      return null;
+    }
+    const outcome = settledOutcomeOf(stop.departed?.doorstepRule ?? "ask");
+    const settled =
+      outcome === null
+        ? null
+        : await this.setting.settle({
+            roundId: round.id,
+            stop,
+            incidentId: incident.id,
+            outcome,
+            at,
+          });
+    if (settled !== null) {
+      return settled;
     }
     const existing = await this.decisions.load(stop.stopId);
     if (existing !== null && existing.state !== "pending") {
-      return;
+      return null;
     }
     if (existing === null) {
       const opened = StopDecision.open({
@@ -75,6 +105,7 @@ export class StopDecisionOpening {
       () => this.work.track(this.notifier.notify([notice]), NOTIFIED),
       NOTIFIED,
     );
+    return null;
   }
 }
 

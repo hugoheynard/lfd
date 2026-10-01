@@ -20,6 +20,7 @@ import { AppConfig } from "../platform/config/app-config.js";
 import { ApplyDeliveryProposalHandler } from "./application/commands/apply-delivery-proposal.handler.js";
 import { LocateDeliveryStopsHandler } from "./application/commands/locate-delivery-stops.handler.js";
 import { SetRoutingSettingsHandler } from "./application/commands/set-routing-settings.handler.js";
+import { SetDoorstepSettingsHandler } from "./application/commands/set-doorstep-settings.handler.js";
 import { GetDeliveryRoundProposalHandler } from "./application/queries/get-delivery-round-proposal.handler.js";
 import { TimeDeliveryRoundsHandler } from "./application/queries/time-delivery-rounds.handler.js";
 import { SimulateDeliveryRoundsHandler } from "./application/queries/simulate-delivery-rounds.handler.js";
@@ -36,6 +37,7 @@ import { DeliverySimulationScenariosController } from "./http/delivery-simulatio
 import { PrismaSimulationScenarioReader } from "./infrastructure/prisma-simulation-scenario.reader.js";
 import { PrismaSimulationScenarioRepository } from "./infrastructure/prisma-simulation-scenario.repository.js";
 import { GetRoutingSettingsHandler } from "./application/queries/get-routing-settings.handler.js";
+import { GetDoorstepSettingsHandler } from "./application/queries/get-doorstep-settings.handler.js";
 import { DeliveryProposalRepository } from "./domain/ports/delivery-proposal.repository.js";
 import { DistanceMatrix } from "./domain/ports/distance-matrix.js";
 import { GeocodeCacheReader } from "./domain/ports/geocode-cache.reader.js";
@@ -43,12 +45,15 @@ import { GeocodeCacheRepository } from "./domain/ports/geocode-cache.repository.
 import { Geocoder } from "./domain/ports/geocoder.js";
 import { RoutingSettingsReader } from "./domain/ports/routing-settings.reader.js";
 import { RoutingSettingsRepository } from "./domain/ports/routing-settings.repository.js";
+import { DoorstepSettingsReader } from "./domain/ports/doorstep-settings.reader.js";
+import { DoorstepSettingsRepository } from "./domain/ports/doorstep-settings.repository.js";
 import { RouteGeometry } from "./domain/ports/route-geometry.js";
 import { DeliveryProposalController } from "./http/delivery-proposal.controller.js";
 import { DeliverySimulatorController } from "./http/delivery-simulator.controller.js";
 import { DeliveryPurchaseAssistantController } from "./http/delivery-purchase-assistant.controller.js";
 import { AssistBinPurchaseHandler } from "./application/queries/assist-bin-purchase.handler.js";
 import { RoutingSettingsController } from "./http/routing-settings.controller.js";
+import { DoorstepSettingsController } from "./http/doorstep-settings.controller.js";
 import { BanGeocoder } from "./infrastructure/ban-geocoder.js";
 import { DisabledGeocoder } from "./infrastructure/disabled-geocoder.js";
 import {
@@ -62,6 +67,8 @@ import { PrismaGeocodeCacheReader } from "./infrastructure/prisma-geocode-cache.
 import { PrismaGeocodeCacheRepository } from "./infrastructure/prisma-geocode-cache.repository.js";
 import { PrismaRoutingSettingsReader } from "./infrastructure/prisma-routing-settings.reader.js";
 import { PrismaRoutingSettingsRepository } from "./infrastructure/prisma-routing-settings.repository.js";
+import { PrismaDoorstepSettingsReader } from "./infrastructure/prisma-doorstep-settings.reader.js";
+import { PrismaDoorstepSettingsRepository } from "./infrastructure/prisma-doorstep-settings.repository.js";
 
 import { DeclareDeliveryBinsHandler } from "./application/commands/declare-delivery-bins.handler.js";
 import { ShareDeliveryBinHandler } from "./application/commands/share-delivery-bin.handler.js";
@@ -162,6 +169,7 @@ import {
     DeliveryPackingController,
     DeliveryLoadingController,
     RoutingSettingsController,
+    DoorstepSettingsController,
     DeliveryProposalController,
     DeliverySimulatorController,
     DeliveryPurchaseAssistantController,
@@ -206,6 +214,9 @@ import {
     GetDeliveryLoadingDayHandler,
     GetRoutingSettingsHandler,
     SetRoutingSettingsHandler,
+    // La décision réglée d'avance à la porte, globale (B3 bis) : lue aussi au départ.
+    GetDoorstepSettingsHandler,
+    SetDoorstepSettingsHandler,
     LocateDeliveryStopsHandler,
     GetDeliveryRoundProposalHandler,
     ApplyDeliveryProposalHandler,
@@ -252,6 +263,8 @@ import {
     { provide: BinCodeDrawer, useClass: CryptoBinCodeDrawer },
     { provide: RoutingSettingsReader, useClass: PrismaRoutingSettingsReader },
     { provide: RoutingSettingsRepository, useClass: PrismaRoutingSettingsRepository },
+    { provide: DoorstepSettingsReader, useClass: PrismaDoorstepSettingsReader },
+    { provide: DoorstepSettingsRepository, useClass: PrismaDoorstepSettingsRepository },
     { provide: GeocodeCacheReader, useClass: PrismaGeocodeCacheReader },
     { provide: GeocodeCacheRepository, useClass: PrismaGeocodeCacheRepository },
     { provide: DeliveryProposalRepository, useClass: PrismaDeliveryProposalRepository },

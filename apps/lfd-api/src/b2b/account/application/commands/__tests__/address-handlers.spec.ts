@@ -90,6 +90,7 @@ function addressesRecorder(recorder: Recorder): CompanyAddressRepository {
         lines: { ...BILLING },
         specs: DELIVERY.specs,
         depositAllowed: false,
+        doorstepRule: null,
         createdAt: new Date("2026-01-01T08:00:00Z"),
         archivedAt: null,
       },

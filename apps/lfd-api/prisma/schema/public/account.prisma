@@ -454,6 +454,13 @@ model Address {
   // `false` en silence. Écrite par le carnet (`DeliveryAddressBook`) seul.
   depositAllowed Boolean @default(false) @map("deposit_allowed")
 
+  // La décision réglée d'avance sur un problème à la porte, redéfinie PAR
+  // ADRESSE (`plan-a-la-porte.md`, B3 bis, LB-Q6) : `ask`, `deposit` ou
+  // `bring_back` — tenu en base par un CHECK. Nulle : l'adresse hérite du
+  // réglage global de la livraison. Une COLONNE, pour la même raison que
+  // `depositAllowed`. Écrite par le carnet seul, sous la route du commercial.
+  doorstepRule String? @map("doorstep_rule") @db.VarChar(16)
+
   // Pas de DELETE physique : on archive.
   archivedAt DateTime? @map("archived_at")
 

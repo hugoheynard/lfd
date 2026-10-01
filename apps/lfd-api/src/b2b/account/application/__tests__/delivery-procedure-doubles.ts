@@ -76,6 +76,7 @@ export function addressBook(
       signatureRequired: null,
     },
     depositAllowed: false,
+    doorstepRule: null,
     createdAt: new Date(0),
     archivedAt,
   });

@@ -45,7 +45,15 @@ export async function myRound(agent: request.Agent, roundId: string): Promise<My
 }
 
 /** Une tournée d'un arrêt chargé, affectée à `driver`, partie par lui. */
-export async function departedStop(ctx: E2eContext, driver: DoorDriver): Promise<DepartedStop> {
+/**
+ * `beforeDeparture` : ce qui se règle juste avant « Commencer ma tournée » —
+ * ce que le départ figera (B3 bis : la règle d'avance à la porte).
+ */
+export async function departedStop(
+  ctx: E2eContext,
+  driver: DoorDriver,
+  beforeDeparture: (orderId: string) => Promise<void> = () => Promise.resolve(),
+): Promise<DepartedStop> {
   const roundId = await openRound(ctx, DOOR_DAY, await addVehicle(ctx, "Kangoo"));
   const orderId = await seedLocatedDelivery(ctx, DOOR_DAY, POINT);
   await assign(ctx, DOOR_DAY, roundId, orderId);
@@ -56,6 +64,7 @@ export async function departedStop(ctx: E2eContext, driver: DoorDriver): Promise
     .put(`${ROUNDS}/${roundId}/livreur`)
     .send({ staffUserId: driver.id, version })
     .expect(204);
+  await beforeDeparture(orderId);
   await driver.agent
     .post(`${MY_ROUND}/${roundId}/depart`)
     .send({ version: (await myRound(driver.agent, roundId)).version })

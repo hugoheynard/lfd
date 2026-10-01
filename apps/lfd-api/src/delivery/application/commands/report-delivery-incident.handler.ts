@@ -42,7 +42,9 @@ const logger = new Logger("ReportDeliveryIncident");
  * Un problème « à la remise » qui dit que le client ne respecte pas les
  * conditions convenues OUVRE, dans la même unité, une décision du commercial
  * sur l'arrêt — et la notification des commerciaux part après la validation
- * (`StopDecisionOpening`, B3, B5).
+ * (`StopDecisionOpening`, B3, B5). Quand la règle figée au départ répond
+ * d'avance (B3 bis), la décision s'applique dans la même unité, sans
+ * notification.
  *
  * @throws {DriverRoundNotFoundError} @throws {InvalidIncidentPhotoError}
  * @throws ceux de `DeliveryIncident.report`.
@@ -105,7 +107,11 @@ export class ReportDeliveryIncidentHandler implements ICommandHandler<
     try {
       await this.uow.run(async () => {
         await this.incidents.record(incident);
-        await this.decisions.openFor(incident, round, incident.toSnapshot().reportedAt);
+        const settled = await this.decisions.openFor(
+          incident,
+          round,
+          incident.toSnapshot().reportedAt,
+        );
         await this.events.publishTraced(
           new DeliveryIncidentReportedEvent(
             {
@@ -118,6 +124,10 @@ export class ReportDeliveryIncidentHandler implements ICommandHandler<
             orderOf(round, incident.stopId),
           ),
         );
+        // La décision réglée d'avance (B3 bis), après le signalement qui l'a déclenchée.
+        if (settled !== null) {
+          await this.events.publishTraced(settled);
+        }
       });
     } catch (error) {
       if (photoKey !== null) {

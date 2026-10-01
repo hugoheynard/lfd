@@ -31,6 +31,7 @@ import {
   InMemoryDeliveryRounds,
   roundWith,
 } from "./round-doubles.js";
+import { FixedDoorstepSettings } from "./decision-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -178,6 +179,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
       departed,
       ORDERS,
       holds,
+      new FixedDoorstepSettings(),
       clock,
       events,
       uow,
@@ -237,11 +239,15 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
           addressNote: null,
           // Figé avec la feuille (plan « À la porte », AP-D5).
           depositAllowed: false,
+          // L'adresse ne redéfinit rien (B3 bis).
+          doorstepRule: null,
           status: "active",
         },
         // Le rang de passage et le point du carnet, figés au départ (MT-D5 v2).
         departureRank: 1,
         gps: null,
+        // Ni adresse ni réglage global : « Me demander », figé (B3 bis).
+        doorstepRule: "ask",
       },
     ]);
     expect(events.traced[0]?.journalFact()).toEqual({
@@ -297,6 +303,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
       departed,
       new FixedDeliveryOrders([deliveryOn("o_1", DAY, { status: "cancelled" })]),
       new FixedDepartureHolds(),
+      new FixedDoorstepSettings(),
       clock,
       events,
       uow,

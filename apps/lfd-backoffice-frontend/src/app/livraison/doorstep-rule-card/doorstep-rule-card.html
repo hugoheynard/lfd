@@ -1,0 +1,34 @@
+<fold-card data-doorstep-rule>
+  <div class="doorstep">
+    <fold-element-title variant="title" title="Décision à la porte" [subtitle]="provenance()" />
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-doorstep-refusal>{{ message }}</fold-callout>
+    }
+
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture de la décision à la porte…" />
+      }
+      @case ('error') {
+        <fold-callout variant="alert" data-doorstep-error>
+          La décision à la porte n’a pas pu être lue.
+          <button actions foldButton size="sm" emphasis="outline" (click)="retry()">
+            Réessayer
+          </button>
+        </fold-callout>
+      }
+      @case ('ready') {
+        <fold-listbox
+          label="Quand le client n’est pas là, refuse ou que l’accès est impossible"
+          hint="S’applique dès que le livreur le signale. Une adresse peut la redéfinir sur la fiche société ; une tournée partie garde la règle de son départ."
+          [options]="options"
+          [value]="rule()"
+          [disabled]="!canWrite() || saving()"
+          (selectionChange)="choose($event)"
+          data-doorstep-rule-choice
+        />
+      }
+    }
+  </div>
+</fold-card>

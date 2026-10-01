@@ -239,6 +239,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   DeliveryDayChange: "delivery",
   DeliveryVehicle: "delivery",
   DeliveryDeparture: "delivery",
+  DeliveryDoorstepSettings: "delivery",
   // La composition (lot 3) : quelques écritures par geste, un matin.
   DeliveryRound: "delivery",
   DeliveryRoundStop: "delivery",

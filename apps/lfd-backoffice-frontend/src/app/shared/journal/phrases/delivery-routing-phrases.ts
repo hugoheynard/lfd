@@ -15,7 +15,7 @@ import {
   type Segment,
 } from '../phrase';
 
-import { PROPOSAL_MODE } from '../values/orders-values';
+import { DOORSTEP_RULE, PROPOSAL_MODE } from '../values/orders-values';
 
 import { orderList } from './delivery-round-phrases';
 
@@ -110,6 +110,22 @@ export const DELIVERY_ROUTING_PHRASES = {
         ...settingsTerms(fact.payload['after']),
         text(' ; c’étaient '),
         ...(recordOf(before) === null ? [text('les valeurs par défaut')] : settingsTerms(before)),
+      ],
+      ['subjectLabel', 'before', 'after'],
+    );
+  },
+  // B3 bis : la décision réglée d'avance à la porte, le réglage global.
+  'delivery_doorstep.settings_updated': (fact) => {
+    const before = fact.payload['before'];
+    return byActor(
+      fact,
+      [
+        text('a réglé la décision à la porte : '),
+        valueIn(DOORSTEP_RULE, fact.payload['after'], { inSentence: true }),
+        text(' ; c’était '),
+        ...(before === null || before === undefined
+          ? [text('« me demander », par défaut')]
+          : [valueIn(DOORSTEP_RULE, before, { inSentence: true })]),
       ],
       ['subjectLabel', 'before', 'after'],
     );

@@ -1,3 +1,5 @@
+import type { DoorstepRule } from "@lfd/contracts";
+
 import { BroughtBackOrdersAnnouncer } from "../../../channels/handover/index.js";
 import {
   type StaffNotice,
@@ -5,6 +7,7 @@ import {
 } from "../../../../staff/notifications/domain/ports/staff-notifier.js";
 import { StopDecision, type StopDecisionSnapshot } from "../../../domain/entities/stop-decision.js";
 import { StopDecisionStaleError } from "../../../domain/errors/delivery-decision-errors.js";
+import { DoorstepSettingsReader } from "../../../domain/ports/doorstep-settings.reader.js";
 import { StopDecisionRepository } from "../../../domain/ports/stop-decision.repository.js";
 
 /**
@@ -89,4 +92,15 @@ export function openDecision(overrides: Partial<StopDecisionSnapshot> = {}): Sto
     decidedByName: null,
     ...overrides,
   };
+}
+
+/** Le réglage global à la porte (B3 bis) ; `null` : personne ne l'a posé. */
+export class FixedDoorstepSettings extends DoorstepSettingsReader {
+  constructor(private readonly rule: DoorstepRule | null = null) {
+    super();
+  }
+
+  current(): Promise<DoorstepRule | null> {
+    return Promise.resolve(this.rule);
+  }
 }

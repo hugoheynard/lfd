@@ -34,6 +34,7 @@ function sheet(overrides: Partial<DepartureSheet> = {}): DepartureSheet {
     note: "par la cour",
     addressNote: "sonner deux fois",
     depositAllowed: false,
+    doorstepRule: null,
     status: "active",
     ...overrides,
   };
@@ -43,7 +44,7 @@ const NO_POINTS = new Map<string, null>();
 
 describe("departedStopsOf — la feuille figée au départ", () => {
   it("fige une feuille par arrêt vivant, note de l'adresse comprise", () => {
-    expect(departedStopsOf(ROUND, AT, [sheet()], NO_POINTS)).toEqual([
+    expect(departedStopsOf(ROUND, AT, [sheet()], NO_POINTS, null)).toEqual([
       {
         stopId: "s_1",
         roundId: "r_1",
@@ -52,6 +53,7 @@ describe("departedStopsOf — la feuille figée au départ", () => {
         sheet: sheet(),
         departureRank: 1,
         gps: null,
+        doorstepRule: "ask",
       },
     ]);
   });
@@ -71,6 +73,7 @@ describe("departedStopsOf — la feuille figée au départ", () => {
       AT,
       [sheet(), sheet({ orderId: "o_2", reference: "C-2" })],
       new Map([["o_2", point]]),
+      null,
     );
 
     expect(departed.map((stop) => [stop.stopId, stop.departureRank, stop.gps])).toEqual([
@@ -79,14 +82,26 @@ describe("departedStopsOf — la feuille figée au départ", () => {
     ]);
   });
 
+  it("fige la règle d'avance à la porte : l'adresse l'emporte sur le réglage global (B3 bis)", () => {
+    const rule = (globalRule: "deposit" | "bring_back" | null, addressRule: "ask" | null) =>
+      departedStopsOf(ROUND, AT, [sheet({ doorstepRule: addressRule })], NO_POINTS, globalRule)[0]
+        ?.doorstepRule;
+
+    expect(rule("bring_back", null)).toBe("bring_back");
+    expect(rule("deposit", "ask")).toBe("ask");
+    expect(rule(null, null)).toBe("ask");
+  });
+
   it("refuse une commande annulée, en la nommant", () => {
-    expect(() => departedStopsOf(ROUND, AT, [sheet({ status: "cancelled" })], NO_POINTS)).toThrow(
-      DepartureOrderCancelledError,
-    );
+    expect(() =>
+      departedStopsOf(ROUND, AT, [sheet({ status: "cancelled" })], NO_POINTS, null),
+    ).toThrow(DepartureOrderCancelledError);
   });
 
   it("refuse une commande que le commerce ne sert plus, plutôt qu'une feuille inventée", () => {
-    expect(() => departedStopsOf(ROUND, AT, [], NO_POINTS)).toThrow(DepartureSheetMissingError);
+    expect(() => departedStopsOf(ROUND, AT, [], NO_POINTS, null)).toThrow(
+      DepartureSheetMissingError,
+    );
   });
 });
 

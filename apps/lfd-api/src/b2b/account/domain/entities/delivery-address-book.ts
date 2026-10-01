@@ -1,4 +1,4 @@
-import type { DeliveryAddressPayload, DeliverySpecs } from "@lfd/contracts";
+import type { DeliveryAddressPayload, DeliverySpecs, DoorstepRule } from "@lfd/contracts";
 
 import { CompanyAddressNotFoundError } from "../errors/account-errors.js";
 import { deliveryStopMinutesOf } from "../value-objects/delivery-stop-minutes.js";
@@ -29,6 +29,11 @@ export interface DeliveryAddress {
    * réécrit les consignes d'un bloc, et ne doit jamais le remettre à `false`.
    */
   readonly depositAllowed: boolean;
+  /**
+   * La décision réglée d'avance à la porte, redéfinie ici par le commercial
+   * (`plan-a-la-porte.md`, B3 bis) ; `null` : hérite du réglage global.
+   */
+  readonly doorstepRule: DoorstepRule | null;
   readonly createdAt: Date;
   /** `null` tant qu'elle est au carnet. Jamais de DELETE physique. */
   readonly archivedAt: Date | null;
@@ -130,6 +135,7 @@ export class DeliveryAddressBook {
       specs,
       // Personne n'a encore rien autorisé : le dépôt se règle à part.
       depositAllowed: false,
+      doorstepRule: null,
       createdAt,
       archivedAt: null,
     });
@@ -174,6 +180,22 @@ export class DeliveryAddressBook {
       return false;
     }
     entry.depositAllowed = allowed;
+    return true;
+  }
+
+  /**
+   * Redéfinit — ou rend au réglage global (`null`) — la décision réglée
+   * d'avance à la porte (B3 bis, LB-Q6). Comme {@link allowDeposit}, le seul
+   * chemin qui l'écrit ; `false` quand rien ne change.
+   *
+   * @throws {CompanyAddressNotFoundError} l'adresse n'est pas à ce carnet.
+   */
+  setDoorstepRule(addressId: string, rule: DoorstepRule | null): boolean {
+    const entry = this.require(addressId);
+    if (entry.doorstepRule === rule) {
+      return false;
+    }
+    entry.doorstepRule = rule;
     return true;
   }
 
@@ -251,6 +273,7 @@ interface BookEntry {
   lines: PostalLines;
   specs: DeliverySpecs;
   depositAllowed: boolean;
+  doorstepRule: DoorstepRule | null;
   readonly createdAt: Date;
   archivedAt: Date | null;
 }

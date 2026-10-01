@@ -15,20 +15,26 @@ export interface DecisionBadge {
 }
 
 /**
- * « En attente du commercial », « Autorisé : déposer », « Rapporté » — ou
- * `null` : aucun signalement n'a ouvert de décision.
+ * « En attente du commercial », « Autorisé : déposer », « Rapporté » — « par
+ * réglage » quand la règle décidée d'avance a répondu (B3 bis) —, ou `null` :
+ * aucun signalement n'a ouvert de décision.
  */
 export function decisionBadgeOf(decision: StopDecisionView | null): DecisionBadge | null {
   if (decision === null) {
     return null;
   }
+  // B3 bis : une décision prise par le réglage le dit — le livreur n'a parlé à personne.
+  const bySetting = decision.source === 'setting';
   switch (decision.state) {
     case 'pending':
       return { label: 'En attente du commercial', variant: 'warning' };
     case 'authorize_deposit':
-      return { label: 'Autorisé : déposer', variant: 'success' };
+      return {
+        label: bySetting ? 'Autorisé par réglage : déposer' : 'Autorisé : déposer',
+        variant: 'success',
+      };
     case 'bring_back':
-      return { label: 'Rapporté', variant: 'neutral' };
+      return { label: bySetting ? 'Rapporté par réglage' : 'Rapporté', variant: 'neutral' };
   }
 }
 
@@ -37,7 +43,12 @@ export function decisionStatusOf(decision: StopDecisionView): string {
   if (decision.state === 'pending' || decision.decidedAt === null) {
     return 'À décider';
   }
-  const by = decision.decidedByName === null ? '' : ` par ${decision.decidedByName}`;
+  const by =
+    decision.source === 'setting'
+      ? ' par le réglage de livraison'
+      : decision.decidedByName === null
+        ? ''
+        : ` par ${decision.decidedByName}`;
   const what = decision.state === 'authorize_deposit' ? 'Dépôt autorisé' : 'Rapporté';
   return `${what} à ${parisTimeOf(decision.decidedAt)}${by}`;
 }

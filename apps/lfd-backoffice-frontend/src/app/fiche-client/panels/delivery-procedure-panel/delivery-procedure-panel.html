@@ -8,6 +8,8 @@
     (changed)="data().onDepositChange($event)"
   />
 
+  <app-delivery-doorstep-rule [companyId]="data().companyId" [addressId]="data().address.id" />
+
   <lfd-delivery-procedure-editor
     [addressId]="data().address.id"
     [canEdit]="true"

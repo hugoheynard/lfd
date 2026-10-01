@@ -21,6 +21,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import { pointAddressLine } from '../fleet';
+import { DoorstepRuleCard } from '../doorstep-rule-card/doorstep-rule-card';
 import { RoutingSettingsCard } from '../routing-settings-card/routing-settings-card';
 
 type DepartureState =
@@ -41,7 +42,8 @@ const PICKUP_POINTS = '/b2b/reglages/points-de-retrait';
  *
  * Le choix n'apparaît qu'avec `delivery_settings:write`. Les réglages du
  * calcul de tournée (lot 7, L7-C13) vivent sous le point : c'est d'ici que
- * partent les distances.
+ * partent les distances. La décision réglée d'avance à la porte (B3 bis)
+ * les suit : c'est le dernier réglage de la livraison.
  */
 @Component({
   selector: 'app-departure-page',
@@ -60,6 +62,7 @@ const PICKUP_POINTS = '/b2b/reglages/points-de-retrait';
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     RoutingSettingsCard,
+    DoorstepRuleCard,
   ],
   templateUrl: './departure-page.html',
   styleUrl: './departure-page.scss',

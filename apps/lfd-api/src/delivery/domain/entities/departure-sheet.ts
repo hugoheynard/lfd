@@ -1,6 +1,7 @@
 import type {
   BillingAddressPayload,
   DeliveryContact,
+  DoorstepRule,
   FulfillmentSource,
   GpsPoint,
 } from "@lfd/contracts";
@@ -10,6 +11,7 @@ import {
   DepartureOrderHeldError,
   DepartureSheetMissingError,
 } from "../errors/delivery-loading-errors.js";
+import { resolveDoorstepRule } from "../services/doorstep-rule.js";
 import type { DeliveryRound } from "./delivery-round.js";
 
 /** La fenêtre convenue, avec sa provenance (`default` n'est pas une promesse). */
@@ -54,6 +56,12 @@ export interface DepartureSheet {
    * la note ; `false` sans adresse reliée (`plan-a-la-porte.md`, AP-D5).
    */
   readonly depositAllowed: boolean;
+  /**
+   * La décision réglée d'avance que l'adresse du carnet REDÉFINIT (B3 bis,
+   * LB-Q6), lue sous le même mur ; `null` : l'adresse hérite du réglage de
+   * la livraison — et toujours `null` sans adresse reliée. Le départ résout.
+   */
+  readonly doorstepRule: DoorstepRule | null;
   /** Lu, jamais figé : une commande annulée ne part pas. */
   readonly status: "active" | "cancelled";
 }
@@ -72,6 +80,11 @@ export interface DepartedStop {
   readonly departureRank: number;
   /** Le point GPS du carnet au départ, ou `null` : la navigation suit le point promis. */
   readonly gps: GpsPoint | null;
+  /**
+   * La décision réglée d'avance RÉSOLUE au départ — l'adresse, sinon le
+   * réglage global, sinon « Me demander » (B3 bis) —, figée avec l'arrêt.
+   */
+  readonly doorstepRule: DoorstepRule;
 }
 
 /**
@@ -85,6 +98,10 @@ export interface DepartedStop {
  * Une commande ANNULÉE entre la composition et le départ ne part pas : le
  * refus la nomme, et dit de retirer l'arrêt.
  *
+ * `globalRule` : le réglage global de la décision d'avance à la porte, lu à
+ * cet instant (`null` : personne ne l'a posé) ; chaque arrêt fige sa règle
+ * résolue (B3 bis).
+ *
  * @throws {DepartureOrderCancelledError} @throws {DepartureSheetMissingError}
  */
 export function departedStopsOf(
@@ -92,6 +109,7 @@ export function departedStopsOf(
   departedAt: Date,
   sheets: readonly DepartureSheet[],
   points: ReadonlyMap<string, GpsPoint | null>,
+  globalRule: DoorstepRule | null,
 ): readonly DepartedStop[] {
   const byOrder = new Map(sheets.map((sheet) => [sheet.orderId, sheet]));
   const cancelled = round.liveStops.flatMap((stop) => {
@@ -114,6 +132,7 @@ export function departedStopsOf(
       sheet,
       departureRank: index + 1,
       gps: points.get(stop.orderId) ?? null,
+      doorstepRule: resolveDoorstepRule(globalRule, sheet.doorstepRule),
     };
   });
 }

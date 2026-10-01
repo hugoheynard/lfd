@@ -32,6 +32,8 @@ import { RemoveDeliveryAddressByStaffHandler } from "./application/commands/remo
 import { SetDefaultDeliveryByStaffHandler } from "./application/commands/set-default-delivery-by-staff.handler.js";
 import { UpdateDeliveryAddressByStaffHandler } from "./application/commands/update-delivery-address-by-staff.handler.js";
 import { SetDeliveryDepositByStaffHandler } from "./application/commands/set-delivery-deposit-by-staff.handler.js";
+import { SetDeliveryDoorstepRuleByStaffHandler } from "./application/commands/set-delivery-doorstep-rule-by-staff.handler.js";
+import { GetDeliveryDoorstepRuleForStaffHandler } from "./application/queries/get-delivery-doorstep-rule-for-staff.handler.js";
 import { GrantTermsHandler } from "./application/commands/grant-terms.handler.js";
 import { BlockDirectDebitHandler } from "./application/commands/block-direct-debit.handler.js";
 import { UnblockDirectDebitHandler } from "./application/commands/unblock-direct-debit.handler.js";
@@ -88,6 +90,7 @@ import { AccountReader } from "./domain/ports/account.reader.js";
 import { AdminCompanyReader } from "./domain/ports/admin-company.reader.js";
 import { PendingAccessReader } from "./domain/ports/pending-access.reader.js";
 import { CompanyAddressReader } from "./domain/ports/company-address.reader.js";
+import { DeliveryDoorstepRuleReader } from "./domain/ports/delivery-doorstep-rule.reader.js";
 import { CompanyAddressRepository } from "./domain/ports/company-address.repository.js";
 import { CompanyContactRepository } from "./domain/ports/company-contact.repository.js";
 import { CompanyRepository } from "./domain/ports/company.repository.js";
@@ -128,6 +131,7 @@ import { PrismaPendingAccessReader } from "./infrastructure/prisma-pending-acces
 import { ListPendingAccessHandler } from "./application/queries/list-pending-access.handler.js";
 import { IssuePasswordLinkHandler } from "./application/commands/issue-password-link.handler.js";
 import { PrismaCompanyAddressReader } from "./infrastructure/prisma-company-address.reader.js";
+import { PrismaDeliveryDoorstepRuleReader } from "./infrastructure/prisma-delivery-doorstep-rule.reader.js";
 import { PrismaCompanyAddressRepository } from "./infrastructure/prisma-company-address.repository.js";
 import { PrismaCompanyContactRepository } from "./infrastructure/prisma-company-contact.repository.js";
 import { PrismaCompanyRepository } from "./infrastructure/prisma-company.repository.js";
@@ -268,6 +272,10 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     AddDeliveryAddressByStaffHandler,
     UpdateDeliveryAddressByStaffHandler,
     SetDeliveryDepositByStaffHandler,
+    // La décision réglée d'avance à la porte, par adresse (B3 bis).
+    SetDeliveryDoorstepRuleByStaffHandler,
+    GetDeliveryDoorstepRuleForStaffHandler,
+    { provide: DeliveryDoorstepRuleReader, useClass: PrismaDeliveryDoorstepRuleReader },
     SetDefaultDeliveryByStaffHandler,
     RemoveDeliveryAddressByStaffHandler,
     RequestActivationSupportHandler,

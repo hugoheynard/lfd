@@ -117,3 +117,31 @@ describe('le calculateur de tournée (delivery_routing.*, delivery_round.proposa
     ).toBe('Colette Martin a appliqué une proposition du calculateur pour le 1 octobre 2026');
   });
 });
+
+describe('la décision réglée d’avance à la porte, globale (B3 bis)', () => {
+  it('dit la règle après, et « me demander » par défaut quand personne n’avait réglé', () => {
+    expect(
+      sentence(
+        fact('delivery_doorstep.settings_updated', 'delivery_doorstep', {
+          subjectLabel: 'Décision à la porte',
+          before: null,
+          after: 'bring_back',
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a réglé la décision à la porte : rapporter ; c’était « me demander », par défaut',
+    );
+  });
+
+  it('dit la règle d’avant quand il y en avait une', () => {
+    expect(
+      sentence(
+        fact('delivery_doorstep.settings_updated', 'delivery_doorstep', {
+          subjectLabel: 'Décision à la porte',
+          before: 'deposit',
+          after: 'ask',
+        }),
+      ),
+    ).toContain('me demander ; c’était déposer avec photo, même si la signature est exigée');
+  });
+});

@@ -42,6 +42,7 @@ function frozen(rank: number | null, overrides: Partial<DepartedStopRow> = {}): 
     departureRank: rank,
     gps: rank === null ? null : FROZEN,
     depositAllowed: false,
+    doorstepRule: "ask",
     arrivedAt: null,
     ...overrides,
   };
@@ -59,6 +60,7 @@ function sheet(orderId: string): DepartureSheet {
     note: "",
     addressNote: null,
     depositAllowed: false,
+    doorstepRule: null,
     status: "active",
   };
 }

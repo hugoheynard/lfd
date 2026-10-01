@@ -1,6 +1,7 @@
 import {
   billingAddressPayloadSchema,
   deliveryContactSchema,
+  doorstepRuleSchema,
   fulfillmentSourceSchema,
 } from "@lfd/contracts";
 import { z } from "zod";
@@ -21,6 +22,7 @@ export const EXECUTION_SELECT = {
   gpsLat: true,
   gpsLng: true,
   depositAllowed: true,
+  doorstepRule: true,
   arrivedAt: true,
 } as const;
 
@@ -38,6 +40,7 @@ export interface ExecutionRecord {
   readonly gpsLat: number | null;
   readonly gpsLng: number | null;
   readonly depositAllowed: boolean;
+  readonly doorstepRule: string;
   readonly arrivedAt: Date | null;
 }
 
@@ -72,6 +75,8 @@ export function departedStopOf(record: ExecutionRecord): DepartedStopRow {
         ? null
         : { lat: record.gpsLat, lng: record.gpsLng },
     depositAllowed: record.depositAllowed,
+    // Un CHECK tient la valeur en base : une autre lève plutôt que d'être devinée.
+    doorstepRule: doorstepRuleSchema.parse(record.doorstepRule),
     arrivedAt: record.arrivedAt,
   };
 }

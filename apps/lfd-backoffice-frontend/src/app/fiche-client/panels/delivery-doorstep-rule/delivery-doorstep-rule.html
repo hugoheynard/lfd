@@ -1,0 +1,26 @@
+<div class="doorstep">
+  @switch (state().status) {
+    @case ('loading') {
+      <fold-loading message="Lecture de la décision à la porte…" />
+    }
+    @case ('error') {
+      <fold-callout variant="alert" data-doorstep-error>
+        La décision à la porte de cette adresse n’a pas pu être lue.
+      </fold-callout>
+    }
+    @case ('ready') {
+      <fold-listbox
+        label="Si le client n’est pas là, refuse ou que l’accès est impossible"
+        hint="Décidé d’avance pour cette adresse : s’applique dès que le livreur le signale. Une tournée déjà partie garde la règle de son départ."
+        [options]="options"
+        [value]="choice()"
+        [disabled]="!canEdit() || saving()"
+        (selectionChange)="choose($event)"
+        data-doorstep-rule
+      />
+    }
+  }
+  @if (refusal(); as refusal) {
+    <fold-callout variant="alert" data-doorstep-refusal>{{ refusal }}</fold-callout>
+  }
+</div>
