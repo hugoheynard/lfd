@@ -100,6 +100,9 @@ export class BinHalfRaceError extends BusinessError {
  * sont plus à des arrêts consécutifs — une recomposition les a séparées.
  */
 export class SharedBinToRedoError extends BusinessError {
+  /** Les codes des bacs à refaire — la route du livreur les redit à sa façon. */
+  readonly codes: readonly string[];
+
   constructor(
     vehicleName: string,
     bins: readonly { readonly code: string; readonly reference: string }[],
@@ -109,5 +112,6 @@ export class SharedBinToRedoError extends BusinessError {
       "delivery.shared_bin_to_redo",
       `« ${vehicleName} » ne peut pas partir — le bac partagé ${listed} n'est plus entre deux arrêts consécutifs : recolisez-le ou remettez les arrêts côte à côte.`,
     );
+    this.codes = bins.map((bin) => bin.code);
   }
 }

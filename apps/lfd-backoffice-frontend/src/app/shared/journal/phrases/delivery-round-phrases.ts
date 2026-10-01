@@ -4,6 +4,7 @@ import { count, optional, recordOf } from '../payload-read';
 import {
   byActor,
   cite,
+  citePerson,
   inUnit,
   subject,
   subjectLabelOf,
@@ -117,5 +118,33 @@ export const DELIVERY_ROUND_PHRASES = {
         ...orderList(fact.payload['after']),
       ],
       [...ROUND_KEYS, 'before', 'after'],
+    ),
+  // Plan « Ma tournée », MT-D2 : le livreur, cité par son nom, ou son identifiant.
+  'delivery_round.driver_assigned': (fact) => {
+    const previous = fact.payload['previous'];
+    return byActor(
+      fact,
+      [
+        text('a affecté '),
+        ...citePerson(fact.payload['driver'], 'un livreur'),
+        text(' à '),
+        ...round(fact),
+        ...(previous === null || previous === undefined
+          ? []
+          : [text(' à la place de '), ...citePerson(previous, 'un livreur')]),
+      ],
+      [...ROUND_KEYS, 'driver', 'previous'],
+    );
+  },
+  'delivery_round.driver_unassigned': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a retiré le livreur '),
+        ...citePerson(fact.payload['previous'], 'un livreur'),
+        text(' de '),
+        ...round(fact),
+      ],
+      [...ROUND_KEYS, 'previous'],
     ),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

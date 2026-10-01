@@ -119,6 +119,9 @@ export class DeliveryRoundDepartedError extends BusinessError {
  * les références ; le geste de sortie est de charger, ou de retirer l'arrêt.
  */
 export class DeliveryRoundNotReadyError extends BusinessError {
+  /** Les références des arrêts non chargés — la route du livreur les redit à sa façon. */
+  readonly references: readonly string[];
+
   constructor(vehicleName: string, unlabelled: readonly string[], partial: readonly string[]) {
     const causes = [
       unlabelled.length > 0 ? `sans bac déclaré : ${unlabelled.join(", ")}` : null,
@@ -128,6 +131,7 @@ export class DeliveryRoundNotReadyError extends BusinessError {
       "delivery.round_not_ready",
       `« ${vehicleName} » ne peut pas partir — ${causes.join(" ; ")}. Déclarez et chargez leurs bacs, ou retirez ces arrêts de la tournée.`,
     );
+    this.references = [...unlabelled, ...partial];
   }
 }
 

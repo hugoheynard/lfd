@@ -307,6 +307,17 @@ export const staffResourceSchema = z.enum([
    * l'un ne doit pas ouvrir l'autre.
    */
   "delivery_loading",
+  /**
+   * **Conduire SA tournée** — lire la tournée qui vous est affectée et la
+   * commencer (`/admin/livraison/ma-tournee`, plan « Ma tournée », MT-D1 v2).
+   *
+   * Le seul droit du rôle `livreur`, qui n'a pas de valeur `StaffRole` : il
+   * vit par sa clé en base (migration `20261001120100_le_role_livreur`). Pas
+   * `delivery_loading` : celui-là ouvre le scan et le plan de chargement, donc
+   * le dépôt. Pas `delivery_doorstep` non plus, que le lot 6 réserve aux gestes
+   * à la porte — ce sera une ressource DE PLUS sur le même rôle.
+   */
+  "delivery_driving",
 
   // ── `staff.` — LE SOCLE ─────────────────────────────────────────────────
   /**
@@ -411,6 +422,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   delivery_settings: "Réglages de livraison",
   delivery_rounds: "Tournées de livraison",
   delivery_loading: "Chargement",
+  delivery_driving: "Conduire sa tournée",
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
   b2b_counter: "Comptoir",
@@ -521,6 +533,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     delivery_settings: "write",
     delivery_rounds: "write",
     delivery_loading: "write",
+    delivery_driving: "write",
     staff_access: "write",
     staff_notifications: "write",
     ops_health: "write",

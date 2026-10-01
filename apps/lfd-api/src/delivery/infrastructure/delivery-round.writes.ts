@@ -51,6 +51,7 @@ export async function writeRound(
             passage: snapshot.passage,
             version: snapshot.version,
             departedAt: snapshot.departedAt,
+            driverStaffId: snapshot.driverStaffId,
             createdAt: snapshot.createdAt,
             updatedAt: snapshot.updatedAt,
           },
@@ -63,6 +64,7 @@ export async function writeRound(
     data: {
       version: snapshot.version,
       departedAt: snapshot.departedAt,
+      driverStaffId: snapshot.driverStaffId,
       updatedAt: snapshot.updatedAt,
     },
   });

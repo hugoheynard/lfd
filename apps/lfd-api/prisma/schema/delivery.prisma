@@ -136,6 +136,11 @@ model DeliveryRound {
   /// Partie le (lot 4, L4-C4) — écrivain : la tournée, par `depart`. Nulle tant
   /// qu'elle est au dépôt ; posée, plus rien ne se compose ni ne se charge (I6).
   departedAt  DateTime? @map("departed_at")
+  /// Le livreur affecté (plan « Ma tournée », MT-D2 v2) — l'id d'une fiche de
+  /// l'annuaire staff, OPAQUE : aucune clé étrangère, la tournée vit dans
+  /// `delivery` et l'annuaire dans `public`. Écrivain : la tournée, par
+  /// `assignDriver` / `unassignDriver`. Le mur du livreur (MT-D3) le lit.
+  driverStaffId String? @map("driver_staff_id")
 
   createdAt DateTime @map("created_at")
   updatedAt DateTime @map("updated_at")
@@ -145,6 +150,7 @@ model DeliveryRound {
 
   @@unique([serviceDay, vehicleId, passage])
   @@index([vehicleId, serviceDay])
+  @@index([driverStaffId, serviceDay])
   @@map("delivery_round")
   @@schema("delivery")
 }
@@ -300,6 +306,15 @@ model DeliveryStopExecution {
   /// La note livreurs de l'adresse du carnet, lue au départ ; nulle sans
   /// adresse reliée. La procédure n'est PAS figée (le lot 6 la lit en direct).
   addressNote       String?  @map("address_note")
+  /// Le rang de passage FIGÉ au départ, 1..n (plan « Ma tournée », MT-D5 v2) :
+  /// `closeStop` resserrera `position` au lot 6, la numérotation du livreur ne
+  /// bouge pas. Nul pour un arrêt parti avant la migration qui l'a ajouté.
+  departureRank     Int?     @map("departure_rank")
+  /// Le point GPS du carnet FIGÉ au départ : la navigation suit le point promis,
+  /// pas le carnet corrigé en route. Nuls sans point au départ — ou avant la
+  /// migration (`departure_rank` nul le distingue).
+  gpsLat            Float?   @map("gps_lat")
+  gpsLng            Float?   @map("gps_lng")
 
   stop DeliveryRoundStop @relation(fields: [stopId], references: [id], onDelete: Restrict)
 

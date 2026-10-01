@@ -19,6 +19,14 @@ export abstract class DeliveryRoundRepository {
   abstract loadForDeparture(id: string): Promise<DeliveryRound | null>;
 
   /**
+   * Le même verrou, **sous le mur du livreur** (plan « Ma tournée », MT-D3 v2) :
+   * la tournée n'est chargée que si `staffUserId` en est le livreur affecté —
+   * sinon `null`, sans rien verrouiller. Une méthode à part, et non un mur
+   * optionnel : l'absence d'un argument ne doit jamais vouloir dire « sans mur ».
+   */
+  abstract loadForDriverDeparture(id: string, staffUserId: string): Promise<DeliveryRound | null>;
+
+  /**
    * Écrit une tournée (ouverture ou changement).
    * @throws {DeliveryRoundStaleError} la version en base n'est plus celle lue.
    * @throws {OrderAlreadyInRoundError} l'index I3 a vu une course.

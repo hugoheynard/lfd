@@ -44,4 +44,20 @@ export const DELIVERY_ROUND_FACTS = {
       after: z.array(namedOrBare("order")),
     }),
   ),
+  /**
+   * Le livreur affecté à la tournée (plan « Ma tournée », MT-D2) ; `previous`
+   * nomme celui qu'il remplace, `null` s'il n'y en avait pas. Cité par son nom
+   * quand l'annuaire le connaît, par son seul id sinon.
+   */
+  "delivery_round.driver_assigned": fact(
+    payload({
+      ...roundKey(),
+      driver: namedOrBare("staff_user"),
+      previous: namedOrBare("staff_user").nullable(),
+    }),
+  ),
+  /** La tournée n'a plus de livreur affecté. */
+  "delivery_round.driver_unassigned": fact(
+    payload({ ...roundKey(), previous: namedOrBare("staff_user") }),
+  ),
 } as const;

@@ -39,6 +39,12 @@ export class InMemoryDeliveryRounds extends DeliveryRoundRepository {
     return this.load(id);
   }
 
+  /** Le mur du livreur, comme l'adaptateur : la tournée n'existe que pour son livreur affecté. */
+  async loadForDriverDeparture(id: string, staffUserId: string): Promise<DeliveryRound | null> {
+    const found = await this.load(id);
+    return found?.driverStaffId === staffUserId ? found : null;
+  }
+
   save(round: DeliveryRound): Promise<void> {
     this.write(round);
     this.saved.push(round.id);
@@ -198,6 +204,7 @@ export function roundWith(
     passage,
     version: 1,
     departedAt: null,
+    driverStaffId: null,
     createdAt: new Date(0),
     updatedAt: new Date(0),
     stops: orderIds.map((orderId, index) => ({

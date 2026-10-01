@@ -10,6 +10,8 @@ function inputs(overrides: Partial<DeliveryRoundsDayInputs> = {}): DeliveryRound
     expected: [],
     composed: new Map(),
     assigned: new Set(),
+    drivers: new Set(),
+    driverNames: new Map(),
     ...overrides,
   };
 }
@@ -22,6 +24,7 @@ const round = {
   version: 3,
   vehicleRetiredAt: null,
   departedAt: null,
+  driverStaffId: null,
   stops: [{ stopId: "s_1", orderId: "o_1", position: 1 }],
 };
 
@@ -90,5 +93,28 @@ describe("deliveryRoundsDayView", () => {
     );
 
     expect(view.rounds.map((entry) => entry.departedAt)).toEqual([null, departedAt.toISOString()]);
+  });
+
+  it("dit le livreur affecté, nommé par l'annuaire, et s'il a perdu le droit (MT-D2 v2)", () => {
+    const view = deliveryRoundsDayView(
+      inputs({
+        rounds: [
+          { ...round, driverStaffId: "staff_paul" },
+          { ...round, id: "r_2", driverStaffId: "staff_ancien" },
+          { ...round, id: "r_3" },
+        ],
+        drivers: new Set(["staff_paul"]),
+        driverNames: new Map([
+          ["staff_paul", "Paul Roux"],
+          ["staff_ancien", null],
+        ]),
+      }),
+    );
+
+    expect(view.rounds.map((entry) => entry.driver)).toEqual([
+      { staffUserId: "staff_paul", name: "Paul Roux", canDrive: true },
+      { staffUserId: "staff_ancien", name: null, canDrive: false },
+      null,
+    ]);
   });
 });

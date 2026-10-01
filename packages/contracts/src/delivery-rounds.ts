@@ -40,8 +40,40 @@ export interface DeliveryRoundView {
    * plus (I6) — l'écran la montre en lecture seule, et le serveur refuse.
    */
   readonly departedAt: string | null;
+  /**
+   * Le livreur affecté (plan « Ma tournée », MT-D2 v2), ou `null`. Le nom est
+   * LU dans l'annuaire, jamais copié.
+   */
+  readonly driver: DeliveryRoundDriverView | null;
   /** Les arrêts vivants, dans l'ordre de passage. */
   readonly stops: readonly DeliveryRoundStopView[];
+}
+
+/** Le livreur affecté à une tournée. */
+export interface DeliveryRoundDriverView {
+  readonly staffUserId: string;
+  /** « Prénom Nom », ou `null` : la fiche n'existe plus, ou n'a pas de nom. */
+  readonly name: string | null;
+  /**
+   * 🔴 `false` : il a PERDU le droit de conduire (`delivery_driving:write`,
+   * rôle et dérogations) ou sa fiche est suspendue. L'écran dit « livreur sans
+   * accès — réaffecter » ; sa route le refuse de toute façon (le guard).
+   */
+  readonly canDrive: boolean;
+}
+
+/**
+ * Les membres du staff qu'on peut affecter à une tournée : ceux qui ont
+ * EFFECTIVEMENT `delivery_driving:write` (rôle et dérogations), fiche non
+ * suspendue — pas ceux qui portent la clé `livreur` (MT-D2 v2).
+ */
+export interface DeliveryDriversView {
+  readonly drivers: readonly DeliveryDriverView[];
+}
+
+export interface DeliveryDriverView {
+  readonly staffUserId: string;
+  readonly name: string;
 }
 
 /** Un arrêt de tournée. */
@@ -112,3 +144,16 @@ export const removeDeliveryStopPayloadSchema = z.object({
   version: versionField,
 });
 export type RemoveDeliveryStopPayload = z.infer<typeof removeDeliveryStopPayloadSchema>;
+
+/** Affecter un livreur à une tournée encore au dépôt (MT-D2). */
+export const assignDeliveryDriverPayloadSchema = z.object({
+  staffUserId: idField("livreur"),
+  version: versionField,
+});
+export type AssignDeliveryDriverPayload = z.infer<typeof assignDeliveryDriverPayloadSchema>;
+
+/** Retirer le livreur d'une tournée encore au dépôt. */
+export const unassignDeliveryDriverPayloadSchema = z.object({
+  version: versionField,
+});
+export type UnassignDeliveryDriverPayload = z.infer<typeof unassignDeliveryDriverPayloadSchema>;

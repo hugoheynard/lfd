@@ -124,6 +124,7 @@ import { PrismaFleetReader } from "./infrastructure/prisma-fleet.reader.js";
 import { PrismaVehicleRoundsReader } from "./infrastructure/prisma-vehicle-rounds.reader.js";
 import { PrismaVehicleRepository } from "./infrastructure/prisma-vehicle.repository.js";
 import { DAY_JOURNAL_CONTROLLERS, DAY_JOURNAL_PROVIDERS } from "./day-journal.providers.js";
+import { DRIVER_CONTROLLERS, DRIVER_PROVIDERS } from "./driver.providers.js";
 import {
   PURCHASE_LIBRARY_CONTROLLERS,
   PURCHASE_LIBRARY_PROVIDERS,
@@ -166,6 +167,7 @@ import {
     BinCapacitiesController,
     ...PURCHASE_LIBRARY_CONTROLLERS,
     ...DAY_JOURNAL_CONTROLLERS,
+    ...DRIVER_CONTROLLERS,
   ],
   providers: [
     AddVehicleHandler,
@@ -220,6 +222,7 @@ import {
     GetBinCapacitiesHandler,
     ...PURCHASE_LIBRARY_PROVIDERS,
     ...DAY_JOURNAL_PROVIDERS,
+    ...DRIVER_PROVIDERS,
     { provide: BinTypeRepository, useClass: PrismaBinTypeRepository },
     { provide: BinTypeLookup, useExisting: BinTypeRepository },
     { provide: BinCapacityRepository, useClass: PrismaBinCapacityRepository },

@@ -780,6 +780,8 @@ export {
   moveDeliveryStopPayloadSchema,
   reorderDeliveryRoundPayloadSchema,
   removeDeliveryStopPayloadSchema,
+  assignDeliveryDriverPayloadSchema,
+  unassignDeliveryDriverPayloadSchema,
 } from "./delivery-rounds.js";
 export type {
   DeliveryRoundsDayView,
@@ -792,7 +794,21 @@ export type {
   MoveDeliveryStopPayload,
   ReorderDeliveryRoundPayload,
   RemoveDeliveryStopPayload,
+  DeliveryRoundDriverView,
+  DeliveryDriversView,
+  DeliveryDriverView,
+  AssignDeliveryDriverPayload,
+  UnassignDeliveryDriverPayload,
 } from "./delivery-rounds.js";
+export type {
+  MyDeliveryRoundsView,
+  MyDeliveryRoundSummaryView,
+  MyDeliveryRoundFreeze,
+  MyDeliveryRoundView,
+  MyDeliveryStopView,
+  MyDeliveryWindowView,
+  MyDeliveryStepView,
+} from "./delivery-my-round.js";
 export {
   DELIVERY_BINS_PER_DECLARATION_MAX,
   DELIVERY_BIN_INNER_BAGS_MAX,

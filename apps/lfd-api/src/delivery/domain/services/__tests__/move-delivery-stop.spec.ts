@@ -18,6 +18,7 @@ function round(id: string, serviceDay: string, orderIds: readonly string[]): Del
     passage: 1,
     version: 2,
     departedAt: null,
+    driverStaffId: null,
     createdAt: AT,
     updatedAt: AT,
     stops: orderIds.map((orderId, index) => ({

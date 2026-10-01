@@ -20,8 +20,8 @@ import { LIVE_STOP, type Tx, writeRound, writeStops } from "./delivery-round.wri
  * `position`, `removed_at`, `closed_at`, et `order_id`, `service_day`,
  * `created_at` à la création. Aucune ligne n'est supprimée.
  *
- * Sur `delivery_round`, il écrit aussi `departed_at` (lot 4, « Partir ») —
- * écrivain : la tournée. Il LIT et VERROUILLE `delivery_bin_load` (`saveMove`),
+ * Sur `delivery_round`, il écrit aussi `departed_at` (lot 4, « Partir ») et
+ * `driver_staff_id` (plan « Ma tournée », MT-D2) — écrivain : la tournée. Il LIT et VERROUILLE `delivery_bin_load` (`saveMove`),
  * sans jamais l'écrire : l'écrivain en est l'exécution.
  *
  * `closed_at` — écrivain : la tournée ; posé au lot 6 par `closeStop`, quand
@@ -68,6 +68,19 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
     await this.prisma.$queryRaw`
       SELECT "id" FROM "delivery"."delivery_round" WHERE "id" = ${id} FOR UPDATE`;
     return this.load(id);
+  }
+
+  /**
+   * Le même verrou, SOUS LE MUR DU LIVREUR (plan « Ma tournée », MT-D3 v2) :
+   * `driver_staff_id` est dans le `WHERE` du verrou. Une tournée d'un autre
+   * livreur, ou sans livreur, n'est ni verrouillée ni chargée — `null`.
+   */
+  async loadForDriverDeparture(id: string, staffUserId: string): Promise<DeliveryRound | null> {
+    const locked = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT "id" FROM "delivery"."delivery_round"
+       WHERE "id" = ${id} AND "driver_staff_id" = ${staffUserId}
+         FOR UPDATE`;
+    return locked.length === 0 ? null : this.load(id);
   }
 
   async save(round: DeliveryRound): Promise<void> {

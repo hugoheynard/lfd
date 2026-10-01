@@ -1,4 +1,5 @@
 import type {
+  DeliveryRoundDriverView,
   DeliveryRoundOrderRef,
   DeliveryRoundsDayView,
   DeliveryRoundStopSignal,
@@ -20,6 +21,10 @@ export interface DeliveryRoundsDayInputs {
   readonly composed: ReadonlyMap<string, DeliveryOrderFacts>;
   /** Parmi les attendues, celles qui sont dans une tournée vivante, de n'importe quel jour. */
   readonly assigned: ReadonlySet<string>;
+  /** Les fiches qui tiennent EFFECTIVEMENT le droit de conduire, maintenant (MT-D2 v2). */
+  readonly drivers: ReadonlySet<string>;
+  /** Le nom des livreurs affectés, lu dans l'annuaire ; absent : fiche inconnue. */
+  readonly driverNames: ReadonlyMap<string, string | null>;
 }
 
 /**
@@ -32,7 +37,8 @@ export interface DeliveryRoundsDayInputs {
  * - **signaux** : `cancelled`, `not_this_day`, `not_delivery` — retirés à la
  *   main (Q11) ;
  * - **véhicule retiré** : un retrait et une affectation simultanés ont pu
- *   passer (C14) ; on le dit.
+ *   passer (C14) ; on le dit ;
+ * - **livreur sans accès** : affecté, puis privé du droit de conduire (MT-D2 v2).
  */
 export function deliveryRoundsDayView(inputs: DeliveryRoundsDayInputs): DeliveryRoundsDayView {
   return {
@@ -56,7 +62,27 @@ function roundView(round: RoundRow, inputs: DeliveryRoundsDayInputs): DeliveryRo
     version: round.version,
     vehicleRetired: !activeOnDay(round.vehicleRetiredAt, inputs.day),
     departedAt: round.departedAt?.toISOString() ?? null,
+    driver: driverView(round.driverStaffId, inputs),
     stops: round.stops.map((stop) => stopView(stop, inputs)),
+  };
+}
+
+/**
+ * Le livreur affecté, nom LU dans l'annuaire. `canDrive` faux : il a perdu le
+ * droit ou sa fiche est suspendue — l'écran dit « livreur sans accès —
+ * réaffecter » (MT-D2 v2).
+ */
+function driverView(
+  staffUserId: string | null,
+  inputs: DeliveryRoundsDayInputs,
+): DeliveryRoundDriverView | null {
+  if (staffUserId === null) {
+    return null;
+  }
+  return {
+    staffUserId,
+    name: inputs.driverNames.get(staffUserId) ?? null,
+    canDrive: inputs.drivers.has(staffUserId),
   };
 }
 

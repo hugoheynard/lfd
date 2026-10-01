@@ -84,8 +84,11 @@ describe('grantGroups', () => {
    *
    * `delivery_loading` l'a fait passer à 34 le même jour : charger un véhicule
    * n'est pas composer sa tournée (lot 4, Q21).
+   *
+   * `delivery_driving` l'a fait passer à 35 le 2026-10-01 : conduire sa
+   * tournée n'est pas la charger (plan-ma-tournee.md, MT-D1 v2).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(34);
+    expect(RESOURCE_COUNT).toBe(35);
   });
 });

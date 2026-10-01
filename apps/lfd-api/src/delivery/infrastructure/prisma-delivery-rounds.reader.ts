@@ -30,6 +30,7 @@ export class PrismaDeliveryRoundsReader extends DeliveryRoundsReader {
       version: row.version,
       vehicleRetiredAt: row.vehicle.retiredAt,
       departedAt: row.departedAt,
+      driverStaffId: row.driverStaffId,
       stops: row.stops.map((stop) => ({
         stopId: stop.id,
         orderId: stop.orderId,

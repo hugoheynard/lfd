@@ -15,6 +15,8 @@ export const DELIVERY_ROUND_FACTS = {
   stopMoved: "delivery_round.stop_moved",
   stopRemoved: "delivery_round.stop_removed",
   reordered: "delivery_round.reordered",
+  driverAssigned: "delivery_round.driver_assigned",
+  driverUnassigned: "delivery_round.driver_unassigned",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 const SUBJECT_TYPE = "delivery_round";
@@ -118,6 +120,42 @@ export class DeliveryRoundReorderedEvent implements JournaledEvent {
     return roundFact(DELIVERY_ROUND_FACTS.reordered, this.round, {
       before: this.before,
       after: this.after,
+    });
+  }
+}
+
+/**
+ * Une fiche staff citée : par son nom quand l'annuaire le connaît, par son
+ * seul id sinon — même règle que la commande.
+ */
+export type CitedDriver = { readonly id: string; readonly name: string } | string;
+
+/** Un livreur affecté (plan « Ma tournée », MT-D2) ; `previous` : celui qu'il remplace. */
+export class DeliveryDriverAssignedEvent implements JournaledEvent {
+  constructor(
+    readonly round: DeliveryRound,
+    readonly driver: CitedDriver,
+    readonly previous: CitedDriver | null,
+  ) {}
+
+  journalFact(): JournalFact {
+    return roundFact(DELIVERY_ROUND_FACTS.driverAssigned, this.round, {
+      driver: this.driver,
+      previous: this.previous,
+    });
+  }
+}
+
+/** La tournée n'a plus de livreur. */
+export class DeliveryDriverUnassignedEvent implements JournaledEvent {
+  constructor(
+    readonly round: DeliveryRound,
+    readonly previous: CitedDriver,
+  ) {}
+
+  journalFact(): JournalFact {
+    return roundFact(DELIVERY_ROUND_FACTS.driverUnassigned, this.round, {
+      previous: this.previous,
     });
   }
 }

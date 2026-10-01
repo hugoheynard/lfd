@@ -4,11 +4,13 @@ import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { CatalogDeliveryProductsReader } from "../b2b/catalog/infrastructure/catalog-delivery-products.reader.js";
 import { PrismaDeliveryOrderLinesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-lines.reader.js";
 import { PrismaDeliveryOrdersReader } from "../b2b/orders/infrastructure/prisma-delivery-orders.reader.js";
+import { PrismaDeliveryProceduresReader } from "../b2b/orders/infrastructure/prisma-delivery-procedures.reader.js";
 import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.module.js";
 import { PickupDepartureCandidatesReader } from "../b2b/pickup-addresses/infrastructure/pickup-departure-candidates.reader.js";
 import {
   DeliveryOrderLinesReader,
   DeliveryOrdersReader,
+  DeliveryProceduresReader,
   DeliveryProductsReader,
   DepartureCandidatesReader,
 } from "../delivery/channels/commerce/index.js";
@@ -26,7 +28,9 @@ import {
  *   grille des contenances des bacs (lot 4 bis, v2-2). Son adaptateur vit chez
  *   `catalog/`, qui exporte `ProductCatalogReader` : d'où `CatalogModule` ;
  * - `DeliveryOrderLinesReader` — les lignes d'une commande (SKU, nom figé,
- *   quantité), pour le colisage proposé (lot 4 bis, L4b-C4).
+ *   quantité), pour le colisage proposé (lot 4 bis, L4b-C4) ;
+ * - `DeliveryProceduresReader` — la procédure de l'adresse d'une commande, lue
+ *   vivante pour le livreur (plan « Ma tournée », MT-D5 v2).
  *
  * `@Global` pour la raison des autres fils : le consommateur est `delivery/`,
  * qui ne peut pas importer le module qui fournit le port sans dépendre du
@@ -40,12 +44,14 @@ import {
     { provide: DeliveryOrdersReader, useClass: PrismaDeliveryOrdersReader },
     { provide: DeliveryProductsReader, useClass: CatalogDeliveryProductsReader },
     { provide: DeliveryOrderLinesReader, useClass: PrismaDeliveryOrderLinesReader },
+    { provide: DeliveryProceduresReader, useClass: PrismaDeliveryProceduresReader },
   ],
   exports: [
     DepartureCandidatesReader,
     DeliveryOrdersReader,
     DeliveryProductsReader,
     DeliveryOrderLinesReader,
+    DeliveryProceduresReader,
   ],
 })
 export class DeliveryFeedModule {}

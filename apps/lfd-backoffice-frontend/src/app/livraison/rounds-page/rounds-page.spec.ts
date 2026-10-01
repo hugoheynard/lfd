@@ -38,6 +38,7 @@ function composition(day: string): DeliveryRoundsDayView {
         version: 4,
         vehicleRetired: false,
         departedAt: firstDeparted,
+        driver: null,
         stops: [
           {
             stopId: 's-1',
@@ -65,6 +66,7 @@ function composition(day: string): DeliveryRoundsDayView {
         version: 7,
         vehicleRetired: true,
         departedAt: null,
+        driver: null,
         stops: [],
       },
     ],

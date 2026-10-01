@@ -22,6 +22,7 @@ function round(
     passage: 1,
     version: 3,
     departedAt,
+    driverStaffId: null,
     createdAt: AT,
     updatedAt: AT,
     stops: orderIds.map((orderId, index) => ({

@@ -4,18 +4,16 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
-import type { StopReadiness } from "../../domain/entities/departure-readiness.js";
-import { departedStopsOf } from "../../domain/entities/departure-sheet.js";
-import type { StopLoading } from "../../domain/entities/stop-loading.js";
 import { DeliveryRoundNotFoundError } from "../../domain/errors/delivery-round-errors.js";
-import { DeliveryRoundDepartedEvent } from "../../domain/events/delivery-loading.events.js";
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
 import { DepartedStopRepository } from "../../domain/ports/departed-stop.repository.js";
 import { StopLoadingRepository } from "../../domain/ports/stop-loading.repository.js";
+import { departAndFreeze } from "../delivery-departure-support.js";
 import { DepartDeliveryRoundCommand } from "./depart-delivery-round.command.js";
 
 /**
- * **« Partir »** (lot 4, L4-C4, Q14) — une seule transaction :
+ * **« Partir »** (lot 4, L4-C4, Q14) — la porte du CHARGEUR, une seule
+ * transaction :
  *
  * 1. la tournée est verrouillée, puis — après elle — les lignes de chargement
  *    de ses arrêts, dans l'ordre de leur identifiant : aucun bac ne se charge,
@@ -24,7 +22,12 @@ import { DepartDeliveryRoundCommand } from "./depart-delivery-round.command.js";
  *    (non étiqueté ou partiel, L4-C17), en listant les références — ou qu'il
  *    porte un bac partagé « à refaire » (lot 4 bis, v2-4), en le nommant ;
  * 3. elle pose `departed_at` (écrivain : la tournée) ; l'exécution FIGE, pour
- *    chaque arrêt, ce que verra le livreur, lu au commerce à cet instant.
+ *    chaque arrêt, ce que verra le livreur, lu au commerce à cet instant — et,
+ *    depuis le 2026-10-01, son rang de passage et son point GPS (plan « Ma
+ *    tournée », MT-D5 v2).
+ *
+ * Elle n'exige PAS de livreur affecté (MT-Q5 tranchée) : un livreur absent, un
+ * départ décidé au dépôt. La porte du livreur est `DepartMyRoundHandler`.
  *
  * Après, plus rien ne se compose ni ne se charge (I6).
  *
@@ -55,34 +58,14 @@ export class DepartDeliveryRoundHandler implements ICommandHandler<
         throw new DeliveryRoundNotFoundError(command.roundId);
       }
       round.ensureVersion(command.payload.version);
-      const loadings = await this.loadings.forRound(round);
-      const sheets = await this.orders.departureSheetsOf(round.orderIds);
-      const references = new Map(sheets.map((sheet) => [sheet.orderId, sheet.reference]));
-      const at = this.clock.now();
-      round.depart(at, readinessOf(loadings, references));
-      const departed = departedStopsOf(round, at, sheets);
-      await this.rounds.save(round);
-      await this.departedStops.record(departed);
-      await this.events.publishTraced(
-        new DeliveryRoundDepartedEvent(round, liveBinCount(loadings)),
-      );
+      const departed = await departAndFreeze(round, {
+        rounds: this.rounds,
+        loadings: this.loadings,
+        departedStops: this.departedStops,
+        orders: this.orders,
+        clock: this.clock,
+      });
+      await this.events.publishTraced(departed);
     });
   }
-}
-
-function readinessOf(
-  loadings: readonly StopLoading[],
-  references: ReadonlyMap<string, string>,
-): readonly StopReadiness[] {
-  return loadings.map((loading) => ({
-    stopId: loading.stopId,
-    reference: references.get(loading.orderId) ?? loading.orderId,
-    state: loading.state,
-    binsToRedo: loading.binsToRedo,
-  }));
-}
-
-/** Les bacs non annulés qui partent — tous chargés, puisque la tournée est partie. */
-function liveBinCount(loadings: readonly StopLoading[]): number {
-  return loadings.reduce((sum, loading) => sum + loading.liveBinCount, 0);
 }

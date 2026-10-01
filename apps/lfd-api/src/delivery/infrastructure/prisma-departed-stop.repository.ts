@@ -10,6 +10,9 @@ import { DepartedStopRepository } from "../domain/ports/departed-stop.repository
  * départ »). SEUL écrivain de `delivery_stop_execution` (C10) ; une ligne par
  * arrêt, écrite dans la transaction de « Partir », jamais réécrite à ce lot.
  *
+ * Depuis le 2026-10-01, il fige aussi le rang de passage et le point GPS du
+ * carnet (plan « Ma tournée », MT-D5 v2).
+ *
  * `DbNull` et non `JsonNull` : une commande sans adresse, sans contact ou sans
  * fenêtre n'en a PAS — ce n'est pas un `null` JSON stocké.
  */
@@ -38,6 +41,9 @@ export class PrismaDepartedStopRepository extends DepartedStopRepository {
         signatureRequired: sheet.signatureRequired,
         note: sheet.note,
         addressNote: sheet.addressNote,
+        departureRank: stop.departureRank,
+        gpsLat: stop.gps?.lat ?? null,
+        gpsLng: stop.gps?.lng ?? null,
       })),
     });
   }

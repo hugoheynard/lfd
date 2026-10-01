@@ -235,6 +235,9 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
           addressNote: null,
           status: "active",
         },
+        // Le rang de passage et le point du carnet, figés au départ (MT-D5 v2).
+        departureRank: 1,
+        gps: null,
       },
     ]);
     expect(events.traced[0]?.journalFact()).toEqual({

@@ -1,4 +1,9 @@
-import type { BillingAddressPayload, DeliveryContact, FulfillmentSource } from "@lfd/contracts";
+import type {
+  BillingAddressPayload,
+  DeliveryContact,
+  FulfillmentSource,
+  GpsPoint,
+} from "@lfd/contracts";
 
 import {
   DepartureOrderCancelledError,
@@ -54,10 +59,19 @@ export interface DepartedStop {
   readonly serviceDay: string;
   readonly departedAt: Date;
   readonly sheet: DepartureSheet;
+  /**
+   * Le rang de passage au départ, 1..n (plan « Ma tournée », MT-D5 v2) :
+   * `closeStop` resserrera les positions au lot 6, ce rang ne bouge pas.
+   */
+  readonly departureRank: number;
+  /** Le point GPS du carnet au départ, ou `null` : la navigation suit le point promis. */
+  readonly gps: GpsPoint | null;
 }
 
 /**
- * Fige une feuille par arrêt vivant d'une tournée qui vient de partir.
+ * Fige une feuille par arrêt vivant d'une tournée qui vient de partir, avec
+ * son rang de passage et son point GPS (`points`, par commande ; une commande
+ * absente n'a pas de point).
  *
  * Une commande que le commerce ne sert plus n'a pas de feuille : on refuse de
  * partir plutôt que d'inventer une adresse, un contact ou une signature.
@@ -71,6 +85,7 @@ export function departedStopsOf(
   round: DeliveryRound,
   departedAt: Date,
   sheets: readonly DepartureSheet[],
+  points: ReadonlyMap<string, GpsPoint | null>,
 ): readonly DepartedStop[] {
   const byOrder = new Map(sheets.map((sheet) => [sheet.orderId, sheet]));
   const cancelled = round.liveStops.flatMap((stop) => {
@@ -80,11 +95,19 @@ export function departedStopsOf(
   if (cancelled.length > 0) {
     throw new DepartureOrderCancelledError(round.vehicleName, cancelled);
   }
-  return round.liveStops.map((stop) => {
+  return round.liveStops.map((stop, index) => {
     const sheet = byOrder.get(stop.orderId);
     if (sheet === undefined) {
       throw new DepartureSheetMissingError(round.vehicleName, stop.orderId);
     }
-    return { stopId: stop.id, roundId: round.id, serviceDay: round.serviceDay, departedAt, sheet };
+    return {
+      stopId: stop.id,
+      roundId: round.id,
+      serviceDay: round.serviceDay,
+      departedAt,
+      sheet,
+      departureRank: index + 1,
+      gps: points.get(stop.orderId) ?? null,
+    };
   });
 }

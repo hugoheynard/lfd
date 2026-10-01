@@ -36,6 +36,7 @@ function loaded(
     passage: 1,
     version: 4,
     departedAt: null,
+    driverStaffId: null,
     createdAt: AT,
     updatedAt: AT,
     stops,

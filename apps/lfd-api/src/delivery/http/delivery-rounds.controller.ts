@@ -1,7 +1,10 @@
 import {
+  type AssignDeliveryDriverPayload,
+  assignDeliveryDriverPayloadSchema,
   type AssignDeliveryStopPayload,
   assignDeliveryStopPayloadSchema,
   type CreatedIdResponse,
+  type DeliveryDriversView,
   type DeliveryRoundsDayView,
   type MoveDeliveryStopPayload,
   moveDeliveryStopPayloadSchema,
@@ -11,6 +14,8 @@ import {
   removeDeliveryStopPayloadSchema,
   type ReorderDeliveryRoundPayload,
   reorderDeliveryRoundPayloadSchema,
+  type UnassignDeliveryDriverPayload,
+  unassignDeliveryDriverPayloadSchema,
 } from "@lfd/contracts";
 import {
   Body,
@@ -28,12 +33,15 @@ import { z } from "zod";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
+import { AssignDeliveryDriverCommand } from "../application/commands/assign-delivery-driver.command.js";
 import { AssignDeliveryStopCommand } from "../application/commands/assign-delivery-stop.command.js";
 import { MoveDeliveryStopCommand } from "../application/commands/move-delivery-stop.command.js";
 import { OpenDeliveryRoundCommand } from "../application/commands/open-delivery-round.command.js";
 import { RemoveDeliveryStopCommand } from "../application/commands/remove-delivery-stop.command.js";
 import { ReorderDeliveryRoundCommand } from "../application/commands/reorder-delivery-round.command.js";
+import { UnassignDeliveryDriverCommand } from "../application/commands/unassign-delivery-driver.command.js";
 import { GetDeliveryRoundsDayQuery } from "../application/queries/get-delivery-rounds-day.query.js";
+import { ListDeliveryDriversQuery } from "../application/queries/list-delivery-drivers.query.js";
 
 /** Le jour de service, validé dans sa FORME — le message nomme le paramètre. */
 const dayQuerySchema = z.object({
@@ -54,6 +62,9 @@ interface AssignedStopResponse {
  * (Q12). Chaque geste est un verbe nommé et porte la version lue ; une
  * composition changée entre-temps répond 409 « rechargez ». Il n'injecte que
  * les bus.
+ *
+ * Affecter un livreur est un geste de COMPOSITION (plan « Ma tournée »,
+ * MT-D2) : même droit, même version.
  */
 @Controller("admin/livraison/tournees")
 @AdminSurface("delivery_rounds")
@@ -67,6 +78,36 @@ export class DeliveryRoundsController {
   day(@Query(new ZodQuery(dayQuerySchema)) query: DayQuery): Promise<DeliveryRoundsDayView> {
     return this.queries.execute<GetDeliveryRoundsDayQuery, DeliveryRoundsDayView>(
       new GetDeliveryRoundsDayQuery(query.jour),
+    );
+  }
+
+  /** Les livreurs qu'on peut affecter : le droit effectif de conduire, pas la clé du rôle. */
+  @Get("livreurs")
+  drivers(): Promise<DeliveryDriversView> {
+    return this.queries.execute<ListDeliveryDriversQuery, DeliveryDriversView>(
+      new ListDeliveryDriversQuery(),
+    );
+  }
+
+  @Put(":roundId/livreur")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async assignDriver(
+    @Param("roundId") roundId: string,
+    @Body(new ZodBody(assignDeliveryDriverPayloadSchema)) payload: AssignDeliveryDriverPayload,
+  ): Promise<void> {
+    await this.commands.execute<AssignDeliveryDriverCommand, void>(
+      new AssignDeliveryDriverCommand(roundId, payload),
+    );
+  }
+
+  @Post(":roundId/livreur/retrait")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unassignDriver(
+    @Param("roundId") roundId: string,
+    @Body(new ZodBody(unassignDeliveryDriverPayloadSchema)) payload: UnassignDeliveryDriverPayload,
+  ): Promise<void> {
+    await this.commands.execute<UnassignDeliveryDriverCommand, void>(
+      new UnassignDeliveryDriverCommand(roundId, payload),
     );
   }
 

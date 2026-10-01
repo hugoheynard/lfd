@@ -94,6 +94,9 @@ enum StaffResource {
   delivery_rounds
   /// LE CHARGEMENT — déclarer les sacs, charger, partir (2026-09-29, lot 4, Q21).
   delivery_loading
+  /// CONDUIRE SA TOURNÉE — lire la tournée qui vous est affectée, la commencer
+  /// (2026-10-01, `documentation/livraisons/plan-ma-tournee.md`, MT-D1 v2).
+  delivery_driving
 
   staff_access
   staff_notifications

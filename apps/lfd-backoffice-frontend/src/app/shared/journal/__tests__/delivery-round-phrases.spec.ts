@@ -82,4 +82,43 @@ describe('la composition des tournées (delivery_round.*)', () => {
       'Colette Martin a réordonné la tournée « Kangoo » du 1 octobre 2026 : de « CMD-1 », « CMD-2 » à « CMD-2 », une commande (identifiant o_1)',
     );
   });
+
+  it('dit l’affectation d’un livreur, et celui qu’il remplace (MT-D2)', () => {
+    expect(
+      sentence(
+        fact('delivery_round.driver_assigned', {
+          ...ROUND,
+          passage: 1,
+          driver: { id: 'staff_paul', name: 'Paul Roux' },
+          previous: null,
+        }),
+      ),
+    ).toBe('Colette Martin a affecté Paul Roux à la tournée « Kangoo » du 1 octobre 2026');
+    expect(
+      sentence(
+        fact('delivery_round.driver_assigned', {
+          ...ROUND,
+          passage: 1,
+          driver: 'staff_lea',
+          previous: { id: 'staff_paul', name: 'Paul Roux' },
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a affecté un livreur (identifiant staff_lea) à la tournée « Kangoo » du 1 octobre 2026 à la place de Paul Roux',
+    );
+  });
+
+  it('dit le retrait du livreur', () => {
+    expect(
+      sentence(
+        fact('delivery_round.driver_unassigned', {
+          ...ROUND,
+          passage: 1,
+          previous: { id: 'staff_paul', name: 'Paul Roux' },
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a retiré le livreur Paul Roux de la tournée « Kangoo » du 1 octobre 2026',
+    );
+  });
 });

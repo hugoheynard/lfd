@@ -21,6 +21,7 @@ function round(departedAt: Date | null = null): DeliveryRound {
     passage: 1,
     version: 3,
     departedAt,
+    driverStaffId: null,
     createdAt: AT,
     updatedAt: AT,
     stops: [

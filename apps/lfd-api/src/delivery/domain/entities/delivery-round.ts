@@ -14,53 +14,26 @@ import {
   OrderAlreadyInRoundError,
   VehicleInactiveOnDayError,
 } from "../errors/delivery-round-errors.js";
+import { DriverWithoutAccessError } from "../errors/delivery-driver-errors.js";
 import { isCalendarDay } from "../value-objects/service-day.js";
 import { SharedBinToRedoError } from "../errors/delivery-bin-declaration-errors.js";
 import { sharedBinsToRedo, type StopReadiness, unreadyStops } from "./departure-readiness.js";
+import type {
+  DeliveryRoundSnapshot,
+  DeliveryRoundState,
+  DeliveryStopState,
+  DetachedStop,
+  RemovedStopState,
+} from "./delivery-round-state.js";
 import type { Vehicle } from "./vehicle.js";
 
-/**
- * Un arrêt tel que la tournée le connaît. `closedAt` non nul = clos (livré ou
- * raté, lot 6) : il n'est plus vivant, garde sa position figée, et se
- * réécrit tel quel.
- */
-export interface DeliveryStopState {
-  readonly id: string;
-  readonly orderId: string;
-  readonly position: number;
-  readonly closedAt: Date | null;
-}
-
-/** Un arrêt retiré pendant cette écriture : la ligne reste, `removedAt` posé. */
-export interface RemovedStopState extends DeliveryStopState {
-  readonly removedAt: Date;
-}
-
-/** L'état persisté d'une tournée — ce que `toDomain` réhydrate. Arrêts non retirés seulement. */
-export interface DeliveryRoundState {
-  readonly id: string;
-  readonly serviceDay: string;
-  readonly vehicleId: string;
-  readonly vehicleName: string;
-  readonly passage: number;
-  readonly version: number;
-  /** Partie le (lot 4, L4-C4), ou `null` : au dépôt. */
-  readonly departedAt: Date | null;
-  readonly createdAt: Date;
-  readonly updatedAt: Date;
-  readonly stops: readonly DeliveryStopState[];
-}
-
-/** Ce que l'adaptateur écrit : l'état, plus les arrêts retirés par ce geste. */
-export interface DeliveryRoundSnapshot extends DeliveryRoundState {
-  readonly removedStops: readonly RemovedStopState[];
-}
-
-/** Un arrêt vivant, détaché d'une tournée pour entrer dans une autre (I7). */
-export interface DetachedStop {
-  readonly id: string;
-  readonly orderId: string;
-}
+export type {
+  DeliveryRoundSnapshot,
+  DeliveryRoundState,
+  DeliveryStopState,
+  DetachedStop,
+  RemovedStopState,
+} from "./delivery-round-state.js";
 
 /**
  * **Une tournée** — la racine de la composition (plan de tournée, lot 3, C1) :
@@ -91,7 +64,7 @@ export class DeliveryRound {
   private constructor(
     private readonly state: Omit<
       DeliveryRoundState,
-      "stops" | "version" | "updatedAt" | "departedAt"
+      "stops" | "version" | "updatedAt" | "departedAt" | "driverStaffId"
     >,
     /** `null` : la tournée vient d'être ouverte, rien n'est encore en base. */
     readonly loadedVersion: number | null,
@@ -99,6 +72,7 @@ export class DeliveryRound {
     private readonly closed: readonly DeliveryStopState[],
     private currentUpdatedAt: Date,
     departedAt: Date | null,
+    private currentDriverStaffId: string | null,
   ) {
     this.currentVersion = loadedVersion ?? 1;
     this.currentDepartedAt = departedAt;
@@ -133,7 +107,7 @@ export class DeliveryRound {
       passage: input.passage,
       createdAt: input.at,
     };
-    return new DeliveryRound(identity, null, [], [], input.at, null);
+    return new DeliveryRound(identity, null, [], [], input.at, null, null);
   }
 
   /**
@@ -163,6 +137,7 @@ export class DeliveryRound {
       closed,
       state.updatedAt,
       state.departedAt,
+      state.driverStaffId,
     );
   }
 
@@ -193,6 +168,11 @@ export class DeliveryRound {
   /** Partie le, ou `null` : au dépôt. */
   get departedAt(): Date | null {
     return this.currentDepartedAt;
+  }
+
+  /** Le livreur affecté (MT-D2), l'id d'une fiche staff ; `null` : aucun. */
+  get driverStaffId(): string | null {
+    return this.currentDriverStaffId;
   }
 
   /** Les arrêts vivants, dans l'ordre de passage. */
@@ -334,6 +314,44 @@ export class DeliveryRound {
   }
 
   /**
+   * **Affecter un livreur** (plan « Ma tournée », MT-D2 v2). Composer, donc
+   * refusé une fois partie (I6). Et refusé à qui n'a pas le droit EFFECTIF de
+   * conduire (`delivery_driving:write`, rôle et dérogations) : `drivers` est
+   * la liste que l'annuaire rend au moment du geste — jamais la clé du rôle.
+   *
+   * Rend `false` quand c'est déjà lui : la version n'avance pas, rien ne s'écrit.
+   * @throws {DeliveryRoundDepartedError} @throws {DriverWithoutAccessError}
+   */
+  assignDriver(staffId: string, drivers: ReadonlySet<string>, at: Date): boolean {
+    this.ensureAtDepot();
+    if (!drivers.has(staffId)) {
+      throw new DriverWithoutAccessError(this.state.vehicleName);
+    }
+    if (this.currentDriverStaffId === staffId) {
+      return false;
+    }
+    this.currentDriverStaffId = staffId;
+    this.touch(at);
+    return true;
+  }
+
+  /**
+   * Retire le livreur affecté ; rend celui qui l'était, ou `null` s'il n'y en
+   * avait pas — rien ne s'écrit alors.
+   * @throws {DeliveryRoundDepartedError}
+   */
+  unassignDriver(at: Date): string | null {
+    this.ensureAtDepot();
+    const previous = this.currentDriverStaffId;
+    if (previous === null) {
+      return null;
+    }
+    this.currentDriverStaffId = null;
+    this.touch(at);
+    return previous;
+  }
+
+  /**
    * Une tournée partie ne se compose plus (I6).
    * @throws {DeliveryRoundDepartedError}
    */
@@ -348,6 +366,7 @@ export class DeliveryRound {
       ...this.state,
       version: this.currentVersion,
       departedAt: this.currentDepartedAt,
+      driverStaffId: this.currentDriverStaffId,
       updatedAt: this.currentUpdatedAt,
       stops: [
         ...this.open.map((stop, index) => ({ ...stop, position: index + 1, closedAt: null })),
