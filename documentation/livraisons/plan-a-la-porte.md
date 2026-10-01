@@ -408,3 +408,17 @@ donc pas ; la question du § 10 bis disparaît, et deux règles la remplacent :
   chemin par lequel il apprend « partie » est **à concevoir** (par le
   commerce, qui connaît les deux par leurs ports), et se décide avant B1.
 - B1 n'a donc plus de cas « retenue » à la porte.
+
+**LB-Q2 à Q4 tranchés par Hugo le 2026-10-01 :**
+
+- **LB-Q2 — oui** : « Rapporter » **clôt** l'arrêt (« rapporté ») ; la
+  commande reste prête, non livrée, sort de l'index des arrêts vivants et peut
+  repartir dans une autre tournée, au même prix.
+- **LB-Q3 — la notification, pour les commerciaux** : B5 se rouvre, réduit à
+  une notification **adressée par droit** (`b2b_companies:write`) dans la
+  cloche, murée en lecture **et** en poussée — la mécanique de PL5-D1/D2
+  ([`plan-tournee-prete.md`](plan-tournee-prete.md)), avec une audience par
+  droit au lieu d'un destinataire unique. Le reste de PL5 (prévenir le
+  livreur) reste de côté.
+- **LB-Q4 — oui** : le lot A part en production **avant** que B soit bâti
+  sur `dev`.
