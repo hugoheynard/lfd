@@ -146,6 +146,32 @@ Le froid d'un produit fait deux sauts : le référentiel le publie par son canal
 vers la plateforme (`pim/channels/b2b-platform/`), le commerce le relaie par
 `DeliveryProductsReader`. La livraison ne lit jamais le PIM.
 
+### 4.1 bis Ce que la livraison demande au retrait — `delivery/channels/handover/`
+
+Ouvert le 2026-10-01 (`plan-a-la-porte.md`, § 10 ter, BQ — **la garde passe
+au livreur au départ**). Deux classes abstraites, déclarées **par la
+livraison**, implémentées **par le retrait** (`handover/application/services/`),
+reliées dans `appBootstrap/delivery-handover-feed.module.ts` :
+
+| Port                      | Méthode                   | Quand                                       | Pour quoi                                                                                     |
+| ------------------------- | ------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `DepartureHoldsReader`    | `heldOrders(orderIds)`    | dans la transaction du départ (deux portes) | une commande retenue au contrôle qualité ne part pas ; le refus nomme l'arrêt                 |
+| `DepartedOrdersAnnouncer` | `ordersDeparted(ids, at)` | **après** la validation (`AfterCommit`, B0) | le retrait garde « partie » par commande (`production.order_departure`) et l'offre au fournil |
+
+Le retrait répond à la première par le port que la production publie
+(`QualityHoldsReader`), au jour demandé de chaque commande — comme au
+comptoir. Il offre la seconde au fournil par `OrderCustodyReader`
+(`production/channels/handover/`, que le retrait implémente) : le contrôle
+qualité refuse alors un verdict sur une commande partie (« La commande est
+partie : le produit n'est plus là. ») ou déjà retirée.
+
+`lint:context-boundaries` n'autorise `handover → delivery` que par ce dossier ;
+`delivery → handover` reste interdit. La matrice du `CLAUDE.md` le dit.
+
+⚠️ L'annonce est suivie en tâche de fond : si elle échoue après un départ
+validé, le fournil peut encore juger la commande partie — l'état d'avant ce
+lot, journalisé, et réparé par aucun rejeu aujourd'hui.
+
 ### 4.2 Ce que la livraison demande au monde — `delivery/domain/ports/`
 
 Les services extérieurs passent par des ports du domaine, implémentés dans
@@ -167,7 +193,8 @@ repli « à vol d'oiseau » (retiré, faux en montagne).
   `delivery_purchase_*`, …), publiés par le publieur du socle ;
 - **sa version de journée** (§ 5).
 
-Aucun autre bloc n'appelle la livraison en code aujourd'hui.
+Aucun autre bloc n'appelle la livraison en code aujourd'hui. Le retrait
+l'**implémente** (§ 4.1 bis) — il ne l'appelle pas.
 
 ## 5. Les journaux de journée — chacun chez soi
 
@@ -249,6 +276,7 @@ suit les deux versions. Jamais un déclencheur qui écrit chez l'autre.
   `appBootstrap/delivery-feed.module.ts`. Jamais un `prisma.order…` dans
   `delivery/`.
 - **Un besoin du fournil ou du retrait** : même forme — un canal déclaré par
-  qui a besoin (`delivery/channels/<bloc>/`), implémenté par qui sait.
+  qui a besoin (`delivery/channels/<bloc>/`), implémenté par qui sait. Le
+  premier est `delivery/channels/handover/` (§ 4.1 bis).
 - **Du SQL écrit à la main** : toujours qualifié `"delivery"."…"`, et jamais
   un autre schéma.

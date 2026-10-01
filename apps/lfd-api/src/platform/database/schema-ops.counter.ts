@@ -221,6 +221,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // le compteur, c'est qu'une lecture le redemande par ligne au lieu d'un coup.
   ProductionContainer: "production",
   OrderHandover: "production",
+  // La garde passée au livreur (2026-10-01, `plan-a-la-porte.md`, BQ) : écrite
+  // par le retrait après un départ, lue par le fournil avant un verdict.
+  OrderDeparture: "production",
   // Le contrôle qualité du superviseur (2026-09-28, plan `plan-controle-qualite.md`,
   // QC2) : un verdict par ligne, ses photos, et les dépôts qui attendent leur verdict.
   ProductionQualityCheck: "production",

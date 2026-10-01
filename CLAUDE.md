@@ -275,7 +275,7 @@ src/
 | **`media`**        | ✓ (autorisation) | **port uniquement** | —                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✓          |
 | **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | ✓          |
 | **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✗                   | ✓          |
-| **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | ✗                   | ✓          |
+| **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | **port uniquement** | ✓          |
 | **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | ✗                   | ✗                   | ✗     | —                   | ✓          |
 | **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✗                   | ✓          |
 | **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | —          |
@@ -313,6 +313,11 @@ fait de son jeu de démonstration une dépendance de production.
 un sous-dossier du fournil serait la faute : il en est sorti le 2026-09-10
 précisément parce que sa clé d'identité est la **commande**, sans journée ni
 clôture, là où la production est en forme de **jour**.
+
+Depuis le 2026-10-01, il implémente aussi `delivery/channels/handover/` — ce
+que la livraison lui demande au départ d'une tournée (« lesquelles sont
+retenues ? », « elles sont parties ») : la garde passe au livreur, et c'est le
+retrait qui tient la garde (`documentation/livraisons/plan-a-la-porte.md`, BQ).
 
 🔴 **`production → b2b` est INTERDIT**, et c'est le sens qui compte. Le fournil
 DÉCLARE ce dont il a besoin (`production/channels/commerce/`) et le commerce

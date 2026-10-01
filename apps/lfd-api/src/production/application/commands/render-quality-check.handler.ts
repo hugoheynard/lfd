@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { OrderCustodyReader } from "../../channels/handover/index.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import type { ProductionDay } from "../../domain/entities/production-day.js";
@@ -23,8 +24,11 @@ import {
   isSameQualityIntent,
   plannedLinesOf,
   type QualityCheckIntent,
+  type QualityTargetRequest,
+  type ScopedQualityTarget,
   scopeQualityTarget,
 } from "../../domain/services/quality-check-scope.js";
+import { refuseOrderOutOfHand } from "../../domain/services/order-out-of-hand.js";
 import { holdTransition } from "../../domain/services/quality-holds.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { QualityPhotoAttachment } from "../services/quality-photo-attachment.service.js";
@@ -40,7 +44,12 @@ import { RenderQualityCheckCommand } from "./render-quality-check.command.js";
  * contenu : 409. Et si deux rejeux se croisent, la base arbitre (clé primaire),
  * le perdant relit et repasse par la même comparaison.
  *
- * ## Puis la journée, les photos, et une transaction
+ * ## Puis la journée, la garde, les photos, et une transaction
+ *
+ * Une commande partie en livraison ou déjà retirée ne se juge plus
+ * (`plan-a-la-porte.md`, BQ) : le retrait le dit, avant tout dépôt de photo.
+ * Lu hors verrou commun — un départ validé dans l'intervalle laisse passer le
+ * verdict, la même course que celle de la retenue au comptoir (D4).
  *
  * La cible est cherchée dans la journée (compte ou plan colisé), le contrôle
  * est rendu une première fois SANS photo — une réserve sans note est refusée
@@ -64,6 +73,7 @@ export class RenderQualityCheckHandler implements ICommandHandler<
     private readonly recorded: QualityCheckReader,
     private readonly days: ProductionDayRepository,
     private readonly attachment: QualityPhotoAttachment,
+    private readonly custody: OrderCustodyReader,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
@@ -77,6 +87,7 @@ export class RenderQualityCheckHandler implements ICommandHandler<
     }
     const day = await this.days.load(intent.serviceDay);
     const scoped = scopeQualityTarget(day, intent.target);
+    await this.refuseIfGone(intent.target, scoped);
     const draft = { ...intent, target: scoped.target, checkedAt: this.clock.now() };
     QualityCheck.render({ ...draft, photos: [] });
     const photos = await this.attachment.copy(intent.uploadIds, {
@@ -92,6 +103,18 @@ export class RenderQualityCheckHandler implements ICommandHandler<
     }
     await this.attachment.release(check.photos);
     return check.id;
+  }
+
+  /** Une commande partie ou retirée ne se juge plus (BQ, LB-Q1). Lue par le retrait. */
+  private async refuseIfGone(
+    request: QualityTargetRequest,
+    scoped: ScopedQualityTarget,
+  ): Promise<void> {
+    if (request.kind !== "order") {
+      return;
+    }
+    const gone = await this.custody.outOfHand([request.orderId]);
+    refuseOrderOutOfHand(scoped, gone.get(request.orderId));
   }
 
   private async record(subject: LabelledQualityCheck, day: ProductionDay): Promise<void> {

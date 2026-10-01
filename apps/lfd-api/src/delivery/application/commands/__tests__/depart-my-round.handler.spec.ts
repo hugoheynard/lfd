@@ -11,7 +11,12 @@ import {
 } from "../../../domain/errors/delivery-driver-errors.js";
 import { DepartMyRoundCommand } from "../depart-my-round.command.js";
 import { DepartMyRoundHandler } from "../depart-my-round.handler.js";
-import { InMemoryStopLoadings, RecordingDepartedStops, stopOf } from "./loading-doubles.js";
+import {
+  FixedDepartureHolds,
+  InMemoryStopLoadings,
+  RecordingDepartedStops,
+  stopOf,
+} from "./loading-doubles.js";
 import {
   deliveryOn,
   InMemoryDeliveryRounds,
@@ -59,7 +64,11 @@ function roundOf(driverStaffId: string | null, departedAt: Date | null = null): 
   });
 }
 
-function departMine(round: DeliveryRound, loadings = new InMemoryStopLoadings(LOADED())) {
+function departMine(
+  round: DeliveryRound,
+  loadings = new InMemoryStopLoadings(LOADED()),
+  holds = new FixedDepartureHolds(),
+) {
   const rounds = new InMemoryDeliveryRounds(round);
   const departed = new RecordingDepartedStops();
   const events = new RecordingPublisher();
@@ -68,6 +77,7 @@ function departMine(round: DeliveryRound, loadings = new InMemoryStopLoadings(LO
     loadings,
     departed,
     ORDERS,
+    holds,
     new FixedClock(NOW),
     events,
     new DirectUnitOfWork(),
@@ -144,5 +154,23 @@ describe("DepartMyRoundHandler — « Commencer ma tournée » (MT-D3 v2)", () =
     await expect(
       handler.execute(new DepartMyRoundCommand("staff_paul", "r_1", { version: 1 })),
     ).rejects.toThrow(DriverRoundBlockedError);
+  });
+
+  it("une commande retenue au contrôle qualité : le livreur ne part pas, l'arrêt est nommé (BQ)", async () => {
+    const { handler, rounds, departed, events } = departMine(
+      roundOf("staff_paul"),
+      new InMemoryStopLoadings(LOADED()),
+      new FixedDepartureHolds(["o_1"]),
+    );
+
+    const refused = handler.execute(new DepartMyRoundCommand("staff_paul", "r_1", { version: 1 }));
+
+    await expect(refused).rejects.toThrow(DriverRoundBlockedError);
+    await expect(refused).rejects.toThrow(
+      "Vous ne pouvez pas partir : l'arrêt CMD-o_1 (Refuge 1950) est retenu au contrôle qualité — appelez le dépôt.",
+    );
+    expect(rounds.stored("r_1")?.departedAt).toBeNull();
+    expect(departed.recorded).toEqual([]);
+    expect(events.traced).toEqual([]);
   });
 });

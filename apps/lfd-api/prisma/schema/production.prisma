@@ -146,6 +146,24 @@ model OrderHandover {
   @@schema("production")
 }
 
+/// La GARDE d'une commande passée au livreur : sa tournée est partie
+/// (`documentation/livraisons/plan-a-la-porte.md`, BQ).
+///
+/// Annoncée par la livraison APRÈS la validation du départ, tenue par le
+/// retrait (sa clé est la commande), lue par le fournil : un verdict qualité
+/// sur une commande partie est refusé — le produit n'est plus là.
+///
+/// Une ligne par commande ; un second départ (une commande rapportée qui
+/// repart un autre jour) réécrit l'instant.
+model OrderDeparture {
+  /// L'identifiant de la commande côté COMMERCE, opaque.
+  orderId    String   @id @map("order_id")
+  departedAt DateTime @map("departed_at")
+
+  @@map("order_departure")
+  @@schema("production")
+}
+
 /// Une ligne à fabriquer. **Aucun montant** — le fournil ne facture pas.
 model ProductionOrderLine {
   id String @id @default(cuid())

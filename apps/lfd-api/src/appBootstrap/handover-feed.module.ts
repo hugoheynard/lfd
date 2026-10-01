@@ -10,9 +10,11 @@ import {
   HandoverSubjectReader,
 } from "../handover/channels/commerce/index.js";
 import { PrismaAttestedHandoversReader } from "../handover/infrastructure/prisma-attested-handovers.reader.js";
+import { PrismaOrderCustodyReader } from "../handover/infrastructure/prisma-order-custody.reader.js";
 import {
   AtelierSheetsReader,
   AttestedHandoversReader,
+  OrderCustodyReader,
   QualityHoldsReader,
 } from "../production/channels/handover/index.js";
 import { PrismaAtelierSheetsReader } from "../production/infrastructure/prisma-atelier-sheets.reader.js";
@@ -31,7 +33,8 @@ import { ProductionModule } from "../production/production.module.js";
  *   livraisons ; il ne va lire aucune des trois.
  * - `AttestedHandoversReader` — la **production déclare**, la remise implémente.
  *   Le fournil a besoin de savoir ce qui a été attesté depuis sa clôture ; il ne
- *   va pas le lire non plus.
+ *   va pas le lire non plus. `OrderCustodyReader` (2026-10-01, BQ), même
+ *   sens : le fournil demande lesquelles sont parties ou retirées.
  * - `QualityHoldsReader` et `AtelierSheetsReader` — la **production publie ET
  *   implémente**, la remise lit. Le comptoir demande quelles commandes un contrôle retient ; la
  *   réponse est un fait de la production (`plan-controle-qualite.md`, D4).
@@ -56,6 +59,7 @@ import { ProductionModule } from "../production/production.module.js";
     { provide: QualityHoldsReader, useClass: PrismaQualityHoldsReader },
     { provide: DeliveryRunSheetReader, useClass: PrismaDeliveryRunSheetReader },
     { provide: AtelierSheetsReader, useClass: PrismaAtelierSheetsReader },
+    { provide: OrderCustodyReader, useClass: PrismaOrderCustodyReader },
   ],
   exports: [
     HandoverSubjectReader,
@@ -64,6 +68,7 @@ import { ProductionModule } from "../production/production.module.js";
     QualityHoldsReader,
     DeliveryRunSheetReader,
     AtelierSheetsReader,
+    OrderCustodyReader,
   ],
 })
 export class HandoverFeedModule {}

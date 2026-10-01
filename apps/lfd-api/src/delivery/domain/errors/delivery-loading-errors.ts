@@ -165,6 +165,23 @@ export class DepartureOrderCancelledError extends BusinessError {
   }
 }
 
+/**
+ * Une commande retenue au contrôle qualité ne part pas
+ * (`plan-a-la-porte.md`, § 10 ter, BQ) : une fois la tournée partie, on ne
+ * contrôle plus — le produit n'est plus là (LB-Q1). Le refus nomme l'arrêt.
+ */
+export class DepartureOrderHeldError extends BusinessError {
+  constructor(
+    vehicleName: string,
+    readonly stops: readonly string[],
+  ) {
+    super(
+      "delivery.departure_order_held",
+      `« ${vehicleName} » ne peut pas partir : ${stops.length > 1 ? "les arrêts" : "l'arrêt"} ${stops.join(", ")} ${stops.length > 1 ? "sont retenus" : "est retenu"} au contrôle qualité. Levez la retenue à la Supervision, ou retirez l'arrêt de la tournée, puis partez.`,
+    );
+  }
+}
+
 /** Une tournée sans arrêt ne part pas. */
 export class EmptyDeliveryRoundError extends BusinessError {
   constructor(vehicleName: string) {

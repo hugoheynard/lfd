@@ -19,6 +19,7 @@ import { UnloadDeliveryBinCommand } from "../unload-delivery-bin.command.js";
 import { UnloadDeliveryBinHandler } from "../unload-delivery-bin.handler.js";
 import {
   binOf,
+  FixedDepartureHolds,
   InMemoryBins,
   InMemoryStopLoadings,
   RecordingDepartedStops,
@@ -167,7 +168,7 @@ describe("UnloadDeliveryBinHandler", () => {
 });
 
 describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
-  function depart(loadings: InMemoryStopLoadings) {
+  function depart(loadings: InMemoryStopLoadings, holds = new FixedDepartureHolds()) {
     const { clock, events, uow } = tools();
     const rounds = new InMemoryDeliveryRounds(roundWith("r_1", DAY, "v_1", ["o_1"]));
     const departed = new RecordingDepartedStops();
@@ -176,6 +177,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
       loadings,
       departed,
       ORDERS,
+      holds,
       clock,
       events,
       uow,
@@ -294,6 +296,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
       new InMemoryStopLoadings(loaded),
       departed,
       new FixedDeliveryOrders([deliveryOn("o_1", DAY, { status: "cancelled" })]),
+      new FixedDepartureHolds(),
       clock,
       events,
       uow,

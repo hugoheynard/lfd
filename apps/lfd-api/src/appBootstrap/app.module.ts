@@ -28,6 +28,7 @@ import { ProductionModule } from "../production/production.module.js";
 import { HandoverFeedModule } from "./handover-feed.module.js";
 import { DeliveryModule } from "../delivery/delivery.module.js";
 import { DeliveryFeedModule } from "./delivery-feed.module.js";
+import { DeliveryHandoverFeedModule } from "./delivery-handover-feed.module.js";
 import { DebtorMandateModule } from "./debtor-mandate.module.js";
 import { LoyaltyVoucherModule } from "./loyalty-voucher.module.js";
 import { IssuedMandatesModule } from "./issued-mandates.module.js";
@@ -147,6 +148,7 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     // tournée). Le fil relie les points de retrait du commerce à son port.
     DeliveryModule,
     DeliveryFeedModule,
+    DeliveryHandoverFeedModule,
     DebtorMandateModule,
     LoyaltyVoucherModule,
     IssuedMandatesModule,

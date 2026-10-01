@@ -95,6 +95,29 @@ export class QualityOrderNotPackedError extends BusinessError {
   }
 }
 
+/**
+ * La commande est partie en livraison : le produit n'est plus là
+ * (`plan-a-la-porte.md`, BQ — LB-Q1).
+ */
+export class QualityOrderDepartedError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "production.quality.order_departed",
+      `La commande est partie : le produit n'est plus là. ${reference} a quitté le dépôt avec sa tournée.`,
+    );
+  }
+}
+
+/** La commande a déjà été retirée (comptoir ou livraison) : le produit n'est plus là. */
+export class QualityOrderHandedOverError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "production.quality.order_handed_over",
+      `La commande ${reference} est déjà retirée : le produit n'est plus là, il n'y a plus rien à contrôler.`,
+    );
+  }
+}
+
 /** Une photo de contrôle demandée qui n'existe pas. */
 export class QualityPhotoNotFoundError extends ResourceNotFoundError {
   constructor(checkId: string, position: number) {

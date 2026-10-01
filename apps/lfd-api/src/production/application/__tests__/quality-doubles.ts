@@ -1,6 +1,7 @@
 import type { StoredDocument } from "../../../platform/storage/document-store.js";
 import { ProductionDocumentStore } from "../../../platform/storage/production-document-store.js";
 import type { ProducibleOrder } from "../../channels/commerce/day-orders.reader.js";
+import { OrderCustodyReader, type OrderOutOfHand } from "../../channels/handover/index.js";
 import { ProductionDay } from "../../domain/entities/production-day.js";
 import type { QualityCheck, QualityPhotoRef } from "../../domain/entities/quality-check.js";
 import { QualityUpload, type QualityUploadState } from "../../domain/entities/quality-upload.js";
@@ -230,3 +231,16 @@ export class InMemoryProductionStore extends ProductionDocumentStore {
 
 /** Un JPEG minimal : ses trois octets de tête suffisent au domaine. */
 export const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
+
+/** Le retrait, tel que le fournil l'interroge : qui n'est plus là, fixé d'avance. */
+export class FixedOrderCustody extends OrderCustodyReader {
+  constructor(private readonly gone: ReadonlyMap<string, OrderOutOfHand> = new Map()) {
+    super();
+  }
+
+  outOfHand(orderIds: readonly string[]): Promise<ReadonlyMap<string, OrderOutOfHand>> {
+    return Promise.resolve(
+      new Map([...this.gone].filter(([orderId]) => orderIds.includes(orderId))),
+    );
+  }
+}

@@ -7,6 +7,7 @@ import type {
 
 import {
   DepartureOrderCancelledError,
+  DepartureOrderHeldError,
   DepartureSheetMissingError,
 } from "../errors/delivery-loading-errors.js";
 import type { DeliveryRound } from "./delivery-round.js";
@@ -115,4 +116,35 @@ export function departedStopsOf(
       gps: points.get(stop.orderId) ?? null,
     };
   });
+}
+
+/**
+ * Refuse le départ si un arrêt vivant porte une commande retenue au contrôle
+ * qualité (`plan-a-la-porte.md`, § 10 ter, BQ — LB-Q1 : une tournée partie ne
+ * se contrôle plus). L'arrêt est nommé par sa référence et son client, ce que
+ * le dépôt et le livreur lisent l'un et l'autre.
+ *
+ * @throws {DepartureOrderHeldError}
+ */
+export function refuseHeldOrders(
+  round: DeliveryRound,
+  sheets: readonly DepartureSheet[],
+  held: ReadonlySet<string>,
+): void {
+  const byOrder = new Map(sheets.map((sheet) => [sheet.orderId, sheet]));
+  const named = round.liveStops
+    .filter((stop) => held.has(stop.orderId))
+    .map((stop) => stopLabel(stop.orderId, byOrder.get(stop.orderId)));
+  if (named.length > 0) {
+    throw new DepartureOrderHeldError(round.vehicleName, named);
+  }
+}
+
+function stopLabel(orderId: string, sheet: DepartureSheet | undefined): string {
+  if (sheet === undefined) {
+    return orderId;
+  }
+  return sheet.customerLabel === ""
+    ? sheet.reference
+    : `${sheet.reference} (${sheet.customerLabel})`;
 }

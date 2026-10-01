@@ -11,6 +11,7 @@ import {
   DeliveryRoundDepartedError,
   DeliveryRoundNotReadyError,
   DepartureOrderCancelledError,
+  DepartureOrderHeldError,
   DepartureSheetMissingError,
   EmptyDeliveryRoundError,
 } from "../domain/errors/delivery-loading-errors.js";
@@ -45,6 +46,12 @@ export async function asDriverRefusal(
   }
   if (error instanceof EmptyDeliveryRoundError) {
     return new DriverRoundBlockedError("votre tournée n'a aucun arrêt");
+  }
+  if (error instanceof DepartureOrderHeldError) {
+    const plural = error.stops.length > 1;
+    return new DriverRoundBlockedError(
+      `${plural ? "les arrêts" : "l'arrêt"} ${error.stops.join(", ")} ${plural ? "sont retenus" : "est retenu"} au contrôle qualité`,
+    );
   }
   if (
     error instanceof DepartureOrderCancelledError ||

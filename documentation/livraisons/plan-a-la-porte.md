@@ -441,5 +441,15 @@ donc pas ; la question du § 10 bis disparaît, et deux règles la remplacent :
   retirée, avec la phrase « La commande est partie : le produit n'est plus
   là. »
 
+> 🔨 **BQ bâti le 2026-10-01 (non commité à l'écriture de cette ligne).**
+> Canal `delivery/channels/handover/` (`DepartureHoldsReader`,
+> `DepartedOrdersAnnouncer`), table `production.order_departure`
+> (migration `20261001160000_la_garde_au_depart`), port
+> `OrderCustodyReader` dans `production/channels/handover/`. Seul un verdict
+> sur une cible **commande** est refusé : un verdict de **ligne** juge un lot
+> encore au fournil (D6 du plan qualité). Une commande « rapportée » (B3,
+> LB-Q2) qui repartira un autre jour reste « partie » entre-temps : B3 devra
+> le dire au retrait.
+
 **Ordre de bâti** : B0 → BQ → B1 → B2 → B3 + B5 → B4. Un lot à la fois sur
 la base de test partagée.

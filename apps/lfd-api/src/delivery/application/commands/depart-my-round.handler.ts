@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
+import { DepartureHoldsReader } from "../../channels/handover/index.js";
 import type { DeliveryRound } from "../../domain/entities/delivery-round.js";
 import { DriverRoundNotFoundError } from "../../domain/errors/delivery-driver-errors.js";
 import type { DeliveryRoundDepartedEvent } from "../../domain/events/delivery-loading.events.js";
@@ -37,6 +38,7 @@ export class DepartMyRoundHandler implements ICommandHandler<DepartMyRoundComman
     private readonly loadings: StopLoadingRepository,
     private readonly departedStops: DepartedStopRepository,
     private readonly orders: DeliveryOrdersReader,
+    private readonly holds: DepartureHoldsReader,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
@@ -64,6 +66,7 @@ export class DepartMyRoundHandler implements ICommandHandler<DepartMyRoundComman
         loadings: this.loadings,
         departedStops: this.departedStops,
         orders: this.orders,
+        holds: this.holds,
         clock: this.clock,
       });
     } catch (error) {

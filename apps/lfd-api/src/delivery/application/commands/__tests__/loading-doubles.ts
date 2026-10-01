@@ -1,3 +1,4 @@
+import { DepartureHoldsReader } from "../../../channels/handover/index.js";
 import { BinType } from "../../../domain/entities/bin-type.js";
 import { DeliveryBin, type DeliveryBinState } from "../../../domain/entities/delivery-bin.js";
 import type { DeliveryRound } from "../../../domain/entities/delivery-round.js";
@@ -202,4 +203,18 @@ export function binTypeOf(
     binType.archive(new Date(0));
   }
   return binType;
+}
+
+/** Le retrait, tel que le départ l'interroge : une liste de retenues fixée d'avance. */
+export class FixedDepartureHolds extends DepartureHoldsReader {
+  readonly asked: (readonly string[])[] = [];
+
+  constructor(private readonly held: readonly string[] = []) {
+    super();
+  }
+
+  heldOrders(orderIds: readonly string[]): Promise<ReadonlySet<string>> {
+    this.asked.push(orderIds);
+    return Promise.resolve(new Set(orderIds.filter((id) => this.held.includes(id))));
+  }
 }

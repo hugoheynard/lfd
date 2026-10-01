@@ -7,12 +7,16 @@ import { GetHandoverByOrderHandler } from "./application/queries/get-handover-by
 import { GetHandoverQueueHandler } from "./application/queries/get-handover-queue.handler.js";
 import { GetHandoverHandler } from "./application/queries/get-handover.handler.js";
 import { HandoverAttestation } from "./application/services/handover-attestation.service.js";
+import { HandoverDepartedOrders } from "./application/services/handover-departed-orders.js";
+import { HandoverDepartureHolds } from "./application/services/handover-departure-holds.js";
 import { HandoverAttestationsReader } from "./domain/ports/handover-attestations.reader.js";
+import { OrderDepartureRepository } from "./domain/ports/order-departure.repository.js";
 import { OrderHandoverRepository } from "./domain/ports/order-handover.repository.js";
 import { DeliveryRunSheetController } from "./http/delivery-run-sheet.controller.js";
 import { HandoverController } from "./http/handover.controller.js";
 import { HandoverSupervisionController } from "./http/handover-supervision.controller.js";
 import { PrismaHandoverAttestationsReader } from "./infrastructure/prisma-handover-attestations.reader.js";
+import { PrismaOrderDepartureRepository } from "./infrastructure/prisma-order-departure.repository.js";
 import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-handover.repository.js";
 
 /**
@@ -28,6 +32,11 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
  * l'implémente. L'adaptateur est donc fourni ailleurs, dans le module de
  * composition qui relie les deux — un contexte ne s'enregistre pas lui-même
  * comme implémentation du port d'un autre.
+ *
+ * `HandoverDepartureHolds` et `HandoverDepartedOrders` (2026-10-01, BQ) sont
+ * fournis ET exportés ici, sous leur propre classe : ce sont les réponses du
+ * retrait au canal de la livraison. C'est `appBootstrap` qui les branche sur
+ * les jetons de la livraison (`useExisting`) — pas ce module.
  */
 @Module({
   controllers: [HandoverController, HandoverSupervisionController, DeliveryRunSheetController],
@@ -41,6 +50,10 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
     HandoverAttestation,
     { provide: OrderHandoverRepository, useClass: PrismaOrderHandoverRepository },
     { provide: HandoverAttestationsReader, useClass: PrismaHandoverAttestationsReader },
+    { provide: OrderDepartureRepository, useClass: PrismaOrderDepartureRepository },
+    HandoverDepartureHolds,
+    HandoverDepartedOrders,
   ],
+  exports: [HandoverDepartureHolds, HandoverDepartedOrders],
 })
 export class HandoverModule {}

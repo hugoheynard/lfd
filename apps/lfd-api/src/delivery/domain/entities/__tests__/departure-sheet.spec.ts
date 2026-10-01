@@ -1,7 +1,8 @@
 import { DeliveryRound } from "../delivery-round.js";
-import { departedStopsOf, type DepartureSheet } from "../departure-sheet.js";
+import { departedStopsOf, type DepartureSheet, refuseHeldOrders } from "../departure-sheet.js";
 import {
   DepartureOrderCancelledError,
+  DepartureOrderHeldError,
   DepartureSheetMissingError,
 } from "../../errors/delivery-loading-errors.js";
 
@@ -86,5 +87,23 @@ describe("departedStopsOf — la feuille figée au départ", () => {
 
   it("refuse une commande que le commerce ne sert plus, plutôt qu'une feuille inventée", () => {
     expect(() => departedStopsOf(ROUND, AT, [], NO_POINTS)).toThrow(DepartureSheetMissingError);
+  });
+});
+
+describe("refuseHeldOrders — une commande retenue ne part pas (BQ)", () => {
+  it("nomme l'arrêt retenu par sa référence et son client", () => {
+    expect(() => refuseHeldOrders(ROUND, [sheet()], new Set(["o_1"]))).toThrow(
+      "« Kangoo blanc » ne peut pas partir : l'arrêt C-1 (Maison Colin) est retenu au contrôle qualité. Levez la retenue à la Supervision, ou retirez l'arrêt de la tournée, puis partez.",
+    );
+  });
+
+  it("sans feuille, nomme la commande par son identifiant plutôt que d'inventer une référence", () => {
+    expect(() => refuseHeldOrders(ROUND, [], new Set(["o_1"]))).toThrow(DepartureOrderHeldError);
+    expect(() => refuseHeldOrders(ROUND, [], new Set(["o_1"]))).toThrow(/l'arrêt o_1 est retenu/u);
+  });
+
+  it("une retenue sur une commande hors de la tournée, ou aucune retenue : rien à refuser", () => {
+    expect(() => refuseHeldOrders(ROUND, [sheet()], new Set(["o_9"]))).not.toThrow();
+    expect(() => refuseHeldOrders(ROUND, [sheet()], new Set())).not.toThrow();
   });
 });

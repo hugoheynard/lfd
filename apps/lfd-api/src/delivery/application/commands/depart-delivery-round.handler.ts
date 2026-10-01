@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
+import { DepartureHoldsReader } from "../../channels/handover/index.js";
 import { DeliveryRoundNotFoundError } from "../../domain/errors/delivery-round-errors.js";
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
 import { DepartedStopRepository } from "../../domain/ports/departed-stop.repository.js";
@@ -34,6 +35,7 @@ import { DepartDeliveryRoundCommand } from "./depart-delivery-round.command.js";
  * @throws {DeliveryRoundNotFoundError} @throws {DeliveryRoundStaleError}
  * @throws {DeliveryRoundDepartedError} @throws {DeliveryRoundNotReadyError}
  * @throws {DepartureSheetMissingError} @throws {DepartureOrderCancelledError}
+ * @throws {DepartureOrderHeldError}
  * @throws {EmptyDeliveryRoundError} @throws {SharedBinToRedoError}
  */
 @CommandHandler(DepartDeliveryRoundCommand)
@@ -46,6 +48,7 @@ export class DepartDeliveryRoundHandler implements ICommandHandler<
     private readonly loadings: StopLoadingRepository,
     private readonly departedStops: DepartedStopRepository,
     private readonly orders: DeliveryOrdersReader,
+    private readonly holds: DepartureHoldsReader,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
@@ -63,6 +66,7 @@ export class DepartDeliveryRoundHandler implements ICommandHandler<
         loadings: this.loadings,
         departedStops: this.departedStops,
         orders: this.orders,
+        holds: this.holds,
         clock: this.clock,
       });
       await this.events.publishTraced(departed);

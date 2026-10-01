@@ -27,6 +27,8 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   "delivery.day_change": "le journal lui-même",
   "production.order_handover":
     "un retrait change le statut de la commande, donc `public.orders` et son journal ; son jour n'existe que dans une table d'un autre bloc (D3)",
+  "production.order_departure":
+    "la garde passée au livreur (BQ, 2026-10-01) : le départ fait déjà bouger la journée de la livraison, et son jour n'existe que dans une table d'un autre bloc (D3), comme `order_handover`",
   "production.production_container": "un réglage par SKU, sans journée",
   "production.production_quality_upload":
     "un dépôt de photo en attente, sans journée — il n'y entre qu'en devenant une photo, surveillée",

@@ -135,7 +135,10 @@ const ALLOWED = {
   media: new Set(["staff", "platform", "pim"]),
   b2b: new Set(["staff", "pim", "platform", "production", "handover", "delivery"]),
   production: new Set(["staff", "platform"]),
-  handover: new Set(["staff", "platform", "production"]),
+  // `delivery` depuis le 2026-10-01 (plan-a-la-porte.md, BQ) : le retrait
+  // implémente ce que la livraison déclare — par son canal SEULEMENT, cf.
+  // `PORT_SURFACE`.
+  handover: new Set(["staff", "platform", "production", "delivery"]),
   // Le socle (l'auteur d'un geste) et la plateforme, rien d'autre : ce dont
   // elle a besoin du commerce, elle le DÉCLARE (2026-09-29).
   delivery: new Set(["staff", "platform"]),
@@ -204,6 +207,14 @@ const PORT_SURFACE = {
   // candidats au départ des tournées (2026-09-29, plan de tournée, Q9). Il ne
   // voit ni la flotte, ni ses tables, ni ses règles.
   "b2b→delivery": "delivery/channels/commerce/",
+  // Le RETRAIT implémente ce que la livraison déclare (2026-10-01,
+  // `plan-a-la-porte.md`, BQ) : « lesquelles sont retenues ? » au départ, et
+  // « elles sont parties » après lui. La garde passe au livreur au départ, et
+  // c'est le retrait qui tient la garde — sa clé est la commande.
+  //
+  // ⚠️ `delivery → handover` reste INTERDIT : la livraison déclare son besoin
+  // et ne sait pas qui la branche.
+  "handover→delivery": "delivery/channels/handover/",
   // La MÉDIATHÈQUE implémente ce que le référentiel déclare : « décris-moi ces
   // URL », « cette image existe-t-elle ». Elle ne voit rien d'autre de lui —
   // ni ses tables, ni ses règles, ni son vocabulaire.
