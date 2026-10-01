@@ -213,6 +213,9 @@ export const ACCOUNT_EN: AccountCopy = {
   addressRemovedToast: 'Address removed.',
   addressActionFailed: 'The address book was not changed.',
   deliveryDialogSubtitle: 'A full postal address, and how we deliver there.',
+  depositAllowedLabel: 'Drop-off allowed with nobody present',
+  depositAllowedHint:
+    'You allow the driver to leave the order with nobody there to receive it, with a photo as proof.',
   deliveryAddSubmit: 'Add',
   addressForm: ADDRESS_FORM,
   deliveryForm: {

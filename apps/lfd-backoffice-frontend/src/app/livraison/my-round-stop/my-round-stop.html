@@ -13,6 +13,16 @@
       @if (item.signatureRequired) {
         <fold-badge variant="accent" content="Signature exigée" data-signature />
       }
+      @if (item.canDeposit) {
+        <!-- Une information au lot A : le geste « Déposé avec preuve » est le lot B. -->
+        <fold-badge variant="info" content="Dépôt autorisé" data-can-deposit />
+      }
+      @if (arrivedLabel(); as arrived) {
+        <fold-badge variant="success" [content]="arrived" data-arrived />
+      }
+      @if (closeLabel(); as state) {
+        <fold-badge variant="warning" [content]="state" data-order-state />
+      }
     </div>
 
     <fold-field-list>
@@ -75,6 +85,57 @@
       >
         Y aller
       </a>
+    }
+
+    @if (gestures()) {
+      @if (next() && item.arrivedAt === null) {
+        <button
+          foldButton
+          block
+          size="lg"
+          icon="map-pin"
+          [loading]="busy()"
+          [disabled]="busy()"
+          (click)="arrive.emit()"
+          data-arrive
+        >
+          Je suis arrivé
+        </button>
+      }
+      @if (closeLabel(); as state) {
+        <fold-inline-confirm
+          intent="primary"
+          [message]="state + ' : l’arrêt sera clos sans remise.'"
+          [labels]="{ confirm: 'Clore' }"
+          [loading]="busy()"
+          (confirmed)="closeWithoutHandover.emit()"
+        >
+          <button foldButton block emphasis="outline" [disabled]="busy()" data-close-without>
+            Clore sans remise
+          </button>
+        </fold-inline-confirm>
+      }
+      @if (reporting()) {
+        <app-incident-report-form
+          [roundId]="roundId()"
+          [families]="doorstep"
+          [stopId]="item.stopId"
+          (reported)="onReported()"
+          (cancelled)="reporting.set(false)"
+        />
+      } @else {
+        <button
+          foldButton
+          block
+          emphasis="outline"
+          intent="danger"
+          icon="warning"
+          (click)="reporting.set(true)"
+          data-report-stop
+        >
+          Déclarer un problème
+        </button>
+      }
     }
   </div>
 </fold-card>

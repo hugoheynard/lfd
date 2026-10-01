@@ -1,6 +1,7 @@
 /* Téléphone d'abord : une seule colonne, bornée au bureau pour rester lisible. */
 .page,
-.stack {
+.stack,
+.actions {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-md);

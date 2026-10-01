@@ -1,6 +1,13 @@
 <fold-panel-header title="Procédure de livraison" [subtitle]="subtitle()" />
 
 <fold-panel-body>
+  <app-delivery-deposit-toggle
+    [companyId]="data().companyId"
+    [addressId]="data().address.id"
+    [depositAllowed]="data().address.depositAllowed"
+    (changed)="data().onDepositChange($event)"
+  />
+
   <lfd-delivery-procedure-editor
     [addressId]="data().address.id"
     [canEdit]="true"

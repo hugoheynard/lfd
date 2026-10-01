@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { MyDeliveryRoundSummaryView, MyDeliveryRoundView } from '@lfd/contracts';
+import type {
+  DeliveryIncidentFamily,
+  MyDeliveryRoundSummaryView,
+  MyDeliveryRoundView,
+  MyDeliveryStopView,
+} from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import type { FoldViewToggleOption } from 'fold-ng';
 import {
@@ -10,12 +15,21 @@ import {
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
+  FoldInlineConfirmComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldViewToggleComponent,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { parisTimeOf } from '../delivery-loading';
+import { incidentCountLabel } from '../delivery-incidents';
+import { IncidentList } from '../incident-list/incident-list';
+import type { IncidentPhotoLoader } from '../incident-photo/incident-photo';
+import {
+  type CurrentStopRef,
+  IncidentReportForm,
+} from '../incident-report-form/incident-report-form';
 import { roundLabel, stopCountLabel } from '../delivery-rounds';
 import {
   goToHref,
@@ -59,6 +73,11 @@ function deviceStorage(): Storage | null {
  * choisissent. Au dépôt, « Commencer ma tournée » ; partie, les liens de
  * navigation. Un refus du serveur s'affiche tel quel — il est écrit pour le
  * livreur (MT-D3 v2) — et la tournée est relue.
+ *
+ * **À la porte** (`plan-a-la-porte.md`, lot A ; `parcours-du-livreur.md`,
+ * PL2) : partie et non rentrée, sous `delivery_doorstep:write`, la tournée
+ * offre « Je suis arrivé », « Déclarer un problème », « Clore sans remise » et
+ * « Tournée terminée ». Rentrée, elle le dit et n'offre plus aucun geste.
  */
 @Component({
   selector: 'app-my-round-page',
@@ -71,9 +90,12 @@ function deviceStorage(): Storage | null {
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
+    FoldInlineConfirmComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldViewToggleComponent,
+    IncidentList,
+    IncidentReportForm,
     MyRoundStop,
   ],
   templateUrl: './my-round-page.html',
@@ -81,6 +103,7 @@ function deviceStorage(): Storage | null {
 })
 export class MyRoundPage {
   private readonly service = inject(MyDeliveryRoundService);
+  private readonly permissions = inject(PermissionsStore);
   private readonly storage = deviceStorage();
 
   private readonly today = parisDayOf(new Date());
@@ -109,8 +132,32 @@ export class MyRoundPage {
     return detail.status === 'ready' ? detail.round : null;
   });
   protected readonly departed = computed(() => (this.round()?.departedAt ?? null) !== null);
+  /** Rentrée le (PL2) : plus aucun geste n'est accepté, l'écran n'en offre plus. */
+  protected readonly returnedAt = computed(() => this.round()?.returnedAt ?? null);
+  /** En route : partie, pas encore rentrée. */
+  protected readonly rolling = computed(() => this.departed() && this.returnedAt() === null);
+  /** Les gestes à la porte : en route, et le droit tenu. */
+  protected readonly gestures = computed(
+    () => this.rolling() && this.permissions.can('delivery_doorstep:write'),
+  );
+  /** Un problème de la tournée est en cours de saisie. */
+  protected readonly reportingRound = signal(false);
+  protected readonly roundFamilies: readonly DeliveryIncidentFamily[] = ['technical', 'road'];
   protected readonly remaining = computed(() => remainingStops(this.round()?.stops ?? []));
   protected readonly legs = computed(() => routeLegs(this.remaining()));
+  /** L'arrêt suivant : le premier encore ouvert, dans l'ordre de passage. */
+  protected readonly nextStop = computed(() => this.remaining()[0] ?? null);
+  protected readonly currentStop = computed<CurrentStopRef | null>(() => {
+    const next = this.nextStop();
+    return next === null
+      ? null
+      : { stopId: next.stopId, label: `${String(next.rank)}. ${next.customerLabel}` };
+  });
+  /** La photo d'un signalement, par la route murée de MA tournée. */
+  protected readonly incidentPhoto = computed<IncidentPhotoLoader>(() => {
+    const roundId = this.round()?.id ?? '';
+    return (incidentId) => this.service.incidentPhoto(roundId, incidentId);
+  });
   /** Ce qui reste et ne peut entrer dans aucun lien : ni point ni adresse. */
   protected readonly unplaced = computed(
     () => this.remaining().filter((stop) => placeOf(stop) === null).length,
@@ -118,7 +165,7 @@ export class MyRoundPage {
   /** « Rentrer » : partie, plus rien à faire, et un point de départ connu. */
   protected readonly homeHref = computed(() => {
     const home = this.round()?.home ?? null;
-    return this.departed() && this.remaining().length === 0 && home !== null
+    return this.rolling() && this.remaining().length === 0 && home !== null
       ? goToHref(this.app(), home)
       : null;
   });
@@ -126,13 +173,14 @@ export class MyRoundPage {
   protected readonly roundLabel = roundLabel;
   protected readonly stopCountLabel = stopCountLabel;
   protected readonly timeOf = parisTimeOf;
+  protected readonly incidentCountLabel = incidentCountLabel;
 
   constructor() {
     void this.loadList();
   }
 
   protected goToOf(stop: MyDeliveryRoundView['stops'][number]): string | null {
-    return this.departed() ? goToHref(this.app(), stop) : null;
+    return this.rolling() ? goToHref(this.app(), stop) : null;
   }
 
   protected pickApp(value: string): void {
@@ -180,6 +228,60 @@ export class MyRoundPage {
     }
     // Relire dans les deux cas : partie, elle montre ses liens ; refusée, sa
     // version a peut-être changé au dépôt.
+    await this.loadRound(round.id);
+    this.busy.set(false);
+  }
+
+  /** « Je suis arrivé » sur l'arrêt suivant. */
+  protected arrive(stop: MyDeliveryStopView): Promise<void> {
+    return this.gesture(
+      (round) => this.service.arrive(round.id, stop.stopId),
+      'L’arrivée n’a pas pu être enregistrée.',
+    );
+  }
+
+  /** Clore sans remise, avec la version lue : une tournée changée entre-temps est refusée. */
+  protected closeWithoutHandover(stop: MyDeliveryStopView): Promise<void> {
+    return this.gesture(
+      (round) =>
+        this.service.closeWithoutHandover(round.id, stop.stopId, { version: round.version }),
+      'L’arrêt n’a pas pu être clos.',
+    );
+  }
+
+  /** « Tournée terminée » (PL2) — confirmée dans la page, jamais par `confirm()`. */
+  protected returnToDepot(): Promise<void> {
+    return this.gesture(
+      (round) => this.service.returnToDepot(round.id),
+      'La tournée n’a pas pu être déclarée rentrée.',
+    );
+  }
+
+  /** Un signalement est enregistré : on referme, on relit (il paraît dans la liste). */
+  protected onRoundReported(): void {
+    this.reportingRound.set(false);
+    this.retryRound();
+  }
+
+  /**
+   * Un geste à la porte : refusé, le message du serveur s'affiche tel quel ;
+   * dans les deux cas la tournée est relue.
+   */
+  private async gesture(
+    write: (round: MyDeliveryRoundView) => Promise<void>,
+    fallback: string,
+  ): Promise<void> {
+    const round = this.round();
+    if (round === null || this.busy()) {
+      return;
+    }
+    this.busy.set(true);
+    this.refusal.set(null);
+    try {
+      await write(round);
+    } catch (error) {
+      this.refusal.set(httpErrorMessage(error, fallback));
+    }
     await this.loadRound(round.id);
     this.busy.set(false);
   }

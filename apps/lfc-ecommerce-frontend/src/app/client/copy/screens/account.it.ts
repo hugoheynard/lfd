@@ -215,6 +215,9 @@ export const ACCOUNT_IT: AccountCopy = {
   addressRemovedToast: 'Indirizzo eliminato.',
   addressActionFailed: 'La rubrica non è stata modificata.',
   deliveryDialogSubtitle: 'Un indirizzo postale completo, e come vi consegniamo.',
+  depositAllowedLabel: 'Deposito autorizzato senza nessuno',
+  depositAllowedHint:
+    'Autorizzate il corriere a lasciare l’ordine senza nessuno a riceverlo, con una foto come prova.',
   deliveryAddSubmit: 'Aggiungi',
   addressForm: ADDRESS_FORM,
   deliveryForm: {

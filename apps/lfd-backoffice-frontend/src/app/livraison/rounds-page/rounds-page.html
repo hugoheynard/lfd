@@ -148,6 +148,13 @@
                             data-departed
                           />
                         }
+                        @if (column.round.returnedAt; as returnedAt) {
+                          <fold-badge
+                            variant="success"
+                            [content]="'Tournée rentrée à ' + timeOf(returnedAt)"
+                            data-returned
+                          />
+                        }
                         @if (column.round.vehicleRetired) {
                           <fold-badge variant="alert" content="Véhicule retiré" data-retired />
                         }
@@ -171,6 +178,42 @@
                       (unassigned)="unassignDriver(column.round)"
                     />
 
+                    @if (roundIncidents(column.round.id); as incidents) {
+                      @if (incidents.length > 0) {
+                        <fold-disclosure data-round-incidents>
+                          <span summary class="flags">
+                            <fold-icon name="warning" />
+                            {{ incidentCountLabel(incidents.length) }}
+                          </span>
+                          <app-incident-list [incidents]="incidents" [loadPhoto]="incidentPhoto" />
+                        </fold-disclosure>
+                      }
+                    }
+                    @if (
+                      canWrite() &&
+                      column.round.departedAt !== null &&
+                      column.round.returnedAt === null
+                    ) {
+                      <fold-inline-confirm
+                        intent="primary"
+                        message="La tournée sera close : ses arrêts restés ouverts passeront dans « Non remis »."
+                        [labels]="{ confirm: 'Déclarer rentrée' }"
+                        [loading]="busy()"
+                        (confirmed)="returnToDepot(column.round)"
+                      >
+                        <button
+                          foldButton
+                          size="sm"
+                          emphasis="outline"
+                          icon="home"
+                          [disabled]="busy()"
+                          data-return-round
+                        >
+                          Déclarer rentrée
+                        </button>
+                      </fold-inline-confirm>
+                    }
+
                     @for (line of column.stops; track line.stop.stopId; let index = $index) {
                       <fold-card surface="sunken" padding="sm" data-stop>
                         <div class="line">
@@ -183,6 +226,20 @@
                           />
                           @if (shortAddressOf(line.sheet); as address) {
                             <span>{{ address }}</span>
+                          }
+                          @if (stopIncidents(line.stop.stopId); as incidents) {
+                            @if (incidents.length > 0) {
+                              <fold-disclosure data-stop-incidents>
+                                <span summary class="flags">
+                                  <fold-icon name="warning" />
+                                  {{ incidentCountLabel(incidents.length) }}
+                                </span>
+                                <app-incident-list
+                                  [incidents]="incidents"
+                                  [loadPhoto]="incidentPhoto"
+                                />
+                              </fold-disclosure>
+                            }
                           }
                           @if (line.stop.signals.length > 0 || line.windowClash !== null) {
                             <div class="flags">

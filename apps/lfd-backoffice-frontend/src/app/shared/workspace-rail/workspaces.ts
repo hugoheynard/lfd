@@ -201,6 +201,14 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     needs: 'delivery_rounds:read',
   },
   {
+    // Juste après les tournées : ce sont leurs arrêts restés ouverts (AP-D7).
+    key: 'non-remis',
+    label: 'Non remis',
+    link: '/livraison/non-remis',
+    icon: 'package-return',
+    needs: 'delivery_rounds:read',
+  },
+  {
     key: 'simulateur',
     label: 'Simulateur',
     link: '/livraison/simulateur',

@@ -1,0 +1,75 @@
+<fold-page-layout icon="package-return" title="Non remis">
+  <p description>
+    Les arrêts restés ouverts au retour des tournées, avec ce que les livreurs ont signalé.
+  </p>
+
+  <div class="page">
+    <fold-callout variant="info" data-out-of-app>
+      Cette liste ne débloque rien : ces commandes restent dans leur tournée, à traiter hors
+      application, en attendant les reports.
+    </fold-callout>
+
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture des arrêts non remis…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="« Non remis » illisible"
+          subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+          data-error
+        >
+          <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @for (stop of stops(); track stop.stopId) {
+          <fold-card data-undelivered>
+            <div class="stack">
+              <fold-element-title
+                variant="title"
+                [title]="stop.reference + ' · ' + stop.customerLabel"
+                [subtitle]="roundOf(stop)"
+              />
+              <fold-field-list>
+                <fold-field label="Partie">{{ timeOf(stop.departedAt) }}</fold-field>
+                <fold-field
+                  label="Arrivée déclarée"
+                  placeholder="Aucune"
+                  [empty]="stop.arrivedAt === null"
+                >
+                  @if (stop.arrivedAt; as arrivedAt) {
+                    {{ timeOf(arrivedAt) }}
+                  }
+                </fold-field>
+                <fold-field
+                  label="Rentrée"
+                  placeholder="Jamais déclarée"
+                  [empty]="stop.returnedAt === null"
+                >
+                  @if (stop.returnedAt; as returnedAt) {
+                    {{ timeOf(returnedAt) }}
+                  }
+                </fold-field>
+              </fold-field-list>
+              @if (stop.incidents.length > 0) {
+                <app-incident-list [incidents]="stop.incidents" [loadPhoto]="incidentPhoto" />
+              } @else {
+                <span>Aucun problème signalé.</span>
+              }
+            </div>
+          </fold-card>
+        } @empty {
+          <fold-empty-state
+            title="Aucun arrêt non remis"
+            subtitle="Toutes les tournées rentrées ont remis ce qu’elles portaient."
+            data-empty
+          >
+            <fold-icon empty-icon name="package-check" />
+          </fold-empty-state>
+        }
+      }
+    }
+  </div>
+</fold-page-layout>

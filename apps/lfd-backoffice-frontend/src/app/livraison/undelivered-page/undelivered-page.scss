@@ -1,0 +1,6 @@
+.page,
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}

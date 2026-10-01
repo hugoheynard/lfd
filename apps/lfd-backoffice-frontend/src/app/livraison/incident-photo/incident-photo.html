@@ -1,0 +1,18 @@
+@switch (state().status) {
+  @case ('idle') {
+    <button foldButton size="sm" emphasis="outline" icon="eye" (click)="open()" data-open-photo>
+      Voir la photo
+    </button>
+  }
+  @case ('loading') {
+    <fold-spinner size="sm" label="Lecture de la photo" />
+  }
+  @case ('error') {
+    <fold-callout variant="alert" data-photo-error>Photo illisible.</fold-callout>
+  }
+  @case ('ready') {
+    <a class="open" [href]="url()" target="_blank" rel="noopener">
+      <img class="photo" [src]="url()" alt="Photo du signalement" />
+    </a>
+  }
+}

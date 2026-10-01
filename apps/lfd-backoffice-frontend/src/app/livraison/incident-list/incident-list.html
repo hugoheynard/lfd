@@ -1,0 +1,19 @@
+<div class="list">
+  @for (incident of incidents(); track incident.id) {
+    <fold-card surface="sunken" padding="sm" data-incident>
+      <div class="incident">
+        <fold-element-title
+          variant="title"
+          [title]="titleOf(incident)"
+          [subtitle]="subtitleOf(incident)"
+        />
+        @if (incident.note !== '') {
+          <span class="note">{{ incident.note }}</span>
+        }
+        @if (incident.hasPhoto) {
+          <app-incident-photo [incidentId]="incident.id" [load]="loadPhoto()" />
+        }
+      </div>
+    </fold-card>
+  }
+</div>

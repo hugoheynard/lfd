@@ -330,6 +330,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/rounds-page/rounds-page').then((m) => m.RoundsPage),
       },
+      // « NON REMIS » (plan-a-la-porte.md, AP-D7) : une LECTURE, sous le droit
+      // des tournées — c'est leur suite, et elle ne débloque rien.
+      {
+        path: 'non-remis',
+        canActivate: [permissionGuard('delivery_rounds:read')],
+        title: 'Non remis — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/undelivered-page/undelivered-page').then((m) => m.UndeliveredPage),
+      },
       // LE SIMULATEUR (lot 9, L9-C1) : une LECTURE, sous le même droit que
       // « Proposer » au lot 7 — rien n'est écrit.
       {

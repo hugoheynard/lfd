@@ -13,6 +13,7 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
   DeliveryDriverView,
+  DeliveryIncidentView,
   DeliveryRoundOrderRef,
   DeliveryRoundStopView,
   DeliveryRoundView,
@@ -28,8 +29,11 @@ import {
   FoldCalloutComponent,
   FoldCardComponent,
   FoldDateComponent,
+  FoldDisclosureComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
+  FoldIconComponent,
+  FoldInlineConfirmComponent,
   FoldListboxComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
@@ -39,7 +43,11 @@ import {
 import { PermissionsStore } from '../../auth/permissions.store';
 import { canReadDeliverySettings } from '../delivery-settings-access';
 import { parisTimeOf } from '../delivery-loading';
+import { incidentCountLabel, incidentsOfRound, incidentsOfStop } from '../delivery-incidents';
+import { DeliveryIncidentsService } from '../delivery-incidents.service';
 import { DeliveryRoundsService } from '../delivery-rounds.service';
+import { IncidentList } from '../incident-list/incident-list';
+import type { IncidentPhotoLoader } from '../incident-photo/incident-photo';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import {
   type ComposedDay,
@@ -70,7 +78,13 @@ import { vehicleBadgeLabel } from '../vehicle-load';
 type ComposeState =
   | { readonly status: 'loading' }
   | { readonly status: 'error' }
-  | { readonly status: 'ready'; readonly day: string; readonly composed: ComposedDay };
+  | {
+      readonly status: 'ready';
+      readonly day: string;
+      readonly composed: ComposedDay;
+      /** Les signalements du jour (`plan-a-la-porte.md`, § 3), posés par tournée et par arrêt. */
+      readonly incidents: readonly DeliveryIncidentView[];
+    };
 
 type FleetState = readonly VehicleView[] | 'error' | null;
 
@@ -106,12 +120,16 @@ const CONFLICT = 409;
     FoldCalloutComponent,
     FoldCardComponent,
     FoldDateComponent,
+    FoldDisclosureComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
+    FoldIconComponent,
+    FoldInlineConfirmComponent,
     FoldListboxComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldViewToggleComponent,
+    IncidentList,
     RoundDriver,
     RoutePlanner,
     RunSheetStop,
@@ -121,6 +139,7 @@ const CONFLICT = 409;
 })
 export class RoundsPage {
   private readonly rounds = inject(DeliveryRoundsService);
+  private readonly incidentsService = inject(DeliveryIncidentsService);
   private readonly runSheet = inject(RunSheetService);
   private readonly settings = inject(DeliverySettingsService);
   private readonly permissions = inject(PermissionsStore);
@@ -180,6 +199,23 @@ export class RoundsPage {
 
   /** La tournée qu'on imprime : seule elle est rendue sur papier. */
   protected readonly printing = signal<string | null>(null);
+
+  private readonly incidents = computed(() => {
+    const state = this.state();
+    return state.status === 'ready' ? state.incidents : [];
+  });
+  /** La photo d'un signalement, par la route de l'admin (`delivery_rounds`). */
+  protected readonly incidentPhoto: IncidentPhotoLoader = (incidentId) =>
+    this.incidentsService.photo(incidentId);
+  protected readonly incidentCountLabel = incidentCountLabel;
+
+  protected roundIncidents(roundId: string): readonly DeliveryIncidentView[] {
+    return incidentsOfRound(this.incidents(), roundId);
+  }
+
+  protected stopIncidents(stopId: string): readonly DeliveryIncidentView[] {
+    return incidentsOfStop(this.incidents(), stopId);
+  }
 
   protected readonly composed = computed(() => {
     const state = this.state();
@@ -410,6 +446,14 @@ export class RoundsPage {
     );
   }
 
+  /** « Déclarer rentrée » (PL2) — quand le livreur a oublié, ou qu'aucun n'était affecté. */
+  protected returnToDepot(round: DeliveryRoundView): Promise<void> {
+    return this.write(
+      () => this.rounds.returnToDepot(round.id),
+      'La tournée n’a pas pu être déclarée rentrée.',
+    );
+  }
+
   protected print(roundId: string): void {
     this.printing.set(roundId);
     afterNextRender(
@@ -458,7 +502,12 @@ export class RoundsPage {
       // C16 : les deux lectures partent ensemble, et l'une sans l'autre n'est rien.
       const [rounds, sheet] = await Promise.all([this.rounds.day(day), this.runSheet.day(day)]);
       if (request === this.request) {
-        this.state.set({ status: 'ready', day, composed: composeDay(rounds, sheet) });
+        this.state.set({
+          status: 'ready',
+          day,
+          composed: composeDay(rounds, sheet),
+          incidents: rounds.incidents,
+        });
       }
     } catch {
       if (request === this.request) {

@@ -1,7 +1,11 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { DeliveryAddressForm, deliveryDraftFrom } from '@lfd/b2b-ui/company';
-import type { DeliveryAddressPayload, DeliveryAddressView } from '@lfd/contracts';
+import type {
+  DeliveryAddressPayload,
+  DeliveryAddressView,
+  MemberDeliveryAddressPayload,
+} from '@lfd/contracts';
 import { FoldPanelHostService, FoldPanelRef } from 'fold-ng';
 import { afterEach, vi } from 'vitest';
 
@@ -44,7 +48,7 @@ const CREATE: DeliveryAddressDialogData = {
 
 interface Wire {
   adds: DeliveryAddressPayload[];
-  updates: { addressId: string; payload: DeliveryAddressPayload }[];
+  updates: { addressId: string; payload: MemberDeliveryAddressPayload }[];
   removes: string[];
   answer: string | null;
   closes: unknown[];
@@ -69,7 +73,7 @@ function boot(data: DeliveryAddressDialogData): ComponentFixture<DeliveryAddress
           updateDelivery: (
             _: string,
             addressId: string,
-            payload: DeliveryAddressPayload,
+            payload: MemberDeliveryAddressPayload,
           ): Promise<string | null> => {
             wire.updates.push({ addressId, payload });
             return Promise.resolve(wire.answer);
@@ -203,6 +207,49 @@ describe('DeliveryAddressDialog', () => {
     form(fixture).value.set(deliveryDraftFrom(CHALET));
     fixture.detectChanges();
     expect(submitButton(fixture)?.disabled).toBe(true);
+  });
+
+  describe('« dépôt autorisé » (AP-Q1)', () => {
+    const box = (fixture: ComponentFixture<DeliveryAddressDialog>): HTMLInputElement | null =>
+      (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
+        '[data-deposit-allowed] input[type="checkbox"]',
+      );
+
+    it('n’est pas proposé à la création : la route de création ne le porte pas', () => {
+      expect(box(boot(CREATE))).toBeNull();
+    });
+
+    it('en correction, dit ce qu’on autorise et part avec l’adresse, Enregistrer armé par la case seule', async () => {
+      const fixture = boot({ ...CREATE, address: CHALET, firstOfBook: false });
+      const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+      expect(text).toContain(FR.account.depositAllowedLabel);
+      expect(text).toContain(FR.account.depositAllowedHint);
+      expect(box(fixture)?.checked).toBe(false);
+      expect(submitButton(fixture)?.disabled).toBe(true);
+
+      box(fixture)?.click();
+      fixture.detectChanges();
+      expect(submitButton(fixture)?.disabled).toBe(false);
+      await submit(fixture);
+
+      expect(wire.updates).toEqual([
+        { addressId: 'adr_1', payload: expect.objectContaining({ depositAllowed: true }) },
+      ]);
+    });
+
+    it('une correction qui ne touche pas la case renvoie la valeur lue, jamais `false` par défaut', async () => {
+      const fixture = boot({
+        ...CREATE,
+        address: { ...CHALET, depositAllowed: true },
+        firstOfBook: false,
+      });
+      expect(box(fixture)?.checked).toBe(true);
+      form(fixture).value.set({ ...form(fixture).value(), ville: 'Tignes' });
+      fixture.detectChanges();
+      await submit(fixture);
+
+      expect(wire.updates[0]?.payload).toMatchObject({ ville: 'Tignes', depositAllowed: true });
+    });
   });
 
   describe('la zone de danger', () => {

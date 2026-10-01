@@ -76,4 +76,9 @@ export class DeliveryRoundsService {
       this.http.post(`${ROUNDS}/${encodeURIComponent(roundId)}/livreur/retrait`, payload),
     );
   }
+
+  /** « Déclarer rentrée » depuis Tournées (PL2), sous `delivery_rounds:write` — rejouée, pareil. */
+  async returnToDepot(roundId: string): Promise<void> {
+    await firstValueFrom(this.http.post(`${ROUNDS}/${encodeURIComponent(roundId)}/retour`, null));
+  }
 }

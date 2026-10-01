@@ -85,10 +85,11 @@ function deliveryViewKeys(role: StaffRole | typeof LIVREUR): string[] {
 }
 
 describe("l'espace Livraison", () => {
-  it('ouvre les neuf vues au comptoir, qui prépare les départs, compose, simule, compare des bacs et charge (Q12, Q21, lot 9, G3)', async () => {
+  it('ouvre les dix vues au comptoir, qui prépare les départs, compose, relit les non-remis, simule, compare des bacs et charge (Q12, Q21, lot 9, G3, AP-D7)', async () => {
     expect(deliveryViewKeys('comptoir')).toEqual([
       'feuille-de-route',
       'tournees',
+      'non-remis',
       'simulateur',
       'assistant-achat',
       'chargement',
@@ -98,6 +99,7 @@ describe("l'espace Livraison", () => {
       'depart',
     ]);
     expect(await opens('comptoir', 'tournees')).toBe(true);
+    expect(await opens('comptoir', 'non-remis')).toBe(true);
     expect(await opens('comptoir', 'simulateur')).toBe(true);
     expect(await opens('comptoir', 'assistant-achat')).toBe(true);
     expect(await opens('comptoir', 'chargement')).toBe(true);

@@ -1,0 +1,10 @@
+.list,
+.incident {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.note {
+  white-space: pre-line;
+}

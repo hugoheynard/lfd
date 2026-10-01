@@ -216,6 +216,9 @@ export const ACCOUNT_FR: AccountCopy = {
   addressRemovedToast: 'Adresse supprimée.',
   addressActionFailed: 'Le carnet n’a pas été modifié.',
   deliveryDialogSubtitle: 'Une adresse postale complète, et comment on y livre.',
+  depositAllowedLabel: 'Dépôt autorisé sans personne',
+  depositAllowedHint:
+    'Vous autorisez le livreur à déposer la commande sans personne pour la réceptionner, avec une photo pour preuve.',
   deliveryAddSubmit: 'Ajouter',
   addressForm: ADDRESS_FORM,
   deliveryForm: {

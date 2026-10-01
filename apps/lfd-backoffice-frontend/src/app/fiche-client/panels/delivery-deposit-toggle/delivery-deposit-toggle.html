@@ -1,0 +1,13 @@
+<div class="deposit">
+  <fold-checkbox
+    label="Dépôt autorisé sans personne"
+    hint="Le client autorise le livreur à déposer la commande sans personne pour la réceptionner, avec une photo pour preuve. Une signature exigée l’emporte toujours."
+    [checked]="checked()"
+    [disabled]="!canEdit() || saving()"
+    (checkedChange)="toggle($event)"
+    data-deposit-allowed
+  />
+  @if (refusal(); as refusal) {
+    <fold-callout variant="alert" data-deposit-refusal>{{ refusal }}</fold-callout>
+  }
+</div>

@@ -94,8 +94,8 @@ export class FicheClientPanels {
 
   /**
    * La procédure de livraison d'une adresse. Rend `true` si son nombre
-   * d'étapes a changé pendant l'ouverture : c'est ce que la carte d'adresses
-   * affiche, et la seule raison de relire la fiche.
+   * d'étapes ou « dépôt autorisé » a changé pendant l'ouverture : ce sont les
+   * seules raisons de relire la fiche.
    *
    * La passerelle est fournie au panneau, liée à cette société — pas à la
    * racine, où elle tirerait l'éditeur dans le bundle initial.
@@ -103,7 +103,12 @@ export class FicheClientPanels {
   async openProcedure(company: AdminCompanyDetail, address: DeliveryAddressView): Promise<boolean> {
     let changed = false;
     await this.panels.open(AdminDeliveryProcedurePanel, {
-      data: { address, onStepCountChange: () => (changed = true) },
+      data: {
+        companyId: company.id,
+        address,
+        onStepCountChange: () => (changed = true),
+        onDepositChange: () => (changed = true),
+      },
       providers: [adminDeliveryProcedureGateway(company.id)],
     }).closed;
     return changed;

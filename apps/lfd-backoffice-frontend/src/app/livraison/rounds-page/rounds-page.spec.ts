@@ -4,6 +4,7 @@ import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { FoldListboxComponent } from 'fold-ng';
 import type {
+  DeliveryIncidentView,
   DeliveryRoundDriverView,
   DeliveryRoundsDayView,
   DeliveryRunSheetView,
@@ -14,6 +15,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
+import { DeliveryIncidentsService } from '../delivery-incidents.service';
 import { DeliveryRoundsService } from '../delivery-rounds.service';
 import { DeliveryRoutingService } from '../delivery-routing.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
@@ -28,6 +30,10 @@ const WRITE: readonly StaffPermission[] = ['delivery_rounds:read', 'delivery_rou
 let firstDeparted: string | null = null;
 /** Le livreur de la première tournée — `null` sauf dans les tests qui l'affectent. */
 let firstDriver: DeliveryRoundDriverView | null = null;
+/** Le retour de la première tournée (PL2) — `null` sauf dans les tests qui la rentrent. */
+let firstReturned: string | null = null;
+/** Les signalements du jour (`plan-a-la-porte.md`, § 3). */
+let dayIncidents: readonly DeliveryIncidentView[] = [];
 
 function composition(day: string): DeliveryRoundsDayView {
   return {
@@ -40,7 +46,7 @@ function composition(day: string): DeliveryRoundsDayView {
         passage: 1,
         version: 4,
         vehicleRetired: false,
-        returnedAt: null,
+        returnedAt: firstReturned,
         departedAt: firstDeparted,
         driver: firstDriver,
         stops: [
@@ -76,7 +82,7 @@ function composition(day: string): DeliveryRoundsDayView {
       },
     ],
     unassigned: [{ orderId: 'o-3', reference: 'CMD-3' }],
-    incidents: [],
+    incidents: dayIncidents,
   };
 }
 
@@ -150,6 +156,7 @@ async function boot(
             outcome(`assignDriver ${roundId} ${JSON.stringify(payload)}`),
           unassignDriver: (roundId: string, payload: unknown) =>
             outcome(`unassignDriver ${roundId} ${JSON.stringify(payload)}`),
+          returnToDepot: (roundId: string) => outcome(`return ${roundId}`),
         } satisfies Partial<Record<keyof DeliveryRoundsService, unknown>>,
       },
       {
@@ -184,6 +191,15 @@ async function boot(
       },
       // Le calculateur a sa propre spec : ici, il ne doit que tenir dans la page.
       { provide: DeliveryRoutingService, useValue: {} },
+      {
+        provide: DeliveryIncidentsService,
+        useValue: {
+          photo: (incidentId: string): Promise<Blob> => {
+            wire.calls.push(`photo ${incidentId}`);
+            return Promise.resolve(new Blob(['x']));
+          },
+        } satisfies Partial<Record<keyof DeliveryIncidentsService, unknown>>,
+      },
       { provide: NotifyService, useValue: { success: () => undefined } },
       {
         provide: PermissionsStore,
@@ -215,6 +231,8 @@ function choose(fixture: ComponentFixture<RoundsPage>, selector: string, roundId
 
 afterEach(() => {
   vi.restoreAllMocks();
+  firstReturned = null;
+  dayIncidents = [];
 });
 
 describe('RoundsPage', () => {
@@ -430,5 +448,95 @@ describe('RoundsPage', () => {
       expect(element.querySelector('[data-driver-choice]')).toBeNull();
       expect(element.querySelector('[data-driver-name]')?.textContent).toContain('Aucun livreur');
     });
+  });
+});
+
+describe('RoundsPage — à la porte (lot A, PL2)', () => {
+  const departedAt = '2026-10-01T05:42:00.000Z';
+
+  afterEach(() => {
+    firstDeparted = null;
+  });
+
+  function incidentOf(overrides: Partial<DeliveryIncidentView>): DeliveryIncidentView {
+    return {
+      id: 'i-1',
+      roundId: 'r-1',
+      stopId: null,
+      orderReference: null,
+      family: 'technical',
+      reason: 'cold_failure',
+      note: '',
+      hasPhoto: false,
+      reportedAt: '2026-10-01T06:10:00.000Z',
+      reportedBy: { staffUserId: 'u-1', name: 'Paul Livreur' },
+      ...overrides,
+    };
+  }
+
+  it('pose les signalements sur la tournée et sur l’arrêt concernés, photo sous delivery_rounds', async () => {
+    URL.createObjectURL = vi.fn(() => 'blob:incident');
+    firstDeparted = departedAt;
+    dayIncidents = [
+      incidentOf({ id: 'i-1' }),
+      incidentOf({
+        id: 'i-2',
+        stopId: 's-1',
+        orderReference: 'CMD-1',
+        family: 'doorstep',
+        reason: 'nobody_present',
+        hasPhoto: true,
+      }),
+    ];
+    const { fixture, element } = await boot();
+    const round = element.querySelectorAll('[data-round]')[0];
+    expect(round?.querySelector('[data-round-incidents]')?.textContent).toContain('2 signalements');
+    const stops = round?.querySelectorAll('[data-stop]');
+    expect(stops?.[0]?.querySelector('[data-stop-incidents]')?.textContent).toContain(
+      'Problème à la remise · Personne pour réceptionner',
+    );
+    expect(stops?.[1]?.querySelector('[data-stop-incidents]')).toBeNull();
+    expect(
+      element.querySelectorAll('[data-round]')[1]?.querySelector('[data-round-incidents]'),
+    ).toBeNull();
+
+    stops?.[0]?.querySelector<HTMLElement>('[data-open-photo]')?.click();
+    await settle(fixture);
+    expect(wire.calls).toContain('photo i-2');
+  });
+
+  it('« Déclarer rentrée » sous delivery_rounds:write, pour une tournée partie et non rentrée', async () => {
+    firstDeparted = departedAt;
+    const { fixture, element } = await boot();
+    const rounds = element.querySelectorAll('[data-round]');
+    expect(rounds[1]?.querySelector('[data-return-round]')).toBeNull();
+
+    button(rounds[0], '[data-return-round]').click();
+    await settle(fixture);
+    const confirm = [...(rounds[0]?.querySelectorAll<HTMLButtonElement>('button') ?? [])].find(
+      (candidate) =>
+        candidate.textContent?.trim() === 'Déclarer rentrée' &&
+        !candidate.hasAttribute('data-return-round'),
+    );
+    confirm?.click();
+    await settle(fixture);
+    expect(wire.calls).toEqual(['return r-1']);
+  });
+
+  it('sans delivery_rounds:write, pas de « Déclarer rentrée »', async () => {
+    firstDeparted = departedAt;
+    const { element } = await boot(['delivery_rounds:read']);
+    expect(element.querySelector('[data-return-round]')).toBeNull();
+  });
+
+  it('une tournée rentrée le dit, et ne propose plus de la déclarer', async () => {
+    firstDeparted = departedAt;
+    firstReturned = '2026-10-01T10:30:00.000Z';
+    const { element } = await boot();
+    const first = element.querySelectorAll('[data-round]')[0];
+    expect(first?.querySelector('[data-returned]')?.textContent).toContain(
+      'Tournée rentrée à 12 h 30',
+    );
+    expect(first?.querySelector('[data-return-round]')).toBeNull();
   });
 });

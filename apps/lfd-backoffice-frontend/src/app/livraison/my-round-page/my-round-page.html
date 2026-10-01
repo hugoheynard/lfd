@@ -83,8 +83,73 @@
                   }
                 </fold-element-title>
 
+                @if (returnedAt(); as returnedAt) {
+                  <fold-callout variant="success" data-returned>
+                    Tournée rentrée à {{ timeOf(returnedAt) }}.
+                  </fold-callout>
+                }
                 @if (refusal(); as refusal) {
                   <fold-callout variant="alert" data-refusal>{{ refusal }}</fold-callout>
+                }
+                @if (gestures()) {
+                  <div class="actions">
+                    @if (reportingRound()) {
+                      <fold-card data-round-report>
+                        <div class="stack">
+                          <fold-element-title
+                            variant="title"
+                            title="Déclarer un problème"
+                            subtitle="Technique ou routier : il porte sur la tournée"
+                          />
+                          <app-incident-report-form
+                            [roundId]="round.id"
+                            [families]="roundFamilies"
+                            [currentStop]="currentStop()"
+                            (reported)="onRoundReported()"
+                            (cancelled)="reportingRound.set(false)"
+                          />
+                        </div>
+                      </fold-card>
+                    } @else {
+                      <button
+                        foldButton
+                        block
+                        emphasis="outline"
+                        intent="danger"
+                        icon="warning"
+                        (click)="reportingRound.set(true)"
+                        data-report-round
+                      >
+                        Déclarer un problème
+                      </button>
+                    }
+                    <fold-inline-confirm
+                      intent="primary"
+                      message="Les bacs vides sont rentrés : plus aucun geste ne sera possible sur cette tournée."
+                      [labels]="{ confirm: 'Tournée terminée' }"
+                      [loading]="busy()"
+                      (confirmed)="returnToDepot()"
+                    >
+                      <button foldButton block icon="home" [disabled]="busy()" data-return>
+                        Tournée terminée
+                      </button>
+                    </fold-inline-confirm>
+                  </div>
+                }
+                @if (round.incidents.length > 0) {
+                  <fold-card data-round-incidents>
+                    <div class="stack">
+                      <fold-element-title
+                        variant="title"
+                        title="Problèmes signalés"
+                        [subtitle]="incidentCountLabel(round.incidents.length)"
+                      />
+                      <app-incident-list
+                        [incidents]="round.incidents"
+                        [loadPhoto]="incidentPhoto()"
+                      />
+                    </div>
+                  </fold-card>
                 }
                 @if (round.freeze === 'not_frozen') {
                   <fold-callout variant="warning" data-not-frozen>
@@ -106,7 +171,7 @@
                   >
                     Commencer ma tournée
                   </button>
-                } @else {
+                } @else if (rolling()) {
                   <fold-view-toggle
                     ariaLabel="Application pour « Y aller »"
                     [options]="appOptions"
@@ -175,7 +240,17 @@
                 }
 
                 @for (stop of departed() ? remaining() : round.stops; track stop.stopId) {
-                  <app-my-round-stop [roundId]="round.id" [stop]="stop" [goTo]="goToOf(stop)" />
+                  <app-my-round-stop
+                    [roundId]="round.id"
+                    [stop]="stop"
+                    [goTo]="goToOf(stop)"
+                    [gestures]="gestures()"
+                    [next]="stop.stopId === nextStop()?.stopId"
+                    [busy]="busy()"
+                    (arrive)="arrive(stop)"
+                    (closeWithoutHandover)="closeWithoutHandover(stop)"
+                    (reported)="retryRound()"
+                  />
                 }
               }
             }

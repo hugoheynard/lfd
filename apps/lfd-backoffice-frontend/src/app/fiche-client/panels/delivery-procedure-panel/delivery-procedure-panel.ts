@@ -10,17 +10,24 @@ import {
 } from 'fold-ng';
 import { DeliveryProcedureEditor } from '@lfd/b2b-ui/company';
 
+import { DeliveryDepositToggle } from '../delivery-deposit-toggle/delivery-deposit-toggle';
+
 /** Charge d'ouverture : l'adresse, et de quoi prévenir la fiche que son compteur a bougé. */
 export interface AdminDeliveryProcedurePanelData {
+  /** La société de la fiche — la route de « dépôt autorisé » la nomme. */
+  readonly companyId: string;
   readonly address: DeliveryAddressView;
   /** Appelé à chaque changement du nombre d'étapes. */
   readonly onStepCountChange: (count: number) => void;
+  /** Appelé quand « dépôt autorisé » a été enregistré. */
+  readonly onDepositChange: (depositAllowed: boolean) => void;
 }
 
 /**
  * La **procédure de livraison** d'une adresse, côté staff : l'éditeur partagé
  * dans un panneau. Le commercial la règle au téléphone, comme le reste de
- * l'adresse — d'où l'écriture ouverte.
+ * l'adresse — d'où l'écriture ouverte. « Dépôt autorisé » y vit aussi
+ * (`plan-a-la-porte.md`, AP-D5) : même droit, même interlocuteur, même moment.
  *
  * La passerelle n'est pas injectée à la racine : elle arrive par les
  * `providers` de l'ouverture, liée à la société de la fiche.
@@ -33,6 +40,7 @@ export interface AdminDeliveryProcedurePanelData {
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldButtonComponent,
+    DeliveryDepositToggle,
     DeliveryProcedureEditor,
   ],
   templateUrl: './delivery-procedure-panel.html',

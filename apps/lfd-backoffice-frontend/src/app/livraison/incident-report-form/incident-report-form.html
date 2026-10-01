@@ -1,0 +1,94 @@
+<div class="form" data-incident-form>
+  @if (familyChoices().length > 1) {
+    <fold-listbox
+      label="Famille"
+      placeholder="Choisir une famille"
+      [options]="familyChoices()"
+      [value]="family()"
+      (valueChange)="pickFamily($event)"
+      data-family
+    />
+  }
+  <fold-listbox
+    label="Motif"
+    placeholder="Choisir un motif"
+    [options]="reasonChoices()"
+    [value]="reason()"
+    [disabled]="family() === null"
+    (valueChange)="reason.set($event)"
+    data-reason
+  />
+  <fold-textarea
+    label="Note"
+    [optional]="true"
+    [rows]="3"
+    [hint]="noteHint()"
+    [value]="note()"
+    (valueChange)="note.set($event)"
+    data-note
+  />
+  @if (noteTooLong()) {
+    <fold-callout variant="warning" data-note-too-long>
+      La note fait au plus {{ noteMax }} caractères.
+    </fold-callout>
+  }
+  @if (currentStop(); as current) {
+    @if (stopId() === null) {
+      <fold-checkbox
+        [label]="'Concerne l’arrêt en cours : ' + current.label"
+        [checked]="linkCurrent()"
+        (checkedChange)="linkCurrent.set($event)"
+        data-link-current
+      />
+    }
+  }
+
+  <!-- L'appareil photo du téléphone, directement : `capture` ouvre la caméra arrière. -->
+  <input
+    #camera
+    class="camera"
+    type="file"
+    accept="image/*"
+    capture="environment"
+    (change)="pickPhoto($event)"
+    data-photo-input
+  />
+  @if (photo(); as picked) {
+    <div class="row">
+      <span>Photo jointe : {{ picked.name }}</span>
+      <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="removePhoto()">
+        Retirer
+      </button>
+    </div>
+  } @else {
+    <button foldButton emphasis="outline" icon="upload" (click)="camera.click()" data-take-photo>
+      Prendre une photo
+    </button>
+  }
+
+  @if (refusal(); as refusal) {
+    <fold-callout variant="alert" data-report-refusal>{{ refusal }}</fold-callout>
+  }
+
+  <div class="row">
+    <button
+      foldButton
+      emphasis="outline"
+      intent="neutral"
+      [disabled]="sending()"
+      (click)="cancelled.emit()"
+    >
+      Annuler
+    </button>
+    <button
+      foldButton
+      intent="danger"
+      [loading]="sending()"
+      [disabled]="!canSend()"
+      (click)="send()"
+      data-send-incident
+    >
+      Signaler
+    </button>
+  </div>
+</div>

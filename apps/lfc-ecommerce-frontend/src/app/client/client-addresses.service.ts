@@ -6,6 +6,7 @@ import type {
   CompanyAddressesView,
   DeliveryAddressPayload,
   DeliveryAddressView,
+  MemberDeliveryAddressPayload,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import { firstValueFrom, type Observable } from 'rxjs';
@@ -124,7 +125,9 @@ export class ClientAddresses {
   updateDelivery(
     companyId: string,
     addressId: string,
-    payload: DeliveryAddressPayload,
+    // La charge du membre : celle de toute livraison, plus « dépôt autorisé »
+    // facultatif — absent, le serveur le laisse tel quel (AP-D5).
+    payload: MemberDeliveryAddressPayload,
   ): Promise<string | null> {
     return this.write(companyId, (headers) =>
       this.http.patch(`${this.url(companyId)}/delivery-addresses/${addressId}`, payload, {
