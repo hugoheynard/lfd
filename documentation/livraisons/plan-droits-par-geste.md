@@ -272,6 +272,8 @@ dérogations contradictoires sans règle. **Retiré.**
   **une pour une**, sans collision possible. Un e2e le prouve (un `deny` sur
   `b2b_orders:write` donne un `deny` sur chacune des quatre).
 
+**Relevé par Hugo le 2026-10-01 : aucune dérogation** sur `b2b_orders`, `b2b_companies` ni `delivery_loading` en production. La recopie ne concerne personne aujourd'hui ; elle reste codée et testée, pour le cas où une dérogation serait posée d'ici le déploiement.
+
 ### 5.4 L'admin calculé sort de ce plan
 
 DG-D3 croise la garde anti-verrouillage (`staff-role-support.ts:44`,
