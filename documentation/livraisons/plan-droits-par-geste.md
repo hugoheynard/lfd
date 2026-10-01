@@ -246,6 +246,15 @@ exact de la table au bâti).
   resserrement. C'est écrit comme une dette datée, pas comme un droit accordé
   par le code.
 
+**Relevé par Hugo le 2026-10-01 : zéro fiche sans clé de rôle en production.**
+Le resserrement passe donc **d'abord**, dans le lot DG0 :
+
+- le repli `ROLE_GRANTS[row.role]` est retiré de `held-role.ts` ;
+- `staff_users.role_key` devient `NOT NULL` (migration de resserrement : zéro
+  ligne nulle relevée en production ; la migration échoue plutôt que de
+  remplir quoi que ce soit si une ligne nulle est apparue entre-temps) ;
+- `ROLE_GRANTS` n'est plus lu au runtime : c'est une **graine** (DG-D5 tient).
+
 ### 5.3 BLOQUANT 3 — pas de fusion de droits : une ressource neuve n'a qu'une source
 
 La v1 faisait hériter `production_packing` de `b2b_orders` **et** de
