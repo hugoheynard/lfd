@@ -1,6 +1,18 @@
 # « Y aller » et la position à la livraison
 
-> 📐 **Plan, rien n'est bâti** (2026-09-30). Hugo : « ajoute le niveau 1 GPS et
+> 🟡 **État relevé le 2026-10-01** : **YA1 et YA2 sont bâtis**
+> (`livraison/my-round-navigation.ts`, l'écran « Ma tournée »). Le texte
+> d'origine (2026-09-30) disait « rien n'est bâti », « `closed_at` : rien ne
+> l'écrit » et « pas de rôle `livreur` » ; c'est périmé : `closed_at` s'écrit
+> (`close-stop-without-handover`, `DeliveryRound.closeStop`) et le rôle
+> `livreur` existe, créé à l'écran avec `delivery_driving`
+> ([`plan-ma-tournee.md`](plan-ma-tournee.md)). **YA3** (les arrêts clos
+> disparaissent des liens) n'est pas déclaré bâti : `remainingStops` filtre déjà
+> `closedAt`, mais la chaîne n'a pas été relue de bout en bout. **YA4** (la
+> position au geste) : aucun code ne lit la position du téléphone — non bâti.
+> Les tableaux ci-dessous restent le relevé du 2026-09-30.
+
+> 📐 **Plan** (2026-09-30) — _en partie bâti, voir le bandeau ci-dessous_. Hugo : « ajoute le niveau 1 GPS et
 > Y aller aux plans, pense à la découpe du parcours en étapes ; idéalement, si
 > on relance le Y aller après avoir quitté l'app de nav, ça enlève les étapes
 > déjà faites (se baser sur livraisons effectuées) ».

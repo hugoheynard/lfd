@@ -1,5 +1,13 @@
 # TODO — la porte (lot 6), mise en dette
 
+> 🟡 **Partiellement bâti — relevé le 2026-10-01.** Le **lot A** de
+> [`plan-a-la-porte.md`](plan-a-la-porte.md) est bâti (arriver, signaler un
+> problème, clore sans remise, rentrer : `5ebc47e6f`, `a93bb3a88`), ainsi que
+> B0 (`5bde2266f`, effets différés après la validation) et BQ (`40ab0467f`, la
+> garde passe au livreur au départ). **Reste** : la remise et le dépôt avec
+> preuve (lot B, en cours) et le code de retrait par e-mail. Le texte
+> ci-dessous, « rien n'est bâti », est celui du 2026-09-29.
+
 > **Mise en dette le 2026-09-29** par Hugo : « met le 6 en dette et avance, j'ai
 > besoin de voir le reste fini avant ». La conception est écrite et contredite
 > deux fois par `vitruve` : elle vit dans

@@ -51,6 +51,7 @@ flowchart TB
     R["delivery_round"]
     RST["delivery_round_stop"]
     SE["delivery_stop_execution"]
+    INC["delivery_incident"]
   end
   subgraph bacs["Bacs et chargement"]
     BT["delivery_bin_type"]
@@ -68,6 +69,7 @@ flowchart TB
   J["day_change<br/>(journal de journée)"]
   V --> R
   R --> RST --> SE
+  R --> INC
   BT --> BC
   BT --> B --> BL
   R -. déclencheurs .-> J
@@ -77,21 +79,22 @@ flowchart TB
   B -. "déclencheurs (par l'arrêt)" .-> J
 ```
 
-| Table                                        | Ce qu'elle tient                                                         | Écrite par                         |
-| -------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------- |
-| `delivery_vehicle`                           | la flotte : plaque, espace utile, froid, énergie, passages de roue       | agrégat `Vehicle`                  |
-| `delivery_departure`                         | le point de départ des tournées                                          | réglage                            |
-| `delivery_routing_settings`                  | les réglages du calculateur (marge, durée d'arrêt…)                      | réglage                            |
-| `delivery_round`                             | une tournée : jour, véhicule, passage, départ                            | agrégat `DeliveryRound`            |
-| `delivery_round_stop`                        | un arrêt : commande (identifiant opaque), position, `closed_at`          | agrégat `DeliveryRound`            |
-| `delivery_stop_execution`                    | l'instantané d'un arrêt au départ (adresse, contact, fenêtre)            | le départ                          |
-| `delivery_geocode`                           | le cache de géocodage                                                    | le calculateur                     |
-| `delivery_bin_type`, `delivery_bin_capacity` | les formats de bacs et leurs contenances                                 | réglage                            |
-| `delivery_bin`, `delivery_bin_load`          | les bacs déclarés et leur chargement                                     | colisage, chargement               |
-| `delivery_simulation_scenario`               | les scénarios du simulateur                                              | simulateur                         |
-| `delivery_purchase_*_candidate`              | la bibliothèque d'achat                                                  | assistant d'achat                  |
-| `delivery_purchase_scenario`                 | les scénarios d'achat (une sélection du tableau, citée par identifiants) | assistant d'achat (2026-10-01)     |
-| `day_change`                                 | le journal de journée de la livraison                                    | **ses déclencheurs**, rien d'autre |
+| Table                                        | Ce qu'elle tient                                                                                                      | Écrite par                         |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| `delivery_vehicle`                           | la flotte : plaque, espace utile, froid, énergie, passages de roue                                                    | agrégat `Vehicle`                  |
+| `delivery_departure`                         | le point de départ des tournées                                                                                       | réglage                            |
+| `delivery_routing_settings`                  | les réglages du calculateur (marge, durée d'arrêt…)                                                                   | réglage                            |
+| `delivery_round`                             | une tournée : jour, véhicule, passage, départ                                                                         | agrégat `DeliveryRound`            |
+| `delivery_round_stop`                        | un arrêt : commande (identifiant opaque), position, `closed_at`                                                       | agrégat `DeliveryRound`            |
+| `delivery_stop_execution`                    | l'instantané d'un arrêt au départ (adresse, contact, fenêtre)                                                         | le départ                          |
+| `delivery_incident`                          | les problèmes déclarés à la porte (famille, motif, note, photo), par tournée et arrêt (2026-10-01, lot A de la porte) | le livreur (`DeliveryIncident`)    |
+| `delivery_geocode`                           | le cache de géocodage                                                                                                 | le calculateur                     |
+| `delivery_bin_type`, `delivery_bin_capacity` | les formats de bacs et leurs contenances                                                                              | réglage                            |
+| `delivery_bin`, `delivery_bin_load`          | les bacs déclarés et leur chargement                                                                                  | colisage, chargement               |
+| `delivery_simulation_scenario`               | les scénarios du simulateur                                                                                           | simulateur                         |
+| `delivery_purchase_*_candidate`              | la bibliothèque d'achat                                                                                               | assistant d'achat                  |
+| `delivery_purchase_scenario`                 | les scénarios d'achat (une sélection du tableau, citée par identifiants)                                              | assistant d'achat (2026-10-01)     |
+| `day_change`                                 | le journal de journée de la livraison                                                                                 | **ses déclencheurs**, rien d'autre |
 
 **Aucune clé étrangère ne sort de ce schéma, et aucune n'y entre.** Une
 commande est désignée par son identifiant (`order_id`, une chaîne), jamais par
@@ -104,7 +107,7 @@ une tournée déjà partie. C'est le même principe que la production (§ 3 du
 ```mermaid
 flowchart LR
   subgraph delivery["bloc delivery"]
-    CH["channels/commerce/<br/>4 ports déclarés"]
+    CH["channels/commerce/<br/>9 ports déclarés"]
     DP["domain/ports/<br/>géocodeur, matrice de distances, …"]
   end
   subgraph b2b["bloc b2b (commerce)"]
@@ -127,7 +130,17 @@ flowchart LR
 
 ### 4.1 Ce que la livraison demande au commerce — `delivery/channels/commerce/`
 
-Quatre classes abstraites, déclarées **par la livraison**, implémentées **par
+> ⚠️ **Corrigé le 2026-10-01** : ce paragraphe disait « quatre ports ». Le
+> canal en publie **neuf** (huit lectures et une annonce, relevés dans
+> `delivery/channels/commerce/index.ts`). Le tableau ci-dessous n'en détaille
+> que quatre, les premiers ; les cinq autres : `DeliveryProceduresReader` (la
+> procédure de l'adresse), `DeliveryStepPhotosReader` (les photos d'étapes),
+> `DeliveryOrderStatesReader` (l'état des commandes), `CommerceDayVersionReader`
+> (la version du journal de journée) et `DeliveryDepartureAnnouncer` (l'annonce
+> du départ). Les neuf sont implémentés par le commerce ; le retrait en offre
+> deux autres (§ 4.1 bis).
+
+Quatre des neuf classes abstraites, déclarées **par la livraison**, implémentées **par
 le commerce**, reliées dans `appBootstrap/delivery-feed.module.ts` :
 
 | Port                        | Méthodes                                                                       | Implémenté par                                                 | Pour quoi                                                                         |
@@ -139,7 +152,7 @@ le commerce**, reliées dans `appBootstrap/delivery-feed.module.ts` :
 
 **Le sens compte** : c'est la livraison qui déclare, le commerce qui
 implémente. La livraison ne connaît aucune classe du commerce ; le commerce ne
-connaît de la livraison que ces quatre contrats. Aucun des deux n'importe
+connaît de la livraison que ces contrats. Aucun des deux n'importe
 l'autre — `appBootstrap/` est le seul à les voir ensemble.
 
 Le froid d'un produit fait deux sauts : le référentiel le publie par son canal

@@ -1,6 +1,14 @@
 # La géométrie du plancher — l'assistant d'achat et le chargement
 
-> 📐 **Plan, rien n'est bâti** (2026-09-30). Hugo : « un assistant achat
+> 🟡 **État relevé le 2026-10-01** : la brique du plancher et l'assistant
+> d'achat sont **bâtis** (`delivery/domain/services/floor/` :
+> `floor-geometry`, `maximize-format`, `purchase-table`, `purchase-cost` ;
+> `cargo-floor.ts` ; migration des passages de roue `4715142a7`). **G5**, la
+> stratégie de chargement (positions des piles, alerte `floor_over`), n'est
+> **pas** bâtie : aucune occurrence de `floor_over` dans le code. G6 en
+> dépend. Le texte d'origine disait « rien n'est bâti ».
+
+> 📐 **Plan** (2026-09-30) — _en partie bâti, voir le bandeau ci-dessous_. Hugo : « un assistant achat
 > logistique, qui permet de simuler une dimension utile et des dimensions de
 > boite », puis « est-ce que le même algo pourra servir à la résolution du
 > chargement ? » — et, sur la réponse : « écris le plan avec la géométrie
@@ -183,10 +191,10 @@ dimensions (G-Q3). Les bacs isothermes n'entrent pas dans le plancher sec.
 
 ### G-D5 — Les données : ce qu'il faut ajouter
 
-| Champ                                                                                                    | Table                                  | Migration                                                                                                                                                                                          |
-| -------------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| passages de roue : longueur, saillie, distance depuis le fond, **hauteur** (cm, tous nuls ou tous posés) | `production.delivery_vehicle`          | **additive**, quatre colonnes nullables + `CHECK` « tous ou aucun » + `CHECK` « jamais sans espace utile » — **bâti le 2026-09-30** (`4715142a7`, migration `20260930100000_les_passages_de_roue`) |
-| jeu entre bacs (cm)                                                                                      | `production.delivery_routing_settings` | additive, défaut 1                                                                                                                                                                                 |
+| Champ                                                                                                    | Table                                                                | Migration                                                                                                                                                                                          |
+| -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| passages de roue : longueur, saillie, distance depuis le fond, **hauteur** (cm, tous nuls ou tous posés) | `delivery.delivery_vehicle` (schéma `delivery` depuis le 2026-09-30) | **additive**, quatre colonnes nullables + `CHECK` « tous ou aucun » + `CHECK` « jamais sans espace utile » — **bâti le 2026-09-30** (`4715142a7`, migration `20260930100000_les_passages_de_roue`) |
+| jeu entre bacs (cm)                                                                                      | `delivery.delivery_routing_settings`                                 | additive, défaut 1                                                                                                                                                                                 |
 
 Aucune donnée existante n'est convertie. Un véhicule sans passages de roue se
 lit comme aujourd'hui : un rectangle. Le journal des véhicules déclare les

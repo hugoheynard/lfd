@@ -302,8 +302,10 @@ Dans l'écran de chargement d'une tournée, la carte « Plan de chargement »
 
 Le plan **suggère** l'ordre, il ne l'impose pas : scanner un bac hors de son
 étape est accepté, le scan ne vérifie que la tournée. Le composant front
-(`livraison/loading-plan/`, jauges de volume, étapes, piles, alertes) est en
-cours de bâti et n'est pas encore affiché dans l'écran de la tournée.
+(`livraison/loading-plan/`, jauges de volume, étapes, piles, alertes) est
+**affiché dans l'écran de chargement** (`loading-round.html`,
+`<app-loading-plan>`) — relevé le 2026-10-01 ; le texte d'origine (2026-09-29)
+le disait « en cours de bâti ».
 
 ### 6.3 Partir
 
@@ -374,7 +376,7 @@ serveur la traduit en refus lisible.
 - **La température de la caisse réfrigérée n'est pas lue** : ni produit ni
   type de bac ne porte de plage de température.
 - **L'énergie du véhicule n'est lue par aucun calcul.**
-- **Le plan de chargement n'est pas encore à l'écran** (§ 6.2).
+- ~~**Le plan de chargement n'est pas encore à l'écran** (§ 6.2).~~ ✅ **À l'écran** (relevé le 2026-10-01, `loading-round.html`).
 - **Un produit non qualifié est traité comme sec** : `requiresCold = false` par
   défaut.
 

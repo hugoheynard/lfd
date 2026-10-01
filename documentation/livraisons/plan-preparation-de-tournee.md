@@ -2,8 +2,13 @@
 
 > **Ouvert le 2026-09-29** à la demande de Hugo : « je ne sais pas comment
 > aborder cette partie pour la préparation de tournée, j'ai besoin d'un état des
-> lieux et d'un plan explicite ». 📐 **Rien n'est bâti.** L'état des lieux a été
+> lieux et d'un plan explicite ». 📐 _Plan d'origine ; voir le bandeau ci-dessous._ L'état des lieux a été
 > relevé dans le code le 2026-09-29, pas dans les documents.
+>
+> ✅ **Relevé le 2026-10-01** : les lots 1 à 4, 7, 8, 9, 10 et 10 bis sont
+> **bâtis** (voir le statut de chacun, ci-dessous) ; la tournée existe, avec
+> son écran Planifier, son simulateur et sa carte. « Rien n'est bâti », dit
+> plus haut, n'est plus vrai ; les lots 5, 11 et la suite restent à relever.
 
 ## 0. Ce que « préparer la tournée » veut dire ici
 
@@ -2016,7 +2021,11 @@ l'afficher, lu sur l'entrée standard :
 ### Lot 9 — Le simulateur de tournée
 
 > **Ouvert le 2026-09-29.** Hugo : « un simulateur dans le back-office où on
-> met des horaires et des adresses pour tester ». 📐 Rien n'est bâti.
+> met des horaires et des adresses pour tester ». 📐 _Écrit avant le bâti._
+>
+> ✅ **Bâti** (relevé le 2026-10-01) : le simulateur (`797388a64`,
+> `delivery-simulator.controller.ts`, écran `simulator-page`) et les scénarios
+> enregistrés (table `delivery_simulation_scenario`).
 
 **Ce que l'équipe obtient** : un écran de l'espace Livraison où l'on saisit
 des arrêts **inventés** — une adresse ou un point GPS, une fenêtre horaire —,
@@ -2154,6 +2163,11 @@ déjà ces noms). Enregistré, le scénario garde ces noms — assumé.
 
 > **Ouvert le 2026-09-29.** Hugo : « je veux que ça soit beau ». 📐 Rien n'est
 > bâti. **La première étape est une maquette, pas du code.**
+>
+> ✅ **Bâti** (relevé le 2026-10-01) : la carte MapLibre à relief
+> (`livraison/delivery-map/`, fichier `relief.pmtiles`) sert l'écran Planifier
+> et le simulateur. Le déploiement des tuiles en production (lot 10 ter) n'a
+> pas été relevé ici.
 
 **Ce que l'équipe obtient** : sur l'écran des tournées (et dans le
 simulateur), une carte de la Savoie avec le **relief**, chaque tournée tracée
@@ -2227,6 +2241,10 @@ le bâti. Suppose le lot 8 déployé pour les tracés.
 > incompréhensible à regarder ». Maquette validée le même jour (« oui ça me
 > parle, glisser les arrêts entre camionnettes ») — artefact privé
 > « Planifier les tournées ». 📐 En cours de bâti.
+>
+> ✅ **Bâti** (relevé le 2026-10-01, `e9ff04fc4`) : l'écran Planifier — carte,
+> feuilles de route, glisser-déposer entre camionnettes
+> (`livraison/route-planner/`), par la route seulement.
 
 **Ce qui était faux dans l'écran du lot 7** : des numéros de commande sans nom
 de client ni lieu, une liste par tournée sans carte, et un bandeau technique

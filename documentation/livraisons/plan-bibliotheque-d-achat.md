@@ -72,8 +72,9 @@ erDiagram
   PURCHASE_SCENARIO }o--o{ DELIVERY_BIN_TYPE : "peut citer le réel"
 ```
 
-Tables dans le schéma `production`, comme tout le bloc `delivery` (Q10 du plan
-de tournée). Jamais supprimées : **archivées**, comme les types de bacs.
+Tables dans le schéma `delivery` (corrigé le 2026-10-01 : ce texte disait
+`production`, d'avant le déménagement du 2026-09-30,
+[`architecture-isolation-livraison.md`](architecture-isolation-livraison.md)). Jamais supprimées : **archivées**, comme les types de bacs.
 Les dimensions passent par les value objects déjà écrits : `CargoFloor`,
 `WheelArches`, `BinDimensions`, `BinFormat`. Aucune règle n'est redoublée.
 

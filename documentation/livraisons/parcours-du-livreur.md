@@ -99,9 +99,9 @@ Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
 - ✅ **Plan de chargement** de la tournée : l'ordre (le dernier arrêt au fond),
   les piles, le volume sec et froid.
 - ✅ **Scan bac par bac** sur l'écran de chargement (droit `delivery_loading`).
-- 🟡 Le livreur doit **charger sa tournée** lui-même (décidé), cloisonné à
-  **sa** tournée — pas encore bâti : aujourd'hui l'écran de chargement voit
-  toutes les tournées.
+- ✅ Le livreur **charge sa tournée** lui-même, cloisonné à **sa** tournée —
+  bâti (relevé le 2026-10-01, `my-delivery-loading.controller.ts`, PL1) ;
+  l'écran de chargement du staff, lui, voit toutes les tournées.
 - 🟡 La **géométrie du plancher** (où poser chaque pile) : lot G5, pas bâti.
 - ❓ Le scan se fait **depuis « Ma tournée »** (un bouton « Charger ») ou sur
   l'écran de chargement actuel ?
@@ -209,9 +209,11 @@ Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
 
 🔑 `delivery_doorstep:write` — « Tournée terminée ».
 
-🖥️ **Bouton** « Tournée terminée » — ✅ bâti ; ❌ il ne vérifie pas encore que chaque arrêt a une livraison ou une décision (lot B). Les « Non remis » sont un écran du **staff**, pas du livreur.
+🖥️ **Bouton** « Tournée terminée » — ✅ bâti, et l'état « rentrée » existe (`returned_at`, `return-my-round.handler.ts`, relevé le 2026-10-01) ; ❌ il ne vérifie pas encore que chaque arrêt a une livraison ou une décision (lot B). Les « Non remis » sont un écran du **staff**, pas du livreur.
 
-- ❌ Une tournée n'a **aucun état « rentrée »** : elle part, et c'est tout.
+- ✅ Une tournée a un état « **rentrée** » (relevé le 2026-10-01 :
+  `returned_at`, `DeliveryRound.returnedAt`, `return-my-round.handler.ts`).
+  _Le texte d'origine disait : « aucun état rentrée »._
 - ❓ Faut-il un geste « **Tournée terminée** » (heure de retour, kilométrage,
   remarques) ? Il fermerait la mesure du temps (départ → retour) et la liste
   des « Non remis » du jour.
