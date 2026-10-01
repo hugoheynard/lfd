@@ -2686,6 +2686,8 @@ suivants.
   🔴 **Un geste ne vaut que pour un arrêt de SA tournée** : le mur du livreur est
   dans la requête, comme `company_id` au B2B.
 
+  > _(2026-10-01 — **remplacé en partie** par [`plan-ma-tournee.md`](plan-ma-tournee.md) § 6 : le rôle `livreur` naît avec `delivery_driving` (lire et commencer **sa** tournée), sans cloche ni valeur d'enum de rôle ; `delivery_doorstep` s'y ajoutera avec les gestes à la porte.)_
+
   **L6-C4 — Le rôle `livreur`** (Q1, premier cas) : un rôle staff neuf, qui n'a
   que `delivery_doorstep` et la lecture de sa tournée. Migration de la
   définition de rôle, comme les grants des lots 2 à 4.
