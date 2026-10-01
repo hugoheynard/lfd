@@ -1,0 +1,11 @@
+/* Téléphone d'abord : une seule colonne, bornée au bureau pour rester lisible. */
+.page,
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.page {
+  max-inline-size: 40rem;
+}

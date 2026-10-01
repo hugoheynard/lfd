@@ -4,6 +4,7 @@ import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { FoldListboxComponent } from 'fold-ng';
 import type {
+  DeliveryRoundDriverView,
   DeliveryRoundsDayView,
   DeliveryRunSheetView,
   StaffPermission,
@@ -25,6 +26,8 @@ const WRITE: readonly StaffPermission[] = ['delivery_rounds:read', 'delivery_rou
 
 /** Le départ de la première tournée — `null` sauf dans le test qui la fait partir. */
 let firstDeparted: string | null = null;
+/** Le livreur de la première tournée — `null` sauf dans les tests qui l'affectent. */
+let firstDriver: DeliveryRoundDriverView | null = null;
 
 function composition(day: string): DeliveryRoundsDayView {
   return {
@@ -38,7 +41,7 @@ function composition(day: string): DeliveryRoundsDayView {
         version: 4,
         vehicleRetired: false,
         departedAt: firstDeparted,
-        driver: null,
+        driver: firstDriver,
         stops: [
           {
             stopId: 's-1',
@@ -133,6 +136,17 @@ async function boot(
             outcome(`reorder ${roundId} ${JSON.stringify(payload)}`),
           remove: (roundId: string, stopId: string, payload: unknown) =>
             outcome(`remove ${roundId} ${stopId} ${JSON.stringify(payload)}`),
+          drivers: () =>
+            Promise.resolve({
+              drivers: [
+                { staffUserId: 'u-1', name: 'Paul Livreur' },
+                { staffUserId: 'u-2', name: 'Zoé Volant' },
+              ],
+            }),
+          assignDriver: (roundId: string, payload: unknown) =>
+            outcome(`assignDriver ${roundId} ${JSON.stringify(payload)}`),
+          unassignDriver: (roundId: string, payload: unknown) =>
+            outcome(`unassignDriver ${roundId} ${JSON.stringify(payload)}`),
         } satisfies Partial<Record<keyof DeliveryRoundsService, unknown>>,
       },
       {
@@ -359,5 +373,59 @@ describe('RoundsPage', () => {
       [],
       expect.objectContaining({ queryParams: { jour: '2026-10-24' }, replaceUrl: true }),
     );
+  });
+
+  describe('le livreur d’une tournée (MT2)', () => {
+    afterEach(() => {
+      firstDriver = null;
+      firstDeparted = null;
+    });
+
+    it('dit « aucun livreur », et affecte avec la version lue', async () => {
+      const { fixture, element } = await boot();
+      const first = element.querySelector('[data-round]');
+      expect(first?.querySelector('[data-driver-name]')?.textContent).toContain('Aucun livreur');
+      choose(fixture, '[data-round] [data-driver-choice]', 'u-2');
+      await settle(fixture);
+      expect(wire.calls).toEqual(['assignDriver r-1 {"staffUserId":"u-2","version":4}']);
+    });
+
+    it('nomme le livreur, le retire, et signale celui qui a perdu l’accès', async () => {
+      firstDriver = { staffUserId: 'u-1', name: 'Paul Livreur', canDrive: false };
+      const { fixture, element } = await boot();
+      const first = element.querySelector('[data-round]');
+      expect(first?.querySelector('[data-driver-name]')?.textContent).toContain('Paul Livreur');
+      expect(first?.querySelector('[data-driver-no-access]')?.getAttribute('content')).toBe(
+        'Livreur sans accès — réaffecter',
+      );
+      button(first, '[data-driver-remove]').click();
+      await settle(fixture);
+      expect(wire.calls).toEqual(['unassignDriver r-1 {"version":4}']);
+    });
+
+    it('affiche le refus du serveur tel quel', async () => {
+      const { fixture, element } = await boot();
+      const message = 'Kangoo est déjà partie : son livreur ne change plus.';
+      wire.refuse = new HttpErrorResponse({ status: 409, error: { message } });
+      choose(fixture, '[data-round] [data-driver-choice]', 'u-1');
+      await settle(fixture);
+      expect(element.querySelector('[data-refusal]')?.textContent?.trim()).toBe(message);
+    });
+
+    it('une tournée partie ne s’affecte plus : le nom seul', async () => {
+      firstDeparted = '2026-10-01T05:42:00.000Z';
+      firstDriver = { staffUserId: 'u-1', name: 'Paul Livreur', canDrive: true };
+      const { element } = await boot();
+      const first = element.querySelector('[data-round]');
+      expect(first?.querySelector('[data-driver-name]')?.textContent).toContain('Paul Livreur');
+      expect(first?.querySelector('[data-driver-choice]')).toBeNull();
+      expect(first?.querySelector('[data-driver-remove]')).toBeNull();
+    });
+
+    it('sans `delivery_rounds:write`, ni choix ni lecture des livreurs', async () => {
+      const { element } = await boot(['delivery_rounds:read']);
+      expect(element.querySelector('[data-driver-choice]')).toBeNull();
+      expect(element.querySelector('[data-driver-name]')?.textContent).toContain('Aucun livreur');
+    });
   });
 });

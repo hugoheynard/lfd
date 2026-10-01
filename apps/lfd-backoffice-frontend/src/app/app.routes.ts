@@ -44,7 +44,11 @@ const COUNTER_ORDER_GUARDS = [
 ];
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'comptes-clients' },
+  // LA RACINE (plan-ma-tournee.md, MT-D7 v2) : vers les comptes clients, dont
+  // le garde renvoie qui n'y a pas droit vers sa première porte (`LANDINGS`) —
+  // le livreur vers sa tournée. `comptes-clients` seul ne correspondait plus à
+  // aucune route depuis qu'il est un onglet du Commercial (vérifié le 2026-10-01).
+  { path: '', pathMatch: 'full', redirectTo: 'commercial/comptes-clients' },
   // ORDRE ① — avant `ficheClientRoutes` : sans cela « nouveau » serait lu comme
   // un identifiant de société, et la page afficherait « Société introuvable ».
   ...nouveauCompteRoutes,
@@ -308,6 +312,15 @@ export const routes: Routes = [
         title: 'Feuille de route — LFC B2B admin',
         loadComponent: () =>
           import('./livraison/livraison-page/livraison-page').then((m) => m.DeliveryPage),
+      },
+      // MA TOURNÉE (plan-ma-tournee.md, MT4) : la page du livreur, sous son
+      // seul droit. C'est aussi son atterrissage (`LANDINGS`).
+      {
+        path: 'ma-tournee',
+        canActivate: [permissionGuard('delivery_driving:read')],
+        title: 'Ma tournée — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/my-round-page/my-round-page').then((m) => m.MyRoundPage),
       },
       {
         path: 'tournees',

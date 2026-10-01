@@ -1,7 +1,12 @@
 import { Injector, runInInjectionContext } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
-import { resolveStaffPermissions, type StaffRole } from '@lfd/contracts';
+import { Router, UrlTree } from '@angular/router';
+import {
+  resolvePermissionsFromGrants,
+  resolveStaffPermissions,
+  type StaffPermission,
+  type StaffRole,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { routes } from '../app.routes';
@@ -20,8 +25,19 @@ import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
  * Les droits viennent de `resolveStaffPermissions`, pas d'une liste recopiée.
  */
 
-function configure(role: StaffRole): void {
-  const permissions = resolveStaffPermissions(role);
+/**
+ * Le rôle `livreur` n'a pas de valeur `StaffRole` : il vit par sa clé en base
+ * (plan-ma-tournee.md, MT-D1 v2). Ses droits, résolus comme les autres.
+ */
+const LIVREUR = 'livreur';
+const LIVREUR_PERMISSIONS = resolvePermissionsFromGrants({ delivery_driving: 'write' });
+
+function permissionsOf(role: StaffRole | typeof LIVREUR): readonly StaffPermission[] {
+  return role === LIVREUR ? LIVREUR_PERMISSIONS : resolveStaffPermissions(role);
+}
+
+function configure(role: StaffRole | typeof LIVREUR): void {
+  const permissions = permissionsOf(role);
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -42,7 +58,7 @@ function isPermissionGuard(guard: unknown): guard is PermissionGuard {
 }
 
 /** Joue les gardes de la coquille PUIS de la vue : vrai si tous laissent passer. */
-async function opens(role: StaffRole, path: string): Promise<boolean> {
+async function opens(role: StaffRole | typeof LIVREUR, path: string): Promise<boolean> {
   configure(role);
   const shell = routes.find((route) => route.path === 'livraison');
   const view = shell?.children?.find((child) => child.path === path);
@@ -61,7 +77,7 @@ async function opens(role: StaffRole, path: string): Promise<boolean> {
   return true;
 }
 
-function deliveryViewKeys(role: StaffRole): string[] {
+function deliveryViewKeys(role: StaffRole | typeof LIVREUR): string[] {
   configure(role);
   return TestBed.inject(WorkspaceCatalogue)
     .views('livraison')()
@@ -123,6 +139,34 @@ describe("l'espace Livraison", () => {
     const shell = routes.find((route) => route.path === 'livraison');
     expect(shell?.children?.find((child) => child.path === '')?.redirectTo).toBe(
       'feuille-de-route',
+    );
+  });
+
+  it('montre au livreur la seule « Ma tournée », et la lui ouvre (MT4)', async () => {
+    expect(deliveryViewKeys(LIVREUR)).toEqual(['ma-tournee']);
+    expect(await opens(LIVREUR, 'ma-tournee')).toBe(true);
+    expect(await opens(LIVREUR, 'tournees')).toBe(false);
+    expect(await opens(LIVREUR, 'chargement')).toBe(false);
+    expect(await opens('comptoir', 'ma-tournee')).toBe(false);
+  });
+
+  it('🔴 le livreur arrive sur sa page, pas sur les comptes clients (MT-D7 v2)', async () => {
+    configure(LIVREUR);
+    // La racine renvoie vers les comptes clients, que le garde ferme au livreur :
+    // il doit le rediriger vers sa tournée, pas le laisser passer.
+    const root = routes.find((route) => route.path === '' && route.pathMatch === 'full');
+    expect(root?.redirectTo).toBe('commercial/comptes-clients');
+    const commercial = routes.find((route) => route.path === 'commercial');
+    const companies = commercial?.children?.find((child) => child.path === 'comptes-clients');
+    const guard = (companies?.canActivate ?? []).find(isPermissionGuard);
+    expect(guard?.permission).toBe('b2b_companies:read');
+    const router = TestBed.inject(Router);
+    const state = router.routerState.snapshot;
+    const result = await runInInjectionContext(TestBed.inject(Injector), () =>
+      guard?.(state.root, state),
+    );
+    expect(result instanceof UrlTree ? router.serializeUrl(result) : result).toBe(
+      '/livraison/ma-tournee',
     );
   });
 });

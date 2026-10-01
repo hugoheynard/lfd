@@ -1,0 +1,187 @@
+<fold-page-layout icon="truck" title="Ma tournée">
+  <div class="page">
+    @switch (list().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture de vos tournées…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Vos tournées sont illisibles"
+          subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+          data-list-error
+        >
+          <button foldButton emphasis="outline" (click)="retryList()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @if (selected() === null) {
+          @for (summary of rounds(); track summary.id) {
+            <fold-card data-my-round-choice>
+              <div class="stack">
+                <fold-element-title
+                  variant="title"
+                  [title]="roundLabel(summary)"
+                  [subtitle]="stopCountLabel(summary.stopCount)"
+                >
+                  @if (summary.departedAt; as departedAt) {
+                    <fold-badge
+                      titleAction
+                      variant="info"
+                      [content]="'Partie à ' + timeOf(departedAt)"
+                    />
+                  }
+                </fold-element-title>
+                <button foldButton block size="lg" (click)="open(summary.id)" data-open-my-round>
+                  Ouvrir
+                </button>
+              </div>
+            </fold-card>
+          } @empty {
+            <fold-empty-state
+              title="Aucune tournée ne vous est affectée aujourd’hui"
+              subtitle="Si vous devez partir, demandez au dépôt de vous affecter une tournée."
+              data-no-round
+            >
+              <fold-icon empty-icon name="truck" />
+            </fold-empty-state>
+          }
+        } @else {
+          @if (canGoBack()) {
+            <button foldButton emphasis="outline" icon="chevron-left" (click)="back()" data-back>
+              Mes tournées du jour
+            </button>
+          }
+          @switch (detail().status) {
+            @case ('loading') {
+              <fold-loading message="Lecture de la tournée…" />
+            }
+            @case ('error') {
+              <fold-empty-state
+                tone="alert"
+                title="Tournée illisible"
+                subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+                data-round-error
+              >
+                <button foldButton emphasis="outline" (click)="retryRound()">Réessayer</button>
+              </fold-empty-state>
+            }
+            @case ('ready') {
+              @if (round(); as round) {
+                <fold-element-title
+                  variant="title"
+                  [title]="roundLabel(round)"
+                  [subtitle]="stopCountLabel(round.stops.length)"
+                >
+                  @if (round.departedAt; as departedAt) {
+                    <fold-badge
+                      titleAction
+                      variant="info"
+                      [content]="'Partie à ' + timeOf(departedAt)"
+                      data-departed
+                    />
+                  }
+                </fold-element-title>
+
+                @if (refusal(); as refusal) {
+                  <fold-callout variant="alert" data-refusal>{{ refusal }}</fold-callout>
+                }
+                @if (round.freeze === 'not_frozen') {
+                  <fold-callout variant="warning" data-not-frozen>
+                    Ordre et position non figés au départ : ils suivent la composition et le carnet
+                    d’adresses.
+                  </fold-callout>
+                }
+
+                @if (!departed()) {
+                  <button
+                    foldButton
+                    block
+                    size="lg"
+                    icon="play"
+                    [loading]="busy()"
+                    [disabled]="busy() || round.stops.length === 0"
+                    (click)="depart()"
+                    data-depart
+                  >
+                    Commencer ma tournée
+                  </button>
+                } @else {
+                  <fold-view-toggle
+                    ariaLabel="Application pour « Y aller »"
+                    [options]="appOptions"
+                    [value]="app()"
+                    (valueChange)="pickApp($event)"
+                    data-app-choice
+                  />
+                  @if (legs().length > 0) {
+                    <fold-card data-legs>
+                      <div class="stack">
+                        <fold-element-title
+                          variant="title"
+                          title="Toute la tournée"
+                          subtitle="Dans Google Maps, par tronçons de quatre arrêts au plus"
+                        />
+                        @for (leg of legs(); track leg.href; let index = $index) {
+                          <a
+                            foldButton
+                            block
+                            size="lg"
+                            icon="map-pin"
+                            [href]="leg.href"
+                            target="_blank"
+                            rel="noopener"
+                            data-leg
+                          >
+                            @if (legs().length === 1) {
+                              Toute la tournée
+                            } @else {
+                              Tronçon {{ index + 1 }} sur {{ legs().length }} · arrêts
+                              {{ leg.firstRank }} à {{ leg.lastRank }}
+                            }
+                          </a>
+                        }
+                      </div>
+                    </fold-card>
+                  }
+                  @if (unplaced() > 0) {
+                    <fold-callout variant="warning" data-unplaced>
+                      {{ unplaced() }} arrêt(s) sans adresse ni point GPS : hors des liens de
+                      navigation.
+                    </fold-callout>
+                  }
+                  @if (remaining().length === 0) {
+                    <fold-empty-state
+                      title="Plus aucun arrêt"
+                      subtitle="La tournée est faite : il ne reste qu’à rentrer."
+                      data-done
+                    >
+                      <fold-icon empty-icon name="home" />
+                      @if (homeHref(); as home) {
+                        <a
+                          foldButton
+                          size="lg"
+                          icon="home"
+                          [href]="home"
+                          target="_blank"
+                          rel="noopener"
+                          data-home
+                        >
+                          Rentrer
+                        </a>
+                      }
+                    </fold-empty-state>
+                  }
+                }
+
+                @for (stop of departed() ? remaining() : round.stops; track stop.stopId) {
+                  <app-my-round-stop [roundId]="round.id" [stop]="stop" [goTo]="goToOf(stop)" />
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  </div>
+</fold-page-layout>

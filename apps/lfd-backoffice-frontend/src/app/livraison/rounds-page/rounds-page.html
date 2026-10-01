@@ -41,6 +41,12 @@
           La flotte n’a pas pu être lue : aucune tournée ne peut être ouverte pour l’instant.
         </fold-callout>
       }
+      @if (driversUnreadable()) {
+        <fold-callout variant="alert" data-drivers-error>
+          La liste des livreurs n’a pas pu être lue : aucun livreur ne peut être affecté pour
+          l’instant.
+        </fold-callout>
+      }
       @if (refusal(); as refusal) {
         <fold-callout variant="alert" data-refusal>{{ refusal }}</fold-callout>
       }
@@ -155,6 +161,15 @@
                         />
                       </span>
                     </fold-element-title>
+
+                    <app-round-driver
+                      [driver]="column.round.driver"
+                      [drivers]="driverOptions()"
+                      [editable]="canWrite() && column.round.departedAt === null"
+                      [disabled]="busy()"
+                      (assigned)="assignDriver(column.round, $event)"
+                      (unassigned)="unassignDriver(column.round)"
+                    />
 
                     @for (line of column.stops; track line.stop.stopId; let index = $index) {
                       <fold-card surface="sunken" padding="sm" data-stop>

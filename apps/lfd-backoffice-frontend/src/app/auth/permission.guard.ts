@@ -10,6 +10,11 @@ import { PermissionsStore } from './permissions.store';
  * renvoie vers la première porte ouverte, pas vers une page d'erreur.
  */
 const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: string }[] = [
+  // EN TÊTE (plan-ma-tournee.md, MT-D7 v2) : le livreur n'a que ce droit, et
+  // sans cette entrée le garde le laisserait passer partout, de 403 en 403.
+  // Seuls le livreur et l'admin le tiennent ; l'admin, qui a tout, n'est
+  // jamais redirigé.
+  { permission: 'delivery_driving:read', path: '/livraison/ma-tournee' },
   { permission: 'b2b_companies:read', path: '/commercial/comptes-clients' },
   { permission: 'b2b_growth:read', path: '/commercial' },
   { permission: 'b2b_orders:read', path: '/commandes' },

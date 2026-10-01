@@ -1,0 +1,34 @@
+<div class="driver" data-driver>
+  <div class="who">
+    <span data-driver-name>{{ label() }}</span>
+    @if (withoutAccess()) {
+      <fold-badge variant="alert" content="Livreur sans accès — réaffecter" data-driver-no-access />
+    }
+  </div>
+  @if (editable()) {
+    <div class="controls">
+      <fold-listbox
+        size="sm"
+        label="Livreur"
+        placeholder="Choisir un livreur"
+        [options]="drivers()"
+        [value]="driver()?.staffUserId ?? null"
+        [disabled]="disabled() || drivers().length === 0"
+        (selectionChange)="pick($event)"
+        data-driver-choice
+      />
+      @if (driver() !== null) {
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          [disabled]="disabled()"
+          (click)="unassigned.emit()"
+          data-driver-remove
+        >
+          Retirer le livreur
+        </button>
+      }
+    </div>
+  }
+</div>

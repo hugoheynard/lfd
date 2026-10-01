@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
+  DeliveryDriverView,
   DeliveryRoundOrderRef,
   DeliveryRoundStopView,
   DeliveryRoundView,
@@ -61,6 +62,7 @@ import {
   windowLabel,
 } from '../run-sheet';
 import { RunSheetService } from '../run-sheet.service';
+import { RoundDriver } from '../round-driver/round-driver';
 import { RoutePlanner } from '../route-planner/route-planner';
 import { RunSheetStop } from '../run-sheet-stop/run-sheet-stop';
 import { vehicleBadgeLabel } from '../vehicle-load';
@@ -110,6 +112,7 @@ const CONFLICT = 409;
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldViewToggleComponent,
+    RoundDriver,
     RoutePlanner,
     RunSheetStop,
   ],
@@ -162,6 +165,16 @@ export class RoundsPage {
   private readonly fleet = signal<FleetState>(null);
   protected readonly fleetUnreadable = computed(() => this.fleet() === 'error');
   protected readonly chosenVehicle = signal<string | null>(null);
+
+  /** Les livreurs affectables (MT-D2 v2) — lus seulement pour qui compose. */
+  private readonly drivers = signal<readonly DeliveryDriverView[] | 'error' | null>(null);
+  protected readonly driversUnreadable = computed(() => this.drivers() === 'error');
+  protected readonly driverOptions = computed<readonly FoldSelectOption<string>[]>(() => {
+    const drivers = this.drivers();
+    return Array.isArray(drivers)
+      ? drivers.map((driver) => ({ value: driver.staffUserId, label: driver.name }))
+      : [];
+  });
 
   /** La tournée qu'on imprime : seule elle est rendue sur papier. */
   protected readonly printing = signal<string | null>(null);
@@ -253,7 +266,10 @@ export class RoundsPage {
     });
     effect(() => {
       if (this.canWrite()) {
-        untracked(() => void this.loadFleet());
+        untracked(() => {
+          void this.loadFleet();
+          void this.loadDrivers();
+        });
       }
     });
   }
@@ -377,6 +393,21 @@ export class RoundsPage {
     );
   }
 
+  /** Affecter un livreur (MT-D2) ; une tournée partie est refusée par le serveur, qui le dit. */
+  protected assignDriver(round: DeliveryRoundView, staffUserId: string): Promise<void> {
+    return this.write(
+      () => this.rounds.assignDriver(round.id, { staffUserId, version: round.version }),
+      'Le livreur n’a pas pu être affecté.',
+    );
+  }
+
+  protected unassignDriver(round: DeliveryRoundView): Promise<void> {
+    return this.write(
+      () => this.rounds.unassignDriver(round.id, { version: round.version }),
+      'Le livreur n’a pas pu être retiré.',
+    );
+  }
+
   protected print(roundId: string): void {
     this.printing.set(roundId);
     afterNextRender(
@@ -431,6 +462,14 @@ export class RoundsPage {
       if (request === this.request) {
         this.state.set({ status: 'error' });
       }
+    }
+  }
+
+  private async loadDrivers(): Promise<void> {
+    try {
+      this.drivers.set((await this.rounds.drivers()).drivers);
+    } catch {
+      this.drivers.set('error');
     }
   }
 

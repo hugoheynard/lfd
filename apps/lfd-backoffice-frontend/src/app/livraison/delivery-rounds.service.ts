@@ -1,12 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
+  AssignDeliveryDriverPayload,
   AssignDeliveryStopPayload,
+  DeliveryDriversView,
   DeliveryRoundsDayView,
   MoveDeliveryStopPayload,
   OpenDeliveryRoundPayload,
   RemoveDeliveryStopPayload,
   ReorderDeliveryRoundPayload,
+  UnassignDeliveryDriverPayload,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -55,5 +58,22 @@ export class DeliveryRoundsService {
 
   async remove(roundId: string, stopId: string, payload: RemoveDeliveryStopPayload): Promise<void> {
     await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/retrait`, payload));
+  }
+
+  /** Qui peut conduire : le droit EFFECTIF `delivery_driving:write` (MT-D2 v2). */
+  drivers(): Promise<DeliveryDriversView> {
+    return firstValueFrom(this.http.get<DeliveryDriversView>(`${ROUNDS}/livreurs`));
+  }
+
+  async assignDriver(roundId: string, payload: AssignDeliveryDriverPayload): Promise<void> {
+    await firstValueFrom(
+      this.http.put(`${ROUNDS}/${encodeURIComponent(roundId)}/livreur`, payload),
+    );
+  }
+
+  async unassignDriver(roundId: string, payload: UnassignDeliveryDriverPayload): Promise<void> {
+    await firstValueFrom(
+      this.http.post(`${ROUNDS}/${encodeURIComponent(roundId)}/livreur/retrait`, payload),
+    );
   }
 }
