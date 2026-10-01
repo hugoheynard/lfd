@@ -494,10 +494,10 @@ forme à préciser (LB-Q6).
 (forme A proposée) : **une décision réglée d'avance** sur un problème à la
 porte (« Absent : déposer avec photo, même si la signature est exigée » /
 « Absent : rapporter » / « Me demander »), posée en **réglage de livraison
-global**, que le commercial **redéfinit** par société puis par adresse (même
-cascade que la signature). Quand le livreur signale, la décision réglée
+global**, que le commercial **redéfinit par adresse** (Hugo : « par adresse »
+— pas de niveau société). Quand le livreur signale, la décision réglée
 s'applique aussitôt, **tracée comme venant du réglage** ; « Me demander »
 ouvre la décision manuelle (B3). Défaut global : « Me demander ».
 
 Découpage : **B3** décision manuelle + **B5** notification des commerciaux ;
-**B3 bis** la décision réglée (global → société → adresse) ; **B4** ensuite.
+**B3 bis** la décision réglée (global → adresse) ; **B4** ensuite.
