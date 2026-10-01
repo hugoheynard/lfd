@@ -1,5 +1,9 @@
 # Prévenir le livreur que sa tournée est prête — lot PL5
 
+> ⏸️ **Mis de côté par Hugo le 2026-10-01** : « pas de notif pour le moment,
+> ça va nous dévier ». Le plan reste tel quel pour le jour où on le reprend ;
+> le défaut de la poussée partagée (D2) existe, lui, dès aujourd'hui.
+
 > 📐 **Plan, rien n'est bâti** (2026-10-01). Hugo : « je veux qu'il soit
 > prévenu » — quand toute sa tournée est prête, sans avoir à rouvrir « Ma
 > tournée ».

@@ -48,7 +48,7 @@ flowchart TD
 - ✅ **Comment le livreur sait que c'est prêt** : il regarde « Ma tournée »
   (PL4, bâti le 2026-10-01) — « n arrêts prêts sur m » en tête, l'avancement
   et les bacs déclarés sur chaque arrêt, la page se met à jour d'elle-même.
-- 🟡 **Il est prévenu** quand toute sa tournée est prête (Hugo, 2026-10-01) :
+- ⏸️ **Il est prévenu** (mis de côté le 2026-10-01) quand toute sa tournée est prête (Hugo, 2026-10-01) :
   lot PL5, voir [`plan-tournee-prete.md`](plan-tournee-prete.md).
 - ✅ **Où sont rangés les bacs** : par tournée, puis par arrêt (Hugo,
   2026-10-01) — « Ma tournée » suit le même rangement.
