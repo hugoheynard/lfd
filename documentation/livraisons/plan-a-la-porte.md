@@ -249,3 +249,25 @@ existe déjà (`DeliveryStopExecution.departedAt`).
   pas de signature ». Une commande dont la signature est exigée (figée au
   départ) ne propose **jamais** « Déposé avec preuve », même si l'adresse
   autorise le dépôt.
+
+## 9. Suite des décisions d'Hugo (2026-10-01)
+
+- **Toute remise porte une photo**, même le cas nominal : « même le happy path
+  signé remis doit avoir des photos ». « Remis au client » exige donc **la
+  photo + le nom** (+ la signature au doigt quand elle est exigée) ; « Déposé
+  avec preuve » exige la photo. Une remise sans photo n'existe pas (lot B).
+- **« Clore sans remise »** : une commande en livraison ne passe pas au
+  comptoir, et une commande produite est facturée donc livrée — le cas est
+  « impossible » dans le métier. Le geste reste un **filet de sécurité
+  invisible** : il n'apparaît que si le commerce dit la commande retirée ou
+  annulée (une donnée incohérente bloquerait sinon l'arrêt pour toujours,
+  BLOQUANT 2 de `vitruve`).
+- **Personne, dépôt interdit, refus, accès impossible** = le client ne
+  respecte pas les conditions convenues → c'est **le commercial qui décide**
+  (laisser quand même, ou rapporter), pas le livreur. Proposé, en attente des
+  réponses d'Hugo : le signalement prévient le commercial ; il répond
+  « Autoriser le dépôt cette fois » (la carte propose alors « Déposé avec
+  preuve », photo obligatoire, décision tracée) ou « Rapporter » (l'arrêt
+  reste ouvert → « Non remis ») ; le livreur continue sans attendre.
+  Questions : quel commercial (attitré ou tous) ; délai d'attente sur place ;
+  « laisser en vrac » toujours avec photo (proposé : oui).
