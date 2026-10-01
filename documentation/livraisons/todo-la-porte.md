@@ -43,3 +43,18 @@
 - L'alarme de retard en livraison (`latenessOf`) : sans remise attestée à la
   porte, toute livraison serait « en retard » après sa fenêtre.
 - Le lot 5 (tranche horaire promise), qui la rallume.
+
+## Les pièces de remise : conservées sans limite, purgeables (Hugo, 2026-10-01)
+
+> « Pour l'instant infini, mais câbler la possibilité d'une purge, et noter en
+> TODO que ça peut être purgeable. »
+
+- **Aujourd'hui** : `production.order_handover_proof` (nom du réceptionnaire,
+  photo, signature, livreur) et ses images sont gardées **sans limite**.
+- **Câblé, non planifié** (lot « purge des pièces », après B2) : une commande
+  qui efface les pièces plus anciennes qu'une durée donnée — la ligne **et**
+  les images au stockage —, et l'effacement des pièces d'une commande à la
+  demande d'une personne. Aucune minuterie ne l'appelle.
+- **À décider plus tard** : la durée (90 jours proposés, plus si les litiges
+  le demandent), l'appel planifié, et ce qu'un écran de contestation montre
+  d'une pièce purgée.
