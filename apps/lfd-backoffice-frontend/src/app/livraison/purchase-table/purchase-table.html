@@ -6,6 +6,45 @@
       </fold-callout>
     }
 
+    <app-purchase-scenarios
+      [revision]="revision()"
+      [currentId]="current()?.id ?? null"
+      [canWrite]="canWrite()"
+      (opened)="openScenario($event)"
+      (archived)="forget($event)"
+    />
+
+    @if (current(); as current) {
+      <div data-current-scenario>
+        <fold-badge variant="neutral" [content]="'Scénario « ' + current.name + ' »'" />
+      </div>
+    }
+
+    @if (issues().length > 0) {
+      <fold-callout variant="warning" announce data-scenario-issues>
+        <div class="table-issues">
+          <span>
+            Ce scénario cite des éléments qui ne passent plus au tableau : ils ne sont pas cochés.
+            Retirez-les, puis remplacez le scénario pour l’en nettoyer.
+          </span>
+          @for (issue of issues(); track issue.source + ':' + issue.id) {
+            <div class="table-issue" data-scenario-issue>
+              <span>{{ issue.message }}</span>
+              <button
+                foldButton
+                size="sm"
+                emphasis="soft"
+                (click)="dropIssue(issue)"
+                data-drop-issue
+              >
+                Retirer
+              </button>
+            </div>
+          }
+        </div>
+      </fold-callout>
+    }
+
     <div class="table-pick">
       <fold-card data-vehicle-choices>
         <div class="table-section">
@@ -98,6 +137,15 @@
         Calculer le tableau
       </button>
     </div>
+
+    @if (canWrite()) {
+      <app-purchase-scenario-save
+        [selection]="payload()"
+        [display]="display()"
+        [current]="current()"
+        (saved)="onSaved($event)"
+      />
+    }
 
     @if (refusal(); as message) {
       <fold-callout variant="alert" announce data-refusal>{{ message }}</fold-callout>

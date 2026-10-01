@@ -65,6 +65,10 @@ const UNWATCHED: Readonly<Record<string, string>> = {
     "les véhicules candidats de la bibliothèque d'achat, sans journée ni tournée",
   "delivery.delivery_purchase_bin_candidate":
     "les formats de bacs candidats de la bibliothèque d'achat, sans journée ni colisage",
+  // Les scénarios d'achat (lot B3, 2026-10-01) : une sélection de candidats
+  // et de réels pour le tableau croisé — aucune journée, aucune tournée.
+  "delivery.delivery_purchase_scenario":
+    "les scénarios de la bibliothèque d'achat, des sélections nommées sans journée ni tournée",
 };
 
 /** Les colonnes qui disent « cette ligne appartient à une journée », côté `public`. */

@@ -19,3 +19,16 @@
   align-items: flex-end;
   gap: var(--fold-space-md);
 }
+
+.table-issues {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.table-issue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}

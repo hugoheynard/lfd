@@ -544,3 +544,32 @@ model DeliveryPurchaseBinCandidate {
   @@map("delivery_purchase_bin_candidate")
   @@schema("delivery")
 }
+
+/// **Un scénario d'achat** (`plan-bibliotheque-d-achat.md`, B-D5, lot B3) :
+/// la sélection du tableau croisé, gardée sous un nom. Même forme que
+/// `delivery_simulation_scenario`. Il CITE des identifiants (candidats ou
+/// réels), il ne copie pas les cotes — et aucune clé étrangère : un élément
+/// archivé ou disparu se NOMME à la relecture, il n'empêche pas d'ouvrir.
+/// Aucune journée — exception écrite dans `test/day-change-triggers.e2e-spec.ts`.
+///
+/// Jamais supprimé : archivé. Nom unique parmi les NON archivés — index
+/// partiel écrit à la main dans `20261001090000_les_scenarios_d_achat`.
+model DeliveryPurchaseScenario {
+  /// Assigné par la commande (`IdGenerator`), jamais par la base.
+  id      String @id
+  name    String
+  /// `{ selection, display }` tel que `purchaseScenarioContentSchema` l'a
+  /// accepté ; revalidé à chaque relecture — jamais rendu en 500.
+  content Json
+
+  createdAt        DateTime  @map("created_at")
+  createdByStaffId String    @map("created_by_staff_id")
+  updatedAt        DateTime  @map("updated_at")
+  updatedByStaffId String    @map("updated_by_staff_id")
+  updatedByName    String    @map("updated_by_name")
+  updatedByRole    String    @map("updated_by_role")
+  archivedAt       DateTime? @map("archived_at")
+
+  @@map("delivery_purchase_scenario")
+  @@schema("delivery")
+}

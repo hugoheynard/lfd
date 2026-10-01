@@ -116,6 +116,8 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // La bibliothèque d'achat (lot B1, 2026-09-30) : même famille.
     "delivery_purchase_vehicle_candidate.",
     "delivery_purchase_bin_candidate.",
+    // Ses scénarios (lot B3, 2026-10-01) : même famille.
+    "delivery_purchase_scenario.",
     // L'heure limite posée sur un produit : même famille que celle d'un point.
     "order_time_limit.",
   ],

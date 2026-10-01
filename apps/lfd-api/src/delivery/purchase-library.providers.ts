@@ -1,5 +1,16 @@
 import type { Provider, Type } from "@nestjs/common";
 
+import { ArchivePurchaseScenarioHandler } from "./application/commands/archive-purchase-scenario.handler.js";
+import { ReactivatePurchaseScenarioHandler } from "./application/commands/reactivate-purchase-scenario.handler.js";
+import { RecordPurchaseScenarioHandler } from "./application/commands/record-purchase-scenario.handler.js";
+import { ReplacePurchaseScenarioHandler } from "./application/commands/replace-purchase-scenario.handler.js";
+import { GetPurchaseScenarioHandler } from "./application/queries/get-purchase-scenario.handler.js";
+import { ListPurchaseScenariosHandler } from "./application/queries/list-purchase-scenarios.handler.js";
+import { PurchaseScenarioRepository } from "./domain/ports/purchase-scenario.repository.js";
+import { PurchaseScenariosReader } from "./domain/ports/purchase-scenarios.reader.js";
+import { PurchaseScenariosController } from "./http/purchase-scenarios.controller.js";
+import { PrismaPurchaseScenarioRepository } from "./infrastructure/prisma-purchase-scenario.repository.js";
+import { PrismaPurchaseScenariosReader } from "./infrastructure/prisma-purchase-scenarios.reader.js";
 import { ArchivePurchaseBinCandidateHandler } from "./application/commands/archive-purchase-bin-candidate.handler.js";
 import { ArchivePurchaseVehicleCandidateHandler } from "./application/commands/archive-purchase-vehicle-candidate.handler.js";
 import { CorrectPurchaseBinCandidateHandler } from "./application/commands/correct-purchase-bin-candidate.handler.js";
@@ -23,7 +34,7 @@ import { PrismaPurchaseVehicleCandidateRepository } from "./infrastructure/prism
 import { PrismaPurchaseVehicleCandidatesReader } from "./infrastructure/prisma-purchase-vehicle-candidates.reader.js";
 
 /**
- * **La bibliothèque d'achat** (`plan-bibliotheque-d-achat.md`, lot B1), rangée
+ * **La bibliothèque d'achat** (`plan-bibliotheque-d-achat.md`, lots B1 et B3), rangée
  * à part pour que `delivery.module.ts` reste lisible : ses contrôleurs, ses
  * handlers, ses ports et leurs adaptateurs. Rien ici n'ÉCRIT la flotte ni le
  * catalogue des bacs (B-D1) ; le tableau croisé (B2) les LIT, par leurs ports
@@ -32,6 +43,7 @@ import { PrismaPurchaseVehicleCandidatesReader } from "./infrastructure/prisma-p
 export const PURCHASE_LIBRARY_CONTROLLERS: readonly Type[] = [
   PurchaseVehicleCandidatesController,
   PurchaseBinCandidatesController,
+  PurchaseScenariosController,
 ];
 
 export const PURCHASE_LIBRARY_PROVIDERS: readonly Provider[] = [
@@ -46,6 +58,12 @@ export const PURCHASE_LIBRARY_PROVIDERS: readonly Provider[] = [
   ReactivatePurchaseBinCandidateHandler,
   ListPurchaseBinCandidatesHandler,
   CrossPurchaseTableHandler,
+  RecordPurchaseScenarioHandler,
+  ReplacePurchaseScenarioHandler,
+  ArchivePurchaseScenarioHandler,
+  ReactivatePurchaseScenarioHandler,
+  ListPurchaseScenariosHandler,
+  GetPurchaseScenarioHandler,
   {
     provide: PurchaseVehicleCandidateRepository,
     useClass: PrismaPurchaseVehicleCandidateRepository,
@@ -53,4 +71,6 @@ export const PURCHASE_LIBRARY_PROVIDERS: readonly Provider[] = [
   { provide: PurchaseVehicleCandidatesReader, useClass: PrismaPurchaseVehicleCandidatesReader },
   { provide: PurchaseBinCandidateRepository, useClass: PrismaPurchaseBinCandidateRepository },
   { provide: PurchaseBinCandidatesReader, useClass: PrismaPurchaseBinCandidatesReader },
+  { provide: PurchaseScenarioRepository, useClass: PrismaPurchaseScenarioRepository },
+  { provide: PurchaseScenariosReader, useClass: PrismaPurchaseScenariosReader },
 ];

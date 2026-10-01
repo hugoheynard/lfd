@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { cents, fact, payload, subjectLabel } from "./fact.js";
+import { cents, count, fact, payload, subjectLabel } from "./fact.js";
 
 const dims = (): z.ZodType =>
   z.object({ lengthCm: z.number().int(), widthCm: z.number().int(), heightCm: z.number().int() });
@@ -69,4 +69,23 @@ export const DELIVERY_PURCHASE_LIBRARY_FACTS = {
   "delivery_purchase_bin_candidate.reactivated": fact(
     payload({ subjectLabel: subjectLabel(), candidate: bin() }),
   ),
+  /**
+   * **Les scénarios d'achat** (lot B3, 2026-10-01). La charge ne recopie pas
+   * la sélection — des identifiants cités n'apprennent rien au journal ; le
+   * nombre de véhicules et de formats suffit à reconnaître l'essai.
+   */
+  "delivery_purchase_scenario.created": fact(
+    payload({ subjectLabel: subjectLabel(), vehicles: count(), formats: count() }),
+  ),
+  /** `renamedFrom` est l'ancien nom quand il a changé, `null` sinon. */
+  "delivery_purchase_scenario.replaced": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      renamedFrom: z.string().min(1).nullable(),
+      vehicles: count(),
+      formats: count(),
+    }),
+  ),
+  "delivery_purchase_scenario.archived": fact(payload({ subjectLabel: subjectLabel() })),
+  "delivery_purchase_scenario.reactivated": fact(payload({ subjectLabel: subjectLabel() })),
 } as const;

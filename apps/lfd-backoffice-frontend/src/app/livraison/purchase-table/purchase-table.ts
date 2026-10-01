@@ -2,11 +2,15 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import {
   PURCHASE_TABLE_MAX_FORMATS,
   PURCHASE_TABLE_MAX_VEHICLES,
+  type PurchaseScenarioDisplay,
+  type PurchaseScenarioIssueView,
+  type PurchaseScenarioView,
   type PurchaseTablePayload,
   type PurchaseTableView,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
@@ -19,10 +23,18 @@ import {
   FoldNumberInputComponent,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { DeliveryBinsService } from '../delivery-bins.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import { DEFAULT_GAP_CM } from '../purchase-assistant';
 import { PurchaseLibraryService } from '../purchase-library.service';
+import {
+  type CurrentPurchaseScenario,
+  PurchaseScenarioSave,
+} from '../purchase-scenario-save/purchase-scenario-save';
+import { issueKey, restoredKeys } from '../purchase-scenarios';
+import { PurchaseScenarios } from '../purchase-scenarios/purchase-scenarios';
+import { PurchaseScenariosService } from '../purchase-scenarios.service';
 import {
   CRITERION_OPTIONS,
   type FormatChoice,
@@ -53,11 +65,17 @@ interface Choices {
  * met en avant la case que le serveur désigne. Le coût par litre est toujours
  * rendu, mais masqué tant qu'on ne le demande pas (Q3). Un refus (404 d'un
  * candidat disparu, 409 d'un archivé) s'affiche avec la phrase du serveur.
+ *
+ * Les **scénarios** (B-D5, lot B3) : ouvrir en remet la sélection, le jeu et
+ * le critère dans les cases ; un élément archivé ou disparu depuis n'est pas
+ * coché, il est NOMMÉ à part et se retire. Enregistrer et remplacer demandent
+ * `delivery_rounds:write` — les boutons disparaissent sans.
  */
 @Component({
   selector: 'app-purchase-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -68,6 +86,8 @@ interface Choices {
     FoldListboxComponent,
     FoldLoadingStateComponent,
     FoldNumberInputComponent,
+    PurchaseScenarioSave,
+    PurchaseScenarios,
     PurchaseTableGrid,
   ],
   templateUrl: './purchase-table.html',
@@ -77,6 +97,8 @@ export class PurchaseTable {
   private readonly library = inject(PurchaseLibraryService);
   private readonly fleet = inject(DeliverySettingsService);
   private readonly bins = inject(DeliveryBinsService);
+  private readonly permissions = inject(PermissionsStore);
+  private readonly scenarios = inject(PurchaseScenariosService);
 
   protected readonly maxVehicles = PURCHASE_TABLE_MAX_VEHICLES;
   protected readonly maxFormats = PURCHASE_TABLE_MAX_FORMATS;
@@ -90,6 +112,18 @@ export class PurchaseTable {
   protected readonly calculating = signal(false);
   protected readonly refusal = signal<string | null>(null);
   protected readonly result = signal<PurchaseTableView | null>(null);
+
+  protected readonly canWrite = computed(() => this.permissions.can('delivery_rounds:write'));
+  /** Le scénario dont vient la sélection, `null` s'il n'en vient d'aucun. */
+  protected readonly current = signal<CurrentPurchaseScenario | null>(null);
+  /** Ce que le scénario ouvert cite et qui ne passerait plus au tableau. */
+  protected readonly issues = signal<readonly PurchaseScenarioIssueView[]>([]);
+  /** Change à chaque enregistrement : la liste des scénarios se relit. */
+  protected readonly revision = signal(0);
+  protected readonly display = computed<PurchaseScenarioDisplay>(() => ({
+    criterion: this.criterion(),
+    showCostPerLiter: this.showCostPerLiter(),
+  }));
 
   /** Le coût par litre ne se choisit comme critère que s'il est affiché. */
   protected readonly criterionOptions = computed(() =>
@@ -155,6 +189,49 @@ export class PurchaseTable {
     } finally {
       this.calculating.set(false);
     }
+  }
+
+  protected async openScenario(id: string): Promise<void> {
+    this.refusal.set(null);
+    try {
+      this.restore(await this.scenarios.open(id));
+    } catch (error) {
+      this.refusal.set(httpErrorMessage(error, 'Ce scénario n’a pas pu être ouvert.'));
+      return;
+    }
+    if (this.issues().length === 0) {
+      await this.compute();
+    }
+  }
+
+  /** Retiré de l'écran : il n'était déjà pas coché, et ne repartira pas au prochain enregistrement. */
+  protected dropIssue(issue: PurchaseScenarioIssueView): void {
+    this.issues.update((issues) => issues.filter((i) => issueKey(i) !== issueKey(issue)));
+  }
+
+  protected onSaved(saved: CurrentPurchaseScenario): void {
+    this.current.set(saved);
+    this.issues.set([]);
+    this.revision.update((n) => n + 1);
+  }
+
+  /** Archivé, le scénario ouvert n'existe plus pour l'équipe : l'écran l'oublie. */
+  protected forget(id: string): void {
+    if (this.current()?.id === id) this.current.set(null);
+  }
+
+  private restore(view: PurchaseScenarioView): void {
+    const choices = this.choices();
+    this.vehicleKeys.set(restoredKeys(view.selection.vehicles, choices?.vehicles ?? []));
+    this.formatKeys.set(restoredKeys(view.selection.formats, choices?.formats ?? []));
+    this.gapCm.set(view.selection.gapCm);
+    if (view.display !== null) {
+      this.showCostPerLiter.set(view.display.showCostPerLiter);
+      this.criterion.set(view.display.criterion);
+    }
+    this.issues.set(view.issues);
+    this.current.set({ id: view.id, name: view.name });
+    this.result.set(null);
   }
 
   private async load(): Promise<void> {

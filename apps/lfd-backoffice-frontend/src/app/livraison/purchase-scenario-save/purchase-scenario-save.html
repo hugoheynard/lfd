@@ -1,0 +1,56 @@
+<div class="save">
+  <div class="save-bar">
+    <button
+      foldButton
+      emphasis="outline"
+      icon="save"
+      [disabled]="selection() === null || saving()"
+      (click)="openForm()"
+      data-save-as
+    >
+      Enregistrer comme scénario
+    </button>
+    @if (current(); as current) {
+      <button
+        foldButton
+        emphasis="soft"
+        [loading]="saving() && !formOpen()"
+        [disabled]="selection() === null || saving()"
+        (click)="replace()"
+        data-replace
+      >
+        Remplacer « {{ current.name }} »
+      </button>
+    }
+  </div>
+
+  @if (formOpen()) {
+    <fold-card data-save-as-form>
+      <div class="save-form">
+        <fold-element-title variant="title" icon="save" title="Enregistrer comme scénario" />
+        <div class="save-bar">
+          <fold-input
+            label="Nom du scénario"
+            [value]="name()"
+            (valueChange)="name.set($event)"
+            data-save-name
+          />
+          <button
+            foldButton
+            [loading]="saving()"
+            [disabled]="saving() || name().trim() === ''"
+            (click)="saveAs()"
+            data-save-as-confirm
+          >
+            Enregistrer
+          </button>
+          <button foldButton emphasis="soft" (click)="formOpen.set(false)">Annuler</button>
+        </div>
+      </div>
+    </fold-card>
+  }
+
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-save-refusal>{{ message }}</fold-callout>
+  }
+</div>

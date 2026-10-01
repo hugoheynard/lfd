@@ -1,0 +1,101 @@
+<fold-card data-purchase-scenarios>
+  <div class="scenarios">
+    <fold-element-title
+      variant="title"
+      icon="folder"
+      title="Scénarios enregistrés"
+      subtitle="Une sélection gardée sous un nom, relancée sur les cotes et les prix d’aujourd’hui"
+    />
+    <fold-checkbox
+      label="Afficher les archivés"
+      [checked]="includeArchived()"
+      (checkedChange)="includeArchived.set($event)"
+      data-include-archived
+    />
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-scenario-refusal>{{ message }}</fold-callout>
+    }
+
+    @let list = state();
+    @if (list.status === 'loading') {
+      <fold-loading message="Lecture des scénarios…" />
+    } @else if (list.status === 'error') {
+      <fold-empty-state tone="alert" title="Les scénarios n’ont pas pu être lus">
+        <button foldButton emphasis="outline" (click)="retry()" data-scenarios-retry>
+          Réessayer
+        </button>
+      </fold-empty-state>
+    } @else if (list.rows.length === 0) {
+      <fold-empty-state
+        title="Aucun scénario enregistré"
+        subtitle="Cochez des véhicules et des formats, puis enregistrez la sélection comme scénario."
+        data-scenarios-empty
+      >
+        <fold-icon empty-icon name="folder" />
+      </fold-empty-state>
+    } @else {
+      <fold-data-table
+        caption="Scénarios d’achat enregistrés"
+        narrowLayout="cards"
+        [columns]="columns"
+        [rows]="list.rows"
+        [rowKey]="rowKey"
+      >
+        <ng-template foldCell="name" let-row>
+          <span class="name" data-scenario-name>
+            {{ row.name }}
+            @if (row.id === currentId()) {
+              <fold-badge variant="info" content="Au tableau" />
+            }
+            @if (row.archivedAt !== null) {
+              <fold-badge variant="neutral" content="Archivé" data-scenario-archived />
+            }
+          </span>
+        </ng-template>
+        <ng-template foldCell="size" let-row>{{ sizeOf(row) }}</ng-template>
+        <ng-template foldCell="updated" let-row>{{ updatedOf(row) }}</ng-template>
+        <ng-template foldCell="actions" let-row>
+          <div class="actions">
+            @if (row.archivedAt === null) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                [disabled]="pending() !== null"
+                (click)="opened.emit(row.id)"
+                data-scenario-open
+              >
+                Ouvrir
+              </button>
+              @if (canWrite()) {
+                <fold-inline-confirm
+                  intent="danger"
+                  message="Le scénario quitte la liste de l’équipe. Les véhicules et les bacs ne sont pas touchés."
+                  [labels]="{ confirm: 'Archiver' }"
+                  [loading]="pending() === row.id"
+                  (confirmed)="archive(row)"
+                  data-scenario-archive
+                >
+                  <button foldButton size="sm" emphasis="soft" intent="danger">Archiver</button>
+                </fold-inline-confirm>
+              }
+            } @else if (canWrite()) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="soft"
+                [loading]="pending() === row.id"
+                [disabled]="pending() !== null"
+                (click)="reactivate(row)"
+                data-scenario-reactivate
+              >
+                Réactiver
+              </button>
+            }
+          </div>
+        </ng-template>
+      </fold-data-table>
+    }
+  </div>
+</fold-card>

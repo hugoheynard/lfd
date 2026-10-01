@@ -251,6 +251,8 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // La bibliothèque d'achat (lot B1) : des candidats, saisis à la main, rarement.
   DeliveryPurchaseVehicleCandidate: "delivery",
   DeliveryPurchaseBinCandidate: "delivery",
+  // Les scénarios d'achat (lot B3) : une sélection nommée, enregistrée à la main.
+  DeliveryPurchaseScenario: "delivery",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

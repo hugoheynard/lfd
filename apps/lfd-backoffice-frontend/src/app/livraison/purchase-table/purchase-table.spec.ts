@@ -3,6 +3,10 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type {
   BinTypeView,
   PurchaseBinCandidateView,
+  PurchaseScenariosView,
+  PurchaseScenarioView,
+  SavePurchaseScenarioPayload,
+  StaffPermission,
   PurchaseTablePayload,
   PurchaseTableView,
   PurchaseVehicleCandidateView,
@@ -10,9 +14,12 @@ import type {
 } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { PermissionsStore } from '../../auth/permissions.store';
+import { NotifyService } from '../../notify.service';
 import { DeliveryBinsService } from '../delivery-bins.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import { PurchaseLibraryService } from '../purchase-library.service';
+import { PurchaseScenariosService } from '../purchase-scenarios.service';
 import { PurchaseTable } from './purchase-table';
 
 const AUTHOR = { staffUserId: 's1', name: 'Hugo', role: 'admin' };
@@ -130,15 +137,69 @@ interface Wire {
   asked: PurchaseTablePayload[];
   refuse: string | null;
   fleetDown: boolean;
+  grants: StaffPermission[];
+  scenario: PurchaseScenarioView;
+  created: SavePurchaseScenarioPayload[];
+  replaced: { id: string; payload: SavePurchaseScenarioPayload }[];
 }
+
+/** Un scénario enregistré : la flotte et un format en service, plus un candidat archivé depuis. */
+const SCENARIO: PurchaseScenarioView = {
+  id: 'ps1',
+  name: 'Kangoo et bacs',
+  selection: {
+    vehicles: [{ source: 'fleet', id: 'veh1' }],
+    formats: [
+      { source: 'bin_type', id: 'bt1' },
+      { source: 'candidate', id: 'pb-old' },
+    ],
+    gapCm: 3,
+  },
+  display: { criterion: 'volume', showCostPerLiter: true },
+  updatedAt: '2026-01-01T08:00:00.000Z',
+  archivedAt: null,
+  issues: [
+    {
+      kind: 'bin_candidate',
+      source: 'candidate',
+      id: 'pb-old',
+      name: 'Caisse Dupont 50',
+      problem: 'archived',
+      message: 'Le format « Caisse Dupont 50 » a été archivé — retirez-le de la sélection.',
+    },
+  ],
+};
+
+const SCENARIOS: PurchaseScenariosView = {
+  scenarios: [
+    {
+      id: 'ps1',
+      name: 'Kangoo et bacs',
+      vehicles: 1,
+      formats: 2,
+      updatedAt: '2026-01-01T08:00:00.000Z',
+      updatedBy: 'Hugo',
+      archivedAt: null,
+    },
+  ],
+};
 
 let wire: Wire;
 
 async function boot(
   vehicles: PurchaseVehicleCandidateView[] = [candidateVehicle(1)],
   fleetDown = false,
+  grants: StaffPermission[] = ['delivery_rounds:read', 'delivery_rounds:write'],
 ): Promise<ComponentFixture<PurchaseTable>> {
-  wire = { asked: [], refuse: null, fleetDown };
+  wire = {
+    asked: [],
+    refuse: null,
+    fleetDown,
+    grants,
+    scenario: SCENARIO,
+    created: [],
+    replaced: [],
+  };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [PurchaseTable],
@@ -173,6 +234,31 @@ async function boot(
           binTypes: () => Promise.resolve({ types: [BIN_TYPE] }),
         } satisfies Pick<DeliveryBinsService, 'binTypes'>,
       },
+      {
+        provide: PurchaseScenariosService,
+        useValue: {
+          list: () => Promise.resolve(SCENARIOS),
+          open: () => Promise.resolve(wire.scenario),
+          create: (payload: SavePurchaseScenarioPayload) => {
+            wire.created.push(payload);
+            return Promise.resolve('ps-new');
+          },
+          replace: (id: string, payload: SavePurchaseScenarioPayload) => {
+            wire.replaced.push({ id, payload });
+            return Promise.resolve();
+          },
+          archive: () => Promise.resolve(),
+          reactivate: () => Promise.resolve(),
+        } satisfies Pick<
+          PurchaseScenariosService,
+          'list' | 'open' | 'create' | 'replace' | 'archive' | 'reactivate'
+        >,
+      },
+      {
+        provide: PermissionsStore,
+        useValue: { can: (permission: StaffPermission) => wire.grants.includes(permission) },
+      },
+      { provide: NotifyService, useValue: { success: () => undefined } },
     ],
   });
   const fixture = TestBed.createComponent(PurchaseTable);
@@ -284,4 +370,99 @@ describe('PurchaseTable', () => {
     expect(host(fixture).querySelector('[data-unread]')?.textContent).toContain('la flotte');
     expect(host(fixture).querySelectorAll('[data-vehicle-choice]')).toHaveLength(1);
   });
+
+  it('ouvrir un scénario remet la sélection, le jeu et le critère, et nomme l’archivé à part', async () => {
+    const fixture = await boot();
+    click(fixture, '[data-scenario-open]');
+    await settle(fixture);
+
+    const checked = [
+      ...host(fixture).querySelectorAll<HTMLInputElement>(
+        '[data-vehicle-choice] input, [data-format-choice] input',
+      ),
+    ].map((box) => box.checked);
+    // Candidat 1, Kangoo | Caisse 50, Bac maison
+    expect(checked).toEqual([false, true, false, true]);
+    expect(host(fixture).querySelector('[data-scenario-issues]')?.textContent).toContain(
+      'Caisse Dupont 50',
+    );
+    expect(host(fixture).querySelector('[data-current-scenario]')?.textContent).toContain(
+      'Kangoo et bacs',
+    );
+    // Un élément à corriger : le tableau ne part pas tout seul.
+    expect(wire.asked).toEqual([]);
+
+    click(fixture, '[data-drop-issue]');
+    expect(host(fixture).querySelector('[data-scenario-issues]')).toBeNull();
+    computeButton(fixture).click();
+    await settle(fixture);
+    expect(wire.asked).toEqual([
+      {
+        vehicles: [{ source: 'fleet', id: 'veh1' }],
+        formats: [{ source: 'bin_type', id: 'bt1' }],
+        gapCm: 3,
+      },
+    ]);
+  });
+
+  it('un scénario sans élément à corriger relance le tableau dès l’ouverture', async () => {
+    const fixture = await boot();
+    wire.scenario = {
+      ...SCENARIO,
+      selection: { ...SCENARIO.selection, formats: [{ source: 'bin_type', id: 'bt1' }] },
+      issues: [],
+    };
+    click(fixture, '[data-scenario-open]');
+    await settle(fixture);
+
+    expect(wire.asked).toHaveLength(1);
+    expect(host(fixture).querySelector('[data-cell]')).not.toBeNull();
+  });
+
+  it('enregistre la sélection, le critère et le coût par litre sous un nom, puis remplace', async () => {
+    const fixture = await boot();
+    check(fixture, '[data-vehicle-choice]', 1);
+    check(fixture, '[data-format-choice]', 1);
+    click(fixture, '[data-save-as]');
+    type(fixture, '[data-save-name] input', 'Mon essai');
+    click(fixture, '[data-save-as-confirm]');
+    await settle(fixture);
+
+    expect(wire.created).toEqual([
+      {
+        name: 'Mon essai',
+        selection: {
+          vehicles: [{ source: 'fleet', id: 'veh1' }],
+          formats: [{ source: 'bin_type', id: 'bt1' }],
+          gapCm: 1,
+        },
+        display: { criterion: 'occupation', showCostPerLiter: false },
+      },
+    ]);
+    click(fixture, '[data-replace]');
+    await settle(fixture);
+    expect(wire.replaced.map((r) => [r.id, r.payload.name])).toEqual([['ps-new', 'Mon essai']]);
+  });
+
+  it('sans droit d’écriture, ni enregistrer, ni remplacer, ni archiver', async () => {
+    const fixture = await boot([candidateVehicle(1)], false, ['delivery_rounds:read']);
+    expect(host(fixture).querySelector('[data-scenario-open]')).not.toBeNull();
+    expect(host(fixture).querySelector('[data-save-as]')).toBeNull();
+    expect(host(fixture).querySelector('[data-scenario-archive]')).toBeNull();
+  });
 });
+
+function click(fixture: ComponentFixture<PurchaseTable>, selector: string): void {
+  const target = host(fixture).querySelector<HTMLElement>(selector);
+  if (target === null) throw new Error(`${selector} absent.`);
+  target.click();
+  fixture.detectChanges();
+}
+
+function type(fixture: ComponentFixture<PurchaseTable>, selector: string, value: string): void {
+  const field = host(fixture).querySelector<HTMLInputElement>(selector);
+  if (field === null) throw new Error(`${selector} absent.`);
+  field.value = value;
+  field.dispatchEvent(new Event('input'));
+  fixture.detectChanges();
+}
