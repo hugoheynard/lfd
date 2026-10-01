@@ -1,4 +1,7 @@
 import {
+  type DayVersionQuery,
+  type DayVersionView,
+  dayVersionQuerySchema,
   type DepartDeliveryRoundPayload,
   departDeliveryRoundPayloadSchema,
   type MyDeliveryRoundsView,
@@ -27,6 +30,7 @@ import type { StoredDocument } from "../../platform/storage/document-store.js";
 import { DepartMyRoundCommand } from "../application/commands/depart-my-round.command.js";
 import { GetMyDeliveryRoundQuery } from "../application/queries/get-my-delivery-round.query.js";
 import { GetMyDeliveryRoundsQuery } from "../application/queries/get-my-delivery-rounds.query.js";
+import { GetMyRoundVersionQuery } from "../application/queries/get-my-round-version.query.js";
 import { GetMyStopStepPhotoQuery } from "../application/queries/get-my-stop-step-photo.query.js";
 import { serveStepPhoto } from "./step-photo-http.js";
 
@@ -65,6 +69,20 @@ export class MyDeliveryRoundController {
   ): Promise<MyDeliveryRoundsView> {
     return this.queries.execute<GetMyDeliveryRoundsQuery, MyDeliveryRoundsView>(
       new GetMyDeliveryRoundsQuery(staffUserId, query.date),
+    );
+  }
+
+  /**
+   * La version de « ma tournée » (PL4) — livraison et commerce mêlés : la page
+   * ne relit sa tournée que si elle a bougé. Déclarée AVANT `:roundId`, qui
+   * la prendrait sinon pour un identifiant de tournée.
+   */
+  @Get("version")
+  version(
+    @Query(new ZodQuery(dayVersionQuerySchema)) query: DayVersionQuery,
+  ): Promise<DayVersionView> {
+    return this.queries.execute<GetMyRoundVersionQuery, DayVersionView>(
+      new GetMyRoundVersionQuery(query.date),
     );
   }
 

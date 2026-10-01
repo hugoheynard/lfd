@@ -14,6 +14,7 @@ import {
 const AT = new Date(0);
 const CARNET = { lat: 45.1, lng: 6.1 };
 const FROZEN = { lat: 45.9, lng: 6.9 };
+const LINE = { sku: "TAR-001", name: "Tarte", quantity: 2, requiresCold: true };
 
 function stop(id: string, position: number, overrides: Partial<DriverStopRow> = {}): DriverStopRow {
   return {
@@ -84,6 +85,8 @@ function inputs(overrides: Partial<MyDeliveryRoundInputs>): MyDeliveryRoundInput
     home: null,
     orderStates: new Map(),
     incidents: [],
+    stopSheets: new Map(),
+    readyOrders: new Set(),
     ...overrides,
   };
 }
@@ -151,9 +154,13 @@ describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
         procedures: new Map([
           ["o_a", [{ id: "st_1", title: "Cour", body: "", hasPhoto: true, photoRevision: "rev1" }]],
         ]),
+        stopSheets: new Map([["o_a", { lines: [LINE], binsExpected: 2 }]]),
       }),
     );
 
+    expect(Object.keys(view.stops[0]?.sheet[0] ?? {}).sort()).toEqual(
+      ["name", "quantity", "requiresCold", "sku"].sort(),
+    );
     expect(Object.keys(view.stops[0] ?? {}).sort()).toEqual(
       [
         "address",
@@ -161,6 +168,9 @@ describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
         // Plan « À la porte », lot A : décidés, pas commodes (AP-D5, AP-D6, AP-Q6, AP-D2).
         "arrivedAt",
         "bins",
+        // « Ma tournée » suit le colisage (PL4) : la fiche sans montant, l'avancement.
+        "binsDeclared",
+        "binsExpected",
         "canDeposit",
         "closedAt",
         "coldBins",
@@ -170,9 +180,11 @@ describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
         "gps",
         "orderNote",
         "orderState",
+        "packing",
         "procedure",
         "rank",
         "reference",
+        "sheet",
         "signatureRequired",
         "stopId",
         "window",
@@ -283,5 +295,57 @@ describe("myDeliveryRoundView — à la porte (plan « À la porte », lot A)", 
         reportedBy: { staffUserId: "staff_paul", name: null },
       }),
     ]);
+  });
+});
+
+describe("myDeliveryRoundView — « Ma tournée » suit le colisage (PL4)", () => {
+  it("porte la fiche, « prête » lue au commerce, les bacs déclarés et attendus", () => {
+    const view = myDeliveryRoundView(
+      inputs({
+        round: round([stop("a", 1), stop("b", 2, { bins: 0, coldBins: 0 }), stop("c", 3)], null),
+        stopSheets: new Map([
+          ["o_a", { lines: [LINE], binsExpected: 2 }],
+          ["o_b", { lines: [LINE], binsExpected: null }],
+        ]),
+        readyOrders: new Set(["o_a", "o_c"]),
+      }),
+    );
+
+    expect(
+      view.stops.map((s) => [s.packing, s.binsDeclared, s.binsExpected, s.sheet.length]),
+    ).toEqual([
+      ["ready", 2, 2, 1],
+      ["in_progress", 0, undefined, 1],
+      ["ready", 2, undefined, 0],
+    ]);
+    expect(view.stops[0]?.sheet).toEqual([LINE]);
+    expect({ readyStops: view.readyStops, stopCount: view.stopCount }).toEqual({
+      readyStops: 2,
+      stopCount: 3,
+    });
+  });
+
+  it("une proposition qui ne sait pas dire : `binsExpected` ABSENT, pas zéro ni null", () => {
+    const view = myDeliveryRoundView(
+      inputs({
+        round: round([stop("a", 1)], null),
+        stopSheets: new Map([["o_a", { lines: [LINE], binsExpected: null }]]),
+      }),
+    );
+
+    expect("binsExpected" in (view.stops[0] ?? {})).toBe(false);
+  });
+
+  it("une ligne qui porterait plus que la liste blanche n'en laisse rien passer", () => {
+    const leaky = { ...LINE, unitPriceMillicents: 120_000, lineTotalCents: 240 };
+    const view = myDeliveryRoundView(
+      inputs({
+        round: round([stop("a", 1)], null),
+        stopSheets: new Map([["o_a", { lines: [leaky], binsExpected: 1 }]]),
+      }),
+    );
+
+    expect(view.stops[0]?.sheet).toEqual([LINE]);
+    expect(JSON.stringify(view)).not.toMatch(/cents|price|total|amount|prix|montant/iu);
   });
 });

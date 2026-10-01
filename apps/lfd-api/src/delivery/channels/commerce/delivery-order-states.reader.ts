@@ -4,6 +4,13 @@ import type { DeliveryStopOrderState } from "@lfd/contracts";
 export interface DeliveryOrderState {
   readonly orderId: string;
   readonly state: DeliveryStopOrderState;
+  /**
+   * **Prête** : la fabrication est finie et la commande attend d'être remise
+   * — ou l'a déjà été (« Ma tournée » suit le colisage, PL4). Une annulée
+   * n'est jamais prête. C'est le commerce qui sait ce que ses statuts veulent
+   * dire ; la livraison n'apprend que ce booléen.
+   */
+  readonly ready: boolean;
 }
 
 /**

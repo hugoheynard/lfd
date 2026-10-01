@@ -18,6 +18,7 @@ import {
 } from "../../domain/ports/driver-rounds.reader.js";
 import { departureViewOf } from "../departure-view.js";
 import { myDeliveryRoundView } from "../my-delivery-round-view.js";
+import { StopSheets } from "../stop-sheets.js";
 import { GetMyDeliveryRoundQuery } from "./get-my-delivery-round.query.js";
 
 /**
@@ -28,7 +29,8 @@ import { GetMyDeliveryRoundQuery } from "./get-my-delivery-round.query.js";
  * les feuilles vivantes et les points du carnet du commerce (seulement pour
  * ce que le départ n'a pas figé), la procédure vivante, le point de départ,
  * l'état de chaque commande et les signalements de la tournée (plan « À la
- * porte »). Une lecture : elle n'écrit rien.
+ * porte »), et la fiche de chaque arrêt avec l'avancement du colisage (PL4).
+ * Une lecture : elle n'écrit rien.
  *
  * @throws {DriverRoundNotFoundError}
  */
@@ -45,6 +47,7 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
     private readonly candidates: DepartureCandidatesReader,
     private readonly states: DeliveryOrderStatesReader,
     private readonly incidents: DeliveryIncidentsReader,
+    private readonly stopSheets: StopSheets,
   ) {}
 
   async execute(query: GetMyDeliveryRoundQuery): Promise<MyDeliveryRoundView> {
@@ -53,8 +56,8 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
       throw new DriverRoundNotFoundError();
     }
     const orderIds = round.stops.map((stop) => stop.orderId);
-    const [sheets, points, procedures, chosenId, candidates, states, incidents] = await Promise.all(
-      [
+    const [sheets, points, procedures, chosenId, candidates, states, incidents, stopSheets] =
+      await Promise.all([
         this.liveSheetsOf(round),
         this.carnetPointsOf(round),
         this.procedures.proceduresOf(orderIds),
@@ -62,8 +65,8 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
         this.candidates.list(),
         this.states.statesOf(orderIds),
         this.incidents.ofRounds([round.id]),
-      ],
-    );
+        this.stopSheets.of(orderIds),
+      ]);
     return myDeliveryRoundView({
       round,
       sheets,
@@ -76,6 +79,8 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
         states.map((state) => [state.orderId, state.state]),
       ),
       incidents,
+      stopSheets,
+      readyOrders: new Set(states.filter((state) => state.ready).map((state) => state.orderId)),
     });
   }
 

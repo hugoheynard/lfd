@@ -216,10 +216,11 @@ model DeliveryRoundStop {
 /// étiquette est une lecture. Ex-`delivery_bag`, renommé en place tant que le
 /// lot 4 n'était pas promu (v2-6).
 ///
-/// Écrivain : le chargement (`delivery/`). **Aucune journée** : un bac n'a pas
-/// de jour, son chargement en a un — d'où son absence de déclencheur
-/// `day_change`, écrite dans `test/day-change-triggers.e2e-spec.ts`. Jamais
-/// supprimé : un bac de trop s'annule (`voided_at`).
+/// Écrivain : le chargement (`delivery/`). **Aucune colonne de journée** : un
+/// bac n'a pas de jour. Ses trois déclencheurs `day_change` (depuis le
+/// 2026-10-01, PL4) écrivent la journée de chaque arrêt VIVANT de sa commande
+/// (`delivery.record_day_change_by_bin_order`) : « Ma tournée » se relit quand
+/// le coliseur déclare. Jamais supprimé : un bac de trop s'annule (`voided_at`).
 ///
 /// `order_id` est OPAQUE : aucune clé étrangère vers `public.orders`.
 ///

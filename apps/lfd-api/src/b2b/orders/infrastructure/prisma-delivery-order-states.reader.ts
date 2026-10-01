@@ -30,8 +30,25 @@ export class PrismaDeliveryOrderStatesReader extends DeliveryOrderStatesReader {
       where: { id: { in: [...orderIds] } },
       select: { id: true, status: true, handedOverAt: true },
     });
-    return rows.map((row) => ({ orderId: row.id, state: stateOf(row) }));
+    return rows.map((row) => ({ orderId: row.id, state: stateOf(row), ready: isReady(row) }));
   }
+}
+
+/** Les statuts d'une commande dont la fabrication est finie : prête, puis remise. */
+const READY_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  OrderStatus.ready,
+  OrderStatus.fulfilled,
+]);
+
+/** Prête : fabrication finie (`ready`), ou déjà au-delà — remise. Jamais une annulée. */
+function isReady(row: {
+  readonly status: OrderStatus;
+  readonly handedOverAt: Date | null;
+}): boolean {
+  if (row.status === OrderStatus.cancelled) {
+    return false;
+  }
+  return row.handedOverAt !== null || READY_STATUSES.has(row.status);
 }
 
 function stateOf(row: {

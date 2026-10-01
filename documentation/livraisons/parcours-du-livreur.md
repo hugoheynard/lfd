@@ -184,6 +184,12 @@ affichée en roulant ou à l'arrivée (9), changer l'ordre (10).
 
 ### Les lots qui en sortent
 
+> 🟡 **PL1 et PL4 : partie serveur bâtie le 2026-10-01** (non commitée à
+> l'écriture) — routes `admin/livraison/ma-tournee/:roundId/chargement…`
+> (PL1), fiche et avancement dans `MyDeliveryStopView`, route
+> `ma-tournee/version`, trois déclencheurs sur `delivery_bin`
+> (`20261001150000_le_bac_fait_bouger_la_journee`) (PL4). L'écran reste à faire.
+
 | Lot                                     | Contenu                                                                                               |
 | --------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | **PL1 — Charger depuis « Ma tournée »** | scan et plan de chargement de **sa** tournée, sous le droit du livreur, avec le mur `driver_staff_id` |

@@ -24,6 +24,7 @@ import {
   unplacedView,
 } from "../delivery-packing-view.js";
 import { freeHalvesOfOrder } from "../free-halves-support.js";
+import { packingLinesOf } from "../packing-lines.js";
 import { GetDeliveryPackingProposalQuery } from "./get-delivery-packing-proposal.query.js";
 
 /**
@@ -74,18 +75,7 @@ export class GetDeliveryPackingProposalHandler implements IQueryHandler<
   /** Les lignes fusionnées par SKU, avec le froid de la fiche produit. */
   private async orderLines(orderId: string): Promise<readonly DeliveryPackingLineView[]> {
     const [lines, sold] = await Promise.all([this.lines.linesOf(orderId), this.products.sold()]);
-    const cold = new Set(sold.filter((product) => product.requiresCold).map((p) => p.sku));
-    const merged = new Map<string, DeliveryPackingLineView>();
-    for (const line of lines) {
-      const known = merged.get(line.sku);
-      merged.set(line.sku, {
-        sku: line.sku,
-        name: known?.name ?? line.name,
-        quantity: (known?.quantity ?? 0) + line.quantity,
-        requiresCold: cold.has(line.sku),
-      });
-    }
-    return [...merged.values()];
+    return packingLinesOf(lines, sold);
   }
 
   /** Le partage en dernier recours, ou `null` (v2-4). */

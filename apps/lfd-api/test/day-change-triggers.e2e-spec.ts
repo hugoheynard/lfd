@@ -38,10 +38,9 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   "delivery.delivery_vehicle":
     "la flotte, un réglage sans journée — une tournée qui recopie le véhicule, elle, en portera une",
   "delivery.delivery_departure": "le point de départ des tournées, un réglage unique sans journée",
-  // Le bac (lot 4, L4-C18, 2026-09-29) appartient à la COMMANDE, pas à une
-  // journée : son CHARGEMENT en a une, et `delivery_bin_load` a ses déclencheurs.
-  "delivery.delivery_bin":
-    "un bac n'a pas de jour, son chargement en a un — `delivery_bin_load` porte la journée et ses déclencheurs",
+  // Le bac (lot 4, L4-C18) n'est PLUS une exception depuis le 2026-10-01
+  // (`parcours-du-livreur.md`, PL4) : sa déclaration fait bouger le journal
+  // par la journée des arrêts de sa commande (`record_day_change_by_bin_order`).
   // Le calculateur de tournée (lot 7, 2026-09-29) : un réglage, et un cache
   // d'adresses. Ce qu'il ÉCRIT dans une journée passe par la tournée, qui a
   // ses déclencheurs.

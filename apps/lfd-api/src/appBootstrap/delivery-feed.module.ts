@@ -3,6 +3,7 @@ import { Global, Module } from "@nestjs/common";
 import { AccountModule } from "../b2b/account/account.module.js";
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { CatalogDeliveryProductsReader } from "../b2b/catalog/infrastructure/catalog-delivery-products.reader.js";
+import { PrismaCommerceDayVersionReader } from "../b2b/orders/infrastructure/prisma-commerce-day-version.reader.js";
 import { PrismaDeliveryOrderStatesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-states.reader.js";
 import { PrismaDeliveryOrderLinesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-lines.reader.js";
 import { PrismaDeliveryOrdersReader } from "../b2b/orders/infrastructure/prisma-delivery-orders.reader.js";
@@ -11,6 +12,7 @@ import { PrismaDeliveryStepPhotosReader } from "../b2b/orders/infrastructure/pri
 import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.module.js";
 import { PickupDepartureCandidatesReader } from "../b2b/pickup-addresses/infrastructure/pickup-departure-candidates.reader.js";
 import {
+  CommerceDayVersionReader,
   DeliveryOrderLinesReader,
   DeliveryOrdersReader,
   DeliveryOrderStatesReader,
@@ -38,7 +40,9 @@ import {
  *   vivante pour le livreur (plan « Ma tournée », MT-D5 v2) ;
  * - `DeliveryStepPhotosReader` — la photo d'une étape de cette procédure,
  *   par le chemin de lecture de la route du staff : d'où `AccountModule`,
- *   qui exporte `DeliveryStepPhotoLocator`.
+ *   qui exporte `DeliveryStepPhotoLocator` ;
+ * - `CommerceDayVersionReader` — la version de journée du commerce, pour la
+ *   version de « ma tournée » (`parcours-du-livreur.md`, PL4).
  *
  * `@Global` pour la raison des autres fils : le consommateur est `delivery/`,
  * qui ne peut pas importer le module qui fournit le port sans dépendre du
@@ -55,6 +59,7 @@ import {
     { provide: DeliveryProceduresReader, useClass: PrismaDeliveryProceduresReader },
     { provide: DeliveryStepPhotosReader, useClass: PrismaDeliveryStepPhotosReader },
     { provide: DeliveryOrderStatesReader, useClass: PrismaDeliveryOrderStatesReader },
+    { provide: CommerceDayVersionReader, useClass: PrismaCommerceDayVersionReader },
   ],
   exports: [
     DepartureCandidatesReader,
@@ -64,6 +69,7 @@ import {
     DeliveryProceduresReader,
     DeliveryStepPhotosReader,
     DeliveryOrderStatesReader,
+    CommerceDayVersionReader,
   ],
 })
 export class DeliveryFeedModule {}

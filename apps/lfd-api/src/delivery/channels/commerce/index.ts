@@ -26,4 +26,5 @@ export {
   DeliveryOrderStatesReader,
   type DeliveryOrderState,
 } from "./delivery-order-states.reader.js";
+export { CommerceDayVersionReader } from "./commerce-day-version.reader.js";
 export type { DepartureSheet, DepartureWindow } from "../../domain/entities/departure-sheet.js";

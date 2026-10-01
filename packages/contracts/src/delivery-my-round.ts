@@ -15,7 +15,16 @@ import type { FulfillmentSource } from "./order.js";
  *   sous `delivery_doorstep`) ;
  * - `GET /:roundId/arrets/:stopId/procedure/:stepId/photo` → l'image (octets,
  *   `Content-Type` relu dans les octets, `private, immutable`) — l'écran y
- *   ajoute `?rev=` + {@link MyDeliveryStepView.photoRevision}.
+ *   ajoute `?rev=` + {@link MyDeliveryStepView.photoRevision} ;
+ * - `GET /version?date=AAAA-MM-JJ` → `DayVersionView` — la version de « ma
+ *   tournée » (PL4) : elle bouge quand le journal de la livraison OU celui du
+ *   commerce bouge pour ce jour. Opaque, elle se compare par égalité ;
+ * - le chargement de MA tournée (PL1, mêmes vues et mêmes corps que l'écran
+ *   de chargement, `delivery-loading.ts`) : `GET /:roundId/chargement` →
+ *   `DeliveryLoadingRoundView` ; `GET /:roundId/chargement/plan` →
+ *   `DeliveryLoadingPlanView` ; `POST /:roundId/chargement/bacs`
+ *   (`LoadDeliveryBinPayload`) → 204 ; `POST
+ *   /:roundId/chargement/bacs/:binId/dechargement` → 204.
  *
  * Les gestes à la porte (arriver, signaler, clore sans remise) sont dans
  * `delivery-doorstep.ts`, sous `delivery_doorstep`.
@@ -24,9 +33,12 @@ import type { FulfillmentSource } from "./order.js";
  * est le livreur AFFECTÉ existent pour elle — une autre rend 404, la liste et
  * le détail lisent le même `where`.
  *
- * 🔴 **Une liste blanche, et aucun montant.** Ni prix, ni total, ni ligne de
- * commande : un total servi au livreur serait lu comme une somme à encaisser
- * à la porte. Ajouter un champ ici est une décision, pas une commodité.
+ * 🔴 **Une liste blanche, et aucun montant.** Ni prix, ni total : un total
+ * servi au livreur serait lu comme une somme à encaisser à la porte. Ajouter
+ * un champ ici est une décision, pas une commodité. Les produits de la
+ * commande y sont entrés le 2026-10-01 par décision (« une seule fiche »,
+ * `parcours-du-livreur.md`, PL4) — le contenu de la feuille d'atelier, SANS
+ * montant, comme le papier qui voyage dans le bac.
  */
 export interface MyDeliveryRoundsView {
   /** Le jour demandé, `AAAA-MM-JJ`. */
@@ -77,6 +89,34 @@ export interface MyDeliveryRoundView {
   readonly home: DeparturePointView | null;
   /** Les problèmes signalés sur cette tournée, du plus ancien au plus récent. */
   readonly incidents: readonly DeliveryIncidentView[];
+  /** Les arrêts dont la commande est prête (`packing: "ready"`) — « 4 arrêts prêts sur 6 » (PL4). */
+  readonly readyStops: number;
+  /** Les arrêts de la tournée (non retirés). */
+  readonly stopCount: number;
+}
+
+/**
+ * Où en est le colisage d'une commande (PL4) :
+ * - `in_progress` — en préparation ;
+ * - `ready` — prête : la commande est `ready` (ou au-delà) côté commerce, qui
+ *   l'apprend du fournil au scan de la fiche.
+ */
+export type MyDeliveryStopPacking = "in_progress" | "ready";
+
+/**
+ * Une ligne de la fiche d'un arrêt — le contenu de la feuille d'atelier
+ * (PL4). **Aucun montant**, par construction : il n'y a pas de champ pour.
+ *
+ * ⚠️ Pas d'unité : ni la ligne de commande ni la feuille d'atelier n'en
+ * portent (relevé le 2026-10-01) — la quantité se lit en pièces vendues.
+ */
+export interface MyDeliverySheetLineView {
+  readonly sku: string;
+  /** Le nom figé à la commande. */
+  readonly name: string;
+  readonly quantity: number;
+  /** Le produit demande le froid (fiche du référentiel) ; `false` : rien de déclaré. */
+  readonly requiresCold: boolean;
 }
 
 /** Un arrêt, tel que le livreur en a besoin à la porte. */
@@ -123,6 +163,19 @@ export interface MyDeliveryStopView {
    * retirée ou annulée se clôt sans remise (AP-D2).
    */
   readonly orderState: DeliveryStopOrderState;
+  /** La fiche : les produits de la commande, fusionnés par SKU, dans l'ordre de la commande. */
+  readonly sheet: readonly MyDeliverySheetLineView[];
+  /** L'avancement du colisage (PL4). */
+  readonly packing: MyDeliveryStopPacking;
+  /** Les bacs déclarés et non annulés — le même compte que {@link bins}, nommé pour l'avancement. */
+  readonly binsDeclared: number;
+  /**
+   * Les bacs que la proposition de colisage prévoit (une moitié compte pour
+   * un) — ABSENT quand elle ne sait pas le dire : un produit sans contenance,
+   * ou du froid sans bac isotherme. Une proposition, pas une consigne : le
+   * coliseur peut déclarer autrement.
+   */
+  readonly binsExpected?: number;
 }
 
 /** La fenêtre convenue ; `default` n'est pas une promesse faite au client. */

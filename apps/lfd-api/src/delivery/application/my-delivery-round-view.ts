@@ -4,6 +4,7 @@ import type {
   GpsPoint,
   MyDeliveryRoundFreeze,
   MyDeliveryRoundView,
+  MyDeliverySheetLineView,
   MyDeliveryStepView,
   MyDeliveryStopView,
 } from "@lfd/contracts";
@@ -14,6 +15,7 @@ import type { DeliveryIncidentRow } from "../domain/ports/delivery-incidents.rea
 import type { DriverRoundRow, DriverStopRow } from "../domain/ports/driver-rounds.reader.js";
 import { depositPermitted } from "../domain/services/deposit-rule.js";
 import { deliveryIncidentView } from "./delivery-incident-view.js";
+import type { StopSheet } from "./stop-sheets.js";
 
 /** Ce que la vue du livreur assemble — les lectures faites au même moment. */
 export interface MyDeliveryRoundInputs {
@@ -30,6 +32,10 @@ export interface MyDeliveryRoundInputs {
   readonly orderStates: ReadonlyMap<string, DeliveryStopOrderState>;
   /** Les signalements de la tournée, du plus ancien au plus récent. */
   readonly incidents: readonly DeliveryIncidentRow[];
+  /** La fiche de chaque commande (PL4) ; une absente : fiche vide, rien d'attendu. */
+  readonly stopSheets: ReadonlyMap<string, StopSheet>;
+  /** Les commandes que le commerce dit prêtes (PL4). */
+  readonly readyOrders: ReadonlySet<string>;
 }
 
 /** Ce qu'un arrêt affiche à la porte — figé au départ, ou lu vivant au dépôt. */
@@ -72,7 +78,10 @@ const UNKNOWN_DOOR: DoorFacts = {
  * - **procédure** : toujours vivante ; **bacs** : les tables de la livraison ;
  * - **à la porte** (`plan-a-la-porte.md`) : l'arrivée et le dépôt autorisé
  *   figés à l'exécution, `canDeposit` calculé ICI par la règle du domaine
- *   (AP-Q6), l'état de la commande lu vivant, les signalements de la tournée.
+ *   (AP-Q6), l'état de la commande lu vivant, les signalements de la tournée ;
+ * - **la fiche et l'avancement du colisage** (PL4) : les produits de la
+ *   commande sans montant, « prête » lue au commerce, les bacs déclarés
+ *   (tables de la livraison) et attendus (la proposition, quand elle le dit).
  */
 export function myDeliveryRoundView(inputs: MyDeliveryRoundInputs): MyDeliveryRoundView {
   const { round } = inputs;
@@ -83,6 +92,7 @@ export function myDeliveryRoundView(inputs: MyDeliveryRoundInputs): MyDeliveryRo
           (a, b) => (a.departed?.departureRank ?? 0) - (b.departed?.departureRank ?? 0),
         )
       : round.stops;
+  const stops = ordered.map((stop, index) => stopView(stop, index + 1, inputs));
   return {
     id: round.id,
     serviceDay: round.serviceDay,
@@ -92,9 +102,11 @@ export function myDeliveryRoundView(inputs: MyDeliveryRoundInputs): MyDeliveryRo
     departedAt: round.departedAt?.toISOString() ?? null,
     returnedAt: round.returnedAt?.toISOString() ?? null,
     freeze,
-    stops: ordered.map((stop, index) => stopView(stop, index + 1, inputs)),
+    stops,
     home: inputs.home,
     incidents: inputs.incidents.map(deliveryIncidentView),
+    readyStops: stops.filter((stop) => stop.packing === "ready").length,
+    stopCount: stops.length,
   };
 }
 
@@ -115,6 +127,7 @@ function stopView(
 ): MyDeliveryStopView {
   const frozenPoint = stop.departed !== null && stop.departed.departureRank !== null;
   const door = doorFactsOf(stop, inputs.sheets.get(stop.orderId));
+  const sheet = inputs.stopSheets.get(stop.orderId);
   return {
     stopId: stop.stopId,
     rank,
@@ -129,6 +142,22 @@ function stopView(
     arrivedAt: stop.departed?.arrivedAt?.toISOString() ?? null,
     canDeposit: depositPermitted(door),
     orderState: inputs.orderStates.get(stop.orderId) ?? "open",
+    sheet: (sheet?.lines ?? []).map(sheetLineView),
+    packing: inputs.readyOrders.has(stop.orderId) ? "ready" : "in_progress",
+    binsDeclared: stop.bins,
+    ...(sheet !== undefined && sheet.binsExpected !== null
+      ? { binsExpected: sheet.binsExpected }
+      : {}),
+  };
+}
+
+/** Une ligne de la fiche, champ par champ : rien d'autre ne passe. */
+function sheetLineView(line: MyDeliverySheetLineView): MyDeliverySheetLineView {
+  return {
+    sku: line.sku,
+    name: line.name,
+    quantity: line.quantity,
+    requiresCold: line.requiresCold,
   };
 }
 

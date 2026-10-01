@@ -74,6 +74,7 @@ flowchart TB
   RST -. déclencheurs .-> J
   SE -. déclencheurs .-> J
   BL -. déclencheurs .-> J
+  B -. "déclencheurs (par l'arrêt)" .-> J
 ```
 
 | Table                                        | Ce qu'elle tient                                                         | Écrite par                         |
@@ -174,11 +175,11 @@ Un écran qui suit une journée (colisage, fiche d'atelier, comptoir,
 supervision, tournées) ne relit tout que si **un numéro de version** a bougé.
 Ce numéro vient d'un **journal** alimenté par des déclencheurs Postgres.
 
-| Journal                 | Alimenté par                                                                            | Lu par                                                                 |
-| ----------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `public.day_change`     | les commandes (`orders`)                                                                | `GET` version du commerce                                              |
-| `production.day_change` | les tables du fournil                                                                   | `GET admin/production/version`, `admin/supervision/production-version` |
-| `delivery.day_change`   | `delivery_round`, `delivery_round_stop`, `delivery_stop_execution`, `delivery_bin_load` | `GET admin/livraison/version`                                          |
+| Journal                 | Alimenté par                                                                                                                                                        | Lu par                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `public.day_change`     | les commandes (`orders`)                                                                                                                                            | `GET` version du commerce                                                                                 |
+| `production.day_change` | les tables du fournil                                                                                                                                               | `GET admin/production/version`, `admin/supervision/production-version`                                    |
+| `delivery.day_change`   | `delivery_round`, `delivery_round_stop`, `delivery_stop_execution`, `delivery_bin_load` ; `delivery_bin` par la journée des arrêts de sa commande (2026-10-01, PL4) | `GET admin/livraison/version` ; `GET admin/livraison/ma-tournee/version` (avec le commerce, par son port) |
 
 **Jusqu'au 2026-09-30, les tables de livraison écrivaient dans le journal du
 fournil**, par douze déclencheurs branchés sur une fonction du fournil. C'était
@@ -192,6 +193,11 @@ Depuis le déménagement : la livraison a son journal, sa fonction, sa route de
 version, et son **élagage** (7 jours), dans son bloc, déclenché par le même
 cron nocturne que celui du fournil (`container/worker.ts`) mais par **sa
 propre route**. Le fournil n'efface jamais `delivery.day_change`.
+
+**« Ma tournée » a besoin des deux** (2026-10-01, PL4) : sa route de version
+additionne le numéro de la livraison et celui du commerce, lu par le port
+`CommerceDayVersionReader` (déclaré dans `delivery/channels/commerce/`,
+implémenté par `b2b/orders/` depuis `public.day_change`).
 
 **Si un écran a un jour besoin des deux** — par exemple le panneau des bacs du
 colisage, s'il devait se rafraîchir sur un chargement — c'est **l'écran** qui

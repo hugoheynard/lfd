@@ -154,7 +154,7 @@ describe("CloseStopWithoutHandoverHandler — « déjà retirée / annulée » (
     const events = new RecordingPublisher();
     const handler = new CloseStopWithoutHandoverHandler(
       rounds,
-      new FixedOrderStates([{ orderId: "o_1", state }]),
+      new FixedOrderStates([{ orderId: "o_1", state, ready: state === "handed_over" }]),
       new FixedDeliveryOrders([deliveryOn("o_1", DAY)]),
       new FixedClock(NOW),
       events,

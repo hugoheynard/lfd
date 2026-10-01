@@ -813,6 +813,8 @@ export type {
   MyDeliveryStopView,
   MyDeliveryWindowView,
   MyDeliveryStepView,
+  MyDeliveryStopPacking,
+  MyDeliverySheetLineView,
 } from "./delivery-my-round.js";
 export {
   DELIVERY_INCIDENT_FAMILIES,
