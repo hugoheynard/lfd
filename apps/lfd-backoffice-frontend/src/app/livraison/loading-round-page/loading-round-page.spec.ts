@@ -13,7 +13,8 @@ import { describe, expect, it } from 'vitest';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { BinScanner } from '../bin-scanner/bin-scanner';
 import { DeliveryLoadingService } from '../delivery-loading.service';
-import { LoadingRoundPage, loadedNotice } from './loading-round-page';
+import { loadedNotice } from '../loading-round/loading-round';
+import { LoadingRoundPage } from './loading-round-page';
 
 const WRITE: readonly StaffPermission[] = ['delivery_loading:read', 'delivery_loading:write'];
 

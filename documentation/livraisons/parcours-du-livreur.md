@@ -188,7 +188,11 @@ affichée en roulant ou à l'arrivée (9), changer l'ordre (10).
 > l'écriture) — routes `admin/livraison/ma-tournee/:roundId/chargement…`
 > (PL1), fiche et avancement dans `MyDeliveryStopView`, route
 > `ma-tournee/version`, trois déclencheurs sur `delivery_bin`
-> (`20261001150000_le_bac_fait_bouger_la_journee`) (PL4). L'écran reste à faire.
+> (`20261001150000_le_bac_fait_bouger_la_journee`) (PL4). **Écran bâti le
+> 2026-10-01** (non commité à l'écriture) : compteur, avancement et fiche sur
+> « Ma tournée », veilleur de version `my-round`, « Charger » qui ouvre le
+> corps de l'écran de chargement (`LoadingRound`) par la porte du livreur
+> (`LoadingGateway` → `MyDeliveryLoadingService`).
 
 | Lot                                     | Contenu                                                                                               |
 | --------------------------------------- | ----------------------------------------------------------------------------------------------------- |

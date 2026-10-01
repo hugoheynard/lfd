@@ -22,6 +22,7 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { parisTimeOf } from '../delivery-loading';
 import { incidentCountLabel } from '../delivery-incidents';
 import { IncidentList } from '../incident-list/incident-list';
@@ -42,6 +43,8 @@ import {
   writeNavigationApp,
 } from '../my-round-navigation';
 import { MyDeliveryRoundService } from '../my-delivery-round.service';
+import { MyRoundLoading } from '../my-round-loading/my-round-loading';
+import { allStopsReady, readyStopsLabel } from '../my-round-packing';
 import { MyRoundStop } from '../my-round-stop/my-round-stop';
 import { parisDayOf } from '../run-sheet';
 
@@ -78,6 +81,14 @@ function deviceStorage(): Storage | null {
  * PL2) : partie et non rentrée, sous `delivery_doorstep:write`, la tournée
  * offre « Je suis arrivé », « Déclarer un problème », « Clore sans remise » et
  * « Tournée terminée ». Rentrée, elle le dit et n'offre plus aucun geste.
+ *
+ * **Elle suit le colisage** (`parcours-du-livreur.md`, PL4) : « n arrêts
+ * prêts sur m » en tête, l'avancement et la fiche sur chaque arrêt. Comme les
+ * postes du fournil, elle interroge la version de « ma tournée » et ne relit
+ * que si elle a bougé (`DayVersionWatcher`).
+ *
+ * **Charger** (PL1) : au dépôt, « Charger » ouvre le chargement de SA tournée
+ * dans la page — le même écran que celui du dépôt, par la porte du livreur.
  */
 @Component({
   selector: 'app-my-round-page',
@@ -96,6 +107,7 @@ function deviceStorage(): Storage | null {
     FoldViewToggleComponent,
     IncidentList,
     IncidentReportForm,
+    MyRoundLoading,
     MyRoundStop,
   ],
   templateUrl: './my-round-page.html',
@@ -115,6 +127,8 @@ export class MyRoundPage {
   /** Le dernier refus du serveur — la tournée reste à l'écran. */
   protected readonly refusal = signal<string | null>(null);
   protected readonly busy = signal(false);
+  /** Le chargement de la tournée est ouvert (PL1). */
+  protected readonly loadingOpen = signal(false);
 
   protected readonly app = signal<NavigationApp>(readNavigationApp(this.storage));
   protected readonly appOptions: readonly FoldViewToggleOption[] = NAVIGATION_APPS;
@@ -170,13 +184,26 @@ export class MyRoundPage {
       : null;
   });
 
+  /** « Charger » : au dépôt seulement — partie, la tournée est gelée. */
+  protected readonly canOpenLoading = computed(() => this.round() !== null && !this.departed());
+
   protected readonly roundLabel = roundLabel;
+  protected readonly readyStopsLabel = readyStopsLabel;
+  protected readonly allStopsReady = allStopsReady;
   protected readonly stopCountLabel = stopCountLabel;
   protected readonly timeOf = parisTimeOf;
   protected readonly incidentCountLabel = incidentCountLabel;
 
   constructor() {
     void this.loadList();
+    // Le coliseur déclare, le fournil marque prête : sans relecture, le
+    // livreur partirait sur un « en préparation » périmé. On ne relit que si
+    // la version de « ma tournée » a bougé (PL4).
+    inject(DayVersionWatcher).watch({
+      journals: ['my-round'],
+      date: () => this.today,
+      reload: () => this.refresh(),
+    });
   }
 
   protected goToOf(stop: MyDeliveryRoundView['stops'][number]): string | null {
@@ -193,12 +220,14 @@ export class MyRoundPage {
 
   protected open(roundId: string): void {
     this.selected.set(roundId);
+    this.loadingOpen.set(false);
     this.refusal.set(null);
     void this.loadRound(roundId);
   }
 
   protected back(): void {
     this.selected.set(null);
+    this.loadingOpen.set(false);
     this.refusal.set(null);
   }
 
@@ -257,6 +286,12 @@ export class MyRoundPage {
     );
   }
 
+  /** Retour du chargement : la tournée est relue — des bacs ont pu bouger. */
+  protected closeLoading(): void {
+    this.loadingOpen.set(false);
+    this.retryRound();
+  }
+
   /** Un signalement est enregistré : on referme, on relit (il paraît dans la liste). */
   protected onRoundReported(): void {
     this.reportingRound.set(false);
@@ -284,6 +319,30 @@ export class MyRoundPage {
     }
     await this.loadRound(round.id);
     this.busy.set(false);
+  }
+
+  /**
+   * La version a bougé : relire ce qui est à l'écran, sans repasser par
+   * « chargement » ni rouvrir d'office — le livreur garde sa place. Ne rejette
+   * pas : un échec garde l'écran d'avant, le tick suivant réessaiera.
+   */
+  private async refresh(): Promise<void> {
+    const id = this.selected();
+    if (id !== null) {
+      await this.loadRound(id);
+      return;
+    }
+    if (this.list().status !== 'ready') {
+      return;
+    }
+    try {
+      const { rounds } = await this.service.mine(this.today);
+      if (this.selected() === null) {
+        this.list.set({ status: 'ready', rounds });
+      }
+    } catch {
+      // L'écran d'avant reste : le tick suivant reposera la question.
+    }
   }
 
   private async loadList(): Promise<void> {

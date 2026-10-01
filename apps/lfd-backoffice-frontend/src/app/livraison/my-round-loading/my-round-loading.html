@@ -1,0 +1,12 @@
+<div class="loading">
+  <button
+    foldButton
+    emphasis="outline"
+    icon="chevron-left"
+    (click)="closed.emit()"
+    data-close-loading
+  >
+    Retour à ma tournée
+  </button>
+  <app-loading-round [roundId]="roundId()" [canWrite]="canWrite()" />
+</div>

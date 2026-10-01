@@ -31,7 +31,7 @@ import {
   stepHeadline,
   volumeGauges,
 } from '../delivery-loading-plan';
-import { DeliveryLoadingService } from '../delivery-loading.service';
+import { LoadingGateway } from '../loading-gateway';
 
 type PlanState =
   | { readonly status: 'loading' }
@@ -64,7 +64,7 @@ type PlanState =
   styleUrl: './loading-plan.scss',
 })
 export class LoadingPlan {
-  private readonly service = inject(DeliveryLoadingService);
+  private readonly service = inject(LoadingGateway);
 
   /** La vue du chargement : son id, sa version, et ses bacs déjà chargés. */
   readonly round = input.required<DeliveryLoadingRoundView>();

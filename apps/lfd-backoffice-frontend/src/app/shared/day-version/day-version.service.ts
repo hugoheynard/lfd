@@ -15,14 +15,21 @@ import { B2B_API_BASE } from '../../api/api-config';
  * fournil et du retrait, depuis le 2026-10-01), `b2b_supervision` pour la
  * Supervision (`commerce`, `supervision-production`). Le droit se choisit par
  * la porte, pas par le journal.
+ *
+ * `my-round` n'est pas un journal de plus : c'est la version de « ma
+ * tournée » (`parcours-du-livreur.md`, PL4), sous `delivery_driving`, qui
+ * MÊLE le journal de la livraison et celui du commerce pour ce jour. Opaque,
+ * elle se compare par égalité — ce que fait déjà le veilleur.
  */
-export type DayJournal = 'commerce' | 'orders' | 'production' | 'supervision-production';
+export type DayJournal =
+  'commerce' | 'my-round' | 'orders' | 'production' | 'supervision-production';
 
 const JOURNAL_PATHS: Readonly<Record<DayJournal, string>> = {
   commerce: 'admin/supervision/version',
   orders: 'admin/orders/day-version',
   'supervision-production': 'admin/supervision/production-version',
   production: 'admin/production/version',
+  'my-round': 'admin/livraison/ma-tournee/version',
 };
 
 /** Lit la version d'une journée dans un journal — une opération, rien d'autre. */

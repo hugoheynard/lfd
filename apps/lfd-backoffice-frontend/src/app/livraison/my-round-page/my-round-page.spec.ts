@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type {
   DeliveryIncidentView,
+  DeliveryLoadingRoundView,
   MyDeliveryRoundSummaryView,
   MyDeliveryRoundView,
   MyDeliveryRoundsView,
@@ -10,8 +11,10 @@ import type {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import { MyDeliveryLoadingService } from '../my-delivery-loading.service';
 import { type IncidentReport, MyDeliveryRoundService } from '../my-delivery-round.service';
-import { myRoundOf, myStopOf } from '../my-round.fixture';
+import { myRoundOf, mySheetLineOf, myStopOf } from '../my-round.fixture';
 import { NAVIGATION_APP_KEY } from '../my-round-navigation';
 import { parisDayOf } from '../run-sheet';
 import { MyRoundPage } from './my-round-page';
@@ -33,6 +36,20 @@ interface Wire {
 }
 
 let wire: Wire;
+/** Ce que la page a confié au veilleur de version — pour jouer un changement. */
+let watched: DayWatch | null;
+
+function loadingViewOf(roundId: string): DeliveryLoadingRoundView {
+  return {
+    roundId,
+    day: '2026-10-01',
+    vehicleName: 'Kangoo',
+    passage: 1,
+    version: 3,
+    departedAt: null,
+    stops: [],
+  };
+}
 
 async function settle(fixture: ComponentFixture<MyRoundPage>): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve));
@@ -63,9 +80,30 @@ async function boot(
     }
     return Promise.resolve();
   };
+  watched = null;
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      {
+        provide: DayVersionWatcher,
+        useValue: {
+          watch: (spec: DayWatch): void => {
+            watched = spec;
+          },
+        },
+      },
+      {
+        provide: MyDeliveryLoadingService,
+        useValue: {
+          round: (id: string): Promise<DeliveryLoadingRoundView> => {
+            wire.calls.push(`loading ${id}`);
+            return Promise.resolve(loadingViewOf(id));
+          },
+          plan: (): Promise<never> => Promise.reject(new Error('plan hors sujet ici')),
+          load: (): Promise<void> => Promise.resolve(),
+          unload: (): Promise<void> => Promise.resolve(),
+        } satisfies Partial<Record<keyof MyDeliveryLoadingService, unknown>>,
+      },
       {
         provide: MyDeliveryRoundService,
         useValue: {
@@ -279,7 +317,9 @@ describe('MyRoundPage — partie', () => {
     const { element } = await boot({ round: myRoundOf({ stops: [stop] }) });
     const card = element.querySelector('[data-my-stop]');
     expect(card?.querySelector('[data-signature]')).not.toBeNull();
-    expect(card?.querySelector('[data-bins]')?.textContent).toContain('3 bacs, dont 1 froid');
+    expect(card?.querySelector('[data-bins]')?.textContent).toContain(
+      '3 bacs déclarés, dont 1 froid',
+    );
     expect(card?.querySelector('[data-tel] a')?.getAttribute('href')).toBe('tel:0612345678');
     expect(card?.querySelector('[data-procedure]')?.textContent).toContain('Par la cour');
     expect(card?.querySelector('app-my-round-step-photo')).not.toBeNull();
@@ -447,5 +487,105 @@ describe('MyRoundPage — à la porte (lot A, PL2)', () => {
     expect(element.querySelector('[data-arrive]')).toBeNull();
     expect(element.querySelector('[data-report-stop]')).toBeNull();
     expect(element.querySelector('[data-go-to]')).toBeNull();
+  });
+});
+
+describe('MyRoundPage — elle suit le colisage (PL4)', () => {
+  it('compte en tête les arrêts prêts, et le dit quand tout l’est', async () => {
+    const { element } = await boot({ round: myRoundOf({ readyStops: 1, stopCount: 2 }) });
+    expect(element.querySelector('[data-round-head]')?.textContent).toContain('1 arrêt prêt sur 2');
+    expect(element.querySelector('[data-all-ready]')).toBeNull();
+
+    const ready = await boot({ round: myRoundOf({ readyStops: 2, stopCount: 2 }) });
+    expect(ready.element.querySelector('[data-round-head]')?.textContent).toContain(
+      '2 arrêts prêts sur 2',
+    );
+    expect(ready.element.querySelector('[data-all-ready]')).not.toBeNull();
+  });
+
+  it('montre l’avancement, les bacs déclarés, et l’estimation SEULEMENT si elle existe', async () => {
+    const { element } = await boot({
+      round: myRoundOf({
+        stops: [
+          myStopOf({ rank: 1, packing: 'ready', bins: 2, binsExpected: 3 }),
+          myStopOf({ rank: 2, packing: 'in_progress', bins: 0 }),
+        ],
+      }),
+    });
+    const [first, second] = [...element.querySelectorAll('[data-my-stop]')];
+    expect(first?.querySelector('[data-packing]')?.textContent).toContain('Prête');
+    expect(first?.querySelector('[data-bins]')?.textContent).toContain('2 bacs déclarés');
+    expect(first?.querySelector('[data-bins-expected]')?.textContent).toContain(
+      'environ 3 attendus',
+    );
+    expect(second?.querySelector('[data-packing]')?.textContent).toContain('En préparation');
+    expect(second?.querySelector('[data-bins]')?.textContent).toContain('aucun bac déclaré');
+    expect(second?.querySelector('[data-bins-expected]')).toBeNull();
+  });
+
+  it('met la fiche en évidence : produits, quantités, froid', async () => {
+    const stop = myStopOf({
+      sheet: [
+        mySheetLineOf({ sku: 'CRO-01', name: 'Croissant', quantity: 12 }),
+        mySheetLineOf({ sku: 'FLAN-01', name: 'Flan', quantity: 2, requiresCold: true }),
+      ],
+    });
+    const { element } = await boot({ round: myRoundOf({ stops: [stop] }) });
+    const sheet = element.querySelector('[data-sheet]');
+    expect(sheet?.textContent).toContain('Fiche · 2 produits');
+    const lines = [...(sheet?.querySelectorAll('[data-sheet-line]') ?? [])];
+    expect(lines).toHaveLength(2);
+    expect(lines[0]?.textContent).toContain('Croissant');
+    expect(lines[0]?.textContent).toContain('× 12');
+    expect(lines[0]?.querySelector('[data-sheet-cold]')).toBeNull();
+    expect(lines[1]?.querySelector('[data-sheet-cold]')).not.toBeNull();
+  });
+
+  it('suit la version de « ma tournée » du jour, et relit la tournée ouverte sans la quitter', async () => {
+    const { fixture, element } = await boot();
+    expect(watched?.journals).toEqual(['my-round']);
+    expect(watched?.date()).toBe(parisDayOf(new Date()));
+
+    wire.round = myRoundOf({ readyStops: 2, stopCount: 2 });
+    await watched?.reload();
+    await settle(fixture);
+    expect(wire.calls.at(-1)).toBe('round r-1');
+    expect(element.querySelector('[data-round-head]')?.textContent).toContain(
+      '2 arrêts prêts sur 2',
+    );
+  });
+
+  it('sans tournée ouverte, relit la liste sans en ouvrir une d’office', async () => {
+    const { fixture, element } = await boot({ rounds: [summaryOf('r-1'), summaryOf('r-2')] });
+    wire.rounds = [summaryOf('r-1')];
+    await watched?.reload();
+    await settle(fixture);
+    expect(wire.calls.at(-1)).toBe(`mine ${parisDayOf(new Date())}`);
+    expect(element.querySelectorAll('[data-my-round-choice]')).toHaveLength(1);
+    expect(element.querySelector('[data-my-stop]')).toBeNull();
+  });
+});
+
+describe('MyRoundPage — charger sa tournée (PL1)', () => {
+  it('au dépôt, « Charger » ouvre le chargement de SA tournée ; le retour relit la tournée', async () => {
+    const { fixture, element } = await boot();
+    click(element, '[data-open-loading]');
+    await settle(fixture);
+    expect(wire.calls).toContain('loading r-1');
+    expect(element.querySelector('app-my-round-loading')).not.toBeNull();
+    expect(element.querySelector('[data-my-stop]')).toBeNull();
+
+    click(element, '[data-close-loading]');
+    await settle(fixture);
+    expect(wire.calls.at(-1)).toBe('round r-1');
+    expect(element.querySelector('app-my-round-loading')).toBeNull();
+    expect(element.querySelectorAll('[data-my-stop]')).toHaveLength(2);
+  });
+
+  it('partie, la tournée ne se charge plus : pas de « Charger »', async () => {
+    const { element } = await boot({
+      round: myRoundOf({ departedAt: '2026-10-01T05:42:00.000Z' }),
+    });
+    expect(element.querySelector('[data-open-loading]')).toBeNull();
   });
 });

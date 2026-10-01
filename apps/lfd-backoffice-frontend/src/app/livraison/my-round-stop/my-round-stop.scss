@@ -25,3 +25,9 @@
   gap: var(--fold-space-sm);
   padding-inline-start: var(--fold-space-lg);
 }
+
+.quantity {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}

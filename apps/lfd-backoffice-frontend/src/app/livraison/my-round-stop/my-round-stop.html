@@ -6,7 +6,11 @@
 
   <div class="body">
     <div class="flags">
+      <fold-badge [variant]="packing().variant" [content]="packing().label" data-packing />
       <fold-badge variant="neutral" [content]="bins()" data-bins />
+      @if (expectedBins(); as expected) {
+        <fold-badge variant="neutral" [content]="expected" data-bins-expected />
+      }
       @if (item.coldBins > 0) {
         <fold-badge variant="info" content="Froid" data-cold />
       }
@@ -24,6 +28,24 @@
         <fold-badge variant="warning" [content]="state" data-order-state />
       }
     </div>
+
+    @if (item.sheet.length > 0) {
+      <fold-disclosure [open]="true" data-sheet>
+        <span summary>{{ sheetSummary() }}</span>
+        <fold-field-list>
+          @for (line of item.sheet; track line.sku) {
+            <fold-field [label]="line.name" data-sheet-line>
+              <span class="quantity">
+                × {{ line.quantity }}
+                @if (line.requiresCold) {
+                  <fold-badge variant="info" content="❄ froid" data-sheet-cold />
+                }
+              </span>
+            </fold-field>
+          }
+        </fold-field-list>
+      </fold-disclosure>
+    }
 
     <fold-field-list>
       <fold-field label="Adresse" placeholder="Aucune adresse" [empty]="item.address === null">

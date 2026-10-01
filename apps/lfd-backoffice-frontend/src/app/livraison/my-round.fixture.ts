@@ -1,4 +1,8 @@
-import type { MyDeliveryRoundView, MyDeliveryStopView } from '@lfd/contracts';
+import type {
+  MyDeliveryRoundView,
+  MyDeliverySheetLineView,
+  MyDeliveryStopView,
+} from '@lfd/contracts';
 
 /** Un arrêt de « Ma tournée », complet, dont on ne précise que ce qui compte au test. */
 export function myStopOf(overrides: Partial<MyDeliveryStopView> = {}): MyDeliveryStopView {
@@ -32,7 +36,7 @@ export function myStopOf(overrides: Partial<MyDeliveryStopView> = {}): MyDeliver
     orderState: 'open',
     sheet: [],
     packing: 'in_progress',
-    binsDeclared: 1,
+    binsDeclared: overrides.bins ?? 1,
     ...overrides,
   };
 }
@@ -55,4 +59,11 @@ export function myRoundOf(overrides: Partial<MyDeliveryRoundView> = {}): MyDeliv
     stopCount: 2,
     ...overrides,
   };
+}
+
+/** Une ligne de la fiche d'un arrêt. */
+export function mySheetLineOf(
+  overrides: Partial<MyDeliverySheetLineView> = {},
+): MyDeliverySheetLineView {
+  return { sku: 'CRO-01', name: 'Croissant', quantity: 12, requiresCold: false, ...overrides };
 }

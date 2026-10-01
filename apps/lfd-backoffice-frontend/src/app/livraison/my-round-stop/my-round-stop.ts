@@ -15,19 +15,25 @@ import {
 import { parisTimeOf } from '../delivery-loading';
 import { closeWithoutHandoverLabel } from '../delivery-incidents';
 import { IncidentReportForm } from '../incident-report-form/incident-report-form';
+import {
+  declaredBinsLabelOf,
+  expectedBinsLabelOf,
+  packingBadgeOf,
+  sheetSummaryOf,
+} from '../my-round-packing';
 import { MyRoundStepPhoto } from '../my-round-step-photo/my-round-step-photo';
 import { contactNameOf, telHrefOf, windowLabel } from '../run-sheet';
-
-/** « 3 bacs, dont 1 froid » — ce que le livreur cherche dans le camion. */
-export function binsLabelOf(stop: Pick<MyDeliveryStopView, 'bins' | 'coldBins'>): string {
-  const bins = stop.bins === 1 ? '1 bac' : `${String(stop.bins)} bacs`;
-  return stop.coldBins === 0 ? bins : `${bins}, dont ${String(stop.coldBins)} froid`;
-}
 
 /**
  * **Un arrêt de « Ma tournée »** — ce qu'il faut savoir à la porte
  * (`plan-ma-tournee.md`, MT-D5) : qui, où, quand, qui appeler, ce qu'on
  * apporte, et comment entrer.
+ *
+ * **La fiche en évidence** (`parcours-du-livreur.md`, PL4) : le contenu de la
+ * feuille d'atelier — produits, quantités, froid — dépliable et ouvert
+ * d'emblée, avec l'avancement du colisage (« En préparation », « Prête », les
+ * bacs déclarés et, s'il est connu, le nombre ATTENDU, toujours dit
+ * « environ » : c'est une proposition).
  *
  * Aucun montant n'existe dans la vue servie (liste blanche du contrat) : il
  * n'y a rien à cacher ici.
@@ -97,7 +103,11 @@ export class MyRoundStop {
           (line) => line.trim() !== '',
         );
   });
-  protected readonly bins = computed(() => binsLabelOf(this.stop()));
+  protected readonly bins = computed(() => declaredBinsLabelOf(this.stop()));
+  /** La proposition de colisage, dite comme une estimation ; `null` : elle ne sait pas. */
+  protected readonly expectedBins = computed(() => expectedBinsLabelOf(this.stop()));
+  protected readonly packing = computed(() => packingBadgeOf(this.stop().packing));
+  protected readonly sheetSummary = computed(() => sheetSummaryOf(this.stop().sheet));
   protected readonly arrivedLabel = computed(() => {
     const arrivedAt = this.stop().arrivedAt;
     return arrivedAt === null ? null : `Arrivé à ${parisTimeOf(arrivedAt)}`;
