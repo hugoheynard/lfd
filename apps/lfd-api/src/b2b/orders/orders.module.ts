@@ -15,6 +15,8 @@ import { MarkOrderReadyHandler } from "./application/commands/mark-order-ready.h
 import { SendGuestOrderNotice } from "./application/handlers/send-guest-order-notice.handler.js";
 import { SendOrderPlacedMail } from "./application/handlers/send-order-placed-mail.handler.js";
 import { SendOrderReadyMail } from "./application/handlers/send-order-ready-mail.handler.js";
+import { CommerceDeliveryDepartureAnnouncer } from "./application/services/commerce-delivery-departure-announcer.js";
+import { DeliveryEnRouteMail } from "./application/services/delivery-en-route-mail.service.js";
 import { SendOrderSettledMail } from "./application/handlers/send-order-settled-mail.handler.js";
 import { RingFailedProSettlement } from "./application/handlers/ring-failed-pro-settlement.handler.js";
 import { SendPaymentExpiredMail } from "./application/handlers/send-payment-expired-mail.handler.js";
@@ -258,6 +260,10 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Le composeur du courriel de retrait, partagé par le colisage (qui
     // l'annonce) et par le rappel du comptoir (qui le renvoie).
     OrderReadyMail,
+    // « Votre livraison est en route » (plan-en-route.md, PL3) : la livraison
+    // annonce le départ par son port, relié dans `DeliveryFeedModule`.
+    DeliveryEnRouteMail,
+    CommerceDeliveryDepartureAnnouncer,
     SendHandoverReminderHandler,
     { provide: OrderPaymentLinkReader, useClass: PrismaOrderPaymentLinkReader },
     ListOrdersAwaitingPaymentHandler,
@@ -354,6 +360,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Les numéros des commandes qui ont rapporté des points, que l'historique
     // du client montre (plan des points, E1.1).
     OrderNumberReader,
+    // L'annonce du départ d'une tournée, que la livraison déclare : sortie
+    // pour être RELIÉE dans `DeliveryFeedModule`, sous le jeton de la livraison.
+    CommerceDeliveryDepartureAnnouncer,
   ],
 })
 export class OrdersModule {}

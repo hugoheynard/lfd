@@ -3,6 +3,8 @@ import { Global, Module } from "@nestjs/common";
 import { AccountModule } from "../b2b/account/account.module.js";
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { CatalogDeliveryProductsReader } from "../b2b/catalog/infrastructure/catalog-delivery-products.reader.js";
+import { OrdersModule } from "../b2b/orders/orders.module.js";
+import { CommerceDeliveryDepartureAnnouncer } from "../b2b/orders/application/services/commerce-delivery-departure-announcer.js";
 import { PrismaCommerceDayVersionReader } from "../b2b/orders/infrastructure/prisma-commerce-day-version.reader.js";
 import { PrismaDeliveryOrderStatesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-states.reader.js";
 import { PrismaDeliveryOrderLinesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-lines.reader.js";
@@ -13,6 +15,7 @@ import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.
 import { PickupDepartureCandidatesReader } from "../b2b/pickup-addresses/infrastructure/pickup-departure-candidates.reader.js";
 import {
   CommerceDayVersionReader,
+  DeliveryDepartureAnnouncer,
   DeliveryOrderLinesReader,
   DeliveryOrdersReader,
   DeliveryOrderStatesReader,
@@ -42,7 +45,11 @@ import {
  *   par le chemin de lecture de la route du staff : d'où `AccountModule`,
  *   qui exporte `DeliveryStepPhotoLocator` ;
  * - `CommerceDayVersionReader` — la version de journée du commerce, pour la
- *   version de « ma tournée » (`parcours-du-livreur.md`, PL4).
+ *   version de « ma tournée » (`parcours-du-livreur.md`, PL4) ;
+ * - `DeliveryDepartureAnnouncer` — le départ d'une tournée, annoncé au
+ *   commerce qui écrit « votre livraison est en route » (`plan-en-route.md`,
+ *   PL3). Seule ANNONCE du fil ; son adaptateur vit dans `OrdersModule`, qui
+ *   a les ports du courriel : d'où l'import, et `useExisting`.
  *
  * `@Global` pour la raison des autres fils : le consommateur est `delivery/`,
  * qui ne peut pas importer le module qui fournit le port sans dépendre du
@@ -50,7 +57,7 @@ import {
  */
 @Global()
 @Module({
-  imports: [PickupAddressesModule, CatalogModule, AccountModule],
+  imports: [PickupAddressesModule, CatalogModule, AccountModule, OrdersModule],
   providers: [
     { provide: DepartureCandidatesReader, useClass: PickupDepartureCandidatesReader },
     { provide: DeliveryOrdersReader, useClass: PrismaDeliveryOrdersReader },
@@ -60,6 +67,7 @@ import {
     { provide: DeliveryStepPhotosReader, useClass: PrismaDeliveryStepPhotosReader },
     { provide: DeliveryOrderStatesReader, useClass: PrismaDeliveryOrderStatesReader },
     { provide: CommerceDayVersionReader, useClass: PrismaCommerceDayVersionReader },
+    { provide: DeliveryDepartureAnnouncer, useExisting: CommerceDeliveryDepartureAnnouncer },
   ],
   exports: [
     DepartureCandidatesReader,
@@ -70,6 +78,7 @@ import {
     DeliveryStepPhotosReader,
     DeliveryOrderStatesReader,
     CommerceDayVersionReader,
+    DeliveryDepartureAnnouncer,
   ],
 })
 export class DeliveryFeedModule {}

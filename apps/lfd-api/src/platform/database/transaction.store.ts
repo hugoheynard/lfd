@@ -30,3 +30,17 @@ export function currentTransaction(): object | undefined {
 export function runInTransaction<T>(tx: object, work: () => Promise<T>): Promise<T> {
   return storage.run(tx, work);
 }
+
+/**
+ * Exécute `work` (et toute sa descendance async) **hors** de la transaction
+ * ambiante.
+ *
+ * Pour un travail de fond lancé par un abonné d'événement : le bus appelle
+ * l'abonné de façon synchrone, donc DANS l'`AsyncLocalStorage` du handler qui
+ * publie. Sans ce détachement, ses lectures viseraient un client de
+ * transaction déjà validé — ou en cours de validation — et échoueraient selon
+ * le moment où elles partent.
+ */
+export function outsideTransaction<T>(work: () => Promise<T>): Promise<T> {
+  return storage.exit(work);
+}

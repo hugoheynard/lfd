@@ -48,6 +48,15 @@ export const MAIL_IT: MailCopy = {
     cta: "Vedere il mio ordine",
     footer: "Le Labo · route de la Balme, Val d'Isère — 7 – 19",
   },
+  deliveryEnRoute: {
+    subject: "La sua consegna è in viaggio",
+    title: "La sua consegna è in viaggio.",
+    intro: "Il suo corriere è partito, arriverà in giornata.",
+    referenceLabel: "Ordine",
+    addressLabel: "Consegna a",
+    cta: "Vedere il mio ordine",
+    footer: "Le Labo · route de la Balme, Val d'Isère — 7 – 19",
+  },
   paymentFailed: {
     subject: "Pagamento rifiutato — il suo ordine {ref}",
     kicker: "Pagamento rifiutato",

@@ -66,6 +66,7 @@ import { PrismaRoutingSettingsRepository } from "./infrastructure/prisma-routing
 import { DeclareDeliveryBinsHandler } from "./application/commands/declare-delivery-bins.handler.js";
 import { ShareDeliveryBinHandler } from "./application/commands/share-delivery-bin.handler.js";
 import { DepartDeliveryRoundHandler } from "./application/commands/depart-delivery-round.handler.js";
+import { AnnounceDeliveryDeparture } from "./application/handlers/announce-delivery-departure.handler.js";
 import { LoadDeliveryBinHandler } from "./application/commands/load-delivery-bin.handler.js";
 import { UnloadDeliveryBinHandler } from "./application/commands/unload-delivery-bin.handler.js";
 import { VoidDeliveryBinHandler } from "./application/commands/void-delivery-bin.handler.js";
@@ -191,6 +192,9 @@ import {
     LoadDeliveryBinHandler,
     UnloadDeliveryBinHandler,
     DepartDeliveryRoundHandler,
+    // « Votre livraison est en route » : la livraison annonce, le commerce
+    // écrit (plan-en-route.md, PL3).
+    AnnounceDeliveryDeparture,
     GetDeliveryOrderBinsHandler,
     GetDeliveryBinFreeHalvesHandler,
     GetDeliveryPackingProposalHandler,

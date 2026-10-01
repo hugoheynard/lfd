@@ -47,6 +47,15 @@ export const MAIL_EN: MailCopy = {
     cta: "View my order",
     footer: "Le Labo · route de la Balme, Val d'Isère — 7 am – 7 pm",
   },
+  deliveryEnRoute: {
+    subject: "Your delivery is on its way",
+    title: "Your delivery is on its way.",
+    intro: "Your driver has left and will arrive during the day.",
+    referenceLabel: "Order",
+    addressLabel: "Delivered to",
+    cta: "View my order",
+    footer: "Le Labo · route de la Balme, Val d'Isère — 7 am – 7 pm",
+  },
   paymentFailed: {
     subject: "Payment declined — your order {ref}",
     kicker: "Payment declined",

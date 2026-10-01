@@ -9,6 +9,10 @@ import {
 
 import { SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS } from "../identity/auth0-identity.gateway.js";
 import { fill, mailCopyOf } from "./copy/mail-copy.js";
+import {
+  renderDeliveryEnRouteMail,
+  type DeliveryEnRouteMailData,
+} from "./delivery-en-route-mail.js";
 import { MANDATE_TO_SIGN_WORDING, type MandateMailScheme } from "./mandate-to-sign-wording.js";
 import { qrPng } from "./qr-image.js";
 
@@ -52,6 +56,8 @@ export interface B2bMails {
     readonly handoverUrl: string;
     readonly locale: ContentLocale;
   };
+  /** **La tournée est partie.** Destinataire : le client. Cf. `delivery-en-route-mail.ts`. */
+  "customer.delivery-en-route": DeliveryEnRouteMailData;
   /**
    * **Le paiement a été refusé.** Destinataire : le client.
    *
@@ -506,6 +512,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
           : {}),
       };
     },
+    "customer.delivery-en-route": (data) => renderDeliveryEnRouteMail(data, customerMail),
     "customer.order-placed": (data) => {
       const copy = mailCopyOf(data.locale).orderPlaced;
       const settlement = settlementOf(data.sheet);

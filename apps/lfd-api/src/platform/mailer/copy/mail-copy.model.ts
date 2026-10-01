@@ -161,10 +161,29 @@ export interface PaymentExpiredCopy {
   readonly footer: string;
 }
 
+/**
+ * Ce que dit le courriel de **départ en livraison** — celui qui part quand la
+ * tournée quitte le dépôt (`documentation/livraisons/plan-en-route.md`, PL3-D4).
+ *
+ * 🔴 **Aucune heure.** On n'a pas d'estimation fiable par arrêt : une heure
+ * fausse coûte plus qu'aucune heure. Ni nom ni téléphone du livreur.
+ */
+export interface DeliveryEnRouteCopy {
+  readonly subject: string;
+  readonly title: string;
+  /** « Votre livreur est parti, il arrive dans la journée. » */
+  readonly intro: string;
+  readonly referenceLabel: string;
+  readonly addressLabel: string;
+  readonly cta: string;
+  readonly footer: string;
+}
+
 /** Tout ce qu'un e-mail sait dire, dans une langue. */
 export interface MailCopy {
   readonly orderPlaced: OrderPlacedCopy;
   readonly orderReady: OrderReadyCopy;
+  readonly deliveryEnRoute: DeliveryEnRouteCopy;
   readonly paymentFailed: PaymentFailedCopy;
   readonly paymentExpired: PaymentExpiredCopy;
 }
