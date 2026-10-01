@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import type { DevSeedOrdersOnlyReport, DevSeedReport } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -57,6 +58,7 @@ import { DevSeedService } from '../dev-seed.service';
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
     FoldSpinnerComponent,
+    RouterLink,
   ],
   templateUrl: './seed-page.html',
   styleUrl: './seed-page.scss',
@@ -94,6 +96,18 @@ export class DevSeedPage {
       count(reset.volumeLadders, 'barème de volume', 'barèmes de volume'),
     ].filter((part) => part !== null);
     return parts.length === 0 ? null : parts.join(', ');
+  });
+
+  /** Le nom du livreur affecté — le requérant —, ou `null` s'il n'y en a pas. */
+  protected readonly driverName = computed(() => {
+    const driver = this.report()?.delivery.driver;
+    return driver?.status === 'assigned' ? driver.name : null;
+  });
+
+  /** Le refus du serveur, mot pour mot : il nomme le droit manquant et où l'ouvrir. */
+  protected readonly driverRefusal = computed(() => {
+    const driver = this.report()?.delivery.driver;
+    return driver?.status === 'refused' ? driver.reason : null;
   });
 
   protected reload(): Promise<void> {

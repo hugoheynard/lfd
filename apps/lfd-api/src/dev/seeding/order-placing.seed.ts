@@ -49,6 +49,11 @@ export interface SeedContext {
    * ni gelable ni rejouable, et la porte `clock-port` le refusait.
    */
   readonly now: Date;
+  /**
+   * La fiche staff de QUI a demandé le semis — le livreur de la tournée
+   * chargée. Absente en ligne de commande : personne à qui l'affecter.
+   */
+  readonly requester?: string | undefined;
 }
 
 /** Une adresse du carnet : son identité, et l'instantané postal que la commande fige. */

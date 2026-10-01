@@ -1,10 +1,16 @@
-import type { DevSeedDeliveryReport, DevSeedOrdersOnlyReport, DevSeedReport } from "@lfd/contracts";
+import type {
+  DevSeedDeliveryReport,
+  DevSeedDriverReport,
+  DevSeedOrdersOnlyReport,
+  DevSeedReport,
+} from "@lfd/contracts";
 import { Injectable, ServiceUnavailableException } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { AppConfig } from "../platform/config/app-config.js";
 import { PrismaService } from "../platform/database/prisma.service.js";
 import { Clock } from "../platform/time/clock.js";
+import type { SeedDriverAssignment } from "./seeding/delivery-driver.seed.js";
 import { seedAccounting } from "./seeding/accounting.seed.js";
 import { seedClient, seedImpersonatedAccess, seedPendingCompany } from "./seeding/client.seed.js";
 import { type OrdersReport, seedOrders } from "./seeding/orders.seed.js";
@@ -53,17 +59,25 @@ export class DevSeedService {
   ) {}
 
   /**
+   * `requester` est la fiche staff de qui a cliqué : la tournée chargée lui
+   * est affectée (cf. `assignSeedDriver`).
+   *
    * Efface ce que le seed ne déclare pas, repose la station, l'entité émettrice,
    * le client et ses commandes. **Dans cet ordre** : les commandes visent des adresses et des
    * points que les deux étapes précédentes posent.
    */
-  async reload(): Promise<DevSeedReport> {
+  async reload(requester: string): Promise<DevSeedReport> {
     this.refuseUnlessLocalDevelopment();
     // UN seul instant pour tout le semis, pris au port. Chaque module le lisait
     // au mur, au fond de ses propres fonctions : le jeu de données n'était donc
     // ni gelable ni rejouable, et deux modules d'un même rechargement pouvaient
     // voir deux instants — sur un semis qui date des commandes par décalage.
-    const context = { prisma: this.prisma, commands: this.commands, now: this.clock.now() };
+    const context = {
+      prisma: this.prisma,
+      commands: this.commands,
+      now: this.clock.now(),
+      requester,
+    };
     await seedStation(context);
     // L'entité émettrice passe ici, comme dans `prisma/seed.ts` : les deux corpus
     // exécutent LES MÊMES fonctions, sans quoi le bouton de rechargement pose un
@@ -112,9 +126,14 @@ export class DevSeedService {
    * ⚠️ Il suppose le décor posé (station, client de référence) : sur une base
    * vierge, `seedOrders` refuse faute de client, et le message le dit.
    */
-  async reloadOrders(): Promise<DevSeedOrdersOnlyReport> {
+  async reloadOrders(requester: string): Promise<DevSeedOrdersOnlyReport> {
     this.refuseUnlessLocalDevelopment();
-    const context = { prisma: this.prisma, commands: this.commands, now: this.clock.now() };
+    const context = {
+      prisma: this.prisma,
+      commands: this.commands,
+      now: this.clock.now(),
+      requester,
+    };
     // Les bons tirés appartiennent aux commandes qu'on va supprimer : mêmes
     // buckets, même raison que dans `reload`.
     const storage = await clearSeededBuckets([
@@ -170,5 +189,11 @@ function deliveryOf({ delivery }: OrdersReport): DevSeedDeliveryReport {
     rounds: delivery.rounds,
     loadedBins: delivery.loadedBins,
     unassigned: delivery.unassigned,
+    driver: driverOf(delivery.driver),
   };
+}
+
+/** Le livreur, sans son identifiant : `assigned` désigne toujours le requérant. */
+function driverOf(driver: SeedDriverAssignment): DevSeedDriverReport {
+  return driver.status === "assigned" ? { status: "assigned", name: driver.name } : driver;
 }

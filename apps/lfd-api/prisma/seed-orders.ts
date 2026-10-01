@@ -38,7 +38,8 @@ async function main(): Promise<void> {
         `✔ Journée de livraison ${report.delivery.day} : ${report.delivery.deliveriesToday} livraison(s) ` +
         `(${report.delivery.notReady} pas encore prête(s)), ${report.delivery.vehicles} véhicule(s), ` +
         `${report.delivery.rounds} tournée chargée (${report.delivery.stopsInRound} arrêts, ` +
-        `${report.delivery.loadedBins} bacs dont ${report.delivery.sharedBins} demi-bac(s) partagé(s), pas partie), ${report.delivery.unassigned} à répartir — « Proposer ».`,
+        `${report.delivery.loadedBins} bacs dont ${report.delivery.sharedBins} demi-bac(s) partagé(s), pas partie), ${report.delivery.unassigned} à répartir — « Proposer ».\n` +
+        `· sans livreur : la ligne de commande n'a pas de requérant — « Recharger les commandes » depuis le back-office l'affecte à qui clique.`,
     );
   } finally {
     await harness.close();

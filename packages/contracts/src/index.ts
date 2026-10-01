@@ -400,6 +400,7 @@ export {
 export type { PickupAccess, PickupOpening, PickupSlot } from "./pickup.js";
 export type {
   DevSeedDeliveryReport,
+  DevSeedDriverReport,
   DevSeedOrdersReport,
   DevSeedOrdersOnlyReport,
   DevSeedReport,

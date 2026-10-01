@@ -12,6 +12,11 @@
       clients du scénario sont reposés à l’identique&nbsp;; les autres sociétés, la station et les
       décisions tarifaires ne bougent pas.
     </p>
+    <p>
+      La tournée chargée vous est affectée, prête à partir&nbsp;: ouvrez «&nbsp;Ma tournée&nbsp;»
+      pour la commencer. Il faut pour ça le droit «&nbsp;Conduire sa tournée&nbsp;»&nbsp;; sans lui,
+      elle reste sans livreur, et le compte rendu dit pourquoi.
+    </p>
     <button
       foldButton
       emphasis="solid"
@@ -113,6 +118,24 @@
               done.delivery.loadedBins
             }}
             bacs, pas partie) · {{ done.delivery.unassigned }} à répartir par « Proposer »
+          </fold-field>
+          <!-- Le livreur de la tournée chargée (2026-10-01) : « assigned »
+               désigne toujours qui a cliqué, d'où le lien vers SA page. -->
+          <fold-field label="Livreur">
+            @switch (done.delivery.driver.status) {
+              @case ('assigned') {
+                Vous ({{ driverName() }}) — prête à partir.
+                <a foldButton size="sm" emphasis="outline" routerLink="/livraison/ma-tournee">
+                  Ma tournée
+                </a>
+              }
+              @case ('refused') {
+                Aucun — {{ driverRefusal() }}
+              }
+              @case ('no_requester') {
+                Aucun — rechargé sans requérant.
+              }
+            }
           </fold-field>
         </fold-field-list>
       </fold-card>

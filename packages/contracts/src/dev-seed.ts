@@ -93,7 +93,21 @@ export interface DevSeedDeliveryReport {
   readonly loadedBins: number;
   /** Les livraisons laissées hors tournée — ce que « Proposer » a à placer. */
   readonly unassigned: number;
+  /** À qui la tournée chargée est affectée, ou pourquoi elle ne l'est pas (2026-10-01). */
+  readonly driver: DevSeedDriverReport;
 }
+
+/**
+ * **Le livreur de la tournée chargée.** Le semis l'affecte à QUI a cliqué, par
+ * la vraie commande d'affectation : `assigned` veut donc toujours dire « à
+ * vous », et « Ma tournée » la montre. `refused` porte le refus du serveur
+ * (le droit « Conduire sa tournée » manque) ; `no_requester` est la ligne de
+ * commande, qui n'a personne à qui l'affecter.
+ */
+export type DevSeedDriverReport =
+  | { readonly status: "assigned"; readonly name: string }
+  | { readonly status: "refused"; readonly reason: string }
+  | { readonly status: "no_requester" };
 
 /** La réponse de `POST /admin/dev/seed/reload`. */
 export interface DevSeedReport {

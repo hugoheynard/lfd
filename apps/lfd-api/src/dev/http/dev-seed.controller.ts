@@ -2,6 +2,7 @@ import type { DevSeedOrdersOnlyReport, DevSeedReport } from "@lfd/contracts";
 import { Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { DevSeedService } from "../dev-seed.service.js";
 
 /**
@@ -26,13 +27,13 @@ export class DevSeedController {
 
   @Post("reload")
   @HttpCode(HttpStatus.OK)
-  reload(): Promise<DevSeedReport> {
-    return this.seeding.reload();
+  reload(@StaffUserId() staffUserId: string): Promise<DevSeedReport> {
+    return this.seeding.reload(staffUserId);
   }
 
   @Post("reload/orders")
   @HttpCode(HttpStatus.OK)
-  reloadOrders(): Promise<DevSeedOrdersOnlyReport> {
-    return this.seeding.reloadOrders();
+  reloadOrders(@StaffUserId() staffUserId: string): Promise<DevSeedOrdersOnlyReport> {
+    return this.seeding.reloadOrders(staffUserId);
   }
 }

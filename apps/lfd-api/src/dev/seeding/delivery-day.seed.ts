@@ -16,6 +16,11 @@ import {
   seedFleet,
 } from "./delivery-rounds.seed.js";
 import {
+  assignSeedDriver,
+  prismaDriverReader,
+  type SeedDriverAssignment,
+} from "./delivery-driver.seed.js";
+import {
   asStaff,
   atHour,
   isoDay,
@@ -298,6 +303,8 @@ export interface DeliveryDayReport {
   readonly loadedBins: number;
   /** Les bacs partagés entre deux arrêts consécutifs (v2-4). */
   readonly sharedBins: number;
+  /** À qui la tournée chargée est affectée, ou pourquoi elle ne l'est pas. */
+  readonly driver: SeedDriverAssignment;
   /** Ce qui reste à répartir — ce que « Proposer » a à placer. */
   readonly unassigned: number;
 }
@@ -362,10 +369,15 @@ export async function advanceDeliveryDay(
   }
   const binTypes = await seedBinTypes(context);
   const stops = roundStops(day.placed, day.alreadyPacked, binTypes);
-  const round = await composeLoadedRound(
-    context,
-    { day: forDay, vehicleId, at: atHour(day.today, LOADING_HOUR, LOADING_MINUTE) },
-    stops,
+  const loadedAt = atHour(day.today, LOADING_HOUR, LOADING_MINUTE);
+  const round = await composeLoadedRound(context, { day: forDay, vehicleId, at: loadedAt }, stops);
+  const driver = await assignSeedDriver(
+    {
+      commands: context.commands,
+      reader: prismaDriverReader(context.prisma),
+      requester: context.requester,
+    },
+    { roundId: round.roundId, at: loadedAt },
   );
   const deliveriesToday = day.placed.length + day.alreadyPacked.length;
   return {
@@ -378,6 +390,7 @@ export async function advanceDeliveryDay(
     stopsInRound: round.stops,
     loadedBins: round.loadedBins,
     sharedBins: round.sharedBins,
+    driver,
     unassigned: deliveriesToday - round.stops,
   };
 }

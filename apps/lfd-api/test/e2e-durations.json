@@ -78,6 +78,7 @@
   "test/delivery-simulator.e2e-spec.ts": 5197,
   "test/delivery-vehicle-load.e2e-spec.ts": 6215,
   "test/delivery-vehicle-wheel-arches.e2e-spec.ts": 6207,
+  "test/dev-seed-driver.e2e-spec.ts": 11700,
   "test/devis-comptable.e2e-spec.ts": 3666,
   "test/direct-debit-blocks.e2e-spec.ts": 4964,
   "test/families-in-data-migration.e2e-spec.ts": 3943,

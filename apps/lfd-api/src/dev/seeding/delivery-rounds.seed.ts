@@ -163,6 +163,7 @@ export interface RoundStop {
 
 /** Ce que la tournée composée porte. */
 export interface ComposedRound {
+  readonly roundId: string;
   readonly stops: number;
   readonly loadedBins: number;
   readonly sharedBins: number;
@@ -207,7 +208,7 @@ export async function composeLoadedRound(
       context.commands.execute(new LoadDeliveryBinCommand(roundId, { binId }, SEED_STAFF_SUB)),
     );
   }
-  return { stops: stops.length, loadedBins: binIds.all.length, sharedBins: binIds.shared };
+  return { roundId, stops: stops.length, loadedBins: binIds.all.length, sharedBins: binIds.shared };
 }
 
 /** Déclare les bacs de chaque arrêt, puis l'autre moitié de ceux qui partagent. */
