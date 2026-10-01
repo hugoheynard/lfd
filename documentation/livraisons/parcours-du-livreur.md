@@ -37,9 +37,31 @@ flowchart TD
   Q --> R["13 · Clôturer ma tournée"]
 ```
 
+## Le rôle « Livreur » (relevé dans le code le 2026-10-01)
+
+| Droit               | Niveau | Ce qu'il ouvre                                                                                                   |
+| ------------------- | ------ | ---------------------------------------------------------------------------------------------------------------- |
+| `delivery_driving`  | read   | « Ma tournée » : ses tournées, fiches, avancement, version, plan et état du chargement, procédures de ses arrêts |
+| `delivery_driving`  | write  | scanner / décharger un bac de sa tournée, « Commencer ma tournée »                                               |
+| `delivery_doorstep` | read   | revoir la photo d'un signalement                                                                                 |
+| `delivery_doorstep` | write  | « Je suis arrivé », signaler, clore sans remise, « Tournée terminée » (lot B : remis, déposé)                    |
+
+Rien d'autre : ni `delivery_loading`, ni `delivery_rounds`, ni
+`delivery_procedures`, ni `delivery_run_sheet`, ni `staff_notifications`.
+Chaque route est en plus **murée sur SES tournées** (`driver_staff_id`) : le
+droit ouvre la surface, le mur choisit les lignes. Les routes sont
+`admin/livraison/ma-tournee/*` (`my-delivery-round`, `my-delivery-loading`
+sous `delivery_driving` ; `my-delivery-doorstep` sous `delivery_doorstep`) ;
+un GET demande `read`, un POST `write`.
+
+Le rôle se crée **à l'écran** (`/admin/staff-roles`) avec ces deux droits en
+écriture — une migration n'accorde jamais un droit à un rôle.
+
 ## Les étapes
 
 ### 1 · Dans la pièce du coliseur
+
+🔑 `delivery_driving:read` — voir « Ma tournée », sa fiche, son avancement et sa version.
 
 - ✅ Le coliseur a **déclaré les bacs** de chaque commande au poste de colisage
   (panneau « Bacs »), chacun avec son **étiquette QR** ; un demi-bac peut être
@@ -55,6 +77,8 @@ flowchart TD
 
 ### 2 · Prendre en charge
 
+🔑 aucun — pas de geste (tranché : le scan au chargement suffit).
+
 - ❌ Rien n'existe. Aujourd'hui, le livreur passe directement au chargement.
 - ❓ **Faut-il un geste « je prends en charge »** (transfert de garde du
   coliseur au livreur) ? Utile si un bac disparaît entre la pièce et le
@@ -63,6 +87,8 @@ flowchart TD
   sont bien froids au moment de les prendre ?
 
 ### 3 · Charger le véhicule
+
+🔑 `delivery_driving:read` pour le plan et l'état du chargement ; `delivery_driving:write` pour scanner et décharger un bac. Jamais `delivery_loading` (l'écran du dépôt, toutes tournées : admin seul).
 
 - ✅ **Plan de chargement** de la tournée : l'ordre (le dernier arrêt au fond),
   les piles, le volume sec et froid.
@@ -76,6 +102,8 @@ flowchart TD
 
 ### 4 · Tout est chargé ?
 
+🔑 `delivery_driving:read` — l'état du chargement le dit ; le refus vient au départ.
+
 - ✅ « Commencer ma tournée » **refuse** tant qu'un bac n'est pas chargé ou
   qu'un demi-bac partagé est « à refaire », et nomme les arrêts en cause.
 - ❓ **Partir sans un arrêt** : si un bac manque, le livreur peut-il retirer
@@ -84,12 +112,16 @@ flowchart TD
 
 ### 5 · Commencer ma tournée
 
+🔑 `delivery_driving:write` — « Commencer ma tournée ».
+
 - ✅ Le départ fige la tournée, l'ordre et le point GPS de chaque arrêt.
 - 🟡 Le **code de retrait envoyé au client au départ** (lot 6, L6-C12) : pas
   bâti.
 - ❓ Le client reçoit-il **« votre livraison est en route »** à ce moment ?
 
 ### 6 · Rouler
+
+🔑 `delivery_driving:read` — liens « Y aller » / « Toute la tournée », et la procédure de SES arrêts (texte et photos) par sa route murée. Pas besoin de `delivery_procedures`, qui est le droit d'éditer côté staff.
 
 - ✅ « Y aller » (Google Maps, Waze, Plans), « Toute la tournée » en tronçons de
   trois étapes.
@@ -98,9 +130,13 @@ flowchart TD
 
 ### 7 · Je suis arrivé
 
+🔑 `delivery_doorstep:write` — « Je suis arrivé ».
+
 - 🟡 Lot A d'« À la porte » : l'heure d'arrivée ; la position suivra (YA4).
 
 ### 8 · Sortir les bacs de cet arrêt
+
+🔑 aucun — pas de geste (tranché : pas de scan à la sortie).
 
 - ❌ Rien n'existe. Le plan de chargement sait quels bacs sont à quel arrêt.
 - ❓ **Scanner les bacs à la sortie du véhicule** pour être sûr de laisser les
@@ -111,6 +147,8 @@ flowchart TD
 
 ### 9 · À la porte
 
+🔑 `delivery_doorstep:write` — signaler un problème, clore sans remise ; lot B : « Remis au client », « Déposé avec preuve ». `delivery_doorstep:read` pour revoir la photo d'un signalement.
+
 - 🟡 Lot A : « Déclarer un problème », « Clore sans remise ».
 - 🟡 Lot B : « Remis au client » (nom, signature si exigée), « Déposé avec
   preuve » (photo, seulement si autorisé et sans signature exigée).
@@ -119,17 +157,23 @@ flowchart TD
 
 ### 10 · Reste-t-il des arrêts ?
 
+🔑 `delivery_driving:read`.
+
 - ✅ La page montre les arrêts restants dans l'ordre.
 - ❓ **Changer l'ordre en route** (un client absent qu'on repasse voir plus
   tard) : permis au livreur, ou jamais ?
 
 ### 11 · Rentrer
 
+🔑 `delivery_driving:read` — le lien « Rentrer ».
+
 - ✅ « Rentrer » mène au point de départ quand il ne reste rien.
 - ❓ Un arrêt resté ouvert (problème) : le livreur **rapporte** la marchandise.
   Comment le dépôt le sait-il ?
 
 ### 12 · Au dépôt : décharger
+
+🔑 aucun geste propre : « Tournée terminée » (13) signifie le retour des bacs.
 
 - ❌ Rien n'existe : ni **retour des bacs vides**, ni **marchandise rapportée**
   (non remise), ni **invendus**.
@@ -138,6 +182,8 @@ flowchart TD
   (combien on en a, où ils sont).
 
 ### 13 · Clôturer ma tournée
+
+🔑 `delivery_doorstep:write` — « Tournée terminée ».
 
 - ❌ Une tournée n'a **aucun état « rentrée »** : elle part, et c'est tout.
 - ❓ Faut-il un geste « **Tournée terminée** » (heure de retour, kilométrage,
