@@ -51,10 +51,17 @@
 
 - **Aujourd'hui** : `production.order_handover_proof` (nom du réceptionnaire,
   photo, signature, livreur) et ses images sont gardées **sans limite**.
-- **Câblé, non planifié** (lot « purge des pièces », après B2) : une commande
-  qui efface les pièces plus anciennes qu'une durée donnée — la ligne **et**
-  les images au stockage —, et l'effacement des pièces d'une commande à la
-  demande d'une personne. Aucune minuterie ne l'appelle.
+- **Câblé le 2026-10-01, non planifié** (lot « purge des pièces », après
+  B2) : `PurgeHandoverProofsOlderThanCommand(retentionDays)` efface les pièces
+  plus anciennes qu'une durée en jours, comptée sur l'horloge du backend — la
+  ligne **et** les images au stockage —, et `EraseHandoverProofsCommand(orderId)`
+  efface celles d'une commande à la demande d'une personne
+  (`apps/lfd-api/src/handover/application/commands/`). Les images partent
+  d'abord, puis la ligne et le fait `order_handover_proof.erased` dans une
+  même transaction : une image que le stockage refuse garde la pièce entière,
+  et relancer la reprend. L'attestation de la remise n'est jamais effacée.
+  **Aucune minuterie, aucune route** ne les appelle.
 - **À décider plus tard** : la durée (90 jours proposés, plus si les litiges
   le demandent), l'appel planifié, et ce qu'un écran de contestation montre
-  d'une pièce purgée.
+  d'une pièce purgée. Et, pour l'effacement à la demande, **qui le
+  déclenche** : il n'a ni route admin ni écran.

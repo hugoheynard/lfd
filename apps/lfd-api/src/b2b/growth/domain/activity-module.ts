@@ -120,6 +120,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "delivery_purchase_scenario.",
     // L'heure limite posée sur un produit : même famille que celle d'un point.
     "order_time_limit.",
+    // Les pièces d'une remise à la porte, effacées (2026-10-01) : avec la
+    // commande qu'elles prouvaient.
+    "order_handover_proof.",
   ],
   // Le RIB d'une société s'écrit `company.bank_account_changed` : il se range
   // ici par son préfixe, sans entrée propre.

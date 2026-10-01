@@ -12,6 +12,7 @@ import { DELIVERY_PURCHASE_SCENARIO_PHRASES } from './delivery-purchase-scenario
 import { DELIVERY_ROUND_PHRASES } from './delivery-round-phrases';
 import { DELIVERY_ROUTING_PHRASES } from './delivery-routing-phrases';
 import { DELIVERY_SIMULATION_PHRASES } from './delivery-simulation-phrases';
+import { HANDOVER_PROOF_PHRASES } from './handover-proof-phrases';
 import { LOYALTY_PHRASES } from './loyalty-phrases';
 import { OPERATION_PHRASES } from './operation-phrases';
 import { ORDERS_PHRASES } from './orders-phrases';
@@ -159,6 +160,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...DELIVERY_BIN_PHRASES,
   ...DELIVERY_PURCHASE_LIBRARY_PHRASES,
   ...DELIVERY_PURCHASE_SCENARIO_PHRASES,
+  ...HANDOVER_PROOF_PHRASES,
   ...PRODUCTION_QUALITY_PHRASES,
   ...PRICING_PHRASES,
   ...ACCOUNTS_PHRASES,

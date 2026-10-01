@@ -39,4 +39,13 @@ export class HandoverProof {
   static rehydrate(state: HandoverProofState): HandoverProof {
     return new HandoverProof(state);
   }
+
+  /**
+   * Les images rangées au stockage — ce qu'un effacement doit retirer AVANT
+   * la ligne, qui seule en garde les clés.
+   */
+  imageKeys(): readonly string[] {
+    const { photoKey, signatureKey } = this.state;
+    return signatureKey === null ? [photoKey] : [photoKey, signatureKey];
+  }
 }

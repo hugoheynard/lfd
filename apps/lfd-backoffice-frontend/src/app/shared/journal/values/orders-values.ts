@@ -75,6 +75,12 @@ export const QUALITY_LIFTING_VERDICT = domain('verdict qui lève un blocage', {
   warning: 'Réserve',
 });
 
+/** Pourquoi les pièces d'une remise à la porte sont parties (2026-10-01). */
+export const HANDOVER_PROOF_ERASURE_CAUSE = domain('motif d’effacement des pièces de remise', {
+  retention: 'Conservation échue',
+  request: 'À la demande de la personne',
+});
+
 export const ORDERS_VALUES: ValueFamily = {
   enums: [
     WEEKDAY,
@@ -87,6 +93,7 @@ export const ORDERS_VALUES: ValueFamily = {
     ABANDON_OUTCOME,
     QUALITY_VERDICT,
     QUALITY_LIFTING_VERDICT,
+    HANDOVER_PROOF_ERASURE_CAUSE,
   ],
   literals: {
     // Ce qu'un contrôle qualité juge (`target.kind`).

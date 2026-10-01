@@ -6,6 +6,7 @@ import { DELIVERY_LOADING_FACTS } from "./delivery-loading.js";
 import { DELIVERY_PURCHASE_LIBRARY_FACTS } from "./delivery-purchase-library.js";
 import { DELIVERY_ROUND_FACTS } from "./delivery-rounds.js";
 import { DELIVERY_ROUTING_FACTS } from "./delivery-routing.js";
+import { HANDOVER_PROOF_FACTS } from "./handover-proofs.js";
 import { DELIVERY_SIMULATION_FACTS } from "./delivery-simulation.js";
 import {
   basisPoints,
@@ -376,6 +377,8 @@ export const ORDERS_PRODUCTION_FACTS = {
   ...DELIVERY_BIN_FACTS,
   /** **La bibliothèque d'achat** (lot B1) — dans son propre fichier, même famille. */
   ...DELIVERY_PURCHASE_LIBRARY_FACTS,
+  /** **Les pièces de remise effacées** (purge câblée, non planifiée) — même famille. */
+  ...HANDOVER_PROOF_FACTS,
 
   /**
    * `absorbed` : les commandes que la journée a absorbées en se fermant. Le

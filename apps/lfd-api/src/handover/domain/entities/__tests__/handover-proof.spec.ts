@@ -26,3 +26,17 @@ describe("HandoverProof — les pièces d'une remise à la porte (B1, L6-C9)", (
     expect(() => HandoverProof.attach(state({ recordedBy: "" }))).toThrow(HandoverRefusedError);
   });
 });
+
+describe("HandoverProof.imageKeys — ce qu'un effacement retire du stockage", () => {
+  it("rend la photo seule, sans signature", () => {
+    expect(HandoverProof.rehydrate(state()).imageKeys()).toEqual(["handover/proofs/p_1/photo"]);
+  });
+
+  it("rend la photo puis la signature", () => {
+    const proof = HandoverProof.rehydrate(state({ signatureKey: "handover/proofs/p_1/signature" }));
+    expect(proof.imageKeys()).toEqual([
+      "handover/proofs/p_1/photo",
+      "handover/proofs/p_1/signature",
+    ]);
+  });
+});
