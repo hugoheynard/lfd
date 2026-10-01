@@ -35,6 +35,7 @@
   "test/company-access-guards.e2e-spec.ts": 4002,
   "test/company-activation.e2e-spec.ts": 2086,
   "test/company-bank-account.e2e-spec.ts": 7662,
+  "test/company-naf-race.e2e-spec.ts": 2000,
   "test/company-pricing.e2e-spec.ts": 10206,
   "test/company-siren.e2e-spec.ts": 5727,
   "test/contacts.e2e-spec.ts": 2984,

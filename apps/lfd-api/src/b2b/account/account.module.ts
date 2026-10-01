@@ -130,6 +130,8 @@ import { PrismaCompanyAddressReader } from "./infrastructure/prisma-company-addr
 import { PrismaCompanyAddressRepository } from "./infrastructure/prisma-company-address.repository.js";
 import { PrismaCompanyContactRepository } from "./infrastructure/prisma-company-contact.repository.js";
 import { PrismaCompanyRepository } from "./infrastructure/prisma-company.repository.js";
+import { CompanyNafWriter } from "./domain/ports/company-naf.writer.js";
+import { PrismaCompanyNafWriter } from "./infrastructure/prisma-company-naf.writer.js";
 import { StaffBlockDirectory } from "./infrastructure/staff-block-directory.js";
 import { StaffDirectory } from "./domain/ports/staff-directory.js";
 import { CertifyKbisHandler } from "./application/commands/certify-kbis.handler.js";
@@ -347,6 +349,7 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     SubjectRoutedCustomerIdentity,
     { provide: SupportRequestRepository, useClass: PrismaSupportRequestRepository },
     OnCompanyDeclaredResolveNaf,
+    { provide: CompanyNafWriter, useClass: PrismaCompanyNafWriter },
     { provide: EstablishmentDirectory, useClass: RechercheEntreprisesEstablishmentDirectory },
     // **Le port de résolution du principal**, tenu par ce domaine. C'est lui qui
     // sait ce qu'est un client chez nous : la couche technique ne fait que

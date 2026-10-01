@@ -173,11 +173,14 @@ export async function seedNeighbourClients(context: ClientContext): Promise<void
  * alors le semis de livraison seul qui cesserait de l'éprouver.
  *
  * Idempotent par raison sociale : une maison déjà semée est laissée telle quelle
- * — sauf si elle est restée **en attente**. Un semis interrompu entre la
- * création et l'activation laissait des maisons `pending` que le passage
- * suivant sautait pour toujours : comptées comme particuliers, leurs
- * livraisons tombaient sur « la livraison n'est pas proposée pour cet espace »
- * (constaté le 2026-09-30, treize maisons sur quinze).
+ * — sauf si elle est restée **en attente**. Des maisons `pending` que le
+ * passage suivant sautait pour toujours étaient comptées comme particuliers, et
+ * leurs livraisons tombaient sur « la livraison n'est pas proposée pour cet
+ * espace » (constaté le 2026-09-30, treize maisons sur quinze). La cause n'était
+ * pas un semis interrompu : la résolution du NAF, en tâche de fond, réécrivait
+ * la société entière chargée AVANT l'activation (corrigé le 2026-10-01, elle
+ * n'écrit plus que le NAF). La reprise reste : un semis réellement interrompu
+ * laisse le même état.
  */
 export async function seedFictiveClients(
   context: ClientContext,
