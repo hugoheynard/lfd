@@ -189,3 +189,29 @@ affichée en roulant ou à l'arrivée (9), changer l'ordre (10).
 | **PL1 — Charger depuis « Ma tournée »** | scan et plan de chargement de **sa** tournée, sous le droit du livreur, avec le mur `driver_staff_id` |
 | **PL2 — « Tournée terminée »**          | un état **rentrée** de la tournée (instant, auteur) ; « Non remis » le lit ; les bacs sont libérés    |
 | **PL3 — « En route »**                  | le courriel au client au départ, envoyé par le commerce                                               |
+
+## Étape 1 revue — « Ma tournée » suit le colisage (Hugo, 2026-10-01)
+
+> « Ma tournée doit s'actualiser en fonction de l'avancement du coliseur » ;
+> « organisé par tournée, par arrêt, fiche en évidence » ; « le bon de commande
+> atelier contient déjà tout ça, peut-être qu'un seul document suffit » —
+> réponse **(a)**.
+
+**Lot PL4** :
+
+- **Une seule fiche** : sur chaque arrêt, le contenu de la **feuille d'atelier**
+  (client, produits et quantités, froid — sans montant, comme le papier qui
+  voyage dans le bac), lu par le **port du commerce** (les lignes de la
+  commande, `DeliveryOrderLinesReader`) — **pas** de PDF, **pas** de port vers
+  le fournil (la case `delivery → production` reste fermée).
+- **L'avancement du colisage** par arrêt : « en préparation », « n bacs sur m
+  déclarés », « prête » — l'état « prête » vient du commerce (la commande
+  `ready`, qu'il apprend du fournil par événement), les bacs viennent de la
+  livraison.
+- **Par tournée puis par arrêt**, un compteur en tête (« 4 arrêts prêts sur 6 »).
+- **Rafraîchissement** : une **version de « ma tournée »** côté serveur, qui
+  bouge quand la livraison bouge **ou** quand le commerce bouge (par son port) ;
+  la déclaration d'un bac fait désormais bouger le journal de la livraison
+  (aujourd'hui, un bac n'a pas de jour : seul son chargement en a un). L'écran
+  interroge cette version et ne relit que si elle a changé, comme les postes
+  du fournil.
