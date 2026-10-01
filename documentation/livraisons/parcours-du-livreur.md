@@ -225,3 +225,21 @@ affichée en roulant ou à l'arrivée (9), changer l'ordre (10).
   (aujourd'hui, un bac n'a pas de jour : seul son chargement en a un). L'écran
   interroge cette version et ne relit que si elle a changé, comme les postes
   du fournil.
+
+## Note — « Tournée terminée » exige un sort pour chaque arrêt (Hugo, 2026-10-01)
+
+> 📌 **Décidé, pas bâti.** « On ne peut pas faire tournée terminée si [ni]
+> une livraison effectuée, [ni] une décision actée » pour chaque point de la
+> tournée.
+
+« Tournée terminée » (PL2) **refuse** tant qu'un arrêt n'a ni :
+
+- **une livraison effectuée** — remis au client ou déposé avec preuve (lot B) ;
+- **une décision actée** — clos sans remise, ou la décision d'un commercial
+  (dépôt autorisé une fois, ou « Rapporter ») sur un problème à la remise
+  (lot B).
+
+Un arrêt seulement **signalé** ne suffit pas. Le refus nomme les arrêts en
+cause, comme « Commencer ma tournée ». Aujourd'hui (lot A), « Tournée terminée »
+ne vérifie pas cette condition : elle se bâtit avec le lot B, qui crée la
+remise et la décision du commercial.
