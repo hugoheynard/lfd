@@ -63,6 +63,7 @@ flowchart TB
     SS["delivery_simulation_scenario"]
     PV["delivery_purchase_vehicle_candidate"]
     PB["delivery_purchase_bin_candidate"]
+    PS["delivery_purchase_scenario"]
   end
   J["day_change<br/>(journal de journée)"]
   V --> R
@@ -75,20 +76,21 @@ flowchart TB
   BL -. déclencheurs .-> J
 ```
 
-| Table                                        | Ce qu'elle tient                                                   | Écrite par                         |
-| -------------------------------------------- | ------------------------------------------------------------------ | ---------------------------------- |
-| `delivery_vehicle`                           | la flotte : plaque, espace utile, froid, énergie, passages de roue | agrégat `Vehicle`                  |
-| `delivery_departure`                         | le point de départ des tournées                                    | réglage                            |
-| `delivery_routing_settings`                  | les réglages du calculateur (marge, durée d'arrêt…)                | réglage                            |
-| `delivery_round`                             | une tournée : jour, véhicule, passage, départ                      | agrégat `DeliveryRound`            |
-| `delivery_round_stop`                        | un arrêt : commande (identifiant opaque), position, `closed_at`    | agrégat `DeliveryRound`            |
-| `delivery_stop_execution`                    | l'instantané d'un arrêt au départ (adresse, contact, fenêtre)      | le départ                          |
-| `delivery_geocode`                           | le cache de géocodage                                              | le calculateur                     |
-| `delivery_bin_type`, `delivery_bin_capacity` | les formats de bacs et leurs contenances                           | réglage                            |
-| `delivery_bin`, `delivery_bin_load`          | les bacs déclarés et leur chargement                               | colisage, chargement               |
-| `delivery_simulation_scenario`               | les scénarios du simulateur                                        | simulateur                         |
-| `delivery_purchase_*_candidate`              | la bibliothèque d'achat                                            | assistant d'achat                  |
-| `day_change`                                 | le journal de journée de la livraison                              | **ses déclencheurs**, rien d'autre |
+| Table                                        | Ce qu'elle tient                                                         | Écrite par                         |
+| -------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------- |
+| `delivery_vehicle`                           | la flotte : plaque, espace utile, froid, énergie, passages de roue       | agrégat `Vehicle`                  |
+| `delivery_departure`                         | le point de départ des tournées                                          | réglage                            |
+| `delivery_routing_settings`                  | les réglages du calculateur (marge, durée d'arrêt…)                      | réglage                            |
+| `delivery_round`                             | une tournée : jour, véhicule, passage, départ                            | agrégat `DeliveryRound`            |
+| `delivery_round_stop`                        | un arrêt : commande (identifiant opaque), position, `closed_at`          | agrégat `DeliveryRound`            |
+| `delivery_stop_execution`                    | l'instantané d'un arrêt au départ (adresse, contact, fenêtre)            | le départ                          |
+| `delivery_geocode`                           | le cache de géocodage                                                    | le calculateur                     |
+| `delivery_bin_type`, `delivery_bin_capacity` | les formats de bacs et leurs contenances                                 | réglage                            |
+| `delivery_bin`, `delivery_bin_load`          | les bacs déclarés et leur chargement                                     | colisage, chargement               |
+| `delivery_simulation_scenario`               | les scénarios du simulateur                                              | simulateur                         |
+| `delivery_purchase_*_candidate`              | la bibliothèque d'achat                                                  | assistant d'achat                  |
+| `delivery_purchase_scenario`                 | les scénarios d'achat (une sélection du tableau, citée par identifiants) | assistant d'achat (2026-10-01)     |
+| `day_change`                                 | le journal de journée de la livraison                                    | **ses déclencheurs**, rien d'autre |
 
 **Aucune clé étrangère ne sort de ce schéma, et aucune n'y entre.** Une
 commande est désignée par son identifiant (`order_id`, une chaîne), jamais par

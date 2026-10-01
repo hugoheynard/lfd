@@ -1,6 +1,6 @@
 # La bibliothèque d'achat — véhicules et bacs candidats, scénarios, tableau croisé
 
-> 🟡 **Plan, partiellement bâti** (2026-09-30) : B1 et B2 côté serveur, aucun écran. Suite de
+> 🟡 **Plan, partiellement bâti** : B1 à B5 bâtis (2026-09-30 / 2026-10-01) ; reste B6 (« ajouter à la flotte », « mettre en service »). Suite de
 > [`plan-geometrie-du-plancher.md`](plan-geometrie-du-plancher.md) : l'assistant
 > d'achat (G1-G3) calcule, mais tout se ressaisit à chaque ouverture.
 >
@@ -138,9 +138,12 @@ Même forme que les scénarios du simulateur de tournée
 (`delivery_simulation_scenario`) : un nom, une sélection en JSON **revalidée à
 chaque relecture**, l'auteur figé, archivable. Un scénario **cite** des
 identifiants, il ne copie pas les cotes : on le relance sur les valeurs
-d'aujourd'hui. Un candidat archivé depuis se nomme dans le refus
-(« le format « Caisse Dupont 50 » a été archivé — retirez-le du scénario »),
-jamais en 500.
+d'aujourd'hui. Un élément archivé, retiré ou disparu depuis **n'empêche pas
+d'ouvrir** le scénario : la relecture le nomme dans `issues` (« le format
+« Caisse Dupont 50 » a été archivé — retirez-le du scénario »), l'écran le
+décoche et propose de le retirer ; c'est le tableau (B2) qui le refuse en 409
+si on le relance tel quel. Jamais de 500. _(Précisé au bâti, 2026-10-01 : la
+v1 disait « se nomme dans le refus », ce qui aurait empêché de corriger.)_
 
 ### B-D6 — Les droits
 
@@ -158,7 +161,7 @@ Ceux du simulateur (Q1), sans droit neuf :
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
 | **B1** ✅ 2026-09-30 (`19a1eb59e`) | Candidats : migration additive (2 tables), agrégats, CRUD + archivage, contrats, e2e (mur de droits, refus d'URL, prix négatif)                                                                                                                | `batisseur`           |
 | **B2** ✅ 2026-09-30               | Tableau croisé : query, bornes 10 × 10, coûts, e2e — coût par litre arrondi au centime le plus proche (moitié vers le haut), meilleures cases calculées au serveur, un véhicule retiré de la flotte refusé comme un archivé ; 10 × 10 en 35 ms | `batisseur`           |
-| **B3**                             | Scénarios : table, enregistrer / relire / archiver, e2e                                                                                                                                                                                        | `batisseur`           |
+| **B3** ✅ 2026-10-01               | Scénarios : table `delivery.delivery_purchase_scenario`, enregistrer / relire (éléments invalides nommés, pas refusés) / remplacer / archiver, écran dans l'onglet Tableau, e2e                                                                | `batisseur`           |
 | **B4**                             | Écran « Bibliothèque » (onglet de l'assistant) : listes, fiches, lien d'achat, prix HT                                                                                                                                                         | `pablo`               |
 | **B5**                             | Écran « Tableau » : sélection, critère, mise en avant, coût par litre à la demande ; enregistrer un scénario                                                                                                                                   | `pablo`               |
 | **B6**                             | « Ajouter à la flotte », « Mettre en service »                                                                                                                                                                                                 | `batisseur` + `pablo` |
