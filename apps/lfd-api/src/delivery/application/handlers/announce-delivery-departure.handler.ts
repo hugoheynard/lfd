@@ -1,6 +1,6 @@
 import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
 
-import { outsideTransaction } from "../../../platform/database/transaction.store.js";
+import { AfterCommit } from "../../../platform/database/after-commit.js";
 import { BackgroundWork } from "../../../platform/events/background-work.js";
 import { DeliveryDepartureAnnouncer } from "../../channels/commerce/index.js";
 import { DeliveryRoundDepartedEvent } from "../../domain/events/delivery-loading.events.js";
@@ -15,22 +15,26 @@ import { DeliveryRoundDepartedEvent } from "../../domain/events/delivery-loading
  * qui échoue ne doit pas faire échouer un départ déjà décidé au dépôt — d'où le
  * suivi par `BackgroundWork`, qui journalise l'échec et le garde pour lui.
  *
- * ## 🔴 Hors de la transaction du départ
+ * ## 🔴 Après la validation du départ, hors de sa transaction
  *
  * Le fait est publié DANS l'unité de travail des deux portes du départ (le
  * journal l'exige, `publishTraced`), et le bus appelle cet abonné de façon
- * synchrone : sans détachement, les lectures du commerce viseraient la
- * transaction du départ, close ou en train de l'être. `outsideTransaction` les
- * rend à la connexion ordinaire.
+ * synchrone. L'annonce est donc inscrite pour APRÈS la validation
+ * (`AfterCommit`, plan-a-la-porte.md B0) : un départ dont la transaction
+ * échoue n'écrit à personne, et les lectures du commerce partent hors de la
+ * transaction close.
  *
  * Les commandes annoncées sont celles des arrêts **vivants** : un arrêt retiré
  * de la tournée n'en fait plus partie.
  */
+const ANNOUNCE = "announce-delivery-departure";
+
 @EventsHandler(DeliveryRoundDepartedEvent)
 export class AnnounceDeliveryDeparture implements IEventHandler<DeliveryRoundDepartedEvent> {
   constructor(
     private readonly announcer: DeliveryDepartureAnnouncer,
     private readonly work: BackgroundWork,
+    private readonly afterCommit: AfterCommit,
   ) {}
 
   handle(event: DeliveryRoundDepartedEvent): void {
@@ -41,9 +45,9 @@ export class AnnounceDeliveryDeparture implements IEventHandler<DeliveryRoundDep
       return;
     }
     const departure = { roundId: event.round.id, departedAt, orderIds: event.round.orderIds };
-    void this.work.track(
-      outsideTransaction(() => this.announcer.announceDeparture(departure)),
-      "announce-delivery-departure",
+    this.afterCommit.defer(
+      () => this.work.track(this.announcer.announceDeparture(departure), ANNOUNCE),
+      ANNOUNCE,
     );
   }
 }

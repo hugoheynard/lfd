@@ -1,3 +1,4 @@
+import { HeldAfterCommit } from "../../../../platform/database/__tests__/held-after-commit.js";
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import {
   type DeliveryDeparture,
@@ -62,10 +63,12 @@ describe("AnnounceDeliveryDeparture", () => {
   it("annonce au commerce la tournée, son instant de départ et ses commandes", async () => {
     const announcer = new RecordingAnnouncer();
     const work = new CapturingWork();
+    const commit = new HeldAfterCommit();
 
-    new AnnounceDeliveryDeparture(announcer, work).handle(
+    new AnnounceDeliveryDeparture(announcer, work, commit).handle(
       new DeliveryRoundDepartedEvent(round(DEPARTED), 4),
     );
+    await commit.commit();
     await work.whenIdle();
 
     expect(announcer.heard).toEqual([
@@ -77,12 +80,14 @@ describe("AnnounceDeliveryDeparture", () => {
   it("une annonce qui échoue ne remonte pas : le travail de fond l'avale après l'avoir journalisée", async () => {
     const announcer = new RecordingAnnouncer(new Error("mailer en panne"));
     const work = new CapturingWork();
+    const commit = new HeldAfterCommit();
 
     expect(() => {
-      new AnnounceDeliveryDeparture(announcer, work).handle(
+      new AnnounceDeliveryDeparture(announcer, work, commit).handle(
         new DeliveryRoundDepartedEvent(round(DEPARTED), 4),
       );
     }).not.toThrow();
+    await commit.commit();
     await expect(work.whenIdle()).resolves.toBeUndefined();
     expect(announcer.heard).toHaveLength(1);
   });
@@ -90,12 +95,32 @@ describe("AnnounceDeliveryDeparture", () => {
   it("n'annonce rien pour une tournée sans instant de départ", async () => {
     const announcer = new RecordingAnnouncer();
     const work = new CapturingWork();
+    const commit = new HeldAfterCommit();
 
-    new AnnounceDeliveryDeparture(announcer, work).handle(
+    new AnnounceDeliveryDeparture(announcer, work, commit).handle(
       new DeliveryRoundDepartedEvent(round(null), 0),
     );
+    await commit.commit();
     await work.whenIdle();
 
+    expect(announcer.heard).toEqual([]);
+    expect(work.labels).toEqual([]);
+  });
+
+  it("n'annonce rien avant la validation du départ, ni jamais si elle échoue", async () => {
+    const announcer = new RecordingAnnouncer();
+    const work = new CapturingWork();
+    const commit = new HeldAfterCommit();
+
+    new AnnounceDeliveryDeparture(announcer, work, commit).handle(
+      new DeliveryRoundDepartedEvent(round(DEPARTED), 4),
+    );
+    await work.whenIdle();
+    expect(announcer.heard).toEqual([]);
+
+    commit.discard();
+    await commit.commit();
+    await work.whenIdle();
     expect(announcer.heard).toEqual([]);
     expect(work.labels).toEqual([]);
   });

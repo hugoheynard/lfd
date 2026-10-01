@@ -2,7 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import { PrismaService } from "./prisma.service.js";
 import type { CountedPrismaClient } from "./counted-prisma.js";
-import { runInTransaction, currentTransaction } from "./transaction.store.js";
+import { CommitQueue, currentTransaction, runInTransaction } from "./transaction.store.js";
 
 /**
  * Une **unité de travail** : tout ce qui s'écrit à l'intérieur part ensemble,
@@ -41,11 +41,18 @@ export class PrismaUnitOfWork extends UnitOfWork {
    * celle en cours** plutôt que d'en ouvrir une seconde : Prisma ne sait pas
    * imbriquer, et deux unités de travail concurrentes sur le même flux
    * signifieraient qu'une moitié peut être annulée sans l'autre.
+   *
+   * Les rappels d'après validation (`AfterCommit`) s'accrochent donc à l'unité
+   * la plus externe : seule elle valide. Sa file n'est vidée qu'une fois
+   * `$transaction` résolu — une unité qui échoue ne les exécute jamais.
    */
   async run<T>(work: () => Promise<T>): Promise<T> {
     if (currentTransaction() !== undefined) {
       return work();
     }
-    return this.prisma.$transaction((tx) => runInTransaction(tx, work));
+    const commits = new CommitQueue();
+    const result = await this.prisma.$transaction((tx) => runInTransaction(tx, work, commits));
+    commits.flush();
+    return result;
   }
 }

@@ -5,7 +5,9 @@
  *
  * Ce que seul l'e2e prouve : le câblage du port à travers la racine de
  * composition, et que l'abonné lit les commandes HORS de la transaction du
- * départ — sans quoi ses lectures viseraient un client de transaction clos.
+ * départ — sans quoi ses lectures viseraient un client de transaction clos —
+ * et APRÈS sa validation (plan-a-la-porte.md, B0) : un départ annulé au
+ * moment de valider n'écrit à personne.
  */
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
 import {
@@ -16,6 +18,9 @@ import {
 } from "./delivery-rounds-scene.js";
 import { composedOrder, declareBins, depart, loadBin } from "./delivery-loading-scene.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { PrismaService } from "../src/platform/database/prisma.service.js";
+import { currentTransaction } from "../src/platform/database/transaction.store.js";
+import { PrismaUnitOfWork, UnitOfWork } from "../src/platform/database/unit-of-work.js";
 
 const DAY = serviceDay();
 
@@ -34,12 +39,47 @@ const recordingMailer = {
   },
 };
 
+/**
+ * La vraie unité de travail, que le test peut faire échouer APRÈS le travail
+ * de l'unité la plus externe — donc après la publication du départ, comme une
+ * validation refusée par la base. Un provider interne doublé, par exception :
+ * c'est le seul moyen d'atteindre « publié, puis annulé » sans provoquer une
+ * vraie panne de Postgres. Tout le reste — SQL, transaction, bus — est réel.
+ */
+class FailableUnitOfWork extends UnitOfWork {
+  inner: UnitOfWork | null = null;
+  failNextCommit = false;
+
+  run<T>(work: () => Promise<T>): Promise<T> {
+    if (this.inner === null) {
+      throw new RangeError("unité de travail e2e non branchée");
+    }
+    if (currentTransaction() !== undefined) {
+      return this.inner.run(work);
+    }
+    return this.inner.run(async () => {
+      const result = await work();
+      if (this.failNextCommit) {
+        this.failNextCommit = false;
+        throw new RangeError("validation refusée (e2e)");
+      }
+      return result;
+    });
+  }
+}
+const unitOfWork = new FailableUnitOfWork();
+
 let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [ADMIN_VERIFIER_OVERRIDE, { token: MAILER, value: recordingMailer }],
+    overrides: [
+      ADMIN_VERIFIER_OVERRIDE,
+      { token: MAILER, value: recordingMailer },
+      { token: UnitOfWork, value: unitOfWork },
+    ],
   });
+  unitOfWork.inner = new PrismaUnitOfWork(ctx.app.get(PrismaService));
 });
 
 afterAll(async () => {
@@ -120,5 +160,19 @@ describe("votre livraison est en route (PL3)", () => {
     await ctx.drain();
 
     expect(enRoute()).toEqual([]);
+  });
+
+  it("un départ dont la transaction échoue après publication n'envoie aucun courriel", async () => {
+    const { roundId } = await loadedRoundOfTwo();
+    unitOfWork.failNextCommit = true;
+
+    expect((await depart(ctx, roundId)).status).toBe(500);
+    await ctx.drain();
+
+    expect(enRoute()).toEqual([]);
+    // Et le départ n'a pas eu lieu : rejoué, il part — et n'écrit qu'alors.
+    expect((await depart(ctx, roundId)).status).toBe(204);
+    await ctx.drain();
+    expect(enRoute()).toHaveLength(2);
   });
 });

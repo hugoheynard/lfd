@@ -8,6 +8,7 @@ import {
 } from "@nestjs/common";
 
 import { AppConfig } from "../config/app-config.js";
+import { AmbientAfterCommit, AfterCommit } from "./after-commit.js";
 import { countedPrisma, type CountedPrismaClient } from "./counted-prisma.js";
 import { PrismaService } from "./prisma.service.js";
 import { assertSchemaIsFresh } from "./schema-freshness.js";
@@ -104,7 +105,8 @@ class PrismaConnection implements OnModuleInit, OnModuleDestroy {
         transactionalPrisma(countedPrisma(raw, counter)),
     },
     { provide: UnitOfWork, useClass: PrismaUnitOfWork },
+    { provide: AfterCommit, useClass: AmbientAfterCommit },
   ],
-  exports: [PrismaService, SchemaOpsCounter, UnitOfWork],
+  exports: [PrismaService, SchemaOpsCounter, UnitOfWork, AfterCommit],
 })
 export class DatabaseModule {}
