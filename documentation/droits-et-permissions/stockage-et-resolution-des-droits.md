@@ -155,21 +155,30 @@ code ferait `ROLE_GRANTS[null]`.
 
 ## 8. Ajouter un droit
 
-Tant que le repli existe, `ROLE_GRANTS` (`packages/contracts/src/staff-access.ts`)
-reste la **graine** : il sème une base neuve (`ensureStaffRoleDefinitions`,
-harnais e2e) et sert au repli. Ajouter une ressource demande donc :
+> ⚠️ **Réécrit le 2026-10-01** (`plan-droits-par-geste.md`, DG0 et DG4).
+> Ce paragraphe décrivait trois étapes — enum, migration qui accorde, entrée
+> dans `ROLE_GRANTS` — tenues par un test de parité. **Elles ne valent plus.**
+
+Le repli sur `ROLE_GRANTS` est **retiré** (`staff_users.role_key` est
+`NOT NULL` depuis `20261001130000_la_cle_de_role_est_obligatoire`, zéro fiche
+sans clé relevée en production). `ROLE_GRANTS`
+(`packages/contracts/src/staff-access.ts`) n'est plus qu'une **graine** : il
+sème une base neuve (`ensureStaffRoleDefinitions`, harnais e2e), il n'est
+jamais lu au runtime. Ajouter une ressource demande désormais :
 
 1. une migration qui ajoute la valeur à l'enum `StaffResource` — **seule**
    dans sa migration ;
-2. une migration qui l'ajoute aux `grants` des rôles concernés, **par clé et
-   en ajout seul** : elle n'écrase jamais une définition éditée à l'écran ;
-3. la même entrée dans `ROLE_GRANTS`.
+2. **aucune** migration d'attribution : qui a la ressource se règle à
+   l'écran (`/admin/staff-roles`). La porte `lint:no-role-grants-in-migrations`
+   refuse toute écriture dans `staff_role_definitions` ou
+   `staff_permission_overrides` postérieure à
+   `20261001130200_la_bascule_des_droits_par_geste` ;
+3. l'entrée dans la graine `ROLE_GRANTS`, si les bases de dev et de test
+   doivent la porter.
 
-`apps/lfd-api/test/staff-role-grants-parity.e2e-spec.ts` rejoue toutes les
-écritures de la table depuis la graine du 2026-09-01 et exige l'égalité exacte
-avec `ROLE_GRANTS` : oublier l'étape 2 ou 3 le fait échouer. C'est ce trou qui
-a fait écrire `20260926120100_les_droits_jamais_ecrits`, pour trois ressources
-qui n'existaient que dans le code.
+L'ancien test de parité (base rejouée = `ROLE_GRANTS`) est **supprimé** :
+il exigeait ce que la règle interdit. `apps/lfd-api/test/staff-role-seed.e2e-spec.ts`
+le remplace — une base semée a exactement les rôles et les droits de la graine.
 
 ## 9. Où c'est éprouvé
 
@@ -177,5 +186,5 @@ qui n'existaient que dans le code.
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `test/staff-roles-in-database.e2e-spec.ts`   | effet immédiat, rôle créé à l'écran, archivé, illisible, secours, déclencheur, verrous, invariants |
 | `test/staff-role-keys-migration.e2e-spec.ts` | chaque fiche a sa `role_key` ; une définition manquante est créée depuis le contrat                |
-| `test/staff-role-grants-parity.e2e-spec.ts`  | la table rejouée égale `ROLE_GRANTS`                                                               |
+| `test/staff-role-seed.e2e-spec.ts`           | une base semée porte exactement la graine `ROLE_GRANTS` (depuis le 2026-10-01)                     |
 | `src/staff/permissions/__tests__/`           | politique, résolveur, définition de rôle                                                           |

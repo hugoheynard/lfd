@@ -42,7 +42,7 @@ une commande, et la comptabilité peut coliser.
   étant `20261001120100_le_role_livreur`, pas encore en production). Chaque
   ressource neuve a donné « la ressource + son attribution à des rôles ».
 - `ROLE_GRANTS` (`packages/contracts/src/staff-access.ts`) est un **miroir**
-  tenu égal à la base par `test/staff-role-grants-parity.e2e-spec.ts`, qui
+  tenu égal à la base par le test de parité des rôles (supprimé depuis, DG4), qui
   rejoue ces migrations.
 - « L'admin couvre tout » est tenu par **une ligne de migration à chaque
   ressource** et par un test du contrat (`__tests__/staff-access.spec.ts`).
@@ -129,7 +129,7 @@ Ensuite, Hugo règle à l'écran (DG-D7).
 
 - `ROLE_GRANTS` ne sert plus qu'à **semer une base vierge** (dev, e2e,
   `legacyRoleSeeds`) ; il n'est plus un miroir de la production.
-- `staff-role-grants-parity.e2e-spec.ts` est **remplacé** par un test qui
+- le test de parité des rôles est **remplacé** par un test qui
   vérifie que la graine est **valide** (ressources connues, pas de doublon) et
   qu'une base semée a les rôles attendus.
 - Les seize migrations passées **ne se touchent pas** (leurs fichiers sont

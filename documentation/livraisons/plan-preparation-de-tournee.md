@@ -209,7 +209,7 @@ Ce que ça coûte, d'après le précédent `b2b_late_fee` (377008f85) :
 - la valeur ajoutée **seule** dans sa migration (irréversible) ;
 - une migration de données qui **complète** `staff_role_definitions.grants`
   sans écraser une définition éditée à l'écran ;
-- `ROLE_GRANTS` tenu au même état (`staff-role-grants-parity.e2e-spec.ts`),
+- `ROLE_GRANTS` tenu au même état (le test de parité des rôles, supprimé le 2026-10-01),
   libellé, `grant-chips.spec.ts`, `app.routes.spec.ts`, `staff-roles.e2e-spec.ts` ;
 - `pnpm test` à la racine, puisque `packages/contracts` bouge.
 

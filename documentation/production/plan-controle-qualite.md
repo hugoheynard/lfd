@@ -130,7 +130,7 @@ disperse en exceptions que personne ne relit.
 c'était faux : depuis le 2026-09-26 les rôles se lisent **en base**
 (`staff_role_definitions`), `ROLE_GRANTS` n'en est que le miroir, et un rôle
 ajouté au seul contrat n'aurait existé pour personne — le test de parité
-(`test/staff-role-grants-parity.e2e-spec.ts`) l'aurait dit. Vu par `batisseur`
+(le test de parité des rôles, supprimé le 2026-10-01) l'aurait dit. Vu par `batisseur`
 au lot QC1. Un rôle défini à l'écran s'attribue à une fiche (la colonne
 d'enum reste `NULL` pour une clé hors enum, `role-assignment.ts`) — vérifié le
 2026-09-28. **Aucun code, aucune migration** pour le rôle.

@@ -274,6 +274,6 @@ comptabilite write), `b2b_order_waivers` (admin write, commercial write),
 `b2b_feature_access` (admin write, commercial read). Après la bascule, ces trois
 rôles les auraient perdues. Refermé par `20260926120100_les_droits_jamais_ecrits`
 (ajout seul, par clé, idempotent), et gardé par
-`apps/lfd-api/test/staff-role-grants-parity.e2e-spec.ts`, qui rejoue toutes les écritures
+le test de parité des rôles (supprimé le 2026-10-01, remplacé par `apps/lfd-api/test/staff-role-seed.e2e-spec.ts`), qui rejouait toutes les écritures
 de la table depuis la graine du 2026-09-01 et exige l'égalité exacte avec
 `ROLE_GRANTS`. Il échoue sans cette migration (vérifié le 2026-09-26).

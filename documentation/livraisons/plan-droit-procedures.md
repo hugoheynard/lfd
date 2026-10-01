@@ -58,7 +58,7 @@ les dérogations sur `b2b_companies`), pour décider au cas par cas.
 
 Deux, comme tout ajout de ressource : la valeur `StaffResource.delivery_procedures`
 seule ; puis les droits des rôles du tableau, idempotents, au format relu par
-`staff-role-grants-parity.e2e-spec.ts`. `ROLE_GRANTS` du contrat suit.
+test de parité des rôles (supprimé le 2026-10-01). `ROLE_GRANTS` du contrat suit.
 
 ### DP-D4 — Le front
 
