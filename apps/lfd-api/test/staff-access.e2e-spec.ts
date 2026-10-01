@@ -8,7 +8,9 @@
  * `documentation/droits-et-permissions/architecture-acces-staff.md`.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
+import type { StaffUserView } from "@lfd/contracts";
+
+import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /** Le comptable : il écrit les commandes, ne touche ni aux réglages ni à l'annuaire. */
 const ACCOUNTANT_SUB = "staff-comptable";
@@ -266,7 +268,102 @@ describe("le mur staff — une décision mord tout de suite", () => {
 
     await accountant().get("/admin/cockpit").expect(200);
   });
+
+  /**
+   * L'écran des dérogations (DG7, `plan-droits-par-geste.md` DG-D9) : accorder
+   * puis retirer PAR LA ROUTE de la fiche, et l'effectif suit — au guard comme
+   * dans la liste de l'annuaire, que le même résolveur calcule.
+   *
+   * Chaque lecture qui précède une écriture REMPLIT le cache de 30 s : sans
+   * l'oubli que fait l'édition, le second appel lirait l'état d'avant.
+   */
+  it("accorder puis retirer une dérogation change l'effectif sans attendre le cache", async () => {
+    const target = await ctx.prisma.staffUser.findUniqueOrThrow({
+      where: { email: ACCOUNTANT_EMAIL },
+    });
+    await accountant().get("/admin/cockpit").expect(403);
+
+    await editAccountantOverrides(target.id, [
+      { resource: "b2b_growth", action: "read", effect: "allow" },
+    ]);
+    await accountant().get("/admin/cockpit").expect(200);
+    expect(await listedPermissions(target.id)).toContain("b2b_growth:read");
+
+    await editAccountantOverrides(target.id, []);
+    await accountant().get("/admin/cockpit").expect(403);
+    expect(await listedPermissions(target.id)).not.toContain("b2b_growth:read");
+  });
+
+  it("un refus posé par la route retire ce que le rôle donne, puis le retirer le rend", async () => {
+    const target = await ctx.prisma.staffUser.findUniqueOrThrow({
+      where: { email: ACCOUNTANT_EMAIL },
+    });
+    await accountant().get("/admin/orders").expect(200);
+
+    await editAccountantOverrides(target.id, [
+      { resource: "b2b_orders", action: "read", effect: "deny" },
+    ]);
+    await accountant().get("/admin/orders").expect(403);
+    // Refuser la lecture refuse l'écriture : l'effectif n'a plus ni l'une ni l'autre.
+    const denied = await listedPermissions(target.id);
+    expect(denied).not.toContain("b2b_orders:read");
+    expect(denied).not.toContain("b2b_orders:write");
+
+    await editAccountantOverrides(target.id, []);
+    await accountant().get("/admin/orders").expect(200);
+  });
+
+  it("refuse à qui n'a pas l'annuaire de poser une dérogation (403), sans rien écrire", async () => {
+    const target = await ctx.prisma.staffUser.findUniqueOrThrow({
+      where: { email: ACCOUNTANT_EMAIL },
+    });
+    await accountant()
+      .patch(`/admin/staff-users/${target.id}`)
+      .send(accountantEdit([{ resource: "b2b_growth", action: "read", effect: "allow" }]))
+      .expect(403);
+
+    expect(
+      await ctx.prisma.staffPermissionOverride.count({ where: { staffUserId: target.id } }),
+    ).toBe(0);
+  });
 });
+
+type OverrideBody = {
+  readonly resource: string;
+  readonly action: "read" | "write";
+  readonly effect: "allow" | "deny";
+};
+
+function accountantEdit(overrides: readonly OverrideBody[]): Record<string, unknown> {
+  return {
+    firstName: "Colette",
+    lastName: "Bréal",
+    email: ACCOUNTANT_EMAIL,
+    role: "comptabilite",
+    overrides,
+  };
+}
+
+async function editAccountantOverrides(
+  id: string,
+  overrides: readonly OverrideBody[],
+): Promise<void> {
+  await ctx
+    .asSub(E2E_STAFF_SUB)
+    .patch(`/admin/staff-users/${id}`)
+    .send(accountantEdit(overrides))
+    .expect(204);
+}
+
+/** L'effectif tel que l'annuaire le sert — ce que l'écran affiche une fois enregistré. */
+async function listedPermissions(id: string): Promise<readonly string[]> {
+  const response = await ctx.asSub(E2E_STAFF_SUB).get("/admin/staff-users").expect(200);
+  const fiche = jsonBody<readonly StaffUserView[]>(response).find((entry) => entry.id === id);
+  if (fiche === undefined) {
+    throw new Error(`fiche ${id} absente de l'annuaire`);
+  }
+  return fiche.permissions;
+}
 
 describe("le mur staff — la dérogation, en vrai", () => {
   it("ouvre une ressource que le rôle ne donne pas", async () => {

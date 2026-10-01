@@ -171,6 +171,12 @@ Pour que « tout se règle à l'écran » soit vrai : sur la fiche d'un membre d
 staff, ses dérogations (accorder, retirer, par ressource et niveau), avec le
 droit effectif résultant affiché. Lot à part, après la bascule.
 
+> ✅ **Constaté déjà bâti le 2026-10-01** (DG7) : `PATCH /admin/staff-users/:id`
+> sous `staff_access`, grille « Hérite / Autorisé / Refusé » sur la fiche, droit
+> effectif par `resolveHeldRole`, fait `staff_user.overrides_changed`. Le lot
+> n'a ajouté que trois e2e (`staff-access.e2e-spec.ts`). Le plan l'avait cru
+> absent sans ouvrir l'écran.
+
 ## 3. Les lots
 
 | Lot     | Contenu                                                                                                                                                  |
