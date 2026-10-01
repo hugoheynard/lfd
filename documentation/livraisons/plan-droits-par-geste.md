@@ -359,3 +359,32 @@ seul ne se fait plus automatiquement une fois que Hugo a réglé les rôles.
 | **DG6** | Procédure masquée (DG-D8)                                                                                                 | ensuite                   |
 | **DG7** | Écran des dérogations                                                                                                     | ensuite                   |
 | —       | Admin calculé                                                                                                             | **plan à part**           |
+
+## 6. Bâti le 2026-10-01 (`8b424bb2f`) — DG0 à DG5
+
+Migrations `20261001130000_la_cle_de_role_est_obligatoire`,
+`20261001130100_les_droits_par_geste` (valeurs d'enum seules),
+`20261001130200_la_bascule_des_droits_par_geste` ; porte
+`lint:no-role-grants-in-migrations` (40ᵉ) ; `20261001120100_le_role_livreur`
+retirée. Suite racine verte, lancée seule.
+
+Écarts au plan, à trancher par Hugo avant la mise en ligne :
+
+1. **Le catalogue vendable reste sous `b2b_orders`** (5.1 bis le mettait sous
+   `b2b_place_order`) : `GET admin/catalog/sellable` et
+   `…/companies/:companyId` servent aussi le prévisionnel, le dossier du jour,
+   le simulateur de tarification et l'onglet Stats de la fiche client. Le
+   support perdrait les Stats le jour J.
+2. **La recopie des dérogations vers `b2b_place_order`** : tout `deny`, quelle
+   que soit son action (refuser la lecture retirait déjà l'écriture), et un
+   `allow` seulement sur l'écriture. Aucune dérogation concernée aujourd'hui.
+3. **Le panneau « Bacs »** demande l'écriture (`production_packing:write` ou
+   `delivery_loading:write`) même pour ses lectures.
+4. **`b2b_place_order` ouvre aussi le simulateur de tarification**
+   (`POST admin/orders/quote`) : le retirer à la comptabilité lui ferme le
+   simulateur.
+
+**Après la mise en ligne, à l'écran** (`/admin/staff-roles`) : créer le rôle
+« Livreur » avec `delivery_driving` ; accorder `delivery_driving` à l'admin
+(la migration retirée le faisait) ; appliquer la feuille de réglage
+[`tableau-droits-livraison.md`](tableau-droits-livraison.md).
