@@ -89,6 +89,7 @@ function addressesRecorder(recorder: Recorder): CompanyAddressRepository {
         id: "a1",
         lines: { ...BILLING },
         specs: DELIVERY.specs,
+        depositAllowed: false,
         createdAt: new Date("2026-01-01T08:00:00Z"),
         archivedAt: null,
       },

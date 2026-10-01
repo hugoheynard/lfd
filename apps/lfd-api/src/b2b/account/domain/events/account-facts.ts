@@ -68,6 +68,12 @@ export const ACCOUNT_FACTS = {
   /** Où l'on livre par défaut — donc où partira la prochaine commande. */
   defaultDeliverySet: "company.default_delivery_set",
   /**
+   * « Dépôt autorisé » réglé sur une adresse — par le client ou par le staff
+   * (`plan-a-la-porte.md`, AP-D5). Il décide si un livreur peut laisser la
+   * commande sans personne : « qui l'a autorisé » doit avoir une réponse.
+   */
+  deliveryDepositSet: "company.delivery_deposit_set",
+  /**
    * La procédure de livraison d'une adresse a été modifiée — ajouté,
    * refait, supprimé ou réordonné une étape. Un livreur envoyé à la mauvaise
    * porte se remonte à qui a écrit la consigne. Préfixé `company.` comme les

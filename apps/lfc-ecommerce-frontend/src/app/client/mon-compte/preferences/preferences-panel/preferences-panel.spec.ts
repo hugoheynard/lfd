@@ -32,6 +32,7 @@ const CHALET: DeliveryAddressView = {
   pays: 'France',
   isDefault: true,
   procedureStepCount: 0,
+  depositAllowed: false,
   specs: {
     note: '',
     slots: { mode: 'everyday', slot: null },

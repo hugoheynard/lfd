@@ -35,6 +35,7 @@ const VIEW: DeliveryAddressView = {
   pays: 'France',
   isDefault: true,
   procedureStepCount: 0,
+  depositAllowed: false,
   specs: {
     note: 'Digicode 45A12, livrer au fournil',
     slots: { mode: 'everyday', slot: { start: '06:00', end: '08:00' } },

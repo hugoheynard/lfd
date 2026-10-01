@@ -3,6 +3,7 @@ import { Global, Module } from "@nestjs/common";
 import { AccountModule } from "../b2b/account/account.module.js";
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { CatalogDeliveryProductsReader } from "../b2b/catalog/infrastructure/catalog-delivery-products.reader.js";
+import { PrismaDeliveryOrderStatesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-states.reader.js";
 import { PrismaDeliveryOrderLinesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-lines.reader.js";
 import { PrismaDeliveryOrdersReader } from "../b2b/orders/infrastructure/prisma-delivery-orders.reader.js";
 import { PrismaDeliveryProceduresReader } from "../b2b/orders/infrastructure/prisma-delivery-procedures.reader.js";
@@ -12,6 +13,7 @@ import { PickupDepartureCandidatesReader } from "../b2b/pickup-addresses/infrast
 import {
   DeliveryOrderLinesReader,
   DeliveryOrdersReader,
+  DeliveryOrderStatesReader,
   DeliveryProceduresReader,
   DeliveryProductsReader,
   DeliveryStepPhotosReader,
@@ -52,6 +54,7 @@ import {
     { provide: DeliveryOrderLinesReader, useClass: PrismaDeliveryOrderLinesReader },
     { provide: DeliveryProceduresReader, useClass: PrismaDeliveryProceduresReader },
     { provide: DeliveryStepPhotosReader, useClass: PrismaDeliveryStepPhotosReader },
+    { provide: DeliveryOrderStatesReader, useClass: PrismaDeliveryOrderStatesReader },
   ],
   exports: [
     DepartureCandidatesReader,
@@ -60,6 +63,7 @@ import {
     DeliveryOrderLinesReader,
     DeliveryProceduresReader,
     DeliveryStepPhotosReader,
+    DeliveryOrderStatesReader,
   ],
 })
 export class DeliveryFeedModule {}

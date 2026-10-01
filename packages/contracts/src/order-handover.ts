@@ -24,7 +24,14 @@ import type { FulfillmentMethod, FulfillmentSource } from "./order.js";
  * destinataire n'avait pas son courriel : un magasinier, quelqu'un d'autre à
  * l'accueil, un téléphone déchargé.
  *
- * 🔴 **Les deux ne se confondent pas, et c'est tout l'objet de ce type.** Sans
+ * `deposit` — **déposé** par le livreur, sans personne pour réceptionner, à
+ * une adresse dont le client a autorisé le dépôt, photo à l'appui
+ * (`documentation/livraisons/plan-a-la-porte.md`, AP-D8). Il a les effets
+ * d'un retrait (AP-Q5). Connu des LECTEURS d'abord : aucun chemin ne l'écrit
+ * encore au 2026-10-01 — l'écrivain part dans un déploiement suivant, et
+ * le premier dépôt écrit rend cette valeur irréversible.
+ *
+ * 🔴 **Les trois ne se confondent pas, et c'est tout l'objet de ce type.** Sans
  * lui, quelqu'un finirait par imprimer le code sur le colis « pour les
  * livraisons difficiles » — et un coursier scannerait son propre carton. Une
  * attestation **faible et honnête** vaut mieux qu'une forte et fausse ; encore
@@ -34,7 +41,7 @@ import type { FulfillmentMethod, FulfillmentSource } from "./order.js";
  * était, et le contrat portait `string` à sa place : deux définitions du même
  * ensemble, dont une qui ne définissait rien.
  */
-export type HandoverVia = "scan" | "manual";
+export type HandoverVia = "scan" | "manual" | "deposit";
 
 /** Une ligne à vérifier au comptoir : ce qu'on compte, pas ce qu'on facture. */
 export interface OrderHandoverLine {
@@ -89,7 +96,8 @@ export interface OrderHandoverView {
   readonly handedOverByName: string | null;
   /**
    * **Comment** elle a été constatée : `scan` (les deux parties étaient là) ou
-   * `manual` (le scan était impossible, l'équipe a saisi). `null` tant qu'elle
+   * `manual` (le scan était impossible, l'équipe a saisi), ou `deposit`
+   * (déposé par le livreur, sans personne). `null` tant qu'elle
    * n'a pas été remis — ou sur un retrait antérieur à la distinction.
    *
    * L'écran l'affiche : un retrait saisi est une attestation **plus faible**,
@@ -181,7 +189,7 @@ export interface HandoverQueueEntryView {
   readonly state: HandoverQueueState;
   /** ISO du retrait, ou `null`. */
   readonly handedOverAt: string | null;
-  /** `scan` ou `manual`, ou `null` si elle reste à faire. */
+  /** `scan`, `manual` ou `deposit`, ou `null` si elle reste à faire. */
   readonly handedOverVia: HandoverVia | null;
   /** ISO du moment où le fournil l'a déclarée prête, ou `null`. */
   readonly readyAt: string | null;

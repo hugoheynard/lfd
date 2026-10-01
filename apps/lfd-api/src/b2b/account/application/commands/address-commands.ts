@@ -27,13 +27,18 @@ export class AddDeliveryAddressCommand {
   ) {}
 }
 
-/** Remplace une adresse de livraison. */
+/**
+ * Remplace une adresse de livraison. `depositAllowed` absent (`undefined`) =
+ * INCHANGÉ : un front qui ne connaît pas le champ ne retire rien
+ * (`plan-a-la-porte.md`, AP-D5).
+ */
 export class UpdateDeliveryAddressCommand {
   constructor(
     readonly actorUserId: string,
     readonly companyId: string,
     readonly addressId: string,
     readonly payload: DeliveryAddressPayload,
+    readonly depositAllowed: boolean | undefined = undefined,
   ) {}
 }
 

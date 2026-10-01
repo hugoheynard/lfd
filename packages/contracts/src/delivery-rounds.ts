@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { DeliveryIncidentView } from "./delivery-doorstep.js";
+
 /**
  * **La composition des tournées d'un jour** — répartir les livraisons entre les
  * véhicules, puis ordonner chaque tournée
@@ -18,6 +20,12 @@ export interface DeliveryRoundsDayView {
    * vivante. C'est là qu'arrivent les retardataires.
    */
   readonly unassigned: readonly DeliveryRoundOrderRef[];
+  /**
+   * Les problèmes signalés par les livreurs ce jour-là, toutes tournées
+   * confondues — l'écran les pose sur la tournée et l'arrêt par `roundId` et
+   * `stopId` (`plan-a-la-porte.md`, § 3).
+   */
+  readonly incidents: readonly DeliveryIncidentView[];
 }
 
 /** Une tournée : un véhicule, un jour, un passage. */
@@ -40,6 +48,11 @@ export interface DeliveryRoundView {
    * plus (I6) — l'écran la montre en lecture seule, et le serveur refuse.
    */
   readonly departedAt: string | null;
+  /**
+   * Rentrée le — « Tournée terminée » (`parcours-du-livreur.md`, PL2) : les
+   * bacs vides sont rentrés. `null` tant qu'elle roule, ou au dépôt.
+   */
+  readonly returnedAt: string | null;
   /**
    * Le livreur affecté (plan « Ma tournée », MT-D2 v2), ou `null`. Le nom est
    * LU dans l'annuaire, jamais copié.

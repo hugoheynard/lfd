@@ -102,3 +102,35 @@ describe("les noms figés des commandes, de la production et de l'équipe (lot B
 
 /** Un instant quelconque : recopié, comparé à aucune horloge. */
 const AT = "2026-09-19T08:00:00.000Z";
+
+describe("le retrait déposé — `deposit`, connu des lecteurs avant d'être écrit (AP-D8)", () => {
+  const handedOver = (via: string) => ({
+    subjectLabel: "Refuge 1950",
+    orderId: "o1",
+    orderNumber: "C-1",
+    handedOverBy: { id: "fiche_1", name: "Paul Roux" },
+    handedOverAt: AT,
+    via,
+  });
+
+  it("accepte `via: deposit` dans la forme courante du retrait", () => {
+    expect(checkJournalFact("order.handed_over", handedOver("deposit"))).toBeNull();
+  });
+
+  it("le lit aussi dans la forme d'avant le lot B", () => {
+    const line = {
+      orderId: "o1",
+      orderNumber: "C-1",
+      handedOverBy: "fiche_1",
+      handedOverAt: AT,
+      via: "deposit",
+    };
+    expect(journalPayloadShapes("order.handed_over").some((s) => s.safeParse(line).success)).toBe(
+      true,
+    );
+  });
+
+  it("refuse toujours une attestation inventée", () => {
+    expect(checkJournalFact("order.handed_over", handedOver("presume"))).not.toBeNull();
+  });
+});

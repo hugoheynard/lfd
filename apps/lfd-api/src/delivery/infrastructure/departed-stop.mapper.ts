@@ -20,6 +20,8 @@ export const EXECUTION_SELECT = {
   departureRank: true,
   gpsLat: true,
   gpsLng: true,
+  depositAllowed: true,
+  arrivedAt: true,
 } as const;
 
 /** La forme de la ligne lue, sans type Prisma. */
@@ -35,6 +37,8 @@ export interface ExecutionRecord {
   readonly departureRank: number | null;
   readonly gpsLat: number | null;
   readonly gpsLng: number | null;
+  readonly depositAllowed: boolean;
+  readonly arrivedAt: Date | null;
 }
 
 /** La fenêtre telle que le départ la fige (`DepartureWindow`). */
@@ -67,5 +71,7 @@ export function departedStopOf(record: ExecutionRecord): DepartedStopRow {
       record.gpsLat === null || record.gpsLng === null
         ? null
         : { lat: record.gpsLat, lng: record.gpsLng },
+    depositAllowed: record.depositAllowed,
+    arrivedAt: record.arrivedAt,
   };
 }

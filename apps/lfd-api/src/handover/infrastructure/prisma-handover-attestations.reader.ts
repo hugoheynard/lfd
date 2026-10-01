@@ -5,6 +5,7 @@ import {
   HandoverAttestationsReader,
   type AttestedHandover,
 } from "../domain/ports/handover-attestations.reader.js";
+import { handoverViaOf } from "./handover-via.mapper.js";
 
 /** Les attestations d'un lot de commandes, en une requête. */
 @Injectable()
@@ -31,13 +32,10 @@ export class PrismaHandoverAttestationsReader extends HandoverAttestationsReader
         {
           handedOverAt: row.handedOverAt,
           handedOverBy: row.handedOverBy,
-          // 🔴 La colonne est un `text` : c'est ICI qu'on la referme sur les
-          // deux valeurs du domaine, comme le fait déjà le dépôt qui réhydrate
-          // une attestation. Une ligne écrite à la main hors du domaine ne doit
-          // pas devenir un `via` inconnu à l'écran — et surtout pas passer pour
-          // un `scan`, qui est l'attestation forte. Tout ce qui n'est pas
-          // exactement « scan » est donc faible.
-          via: row.handedOverVia === "scan" ? ("scan" as const) : ("manual" as const),
+          // 🔴 La colonne est un `text` : refermée sur les valeurs du domaine
+          // par le MÊME mapper que le dépôt qui réhydrate une attestation —
+          // `deposit` relu tel quel, l'inconnu jamais pris pour un `scan`.
+          via: handoverViaOf(row.handedOverVia),
         },
       ]),
     );

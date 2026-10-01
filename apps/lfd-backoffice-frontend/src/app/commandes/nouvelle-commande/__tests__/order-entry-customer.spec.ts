@@ -24,6 +24,7 @@ const ADDRESS: DeliveryAddressView = {
     signatureRequired: false,
   },
   procedureStepCount: 0,
+  depositAllowed: false,
 };
 
 const MEMBER: CompanyMemberView = {

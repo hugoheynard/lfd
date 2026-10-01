@@ -61,6 +61,8 @@ interface AddressSpecs {
   readonly note: string;
   readonly gps: { readonly lat: number; readonly lng: number } | null;
   readonly stopMinutes: number | null;
+  /** « Dépôt autorisé » (`plan-a-la-porte.md`, AP-D5) — une colonne, pas une consigne. */
+  readonly depositAllowed: boolean;
 }
 
 interface DeliveryOrderRow {
@@ -129,7 +131,8 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
     const notes = await this.addressNotesOf(linksOf(rows));
     return rows.map((row) => {
       const agreed = fulfillmentOf(row.fulfillment);
-      const note = row.deliveryAddressId === null ? undefined : notes.get(row.deliveryAddressId);
+      const linked = row.deliveryAddressId === null ? undefined : notes.get(row.deliveryAddressId);
+      const note = linked?.companyId === row.companyId ? linked : undefined;
       return {
         orderId: row.id,
         reference: row.orderNumber,
@@ -139,7 +142,9 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
         window: windowOf(agreed),
         signatureRequired: agreed.signatureRequired.value,
         note: row.note,
-        addressNote: note?.companyId === row.companyId ? note.note : null,
+        addressNote: note === undefined ? null : note.note,
+        // Sans adresse du carnet reliée (sous le mur), rien n'est autorisé.
+        depositAllowed: note?.depositAllowed ?? false,
         status: row.status === "cancelled" ? "cancelled" : "active",
       };
     });
@@ -188,7 +193,7 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
     }
     const rows = await this.prisma.address.findMany({
       where: { OR: links.map((link) => ({ id: link.addressId, companyId: link.companyId })) },
-      select: { id: true, companyId: true, deliverySpecs: true },
+      select: { id: true, companyId: true, deliverySpecs: true, depositAllowed: true },
     });
     return new Map(
       rows.map((row) => {
@@ -200,6 +205,7 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
             note: specs.success ? specs.data.note : "",
             gps: specs.success ? specs.data.gps : null,
             stopMinutes: specs.success ? (specs.data.stopMinutes ?? null) : null,
+            depositAllowed: row.depositAllowed,
           },
         ];
       }),

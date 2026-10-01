@@ -211,7 +211,7 @@ const orderHandedOverBeforeLabel = () =>
     orderNumber: z.string(),
     handedOverBy: ref("staff_user"),
     handedOverAt: instant(),
-    via: z.enum(["scan", "manual"]),
+    via: z.enum(["scan", "manual", "deposit"]),
   });
 
 const containerFactsBeforeLabel = {
@@ -293,8 +293,8 @@ export const ORDERS_PRODUCTION_FACTS = {
       /** La fiche staff qui a remis, sous son nom du moment. */
       handedOverBy: namedOrBare("staff_user"),
       handedOverAt: instant(),
-      /** QR scanné, ou saisie à la main. */
-      via: z.enum(["scan", "manual"]),
+      /** QR scanné, saisie à la main, ou dépôt du livreur (AP-D8 : lu avant d'être écrit). */
+      via: z.enum(["scan", "manual", "deposit"]),
     }),
     [orderHandedOverBeforeLabel()],
   ),

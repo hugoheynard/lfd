@@ -1,6 +1,10 @@
 import type { Prisma } from "../../platform/database/client/client.js";
 import type { AppError } from "../../platform/shared/errors/app-error.js";
-import type { DeliveryRound, DeliveryStopState } from "../domain/entities/delivery-round.js";
+import type {
+  DeliveryRound,
+  DeliveryStopState,
+  RoundReturn,
+} from "../domain/entities/delivery-round.js";
 import {
   DeliveryRoundStaleError,
   OrderAlreadyInRoundError,
@@ -52,6 +56,7 @@ export async function writeRound(
             version: snapshot.version,
             departedAt: snapshot.departedAt,
             driverStaffId: snapshot.driverStaffId,
+            ...returnColumns(snapshot.returned ?? null),
             createdAt: snapshot.createdAt,
             updatedAt: snapshot.updatedAt,
           },
@@ -65,12 +70,26 @@ export async function writeRound(
       version: snapshot.version,
       departedAt: snapshot.departedAt,
       driverStaffId: snapshot.driverStaffId,
+      ...returnColumns(snapshot.returned ?? null),
       updatedAt: snapshot.updatedAt,
     },
   });
   if (written.count === 0) {
     throw new DeliveryRoundStaleError(snapshot.vehicleName);
   }
+}
+
+/** Le retour au dépôt (PL2) — trois colonnes, toutes nulles ou toutes posées. */
+function returnColumns(returned: RoundReturn | null): {
+  readonly returnedAt: Date | null;
+  readonly returnedBy: string | null;
+  readonly returnedByName: string | null;
+} {
+  return {
+    returnedAt: returned?.at ?? null,
+    returnedBy: returned?.byStaffId ?? null,
+    returnedByName: returned?.byName ?? null,
+  };
 }
 
 /**

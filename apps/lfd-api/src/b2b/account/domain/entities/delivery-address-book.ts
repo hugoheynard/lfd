@@ -23,6 +23,12 @@ export interface DeliveryAddress {
   readonly id: string;
   readonly lines: PostalLines;
   readonly specs: DeliverySpecs;
+  /**
+   * Le client autorise le livreur à déposer sans personne
+   * (`plan-a-la-porte.md`, AP-D5). Hors de `specs` : la charge d'édition
+   * réécrit les consignes d'un bloc, et ne doit jamais le remettre à `false`.
+   */
+  readonly depositAllowed: boolean;
   readonly createdAt: Date;
   /** `null` tant qu'elle est au carnet. Jamais de DELETE physique. */
   readonly archivedAt: Date | null;
@@ -122,6 +128,8 @@ export class DeliveryAddressBook {
       id,
       lines: linesOf(payload),
       specs,
+      // Personne n'a encore rien autorisé : le dépôt se règle à part.
+      depositAllowed: false,
       createdAt,
       archivedAt: null,
     });
@@ -149,6 +157,24 @@ export class DeliveryAddressBook {
     if (payload.isDefault) {
       this.defaultIdValue = addressId;
     }
+  }
+
+  /**
+   * Autorise — ou retire — le dépôt sans personne à cette adresse (AP-D5).
+   * Le seul chemin qui l'écrit : {@link edit} ne le touche jamais, pour qu'une
+   * charge qui ne le connaît pas ne le remette pas à `false`.
+   *
+   * Rend `false` quand la valeur ne change pas — rien à journaliser.
+   *
+   * @throws {CompanyAddressNotFoundError} l'adresse n'est pas à ce carnet.
+   */
+  allowDeposit(addressId: string, allowed: boolean): boolean {
+    const entry = this.require(addressId);
+    if (entry.depositAllowed === allowed) {
+      return false;
+    }
+    entry.depositAllowed = allowed;
+    return true;
   }
 
   /**
@@ -224,6 +250,7 @@ interface BookEntry {
   readonly id: string;
   lines: PostalLines;
   specs: DeliverySpecs;
+  depositAllowed: boolean;
   readonly createdAt: Date;
   archivedAt: Date | null;
 }

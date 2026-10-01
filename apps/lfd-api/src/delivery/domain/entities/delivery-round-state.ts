@@ -21,6 +21,16 @@ export interface RemovedStopState extends DeliveryStopState {
   readonly removedAt: Date;
 }
 
+/**
+ * **Le retour au dépôt** (`parcours-du-livreur.md`, PL2) : quand, et qui l'a
+ * déclaré — le nom figé au geste, `""` quand l'annuaire n'en connaissait pas.
+ */
+export interface RoundReturn {
+  readonly at: Date;
+  readonly byStaffId: string;
+  readonly byName: string;
+}
+
 /** L'état persisté d'une tournée — ce que `toDomain` réhydrate. Arrêts non retirés seulement. */
 export interface DeliveryRoundState {
   readonly id: string;
@@ -33,6 +43,12 @@ export interface DeliveryRoundState {
   readonly departedAt: Date | null;
   /** Le livreur affecté (plan « Ma tournée », MT-D2), l'id d'une fiche staff ; `null` : aucun. */
   readonly driverStaffId: string | null;
+  /**
+   * Rentrée (PL2), ou `null` : elle roule encore, ou n'est pas partie.
+   * Facultatif à la RÉHYDRATATION seulement — absent vaut `null` ; le
+   * dépôt Prisma le passe toujours, et `toSnapshot` le rend toujours.
+   */
+  readonly returned?: RoundReturn | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly stops: readonly DeliveryStopState[];

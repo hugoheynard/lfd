@@ -31,6 +31,7 @@ import { PreferFulfillmentByStaffHandler } from "./application/commands/prefer-f
 import { RemoveDeliveryAddressByStaffHandler } from "./application/commands/remove-delivery-address-by-staff.handler.js";
 import { SetDefaultDeliveryByStaffHandler } from "./application/commands/set-default-delivery-by-staff.handler.js";
 import { UpdateDeliveryAddressByStaffHandler } from "./application/commands/update-delivery-address-by-staff.handler.js";
+import { SetDeliveryDepositByStaffHandler } from "./application/commands/set-delivery-deposit-by-staff.handler.js";
 import { GrantTermsHandler } from "./application/commands/grant-terms.handler.js";
 import { BlockDirectDebitHandler } from "./application/commands/block-direct-debit.handler.js";
 import { UnblockDirectDebitHandler } from "./application/commands/unblock-direct-debit.handler.js";
@@ -266,6 +267,7 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     SaveBillingAddressByStaffHandler,
     AddDeliveryAddressByStaffHandler,
     UpdateDeliveryAddressByStaffHandler,
+    SetDeliveryDepositByStaffHandler,
     SetDefaultDeliveryByStaffHandler,
     RemoveDeliveryAddressByStaffHandler,
     RequestActivationSupportHandler,

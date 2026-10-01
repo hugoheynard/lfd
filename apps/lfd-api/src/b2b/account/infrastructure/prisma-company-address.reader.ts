@@ -33,6 +33,7 @@ interface AddressRow {
   readonly pays: string;
   readonly isDefault: boolean;
   readonly deliverySpecs: unknown;
+  readonly depositAllowed: boolean;
 }
 
 /**
@@ -62,6 +63,7 @@ export class PrismaCompanyAddressReader extends CompanyAddressReader {
         pays: true,
         isDefault: true,
         deliverySpecs: true,
+        depositAllowed: true,
       },
     });
 
@@ -118,5 +120,11 @@ function toDeliveryView(row: AddressRow, procedureStepCount: number): DeliveryAd
     row.deliverySpecs === null || row.deliverySpecs === undefined
       ? EMPTY_SPECS
       : deliverySpecsSchema.parse(row.deliverySpecs);
-  return { ...toBillingView(row), isDefault: row.isDefault, specs, procedureStepCount };
+  return {
+    ...toBillingView(row),
+    isDefault: row.isDefault,
+    specs,
+    procedureStepCount,
+    depositAllowed: row.depositAllowed,
+  };
 }

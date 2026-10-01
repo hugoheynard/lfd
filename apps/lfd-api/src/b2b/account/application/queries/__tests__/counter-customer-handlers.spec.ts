@@ -47,6 +47,7 @@ const DELIVERY: DeliveryAddressView = {
     gps: null,
   },
   procedureStepCount: 0,
+  depositAllowed: false,
 };
 
 function company(options: {

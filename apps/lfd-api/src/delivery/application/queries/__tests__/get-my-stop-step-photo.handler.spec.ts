@@ -78,6 +78,7 @@ function setup(): {
     passage: 1,
     version: 1,
     departedAt: null,
+    returnedAt: null,
     stops: [stop("stop-a", "order-a"), stop("stop-b", "order-b")],
   });
   const photos = new FixedStepPhotos(new Map([["order-b/step-1", PHOTO]]));

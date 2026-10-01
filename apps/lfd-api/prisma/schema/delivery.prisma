@@ -124,23 +124,32 @@ model DeliveryDeparture {
 /// migration `20260929140200_les_tournees`.
 model DeliveryRound {
   /// Assigné par la commande (`IdGenerator`).
-  id          String    @id
-  serviceDay  String    @map("service_day") @db.VarChar(10)
-  vehicleId   String    @map("vehicle_id")
+  id            String    @id
+  serviceDay    String    @map("service_day") @db.VarChar(10)
+  vehicleId     String    @map("vehicle_id")
   /// Le nom du véhicule RECOPIÉ à l'ouverture : un renommage ne réécrit pas l'historique.
-  vehicleName String    @map("vehicle_name")
-  passage     Int
+  vehicleName   String    @map("vehicle_name")
+  passage       Int
   /// Avance d'une unité par écriture de la composition ; une écriture qui ne
   /// présente pas la version lue est refusée.
-  version     Int
+  version       Int
   /// Partie le (lot 4, L4-C4) — écrivain : la tournée, par `depart`. Nulle tant
   /// qu'elle est au dépôt ; posée, plus rien ne se compose ni ne se charge (I6).
-  departedAt  DateTime? @map("departed_at")
+  departedAt    DateTime? @map("departed_at")
   /// Le livreur affecté (plan « Ma tournée », MT-D2 v2) — l'id d'une fiche de
   /// l'annuaire staff, OPAQUE : aucune clé étrangère, la tournée vit dans
   /// `delivery` et l'annuaire dans `public`. Écrivain : la tournée, par
   /// `assignDriver` / `unassignDriver`. Le mur du livreur (MT-D3) le lit.
-  driverStaffId String? @map("driver_staff_id")
+  driverStaffId String?   @map("driver_staff_id")
+  /// **Rentrée** le — « Tournée terminée » (`documentation/livraisons/parcours-du-livreur.md`,
+  /// lot PL2) : les bacs vides sont rentrés, et la mesure du temps de tournée
+  /// se ferme. Écrivain : la tournée, par `returnToDepot`, une fois, seulement
+  /// partie. Nulle tant qu'elle roule. Les arrêts restés ouverts le restent.
+  returnedAt     DateTime? @map("returned_at")
+  /// Qui l'a déclarée rentrée — fiche staff OPAQUE (le livreur, ou l'admin
+  /// depuis Tournées), et son nom FIGÉ au geste ; nuls avec `returned_at`.
+  returnedBy     String?   @map("returned_by")
+  returnedByName String?   @map("returned_by_name")
 
   createdAt DateTime @map("created_at")
   updatedAt DateTime @map("updated_at")
@@ -185,7 +194,8 @@ model DeliveryRoundStop {
   /// 1..n, contigu parmi les arrêts vivants de la tournée (I2, tenu par l'agrégat).
   position   Int
   removedAt  DateTime? @map("removed_at")
-  /// Écrivain : la tournée ; posé au lot 6 par `closeStop`. Nul à ce lot.
+  /// Écrivain : la tournée, par `closeStop` — posé depuis le 2026-10-01 par la
+  /// clôture sans remise (plan « À la porte », AP-D2).
   closedAt   DateTime? @map("closed_at")
   createdAt  DateTime  @map("created_at")
 
@@ -287,39 +297,84 @@ model DeliveryBinLoad {
 /// Écrivain : l'exécution seule (C10), dans la transaction du départ. Le lot 6
 /// y ajoutera le livré ou le raté. Trois déclencheurs `day_change`.
 model DeliveryStopExecution {
-  stopId            String   @id @map("stop_id")
-  roundId           String   @map("round_id")
-  orderId           String   @map("order_id")
-  serviceDay        String   @map("service_day") @db.VarChar(10)
-  departedAt        DateTime @map("departed_at")
+  stopId            String    @id @map("stop_id")
+  roundId           String    @map("round_id")
+  orderId           String    @map("order_id")
+  serviceDay        String    @map("service_day") @db.VarChar(10)
+  departedAt        DateTime  @map("departed_at")
   reference         String
-  customerLabel     String   @map("customer_label")
+  customerLabel     String    @map("customer_label")
   /// L'adresse livrée figée à la commande (`BillingAddressPayload`), ou nul.
-  address           Json?    @db.JsonB
+  address           Json?     @db.JsonB
   /// Le contact convenu (`DeliveryContact`), ou nul.
-  contact           Json?    @db.JsonB
+  contact           Json?     @db.JsonB
   /// La fenêtre convenue, avec sa provenance, ou nulle.
-  deliveryWindow    Json?    @map("delivery_window") @db.JsonB
-  signatureRequired Boolean  @map("signature_required")
+  deliveryWindow    Json?     @map("delivery_window") @db.JsonB
+  signatureRequired Boolean   @map("signature_required")
   /// La note laissée sur la commande. `""` sans note.
   note              String
   /// La note livreurs de l'adresse du carnet, lue au départ ; nulle sans
   /// adresse reliée. La procédure n'est PAS figée (le lot 6 la lit en direct).
-  addressNote       String?  @map("address_note")
+  addressNote       String?   @map("address_note")
   /// Le rang de passage FIGÉ au départ, 1..n (plan « Ma tournée », MT-D5 v2) :
   /// `closeStop` resserrera `position` au lot 6, la numérotation du livreur ne
   /// bouge pas. Nul pour un arrêt parti avant la migration qui l'a ajouté.
-  departureRank     Int?     @map("departure_rank")
+  departureRank     Int?      @map("departure_rank")
   /// Le point GPS du carnet FIGÉ au départ : la navigation suit le point promis,
   /// pas le carnet corrigé en route. Nuls sans point au départ — ou avant la
   /// migration (`departure_rank` nul le distingue).
-  gpsLat            Float?   @map("gps_lat")
-  gpsLng            Float?   @map("gps_lng")
+  gpsLat            Float?    @map("gps_lat")
+  gpsLng            Float?    @map("gps_lng")
+  /// « Dépôt autorisé » de l'adresse du carnet, FIGÉ au départ (plan « À la
+  /// porte », AP-D5) : ce que le client permettait quand la tournée est partie.
+  /// `false` sans adresse reliée — et pour un arrêt parti avant la migration.
+  depositAllowed    Boolean   @default(false) @map("deposit_allowed")
+  /// « Je suis arrivé » (AP-D6) — écrit une fois par l'exécution, jamais par la
+  /// tournée ; nul tant que le livreur ne l'a pas déclaré. La donnée manque,
+  /// elle ne s'invente pas.
+  arrivedAt         DateTime? @map("arrived_at")
 
   stop DeliveryRoundStop @relation(fields: [stopId], references: [id], onDelete: Restrict)
 
   @@index([roundId])
   @@map("delivery_stop_execution")
+  @@schema("delivery")
+}
+
+/// **Un problème signalé par le livreur** (plan « À la porte », § 3, AP-Q4) —
+/// à la remise (un arrêt), technique ou routier (la tournée, l'arrêt en cours
+/// s'il y en a un). Un FAIT daté : il ne clôt rien, ne touche pas la commande,
+/// ne se corrige ni ne se supprime.
+///
+/// Écrivain : la porte seule (`delivery/`). `round_id` et `stop_id` sont des
+/// identifiants de la livraison, sans clé étrangère — comme `driver_staff_id`,
+/// l'auteur est une fiche staff opaque, son nom FIGÉ au geste. `service_day`
+/// est recopié de la tournée : trois déclencheurs `day_change` le lisent, et
+/// l'écran Tournées voit un signalement arriver.
+///
+/// ⚠️ Tenu en base et invisible ici : `family` ∈ {`doorstep`, `technical`,
+/// `road`}, une note d'au plus 500 caractères, et un problème à la remise
+/// porte un arrêt. Le motif est un texte que le domaine referme sur la liste
+/// de sa famille (`DELIVERY_INCIDENT_REASONS`).
+model DeliveryIncident {
+  /// Assigné par la commande (`IdGenerator`).
+  id             String   @id
+  roundId        String   @map("round_id")
+  stopId         String?  @map("stop_id")
+  serviceDay     String   @map("service_day") @db.VarChar(10)
+  family         String   @db.VarChar(16)
+  reason         String   @db.VarChar(32)
+  /// `""` sans note.
+  note           String
+  /// La photo, dans le bucket des pièces du fournil ; nulle sans photo.
+  photoKey       String?  @map("photo_key")
+  reportedAt     DateTime @map("reported_at")
+  reportedBy     String   @map("reported_by")
+  reportedByName String   @map("reported_by_name")
+
+  @@index([roundId])
+  @@index([serviceDay])
+  @@map("delivery_incident")
   @@schema("delivery")
 }
 

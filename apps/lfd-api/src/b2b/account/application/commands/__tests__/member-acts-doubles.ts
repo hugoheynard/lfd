@@ -122,6 +122,7 @@ export class InMemoryAddresses extends CompanyAddressRepository {
         id: "a1",
         lines: { ...BILLING },
         specs: DELIVERY.specs,
+        depositAllowed: false,
         createdAt: new Date("2026-01-01T08:00:00Z"),
         archivedAt: null,
       },
@@ -154,6 +155,7 @@ export class AddressReaderWithA1 extends CompanyAddressReader {
           isDefault: true,
           specs: DELIVERY.specs,
           procedureStepCount: 0,
+          depositAllowed: false,
         },
       ],
     });

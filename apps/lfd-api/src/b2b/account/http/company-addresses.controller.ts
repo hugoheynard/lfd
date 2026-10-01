@@ -5,6 +5,8 @@ import {
   type CreatedAddressResponse,
   type DeliveryAddressPayload,
   deliveryAddressPayloadSchema,
+  type MemberDeliveryAddressPayload,
+  memberDeliveryAddressPayloadSchema,
 } from "@lfd/contracts";
 import {
   Body,
@@ -86,17 +88,22 @@ export class CompanyAddressesController {
     return { id };
   }
 
-  /** Remplace une adresse de livraison (gestionnaire). */
+  /**
+   * Remplace une adresse de livraison (gestionnaire). `depositAllowed`,
+   * facultatif, règle le dépôt sans personne ; absent, il reste inchangé
+   * (`plan-a-la-porte.md`, AP-D5).
+   */
   @Patch(":companyId/delivery-addresses/:addressId")
   @HttpCode(HttpStatus.NO_CONTENT)
   async updateDelivery(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
     @Param("addressId") addressId: string,
-    @Body(new ZodBody(deliveryAddressPayloadSchema)) payload: DeliveryAddressPayload,
+    @Body(new ZodBody(memberDeliveryAddressPayloadSchema)) payload: MemberDeliveryAddressPayload,
   ): Promise<void> {
+    const { depositAllowed, ...address } = payload;
     await this.commands.execute<UpdateDeliveryAddressCommand, void>(
-      new UpdateDeliveryAddressCommand(user.userId, companyId, addressId, payload),
+      new UpdateDeliveryAddressCommand(user.userId, companyId, addressId, address, depositAllowed),
     );
   }
 

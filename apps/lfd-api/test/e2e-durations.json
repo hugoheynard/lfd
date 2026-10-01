@@ -54,6 +54,8 @@
   "test/delivery-bins-sharing.e2e-spec.ts": 5698,
   "test/delivery-bins.e2e-spec.ts": 6767,
   "test/delivery-day-version.e2e-spec.ts": 7047,
+  "test/delivery-deposit.e2e-spec.ts": 4700,
+  "test/delivery-doorstep.e2e-spec.ts": 8700,
   "test/delivery-driver-role.e2e-spec.ts": 5300,
   "test/delivery-loading-guards.e2e-spec.ts": 5016,
   "test/delivery-loading-plan.e2e-spec.ts": 5715,

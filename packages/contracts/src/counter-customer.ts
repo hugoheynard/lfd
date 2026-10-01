@@ -55,6 +55,12 @@ export const counterDeliveryAddressSchema = z.object({
   isDefault: z.boolean(),
   specs: deliverySpecsSchema,
   procedureStepCount: z.number().int().nonnegative(),
+  /**
+   * « Dépôt autorisé » (`plan-a-la-porte.md`, AP-D5). Par défaut `false` à la
+   * lecture : un serveur d'avant ne l'envoie pas, et rien n'est autorisé tant
+   * que personne ne l'a dit.
+   */
+  depositAllowed: z.boolean().default(false),
 });
 export type CounterDeliveryAddress = z.infer<typeof counterDeliveryAddressSchema>;
 

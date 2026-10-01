@@ -201,6 +201,19 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
   "company.delivery_address_updated": addressCited(place),
   "company.delivery_address_removed": addressCited({}),
   "company.default_delivery_set": addressCited({}),
+  /**
+   * « Dépôt autorisé » réglé sur une adresse de livraison
+   * (`documentation/livraisons/plan-a-la-porte.md`, AP-D5) — par le client
+   * sur son carnet, ou par le staff sur sa route à part. Né le 2026-10-01 :
+   * aucune forme d'avant.
+   */
+  "company.delivery_deposit_set": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      address: deliveryAddress(),
+      depositAllowed: z.boolean(),
+    }),
+  ),
   /** La société est le sujet : la forme d'avant la répétait en `companyId`. */
   "company.delivery_procedure_edited": fact(
     payload({

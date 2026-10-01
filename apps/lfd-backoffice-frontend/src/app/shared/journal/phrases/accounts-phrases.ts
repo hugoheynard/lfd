@@ -402,6 +402,27 @@ const deliveryProcedureEdited: Phrase = (fact) =>
   );
 
 /**
+ * « … a autorisé le dépôt sans personne à l'adresse à Paris (75011) du client
+ * « X » » — ou l'a retiré (`plan-a-la-porte.md`, AP-D5). Le client sur son
+ * carnet ou le staff : l'auteur de la ligne les distingue.
+ */
+const deliveryDepositSet: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text(
+        fact.payload['depositAllowed'] === true
+          ? 'a autorisé le dépôt sans personne '
+          : 'a retiré le dépôt sans personne ',
+      ),
+      ...deliveryAddress(fact.payload, true),
+      text(' '),
+      ...client(fact, 'of'),
+    ],
+    ['subjectLabel', 'depositAllowed', ...ADDRESS_KEYS],
+  );
+
+/**
  * « … a réglé le client « X » en livraison par coursier par défaut, à Paris
  * (75011), signature exigée ». Le point de retrait n'est connu que par son id :
  * il reste au détail.
@@ -677,6 +698,7 @@ export const ACCOUNTS_PHRASES = {
   'company.delivery_address_removed': onDeliveryAddress('a supprimé', 'of'),
   'company.default_delivery_set': onDeliveryAddress('a fait de', 'of', ' l’adresse par défaut'),
   'company.delivery_procedure_edited': deliveryProcedureEdited,
+  'company.delivery_deposit_set': deliveryDepositSet,
   'company.delivery_procedure_edited_by_staff': deliveryProcedureEdited,
   'company.fulfillment_preference_set': fulfillmentPreferenceSet,
   'company.contact_added': onContact('a ajouté', 'to'),

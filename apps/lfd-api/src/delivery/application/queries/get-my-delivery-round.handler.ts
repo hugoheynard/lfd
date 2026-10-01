@@ -1,14 +1,16 @@
-import type { GpsPoint, MyDeliveryRoundView } from "@lfd/contracts";
+import type { DeliveryStopOrderState, GpsPoint, MyDeliveryRoundView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import {
   DeliveryOrdersReader,
+  DeliveryOrderStatesReader,
   DeliveryProceduresReader,
   type DeliveryProcedureStep,
   DepartureCandidatesReader,
 } from "../../channels/commerce/index.js";
 import type { DepartureSheet } from "../../domain/entities/departure-sheet.js";
 import { DriverRoundNotFoundError } from "../../domain/errors/delivery-driver-errors.js";
+import { DeliveryIncidentsReader } from "../../domain/ports/delivery-incidents.reader.js";
 import { DepartureReader } from "../../domain/ports/departure.reader.js";
 import {
   DriverRoundsReader,
@@ -24,8 +26,9 @@ import { GetMyDeliveryRoundQuery } from "./get-my-delivery-round.query.js";
  * La tournée est lue SOUS LE MUR du livreur ; absente ou à un autre, c'est un
  * 404 qui ne confirme rien. Puis, en parallèle et pour la tournée entière :
  * les feuilles vivantes et les points du carnet du commerce (seulement pour
- * ce que le départ n'a pas figé), la procédure vivante, le point de départ.
- * Une lecture : elle n'écrit rien.
+ * ce que le départ n'a pas figé), la procédure vivante, le point de départ,
+ * l'état de chaque commande et les signalements de la tournée (plan « À la
+ * porte »). Une lecture : elle n'écrit rien.
  *
  * @throws {DriverRoundNotFoundError}
  */
@@ -40,6 +43,8 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
     private readonly procedures: DeliveryProceduresReader,
     private readonly departure: DepartureReader,
     private readonly candidates: DepartureCandidatesReader,
+    private readonly states: DeliveryOrderStatesReader,
+    private readonly incidents: DeliveryIncidentsReader,
   ) {}
 
   async execute(query: GetMyDeliveryRoundQuery): Promise<MyDeliveryRoundView> {
@@ -48,13 +53,17 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
       throw new DriverRoundNotFoundError();
     }
     const orderIds = round.stops.map((stop) => stop.orderId);
-    const [sheets, points, procedures, chosenId, candidates] = await Promise.all([
-      this.liveSheetsOf(round),
-      this.carnetPointsOf(round),
-      this.procedures.proceduresOf(orderIds),
-      this.departure.chosenPickupAddressId(),
-      this.candidates.list(),
-    ]);
+    const [sheets, points, procedures, chosenId, candidates, states, incidents] = await Promise.all(
+      [
+        this.liveSheetsOf(round),
+        this.carnetPointsOf(round),
+        this.procedures.proceduresOf(orderIds),
+        this.departure.chosenPickupAddressId(),
+        this.candidates.list(),
+        this.states.statesOf(orderIds),
+        this.incidents.ofRounds([round.id]),
+      ],
+    );
     return myDeliveryRoundView({
       round,
       sheets,
@@ -63,6 +72,10 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
         procedures.map((procedure) => [procedure.orderId, procedure.steps]),
       ),
       home: departureViewOf(chosenId, candidates).point,
+      orderStates: new Map<string, DeliveryStopOrderState>(
+        states.map((state) => [state.orderId, state.state]),
+      ),
+      incidents,
     });
   }
 

@@ -21,13 +21,14 @@ import { LIVE_STOP, type Tx, writeRound, writeStops } from "./delivery-round.wri
  * `created_at` à la création. Aucune ligne n'est supprimée.
  *
  * Sur `delivery_round`, il écrit aussi `departed_at` (lot 4, « Partir ») et
- * `driver_staff_id` (plan « Ma tournée », MT-D2) — écrivain : la tournée. Il LIT et VERROUILLE `delivery_bin_load` (`saveMove`),
+ * `driver_staff_id` (plan « Ma tournée », MT-D2) et `returned_*` (« Tournée
+ * terminée », PL2) — écrivain : la tournée. Il LIT et VERROUILLE `delivery_bin_load` (`saveMove`),
  * sans jamais l'écrire : l'écrivain en est l'exécution.
  *
- * `closed_at` — écrivain : la tournée ; posé au lot 6 par `closeStop`, quand
- * l'exécution rapporte livré ou raté. Rien ne le pose à ce lot, mais il est
- * RELU et RÉÉCRIT tel quel : l'ignorer à l'écriture le ferait écraser par le
- * premier `save` venu le jour où il sera posé.
+ * `closed_at` — écrivain : la tournée, par `closeStop`. Depuis le 2026-10-01
+ * (plan « À la porte », lot A), seule la clôture SANS remise le pose ; la
+ * remise et le dépôt le poseront au lot suivant. Il est RELU et RÉÉCRIT tel
+ * quel : l'ignorer à l'écriture le ferait écraser par le premier `save` venu.
  *
  * ## La version
  *
@@ -51,6 +52,14 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
     }
     return DeliveryRound.restore({
       ...row,
+      returned:
+        row.returnedAt === null
+          ? null
+          : {
+              at: row.returnedAt,
+              byStaffId: row.returnedBy ?? "",
+              byName: row.returnedByName ?? "",
+            },
       stops: row.stops.map((stop) => ({
         id: stop.id,
         orderId: stop.orderId,
@@ -81,6 +90,14 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
        WHERE "id" = ${id} AND "driver_staff_id" = ${staffUserId}
          FOR UPDATE`;
     return locked.length === 0 ? null : this.load(id);
+  }
+
+  /**
+   * Le verrou et le mur du départ, pour un geste de la porte (plan « À la
+   * porte », AP-D2). Même SQL, autre intention : voir le port.
+   */
+  async loadForDriver(id: string, staffUserId: string): Promise<DeliveryRound | null> {
+    return this.loadForDriverDeparture(id, staffUserId);
   }
 
   async save(round: DeliveryRound): Promise<void> {

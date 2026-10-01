@@ -49,6 +49,8 @@ export {
   deliverySpecsSchema,
   billingAddressPayloadSchema,
   deliveryAddressPayloadSchema,
+  memberDeliveryAddressPayloadSchema,
+  deliveryDepositPayloadSchema,
 } from "./address.js";
 export type {
   Weekday,
@@ -61,6 +63,8 @@ export type {
   DeliverySpecs,
   BillingAddressPayload,
   DeliveryAddressPayload,
+  MemberDeliveryAddressPayload,
+  DeliveryDepositPayload,
   BillingAddressView,
   DeliveryAddressView,
   CompanyAddressesView,
@@ -810,6 +814,26 @@ export type {
   MyDeliveryWindowView,
   MyDeliveryStepView,
 } from "./delivery-my-round.js";
+export {
+  DELIVERY_INCIDENT_FAMILIES,
+  DELIVERY_INCIDENT_REASONS,
+  DELIVERY_INCIDENT_NOTE_MAX,
+  reportDeliveryIncidentFieldsSchema,
+  closeStopWithoutHandoverPayloadSchema,
+} from "./delivery-doorstep.js";
+export type {
+  DeliveryIncidentFamily,
+  DeliveryIncidentReason,
+  ReportDeliveryIncidentFields,
+  ReportedDeliveryIncidentResponse,
+  CloseStopWithoutHandoverPayload,
+  DeliveryStopOrderState,
+  DeliveryIncidentView,
+  DeliveryIncidentAuthorView,
+  DeliveryIncidentsDayView,
+  UndeliveredStopsView,
+  UndeliveredStopView,
+} from "./delivery-doorstep.js";
 export {
   DELIVERY_BINS_PER_DECLARATION_MAX,
   DELIVERY_BIN_INNER_BAGS_MAX,

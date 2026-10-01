@@ -50,6 +50,14 @@ const BARE_REFS: Readonly<Record<string, string>> = {
     "nommée par son numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
   "delivery_round.stop_removed:order":
     "nommée par son numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
+  // Plan « À la porte », lot A (2026-10-01) : le numéro est celui que le départ
+  // a FIGÉ sur l'arrêt ; un arrêt sans instantané n'en a pas à donner.
+  "delivery_round.stop_arrived:order":
+    "nommée par son numéro figé au départ ; un arrêt sans instantané n'a pas de nom à donner",
+  "delivery_round.incident_reported:order":
+    "nommée par son numéro figé au départ ; un arrêt sans instantané n'a pas de nom à donner",
+  "delivery_round.stop_closed_without_handover:order":
+    "nommée par son numéro lu au commerce ; une commande qu'il ne connaît plus n'a plus de nom à donner",
   "delivery_round.proposal_applied:rounds[].before[]":
     "nommées par leur numéro ; une commande que le commerce ne connaît plus n'a plus de nom à donner",
   "delivery_round.proposal_applied:rounds[].after[]":

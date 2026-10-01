@@ -25,6 +25,7 @@ const round = {
   vehicleRetiredAt: null,
   departedAt: null,
   driverStaffId: null,
+  returnedAt: null,
   stops: [{ stopId: "s_1", orderId: "o_1", position: 1 }],
 };
 

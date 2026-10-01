@@ -18,6 +18,8 @@ export interface RoundRow {
   readonly departedAt: Date | null;
   /** Le livreur affecté (plan « Ma tournée », MT-D2), ou `null`. */
   readonly driverStaffId: string | null;
+  /** Rentrée le (« Tournée terminée », PL2), ou `null`. */
+  readonly returnedAt: Date | null;
   /** Arrêts vivants (ni retirés, ni clos), dans l'ordre de passage. */
   readonly stops: readonly RoundStopRow[];
 }

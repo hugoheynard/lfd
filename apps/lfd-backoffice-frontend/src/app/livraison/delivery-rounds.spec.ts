@@ -24,6 +24,7 @@ function round(overrides: Partial<DeliveryRoundView> = {}): DeliveryRoundView {
     passage: 1,
     version: 3,
     vehicleRetired: false,
+    returnedAt: null,
     departedAt: null,
     driver: null,
     stops: [],
@@ -99,6 +100,7 @@ describe('composeDay (C16)', () => {
           }),
         ],
         unassigned: [{ orderId: 'o-free', reference: 'CMD-F' }],
+        incidents: [],
       },
       {
         day: '2026-10-01',

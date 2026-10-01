@@ -1,4 +1,5 @@
 import type {
+  DeliveryStopOrderState,
   DeparturePointView,
   GpsPoint,
   MyDeliveryRoundFreeze,
@@ -9,7 +10,10 @@ import type {
 
 import type { DeliveryProcedureStep } from "../channels/commerce/index.js";
 import type { DepartureSheet } from "../domain/entities/departure-sheet.js";
+import type { DeliveryIncidentRow } from "../domain/ports/delivery-incidents.reader.js";
 import type { DriverRoundRow, DriverStopRow } from "../domain/ports/driver-rounds.reader.js";
+import { depositPermitted } from "../domain/services/deposit-rule.js";
+import { deliveryIncidentView } from "./delivery-incident-view.js";
 
 /** Ce que la vue du livreur assemble — les lectures faites au même moment. */
 export interface MyDeliveryRoundInputs {
@@ -22,6 +26,10 @@ export interface MyDeliveryRoundInputs {
   readonly procedures: ReadonlyMap<string, readonly DeliveryProcedureStep[]>;
   /** Le point de départ des tournées, pour « Rentrer ». */
   readonly home: DeparturePointView | null;
+  /** Où en est chaque commande, lu vivant au commerce ; une absente reste `open`. */
+  readonly orderStates: ReadonlyMap<string, DeliveryStopOrderState>;
+  /** Les signalements de la tournée, du plus ancien au plus récent. */
+  readonly incidents: readonly DeliveryIncidentRow[];
 }
 
 /** Ce qu'un arrêt affiche à la porte — figé au départ, ou lu vivant au dépôt. */
@@ -32,6 +40,7 @@ interface DoorFacts {
   readonly window: MyDeliveryStopView["window"];
   readonly contact: MyDeliveryStopView["contact"];
   readonly signatureRequired: boolean;
+  readonly depositAllowed: boolean;
   readonly orderNote: string;
   readonly addressNote: string | null;
 }
@@ -44,6 +53,7 @@ const UNKNOWN_DOOR: DoorFacts = {
   window: null,
   contact: null,
   signatureRequired: false,
+  depositAllowed: false,
   orderNote: "",
   addressNote: null,
 };
@@ -59,7 +69,10 @@ const UNKNOWN_DOOR: DoorFacts = {
  * - **adresse, contact, fenêtre, signature, notes** : l'instantané du départ,
  *   la feuille vivante du commerce au dépôt ;
  * - **point GPS** : figé au départ ; sinon celui du carnet ;
- * - **procédure** : toujours vivante ; **bacs** : les tables de la livraison.
+ * - **procédure** : toujours vivante ; **bacs** : les tables de la livraison ;
+ * - **à la porte** (`plan-a-la-porte.md`) : l'arrivée et le dépôt autorisé
+ *   figés à l'exécution, `canDeposit` calculé ICI par la règle du domaine
+ *   (AP-Q6), l'état de la commande lu vivant, les signalements de la tournée.
  */
 export function myDeliveryRoundView(inputs: MyDeliveryRoundInputs): MyDeliveryRoundView {
   const { round } = inputs;
@@ -77,9 +90,11 @@ export function myDeliveryRoundView(inputs: MyDeliveryRoundInputs): MyDeliveryRo
     passage: round.passage,
     version: round.version,
     departedAt: round.departedAt?.toISOString() ?? null,
+    returnedAt: round.returnedAt?.toISOString() ?? null,
     freeze,
     stops: ordered.map((stop, index) => stopView(stop, index + 1, inputs)),
     home: inputs.home,
+    incidents: inputs.incidents.map(deliveryIncidentView),
   };
 }
 
@@ -99,10 +114,11 @@ function stopView(
   inputs: MyDeliveryRoundInputs,
 ): MyDeliveryStopView {
   const frozenPoint = stop.departed !== null && stop.departed.departureRank !== null;
+  const door = doorFactsOf(stop, inputs.sheets.get(stop.orderId));
   return {
     stopId: stop.stopId,
     rank,
-    ...doorFactsOf(stop, inputs.sheets.get(stop.orderId)),
+    ...door,
     gps: frozenPoint
       ? (stop.departed?.gps ?? null)
       : (inputs.carnetPoints.get(stop.orderId) ?? null),
@@ -110,6 +126,9 @@ function stopView(
     bins: stop.bins,
     coldBins: stop.coldBins,
     closedAt: stop.closedAt?.toISOString() ?? null,
+    arrivedAt: stop.departed?.arrivedAt?.toISOString() ?? null,
+    canDeposit: depositPermitted(door),
+    orderState: inputs.orderStates.get(stop.orderId) ?? "open",
   };
 }
 
@@ -124,6 +143,7 @@ function doorFactsOf(stop: DriverStopRow, live: DepartureSheet | undefined): Doo
       window: frozen.window,
       contact: frozen.contact,
       signatureRequired: frozen.signatureRequired,
+      depositAllowed: frozen.depositAllowed,
       orderNote: frozen.note,
       addressNote: frozen.addressNote,
     };
@@ -138,6 +158,7 @@ function doorFactsOf(stop: DriverStopRow, live: DepartureSheet | undefined): Doo
     window: live.window,
     contact: live.contact,
     signatureRequired: live.signatureRequired,
+    depositAllowed: live.depositAllowed,
     orderNote: live.note,
     addressNote: live.addressNote,
   };

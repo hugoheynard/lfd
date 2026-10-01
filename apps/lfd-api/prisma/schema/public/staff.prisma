@@ -108,6 +108,9 @@ enum StaffResource {
   /// CONDUIRE SA TOURNÉE — lire la tournée qui vous est affectée, la commencer
   /// (2026-10-01, `documentation/livraisons/plan-ma-tournee.md`, MT-D1 v2).
   delivery_driving
+  /// LES GESTES À LA PORTE — arriver, signaler un problème, clore sans remise
+  /// (2026-10-01, `documentation/livraisons/plan-a-la-porte.md`, AP-D9).
+  delivery_doorstep
   /// LES PROCÉDURES DE LIVRAISON côté staff — sorties de `b2b_companies` le
   /// 2026-10-01 (même plan).
   delivery_procedures

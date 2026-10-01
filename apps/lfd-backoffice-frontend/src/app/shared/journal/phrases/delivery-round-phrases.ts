@@ -68,6 +68,31 @@ export function orderList(raw: unknown): Segment[] {
   });
 }
 
+/** La famille d'un problème signalé, dans la phrase (`plan-a-la-porte.md`, § 3). */
+const INCIDENT_FAMILY: Readonly<Record<string, string>> = {
+  doorstep: 'un problème à la remise',
+  technical: 'un problème technique',
+  road: 'un problème routier',
+};
+
+/** Les motifs, tels que le livreur les a choisis (§ 3). */
+const INCIDENT_REASON: Readonly<Record<string, string>> = {
+  nobody_present: 'personne pour réceptionner',
+  refused: 'refus',
+  address_not_found: 'adresse introuvable',
+  access_impossible: 'accès impossible',
+  goods_damaged: 'marchandise abîmée',
+  vehicle_breakdown: 'panne du véhicule',
+  cold_failure: 'froid défaillant',
+  phone_or_app: 'téléphone ou application',
+  bin_damaged: 'bac endommagé',
+  road_closed: 'route fermée',
+  accident: 'accident',
+  weather_conditions: 'conditions (neige, verglas)',
+  traffic_jam: 'bouchon',
+  other: 'autre',
+};
+
 export const DELIVERY_ROUND_PHRASES = {
   'delivery_round.opened': (fact) => byActor(fact, [text('a ouvert '), ...round(fact)], ROUND_KEYS),
   'delivery_round.stop_assigned': (fact) =>
@@ -146,5 +171,67 @@ export const DELIVERY_ROUND_PHRASES = {
         ...round(fact),
       ],
       [...ROUND_KEYS, 'previous'],
+    ),
+  // « Tournée terminée » (parcours-du-livreur.md, PL2) : les bacs vides sont rentrés.
+  'delivery_round.returned': (fact) => {
+    const open = count(fact.payload['openStops']);
+    return byActor(
+      fact,
+      [
+        text('a déclaré rentrée '),
+        ...round(fact),
+        ...(open === null || open === 0
+          ? []
+          : [text(', '), value(`${String(open)} arrêt${open > 1 ? 's' : ''} non remis`)]),
+      ],
+      [...ROUND_KEYS, 'openStops'],
+    );
+  },
+  // Plan « À la porte », lot A : les gestes du livreur sur un arrêt.
+  'delivery_round.stop_arrived': (fact) =>
+    byActor(
+      fact,
+      [
+        text('est arrivé chez '),
+        ...cite(ORDER, fact.payload['order']),
+        text(' ('),
+        ...round(fact),
+        text(')'),
+      ],
+      [...ROUND_KEYS, 'order'],
+    ),
+  'delivery_round.incident_reported': (fact) => {
+    const order = fact.payload['order'];
+    return byActor(
+      fact,
+      [
+        text(
+          `a signalé ${INCIDENT_FAMILY[optional(fact.payload['family']) ?? ''] ?? 'un problème'}`,
+        ),
+        ...(order === null || order === undefined ? [] : [text(' pour '), ...cite(ORDER, order)]),
+        text(' sur '),
+        ...round(fact),
+        text(' : '),
+        value(INCIDENT_REASON[optional(fact.payload['reason']) ?? ''] ?? 'motif inconnu'),
+        ...(fact.payload['withPhoto'] === true ? [text(', photo jointe')] : []),
+      ],
+      [...ROUND_KEYS, 'order', 'family', 'reason', 'withPhoto'],
+    );
+  },
+  'delivery_round.stop_closed_without_handover': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a clos sans remise l’arrêt de '),
+        ...cite(ORDER, fact.payload['order']),
+        text(' sur '),
+        ...round(fact),
+        text(
+          fact.payload['cause'] === 'cancelled'
+            ? ' : commande annulée'
+            : ' : commande déjà retirée',
+        ),
+      ],
+      [...ROUND_KEYS, 'order', 'cause'],
     ),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

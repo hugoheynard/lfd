@@ -27,6 +27,7 @@ const CHALET: DeliveryAddressView = {
   label: 'Chalet',
   isDefault: true,
   procedureStepCount: 0,
+  depositAllowed: false,
   specs: {
     note: '',
     slots: { mode: 'everyday', slot: null },

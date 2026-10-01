@@ -38,6 +38,7 @@ interface DeliveryRow {
   readonly ville: string;
   readonly pays: string;
   readonly deliverySpecs: unknown;
+  readonly depositAllowed: boolean;
   readonly isDefault: boolean;
   readonly archivedAt: Date | null;
   readonly createdAt: Date;
@@ -65,6 +66,7 @@ function toDomain(row: DeliveryRow): DeliveryAddress {
       pays: row.pays,
     },
     specs: isSpecs(row.deliverySpecs) ? row.deliverySpecs : NO_SPECS,
+    depositAllowed: row.depositAllowed,
     createdAt: row.createdAt,
     archivedAt: row.archivedAt,
   };
@@ -127,6 +129,7 @@ export class PrismaCompanyAddressRepository extends CompanyAddressRepository {
         ville: true,
         pays: true,
         deliverySpecs: true,
+        depositAllowed: true,
         isDefault: true,
         archivedAt: true,
         createdAt: true,
@@ -147,6 +150,8 @@ export class PrismaCompanyAddressRepository extends CompanyAddressRepository {
         const columns = {
           ...entry.lines,
           deliverySpecs: entry.specs,
+          // Relu au chargement, réécrit tel quel : seul `allowDeposit` le change.
+          depositAllowed: entry.depositAllowed,
           // L'unique source du défaut : le carnet, jamais la ligne.
           isDefault: entry.id === state.defaultId,
           archivedAt: entry.archivedAt,

@@ -1,4 +1,5 @@
 import type { BillingAddressPayload, DeliveryContact, GpsPoint } from "./address.js";
+import type { DeliveryIncidentView, DeliveryStopOrderState } from "./delivery-doorstep.js";
 import type { DeparturePointView } from "./delivery-settings.js";
 import type { FulfillmentSource } from "./order.js";
 
@@ -10,9 +11,14 @@ import type { FulfillmentSource } from "./order.js";
  * - `GET ?date=AAAA-MM-JJ` → {@link MyDeliveryRoundsView} ;
  * - `GET /:roundId` → {@link MyDeliveryRoundView} ;
  * - `POST /:roundId/depart` (corps `DepartDeliveryRoundPayload`) → 204 ;
+ * - `POST /:roundId/retour` → 204, idempotente — « Tournée terminée » (PL2,
+ *   sous `delivery_doorstep`) ;
  * - `GET /:roundId/arrets/:stopId/procedure/:stepId/photo` → l'image (octets,
  *   `Content-Type` relu dans les octets, `private, immutable`) — l'écran y
  *   ajoute `?rev=` + {@link MyDeliveryStepView.photoRevision}.
+ *
+ * Les gestes à la porte (arriver, signaler, clore sans remise) sont dans
+ * `delivery-doorstep.ts`, sous `delivery_doorstep`.
  *
  * Le mur est dans la requête : seules les tournées où la personne qui appelle
  * est le livreur AFFECTÉ existent pour elle — une autre rend 404, la liste et
@@ -59,11 +65,18 @@ export interface MyDeliveryRoundView {
   /** À renvoyer avec « Commencer ma tournée » : une tournée modifiée entre-temps est refusée. */
   readonly version: number;
   readonly departedAt: string | null;
+  /**
+   * Rentrée le — « Tournée terminée » (PL2). Rentrée, plus aucun geste à la
+   * porte n'est accepté.
+   */
+  readonly returnedAt: string | null;
   readonly freeze: MyDeliveryRoundFreeze;
   /** Dans l'ordre de passage. */
   readonly stops: readonly MyDeliveryStopView[];
   /** Le point de départ des tournées, pour « Rentrer » ; `null` s'il n'en existe aucun. */
   readonly home: DeparturePointView | null;
+  /** Les problèmes signalés sur cette tournée, du plus ancien au plus récent. */
+  readonly incidents: readonly DeliveryIncidentView[];
 }
 
 /** Un arrêt, tel que le livreur en a besoin à la porte. */
@@ -90,8 +103,26 @@ export interface MyDeliveryStopView {
   readonly bins: number;
   /** Parmi eux, les bacs isothermes — « froid ». */
   readonly coldBins: number;
-  /** Clos (livré ou raté, lot 6) le, ou `null` : à faire. Personne ne l'écrit encore. */
+  /** Clos le, ou `null` : à faire. Écrit, au lot A, par la seule clôture sans remise. */
   readonly closedAt: string | null;
+  /** « Je suis arrivé » le (ISO), ou `null` : aucune arrivée déclarée. */
+  readonly arrivedAt: string | null;
+  /**
+   * Le client autorise le dépôt sans personne à cette adresse — FIGÉ au départ,
+   * lu vivant au dépôt ; `false` sans adresse reliée au carnet (AP-D5).
+   */
+  readonly depositAllowed: boolean;
+  /**
+   * « Déposé avec preuve » est-il permis ? Calculé par le serveur : le dépôt
+   * autorisé ET aucune signature exigée — la signature l'emporte toujours
+   * (AP-Q6). L'écran ne refait pas la règle.
+   */
+  readonly canDeposit: boolean;
+  /**
+   * Où en est la commande, lue vivante au commerce : une commande déjà
+   * retirée ou annulée se clôt sans remise (AP-D2).
+   */
+  readonly orderState: DeliveryStopOrderState;
 }
 
 /** La fenêtre convenue ; `default` n'est pas une promesse faite au client. */

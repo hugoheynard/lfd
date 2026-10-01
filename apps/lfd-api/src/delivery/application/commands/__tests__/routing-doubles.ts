@@ -159,6 +159,7 @@ export class RoundsReaderOver extends DeliveryRoundsReader {
           vehicleName: round.vehicleName,
           passage: round.passage,
           driverStaffId: round.driverStaffId,
+          returnedAt: round.returnedAt,
           version: round.version,
           vehicleRetiredAt: null,
           departedAt: round.departedAt,

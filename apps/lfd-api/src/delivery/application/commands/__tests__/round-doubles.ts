@@ -45,6 +45,10 @@ export class InMemoryDeliveryRounds extends DeliveryRoundRepository {
     return found?.driverStaffId === staffUserId ? found : null;
   }
 
+  loadForDriver(id: string, staffUserId: string): Promise<DeliveryRound | null> {
+    return this.loadForDriverDeparture(id, staffUserId);
+  }
+
   save(round: DeliveryRound): Promise<void> {
     this.write(round);
     this.saved.push(round.id);
@@ -151,6 +155,7 @@ export class FixedDeliveryOrders extends DeliveryOrdersReader {
           signatureRequired: false,
           note: `note ${order.reference}`,
           addressNote: null,
+          depositAllowed: false,
           status: order.status,
         })),
     );

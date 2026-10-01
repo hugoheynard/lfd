@@ -149,6 +149,29 @@ const postalFieldsSchema = z.object({
 export const billingAddressPayloadSchema = postalFieldsSchema;
 export type BillingAddressPayload = z.infer<typeof billingAddressPayloadSchema>;
 
+/** Les champs d'une adresse de livraison, sans les refus croisés. */
+function deliveryAddressFieldsSchema() {
+  return postalFieldsSchema.extend({
+    isDefault: z.boolean().default(false),
+    specs: deliverySpecsSchema,
+  });
+}
+
+/** Le refus croisé de la charge : une signature suppose quelqu'un pour signer. */
+function refuseSignatureWithoutContact(
+  payload: { readonly specs: DeliverySpecs },
+  ctx: z.RefinementCtx,
+): void {
+  if (payload.specs.deliveryContact === null && payload.specs.signatureRequired === true) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["specs", "signatureRequired"],
+      message:
+        "une signature ne peut pas être exigée sans contact sur place : renseignez un contact, ou n'exigez pas de signature",
+    });
+  }
+}
+
 /**
  * Charge de création/édition d'une **adresse de livraison** (postal + consignes).
  *
@@ -162,22 +185,38 @@ export type BillingAddressPayload = z.infer<typeof billingAddressPayloadSchema>;
  * signature — n'est pas refusé ici : le contrat ne connaît pas le socle de la
  * société. Le formulaire partagé le rend inexprimable (`withNoContact`).
  */
-export const deliveryAddressPayloadSchema = postalFieldsSchema
-  .extend({
-    isDefault: z.boolean().default(false),
-    specs: deliverySpecsSchema,
-  })
-  .superRefine((payload, ctx) => {
-    if (payload.specs.deliveryContact === null && payload.specs.signatureRequired === true) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["specs", "signatureRequired"],
-        message:
-          "une signature ne peut pas être exigée sans contact sur place : renseignez un contact, ou n'exigez pas de signature",
-      });
-    }
-  });
+export const deliveryAddressPayloadSchema = deliveryAddressFieldsSchema().superRefine(
+  refuseSignatureWithoutContact,
+);
 export type DeliveryAddressPayload = z.infer<typeof deliveryAddressPayloadSchema>;
+
+/**
+ * La charge d'édition d'une adresse de livraison **par le client**
+ * (`PATCH companies/:companyId/delivery-addresses/:addressId`) : la charge
+ * commune, plus « dépôt autorisé » (`documentation/livraisons/plan-a-la-porte.md`,
+ * AP-Q1, AP-D5).
+ *
+ * 🔴 **Facultatif, et absent veut dire INCHANGÉ** — jamais `false`. Un front en
+ * ligne qui ne connaît pas le champ ne l'envoie pas ; le lire comme un refus
+ * retirerait en silence ce que le client a autorisé. C'est aussi pourquoi il
+ * n'est pas une clé de `specs`, que l'écran réécrit d'un bloc.
+ *
+ * Le staff ne passe pas par ici : sa route d'édition d'adresse (sous
+ * `b2b_companies`) ne le touche pas, et il a la sienne
+ * ({@link deliveryDepositPayloadSchema}, sous `delivery_procedures`).
+ */
+export const memberDeliveryAddressPayloadSchema = deliveryAddressFieldsSchema()
+  .extend({ depositAllowed: z.boolean().optional() })
+  .superRefine(refuseSignatureWithoutContact);
+export type MemberDeliveryAddressPayload = z.infer<typeof memberDeliveryAddressPayloadSchema>;
+
+/**
+ * « Dépôt autorisé » réglé par le staff
+ * (`PUT admin/companies/:companyId/delivery-addresses/:addressId/deposit`,
+ * sous `delivery_procedures`) — AP-D5.
+ */
+export const deliveryDepositPayloadSchema = z.object({ depositAllowed: z.boolean() });
+export type DeliveryDepositPayload = z.infer<typeof deliveryDepositPayloadSchema>;
 
 // ─── Vues de LECTURE (réponses) ──────────────────────────────────────────────
 // Interfaces et non schémas : une réponse n'est pas re-validée à l'émission ; le
@@ -200,6 +239,13 @@ export interface DeliveryAddressView extends BillingAddressView {
   readonly specs: DeliverySpecs;
   /** Le nombre d'étapes de sa procédure de livraison — `0` sans procédure. */
   readonly procedureStepCount: number;
+  /**
+   * Le client autorise-t-il le livreur à **déposer** sans personne pour
+   * réceptionner (AP-Q1) ? `false` par défaut. Distinct de « signature
+   * exigée » : remettre sans signer n'est pas laisser sans personne. Une
+   * signature exigée l'emporte toujours (AP-Q6).
+   */
+  readonly depositAllowed: boolean;
 }
 
 /** Les adresses d'une entreprise : une facturation (ou aucune) + N livraisons. */

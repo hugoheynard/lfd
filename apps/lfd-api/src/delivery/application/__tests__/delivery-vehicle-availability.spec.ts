@@ -13,6 +13,7 @@ function round(id: string, vehicleId: string, orderIds: readonly string[]): Roun
     vehicleRetiredAt: null,
     departedAt: null,
     driverStaffId: null,
+    returnedAt: null,
     stops: orderIds.map((orderId, position) => ({ stopId: `${id}_${orderId}`, orderId, position })),
   };
 }

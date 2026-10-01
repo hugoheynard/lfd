@@ -43,6 +43,7 @@ function delivery(id: string, label: string, isDefault: boolean): DeliveryAddres
     ...POSTAL,
     isDefault,
     procedureStepCount: 0,
+    depositAllowed: false,
     specs: {
       note: '',
       slots: { mode: 'everyday', slot: { start: '06:00', end: '08:00' } },

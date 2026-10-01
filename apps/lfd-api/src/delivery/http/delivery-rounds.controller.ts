@@ -32,6 +32,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { AssignDeliveryDriverCommand } from "../application/commands/assign-delivery-driver.command.js";
 import { AssignDeliveryStopCommand } from "../application/commands/assign-delivery-stop.command.js";
@@ -39,6 +40,7 @@ import { MoveDeliveryStopCommand } from "../application/commands/move-delivery-s
 import { OpenDeliveryRoundCommand } from "../application/commands/open-delivery-round.command.js";
 import { RemoveDeliveryStopCommand } from "../application/commands/remove-delivery-stop.command.js";
 import { ReorderDeliveryRoundCommand } from "../application/commands/reorder-delivery-round.command.js";
+import { ReturnDeliveryRoundCommand } from "../application/commands/return-delivery-round.command.js";
 import { UnassignDeliveryDriverCommand } from "../application/commands/unassign-delivery-driver.command.js";
 import { GetDeliveryRoundsDayQuery } from "../application/queries/get-delivery-rounds-day.query.js";
 import { ListDeliveryDriversQuery } from "../application/queries/list-delivery-drivers.query.js";
@@ -108,6 +110,22 @@ export class DeliveryRoundsController {
   ): Promise<void> {
     await this.commands.execute<UnassignDeliveryDriverCommand, void>(
       new UnassignDeliveryDriverCommand(roundId, payload),
+    );
+  }
+
+  /**
+   * « Tournée terminée » déclarée depuis Tournées (`parcours-du-livreur.md`,
+   * PL2) — quand le livreur a oublié, ou qu'aucun livreur n'était affecté.
+   * 204, même rejoué.
+   */
+  @Post(":roundId/retour")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async returnToDepot(
+    @StaffUserId() staffUserId: string,
+    @Param("roundId") roundId: string,
+  ): Promise<void> {
+    await this.commands.execute<ReturnDeliveryRoundCommand, void>(
+      new ReturnDeliveryRoundCommand(staffUserId, roundId),
     );
   }
 

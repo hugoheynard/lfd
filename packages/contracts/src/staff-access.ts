@@ -359,6 +359,17 @@ export const staffResourceSchema = z.enum([
    */
   "delivery_driving",
   /**
+   * **Les gestes à la porte** — « Je suis arrivé », déclarer un problème,
+   * clore un arrêt sans remise quand la commande a déjà été retirée ou
+   * annulée (`documentation/livraisons/plan-a-la-porte.md`, AP-D9, L6-C10).
+   *
+   * À part de `delivery_driving` : conduire sa tournée et attester ce qui se
+   * passe à la porte sont deux gestes. Ces routes portent le MÊME mur que
+   * « Ma tournée » (la tournée dont on est le livreur affecté). Aucune
+   * migration ne l'accorde : il se règle à l'écran, rôle par rôle.
+   */
+  "delivery_doorstep",
+  /**
    * **Les procédures de livraison**, côté staff — les étapes et leurs photos
    * sur la fiche d'un client. Sorties de `b2b_companies` le 2026-10-01 (plan
    * `plan-droits-par-geste.md`, DG-D1).
@@ -469,6 +480,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   delivery_rounds: "Tournées de livraison",
   delivery_loading: "Chargement",
   delivery_driving: "Conduire sa tournée",
+  delivery_doorstep: "Gestes à la porte",
   delivery_procedures: "Procédures de livraison",
   production_plan: "Production — Plan du soir",
   production_worksheet: "Production — Fiche d'atelier",
@@ -607,6 +619,7 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     delivery_rounds: "write",
     delivery_loading: "write",
     delivery_driving: "write",
+    delivery_doorstep: "write",
     staff_access: "write",
     staff_notifications: "write",
     ops_health: "write",

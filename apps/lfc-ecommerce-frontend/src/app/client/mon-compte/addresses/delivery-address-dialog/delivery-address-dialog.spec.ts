@@ -22,6 +22,7 @@ const CHALET: DeliveryAddressView = {
   pays: 'France',
   isDefault: true,
   procedureStepCount: 0,
+  depositAllowed: false,
   specs: {
     note: 'Porte bleue',
     slots: { mode: 'everyday', slot: { start: '06:00', end: '08:00' } },

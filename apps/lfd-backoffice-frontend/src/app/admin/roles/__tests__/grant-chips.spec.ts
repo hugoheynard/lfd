@@ -89,9 +89,11 @@ describe('grantGroups', () => {
    * tournée n'est pas la charger (plan-ma-tournee.md, MT-D1 v2). Puis à 41 le
    * même jour : `b2b_orders` découpé par geste (`b2b_place_order`, le plan,
    * la fiche, le colisage, le retrait) et les procédures de livraison
-   * (plan-droits-par-geste.md, DG-D1).
+   * (plan-droits-par-geste.md, DG-D1). Puis à 42 le même jour :
+   * `delivery_doorstep`, les gestes à la porte ne sont pas conduire
+   * (plan-a-la-porte.md, AP-D9).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(41);
+    expect(RESOURCE_COUNT).toBe(42);
   });
 });

@@ -87,6 +87,7 @@ const COMPLETE: Partial<AdminCompanyDetailView> = {
         pays: "France",
         isDefault: true,
         procedureStepCount: 0,
+        depositAllowed: false,
       },
     ],
   },

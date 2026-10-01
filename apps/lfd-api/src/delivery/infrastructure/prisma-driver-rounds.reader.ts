@@ -69,6 +69,7 @@ export class PrismaDriverRoundsReader extends DriverRoundsReader {
         passage: true,
         version: true,
         departedAt: true,
+        returnedAt: true,
         stops: {
           where: KEPT_STOP,
           orderBy: { position: "asc" },
@@ -93,6 +94,7 @@ export class PrismaDriverRoundsReader extends DriverRoundsReader {
       passage: row.passage,
       version: row.version,
       departedAt: row.departedAt,
+      returnedAt: row.returnedAt,
       stops: row.stops.map((stop) => ({
         stopId: stop.id,
         orderId: stop.orderId,

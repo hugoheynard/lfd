@@ -93,6 +93,7 @@ const LOADED_ROUND: DeliveryRoundView = {
   passage: 1,
   version: 2,
   vehicleRetired: false,
+  returnedAt: null,
   driver: null,
   departedAt: null,
   stops: [

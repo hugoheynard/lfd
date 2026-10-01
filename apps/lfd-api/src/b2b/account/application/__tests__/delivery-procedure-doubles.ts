@@ -75,6 +75,7 @@ export function addressBook(
       gps: null,
       signatureRequired: null,
     },
+    depositAllowed: false,
     createdAt: new Date(0),
     archivedAt,
   });

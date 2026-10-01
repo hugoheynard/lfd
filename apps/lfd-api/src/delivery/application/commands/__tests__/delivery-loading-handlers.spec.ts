@@ -233,6 +233,8 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
           signatureRequired: false,
           note: "note CMD-o_1",
           addressNote: null,
+          // Figé avec la feuille (plan « À la porte », AP-D5).
+          depositAllowed: false,
           status: "active",
         },
         // Le rang de passage et le point du carnet, figés au départ (MT-D5 v2).

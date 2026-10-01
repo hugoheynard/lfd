@@ -73,6 +73,8 @@ function orderReady(fact: PhraseFact): Said {
 const HANDOVER_HOW: Readonly<Record<string, string>> = {
   scan: ' en scannant le QR du client',
   manual: ' à la main, sans le QR',
+  // Plan « À la porte », AP-D8 : lu avant que personne ne l'écrive.
+  deposit: ' en la déposant sans personne, photo à l’appui',
 };
 
 /**

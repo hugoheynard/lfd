@@ -24,6 +24,10 @@ export interface DepartedStopRow {
   /** `null` : parti avant que le départ ne fige le rang (MT-D5 v2). */
   readonly departureRank: number | null;
   readonly gps: GpsPoint | null;
+  /** « Dépôt autorisé », figé au départ (AP-D5) ; `false` avant la migration qui l'a ajouté. */
+  readonly depositAllowed: boolean;
+  /** « Je suis arrivé » (AP-D6), ou `null`. */
+  readonly arrivedAt: Date | null;
 }
 
 /** Un arrêt non retiré de ma tournée. */
@@ -47,6 +51,8 @@ export interface DriverRoundRow {
   readonly passage: number;
   readonly version: number;
   readonly departedAt: Date | null;
+  /** Rentrée le (« Tournée terminée », PL2), ou `null`. */
+  readonly returnedAt: Date | null;
   /** Par position de composition — la vue choisit l'ordre (rang figé ou position). */
   readonly stops: readonly DriverStopRow[];
 }

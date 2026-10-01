@@ -15,6 +15,11 @@ import {
   VehicleInactiveOnDayError,
 } from "../errors/delivery-round-errors.js";
 import { DriverWithoutAccessError } from "../errors/delivery-driver-errors.js";
+import {
+  DeliveryRoundReturnedError,
+  DoorstepRoundNotDepartedError,
+  RoundNotDepartedForReturnError,
+} from "../errors/delivery-doorstep-errors.js";
 import { isCalendarDay } from "../value-objects/service-day.js";
 import { SharedBinToRedoError } from "../errors/delivery-bin-declaration-errors.js";
 import { sharedBinsToRedo, type StopReadiness, unreadyStops } from "./departure-readiness.js";
@@ -24,6 +29,7 @@ import type {
   DeliveryStopState,
   DetachedStop,
   RemovedStopState,
+  RoundReturn,
 } from "./delivery-round-state.js";
 import type { Vehicle } from "./vehicle.js";
 
@@ -33,6 +39,7 @@ export type {
   DeliveryStopState,
   DetachedStop,
   RemovedStopState,
+  RoundReturn,
 } from "./delivery-round-state.js";
 
 /**
@@ -46,7 +53,11 @@ export type {
  * - une commande n'est qu'une fois dans une même tournée ;
  * - **I6** — une tournée partie ne se compose plus (lot 4, L4-C4) : affecter,
  *   déplacer, réordonner, retirer sont refusés ; et elle ne part que chargée
- *   (Q14, L4-C17).
+ *   (Q14, L4-C17). **Une exception écrite** (L6-C11) : `closeStop`, le seul
+ *   geste permis après le départ — et seulement après ;
+ * - **I8** — « Tournée terminée » (`parcours-du-livreur.md`, PL2) : on ne
+ *   rentre que d'une tournée partie, une fois ; rentrée, elle n'accepte plus
+ *   aucun geste de la porte (`closeStop` compris).
  *
  * **I3** (une commande dans au plus une tournée vivante, tous jours
  * confondus) concerne toutes les tournées : c'est la base qui la tient, par un
@@ -60,16 +71,17 @@ export class DeliveryRound {
   private readonly removed: RemovedStopState[] = [];
   private currentVersion: number;
   private currentDepartedAt: Date | null;
+  private currentReturn: RoundReturn | null = null;
 
   private constructor(
     private readonly state: Omit<
       DeliveryRoundState,
-      "stops" | "version" | "updatedAt" | "departedAt" | "driverStaffId"
+      "stops" | "version" | "updatedAt" | "departedAt" | "driverStaffId" | "returned"
     >,
     /** `null` : la tournée vient d'être ouverte, rien n'est encore en base. */
     readonly loadedVersion: number | null,
     private open: DetachedStop[],
-    private readonly closed: readonly DeliveryStopState[],
+    private closed: readonly DeliveryStopState[],
     private currentUpdatedAt: Date,
     departedAt: Date | null,
     private currentDriverStaffId: string | null,
@@ -130,7 +142,7 @@ export class DeliveryRound {
       passage: state.passage,
       createdAt: state.createdAt,
     };
-    return new DeliveryRound(
+    const round = new DeliveryRound(
       identity,
       state.version,
       open.map(({ id, orderId }) => ({ id, orderId })),
@@ -139,6 +151,8 @@ export class DeliveryRound {
       state.departedAt,
       state.driverStaffId,
     );
+    round.currentReturn = state.returned ?? null;
+    return round;
   }
 
   get id(): string {
@@ -173,6 +187,11 @@ export class DeliveryRound {
   /** Le livreur affecté (MT-D2), l'id d'une fiche staff ; `null` : aucun. */
   get driverStaffId(): string | null {
     return this.currentDriverStaffId;
+  }
+
+  /** Rentrée le (PL2), ou `null`. */
+  get returnedAt(): Date | null {
+    return this.currentReturn?.at ?? null;
   }
 
   /** Les arrêts vivants, dans l'ordre de passage. */
@@ -352,6 +371,62 @@ export class DeliveryRound {
   }
 
   /**
+   * **Clore un arrêt** (L6-C11, `plan-a-la-porte.md`, AP-D2) — l'exception
+   * écrite à I6 : permis APRÈS le départ seulement. L'arrêt garde la position
+   * qu'il avait, les arrêts vivants restants se resserrent en 1..n (I2) ; la
+   * numérotation du livreur, figée au départ, ne bouge pas.
+   *
+   * @throws {DoorstepRoundNotDepartedError} la tournée est au dépôt.
+   * @throws {DeliveryRoundReturnedError} elle est déjà rentrée (I8).
+   * @throws {DeliveryStopNotFoundError} @throws {DeliveryStopClosedError}
+   */
+  closeStop(stopId: string, at: Date): void {
+    if (this.currentDepartedAt === null) {
+      throw new DoorstepRoundNotDepartedError();
+    }
+    this.ensureOnTheRoad();
+    const { index, stop } = this.findOpen(stopId);
+    this.open = this.open.filter((_, position) => position !== index);
+    this.closed = [...this.closed, { ...stop, position: index + 1, closedAt: at }];
+    this.touch(at);
+  }
+
+  /**
+   * **« Tournée terminée »** (`parcours-du-livreur.md`, PL2, I8) : les bacs
+   * vides sont rentrés. Seulement partie ; une fois — un second appel rend
+   * `false` et n'écrit rien, le premier retour fait foi. Les arrêts encore
+   * ouverts le restent : rien ne se clôt tout seul.
+   *
+   * @throws {RoundNotDepartedForReturnError} la tournée n'est pas partie.
+   */
+  returnToDepot(at: Date, by: { readonly staffUserId: string; readonly name: string }): boolean {
+    if (this.currentDepartedAt === null) {
+      throw new RoundNotDepartedForReturnError(this.state.vehicleName);
+    }
+    if (this.currentReturn !== null) {
+      return false;
+    }
+    this.currentReturn = { at, byStaffId: by.staffUserId, byName: by.name };
+    this.touch(at);
+    return true;
+  }
+
+  /**
+   * Une tournée rentrée n'accepte plus aucun geste de la porte (I8).
+   * @throws {DeliveryRoundReturnedError}
+   */
+  ensureOnTheRoad(): void {
+    if (this.currentReturn !== null) {
+      throw new DeliveryRoundReturnedError();
+    }
+  }
+
+  /** L'arrêt est-il clos ? Un nouvel essai après une perte de réseau le demande. */
+  hasClosed(stopId: string): boolean {
+    return this.closed.some((stop) => stop.id === stopId);
+  }
+
+  /**
    * Une tournée partie ne se compose plus (I6).
    * @throws {DeliveryRoundDepartedError}
    */
@@ -367,6 +442,7 @@ export class DeliveryRound {
       version: this.currentVersion,
       departedAt: this.currentDepartedAt,
       driverStaffId: this.currentDriverStaffId,
+      returned: this.currentReturn,
       updatedAt: this.currentUpdatedAt,
       stops: [
         ...this.open.map((stop, index) => ({ ...stop, position: index + 1, closedAt: null })),

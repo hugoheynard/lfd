@@ -14,10 +14,28 @@ export const WEEKDAY = domain(
   Object.fromEntries(WEEKDAYS.map((day) => [day.value, day.label])),
 );
 
-/** Comment le retrait d'une commande a été validé : le QR du client, ou une saisie au comptoir. */
+/**
+ * Comment le retrait d'une commande a été validé : le QR du client, une saisie
+ * au comptoir, ou un dépôt du livreur sans personne (`plan-a-la-porte.md`,
+ * AP-D8 — lu avant que personne ne l'écrive).
+ */
 export const HANDOVER_VIA = domain('manière de remettre une commande', {
   scan: 'QR scanné',
   manual: 'Saisie à la main',
+  deposit: 'Déposé',
+});
+
+/** La famille d'un problème signalé par le livreur (`delivery_round.incident_reported`, § 3). */
+export const INCIDENT_FAMILY = domain('famille d’un problème de livraison', {
+  doorstep: 'Problème à la remise',
+  technical: 'Problème technique',
+  road: 'Problème routier',
+});
+
+/** Pourquoi un arrêt a été clos sans remise (`delivery_round.stop_closed_without_handover`). */
+export const CLOSED_WITHOUT_HANDOVER_CAUSE = domain('raison d’une clôture sans remise', {
+  handed_over: 'Déjà retirée',
+  cancelled: 'Commande annulée',
 });
 
 /** Comment un bac a été chargé (`delivery_bin.loaded`) : son QR lu, ou son code court tapé. */
@@ -61,6 +79,8 @@ export const ORDERS_VALUES: ValueFamily = {
   enums: [
     WEEKDAY,
     HANDOVER_VIA,
+    INCIDENT_FAMILY,
+    CLOSED_WITHOUT_HANDOVER_CAUSE,
     BIN_LOAD_VIA,
     BIN_HALF,
     PROPOSAL_MODE,

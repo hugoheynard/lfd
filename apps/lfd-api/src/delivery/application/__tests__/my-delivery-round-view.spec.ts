@@ -40,6 +40,8 @@ function frozen(rank: number | null, overrides: Partial<DepartedStopRow> = {}): 
     addressNote: "sonner",
     departureRank: rank,
     gps: rank === null ? null : FROZEN,
+    depositAllowed: false,
+    arrivedAt: null,
     ...overrides,
   };
 }
@@ -55,6 +57,7 @@ function sheet(orderId: string): DepartureSheet {
     signatureRequired: false,
     note: "",
     addressNote: null,
+    depositAllowed: false,
     status: "active",
   };
 }
@@ -67,6 +70,7 @@ function round(stops: readonly DriverStopRow[], departedAt: Date | null): Driver
     passage: 1,
     version: 4,
     departedAt,
+    returnedAt: null,
     stops,
   };
 }
@@ -78,6 +82,8 @@ function inputs(overrides: Partial<MyDeliveryRoundInputs>): MyDeliveryRoundInput
     carnetPoints: new Map(),
     procedures: new Map(),
     home: null,
+    orderStates: new Map(),
+    incidents: [],
     ...overrides,
   };
 }
@@ -152,13 +158,18 @@ describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
       [
         "address",
         "addressNote",
+        // Plan « À la porte », lot A : décidés, pas commodes (AP-D5, AP-D6, AP-Q6, AP-D2).
+        "arrivedAt",
         "bins",
+        "canDeposit",
         "closedAt",
         "coldBins",
         "contact",
         "customerLabel",
+        "depositAllowed",
         "gps",
         "orderNote",
+        "orderState",
         "procedure",
         "rank",
         "reference",
@@ -184,5 +195,93 @@ describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
     expect(freezeOf(round([stop("a", 1)], null))).toBe("live");
     expect(freezeOf(round([stop("a", 1, { departed: frozen(1) })], AT))).toBe("departure");
     expect(freezeOf(round([stop("a", 1)], AT))).toBe("not_frozen");
+  });
+});
+
+describe("myDeliveryRoundView — à la porte (plan « À la porte », lot A)", () => {
+  const ARRIVED = new Date(60_000);
+
+  it("🔴 signature exigée ⇒ jamais de dépôt, même si l'adresse l'autorise (AP-Q6)", () => {
+    const view = myDeliveryRoundView(
+      inputs({
+        round: round(
+          [
+            stop("a", 1, {
+              departed: frozen(1, { depositAllowed: true, signatureRequired: true }),
+            }),
+            stop("b", 2, {
+              departed: frozen(2, { depositAllowed: true, signatureRequired: false }),
+            }),
+            stop("c", 3, {
+              departed: frozen(3, { depositAllowed: false, signatureRequired: false }),
+            }),
+          ],
+          AT,
+        ),
+      }),
+    );
+
+    expect(view.stops.map((s) => [s.depositAllowed, s.canDeposit])).toEqual([
+      [true, false],
+      [true, true],
+      [false, false],
+    ]);
+  });
+
+  it("au dépôt, le dépôt autorisé se lit sur la feuille vivante", () => {
+    const view = myDeliveryRoundView(
+      inputs({
+        round: round([stop("a", 1)], null),
+        sheets: new Map([["o_a", { ...sheet("o_a"), depositAllowed: true }]]),
+      }),
+    );
+
+    expect(view.stops[0]).toMatchObject({
+      depositAllowed: true,
+      canDeposit: true,
+      arrivedAt: null,
+    });
+  });
+
+  it("porte l'arrivée figée, l'état de la commande lu au commerce, et les signalements", () => {
+    const view = myDeliveryRoundView(
+      inputs({
+        round: round(
+          [
+            stop("a", 1, { departed: frozen(1, { arrivedAt: ARRIVED }) }),
+            stop("b", 2, { departed: frozen(2) }),
+          ],
+          AT,
+        ),
+        orderStates: new Map([["o_a", "handed_over"]]),
+        incidents: [
+          {
+            id: "inc_1",
+            roundId: "r_1",
+            stopId: "b",
+            orderReference: "FIGÉE",
+            family: "doorstep",
+            reason: "nobody_present",
+            note: "",
+            hasPhoto: false,
+            reportedAt: ARRIVED,
+            reportedBy: "staff_paul",
+            reportedByName: "",
+          },
+        ],
+      }),
+    );
+
+    expect(view.stops.map((s) => [s.arrivedAt, s.orderState])).toEqual([
+      [ARRIVED.toISOString(), "handed_over"],
+      [null, "open"],
+    ]);
+    expect(view.incidents).toEqual([
+      expect.objectContaining({
+        id: "inc_1",
+        stopId: "b",
+        reportedBy: { staffUserId: "staff_paul", name: null },
+      }),
+    ]);
   });
 });

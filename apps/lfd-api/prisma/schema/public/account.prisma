@@ -447,6 +447,13 @@ model Address {
   // une livraison tant qu'aucune consigne n'a été saisie.
   deliverySpecs Json? @map("delivery_specs")
 
+  // « Dépôt autorisé » — le client permet au livreur de DÉPOSER sans personne
+  // pour réceptionner (`documentation/livraisons/plan-a-la-porte.md`, AP-Q1,
+  // AP-D5). Une COLONNE et non une clé de `delivery_specs` : ce `jsonb` se
+  // réécrit d'un bloc, et un front qui ne connaît pas la clé la remettrait à
+  // `false` en silence. Écrite par le carnet (`DeliveryAddressBook`) seul.
+  depositAllowed Boolean @default(false) @map("deposit_allowed")
+
   // Pas de DELETE physique : on archive.
   archivedAt DateTime? @map("archived_at")
 

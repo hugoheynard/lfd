@@ -48,6 +48,11 @@ export interface DepartureSheet {
    * commande n'est pas reliée à une adresse du carnet (sous le mur).
    */
   readonly addressNote: string | null;
+  /**
+   * « Dépôt autorisé » de l'adresse du carnet reliée, lu sous le même mur que
+   * la note ; `false` sans adresse reliée (`plan-a-la-porte.md`, AP-D5).
+   */
+  readonly depositAllowed: boolean;
   /** Lu, jamais figé : une commande annulée ne part pas. */
   readonly status: "active" | "cancelled";
 }

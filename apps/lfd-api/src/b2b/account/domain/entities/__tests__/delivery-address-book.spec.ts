@@ -61,6 +61,7 @@ function entry(id: string, createdAt: Date, archivedAt: Date | null = null): Del
       pays: "France",
     },
     specs: payload(false).specs,
+    depositAllowed: false,
     createdAt,
     archivedAt,
   };

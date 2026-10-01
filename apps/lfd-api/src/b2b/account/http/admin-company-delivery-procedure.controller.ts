@@ -1,5 +1,7 @@
 import {
   type CreatedDeliveryStepResponse,
+  type DeliveryDepositPayload,
+  deliveryDepositPayloadSchema,
   type DeliveryProcedureOrderPayload,
   deliveryProcedureOrderPayloadSchema,
   type DeliveryProcedureView,
@@ -36,6 +38,7 @@ import {
   ReviseDeliveryStepByStaffCommand,
 } from "../application/commands/admin-delivery-procedure-commands.js";
 import type { DeliveryStepPhotoDownload } from "../application/queries/delivery-procedure-reading.js";
+import { SetDeliveryDepositByStaffCommand } from "../application/commands/set-delivery-deposit-by-staff.command.js";
 import { GetDeliveryProcedureForStaffQuery } from "../application/queries/get-delivery-procedure-for-staff.query.js";
 import { GetDeliveryStepPhotoForStaffQuery } from "../application/queries/get-delivery-step-photo-for-staff.query.js";
 import {
@@ -47,6 +50,7 @@ import {
 import { DELIVERY_STEP_UPLOAD_HARD_LIMIT } from "./delivery-procedure-http.js";
 
 const PROCEDURE = ":companyId/delivery-addresses/:addressId/procedure";
+const DEPOSIT = ":companyId/delivery-addresses/:addressId/deposit";
 
 /**
  * **La procédure de livraison** d'une adresse, côté staff.
@@ -57,6 +61,10 @@ const PROCEDURE = ":companyId/delivery-addresses/:addressId/procedure";
  * La bascule l'a donnée au même niveau à chaque rôle qui tenait
  * `b2b_companies`. Aucun mur membership ; chaque écriture inscrit son fait au
  * journal, dans sa transaction.
+ *
+ * Depuis le 2026-10-01, il règle aussi **« dépôt autorisé »** sur l'adresse
+ * (`plan-a-la-porte.md`, AP-D5) : le commercial le règle comme la procédure,
+ * et la route d'édition de l'adresse — sous `b2b_companies` — ne le touche pas.
  */
 @Controller("admin/companies")
 @AdminSurface("delivery_procedures")
@@ -73,6 +81,18 @@ export class AdminCompanyDeliveryProcedureController {
   ): Promise<DeliveryProcedureView> {
     return this.queries.execute<GetDeliveryProcedureForStaffQuery, DeliveryProcedureView>(
       new GetDeliveryProcedureForStaffQuery(companyId, addressId),
+    );
+  }
+
+  @Put(DEPOSIT)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setDeposit(
+    @Param("companyId") companyId: string,
+    @Param("addressId") addressId: string,
+    @Body(new ZodBody(deliveryDepositPayloadSchema)) payload: DeliveryDepositPayload,
+  ): Promise<void> {
+    await this.commands.execute<SetDeliveryDepositByStaffCommand, void>(
+      new SetDeliveryDepositByStaffCommand(companyId, addressId, payload.depositAllowed),
     );
   }
 

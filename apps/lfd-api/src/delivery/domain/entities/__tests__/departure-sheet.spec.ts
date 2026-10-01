@@ -32,6 +32,7 @@ function sheet(overrides: Partial<DepartureSheet> = {}): DepartureSheet {
     signatureRequired: true,
     note: "par la cour",
     addressNote: "sonner deux fois",
+    depositAllowed: false,
     status: "active",
     ...overrides,
   };

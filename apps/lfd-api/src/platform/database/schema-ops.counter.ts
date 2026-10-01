@@ -240,6 +240,8 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   DeliveryBin: "delivery",
   DeliveryBinLoad: "delivery",
   DeliveryStopExecution: "delivery",
+  // À la porte (plan « À la porte », lot A) : un signalement par problème, en route.
+  DeliveryIncident: "delivery",
   // Le calculateur de tournée (lot 7) : un réglage, et le cache du géocodage.
   DeliveryRoutingSettings: "delivery",
   DeliveryGeocode: "delivery",

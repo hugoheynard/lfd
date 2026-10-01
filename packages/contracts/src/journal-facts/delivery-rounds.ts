@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { DELIVERY_INCIDENT_FAMILIES } from "../delivery-doorstep.js";
 import { count, day, fact, named, namedOrBare, payload, subjectLabel } from "./fact.js";
 
 /**
@@ -59,5 +60,41 @@ export const DELIVERY_ROUND_FACTS = {
   /** La tournée n'a plus de livreur affecté. */
   "delivery_round.driver_unassigned": fact(
     payload({ ...roundKey(), previous: namedOrBare("staff_user") }),
+  ),
+  /**
+   * « Tournée terminée » (`parcours-du-livreur.md`, PL2) : les bacs vides sont
+   * rentrés. `openStops` : les arrêts restés ouverts — ils le restent, et
+   * « Non remis » les montre.
+   */
+  "delivery_round.returned": fact(payload({ ...roundKey(), openStops: count() })),
+  /**
+   * « Je suis arrivé » sur un arrêt (`plan-a-la-porte.md`, AP-D6) : l'auteur
+   * est le livreur, sur la ligne. Une seconde arrivée n'écrit rien.
+   */
+  "delivery_round.stop_arrived": fact(payload({ ...roundKey(), order: namedOrBare("order") })),
+  /**
+   * Un problème signalé (§ 3) — il ne clôt rien. `order` : l'arrêt concerné,
+   * `null` pour un problème de la tournée seule. La note n'est PAS ici : un
+   * texte libre du livreur reste sur sa ligne, l'écran le relit là.
+   */
+  "delivery_round.incident_reported": fact(
+    payload({
+      ...roundKey(),
+      order: namedOrBare("order").nullable(),
+      family: z.enum(DELIVERY_INCIDENT_FAMILIES),
+      reason: z.string().min(1),
+      withPhoto: z.boolean(),
+    }),
+  ),
+  /**
+   * Un arrêt clos SANS remise : la commande était déjà retirée, ou annulée
+   * (AP-D2, L6-C11). `cause` dit laquelle, lue au commerce au moment du geste.
+   */
+  "delivery_round.stop_closed_without_handover": fact(
+    payload({
+      ...roundKey(),
+      order: namedOrBare("order"),
+      cause: z.enum(["handed_over", "cancelled"]),
+    }),
   ),
 } as const;

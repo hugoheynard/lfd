@@ -39,8 +39,13 @@ export interface DeliveryRoundsDayInputs {
  * - **véhicule retiré** : un retrait et une affectation simultanés ont pu
  *   passer (C14) ; on le dit ;
  * - **livreur sans accès** : affecté, puis privé du droit de conduire (MT-D2 v2).
+ *
+ * Les signalements de la journée s'y ajoutent dans le handler : ils ne
+ * dépendent d'aucune de ces entrées.
  */
-export function deliveryRoundsDayView(inputs: DeliveryRoundsDayInputs): DeliveryRoundsDayView {
+export function deliveryRoundsDayView(
+  inputs: DeliveryRoundsDayInputs,
+): Omit<DeliveryRoundsDayView, "incidents"> {
   return {
     day: inputs.day,
     rounds: inputs.rounds.map((round) => roundView(round, inputs)),
@@ -62,6 +67,7 @@ function roundView(round: RoundRow, inputs: DeliveryRoundsDayInputs): DeliveryRo
     version: round.version,
     vehicleRetired: !activeOnDay(round.vehicleRetiredAt, inputs.day),
     departedAt: round.departedAt?.toISOString() ?? null,
+    returnedAt: round.returnedAt?.toISOString() ?? null,
     driver: driverView(round.driverStaffId, inputs),
     stops: round.stops.map((stop) => stopView(stop, inputs)),
   };

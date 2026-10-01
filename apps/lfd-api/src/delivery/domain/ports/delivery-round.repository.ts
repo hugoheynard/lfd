@@ -27,6 +27,14 @@ export abstract class DeliveryRoundRepository {
   abstract loadForDriverDeparture(id: string, staffUserId: string): Promise<DeliveryRound | null>;
 
   /**
+   * Le même verrou sous le même mur, pour un geste de la porte sur une tournée
+   * PARTIE (`plan-a-la-porte.md`, AP-D2 : clore un arrêt sans remise). Distinct
+   * du départ par son intention, pas par son SQL : un appelant qui lit
+   * « départ » n'a pas à se demander s'il est au bon endroit.
+   */
+  abstract loadForDriver(id: string, staffUserId: string): Promise<DeliveryRound | null>;
+
+  /**
    * Écrit une tournée (ouverture ou changement).
    * @throws {DeliveryRoundStaleError} la version en base n'est plus celle lue.
    * @throws {OrderAlreadyInRoundError} l'index I3 a vu une course.

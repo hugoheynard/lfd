@@ -4,6 +4,7 @@ import { PrismaService } from "../../platform/database/prisma.service.js";
 import { OrderHandover } from "../domain/entities/order-handover.js";
 import { OrderHandoverRepository } from "../domain/ports/order-handover.repository.js";
 import type { HandoverVia } from "../domain/services/handover.js";
+import { handoverViaOf } from "./handover-via.mapper.js";
 
 /**
  * Les attestations de retrait.
@@ -70,15 +71,11 @@ interface HandoverRow {
 }
 
 /**
- * Réhydrate l'agrégat depuis sa ligne.
- *
- * `handedOverVia` est une colonne texte : Postgres accepterait n'importe quoi,
- * et une ligne écrite à la main hors du domaine ne doit pas devenir un `via`
- * inventé en traversant le mapper. On retombe sur `manual` — l'attestation la
- * plus FAIBLE —, jamais sur `scan` : se tromper vers le bas est honnête.
+ * Réhydrate l'agrégat depuis sa ligne. Le `via` passe par `handoverViaOf` :
+ * une valeur inconnue retombe sur `manual`, jamais sur `scan`.
  */
 function toDomain(row: HandoverRow): OrderHandover {
-  const via: HandoverVia = row.handedOverVia === "scan" ? "scan" : "manual";
+  const via: HandoverVia = handoverViaOf(row.handedOverVia);
   return OrderHandover.rehydrate(
     row.orderId,
     row.reference,

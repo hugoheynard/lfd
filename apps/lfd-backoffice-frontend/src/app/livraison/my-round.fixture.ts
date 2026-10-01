@@ -26,6 +26,10 @@ export function myStopOf(overrides: Partial<MyDeliveryStopView> = {}): MyDeliver
     bins: 1,
     coldBins: 0,
     closedAt: null,
+    arrivedAt: null,
+    depositAllowed: false,
+    canDeposit: false,
+    orderState: 'open',
     ...overrides,
   };
 }
@@ -39,9 +43,11 @@ export function myRoundOf(overrides: Partial<MyDeliveryRoundView> = {}): MyDeliv
     passage: 1,
     version: 3,
     departedAt: null,
+    returnedAt: null,
     freeze: 'live',
     stops: [myStopOf({ rank: 1 }), myStopOf({ rank: 2 })],
     home: null,
+    incidents: [],
     ...overrides,
   };
 }

@@ -40,6 +40,7 @@ function composition(day: string): DeliveryRoundsDayView {
         passage: 1,
         version: 4,
         vehicleRetired: false,
+        returnedAt: null,
         departedAt: firstDeparted,
         driver: firstDriver,
         stops: [
@@ -68,12 +69,14 @@ function composition(day: string): DeliveryRoundsDayView {
         passage: 2,
         version: 7,
         vehicleRetired: true,
+        returnedAt: null,
         departedAt: null,
         driver: null,
         stops: [],
       },
     ],
     unassigned: [{ orderId: 'o-3', reference: 'CMD-3' }],
+    incidents: [],
   };
 }
 
