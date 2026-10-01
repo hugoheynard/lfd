@@ -45,10 +45,13 @@ flowchart TD
   (panneau « Bacs »), chacun avec son **étiquette QR** ; un demi-bac peut être
   partagé entre deux arrêts consécutifs.
 - ✅ La tournée a été **composée** et un **livreur affecté** (Tournées).
-- ❓ **Comment le livreur sait que c'est prêt ?** Il regarde « Ma tournée »
-  (le nombre de bacs déclarés vs attendus), ou c'est le coliseur qui le lui dit ?
-- ❓ **Où sont rangés les bacs d'une tournée** dans la pièce : par tournée, par
-  arrêt, en vrac ? Ça change la façon de les retrouver.
+- ✅ **Comment le livreur sait que c'est prêt** : il regarde « Ma tournée »
+  (PL4, bâti le 2026-10-01) — « n arrêts prêts sur m » en tête, l'avancement
+  et les bacs déclarés sur chaque arrêt, la page se met à jour d'elle-même.
+- 🟡 **Il est prévenu** quand toute sa tournée est prête (Hugo, 2026-10-01) :
+  lot PL5, voir [`plan-tournee-prete.md`](plan-tournee-prete.md).
+- ✅ **Où sont rangés les bacs** : par tournée, puis par arrêt (Hugo,
+  2026-10-01) — « Ma tournée » suit le même rangement.
 
 ### 2 · Prendre en charge
 
