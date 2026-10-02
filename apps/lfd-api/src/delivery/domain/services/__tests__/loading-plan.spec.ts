@@ -1,4 +1,5 @@
 import { type PlanBin, type PlanBinType, type PlanStop, planLoading } from "../loading-plan.js";
+import { CargoFloor } from "../../value-objects/cargo-floor.js";
 import type { PlanVehicle } from "../loading-volume.js";
 
 /** 60 × 40 × 25 cm = 60 L extérieurs. */
@@ -22,7 +23,12 @@ const BAC_FROID: PlanBinType = {
   maxStack: 4,
 };
 
-const ROOMY: PlanVehicle = { name: "Kangoo", cargoLiters: 3000, refrigeratedLiters: 500 };
+const ROOMY: PlanVehicle = {
+  name: "Kangoo",
+  cargoLiters: 3000,
+  refrigeratedLiters: 500,
+  floor: null,
+};
 
 function bin(id: string, overrides: Partial<PlanBin> = {}): PlanBin {
   return {
@@ -91,8 +97,8 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
     ]);
     // Un bac physique : une place dans la pile, la dernière posée.
     expect(plan.stacks).toEqual([
-      { stackIndex: 1, binType: BAC_M, height: 3, stopPositions: [2, 1] },
-      { stackIndex: 2, binType: BAC_M, height: 1, stopPositions: [1] },
+      { stackIndex: 1, binType: BAC_M, height: 3, stopPositions: [2, 1], placement: null },
+      { stackIndex: 2, binType: BAC_M, height: 1, stopPositions: [1], placement: null },
     ]);
     expect(first?.bins.slice(-2).map((entry) => entry.stackIndex)).toEqual([2, 2]);
   });
@@ -119,7 +125,12 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
 
   it("compte le volume EXTÉRIEUR, un bac partagé une fois, et dit ce qui déborde au sec", () => {
     const [left, right] = sharedHalves("o1", "o2");
-    const small: PlanVehicle = { name: "Kangoo", cargoLiters: 200, refrigeratedLiters: 50 };
+    const small: PlanVehicle = {
+      name: "Kangoo",
+      cargoLiters: 200,
+      refrigeratedLiters: 50,
+      floor: null,
+    };
 
     const plan = planLoading(
       [stop("o1", 1, [left, bin("a"), bin("b")]), stop("o2", 2, [right])],
@@ -137,7 +148,12 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
   });
 
   it("met les isothermes dans la caisse réfrigérée, et dit quand elle déborde", () => {
-    const tight: PlanVehicle = { name: "Frigo", cargoLiters: 1000, refrigeratedLiters: 40 };
+    const tight: PlanVehicle = {
+      name: "Frigo",
+      cargoLiters: 1000,
+      refrigeratedLiters: 40,
+      floor: null,
+    };
 
     const plan = planLoading(
       [stop("o1", 1, [bin("c1", { binType: BAC_FROID }), bin("c2", { binType: BAC_FROID })])],
@@ -149,7 +165,12 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
   });
 
   it("sans caisse réfrigérée, compte les isothermes au sec et le dit", () => {
-    const dry: PlanVehicle = { name: "Trafic", cargoLiters: 1000, refrigeratedLiters: null };
+    const dry: PlanVehicle = {
+      name: "Trafic",
+      cargoLiters: 1000,
+      refrigeratedLiters: null,
+      floor: null,
+    };
 
     const plan = planLoading([stop("o1", 1, [bin("c1", { binType: BAC_FROID })])], dry);
 
@@ -165,7 +186,12 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
   });
 
   it("véhicule sans dimensions : jamais « ça tient », toujours `unknown_cargo`", () => {
-    const unknown: PlanVehicle = { name: "Vélo", cargoLiters: null, refrigeratedLiters: null };
+    const unknown: PlanVehicle = {
+      name: "Vélo",
+      cargoLiters: null,
+      refrigeratedLiters: null,
+      floor: null,
+    };
     const many = Array.from({ length: 40 }, (_, index) => bin(`b${String(index)}`));
 
     const plan = planLoading([stop("o1", 1, many)], unknown);
@@ -193,6 +219,81 @@ describe("le plan de chargement v1 — ordre et volume (lot 4 bis, v2-5)", () =>
 
     expect(plan.stacks).toEqual([]);
     expect(plan.volume).toMatchObject({ dryLiters: 0, coldLiters: 0, dryCapacityLiters: 2500 });
+    expect(plan.warnings).toEqual([]);
+  });
+});
+
+/** Un véhicule sec dont on connaît le plancher : ses litres en dérivent. */
+function measured(lengthCm: number): PlanVehicle {
+  const floor = CargoFloor.of({ lengthCm, widthCm: 100, heightCm: 100, wheelArches: null });
+  return { name: "Trafic", cargoLiters: floor.volumeLiters, refrigeratedLiters: null, floor };
+}
+
+/** Trois bacs M par arrêt : une pile pleine chacun. */
+function fullStops(count: number): readonly PlanStop[] {
+  return Array.from({ length: count }, (_, index) =>
+    stop(
+      `o${String(index + 1)}`,
+      index + 1,
+      [1, 2, 3].map((n) => bin(`b${String(index)}_${String(n)}`)),
+    ),
+  );
+}
+
+describe("le plan de chargement — les piles au sol (G5, G-D4)", () => {
+  it("pose le DERNIER arrêt au fond, le premier près des portes", () => {
+    const plan = planLoading(fullStops(3), measured(130));
+
+    expect(plan.stacks.map((stack) => [stack.stopPositions, stack.placement])).toEqual([
+      [[3], expect.objectContaining({ kind: "floor", row: 1, xCm: 0, yCm: 0 })],
+      [[2], expect.objectContaining({ kind: "floor", row: 1, xCm: 0, yCm: 41 })],
+      [[1], expect.objectContaining({ kind: "floor", row: 2, xCm: 61, yCm: 0 })],
+    ]);
+    expect(plan.floor?.lengthCm).toBe(130);
+    expect(plan.warnings).toEqual([]);
+  });
+
+  it("dit `floor_over` en nommant les arrêts, en PLUS de `dry_over`", () => {
+    const plan = planLoading(fullStops(4), measured(70));
+
+    expect(plan.stacks.map((stack) => stack.placement?.kind)).toEqual([
+      "floor",
+      "floor",
+      "off_floor",
+      "off_floor",
+    ]);
+    expect(plan.warnings.map((warning) => warning.kind)).toEqual(["dry_over", "floor_over"]);
+    expect(plan.warnings[1]?.message).toBe(
+      "2 piles ne tiennent pas au sol de « Trafic » (arrêts 1 et 2) : retirez un arrêt de la tournée ou changez de véhicule.",
+    );
+  });
+
+  it("tient en litres sans tenir en forme : `floor_over` seul", () => {
+    // 3 000 L pour 180 L de bacs, mais un plancher de 50 cm : aucun bac M ne s'y pose.
+    const floor = CargoFloor.of({
+      lengthCm: 50,
+      widthCm: 30,
+      heightCm: 2000 / 10,
+      wheelArches: null,
+    });
+    const vehicle: PlanVehicle = {
+      name: "Vélo",
+      cargoLiters: 3000,
+      refrigeratedLiters: null,
+      floor,
+    };
+
+    const plan = planLoading(fullStops(1), vehicle);
+
+    expect(plan.warnings.map((warning) => warning.kind)).toEqual(["floor_over"]);
+    expect(plan.warnings[0]?.message).toContain("1 pile ne tient pas au sol de « Vélo » (arrêt 1)");
+  });
+
+  it("sans plancher connu, aucune position ni `floor_over`", () => {
+    const plan = planLoading(fullStops(2), ROOMY);
+
+    expect(plan.floor).toBeNull();
+    expect(plan.stacks.map((stack) => stack.placement)).toEqual([null, null]);
     expect(plan.warnings).toEqual([]);
   });
 });

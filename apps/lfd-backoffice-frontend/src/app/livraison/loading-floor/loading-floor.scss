@@ -1,0 +1,71 @@
+.floor-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+.plan {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.floor {
+  fill: var(--fold-color-surface-sunken);
+  stroke: var(--fold-color-border);
+  stroke-width: 1;
+}
+
+.doors {
+  stroke: var(--fold-color-primary);
+  stroke-width: 3;
+}
+
+.arch {
+  fill: var(--fold-color-text-faded);
+}
+
+.stack {
+  fill: var(--fold-color-primary-surface);
+  stroke: var(--fold-color-primary);
+  stroke-width: 1;
+}
+
+.stack-label {
+  fill: var(--fold-color-text);
+  font-weight: var(--fold-weight-bold);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.swatch {
+  display: inline-block;
+  width: var(--fold-space-sm);
+  height: var(--fold-space-sm);
+  border-radius: var(--fold-radius-xs);
+}
+
+.swatch.arch {
+  background: var(--fold-color-text-faded);
+}
+
+.line {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+}

@@ -6,7 +6,11 @@ import {
   type RoundVehicleLoadRow,
 } from "../domain/ports/loading-plan.reader.js";
 import type { PlanBinType } from "../domain/services/loading-plan.js";
-import { cargoOfRow, refrigerationOfRow } from "./delivery-vehicle-load.mapper.js";
+import {
+  cargoOfRow,
+  refrigerationOfRow,
+  wheelArchesOfRow,
+} from "./delivery-vehicle-load.mapper.js";
 
 /** Adaptateur Prisma de la lecture du plan de chargement. N'écrit rien. */
 @Injectable()
@@ -25,6 +29,7 @@ export class PrismaLoadingPlanReader extends LoadingPlanReader {
     }
     return {
       cargo: cargoOfRow(round.vehicle),
+      wheelArches: wheelArchesOfRow(round.vehicle),
       refrigeratedLiters: refrigerationOfRow(round.vehicle)?.volumeLiters ?? null,
     };
   }

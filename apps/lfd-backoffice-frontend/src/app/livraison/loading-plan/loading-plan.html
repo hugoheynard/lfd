@@ -79,6 +79,18 @@
           </div>
 
           @if (plan.stacks.length > 0) {
+            <div class="lp-section" data-plan-floor-section>
+              <fold-element-title variant="caps" title="Plancher" />
+              @if (plan.floor; as floor) {
+                <app-loading-floor [floor]="floor" [stacks]="plan.stacks" />
+              } @else {
+                <p class="lp-line" data-plan-floor-unknown>
+                  Les dimensions de {{ plan.vehicleName }} ne sont pas renseignées : pas de plancher
+                  à dessiner. Les piles ci-dessous restent l’ordre à suivre.
+                </p>
+              }
+            </div>
+
             <div class="lp-section" data-plan-stacks>
               <fold-element-title variant="caps" title="Piles" />
               <div class="lp-stacks">

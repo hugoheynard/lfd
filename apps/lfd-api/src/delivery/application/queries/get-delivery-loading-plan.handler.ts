@@ -6,15 +6,15 @@ import { DeliveryRoundNotFoundError } from "../../domain/errors/delivery-round-e
 import { DeliveryLoadingReader } from "../../domain/ports/delivery-loading.reader.js";
 import { LoadingPlanReader } from "../../domain/ports/loading-plan.reader.js";
 import { planLoading } from "../../domain/services/loading-plan.js";
-import { CargoSpace } from "../../domain/value-objects/cargo-space.js";
+import { CargoFloor } from "../../domain/value-objects/cargo-floor.js";
 import { binContextOf } from "../bin-context.js";
 import { loadingPlanView, planStopsOf } from "../delivery-loading-plan-view.js";
 import { GetDeliveryLoadingPlanQuery } from "./get-delivery-loading-plan.query.js";
 
 /**
  * **Le plan de chargement d'une tournée** (lot 4 bis, L4b-C7, v2-5) : l'ordre
- * de chargement, les piles, le volume sec / froid face au véhicule, et les
- * alertes. Une lecture ; le plan SUGGÈRE l'ordre de scan, il ne l'impose pas.
+ * de chargement, les piles et leur place au sol (G5), le volume sec / froid
+ * face au véhicule, et les alertes. Une lecture ; le plan SUGGÈRE l'ordre de scan, il ne l'impose pas.
  *
  * Une tournée n'existe que composée : sans arrêt ni bac, le plan est vide.
  *
@@ -49,11 +49,14 @@ export class GetDeliveryLoadingPlanHandler implements IQueryHandler<
       ),
       this.plans.binTypes([...new Set(bins.map((bin) => bin.binType.id))]),
     ]);
+    // Le volume et le plancher se dérivent par le value object : une seule formule.
+    const floor =
+      load.cargo === null ? null : CargoFloor.of({ ...load.cargo, wheelArches: load.wheelArches });
     const plan = planLoading(planStopsOf(round, context, binTypes), {
       name: round.vehicleName,
-      // Le volume se dérive par le value object : une seule formule.
-      cargoLiters: load.cargo === null ? null : CargoSpace.of(load.cargo).volumeLiters,
+      cargoLiters: floor?.volumeLiters ?? null,
       refrigeratedLiters: load.refrigeratedLiters,
+      floor,
     });
     return loadingPlanView(round, plan);
   }

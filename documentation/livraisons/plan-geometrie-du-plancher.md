@@ -1,5 +1,15 @@
 # La géométrie du plancher — l'assistant d'achat et le chargement
 
+> 🟢 **G5 bâti le 2026-10-02** (non commité) : `apps/lfd-api/src/delivery/domain/services/floor/place-stacks.ts`
+> (stratégie B), `planLoading` rend la place de chaque pile et l'alerte
+> `floor_over` ; le contrat gagne `floor` et `stacks[].placement` ; l'écran du
+> plan de chargement (dépôt et livreur) dessine le plancher vu de dessus — ce
+> qui avance une partie de **G6**. Six points tranchés par défaut, **à revoir** :
+> [`decisions-par-defaut-2026-10-02.md` § 6](decisions-par-defaut-2026-10-02.md)
+> (jeu 1 cm faute de réglage, pas de pile par-dessus un passage, les piles
+> suivantes sortent avec la première qui ne tient pas, hauteur au plafond non
+> vérifiée).
+
 > 🟡 **État relevé le 2026-10-01** : la brique du plancher et l'assistant
 > d'achat sont **bâtis** (`delivery/domain/services/floor/` :
 > `floor-geometry`, `maximize-format`, `purchase-table`, `purchase-cost` ;
@@ -209,7 +219,7 @@ nouvelles clés (`onVehicle`, comme `cargo` le 2026-09-30).
 | **G3**     | Onglet **« Assistant d'achat »** de l'espace Livraison : la maquette, reliée à l'API, pré-remplie par les véhicules et les types en service                        | `pablo`                           |
 | **G4**     | Passages de roue sur le véhicule : migration additive, écran Véhicules, journal                                                                                    | `batisseur` + `pablo`             |
 | **G2 bis** | Empiler par-dessus les passages de roue (G-D2 bis) : `maximize-format`, contrat, plancher de l'écran                                                               | `batisseur` + `pablo`             |
-| **G5**     | Stratégie B dans `planLoading` : positions des piles, alerte `floor_over`                                                                                          | `batisseur`                       |
+| **G5**     | Stratégie B dans `planLoading` : positions des piles, alerte `floor_over` — **bâti 2026-10-02**, décisions par défaut G5a–G5f                                      | `batisseur`                       |
 | **G6**     | Le plancher vu de dessus sur l'écran du plan de chargement, couleur par arrêt                                                                                      | `pablo`                           |
 
 G1 → G2 → G3 donnent l'assistant **sans migration**, sur des dimensions saisies.

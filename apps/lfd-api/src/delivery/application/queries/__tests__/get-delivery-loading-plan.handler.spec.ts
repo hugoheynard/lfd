@@ -39,6 +39,7 @@ const ORDERS = new FixedDeliveryOrders([deliveryOrder("o1", "R-1"), deliveryOrde
 const VAN: RoundVehicleLoadRow = {
   cargo: { lengthCm: 200, widthCm: 100, heightCm: 100 },
   refrigeratedLiters: 300,
+  wheelArches: null,
 };
 
 function handler(load: RoundVehicleLoadRow | null = VAN): GetDeliveryLoadingPlanHandler {

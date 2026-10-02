@@ -108,8 +108,19 @@ describe("le plan de chargement d'une tournée composée", () => {
         height: 4,
         maxStack: 5,
         stopPositions: [positions[2], positions[0]],
+        // G5 : au fond, contre le flanc gauche, dans la longueur.
+        placement: {
+          kind: "floor",
+          row: 1,
+          xCm: 0,
+          yCm: 0,
+          depthCm: 60,
+          widthCm: 40,
+          orientation: "length",
+        },
       },
     ]);
+    expect(plan.floor).toEqual({ lengthCm: 100, widthCm: 100, wheelArches: null });
     // Quatre bacs physiques de 60 × 40 × 22 cm = 211,2 L, arrondis au-dessus.
     expect(plan.volume).toEqual({
       dryLiters: 212,
@@ -130,8 +141,44 @@ describe("le plan de chargement d'une tournée composée", () => {
 
     expect(plan.order.map((step) => step.bins)).toEqual([[]]);
     expect(plan.stacks).toEqual([]);
+    // Sans dimensions, pas de plancher à dessiner (G5).
+    expect(plan.floor).toBeNull();
     expect(plan.volume).toMatchObject({ dryLiters: 0, dryCapacityLiters: null, dryOver: false });
     expect(plan.warnings.map((warning) => warning.kind)).toEqual(["unknown_cargo"]);
+  });
+
+  it("G5 : une pile qui ne tient pas au sol sort en `floor_over`, même quand les litres suffisent", async () => {
+    const vehicle = await admin(ctx)
+      .post(VEHICLES)
+      .send({
+        name: "Utilitaire étroit",
+        plate: "PL-456-AN",
+        cargo: { lengthCm: 100, widthCm: 50, heightCm: 100 },
+        wheelArches: { lengthCm: 20, protrusionCm: 5, fromBackCm: 70, heightCm: 20 },
+      })
+      .expect(201);
+    const roundId = await openRound(ctx, DAY, jsonBody<CreatedIdResponse>(vehicle).id);
+    const order = await seedDelivery(ctx, DAY);
+    await assign(ctx, DAY, roundId, order.id);
+    // Six bacs M, cinq par pile : deux piles, une seule rangée de 61 cm tient.
+    await declareTypedBins(ctx, { orderId: order.id, whole: 6, half: false, innerBags: 0 });
+    const [position] = (await loadingOf(ctx, roundId)).stops.map((stop) => stop.position);
+
+    const plan = jsonBody<DeliveryLoadingPlanView>(await planOf(roundId).expect(200));
+
+    expect(plan.floor).toEqual({
+      lengthCm: 100,
+      widthCm: 50,
+      wheelArches: { fromBackCm: 70, lengthCm: 20, protrusionCm: 5 },
+    });
+    expect(plan.stacks.map((stack) => stack.placement?.kind)).toEqual(["floor", "off_floor"]);
+    expect(plan.volume.dryOver).toBe(false);
+    expect(plan.warnings).toEqual([
+      {
+        kind: "floor_over",
+        message: `1 pile ne tient pas au sol de « Utilitaire étroit » (arrêt ${String(position)}) : retirez un arrêt de la tournée ou changez de véhicule.`,
+      },
+    ]);
   });
 
   it("une tournée inconnue répond 404", async () => {

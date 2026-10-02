@@ -1,0 +1,73 @@
+<div class="floor-view" data-plan-floor>
+  <svg class="plan" [attr.viewBox]="viewBox()" role="img" [attr.aria-label]="planLabel()">
+    <rect
+      class="floor"
+      [attr.x]="padding"
+      [attr.y]="padding"
+      [attr.width]="floor().lengthCm"
+      [attr.height]="floor().widthCm"
+    />
+    <line
+      class="doors"
+      [attr.x1]="padding + floor().lengthCm"
+      [attr.y1]="padding"
+      [attr.x2]="padding + floor().lengthCm"
+      [attr.y2]="padding + floor().widthCm"
+    />
+    @if (floor().wheelArches; as arches) {
+      <rect
+        class="arch"
+        data-arch
+        [attr.x]="padding + arches.fromBackCm"
+        [attr.y]="padding"
+        [attr.width]="arches.lengthCm"
+        [attr.height]="arches.protrusionCm"
+      />
+      <rect
+        class="arch"
+        data-arch
+        [attr.x]="padding + arches.fromBackCm"
+        [attr.y]="padding + floor().widthCm - arches.protrusionCm"
+        [attr.width]="arches.lengthCm"
+        [attr.height]="arches.protrusionCm"
+      />
+    }
+    @for (shape of shapes(); track shape.stackIndex) {
+      <g data-floor-stack>
+        <title>{{ shape.title }}</title>
+        <rect
+          class="stack"
+          rx="1.5"
+          [attr.x]="padding + shape.x"
+          [attr.y]="padding + shape.y"
+          [attr.width]="shape.depth"
+          [attr.height]="shape.across"
+        />
+        <text
+          class="stack-label"
+          text-anchor="middle"
+          dominant-baseline="central"
+          [attr.x]="padding + shape.x + shape.depth / 2"
+          [attr.y]="padding + shape.y + shape.across / 2"
+          [attr.font-size]="shape.fontSize"
+        >
+          {{ shape.label }}
+        </text>
+      </g>
+    }
+  </svg>
+
+  <ul class="legend">
+    <li>Fond à gauche, portes à droite</li>
+    <li>Le numéro est celui de l’arrêt, de bas en haut de la pile</li>
+    @if (floor().wheelArches !== null) {
+      <li><span class="swatch arch"></span>passage de roue</li>
+    }
+  </ul>
+  @if (offFloor(); as label) {
+    <p class="line" data-floor-off>{{ label }}</p>
+  }
+  @if (refrigerated(); as label) {
+    <p class="line" data-floor-cold>{{ label }}</p>
+  }
+</div>

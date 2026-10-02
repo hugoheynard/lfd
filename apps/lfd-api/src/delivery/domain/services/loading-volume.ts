@@ -1,4 +1,5 @@
 import type { BinHalf } from "../value-objects/bin-declaration.js";
+import type { CargoFloor } from "../value-objects/cargo-floor.js";
 
 /** Centimètres cubes dans un litre. */
 const CM3_PER_LITER = 1000;
@@ -10,6 +11,8 @@ export interface PlanVehicle {
   readonly cargoLiters: number | null;
   /** Volume de la caisse réfrigérée, ou `null` : véhicule sec. */
   readonly refrigeratedLiters: number | null;
+  /** Le plancher, passages de roue compris (G5), ou `null` : dimensions non renseignées. */
+  readonly floor: CargoFloor | null;
 }
 
 /** Un bac PHYSIQUE du plan : son type, et le ou les bacs déclarés qui le composent. */

@@ -1,9 +1,12 @@
 import type { PlanBinType } from "../services/loading-plan.js";
 import type { CargoDimensions } from "../value-objects/cargo-space.js";
+import type { MeasuredWheelArches } from "../value-objects/wheel-arches.js";
 
 /** La charge du véhicule d'une tournée, telle qu'elle est AUJOURD'HUI. */
 export interface RoundVehicleLoadRow {
   readonly cargo: CargoDimensions | null;
+  /** Les passages de roue, ou `null` : un rectangle (jamais posés sans `cargo`). */
+  readonly wheelArches: MeasuredWheelArches | null;
   /** Le volume de la caisse réfrigérée, ou `null` : véhicule sec. */
   readonly refrigeratedLiters: number | null;
 }

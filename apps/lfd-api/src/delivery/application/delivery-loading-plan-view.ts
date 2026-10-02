@@ -1,4 +1,4 @@
-import type { DeliveryLoadingPlanView } from "@lfd/contracts";
+import type { DeliveryLoadingPlanFloorView, DeliveryLoadingPlanView } from "@lfd/contracts";
 
 import type { LoadingRoundRow } from "../domain/ports/delivery-loading.reader.js";
 import type { LoadingPlan, PlanBinType, PlanStop } from "../domain/services/loading-plan.js";
@@ -85,7 +85,9 @@ export function loadingPlanView(
       height: stack.height,
       maxStack: stack.binType.maxStack,
       stopPositions: stack.stopPositions,
+      placement: stack.placement === null ? null : { ...stack.placement },
     })),
+    floor: floorView(plan),
     volume: {
       dryLiters: volume.dryLiters,
       coldLiters: volume.coldLiters,
@@ -95,5 +97,26 @@ export function loadingPlanView(
       coldOver: volume.coldOver,
     },
     warnings: plan.warnings.map((warning) => ({ ...warning })),
+  };
+}
+
+/** Le plancher à dessiner : ses cotes et ses passages (la hauteur ne se dessine pas de dessus). */
+function floorView(plan: LoadingPlan): DeliveryLoadingPlanFloorView | null {
+  const { floor } = plan;
+  if (floor === null) {
+    return null;
+  }
+  const arches = floor.wheelArches;
+  return {
+    lengthCm: floor.lengthCm,
+    widthCm: floor.widthCm,
+    wheelArches:
+      arches === null
+        ? null
+        : {
+            fromBackCm: arches.fromBackCm,
+            lengthCm: arches.lengthCm,
+            protrusionCm: arches.protrusionCm,
+          },
   };
 }

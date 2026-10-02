@@ -48,3 +48,14 @@
 | **PC2** | Poste de colisage : rangé par tournée (dernier arrêt d'abord), « n prêtes sur m », badges retenue et à refaire — **bâti 2026-10-02**, non commité   |
 | **PC3** | Étiquette du bac : tournée et rang d'arrêt en gros — **bâti 2026-10-02**, non commité                                                               |
 | **RL1** | Composer les tournées : une commande rapportée réapparaît, badge « Rapportée le … »                                                                 |
+
+## 6. Les piles au sol — lot G5 ([`plan-geometrie-du-plancher.md`](plan-geometrie-du-plancher.md), G-D4)
+
+| #   | Question                                                           | Décision par défaut                                                                                                                                                    | Bâti                     |
+| --- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| G5a | Le jeu entre bacs du chargement, sans réglage (G-Q2 non bâtie) ?   | **1 cm, la constante `BIN_GAP_DEFAULT_CM`** de l'assistant. Le réglage `delivery_routing_settings` reste à faire ; il remplacera la constante sans changer le contrat. | lot G5 — bâti 2026-10-02 |
+| G5b | Une pile se pose-t-elle par-dessus un passage de roue (G-D2 bis) ? | **Non** : une pile du chargement monte depuis le sol ; une rangée qui touche un passage se centre entre eux. Empiler par-dessus reste propre à l'assistant d'achat.    | lot G5 — bâti 2026-10-02 |
+| G5c | Une pile ne tient pas : les suivantes cherchent-elles un trou ?    | **Non, elles sortent aussi** : chargées après elle, elles seraient devant elle. L'alerte `floor_over` les compte toutes.                                               | lot G5 — bâti 2026-10-02 |
+| G5d | Les isothermes, avec et sans caisse réfrigérée ?                   | **Avec caisse : hors plancher** (placement `refrigerated`, le froid reste en litres, G-Q3). **Sans caisse : au sol**, comme le volume les compte au sec.               | lot G5 — bâti 2026-10-02 |
+| G5e | La hauteur d'une pile contre le plafond ?                          | **Non vérifiée** en G5 : la pile garde `maxStack` (règle v1 inchangée). Une pile trop haute pour le plafond n'alerte pas encore.                                       | rien                     |
+| G5f | Une pile qui ne tient pas dans le sens préféré de la rangée ?      | **L'autre sens est essayé**, d'abord dans la rangée ouverte, puis dans une rangée neuve ; l'ordre de chargement n'est jamais changé.                                   | lot G5 — bâti 2026-10-02 |

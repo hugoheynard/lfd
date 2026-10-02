@@ -31,6 +31,7 @@ import {
   stepHeadline,
   volumeGauges,
 } from '../delivery-loading-plan';
+import { LoadingFloor } from '../loading-floor/loading-floor';
 import { LoadingGateway } from '../loading-gateway';
 
 type PlanState =
@@ -40,8 +41,9 @@ type PlanState =
 
 /**
  * **Le plan de chargement d'une tournée** (`plan-preparation-de-tournee.md`,
- * lot 4 bis, L4b-C7, v2-5) : l'ordre SUGGÉRÉ, les piles, le volume sec et
- * froid, et les alertes du serveur telles quelles.
+ * lot 4 bis, L4b-C7, v2-5) : l'ordre SUGGÉRÉ, les piles et leur place sur le
+ * plancher vu de dessus (G5) quand le véhicule a ses dimensions, le volume sec
+ * et froid, et les alertes du serveur telles quelles.
  *
  * Le plan ne change pas quand on scanne : il se relit quand la tournée change
  * de version (un arrêt ajouté, retiré, déplacé). Ce qui est déjà chargé se
@@ -59,6 +61,7 @@ type PlanState =
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldMeterComponent,
+    LoadingFloor,
   ],
   templateUrl: './loading-plan.html',
   styleUrl: './loading-plan.scss',

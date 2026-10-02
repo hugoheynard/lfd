@@ -122,6 +122,7 @@ describe('le plan de chargement, dit à l’écran', () => {
       height: 3,
       maxStack: 5,
       stopPositions: [6, 5],
+      placement: null,
     };
     expect(stackTitle(stack)).toBe('Pile 1 · Bac M — 3 / 5');
     expect(stackStopsLabel(stack)).toBe('de bas en haut : arrêt 6, arrêt 5');

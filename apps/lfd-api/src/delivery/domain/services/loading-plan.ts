@@ -1,11 +1,14 @@
 import type { BinHalf } from "../value-objects/bin-declaration.js";
+import { BIN_GAP_DEFAULT_CM } from "../value-objects/bin-gap.js";
+import type { CargoFloor } from "../value-objects/cargo-floor.js";
+import { placeStacks, type StackPlacement } from "./floor/place-stacks.js";
 import {
   type LoadingVolume,
   loadingVolumeOf,
   type PlanUnit,
   type PlanVehicle,
 } from "./loading-volume.js";
-import { type LoadingWarning, loadingWarningsOf } from "./loading-warnings.js";
+import { floorOverWarning, type LoadingWarning, loadingWarningsOf } from "./loading-warnings.js";
 
 /** Un type de bac, tel que le plan le lit : sa forme EXTÉRIEURE et sa pile. */
 export interface PlanBinType {
@@ -58,11 +61,15 @@ export interface LoadingStack {
   readonly binType: PlanBinType;
   readonly height: number;
   readonly stopPositions: readonly number[];
+  /** Où poser la pile (G5), ou `null` : le plancher du véhicule est inconnu. */
+  readonly placement: StackPlacement | null;
 }
 
 export interface LoadingPlan {
   readonly steps: readonly LoadingStep[];
   readonly stacks: readonly LoadingStack[];
+  /** Le plancher sur lequel les piles sont posées, ou `null`. */
+  readonly floor: CargoFloor | null;
   readonly volume: LoadingVolume;
   readonly warnings: readonly LoadingWarning[];
 }
@@ -75,8 +82,9 @@ interface Placed {
 }
 
 /**
- * **Le plan de chargement v1** (lot 4 bis, L4b-C7, v2-5) — pur : ORDRE et
- * VOLUME, aucune géométrie.
+ * **Le plan de chargement** (lot 4 bis, L4b-C7, v2-5, G5) — pur : ORDRE,
+ * VOLUME, et la place de chaque pile sur le plancher (stratégie B, G-D4) quand
+ * le véhicule a ses dimensions.
  *
  * - L'ordre de chargement est l'inverse de la tournée : le dernier arrêt
  *   d'abord, au fond.
@@ -107,12 +115,44 @@ export function planLoading(stops: readonly PlanStop[], vehicle: PlanVehicle): L
   }
   const units = stacker.units();
   const volume = loadingVolumeOf(units, vehicle);
+  const stacks = placedStacks(stacker.stacks(), vehicle);
+  const offFloor = stacks.filter((stack) => stack.placement?.kind === "off_floor");
+  const floorOver = floorOverWarning(vehicle, offFloor.length, [
+    ...new Set(offFloor.flatMap((stack) => stack.stopPositions)),
+  ]);
   return {
     steps,
-    stacks: stacker.stacks(),
+    stacks,
+    floor: vehicle.floor,
     volume,
-    warnings: loadingWarningsOf(units, vehicle, volume),
+    warnings: [
+      ...loadingWarningsOf(units, vehicle, volume),
+      ...(floorOver === null ? [] : [floorOver]),
+    ],
   };
+}
+
+/**
+ * Les piles, chacune à sa place sur le plancher (G-D4) — dans l'ordre
+ * d'ouverture, qui est celui du chargement. Le jeu est celui du plan par
+ * défaut : aucun réglage ne le porte encore (G-Q2, décision par défaut du
+ * 2026-10-02).
+ */
+function placedStacks(
+  stacks: readonly Omit<LoadingStack, "placement">[],
+  vehicle: PlanVehicle,
+): readonly LoadingStack[] {
+  const { floor } = vehicle;
+  if (floor === null) {
+    return stacks.map((stack) => ({ ...stack, placement: null }));
+  }
+  const placements = placeStacks(
+    floor,
+    stacks.map((stack) => ({ stackIndex: stack.stackIndex, ...stack.binType })),
+    BIN_GAP_DEFAULT_CM,
+    vehicle.refrigeratedLiters !== null,
+  );
+  return stacks.map((stack) => ({ ...stack, placement: placements.get(stack.stackIndex) ?? null }));
 }
 
 /** À quel rang de passage chaque bac est chargé. */
@@ -191,7 +231,7 @@ class Stacker {
     return stack;
   }
 
-  stacks(): readonly LoadingStack[] {
+  stacks(): readonly Omit<LoadingStack, "placement">[] {
     return this.all.map((stack) => ({
       stackIndex: stack.stackIndex,
       binType: stack.binType,

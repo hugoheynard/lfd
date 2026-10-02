@@ -1,9 +1,9 @@
 import type { DeliveryBinHalf } from "./delivery-loading.js";
 
 /**
- * **Le plan de chargement v1** — un plan d'ORDRE et de VOLUME, pas une
- * géométrie (`documentation/livraisons/plan-preparation-de-tournee.md`,
- * lot 4 bis, L4b-C7 et v2-5, tranche D).
+ * **Le plan de chargement** — un plan d'ORDRE et de VOLUME, et depuis G5 la
+ * place des piles au sol (`documentation/livraisons/plan-preparation-de-tournee.md`,
+ * lot 4 bis, L4b-C7 et v2-5, tranche D ; `plan-geometrie-du-plancher.md`, G-D4).
  *
  * `GET admin/livraison/chargement/:roundId/plan` → {@link DeliveryLoadingPlanView},
  * sous `delivery_loading:read` — le droit des autres lectures du chargement.
@@ -62,6 +62,47 @@ export interface DeliveryLoadingPlanStackView {
   readonly maxStack: number;
   /** Les positions d'arrêt présentes, du bas vers le haut, sans doublon. */
   readonly stopPositions: readonly number[];
+  /**
+   * Où poser la pile (G5, stratégie B), ou `null` : le plancher du véhicule
+   * est inconnu ({@link DeliveryLoadingPlanView.floor} vaut alors `null`).
+   */
+  readonly placement: DeliveryLoadingPlanPlacementView | null;
+}
+
+/**
+ * La pile posée au sol. Repère : `x` depuis le FOND (la cloison), `y` depuis
+ * le flanc gauche vu des portes arrière ; empreinte EXTÉRIEURE, sans le jeu.
+ */
+export interface DeliveryLoadingPlanFloorPlacementView {
+  readonly kind: "floor";
+  /** 1..n, depuis le fond. */
+  readonly row: number;
+  readonly xCm: number;
+  readonly yCm: number;
+  readonly depthCm: number;
+  readonly widthCm: number;
+  readonly orientation: "length" | "turned";
+}
+
+/**
+ * Au sol, dans la caisse réfrigérée (le froid reste en litres, sans position),
+ * ou hors plancher — l'alerte `floor_over`.
+ */
+export type DeliveryLoadingPlanPlacementView =
+  | DeliveryLoadingPlanFloorPlacementView
+  | { readonly kind: "refrigerated" }
+  | { readonly kind: "off_floor" };
+
+/** Le plancher vu de dessus : ce qu'il faut pour le dessiner. */
+export interface DeliveryLoadingPlanFloorView {
+  readonly lengthCm: number;
+  readonly widthCm: number;
+  /** Une paire symétrique, ou `null` : un rectangle. */
+  readonly wheelArches: {
+    readonly fromBackCm: number;
+    readonly lengthCm: number;
+    readonly protrusionCm: number;
+  } | null;
 }
 
 /**
@@ -80,8 +121,14 @@ export interface DeliveryLoadingPlanVolumeView {
   readonly coldOver: boolean;
 }
 
+/** `floor_over` (G5) : des piles ne tiennent pas au sol ; s'ajoute à `dry_over`. */
 export type DeliveryLoadingPlanWarningKind =
-  "dry_over" | "cold_over" | "cold_bins_without_refrigeration" | "unknown_cargo" | "bin_to_redo";
+  | "dry_over"
+  | "cold_over"
+  | "cold_bins_without_refrigeration"
+  | "unknown_cargo"
+  | "bin_to_redo"
+  | "floor_over";
 
 export interface DeliveryLoadingPlanWarningView {
   readonly kind: DeliveryLoadingPlanWarningKind;
@@ -95,6 +142,8 @@ export interface DeliveryLoadingPlanView {
   readonly vehicleName: string;
   readonly order: readonly DeliveryLoadingPlanStepView[];
   readonly stacks: readonly DeliveryLoadingPlanStackView[];
+  /** Le plancher du véhicule (G5), ou `null` : dimensions non renseignées. */
+  readonly floor: DeliveryLoadingPlanFloorView | null;
   readonly volume: DeliveryLoadingPlanVolumeView;
   readonly warnings: readonly DeliveryLoadingPlanWarningView[];
 }

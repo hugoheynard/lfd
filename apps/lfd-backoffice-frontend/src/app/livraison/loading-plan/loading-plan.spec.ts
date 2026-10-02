@@ -79,9 +79,24 @@ const PLAN: DeliveryLoadingPlanView = {
     },
   ],
   stacks: [
-    { stackIndex: 1, binTypeName: 'Bac M', height: 1, maxStack: 5, stopPositions: [6] },
-    { stackIndex: 2, binTypeName: 'Bac iso', height: 1, maxStack: 4, stopPositions: [5] },
+    {
+      stackIndex: 1,
+      binTypeName: 'Bac M',
+      height: 1,
+      maxStack: 5,
+      stopPositions: [6],
+      placement: null,
+    },
+    {
+      stackIndex: 2,
+      binTypeName: 'Bac iso',
+      height: 1,
+      maxStack: 4,
+      stopPositions: [5],
+      placement: null,
+    },
   ],
+  floor: null,
   volume: {
     dryLiters: 60,
     coldLiters: 30,
@@ -138,6 +153,41 @@ describe('LoadingPlan', () => {
       'Le volume utile de Kangoo est inconnu.',
     );
     expect(element.querySelectorAll('[data-plan-stack]')).toHaveLength(2);
+  });
+
+  it('sans dimensions, dit qu’il n’y a pas de plancher et garde les piles', async () => {
+    const element = await boot(() => Promise.resolve(PLAN));
+    expect(element.querySelector('[data-plan-floor]')).toBeNull();
+    expect(element.querySelector('[data-plan-floor-unknown]')?.textContent).toContain(
+      'Les dimensions de Kangoo ne sont pas renseignées',
+    );
+    expect(element.querySelectorAll('[data-plan-stack]')).toHaveLength(2);
+  });
+
+  it('dessine le plancher vu de dessus quand le serveur le rend (G5)', async () => {
+    const measured: DeliveryLoadingPlanView = {
+      ...PLAN,
+      floor: { lengthCm: 200, widthCm: 120, wheelArches: null },
+      stacks: PLAN.stacks.map((stack, index) => ({
+        ...stack,
+        placement:
+          index === 0
+            ? {
+                kind: 'floor',
+                row: 1,
+                xCm: 0,
+                yCm: 0,
+                depthCm: 60,
+                widthCm: 40,
+                orientation: 'length',
+              }
+            : { kind: 'refrigerated' },
+      })),
+    };
+    const element = await boot(() => Promise.resolve(measured));
+    expect(element.querySelector('[data-plan-floor-unknown]')).toBeNull();
+    expect(element.querySelectorAll('[data-floor-stack]')).toHaveLength(1);
+    expect(element.querySelector('[data-floor-cold]')?.textContent).toContain('pile 2 (arrêt 5)');
   });
 
   it('dit un plan illisible par l’état d’erreur fold', async () => {

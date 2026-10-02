@@ -1,7 +1,12 @@
 import type { LoadingVolume, PlanUnit, PlanVehicle } from "./loading-volume.js";
 
 export type LoadingWarningKind =
-  "dry_over" | "cold_over" | "cold_bins_without_refrigeration" | "unknown_cargo" | "bin_to_redo";
+  | "dry_over"
+  | "cold_over"
+  | "cold_bins_without_refrigeration"
+  | "unknown_cargo"
+  | "bin_to_redo"
+  | "floor_over";
 
 /** Une alerte du plan : son genre, et la phrase lue au dépôt. */
 export interface LoadingWarning {
@@ -64,4 +69,39 @@ function redoWarnings(units: readonly PlanUnit[]): readonly LoadingWarning[] {
       },
     ];
   });
+}
+
+/**
+ * `floor_over` (G-D4) : des piles ne trouvent pas de place au sol. S'AJOUTE à
+ * `dry_over` — on peut tenir en litres sans tenir en forme, et l'inverse.
+ *
+ * @param stopPositions les arrêts des piles hors plancher, sans doublon.
+ */
+export function floorOverWarning(
+  vehicle: PlanVehicle,
+  offFloorStacks: number,
+  stopPositions: readonly number[],
+): LoadingWarning | null {
+  if (offFloorStacks === 0) {
+    return null;
+  }
+  const named = stopsLabel([...stopPositions].sort((a, b) => a - b));
+  const piles =
+    offFloorStacks === 1 ? "1 pile ne tient pas" : `${offFloorStacks} piles ne tiennent pas`;
+  return {
+    kind: "floor_over",
+    message: `${piles} au sol de « ${vehicle.name} »${named} : retirez un arrêt de la tournée ou changez de véhicule.`,
+  };
+}
+
+/** « (arrêt 5) », « (arrêts 4, 5 et 6) », ou rien. */
+function stopsLabel(sorted: readonly number[]): string {
+  const last = sorted[sorted.length - 1];
+  if (last === undefined) {
+    return "";
+  }
+  if (sorted.length === 1) {
+    return ` (arrêt ${last})`;
+  }
+  return ` (arrêts ${sorted.slice(0, -1).join(", ")} et ${last})`;
 }
