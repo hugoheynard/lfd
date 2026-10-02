@@ -201,8 +201,8 @@ export class App {
       this.permissions.can('delivery_loading:read') ||
       this.permissions.can('delivery_settings:read') ||
       this.permissions.can('delivery_driving:read') ||
-      // « À décider » (plan-a-la-porte.md, B3) : le commercial y répond.
-      this.permissions.can('b2b_companies:write'),
+      // « À décider » (plan-a-la-porte.md, B3) : qui décide à la porte y répond.
+      this.permissions.can('delivery_decisions:write'),
   );
 
   /**
@@ -230,6 +230,13 @@ export class App {
 
   /** Le PIM — même droit que le catalogue, puisque c'est le catalogue. */
   protected readonly canSeePim = computed(() => this.permissions.can('pim_catalog:read'));
+
+  /**
+   * La Médiathèque — son droit à elle, celui que le serveur oppose
+   * (`@AdminSurface("media_library")`). Elle a quitté le référentiel le
+   * 2026-09-23 ; l'entrée suivait encore `pim_catalog` jusqu'au 2026-10-02.
+   */
+  protected readonly canSeeMedia = computed(() => this.permissions.can('media_library:read'));
 
   /**
    * **Outils agent** — l'ÉCRITURE du catalogue, pas sa lecture, et c'est la

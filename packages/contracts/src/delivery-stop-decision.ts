@@ -15,20 +15,27 @@ import type { StaffPermission } from "./staff-access.js";
  * - `bring_back` — « Rapporter » : l'arrêt se CLÔT « rapporté » (LB-Q2) ; la
  *   commande reste prête, non livrée, et peut repartir dans une autre tournée.
  *
- * Routes (`admin/livraison/a-decider…`, sous `b2b_companies:write` — le droit
- * des commerciaux, lecture comprise) :
+ * Routes (`admin/livraison/a-decider…`, sous `delivery_decisions` — `read`
+ * pour les `GET`, `write` pour répondre ; `b2b_companies:write` jusqu'au
+ * 2026-10-02) :
  * - `GET` → {@link PendingStopDecisionsView} ;
  * - `POST /:stopId/autoriser-depot` → 204 ;
  * - `POST /:stopId/rapporter` → 204.
  */
 
 /**
- * **Le droit de décider** — celui des commerciaux (et de l'admin) au
- * 2026-10-01 dans la graine (`ROLE_GRANTS`) et la feuille de réglage
- * (`tableau-droits-livraison.md`, § 2) : il garde la liste, les deux réponses,
- * et c'est l'AUDIENCE de la notification « arrêt à décider » (B5).
+ * **Le droit de décider** — `delivery_decisions:write`, sorti de
+ * `b2b_companies:write` le 2026-10-02 (lot « correctifs de droits »). Il
+ * ouvre les deux réponses, l'écran « À décider », et c'est l'AUDIENCE de la
+ * notification « arrêt à décider » (B5).
+ *
+ * L'audience est l'ÉCRITURE et non la lecture : la notification dit « un
+ * livreur attend votre réponse ». La pousser à qui ne peut que lire, c'est
+ * réveiller quelqu'un pour un geste qu'il n'a pas le droit de faire — et
+ * laisser croire à qui peut répondre qu'un autre s'en occupe.
  */
-export const STOP_DECISION_PERMISSION = "b2b_companies:write" as const satisfies StaffPermission;
+export const STOP_DECISION_PERMISSION =
+  "delivery_decisions:write" as const satisfies StaffPermission;
 
 /** Les deux réponses du commercial. */
 export const STOP_DECISION_OUTCOMES = ["authorize_deposit", "bring_back"] as const;

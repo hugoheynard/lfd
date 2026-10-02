@@ -10,7 +10,7 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import { routes } from '../app.routes';
-import type { PermissionGuard } from '../auth/permission.guard';
+import type { AnyPermissionGuard, PermissionGuard } from '../auth/permission.guard';
 import { PermissionsStore } from '../auth/permissions.store';
 import { PimCapabilitiesStore } from '../pim/capabilities/pim-capabilities.store';
 import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
@@ -57,15 +57,18 @@ function isPermissionGuard(guard: unknown): guard is PermissionGuard {
   return typeof guard === 'function' && 'permission' in guard;
 }
 
+/** Un garde simple ou « l'un ou l'autre » : `opens` les joue tous les deux. */
+function isAnyGuard(guard: unknown): guard is PermissionGuard | AnyPermissionGuard {
+  return isPermissionGuard(guard) || (typeof guard === 'function' && 'anyOf' in guard);
+}
+
 /** Joue les gardes de la coquille PUIS de la vue : vrai si tous laissent passer. */
 async function opens(role: StaffRole | typeof LIVREUR, path: string): Promise<boolean> {
   configure(role);
   const shell = routes.find((route) => route.path === 'livraison');
   const view = shell?.children?.find((child) => child.path === path);
   expect(view).toBeDefined();
-  const guards = [...(shell?.canActivate ?? []), ...(view?.canActivate ?? [])].filter(
-    isPermissionGuard,
-  );
+  const guards = [...(shell?.canActivate ?? []), ...(view?.canActivate ?? [])].filter(isAnyGuard);
   const state = TestBed.inject(Router).routerState.snapshot;
   const injector = TestBed.inject(Injector);
   for (const guard of guards) {
@@ -118,7 +121,17 @@ describe("l'espace Livraison", () => {
     expect(await opens('support', 'vehicules')).toBe(false);
     expect(await opens('support', 'tournees')).toBe(false);
     expect(await opens('support', 'chargement')).toBe(false);
-    expect(await opens('support', 'bac/:binId')).toBe(false);
+  });
+
+  /**
+   * La fiche d'un bac se LIT sous le colisage OU le chargement (2026-10-02) :
+   * le support, qui lit le colisage, l'ouvre — sans rien y pouvoir faire, les
+   * gestes restent en écriture. Elle disait l'inverse avant que la lecture
+   * serveur ne demande plus l'écriture.
+   */
+  it('ouvre la fiche d’un bac à qui lit le colisage, sans le chargement', async () => {
+    expect(await opens('support', 'bac/:binId')).toBe(true);
+    expect(await opens('dev', 'bac/:binId')).toBe(false);
   });
 
   it('ne montre ni n’ouvre le chargement au commercial (Q21 : admin et comptoir)', async () => {

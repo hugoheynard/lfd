@@ -2,8 +2,9 @@
  * E2E **les notifications adressées par droit** (`documentation/livraisons/plan-a-la-porte.md`,
  * B5, LB-Q3 ; mécanique de `plan-tournee-prete.md`, PL5-D1/D2).
  *
- * Le fait réel : un signalement « personne » prévient les commerciaux
- * (`b2b_companies:write`), APRÈS la validation. Ce que seule cette suite
+ * Le fait réel : un signalement « personne » prévient qui peut décider
+ * (`delivery_decisions:write` — `b2b_companies:write` jusqu'au 2026-10-02),
+ * APRÈS la validation. Ce que seule cette suite
  * prouve, sur la vraie base et le vrai guard :
  * - la commerciale la voit dans « mes notifications » ; le livreur et la
  *   comptable, non ;
@@ -107,7 +108,7 @@ async function decisionRung() {
   return { paul, lea, ines };
 }
 
-describe("« Arrêt à décider » — adressée aux commerciaux (B5)", () => {
+describe("« Arrêt à décider » — adressée à qui décide à la porte (B5)", () => {
   it("🔴 la commerciale la voit ; le livreur et la comptable ne la voient pas", async () => {
     const { paul, lea, ines } = await decisionRung();
 
@@ -122,8 +123,44 @@ describe("« Arrêt à décider » — adressée aux commerciaux (B5)", () => {
     const rows = await ctx.prisma.staffNotification.findMany({
       select: { audience: true, idempotencyKey: true },
     });
-    expect(rows.map((row) => row.audience)).toEqual(["b2b_companies:write"]);
+    expect(rows.map((row) => row.audience)).toEqual(["delivery_decisions:write"]);
     expect(rows[0]?.idempotencyKey).toMatch(/^delivery\.stop_decision:/u);
+  });
+
+  /**
+   * 2026-10-02 : l'audience a quitté `b2b_companies:write`. Gérer les comptes
+   * ne suffit plus ; LIRE « À décider » non plus — la notice demande une
+   * réponse, elle ne va qu'à qui peut la donner.
+   */
+  it("🔴 elle va à qui tient « Décider à la porte » en écriture — ni aux comptes seuls, ni à la lecture seule", async () => {
+    const admin = ctx.asSub(E2E_STAFF_SUB);
+    for (const role of [
+      {
+        key: "decideur",
+        label: "Décideur",
+        grants: [{ resource: "delivery_decisions", action: "write" }],
+      },
+      {
+        key: "lecteur-porte",
+        label: "Lecteur",
+        grants: [{ resource: "delivery_decisions", action: "read" }],
+      },
+      {
+        key: "comptes-seuls",
+        label: "Comptes",
+        grants: [{ resource: "b2b_companies", action: "write" }],
+      },
+    ]) {
+      await admin.post("/admin/staff-roles").send(role).expect(201);
+    }
+    const decider = await staffWithRole(ctx, "decideur-zoe", "decideur");
+    const reader = await staffWithRole(ctx, "lecteur-max", "lecteur-porte");
+    const accounts = await staffWithRole(ctx, "comptes-ana", "comptes-seuls");
+    await decisionRung();
+
+    expect((await summary(decider.agent, MINE)).unread).toBe(1);
+    expect(await summary(reader.agent, MINE)).toEqual({ unread: 0, notifications: [] });
+    expect(await summary(accounts.agent, MINE)).toEqual({ unread: 0, notifications: [] });
   });
 
   it("🔴 le fil PARTAGÉ l'exclut : liste, compteur, et marquage par son id", async () => {

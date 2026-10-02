@@ -16,6 +16,7 @@ import {
   type DayVersionQuery,
   dayVersionQuerySchema,
   type DayVersionView,
+  DELIVERY_PROOF_PERMISSION,
 } from "@lfd/contracts";
 import {
   Body,
@@ -191,10 +192,14 @@ export class AdminOrdersController {
 
   /**
    * **La preuve de livraison** — remise en main propre ou dépôt à la porte —,
-   * pour répondre à une contestation. Sous `b2b_orders:read` : c'est la fiche
-   * de la commande qui la montre. `proof: null` : pas remise à la porte.
+   * pour répondre à une contestation. `proof: null` : pas remise à la porte.
+   *
+   * Sous `delivery_proofs:read`, SEUL, depuis le 2026-10-02 (lot « correctifs
+   * de droits ») — `b2b_orders:read` avant : voir une commande n'est pas voir
+   * la porte d'un client ni sa signature. Les deux pièces suivent.
    */
   @Get(":id/preuve-livraison")
+  @RequirePermission(DELIVERY_PROOF_PERMISSION)
   handoverProof(@Param("id") id: string): Promise<OrderHandoverProofResponse> {
     return this.queries.execute<GetOrderHandoverProofQuery, OrderHandoverProofResponse>(
       new GetOrderHandoverProofQuery(id),
@@ -206,6 +211,7 @@ export class AdminOrdersController {
    * par une clé reçue d'ici : une autre commande, ou aucune, rend 404.
    */
   @Get(":id/preuve-livraison/photo")
+  @RequirePermission(DELIVERY_PROOF_PERMISSION)
   handoverProofPhoto(
     @Param("id") id: string,
     @Res({ passthrough: true }) response: Response,
@@ -215,6 +221,7 @@ export class AdminOrdersController {
 
   /** La signature au doigt, quand la remise en porte une. */
   @Get(":id/preuve-livraison/signature")
+  @RequirePermission(DELIVERY_PROOF_PERMISSION)
   handoverProofSignature(
     @Param("id") id: string,
     @Res({ passthrough: true }) response: Response,

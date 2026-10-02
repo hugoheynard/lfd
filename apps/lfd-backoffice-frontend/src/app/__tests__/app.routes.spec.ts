@@ -3,7 +3,7 @@ import type { StaffPermission } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { routes } from '../app.routes';
-import type { PermissionGuard } from '../auth/permission.guard';
+import type { AnyPermissionGuard, PermissionGuard } from '../auth/permission.guard';
 
 /**
  * **Quel droit ouvre quel écran** — la table entière, écrite une fois.
@@ -29,7 +29,12 @@ const OPEN = 'open';
  * écran ouvert exprès s'écrivent pareil, et le test qui traque les orphelins ne
  * peut plus rien dire.
  */
-type ScreenAccess = StaffPermission | readonly StaffPermission[] | null | typeof OPEN;
+type ScreenAccess = StaffPermission | readonly StaffPermission[] | AnyOf | null | typeof OPEN;
+
+/** « L'un OU l'autre » — un `anyPermissionGuard`, à distinguer de deux gardes cumulés. */
+interface AnyOf {
+  readonly anyOf: readonly StaffPermission[];
+}
 
 const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // CONTENU PLATEFORME — sous le B2B, dont il partage le contexte et le droit.
@@ -147,12 +152,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'b2b/reglages/livraison': null,
   'b2b/reglages/heures-limites': null,
 
-  // **Médiathèque** — hors de `pim/`, et gardée au MÊME droit que lui : c'est
-  // le mur que la route serveur oppose (`@AdminSurface("pim_catalog")`). Le
-  // fonds d'images n'appartient à aucun référentiel, mais il n'a pas encore de
-  // ressource à lui — le jour où il en aura une, cette ligne changera, et c'est
-  // ici qu'on s'en apercevra.
-  mediatheque: 'pim_catalog:read',
+  // **Médiathèque** — hors de `pim/`, derrière SA ressource : le mur que la
+  // route serveur oppose (`@AdminSurface("media_library")`). Elle a eu la
+  // sienne le 2026-09-23 ; cette ligne a suivi le 2026-10-02.
+  mediatheque: 'media_library:read',
 
   // **Vitrine** — hors de l'espace B2B, derrière SA ressource : sous `b2b`, le
   // mur `b2b_settings` l'aurait fermée à la communication, qui la compose
@@ -238,15 +241,17 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'livraison/ma-tournee': 'delivery_driving:read',
   'livraison/tournees': 'delivery_rounds:read',
   'livraison/non-remis': 'delivery_rounds:read',
-  // « À décider » (plan-a-la-porte.md, B3) : le droit des commerciaux, pas des tournées.
-  'livraison/a-decider': 'b2b_companies:write',
+  // « À décider » (plan-a-la-porte.md, B3) : le droit de décider, pas celui des
+  // tournées ni des comptes (2026-10-02).
+  'livraison/a-decider': 'delivery_decisions:write',
   'livraison/simulateur': 'delivery_rounds:read',
   'livraison/assistant-achat': 'delivery_rounds:read',
   // Le chargement (lot 4) : ouvrir un bac, une tournée, des étiquettes est une
   // LECTURE ; les gestes demandent l'écriture, que l'écran seul propose.
   'livraison/chargement': 'delivery_loading:read',
   'livraison/chargement/:roundId': 'delivery_loading:read',
-  'livraison/bac/:binId': 'delivery_loading:read',
+  // La fiche d'un bac se lit sous le colisage OU le chargement (2026-10-02).
+  'livraison/bac/:binId': { anyOf: ['production_packing:read', 'delivery_loading:read'] },
   'livraison/etiquettes/:orderId': 'delivery_loading:read',
   'livraison/vehicules': 'delivery_settings:read',
   'livraison/bacs': 'delivery_settings:read',
@@ -319,22 +324,43 @@ function carriesPermission(guard: unknown): guard is PermissionGuard {
   return typeof guard === 'function' && 'permission' in guard;
 }
 
+function carriesAnyOf(guard: unknown): guard is AnyPermissionGuard {
+  return typeof guard === 'function' && 'anyOf' in guard;
+}
+
 /**
  * Les permissions déclarées par cette route, TOUTES, ou `null` si elle n'en
  * déclare pas. Toutes et non la première : la commande pro du comptoir porte
  * deux gardes, et n'en lire qu'un laissait le second changer sans rien rougir.
  */
-function declaredPermission(route: Route): readonly StaffPermission[] | null {
-  const permissions = (route.canActivate ?? []).filter(carriesPermission).map((g) => g.permission);
+function declaredPermission(route: Route): readonly (StaffPermission | AnyOf)[] | null {
+  const permissions = (route.canActivate ?? []).flatMap(
+    (g: unknown): (StaffPermission | AnyOf)[] => {
+      if (carriesPermission(g)) {
+        return [g.permission];
+      }
+      return carriesAnyOf(g) ? [{ anyOf: g.anyOf }] : [];
+    },
+  );
   return permissions.length === 0 ? null : permissions;
 }
 
+function keyOf(access: StaffPermission | AnyOf): string {
+  return typeof access === 'string' ? access : access.anyOf.join(' | ');
+}
+
 /** Une forme comparable d'un accès : `null`, ou les permissions dans l'ordre. */
-function accessKey(access: ScreenAccess): string | null {
+function accessKey(access: ScreenAccess | readonly (StaffPermission | AnyOf)[]): string | null {
   if (access === null || access === OPEN) {
     return null;
   }
-  return typeof access === 'string' ? access : access.join(' + ');
+  return isList(access) ? access.map(keyOf).join(' + ') : keyOf(access);
+}
+
+function isList(
+  access: StaffPermission | AnyOf | readonly (StaffPermission | AnyOf)[],
+): access is readonly (StaffPermission | AnyOf)[] {
+  return Array.isArray(access);
 }
 
 describe("l'arbre de routes du back-office", () => {

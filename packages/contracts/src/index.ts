@@ -735,6 +735,7 @@ export type {
   OrderHandoverProofResponse,
   OrderHandoverProofView,
 } from "./order-handover-proof.js";
+export { DELIVERY_PROOF_PERMISSION } from "./order-handover-proof.js";
 export type {
   DeliveryRunSheetAddressBookView,
   DeliveryRunSheetStepView,

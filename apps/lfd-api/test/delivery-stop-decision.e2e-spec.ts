@@ -4,7 +4,8 @@
  *
  * Ce que seule cette suite prouve, sur la vraie base :
  * - un signalement « personne » OUVRE une décision, que la liste « À décider »
- *   montre au commercial — et à lui seul ;
+ *   montre à qui tient « Décider à la porte » (`delivery_decisions`, sorti de
+ *   `b2b_companies` le 2026-10-02) — et à lui seul ;
  * - « Autoriser » ouvre « Déposé avec preuve » MÊME signature exigée (LB-Q5),
  *   sans faire bouger la version que présente le livreur ;
  * - « Rapporter » CLÔT l'arrêt sans livrer : la commande sort de l'index des
@@ -221,6 +222,48 @@ describe("« À décider » — le commercial décide (B3)", () => {
     expect(
       await ctx.prisma.deliveryStopDecision.findUniqueOrThrow({ where: { stopId } }),
     ).toMatchObject({ outcome: null });
+  });
+
+  /**
+   * 2026-10-02 : « À décider » a quitté `b2b_companies:write`. Gérer les
+   * comptes n'ouvre plus rien ici ; la lecture voit la liste et la photo,
+   * l'écriture seule répond.
+   */
+  it("🔴 le droit est « Décider à la porte » : comptes seuls → 403 ; lecture → la liste sans réponse ; écriture → décide", async () => {
+    const { paul, roundId, stopId } = await scene();
+    const admin = ctx.asSub(E2E_STAFF_SUB);
+    for (const role of [
+      {
+        key: "decideur",
+        label: "Décideur",
+        grants: [{ resource: "delivery_decisions", action: "write" }],
+      },
+      {
+        key: "lecteur-porte",
+        label: "Lecteur",
+        grants: [{ resource: "delivery_decisions", action: "read" }],
+      },
+      {
+        key: "comptes-seuls",
+        label: "Comptes",
+        grants: [{ resource: "b2b_companies", action: "write" }],
+      },
+    ]) {
+      await admin.post("/admin/staff-roles").send(role).expect(201);
+    }
+    const decider = await staffWithRole(ctx, "decideur-zoe", "decideur");
+    const reader = await staffWithRole(ctx, "lecteur-max", "lecteur-porte");
+    const accounts = await staffWithRole(ctx, "comptes-ana", "comptes-seuls");
+    await reportNobody(paul.agent, roundId, stopId);
+
+    await accounts.agent.get(DECIDE).expect(403);
+    await accounts.agent.post(`${DECIDE}/${stopId}/rapporter`).expect(403);
+    expect((await pending(reader.agent)).decisions).toHaveLength(1);
+    await reader.agent.post(`${DECIDE}/${stopId}/rapporter`).expect(403);
+    await decider.agent.post(`${DECIDE}/${stopId}/rapporter`).expect(204);
+    expect(
+      await ctx.prisma.deliveryStopDecision.findUniqueOrThrow({ where: { stopId } }),
+    ).toMatchObject({ outcome: "bring_back" });
   });
 
   it("un arrêt sans signalement n'a pas de décision : 404 nommé", async () => {

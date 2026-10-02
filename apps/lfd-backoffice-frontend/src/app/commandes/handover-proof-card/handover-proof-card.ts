@@ -10,7 +10,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { OrderHandoverProofView } from '@lfd/contracts';
+import { DELIVERY_PROOF_PERMISSION, type OrderHandoverProofView } from '@lfd/contracts';
 import {
   FoldCalloutComponent,
   FoldCardComponent,
@@ -20,6 +20,7 @@ import {
   FoldLoadingStateComponent,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminOrdersService } from '../orders.service';
 
 type CardState =
@@ -44,6 +45,10 @@ const NO_IMAGES: ProofImages = { photo: null, signature: null, failed: false };
  * Rien n'est rendu quand la commande n'a pas été remise à la porte : la
  * carte n'existe que si elle a quelque chose à dire. Les images sont lues en
  * blob (la route porte le jeton) puis rendues à la destruction.
+ *
+ * Sous `delivery_proofs:read` (2026-10-02) : sans ce droit, la carte ne rend
+ * rien et n'appelle rien — le serveur refuserait, et une carte en erreur sur
+ * chaque commande ressemblerait à une panne.
  */
 @Component({
   selector: 'app-handover-proof-card',
@@ -64,6 +69,7 @@ export class HandoverProofCard {
   readonly orderId = input.required<string>();
 
   private readonly api = inject(AdminOrdersService);
+  private readonly permissions = inject(PermissionsStore);
 
   protected readonly state = signal<CardState>({ status: 'loading' });
   protected readonly images = signal<ProofImages>(NO_IMAGES);
@@ -77,8 +83,13 @@ export class HandoverProofCard {
     // images, et un effet qui les suivrait se relancerait sans fin.
     effect(() => {
       const orderId = this.orderId();
+      const allowed = this.permissions.can(DELIVERY_PROOF_PERMISSION);
       untracked(() => {
-        void this.load(orderId);
+        if (allowed) {
+          void this.load(orderId);
+        } else {
+          this.state.set({ status: 'none' });
+        }
       });
     });
     inject(DestroyRef).onDestroy(() => {

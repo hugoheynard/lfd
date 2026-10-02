@@ -9,7 +9,7 @@ const DECIDE = `${B2B_API_BASE}/admin/livraison/a-decider`;
 
 /**
  * **« À décider »** (`documentation/livraisons/plan-a-la-porte.md`, B3) —
- * transport pur, sous `b2b_companies:write` (le droit des commerciaux).
+ * transport pur, sous `delivery_decisions` (lecture pour la liste, écriture pour répondre).
  */
 @Injectable({ providedIn: 'root' })
 export class StopDecisionsService {

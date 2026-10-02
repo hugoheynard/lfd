@@ -72,6 +72,7 @@ const ROUTES = {
   version: (agent) => agent.get(`/admin/production/version?date=${DAY}`),
   handoverQueue: (agent) => agent.get(`/admin/handover/file?jour=${DAY}`),
   binsOfOrder: (agent) => agent.get("/admin/livraison/colisage/bacs?commande=CMD-INCONNUE"),
+  binSheet: (agent) => agent.get("/admin/livraison/colisage/bacs/bac-inconnu"),
   proposal: (agent) => agent.get("/admin/livraison/colisage/proposition?commande=CMD-INCONNUE"),
   procedure: (agent) =>
     agent.get("/admin/companies/societe-inconnue/delivery-addresses/adresse-inconnue/procedure"),
@@ -175,6 +176,27 @@ describe("un geste, ses routes et elles seules", () => {
     await expectGates(loader, ["binsOfOrder", "proposal"], ["packing"]);
     // Lire le colisage n'est pas le faire : le panneau reste fermé (5.3).
     await expectGates(packingReader, ["packing", "version"], ["binsOfOrder", "proposal", "packed"]);
+  });
+
+  /**
+   * 2026-10-02 : la fiche d'un bac — celle qu'ouvre son QR — se LIT. Elle
+   * demandait l'écriture, que l'écran ne demandait pas : à qui lisait, la page
+   * s'ouvrait sur un 403. Le panneau, lui, reste fermé (cas précédent).
+   */
+  it("🔴 la fiche d'un bac se lit sous le colisage OU le chargement, en lecture", async () => {
+    const packingReader = await holderOf("colisage-lu", [
+      { resource: "production_packing", action: "read" },
+    ]);
+    const loadingReader = await holderOf("chargement-lu", [
+      { resource: "delivery_loading", action: "read" },
+    ]);
+    const ordersReader = await holderOf("commandes-lues", [
+      { resource: "b2b_orders", action: "read" },
+    ]);
+
+    await expectGates(packingReader, ["binSheet"], ["binsOfOrder"]);
+    await expectGates(loadingReader, ["binSheet"], ["binsOfOrder"]);
+    await expectGates(ordersReader, [], ["binSheet"]);
   });
 
   it("🔴 la procédure de livraison a son droit : la fiche client ne l'ouvre plus", async () => {

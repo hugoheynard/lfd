@@ -29,7 +29,7 @@ export type StaffResourceScope = Readonly<Record<StaffAction, string>>;
  */
 export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResourceScope>> = {
   pim_catalog: {
-    read: "Consulter le référentiel produit : fiches et leur historique, familles, allergènes, ingrédients, appellations, opérations, limites de commande. Ouvre aussi l'espace Référentiel, que ses autres droits supposent, et l'écran Médiathèque.",
+    read: "Consulter le référentiel produit : fiches et leur historique, familles, allergènes, ingrédients, appellations, opérations, limites de commande. Ouvre aussi l'espace Référentiel, que ses autres droits supposent, et les fiches vers lesquelles mène le panneau « où sert cette image » de la Médiathèque.",
     write:
       "Créer et modifier fiches et familles, leurs allergènes, ingrédients et opérations — y compris publier ou dépublier une fiche. Ouvre aussi les outils d'agent.",
   },
@@ -49,16 +49,16 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
       "Créer ou modifier un taux de TVA et les règles comptables — et lire le journal fiscal, qui demande ce niveau.",
   },
   media_library: {
-    read: "Parcourir le fonds d'images, ses imports en échec, et savoir quelles fiches affichent chaque image. L'écran Médiathèque demande aussi Référentiel — Catalogue en lecture.",
+    read: "Ouvrir l'écran Médiathèque : parcourir le fonds d'images, ses imports en échec, et savoir quelles fiches affichent chaque image. Aller voir ces fiches demande Référentiel — Catalogue en lecture.",
     write: "Déposer des images, les taguer, les décrire et les retirer du fonds.",
   },
   b2b_companies: {
     read: "Voir tous les comptes clients : liste, fiche complète (identité, conditions, KBIS, adresses, contacts, membres), export, activations, accès à remettre. Ouvre aussi les sections Commercial et Admin du menu.",
     write:
-      "Créer et modifier un compte — identité, conditions, adresses, contacts, statut, KBIS —, rattacher un accès, et décider pour le client quand un livreur est bloqué à la porte (« À décider », dont ce droit seul est prévenu).",
+      "Créer et modifier un compte — identité, conditions, adresses, contacts, statut, KBIS —, et rattacher un accès. Décider à la porte pour le client relève de « Décider à la porte ».",
   },
   b2b_orders: {
-    read: "Voir les commandes de tous les clients, leur bon PDF et le détail des prix appliqués. Fournit aussi le catalogue vendable et l'historique du client à qui saisit une commande.",
+    read: "Voir les commandes de tous les clients, leur bon PDF et le détail des prix appliqués. Fournit aussi le catalogue vendable et l'historique du client à qui saisit une commande. La preuve de livraison d'une commande demande « Preuves de livraison ».",
     write:
       "N'ajoute qu'un geste : renvoyer au client le rappel de retrait. Passer une commande relève de « Passer une commande pro ».",
   },
@@ -163,9 +163,9 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write: "Cocher ce qui est fait, reprendre une ligne, régler les contenants du four.",
   },
   production_packing: {
-    read: "Voir le colisage du jour, commande par commande.",
+    read: "Voir le colisage du jour, commande par commande, et ouvrir la fiche d'un bac — celle de son QR —, une lecture partagée avec Chargement.",
     write:
-      "Coliser : ajuster quantités et contenants, marquer une commande colisée, déclarer ses sacs — ce dernier geste partagé avec Chargement.",
+      "Coliser : ajuster quantités et contenants, marquer une commande colisée, et ouvrir le panneau des bacs — déclarer, partager, annuler —, partagé avec Chargement.",
   },
   handover_counter: {
     read: "Voir la file des retraits et le détail d'une commande à remettre.",
@@ -186,9 +186,9 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
       "Composer les tournées : répartir et ordonner les arrêts, affecter un livreur, constater le retour, tenir scénarios et bibliothèques d'achat.",
   },
   delivery_loading: {
-    read: "Voir le chargement de chaque véhicule et son plan.",
+    read: "Voir le chargement de chaque véhicule et son plan, et ouvrir la fiche d'un bac — celle de son QR —, une lecture partagée avec Colisage.",
     write:
-      "Déclarer les sacs d'une commande, les charger ou les décharger, et faire partir le véhicule.",
+      "Déclarer, partager ou annuler les bacs d'une commande, les charger ou les décharger, et faire partir le véhicule.",
   },
   delivery_driving: {
     read: "Voir SA tournée — celle dont on est le livreur affecté, et aucune autre — avec ses arrêts et ses procédures.",
@@ -204,6 +204,15 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     read: "Voir la procédure de livraison d'un client — étapes et photos — sur sa fiche et dans la feuille de route, et la décision réglée d'avance à la porte, globale et par adresse.",
     write:
       "Rédiger les étapes et photos d'une procédure, autoriser le dépôt, régler d'avance la décision à la porte, pour tous ou pour une adresse.",
+  },
+  delivery_decisions: {
+    read: "Voir « À décider » : les arrêts où un livreur attend une décision, et la photo du signalement qui l'a ouverte.",
+    write:
+      "Répondre pour le client — autoriser le dépôt cette fois ou faire rapporter — et être prévenu quand un livreur attend — la notification ne va qu'à ce niveau. Le réglage d'avance de la porte relève de « Procédures de livraison ».",
+  },
+  delivery_proofs: {
+    read: "Voir la preuve de livraison d'une commande — mode, livreur, réceptionnaire, photo et signature — sur sa fiche.",
+    write: "N'ajoute rien aujourd'hui : une preuve ne se modifie pas.",
   },
   staff_access: {
     read: "Voir l'équipe, les rôles et leurs droits, et les accès à remettre. L'écran vit dans Admin, qui demande aussi Comptes clients en lecture.",

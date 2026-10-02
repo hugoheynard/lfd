@@ -29,7 +29,7 @@ const NOTIFIED = "stop-decision-notified";
 const DECISIONS_LINK = "/livraison/a-decider";
 
 /**
- * **Un signalement ouvre une décision, et prévient les commerciaux**
+ * **Un signalement ouvre une décision, et prévient qui peut décider**
  * (`plan-a-la-porte.md`, § 9, § 10 B3, B5, LB-Q3).
  *
  * DANS l'unité de travail du signalement : si son motif en ouvre une
@@ -37,7 +37,7 @@ const DECISIONS_LINK = "/livraison/a-decider";
  * insérée sans échouer si un signalement simultané l'a ouverte d'abord.
  *
  * APRÈS la validation (`AfterCommit`) : une notification ADRESSÉE PAR DROIT
- * (`STOP_DECISION_PERMISSION`) — visible et poussée aux seuls commerciaux.
+ * (`STOP_DECISION_PERMISSION`, `delivery_decisions:write`) — visible et poussée à qui peut répondre.
  * Une par signalement (clé d'idempotence : son id), et seulement tant que
  * la décision attend : une autorisation déjà donnée ne se redemande pas.
  * Un signalement annulé ne prévient personne. L'émission est SUIVIE

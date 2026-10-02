@@ -42,10 +42,21 @@ type OrderQuery = z.infer<typeof orderQuerySchema>;
  *
  * 🔴 La porte s'ouvre AUSSI au colisage (2026-10-01, `documentation/livraisons/plan-droits-par-geste.md`,
  * 5.3) : chaque route exige `production_packing:write` OU
- * `delivery_loading:write` — lectures comprises, comme le plan l'écrit : le
- * panneau est un geste d'écriture, et qui ne fait que lire le colisage
- * (le support) n'a rien à y faire. On élargit la porte, on ne déplace aucun
- * droit — aucune dérogation n'a donc à fusionner.
+ * `delivery_loading:write`, sauf la fiche d'un bac (ci-dessous). On élargit la porte, on ne déplace aucun droit —
+ * aucune dérogation n'a donc à fusionner.
+ *
+ * LA FICHE D'UN BAC (`GET :binId`, celle qu'ouvre son QR) se LIT sous
+ * `production_packing:read` OU `delivery_loading:read` depuis le 2026-10-02
+ * (lot « correctifs de droits ») : l'écran la gardait en lecture, et
+ * l'exiger en écriture ici la rendait vide à qui lit. Ce qu'elle rend
+ * (référence, nom du client, type et moitié du bac, tournée, véhicule,
+ * heures de chargement et de départ) ne dépasse pas ce que le colisage et le
+ * chargement montrent déjà en lecture : ni montant, ni contact, ni adresse
+ * (vérifié le 2026-10-02 sur `delivery-loading.ts`).
+ *
+ * Les deux autres `GET` — les bacs d'une commande, les moitiés libres —
+ * restent en écriture : ils sont le PANNEAU du geste, que la lecture du
+ * colisage n'ouvre pas (plan 5.3 ; `gesture-rights.e2e-spec.ts` le tient).
  */
 @Controller("admin/livraison/colisage/bacs")
 @AdminSurface("delivery_loading")
@@ -93,6 +104,9 @@ export class DeliveryBinsController {
    * Les moitiés libres des arrêts consécutifs de la tournée de la commande
    * (v2-4, tranche C). Déclarée AVANT `:binId`, qui la prendrait sinon pour
    * un identifiant de bac.
+   *
+   * Reste en ÉCRITURE : c'est l'aide du geste de partage (la proposition de
+   * colisage, sa voisine, l'est aussi) — elle ne sert qu'à qui va partager.
    */
   @Get("partenaires")
   @RequireAnyPermission("production_packing:write", "delivery_loading:write")
@@ -105,7 +119,7 @@ export class DeliveryBinsController {
   }
 
   @Get(":binId")
-  @RequireAnyPermission("production_packing:write", "delivery_loading:write")
+  @RequireAnyPermission("production_packing:read", "delivery_loading:read")
   bin(@Param("binId") binId: string): Promise<DeliveryBinDetailView> {
     return this.queries.execute<GetDeliveryBinQuery, DeliveryBinDetailView>(
       new GetDeliveryBinQuery(binId),

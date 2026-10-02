@@ -209,13 +209,14 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     needs: 'delivery_rounds:read',
   },
   {
-    // Le COMMERCIAL répond aux problèmes à la porte (plan-a-la-porte.md, B3) :
-    // son droit, pas celui des tournées.
+    // Qui DÉCIDE à la porte y répond (plan-a-la-porte.md, B3) : son droit
+    // (`delivery_decisions`, sorti de `b2b_companies` le 2026-10-02), pas
+    // celui des tournées.
     key: 'a-decider',
     label: 'À décider',
     link: '/livraison/a-decider',
     icon: 'help',
-    needs: 'b2b_companies:write',
+    needs: 'delivery_decisions:write',
   },
   {
     key: 'simulateur',

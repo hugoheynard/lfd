@@ -375,6 +375,22 @@ export const staffResourceSchema = z.enum([
    * `plan-droits-par-geste.md`, DG-D1).
    */
   "delivery_procedures",
+  /**
+   * **Décider à la porte** — « À décider » : les arrêts où le livreur attend
+   * une décision, autoriser le dépôt, faire rapporter, voir la photo du
+   * signalement ; et la notification qui prévient. Sortie de `b2b_companies`
+   * le 2026-10-02 (lot « correctifs de droits ») : gérer un compte n'est pas
+   * trancher pendant qu'un livreur attend. Le réglage global de la porte
+   * reste sous `delivery_procedures`.
+   */
+  "delivery_decisions",
+  /**
+   * **Les preuves de livraison** — la photo et la signature d'une commande
+   * livrée. Sorties de `b2b_orders` le 2026-10-02 (même lot) : voir une
+   * commande n'est pas voir la porte d'un client ni sa signature. `write`
+   * n'ouvre rien aujourd'hui.
+   */
+  "delivery_proofs",
 
   // ── `staff.` — LE SOCLE ─────────────────────────────────────────────────
   /**
@@ -482,6 +498,8 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   delivery_driving: "Conduire sa tournée",
   delivery_doorstep: "Gestes à la porte",
   delivery_procedures: "Procédures de livraison",
+  delivery_decisions: "Décider à la porte",
+  delivery_proofs: "Preuves de livraison",
   production_plan: "Production — Plan du soir",
   production_worksheet: "Production — Fiche d'atelier",
   production_packing: "Production — Colisage",
@@ -591,6 +609,8 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     production_packing: "write",
     handover_counter: "write",
     delivery_procedures: "write",
+    delivery_decisions: "write",
+    delivery_proofs: "write",
     b2b_counter: "write",
     // `write` sur une vue en lecture seule : l'administrateur couvre tout, sans
     // trou — l'invariant qu'un test du contrat exige (2026-09-25).
@@ -648,6 +668,11 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     handover_counter: "write",
     // Sortie de `b2b_companies`, au même niveau.
     delivery_procedures: "write",
+    // « À décider » et sa notification, sortis de `b2b_companies` le
+    // 2026-10-02 ; la preuve de livraison, sortie de `b2b_orders` le même
+    // jour. Graine seulement : en base, l'accord se fait à l'écran.
+    delivery_decisions: "write",
+    delivery_proofs: "read",
     // Qui commande pour un pro garde le Comptoir, qui en est une porte de plus
     // (2026-09-25) : personne ne perd la saisie que `afa81ae34` lui ouvrait.
     b2b_counter: "read",

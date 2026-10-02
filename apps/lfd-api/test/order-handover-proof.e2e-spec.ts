@@ -5,7 +5,7 @@
  * Ce que seule cette suite prouve : le commerce lit les pièces par le canal
  * que le retrait publie (relié par la racine de composition), les images se
  * retrouvent par la COMMANDE dans le vrai stockage de test, et le droit
- * `b2b_orders:read` tient la porte.
+ * `delivery_proofs:read` tient la porte (`b2b_orders:read` jusqu'au 2026-10-02).
  */
 import { CommandBus } from "@nestjs/cqrs";
 import type { OrderHandoverProofResponse } from "@lfd/contracts";
@@ -162,7 +162,7 @@ describe("La preuve de livraison sur la fiche commande", () => {
     await imageOf(orderId, "photo").expect(404);
   });
 
-  it("sans `b2b_orders:read` : 403, carte et images", async () => {
+  it("sans aucun droit : 403, carte et images", async () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const { roundId, orderId, stopId } = await departedStop(ctx, paul);
     expect((await handOverSigned(paul.agent, roundId, stopId)).status).toBe(204);
@@ -171,5 +171,42 @@ describe("La preuve de livraison sur la fiche commande", () => {
     await paul.agent.get(proofUrl(orderId)).expect(403);
     await paul.agent.get(`${proofUrl(orderId)}/photo`).expect(403);
     await paul.agent.get(`${proofUrl(orderId)}/signature`).expect(403);
+  });
+
+  /**
+   * 2026-10-02 : la preuve a quitté `b2b_orders:read`. Voir les commandes ne
+   * la montre plus ; « Preuves de livraison » en lecture la montre, seul.
+   */
+  it("🔴 `b2b_orders:read` seul → 403 ; `delivery_proofs:read` seul → 200, carte et images", async () => {
+    const admin = ctx.asSub(E2E_STAFF_SUB);
+    await admin
+      .post("/admin/staff-roles")
+      .send({
+        key: "commandes-seules",
+        label: "Commandes",
+        grants: [{ resource: "b2b_orders", action: "read" }],
+      })
+      .expect(201);
+    await admin
+      .post("/admin/staff-roles")
+      .send({
+        key: "preuves",
+        label: "Preuves",
+        grants: [{ resource: "delivery_proofs", action: "read" }],
+      })
+      .expect(201);
+    const orders = await staffWithRole(ctx, "commandes-ana", "commandes-seules");
+    const proofs = await staffWithRole(ctx, "preuves-max", "preuves");
+    const paul = await staffWithRole(ctx, "livreur-paul");
+    const { roundId, orderId, stopId } = await departedStop(ctx, paul);
+    expect((await handOverSigned(paul.agent, roundId, stopId)).status).toBe(204);
+    await ctx.drain();
+
+    await orders.agent.get(proofUrl(orderId)).expect(403);
+    await orders.agent.get(`${proofUrl(orderId)}/photo`).expect(403);
+    await orders.agent.get(`${proofUrl(orderId)}/signature`).expect(403);
+    await proofs.agent.get(proofUrl(orderId)).expect(200);
+    await proofs.agent.get(`${proofUrl(orderId)}/photo`).expect(200);
+    await proofs.agent.get(`${proofUrl(orderId)}/signature`).expect(200);
   });
 });

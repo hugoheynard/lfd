@@ -60,7 +60,7 @@ import { PrismaUndeliveredStopsReader } from "./infrastructure/prisma-undelivere
  * vient du fil du retrait (`appBootstrap/delivery-handover-feed.module.ts`).
  *
  * La décision du commercial (B3) s'y ajoute : son ouverture au signalement,
- * la liste « À décider » et les deux réponses, sous `b2b_companies:write`
+ * la liste « À décider » et les deux réponses, sous `delivery_decisions`
  * (`StopDecisionsController`) ; `StaffNotifier` vient du module global de la
  * cloche, `BroughtBackOrdersAnnouncer` du fil du retrait. La décision réglée
  * d'avance (B3 bis, `StopDecisionBySetting`) s'applique au signalement même.

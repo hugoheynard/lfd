@@ -114,6 +114,12 @@ enum StaffResource {
   /// LES PROCÉDURES DE LIVRAISON côté staff — sorties de `b2b_companies` le
   /// 2026-10-01 (même plan).
   delivery_procedures
+  /// DÉCIDER À LA PORTE — « À décider » et sa notification, sortis de
+  /// `b2b_companies` le 2026-10-02 (lot « correctifs de droits »).
+  delivery_decisions
+  /// LES PREUVES DE LIVRAISON — photo et signature, sorties de `b2b_orders`
+  /// le 2026-10-02 (même lot).
+  delivery_proofs
 
   staff_access
   staff_notifications

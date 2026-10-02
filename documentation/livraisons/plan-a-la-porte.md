@@ -608,3 +608,15 @@ Découpage : **B3** décision manuelle + **B5** notification des commerciaux ;
 > siens : on les **recharge** ; en déclarer de nouveaux sans annuler les
 > anciens bloque le départ (« un arrêt n'est pas chargé »). La proposition
 > calculée ne la place pas d'elle-même.
+
+> 🔐 **Droits redécoupés le 2026-10-02** (lot « correctifs de droits »,
+> non commité à l'écriture de cette ligne). « À décider » — liste, photo du
+> signalement, autoriser, rapporter — et l'audience de la notification
+> passent de `b2b_companies:write` à **`delivery_decisions`** (`GET` en
+> lecture, `POST` en écriture ; audience `delivery_decisions:write`, parce
+> que la notice demande une réponse). La preuve de livraison (carte et trois
+> routes) passe de `b2b_orders:read` à **`delivery_proofs:read`** ; la carte
+> ne s'affiche ni n'appelle sans ce droit. Le réglage global de la porte
+> reste sous `delivery_procedures`. L'accord se fait à l'écran :
+> [`tableau-droits-livraison.md`](tableau-droits-livraison.md), « Au
+> déploiement ».

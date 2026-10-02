@@ -12,6 +12,18 @@
 > (`admin/livraison/a-la-porte`), passe de `delivery_settings` à
 > `delivery_procedures` — une condition de livraison, réglée par le
 > commercial (`plan-a-la-porte.md`, B3 bis).
+>
+> 2026-10-02 : **`delivery_decisions`** (« Décider à la porte ») — « À
+> décider » (liste et photo du signalement en lecture, autoriser / rapporter
+> en écriture) et l'audience de la notification « arrêt à décider »
+> (`delivery_decisions:write`) quittent `b2b_companies:write`. Le réglage
+> global de la porte reste sous `delivery_procedures`. Admin et commercial en
+> **écriture** — voir « Au déploiement ».
+>
+> 2026-10-02 : **`delivery_proofs`** (« Preuves de livraison ») — les trois
+> routes `GET admin/orders/:id/preuve-livraison(/photo|/signature)` et la
+> carte de la fiche commande quittent `b2b_orders:read`. Admin et commercial
+> en **lecture** ; l'écriture n'ouvre rien aujourd'hui.
 
 > 📐 **Proposition** (2026-10-01) — _voir le bandeau ci-dessus_. Point de départ du plan de
 > refonte des droits, à faire contredire par `vitruve` avant de bâtir.
@@ -94,3 +106,28 @@
 > (`/admin/staff-roles`) après la bascule de
 > [`plan-droits-par-geste.md`](plan-droits-par-geste.md) — plus un contenu de
 > migration.
+
+## Au déploiement — `delivery_decisions` et `delivery_proofs` (2026-10-02)
+
+Les deux migrations (`20261002090000`, `20261002090100`) n'ajoutent que les
+valeurs d'enum : **aucun rôle ne les reçoit en base**
+(`lint:no-role-grants-in-migrations`). `ROLE_GRANTS` ne les donne qu'à une
+base vierge, au dev et aux e2e.
+
+**AVANT que quiconque en ait besoin**, accorder à l'écran
+(`/admin/staff-roles`) :
+
+| Rôle           | `delivery_decisions` | `delivery_proofs` |
+| -------------- | -------------------- | ----------------- |
+| **admin**      | écrit                | lit               |
+| **commercial** | écrit                | lit               |
+
+Sans ce geste, au déploiement, **le commercial perd « À décider »** (liste,
+réponses et notification) et la carte « Preuve de livraison » disparaît de
+la fiche commande pour lui. L'admin d'une base existante est dans le même
+cas tant que son rôle ne porte pas les deux valeurs.
+
+⚠️ Ordre : la valeur d'enum n'existe qu'après la migration — l'écran ne la
+propose qu'une fois le déploiement fait. Le geste se fait donc **juste après**
+la mise en ligne, dans la même fenêtre ; pendant cet intervalle, une
+décision à la porte attend sans être notifiée à personne.

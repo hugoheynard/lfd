@@ -53,21 +53,48 @@ export interface PermissionGuard extends CanActivateFn {
  * page vide, sans rien lui dire de ce qu'il peut faire à la place.
  */
 export function permissionGuard(permission: StaffPermission): PermissionGuard {
-  const guard = async (): Promise<boolean | UrlTree> => {
-    const permissions = inject(PermissionsStore);
-    const router = inject(Router);
-
-    await permissions.ensureLoaded();
-    if (permissions.can(permission)) {
-      return true;
-    }
-    const fallback = LANDINGS.find((landing) => permissions.can(landing.permission));
-    // Aucune porte ouverte : on laisse passer et la racine dira ce qu'il en est.
-    // Rediriger en rond serait pire qu'une page qui explique.
-    return fallback === undefined ? true : router.parseUrl(fallback.path);
-  };
+  const guard = (): Promise<boolean | UrlTree> => admitOrRedirect([permission]);
   // La permission voyage AVEC le garde : sans ça, la table des routes ne dit
   // pas quel droit ouvre quel écran, et un garde hérité du mauvais parent est
   // indiscernable du bon (cf. `app.routes.spec.ts`).
   return Object.assign(guard, { permission });
+}
+
+/** Un garde qui laisse passer **l'un OU l'autre** des droits qu'il dit. */
+export interface AnyPermissionGuard extends CanActivateFn {
+  readonly anyOf: readonly StaffPermission[];
+}
+
+/**
+ * Garde de route **« l'un ou l'autre »** — le pendant du `@RequireAnyPermission`
+ * du serveur, pour un écran que deux métiers lisent sans que l'un reçoive la
+ * ressource de l'autre (la fiche d'un bac : le colisage et le chargement,
+ * 2026-10-02).
+ *
+ * Au moins une permission par la signature, comme côté serveur : une liste
+ * vide ne dirait rien. Même redirection qu'un garde simple quand aucune ne
+ * tient.
+ */
+export function anyPermissionGuard(
+  first: StaffPermission,
+  ...others: readonly StaffPermission[]
+): AnyPermissionGuard {
+  const anyOf = [first, ...others] as const;
+  const guard = (): Promise<boolean | UrlTree> => admitOrRedirect(anyOf);
+  return Object.assign(guard, { anyOf });
+}
+
+/** Laisse passer si l'une des permissions tient, sinon redirige vers la première porte ouverte. */
+async function admitOrRedirect(anyOf: readonly StaffPermission[]): Promise<boolean | UrlTree> {
+  const permissions = inject(PermissionsStore);
+  const router = inject(Router);
+
+  await permissions.ensureLoaded();
+  if (anyOf.some((permission) => permissions.can(permission))) {
+    return true;
+  }
+  const fallback = LANDINGS.find((landing) => permissions.can(landing.permission));
+  // Aucune porte ouverte : on laisse passer et la racine dira ce qu'il en est.
+  // Rediriger en rond serait pire qu'une page qui explique.
+  return fallback === undefined ? true : router.parseUrl(fallback.path);
 }

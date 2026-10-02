@@ -1,6 +1,6 @@
 import { type Routes } from '@angular/router';
 
-import { permissionGuard } from './auth/permission.guard';
+import { anyPermissionGuard, permissionGuard } from './auth/permission.guard';
 import {
   ORDER_ENTRY_ORIGIN_KEY,
   type OrderEntryOrigin,
@@ -70,11 +70,15 @@ export const routes: Routes = [
     // `limites-de-commande`) et l'anglais dans le code et les contrats. On
     // dicte une adresse d'écran ; on n'épelle pas un chemin d'API.
     //
-    // `pim_catalog:read` : c'est le mur que la route serveur oppose
-    // (`@AdminSurface("pim_catalog")`). Ouvrir l'écran à qui ne l'a pas ne
-    // montrerait que des 403.
+    // `media_library:read` : c'est le mur que la route serveur oppose
+    // (`@AdminSurface("media_library")`). Ouvrir l'écran à qui ne l'a pas ne
+    // montrerait que des 403. Ce garde demandait `pim_catalog:read` jusqu'au
+    // 2026-10-02, trace du temps où le fonds vivait sous le référentiel.
+    // L'écran n'appelle que `/media/*` ; le panneau « où sert cette image »
+    // NAVIGUE vers les fiches, qui gardent leur propre droit (vérifié le
+    // 2026-10-02).
     path: 'mediatheque',
-    canActivate: [permissionGuard('pim_catalog:read')],
+    canActivate: [permissionGuard('media_library:read')],
     title: 'Médiathèque — LFC B2B admin',
     loadComponent: () =>
       import('./mediatheque/mediatheque-page/mediatheque-page').then((m) => m.MediathequePage),
@@ -340,11 +344,11 @@ export const routes: Routes = [
           import('./livraison/undelivered-page/undelivered-page').then((m) => m.UndeliveredPage),
       },
       // « À DÉCIDER » (plan-a-la-porte.md, B3) : la réponse du COMMERCIAL à un
-      // problème à la porte, sous son droit (`b2b_companies:write`, lecture
-      // comprise) — la cible du lien de la notification « arrêt à décider ».
+      // problème à la porte, sous son droit (`delivery_decisions:write`, lecture
+      // comprise ; `b2b_companies:write` jusqu'au 2026-10-02) — la cible du lien de la notification « arrêt à décider ».
       {
         path: 'a-decider',
-        canActivate: [permissionGuard('b2b_companies:write')],
+        canActivate: [permissionGuard('delivery_decisions:write')],
         title: 'À décider — LFC B2B admin',
         loadComponent: () =>
           import('./livraison/decisions-page/decisions-page').then((m) => m.DecisionsPage),
@@ -393,8 +397,12 @@ export const routes: Routes = [
         // L'adresse qu'encode le QR d'un bac (ou d'une moitié) : un appareil
         // photo natif l'ouvre. `sac/:bagId` n'existe plus (lot 4 bis, v2-6 :
         // le lot 4 n'a jamais été servi, le renommage est franc).
+        //
+        // La fiche se LIT sous le colisage OU le chargement, en lecture
+        // (2026-10-02) — le même `@RequireAnyPermission` que son `GET`
+        // serveur. Annuler un bac reste une écriture, côté serveur.
         path: 'bac/:binId',
-        canActivate: [permissionGuard('delivery_loading:read')],
+        canActivate: [anyPermissionGuard('production_packing:read', 'delivery_loading:read')],
         title: 'Bac — LFC B2B admin',
         loadComponent: () => import('./livraison/bin-page/bin-page').then((m) => m.BinPage),
       },

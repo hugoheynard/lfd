@@ -1,7 +1,12 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { OrderHandoverProofResponse, OrderHandoverProofView } from '@lfd/contracts';
+import type {
+  OrderHandoverProofResponse,
+  OrderHandoverProofView,
+  StaffPermission,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminOrdersService } from '../orders.service';
 import { HandoverProofCard } from './handover-proof-card';
 
@@ -36,6 +41,7 @@ class FakeOrders {
 
 async function boot(
   fake: FakeOrders,
+  permissions: readonly StaffPermission[] = ['delivery_proofs:read'],
 ): Promise<{ fixture: ComponentFixture<HandoverProofCard>; element: HTMLElement }> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -43,6 +49,12 @@ async function boot(
       {
         provide: AdminOrdersService,
         useValue: fake satisfies Pick<AdminOrdersService, 'handoverProof' | 'handoverProofImage'>,
+      },
+      {
+        provide: PermissionsStore,
+        useValue: {
+          can: (permission: StaffPermission): boolean => permissions.includes(permission),
+        } satisfies Pick<PermissionsStore, 'can'>,
       },
     ],
   });
@@ -103,5 +115,17 @@ describe('HandoverProofCard — « Preuve de livraison »', () => {
 
     expect(element.querySelector('[data-proof-card]')).not.toBeNull();
     expect(element.querySelector('[data-images-error]')).not.toBeNull();
+  });
+
+  it('sans « Preuves de livraison » en lecture, ne rend rien et n’appelle rien', async () => {
+    // `b2b_orders:read` seul ne l'ouvre plus (2026-10-02) : la carte se tait
+    // plutôt que d'afficher un 403 sur chaque commande.
+    const fake = new FakeOrders({ proof: HANDED });
+    const { element } = await boot(fake, ['b2b_orders:read']);
+
+    expect(element.querySelector('[data-proof-card]')).toBeNull();
+    expect(element.querySelector('fold-loading')).toBeNull();
+    expect(element.querySelector('fold-callout')).toBeNull();
+    expect(fake.asked).toEqual([]);
   });
 });

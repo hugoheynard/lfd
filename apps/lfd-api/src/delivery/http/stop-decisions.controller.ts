@@ -1,4 +1,4 @@
-import { type PendingStopDecisionsView, STOP_DECISION_PERMISSION } from "@lfd/contracts";
+import type { PendingStopDecisionsView } from "@lfd/contracts";
 import {
   Controller,
   Get,
@@ -12,7 +12,7 @@ import {
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import type { Response } from "express";
 
-import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import type { StoredDocument } from "../../platform/storage/document-store.js";
 import { AuthorizeStopDepositCommand } from "../application/commands/authorize-stop-deposit.command.js";
@@ -25,14 +25,16 @@ import { serveStepPhoto } from "./step-photo-http.js";
  * **Le commercial décide** (`documentation/livraisons/plan-a-la-porte.md`,
  * B3, § 10 bis, LB-Q2, LB-Q5).
  *
- * Sous `b2b_companies:write` — LECTURE COMPRISE (`RequirePermission`) : c'est
- * le droit des commerciaux et de l'admin (graine `ROLE_GRANTS` et feuille de
- * réglage `tableau-droits-livraison.md` § 2, relues le 2026-10-01), et la
- * liste ne sert qu'à qui peut y répondre. Le support et la comptabilité, qui
- * lisent les comptes, ne la voient pas. Il n'injecte que les bus.
+ * Sous `delivery_decisions` depuis le 2026-10-02 (lot « correctifs de
+ * droits ») : la lecture voit la liste et la photo d'un signalement,
+ * l'écriture répond — l'action se déduit du verbe. Avant, `b2b_companies:write`
+ * gardait tout, lecture comprise : gérer un compte et trancher pendant qu'un
+ * livreur attend sont deux métiers. La notification, elle, ne va qu'à qui
+ * peut RÉPONDRE (`STOP_DECISION_PERMISSION`, en écriture). Il n'injecte que
+ * les bus.
  */
 @Controller("admin/livraison/a-decider")
-@AdminSurface("b2b_companies")
+@AdminSurface("delivery_decisions")
 export class StopDecisionsController {
   constructor(
     private readonly commands: CommandBus,
@@ -40,7 +42,6 @@ export class StopDecisionsController {
   ) {}
 
   @Get()
-  @RequirePermission(STOP_DECISION_PERMISSION)
   pending(): Promise<PendingStopDecisionsView> {
     return this.queries.execute<GetPendingStopDecisionsQuery, PendingStopDecisionsView>(
       new GetPendingStopDecisionsQuery(),
@@ -53,7 +54,6 @@ export class StopDecisionsController {
    * sinon. La route des tournées (`delivery_rounds:read`) n'est pas élargie.
    */
   @Get(":stopId/incidents/:incidentId/photo")
-  @RequirePermission(STOP_DECISION_PERMISSION)
   async photo(
     @Param("stopId") stopId: string,
     @Param("incidentId") incidentId: string,

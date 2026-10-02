@@ -383,7 +383,7 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
     expect(notifier.notified).toEqual([
       expect.objectContaining({
         kind: "delivery.stop_decision",
-        audience: "b2b_companies:write",
+        audience: "delivery_decisions:write",
         idempotencyKey: "delivery.stop_decision:inc_000001",
         link: "/livraison/a-decider",
       }),
