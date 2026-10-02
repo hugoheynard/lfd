@@ -6,9 +6,11 @@ import { PrismaHandoverQueueReader } from "../b2b/orders/infrastructure/prisma-h
 import { PrismaHandoverSubjectReader } from "../b2b/orders/infrastructure/prisma-handover-subject.reader.js";
 import {
   DeliveryRunSheetReader,
+  HandoverProofReader,
   HandoverQueueReader,
   HandoverSubjectReader,
 } from "../handover/channels/commerce/index.js";
+import { PrismaHandoverProofReader } from "../handover/infrastructure/prisma-handover-proof.reader.js";
 import { PrismaAttestedHandoversReader } from "../handover/infrastructure/prisma-attested-handovers.reader.js";
 import { PrismaOrderCustodyReader } from "../handover/infrastructure/prisma-order-custody.reader.js";
 import {
@@ -39,6 +41,10 @@ import { ProductionModule } from "../production/production.module.js";
  *   implémente**, la remise lit. Le comptoir demande quelles commandes un contrôle retient ; la
  *   réponse est un fait de la production (`plan-controle-qualite.md`, D4).
  *
+ * - `HandoverProofReader` (2026-10-02) — la **remise publie ET implémente**,
+ *   le commerce lit : les preuves de remise à la porte, pour la fiche d'une
+ *   commande. Même figure que `QualityHoldsReader`, dans l'autre sens.
+ *
  * 🔴 Aucun des trois contextes ne connaît les deux autres. C'est la racine de
  * composition qui sait, et elle seule — sans quoi la dépendance reviendrait par
  * l'autre bout et deux blocs se tiendraient l'un l'autre (§3 du `CLAUDE.md`).
@@ -60,6 +66,7 @@ import { ProductionModule } from "../production/production.module.js";
     { provide: DeliveryRunSheetReader, useClass: PrismaDeliveryRunSheetReader },
     { provide: AtelierSheetsReader, useClass: PrismaAtelierSheetsReader },
     { provide: OrderCustodyReader, useClass: PrismaOrderCustodyReader },
+    { provide: HandoverProofReader, useClass: PrismaHandoverProofReader },
   ],
   exports: [
     HandoverSubjectReader,
@@ -69,6 +76,7 @@ import { ProductionModule } from "../production/production.module.js";
     DeliveryRunSheetReader,
     AtelierSheetsReader,
     OrderCustodyReader,
+    HandoverProofReader,
   ],
 })
 export class HandoverFeedModule {}

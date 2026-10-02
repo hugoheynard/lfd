@@ -1,0 +1,64 @@
+@switch (state().status) {
+  @case ('loading') {
+    <fold-loading message="Lecture de la preuve de livraison…" />
+  }
+  @case ('error') {
+    <fold-callout variant="alert" data-proof-error>
+      La preuve de livraison n'a pas pu être lue. Rechargez la page.
+    </fold-callout>
+  }
+  @case ('ready') {
+    @if (proof(); as proof) {
+      <fold-card data-proof-card>
+        <fold-element-title variant="title" icon="truck" title="Preuve de livraison" />
+        <fold-field-list>
+          <fold-field label="Mode">
+            {{ proof.mode === 'handed' ? 'Remis en main propre' : 'Déposé' }}
+          </fold-field>
+          <fold-field label="Le">
+            {{ proof.handedOverAt | date: 'dd/MM/yyyy à HH:mm' }}
+          </fold-field>
+          <fold-field label="Livreur" [empty]="proof.courierName === null">
+            {{ proof.courierName }}
+          </fold-field>
+          @if (proof.pieces; as pieces) {
+            @if (pieces.receiverName !== null) {
+              <fold-field label="Réceptionné par" data-receiver>
+                {{ pieces.receiverName }}
+              </fold-field>
+            }
+          }
+        </fold-field-list>
+
+        @if (proof.pieces === null) {
+          <fold-callout variant="info" data-proof-erased>
+            Preuve effacée : la remise reste attestée, mais sa photo, son nom et sa signature ne
+            sont plus conservés.
+          </fold-callout>
+        } @else if (images().failed) {
+          <fold-callout variant="alert" data-images-error>
+            Les images de la preuve n'ont pas pu être lues.
+          </fold-callout>
+        } @else {
+          <div class="hp-images">
+            @if (images().photo; as photo) {
+              <a [href]="photo" target="_blank" rel="noopener">
+                <img class="hp-image" [src]="photo" alt="Photo de la livraison" data-photo />
+              </a>
+            }
+            @if (images().signature; as signature) {
+              <a [href]="signature" target="_blank" rel="noopener">
+                <img
+                  class="hp-image"
+                  [src]="signature"
+                  alt="Signature du réceptionnaire"
+                  data-signature
+                />
+              </a>
+            }
+          </div>
+        }
+      </fold-card>
+    }
+  }
+}

@@ -61,7 +61,13 @@
   même transaction : une image que le stockage refuse garde la pièce entière,
   et relancer la reprend. L'attestation de la remise n'est jamais effacée.
   **Aucune minuterie, aucune route** ne les appelle.
+- **Voir les pièces — comblé le 2026-10-02.** La fiche d'une commande au
+  back-office porte une carte « Preuve de livraison » (mode, instant,
+  livreur nommé par l'annuaire, réceptionnaire, photo, signature), sous
+  `b2b_orders:read` : `GET admin/orders/:id/preuve-livraison` et ses deux
+  images `…/photo`, `…/signature`, retrouvées par la commande — aucune clé
+  ne sort du retrait (`HandoverProofReader`, `handover/channels/commerce/`).
+  Une pièce purgée s'y lit « Preuve effacée » : la remise reste attestée.
 - **À décider plus tard** : la durée (90 jours proposés, plus si les litiges
-  le demandent), l'appel planifié, et ce qu'un écran de contestation montre
-  d'une pièce purgée. Et, pour l'effacement à la demande, **qui le
+  le demandent) et l'appel planifié. Et, pour l'effacement à la demande, **qui le
   déclenche** : il n'a ni route admin ni écran.

@@ -1,0 +1,14 @@
+.hp-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}
+
+.hp-image {
+  display: block;
+  max-width: 100%;
+  max-height: calc(var(--fold-space-4xl) * 3);
+  object-fit: contain;
+  border-radius: var(--fold-radius-sm);
+  border: 1px solid var(--fold-color-border);
+}

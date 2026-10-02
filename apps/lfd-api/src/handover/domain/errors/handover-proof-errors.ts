@@ -25,3 +25,17 @@ export class HandoverProofPurgeIncompleteError extends TechnicalError {
     );
   }
 }
+
+/**
+ * **Une pièce rangée qui n'est pas une image.** La livraison a vérifié les
+ * octets à l'entrée ; les relire autrement est une incohérence entre le
+ * stockage et la base, pas un refus métier.
+ */
+export class HandoverProofImageUnreadableError extends TechnicalError {
+  constructor() {
+    super(
+      "handover.proof_image_unreadable",
+      "La pièce de remise rangée pour cette commande n'est pas une image lisible. Signalez-le à l'équipe technique ; la remise elle-même reste attestée.",
+    );
+  }
+}

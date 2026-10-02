@@ -32,6 +32,9 @@
         </fold-callout>
       </lfd-order-detail>
 
+      <!-- La preuve de livraison : rien quand la commande n'a pas été remise à la porte. -->
+      <app-handover-proof-card [orderId]="o.id" />
+
       @if (explained(); as line) {
         <app-price-explain [line]="line" [orderId]="o.id" (dismissed)="explainedSku.set(null)" />
       }

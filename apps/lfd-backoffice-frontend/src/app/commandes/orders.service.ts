@@ -8,6 +8,7 @@ import type {
   AdminPlaceOrderPayload,
   AdminPlacedOrderResponse,
   LineRuleReconstructionView,
+  OrderHandoverProofResponse,
   OrderQuotePayload,
   OrderQuoteView,
   OrderView,
@@ -51,6 +52,31 @@ export class AdminOrdersService {
   async byId(id: string): Promise<OrderView> {
     return firstValueFrom(
       this.http.get<OrderView>(`${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}`),
+    );
+  }
+
+  /**
+   * **La preuve de livraison** d'une commande remise ou déposée à la porte —
+   * `proof: null` quand il n'y en a pas. Aucune clé d'image ne traverse.
+   */
+  async handoverProof(id: string): Promise<OrderHandoverProofResponse> {
+    return firstValueFrom(
+      this.http.get<OrderHandoverProofResponse>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/preuve-livraison`,
+      ),
+    );
+  }
+
+  /**
+   * Une image de cette preuve, en blob : la route porte le jeton, qu'un
+   * `<img src>` n'enverrait pas. Désignée par la commande, jamais par une clé.
+   */
+  async handoverProofImage(id: string, piece: 'photo' | 'signature'): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/preuve-livraison/${piece}`,
+        { responseType: 'blob' },
+      ),
     );
   }
 

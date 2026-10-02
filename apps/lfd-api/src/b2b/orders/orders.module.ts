@@ -71,6 +71,8 @@ import { OrderOperations } from "./application/services/order-operations.service
 import { OrderDrafting } from "./application/services/order-drafting.service.js";
 import { OrderLinePricing } from "./application/services/order-line-pricing.service.js";
 import { GetAdminOrderHandler } from "./application/queries/get-admin-order.handler.js";
+import { GetOrderHandoverProofImageHandler } from "./application/queries/get-order-handover-proof-image.handler.js";
+import { GetOrderHandoverProofHandler } from "./application/queries/get-order-handover-proof.handler.js";
 import { GetOrderDraftHandler } from "./application/queries/get-order-draft.handler.js";
 import { GetShopCartHandler } from "./application/queries/get-shop-cart.handler.js";
 import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
@@ -215,6 +217,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderSheetArchive,
     GetOrderPaymentHandler,
     GetAdminOrderHandler,
+    GetOrderHandoverProofHandler,
+    GetOrderHandoverProofImageHandler,
     { provide: DeliveryDefaultsReader, useClass: PrismaDeliveryDefaultsReader },
     PrismaDayOrdersReader,
     PrismaHandoverSubjectReader,

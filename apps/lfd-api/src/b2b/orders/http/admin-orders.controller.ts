@@ -8,6 +8,7 @@ import {
   type AdminPlaceOrderPayload,
   adminPlaceOrderPayloadSchema,
   type AdminPlacedOrderResponse,
+  type OrderHandoverProofResponse,
   type OrderView,
   orderQuotePayloadSchema,
   type OrderQuotePayload,
@@ -46,6 +47,9 @@ import { GetAdminOrderSheetPdfQuery } from "../application/queries/get-admin-ord
 import type { OrderSheetPdf } from "../application/services/order-sheet-archive.service.js";
 import { GetAdminOrderQuery } from "../application/queries/get-admin-order.query.js";
 import { ListAdminOrdersQuery } from "../application/queries/list-admin-orders.query.js";
+import { GetOrderHandoverProofImageQuery } from "../application/queries/get-order-handover-proof-image.query.js";
+import { GetOrderHandoverProofQuery } from "../application/queries/get-order-handover-proof.query.js";
+import type { StoredDocument } from "../../../platform/storage/document-store.js";
 
 /**
  * Les commandes **vues du staff** — et, depuis la saisie assistée, prises par
@@ -183,6 +187,56 @@ export class AdminOrdersController {
   @Get(":id")
   async one(@Param("id") id: string): Promise<OrderView> {
     return this.queries.execute<GetAdminOrderQuery, OrderView>(new GetAdminOrderQuery(id));
+  }
+
+  /**
+   * **La preuve de livraison** — remise en main propre ou dépôt à la porte —,
+   * pour répondre à une contestation. Sous `b2b_orders:read` : c'est la fiche
+   * de la commande qui la montre. `proof: null` : pas remise à la porte.
+   */
+  @Get(":id/preuve-livraison")
+  handoverProof(@Param("id") id: string): Promise<OrderHandoverProofResponse> {
+    return this.queries.execute<GetOrderHandoverProofQuery, OrderHandoverProofResponse>(
+      new GetOrderHandoverProofQuery(id),
+    );
+  }
+
+  /**
+   * La photo de la remise. La pièce est retrouvée par la COMMANDE, jamais
+   * par une clé reçue d'ici : une autre commande, ou aucune, rend 404.
+   */
+  @Get(":id/preuve-livraison/photo")
+  handoverProofPhoto(
+    @Param("id") id: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    return this.serveProofImage(id, "photo", response);
+  }
+
+  /** La signature au doigt, quand la remise en porte une. */
+  @Get(":id/preuve-livraison/signature")
+  handoverProofSignature(
+    @Param("id") id: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    return this.serveProofImage(id, "signature", response);
+  }
+
+  private async serveProofImage(
+    id: string,
+    piece: "photo" | "signature",
+    response: Response,
+  ): Promise<StreamableFile> {
+    const image = await this.queries.execute<GetOrderHandoverProofImageQuery, StoredDocument>(
+      new GetOrderHandoverProofImageQuery(id, piece),
+    );
+    // `no-store`, pas l'`immutable` des cartes à photo : l'URL ne change pas
+    // quand la pièce est effacée, et une photo de personne ne doit pas
+    // survivre à sa purge dans le cache d'un poste.
+    response.setHeader("Content-Type", image.contentType);
+    response.setHeader("X-Content-Type-Options", "nosniff");
+    response.setHeader("Cache-Control", "private, no-store");
+    return new StreamableFile(image.bytes);
   }
 
   /**
