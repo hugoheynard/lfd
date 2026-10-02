@@ -27,13 +27,53 @@
 }
 
 .stack {
-  fill: var(--fold-color-primary-surface);
-  stroke: var(--fold-color-primary);
+  fill: none;
+  stroke: var(--fold-color-text);
   stroke-width: 1;
 }
 
+.stack--loaded {
+  stroke: var(--fold-color-success);
+  stroke-width: 4;
+}
+
+// La palette des arrêts (STOP_HUE_COUNT = 6) : des teintes claires de
+// l'échelle fold, sous un numéro sombre qui reste l'information.
+.hue-0 {
+  fill: var(--fold-ref-amber-300);
+  background: var(--fold-ref-amber-300);
+}
+
+.hue-1 {
+  fill: var(--fold-ref-teal-400);
+  background: var(--fold-ref-teal-400);
+}
+
+.hue-2 {
+  fill: var(--fold-ref-purple-300);
+  background: var(--fold-ref-purple-300);
+}
+
+.hue-3 {
+  fill: var(--fold-ref-green-300);
+  background: var(--fold-ref-green-300);
+}
+
+.hue-4 {
+  fill: var(--fold-ref-red-400);
+  background: var(--fold-ref-red-400);
+}
+
+.hue-5 {
+  fill: var(--fold-ref-navyink-300);
+  background: var(--fold-ref-navyink-300);
+}
+
 .stack-label {
-  fill: var(--fold-color-text);
+  fill: var(--fold-ref-ink-950);
+  paint-order: stroke;
+  stroke: var(--fold-ref-white);
+  stroke-width: 2;
   font-weight: var(--fold-weight-bold);
 }
 
@@ -55,6 +95,7 @@
 }
 
 .swatch {
+  flex: none;
   display: inline-block;
   width: var(--fold-space-sm);
   height: var(--fold-space-sm);

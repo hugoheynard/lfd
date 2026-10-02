@@ -82,7 +82,12 @@
             <div class="lp-section" data-plan-floor-section>
               <fold-element-title variant="caps" title="Plancher" />
               @if (plan.floor; as floor) {
-                <app-loading-floor [floor]="floor" [stacks]="plan.stacks" />
+                <app-loading-floor
+                  [floor]="floor"
+                  [stacks]="plan.stacks"
+                  [order]="plan.order"
+                  [loadedStacks]="loadedStacks()"
+                />
               } @else {
                 <p class="lp-line" data-plan-floor-unknown>
                   Les dimensions de {{ plan.vehicleName }} ne sont pas renseignées : pas de plancher

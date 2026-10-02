@@ -20,6 +20,7 @@ import {
   FoldMeterComponent,
 } from 'fold-ng';
 
+import { loadedStackIndexes } from '../delivery-loading-floor';
 import {
   currentStep,
   isStepLoaded,
@@ -85,6 +86,11 @@ export class LoadingPlan {
   });
 
   protected readonly loaded = computed(() => loadedBinKeys(this.round()));
+
+  protected readonly loadedStacks = computed(() => {
+    const plan = this.plan();
+    return plan === null ? new Set<number>() : loadedStackIndexes(plan.order, this.loaded());
+  });
 
   protected readonly current = computed(() => {
     const plan = this.plan();

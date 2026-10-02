@@ -41,6 +41,11 @@ function render(floor: DeliveryLoadingPlanFloorView): HTMLElement {
   const fixture = TestBed.createComponent(LoadingFloor);
   fixture.componentRef.setInput('floor', floor);
   fixture.componentRef.setInput('stacks', STACKS);
+  fixture.componentRef.setInput('order', [
+    { step: 1, stopPosition: 6, reference: 'CMD-6', customerLabel: 'Les Balcons', bins: [] },
+    { step: 2, stopPosition: 5, reference: 'CMD-5', customerLabel: 'Le Refuge', bins: [] },
+  ]);
+  fixture.componentRef.setInput('loadedStacks', new Set([1]));
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
 }
@@ -53,7 +58,19 @@ describe('LoadingFloor', () => {
     expect(element.querySelectorAll('[data-arch]')).toHaveLength(2);
     const stacks = element.querySelectorAll('[data-floor-stack]');
     expect(stacks).toHaveLength(1);
-    expect(stacks[0]?.querySelector('text')?.textContent?.trim()).toBe('6·5');
+    expect(stacks[0]?.querySelector('text')?.textContent?.trim()).toBe('✓ 6·5');
+  });
+
+  it('colore une tranche par arrêt, marque la pile chargée et légende arrêt → client', () => {
+    const element = render(FLOOR);
+
+    const stack = element.querySelector('[data-floor-stack]');
+    expect(stack?.hasAttribute('data-loaded')).toBe(true);
+    expect(stack?.querySelectorAll('[data-floor-band]')).toHaveLength(2);
+    const legend = [...element.querySelectorAll('[data-floor-legend]')].map((li) =>
+      li.textContent?.replace(/\s+/g, ' ').trim(),
+    );
+    expect(legend).toEqual(['5 Le Refuge · CMD-5', '6 Les Balcons · CMD-6']);
   });
 
   it('nomme les piles qui ne tiennent pas au sol', () => {

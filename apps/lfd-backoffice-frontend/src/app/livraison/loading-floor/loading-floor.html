@@ -33,10 +33,21 @@
       />
     }
     @for (shape of shapes(); track shape.stackIndex) {
-      <g data-floor-stack>
+      <g data-floor-stack [attr.data-loaded]="shape.loaded ? '' : null">
         <title>{{ shape.title }}</title>
+        @for (band of shape.bands; track band.stopPosition) {
+          <rect
+            [class]="'band hue-' + band.hue"
+            data-floor-band
+            [attr.x]="padding + shape.x + band.offset"
+            [attr.y]="padding + shape.y"
+            [attr.width]="band.depth"
+            [attr.height]="shape.across"
+          />
+        }
         <rect
           class="stack"
+          [class.stack--loaded]="shape.loaded"
           rx="1.5"
           [attr.x]="padding + shape.x"
           [attr.y]="padding + shape.y"
@@ -59,7 +70,13 @@
 
   <ul class="legend">
     <li>Fond à gauche, portes à droite</li>
-    <li>Le numéro est celui de l’arrêt, de bas en haut de la pile</li>
+    <li>Le numéro est celui de l’arrêt, de bas en haut de la pile ; ✓ = pile chargée</li>
+    @for (stop of legend(); track stop.stopPosition) {
+      <li data-floor-legend>
+        <span [class]="'swatch hue-' + stop.hue"></span><strong>{{ stop.stopPosition }}</strong>
+        {{ stop.label }}
+      </li>
+    }
     @if (floor().wheelArches !== null) {
       <li><span class="swatch arch"></span>passage de roue</li>
     }

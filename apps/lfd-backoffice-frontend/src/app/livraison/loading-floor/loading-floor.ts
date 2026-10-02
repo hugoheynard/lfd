@@ -1,7 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import type { DeliveryLoadingPlanFloorView, DeliveryLoadingPlanStackView } from '@lfd/contracts';
+import type {
+  DeliveryLoadingPlanFloorView,
+  DeliveryLoadingPlanStackView,
+  DeliveryLoadingPlanStepView,
+} from '@lfd/contracts';
 
-import { floorStackShapes, unplacedStacksLabel } from '../delivery-loading-floor';
+import { floorLegend, floorStackShapes, unplacedStacksLabel } from '../delivery-loading-floor';
 
 /** Marge autour du plancher, en cm du dessin. */
 const PLAN_PADDING = 4;
@@ -11,6 +15,10 @@ const PLAN_PADDING = 4;
  * à gauche, les portes à droite, les passages de roue, et chaque pile posée
  * portant les numéros de ses arrêts, du bas vers le haut. Lu au dépôt comme
  * sur le téléphone du livreur : le dessin s'étire sur la largeur disponible.
+ *
+ * G6 : chaque arrêt a sa couleur (une tranche de pile par arrêt), redondante
+ * avec le numéro qui reste écrit ; la légende dit arrêt → couleur → client.
+ * Une pile dont tous les bacs sont scannés se marque « ✓ » et se cercle.
  */
 @Component({
   selector: 'app-loading-floor',
@@ -21,9 +29,14 @@ const PLAN_PADDING = 4;
 export class LoadingFloor {
   readonly floor = input.required<DeliveryLoadingPlanFloorView>();
   readonly stacks = input.required<readonly DeliveryLoadingPlanStackView[]>();
+  /** L'ordre du plan : le client de chaque arrêt, pour la légende. */
+  readonly order = input<readonly DeliveryLoadingPlanStepView[]>([]);
+  /** Les piles dont tous les bacs sont scannés. */
+  readonly loadedStacks = input<ReadonlySet<number>>(new Set());
 
   protected readonly padding = PLAN_PADDING;
-  protected readonly shapes = computed(() => floorStackShapes(this.stacks()));
+  protected readonly shapes = computed(() => floorStackShapes(this.stacks(), this.loadedStacks()));
+  protected readonly legend = computed(() => floorLegend(this.stacks(), this.order()));
   protected readonly offFloor = computed(() => unplacedStacksLabel(this.stacks(), 'off_floor'));
   protected readonly refrigerated = computed(() =>
     unplacedStacksLabel(this.stacks(), 'refrigerated'),
