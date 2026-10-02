@@ -11,6 +11,25 @@
 > 2026-10-01 : `plan-poste-de-colisage.md`, `chargement-les-bacs.md`,
 > `plan-le-plus-choisit-un-bac.md`, `plan-controle-qualite.md`.
 
+## Où on en est (relu le 2026-10-02)
+
+> Le corps du document date du 2026-10-01 et reste tel quel ; ce tableau dit
+> ce qui a bougé depuis. Les ❓ ont reçu une **décision par défaut**, à revoir
+> avec Hugo : [`decisions-par-defaut-2026-10-02.md`](decisions-par-defaut-2026-10-02.md) §2.
+
+| Étape | Avant (2026-10-01)                        | Maintenant                                                                                                                    |
+| ----- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1     | 🟡 droit `production_packing` non déployé | ✅ le poste s'ouvre avec `production_packing` (en production depuis le 2026-10-01)                                            |
+| 2     | ❓ ordre de colisage                      | ✅ rangé par tournée, dernier arrêt d'abord (PC2, `507564e72`) — par défaut                                                   |
+| 3-4   | 🟡 le « + » choisit un bac                | ✅ un « + » par format, format proposé en couleur, « − » sur le dernier, avertissements froid et aucun bac (PC1) — par défaut |
+| 5     | ❓ quel produit dans quel bac             | non, pour l'instant — par défaut                                                                                              |
+| 6     | ❓ une ligne qui ne viendra jamais        | le superviseur, hors application (un avenant) — par défaut                                                                    |
+| 8     | ❓ voir la retenue qualité                | ✅ badge « Retenue au contrôle » au poste (PC2) ; ✅ le départ refuse une commande retenue (BQ)                               |
+| 9     | ❌ / ❓ où poser les bacs                 | ✅ l'étiquette porte la tournée et « Arrêt n » en gros (PC3) ; une zone par tournée — par défaut                              |
+| 10    | ❓ l'avancement par tournée               | ✅ « n commandes prêtes sur m » par tournée au poste (PC2) ; ✅ « Ma tournée » côté livreur (PL4)                             |
+| 11    | 🟡 PL4 / PL1 en cours                     | ✅ bâtis et en production                                                                                                     |
+| ↔     | ❓ prévenu d'un « à refaire »             | ✅ badge « À refaire » au poste (PC2), relu dès que la livraison bouge si le poste a un droit de tournées ou de chargement    |
+
 ## Le parcours
 
 ```mermaid
