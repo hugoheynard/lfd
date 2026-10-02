@@ -59,6 +59,31 @@ export class RoundNotDepartedForReturnError extends BusinessError {
   }
 }
 
+/**
+ * **« Tournée terminée » avec des arrêts sans sort** (`plan-a-la-porte.md`,
+ * § 10 B4 ; `parcours-du-livreur.md`, « Tournée terminée exige un sort pour
+ * chaque arrêt ») — refusé au LIVREUR tant qu'un arrêt n'est ni livré (remis,
+ * déposé), ni clos par une décision (clos sans remise, rapporté). Un arrêt
+ * seulement signalé, ou qui attend le commercial, n'a pas de sort. Le refus
+ * nomme les arrêts, comme celui du départ.
+ */
+export class RoundStopsWithoutOutcomeError extends BusinessError {
+  /** Les arrêts en cause, tels que le livreur les lit (« Client (CMD-1) »). */
+  readonly stops: readonly string[];
+
+  constructor(stops: readonly string[]) {
+    const subject =
+      stops.length > 1
+        ? `${String(stops.length)} arrêts n'ont pas de sort`
+        : "un arrêt n'a pas de sort";
+    super(
+      "delivery.round_stops_without_outcome",
+      `Vous ne pouvez pas terminer la tournée : ${subject} (${stops.join(", ")}). Pour chacun, remettez au client, déposez avec preuve ou clôturez sans remise — ou attendez la décision du commercial sur le problème signalé. Bloqué : appelez le dépôt.`,
+    );
+    this.stops = [...stops];
+  }
+}
+
 /** « Je suis arrivé » sur un arrêt déjà clos. */
 export class DoorstepStopClosedError extends BusinessError {
   constructor() {

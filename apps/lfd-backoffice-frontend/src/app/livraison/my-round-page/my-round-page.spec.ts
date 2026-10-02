@@ -586,6 +586,28 @@ describe('MyRoundPage — à la porte (lot A, PL2)', () => {
   });
 });
 
+describe('MyRoundPage — « Tournée terminée » exige un sort pour chaque arrêt (B4)', () => {
+  const departedAt = '2026-10-01T06:00:00.000Z';
+
+  it('nomme avant le clic les arrêts encore sans sort', async () => {
+    const { element } = await boot({ round: myRoundOf({ departedAt }) });
+    const note = element.querySelector('[data-without-outcome]')?.textContent ?? '';
+    expect(note).toContain('1. Client 1, 2. Client 2');
+    expect(element.querySelector('[data-return]')).not.toBeNull();
+  });
+
+  it('ne dit rien quand chaque arrêt est clos', async () => {
+    const closedAt = '2026-10-01T08:00:00.000Z';
+    const { element } = await boot({
+      round: myRoundOf({
+        departedAt,
+        stops: [myStopOf({ rank: 1, closedAt }), myStopOf({ rank: 2, closedAt })],
+      }),
+    });
+    expect(element.querySelector('[data-without-outcome]')).toBeNull();
+  });
+});
+
 describe('MyRoundPage — elle suit le colisage (PL4)', () => {
   it('compte en tête les arrêts prêts, et le dit quand tout l’est', async () => {
     const { element } = await boot({ round: myRoundOf({ readyStops: 1, stopCount: 2 }) });

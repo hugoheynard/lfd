@@ -439,7 +439,19 @@ describe("« Tournée terminée » (PL2)", () => {
   it("le livreur rentre : une fois, 204 rejouée ; les deux vues le portent, un fait au journal", async () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const lea = await staffWithRole(ctx, "livreur-lea");
-    const { roundId } = await departedRound(paul, 1);
+    const { roundId, orderIds } = await departedRound(paul, 1);
+    // B4 : le livreur ne termine qu'avec un sort pour chaque arrêt — ici, clos sans remise.
+    await ctx.prisma.order.update({
+      where: { id: orderIds[0] ?? "" },
+      data: { status: "cancelled" },
+    });
+    const { version: closing } = await myRound(paul.agent, roundId);
+    await paul.agent
+      .post(
+        `${MY_ROUND}/${roundId}/arrets/${await stopIdOf(orderIds[0] ?? "")}/cloture-sans-remise`,
+      )
+      .send({ version: closing })
+      .expect(204);
 
     await lea.agent.post(`${MY_ROUND}/${roundId}/retour`).expect(404);
     await paul.agent.post(`${MY_ROUND}/${roundId}/retour`).expect(204);
@@ -488,7 +500,8 @@ describe("« Tournée terminée » (PL2)", () => {
       where: { id: orderIds[0] ?? "" },
       data: { status: "cancelled" },
     });
-    await paul.agent.post(`${MY_ROUND}/${roundId}/retour`).expect(204);
+    // L'arrêt reste ouvert pour éprouver les refus : seule la rentrée staff le permet (B4).
+    await admin(ctx).post(`${ROUNDS}/${roundId}/retour`).expect(204);
     const { version } = await myRound(paul.agent, roundId);
 
     const arrival = await paul.agent

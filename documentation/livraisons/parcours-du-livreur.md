@@ -305,7 +305,11 @@ affichée en roulant ou à l'arrivée (9), changer l'ordre (10).
 
 ## Note — « Tournée terminée » exige un sort pour chaque arrêt (Hugo, 2026-10-01)
 
-> 📌 **Décidé, pas bâti.** « On ne peut pas faire tournée terminée si [ni]
+> 🔨 **Bâti le 2026-10-01** (`plan-a-la-porte.md`, § 10 B4) : le livreur est
+> refusé (409 nommé) ; la rentrée staff reste permise, et ses arrêts sans sort
+> passent dans « Non remis ».
+>
+> 📌 **Décidé par Hugo.** « On ne peut pas faire tournée terminée si [ni]
 > une livraison effectuée, [ni] une décision actée » pour chaque point de la
 > tournée.
 
@@ -317,6 +321,4 @@ affichée en roulant ou à l'arrivée (9), changer l'ordre (10).
   (lot B).
 
 Un arrêt seulement **signalé** ne suffit pas. Le refus nomme les arrêts en
-cause, comme « Commencer ma tournée ». Aujourd'hui (lot A), « Tournée terminée »
-ne vérifie pas cette condition : elle se bâtit avec le lot B, qui crée la
-remise et la décision du commercial.
+cause, comme « Commencer ma tournée ».

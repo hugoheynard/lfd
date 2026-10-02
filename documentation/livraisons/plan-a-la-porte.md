@@ -394,6 +394,21 @@ dont la validation échouerait. B0 ajoute « exécuter après la validation »
 Refus tant qu'un arrêt n'a ni livraison (remis, déposé), ni décision actée
 (clos sans remise, « Rapporter ») — nommé, comme au départ.
 
+> 🔨 **B4 bâti le 2026-10-01 (non commité à l'écriture de cette ligne).**
+> `DeliveryRound.finish` (I9) : tout sort — remis, déposé, clos sans remise,
+> rapporté par un commercial ou par réglage — passe par `closeStop`, donc la
+> règle est « aucun arrêt vivant ». Un arrêt seulement signalé, en attente du
+> commercial, ou autorisé au dépôt mais pas déposé, est vivant : refus 409
+> `delivery.round_stops_without_outcome`, qui nomme « Client (CMD-x) » (lu par
+> `DeliveryOrdersReader`). Refus ⇒ rien d'écrit, aucun fait. Déjà rentrée :
+> 204, sans vérifier. **SÉRIEUX 4 tranché : la rentrée STAFF
+> (`ReturnDeliveryRoundHandler`, `returnToDepot` seul) reste permise** —
+> sortie de secours d'un livreur bloqué ; ses arrêts sans sort restent ouverts
+> et paraissent dans « Non remis ». Une tournée partie sous l'ancien code n'est
+> pas rattrapée : la règle vaut à son prochain « Tournée terminée ». Écran :
+> la carte nomme les arrêts sans sort avant le clic (`data-without-outcome`),
+> le refus du serveur s'affiche tel quel. Aucune migration.
+
 ### B5 — Prévenir les commerciaux
 
 Demande une notification adressée par droit : c'est le chantier mis de côté

@@ -28,10 +28,12 @@ import {
 } from "./delivery-handover-scene.js";
 import {
   addVehicle,
+  admin,
   ADMIN_VERIFIER_OVERRIDE,
   assign,
   forgetCustomer,
   openRound,
+  ROUNDS,
 } from "./delivery-rounds-scene.js";
 import { forgetRoutingScene } from "./delivery-routing-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -198,7 +200,8 @@ describe("« À décider » — le commercial décide (B3)", () => {
   it("🔴 décision refusée sur une tournée rentrée", async () => {
     const { paul, lea, roundId, stopId } = await scene(false);
     await reportNobody(paul.agent, roundId, stopId);
-    await paul.agent.post(`${MY_ROUND}/${roundId}/retour`).expect(204);
+    // Le livreur ne peut plus terminer avec un arrêt en attente (B4) : la rentrée staff le peut.
+    await admin(ctx).post(`${ROUNDS}/${roundId}/retour`).expect(204);
 
     const returned = await lea.agent.post(`${DECIDE}/${stopId}/autoriser-depot`);
 

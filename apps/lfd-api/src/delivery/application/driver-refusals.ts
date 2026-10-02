@@ -75,3 +75,24 @@ async function customersOf(
     return customer === undefined || customer === "" ? reference : `${customer} (${reference})`;
   });
 }
+
+/**
+ * Commande → « Client (CMD-1) », pour nommer les arrêts d'un refus du livreur
+ * (« Tournée terminée », `plan-a-la-porte.md` § 10 B4). Rien à lire quand il
+ * n'y a aucune commande.
+ */
+export async function customerLabelsOf(
+  orders: DeliveryOrdersReader,
+  orderIds: readonly string[],
+): Promise<ReadonlyMap<string, string>> {
+  if (orderIds.length === 0) {
+    return new Map();
+  }
+  const facts = await orders.byIds(orderIds);
+  return new Map(
+    facts.map((order) => [
+      order.orderId,
+      order.customerLabel === "" ? order.reference : `${order.customerLabel} (${order.reference})`,
+    ]),
+  );
+}

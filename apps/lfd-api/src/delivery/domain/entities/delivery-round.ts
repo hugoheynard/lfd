@@ -19,6 +19,7 @@ import {
   DeliveryRoundReturnedError,
   DoorstepRoundNotDepartedError,
   RoundNotDepartedForReturnError,
+  RoundStopsWithoutOutcomeError,
 } from "../errors/delivery-doorstep-errors.js";
 import { isCalendarDay } from "../value-objects/service-day.js";
 import { SharedBinToRedoError } from "../errors/delivery-bin-declaration-errors.js";
@@ -57,7 +58,9 @@ export type {
  *   geste permis après le départ — et seulement après ;
  * - **I8** — « Tournée terminée » (`parcours-du-livreur.md`, PL2) : on ne
  *   rentre que d'une tournée partie, une fois ; rentrée, elle n'accepte plus
- *   aucun geste de la porte (`closeStop` compris).
+ *   aucun geste de la porte (`closeStop` compris) ;
+ * - **I9** — le LIVREUR ne termine que si chaque arrêt a un sort (`finish`,
+ *   `plan-a-la-porte.md` § 10 B4) ; la rentrée par le staff reste permise.
  *
  * **I3** (une commande dans au plus une tournée vivante, tous jours
  * confondus) concerne toutes les tournées : c'est la base qui la tient, par un
@@ -395,7 +398,8 @@ export class DeliveryRound {
    * **« Tournée terminée »** (`parcours-du-livreur.md`, PL2, I8) : les bacs
    * vides sont rentrés. Seulement partie ; une fois — un second appel rend
    * `false` et n'écrit rien, le premier retour fait foi. Les arrêts encore
-   * ouverts le restent : rien ne se clôt tout seul.
+   * ouverts le restent : rien ne se clôt tout seul. Appelé seul, c'est la
+   * rentrée du STAFF ; le livreur passe par `finish` (I9).
    *
    * @throws {RoundNotDepartedForReturnError} la tournée n'est pas partie.
    */
@@ -409,6 +413,35 @@ export class DeliveryRound {
     this.currentReturn = { at, byStaffId: by.staffUserId, byName: by.name };
     this.touch(at);
     return true;
+  }
+
+  /**
+   * **« Tournée terminée » par le LIVREUR** (`plan-a-la-porte.md`, § 10 B4,
+   * I9) : refusée tant qu'un arrêt est vivant. Tout sort — remis, déposé,
+   * clos sans remise, rapporté par un commercial ou par réglage — passe par
+   * `closeStop` ; un arrêt seulement signalé, ou qui attend la décision du
+   * commercial, est encore vivant. Le refus nomme les arrêts par `labels`
+   * (commande → « Client (CMD-1) »).
+   *
+   * Une tournée déjà rentrée rend `false` sans rien vérifier : le premier
+   * retour fait foi, même celui du staff avec des arrêts ouverts. La rentrée
+   * staff (`returnToDepot` seul) n'est pas soumise à cette règle : c'est la
+   * sortie de secours d'un livreur bloqué, et ses arrêts sans sort passent
+   * dans « Non remis » (AP-D7).
+   *
+   * @throws {RoundNotDepartedForReturnError} @throws {RoundStopsWithoutOutcomeError}
+   */
+  finish(
+    at: Date,
+    by: { readonly staffUserId: string; readonly name: string },
+    labels: ReadonlyMap<string, string>,
+  ): boolean {
+    if (this.currentDepartedAt !== null && this.currentReturn === null && this.open.length > 0) {
+      throw new RoundStopsWithoutOutcomeError(
+        this.open.map((stop) => labels.get(stop.orderId) ?? stop.orderId),
+      );
+    }
+    return this.returnToDepot(at, by);
   }
 
   /**

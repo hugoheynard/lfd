@@ -15,6 +15,7 @@ import {
   DoorstepStopNotFoundError,
   InvalidIncidentPhotoError,
   RoundNotDepartedForReturnError,
+  RoundStopsWithoutOutcomeError,
   StopStillToHandOverError,
 } from "../../../domain/errors/delivery-doorstep-errors.js";
 import { DriverRoundNotFoundError } from "../../../domain/errors/delivery-driver-errors.js";
@@ -488,6 +489,7 @@ describe("« Tournée terminée » — ReturnMyRoundHandler et ReturnDeliveryRou
     );
     const mine = new ReturnMyRoundHandler(
       rounds,
+      new FixedDeliveryOrders([deliveryOn("o_1", DAY, { customerLabel: "Refuge 1950" })]),
       directory,
       new FixedClock(NOW),
       events,
@@ -503,8 +505,15 @@ describe("« Tournée terminée » — ReturnMyRoundHandler et ReturnDeliveryRou
     return { rounds, events, mine, byAdmin };
   }
 
-  it("le livreur rentre : instant du `Clock`, auteur figé, un fait avec les arrêts restés ouverts", async () => {
-    const { rounds, events, mine } = returning();
+  /** L'arrêt a un sort : la tournée l'a clos (remis, déposé, sans remise, rapporté). */
+  function settled(): DeliveryRound {
+    const round = departed();
+    round.closeStop("s_1", DEPARTED);
+    return DeliveryRound.restore(round.toSnapshot());
+  }
+
+  it("le livreur rentre quand chaque arrêt a un sort : instant du `Clock`, auteur figé, un fait", async () => {
+    const { rounds, events, mine } = returning(settled());
 
     await mine.execute(new ReturnMyRoundCommand(PAUL, "r_1"));
 
@@ -517,12 +526,34 @@ describe("« Tournée terminée » — ReturnMyRoundHandler et ReturnDeliveryRou
       type: "delivery_round.returned",
       subjectType: "delivery_round",
       subjectId: "r_1",
-      payload: { subjectLabel: "Kangoo", day: DAY, passage: 1, openStops: 1 },
+      payload: { subjectLabel: "Kangoo", day: DAY, passage: 1, openStops: 0 },
     });
   });
 
+  it("🔴 B4 : un arrêt sans sort refuse le livreur en le nommant — rien ne s'écrit, rien ne se journalise", async () => {
+    const { rounds, events, mine } = returning();
+
+    await expect(mine.execute(new ReturnMyRoundCommand(PAUL, "r_1"))).rejects.toThrow(
+      RoundStopsWithoutOutcomeError,
+    );
+    await expect(mine.execute(new ReturnMyRoundCommand(PAUL, "r_1"))).rejects.toThrow(
+      /Refuge 1950 \(CMD-o_1\)/u,
+    );
+    expect(rounds.saved).toEqual([]);
+    expect(events.traced).toEqual([]);
+  });
+
+  it("la rentrée staff reste permise malgré un arrêt sans sort : il reste ouvert, le fait le compte", async () => {
+    const { rounds, events, byAdmin } = returning();
+
+    await byAdmin.execute(new ReturnDeliveryRoundCommand("staff_admin", "r_1"));
+
+    expect(rounds.stored("r_1")?.liveStops).toHaveLength(1);
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({ openStops: 1 });
+  });
+
   it("rejoué, rien ne s'écrit ni ne se journalise", async () => {
-    const { rounds, events, mine, byAdmin } = returning();
+    const { rounds, events, mine, byAdmin } = returning(settled());
     await mine.execute(new ReturnMyRoundCommand(PAUL, "r_1"));
 
     await mine.execute(new ReturnMyRoundCommand(PAUL, "r_1"));

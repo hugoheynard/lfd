@@ -14,6 +14,11 @@ import { ReturnDeliveryRoundCommand } from "./return-delivery-round.command.js";
  * livreur qui a oublié, une tournée sans livreur partie par le chargeur. La
  * tournée est verrouillée comme au départ ; idempotente.
  *
+ * **Elle n'exige PAS un sort pour chaque arrêt** (`plan-a-la-porte.md`,
+ * § 10 B4, § 10 bis SÉRIEUX 4) : c'est la sortie de secours quand le livreur
+ * est bloqué. Ses arrêts sans sort restent ouverts et paraissent dans
+ * « Non remis » (AP-D7).
+ *
  * @throws {DeliveryRoundNotFoundError} @throws {RoundNotDepartedForReturnError}
  */
 @CommandHandler(ReturnDeliveryRoundCommand)
@@ -35,11 +40,16 @@ export class ReturnDeliveryRoundHandler implements ICommandHandler<
       if (round === null) {
         throw new DeliveryRoundNotFoundError(command.roundId);
       }
-      const returned = await returnAndRecord(round, command.staffUserId, {
-        rounds: this.rounds,
-        directory: this.directory,
-        clock: this.clock,
-      });
+      const returned = await returnAndRecord(
+        round,
+        command.staffUserId,
+        {
+          rounds: this.rounds,
+          directory: this.directory,
+          clock: this.clock,
+        },
+        (at, by) => round.returnToDepot(at, by),
+      );
       if (returned !== null) {
         await this.events.publishTraced(returned);
       }

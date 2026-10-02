@@ -135,6 +135,12 @@
                           Déclarer un problème
                         </button>
                       }
+                      @if (withoutOutcome(); as withoutOutcome) {
+                        <fold-callout variant="warning" data-without-outcome>
+                          Pour terminer, chaque arrêt doit avoir un sort — remis, déposé, clos sans
+                          remise ou rapporté. Reste : {{ withoutOutcome }}.
+                        </fold-callout>
+                      }
                       <fold-inline-confirm
                         intent="primary"
                         message="Les bacs vides sont rentrés : plus aucun geste ne sera possible sur cette tournée."

@@ -5,6 +5,12 @@ import { DeliveryRoundReturnedEvent } from "../domain/events/delivery-doorstep.e
 import type { DeliveryRoundRepository } from "../domain/ports/delivery-round.repository.js";
 import { deliveryAuthorOf } from "./delivery-author.js";
 
+/** Le geste de rentrer : `finish` pour le livreur (I9), `returnToDepot` pour le staff. */
+export type ReturnGesture = (
+  at: Date,
+  by: { readonly staffUserId: string; readonly name: string },
+) => boolean;
+
 /** Les ports du retour — ceux des deux portes (livreur et admin). */
 export interface ReturnDeps {
   readonly rounds: DeliveryRoundRepository;
@@ -20,15 +26,21 @@ export interface ReturnDeps {
  * transaction (même partage que `departAndFreeze`, MT-D3 v2).
  *
  * L'auteur est FIGÉ au geste (nom de l'annuaire, `""` s'il n'en a pas). Rend
- * le fait à publier, ou `null` : déjà rentrée, rien ne s'écrit.
+ * le fait à publier, ou `null` : déjà rentrée, rien ne s'écrit. Un refus
+ * (`gesture` qui lève) n'écrit rien non plus : un refus n'est pas un fait.
+ *
+ * `gesture` est OBLIGATOIRE : chaque porte dit si elle exige un sort par
+ * arrêt (`plan-a-la-porte.md` § 10 B4) — l'absence d'un argument ne doit
+ * jamais vouloir dire « sans la règle ».
  */
 export async function returnAndRecord(
   round: DeliveryRound,
   staffUserId: string,
   deps: ReturnDeps,
+  gesture: ReturnGesture,
 ): Promise<DeliveryRoundReturnedEvent | null> {
   const author = await deliveryAuthorOf(deps.directory, staffUserId);
-  if (!round.returnToDepot(deps.clock.now(), author)) {
+  if (!gesture(deps.clock.now(), author)) {
     return null;
   }
   await deps.rounds.save(round);

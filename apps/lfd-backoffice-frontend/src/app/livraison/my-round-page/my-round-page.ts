@@ -159,6 +159,17 @@ export class MyRoundPage {
   protected readonly roundFamilies: readonly DeliveryIncidentFamily[] = ['technical', 'road'];
   protected readonly remaining = computed(() => remainingStops(this.round()?.stops ?? []));
   protected readonly legs = computed(() => routeLegs(this.remaining()));
+  /**
+   * Les arrêts sans sort, nommés — « Tournée terminée » les refusera
+   * (`plan-a-la-porte.md`, § 10 B4) : le dire avant le clic. Tout sort ferme
+   * l'arrêt, donc ce sont les arrêts encore ouverts. `null` : aucun.
+   */
+  protected readonly withoutOutcome = computed(() => {
+    const open = this.remaining();
+    return open.length === 0
+      ? null
+      : open.map((stop) => `${String(stop.rank)}. ${stop.customerLabel}`).join(', ');
+  });
   /** L'arrêt suivant : le premier encore ouvert, dans l'ordre de passage. */
   protected readonly nextStop = computed(() => this.remaining()[0] ?? null);
   protected readonly currentStop = computed<CurrentStopRef | null>(() => {
