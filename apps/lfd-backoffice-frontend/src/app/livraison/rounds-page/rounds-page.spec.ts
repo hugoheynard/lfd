@@ -105,7 +105,7 @@ function sheet(day: string): DeliveryRunSheetView {
 
 interface Wire {
   readonly calls: string[];
-  readonly reads: { rounds: string[]; sheets: string[] };
+  readonly reads: { rounds: string[]; sheets: string[]; also: (readonly string[])[] };
   refuse: HttpErrorResponse | null;
 }
 
@@ -128,7 +128,7 @@ async function boot(
   sheetRead: (day: string) => Promise<DeliveryRunSheetView> = (day) => Promise.resolve(sheet(day)),
   query: Record<string, string> = {},
 ): Promise<{ fixture: ComponentFixture<RoundsPage>; element: HTMLElement }> {
-  wire = { calls: [], reads: { rounds: [], sheets: [] }, refuse: null };
+  wire = { calls: [], reads: { rounds: [], sheets: [], also: [] }, refuse: null };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -169,8 +169,9 @@ async function boot(
       {
         provide: RunSheetService,
         useValue: {
-          day: (day: string) => {
+          day: (day: string, also: readonly string[] = []) => {
             wire.reads.sheets.push(day);
+            wire.reads.also.push(also);
             return sheetRead(day);
           },
         },
@@ -260,10 +261,10 @@ describe('RoundsPage', () => {
     }
   });
 
-  it('lit demain par défaut, composition ET feuille de route ensemble (C16)', async () => {
+  it('lit demain par défaut, composition puis feuille de route, qui reçoit les rapportées (C16)', async () => {
     await boot();
     const tomorrow = shiftDay(parisDayOf(new Date()), 1);
-    expect(wire.reads).toEqual({ rounds: [tomorrow], sheets: [tomorrow] });
+    expect(wire.reads).toEqual({ rounds: [tomorrow], sheets: [tomorrow], also: [['o-4']] });
   });
 
   it('dit l’échec d’une des deux lectures en alerte : l’une sans l’autre n’est rien', async () => {
@@ -319,6 +320,12 @@ describe('RoundsPage', () => {
     button(stops[1], '[data-remove]').click();
     await settle(fixture);
     expect(wire.calls).toEqual(['remove r-1 s-2 {"version":4}']);
+  });
+
+  it('nomme à la feuille de route les rapportées à replacer (decisions-par-defaut § 4)', async () => {
+    await boot();
+
+    expect(wire.reads.also).toEqual([['o-4']]);
   });
 
   it('409 : dit que la composition a changé et RELIT, sans réessayer', async () => {

@@ -65,14 +65,26 @@ function entry(overrides: Partial<DeliveryRunSheetEntry> = {}): DeliveryRunSheet
 
 class FixedRunSheet extends DeliveryRunSheetReader {
   readonly calls: string[] = [];
+  readonly amongCalls: (readonly string[])[] = [];
 
-  constructor(private readonly entries: readonly DeliveryRunSheetEntry[]) {
+  constructor(
+    private readonly entries: readonly DeliveryRunSheetEntry[],
+    /** Les livraisons d'autres jours, trouvables par identifiant. */
+    private readonly elsewhere: readonly DeliveryRunSheetEntry[] = [],
+  ) {
     super();
   }
 
   deliveriesOn(day: string): Promise<readonly DeliveryRunSheetEntry[]> {
     this.calls.push(day);
     return Promise.resolve(this.entries);
+  }
+
+  deliveriesAmong(orderIds: readonly string[]): Promise<readonly DeliveryRunSheetEntry[]> {
+    this.amongCalls.push(orderIds);
+    return Promise.resolve(
+      [...this.entries, ...this.elsewhere].filter((row) => orderIds.includes(row.orderId)),
+    );
   }
 }
 
@@ -106,8 +118,9 @@ function handlerOf(
   entries: readonly DeliveryRunSheetEntry[],
   attested: ReadonlyMap<string, AttestedHandover> = new Map(),
   without: ReadonlySet<string> = new Set(),
+  elsewhere: readonly DeliveryRunSheetEntry[] = [],
 ) {
-  const sheet = new FixedRunSheet(entries);
+  const sheet = new FixedRunSheet(entries, elsewhere);
   const attestations = new RecordingAttestations(attested);
   const sheets = new FixedAtelierSheets(without);
   return {
@@ -231,5 +244,46 @@ describe("GetDeliveryRunSheetHandler", () => {
       procedure: [],
     });
     expect(JSON.stringify(view)).not.toMatch(/code 1234|Portail|01JREV/u);
+  });
+
+  describe("les livraisons d'un autre jour nommées par l'écran (rapportées, § 4)", () => {
+    it("ajoute la rapportée replacée, avec son adresse, sa fenêtre et sa procédure, après celles du jour", async () => {
+      const { handler } = handlerOf([entry({ orderId: "a" })], new Map(), new Set(), [
+        entry({ orderId: "back", reference: "ORD-BACK" }),
+      ]);
+
+      const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, true, ["back"]));
+
+      expect(view.stops.map((stop) => stop.orderId)).toEqual(["a", "back"]);
+      expect(view.stops[1]).toMatchObject({
+        address: { ligne1: "12 rue du Test" },
+        window: { start: "08:00", end: "09:00" },
+        addressBook: { procedure: [{ title: "Portail" }] },
+        withoutAtelierSheet: false,
+      });
+    });
+
+    it("🔴 sans `delivery_procedures:read`, sa procédure part vide aussi (DG-D8)", async () => {
+      const { handler } = handlerOf([], new Map(), new Set(), [entry({ orderId: "back" })]);
+
+      const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, false, ["back"]));
+
+      expect(view.stops[0]?.addressBook?.procedure).toEqual([]);
+    });
+
+    it("ne double pas une commande déjà du jour, et ne la cherche pas au plan d'atelier d'un autre jour", async () => {
+      const { handler, sheets, attestations } = handlerOf(
+        [entry({ orderId: "a" })],
+        new Map(),
+        new Set(),
+        [entry({ orderId: "back" })],
+      );
+
+      const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, true, ["a", "back"]));
+
+      expect(view.stops.map((stop) => stop.orderId)).toEqual(["a", "back"]);
+      expect(attestations.calls).toEqual([["a", "back"]]);
+      expect(sheets.calls).toEqual([{ day: DAY, orderIds: ["a"] }]);
+    });
   });
 });

@@ -13,6 +13,7 @@ import {
   toRunSheetEntry,
   type AddressLink,
   type RunSheetAddressRow,
+  type RunSheetOrderRow,
   type RunSheetProcedureRow,
 } from "./delivery-run-sheet.query.js";
 import { expectedOnWhere } from "./handover-order.query.js";
@@ -45,6 +46,24 @@ export class PrismaDeliveryRunSheetReader extends DeliveryRunSheetReader {
       orderBy: { createdAt: "asc" },
       select: RUN_SHEET_ORDER_SELECT,
     });
+    return this.entriesOf(rows);
+  }
+
+  async deliveriesAmong(orderIds: readonly string[]): Promise<readonly DeliveryRunSheetEntry[]> {
+    if (orderIds.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.order.findMany({
+      where: { id: { in: [...orderIds] }, status: { not: "draft" }, fulfillmentMethod: "delivery" },
+      orderBy: { createdAt: "asc" },
+      select: RUN_SHEET_ORDER_SELECT,
+    });
+    return this.entriesOf(rows);
+  }
+
+  private async entriesOf(
+    rows: readonly RunSheetOrderRow[],
+  ): Promise<readonly DeliveryRunSheetEntry[]> {
     const links = addressLinksOf(rows);
     const [addresses, procedures] = await Promise.all([
       this.addressesOf(links),

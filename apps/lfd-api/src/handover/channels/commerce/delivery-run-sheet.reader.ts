@@ -34,6 +34,20 @@ export abstract class DeliveryRunSheetReader {
    * @param day Jour de service `AAAA-MM-JJ` (`requested_delivery_date`).
    */
   abstract deliveriesOn(day: string): Promise<readonly DeliveryRunSheetEntry[]>;
+
+  /**
+   * Ces commandes-là, quel que soit leur jour demandé — en livraison,
+   * brouillons écartés, annulées rendues ; les autres sont absentes. Les
+   * mêmes lignes que {@link deliveriesOn}, sous le même mur d'adresse.
+   *
+   * Pourquoi par identifiants : une commande RAPPORTÉE peut être replacée
+   * dans une tournée d'un autre jour que sa date demandée
+   * (`decisions-par-defaut-2026-10-02.md`, § 4), et ce qui la place est la
+   * composition des tournées — un fait de la livraison, que ni la remise ni
+   * le commerce ne lisent. L'écran qui joint les deux nomme donc ces
+   * commandes ; aucun jour ne les retrouverait.
+   */
+  abstract deliveriesAmong(orderIds: readonly string[]): Promise<readonly DeliveryRunSheetEntry[]>;
 }
 
 /** Un arrêt de la feuille de route. **Aucun montant.** */

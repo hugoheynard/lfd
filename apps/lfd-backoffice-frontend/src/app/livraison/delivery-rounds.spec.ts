@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   broughtBackLabel,
   composeDay,
+  ordersFromOtherDays,
   roundLabel,
   shiftedOrder,
   signalLabel,
@@ -117,6 +118,36 @@ describe('composeDay (C16)', () => {
     expect(stops.map((line) => line.sheet?.orderId ?? null)).toEqual(['o-late', null, 'o-early']);
     expect(stops.map((line) => line.windowClash)).toEqual([null, null, 'CMD-L']);
     expect(composed.unassigned[0]?.sheet?.orderId).toBe('o-free');
+  });
+});
+
+describe('ordersFromOtherDays (rapportées, decisions-par-defaut § 4)', () => {
+  it('nomme les arrêts d’un autre jour et les rapportées à replacer, une fois chacune', () => {
+    const stop = (orderId: string, orderDay: string | null) => ({
+      stopId: `s-${orderId}`,
+      orderId,
+      reference: orderId,
+      position: 1,
+      signals: [],
+      orderDay,
+    });
+
+    expect(
+      ordersFromOtherDays({
+        day: '2026-10-01',
+        rounds: [
+          round({
+            stops: [stop('o-day', '2026-10-01'), stop('o-back', '2026-09-30'), stop('o-x', null)],
+          }),
+        ],
+        unassigned: [
+          { orderId: 'o-free', reference: 'F' },
+          { orderId: 'o-wait', reference: 'W', broughtBackAt: '2026-09-30T15:00:00.000Z' },
+          { orderId: 'o-back', reference: 'B', broughtBackAt: '2026-09-30T15:00:00.000Z' },
+        ],
+        incidents: [],
+      }),
+    ).toEqual(['o-back', 'o-wait']);
   });
 });
 

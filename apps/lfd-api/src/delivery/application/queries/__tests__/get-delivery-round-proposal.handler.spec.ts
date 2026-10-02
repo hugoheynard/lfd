@@ -1,5 +1,5 @@
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
-import type { DeliveryStopPoint } from "../../../channels/commerce/index.js";
+import type { DeliveryOrderFacts, DeliveryStopPoint } from "../../../channels/commerce/index.js";
 import { DeliveryRound } from "../../../domain/entities/delivery-round.js";
 import {
   DepartureNotLocatedError,
@@ -14,6 +14,8 @@ import type { GeoPoint } from "../../../domain/value-objects/geo-point.js";
 import { OsrmDistanceMatrix } from "../../../infrastructure/osrm-distance-matrix.js";
 import { addressKeyOf } from "../../../domain/services/address-key.js";
 import { RoutingSettings } from "../../../domain/value-objects/routing-settings.js";
+import { FixedBroughtBackOrders } from "../../commands/__tests__/brought-back-doubles.js";
+import { FixedOrderStates } from "../../commands/__tests__/doorstep-doubles.js";
 import {
   deliveryOn,
   FixedLoadedStops,
@@ -99,17 +101,18 @@ function scene(
     readonly matrix?: DistanceMatrix;
     readonly geometry?: StraightRouteGeometry;
     readonly points?: readonly DeliveryStopPoint[];
+    readonly rounds?: readonly DeliveryRound[];
+    readonly otherOrders?: readonly DeliveryOrderFacts[];
+    readonly broughtBack?: FixedBroughtBackOrders;
   } = {},
 ) {
   const rounds = new InMemoryDeliveryRounds(
     departed(),
     roundWith("r_loaded", DAY, "v2", ["o9"]),
-    roundWith("r_open", DAY, "v1", ["o10"], 2),
+    ...(options.rounds ?? [roundWith("r_open", DAY, "v1", ["o10"], 2)]),
   );
-  const orders = new LocatedDeliveryOrders(
-    POINTS.map((p) => deliveryOn(p.orderId, DAY)),
-    options.points ?? POINTS,
-  );
+  const facts = [...POINTS.map((p) => deliveryOn(p.orderId, DAY)), ...(options.otherOrders ?? [])];
+  const orders = new LocatedDeliveryOrders(facts, options.points ?? POINTS);
   const handler = new GetDeliveryRoundProposalHandler(
     new InMemoryRoutingSettings(options.settings ?? null),
     new FixedDeparture(null).reader,
@@ -122,6 +125,10 @@ function scene(
     options.matrix ?? new StraightLineDistanceMatrix(),
     options.geometry ?? new StraightRouteGeometry(),
     new FixedClock(new Date(0)),
+    options.broughtBack ?? new FixedBroughtBackOrders(),
+    new FixedOrderStates(
+      facts.map((order) => ({ orderId: order.orderId, state: "open" as const, ready: true })),
+    ),
   );
   return { handler, rounds };
 }
@@ -335,5 +342,53 @@ describe("GetDeliveryRoundProposalHandler — les camionnettes occupées (lot 7 
 
     expect(view.rounds.some((round) => round.vehicleId === "v2")).toBe(false);
     expect(view.rounds.some((round) => round.vehicleId === "v1")).toBe(true);
+  });
+
+  describe("les commandes rapportées (decisions-par-defaut-2026-10-02, § 4)", () => {
+    // Des jours comparés aux jours des commandes — jamais à l'horloge.
+    const OTHER_DAY = "2030-03-10";
+    const BROUGHT_AT = new Date("2030-03-10T15:00:00.000Z");
+    const points = [...POINTS, at("o11", 45.59, 5.95), at("o12", 45.57, 5.96)];
+
+    it("place une rapportée d'un autre jour, en tête des commandes à répartir", async () => {
+      const { handler } = scene({
+        points,
+        otherOrders: [deliveryOn("o11", OTHER_DAY)],
+        broughtBack: new FixedBroughtBackOrders([{ orderId: "o11", broughtBackAt: BROUGHT_AT }]),
+      });
+
+      const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
+
+      expect(placed(view)).toEqual(["o1", "o11", "o2", "o3", "o4", "o7"]);
+    });
+
+    it("une tournée qui tient une rapportée d'un autre jour n'est pas « signalée » pour ça", async () => {
+      const { handler } = scene({
+        points,
+        rounds: [roundWith("r_open", DAY, "v1", ["o10", "o11"], 2)],
+        otherOrders: [deliveryOn("o11", OTHER_DAY)],
+        broughtBack: new FixedBroughtBackOrders(
+          [],
+          [{ orderId: "o11", broughtBackAt: BROUGHT_AT }],
+        ),
+      });
+
+      const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, ["v1"], true));
+
+      expect(view.kept.map((kept) => kept.roundId).sort()).toEqual(["r_gone", "r_loaded"]);
+      expect(placed(view)).toContain("o11");
+    });
+
+    it("une commande d'un autre jour JAMAIS rapportée garde la tournée telle quelle", async () => {
+      const { handler } = scene({
+        points,
+        rounds: [roundWith("r_open", DAY, "v1", ["o10", "o12"], 2)],
+        otherOrders: [deliveryOn("o12", OTHER_DAY)],
+      });
+
+      const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, ["v1"], true));
+
+      expect(view.kept.find((kept) => kept.roundId === "r_open")?.reason).toBe("signaled_stop");
+    });
   });
 });

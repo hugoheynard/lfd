@@ -3,10 +3,11 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
 import {
-  type DeliveryOrderFacts,
   DeliveryOrdersReader,
+  DeliveryOrderStatesReader,
   DepartureCandidatesReader,
 } from "../../channels/commerce/index.js";
+import { BroughtBackOrdersReader } from "../../domain/ports/brought-back-orders.reader.js";
 import type { RoundRow } from "../../domain/ports/delivery-rounds.reader.js";
 import { DeliveryRoundsReader } from "../../domain/ports/delivery-rounds.reader.js";
 import { DepartureReader } from "../../domain/ports/departure.reader.js";
@@ -31,6 +32,7 @@ import {
   type KeptRound,
   passageLimitsOf,
 } from "../delivery-proposal-support.js";
+import { type ProposalDayReading, readProposalDay } from "../delivery-proposal-day.js";
 import { proposalViewOf } from "../delivery-proposal-view.js";
 import { routeLinesOf } from "../delivery-route-lines.js";
 import { fleetOccupationOf } from "../delivery-vehicle-availability.js";
@@ -50,7 +52,7 @@ const DEPOT_ID = "depot";
 
 /** Ce que les deux modes partagent. */
 interface PlanInputs {
-  readonly day: DayReading;
+  readonly day: ProposalDayReading;
   readonly stops: ReadonlyMap<string, LocatedStop>;
   readonly vehicles: readonly PlanningVehicle[];
   readonly departure: LocatedDeparture;
@@ -63,20 +65,11 @@ interface Planned {
   readonly kept: readonly KeptRound[];
 }
 
-/** Ce que la proposition a lu du jour. */
-interface DayReading {
-  readonly rounds: readonly RoundRow[];
-  /** À répartir : attendues ce jour, non annulées, dans aucune tournée vivante. */
-  readonly unassigned: readonly string[];
-  readonly loadedStopIds: ReadonlySet<string>;
-  /** Les commandes composées, relues par leur id : de quoi voir un arrêt signalé. */
-  readonly facts: ReadonlyMap<string, DeliveryOrderFacts>;
-}
-
 /**
  * **Proposer** (L7-C3 à C6, C12, C15) — ne lit que le cache du géocodage et
  * le carnet, jamais le réseau ; n'écrit rien. Par défaut, elle ne place que
- * les commandes à répartir ; « tout recomposer » y ajoute les tournées non
+ * les commandes à répartir — rapportées d'un autre jour comprises, en tête
+ * (`decisions-par-defaut-2026-10-02.md`, § 4) ; « tout recomposer » y ajoute les tournées non
  * parties, sans bac chargé, sans arrêt signalé ni non situé. Elle rend les
  * versions de toutes les tournées lues : l'application les exigera.
  *
@@ -105,13 +98,21 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
     private readonly matrix: DistanceMatrix,
     private readonly geometry: RouteGeometry,
     private readonly clock: Clock,
+    private readonly broughtBack: BroughtBackOrdersReader,
+    private readonly states: DeliveryOrderStatesReader,
   ) {}
 
   async execute(query: GetDeliveryRoundProposalQuery): Promise<DeliveryRoundProposalView> {
     const { settings, source } = await routingSettingsOf(this.settings);
     const departure = await locatedDeparture(this.departure, this.candidates);
     const vehicles = await chosenVehicles(this.fleet, query.day, query.vehicleIds);
-    const day = await this.readDay(query.day);
+    const day = await readProposalDay(
+      {
+        ...{ rounds: this.rounds, orders: this.orders, loadedStops: this.loadedStops },
+        ...{ broughtBack: this.broughtBack, states: this.states },
+      },
+      query.day,
+    );
     const stops = await this.locate(day);
     const mode = query.recomposeAll ? "new_rounds" : (query.mode ?? settings.defaultMode);
     const planned =
@@ -145,6 +146,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       rounds: ctx.day.rounds,
       loadedStopIds: ctx.day.loadedStopIds,
       facts: ctx.day.facts,
+      broughtBack: ctx.day.broughtBack,
       located: ctx.stops,
       recomposeAll: query.recomposeAll,
     });
@@ -213,35 +215,11 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
   }
 
   /** Situe les commandes à répartir et celles des tournées — carnet, puis cache. */
-  private async locate(day: DayReading): Promise<ReadonlyMap<string, LocatedStop>> {
+  private async locate(day: ProposalDayReading): Promise<ReadonlyMap<string, LocatedStop>> {
     const composedIds = day.rounds.flatMap((round) => round.stops.map((stop) => stop.orderId));
     const points = await this.orders.stopPointsOf([...day.unassigned, ...composedIds]);
     const located = await locateFromCache(points, this.cache, this.clock.now());
     return new Map(located.map((stop) => [stop.orderId, stop]));
-  }
-
-  private async readDay(serviceDay: string): Promise<DayReading> {
-    const [rounds, expected] = await Promise.all([
-      this.rounds.roundsOn(serviceDay),
-      this.orders.expectedOn(serviceDay),
-    ]);
-    const active = expected.filter((order) => order.status === "active");
-    const [assigned, loadedStopIds] = await Promise.all([
-      this.rounds.composedAmong(active.map((order) => order.orderId)),
-      this.loadedStops.loadedAmong(rounds.flatMap((round) => round.stops.map((s) => s.stopId))),
-    ]);
-    const unassigned = active
-      .map((order) => order.orderId)
-      .filter((orderId) => !assigned.has(orderId));
-    const facts = await this.orders.byIds(
-      rounds.flatMap((round) => round.stops.map((stop) => stop.orderId)),
-    );
-    return {
-      rounds,
-      unassigned,
-      loadedStopIds,
-      facts: new Map(facts.map((order) => [order.orderId, order])),
-    };
   }
 }
 

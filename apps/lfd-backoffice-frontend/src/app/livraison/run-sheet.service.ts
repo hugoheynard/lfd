@@ -15,10 +15,19 @@ import { B2B_API_BASE } from '../api/api-config';
 export class RunSheetService {
   private readonly http = inject(HttpClient);
 
-  async day(day: string): Promise<DeliveryRunSheetView> {
+  /**
+   * `alsoOrderIds` : des livraisons d'un autre jour demandé que la composition
+   * a placées ce jour-là (commandes rapportées, `decisions-par-defaut-2026-10-02.md`,
+   * § 4) — le jour seul ne les retrouverait pas.
+   */
+  async day(day: string, alsoOrderIds: readonly string[] = []): Promise<DeliveryRunSheetView> {
+    const also =
+      alsoOrderIds.length === 0
+        ? ''
+        : `&commandes=${alsoOrderIds.map((id) => encodeURIComponent(id)).join(',')}`;
     return firstValueFrom(
       this.http.get<DeliveryRunSheetView>(
-        `${B2B_API_BASE}/admin/livraison/feuille-de-route?jour=${encodeURIComponent(day)}`,
+        `${B2B_API_BASE}/admin/livraison/feuille-de-route?jour=${encodeURIComponent(day)}${also}`,
       ),
     );
   }

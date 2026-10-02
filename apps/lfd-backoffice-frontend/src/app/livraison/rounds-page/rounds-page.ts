@@ -51,9 +51,10 @@ import type { IncidentPhotoLoader } from '../incident-photo/incident-photo';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import {
   broughtBackLabel,
+  composeDay,
   type ComposedDay,
   type ComposedRound,
-  composeDay,
+  ordersFromOtherDays,
   roundLabel,
   serviceDayLabel,
   shiftedOrder,
@@ -501,8 +502,10 @@ export class RoundsPage {
       this.state.set({ status: 'loading' });
     }
     try {
-      // C16 : les deux lectures partent ensemble, et l'une sans l'autre n'est rien.
-      const [rounds, sheet] = await Promise.all([this.rounds.day(day), this.runSheet.day(day)]);
+      // C16 : l'une sans l'autre n'est rien. La feuille suit la composition,
+      // qui lui nomme les commandes d'un autre jour placées ici (rapportées, § 4).
+      const rounds = await this.rounds.day(day);
+      const sheet = await this.runSheet.day(day, ordersFromOtherDays(rounds));
       if (request === this.request) {
         this.state.set({
           status: 'ready',

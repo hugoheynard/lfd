@@ -58,13 +58,17 @@ export interface KeptRound {
  * tournée partie, jamais une tournée où un bac est chargé. Sans « tout
  * recomposer », aucune autre non plus. Et une tournée dont un arrêt est signalé
  * (à retirer à la main, Q11) ou non situé reste telle quelle : la proposition
- * ne défait pas un placement qu'elle ne saurait pas refaire.
+ * ne défait pas un placement qu'elle ne saurait pas refaire. Une commande
+ * RAPPORTÉE placée un autre jour que sa date demandée n'est pas signalée pour
+ * cette seule raison (`decisions-par-defaut-2026-10-02.md`, § 4).
  */
 export function classifyRounds(input: {
   readonly day: string;
   readonly rounds: readonly RoundRow[];
   readonly loadedStopIds: ReadonlySet<string>;
   readonly facts: ReadonlyMap<string, DeliveryOrderFacts>;
+  /** Les commandes composées qui ont été rapportées : un autre jour ne les signale pas (RL1). */
+  readonly broughtBack: ReadonlySet<string>;
   readonly located: ReadonlyMap<string, LocatedStop>;
   readonly recomposeAll: boolean;
 }): { readonly recomposable: readonly RoundRow[]; readonly kept: readonly KeptRound[] } {
@@ -100,7 +104,7 @@ function keptReason(
       order === undefined ||
       order.status === "cancelled" ||
       !order.delivery ||
-      order.day !== input.day
+      (order.day !== input.day && !input.broughtBack.has(stop.orderId))
     );
   });
   if (signaled) {

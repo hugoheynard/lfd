@@ -78,6 +78,24 @@ export function windowClashes(
   });
 }
 
+/**
+ * Les commandes que la feuille de route du jour ne trouverait pas par sa date :
+ * celles d'un autre jour demandé placées dans une tournée de ce jour-là, et les
+ * rapportées à replacer (`decisions-par-defaut-2026-10-02.md`, § 4). L'écran
+ * les nomme au serveur, qui les sert sous le même droit.
+ */
+export function ordersFromOtherDays(rounds: DeliveryRoundsDayView): readonly string[] {
+  const placed = rounds.rounds.flatMap((round) =>
+    round.stops
+      .filter((stop) => stop.orderDay !== null && stop.orderDay !== rounds.day)
+      .map((stop) => stop.orderId),
+  );
+  const awaiting = rounds.unassigned
+    .filter((order) => order.broughtBackAt !== undefined)
+    .map((order) => order.orderId);
+  return [...new Set([...placed, ...awaiting])];
+}
+
 /** Joint la composition et la feuille de route par `orderId` — sans rien décider avec. */
 export function composeDay(
   rounds: DeliveryRoundsDayView,

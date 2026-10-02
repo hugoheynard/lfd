@@ -33,6 +33,13 @@ import { GetDeliveryRunSheetQuery } from "./get-delivery-run-sheet.query.js";
  * Les livraisons du jour, puis — en parallèle, pour le lot entier — les
  * attestations et les commandes sans feuille d'atelier.
  *
+ * ## Les livraisons d'un autre jour, nommées
+ *
+ * Une commande rapportée replacée dans une tournée d'un autre jour que sa
+ * date demandée (`decisions-par-defaut-2026-10-02.md`, § 4) n'est dans la
+ * feuille d'aucun jour composé : l'écran la nomme (`alsoOrderIds`), et elle
+ * suit, après celles du jour, avec la même procédure sous le même droit.
+ *
  * ## La procédure, sous son propre droit
  *
  * Masquée ici, dans la lecture, quand la query le dit (DG-D8) — pas à l'écran.
@@ -49,11 +56,22 @@ export class GetDeliveryRunSheetHandler implements IQueryHandler<
   ) {}
 
   async execute(query: GetDeliveryRunSheetQuery): Promise<DeliveryRunSheetView> {
-    const entries = await this.deliveries.deliveriesOn(query.day);
+    const [ofDay, among] = await Promise.all([
+      this.deliveries.deliveriesOn(query.day),
+      this.deliveries.deliveriesAmong(query.alsoOrderIds),
+    ]);
+    const known = new Set(ofDay.map((entry) => entry.orderId));
+    const others = among.filter((entry) => !known.has(entry.orderId));
+    const entries = [...ofDay, ...others];
     const orderIds = entries.map((entry) => entry.orderId);
     const [attested, withoutSheet] = await Promise.all([
       this.attestations.forOrders(orderIds),
-      this.sheets.withoutSheet(query.day, orderIds),
+      // Le plan d'atelier est celui du JOUR : une commande d'un autre jour
+      // n'y figure pas, et ce n'est pas un manque — elle a été faite le sien.
+      this.sheets.withoutSheet(
+        query.day,
+        ofDay.map((entry) => entry.orderId),
+      ),
     ]);
     return {
       day: query.day,
