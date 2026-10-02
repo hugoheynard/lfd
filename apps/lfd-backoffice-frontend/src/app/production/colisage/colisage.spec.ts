@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type {
+  DeliveryPackingRoundView,
   PackingContainerStep,
   PackingLine,
   PackingResource,
@@ -132,6 +133,14 @@ function view(over: Partial<ProductionPackingView> = {}): ProductionPackingView 
   };
 }
 
+/**
+ * Une commande en RETRAIT : la seule qui garde le compte anonyme de containers
+ * depuis le lot PC1 (D4) — une livraison choisit un bac d'un format.
+ */
+function retrait(over: Partial<PackingSheet> = {}): PackingSheet {
+  return bac({ fulfillmentMethod: 'pickup', destination: 'Le Labo', ...over });
+}
+
 /** Une commande déclarée prête, ses lignes dans le bac. */
 function readyBac(over: Partial<PackingSheet> = {}): PackingSheet {
   return bac({
@@ -256,6 +265,15 @@ const ME = { firstName: 'Marie', lastName: 'Jost' };
 
 let api: FakePackingService;
 
+/** Les tournées que la livraison sert au poste (lot PC2) ; `null` = la lecture échoue. */
+let rounds: readonly DeliveryPackingRoundView[] | null = [];
+const fakeDelivery = {
+  packingRounds: (day: string) =>
+    rounds === null
+      ? Promise.reject(new Error('tournées illisibles'))
+      : Promise.resolve({ day, rounds }),
+};
+
 interface Harness {
   readonly fixture: ComponentFixture<Colisage>;
   readonly el: HTMLElement;
@@ -339,10 +357,11 @@ describe('le poste de colisage', () => {
         // `can` : les bacs d'une livraison prête (lot 4 bis) demandent un droit que
         // ce poste de test n'a pas — il montre la phrase, sans service.
         { provide: PermissionsStore, useValue: { identity: () => ME, can: () => false } },
-        { provide: DeliveryLoadingService, useValue: {} },
+        { provide: DeliveryLoadingService, useValue: fakeDelivery },
         { provide: DeliveryBinsService, useValue: {} },
       ],
     });
+    rounds = [];
   });
 
   /* ── 🔴 L'ÉCRAN N'ADDITIONNE RIEN ─────────────────────────────────────────
@@ -768,15 +787,106 @@ describe('le poste de colisage', () => {
     expect(el.querySelector('.co-body')).toBeNull();
   });
 
+  /* ── LOT PC2 : RANGÉ PAR TOURNÉE ─────────────────────────────────────────
+     L'ordre et « n prêtes sur m » viennent de la livraison ; l'écran range. */
+
+  describe('rangé par tournée (lot PC2)', () => {
+    function round(over: Partial<DeliveryPackingRoundView> = {}): DeliveryPackingRoundView {
+      return {
+        roundId: 'r-1',
+        vehicleName: 'Kangoo',
+        passage: 1,
+        departedAt: null,
+        stopCount: 2,
+        readyStops: 1,
+        stops: [
+          {
+            orderId: 'o-CMD-002',
+            reference: 'CMD-002',
+            position: 2,
+            ready: false,
+            binToRedo: true,
+          },
+          {
+            orderId: 'o-CMD-001',
+            reference: 'CMD-001',
+            position: 1,
+            ready: true,
+            binToRedo: false,
+          },
+        ],
+        ...over,
+      };
+    }
+
+    it('ouvre le DERNIER arrêt de la tournée d’abord, et met le retrait après', async () => {
+      api.packingView = view({
+        sheets: [
+          retrait({ reference: 'CMD-000', orderId: 'o-CMD-000', customerLabel: 'Comptoir' }),
+          bac(),
+          bac({ reference: 'CMD-002', orderId: 'o-CMD-002', customerLabel: 'Le Refuge' }),
+        ],
+      });
+      rounds = [round()];
+
+      const { el } = await render();
+
+      expect([...el.querySelectorAll('.co-bac-who')].map((who) => said(who))).toEqual([
+        'Le Refuge',
+        'Hôtel du Parc',
+        'Comptoir',
+      ]);
+      expect(said(el.querySelector('.co-title'))).toBe('Le Refuge');
+      expect(
+        [...el.querySelectorAll('[data-round-head]')].map((head) => [
+          said(head.querySelector('.co-round-title')),
+          said(head.querySelector('.co-round-ready')),
+        ]),
+      ).toEqual([
+        ['Kangoo', '1 commande prête sur 2'],
+        ['Hors tournée', ''],
+      ]);
+    });
+
+    it('dit « À refaire » (livraison) et « Retenue au contrôle » (fournil) sur la commande', async () => {
+      api.packingView = view({
+        sheets: [
+          bac({ qualityHeld: true }),
+          bac({ reference: 'CMD-002', orderId: 'o-CMD-002', customerLabel: 'Le Refuge' }),
+        ],
+      });
+      rounds = [round()];
+
+      const { el } = await render();
+      const [refuge, parc] = [...el.querySelectorAll('.co-bac')];
+
+      expect(refuge?.querySelector('[data-flag-redo]')).not.toBeNull();
+      expect(refuge?.querySelector('[data-flag-held]')).toBeNull();
+      expect(parc?.querySelector('[data-flag-held]')).not.toBeNull();
+      expect(said(parc?.querySelector('.co-bac-where'))).toContain('arrêt 1');
+    });
+
+    it('sans les tournées, garde l’ordre servi et le DIT', async () => {
+      rounds = null;
+
+      const { el } = await render();
+
+      expect(el.querySelector('[data-rounds-failed]')).not.toBeNull();
+      expect(el.querySelectorAll('.co-bac')).toHaveLength(1);
+      expect(el.querySelector('[data-round-head]')).toBeNull();
+    });
+  });
+
   /* ── LES CONTAINERS ──────────────────────────────────────────────────────
      Un sens, pas un total : l'écran envoie `add` ou `remove`, le serveur
      compte, l'écran relit. */
 
   it('🔴 « + » envoie `add`, relit, et montre le compte servi', async () => {
+    api.packingView = view({ sheets: [retrait()] });
     const { fixture, el } = await render();
     expect(el.querySelectorAll('.co-container')).toHaveLength(0);
     const readsBefore = api.asked.length;
-    api.packingView = view({ sheets: [bac({ containers: 1 })] });
+    api.packingView = view({ sheets: [retrait({ containers: 1 })] });
 
     plus(el)?.click();
     await settle(fixture);
@@ -788,10 +898,10 @@ describe('le poste de colisage', () => {
   });
 
   it('🔴 « − » envoie `remove`, relit, et montre le compte servi', async () => {
-    api.packingView = view({ sheets: [bac({ containers: 2 })] });
+    api.packingView = view({ sheets: [retrait({ containers: 2 })] });
     const { fixture, el } = await render();
     expect(el.querySelectorAll('.co-container')).toHaveLength(2);
-    api.packingView = view({ sheets: [bac({ containers: 1 })] });
+    api.packingView = view({ sheets: [retrait({ containers: 1 })] });
 
     moins(el)?.click();
     await settle(fixture);
@@ -805,6 +915,7 @@ describe('le poste de colisage', () => {
    * sans effet, et c'est à lui de savoir ce que vaut un retrait.
    */
   it('laisse « − » offert à zéro container — c’est le serveur qui sait', async () => {
+    api.packingView = view({ sheets: [retrait()] });
     const { fixture, el } = await render();
 
     expect(said(el.querySelector('.pc-band-sum'))).toBe('0 container');
@@ -818,7 +929,7 @@ describe('le poste de colisage', () => {
   });
 
   it('ne numérote pas les tuiles : le seul nombre est celui du serveur', async () => {
-    api.packingView = view({ sheets: [bac({ containers: 3 })] });
+    api.packingView = view({ sheets: [retrait({ containers: 3 })] });
 
     const { el } = await render();
     const tiles = el.querySelectorAll('.co-container');
@@ -830,6 +941,7 @@ describe('le poste de colisage', () => {
   });
 
   it('désarme « + » et « − » pendant l’envoi, et seulement pendant', async () => {
+    api.packingView = view({ sheets: [retrait()] });
     const { fixture, el } = await render();
     api.holdSteps = true;
 
@@ -848,7 +960,7 @@ describe('le poste de colisage', () => {
 
   it('🔴 ne laisse plus toucher au compte d’une commande DÉCLARÉE PRÊTE', async () => {
     api.packingView = view({
-      sheets: [readyBac({ containers: 2 })],
+      sheets: [readyBac({ containers: 2, fulfillmentMethod: 'pickup' })],
       todoCount: 0,
       readyCount: 1,
     });
@@ -866,6 +978,7 @@ describe('le poste de colisage', () => {
    */
   it('🔴 garde le compte servi quand le geste est refusé, et le DIT', async () => {
     api.containersRefuse = true;
+    api.packingView = view({ sheets: [retrait()] });
 
     const { fixture, el } = await render();
     plus(el)?.click();

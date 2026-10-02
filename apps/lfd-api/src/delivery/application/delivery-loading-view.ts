@@ -119,7 +119,7 @@ export function orderBinsView(
   orderId: string,
   bins: readonly BinRow[],
   context: BinContext,
-): DeliveryOrderBinsView {
+): Omit<DeliveryOrderBinsView, "round"> {
   const reference = context.names.get(orderId)?.reference ?? "";
   return { orderId, reference, bins: binViewsOf(bins, context) };
 }

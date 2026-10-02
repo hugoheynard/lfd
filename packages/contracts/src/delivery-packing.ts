@@ -151,3 +151,52 @@ export interface DeliveryBinFreeHalvesView {
   /** Par position d'arrêt, puis par identifiant. */
   readonly halves: readonly DeliveryBinFreeHalfView[];
 }
+
+/**
+ * Un arrêt vu du poste de colisage (`decisions-par-defaut-2026-10-02.md`,
+ * lot PC2) : de quoi ranger la commande à sa place, dire si elle est prête et
+ * si l'un de ses bacs partagés est à refaire.
+ */
+export interface DeliveryPackingStopView {
+  readonly orderId: string;
+  readonly reference: string;
+  /** La position de l'arrêt dans l'ordre de passage, 1..n (I2). */
+  readonly position: number;
+  /**
+   * Prête, au sens du commerce — la même source que « Ma tournée » (PL4).
+   * Une annulée ne l'est jamais.
+   */
+  readonly ready: boolean;
+  /** Un bac partagé de la commande est **à refaire** (v2-4) : annuler et recoliser. */
+  readonly binToRedo: boolean;
+}
+
+/** Une tournée vue du poste de colisage. */
+export interface DeliveryPackingRoundView {
+  readonly roundId: string;
+  readonly vehicleName: string;
+  readonly passage: number;
+  /** Partie le, ou `null`. */
+  readonly departedAt: string | null;
+  /** Les arrêts vivants — le « m » de « n commandes prêtes sur m ». */
+  readonly stopCount: number;
+  /** Parmi eux, les prêts — le « n », compté au serveur. */
+  readonly readyStops: number;
+  /**
+   * 🔴 **Du DERNIER arrêt au premier** : l'ordre dans lequel les bacs entrent
+   * dans le véhicule. Un ordre d'affichage, rien n'est imposé.
+   */
+  readonly stops: readonly DeliveryPackingStopView[];
+}
+
+/**
+ * **Les tournées d'un jour, vues du poste de colisage**
+ * (`GET admin/livraison/colisage/tournees?jour=`, lot PC2). Sous
+ * `production_packing:read` OU `delivery_loading:read` : qui ouvre le poste
+ * lit où vont ses commandes, sans recevoir le droit de composer.
+ */
+export interface DeliveryPackingRoundsView {
+  readonly day: string;
+  /** Véhicule par véhicule (ordre de la flotte), puis par passage. */
+  readonly rounds: readonly DeliveryPackingRoundView[];
+}

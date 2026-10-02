@@ -1,8 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import type { DeliveryBinView } from '@lfd/contracts';
+import type { DeliveryBinView, DeliveryOrderRoundPlaceView } from '@lfd/contracts';
 
 import { QrCode } from '../../shared/qr-code/qr-code';
 import { binIndexLabel, halfLabel, innerBagsLabel, sharedWithLabel } from '../delivery-loading';
+import { roundLabel } from '../delivery-rounds';
 
 /**
  * **L'étiquette d'un bac — gabarit PROVISOIRE, une page A4** (L4-C16 ; lot 4
@@ -17,6 +18,11 @@ import { binIndexLabel, halfLabel, innerBagsLabel, sharedWithLabel } from '../de
  * gauche »), et « partagé avec … » pour un bac cloisonné à deux commandes. Les
  * sacs posés dedans ne sont qu'un compte. Ce qu'on tape quand le QR est
  * illisible : le code court, en gros.
+ *
+ * **En tête, la tournée et le rang d'arrêt, en très gros** (lot PC3,
+ * 2026-10-02) : le bac se pose dans la zone de sa tournée, au rang de son
+ * arrêt — on les lit depuis l'autre bout de la pièce. Hors tournée, rien :
+ * on n'imprime pas un rang qu'on ne connaît pas.
  */
 @Component({
   selector: 'app-bin-label',
@@ -29,6 +35,13 @@ export class BinLabel {
   readonly bin = input.required<DeliveryBinView>();
   /** L'adresse absolue du bac — ce qu'encode le QR (L4-C13). */
   readonly url = input.required<string>();
+  /** La tournée de la commande et la position de son arrêt, ou `null` hors tournée. */
+  readonly round = input<DeliveryOrderRoundPlaceView | null>(null);
+
+  protected readonly roundTitle = computed(() => {
+    const round = this.round();
+    return round === null ? null : roundLabel(round);
+  });
 
   /**
    * « Bac M · ½ gauche » — le type d'abord, la moitié s'il y en a une. Le nom

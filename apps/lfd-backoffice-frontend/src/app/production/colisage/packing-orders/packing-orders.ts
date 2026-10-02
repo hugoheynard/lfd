@@ -1,9 +1,20 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { FoldIconComponent, FoldViewToggleComponent, type FoldViewToggleOption } from 'fold-ng';
+import {
+  FoldBadgeComponent,
+  FoldIconComponent,
+  FoldViewToggleComponent,
+  type FoldViewToggleOption,
+} from 'fold-ng';
 
-import type { PackingLine, PackingSheet } from '@lfd/contracts';
+import type { DeliveryPackingRoundView, PackingLine, PackingSheet } from '@lfd/contracts';
 
 import { methodLabel, type PackingStack } from '../../packing-board';
+import {
+  type PackingGroup,
+  packingGroups,
+  packingRoundTitle,
+  readyOrdersLabel,
+} from '../packing-rounds';
 
 /**
  * **La liste des commandes du poste** — la colonne de gauche : la bande, le
@@ -16,6 +27,12 @@ import { methodLabel, type PackingStack } from '../../packing-board';
  * et il émet deux gestes. Découpé du poste le 2026-09-14 : l'état, les lectures
  * et les écritures restent dans `Colisage`.
  *
+ * **Rangée par tournée** (lot PC2, 2026-10-02) : chaque tournée du jour en
+ * tête de groupe, « n commandes prêtes sur m » (compté par la livraison), ses
+ * commandes du dernier arrêt au premier ; « Retenue au contrôle » (fournil) et
+ * « À refaire » (livraison) sur la commande. Un ordre d'affichage : rien
+ * n'est imposé.
+ *
  * ⚠️ Le sélecteur FILTRE — la liste ne montre que la pile choisie —, là où la
  * recherche SURLIGNE. Les deux cohabitent : choisir une pile n'est pas cacher un
  * résultat, c'est ranger son travail.
@@ -23,7 +40,7 @@ import { methodLabel, type PackingStack } from '../../packing-board';
 @Component({
   selector: 'app-packing-orders',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldIconComponent, FoldViewToggleComponent],
+  imports: [FoldBadgeComponent, FoldIconComponent, FoldViewToggleComponent],
   templateUrl: './packing-orders.html',
   styleUrl: './packing-orders.scss',
   host: {
@@ -61,6 +78,20 @@ export class PackingOrders {
 
   /** Une recherche est-elle en cours ? Elle met en retrait ce qu'elle ne touche pas. */
   readonly searching = input(false);
+
+  /** Les tournées du jour, servies par la livraison — `[]` : aucun groupe de tournée. */
+  readonly rounds = input<readonly DeliveryPackingRoundView[]>([]);
+
+  /** Les groupes affichés — la pile, rangée dans l'ordre des tournées. */
+  protected readonly groups = computed<readonly PackingGroup[]>(() =>
+    packingGroups(this.sheets(), this.rounds()),
+  );
+
+  /** Y a-t-il au moins une tournée à l'écran ? Sinon, aucun en-tête de groupe. */
+  protected readonly grouped = computed(() => this.groups().some((group) => group.round !== null));
+
+  protected readonly roundTitle = packingRoundTitle;
+  protected readonly readyLabel = readyOrdersLabel;
 
   /** La commande qu'on veut ouvrir. */
   readonly chosen = output<string>();

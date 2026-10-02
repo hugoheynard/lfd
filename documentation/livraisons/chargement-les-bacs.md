@@ -4,6 +4,11 @@
 > [plan de préparation de tournée](plan-preparation-de-tournee.md)). Chaque
 > affirmation ci-dessous a été relue dans le code ce jour-là ; le plan garde
 > l'histoire et les décisions, ce document dit ce qui existe.
+>
+> **§ 5 mis à jour le 2026-10-02** : lots PC1, PC2 et PC3 de
+> [`decisions-par-defaut-2026-10-02.md`](decisions-par-defaut-2026-10-02.md)
+> (la rangée « + format », le poste rangé par tournée, l'étiquette qui porte
+> la tournée). Ces décisions sont **par défaut, à revoir avec Hugo**.
 
 ## 1. En deux phrases
 
@@ -135,11 +140,64 @@ commerce (§ 10.2).
 ## 5. Coliser, au poste de colisage
 
 Le poste de colisage du fournil (`/production/colisage`, ou
-`/colisage/:reference` ouvert par le QR de la feuille) affiche, pour une
-commande **en livraison**, un panneau **« Bacs »**. Le panneau n'apparaît qu'à
-qui a `delivery_loading:write` ; les autres lisent « Les bacs se déclarent au
-comptoir. » Une commande inconnue, annulée ou en retrait au comptoir est
-refusée (409 `delivery.bins_not_declarable`).
+`/colisage/:reference` ouvert par le QR de la feuille) porte, pour une
+commande **en livraison**, deux gestes sur les bacs, tous deux réservés à qui
+a `production_packing:write` **ou** `delivery_loading:write` (les autres
+lisent « Les bacs se déclarent au comptoir. ») :
+
+- **la rangée « + format »** (§ 5.0), au-dessus des lignes, pendant tout le
+  colisage — elle remplace le compte anonyme de containers ;
+- **le panneau « Bacs »** (§ 5.1 à 5.4), sous la commande une fois déclarée
+  prête : la proposition détaillée, la saisie libre, le partage.
+
+Une commande inconnue, annulée ou en retrait au comptoir est refusée (409
+`delivery.bins_not_declarable`). Une commande **en retrait** garde son compte
+anonyme de containers (`+ / −`), inchangé
+([`plan-le-plus-choisit-un-bac.md`](plan-le-plus-choisit-un-bac.md), D4).
+
+### 5.0 La rangée « + format » (lot PC1)
+
+Un bouton par type de bac **en service** — `+ Bac S ❄`, `+ Bac M`,
+`+ ½ Bac L` pour un type cloisonnable. Un appui déclare **un** bac tout de
+suite, par la route de déclaration (`whole: 1`, ou `whole: 0, half: true`) ;
+« **−** », sur le dernier bac de la liste seulement, l'**annule**. Un bac
+chargé refuse (on décharge d'abord) : le message du serveur s'affiche tel
+quel. Changer un M en L, c'est « − » puis « + » : une nouvelle étiquette (Q4).
+
+- Le compte de la bande **est** la liste des bacs déclarés, et chaque bac a
+  son lien « Étiquette ». « Sacs dans le prochain bac » s'imprime sur
+  l'étiquette du bac suivant.
+- Le format que la **proposition** retiendrait (§ 5.1) est **en couleur** —
+  rien n'est déclaré d'office (Q2).
+- Au premier appui sur « Déclarer prête », l'écran **avertit** s'il n'y a
+  aucun bac, ou du froid (`requiresCold` d'une ligne de la proposition) sans
+  bac isotherme ; un second appui (« Déclarer prête quand même ») déclare.
+  Ce sont des avertissements d'écran : le serveur ne demande aucun bac pour
+  déclarer prête, et « Partir » refuse déjà une tournée incomplète (§ 6.3).
+- `production_orders.containers` n'est plus écrit pour une livraison ; la
+  colonne reste (aucune migration).
+
+### 5.0 bis Le poste rangé par tournée (lot PC2)
+
+La liste des commandes suit les **tournées du jour**, dans l'ordre de la
+composition, et dans chaque tournée **du dernier arrêt au premier** — l'ordre
+où les bacs entrent dans le véhicule. La commande ouverte d'elle-même est donc
+le dernier arrêt de la première tournée. C'est un ordre d'**affichage** : on
+ouvre n'importe quelle commande. Le retrait et les livraisons pas encore
+réparties suivent, sous « Hors tournée », dans l'ordre des références.
+
+- En tête de chaque tournée : « **n commandes prêtes sur m** », compté par la
+  livraison d'après le commerce (la même source que « Ma tournée »).
+- Sur chaque commande : « arrêt n », et deux pastilles —
+  « **Retenue au contrôle** » (un verdict bloquant du superviseur, lu par le
+  fournil : `PackingSheet.qualityHeld`, même règle que le comptoir) et
+  « **À refaire : annuler et recoliser** » (un bac partagé à refaire, § 5.5).
+- La lecture est `GET admin/livraison/colisage/tournees?jour=`, sous
+  `production_packing:read` **ou** `delivery_loading:read`. Le fournil
+  n'importe pas la livraison : c'est l'écran qui lit les deux. Sans elle, la
+  liste garde l'ordre servi et le dit. Elle se relit avec la journée du
+  fournil, et au plus tard toutes les cinq minutes (le filet du veilleur) :
+  une tournée recomposée sans geste au fournil peut attendre ce délai.
 
 ### 5.1 La proposition
 
@@ -203,7 +261,10 @@ tournée est partie. Annuler une moitié libère son côté du bac physique.
 ### 5.3 Les étiquettes
 
 `Livraison → Étiquettes` (`/livraison/etiquettes/:orderId`, ouverte depuis le
-panneau) imprime une étiquette par bac, ou toutes : numéro de commande, client,
+panneau ou de la rangée) imprime une étiquette par bac, ou toutes. **En tête et
+en très gros, la tournée et le rang d'arrêt** (« Kangoo · passage 2 »,
+« Arrêt 3 » — lot PC3) : on pose le bac dans la zone de sa tournée ; hors
+tournée, rien n'est imprimé à cette place. Puis numéro de commande, client,
 rang du bac, type (et côté pour une moitié), avec qui il est partagé, le nombre
 de sacs, le **QR** et le **code court**. Imprimer est une lecture : réimprimer
 ne crée rien. Le QR ouvre `/livraison/bac/:binId`, la fiche du bac.
@@ -242,8 +303,9 @@ retiré, déplacé, tournée réordonnée) et que ce n'est plus vrai, le bac est
 depuis l'ordre des arrêts vivants, donc remettre les arrêts côte à côte le
 répare sans aucun geste sur le bac.
 
-On le voit sur l'écran de chargement (badge « À refaire », bandeau), sur la
-fiche du bac, et dans les alertes du plan ; « Partir » le refuse (§ 6.3). La
+On le voit au poste de colisage (pastille sur la commande, § 5.0 bis), sur
+l'écran de chargement (badge « À refaire », bandeau), sur la fiche du bac, et
+dans les alertes du plan ; « Partir » le refuse (§ 6.3). La
 sortie : annuler les deux moitiés et recoliser, ou remettre les arrêts côte à
 côte.
 
@@ -325,15 +387,16 @@ s'y déclare ni ne s'y annule. Il est refusé, avec la phrase qui nomme le cas :
 
 ## 7. Qui peut quoi
 
-| Geste                                                                                             | Droit                                                  | Rôles (grille par défaut)                                      |
-| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------- |
-| Lire types de bacs, contenances, véhicules                                                        | `delivery_settings:read` **ou** `delivery_rounds:read` | admin, comptoir                                                |
-| Créer, corriger, archiver un type ; poser une contenance ; régler un véhicule                     | `delivery_settings:write`                              | admin                                                          |
-| Écrans Bacs, Contenances, Véhicules (front)                                                       | `delivery_settings:read`                               | admin, comptoir                                                |
-| Cocher « Demande le froid » sur la fiche                                                          | `pim_catalog:write`                                    | selon la grille du référentiel                                 |
-| Lire la proposition, les moitiés libres, les bacs, le plan, l'écran de chargement, les étiquettes | `delivery_loading:read`                                | admin, comptoir                                                |
-| Déclarer, partager, annuler, charger, décharger, partir                                           | `delivery_loading:write`                               | admin, comptoir                                                |
-| Ouvrir le poste de colisage                                                                       | `b2b_orders:write`                                     | (le panneau « Bacs » demande en plus `delivery_loading:write`) |
+| Geste                                                                                             | Droit                                                    | Rôles (grille par défaut)                                                                                   |
+| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Lire types de bacs, contenances, véhicules                                                        | `delivery_settings:read` **ou** `delivery_rounds:read`   | admin, comptoir                                                                                             |
+| Créer, corriger, archiver un type ; poser une contenance ; régler un véhicule                     | `delivery_settings:write`                                | admin                                                                                                       |
+| Écrans Bacs, Contenances, Véhicules (front)                                                       | `delivery_settings:read`                                 | admin, comptoir                                                                                             |
+| Cocher « Demande le froid » sur la fiche                                                          | `pim_catalog:write`                                      | selon la grille du référentiel                                                                              |
+| Lire la proposition, les moitiés libres, les bacs, le plan, l'écran de chargement, les étiquettes | `delivery_loading:read`                                  | admin, comptoir                                                                                             |
+| Déclarer, partager, annuler, charger, décharger, partir                                           | `delivery_loading:write`                                 | admin, comptoir                                                                                             |
+| Ouvrir le poste de colisage                                                                       | `production_packing:read`                                | (la rangée et le panneau « Bacs » demandent en plus `production_packing:write` ou `delivery_loading:write`) |
+| Lire les tournées du poste (`colisage/tournees`)                                                  | `production_packing:read` **ou** `delivery_loading:read` | qui ouvre le poste                                                                                          |
 
 Les écritures se déduisent du verbe HTTP (`@AdminSurface`) ; une lecture
 ouverte à deux droits porte `@RequireAnyPermission`. Une dérogation
@@ -408,7 +471,9 @@ contenances), `delivery-packing.ts` (proposition, moitiés libres),
 **Front — `apps/lfd-backoffice-frontend/src/app/`** :
 `livraison/bins-page/` et `livraison/bin-type-dialog/` (types),
 `livraison/bin-capacities-page/` (grille), `production/colisage/packing-bins/`
-(panneau « Bacs » du poste), `livraison/bin-labels-page/` et
+(panneau « Bacs » du poste), `production/colisage/packing-bin-row/` et
+`production/colisage/bin-row.ts` (la rangée « + format »),
+`production/colisage/packing-rounds.ts` (le rangement par tournée), `livraison/bin-labels-page/` et
 `livraison/bin-label/` (étiquettes), `livraison/bin-page/` (le QR ouvert),
 `livraison/loading-page/` et `livraison/loading-round-page/` (chargement,
 scan, Partir), `livraison/loading-plan/` (plan).

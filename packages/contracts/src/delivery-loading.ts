@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { DeliveryOrderRoundPlaceView } from "./delivery-packing.js";
+
 /**
  * **Le chargement, véhicule par véhicule** — les bacs déclarés, leur
  * chargement, et le départ qui gèle une tournée
@@ -133,6 +135,12 @@ export interface DeliveryOrderBinsView {
   readonly orderId: string;
   readonly reference: string;
   readonly bins: readonly DeliveryBinView[];
+  /**
+   * La tournée vivante de la commande et la position de son arrêt, ou `null`
+   * hors tournée — l'étiquette les imprime en gros pour poser le bac dans la
+   * pièce (`decisions-par-defaut-2026-10-02.md`, lot PC3).
+   */
+  readonly round: DeliveryOrderRoundPlaceView | null;
 }
 
 /**

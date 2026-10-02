@@ -7,6 +7,8 @@ import { ProductionDayRepository } from "../../../domain/ports/production-day.re
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { GetProductionPackingHandler } from "../get-production-packing.handler.js";
 import { GetProductionPackingQuery } from "../get-production-packing.query.js";
+import { QualityCheck } from "../../../domain/entities/quality-check.js";
+import { CheckTable, InMemoryCheckReader } from "../../__tests__/quality-doubles.js";
 import { FixedStaffAuthorDirectory } from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 
 /**
@@ -74,6 +76,7 @@ describe("GetProductionPackingHandler", () => {
       new Days(closedDay(TODAY)),
       new FixedClock(NOW),
       new FixedStaffAuthorDirectory(),
+      new InMemoryCheckReader(new CheckTable()),
     );
 
     const view = await handler.execute(new GetProductionPackingQuery(TODAY));
@@ -102,6 +105,7 @@ describe("GetProductionPackingHandler", () => {
       new Days(closedDay(TODAY)),
       new FixedClock(NOW),
       new FixedStaffAuthorDirectory(),
+      new InMemoryCheckReader(new CheckTable()),
     );
 
     expect((await handler.execute(new GetProductionPackingQuery(TODAY))).relativeDay).toBe("today");
@@ -113,6 +117,7 @@ describe("GetProductionPackingHandler", () => {
       new Days(closedDay(tomorrow)),
       new FixedClock(NOW),
       new FixedStaffAuthorDirectory(),
+      new InMemoryCheckReader(new CheckTable()),
     );
 
     expect((await handler.execute(new GetProductionPackingQuery(tomorrow))).relativeDay).toBe(
@@ -127,6 +132,7 @@ describe("GetProductionPackingHandler", () => {
       new Days(ProductionDay.open(ServiceDay.of(TODAY))),
       new FixedClock(NOW),
       new FixedStaffAuthorDirectory(),
+      new InMemoryCheckReader(new CheckTable()),
     );
 
     const view = await handler.execute(new GetProductionPackingQuery(TODAY));
@@ -149,8 +155,50 @@ describe("GetProductionPackingHandler", () => {
       new Days(closedDay(TODAY)),
       new FixedClock(NOW),
       new FixedStaffAuthorDirectory(),
+      new InMemoryCheckReader(new CheckTable()),
     );
 
     await expect(handler.execute(new GetProductionPackingQuery("08/09/2026"))).rejects.toThrow();
+  });
+
+  /** Lot PC2 (2026-10-02) : le coliseur voit la retenue pour sortir le bac de la pièce. */
+  it("dit qu'une commande est retenue au contrôle, et seulement celle-là", async () => {
+    const table = new CheckTable();
+    table.rows.set(
+      "chk_1",
+      QualityCheck.render({
+        id: "chk_1",
+        serviceDay: ServiceDay.of(TODAY),
+        target: { kind: "line", sku: "VIE-001", quantitySeen: 12 },
+        verdict: "blocking",
+        note: "Croissants brûlés",
+        checkedBy: "staff_sup",
+        checkedAt: NOW,
+        photos: [],
+      }),
+    );
+    const handler = new GetProductionPackingHandler(
+      new Days(closedDay(TODAY)),
+      new FixedClock(NOW),
+      new FixedStaffAuthorDirectory(),
+      new InMemoryCheckReader(table),
+    );
+
+    const view = await handler.execute(new GetProductionPackingQuery(TODAY));
+
+    expect(view.sheets[0]?.qualityHeld).toBe(true);
+  });
+
+  it("ne retient rien sans contrôle bloquant", async () => {
+    const handler = new GetProductionPackingHandler(
+      new Days(closedDay(TODAY)),
+      new FixedClock(NOW),
+      new FixedStaffAuthorDirectory(),
+      new InMemoryCheckReader(new CheckTable()),
+    );
+
+    const view = await handler.execute(new GetProductionPackingQuery(TODAY));
+
+    expect(view.sheets[0]?.qualityHeld).toBe(false);
   });
 });

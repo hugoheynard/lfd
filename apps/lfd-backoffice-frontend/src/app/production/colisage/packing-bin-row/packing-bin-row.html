@@ -1,0 +1,115 @@
+<!--
+  **LES BACS D'UNE LIVRAISON** — à la place du compte anonyme : chaque « + »
+  déclare UN bac d'un format (D2). Le compte de la bande est la liste servie.
+-->
+<p class="br-band">
+  <span class="br-band-title">Bacs</span>
+  <span class="br-band-rule" aria-hidden="true"></span>
+  <span class="br-band-sum" data-bin-row-count>{{ countLabel() }}</span>
+</p>
+
+<div class="br-body">
+  @if (canDeclare()) {
+    @switch (types().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture des formats de bac…" />
+      }
+      @case ('error') {
+        <fold-callout variant="alert" data-bin-row-types-error>
+          Les formats de bac n’ont pas pu être lus.
+          <button foldButton actions size="sm" emphasis="outline" (click)="retry()">
+            Réessayer
+          </button>
+        </fold-callout>
+      }
+      @case ('ready') {
+        <!-- 🔴 Le format proposé est EN COULEUR (Q2) : rien n'est déclaré d'office. -->
+        <div class="br-formats">
+          @for (button of buttons(); track button.key) {
+            <button
+              foldButton
+              size="lg"
+              [emphasis]="button.proposed ? 'solid' : 'outline'"
+              [disabled]="busy()"
+              [attr.data-proposed]="button.proposed ? 'true' : null"
+              (click)="add(button)"
+              data-bin-format
+            >
+              {{ button.label }}
+            </button>
+          } @empty {
+            <p class="br-said">Aucun format de bac en service.</p>
+          }
+        </div>
+      }
+    }
+
+    @if (declared().status === 'error') {
+      <fold-callout variant="alert" data-bin-row-declared-error>
+        Les bacs déclarés n’ont pas pu être lus.
+        <button foldButton actions size="sm" emphasis="outline" (click)="retry()">Réessayer</button>
+      </fold-callout>
+    }
+
+    @if (live().length > 0) {
+      <ul class="br-list">
+        @for (bin of live(); track bin.binId; let last = $last) {
+          <li class="br-bin" data-bin-row-bin>
+            <span class="br-bin-kind">{{ binLabel(bin) }}</span>
+            <span class="br-bin-code">{{ bin.code }}</span>
+            <a
+              foldButton
+              size="sm"
+              emphasis="soft"
+              icon="print"
+              [routerLink]="labelsLink()"
+              [queryParams]="{ bacs: bin.binId }"
+              [attr.aria-label]="'Imprimer l’étiquette ' + bin.code"
+            >
+              Étiquette
+            </a>
+            @if (last) {
+              <!-- « − » : le DERNIER bac seulement (D2). Un bac chargé, le
+                   serveur le refuse — son message s'affiche tel quel. -->
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                [disabled]="busy()"
+                [attr.aria-label]="'Annuler le bac ' + bin.code"
+                (click)="removeLast()"
+                data-bin-row-remove
+              >
+                −
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    }
+
+    <div class="br-actions">
+      <fold-number-input
+        label="Sacs dans le prochain bac"
+        hint="Un compte, imprimé sur l’étiquette."
+        [min]="0"
+        [max]="maxInnerBags"
+        [integer]="true"
+        [value]="innerBags()"
+        (valueChange)="innerBags.set($event)"
+        data-bin-row-inner
+      />
+      @if (live().length > 0) {
+        <a foldButton emphasis="soft" icon="print" [routerLink]="labelsLink()" data-bin-row-labels>
+          Imprimer les étiquettes
+        </a>
+      }
+    </div>
+
+    @if (refusal(); as refusal) {
+      <fold-callout variant="alert" data-bin-row-refusal>{{ refusal }}</fold-callout>
+    }
+  } @else {
+    <p class="br-said" data-bin-row-counter>Les bacs se déclarent au comptoir.</p>
+  }
+</div>

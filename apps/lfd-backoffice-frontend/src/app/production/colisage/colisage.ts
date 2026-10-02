@@ -22,6 +22,8 @@ import { PackingGestures } from './packing-gestures';
 import { PackingOpenOrder, type PackingLineToggle } from './packing-open-order/packing-open-order';
 import { PackingOrders } from './packing-orders/packing-orders';
 import { PackingResources } from './packing-resources/packing-resources';
+import { PackingRoundsReader } from './packing-rounds.reader';
+import { sheetsInRoundOrder } from './packing-rounds';
 import { foundOnlyElsewhere, hitLinesByOrder, normaliseTerm, searchHits } from './packing-search';
 
 /**
@@ -78,13 +80,15 @@ import { foundOnlyElsewhere, hitLinesByOrder, normaliseTerm, searchHits } from '
   ],
   // Fournis ICI, pas à la racine : un poste ouvert deux fois ne partage ni sa
   // lecture ni ses envois.
-  providers: [PackingDayReader, PackingGestures],
+  providers: [PackingDayReader, PackingGestures, PackingRoundsReader],
   templateUrl: './colisage.html',
   styleUrl: './colisage.scss',
 })
 export class Colisage {
   protected readonly day = inject(PackingDayReader);
   protected readonly gestures = inject(PackingGestures);
+  /** Les tournées du jour, lues côté livraison (lot PC2) : l'ORDRE de la liste. */
+  protected readonly rounds = inject(PackingRoundsReader);
 
   /**
    * Le bac à ouvrir, quand on arrive par le QR d'une feuille d'atelier
@@ -166,9 +170,16 @@ export class Colisage {
     this.day.sheets().filter((sheet) => sheet.packedAt !== null),
   );
 
-  /** La pile affichée à gauche. */
+  /**
+   * La pile affichée à gauche, **rangée par tournée, du dernier arrêt au
+   * premier** (lot PC2) — un ordre d'affichage : la tête de pile, celle qui
+   * s'ouvre d'elle-même, est le dernier arrêt de la première tournée.
+   */
   protected readonly visibleSheets = computed(() =>
-    this.stack() === 'todo' ? this.todoSheets() : this.readySheets(),
+    sheetsInRoundOrder(
+      this.stack() === 'todo' ? this.todoSheets() : this.readySheets(),
+      this.rounds.rounds(),
+    ),
   );
 
   private readonly otherSheets = computed(() =>
@@ -271,6 +282,7 @@ export class Colisage {
     this.gestures.forgetOrderFailures();
     const served = await this.day.load();
     if (served !== null) {
+      await this.rounds.load(served.date);
       this.openAsked(served);
     }
   }
@@ -285,6 +297,7 @@ export class Colisage {
     }
     const openBefore = this.current();
     if (await this.day.refresh()) {
+      await this.rounds.load(this.day.date());
       this.noticeClosedElsewhere(openBefore);
     }
   }
@@ -377,6 +390,7 @@ export class Colisage {
     }
     this.justDeclared.set(null);
     if (await this.gestures.declare(sheet)) {
+      void this.rounds.load(this.day.date());
       this.chosen.set(null);
       this.justDeclared.set(sheet.customerLabel);
     }

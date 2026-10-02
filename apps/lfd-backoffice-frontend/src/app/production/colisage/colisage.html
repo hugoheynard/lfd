@@ -148,6 +148,13 @@
     <!-- Le compte de containers sert à charger un véhicule. L'écran n'en tient
          aucun : un geste refusé laisse à l'écran le compte servi, et l'échec se
          dit. -->
+    <!-- Lot PC2 : sans les tournées, la liste garde l'ordre servi — on le DIT. -->
+    @if (rounds.failed()) {
+      <fold-callout variant="warning" class="co-note" data-rounds-failed>
+        Les tournées n’ont pas pu être lues — les commandes restent dans l’ordre des références.
+      </fold-callout>
+    }
+
     @if (gestures.containersFailed()) {
       <fold-callout variant="alert" class="co-note">
         Le nombre de containers n’a pas pu être enregistré — c’est celui du serveur qui est affiché.
@@ -214,6 +221,7 @@
         <div class="co-plates" [class.is-searching]="searching()">
           <app-packing-orders
             [sheets]="visibleSheets()"
+            [rounds]="rounds.rounds()"
             [stack]="stack()"
             [orderCount]="day.orderCount()"
             [todoCount]="day.todoCount()"

@@ -9,6 +9,8 @@
   break-inside: avoid;
 }
 
+.bl-round,
+.bl-stop,
 .bl-reference,
 .bl-customer,
 .bl-index,
@@ -17,6 +19,20 @@
 .bl-inner,
 .bl-code {
   margin: 0;
+}
+
+/* Lot PC3 : la tournée et le rang d'arrêt se lisent depuis l'autre bout de la pièce. */
+.bl-round {
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
+}
+
+.bl-stop {
+  /* Plus grand que la plus grande taille fold : lu de l'autre bout de la
+     pièce, sur une étiquette — un réglage propre à ce gabarit (Q22). */
+  font-size: calc(var(--fold-text-2xl) * 2);
+  font-weight: var(--fold-weight-bold);
+  line-height: var(--fold-leading-none);
 }
 
 .bl-reference {

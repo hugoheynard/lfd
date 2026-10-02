@@ -10,6 +10,7 @@ import type {
   DeliveryLoadingRoundView,
   DeliveryOrderBinsView,
   DeliveryPackingProposalView,
+  DeliveryPackingRoundsView,
   LoadDeliveryBinPayload,
   ShareDeliveryBinPayload,
   SharedDeliveryBinResponse,
@@ -58,6 +59,17 @@ export class DeliveryLoadingService {
       this.http.get<DeliveryPackingProposalView>(
         `${BASE}/colisage/proposition?commande=${id(orderId)}`,
       ),
+    );
+  }
+
+  /**
+   * Les tournées du jour vues du poste de colisage (lot PC2) : les arrêts du
+   * dernier au premier, « n prêtes sur m », « à refaire ». Sous
+   * `production_packing:read` OU `delivery_loading:read`.
+   */
+  packingRounds(day: string): Promise<DeliveryPackingRoundsView> {
+    return firstValueFrom(
+      this.http.get<DeliveryPackingRoundsView>(`${BASE}/colisage/tournees?jour=${id(day)}`),
     );
   }
 

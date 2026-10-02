@@ -12,15 +12,22 @@
 
     <!--
       **LES CONTAINERS DE LA COMMANDE** — au-dessus des lignes parce qu'on les
-      compte en remplissant, pas après. Le compte est celui du serveur ; « + » et
-      « − » émettent un sens, et le poste relit.
+      compte en remplissant, pas après.
+
+      🔴 Une LIVRAISON choisit un bac d'un format (lot PC1, D2) : la rangée
+      déclare chaque bac à la livraison, et le compte anonyme n'apparaît plus.
+      Le RETRAIT garde son compte (D4) : le serveur compte, le poste relit.
     -->
-    <app-packing-containers
-      [count]="order.containers"
-      [editable]="canSetContainers()"
-      [busy]="containersBusy()"
-      (step)="containerStep.emit($event)"
-    />
+    @if (order.fulfillmentMethod === 'delivery') {
+      <app-packing-bin-row [orderId]="order.orderId" />
+    } @else {
+      <app-packing-containers
+        [count]="order.containers"
+        [editable]="canSetContainers()"
+        [busy]="containersBusy()"
+        (step)="containerStep.emit($event)"
+      />
+    }
 
     <div class="co-lines">
       @for (line of order.lines; track line.sku) {
@@ -56,15 +63,27 @@
         <!-- Le MODE est dans le libellé : « retrait » sur une commande livrée
              serait faux. 🔴 Actif selon `canDeclareReady`, la règle du SERVEUR,
              et désarmé pendant la déclaration en vol. -->
+        <!-- Lot PC1, D3 : des avertissements d'écran, au moment de « Prête ». -->
+        @if (warning()) {
+          <fold-callout variant="warning" data-ready-warnings>
+            @for (said of binWarnings(); track said) {
+              <span class="co-warning">{{ said }}</span>
+            }
+            <span class="co-warning"
+              >Déclarez un bac, ou confirmez : la commande partira ainsi.</span
+            >
+          </fold-callout>
+        }
         <button
           foldButton
           block
           size="lg"
           [disabled]="!order.canDeclareReady || closing()"
           [loading]="closing()"
-          (click)="declareReady.emit()"
+          (click)="askReady()"
+          data-declare-ready
         >
-          {{ readyLabel() }}
+          {{ warning() ? 'Déclarer prête quand même' : readyLabel() }}
         </button>
         @if (!order.canDeclareReady && !closing()) {
           <!-- ⚠️ Le nombre est celui du serveur (`remainingLines`), mais la

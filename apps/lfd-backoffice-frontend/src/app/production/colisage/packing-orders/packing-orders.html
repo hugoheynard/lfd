@@ -24,45 +24,78 @@
   />
 
   <div class="co-bacs-list">
-    @for (sheet of sheets(); track sheet.reference) {
-      <button
-        type="button"
-        class="co-bac"
-        [class.is-open]="sheet.reference === openReference()"
-        [class.is-closed]="sheet.packedAt !== null"
-        [class.is-hit]="hitLines().has(sheet.reference)"
-        [attr.aria-current]="sheet.reference === openReference() ? 'true' : null"
-        (click)="chosen.emit(sheet.reference)"
-      >
-        <span class="co-bac-who">
-          {{ sheet.customerLabel }}
-          <!-- 🔴 Les quantités des lignes TROUVÉES, une par ligne, telles que
-               servies — JAMAIS additionnées. On voit qui attend combien sans
-               qu'aucune somme ait lieu ici. -->
-          @for (found of hitLines().get(sheet.reference) ?? []; track found.sku) {
-            <span class="co-hit-chip">{{ found.quantity }} {{ found.productName }}</span>
+    @for (group of groups(); track group.round?.roundId ?? 'hors-tournee') {
+      <!-- Lot PC2 : l'en-tête de tournée et son avancement, comptés par la
+           livraison. Pas d'en-tête quand aucune tournée n'est à l'écran. -->
+      @if (grouped()) {
+        <p class="co-round" data-round-head>
+          <span class="co-round-title">{{ roundTitle(group.round) }}</span>
+          @if (group.round; as round) {
+            <span class="co-round-ready">{{ readyLabel(round) }}</span>
           }
-        </span>
-        <!-- L'acheminement : le mode et le lieu disent sur quelle pile la
-             commande va. ⚠️ Pas d'heure : une commande porte un JOUR de service
-             et rien de plus fin (vérifié le 2026-09-13). -->
-        <span class="co-bac-where">{{ method(sheet) }} · {{ sheet.destination }}</span>
-        <span class="co-bac-count">
-          <!-- 🔴 Le volume est en PRODUITS, compté au serveur (`pieces`,
-               `packedPieces`), et il reste affiché sur une commande prête :
-               « prête » dit l'état, pas le volume. -->
-          <span class="co-bac-pieces"
-            >{{ sheet.packedPieces
-            }}<span class="co-bac-of"> / {{ sheet.pieces }} produits</span></span
-          >
-          @if (sheet.packedAt !== null) {
-            <span class="co-bac-closed">
-              <fold-icon name="package-check" size="sm" />
-              Prête
+        </p>
+      }
+      @for (entry of group.entries; track entry.sheet.reference) {
+        @let sheet = entry.sheet;
+        <button
+          type="button"
+          class="co-bac"
+          [class.is-open]="sheet.reference === openReference()"
+          [class.is-closed]="sheet.packedAt !== null"
+          [class.is-hit]="hitLines().has(sheet.reference)"
+          [attr.aria-current]="sheet.reference === openReference() ? 'true' : null"
+          (click)="chosen.emit(sheet.reference)"
+        >
+          <span class="co-bac-who">
+            {{ sheet.customerLabel }}
+            <!-- 🔴 Les quantités des lignes TROUVÉES, une par ligne, telles que
+                 servies — JAMAIS additionnées. On voit qui attend combien sans
+                 qu'aucune somme ait lieu ici. -->
+            @for (found of hitLines().get(sheet.reference) ?? []; track found.sku) {
+              <span class="co-hit-chip">{{ found.quantity }} {{ found.productName }}</span>
+            }
+          </span>
+          <!-- L'acheminement : le mode et le lieu disent sur quelle pile la
+               commande va. ⚠️ Pas d'heure : une commande porte un JOUR de service
+               et rien de plus fin (vérifié le 2026-09-13). -->
+          <span class="co-bac-where"
+            >{{ method(sheet) }} · {{ sheet.destination }}
+            @if (entry.stop; as stop) {
+              · arrêt {{ stop.position }}
+            }
+          </span>
+          <!-- Lot PC2 : la retenue vient du fournil, « à refaire » de la livraison. -->
+          @if (sheet.qualityHeld === true || entry.stop?.binToRedo === true) {
+            <span class="co-bac-flags">
+              @if (sheet.qualityHeld === true) {
+                <fold-badge variant="alert" content="Retenue au contrôle" data-flag-held />
+              }
+              @if (entry.stop?.binToRedo === true) {
+                <fold-badge
+                  variant="warning"
+                  content="À refaire : annuler et recoliser"
+                  data-flag-redo
+                />
+              }
             </span>
           }
-        </span>
-      </button>
+          <span class="co-bac-count">
+            <!-- 🔴 Le volume est en PRODUITS, compté au serveur (`pieces`,
+                 `packedPieces`), et il reste affiché sur une commande prête :
+                 « prête » dit l'état, pas le volume. -->
+            <span class="co-bac-pieces"
+              >{{ sheet.packedPieces
+              }}<span class="co-bac-of"> / {{ sheet.pieces }} produits</span></span
+            >
+            @if (sheet.packedAt !== null) {
+              <span class="co-bac-closed">
+                <fold-icon name="package-check" size="sm" />
+                Prête
+              </span>
+            }
+          </span>
+        </button>
+      }
     } @empty {
       <!-- « Tout est prêt » et « rien n'est encore prêt » ne se ressemblent pas :
            le premier est la fin de la journée, le second son début. -->

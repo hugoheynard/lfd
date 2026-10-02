@@ -1,6 +1,16 @@
 # Le « + » choisit un bac — un seul contenant par commande livrée
 
-> 📐 **Plan, rien n'est bâti** (2026-09-30). Ouvert sur la remarque de Hugo :
+> 🟢 **Lot A bâti le 2026-10-02, Q2 à Q4 par défaut** — non commité à
+> l'écriture de ce bandeau. Q2 : le format proposé est **en couleur** dans la
+> rangée, rien n'est déclaré d'office ; Q3 : le demi-bac partagé reste au
+> poste ; Q4 : « − » puis « + ». Décisions **à revoir avec Hugo**
+> ([`decisions-par-defaut-2026-10-02.md`](decisions-par-defaut-2026-10-02.md),
+> lot PC1). Le lot B (retirer la saisie libre) n'est pas fait ; le lot C
+> (`chargement-les-bacs.md` § 5) l'est. Ce qui existe :
+> [`chargement-les-bacs.md`](chargement-les-bacs.md) § 5.0.
+>
+> 📐 **Plan, rien n'est bâti** (2026-09-30) — phrase d'origine, périmée par le
+> bandeau ci-dessus. Ouvert sur la remarque de Hugo :
 > « sans algo, c'est la responsabilité du coliseur de préparer de manière
 > optimisée ses bacs clients, donc au niveau du plus / moins on doit désormais
 > choisir une taille de container ».

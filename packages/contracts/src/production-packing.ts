@@ -151,6 +151,16 @@ export interface PackingSheet {
    * l'écran affiche alors `packedBy` tel quel.
    */
   readonly packedByName: string | null;
+  /**
+   * **Retenue au contrôle** (`parcours-du-coliseur.md`, question 5 ; lot PC2,
+   * 2026-10-02) : un verdict courant `blocking` vise la commande, ou un SKU
+   * qu'une de ses lignes porte — la même règle (`heldOrderIds`) que le retrait
+   * lit au comptoir. Le coliseur le voit pour sortir le bac de la pièce.
+   *
+   * Facultatif dans le TYPE seulement : le serveur l'envoie toujours ; un
+   * double de test antérieur qui l'omet se lit « non retenue ».
+   */
+  readonly qualityHeld?: boolean;
 }
 
 /**

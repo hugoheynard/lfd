@@ -43,7 +43,17 @@ const VIEW: DeliveryOrderBinsView = {
       sharedWith: { binId: 'b-9', orderId: 'o-9', reference: 'CMD-9', customerLabel: 'Le Refuge' },
     }),
   ],
+  round: {
+    roundId: 'r-1',
+    day: '2026-10-01',
+    vehicleName: 'Kangoo',
+    passage: 2,
+    position: 3,
+    departedAt: null,
+  },
 };
+
+let served: DeliveryOrderBinsView = VIEW;
 
 let calls: string[];
 
@@ -53,8 +63,9 @@ async function settle(fixture: ComponentFixture<BinLabelsPage>): Promise<void> {
   fixture.detectChanges();
 }
 
-async function boot(bacs?: string): Promise<HTMLElement> {
+async function boot(bacs?: string, view: DeliveryOrderBinsView = VIEW): Promise<HTMLElement> {
   calls = [];
+  served = view;
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -64,7 +75,7 @@ async function boot(bacs?: string): Promise<HTMLElement> {
         useValue: {
           orderBins: (orderId: string) => {
             calls.push(`read ${orderId}`);
-            return Promise.resolve(VIEW);
+            return Promise.resolve(served);
           },
         } satisfies Partial<Record<keyof DeliveryLoadingService, unknown>>,
       },
@@ -129,5 +140,21 @@ describe('BinLabelsPage', () => {
       'partagé avec CMD-9 · Le Refuge',
     );
     expect(half?.querySelector('[data-bin-inner]')?.textContent?.trim()).toBe('2 sacs dedans');
+  });
+
+  /** Lot PC3 : on pose le bac dans la zone de sa tournée, au rang de son arrêt. */
+  it('imprime en gros la tournée et le rang d’arrêt sur chaque étiquette', async () => {
+    const element = await boot();
+    const labels = [...element.querySelectorAll('[data-bin-label]')];
+    expect(
+      labels.map((label) => label.querySelector('[data-bin-round]')?.textContent?.trim()),
+    ).toEqual(['Kangoo · passage 2', 'Kangoo · passage 2']);
+    expect(labels[0]?.querySelector('[data-bin-stop]')?.textContent?.trim()).toBe('Arrêt 3');
+  });
+
+  it('hors tournée, n’imprime ni tournée ni rang — on n’invente pas', async () => {
+    const element = await boot(undefined, { ...VIEW, round: null });
+    expect(element.querySelector('[data-bin-round]')).toBeNull();
+    expect(element.querySelector('[data-bin-stop]')).toBeNull();
   });
 });

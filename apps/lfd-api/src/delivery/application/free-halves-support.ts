@@ -1,10 +1,8 @@
 import type { DeliveryOrderRoundPlaceView } from "@lfd/contracts";
 
-import type {
-  DeliveryLoadingReader,
-  LoadingRoundRow,
-} from "../domain/ports/delivery-loading.reader.js";
+import type { DeliveryLoadingReader } from "../domain/ports/delivery-loading.reader.js";
 import { type FreeHalfRow, freeHalvesAround } from "../domain/services/free-halves.js";
+import { orderStopOf, roundPlaceView } from "./order-round-place.js";
 
 /** Où est une commande, et les moitiés libres des arrêts voisins. */
 export interface FreeHalvesOfOrder {
@@ -22,25 +20,12 @@ export async function freeHalvesOfOrder(
   loading: DeliveryLoadingReader,
   orderId: string,
 ): Promise<FreeHalvesOfOrder> {
-  const place = (await loading.placesOf([orderId])).get(orderId);
-  const round = place === undefined ? null : await loading.round(place.roundId);
-  const stop = round?.stops.find((candidate) => candidate.orderId === orderId);
-  if (round === null || stop === undefined) {
+  const found = await orderStopOf(loading, orderId);
+  if (found === null) {
     return { round: null, halves: [] };
   }
   return {
-    round: placeView(round, stop.position),
-    halves: round.departedAt === null ? freeHalvesAround(round.stops, orderId) : [],
-  };
-}
-
-function placeView(round: LoadingRoundRow, position: number): DeliveryOrderRoundPlaceView {
-  return {
-    roundId: round.id,
-    day: round.serviceDay,
-    vehicleName: round.vehicleName,
-    passage: round.passage,
-    position,
-    departedAt: round.departedAt?.toISOString() ?? null,
+    round: roundPlaceView(found),
+    halves: found.round.departedAt === null ? freeHalvesAround(found.round.stops, orderId) : [],
   };
 }

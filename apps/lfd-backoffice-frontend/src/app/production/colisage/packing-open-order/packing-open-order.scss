@@ -106,3 +106,8 @@
 :host(.is-searching) .co-line:not(.is-hit) {
   opacity: 0.55;
 }
+
+/* Un avertissement de D3 par ligne : on les lit l'un sous l'autre. */
+.co-warning {
+  display: block;
+}

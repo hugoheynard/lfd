@@ -1,4 +1,8 @@
 <section class="bl-label" [attr.aria-label]="'Étiquette ' + indexLabel(bin())" data-bin-label>
+  @if (round(); as place) {
+    <p class="bl-round" data-bin-round>{{ roundTitle() }}</p>
+    <p class="bl-stop" data-bin-stop>Arrêt {{ place.position }}</p>
+  }
   <p class="bl-reference">{{ bin().reference }}</p>
   <p class="bl-customer">{{ bin().customerLabel }}</p>
   <p class="bl-index">{{ indexLabel(bin()) }}</p>

@@ -49,6 +49,12 @@ export interface PackingSources {
    * la fonction reste pure, et ne sait pas qu'un annuaire existe.
    */
   readonly authorName: (reference: string | null) => string | null;
+  /**
+   * Les commandes **retenues au contrôle** ce jour-là, calculées par le
+   * handler avec `heldOrderIds` — la règle que lit aussi le retrait. Un
+   * ensemble et non un calcul ici : les contrôles ne sont pas la journée.
+   */
+  readonly heldOrders: ReadonlySet<string>;
 }
 
 /**
@@ -89,7 +95,7 @@ export function packingBoardOf(sources: PackingSources): ProductionPackingView {
     date: sources.date,
     closedAt: sources.closedAt.toISOString(),
     sheets: [...sources.orders]
-      .map((order) => sheetOf(order, awaiting, sources.authorName))
+      .map((order) => sheetOf(order, awaiting, sources))
       .sort((left, right) => left.reference.localeCompare(right.reference)),
     resources: resourcesOf(sources, awaiting),
     orderCount: sources.orders.length,
@@ -154,7 +160,7 @@ type Awaiting = (sku: string, quantity: number) => boolean;
 function sheetOf(
   order: ProductionOrderSnapshot,
   awaiting: Awaiting,
-  authorName: PackingSources["authorName"],
+  sources: Pick<PackingSources, "authorName" | "heldOrders">,
 ): PackingSheet {
   const packed = order.lines.filter((line) => line.packed !== null);
   return {
@@ -173,7 +179,8 @@ function sheetOf(
     canDeclareReady: canDeclareReady(order),
     packedAt: order.packed?.at.toISOString() ?? null,
     packedBy: order.packed?.by ?? null,
-    packedByName: authorName(order.packed?.by ?? null),
+    packedByName: sources.authorName(order.packed?.by ?? null),
+    qualityHeld: sources.heldOrders.has(order.orderId),
   };
 }
 

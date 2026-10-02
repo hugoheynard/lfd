@@ -48,7 +48,7 @@
       @case ('ready') {
         @for (bin of printed(); track bin.binId) {
           <div class="blp-item">
-            <app-bin-label [bin]="bin" [url]="urlOf(bin)" />
+            <app-bin-label [bin]="bin" [url]="urlOf(bin)" [round]="round()" />
             <button
               foldButton
               class="no-print"

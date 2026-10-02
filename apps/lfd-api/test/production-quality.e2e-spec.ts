@@ -13,7 +13,12 @@ import { randomUUID } from "node:crypto";
  *   verdict (D9) ;
  * - l'idempotence par `id` à travers HTTP (D8).
  */
-import type { QualityBoardView, QualityChecksView, QualityPhotoUploaded } from "@lfd/contracts";
+import type {
+  ProductionPackingView,
+  QualityBoardView,
+  QualityChecksView,
+  QualityPhotoUploaded,
+} from "@lfd/contracts";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -268,6 +273,24 @@ describe("rendre un verdict", () => {
     const { open } = await seedDay();
     await render({ target: { kind: "order", orderId: open }, verdict: "ok" }, 409);
     await render({ target: { kind: "line", sku: "XXX-999" }, verdict: "ok" }, 404);
+  });
+});
+
+describe("le poste de colisage voit la retenue (lot PC2)", () => {
+  it("un blocage de ligne marque « retenue » les commandes qui la portent, un OK la lève", async () => {
+    const { packed, open } = await seedDay();
+    const heldOf = async (): Promise<Record<string, boolean | undefined>> => {
+      const view = jsonBody<ProductionPackingView>(
+        await admin().get(`/admin/production/packing?date=${DAY}`).expect(200),
+      );
+      return Object.fromEntries(view.sheets.map((sheet) => [sheet.orderId, sheet.qualityHeld]));
+    };
+
+    await render({ target: { kind: "line", sku: CROISSANT }, verdict: "blocking", note: "Brûlés" });
+    expect(await heldOf()).toEqual({ [packed]: true, [open]: true });
+
+    await render({ target: { kind: "line", sku: CROISSANT }, verdict: "ok" });
+    expect(await heldOf()).toEqual({ [packed]: false, [open]: false });
   });
 });
 

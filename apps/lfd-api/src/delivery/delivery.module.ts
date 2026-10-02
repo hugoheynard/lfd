@@ -85,6 +85,7 @@ import { GetDeliveryLoadingRoundHandler } from "./application/queries/get-delive
 import { GetDeliveryOrderBinsHandler } from "./application/queries/get-delivery-order-bins.handler.js";
 import { GetDeliveryBinFreeHalvesHandler } from "./application/queries/get-delivery-bin-free-halves.handler.js";
 import { GetDeliveryPackingProposalHandler } from "./application/queries/get-delivery-packing-proposal.handler.js";
+import { GetDeliveryPackingRoundsHandler } from "./application/queries/get-delivery-packing-rounds.handler.js";
 import { DeliveryPackingController } from "./http/delivery-packing.controller.js";
 import { BinCodeDrawer } from "./domain/ports/bin-code-drawer.js";
 import { DeliveryBinRepository } from "./domain/ports/delivery-bin.repository.js";
@@ -208,6 +209,7 @@ import {
     GetDeliveryOrderBinsHandler,
     GetDeliveryBinFreeHalvesHandler,
     GetDeliveryPackingProposalHandler,
+    GetDeliveryPackingRoundsHandler,
     GetDeliveryBinHandler,
     GetDeliveryLoadingRoundHandler,
     GetDeliveryLoadingPlanHandler,

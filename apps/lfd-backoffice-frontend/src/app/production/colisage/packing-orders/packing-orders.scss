@@ -197,3 +197,33 @@
 :host(.is-searching) .co-bac:not(.is-hit) {
   opacity: 0.55;
 }
+
+/* Lot PC2 : l'en-tête d'une tournée — on pose les bacs dans sa zone. */
+.co-round {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: var(--fold-space-sm) var(--fold-space-xl);
+  background: var(--fold-color-surface-band);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.co-round-title {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.co-round-ready {
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+.co-bac-flags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}

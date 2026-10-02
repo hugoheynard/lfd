@@ -48,8 +48,19 @@ function sheet(over: Partial<PackingSheet> = {}): PackingSheet {
   };
 }
 
+/**
+ * La rangée « + format » d'une livraison (lot PC1) lit la livraison : sans le
+ * droit, elle se tait — ces cas-là parlent de la commande, pas des bacs.
+ */
 function render(inputs: Readonly<Record<string, unknown>>): ComponentFixture<PackingOpenOrder> {
   TestBed.resetTestingModule();
+  TestBed.configureTestingModule({
+    providers: [
+      { provide: PermissionsStore, useValue: { can: () => false } },
+      { provide: DeliveryLoadingService, useValue: {} },
+      { provide: DeliveryBinsService, useValue: {} },
+    ],
+  });
   const fixture = TestBed.createComponent(PackingOpenOrder);
   for (const [name, value] of Object.entries({
     canSetContainers: true,
@@ -157,8 +168,8 @@ describe('la commande ouverte du colisage', () => {
     expect(toggles[0]?.line.packed).toBe(false);
   });
 
-  it('émet un sens de container, `add` ou `remove`', () => {
-    const fixture = render({ sheet: sheet({ containers: 3 }) });
+  it('émet un sens de container, `add` ou `remove` — sur un retrait', () => {
+    const fixture = render({ sheet: sheet({ containers: 3, fulfillmentMethod: 'pickup' }) });
     const host: HTMLElement = fixture.nativeElement;
     const steps: PackingContainerStep[] = [];
     fixture.componentInstance.containerStep.subscribe((step) => steps.push(step));
@@ -194,5 +205,90 @@ describe('la commande ouverte du colisage', () => {
     const ready = render({ sheet: null, stack: 'ready' });
     const readyHost: HTMLElement = ready.nativeElement;
     expect(readyHost.textContent).toContain('Rien n’est encore prêt');
+  });
+});
+
+describe('le « + » choisit un bac sur une livraison (lot PC1)', () => {
+  /** Un poste qui peut déclarer, et une livraison sans bac ni froid. */
+  function renderDeclaring(over: Partial<PackingSheet>): ComponentFixture<PackingOpenOrder> {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: PermissionsStore, useValue: { can: () => true } },
+        {
+          provide: DeliveryLoadingService,
+          useValue: {
+            orderBins: (orderId: string) =>
+              Promise.resolve({ orderId, reference: 'CMD-001', bins: [], round: null }),
+            packingProposal: () => Promise.reject(new Error('sans proposition')),
+          },
+        },
+        {
+          provide: DeliveryBinsService,
+          useValue: { binTypes: () => Promise.resolve({ types: [] }) },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(PackingOpenOrder);
+    fixture.componentRef.setInput('sheet', sheet(over));
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  async function settle(fixture: ComponentFixture<PackingOpenOrder>): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
+  }
+
+  it('une livraison montre la rangée des bacs, et plus le compte anonyme', () => {
+    const host: HTMLElement = render({ sheet: sheet() }).nativeElement;
+
+    expect(host.querySelector('app-packing-bin-row')).not.toBeNull();
+    expect(host.querySelector('app-packing-containers')).toBeNull();
+  });
+
+  it('un retrait garde son compte anonyme, sans rangée (D4)', () => {
+    const host: HTMLElement = render({
+      sheet: sheet({ fulfillmentMethod: 'pickup' }),
+    }).nativeElement;
+
+    expect(host.querySelector('app-packing-containers')).not.toBeNull();
+    expect(host.querySelector('app-packing-bin-row')).toBeNull();
+  });
+
+  it('🔴 avertit au premier appui sur « Prête » (aucun bac), déclare au second — jamais un refus', async () => {
+    const fixture = renderDeclaring({ canDeclareReady: true });
+    await settle(fixture);
+    const host: HTMLElement = fixture.nativeElement;
+    let declared = 0;
+    fixture.componentInstance.declareReady.subscribe(() => (declared += 1));
+
+    host.querySelector<HTMLButtonElement>('[data-declare-ready]')?.click();
+    fixture.detectChanges();
+
+    expect(declared).toBe(0);
+    expect(said(host.querySelector('[data-ready-warnings]'))).toContain(
+      'Aucun bac déclaré pour cette livraison.',
+    );
+    expect(said(host.querySelector('[data-declare-ready]'))).toBe('Déclarer prête quand même');
+
+    host.querySelector<HTMLButtonElement>('[data-declare-ready]')?.click();
+    fixture.detectChanges();
+
+    expect(declared).toBe(1);
+  });
+
+  it('un retrait se déclare au premier appui : rien à avertir', () => {
+    const fixture = render({
+      sheet: sheet({ canDeclareReady: true, fulfillmentMethod: 'pickup' }),
+    });
+    let declared = 0;
+    fixture.componentInstance.declareReady.subscribe(() => (declared += 1));
+
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('[data-declare-ready]')
+      ?.click();
+
+    expect(declared).toBe(1);
   });
 });

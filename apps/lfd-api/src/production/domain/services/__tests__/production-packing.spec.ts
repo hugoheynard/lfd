@@ -114,6 +114,7 @@ function sources(overrides: Partial<PackingSources> = {}): PackingSources {
     counts: [],
     now: NOW,
     authorName,
+    heldOrders: new Set<string>(),
     ...overrides,
   };
   return { available: availableFrom(base.counts, base.orders), ...base };
@@ -137,6 +138,23 @@ describe("une journée qui n'est pas arrêtée", () => {
 });
 
 describe("les bacs", () => {
+  it("dit la retenue au contrôle commande par commande, telle que le handler l'a calculée", () => {
+    const board = packingBoardOf(
+      sources({
+        orders: [
+          sheet("CMD-0001", [line("VIE-001", "Croissant", 12)]),
+          sheet("CMD-0002", [line("VIE-001", "Croissant", 4)]),
+        ],
+        heldOrders: new Set(["ord_CMD-0002"]),
+      }),
+    );
+
+    expect(board.sheets.map((entry) => [entry.reference, entry.qualityHeld])).toEqual([
+      ["CMD-0001", false],
+      ["CMD-0002", true],
+    ]);
+  });
+
   it("rend chaque bon avec l'état de ses lignes", () => {
     const board = packingBoardOf(
       sources({

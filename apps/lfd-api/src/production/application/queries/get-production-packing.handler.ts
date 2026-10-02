@@ -4,7 +4,9 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
+import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
 import { packingBoardOf } from "../../domain/services/production-packing.js";
+import { heldOrderIds } from "../../domain/services/quality-verdicts.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { GetProductionPackingQuery } from "./get-production-packing.query.js";
 
@@ -24,6 +26,10 @@ import { GetProductionPackingQuery } from "./get-production-packing.query.js";
  * — selon l'horloge du SERVEUR. Celle d'un poste de fournil n'est pas une
  * autorité, et l'écran ne compare plus de dates.
  *
+ * La **retenue au contrôle** (lot PC2, 2026-10-02) se lit ici, dans le même
+ * bloc : les contrôles de la journée, et `heldOrderIds` — la règle que le
+ * retrait lit au comptoir. Le plan est celui de la journée chargée.
+ *
  * Il n'écrit rien, pas même un compteur — §4.
  */
 @QueryHandler(GetProductionPackingQuery)
@@ -35,6 +41,7 @@ export class GetProductionPackingHandler implements IQueryHandler<
     private readonly days: ProductionDayRepository,
     private readonly clock: Clock,
     private readonly staffAuthors: StaffAuthorDirectory,
+    private readonly checks: QualityCheckReader,
   ) {}
 
   async execute(query: GetProductionPackingQuery): Promise<ProductionPackingView> {
@@ -43,6 +50,10 @@ export class GetProductionPackingHandler implements IQueryHandler<
     const authors = await this.staffAuthors.identify(
       current.orders.map((order) => order.packed?.by ?? null),
     );
+    const plan = current.orders.flatMap((order) =>
+      order.lines.map((line) => ({ orderId: order.orderId, sku: line.sku })),
+    );
+    const heldOrders = heldOrderIds(day, await this.checks.forDay(day), plan);
     return packingBoardOf({
       date: day.value,
       closedAt: current.closedAt,
@@ -51,6 +62,7 @@ export class GetProductionPackingHandler implements IQueryHandler<
       available: (sku) => current.availableOf(sku),
       now: this.clock.now(),
       authorName: (reference) => authors.nameOf(reference),
+      heldOrders,
     });
   }
 }

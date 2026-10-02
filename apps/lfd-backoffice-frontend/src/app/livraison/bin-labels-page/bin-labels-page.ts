@@ -111,6 +111,12 @@ export class BinLabelsPage {
     return state.status === 'ready' ? state.view.reference : null;
   });
 
+  /** La tournée et l'arrêt de la commande, imprimés en gros sur chaque étiquette (lot PC3). */
+  protected readonly round = computed(() => {
+    const state = this.state();
+    return state.status === 'ready' ? state.view.round : null;
+  });
+
   constructor() {
     effect(() => {
       const orderId = this.orderId();
