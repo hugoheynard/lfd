@@ -601,6 +601,8 @@ export type {
   StaffOverride,
   StaffMeView,
 } from "./staff-access.js";
+export { STAFF_RESOURCE_SCOPES } from "./staff-resource-scopes.js";
+export type { StaffResourceScope } from "./staff-resource-scopes.js";
 export {
   staffStatusSchema,
   staffStatusChangeSchema,
@@ -727,6 +729,12 @@ export type {
   OrderHandoverLine,
   OrderHandoverView,
 } from "./order-handover.js";
+export type {
+  OrderHandoverProofMode,
+  OrderHandoverProofPieces,
+  OrderHandoverProofResponse,
+  OrderHandoverProofView,
+} from "./order-handover-proof.js";
 export type {
   DeliveryRunSheetAddressBookView,
   DeliveryRunSheetStepView,
@@ -917,6 +925,9 @@ export type {
   DeliveryOrderRoundPlaceView,
   DeliveryBinFreeHalfView,
   DeliveryBinFreeHalvesView,
+  DeliveryPackingStopView,
+  DeliveryPackingRoundView,
+  DeliveryPackingRoundsView,
 } from "./delivery-packing.js";
 export {
   deliveryRoutingSettingsPayloadSchema,

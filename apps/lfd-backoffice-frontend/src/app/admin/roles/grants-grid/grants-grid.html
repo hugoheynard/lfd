@@ -31,7 +31,17 @@
         </tr>
         @for (row of group.rows; track row.resource) {
           <tr>
-            <th scope="row">{{ row.label }}</th>
+            <!-- La portée, ÉCRITE sous le libellé et non dans un `title` : on choisit un
+                 niveau en sachant ce qu'il ouvre, sans devoir survoler (2026-10-02). -->
+            <th scope="row">
+              <span class="row-label">{{ row.label }}</span>
+              <span class="row-scope">
+                <span class="row-scope-line"><strong>Lecture</strong> — {{ row.scope.read }}</span>
+                <span class="row-scope-line"
+                  ><strong>Écriture</strong> — {{ row.scope.write }}</span
+                >
+              </span>
+            </th>
             <td>
               <fold-select
                 size="sm"

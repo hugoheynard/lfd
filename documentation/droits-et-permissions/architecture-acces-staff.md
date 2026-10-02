@@ -216,6 +216,15 @@ ressource et action.
 | **exploitation** | `ops_health`                 | la carte de santé                                                                                               |
 | _aucun_          | `activity`                   | le journal d'activité, qui traverse tous les outils — seule exception au préfixe, écrite comme telle            |
 
+> **2026-10-02 — ce que chaque droit ouvre, en clair.** Le libellé d'écran
+> (`STAFF_RESOURCE_LABELS`) ne dit plus seul ce qu'on accorde : chaque ressource
+> porte aussi deux phrases, ce que la **lecture** ouvre et ce que l'**écriture**
+> ajoute (`STAFF_RESOURCE_SCOPES`, `packages/contracts/src/staff-resource-scopes.ts`),
+> établies depuis les gardes du code ce jour-là et affichées sous le libellé dans
+> l'éditeur de rôle et la grille des dérogations. ⚠️ Ce tableau-ci n'est pas à
+> jour (vingt-huit lignes, quarante-deux ressources au 2026-10-02) : la table des
+> phrases fait foi pour la portée.
+
 Chaque découpe a sa raison, écrite au-dessus de la valeur dans le contrat.
 Les trois qui comptent le plus :
 

@@ -5,11 +5,13 @@ import {
   staffPermission,
   staffResourceSchema,
   STAFF_RESOURCE_LABELS,
+  STAFF_RESOURCE_SCOPES,
   type StaffAction,
   type StaffOverride,
   type StaffOverrideEffect,
   type RoleGrants,
   type StaffResource,
+  type StaffResourceScope,
 } from '@lfd/contracts';
 import { FoldBadgeComponent, FoldSelectComponent } from 'fold-ng';
 
@@ -32,6 +34,7 @@ interface Cell {
 interface Row {
   readonly resource: StaffResource;
   readonly label: string;
+  readonly scope: StaffResourceScope;
   readonly read: Cell;
   readonly write: Cell;
 }
@@ -69,6 +72,7 @@ export class OverridesGrid {
     return staffResourceSchema.options.map((resource) => ({
       resource,
       label: STAFF_RESOURCE_LABELS[resource],
+      scope: STAFF_RESOURCE_SCOPES[resource],
       read: this.cell(resource, 'read', effective),
       write: this.cell(resource, 'write', effective),
     }));

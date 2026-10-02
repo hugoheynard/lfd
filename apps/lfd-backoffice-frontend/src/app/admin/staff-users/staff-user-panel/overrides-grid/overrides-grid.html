@@ -23,7 +23,15 @@
     <tbody>
       @for (row of rows(); track row.resource) {
         <tr>
-          <th scope="row">{{ row.label }}</th>
+          <!-- La portée, écrite et non au survol : le panneau s'ouvre aussi sur
+               tablette, où rien ne se survole (2026-10-02). -->
+          <th scope="row">
+            <span class="row-label">{{ row.label }}</span>
+            <span class="row-scope">
+              <span class="row-scope-line"><strong>Lecture</strong> — {{ row.scope.read }}</span>
+              <span class="row-scope-line"><strong>Écriture</strong> — {{ row.scope.write }}</span>
+            </span>
+          </th>
           @for (cell of [row.read, row.write]; track cell.action) {
             <td>
               <!-- Le flex vit sur ce div, PAS sur le `<td>` : une cellule en

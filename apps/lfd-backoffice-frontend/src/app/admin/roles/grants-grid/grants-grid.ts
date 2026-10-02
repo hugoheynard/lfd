@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, model } from '@angular/core';
-import { type RoleGrant, type StaffResource } from '@lfd/contracts';
+import { type RoleGrant, type StaffResource, type StaffResourceScope } from '@lfd/contracts';
 import { FoldBadgeComponent, FoldSelectComponent } from 'fold-ng';
 
 import { applyLevel, levelOf, type GrantLevel } from './apply-level';
@@ -14,6 +14,7 @@ const LEVELS: readonly { readonly value: GrantLevel; readonly label: string }[] 
 interface Row {
   readonly resource: StaffResource;
   readonly label: string;
+  readonly scope: StaffResourceScope;
   readonly level: GrantLevel;
 }
 
@@ -66,6 +67,7 @@ export class GrantsGrid {
       rows: group.resources.map((entry) => ({
         resource: entry.resource,
         label: entry.label,
+        scope: entry.scope,
         level: levelOf(this.grants(), entry.resource),
       })),
     })),

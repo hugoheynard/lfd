@@ -1,4 +1,10 @@
-import { staffResourceSchema, STAFF_RESOURCE_LABELS, type StaffResource } from '@lfd/contracts';
+import {
+  staffResourceSchema,
+  STAFF_RESOURCE_LABELS,
+  STAFF_RESOURCE_SCOPES,
+  type StaffResource,
+  type StaffResourceScope,
+} from '@lfd/contracts';
 
 /**
  * **À quel outil appartient un domaine de droits.**
@@ -66,6 +72,8 @@ const TOOL_HINTS: Readonly<Record<StaffTool, string>> = {
 export interface ToolResource {
   readonly resource: StaffResource;
   readonly label: string;
+  /** Ce que la lecture ouvre et ce que l'écriture ajoute — affiché sous le libellé. */
+  readonly scope: StaffResourceScope;
 }
 
 /** Un groupe d'outil et ses domaines, dans l'ordre du catalogue. */
@@ -112,7 +120,11 @@ export function toolGroups(): readonly ToolGroup[] {
   return TOOL_ORDER.flatMap((tool) => {
     const resources = staffResourceSchema.options
       .filter((resource) => toolOf(resource) === tool)
-      .map((resource) => ({ resource, label: STAFF_RESOURCE_LABELS[resource] }));
+      .map((resource) => ({
+        resource,
+        label: STAFF_RESOURCE_LABELS[resource],
+        scope: STAFF_RESOURCE_SCOPES[resource],
+      }));
     return resources.length === 0
       ? []
       : [{ tool, label: TOOL_LABELS[tool], hint: TOOL_HINTS[tool], resources }];

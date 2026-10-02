@@ -45,12 +45,14 @@
   tbody th {
     padding-inline-end: var(--fold-space-md);
     font-weight: normal;
+    vertical-align: top;
   }
 
   /* La colonne des niveaux ne s'étire pas : douze `<select>` pleine largeur
      éloignent le choix de son libellé. */
   td {
     width: 12rem;
+    vertical-align: top;
   }
 }
 
@@ -76,4 +78,25 @@
   display: block;
   font-size: var(--fold-text-xs);
   color: var(--fold-color-text-muted);
+}
+
+/* La portée d'un droit, sous son libellé : deux phrases courtes, en retrait de
+   ton, pour que la colonne des libellés reste lisible d'un coup d'œil. */
+.row-label {
+  display: block;
+}
+
+.row-scope {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin-block-start: var(--fold-space-xs);
+  max-inline-size: 48rem;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+
+  strong {
+    font-weight: 600;
+    color: var(--fold-color-text);
+  }
 }
