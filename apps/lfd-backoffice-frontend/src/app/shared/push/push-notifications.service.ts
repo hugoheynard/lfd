@@ -15,6 +15,12 @@ import {
   type PushState,
 } from './web-push';
 
+/**
+ * La route « à moi » (B5) : gardée par l'authentification seule, là où
+ * `admin/notifications/push` exige la cloche partagée — même contrat.
+ */
+const PUSH = `${B2B_API_BASE}/admin/me/notifications/push`;
+
 /** Le chemin du service worker, servi tel quel depuis `public/`. */
 const WORKER = '/sw.js';
 
@@ -140,9 +146,7 @@ export class PushNotificationsService {
       userVisibleOnly: true,
       applicationServerKey: vapidKeyToBytes(key),
     });
-    await firstValueFrom(
-      this.http.post<void>(`${B2B_API_BASE}/admin/notifications/push`, subscription.toJSON()),
-    );
+    await firstValueFrom(this.http.post<void>(PUSH, subscription.toJSON()));
   }
 
   /**
@@ -160,7 +164,7 @@ export class PushNotificationsService {
     this.busyValue.set(true);
     try {
       await firstValueFrom(
-        this.http.delete<void>(`${B2B_API_BASE}/admin/notifications/push`, {
+        this.http.delete<void>(PUSH, {
           body: { endpoint: subscription.endpoint },
         }),
       );
@@ -185,9 +189,7 @@ export class PushNotificationsService {
    */
   private async readPublicKey(): Promise<string | null> {
     try {
-      const capability = await firstValueFrom(
-        this.http.get<PushCapability>(`${B2B_API_BASE}/admin/notifications/push/key`),
-      );
+      const capability = await firstValueFrom(this.http.get<PushCapability>(`${PUSH}/key`));
       return capability.publicKey;
     } catch {
       return null;

@@ -22,6 +22,8 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { ordersFromOtherDays } from '../delivery-rounds';
+import { DeliveryRoundsService } from '../delivery-rounds.service';
 import {
   DAY_QUERY_PARAM,
   dayOfQuery,
@@ -79,6 +81,7 @@ const TOMORROW = '1';
 })
 export class DeliveryPage {
   private readonly service = inject(RunSheetService);
+  private readonly rounds = inject(DeliveryRoundsService);
   private readonly permissions = inject(PermissionsStore);
 
   /** Le jour du poste, à Paris : le serveur n'en rend pas sans qu'on le demande. */
@@ -168,7 +171,11 @@ export class DeliveryPage {
     const request = ++this.request;
     this.state.set({ status: 'loading' });
     try {
-      const view = await this.service.day(day);
+      // Sans le droit, aucune attente de plus : la page lit comme avant.
+      const also = this.permissions.can('delivery_rounds:read')
+        ? await this.ordersFromOtherDays(day)
+        : [];
+      const view = await this.service.day(day, also);
       if (request === this.request) {
         this.state.set({ status: 'ready', view });
       }
@@ -176,6 +183,24 @@ export class DeliveryPage {
       if (request === this.request) {
         this.state.set({ status: 'error' });
       }
+    }
+  }
+
+  /**
+   * Les commandes d'un autre jour demandé que la composition a placées ce
+   * jour-là (rapportées, `decisions-par-defaut-2026-10-02.md`, § 4) — même
+   * geste que l'écran des tournées, sans canal de plus.
+   *
+   * Appelée seulement sous `delivery_rounds:read` (le droit de
+   * `GET admin/livraison/tournees`) : sans lui, la page ne lit pas la composition et garde son comportement d'avant : la
+   * feuille du jour seule, sans ces commandes. Une composition illisible
+   * (réseau, 5xx) dégrade de même plutôt que de priver la page de sa feuille.
+   */
+  private async ordersFromOtherDays(day: string): Promise<readonly string[]> {
+    try {
+      return ordersFromOtherDays(await this.rounds.day(day));
+    } catch {
+      return [];
     }
   }
 }

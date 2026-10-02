@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
-import type { DeliveryRunSheetView } from '@lfd/contracts';
+import type { DeliveryRoundsDayView, DeliveryRunSheetView } from '@lfd/contracts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { DeliveryRoundsService } from '../delivery-rounds.service';
 import { parisDayOf, shiftDay } from '../run-sheet';
 import { stopOf } from '../run-sheet.fixture';
 import { RunSheetService } from '../run-sheet.service';
@@ -14,8 +15,11 @@ async function mount(
   read: (day: string) => Promise<DeliveryRunSheetView>,
   canSeePhotos = false,
   query: Record<string, string> = {},
+  rounds: ((day: string) => Promise<DeliveryRoundsDayView>) | null = null,
 ) {
   const asked: string[] = [];
+  const also: (readonly string[])[] = [];
+  const roundsAsked: string[] = [];
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -26,20 +30,36 @@ async function mount(
       {
         provide: RunSheetService,
         useValue: {
-          day: (day: string) => {
+          day: (day: string, alsoOrderIds: readonly string[] = []) => {
             asked.push(day);
+            also.push(alsoOrderIds);
             return read(day);
           },
         },
       },
-      { provide: PermissionsStore, useValue: { can: () => canSeePhotos } },
+      {
+        provide: DeliveryRoundsService,
+        useValue: {
+          day: (day: string) => {
+            roundsAsked.push(day);
+            return rounds === null ? Promise.reject(new Error('non lue')) : rounds(day);
+          },
+        },
+      },
+      {
+        provide: PermissionsStore,
+        useValue: {
+          can: (permission: string) =>
+            permission === 'delivery_rounds:read' ? rounds !== null : canSeePhotos,
+        },
+      },
     ],
   });
   const fixture = TestBed.createComponent(DeliveryPage);
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
-  return { fixture, element: fixture.nativeElement as HTMLElement, asked };
+  return { fixture, element: fixture.nativeElement as HTMLElement, asked, also, roundsAsked };
 }
 
 afterEach(() => {
@@ -143,5 +163,43 @@ describe('DeliveryPage', () => {
       [],
       expect.objectContaining({ queryParams: { jour: '2026-10-24' }, replaceUrl: true }),
     );
+  });
+
+  it('nomme à la feuille les rapportées placées ce jour-là, pour qui lit les tournées (§ 4)', async () => {
+    const composition = (day: string): Promise<DeliveryRoundsDayView> =>
+      Promise.resolve({
+        day,
+        rounds: [],
+        unassigned: [
+          { orderId: 'o-back', reference: 'B', broughtBackAt: '2026-09-30T15:00:00.000Z' },
+        ],
+        incidents: [],
+      });
+    const empty = (day: string) => Promise.resolve({ day, stops: [] });
+    const { also, roundsAsked } = await mount(empty, false, { jour: '2026-10-24' }, composition);
+
+    await vi.waitFor(() => expect(also).toHaveLength(1));
+    expect(roundsAsked).toEqual(['2026-10-24']);
+    expect(also).toEqual([['o-back']]);
+  });
+
+  it('sans le droit des tournées, ne lit pas la composition : la feuille du jour seule', async () => {
+    const { also, roundsAsked } = await mount((day) => Promise.resolve({ day, stops: [] }));
+
+    expect(roundsAsked).toEqual([]);
+    expect(also).toEqual([[]]);
+  });
+
+  it('une composition illisible ne prive pas la page de sa feuille', async () => {
+    const { also, element, fixture } = await mount(
+      (day) => Promise.resolve({ day, stops: [] }),
+      false,
+      {},
+      () => Promise.reject(new Error('500')),
+    );
+
+    await vi.waitFor(() => expect(also).toEqual([[]]));
+    fixture.detectChanges();
+    expect(element.querySelector('[data-sheet-error]')).toBeNull();
   });
 });
