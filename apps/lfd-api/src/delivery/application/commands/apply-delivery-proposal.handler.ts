@@ -10,6 +10,7 @@ import { LoadedStopMoveError } from "../../domain/errors/delivery-loading-errors
 import { InvalidProposalError } from "../../domain/errors/delivery-routing-errors.js";
 import { ProposalAppliedEvent } from "../../domain/events/delivery-routing.events.js";
 import { DeliveryProposalRepository } from "../../domain/ports/delivery-proposal.repository.js";
+import { BroughtBackOrdersReader } from "../../domain/ports/brought-back-orders.reader.js";
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
 import { DeliveryRoundsReader } from "../../domain/ports/delivery-rounds.reader.js";
 import { LoadedStopsReader } from "../../domain/ports/loaded-stops.reader.js";
@@ -52,6 +53,7 @@ export class ApplyDeliveryProposalHandler implements ICommandHandler<
     private readonly vehicles: VehicleRepository,
     private readonly loadedStops: LoadedStopsReader,
     private readonly orders: DeliveryOrdersReader,
+    private readonly broughtBack: BroughtBackOrdersReader,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
@@ -65,7 +67,13 @@ export class ApplyDeliveryProposalHandler implements ICommandHandler<
       const touched = await loadTouchedRounds(this.rounds, this.reader, payload);
       const held = new Set([...touched.values()].flatMap((round) => round.orderIds));
       const fresh = payload.rounds.flatMap((item) => item.orderIds.filter((id) => !held.has(id)));
-      await ensureNewOrdersAssignable(this.orders, this.rounds, payload.day, fresh);
+      await ensureNewOrdersAssignable(
+        this.orders,
+        this.rounds,
+        this.broughtBack,
+        payload.day,
+        fresh,
+      );
       const openings = await openingsOf(this.vehicles, this.rounds, payload);
       const drawn = new Map<string, number>();
       const applied = applyProposal({

@@ -27,6 +27,7 @@ import { DecisionIncidentPhotosReader } from "./domain/ports/decision-incident-p
 import { PendingDecisionsReader } from "./domain/ports/pending-decisions.reader.js";
 import { StopDecisionRepository } from "./domain/ports/stop-decision.repository.js";
 import { StopDecisionsReader } from "./domain/ports/stop-decisions.reader.js";
+import { BroughtBackOrdersReader } from "./domain/ports/brought-back-orders.reader.js";
 import { UndeliveredStopsReader } from "./domain/ports/undelivered-stops.reader.js";
 import { DeliveryIncidentsController } from "./http/delivery-incidents.controller.js";
 import { MyDeliveryDoorstepController } from "./http/my-delivery-doorstep.controller.js";
@@ -43,6 +44,7 @@ import {
   PrismaPendingDecisionsReader,
   PrismaStopDecisionsReader,
 } from "./infrastructure/prisma-stop-decisions.reader.js";
+import { PrismaBroughtBackOrdersReader } from "./infrastructure/prisma-brought-back-orders.reader.js";
 import { PrismaUndeliveredStopsReader } from "./infrastructure/prisma-undelivered-stops.reader.js";
 
 /**
@@ -91,6 +93,8 @@ export const DOORSTEP_PROVIDERS: readonly Provider[] = [
   { provide: DeliveryIncidentsReader, useClass: PrismaDeliveryIncidentsReader },
   { provide: IncidentPhotosReader, useClass: PrismaIncidentPhotosReader },
   { provide: UndeliveredStopsReader, useClass: PrismaUndeliveredStopsReader },
+  // Lu par la composition (lot RL1) : le fait vient de la décision à la porte.
+  { provide: BroughtBackOrdersReader, useClass: PrismaBroughtBackOrdersReader },
   StopDecisionOpening,
   StopDecisionBySetting,
   StopDecisionDesk,

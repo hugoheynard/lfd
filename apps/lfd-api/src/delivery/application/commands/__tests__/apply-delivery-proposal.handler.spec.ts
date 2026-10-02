@@ -13,6 +13,7 @@ import { ProposalOutdatedError } from "../../../domain/errors/delivery-routing-e
 import { ApplyDeliveryProposalCommand } from "../apply-delivery-proposal.command.js";
 import { ApplyDeliveryProposalHandler } from "../apply-delivery-proposal.handler.js";
 import { InMemoryVehicles, vehicle } from "./fleet-doubles.js";
+import { FixedBroughtBackOrders } from "./brought-back-doubles.js";
 import {
   deliveryOn,
   FixedDeliveryOrders,
@@ -48,6 +49,11 @@ function scene(loaded: readonly string[] = []) {
       deliveryOn("o3", DAY),
       deliveryOn("o4", DAY, { status: "cancelled" }),
       deliveryOn("o9", DAY),
+      deliveryOn("o5", OTHER_DAY),
+      deliveryOn("o6", OTHER_DAY),
+    ]),
+    new FixedBroughtBackOrders([
+      { orderId: "o5", broughtBackAt: new Date("2030-03-11T15:00:00.000Z") },
     ]),
     new FixedIdGenerator("id"),
     new FixedClock(new Date(0)),
@@ -167,6 +173,19 @@ describe("ApplyDeliveryProposalHandler — « Appliquer » (L7-C6, L7-C11, L7-C1
         }),
       ),
     ).rejects.toThrow(OrderAlreadyInRoundError);
+  });
+
+  it("place une commande RAPPORTÉE d'un autre jour ; refuse une autre de ce jour-là (RL1)", async () => {
+    const { handler, proposals } = scene();
+    const placing = (orderId: string) =>
+      new ApplyDeliveryProposalCommand({
+        ...PROPOSAL,
+        rounds: [...PROPOSAL.rounds, { roundId: null, vehicleId: "v1", orderIds: [orderId] }],
+      });
+
+    await expect(handler.execute(placing("o6"))).rejects.toThrow(/pas à livrer ce jour-là/u);
+    await handler.execute(placing("o5"));
+    expect(proposals.applied).toHaveLength(1);
   });
 
   it("deux tournées à ouvrir pour un même véhicule prennent deux passages", async () => {

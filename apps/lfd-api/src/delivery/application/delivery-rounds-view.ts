@@ -25,6 +25,13 @@ export interface DeliveryRoundsDayInputs {
   readonly drivers: ReadonlySet<string>;
   /** Le nom des livreurs affectés, lu dans l'annuaire ; absent : fiche inconnue. */
   readonly driverNames: ReadonlyMap<string, string | null>;
+  /**
+   * Les commandes rapportées à replacer (lot RL1), de n'importe quel jour :
+   * actives, en livraison, non retirées, dans aucune tournée depuis.
+   */
+  readonly awaiting: readonly DeliveryOrderRef[];
+  /** La dernière fois qu'une commande à replacer ou composée a été rapportée. */
+  readonly broughtBack: ReadonlyMap<string, Date>;
 }
 
 /**
@@ -33,9 +40,10 @@ export interface DeliveryRoundsDayInputs {
  *
  * - **à répartir** : attendues ce jour, non annulées, dans aucune tournée
  *   vivante (I3 : une commande composée un autre jour n'est pas à répartir,
- *   elle est signalée là où elle est) ;
+ *   elle est signalée là où elle est) — et, EN TÊTE, les commandes rapportées
+ *   à replacer, quel que soit le jour composé (lot RL1) ;
  * - **signaux** : `cancelled`, `not_this_day`, `not_delivery` — retirés à la
- *   main (Q11) ;
+ *   main (Q11) ; une commande rapportée n'est jamais `not_this_day` ;
  * - **véhicule retiré** : un retrait et une affectation simultanés ont pu
  *   passer (C14) ; on le dit ;
  * - **livreur sans accès** : affecté, puis privé du droit de conduire (MT-D2 v2).
@@ -49,13 +57,26 @@ export function deliveryRoundsDayView(
   return {
     day: inputs.day,
     rounds: inputs.rounds.map((round) => roundView(round, inputs)),
-    unassigned: inputs.expected
-      .filter((order) => order.status !== "cancelled" && !inputs.assigned.has(order.orderId))
-      .map((order): DeliveryRoundOrderRef => ({
-        orderId: order.orderId,
-        reference: order.reference,
-      })),
+    unassigned: unassignedOf(inputs),
   };
+}
+
+function unassignedOf(inputs: DeliveryRoundsDayInputs): readonly DeliveryRoundOrderRef[] {
+  const awaitingIds = new Set(inputs.awaiting.map((order) => order.orderId));
+  const ofDay = inputs.expected.filter(
+    (order) =>
+      order.status !== "cancelled" &&
+      !inputs.assigned.has(order.orderId) &&
+      !awaitingIds.has(order.orderId),
+  );
+  return [...inputs.awaiting, ...ofDay].map((order) =>
+    orderRef(order, inputs.broughtBack.get(order.orderId)),
+  );
+}
+
+function orderRef(order: DeliveryOrderRef, broughtBackAt: Date | undefined): DeliveryRoundOrderRef {
+  const ref = { orderId: order.orderId, reference: order.reference };
+  return broughtBackAt === undefined ? ref : { ...ref, broughtBackAt: broughtBackAt.toISOString() };
 }
 
 function roundView(round: RoundRow, inputs: DeliveryRoundsDayInputs): DeliveryRoundView {
@@ -94,24 +115,32 @@ function driverView(
 
 function stopView(stop: RoundStopRow, inputs: DeliveryRoundsDayInputs): DeliveryRoundStopView {
   const order = inputs.composed.get(stop.orderId);
-  return {
+  const broughtBackAt = inputs.broughtBack.get(stop.orderId);
+  const view: DeliveryRoundStopView = {
     stopId: stop.stopId,
     orderId: stop.orderId,
     // Une commande que le commerce ne connaît plus (semis de démonstration
     // effacé) n'a pas de numéro : on n'en invente pas.
     reference: order?.reference ?? "",
     position: stop.position,
-    signals: order === undefined ? [] : signalsOf(order, inputs.day),
+    signals: order === undefined ? [] : signalsOf(order, inputs.day, broughtBackAt !== undefined),
     orderDay: order?.day ?? null,
   };
+  return broughtBackAt === undefined
+    ? view
+    : { ...view, broughtBackAt: broughtBackAt.toISOString() };
 }
 
-function signalsOf(order: DeliveryOrderFacts, day: string): readonly DeliveryRoundStopSignal[] {
+function signalsOf(
+  order: DeliveryOrderFacts,
+  day: string,
+  broughtBack: boolean,
+): readonly DeliveryRoundStopSignal[] {
   const signals: DeliveryRoundStopSignal[] = [];
   if (order.status === "cancelled") {
     signals.push("cancelled");
   }
-  if (order.day !== day) {
+  if (order.day !== day && !broughtBack) {
     signals.push("not_this_day");
   }
   if (!order.delivery) {

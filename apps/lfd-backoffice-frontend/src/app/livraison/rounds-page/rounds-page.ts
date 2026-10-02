@@ -50,6 +50,7 @@ import { IncidentList } from '../incident-list/incident-list';
 import type { IncidentPhotoLoader } from '../incident-photo/incident-photo';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import {
+  broughtBackLabel,
   type ComposedDay,
   type ComposedRound,
   composeDay,
@@ -291,6 +292,7 @@ export class RoundsPage {
   protected readonly timeOf = parisTimeOf;
   protected readonly stopCountLabel = stopCountLabel;
   protected readonly signalLabel = signalLabel;
+  protected readonly broughtBackLabel = broughtBackLabel;
   protected readonly windowLabel = windowLabel;
 
   /** Un numéro par lecture : une réponse lente d'un autre jour n'écrase pas la bonne. */

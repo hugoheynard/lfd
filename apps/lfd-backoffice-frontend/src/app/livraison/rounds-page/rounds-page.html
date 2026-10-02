@@ -111,6 +111,13 @@
                         @if (shortAddressOf(line.sheet); as address) {
                           <span>{{ address }}</span>
                         }
+                        @if (line.order.broughtBackAt; as broughtBackAt) {
+                          <fold-badge
+                            variant="warning"
+                            [content]="broughtBackLabel(broughtBackAt)"
+                            data-brought-back
+                          />
+                        }
                         @if (canWrite()) {
                           <fold-listbox
                             size="sm"
@@ -240,6 +247,13 @@
                                 />
                               </fold-disclosure>
                             }
+                          }
+                          @if (line.stop.broughtBackAt; as broughtBackAt) {
+                            <fold-badge
+                              variant="warning"
+                              [content]="broughtBackLabel(broughtBackAt)"
+                              data-brought-back
+                            />
                           }
                           @if (line.stop.signals.length > 0 || line.windowClash !== null) {
                             <div class="flags">

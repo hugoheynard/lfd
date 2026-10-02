@@ -171,6 +171,21 @@ export function serviceDayLabel(isoDay: string): string {
   return SERVICE_DAY.format(new Date(`${isoDay}T00:00:00Z`));
 }
 
+const PARIS_DAY = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  timeZone: 'Europe/Paris',
+});
+
+/**
+ * « Rapportée le jeudi 1 octobre » — le badge d'une commande rapportée à la
+ * porte (`decisions-par-defaut-2026-10-02.md`, lot RL1), jour de Paris.
+ */
+export function broughtBackLabel(broughtBackAt: string): string {
+  return `Rapportée le ${PARIS_DAY.format(new Date(broughtBackAt))}`;
+}
+
 /** Ce qui cloche sur un arrêt, en toutes lettres (Q11 : à retirer à la main). */
 export function signalLabel(signal: DeliveryRoundStopSignal, orderDay: string | null): string {
   switch (signal) {

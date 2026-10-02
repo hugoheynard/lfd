@@ -579,3 +579,32 @@ ouvre la décision manuelle (B3). Défaut global : « Me demander ».
 
 Découpage : **B3** décision manuelle + **B5** notification des commerciaux ;
 **B3 bis** la décision réglée (global → adresse) ; **B4** ensuite.
+
+> ✅ **Voir les preuves — bâti le 2026-10-02** (après B4). Carte « Preuve de
+> livraison » sur la fiche d'une commande au back-office, sous
+> `b2b_orders:read` : mode, instant, livreur (nommé par l'annuaire),
+> réceptionnaire, photo, signature ; « Preuve effacée » quand l'attestation
+> est restée sans pièce (`deposit`, ou `manual` d'une commande partie). Le
+> commerce lit par `HandoverProofReader`, que le retrait publie ET implémente
+> (`handover/channels/commerce/`) ; les images se demandent par la commande
+> (`GET admin/orders/:id/preuve-livraison/photo|signature`), jamais par une
+> clé, et se servent en `private, no-store`.
+
+> 🔨 **RL1 bâti le 2026-10-02 (non commité à l'écriture de cette ligne)** —
+> une commande rapportée repart ([`decisions-par-defaut-2026-10-02.md`](decisions-par-defaut-2026-10-02.md), § 4,
+> décision par défaut à revoir avec Hugo). **Avant** : elle revenait « à
+> répartir » sur son SEUL jour demandé, sans badge, et toute tournée d'un
+> autre jour la refusait (`not_this_day`) — un jour passé la rendait
+> introuvable. **Règle bâtie, la plus réversible** : rapportée et replacée
+> dans aucune tournée depuis (aucun arrêt non retiré créé après la
+> décision), ni annulée, ni au comptoir, ni retirée, elle est « à répartir »
+> en tête de la composition de **n'importe quel jour**, avec
+> `broughtBackAt` (badge « Rapportée le … ») ; affectation, « Chronométrer »
+> et « Appliquer » l'acceptent ce jour-là, et l'arrêt n'est pas signalé
+> `not_this_day`. **Sa date demandée ne change pas** (commerce, promesse
+> client). Port `BroughtBackOrdersReader` (lit `delivery.stop_decision`,
+> `bring_back`), sans migration. Au nouveau départ, `order_departure`
+> repasse « partie » (BQ, déjà vrai). ⚠️ Ses bacs déjà déclarés restent les
+> siens : on les **recharge** ; en déclarer de nouveaux sans annuler les
+> anciens bloque le départ (« un arrêt n'est pas chargé »). La proposition
+> calculée ne la place pas d'elle-même.

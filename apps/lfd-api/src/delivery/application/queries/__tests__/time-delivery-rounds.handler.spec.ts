@@ -37,6 +37,7 @@ import {
   RoundsReaderOver,
   vehicleView,
 } from "../../commands/__tests__/routing-doubles.js";
+import { FixedBroughtBackOrders } from "../../commands/__tests__/brought-back-doubles.js";
 import { TimeDeliveryRoundsHandler } from "../time-delivery-rounds.handler.js";
 import { TimeDeliveryRoundsQuery } from "../time-delivery-rounds.query.js";
 
@@ -64,6 +65,7 @@ const POINTS: readonly DeliveryStopPoint[] = [
   at("o5", 45.62, 5.93),
   at("o6", 45.63, 5.94),
   at("late", 45.4, 6.4),
+  at("brought", 45.64, 5.95),
 ];
 
 function scene(
@@ -85,6 +87,8 @@ function scene(
     [
       ...["o1", "o2", "o3", "o4", "o5", "o6", "late"].map((id) => deliveryOn(id, DAY)),
       deliveryOn("tomorrow", OTHER_DAY),
+      // Rapportée (B3) d'un jour passé : replaçable n'importe quel jour (RL1).
+      deliveryOn("brought", "2030-03-10"),
       deliveryOn("counter", DAY, { delivery: false }),
       deliveryOn("gone", DAY, { status: "cancelled" }),
     ],
@@ -102,6 +106,9 @@ function scene(
     ]),
     new RoundsReaderOver(rounds),
     orders,
+    new FixedBroughtBackOrders([
+      { orderId: "brought", broughtBackAt: new Date("2030-03-10T15:00:00.000Z") },
+    ]),
     new FixedLoadedStops(["r_loaded_s1"]),
     new InMemoryGeocodeCache(),
     options.matrix ?? new StraightLineDistanceMatrix(),
@@ -132,6 +139,16 @@ describe("TimeDeliveryRoundsHandler — « Chronométrer » (L10b-C2)", () => {
       { roundId: null, vehicleId: "v1", orderIds: ["o1", "o2", "o3"] },
     ]);
     expect(forward.rounds[0]?.meters).toBeGreaterThan(straight.rounds[0]?.meters ?? 0);
+  });
+
+  it("chronomètre une commande RAPPORTÉE d'un autre jour, comme une autre (RL1)", async () => {
+    const { handler } = scene();
+
+    const view = await time(handler, [
+      { roundId: null, vehicleId: "v1", orderIds: ["o1", "brought"] },
+    ]);
+
+    expect(view.rounds[0]?.stops.map((stop) => stop.orderId)).toEqual(["o1", "brought"]);
   });
 
   it("compte à l'arrêt le temps de livraison de son adresse, sinon le réglage (L7b-C4)", async () => {

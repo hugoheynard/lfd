@@ -13,6 +13,7 @@ import { AssignDeliveryStopHandler } from "../assign-delivery-stop.handler.js";
 import { OpenDeliveryRoundCommand } from "../open-delivery-round.command.js";
 import { OpenDeliveryRoundHandler } from "../open-delivery-round.handler.js";
 import { InMemoryVehicles, vehicle } from "./fleet-doubles.js";
+import { FixedBroughtBackOrders } from "./brought-back-doubles.js";
 import {
   deliveryOn,
   FixedDeliveryOrders,
@@ -82,12 +83,14 @@ describe("AssignDeliveryStopHandler", () => {
     rounds: InMemoryDeliveryRounds,
     orders: FixedDeliveryOrders,
     vehicles = new InMemoryVehicles(vehicle("v_1", "Kangoo", "AB-123-CD")),
+    broughtBack = new FixedBroughtBackOrders(),
   ) {
     const { ids, clock, events, uow } = tools();
     const handler = new AssignDeliveryStopHandler(
       rounds,
       vehicles,
       orders,
+      broughtBack,
       ids,
       clock,
       events,
@@ -136,6 +139,35 @@ describe("AssignDeliveryStopHandler", () => {
 
     await expect(assigning).rejects.toThrow(OrderNotAssignableError);
     await expect(assigning).rejects.toThrow(message);
+  });
+
+  it("une commande RAPPORTÉE entre dans une tournée d'un autre jour, sa date inchangée (RL1)", async () => {
+    const rounds = new InMemoryDeliveryRounds(roundWith("r_1", DAY, "v_1", []));
+    const brought = new FixedBroughtBackOrders([
+      { orderId: "o_1", broughtBackAt: new Date("2030-03-11T15:00:00.000Z") },
+    ]);
+    const orders = new FixedDeliveryOrders([deliveryOn("o_1", "2030-03-11")]);
+    const { handler } = assign(rounds, orders, undefined, brought);
+
+    await handler.execute(new AssignDeliveryStopCommand("r_1", { orderId: "o_1", version: 1 }));
+
+    expect(rounds.stored("r_1")?.orderIds).toEqual(["o_1"]);
+    expect((await orders.byIds(["o_1"]))[0]?.day).toBe("2030-03-11");
+  });
+
+  it("une commande rapportée PUIS annulée reste refusée (RL1)", async () => {
+    const rounds = new InMemoryDeliveryRounds(roundWith("r_1", DAY, "v_1", []));
+    const brought = new FixedBroughtBackOrders([
+      { orderId: "o_1", broughtBackAt: new Date("2030-03-11T15:00:00.000Z") },
+    ]);
+    const orders = new FixedDeliveryOrders([
+      deliveryOn("o_1", "2030-03-11", { status: "cancelled" }),
+    ]);
+    const { handler } = assign(rounds, orders, undefined, brought);
+
+    await expect(
+      handler.execute(new AssignDeliveryStopCommand("r_1", { orderId: "o_1", version: 1 })),
+    ).rejects.toThrow(/annulée/u);
   });
 
   it("refuse une commande inconnue du commerce", async () => {

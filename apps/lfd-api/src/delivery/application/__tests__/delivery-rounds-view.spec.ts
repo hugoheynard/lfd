@@ -12,6 +12,8 @@ function inputs(overrides: Partial<DeliveryRoundsDayInputs> = {}): DeliveryRound
     assigned: new Set(),
     drivers: new Set(),
     driverNames: new Map(),
+    awaiting: [],
+    broughtBack: new Map(),
     ...overrides,
   };
 }
@@ -71,6 +73,57 @@ describe("deliveryRoundsDayView", () => {
       position: 1,
       signals,
       orderDay: order.day,
+    });
+  });
+
+  it("met EN TÊTE de « à répartir » les commandes rapportées, quel que soit leur jour, datées (RL1)", () => {
+    const broughtBackAt = new Date("2030-03-10T15:00:00.000Z");
+    const view = deliveryRoundsDayView(
+      inputs({
+        expected: [
+          { orderId: "o_1", reference: "A", status: "active" },
+          { orderId: "o_2", reference: "B", status: "active" },
+        ],
+        awaiting: [
+          { orderId: "o_9", reference: "Z", status: "active" },
+          { orderId: "o_2", reference: "B", status: "active" },
+        ],
+        broughtBack: new Map([
+          ["o_9", broughtBackAt],
+          ["o_2", broughtBackAt],
+        ]),
+      }),
+    );
+
+    expect(view.unassigned).toEqual([
+      { orderId: "o_9", reference: "Z", broughtBackAt: broughtBackAt.toISOString() },
+      { orderId: "o_2", reference: "B", broughtBackAt: broughtBackAt.toISOString() },
+      { orderId: "o_1", reference: "A" },
+    ]);
+  });
+
+  it("une commande rapportée replacée un autre jour n'est pas « plus de ce jour », et porte sa date (RL1)", () => {
+    const broughtBackAt = new Date("2030-03-10T15:00:00.000Z");
+    const order = {
+      orderId: "o_1",
+      reference: "A",
+      customerLabel: "Maison A",
+      status: "active" as const,
+      day: "2030-03-10",
+      delivery: true,
+    };
+    const view = deliveryRoundsDayView(
+      inputs({
+        rounds: [round],
+        composed: new Map([["o_1", order]]),
+        broughtBack: new Map([["o_1", broughtBackAt]]),
+      }),
+    );
+
+    expect(view.rounds[0]?.stops[0]).toMatchObject({
+      signals: [],
+      orderDay: "2030-03-10",
+      broughtBackAt: broughtBackAt.toISOString(),
     });
   });
 

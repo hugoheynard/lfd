@@ -9,6 +9,7 @@ import {
   OrderNotAssignableError,
 } from "../domain/errors/delivery-round-errors.js";
 import { ProposalOutdatedError } from "../domain/errors/delivery-routing-errors.js";
+import type { BroughtBackOrdersReader } from "../domain/ports/brought-back-orders.reader.js";
 import type { DeliveryRoundRepository } from "../domain/ports/delivery-round.repository.js";
 import type { DeliveryRoundsReader } from "../domain/ports/delivery-rounds.reader.js";
 import type { VehicleRepository } from "../domain/ports/vehicle.repository.js";
@@ -61,17 +62,23 @@ export async function loadTouchedRounds(
 /**
  * Les commandes que la proposition PLACE pour la première fois doivent être
  * des livraisons attendues ce jour-là, non annulées, et dans aucune tournée
- * vivante d'un autre jour (I3). Rend leur numéro, pour le journal.
+ * vivante d'un autre jour (I3). Une commande RAPPORTÉE n'est plus tenue à
+ * son jour demandé (lot RL1). Rend leur numéro, pour le journal.
  *
  * @throws {OrderNotAssignableError} @throws {OrderAlreadyInRoundError}
  */
 export async function ensureNewOrdersAssignable(
   orders: DeliveryOrdersReader,
   rounds: DeliveryRoundRepository,
+  broughtBack: BroughtBackOrdersReader,
   day: string,
   orderIds: readonly string[],
 ): Promise<void> {
-  const facts = new Map((await orders.byIds(orderIds)).map((order) => [order.orderId, order]));
+  const [known, anyDay] = await Promise.all([
+    orders.byIds(orderIds),
+    broughtBack.lastAmong(orderIds),
+  ]);
+  const facts = new Map(known.map((order) => [order.orderId, order]));
   for (const orderId of orderIds) {
     const order = facts.get(orderId);
     const reference = order?.reference ?? orderId;
@@ -84,7 +91,7 @@ export async function ensureNewOrdersAssignable(
     if (!order.delivery) {
       throw new OrderNotAssignableError(reference, day, "not_delivery");
     }
-    if (order.day !== day) {
+    if (order.day !== day && !anyDay.has(orderId)) {
       throw new OrderNotAssignableError(reference, day, "not_this_day");
     }
     const holder = await rounds.liveHolderOf(orderId);

@@ -35,6 +35,9 @@ let firstReturned: string | null = null;
 /** Les signalements du jour (`plan-a-la-porte.md`, § 3). */
 let dayIncidents: readonly DeliveryIncidentView[] = [];
 
+// Un instant affiché, jamais comparé à l'horloge : le badge le dit tel quel.
+const BROUGHT_BACK_AT = '2026-10-01T15:00:00.000Z';
+
 function composition(day: string): DeliveryRoundsDayView {
   return {
     day,
@@ -57,6 +60,7 @@ function composition(day: string): DeliveryRoundsDayView {
             position: 1,
             signals: [],
             orderDay: day,
+            broughtBackAt: BROUGHT_BACK_AT,
           },
           {
             stopId: 's-2',
@@ -81,7 +85,10 @@ function composition(day: string): DeliveryRoundsDayView {
         stops: [],
       },
     ],
-    unassigned: [{ orderId: 'o-3', reference: 'CMD-3' }],
+    unassigned: [
+      { orderId: 'o-3', reference: 'CMD-3' },
+      { orderId: 'o-4', reference: 'CMD-4', broughtBackAt: BROUGHT_BACK_AT },
+    ],
     incidents: dayIncidents,
   };
 }
@@ -283,6 +290,19 @@ describe('RoundsPage', () => {
     expect(stops[1]?.querySelector('[data-signal]')?.textContent).toContain('Commande annulée');
     // Le signal met le bouton Retirer en avant (Q11).
     expect(button(stops[1], '[data-remove]').className).toContain('danger');
+  });
+
+  it('badge « Rapportée le … » sur une commande rapportée, à répartir comme placée (RL1)', async () => {
+    const { element } = await boot();
+    const orders = [...element.querySelectorAll('[data-unassigned] [data-order]')];
+    expect(orders[0]?.querySelector('[data-brought-back]')).toBeNull();
+    expect(orders[1]?.querySelector('[data-brought-back]')?.textContent).toContain(
+      'Rapportée le jeudi 1 octobre',
+    );
+    const stop = element.querySelector('[data-round] [data-stop]');
+    expect(stop?.querySelector('[data-brought-back]')?.textContent).toContain(
+      'Rapportée le jeudi 1 octobre',
+    );
   });
 
   it('descend un arrêt en envoyant la permutation complète et la version', async () => {

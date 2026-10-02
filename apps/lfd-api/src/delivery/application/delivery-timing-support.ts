@@ -19,8 +19,8 @@ import type { LocatedStop } from "./delivery-routing-support.js";
 type TimedRoundInput = TimeDeliveryRoundsPayload["rounds"][number];
 
 /**
- * Chaque commande une seule fois, et une livraison attendue ce jour-là, non
- * annulée — ce qu'« Appliquer » exigera de toute façon : chronométrer une
+ * Chaque commande une seule fois, et une livraison attendue ce jour-là — ou
+ * rapportée (`anyDay`, lot RL1) —, non annulée — ce qu'« Appliquer » exigera de toute façon : chronométrer une
  * composition qu'on ne pourrait pas appliquer montrerait des heures fausses.
  *
  * @throws {OrderNotAssignableError} @throws {InvalidProposalError}
@@ -28,6 +28,7 @@ type TimedRoundInput = TimeDeliveryRoundsPayload["rounds"][number];
 export function ensureOrdersTimeable(
   payload: TimeDeliveryRoundsPayload,
   facts: ReadonlyMap<string, DeliveryOrderFacts>,
+  anyDay: ReadonlySet<string>,
 ): void {
   const seen = new Set<string>();
   for (const orderId of payload.rounds.flatMap((round) => round.orderIds)) {
@@ -46,7 +47,7 @@ export function ensureOrdersTimeable(
     if (!order.delivery) {
       throw new OrderNotAssignableError(reference, payload.day, "not_delivery");
     }
-    if (order.day !== payload.day) {
+    if (order.day !== payload.day && !anyDay.has(orderId)) {
       throw new OrderNotAssignableError(reference, payload.day, "not_this_day");
     }
   }

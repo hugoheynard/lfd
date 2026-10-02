@@ -3,6 +3,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryOrdersReader, DepartureCandidatesReader } from "../../channels/commerce/index.js";
+import { BroughtBackOrdersReader } from "../../domain/ports/brought-back-orders.reader.js";
 import { DeliveryRoundsReader } from "../../domain/ports/delivery-rounds.reader.js";
 import { DepartureReader } from "../../domain/ports/departure.reader.js";
 import { DistanceMatrix } from "../../domain/ports/distance-matrix.js";
@@ -62,6 +63,7 @@ export class TimeDeliveryRoundsHandler implements IQueryHandler<
     private readonly fleet: FleetReader,
     private readonly rounds: DeliveryRoundsReader,
     private readonly orders: DeliveryOrdersReader,
+    private readonly broughtBack: BroughtBackOrdersReader,
     private readonly loadedStops: LoadedStopsReader,
     private readonly cache: GeocodeCacheReader,
     private readonly matrix: DistanceMatrix,
@@ -71,8 +73,15 @@ export class TimeDeliveryRoundsHandler implements IQueryHandler<
 
   async execute({ composition }: TimeDeliveryRoundsQuery): Promise<DeliveryRoundTimingView> {
     const orderIds = composition.rounds.flatMap((round) => round.orderIds);
-    const facts = await this.orders.byIds(orderIds);
-    ensureOrdersTimeable(composition, new Map(facts.map((order) => [order.orderId, order])));
+    const [facts, broughtBack] = await Promise.all([
+      this.orders.byIds(orderIds),
+      this.broughtBack.lastAmong(orderIds),
+    ]);
+    ensureOrdersTimeable(
+      composition,
+      new Map(facts.map((order) => [order.orderId, order])),
+      new Set(broughtBack.keys()),
+    );
     const vehicles = await chosenVehicles(
       this.fleet,
       composition.day,

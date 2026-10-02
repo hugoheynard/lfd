@@ -106,6 +106,13 @@ export interface DeliveryRoundStopView {
   readonly signals: readonly DeliveryRoundStopSignal[];
   /** Le jour demandé de la commande, aujourd'hui (`AAAA-MM-JJ`), ou `null`. */
   readonly orderDay: string | null;
+  /**
+   * Rapportée le (instant ISO) — « Rapporter » à la porte (B3, LB-Q2) ; absent
+   * sinon. Une commande rapportée n'est jamais signalée `not_this_day` : on
+   * la replace un autre jour sans toucher sa date demandée, qui reste celle du
+   * commerce (`decisions-par-defaut-2026-10-02.md`, § 4, lot RL1).
+   */
+  readonly broughtBackAt?: string;
 }
 
 export type DeliveryRoundStopSignal = "cancelled" | "not_this_day" | "not_delivery";
@@ -114,6 +121,14 @@ export type DeliveryRoundStopSignal = "cancelled" | "not_this_day" | "not_delive
 export interface DeliveryRoundOrderRef {
   readonly orderId: string;
   readonly reference: string;
+  /**
+   * Rapportée le (instant ISO) — « Rapporter » à la porte (B3, LB-Q2) ; absent
+   * sinon. Une commande rapportée et pas encore replacée est « à répartir »
+   * QUEL QUE SOIT le jour composé, et entre dans une tournée de n'importe quel
+   * jour — sa date demandée reste celle du commerce
+   * (`decisions-par-defaut-2026-10-02.md`, § 4, lot RL1).
+   */
+  readonly broughtBackAt?: string;
 }
 
 const dayField = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "jour attendu au format AAAA-MM-JJ");

@@ -2,6 +2,7 @@ import type { DeliveryRoundView, HandoverQueueWindowView, VehicleView } from '@l
 import { describe, expect, it } from 'vitest';
 
 import {
+  broughtBackLabel,
   composeDay,
   roundLabel,
   shiftedOrder,
@@ -145,6 +146,8 @@ describe('les libellés', () => {
     expect(signalLabel('cancelled', null)).toBe('Commande annulée');
     expect(signalLabel('not_delivery', null)).toBe('Passée en retrait au comptoir');
     expect(signalLabel('not_this_day', '2026-10-03')).toBe('Livrée désormais le samedi 3 octobre');
+    // 23 h 30 UTC le 3 = déjà le 4 à Paris : le jour du badge est celui du dépôt.
+    expect(broughtBackLabel('2026-10-03T22:30:00.000Z')).toBe('Rapportée le dimanche 4 octobre');
   });
 });
 
