@@ -92,6 +92,15 @@ export class BinPage {
   private readonly reload = signal(0);
 
   protected readonly canWrite = computed(() => this.permissions.can('delivery_loading:write'));
+  /**
+   * Annuler un bac est une écriture que le serveur ouvre au colisage OU au
+   * chargement — celui qui a déclaré un bac de trop doit pouvoir le retirer.
+   */
+  protected readonly canVoid = computed(
+    () =>
+      this.permissions.can('production_packing:write') ||
+      this.permissions.can('delivery_loading:write'),
+  );
   protected readonly canCompose = computed(() => this.permissions.can('delivery_rounds:read'));
 
   /** Le dernier refus du serveur, tel qu'il l'a dit. */

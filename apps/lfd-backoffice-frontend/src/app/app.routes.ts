@@ -407,8 +407,13 @@ export const routes: Routes = [
         loadComponent: () => import('./livraison/bin-page/bin-page').then((m) => m.BinPage),
       },
       {
+        // Les étiquettes lisent la liste des bacs d'une commande, qui est le
+        // PANNEAU du geste : le serveur l'ouvre sous `production_packing:write`
+        // OU `delivery_loading:write` (plan des droits par geste §5.3). La
+        // route demande la même chose, sans quoi elle s'ouvrirait sur un 403
+        // (aligné le 2026-10-02).
         path: 'etiquettes/:orderId',
-        canActivate: [permissionGuard('delivery_loading:read')],
+        canActivate: [anyPermissionGuard('production_packing:write', 'delivery_loading:write')],
         title: 'Étiquettes des bacs — LFC B2B admin',
         loadComponent: () =>
           import('./livraison/bin-labels-page/bin-labels-page').then((m) => m.BinLabelsPage),

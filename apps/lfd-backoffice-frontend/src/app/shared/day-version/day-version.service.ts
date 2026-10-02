@@ -20,15 +20,21 @@ import { B2B_API_BASE } from '../../api/api-config';
  * tournée » (`parcours-du-livreur.md`, PL4), sous `delivery_driving`, qui
  * MÊLE le journal de la livraison et celui du commerce pour ce jour. Opaque,
  * elle se compare par égalité — ce que fait déjà le veilleur.
+ *
+ * `delivery` est le journal de la livraison (schéma `delivery`), sous
+ * `delivery_rounds:read` OU `delivery_loading:read` — PAS sous
+ * `production_packing:read` : un écran du fournil ne le suit que si le poste
+ * porte l'un des deux (vérifié le 2026-10-02, `delivery-day-version.controller.ts`).
  */
 export type DayJournal =
-  'commerce' | 'my-round' | 'orders' | 'production' | 'supervision-production';
+  'commerce' | 'delivery' | 'my-round' | 'orders' | 'production' | 'supervision-production';
 
 const JOURNAL_PATHS: Readonly<Record<DayJournal, string>> = {
   commerce: 'admin/supervision/version',
   orders: 'admin/orders/day-version',
   'supervision-production': 'admin/supervision/production-version',
   production: 'admin/production/version',
+  delivery: 'admin/livraison/version',
   'my-round': 'admin/livraison/ma-tournee/version',
 };
 

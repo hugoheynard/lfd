@@ -198,6 +198,11 @@ réparties suivent, sous « Hors tournée », dans l'ordre des références.
   liste garde l'ordre servi et le dit. Elle se relit avec la journée du
   fournil, et au plus tard toutes les cinq minutes (le filet du veilleur) :
   une tournée recomposée sans geste au fournil peut attendre ce délai.
+  **2026-10-02** : le poste suit aussi la journée de la **livraison**
+  (`GET admin/livraison/version`) — mais seulement s'il porte
+  `delivery_rounds:read` ou `delivery_loading:read`, les deux droits de cette
+  route ; elle ne s'ouvre pas à `production_packing:read`, et ce lot ne l'a pas
+  élargie. Un poste qui n'a que le colisage garde le filet de cinq minutes.
 
 ### 5.1 La proposition
 
@@ -257,6 +262,9 @@ redéclare. Une tournée **partie** ne reçoit plus de bac.
 **Annuler** un bac de trop : son étiquette ne vaut plus, le bac reste en base
 (jamais supprimé). Refusé s'il est chargé (on décharge d'abord) ou si sa
 tournée est partie. Annuler une moitié libère son côté du bac physique.
+Le bouton de la fiche d'un bac se montre sous `production_packing:write`
+**ou** `delivery_loading:write`, comme le serveur (2026-10-02 ; il ne suivait
+que le second).
 
 ### 5.3 Les étiquettes
 
@@ -397,6 +405,12 @@ s'y déclare ni ne s'y annule. Il est refusé, avec la phrase qui nomme le cas :
 | Déclarer, partager, annuler, charger, décharger, partir                                           | `delivery_loading:write`                                 | admin, comptoir                                                                                             |
 | Ouvrir le poste de colisage                                                                       | `production_packing:read`                                | (la rangée et le panneau « Bacs » demandent en plus `production_packing:write` ou `delivery_loading:write`) |
 | Lire les tournées du poste (`colisage/tournees`)                                                  | `production_packing:read` **ou** `delivery_loading:read` | qui ouvre le poste                                                                                          |
+
+**2026-10-02** : l'écran des étiquettes (`/livraison/etiquettes/:orderId`) se
+garde sous `production_packing:write` **ou** `delivery_loading:write` — il lit
+la liste des bacs d'une commande, qui est le panneau du geste et que le serveur
+ouvre sous ces deux droits. La ligne « Lire … les étiquettes » ci-dessus le
+disait sous `delivery_loading:read` : la route s'ouvrait alors sur un refus.
 
 Les écritures se déduisent du verbe HTTP (`@AdminSurface`) ; une lecture
 ouverte à deux droits porte `@RequireAnyPermission`. Une dérogation

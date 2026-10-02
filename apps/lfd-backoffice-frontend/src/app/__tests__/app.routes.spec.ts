@@ -252,7 +252,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'livraison/chargement/:roundId': 'delivery_loading:read',
   // La fiche d'un bac se lit sous le colisage OU le chargement (2026-10-02).
   'livraison/bac/:binId': { anyOf: ['production_packing:read', 'delivery_loading:read'] },
-  'livraison/etiquettes/:orderId': 'delivery_loading:read',
+  // Les étiquettes lisent le panneau des bacs : celui du geste (2026-10-02).
+  'livraison/etiquettes/:orderId': {
+    anyOf: ['production_packing:write', 'delivery_loading:write'],
+  },
   'livraison/vehicules': 'delivery_settings:read',
   'livraison/bacs': 'delivery_settings:read',
   'livraison/contenances': 'delivery_settings:read',

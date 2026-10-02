@@ -111,7 +111,7 @@
             </div>
           </fold-card>
 
-          @if (canWrite() && (situation() === 'loadable' || situation() === 'unassigned')) {
+          @if (canVoid() && (situation() === 'loadable' || situation() === 'unassigned')) {
             <fold-danger-zone
               appearance="section"
               title="Annuler ce bac"

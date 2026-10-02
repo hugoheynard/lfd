@@ -158,6 +158,13 @@ describe('BinPage', () => {
     expect(element.querySelector('[data-void]')).toBeNull();
   });
 
+  /** Le serveur ouvre l'annulation au colisage aussi : le bouton suivait le seul chargement. */
+  it('montre « Annuler » au colisage, sans le chargement', async () => {
+    const { element } = await boot(['production_packing:read', 'production_packing:write']);
+    expect(element.querySelector('[data-void]')).not.toBeNull();
+    expect(element.querySelector('[data-load]')).toBeNull();
+  });
+
   it('sans écriture, ni charger ni annuler', async () => {
     const { element } = await boot(['delivery_loading:read']);
     expect(element.querySelector('[data-load]')).toBeNull();

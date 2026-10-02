@@ -23,7 +23,7 @@ import { Colisage } from './colisage';
  * Le veilleur de journée, doublé : il garde la relecture que l'écran lui
  * confie, et le test la déclenche comme le ferait une version qui bouge.
  */
-const watched: { reload: () => Promise<void> }[] = [];
+const watched: DayWatch[] = [];
 const fakeWatcher = {
   watch: (spec: DayWatch): void => {
     watched.push(spec);
@@ -614,6 +614,23 @@ describe('le poste de colisage', () => {
     function relancer(): void {
       void watched.at(-1)?.reload();
     }
+
+    it('ne suit que la journée du fournil quand la livraison est hors droit', async () => {
+      await render();
+      expect(watched.at(-1)?.journals).toEqual(['production']);
+    });
+
+    /**
+     * Une tournée recomposée range la pile autrement : sans la journée de la
+     * livraison, seul le filet de 5 min la voyait (2026-10-02).
+     */
+    it('suit aussi la journée de la livraison quand le poste peut la lire', async () => {
+      TestBed.overrideProvider(PermissionsStore, {
+        useValue: { identity: () => ME, can: (p: string) => p === 'delivery_loading:read' },
+      });
+      await render();
+      expect(watched.at(-1)?.journals).toEqual(['production', 'delivery']);
+    });
 
     it('montre une ligne mise au bac sur un autre poste', async () => {
       const { fixture, el } = await render();

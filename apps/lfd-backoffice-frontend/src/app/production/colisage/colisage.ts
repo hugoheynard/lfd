@@ -16,7 +16,9 @@ import type { PackingContainerStep, PackingSheet, ProductionPackingView } from '
 
 import { methodLabel, packingMarkKey, type PackingStack } from '../packing-board';
 import { isoDay } from '../worksheet-day';
+import { PermissionsStore } from '../../auth/permissions.store';
 import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
+import type { DayJournal } from '../../shared/day-version/day-version.service';
 import { PackingDayReader } from './packing-day.reader';
 import { PackingGestures } from './packing-gestures';
 import { PackingOpenOrder, type PackingLineToggle } from './packing-open-order/packing-open-order';
@@ -86,6 +88,7 @@ import { foundOnlyElsewhere, hitLinesByOrder, normaliseTerm, searchHits } from '
 })
 export class Colisage {
   protected readonly day = inject(PackingDayReader);
+  private readonly permissions = inject(PermissionsStore);
   protected readonly gestures = inject(PackingGestures);
   /** Les tournées du jour, lues côté livraison (lot PC2) : l'ORDRE de la liste. */
   protected readonly rounds = inject(PackingRoundsReader);
@@ -152,12 +155,21 @@ export class Colisage {
     // 🔴 Enregistrée par l'ÉCRAN, pas par le lecteur : c'est l'écran qui sait
     // quelle commande est ouverte, et qui compare avant et après.
     // Seulement si la journée du fournil a bougé (`plan-version-par-journee.md`).
+    // La journée de la LIVRAISON aussi (2026-10-02) : une tournée recomposée
+    // range la pile autrement, et sans elle le filet de 5 min seul la voyait.
+    // Seulement si le poste peut la lire — sa porte ne s'ouvre pas au colisage.
     inject(DayVersionWatcher).watch({
-      journals: ['production'],
+      journals: this.watchedJournals(),
       date: this.day.date,
       reload: () => this.refresh(),
       clockDay: () => isoDay(new Date()),
     });
+  }
+
+  private watchedJournals(): readonly DayJournal[] {
+    const deliveryReadable =
+      this.permissions.can('delivery_rounds:read') || this.permissions.can('delivery_loading:read');
+    return deliveryReadable ? ['production', 'delivery'] : ['production'];
   }
 
   /** Ce qui reste à faire. Un tri de la pile, pas un compte. */
