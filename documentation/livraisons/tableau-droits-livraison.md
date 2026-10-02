@@ -7,6 +7,11 @@
 > livreur et admin en **écriture** ; l'admin l'a dans la graine du contrat
 > (`staff-access.ts`), celle du livreur se règle à l'écran, comme
 > `delivery_driving`.
+>
+> 2026-10-02 : la décision réglée d'avance à la porte, réglage **global**
+> (`admin/livraison/a-la-porte`), passe de `delivery_settings` à
+> `delivery_procedures` — une condition de livraison, réglée par le
+> commercial (`plan-a-la-porte.md`, B3 bis).
 
 > 📐 **Proposition** (2026-10-01) — _voir le bandeau ci-dessus_. Point de départ du plan de
 > refonte des droits, à faire contredire par `vitruve` avant de bâtir.

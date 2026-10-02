@@ -14,7 +14,6 @@ import { describe, expect, it } from 'vitest';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { DeliveryRoutingService } from '../delivery-routing.service';
-import { DoorstepSettingsService } from '../doorstep-settings.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
 import { DeparturePage } from './departure-page';
 
@@ -85,11 +84,6 @@ async function boot(
       // Les réglages du calcul ont leur propre spec : ici, lus en échec, ils ne gênent rien.
       {
         provide: DeliveryRoutingService,
-        useValue: { settings: () => Promise.reject(new Error('hors sujet')) },
-      },
-      // La décision à la porte aussi (B3 bis).
-      {
-        provide: DoorstepSettingsService,
         useValue: { settings: () => Promise.reject(new Error('hors sujet')) },
       },
     ],

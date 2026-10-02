@@ -14,6 +14,8 @@ import {
   FoldPageLayoutComponent,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../auth/permissions.store';
+import { DoorstepRuleCard } from '../doorstep-rule-card/doorstep-rule-card';
 import { incidentSubtitleOf, incidentTitleOf } from '../delivery-incidents';
 import { IncidentPhoto, type IncidentPhotoLoader } from '../incident-photo/incident-photo';
 import { roundLabel, serviceDayLabel } from '../delivery-rounds';
@@ -42,6 +44,12 @@ interface Refusal {
  * pendant qu'il est encore sur place lui ouvre « Déposé avec preuve ». La
  * dernière réponse l'emporte tant qu'il n'a pas déposé ; le serveur refuse
  * le reste, et son refus s'affiche sur la carte.
+ *
+ * En tête, la décision réglée d'avance à la porte (B3 bis) : déplacée ici le
+ * 2026-10-02 depuis « Point de départ » — Hugo : « c'est lui qui supervise les
+ * termes et conditions pour les livreurs ». Lue avec `delivery_procedures:read`,
+ * modifiable avec `:write` ; absente sans le droit de lecture (la route
+ * répondrait 403).
  */
 @Component({
   selector: 'app-decisions-page',
@@ -58,12 +66,21 @@ interface Refusal {
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     IncidentPhoto,
+    DoorstepRuleCard,
   ],
   templateUrl: './decisions-page.html',
   styleUrl: './decisions-page.scss',
 })
 export class DecisionsPage {
   private readonly service = inject(StopDecisionsService);
+  private readonly permissions = inject(PermissionsStore);
+
+  protected readonly canReadDoorstepRule = computed(() =>
+    this.permissions.can('delivery_procedures:read'),
+  );
+  protected readonly canWriteDoorstepRule = computed(() =>
+    this.permissions.can('delivery_procedures:write'),
+  );
 
   protected readonly state = signal<DecisionsState>({ status: 'loading' });
   protected readonly decisions = computed(() => {

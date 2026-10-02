@@ -10,8 +10,9 @@
  *   s'ouvre MÊME signature exigée ;
  * - « Me demander » laisse la décision au commercial, comme B3 ;
  * - la règle est FIGÉE au départ : la changer ensuite ne change rien ;
- * - les droits : le global sous `delivery_settings`, l'adresse sous
- *   `delivery_procedures` (le commercial), jamais au livreur.
+ * - les droits : le global ET l'adresse sous `delivery_procedures` (le
+ *   commercial, depuis le 2026-10-02 pour le global), jamais sous
+ *   `delivery_settings` seul, jamais au livreur.
  */
 import type {
   AddressDoorstepRuleView,
@@ -28,6 +29,13 @@ import { forgetRoutingScene } from "./delivery-routing-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 const GLOBAL = "/admin/livraison/a-la-porte";
+
+/** Les réglages de la livraison, sans les conditions : ce que le global n'exige plus. */
+const SETTINGS_ONLY_ROLE = {
+  key: "logistique",
+  label: "Logistique",
+  grants: [{ resource: "delivery_settings", action: "write" }],
+} as const;
 
 let ctx: E2eContext;
 
@@ -205,13 +213,32 @@ describe("la décision réglée d'avance à la porte (B3 bis)", () => {
     ).toBe(1);
   });
 
-  it("🔴 les droits : le global sous delivery_settings, l'adresse sous delivery_procedures, rien au livreur", async () => {
-    const { paul, lea, orderId } = await scene();
+  it("🔴 le commercial (delivery_procedures:write) règle le global, et le relit", async () => {
+    const { lea } = await scene();
+
+    await lea.agent.put(GLOBAL).send({ rule: "bring_back" }).expect(204);
+
+    expect(jsonBody<DoorstepSettingsView>(await lea.agent.get(GLOBAL).expect(200))).toEqual({
+      rule: "bring_back",
+      source: "explicit",
+    });
+  });
+
+  /**
+   * Régression : jusqu'au 2026-10-02 le global vivait sous `delivery_settings`,
+   * que le commercial n'a pas — et qui ouvrirait véhicules, bacs et point de départ.
+   */
+  it("🔴 les droits : delivery_settings seul ne règle plus le global ; rien au livreur", async () => {
+    const { paul, orderId } = await scene();
     const compta = await staffWithRole(ctx, "compta-ines", "comptabilite");
+    await ctx.asSub(E2E_STAFF_SUB).post("/admin/staff-roles").send(SETTINGS_ONLY_ROLE).expect(201);
+    const logistics = await staffWithRole(ctx, "logistique-marc", SETTINGS_ONLY_ROLE.key);
     const route = await addressRuleRoute(orderId);
 
-    await lea.agent.put(GLOBAL).send({ rule: "bring_back" }).expect(403);
+    await logistics.agent.get(GLOBAL).expect(403);
+    await logistics.agent.put(GLOBAL).send({ rule: "bring_back" }).expect(403);
     await paul.agent.get(GLOBAL).expect(403);
+    await paul.agent.put(GLOBAL).send({ rule: "bring_back" }).expect(403);
     await paul.agent.put(route).send({ rule: "deposit" }).expect(403);
     await compta.agent.put(route).send({ rule: "deposit" }).expect(403);
     await paul.agent.get(route).expect(403);

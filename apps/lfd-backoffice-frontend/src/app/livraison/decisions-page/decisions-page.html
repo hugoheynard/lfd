@@ -5,6 +5,9 @@
   </p>
 
   <div class="page">
+    @if (canReadDoorstepRule()) {
+      <app-doorstep-rule-card [canWrite]="canWriteDoorstepRule()" />
+    }
     @switch (state().status) {
       @case ('loading') {
         <fold-loading message="Lecture des arrêts à décider…" />

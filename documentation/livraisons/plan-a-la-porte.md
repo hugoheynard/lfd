@@ -569,6 +569,13 @@ ouvre la décision manuelle (B3). Défaut global : « Me demander ».
 > déjà ouverte, un arrêt clos ou une tournée rentrée retombent sur B3. Faits
 > `delivery_doorstep.settings_updated` et `company.delivery_doorstep_rule_set`.
 > La carte dit « Autorisé par réglage : déposer » / « Rapporté par réglage ».
+>
+> 🔁 **2026-10-02 — le global passe sous `delivery_procedures`** (Hugo :
+> « c'est lui qui supervise les termes et conditions pour les livreurs »).
+> `admin/livraison/a-la-porte` quitte `delivery_settings`, qui aurait ouvert
+> au commercial véhicules, bacs et point de départ ; la carte quitte « Point
+> de départ » pour la tête de « À décider » (lue avec `:read`, modifiable avec
+> `:write`). Sans migration ni droit accordé : l'écran des rôles règle qui l'a.
 
 Découpage : **B3** décision manuelle + **B5** notification des commerciaux ;
 **B3 bis** la décision réglée (global → adresse) ; **B4** ensuite.

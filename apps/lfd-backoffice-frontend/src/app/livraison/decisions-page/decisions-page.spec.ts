@@ -1,8 +1,17 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { PendingStopDecisionsView, PendingStopDecisionView } from '@lfd/contracts';
+import type {
+  PendingStopDecisionsView,
+  PendingStopDecisionView,
+  StaffPermission,
+} from '@lfd/contracts';
+import { By } from '@angular/platform-browser';
+import { FoldListboxComponent } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
+import { PermissionsStore } from '../../auth/permissions.store';
+import { NotifyService } from '../../notify.service';
+import { DoorstepSettingsService } from '../doorstep-settings.service';
 import { StopDecisionsService } from '../stop-decisions.service';
 import { DecisionsPage } from './decisions-page';
 
@@ -63,8 +72,12 @@ class FakeDecisions {
   }
 }
 
+/** Les lectures du réglage global de la porte, pour savoir si la carte l'a demandé. */
+let doorstepReads = 0;
+
 async function boot(
   fake: FakeDecisions,
+  grants: readonly StaffPermission[] = [],
 ): Promise<{ fixture: ComponentFixture<DecisionsPage>; element: HTMLElement }> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -76,8 +89,23 @@ async function boot(
           'pending' | 'authorizeDeposit' | 'bringBack' | 'photo'
         >,
       },
+      {
+        provide: PermissionsStore,
+        useValue: { can: (permission: StaffPermission) => grants.includes(permission) },
+      },
+      {
+        provide: DoorstepSettingsService,
+        useValue: {
+          settings: () => {
+            doorstepReads += 1;
+            return Promise.resolve({ rule: 'ask' as const, source: 'default' as const });
+          },
+        },
+      },
+      { provide: NotifyService, useValue: { success: () => undefined } },
     ],
   });
+  doorstepReads = 0;
   const fixture = TestBed.createComponent(DecisionsPage);
   await settle(fixture);
   return { fixture, element: fixture.nativeElement as HTMLElement };
@@ -89,6 +117,10 @@ async function settle(fixture: ComponentFixture<DecisionsPage>): Promise<void> {
   await fixture.whenStable();
   fixture.detectChanges();
 }
+
+const ruleChoice = (fixture: ComponentFixture<DecisionsPage>): FoldListboxComponent<string> =>
+  fixture.debugElement.query(By.css('[data-doorstep-rule-choice]'))
+    .componentInstance as FoldListboxComponent<string>;
 
 describe('DecisionsPage — « À décider » (B3)', () => {
   it('montre l’arrêt, sa signature exigée, le signalement et sa note', async () => {
@@ -174,5 +206,31 @@ describe('DecisionsPage — « À décider » (B3)', () => {
     await settle(fixture);
 
     expect(fake.calls).toContain('photo s-1 inc-1');
+  });
+
+  describe('la décision réglée d’avance à la porte, en tête (B3 bis, 2026-10-02)', () => {
+    it('sans delivery_procedures:read, la carte n’est pas là et rien n’est lu', async () => {
+      const { element } = await boot(new FakeDecisions());
+
+      expect(element.querySelector('[data-doorstep-rule]')).toBeNull();
+      expect(doorstepReads).toBe(0);
+    });
+
+    it('avec :read seul, la carte se lit sans pouvoir changer le réglage', async () => {
+      const { fixture, element } = await boot(new FakeDecisions(), ['delivery_procedures:read']);
+
+      expect(element.querySelector('[data-doorstep-rule]')).not.toBeNull();
+      expect(doorstepReads).toBe(1);
+      expect(ruleChoice(fixture).disabled()).toBe(true);
+    });
+
+    it('avec :write, le commercial peut changer le réglage', async () => {
+      const { fixture } = await boot(new FakeDecisions(), [
+        'delivery_procedures:read',
+        'delivery_procedures:write',
+      ]);
+
+      expect(ruleChoice(fixture).disabled()).toBe(false);
+    });
   });
 });
