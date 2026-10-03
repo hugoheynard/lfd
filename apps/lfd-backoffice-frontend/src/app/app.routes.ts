@@ -327,6 +327,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/my-round-page/my-round-page').then((m) => m.MyRoundPage),
       },
+      // CHARGER MA TOURNÉE : le chargement du livreur a sa propre adresse, sous
+      // le même droit que « Ma tournée » — un rechargement le rouvre.
+      {
+        path: 'ma-tournee/:roundId/chargement',
+        canActivate: [permissionGuard('delivery_driving:read')],
+        title: 'Charger ma tournée — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/my-round-loading/my-round-loading').then((m) => m.MyRoundLoading),
+      },
       {
         path: 'tournees',
         canActivate: [permissionGuard('delivery_rounds:read')],

@@ -1,0 +1,7 @@
+// L'en-tête du chargement se colle sous le header de l'app, d'un bord à
+// l'autre : la page ne paie ni gouttière ni marge haute, le corps du
+// chargement reprend sa gouttière lui-même.
+.mrl-page {
+  --fold-page-gutter: 0px;
+  --fold-page-pad-top: 0px;
+}

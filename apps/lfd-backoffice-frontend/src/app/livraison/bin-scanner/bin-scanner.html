@@ -16,7 +16,16 @@
         court imprimé sous le QR se tape ci-dessous.
       </fold-callout>
     }
-    <button foldButton icon="qr-code" (click)="start()" data-camera-on>Scanner les bacs</button>
+    <button
+      foldButton
+      icon="qr-code"
+      [size]="size()"
+      [block]="size() === 'lg'"
+      (click)="start()"
+      data-camera-on
+    >
+      Scanner les bacs
+    </button>
   } @else {
     <fold-callout variant="info" data-no-camera>
       Cet appareil n’offre pas de caméra à la page : tapez le code court imprimé sous le QR.

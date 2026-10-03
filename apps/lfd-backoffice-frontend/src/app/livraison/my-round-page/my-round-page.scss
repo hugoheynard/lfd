@@ -10,11 +10,3 @@
 .page {
   max-inline-size: 40rem;
 }
-
-// Chargement ouvert : son en-tête se colle sous le header de l'app, d'un bord
-// à l'autre. La page ne paie plus ni gouttière ni marge haute ; le corps du
-// chargement reprend sa gouttière lui-même.
-.mr-loading {
-  --fold-page-gutter: 0px;
-  --fold-page-pad-top: 0px;
-}

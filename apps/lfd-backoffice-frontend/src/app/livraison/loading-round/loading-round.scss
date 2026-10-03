@@ -77,6 +77,7 @@
 // retour « Ma tournée ») suive.
 .lr-head {
   --fold-color-text: var(--fold-ref-white);
+  --fold-color-text-muted: var(--fold-ref-white);
   --fold-color-border: var(--fold-ref-ink-700);
 
   display: flex;

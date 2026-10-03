@@ -239,6 +239,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   livraison: OPEN,
   'livraison/feuille-de-route': 'delivery_run_sheet:read',
   'livraison/ma-tournee': 'delivery_driving:read',
+  'livraison/ma-tournee/:roundId/chargement': 'delivery_driving:read',
   'livraison/tournees': 'delivery_rounds:read',
   'livraison/non-remis': 'delivery_rounds:read',
   // « À décider » (plan-a-la-porte.md, B3) : le droit de décider, pas celui des

@@ -1,3 +1,4 @@
+import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type {
@@ -685,24 +686,11 @@ describe('MyRoundPage — elle suit le colisage (PL4)', () => {
 });
 
 describe('MyRoundPage — charger sa tournée (PL1)', () => {
-  it('au dépôt, « Charger » ouvre le chargement de SA tournée ; le retour relit la tournée', async () => {
-    const { fixture, element } = await boot();
+  it('« Charger » mène à l’adresse du chargement de SA tournée', async () => {
+    const { element } = await boot();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     click(element, '[data-open-loading]');
-    await settle(fixture);
-    expect(wire.calls).toContain('loading r-1');
-    expect(element.querySelector('app-my-round-loading')).not.toBeNull();
-    expect(element.querySelector('[data-my-stop]')).toBeNull();
-    // L'en-tête du chargement dit « Ma tournée » : le titre de page s'efface,
-    // le récapitulatif de la tournée passe sous l'en-tête.
-    expect(element.querySelector('h1')).toBeNull();
-    expect(element.querySelector('app-my-round-loading [data-round-head]')).not.toBeNull();
-
-    click(element, '[data-close-loading]');
-    await settle(fixture);
-    expect(wire.calls.at(-1)).toBe('round r-1');
-    expect(element.querySelector('app-my-round-loading')).toBeNull();
-    expect(element.querySelectorAll('[data-my-stop]')).toHaveLength(2);
-    expect(element.querySelector('h1')?.textContent).toContain('Ma tournée');
+    expect(navigate).toHaveBeenCalledWith(['/livraison/ma-tournee', 'r-1', 'chargement']);
   });
 
   it('partie, la tournée ne se charge plus : pas de « Charger »', async () => {

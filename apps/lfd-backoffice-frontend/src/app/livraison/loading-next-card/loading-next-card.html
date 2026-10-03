@@ -32,7 +32,11 @@
 
     @if (canLoad()) {
       <div class="nc-actions" data-scan>
-        <app-bin-scanner [paused]="busy()" (scanned)="scanned.emit($event)" />
+        <app-bin-scanner
+          [paused]="busy()"
+          [size]="size() === 'phone' ? 'lg' : 'md'"
+          (scanned)="scanned.emit($event)"
+        />
         <form class="nc-typed" (submit)="$event.preventDefault(); submit()">
           <fold-input
             class="nc-field"

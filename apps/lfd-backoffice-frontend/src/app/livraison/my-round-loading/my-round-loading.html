@@ -1,19 +1,10 @@
-<app-loading-round
-  [roundId]="roundId()"
-  [canWrite]="canWrite()"
-  doneLabel="Retour à ma tournée"
-  (done)="closed.emit()"
->
-  <ng-content select="[loadingContext]" ngProjectAs="[loadingContext]" />
-  <button
-    loadingBack
-    foldButton
-    emphasis="outline"
-    size="sm"
-    icon="chevron-left"
-    (click)="closed.emit()"
-    data-close-loading
+<fold-page-layout class="mrl-page">
+  <app-loading-round
+    [roundId]="roundId()"
+    [canWrite]="canWrite()"
+    doneLabel="Retour à ma tournée"
+    (done)="back()"
   >
-    Ma tournée
-  </button>
-</app-loading-round>
+    <fold-back-link label="Ma tournée" [routerLink]="backLink" data-close-loading />
+  </app-loading-round>
+</fold-page-layout>

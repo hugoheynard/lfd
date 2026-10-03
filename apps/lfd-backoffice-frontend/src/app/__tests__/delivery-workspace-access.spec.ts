@@ -168,9 +168,11 @@ describe("l'espace Livraison", () => {
   it('montre au livreur la seule « Ma tournée », et la lui ouvre (MT4)', async () => {
     expect(deliveryViewKeys(LIVREUR)).toEqual(['ma-tournee']);
     expect(await opens(LIVREUR, 'ma-tournee')).toBe(true);
+    expect(await opens(LIVREUR, 'ma-tournee/:roundId/chargement')).toBe(true);
     expect(await opens(LIVREUR, 'tournees')).toBe(false);
     expect(await opens(LIVREUR, 'chargement')).toBe(false);
     expect(await opens('comptoir', 'ma-tournee')).toBe(false);
+    expect(await opens('comptoir', 'ma-tournee/:roundId/chargement')).toBe(false);
   });
 
   it('🔴 le livreur arrive sur sa page, pas sur les comptes clients (MT-D7 v2)', async () => {

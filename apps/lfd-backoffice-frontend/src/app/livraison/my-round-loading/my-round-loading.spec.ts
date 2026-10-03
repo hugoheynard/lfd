@@ -1,19 +1,23 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
+import { provideRouter, Router } from '@angular/router';
 import type {
   DeliveryLoadingPlanView,
   DeliveryLoadingRoundView,
   LoadDeliveryBinPayload,
   StaffPermission,
 } from '@lfd/contracts';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { BinScanner } from '../bin-scanner/bin-scanner';
 import { DeliveryLoadingService } from '../delivery-loading.service';
 import { MyDeliveryLoadingService } from '../my-delivery-loading.service';
 import { MyRoundLoading } from './my-round-loading';
+
+/** Tout chargé : la seconde moitié du jeu est déjà dans le véhicule. */
+let allLoaded = false;
 
 function view(): DeliveryLoadingRoundView {
   return {
@@ -52,7 +56,7 @@ function view(): DeliveryLoadingRoundView {
             innerBags: 0,
             sharedWithReference: null,
             toRedo: false,
-            loadedAt: null,
+            loadedAt: allLoaded ? '2026-10-01T05:01:00.000Z' : null,
           },
         ],
       },
@@ -133,6 +137,7 @@ async function boot(
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      provideRouter([]),
       {
         provide: MyDeliveryLoadingService,
         useValue: {
@@ -203,11 +208,21 @@ describe('MyRoundLoading — charger SA tournée', () => {
     expect(element.querySelector('[data-unload]')).toBeNull();
   });
 
-  it('« Retour à ma tournée » le dit à la page', async () => {
-    const { fixture, element } = await boot(['delivery_driving:read']);
-    let closed = 0;
-    fixture.componentInstance.closed.subscribe(() => (closed += 1));
-    element.querySelector<HTMLButtonElement>('[data-close-loading]')?.click();
-    expect(closed).toBe(1);
+  it('« Ma tournée » est un lien de retour vers la page du livreur', async () => {
+    const { element } = await boot(['delivery_driving:read']);
+    const back = element.querySelector('fold-back-link[data-close-loading] a');
+    expect(back?.getAttribute('href')).toBe('/livraison/ma-tournee');
+    expect(back?.textContent).toContain('Ma tournée');
+    expect(element.querySelector('h1')).toBeNull();
+  });
+
+  it('« Retour à ma tournée », tout chargé, revient par le routeur', async () => {
+    allLoaded = true;
+    const { fixture, element } = await boot(['delivery_driving:read', 'delivery_driving:write']);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    element.querySelector<HTMLButtonElement>('[data-done]')?.click();
+    fixture.detectChanges();
+    expect(navigate).toHaveBeenCalledWith('/livraison/ma-tournee');
+    allLoaded = false;
   });
 });

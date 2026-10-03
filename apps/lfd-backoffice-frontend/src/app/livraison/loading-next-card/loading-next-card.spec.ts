@@ -1,5 +1,8 @@
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { describe, expect, it } from 'vitest';
+
+import { BinScanner } from '../bin-scanner/bin-scanner';
 
 import type { NextBin } from '../delivery-loading-rows';
 import { LoadingNextCard } from './loading-next-card';
@@ -58,5 +61,15 @@ describe('LoadingNextCard', () => {
     fixture.detectChanges();
     element.querySelector<HTMLButtonElement>('[data-load-typed]')?.click();
     expect(submitted).toEqual(['L5R2DE']);
+  });
+
+  it('au téléphone, le bouton de scan est grand ; au dépôt, il garde sa taille', () => {
+    const fixture = render(true);
+    const scanner = (): BinScanner =>
+      fixture.debugElement.query(By.directive(BinScanner)).componentInstance as BinScanner;
+    expect(scanner().size()).toBe('lg');
+    fixture.componentRef.setInput('size', 'depot');
+    fixture.detectChanges();
+    expect(scanner().size()).toBe('md');
   });
 });

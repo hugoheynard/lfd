@@ -1,4 +1,4 @@
-import { NgTemplateOutlet } from '@angular/common';
+import { Router } from '@angular/router';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type {
   DeliveryIncidentFamily,
@@ -44,7 +44,6 @@ import {
   writeNavigationApp,
 } from '../my-round-navigation';
 import { MyDeliveryRoundService } from '../my-delivery-round.service';
-import { MyRoundLoading } from '../my-round-loading/my-round-loading';
 import { allStopsReady, readyStopsLabel } from '../my-round-packing';
 import { MyRoundStop } from '../my-round-stop/my-round-stop';
 import { parisDayOf } from '../run-sheet';
@@ -95,7 +94,6 @@ function deviceStorage(): Storage | null {
   selector: 'app-my-round-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    NgTemplateOutlet,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -109,7 +107,6 @@ function deviceStorage(): Storage | null {
     FoldViewToggleComponent,
     IncidentList,
     IncidentReportForm,
-    MyRoundLoading,
     MyRoundStop,
   ],
   templateUrl: './my-round-page.html',
@@ -118,6 +115,7 @@ function deviceStorage(): Storage | null {
 export class MyRoundPage {
   private readonly service = inject(MyDeliveryRoundService);
   private readonly permissions = inject(PermissionsStore);
+  private readonly router = inject(Router);
   private readonly storage = deviceStorage();
 
   private readonly today = parisDayOf(new Date());
@@ -129,8 +127,6 @@ export class MyRoundPage {
   /** Le dernier refus du serveur — la tournée reste à l'écran. */
   protected readonly refusal = signal<string | null>(null);
   protected readonly busy = signal(false);
-  /** Le chargement de la tournée est ouvert (PL1). */
-  protected readonly loadingOpen = signal(false);
 
   protected readonly app = signal<NavigationApp>(readNavigationApp(this.storage));
   protected readonly appOptions: readonly FoldViewToggleOption[] = NAVIGATION_APPS;
@@ -233,14 +229,12 @@ export class MyRoundPage {
 
   protected open(roundId: string): void {
     this.selected.set(roundId);
-    this.loadingOpen.set(false);
     this.refusal.set(null);
     void this.loadRound(roundId);
   }
 
   protected back(): void {
     this.selected.set(null);
-    this.loadingOpen.set(false);
     this.refusal.set(null);
   }
 
@@ -299,10 +293,12 @@ export class MyRoundPage {
     );
   }
 
-  /** Retour du chargement : la tournée est relue — des bacs ont pu bouger. */
-  protected closeLoading(): void {
-    this.loadingOpen.set(false);
-    this.retryRound();
+  /**
+   * « Charger » : le chargement a sa propre adresse, sous la tournée — un
+   * rechargement de la page la rouvre, et le retour relit « Ma tournée ».
+   */
+  protected openLoading(roundId: string): void {
+    void this.router.navigate(['/livraison/ma-tournee', roundId, 'chargement']);
   }
 
   /** Un signalement est enregistré : on referme, on relit (il paraît dans la liste). */

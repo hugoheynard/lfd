@@ -53,6 +53,8 @@ const DECODE_WIDTH = 640;
 export class BinScanner {
   /** Un chargement en vol : on continue de filmer, on n'émet plus. */
   readonly paused = input(false);
+  /** La taille du bouton « Scanner les bacs » : `lg` et pleine largeur sur la carte du téléphone. */
+  readonly size = input<'md' | 'lg'>('md');
 
   /** Le contenu brut d'un QR lu. */
   readonly scanned = output<string>();
