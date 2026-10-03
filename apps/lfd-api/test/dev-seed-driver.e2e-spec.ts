@@ -2,10 +2,16 @@
  * E2E du **rechargement qui pose une tournée prête à partir** (2026-10-01) :
  * la tournée chargée du semis est affectée à qui a cliqué, par la vraie
  * commande d'affectation, et ce livreur peut la COMMENCER depuis « Ma
- * tournée » — tous ses bacs chargés, aucun à refaire. Un requérant sans le
- * droit de conduire ne fait pas échouer le rechargement.
+ * tournée » — en chargeant les bacs que le semis laisse à charger (seul le
+ * dernier arrêt l'est d'avance, depuis le 2026-10-03), aucun à refaire. Un
+ * requérant sans le droit de conduire ne fait pas échouer le rechargement.
  */
-import type { DevSeedReport, MyDeliveryRoundsView, MyDeliveryRoundView } from "@lfd/contracts";
+import type {
+  DeliveryLoadingRoundView,
+  DevSeedReport,
+  MyDeliveryRoundsView,
+  MyDeliveryRoundView,
+} from "@lfd/contracts";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -68,6 +74,22 @@ describe("le rechargement affecte la tournée chargée à qui clique", () => {
       );
       expect(rounds).toHaveLength(1);
       const roundId = rounds[0]?.id ?? "";
+
+      // Le semis ouvre « Charger » en cours de route : il reste à charger.
+      const loading = jsonBody<DeliveryLoadingRoundView>(
+        await admin(ctx).get(`${MY_ROUND}/${roundId}/chargement`).expect(200),
+      );
+      const toLoad = loading.stops.flatMap((stop) =>
+        stop.bins.filter((bin) => bin.loadedAt === null),
+      );
+      expect(toLoad.length).toBeGreaterThan(0);
+      for (const bin of toLoad) {
+        await admin(ctx)
+          .post(`${MY_ROUND}/${roundId}/chargement/bacs`)
+          .send({ binId: bin.binId })
+          .expect(204);
+      }
+
       const { version } = jsonBody<MyDeliveryRoundView>(
         await admin(ctx).get(`${MY_ROUND}/${roundId}`).expect(200),
       );

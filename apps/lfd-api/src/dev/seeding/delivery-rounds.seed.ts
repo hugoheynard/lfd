@@ -116,6 +116,12 @@ export interface RoundStop {
    * sacs posés dans sa moitié. Absent = aucun partage.
    */
   readonly sharesPreviousHalf?: { readonly innerBags: number };
+  /**
+   * Ses bacs sont-ils déjà chargés ? Absent = oui. `false` laisse l'arrêt à
+   * charger : l'écran « Charger » montre alors un chargement en cours, pas une
+   * camionnette pleine où tout est coché.
+   */
+  readonly loaded?: boolean;
 }
 
 /** Ce que la tournée composée porte. */
@@ -160,12 +166,17 @@ export async function composeLoadedRound(
     );
   }
   const binIds = await declareRoundBins(context, round.at, stops);
-  for (const binId of binIds.all) {
+  for (const binId of binIds.toLoad) {
     await asStaff(round.at, () =>
       context.commands.execute(new LoadDeliveryBinCommand(roundId, { binId }, SEED_STAFF_SUB)),
     );
   }
-  return { roundId, stops: stops.length, loadedBins: binIds.all.length, sharedBins: binIds.shared };
+  return {
+    roundId,
+    stops: stops.length,
+    loadedBins: binIds.toLoad.length,
+    sharedBins: binIds.shared,
+  };
 }
 
 /** Déclare les bacs de chaque arrêt, puis l'autre moitié de ceux qui partagent. */
@@ -173,11 +184,12 @@ async function declareRoundBins(
   context: RoundsContext,
   at: Date,
   stops: readonly RoundStop[],
-): Promise<{ readonly all: readonly string[]; readonly shared: number }> {
-  const all: string[] = [];
+): Promise<{ readonly toLoad: readonly string[]; readonly shared: number }> {
+  const toLoad: string[] = [];
   let lastHalf: string | null = null;
   let shared = 0;
   for (const stop of stops) {
+    const all: string[] = [];
     const share = stop.sharesPreviousHalf;
     if (share !== undefined && lastHalf !== null) {
       const partnerBinId = lastHalf;
@@ -205,6 +217,9 @@ async function declareRoundBins(
       // La moitié, quand il y en a une, est la dernière déclarée.
       lastHalf = bins.half ? (declared.at(-1) ?? null) : lastHalf;
     }
+    if (stop.loaded !== false) {
+      toLoad.push(...all);
+    }
   }
-  return { all, shared };
+  return { toLoad, shared };
 }

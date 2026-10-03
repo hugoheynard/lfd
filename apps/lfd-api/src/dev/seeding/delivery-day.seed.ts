@@ -73,6 +73,12 @@ interface DeliveryDayEntry {
   readonly bins?: readonly DayBins[];
   /** Prend l'autre moitié du demi-bac de l'arrêt précédent (v2-4) : les sacs de sa moitié. */
   readonly sharesPreviousHalf?: { readonly innerBags: number };
+  /**
+   * Ses bacs sont déjà chargés. Absent : à charger. Seuls les derniers arrêts
+   * le sont — chargés les premiers —, pour que « Charger » s'ouvre en cours
+   * de route, sur un plancher de trois rangées.
+   */
+  readonly loaded?: boolean;
   readonly lines: readonly SeedLine[];
 }
 
@@ -85,7 +91,7 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     stop: 0,
     // Les viennoiseries au frais : un petit isotherme, le pain en Bac M.
     bins: [
-      { type: BIN_M, whole: 1, half: false, innerBags: 1 },
+      { type: BIN_M, whole: 5, half: false, innerBags: 1 },
       { type: BIN_S, whole: 1, half: false, innerBags: 0 },
     ],
     lines: [
@@ -101,7 +107,7 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     // Un Bac L, et un reste qui tient dans un demi-Bac M — dont l'autre moitié
     // part à l'arrêt suivant, le Petit Chaudron (v2-4, dernier recours).
     bins: [
-      { type: BIN_L, whole: 1, half: false, innerBags: 2 },
+      { type: BIN_L, whole: 6, half: false, innerBags: 2 },
       { type: BIN_M, whole: 0, half: true, innerBags: 1 },
     ],
     lines: [
@@ -115,7 +121,7 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     window: { start: "06:30", end: "07:30" },
     ready: true,
     stop: 2,
-    bins: [{ type: BIN_L, whole: 1, half: false, innerBags: 3 }],
+    bins: [{ type: BIN_L, whole: 5, half: false, innerBags: 3 }],
     sharesPreviousHalf: { innerBags: 1 },
     lines: [
       { sku: "VIE-001", quantity: 24 },
@@ -128,7 +134,7 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     window: null,
     ready: true,
     stop: 3,
-    bins: [{ type: BIN_L, whole: 2, half: false, innerBags: 2 }],
+    bins: [{ type: BIN_L, whole: 8, half: false, innerBags: 2 }],
     lines: [
       { sku: "PAI-001", quantity: 30 },
       { sku: "PAI-013", quantity: 12 },
@@ -140,6 +146,9 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     window: null,
     ready: true,
     stop: 5,
+    // Le dernier arrêt, chargé le premier : déjà dans la camionnette.
+    bins: [{ type: BIN_M, whole: 8, half: false, innerBags: 2 }],
+    loaded: true,
     lines: [
       { sku: "VIE-009", quantity: 20 },
       { sku: "VIE-001", quantity: 18 },
@@ -404,17 +413,19 @@ function roundStops(
             rank: entry.stop,
             orderId: order.id,
             bins: entry.bins ?? DEFAULT_BINS,
+            loaded: entry.loaded === true,
             ...(entry.sharesPreviousHalf === undefined
               ? {}
               : { sharesPreviousHalf: entry.sharesPreviousHalf }),
           },
         ],
   );
-  // La Folie Douce commande large : deux Bacs L.
+  // La Folie Douce commande large : huit Bacs L, encore à charger.
   const counter = alreadyPacked.map((order) => ({
     rank: COUNTER_DELIVERY_STOP,
     orderId: order.id,
-    bins: [{ type: BIN_L, whole: 2, half: false, innerBags: 3 }],
+    bins: [{ type: BIN_L, whole: 8, half: false, innerBags: 3 }],
+    loaded: false,
   }));
   return [...ranked, ...counter]
     .sort((left, right) => left.rank - right.rank)
