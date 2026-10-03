@@ -107,8 +107,11 @@ L'humain corrige, il ne construit plus. Voir §3.
   peut partir à 1 h : c'est encore le jour J. Rien ne part la veille — le
   modèle (secondes depuis minuit, `clock-time.ts`) tient tel quel.
 
-- **Q2** — La durée maximale d'une tournée (240 min) reste-t-elle une borne,
-  ou cède-t-elle aussi devant la règle 1 ?
+- ~~**Q2**~~ — **Tranchée par Hugo le 2026-10-03** : la durée maximale
+  d'une tournée **cède** devant la règle 1. C'est une contrainte du travail,
+  qu'on ne modélise pas (CA-D1). `maxRoundMinutes` cesse d'être une borne dure
+  (`vehicle-plan.ts:159`, `overSeconds`) ; il peut rester un **signal**
+  (« tournée longue ») sans jamais refuser une place.
 - **Q3** — Une commande pour J+2 : sa tournée n'existe peut-être pas encore.
   Le calcul l'ouvre-t-il, ou attend-il le soir de la veille ?
 - **Q4** — Le géocodage : à la commande, pour que l'automatique puisse placer ?
