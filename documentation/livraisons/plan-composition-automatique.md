@@ -320,3 +320,13 @@ est-il son jour de livraison ?
 | Lot     | Contenu                                                                                                                                                    |
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **CA0** | Situer l'adresse de livraison à la commande (géocodage déjà en cache, `delivery_geocode`) ; une adresse non située reste signalée, jamais placée au hasard |
+
+## 12. CA2 bâti (`0cf2aaf30`) — trois points validés par Hugo (2026-10-03)
+
+- La passe arrière **vise la marge de sécurité** quand elle est tenable ; le
+  retard se mesure sur la vraie fin de fenêtre.
+- L'heure « au plus tôt » des réglages devient l'heure de départ d'une tournée
+  qu'**aucune** échéance ne presse. Son libellé à l'écran est à renommer
+  (CA3).
+- Plus rien ne pousse à couper une journée : une seule tournée longue plutôt
+  que trois est acceptée. **Pas de pénalité** sur la durée.
