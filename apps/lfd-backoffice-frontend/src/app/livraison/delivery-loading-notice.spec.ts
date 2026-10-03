@@ -23,6 +23,7 @@ const ORDER: readonly DeliveryLoadingPlanStepView[] = [
         half: null,
         sharedWithReference: null,
         isotherm: false,
+        behind: false,
         stackIndex: 1,
       },
     ],

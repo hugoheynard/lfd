@@ -26,6 +26,7 @@ function tile(bins: readonly RowBin[], half = false): StackTile {
     half,
     shared: bins.length > 1,
     isotherm: false,
+    behind: false,
     loaded: bins.every((bin) => bin.loaded),
   };
 }
@@ -123,5 +124,27 @@ describe('LoadingRowView', () => {
     expect(types).toEqual(['M', 'M', 'M', 'S']);
     const stacks = element.querySelectorAll<HTMLElement>('.rv-stack');
     expect(stacks[1]?.style.getPropertyValue('--rv-scale')).toBe('0.625');
+  });
+
+  it('marque un bac posé derrière d’autres, et le dit', () => {
+    const fixture = TestBed.createComponent(LoadingRowView);
+    fixture.componentRef.setInput('title', 'Rangée 1 · le fond');
+    fixture.componentRef.setInput('columns', [
+      {
+        stackIndex: 6,
+        header: 'Pile 6 · Bac S',
+        fill: '0/1',
+        footer: null,
+        typeShort: 'S',
+        scale: 1,
+        tiles: [{ ...tile([rowBin('Q7W2ER', 4, false)]), behind: true }],
+      },
+    ]);
+    fixture.detectChanges();
+    const button = (fixture.nativeElement as HTMLElement).querySelector('[data-row-tile]');
+    expect(button?.textContent).toContain('⤓');
+    expect(button?.getAttribute('aria-label')).toBe(
+      'Arrêt 4, bac Q7W2ER (Bac S), à charger, posé derrière d’autres bacs',
+    );
   });
 });

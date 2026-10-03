@@ -209,6 +209,8 @@ export interface StackTile {
   readonly half: boolean;
   readonly shared: boolean;
   readonly isotherm: boolean;
+  /** Posé derrière d'autres bacs (seconde passe du plan, compactée). */
+  readonly behind: boolean;
   readonly loaded: boolean;
 }
 
@@ -230,6 +232,7 @@ function tileOf(bins: readonly RowBin[], plans: readonly DeliveryLoadingPlanBinV
     half: plans.some((plan) => plan.half !== null),
     shared: bins.length > 1,
     isotherm: plans.some((plan) => plan.isotherm),
+    behind: plans.some((plan) => plan.behind),
     loaded: bins.every((bin) => bin.loaded),
   };
 }

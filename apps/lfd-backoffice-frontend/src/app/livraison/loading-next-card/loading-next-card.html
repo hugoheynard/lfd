@@ -20,6 +20,11 @@
         <div class="nc-placement" data-next-placement>
           <strong>{{ line.lead }}</strong>
           <span>{{ line.detail }}</span>
+          @if (next.bin.behind) {
+            <span class="nc-behind" data-next-behind
+              >⤓ Derrière d’autres bacs : à sortir à l’arrêt {{ next.stopPosition }}</span
+            >
+          }
         </div>
       }
     } @else {

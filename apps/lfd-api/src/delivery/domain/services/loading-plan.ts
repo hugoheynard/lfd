@@ -8,7 +8,12 @@ import {
   type PlanUnit,
   type PlanVehicle,
 } from "./loading-volume.js";
-import { floorOverWarning, type LoadingWarning, loadingWarningsOf } from "./loading-warnings.js";
+import {
+  compactedWarning,
+  floorOverWarning,
+  type LoadingWarning,
+  loadingWarningsOf,
+} from "./loading-warnings.js";
 
 /** Un type de bac, tel que le plan le lit : sa forme EXTÉRIEURE et sa pile. */
 export interface PlanBinType {
@@ -48,6 +53,12 @@ export interface PlannedBin {
   /** La commande à qui est ce bac. */
   readonly reference: string;
   readonly stackIndex: number;
+  /**
+   * Posé « derrière » : sur une pile d'une rangée déjà fermée, avec des bacs
+   * chargés après lui entre lui et les portes. Seul le plan compacté en pose
+   * (cf. `planLoading`, étape 2) ; il faudra en sortir pour l'atteindre.
+   */
+  readonly behind: boolean;
 }
 
 export interface LoadingStep {
@@ -103,12 +114,54 @@ interface Placed {
  * @param stops les arrêts vivants dans l'ordre de passage, leurs bacs non annulés.
  */
 export function planLoading(stops: readonly PlanStop[], vehicle: PlanVehicle): LoadingPlan {
+  const coherent = buildPlan(stops, vehicle, "coherent");
+  if (vehicle.floor === null || offFloorBins(coherent) === 0) {
+    return coherent;
+  }
+  const compact = buildPlan(stops, vehicle, "compact");
+  if (offFloorBins(compact) >= offFloorBins(coherent)) {
+    return coherent;
+  }
+  const behind = compact.steps.flatMap((step) =>
+    step.bins.filter((planned) => planned.behind).map(() => step.stop.position),
+  );
+  const compacted = compactedWarning(behind.length, [...new Set(behind)]);
+  return {
+    ...compact,
+    warnings: compacted === null ? compact.warnings : [...compact.warnings, compacted],
+  };
+}
+
+/**
+ * Les bacs restés hors plancher : la mesure qui départage les deux plans. Un
+ * bac, pas une pile — deux plans n'ont pas les mêmes piles.
+ */
+function offFloorBins(plan: LoadingPlan): number {
+  const outside = new Set(
+    plan.stacks
+      .filter((stack) => stack.placement?.kind === "off_floor")
+      .map((stack) => stack.stackIndex),
+  );
+  return plan.steps.flatMap((step) => step.bins).filter((p) => outside.has(p.stackIndex)).length;
+}
+
+/**
+ * `coherent` : une pile ne monte plus quand sa rangée est fermée (G-D4 ter).
+ * `compact` : elle monte jusqu'à `maxStack`, quitte à poser des bacs derrière.
+ */
+type StackingMode = "coherent" | "compact";
+
+function buildPlan(
+  stops: readonly PlanStop[],
+  vehicle: PlanVehicle,
+  mode: StackingMode,
+): LoadingPlan {
   const buckets = placeBins(stops);
   const placer =
     vehicle.floor === null
       ? null
       : new FloorPlacer(vehicle.floor, BIN_GAP_DEFAULT_CM, vehicle.refrigeratedLiters !== null);
-  const stacker = new Stacker(placer);
+  const stacker = new Stacker(placer, mode);
   const steps: LoadingStep[] = [];
   for (let rank = stops.length - 1; rank >= 0; rank -= 1) {
     const stop = stops[rank];
@@ -118,7 +171,7 @@ export function planLoading(stops: readonly PlanStop[], vehicle: PlanVehicle): L
     const bins = orderWithinStep(buckets.get(rank) ?? []).map((placed): PlannedBin => ({
       bin: placed.bin,
       reference: placed.owner.reference,
-      stackIndex: stacker.put(placed.bin, stop.position),
+      ...stacker.put(placed.bin, stop.position),
     }));
     steps.push({ step: steps.length + 1, stop, bins });
   }
@@ -186,26 +239,39 @@ class Stacker {
   private readonly all: OpenStack[] = [];
 
   /** `null` : un véhicule sans cotes n'a pas de rangées, aucune pile ne ferme. */
-  constructor(private readonly placer: FloorPlacer | null) {}
+  constructor(
+    private readonly placer: FloorPlacer | null,
+    private readonly mode: StackingMode,
+  ) {}
 
   private readonly lastOfType = new Map<string, OpenStack>();
-  private readonly placed = new Map<string, { stack: OpenStack; unit: PlanUnit }>();
+  private readonly placed = new Map<
+    string,
+    { stack: OpenStack; behind: boolean; unit: PlanUnit }
+  >();
 
-  /** Rend la pile du bac ; une seconde moitié rejoint celle de la première. */
-  put(bin: PlanBin, stopPosition: number): number {
+  /**
+   * Rend la pile du bac, et s'il y est posé derrière ; une seconde moitié
+   * rejoint celle de la première, au même titre.
+   */
+  put(
+    bin: PlanBin,
+    stopPosition: number,
+  ): { readonly stackIndex: number; readonly behind: boolean } {
     const key = physicalKey(bin);
     const known = this.placed.get(key);
     if (known !== undefined) {
       known.unit.bins.push(bin);
-      return known.stack.stackIndex;
+      return { stackIndex: known.stack.stackIndex, behind: known.behind };
     }
     const stack = this.stackFor(bin.binType);
+    const behind = stack.height > 0 && !(this.placer?.canGrow(stack.stackIndex) ?? true);
     stack.height += 1;
     if (!stack.stopPositions.includes(stopPosition)) {
       stack.stopPositions.push(stopPosition);
     }
-    this.placed.set(key, { stack, unit: { binType: bin.binType, bins: [bin] } });
-    return stack.stackIndex;
+    this.placed.set(key, { stack, behind, unit: { binType: bin.binType, bins: [bin] } });
+    return { stackIndex: stack.stackIndex, behind };
   }
 
   private stackFor(binType: PlanBinType): OpenStack {
@@ -213,7 +279,7 @@ class Stacker {
     if (
       last !== undefined &&
       last.height < binType.maxStack &&
-      (this.placer?.canGrow(last.stackIndex) ?? true)
+      (this.mode === "compact" || (this.placer?.canGrow(last.stackIndex) ?? true))
     ) {
       return last;
     }

@@ -317,6 +317,78 @@ describe("le plan de chargement — les piles au sol (G5, G-D4)", () => {
     expect(rowOf("FIRST_M")).toBe(2);
   });
 
+  /**
+   * Un plancher de 105 cm de large. Le dernier arrêt ouvre une pile M au fond ;
+   * l'arrêt 2 remplit la rangée 1 (X) puis la rangée 2, à ras (X + Y) ; le
+   * premier arrêt a un bac M. Cohérent : sa pile neuve ouvre une rangée 3.
+   * Compacté : il monte sur la pile M du fond, déjà fermée.
+   */
+  function tightRound(lengthCm: number): ReturnType<typeof planLoading> {
+    const type = (id: string, widthCm: number): PlanBinType => ({
+      id,
+      name: id,
+      isotherm: false,
+      outerLengthCm: 60,
+      outerWidthCm: widthCm,
+      outerHeightCm: 25,
+      maxStack: 3,
+    });
+    const x = type("bin_x", 60);
+    const y = type("bin_y", 43);
+    const floor = CargoFloor.of({ lengthCm, widthCm: 105, heightCm: 100, wheelArches: null });
+    return planLoading(
+      [
+        stop("o1", 1, [bin("first_m")]),
+        stop("o2", 2, [
+          ...["x1", "x2", "x3", "x4"].map((id) => bin(id, { binType: x })),
+          bin("y1", { binType: y }),
+        ]),
+        stop("o3", 3, [bin("last_m")]),
+      ],
+      { name: "Trafic", cargoLiters: floor.volumeLiters, refrigeratedLiters: null, floor },
+    );
+  }
+
+  const rowOfCode = (plan: ReturnType<typeof planLoading>, code: string): number | undefined => {
+    const planned = plan.steps.flatMap((step) => step.bins).find((p) => p.bin.code === code);
+    const placement = plan.stacks.find(
+      (stack) => stack.stackIndex === planned?.stackIndex,
+    )?.placement;
+    return placement?.kind === "floor" ? placement.row : undefined;
+  };
+
+  it("garde le plan cohérent quand il tient : aucun bac derrière, aucune alerte", () => {
+    const plan = tightRound(200);
+
+    expect(rowOfCode(plan, "FIRST_M")).toBe(3);
+    expect(plan.steps.flatMap((step) => step.bins).some((planned) => planned.behind)).toBe(false);
+    expect(plan.warnings).toEqual([]);
+  });
+
+  it("compacte quand le cohérent ne tient pas : le bac monte au fond, marqué derrière, et l'alerte le dit", () => {
+    // 150 cm : la rangée 3 cohérente finirait à 183 cm ; compactée, rien après 122 cm.
+    const plan = tightRound(150);
+
+    const first = plan.steps.flatMap((step) => step.bins).find((p) => p.bin.code === "FIRST_M");
+    expect(first?.behind).toBe(true);
+    expect(rowOfCode(plan, "FIRST_M")).toBe(1);
+    expect(plan.stacks.some((stack) => stack.placement?.kind === "off_floor")).toBe(false);
+    expect(plan.warnings).toEqual([
+      {
+        kind: "compacted",
+        message:
+          "Pour que tout tienne au sol, 1 bac est posé au fond, derrière d'autres (arrêt 1) : il faudra sortir des bacs pour les atteindre.",
+      },
+    ]);
+  });
+
+  it("garde le cohérent et `floor_over` quand compacter ne sauve aucun bac", () => {
+    const plan = planLoading(fullStops(4), measured(70));
+
+    expect(plan.steps.flatMap((step) => step.bins).some((planned) => planned.behind)).toBe(false);
+    expect(plan.warnings.map((warning) => warning.kind)).toEqual(["dry_over", "floor_over"]);
+  });
+
   it("sans plancher connu, aucune position ni `floor_over`", () => {
     const plan = planLoading(fullStops(2), ROOMY);
 

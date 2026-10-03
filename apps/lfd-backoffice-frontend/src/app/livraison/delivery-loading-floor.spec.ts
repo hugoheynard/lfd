@@ -111,6 +111,7 @@ function bin(stackIndex: number, binId: string): DeliveryLoadingPlanStepView['bi
     half: null,
     sharedWithReference: null,
     isotherm: false,
+    behind: false,
     stackIndex,
   };
 }

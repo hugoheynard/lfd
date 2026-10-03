@@ -86,7 +86,10 @@ export type LoadingDeparture = (roundId: string, version: number) => Promise<voi
 const NOT_A_BIN =
   'Ce code ne désigne pas un bac : ni l’adresse d’un bac, ni un code court de six caractères.';
 
-/** Les alertes du plan qui disent un dépassement : en rouge ; les autres en avertissement. */
+/**
+ * Les alertes du plan qui disent un dépassement : en rouge. Les autres —
+ * dont `compacted`, des bacs posés derrière d'autres — en avertissement.
+ */
 const ALERT_WARNINGS: ReadonlySet<DeliveryLoadingPlanWarningKind> = new Set([
   'floor_over',
   'dry_over',

@@ -27,6 +27,7 @@ function bin(overrides: Partial<DeliveryLoadingPlanBinView> = {}): DeliveryLoadi
     half: null,
     sharedWithReference: null,
     isotherm: false,
+    behind: false,
     stackIndex: 1,
     ...overrides,
   };

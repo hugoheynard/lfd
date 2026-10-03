@@ -6,7 +6,8 @@ export type LoadingWarningKind =
   | "cold_bins_without_refrigeration"
   | "unknown_cargo"
   | "bin_to_redo"
-  | "floor_over";
+  | "floor_over"
+  | "compacted";
 
 /** Une alerte du plan : son genre, et la phrase lue au dépôt. */
 export interface LoadingWarning {
@@ -91,6 +92,26 @@ export function floorOverWarning(
   return {
     kind: "floor_over",
     message: `${piles} au sol de « ${vehicle.name} »${named} : retirez un arrêt de la tournée ou changez de véhicule.`,
+  };
+}
+
+/**
+ * Le plan cohérent ne tenait pas au sol ; le plan compacté tient en posant des
+ * bacs derrière d'autres (étape 2 de `planLoading`). Ce n'est pas un refus :
+ * c'est ce qu'il faudra sortir pour les atteindre.
+ */
+export function compactedWarning(
+  behindBins: number,
+  stopPositions: readonly number[],
+): LoadingWarning | null {
+  if (behindBins === 0) {
+    return null;
+  }
+  const named = stopsLabel([...stopPositions].sort((a, b) => a - b));
+  const bacs = behindBins === 1 ? "1 bac est posé" : `${behindBins} bacs sont posés`;
+  return {
+    kind: "compacted",
+    message: `Pour que tout tienne au sol, ${bacs} au fond, derrière d'autres${named} : il faudra sortir des bacs pour les atteindre.`,
   };
 }
 

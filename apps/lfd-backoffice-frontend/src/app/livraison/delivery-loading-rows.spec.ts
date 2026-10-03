@@ -29,6 +29,7 @@ function bin(
     half: null,
     sharedWithReference: null,
     isotherm: false,
+    behind: false,
     stackIndex,
     ...extra,
   };

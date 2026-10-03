@@ -99,3 +99,9 @@
 .nc--depot .nc-scanner {
   order: 1;
 }
+
+// Le bac sera derrière d'autres : dit en avertissement, dans la consigne.
+.nc-behind {
+  color: var(--fold-color-warning-text);
+  font-weight: var(--fold-weight-semibold);
+}

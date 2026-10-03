@@ -109,6 +109,7 @@ function planBin(binId: string, code: string, reference: string, stackIndex: num
     half: null,
     sharedWithReference: null,
     isotherm: false,
+    behind: false,
     stackIndex,
   };
 }

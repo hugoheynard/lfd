@@ -73,6 +73,7 @@ function planBin(binId: string, code: string) {
     half: null,
     sharedWithReference: null,
     isotherm: false,
+    behind: false,
     stackIndex: 1,
   };
 }

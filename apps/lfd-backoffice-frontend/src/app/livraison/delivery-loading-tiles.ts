@@ -162,7 +162,8 @@ export function tileAriaLabel(
     what = canPick ? 'à charger — toucher pour le désigner comme prochain' : 'à charger';
   }
   const type = binTypeName === null ? '' : ` (${binTypeName}${tile.isotherm ? ', isotherme' : ''})`;
-  return `${who}, ${kind} ${codes}${type}, ${what}`;
+  const behind = tile.behind ? ', posé derrière d’autres bacs' : '';
+  return `${who}, ${kind} ${codes}${type}, ${what}${behind}`;
 }
 
 /** Un onglet du sélecteur de rangée : son nom, son avancement, sa mini-carte. */

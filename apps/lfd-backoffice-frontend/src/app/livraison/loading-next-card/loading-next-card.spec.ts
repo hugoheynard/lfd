@@ -17,6 +17,7 @@ const NEXT: NextBin = {
     half: null,
     sharedWithReference: null,
     isotherm: false,
+    behind: false,
     stackIndex: 1,
   },
   stopPosition: 5,
@@ -86,5 +87,16 @@ describe('LoadingNextCard', () => {
       .componentInstance as BinScanner;
     expect(scanner.emphasis()).toBe('outline');
     expect(scanner.label()).toBe('Scanner avec la caméra');
+  });
+
+  it('dit qu’un bac posé derrière d’autres sortira à son arrêt', () => {
+    const fixture = render(false);
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.querySelector('[data-next-behind]')).toBeNull();
+    fixture.componentRef.setInput('next', { ...NEXT, bin: { ...NEXT.bin, behind: true } });
+    fixture.detectChanges();
+    expect(element.querySelector('[data-next-behind]')?.textContent?.trim()).toBe(
+      '⤓ Derrière d’autres bacs : à sortir à l’arrêt 5',
+    );
   });
 });

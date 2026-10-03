@@ -68,7 +68,7 @@ export function loadingPlanView(
       stopPosition: step.stop.position,
       reference: step.stop.reference,
       customerLabel: step.stop.customerLabel,
-      bins: step.bins.map(({ bin, reference, stackIndex }) => ({
+      bins: step.bins.map(({ bin, reference, stackIndex, behind }) => ({
         binId: bin.id,
         code: bin.code,
         reference,
@@ -77,6 +77,7 @@ export function loadingPlanView(
         sharedWithReference: bin.partner?.reference ?? null,
         isotherm: bin.binType.isotherm,
         stackIndex,
+        behind,
       })),
     })),
     stacks: plan.stacks.map((stack) => ({

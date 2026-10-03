@@ -26,6 +26,12 @@ export interface DeliveryLoadingPlanBinView {
   readonly isotherm: boolean;
   /** La pile où poser le bac (1..n, cf. {@link DeliveryLoadingPlanStackView}). */
   readonly stackIndex: number;
+  /**
+   * Posé DERRIÈRE : sur une pile d'une rangée déjà fermée, des bacs chargés
+   * après lui le cachent. Seulement quand le plan cohérent ne tenait pas au
+   * sol (`documentation/livraisons/algorithme-de-chargement.md`).
+   */
+  readonly behind: boolean;
 }
 
 /**
@@ -127,14 +133,19 @@ export interface DeliveryLoadingPlanVolumeView {
   readonly coldOver: boolean;
 }
 
-/** `floor_over` (G5) : des piles ne tiennent pas au sol ; s'ajoute à `dry_over`. */
+/**
+ * `floor_over` (G5) : des piles ne tiennent pas au sol ; s'ajoute à `dry_over`.
+ * `compacted` (2026-10-03) : tout tient au sol, mais des bacs sont posés
+ * derrière d'autres (`DeliveryLoadingPlanBinView.behind`).
+ */
 export type DeliveryLoadingPlanWarningKind =
   | "dry_over"
   | "cold_over"
   | "cold_bins_without_refrigeration"
   | "unknown_cargo"
   | "bin_to_redo"
-  | "floor_over";
+  | "floor_over"
+  | "compacted";
 
 export interface DeliveryLoadingPlanWarningView {
   readonly kind: DeliveryLoadingPlanWarningKind;

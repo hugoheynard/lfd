@@ -209,7 +209,10 @@ Désormais une pile se pose au sol **dès qu'elle s'ouvre** (`FloorPlacer`), et
 un bac ne monte sur une pile ouverte que si sa rangée est **encore la rangée
 ouverte**. Sinon il ouvre une pile neuve, dans la rangée en cours. La caisse
 froide et le hors-plancher ne ferment pas. Prix : quelques piles moins hautes,
-donc parfois une rangée de plus — `floor_over` le dit quand elle manque.
+donc parfois une rangée de plus. Quand elle manque, une seconde passe compacte
+(les piles fermées remontent, les bacs ainsi cachés sont marqués `behind`,
+alerte `compacted`), et n'est gardée que si elle fait tenir plus de bacs au
+sol : [`algorithme-de-chargement.md`](algorithme-de-chargement.md).
 
 **Le froid reste en litres** tant que la caisse réfrigérée n'a pas de
 dimensions (G-Q3). Les bacs isothermes n'entrent pas dans le plancher sec.
