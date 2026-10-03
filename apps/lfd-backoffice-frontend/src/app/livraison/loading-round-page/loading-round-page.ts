@@ -1,11 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import type { DeliveryLoadingRoundView } from '@lfd/contracts';
-import { FoldBackLinkComponent, FoldPageLayoutComponent } from 'fold-ng';
+import { FoldBreadcrumbComponent, type FoldBreadcrumbItem, FoldPageLayoutComponent } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { DeliveryLoadingService } from '../delivery-loading.service';
-import { roundLabel, serviceDayLabel } from '../delivery-rounds';
+import { roundLabel } from '../delivery-rounds';
 import { type LoadingDeparture, LoadingRound } from '../loading-round/loading-round';
 
 /**
@@ -20,8 +19,9 @@ import { type LoadingDeparture, LoadingRound } from '../loading-round/loading-ro
 @Component({
   selector: 'app-loading-round-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBackLinkComponent, FoldPageLayoutComponent, LoadingRound, RouterLink],
+  imports: [FoldBreadcrumbComponent, FoldPageLayoutComponent, LoadingRound],
   templateUrl: './loading-round-page.html',
+  styleUrl: './loading-round-page.scss',
 })
 export class LoadingRoundPage {
   private readonly service = inject(DeliveryLoadingService);
@@ -36,10 +36,17 @@ export class LoadingRoundPage {
   protected readonly departure: LoadingDeparture = (roundId, version) =>
     this.service.depart(roundId, version);
 
-  protected readonly title = computed(() => {
+  /**
+   * Le bandeau sombre : « Livraison / Chargement / Tournée · Kangoo ». L'heure
+   * et le lieu de départ ne sont pas servis par la vue du chargement : ils ne
+   * s'inventent pas ici.
+   */
+  protected readonly crumbs = computed((): readonly FoldBreadcrumbItem[] => {
     const view = this.view();
-    return view === null ? 'Chargement' : `Chargement · ${roundLabel(view)}`;
+    return [
+      { label: 'Livraison', routerLink: '/livraison' },
+      { label: 'Chargement', routerLink: '/livraison/chargement' },
+      { label: view === null ? 'Tournée' : `Tournée · ${roundLabel(view)}` },
+    ];
   });
-
-  protected readonly dayLabel = serviceDayLabel;
 }

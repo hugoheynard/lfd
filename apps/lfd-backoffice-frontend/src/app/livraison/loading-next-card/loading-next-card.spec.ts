@@ -72,4 +72,19 @@ describe('LoadingNextCard', () => {
     fixture.detectChanges();
     expect(scanner().size()).toBe('md');
   });
+
+  it('au dépôt, la douchette prend le focus, et la caméra passe en recours', async () => {
+    const fixture = render(true);
+    fixture.componentRef.setInput('size', 'depot');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    const input = element.querySelector<HTMLInputElement>('[data-typed-code] input');
+    expect(document.activeElement).toBe(input);
+    expect(input?.getAttribute('placeholder')).toBe('Douchette ou code à 6 caractères');
+    const scanner = fixture.debugElement.query(By.directive(BinScanner))
+      .componentInstance as BinScanner;
+    expect(scanner.emphasis()).toBe('outline');
+    expect(scanner.label()).toBe('Scanner avec la caméra');
+  });
 });

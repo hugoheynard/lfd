@@ -128,13 +128,17 @@ function scan(fixture: ComponentFixture<LoadingRoundPage>, raw: string): void {
 describe('LoadingRoundPage', () => {
   it('liste ce qui manque, arrêt par arrêt, l’arrêt sans bac compris', async () => {
     const { element } = await boot();
-    const missing = [...element.querySelectorAll('[data-missing-stop]')].map((line) =>
-      line.textContent?.trim(),
+    const missing = [...element.querySelectorAll('[data-missing-row]')].map((line) =>
+      [...line.querySelectorAll(':scope > span, :scope > span > *')]
+        .filter((part) => part.children.length === 0)
+        .map((part) => part.textContent?.trim())
+        .join(' '),
     );
-    expect(missing).toEqual([
-      'CMD-1 · Le Comptoir — 1 bac sur 2',
-      'CMD-2 · Chez Paul — aucun bac déclaré',
-    ]);
+    // La pastille d'arrêt, le client, les codes restants en Mono, combien.
+    expect(missing).toEqual(['1 Le Comptoir ABC235 1 à charger', '2 Chez Paul aucun bac déclaré']);
+    expect(element.querySelector('[data-missing-row] .lr-miss-stop')?.className).toContain(
+      'hue-a-0',
+    );
   });
 
   it('charge un bac scanné par son identifiant — le scan est le geste', async () => {
@@ -208,8 +212,8 @@ describe('LoadingRoundPage', () => {
       round({ stops: [{ ...first, state: 'loaded', bins: [redo] }, second] }),
     );
     expect(element.querySelector('[data-to-redo]')?.textContent).toContain('Un arrêt porte');
-    expect(element.querySelector('[data-missing-stop]')?.textContent?.trim()).toBe(
-      'CMD-1 · Le Comptoir — bac partagé à refaire · 1 bac sur 1',
+    expect(element.querySelector('[data-missing-row]')?.textContent).toContain(
+      'bac partagé à refaire',
     );
     const refusal =
       'Le bac partagé ABC299 n’est plus entre deux arrêts consécutifs : recolisez-le ou remettez les arrêts côte à côte.';
@@ -221,9 +225,20 @@ describe('LoadingRoundPage', () => {
 
   it('sans écriture, on lit le chargement sans aucun geste', async () => {
     const { element } = await boot(['delivery_loading:read']);
-    expect(element.querySelectorAll('[data-missing-stop]')).toHaveLength(2);
+    expect(element.querySelectorAll('[data-missing-row]')).toHaveLength(2);
     expect(element.querySelector('[data-scan]')).toBeNull();
     expect(element.querySelector('[data-depart]')).toBeNull();
+  });
+});
+
+describe('LoadingRoundPage — le bandeau du dépôt', () => {
+  it('porte le fil d’Ariane Livraison / Chargement / Tournée, sans titre de page', async () => {
+    const { element } = await boot();
+    const crumbs = element.querySelector('[data-loading-head] fold-breadcrumb');
+    const links = [...(crumbs?.querySelectorAll('a') ?? [])].map((a) => a.getAttribute('href'));
+    expect(links).toEqual(['/livraison', '/livraison/chargement']);
+    expect(crumbs?.textContent).toContain('Tournée · Kangoo');
+    expect(element.querySelector('h1')).toBeNull();
   });
 });
 

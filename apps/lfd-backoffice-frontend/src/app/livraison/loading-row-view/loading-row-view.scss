@@ -129,7 +129,7 @@
 }
 
 .rv--depot .rv-tile {
-  min-height: calc(var(--fold-space-5xl) + var(--fold-space-lg));
+  min-height: calc(var(--fold-space-5xl) + var(--fold-space-md) + 2px);
 }
 
 .rv--depot .rv-tile--half {

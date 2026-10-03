@@ -89,3 +89,13 @@
 .nc--depot .nc-code {
   font-size: calc(var(--fold-text-xl) * 2);
 }
+
+// Au dépôt, le champ EST la douchette : il garde le focus (bord primaire et
+// anneau de fold), reste primaire hors focus, et la caméra passe dessous.
+.nc--depot .nc-field {
+  --fold-color-border-subtle: var(--fold-color-primary);
+}
+
+.nc--depot .nc-scanner {
+  order: 1;
+}

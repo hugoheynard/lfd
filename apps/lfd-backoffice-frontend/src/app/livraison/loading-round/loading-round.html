@@ -1,11 +1,14 @@
 <div class="lr" [class.lr--depot]="layout() === 'depot'">
-  @if (layout() === 'phone') {
-    <header class="lr-head" data-progress>
-      <div class="lr-head-line">
-        <ng-content select="fold-back-link" />
+  <header class="lr-head" data-loading-head>
+    <div class="lr-head-line">
+      <ng-content select="fold-back-link" />
+      <ng-content select="fold-breadcrumb" />
+      @if (layout() === 'phone') {
         <span class="lr-head-title" data-loading-title>{{ title() }}</span>
-      </div>
-      <div class="lr-head-line">
+      }
+    </div>
+    @if (layout() === 'phone') {
+      <div class="lr-head-line" data-progress>
         <span class="lr-count">
           <strong class="lr-count-value">{{ progress().loaded }}</strong> /
           {{ progress().total }} bacs chargés
@@ -22,8 +25,8 @@
       >
         <span class="lr-rail-fill" [style.width.%]="progressPercent()"></span>
       </div>
-    </header>
-  }
+    }
+  </header>
   <div class="lr-body">
     <ng-content select="[loadingContext]" />
     @switch (state().status) {
@@ -223,7 +226,10 @@
               }
 
               @if (layout() === 'depot') {
-                <app-loading-plan [plan]="plan" [round]="view" />
+                <fold-disclosure data-plan-detail>
+                  <span summary>Détail du plan</span>
+                  <app-loading-plan [plan]="plan" [round]="view" />
+                </fold-disclosure>
               }
             }
 
@@ -261,9 +267,27 @@
                   </fold-callout>
                 }
                 @for (line of missing(); track line.stopId) {
-                  <p class="lr-missing" data-missing-stop>
-                    {{ line.reference }} · {{ line.customerLabel }} — {{ line.detail }}
-                  </p>
+                  @if (layout() === 'phone') {
+                    <p class="lr-missing" data-missing-stop>
+                      {{ line.reference }} · {{ line.customerLabel }} — {{ line.detail }}
+                    </p>
+                  }
+                }
+                @if (layout() === 'depot') {
+                  @for (row of missingRows(); track row.stopId) {
+                    <div class="lr-miss" data-missing-row>
+                      <span class="lr-miss-stop" [class]="'hue-a-' + row.hue">{{
+                        row.position
+                      }}</span>
+                      <span class="lr-miss-who">
+                        <strong>{{ row.customerLabel }}</strong>
+                        @if (row.codes !== '') {
+                          <span class="lr-miss-codes">{{ row.codes }}</span>
+                        }
+                      </span>
+                      <span class="lr-miss-status">{{ row.status }}</span>
+                    </div>
+                  }
                 }
                 @if (canDepart()) {
                   <button

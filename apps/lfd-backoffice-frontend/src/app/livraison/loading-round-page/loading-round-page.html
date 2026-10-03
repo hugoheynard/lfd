@@ -1,17 +1,11 @@
-<fold-page-layout icon="truck" [title]="title()">
-  <fold-back-link pageActions label="Toutes les tournées" routerLink="/livraison/chargement" />
-  @if (view(); as view) {
-    <p description>
-      {{ dayLabel(view.day) }} — chaque bac scanné se charge dans ce véhicule ; à gauche ce qu’on
-      pose maintenant et ce qui manque, à droite où ça va.
-    </p>
-  }
-
+<fold-page-layout class="lrp-page">
   <app-loading-round
     [roundId]="roundId()"
     [canWrite]="canWrite()"
     layout="depot"
     [departure]="departure"
     (viewChange)="view.set($event)"
-  />
+  >
+    <fold-breadcrumb ariaLabel="Fil d’Ariane" [items]="crumbs()" data-loading-crumbs />
+  </app-loading-round>
 </fold-page-layout>

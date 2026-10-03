@@ -1,6 +1,11 @@
-import type { DeliveryLoadingPlanBinView, DeliveryLoadingPlanStackView } from '@lfd/contracts';
+import type {
+  DeliveryLoadingPlanBinView,
+  DeliveryLoadingPlanStackView,
+  DeliveryLoadingRoundView,
+} from '@lfd/contracts';
 
-import { halfLabel } from './delivery-loading';
+import { halfLabel, hasBinToRedo } from './delivery-loading';
+import { stopHue } from './delivery-loading-floor';
 import { type FloorRow, rowPlace, type StackTile, stackSide } from './delivery-loading-rows';
 
 /**
@@ -157,4 +162,45 @@ export function nextBinBadge(
   return bin.sharedWithReference === null
     ? base
     : `${base} · partagé avec ${bin.sharedWithReference}`;
+}
+
+/** Une ligne de « Ce qui manque » au dépôt : l'arrêt, ses codes restants, et combien. */
+export interface MissingStopRow {
+  readonly stopId: string;
+  readonly position: number;
+  readonly hue: number;
+  readonly customerLabel: string;
+  /** Les codes encore à charger, en Mono : « H4N9QC · L5R2DE ». */
+  readonly codes: string;
+  /** « 2 à charger », « aucun bac déclaré », « bac partagé à refaire ». */
+  readonly status: string;
+}
+
+/**
+ * « Ce qui manque », arrêt par arrêt (SPEC §7) : les arrêts qui empêchent de
+ * partir — pas chargés, ou portant un bac partagé à refaire —, dans l'ordre de
+ * passage. Un arrêt complet disparaît.
+ */
+export function missingByStop(
+  round: Pick<DeliveryLoadingRoundView, 'stops'>,
+): readonly MissingStopRow[] {
+  return round.stops
+    .filter((stop) => stop.state !== 'loaded' || hasBinToRedo(stop))
+    .map((stop) => {
+      const left = stop.bins.filter((bin) => bin.loadedAt === null);
+      let status = `${String(left.length)} à charger`;
+      if (stop.bins.length === 0) {
+        status = 'aucun bac déclaré';
+      } else if (hasBinToRedo(stop)) {
+        status = 'bac partagé à refaire';
+      }
+      return {
+        stopId: stop.stopId,
+        position: stop.position,
+        hue: stopHue(stop.position),
+        customerLabel: stop.customerLabel,
+        codes: left.map((bin) => bin.code).join(' · '),
+        status,
+      };
+    });
 }

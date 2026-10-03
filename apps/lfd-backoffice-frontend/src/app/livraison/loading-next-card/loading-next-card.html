@@ -33,8 +33,12 @@
     @if (canLoad()) {
       <div class="nc-actions" data-scan>
         <app-bin-scanner
+          class="nc-scanner"
           [paused]="busy()"
           [size]="size() === 'phone' ? 'lg' : 'md'"
+          [emphasis]="size() === 'phone' ? 'solid' : 'outline'"
+          [block]="true"
+          [label]="size() === 'phone' ? 'Scanner les bacs' : 'Scanner avec la caméra'"
           (scanned)="scanned.emit($event)"
         />
         <form class="nc-typed" (submit)="$event.preventDefault(); submit()">

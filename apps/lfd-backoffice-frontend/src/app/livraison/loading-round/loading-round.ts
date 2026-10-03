@@ -21,6 +21,7 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldDisclosureComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
@@ -52,7 +53,13 @@ import {
   placementLine,
   stackTiles,
 } from '../delivery-loading-rows';
-import { rowColumns, rowTabs, rowTitle, stackColumns } from '../delivery-loading-tiles';
+import {
+  missingByStop,
+  rowColumns,
+  rowTabs,
+  rowTitle,
+  stackColumns,
+} from '../delivery-loading-tiles';
 import { roundLabel } from '../delivery-rounds';
 import { LoadingGateway } from '../loading-gateway';
 import { LoadingNextCard } from '../loading-next-card/loading-next-card';
@@ -124,6 +131,7 @@ export function loadedNotice(
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
+    FoldDisclosureComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
@@ -193,6 +201,11 @@ export class LoadingRound {
   protected readonly missing = computed(() => {
     const view = this.view();
     return view === null ? [] : missingStops(view);
+  });
+  /** « Ce qui manque » au dépôt, arrêt par arrêt (SPEC §7). */
+  protected readonly missingRows = computed(() => {
+    const view = this.view();
+    return view === null ? [] : missingByStop(view);
   });
   /** Les arrêts qui portent un bac partagé à refaire (v2-4) — dits en alerte. */
   protected readonly toRedoCount = computed(

@@ -1,3 +1,7 @@
+@use '../stop-hues' as hues;
+
+@include hues.stop-hues;
+
 .lr,
 .lr-body,
 .lr-main,
@@ -65,9 +69,9 @@
   margin: 0;
 }
 
-// Au téléphone, la page hôte ne paie plus de gouttière (l'en-tête va d'un
-// bord à l'autre) : le corps la reprend ici.
-.lr:not(.lr--depot) .lr-body {
+// La page hôte ne paie plus de gouttière (l'en-tête va d'un bord à
+// l'autre) : le corps la reprend ici.
+.lr-body {
   padding-inline: var(--fold-space-lg);
 }
 
@@ -124,4 +128,60 @@
   display: block;
   height: 100%;
   background: var(--fold-color-success);
+}
+
+// « Ce qui manque » au dépôt : la pastille d'arrêt, le client et ses codes,
+// et combien il en reste, à droite.
+.lr-miss {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+.lr-miss-stop {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--fold-space-2xl);
+  height: var(--fold-space-2xl);
+  border: 1px solid color-mix(in srgb, var(--fold-ref-ink-950) 30%, transparent);
+  border-radius: var(--fold-radius-round);
+  background: var(--stop-hue-a);
+  color: var(--fold-ref-ink-950);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+}
+
+.lr-miss-who {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: var(--fold-text-sm);
+}
+
+.lr-miss-codes {
+  color: var(--fold-color-text-muted);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  overflow-wrap: anywhere;
+}
+
+.lr-miss-status {
+  flex: none;
+  color: var(--fold-color-warning-text);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+}
+
+// Hors plancher au dépôt : les piles côte à côte.
+@media (min-width: 64rem) {
+  .lr--depot .lr-off {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
 }

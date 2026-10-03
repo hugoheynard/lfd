@@ -75,10 +75,12 @@
 }
 
 .rp--depot .rp-tab {
+  min-height: calc(var(--fold-space-5xl) + var(--fold-space-lg));
+  padding: var(--fold-space-sm) var(--fold-space-md);
   font-size: var(--fold-text-base);
 }
 
 .rp--depot .rp-mark {
-  width: var(--fold-space-md);
-  height: var(--fold-space-md);
+  width: calc(var(--fold-space-md) + 2px);
+  height: calc(var(--fold-space-md) + 2px);
 }

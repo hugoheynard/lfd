@@ -20,11 +20,12 @@
       foldButton
       icon="qr-code"
       [size]="size()"
-      [block]="size() === 'lg'"
+      [emphasis]="emphasis()"
+      [block]="block()"
       (click)="start()"
       data-camera-on
     >
-      Scanner les bacs
+      {{ label() }}
     </button>
   } @else {
     <fold-callout variant="info" data-no-camera>
