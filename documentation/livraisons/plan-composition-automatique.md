@@ -102,8 +102,11 @@ L'humain corrige, il ne construit plus. Voir §3.
 
 ## 5. Questions ouvertes
 
-- **Q1** — Le départ à rebours : borne basse ? (minuit du jour, ou la veille
-  au soir pour une échéance à 1 h ?)
+- ~~**Q1**~~ — **Tranchée par Hugo le 2026-10-03** : la borne basse est
+  **minuit du jour de livraison**. Une commande pour le jour J, échéance 6 h,
+  peut partir à 1 h : c'est encore le jour J. Rien ne part la veille — le
+  modèle (secondes depuis minuit, `clock-time.ts`) tient tel quel.
+
 - **Q2** — La durée maximale d'une tournée (240 min) reste-t-elle une borne,
   ou cède-t-elle aussi devant la règle 1 ?
 - **Q3** — Une commande pour J+2 : sa tournée n'existe peut-être pas encore.
