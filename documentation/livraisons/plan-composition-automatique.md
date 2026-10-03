@@ -365,3 +365,11 @@ passe côté passation : une commande livrée sans fenêtre est refusée, avec l
 phrase.
 
 Une seule migration, additive : `lecteur-de-migrations` avant `main`.
+
+**Précision d'Hugo (2026-10-03) : plusieurs échéances par adresse.** Une
+adresse peut recevoir plusieurs commandes le même jour (6 h le pain, 11 h le
+déjeuner). Chaque commande garde **une** fenêtre, et le calcul fait déjà un
+arrêt par commande : deux échéances, deux arrêts. Ce qui change, c'est le
+préréglage : en mode échéance, l'adresse porte **une liste d'échéances
+préférées** (`delivery_specs`, champ additif, sans migration) ; la commande en
+choisit une, ou une autre heure — une échéance de la liste vaut `default`.
