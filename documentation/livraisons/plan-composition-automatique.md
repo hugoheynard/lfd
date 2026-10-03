@@ -102,6 +102,15 @@ L'humain corrige, il ne construit plus. Voir §3.
 
 ## 5. Questions ouvertes
 
+Tranchées par Hugo le 2026-10-03 :
+
+- **Une tournée chargée n'est jamais touchée** par l'automatique : un seul bac
+  chargé la fige (la règle de « Proposer » aujourd'hui, `classifyRounds`).
+- **Pas de livraison sans échéance ni créneau** : le commerce refuse de passer
+  une commande livrée sans l'une ou l'autre. Lève V5 pour l'avenir ; les
+  commandes déjà passées sans fenêtre restent à traiter (signalées, jamais
+  réécrites).
+
 - ~~**Q1**~~ — **Tranchée par Hugo le 2026-10-03** : la borne basse est
   **minuit du jour de livraison**. Une commande pour le jour J, échéance 6 h,
   peut partir à 1 h : c'est encore le jour J. Rien ne part la veille — le
@@ -112,8 +121,14 @@ L'humain corrige, il ne construit plus. Voir §3.
   qu'on ne modélise pas (CA-D1). `maxRoundMinutes` cesse d'être une borne dure
   (`vehicle-plan.ts:159`, `overSeconds`) ; il peut rester un **signal**
   (« tournée longue ») sans jamais refuser une place.
-- **Q3** — Une commande pour J+2 : sa tournée n'existe peut-être pas encore.
-  Le calcul l'ouvre-t-il, ou attend-il le soir de la veille ?
+- ~~**Q3**~~ — **Tranchée par Hugo le 2026-10-03** : l'objectif est de
+  **calculer à chaque nouvelle commande si elle passe**, sur une volumétrie
+  d'environ **200 clients livrés par jour**. Une commande pour J+2 est donc
+  placée (ou jugée) dans la composition de J+2 dès qu'elle arrive, tournées
+  ouvertes par le calcul s'il le faut. Conséquences à mesurer avant de bâtir :
+  la matrice routière à ~200 points (OSRM `/table` par blocs, lot 8 bis), et
+  l'amélioration locale, mesurée à 60 arrêts sous deux secondes
+  (`improve-plans.ts`), à remesurer à 200.
 - **Q4** — Le géocodage : à la commande, pour que l'automatique puisse placer ?
 - **Q5** — Un véhicule « paramétré » exige-t-il aussi les passages de roue et
   la caisse froide, ou les cotes suffisent-elles ?
