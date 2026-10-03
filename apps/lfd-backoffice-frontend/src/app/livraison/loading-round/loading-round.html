@@ -17,13 +17,25 @@
       </div>
       <div
         class="lr-rail"
+        [class.lr-rail--ticks]="railGroups() !== null"
         role="progressbar"
         aria-label="Bacs chargés"
         [attr.aria-valuenow]="progress().loaded"
         aria-valuemin="0"
         [attr.aria-valuemax]="progress().total"
       >
-        <span class="lr-rail-fill" [style.width.%]="progressPercent()"></span>
+        @if (railGroups(); as groups) {
+          <!-- Un trait par bac, une séparation fine toutes les dix. -->
+          @for (group of groups; track $index) {
+            <span class="lr-rail-group" [style.flex-grow]="group.length">
+              @for (loaded of group; track $index) {
+                <span class="lr-tick" [class.lr-tick--on]="loaded"></span>
+              }
+            </span>
+          }
+        } @else {
+          <span class="lr-rail-fill" [style.width.%]="progressPercent()"></span>
+        }
       </div>
     }
   </header>

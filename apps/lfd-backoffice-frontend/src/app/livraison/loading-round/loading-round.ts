@@ -66,6 +66,7 @@ import { LoadingPlan } from '../loading-plan/loading-plan';
 import { LoadingRowPicker } from '../loading-row-picker/loading-row-picker';
 import { LoadingRowView } from '../loading-row-view/loading-row-view';
 import { neighbourRow, swipeStep } from '../row-swipe';
+import { railTicks } from '../rail-ticks';
 
 type RoundState =
   | { readonly status: 'loading' }
@@ -227,6 +228,14 @@ export class LoadingRound {
   protected readonly stopsLeftLabel = computed(() => {
     const left = this.progress().stopsLeft;
     return left === 0 ? 'complet' : `${String(left)} arrêt${left > 1 ? 's' : ''} à finir`;
+  });
+  /**
+   * La barre en traits, un par bac, par paquets de dix ; `null` au-delà de
+   * `RAIL_TICKS_MAX`, où des traits trop fins redeviennent une barre.
+   */
+  protected readonly railGroups = computed(() => {
+    const { loaded, total } = this.progress();
+    return railTicks(loaded, total);
   });
   protected readonly progressPercent = computed(() => {
     const { loaded, total } = this.progress();

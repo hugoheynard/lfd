@@ -248,3 +248,36 @@
     animation: none;
   }
 }
+
+// La barre en traits : un par bac, un filet clair toutes les dix.
+.lr-rail--ticks {
+  display: flex;
+  gap: var(--fold-space-xs);
+  height: var(--fold-space-sm);
+  overflow: visible;
+  border-radius: 0;
+  background: none;
+}
+
+.lr-rail-group {
+  flex: 1 1 0;
+  display: flex;
+  gap: 1px;
+  min-width: 0;
+}
+
+.lr-rail-group + .lr-rail-group {
+  padding-left: var(--fold-space-xs);
+  border-left: 1px solid color-mix(in srgb, var(--fold-color-bg-header) 40%, var(--fold-ref-white));
+}
+
+.lr-tick {
+  flex: 1 1 0;
+  min-width: 1px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--fold-color-bg-header) 75%, var(--fold-ref-white));
+}
+
+.lr-tick--on {
+  background: var(--fold-color-success);
+}
