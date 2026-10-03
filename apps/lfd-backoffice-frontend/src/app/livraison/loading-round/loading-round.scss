@@ -21,15 +21,23 @@
   gap: var(--fold-space-sm);
 }
 
-// Le dépôt : à gauche ce qu'on fait (400 px), à droite où ça va.
-.lr--depot .lr-body {
+// La bascule en deux colonnes lit la largeur DU COMPOSANT, pas de l'écran :
+// le rail et le menu du back-office en prennent une part, et à 1024 px
+// d'écran la colonne de droite tombait à 170 px (constaté le 2026-10-03).
+.lr {
+  container: lr / inline-size;
+}
+
+// Sur un grand écran, dépôt comme livreur : à gauche ce qu'on fait (400 px),
+// à droite où ça va.
+.lr-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
 
-@media (min-width: 64rem) {
-  .lr--depot .lr-body {
+@container lr (min-width: 52rem) {
+  .lr-body {
     grid-template-columns: calc(var(--fold-space-5xl) * 8 + var(--fold-space-lg)) minmax(0, 1fr);
   }
 }
@@ -177,9 +185,9 @@
   font-weight: var(--fold-weight-bold);
 }
 
-// Hors plancher au dépôt : les piles côte à côte.
-@media (min-width: 64rem) {
-  .lr--depot .lr-off {
+// Hors plancher sur un grand écran : les piles côte à côte.
+@container lr (min-width: 52rem) {
+  .lr-off {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;

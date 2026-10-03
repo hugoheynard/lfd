@@ -17,8 +17,20 @@
   gap: var(--fold-space-md);
 }
 
-.rv--depot .rv-columns {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+// Toutes les piles de la rangée sur une ligne dès que la vue a la place,
+// comme on les voit depuis les portes : la largeur du COMPOSANT décide, pas
+// l'écran ni le poste (le livreur aussi peut ouvrir « Charger » sur un grand
+// écran).
+.rv {
+  container: rv / inline-size;
+}
+
+@container rv (min-width: 32rem) {
+  .rv-columns {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+  }
 }
 
 .rv-head {
