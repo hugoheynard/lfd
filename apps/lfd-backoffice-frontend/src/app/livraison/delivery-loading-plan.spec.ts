@@ -119,6 +119,7 @@ describe('le plan de chargement, dit à l’écran', () => {
     const stack = {
       stackIndex: 1,
       binTypeName: 'Bac M',
+      binTypeHeightCm: 22,
       height: 3,
       maxStack: 5,
       stopPositions: [6, 5],

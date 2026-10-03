@@ -117,6 +117,7 @@ function floorStack(stackIndex: number, row: number, stopPositions: readonly num
   return {
     stackIndex,
     binTypeName: 'Bac M',
+    binTypeHeightCm: 22,
     height: stopPositions.length,
     maxStack: 5,
     stopPositions,

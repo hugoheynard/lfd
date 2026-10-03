@@ -36,6 +36,8 @@ const COLUMNS: readonly TileColumn[] = [
     header: 'Pile 1 · Bac M',
     fill: '1/3',
     footer: 'côté gauche',
+    typeShort: 'M',
+    scale: 1,
     tiles: [
       tile([rowBin('E7C3NJ', 6, true)], true),
       tile([rowBin('H4N9QC', 5, false)]),
@@ -47,6 +49,8 @@ const COLUMNS: readonly TileColumn[] = [
     header: 'Pile 2 · Bac S',
     fill: '0/1',
     footer: 'côté droit',
+    typeShort: 'S',
+    scale: 0.625,
     tiles: [tile([rowBin('B8N3TS', 2, false), rowBin('Y6K2MR', 1, false)], true)],
   },
 ];
@@ -68,10 +72,10 @@ describe('LoadingRowView', () => {
       button.getAttribute('aria-label'),
     );
     expect(labels).toEqual([
-      'Arrêt 6, demi-bac E7C3NJ, chargé — toucher pour le décharger',
-      'Arrêt 5, bac H4N9QC, à poser maintenant',
-      'Arrêt 3, bac P2W7RT, à charger — toucher pour le désigner comme prochain',
-      'Arrêts 2·1, bac partagé B8N3TS · Y6K2MR, à charger — toucher pour le désigner comme prochain',
+      'Arrêt 6, demi-bac E7C3NJ (Bac M), chargé — toucher pour le décharger',
+      'Arrêt 5, bac H4N9QC (Bac M), à poser maintenant',
+      'Arrêt 3, bac P2W7RT (Bac M), à charger — toucher pour le désigner comme prochain',
+      'Arrêts 2·1, bac partagé B8N3TS · Y6K2MR (Bac S), à charger — toucher pour le désigner comme prochain',
     ]);
     expect(element.querySelectorAll('[data-row-column]')[1]?.textContent).toContain('côté droit');
   });
@@ -108,6 +112,16 @@ describe('LoadingRowView', () => {
     const element = render(false).nativeElement as HTMLElement;
     const tiles = [...element.querySelectorAll<HTMLButtonElement>('[data-row-tile]')];
     expect(tiles.every((button) => button.disabled)).toBe(true);
-    expect(tiles[2]?.getAttribute('aria-label')).toBe('Arrêt 3, bac P2W7RT, à charger');
+    expect(tiles[2]?.getAttribute('aria-label')).toBe('Arrêt 3, bac P2W7RT (Bac M), à charger');
+  });
+
+  it('écrit le type dans chaque tuile, et passe la proportion de la pile', () => {
+    const element = render(true).nativeElement as HTMLElement;
+    const types = [...element.querySelectorAll('[data-tile-type]')].map((t) =>
+      t.textContent?.trim(),
+    );
+    expect(types).toEqual(['M', 'M', 'M', 'S']);
+    const stacks = element.querySelectorAll<HTMLElement>('.rv-stack');
+    expect(stacks[1]?.style.getPropertyValue('--rv-scale')).toBe('0.625');
   });
 });

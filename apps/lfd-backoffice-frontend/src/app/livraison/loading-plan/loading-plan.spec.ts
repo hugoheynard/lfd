@@ -81,6 +81,7 @@ const PLAN: DeliveryLoadingPlanView = {
     {
       stackIndex: 1,
       binTypeName: 'Bac M',
+      binTypeHeightCm: 22,
       height: 1,
       maxStack: 5,
       stopPositions: [6],
@@ -89,6 +90,7 @@ const PLAN: DeliveryLoadingPlanView = {
     {
       stackIndex: 2,
       binTypeName: 'Bac iso',
+      binTypeHeightCm: 22,
       height: 1,
       maxStack: 4,
       stopPositions: [5],

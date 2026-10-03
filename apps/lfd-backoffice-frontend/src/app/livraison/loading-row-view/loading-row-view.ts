@@ -57,8 +57,13 @@ export class LoadingRowView {
     return tileState(tile, this.nextKey());
   }
 
-  protected label(tile: StackTile): string {
-    return tileAriaLabel(tile, this.state(tile), this.canPick());
+  protected label(tile: StackTile, column: TileColumn): string {
+    return tileAriaLabel(
+      tile,
+      this.state(tile),
+      this.canPick(),
+      column.header.split(' · ')[1] ?? null,
+    );
   }
 
   protected stops(tile: StackTile): string {

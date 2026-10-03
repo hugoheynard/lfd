@@ -9,7 +9,7 @@ import { FoldButtonComponent } from 'fold-ng';
 
 import { floorLegend, floorStackShapes, unplacedStacksLabel } from '../delivery-loading-floor';
 import { currentRow, type FloorRow, floorRows, stackTiles } from '../delivery-loading-rows';
-import { rowColumns, rowTitle } from '../delivery-loading-tiles';
+import { rowColumns, rowTitle, stackScales } from '../delivery-loading-tiles';
 import { LoadingRowView } from '../loading-row-view/loading-row-view';
 
 /** Marge autour du plancher, en cm du dessin. */
@@ -62,7 +62,11 @@ export class LoadingFloor {
       ? null
       : {
           title: rowTitle(row.row, this.rows().at(-1)?.row ?? row.row),
-          columns: rowColumns(row, stackTiles(this.order(), this.loadedBins())),
+          columns: rowColumns(
+            row,
+            stackTiles(this.order(), this.loadedBins()),
+            stackScales(this.stacks()),
+          ),
         };
   });
   /** La rangée de chaque pile au sol, pour qu'une pile touchée ouvre la sienne. */

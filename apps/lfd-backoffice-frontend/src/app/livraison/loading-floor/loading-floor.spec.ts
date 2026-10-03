@@ -14,6 +14,7 @@ const STACKS: readonly DeliveryLoadingPlanStackView[] = [
   {
     stackIndex: 1,
     binTypeName: 'Bac M',
+    binTypeHeightCm: 22,
     height: 5,
     maxStack: 5,
     stopPositions: [6, 5],
@@ -30,6 +31,7 @@ const STACKS: readonly DeliveryLoadingPlanStackView[] = [
   {
     stackIndex: 2,
     binTypeName: 'Bac M',
+    binTypeHeightCm: 22,
     height: 1,
     maxStack: 5,
     stopPositions: [1],

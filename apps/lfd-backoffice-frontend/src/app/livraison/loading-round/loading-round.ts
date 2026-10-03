@@ -58,6 +58,7 @@ import {
   rowTabs,
   rowTitle,
   stackColumns,
+  stackScales,
 } from '../delivery-loading-tiles';
 import { roundLabel } from '../delivery-rounds';
 import { LoadingGateway } from '../loading-gateway';
@@ -260,6 +261,8 @@ export class LoadingRound {
     const plan = this.plan();
     return plan === null ? new Map() : stackTiles(plan.order, this.loaded());
   });
+  /** Les proportions des bacs, sur le type le plus haut du plan. */
+  private readonly scales = computed(() => stackScales(this.plan()?.stacks ?? []));
   protected readonly rows = computed(() => {
     const plan = this.plan();
     return plan === null || plan.floor === null
@@ -294,25 +297,27 @@ export class LoadingRound {
       ? null
       : {
           title: rowTitle(row.row, this.rows().at(-1)?.row ?? row.row),
-          columns: rowColumns(row, this.tiles()),
+          columns: rowColumns(row, this.tiles(), this.scales()),
         };
   });
   protected readonly tabs = computed(() => rowTabs(this.rows(), this.tiles(), this.nextKey()));
 
   /** Sans plancher : toutes les piles, dans l'ordre d'ouverture. */
   protected readonly allColumns = computed(() =>
-    stackColumns(this.plan()?.stacks ?? [], this.tiles()),
+    stackColumns(this.plan()?.stacks ?? [], this.tiles(), this.scales()),
   );
   protected readonly coldColumns = computed(() =>
     stackColumns(
       (this.plan()?.stacks ?? []).filter((stack) => stack.placement?.kind === 'refrigerated'),
       this.tiles(),
+      this.scales(),
     ),
   );
   protected readonly offFloorColumns = computed(() =>
     stackColumns(
       (this.plan()?.stacks ?? []).filter((stack) => stack.placement?.kind === 'off_floor'),
       this.tiles(),
+      this.scales(),
     ),
   );
 

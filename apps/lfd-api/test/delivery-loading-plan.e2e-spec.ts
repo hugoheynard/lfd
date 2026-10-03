@@ -105,6 +105,7 @@ describe("le plan de chargement d'une tournée composée", () => {
       {
         stackIndex: 1,
         binTypeName: "Bac M e2e",
+        binTypeHeightCm: 22,
         height: 4,
         maxStack: 5,
         stopPositions: [positions[2], positions[0]],

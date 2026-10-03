@@ -7,7 +7,7 @@
           <strong>{{ column.header }}</strong>
           <span class="rv-fill">{{ column.fill }}</span>
         </div>
-        <div class="rv-stack">
+        <div class="rv-stack" [style.--rv-scale]="column.scale">
           @for (tile of column.tiles; track tile.key) {
             <button
               type="button"
@@ -18,17 +18,21 @@
               [class.rv-tile--half]="tile.half"
               [disabled]="!canPick()"
               [attr.aria-pressed]="tile.loaded ? chosen() === tile.key : null"
-              [attr.aria-label]="label(tile)"
+              [attr.aria-label]="label(tile, column)"
               [attr.data-state]="state(tile)"
               data-row-tile
               (click)="pick(tile)"
             >
               <span class="rv-stop">{{ stops(tile) }}</span>
               <span class="rv-side">
-                <span class="rv-code">{{ codes(tile) }}</span>
+                <span class="rv-label">
+                  <span class="rv-code">{{ codes(tile) }}</span>
+                  <span class="rv-type" data-tile-type
+                    >{{ column.typeShort }}{{ tile.isotherm ? ' ❄' : '' }}</span
+                  >
+                </span>
                 <span class="rv-marks"
-                  >{{ tile.half ? '½' : '' }}{{ tile.isotherm ? ' ❄' : ''
-                  }}{{ tile.loaded ? ' ✓' : '' }}</span
+                  >{{ tile.half ? '½' : '' }}{{ tile.loaded ? ' ✓' : '' }}</span
                 >
               </span>
             </button>

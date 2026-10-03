@@ -23,6 +23,10 @@ export interface TileColumn {
   readonly fill: string;
   /** « côté gauche », « côté droit » — `null` hors plancher. */
   readonly footer: string | null;
+  /** « M », « L » — le type, court, écrit dans chaque tuile. */
+  readonly typeShort: string;
+  /** La hauteur d'un bac de la pile, rapportée au type le plus haut du plan (0..1]. */
+  readonly scale: number;
   readonly tiles: readonly StackTile[];
 }
 
@@ -31,6 +35,7 @@ function column(
   binTypeName: string,
   tiles: readonly StackTile[],
   footer: string | null,
+  scale: number,
 ): TileColumn {
   const loaded = tiles.filter((tile) => tile.loaded).length;
   return {
@@ -38,8 +43,37 @@ function column(
     header: `Pile ${String(stackIndex)} · ${binTypeName}`,
     fill: `${String(loaded)}/${String(tiles.length)}`,
     footer,
+    typeShort: binTypeShort(binTypeName),
+    scale,
     tiles,
   };
+}
+
+/** « Bac M » → « M », « Caisse iso » → « iso » : le dernier mot du type. */
+export function binTypeShort(binTypeName: string): string {
+  return binTypeName.trim().split(/\s+/u).at(-1) ?? binTypeName;
+}
+
+/**
+ * La hauteur d'un bac rapportée au plus haut : 1 pour le plus haut, moins
+ * pour les autres. Une hauteur inconnue (≤ 0) ne rétrécit rien.
+ */
+export function tileScale(heightCm: number, maxHeightCm: number): number {
+  if (heightCm <= 0 || maxHeightCm <= 0) {
+    return 1;
+  }
+  return Math.min(1, heightCm / maxHeightCm);
+}
+
+/**
+ * L'échelle de chaque pile, rapportée au type le plus haut du PLAN — pas de la
+ * rangée : deux rangées restent comparables d'un coup d'œil.
+ */
+export function stackScales(
+  stacks: readonly Pick<DeliveryLoadingPlanStackView, 'stackIndex' | 'binTypeHeightCm'>[],
+): ReadonlyMap<number, number> {
+  const max = Math.max(0, ...stacks.map((stack) => stack.binTypeHeightCm));
+  return new Map(stacks.map((stack) => [stack.stackIndex, tileScale(stack.binTypeHeightCm, max)]));
 }
 
 /** Le pied d'une colonne selon sa place dans la rangée. */
@@ -53,6 +87,7 @@ const SIDE_FOOTER: Readonly<Record<string, string>> = {
 export function rowColumns(
   row: FloorRow,
   tiles: ReadonlyMap<number, readonly StackTile[]>,
+  scales: ReadonlyMap<number, number> = new Map(),
 ): readonly TileColumn[] {
   return row.stacks.map((stack, index) =>
     column(
@@ -60,6 +95,7 @@ export function rowColumns(
       stack.binTypeName,
       tiles.get(stack.stackIndex) ?? [],
       SIDE_FOOTER[stackSide(index, row.stacks.length)] ?? null,
+      scales.get(stack.stackIndex) ?? 1,
     ),
   );
 }
@@ -68,9 +104,16 @@ export function rowColumns(
 export function stackColumns(
   stacks: readonly DeliveryLoadingPlanStackView[],
   tiles: ReadonlyMap<number, readonly StackTile[]>,
+  scales: ReadonlyMap<number, number> = new Map(),
 ): readonly TileColumn[] {
   return stacks.map((stack) =>
-    column(stack.stackIndex, stack.binTypeName, tiles.get(stack.stackIndex) ?? [], null),
+    column(
+      stack.stackIndex,
+      stack.binTypeName,
+      tiles.get(stack.stackIndex) ?? [],
+      null,
+      scales.get(stack.stackIndex) ?? 1,
+    ),
   );
 }
 
@@ -99,7 +142,12 @@ export function tileState(tile: StackTile, nextKey: string | null): TileState {
  * « Arrêt 5, bac H4N9QC, à poser maintenant » — tout ce que la tuile dit en
  * couleur et en forme, dit en mots.
  */
-export function tileAriaLabel(tile: StackTile, state: TileState, canPick: boolean): string {
+export function tileAriaLabel(
+  tile: StackTile,
+  state: TileState,
+  canPick: boolean,
+  binTypeName: string | null = null,
+): string {
   const stops = tile.stopPositions.map(String).join('·');
   const who = `${tile.stopPositions.length > 1 ? 'Arrêts' : 'Arrêt'} ${stops}`;
   let kind = tile.half ? 'demi-bac' : 'bac';
@@ -113,7 +161,8 @@ export function tileAriaLabel(tile: StackTile, state: TileState, canPick: boolea
   } else if (state === 'pending') {
     what = canPick ? 'à charger — toucher pour le désigner comme prochain' : 'à charger';
   }
-  return `${who}, ${kind} ${codes}, ${what}`;
+  const type = binTypeName === null ? '' : ` (${binTypeName}${tile.isotherm ? ', isotherme' : ''})`;
+  return `${who}, ${kind} ${codes}${type}, ${what}`;
 }
 
 /** Un onglet du sélecteur de rangée : son nom, son avancement, sa mini-carte. */

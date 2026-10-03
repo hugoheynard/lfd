@@ -82,6 +82,7 @@ export function loadingPlanView(
     stacks: plan.stacks.map((stack) => ({
       stackIndex: stack.stackIndex,
       binTypeName: stack.binType.name,
+      binTypeHeightCm: stack.binType.outerHeightCm,
       height: stack.height,
       maxStack: stack.binType.maxStack,
       stopPositions: stack.stopPositions,

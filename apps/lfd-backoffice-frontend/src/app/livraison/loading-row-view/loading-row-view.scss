@@ -72,7 +72,12 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--fold-space-xs);
-  min-height: calc(var(--fold-space-5xl) + var(--fold-space-sm));
+  // Proportionnelle à la hauteur du type (`--rv-scale`, le plus haut du plan
+  // vaut 1), jamais sous la cible tactile de 44 px.
+  --rv-base: calc(var(--fold-space-5xl) + var(--fold-space-lg));
+  --rv-min: calc(var(--fold-space-4xl) + var(--fold-space-xs));
+
+  min-height: max(var(--rv-min), calc(var(--rv-base) * var(--rv-scale, 1)));
   padding: var(--fold-space-xs) var(--fold-space-sm);
   border: 1.5px dashed var(--fold-color-text-muted);
   border-radius: var(--fold-radius-sm);
@@ -93,7 +98,8 @@
 }
 
 .rv-tile--half {
-  min-height: calc(var(--fold-space-4xl) + var(--fold-space-xs));
+  // Le demi-bac garde son rapport au bac entier (44 / 56), sur la hauteur de son type.
+  min-height: max(var(--rv-min), calc(var(--rv-base) * var(--rv-scale, 1) * 0.8));
 }
 
 .rv-tile--loaded {
@@ -136,16 +142,29 @@
   letter-spacing: var(--fold-tracking-wide);
 }
 
+.rv-label {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+}
+
+// Le type, discret : « M », « L », « S ❄ ».
+.rv-type {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-regular);
+  white-space: nowrap;
+}
+
 .rv-marks {
   font-size: var(--fold-text-xs);
 }
 
 .rv--depot .rv-tile {
-  min-height: calc(var(--fold-space-5xl) + var(--fold-space-md) + 2px);
-}
-
-.rv--depot .rv-tile--half {
-  min-height: var(--fold-space-5xl);
+  --rv-base: calc(var(--fold-space-5xl) + var(--fold-space-2xl));
 }
 
 .rv-unload {

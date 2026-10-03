@@ -49,7 +49,8 @@ export interface DeliveryLoadingPlanStepView {
 /**
  * Une pile : des bacs PHYSIQUES d'un même type, posés dans l'ordre de
  * chargement jusqu'à `maxStack`. Règle : chaque bac va sur la dernière pile
- * ouverte de son type si elle n'est pas pleine, sinon il en ouvre une. Une
+ * ouverte de son type si elle n'est pas pleine et que sa rangée est encore la
+ * rangée ouverte (G-D4 ter, 2026-10-03), sinon il en ouvre une. Une
  * pile peut donc porter plusieurs arrêts — le suivant chargé (= le précédent
  * livré) se pose au-dessus, et il descend en premier.
  */
@@ -57,6 +58,11 @@ export interface DeliveryLoadingPlanStackView {
   /** 1..n, dans l'ordre d'ouverture. */
   readonly stackIndex: number;
   readonly binTypeName: string;
+  /**
+   * Hauteur EXTÉRIEURE d'un bac de la pile, en cm : l'écran dessine les bacs
+   * à proportion, pour qu'un Bac L se lise plus haut qu'un Bac M.
+   */
+  readonly binTypeHeightCm: number;
   /** Nombre de bacs physiques (un bac partagé compte pour un). */
   readonly height: number;
   readonly maxStack: number;

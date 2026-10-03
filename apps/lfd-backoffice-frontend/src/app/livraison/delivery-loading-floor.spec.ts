@@ -15,7 +15,15 @@ function stack(
   placement: DeliveryLoadingPlanStackView['placement'],
   stopPositions: readonly number[] = [stackIndex],
 ): DeliveryLoadingPlanStackView {
-  return { stackIndex, binTypeName: 'Bac M', height: 2, maxStack: 5, stopPositions, placement };
+  return {
+    stackIndex,
+    binTypeName: 'Bac M',
+    binTypeHeightCm: 22,
+    height: 2,
+    maxStack: 5,
+    stopPositions,
+    placement,
+  };
 }
 
 const ON_FLOOR = {
