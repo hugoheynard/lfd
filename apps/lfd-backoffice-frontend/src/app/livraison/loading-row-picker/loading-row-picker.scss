@@ -93,7 +93,8 @@
 }
 
 // Sur l'onglet ouvert (fond sombre), le pointillé d'un bac à charger passe au
-// gris : en blanc, il se confondait avec la teinte claire du carré.
+// gris clair : en blanc pur, il se confondait avec la teinte claire du carré,
+// en gris moyen il disparaissait dans le fond.
 .rp-tab--active .rp-mark--pending {
-  border-color: var(--fold-color-text-muted);
+  border-color: color-mix(in srgb, var(--fold-ref-white) 70%, transparent);
 }
