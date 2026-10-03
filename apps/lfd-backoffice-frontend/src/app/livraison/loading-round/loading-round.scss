@@ -85,20 +85,23 @@
   padding-inline: var(--fold-space-lg);
 }
 
-// L'en-tête du téléphone : une barre secondaire sous le header de l'app
-// (`--fold-color-bg-header` = ink-950), une nuance plus claire. Les rôles
+// L'en-tête du chargement : une barre secondaire sous le header de l'app,
+// TIRÉE de sa couleur (`--fold-color-bg-header`) éclaircie, et non d'un
+// `ink-*` fixe : le header change de teinte avec le thème (ink, graphite…),
+// et un gris voisin écrit en dur jurait avec lui (Hugo, 2026-10-03). Les rôles
 // de texte et de bordure sont rebasculés ici pour que ce qu'on y projette (le
 // retour « Ma tournée ») suive.
 .lr-head {
   --fold-color-text: var(--fold-ref-white);
   --fold-color-text-muted: var(--fold-ref-white);
-  --fold-color-border: var(--fold-ref-ink-700);
+  --fold-color-border: color-mix(in srgb, var(--fold-color-bg-header) 75%, var(--fold-ref-white));
 
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-sm);
   padding: var(--fold-space-md) var(--fold-space-lg);
-  background: var(--fold-ref-ink-900);
+  border-top: 1px solid color-mix(in srgb, var(--fold-color-bg-header) 85%, var(--fold-ref-white));
+  background: color-mix(in srgb, var(--fold-color-bg-header) 94%, var(--fold-ref-white));
   color: var(--fold-ref-white);
 }
 
@@ -131,7 +134,7 @@
   height: var(--fold-space-xs);
   overflow: hidden;
   border-radius: var(--fold-radius-pill);
-  background: var(--fold-ref-ink-700);
+  background: color-mix(in srgb, var(--fold-color-bg-header) 75%, var(--fold-ref-white));
 }
 
 .lr-rail-fill {
