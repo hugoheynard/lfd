@@ -157,6 +157,8 @@ de piles, puisque les deux plans n'ont pas les mêmes piles.
 ## 5. Ce qu'il ne fait pas
 
 - **Il ne réordonne jamais** les piles pour mieux remplir une rangée.
+- **Il ne mélange jamais deux types de bac** dans une pile : à réfléchir,
+  noté dans [`todo-calculateur.md`](todo-calculateur.md).
 - **Il n'optimise pas** : la pose est gloutonne, dans l'ordre. Une rangée peut
   garder un trou qu'une autre pile aurait comblé.
 - **Il ne pèse pas** la place gagnée contre les bacs à manipuler (cf. §2).

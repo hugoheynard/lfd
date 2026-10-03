@@ -85,3 +85,23 @@ La piste discutée le 2026-10-03, à écrire en plan avant de bâtir :
 À trancher : prévenir quand une tournée qui tenait sur l'estimation ne tient
 plus une fois les vrais bacs déclarés ; le poids (I5) reste hors champ tant
 qu'aucun bac n'en porte.
+
+## Des piles mêlant plusieurs tailles de bac — à réfléchir (Hugo, 2026-10-03)
+
+Aujourd'hui une pile ne porte qu'**un seul type** de bac : un bac va sur la
+dernière pile ouverte de SON type (`Stacker.stackFor`, par `binType.id`),
+sinon il en ouvre une ([`algorithme-de-chargement.md`](algorithme-de-chargement.md), §3.2).
+Les raisons : deux bacs du même modèle s'emboîtent, ont la même empreinte, et
+`maxStack` est propre à chaque type.
+
+Le prix : plus de piles basses — une rangée porte au moins une pile par type
+présent, et une pile peut finir à un bac. Piste, si le dépôt empile vraiment
+des tailles différentes :
+
+- autoriser le mélange entre types de **même empreinte** (Bac M et Bac L, tous
+  deux 60 × 40) ;
+- le plus haut (ou le plus lourd) en bas ;
+- une hauteur maximale de pile **en cm** (contre le plafond, G5e) plutôt qu'en
+  nombre de bacs.
+
+À trancher d'abord avec le dépôt : empile-t-on des Bacs M sur des Bacs L ?
