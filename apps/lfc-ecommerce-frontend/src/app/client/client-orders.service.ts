@@ -599,7 +599,14 @@ export class ClientOrders {
  * front n'envoie pas un montant, il envoie une identité. Ici il n'envoie pas
  * « au Labo, 7 h – 8 h », il envoie le point et la date.
  *
- * 🔴 **`requestedWindow` part désormais — en RETRAIT seulement.**
+ * 🔴 **CA1b (2026-10-03) : la livraison envoie maintenant sa fenêtre**, quand le
+ * dialogue « On livre où ? » l'a convenue — une échéance (`start: null`), ou le
+ * créneau qui manquait au carnet. Elle reste omise quand le carnet la fournit
+ * (créneau du jour, ou seule échéance du jour) : le serveur la lit alors à
+ * partir de `deliveryAddressId`, et refuse une livraison sans aucune fenêtre.
+ * Le paragraphe qui suit est l'historique d'avant CA1b.
+ *
+ * **`requestedWindow` partait — en RETRAIT seulement.**
  *
  * Ce commentaire disait « les créneaux sont une maquette ». C'était vrai des
  * deux acheminements quand il a été écrit ; ça ne l'est plus que d'un. Le

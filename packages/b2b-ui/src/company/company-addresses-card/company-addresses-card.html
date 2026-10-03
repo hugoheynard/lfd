@@ -94,8 +94,8 @@
 
               @if (!isUsable(a)) {
                 <fold-callout variant="warning">
-                  Cette adresse n'est pas utilisable pour les commandes tant qu'aucun créneau de
-                  livraison n'est défini.
+                  Cette adresse n'est pas utilisable pour les commandes tant qu'aucun créneau ni
+                  aucune échéance de livraison n'est défini.
                   @if (canManage()) {
                     <button
                       actions
@@ -125,20 +125,36 @@
 
                   @if (expandedId() === a.id) {
                     <div class="detail-body">
-                      <div class="detail-block">
-                        <p class="detail-title">
-                          <fold-icon name="clock" [size]="15" />
-                          Créneaux de livraison
-                        </p>
-                        <!-- Les sept jours restent affichés, tiret compris :
-                             « mardi, rien » est justement l'information. -->
-                        <lfd-hours
-                          class="week"
-                          layout="rows"
-                          [icon]="false"
-                          [entries]="weekly(a)"
-                        />
-                      </div>
+                      @if (byDeadline(a)) {
+                        <div class="detail-block">
+                          <p class="detail-title">
+                            <fold-icon name="clock" [size]="15" />
+                            Échéances de livraison
+                          </p>
+                          @for (row of deadlines(a); track row.key) {
+                            <p class="detail-line">
+                              <span>{{ row.label }} · {{ row.text || '—' }}</span>
+                            </p>
+                          } @empty {
+                            <p class="detail-line"><span>Aucune échéance préférée</span></p>
+                          }
+                        </div>
+                      } @else {
+                        <div class="detail-block">
+                          <p class="detail-title">
+                            <fold-icon name="clock" [size]="15" />
+                            Créneaux de livraison
+                          </p>
+                          <!-- Les sept jours restent affichés, tiret compris :
+                               « mardi, rien » est justement l'information. -->
+                          <lfd-hours
+                            class="week"
+                            layout="rows"
+                            [icon]="false"
+                            [entries]="weekly(a)"
+                          />
+                        </div>
+                      }
 
                       @if (a.specs.deliveryContact; as contact) {
                         <p class="detail-line">

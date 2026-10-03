@@ -251,5 +251,6 @@ function servedSettings(settings: ServedDeliveryAvailability): PublicDeliveryAva
   return {
     openToB2b: settings.openToB2b ?? DEFAULT_DELIVERY_AVAILABILITY.openToB2b,
     openToB2c: settings.openToB2c ?? DEFAULT_DELIVERY_AVAILABILITY.openToB2c,
+    windowMode: settings.windowMode ?? DEFAULT_DELIVERY_AVAILABILITY.windowMode,
   };
 }

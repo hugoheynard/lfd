@@ -257,7 +257,7 @@ function buildSettings(
   errors: string[],
 ): DeliveryRoutingSettingsPayload | null {
   const missing = [
-    draft.earliestDeparture === '' ? 'départ au plus tôt' : null,
+    draft.earliestDeparture === '' ? 'départ quand rien ne presse' : null,
     draft.maxRoundMinutes === null ? 'durée maximale' : null,
     draft.stopMinutes === null ? 'temps de livraison sur place' : null,
     draft.safetyMarginMinutes === null ? 'marge de sécurité' : null,

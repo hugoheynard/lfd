@@ -56,6 +56,8 @@ describe('CounterOrderEntrySource', () => {
     expect(await pending).toEqual({
       openToB2b: false,
       openToB2c: true,
+      // Absent de la vue publique servie : le défaut du commerce (CA-D2).
+      windowMode: 'slot',
       updatedAt: null,
       updatedBy: null,
     });

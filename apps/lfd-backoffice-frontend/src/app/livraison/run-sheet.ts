@@ -7,6 +7,8 @@ import type {
   HandoverQueueWindowView,
 } from '@lfd/contracts';
 
+import { fulfillmentWindowLabel, timeLabel } from '../shared/window-label';
+
 /**
  * Les dérivations pures de la feuille de route du jour
  * (`documentation/livraisons/plan-preparation-de-tournee.md`, lot 1).
@@ -87,11 +89,8 @@ export function sortStops(
   });
 }
 
-/** « 8 h 30 » à partir de « 08:30 ». */
-export function timeLabel(time: string): string {
-  const match = /^(\d{1,2}):(\d{2})/u.exec(time);
-  return match === null ? time : `${String(Number(match[1]))} h ${match[2] ?? '00'}`;
-}
+/** « 8 h 30 » à partir de « 08:30 » — l'écriture commune, réexportée pour les lecteurs de ce module. */
+export { timeLabel };
 
 /**
  * « 20 min sur place » quand l'adresse a son propre temps de livraison
@@ -107,9 +106,7 @@ export function windowLabel(window: HandoverQueueWindowView | null): string {
   if (window === null) {
     return 'Sans créneau';
   }
-  return window.start === null
-    ? `avant ${timeLabel(window.end)}`
-    : `${timeLabel(window.start)} – ${timeLabel(window.end)}`;
+  return fulfillmentWindowLabel(window);
 }
 
 /** Ce que dit l'état du bac, et sa couleur de badge. */

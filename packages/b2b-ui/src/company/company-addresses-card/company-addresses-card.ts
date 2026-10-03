@@ -5,6 +5,7 @@ import type {
   DeliveryContact,
   GpsPoint,
   PickupAddressView,
+  WindowMode,
 } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
@@ -25,11 +26,14 @@ import type { HoursEntry } from '../../hours/hours.model';
 import type { PostalAddress } from '../../address/address.model';
 import { postalFrom } from '../postal-draft.model';
 import {
+  deadlineRows,
   formatDeliveryContact,
   formatGps,
   gpsMapUrl,
   hasDeliverySlot,
+  hasPreferredDeadline,
   weeklySlots,
+  type DeadlineRow,
 } from '../delivery-format';
 
 /**
@@ -89,6 +93,12 @@ export class CompanyAddressesCard {
    * (le retrait est alors l'acheminement) — complémentaire de `showDeliveries`.
    */
   readonly showPickup = input(false);
+  /**
+   * Le réglage général « créneau ou échéance » (CA-D2) : une adresse qui
+   * n'en déroge pas montre ce dont elle hérite — ses échéances, ou ses
+   * créneaux.
+   */
+  readonly globalWindowMode = input<WindowMode>('slot');
 
   /** Éditer la facturation. */
   readonly editBilling = output<void>();
@@ -142,9 +152,21 @@ export class CompanyAddressesCard {
     return { ...postalFrom(view), label: view.label || view.ville };
   }
 
-  /** Commandable seulement si un créneau de livraison est défini. */
+  /**
+   * Commandable seulement si une heure de livraison est déclarée : un créneau,
+   * ou une échéance préférée.
+   */
   protected isUsable(address: DeliveryAddressView): boolean {
-    return hasDeliverySlot(address.specs.slots);
+    return hasDeliverySlot(address.specs.slots) || hasPreferredDeadline(address.specs.deadlines);
+  }
+
+  /** L'adresse se demande-t-elle par échéance ? La sienne, sinon le réglage général. */
+  protected byDeadline(address: DeliveryAddressView): boolean {
+    return (address.specs.windowMode ?? this.globalWindowMode()) === 'deadline';
+  }
+
+  protected deadlines(address: DeliveryAddressView): readonly DeadlineRow[] {
+    return deadlineRows(address.specs.deadlines);
   }
 
   protected weekly(address: DeliveryAddressView): readonly HoursEntry[] {

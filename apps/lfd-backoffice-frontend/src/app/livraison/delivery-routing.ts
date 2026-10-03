@@ -6,7 +6,7 @@ import type {
   DeliveryUnlocatedReason,
 } from '@lfd/contracts';
 
-import { timeLabel } from './run-sheet';
+import { fulfillmentWindowLabel } from '../shared/window-label';
 
 /**
  * Les dérivations pures du calculateur de tournée
@@ -41,9 +41,7 @@ export function distanceLabel(meters: number): string {
 
 /** « fenêtre 8 h 00 – 10 h 00 », « fenêtre avant 10 h 00 ». */
 export function proposalWindowLabel(window: DeliveryProposalWindow): string {
-  return window.start === null
-    ? `fenêtre avant ${timeLabel(window.end)}`
-    : `fenêtre ${timeLabel(window.start)} – ${timeLabel(window.end)}`;
+  return `fenêtre ${fulfillmentWindowLabel(window)}`;
 }
 
 /** Le facteur de détour tel qu'on le lit : 140 → 1,4. */

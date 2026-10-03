@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
-import type { DeliveryContact } from '@lfd/contracts';
+import type { DeliveryContact, WindowMode } from '@lfd/contracts';
 import { FoldCalloutComponent, FoldCheckboxComponent, FoldNumberInputComponent } from 'fold-ng';
 
 import { AddressForm } from '../../address/address-form/address-form';
@@ -62,6 +62,9 @@ export class DeliveryAddressForm {
    * back-office l'ouvre. Masqué, la valeur voyage quand même dans le brouillon.
    */
   readonly showStopMinutes = input(false);
+
+  /** Le réglage général « créneau ou échéance », dont l'adresse hérite (CA-D2). */
+  readonly globalWindowMode = input<WindowMode>('slot');
 
   protected readonly stopMinutesMin = STOP_MINUTES_MIN;
   protected readonly stopMinutesMax = STOP_MINUTES_MAX;

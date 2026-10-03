@@ -256,8 +256,8 @@ describe('les fenêtres, au format de l’organisateur', () => {
   it('écrit l’heure sans minutes nulles', () => {
     expect(clockLabel('07:00')).toBe('07 h');
     expect(clockLabel('8:30')).toBe('08 h 30');
-    expect(windowShortLabel({ start: '07:00', end: '08:00' })).toBe('07 h–08 h');
-    expect(windowShortLabel({ start: null, end: '08:30' })).toBe('avant 08 h 30');
+    expect(windowShortLabel({ start: '07:00', end: '08:00' })).toBe('7 h 00 – 8 h 00');
+    expect(windowShortLabel({ start: null, end: '08:30' })).toBe('avant 8 h 30');
     expect(windowShortLabel(null)).toBe('sans créneau');
   });
 

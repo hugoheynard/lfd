@@ -55,7 +55,13 @@ async function setup(create = vi.fn(() => Promise.resolve(CREATED))): Promise<Ha
         provide: DeliveryAvailabilityService,
         useValue: {
           read: () =>
-            Promise.resolve({ openToB2b: true, openToB2c: true, updatedAt: null, updatedBy: null }),
+            Promise.resolve({
+              openToB2b: true,
+              openToB2c: true,
+              windowMode: 'slot',
+              updatedAt: null,
+              updatedBy: null,
+            }),
         } satisfies Pick<DeliveryAvailabilityService, 'read'>,
       },
       {

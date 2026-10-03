@@ -41,6 +41,22 @@
               />
             </fold-fieldset>
 
+            <!-- Créneau ou échéance (CA-D2) : le défaut de toute adresse qui
+                 hérite ; une adresse peut le surcharger dans le carnet. -->
+            <fold-fieldset
+              legend="Une livraison se demande par"
+              [hint]="windowModeHint(current.windowMode)"
+            >
+              <fold-view-toggle
+                ariaLabel="Créneau ou échéance"
+                activeStyle="accent"
+                [options]="windowModeOptions"
+                [value]="current.windowMode"
+                (valueChange)="setWindowMode($event)"
+                data-window-mode
+              />
+            </fold-fieldset>
+
             @if (closingLabel(); as clientele) {
               <fold-callout class="v-warning" variant="warning">
                 Enregistrer <strong>retire la livraison {{ clientele }}</strong

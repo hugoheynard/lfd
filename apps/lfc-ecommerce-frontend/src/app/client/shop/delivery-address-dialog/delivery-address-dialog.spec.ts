@@ -1,6 +1,6 @@
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { DeliveryAddressView, DeliveryZoneView } from '@lfd/contracts';
+import type { DeliveryAddressView, DeliverySpecs, DeliveryZoneView } from '@lfd/contracts';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
@@ -37,7 +37,20 @@ function address(over: Partial<DeliveryAddressView> & { id: string }): DeliveryA
   } as DeliveryAddressView;
 }
 
-function boot(book: readonly DeliveryAddressView[], currentId: string | null = null) {
+/** Un carnet qui déclare un créneau tous les jours : le serveur le lira. */
+const SLOTTED: DeliverySpecs = {
+  note: '',
+  slots: { mode: 'everyday', slot: { start: '09:00', end: '11:00' } },
+  deliveryContact: null,
+  gps: null,
+  signatureRequired: null,
+};
+
+function boot(
+  book: readonly DeliveryAddressView[],
+  currentId: string | null = null,
+  windowMode: 'slot' | 'deadline' = 'slot',
+) {
   const closed: (ServiceChoice | undefined)[] = [];
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -51,6 +64,7 @@ function boot(book: readonly DeliveryAddressView[], currentId: string | null = n
           // Une seule zone servie : tout ce qui n'est pas en 73150 est dehors.
           zoneFor: (code: string): DeliveryZoneView | null => (code === '73150' ? ZONE : null),
           nextDayFor: (): string | null => '2026-09-21',
+          deliveryAvailability: signal({ openToB2b: true, openToB2c: true, windowMode }),
         },
       },
       {
@@ -85,7 +99,7 @@ describe('DeliveryAddressDialog', () => {
    * panier. Les frais viennent de la ZONE, jamais du contenu.
    */
   it('met le tarif de la zone dans l’action', () => {
-    const { fixture } = boot([address({ id: 'a', isDefault: true })]);
+    const { fixture } = boot([address({ id: 'a', isDefault: true, specs: SLOTTED })]);
 
     expect(cta(fixture)?.textContent).toContain('6,90');
   });
@@ -110,8 +124,8 @@ describe('DeliveryAddressDialog', () => {
    * bon de commande opposable, et aucune heure de livraison n'a de source — pas
    * même celle du carnet, que le serveur lit lui-même depuis l'identifiant.
    */
-  it('rend le mode complet, SANS fenêtre', () => {
-    const { fixture, closed } = boot([address({ id: 'a', isDefault: true })]);
+  it('rend le mode complet, SANS fenêtre quand le carnet la fournit', () => {
+    const { fixture, closed } = boot([address({ id: 'a', isDefault: true, specs: SLOTTED })]);
 
     cta(fixture)?.click();
 
@@ -162,5 +176,57 @@ describe('DeliveryAddressDialog', () => {
     expect(rows(fixture)).toHaveLength(0);
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Mon compte');
     expect(cta(fixture)?.disabled).toBe(true);
+  });
+
+  /** CA1b (2026-10-03) : une livraison ne part plus sans heure. */
+  it('🔴 sans créneau au carnet, demande l’heure et ne part pas sans', () => {
+    const { fixture, closed } = boot([address({ id: 'a', isDefault: true })]);
+
+    cta(fixture)?.click();
+
+    expect(cta(fixture)?.disabled).toBe(true);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      'Une livraison se commande avec une heure',
+    );
+    expect(closed).toEqual([]);
+  });
+
+  it('en créneau sans carnet, envoie le créneau tapé', () => {
+    const { fixture, closed } = boot([address({ id: 'a', isDefault: true })]);
+    fixture.componentInstance['slotStart'].set('07:00');
+    fixture.componentInstance['slotEnd'].set('08:00');
+    fixture.detectChanges();
+
+    cta(fixture)?.click();
+
+    expect(closed[0]).toMatchObject({ window: { start: '07:00', end: '08:00' } });
+  });
+
+  /** CA3 : en échéance, on choisit une heure limite, et aucun début ne part. */
+  it('🔴 en échéance, envoie l’heure choisie SANS début', () => {
+    const specs: DeliverySpecs = {
+      ...SLOTTED,
+      windowMode: 'deadline',
+      deadlines: { mode: 'everyday', times: ['06:00', '11:00'] },
+    };
+    const { fixture, closed } = boot([address({ id: 'a', isDefault: true, specs })]);
+    expect(cta(fixture)?.disabled).toBe(true);
+
+    fixture.componentInstance['onDeadline']('06:00');
+    fixture.detectChanges();
+    cta(fixture)?.click();
+
+    expect(closed[0]).toMatchObject({ window: { start: null, end: '06:00' } });
+  });
+
+  it('suit le réglage général quand l’adresse en hérite, et accepte une autre heure', () => {
+    const { fixture, closed } = boot([address({ id: 'a', isDefault: true })], null, 'deadline');
+
+    fixture.componentInstance['onDeadline']('__other__');
+    fixture.componentInstance['otherDeadline'].set('05:30');
+    fixture.detectChanges();
+    cta(fixture)?.click();
+
+    expect(closed[0]).toMatchObject({ window: { start: null, end: '05:30' } });
   });
 });

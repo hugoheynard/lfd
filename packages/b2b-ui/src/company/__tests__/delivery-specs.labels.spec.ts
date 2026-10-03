@@ -9,6 +9,7 @@ import {
   DELIVERY_SPECS_LABELS_FR,
   type DeliverySpecsLabels,
   signatureOptionsOf,
+  windowModeOptionsOf,
 } from '../delivery-specs/delivery-specs.labels';
 
 describe('libellés de DeliverySpecs', () => {
@@ -126,5 +127,19 @@ describe('pas de signature exigée sans contact sur place', () => {
     expect(
       signatureIssueOf({ ...EMPTY_DELIVERY_SPECS, noContact: true, signatureRequired: null }),
     ).toBe('');
+  });
+});
+
+/** CA-D2 : l'option d'héritage du mode dit ce dont elle hérite. */
+describe('créneau ou échéance', () => {
+  it('nomme le réglage général hérité', () => {
+    expect(windowModeOptionsOf(DELIVERY_SPECS_LABELS_FR, 'deadline')).toEqual([
+      { value: 'inherit', label: 'Comme le réglage général (échéance)' },
+      { value: 'slot', label: 'Créneau' },
+      { value: 'deadline', label: 'Échéance' },
+    ]);
+    expect(windowModeOptionsOf(DELIVERY_SPECS_LABELS_FR, 'slot')[0]?.label).toBe(
+      'Comme le réglage général (créneau)',
+    );
   });
 });

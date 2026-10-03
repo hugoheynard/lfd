@@ -4,6 +4,7 @@ import type {
   DeliverySlot,
   DeliverySlots,
   GpsPoint,
+  PreferredDeadlines,
   Weekday,
 } from '@lfd/contracts';
 
@@ -28,9 +29,53 @@ export const WEEKDAYS: readonly {
   { value: 'sun', label: 'Dimanche', short: 'Dim' },
 ];
 
-/** Rend un créneau lisible : `08:00–10:00`. */
+/**
+ * Rend un créneau lisible : `08:00–10:00`. Un créneau a toujours un début ;
+ * une échéance a sa propre liste (`deadlines`) et son écriture, ci-dessous.
+ */
 export function formatSlot(slot: DeliverySlot): string {
   return `${slot.start}–${slot.end}`;
+}
+
+/** Une échéance lisible : `avant 06:00`. `before` = le mot de la langue d'affichage. */
+export function formatDeadline(time: string, before = 'avant'): string {
+  return `${before} ${time}`;
+}
+
+/** Une ligne d'échéances nommée : « Tous les jours », ou un jour de la semaine. */
+export interface DeadlineRow {
+  readonly key: string;
+  readonly label: string;
+  /** `avant 06:00 · avant 11:00`, ou `''` quand ce jour n'en a aucune. */
+  readonly text: string;
+}
+
+/**
+ * Les échéances préférées d'une adresse, en lignes à afficher. Les jours sans
+ * échéance restent dans la liste, comme les créneaux : « mardi, rien » est
+ * justement l'information.
+ */
+export function deadlineRows(
+  deadlines: PreferredDeadlines | null | undefined,
+): readonly DeadlineRow[] {
+  const text = (times: readonly string[] | null): string =>
+    (times ?? []).map((time) => formatDeadline(time)).join(' · ');
+  if (deadlines === null || deadlines === undefined) {
+    return [];
+  }
+  if (deadlines.mode === 'everyday') {
+    return [{ key: 'every', label: 'Tous les jours', text: text(deadlines.times) }];
+  }
+  return WEEKDAYS.map((day) => ({
+    key: day.value,
+    label: day.label,
+    text: text(deadlines.byDay[day.value]),
+  }));
+}
+
+/** Une adresse en mode échéance est commandable dès qu'elle en porte au moins une. */
+export function hasPreferredDeadline(deadlines: PreferredDeadlines | null | undefined): boolean {
+  return deadlineRows(deadlines).some((row) => row.text !== '');
 }
 
 /**

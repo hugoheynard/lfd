@@ -99,7 +99,7 @@ describe('QueueTable', () => {
     expect(body).toContain('CMD-1042');
     expect(body).toContain('12');
     expect(body).toContain('Attendue');
-    expect(body).toContain('6 h 00 – 8 h 00');
+    expect(body).toContain('6 h 00 – 8 h 00');
   });
 
   it('une commande passée pour une société porte « Pro » à côté du nom', () => {

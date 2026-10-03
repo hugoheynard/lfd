@@ -100,6 +100,12 @@ export const HANDOVER_PROOF_ERASURE_CAUSE = domain('motif d’effacement des pi�
   request: 'À la demande de la personne',
 });
 
+/** Créneau ou échéance — comment une livraison se demande (CA-D2). */
+export const WINDOW_MODE = domain('manière de demander une livraison', {
+  slot: 'Créneau',
+  deadline: 'Échéance',
+});
+
 export const ORDERS_VALUES: ValueFamily = {
   enums: [
     WEEKDAY,
@@ -115,6 +121,7 @@ export const ORDERS_VALUES: ValueFamily = {
     QUALITY_VERDICT,
     QUALITY_LIFTING_VERDICT,
     HANDOVER_PROOF_ERASURE_CAUSE,
+    WINDOW_MODE,
   ],
   literals: {
     // Ce qu'un contrôle qualité juge (`target.kind`).

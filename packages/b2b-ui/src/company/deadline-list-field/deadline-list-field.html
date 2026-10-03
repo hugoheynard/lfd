@@ -1,0 +1,32 @@
+<div class="deadline-list">
+  <div class="times">
+    @for (time of value(); track time) {
+      <span class="time">
+        <fold-badge variant="neutral" [content]="text(time)" />
+        <fold-button-icon
+          icon="close"
+          size="xs"
+          [tooltip]="removeLabel(time)"
+          (clicked)="remove(time)"
+        />
+      </span>
+    } @empty {
+      <fold-badge variant="neutral" [content]="labels().none" />
+    }
+  </div>
+
+  <div class="add">
+    <fold-time size="sm" [label]="newLabel()" [(value)]="pending" />
+    <button
+      foldButton
+      type="button"
+      size="sm"
+      emphasis="soft"
+      icon="plus"
+      [disabled]="!canAdd()"
+      (click)="add()"
+    >
+      {{ labels().add }}
+    </button>
+  </div>
+</div>

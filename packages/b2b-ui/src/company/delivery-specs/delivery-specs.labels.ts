@@ -1,4 +1,4 @@
-import type { Weekday } from '@lfd/contracts';
+import type { Weekday, WindowMode } from '@lfd/contracts';
 
 /**
  * Les **libellés** du fragment `lfd-delivery-specs`.
@@ -45,6 +45,28 @@ export interface DeliverySpecsLabels {
   readonly signatureNotRequired: string;
   /** Remplace `signatureHint` quand « pas de contact » est coché : il dit pourquoi « exigée » a disparu. */
   readonly signatureNoContactHint: string;
+  /** « Créneau ou échéance » pour cette adresse (CA-D2). */
+  readonly windowMode: string;
+  readonly windowModeHint: string;
+  /** `{mode}` : ce dont l'adresse hérite, dit en toutes lettres. */
+  readonly windowModeInherit: string;
+  /** Le mode, en bas de casse, dans `windowModeInherit`. */
+  readonly windowModeSlotLower: string;
+  readonly windowModeDeadlineLower: string;
+  readonly windowModeSlot: string;
+  readonly windowModeDeadline: string;
+  readonly deadlinesLegend: string;
+  readonly sameDeadlinesEveryDay: string;
+  readonly sameDeadlinesEveryDayHint: string;
+  /** Le mot devant une échéance : « avant 06:00 ». */
+  readonly deadlineBefore: string;
+  /** Le libellé du champ horaire qui ajoute une échéance. */
+  readonly deadlineNew: string;
+  readonly deadlineAdd: string;
+  /** `{deadline}` : l'échéance retirée, dans le nom accessible du bouton. */
+  readonly deadlineRemove: string;
+  /** Dit sous une liste vide. */
+  readonly deadlinesNone: string;
 }
 
 /** Le texte d'avant l'entrée, mot pour mot — le défaut, et ce que lit le back-office. */
@@ -82,7 +104,36 @@ export const DELIVERY_SPECS_LABELS_FR: DeliverySpecsLabels = {
   signatureRequired: 'Exigée',
   signatureNotRequired: 'Non exigée',
   signatureNoContactHint: 'sans contact sur place, personne ne peut signer à la remise',
+  windowMode: 'Créneau ou échéance',
+  windowModeHint: 'un créneau a un début et une fin ; une échéance, seulement une heure limite',
+  windowModeInherit: 'Comme le réglage général ({mode})',
+  windowModeSlotLower: 'créneau',
+  windowModeDeadlineLower: 'échéance',
+  windowModeSlot: 'Créneau',
+  windowModeDeadline: 'Échéance',
+  deadlinesLegend: 'Échéances préférées',
+  sameDeadlinesEveryDay: 'Les mêmes échéances tous les jours',
+  sameDeadlinesEveryDayHint: 'décochez pour définir des échéances par jour',
+  deadlineBefore: 'avant',
+  deadlineNew: 'Nouvelle échéance',
+  deadlineAdd: 'Ajouter',
+  deadlineRemove: 'Retirer {deadline}',
+  deadlinesNone: 'Aucune échéance',
 };
+
+/** Les trois réponses à « créneau ou échéance ? » — l'héritage DIT ce dont il hérite. */
+export function windowModeOptionsOf(
+  labels: DeliverySpecsLabels,
+  globalMode: WindowMode,
+): readonly { readonly value: string; readonly label: string }[] {
+  const inherited =
+    globalMode === 'deadline' ? labels.windowModeDeadlineLower : labels.windowModeSlotLower;
+  return [
+    { value: 'inherit', label: labels.windowModeInherit.replace('{mode}', inherited) },
+    { value: 'slot', label: labels.windowModeSlot },
+    { value: 'deadline', label: labels.windowModeDeadline },
+  ];
+}
 
 /** Les trois réponses à « signe-t-on ici ? » — l'héritage DIT ce dont il hérite. */
 export function signatureOptionsOf(

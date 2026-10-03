@@ -256,6 +256,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   weekday: 'Jour de la semaine',
   weightGrams: 'Poids',
   width: 'Largeur',
+  windowMode: 'Créneau ou échéance',
   x: 'X',
   y: 'Y',
 };

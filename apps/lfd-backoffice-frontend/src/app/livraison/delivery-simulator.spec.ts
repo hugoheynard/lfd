@@ -159,7 +159,7 @@ describe('le simulateur — construire le corps de « Proposer »', () => {
     expect(!built.ok && built.errors).toHaveLength(4);
     expect(!built.ok && built.errors[0]).toBe('Arrêt n° 1 : nom requis.');
     expect(!built.ok && built.errors[3]).toContain(
-      'Réglages incomplets : départ au plus tôt, durée maximale, temps de livraison sur place, marge de sécurité.',
+      'Réglages incomplets : départ quand rien ne presse, durée maximale, temps de livraison sur place, marge de sécurité.',
     );
   });
 

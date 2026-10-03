@@ -2,10 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type {
-  DeliveryAvailabilityPatch,
-  DeliveryAvailabilityView,
-  PublicDeliveryAvailabilityView,
+import {
+  DEFAULT_DELIVERY_AVAILABILITY,
+  type DeliveryAvailabilityPatch,
+  type DeliveryAvailabilityView,
+  type PublicDeliveryAvailabilityView,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
@@ -53,6 +54,8 @@ export class DeliveryAvailabilityService {
     return {
       openToB2b: open.openToB2b,
       openToB2c: open.openToB2c,
+      // Facultatif au type (CA-D2) : absent, c'est le défaut du commerce.
+      windowMode: open.windowMode ?? DEFAULT_DELIVERY_AVAILABILITY.windowMode,
       updatedAt: null,
       updatedBy: null,
     };

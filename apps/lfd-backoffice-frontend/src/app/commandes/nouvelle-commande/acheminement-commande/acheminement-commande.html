@@ -68,6 +68,49 @@
   @if (zoneLabel(); as zone) {
     <p class="ach-line">{{ zone }}</p>
   }
+
+  <!-- L'heure de livraison (CA3, CA1b) : une livraison ne part plus sans
+       fenêtre. En échéance, on n'envoie aucun début ; en créneau, celui du
+       carnet vaut, et on n'en demande un que s'il manque. -->
+  @if (windowMode() === 'deadline') {
+    <fold-listbox
+      label="Échéance de livraison"
+      required
+      placeholder="Livré avant quelle heure ?"
+      [options]="deadlineOptions()"
+      [value]="deadlineChoice()"
+      (selectionChange)="onDeadline($event)"
+      data-deadline
+    />
+    @if (otherDeadline()) {
+      <fold-time
+        label="Livré avant"
+        required
+        [value]="typedDeadline()"
+        (valueChange)="onTypedDeadline($event)"
+        data-deadline-other
+      />
+    }
+  } @else if (bookSlotLabel(); as slot) {
+    <p class="ach-line">Créneau du carnet : {{ slot }}</p>
+  } @else {
+    <div class="ach-row">
+      <fold-time
+        label="Livré à partir de"
+        required
+        [value]="typedSlot().start"
+        (valueChange)="onTypedSlot('start', $event)"
+        data-slot-start
+      />
+      <fold-time
+        label="Livré avant"
+        required
+        [value]="typedSlot().end"
+        (valueChange)="onTypedSlot('end', $event)"
+        data-slot-end
+      />
+    </div>
+  }
 } @else {
   @if (pickupOptions().length > 1) {
     <fold-listbox

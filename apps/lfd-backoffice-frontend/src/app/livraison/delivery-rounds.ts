@@ -10,6 +10,7 @@ import type {
   VehicleView,
 } from '@lfd/contracts';
 
+import { fulfillmentWindowLabel } from '../shared/window-label';
 import { parisDayOf } from './run-sheet';
 
 /**
@@ -271,14 +272,12 @@ export function clockLabel(time: string): string {
   return minutes === '00' ? `${hours} h` : `${hours} h ${minutes}`;
 }
 
-/** « 07 h–08 h », « avant 08 h 30 », « sans créneau ». */
+/** « 7 h 00 – 8 h 00 », « avant 8 h 30 », « sans créneau ». */
 export function windowShortLabel(window: WindowBounds | null): string {
   if (window === null) {
     return 'sans créneau';
   }
-  return window.start === null
-    ? `avant ${clockLabel(window.end)}`
-    : `${clockLabel(window.start)}–${clockLabel(window.end)}`;
+  return fulfillmentWindowLabel(window);
 }
 
 /**

@@ -3,6 +3,7 @@ import type {
   CustomerAudience,
   DeliveryAvailabilityPatch,
   DeliveryAvailabilityView,
+  WindowMode,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
@@ -15,6 +16,8 @@ import {
   FoldFieldsetComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
+  FoldViewToggleComponent,
+  type FoldViewToggleOption,
 } from 'fold-ng';
 
 import { DeliveryAvailabilityService } from '../delivery-availability.service';
@@ -22,11 +25,25 @@ import { DeliveryZonesSection } from '../delivery-zones-section/delivery-zones-s
 
 type LoadState = 'loading' | 'ready' | 'error';
 
-/** Les deux cases, telles qu'on les coche avant d'enregistrer. */
+/** Les deux cases et le mode, tels qu'on les règle avant d'enregistrer. */
 interface Availability {
   readonly openToB2b: boolean;
   readonly openToB2c: boolean;
+  readonly windowMode: WindowMode;
 }
+
+/** Créneau ou échéance (CA-D2) — les deux segments du réglage. */
+const WINDOW_MODE_OPTIONS: readonly FoldViewToggleOption[] = [
+  { value: 'slot', label: 'Créneau' },
+  { value: 'deadline', label: 'Échéance' },
+];
+
+/** Ce que chaque mode demande au client, dit sous le choix. */
+const WINDOW_MODE_HINTS: Readonly<Record<WindowMode, string>> = {
+  slot: 'Le client donne un début et une fin : « entre 7 h et 8 h ».',
+  deadline:
+    'Le client ne donne qu’une heure limite : « avant 6 h ». La tournée part aussi tôt qu’il le faut pour la tenir.',
+};
 
 /** Ce qu'une case décochée retire, dit du point de vue de la clientèle. */
 const CLOSED_SENTENCE: Readonly<Record<CustomerAudience, string>> = {
@@ -68,6 +85,7 @@ const CLIENTELE: Readonly<Record<CustomerAudience, string>> = {
     FoldFieldsetComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    FoldViewToggleComponent,
   ],
   templateUrl: './delivery-availability-page.html',
   styleUrl: './delivery-availability-page.scss',
@@ -81,6 +99,7 @@ export class DeliveryAvailabilityPage {
   /** Les cases telles qu'elles sont cochées, enregistrées ou non. */
   protected readonly draft = signal<Availability | null>(null);
   protected readonly saving = signal(false);
+  protected readonly windowModeOptions = WINDOW_MODE_OPTIONS;
   /** Le dernier refus, en clair ; `null` quand le dernier envoi a abouti. */
   protected readonly failure = signal<string | null>(null);
 
@@ -145,6 +164,23 @@ export class DeliveryAvailabilityPage {
     );
   }
 
+  /** L'aide sous le choix créneau / échéance : ce que le mode demande au client. */
+  protected windowModeHint(mode: WindowMode): string {
+    return WINDOW_MODE_HINTS[mode];
+  }
+
+  /**
+   * Créneau ou échéance, sans rien écrire. Le segment rend une chaîne : on ne
+   * garde que les deux valeurs du contrat.
+   */
+  protected setWindowMode(value: string): void {
+    const draft = this.draft();
+    if (draft === null || (value !== 'slot' && value !== 'deadline')) {
+      return;
+    }
+    this.draft.set({ ...draft, windowMode: value });
+  }
+
   /** Revient au réglage servi. */
   protected reset(): void {
     const saved = this.settings();
@@ -184,12 +220,15 @@ export class DeliveryAvailabilityPage {
     if (saved === null || draft === null) {
       return null;
     }
-    const patch: { openToB2b?: boolean; openToB2c?: boolean } = {};
+    const patch: { openToB2b?: boolean; openToB2c?: boolean; windowMode?: WindowMode } = {};
     if (draft.openToB2b !== saved.openToB2b) {
       patch.openToB2b = draft.openToB2b;
     }
     if (draft.openToB2c !== saved.openToB2c) {
       patch.openToB2c = draft.openToB2c;
+    }
+    if (draft.windowMode !== saved.windowMode) {
+      patch.windowMode = draft.windowMode;
     }
     return Object.keys(patch).length === 0 ? null : patch;
   }
@@ -201,5 +240,5 @@ export class DeliveryAvailabilityPage {
 }
 
 function availabilityOf(view: DeliveryAvailabilityView): Availability {
-  return { openToB2b: view.openToB2b, openToB2c: view.openToB2c };
+  return { openToB2b: view.openToB2b, openToB2c: view.openToB2c, windowMode: view.windowMode };
 }

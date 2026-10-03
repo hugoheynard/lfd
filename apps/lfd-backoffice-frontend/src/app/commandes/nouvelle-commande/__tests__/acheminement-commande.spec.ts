@@ -42,7 +42,8 @@ const ADRESSE: DeliveryAddressView = {
   depositAllowed: false,
   specs: {
     note: '',
-    slots: { mode: 'everyday', slot: null },
+    // Un créneau au carnet : en mode créneau, c'est lui que le serveur lit.
+    slots: { mode: 'everyday', slot: { start: '07:00', end: '08:00' } },
     deliveryContact: null,
     gps: null,
     signatureRequired: false,
@@ -60,6 +61,7 @@ const ZONE_92: DeliveryZoneView = {
 const OPEN_TO_ALL: DeliveryAvailabilityView = {
   openToB2b: true,
   openToB2c: true,
+  windowMode: 'slot',
   updatedAt: null,
   updatedBy: null,
 };
@@ -204,7 +206,9 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       ville: 'Neuilly',
       pays: 'France',
     });
-    expect(choice.issue).toBeNull();
+    // CA1b : une adresse dictée n'a pas de carnet, donc pas de créneau — il
+    // reste à convenir, et la commande ne part pas sans.
+    expect(choice.issue).toContain('Créneau de livraison à convenir');
   });
 
   it('bloque quand aucun point de retrait n’est configuré', () => {
@@ -390,6 +394,129 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       // ferait de l'écran du commercial la seule porte d'entrée de la donnée
       // qu'on vient de bannir.
       expect(choiceOf({ pickups: [LABO] }).issue).toContain('Réglages');
+    });
+  });
+
+  /**
+   * **Créneau ou échéance, et jamais sans heure** (plan composition
+   * automatique, CA3 et CA1b — 2026-10-03).
+   */
+  describe('l’heure d’une livraison', () => {
+    const DEADLINES: DeliveryAddressView = {
+      ...ADRESSE,
+      specs: {
+        ...ADRESSE.specs,
+        windowMode: 'deadline',
+        deadlines: { mode: 'everyday', times: ['06:00', '11:00'] },
+      },
+    };
+
+    function courier(
+      addresses: readonly DeliveryAddressView[],
+      settings: DeliveryAvailabilityView = OPEN_TO_ALL,
+    ): ComponentFixture<AcheminementCommande> {
+      const fixture = TestBed.createComponent(AcheminementCommande);
+      fixture.componentRef.setInput('draft', new DraftStore());
+      fixture.componentRef.setInput('pickups', [LABO]);
+      fixture.componentRef.setInput('addresses', addresses);
+      fixture.componentRef.setInput('zones', [ZONE_92]);
+      fixture.componentRef.setInput('deliveryAvailability', settings);
+      fixture.componentRef.setInput('audience', 'b2b');
+      fixture.detectChanges();
+      fixture.componentInstance['onMethod']('delivery');
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    const choice = (fixture: ComponentFixture<AcheminementCommande>): FulfillmentChoice =>
+      fixture.componentInstance['choice']();
+
+    it('en échéance, réclame une heure tant que rien n’est choisi', () => {
+      const fixture = courier([DEADLINES]);
+
+      expect(choice(fixture).window).toBeNull();
+      expect(choice(fixture).issue).toContain('Échéance de livraison à choisir');
+    });
+
+    it('propose les échéances de l’adresse, puis une autre heure', () => {
+      const fixture = courier([DEADLINES]);
+
+      expect(fixture.componentInstance['deadlineOptions']()).toEqual([
+        { value: '06:00', label: 'avant 6 h 00' },
+        { value: '11:00', label: 'avant 11 h 00' },
+        { value: '__other__', label: 'Une autre heure…' },
+      ]);
+    });
+
+    it('🔴 une échéance choisie part SANS début', () => {
+      const fixture = courier([DEADLINES]);
+      fixture.componentInstance['onDeadline']('11:00');
+      fixture.detectChanges();
+
+      expect(choice(fixture).window).toEqual({ start: null, end: '11:00' });
+      expect(choice(fixture).issue).toBeNull();
+    });
+
+    it('accepte une autre heure que celles de l’adresse', () => {
+      const fixture = courier([DEADLINES]);
+      fixture.componentInstance['onDeadline']('__other__');
+      fixture.componentInstance['onTypedDeadline']('09:15');
+      fixture.detectChanges();
+
+      expect(fixture.componentInstance['deadlineChoice']()).toBe('__other__');
+      expect(choice(fixture).window).toEqual({ start: null, end: '09:15' });
+    });
+
+    it('suit le réglage général quand l’adresse en hérite', () => {
+      const fixture = courier([ADRESSE], { ...OPEN_TO_ALL, windowMode: 'deadline' });
+
+      expect(fixture.componentInstance['windowMode']()).toBe('deadline');
+      expect(choice(fixture).issue).toContain('Échéance de livraison à choisir');
+    });
+
+    it('en créneau, garde celui du carnet sans le recopier', () => {
+      const fixture = courier([ADRESSE]);
+
+      expect(choice(fixture).window).toBeNull();
+      expect(choice(fixture).issue).toBeNull();
+    });
+
+    it('en créneau sans carnet, retient un créneau tapé complet', () => {
+      const bare: DeliveryAddressView = {
+        ...ADRESSE,
+        specs: { ...ADRESSE.specs, slots: { mode: 'everyday', slot: null } },
+      };
+      const fixture = courier([bare]);
+      fixture.componentInstance['onTypedSlot']('start', '07:00');
+      fixture.detectChanges();
+      expect(choice(fixture).issue).toContain('Créneau de livraison à convenir');
+
+      fixture.componentInstance['onTypedSlot']('end', '08:30');
+      fixture.detectChanges();
+      expect(choice(fixture).window).toEqual({ start: '07:00', end: '08:30' });
+      expect(choice(fixture).issue).toBeNull();
+    });
+
+    it('la seule échéance du jour vaut sans être choisie — le serveur la reprend', () => {
+      const single: DeliveryAddressView = {
+        ...DEADLINES,
+        specs: { ...DEADLINES.specs, deadlines: { mode: 'everyday', times: ['06:00'] } },
+      };
+      const fixture = courier([single]);
+
+      expect(fixture.componentInstance['deadlineChoice']()).toBe('06:00');
+      expect(choice(fixture).window).toBeNull();
+      expect(choice(fixture).issue).toBeNull();
+    });
+
+    it('changer d’adresse efface l’échéance choisie', () => {
+      const other: DeliveryAddressView = { ...DEADLINES, id: 'addr_2', isDefault: false };
+      const fixture = courier([DEADLINES, other]);
+      fixture.componentInstance['onDeadline']('06:00');
+      fixture.componentInstance['onAddress']('addr_2');
+      fixture.detectChanges();
+
+      expect(choice(fixture).window).toBeNull();
     });
   });
 });

@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { QrCode } from '@lfd/b2b-ui/order';
 import { ORDER_ORIGIN_LABELS, type AtelierSheet } from '@lfd/contracts';
 
+import { fulfillmentWindowLabel } from '../../shared/window-label';
+
 /**
  * Une **fiche de fonction** : une commande, sur une feuille A4.
  *
@@ -75,7 +77,7 @@ export class FicheProduction {
     if (window === null) {
       return null;
     }
-    return window.start === null ? `Avant ${window.end}` : `${window.start} – ${window.end}`;
+    return fulfillmentWindowLabel(window);
   });
 
   /** L'origine n'est dite QUE si elle apprend quelque chose au labo. */

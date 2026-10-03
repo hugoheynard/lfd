@@ -76,6 +76,24 @@ export interface DeliveryAddressCopy {
     readonly noZone: string;
   };
 
+  /**
+   * **L'heure de la livraison** (CA3, CA1b — 2026-10-03) : une livraison ne
+   * part plus sans fenêtre. En échéance, on choisit une heure limite ; en
+   * créneau, celui du carnet vaut, et on n'en demande un que s'il manque.
+   */
+  readonly when: {
+    readonly before: string;
+    readonly deadline: string;
+    readonly deadlinePlaceholder: string;
+    readonly other: string;
+    readonly otherLabel: string;
+    readonly slotStart: string;
+    readonly slotEnd: string;
+    /** Sous l'action tant qu'il manque l'heure : ce qu'il faut faire. */
+    readonly missingDeadline: string;
+    readonly missingSlot: string;
+  };
+
   /** `{fee}` — le tarif de la zone retenue. L'action PORTE le montant. */
   readonly cta: string;
   readonly ctaIdle: string;
@@ -107,6 +125,18 @@ export const DELIVERY_ADDRESS_FR: DeliveryAddressCopy = {
     villePlaceholder: 'Val d’Isère',
     noZone: 'Nous ne livrons pas encore ce code postal — le retrait, lui, reste ouvert.',
   },
+  when: {
+    before: 'avant',
+    deadline: 'Livrée avant',
+    deadlinePlaceholder: 'Choisissez une heure',
+    other: 'Une autre heure…',
+    otherLabel: 'Livrée avant (heure)',
+    slotStart: 'Livrée à partir de',
+    slotEnd: 'Livrée avant',
+    missingDeadline:
+      'Une livraison se commande avec une heure : indiquez avant quelle heure livrer.',
+    missingSlot: 'Une livraison se commande avec une heure : indiquez un créneau, début et fin.',
+  },
   cta: 'Composer mon panier · {fee} €',
   ctaIdle: 'Choisissez une adresse',
   close: 'Fermer',
@@ -137,6 +167,17 @@ export const DELIVERY_ADDRESS_EN: DeliveryAddressCopy = {
     villePlaceholder: 'Val d’Isère',
     noZone: 'We do not deliver to this postcode yet — pickup is still open.',
   },
+  when: {
+    before: 'before',
+    deadline: 'Delivered before',
+    deadlinePlaceholder: 'Pick a time',
+    other: 'Another time…',
+    otherLabel: 'Delivered before (time)',
+    slotStart: 'Delivered from',
+    slotEnd: 'Delivered before',
+    missingDeadline: 'A delivery needs a time: say before when to deliver.',
+    missingSlot: 'A delivery needs a time: give a slot, start and end.',
+  },
   cta: 'Fill my basket · {fee} €',
   ctaIdle: 'Pick an address',
   close: 'Close',
@@ -166,6 +207,17 @@ export const DELIVERY_ADDRESS_IT: DeliveryAddressCopy = {
     ville: 'Città',
     villePlaceholder: 'Val d’Isère',
     noZone: 'Non consegniamo ancora a questo CAP — il ritiro resta aperto.',
+  },
+  when: {
+    before: 'entro le',
+    deadline: 'Consegnata entro le',
+    deadlinePlaceholder: 'Scegliete un orario',
+    other: 'Un altro orario…',
+    otherLabel: 'Consegnata entro le (orario)',
+    slotStart: 'Consegnata dalle',
+    slotEnd: 'Consegnata entro le',
+    missingDeadline: 'Una consegna si ordina con un orario: indicate entro che ora consegnare.',
+    missingSlot: 'Una consegna si ordina con un orario: indicate una fascia, inizio e fine.',
   },
   cta: 'Comporre il carrello · {fee} €',
   ctaIdle: 'Scegliete un indirizzo',

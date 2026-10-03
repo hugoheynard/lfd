@@ -5,8 +5,10 @@ import type {
   DeliverySlot,
   DeliverySlots,
   GpsPoint,
+  PreferredDeadlines,
   SlotByDay,
   Weekday,
+  WindowMode,
 } from '@lfd/contracts';
 
 import { WEEKDAYS } from './delivery-format';
@@ -52,7 +54,33 @@ export interface DeliverySpecsDraft {
    * bloc, et une correction du client l'effacerait sinon.
    */
   readonly stopMinutes: number | null;
+  /**
+   * **Créneau ou échéance** pour ce site (CA-D2). `null` = il hérite du réglage
+   * général de livraison — l'état d'une adresse neuve, pour la même raison que
+   * la signature : ne pas figer ce que le commerce décidera demain.
+   */
+  readonly windowMode: WindowMode | null;
+  /** Les mêmes échéances tous les jours, ou une liste par jour. */
+  readonly sameDeadlinesEveryDay: boolean;
+  /** Les échéances de tous les jours — triées, sans doublon. */
+  readonly everyDeadlines: readonly string[];
+  /** Les échéances jour par jour — une liste vide = aucune ce jour-là. */
+  readonly dayDeadlines: DraftDayDeadlines;
 }
+
+/** Une liste d'échéances par jour (vide = aucune). */
+export type DraftDayDeadlines = Readonly<Record<Weekday, readonly string[]>>;
+
+/** Sept jours sans échéance. */
+export const BLANK_DAY_DEADLINES: DraftDayDeadlines = {
+  mon: [],
+  tue: [],
+  wed: [],
+  thu: [],
+  fri: [],
+  sat: [],
+  sun: [],
+};
 
 /** Le brouillon complet d'une adresse de livraison : le lieu, et les consignes. */
 export type DeliveryDraft = PostalDraft & DeliverySpecsDraft;
@@ -90,6 +118,10 @@ export const EMPTY_DELIVERY_SPECS: DeliverySpecsDraft = {
   contactTel: '',
   signatureRequired: null,
   stopMinutes: null,
+  windowMode: null,
+  sameDeadlinesEveryDay: true,
+  everyDeadlines: [],
+  dayDeadlines: BLANK_DAY_DEADLINES,
 };
 
 /** Brouillon de livraison vierge. */
@@ -115,6 +147,37 @@ export function deliveryDraftFrom(view: DeliveryAddressView): DeliveryDraft {
     contactTel: contact?.telephone ?? '',
     signatureRequired: view.specs.signatureRequired,
     stopMinutes: view.specs.stopMinutes ?? null,
+    windowMode: view.specs.windowMode ?? null,
+    ...deadlinesDraft(view.specs.deadlines ?? null),
+  };
+}
+
+function deadlinesDraft(
+  deadlines: PreferredDeadlines | null,
+): Pick<DeliverySpecsDraft, 'sameDeadlinesEveryDay' | 'everyDeadlines' | 'dayDeadlines'> {
+  if (deadlines === null) {
+    return { sameDeadlinesEveryDay: true, everyDeadlines: [], dayDeadlines: BLANK_DAY_DEADLINES };
+  }
+  if (deadlines.mode === 'everyday') {
+    return {
+      sameDeadlinesEveryDay: true,
+      everyDeadlines: deadlines.times,
+      dayDeadlines: BLANK_DAY_DEADLINES,
+    };
+  }
+  const byDay = deadlines.byDay;
+  return {
+    sameDeadlinesEveryDay: false,
+    everyDeadlines: [],
+    dayDeadlines: {
+      mon: byDay.mon ?? [],
+      tue: byDay.tue ?? [],
+      wed: byDay.wed ?? [],
+      thu: byDay.thu ?? [],
+      fri: byDay.fri ?? [],
+      sat: byDay.sat ?? [],
+      sun: byDay.sun ?? [],
+    },
   };
 }
 
@@ -264,6 +327,12 @@ export function toDeliveryPayload(draft: DeliveryDraft): DeliveryAddressPayload 
       // Absent plutôt que `null` : le `jsonb` garde sa forme d'avant pour les
       // adresses qui suivent le réglage général.
       ...(draft.stopMinutes === null ? {} : { stopMinutes: draft.stopMinutes }),
+      // Même parti : absent = hérite du réglage général, et le `jsonb` des
+      // adresses d'avant CA3 garde sa forme.
+      ...(draft.windowMode === null ? {} : { windowMode: draft.windowMode }),
+      // Les échéances voyagent même en mode créneau : le carnet réécrit les
+      // consignes en bloc, et repasser en créneau ne doit pas les effacer.
+      ...withDeadlines(buildDeadlines(draft)),
     },
   };
 }
@@ -303,4 +372,33 @@ function buildSlots(draft: DeliverySpecsDraft): DeliverySlots {
     sun: toSlot(d.sun.start, d.sun.end),
   };
   return { mode: 'perDay', byDay };
+}
+
+function withDeadlines(deadlines: PreferredDeadlines | null): { deadlines?: PreferredDeadlines } {
+  return deadlines === null ? {} : { deadlines };
+}
+
+/**
+ * Les échéances du brouillon, ou `null` quand il n'y en a aucune — le contrat
+ * refuse une liste vide (`deadlineListSchema`, au moins une).
+ */
+function buildDeadlines(draft: DeliverySpecsDraft): PreferredDeadlines | null {
+  if (draft.sameDeadlinesEveryDay) {
+    return draft.everyDeadlines.length === 0
+      ? null
+      : { mode: 'everyday', times: [...draft.everyDeadlines] };
+  }
+  const d = draft.dayDeadlines;
+  const day = (times: readonly string[]): string[] | null =>
+    times.length === 0 ? null : [...times];
+  const byDay = {
+    mon: day(d.mon),
+    tue: day(d.tue),
+    wed: day(d.wed),
+    thu: day(d.thu),
+    fri: day(d.fri),
+    sat: day(d.sat),
+    sun: day(d.sun),
+  };
+  return Object.values(byDay).every((times) => times === null) ? null : { mode: 'perDay', byDay };
 }

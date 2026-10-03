@@ -15,6 +15,7 @@ const COPY = rowCopyOf({
   stepHandedDelivery: 'Livrée',
   qrReady: 'Votre QR est prêt',
   noWindow: '',
+  before: 'avant',
 });
 
 const ONE: TrackedOrder = trackedOf(LIVE_PICKUP, COPY);

@@ -99,6 +99,37 @@
       }
     </ul>
   }
+
+  <!-- L'heure (CA3, CA1b) : une livraison ne part plus sans fenêtre. -->
+  @if (freeEntry() || entries().length > 0) {
+    @if (windowMode() === 'deadline') {
+      <fold-listbox
+        size="lg"
+        [label]="c().when.deadline"
+        [placeholder]="c().when.deadlinePlaceholder"
+        [options]="deadlineOptions()"
+        [value]="deadlineValue()"
+        (selectionChange)="onDeadline($event)"
+        data-deadline
+      />
+      @if (isOtherDeadline()) {
+        <fold-time
+          size="lg"
+          [label]="c().when.otherLabel"
+          [(value)]="otherDeadline"
+          data-deadline-other
+        />
+      }
+    } @else if (asksSlot()) {
+      <div class="when-slot">
+        <fold-time size="lg" [label]="c().when.slotStart" [(value)]="slotStart" data-slot-start />
+        <fold-time size="lg" [label]="c().when.slotEnd" [(value)]="slotEnd" data-slot-end />
+      </div>
+    }
+    @if (windowMissing(); as message) {
+      <fold-callout variant="warning">{{ message }}</fold-callout>
+    }
+  }
 </fold-panel-body>
 
 <!-- L'action PORTE le montant : on sait ce qu'on paie avant d'avoir composé. -->

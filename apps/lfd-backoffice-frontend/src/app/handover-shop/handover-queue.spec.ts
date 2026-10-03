@@ -156,15 +156,15 @@ describe('sortedQueue', () => {
 
 describe('formatWindow', () => {
   it('écrit une tranche complète en heures françaises', () => {
-    expect(formatWindow(window({ start: '06:30', end: '08:00' }))).toBe(
-      '6\u00a0h\u00a030 – 8\u00a0h\u00a000',
-    );
+    expect(formatWindow(window({ start: '06:30', end: '08:00' }))).toBe('6 h 30 – 8 h 00');
   });
 
-  it('🔴 sans borne basse, rend l’heure SEULE — pas « — – 6 h 30 »', () => {
+  it('🔴 sans borne basse, rend une ÉCHÉANCE — pas « — – 6 h 30 »', () => {
+    // CA3 (2026-10-03) : l'heure seule se lisait comme un rendez-vous, elle
+    // dit désormais « avant », comme partout ailleurs dans le back-office.
     const written = formatWindow(window({ start: null, end: '06:30' }));
 
-    expect(written).toBe('6\u00a0h\u00a030');
+    expect(written).toBe('avant 6 h 30');
     expect(written).not.toContain('–');
   });
 

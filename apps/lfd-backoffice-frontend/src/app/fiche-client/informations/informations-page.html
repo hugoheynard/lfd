@@ -209,6 +209,7 @@
             [showDeliveries]="true"
             [showPickup]="fiche.deliveryHidden()"
             [pickup]="fiche.defaultPickup()"
+            [globalWindowMode]="fiche.windowMode()"
           />
 
           @if (fiche.company(); as c) {

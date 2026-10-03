@@ -8,6 +8,7 @@ import type {
 import type { FoldBadgeVariant, FoldTableTone } from 'fold-ng';
 
 import { searchKey } from '../shared/search/search-key';
+import { fulfillmentWindowLabel } from '../shared/window-label';
 
 /**
  * **La logique de la file de retrait**, hors de tout composant : dérivation des
@@ -198,8 +199,7 @@ export function formatWindow(window: HandoverQueueWindowView | null): string | n
   if (window === null) {
     return null;
   }
-  const end = formatHour(window.end);
-  return window.start === null ? end : `${formatHour(window.start)} – ${end}`;
+  return fulfillmentWindowLabel(window);
 }
 
 /**

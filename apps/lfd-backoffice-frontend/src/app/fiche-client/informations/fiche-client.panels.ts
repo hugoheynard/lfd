@@ -1,5 +1,10 @@
 import { inject, Injectable } from '@angular/core';
-import type { CompanyContactView, DeliveryAddressView, DeliveryContact } from '@lfd/contracts';
+import type {
+  CompanyContactView,
+  DeliveryAddressView,
+  DeliveryContact,
+  WindowMode,
+} from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import {
   BillingAddressPanel,
@@ -37,7 +42,11 @@ export class FicheClientPanels {
    * Le panneau d'une étape d'activation, ou `null` si l'étape n'en a pas
    * (le KBIS est un dépôt de fichier, le règlement se règle sur la fiche).
    */
-  openStep(key: string, company: AdminCompanyDetail): Promise<unknown> | null {
+  openStep(
+    key: string,
+    company: AdminCompanyDetail,
+    globalWindowMode: WindowMode = 'slot',
+  ): Promise<unknown> | null {
     if (key === 'vat' || key === 'legal') {
       return this.panels.open(AdminIdentitePanel, {
         data: {
@@ -60,7 +69,7 @@ export class FicheClientPanels {
       }).closed;
     }
     if (key === 'delivery') {
-      return this.openNewDelivery(company);
+      return this.openNewDelivery(company, globalWindowMode);
     }
     // Le numéro manquant se saisit sur le DÉTENTEUR : c'est lui qu'on appelle,
     // et l'étape ne se propose que lorsqu'il est déjà rattaché. Ouvrir « nouvel
@@ -82,14 +91,25 @@ export class FicheClientPanels {
     return isHolderChoice(closed) ? closed : null;
   }
 
-  /** Une adresse de livraison à créer. */
-  openNewDelivery(company: AdminCompanyDetail): Promise<unknown> {
-    return this.panels.open(DeliveryAddressPanel, { data: deliveryData(company, null) }).closed;
+  /**
+   * Une adresse de livraison à créer. `globalWindowMode` : le réglage
+   * « créneau ou échéance » dont elle hérite (CA-D2), montré dans le panneau.
+   */
+  openNewDelivery(company: AdminCompanyDetail, globalWindowMode: WindowMode): Promise<unknown> {
+    return this.panels.open(DeliveryAddressPanel, {
+      data: deliveryData(company, null, globalWindowMode),
+    }).closed;
   }
 
   /** Une adresse de livraison à corriger — le même panneau, prérempli. */
-  openDelivery(company: AdminCompanyDetail, address: DeliveryAddressView): Promise<unknown> {
-    return this.panels.open(DeliveryAddressPanel, { data: deliveryData(company, address) }).closed;
+  openDelivery(
+    company: AdminCompanyDetail,
+    address: DeliveryAddressView,
+    globalWindowMode: WindowMode,
+  ): Promise<unknown> {
+    return this.panels.open(DeliveryAddressPanel, {
+      data: deliveryData(company, address, globalWindowMode),
+    }).closed;
   }
 
   /**
@@ -191,6 +211,7 @@ function toDraft(contact: CompanyContactView): CompanyContactDraft {
 function deliveryData(
   company: AdminCompanyDetail,
   address: DeliveryAddressView | null,
+  globalWindowMode: WindowMode,
 ): DeliveryAddressPanelData {
   return {
     companyId: company.id,
@@ -199,6 +220,7 @@ function deliveryData(
     signatureFloor: company.fulfillmentPreference.signatureRequired,
     // Réglage d'organisation (L7b-C4) : le staff le voit, le client jamais.
     showStopMinutes: true,
+    globalWindowMode,
   };
 }
 

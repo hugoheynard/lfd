@@ -7,7 +7,9 @@ import {
   input,
   signal,
 } from '@angular/core';
-import type { DeliveryAddressView } from '@lfd/contracts';
+import type { DeliveryAddressView, FulfillmentWindow } from '@lfd/contracts';
+// Sans zod, par le sous-chemin : ce dialogue s'ouvre depuis l'accueil (budget `cloudflare`).
+import { resolveWindowMode } from '@lfd/contracts/shop-values';
 import {
   FoldButtonComponent,
   FoldEmptyStateComponent,
@@ -16,7 +18,9 @@ import {
   FoldPanelFooterComponent,
   FoldCalloutComponent,
   FoldInputComponent,
+  FoldListboxComponent,
   FoldPanelHeaderComponent,
+  FoldTimeComponent,
   FoldPanelHostService,
   FoldPanelRef,
 } from 'fold-ng';
@@ -30,7 +34,16 @@ import { formatCents, formatRate } from '../../format-money';
 import type { ServiceChoice } from '../../order-context.store';
 import { dialogSide } from '../../panel-side';
 import { ORDER_DIALOG } from '../order-dialog';
+import {
+  bookSlotOfDay,
+  deadlinesOfDay,
+  deliveryWindowOf,
+  weekdayOfIsoDate,
+} from '../delivery-window';
 import { ServicePoints } from '../pickup-points.store';
+
+/** L'option « une autre heure » : jamais une heure `HH:mm`. */
+const OTHER_DEADLINE = '__other__';
 
 /** Ce qu'il faut pour ouvrir la porte : l'adresse déjà retenue, s'il y en a une. */
 export interface DeliveryAddressData {
@@ -73,6 +86,10 @@ interface Entry {
  *
  * ## Ce qu'il ne fait PAS, et pourquoi
  *
+ * ⚠️ **Depuis CA1b (2026-10-03), l'heure se convient ici** : une échéance de
+ * l'adresse ou une autre heure, ou un créneau quand le carnet n'en a pas. Le
+ * paragraphe qui suit est l'historique d'avant.
+ *
  * 🔴 **Aucune grille d'heures.** Celle de `/nouvelle-commande` est décorative :
  * `requestedWindow` ne part qu'en RETRAIT (`client-orders.service.ts`), et ses
  * heures viennent de `DELIVERY_SLOTS`, qui dit lui-même n'affirmer rien de
@@ -104,7 +121,9 @@ interface Entry {
     FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldInputComponent,
+    FoldListboxComponent,
     FoldPanelBodyComponent,
+    FoldTimeComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
   ],
@@ -209,7 +228,7 @@ export class DeliveryAddressDialog {
         place: `${address.ligne1} · ${address.codePostal}`,
         fee: zone === null ? '' : fill(copy.fee, { fee: feeOf(zone.fee) }),
         outOfZone: zone === null,
-        window: windowOf(address, copy.window),
+        window: windowOf(address, copy.window, copy.when.before),
         isDefault: address.isDefault,
         selected: address.id === selectedId,
       };
@@ -222,9 +241,101 @@ export class DeliveryAddressDialog {
     return entry === null || entry.outOfZone ? null : entry;
   });
 
-  /** L'action est-elle ouverte ? Les deux modes répondent, chacun pour soi. */
-  protected readonly ready = computed(() =>
-    this.freeEntry() ? this.freeReady() : this.chosen() !== null,
+  // ─── L'heure de la livraison (CA3, CA1b — 2026-10-03) ─────────────────────
+
+  /** L'échéance retenue : une de la liste, ou `OTHER_DEADLINE`, ou `''`. */
+  protected readonly deadlinePick = signal('');
+  /** L'heure tapée derrière « une autre heure ». */
+  protected readonly otherDeadline = signal('');
+  protected readonly slotStart = signal('');
+  protected readonly slotEnd = signal('');
+
+  /** L'adresse du carnet retenue — `null` pour une saisie libre. */
+  private readonly bookAddress = computed(() =>
+    this.freeEntry() ? null : (this.chosen()?.address ?? null),
+  );
+
+  /** Créneau ou échéance : celui de l'adresse, sinon le réglage général. */
+  protected readonly windowMode = computed(() =>
+    resolveWindowMode(
+      this.bookAddress()?.specs.windowMode,
+      this.points.deliveryAvailability().windowMode ?? 'slot',
+    ),
+  );
+
+  private readonly day = computed(() => {
+    const date = this.points.nextDayFor(null);
+    return date === null ? null : weekdayOfIsoDate(date);
+  });
+
+  private readonly dayDeadlines = computed(() =>
+    deadlinesOfDay(this.bookAddress()?.specs.deadlines, this.day()),
+  );
+
+  private readonly bookSlot = computed(() => bookSlotOfDay(this.bookAddress(), this.day()));
+
+  /** Faut-il demander un créneau ? En mode créneau, seulement quand le carnet n'en a pas. */
+  protected readonly asksSlot = computed(
+    () => this.windowMode() === 'slot' && this.bookSlot() === null,
+  );
+
+  protected readonly deadlineOptions = computed(() => {
+    const copy = this.c().when;
+    return [
+      ...this.dayDeadlines().map((time) => ({
+        value: time,
+        label: formatWindow(null, time, copy.before),
+      })),
+      { value: OTHER_DEADLINE, label: copy.other },
+    ];
+  });
+
+  /** L'option montrée : le choix, sinon la seule échéance du jour, que le serveur reprend. */
+  protected readonly deadlineValue = computed(() => {
+    const picked = this.deadlinePick();
+    if (picked !== '') {
+      return picked;
+    }
+    const times = this.dayDeadlines();
+    return times.length === 1 ? (times[0] ?? '') : '';
+  });
+
+  /** La fenêtre envoyée ; `undefined` tant qu'il manque une heure. */
+  private readonly window = computed<FulfillmentWindow | null | undefined>(() => {
+    const picked = this.deadlinePick();
+    return deliveryWindowOf({
+      mode: this.windowMode(),
+      dayDeadlines: picked === OTHER_DEADLINE ? [] : this.dayDeadlines(),
+      bookSlot: this.bookSlot(),
+      deadline: picked === OTHER_DEADLINE ? this.otherDeadline() : picked,
+      slotStart: this.slotStart(),
+      slotEnd: this.slotEnd(),
+    });
+  });
+
+  /** Ce qu'il manque, dit sous l'action — `null` quand l'heure est là. */
+  protected readonly windowMissing = computed(() => {
+    if (this.window() !== undefined) {
+      return null;
+    }
+    return this.windowMode() === 'deadline'
+      ? this.c().when.missingDeadline
+      : this.c().when.missingSlot;
+  });
+
+  protected onDeadline(value: string): void {
+    this.deadlinePick.set(value);
+    if (value !== OTHER_DEADLINE) {
+      this.otherDeadline.set('');
+    }
+  }
+
+  protected readonly isOtherDeadline = computed(() => this.deadlinePick() === OTHER_DEADLINE);
+
+  /** L'action est-elle ouverte ? L'adresse, puis l'heure — une livraison ne part plus sans. */
+  protected readonly ready = computed(
+    () =>
+      (this.freeEntry() ? this.freeReady() : this.chosen() !== null) && this.window() !== undefined,
   );
 
   protected readonly ctaLabel = computed(() => {
@@ -242,16 +353,26 @@ export class DeliveryAddressDialog {
 
   /** Une adresse hors zone se touche, mais ne se retient pas : le refus précède l'effort. */
   protected pick(entry: Entry): void {
+    if (entry.address.id !== this.chosen()?.address.id) {
+      // Les échéances d'un lieu ne valent pas pour un autre.
+      this.deadlinePick.set('');
+      this.otherDeadline.set('');
+    }
     this.picked.set(entry.address.id);
+  }
+
+  /** Le libellé de la fenêtre envoyée, ou `''` quand elle vient du carnet. */
+  private windowLabel(window: FulfillmentWindow | null): string {
+    return window === null ? '' : formatWindow(window.start, window.end, this.c().when.before);
   }
 
   /**
    * Rend le mode de service COMPLET.
    *
-   * 🔴 `window: null`, et c'est délibéré : une heure envoyée d'ici s'écrirait
-   * sur un bon de commande opposable, et aucune heure de livraison n'a de
-   * source ici. Celle du carnet, le serveur la lit lui-même à partir de
-   * `deliveryAddressId` (2026-09-29).
+   * 🔴 La fenêtre (CA3, CA1b — 2026-10-03) : celle que le client vient de
+   * convenir — une échéance, ou le créneau qui manquait —, sinon `null` quand
+   * le carnet la fournit et que le serveur la lit à partir de
+   * `deliveryAddressId`. Jamais aucune : une livraison ne part plus sans heure.
    *
    * 🔴 Le CODE POSTAL, jamais le tarif : la zone s'en déduit côté serveur, qui
    * applique alors le même barème que la facture.
@@ -270,16 +391,20 @@ export class DeliveryAddressDialog {
       return;
     }
     const address = entry.address;
+    const window = this.window();
+    if (window === undefined) {
+      return;
+    }
     this.ref.close({
       mode: 'delivery',
-      window: null,
+      window,
       place: entry.name,
       at: addressAt(entry.name),
       address: `${address.ligne1}, ${address.codePostal}`,
       codePostal: address.codePostal,
       // La fenêtre du carnet tient lieu de libellé quand elle existe ; sinon
       // rien, et l'écran qui l'affiche ne dira que la journée.
-      slot: windowOf(address, '{window}'),
+      slot: this.windowLabel(window) || windowOf(address, '{window}', this.c().when.before),
       date,
       deliveryAddressId: address.id,
       deliveryAddress: {
@@ -309,14 +434,18 @@ export class DeliveryAddressDialog {
     const ligne1 = this.ligne1().trim();
     const ville = this.ville().trim();
     const codePostal = this.codePostal().trim();
+    const window = this.window();
+    if (window === undefined) {
+      return;
+    }
     this.ref.close({
       mode: 'delivery',
-      window: null,
+      window,
       place: ligne1,
       at: addressAt(ligne1),
       address: `${ligne1}, ${codePostal}`,
       codePostal,
-      slot: '',
+      slot: this.windowLabel(window),
       date,
       deliveryAddressId: null,
       deliveryAddress: {
@@ -365,10 +494,10 @@ function feeOf(fee: {
  * quatre surfaces de l'app, et une cinquième façon de la composer finirait par
  * différer d'un tiret.
  */
-function windowOf(address: DeliveryAddressView, gabarit: string): string {
+function windowOf(address: DeliveryAddressView, gabarit: string, before: string): string {
   const slots = address.specs.slots;
   if (slots.mode !== 'everyday' || slots.slot === null) {
     return '';
   }
-  return fill(gabarit, { window: formatWindow(slots.slot.start, slots.slot.end, '') });
+  return fill(gabarit, { window: formatWindow(slots.slot.start, slots.slot.end, before) });
 }

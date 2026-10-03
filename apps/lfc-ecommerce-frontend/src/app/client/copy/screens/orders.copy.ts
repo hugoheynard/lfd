@@ -69,6 +69,8 @@ export interface OrdersCopy {
   readonly qrReady: string;
   /** Un client peut ne demander aucune tranche : c'est un choix, pas un trou. */
   readonly noWindow: string;
+  /** « avant 6 h » — le mot devant une échéance (CA-D2). */
+  readonly before: string;
   readonly statusCancelled: string;
   readonly emptyOrders: string;
   /**
@@ -170,6 +172,7 @@ export const ORDERS_FR: OrdersCopy = {
   stepHandedDelivery: 'Livrée',
   qrReady: 'Votre QR est prêt — présentez-le au comptoir',
   noWindow: 'Aucune tranche demandée',
+  before: 'avant',
   statusCancelled: 'Annulée',
   emptyOrders: 'Aucune commande pour l’instant.',
   statusReceived: 'Reçue',
@@ -256,6 +259,7 @@ export const ORDERS_EN: OrdersCopy = {
   stepHandedDelivery: 'Delivered',
   qrReady: 'Your QR is ready — show it at the counter',
   noWindow: 'No time slot requested',
+  before: 'before',
   statusCancelled: 'Cancelled',
   emptyOrders: 'No orders yet.',
   statusReceived: 'Received',
@@ -342,6 +346,7 @@ export const ORDERS_IT: OrdersCopy = {
   stepHandedDelivery: 'Consegnata',
   qrReady: 'Il suo QR è pronto — lo mostri al banco',
   noWindow: 'Nessuna fascia richiesta',
+  before: 'entro le',
   statusCancelled: 'Annullata',
   emptyOrders: 'Nessun ordine per ora.',
   statusReceived: 'Ricevuto',

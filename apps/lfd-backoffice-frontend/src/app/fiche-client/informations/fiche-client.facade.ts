@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { computed, inject, Injectable } from '@angular/core';
 import type { DeferredTerm, DeliveryAddressView, FulfillmentPreferenceView } from '@lfd/contracts';
 import { isCompanyIdentityOpenable, type CompanyIdentityDraft } from '@lfd/b2b-ui/company';
 
@@ -41,6 +41,8 @@ export class FicheClientFacade {
   readonly pickups = this.store.pickups;
   readonly defaultPickup = this.store.defaultPickup;
   readonly deliveryHidden = this.store.deliveryHidden;
+  /** Le réglage général « créneau ou échéance » (CA-D2), dont héritent les adresses. */
+  readonly windowMode = computed(() => this.store.deliveryAvailability().windowMode);
   readonly libSteps = this.store.libSteps;
   readonly ready = this.store.ready;
   readonly isPending = this.store.isPending;
@@ -181,7 +183,7 @@ export class FicheClientFacade {
       void this.pickHolder();
       return;
     }
-    this.afterPanel((company) => this.panels.openStep(key, company));
+    this.afterPanel((company) => this.panels.openStep(key, company, this.windowMode()));
   }
 
   /** Demande le détenteur, puis le rattache — annuler ne fait rien. */
@@ -198,12 +200,12 @@ export class FicheClientFacade {
 
   /** Ajoute une adresse de livraison. */
   addDelivery(): void {
-    this.afterPanel((company) => this.panels.openNewDelivery(company));
+    this.afterPanel((company) => this.panels.openNewDelivery(company, this.windowMode()));
   }
 
   /** Corrige une adresse de livraison — le même panneau, prérempli. */
   editDelivery(address: DeliveryAddressView): void {
-    this.afterPanel((company) => this.panels.openDelivery(company, address));
+    this.afterPanel((company) => this.panels.openDelivery(company, address, this.windowMode()));
   }
 
   /** La procédure de livraison d'une adresse ; relit la fiche si son nombre d'étapes a bougé. */

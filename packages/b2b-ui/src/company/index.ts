@@ -12,6 +12,7 @@ export { DeliverySpecs } from './delivery-specs/delivery-specs';
 export {
   DELIVERY_SPECS_LABELS_FR,
   signatureOptionsOf,
+  windowModeOptionsOf,
 } from './delivery-specs/delivery-specs.labels';
 export type { DeliverySpecsLabels } from './delivery-specs/delivery-specs.labels';
 export { DeliveryAddressForm } from './delivery-address-form/delivery-address-form';
@@ -73,17 +74,22 @@ export {
   toDeliveryPayload,
   toSlot,
 } from './delivery-draft.model';
-export type { DraftDay, DraftDays } from './delivery-draft.model';
+export type { DraftDay, DraftDayDeadlines, DraftDays } from './delivery-draft.model';
+export { isDeadlineTime, withDeadline, withoutDeadline } from './deadline-list.model';
 export type { DeliveryDraft, DeliverySpecsDraft } from './delivery-draft.model';
 export {
   WEEKDAYS,
   formatSlot,
+  formatDeadline,
+  deadlineRows,
+  hasPreferredDeadline,
   hasDeliverySlot,
   weeklySlots,
   formatDeliveryContact,
   formatGps,
   gpsMapUrl,
 } from './delivery-format';
+export type { DeadlineRow } from './delivery-format';
 export {
   DEFAULT_DESTINATION,
   destinationOf,

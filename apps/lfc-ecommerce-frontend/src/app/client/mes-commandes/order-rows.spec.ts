@@ -12,6 +12,7 @@ const COPY: RowCopy = {
   stepHandedDelivery: 'Livrée',
   qrReady: 'Votre QR est prêt',
   noWindow: 'Aucune tranche demandée',
+  before: 'avant',
 };
 
 /** Une commande de retrait, telle que `GET /companies/:id/orders` la rend. */

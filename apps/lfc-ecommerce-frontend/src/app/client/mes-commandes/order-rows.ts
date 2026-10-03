@@ -1,5 +1,7 @@
 import type { FulfillmentWindow, CustomerOrderView } from '@lfd/contracts';
 
+import { formatWindow } from '../format-hour';
+
 /**
  * **Ce que l'écran des commandes lit** — les modèles de vue, et leur fabrication
  * depuis `CustomerOrderView`.
@@ -145,6 +147,8 @@ export interface RowCopy {
   readonly stepHandedDelivery: string;
   readonly qrReady: string;
   readonly noWindow: string;
+  /** « avant » — le mot devant une échéance. */
+  readonly before: string;
 }
 
 /**
@@ -171,6 +175,7 @@ export function rowCopyOf(copy: {
   readonly stepHandedDelivery: string;
   readonly qrReady: string;
   readonly noWindow: string;
+  readonly before: string;
 }): RowCopy {
   return {
     pickup: copy.modePickup,
@@ -182,6 +187,7 @@ export function rowCopyOf(copy: {
     stepHandedDelivery: copy.stepHandedDelivery,
     qrReady: copy.qrReady,
     noWindow: copy.noWindow,
+    before: copy.before,
   };
 }
 
@@ -221,7 +227,7 @@ export function trackedOf(order: CustomerOrderView, copy: RowCopy): TrackedOrder
     mode: order.fulfillmentMethod === 'pickup' ? 'pickup' : 'courier',
     kind: `${modeLabel(order, copy)} · ${place}`,
     title: order.requestedDeliveryDate ?? '',
-    sub: windowOf(order) || copy.noWindow,
+    sub: windowOf(order, copy.before) || copy.noWindow,
     total: order.totalCents / 100,
     pieces: piecesOf(order),
     // Le statut, DESSINÉ : quatre étapes, donc un quart par étape franchie.
@@ -242,7 +248,7 @@ export function historyRowOf(order: CustomerOrderView, org: string, copy: RowCop
     reference: order.orderNumber,
     date: order.requestedDeliveryDate ?? order.placedAt.slice(0, 10),
     mode: modeLabel(order, copy),
-    slot: windowOf(order),
+    slot: windowOf(order, copy.before),
     pieces: piecesOf(order),
     total: order.totalCents / 100,
     voucherDiscountCents: order.voucherDiscountCents,
@@ -338,12 +344,13 @@ export function placeOf(order: CustomerOrderView): string {
  * façons de la mettre en forme finiraient par se contredire sur l'écran qui la
  * lit le moins.
  */
-export function windowOf(order: CustomerOrderView): string {
+export function windowOf(order: CustomerOrderView, before: string): string {
   const window: FulfillmentWindow | null = order.fulfillment.window.value;
   if (window === null) {
     return '';
   }
-  return window.start === null ? window.end : `${window.start} – ${window.end}`;
+  // Une échéance (CA-D2) se lit « avant 6 h », jamais l'heure seule.
+  return formatWindow(window.start, window.end, before);
 }
 
 /** L'heure d'un instant qui peut ne pas exister — l'étape est alors à venir. */

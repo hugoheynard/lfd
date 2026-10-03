@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
-import type { DeliveryContact } from '@lfd/contracts';
+import type { DeliveryContact, WindowMode } from '@lfd/contracts';
 import {
   FoldCheckboxComponent,
   FoldFieldsetComponent,
@@ -13,15 +13,21 @@ import type { HoursEntry } from '../../hours/hours.model';
 import {
   contactIssueOf,
   type DeliveryDraft,
+  type DraftDayDeadlines,
   type DraftDays,
   withNoContact,
 } from '../delivery-draft.model';
+import {
+  DeadlineListField,
+  type DeadlineListFieldLabels,
+} from '../deadline-list-field/deadline-list-field';
 import { formatDeliveryContact, WEEKDAYS } from '../delivery-format';
 import { withKnownContact } from '../delivery-address-form/delivery-address-form.model';
 import {
   DELIVERY_SPECS_LABELS_FR,
   type DeliverySpecsLabels,
   signatureOptionsOf,
+  windowModeOptionsOf,
 } from './delivery-specs.labels';
 
 /**
@@ -38,6 +44,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     HoursForm,
+    DeadlineListField,
     FoldInputComponent,
     FoldCheckboxComponent,
     FoldFieldsetComponent,
@@ -68,6 +75,53 @@ export class DeliverySpecs {
    * back-office ne passe rien et ne change pas ; l'app cliente passe sa langue.
    */
   readonly labels = input<DeliverySpecsLabels>(DELIVERY_SPECS_LABELS_FR);
+
+  /**
+   * Le réglage général « créneau ou échéance » (CA-D2) — ce dont l'adresse
+   * hérite quand elle ne déroge pas. Entre pour être AFFICHÉ et pour choisir
+   * la saisie à montrer, jamais pour être écrit. `slot` par défaut : c'est le
+   * défaut du commerce tant que personne ne l'a réglé.
+   */
+  readonly globalWindowMode = input<WindowMode>('slot');
+
+  /** Le mode qui s'applique à cette adresse : le sien, sinon le général. */
+  protected readonly effectiveWindowMode = computed<WindowMode>(
+    () => this.value().windowMode ?? this.globalWindowMode(),
+  );
+
+  protected readonly windowModeOptions = computed(() =>
+    windowModeOptionsOf(this.labels(), this.globalWindowMode()),
+  );
+
+  protected readonly windowModeChoice = computed(() => this.value().windowMode ?? 'inherit');
+
+  protected setWindowMode(choice: string): void {
+    const mode: WindowMode | null = choice === 'slot' || choice === 'deadline' ? choice : null;
+    this.set('windowMode', mode);
+  }
+
+  protected readonly deadlineLabels = computed<DeadlineListFieldLabels>(() => {
+    const labels = this.labels();
+    return {
+      before: labels.deadlineBefore,
+      add: labels.deadlineAdd,
+      newDeadline: labels.deadlineNew,
+      remove: labels.deadlineRemove,
+      none: labels.deadlinesNone,
+    };
+  });
+
+  /** Les jours, nommés dans la langue de l'app, pour les échéances par jour. */
+  protected readonly deadlineDays = computed(() =>
+    WEEKDAYS.map((day) => ({ key: day.value, name: this.labels().weekdays[day.value] })),
+  );
+
+  protected setDayDeadlines(day: keyof DraftDayDeadlines, times: readonly string[]): void {
+    this.value.update((draft) => ({
+      ...draft,
+      dayDeadlines: { ...draft.dayDeadlines, [day]: times },
+    }));
+  }
 
   protected readonly contactIssue = computed(() => contactIssueOf(this.value()));
 

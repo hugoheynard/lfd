@@ -1,0 +1,27 @@
+// Les échéances posées, puis la saisie d'une nouvelle : une colonne, le
+// rythme d'une liste.
+.deadline-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+// Une échéance et son « retirer », collés.
+.time {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+// Le champ et son bouton sur une ligne, alignés sur le bas du champ.
+.add {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}

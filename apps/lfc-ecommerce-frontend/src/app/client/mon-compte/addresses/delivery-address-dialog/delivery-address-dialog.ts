@@ -37,6 +37,7 @@ import { NotifyService } from '../../../../notify.service';
 import { ClientAddresses } from '../../../client-addresses.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { dialogSide } from '../../../panel-side';
+import { ServicePoints } from '../../../shop/pickup-points.store';
 import { knownDeliveryContacts } from '../addresses-section';
 
 /** Charge d'ouverture — la même que `DeliveryAddressPanelData` du back-office, plus le rang. */
@@ -155,6 +156,16 @@ export class DeliveryAddressDialog {
   private readonly addresses = inject(ClientAddresses);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef);
+  private readonly points = inject(ServicePoints);
+
+  /**
+   * Le réglage général « créneau ou échéance » (CA-D2), dont l'adresse hérite.
+   * Lu avec les points de service ; tant qu'il ne l'est pas, le défaut du
+   * commerce — le formulaire ne fait que le MONTRER.
+   */
+  protected readonly globalWindowMode = computed(
+    () => this.points.deliveryAvailability().windowMode ?? 'slot',
+  );
 
   protected readonly draft = signal<DeliveryDraft>(EMPTY_DELIVERY_DRAFT);
   /**
@@ -197,6 +208,8 @@ export class DeliveryAddressDialog {
   );
 
   constructor() {
+    // Idempotent : le réglage de livraison vient avec les points de service.
+    void this.points.hydrate();
     // Une entrée requise n'est pas posée quand le constructeur tourne.
     effect(() => {
       const initial = this.initial();

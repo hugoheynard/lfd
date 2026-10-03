@@ -179,6 +179,13 @@ fold-panel-body {
   color: var(--lfc-butter-900);
 }
 
+/* Début et fin d'un créneau à convenir, côte à côte, en colonne quand c'est étroit. */
+.when-slot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}
+
 /* ── Le pied ─────────────────────────────────────────────────────────────── */
 
 /* Pogonia, comme au volet suivant : les boutons du dépôt portent la face de

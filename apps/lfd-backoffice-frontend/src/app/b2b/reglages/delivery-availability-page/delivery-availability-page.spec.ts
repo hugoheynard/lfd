@@ -16,6 +16,7 @@ import { DeliveryAvailabilityPage } from './delivery-availability-page';
 const OPEN: DeliveryAvailabilityView = {
   openToB2b: true,
   openToB2c: true,
+  windowMode: 'slot',
   updatedAt: null,
   updatedBy: null,
 };
@@ -42,6 +43,7 @@ class FakeSettings {
     this.current = {
       openToB2b: patch.openToB2b ?? base.openToB2b,
       openToB2c: patch.openToB2c ?? base.openToB2c,
+      windowMode: patch.windowMode ?? base.windowMode,
       updatedAt: '2026-09-15T08:00:00.000Z',
       updatedBy: 'Hugo',
     };
@@ -158,7 +160,11 @@ describe('DeliveryAvailabilityPage — la disponibilité de la livraison', () =>
     fixture.detectChanges();
 
     expect(fixture.componentInstance['settings']()).toEqual(OPEN);
-    expect(fixture.componentInstance['draft']()).toEqual({ openToB2b: true, openToB2c: false });
+    expect(fixture.componentInstance['draft']()).toEqual({
+      openToB2b: true,
+      openToB2c: false,
+      windowMode: 'slot',
+    });
     const alert: HTMLElement | null = fixture.nativeElement.querySelector('fold-callout.v-alert');
     expect(alert?.textContent).toContain('Droit insuffisant.');
   });
@@ -168,5 +174,24 @@ describe('DeliveryAvailabilityPage — la disponibilité de la livraison', () =>
 
     expect(fixture.nativeElement.querySelector('fold-empty-state')).not.toBeNull();
     expect(text(fixture)).toContain('Réessayer');
+  });
+
+  it('passe en échéance par le seul champ qui change, et relit', async () => {
+    const settings = new FakeSettings(OPEN);
+    const fixture = await mount(settings);
+
+    fixture.componentInstance['setWindowMode']('deadline');
+    await fixture.componentInstance['save']();
+
+    expect(settings.patches).toEqual([{ windowMode: 'deadline' }]);
+    expect(fixture.componentInstance['settings']()?.windowMode).toBe('deadline');
+  });
+
+  it('ignore une valeur de segment hors du contrat', async () => {
+    const fixture = await mount(new FakeSettings(OPEN));
+
+    fixture.componentInstance['setWindowMode']('nimporte');
+
+    expect(fixture.componentInstance['draft']()?.windowMode).toBe('slot');
   });
 });

@@ -7,7 +7,7 @@ import {
   input,
   signal,
 } from '@angular/core';
-import type { DeliveryAddressView, DeliveryContact } from '@lfd/contracts';
+import type { DeliveryAddressView, DeliveryContact, WindowMode } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldPanelBodyComponent,
@@ -46,6 +46,11 @@ export interface DeliveryAddressPanelData {
    * panneau sert aussi l'app cliente, qui ne doit pas le proposer.
    */
   readonly showStopMinutes?: boolean;
+  /**
+   * Le réglage général « créneau ou échéance » (CA-D2), montré dans l'option
+   * d'héritage. Absent = `slot`, le défaut du commerce.
+   */
+  readonly globalWindowMode?: WindowMode;
 }
 
 /**

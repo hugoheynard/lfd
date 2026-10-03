@@ -35,7 +35,8 @@
       @case ('ready') {
         <div class="fields">
           <fold-time
-            label="Départ au plus tôt"
+            label="Départ quand rien ne presse"
+            hint="L’heure de départ d’une tournée qu’aucune échéance ne presse ; une échéance peut faire partir plus tôt, dès minuit."
             [value]="earliest()"
             [readOnly]="!canWrite()"
             (valueChange)="earliest.set($event)"

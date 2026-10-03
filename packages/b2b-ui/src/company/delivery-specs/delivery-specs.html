@@ -4,23 +4,68 @@
      de livraison préférés » sous « Détail de livraison » disait deux fois le
      même mot. -->
 <fold-fieldset [legend]="labels().detailLegend" legendVariant="heading" appearance="border">
-  <fold-fieldset class="slots" [legend]="labels().slotsLegend" legendVariant="heading">
-    <fold-checkbox
-      [label]="labels().sameEveryDay"
-      [hint]="labels().sameEveryDayHint"
-      [checked]="value().sameEveryDay"
-      (checkedChange)="set('sameEveryDay', $event)"
-    />
+  <!-- Créneau ou échéance (CA-D2) : trois réponses, comme la signature —
+       « comme d'habitude » n'est pas « créneau », et le confondre figerait
+       l'adresse le jour où le commerce change de réglage. -->
+  <fold-listbox
+    [label]="labels().windowMode"
+    [hint]="labels().windowModeHint"
+    [options]="windowModeOptions()"
+    [value]="windowModeChoice()"
+    (selectionChange)="setWindowMode($event)"
+    data-window-mode
+  />
 
-    <!-- Une ligne « Tous les jours », ou sept : le socle rend les lignes
-         qu'on lui donne, c'est ici qu'on décide lesquelles. -->
-    <lfd-hours-form
-      [startLabel]="labels().slotStart"
-      [endLabel]="labels().slotEnd"
-      [value]="slotEntries()"
-      (valueChange)="setSlotEntries($event)"
-    />
-  </fold-fieldset>
+  @if (effectiveWindowMode() === 'deadline') {
+    <!-- Plusieurs échéances par adresse (Hugo, 2026-10-03) : 6 h le pain,
+         11 h le déjeuner. La commande, elle, n'en choisit qu'une. -->
+    <fold-fieldset class="slots" [legend]="labels().deadlinesLegend" legendVariant="heading">
+      <fold-checkbox
+        [label]="labels().sameDeadlinesEveryDay"
+        [hint]="labels().sameDeadlinesEveryDayHint"
+        [checked]="value().sameDeadlinesEveryDay"
+        (checkedChange)="set('sameDeadlinesEveryDay', $event)"
+      />
+
+      @if (value().sameDeadlinesEveryDay) {
+        <lfd-deadline-list-field
+          [name]="labels().everyDay"
+          [labels]="deadlineLabels()"
+          [value]="value().everyDeadlines"
+          (valueChange)="set('everyDeadlines', $event)"
+        />
+      } @else {
+        @for (day of deadlineDays(); track day.key) {
+          <fold-fieldset [legend]="day.name">
+            <lfd-deadline-list-field
+              [name]="day.name"
+              [labels]="deadlineLabels()"
+              [value]="value().dayDeadlines[day.key]"
+              (valueChange)="setDayDeadlines(day.key, $event)"
+            />
+          </fold-fieldset>
+        }
+      }
+    </fold-fieldset>
+  } @else {
+    <fold-fieldset class="slots" [legend]="labels().slotsLegend" legendVariant="heading">
+      <fold-checkbox
+        [label]="labels().sameEveryDay"
+        [hint]="labels().sameEveryDayHint"
+        [checked]="value().sameEveryDay"
+        (checkedChange)="set('sameEveryDay', $event)"
+      />
+
+      <!-- Une ligne « Tous les jours », ou sept : le socle rend les lignes
+           qu'on lui donne, c'est ici qu'on décide lesquelles. -->
+      <lfd-hours-form
+        [startLabel]="labels().slotStart"
+        [endLabel]="labels().slotEnd"
+        [value]="slotEntries()"
+        (valueChange)="setSlotEntries($event)"
+      />
+    </fold-fieldset>
+  }
 
   <fold-fieldset [legend]="labels().contactLegend" legendVariant="heading">
     <fold-checkbox
