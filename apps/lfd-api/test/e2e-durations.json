@@ -54,6 +54,7 @@
   "test/delivery-bins-sharing.e2e-spec.ts": 5748,
   "test/delivery-bins.e2e-spec.ts": 5176,
   "test/delivery-brought-back-replace.e2e-spec.ts": 3905,
+  "test/delivery-composition-prerequisites.e2e-spec.ts": 5000,
   "test/delivery-day-version.e2e-spec.ts": 5546,
   "test/delivery-deposit-doorstep.e2e-spec.ts": 6810,
   "test/delivery-deposit.e2e-spec.ts": 3663,

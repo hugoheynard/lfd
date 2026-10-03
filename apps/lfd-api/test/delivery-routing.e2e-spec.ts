@@ -29,6 +29,8 @@ import {
   seedDeparture,
   seedLocatedDelivery,
   timed,
+  MEASURED,
+  seedBinCatalog,
 } from "./delivery-routing-scene.js";
 
 const DAY = serviceDay();
@@ -48,6 +50,7 @@ beforeEach(async () => {
   await ctx.reset();
   forgetCustomer();
   forgetRoutingScene();
+  await seedBinCatalog(ctx);
 });
 
 describe("les réglages du calcul (L7-C13, L7-C15)", () => {
@@ -137,8 +140,8 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
     readonly lost: string;
   }> {
     await seedDeparture(ctx);
-    await addVehicle(ctx, "Kangoo");
-    await addVehicle(ctx, "Trafic");
+    await addVehicle(ctx, "Kangoo", MEASURED);
+    await addVehicle(ctx, "Trafic", MEASURED);
     // Aix-les-Bains au nord, Montmélian au sud-est.
     const north = [
       await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 }),
@@ -207,7 +210,7 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
 
   it("mode insert : insère dans la tournée composée à la main, sans en changer l'ordre", async () => {
     await seedDeparture(ctx);
-    const vehicleId = await addVehicle(ctx, "Kangoo");
+    const vehicleId = await addVehicle(ctx, "Kangoo", MEASURED);
     const roundId = await openRound(ctx, DAY, vehicleId);
     // À la main : le plus loin d'abord, ce que l'optimiseur n'aurait pas fait.
     const far = await seedLocatedDelivery(ctx, DAY, { lat: 45.7, lng: 5.92 });
@@ -238,7 +241,7 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
 describe("chronométrer une composition glissée à la main (L10b-C2)", () => {
   it("chronomètre dans l'ordre donné, trace chaque tournée, et n'écrit rien", async () => {
     await seedDeparture(ctx);
-    const kangoo = await addVehicle(ctx, "Kangoo");
+    const kangoo = await addVehicle(ctx, "Kangoo", MEASURED);
     const roundId = await openRound(ctx, DAY, kangoo);
     const placed = await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
     await assign(ctx, DAY, roundId, placed);
@@ -263,7 +266,7 @@ describe("chronométrer une composition glissée à la main (L10b-C2)", () => {
 
   it("compte chez un arrêt le temps de livraison de SON adresse, lu par le canal (L7b-C4)", async () => {
     await seedDeparture(ctx);
-    const kangoo = await addVehicle(ctx, "Kangoo");
+    const kangoo = await addVehicle(ctx, "Kangoo", MEASURED);
     const usual = await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 });
     const slow = await seedLocatedDelivery(ctx, DAY, { lat: 45.69, lng: 5.91 }, 45);
 

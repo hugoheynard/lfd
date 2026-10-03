@@ -167,6 +167,14 @@ export class Vehicle {
     return this.currentRetiredAt === null;
   }
 
+  /**
+   * **En service et mesuré** : ce qui le compte pour la composition (CA-D3,
+   * Q5 — les cotes suffisent ; passages de roue et froid restent facultatifs).
+   */
+  get measured(): boolean {
+    return this.inService && this.currentLoad.cargo !== null;
+  }
+
   /** Peut-il porter une tournée du jour `day` (`AAAA-MM-JJ`) ? Cf. {@link activeOnDay}. */
   activeOn(day: string): boolean {
     return activeOnDay(this.currentRetiredAt, day);

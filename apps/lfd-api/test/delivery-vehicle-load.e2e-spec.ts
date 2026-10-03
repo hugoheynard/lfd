@@ -87,6 +87,8 @@ describe("le chargement d'un véhicule — aller-retour", () => {
 
   it("la correction est complète : omettre le chargement l'efface, et le journal le dit", async () => {
     const id = await addVehicle({ name: "Master", plate: "AB-123-CD", cargo: CARGO });
+    // Un autre véhicule mesuré reste : effacer les cotes du Master ne défait pas le socle (CA-D3).
+    await addVehicle({ name: "Trafic", plate: "EF-456-GH", cargo: CARGO });
     await admin()
       .put(`${VEHICLES}/${id}`)
       .send({
@@ -105,7 +107,10 @@ describe("le chargement d'un véhicule — aller-retour", () => {
       energy: null,
     });
     const facts = await ctx.prisma.activityEvent.findMany({
-      where: { type: { startsWith: "delivery_vehicle." } },
+      where: {
+        type: { startsWith: "delivery_vehicle." },
+        payload: { path: ["subjectLabel"], equals: "Master" },
+      },
       orderBy: { id: "asc" },
       select: { type: true, payload: true },
     });

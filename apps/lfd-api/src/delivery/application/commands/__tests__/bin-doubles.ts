@@ -5,6 +5,7 @@ import type { BinCapacity } from "../../../domain/entities/bin-capacity.js";
 import { BinType, type BinTypeSpec } from "../../../domain/entities/bin-type.js";
 import { BinCapacityRepository } from "../../../domain/ports/bin-capacity.repository.js";
 import { BinCatalogReader } from "../../../domain/ports/bin-catalog.reader.js";
+import { ActiveBinTypesReader } from "../../../domain/ports/composition-prerequisites.readers.js";
 import { BinTypeRepository } from "../../../domain/ports/bin-type.repository.js";
 
 export const CREATED = new Date(0);
@@ -51,6 +52,27 @@ export class InMemoryBinTypes extends BinTypeRepository {
       [...this.byId.values()].some(
         (type) => type.inService && type.name === name && type.id !== exceptId,
       ),
+    );
+  }
+
+  /** L'état SAUVÉ — comme en base. */
+  all(): readonly BinType[] {
+    return [...this.byId.values()];
+  }
+}
+
+/** Le lecteur du socle (CA-D3) sur le catalogue en mémoire. */
+export class ActiveBinTypesOver extends ActiveBinTypesReader {
+  constructor(private readonly types: InMemoryBinTypes) {
+    super();
+  }
+
+  activeIds(): Promise<readonly string[]> {
+    return Promise.resolve(
+      this.types
+        .all()
+        .filter((t) => t.inService)
+        .map((t) => t.id),
     );
   }
 }

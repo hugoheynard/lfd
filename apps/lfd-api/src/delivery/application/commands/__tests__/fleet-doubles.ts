@@ -1,4 +1,5 @@
 import { Vehicle } from "../../../domain/entities/vehicle.js";
+import { MeasuredVehiclesReader } from "../../../domain/ports/composition-prerequisites.readers.js";
 import { VehicleRoundsReader } from "../../../domain/ports/vehicle-rounds.reader.js";
 import { VehicleRepository } from "../../../domain/ports/vehicle.repository.js";
 import type { LicensePlate } from "../../../domain/value-objects/license-plate.js";
@@ -32,12 +33,40 @@ export class InMemoryVehicles extends VehicleRepository {
     );
     return Promise.resolve(holder?.name ?? null);
   }
+
+  /** L'état SAUVÉ, pas ce qu'un handler a muté sans l'écrire encore — comme en base. */
+  all(): readonly Vehicle[] {
+    return [...this.byId.values()];
+  }
+}
+
+/** Le lecteur du socle (CA-D3) sur la flotte en mémoire. */
+export class MeasuredVehiclesOver extends MeasuredVehiclesReader {
+  constructor(private readonly vehicles: InMemoryVehicles) {
+    super();
+  }
+
+  measuredIds(): Promise<readonly string[]> {
+    return Promise.resolve(
+      this.vehicles
+        .all()
+        .filter((v) => v.measured)
+        .map((v) => v.id),
+    );
+  }
 }
 
 export const CREATED = new Date(0);
 
 export function vehicle(id: string, name: string, plate: string): Vehicle {
   return Vehicle.register({ id, name, plate, at: CREATED });
+}
+
+/** Des cotes utiles quelconques : ce qui rend un véhicule « mesuré » (CA-D3). */
+export const SOME_CARGO = { lengthCm: 200, widthCm: 120, heightCm: 120 };
+
+export function measuredVehicle(id: string, name: string, plate: string): Vehicle {
+  return Vehicle.register({ id, name, plate, cargo: SOME_CARGO, at: CREATED });
 }
 
 /**

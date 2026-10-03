@@ -9,6 +9,10 @@ import {
 } from "../../channels/commerce/index.js";
 import { BroughtBackOrdersReader } from "../../domain/ports/brought-back-orders.reader.js";
 import type { RoundRow } from "../../domain/ports/delivery-rounds.reader.js";
+import {
+  ActiveBinTypesReader,
+  MeasuredVehiclesReader,
+} from "../../domain/ports/composition-prerequisites.readers.js";
 import { DeliveryRoundsReader } from "../../domain/ports/delivery-rounds.reader.js";
 import { DepartureReader } from "../../domain/ports/departure.reader.js";
 import { DistanceMatrix } from "../../domain/ports/distance-matrix.js";
@@ -18,6 +22,7 @@ import { LoadedStopsReader } from "../../domain/ports/loaded-stops.reader.js";
 import { RoutingSettingsReader } from "../../domain/ports/routing-settings.reader.js";
 import type { CostFn } from "../../domain/ports/distance-matrix.js";
 import { RouteGeometry } from "../../domain/ports/route-geometry.js";
+import { ensureComposable } from "../../domain/services/composition-prerequisites.js";
 import { insertIntoRounds } from "../../domain/services/insert-into-rounds.js";
 import type { PlanningVehicle, Proposal } from "../../domain/services/proposal.js";
 import { type PlannableStop, proposeRounds } from "../../domain/services/propose-rounds.js";
@@ -77,6 +82,10 @@ interface Planned {
  * son retour estimé (L7t-C2) ; si un arrêt de cette tournée n'est pas situé,
  * elle ne reçoit rien (`fleetOccupationOf`).
  *
+ * **Refusée sans socle** (CA-D3) : aucun véhicule en service avec ses cotes,
+ * ou aucun type de bac en service — c'est le premier contrôle.
+ *
+ * @throws {NoMeasuredVehicleError} @throws {NoActiveBinTypeError}
  * @throws {DepartureNotLocatedError} @throws {NoVehicleForProposalError}
  * @throws {RoutingVehicleNotFoundError} @throws {VehicleInactiveOnDayError}
  * @throws {RoadRoutingUnavailableError} le calcul routier ne répond pas (L10b-C5).
@@ -100,9 +109,15 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
     private readonly clock: Clock,
     private readonly broughtBack: BroughtBackOrdersReader,
     private readonly states: DeliveryOrderStatesReader,
+    private readonly measured: MeasuredVehiclesReader,
+    private readonly binTypes: ActiveBinTypesReader,
   ) {}
 
   async execute(query: GetDeliveryRoundProposalQuery): Promise<DeliveryRoundProposalView> {
+    ensureComposable({
+      measuredVehicleIds: await this.measured.measuredIds(),
+      activeBinTypeIds: await this.binTypes.activeIds(),
+    });
     const { settings, source } = await routingSettingsOf(this.settings);
     const departure = await locatedDeparture(this.departure, this.candidates);
     const vehicles = await chosenVehicles(this.fleet, query.day, query.vehicleIds);

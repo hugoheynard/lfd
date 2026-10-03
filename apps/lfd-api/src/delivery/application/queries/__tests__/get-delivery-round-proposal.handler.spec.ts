@@ -2,6 +2,10 @@ import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { DeliveryOrderFacts, DeliveryStopPoint } from "../../../channels/commerce/index.js";
 import { DeliveryRound } from "../../../domain/entities/delivery-round.js";
 import {
+  NoActiveBinTypeError,
+  NoMeasuredVehicleError,
+} from "../../../domain/errors/delivery-composition-errors.js";
+import {
   DepartureNotLocatedError,
   RoadRoutingUnavailableError,
 } from "../../../domain/errors/delivery-routing-errors.js";
@@ -15,6 +19,10 @@ import { OsrmDistanceMatrix } from "../../../infrastructure/osrm-distance-matrix
 import { addressKeyOf } from "../../../domain/services/address-key.js";
 import { RoutingSettings } from "../../../domain/value-objects/routing-settings.js";
 import { FixedBroughtBackOrders } from "../../commands/__tests__/brought-back-doubles.js";
+import {
+  FixedActiveBinTypes,
+  FixedMeasuredVehicles,
+} from "../../commands/__tests__/composition-doubles.js";
 import { FixedOrderStates } from "../../commands/__tests__/doorstep-doubles.js";
 import {
   deliveryOn,
@@ -104,6 +112,8 @@ function scene(
     readonly rounds?: readonly DeliveryRound[];
     readonly otherOrders?: readonly DeliveryOrderFacts[];
     readonly broughtBack?: FixedBroughtBackOrders;
+    readonly measuredVehicleIds?: readonly string[];
+    readonly activeBinTypeIds?: readonly string[];
   } = {},
 ) {
   const rounds = new InMemoryDeliveryRounds(
@@ -129,6 +139,8 @@ function scene(
     new FixedOrderStates(
       facts.map((order) => ({ orderId: order.orderId, state: "open" as const, ready: true })),
     ),
+    new FixedMeasuredVehicles(options.measuredVehicleIds ?? ["v1"]),
+    new FixedActiveBinTypes(options.activeBinTypeIds ?? ["bin_m"]),
   );
   return { handler, rounds };
 }
@@ -199,6 +211,23 @@ describe("GetDeliveryRoundProposalHandler — « Proposer » (L7-C3 à C6)", () 
     await expect(
       handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false)),
     ).rejects.toThrow("Point de départ");
+  });
+
+  it("🔴 sans véhicule mesuré, refuse avant tout calcul en renvoyant aux véhicules (CA-D3)", async () => {
+    const { handler } = scene({ measuredVehicleIds: [], labo: null });
+
+    // Le départ non situé n'est pas le refus rendu : le socle est le premier contrôle.
+    await expect(
+      handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false)),
+    ).rejects.toThrow(NoMeasuredVehicleError);
+  });
+
+  it("🔴 sans type de bac en service, refuse en renvoyant aux bacs (CA-D3)", async () => {
+    const { handler } = scene({ activeBinTypeIds: [] });
+
+    await expect(
+      handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false)),
+    ).rejects.toThrow(NoActiveBinTypeError);
   });
 
   describe("mode insert", () => {

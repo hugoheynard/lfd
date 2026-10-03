@@ -33,6 +33,8 @@ import {
   seedLocatedDelivery,
   time,
   TIMING,
+  MEASURED,
+  seedBinCatalog,
 } from "./delivery-routing-scene.js";
 
 const DAY = serviceDay();
@@ -53,6 +55,7 @@ beforeEach(async () => {
   await ctx.reset();
   forgetCustomer();
   forgetRoutingScene();
+  await seedBinCatalog(ctx);
 });
 
 function messageOf(response: Response): string {
@@ -61,7 +64,7 @@ function messageOf(response: Response): string {
 
 /** Une tournée composée à la main, avec une commande située. */
 async function composed(vehicleName: string, gps: typeof NORTH) {
-  const roundId = await openRound(ctx, DAY, await addVehicle(ctx, vehicleName));
+  const roundId = await openRound(ctx, DAY, await addVehicle(ctx, vehicleName, MEASURED));
   const orderId = await seedLocatedDelivery(ctx, DAY, gps);
   const stopId = await assign(ctx, DAY, roundId, orderId);
   return { roundId, orderId, stopId };
@@ -92,7 +95,7 @@ describe("ce que la proposition ne touche jamais (L7-C5)", () => {
     const [binId] = await declareBins(ctx, gone.orderId, 1);
     await loadBin(ctx, gone.roundId, { binId: binId ?? "" }).expect(204);
     expect((await depart(ctx, gone.roundId)).status).toBe(204);
-    await addVehicle(ctx, "Trafic");
+    await addVehicle(ctx, "Trafic", MEASURED);
     await seedLocatedDelivery(ctx, DAY, SOUTH);
 
     const view = await propose(ctx, `jour=${DAY}&toutRecomposer=true`);
@@ -109,7 +112,7 @@ describe("ce que la proposition ne touche jamais (L7-C5)", () => {
     const loaded = await composed("Kangoo", NORTH);
     const [binId] = await declareBins(ctx, loaded.orderId, 1);
     await loadBin(ctx, loaded.roundId, { binId: binId ?? "" }).expect(204);
-    const traficId = await addVehicle(ctx, "Trafic");
+    const traficId = await addVehicle(ctx, "Trafic", MEASURED);
 
     const view = await propose(ctx, `jour=${DAY}&toutRecomposer=true`);
     expect(view.kept).toEqual([
@@ -135,7 +138,7 @@ describe("chronométrer refuse ce qu'appliquer refuserait (L10b-C2)", () => {
     const loaded = await composed("Kangoo", NORTH);
     const [binId] = await declareBins(ctx, loaded.orderId, 1);
     await loadBin(ctx, loaded.roundId, { binId: binId ?? "" }).expect(204);
-    const traficId = await addVehicle(ctx, "Trafic");
+    const traficId = await addVehicle(ctx, "Trafic", MEASURED);
 
     const refused = await time(ctx, {
       day: DAY,
@@ -150,7 +153,7 @@ describe("chronométrer refuse ce qu'appliquer refuserait (L10b-C2)", () => {
 
   it("un arrêt non situé : 409, en renvoyant au carnet", async () => {
     await seedDeparture(ctx);
-    const kangoo = await addVehicle(ctx, "Kangoo");
+    const kangoo = await addVehicle(ctx, "Kangoo", MEASURED);
     const lost = await seedLocatedDelivery(ctx, DAY, null);
 
     const refused = await time(ctx, {
@@ -169,7 +172,7 @@ describe("chronométrer refuse ce qu'appliquer refuserait (L10b-C2)", () => {
 describe("le départ doit être situé", () => {
   it("sans point GPS au labo, « Proposer » refuse et renvoie au réglage", async () => {
     await seedDeparture(ctx, false);
-    await addVehicle(ctx, "Kangoo");
+    await addVehicle(ctx, "Kangoo", MEASURED);
 
     const refused = await admin(ctx).get(`${PROPOSAL}?jour=${DAY}`).expect(409);
 

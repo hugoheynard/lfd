@@ -40,6 +40,8 @@ import {
   propose,
   ROAD_ROUTING_OVERRIDES,
   seedDeparture,
+  MEASURED,
+  seedBinCatalog,
 } from "./delivery-routing-scene.js";
 import {
   bootstrapE2e,
@@ -68,6 +70,7 @@ beforeEach(async () => {
   await ctx.reset();
   forgetCustomer();
   forgetRoutingScene();
+  await seedBinCatalog(ctx);
   await ctx.asSub(E2E_STAFF_SUB).post("/admin/staff-roles").send(DOOR_ROLE).expect(201);
 });
 
@@ -111,7 +114,7 @@ describe("Une commande rapportée repart (RL1)", () => {
     expect(unassignedOf(await dayView(ctx, DOOR_DAY), orderId)).toMatchObject({ broughtBackAt });
 
     // Placée dans une tournée du lendemain : sa date demandée ne bouge pas.
-    const roundId = await openRound(ctx, NEXT_DAY, await addVehicle(ctx, "Trafic"));
+    const roundId = await openRound(ctx, NEXT_DAY, await addVehicle(ctx, "Trafic", MEASURED));
     await assign(ctx, NEXT_DAY, roundId, orderId);
     const order = await ctx.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
     const placed = await dayView(ctx, NEXT_DAY);
@@ -166,7 +169,7 @@ describe("Une commande rapportée repart (RL1)", () => {
   it("une commande d'un autre jour, NON rapportée, reste refusée au lendemain", async () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const { orderId } = await departedStop(ctx, paul);
-    const roundId = await openRound(ctx, NEXT_DAY, await addVehicle(ctx, "Trafic"));
+    const roundId = await openRound(ctx, NEXT_DAY, await addVehicle(ctx, "Trafic", MEASURED));
     const { version } = await roundOf(ctx, NEXT_DAY, roundId);
 
     const refused = await admin(ctx).post(`${ROUNDS}/${roundId}/arrets`).send({ orderId, version });
@@ -177,7 +180,7 @@ describe("Une commande rapportée repart (RL1)", () => {
 
   it("🔴 placée le lendemain, la feuille de route du lendemain la sert quand l'écran la nomme", async () => {
     const { orderId } = await broughtBack();
-    const roundId = await openRound(ctx, NEXT_DAY, await addVehicle(ctx, "Trafic"));
+    const roundId = await openRound(ctx, NEXT_DAY, await addVehicle(ctx, "Trafic", MEASURED));
     await assign(ctx, NEXT_DAY, roundId, orderId);
     const own = (await runSheet(`jour=${DOOR_DAY}`)).stops.find((s) => s.orderId === orderId);
 
@@ -200,6 +203,8 @@ describe("Une commande rapportée repart (RL1)", () => {
   it("🔴 « Proposer » du lendemain la place, comme une commande du jour", async () => {
     const { orderId } = await broughtBack();
     await seedDeparture(ctx);
+    // « Proposer » exige un véhicule mesuré (CA-D3) : celui de la livraison n'a pas de cotes.
+    await addVehicle(ctx, "Trafic", MEASURED);
 
     const view = await propose(ctx, `jour=${NEXT_DAY}`);
 

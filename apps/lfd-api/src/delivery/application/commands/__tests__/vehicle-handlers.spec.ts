@@ -22,7 +22,14 @@ import { ReactivateVehicleHandler } from "../reactivate-vehicle.handler.js";
 import { RetireVehicleCommand } from "../retire-vehicle.command.js";
 import { RetireVehicleHandler } from "../retire-vehicle.handler.js";
 import { VehicleHasUpcomingRoundsError } from "../../../domain/errors/delivery-round-errors.js";
-import { CREATED, FixedVehicleRounds, InMemoryVehicles, vehicle } from "./fleet-doubles.js";
+import {
+  CREATED,
+  FixedVehicleRounds,
+  InMemoryVehicles,
+  measuredVehicle,
+  MeasuredVehiclesOver,
+  vehicle,
+} from "./fleet-doubles.js";
 
 const NOW = new Date(CREATED.getTime() + 3_600_000);
 
@@ -162,9 +169,13 @@ describe("CorrectVehicleHandler", () => {
     const vehicles = new InMemoryVehicles(vehicle("v_1", "Kangoo", "AB-123-CD"));
     const { clock, events, uow } = tools();
 
-    await new CorrectVehicleHandler(vehicles, clock, events, uow).execute(
-      new CorrectVehicleCommand("v_1", { name: "Kangoo gris", plate: "EF-456-GH" }),
-    );
+    await new CorrectVehicleHandler(
+      vehicles,
+      new MeasuredVehiclesOver(vehicles),
+      clock,
+      events,
+      uow,
+    ).execute(new CorrectVehicleCommand("v_1", { name: "Kangoo gris", plate: "EF-456-GH" }));
 
     expect(events.traced[0]?.journalFact().payload).toEqual({
       subjectLabel: "Kangoo gris",
@@ -188,9 +199,19 @@ describe("CorrectVehicleHandler", () => {
   });
 
   it("la fiche est complète : ajouter le froid le trace, l'omettre ensuite l'efface", async () => {
-    const vehicles = new InMemoryVehicles(vehicle("v_1", "Kangoo", "AB-123-CD"));
+    // Un autre véhicule mesuré reste : effacer les cotes de v_1 ne défait pas le socle (CA-D3).
+    const vehicles = new InMemoryVehicles(
+      vehicle("v_1", "Kangoo", "AB-123-CD"),
+      measuredVehicle("v_2", "Master", "EF-456-GH"),
+    );
     const { clock, events, uow } = tools();
-    const handler = new CorrectVehicleHandler(vehicles, clock, events, uow);
+    const handler = new CorrectVehicleHandler(
+      vehicles,
+      new MeasuredVehiclesOver(vehicles),
+      clock,
+      events,
+      uow,
+    );
 
     await handler.execute(
       new CorrectVehicleCommand("v_1", { name: "Kangoo", plate: "AB-123-CD", ...LOADED }),
@@ -215,7 +236,13 @@ describe("CorrectVehicleHandler", () => {
   it("trace les passages de roue ajoutés, et refuse ceux qui sortent du plancher (G4)", async () => {
     const vehicles = new InMemoryVehicles(vehicle("v_1", "Trafic", "AB-123-CD"));
     const { clock, events, uow } = tools();
-    const handler = new CorrectVehicleHandler(vehicles, clock, events, uow);
+    const handler = new CorrectVehicleHandler(
+      vehicles,
+      new MeasuredVehiclesOver(vehicles),
+      clock,
+      events,
+      uow,
+    );
     const identity = { name: "Trafic", plate: "AB-123-CD", ...LOADED };
 
     await handler.execute(new CorrectVehicleCommand("v_1", { ...identity, wheelArches: ARCHES }));
@@ -236,9 +263,13 @@ describe("CorrectVehicleHandler", () => {
     const vehicles = new InMemoryVehicles(vehicle("v_1", "Kangoo", "AB-123-CD"));
     const { clock, events, uow } = tools();
 
-    await new CorrectVehicleHandler(vehicles, clock, events, uow).execute(
-      new CorrectVehicleCommand("v_1", { name: "Kangoo blanc", plate: "AB123CD" }),
-    );
+    await new CorrectVehicleHandler(
+      vehicles,
+      new MeasuredVehiclesOver(vehicles),
+      clock,
+      events,
+      uow,
+    ).execute(new CorrectVehicleCommand("v_1", { name: "Kangoo blanc", plate: "AB123CD" }));
 
     expect(vehicles.saved).toHaveLength(1);
   });
@@ -246,9 +277,13 @@ describe("CorrectVehicleHandler", () => {
   it("refuse un véhicule inconnu", async () => {
     const { clock, events, uow } = tools();
     await expect(
-      new CorrectVehicleHandler(new InMemoryVehicles(), clock, events, uow).execute(
-        new CorrectVehicleCommand("absent", { name: "X", plate: "AB-123-CD" }),
-      ),
+      new CorrectVehicleHandler(
+        new InMemoryVehicles(),
+        new MeasuredVehiclesOver(new InMemoryVehicles()),
+        clock,
+        events,
+        uow,
+      ).execute(new CorrectVehicleCommand("absent", { name: "X", plate: "AB-123-CD" })),
     ).rejects.toThrow(VehicleNotFoundError);
   });
 });
@@ -258,9 +293,14 @@ describe("RetireVehicleHandler", () => {
     const vehicles = new InMemoryVehicles(vehicle("v_1", "Kangoo", "AB-123-CD"));
     const { clock, events, uow } = tools();
 
-    await new RetireVehicleHandler(vehicles, new FixedVehicleRounds(), clock, events, uow).execute(
-      new RetireVehicleCommand("v_1"),
-    );
+    await new RetireVehicleHandler(
+      vehicles,
+      new FixedVehicleRounds(),
+      new MeasuredVehiclesOver(vehicles),
+      clock,
+      events,
+      uow,
+    ).execute(new RetireVehicleCommand("v_1"));
 
     expect(vehicles.saved[0]?.retiredAt).toEqual(NOW);
     expect(events.factTypes()).toEqual(["delivery_vehicle.retired"]);
@@ -275,6 +315,7 @@ describe("RetireVehicleHandler", () => {
       new RetireVehicleHandler(
         new InMemoryVehicles(retired),
         new FixedVehicleRounds(),
+        new MeasuredVehiclesOver(new InMemoryVehicles(retired)),
         clock,
         events,
         uow,
@@ -288,9 +329,14 @@ describe("RetireVehicleHandler", () => {
     const rounds = new FixedVehicleRounds({ v_1: ["1970-01-01", "1970-01-03", "1970-01-05"] });
     const { clock, events, uow } = tools();
 
-    const retiring = new RetireVehicleHandler(vehicles, rounds, clock, events, uow).execute(
-      new RetireVehicleCommand("v_1"),
-    );
+    const retiring = new RetireVehicleHandler(
+      vehicles,
+      rounds,
+      new MeasuredVehiclesOver(vehicles),
+      clock,
+      events,
+      uow,
+    ).execute(new RetireVehicleCommand("v_1"));
 
     await expect(retiring).rejects.toThrow(VehicleHasUpcomingRoundsError);
     await expect(retiring).rejects.toThrow(/1970-01-03, le 1970-01-05/u);
@@ -303,9 +349,14 @@ describe("RetireVehicleHandler", () => {
     const rounds = new FixedVehicleRounds({ v_1: ["1970-01-01"] });
     const { clock, events, uow } = tools();
 
-    await new RetireVehicleHandler(vehicles, rounds, clock, events, uow).execute(
-      new RetireVehicleCommand("v_1"),
-    );
+    await new RetireVehicleHandler(
+      vehicles,
+      rounds,
+      new MeasuredVehiclesOver(vehicles),
+      clock,
+      events,
+      uow,
+    ).execute(new RetireVehicleCommand("v_1"));
 
     expect(vehicles.saved[0]?.retiredAt).toEqual(NOW);
   });
@@ -318,6 +369,7 @@ describe("RetireVehicleHandler", () => {
     await new RetireVehicleHandler(
       vehicles,
       rounds,
+      new MeasuredVehiclesOver(vehicles),
       lateEvening,
       new RecordingPublisher(),
       new DirectUnitOfWork(),

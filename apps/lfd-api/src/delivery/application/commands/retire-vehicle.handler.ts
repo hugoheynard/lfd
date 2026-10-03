@@ -6,8 +6,10 @@ import { DomainEventPublisher } from "../../../platform/events/domain-event-publ
 import { Clock } from "../../../platform/time/clock.js";
 import { VehicleHasUpcomingRoundsError } from "../../domain/errors/delivery-round-errors.js";
 import { VehicleRetiredEvent } from "../../domain/events/vehicle.events.js";
+import { MeasuredVehiclesReader } from "../../domain/ports/composition-prerequisites.readers.js";
 import { VehicleRoundsReader } from "../../domain/ports/vehicle-rounds.reader.js";
 import { VehicleRepository } from "../../domain/ports/vehicle.repository.js";
+import { ensureMeasuredVehicleRemains } from "../../domain/services/composition-prerequisites.js";
 import { loadVehicle } from "../vehicle-support.js";
 import { RetireVehicleCommand } from "./retire-vehicle.command.js";
 
@@ -24,14 +26,20 @@ import { RetireVehicleCommand } from "./retire-vehicle.command.js";
  * strictement simultanés passeraient tous les deux. Le cas est signalé à la
  * lecture (`vehicleRetired` dans la vue du jour), jamais silencieux.
  *
+ * **Refusé si c'est le dernier véhicule en service à avoir ses cotes**
+ * (CA-D3) : sans lui, les tournées ne se proposent plus. Même réserve que
+ * ci-dessus : deux retraits strictement simultanés des deux derniers passeraient
+ * tous les deux ; « Proposer » le dirait alors, jamais en silence.
+ *
  * @throws {VehicleNotFoundError} @throws {VehicleAlreadyRetiredError}
- * @throws {VehicleHasUpcomingRoundsError}
+ * @throws {VehicleHasUpcomingRoundsError} @throws {LastMeasuredVehicleError}
  */
 @CommandHandler(RetireVehicleCommand)
 export class RetireVehicleHandler implements ICommandHandler<RetireVehicleCommand, void> {
   constructor(
     private readonly vehicles: VehicleRepository,
     private readonly rounds: VehicleRoundsReader,
+    private readonly measured: MeasuredVehiclesReader,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
@@ -45,7 +53,14 @@ export class RetireVehicleHandler implements ICommandHandler<RetireVehicleComman
       if (upcoming.length > 0) {
         throw new VehicleHasUpcomingRoundsError(vehicle.name, upcoming);
       }
+      const wasMeasured = vehicle.measured;
       vehicle.retire(now);
+      ensureMeasuredVehicleRemains({
+        vehicle,
+        wasMeasured,
+        measuredIds: await this.measured.measuredIds(),
+        gesture: "retire",
+      });
       await this.vehicles.save(vehicle);
       await this.events.publishTraced(new VehicleRetiredEvent(vehicle));
     });

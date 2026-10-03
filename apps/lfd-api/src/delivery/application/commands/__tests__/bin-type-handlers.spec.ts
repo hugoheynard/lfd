@@ -19,7 +19,14 @@ import { ReactivateBinTypeCommand } from "../reactivate-bin-type.command.js";
 import { ReactivateBinTypeHandler } from "../reactivate-bin-type.handler.js";
 import { SetBinCapacityCommand } from "../set-bin-capacity.command.js";
 import { SetBinCapacityHandler } from "../set-bin-capacity.handler.js";
-import { binType, CREATED, InMemoryBinCapacities, InMemoryBinTypes, SPEC } from "./bin-doubles.js";
+import {
+  ActiveBinTypesOver,
+  binType,
+  CREATED,
+  InMemoryBinCapacities,
+  InMemoryBinTypes,
+  SPEC,
+} from "./bin-doubles.js";
 
 const NOW = new Date(CREATED.getTime() + 3_600_000);
 
@@ -134,12 +141,17 @@ describe("CorrectBinTypeHandler", () => {
 
 describe("ArchiveBinTypeHandler / ReactivateBinTypeHandler", () => {
   it("archive daté du Clock, puis réactive, chacun tracé", async () => {
-    const types = new InMemoryBinTypes(binType("bin_a", "Bac M"));
+    // Un autre type reste en service : archiver bin_a ne défait pas le socle (CA-D3).
+    const types = new InMemoryBinTypes(binType("bin_a", "Bac M"), binType("bin_b", "Bac L"));
     const { clock, events, uow } = tools();
 
-    await new ArchiveBinTypeHandler(types, clock, events, uow).execute(
-      new ArchiveBinTypeCommand("bin_a"),
-    );
+    await new ArchiveBinTypeHandler(
+      types,
+      new ActiveBinTypesOver(types),
+      clock,
+      events,
+      uow,
+    ).execute(new ArchiveBinTypeCommand("bin_a"));
     expect(types.saved[0]?.archivedAt).toEqual(NOW);
 
     await new ReactivateBinTypeHandler(types, clock, events, uow).execute(

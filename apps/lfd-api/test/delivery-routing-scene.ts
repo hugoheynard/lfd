@@ -24,6 +24,7 @@ import { DistanceMatrix } from "../src/delivery/domain/ports/distance-matrix.js"
 import { RouteGeometry } from "../src/delivery/domain/ports/route-geometry.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { type E2eOverride, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { binTypeId } from "./delivery-loading-scene.js";
 import { admin, ROUNDS } from "./delivery-rounds-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
@@ -55,6 +56,14 @@ export async function seedDeparture(ctx: E2eContext, gps: boolean = true): Promi
       ...(gps ? { gps: { lat: 45.5646, lng: 5.9178 } } : {}),
     },
   });
+}
+
+/** Des cotes utiles quelconques : « Proposer » exige un véhicule mesuré (CA-D3). */
+export const MEASURED = { lengthCm: 250, widthCm: 160, heightCm: 140 } as const;
+
+/** Le catalogue minimal : « Proposer » exige un type de bac en service (CA-D3). */
+export async function seedBinCatalog(ctx: E2eContext): Promise<void> {
+  await binTypeId(ctx);
 }
 
 let sequence = 0;

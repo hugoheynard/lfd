@@ -33,11 +33,21 @@ export function admin(ctx: E2eContext): request.Agent {
 
 let plateSeq = 0;
 
-/** Un véhicule, par la route de la flotte. */
-export async function addVehicle(ctx: E2eContext, name: string): Promise<string> {
+/**
+ * Un véhicule, par la route de la flotte — avec ses cotes si on les donne :
+ * « Proposer » en exige au moins un (CA-D3).
+ */
+export async function addVehicle(
+  ctx: E2eContext,
+  name: string,
+  cargo?: { readonly lengthCm: number; readonly widthCm: number; readonly heightCm: number },
+): Promise<string> {
   plateSeq += 1;
   const plate = `AB-${String(100 + plateSeq)}-CD`;
-  const response = await admin(ctx).post(VEHICLES).send({ name, plate }).expect(201);
+  const response = await admin(ctx)
+    .post(VEHICLES)
+    .send({ name, plate, ...(cargo === undefined ? {} : { cargo }) })
+    .expect(201);
   return jsonBody<CreatedIdResponse>(response).id;
 }
 

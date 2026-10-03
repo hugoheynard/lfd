@@ -88,6 +88,8 @@ describe("le catalogue des bacs", () => {
 
   it("archive, libère le nom, et refuse de réactiver sur un nom repris", async () => {
     const id = await addBin();
+    // Un autre type reste en service : archiver le Bac M ne défait pas le socle (CA-D3).
+    await addBin({ ...BAC_M, name: "Bac L" });
     await admin().post(`${BINS}/${id}/archiver`).expect(204);
     const again = await admin().post(`${BINS}/${id}/archiver`).expect(409);
     expect(code(again)).toBe("delivery.bin_type_already_archived");
@@ -97,7 +99,7 @@ describe("le catalogue des bacs", () => {
     expect(code(refused)).toBe("delivery.bin_type_name_taken");
 
     const types = (await catalog()).types;
-    expect(types).toHaveLength(2);
+    expect(types).toHaveLength(3);
     expect(types[0]?.archivedAt).not.toBeNull();
   });
 
@@ -117,6 +119,8 @@ describe("le catalogue des bacs", () => {
   });
 
   it("trace chaque geste, et chaque charge passe le catalogue des faits", async () => {
+    // Un autre type reste en service : archiver le Bac M ne défait pas le socle (CA-D3).
+    await addBin({ ...BAC_M, name: "Bac L" });
     const id = await addBin();
     await admin()
       .put(`${BINS}/${id}`)
@@ -131,6 +135,7 @@ describe("le catalogue des bacs", () => {
       select: { type: true, payload: true },
     });
     expect(facts.map((fact) => fact.type)).toEqual([
+      "delivery_bin_type.added",
       "delivery_bin_type.added",
       "delivery_bin_type.corrected",
       "delivery_bin_type.archived",
@@ -196,6 +201,8 @@ describe("la grille des contenances", () => {
 
   it("refuse une contenance nulle ou sur un type archivé", async () => {
     const id = await addBin();
+    // Un autre type reste en service : archiver le Bac M ne défait pas le socle (CA-D3).
+    await addBin({ ...BAC_M, name: "Bac L" });
 
     const zero = await admin().put(CAPACITIES).send({ binTypeId: id, sku: CROISSANT, units: 0 });
     expect(zero.status).toBe(400);
