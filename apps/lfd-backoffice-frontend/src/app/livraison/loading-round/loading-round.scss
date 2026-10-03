@@ -202,3 +202,11 @@
     align-items: start;
   }
 }
+
+.lr-miss-summary {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+}

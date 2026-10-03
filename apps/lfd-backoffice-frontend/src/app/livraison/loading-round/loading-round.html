@@ -243,7 +243,9 @@
           <ng-template #missingCard>
             <fold-card data-missing>
               <div class="lr-block">
-                <fold-element-title variant="caps" title="Ce qui manque" />
+                @if (layout() === 'depot') {
+                  <fold-element-title variant="caps" title="Ce qui manque" />
+                }
                 @if (toRedoCount() > 0) {
                   <fold-callout variant="alert" data-to-redo>
                     {{ toRedoCount() === 1 ? 'Un arrêt porte' : toRedoCount() + ' arrêts portent' }}
@@ -254,21 +256,18 @@
                 }
                 @if (missingRows().length === 0) {
                   <p class="lr-miss-none">Tout est chargé.</p>
+                } @else if (layout() === 'depot') {
+                  <ng-container *ngTemplateOutlet="missingList" />
                 } @else {
-                  @for (row of missingRows(); track row.stopId) {
-                    <div class="lr-miss" data-missing-row>
-                      <span class="lr-miss-stop" [class]="'hue-a-' + row.hue">{{
-                        row.position
-                      }}</span>
-                      <span class="lr-miss-who">
-                        <strong>{{ row.customerLabel }}</strong>
-                        @if (row.codes !== '') {
-                          <span class="lr-miss-codes">{{ row.codes }}</span>
-                        }
-                      </span>
-                      <span class="lr-miss-status">{{ row.status }}</span>
-                    </div>
-                  }
+                  <!-- Au téléphone, la liste replie : la carte et la rangée passent d'abord. -->
+                  <fold-disclosure data-missing-fold>
+                    <span summary class="lr-miss-summary">
+                      Ce qui manque · {{ missingRows().length }} arrêt{{
+                        missingRows().length > 1 ? 's' : ''
+                      }}
+                    </span>
+                    <ng-container *ngTemplateOutlet="missingList" />
+                  </fold-disclosure>
                 }
                 @if (canDepart()) {
                   <button
@@ -285,6 +284,21 @@
                 }
               </div>
             </fold-card>
+          </ng-template>
+
+          <ng-template #missingList>
+            @for (row of missingRows(); track row.stopId) {
+              <div class="lr-miss" data-missing-row>
+                <span class="lr-miss-stop" [class]="'hue-a-' + row.hue">{{ row.position }}</span>
+                <span class="lr-miss-who">
+                  <strong>{{ row.customerLabel }}</strong>
+                  @if (row.codes !== '') {
+                    <span class="lr-miss-codes">{{ row.codes }}</span>
+                  }
+                </span>
+                <span class="lr-miss-status">{{ row.status }}</span>
+              </div>
+            }
           </ng-template>
         }
       }
