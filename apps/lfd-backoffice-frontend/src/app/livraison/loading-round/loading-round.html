@@ -153,17 +153,28 @@
                   </div>
                 }
                 @if (openRowView(); as row) {
-                  <fold-card>
-                    <app-loading-row-view
-                      [title]="row.title"
-                      subtitle="vue des portes · gauche → droite"
-                      [columns]="row.columns"
-                      [nextKey]="nextKey()"
-                      [canPick]="canLoad()"
-                      [size]="layout()"
-                      (picked)="pick($event)"
-                      (unload)="unload($event)"
-                    />
+                  <!-- Glisser au doigt passe à la rangée voisine (row-swipe.ts). -->
+                  <fold-card
+                    class="lr-swipe"
+                    data-row-swipe
+                    (pointerdown)="swipeStart($event)"
+                    (pointerup)="swipeEnd($event)"
+                    (pointercancel)="swipeCancel()"
+                  >
+                    @for (key of [row.title]; track key) {
+                      <div class="lr-slide" [class.lr-slide--back]="slideBack()">
+                        <app-loading-row-view
+                          [title]="row.title"
+                          subtitle="vue des portes · gauche → droite"
+                          [columns]="row.columns"
+                          [nextKey]="nextKey()"
+                          [canPick]="canLoad()"
+                          [size]="layout()"
+                          (picked)="pick($event)"
+                          (unload)="unload($event)"
+                        />
+                      </div>
+                    }
                   </fold-card>
                 }
               } @else if (allColumns().length > 0) {

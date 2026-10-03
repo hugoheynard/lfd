@@ -65,6 +65,7 @@ import { LoadingNextCard } from '../loading-next-card/loading-next-card';
 import { LoadingPlan } from '../loading-plan/loading-plan';
 import { LoadingRowPicker } from '../loading-row-picker/loading-row-picker';
 import { LoadingRowView } from '../loading-row-view/loading-row-view';
+import { neighbourRow, swipeStep } from '../row-swipe';
 
 type RoundState =
   | { readonly status: 'loading' }
@@ -345,7 +346,40 @@ export class LoadingRound {
   }
 
   protected showRow(row: number): void {
+    const current = this.openRow();
+    this.slideBack.set(current !== null && row < current);
     this.pinnedRow.set(row);
+  }
+
+  /** La rangée qui entre glisse depuis la droite, ou depuis la gauche quand on revient vers le fond. */
+  protected readonly slideBack = signal(false);
+
+  /** Où le doigt s'est posé sur la vue de rangée, le temps du geste. */
+  private swipeOrigin: { readonly x: number; readonly y: number } | null = null;
+
+  protected swipeStart(event: PointerEvent): void {
+    this.swipeOrigin = { x: event.clientX, y: event.clientY };
+  }
+
+  protected swipeEnd(event: PointerEvent): void {
+    const origin = this.swipeOrigin;
+    this.swipeOrigin = null;
+    if (origin === null) {
+      return;
+    }
+    const step = swipeStep(event.clientX - origin.x, event.clientY - origin.y);
+    const row = neighbourRow(
+      this.rows().map((entry) => entry.row),
+      this.openRow(),
+      step,
+    );
+    if (row !== null) {
+      this.showRow(row);
+    }
+  }
+
+  protected swipeCancel(): void {
+    this.swipeOrigin = null;
   }
 
   /** Un QR lu par la caméra, ou un code tapé : c'est le geste. */

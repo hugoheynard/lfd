@@ -341,4 +341,24 @@ describe('LoadingRound — le plan de chargement à l’écran', () => {
     await scan(fixture, 'AAA222');
     expect(text(element, '[data-row-view] fold-element-title')).toContain('Rangée 1');
   });
+
+  it('glisser au doigt vers la gauche passe à la rangée d’après, vers la droite revient', async () => {
+    const { fixture, element } = await bootPlanned();
+    // jsdom n'a pas de `PointerEvent` : un `MouseEvent` du même nom porte les
+    // mêmes coordonnées, seules lues par le composant.
+    const swipe = (fromX: number, toX: number): void => {
+      const card = element.querySelector('[data-row-swipe]');
+      card?.dispatchEvent(new MouseEvent('pointerdown', { clientX: fromX, clientY: 100 }));
+      card?.dispatchEvent(new MouseEvent('pointerup', { clientX: toX, clientY: 105 }));
+      fixture.detectChanges();
+    };
+
+    swipe(300, 100);
+    expect(text(element, '[data-row-view] fold-element-title')).toContain('Rangée 2');
+    swipe(100, 300);
+    expect(text(element, '[data-row-view] fold-element-title')).toContain('Rangée 1');
+    // Un toucher qui bouge à peine ne change rien.
+    swipe(200, 180);
+    expect(text(element, '[data-row-view] fold-element-title')).toContain('Rangée 1');
+  });
 });

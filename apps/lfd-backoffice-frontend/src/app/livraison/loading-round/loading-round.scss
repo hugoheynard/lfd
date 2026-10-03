@@ -210,3 +210,38 @@
   letter-spacing: var(--fold-tracking-caps);
   text-transform: uppercase;
 }
+
+// Le doigt glisse d'une rangée à l'autre : le navigateur garde le défilement
+// vertical, et laisse l'horizontal au geste.
+.lr-swipe {
+  touch-action: pan-y;
+}
+
+// La rangée qui entre glisse dans le sens du doigt (ou de l'onglet touché).
+.lr-slide {
+  animation: lr-slide-in var(--fold-motion-base);
+}
+
+.lr-slide--back {
+  animation-name: lr-slide-in-back;
+}
+
+@keyframes lr-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--fold-space-2xl));
+  }
+}
+
+@keyframes lr-slide-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(calc(-1 * var(--fold-space-2xl)));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lr-slide {
+    animation: none;
+  }
+}
