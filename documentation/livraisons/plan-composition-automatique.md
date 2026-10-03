@@ -229,3 +229,17 @@ déclenchement (V2, V3) ; CA4 ; CA5 avec sa stratégie de versions (V1) ; CA6.
 Mineurs pris : Q4 (géocodage à la commande) devient un prérequis du
 prévisionnel ; « change » = adresse, jour, fenêtre, lignes (donc bacs) ou
 annulation — exactement ce que `day_change` enregistre déjà, à vérifier.
+
+## 9. Tranché par Hugo (2026-10-03)
+
+- **L'application au réel est un clic du bureau** (« Appliquer »), jamais
+  automatique. L'écran alerte quand un jour approche sans être appliqué.
+  Le placement de chaque commande, lui, reste automatique **dans le
+  prévisionnel**.
+- **Le geste humain gagne** sur le calcul. S'il rend une commande non
+  réalisable (échéance intenable, capacité dépassée), la commande passe en
+  **alerte rouge** — visible au tableau, dans le résumé « à régler », et sur
+  sa carte — sans que le calcul défasse le geste.
+
+Reste à fixer avec Hugo : les seuils du banc à 200 clients (proposés :
+recalcul complet < 5 s, insertion d'une commande < 1 s).
