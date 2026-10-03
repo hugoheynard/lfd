@@ -23,7 +23,7 @@ export function driverLabelOf(driver: DeliveryRoundDriverView | null): string {
  * affecté, et — pour qui compose — l'affecter ou le retirer, depuis un bouton
  * menu (avatar, nom, chevron ; `handoff-tournees/SPEC.md`, § 3.3).
  *
- * Le composant n'écrit rien : il émet, et l'écran Tournées écrit, relit et
+ * Le composant n'écrit rien : il émet, et l'écran Organisation de tournées écrit, relit et
  * affiche le refus du serveur comme toute autre composition. Une tournée
  * partie est en lecture seule (I6).
  */

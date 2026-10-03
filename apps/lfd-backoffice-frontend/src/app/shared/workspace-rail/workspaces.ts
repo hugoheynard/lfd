@@ -195,7 +195,7 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
   },
   {
     key: 'tournees',
-    label: 'Tournées',
+    label: 'Organisation de tournées',
     link: '/livraison/tournees',
     icon: 'places',
     needs: 'delivery_rounds:read',

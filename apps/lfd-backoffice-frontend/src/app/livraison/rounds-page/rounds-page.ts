@@ -116,7 +116,7 @@ const PROPOSAL_CHANGED = 'La composition a changé entre-temps : reproposez.';
 const CONFLICT = 409;
 
 /**
- * **Livraison › Tournées** — l'organisateur (`handoff-tournees/SPEC.md`) :
+ * **Livraison › Organisation de tournées** — l'organisateur (`handoff-tournees/SPEC.md`) :
  * répartir les livraisons d'un jour entre les véhicules, puis ranger chaque
  * tournée, dans un seul tableau à trois colonnes.
  *
