@@ -298,7 +298,7 @@ export class MyRoundPage {
    * rechargement de la page la rouvre, et le retour relit « Ma tournée ».
    */
   protected openLoading(roundId: string): void {
-    void this.router.navigate(['/livraison/ma-tournee', roundId, 'chargement']);
+    void this.router.navigate(['/coursier', roundId, 'chargement']);
   }
 
   /** Un signalement est enregistré : on referme, on relit (il paraît dans la liste). */

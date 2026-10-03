@@ -295,6 +295,25 @@ export const routes: Routes = [
       },
     ],
   },
+  // LE COURSIER (2026-10-03) : la page du livreur, espace de PREMIER niveau,
+  // sans rail secondaire — il n'a qu'une vue, et son chargement en est la
+  // suite. Sous son seul droit ; c'est aussi son atterrissage (`LANDINGS`).
+  {
+    path: 'coursier',
+    canActivate: [permissionGuard('delivery_driving:read')],
+    title: 'Coursier — LFC B2B admin',
+    loadComponent: () =>
+      import('./livraison/my-round-page/my-round-page').then((m) => m.MyRoundPage),
+  },
+  // CHARGER MA TOURNÉE : le chargement du livreur a sa propre adresse, sous
+  // le même droit — un rechargement le rouvre.
+  {
+    path: 'coursier/:roundId/chargement',
+    canActivate: [permissionGuard('delivery_driving:read')],
+    title: 'Charger ma tournée — LFC B2B admin',
+    loadComponent: () =>
+      import('./livraison/my-round-loading/my-round-loading').then((m) => m.MyRoundLoading),
+  },
   {
     // LA LIVRAISON est un ESPACE (plan-preparation-de-tournee.md, lot 2). La
     // coquille ne porte AUCUN garde : chaque vue relève de son propre droit, et
@@ -318,23 +337,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/livraison-page/livraison-page').then((m) => m.DeliveryPage),
       },
-      // MA TOURNÉE (plan-ma-tournee.md, MT4) : la page du livreur, sous son
-      // seul droit. C'est aussi son atterrissage (`LANDINGS`).
-      {
-        path: 'ma-tournee',
-        canActivate: [permissionGuard('delivery_driving:read')],
-        title: 'Ma tournée — LFC B2B admin',
-        loadComponent: () =>
-          import('./livraison/my-round-page/my-round-page').then((m) => m.MyRoundPage),
-      },
-      // CHARGER MA TOURNÉE : le chargement du livreur a sa propre adresse, sous
-      // le même droit que « Ma tournée » — un rechargement le rouvre.
+      // « MA TOURNÉE » A DÉMÉNAGÉ sous `/coursier` (2026-10-03) : un espace à
+      // part, que le livreur voit sans la Livraison. Les anciennes adresses
+      // vivent dans des favoris et des liens — elles redirigent.
+      { path: 'ma-tournee', pathMatch: 'full', redirectTo: '/coursier' },
       {
         path: 'ma-tournee/:roundId/chargement',
-        canActivate: [permissionGuard('delivery_driving:read')],
-        title: 'Charger ma tournée — LFC B2B admin',
-        loadComponent: () =>
-          import('./livraison/my-round-loading/my-round-loading').then((m) => m.MyRoundLoading),
+        redirectTo: '/coursier/:roundId/chargement',
       },
       {
         path: 'tournees',

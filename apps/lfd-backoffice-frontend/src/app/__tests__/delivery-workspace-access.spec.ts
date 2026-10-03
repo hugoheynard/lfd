@@ -1,6 +1,7 @@
-import { Injector, runInInjectionContext } from '@angular/core';
+import { Component, Injector, runInInjectionContext } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Router, UrlTree } from '@angular/router';
+import { Router, UrlTree, provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import {
   resolvePermissionsFromGrants,
   resolveStaffPermissions,
@@ -65,8 +66,11 @@ function isAnyGuard(guard: unknown): guard is PermissionGuard | AnyPermissionGua
 /** Joue les gardes de la coquille PUIS de la vue : vrai si tous laissent passer. */
 async function opens(role: StaffRole | typeof LIVREUR, path: string): Promise<boolean> {
   configure(role);
-  const shell = routes.find((route) => route.path === 'livraison');
-  const view = shell?.children?.find((child) => child.path === path);
+  // Le Coursier est de premier niveau (2026-10-03) : pas de coquille au-dessus.
+  const shell = path.startsWith('coursier')
+    ? undefined
+    : routes.find((route) => route.path === 'livraison');
+  const view = (shell?.children ?? routes).find((child) => child.path === path);
   expect(view).toBeDefined();
   const guards = [...(shell?.canActivate ?? []), ...(view?.canActivate ?? [])].filter(isAnyGuard);
   const state = TestBed.inject(Router).routerState.snapshot;
@@ -165,14 +169,26 @@ describe("l'espace Livraison", () => {
     );
   });
 
-  it('montre au livreur la seule « Ma tournée », et la lui ouvre (MT4)', async () => {
-    expect(deliveryViewKeys(LIVREUR)).toEqual(['ma-tournee']);
-    expect(await opens(LIVREUR, 'ma-tournee')).toBe(true);
-    expect(await opens(LIVREUR, 'ma-tournee/:roundId/chargement')).toBe(true);
+  it('ne montre au livreur aucune vue de la Livraison, et lui ouvre le Coursier', async () => {
+    expect(deliveryViewKeys(LIVREUR)).toEqual([]);
+    expect(await opens(LIVREUR, 'coursier')).toBe(true);
+    expect(await opens(LIVREUR, 'coursier/:roundId/chargement')).toBe(true);
     expect(await opens(LIVREUR, 'tournees')).toBe(false);
     expect(await opens(LIVREUR, 'chargement')).toBe(false);
-    expect(await opens('comptoir', 'ma-tournee')).toBe(false);
-    expect(await opens('comptoir', 'ma-tournee/:roundId/chargement')).toBe(false);
+    expect(await opens('comptoir', 'coursier')).toBe(false);
+    expect(await opens('comptoir', 'coursier/:roundId/chargement')).toBe(false);
+  });
+
+  it('renvoie les anciennes adresses de « Ma tournée » vers le Coursier', () => {
+    // Elles vivent dans des favoris et des liens (déménagement du 2026-10-03).
+    const shell = routes.find((route) => route.path === 'livraison');
+    const moved = (shell?.children ?? [])
+      .filter((child) => child.path?.startsWith('ma-tournee'))
+      .map((child) => [child.path, child.redirectTo]);
+    expect(moved).toEqual([
+      ['ma-tournee', '/coursier'],
+      ['ma-tournee/:roundId/chargement', '/coursier/:roundId/chargement'],
+    ]);
   });
 
   it('🔴 le livreur arrive sur sa page, pas sur les comptes clients (MT-D7 v2)', async () => {
@@ -190,8 +206,43 @@ describe("l'espace Livraison", () => {
     const result = await runInInjectionContext(TestBed.inject(Injector), () =>
       guard?.(state.root, state),
     );
-    expect(result instanceof UrlTree ? router.serializeUrl(result) : result).toBe(
-      '/livraison/ma-tournee',
-    );
+    expect(result instanceof UrlTree ? router.serializeUrl(result) : result).toBe('/coursier');
+  });
+});
+
+@Component({ selector: 'app-stub', template: '' })
+class Stub {}
+
+describe('les anciennes adresses de « Ma tournée »', () => {
+  /**
+   * Une vraie navigation : les redirections de l'arbre réel, devant des écrans
+   * factices aux adresses du Coursier — c'est la substitution de `:roundId`
+   * qu'une lecture de `redirectTo` ne prouverait pas.
+   */
+  async function landOn(url: string): Promise<string> {
+    const shell = routes.find((route) => route.path === 'livraison');
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([
+          {
+            path: 'livraison',
+            children: (shell?.children ?? []).filter((child) =>
+              child.path?.startsWith('ma-tournee'),
+            ),
+          },
+          { path: 'coursier', component: Stub },
+          { path: 'coursier/:roundId/chargement', component: Stub },
+        ]),
+      ],
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(url);
+    return TestBed.inject(Router).url;
+  }
+
+  it('mènent au Coursier, la tournée gardée dans l’adresse du chargement', async () => {
+    expect(await landOn('/livraison/ma-tournee')).toBe('/coursier');
+    TestBed.resetTestingModule();
+    expect(await landOn('/livraison/ma-tournee/r-42/chargement')).toBe('/coursier/r-42/chargement');
   });
 });

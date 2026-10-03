@@ -14,7 +14,7 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
   // sans cette entrée le garde le laisserait passer partout, de 403 en 403.
   // Seuls le livreur et l'admin le tiennent ; l'admin, qui a tout, n'est
   // jamais redirigé.
-  { permission: 'delivery_driving:read', path: '/livraison/ma-tournee' },
+  { permission: 'delivery_driving:read', path: '/coursier' },
   { permission: 'b2b_companies:read', path: '/commercial/comptes-clients' },
   { permission: 'b2b_growth:read', path: '/commercial' },
   { permission: 'b2b_orders:read', path: '/commandes' },

@@ -190,9 +190,10 @@ export class App {
   );
   /**
    * La Livraison s'ouvre à qui lit la feuille de route, les tournées, le
-   * chargement, ses réglages OU conduit sa tournée : ses vues relèvent de cinq
-   * droits, et en exiger un fermerait l'espace à qui ne tient qu'un autre
-   * (plan-preparation-de-tournee.md, lots 2-4 ; plan-ma-tournee.md, MT4).
+   * chargement ou ses réglages : ses vues relèvent de plusieurs droits, et en
+   * exiger un fermerait l'espace à qui ne tient qu'un autre
+   * (plan-preparation-de-tournee.md, lots 2-4). Conduire sa tournée n'en est
+   * plus (2026-10-03) : c'est l'espace « Coursier », {@link canSeeCourier}.
    */
   protected readonly canSeeDelivery = computed(
     () =>
@@ -200,10 +201,12 @@ export class App {
       this.permissions.can('delivery_rounds:read') ||
       this.permissions.can('delivery_loading:read') ||
       this.permissions.can('delivery_settings:read') ||
-      this.permissions.can('delivery_driving:read') ||
       // « À décider » (plan-a-la-porte.md, B3) : qui décide à la porte y répond.
       this.permissions.can('delivery_decisions:write'),
   );
+
+  /** Le Coursier — la page du livreur, sous son seul droit. */
+  protected readonly canSeeCourier = computed(() => this.permissions.can('delivery_driving:read'));
 
   /**
    * La Supervision a son droit à elle : elle montre le nom des clients du jour

@@ -125,9 +125,7 @@
             @switch (done.delivery.driver.status) {
               @case ('assigned') {
                 Vous ({{ driverName() }}) — prête à partir.
-                <a foldButton size="sm" emphasis="outline" routerLink="/livraison/ma-tournee">
-                  Ma tournée
-                </a>
+                <a foldButton size="sm" emphasis="outline" routerLink="/coursier"> Ma tournée </a>
               }
               @case ('refused') {
                 Aucun — {{ driverRefusal() }}

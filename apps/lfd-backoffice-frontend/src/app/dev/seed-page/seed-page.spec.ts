@@ -69,7 +69,7 @@ async function reloaded(driver: DevSeedDriverReport): Promise<ComponentFixture<D
 }
 
 const myRoundLink = (fixture: ComponentFixture<DevSeedPage>): HTMLAnchorElement | null =>
-  (fixture.nativeElement as HTMLElement).querySelector('a[href="/livraison/ma-tournee"]');
+  (fixture.nativeElement as HTMLElement).querySelector('a[href="/coursier"]');
 
 const text = (fixture: ComponentFixture<DevSeedPage>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';

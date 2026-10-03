@@ -178,14 +178,6 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
  * la première sans voir les autres.
  */
 export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
-  // En tête : pour le livreur, c'est la seule vue (plan-ma-tournee.md, MT-D7).
-  {
-    key: 'ma-tournee',
-    label: 'Ma tournée',
-    link: '/livraison/ma-tournee',
-    icon: 'truck',
-    needs: 'delivery_driving:read',
-  },
   {
     key: 'feuille-de-route',
     label: 'Feuille de route',

@@ -690,7 +690,7 @@ describe('MyRoundPage — charger sa tournée (PL1)', () => {
     const { element } = await boot();
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     click(element, '[data-open-loading]');
-    expect(navigate).toHaveBeenCalledWith(['/livraison/ma-tournee', 'r-1', 'chargement']);
+    expect(navigate).toHaveBeenCalledWith(['/coursier', 'r-1', 'chargement']);
   });
 
   it('partie, la tournée ne se charge plus : pas de « Charger »', async () => {

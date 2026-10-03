@@ -95,11 +95,26 @@
           fold-menu-item
           icon="truck"
           label="Livraison"
-          badge="app"
           routerLink="/livraison"
           routerLinkActive
           #livraisonRla="routerLinkActive"
           [active]="livraisonRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
+      @if (canSeeCourier()) {
+        <!-- COURSIER — la page du livreur : sa tournée, son chargement. Un
+             espace à part (2026-10-03), que le livreur voit sans la Livraison. -->
+        <a
+          fold-menu-item
+          icon="map-pin"
+          label="Coursier"
+          badge="app"
+          routerLink="/coursier"
+          routerLinkActive
+          #courierRla="routerLinkActive"
+          [active]="courierRla.isActive"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
@@ -558,7 +573,7 @@
       @if (canSeeDelivery()) {
         <!-- La MÊME table que le rail secondaire : une vue ajoutée à
              `LIVRAISON_VIEWS` paraît des deux côtés. -->
-        <fold-nav-group icon="truck" label="Livraison" badge="app" [entryCountLabel]="entriesLabel">
+        <fold-nav-group icon="truck" label="Livraison" [entryCountLabel]="entriesLabel">
           @for (view of livraisonViews(); track view.key) {
             <a
               fold-nav-tile
@@ -572,6 +587,21 @@
             ></a>
           }
         </fold-nav-group>
+      }
+      @if (canSeeCourier()) {
+        <!-- La MÊME entrée qu'au rail. Une tuile simple, comme la Supervision :
+             l'espace n'a qu'une vue, un groupe d'une tuile la déclarerait deux fois. -->
+        <a
+          fold-nav-tile
+          icon="map-pin"
+          label="Coursier"
+          badge="app"
+          routerLink="/coursier"
+          routerLinkActive
+          #courierTile="routerLinkActive"
+          [active]="courierTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
       @if (canSeePim()) {
         <fold-nav-group icon="catalog" label="PIM" [entryCountLabel]="entriesLabel">

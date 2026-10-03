@@ -8,11 +8,11 @@ import { LoadingRound } from '../loading-round/loading-round';
 import { MyDeliveryLoadingService } from '../my-delivery-loading.service';
 
 /** « Ma tournée » : d'où l'on vient, et où l'on revient. */
-export const MY_ROUND_PATH = '/livraison/ma-tournee';
+export const MY_ROUND_PATH = '/coursier';
 
 /**
  * **Charger MA tournée** (`parcours-du-livreur.md`, PL1) — la page
- * `/livraison/ma-tournee/:roundId/chargement`, l'écran de chargement du dépôt
+ * `/coursier/:roundId/chargement`, l'écran de chargement du dépôt
  * branché sur la porte du livreur.
  *
  * Le corps est {@link LoadingRound}, le même que celui du dépôt ; seules

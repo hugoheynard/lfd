@@ -236,10 +236,11 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // relèvent de deux droits distincts, et un garde commun fermerait l'une à qui
   // ne tient que l'autre (plan-preparation-de-tournee.md, lot 2). La coquille ne
   // montre rien d'elle-même ; chaque vue porte son garde.
+  // LE COURSIER (2026-10-03) : la page du livreur, hors de la Livraison.
+  coursier: 'delivery_driving:read',
+  'coursier/:roundId/chargement': 'delivery_driving:read',
   livraison: OPEN,
   'livraison/feuille-de-route': 'delivery_run_sheet:read',
-  'livraison/ma-tournee': 'delivery_driving:read',
-  'livraison/ma-tournee/:roundId/chargement': 'delivery_driving:read',
   'livraison/tournees': 'delivery_rounds:read',
   'livraison/non-remis': 'delivery_rounds:read',
   // « À décider » (plan-a-la-porte.md, B3) : le droit de décider, pas celui des

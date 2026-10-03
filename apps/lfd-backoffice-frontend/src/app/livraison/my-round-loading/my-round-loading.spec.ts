@@ -213,7 +213,7 @@ describe('MyRoundLoading — charger SA tournée', () => {
   it('« Ma tournée » est un lien de retour vers la page du livreur', async () => {
     const { element } = await boot(['delivery_driving:read']);
     const back = element.querySelector('fold-back-link[data-close-loading] a');
-    expect(back?.getAttribute('href')).toBe('/livraison/ma-tournee');
+    expect(back?.getAttribute('href')).toBe('/coursier');
     expect(back?.textContent).toContain('Ma tournée');
     expect(element.querySelector('h1')).toBeNull();
   });
@@ -224,7 +224,7 @@ describe('MyRoundLoading — charger SA tournée', () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     element.querySelector<HTMLButtonElement>('[data-done]')?.click();
     fixture.detectChanges();
-    expect(navigate).toHaveBeenCalledWith('/livraison/ma-tournee');
+    expect(navigate).toHaveBeenCalledWith('/coursier');
     allLoaded = false;
   });
 });

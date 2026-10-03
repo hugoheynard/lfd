@@ -56,7 +56,7 @@ describe('permissionGuard — redirige plutôt que de bloquer', () => {
   it('renvoie le livreur vers sa tournée, en tête de liste (MT-D7 v2)', async () => {
     const result = await guardWith(['delivery_driving:read', 'delivery_driving:write']);
 
-    expect(redirectPath(result)).toBe('/livraison/ma-tournee');
+    expect(redirectPath(result)).toBe('/coursier');
   });
 
   /**
