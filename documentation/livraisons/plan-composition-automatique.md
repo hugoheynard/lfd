@@ -243,3 +243,37 @@ annulation — exactement ce que `day_change` enregistre déjà, à vérifier.
 
 Reste à fixer avec Hugo : les seuils du banc à 200 clients (proposés :
 recalcul complet < 5 s, insertion d'une commande < 1 s).
+
+## 10. v3 — la synthèse à bâtir (2026-10-03)
+
+> Ce qui fait foi désormais : les §2, §5, §9 et cette section. Les §3, §4 et
+> §7 sont l'historique de la conception.
+
+**Le déclencheur, proposé par Hugo** : « l'arrêt de production est aussi le
+trigger pour le calcul des tournées ». La **clôture de la journée de
+production** (`ProductionDay.close`, `production-day.ts:240`) est un fait
+unique par jour — ce que l'heure limite de commande n'est pas (B1). C'est le
+moment où la liste des commandes à fabriquer, donc à livrer, est figée :
+
+- avant la clôture, le prévisionnel du jour vit et se recalcule ;
+- à la clôture, le prévisionnel est **final** : l'écran le signale « prêt à
+  appliquer », et le bureau clique « Appliquer » (§9) ;
+- une reprise de la journée (`retake`) rouvre le prévisionnel.
+
+⚠️ À vérifier avant de bâtir : `delivery → production` est **interdit** par
+la matrice des blocs (CLAUDE.md §3). La livraison doit lire « la journée J
+est-elle close ? » par un port de SON canal, implémenté par qui le sait —
+comme elle lit le commerce. Et le jour de production d'une commande livrée
+est-il son jour de livraison ?
+
+**Les lots, dans l'ordre :**
+
+| Lot      | Contenu                                                                                                                                                                                                      | Migration     |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------- |
+| **CA1**  | Au moins un véhicule actif avec cotes et un type de bac actif, sinon « Proposer » refuse avec la phrase ; on n'archive pas le dernier. Échéance ou créneau obligatoire à la commande livrée.                 | non           |
+| **CA2**  | Départ à rebours par véhicule (passe arrière, passages enchaînés), plancher minuit du jour (Q1) ; `maxRoundMinutes` devient un signal (Q2).                                                                  | non           |
+| **CA3**  | Réglage créneau / échéance (global, surchargeable par adresse) ; affichage « avant HH:MM ».                                                                                                                  | oui, additive |
+| **CA4**  | La capacité à la composition : demande en bacs par commande, `planLoading` à l'insertion.                                                                                                                    | non           |
+| **Banc** | 200 clients de la vallée : recalcul complet < 5 s, insertion d'une commande < 1 s.                                                                                                                           | non           |
+| **CA5**  | Le prévisionnel : recalcul à la lecture, cache sur (jour, version commerce, version flotte, version contraintes) ; table des contraintes humaines ; alerte rouge quand un geste rend une commande intenable. | oui, additive |
+| **CA6**  | La clôture de production comme signal « prêt à appliquer » ; place suggérée pour une commande arrivée sur un jour déjà réel.                                                                                 | non           |
