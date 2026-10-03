@@ -310,5 +310,13 @@ est-il son jour de livraison ?
 | **CA6**  | Le lecteur « jour clos » (B2) ; « Appliquer » = calcul définitif ; écran « prêt à appliquer »                                              |
 | **CA7**  | La place suggérée d'une commande arrivée sur un jour déjà réel (dérogation, reprise)                                                       |
 
-**Encore ouvertes :** Q4 (situer l'adresse à la commande ?), Q5 (cotes
-seules ?).
+**Tranchées par Hugo le 2026-10-03 :**
+
+- **Q4** : l'adresse est **située à la commande** — le prévisionnel ne
+  place que ce qui a un point. Lot **CA0** ci-dessous, prérequis de CA5.
+- **Q5** : un véhicule « paramétré » = **ses cotes** (volume utile et
+  plancher). Passages de roue et caisse froide restent facultatifs.
+
+| Lot     | Contenu                                                                                                                                                    |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CA0** | Situer l'adresse de livraison à la commande (géocodage déjà en cache, `delivery_geocode`) ; une adresse non située reste signalée, jamais placée au hasard |
