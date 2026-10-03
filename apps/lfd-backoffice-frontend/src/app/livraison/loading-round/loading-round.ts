@@ -351,7 +351,7 @@ export class LoadingRound {
     this.pinnedRow.set(row);
   }
 
-  /** La rangée qui entre glisse depuis la droite, ou depuis la gauche quand on revient vers le fond. */
+  /** La rangée qui entre glisse dans le sens du doigt : depuis la gauche vers les portes, depuis la droite vers le fond. */
   protected readonly slideBack = signal(false);
 
   /** Où le doigt s'est posé sur la vue de rangée, le temps du geste. */

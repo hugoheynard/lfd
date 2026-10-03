@@ -229,14 +229,14 @@
 @keyframes lr-slide-in {
   from {
     opacity: 0;
-    transform: translateX(var(--fold-space-2xl));
+    transform: translateX(calc(-1 * var(--fold-space-2xl)));
   }
 }
 
 @keyframes lr-slide-in-back {
   from {
     opacity: 0;
-    transform: translateX(calc(-1 * var(--fold-space-2xl)));
+    transform: translateX(var(--fold-space-2xl));
   }
 }
 

@@ -1,9 +1,9 @@
 import { neighbourRow, SWIPE_MIN_PX, swipeStep } from './row-swipe';
 
 describe('swipeStep', () => {
-  it('vers la gauche avance vers les portes, vers la droite revient au fond', () => {
-    expect(swipeStep(-80, 0)).toBe(1);
-    expect(swipeStep(80, 0)).toBe(-1);
+  it('vers la droite avance vers les portes, vers la gauche revient au fond', () => {
+    expect(swipeStep(80, 0)).toBe(1);
+    expect(swipeStep(-80, 0)).toBe(-1);
   });
 
   it('un geste trop court est un toucher, pas un glissement', () => {

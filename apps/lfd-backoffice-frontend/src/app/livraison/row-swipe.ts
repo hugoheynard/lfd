@@ -1,9 +1,10 @@
 /**
  * **Glisser d'une rangée à l'autre**, au doigt, sur la vue des portes.
  *
- * Fonctions pures : le composant ne fait que mesurer le geste. Glisser vers
- * la gauche avance vers les portes, comme le sélecteur, rangé du fond (à
- * gauche) aux portes (à droite).
+ * Fonctions pures : le composant ne fait que mesurer le geste. Le doigt suit
+ * le sélecteur, rangé du fond (à gauche) aux portes (à droite) : glisser vers
+ * la droite avance vers les portes, vers la gauche revient au fond (Hugo,
+ * 2026-10-03).
  */
 
 /** Un glissement plus court ne change pas de rangée : c'est un toucher qui a bougé. */
@@ -20,7 +21,7 @@ export function swipeStep(dx: number, dy: number): -1 | 0 | 1 {
   if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) < Math.abs(dy) * SWIPE_HORIZONTAL_RATIO) {
     return 0;
   }
-  return dx < 0 ? 1 : -1;
+  return dx > 0 ? 1 : -1;
 }
 
 /** La rangée d'à côté, ou `null` au bout : on ne boucle pas, le fond n'est pas à côté des portes. */
