@@ -330,3 +330,38 @@ est-il son jour de livraison ?
   (CA3).
 - Plus rien ne pousse à couper une journée : une seule tournée longue plutôt
   que trois est acceptée. **Pas de pénalité** sur la durée.
+
+## 13. CA3 — créneau ou échéance : le détail (2026-10-03, carte relevée le jour même)
+
+**Ce qui existe déjà :**
+
+- **La fenêtre d'une commande sait déjà être une échéance** :
+  `fulfillmentWindowSchema.start` est nullable, « `null` = avant `end` »
+  (`packages/contracts/src/address.ts:49-58`), et le livreur la reçoit telle
+  quelle (`delivery_stop_execution.delivery_window`).
+- **Le créneau préféré d'une adresse, lui, exige un début** :
+  `deliverySlotSchema` (`address.ts:26-34`), dans
+  `addresses.delivery_specs` (JSON).
+- **Le motif « global, surchargeable par adresse » existe trois fois** : la
+  signature (`companies` + `delivery_specs.signatureRequired`), la porte
+  (`delivery_doorstep_settings` + `addresses.doorstep_rule`), le temps sur
+  place (`delivery_routing_settings` + `delivery_specs.stopMinutes`).
+- La boutique formate déjà « avant 8 h » (`format-hour.ts`).
+
+**Ce que CA3 bâtit :**
+
+| Couche                | Changement                                                                                                                                                | Migration                               |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| Réglage global        | `windowMode: "slot" \| "deadline"` sur les réglages de livraison du commerce (`public.delivery_settings`), défaut `slot` — rien ne change pour l'existant | **additive** (une colonne enum, défaut) |
+| Surcharge par adresse | `delivery_specs.windowMode: "slot" \| "deadline" \| null` (null = hérite), même motif que `stopMinutes`                                                   | non (JSON, champ optionnel)             |
+| Créneau préféré       | `deliverySlotSchema.start` devient nullable (une échéance préférée) ; les données existantes ont un début, elles restent valides                          | non                                     |
+| Passation             | en mode échéance, la fenêtre demandée a `start: null` ; un début fourni est refusé à la forme                                                             | non                                     |
+| Résolution            | le mode d'une commande = celui de l'adresse, sinon le global ; servi aux fronts avec les défauts de livraison (`DeliveryDefaults`)                        | non                                     |
+| Affichage             | « avant HH:MM » partout où le début est nul (back-office, boutique, PDF, e-mails) — formateurs existants à aligner                                        | non                                     |
+| Réglage de routage    | l'heure « au plus tôt » renommée à l'écran : « Départ quand rien ne presse » (CA2) ; la colonne ne change pas                                             | non                                     |
+
+CA1b (échéance **obligatoire** à la commande livrée) se bâtit dans la même
+passe côté passation : une commande livrée sans fenêtre est refusée, avec la
+phrase.
+
+Une seule migration, additive : `lecteur-de-migrations` avant `main`.
