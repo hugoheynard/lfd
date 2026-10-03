@@ -256,8 +256,10 @@ unique par jour — ce que l'heure limite de commande n'est pas (B1). C'est le
 moment où la liste des commandes à fabriquer, donc à livrer, est figée :
 
 - avant la clôture, le prévisionnel du jour vit et se recalcule ;
-- à la clôture, le prévisionnel est **final** : l'écran le signale « prêt à
-  appliquer », et le bureau clique « Appliquer » (§9) ;
+- à la clôture, un **calcul définitif** recompose tout le jour en respectant
+  les verrous humains (une commande placée à la main ne bouge pas) ; ce
+  prévisionnel est **final** : l'écran le signale « prêt à appliquer », et le
+  bureau clique « Appliquer » (§9) — Hugo, 2026-10-03 ;
 - une reprise de la journée (`retake`) rouvre le prévisionnel.
 
 ⚠️ À vérifier avant de bâtir : `delivery → production` est **interdit** par
