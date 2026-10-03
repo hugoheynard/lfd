@@ -1,0 +1,84 @@
+// Le fond à gauche (la cloison, en gris), les portes à droite (en primaire).
+.rp {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-xs);
+  border-left: 4px solid var(--fold-color-text-faded);
+  border-right: 4px solid var(--fold-color-primary);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-sunken);
+}
+
+.rp-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+  min-height: calc(var(--fold-space-5xl) + var(--fold-space-xs));
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font: inherit;
+  font-size: var(--fold-text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.rp-tab:focus-visible {
+  outline: 3px solid var(--fold-color-primary-border);
+  outline-offset: 2px;
+}
+
+.rp-tab--active {
+  border-color: var(--fold-ref-ink-950);
+  background: var(--fold-ref-ink-950);
+  color: var(--fold-ref-white);
+}
+
+.rp-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--fold-space-xs);
+}
+
+.rp-progress {
+  font-family: var(--fold-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.rp-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.rp-mark {
+  width: var(--fold-space-sm);
+  height: var(--fold-space-sm);
+  border: 1px dashed currentcolor;
+  border-radius: 2px;
+}
+
+.rp-mark--loaded {
+  border-style: solid;
+  background: currentcolor;
+}
+
+.rp-mark--next {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 1px;
+}
+
+.rp--depot .rp-tab {
+  font-size: var(--fold-text-base);
+}
+
+.rp--depot .rp-mark {
+  width: var(--fold-space-md);
+  height: var(--fold-space-md);
+}

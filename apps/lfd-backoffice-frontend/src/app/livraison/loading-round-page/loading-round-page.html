@@ -2,14 +2,15 @@
   <fold-back-link pageActions label="Toutes les tournées" routerLink="/livraison/chargement" />
   @if (view(); as view) {
     <p description>
-      {{ dayLabel(view.day) }} — chaque bac scanné se charge dans ce véhicule, et le bas de l’écran
-      dit ce qui manque encore.
+      {{ dayLabel(view.day) }} — chaque bac scanné se charge dans ce véhicule ; à gauche ce qu’on
+      pose maintenant et ce qui manque, à droite où ça va.
     </p>
   }
 
   <app-loading-round
     [roundId]="roundId()"
     [canWrite]="canWrite()"
+    layout="depot"
     [departure]="departure"
     (viewChange)="view.set($event)"
   />

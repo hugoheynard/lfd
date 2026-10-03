@@ -1,0 +1,31 @@
+<div
+  class="rp"
+  [class.rp--depot]="size() === 'depot'"
+  role="tablist"
+  aria-label="Rangées, du fond vers les portes"
+  data-row-picker
+>
+  @for (tab of tabs(); track tab.row) {
+    <button
+      type="button"
+      role="tab"
+      class="rp-tab"
+      [class.rp-tab--active]="tab.row === selected()"
+      [attr.aria-selected]="tab.row === selected()"
+      [attr.aria-label]="tab.label + ' — ' + (tab.done ? 'chargée' : tab.progress + ' chargés')"
+      [attr.data-row]="tab.row"
+      data-row-tab
+      (click)="selectedChange.emit(tab.row)"
+    >
+      <span class="rp-line">
+        <strong>{{ tab.label }}</strong>
+        <span class="rp-progress">{{ tab.progress }}</span>
+      </span>
+      <span class="rp-marks" aria-hidden="true">
+        @for (mark of tab.marks; track mark.key) {
+          <span class="rp-mark" [class]="'rp-mark--' + mark.state"></span>
+        }
+      </span>
+    </button>
+  }
+</div>

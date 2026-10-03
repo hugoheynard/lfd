@@ -1,0 +1,29 @@
+// La palette des arrêts de l'écran « Charger » — la même que celle du
+// plancher (`loading-floor.scss`, `.hue-0` … `.hue-5`, STOP_HUE_COUNT = 6),
+// portée en variables pour que les tuiles en tirent leurs deux états (teinte
+// pleine, teinte à 26 %) et qu'un bac partagé en porte deux.
+//
+// `.hue-a-N` pose la teinte principale, `.hue-b-N` la seconde (l'autre moitié
+// d'un bac partagé ; la même que la première sinon).
+@use 'sass:list';
+
+$stop-hues: (
+  var(--fold-ref-amber-300),
+  var(--fold-ref-teal-400),
+  var(--fold-ref-purple-300),
+  var(--fold-ref-green-300),
+  var(--fold-ref-red-400),
+  var(--fold-ref-navyink-300)
+);
+
+@mixin stop-hues {
+  @for $i from 1 through list.length($stop-hues) {
+    .hue-a-#{$i - 1} {
+      --stop-hue-a: #{list.nth($stop-hues, $i)};
+    }
+
+    .hue-b-#{$i - 1} {
+      --stop-hue-b: #{list.nth($stop-hues, $i)};
+    }
+  }
+}

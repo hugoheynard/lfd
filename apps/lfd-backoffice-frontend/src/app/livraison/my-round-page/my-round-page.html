@@ -1,4 +1,8 @@
-<fold-page-layout icon="truck" title="Ma tournée">
+<fold-page-layout
+  [icon]="loadingOpen() ? undefined : 'truck'"
+  [title]="loadingOpen() ? undefined : 'Ma tournée'"
+  [class.mr-loading]="loadingOpen()"
+>
   <div class="page">
     @switch (list().status) {
       @case ('loading') {
@@ -47,7 +51,7 @@
             </fold-empty-state>
           }
         } @else {
-          @if (canGoBack()) {
+          @if (canGoBack() && !loadingOpen()) {
             <button foldButton emphasis="outline" icon="chevron-left" (click)="back()" data-back>
               Mes tournées du jour
             </button>
@@ -68,33 +72,43 @@
             }
             @case ('ready') {
               @if (round(); as round) {
-                <fold-element-title
-                  variant="title"
-                  [title]="roundLabel(round)"
-                  [subtitle]="readyStopsLabel(round)"
-                  data-round-head
-                >
-                  @if (allStopsReady(round)) {
-                    <fold-badge
-                      titleAction
-                      variant="success"
-                      content="Tout est prêt"
-                      data-all-ready
-                    />
-                  }
-                  @if (round.departedAt; as departedAt) {
-                    <fold-badge
-                      titleAction
-                      variant="info"
-                      [content]="'Partie à ' + timeOf(departedAt)"
-                      data-departed
-                    />
-                  }
-                </fold-element-title>
+                <ng-template #roundHead>
+                  <fold-element-title
+                    variant="title"
+                    [title]="roundLabel(round)"
+                    [subtitle]="readyStopsLabel(round)"
+                    data-round-head
+                  >
+                    @if (allStopsReady(round)) {
+                      <fold-badge
+                        titleAction
+                        variant="success"
+                        content="Tout est prêt"
+                        data-all-ready
+                      />
+                    }
+                    @if (round.departedAt; as departedAt) {
+                      <fold-badge
+                        titleAction
+                        variant="info"
+                        [content]="'Partie à ' + timeOf(departedAt)"
+                        data-departed
+                      />
+                    }
+                  </fold-element-title>
+                </ng-template>
 
                 @if (loadingOpen()) {
-                  <app-my-round-loading [roundId]="round.id" (closed)="closeLoading()" />
+                  <app-my-round-loading [roundId]="round.id" (closed)="closeLoading()">
+                    <div loadingContext>
+                      <ng-container *ngTemplateOutlet="roundHead" />
+                    </div>
+                  </app-my-round-loading>
                 } @else {
+                  <ng-container *ngTemplateOutlet="roundHead" />
+                }
+
+                @if (!loadingOpen()) {
                   @if (returnedAt(); as returnedAt) {
                     <fold-callout variant="success" data-returned>
                       Tournée rentrée à {{ timeOf(returnedAt) }}.

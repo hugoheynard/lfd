@@ -1,0 +1,91 @@
+@use '../stop-hues' as hues;
+
+@include hues.stop-hues;
+
+.nc,
+.nc-actions,
+.nc-who,
+.nc-placement {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  min-width: 0;
+}
+
+.nc-who,
+.nc-placement {
+  gap: var(--fold-space-xs);
+}
+
+.nc-id {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  min-width: 0;
+}
+
+// L'arrêt, écrit dans sa teinte : la couleur double le numéro, jamais l'inverse.
+.nc-stop {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: calc(var(--fold-space-5xl) + var(--fold-space-sm));
+  height: calc(var(--fold-space-5xl) + var(--fold-space-sm));
+  border: 2px solid color-mix(in srgb, var(--fold-ref-ink-950) 30%, transparent);
+  border-radius: var(--fold-radius-round);
+  background: var(--stop-hue-a);
+  color: var(--fold-ref-ink-950);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
+}
+
+.nc-code {
+  font-family: var(--fold-font-mono);
+  font-size: calc(var(--fold-text-2xl) * 1.5);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: 0.04em;
+  line-height: var(--fold-leading-none);
+}
+
+.nc-client {
+  overflow: hidden;
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nc-placement {
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 1px solid var(--fold-color-info-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-info-surface);
+  color: var(--fold-color-info-text);
+  font-size: var(--fold-text-sm);
+}
+
+.nc-placement strong {
+  font-size: var(--fold-text-lg);
+}
+
+.nc-typed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+.nc-field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.nc--depot .nc-stop {
+  width: calc(var(--fold-space-5xl) + var(--fold-space-md));
+  height: calc(var(--fold-space-5xl) + var(--fold-space-md));
+}
+
+.nc--depot .nc-code {
+  font-size: calc(var(--fold-text-xl) * 2);
+}

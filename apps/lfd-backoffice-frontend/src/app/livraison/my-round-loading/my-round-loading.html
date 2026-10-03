@@ -1,12 +1,19 @@
-<div class="loading">
+<app-loading-round
+  [roundId]="roundId()"
+  [canWrite]="canWrite()"
+  doneLabel="Retour à ma tournée"
+  (done)="closed.emit()"
+>
+  <ng-content select="[loadingContext]" ngProjectAs="[loadingContext]" />
   <button
+    loadingBack
     foldButton
     emphasis="outline"
+    size="sm"
     icon="chevron-left"
     (click)="closed.emit()"
     data-close-loading
   >
-    Retour à ma tournée
+    Ma tournée
   </button>
-  <app-loading-round [roundId]="roundId()" [canWrite]="canWrite()" />
-</div>
+</app-loading-round>

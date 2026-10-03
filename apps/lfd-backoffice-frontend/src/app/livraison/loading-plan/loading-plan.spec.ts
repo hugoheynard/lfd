@@ -2,7 +2,6 @@ import { TestBed } from '@angular/core/testing';
 import type { DeliveryLoadingPlanView, DeliveryLoadingRoundView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { DeliveryLoadingService } from '../delivery-loading.service';
 import { LoadingPlan } from './loading-plan';
 
 const ROUND: DeliveryLoadingRoundView = {
@@ -108,28 +107,17 @@ const PLAN: DeliveryLoadingPlanView = {
   warnings: [{ kind: 'unknown_cargo', message: 'Le volume utile de Kangoo est inconnu.' }],
 };
 
-async function boot(plan: () => Promise<DeliveryLoadingPlanView>): Promise<HTMLElement> {
-  TestBed.resetTestingModule();
-  TestBed.configureTestingModule({
-    providers: [
-      {
-        provide: DeliveryLoadingService,
-        useValue: { plan } satisfies Partial<Record<keyof DeliveryLoadingService, unknown>>,
-      },
-    ],
-  });
+function render(plan: DeliveryLoadingPlanView): HTMLElement {
   const fixture = TestBed.createComponent(LoadingPlan);
+  fixture.componentRef.setInput('plan', plan);
   fixture.componentRef.setInput('round', ROUND);
-  fixture.detectChanges();
-  await new Promise((resolve) => setTimeout(resolve));
-  await fixture.whenStable();
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
 }
 
 describe('LoadingPlan', () => {
-  it('coche le bac scanné et met en avant la première étape pas entièrement chargée', async () => {
-    const element = await boot(() => Promise.resolve(PLAN));
+  it('coche le bac scanné et met en avant la première étape pas entièrement chargée', () => {
+    const element = render(PLAN);
     const steps = [...element.querySelectorAll('[data-plan-step]')];
     expect(steps).toHaveLength(2);
     expect(steps[0]?.hasAttribute('data-current')).toBe(false);
@@ -139,24 +127,22 @@ describe('LoadingPlan', () => {
     expect(element.textContent).toContain('SUGGÉRÉ');
   });
 
-  it('dit la capacité sèche inconnue en phrase, sans jauge, et le froid en jauge', async () => {
-    const element = await boot(() => Promise.resolve(PLAN));
+  it('dit la capacité sèche inconnue en phrase, sans jauge, et le froid en jauge', () => {
+    const element = render(PLAN);
     expect(element.querySelector('[data-volume-unknown]')?.textContent).toContain(
       'capacité inconnue — renseignez les dimensions du véhicule',
     );
     expect(element.querySelectorAll('[data-volume-gauge]')).toHaveLength(1);
   });
 
-  it('affiche les alertes du serveur telles quelles, et les piles', async () => {
-    const element = await boot(() => Promise.resolve(PLAN));
-    expect(element.querySelector('[data-plan-warning]')?.textContent?.trim()).toBe(
-      'Le volume utile de Kangoo est inconnu.',
-    );
+  it('liste les piles, sans répéter les alertes que l’écran porte déjà', () => {
+    const element = render(PLAN);
+    expect(element.querySelector('[data-plan-warning]')).toBeNull();
     expect(element.querySelectorAll('[data-plan-stack]')).toHaveLength(2);
   });
 
-  it('sans dimensions, dit qu’il n’y a pas de plancher et garde les piles', async () => {
-    const element = await boot(() => Promise.resolve(PLAN));
+  it('sans dimensions, dit qu’il n’y a pas de plancher et garde les piles', () => {
+    const element = render(PLAN);
     expect(element.querySelector('[data-plan-floor]')).toBeNull();
     expect(element.querySelector('[data-plan-floor-unknown]')?.textContent).toContain(
       'Les dimensions de Kangoo ne sont pas renseignées',
@@ -164,7 +150,7 @@ describe('LoadingPlan', () => {
     expect(element.querySelectorAll('[data-plan-stack]')).toHaveLength(2);
   });
 
-  it('dessine le plancher vu de dessus quand le serveur le rend (G5)', async () => {
+  it('dessine le plancher vu de dessus quand le serveur le rend (G5)', () => {
     const measured: DeliveryLoadingPlanView = {
       ...PLAN,
       floor: { lengthCm: 200, widthCm: 120, wheelArches: null },
@@ -184,14 +170,9 @@ describe('LoadingPlan', () => {
             : { kind: 'refrigerated' },
       })),
     };
-    const element = await boot(() => Promise.resolve(measured));
+    const element = render(measured);
     expect(element.querySelector('[data-plan-floor-unknown]')).toBeNull();
     expect(element.querySelectorAll('[data-floor-stack]')).toHaveLength(1);
     expect(element.querySelector('[data-floor-cold]')?.textContent).toContain('pile 2 (arrêt 5)');
-  });
-
-  it('dit un plan illisible par l’état d’erreur fold', async () => {
-    const element = await boot(() => Promise.reject(new Error('500')));
-    expect(element.querySelector('[data-plan-error]')).not.toBeNull();
   });
 });

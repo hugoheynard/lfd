@@ -1,0 +1,143 @@
+@use '../stop-hues' as hues;
+
+@include hues.stop-hues;
+
+.rv,
+.rv-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+.rv-columns {
+  display: grid;
+  align-items: end;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--fold-space-md);
+}
+
+.rv--depot .rv-columns {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.rv-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--fold-space-xs);
+  font-size: var(--fold-text-sm);
+}
+
+.rv-fill,
+.rv-foot {
+  color: var(--fold-color-text-muted);
+  font-family: var(--fold-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.rv-foot {
+  text-align: center;
+  font-size: var(--fold-text-xs);
+}
+
+// Les bacs du bas vers le haut, posés sur un socle : le plancher.
+.rv-stack {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-sm) var(--fold-space-xs) 0;
+  border-bottom: 3px solid var(--fold-color-text-secondary);
+  background: var(--fold-color-surface-sunken);
+  border-radius: var(--fold-radius-sm) var(--fold-radius-sm) 0 0;
+}
+
+.rv-tile {
+  --tile-a: color-mix(in srgb, var(--stop-hue-a) 26%, var(--fold-color-surface-card));
+  --tile-b: color-mix(in srgb, var(--stop-hue-b) 26%, var(--fold-color-surface-card));
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-xs);
+  min-height: calc(var(--fold-space-5xl) + var(--fold-space-sm));
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border: 1.5px dashed var(--fold-color-text-muted);
+  border-radius: var(--fold-radius-sm);
+  background: linear-gradient(90deg, var(--tile-a) 50%, var(--tile-b) 50%);
+  color: var(--fold-ref-ink-950);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rv-tile:disabled {
+  cursor: default;
+}
+
+.rv-tile:focus-visible {
+  outline: 3px solid var(--fold-color-primary-border);
+  outline-offset: 2px;
+}
+
+.rv-tile--half {
+  min-height: calc(var(--fold-space-4xl) + var(--fold-space-xs));
+}
+
+.rv-tile--loaded {
+  --tile-a: var(--stop-hue-a);
+  --tile-b: var(--stop-hue-b);
+
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--fold-ref-ink-950) 30%, transparent);
+}
+
+.rv-tile--next {
+  outline: 3px solid var(--fold-color-primary);
+  outline-offset: 2px;
+  box-shadow: var(--fold-shadow-sm);
+}
+
+.rv-stop {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rv-side {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.rv-code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: right;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-wide);
+}
+
+.rv-marks {
+  font-size: var(--fold-text-xs);
+}
+
+.rv--depot .rv-tile {
+  min-height: calc(var(--fold-space-5xl) + var(--fold-space-lg));
+}
+
+.rv--depot .rv-tile--half {
+  min-height: var(--fold-space-5xl);
+}
+
+.rv-unload {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}

@@ -1,22 +1,9 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  input,
-  signal,
-  untracked,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { DeliveryLoadingPlanView, DeliveryLoadingRoundView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
-  FoldButtonComponent,
-  FoldCalloutComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
-  FoldEmptyStateComponent,
-  FoldLoadingStateComponent,
   FoldMeterComponent,
 } from 'fold-ng';
 
@@ -32,14 +19,7 @@ import {
   stepHeadline,
   volumeGauges,
 } from '../delivery-loading-plan';
-import type { BinLoader } from '../delivery-loading-rows';
 import { LoadingFloor } from '../loading-floor/loading-floor';
-import { LoadingGateway } from '../loading-gateway';
-
-type PlanState =
-  | { readonly status: 'loading' }
-  | { readonly status: 'error' }
-  | { readonly status: 'ready'; readonly plan: DeliveryLoadingPlanView };
 
 /**
  * **Le plan de chargement d'une tournée** (`plan-preparation-de-tournee.md`,
@@ -47,8 +27,9 @@ type PlanState =
  * plancher vu de dessus (G5) quand le véhicule a ses dimensions, le volume sec
  * et froid, et les alertes du serveur telles quelles.
  *
- * Le plan ne change pas quand on scanne : il se relit quand la tournée change
- * de version (un arrêt ajouté, retiré, déplacé). Ce qui est déjà chargé se
+ * Le détail du dépôt, sous l'écran « Charger » : le plan est lu par
+ * l'écran (`loading-round`), qui en tire aussi la carte, la rangée et les
+ * alertes — celles-ci ne se répètent pas ici. Ce qui est déjà chargé se
  * croise avec la vue du chargement, que la page relit après chaque geste.
  */
 @Component({
@@ -56,12 +37,8 @@ type PlanState =
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldBadgeComponent,
-    FoldButtonComponent,
-    FoldCalloutComponent,
     FoldCardComponent,
     FoldElementTitleComponent,
-    FoldEmptyStateComponent,
-    FoldLoadingStateComponent,
     FoldMeterComponent,
     LoadingFloor,
   ],
@@ -69,43 +46,19 @@ type PlanState =
   styleUrl: './loading-plan.scss',
 })
 export class LoadingPlan {
-  private readonly service = inject(LoadingGateway);
-
-  /** La vue du chargement : son id, sa version, et ses bacs déjà chargés. */
+  readonly plan = input.required<DeliveryLoadingPlanView>();
+  /** La vue du chargement : ses bacs déjà chargés. */
   readonly round = input.required<DeliveryLoadingRoundView>();
-  /** Le geste de chargement de l'écran, prêté au panneau d'une rangée ; `null` : lecture seule. */
-  readonly loader = input<BinLoader | null>(null);
-  /** Un geste est en vol sur l'écran. */
-  readonly busy = input(false);
-
-  protected readonly state = signal<PlanState>({ status: 'loading' });
-  private readonly reload = signal(0);
-
-  private readonly roundKey = computed(
-    () => `${this.round().roundId}@${String(this.round().version)}`,
-  );
-
-  protected readonly plan = computed(() => {
-    const state = this.state();
-    return state.status === 'ready' ? state.plan : null;
-  });
 
   protected readonly loaded = computed(() => loadedBinKeys(this.round()));
 
   protected readonly loadedStacks = computed(() => {
-    const plan = this.plan();
-    return plan === null ? new Set<number>() : loadedStackIndexes(plan.order, this.loaded());
+    return loadedStackIndexes(this.plan().order, this.loaded());
   });
 
-  protected readonly current = computed(() => {
-    const plan = this.plan();
-    return plan === null ? null : currentStep(plan.order, this.loaded());
-  });
+  protected readonly current = computed(() => currentStep(this.plan().order, this.loaded()));
 
-  protected readonly gauges = computed(() => {
-    const plan = this.plan();
-    return plan === null ? [] : volumeGauges(plan.volume);
-  });
+  protected readonly gauges = computed(() => volumeGauges(this.plan().volume));
 
   protected readonly headline = stepHeadline;
   protected readonly binLabel = planBinLabel;
@@ -113,30 +66,4 @@ export class LoadingPlan {
   protected readonly stackTitle = stackTitle;
   protected readonly stackStops = stackStopsLabel;
   protected readonly stepLoaded = isStepLoaded;
-
-  constructor() {
-    effect(() => {
-      this.roundKey();
-      this.reload();
-      const roundId = untracked(() => this.round().roundId);
-      untracked(() => void this.read(roundId));
-    });
-  }
-
-  protected retry(): void {
-    this.reload.update((n) => n + 1);
-  }
-
-  private async read(roundId: string): Promise<void> {
-    if (this.state().status !== 'ready') {
-      this.state.set({ status: 'loading' });
-    }
-    try {
-      this.state.set({ status: 'ready', plan: await this.service.plan(roundId) });
-    } catch {
-      if (this.state().status !== 'ready') {
-        this.state.set({ status: 'error' });
-      }
-    }
-  }
 }

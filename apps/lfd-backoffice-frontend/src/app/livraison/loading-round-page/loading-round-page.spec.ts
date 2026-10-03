@@ -126,11 +126,8 @@ function scan(fixture: ComponentFixture<LoadingRoundPage>, raw: string): void {
 }
 
 describe('LoadingRoundPage', () => {
-  it('dit « 1 bac sur 2 » par arrêt, met l’arrêt sans bac en rouge, et liste ce qui manque', async () => {
+  it('liste ce qui manque, arrêt par arrêt, l’arrêt sans bac compris', async () => {
     const { element } = await boot();
-    const stops = [...element.querySelectorAll('[data-stop]')];
-    expect(stops[0]?.textContent).toContain('1 bac sur 2');
-    expect(stops[1]?.textContent).toContain('Aucun bac déclaré');
     const missing = [...element.querySelectorAll('[data-missing-stop]')].map((line) =>
       line.textContent?.trim(),
     );
@@ -167,16 +164,9 @@ describe('LoadingRoundPage', () => {
     scan(fixture, 'abc 236');
     await settle(fixture);
     expect(wire.calls).toEqual(['load r-1 {"code":"ABC236"}']);
-    expect(element.querySelector('[data-notice]')?.textContent?.trim()).toBe(
+    expect(element.querySelector('[data-notice-text]')?.textContent?.trim()).toBe(
       'Ce bac part dans le Master bleu.',
     );
-  });
-
-  it('décharge un bac chargé', async () => {
-    const { fixture, element } = await boot();
-    element.querySelector<HTMLButtonElement>('button[data-unload]')?.click();
-    await settle(fixture);
-    expect(wire.calls).toEqual(['unload r-1 b-1']);
   });
 
   it('part avec la version lue, et dit le refus qui liste les références', async () => {
@@ -217,12 +207,6 @@ describe('LoadingRoundPage', () => {
       WRITE,
       round({ stops: [{ ...first, state: 'loaded', bins: [redo] }, second] }),
     );
-    const stop = element.querySelector('[data-stop]');
-    expect(stop?.querySelector('[data-stop-to-redo]')).not.toBeNull();
-    expect(stop?.querySelector('[data-bin-to-redo]')).not.toBeNull();
-    expect(stop?.querySelector('[data-bin-shared]')?.textContent?.trim()).toBe(
-      'partagé avec CMD-9',
-    );
     expect(element.querySelector('[data-to-redo]')?.textContent).toContain('Un arrêt porte');
     expect(element.querySelector('[data-missing-stop]')?.textContent?.trim()).toBe(
       'CMD-1 · Le Comptoir — bac partagé à refaire · 1 bac sur 1',
@@ -232,12 +216,12 @@ describe('LoadingRoundPage', () => {
     wire.refuse = new HttpErrorResponse({ status: 409, error: { message: refusal } });
     element.querySelector<HTMLButtonElement>('button[data-depart]')?.click();
     await settle(fixture);
-    expect(element.querySelector('[data-notice]')?.textContent?.trim()).toBe(refusal);
+    expect(element.querySelector('[data-notice-text]')?.textContent?.trim()).toBe(refusal);
   });
 
   it('sans écriture, on lit le chargement sans aucun geste', async () => {
     const { element } = await boot(['delivery_loading:read']);
-    expect(element.querySelectorAll('[data-stop]')).toHaveLength(2);
+    expect(element.querySelectorAll('[data-missing-stop]')).toHaveLength(2);
     expect(element.querySelector('[data-scan]')).toBeNull();
     expect(element.querySelector('[data-depart]')).toBeNull();
   });

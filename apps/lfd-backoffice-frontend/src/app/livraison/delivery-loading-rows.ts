@@ -2,6 +2,7 @@ import type {
   DeliveryLoadingPlanBinView,
   DeliveryLoadingPlanStackView,
   DeliveryLoadingPlanStepView,
+  DeliveryLoadingPlanView,
   LoadDeliveryBinPayload,
 } from '@lfd/contracts';
 
@@ -194,3 +195,178 @@ export interface BinLoadAttempt {
 
 /** Le geste de chargement, prêté par l'écran qui le tient (scan ou code tapé). */
 export type BinLoader = (raw: string) => Promise<BinLoadAttempt>;
+
+/**
+ * Une tuile de pile : un bac physique tel qu'on le voit. Les deux moitiés
+ * d'un bac PARTAGÉ font une seule tuile — elles se scannent chacune, mais on
+ * les pose ensemble, au même étage.
+ */
+export interface StackTile {
+  readonly key: string;
+  /** Une moitié, ou les deux d'un bac partagé, dans l'ordre du plan. */
+  readonly bins: readonly RowBin[];
+  readonly stopPositions: readonly number[];
+  readonly half: boolean;
+  readonly shared: boolean;
+  readonly isotherm: boolean;
+  readonly loaded: boolean;
+}
+
+/** Les deux moitiés d'un même bac partagé : chacune nomme la commande de l'autre. */
+function partners(a: DeliveryLoadingPlanBinView, b: DeliveryLoadingPlanBinView): boolean {
+  return (
+    a.half !== null &&
+    b.half !== null &&
+    a.sharedWithReference === b.reference &&
+    b.sharedWithReference === a.reference
+  );
+}
+
+function tileOf(bins: readonly RowBin[], plans: readonly DeliveryLoadingPlanBinView[]): StackTile {
+  return {
+    key: bins.map((bin) => bin.key).join('+'),
+    bins,
+    stopPositions: [...new Set(bins.map((bin) => bin.stopPosition))],
+    half: plans.some((plan) => plan.half !== null),
+    shared: bins.length > 1,
+    isotherm: plans.some((plan) => plan.isotherm),
+    loaded: bins.every((bin) => bin.loaded),
+  };
+}
+
+/** Les tuiles de chaque pile, du bas vers le haut ({@link binsByStack}, moitiés partagées réunies). */
+export function stackTiles(
+  order: readonly DeliveryLoadingPlanStepView[],
+  loaded: ReadonlySet<string>,
+): ReadonlyMap<number, readonly StackTile[]> {
+  const plans = new Map(order.flatMap((step) => step.bins).map((bin) => [planBinKey(bin), bin]));
+  const tiles = new Map<number, readonly StackTile[]>();
+  for (const [stackIndex, bins] of binsByStack(order, loaded)) {
+    const stack: StackTile[] = [];
+    for (let i = 0; i < bins.length; i += 1) {
+      const here = bins[i];
+      const above = bins[i + 1];
+      const plan = here === undefined ? undefined : plans.get(here.key);
+      const next = above === undefined ? undefined : plans.get(above.key);
+      if (here === undefined || plan === undefined) {
+        continue;
+      }
+      if (above !== undefined && next !== undefined && partners(plan, next)) {
+        stack.push(tileOf([here, above], [plan, next]));
+        i += 1;
+      } else {
+        stack.push(tileOf([here], [plan]));
+      }
+    }
+    tiles.set(stackIndex, stack);
+  }
+  return tiles;
+}
+
+/** Le bac à poser maintenant : celui qu'on a désigné, ou le premier à charger dans l'ordre. */
+export interface NextBin {
+  readonly key: string;
+  readonly bin: DeliveryLoadingPlanBinView;
+  /** L'arrêt de SA commande — pour une moitié partagée, pas forcément celui de l'étape. */
+  readonly stopPosition: number;
+  readonly customerLabel: string;
+}
+
+/**
+ * Le prochain bac : le bac désigné (`picked`, une clé {@link planBinKey}) s'il
+ * n'est pas chargé, sinon le premier non chargé dans l'ordre du plan. `null`
+ * quand tout est chargé.
+ */
+export function nextBin(
+  plan: Pick<DeliveryLoadingPlanView, 'order'>,
+  loaded: ReadonlySet<string>,
+  picked: string | null,
+): NextBin | null {
+  const byReference = new Map(plan.order.map((step) => [step.reference, step]));
+  const pending = plan.order.flatMap((step) =>
+    step.bins
+      .filter((bin) => !loaded.has(planBinKey(bin)))
+      .map((bin) => {
+        const owner = byReference.get(bin.reference) ?? step;
+        return {
+          key: planBinKey(bin),
+          bin,
+          stopPosition: owner.stopPosition,
+          customerLabel: owner.customerLabel,
+        };
+      }),
+  );
+  return pending.find((entry) => entry.key === picked) ?? pending[0] ?? null;
+}
+
+/** « le fond », « au milieu », « les portes » — où est une rangée, parmi `rowCount`. */
+export function rowPlace(row: number, rowCount: number): string {
+  if (row <= 1) {
+    return 'le fond';
+  }
+  return row >= rowCount ? 'les portes' : 'au milieu';
+}
+
+/** « à gauche », « au milieu », « à droite » — la place d'une pile dans sa rangée, vu des portes. */
+export function stackSide(index: number, count: number): string {
+  if (index <= 0) {
+    return 'à gauche';
+  }
+  return index >= count - 1 ? 'à droite' : 'au milieu';
+}
+
+/** La consigne de pose, en deux lignes : où, puis sur quoi. */
+export interface PlacementLine {
+  readonly lead: string;
+  readonly detail: string;
+}
+
+/** « en bas », « sur le bac de l'arrêt 6 », « sur le bac partagé 1·2 » — ce qu'on voit sous le bac. */
+function restingOn(tiles: readonly StackTile[], key: string): string {
+  const index = tiles.findIndex((tile) => tile.bins.some((bin) => bin.key === key));
+  const below = index > 0 ? tiles[index - 1] : undefined;
+  if (below === undefined) {
+    return 'en bas';
+  }
+  const stops = below.stopPositions.map(String).join('·');
+  return below.shared ? `sur le bac partagé ${stops}` : `sur le bac de l’arrêt ${stops}`;
+}
+
+/**
+ * **Où poser un bac, dit comme le livreur le voit** : la rangée et la pile,
+ * puis le côté et ce qu'il y a dessous. « Sur le bac de l'arrêt 6 » est le
+ * bac juste en dessous dans la pile — le repère qu'on a sous les yeux.
+ * `null` si le bac n'est pas dans le plan.
+ */
+export function placementLine(
+  plan: Pick<DeliveryLoadingPlanView, 'order' | 'stacks'>,
+  target: Pick<DeliveryLoadingPlanBinView, 'binId' | 'half'>,
+): PlacementLine | null {
+  const key = planBinKey(target);
+  const bin = plan.order.flatMap((step) => step.bins).find((entry) => planBinKey(entry) === key);
+  const stack = plan.stacks.find((entry) => entry.stackIndex === bin?.stackIndex);
+  if (bin === undefined || stack === undefined) {
+    return null;
+  }
+  const below = restingOn(stackTiles(plan.order, new Set()).get(stack.stackIndex) ?? [], key);
+  const pile = `Pile ${String(stack.stackIndex)}`;
+  const placement = stack.placement;
+  switch (placement?.kind) {
+    case 'refrigerated':
+      return { lead: 'Caisse froide ❄', detail: 'hors plancher · au froid' };
+    case 'off_floor':
+      return { lead: `${pile} · hors plancher`, detail: below };
+    case 'floor': {
+      const rows = floorRows(plan.stacks, plan.order, new Set());
+      const row = rows.find((entry) => entry.row === placement.row);
+      const index = row?.stacks.findIndex((entry) => entry.stackIndex === stack.stackIndex) ?? 0;
+      const place = rowPlace(placement.row, rows.at(-1)?.row ?? placement.row);
+      return {
+        lead: `Rangée ${String(placement.row)} (${place}) · pile ${String(stack.stackIndex)}`,
+        detail: `${stackSide(index, row?.stacks.length ?? 1)}, ${below}`,
+      };
+    }
+    case undefined:
+      return { lead: `${pile} · ${stack.binTypeName}`, detail: below };
+  }
+}

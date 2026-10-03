@@ -127,14 +127,12 @@
   </div>
 
   @if (openRow(); as row) {
-    <app-loading-row-panel
-      [row]="row"
-      [rows]="rows()"
-      [current]="row.row === current()"
-      [selectedStack]="selection()?.stack ?? null"
-      [loader]="loader()"
-      [busy]="busy()"
-      (closed)="close()"
+    <app-loading-row-view
+      [title]="row.title"
+      subtitle="vue des portes · gauche → droite"
+      [columns]="row.columns"
+      size="depot"
+      data-floor-row-view
     />
   }
 

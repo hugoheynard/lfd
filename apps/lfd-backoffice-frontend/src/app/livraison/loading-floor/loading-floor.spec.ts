@@ -82,7 +82,7 @@ describe('LoadingFloor', () => {
     );
   });
 
-  it('dessine les rangées, et un toucher sur une rangée ouvre « Quoi mettre ici »', () => {
+  it('dessine les rangées, et un toucher sur une rangée l’ouvre vue des portes', () => {
     const fixture = TestBed.createComponent(LoadingFloor);
     fixture.componentRef.setInput('floor', FLOOR);
     fixture.componentRef.setInput('stacks', STACKS);
@@ -93,16 +93,18 @@ describe('LoadingFloor', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]?.getAttribute('role')).toBe('button');
     expect(rows[0]?.getAttribute('aria-label')).toContain('Rangée 1 (le fond)');
-    expect(element.querySelector('[data-row-panel]')).toBeNull();
+    expect(element.querySelector('[data-floor-row-view]')).toBeNull();
 
     rows[0]?.dispatchEvent(new MouseEvent('click'));
     fixture.detectChanges();
     expect(rows[0]?.getAttribute('aria-pressed')).toBe('true');
-    expect(element.querySelector('[data-row-panel]')?.textContent).toContain('Rangée 1');
+    expect(element.querySelector('[data-floor-row-view]')?.textContent).toContain(
+      'Rangée 1 · le fond',
+    );
 
-    element.querySelector<HTMLButtonElement>('[data-row-close]')?.click();
+    rows[0]?.dispatchEvent(new MouseEvent('click'));
     fixture.detectChanges();
-    expect(element.querySelector('[data-row-panel]')).toBeNull();
+    expect(element.querySelector('[data-floor-row-view]')).toBeNull();
   });
 
   it('ouvre la rangée d’une pile touchée au clavier, la pile mise en avant', () => {
@@ -117,6 +119,6 @@ describe('LoadingFloor', () => {
     fixture.detectChanges();
     expect(stack?.getAttribute('aria-pressed')).toBe('true');
     expect(stack?.querySelector('.stack--selected')).not.toBeNull();
-    expect(element.querySelector('[data-row-stack]')?.classList).toContain('rp-stack--selected');
+    expect(element.querySelector('[data-row-column]')?.getAttribute('data-stack')).toBe('1');
   });
 });

@@ -10,7 +10,10 @@ import {
   currentRow,
   floorRows,
   locateBin,
+  nextBin,
   outOfRowNotice,
+  placementLine,
+  stackTiles,
 } from './delivery-loading-rows';
 
 function bin(
@@ -145,5 +148,150 @@ describe('binTypeLabel', () => {
     expect(binTypeLabel({ binTypeName: 'Bac S', half: 'right', isotherm: true })).toBe(
       'Bac S · ½ droite · ❄',
     );
+  });
+});
+
+// Un bac partagé : CMD-2 (gauche) et CMD-1 (droite), chargés à l'étape de
+// l'arrêt 2, en haut de la pile 1, au-dessus d'un bac de l'arrêt 3.
+const SHARED_ORDER: readonly DeliveryLoadingPlanStepView[] = [
+  {
+    step: 1,
+    stopPosition: 3,
+    reference: 'CMD-3',
+    customerLabel: 'Hôtel des Cimes',
+    bins: [bin('c1', 1, { reference: 'CMD-3' })],
+  },
+  {
+    step: 2,
+    stopPosition: 2,
+    reference: 'CMD-2',
+    customerLabel: 'Chalet',
+    bins: [
+      bin('h1', 1, { reference: 'CMD-2', half: 'left', sharedWithReference: 'CMD-1' }),
+      bin('h2', 1, { reference: 'CMD-1', half: 'right', sharedWithReference: 'CMD-2' }),
+      bin('d1', 2, { reference: 'CMD-2' }),
+    ],
+  },
+  {
+    step: 3,
+    stopPosition: 1,
+    reference: 'CMD-1',
+    customerLabel: 'Bistrot',
+    bins: [bin('e1', 1, { reference: 'CMD-1' })],
+  },
+];
+
+describe('stackTiles', () => {
+  it('réunit les deux moitiés d’un bac partagé en une seule tuile', () => {
+    const pile1 = stackTiles(SHARED_ORDER, new Set(['h1:left'])).get(1) ?? [];
+    expect(pile1.map((tile) => tile.stopPositions)).toEqual([[3], [2, 1], [1]]);
+    expect(pile1[1]).toMatchObject({ shared: true, half: true, loaded: false });
+  });
+});
+
+describe('nextBin', () => {
+  const plan = { order: ORDER };
+
+  it('suit l’ordre du plan', () => {
+    expect(nextBin(plan, new Set(), null)?.key).toBe('a1:whole');
+    expect(nextBin(plan, new Set(['a1:whole']), null)?.key).toBe('a2:whole');
+  });
+
+  it('donne la priorité au bac désigné, au client de SA commande', () => {
+    expect(nextBin(plan, new Set(), 's1:left')).toMatchObject({
+      key: 's1:left',
+      stopPosition: 4,
+      customerLabel: 'Chez Jo',
+    });
+  });
+
+  it('reprend l’ordre quand le bac désigné est déjà chargé', () => {
+    expect(nextBin(plan, new Set(['b1:whole']), 'b1:whole')?.key).toBe('a1:whole');
+  });
+
+  it('rend null quand tout est chargé', () => {
+    const all = new Set(['a1:whole', 'a2:whole', 'b1:whole', 's1:left']);
+    expect(nextBin(plan, all, null)).toBeNull();
+  });
+});
+
+describe('placementLine', () => {
+  const plan = { order: ORDER, stacks: STACKS };
+
+  it('au sol, en bas de sa pile, à gauche de la rangée du fond', () => {
+    expect(placementLine(plan, { binId: 'a2', half: null })).toEqual({
+      lead: 'Rangée 1 (le fond) · pile 1',
+      detail: 'à gauche, en bas',
+    });
+  });
+
+  it('au sol, sur le bac de l’arrêt du dessous', () => {
+    expect(placementLine(plan, { binId: 'b1', half: null })).toEqual({
+      lead: 'Rangée 1 (le fond) · pile 1',
+      detail: 'à gauche, sur le bac de l’arrêt 6',
+    });
+    expect(placementLine(plan, { binId: 's1', half: 'left' })?.lead).toBe(
+      'Rangée 2 (les portes) · pile 3',
+    );
+  });
+
+  it('au sol, sur un bac partagé', () => {
+    const shared = {
+      order: SHARED_ORDER,
+      stacks: [floorStack(1, 1, 0, 0), floorStack(2, 1, 0, 50)],
+    };
+    expect(placementLine(shared, { binId: 'e1', half: null })).toEqual({
+      lead: 'Rangée 1 (le fond) · pile 1',
+      detail: 'à gauche, sur le bac partagé 2·1',
+    });
+    expect(placementLine(shared, { binId: 'h2', half: 'right' })?.detail).toBe(
+      'à gauche, sur le bac de l’arrêt 3',
+    );
+    expect(placementLine(shared, { binId: 'd1', half: null })?.detail).toBe('à droite, en bas');
+  });
+
+  it('sans plancher : la pile et son type', () => {
+    const unplaced = {
+      order: ORDER,
+      stacks: STACKS.map((stack) => ({ ...stack, placement: null })),
+    };
+    expect(placementLine(unplaced, { binId: 'b1', half: null })).toEqual({
+      lead: 'Pile 1 · Bac M',
+      detail: 'sur le bac de l’arrêt 6',
+    });
+  });
+
+  it('réfrigéré, et hors plancher', () => {
+    const cold = {
+      order: ORDER,
+      stacks: STACKS.map((stack) =>
+        stack.stackIndex === 1 ? { ...stack, placement: { kind: 'refrigerated' as const } } : stack,
+      ),
+    };
+    expect(placementLine(cold, { binId: 'b1', half: null })).toEqual({
+      lead: 'Caisse froide ❄',
+      detail: 'hors plancher · au froid',
+    });
+    const over = {
+      order: [
+        ...ORDER,
+        {
+          step: 4,
+          stopPosition: 3,
+          reference: 'CMD-6',
+          customerLabel: 'Loin',
+          bins: [bin('o1', 4)],
+        },
+      ],
+      stacks: STACKS,
+    };
+    expect(placementLine(over, { binId: 'o1', half: null })).toEqual({
+      lead: 'Pile 4 · hors plancher',
+      detail: 'en bas',
+    });
+  });
+
+  it('rend null pour un bac hors du plan', () => {
+    expect(placementLine(plan, { binId: 'zz', half: null })).toBeNull();
   });
 });

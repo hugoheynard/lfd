@@ -1,168 +1,288 @@
-<div class="lrp-page">
-  @if (notice(); as notice) {
-    <fold-callout [variant]="notice.variant" data-notice>{{ notice.text }}</fold-callout>
-  }
-
-  @switch (state().status) {
-    @case ('loading') {
-      <fold-loading message="Lecture du chargement…" />
-    }
-    @case ('error') {
-      <fold-empty-state
-        tone="alert"
-        title="Chargement illisible"
-        subtitle="Cette tournée est introuvable, ou le serveur n’a pas répondu."
-        data-round-error
+<div class="lr" [class.lr--depot]="layout() === 'depot'">
+  @if (layout() === 'phone') {
+    <header class="lr-head" data-progress>
+      <div class="lr-head-line">
+        <ng-content select="[loadingBack]" />
+        <span class="lr-head-title" data-loading-title>{{ title() }}</span>
+      </div>
+      <div class="lr-head-line">
+        <span class="lr-count">
+          <strong class="lr-count-value">{{ progress().loaded }}</strong> /
+          {{ progress().total }} bacs chargés
+        </span>
+        <span class="lr-head-left">{{ stopsLeftLabel() }}</span>
+      </div>
+      <div
+        class="lr-rail"
+        role="progressbar"
+        aria-label="Bacs chargés"
+        [attr.aria-valuenow]="progress().loaded"
+        aria-valuemin="0"
+        [attr.aria-valuemax]="progress().total"
       >
-        <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
-      </fold-empty-state>
-    }
-    @case ('ready') {
-      @if (view(); as view) {
-        @if (view.departedAt; as departedAt) {
-          <fold-callout variant="info" data-departed>
-            Partie à {{ timeOf(departedAt) }} : plus rien ne se charge, ne se décharge ni ne se
-            compose sur cette tournée.
-          </fold-callout>
-        }
-
-        @if (canLoad()) {
-          <fold-card data-scan>
-            <div class="lrp-block">
-              <fold-element-title
-                variant="title"
-                title="Scanner"
-                subtitle="Chaque bac ou demi-bac lu se charge dans ce véhicule."
-              />
-              <app-bin-scanner [paused]="busy()" (scanned)="onScanned($event)" />
-              <form class="lrp-typed" (submit)="$event.preventDefault(); loadTyped()">
-                <fold-input
-                  label="Code du bac"
-                  hint="Les six caractères sous le QR, quand il est illisible."
-                  autocomplete="off"
-                  [value]="typed()"
-                  (valueChange)="typed.set($event)"
-                  data-typed-code
+        <span class="lr-rail-fill" [style.width.%]="progressPercent()"></span>
+      </div>
+    </header>
+  }
+  <div class="lr-body">
+    <ng-content select="[loadingContext]" />
+    @switch (state().status) {
+      @case ('loading') {
+        <fold-loading message="Lecture du chargement…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Chargement illisible"
+          subtitle="Cette tournée est introuvable, ou le serveur n’a pas répondu."
+          data-round-error
+        >
+          <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @if (view(); as view) {
+          <div class="lr-main">
+            @if (layout() === 'depot') {
+              <div class="lr-progress" data-progress>
+                <span class="lr-count">
+                  <strong class="lr-count-value">{{ progress().loaded }}</strong> /
+                  {{ progress().total }} bacs chargés
+                </span>
+                <fold-meter
+                  [label]="stopsLeftLabel()"
+                  [value]="progress().loaded"
+                  [max]="progress().total > 0 ? progress().total : 1"
+                  tone="success"
                 />
-                <button
-                  foldButton
-                  type="submit"
-                  emphasis="outline"
-                  [disabled]="busy() || typed().trim() === ''"
-                  data-load-typed
-                >
-                  Charger
-                </button>
-              </form>
-            </div>
-          </fold-card>
-        }
+              </div>
+            }
 
-        <div class="lrp-stops">
-          @for (stop of view.stops; track stop.stopId) {
-            <fold-card data-stop>
-              <div class="lrp-block">
+            @if (view.departedAt; as departedAt) {
+              <fold-callout variant="info" data-departed>
+                Partie à {{ timeOf(departedAt) }} : plus rien ne se charge, ne se décharge ni ne se
+                compose sur cette tournée.
+              </fold-callout>
+            }
+
+            @if (plan(); as plan) {
+              @for (warning of plan.warnings; track warning.kind + warning.message) {
+                <fold-callout [variant]="warningVariant(warning.kind)" data-plan-warning>{{
+                  warning.message
+                }}</fold-callout>
+              }
+            } @else if (planState().status === 'error') {
+              <fold-callout variant="alert" data-plan-error>
+                Le plan de chargement est illisible : le scan charge quand même, sans consigne de
+                place.
+                <button foldButton actions emphasis="outline" size="sm" (click)="retryPlan()">
+                  Réessayer
+                </button>
+              </fold-callout>
+            }
+
+            @if (allLoaded()) {
+              <fold-empty-state
+                icon="check-circle"
+                title="Tout est chargé"
+                [subtitle]="doneSubtitle()"
+                data-all-loaded
+              >
+                @if (doneLabel(); as label) {
+                  <button foldButton (click)="done.emit()" data-done>{{ label }}</button>
+                }
+              </fold-empty-state>
+            } @else if (canLoad() || next() !== null) {
+              <app-loading-next-card
+                [next]="next()"
+                [placement]="placement()"
+                [canLoad]="canLoad()"
+                [busy]="busy()"
+                [size]="layout()"
+                [(code)]="typed"
+                (scanned)="loadFrom($event)"
+                (submitted)="loadFrom($event)"
+              />
+            }
+
+            @if (notice(); as notice) {
+              <fold-callout [variant]="notice.variant" announce data-notice>
+                <span class="lr-notice">
+                  @if (notice.title; as title) {
+                    <strong>{{ title }}</strong>
+                  }
+                  <span data-notice-text>{{ notice.text }}</span>
+                </span>
+                @if (notice.showRow; as row) {
+                  <button
+                    foldButton
+                    actions
+                    emphasis="outline"
+                    size="sm"
+                    (click)="showRow(row)"
+                    data-show-row
+                  >
+                    Voir la rangée {{ row }}
+                  </button>
+                }
+              </fold-callout>
+            }
+
+            @if (layout() === 'depot') {
+              <ng-container *ngTemplateOutlet="missingCard" />
+            }
+          </div>
+
+          <div class="lr-side">
+            @if (plan(); as plan) {
+              @if (plan.floor !== null) {
+                @if (tabs().length > 0) {
+                  <div class="lr-section">
+                    <fold-element-title
+                      variant="caps"
+                      title="Plancher · vu de dessus"
+                      subtitle="fond ← → portes"
+                    />
+                    <app-loading-row-picker
+                      [tabs]="tabs()"
+                      [selected]="openRow()"
+                      [size]="layout()"
+                      (selectedChange)="showRow($event)"
+                    />
+                  </div>
+                }
+                @if (openRowView(); as row) {
+                  <fold-card>
+                    <app-loading-row-view
+                      [title]="row.title"
+                      subtitle="vue des portes · gauche → droite"
+                      [columns]="row.columns"
+                      [nextKey]="nextKey()"
+                      [canPick]="canLoad()"
+                      [size]="layout()"
+                      (picked)="pick($event)"
+                      (unload)="unload($event)"
+                    />
+                  </fold-card>
+                }
+              } @else if (allColumns().length > 0) {
+                <fold-card>
+                  <div class="lr-section">
+                    <fold-callout variant="neutral" data-no-floor>
+                      Dimensions du véhicule non renseignées : pas de place au sol. Les piles
+                      restent, dans l’ordre d’ouverture.
+                    </fold-callout>
+                    <app-loading-row-view
+                      title="Les piles · sans plancher"
+                      subtitle="dans l’ordre d’ouverture"
+                      [columns]="allColumns()"
+                      [nextKey]="nextKey()"
+                      [canPick]="canLoad()"
+                      [size]="layout()"
+                      (picked)="pick($event)"
+                      (unload)="unload($event)"
+                    />
+                  </div>
+                </fold-card>
+              }
+
+              @if (coldColumns().length > 0 || offFloorColumns().length > 0) {
+                <fold-card data-off-floor>
+                  <div class="lr-section">
+                    <fold-element-title variant="title" title="Hors plancher" />
+                    <div class="lr-off">
+                      @if (coldColumns().length > 0) {
+                        <app-loading-row-view
+                          title="Caisse froide ❄"
+                          subtitle="réfrigérée, sans place au sol"
+                          [columns]="coldColumns()"
+                          [nextKey]="nextKey()"
+                          [canPick]="canLoad()"
+                          [size]="layout()"
+                          (picked)="pick($event)"
+                          (unload)="unload($event)"
+                          data-cold
+                        />
+                      }
+                      @for (column of offFloorColumns(); track column.stackIndex) {
+                        <div class="lr-over" data-over-floor>
+                          <app-loading-row-view
+                            [title]="column.header + ' — ne tient pas au sol'"
+                            [columns]="[column]"
+                            [nextKey]="nextKey()"
+                            [canPick]="canLoad()"
+                            [size]="layout()"
+                            (picked)="pick($event)"
+                            (unload)="unload($event)"
+                          />
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </fold-card>
+              }
+
+              @if (layout() === 'depot') {
+                <app-loading-plan [plan]="plan" [round]="view" />
+              }
+            }
+
+            @if (view.stops.length === 0) {
+              <fold-empty-state
+                icon="truck"
+                title="Tournée vide"
+                subtitle="Aucun arrêt n’y est affecté : rien à charger."
+              />
+            }
+
+            @if (layout() === 'phone') {
+              <ng-container *ngTemplateOutlet="missingCard" />
+            }
+          </div>
+
+          <ng-template #missingCard>
+            <fold-card data-missing>
+              <div class="lr-block">
                 <fold-element-title
                   variant="title"
-                  [title]="stop.position + '. ' + stop.reference + ' · ' + stop.customerLabel"
-                  [subtitle]="binCountLabel(stop)"
-                >
-                  <fold-badge
-                    titleAction
-                    [variant]="stateLabel(stop.state).variant"
-                    [content]="stateLabel(stop.state).label"
-                    data-stop-state
-                  />
-                  @if (hasBinToRedo(stop)) {
-                    <fold-badge
-                      titleAction
-                      variant="alert"
-                      content="Bac à refaire"
-                      data-stop-to-redo
-                    />
-                  }
-                </fold-element-title>
-                @for (bin of stop.bins; track bin.binId) {
-                  <div class="lrp-bin" data-bin>
-                    <span>Bac {{ bin.index }} · {{ bin.code }} · {{ binKindLabel(bin) }}</span>
-                    @if (bin.sharedWithReference; as partner) {
-                      <span data-bin-shared>partagé avec {{ partner }}</span>
-                    }
-                    @if (bin.toRedo) {
-                      <fold-badge variant="alert" content="À refaire" data-bin-to-redo />
-                    }
-                    @if (bin.loadedAt; as loadedAt) {
-                      <span>chargé à {{ timeOf(loadedAt) }}</span>
-                      @if (canLoad()) {
-                        <button
-                          foldButton
-                          size="sm"
-                          emphasis="outline"
-                          [disabled]="busy()"
-                          (click)="unload(bin.binId)"
-                          data-unload
-                        >
-                          Décharger
-                        </button>
-                      }
-                    } @else {
-                      <span>à charger</span>
-                    }
-                  </div>
+                  title="Ce qui manque encore"
+                  [subtitle]="
+                    missing().length === 0
+                      ? 'Tout est chargé.'
+                      : 'Ce véhicule ne part pas tant que ces arrêts ne sont pas chargés, ou retirés.'
+                  "
+                />
+                @if (toRedoCount() > 0) {
+                  <fold-callout variant="alert" data-to-redo>
+                    {{ toRedoCount() === 1 ? 'Un arrêt porte' : toRedoCount() + ' arrêts portent' }}
+                    un bac partagé à refaire : ses deux commandes ne sont plus à des arrêts
+                    consécutifs. « Partir » le refuse tant qu’il n’est pas recolisé, ou que les
+                    arrêts ne sont pas remis côte à côte.
+                  </fold-callout>
+                }
+                @for (line of missing(); track line.stopId) {
+                  <p class="lr-missing" data-missing-stop>
+                    {{ line.reference }} · {{ line.customerLabel }} — {{ line.detail }}
+                  </p>
+                }
+                @if (canDepart()) {
+                  <button
+                    foldButton
+                    size="lg"
+                    icon="truck"
+                    [loading]="busy()"
+                    [disabled]="busy()"
+                    (click)="depart()"
+                    data-depart
+                  >
+                    Partir
+                  </button>
                 }
               </div>
             </fold-card>
-          } @empty {
-            <fold-empty-state
-              icon="truck"
-              title="Tournée vide"
-              subtitle="Aucun arrêt n’y est affecté : rien à charger."
-            />
-          }
-        </div>
-
-        <app-loading-plan [round]="view" [loader]="canLoad() ? loader : null" [busy]="busy()" />
-
-        <fold-card data-missing>
-          <div class="lrp-block">
-            <fold-element-title
-              variant="title"
-              title="Ce qui manque encore"
-              [subtitle]="
-                missing().length === 0
-                  ? 'Tout est chargé.'
-                  : 'Ce véhicule ne part pas tant que ces arrêts ne sont pas chargés, ou retirés.'
-              "
-            />
-            @if (toRedoCount() > 0) {
-              <fold-callout variant="alert" data-to-redo>
-                {{ toRedoCount() === 1 ? 'Un arrêt porte' : toRedoCount() + ' arrêts portent' }}
-                un bac partagé à refaire : ses deux commandes ne sont plus à des arrêts consécutifs.
-                « Partir » le refuse tant qu’il n’est pas recolisé, ou que les arrêts ne sont pas
-                remis côte à côte.
-              </fold-callout>
-            }
-            @for (line of missing(); track line.stopId) {
-              <p class="lrp-missing" data-missing-stop>
-                {{ line.reference }} · {{ line.customerLabel }} — {{ line.detail }}
-              </p>
-            }
-            @if (canDepart()) {
-              <button
-                foldButton
-                size="lg"
-                icon="truck"
-                [loading]="busy()"
-                [disabled]="busy()"
-                (click)="depart()"
-                data-depart
-              >
-                Partir
-              </button>
-            }
-          </div>
-        </fold-card>
+          </ng-template>
+        }
       }
     }
-  }
+  </div>
 </div>

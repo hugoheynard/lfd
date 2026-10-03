@@ -22,7 +22,6 @@ import { MyDeliveryLoadingService } from '../my-delivery-loading.service';
   imports: [FoldButtonComponent, LoadingRound],
   providers: [{ provide: LoadingGateway, useExisting: MyDeliveryLoadingService }],
   templateUrl: './my-round-loading.html',
-  styleUrl: './my-round-loading.scss',
 })
 export class MyRoundLoading {
   private readonly permissions = inject(PermissionsStore);

@@ -1,0 +1,59 @@
+<div class="rv" [class.rv--depot]="size() === 'depot'" data-row-view>
+  <fold-element-title variant="title" [title]="title()" [subtitle]="subtitle()" />
+  <div class="rv-columns">
+    @for (column of columns(); track column.stackIndex) {
+      <div class="rv-column" data-row-column [attr.data-stack]="column.stackIndex">
+        <div class="rv-head">
+          <strong>{{ column.header }}</strong>
+          <span class="rv-fill">{{ column.fill }}</span>
+        </div>
+        <div class="rv-stack">
+          @for (tile of column.tiles; track tile.key) {
+            <button
+              type="button"
+              class="rv-tile"
+              [class]="hues(tile)"
+              [class.rv-tile--loaded]="tile.loaded"
+              [class.rv-tile--next]="state(tile) === 'next'"
+              [class.rv-tile--half]="tile.half"
+              [disabled]="!canPick()"
+              [attr.aria-pressed]="tile.loaded ? chosen() === tile.key : null"
+              [attr.aria-label]="label(tile)"
+              [attr.data-state]="state(tile)"
+              data-row-tile
+              (click)="pick(tile)"
+            >
+              <span class="rv-stop">{{ stops(tile) }}</span>
+              <span class="rv-side">
+                <span class="rv-code">{{ codes(tile) }}</span>
+                <span class="rv-marks"
+                  >{{ tile.half ? '½' : '' }}{{ tile.isotherm ? ' ❄' : ''
+                  }}{{ tile.loaded ? ' ✓' : '' }}</span
+                >
+              </span>
+            </button>
+          }
+        </div>
+        @if (column.footer; as footer) {
+          <span class="rv-foot">{{ footer }}</span>
+        }
+      </div>
+    }
+  </div>
+  @if (chosenTile(); as bins) {
+    <div class="rv-unload">
+      @for (bin of bins; track bin.key) {
+        <button
+          foldButton
+          emphasis="outline"
+          size="sm"
+          icon="close"
+          (click)="unloadBin(bin.binId)"
+          data-unload
+        >
+          Décharger {{ bin.code }}
+        </button>
+      }
+    </div>
+  }
+</div>

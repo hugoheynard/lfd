@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type {
   DeliveryIncidentFamily,
@@ -94,6 +95,7 @@ function deviceStorage(): Storage | null {
   selector: 'app-my-round-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NgTemplateOutlet,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,

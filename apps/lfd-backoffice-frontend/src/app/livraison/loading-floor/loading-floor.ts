@@ -8,8 +8,9 @@ import type {
 import { FoldButtonComponent } from 'fold-ng';
 
 import { floorLegend, floorStackShapes, unplacedStacksLabel } from '../delivery-loading-floor';
-import { type BinLoader, currentRow, type FloorRow, floorRows } from '../delivery-loading-rows';
-import { LoadingRowPanel } from '../loading-row-panel/loading-row-panel';
+import { currentRow, type FloorRow, floorRows, stackTiles } from '../delivery-loading-rows';
+import { rowColumns, rowTitle } from '../delivery-loading-tiles';
+import { LoadingRowView } from '../loading-row-view/loading-row-view';
 
 /** Marge autour du plancher, en cm du dessin. */
 const PLAN_PADDING = 4;
@@ -25,13 +26,13 @@ const PLAN_PADDING = 4;
  * Une pile dont tous les bacs sont scannés se marque « ✓ » et se cercle.
  *
  * Les RANGÉES (1 = le fond) sont dessinées et se touchent, une pile aussi :
- * le panneau « Quoi mettre ici » s'ouvre sous le dessin, avec les piles de la
- * rangée et leurs bacs du bas vers le haut, et le geste de scan de l'écran.
+ * la rangée s'ouvre sous le dessin, vue des portes, ses bacs du bas vers le
+ * haut. Le scan, lui, vit sur la carte « À poser maintenant » de l'écran.
  */
 @Component({
   selector: 'app-loading-floor',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, LoadingRowPanel],
+  imports: [FoldButtonComponent, LoadingRowView],
   templateUrl: './loading-floor.html',
   styleUrl: './loading-floor.scss',
 })
@@ -44,9 +45,6 @@ export class LoadingFloor {
   readonly loadedStacks = input<ReadonlySet<number>>(new Set());
   /** Les bacs (ou moitiés) déjà chargés, par `planBinKey`. */
   readonly loadedBins = input<ReadonlySet<string>>(new Set());
-  /** Le geste de chargement de l'écran ; `null` : le panneau ne fait que lire. */
-  readonly loader = input<BinLoader | null>(null);
-  readonly busy = input(false);
 
   /** La rangée ouverte, et la pile touchée s'il y en a une. */
   protected readonly selection = signal<{
@@ -59,7 +57,13 @@ export class LoadingFloor {
   protected readonly current = computed(() => currentRow(this.rows()));
   protected readonly openRow = computed(() => {
     const selection = this.selection();
-    return selection === null ? null : (this.rows().find((r) => r.row === selection.row) ?? null);
+    const row = selection === null ? undefined : this.rows().find((r) => r.row === selection.row);
+    return row === undefined
+      ? null
+      : {
+          title: rowTitle(row.row, this.rows().at(-1)?.row ?? row.row),
+          columns: rowColumns(row, stackTiles(this.order(), this.loadedBins())),
+        };
   });
   /** La rangée de chaque pile au sol, pour qu'une pile touchée ouvre la sienne. */
   private readonly rowOfStack = computed(
@@ -97,10 +101,6 @@ export class LoadingFloor {
     if (row !== undefined) {
       this.selection.set({ row, stack: stackIndex });
     }
-  }
-
-  protected close(): void {
-    this.selection.set(null);
   }
 
   /** Entrée ou Espace sur une cible du dessin : le geste du clic, sans faire défiler. */

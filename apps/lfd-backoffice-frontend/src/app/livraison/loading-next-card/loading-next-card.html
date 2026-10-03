@@ -1,0 +1,61 @@
+<fold-card data-next-card>
+  <div class="nc" [class.nc--depot]="size() === 'depot'">
+    @if (next(); as next) {
+      <fold-element-title variant="caps" title="À poser maintenant">
+        <fold-badge
+          titleAction
+          [variant]="next.bin.isotherm ? 'info' : 'neutral'"
+          [content]="badge()"
+          data-next-type
+        />
+      </fold-element-title>
+      <div class="nc-id">
+        <span class="nc-stop" [class]="hue()" data-next-stop>{{ next.stopPosition }}</span>
+        <span class="nc-who">
+          <span class="nc-code" data-next-code>{{ next.bin.code }}</span>
+          <span class="nc-client">{{ next.customerLabel }} · {{ next.bin.reference }}</span>
+        </span>
+      </div>
+      @if (placement(); as line) {
+        <div class="nc-placement" data-next-placement>
+          <strong>{{ line.lead }}</strong>
+          <span>{{ line.detail }}</span>
+        </div>
+      }
+    } @else {
+      <fold-element-title
+        variant="title"
+        title="Scanner"
+        subtitle="Chaque bac ou demi-bac lu se charge dans ce véhicule."
+      />
+    }
+
+    @if (canLoad()) {
+      <div class="nc-actions" data-scan>
+        <app-bin-scanner [paused]="busy()" (scanned)="scanned.emit($event)" />
+        <form class="nc-typed" (submit)="$event.preventDefault(); submit()">
+          <fold-input
+            class="nc-field"
+            label="Code du bac"
+            [placeholder]="
+              size() === 'depot' ? 'Douchette ou code à 6 caractères' : 'QR illisible ? Tapez'
+            "
+            autocomplete="off"
+            [value]="code()"
+            (valueChange)="type($event)"
+            data-typed-code
+          />
+          <button
+            foldButton
+            type="submit"
+            [emphasis]="size() === 'depot' ? 'solid' : 'outline'"
+            [disabled]="busy() || code().trim() === ''"
+            data-load-typed
+          >
+            Charger
+          </button>
+        </form>
+      </div>
+    }
+  </div>
+</fold-card>
