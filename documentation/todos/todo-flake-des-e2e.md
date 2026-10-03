@@ -134,3 +134,22 @@ s'installe d'autant plus vite que la relance donne raison à chaque fois.
 Aujourd'hui le tri a coûté, deux fois, une relance complète (~3 min) **plus**
 la lecture du périmètre des commits pour écarter la cause réelle. C'est le prix
 à chaque déploiement, tant que ce n'est pas fermé.
+
+## Les bases de test des workers se remplissent de fichiers orphelins (2026-10-03)
+
+Constaté le 2026-10-03 : `lfc_b2b_test_w1` à `w4` portaient chacune
+~400 000 fichiers pour quelques centaines de tables — des relfilenodes
+orphelins laissés par les runs interrompus (`--forceExit`, runs croisés).
+Le volume Docker manquait alors d'**inodes** (pas d'octets) en plein run :
+39 suites e2e en `No space left on device`, sans rapport avec le code.
+
+Remède du jour, sur le poste (bases jetables, recréées par le setup) :
+
+```bash
+for n in 1 2 3 4; do docker exec lfd-dev-postgres sh -c "psql -U \"\$POSTGRES_USER\" -d postgres -c 'DROP DATABASE IF EXISTS \"lfc_b2b_test_w$n\" WITH (FORCE)'"; done
+pnpm --filter lfd-api db:test:setup
+```
+
+À faire : que `db:test:setup` (ou le harnais) le détecte — un compte de
+fichiers par base au-delà d'un seuil — et dise la commande, au lieu de
+laisser un run tomber sur une erreur de disque.

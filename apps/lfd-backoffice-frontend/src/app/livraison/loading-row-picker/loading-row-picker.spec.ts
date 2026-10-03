@@ -11,8 +11,8 @@ const TABS: readonly RowTab[] = [
     progress: '4/5',
     done: false,
     marks: [
-      { key: 'a', state: 'loaded' },
-      { key: 'b', state: 'next' },
+      { key: 'a', state: 'loaded', hue: 0 },
+      { key: 'b', state: 'next', hue: 2 },
     ],
   },
   {
@@ -20,7 +20,7 @@ const TABS: readonly RowTab[] = [
     label: 'R2 · Portes',
     progress: '✓',
     done: true,
-    marks: [{ key: 'c', state: 'loaded' }],
+    marks: [{ key: 'c', state: 'loaded', hue: 4 }],
   },
 ];
 
@@ -42,5 +42,17 @@ describe('LoadingRowPicker', () => {
 
     tabs[1]?.click();
     expect(selected).toEqual([2]);
+  });
+
+  it('teinte chaque carré à la couleur de son arrêt, comme la vue de rangée', () => {
+    const fixture = TestBed.createComponent(LoadingRowPicker);
+    fixture.componentRef.setInput('tabs', TABS);
+    fixture.componentRef.setInput('selected', 1);
+    fixture.detectChanges();
+
+    const marks = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.rp-mark')];
+    expect(marks.map((mark) => mark.classList.contains('hue-a-0'))).toEqual([true, false, false]);
+    expect(marks[1]?.classList.contains('hue-a-2')).toBe(true);
+    expect(marks[2]?.classList.contains('hue-a-4')).toBe(true);
   });
 });

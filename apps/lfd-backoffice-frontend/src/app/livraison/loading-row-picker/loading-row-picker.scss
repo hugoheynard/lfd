@@ -1,3 +1,7 @@
+@use '../stop-hues' as hues;
+
+@include hues.stop-hues;
+
 // Le fond à gauche (la cloison, en gris), les portes à droite (en primaire).
 .rp {
   display: grid;
@@ -62,11 +66,14 @@
   height: var(--fold-space-sm);
   border: 1px dashed currentcolor;
   border-radius: 2px;
+  // La teinte de l'arrêt, comme la tuile : claire à charger, pleine chargée.
+  background: color-mix(in srgb, var(--stop-hue-a) 26%, var(--fold-color-surface-card));
 }
 
 .rp-mark--loaded {
   border-style: solid;
-  background: currentcolor;
+  border-color: color-mix(in srgb, var(--fold-ref-ink-950) 30%, transparent);
+  background: var(--stop-hue-a);
 }
 
 .rp-mark--next {
@@ -83,4 +90,10 @@
 .rp--depot .rp-mark {
   width: calc(var(--fold-space-md) + 2px);
   height: calc(var(--fold-space-md) + 2px);
+}
+
+// Sur l'onglet ouvert (fond sombre), le pointillé d'un bac à charger passe au
+// gris : en blanc, il se confondait avec la teinte claire du carré.
+.rp-tab--active .rp-mark--pending {
+  border-color: var(--fold-color-text-muted);
 }

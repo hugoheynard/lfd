@@ -23,7 +23,7 @@
       </span>
       <span class="rp-marks" aria-hidden="true">
         @for (mark of tab.marks; track mark.key) {
-          <span class="rp-mark" [class]="'rp-mark--' + mark.state"></span>
+          <span class="rp-mark" [class]="'rp-mark--' + mark.state + ' hue-a-' + mark.hue"></span>
         }
       </span>
     </button>

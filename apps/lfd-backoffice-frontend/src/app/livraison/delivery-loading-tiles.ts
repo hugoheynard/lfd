@@ -173,7 +173,12 @@ export interface RowTab {
   /** « 4/5 », ou « ✓ » quand la rangée est chargée. */
   readonly progress: string;
   readonly done: boolean;
-  readonly marks: readonly { readonly key: string; readonly state: TileState }[];
+  /** Un carré par tuile, à la teinte de son (premier) arrêt — celle de la vue de rangée. */
+  readonly marks: readonly {
+    readonly key: string;
+    readonly state: TileState;
+    readonly hue: number;
+  }[];
 }
 
 /** Les onglets, du fond vers les portes. */
@@ -192,7 +197,11 @@ export function rowTabs(
       label: rowTabLabel(row.row, rowCount),
       progress: done ? '✓' : `${String(loaded)}/${String(rowTiles.length)}`,
       done,
-      marks: rowTiles.map((tile) => ({ key: tile.key, state: tileState(tile, nextKey) })),
+      marks: rowTiles.map((tile) => ({
+        key: tile.key,
+        state: tileState(tile, nextKey),
+        hue: stopHue(tile.stopPositions[0] ?? 1),
+      })),
     };
   });
 }
