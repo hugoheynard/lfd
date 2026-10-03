@@ -85,9 +85,9 @@ export interface SeedLine {
   readonly quantity: number;
 }
 
-/** Une tranche horaire demandée. */
+/** Une tranche horaire demandée ; `start` nul = une échéance (« avant `end` »). */
 export interface SeedWindow {
-  readonly start: string;
+  readonly start: string | null;
   readonly end: string;
 }
 

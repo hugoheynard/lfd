@@ -79,6 +79,14 @@ model DeliveryZone {
   @@schema("public")
 }
 
+/// Créneau (un début et une fin) ou échéance (une heure limite seule).
+enum DeliveryWindowMode {
+  slot
+  deadline
+
+  @@schema("public")
+}
+
 /// **À qui la livraison est proposée** — un réglage global, UNE ligne.
 ///
 /// Ligne absente = ouverte aux deux : c'est l'existant, et aucun semis n'est
@@ -91,6 +99,12 @@ model DeliveryAvailability {
 
   openToB2b Boolean @map("open_to_b2b")
   openToB2c Boolean @map("open_to_b2c")
+
+  /// **Créneau ou échéance** : comment une livraison se demande, pour toute
+  /// adresse qui ne le surcharge pas (`delivery_specs.windowMode`). Défaut
+  /// `slot` : l'existant, rien ne change pour les lignes déjà posées. Plan
+  /// composition automatique, CA-D2.
+  windowMode DeliveryWindowMode @default(slot) @map("window_mode")
 
   /// Instant du geste, lu du `Clock` — pas `@updatedAt`, qui lirait l'horloge
   /// de la base au lieu de celle de la requête.

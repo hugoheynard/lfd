@@ -144,7 +144,11 @@ async function place(
   const where =
     fulfillment === "pickup"
       ? { pickupAddressId: point.id }
-      : { deliveryAddress: SITE, deliveryAddressId };
+      : {
+          deliveryAddress: SITE,
+          deliveryAddressId,
+          requestedWindow: { start: null, end: "10:00" },
+        };
   const placed = jsonBody<{ orderNumber: string }>(
     await ctx
       .asSub(sub)

@@ -14,7 +14,9 @@ import {
 } from "../../../../payments/domain/payment-gateway.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import {
+  DeadlineWindowHasStartError,
   DeliveryClosedForAudienceError,
+  DeliveryWindowRequiredError,
   NoDeliveryZoneForPostalCodeError,
   OrderCompanyNotFoundError,
   PickupNotConfiguredError,
@@ -109,7 +111,7 @@ import { VoucherNotForCompanyOrderError } from "../../../domain/errors/order-vou
 import { PlaceOrderHandler } from "../place-order.handler.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CanonicalPriceHistoryReader } from "../../../../catalog/domain/ports/canonical-price-history.reader.js";
-import type { CatalogPricing } from "@lfd/contracts";
+import type { CatalogPricing, FulfillmentWindow } from "@lfd/contracts";
 import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js";
 
 /**
@@ -469,6 +471,9 @@ const TARENTAISE: DeliveryZoneView = {
 };
 
 /** Adresse livrée (coursier) — dans la zone ci-dessus. */
+/** Une livraison se commande avec une heure (CA1b) : l'échéance des fixtures coursier. */
+const BEFORE_TEN = { start: null, end: "10:00" };
+
 const COURIER_ADDR: BillingAddressPayload = {
   label: "",
   ligne1: "12 rue du Test",
@@ -961,7 +966,11 @@ describe("PlaceOrderHandler", () => {
       // plus une commande d'entreprise. `tsconfig.test.json` l'a dit.
       new PlaceOrderCommand(
         "u1",
-        payload({ fulfillmentMethod: "delivery", deliveryAddress: COURIER_ADDR }),
+        payload({
+          fulfillmentMethod: "delivery",
+          deliveryAddress: COURIER_ADDR,
+          requestedWindow: BEFORE_TEN,
+        }),
         "c1",
       ),
     );
@@ -1001,6 +1010,7 @@ describe("PlaceOrderHandler", () => {
             fulfillmentMethod: "delivery",
             deliveryAddress: COURIER_ADDR,
             deliveryAddressId: "addr_c1",
+            requestedWindow: BEFORE_TEN,
           }),
           companyId,
         ),
@@ -1438,5 +1448,112 @@ describe("PlaceOrderHandler — le bon de fidélité", () => {
 
     expect(redemption.calls).toEqual([]);
     expect(sink.placed).toBeNull();
+  });
+});
+
+/**
+ * Créneau ou échéance (plan composition automatique, CA-D2) et livraison sans
+ * fenêtre refusée (CA1b), au travers de la vraie passation.
+ */
+describe("PlaceOrderHandler — créneau ou échéance", () => {
+  /** Une adresse du carnet de `c1`, avec son mode et ses échéances. */
+  class BookWithDeadlines extends DeliveryDefaultsReader {
+    constructor(private readonly specs: Partial<DeliveryDefaults>) {
+      super();
+    }
+
+    of(addressId: string): Promise<DeliveryDefaults> {
+      return Promise.resolve({ ...NO_DELIVERY_DEFAULTS, bookAddressId: addressId, ...this.specs });
+    }
+  }
+
+  async function place(
+    window: FulfillmentWindow | null | undefined,
+    options: { readonly global?: "slot" | "deadline"; readonly book?: DeliveryDefaultsReader } = {},
+  ): Promise<OrderToPlace | null> {
+    const sink = { placed: null as OrderToPlace | null };
+    const handler = new PlaceOrderHandler(
+      guard("orders", "active"),
+      drafting(pickups(), zones(TARENTAISE), versionsAt(CURRENT_VERSION), {
+        delivery: { ...DEFAULT_DELIVERY_AVAILABILITY, windowMode: options.global ?? "slot" },
+        ...(options.book === undefined ? {} : { book: options.book }),
+      }),
+      capturingRepo(sink),
+      payments(),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+    );
+    await handler.execute(
+      new PlaceOrderCommand(
+        "u1",
+        payload({
+          fulfillmentMethod: "delivery",
+          deliveryAddress: COURIER_ADDR,
+          deliveryAddressId: "addr_c1",
+          ...(window === undefined ? {} : { requestedWindow: window }),
+        }),
+        "c1",
+      ),
+    );
+    return sink.placed;
+  }
+
+  it("en échéance globale, fige une fenêtre sans début", async () => {
+    const placed = await place(BEFORE_TEN, { global: "deadline" });
+
+    expect(placed?.agreed.window.value).toEqual(BEFORE_TEN);
+  });
+
+  it("en échéance globale, refuse un début fourni — rien n'est écrit", async () => {
+    await expect(place({ start: "08:00", end: "10:00" }, { global: "deadline" })).rejects.toThrow(
+      DeadlineWindowHasStartError,
+    );
+  });
+
+  /** CA1b : une livraison sans heure ne se place dans aucune tournée. */
+  it("refuse une livraison sans fenêtre", async () => {
+    await expect(place(undefined)).rejects.toThrow(DeliveryWindowRequiredError);
+    await expect(place(null, { global: "deadline" })).rejects.toThrow(DeliveryWindowRequiredError);
+  });
+
+  it("la surcharge d'adresse l'emporte sur le global", async () => {
+    const book = new BookWithDeadlines({ windowMode: "deadline" });
+
+    await expect(place({ start: "08:00", end: "10:00" }, { global: "slot", book })).rejects.toThrow(
+      DeadlineWindowHasStartError,
+    );
+  });
+
+  it("une échéance de la liste de l'adresse est une reprise, une autre heure un choix", async () => {
+    const book = new BookWithDeadlines({ windowMode: "deadline", deadlines: ["06:00", "11:00"] });
+
+    const listed = await place({ start: null, end: "11:00" }, { book });
+    const other = await place({ start: null, end: "09:00" }, { book });
+
+    expect(listed?.agreed.window.source).toBe("default");
+    expect(other?.agreed.window.source).toBe("override");
+  });
+
+  it("une échéance préférée unique est reprise quand la commande ne dit rien", async () => {
+    const book = new BookWithDeadlines({ windowMode: "deadline", deadlines: ["06:00"] });
+
+    const placed = await place(undefined, { book });
+
+    expect(placed?.agreed.window).toEqual({
+      value: { start: null, end: "06:00" },
+      source: "default",
+    });
+  });
+
+  it("plusieurs échéances préférées ne se choisissent pas à la place du client", async () => {
+    const book = new BookWithDeadlines({ windowMode: "deadline", deadlines: ["06:00", "11:00"] });
+
+    await expect(place(undefined, { book })).rejects.toThrow(DeliveryWindowRequiredError);
   });
 });

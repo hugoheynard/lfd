@@ -224,9 +224,9 @@ export const DELIVERY_CLIENTS: readonly NeighbourClient[] = [
     },
     address: { ligne1: "Route de Montrigon", codePostal: "73700", ville: "Bourg-Saint-Maurice" },
     gps: { lat: 45.615, lng: 6.772 },
-    // 🔴 SANS créneau, et c'est le sujet : la livraison qui n'a aucune fenêtre
-    // convenue — la feuille de route et « Proposer » doivent la placer sans lui
-    // en inventer une.
+    // 🔴 Un carnet SANS créneau : la commande dit elle-même son heure — une
+    // échéance, cf. `delivery-day.seed.ts`. Une livraison sans aucune fenêtre
+    // est refusée à la passation depuis le 2026-10-03 (CA1b).
     site: { slot: null, note: "", contact: null, signatureRequired: null, steps: [] },
   },
   {

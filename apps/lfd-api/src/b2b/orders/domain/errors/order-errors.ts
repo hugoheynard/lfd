@@ -373,3 +373,32 @@ export class OrderPaymentLinkRefusedError extends BusinessError {
     super("orders.payment_link.refused", reason);
   }
 }
+
+/**
+ * Une livraison passée **sans fenêtre** — ni créneau, ni échéance (plan
+ * composition automatique, CA1b). Refus de forme (400) : la demande est
+ * incomplète, et la tournée ne saurait pas avant quelle heure servir.
+ */
+export class DeliveryWindowRequiredError extends DomainError {
+  constructor() {
+    super(
+      "orders.fulfillment.window_required",
+      "Une livraison se commande avec une heure : indiquez avant quelle heure livrer " +
+        "(ou un créneau), puis validez de nouveau la commande.",
+    );
+  }
+}
+
+/**
+ * Une fenêtre **avec un début** demandée pour une adresse livrée en mode
+ * échéance (CA-D2) : on n'y saisit qu'une heure limite.
+ */
+export class DeadlineWindowHasStartError extends DomainError {
+  constructor() {
+    super(
+      "orders.fulfillment.deadline_with_start",
+      "Cette adresse est livrée à échéance : indiquez seulement l'heure limite " +
+        "(« avant HH:MM »), sans heure de début, puis validez de nouveau la commande.",
+    );
+  }
+}

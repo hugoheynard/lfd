@@ -215,7 +215,11 @@ describe("le devis de la vitrine et la facture", () => {
         lines: [...PANIER],
         fulfillment: { method: "delivery", codePostal: COURIER_ADDR.codePostal },
       },
-      { fulfillmentMethod: "delivery", deliveryAddress: COURIER_ADDR },
+      {
+        fulfillmentMethod: "delivery",
+        deliveryAddress: COURIER_ADDR,
+        requestedWindow: { start: null, end: "10:00" },
+      },
     );
   });
 
@@ -331,6 +335,7 @@ describe("le devis de la vitrine et la facture", () => {
           requestedDeliveryDate: SERVICE_DAY,
           note: "",
           fulfillmentMethod: "delivery",
+          requestedWindow: { start: null, end: "10:00" },
           deliveryAddress: COURIER_ADDR,
           lines: [...PANIER],
         })
@@ -375,6 +380,7 @@ describe("le devis de la vitrine et la facture", () => {
           requestedDeliveryDate: SERVICE_DAY,
           note: "",
           fulfillmentMethod: "delivery",
+          requestedWindow: { start: null, end: "10:00" },
           deliveryAddress: PERCENT_ADDR,
           lines: [...PANIER],
         })

@@ -16,6 +16,9 @@ export {
   DEFAULT_DELIVERY_AVAILABILITY,
   DELIVERY_CLOSED_FOR_AUDIENCE,
   deliveryOpenTo,
+  resolveWindowMode,
+  WINDOW_MODES,
+  type WindowMode,
   type DeliveryAvailabilityView,
   type PublicDeliveryAvailabilityView,
 } from "./delivery-availability.values.js";

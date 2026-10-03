@@ -110,6 +110,7 @@ async function placeOrder(
       companyId,
       requestedDeliveryDate: day,
       fulfillmentMethod: "delivery",
+      requestedWindow: { start: null, end: "10:00" },
       deliveryAddress: SITE,
       note: "",
       lines,

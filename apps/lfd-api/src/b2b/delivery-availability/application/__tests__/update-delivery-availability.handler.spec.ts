@@ -81,7 +81,13 @@ describe("UpdateDeliveryAvailabilityHandler", () => {
     const written = new Written();
 
     await handler(
-      { openToB2b: false, openToB2c: false, updatedAt: AT.toISOString(), updatedBy: "Alex" },
+      {
+        openToB2b: false,
+        openToB2c: false,
+        windowMode: "slot",
+        updatedAt: AT.toISOString(),
+        updatedBy: "Alex",
+      },
       written,
       new RecordingPublisher(),
     ).execute(new UpdateDeliveryAvailabilityCommand({ openToB2c: true }, "staff_agent"));
@@ -100,7 +106,23 @@ describe("UpdateDeliveryAvailabilityHandler", () => {
     expect(events.traced[0]?.journalFact().payload).toEqual({
       openToB2b: false,
       openToB2c: true,
-      previous: { openToB2b: true, openToB2c: true },
+      windowMode: "slot",
+      previous: { openToB2b: true, openToB2c: true, windowMode: "slot" },
+    });
+  });
+
+  it("pose le mode échéance et le journalise avec le mode remplacé", async () => {
+    const written = new Written();
+    const events = new RecordingPublisher();
+
+    await handler(DEFAULT_DELIVERY_AVAILABILITY, written, events).execute(
+      new UpdateDeliveryAvailabilityCommand({ windowMode: "deadline" }, "staff_agent"),
+    );
+
+    expect(written.last?.windowMode).toBe("deadline");
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+      windowMode: "deadline",
+      previous: { windowMode: "slot" },
     });
   });
 

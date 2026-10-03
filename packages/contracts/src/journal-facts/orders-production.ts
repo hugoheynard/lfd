@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { weekdaySchema } from "../address.js";
+import { WINDOW_MODES } from "../delivery-availability.values.js";
 import { DELIVERY_BIN_FACTS } from "./delivery-bins.js";
 import { DELIVERY_LOADING_FACTS } from "./delivery-loading.js";
 import { DELIVERY_PURCHASE_LIBRARY_FACTS } from "./delivery-purchase-library.js";
@@ -178,7 +179,13 @@ const lateFee = () => payload({ fee: adjustment(), vatRatePercent: percent() });
 const containerRule = () =>
   payload({ unitsPerContainer: count(), singular: z.string(), plural: z.string() });
 
-const openings = () => payload({ openToB2b: z.boolean(), openToB2c: z.boolean() });
+/**
+ * `windowMode` facultatif : les faits écrits avant le 2026-10-03 (CA-D2) ne le
+ * portent pas, et un fait passé ne se réécrit pas.
+ */
+const windowModeOfFact = () => z.enum(WINDOW_MODES).optional();
+const openings = () =>
+  payload({ openToB2b: z.boolean(), openToB2c: z.boolean(), windowMode: windowModeOfFact() });
 
 /**
  * Le sujet d'une commande est la PERSONNE qui l'a passée (`subjectType:
@@ -337,7 +344,12 @@ export const ORDERS_PRODUCTION_FACTS = {
   "order_late_fee.set": fact(payload({ before: lateFee().nullable(), after: lateFee() })),
   "order_late_fee.cleared": fact(payload({ before: lateFee() })),
   "delivery_availability.updated": fact(
-    payload({ openToB2b: z.boolean(), openToB2c: z.boolean(), previous: openings() }),
+    payload({
+      openToB2b: z.boolean(),
+      openToB2c: z.boolean(),
+      windowMode: windowModeOfFact(),
+      previous: openings(),
+    }),
   ),
 
   /**

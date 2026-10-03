@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { WINDOW_MODES } from "./delivery-availability.values.js";
+
 /**
  * Contrat de fil des **adresses** d'une entreprise B2B.
  *
@@ -22,6 +24,11 @@ const TIME_HHMM = /^([01]\d|2[0-3]):[0-5]\d$/u;
  * Un créneau horaire préféré `début`→`fin` au format `HH:mm`. Le refine impose
  * l'invariant métier (`début < fin`) au niveau du contrat : c'est le backend qui
  * garantit, en refusant à sa frontière un créneau à l'envers.
+ *
+ * Il garde son début : une échéance préférée ne s'y range pas, elle a sa liste
+ * ({@link preferredDeadlinesSchema}, `DeliverySpecs.deadlines`) — une adresse en
+ * reçoit parfois plusieurs par jour (Hugo, 2026-10-03), un créneau n'en porte
+ * qu'une.
  */
 export const deliverySlotSchema = z
   .object({
@@ -58,6 +65,13 @@ export const fulfillmentWindowSchema = z
   });
 export type FulfillmentWindow = z.infer<typeof fulfillmentWindowSchema>;
 
+/**
+ * **Créneau ou échéance** (CA-D2). Les valeurs, le type et la résolution vivent
+ * sans zod dans `delivery-availability.values.ts` : la boutique les lit au
+ * démarrage.
+ */
+export const windowModeSchema = z.enum(WINDOW_MODES);
+
 /** Vrai quand `inner` tient entièrement dans `outer`. Une borne basse absente vaut « dès l'ouverture ». */
 export function windowContains(outer: FulfillmentWindow, inner: FulfillmentWindow): boolean {
   const outerStart = outer.start ?? "00:00";
@@ -86,6 +100,54 @@ export const deliverySlotsSchema = z.discriminatedUnion("mode", [
   z.object({ mode: z.literal("perDay"), byDay: slotByDaySchema }),
 ]);
 export type DeliverySlots = z.infer<typeof deliverySlotsSchema>;
+
+/**
+ * Une liste d'**échéances préférées** (`HH:mm`) : une ou plusieurs, sans
+ * doublon, de la plus tôt à la plus tard. Plusieurs parce qu'une adresse peut
+ * recevoir plusieurs commandes par jour — 06:00 pour le pain, 11:00 pour le
+ * déjeuner (Hugo, 2026-10-03). Chaque commande, elle, n'en porte qu'une.
+ */
+export const deadlineListSchema = z
+  .array(z.string().regex(TIME_HHMM, "heure attendue au format HH:mm"))
+  .min(1, "au moins une échéance")
+  .refine((times) => times.every((time, i) => i === 0 || (times[i - 1] ?? "") < time), {
+    message: "échéances sans doublon, de la plus tôt à la plus tard",
+  });
+
+/** Une liste d'échéances (ou aucune, `null`) pour chacun des sept jours. */
+export const deadlinesByDaySchema = z.object({
+  mon: deadlineListSchema.nullable(),
+  tue: deadlineListSchema.nullable(),
+  wed: deadlineListSchema.nullable(),
+  thu: deadlineListSchema.nullable(),
+  fri: deadlineListSchema.nullable(),
+  sat: deadlineListSchema.nullable(),
+  sun: deadlineListSchema.nullable(),
+});
+
+/**
+ * Échéances préférées d'une adresse en mode échéance — même grain que
+ * `deliverySlotsSchema` : les mêmes tous les jours, ou une liste par jour.
+ */
+export const preferredDeadlinesSchema = z.discriminatedUnion("mode", [
+  z.object({ mode: z.literal("everyday"), times: deadlineListSchema }),
+  z.object({ mode: z.literal("perDay"), byDay: deadlinesByDaySchema }),
+]);
+export type PreferredDeadlines = z.infer<typeof preferredDeadlinesSchema>;
+
+/** Les échéances préférées d'un jour donné ; aucune = liste vide. */
+export function deadlinesFor(
+  deadlines: PreferredDeadlines | null | undefined,
+  day: Weekday | null,
+): readonly string[] {
+  if (deadlines === null || deadlines === undefined) {
+    return [];
+  }
+  if (deadlines.mode === "everyday") {
+    return deadlines.times;
+  }
+  return day === null ? [] : (deadlines.byDay[day] ?? []);
+}
 
 /** Contact sur place à la livraison — la personne que le livreur appelle. */
 export const deliveryContactSchema = z.object({
@@ -132,6 +194,17 @@ export const deliverySpecsSchema = z.object({
    * carnet, qui la refuse à l'écriture en la nommant.
    */
   stopMinutes: z.number().int().nullable().optional(),
+  /**
+   * **Créneau ou échéance** pour CETTE adresse (CA-D2). Absent ou `null` :
+   * elle hérite du réglage global de livraison. Facultatif : les adresses
+   * rangées avant le 2026-10-03 n'en portent pas, et héritent.
+   */
+  windowMode: windowModeSchema.nullable().optional(),
+  /**
+   * Les **échéances préférées** de CETTE adresse, lues en mode échéance. Absent
+   * ou `null` : aucune. Le créneau `slots` reste celui du mode créneau.
+   */
+  deadlines: preferredDeadlinesSchema.nullable().optional(),
 });
 export type DeliverySpecs = z.infer<typeof deliverySpecsSchema>;
 

@@ -3,7 +3,7 @@ import { DeliveryAvailabilityUpdatedEvent } from "../delivery-availability.event
 
 const AT = new Date(0);
 const AUTHOR = { staffUserId: "staff_agent", name: "Camille Durand", role: "commercial" };
-const OPEN = { openToB2b: true, openToB2c: true };
+const OPEN = { openToB2b: true, openToB2c: true, windowMode: "slot" } as const;
 
 describe("DeliveryAvailability.pose", () => {
   it("ne change que la clientèle nommée par le patch", () => {
@@ -32,7 +32,7 @@ describe("DeliveryAvailability.pose", () => {
 
   it("permet de fermer aux deux — le retrait reste", () => {
     const settings = DeliveryAvailability.pose({
-      current: { openToB2b: false, openToB2c: true },
+      current: { openToB2b: false, openToB2c: true, windowMode: "slot" },
       patch: { openToB2c: false },
       at: AT,
       author: AUTHOR,
@@ -59,7 +59,36 @@ describe("DeliveryAvailabilityUpdatedEvent", () => {
     expect(fact.payload).toEqual({
       openToB2b: true,
       openToB2c: false,
-      previous: { openToB2b: true, openToB2c: true },
+      windowMode: "slot",
+      previous: { openToB2b: true, openToB2c: true, windowMode: "slot" },
     });
+  });
+});
+
+describe("DeliveryAvailability.pose — créneau ou échéance (CA-D2)", () => {
+  it("passe en échéance sans toucher aux clientèles", () => {
+    const settings = DeliveryAvailability.pose({
+      current: OPEN,
+      patch: { windowMode: "deadline" },
+      at: AT,
+      author: AUTHOR,
+    });
+
+    expect([settings.openToB2b, settings.openToB2c, settings.windowMode]).toEqual([
+      true,
+      true,
+      "deadline",
+    ]);
+  });
+
+  it("un patch qui ne dit rien du mode le laisse tel quel", () => {
+    const settings = DeliveryAvailability.pose({
+      current: { ...OPEN, windowMode: "deadline" },
+      patch: { openToB2b: false },
+      at: AT,
+      author: AUTHOR,
+    });
+
+    expect(settings.windowMode).toBe("deadline");
   });
 });

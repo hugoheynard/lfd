@@ -1,4 +1,4 @@
-import { deliverySpecsSchema } from "@lfd/contracts";
+import { deadlinesFor, deliverySpecsSchema, weekdayOfDate } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -23,7 +23,7 @@ export class PrismaDeliveryDefaultsReader extends DeliveryDefaultsReader {
     super();
   }
 
-  async of(addressId: string, companyId: string): Promise<DeliveryDefaults> {
+  async of(addressId: string, companyId: string, day: string | null): Promise<DeliveryDefaults> {
     // La société vient avec l'adresse : la signature se résout ICI, et c'est le
     // seul endroit où les deux étages sont visibles ensemble. Les lire en deux
     // requêtes laisserait à l'appelant le soin de les composer — donc à chaque
@@ -60,6 +60,8 @@ export class PrismaDeliveryDefaultsReader extends DeliveryDefaultsReader {
       // de faire dépendre le défaut de la date — à faire le jour où le besoin
       // se présente, pas à deviner ici.
       window: specs.data.slots.mode === "everyday" ? specs.data.slots.slot : null,
+      windowMode: specs.data.windowMode ?? null,
+      deadlines: deadlinesFor(specs.data.deadlines, day === null ? null : weekdayOfDate(day)),
       bookAddressId: row.id,
     };
   }

@@ -12,13 +12,14 @@ import { Injectable } from "@nestjs/common";
 import { CatalogVersionReader } from "../../../catalog/domain/ports/catalog-version.reader.js";
 import { CartAdjustments } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
-import { type DeliveryContact, type FulfillmentWindow } from "@lfd/contracts";
+import { type DeliveryContact, type FulfillmentWindow, type WindowMode } from "@lfd/contracts";
 import {
   type DeliveryDefaults,
   DeliveryDefaultsReader,
   NO_DELIVERY_DEFAULTS,
 } from "../../domain/ports/delivery-defaults.reader.js";
-import { agreeFulfillment, windowFitsPickup } from "../../domain/services/agreed-fulfillment.js";
+import { windowFitsPickup } from "../../domain/services/agreed-fulfillment.js";
+import { agreeWithWindow } from "../../domain/services/delivery-window.js";
 import { Order, type OrderVoucher } from "../../domain/entities/order.js";
 import {
   InvalidOrderFulfillmentError,
@@ -86,6 +87,8 @@ interface ResolvedFulfillment {
   /** Le barème de zone qui a produit les frais, ou `null` en retrait. */
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   readonly deliveryFeeCents: number;
+  /** Le mode créneau / échéance global, ou `null` en retrait (CA-D2). */
+  readonly globalWindowMode: WindowMode | null;
 }
 
 /**
@@ -170,13 +173,15 @@ export class OrderDrafting {
     // se paierait sur toutes les commandes à l'heure.
     const late = await this.lateFeeFor(waiverUsed, subtotalCents);
     const defaults = await this.defaultsFor(content, parties);
-    const agreed = agreeFulfillment(
+    const agreed = agreeWithWindow(
       {
+        method: content.fulfillmentMethod,
         window: content.requestedWindow,
         contact: content.deliveryContact,
         signatureRequired: content.signatureRequired,
       },
       defaults,
+      acheminement.globalWindowMode,
     );
     const order = Order.draft({
       agreed,
@@ -341,7 +346,11 @@ export class OrderDrafting {
     ) {
       return NO_DELIVERY_DEFAULTS;
     }
-    return this.deliveryDefaults.of(content.deliveryAddressId, parties.companyId);
+    return this.deliveryDefaults.of(
+      content.deliveryAddressId,
+      parties.companyId,
+      content.requestedDeliveryDate,
+    );
   }
 
   /**
@@ -390,6 +399,7 @@ export class OrderDrafting {
         // Un retrait n'a pas de frais de zone : pas de barème à figer.
         deliveryFeeAdjustment: null,
         deliveryFeeCents: 0,
+        globalWindowMode: null,
       };
     }
 
@@ -419,6 +429,7 @@ export class OrderDrafting {
       // une facture doit pouvoir dire « Val d'Isère, 20 € forfaitaires » plutôt
       // que le seul chiffre.
       deliveryFeeAdjustment: coursier.feeAdjustment,
+      globalWindowMode: coursier.globalWindowMode,
     };
   }
 }

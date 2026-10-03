@@ -24,6 +24,12 @@ export interface FulfillmentDefaults {
   readonly signatureRequired: boolean;
   /** Fenêtre proposée par le réglage, ou `null` si aucune. */
   readonly window: FulfillmentWindow | null;
+  /**
+   * Les échéances préférées de l'adresse pour le jour servi. Une échéance de
+   * cette liste (« avant 11:00 ») est une reprise, même si elle n'est pas
+   * `window` : l'adresse en propose plusieurs, la commande en choisit une.
+   */
+  readonly deadlines?: readonly string[] | undefined;
 }
 
 /**
@@ -56,6 +62,19 @@ function sameWindow(a: FulfillmentWindow | null, b: FulfillmentWindow | null): b
   return a.start === b.start && a.end === b.end;
 }
 
+/** `default` quand la fenêtre est celle du réglage, ou l'une de ses échéances. */
+function windowSource(
+  window: FulfillmentWindow | null,
+  defaults: FulfillmentDefaults,
+): "default" | "override" {
+  if (sameWindow(window, defaults.window)) {
+    return "default";
+  }
+  const listed =
+    window !== null && window.start === null && (defaults.deadlines ?? []).includes(window.end);
+  return listed ? "default" : "override";
+}
+
 /**
  * Fige l'acheminement convenu.
  *
@@ -76,7 +95,7 @@ export function agreeFulfillment(
       ? defaults.signatureRequired
       : request.signatureRequired;
   return {
-    window: { value: window, source: sameWindow(window, defaults.window) ? "default" : "override" },
+    window: { value: window, source: windowSource(window, defaults) },
     contact: {
       value: contact,
       source: sameContact(contact, defaults.contact) ? "default" : "override",

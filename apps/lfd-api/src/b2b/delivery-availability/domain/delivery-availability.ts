@@ -1,11 +1,15 @@
-import type { DeliveryAvailabilityPatch } from "@lfd/contracts";
+import type { DeliveryAvailabilityPatch, WindowMode } from "@lfd/contracts";
 
 import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
 
-/** Les deux cases, sans leur trace : ce qu'une lecture rend et ce qu'un patch change. */
+/**
+ * Le réglage sans sa trace : ce qu'une lecture rend et ce qu'un patch change —
+ * les deux clientèles, et depuis le 2026-10-03 le mode créneau / échéance.
+ */
 export interface DeliveryOpening {
   readonly openToB2b: boolean;
   readonly openToB2c: boolean;
+  readonly windowMode: WindowMode;
 }
 
 /**
@@ -22,6 +26,7 @@ export class DeliveryAvailability {
   private constructor(
     readonly openToB2b: boolean,
     readonly openToB2c: boolean,
+    readonly windowMode: WindowMode,
     readonly at: Date,
     readonly author: StaffTrace,
   ) {}
@@ -37,6 +42,7 @@ export class DeliveryAvailability {
     return new DeliveryAvailability(
       patch.openToB2b ?? current.openToB2b,
       patch.openToB2c ?? current.openToB2c,
+      patch.windowMode ?? current.windowMode,
       input.at,
       input.author,
     );

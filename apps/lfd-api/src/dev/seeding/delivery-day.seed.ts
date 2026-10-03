@@ -45,8 +45,10 @@ import {
  * - **trois pas encore prêtes** : la feuille de route doit dire ce qui manque ;
  * - **trois fenêtres demandées** qui s'écartent du carnet, les autres celle du
  *   carnet — la provenance se lit sur la commande ;
- * - **une sans créneau** (l'Épicerie des Eulets, dont le carnet n'en porte
- *   pas) ;
+ * - **une à échéance** (l'Épicerie des Eulets, dont le carnet ne porte pas de
+ *   créneau) : « avant 11:00 ». Elle était passée SANS fenêtre jusqu'au
+ *   2026-10-03 ; une livraison sans heure est refusée depuis (plan composition
+ *   automatique, CA1b) ;
  * - **une tournée composée et chargée** pour Camionnette 1 — Val d'Isère —, pas
  *   partie ; **tout le reste non réparti**, pour qu'on presse « Proposer ».
  */
@@ -210,7 +212,7 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
   },
   {
     enseigne: "Épicerie des Eulets",
-    window: null,
+    window: { start: null, end: "11:00" },
     ready: true,
     stop: null,
     lines: [

@@ -15,6 +15,26 @@ import type { CustomerAudience } from "./customer-audience.js";
  */
 
 /**
+ * **Créneau ou échéance** — la façon dont une livraison se demande (plan
+ * composition automatique, CA-D2). `slot` : un début et une fin ; `deadline` :
+ * une heure limite seule, la fenêtre demandée n'a pas de début.
+ */
+export const WINDOW_MODES = ["slot", "deadline"] as const;
+export type WindowMode = (typeof WINDOW_MODES)[number];
+
+/**
+ * Le mode qui s'applique à une livraison : celui de l'adresse s'il est posé,
+ * sinon le réglage global. `null`/absent = l'adresse hérite — même motif que
+ * `stopMinutes` et la signature.
+ */
+export function resolveWindowMode(
+  addressMode: WindowMode | null | undefined,
+  globalMode: WindowMode,
+): WindowMode {
+  return addressMode ?? globalMode;
+}
+
+/**
  * Contrat de fil du **réglage de livraison** : à quelles clientèles la livraison
  * est proposée. Un réglage global, posé dans « E-commerce LFC → Réglages →
  * Livraison ». Cf. `documentation/livraisons/plan-remise-et-livraison-par-clientele.md`, D4.
@@ -22,6 +42,11 @@ import type { CustomerAudience } from "./customer-audience.js";
 export interface DeliveryAvailabilityView {
   readonly openToB2b: boolean;
   readonly openToB2c: boolean;
+  /**
+   * Comment une livraison se demande par défaut — créneau ou échéance (CA-D2).
+   * Une adresse peut le surcharger (`DeliverySpecs.windowMode`).
+   */
+  readonly windowMode: WindowMode;
   /** Instant du dernier geste ; `null` tant que personne n'a rien réglé (ouvert aux deux). */
   readonly updatedAt: string | null;
   /** Le nom de qui l'a posé, figé au geste ; `null` tant que personne n'a rien réglé. */
@@ -36,12 +61,19 @@ export interface DeliveryAvailabilityView {
 export type PublicDeliveryAvailabilityView = Pick<
   DeliveryAvailabilityView,
   "openToB2b" | "openToB2c"
->;
+> & {
+  /**
+   * Toujours servi depuis le 2026-10-03 (CA-D2) ; facultatif au TYPE pour
+   * qu'un front qui pose son propre défaut sans lui compile encore.
+   */
+  readonly windowMode?: WindowMode | undefined;
+};
 
 /** Ce que vaut le réglage tant que personne ne l'a posé : l'existant, ouvert aux deux. */
 export const DEFAULT_DELIVERY_AVAILABILITY: DeliveryAvailabilityView = {
   openToB2b: true,
   openToB2c: true,
+  windowMode: "slot",
   updatedAt: null,
   updatedBy: null,
 };

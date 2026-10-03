@@ -1,4 +1,4 @@
-import type { DeliveryContact, FulfillmentWindow } from "@lfd/contracts";
+import type { DeliveryContact, FulfillmentWindow, WindowMode } from "@lfd/contracts";
 
 /**
  * Les **réglages d'une adresse du carnet** qui préremplissent une commande :
@@ -13,6 +13,18 @@ export interface DeliveryDefaults {
   readonly contact: DeliveryContact | null;
   readonly signatureRequired: boolean;
   readonly window: FulfillmentWindow | null;
+  /**
+   * Créneau ou échéance pour CETTE adresse ; `null` = elle hérite du réglage
+   * global de livraison (CA-D2). La résolution se fait à la passation, avec le
+   * global : une adresse dictée n'a pas de carnet, mais a un mode.
+   */
+  readonly windowMode: WindowMode | null;
+  /**
+   * Les échéances préférées de l'adresse **pour le jour servi**, triées. Une
+   * échéance de cette liste demandée par la commande est une reprise
+   * (`default`), toute autre heure un choix (`override`).
+   */
+  readonly deadlines: readonly string[];
   /**
    * L'adresse du carnet, **confirmée sous le mur** de la société — ou `null`
    * quand elle n'y est pas (inconnue, ou d'une autre maison).
@@ -31,6 +43,8 @@ export const NO_DELIVERY_DEFAULTS: DeliveryDefaults = {
   contact: null,
   signatureRequired: false,
   window: null,
+  windowMode: null,
+  deadlines: [],
   bookAddressId: null,
 };
 
@@ -46,6 +60,9 @@ export abstract class DeliveryDefaultsReader {
    * la commande de n'importe quel client le contact de livraison (nom,
    * téléphone), la signature et le créneau d'une AUTRE maison (corrigé le
    * 2026-09-15).
+   *
+   * `day` (`YYYY-MM-DD`, ou `null`) choisit les échéances préférées d'un
+   * réglage par jour.
    */
-  abstract of(addressId: string, companyId: string): Promise<DeliveryDefaults>;
+  abstract of(addressId: string, companyId: string, day: string | null): Promise<DeliveryDefaults>;
 }

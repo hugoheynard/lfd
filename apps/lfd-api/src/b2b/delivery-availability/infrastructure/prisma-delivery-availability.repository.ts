@@ -16,6 +16,7 @@ export class PrismaDeliveryAvailabilityRepository extends DeliveryAvailabilityRe
     const row = {
       openToB2b: settings.openToB2b,
       openToB2c: settings.openToB2c,
+      windowMode: settings.windowMode,
       updatedAt: settings.at,
       updatedByStaffId: settings.author.staffUserId,
       updatedByName: settings.author.name,

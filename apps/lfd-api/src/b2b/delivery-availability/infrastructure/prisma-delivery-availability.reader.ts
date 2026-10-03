@@ -20,7 +20,13 @@ export class PrismaDeliveryAvailabilityReader extends DeliveryAvailabilityReader
   async current(): Promise<DeliveryAvailabilityView> {
     const row = await this.prisma.deliveryAvailability.findUnique({
       where: { key: DELIVERY_AVAILABILITY_KEY },
-      select: { openToB2b: true, openToB2c: true, updatedAt: true, updatedByName: true },
+      select: {
+        openToB2b: true,
+        openToB2c: true,
+        windowMode: true,
+        updatedAt: true,
+        updatedByName: true,
+      },
     });
     if (row === null) {
       return DEFAULT_DELIVERY_AVAILABILITY;
@@ -28,6 +34,7 @@ export class PrismaDeliveryAvailabilityReader extends DeliveryAvailabilityReader
     return {
       openToB2b: row.openToB2b,
       openToB2c: row.openToB2c,
+      windowMode: row.windowMode,
       updatedAt: row.updatedAt.toISOString(),
       // Un agent que l'annuaire ne connaissait pas a été figé sans nom : on ne
       // l'invente pas, et une chaîne vide n'est pas un nom à afficher.

@@ -20,7 +20,7 @@ export class DeliveryAvailabilityController {
   constructor(private readonly queries: QueryBus) {}
 
   /**
-   * Les deux clientèles, et rien d'autre : l'auteur et l'instant du réglage
+   * Les deux clientèles et le mode créneau / échéance, et rien d'autre : l'auteur et l'instant du réglage
    * restent dans la vue admin — un nom d'agent ne se sert pas sans jeton.
    */
   @Get()
@@ -29,6 +29,10 @@ export class DeliveryAvailabilityController {
       GetDeliveryAvailabilityQuery,
       DeliveryAvailabilityView
     >(new GetDeliveryAvailabilityQuery());
-    return { openToB2b: settings.openToB2b, openToB2c: settings.openToB2c };
+    return {
+      openToB2b: settings.openToB2b,
+      openToB2c: settings.openToB2c,
+      windowMode: settings.windowMode,
+    };
   }
 }

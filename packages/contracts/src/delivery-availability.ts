@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { WINDOW_MODES } from "./delivery-availability.values.js";
+
 /**
  * Contrat de fil du **réglage de livraison** : le schéma du patch, et le reste
  * par réexport.
@@ -13,6 +15,9 @@ export {
   DEFAULT_DELIVERY_AVAILABILITY,
   DELIVERY_CLOSED_FOR_AUDIENCE,
   deliveryOpenTo,
+  resolveWindowMode,
+  WINDOW_MODES,
+  type WindowMode,
   type DeliveryAvailabilityView,
   type PublicDeliveryAvailabilityView,
 } from "./delivery-availability.values.js";
@@ -22,8 +27,14 @@ export const deliveryAvailabilityPatchSchema = z
   .object({
     openToB2b: z.boolean().optional(),
     openToB2c: z.boolean().optional(),
+    /** Créneau ou échéance, par défaut pour toute adresse qui hérite (CA-D2). */
+    windowMode: z.enum(WINDOW_MODES).optional(),
   })
-  .refine((patch) => patch.openToB2b !== undefined || patch.openToB2c !== undefined, {
-    message: "au moins une clientèle à changer : openToB2b ou openToB2c",
-  });
+  .refine(
+    (patch) =>
+      patch.openToB2b !== undefined ||
+      patch.openToB2c !== undefined ||
+      patch.windowMode !== undefined,
+    { message: "au moins un réglage à changer : openToB2b, openToB2c ou windowMode" },
+  );
 export type DeliveryAvailabilityPatch = z.infer<typeof deliveryAvailabilityPatchSchema>;

@@ -6,7 +6,7 @@ import {
   type CartAdjustment,
   type CustomerAudience,
 } from "@lfd/contracts";
-import type { DeliveryZoneView, PickupAddressView } from "@lfd/contracts";
+import type { DeliveryZoneView, PickupAddressView, WindowMode } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { DeliveryAvailabilityReader } from "../../../delivery-availability/domain/ports/delivery-availability.reader.js";
@@ -28,6 +28,12 @@ export interface ResolvedPickup {
 /** La zone déduite du code postal, et ce qu'elle ajoute au panier. */
 export interface ResolvedDelivery {
   readonly zone: DeliveryZoneView;
+  /**
+   * Le mode créneau / échéance **global**, lu avec l'ouverture dans le même
+   * réglage (CA-D2). Une adresse du carnet peut le surcharger : la caisse
+   * résout, ce service ne connaît pas le carnet.
+   */
+  readonly globalWindowMode: WindowMode;
   readonly feeCents: number;
   /**
    * **Ce qui a produit** `feeCents` — le barème de la zone, tel qu'il était.
@@ -134,7 +140,8 @@ export class CartAdjustments {
     subtotalCents: number,
     audience: CustomerAudience,
   ): Promise<ResolvedDelivery> {
-    if (!deliveryOpenTo(await this.delivery.current(), audience)) {
+    const settings = await this.delivery.current();
+    if (!deliveryOpenTo(settings, audience)) {
       throw new DeliveryClosedForAudienceError();
     }
     const zone = await this.zones.resolveForPostalCode(codePostal);
@@ -143,6 +150,7 @@ export class CartAdjustments {
     }
     return {
       zone,
+      globalWindowMode: settings.windowMode,
       feeCents: cartAdjustmentCents(zone.fee, subtotalCents),
       feeAdjustment: zone.fee,
     };

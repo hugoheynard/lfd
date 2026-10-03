@@ -57,7 +57,7 @@ async function adminView(): Promise<DeliveryAvailabilityView> {
 
 describe("le réglage de livraison", () => {
   it("ligne absente : ouvert aux deux, sans auteur ni instant — sur les deux routes", async () => {
-    expect(await publicView()).toEqual({ openToB2b: true, openToB2c: true });
+    expect(await publicView()).toEqual({ openToB2b: true, openToB2c: true, windowMode: "slot" });
     expect(await adminView()).toEqual(DEFAULT_DELIVERY_AVAILABILITY);
     expect(await ctx.prisma.deliveryAvailability.count()).toBe(0);
   });
@@ -65,7 +65,11 @@ describe("le réglage de livraison", () => {
   it("ferme une clientèle en laissant l'autre, et fige qui et quand", async () => {
     await staff().patch("/admin/delivery-availability").send({ openToB2c: false }).expect(204);
 
-    expect(await publicView()).toEqual({ openToB2b: true, openToB2c: false });
+    expect(await publicView()).toEqual({
+      openToB2b: true,
+      openToB2c: false,
+      windowMode: "slot",
+    });
     const view = await adminView();
     expect(view.updatedAt).not.toBeNull();
     expect(view.updatedBy).not.toBeNull();
@@ -87,7 +91,7 @@ describe("le réglage de livraison", () => {
       string,
       unknown
     >;
-    expect(Object.keys(body).sort()).toEqual(["openToB2b", "openToB2c"]);
+    expect(Object.keys(body).sort()).toEqual(["openToB2b", "openToB2c", "windowMode"]);
   });
 
   it("un second patch part de l'état posé, pas du défaut", async () => {
@@ -124,7 +128,22 @@ describe("le réglage de livraison", () => {
     expect(facts[0]?.payload).toEqual({
       openToB2b: true,
       openToB2c: false,
-      previous: { openToB2b: true, openToB2c: true },
+      windowMode: "slot",
+      previous: { openToB2b: true, openToB2c: true, windowMode: "slot" },
     });
+  });
+
+  it("pose le mode échéance (CA-D2), servi sur les deux routes, sans toucher aux clientèles", async () => {
+    await staff()
+      .patch("/admin/delivery-availability")
+      .send({ windowMode: "deadline" })
+      .expect(204);
+
+    expect(await publicView()).toEqual({
+      openToB2b: true,
+      openToB2c: true,
+      windowMode: "deadline",
+    });
+    expect((await adminView()).windowMode).toBe("deadline");
   });
 });

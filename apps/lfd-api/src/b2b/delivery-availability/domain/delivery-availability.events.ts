@@ -37,7 +37,12 @@ export class DeliveryAvailabilityUpdatedEvent implements JournaledEvent {
       payload: {
         openToB2b: this.settings.openToB2b,
         openToB2c: this.settings.openToB2c,
-        previous: { openToB2b: this.previous.openToB2b, openToB2c: this.previous.openToB2c },
+        windowMode: this.settings.windowMode,
+        previous: {
+          openToB2b: this.previous.openToB2b,
+          openToB2c: this.previous.openToB2c,
+          windowMode: this.previous.windowMode,
+        },
       },
     };
   }
