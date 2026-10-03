@@ -1,0 +1,50 @@
+<fold-card
+  padding="sm"
+  radius="md"
+  class="card"
+  [class.edge-alert]="edge() === 'alert'"
+  [class.edge-warning]="edge() === 'warning'"
+  [class.edge-proposed]="edge() === 'proposed'"
+  [class.frozen]="frozen()"
+  [class.highlighted]="highlighted()"
+  [class.draggable]="handle()"
+  data-order-card
+>
+  <div class="body">
+    <div class="row">
+      @if (position(); as position) {
+        <span
+          class="num"
+          [class.num-proposed]="mark() === 'proposed'"
+          [class.num-frozen]="mark() === 'frozen'"
+          data-position
+          >{{ position }}</span
+        >
+      } @else if (handle()) {
+        <span class="grip" aria-hidden="true">⋮⋮</span>
+      }
+      <div class="who">
+        <span class="title" [class.title-alert]="signaled()" data-card-title>{{ title() }}</span>
+        <span class="meta" data-card-meta>{{ meta() }}</span>
+      </div>
+      <div class="side">
+        <span
+          class="window"
+          [class.window-none]="window() === 'sans créneau'"
+          [class.window-clash]="windowClash()"
+          data-card-window
+          >{{ window() }}</span
+        >
+        <ng-content select="[cardKeys]" />
+      </div>
+    </div>
+    @if (tags().length > 0) {
+      <div class="tags">
+        @for (tag of tags(); track tag.label) {
+          <fold-badge radius="square" [variant]="tag.variant" [content]="tag.label" data-card-tag />
+        }
+      </div>
+    }
+    <ng-content />
+  </div>
+</fold-card>

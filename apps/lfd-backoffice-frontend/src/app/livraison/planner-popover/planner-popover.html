@@ -1,0 +1,92 @@
+<fold-popover placement="bottom-end" [(open)]="open">
+  <button
+    foldButton
+    foldPopoverTrigger
+    icon="edit"
+    [emphasis]="previewing() ? 'soft' : 'solid'"
+    [disabled]="disabled()"
+    data-planner-open
+  >
+    Proposer les tournées
+  </button>
+  <div foldPopoverPanel class="panel" role="dialog" aria-label="Proposer les tournées" data-planner>
+    <div class="head">
+      <span class="heading">Proposer les tournées</span>
+      <span class="lede">
+        Une proposition en aperçu, dans le tableau : rien n’est écrit tant qu’on n’a pas appliqué.
+      </span>
+    </div>
+
+    @if (vehicles().length > 0) {
+      <div class="group">
+        <span class="label">Véhicules</span>
+        @for (vehicle of vehicles(); track vehicle.id) {
+          <div class="vehicle" [class.excluded]="vehicle.excluded">
+            <span class="swatch" aria-hidden="true" [style.background]="vehicle.color"></span>
+            <fold-checkbox
+              [label]="vehicle.name"
+              [checked]="isChecked(vehicle)"
+              [disabled]="busy() || vehicle.excluded"
+              (checkedChange)="toggle(vehicle.id, $event)"
+              data-vehicle
+            />
+            <span class="sub">{{ vehicle.sub }}</span>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="group" [class.muted]="recomposeAll()">
+      <span class="label">Proposer en</span>
+      <fold-view-toggle
+        ariaLabel="Proposer en"
+        activeStyle="solid"
+        [options]="modeOptions"
+        [value]="mode() ?? ''"
+        (valueChange)="pickMode($event)"
+        data-mode
+      />
+      <span class="hint" data-mode-hint>{{ modeHint() }}</span>
+    </div>
+
+    <fold-checkbox
+      label="Tout recomposer"
+      hint="Reprendre aussi les tournées composées à la main, sans tenir compte du mode (jamais une tournée partie ou chargée)."
+      [checked]="recomposeAll()"
+      [disabled]="busy()"
+      (checkedChange)="recomposeAll.set($event)"
+      data-recompose-all
+    />
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-planner-refusal>{{ message }}</fold-callout>
+    }
+
+    <div class="actions">
+      @if (canWrite()) {
+        <button
+          foldButton
+          emphasis="outline"
+          [loading]="phase() === 'locating'"
+          [disabled]="busy()"
+          (click)="locate()"
+          data-locate
+        >
+          Situer les arrêts
+        </button>
+      }
+      <button
+        foldButton
+        class="propose"
+        [loading]="phase() === 'proposing'"
+        [disabled]="busy() || nothingChosen()"
+        (click)="propose()"
+        data-propose
+      >
+        Proposer
+      </button>
+    </div>
+
+    <fold-link (clicked)="openSettings()" data-settings-link>Réglages du calcul</fold-link>
+  </div>
+</fold-popover>

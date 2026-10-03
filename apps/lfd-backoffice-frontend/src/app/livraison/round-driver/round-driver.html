@@ -1,34 +1,46 @@
 <div class="driver" data-driver>
-  <div class="who">
-    <span data-driver-name>{{ label() }}</span>
-    @if (withoutAccess()) {
-      <fold-badge variant="alert" content="Livreur sans accès — réaffecter" data-driver-no-access />
-    }
-  </div>
   @if (editable()) {
-    <div class="controls">
-      <fold-listbox
-        size="sm"
-        label="Livreur"
-        placeholder="Choisir un livreur"
-        [options]="drivers()"
-        [value]="driver()?.staffUserId ?? null"
-        [disabled]="disabled() || drivers().length === 0"
-        (selectionChange)="pick($event)"
+    <fold-dropdown placement="bottom-start" ariaLabel="Livreur de la tournée">
+      <button
+        type="button"
+        class="trigger"
+        foldPopoverTrigger="menu"
+        [class.missing]="driver() === null"
+        [disabled]="disabled()"
         data-driver-choice
-      />
-      @if (driver() !== null) {
-        <button
-          foldButton
-          size="sm"
-          emphasis="outline"
-          [disabled]="disabled()"
-          (click)="unassigned.emit()"
-          data-driver-remove
-        >
-          Retirer le livreur
-        </button>
+      >
+        @if (driver() === null) {
+          <span class="unknown" aria-hidden="true">?</span>
+        } @else {
+          <fold-avatar size="sm" [name]="label()" />
+        }
+        <span class="name" data-driver-name>{{
+          driver() === null ? 'Choisir un livreur' : label()
+        }}</span>
+        <fold-icon name="chevron-down" size="xs" />
+      </button>
+      @for (option of drivers(); track option.value) {
+        <fold-dropdown-item (selected)="pick(option.value)" data-driver-option>
+          {{ option.label }}
+        </fold-dropdown-item>
       }
+      @if (driver() !== null) {
+        <fold-dropdown-item tone="danger" (selected)="unassigned.emit()" data-driver-remove>
+          Retirer le livreur
+        </fold-dropdown-item>
+      }
+    </fold-dropdown>
+  } @else {
+    <div class="trigger static" [class.missing]="driver() === null">
+      @if (driver() === null) {
+        <span class="unknown" aria-hidden="true">?</span>
+      } @else {
+        <fold-avatar size="sm" [name]="label()" />
+      }
+      <span class="name" data-driver-name>{{ label() }}</span>
     </div>
+  }
+  @if (withoutAccess()) {
+    <fold-badge variant="alert" content="Livreur sans accès — réaffecter" data-driver-no-access />
   }
 </div>

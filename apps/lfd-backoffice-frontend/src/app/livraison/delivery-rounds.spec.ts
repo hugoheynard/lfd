@@ -3,14 +3,21 @@ import { describe, expect, it } from 'vitest';
 
 import {
   broughtBackLabel,
+  clockLabel,
   composeDay,
+  movedOrder,
   ordersFromOtherDays,
+  passageCountLabel,
+  roundCountLabel,
   roundLabel,
   shiftedOrder,
+  shortRoundLabel,
   signalLabel,
+  sortedByWindow,
   stopCountLabel,
   vehiclesActiveOn,
   windowClashes,
+  windowShortLabel,
 } from './delivery-rounds';
 import { stopOf } from './run-sheet.fixture';
 
@@ -206,5 +213,83 @@ describe('vehiclesActiveOn (C14)', () => {
       'actif',
       'retire-le-jour',
     ]);
+  });
+});
+
+describe('movedOrder (le glisser)', () => {
+  const lists = { a: ['1', '2', '3'], b: ['4'] };
+
+  it('monte et descend dans la même liste, en rendant la liste ENTIÈRE (I2)', () => {
+    expect(movedOrder(lists, { list: 'a', index: 2 }, { list: 'a', index: 0 })).toEqual({
+      a: ['3', '1', '2'],
+    });
+    expect(movedOrder(lists, { list: 'a', index: 0 }, { list: 'a', index: 2 })).toEqual({
+      a: ['2', '3', '1'],
+    });
+  });
+
+  it('passe dans une autre liste au rang visé, et rend les deux listes touchées', () => {
+    expect(movedOrder(lists, { list: 'a', index: 1 }, { list: 'b', index: 0 })).toEqual({
+      a: ['1', '3'],
+      b: ['2', '4'],
+    });
+  });
+
+  it('borne aux extrémités : un rang trop grand tombe en fin', () => {
+    expect(movedOrder(lists, { list: 'a', index: 0 }, { list: 'b', index: 9 })).toEqual({
+      a: ['2', '3'],
+      b: ['4', '1'],
+    });
+    expect(movedOrder(lists, { list: 'a', index: 0 }, { list: 'a', index: 9 })).toEqual({
+      a: ['2', '3', '1'],
+    });
+  });
+
+  it('ne rend rien quand rien ne bouge, ou hors des listes', () => {
+    expect(movedOrder(lists, { list: 'a', index: 1 }, { list: 'a', index: 1 })).toBeNull();
+    expect(movedOrder(lists, { list: 'a', index: 5 }, { list: 'b', index: 0 })).toBeNull();
+    expect(movedOrder(lists, { list: 'a', index: 0 }, { list: 'z', index: 0 })).toBeNull();
+  });
+});
+
+describe('les fenêtres, au format de l’organisateur', () => {
+  it('écrit l’heure sans minutes nulles', () => {
+    expect(clockLabel('07:00')).toBe('07 h');
+    expect(clockLabel('8:30')).toBe('08 h 30');
+    expect(windowShortLabel({ start: '07:00', end: '08:00' })).toBe('07 h–08 h');
+    expect(windowShortLabel({ start: null, end: '08:30' })).toBe('avant 08 h 30');
+    expect(windowShortLabel(null)).toBe('sans créneau');
+  });
+
+  it('nomme une tournée courte, et compte passages et tournées', () => {
+    expect(shortRoundLabel({ vehicleName: 'Trafic frigo', passage: 1 })).toBe('Trafic frigo');
+    expect(shortRoundLabel({ vehicleName: 'Kangoo blanc', passage: 2 })).toBe('Kangoo · 2');
+    expect(passageCountLabel(1)).toBe('1 tournée');
+    expect(passageCountLabel(2)).toBe('2 passages');
+    expect(roundCountLabel(3)).toBe('3 tournées');
+  });
+});
+
+describe('sortedByWindow (« Ranger par créneau »)', () => {
+  const at = (reference: string, start: string | null, end: string | null) => ({
+    reference,
+    window: end === null ? null : { start, end },
+  });
+
+  it('range par début de fenêtre, la fin à défaut, sans créneau en dernier, stable', () => {
+    const sorted = sortedByWindow([
+      at('A', '09:00', '10:00'),
+      at('B', null, null),
+      at('C', null, '08:30'),
+      at('D', '07:00', '08:00'),
+      at('E', '09:00', '11:00'),
+    ]);
+    expect(sorted.map((stop) => stop.reference)).toEqual(['D', 'C', 'A', 'E', 'B']);
+  });
+
+  it('après le tri, plus de fenêtre intenable sur un jeu sans conflit réel', () => {
+    const stops = [at('A', '09:00', '10:00'), at('B', '07:00', '08:00'), at('C', '08:00', '09:00')];
+    expect(windowClashes(stops).some((clash) => clash !== null)).toBe(true);
+    expect(windowClashes(sortedByWindow(stops)).every((clash) => clash === null)).toBe(true);
   });
 });

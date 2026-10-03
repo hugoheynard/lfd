@@ -1,0 +1,69 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  inline-size: 23.75rem;
+  max-inline-size: 100%;
+  padding: var(--fold-space-md);
+}
+
+.head,
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.heading {
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+}
+
+.lede,
+.hint,
+.sub {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+.label {
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+}
+
+.vehicle {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-block-size: var(--fold-space-2xl);
+}
+
+.excluded {
+  opacity: 0.6;
+}
+
+.swatch {
+  flex: none;
+  inline-size: var(--fold-space-sm);
+  block-size: var(--fold-space-sm);
+  border-radius: var(--fold-radius-xs);
+}
+
+.sub {
+  margin-inline-start: auto;
+}
+
+/* « Tout recomposer » ignore le mode : il s'efface sans disparaître. */
+.muted fold-view-toggle {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.actions {
+  display: flex;
+  gap: var(--fold-space-sm);
+}
+
+.propose {
+  flex: 1;
+}

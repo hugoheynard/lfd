@@ -22,6 +22,9 @@ import { parisDayOf } from './run-sheet';
 
 const MINUTES_PER_HOUR = 60;
 
+/** Une fenêtre réduite à ce qu'on compare : son début et sa fin. */
+export type WindowBounds = Pick<HandoverQueueWindowView, 'start' | 'end'>;
+
 /** Un arrêt de tournée, joint à sa ligne de feuille de route — `null` si la feuille du jour ne la connaît pas. */
 export interface ComposedStop {
   readonly stop: DeliveryRoundStopView;
@@ -62,7 +65,7 @@ function minutesOf(time: string): number | null {
  * (« avant 10 h ») ne bloque personne.
  */
 export function windowClashes(
-  stops: readonly { readonly reference: string; readonly window: HandoverQueueWindowView | null }[],
+  stops: readonly { readonly reference: string; readonly window: WindowBounds | null }[],
 ): readonly (string | null)[] {
   return stops.map((current, index) => {
     const end = current.window === null ? null : minutesOf(current.window.end);
@@ -216,4 +219,106 @@ export function signalLabel(signal: DeliveryRoundStopSignal, orderDay: string | 
     case 'not_delivery':
       return 'Passée en retrait au comptoir';
   }
+}
+
+/** Une place dans une liste nommée : la tournée (ou « à répartir »), et le rang. */
+export interface ListSlot {
+  readonly list: string;
+  readonly index: number;
+}
+
+/** Des listes d'identifiants, par nom : les tournées et « à répartir ». */
+export type OrderLists = Readonly<Record<string, readonly string[]>>;
+
+/**
+ * Les listes après avoir glissé l'élément de `from` vers `to` — `null` si le
+ * geste ne change rien ou vise hors des listes. Ne rend QUE les listes
+ * touchées, ENTIÈRES : le serveur exige la permutation complète (I2).
+ *
+ * `to.index` suit le glisser-déposer : dans la même liste, le rang final de
+ * l'élément ; vers une autre liste, le rang où il s'insère (borné à la fin).
+ */
+export function movedOrder(lists: OrderLists, from: ListSlot, to: ListSlot): OrderLists | null {
+  const source = lists[from.list];
+  const target = lists[to.list];
+  const moving = source?.[from.index];
+  if (source === undefined || target === undefined || moving === undefined) {
+    return null;
+  }
+  const remaining = source.filter((_, index) => index !== from.index);
+  if (from.list === to.list) {
+    const at = Math.max(0, Math.min(to.index, remaining.length));
+    if (at === from.index) {
+      return null;
+    }
+    return { [from.list]: [...remaining.slice(0, at), moving, ...remaining.slice(at)] };
+  }
+  const at = Math.max(0, Math.min(to.index, target.length));
+  return {
+    [from.list]: remaining,
+    [to.list]: [...target.slice(0, at), moving, ...target.slice(at)],
+  };
+}
+
+/** « 07 h », « 08 h 30 » — l'heure telle que la lit l'organisateur, au format de la maquette. */
+export function clockLabel(time: string): string {
+  const match = /^(\d{1,2}):(\d{2})/u.exec(time);
+  if (match === null) {
+    return time;
+  }
+  const hours = (match[1] ?? '').padStart(2, '0');
+  const minutes = match[2] ?? '00';
+  return minutes === '00' ? `${hours} h` : `${hours} h ${minutes}`;
+}
+
+/** « 07 h–08 h », « avant 08 h 30 », « sans créneau ». */
+export function windowShortLabel(window: WindowBounds | null): string {
+  if (window === null) {
+    return 'sans créneau';
+  }
+  return window.start === null
+    ? `avant ${clockLabel(window.end)}`
+    : `${clockLabel(window.start)}–${clockLabel(window.end)}`;
+}
+
+/**
+ * La clé de tri d'une fenêtre : son début, sinon sa fin ; une commande sans
+ * créneau passe en dernier.
+ */
+function windowSortKey(window: WindowBounds | null): number {
+  const time = window === null ? null : (window.start ?? window.end);
+  return (time === null ? null : minutesOf(time)) ?? Number.POSITIVE_INFINITY;
+}
+
+/**
+ * « Ranger par créneau » : l'ordre par début de fenêtre (la fin quand il n'y
+ * a pas de début), stable pour deux fenêtres égales. Rend les identifiants
+ * dans le nouvel ordre — la permutation ENTIÈRE (I2).
+ */
+export function sortedByWindow<T extends { readonly window: WindowBounds | null }>(
+  stops: readonly T[],
+): readonly T[] {
+  return stops
+    .map((stop, index) => ({ stop, index, key: windowSortKey(stop.window) }))
+    .sort((a, b) => a.key - b.key || a.index - b.index)
+    .map(({ stop }) => stop);
+}
+
+/** Le nom court d'une tournée sur un bouton « Mettre dans » : « Trafic frigo », « Kangoo · 2 ». */
+export function shortRoundLabel(round: Pick<DeliveryRoundView, 'vehicleName' | 'passage'>): string {
+  if (round.passage <= 1) {
+    return round.vehicleName;
+  }
+  const first = round.vehicleName.trim().split(/\s+/u)[0] ?? round.vehicleName;
+  return `${first} · ${String(round.passage)}`;
+}
+
+/** « 1 tournée », « 3 tournées ». */
+export function roundCountLabel(count: number): string {
+  return count === 1 ? '1 tournée' : `${String(count)} tournées`;
+}
+
+/** Ce que compte l'en-tête d'un véhicule : « 1 tournée » ou « 2 passages » (Q13). */
+export function passageCountLabel(count: number): string {
+  return count > 1 ? `${String(count)} passages` : '1 tournée';
 }

@@ -1,5 +1,4 @@
 import type {
-  DeliveryKeptRoundReason,
   DeliveryProposalMode,
   DeliveryProposalWindow,
   DeliveryRoundProposalView,
@@ -98,19 +97,6 @@ const UNLOCATED: Readonly<Record<DeliveryUnlocatedReason, string>> = {
 
 export function unlocatedReasonLabel(reason: DeliveryUnlocatedReason): string {
   return UNLOCATED[reason];
-}
-
-const KEPT: Readonly<Record<DeliveryKeptRoundReason, string>> = {
-  departed: 'Déjà partie',
-  loaded: 'Un bac y est chargé',
-  unlocated_stop: 'Un de ses arrêts n’est pas situé',
-  signaled_stop: 'Un de ses arrêts est signalé',
-  not_requested: 'Non demandée — véhicule décoché, ou composée à la main sans « Tout recomposer »',
-  unchanged: 'Rien à y insérer',
-};
-
-export function keptReasonLabel(reason: DeliveryKeptRoundReason): string {
-  return KEPT[reason];
 }
 
 const MODES: Readonly<Record<DeliveryProposalMode, string>> = {

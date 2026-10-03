@@ -1,0 +1,141 @@
+:host {
+  display: block;
+  flex: none;
+  inline-size: 18.75rem;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  background: var(--fold-color-surface-card);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg);
+}
+
+.frozen {
+  background: var(--fold-color-surface-subtle);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border-block-end: 1px solid var(--fold-color-border-subtle);
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.sub {
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs) var(--fold-space-sm);
+}
+
+.swatch {
+  flex: none;
+  inline-size: var(--fold-space-sm);
+  block-size: var(--fold-space-sm);
+  background: var(--vehicle-color);
+  border-radius: var(--fold-radius-xs);
+}
+
+/* Le titre ne se tronque jamais : c'est lui qu'on cherche. */
+.title {
+  flex: 1;
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+  white-space: nowrap;
+}
+
+.note {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+.count {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.departed {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+}
+
+.flags,
+.keys,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.stops {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  min-block-size: var(--fold-space-4xl);
+  padding: var(--fold-space-sm);
+  border-radius: 0 0 var(--fold-radius-lg) var(--fold-radius-lg);
+}
+
+/* La colonne visée par un glisser prend un contour primaire. */
+.stops.cdk-drop-list-dragging {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: -2px;
+}
+
+/* Le repère d'insertion : une barre bleue de 3 px là où l'arrêt tombera. */
+.drop-line {
+  block-size: 3px;
+  background: var(--fold-color-primary);
+  border-radius: var(--fold-radius-pill);
+}
+
+/* La carte emportée : à 40 %, la place qu'elle quittera reste lisible. */
+.cdk-drag-preview {
+  opacity: 0.4;
+}
+
+.cdk-drag-animating,
+.stops.cdk-drop-list-dragging app-order-card {
+  transition: transform 0.2s ease;
+}
+
+.frozen-hint {
+  display: none;
+}
+
+/* Une tournée partie refuse le dépôt, et le dit pendant qu'on la survole. */
+.frozen-list.cdk-drop-list-dragging {
+  outline: 2px dashed var(--fold-color-alert);
+
+  .drop-line {
+    display: none;
+  }
+
+  .frozen-hint {
+    display: block;
+    padding: var(--fold-space-sm);
+    color: var(--fold-color-alert-text);
+    font-size: var(--fold-text-xs);
+    font-weight: var(--fold-weight-semibold);
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cdk-drag-animating,
+  .stops.cdk-drop-list-dragging app-order-card {
+    transition: none;
+  }
+}

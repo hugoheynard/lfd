@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import type { DeliveryRoundDriverView } from '@lfd/contracts';
-import { FoldListboxComponent } from 'fold-ng';
+import { FoldDropdownItemComponent } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { driverLabelOf, RoundDriver } from './round-driver';
@@ -30,11 +30,30 @@ describe('driverLabelOf', () => {
 describe('RoundDriver', () => {
   it('ne réaffecte pas celui qui l’est déjà', () => {
     const { fixture, emitted } = mount({ staffUserId: 'u-1', name: 'Paul', canDrive: true });
-    const listbox = fixture.debugElement.query(By.css('[data-driver-choice]'));
-    expect(listbox.componentInstance).toBeInstanceOf(FoldListboxComponent);
-    listbox.triggerEventHandler('selectionChange', 'u-1');
-    listbox.triggerEventHandler('selectionChange', 'u-2');
-    expect(emitted).toEqual(['u-2']);
+    const option = fixture.debugElement.query(By.css('[data-driver-option]'));
+    // La vraie entrée de menu fold : c'est son événement qui est piloté.
+    expect(option.componentInstance).toBeInstanceOf(FoldDropdownItemComponent);
+    option.triggerEventHandler('selected');
+    expect(emitted).toEqual([]);
+  });
+
+  it('sans livreur, le bouton menu invite à en choisir un ; le menu affecte', () => {
+    const { fixture, element, emitted } = mount(null);
+    expect(element.querySelector('[data-driver-choice]')?.classList).toContain('missing');
+    expect(element.querySelector('[data-driver-name]')?.textContent).toContain(
+      'Choisir un livreur',
+    );
+    expect(element.querySelector('[data-driver-remove]')).toBeNull();
+    fixture.debugElement.query(By.css('[data-driver-option]')).triggerEventHandler('selected');
+    expect(emitted).toEqual(['u-1']);
+  });
+
+  it('« Retirer le livreur » est dans le menu quand un livreur est affecté', () => {
+    const { fixture } = mount({ staffUserId: 'u-2', name: 'Zoé', canDrive: true });
+    let removed = 0;
+    fixture.componentInstance.unassigned.subscribe(() => (removed += 1));
+    fixture.debugElement.query(By.css('[data-driver-remove]')).triggerEventHandler('selected');
+    expect(removed).toBe(1);
   });
 
   it('en lecture seule, ni choix ni retrait', () => {

@@ -2,10 +2,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
-import { FoldListboxComponent } from 'fold-ng';
+import { FoldDropdownItemComponent } from 'fold-ng';
 import type {
   DeliveryIncidentView,
   DeliveryRoundDriverView,
+  DeliveryRoundProposalView,
   DeliveryRoundsDayView,
   DeliveryRunSheetView,
   StaffPermission,
@@ -22,6 +23,11 @@ import { DeliverySettingsService } from '../delivery-settings.service';
 import { parisDayOf, shiftDay } from '../run-sheet';
 import { stopOf } from '../run-sheet.fixture';
 import { RunSheetService } from '../run-sheet.service';
+import { MAP_TILES } from '../map-tiles.config';
+import { PlannerPopover } from '../planner-popover/planner-popover';
+import type { BoardDrop } from '../rounds-board-model';
+import { POOL_KEY } from '../rounds-board-model';
+import { RoundsBoard } from '../rounds-board/rounds-board';
 import { RoundsPage } from './rounds-page';
 
 const WRITE: readonly StaffPermission[] = ['delivery_rounds:read', 'delivery_rounds:write'];
@@ -103,6 +109,49 @@ function sheet(day: string): DeliveryRunSheetView {
   };
 }
 
+/** Une proposition : CMD-3 placée dans le second passage du Kangoo. */
+const PROPOSAL: DeliveryRoundProposalView = {
+  day: '2026-10-02',
+  estimate: 'road',
+  mode: 'insert',
+  departurePoint: { pickupAddressId: 'p-1', label: 'Le Labo', gps: { lat: 45.44, lng: 6.98 } },
+  settings: {
+    detourPercent: 140,
+    averageSpeedKmh: 35,
+    earliestDeparture: '07:00',
+    maxRoundMinutes: 240,
+    stopMinutes: 5,
+    safetyMarginMinutes: 20,
+    defaultMode: 'insert',
+    multiplePassages: true,
+    source: 'default',
+  },
+  rounds: [
+    {
+      roundId: 'r-2',
+      vehicleId: 'v-1',
+      vehicleName: 'Kangoo',
+      passage: 2,
+      departureTime: '09:00',
+      returnTime: '10:00',
+      meters: 1000,
+      minutes: 60,
+      overDuration: false,
+      geometry: null,
+      stops: [
+        { orderId: 'o-3', reference: 'CMD-3', arrival: '09:10', window: null, windowMissed: false },
+      ],
+    },
+  ],
+  unlocated: [],
+  overflow: [{ orderId: 'o-4', reference: 'CMD-4' }],
+  kept: [{ roundId: 'r-1', vehicleName: 'Kangoo', passage: 1, reason: 'not_requested' }],
+  versions: [
+    { roundId: 'r-1', version: 4 },
+    { roundId: 'r-2', version: 7 },
+  ],
+};
+
 interface Wire {
   readonly calls: string[];
   readonly reads: { rounds: string[]; sheets: string[]; also: (readonly string[])[] };
@@ -118,8 +167,10 @@ function outcome(call: string): Promise<void> {
 
 /** Les lectures sont chaînées (deux en parallèle, puis la jointure) : on laisse la file se vider. */
 async function settle(fixture: ComponentFixture<RoundsPage>): Promise<void> {
-  await new Promise((resolve) => setTimeout(resolve));
-  await fixture.whenStable();
+  for (let turn = 0; turn < 4; turn += 1) {
+    await new Promise((resolve) => setTimeout(resolve));
+    await fixture.whenStable();
+  }
   fixture.detectChanges();
 }
 
@@ -132,6 +183,7 @@ async function boot(
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      { provide: MAP_TILES, useValue: { baseUrl: '', wholeFile: false } },
       {
         provide: ActivatedRoute,
         useValue: { snapshot: { queryParamMap: convertToParamMap(query) } },
@@ -195,10 +247,18 @@ async function boot(
                 } satisfies VehicleView,
               ],
             }),
-        },
+          departure: () => Promise.reject(new Error('non lu')),
+        } satisfies Partial<Record<keyof DeliverySettingsService, unknown>>,
       },
-      // Le calculateur a sa propre spec : ici, il ne doit que tenir dans la page.
-      { provide: DeliveryRoutingService, useValue: {} },
+      {
+        provide: DeliveryRoutingService,
+        useValue: {
+          // Sans calcul routier : la carte garde ses repères, l'aperçu ses heures d'origine.
+          time: () => Promise.reject(new Error('pas de calcul routier')),
+          settings: () => Promise.reject(new Error('non lu')),
+          apply: (payload: unknown) => outcome(`apply ${JSON.stringify(payload)}`),
+        } satisfies Partial<Record<keyof DeliveryRoutingService, unknown>>,
+      },
       {
         provide: DeliveryIncidentsService,
         useValue: {
@@ -229,12 +289,18 @@ function button(element: Element | null | undefined, selector: string): HTMLButt
   return found;
 }
 
-/** Choisit une tournée dans la liste « Tournée » d'un conteneur, comme la listbox l'émet. */
-function choose(fixture: ComponentFixture<RoundsPage>, selector: string, roundId: string): void {
-  const listbox = fixture.debugElement.query(By.css(selector));
-  // La vraie listbox fold, pas un élément quelconque : c'est son sélecteur qui est piloté.
-  expect(listbox.componentInstance).toBeInstanceOf(FoldListboxComponent);
-  listbox.triggerEventHandler('selectionChange', roundId);
+/** Un geste du tableau, tel que le glisser-déposer le remonte. */
+async function drop(fixture: ComponentFixture<RoundsPage>, gesture: BoardDrop): Promise<void> {
+  fixture.debugElement.query(By.directive(RoundsBoard)).triggerEventHandler('dropped', gesture);
+  await settle(fixture);
+}
+
+/** Choisit une entrée du menu « livreur » d'une tournée, comme le menu fold l'émet. */
+function chooseDriver(fixture: ComponentFixture<RoundsPage>, index: number): void {
+  const option = fixture.debugElement.queryAll(By.css('[data-round] [data-driver-option]'))[index];
+  // La vraie entrée de menu fold, pas un élément quelconque : c'est elle qui est pilotée.
+  expect(option?.componentInstance).toBeInstanceOf(FoldDropdownItemComponent);
+  option?.triggerEventHandler('selected');
 }
 
 afterEach(() => {
@@ -244,18 +310,23 @@ afterEach(() => {
 });
 
 describe('RoundsPage', () => {
-  it('une tournée partie est en lecture seule, et dit son heure de départ (lot 4)', async () => {
+  it('une tournée partie est gelée, et dit son heure de départ (lot 4)', async () => {
     firstDeparted = '2026-10-01T05:42:00.000Z';
     try {
       const { element } = await boot();
       const first = element.querySelector('[data-round]');
-      expect(first?.querySelector('[data-departed]')?.textContent).toContain('Partie à 7 h 42');
+      expect(first?.querySelector('[data-round-state]')?.textContent).toContain('Partie 7 h 42');
+      expect(first?.textContent).toContain('Partie : gelée, rien ne s’y déplace.');
       expect(first?.querySelector('[data-remove]')).toBeNull();
-      expect(first?.querySelector('[data-move]')).toBeNull();
-      // L'autre tournée garde ses gestes, et la partie n'est plus proposée.
-      expect(
-        element.querySelectorAll('[data-round]')[1]?.querySelector('[data-departed]'),
-      ).toBeNull();
+      expect(first?.querySelector('[data-down]')).toBeNull();
+      // L'autre tournée reste en préparation, et seule elle reçoit « Mettre dans ».
+      const second = element.querySelectorAll('[data-round]')[1];
+      expect(second?.querySelector('[data-round-state]')?.textContent).toContain('En préparation');
+      const targets = [...element.querySelectorAll('[data-order] [data-assign]')];
+      expect(targets.map((target) => target.textContent?.trim())).toEqual([
+        'Kangoo · 2',
+        'Kangoo · 2',
+      ]);
     } finally {
       firstDeparted = null;
     }
@@ -272,38 +343,43 @@ describe('RoundsPage', () => {
     expect(element.querySelector('[data-compose-error]')?.getAttribute('tone')).toBe('alert');
   });
 
-  it('montre la colonne à répartir, une colonne par tournée, et ce qui cloche', async () => {
+  it('montre « À répartir », un bloc par véhicule, une colonne par passage, et ce qui cloche', async () => {
     const { element } = await boot();
     expect(element.querySelector('[data-unassigned]')?.textContent).toContain('CMD-3');
+    expect(element.querySelector('[data-summary-pool]')?.textContent).toContain('2 à répartir');
+
+    // Deux passages du même véhicule : un seul bloc, deux colonnes (Q13).
+    expect(element.querySelectorAll('[data-vehicle-group]')).toHaveLength(1);
+    expect(element.querySelector('[data-passages]')?.textContent).toContain('2 passages');
+    // Le chargement du véhicule, en lecture seule (L2b-C3).
+    expect(element.querySelector('[data-load]')?.textContent).toContain('5,5 m³ ❄');
 
     const rounds = [...element.querySelectorAll('[data-round]')];
     expect(rounds).toHaveLength(2);
-    expect(rounds[0]?.textContent).toContain('2 arrêts');
-    // Le chargement du véhicule, en lecture seule (L2b-C3).
-    expect(rounds[0]?.querySelector('[data-load]')?.textContent).toContain('5,5 m³ ❄');
-    expect(rounds[1]?.textContent).toContain('Kangoo · passage 2');
+    expect(rounds[0]?.querySelector('[data-round-title]')?.textContent).toContain('Passage 1');
+    expect(rounds[0]?.textContent).toContain('part en premier');
+    expect(rounds[0]?.querySelector('[data-stop-count]')?.textContent).toContain('2 arrêts');
+    expect(rounds[1]?.querySelector('[data-round-title]')?.textContent).toContain('Passage 2');
+    expect(rounds[1]?.textContent).toContain('après le passage 1');
     expect(rounds[1]?.querySelector('[data-retired]')).not.toBeNull();
 
     const stops = [...(rounds[0]?.querySelectorAll('[data-stop]') ?? [])];
-    expect(stops[0]?.textContent).toContain('CMD-1 · Le Comptoir');
+    expect(stops[0]?.textContent).toContain('CMD-1');
     // Absent de la feuille du jour : sa référence et son signal, quand même.
     expect(stops[1]?.textContent).toContain('CMD-2');
-    expect(stops[1]?.querySelector('[data-signal]')?.textContent).toContain('Commande annulée');
-    // Le signal met le bouton Retirer en avant (Q11).
+    expect(stops[1]?.textContent).toContain('Commande annulée');
+    // Le signal met « Retirer de la tournée » en avant (Q11).
     expect(button(stops[1], '[data-remove]').className).toContain('danger');
+    expect(element.querySelector('[data-summary-alerts]')?.textContent).toContain('1 à régler');
   });
 
   it('badge « Rapportée le … » sur une commande rapportée, à répartir comme placée (RL1)', async () => {
     const { element } = await boot();
     const orders = [...element.querySelectorAll('[data-unassigned] [data-order]')];
-    expect(orders[0]?.querySelector('[data-brought-back]')).toBeNull();
-    expect(orders[1]?.querySelector('[data-brought-back]')?.textContent).toContain(
-      'Rapportée le jeudi 1 octobre',
-    );
+    expect(orders[0]?.textContent).not.toContain('Rapportée le');
+    expect(orders[1]?.textContent).toContain('Rapportée le jeudi 1 octobre');
     const stop = element.querySelector('[data-round] [data-stop]');
-    expect(stop?.querySelector('[data-brought-back]')?.textContent).toContain(
-      'Rapportée le jeudi 1 octobre',
-    );
+    expect(stop?.textContent).toContain('Rapportée le jeudi 1 octobre');
   });
 
   it('descend un arrêt en envoyant la permutation complète et la version', async () => {
@@ -314,12 +390,52 @@ describe('RoundsPage', () => {
     expect(wire.calls).toEqual(['reorder r-1 {"stopIds":["s-2","s-1"],"version":4}']);
   });
 
+  it('glisse un arrêt plus haut dans sa tournée : la permutation entière (I2)', async () => {
+    const { fixture } = await boot();
+    await drop(fixture, {
+      orderId: 'o-2',
+      from: { list: 'r-1', index: 1 },
+      to: { list: 'r-1', index: 0 },
+    });
+    expect(wire.calls).toEqual(['reorder r-1 {"stopIds":["s-2","s-1"],"version":4}']);
+  });
+
+  it('« Annuler » renvoie la permutation exacte d’avant', async () => {
+    const { fixture, element } = await boot();
+    button(element.querySelector('[data-round] [data-stop]'), '[data-down]').click();
+    await settle(fixture);
+    expect(element.querySelector('[data-undo-text]')?.textContent).toContain(
+      'CMD-1 → Kangoo · arrêt 2',
+    );
+
+    button(element, '[data-undo]').click();
+    await settle(fixture);
+    expect(wire.calls).toEqual([
+      'reorder r-1 {"stopIds":["s-2","s-1"],"version":4}',
+      'reorder r-1 {"stopIds":["s-1","s-2"],"version":4}',
+    ]);
+    expect(element.querySelector('[data-undo-toast]')).toBeNull();
+  });
+
   it('retire un arrêt avec la version de sa tournée', async () => {
     const { fixture, element } = await boot();
     const stops = element.querySelectorAll('[data-round] [data-stop]');
     button(stops[1], '[data-remove]').click();
     await settle(fixture);
     expect(wire.calls).toEqual(['remove r-1 s-2 {"version":4}']);
+    expect(element.querySelector('[data-undo-text]')?.textContent).toContain(
+      'CMD-2 retirée · à répartir',
+    );
+  });
+
+  it('glisser un arrêt vers « À répartir » le retire', async () => {
+    const { fixture } = await boot();
+    await drop(fixture, {
+      orderId: 'o-1',
+      from: { list: 'r-1', index: 0 },
+      to: { list: POOL_KEY, index: 0 },
+    });
+    expect(wire.calls).toEqual(['remove r-1 s-1 {"version":4}']);
   });
 
   it('nomme à la feuille de route les rapportées à replacer (decisions-par-defaut § 4)', async () => {
@@ -344,15 +460,25 @@ describe('RoundsPage', () => {
     expect(element.querySelector('[data-refusal]')?.textContent).toContain(
       'La tournée a été modifiée entre-temps.',
     );
+    // Un geste refusé ne s'annule pas : il n'a pas eu lieu.
+    expect(element.querySelector('[data-undo-toast]')).toBeNull();
   });
 
-  it('cache toute écriture sans `delivery_rounds:write`', async () => {
+  it('lecture seule : ni poignée, ni « Mettre dans », ni ↑ ↓, ni « Proposer » — la carte et les onglets restent', async () => {
     const { element } = await boot(['delivery_rounds:read']);
     expect(element.querySelector('[data-stop]')).not.toBeNull();
-    for (const selector of ['[data-remove]', '[data-down]', '[data-move]', '[data-assign]']) {
+    for (const selector of [
+      '[data-remove]',
+      '[data-down]',
+      '[data-assign]',
+      '[data-open-round]',
+      '[data-planner-open]',
+    ]) {
       expect(element.querySelector(selector)).toBeNull();
     }
-    expect(element.querySelector('[data-open-round]')).toBeNull();
+    expect(element.querySelector('[data-order]')?.textContent).not.toContain('⋮⋮');
+    expect(element.querySelector('[data-tab="all"]')).not.toBeNull();
+    expect(element.querySelector('[data-map-panel]')).not.toBeNull();
   });
 
   it('imprime UNE tournée, avec les consignes de la feuille de route', async () => {
@@ -371,33 +497,71 @@ describe('RoundsPage', () => {
     expect(element.querySelector('[data-print-sheet]')).toBeNull();
   });
 
-  it('affecte une commande à répartir à la tournée choisie, avec SA version, puis relit', async () => {
-    const { fixture } = await boot();
-    choose(fixture, '[data-unassigned] [data-assign]', 'r-2');
+  it('« Mettre dans » affecte la commande à la tournée choisie, avec SA version, puis relit', async () => {
+    const { fixture, element } = await boot();
+    // « Kangoo · 2 » : le second passage, pas le premier.
+    element
+      .querySelector('[data-unassigned] [data-order]')
+      ?.querySelectorAll<HTMLButtonElement>('[data-assign]')[1]
+      ?.click();
     await settle(fixture);
 
     expect(wire.calls).toEqual(['assign r-2 {"orderId":"o-3","version":7}']);
-    expect(wire.reads.rounds).toHaveLength(2);
-    expect(wire.reads.sheets).toHaveLength(2);
+    expect(wire.reads.rounds.length).toBeGreaterThan(1);
+    expect(wire.reads.sheets.length).toBe(wire.reads.rounds.length);
   });
 
-  it('déplace un arrêt placé avec les versions des DEUX tournées, puis relit', async () => {
+  it('glisse un arrêt vers l’autre tournée avec les versions des DEUX tournées, puis relit', async () => {
     const { fixture } = await boot();
-    const stops = fixture.debugElement.queryAll(By.css('[data-round] [data-stop]'));
-    stops[1]?.query(By.css('[data-move]')).triggerEventHandler('selectionChange', 'r-2');
-    await settle(fixture);
+    await drop(fixture, {
+      orderId: 'o-2',
+      from: { list: 'r-1', index: 1 },
+      to: { list: 'r-2', index: 0 },
+    });
 
     expect(wire.calls).toEqual(['move r-1 s-2 {"toRoundId":"r-2","fromVersion":4,"toVersion":7}']);
-    expect(wire.reads.rounds).toHaveLength(2);
-    expect(wire.reads.sheets).toHaveLength(2);
+    expect(wire.reads.rounds.length).toBeGreaterThan(1);
   });
 
-  it('ne déplace rien quand on rechoisit la tournée de l’arrêt', async () => {
+  it('ne déplace rien quand l’arrêt retombe à sa place', async () => {
     const { fixture } = await boot();
-    const stop = fixture.debugElement.query(By.css('[data-round] [data-stop]'));
-    stop.query(By.css('[data-move]')).triggerEventHandler('selectionChange', 'r-1');
+    await drop(fixture, {
+      orderId: 'o-1',
+      from: { list: 'r-1', index: 0 },
+      to: { list: 'r-1', index: 0 },
+    });
+    expect(wire.calls).toEqual([]);
+  });
+
+  it('un dépôt sur une tournée partie est refusé, sans aucun appel au serveur (I6)', async () => {
+    firstDeparted = '2026-10-01T05:42:00.000Z';
+    try {
+      const { fixture, element } = await boot();
+      await drop(fixture, {
+        orderId: 'o-3',
+        from: { list: POOL_KEY, index: 0 },
+        to: { list: 'r-1', index: 0 },
+      });
+      expect(wire.calls).toEqual([]);
+      expect(element.querySelector('[data-undo-text]')?.textContent).toContain(
+        'Kangoo est partie : rien ne s’y dépose.',
+      );
+      expect(element.querySelector('[data-undo]')).toBeNull();
+    } finally {
+      firstDeparted = null;
+    }
+  });
+
+  it('un dépôt sur l’onglet d’un véhicule sans tournée en préparation : le dire, sans appel', async () => {
+    const { fixture, element } = await boot();
+    fixture.debugElement
+      .query(By.directive(RoundsBoard))
+      .triggerEventHandler('noTarget', 'Trafic frigo');
     await settle(fixture);
     expect(wire.calls).toEqual([]);
+    expect(element.querySelector('[data-undo-text]')?.textContent).toContain(
+      'Trafic frigo : aucune tournée en préparation.',
+    );
   });
 
   it('rouvre le jour de l’URL, et retombe sur demain si le paramètre est illisible', async () => {
@@ -408,19 +572,88 @@ describe('RoundsPage', () => {
     expect(wire.reads.rounds).toEqual([shiftDay(parisDayOf(new Date()), 1)]);
   });
 
-  it('écrit le jour choisi dans l’URL sans empiler l’historique', async () => {
-    const { fixture } = await boot();
+  it('« Autre jour » ouvre la date, qui s’écrit dans l’URL sans empiler l’historique', async () => {
+    const { fixture, element } = await boot();
+    expect(element.querySelector('[data-day-bar] fold-date')).toBeNull();
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    fixture.debugElement
+      .query(By.css('[data-day-bar] fold-view-toggle'))
+      .triggerEventHandler('valueChange', 'other');
+    fixture.detectChanges();
     fixture.debugElement
       .query(By.css('[data-day-bar] fold-date'))
       .triggerEventHandler('valueChange', '2026-10-24');
     await settle(fixture);
 
     expect(wire.reads.rounds.at(-1)).toBe('2026-10-24');
+    expect(element.querySelector('[data-day-label]')?.textContent).toContain('samedi 24 octobre');
     expect(navigate).toHaveBeenCalledWith(
       [],
       expect.objectContaining({ queryParams: { jour: '2026-10-24' }, replaceUrl: true }),
     );
+  });
+
+  describe('l’aperçu d’une proposition (§ 6)', () => {
+    async function proposeIn(fixture: ComponentFixture<RoundsPage>): Promise<void> {
+      fixture.debugElement
+        .query(By.directive(PlannerPopover))
+        .triggerEventHandler('proposed', { proposal: PROPOSAL, recomposed: false });
+      await settle(fixture);
+    }
+
+    it('remplit le même tableau : arrêts proposés en bleu, le reste à répartir avec sa raison', async () => {
+      const { fixture, element } = await boot();
+      await proposeIn(fixture);
+
+      expect(element.querySelector('[data-proposal-mode]')?.textContent).toContain(
+        'Insérer dans les tournées existantes — rien n’est écrit tant que vous n’appliquez pas.',
+      );
+      const second = element.querySelectorAll('[data-round]')[1];
+      expect(second?.querySelector('[data-position]')?.className).toContain('num-proposed');
+      expect(element.querySelector('[data-unassigned]')?.textContent).toContain(
+        'Ne tient dans aucune tournée (durée max.)',
+      );
+      expect(element.querySelector('[data-unassigned]')?.textContent).toContain(
+        'Ce que le calcul n’a pas placé, avec sa raison.',
+      );
+    });
+
+    it('« Jeter » n’écrit rien, et rend la composition', async () => {
+      const { fixture, element } = await boot();
+      await proposeIn(fixture);
+      button(element, '[data-discard]').click();
+      await settle(fixture);
+
+      expect(wire.calls).toEqual([]);
+      expect(element.querySelector('[data-preview]')).toBeNull();
+      expect(element.querySelector('[data-unassigned]')?.textContent).toContain('CMD-3');
+    });
+
+    it('un glisser en aperçu n’écrit rien ; « Appliquer » écrit la proposition AJUSTÉE', async () => {
+      const { fixture, element } = await boot();
+      await proposeIn(fixture);
+      // CMD-4, que le calcul n'a pas su placer, glissée à la main en tête du passage 2.
+      await drop(fixture, {
+        orderId: 'o-4',
+        from: { list: POOL_KEY, index: 0 },
+        to: { list: 'r-2', index: 0 },
+      });
+      expect(wire.calls).toEqual([]);
+
+      button(element, '[data-apply]').click();
+      await settle(fixture);
+      expect(wire.calls).toEqual([
+        `apply ${JSON.stringify({
+          day: '2026-10-02',
+          rounds: [{ roundId: 'r-2', vehicleId: 'v-1', orderIds: ['o-4', 'o-3'] }],
+          versions: [
+            { roundId: 'r-1', version: 4 },
+            { roundId: 'r-2', version: 7 },
+          ],
+        })}`,
+      ]);
+      expect(element.querySelector('[data-preview]')).toBeNull();
+    });
   });
 
   describe('le livreur d’une tournée (MT2)', () => {
@@ -429,11 +662,13 @@ describe('RoundsPage', () => {
       firstDeparted = null;
     });
 
-    it('dit « aucun livreur », et affecte avec la version lue', async () => {
+    it('invite à choisir un livreur, et affecte avec la version lue', async () => {
       const { fixture, element } = await boot();
       const first = element.querySelector('[data-round]');
-      expect(first?.querySelector('[data-driver-name]')?.textContent).toContain('Aucun livreur');
-      choose(fixture, '[data-round] [data-driver-choice]', 'u-2');
+      expect(first?.querySelector('[data-driver-name]')?.textContent).toContain(
+        'Choisir un livreur',
+      );
+      chooseDriver(fixture, 1);
       await settle(fixture);
       expect(wire.calls).toEqual(['assignDriver r-1 {"staffUserId":"u-2","version":4}']);
     });
@@ -446,7 +681,9 @@ describe('RoundsPage', () => {
       expect(first?.querySelector('[data-driver-no-access]')?.getAttribute('content')).toBe(
         'Livreur sans accès — réaffecter',
       );
-      button(first, '[data-driver-remove]').click();
+      fixture.debugElement
+        .query(By.css('[data-round] [data-driver-remove]'))
+        .triggerEventHandler('selected');
       await settle(fixture);
       expect(wire.calls).toEqual(['unassignDriver r-1 {"version":4}']);
     });
@@ -455,7 +692,7 @@ describe('RoundsPage', () => {
       const { fixture, element } = await boot();
       const message = 'Kangoo est déjà partie : son livreur ne change plus.';
       wire.refuse = new HttpErrorResponse({ status: 409, error: { message } });
-      choose(fixture, '[data-round] [data-driver-choice]', 'u-1');
+      chooseDriver(fixture, 0);
       await settle(fixture);
       expect(element.querySelector('[data-refusal]')?.textContent?.trim()).toBe(message);
     });
@@ -561,9 +798,7 @@ describe('RoundsPage — à la porte (lot A, PL2)', () => {
     firstReturned = '2026-10-01T10:30:00.000Z';
     const { element } = await boot();
     const first = element.querySelectorAll('[data-round]')[0];
-    expect(first?.querySelector('[data-returned]')?.textContent).toContain(
-      'Tournée rentrée à 12 h 30',
-    );
+    expect(first?.querySelector('[data-round-state]')?.textContent).toContain('Rentrée 12 h 30');
     expect(first?.querySelector('[data-return-round]')).toBeNull();
   });
 });

@@ -1,0 +1,197 @@
+<section
+  class="column"
+  [class.frozen]="round().frozen"
+  [style.--vehicle-color]="color()"
+  [attr.aria-label]="ariaLabel()"
+  data-round
+>
+  <div class="head">
+    <div class="line">
+      <span class="swatch" aria-hidden="true"></span>
+      <span class="title" data-round-title>{{ title() }}</span>
+      <fold-button-icon
+        icon="print"
+        size="sm"
+        tooltip="Imprimer la feuille de route"
+        [disabled]="round().stops.length === 0 || round().roundId === null"
+        (clicked)="printed.emit()"
+        data-print
+      />
+    </div>
+    <div class="line sub">
+      <fold-badge
+        radius="square"
+        [variant]="state().variant"
+        [content]="state().label"
+        data-round-state
+      />
+      @if (passageNote(); as note) {
+        <span class="note" data-passage-note>{{ note }}</span>
+      }
+      @if (round().vehicleRetired) {
+        <fold-badge radius="square" variant="alert" content="Véhicule retiré" data-retired />
+      }
+    </div>
+
+    @if (round().roundId !== null) {
+      <app-round-driver
+        [driver]="round().driver"
+        [drivers]="drivers()"
+        [editable]="canWrite() && !round().frozen && !preview()"
+        [disabled]="busy()"
+        (assigned)="driverAssigned.emit($event)"
+        (unassigned)="driverRemoved.emit()"
+      />
+    }
+
+    <div class="count" data-stop-count>{{ stopCountLabel(round().stops.length) }}</div>
+
+    @if (canSort()) {
+      <button
+        foldButton
+        size="sm"
+        emphasis="soft"
+        intent="warning"
+        [disabled]="busy()"
+        (click)="sorted.emit()"
+        data-sort
+      >
+        Ranger par créneau
+      </button>
+    }
+
+    @if (roundIncidents().length > 0) {
+      <fold-disclosure data-round-incidents>
+        <span summary class="flags">
+          <fold-icon name="warning" />
+          {{ incidentCountLabel(roundIncidents().length) }}
+        </span>
+        <app-incident-list [incidents]="roundIncidents()" [loadPhoto]="incidentPhoto()" />
+      </fold-disclosure>
+    }
+
+    @if (round().departedAt !== null) {
+      <div class="departed">
+        <span class="note">Partie : gelée, rien ne s’y déplace.</span>
+        @if (canWrite() && round().returnedAt === null && !preview()) {
+          <fold-inline-confirm
+            intent="primary"
+            message="La tournée sera close : ses arrêts restés ouverts passeront dans « Non remis »."
+            [labels]="{ confirm: 'Déclarer rentrée' }"
+            [loading]="busy()"
+            (confirmed)="returned.emit()"
+          >
+            <button foldButton size="sm" emphasis="outline" [disabled]="busy()" data-return-round>
+              Déclarer rentrée
+            </button>
+          </fold-inline-confirm>
+        }
+      </div>
+    }
+  </div>
+
+  <div
+    class="stops"
+    role="list"
+    cdkDropList
+    [class.frozen-list]="round().frozen"
+    [cdkDropListData]="round().key"
+    [cdkDropListSortingDisabled]="round().frozen"
+    (cdkDropListDropped)="drop($event)"
+    data-stops
+  >
+    @for (
+      stop of round().stops;
+      track stop.orderId;
+      let index = $index;
+      let first = $first;
+      let last = $last
+    ) {
+      <app-order-card
+        cdkDrag
+        cdkDragPreviewContainer="parent"
+        [cdkDragData]="stop.orderId"
+        [cdkDragDisabled]="!movable() || busy()"
+        [title]="titleOf(stop)"
+        [meta]="metaOf(stop)"
+        [window]="windowOf(stop)"
+        [ariaLabel]="ariaOf(stop, index)"
+        [position]="index + 1"
+        [mark]="markOf(stop)"
+        [edge]="edgeOf(stop)"
+        [tags]="tagsOf(stop)"
+        [frozen]="round().frozen"
+        [signaled]="stop.signals.length > 0"
+        [windowClash]="stop.windowClash !== null"
+        [highlighted]="highlighted() === stop.orderId"
+        (cdkDragStarted)="dragging.emit(true)"
+        (cdkDragEnded)="dragging.emit(false)"
+        (mouseenter)="hovered.emit(stop.orderId)"
+        (mouseleave)="hovered.emit(null)"
+        data-stop
+      >
+        <div *cdkDragPlaceholder class="drop-line"></div>
+        @if (movable()) {
+          <span cardKeys class="keys">
+            <fold-button-icon
+              icon="chevron-up"
+              size="xs"
+              tooltip="Monter"
+              [disabled]="busy() || first"
+              (clicked)="shifted.emit({ index, delta: -1 })"
+              data-up
+            />
+            <fold-button-icon
+              icon="chevron-down"
+              size="xs"
+              tooltip="Descendre"
+              [disabled]="busy() || last"
+              (clicked)="shifted.emit({ index, delta: 1 })"
+              data-down
+            />
+            @if (stop.signals.length === 0) {
+              <fold-button-icon
+                icon="close"
+                size="xs"
+                tooltip="Retirer de la tournée"
+                [disabled]="busy()"
+                (clicked)="removed.emit(stop.orderId)"
+                data-remove
+              />
+            }
+          </span>
+        }
+        @if (movable() && stop.signals.length > 0) {
+          <div class="actions">
+            <button
+              foldButton
+              size="sm"
+              intent="danger"
+              [disabled]="busy()"
+              (click)="removed.emit(stop.orderId)"
+              data-remove
+            >
+              Retirer de la tournée
+            </button>
+          </div>
+        }
+        @if (stopIncidents(stop); as incidents) {
+          @if (incidents.length > 0) {
+            <fold-disclosure data-stop-incidents>
+              <span summary class="flags">
+                <fold-icon name="warning" />
+                {{ incidentCountLabel(incidents.length) }}
+              </span>
+              <app-incident-list [incidents]="incidents" [loadPhoto]="incidentPhoto()" />
+            </fold-disclosure>
+          }
+        }
+      </app-order-card>
+    } @empty {
+      <fold-empty-state title="Tournée vide" subtitle="Glissez une commande ici." data-empty-round>
+        <fold-icon empty-icon name="truck" />
+      </fold-empty-state>
+    }
+    <div class="frozen-hint" aria-hidden="true">Partie : on ne dépose plus ici</div>
+  </div>
+</section>

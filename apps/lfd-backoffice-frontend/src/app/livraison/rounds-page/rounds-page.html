@@ -1,40 +1,158 @@
-<fold-page-layout icon="truck" title="Tournées">
-  <p description>
-    Répartir les livraisons du jour entre les véhicules, puis ranger chaque tournée dans l’ordre de
-    passage.
-  </p>
+<fold-page-layout class="rounds-page">
+  <header class="no-print head" data-rounds-head>
+    <h1 class="head-title">Tournées</h1>
+    <span class="head-lede">
+      Répartir les livraisons entre les véhicules, puis les ranger dans l’ordre de passage.
+    </span>
+  </header>
 
-  <div class="compose">
-    <div class="no-print compose">
-      <div class="bar" data-day-bar>
+  <div class="page">
+    <div class="no-print screen">
+      <div class="toolbar" data-day-bar>
         <fold-view-toggle
           ariaLabel="Jour de livraison"
+          activeStyle="solid"
           [options]="dayOptions"
           [value]="dayChoice()"
           (valueChange)="pickChoice($event)"
         />
-        <fold-date label="Date" [value]="day()" (valueChange)="pickDate($event)" />
-        @if (canWrite()) {
-          <fold-listbox
-            label="Nouvelle tournée"
-            placeholder="Choisir un véhicule"
-            [options]="vehicleOptions()"
-            [value]="chosenVehicle()"
-            [disabled]="busy()"
-            (valueChange)="chosenVehicle.set($event)"
-            data-vehicle-choice
-          />
-          <button
-            foldButton
-            icon="plus"
-            [disabled]="chosenVehicle() === null || busy()"
-            (click)="openRound()"
-            data-open-round
-          >
-            Ouvrir la tournée
-          </button>
+        @if (dayChoice() === 'other') {
+          <fold-date label="Date" [value]="day()" (valueChange)="pickDate($event)" />
         }
+        <span class="day" data-day-label>{{ dayLabel() }}</span>
+
+        @if (board() !== null) {
+          <div class="summary" data-summary>
+            @if (summary().pool > 0) {
+              <fold-badge
+                radius="square"
+                variant="warning"
+                [content]="summary().pool + ' à répartir'"
+                data-summary-pool
+              />
+            } @else {
+              <fold-badge
+                radius="square"
+                variant="success"
+                content="Tout est réparti"
+                data-summary-pool
+              />
+            }
+            <fold-badge radius="square" variant="neutral" [content]="summary().rounds" />
+            @if (summary().alerts > 0) {
+              <fold-badge
+                radius="square"
+                variant="alert"
+                [content]="summary().alerts + ' à régler'"
+                data-summary-alerts
+              />
+            }
+          </div>
+        }
+
+        <div class="actions">
+          @if (canWrite()) {
+            <app-planner-popover
+              [day]="day()"
+              [vehicles]="plannerVehicles()"
+              [canWrite]="canWrite()"
+              [canReadSettings]="canReadSettings()"
+              [disabled]="busy() || state().status !== 'ready'"
+              [previewing]="preview.active()"
+              (proposed)="showProposal($event)"
+              (located)="located()"
+            />
+            <fold-dropdown placement="bottom-end" ariaLabel="Choisir un véhicule">
+              <button
+                foldButton
+                foldPopoverTrigger="menu"
+                class="new-round"
+                icon="plus"
+                [disabled]="busy() || preview.active() || newRoundChoices().length === 0"
+                data-open-round
+              >
+                Nouvelle tournée
+              </button>
+              @for (vehicle of newRoundChoices(); track vehicle.id) {
+                <fold-dropdown-item (selected)="openRound(vehicle.id)" data-vehicle-choice>
+                  <span class="choice">
+                    <span
+                      class="swatch"
+                      aria-hidden="true"
+                      [style.background]="vehicle.color"
+                    ></span>
+                    <span class="choice-name">{{ vehicle.name }}</span>
+                    <span class="choice-sub">{{ vehicle.sub }}</span>
+                  </span>
+                </fold-dropdown-item>
+              }
+            </fold-dropdown>
+          }
+        </div>
       </div>
+
+      @if (preview.proposal(); as proposal) {
+        <fold-card padding="sm" radius="md" class="preview" data-preview>
+          <div class="preview-band" role="status">
+            <fold-badge radius="square" variant="info" content="APERÇU" />
+            <span class="preview-text" data-proposal-mode>
+              <strong>{{ previewMode() }}</strong> — rien n’est écrit tant que vous n’appliquez pas.
+              Glissez pour ajuster ; les arrêts proposés sont en bleu.
+            </span>
+            <div class="summary" data-plan-summary>
+              <fold-badge
+                radius="square"
+                variant="info"
+                [content]="preview.summary().deliveries + ' livraisons'"
+              />
+              <fold-badge
+                radius="square"
+                variant="info"
+                [content]="preview.summary().vans + ' camionnettes'"
+              />
+              @if (preview.summary().late > 0) {
+                <fold-badge
+                  radius="square"
+                  variant="alert"
+                  [content]="preview.summary().late + ' hors créneau'"
+                  data-summary-late
+                />
+              }
+              @if (preview.summary().notReady > 0) {
+                <fold-badge
+                  radius="square"
+                  variant="warning"
+                  [content]="
+                    preview.summary().notReady +
+                    (preview.summary().notReady > 1 ? ' pas encore prêtes' : ' pas encore prête')
+                  "
+                  data-summary-not-ready
+                />
+              }
+            </div>
+            <button
+              foldButton
+              emphasis="outline"
+              [disabled]="busy()"
+              (click)="discard()"
+              data-discard
+            >
+              Jeter
+            </button>
+            @if (canWrite()) {
+              <button
+                foldButton
+                [loading]="busy()"
+                [disabled]="!canApply()"
+                (click)="apply()"
+                data-apply
+              >
+                Appliquer
+              </button>
+            }
+          </div>
+        </fold-card>
+      }
 
       @if (fleetUnreadable()) {
         <fold-callout variant="alert" data-fleet-error>
@@ -50,303 +168,38 @@
       @if (refusal(); as refusal) {
         <fold-callout variant="alert" data-refusal>{{ refusal }}</fold-callout>
       }
-
-      <app-route-planner
-        [day]="day()"
-        [vehicles]="vehicleOptions()"
-        [canWrite]="canWrite()"
-        [disabled]="busy()"
-        [companies]="companies()"
-        [canOpenClients]="canSeePhotos()"
-        [canReadSettings]="canReadSettings()"
-        [composed]="composed()"
-        (changed)="retry()"
-      />
-
-      @switch (state().status) {
-        @case ('loading') {
-          <fold-loading message="Lecture des tournées…" />
-        }
-        @case ('error') {
-          <fold-empty-state
-            tone="alert"
-            title="Tournées illisibles"
-            subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
-            data-compose-error
-          >
-            <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
-          </fold-empty-state>
-        }
-        @case ('ready') {
-          @if (composed(); as composed) {
-            <div class="board">
-              <fold-card data-unassigned>
-                <div class="column">
-                  <fold-element-title
-                    variant="title"
-                    title="À répartir"
-                    [subtitle]="
-                      composed.unassigned.length === 0
-                        ? 'Tout est réparti'
-                        : 'Dans aucune tournée : aucune ne doit partir oubliée'
-                    "
-                  >
-                    @if (composed.unassigned.length > 0) {
-                      <fold-badge
-                        titleAction
-                        variant="warning"
-                        [content]="composed.unassigned.length + ' à répartir'"
-                      />
-                    }
-                  </fold-element-title>
-
-                  @for (line of composed.unassigned; track line.order.orderId) {
-                    <fold-card surface="sunken" padding="sm" data-order>
-                      <div class="line">
-                        <fold-element-title
-                          variant="title"
-                          [title]="titleOf(line.order.reference, line.sheet)"
-                          [subtitle]="windowOf(line.sheet)"
-                        />
-                        @if (shortAddressOf(line.sheet); as address) {
-                          <span>{{ address }}</span>
-                        }
-                        @if (line.order.broughtBackAt; as broughtBackAt) {
-                          <fold-badge
-                            variant="warning"
-                            [content]="broughtBackLabel(broughtBackAt)"
-                            data-brought-back
-                          />
-                        }
-                        @if (canWrite()) {
-                          <fold-listbox
-                            size="sm"
-                            label="Tournée"
-                            placeholder="Choisir une tournée"
-                            [options]="roundOptions()"
-                            [value]="null"
-                            [disabled]="busy() || roundOptions().length === 0"
-                            (selectionChange)="assign(line.order, $event)"
-                            data-assign
-                          />
-                        }
-                      </div>
-                    </fold-card>
-                  }
-                </div>
-              </fold-card>
-
-              @for (column of composed.rounds; track column.round.id) {
-                <fold-card data-round>
-                  <div class="column">
-                    <fold-element-title
-                      variant="title"
-                      [title]="roundLabel(column.round)"
-                      [subtitle]="stopCountLabel(column.stops.length)"
-                    >
-                      <span titleAction class="actions">
-                        @if (loadBadge(column.round.vehicleId); as load) {
-                          <fold-badge variant="neutral" [content]="load" data-load />
-                        }
-                        @if (column.round.departedAt; as departedAt) {
-                          <fold-badge
-                            variant="info"
-                            [content]="'Partie à ' + timeOf(departedAt)"
-                            data-departed
-                          />
-                        }
-                        @if (column.round.returnedAt; as returnedAt) {
-                          <fold-badge
-                            variant="success"
-                            [content]="'Tournée rentrée à ' + timeOf(returnedAt)"
-                            data-returned
-                          />
-                        }
-                        @if (column.round.vehicleRetired) {
-                          <fold-badge variant="alert" content="Véhicule retiré" data-retired />
-                        }
-                        <fold-button-icon
-                          icon="print"
-                          size="sm"
-                          tooltip="Imprimer cette tournée"
-                          [disabled]="column.stops.length === 0"
-                          (clicked)="print(column.round.id)"
-                          data-print
-                        />
-                      </span>
-                    </fold-element-title>
-
-                    <app-round-driver
-                      [driver]="column.round.driver"
-                      [drivers]="driverOptions()"
-                      [editable]="canWrite() && column.round.departedAt === null"
-                      [disabled]="busy()"
-                      (assigned)="assignDriver(column.round, $event)"
-                      (unassigned)="unassignDriver(column.round)"
-                    />
-
-                    @if (roundIncidents(column.round.id); as incidents) {
-                      @if (incidents.length > 0) {
-                        <fold-disclosure data-round-incidents>
-                          <span summary class="flags">
-                            <fold-icon name="warning" />
-                            {{ incidentCountLabel(incidents.length) }}
-                          </span>
-                          <app-incident-list [incidents]="incidents" [loadPhoto]="incidentPhoto" />
-                        </fold-disclosure>
-                      }
-                    }
-                    @if (
-                      canWrite() &&
-                      column.round.departedAt !== null &&
-                      column.round.returnedAt === null
-                    ) {
-                      <fold-inline-confirm
-                        intent="primary"
-                        message="La tournée sera close : ses arrêts restés ouverts passeront dans « Non remis »."
-                        [labels]="{ confirm: 'Déclarer rentrée' }"
-                        [loading]="busy()"
-                        (confirmed)="returnToDepot(column.round)"
-                      >
-                        <button
-                          foldButton
-                          size="sm"
-                          emphasis="outline"
-                          icon="home"
-                          [disabled]="busy()"
-                          data-return-round
-                        >
-                          Déclarer rentrée
-                        </button>
-                      </fold-inline-confirm>
-                    }
-
-                    @for (line of column.stops; track line.stop.stopId; let index = $index) {
-                      <fold-card surface="sunken" padding="sm" data-stop>
-                        <div class="line">
-                          <fold-element-title
-                            variant="title"
-                            [title]="
-                              line.stop.position + '. ' + titleOf(line.stop.reference, line.sheet)
-                            "
-                            [subtitle]="windowOf(line.sheet)"
-                          />
-                          @if (shortAddressOf(line.sheet); as address) {
-                            <span>{{ address }}</span>
-                          }
-                          @if (stopIncidents(line.stop.stopId); as incidents) {
-                            @if (incidents.length > 0) {
-                              <fold-disclosure data-stop-incidents>
-                                <span summary class="flags">
-                                  <fold-icon name="warning" />
-                                  {{ incidentCountLabel(incidents.length) }}
-                                </span>
-                                <app-incident-list
-                                  [incidents]="incidents"
-                                  [loadPhoto]="incidentPhoto"
-                                />
-                              </fold-disclosure>
-                            }
-                          }
-                          @if (line.stop.broughtBackAt; as broughtBackAt) {
-                            <fold-badge
-                              variant="warning"
-                              [content]="broughtBackLabel(broughtBackAt)"
-                              data-brought-back
-                            />
-                          }
-                          @if (line.stop.signals.length > 0 || line.windowClash !== null) {
-                            <div class="flags">
-                              @for (signal of line.stop.signals; track signal) {
-                                <fold-badge
-                                  variant="alert"
-                                  [content]="signalLabel(signal, line.stop.orderDay)"
-                                  data-signal
-                                />
-                              }
-                              @if (line.windowClash; as clash) {
-                                <fold-badge
-                                  variant="warning"
-                                  [content]="'Fenêtre intenable après ' + clash"
-                                  data-window-clash
-                                />
-                              }
-                            </div>
-                          }
-                          <!-- Une tournée partie est gelée (lot 4, I6) : lecture seule. -->
-                          @if (canWrite() && column.round.departedAt === null) {
-                            <div class="controls">
-                              <fold-listbox
-                                size="sm"
-                                label="Tournée"
-                                [options]="roundOptions()"
-                                [value]="column.round.id"
-                                [disabled]="busy()"
-                                (selectionChange)="move(column.round, line.stop, $event)"
-                                data-move
-                              />
-                              <fold-button-icon
-                                icon="chevron-up"
-                                size="sm"
-                                tooltip="Monter"
-                                [disabled]="busy() || index === 0"
-                                (clicked)="shift(column, index, -1)"
-                                data-up
-                              />
-                              <fold-button-icon
-                                icon="chevron-down"
-                                size="sm"
-                                tooltip="Descendre"
-                                [disabled]="busy() || index === column.stops.length - 1"
-                                (clicked)="shift(column, index, 1)"
-                                data-down
-                              />
-                              <button
-                                foldButton
-                                size="sm"
-                                [emphasis]="line.stop.signals.length > 0 ? 'solid' : 'outline'"
-                                [intent]="line.stop.signals.length > 0 ? 'danger' : 'neutral'"
-                                [disabled]="busy()"
-                                (click)="remove(column.round, line.stop)"
-                                data-remove
-                              >
-                                Retirer
-                              </button>
-                            </div>
-                          }
-                        </div>
-                      </fold-card>
-                    } @empty {
-                      <fold-empty-state
-                        icon="truck"
-                        title="Tournée vide"
-                        subtitle="Choisissez-la sur une commande à répartir."
-                      />
-                    }
-                  </div>
-                </fold-card>
-              }
-            </div>
-
-            @if (composed.rounds.length === 0) {
-              <fold-empty-state
-                icon="truck"
-                title="Aucune tournée ce jour-là"
-                [subtitle]="
-                  canWrite()
-                    ? 'Ouvrez une tournée pour un véhicule, puis répartissez les commandes.'
-                    : 'Personne n’a encore composé les tournées de ce jour.'
-                "
-                data-no-round
-              />
-            }
-          }
-        }
+      @if (preview.timingRefusal(); as message) {
+        <fold-callout variant="alert" announce data-timing-refusal>{{ message }}</fold-callout>
       }
+
+      <app-rounds-board
+        [status]="state().status"
+        [board]="board()"
+        [preview]="preview.active()"
+        [canWrite]="canWrite()"
+        [busy]="busy()"
+        [colors]="colors()"
+        [drivers]="driverOptions()"
+        [incidents]="incidents()"
+        [incidentPhoto]="incidentPhoto"
+        [loadBadges]="loadBadges()"
+        [departure]="departure()"
+        [canOpenClients]="canSeePhotos()"
+        (dropped)="onDrop($event)"
+        (shifted)="onShift($event)"
+        (removed)="onRemove($event)"
+        (sorted)="onSort($event)"
+        (driverAssigned)="assignDriver($event)"
+        (driverRemoved)="unassignDriver($event)"
+        (returned)="returnToDepot($event)"
+        (printed)="print($event)"
+        (retry)="retry()"
+        (noTarget)="noTarget($event)"
+      />
     </div>
 
     @if (printedRound(); as printed) {
-      <section class="print-only compose" data-print-sheet>
+      <section class="print-only page" data-print-sheet>
         <fold-element-title
           variant="title"
           [title]="roundLabel(printed.round)"
@@ -368,4 +221,17 @@
       </section>
     }
   </div>
+
+  @if (toast(); as toast) {
+    <div class="no-print undo" data-undo-toast>
+      <fold-toast variant="info" [duration]="undoMs" (dismiss)="dismissToast(toast.id)">
+        <span class="undo-body">
+          <span data-undo-text>{{ toast.text }}</span>
+          @if (toast.undo !== null) {
+            <button foldButton size="sm" emphasis="soft" (click)="undo()" data-undo>Annuler</button>
+          }
+        </span>
+      </fold-toast>
+    </div>
+  }
 </fold-page-layout>

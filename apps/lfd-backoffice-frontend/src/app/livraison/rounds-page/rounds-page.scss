@@ -1,43 +1,146 @@
-.compose {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-md);
+/* La bande d'en-tête collée sous le header de l'app, pleine largeur (comme `.lr-head`). */
+.rounds-page {
+  --fold-page-gutter: 0px;
+  --fold-page-pad-top: 0px;
 }
 
-.bar {
+.head {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--fold-space-sm);
+  align-items: baseline;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-md) var(--fold-space-lg);
+  border-top: 1px solid color-mix(in srgb, var(--fold-color-bg-header) 85%, var(--fold-ref-white));
+  background: color-mix(in srgb, var(--fold-color-bg-header) 94%, var(--fold-ref-white));
+  color: var(--fold-ref-white);
 }
 
-/* Une colonne par tournée, plus « à répartir » ; elles passent à la ligne au
-   téléphone plutôt que de défiler de côté. */
-.board {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
-  align-items: start;
+.head-title {
+  margin: 0;
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-bold);
+}
+
+.head-lede {
+  color: color-mix(in srgb, var(--fold-ref-white) 60%, var(--fold-color-bg-header));
+  font-size: var(--fold-text-sm);
+}
+
+/* La gouttière revient au contenu, l'en-tête seul va d'un bord à l'autre. */
+.page {
+  padding: 0 var(--fold-space-lg) var(--fold-space-lg);
+  min-inline-size: 0;
+}
+
+.page,
+.screen {
+  display: flex;
+  flex-direction: column;
   gap: var(--fold-space-md);
 }
 
-.column,
-.line {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-sm);
+.screen {
+  min-inline-size: 0;
 }
 
+/* Une seule ligne, sur fond clair séparé du tableau. */
+.toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--fold-space-sm) var(--fold-space-md);
+  margin-inline: calc(-1 * var(--fold-space-lg));
+  padding: var(--fold-space-sm) var(--fold-space-lg);
+  background: var(--fold-color-surface-card);
+  border-block-end: 1px solid var(--fold-color-border);
+}
+
+.toolbar > * {
+  flex: none;
+}
+
+/* Faute de place, les badges passent sur deux lignes ; la barre, jamais. */
+.toolbar > .summary {
+  flex: 0 1 auto;
+  min-inline-size: 0;
+}
+
+.toolbar > .actions {
+  flex-wrap: nowrap;
+}
+
+/* « + Nouvelle tournée » : plein sombre, comme la maquette. */
+.actions .new-round {
+  --b-base: var(--fold-color-text);
+  --b-strong: color-mix(in srgb, var(--fold-color-text) 84%, var(--fold-color-bg-page));
+  --b-on: var(--fold-color-surface-card);
+}
+
+.day {
+  font-weight: var(--fold-weight-bold);
+  white-space: nowrap;
+}
+
+.summary,
 .actions,
-.flags,
-.controls {
+.preview-band {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--fold-space-xs);
+  gap: var(--fold-space-sm);
 }
 
-.controls {
-  align-items: flex-end;
+.actions {
+  margin-inline-start: auto;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  inline-size: 100%;
+}
+
+.choice-name {
+  flex: 1;
+}
+
+.choice-sub {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+.swatch {
+  flex: none;
+  inline-size: var(--fold-space-sm);
+  block-size: var(--fold-space-sm);
+  border-radius: var(--fold-radius-xs);
+}
+
+/* Le bandeau d'aperçu : sous la barre d'outils, au ton de l'information. */
+.preview {
+  background: var(--fold-color-info-surface);
+  border-color: var(--fold-color-info-border);
+}
+
+.preview-text {
+  flex: 1;
+  min-inline-size: 16rem;
+  font-size: var(--fold-text-sm);
+}
+
+/* « Annuler » : en bas à gauche, huit secondes. */
+.undo {
+  position: fixed;
+  inset-block-end: var(--fold-space-lg);
+  inset-inline-start: var(--fold-space-lg);
+  z-index: 10;
+}
+
+.undo-body {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
 }
 
 /* Sur papier, la seule tournée choisie ; à l'écran, jamais. */

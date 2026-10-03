@@ -8,21 +8,18 @@ import { describe, expect, it } from 'vitest';
 
 import {
   applyPayloadOfPlan,
-  moveStop,
   type PlannedRound,
   type PlannedStop,
-  plannedRoundTitle,
   planOf,
   planSummary,
+  planWithLists,
   roundColor,
-  stopCompanyOf,
-  stopFlags,
   stopNameOf,
-  stopPlaceOf,
   timingPayloadOf,
+  vehicleColors,
   withTimings,
 } from './delivery-planning';
-import type { ComposedDay } from './delivery-rounds';
+import { type ComposedDay, movedOrder } from './delivery-rounds';
 import { stopOf } from './run-sheet.fixture';
 
 const SETTINGS: DeliveryRoutingSettingsView = {
@@ -155,6 +152,26 @@ function stop(overrides: Partial<PlannedStop>): PlannedStop {
 
 const plan = (): readonly PlannedRound[] => planOf(PROPOSAL, COMPOSED);
 
+/** Un glisser dans l'aperçu, comme le tableau le fait : les listes, puis la composition. */
+function glide(
+  rounds: readonly PlannedRound[],
+  from: { readonly key: string; readonly index: number },
+  to: { readonly key: string; readonly index: number },
+): readonly PlannedRound[] | null {
+  const lists = Object.fromEntries(
+    rounds.map((round) => [round.key, round.stops.map((line) => line.orderId)]),
+  );
+  const next = movedOrder(
+    lists,
+    { list: from.key, index: from.index },
+    { list: to.key, index: to.index },
+  );
+  const stops = new Map(
+    rounds.flatMap((round) => round.stops.map((line) => [line.orderId, line] as const)),
+  );
+  return next === null ? null : planWithLists(rounds, next, stops);
+}
+
 describe('planOf', () => {
   it('joint le nom et le lieu par commande, jamais la référence en premier', () => {
     const [first] = plan();
@@ -162,8 +179,6 @@ describe('planOf', () => {
 
     // Régression : « Le Chalet » (seconde adresse du client) s'affichait du nom de la société.
     expect(stopNameOf(joined)).toBe('Le Chalet');
-    expect(stopCompanyOf(joined)).toBe('La Folie Douce Val d’Isère');
-    expect(stopPlaceOf(joined)).toBe('3 rue des Lilas, Paris');
     // Absente de la feuille de route : la référence, faute de mieux.
     expect(stopNameOf(first!.stops[1]!)).toBe('CMD-2');
   });
@@ -176,68 +191,20 @@ describe('planOf', () => {
   });
 });
 
-describe('plannedRoundTitle', () => {
-  const base = {
-    vehicleName: 'Camionnette 1',
-    passage: 1,
-    roundId: null,
-    lock: null,
-    timing: null,
-  } as const;
-  const timing = {
-    departureTime: '08:05',
-    returnTime: '10:00',
-    meters: 0,
-    minutes: 0,
-    overDuration: false,
-  };
-
-  /** Constaté le 2026-09-29 : deux colonnes « Camionnette 1 » sans rien pour les distinguer. */
-  it('dit qu’une tournée gardée est chargée, ou partie', () => {
-    expect(plannedRoundTitle({ ...base, roundId: 'r-1', lock: 'loaded' })).toBe(
-      'Camionnette 1 · chargée',
-    );
-    expect(plannedRoundTitle({ ...base, roundId: 'r-1', lock: 'departed' })).toBe(
-      'Camionnette 1 · partie',
-    );
-  });
-
-  it('numérote un second passage et donne son départ', () => {
-    expect(plannedRoundTitle({ ...base, roundId: 'r-2', passage: 2, timing })).toBe(
-      'Camionnette 1 · 2ᵉ passage · départ 8 h 05',
-    );
-  });
-
-  it('tait le départ d’un passage pas encore chronométré', () => {
-    expect(plannedRoundTitle({ ...base, roundId: 'r-2', passage: 3 })).toBe(
-      'Camionnette 1 · 3ᵉ passage',
-    );
-  });
-
-  it('garde « à ouvrir » pour une tournée neuve', () => {
-    expect(plannedRoundTitle({ ...base, timing })).toBe('Camionnette 1 · à ouvrir');
-    expect(plannedRoundTitle({ ...base, passage: 2, timing })).toBe(
-      'Camionnette 1 · 2ᵉ passage · départ 8 h 05 · à ouvrir',
-    );
-  });
-
-  it('ne dit rien de plus pour un premier passage gardé et libre', () => {
-    expect(plannedRoundTitle({ ...base, roundId: 'r-1' })).toBe('Camionnette 1');
-  });
-});
-
 describe('stopNameOf', () => {
-  it('sans libellé d’adresse : la raison sociale, sans la répéter en second', () => {
+  it('sans libellé d’adresse : la raison sociale', () => {
     const line = stop({ sheet: stopOf({ customerLabel: 'SARL Le Comptoir' }) });
 
     expect(stopNameOf(line)).toBe('SARL Le Comptoir');
-    expect(stopCompanyOf(line)).toBeNull();
   });
 });
 
-describe('moveStop', () => {
+describe('planWithLists', () => {
+  const stops = (): ReadonlyMap<string, PlannedStop> =>
+    new Map(plan().flatMap((round) => round.stops.map((line) => [line.orderId, line] as const)));
+
   it('glisse un arrêt vers une autre camionnette, et efface les heures des deux colonnes', () => {
-    const next = moveStop(plan(), { key: 'r-1', index: 0 }, { key: 'new:v-2:1', index: 1 });
+    const next = planWithLists(plan(), { 'r-1': ['o-2'], 'new:v-2:1': ['o-3', 'o-1'] }, stops());
 
     const [source, target] = next ?? [];
     expect(source?.stops.map((line) => line.orderId)).toEqual(['o-2']);
@@ -246,25 +213,23 @@ describe('moveStop', () => {
     expect(target?.stops.every((line) => line.arrival === null)).toBe(true);
   });
 
-  it('réordonne dans la colonne', () => {
-    const next = moveStop(plan(), { key: 'r-1', index: 1 }, { key: 'r-1', index: 0 });
+  it('réordonne dans la colonne, sans toucher aux autres', () => {
+    const before = plan();
+    const next = planWithLists(before, { 'r-1': ['o-2', 'o-1'] }, stops());
 
     expect(next?.[0]?.stops.map((line) => line.orderId)).toEqual(['o-2', 'o-1']);
+    expect(next?.[1]).toBe(before[1]);
   });
 
-  it('ne fait rien quand l’arrêt retombe à sa place', () => {
-    expect(moveStop(plan(), { key: 'r-1', index: 1 }, { key: 'r-1', index: 1 })).toBeNull();
-  });
-
-  it('refuse une tournée chargée : ni vers elle, ni hors d’elle (I6)', () => {
-    expect(moveStop(plan(), { key: 'r-1', index: 0 }, { key: 'r-9', index: 0 })).toBeNull();
-    expect(moveStop(plan(), { key: 'r-9', index: 0 }, { key: 'r-1', index: 0 })).toBeNull();
+  it('refuse une tournée chargée (I6), et une commande sans arrêt connu', () => {
+    expect(planWithLists(plan(), { 'r-9': ['o-9', 'o-1'] }, stops())).toBeNull();
+    expect(planWithLists(plan(), { 'r-1': ['o-404'] }, stops())).toBeNull();
   });
 });
 
 describe('chronométrer', () => {
   it('n’envoie que les colonnes touchées, sans celles qu’un glisser a vidées', () => {
-    const emptied = moveStop(plan(), { key: 'new:v-2:1', index: 0 }, { key: 'r-1', index: 0 });
+    const emptied = glide(plan(), { key: 'new:v-2:1', index: 0 }, { key: 'r-1', index: 0 });
 
     expect(timingPayloadOf('2026-10-01', emptied ?? [], ['new:v-2:1', 'r-1'])).toEqual({
       day: '2026-10-01',
@@ -273,7 +238,7 @@ describe('chronométrer', () => {
   });
 
   it('pose les heures rendues, et ignore une réponse qu’un glisser plus récent a rendue caduque', () => {
-    const moved = moveStop(plan(), { key: 'r-1', index: 1 }, { key: 'r-1', index: 0 }) ?? [];
+    const moved = glide(plan(), { key: 'r-1', index: 1 }, { key: 'r-1', index: 0 }) ?? [];
     const sent = timingPayloadOf('2026-10-01', moved, ['r-1'])!;
     const view = {
       day: '2026-10-01',
@@ -304,14 +269,14 @@ describe('chronométrer', () => {
     expect(timed[0]?.timing?.departureTime).toBe('06:10');
     expect(timed[0]?.stops.map((line) => line.arrival)).toEqual(['06:15', '06:30']);
 
-    const movedAgain = moveStop(moved, { key: 'r-1', index: 1 }, { key: 'r-1', index: 0 }) ?? [];
+    const movedAgain = glide(moved, { key: 'r-1', index: 1 }, { key: 'r-1', index: 0 }) ?? [];
     expect(withTimings(movedAgain, sent, view)[0]?.timing).toBeNull();
   });
 });
 
 describe('applyPayloadOfPlan', () => {
   it('envoie la composition éditée, sans la tournée chargée, avec toutes les versions lues', () => {
-    const moved = moveStop(plan(), { key: 'r-1', index: 0 }, { key: 'new:v-2:1', index: 0 }) ?? [];
+    const moved = glide(plan(), { key: 'r-1', index: 0 }, { key: 'new:v-2:1', index: 0 }) ?? [];
 
     expect(applyPayloadOfPlan(PROPOSAL, moved)).toEqual({
       day: '2026-10-01',
@@ -327,55 +292,11 @@ describe('applyPayloadOfPlan', () => {
   });
 
   it('n’ouvre pas une tournée qu’on a vidée', () => {
-    const emptied =
-      moveStop(plan(), { key: 'new:v-2:1', index: 0 }, { key: 'r-1', index: 2 }) ?? [];
+    const emptied = glide(plan(), { key: 'new:v-2:1', index: 0 }, { key: 'r-1', index: 2 }) ?? [];
 
     expect(applyPayloadOfPlan(PROPOSAL, emptied).rounds.map((round) => round.roundId)).toEqual([
       'r-1',
     ]);
-  });
-});
-
-describe('stopFlags', () => {
-  it('écrit les problèmes sur la ligne', () => {
-    const flags = stopFlags(
-      stop({
-        arrival: '07:04',
-        window: { start: '08:00', end: '09:00' },
-        windowMissed: true,
-        sheet: stopOf({
-          state: 'expected',
-          signatureRequired: true,
-          addressBook: {
-            companyId: 'co-1',
-            addressId: 'a-1',
-            note: '',
-            gps: null,
-            procedure: [
-              { id: 'st-1', title: 'Sonner', body: '', hasPhoto: false, photoRevision: null },
-              { id: 'st-2', title: 'Poser', body: '', hasPhoto: false, photoRevision: null },
-            ],
-          },
-        }),
-      }),
-    ).map((flag) => flag.label);
-
-    expect(flags).toEqual([
-      'Arrive après son créneau',
-      'Attend 56 min l’ouverture',
-      'Pas encore prête',
-      'Signature exigée',
-      'Procédure en 2 étapes',
-    ]);
-  });
-
-  it('ne signale pas une attente de moins de 20 min, ni un arrêt sans heures', () => {
-    expect(stopFlags(stop({ arrival: '07:45', window: { start: '08:00', end: '09:00' } }))).toEqual(
-      [],
-    );
-    expect(stopFlags(stop({ arrival: null, window: { start: '08:00', end: '09:00' } }))).toEqual(
-      [],
-    );
   });
 });
 
@@ -396,5 +317,15 @@ describe('roundColor', () => {
   it('garde luminosité et saturation fixes : aucune tournée ne domine', () => {
     expect(roundColor(0, 2)).toMatch(/^oklch\(0\.63 0\.17 /u);
     expect(roundColor(1, 2)).toMatch(/^oklch\(0\.63 0\.17 225\.0\)$/u);
+  });
+});
+
+describe('vehicleColors', () => {
+  it('donne à chaque véhicule son cran de la roue, une fois, quel que soit le nombre de passages', () => {
+    const colors = vehicleColors(['v-1', 'v-2', 'v-1']);
+
+    expect(colors.size).toBe(2);
+    expect(colors.get('v-1')).toBe(roundColor(0, 2));
+    expect(colors.get('v-2')).toBe(roundColor(1, 2));
   });
 });

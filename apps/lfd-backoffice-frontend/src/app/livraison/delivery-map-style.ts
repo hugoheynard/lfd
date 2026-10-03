@@ -45,10 +45,18 @@ export const MAP_PALETTE_TOKENS: Readonly<Record<keyof MapPalette, string>> = {
   labelMinor: '--fold-color-text-faded',
 };
 
-/** Une tournée à tracer : sa couleur résolue et sa géométrie `[lng, lat]`. */
+/**
+ * Comment se trace une tournée : en plein, en tirets (un second passage du
+ * véhicule qu'on regarde), ou en pointillé estompé (les autres tournées,
+ * montrées pour mémoire).
+ */
+export type MapRouteStyle = 'solid' | 'dashed' | 'muted';
+
+/** Une tournée à tracer : sa couleur résolue, sa géométrie `[lng, lat]`, son trait. */
 export interface MapRoute {
   readonly color: string;
   readonly coordinates: readonly (readonly [number, number])[];
+  readonly style: MapRouteStyle;
 }
 
 export const ROUTES_SOURCE = 'tournees';
@@ -59,6 +67,10 @@ const HILLSHADE_EXAGGERATION = 0.5;
 const HALO_WIDTH = 7;
 const ROUTE_WIDTH = 3.5;
 const HALO_OPACITY = 0.85;
+/** Les tournées montrées pour mémoire, derrière celles qu'on regarde. */
+const MUTED_OPACITY = 0.4;
+const DASHED_PATTERN = [2, 1.5];
+const MUTED_PATTERN = [0.5, 1.5];
 const RELIEF_TILE_SIZE = 512;
 
 /**
@@ -102,7 +114,7 @@ export function glyphsUrlOf(baseUri: string): string {
 /** Un tracé en GeoJSON — la seule forme que la carte pose. */
 export interface RouteFeature {
   readonly type: 'Feature';
-  readonly properties: { readonly color: string };
+  readonly properties: { readonly color: string; readonly style: MapRouteStyle };
   readonly geometry: { readonly type: 'LineString'; readonly coordinates: [number, number][] };
 }
 
@@ -119,7 +131,7 @@ export function routesGeoJson(routes: readonly MapRoute[]): RoutesCollection {
       .filter((route) => route.coordinates.length > 1)
       .map((route): RouteFeature => ({
         type: 'Feature',
-        properties: { color: route.color },
+        properties: { color: route.color, style: route.style },
         geometry: {
           type: 'LineString',
           coordinates: route.coordinates.map(([lng, lat]) => [lng, lat]),
@@ -311,9 +323,23 @@ export function mapStyleOf(
       road('road-primary', ['primary', 'trunk', 'motorway'], 3.6, palette.roadMajor),
       ...labelLayers(palette),
       {
+        id: 'routes-muted',
+        type: 'line',
+        source: ROUTES_SOURCE,
+        filter: ['==', ['get', 'style'], 'muted'],
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': ROUTE_WIDTH,
+          'line-opacity': MUTED_OPACITY,
+          'line-dasharray': MUTED_PATTERN,
+        },
+      },
+      {
         id: 'halo',
         type: 'line',
         source: ROUTES_SOURCE,
+        filter: ['!=', ['get', 'style'], 'muted'],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
           'line-color': palette.halo,
@@ -322,9 +348,22 @@ export function mapStyleOf(
         },
       },
       {
+        id: 'routes-dashed',
+        type: 'line',
+        source: ROUTES_SOURCE,
+        filter: ['==', ['get', 'style'], 'dashed'],
+        layout: { 'line-cap': 'butt', 'line-join': 'round' },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': ROUTE_WIDTH,
+          'line-dasharray': DASHED_PATTERN,
+        },
+      },
+      {
         id: 'routes',
         type: 'line',
         source: ROUTES_SOURCE,
+        filter: ['==', ['get', 'style'], 'solid'],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: { 'line-color': ['get', 'color'], 'line-width': ROUTE_WIDTH },
       },

@@ -1,0 +1,331 @@
+/*
+ * Trois colonnes fixes : À répartir 260 · les tournées · la carte 340. Dans le
+ * shell (rail + menu Livraison), le tableau n'a que ~985 px à 1440 : les
+ * latérales sont resserrées, et la colonne des tournées défile DANS sa zone
+ * plutôt que la page (décision d'Hugo, 2026-10-03).
+ */
+.board {
+  display: grid;
+  grid-template-columns: 16.25rem minmax(20rem, 1fr) 21.25rem;
+  min-inline-size: 0;
+  gap: var(--fold-space-md);
+  block-size: 75dvh;
+  min-block-size: 36rem;
+}
+
+.pool,
+.center,
+.map {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  min-inline-size: 0;
+}
+
+/* ─── À répartir ─── */
+
+.pool {
+  background: var(--fold-color-surface-card);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg);
+}
+
+/* Un arrêt de tournée en vol : la colonne l'accueille pour le retirer. */
+.pool.cdk-drop-list-receiving {
+  background: var(--fold-color-info-surface);
+  border: 1.5px dashed var(--fold-color-primary);
+
+  .remove-hint {
+    display: block;
+  }
+}
+
+.pool-head {
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border-block-end: 1px solid var(--fold-color-border-subtle);
+}
+
+.pool-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm);
+  overflow-y: auto;
+}
+
+.remove-hint {
+  display: none;
+  padding: var(--fold-space-sm);
+  color: var(--fold-color-primary-text);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  text-align: center;
+  border: 1px dashed var(--fold-color-primary);
+  border-radius: var(--fold-radius-md);
+}
+
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.quick-label {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+.swatch {
+  display: inline-block;
+  flex: none;
+  inline-size: var(--fold-space-sm);
+  block-size: var(--fold-space-sm);
+  background: var(--vehicle-color);
+  border-radius: var(--fold-radius-xs);
+}
+
+.big {
+  inline-size: var(--fold-space-md);
+  block-size: var(--fold-space-md);
+}
+
+.drop-line {
+  block-size: 3px;
+  background: var(--fold-color-primary);
+  border-radius: var(--fold-radius-pill);
+}
+
+.cdk-drag-preview {
+  opacity: 0.4;
+}
+
+/* ─── Les tournées ─── */
+
+.tabs {
+  display: flex;
+  gap: var(--fold-space-xs);
+  overflow-x: auto;
+  border-block-end: 1px solid var(--fold-color-border);
+}
+
+.tab {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-block-size: var(--fold-space-3xl);
+  padding-inline: var(--fold-space-md);
+  color: var(--fold-color-text);
+  font: inherit;
+  font-size: var(--fold-text-sm);
+  white-space: nowrap;
+  background: transparent;
+  border: 1px solid transparent;
+  border-block-end: none;
+  border-radius: var(--fold-radius-md) var(--fold-radius-md) 0 0;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: -2px;
+  }
+}
+
+/* L'onglet ouvert : fond creusé, et un trait de 3 px de la couleur du véhicule. */
+.active {
+  font-weight: var(--fold-weight-bold);
+  background: var(--fold-color-surface-sunken);
+  border-color: var(--fold-color-border);
+  box-shadow: inset 0 3px 0 var(--vehicle-color, var(--fold-color-text));
+}
+
+/* Un onglet visé par un glisser. */
+.over {
+  background: var(--fold-color-info-surface);
+  border: 1.5px dashed var(--fold-color-primary);
+  border-block-end: none;
+}
+
+.tab-count {
+  color: var(--fold-color-text-muted);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+}
+
+.active .tab-count {
+  color: var(--fold-color-primary-text);
+}
+
+.drag-hint {
+  padding: var(--fold-space-xs) var(--fold-space-md);
+  color: var(--fold-color-primary-text);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  background: var(--fold-color-info-surface);
+}
+
+.lanes {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  gap: var(--fold-space-md);
+  min-block-size: 0;
+  padding: var(--fold-space-md);
+  overflow: auto;
+  background: var(--fold-color-surface-sunken);
+  border: 1px solid var(--fold-color-border);
+  border-block-start: none;
+  border-radius: 0 0 var(--fold-radius-lg) var(--fold-radius-lg);
+}
+
+/* Un véhicule : fond teinté à 16 %, bord à 55 %, un trait de 4 px en haut. */
+.vehicle {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm);
+  background: color-mix(in srgb, var(--vehicle-color) 16%, var(--fold-color-surface-card));
+  border: 1px solid color-mix(in srgb, var(--vehicle-color) 55%, var(--fold-color-surface-card));
+  border-block-start: 4px solid var(--vehicle-color);
+  border-radius: var(--fold-radius-lg);
+}
+
+.vehicle-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding-inline: var(--fold-space-xs);
+}
+
+.vehicle-name {
+  font-weight: var(--fold-weight-bold);
+  white-space: nowrap;
+}
+
+.vehicle-load {
+  margin-inline-start: auto;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  white-space: nowrap;
+}
+
+.passages {
+  display: flex;
+  align-items: stretch;
+  gap: var(--fold-space-xs);
+}
+
+/* Entre deux passages : le véhicule rentre au Labo et recharge. */
+.reload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  padding-block: var(--fold-space-md);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+.reload-text {
+  writing-mode: vertical-rl;
+  font-family: var(--fold-font-mono);
+  white-space: nowrap;
+}
+
+/* ─── La carte ─── */
+
+.map {
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  overflow-y: auto;
+  background: var(--fold-color-surface-card);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg);
+}
+
+.map-head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.map-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.map-title {
+  font-weight: var(--fold-weight-bold);
+}
+
+.map-sub,
+.map-note {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+/* Sa hauteur est celle de la carte elle-même : une boîte plus courte la laissait déborder sur la liste. */
+.map-canvas {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+}
+
+.map-rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.map-row {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-block-size: var(--fold-space-2xl);
+  padding-inline: var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+  border-radius: var(--fold-radius-sm);
+}
+
+.hot {
+  background: var(--fold-color-info-surface);
+}
+
+.clash {
+  color: var(--fold-color-warning-text);
+}
+
+.map-num {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: var(--fold-space-lg);
+  block-size: var(--fold-space-lg);
+  color: var(--fold-color-text);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  border-radius: var(--fold-radius-round);
+}
+
+.map-row-title {
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-row-window {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  white-space: nowrap;
+}

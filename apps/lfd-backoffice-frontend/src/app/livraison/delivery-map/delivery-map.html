@@ -52,14 +52,4 @@
       Pas de tracé par la route pour {{ untraced().join(', ') }} : les repères seuls.
     </fold-callout>
   }
-  @if (state() === 'ready' && unplaced() > 0) {
-    <fold-callout variant="neutral" data-map-unplaced>
-      {{
-        unplaced() === 1
-          ? 'Un arrêt n’a pas de point GPS dans le carnet d’adresses : il n’est pas sur la carte.'
-          : unplaced() +
-            ' arrêts n’ont pas de point GPS dans le carnet d’adresses : ils ne sont pas sur la carte.'
-      }}
-    </fold-callout>
-  }
 </div>

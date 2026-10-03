@@ -1,7 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import type { DeliveryRoundDriverView } from '@lfd/contracts';
 import type { FoldSelectOption } from 'fold-ng';
-import { FoldBadgeComponent, FoldButtonComponent, FoldListboxComponent } from 'fold-ng';
+import {
+  FoldAvatarComponent,
+  FoldBadgeComponent,
+  FoldDropdownComponent,
+  FoldDropdownItemComponent,
+  FoldIconComponent,
+  FoldPopoverTriggerDirective,
+} from 'fold-ng';
 
 /** Ce que dit la ligne « livreur » d'une tournée. */
 export function driverLabelOf(driver: DeliveryRoundDriverView | null): string {
@@ -13,7 +20,8 @@ export function driverLabelOf(driver: DeliveryRoundDriverView | null): string {
 
 /**
  * **Le livreur d'une tournée** (`plan-ma-tournee.md`, MT-D2 v2) : qui est
- * affecté, et — pour qui compose — l'affecter ou le retirer.
+ * affecté, et — pour qui compose — l'affecter ou le retirer, depuis un bouton
+ * menu (avatar, nom, chevron ; `handoff-tournees/SPEC.md`, § 3.3).
  *
  * Le composant n'écrit rien : il émet, et l'écran Tournées écrit, relit et
  * affiche le refus du serveur comme toute autre composition. Une tournée
@@ -22,7 +30,14 @@ export function driverLabelOf(driver: DeliveryRoundDriverView | null): string {
 @Component({
   selector: 'app-round-driver',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldButtonComponent, FoldListboxComponent],
+  imports: [
+    FoldAvatarComponent,
+    FoldBadgeComponent,
+    FoldDropdownComponent,
+    FoldDropdownItemComponent,
+    FoldIconComponent,
+    FoldPopoverTriggerDirective,
+  ],
   templateUrl: './round-driver.html',
   styleUrl: './round-driver.scss',
 })

@@ -4,14 +4,65 @@
   gap: var(--fold-space-xs);
 }
 
-.who,
-.controls {
+/* Le bouton menu de la maquette : avatar, nom, chevron — sur toute la largeur. */
+.trigger {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--fold-space-xs);
+  gap: var(--fold-space-sm);
+  inline-size: 100%;
+  min-block-size: var(--fold-space-2xl);
+  padding-inline: var(--fold-space-sm);
+  color: var(--fold-color-text);
+  font: inherit;
+  font-size: var(--fold-text-sm);
+  text-align: start;
+  background: var(--fold-color-surface-sunken);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: 1px;
+  }
 }
 
-.controls {
-  align-items: flex-end;
+.static {
+  cursor: default;
+}
+
+/* Sans livreur : ambre en pointillé, l'œil s'y arrête. */
+.missing {
+  color: var(--fold-color-warning-text);
+  font-weight: var(--fold-weight-semibold);
+  background: var(--fold-color-warning-surface);
+  border: 1px dashed var(--fold-color-warning);
+}
+
+.name {
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unknown {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: var(--fold-space-lg);
+  block-size: var(--fold-space-lg);
+  color: var(--fold-color-warning-text);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  background: var(--fold-color-surface-card);
+  border: 1px solid var(--fold-color-warning);
+  border-radius: var(--fold-radius-round);
 }

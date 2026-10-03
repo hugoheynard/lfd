@@ -33,12 +33,13 @@ import {
   MAP_PALETTE_TOKENS,
   type MapPalette,
   type MapRoute,
+  type MapRouteStyle,
   glyphsUrlOf,
   mapStyleOf,
   ROUTES_SOURCE,
   routesGeoJson,
 } from '../delivery-map-style';
-import { colorOf, type PlannedRound, stopNameOf, stopPointOf } from '../delivery-planning';
+import { type PlannedRound, roundColor, stopNameOf, stopPointOf } from '../delivery-planning';
 import { MAP_TILES } from '../map-tiles.config';
 
 type MapState = 'absent' | 'loading' | 'ready' | 'error';
@@ -60,9 +61,11 @@ const INITIAL_ZOOM = 10;
 const FIT_PADDING = 40;
 
 /**
- * **La carte de l'écran « Planifier »** (lot 10 bis, L10b-C1, C4, C6) :
- * les tracés par la route, un repère numéroté par arrêt à la couleur de sa
- * camionnette, le labo ; les noms de lieux sont dessinés par la carte.
+ * **La carte de l'organisateur de tournées** (lot 10 bis, L10b-C1, C4, C6 ;
+ * `handoff-tournees/SPEC.md`, § 5) : les tracés par la route, un repère
+ * numéroté par arrêt à la couleur de son véhicule, le labo ; les noms de
+ * lieux sont dessinés par la carte. Les tournées `muted` se tracent en
+ * pointillé estompé, les `dashed` en tirets (un second passage).
  *
  * MapLibre et pmtiles sont chargés à la demande, jamais au démarrage (L10b-C6).
  * Sans URL de tuiles (production, tant que le bucket n'existe pas), la carte
@@ -96,6 +99,12 @@ export class DeliveryMap {
   readonly departure = input.required<MapDeparture>();
   /** L'arrêt survolé dans une feuille de route. */
   readonly highlighted = input<string | null>(null);
+  /** La couleur de chaque véhicule, par identifiant — la même que dans le tableau. */
+  readonly colors = input<ReadonlyMap<string, string>>(new Map());
+  /** Les tournées (par clé) montrées pour mémoire : pointillé estompé. */
+  readonly muted = input<ReadonlySet<string>>(new Set());
+  /** Les tournées (par clé) tracées en tirets : un second passage du véhicule regardé. */
+  readonly dashed = input<ReadonlySet<string>>(new Set());
 
   /** L'arrêt survolé sur la carte, `null` en sortant. */
   readonly hovered = output<string | null>();
@@ -109,13 +118,6 @@ export class DeliveryMap {
       .filter((round) => round.stops.length > 0 && round.timing !== null && round.geometry === null)
       .map((round) => round.vehicleName),
   );
-  /** Les arrêts sans point dans le carnet : pas de repère. */
-  protected readonly unplaced = computed(
-    () =>
-      this.rounds()
-        .flatMap((round) => round.stops)
-        .filter((stop) => stopPointOf(stop) === null).length,
-  );
   protected readonly legend = computed(() => {
     const rounds = this.rounds();
     const seen = new Set<string>();
@@ -124,19 +126,23 @@ export class DeliveryMap {
         return [];
       }
       seen.add(round.vehicleName);
-      return [{ name: round.vehicleName, color: colorOf(rounds, round.key) }];
+      return [{ name: round.vehicleName, color: this.colorOf(round) }];
     });
   });
 
   private map: MapLibreMap | null = null;
   private library: MapLibre | null = null;
   private markers: { readonly orderId: string | null; readonly marker: Marker }[] = [];
-  private fitted = false;
+  /** Les tournées que le dernier cadrage couvrait : un autre onglet recadre. */
+  private fittedOn: string | null = null;
 
   constructor() {
     afterNextRender(() => void this.start());
     effect(() => {
       const rounds = this.rounds();
+      this.colors();
+      this.muted();
+      this.dashed();
       if (this.state() === 'ready') {
         untracked(() => this.draw(rounds));
       }
@@ -148,6 +154,18 @@ export class DeliveryMap {
       }
     });
     inject(DestroyRef).onDestroy(() => this.map?.remove());
+  }
+
+  /** La couleur du véhicule ; à défaut, le premier cran de la roue partagée. */
+  private colorOf(round: PlannedRound): string {
+    return this.colors().get(round.vehicleId) ?? roundColor(0, 1);
+  }
+
+  private styleOf(round: PlannedRound): MapRouteStyle {
+    if (this.muted().has(round.key)) {
+      return 'muted';
+    }
+    return this.dashed().has(round.key) ? 'dashed' : 'solid';
   }
 
   protected retry(): void {
@@ -190,7 +208,7 @@ export class DeliveryMap {
       map.addControl(new library.NavigationControl({ showCompass: false }), 'top-right');
       this.library = library;
       this.map = map;
-      this.fitted = false;
+      this.fittedOn = null;
       map.once('load', () => this.state.set('ready'));
       // Un style refusé n'émet que `error` : sans ceci, « Chargement » à vie.
       map.on('error', () => {
@@ -294,7 +312,13 @@ export class DeliveryMap {
     const routes: MapRoute[] = rounds.flatMap((round) =>
       round.geometry === null
         ? []
-        : [{ color: this.toRgba(colorOf(rounds, round.key)), coordinates: round.geometry }],
+        : [
+            {
+              color: this.toRgba(this.colorOf(round)),
+              coordinates: round.geometry,
+              style: this.styleOf(round),
+            },
+          ],
     );
     map.getSource<GeoJSONSource>(ROUTES_SOURCE)?.setData(routesGeoJson(routes));
 
@@ -310,14 +334,21 @@ export class DeliveryMap {
     const departure = this.departure();
     add(this.element('delivery-map__lab', 'L', `${departure.label} — départ`), departure.gps, null);
     for (const round of rounds) {
-      const color = colorOf(rounds, round.key);
+      const color = this.colorOf(round);
+      const muted = this.muted().has(round.key);
       round.stops.forEach((stop, index) => {
         const point = stopPointOf(stop);
         if (point === null) {
           return;
         }
         const pin = this.element(
-          stop.windowMissed ? 'delivery-map__pin delivery-map__pin--late' : 'delivery-map__pin',
+          [
+            'delivery-map__pin',
+            stop.windowMissed ? 'delivery-map__pin--late' : '',
+            muted ? 'delivery-map__pin--muted' : '',
+          ]
+            .filter((name) => name !== '')
+            .join(' '),
           String(index + 1),
           stop.arrival === null ? stopNameOf(stop) : `${stopNameOf(stop)} — ${stop.arrival}`,
         );
@@ -328,8 +359,10 @@ export class DeliveryMap {
       });
     }
     this.highlight(this.highlighted());
-    if (!this.fitted) {
+    const shown = rounds.map((round) => round.key).join(' ');
+    if (this.fittedOn !== shown) {
       this.fit(rounds);
+      this.fittedOn = shown;
     }
   }
 
@@ -371,6 +404,5 @@ export class DeliveryMap {
       }
     }
     map.fitBounds(bounds, { padding: FIT_PADDING, duration: 0 });
-    this.fitted = true;
   }
 }

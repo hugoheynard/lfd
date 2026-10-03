@@ -29,8 +29,9 @@ app-delivery-map {
 
 .delivery-map__legend {
   position: absolute;
+  /* En haut à gauche : en bas, elle recouvrait le tracé et l'attribution. */
   inset-inline-start: var(--fold-space-sm);
-  inset-block-end: var(--fold-space-xl);
+  inset-block-start: var(--fold-space-sm);
   z-index: 2;
   display: grid;
   gap: var(--fold-space-xs);
@@ -78,6 +79,10 @@ app-delivery-map {
   box-shadow:
     0 0 0 3px var(--fold-color-alert),
     var(--fold-shadow-sm);
+}
+
+.delivery-map__pin--muted {
+  opacity: 0.55;
 }
 
 .delivery-map__pin--highlighted {

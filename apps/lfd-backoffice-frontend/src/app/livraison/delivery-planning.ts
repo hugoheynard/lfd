@@ -11,7 +11,6 @@ import type {
 } from '@lfd/contracts';
 
 import type { ComposedDay } from './delivery-rounds';
-import { timeLabel } from './run-sheet';
 
 /**
  * Les dérivations pures de l'écran « Planifier »
@@ -25,11 +24,6 @@ import { timeLabel } from './run-sheet';
  * Type-only sur le contrat, comme `delivery-routing.ts` : une valeur importée
  * de `@lfd/contracts` tirerait zod dans le paquet de la page.
  */
-
-const MINUTES_PER_HOUR = 60;
-
-/** En deçà, attendre l'ouverture ne se signale pas : c'est le temps de se garer. */
-export const WAIT_FLAG_MINUTES = 20;
 
 /** Pourquoi une tournée ne se glisse pas (I6) : ni vers elle, ni hors d'elle. */
 export type PlannedLock = 'departed' | 'loaded';
@@ -75,37 +69,6 @@ export interface PlannedRound {
   readonly timing: PlannedTiming | null;
   readonly geometry: readonly (readonly [number, number])[] | null;
   readonly stops: readonly PlannedStop[];
-}
-
-/**
- * **Le titre d'une colonne** (lot 7 ter, L7t-C3) : une camionnette qui
- * apparaît deux fois doit dire pourquoi. « Camionnette 1 · chargée » (ou
- * « · partie ») pour une tournée gardée verrouillée ; « Camionnette 1 · 2ᵉ
- * passage · départ 8 h 05 » à partir du second passage — l'heure seulement
- * quand elle est chronométrée ; « · à ouvrir » pour une tournée neuve.
- */
-export function plannedRoundTitle(
-  round: Pick<PlannedRound, 'vehicleName' | 'passage' | 'roundId' | 'lock' | 'timing'>,
-): string {
-  const parts = [round.vehicleName];
-  if (round.passage > 1) {
-    parts.push(`${String(round.passage)}ᵉ passage`);
-    if (round.timing !== null) {
-      parts.push(`départ ${timeLabel(round.timing.departureTime)}`);
-    }
-  }
-  if (round.lock !== null) {
-    parts.push(round.lock === 'departed' ? 'partie' : 'chargée');
-  } else if (round.roundId === null) {
-    parts.push('à ouvrir');
-  }
-  return parts.join(' · ');
-}
-
-/** Une place dans la composition : la colonne, et le rang dans la colonne. */
-export interface PlanSlot {
-  readonly key: string;
-  readonly index: number;
 }
 
 function keyOf(
@@ -202,39 +165,38 @@ export function planOf(
 }
 
 /**
- * La composition après avoir glissé l'arrêt de `from` vers `to` — `null` si
- * le geste ne change rien ou touche une tournée verrouillée (I6). Les deux
- * colonnes touchées perdent leurs heures et leur tracé : ils ne valent plus
- * que pour l'ancienne composition, et l'écran ne ment pas en attendant.
+ * La composition après un geste : chaque colonne nommée dans `lists` prend ces
+ * commandes, dans cet ordre ; les autres ne bougent pas. `null` si une colonne
+ * nommée est verrouillée (I6), n'est pas un véhicule connu, ou si une commande
+ * n'a pas d'arrêt connu dans `stops`.
  *
- * `to.index` est le rang voulu APRÈS le retrait de l'arrêt de sa place.
+ * Les colonnes touchées perdent leurs heures et leur tracé : ils ne valent
+ * plus que pour l'ancienne composition, et l'écran ne ment pas en attendant.
  */
-export function moveStop(
+export function planWithLists(
   rounds: readonly PlannedRound[],
-  from: PlanSlot,
-  to: PlanSlot,
+  lists: Readonly<Record<string, readonly string[]>>,
+  stops: ReadonlyMap<string, PlannedStop>,
 ): readonly PlannedRound[] | null {
-  const source = rounds.find((round) => round.key === from.key);
-  const target = rounds.find((round) => round.key === to.key);
-  const moving = source?.stops[from.index];
-  if (source === undefined || target === undefined || moving === undefined) {
+  const touched = rounds.filter((round) => lists[round.key] !== undefined);
+  if (touched.some((round) => round.lock !== null || round.vehicleId === '')) {
     return null;
   }
-  if (source.lock !== null || target.lock !== null || target.vehicleId === '') {
-    return null;
-  }
-  const remaining = source.stops.filter((_, index) => index !== from.index);
-  const base = source.key === target.key ? remaining : target.stops;
-  const at = Math.max(0, Math.min(to.index, base.length));
-  if (source.key === target.key && at === from.index) {
-    return null;
-  }
-  const inserted = [...base.slice(0, at), { ...moving, arrival: null }, ...base.slice(at)];
-  return rounds.map((round) => {
-    if (round.key === target.key) {
-      return stale(round, inserted);
+  const next = new Map<string, readonly PlannedStop[]>();
+  for (const round of touched) {
+    const placed: PlannedStop[] = [];
+    for (const orderId of lists[round.key] ?? []) {
+      const stop = stops.get(orderId);
+      if (stop === undefined) {
+        return null;
+      }
+      placed.push(stop);
     }
-    return round.key === source.key ? stale(round, remaining) : round;
+    next.set(round.key, placed);
+  }
+  return rounds.map((round) => {
+    const placed = next.get(round.key);
+    return placed === undefined ? round : stale(round, placed);
   });
 }
 
@@ -337,64 +299,12 @@ export function applyPayloadOfPlan(
   };
 }
 
-function minutesOf(time: string): number | null {
-  const match = /^(\d{1,2}):(\d{2})/u.exec(time);
-  return match === null ? null : Number(match[1]) * MINUTES_PER_HOUR + Number(match[2]);
-}
-
-/** Un problème écrit sur la ligne, et son ton. */
-export interface StopFlag {
-  readonly label: string;
-  readonly variant: 'alert' | 'warning' | 'neutral';
-}
-
-/** « 56 min », « 1 h 05 ». */
-function waitLabel(minutes: number): string {
-  if (minutes < MINUTES_PER_HOUR) {
-    return `${String(minutes)} min`;
-  }
-  const rest = minutes % MINUTES_PER_HOUR;
-  return `${String(Math.floor(minutes / MINUTES_PER_HOUR))} h ${String(rest).padStart(2, '0')}`;
-}
-
-/**
- * Ce qui demande l'attention, écrit SUR la ligne (L10b-C1) : arriver après
- * son créneau, attendre l'ouverture (au-delà de {@link WAIT_FLAG_MINUTES}),
- * une commande pas encore prête, la signature, la procédure.
- */
-export function stopFlags(stop: PlannedStop): readonly StopFlag[] {
-  const flags: StopFlag[] = [];
-  if (stop.windowMissed) {
-    flags.push({ label: 'Arrive après son créneau', variant: 'alert' });
-  }
-  const arrival = stop.arrival === null ? null : minutesOf(stop.arrival);
-  const start = stop.window?.start ?? null;
-  const opening = start === null ? null : minutesOf(start);
-  if (arrival !== null && opening !== null && opening - arrival >= WAIT_FLAG_MINUTES) {
-    flags.push({ label: `Attend ${waitLabel(opening - arrival)} l’ouverture`, variant: 'warning' });
-  }
-  if (stop.sheet?.state === 'expected') {
-    flags.push({ label: 'Pas encore prête', variant: 'warning' });
-  }
-  if (stop.sheet?.signatureRequired === true) {
-    flags.push({ label: 'Signature exigée', variant: 'neutral' });
-  }
-  const steps = stop.sheet?.addressBook?.procedure.length ?? 0;
-  if (steps > 0) {
-    flags.push({
-      label: steps === 1 ? 'Procédure en 1 étape' : `Procédure en ${String(steps)} étapes`,
-      variant: 'neutral',
-    });
-  }
-  return flags;
-}
-
 /**
  * Le nom d'un arrêt : le LIBELLÉ DE L'ADRESSE livrée (« Le Chalet »), parce
  * qu'un client peut être livré à plusieurs endroits et que c'est l'endroit
  * qu'on cherche ; sinon la raison sociale ; sinon la référence seule.
  */
-export function stopNameOf(stop: PlannedStop): string {
+export function stopNameOf(stop: Pick<PlannedStop, 'reference' | 'sheet'>): string {
   if (stop.sheet === null) {
     return stop.reference;
   }
@@ -402,26 +312,8 @@ export function stopNameOf(stop: PlannedStop): string {
   return label === '' ? stop.sheet.customerLabel : label;
 }
 
-/** La société, en second, quand elle diffère du nom affiché ; `null` sinon. */
-export function stopCompanyOf(stop: PlannedStop): string | null {
-  if (stop.sheet === null) {
-    return null;
-  }
-  const company = stop.sheet.tradeName ?? stop.sheet.customerLabel;
-  return company === stopNameOf(stop) ? null : company;
-}
-
-/** « 3 rue des Lilas, Paris », ou `null` sans adresse. */
-export function stopPlaceOf(stop: PlannedStop): string | null {
-  const address = stop.sheet?.address;
-  if (address === null || address === undefined) {
-    return null;
-  }
-  return [address.ligne1, address.ville].filter((part) => part.trim() !== '').join(', ');
-}
-
 /** Le point de l'arrêt, lu dans le carnet d'adresses ; `null` : pas de repère. */
-export function stopPointOf(stop: PlannedStop): GpsPoint | null {
+export function stopPointOf(stop: Pick<PlannedStop, 'sheet'>): GpsPoint | null {
   return stop.sheet?.addressBook?.gps ?? null;
 }
 
@@ -467,10 +359,13 @@ export function roundColor(rank: number, count: number): string {
   return `oklch(${String(ROUND_LIGHTNESS)} ${String(ROUND_CHROMA)} ${hue.toFixed(1)})`;
 }
 
-/** La couleur d'une colonne : le rang de son véhicule parmi les véhicules du jour. */
-export function colorOf(rounds: readonly PlannedRound[], key: string): string {
-  const vehicles = [...new Set(rounds.map((round) => round.vehicleName))];
-  const round = rounds.find((candidate) => candidate.key === key);
-  const rank = round === undefined ? 0 : vehicles.indexOf(round.vehicleName);
-  return roundColor(rank, vehicles.length);
+/**
+ * La couleur de chaque véhicule : son rang dans `vehicleIds` (sans doublon),
+ * sur la roue de {@link roundColor}. Le même véhicule garde sa couleur tant
+ * que la liste ne change pas — d'un onglet à l'autre, de la composition à
+ * l'aperçu.
+ */
+export function vehicleColors(vehicleIds: readonly string[]): ReadonlyMap<string, string> {
+  const unique = [...new Set(vehicleIds)];
+  return new Map(unique.map((id, rank) => [id, roundColor(rank, unique.length)]));
 }

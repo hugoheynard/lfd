@@ -1,0 +1,296 @@
+<div class="board" cdkDropListGroup data-board>
+  <!-- ─── À répartir ─────────────────────────────────────────── -->
+  <section
+    class="pool"
+    aria-label="À répartir"
+    cdkDropList
+    cdkDropListElementContainer=".pool-list"
+    [cdkDropListData]="poolKey"
+    [cdkDropListSortingDisabled]="true"
+    (cdkDropListDropped)="dropOnPool($event)"
+    data-unassigned
+  >
+    <div class="pool-head">
+      <fold-element-title variant="title" title="À répartir" [subtitle]="poolSubtitle()">
+        @if (pool().length > 0) {
+          <fold-badge
+            titleAction
+            radius="square"
+            variant="warning"
+            [content]="pool().length + ' à répartir'"
+            data-pool-count
+          />
+        } @else {
+          <fold-badge titleAction radius="square" variant="success" content="✓" data-pool-count />
+        }
+      </fold-element-title>
+    </div>
+    <div class="pool-list" role="list">
+      <div class="remove-hint" aria-hidden="true">Déposer ici pour retirer de la tournée</div>
+      @for (order of pool(); track order.orderId; let index = $index) {
+        <app-order-card
+          cdkDrag
+          cdkDragPreviewContainer="parent"
+          [cdkDragData]="order.orderId"
+          [cdkDragDisabled]="!canWrite() || busy()"
+          [title]="titleOf(order)"
+          [meta]="metaOf(order)"
+          [window]="windowOf(order)"
+          [ariaLabel]="ariaOf(order)"
+          [handle]="canWrite()"
+          [edge]="order.broughtBackAt === null ? 'none' : 'warning'"
+          [tags]="tagsOf(order)"
+          (cdkDragStarted)="dragging.set(true)"
+          (cdkDragEnded)="dragging.set(false)"
+          data-order
+        >
+          <div *cdkDragPlaceholder class="drop-line"></div>
+          @if (canWrite() && openRounds().length > 0) {
+            <div class="quick">
+              <span class="quick-label">Mettre dans</span>
+              @for (round of openRounds(); track round.key) {
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  [disabled]="busy()"
+                  (click)="put(order, index, round)"
+                  data-assign
+                >
+                  <span
+                    class="swatch"
+                    aria-hidden="true"
+                    [style.background]="colorOf(round.vehicleId)"
+                  ></span>
+                  {{ shortRoundLabel(round) }}
+                </button>
+              }
+            </div>
+          }
+          @if (needsGps(order) && canOpenCarnet(order)) {
+            <fold-link (clicked)="openCarnet(order)" data-company-link>
+              Compléter le GPS dans le carnet
+            </fold-link>
+          }
+        </app-order-card>
+      } @empty {
+        <fold-empty-state
+          title="Tout est réparti"
+          subtitle="Aucune commande ne partira oubliée."
+          data-pool-empty
+        >
+          <fold-icon empty-icon name="check-circle" />
+        </fold-empty-state>
+      }
+    </div>
+  </section>
+
+  <!-- ─── Les tournées ───────────────────────────────────────── -->
+  <section class="center" aria-label="Tournées">
+    <div class="tabs" role="tablist" aria-label="Véhicules">
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.active]="vehicleTab() === null"
+        [attr.aria-selected]="vehicleTab() === null"
+        (click)="pickTab('all')"
+        data-tab="all"
+      >
+        <span class="tab-label">Toutes</span>
+        <span class="tab-count">{{ allCount() }}</span>
+        @if (allAlerts() > 0) {
+          <fold-badge variant="alert" [content]="'' + allAlerts()" data-tab-alerts />
+        }
+      </button>
+      @for (tab of tabs(); track tab.vehicleId) {
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          cdkDropList
+          [cdkDropListData]="tabPrefix + tab.vehicleId"
+          [cdkDropListSortingDisabled]="true"
+          [class.active]="vehicleTab()?.vehicleId === tab.vehicleId"
+          [class.over]="tabOver() === tab.vehicleId"
+          [attr.aria-selected]="vehicleTab()?.vehicleId === tab.vehicleId"
+          [style.--vehicle-color]="colorOf(tab.vehicleId)"
+          (click)="pickTab(tab.vehicleId)"
+          (cdkDropListEntered)="tabOver.set(tab.vehicleId)"
+          (cdkDropListExited)="tabOver.set(null)"
+          (cdkDropListDropped)="dropOnTab($event, tab.vehicleId)"
+          [attr.data-tab]="tab.vehicleId"
+        >
+          <span class="swatch" aria-hidden="true"></span>
+          <span class="tab-label">{{ tab.label }}</span>
+          <span class="tab-count">{{ tab.count }}</span>
+          @if (tab.alerts > 0) {
+            <fold-badge variant="alert" [content]="'' + tab.alerts" data-tab-alerts />
+          }
+        </button>
+      }
+    </div>
+
+    @if (dragging() && vehicleTab() !== null) {
+      <div class="drag-hint" role="status" data-tab-hint>
+        Déposez sur un onglet pour l’envoyer dans ce véhicule.
+      </div>
+    }
+
+    <div class="lanes" role="tabpanel">
+      @switch (status()) {
+        @case ('loading') {
+          <fold-loading message="Lecture des tournées…" />
+        }
+        @case ('error') {
+          <fold-empty-state
+            tone="alert"
+            title="Tournées illisibles"
+            subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+            data-compose-error
+          >
+            <button foldButton emphasis="outline" (click)="retry.emit()">Réessayer</button>
+          </fold-empty-state>
+        }
+        @case ('ready') {
+          @for (group of visibleGroups(); track group.vehicleId) {
+            <div
+              class="vehicle"
+              role="group"
+              [style.--vehicle-color]="colorOf(group.vehicleId)"
+              [attr.aria-label]="group.vehicleName + ', ' + passageCountLabel(group.rounds.length)"
+              data-vehicle-group
+            >
+              @if (vehicleTab() === null) {
+                <div class="vehicle-head">
+                  <span class="swatch big" aria-hidden="true"></span>
+                  <span class="vehicle-name">{{ group.vehicleName }}</span>
+                  <fold-badge
+                    radius="square"
+                    [variant]="group.rounds.length > 1 ? 'accent' : 'neutral'"
+                    [content]="passageCountLabel(group.rounds.length)"
+                    data-passages
+                  />
+                  @if (loadOf(group.vehicleId); as load) {
+                    <span class="vehicle-load" data-load>{{ load }}</span>
+                  }
+                </div>
+              }
+              <div class="passages">
+                @for (round of group.rounds; track round.key; let index = $index) {
+                  @if (index > 0) {
+                    <div class="reload" aria-hidden="true">
+                      <span>→</span>
+                      <span class="reload-text">retour Labo · recharge</span>
+                    </div>
+                  }
+                  <app-round-column
+                    [round]="round"
+                    [color]="colorOf(round.vehicleId)"
+                    [title]="columnTitle(group.rounds, index)"
+                    [passageNote]="passageNote(group.rounds, index)"
+                    [canWrite]="canWrite()"
+                    [busy]="busy()"
+                    [preview]="preview()"
+                    [drivers]="drivers()"
+                    [highlighted]="highlighted()"
+                    [incidents]="incidents()"
+                    [incidentPhoto]="incidentPhoto()"
+                    (dropped)="dropOnRound($event)"
+                    (shifted)="shifted.emit({ key: round.key, value: $event })"
+                    (removed)="removed.emit({ key: round.key, value: $event })"
+                    (sorted)="sorted.emit(round.key)"
+                    (driverAssigned)="driverAssigned.emit({ key: round.key, value: $event })"
+                    (driverRemoved)="driverRemoved.emit(round.key)"
+                    (returned)="returned.emit(round.key)"
+                    (printed)="printed.emit(round.key)"
+                    (hovered)="highlighted.set($event)"
+                    (dragging)="dragging.set($event)"
+                  />
+                }
+              </div>
+            </div>
+          } @empty {
+            <fold-empty-state
+              title="Aucune tournée ce jour-là"
+              [subtitle]="
+                canWrite()
+                  ? 'Ouvrez une tournée pour un véhicule, puis répartissez les commandes.'
+                  : 'Personne n’a encore composé les tournées de ce jour.'
+              "
+              data-no-round
+            >
+              <fold-icon empty-icon name="truck" />
+            </fold-empty-state>
+          }
+        }
+      }
+    </div>
+  </section>
+
+  <!-- ─── La carte ───────────────────────────────────────────── -->
+  <aside class="map" [attr.aria-label]="'Carte · ' + mapTitle()" data-map-panel>
+    <div class="map-head">
+      @if (vehicleTab(); as vehicle) {
+        <span
+          class="swatch big"
+          aria-hidden="true"
+          [style.background]="colorOf(vehicle.vehicleId)"
+        ></span>
+      }
+      <div class="map-titles">
+        <span class="map-title" data-map-title>{{ mapTitle() }}</span>
+        <span class="map-sub">{{ mapSubtitle() }}</span>
+      </div>
+    </div>
+    <fold-view-toggle
+      size="sm"
+      ariaLabel="Afficher"
+      activeStyle="solid"
+      [options]="scopeOptions"
+      [value]="scope()"
+      (valueChange)="pickScope($event)"
+      data-map-scope
+    />
+    <div class="map-canvas">
+      @if (departure(); as departure) {
+        <app-delivery-map
+          [rounds]="mapRounds()"
+          [departure]="departure"
+          [colors]="colors()"
+          [muted]="mapMuted()"
+          [dashed]="mapDashed()"
+          [highlighted]="highlighted()"
+          (hovered)="highlighted.set($event)"
+        />
+      } @else {
+        <fold-empty-state
+          title="Pas de carte"
+          subtitle="Le point de départ n’est pas situé : réglez-le dans le départ des tournées."
+          data-map-no-departure
+        >
+          <fold-icon empty-icon name="map-pin" />
+        </fold-empty-state>
+      }
+    </div>
+    <ul class="map-rows" data-map-rows>
+      @for (row of mapRows(); track row.orderId) {
+        <li
+          class="map-row"
+          [class.hot]="highlighted() === row.orderId"
+          [class.clash]="row.clash"
+          (mouseenter)="highlighted.set(row.orderId)"
+          (mouseleave)="highlighted.set(null)"
+          data-map-row
+        >
+          <span class="map-num" [style.background]="row.color">{{ row.number }}</span>
+          <span class="map-row-title">{{ row.title }}</span>
+          <span class="map-row-window">{{ row.window }}</span>
+        </li>
+      }
+    </ul>
+    @if (mapNote() !== '') {
+      <span class="map-note" data-map-note>{{ mapNote() }}</span>
+    }
+  </aside>
+</div>
