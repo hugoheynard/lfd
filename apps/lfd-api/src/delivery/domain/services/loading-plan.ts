@@ -1,7 +1,7 @@
 import type { BinHalf } from "../value-objects/bin-declaration.js";
 import { BIN_GAP_DEFAULT_CM } from "../value-objects/bin-gap.js";
 import type { CargoFloor } from "../value-objects/cargo-floor.js";
-import { placeStacks, type StackPlacement } from "./floor/place-stacks.js";
+import { FloorPlacer, type StackPlacement } from "./floor/place-stacks.js";
 import {
   type LoadingVolume,
   loadingVolumeOf,
@@ -92,14 +92,23 @@ interface Placed {
  *   du PREMIER des deux arrêts, en dernier : en haut de sa pile (v2-4). Ses
  *   deux moitiés y sont listées, côte à côte ; c'est UN bac physique.
  * - Piles : chaque bac physique va sur la dernière pile ouverte de son type si
- *   elle n'a pas atteint `maxStack`, sinon il en ouvre une. Une pile porte
- *   donc plusieurs arrêts : le suivant chargé — livré avant — est au-dessus.
+ *   elle n'a pas atteint `maxStack` ET que sa rangée est encore la rangée
+ *   ouverte, sinon il en ouvre une. Une pile porte donc plusieurs arrêts : le
+ *   suivant chargé — livré avant — est au-dessus.
+ * - Une pile se pose au sol dès qu'elle s'ouvre (G-D4 ter, 2026-10-03) : sans
+ *   ça, le premier arrêt de la tournée finissait sur une pile du FOND, ouverte
+ *   par le dernier arrêt, et l'arrêt se retrouvait coupé entre le fond et les
+ *   portes (constaté sur le semis, Hugo).
  *
  * @param stops les arrêts vivants dans l'ordre de passage, leurs bacs non annulés.
  */
 export function planLoading(stops: readonly PlanStop[], vehicle: PlanVehicle): LoadingPlan {
   const buckets = placeBins(stops);
-  const stacker = new Stacker();
+  const placer =
+    vehicle.floor === null
+      ? null
+      : new FloorPlacer(vehicle.floor, BIN_GAP_DEFAULT_CM, vehicle.refrigeratedLiters !== null);
+  const stacker = new Stacker(placer);
   const steps: LoadingStep[] = [];
   for (let rank = stops.length - 1; rank >= 0; rank -= 1) {
     const stop = stops[rank];
@@ -115,7 +124,10 @@ export function planLoading(stops: readonly PlanStop[], vehicle: PlanVehicle): L
   }
   const units = stacker.units();
   const volume = loadingVolumeOf(units, vehicle);
-  const stacks = placedStacks(stacker.stacks(), vehicle);
+  const placements = placer?.placements() ?? null;
+  const stacks: readonly LoadingStack[] = stacker
+    .stacks()
+    .map((stack) => ({ ...stack, placement: placements?.get(stack.stackIndex) ?? null }));
   const offFloor = stacks.filter((stack) => stack.placement?.kind === "off_floor");
   const floorOver = floorOverWarning(vehicle, offFloor.length, [
     ...new Set(offFloor.flatMap((stack) => stack.stopPositions)),
@@ -130,29 +142,6 @@ export function planLoading(stops: readonly PlanStop[], vehicle: PlanVehicle): L
       ...(floorOver === null ? [] : [floorOver]),
     ],
   };
-}
-
-/**
- * Les piles, chacune à sa place sur le plancher (G-D4) — dans l'ordre
- * d'ouverture, qui est celui du chargement. Le jeu est celui du plan par
- * défaut : aucun réglage ne le porte encore (G-Q2, décision par défaut du
- * 2026-10-02).
- */
-function placedStacks(
-  stacks: readonly Omit<LoadingStack, "placement">[],
-  vehicle: PlanVehicle,
-): readonly LoadingStack[] {
-  const { floor } = vehicle;
-  if (floor === null) {
-    return stacks.map((stack) => ({ ...stack, placement: null }));
-  }
-  const placements = placeStacks(
-    floor,
-    stacks.map((stack) => ({ stackIndex: stack.stackIndex, ...stack.binType })),
-    BIN_GAP_DEFAULT_CM,
-    vehicle.refrigeratedLiters !== null,
-  );
-  return stacks.map((stack) => ({ ...stack, placement: placements.get(stack.stackIndex) ?? null }));
 }
 
 /** À quel rang de passage chaque bac est chargé. */
@@ -195,6 +184,10 @@ interface OpenStack {
 /** Pose les bacs physiques en piles, dans l'ordre où on les charge. */
 class Stacker {
   private readonly all: OpenStack[] = [];
+
+  /** `null` : un véhicule sans cotes n'a pas de rangées, aucune pile ne ferme. */
+  constructor(private readonly placer: FloorPlacer | null) {}
+
   private readonly lastOfType = new Map<string, OpenStack>();
   private readonly placed = new Map<string, { stack: OpenStack; unit: PlanUnit }>();
 
@@ -217,7 +210,11 @@ class Stacker {
 
   private stackFor(binType: PlanBinType): OpenStack {
     const last = this.lastOfType.get(binType.id);
-    if (last !== undefined && last.height < binType.maxStack) {
+    if (
+      last !== undefined &&
+      last.height < binType.maxStack &&
+      (this.placer?.canGrow(last.stackIndex) ?? true)
+    ) {
       return last;
     }
     const stack: OpenStack = {
@@ -228,6 +225,7 @@ class Stacker {
     };
     this.all.push(stack);
     this.lastOfType.set(binType.id, stack);
+    this.placer?.place({ stackIndex: stack.stackIndex, ...binType });
     return stack;
   }
 

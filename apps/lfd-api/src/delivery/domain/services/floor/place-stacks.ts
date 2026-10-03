@@ -73,25 +73,64 @@ export function placeStacks(
   gapCm: number,
   refrigerated: boolean,
 ): ReadonlyMap<number, StackPlacement> {
-  const placements = new Map<number, StackPlacement>();
-  const rows: OpenRow[] = [];
-  let blocked = false;
+  const placer = new FloorPlacer(floor, gapCm, refrigerated);
   for (const stack of stacks) {
-    if (stack.isotherm && refrigerated) {
-      placements.set(stack.stackIndex, { kind: "refrigerated" });
-      continue;
-    }
-    blocked = blocked || !put(floor, rows, printsOf(stack, gapCm));
-    if (blocked) {
-      placements.set(stack.stackIndex, { kind: "off_floor" });
-    }
+    placer.place(stack);
   }
-  for (const row of rows) {
-    for (const [index, placement] of finalize(floor, row)) {
-      placements.set(index, placement);
+  return placer.placements();
+}
+
+/**
+ * **La même stratégie B, pile après pile**, pour qui empile en même temps
+ * qu'il pose : le plan de chargement demande, avant de monter un bac sur une
+ * pile déjà ouverte, si sa rangée est encore la rangée ouverte (G-D4 ter).
+ */
+export class FloorPlacer {
+  private readonly rows: OpenRow[] = [];
+  private readonly rowOf = new Map<number, number>();
+  private readonly elsewhere = new Map<number, StackPlacement>();
+  private blocked = false;
+
+  constructor(
+    private readonly floor: CargoFloor,
+    private readonly gapCm: number,
+    private readonly refrigerated: boolean,
+  ) {}
+
+  /** Pose une pile neuve : dans la caisse froide, au sol, ou hors plancher. */
+  place(stack: StackToPlace): void {
+    if (stack.isotherm && this.refrigerated) {
+      this.elsewhere.set(stack.stackIndex, { kind: "refrigerated" });
+      return;
     }
+    this.blocked = this.blocked || !put(this.floor, this.rows, printsOf(stack, this.gapCm));
+    if (this.blocked) {
+      this.elsewhere.set(stack.stackIndex, { kind: "off_floor" });
+      return;
+    }
+    this.rowOf.set(stack.stackIndex, this.rows.length);
   }
-  return placements;
+
+  /**
+   * Une pile peut-elle encore monter ? Au sol, seulement tant que sa rangée
+   * est la rangée ouverte : une rangée fermée a une pile chargée APRÈS elle
+   * devant elle, et un bac posé dessus serait livré avant ce qui le cache.
+   * La caisse froide et le hors-plancher ne ferment pas.
+   */
+  canGrow(stackIndex: number): boolean {
+    const row = this.rowOf.get(stackIndex);
+    return row === undefined || row === this.rows.length;
+  }
+
+  placements(): ReadonlyMap<number, StackPlacement> {
+    const placements = new Map<number, StackPlacement>(this.elsewhere);
+    for (const row of this.rows) {
+      for (const [index, placement] of finalize(this.floor, row)) {
+        placements.set(index, placement);
+      }
+    }
+    return placements;
+  }
 }
 
 /** Le sens qui laisse le plus de largeur d'abord ; à égalité, dans la longueur. */

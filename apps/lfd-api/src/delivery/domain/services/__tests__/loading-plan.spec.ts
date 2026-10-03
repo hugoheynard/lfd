@@ -289,6 +289,34 @@ describe("le plan de chargement — les piles au sol (G5, G-D4)", () => {
     expect(plan.warnings[0]?.message).toContain("1 pile ne tient pas au sol de « Vélo » (arrêt 1)");
   });
 
+  /**
+   * Régression (2026-10-03) : le premier arrêt montait sur une pile de son type
+   * ouverte par le DERNIER arrêt, au fond, alors qu'une rangée plus proche des
+   * portes était déjà ouverte — l'arrêt livré en premier finissait au fond.
+   */
+  it("ne monte pas sur une pile d'une rangée déjà fermée : le premier arrêt reste près des portes", () => {
+    const cold = (id: string): PlanBin => bin(id, { binType: BAC_FROID });
+    const plan = planLoading(
+      [
+        stop("o1", 1, [bin("first_m")]),
+        // Cinq isothermes, sans caisse froide : deux piles qui ouvrent la rangée 2.
+        stop("o2", 2, ["c1", "c2", "c3", "c4", "c5"].map(cold)),
+        stop("o3", 3, [bin("last_m")]),
+      ],
+      measured(200),
+    );
+
+    const rowOf = (code: string): number | undefined => {
+      const stackIndex = plan.steps
+        .flatMap((step) => step.bins)
+        .find((planned) => planned.bin.code === code)?.stackIndex;
+      const placement = plan.stacks.find((stack) => stack.stackIndex === stackIndex)?.placement;
+      return placement?.kind === "floor" ? placement.row : undefined;
+    };
+    expect(rowOf("LAST_M")).toBe(1);
+    expect(rowOf("FIRST_M")).toBe(2);
+  });
+
   it("sans plancher connu, aucune position ni `floor_over`", () => {
     const plan = planLoading(fullStops(2), ROOMY);
 
