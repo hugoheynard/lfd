@@ -1,5 +1,5 @@
 <div class="floor-view" data-plan-floor>
-  <svg class="plan" [attr.viewBox]="viewBox()" role="img" [attr.aria-label]="planLabel()">
+  <svg class="plan" [attr.viewBox]="viewBox()" role="group" [attr.aria-label]="planLabel()">
     <rect
       class="floor"
       [attr.x]="padding"
@@ -32,8 +32,50 @@
         [attr.height]="arches.protrusionCm"
       />
     }
+    @for (row of rows(); track row.row) {
+      <g
+        class="row-target"
+        [class.row-target--selected]="selection()?.row === row.row"
+        role="button"
+        tabindex="0"
+        [attr.aria-label]="rowAriaLabel(row)"
+        [attr.aria-pressed]="selection()?.row === row.row"
+        data-floor-row
+        [attr.data-row]="row.row"
+        (click)="selectRow(row.row)"
+        (keydown)="onKey($event, selectRow.bind(this, row.row))"
+      >
+        <rect
+          class="row"
+          [attr.x]="padding + row.x"
+          [attr.y]="padding"
+          [attr.width]="row.depth"
+          [attr.height]="floor().widthCm"
+        />
+        <text
+          class="row-label"
+          text-anchor="middle"
+          [attr.x]="padding + row.x + row.depth / 2"
+          [attr.y]="padding - 0.5"
+          font-size="3.5"
+        >
+          {{ row.label }}
+        </text>
+      </g>
+    }
     @for (shape of shapes(); track shape.stackIndex) {
-      <g data-floor-stack [attr.data-loaded]="shape.loaded ? '' : null">
+      <g
+        class="stack-target"
+        role="button"
+        tabindex="0"
+        [attr.aria-label]="shape.title"
+        [attr.aria-pressed]="selection()?.stack === shape.stackIndex"
+        data-floor-stack
+        [attr.data-stack]="shape.stackIndex"
+        [attr.data-loaded]="shape.loaded ? '' : null"
+        (click)="selectStack(shape.stackIndex)"
+        (keydown)="onKey($event, selectStack.bind(this, shape.stackIndex))"
+      >
         <title>{{ shape.title }}</title>
         @for (band of shape.bands; track band.stopPosition) {
           <rect
@@ -48,6 +90,7 @@
         <rect
           class="stack"
           [class.stack--loaded]="shape.loaded"
+          [class.stack--selected]="selection()?.stack === shape.stackIndex"
           rx="1.5"
           [attr.x]="padding + shape.x"
           [attr.y]="padding + shape.y"
@@ -68,8 +111,35 @@
     }
   </svg>
 
+  <div class="rows" role="group" aria-label="Rangées, du fond vers les portes">
+    @for (row of rows(); track row.row) {
+      <button
+        foldButton
+        [emphasis]="selection()?.row === row.row ? 'solid' : 'outline'"
+        [attr.aria-pressed]="selection()?.row === row.row"
+        data-row-button
+        (click)="selectRow(row.row)"
+      >
+        {{ row.label }}{{ row.row === 1 ? ' · le fond' : '' }} — {{ row.loadedCount }} /
+        {{ row.binCount }}{{ row.row === current() ? ' · à charger maintenant' : '' }}
+      </button>
+    }
+  </div>
+
+  @if (openRow(); as row) {
+    <app-loading-row-panel
+      [row]="row"
+      [rows]="rows()"
+      [current]="row.row === current()"
+      [selectedStack]="selection()?.stack ?? null"
+      [loader]="loader()"
+      [busy]="busy()"
+      (closed)="close()"
+    />
+  }
+
   <ul class="legend">
-    <li>Fond à gauche, portes à droite</li>
+    <li>Fond à gauche, portes à droite ; on charge la rangée 1 (le fond) d’abord</li>
     <li>Le numéro est celui de l’arrêt, de bas en haut de la pile ; ✓ = pile chargée</li>
     @for (stop of legend(); track stop.stopPosition) {
       <li data-floor-legend>

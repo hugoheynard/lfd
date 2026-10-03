@@ -81,4 +81,42 @@ describe('LoadingFloor', () => {
       'Hors plancher : pile 2 (arrêt 1)',
     );
   });
+
+  it('dessine les rangées, et un toucher sur une rangée ouvre « Quoi mettre ici »', () => {
+    const fixture = TestBed.createComponent(LoadingFloor);
+    fixture.componentRef.setInput('floor', FLOOR);
+    fixture.componentRef.setInput('stacks', STACKS);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+
+    const rows = element.querySelectorAll<SVGGElement>('[data-floor-row]');
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.getAttribute('role')).toBe('button');
+    expect(rows[0]?.getAttribute('aria-label')).toContain('Rangée 1 (le fond)');
+    expect(element.querySelector('[data-row-panel]')).toBeNull();
+
+    rows[0]?.dispatchEvent(new MouseEvent('click'));
+    fixture.detectChanges();
+    expect(rows[0]?.getAttribute('aria-pressed')).toBe('true');
+    expect(element.querySelector('[data-row-panel]')?.textContent).toContain('Rangée 1');
+
+    element.querySelector<HTMLButtonElement>('[data-row-close]')?.click();
+    fixture.detectChanges();
+    expect(element.querySelector('[data-row-panel]')).toBeNull();
+  });
+
+  it('ouvre la rangée d’une pile touchée au clavier, la pile mise en avant', () => {
+    const fixture = TestBed.createComponent(LoadingFloor);
+    fixture.componentRef.setInput('floor', FLOOR);
+    fixture.componentRef.setInput('stacks', STACKS);
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+
+    const stack = element.querySelector('[data-floor-stack]');
+    stack?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    fixture.detectChanges();
+    expect(stack?.getAttribute('aria-pressed')).toBe('true');
+    expect(stack?.querySelector('.stack--selected')).not.toBeNull();
+    expect(element.querySelector('[data-row-stack]')?.classList).toContain('rp-stack--selected');
+  });
 });

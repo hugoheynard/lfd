@@ -32,6 +32,7 @@ import {
   stepHeadline,
   volumeGauges,
 } from '../delivery-loading-plan';
+import type { BinLoader } from '../delivery-loading-rows';
 import { LoadingFloor } from '../loading-floor/loading-floor';
 import { LoadingGateway } from '../loading-gateway';
 
@@ -72,6 +73,10 @@ export class LoadingPlan {
 
   /** La vue du chargement : son id, sa version, et ses bacs déjà chargés. */
   readonly round = input.required<DeliveryLoadingRoundView>();
+  /** Le geste de chargement de l'écran, prêté au panneau d'une rangée ; `null` : lecture seule. */
+  readonly loader = input<BinLoader | null>(null);
+  /** Un geste est en vol sur l'écran. */
+  readonly busy = input(false);
 
   protected readonly state = signal<PlanState>({ status: 'loading' });
   private readonly reload = signal(0);

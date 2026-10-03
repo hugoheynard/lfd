@@ -46,4 +46,36 @@ describe('BinScanner', () => {
     expect(element.querySelector('[data-camera-denied]')).not.toBeNull();
     expect(element.querySelector('[data-camera-on]')).not.toBeNull();
   });
+
+  it('une seule caméra sur la page : allumer un lecteur éteint l’autre, et rend un flux arrivé trop tard', async () => {
+    const stopTrack = vi.fn();
+    type FakeStream = { readonly getTracks: () => readonly { readonly stop: () => void }[] };
+    const pending: ((stream: FakeStream) => void)[] = [];
+    const getUserMedia = vi.fn(() => new Promise<FakeStream>((resolve) => pending.push(resolve)));
+    vi.stubGlobal('navigator', { ...navigator, mediaDevices: { getUserMedia } });
+    TestBed.resetTestingModule();
+    const first = TestBed.createComponent(BinScanner);
+    const second = TestBed.createComponent(BinScanner);
+    first.detectChanges();
+    second.detectChanges();
+    const a = first.nativeElement as HTMLElement;
+    const b = second.nativeElement as HTMLElement;
+
+    a.querySelector<HTMLButtonElement>('button[data-camera-on]')?.click();
+    first.detectChanges();
+    expect(a.querySelector('[data-camera-off]')).not.toBeNull();
+
+    b.querySelector<HTMLButtonElement>('button[data-camera-on]')?.click();
+    await first.whenStable();
+    first.detectChanges();
+    second.detectChanges();
+    expect(b.querySelector('[data-camera-off]')).not.toBeNull();
+    expect(a.querySelector('[data-camera-off]')).toBeNull();
+    expect(a.querySelector('[data-camera-on]')).not.toBeNull();
+
+    // L'autorisation du premier arrive après coup : son flux est rendu aussitôt.
+    pending[0]?.({ getTracks: () => [{ stop: stopTrack }] });
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(stopTrack).toHaveBeenCalledOnce();
+  });
 });

@@ -33,6 +33,7 @@ import {
   stopStateLabel,
 } from '../delivery-loading';
 import { roundLabel } from '../delivery-rounds';
+import type { BinLoadAttempt, BinLoader } from '../delivery-loading-rows';
 import { LoadingGateway } from '../loading-gateway';
 import { LoadingPlan } from '../loading-plan/loading-plan';
 
@@ -167,34 +168,41 @@ export class LoadingRound {
   }
 
   /** Un QR lu par la caméra : c'est le geste. */
-  protected onScanned(raw: string): Promise<void> {
-    return this.loadFrom(raw);
+  protected async onScanned(raw: string): Promise<void> {
+    await this.loadFrom(raw);
   }
 
   /** Le code court tapé. */
-  protected loadTyped(): Promise<void> {
-    return this.loadFrom(this.typed());
+  protected async loadTyped(): Promise<void> {
+    await this.loadFrom(this.typed());
   }
 
-  private async loadFrom(raw: string): Promise<void> {
+  /** Le même geste, prêté au panneau d'une rangée du plancher. */
+  protected readonly loader: BinLoader = (raw) => this.loadFrom(raw);
+
+  private async loadFrom(raw: string): Promise<BinLoadAttempt> {
     const payload = scannedBin(raw);
     if (payload === null) {
       this.notice.set({ variant: 'warning', text: NOT_A_BIN });
-      return;
+      return { accepted: false, payload: null, message: NOT_A_BIN };
     }
     const roundId = this.roundId();
     const accepted = await this.write(
       () => this.gateway.load(roundId, payload),
       'Le bac n’a pas pu être chargé.',
     );
-    if (accepted) {
-      this.typed.set('');
-      const view = this.view();
-      this.notice.set({
-        variant: 'success',
-        text: view === null ? 'Bac chargé.' : loadedNotice(view, payload),
-      });
+    if (!accepted) {
+      return {
+        accepted,
+        payload,
+        message: this.notice()?.text ?? 'Un autre geste est en cours : réessayez.',
+      };
     }
+    this.typed.set('');
+    const view = this.view();
+    const text = view === null ? 'Bac chargé.' : loadedNotice(view, payload);
+    this.notice.set({ variant: 'success', text });
+    return { accepted, payload, message: text };
   }
 
   protected unload(binId: string): Promise<boolean> {

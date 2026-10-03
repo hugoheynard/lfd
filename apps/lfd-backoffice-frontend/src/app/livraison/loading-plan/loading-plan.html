@@ -87,6 +87,9 @@
                   [stacks]="plan.stacks"
                   [order]="plan.order"
                   [loadedStacks]="loadedStacks()"
+                  [loadedBins]="loaded()"
+                  [loader]="loader()"
+                  [busy]="busy()"
                 />
               } @else {
                 <p class="lp-line" data-plan-floor-unknown>

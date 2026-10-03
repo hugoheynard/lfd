@@ -110,3 +110,44 @@
   margin: 0;
   font-size: var(--fold-text-sm);
 }
+
+.row {
+  fill: transparent;
+  stroke: var(--fold-color-border);
+  stroke-width: 0.5;
+  stroke-dasharray: 2 2;
+}
+
+.row-label {
+  fill: var(--fold-color-text-muted);
+}
+
+.row-target,
+.stack-target {
+  cursor: pointer;
+  outline: none;
+}
+
+.row-target--selected .row {
+  fill: var(--fold-color-primary-surface);
+  stroke: var(--fold-color-primary);
+  stroke-width: 2;
+  stroke-dasharray: none;
+}
+
+.row-target:focus-visible .row,
+.stack-target:focus-visible .stack {
+  stroke: var(--fold-color-primary);
+  stroke-width: 3;
+}
+
+.stack--selected {
+  stroke: var(--fold-color-primary);
+  stroke-width: 5;
+}
+
+.rows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}

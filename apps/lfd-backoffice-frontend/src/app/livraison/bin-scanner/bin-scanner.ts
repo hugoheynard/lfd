@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  effect,
   type ElementRef,
   inject,
   input,
@@ -11,6 +12,7 @@ import {
 } from '@angular/core';
 import { FoldButtonComponent, FoldCalloutComponent, FoldLoadingStateComponent } from 'fold-ng';
 
+import { CameraLease } from '../camera-lease';
 import { readQrCode, scannerAvailable } from '../../handover-shop/scan-dialog/qr-reader';
 
 type Stage = 'off' | 'starting' | 'scanning' | 'denied';
@@ -62,8 +64,18 @@ export class BinScanner {
   private stream: MediaStream | null = null;
   private last: { readonly value: string; readonly at: number } | null = null;
 
+  private readonly lease = inject(CameraLease);
+  private readonly token = Symbol('bin-scanner');
+
   constructor() {
     inject(DestroyRef).onDestroy(() => this.stop());
+    // Un autre lecteur de la page s'est allumé : celui-ci s'éteint.
+    effect(() => {
+      const holder = this.lease.holder();
+      if (holder !== this.token && (this.stage() === 'starting' || this.stage() === 'scanning')) {
+        this.stop();
+      }
+    });
   }
 
   /** Cet appareil a-t-il une caméra que la page peut demander ? */
@@ -71,12 +83,18 @@ export class BinScanner {
     typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getUserMedia === 'function';
 
   protected async start(): Promise<void> {
+    this.lease.claim(this.token);
     this.stage.set('starting');
     try {
       // La caméra d'abord : refusée, le décodeur n'est jamais téléchargé.
       this.stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' },
       });
+      if (this.lease.holder() !== this.token) {
+        // Un autre lecteur a pris la caméra pendant l'autorisation : on rend ce flux.
+        this.stop();
+        return;
+      }
       const decode = await this.decoder();
       const element = this.video()?.nativeElement;
       if (element === undefined) {
@@ -100,6 +118,7 @@ export class BinScanner {
       track.stop();
     }
     this.stream = null;
+    this.lease.release(this.token);
     if (this.stage() !== 'denied') {
       this.stage.set('off');
     }

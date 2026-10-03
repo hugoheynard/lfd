@@ -121,7 +121,7 @@
           }
         </div>
 
-        <app-loading-plan [round]="view" />
+        <app-loading-plan [round]="view" [loader]="canLoad() ? loader : null" [busy]="busy()" />
 
         <fold-card data-missing>
           <div class="lrp-block">
