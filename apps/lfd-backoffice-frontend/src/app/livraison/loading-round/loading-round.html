@@ -131,9 +131,7 @@
               </fold-callout>
             }
 
-            @if (layout() === 'depot') {
-              <ng-container *ngTemplateOutlet="missingCard" />
-            }
+            <ng-container *ngTemplateOutlet="missingCard" />
           </div>
 
           <div class="lr-side">
@@ -240,24 +238,12 @@
                 subtitle="Aucun arrêt n’y est affecté : rien à charger."
               />
             }
-
-            @if (layout() === 'phone') {
-              <ng-container *ngTemplateOutlet="missingCard" />
-            }
           </div>
 
           <ng-template #missingCard>
             <fold-card data-missing>
               <div class="lr-block">
-                <fold-element-title
-                  variant="title"
-                  title="Ce qui manque encore"
-                  [subtitle]="
-                    missing().length === 0
-                      ? 'Tout est chargé.'
-                      : 'Ce véhicule ne part pas tant que ces arrêts ne sont pas chargés, ou retirés.'
-                  "
-                />
+                <fold-element-title variant="caps" title="Ce qui manque" />
                 @if (toRedoCount() > 0) {
                   <fold-callout variant="alert" data-to-redo>
                     {{ toRedoCount() === 1 ? 'Un arrêt porte' : toRedoCount() + ' arrêts portent' }}
@@ -266,14 +252,9 @@
                     arrêts ne sont pas remis côte à côte.
                   </fold-callout>
                 }
-                @for (line of missing(); track line.stopId) {
-                  @if (layout() === 'phone') {
-                    <p class="lr-missing" data-missing-stop>
-                      {{ line.reference }} · {{ line.customerLabel }} — {{ line.detail }}
-                    </p>
-                  }
-                }
-                @if (layout() === 'depot') {
+                @if (missingRows().length === 0) {
+                  <p class="lr-miss-none">Tout est chargé.</p>
+                } @else {
                   @for (row of missingRows(); track row.stopId) {
                     <div class="lr-miss" data-missing-row>
                       <span class="lr-miss-stop" [class]="'hue-a-' + row.hue">{{

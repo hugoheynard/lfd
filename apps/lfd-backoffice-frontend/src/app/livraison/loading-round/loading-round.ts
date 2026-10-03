@@ -32,7 +32,6 @@ import {
   binCountLabel,
   binKindLabel,
   hasBinToRedo,
-  missingStops,
   parisTimeOf,
   scannedBin,
 } from '../delivery-loading';
@@ -198,11 +197,7 @@ export class LoadingRound {
   );
   protected readonly canDepart = computed(() => this.canLoad() && this.departure() !== null);
 
-  protected readonly missing = computed(() => {
-    const view = this.view();
-    return view === null ? [] : missingStops(view);
-  });
-  /** « Ce qui manque » au dépôt, arrêt par arrêt (SPEC §7). */
+  /** « Ce qui manque », arrêt par arrêt (SPEC §7) — dépôt comme livreur. */
   protected readonly missingRows = computed(() => {
     const view = this.view();
     return view === null ? [] : missingByStop(view);

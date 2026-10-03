@@ -73,8 +73,10 @@
   gap: var(--fold-space-sm);
 }
 
-.lr-missing {
+.lr-miss-none {
   margin: 0;
+  color: var(--fold-color-success-text);
+  font-size: var(--fold-text-sm);
 }
 
 // La page hôte ne paie plus de gouttière (l'en-tête va d'un bord à
@@ -138,13 +140,20 @@
   background: var(--fold-color-success);
 }
 
-// « Ce qui manque » au dépôt : la pastille d'arrêt, le client et ses codes,
-// et combien il en reste, à droite.
+// « Ce qui manque », dépôt comme livreur : une ligne par arrêt — la pastille,
+// le client et ses codes, et combien il en reste, à droite — séparées d'un
+// filet, comme la liste du handoff.
 .lr-miss {
   display: flex;
   align-items: center;
   gap: var(--fold-space-sm);
   min-width: 0;
+  padding-block: var(--fold-space-sm);
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
+
+.lr-miss:last-of-type {
+  border-bottom: 0;
 }
 
 .lr-miss-stop {
