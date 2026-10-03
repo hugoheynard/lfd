@@ -8,13 +8,8 @@ import {
   resolveBins,
   seedBinTypes,
 } from "./delivery-bins.seed.js";
-import {
-  chooseLaboDeparture,
-  composeLoadedRound,
-  FLEET,
-  type RoundStop,
-  seedFleet,
-} from "./delivery-rounds.seed.js";
+import { FLEET, seedFleet } from "./delivery-fleet.seed.js";
+import { chooseLaboDeparture, composeLoadedRound, type RoundStop } from "./delivery-rounds.seed.js";
 import {
   assignSeedDriver,
   prismaDriverReader,

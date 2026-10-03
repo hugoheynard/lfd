@@ -1,13 +1,11 @@
 import type { CommandBus } from "@nestjs/cqrs";
 
-import { AddVehicleCommand } from "../../delivery/application/commands/add-vehicle.command.js";
 import { AssignDeliveryStopCommand } from "../../delivery/application/commands/assign-delivery-stop.command.js";
 import { ChooseDepartureCommand } from "../../delivery/application/commands/choose-departure.command.js";
 import { DeclareDeliveryBinsCommand } from "../../delivery/application/commands/declare-delivery-bins.command.js";
 import { LoadDeliveryBinCommand } from "../../delivery/application/commands/load-delivery-bin.command.js";
 import { ShareDeliveryBinCommand } from "../../delivery/application/commands/share-delivery-bin.command.js";
 import { OpenDeliveryRoundCommand } from "../../delivery/application/commands/open-delivery-round.command.js";
-import { ReactivateVehicleCommand } from "../../delivery/application/commands/reactivate-vehicle.command.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
 import { asStaff, SEED_STAFF_SUB } from "./order-placing.seed.js";
 
@@ -77,47 +75,6 @@ export interface RoundsContext {
   readonly prisma: PrismaClient;
   readonly commands: CommandBus;
   readonly now: Date;
-}
-
-/**
- * Les trois camionnettes. Plaques au format SIV, que le value object accepte
- * (ni I, ni O, ni U) — et qui ne désignent aucun véhicule qu'on connaisse.
- */
-export const FLEET: readonly { readonly name: string; readonly plate: string }[] = [
-  { name: "Camionnette 1", plate: "FG-481-KL" },
-  { name: "Camionnette 2", plate: "FG-482-KL" },
-  { name: "Camionnette 3", plate: "FG-483-KL" },
-];
-
-/**
- * **La flotte, idempotente par plaque.** Une camionnette absente est ajoutée,
- * une camionnette retirée sur le poste est remise en service, les autres sont
- * laissées telles quelles — et aucun autre véhicule n'est touché.
- *
- * @returns l'identifiant de chaque camionnette, par nom.
- */
-export async function seedFleet(context: RoundsContext): Promise<ReadonlyMap<string, string>> {
-  const ids = new Map<string, string>();
-  for (const vehicle of FLEET) {
-    const existing = await context.prisma.deliveryVehicle.findFirst({
-      where: { plate: vehicle.plate },
-      select: { id: true, retiredAt: true },
-    });
-    if (existing === null) {
-      const id = await asStaff(context.now, () =>
-        context.commands.execute<AddVehicleCommand, string>(new AddVehicleCommand(vehicle)),
-      );
-      ids.set(vehicle.name, id);
-      continue;
-    }
-    if (existing.retiredAt !== null) {
-      await asStaff(context.now, () =>
-        context.commands.execute(new ReactivateVehicleCommand(existing.id)),
-      );
-    }
-    ids.set(vehicle.name, existing.id);
-  }
-  return ids;
 }
 
 /**
