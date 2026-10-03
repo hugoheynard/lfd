@@ -42,20 +42,25 @@ describe("insérer dans les tournées existantes (mode insert)", () => {
     expect(proposal.overflow).toEqual([]);
   });
 
-  it("ne dépasse pas la durée maximale : ce qui ne tient pas va à une tournée neuve", () => {
+  /**
+   * Réécrit le 2026-10-03 (CA2, Q2) : la durée maximale renvoyait « far » à
+   * une tournée neuve. Elle ne refuse plus une place : la tournée existante le
+   * prend, et elle est signalée longue.
+   */
+  it("la durée maximale ne refuse plus une place : la tournée la prend, signalée longue", () => {
     const proposal = insertIntoRounds(input({ stops: [stop("far")], settings: settings(60) }));
 
-    expect(proposal.tours.map((tour) => [tour.roundId, ids(tour.stops)])).toEqual([
-      [null, ["far"]],
-    ]);
-    expect(proposal.tours[0]?.rank).toBe(2);
+    expect(proposal.tours.map((tour) => tour.roundId)).toEqual(["r1"]);
+    expect(ids(proposal.tours[0]?.stops ?? [])).toContain("far");
+    expect(proposal.tours[0]?.overDuration).toBe(true);
+    expect(proposal.overflow).toEqual([]);
   });
 
-  it("pas de second passage quand le réglage l'interdit : ça déborde, signalé", () => {
+  it("pas de passage quand le réglage l'interdit : ça déborde, signalé", () => {
     const proposal = insertIntoRounds(
       input({
         stops: [stop("far")],
-        settings: settings(60),
+        rounds: [],
         passageLimits: new Map([["v1", 0]]),
       }),
     );

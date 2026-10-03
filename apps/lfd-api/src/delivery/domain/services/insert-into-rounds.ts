@@ -23,7 +23,7 @@ export interface InsertionInput extends PlanningContext {
   readonly rounds: readonly InsertableRound[];
   /** Combien de tournées NEUVES chaque véhicule peut recevoir ; absent : autant qu'il en faut. */
   readonly passageLimits?: ReadonlyMap<string, number>;
-  /** D'où part chaque véhicule occupé par une tournée PARTIE (L7t-C2) ; absent : l'heure réglée. */
+  /** D'où part chaque véhicule occupé par une tournée PARTIE (L7t-C2) ; absent : minuit du jour (CA2). */
   readonly starts?: ReadonlyMap<string, VehicleStart>;
 }
 

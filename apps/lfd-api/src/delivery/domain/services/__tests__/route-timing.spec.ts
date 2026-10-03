@@ -44,26 +44,42 @@ describe("chronométrer une tournée (L7-C15)", () => {
     expect(durationOf(route)).toBe(65 * MINUTE);
   });
 
-  it("part PLUS TARD si la première fenêtre le permet, jamais plus tôt que l'heure au plus tôt", () => {
+  /**
+   * Réécrit le 2026-10-03 (CA2, CA-D1) : le départ s'alignait sur le DÉBUT de
+   * la première fenêtre, au-dessus de l'heure au plus tôt. Il se calcule
+   * désormais à rebours, sur la FIN de chaque fenêtre (moins la marge visée).
+   */
+  it("part au plus tard qui tient la fin de la fenêtre, marge comprise, jamais sous le plancher", () => {
     const clock: RouteClock = { earliestDeparture: SIX, stopSeconds: 0 };
     const eight = 8 * 3600;
+    const window = { start: eight, end: eight + 3600 };
 
-    const late = timeRoute(
+    const late = timeRoute("depot", [{ id: "a", window }], cost, clock);
+    const margin = timeRoute("depot", [{ id: "a", window }], cost, {
+      ...clock,
+      safetySeconds: 20 * MINUTE,
+    });
+    const floored = timeRoute(
       "depot",
-      [{ id: "a", window: { start: eight, end: eight + 3600 } }],
+      [{ id: "a", window: { start: null, end: SIX + 5 * MINUTE } }],
       cost,
       clock,
     );
-    const early = timeRoute(
-      "depot",
-      [{ id: "a", window: { start: SIX, end: SIX + 3600 } }],
-      cost,
-      clock,
-    );
 
-    expect(late.departure).toBe(eight - 10 * MINUTE);
-    expect(late.arrivals).toEqual([eight]);
-    expect(early.departure).toBe(SIX);
+    expect(late.departure).toBe(eight + 50 * MINUTE);
+    expect(late.arrivals).toEqual([eight + 60 * MINUTE]);
+    expect(late.missed).toEqual([false]);
+    expect(margin.departure).toBe(eight + 30 * MINUTE);
+    expect(floored.departure).toBe(SIX);
+    expect(floored.lateSeconds).toBe(5 * MINUTE);
+  });
+
+  it("rien ne presse : part à l'heure réglée, ou plus tard pour ne pas attendre (CA2)", () => {
+    const clock: RouteClock = { earliestDeparture: 0, stopSeconds: 0, idleDeparture: SIX };
+
+    const loose = timeRoute("depot", [{ id: "a", window: null }], cost, clock);
+
+    expect(loose.departure).toBe(SIX);
   });
 
   it("attend l'ouverture d'une fenêtre, et signale une arrivée après sa fin", () => {

@@ -33,6 +33,6 @@ export interface ProposedTour {
 
 export interface Proposal {
   readonly tours: readonly ProposedTour[];
-  /** Les commandes à répartir qu'aucune tournée ne tient dans la durée maximale. */
+  /** Les commandes à répartir qu'aucune tournée ne peut recevoir (plus de passage permis). */
   readonly overflow: readonly string[];
 }

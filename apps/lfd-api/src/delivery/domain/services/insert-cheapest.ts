@@ -1,13 +1,7 @@
 import { compareIds } from "./compare-ids.js";
 import type { PlanningContext } from "./proposal.js";
-import type { RoutingStop } from "./route-timing.js";
-import {
-  isBetterScore,
-  openingOf,
-  type Routes,
-  scoreVehicle,
-  type VehiclePlan,
-} from "./vehicle-plan.js";
+import { DAY_START, type RoutingStop } from "./route-timing.js";
+import { isBetterScore, type Routes, scoreVehicle, type VehiclePlan } from "./vehicle-plan.js";
 
 /** Où une tournée neuve peut s'ouvrir parmi celles d'un véhicule. */
 export type NewRoutePlacement = "anywhere" | "after_existing";
@@ -26,8 +20,8 @@ interface Placement {
  * l'ordre `byPriority`, va à la place — tournée existante ou tournée neuve,
  * sur n'importe quel véhicule — dont le surcoût est le plus petit : le moins
  * de retard ajouté d'abord, puis marge, route, attente, tournée ouverte
- * (`scoreVehicle`, L7t-C1), sans
- * qu'aucune tournée dépasse davantage la durée maximale.
+ * (`scoreVehicle`, L7t-C1). La durée maximale d'une tournée ne refuse
+ * aucune place (CA2, Q2) : elle cède devant la règle 1.
  *
  * Une tournée neuve n'est permise que sous `maxRoutes` ; `after_existing`
  * l'ouvre après les tournées déjà là (mode `insert` : leurs passages sont
@@ -45,7 +39,7 @@ export function insertCheapest(
 ): { readonly plans: readonly VehiclePlan[]; readonly unplaced: readonly RoutingStop[] } {
   const current = [...plans];
   const unplaced: RoutingStop[] = [];
-  for (const stop of byPriority(ctx, pending)) {
+  for (const stop of byPriority(pending)) {
     const best = cheapestPlacement(ctx, current, stop, newRoutes);
     const target = best === null ? undefined : current[best.vehicle];
     if (best === null || target === undefined) {
@@ -60,14 +54,11 @@ export function insertCheapest(
 /**
  * Les créneaux les plus serrés d'abord (L7b-C1) : le plus étroit, puis celui
  * qui ferme le plus tôt ; sans créneau, en dernier. Égalité : l'identifiant.
+ * Une échéance (fenêtre sans début) court depuis minuit du jour (CA2, Q1).
  */
-export function byPriority(
-  ctx: PlanningContext,
-  stops: readonly RoutingStop[],
-): readonly RoutingStop[] {
-  const opening = openingOf(ctx);
+export function byPriority(stops: readonly RoutingStop[]): readonly RoutingStop[] {
   const width = (stop: RoutingStop): number =>
-    stop.window === null ? Infinity : stop.window.end - (stop.window.start ?? opening);
+    stop.window === null ? Infinity : stop.window.end - (stop.window.start ?? DAY_START);
   const end = (stop: RoutingStop): number => stop.window?.end ?? Infinity;
   return [...stops].sort(
     (a, b) => width(a) - width(b) || end(a) - end(b) || compareIds(a.id, b.id),
@@ -89,10 +80,7 @@ function cheapestPlacement(
         lateSeconds: after.lateSeconds - before.lateSeconds,
         cost: after.cost - before.cost,
       };
-      if (
-        after.overSeconds <= before.overSeconds &&
-        (best === null || isBetterScore(delta, best.delta))
-      ) {
+      if (best === null || isBetterScore(delta, best.delta)) {
         best = { vehicle, routes, delta };
       }
     }

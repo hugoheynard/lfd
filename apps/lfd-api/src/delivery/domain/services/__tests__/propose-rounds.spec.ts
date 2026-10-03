@@ -1,6 +1,6 @@
 import { RoutingSettings } from "../../value-objects/routing-settings.js";
 import { type PlannableStop, type ProposalInput, proposeRounds } from "../propose-rounds.js";
-import { durationOf } from "../route-timing.js";
+import { DAY_START, durationOf } from "../route-timing.js";
 import { lineCost } from "./line-cost.js";
 
 const MINUTE = 60;
@@ -56,14 +56,22 @@ describe("proposer (L7-C5, L7-C15, L7b-C1 à C3)", () => {
     expect(proposal.overflow).toEqual([]);
   });
 
-  it("répartit entre les véhicules quand un seul ne tient pas, un côté chacun", () => {
-    // Tout faire en une tournée : 40 minutes, au-delà des 30 permises.
+  /**
+   * Réécrit le 2026-10-03 (CA2, Q2) : c'était la durée maximale (30 min) qui
+   * forçait la répartition. Elle ne refuse plus rien ; ce sont les échéances
+   * qui la forcent désormais.
+   */
+  it("répartit entre les véhicules quand un seul ne tient pas les échéances, un côté chacun", () => {
+    // e3 et w3, aux deux bouts, ferment à 0 h 12 : un seul véhicule en
+    // manquerait un, même parti à minuit.
     const wide = lineCost({ depot: 0, e1: 6, e2: 8, e3: 10, w1: -6, w2: -8, w3: -10 });
+    const tight = { start: null, end: DAY_START + 12 * MINUTE };
     const proposal = proposeRounds(
       input({
         cost: wide,
-        stops: sides,
-        settings: settings(30),
+        stops: sides.map((stop) =>
+          stop.id === "e3" || stop.id === "w3" ? { ...stop, window: tight } : stop,
+        ),
         vehicles: [
           { id: "v2", name: "Trafic" },
           { id: "v1", name: "Kangoo" },
@@ -79,6 +87,7 @@ describe("proposer (L7-C5, L7-C15, L7b-C1 à C3)", () => {
       ["w1", "w2", "w3"],
     ]);
     expect(proposal.tours.every((tour) => tour.rank === 1 && tour.roundId === null)).toBe(true);
+    expect(proposal.tours.flatMap((tour) => tour.timed.missed)).not.toContain(true);
     expect(proposal.overflow).toEqual([]);
   });
 
@@ -89,11 +98,22 @@ describe("proposer (L7-C5, L7-C15, L7b-C1 à C3)", () => {
     expect(again).toEqual(first);
   });
 
-  it("découpe au-delà de la durée maximale en un second passage du même véhicule (Q13)", () => {
-    const cost = lineCost({ depot: 0, a: 10, b: 11, c: -10, d: -11 });
+  /**
+   * Réécrit le 2026-10-03 (CA2, Q2) : la durée maximale découpait. Un second
+   * passage ne s'ouvre plus que s'il coûte moins qu'une tournée qui attend :
+   * ici cinq heures devant la porte de b.
+   */
+  it("ouvre un second passage du même véhicule quand l'attente coûterait plus (Q13)", () => {
+    const cost = lineCost({ depot: 0, a: 10, b: -10 });
 
     const proposal = proposeRounds(
-      input({ cost, stops: ["a", "b", "c", "d"].map(loose), settings: settings(30) }),
+      input({
+        cost,
+        stops: [
+          { ...loose("a"), window: { start: null, end: DAY_START + 30 * MINUTE } },
+          { ...loose("b"), window: { start: 8 * HOUR, end: 8 * HOUR + 30 * MINUTE } },
+        ],
+      }),
     );
 
     expect(proposal.tours.map((tour) => [tour.vehicleId, tour.rank])).toEqual([
@@ -101,17 +121,12 @@ describe("proposer (L7-C5, L7-C15, L7b-C1 à C3)", () => {
       ["v1", 2],
     ]);
     const [first, second] = proposal.tours;
-    expect(proposal.tours.every((tour) => durationOf(tour.timed) <= 30 * MINUTE)).toBe(true);
     expect(second?.timed.departure).toBeGreaterThanOrEqual(first?.timed.return ?? Infinity);
-    expect(proposal.tours.flatMap((tour) => tour.stops.map((s) => s.id)).sort()).toEqual([
-      "a",
-      "b",
-      "c",
-      "d",
-    ]);
+    expect(proposal.tours.flatMap((tour) => tour.timed.missed)).toEqual([false, false]);
   });
 
-  it("un seul passage permis : ce qui ne tient pas dans le premier déborde", () => {
+  /** Réécrit le 2026-10-03 (CA2, Q2) : la durée maximale faisait déborder. */
+  it("un seul passage permis : tout tient dans le premier, signalé long (Q2)", () => {
     const cost = lineCost({ depot: 0, a: 10, b: 11, c: -10, d: -11 });
 
     const proposal = proposeRounds(
@@ -124,10 +139,24 @@ describe("proposer (L7-C5, L7-C15, L7b-C1 à C3)", () => {
     );
 
     expect(proposal.tours).toHaveLength(1);
-    expect(proposal.overflow).toHaveLength(2);
+    expect(proposal.tours[0]?.overDuration).toBe(true);
+    expect(proposal.overflow).toEqual([]);
   });
 
-  it("compte le temps d'arrêt dans la durée maximale", () => {
+  it("aucun passage permis : tout déborde, signalé", () => {
+    const proposal = proposeRounds(
+      input({
+        cost: lineCost({ depot: 0, a: 10 }),
+        stops: [loose("a")],
+        passageLimits: new Map([["v1", 0]]),
+      }),
+    );
+
+    expect(proposal.tours).toEqual([]);
+    expect(proposal.overflow).toEqual(["a"]);
+  });
+
+  it("compte le temps d'arrêt dans la durée signalée", () => {
     const cost = lineCost({ depot: 0, a: 5, b: 6 });
 
     // 5 + 1 + 6 = 12 minutes de route ; avec 10 minutes par arrêt, 32 > 30.
@@ -135,29 +164,34 @@ describe("proposer (L7-C5, L7-C15, L7b-C1 à C3)", () => {
       input({ cost, stops: ["a", "b"].map(loose), settings: settings(30, 10) }),
     );
 
-    expect(proposal.tours).toHaveLength(2);
+    expect(proposal.tours).toHaveLength(1);
+    expect(proposal.tours[0]?.overDuration).toBe(true);
   });
 
-  it("un arrêt dont l'aller-retour seul dépasse la durée maximale déborde, signalé", () => {
-    const cost = lineCost({ depot: 0, near: 2, far: 20 });
+  it("une tournée de plus de 240 minutes est acceptée, mais signalée longue (CA2, Q2)", () => {
+    // Deux heures dix de route à l'aller, autant au retour.
+    const cost = lineCost({ depot: 0, near: 2, far: 130 });
 
-    const proposal = proposeRounds(
-      input({ cost, stops: ["near", "far"].map(loose), settings: settings(30) }),
-    );
+    const proposal = proposeRounds(input({ cost, stops: ["near", "far"].map(loose) }));
 
-    expect(proposal.overflow).toEqual(["far"]);
-    expect(proposal.tours.flatMap((tour) => tour.stops.map((s) => s.id))).toEqual(["near"]);
+    expect(proposal.overflow).toEqual([]);
+    expect(proposal.tours).toHaveLength(1);
+    const [tour] = proposal.tours;
+    const timed = tour?.timed;
+    expect(timed === undefined ? 0 : durationOf(timed)).toBeGreaterThan(240 * MINUTE);
+    expect(tour?.overDuration).toBe(true);
   });
 
-  it("un arrêt trop loin qui AVAIT une tournée y reste, et la tournée est signalée trop longue", () => {
-    const cost = lineCost({ depot: 0, near: 2, far: 20 });
+  it("un arrêt qui déborde et AVAIT une tournée y reste, et la tournée est signalée trop longue", () => {
+    const cost = lineCost({ depot: 0, far: 20 });
 
     const proposal = proposeRounds(
       input({
         cost,
-        stops: [loose("near"), home("far", "r_old")],
+        stops: [home("far", "r_old")],
         recomposable: [{ roundId: "r_old", vehicleId: "v9", vehicleName: "Vieux", passage: 1 }],
         settings: settings(30),
+        passageLimits: new Map([["v1", 0]]),
       }),
     );
 
@@ -168,26 +202,31 @@ describe("proposer (L7-C5, L7-C15, L7b-C1 à C3)", () => {
   });
 
   it("reprend les tournées recomposables du véhicule dans l'ordre de leur passage", () => {
-    const cost = lineCost({ depot: 0, a: 10, b: 11, c: -10, d: -11 });
+    const cost = lineCost({ depot: 0, a: 10, b: -10 });
 
     const proposal = proposeRounds(
       input({
         cost,
-        stops: [home("a", "r2"), home("b", "r2"), loose("c"), loose("d")],
+        stops: [
+          { ...home("a", "r2"), window: { start: null, end: DAY_START + 30 * MINUTE } },
+          { ...loose("b"), window: { start: 8 * HOUR, end: 8 * HOUR + 30 * MINUTE } },
+        ],
         recomposable: [
           { roundId: "r2", vehicleId: "v1", vehicleName: "Kangoo", passage: 2 },
           { roundId: "r1", vehicleId: "v1", vehicleName: "Kangoo", passage: 1 },
         ],
-        settings: settings(30),
       }),
     );
 
     expect(proposal.tours.map((tour) => tour.roundId)).toEqual(["r1", "r2"]);
   });
 
-  it("fait passer devant l'arrêt dont le créneau finit tôt (L7-C4)", () => {
-    // Sans créneau, on irait d'abord au plus près (-1). Celui de +4 ferme
-    // 5 minutes après le départ : il passe en premier, et personne n'est en retard.
+  /**
+   * Réécrit le 2026-10-03 (CA2) : au départ fixé à 6 h, l'arrêt qui ferme à
+   * 6 h 05 devait passer en premier. Le départ se calcule désormais à rebours :
+   * quel que soit l'ordre, on part assez tôt, et personne n'est en retard.
+   */
+  it("part assez tôt pour l'arrêt dont le créneau finit tôt (L7-C4, CA2)", () => {
     const near = lineCost({ depot: 0, minus1: -1, plus4: 4 });
     const proposal = proposeRounds(
       input({
@@ -200,8 +239,8 @@ describe("proposer (L7-C5, L7-C15, L7b-C1 à C3)", () => {
     );
 
     const [tour] = proposal.tours;
-    expect(tour?.stops.map((s) => s.id)).toEqual(["plus4", "minus1"]);
     expect(tour?.timed.missed).toEqual([false, false]);
+    expect(tour?.timed.departure).toBeLessThan(SIX);
   });
 
   it("tient compte du sens : une matrice asymétrique change l'ordre", () => {
@@ -217,10 +256,11 @@ describe("proposer (L7-C5, L7-C15, L7b-C1 à C3)", () => {
   });
 
   it("ne rend un arrêt hors créneau que si aucune place ne l'évite (L7b-C1)", () => {
-    // a et b ferment à 6 h 15, aux deux bouts : un seul véhicule arriverait en
-    // retard chez l'un des deux. Le second véhicule les tient tous les deux.
+    // a et b ferment à 0 h 15, aux deux bouts : un seul véhicule arriverait en
+    // retard chez l'un des deux, même parti à minuit (CA2). Le second véhicule
+    // les tient tous les deux.
     const cost = lineCost({ depot: 0, a: 10, b: -10 });
-    const early = { start: null, end: SIX + 15 * MINUTE };
+    const early = { start: null, end: DAY_START + 15 * MINUTE };
 
     const proposal = proposeRounds(
       input({
@@ -243,8 +283,8 @@ describe("proposer (L7-C5, L7-C15, L7b-C1 à C3)", () => {
 
   it("préfère la première tournée d'un véhicule libre à un second passage (L7b-C3)", () => {
     // Même lieu, créneaux de 6 h et de 10 h : une seule tournée attendrait
-    // quatre heures, au-delà des 240 minutes. Deux tournées, donc — mais sur
-    // deux véhicules, pas deux passages du même.
+    // quatre heures, ce qui coûte plus qu'une tournée ouverte. Deux tournées,
+    // donc — mais sur deux véhicules, pas deux passages du même.
     const cost = lineCost({ depot: 0, a: 10, b: 10 });
 
     const proposal = proposeRounds(

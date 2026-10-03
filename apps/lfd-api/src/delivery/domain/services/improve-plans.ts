@@ -24,8 +24,8 @@ const NEIGHBOURHOODS = [intraRouteMoves, relocations, swaps, tailExchanges] as c
  * **Améliorer** (L7b-C2) : tant qu'un geste baisse le coût, on le prend —
  * dans une tournée (Or-opt, 2-opt), puis entre tournées et entre véhicules
  * (déplacer un arrêt, permuter deux arrêts, 2-opt*). « Baisser » se lit
- * dans l'ordre de L7t-C1 : moins de retard d'abord, puis moins cher. Un geste qui ferait
- * dépasser davantage la durée maximale est refusé, quel que soit son gain.
+ * dans l'ordre de L7t-C1 : moins de retard d'abord, puis moins cher. La
+ * durée maximale ne refuse aucun geste (CA2, Q2) : elle n'est qu'un signal.
  *
  * Les gestes se cherchent par PAIRE de véhicules — un véhicule seul (ses
  * tournées entre elles), puis deux véhicules (les gestes de l'un à l'autre) :
@@ -138,8 +138,5 @@ function improves(
     lateSeconds: sum(list, "lateSeconds"),
     cost: sum(list, "cost"),
   });
-  return (
-    sum(after, "overSeconds") <= sum(before, "overSeconds") &&
-    isBetterScore(total(after), total(before))
-  );
+  return isBetterScore(total(after), total(before));
 }

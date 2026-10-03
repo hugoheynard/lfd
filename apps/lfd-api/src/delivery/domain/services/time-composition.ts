@@ -1,7 +1,15 @@
 import type { CostFn } from "../ports/distance-matrix.js";
 import type { RoutingSettings } from "../value-objects/routing-settings.js";
 import type { PlanningVehicle, ProposedTour } from "./proposal.js";
-import { durationOf, type RoutingStop, timeRoute } from "./route-timing.js";
+import {
+  DAY_START,
+  durationOf,
+  type RouteClock,
+  type RoutingStop,
+  type TimedRoute,
+  timeChain,
+  timeRoute,
+} from "./route-timing.js";
 
 const SECONDS_PER_MINUTE = 60;
 
@@ -22,28 +30,29 @@ export interface CompositionInput {
 /**
  * **Chronomètre une composition telle quelle** (L10b-C2) — ni répartition,
  * ni réordonnancement : l'ordre est celui qu'on a glissé à la main, et c'est
- * tout l'objet. Chaque tournée part au plus tôt à l'heure réglée ; le passage
- * suivant d'un même véhicule, à son retour du précédent — comme dans
- * `proposeRounds` (Q13). Une tournée trop longue est signalée, jamais coupée.
+ * tout l'objet. Les passages d'un même véhicule sont chronométrés ENSEMBLE,
+ * dans l'ordre reçu (`timeChain`, CA2) : chacun part au plus tard qui tient
+ * ses échéances et celles des suivants, jamais avant minuit du jour ni avant
+ * le retour du précédent — comme dans `proposeRounds` (Q13). Une tournée trop
+ * longue est signalée, jamais coupée ni refusée (Q2).
  *
  * Rend les tournées dans l'ordre reçu. Pure et déterministe.
  */
 export function timeComposition(input: CompositionInput): readonly ProposedTour[] {
-  const opening = input.settings.earliestDepartureMinute * SECONDS_PER_MINUTE;
   const maxSeconds = input.settings.maxRoundMinutes * SECONDS_PER_MINUTE;
-  const stopSeconds = input.settings.stopMinutes * SECONDS_PER_MINUTE;
-  const lastReturn = new Map<string, number>();
+  const clock: RouteClock = {
+    earliestDeparture: DAY_START,
+    stopSeconds: input.settings.stopMinutes * SECONDS_PER_MINUTE,
+    idleDeparture: input.settings.earliestDepartureMinute * SECONDS_PER_MINUTE,
+    safetySeconds: input.settings.safetyMarginMinutes * SECONDS_PER_MINUTE,
+  };
+  const timedById = timeByVehicle(input, clock);
   const passages = new Map<string, number>();
-  return input.rounds.map((round) => {
+  return input.rounds.map((round, index) => {
     const vehicleId = round.vehicle.id;
-    const earliest = Math.max(opening, lastReturn.get(vehicleId) ?? opening);
-    const timed = timeRoute(input.depotId, round.stops, input.cost, {
-      earliestDeparture: earliest,
-      stopSeconds,
-    });
+    const timed = timedById[index] ?? timeRoute(input.depotId, round.stops, input.cost, clock);
     const rank = (passages.get(vehicleId) ?? 0) + 1;
     passages.set(vehicleId, rank);
-    lastReturn.set(vehicleId, timed.return);
     return {
       roundId: round.roundId,
       vehicleId,
@@ -54,4 +63,30 @@ export function timeComposition(input: CompositionInput): readonly ProposedTour[
       overDuration: durationOf(timed) > maxSeconds,
     };
   });
+}
+
+/** Chaque tournée chronométrée avec les autres passages de son véhicule, indexée comme reçue. */
+function timeByVehicle(input: CompositionInput, clock: RouteClock): readonly TimedRoute[] {
+  const indicesByVehicle = new Map<string, number[]>();
+  input.rounds.forEach((round, index) => {
+    const indices = indicesByVehicle.get(round.vehicle.id) ?? [];
+    indices.push(index);
+    indicesByVehicle.set(round.vehicle.id, indices);
+  });
+  const timed: TimedRoute[] = new Array<TimedRoute>(input.rounds.length);
+  for (const indices of indicesByVehicle.values()) {
+    const chain = timeChain(
+      input.depotId,
+      indices.map((index) => input.rounds[index]?.stops ?? []),
+      input.cost,
+      clock,
+    );
+    chain.forEach((route, position) => {
+      const index = indices[position];
+      if (index !== undefined) {
+        timed[index] = route;
+      }
+    });
+  }
+  return timed;
 }

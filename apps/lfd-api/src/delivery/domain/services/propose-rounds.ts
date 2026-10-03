@@ -43,12 +43,12 @@ export interface ProposalInput {
   readonly passageLimits?: ReadonlyMap<string, number>;
   /**
    * D'où part chaque véhicule OCCUPÉ par une tournée gardée chargée ou partie
-   * (L7t-C2, `busyStarts`) ; absent : libre dès l'heure réglée.
+   * (L7t-C2, `busyStarts`) ; absent : libre dès minuit du jour (CA2).
    */
   readonly starts?: ReadonlyMap<string, VehicleStart>;
 }
 
-/** D'où part ce véhicule : son retour estimé s'il est occupé, sinon l'heure réglée. */
+/** D'où part ce véhicule : son retour estimé s'il est occupé, sinon minuit du jour (CA2). */
 export function startOf(
   input: PlanningContext & { readonly starts?: ReadonlyMap<string, VehicleStart> },
   vehicleId: string,
@@ -65,8 +65,7 @@ export function startOf(
  * n'existe que si la journée ne tient pas autrement : il coûte une tournée
  * ouverte, que la tournée existante évite dès qu'elle peut prendre l'arrêt.
  *
- * Ce qui ne tient nulle part — aller-retour seul au-delà de la durée
- * maximale, ou plus de passage permis — déborde : à répartir, signalé, jamais
+ * Ce qui ne tient nulle part — plus de passage permis — déborde : à répartir, signalé, jamais
  * tronqué en silence. S'il vient d'une tournée existante, il y RESTE, en
  * dernier, et la tournée est signalée trop longue — la proposition ne défait
  * jamais un placement qu'elle ne sait pas refaire.
@@ -134,7 +133,7 @@ function keepAtHome(
         input.depotId,
         stops,
         input.cost,
-        clockOf(input, existing.timed.departure),
+        clockOf(input, floorOf(input, result, existing)),
       );
       result[index] = tourOf(input, vehicleOf(existing), existing.rank, roundId, stops, timed);
       continue;
@@ -152,6 +151,21 @@ function keepAtHome(
     result.push(tourOf(input, vehicle, rank, roundId, staying, timed));
   }
   return result;
+}
+
+/**
+ * Le plancher d'une tournée qu'on rallonge (CA2) : le retour du passage qui
+ * la précède sur son véhicule, sinon le départ libre du véhicule — pas son
+ * ancien départ, que les arrêts ajoutés peuvent obliger à avancer.
+ */
+function floorOf(input: ProposalInput, tours: readonly ProposedTour[], tour: ProposedTour): number {
+  const before = tours.filter(
+    (other) => other.vehicleId === tour.vehicleId && other.rank < tour.rank,
+  );
+  return Math.max(
+    startOf(input, tour.vehicleId).availableFrom,
+    ...before.map((other) => other.timed.return),
+  );
 }
 
 function vehicleOf(tour: ProposedTour): PlanningVehicle {

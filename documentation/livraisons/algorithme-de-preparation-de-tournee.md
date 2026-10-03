@@ -33,13 +33,21 @@ le client ») :
 | 3    | **Le moins d'heures de livreur**             | route + attente + temps sur place, du départ au retour                                                                                            |
 | 3    | **Le moins de tournées**                     | ouvrir une tournée coûte 1 h ; un second passage du même véhicule coûte en plus la durée maximale d'une tournée (4 h par défaut)                  |
 
-Et une **borne**, pas un prix : aucune tournée ne doit dépasser la durée
-maximale (240 min par défaut). Un geste qui ferait dépasser davantage est
-refusé, quel que soit son gain.
+**La règle 1 prime** (CA-D1, lot CA2 du
+[plan de composition automatique](plan-composition-automatique.md), 2026-10-03) :
+tout le monde est servi avant son échéance. Le départ se calcule **à rebours**
+(§5.3), aussi tôt qu'il le faut — dès **minuit du jour de livraison** (Q1).
+
+La **durée maximale** (240 min par défaut) n'est **plus une borne** (Q2) : elle
+cède devant la règle 1 et ne refuse ni un geste, ni une place. Elle reste un
+**signal** — « tournée longue » (`overDuration`) — et le prix d'un second
+passage. Conséquence à connaître : rien ne pousse plus à couper une journée
+qui tient en une seule tournée longue sans retard.
 
 Le créneau reste une contrainte **douce** : un arrêt qu'on ne peut livrer qu'en
-retard est livré quand même, et le retard est **signalé**. Il n'est accepté que
-faute de toute autre place.
+retard — même en partant à minuit — est livré quand même, et le retard est
+**signalé** (`missed`, `lateSeconds`). Il n'est accepté que faute de toute
+autre place.
 
 ## 3. Les données d'entrée
 
@@ -56,9 +64,10 @@ faute de toute autre place.
   la Savoie), entre le départ et chaque arrêt situé. Pas de vol d'oiseau : il se
   trompait de trente minutes en montagne. Si le calcul routier ne répond pas,
   « Proposer » **refuse** au lieu d'estimer autrement.
-- **Les réglages** : heure de départ au plus tôt (06:00), durée maximale
-  (240 min), temps d'arrêt (5 min), marge de sécurité (20 min), plusieurs
-  passages permis ou non, mode par défaut.
+- **Les réglages** : heure de départ « au plus tôt » (06:00 — depuis CA2, le
+  départ d'une tournée qu'aucune échéance ne presse, plus un plancher), durée
+  maximale (240 min, un signal), temps d'arrêt (5 min), marge de sécurité
+  (20 min), plusieurs passages permis ou non, mode par défaut.
 
 Un arrêt **non situé** (adresse sans point GPS) n'entre pas dans le calcul :
 il est listé à part, à situer.
@@ -95,9 +104,10 @@ flowchart TD
    - à chaque position de chaque tournée existante ;
    - dans une tournée neuve, si le véhicule a encore droit à un passage.
 3. On garde la place dont le **surcoût** est le plus petit, selon l'ordre du
-   §2 : le moins de retard ajouté d'abord, puis le reste. Une place qui ferait
-   dépasser davantage la durée maximale est écartée.
-4. Si **aucune** place n'est possible, l'arrêt **déborde**.
+   §2 : le moins de retard ajouté d'abord, puis le reste. La durée maximale
+   n'écarte plus aucune place (CA2, Q2).
+4. Si **aucune** place n'est possible (plus de passage permis), l'arrêt
+   **déborde**.
 
 Pourquoi ouvrir une tournée est rare : elle coûte une heure, et un second
 passage coûte en plus une durée maximale entière. Une tournée existante qui
@@ -126,12 +136,25 @@ prend :
 ### 5.3 Rendre
 
 - Chaque tournée est **chronométrée** : départ, arrivée à chaque arrêt, retour,
-  kilomètres, retards. Le départ est **le plus tard possible** si le premier
-  créneau le permet (on ne part pas à 6 h pour attendre 8 h devant la porte).
-  Arrivé avant un créneau, on attend ; après, on livre quand même, signalé.
-- Les passages d'un véhicule s'enchaînent : le second part au plus tôt au
-  retour du premier.
-- Une tournée trop longue est **signalée** (`overDuration`).
+  kilomètres, retards.
+- Le départ se calcule **à rebours** (CA2, `latestDepartures` dans
+  `route-timing.ts`) : c'est le **plus tard possible** qui sert encore chaque
+  arrêt avant la fin de sa fenêtre, marge de sécurité visée quand c'est
+  tenable. La passe arrière porte sur **tout le véhicule** : le passage n+1
+  part au retour du passage n, donc une échéance du second fait partir le
+  premier plus tôt.
+- Le **plancher** est minuit du jour de livraison (Q1), ou le retour de ce que
+  le véhicule porte déjà. Si le plancher l'emporte, l'échéance ne tient pas :
+  l'arrêt est **en retard, signalé** — jamais en silence.
+- Une tournée qu'**aucune** échéance ne presse (aucune fin de fenêtre, ni
+  chez elle ni dans un passage suivant) part à l'heure réglée « au plus tôt »,
+  ou plus tard si son premier créneau ouvre plus tard.
+- Une fenêtre qui a un **début** (« pas avant 7 h ») le garde : arrivé avant,
+  on attend à la porte. Une échéance (fenêtre sans début) n'a pas d'attente.
+- Le même chronométrage sert partout : `timeRoute` / `timeChain`, le score
+  (`scoreVehicle`, vérifié identique), `timeComposition` (l'écran) et le
+  retour estimé d'un véhicule occupé (`busyStarts`).
+- Une tournée trop longue est **signalée** (`overDuration`), jamais refusée.
 - Les **débordements** sont rendus à part : à répartir, signalés, jamais
   tronqués en silence. Un arrêt qui débordait mais venait d'une tournée
   existante y **reste**, en dernier, et la tournée est signalée trop longue :
@@ -174,6 +197,9 @@ reproposer.
   prochain chantier proposé (un plan « capacité à la composition », à écrire).
 - **Le poids** des bacs : aucun bac n'en porte aujourd'hui.
 - **Le livreur** : la proposition affecte des véhicules, pas des personnes.
+- **Les contraintes du travail** (CA-D1) : ni heure d'embauche, ni repos, ni
+  durée de tournée tenable. On part à 2 h du matin s'il le faut ; la durée
+  maximale n'est qu'un signal.
 - **Le trafic réel ou l'heure** : la matrice routière est la même à 6 h et à
   10 h ; la marge de sécurité est là pour ça.
 - **L'optimum** : c'est une heuristique (construire, puis améliorer

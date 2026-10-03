@@ -97,17 +97,23 @@ describe("SimulateDeliveryRoundsHandler — le simulateur (L9-C1 à C5)", () => 
     );
   });
 
+  /** 00:05 depuis 2026-10-03 (CA2) : on part dès minuit, 06:05 se tient désormais. */
   it("dit la fenêtre manquée, sans refuser l'arrêt", async () => {
     const view = await handlerWith({}).execute(
-      scenario({ stops: [stop("loin", 45.4, 6.4, { start: null, end: "06:05" })] }),
+      scenario({ stops: [stop("loin", 45.4, 6.4, { start: null, end: "00:05" })] }),
     );
 
     const [placed] = view.rounds.flatMap((round) => round.stops);
-    expect(placed?.window).toEqual({ start: null, end: "06:05" });
+    expect(placed?.window).toEqual({ start: null, end: "00:05" });
     expect(placed?.windowMissed).toBe(true);
   });
 
-  it("met en débord l'arrêt qu'aucune tournée ne tient dans la durée maximale", async () => {
+  /**
+   * Réécrit le 2026-10-03 (CA2, Q2 — Hugo) : la durée maximale mettait « val »
+   * en débord. Elle cède devant la règle 1 : l'arrêt est placé, la tournée
+   * signalée longue.
+   */
+  it("place l'arrêt au-delà de la durée maximale, et signale la tournée longue", async () => {
     const view = await handlerWith({}).execute(
       scenario({
         stops: [stop("proche", 45.57, 5.92), stop("val", VAL_D_ISERE.lat, VAL_D_ISERE.lng)],
@@ -115,7 +121,9 @@ describe("SimulateDeliveryRoundsHandler — le simulateur (L9-C1 à C5)", () => 
       }),
     );
 
-    expect(view.overflow).toEqual([{ stopId: "val", label: "Chez val" }]);
+    expect(view.overflow).toEqual([]);
+    const withVal = view.rounds.find((round) => round.stops.some((s) => s.stopId === "val"));
+    expect(withVal?.overDuration).toBe(true);
   });
 
   it("annonce toujours la route — `estimate` est déprécié, et vaut `road` (L10b-C5)", async () => {

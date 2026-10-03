@@ -1,5 +1,13 @@
 import type { PlanningContext, PlanningVehicle } from "./proposal.js";
-import { type RouteClock, type RoutingStop, type TimedRoute, timeRoute } from "./route-timing.js";
+import {
+  DAY_START,
+  departureOf,
+  latestDepartures,
+  type RouteClock,
+  type RoutingStop,
+  type TimedRoute,
+  timeChain,
+} from "./route-timing.js";
 
 const SECONDS_PER_MINUTE = 60;
 
@@ -63,15 +71,18 @@ export type Routes = readonly PlanRoute[];
  * première tournée proposée y est déjà un SECOND passage.
  */
 export interface VehicleStart {
-  /** Au plus tôt, en secondes depuis minuit : l'heure réglée, ou le retour de ce qu'il porte déjà. */
+  /** Au plus tôt, en secondes depuis minuit : minuit du jour, ou le retour de ce qu'il porte déjà. */
   readonly availableFrom: number;
   /** Combien de tournées gardées il fait avant : 0 si rien ne l'occupe. */
   readonly passagesBefore: number;
 }
 
-/** Un véhicule libre dès l'heure réglée. */
-export function freeStart(ctx: PlanningContext): VehicleStart {
-  return { availableFrom: openingOf(ctx), passagesBefore: 0 };
+/**
+ * Un véhicule libre dès minuit du jour (CA2, Q1) : l'heure réglée n'est plus
+ * un plancher — elle ne ferait qu'arriver en retard.
+ */
+export function freeStart(_ctx: PlanningContext): VehicleStart {
+  return { availableFrom: DAY_START, passagesBefore: 0 };
 }
 
 /** Un véhicule pendant le calcul. */
@@ -84,13 +95,13 @@ export interface VehiclePlan extends VehicleStart {
 
 /**
  * Ce qu'un véhicule coûte : ses secondes hors créneau À PART (priorité 1),
- * le reste en `cost` (marge, heures, tournées), et de combien ses tournées
- * dépassent la durée maximale — une borne, pas un prix.
+ * le reste en `cost` (marge, heures, tournées). La durée maximale d'une
+ * tournée n'y figure plus comme borne (CA2, Q2) : elle cède devant la
+ * règle 1 et n'est plus qu'un signal (`overDuration`).
  */
 export interface VehicleScore {
   readonly lateSeconds: number;
   readonly cost: number;
-  readonly overSeconds: number;
 }
 
 /** Une différence plus petite que ça est du bruit de virgule flottante. */
@@ -116,11 +127,17 @@ export function clockOf(ctx: PlanningContext, earliest: number): RouteClock {
   return {
     earliestDeparture: earliest,
     stopSeconds: ctx.settings.stopMinutes * SECONDS_PER_MINUTE,
+    idleDeparture: idleDepartureOf(ctx),
+    safetySeconds: ctx.settings.safetyMarginMinutes * SECONDS_PER_MINUTE,
   };
 }
 
-/** L'heure au plus tôt des réglages, en secondes depuis minuit. */
-export function openingOf(ctx: PlanningContext): number {
+/**
+ * L'heure réglée « au plus tôt », en secondes depuis minuit. Depuis CA2 ce
+ * n'est plus un plancher : c'est le départ d'une tournée qu'aucune échéance
+ * ne presse (`RouteClock.idleDeparture`).
+ */
+export function idleDepartureOf(ctx: PlanningContext): number {
   return ctx.settings.earliestDepartureMinute * SECONDS_PER_MINUTE;
 }
 
@@ -130,22 +147,21 @@ export function maxSecondsOf(ctx: PlanningContext): number {
 }
 
 /**
- * Chronomètre les tournées d'un véhicule (Q13) : la première part au plus tôt
- * à `from` ; chacune des suivantes, au plus tôt au retour de la précédente.
+ * Chronomètre les tournées d'un véhicule (Q13, CA2) : au plus tard qui tient
+ * toutes les échéances du véhicule, la première jamais avant `from`, chacune
+ * des suivantes jamais avant le retour de la précédente (`timeChain`).
  */
 export function timeVehicle(
   ctx: PlanningContext,
   routes: Routes,
   from: number,
 ): readonly TimedRoute[] {
-  const timed: TimedRoute[] = [];
-  let earliest = from;
-  for (const { stops } of routes) {
-    const route = timeRoute(ctx.depotId, stops, ctx.cost, clockOf(ctx, earliest));
-    timed.push(route);
-    earliest = route.return;
-  }
-  return timed;
+  return timeChain(
+    ctx.depotId,
+    routes.map(({ stops }) => stops),
+    ctx.cost,
+    clockOf(ctx, from),
+  );
 }
 
 /**
@@ -154,10 +170,11 @@ export function timeVehicle(
  * (`MARGIN_WEIGHT` chacune), les minutes de route, d'attente et de livraison
  * (départ → retour), et chaque tournée ouverte — alourdie pour un second
  * passage, y compris quand le premier est une tournée gardée (L7t-C2). Une
- * tournée vide ne coûte rien. Le dépassement de la durée maximale est rendu À
- * PART : c'est une borne, pas un prix — un geste qui l'augmente est refusé.
+ * tournée vide ne coûte rien. La durée maximale ne refuse rien (CA2, Q2).
  *
- * Le véhicule part au plus tôt à `start.availableFrom` (L7t-C2).
+ * Chaque tournée part au plus tard qui tient les échéances du véhicule
+ * (`latestDepartures`, CA2), jamais avant `start.availableFrom` (L7t-C2) ni
+ * avant le retour du passage précédent.
  *
  * Appelé des dizaines de milliers de fois par proposition : il refait le
  * chronométrage de `timeRoute` sans rien allouer. Les deux doivent rester
@@ -168,24 +185,27 @@ export function scoreVehicle(
   routes: Routes,
   start: VehicleStart,
 ): VehicleScore {
-  const maxSeconds = maxSecondsOf(ctx);
-  const defaultStop = ctx.settings.stopMinutes * SECONDS_PER_MINUTE;
-  const margin = ctx.settings.safetyMarginMinutes * SECONDS_PER_MINUTE;
+  const clock = clockOf(ctx, start.availableFrom);
+  const defaultStop = clock.stopSeconds;
+  const margin = clock.safetySeconds ?? 0;
+  const all = routes.map(({ stops }) => stops);
+  const latest = latestDepartures(ctx.depotId, all, ctx.cost, clock);
   let cost = 0;
   let lateSeconds = 0;
-  let overSeconds = 0;
   let opened = start.passagesBefore;
   let earliest = start.availableFrom;
-  for (const { stops } of routes) {
-    const first = stops[0];
-    if (first === undefined) {
+  for (const [index, stops] of all.entries()) {
+    if (stops.length === 0) {
       continue;
     }
-    const firstStart = first.window?.start ?? null;
-    const departure =
-      firstStart === null
-        ? earliest
-        : Math.max(earliest, firstStart - ctx.cost.seconds(ctx.depotId, first.id));
+    const routeClock = { ...clock, earliestDeparture: earliest };
+    const departure = departureOf(
+      ctx.depotId,
+      stops,
+      ctx.cost,
+      routeClock,
+      latest[index] ?? Infinity,
+    );
     let at = departure;
     let inMargin = 0;
     let previous = ctx.depotId;
@@ -207,9 +227,8 @@ export function scoreVehicle(
       MARGIN_WEIGHT * inMargin +
       ROUND_OPENING_SECONDS +
       (opened > 0 ? passagePenaltyOf(ctx) : 0);
-    overSeconds += Math.max(0, duration - maxSeconds);
     opened += 1;
     earliest = back;
   }
-  return { lateSeconds, cost, overSeconds };
+  return { lateSeconds, cost };
 }

@@ -142,7 +142,7 @@ Tranchées par Hugo le 2026-10-03 :
 **Le principe.** Pour un jour **à venir**, « Organisation de tournées » ne
 montre pas des tournées vides à remplir : elle montre la **composition
 prévisionnelle** du jour, recalculée à chaque commande qui entre, change ou
-s'annule. C'est l'aperçu de « Proposer » (`handoff-tournees/SPEC.md`, §6),
+s'annule. C’est l’aperçu de « Proposer » (le handoff « Tournées », §6),
 devenu **permanent et vivant**.
 
 - Elle dit en continu : véhicules et passages nécessaires, heure de départ de

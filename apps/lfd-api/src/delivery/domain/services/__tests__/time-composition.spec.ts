@@ -39,7 +39,7 @@ describe("timeComposition — chronométrer une composition telle quelle (L10b-C
     expect(tours.map((tour) => tour.roundId)).toEqual(["r1", null]);
   });
 
-  it("chaque véhicule part à l'heure réglée ; son passage suivant, à son retour", () => {
+  it("rien ne presse : chaque véhicule part à l'heure réglée ; son passage suivant, à son retour", () => {
     const tours = timeComposition({
       depotId: "depot",
       rounds: [
@@ -54,6 +54,22 @@ describe("timeComposition — chronométrer une composition telle quelle (L10b-C
     // Aller 10 min, arrêt 5 min, retour 10 min : 25 min.
     expect(tours.map((tour) => tour.timed.departure)).toEqual([SIX, SIX, SIX + 25 * 60]);
     expect(tours.map((tour) => tour.rank)).toEqual([1, 1, 2]);
+  });
+
+  it("passages enchaînés : une échéance du second fait partir le premier plus tôt (CA2)", () => {
+    const tours = timeComposition({
+      depotId: "depot",
+      rounds: [
+        { roundId: null, vehicle: KANGOO, stops: [{ id: "a", window: null }] },
+        { roundId: null, vehicle: KANGOO, stops: [{ id: "b", window: { start: null, end: SIX } }] },
+      ],
+      cost: TEN_MINUTES,
+      settings: settings({ safetyMarginMinutes: 0 }),
+    });
+
+    // Le second part à 5 h 50 pour b avant 6 h ; le premier (25 min) à 5 h 25.
+    expect(tours.map((tour) => tour.timed.departure)).toEqual([SIX - 35 * 60, SIX - 10 * 60]);
+    expect(tours.flatMap((tour) => tour.timed.missed)).toEqual([false, false]);
   });
 
   it("signale une tournée trop longue, sans la couper", () => {

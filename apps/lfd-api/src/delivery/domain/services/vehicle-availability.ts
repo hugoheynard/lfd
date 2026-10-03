@@ -1,8 +1,8 @@
 import { compareIds } from "./compare-ids.js";
 import type { PlanningContext, PlanningVehicle } from "./proposal.js";
-import type { RoutingStop } from "./route-timing.js";
+import { DAY_START, type RoutingStop } from "./route-timing.js";
 import { timeComposition } from "./time-composition.js";
-import { openingOf, type VehicleStart } from "./vehicle-plan.js";
+import type { VehicleStart } from "./vehicle-plan.js";
 
 /** Une tournée gardée qui OCCUPE son véhicule : chargée ou partie (L7t-C2). */
 export interface BusyRound {
@@ -48,11 +48,7 @@ export function busyStarts(
     const late = actual === null ? 0 : Math.max(0, actual - tour.timed.departure);
     const previous = starts.get(tour.vehicleId);
     starts.set(tour.vehicleId, {
-      availableFrom: Math.max(
-        openingOf(ctx),
-        previous?.availableFrom ?? 0,
-        tour.timed.return + late,
-      ),
+      availableFrom: Math.max(previous?.availableFrom ?? DAY_START, tour.timed.return + late),
       passagesBefore: (previous?.passagesBefore ?? 0) + 1,
     });
   });
