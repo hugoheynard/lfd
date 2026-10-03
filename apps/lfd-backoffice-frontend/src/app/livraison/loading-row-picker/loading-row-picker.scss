@@ -92,9 +92,10 @@
   height: calc(var(--fold-space-md) + 2px);
 }
 
-// Sur l'onglet ouvert (fond sombre), le pointillé d'un bac à charger passe au
-// gris clair : en blanc pur, il se confondait avec la teinte claire du carré,
-// en gris moyen il disparaissait dans le fond.
+// Sur l'onglet ouvert (fond sombre), un bac à charger garde un pointillé
+// clair sur un fond SOMBRE teinté : un carré clair avalait le pointillé clair,
+// un pointillé gris disparaissait dans le fond (Hugo, 2026-10-03).
 .rp-tab--active .rp-mark--pending {
-  border-color: color-mix(in srgb, var(--fold-ref-white) 70%, transparent);
+  border-color: color-mix(in srgb, var(--fold-ref-white) 80%, transparent);
+  background: color-mix(in srgb, var(--stop-hue-a) 30%, transparent);
 }
