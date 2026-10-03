@@ -133,6 +133,53 @@ Tranchées par Hugo le 2026-10-03 :
 - **Q5** — Un véhicule « paramétré » exige-t-il aussi les passages de roue et
   la caisse froide, ou les cotes suffisent-elles ?
 
+## 7. v2 — le prévisionnel vit dans « Organisation de tournées » (Hugo, 2026-10-03)
+
+> « Notre problématique, c'est la planification : il faut un estimate en temps
+> réel à chaque nouvelle commande. » — puis : « ça peut être dans /tournées,
+> c'est exactement le but. »
+
+**Le principe.** Pour un jour **à venir**, « Organisation de tournées » ne
+montre pas des tournées vides à remplir : elle montre la **composition
+prévisionnelle** du jour, recalculée à chaque commande qui entre, change ou
+s'annule. C'est l'aperçu de « Proposer » (`handoff-tournees/SPEC.md`, §6),
+devenu **permanent et vivant**.
+
+- Elle dit en continu : véhicules et passages nécessaires, heure de départ de
+  chaque tournée (à rebours, CA-D1), remplissage (litres + plancher), et les
+  commandes **à risque** (échéance intenable, capacité).
+- On y **glisse** comme aujourd'hui en aperçu : un geste humain devient une
+  **contrainte** du prévisionnel (« cette commande dans ce véhicule, à cette
+  place ») que les recalculs respectent — l'épinglage.
+- À l'**heure limite de commande** de la veille, le prévisionnel est
+  **appliqué** aux tournées réelles, une fois (ou avant, par « Appliquer »).
+  Ensuite on est sur le réel : correction à la main, chargement, départ.
+
+**Ce que ça lève dans la contradiction (§6).**
+
+|                     | Comment                                                                                                                                         |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| V1 versions         | le recalcul n'écrit pas dans les tournées réelles ; une seule écriture, à l'heure limite                                                        |
+| V2 déclencheur      | un recalcul est rejouable sans risque ; un raté se rattrape au suivant. Reste : le port commerce → livraison « une commande livrable a changé » |
+| V3 épinglage        | les contraintes humaines vivent sur le prévisionnel ; il faut les stocker (migration additive), pas une colonne sur l'arrêt réel                |
+| V4 départ à rebours | inchangé : la passe arrière par véhicule reste à bâtir (Q1, Q2 tranchées)                                                                       |
+| V5 sans fenêtre     | levé pour l'avenir : échéance obligatoire à la commande                                                                                         |
+
+**Ce qui ne passe pas** est **accepté et signalé** (« à risque ») : on ne
+refuse pas une commande sur une estimation tant qu'on ne l'a pas comparée au
+réel pendant quelques semaines. Ensuite, le même calcul pourra alimenter le
+parcours de commande.
+
+**Ordre v2** : CA1 (véhicule, bac, échéance obligatoires) → CA2 (départ à
+rebours, durée max en signal) → CA4 (capacité) → **banc à 200 clients** →
+le prévisionnel (stockage, recalcul à chaque commande, contraintes humaines,
+affichage dans Organisation de tournées) → l'application à l'heure limite.
+CA3 (réglage créneau/échéance) en parallèle.
+
+**Ouvert** : où vit le prévisionnel (table neuve ou recalcul à la lecture),
+qui déclenche le recalcul (port du canal, file), et ce que voit le bureau
+quand deux personnes glissent dans le même prévisionnel.
+
 ## 6. Contradiction de `vitruve` (2026-10-03) — à corriger avant de bâtir
 
 Le plan v1 ci-dessus **ne tient pas en l'état**. Cinq objections bloquantes,
