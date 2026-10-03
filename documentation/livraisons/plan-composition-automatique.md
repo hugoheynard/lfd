@@ -279,3 +279,36 @@ est-il son jour de livraison ?
 | **Banc** | 200 clients de la vallée : recalcul complet < 5 s, insertion d'une commande < 1 s.                                                                                                                           | non           |
 | **CA5**  | Le prévisionnel : recalcul à la lecture, cache sur (jour, version commerce, version flotte, version contraintes) ; table des contraintes humaines ; alerte rouge quand un geste rend une commande intenable. | oui, additive |
 | **CA6**  | La clôture de production comme signal « prêt à appliquer » ; place suggérée pour une commande arrivée sur un jour déjà réel.                                                                                 | non           |
+
+## 11. Contradiction de la v3 (2026-10-03), et la v4 proposée
+
+**Bloquants de `vitruve` et réponse :**
+
+| #   | Objection                                                                                                                                                                                                 | v4                                                                                                                                                                                                                                                                                             |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1  | Un calcul « définitif » pur n'est pas définitif (la version du commerce bouge encore après la clôture : `absorbIntoPlan`, dérogations) ; figé, il faudrait l'écrire, sur un déclencheur de la production. | **Le calcul définitif est celui que fait « Appliquer »**, au clic, sur l'état du moment et en respectant les verrous. Rien n'est stocké avant ; la clôture ne déclenche aucune écriture, elle **autorise et signale** (« prêt à appliquer »).                                                  |
+| B2  | Aucun port ne dit à la livraison que le jour est clos ; `delivery → production` est fermé ; `ProductionDayClosedEvent` vit dans `production/channels/commerce/`.                                          | Un **lecteur** dans `delivery/channels/commerce/` (« la journée J est-elle close ? »), implémenté par le **commerce**, qui lit la production par son port permis (`b2b → production`, port uniquement). Une lecture, pas un déclencheur : la doctrine du canal tient, la matrice ne bouge pas. |
+| B3  | `retake` n'efface pas `closedAt` ; aucun signal de reprise.                                                                                                                                               | La reprise **ne rouvre rien** : le jour reste clos, les commandes absorbées apparaissent « à placer », avec leur place suggérée. Phrase « la reprise rouvre » retirée.                                                                                                                         |
+
+**Sérieux pris :**
+
+- Le jour de fabrication **est** le jour de livraison, par convention (`serviceDay` = `requestedDeliveryDate`, `prisma-day-orders.reader.ts:47`) : écrit ici, à tenir.
+- **Pas de cache en v4.** Recalcul à la lecture, mesuré au banc ; un cache ne viendra que si le banc l'exige, et alors avec une clé qui couvre **toutes** les entrées (réglages, bacs, géocodage, flotte, contraintes), dans une table — les backends sont sans état.
+- **Le banc** mesure le **calcul pur** (matrice exclue, mesurée à part) : 200 arrêts, 4 véhicules, 2 passages permis, 10 contraintes, matrice chaude, médiane et p95 sur 20 tirages, sur le poste de dev ; seuil p95 < 5 s. Le seuil « insertion < 1 s » est retiré (il n'y a plus d'insertion). Le jeu : 200 points tirés dans les communes servies, graine fixe.
+
+**Lots v4 :**
+
+| Lot      | Contenu                                                                                                                                    |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **CA1**  | Livraison : véhicule actif avec cotes + type de bac actif obligatoires (Q5 : les cotes suffisent, proposé)                                 |
+| **CA1b** | Commerce : échéance ou créneau obligatoire à la commande livrée ; les commandes passées sans fenêtre sont signalées, jamais réécrites      |
+| **CA2**  | Départ à rebours, durée max en signal _(en cours)_                                                                                         |
+| **CA3**  | Réglage créneau / échéance, affichage « avant HH:MM »                                                                                      |
+| **CA4**  | Capacité à la composition                                                                                                                  |
+| **Banc** | Ci-dessus                                                                                                                                  |
+| **CA5**  | Le prévisionnel à la lecture ; table des contraintes avec version de l'ensemble par jour (deux glisseurs : le second relit) ; alerte rouge |
+| **CA6**  | Le lecteur « jour clos » (B2) ; « Appliquer » = calcul définitif ; écran « prêt à appliquer »                                              |
+| **CA7**  | La place suggérée d'une commande arrivée sur un jour déjà réel (dérogation, reprise)                                                       |
+
+**Encore ouvertes :** Q4 (situer l'adresse à la commande ?), Q5 (cotes
+seules ?).
