@@ -157,6 +157,15 @@ export abstract class OrderRepository {
    *
    * Rend le **nombre** de commandes absorbées. Zéro sur une seconde clôture :
    * la condition d'état rend l'opération idempotente sans garde ajouté.
+   *
+   * 🔴 **Bornée à `orderIds`** depuis le 2026-10-04 : les commandes que la
+   * production a comptées, et elles seules. Sans cette borne, l'effet dépendait
+   * de l'HEURE de livraison — une reprise ou un rejeu du fait durable confirmait
+   * aussi les commandes passées après l'arrêt, jamais comptées par le fournil.
    */
-  abstract absorbIntoPlan(serviceDay: string, at: Date): Promise<number>;
+  abstract absorbIntoPlan(
+    serviceDay: string,
+    orderIds: readonly string[],
+    at: Date,
+  ): Promise<number>;
 }

@@ -23,7 +23,11 @@ export {
   type ExpectedDayProduction,
   type ExpectedItem,
 } from "./expected-production.reader.js";
-export { ProductionDayClosedEvent } from "./production-day-closed.event.js";
+export {
+  PRODUCTION_DAY_CLOSED,
+  ProductionDayClosedEvent,
+  ProductionDayClosedPayloadError,
+} from "./production-day-closed.event.js";
 export { PendingCommerceOrdersReader } from "./pending-orders.reader.js";
 export { PendingSettlementSweeper } from "./pending-settlement.sweeper.js";
 export { OrderPackedEvent } from "./order-packed.event.js";

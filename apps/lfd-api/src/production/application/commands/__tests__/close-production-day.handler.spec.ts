@@ -1,6 +1,8 @@
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import type { JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
+import type { DurableFact } from "../../../../platform/outbox/durable-event.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   DayOrdersReader,
@@ -145,6 +147,32 @@ class Publisher extends RecordingPublisher {
   }
 }
 
+/** Le fait durable de référence, tel que le contrat l'écrit. */
+function closedFact(
+  orderIds: readonly string[],
+  closedAt: Date,
+  reannouncedAt: Date | null = null,
+) {
+  return new ProductionDayClosedEvent(DAY, closedAt, orderIds, reannouncedAt).durableFact();
+}
+
+/** La boîte d'envoi doublée : elle refuse hors unité de travail, comme le vrai port. */
+class Durable extends DurablePublisher {
+  readonly facts: DurableFact[] = [];
+
+  constructor(private readonly uow: ObservedUnitOfWork) {
+    super();
+  }
+
+  publish(fact: DurableFact): Promise<void> {
+    if (!this.uow.open) {
+      return Promise.reject(new Error("fait durable hors unité de travail"));
+    }
+    this.facts.push(fact);
+    return Promise.resolve();
+  }
+}
+
 function subject(day: ProductionDay, rows: readonly ProducibleOrder[]) {
   const days = new Days(day);
   const calls: CommerceCall[] = [];
@@ -152,7 +180,9 @@ function subject(day: ProductionDay, rows: readonly ProducibleOrder[]) {
   const sweeper = new Sweeper(calls);
   const uow = new ObservedUnitOfWork();
   const events = new Publisher(uow);
+  const durable = new Durable(uow);
   return {
+    durable,
     days,
     commerce,
     sweeper,
@@ -165,6 +195,7 @@ function subject(day: ProductionDay, rows: readonly ProducibleOrder[]) {
       events,
       new FixedClock(NOW),
       uow,
+      durable,
     ),
   };
 }
@@ -172,7 +203,10 @@ function subject(day: ProductionDay, rows: readonly ProducibleOrder[]) {
 describe("clore une journée", () => {
   it("inscrit les commandes, arrête le compte, et PUBLIE le fait", async () => {
     const open = ProductionDay.open(ServiceDay.of(DAY));
-    const { handler, days, events } = subject(open, [order(), order({ orderId: "ord_2" })]);
+    const { handler, days, events, durable } = subject(open, [
+      order(),
+      order({ orderId: "ord_2" }),
+    ]);
 
     const closure = await handler.execute(new CloseProductionDayCommand(DAY));
 
@@ -185,10 +219,8 @@ describe("clore une journée", () => {
     expect(days.saved?.counts).toEqual([
       { sku: "VIE-001", productName: "Croissant", quantity: 80, done: null },
     ]);
-    expect(events.published).toEqual([
-      new ProductionDayClosedJournalEvent(DAY, 2),
-      new ProductionDayClosedEvent(DAY, NOW, 2),
-    ]);
+    expect(events.published).toEqual([new ProductionDayClosedJournalEvent(DAY, 2)]);
+    expect(durable.facts).toEqual([closedFact(["ord_1", "ord_2"], NOW)]);
   });
 
   it("JOURNALISE la clôture — la date de service et le nombre inscrit", async () => {
@@ -209,14 +241,27 @@ describe("clore une journée", () => {
     ]);
   });
 
-  it("le fait part DANS l'unité de travail, l'événement du canal APRÈS elle", async () => {
-    // Publié depuis la transaction, l'abonné du commerce hériterait de son
-    // contexte et écrirait sur une transaction pas encore validée.
-    const { handler, events } = subject(ProductionDay.open(ServiceDay.of(DAY)), [order()]);
+  it("journal ET boîte d'envoi partent DANS l'unité de travail de la clôture", async () => {
+    // Le fait durable tombe avec la clôture, ou n'existe pas : le double refuse
+    // hors unité de travail, comme le vrai port. Plus rien ne part en mémoire.
+    const { handler, events, durable } = subject(ProductionDay.open(ServiceDay.of(DAY)), [order()]);
 
     await handler.execute(new CloseProductionDayCommand(DAY));
 
     expect(events.insideUnitOfWork).toEqual([new ProductionDayClosedJournalEvent(DAY, 1)]);
+    expect(durable.facts).toHaveLength(1);
+  });
+
+  it("la clé de la clôture est déterministe : la journée et l'instant d'arrêt", async () => {
+    const { handler, durable } = subject(ProductionDay.open(ServiceDay.of(DAY)), [order()]);
+
+    await handler.execute(new CloseProductionDayCommand(DAY));
+
+    expect(durable.facts[0]).toMatchObject({
+      type: "production.day_closed",
+      key: `production.day_closed:${DAY}:${NOW.toISOString()}`,
+      payload: { serviceDay: DAY, closedAt: NOW.toISOString(), orderIds: ["ord_1"] },
+    });
   });
 
   it("ne confirme RIEN chez le commerce — il l'apprend par l'événement", async () => {
@@ -252,13 +297,14 @@ describe("clore une journée", () => {
   });
 
   it("REFUSE une journée sans commande, plutôt que d'arrêter le vide", async () => {
-    const { handler, days, events } = subject(ProductionDay.open(ServiceDay.of(DAY)), []);
+    const { handler, days, events, durable } = subject(ProductionDay.open(ServiceDay.of(DAY)), []);
 
     await expect(handler.execute(new CloseProductionDayCommand(DAY))).rejects.toThrow(
       ProductionDayEmptyError,
     );
     expect(days.saved).toBeNull();
     expect(events.published).toEqual([]);
+    expect(durable.facts).toEqual([]);
   });
 
   it("refuse un jour qui n'est pas une date", async () => {
@@ -279,14 +325,16 @@ describe("réannoncer une journée déjà close", () => {
     expect(sweeper.days).toEqual([DAY]);
   });
 
-  it("REPUBLIE le fait sans rien recalculer", async () => {
-    // C'est le rattrapage prévu : le bus vit en processus, donc un abonné qui a
-    // échoué laisserait des commandes `placed` sur une journée close. Presser à
-    // nouveau le bouton republie — et `absorbIntoPlan` étant idempotent, c'est
-    // sans danger.
+  it("REPUBLIE le fait sans rien recalculer — l'instantané, pas le commerce d'aujourd'hui", async () => {
+    // Le filet humain : presser à nouveau le bouton republie un fait durable.
+    // Il porte les commandes de l'INSTANTANÉ (ord_1), jamais `ord_2` arrivée
+    // après l'arrêt : le commerce n'absorbe que ce que le fournil a compté.
     const closed = ProductionDay.open(ServiceDay.of(DAY));
     closed.close([order()], EARLIER);
-    const { handler, days, events } = subject(closed, [order(), order({ orderId: "ord_2" })]);
+    const { handler, days, events, durable } = subject(closed, [
+      order(),
+      order({ orderId: "ord_2" }),
+    ]);
 
     const closure = await handler.execute(new CloseProductionDayCommand(DAY));
 
@@ -295,8 +343,23 @@ describe("réannoncer une journée déjà close", () => {
     // par la même clôture doivent porter la même heure.
     expect(closure.closedAt).toBe(EARLIER.toISOString());
     expect(closure.absorbed).toBe(1);
-    expect(events.published).toEqual([new ProductionDayClosedEvent(DAY, EARLIER, 1)]);
+    expect(events.published).toEqual([]);
+    expect(durable.facts).toEqual([closedFact(["ord_1"], EARLIER, NOW)]);
     expect(days.saved).toBeNull();
+  });
+
+  it("une réannonce est un fait NEUF : sa clé porte l'instant du geste", async () => {
+    // Dédupliquée sur la clé de la clôture, elle ne ferait rien — un bouton de
+    // réparation sans effet. Cf. `ProductionDayClosedEvent`, « La clé ».
+    const closed = ProductionDay.open(ServiceDay.of(DAY));
+    closed.close([order()], EARLIER);
+    const { handler, durable } = subject(closed, [order()]);
+
+    await handler.execute(new CloseProductionDayCommand(DAY));
+
+    expect(durable.facts[0]?.key).toBe(
+      `production.day_closed:${DAY}:${EARLIER.toISOString()}:reannounced:${NOW.toISOString()}`,
+    );
   });
 
   it("n'écrit AUCUN fait au journal — rien n'a changé", async () => {

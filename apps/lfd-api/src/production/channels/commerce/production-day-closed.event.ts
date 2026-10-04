@@ -1,35 +1,101 @@
+import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
+import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
+
+/** Nom stable du fait, clé de routage vers `@DurableHandler`. */
+export const PRODUCTION_DAY_CLOSED = "production.day_closed";
+
 /**
- * **Une journée de fabrication vient d'être arrêtée.**
+ * **Une journée de fabrication vient d'être arrêtée** — fait DURABLE depuis le
+ * 2026-10-04 (plan `documentation/journalisation/plan-boite-d-envoi.md`, §7 :
+ * la clôture est le premier client de la boîte d'envoi).
  *
  * Le fait appartient à la production : c'est elle qui décide qu'une journée
  * bascule. Le commerce l'apprend et en tire ses conséquences — ses commandes
- * passent `confirmed` — sans que la production ait à le savoir. C'est le
- * couplage minimal : chaque contexte n'écrit QUE ses propres tables.
+ * passent `confirmed` — sans que la production ait à le savoir.
  *
- * ⚠️ **Il est publié aussi lors d'une RÉANNONCE.** Presser à nouveau le bouton
- * sur une journée déjà arrêtée ne recalcule rien — l'agrégat refuse — mais
- * republie le fait. C'est le rattrapage prévu quand un abonné a échoué : le bus
- * vit en processus, l'événement n'est ni persisté ni rejoué, et un container qui
- * tombe entre la publication et l'écriture laisserait des commandes `placed` sur
- * une journée close.
+ * ## Le contrat (le payload), et pourquoi il porte les commandes
  *
- * Les abonnés doivent donc être **idempotents**. `absorbIntoPlan` l'est par son
- * `where` (`status: placed`), et c'est ce qui rend la réannonce sans danger.
+ * `{ serviceDay, closedAt, orderIds }` — rien d'autre, aucune forme Prisma.
+ * `orderIds` est l'instantané que la production a compté : l'abonné n'absorbe
+ * QUE celles-là. Sans eux, une livraison tardive (reprise, rejeu d'un message
+ * mort) confirmait aussi les commandes passées APRÈS l'arrêt, que le fournil
+ * n'a jamais comptées, et les datait d'une clôture qui ne les avait pas vues.
  *
- * 🔴 **Il vit dans le CANAL, pas dans le domaine**, et la porte des frontières
- * me l'a appris : un événement qu'un autre bloc consomme fait partie de la
- * surface publiée, au même titre qu'un port. Le laisser dans `domain/events/`
- * aurait obligé le commerce à atteindre l'intérieur du fournil pour s'abonner —
- * « on n'atteint pas l'intérieur d'un autre bloc parce qu'on en connaît le
- * chemin ».
+ * ## La clé
+ *
+ * - Clôture : `production.day_closed:<serviceDay>:<closedAt>`. Une journée ne se
+ *   clôt qu'une fois (l'agrégat refuse la seconde), donc la clé est unique par
+ *   plan arrêté ; si un jour une réouverture existe, la nouvelle clôture aura
+ *   un autre instant, donc sera un autre fait.
+ * - Réannonce : `…:<closedAt>:reannounced:<instant de la réannonce>`. Elle ne
+ *   change pas l'instantané mais peut changer ce qu'il CONTIENT (un retirage y
+ *   ajoute des commandes, et c'est la réannonce qui les fait apprendre au
+ *   commerce — cf. `RetakeProductionDayHandler`). Surtout, c'est un geste humain
+ *   de réparation : la dédupliquer en silence ferait d'un bouton un geste sans
+ *   effet. Chaque pression est donc un fait, et l'effet reste borné par
+ *   `orderIds` et par `status: placed`.
+ *
+ * 🔴 **Il vit dans le CANAL, pas dans le domaine** : un fait qu'un autre bloc
+ * consomme fait partie de la surface publiée, au même titre qu'un port.
  */
-export class ProductionDayClosedEvent {
+export class ProductionDayClosedEvent implements DurableEvent {
   constructor(
     /** `AAAA-MM-JJ` — la journée arrêtée. */
     readonly serviceDay: string,
     /** L'instant de la clôture **d'origine**, jamais celui du rejeu. */
     readonly closedAt: Date,
-    /** Ce que la production a inscrit chez elle. Pour le journal, pas pour agir. */
-    readonly orderCount: number,
+    /** Les commandes de l'instantané — les seules que le commerce absorbe. */
+    readonly orderIds: readonly string[],
+    /** Présent sur une réannonce : l'instant du geste, pour la clé seulement. */
+    readonly reannouncedAt: Date | null = null,
   ) {}
+
+  durableFact(): DurableFact {
+    const base = `${PRODUCTION_DAY_CLOSED}:${this.serviceDay}:${this.closedAt.toISOString()}`;
+    return {
+      type: PRODUCTION_DAY_CLOSED,
+      key:
+        this.reannouncedAt === null
+          ? base
+          : `${base}:reannounced:${this.reannouncedAt.toISOString()}`,
+      payload: {
+        serviceDay: this.serviceDay,
+        closedAt: this.closedAt.toISOString(),
+        orderIds: [...this.orderIds],
+      },
+    };
+  }
+
+  /**
+   * Relit le contrat côté abonné. Un payload hors forme est une faute d'émetteur :
+   * la livraison échoue, est reprise, puis finit en message mort visible.
+   *
+   * @throws {ProductionDayClosedPayloadError}
+   */
+  static fromPayload(payload: Readonly<Record<string, unknown>>): ProductionDayClosedEvent {
+    const { serviceDay, closedAt, orderIds } = payload;
+    const at = typeof closedAt === "string" ? new Date(closedAt) : null;
+    if (
+      typeof serviceDay !== "string" ||
+      at === null ||
+      Number.isNaN(at.getTime()) ||
+      !Array.isArray(orderIds) ||
+      !orderIds.every((id): id is string => typeof id === "string")
+    ) {
+      throw new ProductionDayClosedPayloadError();
+    }
+    return new ProductionDayClosedEvent(serviceDay, at, orderIds);
+  }
+}
+
+/** Le fait `production.day_closed` reçu ne respecte pas son contrat. */
+export class ProductionDayClosedPayloadError extends TechnicalError {
+  constructor() {
+    super(
+      "production_day_closed.payload_invalid",
+      "Le fait « journée arrêtée » reçu est illisible (journée, instant ou commandes manquants) : " +
+        "le commerce n'a rien confirmé. Le message reste dans la boîte d'envoi ; " +
+        "corriger l'émetteur puis le rejouer depuis la carte de santé.",
+    );
+  }
 }

@@ -18,10 +18,10 @@ import type { JournalFact, JournaledEvent } from "../../../platform/journal/jour
  *
  * ⚠️ **Ce ne sont PAS les événements du canal.** `ProductionDayClosedEvent`
  * (`channels/commerce/`) est ce que le commerce écoute pour confirmer ses
- * commandes ; il est publié APRÈS la transaction, et aussi à chaque réannonce.
- * Ces faits-ci partent DANS la transaction, et seulement quand quelque chose a
- * changé. Les confondre ferait soit journaliser les réannonces, soit publier au
- * commerce depuis l'intérieur d'une transaction pas encore validée.
+ * commandes ; c'est un fait de la boîte d'envoi (depuis le 2026-10-04), écrit
+ * aussi à chaque réannonce, et livré par le relais APRÈS la validation. Ces
+ * faits-ci vont au journal, et seulement quand quelque chose a changé. Les
+ * confondre ferait journaliser les réannonces.
  */
 export const PRODUCTION_DAY_FACTS = {
   closed: "production_day.closed",

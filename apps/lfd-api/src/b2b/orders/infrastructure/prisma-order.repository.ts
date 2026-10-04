@@ -289,13 +289,15 @@ export class PrismaOrderRepository extends OrderRepository {
     return count === 1;
   }
 
-  async absorbIntoPlan(serviceDay: string, at: Date): Promise<number> {
+  async absorbIntoPlan(serviceDay: string, orderIds: readonly string[], at: Date): Promise<number> {
     // `status: placed` dans le WHERE : c'est la base qui applique la règle
     // nommée par `absorbedByPlan`. Une commande déjà plus avancée n'est pas
     // touchée — les états ne reculent jamais — et une seconde clôture n'en
     // trouve aucune, donc n'en change aucune.
+    // `id IN orderIds` : seules les commandes de l'instantané (cf. le port).
     const { count } = await this.prisma.order.updateMany({
       where: {
+        id: { in: [...orderIds] },
         requestedDeliveryDate: new Date(`${serviceDay}T00:00:00.000Z`),
         // 🔴 **Le fragment PARTAGÉ** (2026-09-17). C'est ICI que la règle
         // s'écrivait en dur, et les trois autres surfaces la recopiaient — mal.

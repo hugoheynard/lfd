@@ -191,3 +191,36 @@ Deux ajouts à BE1, que la comparaison a fait voir :
   aucun cron n'a été ajouté.
 - **Reste** : l'affichage des messages morts dans la carte de santé (un nœud
   du manifeste, `@lfd/ops-contract`, l'écran). Les données sont prêtes.
+
+## 10. BE3 bâti en premier (2026-10-04) — la clôture de journée
+
+Ordre du §7 : la clôture est le premier client. Le tableau du §5 garde ses
+numéros ; c'est le lot BE3 qui est bâti ici.
+
+- `CloseProductionDayHandler` écrit `production.day_closed` dans la boîte
+  d'envoi, **dans la même unité de travail** que la journée et le journal. Plus
+  rien ne part sur le bus en mémoire pour ce fait : son seul abonné
+  (`OnProductionDayClosed`, b2b) est devenu un `@DurableHandler`
+  (`b2b.orders.absorb-into-plan`).
+- **Le contrat** : `{ serviceDay, closedAt, orderIds }`, relu par
+  `ProductionDayClosedEvent.fromPayload` (un payload hors forme échoue, est
+  repris, puis reste visible en message mort).
+- **L'idempotence n'était pas vraie, elle l'est.** `absorbIntoPlan` prenait
+  toute la journée `placed` : une livraison tardive (reprise, rejeu) ou une
+  réannonce confirmait aussi les commandes passées APRÈS l'arrêt, que le fournil
+  n'avait pas comptées, en les datant de la clôture. Elle est bornée depuis aux
+  `orderIds` de l'instantané. Test e2e : `production-day-closed`, « une
+  re-clôture est un fait NEUF, qui n'absorbe que l'instantané ».
+- **La clé.** Clôture : `production.day_closed:<jour>:<closedAt>` — une journée
+  ne se clôt qu'une fois (l'agrégat refuse), donc un fait par plan arrêté.
+  Réannonce : `…:<closedAt>:reannounced:<instant du geste>`, un fait NEUF à
+  chaque pression. Raison : la réannonce ne recalcule pas l'instantané, mais un
+  retirage y a pu ajouter des commandes, et c'est elle qui les fait apprendre
+  au commerce (le retirage ne publie rien) ; et c'est un geste humain de
+  réparation, qu'une déduplication rendrait muet (l'e2e `production-batch`
+  « MONTRE la divergence… et la referme » le tient). L'effet reste borné par
+  `orderIds` et `status: placed`.
+- **Écart à la consigne** « une re-clôture est un nouveau fait si elle change le
+  plan » : appliquée à la lettre, une réannonce sans retirage serait dédupliquée
+  et le bouton de réparation ne réparerait plus rien. Choisi : un fait par
+  geste. À trancher si l'on préfère que le filet passe par le rejeu admin.

@@ -10,8 +10,10 @@ import { planWhere } from "./plan-filter.js";
  * Ce que le commerce n'a pas encore basculé — **les trois retards possibles**.
  *
  * Un par fait que le fournil annonce : la clôture, le colisage, la remise. Les
- * trois passent par le même bus en processus, donc les trois peuvent se perdre ;
- * seul le premier se voyait avant le 2026-09-08.
+ * trois passaient par le même bus en processus, donc pouvaient se perdre ; seul
+ * le premier se voyait avant le 2026-09-08. Depuis le 2026-10-04, la clôture
+ * passe par la boîte d'envoi : elle ne se perd plus, mais une livraison en
+ * reprise laisse la journée en retard le temps du délai.
  *
  * ## La journée
  *

@@ -818,8 +818,9 @@ describe("le plan du soir", () => {
    * Attend que le COMMERCE ait appris.
    *
    * 🔴 Il l'apprend désormais par un **abonné**, pas par l'appel : la production
-   * publie `production.day_closed`, `b2b` s'abonne, et `BackgroundWork` porte la
-   * promesse. La requête répond donc avant que `confirmed` ne soit écrit —
+   * écrit `production.day_closed` dans la boîte d'envoi (depuis le 2026-10-04),
+   * `b2b` s'y abonne en `@DurableHandler`, et le relais, inscrit à
+   * `BackgroundWork`, le livre après la validation. La requête répond donc avant que `confirmed` ne soit écrit —
    * sonder est la seule façon honnête de tester ce chemin, et c'est le prix
    * assumé du couplage minimal.
    */
@@ -864,9 +865,9 @@ describe("le plan du soir", () => {
   });
 
   it("RÉANNONCE une journée close sans recalculer son instantané", async () => {
-    // Le rattrapage prévu : le bus vit en processus, donc un abonné qui échoue
-    // laisse des commandes `placed` sur une journée close. Rejouer la clôture
-    // republie le fait — mais le compte à produire, lui, ne bouge pas.
+    // Le filet humain (la boîte d'envoi reprend déjà un abonné qui échoue,
+    // depuis le 2026-10-04) : rejouer la clôture republie le fait — mais le
+    // compte à produire, lui, ne bouge pas.
     await place(SERVICE_DAY);
     const first = await closePlan(SERVICE_DAY);
 
