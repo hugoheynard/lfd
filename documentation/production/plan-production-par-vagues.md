@@ -177,3 +177,26 @@ de la journée, et elle est signalée.
   mode d'acheminement, pourra remplacer le réglage plus tard. Lot V4, après
   quelques semaines de données. En attendant, l'écran montre la marge réglée
   **à côté** de la mesure, pour qu'on voie l'écart avant d'automatiser.
+
+### 7.2 L'échéance mène (Hugo, 2026-10-04)
+
+> « on doit voir les vagues à l'envers : l'échéance mène, tout doit être fait
+> pour satisfaire l'échéance. »
+
+La vague n'est pas un casier, c'est **une vue à rebours des échéances** :
+
+- **Q3 — tranchée : une pièce sert toujours l'échéance la plus proche.** Il n'y
+  a pas de stock par vague. Au colisage, la réserve reste par `(jour, SKU)`, et
+  ce qui sort du four est attribué **d'abord à la commande dont l'échéance est
+  la plus proche** (earliest deadline first). Une pièce sortie « pour 08:40 »
+  sert 05:10 si 05:10 en manque.
+- **La fiche d'atelier se lit comme un compte à rebours** : pour chaque SKU, ce
+  qui doit être sorti avant chaque heure, **cumulé** (« 120 avant 04:40,
+  180 avant 08:10, 205 avant 10:30 »), et où l'on en est par rapport au
+  prochain seuil. Le retard se voit sur l'échéance qu'il met en danger, pas
+  sur une vague.
+- **Une fournée ne se déclare pas « pour une vague »** : elle s'ajoute au
+  sorti du SKU, et la répartition par échéance se calcule. Le §4 (« une fournée
+  se déclare pour une vague ») est remplacé.
+- **Au colisage**, la liste se trie par échéance, et une commande n'est
+  « colisable » que quand le sorti du SKU, attribué par échéance, la couvre.
