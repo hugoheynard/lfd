@@ -63,3 +63,48 @@ L'écran suit donc l'ordre des chantiers, pas celui du geste.
 - La moitié de bac partagée entre deux commandes (aujourd'hui `shareCandidate`,
   « à refaire ») : un contenant appartient-il à une commande, ou à un arrêt ?
 - Les étiquettes des sacs : quand, et quel contenu.
+
+## 5. Contradiction de `vitruve` (2026-10-04), et la v2
+
+Quatre BLOQUANTS, et une même racine : la v1 faisait naître le bac au colisage
+et le **copiait** à la livraison par un fait. Or la déclaration d'un bac porte
+des refus que seule la livraison sait tenir (type archivé ou non divisible,
+commande hors livraison ou annulée, tournée partie), un code court unique
+« sur tous les bacs, annulés compris » (`delivery_bin.code`, `drawBinCodes`),
+un QR qui porte `DeliveryBin.id`, et un cycle de vie (annuler, décharger,
+verrou au départ). Un fait asynchrone ne peut pas refuser à l'écran.
+
+**v2 — la livraison garde le bac, le colisage garde le contenu.**
+
+- **Un bac se crée par une DÉCISION synchrone.** Le colisage déclare un port
+  `BinDesk` dans `packing/channels/delivery/` (« déclare ce bac pour cette
+  commande », « annule-le », « propose un colisage »), que la livraison
+  implémente (relié dans `appBootstrap`). Ses refus d'aujourd'hui remontent
+  tels quels à l'écran. Le code et l'id sont tirés par la livraison, une seule
+  fois, dans `delivery_bin`, comme aujourd'hui.
+- **Matrice** : une arête `delivery → packing`, par `packing/channels/delivery/`
+  seulement (la livraison implémente ce que le colisage déclare, sur le modèle
+  de `b2b → delivery`). `packing → delivery` reste interdit. « Proposer » et les
+  contenances restent à la livraison, derrière le même port : pas de cycle.
+- **Le colisage tient le contenu** : `packing.container` (commande, nature
+  `bin` | `bag`, et pour un bac l'id **opaque** de `delivery_bin`) et
+  `packing.container_line` (contenant, SKU, quantité ; une ligne se coupe).
+  « Au bac » d'une ligne = la somme de ses répartitions.
+- **Les sacs** n'ont pas de livraison : ils naissent et vivent au colisage.
+  `delivery_bin.inner_bags` (les sacs posés DANS un bac, imprimés) reste ce
+  qu'il est ; ce n'est pas un contenant de retrait.
+- **Cycle de vie** : annuler un bac passe par le port (la livraison refuse un
+  bac chargé ou une tournée partie) ; le colisage retire alors son contenu.
+  Rouvrir une commande ne touche que le contenu. Le demi-bac partagé reste une
+  affaire de la livraison (`shareCandidate`, adjacence) : un contenant du
+  colisage pointe une **moitié** de bac (`delivery_bin` porte la moitié), et
+  deux commandes peuvent donc pointer le même bac physique.
+- **« Partir »** ne change pas : le bac existe dès la déclaration, avant tout
+  chargement.
+- **Bascule** : les commandes dont des bacs sont déjà déclarés gardent
+  l'ancien écran ; la colonne Contenants s'ouvre pour les journées **closes
+  après** le déploiement (colonne `packing_order.containers` posée à la
+  création de la liste à coliser). Aucun bac existant n'est repris.
+- **Contrat servi** : `container_count` et `PackingContainerStep` restent servis
+  pour les commandes de l'ancien écran ; pour les nouvelles, le compte devient
+  le nombre de contenants, en lecture seule.
