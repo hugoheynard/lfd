@@ -18,7 +18,12 @@
       déclare chaque bac à la livraison, et le compte anonyme n'apparaît plus.
       Le RETRAIT garde son compte (D4) : le serveur compte, le poste relit.
     -->
-    @if (order.fulfillmentMethod === 'delivery') {
+    @if (listed()) {
+      <!-- K2b (`plan-les-bacs-au-colisage.md` §5.1) : la commande `listed`
+           tient ses contenants dans une colonne, et ses lignes se GLISSENT —
+           ni compte, ni coche. Les commandes `counted` gardent ce qui suit. -->
+      <app-packing-container-board [sheet]="order" />
+    } @else if (order.fulfillmentMethod === 'delivery') {
       <app-packing-bin-row [orderId]="order.orderId" />
     } @else {
       <app-packing-containers
@@ -29,23 +34,25 @@
       />
     }
 
-    <div class="co-lines">
-      @for (line of order.lines; track line.sku) {
-        <app-packing-line
-          [line]="shownLine(line)"
-          [locked]="order.packedAt !== null || busySkus().has(line.sku)"
-          [hit]="hitSkus().has(line.sku)"
-          (toggled)="toggled.emit({ line, packed: $event })"
-        />
-      } @empty {
-        <fold-empty-state
-          title="Cette commande est vide"
-          subtitle="Aucune ligne à mettre dedans — rien n’a été commandé sur cette feuille."
-        >
-          <fold-icon empty-icon name="basket" size="lg" />
-        </fold-empty-state>
-      }
-    </div>
+    @if (!listed()) {
+      <div class="co-lines">
+        @for (line of order.lines; track line.sku) {
+          <app-packing-line
+            [line]="shownLine(line)"
+            [locked]="order.packedAt !== null || busySkus().has(line.sku)"
+            [hit]="hitSkus().has(line.sku)"
+            (toggled)="toggled.emit({ line, packed: $event })"
+          />
+        } @empty {
+          <fold-empty-state
+            title="Cette commande est vide"
+            subtitle="Aucune ligne à mettre dedans — rien n’a été commandé sur cette feuille."
+          >
+            <fold-icon empty-icon name="basket" size="lg" />
+          </fold-empty-state>
+        }
+      </div>
+    }
 
     <div class="co-close">
       @if (order.packedAt !== null) {
@@ -56,7 +63,7 @@
         <!-- Lot 4 bis : les bacs d'une livraison se déclarent ici, une fois
              la commande prête. Le composant décide seul de ce qu'il montre selon le droit
              `production_packing:write` ou `delivery_loading:write` ; « Prête » n'en dépend pas. -->
-        @if (order.fulfillmentMethod === 'delivery') {
+        @if (order.fulfillmentMethod === 'delivery' && !listed()) {
           <app-packing-bins [orderId]="order.orderId" />
         }
       } @else {

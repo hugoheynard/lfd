@@ -106,6 +106,12 @@ export const WINDOW_MODE = domain('manière de demander une livraison', {
   deadline: 'Échéance',
 });
 
+/** Un contenant du colisage (K2b) : un bac de livraison, ou un sac à emporter. */
+export const CONTAINER_NATURE = domain('nature d’un contenant', {
+  bin: 'Bac',
+  bag: 'Sac',
+});
+
 export const ORDERS_VALUES: ValueFamily = {
   enums: [
     WEEKDAY,
@@ -122,6 +128,7 @@ export const ORDERS_VALUES: ValueFamily = {
     QUALITY_LIFTING_VERDICT,
     HANDOVER_PROOF_ERASURE_CAUSE,
     WINDOW_MODE,
+    CONTAINER_NATURE,
   ],
   literals: {
     // Ce qu'un contrôle qualité juge (`target.kind`).

@@ -23,6 +23,8 @@ import type {
 import type { PackingStack } from '../../packing-board';
 import { PackingBinRow } from '../packing-bin-row/packing-bin-row';
 import { PackingBins } from '../packing-bins/packing-bins';
+import { isListed } from '../container-board';
+import { PackingContainerBoard } from '../packing-container-board/packing-container-board';
 import { PackingContainers } from '../packing-containers/packing-containers';
 import { PackingLine } from '../packing-line/packing-line';
 
@@ -67,6 +69,7 @@ export interface PackingLineToggle {
     FoldIconComponent,
     PackingBinRow,
     PackingBins,
+    PackingContainerBoard,
     PackingContainers,
     PackingLine,
   ],
@@ -117,6 +120,15 @@ export class PackingOpenOrder {
 
   /** « Déclarer prête » demandé. */
   readonly declareReady = output<void>();
+
+  /**
+   * La commande tient-elle ses contenants dans la colonne (K2b) ? Sinon,
+   * l'écran d'avant, intact.
+   */
+  protected readonly listed = computed(() => {
+    const order = this.sheet();
+    return order !== null && isListed(order);
+  });
 
   /** La rangée « + format » de la livraison ouverte, quand elle est rendue. */
   private readonly binRow = viewChild(PackingBinRow);

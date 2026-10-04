@@ -1,0 +1,166 @@
+/* 🔴 L'hôte ferme la chaîne de hauteurs (cf. `packing-open-order.scss`) :
+   sans `min-height: 0`, les deux colonnes cesseraient de défiler. */
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Produits | Contenants ; en pile, les contenants SOUS les produits. */
+.cb-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+@media (max-width: 1099px) {
+  .cb-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.cb-column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.cb-column + .cb-column {
+  border-left: 1px solid var(--fold-color-border);
+}
+
+@media (max-width: 1099px) {
+  .cb-column + .cb-column {
+    border-left: none;
+    border-top: 1px solid var(--fold-color-border);
+  }
+}
+
+.cb-band {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--fold-space-lg);
+  margin: 0;
+  padding: var(--fold-space-md) var(--fold-space-xl);
+  background: var(--fold-color-surface-band);
+  border-bottom: 1px solid var(--fold-color-border);
+}
+
+.cb-band-title {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
+}
+
+.cb-band-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--fold-color-border);
+}
+
+.cb-scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.cb-lines {
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-md);
+}
+
+.cb-containers {
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-md);
+}
+
+.cb-line {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text-muted);
+}
+
+/* Une ligne qui se glisse : on la prend, au doigt comme à la souris. */
+.cb-line.is-draggable {
+  color: var(--fold-color-text-primary);
+  cursor: grab;
+  touch-action: none;
+}
+
+.cb-line.is-done {
+  background: var(--fold-color-success-surface);
+}
+
+.cb-qty {
+  font-size: var(--fold-text-lg);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.cb-of {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-regular);
+  color: var(--fold-color-text-muted);
+}
+
+.cb-name {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  min-width: 0;
+}
+
+.cb-actions,
+.cb-formats,
+.cb-ask-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+.cb-shares {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cb-share {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.cb-ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding-top: var(--fold-space-sm);
+  border-top: 1px solid var(--fold-color-border);
+}
+
+/* Le contenant que survole une ligne : il se désigne. */
+.cb-container.cdk-drop-list-receiving,
+.cb-container.cdk-drop-list-dragging {
+  outline: 2px dashed var(--fold-color-info-border);
+  outline-offset: -2px;
+}
