@@ -126,6 +126,12 @@ son dépôt refuse d'écrire : oublier la trace ne compile pas. Ses faits porten
 des diffs et une **portée** (`blast`) que seul le handler sait calculer.
 Détail : [`../pim/journalisation-et-tracabilite.md`](../pim/journalisation-et-tracabilite.md).
 
+> ⚠️ **Ajouté le 2026-10-04 :** `publishTraced` garantit la **trace**, pas la
+> **livraison**. La publication qui suit l'écriture au journal se fait en
+> mémoire, et elle se perd si le processus redémarre. Un fait qui doit faire
+> réagir un autre bloc passe par la boîte d'envoi
+> ([`plan-evenements-durables.md`](plan-evenements-durables.md)).
+
 **2. Les actes nommés (`b2b/account`, zones, points de retrait, heures limites,
 mandats…)** — l'événement de domaine **est** le fait : il implémente
 `JournaledEvent.journalFact()` (`platform/journal/journal-fact.ts`), et
