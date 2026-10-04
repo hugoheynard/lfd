@@ -49,7 +49,12 @@
 >   depuis le 2026-10-01 avec `lint:no-role-grants-in-migrations` : seize
 >   migrations avaient accordé des droits à des rôles, contre l'écran censé
 >   les régler ; après la bascule des droits par geste, une migration n'écrit
->   plus ni `staff_role_definitions` ni `staff_permission_overrides`. C'est la
+>   plus ni `staff_role_definitions` ni `staff_permission_overrides`. Et **41**
+>   depuis le 2026-10-04 avec `lint:durable-cross-block` : un `@EventsHandler`
+>   qui écoute un fait d'un autre bloc vit sur le bus en mémoire, et un
+>   redémarrage laisse les deux blocs en désaccord sans que personne le sache ;
+>   entre deux blocs, l'abonné est un `@DurableHandler`, et les abonnés qui
+>   restent à basculer sont une dette comptée qui ne peut que décroître. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1125,7 +1130,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 40 portes du dépôt, d'un coup
+pnpm lint:gates         # les 41 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

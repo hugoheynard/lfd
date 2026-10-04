@@ -179,6 +179,12 @@ jobs:
       - name: "Gate : un contrôleur n'injecte que des bus"
         run: pnpm lint:controller-buses
 
+      # Un abonné en mémoire qui écoute un autre bloc perd le fait au premier
+      # redémarrage, et les deux blocs divergent sans que personne le sache.
+      # Entre deux blocs, l'abonné est durable ; la dette restante est comptée.
+      - name: "Gate : un fait qui traverse un bloc passe par la boîte d'envoi"
+        run: pnpm lint:durable-cross-block
+
       # Un `routerLink` absolu qui ne mène nulle part compile, démarre et passe
       # les tests : il casse au CLIC, en NG04002, devant l'utilisateur. Le PIM en
       # portait cinq, survivants de sa fusion dans le back-office — ses routes

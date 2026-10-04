@@ -62,13 +62,13 @@ sequenceDiagram
     alt la journée n'est pas arrêtée, ou la fiche n'est pas au plan
         P-->>Staff: 409 / 404 — le geste n'a pas de sens ici
     else le bac n'était pas encore fait
-        P->>P: markPacked — écriture CONDITIONNELLE, ferme la course
-        P--)B: OrderPackedEvent
+        P->>P: markPacked (CONDITIONNELLE) + production.order_packed dans la boîte d'envoi, même transaction
+        P--)B: production.order_packed (relais de la boîte d'envoi, depuis le 2026-10-04)
         P-->>Staff: { packedAt, packedBy, alreadyPacked: false }
-        Note right of B: en ARRIÈRE-PLAN (BackgroundWork)
-        B->>B: MarkOrderReady — confirmed → ready, courriel au client
+        Note right of B: livré au moins une fois, repris s'il échoue
+        B->>B: MarkOrderReady — confirmed → ready, courriel au client (sans effet si déjà prête)
     else le bac est DÉJÀ fait — rescan
-        P--)B: OrderPackedEvent (réannonce, valeurs du 1ᵉʳ scan)
+        P--)B: production.order_packed (fait neuf par rescan, valeurs du 1ᵉʳ scan)
         P-->>Staff: { …, alreadyPacked: true }
     end
 

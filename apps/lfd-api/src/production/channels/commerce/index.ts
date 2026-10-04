@@ -30,5 +30,9 @@ export {
 } from "./production-day-closed.event.js";
 export { PendingCommerceOrdersReader } from "./pending-orders.reader.js";
 export { PendingSettlementSweeper } from "./pending-settlement.sweeper.js";
-export { OrderPackedEvent } from "./order-packed.event.js";
+export {
+  OrderPackedEvent,
+  OrderPackedPayloadError,
+  PRODUCTION_ORDER_PACKED,
+} from "./order-packed.event.js";
 export { WorkshopShelvesReader } from "./workshop-shelves.reader.js";

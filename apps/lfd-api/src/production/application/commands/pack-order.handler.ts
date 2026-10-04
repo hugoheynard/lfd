@@ -1,10 +1,12 @@
 import type { ProductionPackingAck } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { OrderPackedEvent } from "../../channels/commerce/order-packed.event.js";
 import type { PackedMark } from "../../domain/entities/production-day.js";
+import type { ProductionOrderSnapshot } from "../../domain/entities/production-day.snapshot.js";
 import { OrderAlreadyPackedError } from "../../domain/errors/production-errors.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
@@ -13,22 +15,26 @@ import { PackOrderCommand } from "./pack-order.command.js";
 /**
  * **Le bac est fait** — le colisage, constaté devant la fiche d'atelier.
  *
- * ## La réannonce, et pourquoi elle n'est pas un colisage de plus
+ * ## Le colisage et son fait, dans la MÊME transaction (depuis le 2026-10-04)
  *
- * 🔴 Un second scan levait `409` jusqu'au 2026-09-08. C'était défendable et
- * c'était un piège : le bus vit **en processus**, l'événement n'est ni persisté
- * ni rejoué, et un abonné qui échoue laissait la commande en arrière chez le
- * commerce — `confirmed` pour toujours. Le refus fermait précisément le seul
- * geste qui répare, et rien ne signalait la divergence.
+ * `markPacked` et l'écriture de `production.order_packed` dans la boîte
+ * d'envoi partent dans une seule unité de travail : les deux, ou aucun. Le fait
+ * n'est écrit que si CE poste gagne l'écriture conditionnée — le perdant d'une
+ * course n'écrit rien, le fait du gagnant suffit (plan
+ * `documentation/journalisation/plan-evenements-durables.md`, E1). Plus rien ne
+ * part sur le bus en mémoire : le seul abonné (`OnOrderPacked`, commerce) est
+ * durable.
  *
- * Rescanner republie donc le fait **déjà gravé**. Ce n'est pas un second
- * colisage : l'attestation ne bouge pas — l'heure et l'auteur restent ceux du
- * premier scan, parce que c'est à ce moment-là que le bac a été fermé. Seul
- * l'événement repart, et il est sans danger parce que `markReady` est
- * idempotent (`readyAt: null` dans sa condition).
+ * ## Le rescan, et pourquoi il n'est pas un colisage de plus
  *
- * C'est exactement le motif de la clôture, dont le dossier disait déjà :
- * « presser à nouveau le bouton est le rattrapage ».
+ * 🔴 Un second scan levait `409` jusqu'au 2026-09-08 : le fait vivait en
+ * mémoire, et le refus fermait le seul geste qui réparait un abonné perdu.
+ * Rescanner republie donc le fait **déjà gravé** — l'heure et l'auteur restent
+ * ceux du premier scan — sous une clé NEUVE, un fait par pression, comme la
+ * réannonce de la clôture. La boîte d'envoi reprend désormais un abonné qui
+ * échoue ; le rescan reste le filet humain, notamment pour un bac colisé avant
+ * le 2026-10-04 dont le fait en mémoire s'est perdu (aucune ligne à rejouer).
+ * Sans danger : le commerce ne fait rien sur une commande déjà prête.
  *
  * ⚠️ Les deux autres refus, eux, **restent** : une journée pas encore arrêtée et
  * une référence hors du plan ne sont pas des retards de propagation, ce sont des
@@ -45,8 +51,9 @@ import { PackOrderCommand } from "./pack-order.command.js";
 export class PackOrderHandler implements ICommandHandler<PackOrderCommand, ProductionPackingAck> {
   constructor(
     private readonly days: ProductionDayRepository,
-    private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
+    private readonly uow: UnitOfWork,
+    private readonly durable: DurablePublisher,
   ) {}
 
   async execute(command: PackOrderCommand): Promise<ProductionPackingAck> {
@@ -57,24 +64,48 @@ export class PackOrderHandler implements ICommandHandler<PackOrderCommand, Produ
     // dit rien du bac : c'est ici qu'on décide ce que « déjà fait » veut dire.
     const target = current.sheetToPack(command.reference);
     if (target.packed !== null) {
-      return this.announce(command.reference, target.packed, true);
+      return this.reannounce(target, target.packed);
     }
 
     const at = this.clock.now();
     // La mutation en mémoire ne sert qu'à faire jouer les invariants : c'est
     // l'écriture conditionnée qui fait foi.
     current.pack(command.reference, at, command.staffUserId);
+    const mark: PackedMark = { at, by: command.staffUserId };
 
-    const won = await this.days.markPacked(day, command.reference, at, command.staffUserId);
+    const won = await this.uow.run(async () => {
+      const wrote = await this.days.markPacked(day, command.reference, at, command.staffUserId);
+      if (wrote) {
+        await this.durable.publish(this.factOf(target, mark, null).durableFact());
+      }
+      return wrote;
+    });
     if (!won) {
-      // Course perdue entre la lecture et l'écriture. On ne réécrit rien — le
-      // colisage de l'autre poste est le seul vrai —, mais on le RELIT pour le
-      // réannoncer avec ses vraies valeurs. Publier les nôtres daterait le bac
-      // d'un instant qui n'a rien fermé.
-      return this.announce(command.reference, await this.winnerMark(day, command.reference), true);
+      // Course perdue entre la lecture et l'écriture. On ne réécrit rien et on
+      // ne publie rien — le colisage de l'autre poste est le seul vrai, et son
+      // fait est parti avec lui. On le RELIT pour répondre avec ses valeurs.
+      return ack(command.reference, await this.winnerMark(day, command.reference), true);
     }
+    return ack(command.reference, mark, false);
+  }
 
-    return this.announce(command.reference, { at, by: command.staffUserId }, false);
+  /** Republie le fait d'un bac déjà fait, sous une clé neuve, sans rien réécrire. */
+  private async reannounce(
+    target: ProductionOrderSnapshot,
+    mark: PackedMark,
+  ): Promise<ProductionPackingAck> {
+    const now = this.clock.now();
+    await this.uow.run(() => this.durable.publish(this.factOf(target, mark, now).durableFact()));
+    return ack(target.reference, mark, true);
+  }
+
+  /** L'instant et l'auteur sont ceux du COLISAGE, jamais ceux du rescan. */
+  private factOf(
+    target: ProductionOrderSnapshot,
+    mark: PackedMark,
+    reannouncedAt: Date | null,
+  ): OrderPackedEvent {
+    return new OrderPackedEvent(target.orderId, target.reference, mark.at, mark.by, reannouncedAt);
   }
 
   /**
@@ -92,19 +123,14 @@ export class PackOrderHandler implements ICommandHandler<PackOrderCommand, Produ
     }
     return mark;
   }
+}
 
-  /** Publie le fait — neuf ou rejoué — et rend l'accusé de réception. */
-  private announce(
-    reference: string,
-    mark: PackedMark,
-    alreadyPacked: boolean,
-  ): ProductionPackingAck {
-    this.events.publish(new OrderPackedEvent(reference, mark.at, mark.by));
-    return {
-      reference,
-      packedAt: mark.at.toISOString(),
-      packedBy: mark.by,
-      alreadyPacked,
-    };
-  }
+/** L'accusé de réception du poste. */
+function ack(reference: string, mark: PackedMark, alreadyPacked: boolean): ProductionPackingAck {
+  return {
+    reference,
+    packedAt: mark.at.toISOString(),
+    packedBy: mark.by,
+    alreadyPacked,
+  };
 }

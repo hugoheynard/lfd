@@ -2,7 +2,7 @@
 
 > Hugo, 2026-10-04 : « maintenant qu'on a la boîte d'envoi, est-ce que ça doit
 > changer la manière dont on journalise ? est-ce qu'il y a une refacto à
-> faire ? » État : **inventaire fait, refacto non commencée**. Suite de
+> faire ? » État : **inventaire fait, E1 bâti (§6)**. Suite de
 > [`plan-boite-d-envoi.md`](plan-boite-d-envoi.md).
 
 ## 1. Ce qui ne change pas : le journal
@@ -41,7 +41,7 @@ a été rouverte (ligne 11).
 | #   | Abonné                                     | Écoute                                    | Effet                                            | Si perdu                                |
 | --- | ------------------------------------------ | ----------------------------------------- | ------------------------------------------------ | --------------------------------------- |
 | 30  | `orders/on-production-day-closed`          | `production.day_closed`                   | placed → confirmed                               | ✅ **durable** (BE3, 2026-10-04)        |
-| 5   | `orders/on-order-packed`                   | `OrderPackedEvent` (production)           | placed → ready                                   | commande bloquée en `placed`            |
+| 5   | `orders/on-order-packed`                   | `production.order_packed`                 | placed → ready                                   | ✅ **durable** (E1, 2026-10-04)         |
 | 28  | `orders/on-order-handed-over`              | `OrderHandedOverEvent` (handover)         | ready → fulfilled                                | commande bloquée en `ready`             |
 | 11  | `loyalty/credit-points-on-handover`        | `OrderHandedOverEvent`                    | **points de fidélité**                           | points jamais crédités                  |
 | 10  | `loyalty/credit-points-on-payment-settled` | `OrderPaymentSettledEvent`                | **points de fidélité**                           | points jamais crédités                  |
@@ -102,3 +102,38 @@ déclaré dans **un autre bloc** (le chemin de la classe d'événement le dit)
 échoue, sauf s'il figure sur une liste de dette qui ne peut que diminuer,
 comptée et affichée à chaque passage, comme `lint:controller-buses`. Elle
 naît avec E1, la liste pleine.
+
+## 6. E1 bâti (2026-10-04) — le colisage
+
+- `PackOrderHandler` écrit `markPacked` et `production.order_packed` dans **une**
+  unité de travail ; le fait n'est écrit que si le poste **gagne** l'écriture
+  conditionnée. Le perdant d'une course n'écrit rien. Plus rien ne part en
+  mémoire pour ce fait.
+- **Le contrat** : `{ orderId, reference, packedAt, packedBy }`, relu par
+  `OrderPackedEvent.fromPayload`. **La clé** : `production.order_packed:<orderId>`.
+- **Le rescan est un fait neuf par geste** (`…:reannounced:<instant>`), comme la
+  réannonce de la clôture, et contre la consigne du §7 de la boîte d'envoi (« les
+  réannonces restent en `publish` ») : le rescan est un filet humain que l'e2e
+  `production-batch` « RATTRAPE un commerce resté en arrière » tient, et c'est le
+  seul pour un bac colisé avant ce lot, dont le fait en mémoire perdu n'a aucune
+  ligne à rejouer. Dédupliqué par la clé, il ne livrerait rien.
+- L'abonné `OnOrderPacked` est un `@DurableHandler`
+  (`b2b.orders.mark-ready`).
+- **L'idempotence n'était pas vraie, elle l'est.** `MarkOrderReadyCommand` levait
+  `PackingRefusedError` sur une commande déjà prête : un rescan échouait (en
+  silence en mémoire, en message mort sous la boîte d'envoi). Elle rend
+  désormais un succès sans effet, course perdue comprise. Annulée, brouillon ou
+  retirée restent des refus — un message mort visible, pas une divergence muette.
+- **`OrderReadyEvent` part après la validation** (`AfterCommit`). Publié dans
+  l'unité de travail de la livraison, l'abonné du journal en héritait la
+  transaction et écrivait `order.ready` sur une transaction close — `record`
+  l'avalait (trois e2e `production-batch` rouges).
+- **#27 (courriel « prête ») et #19 (journal `order.ready`) restent en mémoire** :
+  `OrderReadyEvent` est déclaré et écouté dans le bloc `b2b`, la porte ne les
+  vise pas. Ils sont désormais déclenchés après la validation d'une livraison
+  durable ; leur perte ne survient plus qu'entre la validation et le saut en
+  mémoire (redémarrage à cet instant). Les rendre durables demanderait que
+  `MarkOrderReadyHandler` écrive un fait `order.ready` dans la même unité de
+  travail — c'est E5/E6, pas E1.
+- **La porte** `lint:durable-cross-block` est née : dette de deux abonnés
+  (`on-order-handed-over` → E2, `on-product-media-changed` → E5).

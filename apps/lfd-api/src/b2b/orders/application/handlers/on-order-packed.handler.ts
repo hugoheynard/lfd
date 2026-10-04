@@ -1,9 +1,19 @@
-import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
+import { Injectable } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { BackgroundWork } from "../../../../platform/events/background-work.js";
-import { OrderPackedEvent } from "../../../../production/channels/commerce/index.js";
+import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import {
+  DurableHandler,
+  type DurableSubscriber,
+} from "../../../../platform/outbox/durable-handler.js";
+import {
+  OrderPackedEvent,
+  PRODUCTION_ORDER_PACKED,
+} from "../../../../production/channels/commerce/index.js";
 import { MarkOrderReadyCommand } from "../commands/mark-order-ready.command.js";
+
+/** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
+export const ON_ORDER_PACKED = "b2b.orders.mark-ready";
 
 /**
  * **Le commerce apprend qu'un bac est fait**, et en tire son propre statut.
@@ -16,37 +26,38 @@ import { MarkOrderReadyCommand } from "../commands/mark-order-ready.command.js";
  * commande est prête » écoutent. L'appeler garde ces trois-là intacts ; appeler
  * le dépôt directement les aurait tous les trois contournés en silence.
  *
- * Ce qui change n'est donc pas ce que le commerce fait, c'est **qui le
- * déclenche** : le fournil, par un fait, et non plus une route hébergée chez le
- * commerce sous un chemin `admin/production`.
+ * ## Abonné DURABLE depuis le 2026-10-04 (lot E1)
  *
- * ## Ce que ce couplage coûte
+ * Jusque-là, le fait passait par le bus en mémoire, « ni persisté ni rejoué » :
+ * un container qui tombait entre le colisage et cette écriture laissait la
+ * commande `confirmed` avec un bac fait, et seul un rescan humain rattrapait.
+ * Le fait est désormais écrit dans la boîte d'envoi avec le colisage (plan
+ * `documentation/journalisation/plan-evenements-durables.md`) : livré au moins
+ * une fois, et la garde du relais pose le reçu dans la même unité de travail
+ * que l'écriture — un doublon du MÊME fait est sauté.
  *
- * ⚠️ Le bus vit en processus. Un `packingBlocker` qui refuse — commande annulée,
- * déjà remise — laisse la production avec un bac déclaré et le commerce en
- * arrière. Ça ne peut PAS arriver aujourd'hui (vérifié le 2026-09-26) : les
- * seules annulations — l'abandon du client et le balayage de la clôture — ne
- * touchent qu'un règlement non encaissé, que le plan du soir n'inscrit jamais,
- * et une remise avant colisage est déjà refusée par l'agrégat de production.
- * Le jour où une commande PAYÉE s'annulera, l'annulation devra se propager
- * jusqu'au fournil — sinon il colise pour rien, ce qui est le vrai problème,
- * pas la divergence.
+ * ## Idempotent pour de vrai
  *
- * `BackgroundWork.track` est obligatoire (`lint:events-tracked`) : un `void`
- * promesse mourrait en silence.
+ * Deux faits différents pour la même commande existent (colisage, puis rescan) :
+ * `MarkOrderReadyCommand` ne fait rien sur une commande déjà prête — ni
+ * écriture, ni second courriel. Elle levait jusqu'au 2026-10-04.
+ *
+ * ⚠️ Un `packingBlocker` qui refuse — commande annulée, retirée sans avoir été
+ * prête — fait échouer la livraison, qui finit en message mort visible plutôt
+ * qu'en divergence muette. Ça ne peut pas arriver aujourd'hui (vérifié le
+ * 2026-09-26) : les seules annulations ne touchent qu'un règlement non encaissé,
+ * que le plan du soir n'inscrit jamais.
+ *
+ * Le relais l'inscrit à `BackgroundWork` : c'est ce que `lint:events-tracked`
+ * vérifie sur un `@DurableHandler`.
  */
-@EventsHandler(OrderPackedEvent)
-export class OnOrderPacked implements IEventHandler<OrderPackedEvent> {
-  constructor(
-    private readonly commands: CommandBus,
-    private readonly work: BackgroundWork,
-  ) {}
+@Injectable()
+@DurableHandler({ type: PRODUCTION_ORDER_PACKED, subscriber: ON_ORDER_PACKED })
+export class OnOrderPacked implements DurableSubscriber {
+  constructor(private readonly commands: CommandBus) {}
 
-  handle(event: OrderPackedEvent): void {
-    void this.work.track(this.run(event), "on-order-packed");
-  }
-
-  private async run(event: OrderPackedEvent): Promise<void> {
+  async handle(delivery: DurableDelivery): Promise<void> {
+    const event = OrderPackedEvent.fromPayload(delivery.payload);
     // L'identité et l'instant viennent du FAIT, pas de l'horloge d'ici : le
     // colisage a eu lieu au fournil, et c'est cette heure-là qui compte.
     await this.commands.execute(
