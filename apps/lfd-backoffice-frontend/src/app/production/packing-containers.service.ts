@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
-  DeliveryPackingProposalView,
+  DeliveryBinFreeHalvesView,
   MovePackingPieces,
   OpenedPackingContainer,
   OpenPackingContainer,
@@ -14,7 +14,7 @@ import { B2B_API_BASE } from '../api/api-config';
 /**
  * **La colonne Contenants du poste de colisage** (K2b,
  * `colisage/plan-les-bacs-au-colisage.md` §5–§5.1) : créer un bac ou un sac,
- * y répartir des pièces, les en retirer, annuler un contenant, proposer.
+ * y répartir des pièces, les en retirer, annuler un contenant, proposer, partager une moitié.
  *
  * Séparé de `PackingService` parce que les routes vivent sous une autre
  * racine (`admin/packing/:date/orders/:orderId`, servie par le bloc
@@ -71,10 +71,20 @@ export class PackingContainersService {
     );
   }
 
-  /** « Proposer » — une lecture ; la livraison seulement. */
-  proposal(date: string, orderId: string): Promise<DeliveryPackingProposalView> {
+  /**
+   * « Proposer », appliqué par le serveur d'un coup (plan §7) : les bacs
+   * proposés naissent et se remplissent bac par bac, ou rien n'est écrit.
+   */
+  async applyProposal(date: string, orderId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.orderUrl(date, orderId)}/proposal/apply`, {}),
+    );
+  }
+
+  /** Les moitiés libres des arrêts voisins — à partager ; la livraison seulement. */
+  shareableHalves(date: string, orderId: string): Promise<DeliveryBinFreeHalvesView> {
     return firstValueFrom(
-      this.http.get<DeliveryPackingProposalView>(`${this.orderUrl(date, orderId)}/proposal`),
+      this.http.get<DeliveryBinFreeHalvesView>(`${this.orderUrl(date, orderId)}/shareable-halves`),
     );
   }
 

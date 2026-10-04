@@ -97,7 +97,7 @@
 
 /* Une ligne qui se glisse : on la prend, au doigt comme à la souris. */
 .cb-line.is-draggable {
-  color: var(--fold-color-text-primary);
+  color: var(--fold-color-text);
   cursor: grab;
   touch-action: none;
 }

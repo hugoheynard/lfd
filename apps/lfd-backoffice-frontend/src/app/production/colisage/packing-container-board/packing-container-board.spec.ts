@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type {
   BinTypeView,
-  DeliveryPackingProposalView,
+  DeliveryBinFreeHalvesView,
   OpenPackingContainer,
   PackingContainerView,
   PackingLine,
@@ -20,8 +20,9 @@ import { PackingContainerBoard } from './packing-container-board';
 /**
  * Ce que ces cas tiennent (K2b, `plan-les-bacs-au-colisage.md` §2, §5.1) : un
  * bac pour une livraison, un sac pour un retrait ; un dépôt demande combien,
- * « tout » par défaut ; un refus du serveur se dit tel quel ; « Proposer »
- * n'écrit que sur un clic ; une commande prête ne bouge plus ; chaque geste
+ * « tout » par défaut, au dépôt comme au retrait ; un refus du serveur se dit
+ * tel quel ; « Proposer » n'écrit que sur un clic, d'un seul appel ; une
+ * livraison partage une moitié voisine ; une commande prête ne bouge plus ; chaque geste
  * se relit.
  */
 
@@ -99,7 +100,14 @@ class FakeContainers {
   readonly withdrawn: { containerId: string; sku: string; quantity: number }[] = [];
   readonly voided: string[] = [];
   voidRefusal: unknown = null;
-  proposalView: DeliveryPackingProposalView | null = null;
+  proposals = 0;
+  proposalRefusal: unknown = null;
+  halvesView: DeliveryBinFreeHalvesView = {
+    orderId: 'o-1',
+    reference: 'CMD-1',
+    round: null,
+    halves: [],
+  };
 
   open(_date: string, _orderId: string, body: OpenPackingContainer): Promise<string> {
     this.opened.push(body);
@@ -121,10 +129,13 @@ class FakeContainers {
     return this.voidRefusal === null ? Promise.resolve() : Promise.reject(this.voidRefusal);
   }
 
-  proposal(): Promise<DeliveryPackingProposalView> {
-    return this.proposalView === null
-      ? Promise.reject(new Error('sans proposition'))
-      : Promise.resolve(this.proposalView);
+  applyProposal(): Promise<void> {
+    this.proposals += 1;
+    return this.proposalRefusal === null ? Promise.resolve() : Promise.reject(this.proposalRefusal);
+  }
+
+  shareableHalves(): Promise<DeliveryBinFreeHalvesView> {
+    return Promise.resolve(this.halvesView);
   }
 }
 
@@ -190,6 +201,7 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     const { fixture, el } = await render(sheet({ fulfillmentMethod: 'pickup' }));
     expect(el.querySelector('[data-new-bin]')).toBeNull();
     expect(el.querySelector('[data-propose]')).toBeNull();
+    expect(el.querySelector('[data-share-half]')).toBeNull();
     click(el, '[data-new-bag]');
     await settle(fixture);
     expect(api.opened).toEqual([{ nature: 'bag' }]);
@@ -229,7 +241,7 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     expect(el.querySelector('[data-pending-drop]')).toBeNull();
   });
 
-  it('retire une répartition entière', async () => {
+  it('retire une partie d’une répartition : « tout » par défaut, puis la quantité dite', async () => {
     const { fixture, el } = await render(
       sheet({
         containerList: [
@@ -242,7 +254,21 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     );
     click(el, '[data-withdraw]');
     await settle(fixture);
-    expect(api.withdrawn).toEqual([{ containerId: 'c-1', sku: 'CRO', quantity: 10 }]);
+    const ask = el.querySelector('[data-pending-withdrawal]');
+    expect(said(ask)).toContain('Croissant — combien retirer ?');
+    expect(said(ask)).toContain('Tout : 10');
+    expect(api.withdrawn).toEqual([]);
+    const input = ask?.querySelector('input');
+    expect(input).not.toBeNull();
+    if (input) {
+      input.value = '4';
+      input.dispatchEvent(new Event('input'));
+    }
+    await settle(fixture);
+    click(el, '[data-confirm-withdrawal]');
+    await settle(fixture);
+    expect(api.withdrawn).toEqual([{ containerId: 'c-1', sku: 'CRO', quantity: 4 }]);
+    expect(el.querySelector('[data-pending-withdrawal]')).toBeNull();
   });
 
   it('dit tel quel le refus du serveur à l’annulation d’un bac chargé', async () => {
@@ -260,32 +286,84 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     expect(rereads).toBe(1);
   });
 
-  it('« Proposer » n’écrit que sur un clic, et pré-remplit le bac proposé', async () => {
-    api.proposalView = {
-      orderId: 'o-1',
-      reference: 'CMD-1',
-      lines: [],
-      bins: [
+  it('« Proposer » n’écrit que sur un clic, d’un seul appel au serveur', async () => {
+    const { fixture, el } = await render(sheet({}));
+    expect(api.proposals).toBe(0);
+    click(el, '[data-propose]');
+    await settle(fixture);
+    expect(api.proposals).toBe(1);
+    expect(api.opened).toEqual([]);
+    expect(api.allocated).toEqual([]);
+    expect(rereads).toBe(1);
+  });
+
+  it('une proposition vide se dit telle quelle, et renvoie aux contenances', async () => {
+    api.proposalRefusal = new HttpErrorResponse({
+      status: 409,
+      error: {
+        code: 'packing.proposal.empty',
+        message: 'La grille des contenances ne couvre rien.',
+      },
+    });
+    const { fixture, el } = await render(sheet({}));
+    click(el, '[data-propose]');
+    await settle(fixture);
+    expect(said(el.querySelector('[data-container-refusal]'))).toContain(
+      'La grille des contenances ne couvre rien.',
+    );
+    expect(el.querySelector('[data-capacities-link]')?.getAttribute('href')).toBe(
+      '/livraison/contenances',
+    );
+  });
+
+  it('un autre refus de « Proposer » ne renvoie pas aux contenances', async () => {
+    api.proposalRefusal = new HttpErrorResponse({
+      status: 409,
+      error: { code: 'packing.proposal.containers_exist', message: 'Elle a déjà un contenant.' },
+    });
+    const { fixture, el } = await render(sheet({}));
+    click(el, '[data-propose]');
+    await settle(fixture);
+    expect(said(el.querySelector('[data-container-refusal]'))).toBe('Elle a déjà un contenant.');
+    expect(el.querySelector('[data-capacities-link]')).toBeNull();
+  });
+
+  it('une livraison prend la moitié libre d’un arrêt voisin', async () => {
+    api.halvesView = {
+      ...api.halvesView,
+      halves: [
         {
+          binId: 'b-9',
+          code: 'Z9Q',
+          orderId: 'o-2',
+          reference: 'CMD-2',
+          customerLabel: 'Chez Max',
+          position: 4,
           binTypeId: 't-m',
           binTypeName: 'Bac M',
           isotherm: false,
-          cold: false,
-          whole: 1,
-          half: false,
-          fill: 0.5,
-          content: [{ sku: 'CRO', quantity: 20 }],
+          freeHalf: 'right',
         },
       ],
-      unplaced: [],
-      shareCandidate: null,
     };
     const { fixture, el } = await render(sheet({}));
-    expect(api.opened).toEqual([]);
-    click(el, '[data-propose]');
+    click(el, '[data-share-half]');
     await settle(fixture);
-    expect(api.opened).toEqual([{ nature: 'bin', binTypeId: 't-m', half: false, innerBags: 0 }]);
-    expect(api.allocated).toEqual([{ containerId: 'c-new-1', sku: 'CRO', quantity: 20 }]);
+    expect(said(el.querySelector('[data-shareable-half]'))).toBe(
+      'Z9Q · ½ droite — Chez Max (arrêt 4)',
+    );
+    click(el, '[data-shareable-half]');
+    await settle(fixture);
+    expect(api.opened).toEqual([{ nature: 'bin', partnerBinId: 'b-9', innerBags: 0 }]);
+  });
+
+  it('sans moitié libre voisine, le dit', async () => {
+    const { fixture, el } = await render(sheet({}));
+    click(el, '[data-share-half]');
+    await settle(fixture);
+    expect(said(el.querySelector('[data-no-half]'))).toBe(
+      'Aucune moitié libre aux arrêts voisins.',
+    );
   });
 
   it('« Proposer » ne s’offre plus dès qu’un contenant existe', async () => {

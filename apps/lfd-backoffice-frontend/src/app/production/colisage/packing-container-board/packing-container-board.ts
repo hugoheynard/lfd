@@ -10,7 +10,13 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { BinTypeView, PackingContainerView, PackingLine, PackingSheet } from '@lfd/contracts';
+import type {
+  BinTypeView,
+  DeliveryBinFreeHalfView,
+  PackingContainerView,
+  PackingLine,
+  PackingSheet,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -32,6 +38,7 @@ import {
   containerTitle,
   isLineInContainers,
   piecesLabel,
+  shareableHalfLabel,
   unallocatedOf,
 } from '../container-board';
 import { PackingContainerGestures } from '../packing-container-gestures';
@@ -39,18 +46,29 @@ import { PackingContainerGestures } from '../packing-container-gestures';
 /** Au plus tant de sacs par bac — la borne du contrat, recopiée (zod hors du paquet). */
 const MAX_INNER_BAGS = 50;
 
+/** Le refus d'une proposition vide — il renvoie à l'écran Contenances (plan §7). */
+const EMPTY_PROPOSAL_CODE = 'packing.proposal.empty';
+
 /**
  * Au doigt, le glisser part après un appui tenu : sans ce délai, faire défiler
  * la liste des produits attraperait une ligne. À la souris, tout de suite.
  */
 const DRAG_START_DELAY = { touch: 250, mouse: 0 } as const;
 
-/** Une lecture des formats de bac. */
+/** Une lecture (formats de bac, moitiés partageables). */
 type Loadable<T> =
   | { readonly status: 'idle' }
   | { readonly status: 'loading' }
   | { readonly status: 'error' }
   | { readonly status: 'ready'; readonly value: T };
+
+/** Ce qu'on retire en partie : la répartition, et ce qu'elle porte. */
+interface PendingWithdrawal {
+  readonly orderId: string;
+  readonly containerId: string;
+  readonly sku: string;
+  readonly max: number;
+}
 
 /** Un dépôt qui attend sa quantité : la ligne, le contenant, et ce qui reste. */
 interface PendingDrop {
@@ -68,8 +86,10 @@ interface PendingDrop {
  *
  * On crée un bac (livraison) ou un sac (retrait), on y **glisse** une ligne,
  * et l'écran demande combien (« tout » par défaut) : une ligne se coupe entre
- * deux contenants. On retire une répartition, on annule un contenant ;
- * « Proposer » pré-remplit sur un clic, jamais d'office.
+ * deux contenants. On retire tout ou partie d'une répartition, on annule un
+ * contenant ; « Proposer » est appliqué par le serveur sur un clic, jamais
+ * d'office, et une livraison peut prendre la moitié libre d'un arrêt voisin
+ * (plan §7).
  *
  * 🔴 **Aucun chiffre calculé ici** : `allocated`, `unallocated`, `pieces`
  * sont servis, et chaque geste se relit. Les refus du serveur s'affichent
@@ -134,7 +154,18 @@ export class PackingContainerBoard {
     const types = this.types();
     return types.status === 'ready' ? binFormatButtons(types.value, null) : [];
   });
+  /** Le choix d'une moitié voisine est-il déplié (« Partager une moitié ») ? */
+  protected readonly sharing = signal(false);
+  protected readonly halves = signal<Loadable<readonly DeliveryBinFreeHalfView[]>>({
+    status: 'idle',
+  });
+  protected readonly halfLabel = shareableHalfLabel;
   protected readonly innerBags = signal<number | null>(0);
+  /** Le lien de sortie d'une proposition vide : la grille des contenances. */
+  protected readonly capacitiesLink = '/livraison/contenances';
+  protected readonly emptyProposal = computed(
+    () => this.gestures.refusal()?.code === EMPTY_PROPOSAL_CODE,
+  );
   protected readonly maxInnerBags = MAX_INNER_BAGS;
 
   private readonly pendingDrop = signal<PendingDrop | null>(null);
@@ -144,6 +175,14 @@ export class PackingContainerBoard {
     return drop !== null && drop.orderId === this.sheet().orderId ? drop : null;
   });
   protected readonly pendingQuantity = signal<number | null>(null);
+
+  private readonly pendingWithdrawal = signal<PendingWithdrawal | null>(null);
+  /** Le retrait en attente, s'il porte sur la commande ouverte. */
+  protected readonly withdrawing = computed(() => {
+    const pending = this.pendingWithdrawal();
+    return pending !== null && pending.orderId === this.sheet().orderId ? pending : null;
+  });
+  protected readonly withdrawQuantity = signal<number | null>(null);
 
   protected readonly dragDelay = DRAG_START_DELAY;
   protected readonly title = containerTitle;
@@ -167,7 +206,10 @@ export class PackingContainerBoard {
       untracked(() => {
         this.gestures.forget();
         this.choosing.set(false);
+        this.sharing.set(false);
+        this.halves.set({ status: 'idle' });
         this.pendingDrop.set(null);
+        this.pendingWithdrawal.set(null);
       });
     });
   }
@@ -179,6 +221,7 @@ export class PackingContainerBoard {
   /** « + Nouveau bac » : déplie les formats, lus une fois. */
   protected toggleChoice(): void {
     this.choosing.update((open) => !open);
+    this.sharing.set(false);
     const types = this.types();
     if (this.choosing() && (types.status === 'idle' || types.status === 'error')) {
       void this.loadTypes();
@@ -201,12 +244,36 @@ export class PackingContainerBoard {
     }
   }
 
+  /** « Partager une moitié » : déplie les moitiés libres voisines, relues à chaque ouverture. */
+  protected toggleSharing(): void {
+    this.sharing.update((open) => !open);
+    this.choosing.set(false);
+    if (this.sharing()) {
+      void this.loadHalves();
+    }
+  }
+
+  protected async shareHalf(half: DeliveryBinFreeHalfView): Promise<void> {
+    const innerBags = this.innerBags();
+    if (innerBags === null || !Number.isInteger(innerBags) || innerBags < 0) {
+      return;
+    }
+    const opened = await this.gestures.open(this.sheet().orderId, {
+      nature: 'bin',
+      partnerBinId: half.binId,
+      innerBags,
+    });
+    if (opened) {
+      this.sharing.set(false);
+    }
+  }
+
   protected async addBag(): Promise<void> {
     await this.gestures.open(this.sheet().orderId, { nature: 'bag' });
   }
 
   protected async propose(): Promise<void> {
-    await this.gestures.propose(this.sheet().orderId, this.innerBags() ?? 0);
+    await this.gestures.propose(this.sheet().orderId);
   }
 
   /** Une ligne lâchée sur un contenant : on demande combien, « tout » par défaut. */
@@ -255,12 +322,40 @@ export class PackingContainerBoard {
     }
   }
 
-  protected async withdraw(
-    container: PackingContainerView,
-    sku: string,
-    quantity: number,
-  ): Promise<void> {
-    await this.gestures.withdraw(this.sheet().orderId, container.id, sku, quantity);
+  /** « Retirer » : on demande combien, « tout » par défaut. */
+  askWithdrawal(container: PackingContainerView, sku: string): void {
+    const share = container.lines.find((candidate) => candidate.sku === sku);
+    if (share === undefined || !this.editable()) {
+      return;
+    }
+    this.pendingWithdrawal.set({
+      orderId: this.sheet().orderId,
+      containerId: container.id,
+      sku,
+      max: share.quantity,
+    });
+    this.withdrawQuantity.set(share.quantity);
+  }
+
+  protected cancelWithdrawal(): void {
+    this.pendingWithdrawal.set(null);
+  }
+
+  protected async confirmWithdrawal(): Promise<void> {
+    const pending = this.withdrawing();
+    const quantity = this.withdrawQuantity();
+    if (pending === null || quantity === null || !Number.isInteger(quantity) || quantity <= 0) {
+      return;
+    }
+    const accepted = await this.gestures.withdraw(
+      pending.orderId,
+      pending.containerId,
+      pending.sku,
+      quantity,
+    );
+    if (accepted) {
+      this.pendingWithdrawal.set(null);
+    }
   }
 
   protected async voidContainer(container: PackingContainerView): Promise<void> {
@@ -273,6 +368,16 @@ export class PackingContainerBoard {
       this.types.set({ status: 'ready', value: (await this.binTypes.binTypes()).types });
     } catch {
       this.types.set({ status: 'error' });
+    }
+  }
+
+  private async loadHalves(): Promise<void> {
+    this.halves.set({ status: 'loading' });
+    try {
+      const view = await this.gestures.shareableHalves(this.sheet().orderId);
+      this.halves.set({ status: 'ready', value: view.halves });
+    } catch {
+      this.halves.set({ status: 'error' });
     }
   }
 }

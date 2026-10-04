@@ -1,6 +1,5 @@
 import type {
-  DeliveryPackingProposalView,
-  OpenPackingContainer,
+  DeliveryBinFreeHalfView,
   PackingContainerView,
   PackingLine,
   PackingSheet,
@@ -61,56 +60,10 @@ export function piecesLabel(pieces: number): string {
   return pieces === 1 ? '1 pièce' : `${String(pieces)} pièces`;
 }
 
-/** Une étape de « Proposer » : un contenant à créer, et ce qu'on y répartit. */
-export interface ProposalStep {
-  readonly request: OpenPackingContainer;
-  /** Le libellé de l'étape, pour dire où l'on s'est arrêté. */
-  readonly label: string;
-  /** Vide quand l'entrée de la proposition compte plusieurs bacs (cf. ci-dessous). */
-  readonly content: readonly { readonly sku: string; readonly quantity: number }[];
-}
-
-/**
- * **Ce que « Proposer » écrit** : un bac par bac proposé (les entiers, puis
- * la moitié).
- *
- * ⚠️ La proposition donne le contenu par ENTRÉE (un type × un nombre de bacs),
- * pas par bac. Quand une entrée ne compte qu'un bac, son contenu y va ; sinon,
- * les bacs sont créés vides et le contenu reste à glisser — couper le total
- * entre eux serait inventer une répartition que la proposition ne dit pas.
- */
-export function proposalSteps(
-  proposal: Pick<DeliveryPackingProposalView, 'bins'>,
-  innerBags: number,
-): readonly ProposalStep[] {
-  return proposal.bins.flatMap((entry) => {
-    const count = entry.whole + (entry.half ? 1 : 0);
-    const content = count === 1 ? entry.content.filter((item) => item.quantity > 0) : [];
-    const wholes: ProposalStep[] = Array.from({ length: entry.whole }, () => ({
-      request: { nature: 'bin', binTypeId: entry.binTypeId, half: false, innerBags },
-      label: entry.binTypeName,
-      content,
-    }));
-    if (!entry.half) {
-      return wholes;
-    }
-    return [
-      ...wholes,
-      {
-        request: { nature: 'bin', binTypeId: entry.binTypeId, half: true, innerBags },
-        label: `½ ${entry.binTypeName}`,
-        content,
-      },
-    ];
-  });
-}
-
-/** La proposition laisse-t-elle des pièces à glisser à la main ? */
-export function proposalLeavesWork(
-  proposal: Pick<DeliveryPackingProposalView, 'bins' | 'unplaced'>,
-): boolean {
-  return (
-    proposal.unplaced.length > 0 ||
-    proposal.bins.some((entry) => entry.whole + (entry.half ? 1 : 0) > 1)
-  );
+/** « A3K · ½ droite — Le Refuge (arrêt 4) » : la moitié qu'on prendrait, et chez qui. */
+export function shareableHalfLabel(
+  half: Pick<DeliveryBinFreeHalfView, 'code' | 'freeHalf' | 'customerLabel' | 'position'>,
+): string {
+  const side = halfLabel(half.freeHalf) ?? '';
+  return `${half.code} · ${side} — ${half.customerLabel} (arrêt ${String(half.position)})`;
 }

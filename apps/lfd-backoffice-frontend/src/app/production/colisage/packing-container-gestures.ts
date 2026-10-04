@@ -1,22 +1,28 @@
 import { inject, Injectable, signal } from '@angular/core';
 
-import type { OpenPackingContainer } from '@lfd/contracts';
+import type { DeliveryBinFreeHalvesView, OpenPackingContainer } from '@lfd/contracts';
 
 import { PackingContainersService } from '../packing-containers.service';
-import { serverMessageOf } from '../server-message';
-import { proposalLeavesWork, proposalSteps } from './container-board';
+import { serverCodeOf, serverMessageOf } from '../server-message';
 import { PackingDayReader } from './packing-day.reader';
+
+/** Le dernier refus du serveur : son message, tel quel, et son code. */
+export interface ContainerRefusal {
+  readonly message: string;
+  readonly code: string | null;
+}
 
 /**
  * **CE QU'ON FAIT dans la colonne Contenants** (K2b) — créer, répartir,
- * retirer, annuler, proposer — avec l'envoi en vol et le dernier refus.
+ * retirer, annuler, proposer, partager une moitié — avec l'envoi en vol et le
+ * dernier refus.
  *
  * Fourni par {@link PackingContainerBoard} ; il injecte le
  * {@link PackingDayReader} de l'écran, et chaque geste — accepté OU refusé —
  * finit par sa relecture : ce qui s'affiche est ce que le serveur sert.
  *
  * 🔴 Les refus du serveur se disent TELS QUELS (bac chargé, tournée partie,
- * type archivé…) : il les écrit pour le personnel.
+ * type archivé, proposition vide…) : il les écrit pour le personnel.
  */
 @Injectable()
 export class PackingContainerGestures {
@@ -26,17 +32,12 @@ export class PackingContainerGestures {
   private readonly inFlight = signal(false);
   readonly busy = this.inFlight.asReadonly();
 
-  private readonly refused = signal<string | null>(null);
+  private readonly refused = signal<ContainerRefusal | null>(null);
   readonly refusal = this.refused.asReadonly();
 
-  /** Ce que « Proposer » a laissé à faire à la main, le temps de le dire. */
-  private readonly proposalNote = signal<string | null>(null);
-  readonly note = this.proposalNote.asReadonly();
-
-  /** Oublie le refus et la note — on a ouvert une autre commande. */
+  /** Oublie le refus — on a ouvert une autre commande. */
   forget(): void {
     this.refused.set(null);
-    this.proposalNote.set(null);
   }
 
   open(orderId: string, request: OpenPackingContainer): Promise<boolean> {
@@ -58,31 +59,16 @@ export class PackingContainerGestures {
   }
 
   /**
-   * **« Proposer »** — sur un clic, jamais d'office (§2.4). Lit la proposition,
-   * crée ses bacs l'un après l'autre et y répartit ce qu'elle place sans
-   * ambiguïté. S'arrête au premier refus : ce qui est déjà créé reste, et
-   * s'annule à la main.
+   * **« Proposer »** — sur un clic, jamais d'office (§2.4). Le serveur
+   * l'applique d'un coup (§7) : tout est écrit, ou rien.
    */
-  propose(orderId: string, innerBags: number): Promise<boolean> {
-    return this.write(async (date) => {
-      const proposal = await this.api.proposal(date, orderId);
-      const steps = proposalSteps(proposal, innerBags);
-      if (steps.length === 0) {
-        this.proposalNote.set('La proposition ne retient aucun bac — créez-les à la main.');
-        return;
-      }
-      for (const step of steps) {
-        const containerId = await this.api.open(date, orderId, step.request);
-        for (const item of step.content) {
-          await this.api.allocate(date, orderId, containerId, item.sku, item.quantity);
-        }
-      }
-      if (proposalLeavesWork(proposal)) {
-        this.proposalNote.set(
-          'Bacs proposés créés. Ce qui reste dans « Produits » est à glisser à la main.',
-        );
-      }
-    });
+  propose(orderId: string): Promise<boolean> {
+    return this.write((date) => this.api.applyProposal(date, orderId));
+  }
+
+  /** Les moitiés libres des arrêts voisins — une lecture, sans relecture du poste. */
+  shareableHalves(orderId: string): Promise<DeliveryBinFreeHalvesView> {
+    return this.api.shareableHalves(this.day.date(), orderId);
   }
 
   /** Un geste, puis la relecture — qu'il ait été accepté ou refusé. */
@@ -92,13 +78,12 @@ export class PackingContainerGestures {
     }
     this.inFlight.set(true);
     this.refused.set(null);
-    this.proposalNote.set(null);
     let accepted = true;
     try {
       await gesture(this.day.date());
     } catch (error) {
       accepted = false;
-      this.refused.set(serverMessageOf(error));
+      this.refused.set({ message: serverMessageOf(error), code: serverCodeOf(error) });
     }
     await this.day.rereadAfterWrite();
     this.inFlight.set(false);

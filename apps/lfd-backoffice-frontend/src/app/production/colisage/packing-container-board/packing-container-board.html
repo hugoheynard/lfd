@@ -73,6 +73,17 @@
             >
               Nouveau bac
             </button>
+            <!-- §7 : la moitié libre d'un arrêt voisin — un dernier recours, à la main. -->
+            <button
+              foldButton
+              emphasis="outline"
+              icon="package"
+              [disabled]="gestures.busy()"
+              (click)="toggleSharing()"
+              data-share-half
+            >
+              Partager une moitié
+            </button>
             <!-- §2.4 : sur un clic, jamais d'office — et seulement sur une commande sans contenant. -->
             @if (containers().length === 0) {
               <button
@@ -131,6 +142,48 @@
               </div>
             }
           }
+        }
+
+        @if (sharing()) {
+          @switch (halves().status) {
+            @case ('loading') {
+              <fold-loading message="Lecture des moitiés libres…" />
+            }
+            @case ('error') {
+              <fold-callout variant="alert" data-halves-error>
+                Les moitiés libres n’ont pas pu être lues.
+                <button foldButton actions size="sm" emphasis="outline" (click)="toggleSharing()">
+                  Fermer
+                </button>
+              </fold-callout>
+            }
+            @case ('ready') {
+              <div class="cb-formats">
+                @if (halves(); as loaded) {
+                  @if (loaded.status === 'ready') {
+                    @for (half of loaded.value; track half.binId) {
+                      <button
+                        foldButton
+                        emphasis="outline"
+                        [disabled]="gestures.busy()"
+                        (click)="shareHalf(half)"
+                        data-shareable-half
+                      >
+                        {{ halfLabel(half) }}
+                      </button>
+                    } @empty {
+                      <fold-callout variant="warning" data-no-half>
+                        Aucune moitié libre aux arrêts voisins.
+                      </fold-callout>
+                    }
+                  }
+                }
+              </div>
+            }
+          }
+        }
+
+        @if (choosing() || sharing()) {
           <fold-number-input
             label="Sacs dans le bac"
             hint="Un compte, imprimé sur l’étiquette."
@@ -150,16 +203,27 @@
       }
 
       @if (gestures.refusal(); as refusal) {
-        <fold-callout variant="alert" data-container-refusal>{{ refusal }}</fold-callout>
-      }
-      @if (gestures.note(); as note) {
-        <fold-callout variant="info" data-proposal-note>{{ note }}</fold-callout>
+        <fold-callout variant="alert" data-container-refusal>
+          {{ refusal.message }}
+          @if (emptyProposal()) {
+            <a
+              foldButton
+              actions
+              size="sm"
+              emphasis="outline"
+              [routerLink]="capacitiesLink"
+              data-capacities-link
+            >
+              Contenances
+            </a>
+          }
+        </fold-callout>
       }
 
       @for (container of containers(); track container.id) {
-        <fold-card
+        <!-- Le glisser se pose sur un élément natif : un attribut inconnu sur fold-card ne se voit pas. -->
+        <div
           class="cb-container"
-          padding="sm"
           cdkDropList
           [cdkDropListData]="container.id"
           [cdkDropListSortingDisabled]="true"
@@ -168,96 +232,129 @@
           (cdkDropListDropped)="dropped($event)"
           [attr.data-container]="container.id"
         >
-          <fold-element-title
-            variant="title"
-            [icon]="container.nature === 'bin' ? 'package' : 'shopping-bag'"
-            [title]="title(container)"
-            [subtitle]="pieces(container.pieces)"
-          >
-            @if (container.binId; as binId) {
-              <a
-                titleAction
-                foldButton
-                size="sm"
-                emphasis="soft"
-                icon="print"
-                [routerLink]="labelsLink()"
-                [queryParams]="{ bacs: binId }"
-                [attr.aria-label]="'Imprimer l’étiquette ' + title(container)"
-                data-bin-label
-              >
-                Étiquette
-              </a>
-            }
-            @if (editable()) {
-              <button
-                titleAction
-                foldButton
-                size="sm"
-                emphasis="soft"
-                intent="danger"
-                [disabled]="gestures.busy()"
-                (click)="voidContainer(container)"
-                [attr.aria-label]="'Annuler ' + title(container)"
-                data-void-container
-              >
-                Annuler
-              </button>
-            }
-          </fold-element-title>
+          <fold-card padding="sm">
+            <fold-element-title
+              variant="title"
+              [icon]="container.nature === 'bin' ? 'package' : 'shopping-bag'"
+              [title]="title(container)"
+              [subtitle]="pieces(container.pieces)"
+            >
+              @if (container.binId; as binId) {
+                <a
+                  titleAction
+                  foldButton
+                  size="sm"
+                  emphasis="soft"
+                  icon="print"
+                  [routerLink]="labelsLink()"
+                  [queryParams]="{ bacs: binId }"
+                  [attr.aria-label]="'Imprimer l’étiquette ' + title(container)"
+                  data-bin-label
+                >
+                  Étiquette
+                </a>
+              }
+              @if (editable()) {
+                <button
+                  titleAction
+                  foldButton
+                  size="sm"
+                  emphasis="soft"
+                  intent="danger"
+                  [disabled]="gestures.busy()"
+                  (click)="voidContainer(container)"
+                  [attr.aria-label]="'Annuler ' + title(container)"
+                  data-void-container
+                >
+                  Annuler
+                </button>
+              }
+            </fold-element-title>
 
-          @if (container.lines.length > 0) {
-            <ul class="cb-shares">
-              @for (share of container.lines; track share.sku) {
-                <li class="cb-share">
-                  <span class="cb-qty">{{ share.quantity }}</span>
-                  <span class="cb-name">{{ share.productName }}</span>
-                  @if (editable()) {
+            @if (container.lines.length > 0) {
+              <ul class="cb-shares">
+                @for (share of container.lines; track share.sku) {
+                  <li class="cb-share">
+                    <span class="cb-qty">{{ share.quantity }}</span>
+                    <span class="cb-name">{{ share.productName }}</span>
+                    @if (editable()) {
+                      <button
+                        foldButton
+                        size="sm"
+                        emphasis="outline"
+                        [disabled]="gestures.busy()"
+                        (click)="askWithdrawal(container, share.sku)"
+                        [attr.aria-label]="
+                          'Retirer ' + share.productName + ' de ' + title(container)
+                        "
+                        data-withdraw
+                      >
+                        Retirer
+                      </button>
+                    }
+                  </li>
+                  @if (withdrawing(); as pending) {
+                    @if (pending.containerId === container.id && pending.sku === share.sku) {
+                      <li class="cb-ask" data-pending-withdrawal>
+                        <fold-number-input
+                          [label]="share.productName + ' — combien retirer ?'"
+                          [hint]="'Tout : ' + pending.max"
+                          [min]="1"
+                          [max]="pending.max"
+                          [integer]="true"
+                          [value]="withdrawQuantity()"
+                          (valueChange)="withdrawQuantity.set($event)"
+                        />
+                        <div class="cb-ask-actions">
+                          <button
+                            foldButton
+                            [disabled]="gestures.busy()"
+                            [loading]="gestures.busy()"
+                            (click)="confirmWithdrawal()"
+                            data-confirm-withdrawal
+                          >
+                            Retirer
+                          </button>
+                          <button foldButton emphasis="soft" (click)="cancelWithdrawal()">
+                            Annuler
+                          </button>
+                        </div>
+                      </li>
+                    }
+                  }
+                }
+              </ul>
+            }
+
+            @if (pending(); as drop) {
+              @if (drop.containerId === container.id) {
+                <div class="cb-ask" data-pending-drop>
+                  <fold-number-input
+                    [label]="drop.productName + ' — combien ?'"
+                    [hint]="'Tout : ' + drop.max"
+                    [min]="1"
+                    [max]="drop.max"
+                    [integer]="true"
+                    [value]="pendingQuantity()"
+                    (valueChange)="pendingQuantity.set($event)"
+                  />
+                  <div class="cb-ask-actions">
                     <button
                       foldButton
-                      size="sm"
-                      emphasis="outline"
                       [disabled]="gestures.busy()"
-                      (click)="withdraw(container, share.sku, share.quantity)"
-                      [attr.aria-label]="'Retirer ' + share.productName + ' de ' + title(container)"
-                      data-withdraw
+                      [loading]="gestures.busy()"
+                      (click)="confirmDrop()"
+                      data-confirm-drop
                     >
-                      Retirer
+                      Mettre dedans
                     </button>
-                  }
-                </li>
-              }
-            </ul>
-          }
-
-          @if (pending(); as drop) {
-            @if (drop.containerId === container.id) {
-              <div class="cb-ask" data-pending-drop>
-                <fold-number-input
-                  [label]="drop.productName + ' — combien ?'"
-                  [hint]="'Tout : ' + drop.max"
-                  [min]="1"
-                  [max]="drop.max"
-                  [integer]="true"
-                  [value]="pendingQuantity()"
-                  (valueChange)="pendingQuantity.set($event)"
-                />
-                <div class="cb-ask-actions">
-                  <button
-                    foldButton
-                    [disabled]="gestures.busy()"
-                    [loading]="gestures.busy()"
-                    (click)="confirmDrop()"
-                    data-confirm-drop
-                  >
-                    Mettre dedans
-                  </button>
-                  <button foldButton emphasis="soft" (click)="cancelDrop()">Annuler</button>
+                    <button foldButton emphasis="soft" (click)="cancelDrop()">Annuler</button>
+                  </div>
                 </div>
-              </div>
+              }
             }
-          }
-        </fold-card>
+          </fold-card>
+        </div>
       } @empty {
         <fold-empty-state
           title="Aucun contenant"

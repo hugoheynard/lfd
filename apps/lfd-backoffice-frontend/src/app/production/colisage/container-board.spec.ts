@@ -1,4 +1,3 @@
-import type { DeliveryPackingBinView, DeliveryPackingProposalView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -7,30 +6,7 @@ import {
   isLineInContainers,
   isListed,
   piecesLabel,
-  proposalLeavesWork,
-  proposalSteps,
 } from './container-board';
-
-function entry(over: Partial<DeliveryPackingBinView>): DeliveryPackingBinView {
-  return {
-    binTypeId: 't-m',
-    binTypeName: 'Bac M',
-    isotherm: false,
-    cold: false,
-    whole: 1,
-    half: false,
-    fill: 0.5,
-    content: [{ sku: 'CRO', quantity: 20 }],
-    ...over,
-  };
-}
-
-function proposal(
-  bins: DeliveryPackingBinView[],
-  unplaced: DeliveryPackingProposalView['unplaced'] = [],
-): Pick<DeliveryPackingProposalView, 'bins' | 'unplaced'> {
-  return { bins, unplaced };
-}
 
 describe('la colonne Contenants (K2b), en fonctions pures', () => {
   it('ne bascule que sur `listed` : une feuille sans mode garde l’ancien écran', () => {
@@ -58,38 +34,5 @@ describe('la colonne Contenants (K2b), en fonctions pures', () => {
     expect(piecesLabel(0)).toBe('vide');
     expect(piecesLabel(1)).toBe('1 pièce');
     expect(piecesLabel(12)).toBe('12 pièces');
-  });
-
-  it('« Proposer » remplit un bac seul de son entrée', () => {
-    const steps = proposalSteps(proposal([entry({})]), 2);
-    expect(steps).toEqual([
-      {
-        request: { nature: 'bin', binTypeId: 't-m', half: false, innerBags: 2 },
-        label: 'Bac M',
-        content: [{ sku: 'CRO', quantity: 20 }],
-      },
-    ]);
-  });
-
-  it('« Proposer » crée vides les bacs d’une entrée qui en compte plusieurs : le contenu n’est pas dit par bac', () => {
-    const steps = proposalSteps(proposal([entry({ whole: 2, half: true })]), 0);
-    expect(steps.map((step) => step.label)).toEqual(['Bac M', 'Bac M', '½ Bac M']);
-    expect(steps.every((step) => step.content.length === 0)).toBe(true);
-    expect(steps[2]?.request).toEqual({
-      nature: 'bin',
-      binTypeId: 't-m',
-      half: true,
-      innerBags: 0,
-    });
-    expect(proposalLeavesWork(proposal([entry({ whole: 2 })]))).toBe(true);
-  });
-
-  it('dit qu’il reste à faire quand la proposition ne place pas tout', () => {
-    expect(proposalLeavesWork(proposal([entry({})]))).toBe(false);
-    expect(
-      proposalLeavesWork(
-        proposal([entry({})], [{ sku: 'X', name: 'X', quantity: 1, reason: 'no_capacity' }]),
-      ),
-    ).toBe(true);
   });
 });

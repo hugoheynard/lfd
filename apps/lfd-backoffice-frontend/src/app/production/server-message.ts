@@ -35,3 +35,20 @@ export function serverMessageOf(error: unknown): string {
   const message = typeof envelope.message === 'string' ? envelope.message.trim() : '';
   return message === '' ? FALLBACK_MESSAGE : message;
 }
+
+/**
+ * Le `code` de l'enveloppe d'erreur de l'API, quand il y en a un — pour
+ * accompagner un refus précis d'un geste de sortie (un lien), jamais pour
+ * réécrire son message.
+ */
+export function serverCodeOf(error: unknown): string | null {
+  if (!(error instanceof HttpErrorResponse)) {
+    return null;
+  }
+  const body: unknown = error.error;
+  if (typeof body !== 'object' || body === null) {
+    return null;
+  }
+  const envelope: Partial<Record<'code', unknown>> = body;
+  return typeof envelope.code === 'string' ? envelope.code : null;
+}
