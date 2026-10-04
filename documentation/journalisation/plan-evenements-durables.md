@@ -185,3 +185,35 @@ naît avec E1, la liste pleine.
   (`HandoverPublication`, `DoorstepHandoverAttestor`) : elle est désormais vide,
   le fait étant écrit dans l'unité du livreur. La retirer touche le canal de la
   livraison et ses appelants — laissé à une tranche à part.
+
+## 8. Les ports entre blocs — inventaire (2026-10-04)
+
+> Hugo : « si on a commencé les messages, est-ce que ce n'est pas mieux que
+> les ports ? » La règle retenue : **dire par message, demander par port**.
+> Un port n'est légitime que là où l'appelant a besoin de la réponse pour
+> continuer, ou de l'état vif ; une annonce qui passe par un port est un
+> message déguisé.
+
+Relevé par un agent `Explore`, puis rouvert à la main pour ce qui est marqué
+✔ (le reste est à revérifier avant d'agir) : **37 ports** déclarés dans des
+`*/channels/*/`.
+
+| Classe                                            | Compte | Ports                                                                                                                                                                                                                                                                                                                   | Suite                                                                               |
+| ------------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Annonce** — l'appelant n'utilise pas la réponse | 3      | `DeliveryDepartureAnnouncer` ✔ (livraison → commerce), `DepartedOrdersAnnouncer`, `BroughtBackOrdersAnnouncer` (livraison → retrait), appelés après validation sous `BackgroundWork` : perdables                                                                                                                        | **E3** : faits durables (`delivery.round_departed`, `delivery.orders_brought_back`) |
+| **Décision de transition**                        | 1      | `PackingStation` (K2 : le poste passe par le fournil puis par ce port)                                                                                                                                                                                                                                                  | **K3** : le poste appelle directement les routes du colisage                        |
+| **Décision légitime**                             | 4      | `PendingSettlementSweeper` ✔ (appelé par la clôture **avant** de charger la journée, l. 113 : la clôture a besoin que les règlements en vol soient tranchés), `DoorstepHandoverAttestor` (la porte attend la réponse), `B2bCatalogDriver` (envoi du catalogue, déjà asynchrone et journalisé), et un autre à identifier | rester des ports                                                                    |
+| **Lecture**                                       | 29     | dont 13 implémentés par le commerce (commandes, adresses, échéances, catalogue)                                                                                                                                                                                                                                         | rester des ports : l'état vif appartient au commerce                                |
+
+**Lectures qui figent une copie** (`DayOrdersReader` à la clôture,
+`DeliveryOrdersReader` au départ d'une tournée) : elles lisent l'état vif au
+moment d'un geste, puis le geste fige un instantané chez l'appelant. C'est
+la bonne forme — une copie tenue à jour par messages coûterait sa
+synchronisation sans rien ajouter.
+
+**À revérifier avant d'agir** (affirmations de l'agent, non rouvertes) :
+
+- `MediaCarriers` agrège trois porteurs ; un seul en échec refuserait le
+  retrait d'une image ;
+- des lectures servies à chaque écran sans pagination
+  (`DeliveryOrdersReader`).
