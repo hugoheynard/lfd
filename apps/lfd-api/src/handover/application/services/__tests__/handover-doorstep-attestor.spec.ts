@@ -1,4 +1,7 @@
-import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
+import {
+  TransactionalDurablePublisher,
+  TransactionalUnitOfWork,
+} from "../../../../platform/outbox/__tests__/transactional-durable.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import type { StoredDocument } from "../../../../platform/storage/document-store.js";
 import { ProductionDocumentStore } from "../../../../platform/storage/production-document-store.js";
@@ -23,8 +26,8 @@ import { HandoverDoorstepAttestor } from "../handover-doorstep-attestor.js";
 
 /*
  * Le retrait atteste une remise à la porte (plan-a-la-porte.md, B1, AP-D1) :
- * la règle du comptoir, mais RIEN n'est publié avant que la livraison appelle
- * la publication rendue — après sa validation.
+ * la règle du comptoir, et le fait durable écrit dans l'unité de travail du
+ * livreur (lot E2) : il part avec sa validation, ou pas du tout.
  */
 
 // Des instants recopiés, jamais comparés à l'horloge.
@@ -129,12 +132,13 @@ function attestorOf(subjects: readonly HandoverSubject[] = [subjectOf("o_1")]) {
   const handovers = new InMemoryHandovers();
   const proofs = new InMemoryProofs();
   const store = new InMemoryStore();
-  const events = new RecordingPublisher();
+  const uow = new TransactionalUnitOfWork();
   const clock = new FixedClock(AT);
   const attestation = new HandoverAttestation(
     handovers,
     clock,
-    events,
+    uow,
+    new TransactionalDurablePublisher(uow),
     new FixedStaffAuthorDirectory(authorsKnownAs({ firstName: "Paul", lastName: "R" }, "paul")),
     new FixedQualityHolds(),
   );
@@ -147,7 +151,16 @@ function attestorOf(subjects: readonly HandoverSubject[] = [subjectOf("o_1")]) {
     new FixedIdGenerator("proof"),
     clock,
   );
-  return { attestor, handovers, proofs, store, events };
+  return { attestor, handovers, proofs, store, uow };
+}
+
+/** Le livreur : son unité de travail enveloppe le geste, comme `HandOverStopHandler`. */
+function inCourierUnit<T>(uow: TransactionalUnitOfWork, work: () => Promise<T>): Promise<T> {
+  return uow.run(work);
+}
+
+function factOf(at: Date, via: "manual" | "deposit", reannouncedAt: Date | null = null) {
+  return new OrderHandedOverEvent("o_1", "ORD-o_1", at, "paul", via, reannouncedAt).durableFact();
 }
 
 const STAGED = { photoKey: "handover/proofs/p/photo", signatureKey: null };
@@ -177,15 +190,12 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
     expect(store.objects.size).toBe(0);
   });
 
-  it("🔴 grave l'attestation `manual` et ses pièces SANS publier ; la publication rendue publie", async () => {
-    const { attestor, handovers, proofs, events } = attestorOf();
+  it("🔴 grave l'attestation `manual`, ses pièces et son fait durable dans l'unité du livreur", async () => {
+    const { attestor, handovers, proofs, uow } = attestorOf();
 
-    const publish = await attestor.attest({
-      orderId: "o_1",
-      by: "paul",
-      receiverName: "Mme Durand",
-      proofs: STAGED,
-    });
+    const publish = await inCourierUnit(uow, () =>
+      attestor.attest({ orderId: "o_1", by: "paul", receiverName: "Mme Durand", proofs: STAGED }),
+    );
 
     expect(handovers.rows.get("o_1")?.via).toBe("manual");
     expect(proofs.rows.get("o_1")?.state).toEqual({
@@ -196,41 +206,45 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
       recordedBy: "paul",
       recordedAt: AT,
     });
-    expect(events.published).toEqual([]);
+    expect(uow.of("handover.handed_over")).toEqual([factOf(AT, "manual")]);
 
+    // La publication rendue à la livraison n'ajoute rien : le fait est déjà écrit.
     publish();
-
-    expect(events.published).toEqual([new OrderHandedOverEvent("ORD-o_1", AT, "paul", "manual")]);
+    expect(uow.committed).toHaveLength(1);
   });
 
-  it("🔴 un dépôt sans personne (B2) : attesté `deposit`, sans nom, mêmes effets publiés", async () => {
-    const { attestor, handovers, proofs, events } = attestorOf();
-
-    const publish = await attestor.attest({
-      orderId: "o_1",
-      by: "paul",
-      receiverName: null,
-      proofs: STAGED,
-    });
-
-    expect(handovers.rows.get("o_1")?.via).toBe("deposit");
-    expect(proofs.rows.get("o_1")?.state.receiverName).toBeNull();
-    expect(events.published).toEqual([]);
-
-    publish();
-
-    expect(events.published).toEqual([new OrderHandedOverEvent("ORD-o_1", AT, "paul", "deposit")]);
-  });
-
-  it("refuse avec la phrase du comptoir — et ne republie rien, l'unité va échouer", async () => {
-    const { attestor, handovers, proofs, events } = attestorOf([subjectOf("o_1", "cancelled")]);
+  it("sans unité ouverte, l'attestation ouvre la sienne — jamais un fait sans transaction", async () => {
+    const { attestor, uow } = attestorOf();
 
     await expect(
       attestor.attest({ orderId: "o_1", by: "paul", receiverName: "Mme D", proofs: STAGED }),
+    ).resolves.toBeInstanceOf(Function);
+    expect(uow.of("handover.handed_over")).toEqual([factOf(AT, "manual")]);
+  });
+
+  it("🔴 un dépôt sans personne (B2) : attesté `deposit`, sans nom, mêmes effets publiés", async () => {
+    const { attestor, handovers, proofs, uow } = attestorOf();
+
+    await inCourierUnit(uow, () =>
+      attestor.attest({ orderId: "o_1", by: "paul", receiverName: null, proofs: STAGED }),
+    );
+
+    expect(handovers.rows.get("o_1")?.via).toBe("deposit");
+    expect(proofs.rows.get("o_1")?.state.receiverName).toBeNull();
+    expect(uow.of("handover.handed_over")).toEqual([factOf(AT, "deposit")]);
+  });
+
+  it("refuse avec la phrase du comptoir — et ne réannonce rien, l'unité va échouer", async () => {
+    const { attestor, handovers, proofs, uow } = attestorOf([subjectOf("o_1", "cancelled")]);
+
+    await expect(
+      inCourierUnit(uow, () =>
+        attestor.attest({ orderId: "o_1", by: "paul", receiverName: "Mme D", proofs: STAGED }),
+      ),
     ).rejects.toThrow("Cette commande est annulée.");
     expect(handovers.rows.size).toBe(0);
     expect(proofs.rows.size).toBe(0);
-    expect(events.published).toEqual([]);
+    expect(uow.committed).toEqual([]);
   });
 
   it("refuse une commande que le commerce ne sert plus", async () => {
@@ -241,8 +255,8 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
     ).rejects.toThrow(HandoverRefusedError);
   });
 
-  it("rejeu : republie l'attestation à la porte EXISTANTE — son heure, son auteur", async () => {
-    const { attestor, handovers, proofs, events } = attestorOf();
+  it("rejeu : réannonce l'attestation à la porte EXISTANTE — son heure, son auteur", async () => {
+    const { attestor, handovers, proofs, uow } = attestorOf();
     handovers.rows.set("o_1", OrderHandover.rehydrate("o_1", "ORD-o_1", EARLIER, "paul", "manual"));
     proofs.rows.set(
       "o_1",
@@ -256,12 +270,11 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
       }),
     );
 
-    const publish = await attestor.republication("o_1");
+    const publish = await inCourierUnit(uow, () => attestor.republication("o_1"));
     publish?.();
 
-    expect(events.published).toEqual([
-      new OrderHandedOverEvent("ORD-o_1", EARLIER, "paul", "manual"),
-    ]);
+    // Un fait NEUF, sous la clé de l'instant du rejeu — l'heure du fait reste celle du retrait.
+    expect(uow.of("handover.handed_over")).toEqual([factOf(EARLIER, "manual", AT)]);
   });
 
   it("rejeu : une remise au COMPTOIR n'est pas une remise à la porte — `null`", async () => {

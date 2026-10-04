@@ -26,6 +26,15 @@ import { HandoverAttestation } from "./handover-attestation.service.js";
 const HANDED_VIA: HandoverVia = "manual";
 const DEPOSIT_VIA: HandoverVia = "deposit";
 
+/**
+ * La publication rendue à la livraison, désormais vide : le fait
+ * `handover.handed_over` est écrit dans la boîte d'envoi DANS l'unité de
+ * travail du livreur (lot E2, 2026-10-04) — il part avec la validation, ou pas
+ * du tout. Le port de la livraison rend encore une publication à appeler après
+ * la validation ; l'appeler ne fait plus rien.
+ */
+const ALREADY_IN_OUTBOX: HandoverPublication = () => undefined;
+
 /** Les pièces d'une remise, sous le préfixe du retrait. */
 function proofKey(stagingId: string, piece: "photo" | "signature"): string {
   return `handover/proofs/${stagingId}/${piece}`;
@@ -37,9 +46,9 @@ function proofKey(stagingId: string, piece: "photo" | "signature"): string {
  *
  * La règle est CELLE du comptoir (`HandoverAttestation`) : commande annulée,
  * pas passée, déjà retirée, retenue — refusées avec la même phrase, la course
- * tranchée par la même contrainte. Ce qui change : rien n'est publié ici, la
- * publication est rendue (AP-D1), et les pièces sont gravées avec
- * l'attestation, dans la même transaction.
+ * tranchée par la même contrainte. Ce qui change : les pièces sont gravées avec
+ * l'attestation et son fait durable, dans la même transaction — celle du
+ * livreur (AP-D1, puis lot E2).
  */
 @Injectable()
 export class HandoverDoorstepAttestor extends DoorstepHandoverAttestor {
@@ -80,7 +89,7 @@ export class HandoverDoorstepAttestor extends DoorstepHandoverAttestor {
         "Cette commande n'existe plus côté commerce : ne la remettez pas, et appelez le dépôt.",
       );
     }
-    const { publish } = await this.attestation.attestQuietly(
+    await this.attestation.attestQuietly(
       subject,
       request.by,
       request.receiverName === null ? DEPOSIT_VIA : HANDED_VIA,
@@ -95,7 +104,7 @@ export class HandoverDoorstepAttestor extends DoorstepHandoverAttestor {
         recordedAt: this.clock.now(),
       }),
     );
-    return publish;
+    return ALREADY_IN_OUTBOX;
   }
 
   async republication(orderId: string): Promise<HandoverPublication | null> {
@@ -103,7 +112,13 @@ export class HandoverDoorstepAttestor extends DoorstepHandoverAttestor {
       this.proofs.findByOrderId(orderId),
       this.handovers.findByOrderId(orderId),
     ]);
-    return proof === null || handover === null ? null : this.attestation.publicationOf(handover);
+    if (proof === null || handover === null) {
+      return null;
+    }
+    // Un fait NEUF, dans l'unité de travail du rejeu : il répare un commerce
+    // resté en arrière, sans rien réécrire de l'attestation.
+    await this.attestation.reannounce(handover);
+    return ALREADY_IN_OUTBOX;
   }
 
   async discardProofs(staged: StagedHandoverProofs): Promise<void> {

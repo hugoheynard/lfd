@@ -1,12 +1,22 @@
-import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
+import { Injectable } from "@nestjs/common";
 
-import { BackgroundWork } from "../../../../platform/events/background-work.js";
-import { OrderHandedOverEvent } from "../../../orders/domain/events/order-handed-over.event.js";
+import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
+import {
+  DurableHandler,
+  type DurableSubscriber,
+} from "../../../../platform/outbox/durable-handler.js";
+import {
+  ORDER_FULFILLED,
+  OrderHandedOverEvent,
+} from "../../../orders/domain/events/order-handed-over.event.js";
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
 import { ActorNamer } from "../../domain/ports/actor-namer.js";
 import { CustomerNamer } from "../../domain/ports/customer-namer.js";
 import { customerLabel, staffCitation } from "./order-fact-names.js";
+
+/** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
+export const RECORD_ORDER_HANDED_OVER = "b2b.growth.record-handed-over";
 
 /**
  * Abonné du journal : `order.handed_over` → **le témoin immuable d'une remise**.
@@ -48,21 +58,26 @@ import { customerLabel, staffCitation } from "./order-fact-names.js";
  * Depuis le lot B du plan des phrases (2026-09-19), `handedOverBy` cite la
  * fiche avec son nom du moment (`{ id, name }`, D5), et la ligne porte le nom
  * du client en `subjectLabel` (D6) — lus ici, une fois, au moment du fait.
+ *
+ * ## Abonné DURABLE depuis le 2026-10-04 (lot E2)
+ *
+ * Il écoute `order.fulfilled` dans la boîte d'envoi, et tourne donc dans
+ * l'unité de travail de la livraison. `record` reste best-effort, mais un
+ * échec de base y condamne la transaction : la livraison échoue alors et sera
+ * reprise — mieux que le témoin perdu en silence d'avant. La clé
+ * d'idempotence garde un seul témoin par commande, rejeu compris.
  */
-@EventsHandler(OrderHandedOverEvent)
-export class OnOrderHandedOver implements IEventHandler<OrderHandedOverEvent> {
+@Injectable()
+@DurableHandler({ type: ORDER_FULFILLED, subscriber: RECORD_ORDER_HANDED_OVER })
+export class OnOrderHandedOver implements DurableSubscriber {
   constructor(
     private readonly recorder: ActivityRecorder,
     private readonly customers: CustomerNamer,
     private readonly actors: ActorNamer,
-    private readonly work: BackgroundWork,
   ) {}
 
-  handle(event: OrderHandedOverEvent): void {
-    void this.work.track(this.run(event), "on-order-handed-over");
-  }
-
-  private async run(event: OrderHandedOverEvent): Promise<void> {
+  async handle(delivery: DurableDelivery): Promise<void> {
+    const event = OrderHandedOverEvent.fromPayload(delivery.payload);
     const subject = await customerLabel(this.customers, event.placedByUserId);
     const by = await staffCitation(this.actors, event.handedOverBy);
     await this.recorder.record({

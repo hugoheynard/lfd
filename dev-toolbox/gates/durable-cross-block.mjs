@@ -44,7 +44,6 @@ const SRC = join(ROOT, "apps/lfd-api/src");
  * bascule ; la liste ne grandit pas, elle se vide.
  */
 const DEBT = new Map([
-  ["apps/lfd-api/src/b2b/orders/application/handlers/on-order-handed-over.handler.ts", "E2"],
   ["apps/lfd-api/src/b2b/catalog/application/handlers/on-product-media-changed.handler.ts", "E5"],
 ]);
 

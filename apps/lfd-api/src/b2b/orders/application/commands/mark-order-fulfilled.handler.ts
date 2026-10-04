@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { OrderReferenceNotFoundError } from "../../domain/errors/order-errors.js";
 import { OrderHandedOverEvent } from "../../domain/events/order-handed-over.event.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
@@ -21,24 +22,30 @@ import { MarkOrderFulfilledCommand } from "./mark-order-fulfilled.command.js";
  * numéro. Ce n'est pas un cas métier, c'est une incohérence entre deux
  * contextes, et elle doit lever.
  *
- * ## Pourquoi il republie
+ * ## Pourquoi il écrit son propre fait
  *
- * `OrderHandedOverEvent` (celui du commerce) est déjà écouté par le journal
- * d'activité. Le fournil publie **le sien**, dans son canal ; le rebrancher
- * directement sur `growth` aurait donné à un second bloc du commerce une
- * connaissance de la production, pour zéro gain. Un fait traverse la frontière
- * une fois, à un seul endroit.
+ * `order.fulfilled` est écouté par les points et par le journal. Le retrait
+ * écrit **le sien** (`handover.handed_over`), dans son canal ; brancher ces
+ * deux abonnés dessus leur aurait donné une connaissance du retrait, pour zéro
+ * gain. Un fait traverse la frontière une fois, à un seul endroit.
  *
- * ⚠️ Une écriture perdue (`won === false`) n'est PAS une erreur : l'abonné a été
- * rappelé, ou la commande portait déjà son attestation. On ne republie alors
- * rien — sinon le journal compterait deux remises là où il n'y en a eu qu'une.
+ * ## Idempotent, et durable (lot E2, 2026-10-04)
+ *
+ * `markFulfilled` et `order.fulfilled` partent dans UNE unité de travail —
+ * celle de la livraison durable quand l'abonné du retrait l'appelle, la sienne
+ * sinon. Une écriture perdue (`won === false`) n'est PAS une erreur : le fait
+ * a été rejoué ou réannoncé, ou la commande portait déjà son attestation. On
+ * n'écrit alors rien — ni second gain de points, ni second témoin au journal.
+ * Ce handler ne publie plus rien en mémoire : plus rien n'hérite de la
+ * transaction du relais.
  */
 @CommandHandler(MarkOrderFulfilledCommand)
 export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfilledCommand, void> {
   constructor(
     private readonly orders: OrderReader,
     private readonly repository: OrderRepository,
-    private readonly events: DomainEventPublisher,
+    private readonly uow: UnitOfWork,
+    private readonly durable: DurablePublisher,
   ) {}
 
   async execute(command: MarkOrderFulfilledCommand): Promise<void> {
@@ -47,25 +54,24 @@ export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfi
       throw new OrderReferenceNotFoundError(command.reference);
     }
 
-    const won = await this.repository.markFulfilled(
-      command.reference,
-      command.at,
+    const fulfilled = new OrderHandedOverEvent(
+      order.orderId,
+      order.orderNumber,
+      order.placedByUserId,
       command.staffUserId,
+      command.at,
       command.via,
     );
-    if (!won) {
-      return;
-    }
-
-    this.events.publish(
-      new OrderHandedOverEvent(
-        order.orderId,
-        order.orderNumber,
-        order.placedByUserId,
-        command.staffUserId,
+    await this.uow.run(async () => {
+      const won = await this.repository.markFulfilled(
+        command.reference,
         command.at,
+        command.staffUserId,
         command.via,
-      ),
-    );
+      );
+      if (won) {
+        await this.durable.publish(fulfilled.durableFact());
+      }
+    });
   }
 }

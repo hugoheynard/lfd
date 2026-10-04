@@ -2,7 +2,7 @@
 
 > Hugo, 2026-10-04 : « maintenant qu'on a la boîte d'envoi, est-ce que ça doit
 > changer la manière dont on journalise ? est-ce qu'il y a une refacto à
-> faire ? » État : **inventaire fait, E1 bâti (§6)**. Suite de
+> faire ? » État : **inventaire fait, E1 bâti (§6), E2 bâti (§7)**. Suite de
 > [`plan-boite-d-envoi.md`](plan-boite-d-envoi.md).
 
 ## 1. Ce qui ne change pas : le journal
@@ -42,8 +42,8 @@ a été rouverte (ligne 11).
 | --- | ------------------------------------------ | ----------------------------------------- | ------------------------------------------------ | --------------------------------------- |
 | 30  | `orders/on-production-day-closed`          | `production.day_closed`                   | placed → confirmed                               | ✅ **durable** (BE3, 2026-10-04)        |
 | 5   | `orders/on-order-packed`                   | `production.order_packed`                 | placed → ready                                   | ✅ **durable** (E1, 2026-10-04)         |
-| 28  | `orders/on-order-handed-over`              | `OrderHandedOverEvent` (handover)         | ready → fulfilled                                | commande bloquée en `ready`             |
-| 11  | `loyalty/credit-points-on-handover`        | `OrderHandedOverEvent`                    | **points de fidélité**                           | points jamais crédités                  |
+| 28  | `orders/on-order-handed-over`              | `handover.handed_over` (handover)         | ready → fulfilled                                | ✅ **durable** (E2, 2026-10-04)         |
+| 11  | `loyalty/credit-points-on-handover`        | `order.fulfilled`                         | **points de fidélité**                           | ✅ **durable** (E2, 2026-10-04)         |
 | 10  | `loyalty/credit-points-on-payment-settled` | `OrderPaymentSettledEvent`                | **points de fidélité**                           | points jamais crédités                  |
 | 1   | `delivery/hand-departed-orders-over`       | `DeliveryRoundDepartedEvent`              | la garde passe au livreur (port vers le retrait) | le retrait croit la commande au fournil |
 | 2   | `delivery/announce-delivery-departure`     | `DeliveryRoundDepartedEvent`              | « partie » au commerce (port)                    | le commerce ignore le départ            |
@@ -69,7 +69,8 @@ base. Le préalable d'E2 est levé.
 **B — analytique (croissance, cockpit, alertes) : durable si sa perte fausse
 une décision**
 
-`growth/on-order-placed`, `on-order-ready`, `on-order-handed-over`,
+`growth/on-order-placed`, `on-order-ready`, `on-order-handed-over` (✅
+**durable**, E2, 2026-10-04 — `order.fulfilled`),
 `on-order-abandoned`, `on-user-registered`, `on-user-registered-link-lead`
 (conversion d'un lead), `on-support-requested`, `on-support-handled`,
 `on-subscription-created`, `on-company-step-reached`, `on-company-declared`,
@@ -139,3 +140,48 @@ naît avec E1, la liste pleine.
   travail — c'est E5/E6, pas E1.
 - **La porte** `lint:durable-cross-block` est née : dette de deux abonnés
   (`on-order-handed-over` → E2, `on-product-media-changed` → E5).
+
+## 7. E2 bâti (2026-10-04) — le retrait
+
+- **Trois émetteurs, un seul chemin.** Le scan et la saisie au comptoir
+  (`ConfirmHandoverHandler`, `ConfirmManualHandoverHandler`) et la remise à la
+  porte (`HandoverDoorstepAttestor`, attestation et rejeu) passent tous par
+  `HandoverAttestation`, qui écrit l'attestation et `handover.handed_over` dans
+  **une** unité de travail — la sienne au comptoir, celle du livreur à la porte.
+  Le perdant d'une course lève dans l'unité : rien n'est écrit. Plus rien ne
+  part en mémoire pour ce fait.
+- **Le contrat** : `{ orderId, reference, handedOverAt, handedOverBy, via }`,
+  relu par `OrderHandedOverEvent.fromPayload` (canal du retrait). **La clé** :
+  `handover.handed_over:<orderId>`.
+- **La réannonce reste, en fait neuf** (`…:reannounced:<instant>`), comme le
+  rescan du colisage : un retrait refusé au comptoir réannonce l'attestation
+  existante (relue après l'annulation, donc celle du gagnant d'une course), et
+  le rejeu d'un arrêt à la porte aussi. C'est le seul filet pour un retrait
+  attesté avant ce lot, dont le fait en mémoire perdu n'a aucune ligne à rejouer.
+- **Deux types, et le commerce écrit le sien.** `MarkOrderFulfilledHandler` écrit
+  `markFulfilled` et `order.fulfilled` dans une unité de travail (celle de la
+  livraison durable quand l'abonné l'appelle). Pourquoi un second fait plutôt
+  que de brancher les points et le journal sur `handover.handed_over` : le
+  retrait ne connaît ni le client ni l'identifiant qu'ils lisent, et il annonce
+  un fait par GESTE (réannonces comprises) — `order.fulfilled` n'est écrit que
+  par l'écriture gagnante de `markFulfilled`, un par commande
+  (`order.fulfilled:<orderId>`). Les deux classes s'appellent encore
+  `OrderHandedOverEvent` ; leurs types ne le peuvent pas (§3).
+- **Les abonnés** : `b2b.orders.mark-fulfilled` (#28, `handover.handed_over`),
+  `b2b.loyalty.credit-on-handover` (#11) et `b2b.growth.record-handed-over`
+  (#21), tous deux sur `order.fulfilled`.
+- **L'idempotence, relue** : `MarkOrderFulfilledCommand` était déjà un succès
+  sans effet sur une commande retirée (`handedOverAt: null` dans le `where`) ;
+  elle n'écrit pas de second `order.fulfilled`. `CreditOrderPointsCommand`
+  relit les gains sous le verrou du titulaire, et l'index unique refuse le
+  reste. Aucun test « qui échouait avant » : les deux tenaient déjà ; les e2e
+  `handover-durable` (abonné repris, double attestation, course) le prouvent.
+- **Plus rien en mémoire à hériter de la transaction du relais** :
+  `MarkOrderFulfilledHandler` ne publie plus sur le bus (le piège d'E1 ne se
+  pose pas).
+- **La porte** `lint:durable-cross-block` : `on-order-handed-over` sort de la
+  dette ; reste `on-product-media-changed` (E5).
+- ⚠️ **Le port de la livraison rend encore une publication**
+  (`HandoverPublication`, `DoorstepHandoverAttestor`) : elle est désormais vide,
+  le fait étant écrit dans l'unité du livreur. La retirer touche le canal de la
+  livraison et ses appelants — laissé à une tranche à part.

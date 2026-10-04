@@ -1,4 +1,8 @@
-import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import type { DurableFact } from "../../../../platform/outbox/durable-event.js";
+import {
+  TransactionalDurablePublisher,
+  TransactionalUnitOfWork,
+} from "../../../../platform/outbox/__tests__/transactional-durable.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import type { HandoverSubject } from "../../../channels/commerce/handover-subject.reader.js";
 import { OrderHandedOverEvent } from "../../../channels/commerce/order-handed-over.event.js";
@@ -52,19 +56,29 @@ function repositoryOf(existing: OrderHandover | null, won: boolean) {
   return { repository, written };
 }
 
-/** Le collecteur de faits — un doublé qui implémente le port, pas un littéral. */
-class CollectingPublisher extends DomainEventPublisher {
-  readonly published: unknown[] = [];
+/** Les faits `handover.handed_over` VALIDÉS — ceux d'une unité annulée n'y sont pas. */
+class Outbox {
+  readonly uow = new TransactionalUnitOfWork();
+  readonly publisher = new TransactionalDurablePublisher(this.uow);
 
-  publish(event: unknown): void {
-    this.published.push(event);
+  get published(): readonly DurableFact[] {
+    return this.uow.of("handover.handed_over");
   }
+}
 
-  async publishTraced(): Promise<void> {
-    // Aucun fait journalisé ne part d'ici : le fournil publie sur le bus, et
-    // c'est le commerce qui décide ce qui entre au journal.
-    return Promise.resolve();
-  }
+/** Le fait attendu d'une attestation, tel que la boîte d'envoi le garde. */
+function factOf(
+  handover: { at: Date; by: string; via: "scan" | "manual" },
+  reannouncedAt: Date | null = null,
+): DurableFact {
+  return new OrderHandedOverEvent(
+    "ord_1",
+    "ORD-ABCD-1234",
+    handover.at,
+    handover.by,
+    handover.via,
+    reannouncedAt,
+  ).durableFact();
 }
 
 /** L'horloge gelée : le geste doit prendre son instant au port, pas au mur. */
@@ -85,8 +99,15 @@ function attestationOf(
   holds: FixedQualityHolds = new FixedQualityHolds(),
 ) {
   const { repository, written } = repositoryOf(existing, won);
-  const events = new CollectingPublisher();
-  const service = new HandoverAttestation(repository, new FixedClock(), events, AUTHORS, holds);
+  const events = new Outbox();
+  const service = new HandoverAttestation(
+    repository,
+    new FixedClock(),
+    events.uow,
+    events.publisher,
+    AUTHORS,
+    holds,
+  );
   return { service, written, events };
 }
 
@@ -117,7 +138,7 @@ class SequentialOrderHandoverRepository extends OrderHandoverRepository {
 }
 
 describe("HandoverAttestation", () => {
-  it("grave, publie le fait, et rend l'attestation obtenue", async () => {
+  it("grave, écrit le fait durable dans la même unité de travail, et rend l'attestation", async () => {
     const { service, written, events } = attestationOf(null, true);
 
     const view = await service.attest(subject(), "staff-1", "scan");
@@ -128,9 +149,8 @@ describe("HandoverAttestation", () => {
     expect(view.handedOverByName).toBe("Inès Moreau");
     expect(view.handedOverVia).toBe("scan");
     expect(view.handedOverAt).toBe(AT.toISOString());
-    expect(events.published).toEqual([
-      new OrderHandedOverEvent("ORD-ABCD-1234", AT, "staff-1", "scan"),
-    ]);
+    expect(events.published).toEqual([factOf({ at: AT, by: "staff-1", via: "scan" })]);
+    expect(events.published[0]?.key).toBe("handover.handed_over:ord_1");
   });
 
   it("ne publie RIEN quand un autre poste a gagné la course", async () => {
@@ -153,7 +173,7 @@ describe("HandoverAttestation", () => {
     await service.attest(subject(), "staff-1", "manual");
 
     expect(written[0]?.handedOverAt).toBe(AT);
-    expect(events.published[0]).toMatchObject({ handedOverAt: AT });
+    expect(events.published[0]?.payload).toMatchObject({ handedOverAt: AT.toISOString() });
   });
 
   it("laisse l'agrégat REFUSER avant d'écrire quoi que ce soit", async () => {
@@ -191,13 +211,9 @@ describe("HandoverAttestation", () => {
 
     await expect(service.attest(subject(), "staff-1", "scan")).rejects.toThrow(/déjà été retirée/u);
 
+    // Une RÉANNONCE : un fait neuf par geste, sous la clé de l'instant du geste.
     expect(events.published).toEqual([
-      new OrderHandedOverEvent(
-        "ORD-ABCD-1234",
-        new Date("2026-09-07T15:00:00.000Z"),
-        "staff-0",
-        "manual",
-      ),
+      factOf({ at: new Date("2026-09-07T15:00:00.000Z"), by: "staff-0", via: "manual" }, AT),
     ]);
   });
 
@@ -228,11 +244,12 @@ describe("HandoverAttestation", () => {
       "scan",
     );
     const repository = new SequentialOrderHandoverRepository([null, winner], false);
-    const events = new CollectingPublisher();
+    const events = new Outbox();
     const service = new HandoverAttestation(
       repository,
       new FixedClock(),
-      events,
+      events.uow,
+      events.publisher,
       AUTHORS,
       new FixedQualityHolds(),
     );
@@ -242,12 +259,7 @@ describe("HandoverAttestation", () => {
     );
 
     expect(events.published).toEqual([
-      new OrderHandedOverEvent(
-        "ORD-ABCD-1234",
-        new Date("2026-09-07T16:29:00.000Z"),
-        "staff-winner",
-        "scan",
-      ),
+      factOf({ at: new Date("2026-09-07T16:29:00.000Z"), by: "staff-winner", via: "scan" }, AT),
     ]);
   });
 
