@@ -160,3 +160,30 @@ Ce que ça coûte, à trancher avant P1 :
 Avec le push, la **double écriture disparaît** (BLOQUANT 1) : le fournil
 n'écrit plus le colisage du tout dès P1 ; il publie, et la bascule se fait
 par reconstruction de la projection.
+
+## 9. Contradiction du §8 par `vitruve` (2026-10-04) — et la conclusion
+
+Le push ne tient pas, pour une raison qui n'était pas visible au §7 :
+
+- **L'invariant va dans les deux sens.** Le fournil refuse d'annuler ou de
+  décocher une fournée si « sorti − quantité < au bac »
+  (`BatchStillPackedError`, `production-day.batches.ts`). « Sorti ≥ au bac »
+  est UN invariant, gardé des deux côtés dans UN agrégat. Le couper oblige soit
+  à tirer de l'autre côté, soit à croiser deux projections (cycle
+  `production ↔ packing`, et une course qui rend le disponible négatif), soit
+  à perdre la garde.
+- **Aucune publication sûre n'existe** : pas de boîte d'envoi, l'`EventBus`
+  est en mémoire (le handler de clôture le dit), le `Journal` n'est pas un
+  relais. Une projection devrait se reconstruire en tirant — le pull resterait
+  la vérité.
+- **« Comme `handover` » était faux** : le retrait tire
+  (`handover-queue.reader.ts`), et son JSDoc explique pourquoi il ne copie pas.
+- Publier les fournées une à une ferait recopier `production-output.ts`
+  (fournées implicites) : deux implémentations d'une règle du fournil.
+
+**Conclusion.** Les DONNÉES du colisage restent dans l'agrégat
+`ProductionDay` : c'est le même invariant que les fournées. Ce qui mérite son
+propre domaine, c'est le **poste** — une entrée de premier niveau, un
+vocabulaire, un écran — pas la table. On bâtit **P0** ; P1–P3 sont abandonnés
+tant que « sorti ≥ au bac » existe. À rouvrir si les bacs (`delivery_bin`) et
+la capacité (CA4) donnent au colisage une règle qui ne touche pas au four.
