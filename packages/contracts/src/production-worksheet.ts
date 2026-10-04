@@ -92,6 +92,14 @@ export interface WorkshopLine {
   readonly batches: readonly WorkshopBatch[];
   /** Le contenant réglé, pour « + 1 plaque » ; `null` = pas de bouton rapide. */
   readonly container: WorkshopLineContainer | null;
+  /**
+   * **Retour en attente** (colisage K2, 2026-10-04) : Σ des pièces demandées au
+   * colisage sur les fournées de la ligne, sans réponse encore. Toujours
+   * comptées dans `produced`. `0` = rien en attente.
+   *
+   * Facultatif dans le TYPE seulement (cf. `WorkshopBatch.pendingReturn`).
+   */
+  readonly pendingReturn?: number;
 }
 
 /** Le libellé du groupe des SKU que le catalogue ne connaît pas. */

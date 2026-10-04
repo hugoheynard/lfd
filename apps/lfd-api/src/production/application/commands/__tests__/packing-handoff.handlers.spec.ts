@@ -1,3 +1,4 @@
+import { legacyOf } from "../../../application/__tests__/station-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
@@ -47,7 +48,8 @@ const ORDER: ProducibleOrder = {
 function closedDay(): ProductionDay {
   const day = ProductionDay.open(ServiceDay.of(DAY));
   day.close([ORDER], new Date("2026-09-13T04:20:00.000Z"));
-  return day;
+  // L'ancien poste : depuis K2, une clôture naît au colisage.
+  return legacyOf(day);
 }
 
 /** Cochée par l'ANCIEN binaire, sans fournée : 30 implicites. */
@@ -143,6 +145,8 @@ describe("déclarer une fournée, c'est la remettre au colisage", () => {
       quantity: 12,
       recorded: { at: EARLIER, by: "staff-1", initials: "MB" },
       cancelled: { at: EARLIER, by: "staff-1" },
+      returned: 0,
+      pendingReturn: 0,
     });
 
     await handler.execute(record(FIRST, 12));
@@ -198,6 +202,8 @@ describe("annuler une fournée remise, c'est la reprendre (journée `legacy`)", 
           quantity: 12,
           legacy: true,
           requestedAt: NOW.toISOString(),
+          // La remise visée, portée depuis K2 (§13).
+          handoffId: FIRST,
         },
       },
     ]);
@@ -211,6 +217,8 @@ describe("annuler une fournée remise, c'est la reprendre (journée `legacy`)", 
       quantity: 12,
       recorded: { at: EARLIER, by: "staff-1", initials: "MB" },
       cancelled: null,
+      returned: 0,
+      pendingReturn: 0,
     });
 
     await cancel.execute(new CancelBatchCommand(DAY, FIRST, "staff-3"));
@@ -238,6 +246,8 @@ describe("annuler une fournée remise, c'est la reprendre (journée `legacy`)", 
       quantity: 4,
       recorded: { at: EARLIER, by: "staff-1", initials: "MB" },
       cancelled: null,
+      returned: 0,
+      pendingReturn: 0,
     });
     await handler.execute(record(FIRST, 12));
 

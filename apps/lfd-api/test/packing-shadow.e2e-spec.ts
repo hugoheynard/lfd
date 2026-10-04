@@ -20,7 +20,7 @@ import {
   STAFF,
   bootstrapProductionDay,
   cancelBatch,
-  closePlan,
+  closeLegacyPlan,
   markLine,
   place,
   recordBatch,
@@ -52,7 +52,7 @@ beforeEach(async () => {
 async function closedDay(): Promise<void> {
   await place(ctx, issued, [{ sku: CROISSANT, quantity: 8 }]);
   await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);
-  await closePlan(ctx);
+  await closeLegacyPlan(ctx);
   await ctx.drain();
 }
 
@@ -126,7 +126,7 @@ describe("la clôture tire la liste à coliser", () => {
   it("une réannonce ne réécrit rien : même clé par commande", async () => {
     await closedDay();
 
-    await closePlan(ctx);
+    await closeLegacyPlan(ctx);
     await ctx.drain();
 
     expect(

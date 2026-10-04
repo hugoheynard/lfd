@@ -1,3 +1,4 @@
+import { legacyOf, RecordingStation } from "../../../application/__tests__/station-doubles.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import {
@@ -63,8 +64,10 @@ class Days extends ProductionDayRepository {
 }
 
 function closedDay(): ProductionDay {
-  const day = ProductionDay.open(ServiceDay.of(DAY));
-  day.close([ORDER], CLOSED_AT);
+  const opened = ProductionDay.open(ServiceDay.of(DAY));
+  opened.close([ORDER], CLOSED_AT);
+  // L'ancien poste : depuis K2, une clôture naît au colisage.
+  const day = legacyOf(opened);
   return day;
 }
 
@@ -78,7 +81,7 @@ describe("DeclarePackingContainersHandler", () => {
   it("grave le nombre de bacs de la commande", async () => {
     const days = new Days(closedDay());
 
-    await new DeclarePackingContainersHandler(days).execute(
+    await new DeclarePackingContainersHandler(days, new RecordingStation()).execute(
       new DeclarePackingContainersCommand(DAY, REFERENCE, 3),
     );
 
@@ -90,7 +93,7 @@ describe("DeclarePackingContainersHandler", () => {
     // réécrirait la journée et effacerait le travail du voisin.
     const days = new Days(closedDay());
 
-    await new DeclarePackingContainersHandler(days).execute(
+    await new DeclarePackingContainersHandler(days, new RecordingStation()).execute(
       new DeclarePackingContainersCommand(DAY, REFERENCE, 3),
     );
 
@@ -100,7 +103,7 @@ describe("DeclarePackingContainersHandler", () => {
   it("accepte ZÉRO — c'est une réponse, pas une absence de réponse", async () => {
     const days = new Days(closedDay());
 
-    await new DeclarePackingContainersHandler(days).execute(
+    await new DeclarePackingContainersHandler(days, new RecordingStation()).execute(
       new DeclarePackingContainersCommand(DAY, REFERENCE, 0),
     );
 
@@ -111,7 +114,7 @@ describe("DeclarePackingContainersHandler", () => {
     const days = new Days(closedDay());
 
     await expect(
-      new DeclarePackingContainersHandler(days).execute(
+      new DeclarePackingContainersHandler(days, new RecordingStation()).execute(
         new DeclarePackingContainersCommand(DAY, REFERENCE, 2.5),
       ),
     ).rejects.toBeInstanceOf(InvalidContainerCountError);
@@ -121,14 +124,14 @@ describe("DeclarePackingContainersHandler", () => {
   it("refuse une journée ouverte et une référence hors du plan", async () => {
     const open = new Days(ProductionDay.open(ServiceDay.of(DAY)));
     await expect(
-      new DeclarePackingContainersHandler(open).execute(
+      new DeclarePackingContainersHandler(open, new RecordingStation()).execute(
         new DeclarePackingContainersCommand(DAY, REFERENCE, 1),
       ),
     ).rejects.toBeInstanceOf(ProductionDayNotClosedError);
 
     const unknown = new Days(closedDay());
     await expect(
-      new DeclarePackingContainersHandler(unknown).execute(
+      new DeclarePackingContainersHandler(unknown, new RecordingStation()).execute(
         new DeclarePackingContainersCommand(DAY, "CMD-9999", 1),
       ),
     ).rejects.toBeInstanceOf(AtelierSheetNotFoundError);
@@ -138,10 +141,26 @@ describe("DeclarePackingContainersHandler", () => {
     const days = new Days(sealedDay());
 
     await expect(
-      new DeclarePackingContainersHandler(days).execute(
+      new DeclarePackingContainersHandler(days, new RecordingStation()).execute(
         new DeclarePackingContainersCommand(DAY, REFERENCE, 5),
       ),
     ).rejects.toBeInstanceOf(PackedOrderSealedError);
     expect(days.counts).toHaveLength(0);
+  });
+});
+
+describe("une journée `packing` (colisage, K2)", () => {
+  it("remet le total au poste du colisage, sans rien écrire au fournil", async () => {
+    const opened = ProductionDay.open(ServiceDay.of(DAY));
+    opened.close([ORDER], CLOSED_AT);
+    const days = new Days(opened);
+    const station = new RecordingStation();
+
+    await new DeclarePackingContainersHandler(days, station).execute(
+      new DeclarePackingContainersCommand(DAY, REFERENCE, 3),
+    );
+
+    expect(station.calls).toEqual(["declare:ord_1:3"]);
+    expect(days.counts).toEqual([]);
   });
 });

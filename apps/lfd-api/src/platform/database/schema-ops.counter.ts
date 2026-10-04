@@ -278,6 +278,11 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   PackingLine: "packing",
   PackingStock: "packing",
   PackingReceipt: "packing",
+  // La bascule (K2) : les demandes de retour des deux côtés, et le journal de
+  // journée du colisage (écrit par ses déclencheurs, balayé seulement).
+  PackingReturn: "packing",
+  PackingDayChange: "packing",
+  ProductionReturnRequest: "production",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

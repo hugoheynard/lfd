@@ -156,6 +156,9 @@ async function closeAndPack(orderIds: readonly string[]): Promise<void> {
     .put(`/admin/production/worksheet/${DAY}/lines/${CROISSANT}/done`)
     .send({ initials: "KA" })
     .expect(204);
+  // Depuis K2, la journée naît au colisage : la liste à coliser et la remise
+  // lui arrivent par la boîte d'envoi, hors de la requête.
+  await ctx.drain();
   for (const orderId of orderIds) {
     const order = await ctx.prisma.productionOrder.findFirstOrThrow({
       where: { serviceDay: DAY, orderId },

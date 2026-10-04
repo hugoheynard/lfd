@@ -43,6 +43,8 @@ function batch(id: string, quantity: number, cancelled = false): ProductionBatch
     quantity,
     recorded: MARK,
     cancelled: cancelled ? { at: FIVE, by: "staff-2" } : null,
+    returned: 0,
+    pendingReturn: 0,
   };
 }
 

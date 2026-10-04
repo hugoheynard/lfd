@@ -142,7 +142,9 @@ function lineView(line: WorksheetLine): WorkshopLine {
       quantity: batch.quantity,
       recordedAt: batch.recorded.at.toISOString(),
       initials: batch.recorded.initials === "" ? null : batch.recorded.initials,
+      pendingReturn: batch.pendingReturn,
     })),
+    pendingReturn: line.pendingReturn,
     container:
       line.container === null
         ? null

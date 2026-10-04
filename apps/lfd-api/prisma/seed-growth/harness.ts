@@ -49,6 +49,8 @@ export interface SeedHarness {
    * des deux mondes, parce qu'on cherche l'erreur dans ce qu'on vient d'écrire.
    */
   close(): Promise<void>;
+  /** Attend que le travail de fond — la boîte d'envoi comprise — soit retombé. */
+  settle(): Promise<void>;
 }
 
 export async function bootstrapHarness(): Promise<SeedHarness> {
@@ -76,6 +78,7 @@ export async function bootstrapHarness(): Promise<SeedHarness> {
     prisma: module.get(PrismaService, { strict: false }),
     runAt: <T>(now: Date, actor: Actor, fn: () => Promise<T>): Promise<T> =>
       runWithRequestContext({ now, traceId: newTraceId(), actor }, fn),
+    settle: () => module.get(BackgroundWork, { strict: false }).whenIdle(),
     close: async () => {
       await module.get(BackgroundWork, { strict: false }).whenIdle();
       await module.close();

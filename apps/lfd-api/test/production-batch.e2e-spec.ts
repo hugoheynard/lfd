@@ -23,6 +23,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { asLegacyPacking } from "./production-day-fixture.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { settleCardPayments } from "./card-payments.js";
 
@@ -302,6 +303,8 @@ async function closeAndPack(
   expected = 201,
 ): Promise<void> {
   await context.asSub("staff-e2e").post(`/admin/production/batch/${day}/close`);
+  // L'ancien poste : cette suite l'éprouve (K2 — cf. `asLegacyPacking`).
+  await asLegacyPacking(context, day);
   await context
     .asSub("staff-e2e")
     .post(`/admin/production/batch/${day}/sheets/${reference}/packed`)
@@ -344,6 +347,7 @@ describe("le colisage", () => {
   async function placeAndClose(): Promise<string> {
     const reference = await placeOne();
     await ctx.asSub("staff-e2e").post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201);
+    await asLegacyPacking(ctx, SERVICE_DAY);
     return reference;
   }
 
@@ -628,6 +632,7 @@ describe("les courriels d'une commande", () => {
     const reference = await placeOne();
 
     await ctx.asSub("staff-e2e").post(`/admin/production/batch/${SERVICE_DAY}/close`);
+    await asLegacyPacking(ctx, SERVICE_DAY);
     await Promise.all([
       ctx
         .asSub("staff-e2e")
@@ -742,6 +747,7 @@ describe("le journal d'une commande", () => {
   it("n'écrit QU'UN témoin quand deux postes scannent le même colisage", async () => {
     const reference = await placeAndReady();
     await ctx.asSub("staff-e2e").post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201);
+    await asLegacyPacking(ctx, SERVICE_DAY);
 
     await Promise.all([
       ctx
@@ -798,6 +804,7 @@ describe("le plan du soir", () => {
       .asSub("staff-e2e")
       .post(`/admin/production/batch/${day}/close`)
       .expect(201);
+    await asLegacyPacking(ctx, day);
     return jsonBody<Closure>(response);
   }
 

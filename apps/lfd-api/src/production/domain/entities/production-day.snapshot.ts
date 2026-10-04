@@ -130,6 +130,15 @@ export interface ProductionBatchSnapshot {
   readonly quantity: number;
   readonly recorded: DoneMark;
   readonly cancelled: PackedMark | null;
+  /**
+   * Les pièces que le COLISAGE a rendues sur cette fournée (journée `packing`,
+   * K2, §13 B2) : « sorti » en est diminué. Un retour total l'annule ; un
+   * retour partiel la laisse compter pour le reste. `0` sur une journée
+   * `legacy`, dont l'annulation reste synchrone.
+   */
+  readonly returned: number;
+  /** Les pièces demandées en retour, sans réponse encore — « retour en attente ». */
+  readonly pendingReturn: number;
 }
 
 /** L'état d'une journée, tel que l'adaptateur l'écrit et le relit. */

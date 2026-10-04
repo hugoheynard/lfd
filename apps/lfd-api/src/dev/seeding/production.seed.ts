@@ -46,9 +46,21 @@
  * client satisfait cette forme sans rien déclarer.
  */
 export interface ProductionTables {
-  readonly productionBatch: { deleteMany(): Promise<{ readonly count: number }> };
-  readonly productionDay: { deleteMany(): Promise<{ readonly count: number }> };
-  readonly orderHandover: { deleteMany(): Promise<{ readonly count: number }> };
+  readonly productionReturnRequest: Deletable;
+  readonly productionHandoff: Deletable;
+  readonly productionBatch: Deletable;
+  readonly productionDay: Deletable;
+  readonly orderHandover: Deletable;
+  readonly packingLine: Deletable;
+  readonly packingOrder: Deletable;
+  readonly packingStock: Deletable;
+  readonly packingReceipt: Deletable;
+  readonly packingReturn: Deletable;
+}
+
+/** Une table qu'on vide d'un coup. */
+interface Deletable {
+  deleteMany(): Promise<{ readonly count: number }>;
 }
 
 /** Ce que la coupe a emporté — de quoi le dire à qui l'a demandée. */
@@ -67,8 +79,19 @@ export async function resetProduction(prisma: ProductionTables): Promise<Product
   // une journée qui a sorti du four ne se supprime pas. La coupe de démo les
   // emporte donc d'abord, sans quoi elle échouerait dès la première fournée
   // saisie (lecteur-de-migrations, 2026-09-28).
+  // Les remises au colisage et les demandes de retour (colisage, K1–K2)
+  // tiennent la journée en `Restrict`, comme les fournées : elles partent avant.
+  await prisma.productionReturnRequest.deleteMany();
+  await prisma.productionHandoff.deleteMany();
   await prisma.productionBatch.deleteMany();
   const days = await prisma.productionDay.deleteMany();
+  // Le colisage tient ses copies des mêmes journées, sans clé vers le fournil :
+  // la frontière, voulue. Les lignes avant leur bac (`Restrict`).
+  await prisma.packingLine.deleteMany();
+  await prisma.packingOrder.deleteMany();
+  await prisma.packingStock.deleteMany();
+  await prisma.packingReceipt.deleteMany();
+  await prisma.packingReturn.deleteMany();
   // La remise, elle, n'appartient à aucune journée — c'est tout l'objet de sa
   // table : une commande passée après la clôture reste remettable sans être au
   // plan. Elle se supprime donc à part.

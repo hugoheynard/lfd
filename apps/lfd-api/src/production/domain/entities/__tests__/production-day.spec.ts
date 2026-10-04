@@ -209,13 +209,16 @@ describe("la journée et le colisage (plan colisage, K1)", () => {
     expect(opened().packingOwner).toBe("legacy");
   });
 
-  it("la clôture écrit `legacy` et fige l'échéance de chaque commande", () => {
+  it("la clôture écrit `packing` et fige l'échéance de chaque commande", () => {
+    // K2 (2026-10-04, « on bascule direct ») : toute journée arrêtée par ce
+    // binaire naît au colisage. Le binaire de K1 écrivait `legacy`.
     const day = opened();
+    expect(day.packingOwner).toBe("legacy");
 
     day.close([order({ dueAt: "07:30" }), order({ orderId: "ord_2", dueAt: null })], AT);
 
-    expect(day.packingOwner).toBe("legacy");
-    expect(day.toSnapshot().packingOwner).toBe("legacy");
+    expect(day.packingOwner).toBe("packing");
+    expect(day.toSnapshot().packingOwner).toBe("packing");
     expect(day.orders.map((sheet) => sheet.dueAt)).toEqual(["07:30", null]);
   });
 

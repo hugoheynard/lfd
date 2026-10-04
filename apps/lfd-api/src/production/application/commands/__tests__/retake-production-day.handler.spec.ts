@@ -177,6 +177,8 @@ describe("RetakeProductionDayHandler", () => {
         quantity: 30,
         recorded: { at: TIRAGE, by: "staff-1", initials: "MB" },
         cancelled: null,
+        returned: 0,
+        pendingReturn: 0,
       },
     ]);
     expect(days.saved?.counts[0]).toMatchObject({ quantity: 42, done: null });

@@ -1,6 +1,7 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { RecordingDayLock } from "../../../application/__tests__/batch-doubles.js";
+import { legacyOf, RecordingStation } from "../../../application/__tests__/station-doubles.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import { ProductionDay, type PackedLineMark } from "../../../domain/entities/production-day.js";
 import {
@@ -101,6 +102,13 @@ function closedDay(): ProductionDay {
 function awaitingDay(): ProductionDay {
   const day = ProductionDay.open(ServiceDay.of(DAY));
   day.close([ORDER], new Date("2026-09-13T04:20:00.000Z"));
+  return legacyOf(day);
+}
+
+/** La même, arrêtée par le binaire de K2 : colisée au colisage. */
+function packingDay(): ProductionDay {
+  const day = ProductionDay.open(ServiceDay.of(DAY));
+  day.close([ORDER], new Date("2026-09-13T04:20:00.000Z"));
   return day;
 }
 
@@ -111,12 +119,26 @@ function sealedDay(): ProductionDay {
   return day;
 }
 
-function markHandler(days: Days, lock = new RecordingDayLock()): MarkPackingLineHandler {
-  return new MarkPackingLineHandler(days, lock, new FixedClock(NOW), new DirectUnitOfWork());
+function markHandler(
+  days: Days,
+  lock = new RecordingDayLock(),
+  station = new RecordingStation(),
+): MarkPackingLineHandler {
+  return new MarkPackingLineHandler(
+    days,
+    lock,
+    new FixedClock(NOW),
+    new DirectUnitOfWork(),
+    station,
+  );
 }
 
-function unmarkHandler(days: Days, lock = new RecordingDayLock()): UnmarkPackingLineHandler {
-  return new UnmarkPackingLineHandler(days, lock, new DirectUnitOfWork());
+function unmarkHandler(
+  days: Days,
+  lock = new RecordingDayLock(),
+  station = new RecordingStation(),
+): UnmarkPackingLineHandler {
+  return new UnmarkPackingLineHandler(days, lock, new DirectUnitOfWork(), station);
 }
 
 describe("le verrou de la journée (D4 des fournées)", () => {
@@ -278,5 +300,53 @@ describe("UnmarkPackingLineHandler", () => {
       unmarkHandler(sealed).execute(new UnmarkPackingLineCommand(DAY, REFERENCE, SKU)),
     ).rejects.toBeInstanceOf(PackedOrderSealedError);
     expect(sealed.marks).toHaveLength(0);
+  });
+});
+
+describe("une journée `packing` (colisage, K2)", () => {
+  it("remet la mise au bac au poste du colisage, sans rien écrire au fournil", async () => {
+    const days = new Days(packingDay());
+    const station = new RecordingStation();
+
+    await markHandler(days, new RecordingDayLock(), station).execute(
+      new MarkPackingLineCommand(DAY, REFERENCE, SKU, "MB", "staff-1"),
+    );
+
+    expect(station.calls).toEqual([`mark:ord_1:${SKU}:staff-1:MB`]);
+    expect(days.marks).toEqual([]);
+  });
+
+  it("ne juge PAS « pas encore sorti du four » : c'est la réserve du colisage qui le dit", async () => {
+    // Rien n'est sorti au fournil ; la remise peut pourtant être arrivée au colisage.
+    const station = new RecordingStation();
+
+    await markHandler(new Days(packingDay()), new RecordingDayLock(), station).execute(
+      new MarkPackingLineCommand(DAY, REFERENCE, SKU, "", "staff-1"),
+    );
+
+    expect(station.calls).toHaveLength(1);
+  });
+
+  it("garde les refus STRUCTURELS du fournil : référence hors du plan", async () => {
+    const station = new RecordingStation();
+
+    await expect(
+      markHandler(new Days(packingDay()), new RecordingDayLock(), station).execute(
+        new MarkPackingLineCommand(DAY, "CMD-9999", SKU, "", "staff-1"),
+      ),
+    ).rejects.toBeInstanceOf(AtelierSheetNotFoundError);
+    expect(station.calls).toEqual([]);
+  });
+
+  it("remet la décoche au poste du colisage", async () => {
+    const days = new Days(packingDay());
+    const station = new RecordingStation();
+
+    await unmarkHandler(days, new RecordingDayLock(), station).execute(
+      new UnmarkPackingLineCommand(DAY, REFERENCE, SKU),
+    );
+
+    expect(station.calls).toEqual([`unmark:ord_1:${SKU}`]);
+    expect(days.marks).toEqual([]);
   });
 });

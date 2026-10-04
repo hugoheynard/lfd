@@ -24,6 +24,7 @@ import { ON_ORDER_PACKED } from "../src/b2b/orders/application/handlers/on-order
 import { PrismaOrderRepository } from "../src/b2b/orders/infrastructure/prisma-order.repository.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { asLegacyPacking } from "./production-day-fixture.js";
 import { settleCardPayments } from "./card-payments.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
@@ -162,6 +163,8 @@ async function placeAndClose(): Promise<string> {
   );
   await settleCardPayments(ctx, issuedIntents);
   await ctx.asSub(STAFF).post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201);
+  // L'ancien poste, que cette suite éprouve (K2 — cf. `asLegacyPacking`).
+  await asLegacyPacking(ctx, SERVICE_DAY);
   await ctx.drain();
   return placed.orderNumber;
 }

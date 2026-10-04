@@ -1,3 +1,5 @@
+import { PackedDayReading } from "../../services/packed-day-reading.service.js";
+import { FixedStationReader } from "../../__tests__/station-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -39,7 +41,10 @@ function subject(gone: ReadonlyMap<string, OrderOutOfHand> = new Map()) {
   const handler = new RenderQualityCheckHandler(
     new InMemoryChecks(table),
     new InMemoryCheckReader(table),
-    new FixedDays(closedDay(DAY, clock.now(), ["ord_2"])),
+    new PackedDayReading(
+      new FixedDays(closedDay(DAY, clock.now(), ["ord_2"])),
+      new FixedStationReader(),
+    ),
     new QualityPhotoAttachment(new InMemoryUploads(table), new InMemoryProductionStore(), clock),
     new FixedOrderCustody(gone),
     events,
@@ -114,7 +119,10 @@ describe("RenderQualityCheckHandler — la garde (BQ)", () => {
     const after = new RenderQualityCheckHandler(
       new InMemoryChecks(before.table),
       new InMemoryCheckReader(before.table),
-      new FixedDays(closedDay(DAY, new Date(0), ["ord_2"])),
+      new PackedDayReading(
+        new FixedDays(closedDay(DAY, new Date(0), ["ord_2"])),
+        new FixedStationReader(),
+      ),
       new QualityPhotoAttachment(
         new InMemoryUploads(before.table),
         new InMemoryProductionStore(),

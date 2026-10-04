@@ -6,6 +6,8 @@ import { ReturnRequestedEvent } from "../../channels/packing/return-requested.ev
 import type { PackedMark, ProductionBatchSnapshot } from "../../domain/entities/production-day.js";
 import { ProductionHandoffLedger } from "../../domain/ports/production-handoff.ledger.js";
 import { ProductionHandoffReader } from "../../domain/ports/production-handoff.reader.js";
+import { ProductionReturnRequests } from "../../domain/ports/production-return.requests.js";
+import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { handoffOf, returnOf } from "../../domain/services/production-handoff.js";
 import type { PackingOwner } from "../../domain/value-objects/packing-owner.js";
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
@@ -27,6 +29,8 @@ export class PackingHandoffs {
     private readonly ledger: ProductionHandoffLedger,
     private readonly handed: ProductionHandoffReader,
     private readonly durable: DurablePublisher,
+    private readonly requests: ProductionReturnRequests,
+    private readonly ids: IdGenerator,
   ) {}
 
   /** La fournée déclarée est remise. Rejouée, elle ne l'est qu'une fois (même `id`, même clé). */
@@ -73,8 +77,54 @@ export class PackingHandoffs {
           batch.quantity,
           owner === "legacy",
           mark.at,
+          batch.id,
         ).durableFact(),
       );
     }
+  }
+
+  /**
+   * **Sur une journée `packing`** (K2, §13 B2) : les fournées déjà remises ne
+   * s'annulent PAS ici. Chacune devient une demande de retour — une ligne
+   * `production_return_request` et `production.return_requested` (`legacy:
+   * false`, avec la remise visée) —, et « sorti » ne baisse qu'à la réponse.
+   *
+   * L'identifiant est neuf à chaque demande (`return-<id>`, ULID) : un retour
+   * refusé — tout au bac — se redemande après la décoche au colisage (§10.2).
+   *
+   * @returns les fournées JAMAIS remises, que l'appelant annule tout de suite :
+   *   le colisage ne les a pas, il n'a rien à rendre.
+   */
+  async requestReturns(
+    day: ServiceDay,
+    batches: readonly ProductionBatchSnapshot[],
+    mark: PackedMark,
+  ): Promise<readonly ProductionBatchSnapshot[]> {
+    const handed = await this.handed.handedAmong(
+      day,
+      batches.map((batch) => batch.id),
+    );
+    for (const batch of batches.filter((candidate) => handed.has(candidate.id))) {
+      const requestId = `return-${this.ids.next()}`;
+      await this.requests.request(day, {
+        requestId,
+        batchId: batch.id,
+        sku: batch.sku,
+        quantity: batch.quantity,
+        requested: mark,
+      });
+      await this.durable.publish(
+        new ReturnRequestedEvent(
+          requestId,
+          day.value,
+          batch.sku,
+          batch.quantity,
+          false,
+          mark.at,
+          batch.id,
+        ).durableFact(),
+      );
+    }
+    return batches.filter((batch) => !handed.has(batch.id));
   }
 }

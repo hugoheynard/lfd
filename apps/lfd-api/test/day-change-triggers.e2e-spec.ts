@@ -25,6 +25,7 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   "production.day_change": "le journal lui-même",
   "public.day_change": "le journal lui-même",
   "delivery.day_change": "le journal lui-même",
+  "packing.day_change": "le journal lui-même",
   "production.order_handover":
     "un retrait change le statut de la commande, donc `public.orders` et son journal ; son jour n'existe que dans une table d'un autre bloc (D3)",
   "production.order_departure":
@@ -127,7 +128,7 @@ async function tablesToWatch(): Promise<string[]> {
   const rows = await ctx.prisma.$queryRaw<{ tbl: string }[]>`
     SELECT table_schema || '.' || table_name AS tbl
       FROM information_schema.tables
-     WHERE table_type = 'BASE TABLE' AND table_schema IN ('production', 'delivery')
+     WHERE table_type = 'BASE TABLE' AND table_schema IN ('production', 'delivery', 'packing')
     UNION
     SELECT table_schema || '.' || table_name
       FROM information_schema.columns
@@ -226,10 +227,11 @@ describe("D7 — une table qui porte une journée a son déclencheur, ou sa rais
 
   it("aucun déclencheur de journal n'écrit hors du schéma de sa table (D3)", async () => {
     const triggers = await journalTriggerSchemas(ctx.prisma);
-    // Les trois journaux ont chacun leurs déclencheurs : une requête qui ne
-    // trouverait plus rien passerait sans rien garder.
+    // Les quatre journaux ont chacun leurs déclencheurs (`packing` depuis la
+    // bascule du colisage, K2) : une requête qui ne trouverait plus rien
+    // passerait sans rien garder.
     expect(new Set(triggers.map((row) => row.table_schema))).toEqual(
-      new Set(["public", "production", "delivery"]),
+      new Set(["public", "production", "delivery", "packing"]),
     );
     expect(crossingTriggers(triggers)).toEqual([]);
   });
@@ -289,6 +291,63 @@ describe("D2 — une ligne par journée et par instruction", () => {
       data: { retakenBy: "personne" },
     });
     expect(await ctx.prisma.productionDayChange.count()).toBe(before);
+  });
+});
+
+describe("le colisage a SON journal (K2, `colisage/plan-domaine-colisage.md`, §10.3)", () => {
+  const DAY = serviceDay();
+  const packingTraces = () => ctx.prisma.packingDayChange.count({ where: { serviceDay: DAY } });
+  const productionTraces = () =>
+    ctx.prisma.productionDayChange.count({ where: { serviceDay: DAY } });
+
+  it("une écriture du colisage inscrit la version de SA journée, chez lui seul", async () => {
+    const [packing, production] = [await packingTraces(), await productionTraces()];
+
+    await ctx.prisma.packingStock.createMany({
+      data: ["A-1", "A-2"].map((sku) => ({ serviceDay: DAY, sku, received: 3 })),
+    });
+
+    expect((await packingTraces()) - packing).toBe(1);
+    expect((await productionTraces()) - production).toBe(0);
+  });
+
+  it("chaque table du colisage qui porte une journée l'inscrit", async () => {
+    const before = await packingTraces();
+    await ctx.prisma.packingOrder.create({
+      data: {
+        serviceDay: DAY,
+        orderId: "ord_1",
+        reference: "CMD-0001",
+        customerLabel: "Trois Ponts",
+        fulfillmentMethod: "pickup",
+        drawnAt: new Date(),
+      },
+    });
+    await ctx.prisma.packingLine.create({
+      data: { serviceDay: DAY, orderId: "ord_1", sku: "A-1", productName: "A", quantity: 1 },
+    });
+    await ctx.prisma.packingReceipt.create({
+      data: {
+        id: "b1",
+        kind: "handoff",
+        serviceDay: DAY,
+        sku: "A-1",
+        quantity: 1,
+        receivedAt: new Date(),
+      },
+    });
+    await ctx.prisma.packingReturn.create({
+      data: {
+        requestId: "return-1",
+        serviceDay: DAY,
+        sku: "A-1",
+        handoffId: "b1",
+        requested: 1,
+        receivedAt: new Date(),
+      },
+    });
+
+    expect((await packingTraces()) - before).toBe(4);
   });
 });
 

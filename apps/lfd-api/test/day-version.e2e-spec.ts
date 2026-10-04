@@ -162,6 +162,9 @@ async function readyToPack(): Promise<{ orderId: string; reference: string }> {
   const orderId = await place([{ sku: CROISSANT, quantity: 6 }]);
   await close();
   await bake(CROISSANT);
+  // Depuis K2, la journée naît au colisage : la liste à coliser et la remise
+  // de la fournée lui arrivent par la boîte d'envoi, hors de la requête.
+  await ctx.drain();
   return { orderId, reference: (await planned(orderId)).reference };
 }
 
@@ -379,6 +382,9 @@ describe("les routes de version (V2)", () => {
   it("la version du fournil se lit aussi sous `b2b_supervision:read`, par la porte de la Supervision", async () => {
     await place([{ sku: CROISSANT, quantity: 2 }]);
     await close();
+    // La liste à coliser part au colisage par la boîte d'envoi (K2) : sans
+    // drain, sa livraison ferait bouger la version entre les deux lectures.
+    await ctx.drain();
     await allowRead("staff-version-sup-fournil", "b2b_supervision");
     const supervisor = ctx.asSub("staff-version-sup-fournil");
     const view = jsonBody<DayVersionView>(

@@ -3,7 +3,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
+import { PackedDayReading } from "../services/packed-day-reading.service.js";
 import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
 import { packingBoardOf } from "../../domain/services/production-packing.js";
 import { heldOrderIds } from "../../domain/services/quality-verdicts.js";
@@ -30,6 +30,13 @@ import { GetProductionPackingQuery } from "./get-production-packing.query.js";
  * bloc : les contrôles de la journée, et `heldOrderIds` — la règle que le
  * retrait lit au comptoir. Le plan est celui de la journée chargée.
  *
+ * ## Journée `packing` (K2)
+ *
+ * Le bac, ses lignes, ses containers et le disponible se lisent au COLISAGE
+ * (`PackedDayReading`), posés sur le plan du fournil :
+ * même calcul, même contrat. Le choix suit `packing_owner`, jamais une table
+ * de l'ombre (§13 B1).
+ *
  * Il n'écrit rien, pas même un compteur — §4.
  */
 @QueryHandler(GetProductionPackingQuery)
@@ -38,7 +45,7 @@ export class GetProductionPackingHandler implements IQueryHandler<
   ProductionPackingView
 > {
   constructor(
-    private readonly days: ProductionDayRepository,
+    private readonly days: PackedDayReading,
     private readonly clock: Clock,
     private readonly staffAuthors: StaffAuthorDirectory,
     private readonly checks: QualityCheckReader,
@@ -46,20 +53,21 @@ export class GetProductionPackingHandler implements IQueryHandler<
 
   async execute(query: GetProductionPackingQuery): Promise<ProductionPackingView> {
     const day = ServiceDay.of(query.serviceDay);
-    const current = await this.days.load(day);
+    const { day: current, available } = await this.days.load(day);
+    const orders = current.orders;
     const authors = await this.staffAuthors.identify(
-      current.orders.map((order) => order.packed?.by ?? null),
+      orders.map((order) => order.packed?.by ?? null),
     );
-    const plan = current.orders.flatMap((order) =>
+    const plan = orders.flatMap((order) =>
       order.lines.map((line) => ({ orderId: order.orderId, sku: line.sku })),
     );
     const heldOrders = heldOrderIds(day, await this.checks.forDay(day), plan);
     return packingBoardOf({
       date: day.value,
       closedAt: current.closedAt,
-      orders: current.orders,
+      orders,
       counts: current.counts,
-      available: (sku) => current.availableOf(sku),
+      available,
       now: this.clock.now(),
       authorName: (reference) => authors.nameOf(reference),
       heldOrders,

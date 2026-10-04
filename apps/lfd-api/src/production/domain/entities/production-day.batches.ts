@@ -6,9 +6,15 @@ import {
   BatchConflictError,
   InvalidBatchQuantityError,
   BatchNotFoundError,
+  BatchReturnPendingError,
   BatchStillPackedError,
 } from "../errors/batch-errors.js";
-import { activeBatchesOf, implicitBatchesOf, outputOf } from "../services/production-output.js";
+import {
+  activeBatchesOf,
+  countedBatch,
+  implicitBatchesOf,
+  outputOf,
+} from "../services/production-output.js";
 import type { ServiceDay } from "../value-objects/service-day.value-object.js";
 import type {
   DoneMark,
@@ -36,9 +42,15 @@ export interface BatchState {
   readonly batches: readonly ProductionBatchSnapshot[];
 }
 
-/** Les fournées réelles ET les implicites des coches héritées (§5.2). */
+/**
+ * Les fournées réelles ET les implicites des coches héritées (§5.2), chacune
+ * pour ce qu'elle compte — rendus du colisage déduits (K2, `countedBatch`).
+ */
 export function effectiveBatchesOf(state: BatchState): readonly ProductionBatchSnapshot[] {
-  return [...state.batches, ...implicitBatchesOf(state.day.value, state.counts, state.batches)];
+  return [
+    ...state.batches.map(countedBatch),
+    ...implicitBatchesOf(state.day.value, state.counts, state.batches),
+  ];
 }
 
 /** Σ des fournées qui comptent pour ce SKU, implicites comprises. */
@@ -118,6 +130,8 @@ export function batchToComplete(
     quantity: output.remaining,
     recorded,
     cancelled: null,
+    returned: 0,
+    pendingReturn: 0,
   };
 }
 
@@ -128,6 +142,7 @@ export function batchToComplete(
  * @throws {BatchNotFoundError} aucune fournée de ce jour sous cet `id`.
  * @throws {BatchStillPackedError} il resterait moins de pièces sorties que de
  *   pièces au bac, bacs fermés compris.
+ * @throws {BatchReturnPendingError} un retour est déjà demandé au colisage (K2).
  */
 export function batchToCancel(state: BatchState, id: string): ProductionBatchSnapshot | null {
   const target = effectiveBatchesOf(state).find((batch) => batch.id === id);
@@ -136,6 +151,9 @@ export function batchToCancel(state: BatchState, id: string): ProductionBatchSna
   }
   if (target.cancelled !== null) {
     return null;
+  }
+  if (target.pendingReturn > 0) {
+    throw new BatchReturnPendingError(productNameOf(state, target.sku), target.pendingReturn);
   }
   const packed = packedOf(state, target.sku);
   if (producedOf(state, target.sku) - target.quantity < packed) {
@@ -150,12 +168,17 @@ export function batchToCancel(state: BatchState, id: string): ProductionBatchSna
  * changement de comportement de l'ancien contrat, et il est voulu.
  *
  * @throws {BatchStillPackedError} des pièces de cet article sont dans des sacs.
+ * @throws {BatchReturnPendingError} un retour est déjà demandé au colisage (K2).
  */
 export function batchesToUncheck(
   state: BatchState,
   sku: string,
 ): readonly ProductionBatchSnapshot[] {
   const active = activeBatchesOf(effectiveBatchesOf(state), sku);
+  const pending = active.reduce((total, batch) => total + batch.pendingReturn, 0);
+  if (pending > 0) {
+    throw new BatchReturnPendingError(productNameOf(state, sku), pending);
+  }
   const packed = packedOf(state, sku);
   if (active.length > 0 && packed > 0) {
     throw new BatchStillPackedError(productNameOf(state, sku), packed, "uncheck");
@@ -241,7 +264,7 @@ export function batchToRecord(
   if (!Number.isInteger(quantity) || quantity < 1) {
     throw new InvalidBatchQuantityError(quantity);
   }
-  return { id, sku, quantity, recorded, cancelled: null };
+  return { id, sku, quantity, recorded, cancelled: null, returned: 0, pendingReturn: 0 };
 }
 
 /**

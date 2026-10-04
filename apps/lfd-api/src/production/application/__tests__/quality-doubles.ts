@@ -52,6 +52,8 @@ export function closedDay(day: ServiceDay, at: Date, packed: readonly string[]):
   const snapshot = open.toSnapshot();
   return ProductionDay.fromSnapshot({
     ...snapshot,
+    // Le bac fermé est écrit au FOURNIL : une journée de l'ancien poste (K2).
+    packingOwner: "legacy",
     orders: snapshot.orders.map((order) =>
       packed.includes(order.orderId) ? { ...order, packed: { at, by: "staff_pack" } } : order,
     ),

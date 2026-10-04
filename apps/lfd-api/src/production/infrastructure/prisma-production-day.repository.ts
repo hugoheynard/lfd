@@ -8,7 +8,7 @@ import {
   MAX_CONTAINERS_PER_ORDER,
 } from "../domain/value-objects/container-step.js";
 import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
-import { BATCH_COLUMNS, batchOf } from "./prisma-production-batch.repository.js";
+import { BATCH_COLUMNS, batchOf, returnsByBatch } from "./prisma-production-batch.repository.js";
 
 /**
  * L'adaptateur Prisma de la journée de production.
@@ -78,11 +78,14 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         // Annulées comprises : « aucune fournée » (qui décide d'une fournée
         // implicite, §5.2 des fournées) se lit annulées comprises.
         batches: { select: BATCH_COLUMNS, orderBy: [{ recordedAt: "asc" }, { id: "asc" }] },
+        // Les retours demandés au colisage (K2) : ce qu'il a rendu, ce qui attend.
+        returns: { select: { batchId: true, quantity: true, returned: true } },
       },
     });
     if (row === null) {
       return ProductionDay.open(day);
     }
+    const returns = returnsByBatch(row.returns);
     return ProductionDay.fromSnapshot({
       serviceDay: row.serviceDay,
       closedAt: row.closedAt,
@@ -136,7 +139,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             ? null
             : { at: count.doneAt, by: count.doneBy, initials: count.doneInitials },
       })),
-      batches: row.batches.map(batchOf),
+      batches: row.batches.map((batch) => batchOf(batch, returns.get(batch.id))),
     });
   }
 

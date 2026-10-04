@@ -1,8 +1,8 @@
 # Le colisage, son propre domaine — plan
 
 > Hugo, 2026-10-04 : « sortir de production, j'ai l'impression que ça mérite son
-> propre domaine ». État : **doc-first**, rien de bâti. À contredire par
-> `vitruve` (migration de données, frontière) avant de bâtir.
+> propre domaine ». État : **K1 bâti et déployé, K2 bâti** (§14, §15). Le
+> texte d'origine (doc-first) suit tel quel.
 
 ## 1. Ce qui existe (relu le 2026-10-04)
 
@@ -498,3 +498,105 @@ rende réel.
   lecture de version en K1, et un journal sans balayage grossirait. À poser
   avec K2. Le contrat `packing.returned` n'est pas encore déclaré : K1 ne
   répond à aucun retour.
+
+## 15. K2 bâti (2026-10-04) — basculer, sans interrupteur
+
+> Hugo, 2026-10-04 : « on bascule direct ». Pas d'interrupteur ni de réglage
+> d'exécution : **toute clôture faite par ce binaire écrit `packing_owner =
+'packing'`**. Une journée arrêtée avant le déploiement garde `legacy` et
+> finit sur l'ancien poste, que le code sert encore (K3 le retirera).
+
+### 15.1 Irréversible au déploiement, et ce qu'un retour arrière demanderait
+
+Le premier soir qui suit le déploiement, la journée arrêtée naît au colisage :
+ses bacs, ses lignes au bac, ses containers et ses retours ne sont écrits
+**que** dans `packing.*` et `production.production_return_request`. Les
+colonnes `packed_*` / `container_count` du fournil restent vides pour elle.
+
+Redéployer le binaire de K1 sur une journée `packing` en cours ne la rend pas
+à l'ancien poste : il lirait les colonnes du fournil (vides) et montrerait un
+poste où rien n'est au bac, alors que des bacs sont fermés et des commandes
+prêtes chez le commerce. Un retour arrière demanderait donc, **à la main et
+journée par journée** :
+
+1. de ne le faire que sur des journées dont aucun bac n'est fermé — sinon le
+   commerce a déjà annoncé « prête » sur un bac dont l'ancien poste ne sait
+   rien ;
+2. de recopier `packing.packing_line.packed_*` et `packing.packing_order`
+   (`packed_*`, `container_count`) vers `production.production_order(_line)`,
+   puis de passer `packing_owner` à `legacy` — une migration de données, donc
+   `vitruve` d'abord ;
+3. de trancher les demandes de retour sans réponse
+   (`production_return_request.answered_at IS NULL`) : l'ancien binaire ne lit
+   pas cette table, et la fiche les compterait encore comme sorties.
+
+Le schéma, lui, s'enlève (migration en avant, décrite en tête de
+`20261004200000_la_bascule_du_colisage`) une fois aucune journée `packing`
+en cours.
+
+### 15.2 Ce qui a été tranché en bâtissant
+
+- **Le poste reste servi par le fournil**, à ses adresses (celles des QR
+  imprimés), contrats inchangés. Sur une journée `packing`, le fournil garde ses
+  refus structurels (journée arrêtée, référence au plan) et remet le geste au
+  colisage par un port qu'il **déclare** et que le colisage **implémente** :
+  `PackingStation` (écriture) et `PackingStationReader` (lecture), dans
+  `production/channels/packing/`, reliés par `PackingFeedModule`. Même figure
+  que `production/channels/handover/`. Aucune arête neuve dans la matrice.
+- **Les règles du bac ont déménagé** dans deux agrégats du colisage :
+  `PackingSheet` (scellé, ligne réversible, plafond, total) et `PackingStock`
+  (`au bac ≤ reçu − rendu`, verrou `FOR UPDATE` sur `packing_stock`). Mêmes
+  **codes** et mêmes messages que l'ancien poste (`production.packing.*`) :
+  l'écran ne voit pas la différence. Un refus neuf : la commande pas encore
+  arrivée au colisage (`packing.order.not_drawn_yet`, 409, « réessayez »).
+- **Ordre des verrous** : journée du fournil → bac → réserve. La décision d'un
+  retour ne prend que la réserve, la réponse au fournil que la journée.
+- **`packing.order_packed`** est déclaré dans `production/channels/packing/`,
+  ré-exporté par `production/channels/commerce/` (la seule surface du commerce
+  vers le fournil), même charge que `production.order_packed`. Le commerce a
+  deux abonnés (`OnOrderPacked`, `OnPackingOrderPacked`).
+- **Le retour sur une journée `packing`** : l'annulation ou la décoche d'une
+  fournée remise écrit `production_return_request` et publie
+  `return_requested` (`legacy: false`, avec `handoffId` — champ ajouté au
+  contrat, requis seulement hors `legacy`). L'identifiant est neuf à chaque
+  demande (`return-<ULID>`) : un refus se redemande après la décoche au
+  colisage (§10.2). Une seconde demande pendant qu'une attend est refusée
+  (`production.batch.return_pending`). Le colisage tranche
+  (`min(demandé, reçu − rendu − au bac)`), garde en attente une demande dont la
+  remise n'est pas arrivée (`packing.packing_return`), et répond par
+  `packing.returned`. Le fournil, à la réception : une remise négative de ce
+  qui est rendu ; la fournée s'annule si elle a tout rendu, sinon elle compte
+  pour le reste (`returned` sur la fournée, déduit de « sorti »).
+- **Une fournée jamais remise** sur une journée `packing` s'annule tout de
+  suite : le colisage ne l'a pas.
+- **« Retour en attente »** : `pendingReturn` ajouté à `WorkshopLine` et à
+  `WorkshopBatch` (facultatif dans le TYPE, comme `qualityHeld` : le serveur
+  l'envoie toujours).
+- **La journée telle que le poste la voit** (`PackedDayReading`) : le poste,
+  la supervision, l'état de la journée **et le contrôle qualité** (« la
+  commande est-elle colisée ? ») lisent les bacs au colisage sur une journée
+  `packing`. Le contrôle qualité n'était pas dans la liste du §11 ; sans lui,
+  un verdict sur une commande colisée était refusé.
+- **La version du jour** (`GET admin/production/version`) additionne le journal
+  du fournil et celui du colisage (`packing.day_change`, ses déclencheurs sur
+  les cinq tables `packing.*`) : sans quoi le poste ne voyait plus bouger ses
+  propres gestes. Le contrat se compare par égalité.
+- **Le semis de dev** joue la journée du jour au colisage : il attend la boîte
+  d'envoi (`SeedContext.settle`) avant de mettre au bac, et reprend une fournée
+  de trop (`seed-retour-<jour>`). Le rechargement vide aussi les remises, les
+  demandes de retour et les tables `packing.*` — il échouait sinon dès la
+  première fournée remise (clé `Restrict` posée en K1).
+- **La répétition** : `apps/lfd-api/test/packing-switch.e2e-spec.ts` joue la même journée
+  sur l'ancien poste (journée rendue `legacy` en base : depuis K2, aucune
+  clôture ne la fait plus naître) et sur le colisage, et compare ce que
+  l'écran et le commerce en voient ; les faits diffèrent, et c'est écrit.
+
+### 15.3 Non fait, et dit
+
+- **Le refus d'un retour** (rendu `0`, Q5) n'a pas de champ sur la fiche : la
+  réponse est en base (`production_return_request.returned`), la fournée reste
+  comptée, mais rien ne le DIT à l'écran. À concevoir avec le front.
+- **Le balayage de `packing.day_change`** n'existe pas : le journal grossit
+  comme `production.day_change` avant le sien.
+- **Les noms de K1** (`PackingShadowLedger`, `packing.shadow.*`) restent : les
+  noms d'abonnés sont les clés des reçus déjà posés.

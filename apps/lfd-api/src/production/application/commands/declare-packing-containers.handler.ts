@@ -1,7 +1,9 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { PackingStation } from "../../channels/packing/packing-station.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { stationOrderOf } from "../services/packing-station-ref.js";
 import { DeclarePackingContainersCommand } from "./declare-packing-containers.command.js";
 
 /**
@@ -28,6 +30,9 @@ import { DeclarePackingContainersCommand } from "./declare-packing-containers.co
  * ajoutera `container_count_by` — et c'est cette colonne qui ramènera le
  * paramètre, pas l'inverse (retiré le 2026-09-13).
  *
+ * Sur une journée `packing` (K2), le geste est remis au poste du colisage
+ * après les refus structurels — cf. `MarkPackingLineHandler`.
+ *
  * Rend `void` : le client relit le poste — §4.
  *
  * @sans-journal geste d'atelier, journalisation laissée au TODO par Hugo le
@@ -39,11 +44,19 @@ export class DeclarePackingContainersHandler implements ICommandHandler<
   DeclarePackingContainersCommand,
   void
 > {
-  constructor(private readonly days: ProductionDayRepository) {}
+  constructor(
+    private readonly days: ProductionDayRepository,
+    private readonly station: PackingStation,
+  ) {}
 
   async execute(command: DeclarePackingContainersCommand): Promise<void> {
     const day = ServiceDay.of(command.serviceDay);
     const current = await this.days.load(day);
+    const order = stationOrderOf(current, command.reference);
+    if (order !== null) {
+      await this.station.declareContainers(order, command.containers);
+      return;
+    }
     current.declareContainers(command.reference, command.containers);
     await this.days.recordContainerCount(day, command.reference, command.containers);
   }

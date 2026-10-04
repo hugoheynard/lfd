@@ -8,6 +8,10 @@
  * | `HandedToPackingEvent`  | fait durable     | une fournée sortie = remise au colisage       |
  * | `ReturnRequestedEvent`  | fait durable     | une fournée remise, puis annulée              |
  * | `LegacyPackingReader`   | port publié (K1) | le colisable de l'ancien chemin, pour comparer |
+ * | `PackingStation`        | port (K2)        | le poste d'une journée `packing`, en écriture |
+ * | `PackingStationReader`  | port (K2)        | le même, en lecture                           |
+ * | `PackingReturnedEvent`  | fait durable     | la réponse du colisage à un retour            |
+ * | `PackingOrderPackedEvent` | fait durable   | un bac fermé au colisage — lu par le commerce |
  *
  * `lint:context-boundaries` n'autorise `packing → production` que par ce
  * dossier, et `production → packing` jamais : le fournil publie, il ne sait
@@ -35,3 +39,22 @@ export {
   ReturnRequestedEvent,
   ReturnRequestedPayloadError,
 } from "./return-requested.event.js";
+export { PACKING_ORDER_PACKED, PackingOrderPackedEvent } from "./packing-order-packed.event.js";
+export {
+  PACKING_RETURNED,
+  PackingReturnedEvent,
+  PackingReturnedPayloadError,
+} from "./packing-returned.event.js";
+export { PackingDayVersionReader } from "./packing-day-version.reader.js";
+export {
+  PackingStation,
+  PackingStationReader,
+  type StationDay,
+  type StationLine,
+  type StationLineMark,
+  type StationOrder,
+  type StationOrderRef,
+  type StationSeal,
+  type StationSealAck,
+  type StationStock,
+} from "./packing-station.js";

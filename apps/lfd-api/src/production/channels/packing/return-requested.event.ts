@@ -16,13 +16,15 @@ export const PRODUCTION_RETURN_REQUESTED = "production.return_requested";
  *   DÉJÀ décidé, synchrone, comme avant : le colisage applique le retour sans
  *   répondre.
  * - `legacy: false` — une journée `packing` (K2) : c'est une DEMANDE, que le
- *   colisage tranchera et à laquelle il répondra par `packing.returned`. Le
- *   binaire de K1 n'en émet jamais.
+ *   colisage tranche et à laquelle il répond par `packing.returned`. Elle
+ *   porte `handoffId` (la fournée), sans quoi elle est hors contrat.
  *
  * ## La clé
  *
- * `production.return_requested:<requestId>`, et `requestId` est déterministe
- * (`return-<id de la fournée>`) : une fournée ne s'annule qu'une fois.
+ * `production.return_requested:<requestId>`. `legacy` : `return-<fournée>` —
+ * l'annulation est synchrone, une fois. `packing` : `return-<fournée>-<n>`,
+ * la n-ième demande — un retour refusé (tout au bac) se redemande après la
+ * décoche au colisage (§10.2).
  *
  * 🔴 **Il vit dans le CANAL** : le colisage le lit par ce dossier seulement.
  */
@@ -36,6 +38,12 @@ export class ReturnRequestedEvent implements DurableEvent {
     readonly quantity: number,
     readonly legacy: boolean,
     readonly requestedAt: Date,
+    /**
+     * La remise visée — l'`id` de la fournée (K2). Le colisage en a besoin pour
+     * savoir si elle lui est déjà arrivée (« remise inconnue », §13). `null`
+     * sur un fait `legacy` émis par le binaire de K1, qui ne la portait pas.
+     */
+    readonly handoffId: string | null = null,
   ) {}
 
   durableFact(): DurableFact {
@@ -49,8 +57,21 @@ export class ReturnRequestedEvent implements DurableEvent {
         quantity: this.quantity,
         legacy: this.legacy,
         requestedAt: this.requestedAt.toISOString(),
+        handoffId: this.handoffId,
       },
     };
+  }
+
+  /**
+   * La remise visée, pour une demande `packing` — qui la porte toujours.
+   *
+   * @throws {ReturnRequestedPayloadError} elle manque : le fait est hors contrat.
+   */
+  handoffOfRequest(): string {
+    if (this.handoffId === null) {
+      throw new ReturnRequestedPayloadError();
+    }
+    return this.handoffId;
   }
 
   /** @throws {ReturnRequestedPayloadError} un payload hors contrat. */
@@ -61,17 +82,27 @@ export class ReturnRequestedEvent implements DurableEvent {
     const quantity = piecesOf(payload["quantity"]);
     const legacy = payload["legacy"];
     const requestedAt = instantOf(payload["requestedAt"]);
+    const handoffId = textOf(payload["handoffId"]);
     if (
       requestId === null ||
       serviceDay === null ||
       sku === null ||
       quantity === null ||
       typeof legacy !== "boolean" ||
-      requestedAt === null
+      requestedAt === null ||
+      (!legacy && handoffId === null)
     ) {
       throw new ReturnRequestedPayloadError();
     }
-    return new ReturnRequestedEvent(requestId, serviceDay, sku, quantity, legacy, requestedAt);
+    return new ReturnRequestedEvent(
+      requestId,
+      serviceDay,
+      sku,
+      quantity,
+      legacy,
+      requestedAt,
+      handoffId,
+    );
   }
 }
 

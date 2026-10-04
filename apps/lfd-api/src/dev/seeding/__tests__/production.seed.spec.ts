@@ -23,7 +23,20 @@ import { resetProduction, type ProductionTables } from "../production.seed.js";
  */
 function prismaSpy(counts: { readonly days: number; readonly handovers: number }) {
   const called: string[] = [];
+  const table = (name: string) => ({
+    deleteMany: (): Promise<{ count: number }> => {
+      called.push(name);
+      return Promise.resolve({ count: 0 });
+    },
+  });
   const prisma: ProductionTables = {
+    productionReturnRequest: table("productionReturnRequest"),
+    productionHandoff: table("productionHandoff"),
+    packingLine: table("packingLine"),
+    packingOrder: table("packingOrder"),
+    packingStock: table("packingStock"),
+    packingReceipt: table("packingReceipt"),
+    packingReturn: table("packingReturn"),
     productionBatch: {
       deleteMany: (): Promise<{ count: number }> => {
         called.push("productionBatch");
@@ -55,8 +68,21 @@ describe("resetProduction", () => {
 
     const report = await resetProduction(prisma);
 
-    // Les fournées d'abord : leur clé vers la journée est `Restrict`.
-    expect(called).toEqual(["productionBatch", "productionDay", "orderHandover"]);
+    // Tout ce qui tient la journée en `Restrict` d'abord — demandes de retour,
+    // remises, fournées —, puis la journée, puis les copies du colisage (K2),
+    // les lignes avant leur bac. L'attestation de remise reste en dernier.
+    expect(called).toEqual([
+      "productionReturnRequest",
+      "productionHandoff",
+      "productionBatch",
+      "productionDay",
+      "packingLine",
+      "packingOrder",
+      "packingStock",
+      "packingReceipt",
+      "packingReturn",
+      "orderHandover",
+    ]);
     expect(report).toEqual({ days: 1, handovers: 3 });
   });
 

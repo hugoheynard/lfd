@@ -1,8 +1,10 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { ContainerStepConflictError } from "../../domain/errors/production-errors.js";
+import { PackingStation } from "../../channels/packing/packing-station.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { stationOrderOf } from "../services/packing-station-ref.js";
 import { StepPackingContainersCommand } from "./step-packing-containers.command.js";
 
 /**
@@ -27,6 +29,10 @@ import { StepPackingContainersCommand } from "./step-packing-containers.command.
  * Aucune identité staff : un compte n'est pas un fait daté, et aucune colonne ne
  * garderait son auteur. Qui a appuyé se lirait dans le journal.
  *
+ * Sur une journée `packing` (K2), le geste est remis au poste du colisage
+ * après les refus structurels : le bac y est verrouillé, et le compte s'écrit
+ * sans course possible — cf. `PackingStationService`.
+ *
  * Rend `void` : le client relit le poste — §4.
  *
  * @sans-journal geste d'atelier, journalisation laissée au TODO par Hugo le
@@ -38,11 +44,20 @@ export class StepPackingContainersHandler implements ICommandHandler<
   StepPackingContainersCommand,
   void
 > {
-  constructor(private readonly days: ProductionDayRepository) {}
+  constructor(
+    private readonly days: ProductionDayRepository,
+    private readonly station: PackingStation,
+  ) {}
 
   async execute(command: StepPackingContainersCommand): Promise<void> {
     const day = ServiceDay.of(command.serviceDay);
-    (await this.days.load(day)).containerStepOn(command.reference, command.step);
+    const current = await this.days.load(day);
+    const order = stationOrderOf(current, command.reference);
+    if (order !== null) {
+      await this.station.stepContainers(order, command.step);
+      return;
+    }
+    current.containerStepOn(command.reference, command.step);
     const written = await this.days.stepContainerCount(day, command.reference, command.step);
     if (written || command.step === "remove") {
       return;

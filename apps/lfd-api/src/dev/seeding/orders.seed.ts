@@ -23,6 +23,7 @@ import {
   shiftDays,
   type Target,
 } from "./order-placing.seed.js";
+import { seedReturnedBatch } from "./packing-return.seed.js";
 import { resetProduction, type ProductionResetReport } from "./production.seed.js";
 
 export type { SeedContext } from "./order-placing.seed.js";
@@ -511,6 +512,8 @@ async function seedToday(
   // confondus : une ligne de fournée ne se coche qu'une fois.
   const baked = new Set<string>();
   await advanceCounter(context, counter, today, baked);
+  // Une fournée de trop, reprise : l'annulation que le colisage tranche (K2).
+  await asStaff(atHour(today, PACKED_HOUR), () => seedReturnedBatch(context, forDay));
   const counterDelivery = counter.find((placed) => placed.entry.point === null);
   return advanceDeliveryDay(context, {
     today,

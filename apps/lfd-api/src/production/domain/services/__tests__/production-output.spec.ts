@@ -33,6 +33,8 @@ function batch(
     quantity,
     recorded: { at, by: "staff-1", initials: "MB" },
     cancelled: cancelled ? { at: SIX, by: "staff-2" } : null,
+    returned: 0,
+    pendingReturn: 0,
   };
 }
 
@@ -98,6 +100,8 @@ describe("implicitBatchesOf — la coche de l'ancien binaire", () => {
         quantity: 30,
         recorded: coche,
         cancelled: null,
+        returned: 0,
+        pendingReturn: 0,
       },
     ]);
     expect(implicitBatchId(DAY, "VIE-001")).toBe(`backfill-${DAY}-VIE-001`);

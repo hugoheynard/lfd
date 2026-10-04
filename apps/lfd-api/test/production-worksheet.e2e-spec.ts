@@ -26,6 +26,7 @@ import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { asLegacyPacking } from "./production-day-fixture.js";
 import { settleCardPayments } from "./card-payments.js";
 import { E2E_FAMILIES } from "./catalog-fixture.js";
 
@@ -209,6 +210,9 @@ describe("la fiche d'une journée ARRÊTÉE", () => {
   it("enlève la coche quand on décoche — un doigt fariné n'est pas un incident", async () => {
     await place(CROISSANT, 12);
     await closePlan();
+    // L'ancien poste, où décocher est synchrone. Sur une journée `packing`
+    // (K2), c'est un « retour demandé » au colisage — `packing-switch.e2e-spec.ts`.
+    await asLegacyPacking(ctx, SERVICE_DAY);
     await mark(CROISSANT, "MB");
 
     await ctx

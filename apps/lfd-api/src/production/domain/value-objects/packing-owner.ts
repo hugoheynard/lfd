@@ -8,10 +8,14 @@
  * déploiement. Les routes, la supervision et le poste liront cette valeur,
  * jamais une table de l'ombre.
  *
- * 🔴 Le binaire de K1 n'écrit QUE `legacy` (`LEGACY_PACKING_OWNER`) : seul
- * celui de K2 écrira `packing`.
+ * Depuis K2 (2026-10-04), la clôture écrit TOUJOURS `packing` — « on bascule
+ * direct » (Hugo). `legacy` ne se lit plus que sur les journées arrêtées
+ * avant, qui finissent sur l'ancien poste.
  */
 export type PackingOwner = "legacy" | "packing";
 
-/** Le propriétaire que la clôture écrit tant que K2 n'est pas déployé. */
+/** L'ancien poste — celui d'une journée jamais arrêtée, ou arrêtée avant K2. */
 export const LEGACY_PACKING_OWNER: PackingOwner = "legacy";
+
+/** Le colisage, son propre bloc (K2). */
+export const PACKING_PACKING_OWNER: PackingOwner = "packing";

@@ -12,6 +12,8 @@ const BATCH: ProductionBatchSnapshot = {
   quantity: 12,
   recorded: { at: RECORDED, by: "staff-1", initials: "MB" },
   cancelled: null,
+  returned: 0,
+  pendingReturn: 0,
 };
 
 function sheet(orderId: string): ProductionOrderSnapshot {

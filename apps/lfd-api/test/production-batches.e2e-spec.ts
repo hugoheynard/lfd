@@ -25,7 +25,7 @@ import {
   STAFF,
   bootstrapProductionDay,
   cancelBatch,
-  closePlan,
+  closeLegacyPlan,
   markLine,
   pack,
   place,
@@ -59,7 +59,7 @@ beforeEach(async () => {
 async function twoBagsOfTwelve(): Promise<readonly string[]> {
   await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
   await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
-  await closePlan(ctx);
+  await closeLegacyPlan(ctx);
   return references(ctx);
 }
 

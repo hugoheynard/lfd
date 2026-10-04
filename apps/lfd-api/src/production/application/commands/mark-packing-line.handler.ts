@@ -1,10 +1,12 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { PackingStation } from "../../channels/packing/packing-station.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { stationOrderOf } from "../services/packing-station-ref.js";
 import { MarkPackingLineCommand } from "./mark-packing-line.command.js";
 
 /**
@@ -36,6 +38,15 @@ import { MarkPackingLineCommand } from "./mark-packing-line.command.js";
  * l'heure et les initiales, ce qui est exactement ce qu'on veut quand la
  * première coche était la mauvaise.
  *
+ * ## Journée `packing` (K2)
+ *
+ * Le fournil garde ses refus structurels, puis remet le geste au poste du
+ * colisage (`PackingStation`) : le bac, la ligne et « pas encore sorti du
+ * four » y sont tranchés sous le verrou de la réserve `(jour, SKU)`. Mêmes
+ * codes, mêmes messages, même contrat. La remise se fait sous le verrou de la
+ * journée, comme l'ancien geste : l'ordre des verrous est toujours journée →
+ * bac → réserve, et la réponse d'un retour ne prend que la journée.
+ *
  * Rend `void` : le client relit le poste — §4.
  *
  * @sans-journal geste d'atelier, journalisation laissée au TODO par Hugo le
@@ -49,6 +60,7 @@ export class MarkPackingLineHandler implements ICommandHandler<MarkPackingLineCo
     private readonly lock: ProductionDayLock,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly station: PackingStation,
   ) {}
 
   async execute(command: MarkPackingLineCommand): Promise<void> {
@@ -56,6 +68,15 @@ export class MarkPackingLineHandler implements ICommandHandler<MarkPackingLineCo
     await this.uow.run(async () => {
       await this.lock.lock(day);
       const current = await this.days.load(day);
+      const order = stationOrderOf(current, command.reference);
+      if (order !== null) {
+        await this.station.markLine(order, command.sku, {
+          at: this.clock.now(),
+          by: command.staffUserId,
+          initials: command.initials,
+        });
+        return;
+      }
       current.lineToFill(command.reference, command.sku);
       await this.days.markPackedLine(day, command.reference, command.sku, {
         at: this.clock.now(),

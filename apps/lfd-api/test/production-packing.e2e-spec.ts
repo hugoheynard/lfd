@@ -22,6 +22,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { asLegacyPacking } from "./production-day-fixture.js";
 import { settleCardPayments } from "./card-payments.js";
 
 const MEMBER = "auth0|member";
@@ -104,8 +105,10 @@ async function place(lines: readonly { sku: string; quantity: number }[]): Promi
   await settleCardPayments(ctx, issuedIntents);
 }
 
+/** Arrête le plan, colisé par l'ANCIEN poste — que cette suite éprouve (K2). */
 async function closePlan(): Promise<void> {
   await ctx.asSub(STAFF).post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201);
+  await asLegacyPacking(ctx, SERVICE_DAY);
 }
 
 /**

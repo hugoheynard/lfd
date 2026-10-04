@@ -63,6 +63,8 @@ export function implicitBatchesOf(
             quantity: item.quantity,
             recorded: item.done,
             cancelled: null,
+            returned: 0,
+            pendingReturn: 0,
           },
         ],
   );
@@ -101,4 +103,14 @@ export function outputOf(quantity: number, active: readonly ProductionBatchSnaps
     complete: produced >= quantity,
     completedBy,
   };
+}
+
+/**
+ * La fournée telle qu'elle COMPTE : sa quantité moins ce que le colisage a
+ * rendu (K2, §13 B2). « Sorti » ne baisse que par une réponse du colisage —
+ * jamais par la demande — donc une fournée en « retour en attente » compte
+ * entière.
+ */
+export function countedBatch(batch: ProductionBatchSnapshot): ProductionBatchSnapshot {
+  return batch.returned === 0 ? batch : { ...batch, quantity: batch.quantity - batch.returned };
 }

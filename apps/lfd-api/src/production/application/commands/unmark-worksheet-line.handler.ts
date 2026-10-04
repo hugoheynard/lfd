@@ -23,9 +23,13 @@ import { UnmarkWorksheetLineCommand } from "./unmark-worksheet-line.command.js";
  * l'écriture le rendrait faux.
  *
  * Les fournées déjà REMISES au colisage sont reprises dans la même unité de
- * travail (colisage, §13, B2) — cf. `CancelBatchHandler`. Le contrat reste
- * servi tel quel ; sur une journée `packing` (K2), sa sémantique deviendra
- * « retour demandé », et c'est ce JSDoc qui le dira.
+ * travail (colisage, §13, B2) — cf. `CancelBatchHandler`.
+ *
+ * 🔴 **Sur une journée `packing` (K2), sa sémantique est « retour demandé »** :
+ * les fournées remises deviennent des demandes de retour au colisage, la ligne
+ * ne se vide PAS tout de suite, et la fiche dit « retour en attente ». Seule la
+ * réponse du colisage fait baisser « sorti ». Le contrat de la route est servi
+ * tel quel (204).
  *
  * @sans-journal geste d'atelier, journalisation laissée au TODO par Hugo le
  * 2026-09-19 (une ligne par coche ou un fait par journée : à trancher —
@@ -55,6 +59,12 @@ export class UnmarkWorksheetLineHandler implements ICommandHandler<
         await this.batches.record(day, inherited);
       }
       const mark = { at: this.clock.now(), by: command.staffUserId };
+      if (current.packingOwner === "packing") {
+        for (const unhanded of await this.handoffs.requestReturns(day, cancelled, mark)) {
+          await this.batches.cancel(day, unhanded.id, mark);
+        }
+        return;
+      }
       for (const batch of cancelled) {
         await this.batches.cancel(day, batch.id, mark);
       }

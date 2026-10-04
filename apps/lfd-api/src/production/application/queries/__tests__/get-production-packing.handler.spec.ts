@@ -9,6 +9,8 @@ import { GetProductionPackingHandler } from "../get-production-packing.handler.j
 import { GetProductionPackingQuery } from "../get-production-packing.query.js";
 import { QualityCheck } from "../../../domain/entities/quality-check.js";
 import { CheckTable, InMemoryCheckReader } from "../../__tests__/quality-doubles.js";
+import { PackedDayReading } from "../../services/packed-day-reading.service.js";
+import { FixedStationReader, legacyOf } from "../../__tests__/station-doubles.js";
 import { FixedStaffAuthorDirectory } from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 
 /**
@@ -68,13 +70,21 @@ class Days extends ProductionDayRepository {
 function closedDay(day: string): ProductionDay {
   const production = ProductionDay.open(ServiceDay.of(day));
   production.close([ORDER], CLOSED_AT);
+  // L'ancien poste : depuis K2, une clôture naît au colisage.
+  return legacyOf(production);
+}
+
+/** Arrêtée par le binaire de K2 : le bac se lit au colisage. */
+function packingDay(day: string): ProductionDay {
+  const production = ProductionDay.open(ServiceDay.of(day));
+  production.close([ORDER], CLOSED_AT);
   return production;
 }
 
 describe("GetProductionPackingHandler", () => {
   it("rend les bacs, la ressource et les compteurs d'une journée arrêtée", async () => {
     const handler = new GetProductionPackingHandler(
-      new Days(closedDay(TODAY)),
+      new PackedDayReading(new Days(closedDay(TODAY)), new FixedStationReader()),
       new FixedClock(NOW),
       new FixedStaffAuthorDirectory(),
       new InMemoryCheckReader(new CheckTable()),
@@ -103,7 +113,7 @@ describe("GetProductionPackingHandler", () => {
 
   it("dit « aujourd'hui » selon l'horloge du SERVEUR, pas celle du poste", async () => {
     const handler = new GetProductionPackingHandler(
-      new Days(closedDay(TODAY)),
+      new PackedDayReading(new Days(closedDay(TODAY)), new FixedStationReader()),
       new FixedClock(NOW),
       new FixedStaffAuthorDirectory(),
       new InMemoryCheckReader(new CheckTable()),
@@ -115,7 +125,7 @@ describe("GetProductionPackingHandler", () => {
   it("dit « demain » quand l'horloge avance d'un jour… vers la veille", async () => {
     const tomorrow = addDays(TODAY, 1);
     const handler = new GetProductionPackingHandler(
-      new Days(closedDay(tomorrow)),
+      new PackedDayReading(new Days(closedDay(tomorrow)), new FixedStationReader()),
       new FixedClock(NOW),
       new FixedStaffAuthorDirectory(),
       new InMemoryCheckReader(new CheckTable()),
@@ -130,7 +140,10 @@ describe("GetProductionPackingHandler", () => {
     // L'écran dit « plan non arrêté » ; lever ferait d'un jour ouvert trop tôt
     // une erreur, alors que c'est un état parfaitement normal à 3 h du matin.
     const handler = new GetProductionPackingHandler(
-      new Days(ProductionDay.open(ServiceDay.of(TODAY))),
+      new PackedDayReading(
+        new Days(ProductionDay.open(ServiceDay.of(TODAY))),
+        new FixedStationReader(),
+      ),
       new FixedClock(NOW),
       new FixedStaffAuthorDirectory(),
       new InMemoryCheckReader(new CheckTable()),
@@ -153,7 +166,7 @@ describe("GetProductionPackingHandler", () => {
 
   it("refuse un jour qui n'en est pas un — c'est le domaine qui tranche", async () => {
     const handler = new GetProductionPackingHandler(
-      new Days(closedDay(TODAY)),
+      new PackedDayReading(new Days(closedDay(TODAY)), new FixedStationReader()),
       new FixedClock(NOW),
       new FixedStaffAuthorDirectory(),
       new InMemoryCheckReader(new CheckTable()),
@@ -179,7 +192,7 @@ describe("GetProductionPackingHandler", () => {
       }),
     );
     const handler = new GetProductionPackingHandler(
-      new Days(closedDay(TODAY)),
+      new PackedDayReading(new Days(closedDay(TODAY)), new FixedStationReader()),
       new FixedClock(NOW),
       new FixedStaffAuthorDirectory(),
       new InMemoryCheckReader(table),
@@ -192,7 +205,7 @@ describe("GetProductionPackingHandler", () => {
 
   it("ne retient rien sans contrôle bloquant", async () => {
     const handler = new GetProductionPackingHandler(
-      new Days(closedDay(TODAY)),
+      new PackedDayReading(new Days(closedDay(TODAY)), new FixedStationReader()),
       new FixedClock(NOW),
       new FixedStaffAuthorDirectory(),
       new InMemoryCheckReader(new CheckTable()),
@@ -201,5 +214,54 @@ describe("GetProductionPackingHandler", () => {
     const view = await handler.execute(new GetProductionPackingQuery(TODAY));
 
     expect(view.sheets[0]?.qualityHeld).toBe(false);
+  });
+});
+
+describe("GetProductionPackingHandler — une journée `packing` (K2)", () => {
+  it("lit le bac, ses lignes et le disponible au COLISAGE, dans le même contrat", async () => {
+    const packedAt = new Date(NOW.getTime() - 10 * 60 * 1000);
+    const handler = new GetProductionPackingHandler(
+      new PackedDayReading(
+        new Days(packingDay(TODAY)),
+        new FixedStationReader({
+          orders: [
+            {
+              orderId: "ord_1",
+              packed: null,
+              containers: 2,
+              lines: [{ sku: "VIE-001", packed: { at: packedAt, by: "staff-1", initials: "MB" } }],
+            },
+          ],
+          stocks: [{ sku: "VIE-001", received: 20, returned: 0, packed: 12 }],
+        }),
+      ),
+      new FixedClock(NOW),
+      new FixedStaffAuthorDirectory(),
+      new InMemoryCheckReader(new CheckTable()),
+    );
+
+    const view = await handler.execute(new GetProductionPackingQuery(TODAY));
+
+    expect(view.sheets[0]).toMatchObject({
+      containers: 2,
+      packedLines: 1,
+      canDeclareReady: true,
+      lines: [{ sku: "VIE-001", packed: true, initials: "MB", awaitingProduction: false }],
+    });
+    expect(view.resources[0]).toMatchObject({ allocated: 12, awaitingProduction: false });
+  });
+
+  it("une commande que la liste n'a pas encore livrée au colisage se lit ouverte et vide", async () => {
+    const handler = new GetProductionPackingHandler(
+      new PackedDayReading(new Days(packingDay(TODAY)), new FixedStationReader()),
+      new FixedClock(NOW),
+      new FixedStaffAuthorDirectory(),
+      new InMemoryCheckReader(new CheckTable()),
+    );
+
+    const view = await handler.execute(new GetProductionPackingQuery(TODAY));
+
+    expect(view.sheets[0]).toMatchObject({ packedAt: null, containers: 0, packedLines: 0 });
+    expect(view.sheets[0]?.lines[0]).toMatchObject({ packed: false, awaitingProduction: true });
   });
 });

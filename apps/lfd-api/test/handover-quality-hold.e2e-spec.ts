@@ -157,6 +157,9 @@ async function seedDay() {
     .put(`/admin/production/worksheet/${DAY}/lines/${CROISSANT}/done`)
     .send({ initials: "KA" })
     .expect(204);
+  // Depuis K2, la journée naît au colisage : la liste à coliser et la remise
+  // lui arrivent par la boîte d'envoi, hors de la requête.
+  await ctx.drain();
   await pack(croissants);
   await pack(delivery);
   return { croissants, mixed, baguettes, delivery };

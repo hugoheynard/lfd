@@ -35,6 +35,10 @@ export {
   OrderPackedPayloadError,
   PRODUCTION_ORDER_PACKED,
 } from "./order-packed.event.js";
+// Le bac fermé AU COLISAGE (K2) : déclaré dans le canal du colisage, relu ici
+// par le commerce, dont la seule surface vers le fournil est ce dossier. Même
+// charge que `production.order_packed` — `OrderPackedEvent.fromPayload` la lit.
+export { PACKING_ORDER_PACKED } from "../packing/packing-order-packed.event.js";
 export { WorkshopShelvesReader } from "./workshop-shelves.reader.js";
 export {
   DueThresholdsReader,

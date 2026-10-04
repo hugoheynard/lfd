@@ -25,6 +25,7 @@ async function main(): Promise<void> {
       prisma: harness.prisma,
       commands: harness.commands,
       now: new Date(),
+      settle: () => harness.settle(),
     });
     console.log(
       `· ${report.removed} commande(s) effacée(s) — reposées.\n` +

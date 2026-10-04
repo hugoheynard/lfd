@@ -33,11 +33,44 @@ interface BatchRow {
   readonly cancelledBy: string | null;
 }
 
+/** Ce que les demandes de retour disent d'une fournée (K2) — zéro sans demande. */
+export interface BatchReturns {
+  readonly returned: number;
+  readonly pendingReturn: number;
+}
+
+const NO_RETURN: BatchReturns = { returned: 0, pendingReturn: 0 };
+
+/** Une demande de retour, telle que le chargement de la journée la lit. */
+interface ReturnRow {
+  readonly batchId: string;
+  readonly quantity: number;
+  readonly returned: number | null;
+}
+
+/**
+ * Les demandes de retour d'une journée, par fournée : rendu (réponses) et en
+ * attente (sans réponse). `returned` nul = pas encore de réponse (CHECK).
+ */
+export function returnsByBatch(rows: readonly ReturnRow[]): ReadonlyMap<string, BatchReturns> {
+  const byBatch = new Map<string, BatchReturns>();
+  for (const row of rows) {
+    const known = byBatch.get(row.batchId) ?? NO_RETURN;
+    byBatch.set(
+      row.batchId,
+      row.returned === null
+        ? { ...known, pendingReturn: known.pendingReturn + row.quantity }
+        : { ...known, returned: known.returned + row.returned },
+    );
+  }
+  return byBatch;
+}
+
 /**
  * Ligne → fournée. L'annulation est recollée en un couple, ou `null` : le CHECK
  * de la table interdit l'un sans l'autre, et l'agrégat ne connaît pas cet état.
  */
-export function batchOf(row: BatchRow): ProductionBatchSnapshot {
+export function batchOf(row: BatchRow, returns: BatchReturns = NO_RETURN): ProductionBatchSnapshot {
   return {
     id: row.id,
     sku: row.sku,
@@ -47,6 +80,8 @@ export function batchOf(row: BatchRow): ProductionBatchSnapshot {
       row.cancelledAt === null || row.cancelledBy === null
         ? null
         : { at: row.cancelledAt, by: row.cancelledBy },
+    returned: returns.returned,
+    pendingReturn: returns.pendingReturn,
   };
 }
 

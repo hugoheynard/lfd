@@ -97,6 +97,30 @@ export async function closePlan(ctx: E2eContext): Promise<void> {
   await ctx.asSub(STAFF).post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201);
 }
 
+/**
+ * **La journée, colisée par l'ANCIEN poste** — telle qu'une journée arrêtée
+ * avant la bascule du colisage (plan `colisage/plan-domaine-colisage.md`, K2).
+ *
+ * Une écriture en base, et c'est délibéré : depuis K2, aucune clôture ne fait
+ * plus naître de journée `legacy` (« on bascule direct », Hugo, 2026-10-04),
+ * mais le binaire sert encore celles qui le sont. Les suites qui éprouvent
+ * l'ancien poste les reconstituent ainsi ; aucune autre colonne n'est touchée.
+ */
+export async function asLegacyPacking(ctx: E2eContext, day = SERVICE_DAY): Promise<void> {
+  // `updateMany` : une clôture refusée (journée vide) n'a pas de ligne, et le
+  // refus est ce que la suite éprouve.
+  await ctx.prisma.productionDay.updateMany({
+    where: { serviceDay: day },
+    data: { packingOwner: "legacy" },
+  });
+}
+
+/** Arrête le plan, puis le rend à l'ancien poste — cf. {@link asLegacyPacking}. */
+export async function closeLegacyPlan(ctx: E2eContext): Promise<void> {
+  await closePlan(ctx);
+  await asLegacyPacking(ctx);
+}
+
 export async function retake(ctx: E2eContext): Promise<void> {
   await ctx.asSub(STAFF).post(`/admin/production/worksheet/${SERVICE_DAY}/retake`).expect(201);
 }

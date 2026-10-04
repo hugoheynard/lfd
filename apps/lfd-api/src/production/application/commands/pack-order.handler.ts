@@ -4,12 +4,14 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
+import { PackingStation } from "../../channels/packing/packing-station.js";
 import { OrderPackedEvent } from "../../channels/commerce/order-packed.event.js";
 import type { PackedMark } from "../../domain/entities/production-day.js";
 import type { ProductionOrderSnapshot } from "../../domain/entities/production-day.snapshot.js";
 import { OrderAlreadyPackedError } from "../../domain/errors/production-errors.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { stationOrderOf } from "../services/packing-station-ref.js";
 import { PackOrderCommand } from "./pack-order.command.js";
 
 /**
@@ -40,6 +42,12 @@ import { PackOrderCommand } from "./pack-order.command.js";
  * une référence hors du plan ne sont pas des retards de propagation, ce sont des
  * gestes qui n'ont pas de sens. `sheetToPack` les porte, et les porte seul.
  *
+ * ## Journée `packing` (K2)
+ *
+ * Après les refus structurels, la fermeture est remise au poste du colisage,
+ * qui publie `packing.order_packed` (le commerce écoute les deux types) — le
+ * rescan d'un bac déjà fermé y est aussi une réannonce. L'accusé est le même.
+ *
  * @sans-journal le colisage rend la commande prête chez le commerce
  * (`OnOrderPacked` → `MarkOrderReadyCommand`), et `order.ready` est écrit par
  * l'abonné de la croissance (`on-order-ready.handler.ts`), en best-effort comme
@@ -54,11 +62,24 @@ export class PackOrderHandler implements ICommandHandler<PackOrderCommand, Produ
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly durable: DurablePublisher,
+    private readonly station: PackingStation,
   ) {}
 
   async execute(command: PackOrderCommand): Promise<ProductionPackingAck> {
     const day = ServiceDay.of(command.serviceDay);
     const current = await this.days.load(day);
+    const order = stationOrderOf(current, command.reference);
+    if (order !== null) {
+      const sealed = await this.station.seal(order, {
+        at: this.clock.now(),
+        by: command.staffUserId,
+      });
+      return ack(
+        command.reference,
+        { at: sealed.packedAt, by: sealed.packedBy },
+        sealed.alreadyPacked,
+      );
+    }
 
     // Lève si la journée n'est pas arrêtée ou si la référence est inconnue. Ne
     // dit rien du bac : c'est ici qu'on décide ce que « déjà fait » veut dire.

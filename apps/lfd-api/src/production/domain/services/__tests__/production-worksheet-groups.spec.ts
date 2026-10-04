@@ -30,6 +30,7 @@ function line(sku: string, quantity: number, done = false): WorksheetLine {
     surplus: 0,
     batches: [],
     container: null,
+    pendingReturn: 0,
   };
 }
 

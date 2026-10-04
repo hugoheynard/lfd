@@ -1,3 +1,4 @@
+import { legacyOf, RecordingStation } from "../../../application/__tests__/station-doubles.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import type { DurableFact } from "../../../../platform/outbox/durable-event.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
@@ -29,8 +30,10 @@ const ORDER: ProducibleOrder = {
 };
 
 function closedDay(): ProductionDay {
-  const day = ProductionDay.open(ServiceDay.of(DAY));
-  day.close([ORDER], CLOSED_AT);
+  const opened = ProductionDay.open(ServiceDay.of(DAY));
+  opened.close([ORDER], CLOSED_AT);
+  // L'ancien poste : depuis K2, une clôture naît au colisage.
+  const day = legacyOf(opened);
   return day;
 }
 
@@ -117,8 +120,9 @@ function subject(day: ProductionDay) {
   const uow = new ObservedUnitOfWork();
   const days = new Days(day, uow);
   const durable = new Durable(uow);
-  const handler = new PackOrderHandler(days, new FixedClock(NOW), uow, durable);
-  return { days, durable, handler };
+  const station = new RecordingStation();
+  const handler = new PackOrderHandler(days, new FixedClock(NOW), uow, durable, station);
+  return { days, durable, handler, station };
 }
 
 const pack = (by = "staff_a") => new PackOrderCommand(DAY, REFERENCE, by);
@@ -208,5 +212,42 @@ describe("le contrat `production.order_packed`", () => {
     { orderId: ORDER_ID, reference: REFERENCE, packedAt: FIRST_SCAN.toISOString() },
   ])("refuse un payload hors forme (%o)", (payload) => {
     expect(() => OrderPackedEvent.fromPayload(payload)).toThrow("illisible");
+  });
+});
+
+describe("une journée `packing` (colisage, K2)", () => {
+  function packingDay(): ProductionDay {
+    const opened = ProductionDay.open(ServiceDay.of(DAY));
+    opened.close([ORDER], CLOSED_AT);
+    return opened;
+  }
+
+  it("remet la fermeture au colisage — qui publie — et rend son accusé tel quel", async () => {
+    const { handler, durable, station } = subject(packingDay());
+
+    const ack = await handler.execute(pack());
+
+    expect(station.calls).toEqual([`seal:${ORDER_ID}:staff_a`]);
+    expect(durable.facts).toEqual([]);
+    expect(ack).toEqual({
+      reference: REFERENCE,
+      packedAt: NOW.toISOString(),
+      packedBy: "staff_a",
+      alreadyPacked: false,
+    });
+  });
+
+  it("un rescan rend l'accusé d'ORIGINE que le colisage a gardé", async () => {
+    const { handler, station } = subject(packingDay());
+    station.sealAck = { packedAt: FIRST_SCAN, packedBy: "staff_a", alreadyPacked: true };
+
+    const ack = await handler.execute(pack("staff_b"));
+
+    expect(ack).toEqual({
+      reference: REFERENCE,
+      packedAt: FIRST_SCAN.toISOString(),
+      packedBy: "staff_a",
+      alreadyPacked: true,
+    });
   });
 });

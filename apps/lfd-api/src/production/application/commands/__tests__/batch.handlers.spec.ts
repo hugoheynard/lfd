@@ -1,3 +1,4 @@
+import { legacyOf } from "../../../application/__tests__/station-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
@@ -61,7 +62,8 @@ const ORDERS: readonly ProducibleOrder[] = [
 function closedDay(): ProductionDay {
   const day = ProductionDay.open(ServiceDay.of(DAY));
   day.close(ORDERS, new Date("2026-09-13T04:20:00.000Z"));
-  return day;
+  // L'ancien poste : depuis K2, une clôture naît au colisage.
+  return legacyOf(day);
 }
 
 /** Cochée par l'ANCIEN binaire (`done_*`), sans aucune fournée : 30 implicites. */
@@ -132,6 +134,8 @@ describe("RecordBatchHandler", () => {
         quantity: 12,
         recorded: { at: NOW, by: "staff-1", initials: "MB" },
         cancelled: null,
+        returned: 0,
+        pendingReturn: 0,
       },
     ]);
     // Déclarer ne fait qu'augmenter le disponible : rien à sérialiser (D4).

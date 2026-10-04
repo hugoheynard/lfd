@@ -68,3 +68,18 @@ export class BatchStillPackedError extends BusinessError {
     );
   }
 }
+
+/**
+ * Un **retour est déjà demandé** au colisage pour cette fournée, sans réponse
+ * encore (journée `packing`, colisage K2, §13 B2). Le redemander ferait deux
+ * demandes pour les mêmes pièces ; la réponse arrive par la boîte d'envoi, et
+ * la fiche montre « retour en attente » d'ici là.
+ */
+export class BatchReturnPendingError extends BusinessError {
+  constructor(productName: string, pending: number) {
+    super(
+      "production.batch.return_pending",
+      `Un retour de ${String(pending)} « ${productName} » est déjà demandé au colisage et attend sa réponse. Attendez qu'il réponde avant d'annuler à nouveau ; s'il tarde, regardez les messages en souffrance de la carte de santé.`,
+    );
+  }
+}

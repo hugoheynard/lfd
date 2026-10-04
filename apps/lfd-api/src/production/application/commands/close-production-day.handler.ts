@@ -82,7 +82,14 @@ import { CloseProductionDayCommand } from "./close-production-day.command.js";
  * Dans la même unité de travail, un `production.packing_list_drawn` par
  * commande de l'instantané (plan `colisage/plan-domaine-colisage.md`, §11, B1).
  * La réannonce les republie : même clé par commande, la boîte d'envoi absorbe
- * (§13, MINEURS). Le colisage les tient en ombre ; rien de visible ne change.
+ * (§13, MINEURS).
+ *
+ * ## Qui colisera (K2 — 2026-10-04)
+ *
+ * Toute journée arrêtée par ce binaire naît au colisage (`packing_owner =
+ * packing`, §13 B1) : Hugo a tranché « on bascule direct », sans
+ * interrupteur. La réannonce ne change rien au propriétaire ; une journée
+ * arrêtée avant le déploiement garde `legacy` et finit sur l'ancien poste.
  */
 @CommandHandler(CloseProductionDayCommand)
 export class CloseProductionDayHandler implements ICommandHandler<

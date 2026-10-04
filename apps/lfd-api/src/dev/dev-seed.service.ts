@@ -9,6 +9,7 @@ import { CommandBus } from "@nestjs/cqrs";
 
 import { AppConfig } from "../platform/config/app-config.js";
 import { PrismaService } from "../platform/database/prisma.service.js";
+import { BackgroundWork } from "../platform/events/background-work.js";
 import { Clock } from "../platform/time/clock.js";
 import type { SeedDriverAssignment } from "./seeding/delivery-driver.seed.js";
 import { seedAccounting } from "./seeding/accounting.seed.js";
@@ -56,6 +57,7 @@ export class DevSeedService {
     private readonly commands: CommandBus,
     private readonly config: AppConfig,
     private readonly clock: Clock,
+    private readonly work: BackgroundWork,
   ) {}
 
   /**
@@ -77,6 +79,7 @@ export class DevSeedService {
       commands: this.commands,
       now: this.clock.now(),
       requester,
+      settle: () => this.work.whenIdle(),
     };
     await seedStation(context);
     // L'entité émettrice passe ici, comme dans `prisma/seed.ts` : les deux corpus
@@ -133,6 +136,7 @@ export class DevSeedService {
       commands: this.commands,
       now: this.clock.now(),
       requester,
+      settle: () => this.work.whenIdle(),
     };
     // Les bons tirés appartiennent aux commandes qu'on va supprimer : mêmes
     // buckets, même raison que dans `reload`.

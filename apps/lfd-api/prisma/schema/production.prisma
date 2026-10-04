@@ -59,6 +59,7 @@ model ProductionDay {
   counts   ProductionCount[]
   batches  ProductionBatch[]
   handoffs ProductionHandoff[]
+  returns  ProductionReturnRequest[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -350,6 +351,39 @@ model ProductionHandoff {
 
   @@index([serviceDay, sku])
   @@map("production_handoff")
+  @@schema("production")
+}
+
+/// **Une demande de retour au colisage**, sur une journée `packing` (plan
+/// `documentation/colisage/plan-domaine-colisage.md`, K2, §13 B2). L'annulation
+/// ou la décoche d'une fournée remise ne baisse pas « sorti » : elle écrit ici,
+/// et publie `production.return_requested`. Seule la réponse (`packing.returned`)
+/// la clôt — `answered_at` et `returned` ensemble (CHECK) — et fait baisser
+/// « sorti » de `returned`.
+model ProductionReturnRequest {
+  /// `return-<id de la fournée>-<n>` : la n-ième demande sur cette fournée.
+  requestId String @id @map("request_id")
+
+  serviceDay String        @map("service_day") @db.VarChar(10)
+  day        ProductionDay @relation(fields: [serviceDay], references: [serviceDay], onDelete: Restrict)
+
+  /// La fournée visée — sa remise au colisage porte le même `id`.
+  batchId  String @map("batch_id")
+  sku      String
+  /// Des pièces, > 0 : ce que la fournée garde encore de « sorti ».
+  quantity Int
+
+  requestedAt DateTime @map("requested_at") @db.Timestamptz(6)
+  /// La fiche staff du geste, figée.
+  requestedBy String   @map("requested_by")
+
+  /// La réponse du colisage. `null` tous les deux = « retour en attente ».
+  answeredAt DateTime? @map("answered_at") @db.Timestamptz(6)
+  /// Ce que le colisage a rendu, de 0 (refus, tout au bac) à `quantity`.
+  returned   Int?
+
+  @@index([serviceDay, batchId])
+  @@map("production_return_request")
   @@schema("production")
 }
 

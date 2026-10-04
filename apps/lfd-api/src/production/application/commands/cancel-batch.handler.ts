@@ -23,8 +23,16 @@ import { CancelBatchCommand } from "./cancel-batch.command.js";
  *
  * Une fournée déjà REMISE au colisage est reprise dans la même unité de
  * travail : une remise négative et `production.return_requested` (colisage,
- * §13, B2). Sur une journée `legacy` — toutes, en K1 —, l'annulation reste
- * synchrone comme avant, et le fait le dit (`legacy: true`).
+ * §13, B2). Sur une journée `legacy`, l'annulation reste synchrone comme
+ * avant, et le fait le dit (`legacy: true`).
+ *
+ * ## Journée `packing` (K2) : une DEMANDE, pas une annulation
+ *
+ * Une fournée remise ne s'annule pas ici : elle devient une demande de retour
+ * (`requestReturns`), « sorti » ne baisse pas, et la fiche dit « retour en
+ * attente ». Seule la réponse du colisage (`OnPackingReturned`) la réduit ou
+ * l'annule. Le contrat de la route reste servi tel quel — 204 —, et c'est sa
+ * sémantique sur une journée `packing` : « retour demandé ».
  *
  * @sans-journal geste d'atelier, sous le même régime que la coche (plan, D7).
  */
@@ -52,6 +60,12 @@ export class CancelBatchHandler implements ICommandHandler<CancelBatchCommand, v
         await this.batches.record(day, inherited);
       }
       const mark = { at: this.clock.now(), by: command.staffUserId };
+      if (current.packingOwner === "packing") {
+        for (const unhanded of await this.handoffs.requestReturns(day, [target], mark)) {
+          await this.batches.cancel(day, unhanded.id, mark);
+        }
+        return;
+      }
       await this.batches.cancel(day, target.id, mark);
       await this.handoffs.takeBack(day, [target], mark, current.packingOwner);
     });

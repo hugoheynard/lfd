@@ -54,6 +54,17 @@ export interface SeedContext {
    * chargée. Absente en ligne de commande : personne à qui l'affecter.
    */
   readonly requester?: string | undefined;
+  /**
+   * **Laisse la boîte d'envoi livrer ce qui est en vol** — et rend la main quand
+   * plus rien ne l'est.
+   *
+   * Depuis la bascule du colisage (K2, 2026-10-04), le poste se nourrit de
+   * faits : la liste à coliser part à la clôture, chaque fournée est une
+   * remise. Sans cette attente, le semis mettait au bac une commande que le
+   * colisage n'avait pas encore reçue, et le refus (`packing.order.not_drawn_yet`)
+   * aurait été juste.
+   */
+  readonly settle: () => Promise<void>;
 }
 
 /** Une adresse du carnet : son identité, et l'instantané postal que la commande fige. */
@@ -318,12 +329,20 @@ export async function packFully(
       );
       baked.add(sku);
     }
+  }
+  // Les fournées sont des remises : le colisage doit les avoir reçues, et la
+  // liste à coliser avec elles, avant qu'une ligne entre au bac (K2).
+  await context.settle();
+  for (const { sku } of lines) {
     await context.commands.execute(
       new MarkPackingLineCommand(serviceDay, reference, sku, SEED_INITIALS, SEED_STAFF_SUB),
     );
   }
   await context.commands.execute(new DeclarePackingContainersCommand(serviceDay, reference, 1));
   await context.commands.execute(new PackOrderCommand(serviceDay, reference, SEED_STAFF_SUB));
+  // La fermeture rend la commande prête par un fait : le commerce doit l'avoir
+  // lu avant que la suite du semis (retrait, tournée) ne s'appuie dessus.
+  await context.settle();
 }
 
 /**

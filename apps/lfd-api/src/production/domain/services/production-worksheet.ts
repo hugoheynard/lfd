@@ -1,6 +1,6 @@
 import type { ProducibleOrder } from "../../channels/commerce/day-orders.reader.js";
 import type { ProducedItemSnapshot, ProductionBatchSnapshot } from "../entities/production-day.js";
-import { activeBatchesOf, implicitBatchesOf, outputOf } from "./production-output.js";
+import { activeBatchesOf, countedBatch, implicitBatchesOf, outputOf } from "./production-output.js";
 
 /**
  * **La fiche d'atelier** — le compte à produire d'une journée, rendu cochable,
@@ -72,6 +72,11 @@ export interface WorksheetLine {
   /** Les fournées qui comptent, dans l'ordre de sortie. */
   readonly batches: readonly ProductionBatchSnapshot[];
   readonly container: ContainerRule | null;
+  /**
+   * Les pièces demandées en retour au colisage, sans réponse (K2, §13 B2) —
+   * encore comptées dans `produced` : « sorti » ne baisse qu'à la réponse.
+   */
+  readonly pendingReturn: number;
 }
 
 export interface WorksheetDriftLine {
@@ -136,10 +141,13 @@ export function worksheetOf(sources: WorksheetSources): Worksheet {
   };
 }
 
-/** Les fournées réelles, et les implicites des coches héritées (§5.2). */
+/**
+ * Les fournées réelles — pour ce qu'elles comptent, rendus du colisage déduits
+ * (K2) —, et les implicites des coches héritées (§5.2).
+ */
 function effectiveBatches(sources: WorksheetSources): readonly ProductionBatchSnapshot[] {
   return [
-    ...sources.batches,
+    ...sources.batches.map(countedBatch),
     ...implicitBatchesOf(sources.serviceDay, sources.counts, sources.batches),
   ];
 }
@@ -178,6 +186,7 @@ function line(
     surplus: output.surplus,
     batches: active,
     container: rule ?? null,
+    pendingReturn: active.reduce((total, batch) => total + batch.pendingReturn, 0),
   };
 }
 

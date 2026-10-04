@@ -327,6 +327,8 @@ describe("worksheetOf — les fournées (plan des fournées, D2, §4)", () => {
       quantity,
       recorded: { at, by: "staff-1", initials },
       cancelled: null,
+      returned: 0,
+      pendingReturn: 0,
     };
   }
 

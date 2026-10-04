@@ -21,6 +21,16 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
  * ne voit.
  */
 
+/** Rendu et en attente, pour une fournée (K2). */
+export interface BatchReturnCounts {
+  readonly returned: number;
+  readonly pendingReturn: number;
+}
+
+function noReturns(): BatchReturnCounts {
+  return { returned: 0, pendingReturn: 0 };
+}
+
 /** Le verrou : il note qu'il a été pris, pour quelle journée. */
 export class RecordingDayLock extends ProductionDayLock {
   constructor(private readonly trace: string[] = []) {
@@ -91,10 +101,15 @@ export class BatchBackedDays extends ProductionDayRepository {
   saved = 0;
   stale = false;
 
+  /**
+   * @param returnsOf ce que les demandes de retour disent d'une fournée (K2) —
+   *   le pendant de `returnsByBatch` côté adaptateur. Aucune par défaut.
+   */
   constructor(
     private readonly base: ProductionDay,
     private readonly store: InMemoryBatches,
     private readonly trace: string[] = [],
+    private readonly returnsOf: (batchId: string) => BatchReturnCounts = noReturns,
   ) {
     super();
   }
@@ -102,10 +117,11 @@ export class BatchBackedDays extends ProductionDayRepository {
   load(): Promise<ProductionDay> {
     this.trace.push("load");
     const snapshot = this.base.toSnapshot();
+    const written = this.store.batches.map((batch) => ({ ...batch, ...this.returnsOf(batch.id) }));
     return Promise.resolve(
       ProductionDay.fromSnapshot({
         ...snapshot,
-        batches: this.stale ? snapshot.batches : [...snapshot.batches, ...this.store.batches],
+        batches: this.stale ? snapshot.batches : [...snapshot.batches, ...written],
       }),
     );
   }

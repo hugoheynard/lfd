@@ -27,7 +27,7 @@ import {
   MEMBER,
   SERVICE_DAY,
   bootstrapProductionDay,
-  closePlan,
+  closeLegacyPlan,
   pack,
   packing,
   place,
@@ -86,7 +86,7 @@ async function legacyCheck(sku = CROISSANT): Promise<void> {
 describe("le rattrapage", () => {
   it("🔴 rejoué deux fois, y compris après un save, ne double aucune fournée", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 30 }]);
-    await closePlan(ctx);
+    await closeLegacyPlan(ctx);
     await legacyCheck();
 
     await runBackfill();
@@ -109,7 +109,7 @@ describe("le rattrapage", () => {
 
   it("une coche héritée non rattrapée se lit quand même comme sortie", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 30 }]);
-    await closePlan(ctx);
+    await closeLegacyPlan(ctx);
     await legacyCheck();
 
     expect(await worksheetLine(ctx)).toMatchObject({ produced: 30, done: true, initials: "LG" });
@@ -120,7 +120,7 @@ describe("le rattrapage", () => {
 describe("le retirage", () => {
   it("🔴 30 cochés puis 30 → 42 : la ligne n'est PAS complète", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 30 }]);
-    await closePlan(ctx);
+    await closeLegacyPlan(ctx);
     await legacyCheck();
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
 
@@ -144,7 +144,7 @@ describe("le retirage", () => {
     // redevenait vide. On tient le verrou de la journée à la main, on lance le
     // retirage (il attend), on colise dans la même fenêtre, on relâche.
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
-    await closePlan(ctx);
+    await closeLegacyPlan(ctx);
     await legacyCheck();
     const [reference] = await references(ctx);
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 6 }]);
@@ -171,7 +171,7 @@ describe("le retirage", () => {
 
   it("le verrou n'empêche pas de coliser après un retirage", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
-    await closePlan(ctx);
+    await closeLegacyPlan(ctx);
     await legacyCheck();
     const [reference] = await references(ctx);
 

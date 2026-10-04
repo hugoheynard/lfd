@@ -72,6 +72,10 @@ import { ProductionHandoffLedger } from "./domain/ports/production-handoff.ledge
 import { ProductionHandoffReader } from "./domain/ports/production-handoff.reader.js";
 import { PrismaProductionHandoffLedger } from "./infrastructure/prisma-production-handoff.ledger.js";
 import { PrismaProductionHandoffReader } from "./infrastructure/prisma-production-handoff.reader.js";
+import { PackedDayReading } from "./application/services/packed-day-reading.service.js";
+import { OnPackingReturned } from "./application/handlers/on-packing-returned.handler.js";
+import { ProductionReturnRequests } from "./domain/ports/production-return.requests.js";
+import { PrismaProductionReturnRequests } from "./infrastructure/prisma-production-return.requests.js";
 
 /**
  * **Le fournil.**
@@ -160,6 +164,11 @@ import { PrismaProductionHandoffReader } from "./infrastructure/prisma-productio
     PackingHandoffs,
     { provide: ProductionHandoffLedger, useClass: PrismaProductionHandoffLedger },
     { provide: ProductionHandoffReader, useClass: PrismaProductionHandoffReader },
+    // La bascule (K2) : les retours demandés au colisage, et sa réponse.
+    { provide: ProductionReturnRequests, useClass: PrismaProductionReturnRequests },
+    OnPackingReturned,
+    // La journée telle que le poste la voit, bacs compris (K2) — une lecture.
+    PackedDayReading,
     // Publié pour la route de contrôle de l'ombre ; relié par `PackingFeedModule`.
     DayLegacyPackingReader,
   ],

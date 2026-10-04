@@ -6,7 +6,11 @@ import {
 } from "../errors/production-errors.js";
 import { absorbArrivals, countOf, freezeOrder } from "../services/production-count.js";
 import type { ContainerStep } from "../value-objects/container-step.js";
-import { LEGACY_PACKING_OWNER, type PackingOwner } from "../value-objects/packing-owner.js";
+import {
+  LEGACY_PACKING_OWNER,
+  PACKING_PACKING_OWNER,
+  type PackingOwner,
+} from "../value-objects/packing-owner.js";
 import { ServiceDay } from "../value-objects/service-day.value-object.js";
 import * as batching from "./production-day.batches.js";
 import * as packing from "./production-day.packing.js";
@@ -247,6 +251,10 @@ export class ProductionDay {
    * L'instant vient du port d'horloge, jamais du mur — deux clôtures de la même
    * journée doivent porter le même instant que ce que le journal en dira.
    *
+   * Depuis K2, la journée naît au COLISAGE (`packing`, §13 B1) — sans
+   * interrupteur, décision de Hugo du 2026-10-04. Une journée `legacy` ne naît
+   * plus : elle ne se relit que depuis la base (`fromSnapshot`).
+   *
    * @throws {ProductionDayAlreadyClosedError} elle l'est déjà — cf. l'en-tête.
    * @throws {ProductionDayEmptyError} rien à produire ce jour-là.
    */
@@ -260,8 +268,9 @@ export class ProductionDay {
     this.ordersValue = orders.map(freezeOrder);
     this.countsValue = countOf(orders);
     this.closedAtValue = at;
-    // Le binaire de K1 ne connaît que l'ancien poste (colisage, §13, B1).
-    this.packingOwnerValue = LEGACY_PACKING_OWNER;
+    // Écrit ici et nulle part ailleurs (colisage, §13, B1) : la journée garde
+    // le propriétaire qu'elle a reçu en s'arrêtant.
+    this.packingOwnerValue = PACKING_PACKING_OWNER;
   }
 
   /** La ligne qu'on s'apprête à cocher, sans muter — refus : `production-day.batches.ts`. */

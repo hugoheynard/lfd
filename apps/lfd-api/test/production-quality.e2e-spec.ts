@@ -141,6 +141,9 @@ async function seedDay(): Promise<{ packed: string; open: string }> {
     .put(`/admin/production/worksheet/${DAY}/lines/${CROISSANT}/done`)
     .send({ initials: "KA" })
     .expect(204);
+  // Depuis K2, la journée naît au colisage : la liste à coliser et la remise
+  // lui arrivent par la boîte d'envoi, hors de la requête.
+  await ctx.drain();
   const orders = await ctx.prisma.productionOrder.findMany({
     where: { serviceDay: DAY },
     select: { orderId: true, reference: true, lines: { select: { sku: true } } },

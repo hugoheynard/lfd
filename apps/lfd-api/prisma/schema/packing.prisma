@@ -104,3 +104,39 @@ model PackingReceipt {
   @@map("packing_receipt")
   @@schema("packing")
 }
+
+/// **Une demande de retour reçue du fournil** sur une journée `packing` (K2,
+/// §13 B2). Le colisage la tranche sous le verrou de la réserve :
+/// `returned = min(requested, reçu − rendu − au bac)`. Si la remise visée
+/// (`handoff_id`) n'est pas encore arrivée, la demande attend ici, sans
+/// décision, et elle est tranchée à son arrivée (§13, MINEURS).
+model PackingReturn {
+  requestId  String    @id @map("request_id")
+  serviceDay String    @map("service_day") @db.VarChar(10)
+  sku        String
+  /// La remise visée — l'`id` de la fournée.
+  handoffId  String    @map("handoff_id")
+  requested  Int
+  receivedAt DateTime  @map("received_at") @db.Timestamptz(6)
+  /// La décision : `null` tous les deux = en attente de la remise.
+  decidedAt  DateTime? @map("decided_at") @db.Timestamptz(6)
+  returned   Int?
+
+  @@index([handoffId])
+  @@map("packing_return")
+  @@schema("packing")
+}
+
+/// Le **journal des journées du colisage** — le pendant de
+/// `production.day_change`, dans son propre schéma (D3). Aucun code ne
+/// l'écrit : les déclencheurs d'instruction des tables `packing.*` l'alimentent
+/// par `packing.record_day_change_by_service_day()`.
+model PackingDayChange {
+  id         BigInt   @id @default(autoincrement())
+  serviceDay String   @map("service_day") @db.VarChar(10)
+  changedAt  DateTime @default(now()) @map("changed_at") @db.Timestamptz(6)
+
+  @@index([serviceDay, id])
+  @@map("day_change")
+  @@schema("packing")
+}

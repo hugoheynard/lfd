@@ -3,7 +3,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { PendingCommerceOrdersReader } from "../../channels/commerce/pending-orders.reader.js";
 import { AttestedHandoversReader } from "../../channels/handover/index.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
+import { PackedDayReading } from "../services/packed-day-reading.service.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { GetProductionDayStatusQuery } from "./get-production-day-status.query.js";
 
@@ -41,14 +41,15 @@ export class GetProductionDayStatusHandler implements IQueryHandler<
   ProductionDayStatus
 > {
   constructor(
-    private readonly days: ProductionDayRepository,
+    private readonly days: PackedDayReading,
     private readonly pending: PendingCommerceOrdersReader,
     private readonly handovers: AttestedHandoversReader,
   ) {}
 
   async execute(query: GetProductionDayStatusQuery): Promise<ProductionDayStatus> {
     const day = ServiceDay.of(query.serviceDay);
-    const current = await this.days.load(day);
+    // Sur une journée `packing` (K2), le bac fermé se lit au colisage.
+    const { day: current } = await this.days.load(day);
     const closedAt = current.closedAt;
     const base = {
       date: day.value,

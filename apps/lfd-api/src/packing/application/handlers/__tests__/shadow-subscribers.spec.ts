@@ -5,8 +5,14 @@ import {
   PackingListDrawnPayloadError,
   ReturnRequestedEvent,
 } from "../../../../production/channels/packing/index.js";
-import { ReturnDecisionNotYetServedError } from "../../../domain/errors/packing-shadow-errors.js";
 import { InMemoryShadow } from "../../__tests__/shadow-doubles.js";
+import {
+  InMemoryReturnReader,
+  InMemoryReturns,
+  InMemoryStocks,
+  RecordingDurable,
+} from "../../__tests__/station-doubles.js";
+import { PackingReturnDesk } from "../../returns/packing-return-desk.service.js";
 import { OnHandedToPacking } from "../on-handed-to-packing.handler.js";
 import { OnPackingListDrawn } from "../on-packing-list-drawn.handler.js";
 import { OnReturnRequested } from "../on-return-requested.handler.js";
@@ -40,11 +46,24 @@ function drawn(orderId = "ord_1") {
 function setup() {
   const shadow = new InMemoryShadow();
   const clock = new FixedClock(NOW);
+  const returns = new InMemoryReturns();
+  const stocks = new InMemoryStocks(shadow);
+  const durable = new RecordingDurable();
+  const desk = new PackingReturnDesk(
+    returns,
+    new InMemoryReturnReader(returns, shadow),
+    stocks,
+    durable,
+    clock,
+  );
   return {
     shadow,
+    returns,
+    stocks,
+    durable,
     list: new OnPackingListDrawn(shadow),
-    handed: new OnHandedToPacking(shadow, clock),
-    returned: new OnReturnRequested(shadow, clock),
+    handed: new OnHandedToPacking(shadow, clock, desk),
+    returned: new OnReturnRequested(shadow, clock, desk),
   };
 }
 
@@ -131,12 +150,85 @@ describe("OnReturnRequested", () => {
 
     expect(shadow.stockOf(DAY, "CRO")).toEqual({ received: 5, returned: 5 });
   });
+});
 
-  it("🔴 une DEMANDE (journée `packing`) n'est ni tranchée ni perdue : elle échoue", async () => {
-    const { shadow, returned } = setup();
-    const fact = new ReturnRequestedEvent("return-b1", DAY, "CRO", 5, false, AT).durableFact();
+/** Une demande de retour d'une journée `packing` (K2) : elle porte sa remise. */
+function ask(requestId: string, quantity: number, handoffId = "b1") {
+  return new ReturnRequestedEvent(
+    requestId,
+    DAY,
+    "CRO",
+    quantity,
+    false,
+    AT,
+    handoffId,
+  ).durableFact();
+}
 
-    await expect(returned.handle(delivery(fact))).rejects.toThrow(ReturnDecisionNotYetServedError);
-    expect(shadow.receipts.size).toBe(0);
+describe("OnReturnRequested — une DEMANDE (journée `packing`, K2)", () => {
+  const RETURNED = "packing.returned";
+
+  it("rend ce qui n'est pas au bac, et répond par `packing.returned`", async () => {
+    const { handed, returned, durable, shadow, stocks } = setup();
+    await handed.handle(delivery(new HandedToPackingEvent("b1", DAY, "CRO", 12, AT).durableFact()));
+    const held = await stocks.lock(DAY, "CRO");
+    held.take(5, "Croissant");
+    await stocks.save(held);
+
+    await returned.handle(delivery(ask("return-x", 12)));
+
+    expect(durable.of(RETURNED)).toEqual([
+      {
+        type: RETURNED,
+        key: `${RETURNED}:return-x`,
+        payload: {
+          requestId: "return-x",
+          serviceDay: DAY,
+          returned: 7,
+          decidedAt: NOW.toISOString(),
+        },
+      },
+    ]);
+    expect(shadow.stockOf(DAY, "CRO")).toEqual({ received: 12, returned: 7 });
+  });
+
+  it("répond ZÉRO quand tout est au bac — un refus, affiché au fournil (Q5)", async () => {
+    const { handed, returned, durable, stocks } = setup();
+    await handed.handle(delivery(new HandedToPackingEvent("b1", DAY, "CRO", 12, AT).durableFact()));
+    const held = await stocks.lock(DAY, "CRO");
+    held.take(12, "Croissant");
+    await stocks.save(held);
+
+    await returned.handle(delivery(ask("return-x", 12)));
+
+    expect(durable.of(RETURNED)[0]?.payload).toMatchObject({ returned: 0 });
+  });
+
+  it("« remise inconnue » : la demande ATTEND, et se tranche à l'arrivée de la remise", async () => {
+    const { handed, returned, durable } = setup();
+
+    await returned.handle(delivery(ask("return-x", 12)));
+    expect(durable.facts).toEqual([]);
+
+    await handed.handle(delivery(new HandedToPackingEvent("b1", DAY, "CRO", 12, AT).durableFact()));
+    expect(durable.of(RETURNED)[0]?.payload).toMatchObject({ requestId: "return-x", returned: 12 });
+  });
+
+  it("une demande livrée deux fois n'est tranchée qu'une fois", async () => {
+    const { handed, returned, durable, shadow } = setup();
+    await handed.handle(delivery(new HandedToPackingEvent("b1", DAY, "CRO", 12, AT).durableFact()));
+
+    await returned.handle(delivery(ask("return-x", 5)));
+    await returned.handle(delivery(ask("return-x", 5)));
+
+    expect(durable.of(RETURNED)).toHaveLength(1);
+    expect(shadow.stockOf(DAY, "CRO")).toEqual({ received: 12, returned: 5 });
+  });
+
+  it("une demande sans sa remise est hors contrat : elle échoue, visible", async () => {
+    const { returned } = setup();
+    const fact = new ReturnRequestedEvent("return-x", DAY, "CRO", 5, false, AT).durableFact();
+
+    await expect(returned.handle(delivery(fact))).rejects.toThrow(/illisible/);
   });
 });

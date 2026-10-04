@@ -1,3 +1,4 @@
+import { legacyOf, RecordingStation } from "../../../application/__tests__/station-doubles.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import {
@@ -81,8 +82,10 @@ class Days extends ProductionDayRepository {
 }
 
 function closedDay(containers = 0): ProductionDay {
-  const day = ProductionDay.open(ServiceDay.of(DAY));
-  day.close([ORDER], CLOSED_AT);
+  const opened = ProductionDay.open(ServiceDay.of(DAY));
+  opened.close([ORDER], CLOSED_AT);
+  // L'ancien poste : depuis K2, une clôture naît au colisage.
+  const day = legacyOf(opened);
   if (containers > 0) {
     day.declareContainers(REFERENCE, containers);
   }
@@ -95,8 +98,13 @@ function sealedDay(): ProductionDay {
   return day;
 }
 
-function run(days: Days, step: ContainerStep, reference = REFERENCE): Promise<void> {
-  return new StepPackingContainersHandler(days).execute(
+function run(
+  days: Days,
+  step: ContainerStep,
+  reference = REFERENCE,
+  station = new RecordingStation(),
+): Promise<void> {
+  return new StepPackingContainersHandler(days, station).execute(
     new StepPackingContainersCommand(DAY, reference, step),
   );
 }
@@ -161,5 +169,17 @@ describe("StepPackingContainersHandler", () => {
     const days = new Days([closedDay(), closedDay()], false);
 
     await expect(run(days, "add")).rejects.toBeInstanceOf(ContainerStepConflictError);
+  });
+});
+
+describe("une journée `packing` (colisage, K2)", () => {
+  it("remet le pas au poste du colisage, sans compter au fournil", async () => {
+    const opened = ProductionDay.open(ServiceDay.of(DAY));
+    opened.close([ORDER], CLOSED_AT);
+    const station = new RecordingStation();
+
+    await run(new Days([opened]), "add", REFERENCE, station);
+
+    expect(station.calls).toEqual(["step:ord_1:add"]);
   });
 });

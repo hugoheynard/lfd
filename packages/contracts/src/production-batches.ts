@@ -47,6 +47,17 @@ export interface WorkshopBatch {
   readonly recordedAt: string;
   /** `null` = déclarée sans signature. */
   readonly initials: string | null;
+  /**
+   * **Retour en attente** (colisage K2, 2026-10-04) : les pièces de cette
+   * fournée que le fournil a demandé au colisage de lui rendre, sans réponse
+   * encore. Elles comptent toujours dans « sorti ». `0` = rien en attente — et
+   * toujours `0` sur une journée de l'ancien poste, où l'annulation est
+   * synchrone. Ajouté au contrat ; un front qui l'ignore affiche comme avant.
+   *
+   * Facultatif dans le TYPE seulement, comme `qualityHeld` : le serveur
+   * l'envoie toujours ; un double de test antérieur qui l'omet se lit `0`.
+   */
+  readonly pendingReturn?: number;
 }
 
 /**

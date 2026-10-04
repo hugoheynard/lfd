@@ -87,6 +87,7 @@ import { OrderSheetArchive } from "./application/services/order-sheet-archive.se
 import { OnProductionDayClosed } from "./application/handlers/on-production-day-closed.handler.js";
 import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.handler.js";
 import { OnOrderPacked } from "./application/handlers/on-order-packed.handler.js";
+import { OnPackingOrderPacked } from "./application/handlers/on-packing-order-packed.handler.js";
 import { PrismaDayOrdersReader } from "./infrastructure/prisma-day-orders.reader.js";
 import { DueThresholds } from "./application/services/due-thresholds.service.js";
 import { DeadlineOrdersReader } from "./domain/ports/deadline-orders.reader.js";
@@ -232,6 +233,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: DeadlineOrdersReader, useClass: PrismaDeadlineOrdersReader },
     OnProductionDayClosed,
     OnOrderPacked,
+    // Le même fait publié par le colisage (K2) : les deux types pendant un déploiement.
+    OnPackingOrderPacked,
     OnOrderHandedOver,
     GetProductionBatchHandler,
     GetPackingHandler,

@@ -1,3 +1,4 @@
+import { legacyOf } from "../../../application/__tests__/station-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
@@ -45,7 +46,8 @@ const ORDER: ProducibleOrder = {
 function closedDay(): ProductionDay {
   const day = ProductionDay.open(ServiceDay.of(DAY));
   day.close([ORDER], new Date("2026-09-13T04:20:00.000Z"));
-  return day;
+  // L'ancien poste : depuis K2, une clôture naît au colisage.
+  return legacyOf(day);
 }
 
 /** La même, cochée par l'ANCIEN binaire (`done_*`), sans aucune fournée. */
@@ -119,6 +121,8 @@ describe("MarkWorksheetLineHandler — « rendre la ligne complète »", () => {
         quantity: 30,
         recorded: { at: NOW, by: "staff-1", initials: "MB" },
         cancelled: null,
+        returned: 0,
+        pendingReturn: 0,
       },
     ]);
     // Ni `save` de la journée, ni coche `done_*` : le port n'a plus de quoi l'écrire.

@@ -17,7 +17,6 @@ import {
   QualityHoldLiftedJournalEvent,
   QualityHoldRaisedJournalEvent,
 } from "../../domain/events/quality-check.events.js";
-import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
 import { QualityCheckRepository } from "../../domain/ports/quality-check.repository.js";
 import {
@@ -31,6 +30,7 @@ import {
 import { refuseOrderOutOfHand } from "../../domain/services/order-out-of-hand.js";
 import { holdTransition } from "../../domain/services/quality-holds.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { PackedDayReading } from "../services/packed-day-reading.service.js";
 import { QualityPhotoAttachment } from "../services/quality-photo-attachment.service.js";
 import { RenderQualityCheckCommand } from "./render-quality-check.command.js";
 
@@ -71,7 +71,7 @@ export class RenderQualityCheckHandler implements ICommandHandler<
   constructor(
     private readonly checks: QualityCheckRepository,
     private readonly recorded: QualityCheckReader,
-    private readonly days: ProductionDayRepository,
+    private readonly days: PackedDayReading,
     private readonly attachment: QualityPhotoAttachment,
     private readonly custody: OrderCustodyReader,
     private readonly events: DomainEventPublisher,
@@ -85,7 +85,9 @@ export class RenderQualityCheckHandler implements ICommandHandler<
     if (existing !== null) {
       return replayed(existing, intent);
     }
-    const day = await this.days.load(intent.serviceDay);
+    // Bacs compris, où qu'ils soient tenus : sur une journée `packing` (K2),
+    // « la commande est-elle colisée ? » se lit au colisage.
+    const { day } = await this.days.load(intent.serviceDay);
     const scoped = scopeQualityTarget(day, intent.target);
     await this.refuseIfGone(intent.target, scoped);
     const draft = { ...intent, target: scoped.target, checkedAt: this.clock.now() };
