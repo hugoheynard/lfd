@@ -24,6 +24,14 @@ export interface DeliverySpecsLabels {
   /** Repris dans l'`aria-label` de chaque champ horaire, suivi du nom de la ligne. */
   readonly slotStart: string;
   readonly slotEnd: string;
+  /** Le bouton qui ajoute un créneau à la liste (CA3b). */
+  readonly slotAdd: string;
+  /** `{slot}` : le créneau retiré, dans le nom accessible du bouton. */
+  readonly slotRemove: string;
+  /** Dit sous une liste vide. */
+  readonly slotsNone: string;
+  /** Dit quand le créneau tapé en chevauche un déjà posé. */
+  readonly slotOverlap: string;
   readonly contactLegend: string;
   readonly noContact: string;
   readonly noContactHint: string;
@@ -73,8 +81,8 @@ export interface DeliverySpecsLabels {
 export const DELIVERY_SPECS_LABELS_FR: DeliverySpecsLabels = {
   detailLegend: 'Détail de livraison',
   slotsLegend: 'Créneaux préférés',
-  sameEveryDay: 'Le même créneau tous les jours',
-  sameEveryDayHint: 'décochez pour définir un créneau par jour',
+  sameEveryDay: 'Les mêmes créneaux tous les jours',
+  sameEveryDayHint: 'décochez pour définir des créneaux par jour',
   everyDay: 'Tous les jours',
   weekdays: {
     mon: 'Lundi',
@@ -87,6 +95,10 @@ export const DELIVERY_SPECS_LABELS_FR: DeliverySpecsLabels = {
   },
   slotStart: 'Début',
   slotEnd: 'Fin',
+  slotAdd: 'Ajouter',
+  slotRemove: 'Retirer {slot}',
+  slotsNone: 'Aucun créneau',
+  slotOverlap: 'Ce créneau en chevauche un autre déjà posé.',
   contactLegend: 'Contact sur place',
   noContact: 'Pas de contact de livraison dédié',
   noContactHint: "cochez si le livreur n'a personne à prévenir sur place",

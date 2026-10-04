@@ -45,7 +45,7 @@ export class FicheClientPanels {
   openStep(
     key: string,
     company: AdminCompanyDetail,
-    globalWindowMode: WindowMode = 'slot',
+    globalWindowMode: WindowMode = 'deadline',
   ): Promise<unknown> | null {
     if (key === 'vat' || key === 'legal') {
       return this.panels.open(AdminIdentitePanel, {

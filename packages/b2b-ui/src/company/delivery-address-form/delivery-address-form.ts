@@ -64,7 +64,7 @@ export class DeliveryAddressForm {
   readonly showStopMinutes = input(false);
 
   /** Le réglage général « créneau ou échéance », dont l'adresse hérite (CA-D2). */
-  readonly globalWindowMode = input<WindowMode>('slot');
+  readonly globalWindowMode = input<WindowMode>('deadline');
 
   protected readonly stopMinutesMin = STOP_MINUTES_MIN;
   protected readonly stopMinutesMax = STOP_MINUTES_MAX;

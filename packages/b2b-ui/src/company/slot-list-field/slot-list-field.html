@@ -1,0 +1,37 @@
+<div class="slot-list">
+  <div class="slots">
+    @for (slot of value(); track slot.start) {
+      <span class="slot">
+        <fold-badge variant="neutral" [content]="text(slot)" />
+        <fold-button-icon
+          icon="close"
+          size="xs"
+          [tooltip]="removeLabel(slot)"
+          (clicked)="remove(slot)"
+        />
+      </span>
+    } @empty {
+      <fold-badge variant="neutral" [content]="labels().none" />
+    }
+  </div>
+
+  <div class="add">
+    <fold-time size="sm" [label]="startLabel()" [(value)]="pendingStart" />
+    <fold-time size="sm" [label]="endLabel()" [(value)]="pendingEnd" />
+    <button
+      foldButton
+      type="button"
+      size="sm"
+      emphasis="soft"
+      icon="plus"
+      [disabled]="!canAdd()"
+      (click)="add()"
+    >
+      {{ labels().add }}
+    </button>
+  </div>
+
+  @if (overlaps()) {
+    <p class="overlap">{{ labels().overlap }}</p>
+  }
+</div>

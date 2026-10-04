@@ -89,9 +89,13 @@ export interface DeliveryAddressCopy {
     readonly otherLabel: string;
     readonly slotStart: string;
     readonly slotEnd: string;
+    /** Plusieurs créneaux au carnet ce jour-là (CA3b) : on en choisit un. */
+    readonly slot: string;
+    readonly slotPlaceholder: string;
     /** Sous l'action tant qu'il manque l'heure : ce qu'il faut faire. */
     readonly missingDeadline: string;
     readonly missingSlot: string;
+    readonly missingBookSlot: string;
   };
 
   /** `{fee}` — le tarif de la zone retenue. L'action PORTE le montant. */
@@ -133,9 +137,12 @@ export const DELIVERY_ADDRESS_FR: DeliveryAddressCopy = {
     otherLabel: 'Livrée avant (heure)',
     slotStart: 'Livrée à partir de',
     slotEnd: 'Livrée avant',
+    slot: 'Créneau de livraison',
+    slotPlaceholder: 'Choisissez un créneau',
     missingDeadline:
       'Une livraison se commande avec une heure : indiquez avant quelle heure livrer.',
     missingSlot: 'Une livraison se commande avec une heure : indiquez un créneau, début et fin.',
+    missingBookSlot: 'Une livraison se commande avec une heure : choisissez un de vos créneaux.',
   },
   cta: 'Composer mon panier · {fee} €',
   ctaIdle: 'Choisissez une adresse',
@@ -175,8 +182,11 @@ export const DELIVERY_ADDRESS_EN: DeliveryAddressCopy = {
     otherLabel: 'Delivered before (time)',
     slotStart: 'Delivered from',
     slotEnd: 'Delivered before',
+    slot: 'Delivery slot',
+    slotPlaceholder: 'Pick a slot',
     missingDeadline: 'A delivery needs a time: say before when to deliver.',
     missingSlot: 'A delivery needs a time: give a slot, start and end.',
+    missingBookSlot: 'A delivery needs a time: pick one of your slots.',
   },
   cta: 'Fill my basket · {fee} €',
   ctaIdle: 'Pick an address',
@@ -216,8 +226,11 @@ export const DELIVERY_ADDRESS_IT: DeliveryAddressCopy = {
     otherLabel: 'Consegnata entro le (orario)',
     slotStart: 'Consegnata dalle',
     slotEnd: 'Consegnata entro le',
+    slot: 'Fascia di consegna',
+    slotPlaceholder: 'Scegliete una fascia',
     missingDeadline: 'Una consegna si ordina con un orario: indicate entro che ora consegnare.',
     missingSlot: 'Una consegna si ordina con un orario: indicate una fascia, inizio e fine.',
+    missingBookSlot: 'Una consegna si ordina con un orario: scegliete una delle vostre fasce.',
   },
   cta: 'Comporre il carrello · {fee} €',
   ctaIdle: 'Scegliete un indirizzo',

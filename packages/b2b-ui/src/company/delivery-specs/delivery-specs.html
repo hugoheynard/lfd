@@ -35,7 +35,7 @@
           (valueChange)="set('everyDeadlines', $event)"
         />
       } @else {
-        @for (day of deadlineDays(); track day.key) {
+        @for (day of weekdays(); track day.key) {
           <fold-fieldset [legend]="day.name">
             <lfd-deadline-list-field
               [name]="day.name"
@@ -56,14 +56,27 @@
         (checkedChange)="set('sameEveryDay', $event)"
       />
 
-      <!-- Une ligne « Tous les jours », ou sept : le socle rend les lignes
-           qu'on lui donne, c'est ici qu'on décide lesquelles. -->
-      <lfd-hours-form
-        [startLabel]="labels().slotStart"
-        [endLabel]="labels().slotEnd"
-        [value]="slotEntries()"
-        (valueChange)="setSlotEntries($event)"
-      />
+      <!-- Plusieurs créneaux par adresse (CA3b, Hugo 2026-10-04) : le matin
+           ET une soirée. La même liste tous les jours, ou une par jour. -->
+      @if (value().sameEveryDay) {
+        <lfd-slot-list-field
+          [name]="labels().everyDay"
+          [labels]="slotLabels()"
+          [value]="value().everySlots"
+          (valueChange)="set('everySlots', $event)"
+        />
+      } @else {
+        @for (day of weekdays(); track day.key) {
+          <fold-fieldset [legend]="day.name">
+            <lfd-slot-list-field
+              [name]="day.name"
+              [labels]="slotLabels()"
+              [value]="value().daySlots[day.key]"
+              (valueChange)="setDaySlots(day.key, $event)"
+            />
+          </fold-fieldset>
+        }
+      }
     </fold-fieldset>
   }
 

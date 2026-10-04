@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
-import type { DeliveryContact, WindowMode } from '@lfd/contracts';
+import type { DeliveryContact, DeliverySlot, WindowMode } from '@lfd/contracts';
 import {
   FoldCheckboxComponent,
   FoldFieldsetComponent,
@@ -8,13 +8,11 @@ import {
   type FoldSelectOption,
 } from 'fold-ng';
 
-import { HoursForm } from '../../hours/hours-form/hours-form';
-import type { HoursEntry } from '../../hours/hours.model';
 import {
   contactIssueOf,
   type DeliveryDraft,
   type DraftDayDeadlines,
-  type DraftDays,
+  type DraftDaySlots,
   withNoContact,
 } from '../delivery-draft.model';
 import {
@@ -22,6 +20,7 @@ import {
   type DeadlineListFieldLabels,
 } from '../deadline-list-field/deadline-list-field';
 import { formatDeliveryContact, WEEKDAYS } from '../delivery-format';
+import { SlotListField, type SlotListFieldLabels } from '../slot-list-field/slot-list-field';
 import { withKnownContact } from '../delivery-address-form/delivery-address-form.model';
 import {
   DELIVERY_SPECS_LABELS_FR,
@@ -43,7 +42,7 @@ import {
   selector: 'lfd-delivery-specs',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    HoursForm,
+    SlotListField,
     DeadlineListField,
     FoldInputComponent,
     FoldCheckboxComponent,
@@ -79,10 +78,10 @@ export class DeliverySpecs {
   /**
    * Le réglage général « créneau ou échéance » (CA-D2) — ce dont l'adresse
    * hérite quand elle ne déroge pas. Entre pour être AFFICHÉ et pour choisir
-   * la saisie à montrer, jamais pour être écrit. `slot` par défaut : c'est le
+   * la saisie à montrer, jamais pour être écrit. `deadline` par défaut : c'est le
    * défaut du commerce tant que personne ne l'a réglé.
    */
-  readonly globalWindowMode = input<WindowMode>('slot');
+  readonly globalWindowMode = input<WindowMode>('deadline');
 
   /** Le mode qui s'applique à cette adresse : le sien, sinon le général. */
   protected readonly effectiveWindowMode = computed<WindowMode>(
@@ -111,8 +110,8 @@ export class DeliverySpecs {
     };
   });
 
-  /** Les jours, nommés dans la langue de l'app, pour les échéances par jour. */
-  protected readonly deadlineDays = computed(() =>
+  /** Les jours, nommés dans la langue de l'app, pour les créneaux et échéances par jour. */
+  protected readonly weekdays = computed(() =>
     WEEKDAYS.map((day) => ({ key: day.value, name: this.labels().weekdays[day.value] })),
   );
 
@@ -125,46 +124,26 @@ export class DeliverySpecs {
 
   protected readonly contactIssue = computed(() => contactIssueOf(this.value()));
 
-  /**
-   * Les créneaux, en lignes nommées. Une seule — « Tous les jours » — ou sept,
-   * selon la case : c'est la même saisie, ce n'est pas la même promesse.
-   */
-  protected readonly slotEntries = computed<readonly HoursEntry[]>(() => {
-    const draft = this.value();
-    if (draft.sameEveryDay) {
-      return [
-        {
-          key: 'every',
-          label: this.labels().everyDay,
-          range: { start: draft.everyStart, end: draft.everyEnd },
-        },
-      ];
-    }
-    return WEEKDAYS.map((day) => ({
-      key: day.value,
-      label: this.labels().weekdays[day.value],
-      range: draft.days[day.value],
-    }));
+  protected readonly slotLabels = computed<SlotListFieldLabels>(() => {
+    const labels = this.labels();
+    return {
+      start: labels.slotStart,
+      end: labels.slotEnd,
+      add: labels.slotAdd,
+      remove: labels.slotRemove,
+      none: labels.slotsNone,
+      overlap: labels.slotOverlap,
+    };
   });
 
-  protected setSlotEntries(entries: readonly HoursEntry[]): void {
-    const single = entries[0];
-    if (this.value().sameEveryDay) {
-      if (single !== undefined) {
-        this.value.update((draft) => ({
-          ...draft,
-          everyStart: single.range.start,
-          everyEnd: single.range.end,
-        }));
-      }
-      return;
-    }
+  /**
+   * Plusieurs créneaux par jour (CA3b) : une adresse commande parfois le
+   * matin ET pour une soirée. La commande, elle, n'en choisit qu'un.
+   */
+  protected setDaySlots(day: keyof DraftDaySlots, slots: readonly DeliverySlot[]): void {
     this.value.update((draft) => ({
       ...draft,
-      days: WEEKDAYS.reduce<DraftDays>((days, day) => {
-        const found = entries.find((entry) => entry.key === day.value);
-        return { ...days, [day.value]: found?.range ?? draft.days[day.value] };
-      }, draft.days),
+      daySlots: { ...draft.daySlots, [day]: slots },
     }));
   }
 

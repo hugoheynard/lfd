@@ -62,20 +62,19 @@ export {
 } from './postal-draft.model';
 export type { FrenchPostal, PostalDraft } from './postal-draft.model';
 export {
-  BLANK_DAYS,
+  BLANK_DAY_SLOTS,
   contactIssueOf,
   deliveryDraftFrom,
   deliveryIssueOf,
   EMPTY_DELIVERY_DRAFT,
   EMPTY_DELIVERY_SPECS,
-  fromSlotByDay,
   isBadSlot,
-  slotIssueOf,
   toDeliveryPayload,
   toSlot,
 } from './delivery-draft.model';
-export type { DraftDay, DraftDayDeadlines, DraftDays } from './delivery-draft.model';
+export type { DraftDayDeadlines, DraftDaySlots } from './delivery-draft.model';
 export { isDeadlineTime, withDeadline, withoutDeadline } from './deadline-list.model';
+export { canAddSlot, isSlot, slotsOverlap, withoutSlot, withSlot } from './slot-list.model';
 export type { DeliveryDraft, DeliverySpecsDraft } from './delivery-draft.model';
 export {
   WEEKDAYS,
@@ -83,13 +82,13 @@ export {
   formatDeadline,
   deadlineRows,
   hasPreferredDeadline,
-  hasDeliverySlot,
-  weeklySlots,
+  hasPreferredSlot,
+  slotRows,
   formatDeliveryContact,
   formatGps,
   gpsMapUrl,
 } from './delivery-format';
-export type { DeadlineRow } from './delivery-format';
+export type { DeadlineRow, WindowRow } from './delivery-format';
 export {
   DEFAULT_DESTINATION,
   destinationOf,

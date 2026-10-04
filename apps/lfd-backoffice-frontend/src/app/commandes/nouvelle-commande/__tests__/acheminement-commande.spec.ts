@@ -497,6 +497,67 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       expect(choice(fixture).issue).toBeNull();
     });
 
+    describe('plusieurs créneaux au carnet (CA3b)', () => {
+      const MANY: DeliveryAddressView = {
+        ...ADRESSE,
+        specs: {
+          ...ADRESSE.specs,
+          slotList: {
+            mode: 'everyday',
+            slots: [
+              { start: '07:00', end: '08:00' },
+              { start: '18:00', end: '19:00' },
+            ],
+          },
+        },
+      };
+
+      it('réclame un choix parmi les créneaux de l’adresse', () => {
+        const fixture = courier([MANY]);
+
+        expect(fixture.componentInstance['bookSlotOptions']().map((o) => o.value)).toEqual([
+          '07:00-08:00',
+          '18:00-19:00',
+        ]);
+        expect(choice(fixture).window).toBeNull();
+        expect(choice(fixture).issue).toContain('Créneau de livraison à choisir');
+      });
+
+      it('envoie le créneau choisi, bornes comprises', () => {
+        const fixture = courier([MANY]);
+        fixture.componentInstance['onBookSlot']('18:00-19:00');
+        fixture.detectChanges();
+
+        expect(choice(fixture).window).toEqual({ start: '18:00', end: '19:00' });
+        expect(choice(fixture).issue).toBeNull();
+      });
+
+      it('une liste d’un seul créneau vaut sans choix — le serveur la reprend', () => {
+        const one: DeliveryAddressView = {
+          ...ADRESSE,
+          specs: {
+            ...ADRESSE.specs,
+            slotList: { mode: 'everyday', slots: [{ start: '18:00', end: '19:00' }] },
+          },
+        };
+        const fixture = courier([one]);
+
+        expect(fixture.componentInstance['soleBookSlotLabel']()).not.toBeNull();
+        expect(choice(fixture).window).toBeNull();
+        expect(choice(fixture).issue).toBeNull();
+      });
+
+      it('une liste vide fait taper début et fin', () => {
+        const none: DeliveryAddressView = {
+          ...ADRESSE,
+          specs: { ...ADRESSE.specs, slotList: { mode: 'everyday', slots: [] } },
+        };
+        const fixture = courier([none]);
+
+        expect(choice(fixture).issue).toContain('Créneau de livraison à convenir');
+      });
+    });
+
     it('la seule échéance du jour vaut sans être choisie — le serveur la reprend', () => {
       const single: DeliveryAddressView = {
         ...DEADLINES,

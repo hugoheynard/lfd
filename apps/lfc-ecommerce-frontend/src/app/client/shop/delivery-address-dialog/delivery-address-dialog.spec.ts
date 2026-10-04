@@ -202,6 +202,28 @@ describe('DeliveryAddressDialog', () => {
     expect(closed[0]).toMatchObject({ window: { start: '07:00', end: '08:00' } });
   });
 
+  /** CA3b : plusieurs créneaux au carnet — la commande en porte un, choisi. */
+  it('🔴 plusieurs créneaux au carnet : on en choisit un, et c’est lui qui part', () => {
+    const specs: DeliverySpecs = {
+      ...SLOTTED,
+      slotList: {
+        mode: 'everyday',
+        slots: [
+          { start: '07:00', end: '08:00' },
+          { start: '18:00', end: '19:00' },
+        ],
+      },
+    };
+    const { fixture, closed } = boot([address({ id: 'a', isDefault: true, specs })]);
+    expect(cta(fixture)?.disabled).toBe(true);
+
+    fixture.componentInstance['slotPick'].set('18:00-19:00');
+    fixture.detectChanges();
+    cta(fixture)?.click();
+
+    expect(closed[0]).toMatchObject({ window: { start: '18:00', end: '19:00' } });
+  });
+
   /** CA3 : en échéance, on choisit une heure limite, et aucun début ne part. */
   it('🔴 en échéance, envoie l’heure choisie SANS début', () => {
     const specs: DeliverySpecs = {

@@ -236,8 +236,8 @@ export const ACCOUNT_IT: AccountCopy = {
     specs: {
       detailLegend: 'Dettagli di consegna',
       slotsLegend: 'Fasce orarie preferite',
-      sameEveryDay: 'La stessa fascia oraria ogni giorno',
-      sameEveryDayHint: 'deselezionate per impostare una fascia per giorno',
+      sameEveryDay: 'Le stesse fasce orarie ogni giorno',
+      sameEveryDayHint: 'deselezionate per impostare le fasce per giorno',
       everyDay: 'Tutti i giorni',
       weekdays: {
         mon: 'Lunedì',
@@ -250,6 +250,10 @@ export const ACCOUNT_IT: AccountCopy = {
       },
       slotStart: 'Inizio',
       slotEnd: 'Fine',
+      slotAdd: 'Aggiungi',
+      slotRemove: 'Rimuovi {slot}',
+      slotsNone: 'Nessuna fascia',
+      slotOverlap: 'Questa fascia si sovrappone a una già impostata.',
       contactLegend: 'Contatto sul posto',
       noContact: 'Nessun contatto di consegna dedicato',
       noContactHint: 'selezionate se il corriere non ha nessuno da avvisare sul posto',

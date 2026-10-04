@@ -237,8 +237,8 @@ export const ACCOUNT_FR: AccountCopy = {
     specs: {
       detailLegend: 'Détail de livraison',
       slotsLegend: 'Créneaux préférés',
-      sameEveryDay: 'Le même créneau tous les jours',
-      sameEveryDayHint: 'décochez pour définir un créneau par jour',
+      sameEveryDay: 'Les mêmes créneaux tous les jours',
+      sameEveryDayHint: 'décochez pour définir des créneaux par jour',
       everyDay: 'Tous les jours',
       weekdays: {
         mon: 'Lundi',
@@ -251,6 +251,10 @@ export const ACCOUNT_FR: AccountCopy = {
       },
       slotStart: 'Début',
       slotEnd: 'Fin',
+      slotAdd: 'Ajouter',
+      slotRemove: 'Retirer {slot}',
+      slotsNone: 'Aucun créneau',
+      slotOverlap: 'Ce créneau en chevauche un autre déjà posé.',
       contactLegend: 'Contact sur place',
       noContact: 'Pas de contact de livraison dédié',
       noContactHint: 'cochez si le livreur n’a personne à prévenir sur place',

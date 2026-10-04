@@ -113,32 +113,6 @@
   color: var(--fold-color-text);
 }
 
-// Grille hebdo : un jour par ligne, le créneau aligné à droite.
-.week {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
-  gap: 0.1rem var(--fold-space-lg);
-}
-.week-row {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--fold-space-sm);
-  font-size: var(--fold-text-sm, 0.875rem);
-}
-.week-day {
-  color: var(--fold-color-text-muted);
-}
-.week-slot {
-  font-variant-numeric: tabular-nums;
-  color: var(--fold-color-text);
-}
-.week-row.is-empty .week-slot {
-  color: var(--fold-color-text-muted);
-}
-
 // Contact / note / GPS : ligne discrète avec icône alignée en tête.
 .detail-line {
   display: flex;

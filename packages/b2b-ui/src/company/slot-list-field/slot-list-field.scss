@@ -1,0 +1,34 @@
+// Les créneaux posés, puis la saisie d'un nouveau : une colonne, le rythme
+// d'une liste — celui de `lfd-deadline-list-field`.
+.slot-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+// Un créneau et son « retirer », collés.
+.slot {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+// Les deux champs et le bouton sur une ligne, alignés sur le bas des champs.
+.add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+.overlap {
+  margin: 0;
+  font-size: var(--fold-text-sm, 0.875rem);
+  color: var(--fold-color-alert);
+}

@@ -3,6 +3,7 @@ import type { DeliveryAddressView } from '@lfd/contracts';
 import {
   deliveryDraftFrom,
   deliveryIssueOf,
+  BLANK_DAY_SLOTS,
   EMPTY_DELIVERY_DRAFT,
   stopMinutesIssueOf,
   toDeliveryPayload,
@@ -71,7 +72,7 @@ describe('La part postale', () => {
     expect(back.ville).toBe('Lyon');
     expect(back.contactNom).toBe('Martin');
     expect(back.signatureRequired).toBe(true);
-    expect(back.everyStart).toBe('06:00');
+    expect(back.everySlots).toEqual([{ start: '06:00', end: '08:00' }]);
   });
 
   it('préremplit un brouillon postal sans rien inventer de la livraison', () => {
@@ -92,7 +93,51 @@ describe('Le brouillon de livraison', () => {
     const payload = toDeliveryPayload(deliveryDraftFrom(VIEW));
 
     expect(payload.isDefault).toBe(true);
-    expect(payload.specs).toEqual(VIEW.specs);
+    // CA3b : la liste part en plus de l'ancien créneau, qu'elle reproduit.
+    expect(payload.specs).toEqual({
+      ...VIEW.specs,
+      slotList: { mode: 'everyday', slots: [{ start: '06:00', end: '08:00' }] },
+    });
+  });
+
+  /** CA3b (§14.1) : plusieurs créneaux par jour, et l'ancien `slots` dérivé du premier. */
+  it('écrit plusieurs créneaux par jour, et en dérive l’ancien créneau unique', () => {
+    const draft = {
+      ...deliveryDraftFrom(VIEW),
+      sameEveryDay: false,
+      daySlots: {
+        ...BLANK_DAY_SLOTS,
+        mon: [
+          { start: '07:00', end: '08:00' },
+          { start: '18:00', end: '19:00' },
+        ],
+      },
+    };
+    const specs = toDeliveryPayload(draft).specs;
+
+    expect(specs.slotList).toEqual({
+      mode: 'perDay',
+      byDay: {
+        mon: draft.daySlots.mon,
+        tue: null,
+        wed: null,
+        thu: null,
+        fri: null,
+        sat: null,
+        sun: null,
+      },
+    });
+    expect(specs.slots).toMatchObject({ mode: 'perDay', byDay: { mon: draft.daySlots.mon[0] } });
+    // Et l'aller-retour relit la liste, pas le seul premier créneau.
+    const back = deliveryDraftFrom({ ...VIEW, specs });
+    expect(back.daySlots.mon).toHaveLength(2);
+  });
+
+  /** Absente, la liste serait gardée telle quelle par le serveur : la vider doit s'écrire. */
+  it('envoie une liste VIDE quand on retire le dernier créneau', () => {
+    const draft = { ...deliveryDraftFrom(VIEW), everySlots: [] };
+
+    expect(toDeliveryPayload(draft).specs.slotList).toEqual({ mode: 'everyday', slots: [] });
   });
 
   it('reproche le LIEU avant les consignes', () => {

@@ -21,7 +21,8 @@ describe('libellés de DeliverySpecs', () => {
     expect(DELIVERY_SPECS_LABELS_FR).toMatchObject({
       detailLegend: 'Détail de livraison',
       slotsLegend: 'Créneaux préférés',
-      sameEveryDay: 'Le même créneau tous les jours',
+      // CA3b (2026-10-04) : plusieurs créneaux par jour — le mot a suivi.
+      sameEveryDay: 'Les mêmes créneaux tous les jours',
       everyDay: 'Tous les jours',
       slotStart: 'Début',
       slotEnd: 'Fin',

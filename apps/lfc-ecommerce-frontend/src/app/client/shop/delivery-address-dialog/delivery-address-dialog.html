@@ -120,6 +120,17 @@
           data-deadline-other
         />
       }
+    } @else if (slotOptions().length > 0) {
+      <!-- Plusieurs créneaux au carnet ce jour-là (CA3b) : la commande en porte un. -->
+      <fold-listbox
+        size="lg"
+        [label]="c().when.slot"
+        [placeholder]="c().when.slotPlaceholder"
+        [options]="slotOptions()"
+        [value]="slotValue()"
+        (selectionChange)="slotPick.set($event)"
+        data-book-slot
+      />
     } @else if (asksSlot()) {
       <div class="when-slot">
         <fold-time size="lg" [label]="c().when.slotStart" [(value)]="slotStart" data-slot-start />

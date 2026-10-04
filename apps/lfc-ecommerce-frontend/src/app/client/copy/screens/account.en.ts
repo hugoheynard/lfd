@@ -234,8 +234,8 @@ export const ACCOUNT_EN: AccountCopy = {
     specs: {
       detailLegend: 'Delivery details',
       slotsLegend: 'Preferred time slots',
-      sameEveryDay: 'Same time slot every day',
-      sameEveryDayHint: 'untick to set a time slot per day',
+      sameEveryDay: 'Same time slots every day',
+      sameEveryDayHint: 'untick to set time slots per day',
       everyDay: 'Every day',
       weekdays: {
         mon: 'Monday',
@@ -248,6 +248,10 @@ export const ACCOUNT_EN: AccountCopy = {
       },
       slotStart: 'Start',
       slotEnd: 'End',
+      slotAdd: 'Add',
+      slotRemove: 'Remove {slot}',
+      slotsNone: 'No time slot',
+      slotOverlap: 'This slot overlaps one already set.',
       contactLegend: 'On-site contact',
       noContact: 'No dedicated delivery contact',
       noContactHint: 'tick if the driver has nobody to call on site',

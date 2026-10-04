@@ -35,9 +35,10 @@ import type { ServiceChoice } from '../../order-context.store';
 import { dialogSide } from '../../panel-side';
 import { ORDER_DIALOG } from '../order-dialog';
 import {
-  bookSlotOfDay,
+  bookSlotsOfDay,
   deadlinesOfDay,
   deliveryWindowOf,
+  slotKey,
   weekdayOfIsoDate,
 } from '../delivery-window';
 import { ServicePoints } from '../pickup-points.store';
@@ -247,6 +248,8 @@ export class DeliveryAddressDialog {
   protected readonly deadlinePick = signal('');
   /** L'heure tapée derrière « une autre heure ». */
   protected readonly otherDeadline = signal('');
+  /** Le créneau du carnet retenu (sa clé), quand le jour en porte plusieurs. */
+  protected readonly slotPick = signal('');
   protected readonly slotStart = signal('');
   protected readonly slotEnd = signal('');
 
@@ -259,7 +262,7 @@ export class DeliveryAddressDialog {
   protected readonly windowMode = computed(() =>
     resolveWindowMode(
       this.bookAddress()?.specs.windowMode,
-      this.points.deliveryAvailability().windowMode ?? 'slot',
+      this.points.deliveryAvailability().windowMode ?? 'deadline',
     ),
   );
 
@@ -272,12 +275,31 @@ export class DeliveryAddressDialog {
     deadlinesOfDay(this.bookAddress()?.specs.deadlines, this.day()),
   );
 
-  private readonly bookSlot = computed(() => bookSlotOfDay(this.bookAddress(), this.day()));
+  /** Les créneaux du carnet pour ce jour (CA3b) — plusieurs possibles. */
+  private readonly daySlots = computed(() => bookSlotsOfDay(this.bookAddress(), this.day()));
 
-  /** Faut-il demander un créneau ? En mode créneau, seulement quand le carnet n'en a pas. */
+  /** Faut-il taper un créneau ? En mode créneau, seulement quand le carnet n'en a pas. */
   protected readonly asksSlot = computed(
-    () => this.windowMode() === 'slot' && this.bookSlot() === null,
+    () => this.windowMode() === 'slot' && this.daySlots().length === 0,
   );
+
+  /** Plusieurs créneaux au carnet ce jour-là : on en choisit un. */
+  protected readonly slotOptions = computed(() => {
+    const slots = this.daySlots();
+    const before = this.c().when.before;
+    return this.windowMode() !== 'slot' || slots.length < 2
+      ? []
+      : slots.map((slot) => ({
+          value: slotKey(slot),
+          label: formatWindow(slot.start, slot.end, before),
+        }));
+  });
+
+  /** L'option montrée : le choix, ou rien — plusieurs créneaux ne se devinent pas. */
+  protected readonly slotValue = computed(() => {
+    const picked = this.slotPick();
+    return this.slotOptions().some((option) => option.value === picked) ? picked : '';
+  });
 
   protected readonly deadlineOptions = computed(() => {
     const copy = this.c().when;
@@ -306,8 +328,9 @@ export class DeliveryAddressDialog {
     return deliveryWindowOf({
       mode: this.windowMode(),
       dayDeadlines: picked === OTHER_DEADLINE ? [] : this.dayDeadlines(),
-      bookSlot: this.bookSlot(),
+      daySlots: this.daySlots(),
       deadline: picked === OTHER_DEADLINE ? this.otherDeadline() : picked,
+      slot: this.slotPick(),
       slotStart: this.slotStart(),
       slotEnd: this.slotEnd(),
     });
@@ -318,8 +341,11 @@ export class DeliveryAddressDialog {
     if (this.window() !== undefined) {
       return null;
     }
-    return this.windowMode() === 'deadline'
-      ? this.c().when.missingDeadline
+    if (this.windowMode() === 'deadline') {
+      return this.c().when.missingDeadline;
+    }
+    return this.slotOptions().length > 0
+      ? this.c().when.missingBookSlot
       : this.c().when.missingSlot;
   });
 
@@ -357,6 +383,7 @@ export class DeliveryAddressDialog {
       // Les échéances d'un lieu ne valent pas pour un autre.
       this.deadlinePick.set('');
       this.otherDeadline.set('');
+      this.slotPick.set('');
     }
     this.picked.set(entry.address.id);
   }
@@ -484,7 +511,7 @@ function feeOf(fee: {
 /**
  * La fenêtre que le CARNET déclare pour cette adresse, ou `''`.
  *
- * 🔴 **`everyday` SEULEMENT.** Un carnet peut déclarer un créneau par JOUR
+ * 🔴 **`everyday` SEULEMENT.** Un carnet peut déclarer ses créneaux par JOUR
  * (`perDay`) ; la journée de livraison ne se choisit pas ici, donc en nommer un
  * reviendrait à tirer un jour au sort. Une adresse sans créneau global ne dit
  * rien — elle se livre dans la tournée, et annoncer une heure serait exactement
@@ -495,9 +522,11 @@ function feeOf(fee: {
  * différer d'un tiret.
  */
 function windowOf(address: DeliveryAddressView, gabarit: string, before: string): string {
-  const slots = address.specs.slots;
-  if (slots.mode !== 'everyday' || slots.slot === null) {
+  // Jour `null` : seuls les créneaux « tous les jours » répondent (CA3b).
+  const slots = bookSlotsOfDay(address, null);
+  if (slots.length === 0) {
     return '';
   }
-  return fill(gabarit, { window: formatWindow(slots.slot.start, slots.slot.end, before) });
+  const text = slots.map((slot) => formatWindow(slot.start, slot.end, before)).join(' · ');
+  return fill(gabarit, { window: text });
 }

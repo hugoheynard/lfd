@@ -21,8 +21,6 @@ import {
 } from 'fold-ng';
 
 import { AddressView } from '../../address/address-view/address-view';
-import { HoursView } from '../../hours/hours-view/hours-view';
-import type { HoursEntry } from '../../hours/hours.model';
 import type { PostalAddress } from '../../address/address.model';
 import { postalFrom } from '../postal-draft.model';
 import {
@@ -30,10 +28,10 @@ import {
   formatDeliveryContact,
   formatGps,
   gpsMapUrl,
-  hasDeliverySlot,
   hasPreferredDeadline,
-  weeklySlots,
-  type DeadlineRow,
+  hasPreferredSlot,
+  slotRows,
+  type WindowRow,
 } from '../delivery-format';
 
 /**
@@ -48,7 +46,6 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AddressView,
-    HoursView,
     FoldPageSectionComponent,
     FoldCardComponent,
     FoldBadgeComponent,
@@ -98,7 +95,7 @@ export class CompanyAddressesCard {
    * n'en déroge pas montre ce dont elle hérite — ses échéances, ou ses
    * créneaux.
    */
-  readonly globalWindowMode = input<WindowMode>('slot');
+  readonly globalWindowMode = input<WindowMode>('deadline');
 
   /** Éditer la facturation. */
   readonly editBilling = output<void>();
@@ -157,7 +154,7 @@ export class CompanyAddressesCard {
    * ou une échéance préférée.
    */
   protected isUsable(address: DeliveryAddressView): boolean {
-    return hasDeliverySlot(address.specs.slots) || hasPreferredDeadline(address.specs.deadlines);
+    return hasPreferredSlot(address.specs) || hasPreferredDeadline(address.specs.deadlines);
   }
 
   /** L'adresse se demande-t-elle par échéance ? La sienne, sinon le réglage général. */
@@ -165,12 +162,13 @@ export class CompanyAddressesCard {
     return (address.specs.windowMode ?? this.globalWindowMode()) === 'deadline';
   }
 
-  protected deadlines(address: DeliveryAddressView): readonly DeadlineRow[] {
+  protected deadlines(address: DeliveryAddressView): readonly WindowRow[] {
     return deadlineRows(address.specs.deadlines);
   }
 
-  protected weekly(address: DeliveryAddressView): readonly HoursEntry[] {
-    return weeklySlots(address.specs.slots);
+  /** Les créneaux préférés, plusieurs par ligne (CA3b). */
+  protected slots(address: DeliveryAddressView): readonly WindowRow[] {
+    return slotRows(address.specs);
   }
 
   protected contactName(contact: DeliveryContact): string {

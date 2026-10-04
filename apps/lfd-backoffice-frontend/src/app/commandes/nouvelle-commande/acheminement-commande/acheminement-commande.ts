@@ -20,6 +20,7 @@ import {
   deliveryOpenTo,
   pickupSlots,
   resolveWindowMode,
+  slotsFor,
   weekdayOfDate,
 } from '@lfd/contracts';
 import { fulfillmentWindowLabel } from '../../../shared/window-label';
@@ -302,23 +303,47 @@ export class AcheminementCommande {
     return date === '' ? null : weekdayOfDate(date);
   });
 
-  /** Le créneau que le CARNET déclare pour le jour livré — le serveur le lira. */
-  protected readonly bookSlot = computed<FulfillmentWindow | null>(() => {
-    const slots = this.bookEntry()?.specs.slots;
-    const day = this.deliveryDay();
-    if (slots === undefined) {
-      return null;
-    }
-    if (slots.mode === 'everyday') {
-      return slots.slot;
-    }
-    return day === null ? null : slots.byDay[day];
+  /**
+   * Les créneaux que le CARNET déclare pour le jour livré (CA3b, plan
+   * composition automatique §14.1) — plusieurs possibles, la commande n'en
+   * porte qu'un.
+   */
+  private readonly bookSlots = computed<readonly FulfillmentWindow[]>(() => {
+    const specs = this.bookEntry()?.specs;
+    return specs === undefined ? [] : slotsFor(specs, this.deliveryDay());
   });
 
-  protected readonly bookSlotLabel = computed(() => {
-    const slot = this.bookSlot();
-    return slot === null ? null : fulfillmentWindowLabel(slot);
+  /** Le SEUL créneau du jour : le serveur le reprend si on n'en envoie aucun. */
+  protected readonly soleBookSlotLabel = computed(() => {
+    const slots = this.bookSlots();
+    const sole = slots.length === 1 ? (slots[0] ?? null) : null;
+    return sole === null ? null : fulfillmentWindowLabel(sole);
   });
+
+  /** Plusieurs créneaux ce jour-là : la commande en choisit un. */
+  protected readonly bookSlotOptions = computed(() => {
+    const slots = this.bookSlots();
+    return slots.length < 2
+      ? []
+      : slots.map((slot) => ({ value: idOf(slot), label: fulfillmentWindowLabel(slot) }));
+  });
+
+  /** Le créneau du carnet retenu, ou `''`. */
+  protected readonly bookSlotChoice = computed<string>(() => {
+    const window = this.draft().window();
+    if (window === null) {
+      return '';
+    }
+    const id = idOf(window);
+    return this.bookSlotOptions().some((option) => option.value === id) ? id : '';
+  });
+
+  protected onBookSlot(value: string): void {
+    const slot = this.bookSlots().find((entry) => idOf(entry) === value);
+    if (slot !== undefined) {
+      this.draft().window.set({ start: slot.start, end: slot.end });
+    }
+  }
 
   /** « Une autre heure » est ouverte — l'heure n'est peut-être pas encore tapée. */
   private readonly otherDeadlineOpen = signal(false);
@@ -421,9 +446,19 @@ export class AcheminementCommande {
               'Échéance de livraison à choisir — une de l’adresse, ou une autre heure. Une livraison ne part plus sans heure.',
           };
     }
-    if (this.bookSlot() !== null) {
-      // Rien ne change en mode créneau : celui du carnet, que le serveur lit.
+    const slots = this.bookSlots();
+    if (slots.length === 1) {
+      // Le seul créneau du carnet pour ce jour : le serveur le lit.
       return { window: null, issue: null };
+    }
+    if (slots.length > 1) {
+      return this.bookSlotChoice() !== ''
+        ? { window, issue: null }
+        : {
+            window: null,
+            issue:
+              'Créneau de livraison à choisir parmi ceux de l’adresse. Une livraison ne part plus sans heure.',
+          };
     }
     return window !== null && window.start !== null
       ? { window, issue: null }

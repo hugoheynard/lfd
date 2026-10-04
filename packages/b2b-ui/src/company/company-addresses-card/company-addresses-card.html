@@ -147,12 +147,11 @@
                           </p>
                           <!-- Les sept jours restent affichés, tiret compris :
                                « mardi, rien » est justement l'information. -->
-                          <lfd-hours
-                            class="week"
-                            layout="rows"
-                            [icon]="false"
-                            [entries]="weekly(a)"
-                          />
+                          @for (row of slots(a); track row.key) {
+                            <p class="detail-line">
+                              <span>{{ row.label }} · {{ row.text || '—' }}</span>
+                            </p>
+                          }
                         </div>
                       }
 

@@ -1,17 +1,17 @@
+import { legacySlotsOf, slotsFor } from '@lfd/contracts';
 import type {
   DeliveryAddressPayload,
   DeliveryAddressView,
   DeliveryContact,
   DeliverySlot,
-  DeliverySlots,
+  DeliverySpecs,
   GpsPoint,
   PreferredDeadlines,
-  SlotByDay,
+  PreferredSlots,
   Weekday,
   WindowMode,
 } from '@lfd/contracts';
 
-import { WEEKDAYS } from './delivery-format';
 import {
   EMPTY_POSTAL_DRAFT,
   gpsIssueOf,
@@ -32,10 +32,12 @@ import {
 export interface DeliverySpecsDraft {
   /** L'adresse proposée d'office au panier. */
   readonly isDefault: boolean;
+  /** Les mêmes créneaux tous les jours, ou une liste par jour (CA3b). */
   readonly sameEveryDay: boolean;
-  readonly everyStart: string;
-  readonly everyEnd: string;
-  readonly days: DraftDays;
+  /** Les créneaux de tous les jours — triés, sans chevauchement. */
+  readonly everySlots: readonly DeliverySlot[];
+  /** Les créneaux jour par jour — une liste vide = aucun ce jour-là. */
+  readonly daySlots: DraftDaySlots;
   readonly noContact: boolean;
   readonly contactPrenom: string;
   readonly contactNom: string;
@@ -85,33 +87,26 @@ export const BLANK_DAY_DEADLINES: DraftDayDeadlines = {
 /** Le brouillon complet d'une adresse de livraison : le lieu, et les consignes. */
 export type DeliveryDraft = PostalDraft & DeliverySpecsDraft;
 
-/** Brouillon de créneau par jour (chaînes, `''` = vide). */
-export interface DraftDay {
-  readonly start: string;
-  readonly end: string;
-}
-export type DraftDays = Readonly<Record<Weekday, DraftDay>>;
+/** Une liste de créneaux par jour (vide = aucun). */
+export type DraftDaySlots = Readonly<Record<Weekday, readonly DeliverySlot[]>>;
 
-const BLANK_DAY: DraftDay = { start: '', end: '' };
-
-/** Sept jours vierges. */
-export const BLANK_DAYS: DraftDays = {
-  mon: BLANK_DAY,
-  tue: BLANK_DAY,
-  wed: BLANK_DAY,
-  thu: BLANK_DAY,
-  fri: BLANK_DAY,
-  sat: BLANK_DAY,
-  sun: BLANK_DAY,
+/** Sept jours sans créneau. */
+export const BLANK_DAY_SLOTS: DraftDaySlots = {
+  mon: [],
+  tue: [],
+  wed: [],
+  thu: [],
+  fri: [],
+  sat: [],
+  sun: [],
 };
 
 /** Consignes vierges — aucune contrainte déclarée, rien d'hérité contredit. */
 export const EMPTY_DELIVERY_SPECS: DeliverySpecsDraft = {
   isDefault: false,
   sameEveryDay: true,
-  everyStart: '',
-  everyEnd: '',
-  days: BLANK_DAYS,
+  everySlots: [],
+  daySlots: BLANK_DAY_SLOTS,
   noContact: false,
   contactPrenom: '',
   contactNom: '',
@@ -140,7 +135,7 @@ export function deliveryDraftFrom(view: DeliveryAddressView): DeliveryDraft {
     gpsLat: view.specs.gps === null ? '' : String(view.specs.gps.lat),
     gpsLng: view.specs.gps === null ? '' : String(view.specs.gps.lng),
     isDefault: view.isDefault,
-    ...slotsDraft(view.specs.slots),
+    ...slotsDraft(view.specs),
     noContact: contact === null,
     contactPrenom: contact?.prenom ?? '',
     contactNom: contact?.nom ?? '',
@@ -181,32 +176,30 @@ function deadlinesDraft(
   };
 }
 
+/**
+ * Les créneaux stockés vers le brouillon, lus par `slotsFor` — le seul point
+ * de lecture (§14.1) : la liste `slotList` si l'adresse en porte une, sinon
+ * l'ancien `slots` lu comme une liste d'un élément.
+ */
 function slotsDraft(
-  slots: DeliverySlots,
-): Pick<DeliverySpecsDraft, 'sameEveryDay' | 'everyStart' | 'everyEnd' | 'days'> {
-  if (slots.mode === 'everyday') {
-    return {
-      sameEveryDay: true,
-      everyStart: slots.slot?.start ?? '',
-      everyEnd: slots.slot?.end ?? '',
-      days: BLANK_DAYS,
-    };
+  specs: Pick<DeliverySpecs, 'slots' | 'slotList'>,
+): Pick<DeliverySpecsDraft, 'sameEveryDay' | 'everySlots' | 'daySlots'> {
+  const mode = specs.slotList?.mode ?? specs.slots.mode;
+  if (mode === 'everyday') {
+    return { sameEveryDay: true, everySlots: slotsFor(specs, null), daySlots: BLANK_DAY_SLOTS };
   }
-  return { sameEveryDay: false, everyStart: '', everyEnd: '', days: fromSlotByDay(slots.byDay) };
-}
-
-/** Projette les créneaux stockés vers les brouillons de formulaire. */
-export function fromSlotByDay(byDay: SlotByDay): DraftDays {
-  const draft = (slot: DeliverySlot | null): DraftDay =>
-    slot ? { start: slot.start, end: slot.end } : BLANK_DAY;
   return {
-    mon: draft(byDay.mon),
-    tue: draft(byDay.tue),
-    wed: draft(byDay.wed),
-    thu: draft(byDay.thu),
-    fri: draft(byDay.fri),
-    sat: draft(byDay.sat),
-    sun: draft(byDay.sun),
+    sameEveryDay: false,
+    everySlots: [],
+    daySlots: {
+      mon: slotsFor(specs, 'mon'),
+      tue: slotsFor(specs, 'tue'),
+      wed: slotsFor(specs, 'wed'),
+      thu: slotsFor(specs, 'thu'),
+      fri: slotsFor(specs, 'fri'),
+      sat: slotsFor(specs, 'sat'),
+      sun: slotsFor(specs, 'sun'),
+    },
   };
 }
 
@@ -219,18 +212,6 @@ export function toSlot(start: string, end: string): DeliverySlot | null {
 export function isBadSlot(start: string, end: string): boolean {
   const touched = start !== '' || end !== '';
   return touched && !(start !== '' && end !== '' && start < end);
-}
-
-/** Message d'erreur créneaux (`''` si valide), selon le mode. */
-export function slotIssueOf(draft: DeliverySpecsDraft): string {
-  if (draft.sameEveryDay) {
-    return isBadSlot(draft.everyStart, draft.everyEnd)
-      ? 'Renseignez une heure de début ET de fin, la fin après le début.'
-      : '';
-  }
-  return WEEKDAYS.some((w) => isBadSlot(draft.days[w.value].start, draft.days[w.value].end))
-    ? 'Chaque créneau renseigné doit avoir un début et une fin valides.'
-    : '';
 }
 
 /** Message d'erreur contact (`''` si valide) : les trois champs, sauf « pas de contact ». */
@@ -302,7 +283,6 @@ export function withNoContact<T extends DeliverySpecsDraft>(
 export function deliveryIssueOf(draft: DeliveryDraft): string {
   return (
     postalIssue(draft) ||
-    slotIssueOf(draft) ||
     contactIssueOf(draft) ||
     signatureIssueOf(draft) ||
     stopMinutesIssueOf(draft) ||
@@ -321,7 +301,12 @@ export function toDeliveryPayload(draft: DeliveryDraft): DeliveryAddressPayload 
       // le panier peut s'en écarter, et l'écart se voit (provenance figée).
       signatureRequired: draft.signatureRequired,
       note: draft.note.trim(),
-      slots: buildSlots(draft),
+      // La liste part TOUJOURS, vide comprise : absente, le serveur garde
+      // celle qu'il a (§14.1, l'onglet resté sur l'ancien front), et retirer
+      // le dernier créneau n'effacerait rien. `slots` en est dérivé — le
+      // premier de chaque jour — pour qui ne lit que lui.
+      slots: legacySlotsOf(buildSlotList(draft)),
+      slotList: buildSlotList(draft),
       deliveryContact: buildContact(draft),
       gps: buildGps(draft),
       // Absent plutôt que `null` : le `jsonb` garde sa forme d'avant pour les
@@ -357,21 +342,25 @@ function buildGps(draft: PostalDraft): GpsPoint | null {
   return { lat: Number(lat), lng: Number(lng) };
 }
 
-function buildSlots(draft: DeliverySpecsDraft): DeliverySlots {
+function buildSlotList(draft: DeliverySpecsDraft): PreferredSlots {
   if (draft.sameEveryDay) {
-    return { mode: 'everyday', slot: toSlot(draft.everyStart, draft.everyEnd) };
+    return { mode: 'everyday', slots: [...draft.everySlots] };
   }
-  const d = draft.days;
-  const byDay: SlotByDay = {
-    mon: toSlot(d.mon.start, d.mon.end),
-    tue: toSlot(d.tue.start, d.tue.end),
-    wed: toSlot(d.wed.start, d.wed.end),
-    thu: toSlot(d.thu.start, d.thu.end),
-    fri: toSlot(d.fri.start, d.fri.end),
-    sat: toSlot(d.sat.start, d.sat.end),
-    sun: toSlot(d.sun.start, d.sun.end),
+  const d = draft.daySlots;
+  const day = (slots: readonly DeliverySlot[]): DeliverySlot[] | null =>
+    slots.length === 0 ? null : [...slots];
+  return {
+    mode: 'perDay',
+    byDay: {
+      mon: day(d.mon),
+      tue: day(d.tue),
+      wed: day(d.wed),
+      thu: day(d.thu),
+      fri: day(d.fri),
+      sat: day(d.sat),
+      sun: day(d.sun),
+    },
   };
-  return { mode: 'perDay', byDay };
 }
 
 function withDeadlines(deadlines: PreferredDeadlines | null): { deadlines?: PreferredDeadlines } {

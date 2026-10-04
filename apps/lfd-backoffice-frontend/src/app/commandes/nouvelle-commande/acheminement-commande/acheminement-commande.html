@@ -91,8 +91,19 @@
         data-deadline-other
       />
     }
-  } @else if (bookSlotLabel(); as slot) {
+  } @else if (soleBookSlotLabel(); as slot) {
     <p class="ach-line">Créneau du carnet : {{ slot }}</p>
+  } @else if (bookSlotOptions().length > 0) {
+    <!-- Plusieurs créneaux au carnet ce jour-là (CA3b) : la commande en porte un. -->
+    <fold-listbox
+      label="Créneau de livraison"
+      required
+      placeholder="Quel créneau de l’adresse ?"
+      [options]="bookSlotOptions()"
+      [value]="bookSlotChoice()"
+      (selectionChange)="onBookSlot($event)"
+      data-book-slot
+    />
   } @else {
     <div class="ach-row">
       <fold-time

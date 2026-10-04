@@ -164,7 +164,7 @@ export class DeliveryAddressDialog {
    * commerce — le formulaire ne fait que le MONTRER.
    */
   protected readonly globalWindowMode = computed(
-    () => this.points.deliveryAvailability().windowMode ?? 'slot',
+    () => this.points.deliveryAvailability().windowMode ?? 'deadline',
   );
 
   protected readonly draft = signal<DeliveryDraft>(EMPTY_DELIVERY_DRAFT);

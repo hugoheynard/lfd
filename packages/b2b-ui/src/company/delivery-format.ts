@@ -1,8 +1,8 @@
-import type { HoursEntry } from '../hours/hours.model';
+import { slotsFor } from '@lfd/contracts';
 import type {
   DeliveryContact,
   DeliverySlot,
-  DeliverySlots,
+  DeliverySpecs,
   GpsPoint,
   PreferredDeadlines,
   Weekday,
@@ -42,13 +42,16 @@ export function formatDeadline(time: string, before = 'avant'): string {
   return `${before} ${time}`;
 }
 
-/** Une ligne d'échéances nommée : « Tous les jours », ou un jour de la semaine. */
-export interface DeadlineRow {
+/** Une ligne nommée — « Tous les jours », ou un jour de la semaine — et ses heures. */
+export interface WindowRow {
   readonly key: string;
   readonly label: string;
-  /** `avant 06:00 · avant 11:00`, ou `''` quand ce jour n'en a aucune. */
+  /** `avant 06:00 · avant 11:00`, `07:00–08:00 · 18:00–19:00`, ou `''` quand ce jour n'a rien. */
   readonly text: string;
 }
+
+/** Une ligne d'échéances. */
+export type DeadlineRow = WindowRow;
 
 /**
  * Les échéances préférées d'une adresse, en lignes à afficher. Les jours sans
@@ -79,30 +82,26 @@ export function hasPreferredDeadline(deadlines: PreferredDeadlines | null | unde
 }
 
 /**
- * Une adresse est **commandable** dès qu'elle porte au moins un créneau : le
- * créneau global (`everyday`) ou un jour renseigné (`perDay`).
+ * Les créneaux préférés d'une adresse, en lignes à afficher (CA3b) — plusieurs
+ * par ligne, lus par `slotsFor`. Les jours sans créneau restent dans la liste :
+ * « mardi, rien » est justement l'information.
  */
-export function hasDeliverySlot(slots: DeliverySlots): boolean {
-  if (slots.mode === 'everyday') {
-    return slots.slot !== null;
+export function slotRows(specs: Pick<DeliverySpecs, 'slots' | 'slotList'>): readonly WindowRow[] {
+  const text = (slots: readonly DeliverySlot[]): string => slots.map(formatSlot).join(' · ');
+  const mode = specs.slotList?.mode ?? specs.slots.mode;
+  if (mode === 'everyday') {
+    return [{ key: 'every', label: 'Tous les jours', text: text(slotsFor(specs, null)) }];
   }
-  return WEEKDAYS.some((day) => slots.byDay[day.value] !== null);
+  return WEEKDAYS.map((day) => ({
+    key: day.value,
+    label: day.label,
+    text: text(slotsFor(specs, day.value)),
+  }));
 }
 
-/**
- * Déplie les créneaux en sept plages nommées, pour le socle `lfd-hours`. Les
- * jours sans créneau restent dans la liste : c'est l'affichage qui décide de
- * les montrer en creux ou de les taire.
- */
-export function weeklySlots(slots: DeliverySlots): readonly HoursEntry[] {
-  return WEEKDAYS.map((day) => {
-    const slot = slots.mode === 'everyday' ? slots.slot : slots.byDay[day.value];
-    return {
-      key: day.value,
-      label: day.label,
-      range: { start: slot?.start ?? '', end: slot?.end ?? '' },
-    };
-  });
+/** Une adresse en mode créneau est commandable dès qu'elle en porte au moins un, un jour. */
+export function hasPreferredSlot(specs: Pick<DeliverySpecs, 'slots' | 'slotList'>): boolean {
+  return slotRows(specs).some((row) => row.text !== '');
 }
 
 /** Nom complet d'un contact de livraison, espaces superflus retirés. */
