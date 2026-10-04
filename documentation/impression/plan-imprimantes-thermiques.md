@@ -107,3 +107,63 @@ sequenceDiagram
 | IM4 | Étiquettes de production (Q1)                                                                        | non       |
 
 IM1 attend BE1 (la boîte d'envoi) et le verdict d'IM0.
+
+## 7. Contradiction de `vitruve` (2026-10-04), et la v2
+
+**BLOQUANTS, levés :**
+
+1. **À qui appartient l'Imprimerie ?** La passerelle ne contient pas de
+   métier : elle n'a que du routage. L'API n'a qu'une classe de Durable
+   Object, le container lui-même, et une migration de classe est presque
+   irréversible. → L'Imprimerie devient **un Worker à part,
+   `apps/lfd-printing`**, avec sa classe `Printer` (un Durable Object par
+   imprimante). La passerelle y est reliée par un service binding, comme
+   pour `ROUTE_PLANNER`. Elle entre dans la matrice des frontières :
+   personne ne l'importe, elle ne lit aucune base.
+2. **La passerelle ne peut pas vérifier un secret qui vit dans Postgres.** →
+   La passerelle ne fait que **router** la WebSocket. C'est le Durable Object
+   de l'imprimante qui vérifie l'en-tête Basic, contre un hash qu'il garde
+   dans son propre stockage. L'API lui **pousse** ce hash, et l'état
+   actif ou archivé, quand on les règle à l'écran. Désactiver une imprimante
+   ferme sa socket.
+3. **L'abonné, dans le container, n'atteint pas un Durable Object.** → Il
+   passe par une **seconde route**, `POST /printers/:id/jobs` de la
+   passerelle, protégée par un jeton de service, sur le même modèle que
+   `ROUTE_PLANNER_TOKEN`. Le jeton est rangé avec les autres clés
+   d'exécution. La phrase « aucune autre route n'y mène » du §3 est fausse :
+   il y en a deux, et chacune a sa propre authentification.
+4. **Une étiquette imprimée à la déclaration ne connaît pas toujours la
+   tournée ni le rang.** Un bac se déclare aussi hors tournée. → C'est la
+   question Q2, reformulée au §5 bis.
+5. **L'état `~HS` ne dit pas quel ordre a échoué.** → Le Durable Object
+   **sérialise** : un seul ordre en vol à la fois, et le suivant attend
+   l'état. L'accusé veut dire « remis sans erreur détectée », pas
+   « imprimé ». Un rejeu peut donc produire une **étiquette en double**,
+   et c'est assumé : elle porte le même code et le même QR, donc elle ne
+   trompe personne.
+
+**SÉRIEUX, tranchés :**
+
+- **Imprimante hors ligne.** L'abonné « impression » a sa propre politique de
+  rejeu : « imprimante absente » ne compte pas comme un essai. On réessaie
+  toutes les 5 minutes pendant 24 heures, et au-delà le message est mort. Une
+  nuit d'imprimante éteinte ne tue plus ses ordres. La boîte d'envoi doit donc
+  permettre une politique par abonné ; c'est à ajouter en IM2.
+- **Le ping de Weblink** peut réveiller le Durable Object à chaque passage :
+  à mesurer dans IM0, avec la réponse automatique de l'API d'hibernation.
+- **Force brute** : une limite de débit sur la route `connect` de la
+  passerelle, et un verrouillage après N échecs dans le Durable Object.
+- **Le ZPL est rendu au moment de publier.** Changer la largeur d'étiquette
+  ne touche pas les ordres déjà en attente. C'est assumé.
+- Tant que l'admin n'a pas accordé le droit neuf à l'écran, personne ne
+  règle une imprimante.
+- IM1 porte **deux** migrations : Prisma (`printers`) et la classe de Durable
+  Object du nouveau Worker.
+
+### 5 bis. Q2 reformulée — quand imprimer l'étiquette d'un bac ?
+
+- **a.** À la déclaration, sans tournée ni rang (le bac n'en a pas toujours).
+- **b.** Quand la tournée est figée, avec la tournée et le rang en gros :
+  c'est un autre fait durable (`delivery.round_locked`).
+- **c.** Les deux : une petite étiquette d'identité à la déclaration, puis
+  une étiquette de tournée au verrouillage.

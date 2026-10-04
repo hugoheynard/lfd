@@ -125,7 +125,7 @@ Trois garanties, chacune tenue par un morceau :
 
 **SÉRIEUX, tranchés :**
 
-- **Schéma `platform`** créé en BE1 : `datasource`, `prisma/schema/platform.prisma`,
+- **Schéma `platform`** créé en BE1 : `datasource`, `apps/lfd-api/prisma/schema/platform.prisma`,
   `CREATE SCHEMA`, et la lecture `ops → platform` déclarée.
 - **Réserver, puis livrer.** Une courte transaction réserve des lignes
   (`UPDATE … SET claimed_until = now + bail … FOR UPDATE SKIP LOCKED
@@ -170,3 +170,24 @@ Deux ajouts à BE1, que la comparaison a fait voir :
 2. **Le rejeu manuel.** Une commande, sur une route admin gardée, remet à
    zéro les essais d'un couple message × abonné et le relance. L'écran ira
    avec la carte de santé.
+
+## 9. BE1 bâti (2026-10-04) — ce qui a été tranché en bâtissant
+
+- La table de l'état par abonné s'appelle `platform.outbox_delivery`
+  (`event_id`, `subscriber`) ; son `delivered_at` sert de reçu.
+- **Les livraisons naissent à l'écriture**, une par abonné inscrit à cet
+  instant. Un abonné ajouté plus tard ne reçoit pas les faits passés, et un
+  fait sans abonné n'a aucune ligne de livraison. Brancher un abonné sur un
+  fait déjà émis demandera un rattrapage explicite.
+- `@DurableHandler({ type, subscriber })` : le nom d'abonné est la clé du reçu.
+  Il est stable au renommage d'une classe, et deux abonnés du même nom
+  refusent le démarrage.
+- **Un port à part, `DurablePublisher`**, plutôt qu'un troisième verbe sur
+  `DomainEventPublisher` (ISP, CLAUDE.md §2) : sept doubles implémentaient un
+  verbe qu'ils n'appelaient pas.
+- Le rejeu est gardé par le droit d'écriture sur `ops_health` (l'admin, par
+  défaut). À régler à l'écran.
+- Le rattrapage passe par le cron `*/5` existant (`container/worker.ts`) :
+  aucun cron n'a été ajouté.
+- **Reste** : l'affichage des messages morts dans la carte de santé (un nœud
+  du manifeste, `@lfd/ops-contract`, l'écran). Les données sont prêtes.
