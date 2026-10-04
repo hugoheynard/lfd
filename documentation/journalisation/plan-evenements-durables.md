@@ -61,8 +61,10 @@ a été rouverte (ligne 11).
 Idempotence : les courriels et les cloches portent une clé déterministe
 (`idempotencyKey`). Le crédit de points relit les gains déjà écrits pour la
 commande, sous le verrou du titulaire (`prisma-loyalty-earned-orders.reader.ts`,
-rouvert le 2026-10-04) ; que l'index partiel `(order_id) WHERE kind='earned'`
-soit **unique** n'est pas vérifié, et doit l'être avant le lot E2.
+rouvert le 2026-10-04) ; l'index partiel `(order_id) WHERE kind='earned'` est
+**unique** (`20260926160000_la_fidelite`, `loyalty_ledger_entries_earned_order_key`,
+vérifié le 2026-10-04) : un second gain pour la même commande est refusé en
+base. Le préalable d'E2 est levé.
 
 **B — analytique (croissance, cockpit, alertes) : durable si sa perte fausse
 une décision**
