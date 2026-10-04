@@ -205,7 +205,7 @@ Fournée du jour ; les deux autres vues restent derrière elle, intactes.
 
 _Décidé le 2026-09-14, à la demande de Hugo. État : en construction._
 
-Même règle que le poste de colisage (`plan-poste-de-colisage.md`, « L'écran
+Même règle que le poste de colisage (`../colisage/plan-poste-de-colisage.md`, « L'écran
 n'additionne rien ») : **tout ce qui est un chiffre, une pile ou une règle vient
 du serveur**, et l'écran relit après chaque geste accepté. Jusqu'ici la fiche
 joignait elle-même le catalogue pour trouver les rayons, triait, comptait les

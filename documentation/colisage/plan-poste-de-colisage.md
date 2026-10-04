@@ -196,7 +196,7 @@ puisse devenir une liste de containers nommés, chacun portant ce qu'il contient
 
 ---
 
-> **Relecture multiposte** — depuis le 2026-09-14, ce poste se relit toutes les 15 s tant que l'onglet est visible, et une coche part directement au serveur, sans file. La règle et ses raisons : [`relecture-des-postes.md`](relecture-des-postes.md).
+> **Relecture multiposte** — depuis le 2026-09-14, ce poste se relit toutes les 15 s tant que l'onglet est visible, et une coche part directement au serveur, sans file. La règle et ses raisons : [`../production/relecture-des-postes.md`](../production/relecture-des-postes.md).
 
 ---
 

@@ -4,7 +4,7 @@
 > l'écriture de ce bandeau. Q2 : le format proposé est **en couleur** dans la
 > rangée, rien n'est déclaré d'office ; Q3 : le demi-bac partagé reste au
 > poste ; Q4 : « − » puis « + ». Décisions **à revoir avec Hugo**
-> ([`decisions-par-defaut-2026-10-02.md`](decisions-par-defaut-2026-10-02.md),
+> ([`../livraisons/decisions-par-defaut-2026-10-02.md`](../livraisons/decisions-par-defaut-2026-10-02.md),
 > lot PC1). Le lot B (retirer la saisie libre) n'est pas fait ; le lot C
 > (`chargement-les-bacs.md` § 5) l'est. Ce qui existe :
 > [`chargement-les-bacs.md`](chargement-les-bacs.md) § 5.0.

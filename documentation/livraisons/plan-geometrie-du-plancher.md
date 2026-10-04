@@ -26,7 +26,7 @@
 >
 > Maquette interactive (hors dépôt) :
 > <https://claude.ai/artifact/66XrmXV9cG42JeDBjgc2ti>. Référence de ce qui
-> existe : [`chargement-les-bacs.md`](chargement-les-bacs.md), qui liste en
+> existe : [`../colisage/chargement-les-bacs.md`](../colisage/chargement-les-bacs.md), qui liste en
 > premier manque « pas de géométrie du plancher » (§ 9).
 
 ## 1. Ce qui existe, relevé dans le code le 2026-09-30

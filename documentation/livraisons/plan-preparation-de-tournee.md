@@ -939,13 +939,13 @@ profonde existe déjà (`staff-login.ts`, restauration de la cible dans
 
 ### Lot 4 bis — Les bacs : colisage typé, scan au bac, plan de chargement
 
-> 📘 **La référence est [`chargement-les-bacs.md`](chargement-les-bacs.md)** : ce qui existe et comment ça marche, relu dans le code le 2026-09-29. Ce qui suit garde l'histoire et les décisions.
+> 📘 **La référence est [`../colisage/chargement-les-bacs.md`](../colisage/chargement-les-bacs.md)** : ce qui existe et comment ça marche, relu dans le code le 2026-09-29. Ce qui suit garde l'histoire et les décisions.
 
 > **Ouvert le 2026-09-29.** Hugo : « des bacs fermés superposables de
 > différentes tailles, dans lesquels on saura combien on peut mettre de chaque
 > item […] optimiser colisage / rangement dans les véhicules en fonction de
 > l'ordre des tournées ». ✅ Bâti le 2026-09-29, tranches A à D (voir les blocs
-> « bâti » sous v2-7) — la référence est `chargement-les-bacs.md`.
+> « bâti » sous v2-7) — la référence est `../colisage/chargement-les-bacs.md`.
 
 **Réponses de Hugo (2026-09-29)** : Q1 — **tout part en bac**, et on scanne
 le bac ; un bac peut contenir des sacs (emballage intérieur, sans QR). Une

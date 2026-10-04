@@ -6,7 +6,7 @@
 > sache quoi défaire. Le critère de choix : le geste le plus réversible, qui
 > n'engage ni argent ni donnée irrécupérable.
 
-## 1. Le « + » choisit un bac ([`plan-le-plus-choisit-un-bac.md`](plan-le-plus-choisit-un-bac.md) §5)
+## 1. Le « + » choisit un bac ([`../colisage/plan-le-plus-choisit-un-bac.md`](../colisage/plan-le-plus-choisit-un-bac.md) §5)
 
 | #   | Question                               | Décision par défaut                                                                           | Bâti                                     |
 | --- | -------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------- |
@@ -15,7 +15,7 @@
 | Q3  | Le demi-bac partagé : au poste ?       | **Au poste**, inchangé.                                                                       | rien                                     |
 | Q4  | Changer M en L                         | **« − » puis « + »** : nouvelle étiquette ; pas de geste qui garde le QR.                     | lot PC1 — bâti 2026-10-02 (rien de neuf) |
 
-## 2. Le parcours du coliseur ([`parcours-du-coliseur.md`](parcours-du-coliseur.md))
+## 2. Le parcours du coliseur ([`../colisage/parcours-du-coliseur.md`](../colisage/parcours-du-coliseur.md))
 
 | #   | Question                                        | Décision par défaut                                                                                                                                | Bâti                      |
 | --- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |

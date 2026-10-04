@@ -1,7 +1,7 @@
 # Le parcours du coliseur — du four au bac posé dans la pièce
 
 > 🗒️ **Document de travail** (2026-10-01), jumeau de
-> [`parcours-du-livreur.md`](parcours-du-livreur.md), pour réfléchir ensemble
+> [`../livraisons/parcours-du-livreur.md`](../livraisons/parcours-du-livreur.md), pour réfléchir ensemble
 > aux étapes du coliseur. Il s'arrête là où le livreur commence : **les bacs
 > d'une tournée posés dans la pièce du coliseur**.
 >
@@ -15,7 +15,7 @@
 
 > Le corps du document date du 2026-10-01 et reste tel quel ; ce tableau dit
 > ce qui a bougé depuis. Les ❓ ont reçu une **décision par défaut**, à revoir
-> avec Hugo : [`decisions-par-defaut-2026-10-02.md`](decisions-par-defaut-2026-10-02.md) §2.
+> avec Hugo : [`../livraisons/decisions-par-defaut-2026-10-02.md`](../livraisons/decisions-par-defaut-2026-10-02.md) §2.
 
 | Étape | Avant (2026-10-01)                        | Maintenant                                                                                                                    |
 | ----- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |

@@ -45,6 +45,6 @@ de départ du véhicule** — il faut donc tenir compte du délai de livraison.
   `DayOrdersReader` rend à la production — la production ne va pas la lire
   ailleurs (matrice du §3 de `CLAUDE.md`).
 - Le **tri se fait au serveur**, comme tout le colisage depuis le 2026-09-14
-  (« L'écran n'additionne rien », `documentation/production/plan-poste-de-colisage.md`).
+  (« L'écran n'additionne rien », `documentation/colisage/plan-poste-de-colisage.md`).
 - Une colonne ajoutée à `production_order` pour figer l'échéance serait une
   **migration** : additive, et relue par `lecteur-de-migrations`.
