@@ -153,3 +153,16 @@ pnpm --filter lfd-api db:test:setup
 À faire : que `db:test:setup` (ou le harnais) le détecte — un compte de
 fichiers par base au-delà d'un seuil — et dise la commande, au lieu de
 laisser un run tomber sur une erreur de disque.
+
+## 2026-10-04 — deux rouges intermittents, chacun vert seul
+
+- `production-batch` › « écrit à nouveau QUAND LA COMMANDE EST PRÊTE » :
+  `customer.order-placed` reçu deux fois. Le courriel du test précédent,
+  envoyé en tâche de fond, arrive après la remise à zéro. Vert 3/3 seul.
+- `staff-roles` › « admin LIT b2b_companies » : 500
+  `persistence.database_unavailable` cinq secondes après le démarrage des
+  quatre workers. Vert seul.
+
+Les deux sont des courses de harnais, sans lien avec le code alors en cours
+(CA3b). À reprendre : drainer le `BackgroundWork` avant `ctx.reset()`, et
+attendre la base au démarrage d'un worker.
