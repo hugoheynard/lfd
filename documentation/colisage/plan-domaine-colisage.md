@@ -344,3 +344,12 @@ sequenceDiagram
 plafond de contenants et le bac scellé deviennent des règles du colisage.
 Une ligne peut rester indisponible **indéfiniment** si une remise meurt :
 c'est l'affichage aux deux postes qui l'empêche de passer inaperçue.
+
+### 11.1 Tranché par Hugo (2026-10-04)
+
+- **Q5** : une demande de retour impossible (tout est au bac) est un **refus
+  affiché au fournil**, sans alerte au colisage.
+- **Q4** (le grain du geste) dépend désormais du plan de production par
+  échéance (« quelles quantités partielles d'un produit doivent être
+  produites à quelle heure ») : si la production se découpe en **vagues**,
+  la vague est le grain naturel de la remise. Conception à part, à venir.
