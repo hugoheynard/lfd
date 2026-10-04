@@ -160,3 +160,20 @@ typique ; l'alerte V3 rattrape le cas où la vraie tournée part plus tôt.
 vague ne dépend plus de la tournée. Reste une commande **sans échéance**
 (une ancienne, ou un retrait sans fenêtre) : elle va dans la dernière vague
 de la journée, et elle est signalée.
+
+### 7.1 Tranché par Hugo (2026-10-04)
+
+- **Q1 — oui** : on revient à la décision du 2026-09-28. Sortir une fournée
+  pour une vague, c'est la remettre au colisage. Il n'y a pas de geste « envoyer
+  au colisage » à part.
+- **Q2 — la marge est un réglage, arbitraire pour l'instant, et elle devra
+  devenir mesurée.** La donnée existe déjà :
+  - l'heure de sortie de chaque fournée (`production_batch.recorded_at`) ;
+  - l'heure de mise au bac de chaque ligne et de fermeture de chaque bac
+    (`packed_at`).
+
+  Le temps réel de colisage, c'est l'écart entre la dernière sortie des SKU
+  d'une commande et la fermeture de son bac. Un quantile de cet écart, par
+  mode d'acheminement, pourra remplacer le réglage plus tard. Lot V4, après
+  quelques semaines de données. En attendant, l'écran montre la marge réglée
+  **à côté** de la mesure, pour qu'on voie l'écart avant d'automatiser.

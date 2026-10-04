@@ -353,3 +353,12 @@ c'est l'affichage aux deux postes qui l'empêche de passer inaperçue.
   échéance (« quelles quantités partielles d'un produit doivent être
   produites à quelle heure ») : si la production se découpe en **vagues**,
   la vague est le grain naturel de la remise. Conception à part, à venir.
+
+### 11.2 La remise est la sortie du four (Hugo, 2026-10-04)
+
+Hugo revient à sa décision du 2026-09-28 (`production/plan-fournees-progressives.md`,
+décision 3) : **sortir une fournée, c'est la remettre au colisage**. Le geste
+« envoyer au colisage » (option b, §10.2) disparaît. Le fait
+`production.handed_to_packing` est publié par la déclaration d'une fournée,
+dans sa transaction ; une annulation de fournée devient une demande de retour.
+Le grain de la remise est **la vague** (`production/plan-production-par-vagues.md`).
