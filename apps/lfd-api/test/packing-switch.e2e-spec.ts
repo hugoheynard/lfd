@@ -37,6 +37,8 @@ import {
   references,
   storedBatches,
   worksheetLine,
+  relayGate,
+  releaseRelay,
 } from "./production-day-fixture.js";
 
 /** Des ULID de forme valide, tirés « par l'écran ». */
@@ -56,6 +58,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  relayGate.open = true;
   await ctx.reset();
   await createUser(ctx.prisma, { auth0Sub: MEMBER });
 });
@@ -229,11 +232,14 @@ describe("une journée `packing` — ce qui n'a pas d'équivalent sur l'ancien p
   it("« retour en attente » se lit sur la fiche tant que le colisage n'a pas répondu", async () => {
     await packedDay();
 
+    // Le relais retenu : sans ça, sur une machine lente, la réponse du
+    // colisage arrivait avant la lecture (CI du 2026-10-04).
+    relayGate.open = false;
     expect(await cancelBatch(ctx, FIRST)).toBe(204);
 
-    // Aucun drain : la demande est écrite, la réponse n'est pas encore venue.
     expect(await worksheetLine(ctx)).toMatchObject({ produced: 12, pendingReturn: 12 });
     expect(await cancelBatch(ctx, FIRST)).toBe(409);
+    await releaseRelay(ctx);
     await settle();
     expect(await worksheetLine(ctx)).toMatchObject({ produced: 0, pendingReturn: 0 });
   });

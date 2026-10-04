@@ -3,6 +3,8 @@ import type { ProductionPackingView, ProductionWorksheetView, WorkshopLine } fro
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
+import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { settleCardPayments } from "./card-payments.js";
 
@@ -29,6 +31,23 @@ const SITE = {
   ville: "Val d'Isère",
   pays: "France",
 };
+
+/**
+ * **Le réveil du relais, qu'une suite peut retenir.** Après chaque validation,
+ * le relais part de lui-même livrer ce qui vient d'être écrit : une suite qui
+ * veut lire l'état AVANT la réponse d'un abonné perdait la course sur une
+ * machine lente (CI du 2026-10-04, « retour en attente »). Fermé, plus rien ne
+ * part seul ; `release` rouvre et livre tout. Ouvert par défaut : les autres
+ * suites ne voient aucune différence.
+ */
+export const relayGate: { open: boolean; relay: OutboxRelay | null } = { open: true, relay: null };
+
+/** Rouvre le relais et livre ce qui attendait. */
+export async function releaseRelay(ctx: E2eContext): Promise<void> {
+  relayGate.open = true;
+  await relayGate.relay?.sweep();
+  await ctx.drain();
+}
 
 /** Boote l'app, jeton staff et passerelle de paiement doublés — le reste est réel. */
 export async function bootstrapProductionDay(): Promise<{
@@ -60,8 +79,20 @@ export async function bootstrapProductionDay(): Promise<{
           cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
         },
       },
+      {
+        token: OutboxRelayTrigger,
+        value: {
+          wake: (): void => {
+            if (relayGate.open) {
+              relayGate.relay?.wake();
+            }
+          },
+        },
+      },
     ],
   });
+  relayGate.open = true;
+  relayGate.relay = ctx.app.get(OutboxRelay);
   return { ctx, issued };
 }
 
