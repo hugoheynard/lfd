@@ -406,3 +406,61 @@ chaque réception est commutative.
 **L'ombre (K1) est la répétition** que le §11 demandait : quelques jours de
 production réelle où le colisage calcule à côté, sans risque, avant qu'on le
 rende réel.
+
+## 13. Contradiction de la v4 par `vitruve` (2026-10-04), et la v4.1
+
+**BLOQUANTS, levés :**
+
+1. **Le critère de bascule « une `packing_order` existe » attrapait les
+   journées de l'ombre**, et dépendait d'une livraison asynchrone. →
+   **Une colonne `production_day.packing_owner`** (`legacy` | `packing`),
+   écrite dans la transaction de la clôture. Le binaire de K1 écrit
+   toujours `legacy`, et seul celui de K2 écrit `packing`. Les routes
+   servies, la supervision et le poste lisent cette colonne, jamais une
+   table de l'ombre. Une journée garde le propriétaire qu'elle a eu à sa
+   clôture, ce qui règle aussi le cas d'une journée arrêtée pendant le
+   déploiement.
+2. **L'annulation devient asynchrone sur une journée `packing`.** →
+   - L'annulation ou la décoche pose une remise « retour demandé » et publie
+     `return_requested`. Elle **ne baisse pas** « sorti ».
+   - Seule la réception de `packing.returned` baisse « sorti », de la
+     quantité rendue.
+   - La fiche affiche « retour en attente ».
+   - Le contrat de `unmark` reste servi tel quel. Sa sémantique, sur une
+     journée `packing`, est « retour demandé », et elle est écrite dans son
+     JSDoc.
+   - Sur une journée `legacy`, rien ne change : l'annulation reste
+     synchrone, et elle publie seulement `return_requested` avec
+     `legacy: true`. L'ombre l'applique alors sans répondre, puisque le
+     fournil a déjà décidé.
+3. **La déclaration n'a pas de transaction.** → `record-batch` et
+   `mark-worksheet-line` enveloppent `materialize` + `record` + `publish` dans
+   une seule unité de travail. **`handoffId` = l'`id` de la fournée** :
+   une déclaration en double est absorbée, et le fait ne s'écrit qu'une fois.
+   Les fournées implicites (coches héritées) n'existent que sur des journées
+   d'avant les fournées, et ne sont **jamais** publiées.
+
+**SÉRIEUX, tranchés :**
+
+- **L'échéance entre dans le snapshot.** Le contrat `ProducibleOrder` du canal
+  commerce gagne `dueAt`, calculé par la même règle que V0 : le début du
+  créneau (Hugo, 2026-10-04), sinon la fin de l'échéance. Le snapshot de
+  `ProductionDay` la garde, pour qu'une republication la retrouve. Pour le
+  tri, une commande sans échéance passe **en dernier**.
+- **La vague n'est pas portée** par les faits : l'attribution par échéance
+  se calcule à la lecture.
+- **Ce que l'ombre compare** : le « colisable » seulement, pas les bacs
+  faits. La répétition de K2 se fait **aussi en dev, avec le semis**,
+  geste par geste, avant le déploiement.
+- **K2 reste irréversible** pour une journée colisée sur `packing`.
+- **Les portes sont armées avant K1** : la matrice du CLAUDE.md §3,
+  `lint:context-boundaries`, les `schemas` du `datasource`,
+  `prisma-schema-layout`, `cross-schema-join` et `durable-cross-block`.
+
+**MINEURS** :
+
+- La réannonce de clôture republie aussi `packing_list_drawn`. C'est
+  idempotent, puisque la clé est la commande.
+- « Remise inconnue » : c'est le colisage qui garde la demande en attente,
+  et il répond quand la remise arrive. Le fournil ne republie rien.
+- La requête de comptage de K3 sera écrite dans le lot K3.
