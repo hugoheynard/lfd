@@ -166,3 +166,8 @@ laisser un run tomber sur une erreur de disque.
 Les deux sont des courses de harnais, sans lien avec le code alors en cours
 (CA3b). À reprendre : drainer le `BackgroundWork` avant `ctx.reset()`, et
 attendre la base au démarrage d'un worker.
+
+- `pim-operations` › « refuse de retirer l'image d'une opération » : 500 sur
+  `GET /media/carriers`, troisième rouge isolé en trois passages complets le
+  même jour, toujours un seul, jamais le même. Vert 2/2 seul. Hypothèse la plus
+  probable : la même panne de base au démarrage des quatre workers.
