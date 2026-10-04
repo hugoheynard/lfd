@@ -149,3 +149,24 @@ RETURNING`) ; chaque livraison tourne ensuite dans **sa propre** unité de
 **Ordre revu :** BE3 (la clôture, déjà en unité de travail) devient le
 **premier client**, parce que c'est le plus simple. BE2 (`OrderPacked`)
 vient ensuite.
+
+## 8. Une file de messages, et sa file des messages morts (Hugo, 2026-10-04)
+
+> « ça ressemble à de la vraie archi push, avec une dead letter queue et une
+> message queue en fait »
+
+C'est le cas : une file posée sur Postgres. Sa différence avec un broker est
+l'atomicité avec l'écriture métier. Un broker seul referait le trou d'aujourd'hui
+(écrire, puis publier) ; il se brancherait **derrière** la boîte d'envoi, et ce
+serait le facteur qui le remplirait (Cloudflare Queues, la cible naturelle).
+
+Deux ajouts à BE1, que la comparaison a fait voir :
+
+1. **L'état de livraison est tenu par abonné.** Une ligne
+   `(event_id, subscriber)` porte les essais, le bail, `delivered_at` et
+   `last_error`. Un message est livré quand toutes ses lignes le sont. La
+   file des messages morts vise donc un couple message × abonné, et elle
+   nomme l'abonné qui bloque.
+2. **Le rejeu manuel.** Une commande, sur une route admin gardée, remet à
+   zéro les essais d'un couple message × abonné et le relance. L'écran ira
+   avec la carte de santé.
