@@ -8,6 +8,7 @@ import {
   scoreVehicle,
   type VehiclePlan,
   type VehicleScore,
+  type VehicleStart,
 } from "./vehicle-plan.js";
 
 /**
@@ -16,6 +17,33 @@ import {
  * à un nombre fixe de gestes — sans horloge, pour rester déterministe.
  */
 const MAX_MOVES = 400;
+
+type ScoreFn = (routes: Routes, start: VehicleStart) => VehicleScore;
+
+/**
+ * Le score d'un véhicule ne dépend que de son départ et de la suite de ses
+ * arrêts (`ctx` est fixe pendant tout le calcul). Les mêmes configurations
+ * reviennent d'un tour à l'autre — chaque tour rouvre les paires dont un
+ * véhicule a changé, et réessaie les mêmes gestes sur l'autre — : les noter
+ * une fois. Mesuré le 2026-10-04 : depuis le départ à rebours (CA2),
+ * `scoreVehicle` faisait 90 % du temps du calcul, et la CI passait la borne
+ * de L7b-C2.
+ */
+function memoizedScore(ctx: PlanningContext): ScoreFn {
+  const known = new Map<string, VehicleScore>();
+  return (routes, start) => {
+    const key = `${start.availableFrom}/${start.passagesBefore}/${routes
+      .map(({ stops }) => stops.map((stop) => stop.id).join(","))
+      .join("|")}`;
+    const cached = known.get(key);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const scored = scoreVehicle(ctx, routes, start);
+    known.set(key, scored);
+    return scored;
+  };
+}
 
 /** Les voisinages, du moins cher au plus large. */
 const NEIGHBOURHOODS = [intraRouteMoves, relocations, swaps, tailExchanges] as const;
@@ -42,7 +70,8 @@ export function improvePlans(
   pinned: ReadonlySet<string>,
 ): readonly VehiclePlan[] {
   const current = [...plans];
-  const scores = current.map((plan) => scoreVehicle(ctx, plan.routes, plan));
+  const score = memoizedScore(ctx);
+  const scores = current.map((plan) => score(plan.routes, plan));
   const clean = new WeakMap<Routes, WeakSet<Routes>>();
   const near = nearnessOf(ctx, current);
   let moves = 0;
@@ -57,7 +86,7 @@ export function improvePlans(
       }
       const members = a === b ? [a] : [a, b];
       const scope = { pinned, crossOnly: a !== b, near };
-      const found = firstImprovement(ctx, members, current, scores, scope);
+      const found = firstImprovement(score, freeStart(ctx), members, current, scores, scope);
       if (found === null) {
         const set = clean.get(routesA) ?? new WeakSet<Routes>();
         set.add(routesB);
@@ -88,7 +117,8 @@ interface Found {
 
 /** Le premier geste qui améliore, parmi les véhicules `members` seulement. */
 function firstImprovement(
-  ctx: PlanningContext,
+  score: ScoreFn,
+  free: VehicleStart,
   members: readonly number[],
   plans: readonly VehiclePlan[],
   scores: readonly VehicleScore[],
@@ -98,9 +128,7 @@ function firstImprovement(
   const subScores = members.flatMap((index) => scores[index] ?? []);
   for (const neighbourhood of NEIGHBOURHOODS) {
     for (const move of neighbourhood(sub, scope)) {
-      const after = move.map(({ vehicle, routes }) =>
-        scoreVehicle(ctx, routes, sub[vehicle] ?? freeStart(ctx)),
-      );
+      const after = move.map(({ vehicle, routes }) => score(routes, sub[vehicle] ?? free));
       const before = move.map(({ vehicle }) => subScores[vehicle]);
       if (improves(before, after)) {
         return { move, scores: after };
