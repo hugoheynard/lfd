@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { PackingStationReader } from "../../channels/packing/packing-station.js";
+import { PackingStationReader, type StationDay } from "../../channels/packing/packing-station.js";
 import { ProductionDay } from "../../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { overlayStation, stationAvailable } from "../../domain/services/packing-overlay.js";
@@ -10,6 +10,11 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
 export interface PackedDay {
   readonly day: ProductionDay;
   readonly available: (sku: string) => number;
+  /**
+   * Ce que le colisage tient de la journée — ses contenants compris (K2b) ;
+   * `null` sur une journée `legacy`.
+   */
+  readonly station: StationDay | null;
 }
 
 /**
@@ -37,7 +42,7 @@ export class PackedDayReading {
   async load(day: ServiceDay): Promise<PackedDay> {
     const current = await this.days.load(day);
     if (current.packingOwner !== "packing") {
-      return { day: current, available: (sku) => current.availableOf(sku) };
+      return { day: current, available: (sku) => current.availableOf(sku), station: null };
     }
     const held = await this.station.dayOf(day.value);
     return {
@@ -46,6 +51,7 @@ export class PackedDayReading {
         orders: overlayStation(current.orders, held),
       }),
       available: stationAvailable(held),
+      station: held,
     };
   }
 }

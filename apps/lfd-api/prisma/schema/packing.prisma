@@ -34,8 +34,12 @@ model PackingOrder {
   packedBy       String?   @map("packed_by")
   /// Les contenants comptés (K2). `0` = personne ne les a comptés.
   containerCount Int       @default(0) @map("container_count")
+  /// `counted` (le compte ci-dessus) ou `listed` (la colonne Contenants, K2b).
+  /// `listed` est posé à l'inscription par le binaire de K2b (CHECK).
+  containerMode  String    @default("counted") @map("container_mode") @db.VarChar(8)
 
-  lines PackingLine[]
+  lines      PackingLine[]
+  containers PackingContainer[]
 
   @@id([serviceDay, orderId])
   @@map("packing_order")
@@ -138,5 +142,52 @@ model PackingDayChange {
 
   @@index([serviceDay, id])
   @@map("day_change")
+  @@schema("packing")
+}
+
+/// **Un contenant d'une commande** (K2b, `plan-les-bacs-au-colisage.md` §5–§5.1)
+/// : un bac — déclaré par la livraison, qui en garde le code, le QR et le
+/// chargement — ou un sac à emporter, qui naît et vit ici. Jamais supprimé :
+/// un contenant annulé porte `voided_at`, ses lignes restent, ignorées.
+model PackingContainer {
+  id         String       @id
+  serviceDay String       @map("service_day") @db.VarChar(10)
+  orderId    String       @map("order_id")
+  order      PackingOrder @relation(fields: [serviceDay, orderId], references: [serviceDay, orderId], onDelete: Restrict)
+
+  /// `bin` ou `bag` (CHECK).
+  nature  String  @db.VarChar(4)
+  /// L'identifiant OPAQUE de `delivery.delivery_bin`, sans clé étrangère.
+  binId   String? @unique @map("bin_id")
+  /// Instantané du code court du bac, pris à la déclaration.
+  binCode String? @map("bin_code") @db.VarChar(6)
+  /// Instantané de la moitié (`left` | `right`) ; nul pour un bac entier.
+  binHalf String? @map("bin_half") @db.VarChar(5)
+
+  openedAt DateTime  @map("opened_at") @db.Timestamptz(6)
+  openedBy String    @map("opened_by")
+  voidedAt DateTime? @map("voided_at") @db.Timestamptz(6)
+  voidedBy String?   @map("voided_by")
+
+  lines PackingContainerLine[]
+
+  @@index([serviceDay, orderId])
+  @@map("container")
+  @@schema("packing")
+}
+
+/// **Ce qu'un contenant porte** : un SKU, une quantité. « Au bac » d'une ligne
+/// de commande = la somme sur ses contenants non annulés. Une quantité retirée
+/// à zéro reste une ligne à zéro.
+model PackingContainerLine {
+  containerId String           @map("container_id")
+  container   PackingContainer @relation(fields: [containerId], references: [id], onDelete: Restrict)
+  /// Recopié du contenant : le déclencheur `day_change` lit la journée ici.
+  serviceDay  String           @map("service_day") @db.VarChar(10)
+  sku         String
+  quantity    Int
+
+  @@id([containerId, sku])
+  @@map("container_line")
   @@schema("packing")
 }

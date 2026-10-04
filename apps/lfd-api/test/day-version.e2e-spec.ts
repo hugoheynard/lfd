@@ -26,6 +26,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { asCountedContainers } from "./production-day-fixture.js";
 
 const MEMBER = "auth0|member-day-version";
 const DAY = serviceDay();
@@ -165,6 +166,9 @@ async function readyToPack(): Promise<{ orderId: string; reference: string }> {
   // Depuis K2, la journée naît au colisage : la liste à coliser et la remise
   // de la fournée lui arrivent par la boîte d'envoi, hors de la requête.
   await ctx.drain();
+  // K2b : ces commandes comptent leurs contenants (ancien écran) — le sujet
+  // de la suite n'est pas le colisage, mais ce que la coche et le « + » déclenchent.
+  await asCountedContainers(ctx, DAY);
   return { orderId, reference: (await planned(orderId)).reference };
 }
 

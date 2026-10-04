@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { PackingContainerView } from "./packing-containers.js";
 import { workshopInitialsSchema } from "./production-worksheet.js";
 
 /**
@@ -77,6 +78,16 @@ export interface PackingLine {
    * arrivé après le tirage, et personne ne l'a encore fabriqué.
    */
   readonly awaitingProduction: boolean;
+  /**
+   * Les pièces de la ligne réparties dans les contenants (K2b, ajouté le
+   * 2026-10-04). Sur une commande `counted`, la quantité si la ligne est
+   * cochée, sinon zéro.
+   *
+   * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
+   */
+  readonly allocated?: number;
+  /** `quantity - allocated` — la colonne « À répartir ». Calculé au serveur. */
+  readonly unallocated?: number;
 }
 
 /**
@@ -161,6 +172,22 @@ export interface PackingSheet {
    * double de test antérieur qui l'omet se lit « non retenue ».
    */
   readonly qualityHeld?: boolean;
+  /**
+   * **Comment la commande tient ses contenants** (K2b, ajouté le 2026-10-04,
+   * `colisage/plan-les-bacs-au-colisage.md` §5.1) :
+   *
+   * - `counted` — l'ancien écran : `containers` se règle par « + » / « − »,
+   *   les lignes se cochent, les bacs de livraison se déclarent après
+   *   « prête » ;
+   * - `listed` — la colonne Contenants : on y crée des bacs et des sacs, on y
+   *   glisse les lignes ; `containers` est le nombre de contenants, en lecture
+   *   seule, et « + » / « − » comme la coche sont refusés.
+   *
+   * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
+   */
+  readonly containerMode?: "counted" | "listed";
+  /** Les contenants vivants, dans l'ordre de création. Vide sur `counted`. */
+  readonly containerList?: readonly PackingContainerView[];
 }
 
 /**

@@ -139,7 +139,13 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
   // article (2026-09-19). Les coches d'atelier n'y écrivent rien encore. Le
   // contrôle qualité du superviseur s'y range aussi (2026-09-28, lot QC2) : un
   // verdict juge ce que le fournil a fabriqué.
-  production: ["production_day.", "production_container.", "production_quality."],
+  // Les contenants du colisage (K2b, 2026-10-04) : le poste est au fournil.
+  production: [
+    "production_day.",
+    "production_container.",
+    "production_quality.",
+    "packing_container.",
+  ],
   // Le travail de la comptabilité (Hugo, 2026-09-19). `accounting_rules.` n'y
   // est PAS : il reste sous `pim`, à côté des taux qu'il accompagne.
   comptabilite: [

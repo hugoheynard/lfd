@@ -36,6 +36,7 @@ import {
 import { createUser } from "./factories.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { storageKeys } from "./storage.js";
+import { asCountedContainers } from "./production-day-fixture.js";
 
 const MEMBER = "auth0|member-quality";
 const READER = "staff-supervision-lecture";
@@ -144,6 +145,9 @@ async function seedDay(): Promise<{ packed: string; open: string }> {
   // Depuis K2, la journée naît au colisage : la liste à coliser et la remise
   // lui arrivent par la boîte d'envoi, hors de la requête.
   await ctx.drain();
+  // K2b : ces commandes comptent leurs contenants (ancien écran) — le sujet
+  // de la suite n'est pas le colisage, mais ce que la coche et le « + » déclenchent.
+  await asCountedContainers(ctx, DAY);
   const orders = await ctx.prisma.productionOrder.findMany({
     where: { serviceDay: DAY },
     select: { orderId: true, reference: true, lines: { select: { sku: true } } },

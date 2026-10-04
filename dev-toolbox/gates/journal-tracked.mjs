@@ -260,6 +260,32 @@ const PRODUCTION_ZONE = "production";
  */
 const DELIVERY_ZONE = "delivery";
 
+/**
+ * Les services de la livraison qui journalisent eux-mêmes, et le fichier où la
+ * porte le VÉRIFIE — même geste que `MONEY_DELEGATES`. `DeliveryBinOffice`
+ * (K2b, 2026-10-04, `colisage/plan-les-bacs-au-colisage.md`) porte la
+ * déclaration, l'annulation et le partage d'un bac pour DEUX portes : les
+ * routes de la livraison et `BinDesk`, que le colisage appelle. Ses trois
+ * handlers y délèguent.
+ */
+const DELIVERY_DELEGATES = new Map([
+  ["DeliveryBinOffice", join("delivery", "application", "delivery-bin-office.ts")],
+]);
+
+/** Un handler de la livraison trace, ou délègue à un service de `DELIVERY_DELEGATES` qui le fait. */
+function auditDelivery(source, index, params, handler) {
+  const delegate = [...DELIVERY_DELEGATES.keys()].find((name) => params.includes(name));
+  if (delegate === undefined) {
+    return auditTraced(source, index, params, handler);
+  }
+  checked += 1;
+  const service = readFileSync(join(SRC, DELIVERY_DELEGATES.get(delegate)), "utf8");
+  const traced = service.includes("publishTraced(") && service.includes("uow.run(");
+  return traced
+    ? { traced: true }
+    : { traced: false, missing: [`un ${delegate} qui journalise sous UnitOfWork`], handler };
+}
+
 /** Ce qui ouvre l'unité de travail pour une délégation — sans journaliser pour elle. */
 const TRANSACTION_OPENERS = new Map([
   ["writeVoidingDraft", join("b2b", "payments", "application", "draft-mandate-voiding.ts")],
@@ -464,7 +490,7 @@ const ZONES = [
   },
   {
     root: join(SRC, DELIVERY_ZONE),
-    audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
+    audit: (source, index, params, handler) => auditDelivery(source, index, params, handler),
   },
   {
     root: join(SRC, "b2b", "pricing"),

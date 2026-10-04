@@ -18,6 +18,9 @@ function sheet(containers = 0): PackingSheet {
     packed: null,
     containers,
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 12, packed: null }],
+    containerMode: "counted",
+    containerList: [],
+    fulfillmentMethod: "pickup",
   });
 }
 

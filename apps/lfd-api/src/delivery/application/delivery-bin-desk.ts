@@ -1,0 +1,87 @@
+import type { DeliveryPackingProposalView } from "@lfd/contracts";
+import { Injectable } from "@nestjs/common";
+
+import {
+  BinDesk,
+  type BinDeclarationRequest,
+  type BinShareRequest,
+  type DeskBin,
+} from "../../packing/channels/delivery/index.js";
+import { TechnicalError } from "../../platform/shared/errors/app-error.js";
+import type { DeliveryBin } from "../domain/entities/delivery-bin.js";
+import { DeliveryBinOffice } from "./delivery-bin-office.js";
+import { GetDeliveryPackingProposalHandler } from "./queries/get-delivery-packing-proposal.handler.js";
+import { GetDeliveryPackingProposalQuery } from "./queries/get-delivery-packing-proposal.query.js";
+
+/** Une déclaration acceptée qui ne rend aucun bac : un défaut, jamais un refus. */
+class DeskDeclaredNothingError extends TechnicalError {
+  constructor() {
+    super(
+      "delivery.bin_desk.declared_nothing",
+      "La déclaration du bac a été acceptée sans qu'aucun bac ne naisse : rien n'a été écrit. Signalez-le à l'équipe technique.",
+    );
+  }
+}
+
+/** Le bac vu du colisage : son identifiant (celui du QR), son code, sa moitié. */
+function deskBinOf(bin: DeliveryBin): DeskBin {
+  return { binId: bin.id, code: bin.code, half: bin.half };
+}
+
+/**
+ * **Le guichet des bacs, tenu par la livraison pour le colisage** (K2b,
+ * `colisage/plan-les-bacs-au-colisage.md` §5–§5.1) — implémente `BinDesk`,
+ * que le colisage déclare.
+ *
+ * Il ne refait aucune règle : il passe par `DeliveryBinOffice`, celui-là même
+ * que servent les anciennes routes, et ses refus remontent tels quels. Il ne
+ * lit PAS `ContainerManagedOrders` — c'est justement la porte réservée aux
+ * commandes gérées au colisage.
+ *
+ * Chaque geste rejoint l'unité de travail de l'appelant : le bac et son
+ * contenant s'écrivent ensemble, ou pas du tout.
+ *
+ * « Proposer » passe par le cas de lecture nommé de la livraison
+ * (`GetDeliveryPackingProposalHandler`), qui reste la seule lecture des
+ * contenances.
+ */
+@Injectable()
+export class DeliveryBinDesk extends BinDesk {
+  constructor(
+    private readonly office: DeliveryBinOffice,
+    private readonly proposals: GetDeliveryPackingProposalHandler,
+  ) {
+    super();
+  }
+
+  async declareBin(request: BinDeclarationRequest): Promise<DeskBin> {
+    const [bin] = await this.office.declare({
+      orderId: request.orderId,
+      binTypeId: request.binTypeId,
+      whole: request.half ? 0 : 1,
+      half: request.half,
+      innerBags: request.innerBags,
+    });
+    if (bin === undefined) {
+      // `BinDeclaration.of` refuse une déclaration vide : un bac au moins naît.
+      throw new DeskDeclaredNothingError();
+    }
+    return deskBinOf(bin);
+  }
+
+  async voidBin(binId: string): Promise<void> {
+    await this.office.void(binId);
+  }
+
+  async shareHalf(request: BinShareRequest): Promise<DeskBin> {
+    return deskBinOf(await this.office.share(request));
+  }
+
+  async propose(orderId: string): Promise<DeliveryPackingProposalView> {
+    return this.proposals.execute(new GetDeliveryPackingProposalQuery(orderId));
+  }
+
+  async liveBins(binIds: readonly string[]): Promise<ReadonlySet<string>> {
+    return this.office.liveAmong(binIds);
+  }
+}

@@ -41,6 +41,7 @@ async function shadowOf(received: number, returned = 0): Promise<InMemoryShadow>
       fulfillmentMethod: "pickup",
       dueAt: order.dueAt,
       drawnAt: AT,
+      containerMode: "listed",
       lines: order.lines.map((line) => ({ ...line, productName: line.sku })),
     });
   }

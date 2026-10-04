@@ -7,6 +7,13 @@ import { ComparePackingShadowHandler } from "./application/queries/compare-packi
 import { PackingShadowLedger } from "./domain/ports/packing-shadow.ledger.js";
 import { PackingShadowReader } from "./domain/ports/packing-shadow.reader.js";
 import { PackingShadowController } from "./http/packing-shadow.controller.js";
+import { AllocateToContainerHandler } from "./application/containers/allocate-to-container.handler.js";
+import { GetPackingProposalHandler } from "./application/containers/get-packing-proposal.handler.js";
+import { OpenPackingContainerHandler } from "./application/containers/open-packing-container.handler.js";
+import { VoidPackingContainerHandler } from "./application/containers/void-packing-container.handler.js";
+import { WithdrawFromContainerHandler } from "./application/containers/withdraw-from-container.handler.js";
+import { PackingContainersController } from "./http/packing-containers.controller.js";
+import { PrismaContainerManagedOrders } from "./infrastructure/prisma-container-managed-orders.js";
 import { PrismaPackingShadowLedger } from "./infrastructure/prisma-packing-shadow.ledger.js";
 import { PrismaPackingShadowReader } from "./infrastructure/prisma-packing-shadow.reader.js";
 import { PackingReturnDesk } from "./application/returns/packing-return-desk.service.js";
@@ -35,12 +42,17 @@ import { PrismaPackingStockRepository } from "./infrastructure/prisma-packing-st
  * implémentations, que `PackingFeedModule` relie. Les retours du fournil sont
  * tranchés par `PackingReturnDesk`.
  *
+ * K2b : la colonne Contenants — ses routes, ses gestes, et le canal
+ * `packing/channels/delivery/` (`BinDesk` implémenté par la livraison,
+ * `ContainerManagedOrders` par ce module), reliés par
+ * `PackingDeliveryFeedModule`.
+ *
  * `LegacyPackingReader` n'est pas déclaré ici : c'est un port que la
  * production publie et implémente, relié par `PackingFeedModule` — le
  * colisage n'importe pas le module du fournil.
  */
 @Module({
-  controllers: [PackingShadowController],
+  controllers: [PackingShadowController, PackingContainersController],
   providers: [
     OnPackingListDrawn,
     OnHandedToPacking,
@@ -56,7 +68,15 @@ import { PrismaPackingStockRepository } from "./infrastructure/prisma-packing-st
     { provide: PackingStockRepository, useClass: PrismaPackingStockRepository },
     { provide: PackingReturnLedger, useClass: PrismaPackingReturnLedger },
     { provide: PackingReturnReader, useClass: PrismaPackingReturnReader },
+    // La colonne Contenants (K2b) : ses gestes passent par `BinDesk` pour un
+    // bac ; `ContainerManagedOrders` est relu par la livraison.
+    OpenPackingContainerHandler,
+    AllocateToContainerHandler,
+    WithdrawFromContainerHandler,
+    VoidPackingContainerHandler,
+    GetPackingProposalHandler,
+    PrismaContainerManagedOrders,
   ],
-  exports: [PackingStationService, PrismaPackingStationReader],
+  exports: [PackingStationService, PrismaPackingStationReader, PrismaContainerManagedOrders],
 })
 export class PackingModule {}

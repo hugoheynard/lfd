@@ -1,50 +1,42 @@
 import {
+  BagOnDeliveryError,
+  ContainersCountedError,
+  ContainersListedError,
+  LineGoesIntoContainerError,
+  UnallocatedLinesError,
+} from "../errors/packing-container-errors.js";
+import {
   ContainerCeilingReachedError,
   InvalidContainerCountError,
   PackedOrderSealedError,
   PackingLineNotFoundError,
 } from "../errors/packing-station-errors.js";
+import {
+  type ContainerLine,
+  type ContainerMark,
+  OrderContents,
+  type PackingContainerState,
+} from "./order-contents.js";
 
-/**
- * Le plafond d'une commande : **99 containers** — le même nombre que l'ancien
- * poste (`production/domain/value-objects/container-step.ts`) et que
- * `setPackingContainersSchema` côté contrat. Recopié et non importé : le
- * colisage n'atteint le fournil que par son canal, et ce nombre est désormais
- * une règle du colisage (§11 MINEURS). Les trois bougent ensemble.
- */
-export const MAX_CONTAINERS_PER_ORDER = 99;
+import {
+  type ContainerMode,
+  type ContainerStep,
+  MAX_CONTAINERS_PER_ORDER,
+  type PackingSheetSnapshot,
+  type SheetLine,
+  type SheetLineMark,
+  type SheetMark,
+} from "./packing-sheet.snapshot.js";
 
-/** Une signature : l'instant et la fiche staff. */
-export interface SheetMark {
-  readonly at: Date;
-  readonly by: string;
-}
-
-/** La ligne au bac — avec les initiales, vides permises. */
-export interface SheetLineMark extends SheetMark {
-  readonly initials: string;
-}
-
-/** Une ligne à coliser : l'article, la quantité due, et si elle est au bac. */
-export interface SheetLine {
-  readonly sku: string;
-  readonly productName: string;
-  readonly quantity: number;
-  readonly packed: SheetLineMark | null;
-}
-
-/** L'état d'un bac, tel que l'adaptateur l'écrit et le relit. */
-export interface PackingSheetSnapshot {
-  readonly serviceDay: string;
-  readonly orderId: string;
-  readonly reference: string;
-  readonly packed: SheetMark | null;
-  readonly containers: number;
-  readonly lines: readonly SheetLine[];
-}
-
-/** Un pas de container — le type du canal, structurellement. */
-export type ContainerStep = "add" | "remove";
+export {
+  type ContainerMode,
+  type ContainerStep,
+  MAX_CONTAINERS_PER_ORDER,
+  type PackingSheetSnapshot,
+  type SheetLine,
+  type SheetLineMark,
+  type SheetMark,
+};
 
 /**
  * **Le bac d'une commande** — l'agrégat du poste de colisage (plan
@@ -60,6 +52,8 @@ export type ContainerStep = "add" | "remove";
  * sous verrou.
  */
 export class PackingSheet {
+  private readonly contents: OrderContents;
+
   private constructor(
     readonly serviceDay: string,
     readonly orderId: string,
@@ -67,7 +61,12 @@ export class PackingSheet {
     private packedValue: SheetMark | null,
     private containersValue: number,
     private linesValue: readonly SheetLine[],
-  ) {}
+    readonly containerMode: ContainerMode,
+    containerList: readonly PackingContainerState[],
+    readonly fulfillmentMethod: "pickup" | "delivery",
+  ) {
+    this.contents = OrderContents.of(reference, containerList);
+  }
 
   static fromSnapshot(snapshot: PackingSheetSnapshot): PackingSheet {
     return new PackingSheet(
@@ -77,6 +76,9 @@ export class PackingSheet {
       snapshot.packed,
       snapshot.containers,
       snapshot.lines,
+      snapshot.containerMode,
+      snapshot.containerList,
+      snapshot.fulfillmentMethod,
     );
   }
 
@@ -85,7 +87,11 @@ export class PackingSheet {
   }
 
   get containers(): number {
-    return this.containersValue;
+    return this.containerMode === "listed" ? this.contents.liveCount : this.containersValue;
+  }
+
+  get containerList(): readonly PackingContainerState[] {
+    return this.contents.containers;
   }
 
   get lines(): readonly SheetLine[] {
@@ -114,6 +120,7 @@ export class PackingSheet {
    * @returns les pièces que ce geste PREND à la réserve (0 sur un recocher).
    */
   put(sku: string, mark: SheetLineMark): number {
+    this.assertCounted(() => new LineGoesIntoContainerError(this.reference));
     const line = this.lineToTouch(sku);
     this.replaceLine({ ...line, packed: mark });
     return line.packed === null ? line.quantity : 0;
@@ -121,6 +128,7 @@ export class PackingSheet {
 
   /** @returns les pièces que ce geste REND à la réserve (0 si elle n'y était pas). */
   takeOut(sku: string): number {
+    this.assertCounted(() => new LineGoesIntoContainerError(this.reference));
     const line = this.lineToTouch(sku);
     this.replaceLine({ ...line, packed: null });
     return line.packed === null ? 0 : line.quantity;
@@ -137,6 +145,9 @@ export class PackingSheet {
     if (this.packedValue !== null) {
       return { mark: this.packedValue, fresh: false };
     }
+    if (this.containerMode === "listed") {
+      this.assertAllAllocated();
+    }
     this.packedValue = mark;
     return { mark, fresh: true };
   }
@@ -149,6 +160,7 @@ export class PackingSheet {
    */
   step(step: ContainerStep): void {
     this.assertOpen();
+    this.assertCounted(() => new ContainersListedError(this.reference));
     if (step === "add") {
       if (this.containersValue >= MAX_CONTAINERS_PER_ORDER) {
         throw new ContainerCeilingReachedError(this.reference, MAX_CONTAINERS_PER_ORDER);
@@ -167,6 +179,7 @@ export class PackingSheet {
    */
   declareContainers(containers: number): void {
     this.assertOpen();
+    this.assertCounted(() => new ContainersListedError(this.reference));
     if (!Number.isInteger(containers) || containers < 0 || containers > MAX_CONTAINERS_PER_ORDER) {
       throw new InvalidContainerCountError(containers);
     }
@@ -179,9 +192,109 @@ export class PackingSheet {
       orderId: this.orderId,
       reference: this.reference,
       packed: this.packedValue,
-      containers: this.containersValue,
+      containers: this.containers,
       lines: this.linesValue,
+      containerMode: this.containerMode,
+      containerList: this.contents.containers,
+      fulfillmentMethod: this.fulfillmentMethod,
     };
+  }
+
+  // ── La colonne Contenants (K2b) ────────────────────────────────────────────
+
+  /**
+   * Un contenant de plus est-il permis ? Demandé AVANT qu'un bac ne naisse
+   * chez la livraison.
+   *
+   * @throws {PackedOrderSealedError} @throws {ContainersCountedError}
+   * @throws {ContainerCeilingReachedError}
+   */
+  assertCanOpenContainer(): void {
+    this.assertListedAndOpen();
+    if (this.contents.liveCount >= MAX_CONTAINERS_PER_ORDER) {
+      throw new ContainerCeilingReachedError(this.reference, MAX_CONTAINERS_PER_ORDER);
+    }
+  }
+
+  /** Un contenant de plus — un bac déjà déclaré par la livraison, ou un sac. */
+  openContainer(container: PackingContainerState): void {
+    this.assertCanOpenContainer();
+    if (container.nature === "bag" && this.fulfillmentMethod === "delivery") {
+      throw new BagOnDeliveryError(this.reference);
+    }
+    this.contents.add(container);
+  }
+
+  /** Le contenant vivant, avant un geste qui doit d'abord passer ailleurs (le bac). */
+  liveContainer(containerId: string): PackingContainerState {
+    this.assertListedAndOpen();
+    return this.contents.live(containerId);
+  }
+
+  /**
+   * Répartit des pièces d'une ligne dans un contenant ; la ligne est au bac,
+   * signée par ce geste, quand toute sa quantité est répartie.
+   *
+   * @returns les pièces que ce geste PREND à la réserve.
+   */
+  allocate(containerId: string, sku: string, quantity: number, mark: SheetMark): number {
+    const line = this.listedLine(sku);
+    const pieces = this.contents.allocate(containerId, line, quantity);
+    this.markByAllocation(line, { ...mark, initials: "" });
+    return pieces;
+  }
+
+  /** @returns les pièces que ce retrait d'un contenant REND à la réserve. */
+  withdraw(containerId: string, sku: string, quantity: number): number {
+    const line = this.listedLine(sku);
+    const pieces = this.contents.withdraw(containerId, line, quantity);
+    this.markByAllocation(line, null);
+    return pieces;
+  }
+
+  /** Annule un contenant ; ses lignes restent, ignorées. @returns ce qui retourne à la réserve. */
+  voidContainer(containerId: string, mark: ContainerMark): readonly ContainerLine[] {
+    this.assertListedAndOpen();
+    const released = this.contents.void(containerId, mark);
+    for (const line of this.linesValue.filter((due) => released.some((r) => r.sku === due.sku))) {
+      this.markByAllocation(line, null);
+    }
+    return released;
+  }
+
+  private listedLine(sku: string): SheetLine {
+    this.assertListedAndOpen();
+    return this.lineToTouch(sku);
+  }
+
+  /** Une ligne `listed` est au bac ssi toute sa quantité est répartie. */
+  private markByAllocation(line: SheetLine, mark: SheetLineMark | null): void {
+    const complete = this.contents.allocatedOf(line.sku) >= line.quantity;
+    const packed = complete ? (mark ?? line.packed) : null;
+    this.replaceLine({ ...line, packed });
+  }
+
+  private assertAllAllocated(): void {
+    const short = this.contents.unallocated(this.linesValue);
+    if (short.length > 0) {
+      throw new UnallocatedLinesError(
+        this.reference,
+        short.map((line) => `« ${line.productName} »`),
+      );
+    }
+  }
+
+  private assertListedAndOpen(): void {
+    this.assertOpen();
+    if (this.containerMode !== "listed") {
+      throw new ContainersCountedError(this.reference);
+    }
+  }
+
+  private assertCounted(refusal: () => Error): void {
+    if (this.containerMode === "listed") {
+      throw refusal();
+    }
   }
 
   private assertOpen(): void {

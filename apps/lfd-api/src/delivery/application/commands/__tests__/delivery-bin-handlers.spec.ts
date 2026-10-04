@@ -16,6 +16,7 @@ import {
   InvalidInnerBagsError,
 } from "../../../domain/errors/delivery-bin-declaration-errors.js";
 import { BinTypeNotFoundError } from "../../../domain/errors/delivery-bin-errors.js";
+import { DeliveryBinOffice } from "../../delivery-bin-office.js";
 import { DeclareDeliveryBinsCommand } from "../declare-delivery-bins.command.js";
 import { DeclareDeliveryBinsHandler } from "../declare-delivery-bins.handler.js";
 import { VoidDeliveryBinCommand } from "../void-delivery-bin.command.js";
@@ -29,6 +30,7 @@ import {
   ScriptedDrawer,
   stopOf,
 } from "./loading-doubles.js";
+import { FixedManagedOrders } from "./managed-orders-double.js";
 import { deliveryOn, FixedDeliveryOrders } from "./round-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
@@ -71,19 +73,22 @@ describe("DeclareDeliveryBinsHandler — L4-C16, L4-C20, lot 4 bis", () => {
     const { clock, events, uow } = tools();
     const bins = options.bins ?? new InMemoryBins();
     const handler = new DeclareDeliveryBinsHandler(
-      bins,
-      new FixedBinTypeLookup(
-        binTypeOf("t_m"),
-        binTypeOf("t_s", { divisible: false }),
-        binTypeOf("t_old", { archived: true }),
+      new DeliveryBinOffice(
+        bins,
+        new FixedBinTypeLookup(
+          binTypeOf("t_m"),
+          binTypeOf("t_s", { divisible: false }),
+          binTypeOf("t_old", { archived: true }),
+        ),
+        options.loadings ?? new InMemoryStopLoadings(),
+        ORDERS,
+        new ScriptedDrawer(options.codes ?? ["AAAAAA", "BBBBBB", "CCCCCC"]),
+        new FixedIdGenerator("bin"),
+        clock,
+        events,
+        uow,
       ),
-      options.loadings ?? new InMemoryStopLoadings(),
-      ORDERS,
-      new ScriptedDrawer(options.codes ?? ["AAAAAA", "BBBBBB", "CCCCCC"]),
-      new FixedIdGenerator("bin"),
-      clock,
-      events,
-      uow,
+      new FixedManagedOrders(),
     );
     return { handler, bins, events };
   }
@@ -210,7 +215,20 @@ describe("VoidDeliveryBinHandler — L4-C19", () => {
   ) {
     const { clock, events, uow } = tools();
     return {
-      handler: new VoidDeliveryBinHandler(bins, loadings, ORDERS, clock, events, uow),
+      handler: new VoidDeliveryBinHandler(
+        new DeliveryBinOffice(
+          bins,
+          new FixedBinTypeLookup(),
+          loadings,
+          ORDERS,
+          new ScriptedDrawer([]),
+          new FixedIdGenerator("bin"),
+          clock,
+          events,
+          uow,
+        ),
+        new FixedManagedOrders(),
+      ),
       bins,
       events,
     };

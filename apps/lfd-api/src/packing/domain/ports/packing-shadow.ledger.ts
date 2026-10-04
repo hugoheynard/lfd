@@ -1,3 +1,5 @@
+import type { ContainerMode } from "../entities/packing-sheet.js";
+
 /** Une commande à coliser, telle que l'ombre l'inscrit. */
 export interface ShadowOrderToDraw {
   readonly serviceDay: string;
@@ -7,6 +9,12 @@ export interface ShadowOrderToDraw {
   readonly fulfillmentMethod: "pickup" | "delivery";
   readonly dueAt: string | null;
   readonly drawnAt: Date;
+  /**
+   * `listed` depuis K2b (`plan-les-bacs-au-colisage.md` §5.1) : toute commande
+   * inscrite par ce binaire liste ses contenants. Une commande déjà inscrite
+   * garde le sien — l'inscription ne réécrit rien.
+   */
+  readonly containerMode: ContainerMode;
   /** Additionnées par article : une ligne par SKU. */
   readonly lines: readonly {
     readonly sku: string;

@@ -29,6 +29,7 @@ import {
   bootstrapProductionDay,
   cancelBatch,
   closeLegacyPlan,
+  asCountedContainers,
   closePlan,
   pack,
   packing,
@@ -108,6 +109,9 @@ async function playDay(close: (context: E2eContext) => Promise<void>) {
   await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);
   await close(ctx);
   await settle();
+  // K2b : la répétition de K2 compare le COMPTE de contenants des deux postes —
+  // des commandes inscrites avant la colonne Contenants.
+  await asCountedContainers(ctx);
   const [first, second] = await references(ctx);
   if (first === undefined || second === undefined) {
     throw new Error("La journée devait porter deux bons.");
@@ -207,6 +211,7 @@ describe("une journée `packing` — ce qui n'a pas d'équivalent sur l'ancien p
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
     await closePlan(ctx);
     await settle();
+    await asCountedContainers(ctx);
     expect(await recordBatch(ctx, FIRST, 12)).toBe(204);
     await settle();
     return references(ctx);
@@ -248,6 +253,7 @@ describe("une journée `packing` — ce qui n'a pas d'équivalent sur l'ancien p
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
     await closePlan(ctx);
     await settle();
+    await asCountedContainers(ctx);
     expect(await recordBatch(ctx, THIRD, 5)).toBe(204);
     await settle();
     const [reference] = await references(ctx);

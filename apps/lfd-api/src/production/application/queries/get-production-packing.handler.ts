@@ -5,6 +5,7 @@ import { Clock } from "../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import { PackedDayReading } from "../services/packed-day-reading.service.js";
 import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
+import { withContainerList } from "../../domain/services/packing-container-list.js";
 import { packingBoardOf } from "../../domain/services/production-packing.js";
 import { heldOrderIds } from "../../domain/services/quality-verdicts.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
@@ -53,7 +54,7 @@ export class GetProductionPackingHandler implements IQueryHandler<
 
   async execute(query: GetProductionPackingQuery): Promise<ProductionPackingView> {
     const day = ServiceDay.of(query.serviceDay);
-    const { day: current, available } = await this.days.load(day);
+    const { day: current, available, station } = await this.days.load(day);
     const orders = current.orders;
     const authors = await this.staffAuthors.identify(
       orders.map((order) => order.packed?.by ?? null),
@@ -62,7 +63,7 @@ export class GetProductionPackingHandler implements IQueryHandler<
       order.lines.map((line) => ({ orderId: order.orderId, sku: line.sku })),
     );
     const heldOrders = heldOrderIds(day, await this.checks.forDay(day), plan);
-    return packingBoardOf({
+    const board = packingBoardOf({
       date: day.value,
       closedAt: current.closedAt,
       orders,
@@ -72,5 +73,7 @@ export class GetProductionPackingHandler implements IQueryHandler<
       authorName: (reference) => authors.nameOf(reference),
       heldOrders,
     });
+    // K2b : la colonne Contenants, par champs ajoutés.
+    return { ...board, sheets: withContainerList(board.sheets, station) };
   }
 }

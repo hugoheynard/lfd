@@ -2,6 +2,12 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { PackingSheet, type SheetLine } from "../domain/entities/packing-sheet.js";
+import {
+  CONTAINER_SELECT,
+  containerModeOf,
+  containerOf,
+  saveContainers,
+} from "./packing-container.mapper.js";
 import { PackingSheetRepository } from "../domain/ports/packing-sheet.repository.js";
 import { assertInsideUnitOfWork } from "./packing-lock.js";
 
@@ -52,6 +58,9 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
         packedAt: true,
         packedBy: true,
         containerCount: true,
+        containerMode: true,
+        fulfillmentMethod: true,
+        containers: CONTAINER_SELECT,
         lines: {
           select: {
             sku: true,
@@ -78,6 +87,9 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
           : { at: row.packedAt, by: row.packedBy },
       containers: row.containerCount,
       lines: row.lines.map(lineOf),
+      containerMode: containerModeOf(row.containerMode),
+      containerList: row.containers.map(containerOf),
+      fulfillmentMethod: row.fulfillmentMethod === "delivery" ? "delivery" : "pickup",
     });
   }
 
@@ -91,6 +103,7 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
         containerCount: snapshot.containers,
       },
     });
+    await saveContainers(this.prisma, snapshot);
     for (const line of snapshot.lines) {
       await this.prisma.packingLine.update({
         where: {

@@ -10,6 +10,7 @@ import {
   BinsNotDeclarableError,
   DeliveryBinNotFoundError,
 } from "../../../domain/errors/delivery-loading-errors.js";
+import { DeliveryBinOffice } from "../../delivery-bin-office.js";
 import { ShareDeliveryBinCommand } from "../share-delivery-bin.command.js";
 import { ShareDeliveryBinHandler } from "../share-delivery-bin.handler.js";
 import {
@@ -21,6 +22,7 @@ import {
   ScriptedDrawer,
   stopOf,
 } from "./loading-doubles.js";
+import { FixedManagedOrders } from "./managed-orders-double.js";
 import { deliveryOn, FixedDeliveryOrders } from "./round-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
@@ -47,15 +49,18 @@ function sharing(
   const events = new RecordingPublisher();
   const bins = options.bins ?? new InMemoryBins(LEFT);
   const handler = new ShareDeliveryBinHandler(
-    bins,
-    new FixedBinTypeLookup(binTypeOf("t_m")),
-    options.loadings ?? new InMemoryStopLoadings(inRound("o_2"), inRound("o_3")),
-    ORDERS,
-    new ScriptedDrawer(["JJJJJJ"]),
-    new FixedIdGenerator("bin"),
-    new FixedClock(NOW),
-    events,
-    new DirectUnitOfWork(),
+    new DeliveryBinOffice(
+      bins,
+      new FixedBinTypeLookup(binTypeOf("t_m")),
+      options.loadings ?? new InMemoryStopLoadings(inRound("o_2"), inRound("o_3")),
+      ORDERS,
+      new ScriptedDrawer(["JJJJJJ"]),
+      new FixedIdGenerator("bin"),
+      new FixedClock(NOW),
+      events,
+      new DirectUnitOfWork(),
+    ),
+    new FixedManagedOrders(),
   );
   return { handler, bins, events };
 }

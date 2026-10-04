@@ -282,6 +282,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // journée du colisage (écrit par ses déclencheurs, balayé seulement).
   PackingReturn: "packing",
   PackingDayChange: "packing",
+  // K2b : les contenants d'une commande et leur contenu.
+  PackingContainer: "packing",
+  PackingContainerLine: "packing",
   ProductionReturnRequest: "production",
 };
 

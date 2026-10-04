@@ -5,7 +5,13 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
-import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+  type E2eOverride,
+} from "./e2e-harness.js";
 import { settleCardPayments } from "./card-payments.js";
 
 /**
@@ -50,7 +56,7 @@ export async function releaseRelay(ctx: E2eContext): Promise<void> {
 }
 
 /** Boote l'app, jeton staff et passerelle de paiement doublés — le reste est réel. */
-export async function bootstrapProductionDay(): Promise<{
+export async function bootstrapProductionDay(extra: readonly E2eOverride[] = []): Promise<{
   readonly ctx: E2eContext;
   readonly issued: string[];
 }> {
@@ -89,6 +95,7 @@ export async function bootstrapProductionDay(): Promise<{
           },
         },
       },
+      ...extra,
     ],
   });
   relayGate.open = true;
@@ -143,6 +150,19 @@ export async function asLegacyPacking(ctx: E2eContext, day = SERVICE_DAY): Promi
   await ctx.prisma.productionDay.updateMany({
     where: { serviceDay: day },
     data: { packingOwner: "legacy" },
+  });
+}
+
+/**
+ * Rend les commandes déjà inscrites au colisage à l'ancien compte de
+ * contenants (`counted`) — celles d'une journée arrêtée AVANT K2b, que ce
+ * binaire n'inscrit plus (`listed` depuis K2b, `plan-les-bacs-au-colisage.md`
+ * §5.1). À appeler après que la liste à coliser a été livrée.
+ */
+export async function asCountedContainers(ctx: E2eContext, day = SERVICE_DAY): Promise<void> {
+  await ctx.prisma.packingOrder.updateMany({
+    where: { serviceDay: day },
+    data: { containerMode: "counted" },
   });
 }
 

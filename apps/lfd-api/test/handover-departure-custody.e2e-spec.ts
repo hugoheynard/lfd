@@ -29,6 +29,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { asCountedContainers } from "./production-day-fixture.js";
 
 const MEMBER = "auth0|member-custody";
 const DAY = serviceDay();
@@ -159,6 +160,9 @@ async function closeAndPack(orderIds: readonly string[]): Promise<void> {
   // Depuis K2, la journée naît au colisage : la liste à coliser et la remise
   // lui arrivent par la boîte d'envoi, hors de la requête.
   await ctx.drain();
+  // K2b : ces commandes comptent leurs contenants (ancien écran) — le sujet
+  // de la suite n'est pas le colisage, mais ce que la coche et le « + » déclenchent.
+  await asCountedContainers(ctx, DAY);
   for (const orderId of orderIds) {
     const order = await ctx.prisma.productionOrder.findFirstOrThrow({
       where: { serviceDay: DAY, orderId },

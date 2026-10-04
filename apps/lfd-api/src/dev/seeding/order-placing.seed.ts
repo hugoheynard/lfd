@@ -9,6 +9,8 @@ import { PaymentStatus } from "../../platform/database/client/client.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
 import { DeclarePackingContainersCommand } from "../../production/application/commands/declare-packing-containers.command.js";
 import { MarkPackingLineCommand } from "../../production/application/commands/mark-packing-line.command.js";
+import { AllocateToContainerCommand } from "../../packing/application/containers/allocate-to-container.command.js";
+import { OpenPackingContainerCommand } from "../../packing/application/containers/open-packing-container.command.js";
 import { MarkWorksheetLineCommand } from "../../production/application/commands/mark-worksheet-line.command.js";
 import { PackOrderCommand } from "../../production/application/commands/pack-order.command.js";
 import { CLIENT_RAISON_SOCIALE } from "./client.seed.js";
@@ -333,16 +335,74 @@ export async function packFully(
   // Les fournées sont des remises : le colisage doit les avoir reçues, et la
   // liste à coliser avec elles, avant qu'une ligne entre au bac (K2).
   await context.settle();
-  for (const { sku } of lines) {
-    await context.commands.execute(
-      new MarkPackingLineCommand(serviceDay, reference, sku, SEED_INITIALS, SEED_STAFF_SUB),
-    );
+  if (!(await packIntoBag(context, serviceDay, reference))) {
+    for (const { sku } of lines) {
+      await context.commands.execute(
+        new MarkPackingLineCommand(serviceDay, reference, sku, SEED_INITIALS, SEED_STAFF_SUB),
+      );
+    }
+    await context.commands.execute(new DeclarePackingContainersCommand(serviceDay, reference, 1));
   }
-  await context.commands.execute(new DeclarePackingContainersCommand(serviceDay, reference, 1));
   await context.commands.execute(new PackOrderCommand(serviceDay, reference, SEED_STAFF_SUB));
   // La fermeture rend la commande prête par un fait : le commerce doit l'avoir
   // lu avant que la suite du semis (retrait, tournée) ne s'appuie dessus.
   await context.settle();
+}
+
+/**
+ * Une commande qui LISTE ses contenants (K2b) : un sac, toutes ses lignes
+ * glissées dedans. Un sac plutôt qu'un bac : il n'a pas de règle de livraison
+ * à satisfaire, et le semis prépare un poste, pas une tournée.
+ *
+ * ⚠️ Une commande LIVRÉE reste sur l'ancien écran (`counted`, posé ici) : le
+ * semis des tournées déclare ses bacs APRÈS « prête », par la route de la
+ * livraison — l'ordre d'avant K2b, que ce binaire ne produit plus. La faire
+ * passer à la colonne Contenants demande de composer les tournées AVANT de
+ * coliser (le partage d'une moitié exige deux arrêts voisins) : une dette du
+ * semis, notée au rapport du lot K2b (2026-10-04).
+ *
+ * @returns `false` si la commande compte ses contenants (journée `legacy`,
+ *   inscrite avant K2b, ou livrée) — l'appelant suit l'ancien geste.
+ */
+async function packIntoBag(
+  context: SeedContext,
+  serviceDay: string,
+  reference: string,
+): Promise<boolean> {
+  const order = await context.prisma.packingOrder.findFirst({
+    where: { serviceDay, reference, containerMode: "listed" },
+    select: {
+      orderId: true,
+      fulfillmentMethod: true,
+      lines: { select: { sku: true, quantity: true } },
+    },
+  });
+  if (order === null) {
+    return false;
+  }
+  if (order.fulfillmentMethod === "delivery") {
+    await context.prisma.packingOrder.update({
+      where: { serviceDay_orderId: { serviceDay, orderId: order.orderId } },
+      data: { containerMode: "counted" },
+    });
+    return false;
+  }
+  const containerId = await context.commands.execute<OpenPackingContainerCommand, string>(
+    new OpenPackingContainerCommand(serviceDay, order.orderId, { nature: "bag" }, SEED_STAFF_SUB),
+  );
+  for (const line of order.lines) {
+    await context.commands.execute(
+      new AllocateToContainerCommand(
+        serviceDay,
+        order.orderId,
+        containerId,
+        line.sku,
+        line.quantity,
+        SEED_STAFF_SUB,
+      ),
+    );
+  }
+  return true;
 }
 
 /**

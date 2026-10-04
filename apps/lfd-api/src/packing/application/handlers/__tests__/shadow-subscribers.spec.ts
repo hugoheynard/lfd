@@ -82,6 +82,8 @@ describe("OnPackingListDrawn", () => {
         fulfillmentMethod: "pickup",
         dueAt: "07:00",
         drawnAt: AT,
+        // K2b : toute commande inscrite désormais liste ses contenants.
+        containerMode: "listed",
         lines: [{ sku: "CRO", productName: "Croissant", quantity: 3 }],
       },
     ]);

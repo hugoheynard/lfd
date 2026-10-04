@@ -71,6 +71,8 @@ import { PrismaDoorstepSettingsReader } from "./infrastructure/prisma-doorstep-s
 import { PrismaDoorstepSettingsRepository } from "./infrastructure/prisma-doorstep-settings.repository.js";
 
 import { DeclareDeliveryBinsHandler } from "./application/commands/declare-delivery-bins.handler.js";
+import { DeliveryBinDesk } from "./application/delivery-bin-desk.js";
+import { DeliveryBinOffice } from "./application/delivery-bin-office.js";
 import { ShareDeliveryBinHandler } from "./application/commands/share-delivery-bin.handler.js";
 import { DepartDeliveryRoundHandler } from "./application/commands/depart-delivery-round.handler.js";
 import { AnnounceDeliveryDeparture } from "./application/handlers/announce-delivery-departure.handler.js";
@@ -198,6 +200,10 @@ import {
     RemoveDeliveryStopHandler,
     GetDeliveryRoundsDayHandler,
     DeclareDeliveryBinsHandler,
+    // Le guichet des bacs (K2b) : servi aux anciennes routes ET au colisage,
+    // qui l'atteint par `BinDesk` (relié par `PackingBinsModule`).
+    DeliveryBinOffice,
+    DeliveryBinDesk,
     ShareDeliveryBinHandler,
     VoidDeliveryBinHandler,
     LoadDeliveryBinHandler,
@@ -301,5 +307,6 @@ import {
       },
     },
   ],
+  exports: [DeliveryBinDesk],
 })
 export class DeliveryModule {}

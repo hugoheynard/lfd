@@ -31,6 +31,9 @@ function setup(received = 12) {
     packed: null,
     containers: 0,
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 12, packed: null }],
+    containerMode: "counted",
+    containerList: [],
+    fulfillmentMethod: "pickup",
   });
   const stocks = new InMemoryStocks(shadow);
   const durable = new RecordingDurable();

@@ -38,6 +38,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { asCountedContainers } from "./production-day-fixture.js";
 
 const MEMBER = "auth0|member";
 const SUPERVISOR = "staff-supervision-seule";
@@ -176,6 +177,10 @@ async function seedWorkedDay(): Promise<void> {
     .put(`/admin/production/worksheet/${SERVICE_DAY}/lines/${CROISSANT}/done`)
     .send({ initials: "KA" })
     .expect(204);
+  await ctx.drain();
+  // K2b : ces commandes comptent leurs contenants (ancien écran) — le sujet
+  // de la suite n'est pas le colisage, mais ce que la coche et le « + » déclenchent.
+  await asCountedContainers(ctx, SERVICE_DAY);
   const packing = jsonBody<ProductionPackingView>(
     await staff.get(`/admin/production/packing?date=${SERVICE_DAY}`).expect(200),
   );

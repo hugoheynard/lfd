@@ -69,13 +69,41 @@ export interface StationLine {
   readonly packed: StationLineMark | null;
 }
 
+/**
+ * Un contenant VIVANT d'un bac `listed` (K2b, ajouté le 2026-10-04) : un bac de
+ * livraison ou un sac, et ce qu'il porte. Le colisage ne sert ni un contenant
+ * annulé, ni un contenant dont le bac a été annulé.
+ */
+export interface StationContainer {
+  readonly id: string;
+  readonly nature: "bin" | "bag";
+  /** Le code du bac, ou « Sac N ». */
+  readonly label: string;
+  readonly bin: {
+    readonly binId: string;
+    readonly code: string;
+    readonly half: "left" | "right" | null;
+  } | null;
+  /** Les quantités non nulles, par SKU. */
+  readonly lines: readonly { readonly sku: string; readonly quantity: number }[];
+}
+
 /** Un bac, tel que le colisage le tient. */
 export interface StationOrder {
   readonly orderId: string;
   /** `null` = ouvert. */
   readonly packed: StationSeal | null;
+  /** Sur `listed`, le nombre de contenants vivants. */
   readonly containers: number;
   readonly lines: readonly StationLine[];
+  /**
+   * `counted` (le compte) ou `listed` (la colonne Contenants, K2b). Facultatif
+   * dans le TYPE seulement : le colisage l'envoie toujours ; absent se lit
+   * `counted`.
+   */
+  readonly containerMode?: "counted" | "listed";
+  /** Les contenants vivants, dans l'ordre de création. */
+  readonly containerList?: readonly StationContainer[];
 }
 
 /** La réserve d'un article : reçu du four, rendu, au bac. */

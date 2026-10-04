@@ -71,11 +71,13 @@ describe("moduleOf — le fournil", () => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module production ne ramène que ses trois préfixes", () => {
+  it("le filtre du module production ne ramène que ses quatre préfixes", () => {
+    // Les contenants du colisage (K2b, 2026-10-04) : le poste est au fournil.
     expect(prefixesOf("production")).toEqual([
       "production_day.",
       "production_container.",
       "production_quality.",
+      "packing_container.",
     ]);
   });
 });

@@ -49,6 +49,7 @@ export { PackingDayVersionReader } from "./packing-day-version.reader.js";
 export {
   PackingStation,
   PackingStationReader,
+  type StationContainer,
   type StationDay,
   type StationLine,
   type StationLineMark,

@@ -544,6 +544,14 @@ export type {
   QualityVerdictCode,
   RenderQualityCheckPayload,
 } from "./production-quality.js";
+export { movePackingPiecesSchema, openPackingContainerSchema } from "./packing-containers.js";
+export type {
+  MovePackingPieces,
+  OpenPackingContainer,
+  OpenedPackingContainer,
+  PackingContainerLineView,
+  PackingContainerView,
+} from "./packing-containers.js";
 export {
   markPackingLineSchema,
   packingContainerStepSchema,

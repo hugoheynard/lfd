@@ -142,3 +142,37 @@ verrou au départ). Un fait asynchrone ne peut pas refuser à l'écran.
   (« le nombre de contenants se lit dans la colonne Contenants »).
 - **CLAUDE.md §3, la matrice et `lint:context-boundaries`** : dans le même
   commit que l'arête `delivery → packing`.
+
+## 6. K2b bâti, côté serveur (2026-10-04) — ce qui a été tranché en bâtissant
+
+État : **serveur et contrats bâtis**, écran à faire.
+
+- **Portes d'abord** : `delivery → packing` par `packing/channels/delivery/`
+  seulement (`lint:context-boundaries`, CLAUDE.md §3).
+- **`BinDesk`** est implémenté par `DeliveryBinDesk`, qui passe par
+  `DeliveryBinOffice` : les trois anciens handlers y ont été extraits, et ils y
+  délèguent après avoir lu `ContainerManagedOrders`. « Proposer » passe par le
+  cas de lecture de la livraison. Le tout est relié par
+  `apps/lfd-api/src/appBootstrap/packing-delivery-feed.module.ts`.
+- **Schéma** (`20261004230000_les_contenants_au_colisage`) : la colonne
+  `packing_order.container_mode`, plus `packing.container` et
+  `packing.container_line`. Le code et la moitié du bac y sont un
+  **instantané** pris à la déclaration, sans clé étrangère. Les lignes portent
+  `service_day` pour les déclencheurs `day_change`.
+- **L'agrégat** : `PackingSheet` porte `OrderContents`. Sur `listed`, la coche,
+  « + »/« − » et le total sont refusés, et une ligne est au bac quand toute sa
+  quantité est répartie (signée par le geste qui la complète). La fermeture
+  exige que tout soit réparti, et le compte de contenants devient celui des
+  contenants vivants.
+- **Faits** : `packing_container.opened|filled|emptied|voided`, sujet la
+  commande, rangés sous le module `production`.
+- **Un sac sur une commande livrée est refusé** (Hugo, 2026-10-04 :
+  livraison = bacs, retrait = sacs) — `packing.container.bag_on_delivery`.
+- **Hors lot : « rouvrir » une commande fermée n'existe pas.** Le refus du
+  §5.1 (« rouvrir une commande dont un bac est chargé ») attend que ce geste
+  soit conçu.
+- **Non fait, et dit** : le retrait du contenu d'un bac **chargé** sur une
+  commande encore ouverte n'est pas refusé par la livraison (§5.1 : il n'existe
+  pas de « rouvrir », et `BinDesk` n'a pas de garde « intact »). Le semis de dev
+  garde les commandes livrées en `counted`, parce qu'il compose les tournées
+  après le colisage.
