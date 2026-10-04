@@ -621,3 +621,69 @@ en cours.
 - Ordre de construction, **un constructeur, à la suite** : finir K2b → suite
   de K2b (« Proposer » bac par bac et atomique, moitié partagée, retrait
   partiel, rouvrir une commande) → K3 sauvage. Un seul déploiement à la fin.
+
+## 17. K3 — le colisage sert son poste, l'ancien chemin disparaît (plan, 2026-10-04)
+
+> Suite du §16 (« sauvage »). K2b et sa suite sont bâtis. Relu dans le code le
+> 2026-10-04 : `get-production-packing.handler.ts` (le fournil compose le
+> poste : son plan, `packedDayReading`, le contrôle qualité, les auteurs, puis
+> `overlayStation` pose le colisage par-dessus) ; `PackingStation` /
+> `PackingStationReader` (déclarés par le fournil, implémentés par le colisage) ;
+> les handlers `mark` / `unmark` / `pack` / `declare` / `step` du fournil, qui
+> refusent puis délèguent.
+
+### 17.1 Qui sert quoi
+
+| Ce que montre le poste                      | Propriétaire                             | Comment le colisage l'obtient                                                                                                             |
+| ------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Commandes, lignes, échéances, destination   | colisage (reçu par `packing_list_drawn`) | ses tables                                                                                                                                |
+| Contenants, répartitions, fermeture, auteur | colisage                                 | ses tables ; l'auteur par `staff`                                                                                                         |
+| Disponible par SKU, « À répartir »          | colisage (`packing_stock`)               | ses tables                                                                                                                                |
+| Commandes retenues par le contrôle qualité  | **fournil**                              | un lecteur que le fournil publie dans `production/channels/packing/` (`QualityHeldOrdersReader`) — arête existante `packing → production` |
+| Jour arrêté, heure de clôture               | fournil                                  | idem, ou déjà dans la liste à coliser                                                                                                     |
+
+Aucune arête neuve. Le fournil ne lit plus le colisage pour composer le poste.
+
+### 17.2 Ce qui change
+
+- **Lecture** : `GET /admin/packing/:date/board`, servie par le colisage, même
+  forme que `ProductionPackingView` (le front change d'URL, pas de forme).
+- **Écritures** : toutes au colisage, sous `admin/packing/:date/orders/:orderId/…`
+  (répartir, retirer, contenants, proposer, **fermer** = déclarer prête,
+  **rouvrir**). Les routes du fournil `production/packing/*` disparaissent, avec
+  leurs handlers et le port `PackingStation`.
+- **Les lecteurs qui restent côté fournil** : la Supervision, l'état du jour et
+  le contrôle qualité demandent « cette commande est-elle colisée ? » par un
+  port étroit que le fournil déclare et que le colisage implémente
+  (`PackedOrdersReader`, la forme de `PackingStationReader` réduite à ce
+  besoin).
+- **Rouvrir (Hugo, option b)** : un geste du colisage sur une commande
+  fermée, refusé si un de ses bacs est chargé ou sa tournée partie (`BinDesk`).
+  Il rouvre le **rangement** seulement : la commande reste « prête » au
+  commerce, aucun fait n'est publié ; la refermer ne republie pas
+  `packing.order_packed` (même clé).
+
+### 17.3 Ce qui est retiré du code (« sauvage »)
+
+Le poste du fournil et ses handlers ; `production.order_packed` et son abonné
+`OnOrderPacked` ; `PackingStation` et `overlayStation` ; les lectures et
+écritures de `packed_*` / `container_count` du fournil ; `PackingContainerStep`
+et le compte « + / − » ; `container_mode` (tout est « listé » ; une commande
+encore `counted` n'est plus colisable) ; l'ombre de K1 (`PackingShadowLedger`
+reste le nom des reçus déjà posés — voir le code, pas renommé) et sa route de
+comparaison ; `LegacyPackingReader` ; la déclaration des bacs après « prête »
+pour une commande du colisage ; les fixtures `asLegacyPacking` /
+`asCountedContainers` et les tests qui ne testent que l'ancien chemin.
+**Aucune colonne supprimée en base.**
+
+### 17.4 Lots
+
+| Lot | Contenu                                                                                                                |
+| --- | ---------------------------------------------------------------------------------------------------------------------- |
+| K3a | Serveur : `board` servi par le colisage, fermer / rouvrir au colisage, `QualityHeldOrdersReader`, `PackedOrdersReader` |
+| K3b | Écran : le poste lit `admin/packing/:date/board` et écrit au colisage ; « Rouvrir »                                    |
+| K3c | Retrait du code mort (§17.3), portes, CLAUDE.md §3 si une ligne de matrice change                                      |
+
+Un déploiement pour les trois. Pas de `vitruve` : aucune frontière neuve,
+aucune migration de données ; les affirmations ci-dessus ont été rouvertes dans
+le code.
