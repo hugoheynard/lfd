@@ -169,15 +169,21 @@ export class App {
   protected readonly canSeeAnalytics = computed(() => this.permissions.can('b2b_growth:read'));
 
   /**
-   * La Production s'ouvre à qui tient L'UN des trois gestes du fournil — le
-   * plan du soir, la fiche d'atelier, le colisage (2026-10-01,
-   * `documentation/livraisons/plan-droits-par-geste.md`, DG-D1). Ils étaient tous sous `b2b_orders:read`.
+   * La Production s'ouvre à qui tient L'UN des gestes du fournil — le plan du
+   * soir, la fiche d'atelier (2026-10-01,
+   * `documentation/livraisons/plan-droits-par-geste.md`, DG-D1). Le colisage
+   * n'en est plus depuis le 2026-10-04 : c'est son propre espace,
+   * {@link canSeePacking}.
    */
   protected readonly canSeeProduction = computed(
     () =>
       this.permissions.can('production_plan:read') ||
-      this.permissions.can('production_worksheet:read') ||
-      this.permissions.can('production_packing:read'),
+      this.permissions.can('production_worksheet:read'),
+  );
+
+  /** Le Colisage — un poste à part (2026-10-04), sous son seul droit. */
+  protected readonly canSeePacking = computed(() =>
+    this.permissions.can('production_packing:read'),
   );
   /**
    * Le Comptoir s'ouvre à qui sert la file de retrait OU passe une commande

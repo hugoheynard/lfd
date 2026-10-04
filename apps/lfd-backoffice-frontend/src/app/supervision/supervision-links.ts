@@ -10,7 +10,7 @@ import type { StaffPermission } from '@lfd/contracts';
  */
 export const SUPERVISION_LINKS = {
   preparation: { path: '/production/journee', label: 'Ouvrir la fournée' },
-  packing: { path: '/production/colisage', label: 'Ouvrir le colisage' },
+  packing: { path: '/colisage', label: 'Ouvrir le colisage' },
   handover: { path: '/comptoir/retrait', label: 'Ouvrir le retrait' },
 } as const;
 

@@ -70,6 +70,21 @@
         ></a>
       }
 
+      @if (canSeePacking()) {
+        <!-- COLISAGE — un poste à part de la production (2026-10-04) : ses
+             données restent au fournil, son geste a son entrée. -->
+        <a
+          fold-menu-item
+          icon="package"
+          label="Colisage"
+          routerLink="/colisage"
+          routerLinkActive
+          #packingRla="routerLinkActive"
+          [active]="packingRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeeCounter()) {
         <!-- LE COMPTOIR — la file de retrait et la commande pro. Juste après la
              production parce que c'est la suite du même flux : on fabrique, on
@@ -544,6 +559,19 @@
             ></a>
           }
         </fold-nav-group>
+      }
+      @if (canSeePacking()) {
+        <!-- La MÊME entrée qu'au rail, en tuile simple comme le Coursier. -->
+        <a
+          fold-nav-tile
+          icon="package"
+          label="Colisage"
+          routerLink="/colisage"
+          routerLinkActive
+          #packingTile="routerLinkActive"
+          [active]="packingTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
       @if (canSeeCounter()) {
         <!-- La MÊME entrée qu'au rail, et il faut la poser deux fois : les

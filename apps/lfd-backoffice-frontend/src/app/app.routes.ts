@@ -305,6 +305,18 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./livraison/my-round-page/my-round-page').then((m) => m.MyRoundPage),
   },
+  // LE COLISAGE (2026-10-04, `documentation/colisage/plan-domaine-colisage.md`,
+  // P0) : un poste de PREMIER niveau, comme le Coursier — ses données restent
+  // au fournil, mais le geste n'en est pas une vue. Le même composant que
+  // `colisage/:reference` : le poste ouvert sur la liste plutôt que sur une
+  // commande. Le chemin exact ne masque pas la route du QR, qui exige un segment.
+  {
+    path: 'colisage',
+    pathMatch: 'full',
+    canActivate: [permissionGuard('production_packing:read')],
+    title: 'Colisage — LFC B2B admin',
+    loadComponent: () => import('./production/colisage/colisage').then((m) => m.Colisage),
+  },
   // CHARGER MA TOURNÉE : le chargement du livreur a sa propre adresse, sous
   // le même droit — un rechargement le rouvre.
   {
@@ -590,15 +602,10 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
       },
-      {
-        // Le même composant que `colisage/:reference` au premier niveau : c'est
-        // le poste, ouvert sur la liste des commandes plutôt que sur l'une d'elles. Deux
-        // portes, un seul écran — on y entre par le rail ou par un QR.
-        path: 'colisage',
-        canActivate: [permissionGuard('production_packing:read')],
-        title: 'Colisage — LFC B2B admin',
-        loadComponent: () => import('./production/colisage/colisage').then((m) => m.Colisage),
-      },
+      // Le colisage est un poste à part depuis le 2026-10-04
+      // (`documentation/colisage/plan-domaine-colisage.md`, P0) : l'ancienne
+      // adresse reste valide — c'est le favori des postes de labo.
+      { path: 'colisage', pathMatch: 'full', redirectTo: '/colisage' },
     ],
   },
   ...commercialRoutes,

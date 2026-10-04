@@ -216,7 +216,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   production: OPEN,
   'production/journee': 'production_worksheet:read',
   'production/previsionnel': 'production_plan:read',
-  'production/colisage': 'production_packing:read',
   // LE COMPTOIR non plus : la file de retrait (`handover_counter`) et la
   // commande pro (`b2b_place_order`) sont deux droits. Attester un retrait
   // passe par `retrait/:token`, qui exige l'écriture.
@@ -238,6 +237,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // montre rien d'elle-même ; chaque vue porte son garde.
   // LE COURSIER (2026-10-03) : la page du livreur, hors de la Livraison.
   coursier: 'delivery_driving:read',
+  colisage: 'production_packing:read',
   'coursier/:roundId/chargement': 'delivery_driving:read',
   livraison: OPEN,
   'livraison/feuille-de-route': 'delivery_run_sheet:read',

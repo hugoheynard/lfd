@@ -106,11 +106,15 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
 /**
  * Les vues de la **Production**.
  *
- * Trois vues, et ce sont trois QUESTIONS, pas trois niveaux de détail : le
+ * Deux vues, et ce sont deux QUESTIONS, pas deux niveaux de détail : le
  * prévisionnel dit **quand ça tombe**, la fournée du jour dit ce qu'on sort du
- * four maintenant, le colisage dit **dans quel bac ça va**. Aucune ne se déduit
- * d'une autre lue autrement : la fournée arbitre entre un plan arrêté et une
- * demande qui bouge, et le colisage pèse ce qui est sorti contre ce qui est dû.
+ * four maintenant. Aucune ne se déduit de l'autre lue autrement : la fournée
+ * arbitre entre un plan arrêté et une demande qui bouge.
+ *
+ * ⚠️ **Ce commentaire disait « trois vues » jusqu'au 2026-10-04.** Le colisage
+ * en est sorti : c'est un poste à part, avec son entrée de premier niveau
+ * (`/colisage`, `documentation/colisage/plan-domaine-colisage.md`, P0). Ses
+ * données restent au fournil ; son geste n'est pas une vue de la production.
  *
  * ⚠️ **Ce commentaire disait « deux vues » jusqu'au 2026-09-13**, et il était
  * juste quand il a été écrit. La fournée et le colisage ont pour clés le RAYON
@@ -129,8 +133,7 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
  * posé sur un écran de fournil.
  *
  * Chaque vue porte son `needs` depuis le 2026-10-01 (`documentation/livraisons/plan-droits-par-geste.md`,
- * DG-D1) : le prévisionnel est le plan du soir, la fournée la fiche d'atelier,
- * le colisage le sien. La coquille n'est plus gardée — comme la Livraison —,
+ * DG-D1) : le prévisionnel est le plan du soir, la fournée la fiche d'atelier. La coquille n'est plus gardée — comme la Livraison —,
  * parce qu'un garde commun fermerait une vue à qui ne tient que l'autre.
  */
 export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
@@ -150,20 +153,6 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
     link: '/production/journee',
     icon: 'production',
     needs: 'production_worksheet:read',
-  },
-  {
-    // APRÈS la fournée, parce que c'est l'ordre du fournil : on sort du four,
-    // puis on répartit. Le poste s'atteint aussi par le QR d'une feuille
-    // d'atelier (`/colisage/:reference`) — l'entrée de rail est la porte de
-    // celui qui n'a pas de papier sous la main.
-    key: 'colisage',
-    label: 'Colisage',
-    link: '/production/colisage',
-    // `package` : le jeu d'icônes de fold ne porte pas de `box` (vérifié le
-    // 2026-09-13, 0.27.2), et `package` EST le carton. `basket` disait le
-    // panier d'achat, c'est-à-dire le geste du client, pas celui du fournil.
-    icon: 'package',
-    needs: 'production_packing:read',
   },
 ];
 
