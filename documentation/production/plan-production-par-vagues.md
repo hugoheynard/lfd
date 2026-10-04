@@ -110,3 +110,53 @@ inverse (avancée) est **alerté** au fournil : « 12 baguettes manquent pour
 | V1  | Le compte à produire par vague, figé à la clôture ; la fiche d'atelier en vagues | données (trois temps) |
 | V2  | Les fournées par vague ; la remise par vague (colisage v3.1)                     | additive              |
 | V3  | L'écart après « Appliquer », alerté au fournil                                   | non                   |
+
+## 7. Contradiction de `vitruve` (2026-10-04), et la v2
+
+**BLOQUANTS, levés par un seul changement : la vague ne dépend plus des
+tournées.**
+
+1. **Le §3 figeait la clôture sur « l'instantané des tournées »,** qui
+   n'existe pas : rien n'est stocké avant « Appliquer », le prévisionnel (CA5)
+   n'est pas bâti, et la v4 de la composition (§11, B1) a écarté précisément
+   ce geste.
+2. **La matrice interdit `production ↔ delivery` dans les deux sens** : ni
+   port, ni fait durable entre eux.
+3. **Une commande arrivée après la clôture** (retirage, `absorbIntoPlan`)
+   n'avait pas de vague.
+
+→ **La vague est une fonction pure de la commande** : son échéance (ou la
+fenêtre d'un retrait), moins une marge. Pas de trajet, pas de tournée. Le
+commerce la calcule et la met dans les lignes que la clôture lit déjà
+(`day-orders.reader`) ; le retirage applique la même règle. La production ne
+parle jamais à la livraison. La tournée ne sert plus qu'à l'alerte du lot V3,
+qui passera par le commerce (`b2b → delivery`, ports seulement).
+
+Ce que ça coûte : deux commandes « avant 07:30 » tombent dans la même vague,
+même si l'une est à 5 minutes et l'autre à 40. La marge couvre une tournée
+typique ; l'alerte V3 rattrape le cas où la vraie tournée part plus tôt.
+
+**SÉRIEUX, tranchés :**
+
+- **`latestDepartures` n'est plus lu** par la production (il enchaîne les
+  passages d'un véhicule, et vaut `Infinity` sans contrainte). Il ne sert
+  qu'à l'alerte V3, qui devra traiter `Infinity` comme « aucune contrainte ».
+- **« Produire plus tôt n'est jamais faux » était faux** pour un produit qui
+  doit rester frais. Le §3 est corrigé : une commande déplacée vers une vague
+  plus tardive est **signalée** aussi. Le geste de sortie dépend de Q3.
+- **Sans marge réglée, ou une journée sans échéances** : une seule vague,
+  « la journée ». C'est le comportement d'aujourd'hui, et la clôture ne
+  refuse jamais. Les journées closes avant la bascule sont lues ainsi.
+- **La coche du compte** (« sorti », auteur, initiales) vit aujourd'hui sur la
+  ligne `(jour, sku)`. Elle descend sur la ligne `(jour, sku, vague)` ; une
+  journée historique a une seule vague, donc rien n'est perdu. Le contrat de
+  la fiche gagne un champ `waves` **ajouté**, l'ancien total reste servi. La
+  clé de vague dans le compte est **irréversible** sans migration de données.
+- **Q1 revient sur la v3.1 du colisage, décidée le même jour.** Rien n'en est
+  bâti : revenir dessus ne coûte que le texte.
+
+**Q4 disparaît** : c'est le commerce qui donne la vague, pas la livraison.
+**Q5 change** : « une commande sans tournée » n'a plus de sens, puisque la
+vague ne dépend plus de la tournée. Reste une commande **sans échéance**
+(une ancienne, ou un retrait sans fenêtre) : elle va dans la dernière vague
+de la journée, et elle est signalée.
