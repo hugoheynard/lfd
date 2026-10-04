@@ -658,6 +658,12 @@ transport côté `PrismaService` — `prisma+postgres://` → Accelerate (prod/d
 `postgresql://` → adapter `pg` (tests) — donc les e2e exercent le **vrai**
 client, les vraies migrations et les vraies contraintes.
 
+> ⚠️ **Plus vrai depuis le 2026-09-19** (relu le 2026-10-04 dans
+> `prisma.service.ts`) : Accelerate a été quitté en production, et la branche
+> retirée le 2026-09-22. Il n'y a plus qu'un transport, l'adaptateur `pg` vers
+> le pooler Postgres, en prod, en dev et en e2e ; `AppConfig` refuse au
+> démarrage une URL `prisma+postgres://`.
+
 - La **seule** frontière doublée est la vérification de signature Auth0 (tenant
   distant + clés privées, et ce n'est pas ce qu'un e2e éprouve). Le double est
   trivial : **le jeton porteur EST le `sub`**, et un jeton préfixé `invalid`
