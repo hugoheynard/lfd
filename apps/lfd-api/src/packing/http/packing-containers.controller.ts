@@ -1,4 +1,5 @@
 import {
+  type DeliveryBinFreeHalvesView,
   type DeliveryPackingProposalView,
   type MovePackingPieces,
   type OpenedPackingContainer,
@@ -13,6 +14,8 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
+import { ApplyPackingProposalCommand } from "../application/containers/apply-packing-proposal.command.js";
+import { GetShareableHalvesQuery } from "../application/containers/get-shareable-halves.query.js";
 import { AllocateToContainerCommand } from "../application/containers/allocate-to-container.command.js";
 import { GetPackingProposalQuery } from "../application/containers/get-packing-proposal.query.js";
 import { OpenPackingContainerCommand } from "../application/containers/open-packing-container.command.js";
@@ -26,7 +29,7 @@ const NO_CONTENT = 204;
  * **La colonne Contenants du poste de colisage** (K2b,
  * `colisage/plan-les-bacs-au-colisage.md` §5–§5.1) : créer un bac ou un sac,
  * y glisser une quantité d'une ligne, l'en ressortir, annuler un contenant,
- * proposer un colisage.
+ * proposer un colisage et l'appliquer, lister les moitiés partageables.
  *
  * Sous `production_packing` : le droit de qui tient le poste — `write` pour
  * les gestes, `read` pour la proposition. Aucun droit neuf, aucun rôle touché.
@@ -123,6 +126,35 @@ export class PackingContainersController {
     dayOf(date);
     return this.queries.execute<GetPackingProposalQuery, DeliveryPackingProposalView>(
       new GetPackingProposalQuery(orderId),
+    );
+  }
+
+  /**
+   * **Appliquer « Proposer »** d'un coup : les bacs proposés naissent chez la
+   * livraison et se remplissent bac par bac, de ce qui est sorti du four, dans
+   * une seule transaction. Refusé sur une commande qui a déjà des contenants.
+   */
+  @Post("proposal/apply")
+  @HttpCode(NO_CONTENT)
+  async applyProposal(
+    @Param("date") date: string,
+    @Param("orderId") orderId: string,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<ApplyPackingProposalCommand, void>(
+      new ApplyPackingProposalCommand(dayOf(date), orderId, staffUserId),
+    );
+  }
+
+  /** Les moitiés libres des arrêts voisins, à partager — une lecture. */
+  @Get("shareable-halves")
+  async shareableHalves(
+    @Param("date") date: string,
+    @Param("orderId") orderId: string,
+  ): Promise<DeliveryBinFreeHalvesView> {
+    dayOf(date);
+    return this.queries.execute<GetShareableHalvesQuery, DeliveryBinFreeHalvesView>(
+      new GetShareableHalvesQuery(orderId),
     );
   }
 }

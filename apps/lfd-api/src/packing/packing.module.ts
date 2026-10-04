@@ -7,6 +7,8 @@ import { ComparePackingShadowHandler } from "./application/queries/compare-packi
 import { PackingShadowLedger } from "./domain/ports/packing-shadow.ledger.js";
 import { PackingShadowReader } from "./domain/ports/packing-shadow.reader.js";
 import { PackingShadowController } from "./http/packing-shadow.controller.js";
+import { ApplyPackingProposalHandler } from "./application/containers/apply-packing-proposal.handler.js";
+import { GetShareableHalvesHandler } from "./application/containers/get-shareable-halves.handler.js";
 import { AllocateToContainerHandler } from "./application/containers/allocate-to-container.handler.js";
 import { GetPackingProposalHandler } from "./application/containers/get-packing-proposal.handler.js";
 import { OpenPackingContainerHandler } from "./application/containers/open-packing-container.handler.js";
@@ -75,6 +77,8 @@ import { PrismaPackingStockRepository } from "./infrastructure/prisma-packing-st
     WithdrawFromContainerHandler,
     VoidPackingContainerHandler,
     GetPackingProposalHandler,
+    ApplyPackingProposalHandler,
+    GetShareableHalvesHandler,
     PrismaContainerManagedOrders,
   ],
   exports: [PackingStationService, PrismaPackingStationReader, PrismaContainerManagedOrders],

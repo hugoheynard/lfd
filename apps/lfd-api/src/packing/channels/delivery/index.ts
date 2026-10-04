@@ -4,7 +4,7 @@
  *
  * | Pièce                    | Déclaré par | Implémenté par | Ce qu'il porte                              |
  * | ------------------------ | ----------- | -------------- | ------------------------------------------- |
- * | `BinDesk`                | le colisage | la livraison   | déclarer, annuler, partager, proposer, vivants |
+ * | `BinDesk`                | le colisage | la livraison   | déclarer, annuler, partager, proposer, contenances, moitiés libres, vivants |
  * | `ContainerManagedOrders` | le colisage | le colisage    | « cette commande se gère-t-elle ici ? »      |
  *
  * `lint:context-boundaries` n'autorise `delivery → packing` que par ce dossier ;
@@ -15,5 +15,6 @@ export {
   type BinDeclarationRequest,
   type BinShareRequest,
   type DeskBin,
+  type DeskCapacity,
 } from "./bin-desk.js";
 export { ContainerManagedOrders } from "./container-managed-orders.reader.js";

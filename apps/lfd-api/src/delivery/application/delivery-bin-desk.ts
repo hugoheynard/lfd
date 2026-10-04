@@ -1,4 +1,4 @@
-import type { DeliveryPackingProposalView } from "@lfd/contracts";
+import type { DeliveryBinFreeHalvesView, DeliveryPackingProposalView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import {
@@ -6,10 +6,14 @@ import {
   type BinDeclarationRequest,
   type BinShareRequest,
   type DeskBin,
+  type DeskCapacity,
 } from "../../packing/channels/delivery/index.js";
 import { TechnicalError } from "../../platform/shared/errors/app-error.js";
 import type { DeliveryBin } from "../domain/entities/delivery-bin.js";
+import { BinCatalogReader } from "../domain/ports/bin-catalog.reader.js";
 import { DeliveryBinOffice } from "./delivery-bin-office.js";
+import { GetDeliveryBinFreeHalvesHandler } from "./queries/get-delivery-bin-free-halves.handler.js";
+import { GetDeliveryBinFreeHalvesQuery } from "./queries/get-delivery-bin-free-halves.query.js";
 import { GetDeliveryPackingProposalHandler } from "./queries/get-delivery-packing-proposal.handler.js";
 import { GetDeliveryPackingProposalQuery } from "./queries/get-delivery-packing-proposal.query.js";
 
@@ -43,13 +47,18 @@ function deskBinOf(bin: DeliveryBin): DeskBin {
  *
  * « Proposer » passe par le cas de lecture nommé de la livraison
  * (`GetDeliveryPackingProposalHandler`), qui reste la seule lecture des
- * contenances.
+ * contenances. Les contenances servies à « Proposer, bac par bac » sont
+ * celles-là mêmes (`activeCapacities`), et les moitiés libres passent par le
+ * cas de lecture de la livraison (`GetDeliveryBinFreeHalvesHandler`) : la
+ * règle d'adjacence reste chez elle.
  */
 @Injectable()
 export class DeliveryBinDesk extends BinDesk {
   constructor(
     private readonly office: DeliveryBinOffice,
     private readonly proposals: GetDeliveryPackingProposalHandler,
+    private readonly freeHalvesQuery: GetDeliveryBinFreeHalvesHandler,
+    private readonly catalog: BinCatalogReader,
   ) {
     super();
   }
@@ -79,6 +88,14 @@ export class DeliveryBinDesk extends BinDesk {
 
   async propose(orderId: string): Promise<DeliveryPackingProposalView> {
     return this.proposals.execute(new GetDeliveryPackingProposalQuery(orderId));
+  }
+
+  async capacities(): Promise<readonly DeskCapacity[]> {
+    return this.catalog.activeCapacities();
+  }
+
+  async freeHalves(orderId: string): Promise<DeliveryBinFreeHalvesView> {
+    return this.freeHalvesQuery.execute(new GetDeliveryBinFreeHalvesQuery(orderId));
   }
 
   async liveBins(binIds: readonly string[]): Promise<ReadonlySet<string>> {

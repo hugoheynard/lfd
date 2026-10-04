@@ -11,7 +11,14 @@ import { z } from "zod";
  * - `POST containers/:containerId/lines/:sku` ({@link MovePackingPieces}) → 204 — répartir ;
  * - `POST containers/:containerId/lines/:sku/withdrawal` ({@link MovePackingPieces}) → 204 — retirer ;
  * - `POST containers/:containerId/void` → 204 — annuler ;
- * - `GET proposal` → `DeliveryPackingProposalView` — proposer (livraison seulement).
+ * - `GET proposal` → `DeliveryPackingProposalView` — proposer (livraison seulement) ;
+ * - `POST proposal/apply` → 204 — appliquer « Proposer » d'un coup : les bacs
+ *   proposés naissent chez la livraison et se remplissent bac par bac (suite de
+ *   K2b, plan §7). 409 `packing.proposal.containers_exist` si la commande a
+ *   déjà un contenant vivant, `packing.proposal.empty` si la grille des
+ *   contenances ne couvre rien ;
+ * - `GET shareable-halves` → `DeliveryBinFreeHalvesView` — les moitiés libres
+ *   des arrêts voisins ; partager = `POST containers` avec `partnerBinId`.
  *
  * Le poste se relit ensuite par `GET admin/production/packing?date=` : chaque
  * `PackingSheet` porte `containerMode`, `containerList`, et chaque ligne

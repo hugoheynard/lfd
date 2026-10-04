@@ -1,10 +1,11 @@
-import type { DeliveryPackingProposalView } from "@lfd/contracts";
+import type { DeliveryBinFreeHalvesView, DeliveryPackingProposalView } from "@lfd/contracts";
 
 import {
   BinDesk,
   type BinDeclarationRequest,
   type BinShareRequest,
   type DeskBin,
+  type DeskCapacity,
 } from "../../channels/delivery/index.js";
 
 /**
@@ -18,6 +19,10 @@ export class ScriptedBinDesk extends BinDesk {
   readonly voided: string[] = [];
   readonly dead = new Set<string>();
   refusal: Error | null = null;
+  /** Les entrées que « Proposer » rend ; vide par défaut. */
+  proposedBins: DeliveryPackingProposalView["bins"] = [];
+  grid: readonly DeskCapacity[] = [];
+  halves: DeliveryBinFreeHalvesView["halves"] = [];
   private next = 0;
 
   declareBin(request: BinDeclarationRequest): Promise<DeskBin> {
@@ -44,9 +49,25 @@ export class ScriptedBinDesk extends BinDesk {
       orderId,
       reference: `CMD-${orderId}`,
       lines: [],
-      bins: [],
+      bins: this.proposedBins,
       unplaced: [],
       shareCandidate: null,
+    });
+  }
+
+  capacities(): Promise<readonly DeskCapacity[]> {
+    return Promise.resolve(this.grid);
+  }
+
+  freeHalves(orderId: string): Promise<DeliveryBinFreeHalvesView> {
+    if (this.refusal !== null) {
+      return Promise.reject(this.refusal);
+    }
+    return Promise.resolve({
+      orderId,
+      reference: `CMD-${orderId}`,
+      round: null,
+      halves: this.halves,
     });
   }
 

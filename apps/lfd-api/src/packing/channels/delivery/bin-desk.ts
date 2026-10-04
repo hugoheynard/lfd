@@ -1,4 +1,4 @@
-import type { DeliveryPackingProposalView } from "@lfd/contracts";
+import type { DeliveryBinFreeHalvesView, DeliveryPackingProposalView } from "@lfd/contracts";
 
 /** Un bac à déclarer pour une commande : un bac entier, ou la moitié gauche d'un bac neuf. */
 export interface BinDeclarationRequest {
@@ -23,6 +23,13 @@ export interface DeskBin {
   readonly code: string;
   /** `null` = un bac entier. */
   readonly half: "left" | "right" | null;
+}
+
+/** Une case de la grille des contenances : un bac ENTIER de ce type tient `units` pièces. */
+export interface DeskCapacity {
+  readonly binTypeId: string;
+  readonly sku: string;
+  readonly units: number;
 }
 
 /**
@@ -60,6 +67,19 @@ export abstract class BinDesk {
 
   /** Le colisage proposé d'une commande livrée — une lecture, qui n'écrit rien. */
   abstract propose(orderId: string): Promise<DeliveryPackingProposalView>;
+
+  /**
+   * Les contenances des types EN SERVICE — celles que « Proposer » a lues, pour
+   * couper un contenu par type en bacs (suite de K2b, plan §7).
+   */
+  abstract capacities(): Promise<readonly DeskCapacity[]>;
+
+  /**
+   * Les moitiés libres des arrêts voisins, partageables par cette commande —
+   * la règle d'adjacence de la livraison. Une LECTURE ; mêmes refus qu'au
+   * partage (commande hors livraison, annulée).
+   */
+  abstract freeHalves(orderId: string): Promise<DeliveryBinFreeHalvesView>;
 
   /**
    * Ceux de ces bacs qui existent et ne sont pas annulés. Défense en

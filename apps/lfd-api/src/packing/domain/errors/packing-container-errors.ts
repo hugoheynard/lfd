@@ -123,3 +123,27 @@ export class BagOnDeliveryError extends BusinessError {
     );
   }
 }
+
+/**
+ * « Proposer » ne s'applique qu'à une commande SANS contenant (suite de K2b,
+ * plan §7) : la proposition dimensionne toute la commande, et la mêler à des
+ * contenants déjà faits doublerait des bacs.
+ */
+export class ProposalOverContainersError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "packing.proposal.containers_exist",
+      `La commande ${reference} a déjà des contenants : « Proposer » ne s'applique qu'à une commande qui n'en a aucun. Glissez le reste à la main, ou annulez ses contenants puis proposez de nouveau.`,
+    );
+  }
+}
+
+/** La livraison ne propose aucun bac : la grille des contenances ne couvre pas la commande. */
+export class EmptyProposalError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "packing.proposal.empty",
+      `Rien à proposer pour la commande ${reference} : aucun type de bac en service n'a de contenance pour ses produits. Remplissez l'écran « Contenances » de la livraison, ou créez les bacs à la main.`,
+    );
+  }
+}

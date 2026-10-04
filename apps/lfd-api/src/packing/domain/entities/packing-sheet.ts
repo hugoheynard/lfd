@@ -3,6 +3,7 @@ import {
   ContainersCountedError,
   ContainersListedError,
   LineGoesIntoContainerError,
+  ProposalOverContainersError,
   UnallocatedLinesError,
 } from "../errors/packing-container-errors.js";
 import {
@@ -213,6 +214,20 @@ export class PackingSheet {
     this.assertListedAndOpen();
     if (this.contents.liveCount >= MAX_CONTAINERS_PER_ORDER) {
       throw new ContainerCeilingReachedError(this.reference, MAX_CONTAINERS_PER_ORDER);
+    }
+  }
+
+  /**
+   * « Proposer » est-il permis ? Une commande ouverte, `listed`, sans aucun
+   * contenant vivant (suite de K2b, plan §7).
+   *
+   * @throws {PackedOrderSealedError} @throws {ContainersCountedError}
+   * @throws {ProposalOverContainersError}
+   */
+  assertCanApplyProposal(): void {
+    this.assertListedAndOpen();
+    if (this.contents.liveCount > 0) {
+      throw new ProposalOverContainersError(this.reference);
     }
   }
 

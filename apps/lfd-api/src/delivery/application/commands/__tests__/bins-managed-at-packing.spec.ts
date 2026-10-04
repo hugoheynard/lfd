@@ -21,10 +21,13 @@ import {
   stopOf,
 } from "./loading-doubles.js";
 import { FixedLoading, FixedOrderLines } from "../../queries/__tests__/packing-doubles.js";
+import { GetDeliveryBinFreeHalvesHandler } from "../../queries/get-delivery-bin-free-halves.handler.js";
 import { GetDeliveryPackingProposalHandler } from "../../queries/get-delivery-packing-proposal.handler.js";
 import { FixedBinCatalog, FixedDeliveryProducts } from "./bin-doubles.js";
 import { FixedManagedOrders } from "./managed-orders-double.js";
 import { deliveryOn, FixedDeliveryOrders } from "./round-doubles.js";
+
+const CAPACITY = { binTypeId: "t_m", sku: "CRO", units: 30 };
 
 // Un jour comparé à rien, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -123,6 +126,11 @@ describe("DeliveryBinDesk — la porte du colisage, aux règles de la livraison"
           new FixedBinCatalog([], []),
           new FixedLoading([]),
         ),
+        new GetDeliveryBinFreeHalvesHandler(
+          new FixedLoading([]),
+          new FixedDeliveryOrders([deliveryOn("o_listed", DAY)]),
+        ),
+        new FixedBinCatalog([], [CAPACITY]),
       ),
     };
   }
@@ -172,6 +180,23 @@ describe("DeliveryBinDesk — la porte du colisage, aux règles de la livraison"
 
     expect(view).toMatchObject({ orderId: "o_listed", bins: [], unplaced: [] });
     expect(bins.byId.size).toBe(1);
+  });
+
+  it("sert au colisage les contenances qu'a lues la proposition", async () => {
+    const { desk: target } = desk();
+
+    expect(await target.capacities()).toEqual([CAPACITY]);
+  });
+
+  it("liste les moitiés libres par le cas de lecture de la livraison, et ses refus", async () => {
+    const { desk: target } = desk();
+
+    expect(await target.freeHalves("o_listed")).toMatchObject({
+      orderId: "o_listed",
+      round: null,
+      halves: [],
+    });
+    await expect(target.freeHalves("o_unknown")).rejects.toThrow();
   });
 
   it("annule un bac, et ne le dit plus vivant", async () => {

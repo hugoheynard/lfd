@@ -176,3 +176,61 @@ verrou au départ). Un fait asynchrone ne peut pas refuser à l'écran.
   pas de « rouvrir », et `BinDesk` n'a pas de garde « intact »). Le semis de dev
   garde les commandes livrées en `counted`, parce qu'il compose les tournées
   après le colisage.
+
+## 7. Suite de K2b bâtie, côté serveur (2026-10-04)
+
+État : **serveur et contrats bâtis**, écran à faire.
+
+- **« Proposer », appliqué par le serveur d'un seul coup** —
+  `POST admin/packing/:date/orders/:orderId/proposal/apply` (204), une seule
+  unité de travail. La règle, écrite dans `distributeProposal`
+  (`apps/lfd-api/src/packing/domain/services/proposal-distribution.ts`), pure :
+  1. les bacs d'une entrée de la proposition sont ses `whole` bacs entiers,
+     puis sa moitié ; les entrées gardent l'ordre de la livraison (froid
+     d'abord) ;
+  2. chaque bac se remplit **avant le suivant**, article par article dans
+     l'ordre des SKU, avec la règle de place de la livraison : une unité
+     occupe `1 / contenance(type, SKU)` d'un bac entier, une moitié offre 0,5 ;
+  3. on ne place que ce qui est **disponible** : ce qui reste de la ligne,
+     borné par la réserve (`reçu − rendu − au bac`). Ce qui ne rentre pas, ou
+     n'est pas encore sorti du four, reste « à répartir » ;
+  4. un bac proposé naît **même vide** : la proposition dit combien de bacs la
+     commande demande, et ce qui sortira du four ira dedans.
+  - L'ordre des verrous est celui des autres gestes : commande, puis bacs chez
+    la livraison (`BinDesk.declareBin`, qui rejoint la transaction), puis la
+    réserve de chaque article dans l'ordre des SKU. Un refus, n'importe où, et
+    rien n'est écrit.
+  - **Refusé sur une commande qui a déjà un contenant vivant**
+    (`packing.proposal.containers_exist`) : la proposition dimensionne toute la
+    commande, et la mêler à des contenants faits doublerait des bacs. Une
+    commande dont tous les contenants ont été annulés se repropose.
+  - **Une proposition vide est refusée** (`packing.proposal.empty`), en
+    renvoyant à l'écran « Contenances » (décision 4 : la grille est peu
+    remplie).
+  - Le partage d'une moitié voisine (`shareCandidate`) n'est **pas** appliqué :
+    c'est un dernier recours, qui se fait à la main.
+  - Les contenances arrivent par `BinDesk.capacities()` — les mêmes
+    `activeCapacities` que lit la proposition.
+- **Partager une moitié depuis le colisage** —
+  `GET admin/packing/:date/orders/:orderId/shareable-halves`
+  (`DeliveryBinFreeHalvesView`), servi par la livraison derrière
+  `BinDesk.freeHalves()` (son cas de lecture, sa règle d'adjacence). Le
+  contenant se crée sur la moitié par la route existante
+  (`POST containers`, `{ nature: "bin", partnerBinId, innerBags }`).
+- **Le retrait partiel** était déjà permis par le contrat
+  (`POST containers/:id/lines/:sku/withdrawal`, une quantité) : vérifié et
+  éprouvé aux trois niveaux.
+- **« Rouvrir » une commande déclarée prête : NON bâti, et c'est un refus de
+  la règle, pas un oubli.** Fermer une commande publie `packing.order_packed`,
+  et le commerce la passe `ready`. Or le commerce tient que **les états ne
+  reculent jamais** (`b2b/orders/domain/services/packing.ts`,
+  `production-plan.ts`, `prisma-order.repository.ts` `absorbIntoPlan`, vérifié
+  le 2026-10-04) : aucune transition `ready → confirmed | in_production`
+  n'existe, `markReady` est conditionné en base, et `OrderReadyEvent` a déjà
+  prévenu le client. Rouvrir côté colisage sans rien republier laisserait le
+  comptoir lire « prête » une commande dont les lignes ressortent des bacs.
+  **À trancher par Hugo** : soit une transition commerce nommée (« rouverte »,
+  avec ce qu'elle dit au client et au comptoir), soit un « rouvrir » qui ne
+  touche que le rangement des contenants (pas les quantités) et laisse
+  `ready`. Les gardes côté livraison (bac chargé, tournée partie, §5.1) ne
+  dépendent pas de ce choix.
