@@ -283,3 +283,64 @@ sequenceDiagram
 - **Q6 — la matrice** : `packing` déclare `packing/channels/production/` et
   `packing/channels/commerce/` ; la boîte d'envoi porte les faits ; aucune
   lecture synchrone entre les deux.
+
+## 11. Contradiction de la v3 par `vitruve` (2026-10-04), et la v3.1
+
+**BLOQUANTS, levés :**
+
+1. **`production.day_closed` ne porte que `{serviceDay, closedAt, orderIds}`.**
+   Il ne suffit pas à créer quoi que ce soit au colisage. → Un **fait à part**,
+   `production.packing_list_drawn`, est publié dans la transaction de la
+   clôture. Il porte l'instantané des commandes à coliser : `orderId`,
+   référence, client, mode de retrait, et les lignes (SKU, nom, quantité due).
+   `day_closed` ne change pas de forme, et le commerce continue de le lire.
+2. **Le retirage n'envoie rien au commerce.** Les commandes qu'il absorbe
+   n'arriveraient jamais au colisage. → Le retirage publie le même fait,
+   `production.packing_list_drawn`, limité aux commandes absorbées, avec une
+   clé idempotente par commande.
+3. **Les faits arrivent dans le désordre** (le relais trie par
+   `next_attempt_at`). Le §10.2 est corrigé : l'ordre n'est **pas** garanti,
+   et chaque réception est commutative.
+   - Le colisage reçoit les remises dans une **réserve par `(jour, SKU)`**,
+     qui ne dépend pas des commandes : une remise qui arrive avant la liste
+     à coliser est gardée, et sert quand la liste arrive.
+   - La réponse à une demande de retour distingue deux cas :
+     - « remise inconnue » : la demande est reprise plus tard ;
+     - « refusé, tout est au bac » : la demande est close.
+
+**SÉRIEUX, tranchés :**
+
+- **Une remise devenue message mort fait disparaître des pièces.** Les deux
+  postes l'affichent (« 2 remises en souffrance »), avec le rejeu en un
+  geste. La carte de santé n'est pas le seul endroit où on la voit.
+- **« Sorti » ne doit jamais passer sous « remis ».** Tous les chemins qui
+  font baisser « sorti » lisent la somme des remises : l'annulation, la
+  décoche, `batchToComplete` et `materialize`. Un test le prouve pour chacun.
+- **Un verrou par `(jour, SKU)` côté colisage.** C'est une ligne
+  `packing.packing_stock` (reçu, rendu, au bac), modifiée par une écriture
+  conditionnée. La mise au bac et le retour passent tous les deux par elle.
+  C'est la course du §9, et une seule ligne la ferme.
+- **Le cycle de dépendances.** Le fournil déclare
+  `production/channels/packing/`, qui définit les deux contrats : les faits
+  qu'il publie, et la décision de retour qu'il attend. Le colisage importe ce
+  canal et publie dans sa forme. La matrice gagne une seule arête,
+  `packing → production`, sur le canal seulement. `production` n'importe
+  rien.
+- **Le type `production.order_packed` change de nom.** Pendant un
+  déploiement, l'abonné du commerce écoute **les deux** types. L'ancien est
+  retiré au déploiement suivant, quand plus aucune livraison ne le porte
+  (requête de comptage).
+- **Le critère de bascule** : une `packing_order` existe pour ce jour. Les
+  routes déjà servies et la supervision
+  (`get-production-day-status.handler.ts`, `get-production-packing.handler.ts`)
+  le lisent, et suivent le bon chemin.
+- **Q4 (le grain du geste)** se tranche **avant** l'étape 1 : sans elle,
+  rien n'est colisable après la bascule.
+- **Irréversible** une fois une journée colisée sur `packing`. Il n'y a pas
+  de retour automatique. Une journée de répétition en dev, avec le semis,
+  précède le déploiement.
+
+**MINEURS, notés :** le test `day_change` sur `packing` est à écrire. Le
+plafond de contenants et le bac scellé deviennent des règles du colisage.
+Une ligne peut rester indisponible **indéfiniment** si une remise meurt :
+c'est l'affichage aux deux postes qui l'empêche de passer inaperçue.
