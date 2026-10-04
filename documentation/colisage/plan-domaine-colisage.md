@@ -362,3 +362,47 @@ décision 3) : **sortir une fournée, c'est la remettre au colisage**. Le geste
 `production.handed_to_packing` est publié par la déclaration d'une fournée,
 dans sa transaction ; une annulation de fournée devient une demande de retour.
 Le grain de la remise est **la vague** (`production/plan-production-par-vagues.md`).
+
+## 12. v4 — la synthèse à bâtir (2026-10-04)
+
+> Hugo, 2026-10-04 : « l'objectif du jour est de séparer le colisage ». Cette
+> section rassemble les §10–§11.2 et le plan des vagues (§7.2 : l'échéance
+> mène) en un seul texte à bâtir. Elle **remplace** le §6 (lots P0–P3).
+
+### 12.1 Les faits
+
+| Fait (boîte d'envoi)            | Émis par, dans la transaction de                                           | Porte                                                                                                                      |
+| ------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `production.packing_list_drawn` | la clôture ; le retirage (commandes absorbées seulement)                   | par commande : `orderId`, référence, client, mode, **échéance** (début du créneau ou fin), lignes (SKU, nom, quantité due) |
+| `production.handed_to_packing`  | la déclaration d'une fournée (= la sortie du four, décision du 2026-09-28) | `handoffId`, jour, SKU, quantité                                                                                           |
+| `production.return_requested`   | l'annulation ou la décoche d'une fournée **déjà remise**                   | `requestId`, jour, SKU, quantité                                                                                           |
+| `packing.returned`              | le colisage, qui décide                                                    | `requestId`, rendu (0 = refus, affiché au fournil) ou « remise inconnue » (reprise plus tard)                              |
+| `packing.order_packed`          | la fermeture d'un bac au colisage                                          | remplace `production.order_packed` ; le commerce écoute les deux types pendant un déploiement                              |
+
+Contrats déclarés par le fournil dans `production/channels/packing/`. Seule
+arête neuve : `packing → production`, sur ce canal. L'ordre n'est pas garanti :
+chaque réception est commutative.
+
+### 12.2 Le colisage
+
+- Schéma `packing` : `packing_order` (clé `order_id` opaque, `service_day`,
+  échéance, état, scellé, contenants), `packing_line` (SKU, due, au bac, qui,
+  quand), `packing_stock` (`service_day`, SKU : reçu, rendu, au bac — **la**
+  ligne verrouillée par la mise au bac et le retour), `packing_receipt`
+  (idempotence par `handoffId` / `requestId`).
+- **Colisable** : le stock du SKU, attribué aux commandes par échéance
+  croissante (la plus proche d'abord), couvre la ligne. Calculé à la lecture.
+- Les règles du poste d'aujourd'hui y déménagent : bac scellé, plafond de
+  contenants, ligne réversible tant que le bac n'est pas fermé.
+
+### 12.3 Les lots
+
+| Lot                        | Contenu                                                                                                                                                                                                                                                                                               | Migration |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **K1 — étendre, en ombre** | Tables `packing.*` et `production.production_handoff`. Le fournil publie les quatre faits ; le colisage les reçoit et tient ses tables **en ombre**, sans que personne ne les lise. Un écran de contrôle (dev, et la carte de santé) compare l'ombre au colisage réel jour par jour.                  | additive  |
+| **K2 — basculer**          | Le poste de colisage écrit dans `packing` pour une journée **non encore arrêtée** au déploiement ; `packing.order_packed` remplace l'ancien fait ; les gardes de fournées lisent `production_handoff` ; routes servies et supervision suivent le critère « une `packing_order` existe pour ce jour ». | non       |
+| **K3 — resserrer**         | Les colonnes `packed_*` / `container_count` du fournil cessent d'être lues ; l'ancien type de fait est retiré. Après comptage donné à Hugo.                                                                                                                                                           | plus tard |
+
+**L'ombre (K1) est la répétition** que le §11 demandait : quelques jours de
+production réelle où le colisage calcule à côté, sans risque, avant qu'on le
+rende réel.
