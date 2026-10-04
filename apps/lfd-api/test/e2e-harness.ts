@@ -29,7 +29,7 @@
  */
 
 import { legacyRoleSeeds } from "@lfd/contracts";
-import type { INestApplication } from "@nestjs/common";
+import type { INestApplication, Type } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
 import type { App } from "supertest/types";
@@ -115,11 +115,16 @@ export interface E2eOverride {
 
 export interface E2eOptions {
   readonly overrides?: readonly E2eOverride[];
+  /**
+   * Modules AJOUTÉS à côté de l'`AppModule` — pour une sonde que seul l'e2e
+   * déclare (un abonné durable de test, par ex.). Ils ne remplacent rien.
+   */
+  readonly imports?: readonly Type[];
 }
 
 /** Boote l'app e2e et vérifie que la base de test est bien joignable et migrée. */
 export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext> {
-  const builder = Test.createTestingModule({ imports: [AppModule] })
+  const builder = Test.createTestingModule({ imports: [AppModule, ...(options.imports ?? [])] })
     .overrideProvider(AccessTokenVerifier)
     .useValue(stubVerifier)
     // 🔴 SECONDE frontière doublée du harnais, après la signature Auth0, et

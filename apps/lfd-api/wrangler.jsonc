@@ -134,7 +134,8 @@
   //    s'endort jamais et personne ne paie de démarrage à froid. Sans ce cron,
   //    une nuit ou un dimanche suffisent à endormir le backend, et le premier
   //    visiteur du matin attend le boot de Node. Coût : ~8 600 requêtes Worker
-  //    par mois, invisible dans le forfait.
+  //    par mois, invisible dans le forfait. Le même passage balaie la boîte
+  //    d'envoi (POST /admin/outbox/sweep, `triggerOutboxSweep` dans worker.ts).
   //
   // 2. `0 3|11|19` — RECOMPUTE du read-model `lead_score` (POST /admin/recompute
   //    vers le container, jeton RECOMPUTE_TOKEN), 3×/jour aux HEURES CREUSES,

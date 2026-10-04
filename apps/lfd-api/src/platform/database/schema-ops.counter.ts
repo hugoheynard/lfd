@@ -264,6 +264,10 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   DeliveryPurchaseBinCandidate: "delivery",
   // Les scénarios d'achat (lot B3) : une sélection nommée, enregistrée à la main.
   DeliveryPurchaseScenario: "delivery",
+  // La boîte d'envoi (plan-boite-d-envoi, BE1) : le relais l'écrit surtout en
+  // SQL brut — compté dans le seau brut ; seul le rejeu passe par ces modèles.
+  OutboxMessage: "platform",
+  OutboxDelivery: "platform",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

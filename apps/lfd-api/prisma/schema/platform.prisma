@@ -1,0 +1,60 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// PLATFORM — la boîte d'envoi, aucune connaissance métier
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Plan `documentation/journalisation/plan-boite-d-envoi.md`, lot BE1 (§7 et §8).
+// Code dans `src/platform/outbox/`. Le `type` et la `payload` d'un fait sont
+// des VALEURS opaques ici : le schéma ne sait pas ce qu'est une commande.
+
+/// **Un fait durable**, écrit dans la même transaction que le changement qu'il
+/// décrit : si elle tombe, il n'existe pas ; si elle passe, il existe pour
+/// toujours. Jamais supprimé (§7 : pas de DELETE, on archivera si le volume
+/// l'exige).
+///
+/// L'état de livraison n'est PAS ici : il est par abonné, dans
+/// `OutboxDelivery` (§8) — un message a N abonnés, et un seul peut bloquer.
+model OutboxMessage {
+  /// ULID assigné par l'`IdGenerator`.
+  id         String   @id
+  /// Clé DÉTERMINISTE du fait (`order.packed:<orderId>`) : un même fait ne
+  /// s'écrit qu'une fois, quel que soit le chemin (`ON CONFLICT DO NOTHING`).
+  key        String   @unique
+  /// Nom stable du fait (`order.handed_over`), quelle que soit la classe.
+  type       String
+  payload    Json
+  /// Lu du `Clock`, jamais de la base.
+  occurredAt DateTime @map("occurred_at") @db.Timestamptz(3)
+  traceId    String?  @map("trace_id")
+
+  deliveries OutboxDelivery[]
+
+  @@map("outbox")
+  @@schema("platform")
+}
+
+/// **La livraison d'un fait à UN abonné** — et son reçu.
+///
+/// `delivered_at` posé dans la MÊME transaction que l'effet de l'abonné : c'est
+/// le reçu qui rend une seconde livraison sans effet. Les essais, le bail et la
+/// dernière erreur sont par couple message × abonné : une lettre morte nomme
+/// l'abonné qui bloque.
+///
+/// L'index PARTIEL sur les non livrées (`WHERE delivered_at IS NULL`) est écrit
+/// à la main dans la migration `20261004120000_la_boite_d_envoi` : Prisma ne
+/// sait pas le dire.
+model OutboxDelivery {
+  eventId       String        @map("event_id")
+  /// Nom stable de l'abonné (`@DurableHandler`).
+  subscriber    String
+  attempts      Int           @default(0)
+  nextAttemptAt DateTime      @map("next_attempt_at") @db.Timestamptz(3)
+  /// Bail du relais qui l'a réservée : expiré, la ligne revient.
+  claimedUntil  DateTime?     @map("claimed_until") @db.Timestamptz(3)
+  deliveredAt   DateTime?     @map("delivered_at") @db.Timestamptz(3)
+  lastError     String?       @map("last_error")
+  message       OutboxMessage @relation(fields: [eventId], references: [id])
+
+  @@id([eventId, subscriber])
+  @@map("outbox_delivery")
+  @@schema("platform")
+}

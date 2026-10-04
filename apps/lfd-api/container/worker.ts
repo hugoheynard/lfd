@@ -329,6 +329,29 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et balaie la boîte d'envoi : livre les faits durables
+ * que le chemin rapide n'a pas livrés — processus mort après la validation,
+ * abonné en échec dont le délai est échu (plan
+ * `documentation/journalisation/plan-boite-d-envoi.md`, §7 B3).
+ *
+ * Sur le cron de RAFRAÎCHISSEMENT, pas sur un cron à lui : c'est déjà lui qui
+ * réveille l'instance toutes les cinq minutes, et un fait en attente ne doit
+ * pas attendre plus. Même porte et même jeton que le recompute ; idempotent.
+ */
+async function triggerOutboxSweep(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await backend(env).fetch(
+    new Request("https://internal/admin/outbox/sweep", {
+      method: "POST",
+      headers: { "x-lfc-recompute-token": token },
+    }),
+  );
+}
+
+/**
  * L'expression exacte du cron de rafraîchissement, telle qu'écrite dans
  * `wrangler.jsonc`. Cloudflare ne transmet que cette chaîne pour distinguer les
  * déclenchements : elle doit rester **identique des deux côtés**, sinon le ping
@@ -392,7 +415,7 @@ async function keepWarm(env: Env): Promise<void> {
 function dispatchCron(cron: string, env: Env): Promise<void> {
   switch (cron) {
     case KEEP_WARM_CRON:
-      return keepWarm(env);
+      return keepWarm(env).then(() => triggerOutboxSweep(env));
     case MEDIA_SWEEP_CRON:
       return triggerMediaSweep(env);
     case LOYALTY_SWEEP_CRON:

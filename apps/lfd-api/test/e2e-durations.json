@@ -133,6 +133,7 @@
   "test/order-window-mode.e2e-spec.ts": 3571,
   "test/orders-idempotency.e2e-spec.ts": 4018,
   "test/orders.e2e-spec.ts": 9766,
+  "test/outbox.e2e-spec.ts": 7455,
   "test/password-link.e2e-spec.ts": 2935,
   "test/payment-links.e2e-spec.ts": 5607,
   "test/payments-journal.e2e-spec.ts": 6084,

@@ -50,6 +50,7 @@ import { envFilePaths } from "../platform/config/env-readers.js";
 import { BusModule } from "../platform/bus/bus.module.js";
 import { ContextModule } from "../platform/context/context.module.js";
 import { EventsModule } from "../platform/events/events.module.js";
+import { OutboxModule } from "../platform/outbox/outbox.module.js";
 import { IdentityModule } from "../platform/identity/identity.module.js";
 import { LoggingModule } from "../platform/logging/logging.module.js";
 import { StartupModule } from "../platform/startup/startup.module.js";
@@ -81,6 +82,7 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     // Publication d'événements de domaine (@Global) : bus cqrs derrière un port
     // injectable. Les émetteurs publient, le journal croissance écoute.
     EventsModule,
+    OutboxModule,
     IdentityModule,
     StartupModule,
     LoggingModule,

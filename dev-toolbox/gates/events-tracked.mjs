@@ -16,6 +16,14 @@
  * il ne se voit qu'un jour de malchance, en CI, sur un test qui n'a rien à voir.
  * D'où ce filet.
  *
+ * Depuis le 2026-10-04 (plan `documentation/journalisation/plan-boite-d-envoi.md`,
+ * §7), elle couvre aussi les abonnés DURABLES (`@DurableHandler`). Eux ne
+ * s'inscrivent pas eux-mêmes : c'est le relais qui les appelle, et c'est LUI
+ * qui doit passer par `this.work.track(` — sans quoi `drain()` rendrait la main
+ * avant leur livraison. Et un abonné durable n'ouvre pas d'unité de travail :
+ * la garde commune l'ouvre, avec le reçu ; une seconde, imbriquée, rejoindrait
+ * la première sans rien changer — mais dirait au lecteur le contraire.
+ *
  * Usage : `pnpm lint:events-tracked` (branché en CI).
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
@@ -85,7 +93,13 @@ function* walk(dir) {
   }
 }
 
+/** Le relais qui appelle les abonnés durables : c'est lui qui s'inscrit. */
+const DURABLE_RELAY = "apps/lfd-api/src/platform/outbox/outbox-relay.ts";
+const DURABLE_DEFINITION = "apps/lfd-api/src/platform/outbox/durable-handler.ts";
+
 const offenders = [];
+const durableOffenders = [];
+let durableHandlers = 0;
 for (const root of SCAN_ROOTS) {
   for (const file of walk(join(ROOT, root))) {
     const path = relative(ROOT, file);
@@ -93,6 +107,15 @@ for (const root of SCAN_ROOTS) {
       continue;
     }
     const source = readFileSync(file, "utf8");
+    if (path !== DURABLE_DEFINITION && /@DurableHandler\(/u.test(source)) {
+      durableHandlers += 1;
+      if (/\bUnitOfWork\b/u.test(source)) {
+        durableOffenders.push(`${path} — ouvre sa propre unité de travail`);
+      }
+      if (!source.includes("implements DurableSubscriber")) {
+        durableOffenders.push(`${path} — n'implémente pas DurableSubscriber`);
+      }
+    }
     // Un module qui se contente d'ENREGISTRER des abonnés n'en est pas un.
     if (!source.includes("@EventsHandler(") || !source.includes("implements IEventHandler")) {
       continue;
@@ -101,6 +124,25 @@ for (const root of SCAN_ROOTS) {
       offenders.push(path);
     }
   }
+}
+
+// Le relais doit exister et s'inscrire, qu'il ait déjà des abonnés ou non :
+// le jour où le premier arrive, il est trop tard pour s'en apercevoir.
+const relayPath = join(ROOT, DURABLE_RELAY);
+if (!existsSync(relayPath) || !readFileSync(relayPath, "utf8").includes("this.work.track(")) {
+  durableOffenders.push(`${DURABLE_RELAY} — le relais ne s'inscrit pas au travail de fond`);
+}
+
+if (durableOffenders.length > 0) {
+  console.error("Abonnés durables mal branchés :\n");
+  for (const line of durableOffenders) {
+    console.error(`  ${line}`);
+  }
+  console.error(
+    "\nLe relais appelle les @DurableHandler sous `this.work.track(...)`, dans\n" +
+      "l'unité de travail de la garde commune : l'abonné n'en ouvre pas.\n",
+  );
+  process.exit(1);
 }
 
 if (offenders.length > 0) {
@@ -116,4 +158,7 @@ if (offenders.length > 0) {
   process.exit(1);
 }
 
-console.log("Gate OK : tous les abonnés d'événement s'inscrivent au travail de fond.");
+console.log(
+  `Gate OK : tous les abonnés d'événement s'inscrivent au travail de fond ` +
+    `(${durableHandlers} abonné(s) durable(s), relais inscrit).`,
+);
