@@ -91,6 +91,16 @@ seulement quand la tâche courante le demande.
 
 ## 0. 🔴 Le back-office est EN SERVICE depuis le 2026-08-17
 
+> ⚠️ **Corrigé par Hugo le 2026-10-04 : on est en PRÉ-RELEASE.** Il n'y a pas
+> encore d'activité commerciale réelle (« je ne suis pas en activité encore »).
+> Conséquence décidée ce jour-là : un contrat servi peut être cassé dans le
+> même déploiement (plus d'obligation « étendre, basculer, resserrer » pour le
+> code et les contrats), sur décision de Hugo par chantier. **Ce qui reste
+> vrai** : pas de suppression ni de remise à blanc en production sans ordre
+> explicite (une colonne morte reste en base), les messages d'erreur nomment le
+> cas réel, et un merge dans `main` déploie. Le texte ci-dessous décrit
+> l'intention d'origine ; il redevient la règle au lancement commercial.
+
 Le back-office staff (`lfd-backoffice-frontend` + `/admin/*` du backend B2B) est
 **ouvert à l'usage commercial réel**. Ce n'est plus une maquette qu'on itère : des
 comptes clients y sont créés, des accès y sont ouverts, des e-mails en partent.
@@ -278,20 +288,20 @@ src/
 └── main.ts
 ```
 
-| Depuis ↓ vers →    | `staff`          | `pim`               | `media`             | `b2b` | `production`        | `handover`          | `ops` | `delivery`          | `packing` | `platform` |
-| ------------------ | ---------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ----- | ------------------- | --------- | ---------- |
-| **`staff`**        | —                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗         | ✓          |
-| **`pim`**          | ✓ (autorisation) | —                   | **port uniquement** | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗         | ✓          |
-| **`media`**        | ✓ (autorisation) | **port uniquement** | —                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗         | ✓          |
-| **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | ✗         | ✓          |
-| **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✗                   | **✗**     | ✓          |
-| **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | **port uniquement** | ✗         | ✓          |
-| **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | ✗                   | ✗     | —                   | ✗         | ✓          |
-| **`packing`**      | ✓ (autorisation) | ✗                   | ✗                   | ✗     | **port uniquement** | ✗                   | ✗     | ✗                   | —         | ✓          |
-| **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✗                   | ✗         | ✓          |
-| **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗         | —          |
-| **`appBootstrap`** | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓         | ✓          |
-| **`dev`**          | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓         | ✓          |
+| Depuis ↓ vers →    | `staff`          | `pim`               | `media`             | `b2b` | `production`        | `handover`          | `ops` | `delivery`          | `packing`           | `platform` |
+| ------------------ | ---------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ---------- |
+| **`staff`**        | —                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✓          |
+| **`pim`**          | ✓ (autorisation) | —                   | **port uniquement** | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✓          |
+| **`media`**        | ✓ (autorisation) | **port uniquement** | —                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✓          |
+| **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | ✗                   | ✓          |
+| **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✗                   | **✗**               | ✓          |
+| **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | **port uniquement** | ✗                   | ✓          |
+| **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | ✗                   | ✗     | —                   | **port uniquement** | ✓          |
+| **`packing`**      | ✓ (autorisation) | ✗                   | ✗                   | ✗     | **port uniquement** | ✗                   | ✗     | ✗                   | —                   | ✓          |
+| **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✗                   | ✗                   | ✓          |
+| **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —          |
+| **`appBootstrap`** | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓          |
+| **`dev`**          | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓          |
 
 🔴 **`pim` et `media` sont les deux aux DEUX CÔTÉS d'un canal** — le cas que
 `handover` était seul à connaître. Chacun déclare ce dont il a besoin et
@@ -348,6 +358,17 @@ de l'ancien chemin que seule la route de contrôle de l'ombre lit. `production �
 packing` reste interdit : le fournil publie, il ne sait pas qui écoute. En K1,
 le colisage ne tient qu'une ombre ; `production_day.packing_owner` dit qui
 colise réellement une journée, et vaut toujours `legacy`.
+
+🔴 **`delivery` implémente ce que le colisage déclare** (2026-10-04, K2b,
+[`documentation/colisage/plan-les-bacs-au-colisage.md`](documentation/colisage/plan-les-bacs-au-colisage.md),
+§5–§5.1). Le colisage tient le CONTENU des contenants ; la livraison garde le
+BAC (code court, QR, chargement, « Partir »). Le colisage déclare
+`packing/channels/delivery/` — `BinDesk` (déclarer, annuler, partager un bac,
+proposer, « ces bacs sont-ils vivants ? »), que la livraison implémente dans la
+transaction de l'appelant, et `ContainerManagedOrders`, qu'il implémente
+lui-même et que les anciennes routes des bacs lisent pour refuser une commande
+gérée au colisage. `packing → delivery` reste interdit : le colisage ne sait
+pas qui le branche, et « Proposer » ne fait donc pas de cycle.
 
 🔴 **`production → b2b` est INTERDIT**, et c'est le sens qui compte. Le fournil
 DÉCLARE ce dont il a besoin (`production/channels/commerce/`) et le commerce
