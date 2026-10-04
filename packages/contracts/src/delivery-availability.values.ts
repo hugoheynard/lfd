@@ -47,6 +47,16 @@ export interface DeliveryAvailabilityView {
    * Une adresse peut le surcharger (`DeliverySpecs.windowMode`).
    */
   readonly windowMode: WindowMode;
+  /**
+   * **Marge de livraison**, en minutes : colisage + chargement, retranchée de
+   * l'échéance d'une livraison pour dire au fournil avant quelle heure sortir
+   * (plan production par vagues, §7.3). `null` = non réglée — aucune valeur
+   * n'est inventée. Toujours servie depuis le 2026-10-04 ; facultative au TYPE
+   * pour qu'un front qui construit sa propre vue compile encore.
+   */
+  readonly deliveryMarginMinutes?: number | null | undefined;
+  /** **Marge de retrait**, en minutes : colisage seul. Même contrat que la précédente. */
+  readonly pickupMarginMinutes?: number | null | undefined;
   /** Instant du dernier geste ; `null` tant que personne n'a rien réglé (ouvert aux deux). */
   readonly updatedAt: string | null;
   /** Le nom de qui l'a posé, figé au geste ; `null` tant que personne n'a rien réglé. */
@@ -74,6 +84,8 @@ export const DEFAULT_DELIVERY_AVAILABILITY: DeliveryAvailabilityView = {
   openToB2b: true,
   openToB2c: true,
   windowMode: "deadline",
+  deliveryMarginMinutes: null,
+  pickupMarginMinutes: null,
   updatedAt: null,
   updatedBy: null,
 };

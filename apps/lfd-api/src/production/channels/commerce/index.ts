@@ -36,3 +36,10 @@ export {
   PRODUCTION_ORDER_PACKED,
 } from "./order-packed.event.js";
 export { WorkshopShelvesReader } from "./workshop-shelves.reader.js";
+export {
+  DueThresholdsReader,
+  type DayDueThresholds,
+  type DueThreshold,
+  type DueThresholdKind,
+  type SkuDueThresholds,
+} from "./due-thresholds.reader.js";

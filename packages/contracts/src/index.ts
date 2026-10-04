@@ -501,6 +501,18 @@ export type {
   ProductionForecastQuery,
   ProductionForecastView,
 } from "./production-forecast.js";
+export {
+  dueThresholdKindSchema,
+  dueThresholdSchema,
+  productionDueThresholdLineSchema,
+  productionDueThresholdsViewSchema,
+} from "./production-due-thresholds.js";
+export type {
+  DueThresholdKind,
+  DueThresholdView,
+  ProductionDueThresholdLine,
+  ProductionDueThresholdsView,
+} from "./production-due-thresholds.js";
 export { productionBatchQuerySchema } from "./production-sheet.js";
 export type {
   ProductionBatchQuery,

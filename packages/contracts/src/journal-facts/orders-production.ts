@@ -184,8 +184,20 @@ const containerRule = () =>
  * portent pas, et un fait passé ne se réécrit pas.
  */
 const windowModeOfFact = () => z.enum(WINDOW_MODES).optional();
+/**
+ * Une marge de production, en minutes (plan production par vagues, V0) :
+ * `null` = non réglée. Facultative : les faits écrits avant le 2026-10-04 ne
+ * la portent pas.
+ */
+const marginOfFact = () => z.number().int().nonnegative().nullable().optional();
 const openings = () =>
-  payload({ openToB2b: z.boolean(), openToB2c: z.boolean(), windowMode: windowModeOfFact() });
+  payload({
+    openToB2b: z.boolean(),
+    openToB2c: z.boolean(),
+    windowMode: windowModeOfFact(),
+    deliveryMarginMinutes: marginOfFact(),
+    pickupMarginMinutes: marginOfFact(),
+  });
 
 /**
  * Le sujet d'une commande est la PERSONNE qui l'a passée (`subjectType:
@@ -348,6 +360,8 @@ export const ORDERS_PRODUCTION_FACTS = {
       openToB2b: z.boolean(),
       openToB2c: z.boolean(),
       windowMode: windowModeOfFact(),
+      deliveryMarginMinutes: marginOfFact(),
+      pickupMarginMinutes: marginOfFact(),
       previous: openings(),
     }),
   ),

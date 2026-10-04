@@ -4,11 +4,13 @@ import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { CatalogWorkshopShelvesReader } from "../b2b/catalog/infrastructure/catalog-workshop-shelves.reader.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PendingSettlementSweep } from "../b2b/orders/application/services/pending-settlement-sweep.service.js";
+import { DueThresholds } from "../b2b/orders/application/services/due-thresholds.service.js";
 import { PrismaDayOrdersReader } from "../b2b/orders/infrastructure/prisma-day-orders.reader.js";
 import { PrismaExpectedProductionReader } from "../b2b/orders/infrastructure/prisma-expected-production.reader.js";
 import { PrismaPendingOrdersReader } from "../b2b/orders/infrastructure/prisma-pending-orders.reader.js";
 import {
   DayOrdersReader,
+  DueThresholdsReader,
   ExpectedProductionReader,
   PendingCommerceOrdersReader,
   PendingSettlementSweeper,
@@ -62,9 +64,13 @@ import {
     // de trancher les règlements en vol avant de compter (plan d'abandon, B1).
     // `useExisting` : l'instance est celle d'`OrdersModule`, qui a ses ports.
     { provide: PendingSettlementSweeper, useExisting: PendingSettlementSweep },
+    // Le compte à rebours par échéance (vagues, V0) : l'échéance et les marges
+    // sont au commerce, la production ne reçoit que des seuils.
+    { provide: DueThresholdsReader, useExisting: DueThresholds },
   ],
   exports: [
     DayOrdersReader,
+    DueThresholdsReader,
     ExpectedProductionReader,
     PendingCommerceOrdersReader,
     PendingSettlementSweeper,

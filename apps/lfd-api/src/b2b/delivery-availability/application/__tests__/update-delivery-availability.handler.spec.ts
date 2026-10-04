@@ -8,6 +8,7 @@ import {
   type StaffIdentity,
 } from "../../../account/domain/ports/staff-directory.js";
 import type { DeliveryAvailability } from "../../domain/delivery-availability.js";
+import { InvalidProductionMarginError } from "../../domain/production-margin.js";
 import { DeliveryAvailabilityReader } from "../../domain/ports/delivery-availability.reader.js";
 import { DeliveryAvailabilityRepository } from "../../domain/ports/delivery-availability.repository.js";
 import { UpdateDeliveryAvailabilityCommand } from "../commands/update-delivery-availability.command.js";
@@ -107,7 +108,15 @@ describe("UpdateDeliveryAvailabilityHandler", () => {
       openToB2b: false,
       openToB2c: true,
       windowMode: "deadline",
-      previous: { openToB2b: true, openToB2c: true, windowMode: "deadline" },
+      deliveryMarginMinutes: null,
+      pickupMarginMinutes: null,
+      previous: {
+        openToB2b: true,
+        openToB2c: true,
+        windowMode: "deadline",
+        deliveryMarginMinutes: null,
+        pickupMarginMinutes: null,
+      },
     });
   });
 
@@ -145,5 +154,32 @@ describe("GetDeliveryAvailabilityHandler", () => {
     ).execute();
 
     expect(view).toEqual(DEFAULT_DELIVERY_AVAILABILITY);
+  });
+
+  it("pose une marge de livraison sur un réglage qui portait déjà celle du retrait", async () => {
+    const written = new Written();
+
+    await handler(
+      { ...DEFAULT_DELIVERY_AVAILABILITY, pickupMarginMinutes: 20 },
+      written,
+      new RecordingPublisher(),
+    ).execute(new UpdateDeliveryAvailabilityCommand({ deliveryMarginMinutes: 45 }, "staff_agent"));
+
+    expect([written.last?.deliveryMarginMinutes, written.last?.pickupMarginMinutes]).toEqual([
+      45, 20,
+    ]);
+  });
+
+  it("refuse une marge hors de la journée, sans rien écrire ni journaliser", async () => {
+    const written = new Written();
+    const events = new RecordingPublisher();
+
+    await expect(
+      handler(DEFAULT_DELIVERY_AVAILABILITY, written, events).execute(
+        new UpdateDeliveryAvailabilityCommand({ pickupMarginMinutes: -10 }, "staff_agent"),
+      ),
+    ).rejects.toThrow(InvalidProductionMarginError);
+    expect(written.last).toBeNull();
+    expect(events.factTypes()).toEqual([]);
   });
 });

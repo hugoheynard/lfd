@@ -1,5 +1,6 @@
 import { DeliveryAvailability } from "../delivery-availability.js";
 import { DeliveryAvailabilityUpdatedEvent } from "../delivery-availability.events.js";
+import { InvalidProductionMarginError } from "../production-margin.js";
 
 const AT = new Date(0);
 const AUTHOR = { staffUserId: "staff_agent", name: "Camille Durand", role: "commercial" };
@@ -60,7 +61,15 @@ describe("DeliveryAvailabilityUpdatedEvent", () => {
       openToB2b: true,
       openToB2c: false,
       windowMode: "slot",
-      previous: { openToB2b: true, openToB2c: true, windowMode: "slot" },
+      deliveryMarginMinutes: null,
+      pickupMarginMinutes: null,
+      previous: {
+        openToB2b: true,
+        openToB2c: true,
+        windowMode: "slot",
+        deliveryMarginMinutes: null,
+        pickupMarginMinutes: null,
+      },
     });
   });
 });
@@ -90,5 +99,64 @@ describe("DeliveryAvailability.pose — créneau ou échéance (CA-D2)", () => {
     });
 
     expect(settings.windowMode).toBe("deadline");
+  });
+});
+
+describe("DeliveryAvailability.pose — marges de production (vagues, V0)", () => {
+  const pose = (
+    current: Parameters<typeof DeliveryAvailability.pose>[0]["current"],
+    patch: Parameters<typeof DeliveryAvailability.pose>[0]["patch"],
+  ) => DeliveryAvailability.pose({ current, patch, at: AT, author: AUTHOR });
+
+  it("n'invente aucune marge : un réglage jamais posé reste non réglé", () => {
+    const settings = pose(OPEN, { openToB2b: false });
+
+    expect([settings.deliveryMarginMinutes, settings.pickupMarginMinutes]).toEqual([null, null]);
+  });
+
+  it("règle les deux marges indépendamment", () => {
+    const settings = pose(OPEN, { deliveryMarginMinutes: 50, pickupMarginMinutes: 20 });
+
+    expect([settings.deliveryMarginMinutes, settings.pickupMarginMinutes]).toEqual([50, 20]);
+  });
+
+  it("une marge absente du patch reste telle quelle, `null` l'efface", () => {
+    const settings = pose(
+      { ...OPEN, deliveryMarginMinutes: 50, pickupMarginMinutes: 20 },
+      { pickupMarginMinutes: null },
+    );
+
+    expect([settings.deliveryMarginMinutes, settings.pickupMarginMinutes]).toEqual([50, null]);
+  });
+
+  it("admet zéro et une journée pleine, bornes comprises", () => {
+    const settings = pose(OPEN, { deliveryMarginMinutes: 0, pickupMarginMinutes: 1440 });
+
+    expect([settings.deliveryMarginMinutes, settings.pickupMarginMinutes]).toEqual([0, 1440]);
+  });
+
+  it.each([-1, 1441, 12.5])("refuse une marge de livraison de %p minutes", (value) => {
+    expect(() => pose(OPEN, { deliveryMarginMinutes: value })).toThrow(
+      InvalidProductionMarginError,
+    );
+  });
+
+  it("nomme la marge refusée et le geste de sortie", () => {
+    expect(() => pose(OPEN, { pickupMarginMinutes: -5 })).toThrow(
+      /marge de retrait.*videz le champ/su,
+    );
+  });
+
+  it("le fait du journal porte les marges posées et remplacées", () => {
+    const previous = { ...OPEN, deliveryMarginMinutes: 30 };
+    const settings = pose(previous, { deliveryMarginMinutes: 45 });
+
+    const payload = new DeliveryAvailabilityUpdatedEvent(settings, previous).journalFact().payload;
+
+    expect(payload).toMatchObject({
+      deliveryMarginMinutes: 45,
+      pickupMarginMinutes: null,
+      previous: { deliveryMarginMinutes: 30, pickupMarginMinutes: null },
+    });
   });
 });

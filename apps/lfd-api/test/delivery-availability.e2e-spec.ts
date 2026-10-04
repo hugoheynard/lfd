@@ -5,6 +5,7 @@
  */
 import {
   DEFAULT_DELIVERY_AVAILABILITY,
+  type ProductionDueThresholdsView,
   type DeliveryAvailabilityView,
   type PublicDeliveryAvailabilityView,
 } from "@lfd/contracts";
@@ -133,7 +134,15 @@ describe("le réglage de livraison", () => {
       openToB2b: true,
       openToB2c: false,
       windowMode: "deadline",
-      previous: { openToB2b: true, openToB2c: true, windowMode: "deadline" },
+      deliveryMarginMinutes: null,
+      pickupMarginMinutes: null,
+      previous: {
+        openToB2b: true,
+        openToB2c: true,
+        windowMode: "deadline",
+        deliveryMarginMinutes: null,
+        pickupMarginMinutes: null,
+      },
     });
   });
 
@@ -147,5 +156,36 @@ describe("le réglage de livraison", () => {
       windowMode: "slot",
     });
     expect((await adminView()).windowMode).toBe("slot");
+  });
+
+  // Plan production par vagues, V0 : deux marges, sans défaut inventé.
+  it("pose les marges de production, les sert à l'admin seul et au compte à rebours du fournil", async () => {
+    expect((await adminView()).deliveryMarginMinutes).toBeNull();
+
+    await staff()
+      .patch("/admin/delivery-availability")
+      .send({ deliveryMarginMinutes: 50, pickupMarginMinutes: 20 })
+      .expect(204);
+
+    expect(await adminView()).toMatchObject({ deliveryMarginMinutes: 50, pickupMarginMinutes: 20 });
+    expect(await publicView()).not.toHaveProperty("deliveryMarginMinutes");
+    const due = jsonBody<ProductionDueThresholdsView>(
+      await staff().get("/admin/production/batch/2030-01-15/due-thresholds").expect(200),
+    );
+    expect(due).toEqual({
+      date: "2030-01-15",
+      deliveryMarginMinutes: 50,
+      pickupMarginMinutes: 20,
+      lines: [],
+    });
+  });
+
+  it("refuse une marge hors de la journée, sans rien écrire", async () => {
+    await staff()
+      .patch("/admin/delivery-availability")
+      .send({ pickupMarginMinutes: 2000 })
+      .expect(400);
+
+    expect((await adminView()).pickupMarginMinutes).toBeNull();
   });
 });

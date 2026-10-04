@@ -1,5 +1,6 @@
 import {
   type ProductionDayStatus,
+  type ProductionDueThresholdsView,
   type ProductionForecastQuery,
   type ProductionForecastView,
   type ProductionPackingAck,
@@ -21,6 +22,7 @@ import { GetAtelierSheetPdfQuery } from "../application/queries/get-atelier-shee
 import { GetProductionCountPdfQuery } from "../application/queries/get-production-count-pdf.query.js";
 import { GetProductionDayStatusQuery } from "../application/queries/get-production-day-status.query.js";
 import { GetProductionForecastQuery } from "../application/queries/get-production-forecast.query.js";
+import { GetProductionDueThresholdsQuery } from "../application/queries/get-production-due-thresholds.query.js";
 import type { ProductionPaper } from "../application/services/production-paper.service.js";
 
 /**
@@ -174,6 +176,19 @@ export class ProductionDayController {
   ): Promise<ProductionForecastView> {
     return this.queries.execute<GetProductionForecastQuery, ProductionForecastView>(
       new GetProductionForecastQuery(query.from, query.to),
+    );
+  }
+
+  /**
+   * **Le compte à rebours d'une journée** — pour chaque produit, ce qui doit
+   * être sorti avant chaque heure, cumulé (plan production par vagues, V0).
+   * Lecture seule, prévision calculée par le commerce ; même garde que le
+   * prévisionnel (`production_plan`).
+   */
+  @Get("batch/:date/due-thresholds")
+  async dueThresholds(@Param("date") date: string): Promise<ProductionDueThresholdsView> {
+    return this.queries.execute<GetProductionDueThresholdsQuery, ProductionDueThresholdsView>(
+      new GetProductionDueThresholdsQuery(productionBatchQuerySchema.parse({ date }).date),
     );
   }
 

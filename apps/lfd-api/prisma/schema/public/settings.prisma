@@ -106,6 +106,14 @@ model DeliveryAvailability {
   /// (CA-D2). Plan composition automatique.
   windowMode DeliveryWindowMode @default(deadline) @map("window_mode")
 
+  /// **Marges de production**, en minutes (plan production par vagues, V0,
+  /// §7.3) : livraison = colisage + chargement ; retrait = colisage seul.
+  /// Retranchées de l'échéance d'une commande pour dire au fournil avant
+  /// quelle heure sortir. `NULL` = non réglée, et c'est voulu : sans réglage,
+  /// la journée n'a qu'un seul seuil. Aucun défaut inventé.
+  deliveryMarginMinutes Int? @map("delivery_margin_minutes")
+  pickupMarginMinutes   Int? @map("pickup_margin_minutes")
+
   /// Instant du geste, lu du `Clock` — pas `@updatedAt`, qui lirait l'horloge
   /// de la base au lieu de celle de la requête.
   updatedAt        DateTime @map("updated_at")

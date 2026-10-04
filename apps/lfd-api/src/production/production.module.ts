@@ -42,6 +42,7 @@ import { GetCurrentProductionWorksheetHandler } from "./application/queries/get-
 import { GetProductionCountPdfHandler } from "./application/queries/get-production-count-pdf.handler.js";
 import { GetProductionDayStatusHandler } from "./application/queries/get-production-day-status.handler.js";
 import { GetProductionForecastHandler } from "./application/queries/get-production-forecast.handler.js";
+import { GetProductionDueThresholdsHandler } from "./application/queries/get-production-due-thresholds.handler.js";
 import { GetProductionPackingHandler } from "./application/queries/get-production-packing.handler.js";
 import { GetProductionWorksheetHandler } from "./application/queries/get-production-worksheet.handler.js";
 import { ListProductionContainersHandler } from "./application/queries/list-production-containers.handler.js";
@@ -106,6 +107,7 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
     RemoveProductionContainerHandler,
     GetProductionDayStatusHandler,
     GetProductionForecastHandler,
+    GetProductionDueThresholdsHandler,
     GetProductionWorksheetHandler,
     GetCurrentProductionWorksheetHandler,
     GetProductionPackingHandler,

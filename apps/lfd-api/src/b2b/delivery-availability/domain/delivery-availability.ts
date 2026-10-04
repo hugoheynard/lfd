@@ -1,6 +1,7 @@
 import type { DeliveryAvailabilityPatch, WindowMode } from "@lfd/contracts";
 
 import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
+import { productionMargin } from "./production-margin.js";
 
 /**
  * Le réglage sans sa trace : ce qu'une lecture rend et ce qu'un patch change —
@@ -10,6 +11,13 @@ export interface DeliveryOpening {
   readonly openToB2b: boolean;
   readonly openToB2c: boolean;
   readonly windowMode: WindowMode;
+  /**
+   * Marges de production, en minutes (plan production par vagues, V0).
+   * Facultatives au type : une lecture d'avant le 2026-10-04 ne les porte pas,
+   * et l'absence vaut `null` — non réglée.
+   */
+  readonly deliveryMarginMinutes?: number | null | undefined;
+  readonly pickupMarginMinutes?: number | null | undefined;
 }
 
 /**
@@ -27,11 +35,18 @@ export class DeliveryAvailability {
     readonly openToB2b: boolean,
     readonly openToB2c: boolean,
     readonly windowMode: WindowMode,
+    readonly deliveryMarginMinutes: number | null,
+    readonly pickupMarginMinutes: number | null,
     readonly at: Date,
     readonly author: StaffTrace,
   ) {}
 
-  /** L'état courant, modifié par les seules clés présentes du patch. */
+  /**
+   * L'état courant, modifié par les seules clés présentes du patch. Une marge
+   * à `null` dans le patch efface le réglage ; absente, elle reste telle quelle.
+   *
+   * @throws {InvalidProductionMarginError} une marge hors de la journée.
+   */
   static pose(input: {
     readonly current: DeliveryOpening;
     readonly patch: DeliveryAvailabilityPatch;
@@ -43,6 +58,18 @@ export class DeliveryAvailability {
       patch.openToB2b ?? current.openToB2b,
       patch.openToB2c ?? current.openToB2c,
       patch.windowMode ?? current.windowMode,
+      productionMargin(
+        "delivery",
+        patch.deliveryMarginMinutes === undefined
+          ? (current.deliveryMarginMinutes ?? null)
+          : patch.deliveryMarginMinutes,
+      ),
+      productionMargin(
+        "pickup",
+        patch.pickupMarginMinutes === undefined
+          ? (current.pickupMarginMinutes ?? null)
+          : patch.pickupMarginMinutes,
+      ),
       input.at,
       input.author,
     );

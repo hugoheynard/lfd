@@ -24,6 +24,8 @@ export class PrismaDeliveryAvailabilityReader extends DeliveryAvailabilityReader
         openToB2b: true,
         openToB2c: true,
         windowMode: true,
+        deliveryMarginMinutes: true,
+        pickupMarginMinutes: true,
         updatedAt: true,
         updatedByName: true,
       },
@@ -35,6 +37,8 @@ export class PrismaDeliveryAvailabilityReader extends DeliveryAvailabilityReader
       openToB2b: row.openToB2b,
       openToB2c: row.openToB2c,
       windowMode: row.windowMode,
+      deliveryMarginMinutes: row.deliveryMarginMinutes,
+      pickupMarginMinutes: row.pickupMarginMinutes,
       updatedAt: row.updatedAt.toISOString(),
       // Un agent que l'annuaire ne connaissait pas a été figé sans nom : on ne
       // l'invente pas, et une chaîne vide n'est pas un nom à afficher.

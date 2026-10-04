@@ -17,6 +17,8 @@ export class PrismaDeliveryAvailabilityRepository extends DeliveryAvailabilityRe
       openToB2b: settings.openToB2b,
       openToB2c: settings.openToB2c,
       windowMode: settings.windowMode,
+      deliveryMarginMinutes: settings.deliveryMarginMinutes,
+      pickupMarginMinutes: settings.pickupMarginMinutes,
       updatedAt: settings.at,
       updatedByStaffId: settings.author.staffUserId,
       updatedByName: settings.author.name,

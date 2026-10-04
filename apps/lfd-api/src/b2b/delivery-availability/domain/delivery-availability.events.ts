@@ -38,10 +38,14 @@ export class DeliveryAvailabilityUpdatedEvent implements JournaledEvent {
         openToB2b: this.settings.openToB2b,
         openToB2c: this.settings.openToB2c,
         windowMode: this.settings.windowMode,
+        deliveryMarginMinutes: this.settings.deliveryMarginMinutes,
+        pickupMarginMinutes: this.settings.pickupMarginMinutes,
         previous: {
           openToB2b: this.previous.openToB2b,
           openToB2c: this.previous.openToB2c,
           windowMode: this.previous.windowMode,
+          deliveryMarginMinutes: this.previous.deliveryMarginMinutes ?? null,
+          pickupMarginMinutes: this.previous.pickupMarginMinutes ?? null,
         },
       },
     };

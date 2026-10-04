@@ -29,12 +29,15 @@ export const deliveryAvailabilityPatchSchema = z
     openToB2c: z.boolean().optional(),
     /** Créneau ou échéance, par défaut pour toute adresse qui hérite (CA-D2). */
     windowMode: z.enum(WINDOW_MODES).optional(),
+    /**
+     * Marges de production, en minutes (plan production par vagues, V0) :
+     * `null` efface le réglage. La borne vit dans le domaine.
+     */
+    deliveryMarginMinutes: z.number().int().nullable().optional(),
+    pickupMarginMinutes: z.number().int().nullable().optional(),
   })
-  .refine(
-    (patch) =>
-      patch.openToB2b !== undefined ||
-      patch.openToB2c !== undefined ||
-      patch.windowMode !== undefined,
-    { message: "au moins un réglage à changer : openToB2b, openToB2c ou windowMode" },
-  );
+  .refine((patch) => Object.values(patch).some((value) => value !== undefined), {
+    message:
+      "au moins un réglage à changer : openToB2b, openToB2c, windowMode, deliveryMarginMinutes ou pickupMarginMinutes",
+  });
 export type DeliveryAvailabilityPatch = z.infer<typeof deliveryAvailabilityPatchSchema>;

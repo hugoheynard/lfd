@@ -88,6 +88,9 @@ import { OnProductionDayClosed } from "./application/handlers/on-production-day-
 import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.handler.js";
 import { OnOrderPacked } from "./application/handlers/on-order-packed.handler.js";
 import { PrismaDayOrdersReader } from "./infrastructure/prisma-day-orders.reader.js";
+import { DueThresholds } from "./application/services/due-thresholds.service.js";
+import { DeadlineOrdersReader } from "./domain/ports/deadline-orders.reader.js";
+import { PrismaDeadlineOrdersReader } from "./infrastructure/prisma-deadline-orders.reader.js";
 import { PrismaHandoverSubjectReader } from "./infrastructure/prisma-handover-subject.reader.js";
 import { PrismaPendingOrdersReader } from "./infrastructure/prisma-pending-orders.reader.js";
 import { GetProductionBatchHandler } from "./application/queries/get-production-batch.handler.js";
@@ -223,6 +226,10 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     PrismaDayOrdersReader,
     PrismaHandoverSubjectReader,
     PrismaPendingOrdersReader,
+    // Le compte à rebours du fournil (vagues, V0) : implémente un port de la
+    // production, relié dans `appBootstrap`.
+    DueThresholds,
+    { provide: DeadlineOrdersReader, useClass: PrismaDeadlineOrdersReader },
     OnProductionDayClosed,
     OnOrderPacked,
     OnOrderHandedOver,
@@ -351,6 +358,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     PrismaHandoverSubjectReader,
     PrismaPendingOrdersReader,
     PendingSettlementSweep,
+    DueThresholds,
     // Et le port de lecture des commandes, dont le troisième dépend : il
     // DÉLÈGUE la lecture du sujet de remise plutôt que de recopier son `select`,
     // et Nest doit pouvoir le lui donner là où il est instancié.

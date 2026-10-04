@@ -209,3 +209,10 @@ par défaut inventée : sans réglage, une seule vague « la journée » (§7). 
 lot V4 les mesurera (§7.1). Toutes les questions du plan sont tranchées. Le
 plan est prêt à bâtir à partir de V0, dans l'ordre du §6, en remplaçant la
 « vague figée » par le compte à rebours du §7.2.
+
+### 7.4 L'heure de l'échéance (Hugo, 2026-10-04)
+
+Pour une commande **en créneau**, le seuil se calcule sur le **début** du
+créneau : le client attend dès le début. **En échéance** (`start: null`), c'est
+la fin. Même règle en retrait et en livraison. Bâti au lot V0
+(`apps/lfd-api/src/b2b/orders/domain/services/deadline-thresholds.ts`).
