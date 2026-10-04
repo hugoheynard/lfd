@@ -200,3 +200,12 @@ La vague n'est pas un casier, c'est **une vue à rebours des échéances** :
   se déclare pour une vague ») est remplacé.
 - **Au colisage**, la liste se trie par échéance, et une commande n'est
   « colisable » que quand le sorti du SKU, attribué par échéance, la couvre.
+
+### 7.3 Les marges : deux réglages (Hugo, 2026-10-04)
+
+Une marge pour la **livraison** (colisage + chargement), une pour le
+**retrait** (colisage seul). Ce sont deux réglages du commerce, sans valeur
+par défaut inventée : sans réglage, une seule vague « la journée » (§7). Le
+lot V4 les mesurera (§7.1). Toutes les questions du plan sont tranchées. Le
+plan est prêt à bâtir à partir de V0, dans l'ordre du §6, en remplaçant la
+« vague figée » par le compte à rebours du §7.2.
