@@ -600,3 +600,24 @@ en cours.
   comme `production.day_change` avant le sien.
 - **Les noms de K1** (`PackingShadowLedger`, `packing.shadow.*`) restent : les
   noms d'abonnés sont les clés des reçus déjà posés.
+
+## 16. « Sauvage » — plier le colisage d'une traite (Hugo, 2026-10-04)
+
+> « pas besoin des trois temps, on peut faire sauvage, je suis pré-release,
+> on gagne du temps. »
+
+- **Plus de double service** : l'ancien chemin `legacy` (poste du fournil,
+  `production.order_packed`, colonnes `packed_*` / `container_count` du
+  fournil, compte « + / − » des contenants, déclaration des bacs après
+  « prête ») est **retiré du code** en une fois, avec ses routes et ses champs
+  de contrat. Une journée `legacy` restante n'est plus colisable : accepté,
+  pré-release.
+- **Le poste parle directement au colisage** (K3a) : plus de détour par le
+  fournil ni de port `PackingStation`.
+- **Ce qui reste, par règle et non par prudence** : aucune colonne n'est
+  supprimée en base (« pas de suppression en production »). Les colonnes
+  mortes cessent d'être lues et écrites ; leur suppression est un geste à part,
+  sur ordre explicite de Hugo.
+- Ordre de construction, **un constructeur, à la suite** : finir K2b → suite
+  de K2b (« Proposer » bac par bac et atomique, moitié partagée, retrait
+  partiel, rouvrir une commande) → K3 sauvage. Un seul déploiement à la fin.
