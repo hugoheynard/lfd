@@ -286,7 +286,7 @@ src/
 | **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | ✗         | ✓          |
 | **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✗                   | **✗**     | ✓          |
 | **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | **port uniquement** | ✗         | ✓          |
-| **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | ✗                   | ✗                   | ✗     | —                   | ✗         | ✓          |
+| **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | ✗                   | ✗     | —                   | ✗         | ✓          |
 | **`packing`**      | ✓ (autorisation) | ✗                   | ✗                   | ✗     | **port uniquement** | ✗                   | ✗     | ✗                   | —         | ✓          |
 | **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✗                   | ✗         | ✓          |
 | **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗         | —          |
@@ -329,6 +329,16 @@ Depuis le 2026-10-01, il implémente aussi `delivery/channels/handover/` — ce
 que la livraison lui demande au départ d'une tournée (« lesquelles sont
 retenues ? », « elles sont parties ») : la garde passe au livreur, et c'est le
 retrait qui tient la garde (`documentation/livraisons/plan-a-la-porte.md`, BQ).
+
+🔴 **`delivery` écoute la clôture du fournil par un canal** (2026-10-04,
+Hugo, option B — `documentation/livraisons/plan-composition-automatique.md`,
+§15). La matrice interdisait `production ↔ delivery` dans les deux sens, au
+temps où les domaines s'appelaient en direct. Une arête **à sens unique, sur un
+fait**, ne couple pas de la même façon : la livraison s'abonne à
+`production.day_closed` par `production/channels/delivery/`, et lit le détail
+des commandes au commerce comme avant. `production → delivery` reste interdit :
+le fournil publie, il ne sait pas qui écoute. Le commerce ne relaie pas les
+faits des autres — il n'est pas un hub.
 
 🔴 **`packing` ne lit le fournil que par son canal** (2026-10-04, plan
 [`documentation/colisage/plan-domaine-colisage.md`](documentation/colisage/plan-domaine-colisage.md),

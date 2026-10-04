@@ -463,3 +463,35 @@ Questions à Hugo, ouvertes :
 
 Tranché (Hugo, 2026-10-04) : **toute la démo passe en échéance** — adresses
 semées avec échéances préférées, commandes semées en `{start:null,end}`.
+
+## 15. CA6 révisé — la livraison écoute la clôture (Hugo, 2026-10-04, option B)
+
+> « pourquoi la livraison n'est pas abonnée aussi ? l'arrêt du compte de prod
+> signe aussi les commandes à livrer » — puis : « option B, ouvre l'arête ».
+
+**Ce qui change par rapport au §9 et au §10 (B2).** CA6 prévoyait que la
+livraison **lise** « ce jour est-il clos ? » au commerce, et que la clôture
+n'écrive rien côté livraison. Depuis la boîte d'envoi
+(`journalisation/plan-boite-d-envoi.md`), la clôture publie un fait durable,
+`production.day_closed`. La livraison **s'y abonne** :
+
+- **avant la clôture** : rien ne change. Le prévisionnel des tournées se
+  recalcule à la lecture, à chaque commande ; c'est le « temps réel » du §7 ;
+- **à la clôture** : l'abonné de la livraison passe le jour en « prêt à
+  appliquer », alerte le bureau, et relit au commerce, par son canal
+  existant, les commandes du plan arrêté (`orderIds` du fait) avec leurs
+  adresses et leurs échéances. Le clic « Appliquer » reste au bureau (§9) ;
+- **au retirage** : un fait des commandes absorbées (à publier par le
+  retirage, comme `production.packing_list_drawn`) donne à la livraison les
+  commandes arrivées après la clôture. Elle propose leur place (CA7).
+
+**L'arête.** La matrice interdisait `production ↔ delivery`. Hugo a choisi
+d'ouvrir **`delivery → production`, par `production/channels/delivery/`
+seulement** (le fait, rien de l'agrégat) ; `production → delivery` reste
+interdit. Le commerce ne relaie pas les faits des autres : il ne publie que
+ceux dont il est propriétaire. Ouvert le 2026-10-04 dans CLAUDE.md §3 et
+`lint:context-boundaries` ; le canal ne porte encore que le fait de clôture,
+sans abonné.
+
+**À faire avant de bâtir CA6** : contredire ce §15 par `vitruve` (frontière),
+et trancher l'abonnement au fait du retirage.

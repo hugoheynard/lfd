@@ -149,7 +149,9 @@ const ALLOWED = {
   handover: new Set(["staff", "platform", "production", "delivery"]),
   // Le socle (l'auteur d'un geste) et la plateforme, rien d'autre : ce dont
   // elle a besoin du commerce, elle le DÉCLARE (2026-09-29).
-  delivery: new Set(["staff", "platform"]),
+  // Et le fournil par son canal SEULEMENT depuis le 2026-10-04 (option B) : la
+  // livraison écoute la clôture ; `production → delivery` reste interdit.
+  delivery: new Set(["staff", "platform", "production"]),
   // Le fournil par son canal SEULEMENT (`PORT_SURFACE`) ; ⚠️ `production →
   // packing` reste interdit : le fournil publie, il ne sait pas qui écoute.
   packing: new Set(["staff", "platform", "production"]),
@@ -231,6 +233,10 @@ const PORT_SURFACE = {
   // `plan-domaine-colisage.md`, §11 et §13) : la liste à coliser, la remise
   // d'une fournée, la demande de retour. Contrats et faits, rien de l'agrégat.
   "packing→production": "production/channels/packing/",
+  // La LIVRAISON écoute la clôture du fournil (2026-10-04, Hugo, option B,
+  // `plan-composition-automatique.md` §15) : le fait seul, rien de l'agrégat.
+  // Le détail des commandes, elle le lit au commerce.
+  "delivery→production": "production/channels/delivery/",
   // La MÉDIATHÈQUE implémente ce que le référentiel déclare : « décris-moi ces
   // URL », « cette image existe-t-elle ». Elle ne voit rien d'autre de lui —
   // ni ses tables, ni ses règles, ni son vocabulaire.
