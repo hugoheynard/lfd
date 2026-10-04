@@ -108,3 +108,37 @@ verrou au départ). Un fait asynchrone ne peut pas refuser à l'écran.
 - **Contrat servi** : `container_count` et `PackingContainerStep` restent servis
   pour les commandes de l'ancien écran ; pour les nouvelles, le compte devient
   le nombre de contenants, en lecture seule.
+
+### 5.1 Seconde contradiction (2026-10-04), et la v2.1
+
+- **B1 — les routes d'écriture de la livraison** (`declare-delivery-bins`,
+  `void-delivery-bin`, `share-delivery-bin`) contourneraient le colisage. →
+  **Le port est la seule porte** pour une commande gérée au colisage : le
+  colisage publie dans `packing/channels/delivery/` un lecteur
+  `ContainerManagedOrders` (implémenté par le colisage lui-même, sur le
+  modèle de `LegacyPackingReader`) ; les trois commandes de la livraison le
+  lisent et refusent, avec un message qui dit le geste de sortie (« ce bac se
+  gère au poste de colisage »). Le **partage** d'une moitié passe lui aussi
+  par `BinDesk`. Défense en profondeur : `BinDesk` expose aussi « ces bacs
+  sont-ils vivants ? », et le colisage ne compte jamais un contenant dont le
+  bac est annulé.
+- **B2 — l'atomicité** : l'implémentation de `BinDesk` s'exécute dans la
+  transaction du colisage. `UnitOfWork.run` **rejoint** une transaction déjà
+  ouverte (`platform/database/unit-of-work.ts` l.40-50, vérifié le
+  2026-10-04) : le bac et son contenant s'écrivent ensemble, ou pas du tout.
+- **Pas de DELETE** : un contenant annulé porte `voided_at` ; ses lignes
+  restent, ignorées, et le fait est journalisé.
+- **L'id du bac sans clé étrangère** : tenu par le port à l'écriture, et
+  relu vivant par `BinDesk` à la lecture.
+- **Rouvrir une commande dont un bac est chargé ou parti** : refusé par la
+  livraison au retrait du contenu (même refus qu'à l'annulation d'un bac
+  chargé).
+- **Le drapeau** s'appelle `packing_order.container_mode` (`counted` | `listed`,
+  défaut `counted`) ; `listed` est posé à la création de la liste à coliser
+  après le déploiement. Une commande `listed` à laquelle la livraison aurait
+  déclaré un bac par l'ancienne route ne peut pas exister : la route la refuse
+  (B1).
+- **`PackingContainerStep`** sur une commande `listed` : refus nommé
+  (« le nombre de contenants se lit dans la colonne Contenants »).
+- **CLAUDE.md §3, la matrice et `lint:context-boundaries`** : dans le même
+  commit que l'arête `delivery → packing`.
