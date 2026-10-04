@@ -187,3 +187,99 @@ propre domaine, c'est le **poste** — une entrée de premier niveau, un
 vocabulaire, un écran — pas la table. On bâtit **P0** ; P1–P3 sont abandonnés
 tant que « sorti ≥ au bac » existe. À rouvrir si les bacs (`delivery_bin`) et
 la capacité (CA4) donnent au colisage une règle qui ne touche pas au four.
+
+## 10. v3 — transférer plutôt que partager (Hugo, 2026-10-04)
+
+> « si ça arrive au colisage on ne peut plus l'enlever du fournil, ça me paraît
+> logique ; on pourrait garder au fournil un compte de ce qui est parti et
+> qu'on ne peut plus annuler. » Puis : la remise se fait par un **geste**
+> (option b).
+
+### 10.1 L'idée : chaque unité appartient à un seul domaine à la fois
+
+Le §9 a écarté la sortie parce que « sorti ≥ au bac » était **une** règle
+gardée **des deux côtés**. La v3 la coupe en deux règles, chacune locale à son
+propriétaire, reliées par un **transfert** décidé par celui qui donne :
+
+| Domaine                | Ce qu'il possède                 | Sa règle, vérifiée chez lui seul                                |
+| ---------------------- | -------------------------------- | --------------------------------------------------------------- |
+| Fournil (`production`) | sorti du four, remis au colisage | `remis ≤ sorti` ; on n'annule ou ne corrige que `sorti − remis` |
+| Colisage (`packing`)   | reçu, au bac                     | `au bac ≤ reçu − rendu`                                         |
+
+C'est la forme de la garde au retrait : à chaque instant, une seule partie
+tient la chose. Une copie en retard ne crée plus d'écart. Au pire, une ligne
+reste indisponible le temps que la remise arrive.
+
+### 10.2 Le protocole
+
+```mermaid
+sequenceDiagram
+  participant F as Fournil
+  participant O as Boîte d'envoi
+  participant C as Colisage
+  F->>F: geste « envoyer au colisage » (fournée / chariot)<br/>remis += n — refusé si n > sorti − remis
+  F->>O: production.handed_to_packing {handoffId, jour, sku, n} (même transaction)
+  O->>C: livre
+  C->>C: reçu += n (idempotent sur handoffId)
+  Note over C: au bac ≤ reçu − rendu
+  F->>O: production.return_requested {requestId, jour, sku, n}
+  O->>C: livre
+  C->>C: rend min(n, reçu − rendu − au bac) — décidé chez lui
+  C->>O: packing.returned {requestId, rendu}
+  O->>F: livre
+  F->>F: remis −= rendu (idempotent sur requestId)
+```
+
+- **La remise est un geste du fournil** (option b) : « envoyer au colisage »,
+  par fournée ou par chariot. Tant qu'il n'a pas envoyé, il corrige
+  librement.
+- **Corriger après l'envoi devient une demande de retour.** Le colisage ne
+  rend que ce qui n'est pas au bac, et il le décide chez lui. Si tout est au
+  bac, il rend 0, et le fournil le voit : la correction demande alors de
+  décocher au colisage.
+- **Le colisage publie la commande colisée** (`packing.order_packed`), qui
+  remplace `production.order_packed` (E1) : l'émetteur change, le commerce
+  garde un seul abonné, et le type change de nom.
+- **La journée arrêtée** reste une condition. Elle arrive au colisage par
+  `production.day_closed` (déjà durable), qui y crée les commandes et leurs
+  lignes à coliser.
+
+### 10.3 Les données
+
+- **Fournil** : une table `production.production_handoff` (`id`, `service_day`,
+  `sku`, `quantity` signée — positive pour une remise, négative pour un retour
+  accepté —, `source` : fournée ou chariot, `at`, `by`, `request_id`). La part
+  annulable se calcule : `sorti − Σ quantity`. Les gardes de fournée
+  (`BatchStillPackedError`) lisent **cette** somme, et plus ce qui est au bac.
+- **Colisage** : schéma `packing`, avec `packing_order` (clé `order_id`
+  opaque + `service_day`), `packing_line` (sku, quantité due, au bac, qui,
+  quand), `packing_receipt` (une ligne par remise ou retour reçu, clé
+  `handoff_id` / `request_id`).
+- Les colonnes `packed_*` et `container_count` de `production_order(_line)`
+  cessent d'être écrites à la bascule, puis d'être lues ; elles ne sont pas
+  supprimées avant un quatrième passage.
+- `day_change` : les tables `packing.*` portent `service_day` et reçoivent les
+  mêmes déclencheurs ; `day-change-triggers.e2e-spec.ts` couvre le schéma
+  `packing`.
+
+### 10.4 La bascule — trois déploiements
+
+1. **Étendre** : tables neuves, vides. Le geste « envoyer au colisage »
+   existe ; le colisage lit encore les colonnes du fournil.
+2. **Basculer, jour par jour, à une journée non arrêtée.** Une journée déjà
+   arrêtée au moment du déploiement finit sur l'ancien chemin. Une journée
+   arrêtée après naît au colisage, avec `production.day_closed`. Ainsi,
+   aucune journée n'est coupée en deux, et il n'y a aucune copie de données en
+   vol.
+3. **Resserrer** : plus tard, après une requête de comptage donnée à Hugo.
+
+### 10.5 Ce qui reste ouvert
+
+- **Q4 — le grain du geste** : par fournée, par chariot, ou « tout ce qui est
+  sorti pour ce SKU » ? Le chariot n'existe pas encore comme objet ; la
+  fournée, oui (`production_batch`).
+- **Q5 — un retour refusé faute de stock** (tout est au bac) : alerte au
+  colisage, ou simple refus affiché au fournil ?
+- **Q6 — la matrice** : `packing` déclare `packing/channels/production/` et
+  `packing/channels/commerce/` ; la boîte d'envoi porte les faits ; aucune
+  lecture synchrone entre les deux.
