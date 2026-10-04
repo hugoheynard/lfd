@@ -77,6 +77,10 @@ const BLOCKS = new Set([
   //   `src/delivery/` serait ignoré, et n'importe quel bloc pourrait écrire
   //   la flotte sans que rien ne rougisse — le piège déjà raconté pour `media`.
   "delivery",
+  // ▸ LE COLISAGE (2026-10-04, `plan-domaine-colisage.md`, K1). Armée AVANT que
+  //   le bloc existe : sans cette ligne, `src/packing/` serait ignoré, et le
+  //   fournil pourrait écrire l'ombre du colisage sans que rien ne rougisse.
+  "packing",
 ]);
 
 /**

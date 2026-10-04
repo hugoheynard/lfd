@@ -10,6 +10,7 @@ import {
 } from "../../../channels/commerce/day-orders.reader.js";
 import { PendingSettlementSweeper } from "../../../channels/commerce/pending-settlement.sweeper.js";
 import { ProductionDayClosedEvent } from "../../../channels/commerce/production-day-closed.event.js";
+import { PackingListDrawnEvent } from "../../../channels/packing/packing-list-drawn.event.js";
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionDayClosedJournalEvent } from "../../../domain/events/production-day.events.js";
 import { ProductionDayEmptyError } from "../../../domain/errors/production-errors.js";
@@ -29,6 +30,7 @@ function order(overrides: Partial<ProducibleOrder> = {}): ProducibleOrder {
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
+    dueAt: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40 }],
     ...overrides,
   };
@@ -156,6 +158,18 @@ function closedFact(
   return new ProductionDayClosedEvent(DAY, closedAt, orderIds, reannouncedAt).durableFact();
 }
 
+/** La commande à coliser de référence (colisage, K1) — un fait par commande. */
+function listFact(source: ProducibleOrder, drawnAt: Date) {
+  return new PackingListDrawnEvent(DAY, drawnAt, {
+    orderId: source.orderId,
+    reference: source.reference,
+    customerLabel: source.customerLabel,
+    fulfillmentMethod: source.fulfillmentMethod,
+    dueAt: source.dueAt,
+    lines: source.lines,
+  }).durableFact();
+}
+
 /** La boîte d'envoi doublée : elle refuse hors unité de travail, comme le vrai port. */
 class Durable extends DurablePublisher {
   readonly facts: DurableFact[] = [];
@@ -220,7 +234,26 @@ describe("clore une journée", () => {
       { sku: "VIE-001", productName: "Croissant", quantity: 80, done: null },
     ]);
     expect(events.published).toEqual([new ProductionDayClosedJournalEvent(DAY, 2)]);
-    expect(durable.facts).toEqual([closedFact(["ord_1", "ord_2"], NOW)]);
+    // Puis la liste à coliser, une commande par fait (colisage, K1, §11 B1).
+    expect(durable.facts).toEqual([
+      closedFact(["ord_1", "ord_2"], NOW),
+      listFact(order(), NOW),
+      listFact(order({ orderId: "ord_2" }), NOW),
+    ]);
+  });
+
+  it("la liste à coliser porte l'ÉCHÉANCE de chaque commande (colisage, §13)", async () => {
+    const { handler, durable } = subject(ProductionDay.open(ServiceDay.of(DAY)), [
+      order({ dueAt: "07:30" }),
+    ]);
+
+    await handler.execute(new CloseProductionDayCommand(DAY));
+
+    expect(durable.facts[1]).toMatchObject({
+      type: "production.packing_list_drawn",
+      key: `production.packing_list_drawn:${DAY}:ord_1`,
+      payload: { order: { dueAt: "07:30" } },
+    });
   });
 
   it("JOURNALISE la clôture — la date de service et le nombre inscrit", async () => {
@@ -249,7 +282,8 @@ describe("clore une journée", () => {
     await handler.execute(new CloseProductionDayCommand(DAY));
 
     expect(events.insideUnitOfWork).toEqual([new ProductionDayClosedJournalEvent(DAY, 1)]);
-    expect(durable.facts).toHaveLength(1);
+    // La clôture et la liste à coliser : le double refuse hors unité de travail.
+    expect(durable.facts).toHaveLength(2);
   });
 
   it("la clé de la clôture est déterministe : la journée et l'instant d'arrêt", async () => {
@@ -344,7 +378,12 @@ describe("réannoncer une journée déjà close", () => {
     expect(closure.closedAt).toBe(EARLIER.toISOString());
     expect(closure.absorbed).toBe(1);
     expect(events.published).toEqual([]);
-    expect(durable.facts).toEqual([closedFact(["ord_1"], EARLIER, NOW)]);
+    // La liste est republiée sous la MÊME clé par commande, et datée du tirage
+    // d'origine : la boîte d'envoi l'absorbe (colisage, §13, MINEURS).
+    expect(durable.facts).toEqual([
+      closedFact(["ord_1"], EARLIER, NOW),
+      listFact(order(), EARLIER),
+    ]);
     expect(days.saved).toBeNull();
   });
 

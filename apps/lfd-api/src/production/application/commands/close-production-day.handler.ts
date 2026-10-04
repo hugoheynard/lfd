@@ -12,6 +12,7 @@ import type { ProductionDay } from "../../domain/entities/production-day.js";
 import { ProductionDayClosedJournalEvent } from "../../domain/events/production-day.events.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { packingListFactsOf } from "../services/packing-list-facts.js";
 import { CloseProductionDayCommand } from "./close-production-day.command.js";
 
 /**
@@ -75,6 +76,13 @@ import { CloseProductionDayCommand } from "./close-production-day.command.js";
  *
  * L'abonné du commerce ne tourne plus dans le contexte de cette transaction :
  * le relais le livre après la validation, dans SA propre unité de travail.
+ *
+ * ## La liste à coliser (colisage, K1 — 2026-10-04)
+ *
+ * Dans la même unité de travail, un `production.packing_list_drawn` par
+ * commande de l'instantané (plan `colisage/plan-domaine-colisage.md`, §11, B1).
+ * La réannonce les republie : même clé par commande, la boîte d'envoi absorbe
+ * (§13, MINEURS). Le colisage les tient en ombre ; rien de visible ne change.
  */
 @CommandHandler(CloseProductionDayCommand)
 export class CloseProductionDayHandler implements ICommandHandler<
@@ -114,6 +122,7 @@ export class CloseProductionDayHandler implements ICommandHandler<
         new ProductionDayClosedJournalEvent(day.value, current.orders.length),
       );
       await this.durable.publish(this.factOf(day, current, now, null).durableFact());
+      await this.publishPackingList(day, current, now);
     });
 
     return this.report(day, now, current.orders.length, false);
@@ -129,10 +138,22 @@ export class CloseProductionDayHandler implements ICommandHandler<
     // taire sur la seule chose qu'il sait.
     const now = this.clock.now();
     const at = current.closedAt ?? now;
-    await this.uow.run(() =>
-      this.durable.publish(this.factOf(day, current, at, now).durableFact()),
-    );
+    await this.uow.run(async () => {
+      await this.durable.publish(this.factOf(day, current, at, now).durableFact());
+      await this.publishPackingList(day, current, at);
+    });
     return this.report(day, at, current.orders.length, true);
+  }
+
+  /** Une commande, un fait — l'instant est celui du tirage d'origine. */
+  private async publishPackingList(
+    day: ServiceDay,
+    current: ProductionDay,
+    drawnAt: Date,
+  ): Promise<void> {
+    for (const fact of packingListFactsOf(day, current.orders, drawnAt)) {
+      await this.durable.publish(fact.durableFact());
+    }
   }
 
   /** L'instant est celui du SNAPSHOT, jamais celui du rejeu. */

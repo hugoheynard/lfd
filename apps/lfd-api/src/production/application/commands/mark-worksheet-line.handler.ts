@@ -1,9 +1,11 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { ProductionBatchRepository } from "../../domain/ports/production-batch.repository.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { PackingHandoffs } from "../services/packing-handoffs.service.js";
 import { MarkWorksheetLineCommand } from "./mark-worksheet-line.command.js";
 
 /**
@@ -20,6 +22,10 @@ import { MarkWorksheetLineCommand } from "./mark-worksheet-line.command.js";
  * - **Deux cochers simultanés** calculent le même `id` ; le second est absorbé
  *   par l'idempotence de la déclaration.
  *
+ * La fournée du reste est REMISE au colisage, dans la même unité de travail
+ * que sa déclaration (colisage, §13, B3) — comme `RecordBatchHandler`, et
+ * jamais les coches héritées qu'elle matérialise.
+ *
  * Les refus structurels (journée ouverte, SKU hors compte) restent ceux
  * d'`itemToMark`, appelés par `batchToComplete`.
  *
@@ -33,6 +39,8 @@ export class MarkWorksheetLineHandler implements ICommandHandler<MarkWorksheetLi
     private readonly days: ProductionDayRepository,
     private readonly batches: ProductionBatchRepository,
     private readonly clock: Clock,
+    private readonly uow: UnitOfWork,
+    private readonly handoffs: PackingHandoffs,
   ) {}
 
   async execute(command: MarkWorksheetLineCommand): Promise<void> {
@@ -46,10 +54,15 @@ export class MarkWorksheetLineHandler implements ICommandHandler<MarkWorksheetLi
     if (batch === null) {
       return;
     }
-    for (const inherited of current.materialize(command.sku)) {
-      await this.batches.record(day, inherited);
-    }
-    const stored = await this.batches.record(day, batch);
-    current.acknowledge(batch, stored.serviceDay, stored.batch);
+    await this.uow.run(async () => {
+      for (const inherited of current.materialize(command.sku)) {
+        await this.batches.record(day, inherited);
+      }
+      const stored = await this.batches.record(day, batch);
+      current.acknowledge(batch, stored.serviceDay, stored.batch);
+      if (stored.batch.cancelled === null) {
+        await this.handoffs.handOver(day, stored.batch);
+      }
+    });
   }
 }

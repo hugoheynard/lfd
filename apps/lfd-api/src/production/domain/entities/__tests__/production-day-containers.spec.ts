@@ -31,6 +31,7 @@ function order(overrides: Partial<ProducibleOrder> = {}): ProducibleOrder {
     customerLabel: "Hôtel des Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
+    dueAt: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40 }],
     ...overrides,
   };

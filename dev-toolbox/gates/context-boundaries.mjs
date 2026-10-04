@@ -70,6 +70,14 @@ const BLOCK_OF = {
   //   lui sert — et n'atteint rien d'autre que le socle et la plateforme.
   delivery: "delivery",
 
+  // ▸ LE COLISAGE — le poste qui met les commandes au bac (2026-10-04,
+  //   `documentation/colisage/plan-domaine-colisage.md`, §12–§13, lot K1). Sa
+  //   clé est la commande et le bac, pas la journée. Il reçoit les faits du
+  //   fournil par la boîte d'envoi, dans la forme que le fournil DÉCLARE
+  //   (`production/channels/packing/`), et n'atteint rien d'autre que le socle
+  //   et la plateforme. Personne ne l'importe : il publie, il ne se lit pas.
+  packing: "packing",
+
   // ▸ LA RACINE DE COMPOSITION — le seul endroit qui a le droit de connaître
   //   tout le monde, parce que son unique travail est de relier les blocs
   //   entre eux. Personne ne l'importe en retour : un contexte qui remonte
@@ -142,6 +150,9 @@ const ALLOWED = {
   // Le socle (l'auteur d'un geste) et la plateforme, rien d'autre : ce dont
   // elle a besoin du commerce, elle le DÉCLARE (2026-09-29).
   delivery: new Set(["staff", "platform"]),
+  // Le fournil par son canal SEULEMENT (`PORT_SURFACE`) ; ⚠️ `production →
+  // packing` reste interdit : le fournil publie, il ne sait pas qui écoute.
+  packing: new Set(["staff", "platform", "production"]),
   platform: new Set([]),
   ops: new Set(["platform"]),
   root: new Set([
@@ -154,6 +165,7 @@ const ALLOWED = {
     "handover",
     "media",
     "delivery",
+    "packing",
   ]),
 };
 
@@ -215,6 +227,10 @@ const PORT_SURFACE = {
   // ⚠️ `delivery → handover` reste INTERDIT : la livraison déclare son besoin
   // et ne sait pas qui la branche.
   "handover→delivery": "delivery/channels/handover/",
+  // Le COLISAGE lit les faits que le fournil publie pour lui (2026-10-04,
+  // `plan-domaine-colisage.md`, §11 et §13) : la liste à coliser, la remise
+  // d'une fournée, la demande de retour. Contrats et faits, rien de l'agrégat.
+  "packing→production": "production/channels/packing/",
   // La MÉDIATHÈQUE implémente ce que le référentiel déclare : « décris-moi ces
   // URL », « cette image existe-t-elle ». Elle ne voit rien d'autre de lui —
   // ni ses tables, ni ses règles, ni son vocabulaire.

@@ -54,6 +54,7 @@ function sheet(
     customerLabel: "Hôtel des Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
+    dueAt: null,
     lines,
   };
 }

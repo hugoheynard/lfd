@@ -66,6 +66,12 @@ import { PrismaProductionDayRepository } from "./infrastructure/prisma-productio
 import { PrismaProductionBatchRepository } from "./infrastructure/prisma-production-batch.repository.js";
 import { PrismaProductionDayLock } from "./infrastructure/prisma-production-day.lock.js";
 import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-plan.reader.js";
+import { DayLegacyPackingReader } from "./application/services/day-legacy-packing.reader.js";
+import { PackingHandoffs } from "./application/services/packing-handoffs.service.js";
+import { ProductionHandoffLedger } from "./domain/ports/production-handoff.ledger.js";
+import { ProductionHandoffReader } from "./domain/ports/production-handoff.reader.js";
+import { PrismaProductionHandoffLedger } from "./infrastructure/prisma-production-handoff.ledger.js";
+import { PrismaProductionHandoffReader } from "./infrastructure/prisma-production-handoff.reader.js";
 
 /**
  * **Le fournil.**
@@ -150,10 +156,16 @@ import { PrismaProductionPlanReader } from "./infrastructure/prisma-production-p
     PruneProductionDayChangesHandler,
     { provide: ProductionDayVersionReader, useClass: PrismaProductionDayVersionReader },
     { provide: ProductionDayChangePruner, useClass: PrismaProductionDayChangePruner },
+    // La remise au colisage (plan `colisage/plan-domaine-colisage.md`, K1).
+    PackingHandoffs,
+    { provide: ProductionHandoffLedger, useClass: PrismaProductionHandoffLedger },
+    { provide: ProductionHandoffReader, useClass: PrismaProductionHandoffReader },
+    // Publié pour la route de contrôle de l'ombre ; relié par `PackingFeedModule`.
+    DayLegacyPackingReader,
   ],
   // La lecture des contrôles sert aussi la retenue que la production PUBLIE au
   // retrait (`channels/handover/`, QC3) — son adaptateur est relié par la
   // racine de composition, qui a besoin de ce port pour le construire.
-  exports: [QualityCheckReader],
+  exports: [QualityCheckReader, DayLegacyPackingReader],
 })
 export class ProductionModule {}

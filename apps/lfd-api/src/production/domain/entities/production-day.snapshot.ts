@@ -1,3 +1,5 @@
+import type { PackingOwner } from "../value-objects/packing-owner.js";
+
 /**
  * **La forme d'une journée de fabrication** — ce que l'agrégat porte, et ce que
  * l'adaptateur écrit et relit.
@@ -70,6 +72,11 @@ export interface ProductionOrderSnapshot {
   readonly customerLabel: string;
   readonly fulfillmentMethod: "pickup" | "delivery";
   readonly destination: string;
+  /**
+   * `HH:mm` — début du créneau, sinon fin de l'échéance ; `null` = aucune
+   * (colisage, §13). Gardée pour qu'une republication de la liste la retrouve.
+   */
+  readonly dueAt: string | null;
   readonly lines: readonly ProductionLineSnapshot[];
 }
 
@@ -131,6 +138,8 @@ export interface ProductionDaySnapshot {
   readonly closedAt: Date | null;
   /** Le dernier retirage — `null` tant que la journée porte son tirage d'origine. */
   readonly retaken: PackedMark | null;
+  /** Qui colise la journée — écrit à la clôture (colisage, §13, B1). */
+  readonly packingOwner: PackingOwner;
   readonly orders: readonly ProductionOrderSnapshot[];
   readonly counts: readonly ProducedItemSnapshot[];
   /** Toutes les fournées du jour, annulées comprises, dans l'ordre de la base. */

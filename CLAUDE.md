@@ -262,6 +262,11 @@ src/
 │                   (Q10 révisée) ; canal `channels/commerce/` que le
 │                   commerce implémente. Cf. livraisons/architecture-
 │                   isolation-livraison.md
+├── packing/      ▸ LE COLISAGE — le poste qui met les commandes au bac.
+│                   Ouvert le 2026-10-04 (plan colisage, lot K1) : son schéma
+│                   `packing`, tenu EN OMBRE par les faits que le fournil
+│                   publie (`production/channels/packing/`). Personne ne
+│                   l'importe. Cf. colisage/plan-domaine-colisage.md
 ├── ops/          ▸ LA CARTE DE SANTÉ — health, sondes, journal, trafic, vitals
 │                   il OBSERVE et ne possède rien
 ├── platform/     ▸ TECHNIQUE PURE — zéro connaissance métier
@@ -273,19 +278,20 @@ src/
 └── main.ts
 ```
 
-| Depuis ↓ vers →    | `staff`          | `pim`               | `media`             | `b2b` | `production`        | `handover`          | `ops` | `delivery`          | `platform` |
-| ------------------ | ---------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ----- | ------------------- | ---------- |
-| **`staff`**        | —                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✓          |
-| **`pim`**          | ✓ (autorisation) | —                   | **port uniquement** | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✓          |
-| **`media`**        | ✓ (autorisation) | **port uniquement** | —                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✓          |
-| **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | ✓          |
-| **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✗                   | ✓          |
-| **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | **port uniquement** | ✓          |
-| **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | ✗                   | ✗                   | ✗     | —                   | ✓          |
-| **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✗                   | ✓          |
-| **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | —          |
-| **`appBootstrap`** | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓          |
-| **`dev`**          | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓          |
+| Depuis ↓ vers →    | `staff`          | `pim`               | `media`             | `b2b` | `production`        | `handover`          | `ops` | `delivery`          | `packing` | `platform` |
+| ------------------ | ---------------- | ------------------- | ------------------- | ----- | ------------------- | ------------------- | ----- | ------------------- | --------- | ---------- |
+| **`staff`**        | —                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗         | ✓          |
+| **`pim`**          | ✓ (autorisation) | —                   | **port uniquement** | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗         | ✓          |
+| **`media`**        | ✓ (autorisation) | **port uniquement** | —                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗         | ✓          |
+| **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | ✗         | ✓          |
+| **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✗                   | **✗**     | ✓          |
+| **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | **port uniquement** | ✗         | ✓          |
+| **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | ✗                   | ✗                   | ✗     | —                   | ✗         | ✓          |
+| **`packing`**      | ✓ (autorisation) | ✗                   | ✗                   | ✗     | **port uniquement** | ✗                   | ✗     | ✗                   | —         | ✓          |
+| **`ops`**          | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | —     | ✗                   | ✗         | ✓          |
+| **`platform`**     | ✗                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗         | —          |
+| **`appBootstrap`** | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓         | ✓          |
+| **`dev`**          | ✓                | ✓                   | ✓                   | ✓     | ✓                   | ✓                   | ✓     | ✓                   | ✓         | ✓          |
 
 🔴 **`pim` et `media` sont les deux aux DEUX CÔTÉS d'un canal** — le cas que
 `handover` était seul à connaître. Chacun déclare ce dont il a besoin et
@@ -323,6 +329,15 @@ Depuis le 2026-10-01, il implémente aussi `delivery/channels/handover/` — ce
 que la livraison lui demande au départ d'une tournée (« lesquelles sont
 retenues ? », « elles sont parties ») : la garde passe au livreur, et c'est le
 retrait qui tient la garde (`documentation/livraisons/plan-a-la-porte.md`, BQ).
+
+🔴 **`packing` ne lit le fournil que par son canal** (2026-10-04, plan
+[`documentation/colisage/plan-domaine-colisage.md`](documentation/colisage/plan-domaine-colisage.md),
+§12–§13). Le fournil DÉCLARE et publie `production/channels/packing/` — les
+faits de la liste à coliser, de la remise et du retour, et le port de lecture
+de l'ancien chemin que seule la route de contrôle de l'ombre lit. `production →
+packing` reste interdit : le fournil publie, il ne sait pas qui écoute. En K1,
+le colisage ne tient qu'une ombre ; `production_day.packing_owner` dit qui
+colise réellement une journée, et vaut toujours `legacy`.
 
 🔴 **`production → b2b` est INTERDIT**, et c'est le sens qui compte. Le fournil
 DÉCLARE ce dont il a besoin (`production/channels/commerce/`) et le commerce

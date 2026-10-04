@@ -6,6 +6,7 @@ import { ProductionBatchRepository } from "../../domain/ports/production-batch.r
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { PackingHandoffs } from "../services/packing-handoffs.service.js";
 import { CancelBatchCommand } from "./cancel-batch.command.js";
 
 /**
@@ -20,6 +21,11 @@ import { CancelBatchCommand } from "./cancel-batch.command.js";
  * héritée (fournée implicite, §5.2) la matérialise d'abord : on n'annule pas
  * une ligne qui n'existe pas.
  *
+ * Une fournée déjà REMISE au colisage est reprise dans la même unité de
+ * travail : une remise négative et `production.return_requested` (colisage,
+ * §13, B2). Sur une journée `legacy` — toutes, en K1 —, l'annulation reste
+ * synchrone comme avant, et le fait le dit (`legacy: true`).
+ *
  * @sans-journal geste d'atelier, sous le même régime que la coche (plan, D7).
  */
 @CommandHandler(CancelBatchCommand)
@@ -30,6 +36,7 @@ export class CancelBatchHandler implements ICommandHandler<CancelBatchCommand, v
     private readonly lock: ProductionDayLock,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly handoffs: PackingHandoffs,
   ) {}
 
   async execute(command: CancelBatchCommand): Promise<void> {
@@ -44,10 +51,9 @@ export class CancelBatchHandler implements ICommandHandler<CancelBatchCommand, v
       for (const inherited of current.materialize(target.sku)) {
         await this.batches.record(day, inherited);
       }
-      await this.batches.cancel(day, target.id, {
-        at: this.clock.now(),
-        by: command.staffUserId,
-      });
+      const mark = { at: this.clock.now(), by: command.staffUserId };
+      await this.batches.cancel(day, target.id, mark);
+      await this.handoffs.takeBack(day, [target], mark, current.packingOwner);
     });
   }
 }

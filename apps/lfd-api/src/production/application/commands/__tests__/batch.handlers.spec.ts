@@ -13,6 +13,7 @@ import {
   ProductionDayNotClosedError,
 } from "../../../domain/errors/production-errors.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { handoffsOnDoubles } from "../../__tests__/handoff-doubles.js";
 import {
   BatchBackedDays,
   InMemoryBatches,
@@ -43,6 +44,7 @@ const ORDERS: readonly ProducibleOrder[] = [
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
+    dueAt: null,
     lines: [{ sku: SKU, productName: "Croissant", quantity: 24 }],
   },
   {
@@ -51,6 +53,7 @@ const ORDERS: readonly ProducibleOrder[] = [
     customerLabel: "Le Chalet",
     fulfillmentMethod: "delivery",
     destination: "Val d'Isère",
+    dueAt: null,
     lines: [{ sku: SKU, productName: "Croissant", quantity: 6 }],
   },
 ];
@@ -100,12 +103,15 @@ function setup(base: ProductionDay = closedDay()) {
   const days = new BatchBackedDays(base, store, trace);
   const lock = new RecordingDayLock(trace);
   const clock = new FixedClock(NOW);
+  const handoffs = handoffsOnDoubles();
+  const uow = new DirectUnitOfWork();
   return {
     store,
     trace,
     lock,
-    record: new RecordBatchHandler(days, store, clock),
-    cancel: new CancelBatchHandler(days, store, lock, clock, new DirectUnitOfWork()),
+    handoffs,
+    record: new RecordBatchHandler(days, store, clock, uow, handoffs.service),
+    cancel: new CancelBatchHandler(days, store, lock, clock, uow, handoffs.service),
   };
 }
 

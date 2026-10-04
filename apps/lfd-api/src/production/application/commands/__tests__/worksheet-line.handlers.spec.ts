@@ -13,6 +13,7 @@ import {
   InMemoryBatches,
   RecordingDayLock,
 } from "../../__tests__/batch-doubles.js";
+import { handoffsOnDoubles } from "../../__tests__/handoff-doubles.js";
 import { MarkWorksheetLineCommand } from "../mark-worksheet-line.command.js";
 import { MarkWorksheetLineHandler } from "../mark-worksheet-line.handler.js";
 import { UnmarkWorksheetLineCommand } from "../unmark-worksheet-line.command.js";
@@ -36,6 +37,7 @@ const ORDER: ProducibleOrder = {
   customerLabel: "Trois Ponts",
   fulfillmentMethod: "pickup",
   destination: "Le Labo",
+  dueAt: null,
   lines: [{ sku: SKU, productName: "Pain de seigle", quantity: 30 }],
 };
 
@@ -77,6 +79,7 @@ function setup(base: ProductionDay = closedDay()): {
   readonly store: InMemoryBatches;
   readonly days: BatchBackedDays;
   readonly trace: string[];
+  readonly handoffs: ReturnType<typeof handoffsOnDoubles>;
   readonly mark: MarkWorksheetLineHandler;
   readonly unmark: UnmarkWorksheetLineHandler;
 } {
@@ -84,17 +87,21 @@ function setup(base: ProductionDay = closedDay()): {
   const store = new InMemoryBatches(trace);
   const days = new BatchBackedDays(base, store, trace);
   const clock = new FixedClock(NOW);
+  const handoffs = handoffsOnDoubles();
+  const uow = new DirectUnitOfWork();
   return {
     store,
     days,
     trace,
-    mark: new MarkWorksheetLineHandler(days, store, clock),
+    handoffs,
+    mark: new MarkWorksheetLineHandler(days, store, clock, uow, handoffs.service),
     unmark: new UnmarkWorksheetLineHandler(
       days,
       store,
       new RecordingDayLock(trace),
       clock,
-      new DirectUnitOfWork(),
+      uow,
+      handoffs.service,
     ),
   };
 }

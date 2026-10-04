@@ -28,6 +28,7 @@ export const ORDERS: readonly ProducibleOrder[] = [
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
+    dueAt: null,
     lines: [{ sku: CROISSANT, productName: "Croissant", quantity: 12 }],
   },
   {
@@ -36,6 +37,7 @@ export const ORDERS: readonly ProducibleOrder[] = [
     customerLabel: "Le Chalet",
     fulfillmentMethod: "delivery",
     destination: "Val d'Isère",
+    dueAt: null,
     lines: [
       { sku: CROISSANT, productName: "Croissant", quantity: 4 },
       { sku: BAGUETTE, productName: "Baguette", quantity: 2 },

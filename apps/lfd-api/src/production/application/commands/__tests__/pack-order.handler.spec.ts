@@ -24,6 +24,7 @@ const ORDER: ProducibleOrder = {
   customerLabel: "Trois Ponts",
   fulfillmentMethod: "pickup",
   destination: "Le Labo",
+  dueAt: null,
   lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 4 }],
 };
 

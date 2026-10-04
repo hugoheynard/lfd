@@ -50,6 +50,7 @@ function arrival(orderId: string, lines: readonly [string, string, number][]): P
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
+    dueAt: null,
     lines: lines.map(([sku, productName, quantity]) => ({ sku, productName, quantity })),
   };
 }

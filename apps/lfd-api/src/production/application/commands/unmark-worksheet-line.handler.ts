@@ -6,6 +6,7 @@ import { ProductionBatchRepository } from "../../domain/ports/production-batch.r
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { PackingHandoffs } from "../services/packing-handoffs.service.js";
 import { UnmarkWorksheetLineCommand } from "./unmark-worksheet-line.command.js";
 
 /**
@@ -20,6 +21,11 @@ import { UnmarkWorksheetLineCommand } from "./unmark-worksheet-line.command.js";
  * Sous le verrou de la journée (D4), pour la même raison qu'annuler une
  * fournée : le refus lit le bac, et un colisage validé entre la lecture et
  * l'écriture le rendrait faux.
+ *
+ * Les fournées déjà REMISES au colisage sont reprises dans la même unité de
+ * travail (colisage, §13, B2) — cf. `CancelBatchHandler`. Le contrat reste
+ * servi tel quel ; sur une journée `packing` (K2), sa sémantique deviendra
+ * « retour demandé », et c'est ce JSDoc qui le dira.
  *
  * @sans-journal geste d'atelier, journalisation laissée au TODO par Hugo le
  * 2026-09-19 (une ligne par coche ou un fait par journée : à trancher —
@@ -36,6 +42,7 @@ export class UnmarkWorksheetLineHandler implements ICommandHandler<
     private readonly lock: ProductionDayLock,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly handoffs: PackingHandoffs,
   ) {}
 
   async execute(command: UnmarkWorksheetLineCommand): Promise<void> {
@@ -51,6 +58,7 @@ export class UnmarkWorksheetLineHandler implements ICommandHandler<
       for (const batch of cancelled) {
         await this.batches.cancel(day, batch.id, mark);
       }
+      await this.handoffs.takeBack(day, cancelled, mark, current.packingOwner);
     });
   }
 }

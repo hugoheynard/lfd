@@ -33,6 +33,8 @@ import { DebtorMandateModule } from "./debtor-mandate.module.js";
 import { LoyaltyVoucherModule } from "./loyalty-voucher.module.js";
 import { IssuedMandatesModule } from "./issued-mandates.module.js";
 import { ProductionFeedModule } from "./production-feed.module.js";
+import { PackingModule } from "../packing/packing.module.js";
+import { PackingFeedModule } from "./packing-feed.module.js";
 import { ImageCatalogueModule } from "./image-catalogue.module.js";
 import { MediaCarriersModule } from "./media-carriers.module.js";
 import { CatalogFeedModule } from "./catalog-feed.module.js";
@@ -146,6 +148,9 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     ProductionFeedModule,
     HandoverModule,
     HandoverFeedModule,
+    // Le colisage, en ombre (plan `colisage/plan-domaine-colisage.md`, K1).
+    PackingModule,
+    PackingFeedModule,
     // La livraison : la flotte et le départ des tournées (lot 2 du plan de
     // tournée). Le fil relie les points de retrait du commerce à son port.
     DeliveryModule,

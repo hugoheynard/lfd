@@ -6,6 +6,7 @@ import {
 } from "../errors/production-errors.js";
 import { absorbArrivals, countOf, freezeOrder } from "../services/production-count.js";
 import type { ContainerStep } from "../value-objects/container-step.js";
+import { LEGACY_PACKING_OWNER, type PackingOwner } from "../value-objects/packing-owner.js";
 import { ServiceDay } from "../value-objects/service-day.value-object.js";
 import * as batching from "./production-day.batches.js";
 import * as packing from "./production-day.packing.js";
@@ -66,6 +67,7 @@ export class ProductionDay {
     readonly day: ServiceDay,
     private closedAtValue: Date | null,
     private retakenValue: PackedMark | null,
+    private packingOwnerValue: PackingOwner,
     private ordersValue: readonly ProductionOrderSnapshot[],
     private countsValue: readonly ProducedItemSnapshot[],
     private batchesValue: readonly ProductionBatchSnapshot[],
@@ -76,7 +78,7 @@ export class ProductionDay {
    * qu'on puisse fabriquer sans lire la base.
    */
   static open(day: ServiceDay): ProductionDay {
-    return new ProductionDay(day, null, null, [], [], []);
+    return new ProductionDay(day, null, null, LEGACY_PACKING_OWNER, [], [], []);
   }
 
   /** Rehydrate depuis l'adaptateur. Les value objects revalident au passage. */
@@ -85,6 +87,7 @@ export class ProductionDay {
       ServiceDay.of(snapshot.serviceDay),
       snapshot.closedAt,
       snapshot.retaken,
+      snapshot.packingOwner,
       snapshot.orders,
       snapshot.counts,
       snapshot.batches,
@@ -104,6 +107,11 @@ export class ProductionDay {
     return this.retakenValue;
   }
 
+  /** Qui colise la journée — cf. `PackingOwner`. */
+  get packingOwner(): PackingOwner {
+    return this.packingOwnerValue;
+  }
+
   get orders(): readonly ProductionOrderSnapshot[] {
     return this.ordersValue;
   }
@@ -116,6 +124,11 @@ export class ProductionDay {
   /** Les fournées du jour, annulées comprises — sans les implicites (§5.2). */
   get batches(): readonly ProductionBatchSnapshot[] {
     return this.batchesValue;
+  }
+
+  /** Sorti du four pour ce SKU, coches héritées comprises. Cf. `production-day.batches.ts`. */
+  producedOf(sku: string): number {
+    return batching.producedOf(this, sku);
   }
 
   /** Sorti − au bac, bacs fermés compris (D4). Cf. `production-day.batches.ts`. */
@@ -247,6 +260,8 @@ export class ProductionDay {
     this.ordersValue = orders.map(freezeOrder);
     this.countsValue = countOf(orders);
     this.closedAtValue = at;
+    // Le binaire de K1 ne connaît que l'ancien poste (colisage, §13, B1).
+    this.packingOwnerValue = LEGACY_PACKING_OWNER;
   }
 
   /** La ligne qu'on s'apprête à cocher, sans muter — refus : `production-day.batches.ts`. */
@@ -290,6 +305,7 @@ export class ProductionDay {
       serviceDay: this.day.value,
       closedAt: this.closedAtValue,
       retaken: this.retakenValue,
+      packingOwner: this.packingOwnerValue,
       orders: this.ordersValue,
       counts: this.countsValue,
       batches: this.batchesValue,

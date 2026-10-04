@@ -1,6 +1,7 @@
 import {
   type DeadlineOrder,
   deadlineThresholds,
+  dueClockOf,
   type ProductionMargins,
 } from "../deadline-thresholds.js";
 
@@ -183,5 +184,15 @@ describe("deadlineThresholds — le compte à rebours par échéance", () => {
     expect(bag?.thresholds).toEqual([
       { kind: "undated", before: null, quantity: 3, cumulative: 3 },
     ]);
+  });
+});
+
+describe("dueClockOf — l'heure d'échéance remise au fournil (colisage, §13)", () => {
+  it("le début du créneau s'il y en a un", () => {
+    expect(dueClockOf({ start: "06:00", end: "08:00" })).toBe("06:00");
+  });
+
+  it("sinon la fin de l'échéance", () => {
+    expect(dueClockOf({ start: null, end: "09:30" })).toBe("09:30");
   });
 });

@@ -46,9 +46,19 @@ model ProductionDay {
   retakenAt DateTime? @map("retaken_at")
   retakenBy String?   @map("retaken_by")
 
-  orders  ProductionOrder[]
-  counts  ProductionCount[]
-  batches ProductionBatch[]
+  /// **Qui colise cette journée** — `legacy` (le poste du fournil, ses colonnes
+  /// `packed_*`) ou `packing` (le bloc du colisage). Écrite dans la transaction
+  /// de la clôture, et une journée garde le propriétaire qu'elle a eu à sa
+  /// clôture (`documentation/colisage/plan-domaine-colisage.md`, §13, B1).
+  ///
+  /// Le binaire de K1 n'écrit QUE `legacy` : l'ombre du colisage calcule à
+  /// côté, personne ne la lit. Le CHECK de la migration tient les deux valeurs.
+  packingOwner String @default("legacy") @map("packing_owner")
+
+  orders   ProductionOrder[]
+  counts   ProductionCount[]
+  batches  ProductionBatch[]
+  handoffs ProductionHandoff[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -73,6 +83,13 @@ model ProductionOrder {
   customerLabel     String @map("customer_label")
   fulfillmentMethod String @map("fulfillment_method")
   destination       String
+
+  /// **L'échéance** de la commande, `HH:mm` sur la journée : le début du
+  /// créneau s'il y en a un, sinon la fin de l'échéance — la règle du compte à
+  /// rebours (`deadline-thresholds.ts`). `null` = aucune échéance convenue, ou
+  /// commande inscrite avant la colonne (2026-10-04, colisage K1) : elle passe
+  /// alors en DERNIER dans l'attribution du colisable.
+  dueAt String? @map("due_at") @db.VarChar(5)
 
   /// Le COLISAGE, tel que le fournil le constate. `null` = pas encore fermé.
   ///
@@ -296,6 +313,43 @@ model ProductionBatch {
 
   @@index([serviceDay, sku])
   @@map("production_batch")
+  @@schema("production")
+}
+
+/// **Une remise au colisage** — ce que le fournil a transféré au colisage, ou
+/// repris (`documentation/colisage/plan-domaine-colisage.md`, §10.3, §11.2,
+/// §13). La remise EST la sortie du four : une fournée déclarée en écrit une,
+/// d'`id` = l'`id` de la fournée. Une fournée implicite (coche héritée) n'en
+/// écrit JAMAIS.
+///
+/// `quantity` est SIGNÉE : positive pour une remise, négative pour un retour
+/// accepté. La part encore annulable par le fournil se calculera
+/// `sorti − Σ quantity` (K2) ; en K1 personne ne la lit, la table se remplit
+/// en ombre.
+///
+/// Jamais modifiée ni supprimée : un retour est une ligne de plus.
+model ProductionHandoff {
+  /// L'`id` de la fournée pour une remise ; `return-<id de la fournée>` pour un retour.
+  id String @id
+
+  serviceDay String        @map("service_day") @db.VarChar(10)
+  day        ProductionDay @relation(fields: [serviceDay], references: [serviceDay], onDelete: Restrict)
+
+  sku      String
+  /// Jamais nulle (CHECK) : positive = remise, négative = retour accepté.
+  quantity Int
+  /// `batch` — la fournée. Le chariot ou la vague viendront par une valeur de plus.
+  source   String
+
+  at DateTime @db.Timestamptz(6)
+  /// La fiche staff du geste, figée. Jamais un `sub`.
+  by String
+
+  /// La demande de retour qui a produit cette ligne ; `null` pour une remise.
+  requestId String? @unique @map("request_id")
+
+  @@index([serviceDay, sku])
+  @@map("production_handoff")
   @@schema("production")
 }
 

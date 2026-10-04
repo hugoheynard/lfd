@@ -12,6 +12,7 @@ import { ServiceDay } from "../../../domain/value-objects/service-day.value-obje
 import { RetakeProductionDayCommand } from "../retake-production-day.command.js";
 import { RetakeProductionDayHandler } from "../retake-production-day.handler.js";
 import { InMemoryBatches, RecordingDayLock } from "../../__tests__/batch-doubles.js";
+import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 
 /** Deux instants recopiés, jamais comparés à l'horloge — exception étroite du §5. */
 const TIRAGE = new Date("2026-09-13T04:20:00.000Z");
@@ -25,6 +26,7 @@ function order(orderId: string, quantity: number): ProducibleOrder {
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
+    dueAt: null,
     lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity }],
   };
 }
@@ -101,6 +103,7 @@ function subject(
   events: RecordingPublisher = new RecordingPublisher(),
   batches: InMemoryBatches = new InMemoryBatches(),
   lock: RecordingDayLock = new RecordingDayLock(),
+  durable: RecordingDurable = new RecordingDurable(),
 ): RetakeProductionDayHandler {
   return new RetakeProductionDayHandler(
     days,
@@ -110,6 +113,7 @@ function subject(
     new DirectUnitOfWork(),
     batches,
     lock,
+    durable,
   );
 }
 
@@ -201,5 +205,44 @@ describe("RetakeProductionDayHandler", () => {
       handler.execute(new RetakeProductionDayCommand(DAY, "staff-1")),
     ).rejects.toBeInstanceOf(ProductionDayNotClosedError);
     expect(days.saved).toBeNull();
+  });
+});
+
+describe("RetakeProductionDayHandler — la liste à coliser (colisage, K1, §11 B2)", () => {
+  it("publie une commande à coliser pour chaque commande ABSORBÉE, et elles seules", async () => {
+    const durable = new RecordingDurable();
+    const handler = subject(
+      new Days(closedDay()),
+      [order("ord_1", 30), order("ord_2", 12), order("ord_3", 4)],
+      new RecordingPublisher(),
+      new InMemoryBatches(),
+      new RecordingDayLock(),
+      durable,
+    );
+
+    await handler.execute(new RetakeProductionDayCommand(DAY, "staff-1"));
+
+    expect(durable.facts.map((fact) => fact.key)).toEqual([
+      `production.packing_list_drawn:${DAY}:ord_2`,
+      `production.packing_list_drawn:${DAY}:ord_3`,
+    ]);
+    // Datées du retirage — l'instant du tirage qui les a inscrites.
+    expect(durable.facts[0]?.payload).toMatchObject({ drawnAt: NOW.toISOString() });
+  });
+
+  it("ne publie rien quand rien n'est absorbé", async () => {
+    const durable = new RecordingDurable();
+    const handler = subject(
+      new Days(closedDay()),
+      [order("ord_1", 30)],
+      new RecordingPublisher(),
+      new InMemoryBatches(),
+      new RecordingDayLock(),
+      durable,
+    );
+
+    await handler.execute(new RetakeProductionDayCommand(DAY, "staff-1"));
+
+    expect(durable.facts).toEqual([]);
   });
 });

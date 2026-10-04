@@ -24,6 +24,7 @@ function order(overrides: Partial<ProducibleOrder> = {}): ProducibleOrder {
     customerLabel: "Hôtel des Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
+    dueAt: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40 }],
     ...overrides,
   };
@@ -200,5 +201,37 @@ describe("le jour de service", () => {
 
   it("accepte un jour bien formé, espaces compris", () => {
     expect(ServiceDay.of(" 2026-09-08 ").value).toBe("2026-09-08");
+  });
+});
+
+describe("la journée et le colisage (plan colisage, K1)", () => {
+  it("une journée ouverte appartient à l'ancien poste", () => {
+    expect(opened().packingOwner).toBe("legacy");
+  });
+
+  it("la clôture écrit `legacy` et fige l'échéance de chaque commande", () => {
+    const day = opened();
+
+    day.close([order({ dueAt: "07:30" }), order({ orderId: "ord_2", dueAt: null })], AT);
+
+    expect(day.packingOwner).toBe("legacy");
+    expect(day.toSnapshot().packingOwner).toBe("legacy");
+    expect(day.orders.map((sheet) => sheet.dueAt)).toEqual(["07:30", null]);
+  });
+
+  it("le retirage fige l'échéance des commandes qu'il absorbe", () => {
+    const day = opened();
+    day.close([order()], AT);
+
+    day.retake([order(), order({ orderId: "ord_2", dueAt: "09:00" })], LATER, "staff-1");
+
+    expect(day.orders.map((sheet) => sheet.dueAt)).toEqual([null, "09:00"]);
+  });
+
+  it("le propriétaire survit à l'aller-retour par l'instantané", () => {
+    const snapshot = opened().toSnapshot();
+    expect(ProductionDay.fromSnapshot({ ...snapshot, packingOwner: "packing" }).packingOwner).toBe(
+      "packing",
+    );
   });
 });

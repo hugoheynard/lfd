@@ -41,6 +41,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         closedAt: true,
         retakenAt: true,
         retakenBy: true,
+        packingOwner: true,
         orders: {
           select: {
             orderId: true,
@@ -48,6 +49,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             customerLabel: true,
             fulfillmentMethod: true,
             destination: true,
+            dueAt: true,
             packedAt: true,
             packedBy: true,
             containerCount: true,
@@ -90,6 +92,8 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         row.retakenAt === null || row.retakenBy === null
           ? null
           : { at: row.retakenAt, by: row.retakenBy },
+      // Le CHECK de la base n'admet que ces deux valeurs.
+      packingOwner: row.packingOwner === "packing" ? "packing" : "legacy",
       orders: row.orders.map((order) => ({
         // Les deux colonnes restent nullables en base — c'est la même ligne
         // avant et après le colisage. Le mapper les recolle en un couple, ou en
@@ -107,6 +111,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         // ramène dans son union plutôt que de laisser une `string` circuler.
         fulfillmentMethod: order.fulfillmentMethod === "delivery" ? "delivery" : "pickup",
         destination: order.destination,
+        dueAt: order.dueAt,
         lines: order.lines.map((line) => ({
           sku: line.sku,
           productName: line.productName,
@@ -279,11 +284,13 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
           closedAt: snapshot.closedAt,
           retakenAt: snapshot.retaken?.at ?? null,
           retakenBy: snapshot.retaken?.by ?? null,
+          packingOwner: snapshot.packingOwner,
         },
         update: {
           closedAt: snapshot.closedAt,
           retakenAt: snapshot.retaken?.at ?? null,
           retakenBy: snapshot.retaken?.by ?? null,
+          packingOwner: snapshot.packingOwner,
         },
       });
       await tx.productionOrder.deleteMany({ where: { serviceDay: snapshot.serviceDay } });
@@ -297,6 +304,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             customerLabel: order.customerLabel,
             fulfillmentMethod: order.fulfillmentMethod,
             destination: order.destination,
+            dueAt: order.dueAt,
             packedAt: order.packed === null ? null : order.packed.at,
             packedBy: order.packed === null ? null : order.packed.by,
             // 🔴 Réécrit, pas perdu — même raison que le remplissage des lignes

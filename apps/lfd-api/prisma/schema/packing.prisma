@@ -1,0 +1,106 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// PACKING — le colisage, son propre domaine
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Plan `documentation/colisage/plan-domaine-colisage.md`, §12 (v4) corrigé par
+// §13 (v4.1). Lot K1 : ces tables se remplissent EN OMBRE, par les faits que le
+// fournil publie dans la boîte d'envoi (`production/channels/packing/`).
+// Personne ne les lit pour décider ; seule la route de contrôle les compare au
+// colisage réel.
+//
+// ⚠️ Aucune clé étrangère vers `production` ni vers `public` : une commande est
+// un identifiant OPAQUE + un instantané, comme partout ailleurs. Les faits
+// arrivent dans le désordre : chaque table se remplit de façon commutative.
+
+/// **Une commande à coliser**, telle que la liste tirée par le fournil l'a
+/// donnée. Clé : la journée et la commande — une commande déplacée d'un jour à
+/// l'autre est deux colisages.
+model PackingOrder {
+  serviceDay String @map("service_day") @db.VarChar(10)
+  /// L'identifiant de la commande côté COMMERCE, opaque.
+  orderId    String @map("order_id")
+
+  reference         String
+  customerLabel     String  @map("customer_label")
+  fulfillmentMethod String  @map("fulfillment_method")
+  /// `HH:mm` — début du créneau, sinon fin de l'échéance ; `null` = en dernier.
+  dueAt             String? @map("due_at") @db.VarChar(5)
+
+  /// L'instant du tirage (clôture ou retirage) qui l'a inscrite — celui du fournil.
+  drawnAt DateTime @map("drawn_at") @db.Timestamptz(6)
+
+  /// Le bac fermé (K2). `null` tous les deux = ouvert ; en K1, toujours ouvert.
+  packedAt       DateTime? @map("packed_at") @db.Timestamptz(6)
+  packedBy       String?   @map("packed_by")
+  /// Les contenants comptés (K2). `0` = personne ne les a comptés.
+  containerCount Int       @default(0) @map("container_count")
+
+  lines PackingLine[]
+
+  @@id([serviceDay, orderId])
+  @@map("packing_order")
+  @@schema("packing")
+}
+
+/// **Une ligne à coliser** : ce qui est dû, et ce qui est au bac (K2).
+model PackingLine {
+  serviceDay String       @map("service_day") @db.VarChar(10)
+  orderId    String       @map("order_id")
+  order      PackingOrder @relation(fields: [serviceDay, orderId], references: [serviceDay, orderId], onDelete: Restrict)
+
+  sku         String
+  productName String @map("product_name")
+  /// La quantité DUE — celle de l'instantané du fournil.
+  quantity    Int
+
+  /// Au bac (K2) : réversible tant que le bac est ouvert. `null` = pas au bac.
+  packedAt       DateTime? @map("packed_at") @db.Timestamptz(6)
+  packedBy       String?   @map("packed_by")
+  packedInitials String    @default("") @map("packed_initials")
+
+  @@id([serviceDay, orderId, sku])
+  @@map("packing_line")
+  @@schema("packing")
+}
+
+/// **La réserve d'un article, pour une journée** — LA ligne qu'une mise au bac
+/// et un retour verrouillent (§11, SÉRIEUX). Elle ne dépend pas des commandes :
+/// une remise qui arrive avant la liste à coliser est gardée ici.
+///
+/// Invariant visé (K2) : `packed ≤ received − returned`. Les CHECK de la
+/// migration tiennent déjà les trois compteurs positifs.
+model PackingStock {
+  serviceDay String @map("service_day") @db.VarChar(10)
+  sku        String
+
+  /// Σ des remises reçues du fournil.
+  received Int @default(0)
+  /// Σ des retours rendus au fournil.
+  returned Int @default(0)
+  /// Ce qui est au bac (K2). En K1, toujours 0.
+  packed   Int @default(0)
+
+  @@id([serviceDay, sku])
+  @@map("packing_stock")
+  @@schema("packing")
+}
+
+/// **Un fait reçu**, une fois : la clé d'idempotence d'une remise (`handoffId`)
+/// ou d'un retour (`requestId`). Écrite dans la même transaction que l'effet
+/// sur la réserve — un fait reçu deux fois ne compte qu'une fois, quel que
+/// soit le chemin (rejeu admin, réannonce).
+model PackingReceipt {
+  /// `handoffId` pour une remise, `requestId` pour un retour.
+  id         String   @id
+  /// `handoff` ou `return` (CHECK).
+  kind       String
+  serviceDay String   @map("service_day") @db.VarChar(10)
+  sku        String
+  /// La quantité APPLIQUÉE à la réserve, toujours positive (CHECK).
+  quantity   Int
+  receivedAt DateTime @map("received_at") @db.Timestamptz(6)
+
+  @@index([serviceDay, sku])
+  @@map("packing_receipt")
+  @@schema("packing")
+}

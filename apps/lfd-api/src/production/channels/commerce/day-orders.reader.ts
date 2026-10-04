@@ -33,6 +33,16 @@ export interface ProducibleOrder {
   readonly fulfillmentMethod: "pickup" | "delivery";
   /** Le lieu nommé — point de retrait, ou adresse livrée, déjà résolu. */
   readonly destination: string;
+  /**
+   * **L'échéance**, `HH:mm` sur la journée : le début du créneau s'il y en a
+   * un, sinon la fin de l'échéance — la règle du compte à rebours
+   * (`deadline-thresholds.ts`, tranchée par Hugo le 2026-10-04). `null` =
+   * aucune échéance convenue ; le colisage la place alors en dernier.
+   *
+   * Ajoutée pour le colisage (plan `colisage/plan-domaine-colisage.md`, §13) :
+   * la liste à coliser attribue ce qui sort du four par échéance croissante.
+   */
+  readonly dueAt: string | null;
   readonly lines: readonly ProducibleLine[];
 }
 

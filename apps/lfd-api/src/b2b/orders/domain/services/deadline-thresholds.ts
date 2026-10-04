@@ -124,7 +124,17 @@ function dueMinute(
     return UNDATED;
   }
   const margin = order.fulfillmentMethod === "delivery" ? margins.delivery : margins.pickup;
-  return Math.max(0, minuteOf(order.window.start ?? order.window.end) - margin);
+  return Math.max(0, minuteOf(dueClockOf(order.window)) - margin);
+}
+
+/**
+ * **L'heure d'échéance d'une fenêtre**, `HH:mm` : son début s'il y en a un,
+ * sinon sa fin — la règle de l'en-tête. Exportée pour que le snapshot remis au
+ * fournil (`ProducibleOrder.dueAt`, colisage §13) suive la MÊME règle que le
+ * compte à rebours, sans la recopier.
+ */
+export function dueClockOf(window: NonNullable<DeadlineOrder["window"]>): string {
+  return window.start ?? window.end;
 }
 
 function cumulate(

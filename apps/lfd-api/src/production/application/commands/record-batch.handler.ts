@@ -1,9 +1,11 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { ProductionBatchRepository } from "../../domain/ports/production-batch.repository.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { PackingHandoffs } from "../services/packing-handoffs.service.js";
 import { RecordBatchCommand } from "./record-batch.command.js";
 
 /**
@@ -25,6 +27,15 @@ import { RecordBatchCommand } from "./record-batch.command.js";
  * qu'aucune fournée réelle n'existe. La première fournée réelle l'effacerait :
  * on la matérialise donc avant (même `id` que le rattrapage, idempotent).
  *
+ * ## La remise au colisage, dans la même unité de travail (2026-10-04)
+ *
+ * Sortir une fournée, c'est la remettre au colisage (plan
+ * `colisage/plan-domaine-colisage.md`, §11.2 ; §13, B3) : matérialiser,
+ * déclarer, écrire la remise et publier `production.handed_to_packing` partent
+ * ensemble. `handoffId` = l'`id` de la fournée — un rejeu est absorbé. Une
+ * fournée rejouée APRÈS son annulation ne se remet pas : elle ne compte plus.
+ * Les coches héritées matérialisées ne sont jamais remises.
+ *
  * Rend `void` : le client relit la fiche — §4.
  *
  * @sans-journal geste d'atelier, sous le même régime que la coche (plan, D7) :
@@ -37,6 +48,8 @@ export class RecordBatchHandler implements ICommandHandler<RecordBatchCommand, v
     private readonly days: ProductionDayRepository,
     private readonly batches: ProductionBatchRepository,
     private readonly clock: Clock,
+    private readonly uow: UnitOfWork,
+    private readonly handoffs: PackingHandoffs,
   ) {}
 
   async execute(command: RecordBatchCommand): Promise<void> {
@@ -47,10 +60,15 @@ export class RecordBatchHandler implements ICommandHandler<RecordBatchCommand, v
       by: command.staffUserId,
       initials: command.initials,
     });
-    for (const inherited of current.materialize(command.sku)) {
-      await this.batches.record(day, inherited);
-    }
-    const stored = await this.batches.record(day, batch);
-    current.acknowledge(batch, stored.serviceDay, stored.batch);
+    await this.uow.run(async () => {
+      for (const inherited of current.materialize(command.sku)) {
+        await this.batches.record(day, inherited);
+      }
+      const stored = await this.batches.record(day, batch);
+      current.acknowledge(batch, stored.serviceDay, stored.batch);
+      if (stored.batch.cancelled === null) {
+        await this.handoffs.handOver(day, stored.batch);
+      }
+    });
   }
 }

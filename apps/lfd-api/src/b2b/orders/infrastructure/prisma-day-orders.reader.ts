@@ -6,6 +6,8 @@ import {
   type ProducibleOrder,
   type ServiceDay,
 } from "../../../production/channels/commerce/index.js";
+import { dueClockOf } from "../domain/services/deadline-thresholds.js";
+import { fulfillmentOf } from "./order-fulfillment.parse.js";
 import { planWhere } from "./plan-filter.js";
 
 /**
@@ -57,6 +59,7 @@ export class PrismaDayOrdersReader extends DayOrdersReader {
         id: true,
         orderNumber: true,
         fulfillmentMethod: true,
+        fulfillment: true,
         pickupAddress: true,
         deliveryAddressSnapshot: true,
         company: { select: { enseigne: true, raisonSociale: true } },
@@ -75,6 +78,7 @@ export class PrismaDayOrdersReader extends DayOrdersReader {
         row.pickupAddress,
         row.deliveryAddressSnapshot,
       ),
+      dueAt: dueAtOf(row.fulfillment),
       lines: row.lines.map((line) => ({
         sku: line.sku,
         productName: line.productNameSnapshot,
@@ -82,6 +86,15 @@ export class PrismaDayOrdersReader extends DayOrdersReader {
       })),
     }));
   }
+}
+
+/**
+ * L'échéance remise au fournil — la fenêtre lue par le parseur partagé, réduite
+ * par la règle du compte à rebours. `null` = aucune fenêtre convenue.
+ */
+function dueAtOf(fulfillment: Parameters<typeof fulfillmentOf>[0]): string | null {
+  const window = fulfillmentOf(fulfillment).window.value;
+  return window === null ? null : dueClockOf(window);
 }
 
 /**

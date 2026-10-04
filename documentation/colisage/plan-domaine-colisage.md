@@ -464,3 +464,37 @@ rende réel.
 - « Remise inconnue » : c'est le colisage qui garde la demande en attente,
   et il répond quand la remise arrive. Le fournil ne republie rien.
 - La requête de comptage de K3 sera écrite dans le lot K3.
+
+## 14. K1 bâti (2026-10-04) — ce qui a été tranché en bâtissant
+
+- **Portes armées d'abord** : `packing` dans `BLOCK_OF`, `ALLOWED` et
+  `PORT_SURFACE` (`packing → production` par `production/channels/packing/`
+  seulement) de `lint:context-boundaries`, dans les blocs de
+  `lint:prisma-model-ownership`, et dans les `schemas` du `datasource` (que
+  `prisma-schema-layout` et `cross-schema-join` lisent). `durable-cross-block`
+  lit le bloc dans le chemin : rien à y déclarer. CLAUDE.md §3 porte la ligne
+  et la colonne. Le compteur d'opérations par schéma
+  (`platform/database/schema-ops.counter.ts`) a gagné les cinq modèles.
+- **Un fait `packing_list_drawn` PAR COMMANDE**, clé
+  `production.packing_list_drawn:<jour>:<orderId>` : la réannonce republie les
+  mêmes clés (absorbées), le retirage n'écrit que les commandes absorbées.
+- **`dueAt` est un `HH:mm`** (`string | null`), calculé par `dueClockOf`,
+  exporté de `deadline-thresholds.ts` — une seule règle pour le compte à
+  rebours et le snapshot. Colonne `production_order.due_at`, nulle pour les
+  commandes inscrites avant.
+- **Le retour** : `requestId = return-<id de la fournée>`, une ligne
+  `production_handoff` négative, et `return_requested` publié seulement si la
+  fournée avait été remise (une fournée d'avant K1 ou implicite ne demande
+  rien). Un `return_requested` `legacy: false` reçu par K1 **échoue** (message
+  mort visible) plutôt que d'être tranché ou perdu.
+- **La comparaison** passe les deux côtés par la même attribution : stock
+  « sorti du four » (coches héritées comprises) côté fournil, « reçu − rendu »
+  côté ombre. Une fournée d'avant le déploiement se voit en écart, c'est
+  attendu. Route : `GET /admin/packing/shadow?date=`, sous `production_packing`.
+  Le fournil la sert par un port publié, `LegacyPackingReader`, relié par
+  `apps/lfd-api/src/appBootstrap/packing-feed.module.ts`.
+- **Non fait, et dit** : pas de journal `packing.day_change` ni de
+  déclencheurs sur les tables `packing.*` (§10.3, §11 MINEURS) — aucune
+  lecture de version en K1, et un journal sans balayage grossirait. À poser
+  avec K2. Le contrat `packing.returned` n'est pas encore déclaré : K1 ne
+  répond à aucun retour.

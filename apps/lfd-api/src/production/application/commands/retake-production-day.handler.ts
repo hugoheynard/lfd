@@ -3,13 +3,17 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
+import type { ProductionOrderSnapshot } from "../../domain/entities/production-day.js";
 import { ProductionDayRetakenJournalEvent } from "../../domain/events/production-day.events.js";
 import { ProductionBatchRepository } from "../../domain/ports/production-batch.repository.js";
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
+import { arrivalsBetween } from "../../domain/services/production-handoff.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { packingListFactsOf } from "../services/packing-list-facts.js";
 import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
 
 /**
@@ -22,6 +26,11 @@ import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
  * 2026-09-13). Le refaire ici donnerait deux filtres pour un seul fait — et le
  * jour où l'un changerait, le bandeau annoncerait autre chose que ce que le
  * bouton absorbe.
+ *
+ * Il publie, en revanche, AU COLISAGE (2026-10-04, plan
+ * `colisage/plan-domaine-colisage.md`, §11, B2) : un `production.packing_list_drawn`
+ * par commande ABSORBÉE, dans la même unité de travail — sans quoi elles
+ * n'arriveraient jamais à la liste à coliser.
  *
  * Il ne publie rien AU COMMERCE. Un retirage n'inscrit aucune commande NOUVELLE
  * au commerce : celles qu'il absorbe sont les mêmes `placed` qu'une clôture
@@ -70,6 +79,7 @@ export class RetakeProductionDayHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly batches: ProductionBatchRepository,
     private readonly lock: ProductionDayLock,
+    private readonly durable: DurablePublisher,
   ) {}
 
   async execute(command: RetakeProductionDayCommand): Promise<ProductionWorksheetRetake> {
@@ -80,13 +90,16 @@ export class RetakeProductionDayHandler implements ICommandHandler<
       await this.lock.lock(day);
       const locked = await this.days.load(day);
       const inherited = locked.materialize();
-      const absorbed = locked.retake(producible, this.clock.now(), command.staffUserId);
+      const before = locked.orders;
+      const now = this.clock.now();
+      const absorbed = locked.retake(producible, now, command.staffUserId);
       if (absorbed > 0) {
         for (const batch of inherited) {
           await this.batches.record(day, batch);
         }
         await this.days.save(locked);
         await this.events.publishTraced(new ProductionDayRetakenJournalEvent(day.value, absorbed));
+        await this.publishArrivals(day, arrivalsBetween(before, locked.orders), now);
       }
       return { day: locked, absorbed };
     });
@@ -104,5 +117,16 @@ export class RetakeProductionDayHandler implements ICommandHandler<
         this.clock.now()
       ).toISOString(),
     };
+  }
+
+  /** Les commandes absorbées entrent dans la liste à coliser, datées du retirage. */
+  private async publishArrivals(
+    day: ServiceDay,
+    arrivals: readonly ProductionOrderSnapshot[],
+    drawnAt: Date,
+  ): Promise<void> {
+    for (const fact of packingListFactsOf(day, arrivals, drawnAt)) {
+      await this.durable.publish(fact.durableFact());
+    }
   }
 }

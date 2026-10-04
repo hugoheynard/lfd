@@ -232,6 +232,9 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   ProductionQualityCheck: "production",
   ProductionQualityPhoto: "production",
   ProductionQualityUpload: "production",
+  // La remise au colisage (2026-10-04, `colisage/plan-domaine-colisage.md`, K1) :
+  // une ligne par fournée déclarée, et une par retour.
+  ProductionHandoff: "production",
   // La livraison : son code vit dans `src/delivery/`, ses tables dans son
   // propre schéma depuis le 2026-09-30 (`plan-schema-delivery.md`, SD-D1). Un
   // pic sur la flotte est un geste de réglage, rare par nature.
@@ -268,6 +271,13 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // SQL brut — compté dans le seau brut ; seul le rejeu passe par ces modèles.
   OutboxMessage: "platform",
   OutboxDelivery: "platform",
+  // Le colisage, en ombre (2026-10-04, `colisage/plan-domaine-colisage.md`, K1) :
+  // écrit par les abonnés durables, une ligne par fait reçu. La réserve
+  // s'écrit aussi en SQL brut — comptée dans le seau brut.
+  PackingOrder: "packing",
+  PackingLine: "packing",
+  PackingStock: "packing",
+  PackingReceipt: "packing",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */
