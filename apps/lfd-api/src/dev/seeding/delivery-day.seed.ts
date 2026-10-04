@@ -119,8 +119,8 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
   },
   {
     enseigne: "Le Petit Chaudron",
-    // Plus tôt que son carnet : le service du petit-déjeuner est avancé.
-    window: { start: "06:30", end: "07:30" },
+    // La première de ses deux échéances : le pain du petit-déjeuner.
+    window: { start: null, end: "07:30" },
     ready: true,
     stop: 2,
     bins: [{ type: BIN_L, whole: 5, half: false, innerBags: 3 }],
@@ -170,7 +170,7 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
   },
   {
     enseigne: "Hôtel Le Lac Blanc",
-    window: { start: "08:00", end: "09:00" },
+    window: { start: null, end: "09:00" },
     ready: true,
     stop: null,
     lines: [
@@ -190,9 +190,9 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
   },
   {
     enseigne: "Brasserie des Marmottes",
-    // Plus tard que le carnet, et pas encore prête : la feuille de route doit
+    // Sa seconde échéance, celle de midi, et pas encore prête : la feuille de route doit
     // montrer un bac qui manque sans alarmer pour rien.
-    window: { start: "10:30", end: "11:30" },
+    window: { start: null, end: "11:30" },
     ready: false,
     stop: null,
     lines: [

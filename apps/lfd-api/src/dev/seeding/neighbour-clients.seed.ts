@@ -61,8 +61,11 @@ export interface NeighbourClient {
 
 /** Les consignes d'une adresse de livraison, et sa procédure s'il y en a une. */
 export interface DeliverySite {
-  /** Le créneau du carnet, tous les jours ; `null` = aucun créneau convenu. */
-  readonly slot: { readonly start: string; readonly end: string } | null;
+  /**
+   * Les échéances préférées du carnet, tous les jours, de la plus tôt à la plus
+   * tard ; `null` = aucune convenue. La démo est en échéance (Hugo, 2026-10-04).
+   */
+  readonly deadlines: readonly [string, ...string[]] | null;
   readonly note: string;
   readonly contact: {
     readonly prenom: string;
@@ -75,9 +78,9 @@ export interface DeliverySite {
   readonly steps: readonly { readonly title: string; readonly body: string }[];
 }
 
-/** Ce que les voisins portent depuis toujours : 07:00–09:00, sans consigne. */
+/** Ce que les voisins portent depuis toujours : avant 09:00, sans consigne. */
 const DEFAULT_SITE: DeliverySite = {
-  slot: { start: "07:00", end: "09:00" },
+  deadlines: ["09:00"],
   note: "",
   contact: null,
   signatureRequired: null,
@@ -89,6 +92,9 @@ export const NEIGHBOURS: readonly NeighbourClient[] = [
   {
     raisonSociale: "SARL Chez Marmotte",
     enseigne: "Le Petit Chaudron",
+    // Deux échéances le même jour : le pain du matin, le service de midi
+    // (Hugo, 2026-10-03). Ses commandes disent donc laquelle.
+    site: { ...DEFAULT_SITE, deadlines: ["07:30", "11:00"] },
     formeJuridique: "SARL",
     siret: "91234567500017",
     vatNumber: "FR65912345675",
@@ -105,6 +111,8 @@ export const NEIGHBOURS: readonly NeighbourClient[] = [
   {
     raisonSociale: "SAS Hôtellerie du Lac",
     enseigne: "Hôtel Le Lac Blanc",
+    // Le petit-déjeuner, puis le dîner : deux échéances, ses commandes choisissent.
+    site: { ...DEFAULT_SITE, deadlines: ["09:00", "18:00"] },
     formeJuridique: "SAS",
     siret: "88765432500018",
     vatNumber: "FR65887654325",
@@ -248,7 +256,9 @@ async function seedNeighbour(context: ClientContext, neighbour: NeighbourClient)
         isDefault: true,
         specs: {
           note: site.note,
-          slots: { mode: "everyday", slot: site.slot },
+          slots: { mode: "everyday", slot: null },
+          deadlines:
+            site.deadlines === null ? null : { mode: "everyday", times: [...site.deadlines] },
           deliveryContact: site.contact,
           gps: neighbour.gps,
           signatureRequired: site.signatureRequired,

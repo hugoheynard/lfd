@@ -69,11 +69,11 @@ export type PublicDeliveryAvailabilityView = Pick<
   readonly windowMode?: WindowMode | undefined;
 };
 
-/** Ce que vaut le réglage tant que personne ne l'a posé : l'existant, ouvert aux deux. */
+/** Ce que vaut le réglage tant que personne ne l'a posé : ouvert aux deux, en échéance (§14.2, Hugo 2026-10-04). */
 export const DEFAULT_DELIVERY_AVAILABILITY: DeliveryAvailabilityView = {
   openToB2b: true,
   openToB2c: true,
-  windowMode: "slot",
+  windowMode: "deadline",
   updatedAt: null,
   updatedBy: null,
 };

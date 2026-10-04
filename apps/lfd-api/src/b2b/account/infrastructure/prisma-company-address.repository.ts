@@ -1,4 +1,9 @@
-import { type BillingAddressPayload, type DeliverySpecs, doorstepRuleSchema } from "@lfd/contracts";
+import {
+  type BillingAddressPayload,
+  type DeliverySpecs,
+  deliverySpecsSchema,
+  doorstepRuleSchema,
+} from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { AddressKind } from "../../../platform/database/client/client.js";
@@ -66,7 +71,7 @@ function toDomain(row: DeliveryRow): DeliveryAddress {
       ville: row.ville,
       pays: row.pays,
     },
-    specs: isSpecs(row.deliverySpecs) ? row.deliverySpecs : NO_SPECS,
+    specs: specsOf(row.deliverySpecs),
     depositAllowed: row.depositAllowed,
     // Un CHECK tient la valeur en base : une autre lève plutôt que d'être devinée.
     doorstepRule: row.doorstepRule === null ? null : doorstepRuleSchema.parse(row.doorstepRule),
@@ -77,12 +82,15 @@ function toDomain(row: DeliveryRow): DeliveryAddress {
 
 /**
  * La colonne `delivery_specs` est un `jsonb` : elle peut être `null` (livraison
- * d'avant les consignes) et rien en base ne garantit sa forme. On la reconnaît
- * plutôt que de l'affirmer — un `as` ici ferait entrer une valeur non vérifiée
- * dans le domaine sous couvert de typage.
+ * d'avant les consignes) et rien en base ne garantit sa forme. Elle passe par
+ * le MÊME schéma que les lectures (`prisma-company-address.reader.ts`) : le
+ * carnet réécrit toutes ses entrées à chaque geste, et une valeur seulement
+ * « reconnue » à la présence de `slots` y entrait brute (plan composition
+ * automatique §14.1, BLOQUANT 2). Une forme illisible lève plutôt que d'être
+ * réécrite en consignes vides.
  */
-function isSpecs(value: unknown): value is DeliverySpecs {
-  return typeof value === "object" && value !== null && "slots" in value;
+function specsOf(value: unknown): DeliverySpecs {
+  return value === null || value === undefined ? NO_SPECS : deliverySpecsSchema.parse(value);
 }
 
 /**

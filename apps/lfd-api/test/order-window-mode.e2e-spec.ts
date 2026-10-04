@@ -10,6 +10,7 @@ import { randomUUID } from "node:crypto";
 
 import {
   type BillingAddressPayload,
+  type CompanyAddressesView,
   type DeliveryAddressPayload,
   type OrderFulfillment,
   orderFulfillmentSchema,
@@ -213,5 +214,84 @@ describe("livraison sans fenêtre (CA1b)", () => {
 
     expect(JSON.stringify(refused.body)).toContain("orders.fulfillment.window_required");
     expect(await ctx.prisma.order.count()).toBe(0);
+  });
+});
+
+describe("plusieurs créneaux par adresse (CA3b, §14.1)", () => {
+  const MORNING = { start: "06:00", end: "08:00" };
+  const EVENING = { start: "18:00", end: "20:00" };
+
+  async function storedSpecs(addressId: string): Promise<DeliveryAddressPayload["specs"]> {
+    const response = await ctx.asSub(OWNER).get(`/companies/${companyId}/addresses`).expect(200);
+    const view = jsonBody<CompanyAddressesView>(response);
+    const found = view.deliveries.find((address) => address.id === addressId);
+    if (found === undefined) {
+      throw new Error(`adresse ${addressId} absente du carnet relu`);
+    }
+    return found.specs;
+  }
+
+  it("range la liste et en dérive l'ancien créneau ; une charge SANS liste ne l'efface pas", async () => {
+    const addressId = await bookAddress({
+      slotList: { mode: "everyday", slots: [MORNING, EVENING] },
+    });
+    expect((await storedSpecs(addressId)).slots).toEqual({ mode: "everyday", slot: MORNING });
+
+    // L'onglet resté sur l'ancien front renvoie `slots` sans connaître `slotList`.
+    await ctx
+      .asSub(OWNER)
+      .patch(`/companies/${companyId}/delivery-addresses/${addressId}`)
+      .send({
+        ...POSTAL,
+        isDefault: true,
+        specs: {
+          note: "sonner deux fois",
+          slots: { mode: "everyday", slot: null },
+          deliveryContact: null,
+          gps: null,
+        },
+      })
+      .expect(204);
+
+    const specs = await storedSpecs(addressId);
+    expect(specs.note).toBe("sonner deux fois");
+    expect(specs.slotList).toEqual({ mode: "everyday", slots: [MORNING, EVENING] });
+    expect(specs.slots).toEqual({ mode: "everyday", slot: MORNING });
+  });
+
+  it("refuse une liste qui se chevauche, et rien n'est écrit", async () => {
+    await ctx
+      .asSub(OWNER)
+      .post(`/companies/${companyId}/delivery-addresses`)
+      .send({
+        ...POSTAL,
+        isDefault: true,
+        specs: {
+          signatureRequired: null,
+          note: "",
+          slots: { mode: "everyday", slot: null },
+          deliveryContact: null,
+          gps: null,
+          slotList: { mode: "everyday", slots: [MORNING, { start: "07:00", end: "09:00" }] },
+        },
+      })
+      .expect(400);
+    expect(await ctx.prisma.address.count({ where: { companyId, kind: "delivery" } })).toBe(0);
+  });
+
+  it("un seul créneau ce jour-là vaut reprise à la passation", async () => {
+    await setGlobal("slot");
+    const addressId = await bookAddress({ slotList: { mode: "everyday", slots: [EVENING] } });
+
+    const placed = await ctx
+      .asSub(OWNER)
+      .post("/orders")
+      .send(deliveryOrder(addressId, EVENING))
+      .expect(201);
+
+    expect((await agreedOf(jsonBody<{ id: string }>(placed).id)).window).toEqual({
+      value: EVENING,
+      source: "default",
+    });
   });
 });

@@ -7,11 +7,11 @@ import { type NeighbourClient, seedFictiveClients } from "./neighbour-clients.se
  * Les voisins de `NEIGHBOURS` suffisent au comptoir ; ils ne suffisent pas à
  * une tournée. Pour « se projeter » dans la feuille de route, l'écran des
  * tournées et le chargement, il faut une vraie journée : des arrêts dans trois
- * vallées, des créneaux qui ne se ressemblent pas, des consignes de porte, un
+ * vallées, des échéances qui ne se ressemblent pas, des consignes de porte, un
  * contact à appeler, une signature exigée, une procédure à étapes.
  *
  * Semées par le MÊME chemin que les voisins (`seedFictiveClients`) :
- * déclaration, facturation, adresse de livraison avec GPS et créneau, terme
+ * déclaration, facturation, adresse de livraison avec GPS et échéance, terme
  * mensuel, activation par la porte.
  *
  * Les points GPS ont été relevés sur OpenStreetMap par Hugo le 2026-09-29. Les
@@ -40,7 +40,7 @@ export const DELIVERY_CLIENTS: readonly NeighbourClient[] = [
     address: { ligne1: "Rue du Parc des Sports", codePostal: "73150", ville: "Val d'Isère" },
     gps: { lat: 45.4478, lng: 6.9765 },
     site: {
-      slot: { start: "07:00", end: "09:00" },
+      deadlines: ["09:00"],
       note: "Par la cour, porte de la réserve à droite.",
       contact: { prenom: "Claire", nom: "Moret", telephone: "06 31 42 18 77" },
       signatureRequired: true,
@@ -73,7 +73,7 @@ export const DELIVERY_CLIENTS: readonly NeighbourClient[] = [
     address: { ligne1: "Rue du Rosoleil", codePostal: "73150", ville: "Val d'Isère" },
     gps: { lat: 45.4624, lng: 6.9615 },
     site: {
-      slot: { start: "06:30", end: "08:00" },
+      deadlines: ["08:00"],
       note: "Code portail 1234, dépôt au local à skis.",
       contact: null,
       signatureRequired: null,
@@ -96,7 +96,7 @@ export const DELIVERY_CLIENTS: readonly NeighbourClient[] = [
     address: { ligne1: "Le Laisinant", codePostal: "73150", ville: "Val d'Isère" },
     gps: { lat: 45.4527, lng: 6.9905 },
     site: {
-      slot: { start: "07:00", end: "09:00" },
+      deadlines: ["09:00"],
       note: "Chemin enneigé l'hiver : se garer en bas et monter à pied.",
       contact: { prenom: "Sophie", nom: "Blanc", telephone: "06 74 20 11 39" },
       signatureRequired: false,
@@ -123,7 +123,7 @@ export const DELIVERY_CLIENTS: readonly NeighbourClient[] = [
     },
     gps: { lat: 45.592, lng: 6.7877 },
     site: {
-      slot: { start: "06:30", end: "08:00" },
+      deadlines: ["08:00"],
       note: "Entrée de service à l'arrière, sonner à la cuisine.",
       contact: { prenom: "Nicolas", nom: "Gaidon", telephone: "06 45 63 09 12" },
       signatureRequired: true,
@@ -156,7 +156,7 @@ export const DELIVERY_CLIENTS: readonly NeighbourClient[] = [
     },
     gps: { lat: 45.5625, lng: 6.829 },
     site: {
-      slot: { start: "10:00", end: "11:30" },
+      deadlines: ["11:30"],
       note: "",
       contact: null,
       signatureRequired: null,
@@ -179,7 +179,8 @@ export const DELIVERY_CLIENTS: readonly NeighbourClient[] = [
     address: { ligne1: "Arc 1950", codePostal: "73700", ville: "Bourg-Saint-Maurice" },
     gps: { lat: 45.569, lng: 6.821 },
     site: {
-      slot: { start: "10:00", end: "11:30" },
+      // Le café du matin et le service de midi : deux échéances.
+      deadlines: ["07:30", "11:30"],
       note: "Livrer par la galerie marchande, porte 3.",
       contact: { prenom: "Élodie", nom: "Favre", telephone: "06 23 54 76 81" },
       signatureRequired: null,
@@ -202,7 +203,7 @@ export const DELIVERY_CLIENTS: readonly NeighbourClient[] = [
     address: { ligne1: "Rue des Contamines", codePostal: "73700", ville: "Séez" },
     gps: { lat: 45.6237, lng: 6.7962 },
     site: {
-      slot: { start: "07:00", end: "09:00" },
+      deadlines: ["09:00"],
       note: "Par la cour.",
       contact: null,
       signatureRequired: null,
@@ -224,10 +225,10 @@ export const DELIVERY_CLIENTS: readonly NeighbourClient[] = [
     },
     address: { ligne1: "Route de Montrigon", codePostal: "73700", ville: "Bourg-Saint-Maurice" },
     gps: { lat: 45.615, lng: 6.772 },
-    // 🔴 Un carnet SANS créneau : la commande dit elle-même son heure — une
+    // 🔴 Un carnet SANS échéance : la commande dit elle-même son heure — une
     // échéance, cf. `delivery-day.seed.ts`. Une livraison sans aucune fenêtre
     // est refusée à la passation depuis le 2026-10-03 (CA1b).
-    site: { slot: null, note: "", contact: null, signatureRequired: null, steps: [] },
+    site: { deadlines: null, note: "", contact: null, signatureRequired: null, steps: [] },
   },
   {
     raisonSociale: "SAS Le Comptoir de la Chaudanne",
@@ -245,7 +246,7 @@ export const DELIVERY_CLIENTS: readonly NeighbourClient[] = [
     address: { ligne1: "Rue de la Chaudanne", codePostal: "73700", ville: "Bourg-Saint-Maurice" },
     gps: { lat: 45.621, lng: 6.764 },
     site: {
-      slot: { start: "06:30", end: "08:00" },
+      deadlines: ["08:00"],
       note: "Rideau à moitié levé dès 6 h : déposer derrière le comptoir.",
       contact: null,
       signatureRequired: null,
@@ -268,7 +269,7 @@ export const DELIVERY_CLIENTS: readonly NeighbourClient[] = [
     address: { ligne1: "Route des Hameaux", codePostal: "73700", ville: "Montvalezan" },
     gps: { lat: 45.6127, lng: 6.8457 },
     site: {
-      slot: { start: "07:00", end: "09:00" },
+      deadlines: ["09:00"],
       note: "Code portail 1234.",
       contact: null,
       signatureRequired: null,
@@ -291,7 +292,7 @@ export const DELIVERY_CLIENTS: readonly NeighbourClient[] = [
     address: { ligne1: "Rue du Gollet, La Rosière", codePostal: "73700", ville: "Montvalezan" },
     gps: { lat: 45.6255, lng: 6.8508 },
     site: {
-      slot: { start: "10:00", end: "11:30" },
+      deadlines: ["11:30"],
       note: "",
       contact: null,
       signatureRequired: null,

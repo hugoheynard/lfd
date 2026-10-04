@@ -102,9 +102,9 @@ model DeliveryAvailability {
 
   /// **Créneau ou échéance** : comment une livraison se demande, pour toute
   /// adresse qui ne le surcharge pas (`delivery_specs.windowMode`). Défaut
-  /// `slot` : l'existant, rien ne change pour les lignes déjà posées. Plan
-  /// composition automatique, CA-D2.
-  windowMode DeliveryWindowMode @default(slot) @map("window_mode")
+  /// `deadline` depuis le 2026-10-04 (Hugo, §14.2) ; `slot` à sa création
+  /// (CA-D2). Plan composition automatique.
+  windowMode DeliveryWindowMode @default(deadline) @map("window_mode")
 
   /// Instant du geste, lu du `Clock` — pas `@updatedAt`, qui lirait l'horloge
   /// de la base au lieu de celle de la requête.

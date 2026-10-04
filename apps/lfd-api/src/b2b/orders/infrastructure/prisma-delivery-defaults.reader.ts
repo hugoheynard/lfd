@@ -1,4 +1,4 @@
-import { deadlinesFor, deliverySpecsSchema, weekdayOfDate } from "@lfd/contracts";
+import { deadlinesFor, deliverySpecsSchema, slotsFor, weekdayOfDate } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -48,20 +48,20 @@ export class PrismaDeliveryDefaultsReader extends DeliveryDefaultsReader {
       // décidé, et le socle de la société est ce qu'il reste de vrai.
       return { ...NO_DELIVERY_DEFAULTS, signatureRequired: floor, bookAddressId: row.id };
     }
+    const weekday = day === null ? null : weekdayOfDate(day);
+    // Plusieurs créneaux le même jour : la passation CHOISIT, rien n'est
+    // prérempli. Un seul : il vaut reprise (§14.1). Sans jour choisi, seuls
+    // les créneaux « tous les jours » comptent.
+    const daySlots = slotsFor(specs.data, weekday);
     return {
       contact: specs.data.deliveryContact,
       // `null` = l'adresse hérite. C'est la seule ligne de tout ce chantier qui
       // décide vraiment : deux états auraient figé le socle au moment où
       // l'adresse a été créée.
       signatureRequired: specs.data.signatureRequired ?? floor,
-      // Le créneau « tous les jours » est le seul qui vaille comme
-      // préremplissage : un créneau PAR JOUR dépend du jour servi, que le
-      // panier ne connaît qu'après le choix de la date. Le brancher demanderait
-      // de faire dépendre le défaut de la date — à faire le jour où le besoin
-      // se présente, pas à deviner ici.
-      window: specs.data.slots.mode === "everyday" ? specs.data.slots.slot : null,
+      window: daySlots.length === 1 ? (daySlots[0] ?? null) : null,
       windowMode: specs.data.windowMode ?? null,
-      deadlines: deadlinesFor(specs.data.deadlines, day === null ? null : weekdayOfDate(day)),
+      deadlines: deadlinesFor(specs.data.deadlines, weekday),
       bookAddressId: row.id,
     };
   }

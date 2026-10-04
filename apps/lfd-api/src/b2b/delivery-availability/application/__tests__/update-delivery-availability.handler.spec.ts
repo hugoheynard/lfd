@@ -106,23 +106,24 @@ describe("UpdateDeliveryAvailabilityHandler", () => {
     expect(events.traced[0]?.journalFact().payload).toEqual({
       openToB2b: false,
       openToB2c: true,
-      windowMode: "slot",
-      previous: { openToB2b: true, openToB2c: true, windowMode: "slot" },
+      windowMode: "deadline",
+      previous: { openToB2b: true, openToB2c: true, windowMode: "deadline" },
     });
   });
 
-  it("pose le mode échéance et le journalise avec le mode remplacé", async () => {
+  // Le défaut est l'échéance depuis le 2026-10-04 (§14.2) : on pose le créneau.
+  it("pose le mode créneau et le journalise avec le mode remplacé", async () => {
     const written = new Written();
     const events = new RecordingPublisher();
 
     await handler(DEFAULT_DELIVERY_AVAILABILITY, written, events).execute(
-      new UpdateDeliveryAvailabilityCommand({ windowMode: "deadline" }, "staff_agent"),
+      new UpdateDeliveryAvailabilityCommand({ windowMode: "slot" }, "staff_agent"),
     );
 
-    expect(written.last?.windowMode).toBe("deadline");
+    expect(written.last?.windowMode).toBe("slot");
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
-      windowMode: "deadline",
-      previous: { windowMode: "slot" },
+      windowMode: "slot",
+      previous: { windowMode: "deadline" },
     });
   });
 

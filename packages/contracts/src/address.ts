@@ -149,6 +149,52 @@ export function deadlinesFor(
   return day === null ? [] : (deadlines.byDay[day] ?? []);
 }
 
+/** Des créneaux préférés, du plus tôt au plus tard ; `[]` = aucun. */
+const slotListSchema = z.array(deliverySlotSchema);
+
+/** Une liste de créneaux (ou aucune, `null`) pour chacun des sept jours. */
+export const slotListByDaySchema = z.object({
+  mon: slotListSchema.nullable(),
+  tue: slotListSchema.nullable(),
+  wed: slotListSchema.nullable(),
+  thu: slotListSchema.nullable(),
+  fri: slotListSchema.nullable(),
+  sat: slotListSchema.nullable(),
+  sun: slotListSchema.nullable(),
+});
+
+/**
+ * **Plusieurs créneaux préférés** par adresse (CA3b, plan composition
+ * automatique §14.1) — même grain que {@link preferredDeadlinesSchema}. Une
+ * adresse commande parfois le matin ET pour une soirée ; une commande, elle,
+ * n'en porte toujours qu'un.
+ *
+ * Un champ AJOUTÉ à côté de `slots`, et non une nouvelle forme de `slots` : un
+ * onglet resté sur l'ancien front renvoie `slots` sans connaître ce champ, et
+ * ne doit rien effacer. L'ordre et l'absence de chevauchement ne sont refusés
+ * qu'à l'écriture (la charge), pas ici : les lectures réutilisent ce schéma.
+ */
+export const preferredSlotsSchema = z.discriminatedUnion("mode", [
+  z.object({ mode: z.literal("everyday"), slots: slotListSchema }),
+  z.object({ mode: z.literal("perDay"), byDay: slotListByDaySchema }),
+]);
+export type PreferredSlots = z.infer<typeof preferredSlotsSchema>;
+
+/** Vrai quand chaque créneau commence après la fin du précédent (bord à bord admis). */
+function inOrderWithoutOverlap(slots: readonly DeliverySlot[]): boolean {
+  return slots.every((slot, i) => i === 0 || (slots[i - 1]?.end ?? "") <= slot.start);
+}
+
+/** Les listes de créneaux d'une charge, chacune avec son chemin pour le refus. */
+function slotListsOf(
+  list: PreferredSlots,
+): readonly (readonly [readonly DeliverySlot[], readonly string[]])[] {
+  if (list.mode === "everyday") {
+    return [[list.slots, ["slots"]]];
+  }
+  return weekdaySchema.options.map((day) => [list.byDay[day] ?? [], ["byDay", day]] as const);
+}
+
 /** Contact sur place à la livraison — la personne que le livreur appelle. */
 export const deliveryContactSchema = z.object({
   prenom: z.string().trim().min(1, "prénom requis"),
@@ -205,6 +251,13 @@ export const deliverySpecsSchema = z.object({
    * ou `null` : aucune. Le créneau `slots` reste celui du mode créneau.
    */
   deadlines: preferredDeadlinesSchema.nullable().optional(),
+  /**
+   * Les **créneaux préférés** de CETTE adresse (CA3b), plusieurs par jour.
+   * Absent ou `null` : on lit l'ancien `slots` ({@link slotsFor}), que le
+   * serveur dérive de cette liste à chaque écriture — le premier créneau de
+   * chaque jour — pour qu'un onglet sur l'ancien front lise encore juste.
+   */
+  slotList: preferredSlotsSchema.nullable().optional(),
 });
 export type DeliverySpecs = z.infer<typeof deliverySpecsSchema>;
 
@@ -245,6 +298,36 @@ function refuseSignatureWithoutContact(
   }
 }
 
+/** Le refus de forme de la charge : des créneaux triés, sans chevauchement (§14.1). */
+function refuseUnorderedSlots(
+  payload: { readonly specs: DeliverySpecs },
+  ctx: z.RefinementCtx,
+): void {
+  const list = payload.specs.slotList;
+  if (list === null || list === undefined) {
+    return;
+  }
+  for (const [slots, path] of slotListsOf(list)) {
+    if (!inOrderWithoutOverlap(slots)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["specs", "slotList", ...path],
+        message:
+          "créneaux à ranger du plus tôt au plus tard, sans chevauchement : un créneau commence après la fin du précédent",
+      });
+    }
+  }
+}
+
+/** Les refus croisés d'une charge d'adresse de livraison. */
+function refuseDeliveryPayload(
+  payload: { readonly specs: DeliverySpecs },
+  ctx: z.RefinementCtx,
+): void {
+  refuseSignatureWithoutContact(payload, ctx);
+  refuseUnorderedSlots(payload, ctx);
+}
+
 /**
  * Charge de création/édition d'une **adresse de livraison** (postal + consignes).
  *
@@ -258,9 +341,8 @@ function refuseSignatureWithoutContact(
  * signature — n'est pas refusé ici : le contrat ne connaît pas le socle de la
  * société. Le formulaire partagé le rend inexprimable (`withNoContact`).
  */
-export const deliveryAddressPayloadSchema = deliveryAddressFieldsSchema().superRefine(
-  refuseSignatureWithoutContact,
-);
+export const deliveryAddressPayloadSchema =
+  deliveryAddressFieldsSchema().superRefine(refuseDeliveryPayload);
 export type DeliveryAddressPayload = z.infer<typeof deliveryAddressPayloadSchema>;
 
 /**
@@ -280,7 +362,7 @@ export type DeliveryAddressPayload = z.infer<typeof deliveryAddressPayloadSchema
  */
 export const memberDeliveryAddressPayloadSchema = deliveryAddressFieldsSchema()
   .extend({ depositAllowed: z.boolean().optional() })
-  .superRefine(refuseSignatureWithoutContact);
+  .superRefine(refuseDeliveryPayload);
 export type MemberDeliveryAddressPayload = z.infer<typeof memberDeliveryAddressPayloadSchema>;
 
 /**

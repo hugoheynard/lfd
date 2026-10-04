@@ -167,7 +167,8 @@ interface CounterOrder {
   /** Le point de retrait, par son libellé. `null` = le coursier passe. */
   readonly point: string | null;
   /** La tranche demandée, ou `null` : aucune n'a été demandée. */
-  readonly window: { readonly start: string; readonly end: string } | null;
+  /** `start` nul = une échéance — la forme de toute livraison de la démo. */
+  readonly window: { readonly start: string | null; readonly end: string } | null;
   /** L'état que la file doit montrer, atteint par les vraies commandes. */
   readonly outcome: "expected" | "ready" | "handed_over";
   /**
@@ -274,7 +275,9 @@ const TOMORROW: readonly (Pick<CounterOrder, "point" | "window"> & {
   {
     client: 2,
     point: null,
-    window: null,
+    // L'Hôtel Le Lac Blanc porte deux échéances (09:00, 18:00) : la commande
+    // dit laquelle — celle du dîner.
+    window: { start: null, end: "18:00" },
     lines: [
       { sku: "PAI-013", quantity: 10 },
       { sku: "VIE-009", quantity: 36 },

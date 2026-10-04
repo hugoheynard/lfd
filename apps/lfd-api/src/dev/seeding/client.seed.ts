@@ -463,7 +463,10 @@ const DELIVERIES = [
       // fonctionnait (`defaultsFor` lit le carnet) ; c'est la donnée qui manquait.
       //
       // Celui-ci s'accorde avec la note : avant l'ouverture des remontées.
-      slots: { mode: "everyday" as const, slot: { start: "06:00", end: "07:30" } },
+      // La démo est en échéance (Hugo, 2026-10-04) : l'ancien créneau unique
+      // reste vide, l'échéance préférée porte la contrainte.
+      slots: { mode: "everyday" as const, slot: null },
+      deadlines: { mode: "everyday" as const, times: ["07:30"] },
       deliveryContact: null,
       // Les points du scénario : Val d'Isère, Bourg-Saint-Maurice, Arc 1800, La
       // Rosière (Hugo, 2026-09-29), relus sur Nominatim le même jour. Sans
@@ -485,7 +488,10 @@ const DELIVERIES = [
       // Une fenêtre DIFFÉRENTE de l'autre adresse, et plus tardive : deux sites
       // d'une même maison n'ont pas les mêmes contraintes, et un jeu de données
       // qui les alignerait ne montrerait jamais que la fenêtre suit l'adresse.
-      slots: { mode: "everyday" as const, slot: { start: "07:00", end: "09:00" } },
+      // La démo est en échéance (Hugo, 2026-10-04) : l'ancien créneau unique
+      // reste vide, l'échéance préférée porte la contrainte.
+      slots: { mode: "everyday" as const, slot: null },
+      deadlines: { mode: "everyday" as const, times: ["09:00"] },
       deliveryContact: null,
       // La Rosière : la station la plus au nord du scénario (Hugo, 2026-09-29).
       gps: { lat: 45.6286, lng: 6.8478 },

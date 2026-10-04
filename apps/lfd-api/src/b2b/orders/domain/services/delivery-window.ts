@@ -79,7 +79,7 @@ export function agreeWithWindow(
   defaults: DeliveryDefaults,
   globalMode: WindowMode | null,
 ): OrderFulfillment {
-  const mode = resolveWindowMode(defaults.windowMode, globalMode ?? "slot");
+  const mode = resolveWindowMode(defaults.windowMode, globalMode ?? "deadline");
   const agreed = agreeFulfillment(request, {
     contact: defaults.contact,
     signatureRequired: defaults.signatureRequired,

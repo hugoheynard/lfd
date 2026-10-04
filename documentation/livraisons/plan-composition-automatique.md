@@ -373,3 +373,93 @@ arrêt par commande : deux échéances, deux arrêts. Ce qui change, c'est le
 préréglage : en mode échéance, l'adresse porte **une liste d'échéances
 préférées** (`delivery_specs`, champ additif, sans migration) ; la commande en
 choisit une, ou une autre heure — une échéance de la liste vaut `default`.
+
+## 14. CA3b — plusieurs créneaux par jour sur une adresse (Hugo, 2026-10-04)
+
+> « fais en sorte qu'on puisse avoir plusieurs créneaux aussi » — une adresse
+> commande parfois le matin ET pour une soirée.
+
+**Décision.** Le créneau suit les échéances (§13) : une adresse porte une
+**liste** de créneaux, la même tous les jours ou une par jour. Une commande,
+elle, n'en porte toujours qu'**un** : à la passation, on le choisit dans la
+liste du jour ; si la liste est vide, on saisit début et fin (comportement CA3).
+La composition ne change pas — elle lit la fenêtre de la commande.
+
+**Forme.** `deliverySlotsSchema` devient :
+
+```ts
+{ mode: "everyday", slots: DeliverySlot[] }          // [] = aucun créneau
+{ mode: "perDay",   byDay: { mon: DeliverySlot[] | null, … } }
+```
+
+Liste triée par début, sans chevauchement (`slots[i-1].end <= slots[i].start`),
+refusée au contrat sinon. Un helper `slotsFor(slots, day)` miroir de
+`deadlinesFor`.
+
+**Les adresses déjà enregistrées — pas de SQL.** `delivery_specs` est un
+`jsonb`. Le schéma **lit** l'ancienne forme par `z.preprocess` :
+`{mode:"everyday", slot: S|null}` → `{slots: S ? [S] : []}`, et un `byDay[d]`
+objet → `[objet]`. Il **écrit** toujours la nouvelle. Aucune réécriture de
+masse : une adresse bascule à sa prochaine modification. La lecture tolérante
+reste tant qu'une ligne d'ancienne forme existe (requête de comptage donnée à
+Hugo avant de la retirer, en trois temps).
+
+**Contrat servi.** Serveur et écrans (boutique + back-office + `@lfd/b2b-ui`)
+partent dans le même déploiement que CA3. Un onglet ouvert sur l'ancien front
+lirait `slots.slot` absent → il afficherait « aucun créneau » jusqu'au
+rechargement : accepté, rien n'est écrit faux (l'ancien front renverrait
+l'ancienne forme, que le serveur lit encore).
+
+### 14.1 Contradiction de `vitruve` (2026-10-04) et v2 de CA3b
+
+Trois BLOQUANTS, tous levés en changeant la forme plutôt qu'en la tolérant :
+
+1. **Un onglet resté sur l'ancien front effacerait les créneaux** en renvoyant
+   `slot: null` sur une adresse déjà passée en liste. → On ne change PAS
+   `slots`. On AJOUTE un champ, comme `deadlines` :
+   `DeliverySpecs.slotList: PreferredSlots | null` (optionnel), de grain
+   `{mode:"everyday", slots: S[]} | {mode:"perDay", byDay:{mon: S[]|null,…}}`.
+   Le serveur, à l'écriture, **dérive `slots` (l'ancien) du premier créneau de
+   chaque jour** de `slotList` : l'ancien front lit toujours quelque chose de
+   juste. Si un payload arrive SANS `slotList` (ancien front), le serveur
+   **conserve la `slotList` stockée** au lieu de l'effacer.
+2. **Le dépôt du carnet** (`prisma-company-address.repository.ts`) fait entrer
+   le jsonb brut : il parse désormais par `deliverySpecsSchema` comme le reader.
+3. **Pas de `preprocess`** : plus de forme à tolérer, le problème disparaît.
+
+Retenus aussi : lecture d'une `slotList` absente = repli sur `slots` (liste
+d'un élément) via un helper `slotsFor(specs, day)` — seul point de lecture ;
+le préremplissage de la passation (`prisma-delivery-defaults.reader.ts`) prend
+le créneau seulement si la liste du jour en a **un seul**, sinon on choisit ;
+le refine « trié, sans chevauchement » ne vaut qu'à l'écriture (payload), pas
+dans le schéma de lecture. Fixtures e2e : au moins une en nouvelle forme.
+Resserrement (retrait de `slots`) : plus tard, trois temps, non daté.
+
+### 14.2 Le réglage général par défaut : échéance (Hugo, 2026-10-04)
+
+`delivery_settings.window_mode` passe par défaut à `deadline`. La migration
+CA3 (`20261003090000`) est appliquée en dev : on ne la touche pas, une
+migration suivante fait `ALTER COLUMN … SET DEFAULT 'deadline'` et
+`UPDATE … SET window_mode = 'deadline'` (aucune ligne en production n'a encore
+cette colonne : rien n'y est écrasé de ce qu'un humain aurait choisi). Le
+`@default` Prisma et le repli applicatif (`resolveWindowMode`) suivent.
+
+### 14.3 Bâti (contrats + serveur), et ce qui reste ouvert (2026-10-04)
+
+Questions à Hugo, ouvertes :
+
+- **Q-CA3b-1 — l'ancien onglet.** Un payload sans `slotList` garde la liste
+  stockée, et l'ancien `slots` en est re-dérivé : un créneau changé depuis un
+  onglet resté sur l'ancien front, sur une adresse déjà en liste, est écrasé
+  sans message. La liste ne s'efface jamais. Fenêtre : juste après le
+  déploiement. À accepter ou à refuser (refuser = 409 « rechargez la page »).
+- **Q-CA3b-2 — la saisie début/fin à la passation** quand le carnet n'a pas de
+  créneau ce jour-là (adresse saisie à la volée) : à confirmer.
+- **Q-CA3b-3 — le message d'erreur résiduel** d'un créneau mal saisi qui reste
+  affiché après passage en échéance : corriger ou noter.
+
+- **Q-CA3b-4 — « un autre créneau »** à la passation quand l'adresse en a
+  plusieurs (les échéances le permettent ; les créneaux non, pour l'instant).
+
+Tranché (Hugo, 2026-10-04) : **toute la démo passe en échéance** — adresses
+semées avec échéances préférées, commandes semées en `{start:null,end}`.

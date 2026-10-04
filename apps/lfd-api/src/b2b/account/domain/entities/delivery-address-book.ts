@@ -1,6 +1,7 @@
 import type { DeliveryAddressPayload, DeliverySpecs, DoorstepRule } from "@lfd/contracts";
 
 import { CompanyAddressNotFoundError } from "../errors/account-errors.js";
+import { withSlotList } from "../services/delivery-slot-list.js";
 import { deliveryStopMinutesOf } from "../value-objects/delivery-stop-minutes.js";
 
 /**
@@ -127,7 +128,7 @@ export class DeliveryAddressBook {
    * @throws {InvalidDeliveryStopMinutesError} un temps de livraison sur place hors bornes.
    */
   add(id: string, payload: DeliveryAddressPayload, createdAt: Date): void {
-    const specs = specsOf(payload);
+    const specs = specsOf(payload, null);
     const first = this.active().length === 0;
     this.entries.push({
       id,
@@ -157,7 +158,7 @@ export class DeliveryAddressBook {
    */
   edit(addressId: string, payload: DeliveryAddressPayload): void {
     const entry = this.require(addressId);
-    const specs = specsOf(payload);
+    const specs = specsOf(payload, entry.specs);
     entry.lines = linesOf(payload);
     entry.specs = specs;
     if (payload.isDefault) {
@@ -281,10 +282,12 @@ interface BookEntry {
 /**
  * Les consignes à écrire : la charge, son temps de livraison sur place passé
  * par le carnet (L7b-C4). Non saisi, il n'est pas écrit — le `jsonb` garde sa
- * forme d'avant pour toutes les adresses qui suivent le réglage.
+ * forme d'avant pour toutes les adresses qui suivent le réglage. Les créneaux
+ * suivent {@link withSlotList} : une liste rangée survit à une charge qui
+ * l'ignore.
  */
-function specsOf(payload: DeliveryAddressPayload): DeliverySpecs {
-  const { stopMinutes, ...rest } = payload.specs;
+function specsOf(payload: DeliveryAddressPayload, stored: DeliverySpecs | null): DeliverySpecs {
+  const { stopMinutes, ...rest } = withSlotList(payload.specs, stored);
   const checked = deliveryStopMinutesOf(stopMinutes);
   return checked === null ? rest : { ...rest, stopMinutes: checked };
 }
