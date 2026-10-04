@@ -1,0 +1,49 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Le compte à rebours"
+    [subtitle]="marginsLabel() || 'Ce qui doit être sorti avant chaque échéance, cumulé.'"
+  />
+
+  <div class="dt-body">
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Lecture des échéances…" />
+      }
+      @case ('error') {
+        <fold-empty-state tone="alert" title="Impossible de lire les échéances">
+          <button foldButton (click)="load()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @default {
+        @if (marginsMissing()) {
+          <fold-callout variant="info">
+            Les marges de livraison et de retrait ne sont pas toutes deux réglées : la journée n'a
+            qu'une échéance, « la journée ».
+            <a routerLink="/b2b/reglages/livraison">Régler les marges</a>
+          </fold-callout>
+        }
+
+        @if (rows().length === 0) {
+          <fold-empty-state
+            title="Aucune échéance ce jour-là"
+            subtitle="Aucune commande n'est au plan de cette journée."
+          />
+        } @else {
+          <ul class="dt-lines">
+            @for (row of rows(); track row.sku) {
+              <li class="dt-line">
+                <span class="dt-product">{{ row.productName }}</span>
+                <span class="dt-countdown">{{ row.countdown }}</span>
+                @if (row.undated > 0) {
+                  <fold-badge variant="warning" [content]="row.undated + ' sans échéance'" />
+                }
+              </li>
+            }
+          </ul>
+        }
+      }
+    }
+  </div>
+</fold-card>

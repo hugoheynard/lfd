@@ -15,6 +15,7 @@ import {
   FoldEmptyStateComponent,
   FoldFieldsetComponent,
   FoldLoadingStateComponent,
+  FoldNumberInputComponent,
   FoldPageLayoutComponent,
   FoldViewToggleComponent,
   type FoldViewToggleOption,
@@ -30,7 +31,14 @@ interface Availability {
   readonly openToB2b: boolean;
   readonly openToB2c: boolean;
   readonly windowMode: WindowMode;
+  /** Marge de livraison (colisage + chargement), en minutes ; `null` = non réglée. */
+  readonly deliveryMarginMinutes: number | null;
+  /** Marge de retrait (colisage seul), en minutes ; `null` = non réglée. */
+  readonly pickupMarginMinutes: number | null;
 }
+
+/** Une marge du plan de production par vagues : un jour au plus (§7.3). */
+type MarginKey = 'deliveryMarginMinutes' | 'pickupMarginMinutes';
 
 /** Créneau ou échéance (CA-D2) — les deux segments du réglage. */
 const WINDOW_MODE_OPTIONS: readonly FoldViewToggleOption[] = [
@@ -84,6 +92,7 @@ const CLIENTELE: Readonly<Record<CustomerAudience, string>> = {
     FoldEmptyStateComponent,
     FoldFieldsetComponent,
     FoldLoadingStateComponent,
+    FoldNumberInputComponent,
     FoldPageLayoutComponent,
     FoldViewToggleComponent,
   ],
@@ -181,6 +190,18 @@ export class DeliveryAvailabilityPage {
     this.draft.set({ ...draft, windowMode: value });
   }
 
+  /**
+   * Une marge, sans rien écrire. Un champ vidé vaut `null` : la marge n'est
+   * plus réglée, et la fiche retombe sur une seule échéance « la journée ».
+   */
+  protected setMargin(key: MarginKey, value: number | null): void {
+    const draft = this.draft();
+    if (draft === null) {
+      return;
+    }
+    this.draft.set({ ...draft, [key]: value });
+  }
+
   /** Revient au réglage servi. */
   protected reset(): void {
     const saved = this.settings();
@@ -220,7 +241,20 @@ export class DeliveryAvailabilityPage {
     if (saved === null || draft === null) {
       return null;
     }
-    const patch: { openToB2b?: boolean; openToB2c?: boolean; windowMode?: WindowMode } = {};
+    const servedDraft = availabilityOf(saved);
+    const patch: {
+      openToB2b?: boolean;
+      openToB2c?: boolean;
+      windowMode?: WindowMode;
+      deliveryMarginMinutes?: number | null;
+      pickupMarginMinutes?: number | null;
+    } = {};
+    if (draft.deliveryMarginMinutes !== servedDraft.deliveryMarginMinutes) {
+      patch.deliveryMarginMinutes = draft.deliveryMarginMinutes;
+    }
+    if (draft.pickupMarginMinutes !== servedDraft.pickupMarginMinutes) {
+      patch.pickupMarginMinutes = draft.pickupMarginMinutes;
+    }
     if (draft.openToB2b !== saved.openToB2b) {
       patch.openToB2b = draft.openToB2b;
     }
@@ -240,5 +274,11 @@ export class DeliveryAvailabilityPage {
 }
 
 function availabilityOf(view: DeliveryAvailabilityView): Availability {
-  return { openToB2b: view.openToB2b, openToB2c: view.openToB2c, windowMode: view.windowMode };
+  return {
+    openToB2b: view.openToB2b,
+    openToB2c: view.openToB2c,
+    windowMode: view.windowMode,
+    deliveryMarginMinutes: view.deliveryMarginMinutes ?? null,
+    pickupMarginMinutes: view.pickupMarginMinutes ?? null,
+  };
 }

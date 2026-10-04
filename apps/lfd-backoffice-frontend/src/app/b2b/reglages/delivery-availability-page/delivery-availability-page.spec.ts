@@ -44,6 +44,14 @@ class FakeSettings {
       openToB2b: patch.openToB2b ?? base.openToB2b,
       openToB2c: patch.openToB2c ?? base.openToB2c,
       windowMode: patch.windowMode ?? base.windowMode,
+      deliveryMarginMinutes:
+        patch.deliveryMarginMinutes === undefined
+          ? (base.deliveryMarginMinutes ?? null)
+          : patch.deliveryMarginMinutes,
+      pickupMarginMinutes:
+        patch.pickupMarginMinutes === undefined
+          ? (base.pickupMarginMinutes ?? null)
+          : patch.pickupMarginMinutes,
       updatedAt: '2026-09-15T08:00:00.000Z',
       updatedBy: 'Hugo',
     };
@@ -164,6 +172,8 @@ describe('DeliveryAvailabilityPage — la disponibilité de la livraison', () =>
       openToB2b: true,
       openToB2c: false,
       windowMode: 'slot',
+      deliveryMarginMinutes: null,
+      pickupMarginMinutes: null,
     });
     const alert: HTMLElement | null = fixture.nativeElement.querySelector('fold-callout.v-alert');
     expect(alert?.textContent).toContain('Droit insuffisant.');
@@ -193,5 +203,42 @@ describe('DeliveryAvailabilityPage — la disponibilité de la livraison', () =>
     fixture.componentInstance['setWindowMode']('nimporte');
 
     expect(fixture.componentInstance['draft']()?.windowMode).toBe('slot');
+  });
+
+  it('enregistre la seule marge changée, et la relit', async () => {
+    const settings = new FakeSettings({
+      ...OPEN,
+      deliveryMarginMinutes: null,
+      pickupMarginMinutes: 30,
+    });
+    const fixture = await mount(settings);
+
+    expect(text(fixture)).toContain('une seule échéance');
+    fixture.componentInstance['setMargin']('deliveryMarginMinutes', 90);
+    await fixture.componentInstance['save']();
+
+    expect(settings.patches).toEqual([{ deliveryMarginMinutes: 90 }]);
+    expect(fixture.componentInstance['settings']()?.deliveryMarginMinutes).toBe(90);
+  });
+
+  it('vider une marge envoie null : elle n’est plus réglée', async () => {
+    const settings = new FakeSettings({
+      ...OPEN,
+      deliveryMarginMinutes: 90,
+      pickupMarginMinutes: 30,
+    });
+    const fixture = await mount(settings);
+
+    fixture.componentInstance['setMargin']('pickupMarginMinutes', null);
+    await fixture.componentInstance['save']();
+
+    expect(settings.patches).toEqual([{ pickupMarginMinutes: null }]);
+  });
+
+  it('une marge absente de la vue compte comme non réglée, sans rien à enregistrer', async () => {
+    const fixture = await mount(new FakeSettings(OPEN));
+
+    expect(fixture.componentInstance['draft']()?.deliveryMarginMinutes).toBeNull();
+    expect(saveButton(fixture).disabled).toBe(true);
   });
 });

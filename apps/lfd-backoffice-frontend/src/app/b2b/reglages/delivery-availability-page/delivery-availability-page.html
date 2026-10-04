@@ -57,6 +57,38 @@
               />
             </fold-fieldset>
 
+            <!-- Les marges du plan de production par vagues (§7.3) : sans
+                 les deux, une seule échéance « la journée ». -->
+            <fold-fieldset
+              legend="Marges de production, en minutes"
+              hint="Le temps à garder entre la sortie du four et l'échéance d'une commande. Sans les deux marges, la fiche de production montre une seule échéance : « la journée »."
+            >
+              <fold-number-input
+                label="Marge de livraison (colisage + chargement)"
+                optional
+                optionalLabel="facultatif"
+                [min]="0"
+                [max]="1440"
+                [step]="5"
+                [disabled]="saving()"
+                [value]="current.deliveryMarginMinutes"
+                (valueChange)="setMargin('deliveryMarginMinutes', $event)"
+                data-delivery-margin
+              />
+              <fold-number-input
+                label="Marge de retrait (colisage)"
+                optional
+                optionalLabel="facultatif"
+                [min]="0"
+                [max]="1440"
+                [step]="5"
+                [disabled]="saving()"
+                [value]="current.pickupMarginMinutes"
+                (valueChange)="setMargin('pickupMarginMinutes', $event)"
+                data-pickup-margin
+              />
+            </fold-fieldset>
+
             @if (closingLabel(); as clientele) {
               <fold-callout class="v-warning" variant="warning">
                 Enregistrer <strong>retire la livraison {{ clientele }}</strong

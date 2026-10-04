@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   ProductionBatchView,
+  ProductionDueThresholdsView,
   ProductionForecastView,
   ProductionPlanClosure,
 } from '@lfd/contracts';
@@ -64,6 +65,19 @@ export class ProductionService {
     return firstValueFrom(
       this.http.get<ProductionBatchView>(
         `${B2B_API_BASE}/admin/production/batch?date=${encodeURIComponent(date)}`,
+      ),
+    );
+  }
+
+  /**
+   * Le **compte à rebours** d'une journée (`AAAA-MM-JJ`) : par produit, ce qui
+   * doit être sorti avant chaque échéance, cumulé. Lecture seule, une
+   * prévision — plan `production/plan-production-par-vagues.md`, V0.
+   */
+  async dueThresholds(date: string): Promise<ProductionDueThresholdsView> {
+    return firstValueFrom(
+      this.http.get<ProductionDueThresholdsView>(
+        `${B2B_API_BASE}/admin/production/batch/${encodeURIComponent(date)}/due-thresholds`,
       ),
     );
   }

@@ -20,6 +20,7 @@ import { AdminCatalogService } from '../../../commandes/catalog.service';
 import { FicheProduction } from '../../fiche-production/fiche-production';
 import { productionRecap, totalPieces } from '../../production-recap';
 import { ProductionService } from '../../production.service';
+import { DueThresholdsSection } from '../due-thresholds-section/due-thresholds-section';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -89,6 +90,7 @@ function defaultDate(): string {
   selector: 'app-dossier-du-jour',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    DueThresholdsSection,
     FicheProduction,
     FoldButtonComponent,
     FoldCalloutComponent,

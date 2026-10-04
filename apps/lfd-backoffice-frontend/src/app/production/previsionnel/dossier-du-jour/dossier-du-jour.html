@@ -48,6 +48,10 @@
   </fold-callout>
 }
 
+<!-- Le compte à rebours de la même journée (V0, lecture seule). Il ne
+     s'imprime pas : le dossier papier reste ce qu'il était. -->
+<app-due-thresholds-section class="pr-no-print" [date]="date()" />
+
 @switch (state()) {
   @case ('loading') {
     <fold-loading message="Lecture du lot…" />
