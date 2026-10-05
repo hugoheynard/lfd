@@ -33,6 +33,8 @@ function prismaSpy(counts: { readonly days: number; readonly handovers: number }
     productionReturnRequest: table("productionReturnRequest"),
     productionHandoff: table("productionHandoff"),
     packingLine: table("packingLine"),
+    packingContainerLine: table("packingContainerLine"),
+    packingContainer: table("packingContainer"),
     packingOrder: table("packingOrder"),
     packingStock: table("packingStock"),
     packingReceipt: table("packingReceipt"),
@@ -77,6 +79,10 @@ describe("resetProduction", () => {
       "productionBatch",
       "productionDay",
       "packingLine",
+      // Régression du 2026-10-05 : les contenants manquaient, et la coupe
+      // échouait sur leur clé `Restrict` vers la commande au colisage.
+      "packingContainerLine",
+      "packingContainer",
       "packingOrder",
       "packingStock",
       "packingReceipt",

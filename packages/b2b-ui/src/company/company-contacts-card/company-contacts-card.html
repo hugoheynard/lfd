@@ -9,6 +9,10 @@
     </button>
   }
 
+  <!-- Ce que l'écran hôte veut dire EN TÊTE de la carte (la case « suivre les
+       contacts du principal » d'un sous-compte, côté staff). -->
+  <ng-content select="[contactsLead]" />
+
   <div class="cards">
     @for (card of contacts(); track card.contactId ?? 'primary') {
       <!-- Votre carte ressort : surface accent (inversée) + bandes raised. -->

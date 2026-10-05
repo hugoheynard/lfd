@@ -99,6 +99,18 @@ const ADMITTED = new Map([
     "le semis de développement crée les comptes des clients voisins, même raison",
   ],
   [
+    "apps/lfd-api/src/dev/seeding/sub-account-people.seed.ts",
+    "le semis de développement crée les gouvernantes et détenteurs des sous-comptes (sub fictifs `seed|…`), même raison",
+  ],
+  [
+    "apps/lfd-api/src/dev/seeding/sub-account-chalets.seed.ts",
+    "le semis de développement déclare les personnes des chalets de démonstration (sub fictifs `seed|…`), même raison",
+  ],
+  [
+    "apps/lfd-api/src/dev/seeding/sub-account-hotels.seed.ts",
+    "le semis de développement déclare les personnes du groupe hôtelier de démonstration (sub fictifs `seed|…`), même raison",
+  ],
+  [
     "apps/lfd-api/src/dev/seeding/delivery-clients.seed.ts",
     "le semis de développement déclare les comptes des clients de la journée de livraison (sub fictifs `seed|…`), même raison",
   ],

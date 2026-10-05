@@ -22,12 +22,23 @@ import type { CycleOrder, FrozenVatShare } from "../ports/cycle-orders.reader.js
  * ci-dessus ne dépende pas de la santé de chaque JSON.
  */
 
+/** Une société qui règle pour une autre — nommée comme elle se reconnaît. */
+export interface StatementPayer {
+  readonly companyId: string;
+  readonly name: string;
+}
+
 /** Une commande du relevé, avec son HT et le sort de sa TVA. */
 export interface StatementLine extends CycleOrder {
   /** `subtotal − discount − voucher` : la marchandise, hors livraison et surtaxe. */
   readonly htCents: number;
   /** Faux ⇒ la TVA de cette commande est comptée en « non ventilée ». */
   readonly vatVentilated: boolean;
+  /**
+   * La société qui règle cette commande quand ce n'est PAS celle du relevé — un
+   * site qui suivait `billing` à la date de la commande. `null` sinon.
+   */
+  readonly paidBy: StatementPayer | null;
 }
 
 export interface StatementTotals {
@@ -47,22 +58,36 @@ export interface StatementTotals {
   readonly totalCents: number;
 }
 
-export interface CycleStatement {
+/** Des commandes et leurs totaux — un groupe, ou un relevé entier. */
+export interface StatementAggregate {
   readonly lines: readonly StatementLine[];
   readonly totals: StatementTotals;
 }
 
+/** Qui règle une commande, quand ce n'est pas la société du relevé. */
+export type PaidByResolver = (order: CycleOrder) => StatementPayer | null;
+
+const PAID_BY_NOBODY_ELSE: PaidByResolver = () => null;
+
 /** Agrège les commandes d'un cycle, dans l'ordre où elles sont données. */
-export function aggregateStatement(orders: readonly CycleOrder[]): CycleStatement {
-  const lines = orders.map(toLine);
+export function aggregateStatement(
+  orders: readonly CycleOrder[],
+  paidBy: PaidByResolver = PAID_BY_NOBODY_ELSE,
+): StatementAggregate {
+  return linesAggregate(orders.map((order) => toLine(order, paidBy(order))));
+}
+
+/** Les totaux de lignes déjà faites — la somme d'un relevé à plusieurs groupes. */
+export function linesAggregate(lines: readonly StatementLine[]): StatementAggregate {
   return { lines, totals: totalsOf(lines) };
 }
 
-function toLine(order: CycleOrder): StatementLine {
+function toLine(order: CycleOrder, paidBy: StatementPayer | null): StatementLine {
   return {
     ...order,
     htCents: order.subtotalCents - order.discountCents - order.voucherDiscountCents,
     vatVentilated: isVentilated(order),
+    paidBy,
   };
 }
 
@@ -112,6 +137,6 @@ function sum(values: readonly number[]): number {
 }
 
 /** Les taux présents dans un relevé — les colonnes de l'export. */
-export function ratesOf(statement: CycleStatement): readonly number[] {
+export function ratesOf(statement: StatementAggregate): readonly number[] {
   return statement.totals.vatByRate.map((share) => share.rate);
 }

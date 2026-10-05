@@ -135,11 +135,11 @@ séparer ouvrait le seul cas dangereux, prélever A pour une facture émise à
 B, et obligeait à garder les deux en cohérence dans les deux sens. Ils
 forment donc **un seul** aspect :
 
-| Aspect         | « Suit le principal » veut dire                                                                                                                                                                                 | Chalets  | Club Med |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------: | :------: |
-| **`billing`**  | facturé **et** prélevé au nom du principal : pas de SIRET propre, la facture nomme la société du principal avec le nom du sous-compte, et le prélèvement passe par le RIB, le mandat et les termes du principal |    ✅    |    —     |
-| **`pricing`**  | la mercuriale et les engagements du principal                                                                                                                                                                   |    ✅    |    ✅    |
-| **`contacts`** | un contact du principal partagé avec le sous-compte                                                                                                                                                             | au choix | au choix |
+| Aspect         | « Suit le principal » veut dire                                                                                                                                                                                                                                                                                                            | Chalets  | Club Med |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------: | :------: |
+| **`billing`**  | facturé au nom du principal, et prélevé sur son compte pour les commandes passées **au compte** (un site peut aussi régler par carte à la commande, Hugo, 2026-10-05) : pas de SIRET propre, la facture nomme la société du principal avec le nom du sous-compte, et le prélèvement passe par le RIB, le mandat et les termes du principal |    ✅    |    —     |
+| **`pricing`**  | la mercuriale et les engagements du principal                                                                                                                                                                                                                                                                                              |    ✅    |    ✅    |
+| **`contacts`** | un contact du principal partagé avec le sous-compte                                                                                                                                                                                                                                                                                        | au choix | au choix |
 
 **Toujours propres au sous-compte** : ses adresses de livraison, ses
 contacts de livraison et ses commandes.
@@ -403,6 +403,19 @@ sert jamais à répondre « mes données » :
 
 ## 4. Les écrans d'administration
 
+**L'onglet Informations d'un site montre l'hérité, il ne le réclame pas**
+(Hugo, 2026-10-05 : « beaucoup de mélange avec les warnings »). L'identité
+légale, l'adresse de facturation et le paiement sont ceux du principal, en
+lecture, avec un lien. La liste des pièces ne réclame que ce que le serveur
+dit bloquant pour un site. Une entité garde l'onglet d'un client normal.
+
+**Un onglet « Sous-comptes »**, juste après « Informations » dans la fiche
+client (Hugo, 2026-10-05). Sur un principal, il porte la liste des
+sous-comptes, « Créer un sous-compte », « Rattacher un client existant » et
+la case « compte de groupe ». Sur un sous-compte, il porte le bandeau « Site
+de / Entité rattachée à », « Détacher » et le rappel des aspects suivis. Les
+cases « Suivre le compte principal » restent dans leurs onglets.
+
 - **Badge « Sous-compte de _Principal_ »**, cliquable vers le principal,
   partout où un client apparaît : liste des clients, cockpit commercial,
   fiche, commandes. Chaque sous-compte reste un client **à part entière**
@@ -423,6 +436,13 @@ Calqués sur la barre de déclinaisons de la fiche produit.
   panneau montre les valeurs du principal en lecture, avec la mention
   « hérité de _Principal_ depuis le _date_ ». Décochée, il montre les
   siennes. C'est le geste « Aligner sur la déclinaison par défaut ».
+- **Créer un sous-compte ne demande que le type et le nom** (Hugo,
+  2026-10-05 : « plutôt qu'un panel complexe »). Valider crée le sous-compte
+  en `pending` et ouvre sa fiche, où tout se complète par les écrans
+  existants : adresse, identité légale pour une entité, contacts, et les
+  cases « Suivre » dans leurs onglets. Un site naît en suivant `billing`.
+  Le panneau détaillé ci-dessous est la première version, remplacée le
+  même jour.
 - **Créer un sous-compte** commence par un **choix explicite** (retour de
   Hugo sur le premier écran, 2026-10-05 : « si le sous-compte est un chalet,
   il a la même raison sociale et tout ? ça n'est pas clair ») :

@@ -25,20 +25,6 @@
     }
     @case ('ready') {
       <fold-aside-layout class="fiche" asideRightLabel="Activation">
-        <!-- Un sous-compte le dit EN TÊTE, avant tout le reste : ce qu'il suit
-             de son principal change ce que veulent dire ses pièces et sa
-             facturation (plan-sous-comptes §4). -->
-        @if (fiche.company(); as c) {
-          @if (c.hierarchy.parent; as parent) {
-            <app-parent-banner
-              [companyId]="c.id"
-              [parent]="parent"
-              [follows]="c.hierarchy.follows"
-              (detached)="fiche.reload()"
-            />
-          }
-        }
-
         <!-- La synthèse ne réclame que ce qui bloque À CE MOMENT : deux champs
              pour ouvrir, les pièces d'activation ensuite. Montrer le dossier
              complet devant un formulaire vide faisait passer pour bloquant ce
@@ -131,6 +117,12 @@
             <strong>section par section</strong>, dès que le compte est ouvert. Vous pourrez vous
             interrompre et reprendre : ce qui est enregistré est enregistré.
           </fold-callout>
+        } @else if (isSite()) {
+          <!-- Un SITE n'a pas d'identité propre : celle de son principal, en
+               lecture, sans KBIS ni édition (plan-sous-comptes §2.1 bis). -->
+          @if (principal(); as p) {
+            <app-site-identity-card [principal]="p" />
+          }
         } @else if (fiche.identity(); as id) {
           <lfd-company-identity-card
             [identity]="id"
@@ -193,19 +185,6 @@
           <!-- UNE carte : les interlocuteurs, détenteur compris, chacun portant
                l'état de son accès. Éditable comme côté client — le commercial
                complète le dossier à la place du client, c'est la Porte B. -->
-          @if (fiche.company(); as c) {
-            @if (c.hierarchy.parent; as parent) {
-              <fold-card>
-                <app-follow-parent-toggle
-                  aspect="contacts"
-                  [companyId]="c.id"
-                  [parent]="parent"
-                  [follows]="c.hierarchy.follows"
-                  (changed)="fiche.reload()"
-                />
-              </fold-card>
-            }
-          }
           <lfd-company-contacts-card
             [contacts]="fiche.contacts()"
             [canManage]="true"
@@ -213,7 +192,23 @@
             (editContact)="fiche.editContact($event)"
             (removeContact)="fiche.removeContact($event)"
             (inviteContact)="fiche.openAccess($event)"
-          />
+          >
+            <!-- La case « contacts » vit EN TÊTE de la carte qu'elle règle, pas
+                 dans une carte à part. -->
+            <ng-container ngProjectAs="[contactsLead]">
+              @if (fiche.company(); as c) {
+                @if (c.hierarchy.parent; as parent) {
+                  <app-follow-parent-toggle
+                    aspect="contacts"
+                    [companyId]="c.id"
+                    [parent]="parent"
+                    [follows]="c.hierarchy.follows"
+                    (changed)="fiche.reload()"
+                  />
+                }
+              }
+            </ng-container>
+          </lfd-company-contacts-card>
 
           <!-- Le staff saisit TOUJOURS les adresses de livraison, même service
                fermé : c'est le carnet d'adresses du client, pas une promesse de
@@ -223,7 +218,10 @@
                — le choix au panier, la préférence d'acheminement — pas la
                fiche. -->
           <lfd-company-addresses-card
-            [billing]="fiche.billing()"
+            [billing]="isSite() ? (principal()?.addresses?.billing ?? null) : fiche.billing()"
+            [billingCarriedBy]="
+              isSite() ? (fiche.company()?.hierarchy?.parent?.enseigne ?? null) : null
+            "
             [deliveries]="fiche.deliveries()"
             [canManage]="true"
             [signatureFloor]="fiche.company()?.fulfillmentPreference?.signatureRequired ?? false"
@@ -258,34 +256,11 @@
             />
           }
 
-          @if (fiche.company(); as c) {
-            @if (c.hierarchy.parent; as parent) {
-              <!-- La FACTURATION suivie : facturé et prélevé au nom du
-                   principal (§2.1). La case précède le règlement qu'elle
-                   remplace. -->
-              <fold-card>
-                <app-follow-parent-toggle
-                  aspect="billing"
-                  [companyId]="c.id"
-                  [parent]="parent"
-                  [follows]="c.hierarchy.follows"
-                  (changed)="fiche.reload()"
-                />
-              </fold-card>
-            } @else {
-              <!-- Un compte sans principal peut en devenir un : ses
-                   sous-comptes, et la case « Compte de groupe ». -->
-              <app-sub-accounts-card
-                [company]="c"
-                [globalWindowMode]="fiche.windowMode()"
-                (changed)="fiche.reload()"
-              />
-            }
-          }
-
           <!-- En bas de fiche : c'est ce qu'on regarde en dernier, une fois le
                dossier constitué, et c'est là que vit le mandat SEPA. -->
-          @if (fiche.company(); as c) {
+          @if (isSite() && fiche.company()?.hierarchy?.parent; as parent) {
+            <app-site-payment-note [parent]="parent" />
+          } @else if (fiche.company(); as c) {
             <app-paiement-section
               [companyId]="c.id"
               [companyName]="c.raisonSociale"

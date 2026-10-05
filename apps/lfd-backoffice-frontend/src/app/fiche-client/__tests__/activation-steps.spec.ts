@@ -25,6 +25,7 @@ function withGate(
 ): AdminCompanyDetail {
   return {
     kbis: null,
+    hierarchy: { parent: null, subAccounts: [], follows: [], groupWithoutDelivery: false },
     ...over,
     gate: { canActivate: false, blocking: [], checklist: ALL_TODO, ...gate },
   } as AdminCompanyDetail;
@@ -32,6 +33,28 @@ function withGate(
 
 /** Un extrait déposé, pas encore vérifié — le cas qui change le geste. */
 const DEPOSITED = { kbis: { certified: false } } as Partial<AdminCompanyDetail>;
+
+/** Un site : il suit la facturation d'un principal actif. */
+const SITE = {
+  hierarchy: {
+    parent: { id: 'p1', enseigne: 'Alpes Chalets', status: 'active' },
+    subAccounts: [],
+    follows: [{ aspect: 'billing', since: '2026-09-10T08:00:00.000Z' }],
+    groupWithoutDelivery: false,
+  },
+} as Partial<AdminCompanyDetail>;
+
+describe('un site ne se voit réclamer que ce que le serveur lui laisse', () => {
+  it('tait TVA, facturation et KBIS que le serveur a levés', () => {
+    const steps = activationSteps(withGate({ blocking: ['telephone'] }, SITE));
+    expect(steps.map((step) => step.key)).toEqual(['telephone']);
+  });
+
+  it('garde une pièce que le serveur bloque encore (principal pas encore actif)', () => {
+    const steps = activationSteps(withGate({ blocking: ['vat', 'facturation'] }, SITE));
+    expect(steps.map((step) => step.key)).toEqual(['vat', 'billing']);
+  });
+});
 
 describe('la fiche HABILLE le verdict du serveur, elle ne le rejoue pas', () => {
   it('liste les pièces que le serveur dit non faites, et RIEN d’autre', () => {

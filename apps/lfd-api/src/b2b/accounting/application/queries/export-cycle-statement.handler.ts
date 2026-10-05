@@ -2,6 +2,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import { CycleOrdersReader } from "../../domain/ports/cycle-orders.reader.js";
+import { StatementBillingReader } from "../../domain/ports/statement-billing.reader.js";
 import { statementCsv } from "../../domain/services/cycle-statement-csv.js";
 import { buildStatement } from "../cycle-statement-support.js";
 import { ExportCycleStatementQuery } from "./cycle-statement-queries.js";
@@ -25,12 +26,13 @@ export class ExportCycleStatementHandler implements IQueryHandler<
 > {
   constructor(
     private readonly orders: CycleOrdersReader,
+    private readonly billing: StatementBillingReader,
     private readonly clock: Clock,
   ) {}
 
   async execute(query: ExportCycleStatementQuery): Promise<CycleStatementFile> {
     const built = await buildStatement(
-      { orders: this.orders, clock: this.clock },
+      { orders: this.orders, billing: this.billing, clock: this.clock },
       query.companyId,
       query.month,
     );

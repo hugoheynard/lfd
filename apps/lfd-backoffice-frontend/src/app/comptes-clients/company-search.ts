@@ -1,7 +1,8 @@
 import type { AdminCompany } from './admin-company';
 
 /**
- * La **recherche d'un compte** : société, SIRET, ou propriétaire de l'espace.
+ * La **recherche d'un compte** : société, SIRET, propriétaire de l'espace, ou
+ * nom du principal d'un sous-compte.
  *
  * Trois champs parce que le commercial arrive par trois chemins — il a le nom en
  * tête, il lit un SIRET sur un document, ou il a au téléphone la personne qui
@@ -30,12 +31,14 @@ function haystack(company: AdminCompany): string[] {
   const owner = company.owner;
   return [
     normalise(company.raisonSociale),
-    normalise(company.enseigne),
     // L'enseigne est le nom SOUS LEQUEL le client se présente au téléphone ;
     // la raison sociale est celle qui est écrite sur les papiers. Chercher l'un
     // sans l'autre, c'est rater la moitié des appels.
     normalise(company.enseigne),
     normalise(company.reference),
+    // Un sous-compte se trouve aussi par son principal : « alpe » rend le
+    // groupe ET ses chalets, qui n'ont souvent pas de raison sociale propre.
+    company.parent === null ? '' : normalise(company.parent.enseigne),
     owner === null ? '' : normalise(`${owner.firstName} ${owner.lastName}`),
     owner === null ? '' : normalise(owner.email),
   ].filter((field) => field !== '');

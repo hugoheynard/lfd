@@ -20,3 +20,19 @@
 .ref {
   font-variant-numeric: tabular-nums;
 }
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.grand-total {
+  margin: 0;
+  text-align: right;
+}
+
+.entities {
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+}

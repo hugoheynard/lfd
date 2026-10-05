@@ -63,6 +63,12 @@ import {
 export class CompanyAddressesCard {
   /** L'adresse de facturation, ou `null` si non renseignée. */
   readonly billing = input<BillingAddressView | null>(null);
+  /**
+   * Le nom du compte dont l'adresse de facturation est REPRISE (un site qui
+   * suit la facturation de son principal), ou `null`. Renseigné, le bloc
+   * facturation passe en lecture : `billing` est alors celle de ce compte.
+   */
+  readonly billingCarriedBy = input<string | null>(null);
   /** Les adresses de livraison. */
   readonly deliveries = input.required<readonly DeliveryAddressView[]>();
   /** Le gestionnaire peut éditer / ajouter / supprimer. */

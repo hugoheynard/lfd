@@ -120,6 +120,19 @@ describe("Créer un sous-compte", () => {
     ]);
   });
 
+  it("crée un sous-compte au nom seul, sans adresse de livraison", async () => {
+    const w = world([principalCompany()]);
+    const { deliveryAddress: _omitted, ...nameOnly } = payload();
+
+    const id = await createHandler(w).execute(
+      new CreateSubAccountCommand("groupe", nameOnly, false),
+    );
+
+    expect(id).toBe("sub_new");
+    expect(w.companies.declared[0]?.parentCompanyId).toBe("groupe");
+    expect(w.addresses.books).toEqual([]);
+  });
+
   it("refuse le suivi du tarif sans le droit de tarification, avant toute écriture", async () => {
     const w = world([principalCompany()]);
 

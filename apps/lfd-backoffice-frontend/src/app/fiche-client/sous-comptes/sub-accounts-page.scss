@@ -1,0 +1,13 @@
+.sub {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.reminders {
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}

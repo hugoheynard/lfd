@@ -26,6 +26,7 @@ function order(shape: OrderShape): AdminOrderRow {
     vatCents: 0,
     totalCents: shape.totalCents,
     customerLabel: 'Café des Halles',
+    companyDisplayName: 'Café des Halles',
     companyId: 'cmp_1',
     origin: shape.origin ?? 'self_service',
   };

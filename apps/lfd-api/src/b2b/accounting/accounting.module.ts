@@ -24,6 +24,7 @@ import { ListLegalEntitiesHandler } from "./application/queries/list-legal-entit
 import { BillableOrdersReader } from "./domain/ports/billable-orders.reader.js";
 import { CreditorReader } from "./domain/ports/creditor.reader.js";
 import { CycleOrdersReader } from "./domain/ports/cycle-orders.reader.js";
+import { StatementBillingReader } from "./domain/ports/statement-billing.reader.js";
 import { FirstMandateLedger } from "./domain/ports/first-mandate-ledger.js";
 import { LegalEntityLogoReader } from "./domain/ports/legal-entity-logo.reader.js";
 import { LegalEntityReader } from "./domain/ports/legal-entity.reader.js";
@@ -35,6 +36,7 @@ import { AdminLegalEntityBankingController } from "./http/admin-legal-entity-ban
 import { AdminLegalEntityDocumentsController } from "./http/admin-legal-entity-documents.controller.js";
 import { PrismaBillableOrdersReader } from "./infrastructure/prisma-billable-orders.reader.js";
 import { PrismaCycleOrdersReader } from "./infrastructure/prisma-cycle-orders.reader.js";
+import { PrismaStatementBillingReader } from "./infrastructure/prisma-statement-billing.reader.js";
 import { PrismaCreditorReader } from "./infrastructure/prisma-creditor.reader.js";
 import { PrismaFirstMandateLedger } from "./infrastructure/prisma-first-mandate-ledger.js";
 import { PrismaLegalEntityLogoReader } from "./infrastructure/prisma-legal-entity-logo.reader.js";
@@ -82,6 +84,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: CreditorReader, useClass: PrismaCreditorReader },
     { provide: BillableOrdersReader, useClass: PrismaBillableOrdersReader },
     { provide: CycleOrdersReader, useClass: PrismaCycleOrdersReader },
+    { provide: StatementBillingReader, useClass: PrismaStatementBillingReader },
     { provide: LegalEntityLogoReader, useClass: PrismaLegalEntityLogoReader },
     { provide: FirstMandateLedger, useClass: PrismaFirstMandateLedger },
     DeclareLegalEntityHandler,

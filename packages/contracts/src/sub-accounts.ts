@@ -98,7 +98,12 @@ export const createSubAccountPayloadSchema = z.strictObject({
   siret: z.string().default(""),
   siren: z.string().default(""),
   vatNumber: z.string().default(""),
-  deliveryAddress: deliveryAddressPayloadSchema,
+  /**
+   * Facultative depuis le 2026-10-05 (Hugo) : le panneau ne demande plus que
+   * la sorte et le nom ; l'adresse se complète sur la fiche, et l'activation
+   * garde ses exigences.
+   */
+  deliveryAddress: deliveryAddressPayloadSchema.optional(),
   follows: z.array(companyFollowAspectSchema).default([]),
 });
 export type CreateSubAccountPayload = z.infer<typeof createSubAccountPayloadSchema>;

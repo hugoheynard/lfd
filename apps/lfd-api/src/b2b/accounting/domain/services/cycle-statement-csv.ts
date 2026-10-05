@@ -2,7 +2,7 @@ import { instantToLocal } from "@lfd/contracts";
 
 import type { FrozenVatShare } from "../ports/cycle-orders.reader.js";
 import { CSV_BOM, CSV_SEPARATOR, csvEuros, csvQuoted } from "./csv-cells.js";
-import type { CycleStatement, StatementLine, StatementTotals } from "./cycle-statement.js";
+import type { StatementAggregate, StatementLine, StatementTotals } from "./cycle-statement.js";
 
 /** Ce que l'en-tête du fichier doit dire de lui-même. */
 export interface StatementCsvHeading {
@@ -31,7 +31,7 @@ export const STATEMENT_SCOPE =
  * cycle, plus la colonne « non ventilée » — la somme d'une ligne retombe donc
  * sur sa TVA totale, sans qu'aucune part ne soit recalculée.
  */
-export function statementCsv(statement: CycleStatement, heading: StatementCsvHeading): string {
+export function statementCsv(statement: StatementAggregate, heading: StatementCsvHeading): string {
   const rates = statement.totals.vatByRate.map((share) => share.rate);
   const rows = [
     ...headingRows(heading),
@@ -87,8 +87,9 @@ function orderRow(
     csvQuoted(localDay(line.placedAt)),
     csvQuoted(line.orderNumber),
     csvQuoted(line.siteName),
-    // Avant S4, le payeur EST la société qui commande.
-    csvQuoted(heading.companyName),
+    // Le payeur est la société du relevé, sauf pour la commande d'un site qui
+    // suivait `billing` à sa date : le relevé de ce site nomme alors qui paie.
+    csvQuoted(line.paidBy?.name ?? heading.companyName),
     csvQuoted(heading.month),
     csvEuros(line.subtotalCents),
     csvEuros(line.discountCents),

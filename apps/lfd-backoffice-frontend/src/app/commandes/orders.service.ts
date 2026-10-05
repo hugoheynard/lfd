@@ -37,6 +37,9 @@ export class AdminOrdersService {
     if (filters.status !== undefined) {
       params.set('status', filters.status);
     }
+    if (filters.withSubAccounts === true) {
+      params.set('withSubAccounts', 'true');
+    }
     if (filters.limit !== undefined) {
       params.set('limit', `${filters.limit}`);
     }

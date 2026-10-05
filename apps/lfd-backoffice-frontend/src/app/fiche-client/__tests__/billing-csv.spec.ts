@@ -23,6 +23,7 @@ function order(
     vatCents: totalCents - Math.round(totalCents / 1.055),
     totalCents,
     customerLabel: 'Café des Halles',
+    companyDisplayName: 'Café des Halles',
     companyId: 'cmp_1',
     origin: 'self_service',
     ...overrides,

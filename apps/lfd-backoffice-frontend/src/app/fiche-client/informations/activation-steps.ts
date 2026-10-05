@@ -187,7 +187,7 @@ export function activationSteps(company: AdminCompanyDetail | null): readonly Ac
   // bloque plus rien.
   const kbisDeposited = company.kbis !== null;
   const pieces = company.gate.checklist
-    .filter((check) => !check.done)
+    .filter((check) => !check.done && !liftedForSite(company, check.piece, check.blocking))
     .map((check) => {
       const key: StepKey = check.piece === 'kbis' && kbisDeposited ? 'kbis_verify' : check.piece;
       // Le serveur dit lui-même laquelle tient la porte — l'écran ne le redéduit
@@ -200,6 +200,44 @@ export function activationSteps(company: AdminCompanyDetail | null): readonly Ac
   // ligne d'avertissement permanente, sur une exigence qui n'existe pas, avec un
   // geste qui ne fait rien : elle apprenait à ignorer l'encart entier.
   return [...legal, ...holder, ...phone, ...pieces];
+}
+
+/** L'empêchement que lève chaque pièce bloquante — celui que le serveur omet quand il la lève. */
+const PIECE_BLOCKERS: Partial<Record<ActivationPiece, ActivationBlocker>> = {
+  vat: 'vat',
+  billing: 'facturation',
+};
+
+/**
+ * Une pièce que le serveur a **levée** : un site qui suit la facturation de
+ * son principal reprend sa TVA, son adresse de facturation et son KBIS
+ * (`activation-gate.ts`, `isLegallyCarried`, vérifié le 2026-10-05). La
+ * checklist du serveur les porte encore « à faire », mais `gate.blocking` ne
+ * les nomme plus : c'est ce verdict qu'on suit, pas un recalcul. Le KBIS, qui
+ * ne bloque jamais, se lève sur le suivi `billing` lui-même.
+ */
+function liftedForSite(
+  company: AdminCompanyDetail,
+  piece: ActivationPiece,
+  blocking: boolean,
+): boolean {
+  if (!followsBilling(company)) {
+    return false;
+  }
+  if (piece === 'kbis') {
+    return true;
+  }
+  const blocker = PIECE_BLOCKERS[piece];
+  return blocking && blocker !== undefined && !company.gate.blocking.includes(blocker);
+}
+
+/** Un SITE : un sous-compte qui suit la facturation de son principal. */
+export function followsBilling(company: AdminCompanyDetail | null): boolean {
+  return (
+    company !== null &&
+    company.hierarchy.parent !== null &&
+    company.hierarchy.follows.some((follow) => follow.aspect === 'billing')
+  );
 }
 
 /**

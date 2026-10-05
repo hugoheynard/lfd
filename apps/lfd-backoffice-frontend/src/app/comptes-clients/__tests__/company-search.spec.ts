@@ -81,4 +81,16 @@ describe('matchesCompanySearch', () => {
     expect(matchesCompanySearch(company(), 'martin')).toBe(false);
     expect(matchesCompanySearch(company(), 'pâtisserie')).toBe(false);
   });
+
+  it('trouve un sous-compte par le nom de son principal', () => {
+    const chalet = company({
+      raisonSociale: '',
+      enseigne: 'Chalet Edelweiss',
+      parent: { id: 'c_alpes', enseigne: 'Alpes Chalets Privés' },
+    });
+
+    expect(matchesCompanySearch(chalet, 'alpe')).toBe(true);
+    expect(matchesCompanySearch(chalet, 'edelweiss')).toBe(true);
+    expect(matchesCompanySearch(company(), 'alpe')).toBe(false);
+  });
 });

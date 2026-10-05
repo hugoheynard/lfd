@@ -133,6 +133,41 @@ describe("Créer un sous-compte", () => {
     expect(list.find((company) => company.id === groupe)?.parent).toBeNull();
   });
 
+  it("se crée au NOM SEUL, puis se complète par les gestes existants de la fiche", async () => {
+    const groupe = await principal();
+
+    const created = await admin()
+      .post(`/admin/companies/${groupe}/sub-accounts`)
+      .send({ enseigne: "Club Med Tignes", follows: [] })
+      .expect(201);
+    const entity = jsonBody<CreatedIdResponse>(created).id;
+
+    const row = await ctx.prisma.company.findUniqueOrThrow({ where: { id: entity } });
+    expect(row).toMatchObject({ status: "pending", parentCompanyId: groupe, siret: "" });
+    expect((await fiche(groupe)).hierarchy.subAccounts[0]).toMatchObject({
+      id: entity,
+      city: null,
+    });
+
+    await admin().post(`/admin/companies/${entity}/delivery-addresses`).send(DELIVERY).expect(201);
+    await admin()
+      .patch(`/admin/companies/${entity}/identity`)
+      .send({
+        enseigne: "Club Med Tignes",
+        raisonSociale: "Club Med Tignes SAS",
+        formeJuridique: "SAS",
+        siret: "73282932000074",
+      })
+      .expect(204);
+
+    const completed = await ctx.prisma.company.findUniqueOrThrow({ where: { id: entity } });
+    expect(completed).toMatchObject({
+      raisonSociale: "Club Med Tignes SAS",
+      siret: "73282932000074",
+    });
+    expect((await fiche(groupe)).hierarchy.subAccounts[0]?.city).toBe("Chamonix");
+  });
+
   it("refuse de créer le sous-compte d'un sous-compte", async () => {
     const chalet = await createChalet(await principal(), []);
 

@@ -104,7 +104,6 @@ function boot(company: AdminCompanyDetail): {
   });
   const fixture = TestBed.createComponent(SubAccountsCard);
   fixture.componentRef.setInput('company', company);
-  fixture.componentRef.setInput('globalWindowMode', 'deadline');
   fixture.componentInstance.changed.subscribe(() => (wire.changed += 1));
   fixture.detectChanges();
   return { fixture, wire };
@@ -159,8 +158,6 @@ describe('SubAccountsCard', () => {
       parentRaisonSociale: 'Chalets SAS',
       parentSiret: '73282932000074',
       parentVatNumber: '',
-      parentSiren: '732829320',
-      globalWindowMode: 'deadline',
     });
     expect(wire.changed).toBe(1);
   });

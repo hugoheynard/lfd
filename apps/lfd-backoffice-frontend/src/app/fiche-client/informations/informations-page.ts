@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   FoldAsideLayoutComponent,
@@ -27,14 +35,15 @@ import { AdminCompaniesService } from '../../comptes-clients/admin-companies.ser
 import { ActivationAside } from '../activation-aside/activation-aside';
 import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
 import { PaiementSection } from '../paiement-section/paiement-section';
-import { ParentBanner } from '../parent-banner/parent-banner';
 import { FollowParentToggle } from '../follow-parent-toggle/follow-parent-toggle';
-import { SubAccountsCard } from '../sub-accounts-card/sub-accounts-card';
 import { FicheClientActions } from './fiche-client.actions';
 import { FicheClientFacade } from './fiche-client.facade';
 import { FicheClientPanels } from './fiche-client.panels';
 import { FicheClientStore } from './fiche-client.store';
-import { openingSteps } from './activation-steps';
+import { followsBilling, openingSteps } from './activation-steps';
+import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
+import { SiteIdentityCard } from '../site-identity-card/site-identity-card';
+import { SitePaymentNote } from '../site-payment-note/site-payment-note';
 
 /**
  * Fiche **détail** d'un compte client (staff) — reflète l'**état d'activation**
@@ -79,9 +88,9 @@ import { openingSteps } from './activation-steps';
     CompanyActivationChecklist,
     ActivationAside,
     PaiementSection,
-    ParentBanner,
     FollowParentToggle,
-    SubAccountsCard,
+    SiteIdentityCard,
+    SitePaymentNote,
   ],
   templateUrl: './informations-page.html',
   styleUrl: './informations-page.scss',
@@ -186,7 +195,19 @@ export class InformationsPage {
     return role === '' ? ` par ${agent}, le ${date}` : ` par ${agent} (${role}), le ${date}`;
   });
 
+  /**
+   * Un SITE (il suit la facturation de son principal) : identité, adresse de
+   * facturation et règlement sont ceux du principal, montrés en lecture.
+   */
+  protected readonly isSite = computed(() => followsBilling(this.fiche.company()));
+  /** La fiche du principal d'un site, lue pour ce qu'on y montre en lecture. */
+  protected readonly principal = signal<AdminCompanyDetail | null>(null);
+
   constructor() {
+    effect(() => {
+      const parentId = this.isSite() ? (this.fiche.company()?.hierarchy.parent?.id ?? null) : null;
+      untracked(() => void this.loadPrincipal(parentId));
+    });
     // Lu au `snapshot` : la route ne change pas sous la page, sauf à la
     // création — et là c'est nous qui la réglons.
     void this.fiche.start(this.route.snapshot.paramMap.get('id'));
@@ -250,5 +271,13 @@ export class InformationsPage {
 
   protected back(): void {
     void this.router.navigate(['/commercial/comptes-clients']);
+  }
+
+  private async loadPrincipal(parentId: string | null): Promise<void> {
+    if (parentId === null) {
+      this.principal.set(null);
+      return;
+    }
+    this.principal.set((await this.companies.getById(parentId)) ?? null);
   }
 }

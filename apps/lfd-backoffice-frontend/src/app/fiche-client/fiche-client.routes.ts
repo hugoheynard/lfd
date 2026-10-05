@@ -46,6 +46,11 @@ export const ficheClientRoutes: Routes = [
           import('./informations/informations-page').then((m) => m.InformationsPage),
       },
       {
+        path: 'sous-comptes',
+        loadComponent: () =>
+          import('./sous-comptes/sub-accounts-page').then((m) => m.ClientSubAccountsPage),
+      },
+      {
         // 🔴 `b2b_client_notes:read` et non le droit du parent. La fiche s'ouvre
         // avec `b2b_companies:read`, que portent aussi la comptabilité et le
         // support ; les notes de la commerciale ne sont qu'à elle et à

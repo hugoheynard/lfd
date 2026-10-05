@@ -1,6 +1,8 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type {
+  CycleStatementOrderView,
+  CycleStatementTotalsView,
   CycleStatementView,
   StaffPermission,
   StatementCycleView,
@@ -32,6 +34,41 @@ const CYCLES: StatementCyclesView = {
   ],
 };
 
+const ORDER: CycleStatementOrderView = {
+  id: 'o1',
+  orderNumber: 'CMD-1',
+  placedAt: '2026-09-12T08:00:00.000Z',
+  companyId: 'c1',
+  siteName: 'Boulangerie du Port',
+  paidBy: null,
+  subtotalCents: 10_000,
+  discountCents: 500,
+  voucherDiscountCents: 0,
+  htCents: 9_500,
+  deliveryFeeCents: 1_500,
+  lateFeeCents: 0,
+  vatShares: [{ rate: 5.5, amountCents: 523 }],
+  vatVentilated: true,
+  vatCents: 523,
+  totalCents: 11_523,
+};
+
+function totalsOf(unventilatedVatCents = 0, count = 1): CycleStatementTotalsView {
+  return {
+    orderCount: count,
+    subtotalCents: 10_000 * count,
+    discountCents: 500 * count,
+    voucherDiscountCents: 0,
+    htCents: 9_500 * count,
+    deliveryFeeCents: 1_500 * count,
+    lateFeeCents: 0,
+    vatByRate: [{ rate: 5.5, amountCents: 523 * count }],
+    unventilatedVatCents,
+    vatCents: 523 * count + unventilatedVatCents,
+    totalCents: 11_523 * count + unventilatedVatCents,
+  };
+}
+
 function statementOf(month: string, unventilatedVatCents = 0): CycleStatementView {
   return {
     companyId: 'c1',
@@ -39,50 +76,58 @@ function statementOf(month: string, unventilatedVatCents = 0): CycleStatementVie
     cycle: CYCLES.cycles.find((cycle) => cycle.month === month) ?? CURRENT,
     provisional: true,
     scope: 'Périmètre : commandes passées au compte. Hors commandes payées par carte.',
-    orders: [
+    groups: [
       {
-        id: 'o1',
-        orderNumber: 'CMD-1',
-        placedAt: '2026-09-12T08:00:00.000Z',
-        siteName: 'Boulangerie du Port',
-        subtotalCents: 10_000,
-        discountCents: 500,
-        voucherDiscountCents: 0,
-        htCents: 9_500,
-        deliveryFeeCents: 1_500,
-        lateFeeCents: 0,
-        vatShares: [{ rate: 5.5, amountCents: 523 }],
-        vatVentilated: true,
-        vatCents: 523,
-        totalCents: 11_523,
+        companyId: 'c1',
+        label: 'Boulangerie du Port',
+        ownOrders: true,
+        orders: [ORDER],
+        totals: totalsOf(unventilatedVatCents),
       },
     ],
-    totals: {
-      orderCount: 1,
-      subtotalCents: 10_000,
-      discountCents: 500,
-      voucherDiscountCents: 0,
-      htCents: 9_500,
-      deliveryFeeCents: 1_500,
-      lateFeeCents: 0,
-      vatByRate: [{ rate: 5.5, amountCents: 523 }],
-      unventilatedVatCents,
-      vatCents: 523 + unventilatedVatCents,
-      totalCents: 11_523 + unventilatedVatCents,
-    },
+    totals: totalsOf(unventilatedVatCents),
+    selfPayingEntities: [],
+  };
+}
+
+/** Un principal, un chalet suivi, et une entité qui règle seule. */
+function payerStatementOf(month: string): CycleStatementView {
+  const chalet: CycleStatementOrderView = {
+    ...ORDER,
+    id: 'o2',
+    orderNumber: 'CMD-2',
+    companyId: 'chalet',
+    siteName: 'Chalet Edelweiss',
+  };
+  return {
+    ...statementOf(month),
+    groups: [
+      ...statementOf(month).groups,
+      {
+        companyId: 'chalet',
+        label: 'Chalet Edelweiss',
+        ownOrders: false,
+        orders: [chalet],
+        totals: totalsOf(),
+      },
+    ],
+    totals: totalsOf(0, 2),
+    selfPayingEntities: [{ companyId: 'club', name: 'Club Med Tignes' }],
   };
 }
 
 interface Wire {
   readonly asked: string[];
   unventilated: number;
+  /** Remplace le relevé simple. */
+  view: ((month: string) => CycleStatementView) | null;
 }
 
 function boot(permissions: readonly StaffPermission[]): {
   fixture: ComponentFixture<CycleStatementCard>;
   wire: Wire;
 } {
-  const wire: Wire = { asked: [], unventilated: 0 };
+  const wire: Wire = { asked: [], unventilated: 0, view: null };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -98,7 +143,7 @@ function boot(permissions: readonly StaffPermission[]): {
           cycles: () => Promise.resolve(CYCLES),
           statement: (_id: string, month: string) => {
             wire.asked.push(month);
-            return Promise.resolve(statementOf(month, wire.unventilated));
+            return Promise.resolve(wire.view?.(month) ?? statementOf(month, wire.unventilated));
           },
         } satisfies Partial<Record<keyof CycleStatementService, unknown>>,
       },
@@ -167,5 +212,49 @@ describe('CycleStatementCard', () => {
     expect(
       (accountant.fixture.nativeElement as HTMLElement).querySelector('[data-statement-export]'),
     ).not.toBeNull();
+  });
+
+  it('montre un bloc par site avec son sous-total, le total payé, et les entités à part', async () => {
+    const { fixture, wire } = boot(['b2b_companies:read']);
+    wire.view = payerStatementOf;
+    await settle(fixture);
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelectorAll('[data-statement-group]')).toHaveLength(2);
+    expect(text(fixture)).toContain('Chalet Edelweiss');
+    expect(text(fixture)).toContain('Boulangerie du Port — commandes propres');
+    expect(
+      host.querySelector('[data-statement-grand-total]')?.textContent?.replace(/\s/gu, ''),
+    ).toContain('230,46€');
+    const entity = host.querySelector<HTMLAnchorElement>('[data-statement-self-paying] a');
+    expect(entity?.textContent).toContain('Club Med Tignes');
+    expect(entity?.getAttribute('href')).toBe('/comptes-clients/club/facturation');
+  });
+
+  it('nomme le principal sur le relevé d’un site qui le suivait', async () => {
+    const plain = boot(['b2b_companies:read']);
+    await settle(plain.fixture);
+    expect(
+      (plain.fixture.nativeElement as HTMLElement).querySelector('[data-statement-paid-by]'),
+    ).toBeNull();
+
+    const site = boot(['b2b_companies:read']);
+    site.wire.view = (month) => {
+      const base = statementOf(month);
+      const paidBy = { companyId: 'alpes', name: 'Alpes Chalets' };
+      return {
+        ...base,
+        groups: base.groups.map((group) => ({
+          ...group,
+          orders: group.orders.map((order) => ({ ...order, paidBy })),
+        })),
+      };
+    };
+    await settle(site.fixture);
+    expect(
+      (site.fixture.nativeElement as HTMLElement).querySelector('[data-statement-paid-by]')
+        ?.textContent,
+    ).toContain('Alpes Chalets');
+    expect(text(site.fixture)).toContain('payé par Alpes Chalets');
   });
 });

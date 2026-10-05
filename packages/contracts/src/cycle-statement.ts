@@ -37,8 +37,16 @@ export interface CycleStatementOrderView {
   readonly orderNumber: string;
   /** ISO — l'instant de passation, qui range la commande dans son cycle. */
   readonly placedAt: string;
-  /** La société qui a commandé. Avant S4, c'est aussi le payeur. */
+  /** La société qui a commandé — le site, quand c'est un sous-compte. */
+  readonly companyId: string;
+  /** Son enseigne, à défaut sa raison sociale. */
   readonly siteName: string;
+  /**
+   * Qui règle cette commande quand ce n'est pas la société du relevé : le
+   * principal que ce site suivait en `billing` à la date de la commande. `null`
+   * sinon — et toujours `null` dans le relevé du principal.
+   */
+  readonly paidBy: StatementPayerView | null;
   readonly subtotalCents: number;
   readonly discountCents: number;
   readonly voucherDiscountCents: number;
@@ -52,6 +60,12 @@ export interface CycleStatementOrderView {
   readonly vatVentilated: boolean;
   readonly vatCents: number;
   readonly totalCents: number;
+}
+
+/** Une société qui en règle une autre. */
+export interface StatementPayerView {
+  readonly companyId: string;
+  readonly name: string;
 }
 
 export interface CycleStatementTotalsView {
@@ -81,6 +95,33 @@ export interface CycleStatementView {
   readonly provisional: boolean;
   /** Le périmètre, en toutes lettres — ce que le relevé ne couvre pas. */
   readonly scope: string;
+  /**
+   * La société du relevé d'abord (`ownOrders`), puis un groupe par site qui la
+   * suivait en `billing` à la date de ses commandes, par nom. Avant S4, tous
+   * les sites sont groupés ici, un sous-total chacun.
+   */
+  readonly groups: readonly CycleStatementGroupView[];
+  /** = la somme des groupes, au centime. */
+  readonly totals: CycleStatementTotalsView;
+  /**
+   * Ses sous-comptes actuels qui ne suivent pas `billing` : des entités qui
+   * règlent seules. Listées pour qu'on les retrouve, **sans montant**.
+   */
+  readonly selfPayingEntities: readonly StatementEntityView[];
+}
+
+/** Un groupe du relevé : ses commandes, et leur sous-total. */
+export interface CycleStatementGroupView {
+  readonly companyId: string;
+  /** L'enseigne du site, ou celle de la société du relevé pour son propre groupe. */
+  readonly label: string;
+  readonly ownOrders: boolean;
   readonly orders: readonly CycleStatementOrderView[];
   readonly totals: CycleStatementTotalsView;
+}
+
+/** Une entité rattachée qui règle seule. */
+export interface StatementEntityView {
+  readonly companyId: string;
+  readonly name: string;
 }

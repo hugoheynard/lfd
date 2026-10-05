@@ -37,7 +37,7 @@ import {
   type OwnedOrder,
   type PackingOrder,
 } from "../domain/ports/order.reader.js";
-import { vatSharesSchema, type VatShareView } from "@lfd/contracts";
+import { companyDisplayName, vatSharesSchema, type VatShareView } from "@lfd/contracts";
 
 import { orderOriginOf } from "../domain/services/order-origin.js";
 
@@ -198,7 +198,7 @@ export class PrismaOrderReader extends OrderReader {
   async listForAdmin(query: AdminOrdersQuery): Promise<readonly AdminOrderRow[]> {
     const rows = await this.prisma.order.findMany({
       where: {
-        ...(query.companyId === undefined ? {} : { companyId: query.companyId }),
+        ...adminCompanyWhere(query),
         ...(query.status === undefined ? {} : { status: query.status }),
       },
       orderBy: { createdAt: "desc" },
@@ -216,7 +216,7 @@ export class PrismaOrderReader extends OrderReader {
         fromSubscriptionId: true,
         placedByStaffId: true,
         createdAt: true,
-        company: { select: { raisonSociale: true } },
+        company: { select: { raisonSociale: true, enseigne: true } },
         placedBy: { select: { email: true, firstName: true, lastName: true } },
       },
     });
@@ -498,7 +498,7 @@ interface AdminRow {
   readonly fromSubscriptionId: string | null;
   readonly placedByStaffId: string | null;
   readonly createdAt: Date;
-  readonly company: { readonly raisonSociale: string } | null;
+  readonly company: { readonly raisonSociale: string; readonly enseigne: string } | null;
   readonly placedBy: {
     readonly email: string;
     readonly firstName: string;
@@ -519,7 +519,25 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
     totalCents: row.totalCents,
     customerLabel: customerLabelOf(row),
     companyId: row.companyId,
+    companyDisplayName: row.company === null ? null : companyDisplayName(row.company),
     origin: orderOriginOf(row),
+  };
+}
+
+/**
+ * Le filtre société de la liste staff. Avec `withSubAccounts`, la société ET
+ * ses sous-comptes actuels — la structure d'aujourd'hui, pas le payeur à date :
+ * l'onglet suit l'activité d'un groupe, il ne compte pas d'argent.
+ */
+function adminCompanyWhere(query: AdminOrdersQuery): Prisma.OrderWhereInput {
+  if (query.companyId === undefined) {
+    return {};
+  }
+  if (query.withSubAccounts !== true) {
+    return { companyId: query.companyId };
+  }
+  return {
+    OR: [{ companyId: query.companyId }, { company: { parentCompanyId: query.companyId } }],
   };
 }
 

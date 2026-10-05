@@ -1,0 +1,54 @@
+<fold-card data-sub-accounts-help>
+  <fold-disclosure [open]="open()">
+    <span summary>Comment fonctionnent les sous-comptes</span>
+    <div class="help">
+      <p>
+        Un sous-compte est un client à part entière — ses adresses, ses contacts, ses commandes —
+        rattaché à un compte principal. Il en existe deux sortes.
+      </p>
+      <p>
+        <strong>Un site de cette société</strong> — par exemple un chalet d'une société qui en gère
+        plusieurs. C'est la même entité légale : le site n'a pas de SIRET à lui. Ses commandes sont
+        facturées au nom du compte principal, avec le nom du site. Celles passées au compte sont
+        prélevées sur le compte du principal ; un site peut aussi régler par carte à la commande.
+      </p>
+      <p>
+        <strong>Une entité distincte</strong> — par exemple un établissement d'un groupe hôtelier.
+        Elle a sa propre identité légale et règle ses propres factures. Elle peut bénéficier de la
+        mercuriale négociée par le principal.
+      </p>
+
+      <h3>Ce qu'un sous-compte peut reprendre du principal</h3>
+      <ul>
+        <li>
+          Facturation : facturé au nom du principal, et prélevé sur son compte pour les commandes
+          passées au compte. C'est ce qui fait d'un sous-compte un site.
+        </li>
+        <li>
+          Tarif : la mercuriale et les engagements de volume du principal. Ce choix appartient au
+          commercial ; ses commandes font alors avancer le palier du principal.
+        </li>
+        <li>Contacts : les interlocuteurs du principal, partagés.</li>
+      </ul>
+      <p>
+        La facturation se règle ici, dans l'onglet Sous-comptes ; le tarif dans l'onglet Tarifs ;
+        les contacts en tête de la carte Contacts, dans Informations. Chaque choix prend effet à sa
+        date : les commandes déjà passées gardent les conditions d'alors.
+      </p>
+
+      <h3>Qui voit quoi</h3>
+      <p>
+        Les personnes d'un sous-compte ne voient que leur sous-compte, jamais le principal ni les
+        autres sous-comptes. (Les owners et admins du principal pourront bientôt agir dans ses
+        sous-comptes.)
+      </p>
+
+      <h3>Rattacher et détacher</h3>
+      <p>
+        Seuls l'administration et les commerciaux rattachent un client existant ou détachent un
+        sous-compte ; un client ne peut pas le faire. Détacher met fin à tout ce que le sous-compte
+        reprenait du principal, à compter de ce jour.
+      </p>
+    </div>
+  </fold-disclosure>
+</fold-card>

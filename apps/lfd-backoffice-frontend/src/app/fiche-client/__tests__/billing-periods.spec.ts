@@ -28,6 +28,7 @@ function order(
     vatCents: 0,
     totalCents,
     customerLabel: 'Café des Halles',
+    companyDisplayName: 'Café des Halles',
     companyId: 'cmp_1',
     origin: 'self_service',
   };

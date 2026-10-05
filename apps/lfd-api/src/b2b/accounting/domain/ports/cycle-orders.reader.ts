@@ -23,10 +23,12 @@ export interface CycleOrder {
   readonly id: string;
   readonly orderNumber: string;
   readonly placedAt: Date;
+  /** La société qui a commandé (`company_id`) — le site, quand c'est un sous-compte. */
+  readonly companyId: string;
   /**
-   * Le site qui a commandé — la raison sociale de `company_id`. Avant S4, c'est
-   * aussi le payeur ; après, ce sera le sous-compte, et le payeur sera figé à
-   * part (`billed_company_id`).
+   * Le nom sous lequel ce site se reconnaît (`companyDisplayName` : l'enseigne,
+   * à défaut la raison sociale). Deux chalets d'une même société ont la même
+   * raison sociale ; seule l'enseigne les distingue sur un relevé.
    */
   readonly siteName: string;
   readonly subtotalCents: number;
@@ -44,6 +46,14 @@ export interface CycleOrder {
   readonly totalCents: number;
 }
 
+/** La société d'un relevé, sous ses deux noms. */
+export interface StatementCompany {
+  /** La raison sociale — l'en-tête et le nom du fichier. */
+  readonly name: string;
+  /** L'enseigne, à défaut la raison sociale — le titre de son groupe. */
+  readonly label: string;
+}
+
 /**
  * Les commandes d'un relevé, **une par une**.
  *
@@ -55,15 +65,20 @@ export interface CycleOrder {
  * l'assiette du prélèvement ne servirait pas à le rapprocher.
  */
 export abstract class CycleOrdersReader {
-  /** La raison sociale de la société, ou `null` si elle n'existe pas. */
-  abstract companyName(companyId: string): Promise<string | null>;
+  /** La société du relevé, ou `null` si elle n'existe pas. */
+  abstract statementCompany(companyId: string): Promise<StatementCompany | null>;
 
   /**
-   * Les commandes passées au compte par cette société sur `[startsAt, closesAt[`,
-   * de la plus ancienne à la plus récente.
+   * Les commandes passées au compte par ces sociétés sur `[startsAt, closesAt[`,
+   * de la plus ancienne à la plus récente. Plusieurs sociétés : le relevé d'un
+   * principal lit aussi celles de ses sites, que le domaine trie ensuite à date
+   * (`billedPayerOf`).
    *
    * 🔴 Même périmètre que l'assiette : ni les commandes réglées par carte, ni
    * les gratuites, ni les annulées, ni celles d'un particulier.
    */
-  abstract cycleOrders(companyId: string, cycle: BillingCycle): Promise<readonly CycleOrder[]>;
+  abstract cycleOrders(
+    companyIds: readonly string[],
+    cycle: BillingCycle,
+  ): Promise<readonly CycleOrder[]>;
 }

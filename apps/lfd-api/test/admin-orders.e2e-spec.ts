@@ -51,6 +51,7 @@ const pickupContent = (): Record<string, unknown> => ({
 
 const MEMBER = "auth0|member";
 const SOLO = "auth0|solo";
+const SITE_MEMBER = "auth0|site-member";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -178,6 +179,46 @@ describe("GET /admin/orders", () => {
     );
 
     expect(rows.map((row) => row.companyId)).toEqual([companyId]);
+  });
+
+  it("ajoute les commandes des sous-comptes avec `withSubAccounts`, nommés par leur enseigne", async () => {
+    const { companyId } = await seedTwoOrders();
+    const site = await createCompany(ctx.prisma, {
+      raisonSociale: "Café des Halles SAS",
+      enseigne: "Halles — Terrasse",
+      status: CompanyStatus.active,
+    });
+    await ctx.prisma.company.update({
+      where: { id: site.id },
+      data: { parentCompanyId: companyId },
+    });
+    const siteMember = await createUser(ctx.prisma, { auth0Sub: SITE_MEMBER });
+    await attachTo(ctx.prisma, siteMember.id, site.id, CustomerRole.owner);
+    await ctx
+      .asSub(SITE_MEMBER)
+      .post("/orders")
+      .send({ ...pickupContent(), companyId: site.id, lines: [{ sku: "VIE-001", quantity: 1 }] })
+      .expect(201);
+
+    const alone = jsonBody<readonly AdminOrderRow[]>(
+      await staff().get(`/admin/orders?companyId=${companyId}`).expect(200),
+    );
+    const grouped = jsonBody<readonly AdminOrderRow[]>(
+      await staff().get(`/admin/orders?companyId=${companyId}&withSubAccounts=true`).expect(200),
+    );
+    const ofSite = jsonBody<readonly AdminOrderRow[]>(
+      await staff().get(`/admin/orders?companyId=${site.id}&withSubAccounts=true`).expect(200),
+    );
+
+    expect(alone.map((row) => row.companyId)).toEqual([companyId]);
+    expect([...grouped].map((row) => [row.companyId, row.companyDisplayName]).sort()).toEqual(
+      [
+        [companyId, "Café des Halles SAS"],
+        [site.id, "Halles — Terrasse"],
+      ].sort(),
+    );
+    // un site n'a pas de sous-comptes : il ne voit que les siennes
+    expect(ofSite.map((row) => row.companyId)).toEqual([site.id]);
   });
 
   it("filtre sur un état d'avancement", async () => {

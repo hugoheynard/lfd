@@ -52,6 +52,8 @@ export interface ProductionTables {
   readonly productionDay: Deletable;
   readonly orderHandover: Deletable;
   readonly packingLine: Deletable;
+  readonly packingContainerLine: Deletable;
+  readonly packingContainer: Deletable;
   readonly packingOrder: Deletable;
   readonly packingStock: Deletable;
   readonly packingReceipt: Deletable;
@@ -88,6 +90,12 @@ export async function resetProduction(prisma: ProductionTables): Promise<Product
   // Le colisage tient ses copies des mêmes journées, sans clé vers le fournil :
   // la frontière, voulue. Les lignes avant leur bac (`Restrict`).
   await prisma.packingLine.deleteMany();
+  // Les contenants (K2b) tiennent leur commande en `Restrict`, et leurs lignes
+  // tiennent le contenant : ils partent avant elle. Oubliés jusqu'au
+  // 2026-10-05, ils faisaient échouer tout `seed:orders` dès qu'un sac avait
+  // été ouvert au colisage.
+  await prisma.packingContainerLine.deleteMany();
+  await prisma.packingContainer.deleteMany();
   await prisma.packingOrder.deleteMany();
   await prisma.packingStock.deleteMany();
   await prisma.packingReceipt.deleteMany();

@@ -19,6 +19,7 @@ function order(overrides: Partial<CycleOrder>): CycleOrder {
     id: "o1",
     orderNumber: "CMD-1",
     placedAt: new Date("2026-09-14T22:30:00.000Z"),
+    companyId: "c-port",
     siteName: "Boulangerie du Port",
     subtotalCents: 10_000,
     discountCents: 500,
@@ -76,5 +77,14 @@ describe("rateLabel", () => {
   it("écrit le taux à la française", () => {
     expect(rateLabel(5.5)).toBe("5,5 %");
     expect(rateLabel(20)).toBe("20 %");
+  });
+
+  it("renseigne le site de chaque commande, et nomme le payeur d'un site qui suivait le principal", () => {
+    const paid = aggregateStatement([order({ siteName: "Chalet Edelweiss" })], () => ({
+      companyId: "c-alpes",
+      name: "Alpes Chalets",
+    }));
+    const [line] = rowsOf(statementCsv(paid, SEPTEMBER)).filter((row) => row.includes("CMD-1"));
+    expect(line).toContain('"Chalet Edelweiss";"Alpes Chalets"');
   });
 });

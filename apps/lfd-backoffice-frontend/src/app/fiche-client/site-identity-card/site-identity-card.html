@@ -1,0 +1,17 @@
+<fold-card data-site-identity>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="company"
+    [title]="'Identité légale : celle de ' + name()"
+    subtitle="Un site est facturé au nom de son principal : rien à saisir ici, ni KBIS."
+  />
+  <fold-field-list>
+    <fold-field label="Raison sociale">{{ principal().raisonSociale || '—' }}</fold-field>
+    <fold-field label="SIRET">{{ siret() }}</fold-field>
+    <fold-field label="N° de TVA">{{ principal().vatNumber || '—' }}</fold-field>
+  </fold-field-list>
+  <a [routerLink]="['/comptes-clients', principal().id, 'informations']">
+    Ouvrir la fiche de {{ name() }}
+  </a>
+</fold-card>

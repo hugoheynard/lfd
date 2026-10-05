@@ -1,6 +1,7 @@
 # L'agrégation des commandes — le relevé avant la facture
 
-> 📐 **Plan v2, rien n'est bâti** (2026-10-05). Contredit par `vitruve` le
+> 🟡 **Plan v2 — A1, A2 et la vue payeur bâtis le 2026-10-05** (`c46572f` et
+> suivant) ; A3 attend S4. Contredit par `vitruve` le
 > même jour : une objection BLOQUANTE, quatre SÉRIEUSES, reprises au §6.
 > Prérequis de la facturation des
 > sous-comptes ([`../b2b/plan-sous-comptes.md`](../b2b/plan-sous-comptes.md),
@@ -85,7 +86,12 @@ leur en-tête.
 ### 1.2 Le payeur et le groupe
 
 - **Payeur** : `COALESCE(billed_company_id, company_id)`, la commande figée
-  (sous-comptes, S4). Avant S4, c'est `company_id`.
+  (sous-comptes, S4). **Avant S4** (bâti le 2026-10-05, Hugo veut voir le
+  rendu) : le payeur est résolu à la date de la commande sur
+  `company_follows` (un site qui suivait `billing` à cette date est payé par
+  son principal), dans **un seul** endroit, `billed-payer.ts`, que S4
+  remplacera par la colonne figée. Le relevé d'un principal a un groupe
+  par site et un sous-total ; celui d'un site porte « payé par ».
 - **Groupe** : le sous-compte de la commande, si ce site a la facturation
   séparée **à la date de la commande** (décision datée, comme les autres).
   Sinon, le groupe du payeur.
@@ -129,6 +135,11 @@ requête, résolue par le mur actuel, et jamais une société lue ailleurs :
 
 - **Pas de facture** : ni numéro légal, ni série continue, ni mentions, ni
   PDF signé. Elle viendra par-dessus le relevé, avant l'échéance de 2027.
+  ⚠️ **La facture ne sera pas « le relevé + un numéro »** (Hugo,
+  2026-10-05) : une commande réglée **par carte** est hors du relevé, qui ne
+  montre que ce qui reste à prélever, mais elle doit être facturée elle
+  aussi, au nom du payeur, avec la mention « réglée ». Le lot facture
+  élargit donc le périmètre au-delà de l'assiette du prélèvement.
 - **Pas d'avoir** : une commande annulée après coup sort simplement du
   relevé si elle est `cancelled`. Le traitement comptable d'une annulation
   après prélèvement attend la facture et S4-0.

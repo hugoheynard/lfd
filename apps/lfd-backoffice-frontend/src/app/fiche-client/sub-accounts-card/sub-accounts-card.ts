@@ -10,7 +10,7 @@ import {
   untracked,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { SubAccountView, WindowMode } from '@lfd/contracts';
+import type { SubAccountView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBadgeComponent,
@@ -71,8 +71,6 @@ export class SubAccountsCard {
   private readonly panels = inject(FoldPanelHostService);
 
   readonly company = input.required<AdminCompanyDetail>();
-  /** Le réglage général « créneau ou échéance », pour la première adresse (CA-D2). */
-  readonly globalWindowMode = input.required<WindowMode>();
 
   /** La hiérarchie a changé : la fiche relit. */
   readonly changed = output<void>();
@@ -110,8 +108,6 @@ export class SubAccountsCard {
           parentRaisonSociale: company.raisonSociale,
           parentSiret: company.siret,
           parentVatNumber: company.vatNumber,
-          parentSiren: company.siren,
-          globalWindowMode: this.globalWindowMode(),
         },
       })
       .closed.then((id) => this.changedIf(id));

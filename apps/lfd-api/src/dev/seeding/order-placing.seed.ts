@@ -122,6 +122,12 @@ export interface SeedOrder {
    * client de référence se fait livrer « Le Chalet », qui ne l'est pas.
    */
   readonly deliveryLabel?: string;
+  /**
+   * Le règlement demandé ; absent = le serveur décide (au compte si les termes
+   * sont accordés, carte sinon). `card` sert la commande payée par carte d'un
+   * client au compte (`sub-account-orders.seed.ts`).
+   */
+  readonly settlement?: "card" | "account";
 }
 
 /** Une commande posée : son identifiant (la clé de la livraison) et son numéro (celle du fournil). */
@@ -150,12 +156,25 @@ export async function resolveTarget(
   if (company === null) {
     throw new Error(`Société « ${raisonSociale} » absente : semer le client avant ses commandes.`);
   }
+  return targetOf(context, company.id, raisonSociale);
+}
+
+/**
+ * La même cible, par l'identifiant — un site de sous-compte n'a pas de raison
+ * sociale propre, donc pas de clé par laquelle {@link resolveTarget} le trouve.
+ */
+export async function targetOf(
+  context: SeedContext,
+  companyId: string,
+  name: string,
+): Promise<Target> {
+  const company = { id: companyId };
   const member = await context.prisma.membership.findFirst({
     where: { companyId: company.id },
     select: { userId: true },
   });
   if (member === null) {
-    throw new Error(`La société « ${raisonSociale} » n'a aucun membre : rien à qui porter.`);
+    throw new Error(`La société « ${name} » n'a aucun membre : rien à qui porter.`);
   }
   const labo = await context.prisma.pickupAddress.findFirst({
     where: { isDefault: true },
@@ -262,7 +281,7 @@ export async function place(
     idempotencyKey: randomUUID(),
     // Le semis ne choisit pas son règlement : il laisse le serveur décider comme
     // il l'a toujours fait — au compte si les termes sont accordés, carte sinon.
-    settlement: null,
+    settlement: order.settlement ?? null,
     fulfillmentMethod: order.method,
     deliveryAddress: delivery?.postal ?? null,
     // L'IDENTITÉ de l'adresse, en plus de son instantané postal : sans elle le

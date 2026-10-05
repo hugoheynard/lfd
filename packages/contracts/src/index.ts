@@ -153,7 +153,10 @@ export {
 export type { BillingCycleView } from "./billing-cycle.js";
 export { statementMonthSchema } from "./cycle-statement.js";
 export type {
+  CycleStatementGroupView,
   CycleStatementOrderView,
+  StatementEntityView,
+  StatementPayerView,
   CycleStatementTotalsView,
   CycleStatementView,
   StatementCycleView,

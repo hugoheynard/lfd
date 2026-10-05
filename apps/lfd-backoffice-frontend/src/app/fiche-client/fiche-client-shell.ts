@@ -79,6 +79,15 @@ const ALL_TABS: readonly GuardedTab[] = [
     icon: 'company',
     permission: null,
   },
+  // Juste après Informations : la hiérarchie des comptes a son onglet, visible
+  // pour tout client — un client seul y trouve « Créer » et « Rattacher ».
+  {
+    key: 'sous-comptes',
+    label: 'Sous-comptes',
+    link: 'sous-comptes',
+    icon: 'org-chart',
+    permission: null,
+  },
   // Entre Informations et Commandes, et derrière son propre droit : la
   // comptabilité et le support lisent la fiche, pas les notes de la commerciale.
   {

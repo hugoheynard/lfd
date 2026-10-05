@@ -93,43 +93,95 @@
             </fold-callout>
           }
 
-          @if (statement.orders.length === 0) {
+          @if (payerOf(statement); as payer) {
+            <!-- Le relevé d'un site : ses seules commandes, mais il ne les règle
+                 pas toutes — le principal qu'il suivait à leur date les paie. -->
+            <fold-callout appearance="inset" variant="info" data-statement-paid-by>
+              Des commandes de ce relevé sont réglées par <strong>{{ payer }}</strong
+              >, que ce site suivait en facturation à leur date. Elles figurent aussi sur le relevé
+              de {{ payer }}.
+            </fold-callout>
+          }
+
+          @if (statement.totals.orderCount === 0) {
             <fold-empty-state
               title="Aucune commande au compte sur ce cycle"
               subtitle="Les commandes réglées par carte, gratuites ou annulées n’entrent pas dans le relevé."
             />
           } @else {
-            <fold-data-table
-              caption="Commandes du cycle"
-              narrowLayout="cards"
-              hover
-              zebra
-              clickable
-              [columns]="columns"
-              [rows]="statement.orders"
-              [rowKey]="rowKey"
-              (rowClick)="open($event)"
-            >
-              <ng-template foldCell="date" let-row>{{ day(row.placedAt) }}</ng-template>
-              <ng-template foldCell="reference" let-row>
-                <span class="ref">{{ row.orderNumber }}</span>
-              </ng-template>
-              <ng-template foldCell="ht" let-row>{{ euros(row.htCents) }}</ng-template>
-              <ng-template foldCell="discounts" let-row>
-                {{ euros(row.discountCents + row.voucherDiscountCents) }}
-              </ng-template>
-              <ng-template foldCell="delivery" let-row>{{
-                euros(row.deliveryFeeCents)
-              }}</ng-template>
-              <ng-template foldCell="lateFee" let-row>{{ euros(row.lateFeeCents) }}</ng-template>
-              <ng-template foldCell="vat" let-row>
-                {{ euros(row.vatCents) }}
-                @if (!row.vatVentilated) {
-                  <fold-badge variant="neutral" content="non ventilée" />
+            @for (group of shownGroups(statement); track group.companyId) {
+              <section class="group" [attr.data-statement-group]="group.companyId">
+                @if (statement.groups.length > 1) {
+                  <fold-element-title
+                    variant="caps"
+                    [title]="groupTitle(group)"
+                    [subtitle]="groupSubtitle(group)"
+                  />
                 }
-              </ng-template>
-              <ng-template foldCell="total" let-row>{{ euros(row.totalCents) }}</ng-template>
-            </fold-data-table>
+                <fold-data-table
+                  [caption]="'Commandes — ' + group.label"
+                  narrowLayout="cards"
+                  hover
+                  zebra
+                  clickable
+                  [columns]="columns"
+                  [rows]="group.orders"
+                  [rowKey]="rowKey"
+                  (rowClick)="open($event)"
+                >
+                  <ng-template foldCell="date" let-row>{{ day(row.placedAt) }}</ng-template>
+                  <ng-template foldCell="reference" let-row>
+                    <span class="ref">{{ row.orderNumber }}</span>
+                    @if (row.paidBy; as paidBy) {
+                      <fold-badge variant="info" [content]="'payé par ' + paidBy.name" />
+                    }
+                  </ng-template>
+                  <ng-template foldCell="ht" let-row>{{ euros(row.htCents) }}</ng-template>
+                  <ng-template foldCell="discounts" let-row>
+                    {{ euros(row.discountCents + row.voucherDiscountCents) }}
+                  </ng-template>
+                  <ng-template foldCell="delivery" let-row>{{
+                    euros(row.deliveryFeeCents)
+                  }}</ng-template>
+                  <ng-template foldCell="lateFee" let-row>{{
+                    euros(row.lateFeeCents)
+                  }}</ng-template>
+                  <ng-template foldCell="vat" let-row>
+                    {{ euros(row.vatCents) }}
+                    @if (!row.vatVentilated) {
+                      <fold-badge variant="neutral" content="non ventilée" />
+                    }
+                  </ng-template>
+                  <ng-template foldCell="total" let-row>{{ euros(row.totalCents) }}</ng-template>
+                </fold-data-table>
+              </section>
+            }
+
+            @if (statement.groups.length > 1) {
+              <p class="grand-total" data-statement-grand-total>
+                Total payé par {{ statement.groups[0]?.label }}&nbsp;:
+                <strong class="ttc">{{ euros(statement.totals.totalCents) }}</strong> TTC
+              </p>
+            }
+          }
+
+          @if (statement.selfPayingEntities.length > 0) {
+            <section class="group" data-statement-self-paying>
+              <fold-element-title
+                variant="caps"
+                title="Entités rattachées qui règlent seules"
+                subtitle="Elles ne suivent pas la facturation de ce compte : leurs commandes sont sur leur propre relevé."
+              />
+              <ul class="entities">
+                @for (entity of statement.selfPayingEntities; track entity.companyId) {
+                  <li>
+                    <a [routerLink]="['/comptes-clients', entity.companyId, 'facturation']">{{
+                      entity.name
+                    }}</a>
+                  </li>
+                }
+              </ul>
+            </section>
           }
         }
       }

@@ -17,12 +17,24 @@
         </a>
       </header>
 
+      @if (hasSites()) {
+        <fold-listbox
+          class="cmd-site"
+          label="Site"
+          hint="Ce compte et ses sous-comptes actuels. Qui règle quoi est sur le relevé de cycle."
+          [options]="siteChoices()"
+          [value]="site()"
+          (selectionChange)="onSite($event)"
+          data-orders-site
+        />
+      }
+
       <fold-data-table
         caption="Commandes du compte"
         hover
         clickable
         density="compact"
-        [columns]="columns"
+        [columns]="columns()"
         [rows]="rows()"
         [rowKey]="rowKey"
         [loading]="state() === 'loading'"
@@ -35,6 +47,8 @@
             <fold-badge variant="accent" [content]="pill" />
           }
         </ng-template>
+
+        <ng-template foldCell="site" let-row>{{ siteOf(row) }}</ng-template>
 
         <ng-template foldCell="placedAt" let-row>{{ date(row) }}</ng-template>
 

@@ -1,0 +1,15 @@
+.help {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+
+  h3 {
+    margin: var(--fold-space-sm) 0 0;
+    font-size: var(--fold-text-base);
+  }
+
+  p,
+  ul {
+    margin: 0;
+  }
+}

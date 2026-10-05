@@ -22,6 +22,7 @@
     "src",
     "prisma/seed.ts",
     "prisma/seed-orders.ts",
+    "prisma/seed-sub-accounts.ts",
     "prisma/reset-to-seed.ts",
     "prisma/seed-pim.ts",
     "prisma/seed-delivery.ts",

@@ -79,6 +79,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptes-clients/:id': 'b2b_companies:read',
   'comptes-clients/:id/dashboard': null,
   'comptes-clients/:id/informations': null,
+  'comptes-clients/:id/sous-comptes': null,
   // Les notes de la commerciale : ni la comptabilité ni le support, qui lisent pourtant la fiche.
   'comptes-clients/:id/notes': 'b2b_client_notes:read',
   'comptes-clients/:id/commandes': null,

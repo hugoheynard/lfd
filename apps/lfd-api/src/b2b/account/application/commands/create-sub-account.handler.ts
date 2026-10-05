@@ -24,7 +24,7 @@ import { CreateSubAccountCommand } from "./create-sub-account.command.js";
 
 /**
  * Crée un sous-compte rattaché à son principal, en UNE transaction : la
- * société, son lien, sa première adresse de livraison et ses suivis tombent
+ * société, son lien, sa première adresse de livraison (si donnée) et ses suivis tombent
  * ensemble ou tiennent ensemble.
  *
  * Sous le verrou de la hiérarchie (§5) : le principal est relu après le
@@ -62,9 +62,7 @@ export class CreateSubAccountHandler implements ICommandHandler<CreateSubAccount
       company.attachTo(parent.company);
       const id = await this.companies.declareUnowned(company);
 
-      const book = await this.addresses.loadDeliveryBook(id);
-      book.add(this.ids.next(), command.payload.deliveryAddress, now);
-      await this.addresses.saveDeliveryBook(book);
+      await this.addFirstAddress(id, command, now);
 
       const follows = SubAccountFollows.none(id);
       for (const aspect of aspects) {
@@ -85,5 +83,24 @@ export class CreateSubAccountHandler implements ICommandHandler<CreateSubAccount
     // Le fait d'entonnoir, best-effort comme à toute création staff.
     this.events.publish(new CompanyDeclaredEvent(companyId, company.displayName(), "staff", null));
     return companyId;
+  }
+
+  /**
+   * L'adresse de livraison est facultative à la création (2026-10-05) : un
+   * sous-compte au nom seul est valide en `pending`, et c'est l'activation qui
+   * exige une adresse, comme pour tout compte.
+   */
+  private async addFirstAddress(
+    id: string,
+    command: CreateSubAccountCommand,
+    now: Date,
+  ): Promise<void> {
+    const address = command.payload.deliveryAddress;
+    if (address === undefined) {
+      return;
+    }
+    const book = await this.addresses.loadDeliveryBook(id);
+    book.add(this.ids.next(), address, now);
+    await this.addresses.saveDeliveryBook(book);
   }
 }

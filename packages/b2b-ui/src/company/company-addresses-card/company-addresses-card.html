@@ -3,7 +3,7 @@
     <fold-card>
       <div class="addr-head">
         <p class="card-kicker">Facturation</p>
-        @if (canManage()) {
+        @if (canManage() && billingCarriedBy() === null) {
           <button
             foldButton
             emphasis="soft"
@@ -16,8 +16,13 @@
           </button>
         }
       </div>
+      @if (billingCarriedBy(); as owner) {
+        <p class="carried" data-billing-carried>Celle de {{ owner }}.</p>
+      }
       @if (billing(); as fa) {
         <lfd-address [address]="postal(fa)" />
+      } @else if (billingCarriedBy() !== null) {
+        <p class="carried">{{ billingCarriedBy() }} n’a pas encore d’adresse de facturation.</p>
       } @else {
         <fold-callout variant="warning">Aucune adresse de facturation renseignée.</fold-callout>
       }

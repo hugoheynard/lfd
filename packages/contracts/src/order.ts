@@ -990,6 +990,13 @@ export interface AdminOrderRow {
   /** `null` = commande personnelle, sans entreprise. */
   readonly companyId: string | null;
   /**
+   * La société sous le nom où elle se reconnaît (`companyDisplayName` :
+   * l'enseigne, à défaut la raison sociale), `null` sans entreprise. C'est ce
+   * qui distingue deux sites d'un même principal, qui partagent souvent la
+   * raison sociale.
+   */
+  readonly companyDisplayName: string | null;
+  /**
    * Par quelle porte elle est entrée — cf. {@link OrderOrigin}. Remplace le
    * booléen `fromSubscription` : deux façons de dire la provenance sur la même
    * ligne finissaient par se contredire dès qu'une troisième porte s'ouvrait,
@@ -1005,6 +1012,15 @@ export interface AdminOrderRow {
 export const adminOrdersQuerySchema = z.object({
   /** Restreint à une entreprise. Absent = toutes, entreprises et personnelles. */
   companyId: z.string().trim().min(1).optional(),
+  /**
+   * Avec `companyId` : ajoute les commandes de ses sous-comptes ACTUELS
+   * (`parent_company_id`). Une vue de suivi, pas d'argent : le payeur à date,
+   * c'est le relevé de cycle. Sans `companyId`, sans effet.
+   */
+  withSubAccounts: z
+    .enum(["true", "false"])
+    .transform((value) => value === "true")
+    .optional(),
   /** Restreint à un état d'avancement. */
   status: orderStatusSchema.optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),

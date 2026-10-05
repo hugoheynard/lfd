@@ -1,0 +1,70 @@
+<section class="sub">
+  @switch (fiche.state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des sous-comptes…" />
+    }
+    @case ('ready') {
+      @if (fiche.company(); as c) {
+        <app-sub-accounts-help
+          [open]="c.hierarchy.parent === null && c.hierarchy.subAccounts.length === 0"
+        />
+        @if (c.hierarchy.parent; as parent) {
+          <app-parent-banner
+            [companyId]="c.id"
+            [parent]="parent"
+            [follows]="c.hierarchy.follows"
+            (detached)="fiche.reload()"
+          />
+          <!-- La case qui fait d'un sous-compte un SITE : facturé et prélevé au
+               nom du principal. Elle vit ici, pas dans Informations. -->
+          <fold-card data-billing-follow>
+            <app-follow-parent-toggle
+              aspect="billing"
+              [companyId]="c.id"
+              [parent]="parent"
+              [follows]="c.hierarchy.follows"
+              (changed)="fiche.reload()"
+            />
+          </fold-card>
+          <fold-card data-follow-reminders>
+            <fold-element-title
+              cardHeader
+              variant="title"
+              icon="company"
+              title="Ce que ce compte suit de son principal"
+              subtitle="En lecture : chaque case se règle dans l’onglet qu’elle concerne."
+            />
+            <ul class="reminders">
+              @for (reminder of reminders(c.hierarchy.follows); track reminder.aspect) {
+                <li [attr.data-follow-reminder]="reminder.aspect">
+                  <strong>{{ reminder.label }}</strong>
+                  —
+                  @if (reminder.since; as since) {
+                    suivi depuis le {{ since }}
+                  } @else {
+                    non suivi
+                  }
+                  ·
+                  <a [routerLink]="['/comptes-clients', c.id, reminder.tab]">{{
+                    reminder.tabLabel
+                  }}</a>
+                </li>
+              }
+            </ul>
+          </fold-card>
+        } @else {
+          <app-sub-accounts-card [company]="c" (changed)="fiche.reload()" />
+        }
+      }
+    }
+    @default {
+      <fold-empty-state
+        tone="alert"
+        title="Impossible de charger les sous-comptes"
+        subtitle="La lecture a échoué — la hiérarchie, elle, est intacte."
+      >
+        <button foldButton (click)="fiche.reload()">Réessayer</button>
+      </fold-empty-state>
+    }
+  }
+</section>

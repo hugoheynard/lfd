@@ -16,7 +16,12 @@
  * lecture et l'agrégation. Elles prennent l'instant de la base, donc tombent
  * dans le cycle en cours sans aucune date écrite ici.
  */
-import { instantToLocal, type CycleStatementView, type StatementCyclesView } from "@lfd/contracts";
+import {
+  instantToLocal,
+  type CycleStatementOrderView,
+  type CycleStatementView,
+  type StatementCyclesView,
+} from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -100,6 +105,11 @@ async function statement(companyId: string, query = ""): Promise<CycleStatementV
   );
 }
 
+/** Toutes les commandes du relevé, groupe après groupe. */
+function ordersOf(view: CycleStatementView): readonly CycleStatementOrderView[] {
+  return view.groups.flatMap((group) => group.orders);
+}
+
 /** Une fiche staff d'un rôle donné, sans dérogation. */
 async function staffOfRole(
   role: "support" | "communication",
@@ -154,11 +164,11 @@ describe("le relevé d'un cycle", () => {
 
     const view = await statement(port.companyId);
 
-    expect(view.orders.map((order) => order.orderNumber)).toEqual([kept]);
+    expect(ordersOf(view).map((order) => order.orderNumber)).toEqual([kept]);
     expect(view.provisional).toBe(true);
     expect(view.cycle.inProgress).toBe(true);
     expect(view.scope).toContain("Hors commandes payées par carte");
-    expect(view.orders[0]).toMatchObject({ htCents: 9_500, deliveryFeeCents: 1_500 });
+    expect(ordersOf(view)[0]).toMatchObject({ htCents: 9_500, deliveryFeeCents: 1_500 });
   });
 
   it("porte la TVA d'une commande sans ventilation en « non ventilée », et retombe sur Σ vat_cents", async () => {
@@ -194,14 +204,14 @@ describe("le relevé d'un cycle", () => {
 
     const view = await statement(port.companyId, `?month=${pastMonth}`);
     expect(view.cycle).toMatchObject({ month: pastMonth, inProgress: false });
-    expect(view.orders.map((order) => order.orderNumber)).toEqual([old]);
-    expect((await statement(port.companyId)).orders).toEqual([]);
+    expect(ordersOf(view).map((order) => order.orderNumber)).toEqual([old]);
+    expect(ordersOf(await statement(port.companyId))).toEqual([]);
   });
 
   it("rend un relevé vide, à zéro, pour un cycle sans commande", async () => {
     const port = await client("Boulangerie du Port");
     const view = await statement(port.companyId);
-    expect(view.orders).toEqual([]);
+    expect(ordersOf(view)).toEqual([]);
     expect(view.totals).toMatchObject({ orderCount: 0, vatCents: 0, totalCents: 0 });
   });
 
