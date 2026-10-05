@@ -43,9 +43,8 @@ commande sans mandat effectif n'appartient à aucun lot : elle est
 
 > ⚠️ Si une société a deux mandats actifs, chez deux entités, sa commande
 > est ambiguë. Elle est alors refusée à la constitution, avec le nom de la
-> société. C'est une interdiction, pas un choix au hasard. Aujourd'hui, il
-> n'existe qu'une entité qui encaisse (à vérifier en P1, par une lecture de
-> Hugo).
+> société. C'est une interdiction, pas un choix au hasard. Une seule entité
+> encaisse aujourd'hui (Hugo, 2026-10-05).
 
 **Une ligne de prélèvement porte ses commandes.** Le nouveau port
 `collectableOrders(entity, closesAt)` liste les **commandes**, et non des
@@ -178,14 +177,16 @@ le premier essai.
 
 - **Q1 — Constitution manuelle ou automatique à la clôture ?** _Défaut :
   manuelle, par la compta._
-- **Q2 — Une commande sans mandat** : on garde l'interdiction d'aujourd'hui
-  (tout le fichier bloqué), ou on l'affaiblit en écartant la commande,
-  nommée en tête ? _Défaut proposé : l'écarter. C'est un affaiblissement,
-  à décider en le sachant._
+- **Q2 — Une commande sans mandat.** Hugo n'a pas tranché (2026-10-05).
+  **On garde donc l'interdiction d'aujourd'hui** : une commande sans mandat
+  rend le lot **non déposable**, et la constitution le dit en nommant la
+  société. Un garde-fou ne s'affaiblit pas par défaut. `no_mandate` reste une
+  raison d'exclusion pour l'écran, et le lot ne part pas tant qu'elle
+  existe.
 - **Q3 — Garder l'aperçu du cycle en cours ?** _Défaut : oui._
-- **Q4 — Combien d'entités encaissent aujourd'hui ?** Si c'est une seule, le
-  cas « deux mandats actifs chez deux entités » reste théorique. Il est
-  quand même refusé.
+- **Q4 — Combien d'entités encaissent ?** **Une seule** (Hugo, 2026-10-05).
+  Le cas « deux mandats actifs chez deux entités » reste théorique, et il
+  est refusé quand même.
 
 ## 8. Ce que `vitruve` a changé (2026-10-05)
 
