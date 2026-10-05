@@ -1,6 +1,6 @@
 import type { S3StorageConfig } from "@lfd/storage";
 
-import { clearBucket, clearSeededBuckets } from "../storage.seed.js";
+import { clearBucket, clearPrefixes, clearSeededBuckets } from "../storage.seed.js";
 
 /**
  * Ce que ces cas tiennent n'est pas « le nettoyage nettoie » — il le fait, et un
@@ -54,5 +54,20 @@ describe("la serrure du nettoyage de buckets", () => {
     // rechargement entier parce qu'un bucket facultatif manque serait
     // disproportionné — le compte rendu ne le nomme simplement pas.
     await expect(clearSeededBuckets([null, null])).resolves.toEqual([]);
+  });
+});
+
+describe("la serrure du nettoyage par préfixes", () => {
+  it("refuse R2, même quand il n'y a aucun préfixe à retirer", async () => {
+    // Une liste vide ne doit pas transformer un appel contre R2 en succès.
+    await expect(
+      clearPrefixes(config("https://abc123.r2.cloudflarestorage.com"), []),
+    ).rejects.toThrow(/abc123\.r2\.cloudflarestorage\.com/u);
+  });
+
+  it("refuse R2 avec des préfixes", async () => {
+    await expect(
+      clearPrefixes(config("https://abc123.r2.cloudflarestorage.com"), ["orders/o-1/"]),
+    ).rejects.toThrow(/abc123/u);
   });
 });

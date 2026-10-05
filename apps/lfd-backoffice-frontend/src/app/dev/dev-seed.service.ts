@@ -1,15 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { DevSeedOrdersOnlyReport, DevSeedReport } from '@lfd/contracts';
+import type { DevSeedReport } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
 
 /**
- * **Recharger le jeu de données de développement.**
+ * **Recharger tout le jeu de données de développement.**
  *
- * Deux gestes : tout recharger, ou le seul scénario de commandes (celui de
- * `pnpm seed:orders`, qui repose lui-même ses clients — 2026-09-30).
+ * Le scénario de commandes seul ne passe plus par ici depuis le 2026-10-05 :
+ * il se joue étape par étape (`DevScenarioService`).
  *
  * ⚠️ Ce service n'existe que dans un build de développement — il n'est atteint
  * que par la page du même dossier, elle-même absente du bundle de production
@@ -22,12 +22,6 @@ export class DevSeedService {
   reload(): Promise<DevSeedReport> {
     return firstValueFrom(
       this.http.post<DevSeedReport>(`${B2B_API_BASE}/admin/dev/seed/reload`, {}),
-    );
-  }
-
-  reloadOrders(): Promise<DevSeedOrdersOnlyReport> {
-    return firstValueFrom(
-      this.http.post<DevSeedOrdersOnlyReport>(`${B2B_API_BASE}/admin/dev/seed/reload/orders`, {}),
     );
   }
 }

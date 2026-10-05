@@ -39,7 +39,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export const SEED_STAFF_SUB = "seed|dev";
 
 /** Les initiales du semis sur les coches — deux lettres, comme au crayon. */
-const SEED_INITIALS = "SD";
+export const SEED_INITIALS = "SD";
 
 /** Le minimum dont le semis de commandes a besoin : la base, le bus, et de quoi dater. */
 export interface SeedContext {
@@ -128,6 +128,8 @@ export interface SeedOrder {
    * client au compte (`sub-account-orders.seed.ts`).
    */
   readonly settlement?: "card" | "account";
+  /** La clé d'idempotence de la passation ; absente = tirée au hasard. */
+  readonly idempotencyKey?: string;
 }
 
 /** Une commande posée : son identifiant (la clé de la livraison) et son numéro (celle du fournil). */
@@ -277,8 +279,10 @@ export async function place(
   const payload: PlaceOrderPayload = {
     // Chaque commande du semis est une tentative DISTINCTE : une clé par
     // commande, sinon la seconde serait rendue comme un rejeu de la première et
-    // le semis poserait une seule ligne au lieu de son historique.
-    idempotencyKey: randomUUID(),
+    // le semis poserait une seule ligne au lieu de son historique. Une clé
+    // DÉRIVÉE quand l'appelant en donne une : c'est la marque par laquelle les
+    // étapes du scénario retrouvent leurs commandes (`scenario-keys.seed.ts`).
+    idempotencyKey: order.idempotencyKey ?? randomUUID(),
     // Le semis ne choisit pas son règlement : il laisse le serveur décider comme
     // il l'a toujours fait — au compte si les termes sont accordés, carte sinon.
     settlement: order.settlement ?? null,

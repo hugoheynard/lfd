@@ -28,15 +28,14 @@ async function main(): Promise<void> {
       settle: () => harness.settle(),
     });
     console.log(
-      `· ${report.removed} commande(s) effacée(s) — reposées.\n` +
-        `· fournil vidé : ${report.production.days} plan(s), ` +
-        `${report.production.handovers} attestation(s) de remise, ` +
-        `${report.production.facts} fait(s) d'outbox de ces journées.\n` +
+      `· ${report.purge.orders} commande(s) effacée(s) — reposées.\n` +
+        `· remise à l'état de base : ${report.purge.removed
+          .map((entry) => `${entry.category} ${String(entry.rows)}`)
+          .join(", ")} ligne(s).\n` +
         `✔ ${report.placed} commande(s) posées, dont 1 pour hier (${report.yesterday}), ` +
         `${report.counterToday} au comptoir aujourd'hui (${report.today}, Le Labo + Le Village), ` +
         `${report.tomorrowCount} pour demain (${report.tomorrow}, plan à arrêter ce soir) ` +
         `et 2 en attente à J+2 (${report.peakDay}, livraison + retrait) — le PIC du prévisionnel.\n` +
-        `· livraison vidée : ${report.rounds.rounds} tournée(s), ${report.rounds.bins} bac(s).\n` +
         `✔ Journée de livraison ${report.delivery.day} : ${report.delivery.deliveriesToday} livraison(s) ` +
         `(${report.delivery.notReady} pas encore prête(s)), ${report.delivery.vehicles} véhicule(s), ` +
         `${report.delivery.rounds} tournée(s), ${report.delivery.stops} arrêt(s), ` +

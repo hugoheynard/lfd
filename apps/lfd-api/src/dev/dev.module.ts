@@ -1,11 +1,13 @@
 import { Module } from "@nestjs/common";
 
+import { DevScenarioService } from "./dev-scenario.service.js";
 import { DevSeedService } from "./dev-seed.service.js";
+import { DevScenarioController } from "./http/dev-scenario.controller.js";
 import { DevSeedController } from "./http/dev-seed.controller.js";
 
 /**
- * **L'outillage de développement** — aujourd'hui le rechargement du jeu de
- * données, et rien d'autre.
+ * **L'outillage de développement** — le rechargement du jeu de données, et
+ * depuis le 2026-10-05 le scénario du jour joué étape par étape.
  *
  * Il est monté **en toutes circonstances**, y compris en production, et c'est un
  * choix. Un module conditionnel se décide à l'instanciation du décorateur, donc
@@ -20,7 +22,7 @@ import { DevSeedController } from "./http/dev-seed.controller.js";
  * et le refus sur `NODE_ENV=production`.
  */
 @Module({
-  controllers: [DevSeedController],
-  providers: [DevSeedService],
+  controllers: [DevSeedController, DevScenarioController],
+  providers: [DevSeedService, DevScenarioService],
 })
 export class DevModule {}

@@ -80,6 +80,35 @@ function localEndpointOf(config: S3StorageConfig): string {
  * par rencontrer la page suivante.
  */
 export async function clearBucket(config: S3StorageConfig): Promise<StorageResetReport> {
+  return clearMatching(config, () => true);
+}
+
+/**
+ * **Ne retire que les objets rangés sous ces préfixes** (2026-10-05) — la
+ * remise à l'état de base du scénario n'emporte que les pièces de SES
+ * commandes et de SES journées (`documentation/order/plan-jeu-de-donnees-par-
+ * etapes.md` §2 bis), là où le rechargement complet vide le bucket.
+ *
+ * Le bucket est lu une fois et filtré ici, plutôt qu'un appel par préfixe :
+ * une centaine de commandes ferait une centaine de listes.
+ */
+export async function clearPrefixes(
+  config: S3StorageConfig,
+  prefixes: readonly string[],
+): Promise<StorageResetReport> {
+  if (prefixes.length === 0) {
+    // La serrure tient même quand il n'y a rien à faire : un appel contre R2
+    // doit refuser, pas réussir parce que la liste était vide.
+    localEndpointOf(config);
+    return { bucket: config.bucket, objects: 0 };
+  }
+  return clearMatching(config, (key) => prefixes.some((prefix) => key.startsWith(prefix)));
+}
+
+async function clearMatching(
+  config: S3StorageConfig,
+  matches: (key: string) => boolean,
+): Promise<StorageResetReport> {
   const endpoint = localEndpointOf(config);
   const client = new S3Client({
     // `auto` par défaut : `exactOptionalPropertyTypes` refuse un `undefined`
@@ -99,9 +128,9 @@ export async function clearBucket(config: S3StorageConfig): Promise<StorageReset
         ...(token === undefined ? {} : { ContinuationToken: token }),
       }),
     );
-    const keys: ObjectIdentifier[] = (page.Contents ?? [])
-      .filter((object) => object.Key !== undefined)
-      .map((object) => ({ Key: object.Key }));
+    const keys: ObjectIdentifier[] = (page.Contents ?? []).flatMap((object) =>
+      object.Key !== undefined && matches(object.Key) ? [{ Key: object.Key }] : [],
+    );
     if (keys.length > 0) {
       await client.send(
         new DeleteObjectsCommand({ Bucket: config.bucket, Delete: { Objects: keys } }),

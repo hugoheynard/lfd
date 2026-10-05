@@ -5,38 +5,175 @@
     recalées sur aujourd’hui.
   </p>
 
-  <fold-page-section title="Le scénario de commandes seul">
-    <p>
-      Rejoue les commandes habituelles — l’historique, hier, le comptoir et la journée de livraison
-      d’aujourd’hui, demain, le pic de J+2 — et repart de zéro sur le fournil et les tournées. Les
-      clients du scénario sont reposés à l’identique&nbsp;; les autres sociétés, la station et les
-      décisions tarifaires ne bougent pas.
-    </p>
-    <p>
-      La tournée chargée vous est affectée, prête à partir&nbsp;: ouvrez «&nbsp;Ma tournée&nbsp;»
-      pour la commencer. Il faut pour ça le droit «&nbsp;Conduire sa tournée&nbsp;»&nbsp;; sans lui,
-      elle reste sans livreur, et le compte rendu dit pourquoi.
-    </p>
-    <button
-      foldButton
-      emphasis="solid"
-      intent="primary"
-      size="lg"
-      type="button"
-      [disabled]="running() !== null"
-      (click)="reloadOrders()"
-    >
-      @if (running() === 'orders') {
-        <fold-spinner size="sm" />
-        Rechargement…
-      } @else {
-        Recharger les commandes
+  @if (view(); as scenario) {
+    <fold-page-section title="La journée de démo">
+      <div class="state">
+        <p class="state-sentence">
+          La journée de démo du {{ day() }}
+          @if (reached() === null) {
+            n’est pas posée. Remettez-la à l’état de base, en bas de page, pour la reposer.
+          } @else if (reached() === last) {
+            est à l’étape <strong>{{ last }} sur {{ last }}</strong
+            >. {{ meaning() }}
+          } @else {
+            est à l’étape <strong>{{ reached() }} sur {{ last }}</strong
+            >&nbsp;: {{ meaning() }}.
+          }
+        </p>
+        <p class="state-size">Base locale&nbsp;: {{ size() }}</p>
+      </div>
+
+      @if (playingText(); as playingStep) {
+        <fold-callout variant="info">
+          <div class="banner">
+            <p class="banner-line">
+              <fold-spinner size="sm" />
+              Étape {{ playingStep.step }} sur {{ last }} — {{ playingStep.loading }}
+            </p>
+            <fold-meter
+              label="Progression de la journée de démo"
+              [value]="playingStep.step"
+              [max]="last"
+            />
+          </div>
+        </fold-callout>
       }
-    </button>
-  </fold-page-section>
+
+      <fold-card>
+        <ol class="steps">
+          @for (row of rows(); track row.text.step) {
+            <li class="step">
+              <div class="step-status">
+                <fold-badge
+                  [content]="badges[row.status].label"
+                  [variant]="badges[row.status].variant"
+                />
+                @if (row.status === 'running') {
+                  <fold-spinner size="sm" />
+                }
+              </div>
+              <div class="step-body">
+                <p class="step-title">{{ row.text.step }}. {{ row.text.title }}</p>
+                <p>{{ row.text.explanation }}</p>
+                @if (row.status === 'done') {
+                  @if (row.summary) {
+                    <p class="step-summary">{{ row.summary }}</p>
+                  }
+                  <div class="step-links">
+                    @for (link of row.text.links; track link.route) {
+                      <a foldButton size="sm" emphasis="outline" [routerLink]="link.route">
+                        {{ link.label }}
+                      </a>
+                    }
+                  </div>
+                }
+                @if (row.failure; as message) {
+                  <fold-callout variant="alert">
+                    <p><strong>Cette étape n’a pas abouti</strong></p>
+                    <p>{{ message }}</p>
+                  </fold-callout>
+                }
+              </div>
+              <div class="step-action">
+                @if (row.status === 'upcoming' && reached() !== null) {
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="outline"
+                    type="button"
+                    [disabled]="busy()"
+                    (click)="loadUntil(row.text.step)"
+                  >
+                    Charger jusqu’ici
+                  </button>
+                }
+              </div>
+            </li>
+          }
+        </ol>
+      </fold-card>
+
+      @if (nextLabel(); as label) {
+        <div>
+          <button
+            foldButton
+            emphasis="solid"
+            intent="primary"
+            size="lg"
+            type="button"
+            [disabled]="busy()"
+            (click)="playNext()"
+          >
+            {{ label }}
+          </button>
+        </div>
+      }
+    </fold-page-section>
+
+    <fold-page-section title="Repartir de zéro">
+      <fold-card>
+        <div class="reset">
+          <p>Base locale&nbsp;: {{ size() }}</p>
+          @if (confirmingReset()) {
+            <fold-callout variant="warning">
+              <p>
+                Remettre la journée de démo à l’état de base&nbsp;? Les commandes, la production, le
+                colisage et les tournées du scénario sont <strong>supprimés</strong> puis les
+                commandes sont repassées. Les autres clients, le catalogue, les tarifs et l’équipe
+                ne bougent pas.
+              </p>
+            </fold-callout>
+          }
+          <div>
+            <fold-inline-confirm
+              intent="danger"
+              size="md"
+              keepOpenOnConfirm
+              [loading]="playing() === 0"
+              [labels]="{ confirm: 'Remettre à l’état de base', cancel: 'Annuler' }"
+              [(open)]="confirmingReset"
+              (confirmed)="resetScenario()"
+            >
+              <button
+                foldButton
+                emphasis="outline"
+                intent="danger"
+                type="button"
+                [disabled]="busy()"
+              >
+                Remettre à l’état de base
+              </button>
+            </fold-inline-confirm>
+          </div>
+          @if (resetError(); as message) {
+            <fold-callout variant="alert">
+              <p><strong>La remise à l’état de base n’a pas abouti</strong></p>
+              <p>{{ message }}</p>
+            </fold-callout>
+          }
+          @if (resetReport(); as done) {
+            <p>Ce qui a été supprimé&nbsp;:</p>
+            <fold-field-list>
+              @for (line of purge(); track line.label) {
+                <fold-field [label]="line.label">{{ line.count }}</fold-field>
+              }
+              <fold-field label="Commandes repassées">{{ done.placed }}</fold-field>
+            </fold-field-list>
+          }
+        </div>
+      </fold-card>
+    </fold-page-section>
+  } @else if (loadError() !== null) {
+    <fold-empty-state tone="alert" title="La journée de démo n’a pas pu être lue">
+      <button foldButton emphasis="outline" type="button" (click)="retryLoad()">Réessayer</button>
+    </fold-empty-state>
+  } @else {
+    <fold-loading message="Lecture de la journée de démo…" />
+  }
 
   <fold-page-section title="Tout recharger">
-    <fold-callout variant="alert" title="Ce geste supprime">
+    <fold-callout variant="alert">
+      <p><strong>Ce geste supprime</strong></p>
       <p>
         Toute société et toute personne qui ne sont pas le client de référence, avec leurs commandes
         et leurs adresses. Les points de retrait et les zones que le semis ne déclare pas partent
@@ -61,10 +198,10 @@
       size="lg"
       type="button"
       emphasis="outline"
-      [disabled]="running() !== null"
+      [disabled]="busy()"
       (click)="reload()"
     >
-      @if (running() === 'all') {
+      @if (reloading()) {
         <fold-spinner size="sm" />
         Rechargement…
       } @else {
@@ -80,15 +217,13 @@
              entrée `[value]` : un attribut inconnu ne lève rien à la
              compilation d'un template, mais l'AOT, lui, le refuse. -->
         <fold-field-list>
-          @if ('reset' in done) {
-            <fold-field
-              label="Supprimé"
-              [empty]="removed() === null"
-              placeholder="Rien — la base était déjà propre."
-            >
-              {{ removed() }}
-            </fold-field>
-          }
+          <fold-field
+            label="Supprimé"
+            [empty]="removed() === null"
+            placeholder="Rien — la base était déjà propre."
+          >
+            {{ removed() }}
+          </fold-field>
           <fold-field label="Commandes reposées">{{ done.orders.placed }}</fold-field>
           <!-- Les deux journées qui font l'invariant : elles doivent TOUJOURS
                exister, quel que soit le jour où l'on sème. -->

@@ -2,9 +2,10 @@ import type {
   DevSeedDeliveryReport,
   DevSeedDriverReport,
   DevSeedOrdersOnlyReport,
+  DevSeedOrdersReport,
   DevSeedReport,
 } from "@lfd/contracts";
-import { Injectable, ServiceUnavailableException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { AppConfig } from "../platform/config/app-config.js";
@@ -14,10 +15,13 @@ import { Clock } from "../platform/time/clock.js";
 import type { SeedDriverAssignment } from "./seeding/delivery-driver.seed.js";
 import { seedAccounting } from "./seeding/accounting.seed.js";
 import { seedClient, seedImpersonatedAccess, seedPendingCompany } from "./seeding/client.seed.js";
+import { resetDeliveryRounds } from "./seeding/delivery-rounds.seed.js";
 import { type OrdersReport, seedOrders } from "./seeding/orders.seed.js";
+import { resetProduction } from "./seeding/production.seed.js";
 import { resetToSeed } from "./seeding/reset.seed.js";
 import { seedLegalDocuments } from "./seeding/legal-documents.seed.js";
 import { seedStation } from "./seeding/station.seed.js";
+import { refuseUnlessLocalDevelopment } from "./local-development.lock.js";
 import { clearSeededBuckets } from "./seeding/storage.seed.js";
 
 /**
@@ -69,7 +73,7 @@ export class DevSeedService {
    * points que les deux étapes précédentes posent.
    */
   async reload(requester: string): Promise<DevSeedReport> {
-    this.refuseUnlessLocalDevelopment();
+    refuseUnlessLocalDevelopment(this.config);
     // UN seul instant pour tout le semis, pris au port. Chaque module le lisait
     // au mur, au fond de ses propres fonctions : le jeu de données n'était donc
     // ni gelable ni rejouable, et deux modules d'un même rechargement pouvaient
@@ -101,6 +105,12 @@ export class DevSeedService {
     // ne montrait donc jamais ce que le semis venait de poser.
     await seedImpersonatedAccess(context, [client.companyId, pendingCompanyId]);
     const reset = await resetToSeed(this.prisma);
+    // « Tout recharger » vide TOUT le fournil et toutes les tournées, comme
+    // avant le 2026-10-05 : la coupe vient d'emporter les commandes de sociétés
+    // qui ne sont pas au scénario, et leurs journées seraient orphelines. La
+    // remise du scénario, elle, ne vise plus que ses journées.
+    await resetProduction(this.prisma);
+    await resetDeliveryRounds(this.prisma);
     // Les buckets APRÈS la coupe et AVANT le semis : les commandes qui
     // possédaient ces documents n'existent plus, et celles qu'on va poser n'en
     // ont pas encore. Vider avant la coupe laisserait une fenêtre où une
@@ -114,7 +124,7 @@ export class DevSeedService {
     // `pnpm seed:orders`, pour que le bouton et la ligne de commande posent le
     // même jeu de données.
     const orders = await seedOrders(context);
-    return { reset, orders, storage, delivery: deliveryOf(orders) };
+    return { reset, orders: ordersOf(orders), storage, delivery: deliveryOf(orders) };
   }
 
   /**
@@ -130,7 +140,7 @@ export class DevSeedService {
    * vierge, `seedOrders` refuse faute de client, et le message le dit.
    */
   async reloadOrders(requester: string): Promise<DevSeedOrdersOnlyReport> {
-    this.refuseUnlessLocalDevelopment();
+    refuseUnlessLocalDevelopment(this.config);
     const context = {
       prisma: this.prisma,
       commands: this.commands,
@@ -138,50 +148,32 @@ export class DevSeedService {
       requester,
       settle: () => this.work.whenIdle(),
     };
-    // Les bons tirés appartiennent aux commandes qu'on va supprimer : mêmes
-    // buckets, même raison que dans `reload`.
-    const storage = await clearSeededBuckets([
-      this.config.r2Storage("customers"),
-      this.config.r2Storage("production"),
-    ]);
-    const orders = await seedOrders(context);
-    return { orders, storage, delivery: deliveryOf(orders) };
-  }
-
-  /**
-   * La serrure, à l'usage plutôt qu'au démarrage.
-   *
-   * Au démarrage, elle empêcherait l'API de booter sur une machine mal
-   * configurée — un refus disproportionné pour un outil de confort. Ici elle ne
-   * refuse que le geste, et elle dit pourquoi.
-   */
-  private refuseUnlessLocalDevelopment(): void {
-    if (this.config.isProduction()) {
-      throw new ServiceUnavailableException(
-        "Le rechargement du jeu de données n'existe pas en production.",
-      );
-    }
-    const url = this.config.databaseUrl();
-    if (!url.startsWith("postgresql://") && !url.startsWith("postgres://")) {
-      throw new ServiceUnavailableException(
-        "Base non locale : le rechargement n'écrit que vers un Postgres direct.",
-      );
-    }
-    const host = new URL(url).hostname;
-    if (!LOCAL_HOSTS.has(host)) {
-      throw new ServiceUnavailableException(
-        `Base non locale (« ${host} ») : le rechargement supprime des sociétés et des commandes.`,
-      );
-    }
+    // Depuis le 2026-10-05, la remise à l'état de base du scénario suivie de
+    // ses étapes (`seedOrders`) : les bons tirés ne partent plus avec le
+    // bucket entier, seulement ceux des commandes et journées du scénario.
+    const orders = await seedOrders(context, {
+      customers: this.config.r2Storage("customers"),
+      production: this.config.r2Storage("production"),
+    });
+    return {
+      orders: ordersOf(orders),
+      storage: orders.purge.storage,
+      delivery: deliveryOf(orders),
+    };
   }
 }
 
-/**
- * Les hôtes acceptés comme « ma machine ». Une **liste blanche**, et non une
- * négation de l'hôte de production : ce qui n'est pas explicitement local doit
- * être refusé, y compris ce qu'on n'a pas pensé à interdire.
- */
-const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+/** Les commandes posées, dans la forme que l'écran lit. */
+function ordersOf(report: OrdersReport): DevSeedOrdersReport {
+  return {
+    removed: report.purge.orders,
+    placed: report.placed,
+    yesterday: report.yesterday,
+    today: report.today,
+    counterToday: report.counterToday,
+    peakDay: report.peakDay,
+  };
+}
 
 /** La journée de livraison, dans la forme que l'écran lit. */
 function deliveryOf({ delivery }: OrdersReport): DevSeedDeliveryReport {

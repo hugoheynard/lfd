@@ -87,7 +87,6 @@ const DEBT = new Map([
     "apps/lfd-backoffice-frontend/src/app/commandes/nouvelle-commande/panier-commande/panier-commande.html",
     1,
   ],
-  ["apps/lfd-backoffice-frontend/src/app/dev/seed-page/seed-page.html", 1],
   ["apps/lfd-backoffice-frontend/src/app/fiche-client/commandes/commandes-page.html", 1],
   ["apps/lfd-backoffice-frontend/src/app/fiche-client/tarifs/tarifs-page.html", 2],
   ["apps/lfc-ecommerce-frontend/src/app/legacy/commandes/reglement-page/reglement-page.html", 1],

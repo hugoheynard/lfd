@@ -123,3 +123,65 @@ export interface DevSeedReport {
  * seul (2026-09-30). Pas de `reset` — rien n'est coupé hors des commandes.
  */
 export type DevSeedOrdersOnlyReport = Omit<DevSeedReport, "reset">;
+
+/**
+ * **Les étapes du scénario du jour** (2026-10-05,
+ * `documentation/order/plan-jeu-de-donnees-par-etapes.md` §1) : 0 commandes
+ * passées, 1 plan de production clôturé, 2 tournées composées, 3 production
+ * complète, 4 colisage complet, 5 tournées chargées prêtes à partir.
+ *
+ * Les tournées avant le colisage : c'est l'ordre que le code impose (un
+ * demi-bac ne se partage qu'entre deux arrêts consécutifs d'une tournée).
+ */
+export type DevScenarioStep = 0 | 1 | 2 | 3 | 4 | 5;
+
+/** Une étape, cochée ou non, avec ce que la base en dit. */
+export interface DevScenarioStepView {
+  readonly step: DevScenarioStep;
+  /** Atteinte : cette étape ET toutes celles d'avant sont vraies en base. */
+  readonly reached: boolean;
+  /** Ce que la base porte pour elle, compté par le serveur (« 3 tournées, 51 bacs »). */
+  readonly summary: string;
+}
+
+/**
+ * La réponse de `GET /admin/dev/scenario`.
+ *
+ * `reached` est **déduit** de la base à chaque lecture, jamais mémorisé : une
+ * base retouchée à la main montre l'étape réellement atteinte. `null` = le
+ * scénario du jour n'est pas posé (ou plus entier) — la remise à l'état de base
+ * le repose.
+ */
+export interface DevScenarioView {
+  /** `AAAA-MM-JJ` — la journée jouée. */
+  readonly day: string;
+  readonly reached: DevScenarioStep | null;
+  readonly steps: readonly DevScenarioStepView[];
+  /** `pg_database_size`, en octets : la dérive se voit avant de bloquer (§2 bis). */
+  readonly databaseBytes: number;
+}
+
+/** Les catégories que la remise à l'état de base compte (§2 bis). */
+export type DevScenarioPurgeCategory =
+  "orders" | "production" | "packing" | "delivery" | "outbox" | "journals";
+
+/** Les lignes supprimées d'une catégorie. */
+export interface DevScenarioPurgeView {
+  readonly category: DevScenarioPurgeCategory;
+  readonly rows: number;
+}
+
+/** La réponse de `POST /admin/dev/scenario/reset` : ce qui est parti, ce qui est reposé. */
+export interface DevScenarioResetReport {
+  readonly day: string;
+  readonly removed: readonly DevScenarioPurgeView[];
+  /** Les objets retirés, bucket par bucket — seulement ceux du scénario. */
+  readonly storage: readonly DevSeedStorageReport[];
+  /** Les commandes reposées, tous jours confondus. */
+  readonly placed: number;
+}
+
+/** La réponse de `POST /admin/dev/scenario/next` : l'étape jouée. L'écran relit l'état. */
+export interface DevScenarioNextReport {
+  readonly played: DevScenarioStep;
+}

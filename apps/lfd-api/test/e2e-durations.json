@@ -94,6 +94,8 @@
   "test/delivery-stop-decision.e2e-spec.ts": 7460,
   "test/delivery-vehicle-load.e2e-spec.ts": 7879,
   "test/delivery-vehicle-wheel-arches.e2e-spec.ts": 4787,
+  "test/dev-scenario-stability.e2e-spec.ts": 84909,
+  "test/dev-scenario.e2e-spec.ts": 59240,
   "test/dev-seed-driver.e2e-spec.ts": 14230,
   "test/dev-seed-packing.e2e-spec.ts": 8028,
   "test/devis-comptable.e2e-spec.ts": 4320,
