@@ -218,3 +218,34 @@ export async function loadRound(
   }
   return { stops: stops.length, loadedBins: ordered.length };
 }
+
+/**
+ * **Répartit les arrêts sur la flotte**, sans rejouer « Proposer » : le
+ * premier véhicule garde la tournée composée à la main (`first`, dans son
+ * ordre), le reste est coupé en tranches CONTIGUËS et équilibrées sur les
+ * autres — contiguës parce que la liste suit les vallées, et qu'une tranche
+ * reste ainsi une vallée plutôt qu'un zigzag.
+ *
+ * Rend une liste par véhicule, vides comprises : un véhicule sans arrêt
+ * n'ouvre pas de tournée (c'est à l'appelant de l'ignorer).
+ */
+export function spreadOverVehicles<T>(
+  first: readonly T[],
+  rest: readonly T[],
+  vehicles: number,
+): readonly (readonly T[])[] {
+  if (vehicles < 1) return [];
+  const others = vehicles - 1;
+  if (others === 0) return [[...first, ...rest]];
+  // Les premières tranches prennent le reste de la division : 3 sur 2 → 2 + 1.
+  const base = Math.floor(rest.length / others);
+  const extra = rest.length % others;
+  const chunks: (readonly T[])[] = [];
+  let start = 0;
+  for (let slot = 0; slot < others; slot += 1) {
+    const size = base + (slot < extra ? 1 : 0);
+    chunks.push(rest.slice(start, start + size));
+    start += size;
+  }
+  return [first, ...chunks];
+}

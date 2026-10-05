@@ -49,7 +49,7 @@ export interface ProductionTables {
   readonly productionReturnRequest: Deletable;
   readonly productionHandoff: Deletable;
   readonly productionBatch: Deletable;
-  readonly productionDay: Deletable;
+  readonly productionDay: DayTable;
   readonly orderHandover: Deletable;
   readonly packingLine: Deletable;
   readonly packingContainerLine: Deletable;
@@ -58,11 +58,47 @@ export interface ProductionTables {
   readonly packingStock: Deletable;
   readonly packingReceipt: Deletable;
   readonly packingReturn: Deletable;
+  readonly outboxMessage: OutboxPurge<SeededFactsFilter>;
+  readonly outboxDelivery: OutboxPurge<{ readonly message: SeededFactsFilter }>;
 }
+
+/** Une table dont on n'emporte qu'une partie, désignée par un filtre. */
+interface OutboxPurge<Where> {
+  deleteMany(args: { readonly where: Where }): Promise<{ readonly count: number }>;
+}
+
+/** Le filtre des faits semés : par type, puis par journée de la charge. */
+interface SeededFactsFilter {
+  // Tableaux mutables : c'est la forme que le client Prisma accepte.
+  readonly type: { readonly in: string[] };
+  readonly OR: { readonly payload: { readonly path: string[]; readonly equals: string } }[];
+}
+
+/**
+ * Les faits du fournil et du colisage qui portent `serviceDay` dans leur
+ * charge, et dont la clé est DÉTERMINISTE pour une journée semée (vérifié le
+ * 2026-10-05 dans `production/channels/` : `…handed_to_packing:mark-<jour>-…`,
+ * `…day_closed:<jour>:<instant>`, `…packing_list_drawn:<jour>:<commande>`).
+ * Valeurs littérales : `dev/` ne lit pas l'intérieur de ces blocs pour si peu.
+ */
+export const SEEDED_DAY_FACT_TYPES: readonly string[] = [
+  "production.day_closed",
+  "production.handed_to_packing",
+  "production.packing_list_drawn",
+  "production.return_requested",
+  "packing.returned",
+];
 
 /** Une table qu'on vide d'un coup. */
 interface Deletable {
   deleteMany(): Promise<{ readonly count: number }>;
+}
+
+/** Une table où l'on relit les journées avant de les effacer. */
+interface DayTable extends Deletable {
+  findMany(args: {
+    readonly select: { readonly serviceDay: true };
+  }): Promise<readonly { readonly serviceDay: string }[]>;
 }
 
 /** Ce que la coupe a emporté — de quoi le dire à qui l'a demandée. */
@@ -71,6 +107,8 @@ export interface ProductionResetReport {
   readonly days: number;
   /** Les attestations de remise, qui ne dépendent d'aucune journée. */
   readonly handovers: number;
+  /** Les faits d'outbox des journées effacées (cf. `purgeSeededDayFacts`). */
+  readonly facts: number;
 }
 
 export async function resetProduction(prisma: ProductionTables): Promise<ProductionResetReport> {
@@ -83,6 +121,11 @@ export async function resetProduction(prisma: ProductionTables): Promise<Product
   // saisie (lecteur-de-migrations, 2026-09-28).
   // Les remises au colisage et les demandes de retour (colisage, K1–K2)
   // tiennent la journée en `Restrict`, comme les fournées : elles partent avant.
+  const seededDays = await prisma.productionDay.findMany({ select: { serviceDay: true } });
+  const facts = await purgeSeededDayFacts(
+    prisma,
+    seededDays.map((day) => day.serviceDay),
+  );
   await prisma.productionReturnRequest.deleteMany();
   await prisma.productionHandoff.deleteMany();
   await prisma.productionBatch.deleteMany();
@@ -104,5 +147,31 @@ export async function resetProduction(prisma: ProductionTables): Promise<Product
   // table : une commande passée après la clôture reste remettable sans être au
   // plan. Elle se supprime donc à part.
   const handovers = await prisma.orderHandover.deleteMany();
-  return { days: days.count, handovers: handovers.count };
+  return { days: days.count, handovers: handovers.count, facts };
+}
+
+/**
+ * 🔴 **Rend le semis rejouable dans la même journée** (2026-10-05).
+ *
+ * Effacer les journées sans leurs faits laissait dans `platform.outbox` les
+ * faits du premier passage. Leur clé est déterministe et UNIQUE : au second
+ * passage, la remise au colisage (`production.handed_to_packing:mark-<jour>-…`)
+ * était absorbée par `ON CONFLICT DO NOTHING`, le colisage ne la recevait
+ * jamais, et le semis échouait sur « Il manque 35 Croissant sortis du four ».
+ *
+ * Seulement les faits de CES journées et de CES types : le reste du journal
+ * n'est pas à nous. Les livraisons d'abord (leur clé tient le message).
+ */
+async function purgeSeededDayFacts(
+  prisma: ProductionTables,
+  serviceDays: readonly string[],
+): Promise<number> {
+  if (serviceDays.length === 0) return 0;
+  const where: SeededFactsFilter = {
+    type: { in: [...SEEDED_DAY_FACT_TYPES] },
+    OR: serviceDays.map((day) => ({ payload: { path: ["serviceDay"], equals: day } })),
+  };
+  await prisma.outboxDelivery.deleteMany({ where: { message: where } });
+  const removed = await prisma.outboxMessage.deleteMany({ where });
+  return removed.count;
 }

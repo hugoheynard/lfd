@@ -108,4 +108,22 @@ describe("le rechargement de dev joue la journée du jour au colisage (K2)", () 
     },
     FULL_RELOAD_TIMEOUT_MS,
   );
+
+  /**
+   * Régression (2026-10-05) : le second rechargement du même jour échouait sur
+   * « Il manque 35 Croissant sortis du four ». Les faits du premier passage
+   * restaient dans l'outbox, et leur clé unique absorbait la remise au colisage.
+   */
+  it(
+    "se rejoue le même jour sans manquer la remise au colisage",
+    async () => {
+      await admin(ctx).post(RELOAD).expect(200);
+      await ctx.drain();
+      const report = jsonBody<DevSeedReport>(await admin(ctx).post(RELOAD).expect(200));
+      await ctx.drain();
+
+      expect(report.delivery.rounds).toBeGreaterThan(0);
+    },
+    FULL_RELOAD_TIMEOUT_MS * 2,
+  );
 });

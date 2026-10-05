@@ -15,6 +15,7 @@ import {
   halfBinOf,
   loadRound,
   type RoundStop,
+  spreadOverVehicles,
 } from "./delivery-rounds.seed.js";
 import {
   assignSeedDriver,
@@ -55,8 +56,11 @@ import {
  *   créneau) : « avant 11:00 ». Elle était passée SANS fenêtre jusqu'au
  *   2026-10-03 ; une livraison sans heure est refusée depuis (plan composition
  *   automatique, CA1b) ;
- * - **une tournée composée et chargée** pour Camionnette 1 — Val d'Isère —, pas
- *   partie ; **tout le reste non réparti**, pour qu'on presse « Proposer ».
+ * - **toutes les livraisons colisées en tournées CHARGÉES, pas parties**
+ *   (Hugo, 2026-10-05) : Camionnette 1 tient Val d'Isère dans l'ordre de la
+ *   vallée, les autres prêtes sont réparties en tranches contiguës sur les
+ *   autres véhicules (`spreadOverVehicles`, pas l'algorithme de « Proposer ») ;
+ *   seules les pas encore prêtes — sans bac — restent hors tournée.
  */
 
 /** Une livraison du jour, visée par l'enseigne du client. */
@@ -81,12 +85,6 @@ interface DeliveryDayEntry {
   readonly bins?: readonly DayBins[];
   /** Prend l'autre moitié du demi-bac de l'arrêt précédent (v2-4) : les sacs de sa moitié. */
   readonly sharesPreviousHalf?: { readonly innerBags: number };
-  /**
-   * Ses bacs sont déjà chargés. Absent : à charger. Seuls les derniers arrêts
-   * le sont — chargés les premiers —, pour que « Charger » s'ouvre en cours
-   * de route, sur un plancher de trois rangées.
-   */
-  readonly loaded?: boolean;
   readonly lines: readonly SeedLine[];
 }
 
@@ -154,15 +152,13 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     window: null,
     ready: true,
     stop: 5,
-    // Le dernier arrêt, chargé le premier : déjà dans la camionnette.
     bins: [{ type: BIN_M, whole: 8, half: false, innerBags: 2 }],
-    loaded: true,
     lines: [
       { sku: "VIE-009", quantity: 20 },
       { sku: "VIE-001", quantity: 18 },
     ],
   },
-  // ── Bourg-Saint-Maurice, les Arcs, Séez — non répartis ────────────────────
+  // ── Bourg-Saint-Maurice, les Arcs, Séez — répartis sur les autres véhicules ─
   {
     enseigne: "Hôtel des Pins",
     window: null,
@@ -246,7 +242,7 @@ const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
       { sku: "VIE-005", quantity: 8 },
     ],
   },
-  // ── La Rosière, Montvalezan — non répartis ────────────────────────────────
+  // ── La Rosière, Montvalezan — répartis sur les autres véhicules ───────────
   {
     enseigne: "Gîte du Villaret",
     window: null,
@@ -287,7 +283,7 @@ const COUNTER_DELIVERY_STOP = 4;
 /** Le point de départ des tournées — celui que la station sème. */
 const LABO = "Le Labo";
 
-/** Le véhicule de la tournée composée. */
+/** Le véhicule de la tournée de Val d'Isère, composée dans l'ordre de la vallée. */
 const ROUND_VEHICLE = "Camionnette 1";
 
 /** Colisage à 5 h comme le comptoir ; chargement à 5 h 45, avant le départ. */
@@ -310,14 +306,17 @@ export interface DeliveryDayReport {
   readonly deliveriesToday: number;
   readonly notReady: number;
   readonly vehicles: number;
+  /** Les tournées composées et chargées — une par véhicule qui a des arrêts. */
   readonly rounds: number;
-  readonly stopsInRound: number;
+  /** Les arrêts, toutes tournées confondues. */
+  readonly stops: number;
+  /** Les bacs chargés, toutes tournées confondues : tous ceux des arrêts. */
   readonly loadedBins: number;
   /** Les bacs partagés entre deux arrêts consécutifs (v2-4). */
   readonly sharedBins: number;
   /** À qui la tournée chargée est affectée, ou pourquoi elle ne l'est pas. */
   readonly driver: SeedDriverAssignment;
-  /** Ce qui reste à répartir — ce que « Proposer » a à placer. */
+  /** Les livraisons hors tournée : les pas encore prêtes, qui n'ont aucun bac. */
   readonly unassigned: number;
 }
 
@@ -352,13 +351,13 @@ export async function placeDeliveryDay(
 }
 
 /**
- * Sème la flotte et le départ, compose la tournée de Val d'Isère, colise ce
- * qui doit être prêt, puis charge. À appeler APRÈS le plan du soir.
+ * Sème la flotte et le départ, compose les tournées, colise ce qui doit être
+ * prêt, puis charge TOUT. À appeler APRÈS le plan du soir.
  *
- * 🔴 **La tournée AVANT le colisage** depuis K3c (`colisage.md`
+ * 🔴 **Les tournées AVANT le colisage** depuis K3c (`colisage.md`
  * §17.3) : un bac de livraison naît au colisage, et partager une moitié exige
- * deux arrêts consécutifs de la même tournée. Une commande non prête entre
- * dans la tournée — la feuille de route le dit — mais n'a pas de bac.
+ * deux arrêts consécutifs de la même tournée. Une commande non prête n'entre
+ * dans aucune tournée : sans bac, elle ne se charge pas.
  */
 export async function advanceDeliveryDay(
   context: SeedContext,
@@ -373,39 +372,70 @@ export async function advanceDeliveryDay(
   },
 ): Promise<DeliveryDayReport> {
   const forDay = isoDay(day.today);
-  const vehicles = await seedFleet(context);
+  const vehicleIds = fleetIds(await seedFleet(context));
   await chooseLaboDeparture(context, LABO);
-  const vehicleId = vehicles.get(ROUND_VEHICLE);
-  if (vehicleId === undefined) {
-    throw new Error(`Véhicule « ${ROUND_VEHICLE} » absent de la flotte semée.`);
-  }
-  const stops = roundStops(day.placed, day.alreadyPacked);
   const loadedAt = atHour(day.today, LOADING_HOUR, LOADING_MINUTE);
-  const roundId = await composeRound(context, { day: forDay, vehicleId, at: loadedAt }, stops);
+  const spread = spreadOverVehicles(
+    roundStops(day.placed, day.alreadyPacked),
+    otherReadyStops(day.placed),
+    vehicleIds.length,
+  );
+  const rounds: { readonly roundId: string; readonly stops: readonly RoundStop[] }[] = [];
+  for (const [rank, stops] of spread.entries()) {
+    const vehicleId = vehicleIds[rank];
+    if (stops.length === 0 || vehicleId === undefined) continue;
+    const roundId = await composeRound(context, { day: forDay, vehicleId, at: loadedAt }, stops);
+    rounds.push({ roundId, stops });
+  }
   const sharedBins = await packDeliveries(context, forDay, day);
-  const round = await loadRound(context, { roundId, at: loadedAt }, stops);
+  let loadedBins = 0;
+  for (const round of rounds) {
+    loadedBins += (await loadRound(context, { roundId: round.roundId, at: loadedAt }, round.stops))
+      .loadedBins;
+  }
   const driver = await assignSeedDriver(
     {
       commands: context.commands,
       reader: prismaDriverReader(context.prisma),
       requester: context.requester,
     },
-    { roundId, at: loadedAt },
+    { roundId: rounds[0]?.roundId ?? "", at: loadedAt },
   );
   const deliveriesToday = day.placed.length + day.alreadyPacked.length;
+  const stops = rounds.reduce((total, round) => total + round.stops.length, 0);
   return {
     day: forDay,
     deliveries: day.placed.length,
     deliveriesToday,
     notReady: day.placed.filter((placed) => !placed.entry.ready).length,
     vehicles: FLEET.length,
-    rounds: 1,
-    stopsInRound: round.stops,
-    loadedBins: round.loadedBins,
+    rounds: rounds.length,
+    stops,
+    loadedBins,
     sharedBins,
     driver,
-    unassigned: deliveriesToday - round.stops,
+    unassigned: deliveriesToday - stops,
   };
+}
+
+/**
+ * Les véhicules de la flotte semée, Camionnette 1 en tête — c'est elle qui
+ * reçoit la tournée de Val d'Isère. Tous actifs : `seedFleet` remet en
+ * service une camionnette retirée.
+ */
+function fleetIds(vehicles: ReadonlyMap<string, string>): readonly string[] {
+  const first = vehicles.get(ROUND_VEHICLE);
+  if (first === undefined) {
+    throw new Error(`Véhicule « ${ROUND_VEHICLE} » absent de la flotte semée.`);
+  }
+  return [first, ...[...vehicles].flatMap(([name, id]) => (name === ROUND_VEHICLE ? [] : [id]))];
+}
+
+/** Les livraisons prêtes hors Val d'Isère, dans l'ordre des vallées. */
+function otherReadyStops(placed: readonly PlacedDelivery[]): readonly RoundStop[] {
+  return placed.flatMap(({ order, entry }) =>
+    entry.stop === null && entry.ready ? [{ orderId: order.id }] : [],
+  );
 }
 
 /**
@@ -454,14 +484,11 @@ function roundStops(
   alreadyPacked: readonly PlacedOrder[],
 ): readonly RoundStop[] {
   const ranked = placed.flatMap(({ order, entry }) =>
-    entry.stop === null
-      ? []
-      : [{ rank: entry.stop, orderId: order.id, loaded: entry.loaded === true }],
+    entry.stop === null ? [] : [{ rank: entry.stop, orderId: order.id }],
   );
   const counter = alreadyPacked.map((order) => ({
     rank: COUNTER_DELIVERY_STOP,
     orderId: order.id,
-    loaded: false,
   }));
   return [...ranked, ...counter]
     .sort((left, right) => left.rank - right.rank)

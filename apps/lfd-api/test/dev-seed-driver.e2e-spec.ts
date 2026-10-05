@@ -2,8 +2,8 @@
  * E2E du **rechargement qui pose une tournée prête à partir** (2026-10-01) :
  * la tournée chargée du semis est affectée à qui a cliqué, par la vraie
  * commande d'affectation, et ce livreur peut la COMMENCER depuis « Ma
- * tournée » — en chargeant les bacs que le semis laisse à charger (seul le
- * dernier arrêt l'est d'avance, depuis le 2026-10-03), aucun à refaire. Un
+ * tournée » — tous ses bacs déjà chargés (depuis le 2026-10-05 : chaque
+ * livraison colisée est en tournée chargée, pas partie), aucun à refaire. Un
  * requérant sans le droit de conduire ne fait pas échouer le rechargement.
  */
 import type {
@@ -75,20 +75,18 @@ describe("le rechargement affecte la tournée chargée à qui clique", () => {
       expect(rounds).toHaveLength(1);
       const roundId = rounds[0]?.id ?? "";
 
-      // Le semis ouvre « Charger » en cours de route : il reste à charger.
+      // Toutes les tournées du jour sont composées et chargées, pas parties.
+      expect(report.delivery.rounds).toBe(report.delivery.vehicles);
       const loading = jsonBody<DeliveryLoadingRoundView>(
         await admin(ctx).get(`${MY_ROUND}/${roundId}/chargement`).expect(200),
       );
       const toLoad = loading.stops.flatMap((stop) =>
         stop.bins.filter((bin) => bin.loadedAt === null),
       );
-      expect(toLoad.length).toBeGreaterThan(0);
-      for (const bin of toLoad) {
-        await admin(ctx)
-          .post(`${MY_ROUND}/${roundId}/chargement/bacs`)
-          .send({ binId: bin.binId })
-          .expect(204);
-      }
+      expect(toLoad).toEqual([]);
+      expect(loading.stops.length).toBeGreaterThan(0);
+      // Hors tournée : les seules pas encore prêtes, qui n'ont aucun bac.
+      expect(report.delivery.unassigned).toBe(report.delivery.notReady);
 
       const { version } = jsonBody<MyDeliveryRoundView>(
         await admin(ctx).get(`${MY_ROUND}/${roundId}`).expect(200),
@@ -118,7 +116,7 @@ describe("le rechargement affecte la tournée chargée à qui clique", () => {
       expect(
         report.delivery.driver.status === "refused" ? report.delivery.driver.reason : "",
       ).toContain("Conduire sa tournée");
-      expect(report.delivery.rounds).toBe(1);
+      expect(report.delivery.rounds).toBe(report.delivery.vehicles);
     },
     FULL_RELOAD_TIMEOUT_MS,
   );

@@ -1,4 +1,8 @@
-import { type DeliveryRoundTables, resetDeliveryRounds } from "../delivery-rounds.seed.js";
+import {
+  type DeliveryRoundTables,
+  resetDeliveryRounds,
+  spreadOverVehicles,
+} from "../delivery-rounds.seed.js";
 
 /**
  * La coupe de la livraison, au rechargement.
@@ -55,5 +59,25 @@ describe("resetDeliveryRounds", () => {
     const { prisma } = prismaSpy({ rounds: 0, bins: 0 });
 
     await expect(resetDeliveryRounds(prisma)).resolves.toEqual({ rounds: 0, bins: 0 });
+  });
+});
+
+describe("spreadOverVehicles", () => {
+  it("garde la tournée composée au premier véhicule et équilibre le reste en tranches contiguës", () => {
+    expect(spreadOverVehicles(["a", "b"], ["1", "2", "3", "4", "5", "6", "7", "8"], 3)).toEqual([
+      ["a", "b"],
+      ["1", "2", "3", "4"],
+      ["5", "6", "7", "8"],
+    ]);
+  });
+
+  it("donne le reste de la division aux premières tranches", () => {
+    expect(spreadOverVehicles<string>([], ["1", "2", "3"], 3)).toEqual([[], ["1", "2"], ["3"]]);
+    expect(spreadOverVehicles<string>([], ["1"], 4)).toEqual([[], ["1"], [], []]);
+  });
+
+  it("tout au seul véhicule, et rien sans véhicule", () => {
+    expect(spreadOverVehicles(["a"], ["b"], 1)).toEqual([["a", "b"]]);
+    expect(spreadOverVehicles(["a"], ["b"], 0)).toEqual([]);
   });
 });
