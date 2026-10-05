@@ -283,6 +283,37 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     expect(dialog().querySelector('[data-pending-drop]')).toBeNull();
   });
 
+  /** Sur tablette, la colonne « Marchandise à répartir » n'est pas rendue : le reste vit sous la ligne. */
+  it('écrit sous la quantité le reste servi du même SKU, zéro et manque compris', async () => {
+    const { fixture, el } = await render(
+      sheet({
+        lines: [
+          line({ sku: 'CRO' }),
+          line({ sku: 'PAC', productName: 'Pain au chocolat' }),
+          line({ sku: 'BRI', productName: 'Brioche' }),
+          line({ sku: 'BAG', productName: 'Baguette' }),
+        ],
+        containerList: [container({})],
+      }),
+    );
+    fixture.componentRef.setInput(
+      'stock',
+      new Map([
+        ['CRO', 57],
+        ['PAC', 0],
+        ['BRI', -3],
+      ]),
+    );
+    fixture.detectChanges();
+    expect(said(el.querySelector('[data-line-stock="CRO"]'))).toBe('57 en stock');
+    expect(said(el.querySelector('[data-line-stock="PAC"]'))).toBe('0 en stock');
+    const short = el.querySelector('[data-line-stock="BRI"]');
+    expect(said(short)).toBe('-3 en stock');
+    expect(short?.classList.contains('is-short')).toBe(true);
+    // Un SKU absent de la marchandise servie : rien d'inventé.
+    expect(el.querySelector('[data-line-stock="BAG"]')).toBeNull();
+  });
+
   it('une ligne toute répartie porte une coche', async () => {
     const { fixture } = await render(
       sheet({ lines: [line({ allocated: 20, unallocated: 0 })], containerList: [container({})] }),

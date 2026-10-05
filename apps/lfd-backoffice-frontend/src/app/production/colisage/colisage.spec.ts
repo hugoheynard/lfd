@@ -547,14 +547,14 @@ describe('le poste de colisage', () => {
 
     it('dit que la relecture a échoué, sans vider le poste', async () => {
       const { fixture, el } = await render();
-      expect(said(el.querySelector('.co-foot-origin'))).toContain('relu à');
+      expect(el.querySelector('.co-refresh-failed')).toBeNull();
 
       api.packingView = null;
       relancer();
       await settle(fixture);
 
       expect(el.querySelector('.co-body')).not.toBeNull();
-      expect(said(el.querySelector('.co-foot-origin'))).toContain('relecture impossible');
+      expect(said(el.querySelector('.co-refresh-failed'))).toContain('Relecture impossible');
     });
   });
 

@@ -33,9 +33,23 @@
           } @else {
             <fold-icon name="grip" size="sm" />
           }
-          <span class="cb-qty" [attr.data-line-shares]="line.sku"
-            >{{ allocated(line) }}<span class="cb-of"> / {{ line.quantity }}</span></span
-          >
+          <!-- Sur tablette, le reste de la journée vit ICI, sous la quantité :
+               la colonne de droite n'y est pas rendue (2026-10-05). -->
+          <span class="cb-qty-stack">
+            <span class="cb-qty" [attr.data-line-shares]="line.sku"
+              >{{ allocated(line) }}<span class="cb-of"> / {{ line.quantity }}</span></span
+            >
+            @if (stock().get(line.sku); as remaining) {
+              <span
+                class="cb-stock"
+                [class.is-short]="remaining < 0"
+                [attr.data-line-stock]="line.sku"
+                >{{ remaining }} en stock</span
+              >
+            } @else if (stock().has(line.sku)) {
+              <span class="cb-stock" [attr.data-line-stock]="line.sku">0 en stock</span>
+            }
+          </span>
           <span class="cb-name">
             {{ line.productName }}
             @if (line.awaitingProduction) {

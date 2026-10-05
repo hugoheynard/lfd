@@ -31,6 +31,35 @@
         <h1 class="co-title">{{ current()?.customerLabel ?? 'Colisage' }}</h1>
       </div>
 
+      <!-- Tablette seulement (≤ 1366 px) : la liste des commandes se replie, et
+           ce bouton la rouvre. Le titre ci-contre nomme la commande ouverte. -->
+      <button
+        foldButton
+        class="co-orders-toggle"
+        emphasis="outline"
+        icon="list"
+        [attr.aria-expanded]="!ordersFolded()"
+        (click)="toggleOrders()"
+        data-orders-toggle
+      >
+        {{ ordersFolded() ? 'Commandes' : 'Replier les commandes' }}
+      </button>
+
+      <fold-search
+        class="co-search"
+        size="lg"
+        [placeholder]="
+          compactMasthead()
+            ? 'Recherche'
+            : 'Chercher un produit ou un SKU — surligne, ne filtre pas'
+        "
+        ariaLabel="Chercher un produit ou un SKU dans la journée — surligne, ne filtre pas"
+        clearLabel="Effacer la recherche"
+        [value]="term()"
+        (valueChange)="term.set($event)"
+        (keydown.escape)="clearTerm()"
+      />
+
       @if (current(); as order) {
         <div class="co-figures">
           <p class="co-figure">
@@ -62,16 +91,6 @@
       `Escape` vide le champ ; le `×` de `fold-search` fait le même geste, et
       c'est lui qui porte l'accessibilité du bouton.
     -->
-    <fold-search
-      class="co-search"
-      size="lg"
-      placeholder="Chercher un produit ou un SKU — surligne, ne filtre pas"
-      ariaLabel="Chercher un produit dans la journée"
-      clearLabel="Effacer la recherche"
-      [value]="term()"
-      (valueChange)="term.set($event)"
-      (keydown.escape)="clearTerm()"
-    />
 
     <!--
       🔴 Le sélecteur FILTRE, la recherche SURLIGNE — et sans cet avis, le
@@ -140,6 +159,18 @@
       </fold-callout>
     }
 
+    <!--
+      Le pied « relu à … » est retiré (2026-10-05, Hugo) ; l'échec, lui, se dit
+      encore : une balance figée qui a l'air à jour fait répartir deux fois la
+      même marchandise.
+    -->
+    @if (day.refreshFailed()) {
+      <fold-callout variant="warning" class="co-note co-refresh-failed">
+        Relecture impossible depuis {{ day.readLabel() }} — les restes affichés peuvent être
+        périmés.
+      </fold-callout>
+    }
+
     <!-- Lot PC2 : sans les tournées, la liste garde l'ordre servi — on le DIT. -->
     @if (rounds.failed()) {
       <fold-callout variant="warning" class="co-note" data-rounds-failed>
@@ -152,8 +183,7 @@
 <!--
   **Le corps vit HORS du `fold-page-layout`**, exactement comme sur la fiche
   d'atelier, et pour la même contrainte : `.page-body` est en `flex: 0 1 auto` et
-  ne s'étire pas à la hauteur du layout. Le pied doit rester au bas de la
-  fenêtre — il dit de quand date la balance, et une relecture ratée.
+  ne s'étire pas à la hauteur du layout.
 -->
 @switch (day.state()) {
   @case ('loading') {
@@ -203,7 +233,11 @@
           `is-searching` reste posé ici pour dire l'état de l'écran entier ; le
           retrait lui-même vit dans la feuille de chaque colonne.
         -->
-        <div class="co-plates" [class.is-searching]="searching()">
+        <div
+          class="co-plates"
+          [class.is-searching]="searching()"
+          [class.is-orders-folded]="ordersFolded()"
+        >
           <app-packing-orders
             [sheets]="visibleSheets()"
             [rounds]="rounds.rounds()"
@@ -222,6 +256,7 @@
             [sheet]="current()"
             [stack]="stack()"
             [hitSkus]="hits()"
+            [stock]="stockBySku()"
             [searching]="searching()"
             [closing]="gestures.closing()"
             [reopening]="gestures.reopening()"
@@ -236,21 +271,6 @@
             [searching]="searching()"
           />
         </div>
-
-        <footer class="co-foot">
-          <p class="co-foot-rule">
-            Ni prix, ni total en euros sur ce poste — le fournil colise, il ne facture pas.
-          </p>
-          <p class="co-foot-origin">
-            <!-- De quand date la balance : le poste se relit toutes les 15 s, et
-                 une relecture ratée se dit au lieu d'avoir l'air à jour. -->
-            @if (day.refreshFailed()) {
-              <span class="co-foot-flag">relecture impossible depuis {{ day.readLabel() }}</span>
-            } @else if (day.readLabel(); as read) {
-              <span>relu à {{ read }}</span>
-            }
-          </p>
-        </footer>
       </section>
     } @else {
       <fold-empty-state

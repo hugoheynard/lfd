@@ -59,6 +59,9 @@ export class PackingOpenOrder {
   /** Les SKU que la recherche surligne. */
   readonly hitSkus = input<ReadonlySet<string>>(new Set());
 
+  /** Le reste de la journée par SKU, tel que servi — remis au plateau. */
+  readonly stock = input<ReadonlyMap<string, number>>(new Map());
+
   /** Une recherche est-elle en cours ? Elle met en retrait ce qu'elle ne touche pas. */
   readonly searching = input(false);
 

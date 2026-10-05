@@ -17,7 +17,7 @@
       avec l'ancien poste : tout est en lecture seule (§17.6).
     -->
     @if (listed()) {
-      <app-packing-container-board [sheet]="order" />
+      <app-packing-container-board [sheet]="order" [stock]="stock()" />
     } @else {
       <fold-callout variant="info" data-legacy-order>
         Commande colisée avec l'ancien poste : elle ne se modifie plus ici.

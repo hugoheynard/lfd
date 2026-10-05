@@ -19,6 +19,7 @@ import { isoDay } from '../worksheet-day';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import type { DayJournal } from '../../shared/day-version/day-version.service';
+import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { PackingDayReader } from './packing-day.reader';
 import { PackingGestures } from './packing-gestures';
 import { PackingOpenOrder } from './packing-open-order/packing-open-order';
@@ -61,6 +62,9 @@ import { foundOnlyElsewhere, hitLinesByOrder, normaliseTerm, searchHits } from '
  * identifiants suivent le FAIT. Personne ne doit renommer l'événement pour
  * « aligner » les deux (écrit le 2026-09-13, à la demande de l'exploitant).
  */
+/** La largeur où la bande tient sur une ligne — la même que `colisage.scss`. */
+const COMPACT_MASTHEAD_QUERY = '(max-width: 1366px)';
+
 @Component({
   selector: 'app-colisage',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -137,6 +141,29 @@ export class Colisage {
    * quelqu'un qui n'a rien cliqué : sans cette phrase, on croirait l'avoir perdue.
    */
   protected readonly closedElsewhere = signal<string | null>(null);
+
+  /**
+   * **La liste des commandes, repliée** — tablette seulement (≤ 1366 px) :
+   * au-dessus, la feuille de style l'ignore et la colonne reste ouverte. Repliée
+   * à l'ouverture et après chaque choix, pour rendre la largeur aux Produits et
+   * aux Contenants, entre lesquels on glisse (2026-10-05, Hugo).
+   */
+  protected readonly ordersFolded = signal(true);
+
+  /**
+   * Le reste de la journée par SKU, tel que servi : une table de recherche pour
+   * l'écrire sous chaque ligne sur tablette, où la colonne de droite n'est pas
+   * rendue. Aucun calcul — `remaining` vient du serveur.
+   */
+  protected readonly stockBySku = computed<ReadonlyMap<string, number>>(
+    () => new Map(this.day.resources().map((item) => [item.sku, item.remaining])),
+  );
+
+  /**
+   * Tablette et mobile (≤ 1366 px) : la recherche partage la ligne de la bande,
+   * et la phrase longue n'y tient pas — « Recherche » seul (2026-10-05, Hugo).
+   */
+  protected readonly compactMasthead = narrowViewport(COMPACT_MASTHEAD_QUERY);
 
   /** Le terme cherché. Il SURLIGNE, il ne filtre pas — voir `packing-search.ts`. */
   protected readonly term = signal('');
@@ -320,6 +347,12 @@ export class Colisage {
     this.gestures.forgetOrderFailures();
     this.justDeclared.set(null);
     this.closedElsewhere.set(null);
+    this.ordersFolded.set(true);
+  }
+
+  /** Replie ou rouvre la liste des commandes (tablette). */
+  protected toggleOrders(): void {
+    this.ordersFolded.update((folded) => !folded);
   }
 
   /** Change de pile. Le choix courant retombe sur la tête de la nouvelle pile. */

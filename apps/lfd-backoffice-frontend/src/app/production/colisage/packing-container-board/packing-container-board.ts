@@ -135,6 +135,14 @@ export class PackingContainerBoard {
   /** La commande ouverte, `containerMode = listed`. */
   readonly sheet = input.required<PackingSheet>();
 
+  /**
+   * Le reste de la journée par SKU, tel que servi (`remaining` de la
+   * marchandise à répartir). Lu sous la quantité demandée sur tablette, où la
+   * colonne « Marchandise à répartir » n'a plus la place (2026-10-05, Hugo).
+   * Une recherche dans une table, pas un calcul.
+   */
+  readonly stock = input<ReadonlyMap<string, number>>(new Map());
+
   private readonly orderId = computed(() => this.sheet().orderId);
 
   protected readonly canWrite = computed(() => this.permissions.can('production_packing:write'));

@@ -1,8 +1,7 @@
 /* ── 🔴 PLEINE HAUTEUR : LE POSTE SORT DU FLUX ──────────────────────────────
    Le poste n'est pas un document : on coche dedans, et ses TROIS colonnes
-   défilent chacune pour elle-même sous une bande qui ne bouge pas. Le pied, qui
-   dit de quand date la balance et qu'une relecture a échoué, reste au bas de la
-   fenêtre.
+   défilent chacune pour elle-même sous une bande qui ne bouge pas (le pied est
+   retiré depuis le 2026-10-05 ; l'échec de relecture se dit dans la bande).
 
    ⚠️ **Un `flex: 1 1 auto` ne suffit PAS.** La chaîne de hauteurs ne se ferme pas :
    `.content-flow` de la coquille fold est en `flex: 1 0 auto` — **shrink
@@ -146,9 +145,16 @@
 }
 
 /* Le champ prend toute la bande : une grande cible, visée les mains prises. Il
-   ne défile pas — il appartient à la tête, pas aux colonnes. */
+   ne défile pas — il appartient à la tête, pas aux colonnes. Au-dessus de
+   1366 px il passe à la ligne sous le titre ; en dessous, il partage la ligne. */
 .co-search {
-  margin-top: var(--fold-space-md);
+  flex: 1 1 100%;
+  order: 1;
+}
+
+/* Le repli de la liste des commandes n'existe que sur tablette. */
+.co-orders-toggle {
+  display: none;
 }
 
 /* ── LE CORPS ───────────────────────────────────────────────────────────────
@@ -172,8 +178,8 @@ fold-page-layout {
    Les trois pistes appartiennent au poste ; ce que chaque colonne met dedans,
    et la façon dont elle défile, appartiennent à chaque colonne.
 
-   Sous 1100 px les colonnes passent en pile — la largeur où celle des noms de
-   produits cesse de tenir sans césure. */
+   Sous 1367 px, voir le bloc tablette plus bas ; sous 768 px seulement, les
+   colonnes passent en pile. */
 .co-plates {
   display: grid;
   grid-template-columns: minmax(200px, 1fr) minmax(0, 2fr) minmax(240px, 1fr);
@@ -181,47 +187,79 @@ fold-page-layout {
   min-height: 0;
 }
 
-@media (max-width: 1099px) {
+/* ── TABLETTE PAYSAGE (768–1366 px) — 2026-10-05, Hugo ──────────────────────
+   Le poste se joue sur iPad paysage. Produits et Contenants restent côte à côte
+   à TOUTE largeur tablette : c'est entre eux qu'on glisse. Pour leur rendre la
+   place :
+   - la colonne « Marchandise à répartir » n'est pas rendue — le reste de chaque
+     produit s'écrit sous sa quantité, dans la colonne Produits ;
+   - la liste des commandes se replie (220 px ouverte), et la bande nomme la
+     commande ouverte ;
+   - la bande tient sur une ligne : titre · repli · recherche · compteurs. */
+@media (max-width: 1366px) {
+  .co-masthead {
+    padding-block: var(--fold-space-md);
+  }
+
+  .co-masthead-bar {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .co-title {
+    font-size: var(--fold-text-lg);
+  }
+
+  .co-search {
+    flex: 1 1 auto;
+    order: 0;
+    min-width: 0;
+  }
+
+  .co-orders-toggle {
+    display: inline-flex;
+    flex: none;
+  }
+
+  .co-figures {
+    gap: var(--fold-space-xl);
+  }
+
+  .co-figure-value {
+    font-size: var(--fold-text-xl);
+  }
+
   .co-plates {
-    grid-template-columns: 1fr;
-    overflow-y: auto;
+    grid-template-columns: 220px minmax(0, 1fr);
+  }
+
+  .co-plates > app-packing-resources {
+    display: none;
+  }
+
+  .co-plates.is-orders-folded {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .co-plates.is-orders-folded > app-packing-orders {
+    display: none;
   }
 }
 
-/* ── LE PIED ────────────────────────────────────────────────────────────────
-   Il ne défile jamais : la règle de l'écran à gauche, de quand date la balance
-   à droite. */
-.co-foot {
-  display: flex;
-  flex: none;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fold-space-2xl);
-  padding: var(--fold-space-lg) var(--fold-space-xl);
-  background: var(--fold-color-bg-rail-secondary);
-  border-top: 1px solid var(--fold-color-border);
-}
+/* Vrai mobile seulement : la bande reprend sa ligne, les colonnes s'empilent. */
+@media (max-width: 767px) {
+  .co-masthead-bar {
+    flex-wrap: wrap;
+  }
 
-.co-foot-rule,
-.co-foot-origin {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-sm);
-  margin: 0;
-  font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-xs);
-  letter-spacing: var(--fold-tracking-wide);
-  color: var(--fold-color-text-muted);
-}
+  .co-search {
+    flex-basis: 100%;
+    order: 1;
+  }
 
-/* 🔴 « relecture impossible » est la seule mention accentuée du pied : une
-   balance figée qui a l'air à jour fait répartir deux fois la même marchandise. */
-.co-foot-flag {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--fold-space-xs);
-  color: var(--fold-color-warning);
-  font-weight: var(--fold-weight-bold);
+  .co-plates,
+  .co-plates.is-orders-folded {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+  }
 }

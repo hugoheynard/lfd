@@ -182,6 +182,8 @@ export const routes: Routes = [
     // c'était la garde d'origine de cette route).
     canActivate: [permissionGuard('production_packing:write')],
     title: 'Colisage — LFC B2B admin',
+    // Un poste à plein écran : le rail se replie sur tablette (voir `App`).
+    data: { compactRail: true },
     loadComponent: () => import('./production/colisage/colisage').then((m) => m.Colisage),
   },
   {
@@ -315,6 +317,8 @@ export const routes: Routes = [
     pathMatch: 'full',
     canActivate: [permissionGuard('production_packing:read')],
     title: 'Colisage — LFC B2B admin',
+    // Un poste à plein écran : le rail se replie sur tablette (voir `App`).
+    data: { compactRail: true },
     loadComponent: () => import('./production/colisage/colisage').then((m) => m.Colisage),
   },
   // CHARGER MA TOURNÉE : le chargement du livreur a sa propre adresse, sous

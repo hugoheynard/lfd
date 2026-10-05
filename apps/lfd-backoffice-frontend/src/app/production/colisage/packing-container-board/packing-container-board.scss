@@ -16,7 +16,7 @@
   min-height: 0;
 }
 
-@media (max-width: 1099px) {
+@media (max-width: 767px) {
   .cb-board {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -33,7 +33,7 @@
   border-left: 1px solid var(--fold-color-border);
 }
 
-@media (max-width: 1099px) {
+@media (max-width: 767px) {
   .cb-column + .cb-column {
     border-left: none;
     border-top: 1px solid var(--fold-color-border);
@@ -110,6 +110,33 @@
   font-size: var(--fold-text-lg);
   font-weight: var(--fold-weight-bold);
   font-variant-numeric: tabular-nums;
+}
+
+.cb-qty-stack {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Le reste de la journée, sous la quantité — tablette seulement : au-dessus,
+   la colonne « Marchandise à répartir » le dit déjà. */
+.cb-stock {
+  display: none;
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+.cb-stock.is-short {
+  color: var(--fold-color-alert-text);
+  font-weight: var(--fold-weight-bold);
+}
+
+@media (max-width: 1366px) {
+  .cb-stock {
+    display: inline;
+  }
 }
 
 .cb-of {
