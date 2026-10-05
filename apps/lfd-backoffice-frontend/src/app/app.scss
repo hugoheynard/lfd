@@ -21,7 +21,8 @@ fold-app-shell {
   color: var(--fold-color-text);
 }
 
-/* Le burger n'existe QUE sous 768px : au-dessus le rail est là, et un second
+/* Le burger n'existe QUE quand le shell est mobile (`.is-mobile`, posé par
+   `fold-app-shell` selon `mobileQuery`) : sinon le rail est là, et un second
    chemin vers le même menu n'ajouterait qu'une question. */
 .app-hamburger {
   display: none;
@@ -81,11 +82,13 @@ fold-app-shell {
   opacity: 0.85;
 }
 
-@media (max-width: 768px) {
-  .app-hamburger {
-    display: inline-flex;
-  }
+fold-app-shell.is-mobile .app-hamburger {
+  display: inline-flex;
+}
 
+/* Compaction de l'en-tête : une affaire de LARGEUR, pas de navigation — sur
+   iPad la place existe, l'adresse reste. */
+@media (max-width: 768px) {
   .app-header {
     gap: var(--fold-space-sm, 0.5rem);
     padding-inline: var(--fold-space-sm, 0.6rem);

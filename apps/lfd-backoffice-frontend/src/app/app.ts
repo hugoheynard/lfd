@@ -1,4 +1,3 @@
-import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -91,7 +90,8 @@ export class App {
   /** Rail primaire : déployé par défaut, repliable via le chevron intégré. */
   protected readonly menuExpanded = signal<boolean | undefined>(true);
   /**
-   * Navigation mobile ≤768px. Le shell ne rend aucun tiroir
+   * Navigation mobile — quand le shell est mobile (`mobileQuery="phoneOrTablet"` :
+   * téléphone, ou écran tactile jusqu'à 1366 px, iPad compris). Le shell ne rend aucun tiroir
    * (`mobileNav="none"`) : ce drapeau ouvre la grille de tuiles, et le burger
    * de l'en-tête le bascule.
    */
@@ -368,30 +368,7 @@ export class App {
     headerNameOf(this.workspace()?.title, this.pageName()),
   );
 
-  /**
-   * **Un poste à plein écran** (route marquée `data.compactRail`) : sur
-   * tablette, le rail primaire déployé lui volait ~215 px — sur iPad paysage, le
-   * colisage en devenait impraticable (2026-10-05, Hugo). En y ENTRANT sous
-   * {@link COMPACT_RAIL_QUERY}, le rail se replie en icônes ; le chevron le
-   * rouvre, et ce choix tient jusqu'à la navigation suivante. Les autres pages
-   * ne sont pas touchées.
-   */
-  private readonly compactRailRoute = toSignal(
-    this.router.events.pipe(
-      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
-      map(() => deepest(this.router.routerState.snapshot.root).data['compactRail'] === true),
-    ),
-    { initialValue: false },
-  );
-
-  private readonly window = inject(DOCUMENT).defaultView;
-
   constructor() {
-    effect(() => {
-      if (this.compactRailRoute() && this.window?.matchMedia(COMPACT_RAIL_QUERY).matches === true) {
-        this.menuExpanded.set(false);
-      }
-    });
     // La lecture ne peut pas partir avant la session : sans jeton, `/admin/me`
     // rendrait 401 et on conclurait « aucun accès » à tort.
     effect(() => {
@@ -448,7 +425,6 @@ export class App {
  * coquille, jamais celui de la vue qu'on regarde.
  */
 /** La largeur sous laquelle un poste replie le rail : l'iPad paysage, jusqu'au 13". */
-const COMPACT_RAIL_QUERY = '(max-width: 1366px)';
 
 function deepest(route: ActivatedRouteSnapshot): ActivatedRouteSnapshot {
   let current = route;

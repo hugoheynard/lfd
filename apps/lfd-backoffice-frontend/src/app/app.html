@@ -7,9 +7,16 @@
 } @else if (locked()) {
   <app-staff-login />
 } @else {
-  <!-- `mobileNav="none"` : sous 768px le shell ne rend AUCUN tiroir — le rail
-       s'efface et le lanceur de tuiles, plus bas, prend le relais. -->
-  <fold-app-shell #shell="foldAppShell" mobileNav="none" [(mobileNavOpen)]="mobileNavOpen">
+  <!-- `mobileQuery="phoneOrTablet"` : le shell passe mobile sur téléphone ET sur
+       tablette tactile jusqu'à 1366 px (iPad portrait ou paysage, décision Hugo
+       2026-10-05). `mobileNav="none"` : en mobile le shell ne rend AUCUN tiroir —
+       le rail s'efface et le lanceur de tuiles, plus bas, prend le relais. -->
+  <fold-app-shell
+    #shell="foldAppShell"
+    mobileQuery="phoneOrTablet"
+    mobileNav="none"
+    [(mobileNavOpen)]="mobileNavOpen"
+  >
     <!-- Rail primaire — le menu de l'app. Déployé par défaut, repliable. -->
     <fold-menu railPrimary collapsible tint="primary" level="primary" [(expanded)]="menuExpanded">
       <a header class="rail-brand" routerLink="/" aria-label="LFC B2B admin — accueil">
@@ -370,7 +377,7 @@
          masquer. Ce qui le remplit vient du store, pas d'une lecture d'URL —
          la racine n'a pas à connaître les vues du PIM.
 
-         ⚠️ Sous 768px la coquille retire les DEUX rails et ne ramène que le
+         ⚠️ En mobile (`shell.isMobile()`) la coquille retire les DEUX rails et ne ramène que le
          primaire (en tiroir, ici en lanceur de tuiles). C'est l'espace lui-même
          qui rend alors ses vues, en barre horizontale dans la page. -->
     @if (workspace(); as ws) {
@@ -681,7 +688,7 @@
 
       @if (canSeeSettings()) {
         <!-- LE B2B, qui n'avait AUCUNE tuile : ses vues n'existaient qu'au rail
-             secondaire, donc nulle part sous 768px. Les deux arbres ne partagent
+             secondaire, donc nulle part en mobile. Les deux arbres ne partagent
              pas leur modèle — une entrée posée d'un seul côté est invisible de
              l'autre. -->
         <fold-nav-group icon="store" label="E-commerce LFC" [entryCountLabel]="entriesLabel">
