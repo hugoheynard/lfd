@@ -31,8 +31,7 @@ clôture ──► colisage (K1/K2 ✅) ──► bacs (K2b ⏳) ──► charg
 
 1. ~~**K2b** : finir, déployer~~ — déployé le 2026-10-05 (`84de845`).
    1 bis. **K3** (Hugo, « plier le colisage d'une traite ») : K3a, K3b, K3c, un déploiement.
-2. **Observer une vraie journée** en production : colisage au domaine, « retour
-   en attente », commande prête, boîte d'envoi vide. Corriger avant d'avancer.
+2. ~~**Observer une vraie journée**~~ — retiré le 2026-10-05 (Hugo : « je suis pré-exploitation, ça n'arrivera pas, il faut finir le plan »). Les répétitions en dev et les e2e en tiennent lieu.
 3. **E3** : le départ d'une tournée et les commandes rapportées deviennent des
    faits durables (aujourd'hui trois annonces perdables).
 4. **CA6** : la livraison écoute la clôture (« prêt à appliquer ») ;
