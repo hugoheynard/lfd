@@ -35,6 +35,13 @@ function order(overrides: Partial<BoardOrder> & Pick<BoardOrder, "orderId">): Bo
   };
 }
 
+function bag(
+  id: string,
+  lines: readonly { readonly sku: string; readonly quantity: number }[],
+): BoardOrder["containerList"][number] {
+  return { id, nature: "bag", label: "Sac 1", bin: null, lines };
+}
+
 function sources(day: PackingBoardDay, overrides: Partial<BoardSources> = {}): BoardSources {
   return {
     date: TODAY,
@@ -217,7 +224,12 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
     const view = packingBoardOf(
       sources({
         orders: [
-          order({ orderId: "1", lines: [line("CRO", 4, true, "Croissant")] }),
+          // Une ligne cochée sur `listed` a ses pièces dans un contenant.
+          order({
+            orderId: "1",
+            lines: [line("CRO", 4, true, "Croissant")],
+            containerList: [bag("ctn_1", [{ sku: "CRO", quantity: 4 }])],
+          }),
           order({ orderId: "2", lines: [line("CRO", 3, false, "Croissant")] }),
         ],
         stocks: [{ sku: "CRO", received: 7, returned: 0, packed: 4 }],
@@ -241,5 +253,63 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
     const view = packingBoardOf(sources({ orders: [], stocks: [] }, { date: addDays(TODAY, 1) }));
 
     expect(view.relativeDay).toBe("tomorrow");
+  });
+
+  /**
+   * Régression (2026-10-05, VIE-001) : 18 croissants posés sur une ligne
+   * ouverte étaient retirés du libre ET comptés dans l'attente — badge à tort,
+   * compteur figé à 95, fiche à 29/108 au lieu de 47/108.
+   */
+  it("des pièces posées sur une ligne ouverte ne sont pas attendues deux fois, et comptent posées", () => {
+    const view = packingBoardOf(
+      sources({
+        orders: [
+          order({
+            orderId: "A",
+            lines: [
+              line("BAG", 23, true, "Baguette"),
+              line("CHA", 6, true, "Chausson"),
+              line("CRO", 38, false, "Croissant"),
+              // 23 + 6 + 38 = 67 : un pain encore ouvert porte la fiche à 108.
+              line("PAI", 41, false, "Pain"),
+            ],
+            containerList: [
+              bag("ctn_a", [
+                { sku: "BAG", quantity: 23 },
+                { sku: "CHA", quantity: 6 },
+                { sku: "CRO", quantity: 18 },
+              ]),
+            ],
+          }),
+          order({
+            orderId: "B",
+            lines: [line("CRO", 328, true, "Croissant")],
+            containerList: [bag("ctn_b", [{ sku: "CRO", quantity: 328 }])],
+          }),
+          order({ orderId: "C", lines: [line("CRO", 41, false, "Croissant")] }),
+          order({ orderId: "D", lines: [line("CRO", 16, false, "Croissant")] }),
+        ],
+        stocks: [
+          { sku: "BAG", received: 23, returned: 0, packed: 23 },
+          { sku: "CHA", received: 6, returned: 0, packed: 6 },
+          { sku: "CRO", received: 423, returned: 0, packed: 346 },
+          { sku: "PAI", received: 41, returned: 0, packed: 0 },
+        ],
+      }),
+    );
+
+    expect(view.resources.find((r) => r.sku === "CRO")).toMatchObject({
+      produced: 423,
+      allocated: 346,
+      remaining: 77,
+      awaitingProduction: false,
+    });
+    const sheet = view.sheets.find((s) => s.orderId === "A");
+    expect(sheet).toMatchObject({ pieces: 108, packedPieces: 47 });
+    expect(sheet?.lines.find((l) => l.sku === "CRO")).toMatchObject({
+      allocated: 18,
+      unallocated: 20,
+      awaitingProduction: false,
+    });
   });
 });

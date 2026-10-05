@@ -1,7 +1,8 @@
 import type { PackingResource, ProductionPackingView } from "@lfd/contracts";
 
 import type { PackingBoardDay } from "../ports/packing-board.reader.js";
-import { type Awaiting, byNameThenSku, sheetOf } from "./packing-board-sheet.js";
+import { allocationOf, type Awaiting, byNameThenSku, sheetOf } from "./packing-board-sheet.js";
+import { leftToPlace, shortfall } from "./placement.js";
 import { relativeDayOf } from "./relative-day.js";
 
 /**
@@ -81,21 +82,25 @@ function firstDrawnAt(day: PackingBoardDay): Date | null {
 }
 
 /**
- * Le disponible ne couvre pas la quantité — la règle de la garde
- * (`PackingStock.take`) : la ligne que l'écran grise est celle que le serveur
- * refuse. Sans garde sur `quantity > 0`, comme l'ancien poste : un disponible
- * négatif reste « en attente ».
+ * Le disponible ne couvre pas la quantité — `shortfall`, la règle même de la
+ * garde (`PackingStock.take`) : la ligne que l'écran grise est celle que le
+ * serveur refuse. Le libre n'est pas borné ici : une réserve en dette manque
+ * d'autant. Rien à poser n'attend rien.
  */
 function awaitingOf(day: PackingBoardDay): Awaiting {
   const free = new Map(
     day.stocks.map((stock) => [stock.sku, stock.received - stock.returned - stock.packed] as const),
   );
-  return (sku, quantity) => (free.get(sku) ?? 0) < quantity;
+  return (sku, quantity) => shortfall(free.get(sku) ?? 0, quantity) > 0;
 }
 
 /**
- * **La balance**, article par article. `remaining` peut être négatif : les
- * bacs demandent plus que le compte — c'est ce qu'il faut voir.
+ * **La balance**, article par article. `allocated` = les pièces POSÉES, lignes
+ * ouvertes comprises ; `remaining` = compte − posé, et baisse dès le dépôt.
+ * L'attente compare le libre au seul reste à poser des lignes ouvertes : le
+ * libre a déjà retiré ce qui est dans un sac, le recompter dans la demande
+ * fabriquait un manque (bug du 2026-10-05). `remaining` peut être négatif :
+ * les bacs demandent plus que le compte — c'est ce qu'il faut voir.
  */
 function resourcesOf(day: PackingBoardDay, awaiting: Awaiting): readonly PackingResource[] {
   const produced = new Map<string, number>();
@@ -103,11 +108,17 @@ function resourcesOf(day: PackingBoardDay, awaiting: Awaiting): readonly Packing
   // Ce que les bacs OUVERTS attendent encore.
   const pending = new Map<string, number>();
   const names = new Map<string, string>();
-  for (const line of day.orders.flatMap((order) => order.lines)) {
-    names.set(line.sku, names.get(line.sku) ?? line.productName);
-    produced.set(line.sku, (produced.get(line.sku) ?? 0) + line.quantity);
-    const bucket = line.packed === null ? pending : allocated;
-    bucket.set(line.sku, (bucket.get(line.sku) ?? 0) + line.quantity);
+  for (const order of day.orders) {
+    const allocatedOf = allocationOf(order);
+    for (const line of order.lines) {
+      const placed = allocatedOf(line);
+      names.set(line.sku, names.get(line.sku) ?? line.productName);
+      addTo(produced, line.sku, line.quantity);
+      addTo(allocated, line.sku, placed);
+      if (line.packed === null) {
+        addTo(pending, line.sku, leftToPlace(line.quantity, placed));
+      }
+    }
   }
   return [...names.entries()]
     .map(([sku, productName]) => {
@@ -126,4 +137,8 @@ function resourcesOf(day: PackingBoardDay, awaiting: Awaiting): readonly Packing
       };
     })
     .sort(byNameThenSku);
+}
+
+function addTo(totals: Map<string, number>, sku: string, quantity: number): void {
+  totals.set(sku, (totals.get(sku) ?? 0) + quantity);
 }

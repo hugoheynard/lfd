@@ -2,8 +2,9 @@ import type { PackingContainerView, PackingLine, PackingSheet } from "@lfd/contr
 
 import type { SheetLine } from "../entities/packing-sheet.snapshot.js";
 import type { BoardOrder } from "../ports/packing-board.reader.js";
+import { allocatedOnLine, leftToPlace } from "./placement.js";
 
-/** « Faut-il encore attendre le four pour `quantity` pièces de `sku` ? » */
+/** « Faut-il encore attendre le four pour poser `quantity` pièces de `sku` ? » */
 export type Awaiting = (sku: string, quantity: number) => boolean;
 
 /** Ce que le handler résout hors des tables du colisage, pour une fiche. */
@@ -49,7 +50,9 @@ export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet 
     packedLines: packed.length,
     remainingLines: order.lines.length - packed.length,
     pieces: sumOfQuantities(order.lines),
-    packedPieces: sumOfQuantities(packed),
+    // Les pièces POSÉES, lignes ouvertes comprises — 18 croissants dans un sac
+    // comptent avant que leur ligne soit cochée (bug du 2026-10-05).
+    packedPieces: order.lines.reduce((sum, line) => sum + allocatedOf(line), 0),
     canDeclareReady: canDeclareReady(order),
     packedAt: order.packed?.at.toISOString() ?? null,
     packedBy: order.packed?.by ?? null,
@@ -60,20 +63,9 @@ export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet 
   };
 }
 
-/**
- * Les pièces d'une ligne réparties. `listed` : la somme sur les contenants
- * vivants ; `counted` : la quantité si la ligne est cochée, sinon zéro.
- */
-function allocationOf(order: BoardOrder): (line: SheetLine) => number {
-  if (order.containerMode !== "listed") {
-    return (line) => (line.packed === null ? 0 : line.quantity);
-  }
-  return (line) =>
-    order.containerList.reduce(
-      (sum, container) =>
-        sum + (container.lines.find((held) => held.sku === line.sku)?.quantity ?? 0),
-      0,
-    );
+/** Les pièces posées d'une ligne de cette commande — la règle de `placement.ts`. */
+export function allocationOf(order: BoardOrder): (line: SheetLine) => number {
+  return (line) => allocatedOnLine(order.containerMode, line, order.containerList);
 }
 
 /** Les lignes d'un bac, rangées par nom puis SKU. */
@@ -85,6 +77,7 @@ function linesOf(
   return [...order.lines]
     .map((line) => {
       const allocated = allocatedOf(line);
+      const toPlace = leftToPlace(line.quantity, allocated);
       return {
         sku: line.sku,
         productName: line.productName,
@@ -93,10 +86,11 @@ function linesOf(
         // La chaîne vide n'est pas une signature : `null`, comme l'ancien poste.
         initials: line.packed === null || line.packed.initials === "" ? null : line.packed.initials,
         packedAt: line.packed?.at.toISOString() ?? null,
-        // Une ligne déjà au bac n'attend plus rien : ses pièces sont dans le sac.
-        awaitingProduction: line.packed === null && awaiting(line.sku, line.quantity),
+        // Une ligne déjà au bac n'attend plus rien ; une ligne ouverte n'attend
+        // que ce qui lui reste à poser — pas les pièces déjà dans un sac.
+        awaitingProduction: line.packed === null && awaiting(line.sku, toPlace),
         allocated,
-        unallocated: Math.max(0, line.quantity - allocated),
+        unallocated: toPlace,
       };
     })
     .sort(byNameThenSku);

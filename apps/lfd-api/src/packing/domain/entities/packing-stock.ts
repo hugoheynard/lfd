@@ -1,4 +1,5 @@
 import { LineNotProducedYetError } from "../errors/packing-station-errors.js";
+import { shortfall } from "../services/placement.js";
 
 /** L'état d'une réserve, tel que l'adaptateur l'écrit et le relit. */
 export interface PackingStockSnapshot {
@@ -64,7 +65,7 @@ export class PackingStock {
    *   dit combien il en manque, comme l'ancien poste.
    */
   take(quantity: number, productName: string): void {
-    const missing = quantity - this.free;
+    const missing = shortfall(this.free, quantity);
     if (missing > 0) {
       throw new LineNotProducedYetError(productName, missing);
     }

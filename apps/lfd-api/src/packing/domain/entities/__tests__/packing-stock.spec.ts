@@ -55,4 +55,13 @@ describe("PackingStock.giveBack — le colisage décide d'un retour", () => {
     expect(held.giveBack(12)).toBe(0);
     expect(held.returned).toBe(0);
   });
+
+  /**
+   * Régression (2026-10-05, VIE-001) : le serveur et le badge lisent le même
+   * libre — 423 reçus, 346 posés, 77 se posent, pas un de plus.
+   */
+  it("pose exactement le libre que l'écran annonce, et refuse la pièce de trop", () => {
+    expect(() => stock(423, 0, 346).take(77, "Croissant")).not.toThrow();
+    expect(() => stock(423, 0, 346).take(78, "Croissant")).toThrow(/Il manque 1 « Croissant »/);
+  });
 });

@@ -5,6 +5,7 @@ import {
   PackingContainerVoidedError,
   WithdrawBeyondContentError,
 } from "../errors/packing-container-errors.js";
+import { leftToPlace } from "../services/placement.js";
 
 /** La ligne due, vue des contenants : l'article, son nom, sa quantité. */
 export interface DueLine {
@@ -129,9 +130,9 @@ export class OrderContents {
   allocate(containerId: string, line: DueLine, quantity: number): number {
     const pieces = piecesToMove(quantity);
     this.live(containerId);
-    const remaining = line.quantity - this.allocatedOf(line.sku);
+    const remaining = leftToPlace(line.quantity, this.allocatedOf(line.sku));
     if (pieces > remaining) {
-      throw new OverAllocationError(line.productName, Math.max(0, remaining));
+      throw new OverAllocationError(line.productName, remaining);
     }
     this.shift(containerId, line.sku, pieces);
     return pieces;
