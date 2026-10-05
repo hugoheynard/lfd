@@ -408,11 +408,23 @@ Calqués sur la barre de déclinaisons de la fiche produit.
   panneau montre les valeurs du principal en lecture, avec la mention
   « hérité de _Principal_ depuis le _date_ ». Décochée, il montre les
   siennes. C'est le geste « Aligner sur la déclinaison par défaut ».
-- **Créer un sous-compte** : identité légale (SIRET, raison sociale,
-  enseigne ; le SIREN du principal est proposé), première adresse de
-  livraison, puis les aspects à suivre (`billing` pour un site sans SIRET ; `pricing`
-  seulement pour qui a le droit de tarification, cf. Q9). Le sous-compte naît en `pending`, comme toute création
-  staff, et s'active par le chemin existant.
+- **Créer un sous-compte** commence par un **choix explicite** (retour de
+  Hugo sur le premier écran, 2026-10-05 : « si le sous-compte est un chalet,
+  il a la même raison sociale et tout ? ça n'est pas clair ») :
+  - **« Un site de cette société »** (le chalet) : seulement le nom du site,
+    l'adresse et le contact de livraison. Aucun champ d'identité légale.
+    L'écran montre en lecture « Facturé au nom de _raison sociale_ — SIRET,
+    TVA du principal ». `billing` est suivi d'office : c'est ce que veut dire
+    « site ».
+  - **« Une entité distincte »** (l'établissement Club Med) : l'identité
+    légale complète, avec le SIREN du principal proposé. `billing` n'est
+    pas proposé.
+  - Dans les deux cas : « Appliquer la mercuriale du principal » (seulement
+    avec le droit de tarification, jamais cochée d'office) et « Partager les
+    contacts du principal ».
+  - Le sous-compte naît en `pending`, comme toute création staff. Le bandeau
+    dit lequel des deux il est : « Site de _Principal_ » ou « Entité
+    rattachée à _Principal_ ».
 - **Rattacher** un client existant comme sous-compte, et le **détacher**.
   Détacher ferme toutes ses périodes de suivi : le sous-compte reprend ses
   valeurs propres, qui dormaient.
