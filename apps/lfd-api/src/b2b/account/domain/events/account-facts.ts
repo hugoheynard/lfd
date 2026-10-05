@@ -60,6 +60,16 @@ export const ACCOUNT_FACTS = {
   directDebitBlocked: "company.direct_debit_blocked",
   /** La comptabilité rétablit le prélèvement mensuel. */
   directDebitUnblocked: "company.direct_debit_unblocked",
+  /** Sous-comptes (plan-sous-comptes, S1) : le lien vers un principal est posé. */
+  parentAttached: "company.parent_attached",
+  /** Le lien est retiré ; les périodes de suivi en cours sont closes. */
+  parentDetached: "company.parent_detached",
+  /** Un aspect du principal commence à être suivi. */
+  parentFollowed: "company.parent_followed",
+  /** Un aspect du principal cesse d'être suivi. */
+  parentUnfollowed: "company.parent_unfollowed",
+  /** « Compte de groupe, sans livraison », coché ou décoché. */
+  groupWithoutDeliverySet: "company.group_without_delivery_set",
   /** Un agent écrit l'adresse de facturation — celle qui part sur les factures. */
   billingAddressSaved: "company.billing_address_saved",
   deliveryAddressAdded: "company.delivery_address_added",

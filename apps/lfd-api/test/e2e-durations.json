@@ -217,6 +217,7 @@
   "test/storefront-operations.e2e-spec.ts": 6621,
   "test/storefront-roles-migration.e2e-spec.ts": 2140,
   "test/storefront.e2e-spec.ts": 9721,
+  "test/sub-accounts.e2e-spec.ts": 12492,
   "test/subscriptions-journal.e2e-spec.ts": 4485,
   "test/subscriptions.e2e-spec.ts": 3933,
   "test/supervision-routes.e2e-spec.ts": 6374,

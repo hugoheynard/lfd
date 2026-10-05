@@ -36,6 +36,8 @@ const detail: AdminCompanyDetailView = {
   },
   kbis: null,
   hasOpenSupportRequest: false,
+  parent: null,
+  hierarchy: { parent: null, subAccounts: [], follows: [], groupWithoutDelivery: false },
   // `pending` : le dossier est déposé, il n'a jamais été activé. `null` n'est
   // donc pas un remplissage — c'est ce que la fiche DIT, et la distinction avec
   // `createdAt` est celle qui date le chiffre d'affaires.

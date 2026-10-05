@@ -14,6 +14,7 @@ function company(over: Partial<WarningInput> = {}): WarningInput {
     hasActiveMandate: false,
     kbisUploadedAt: null,
     kbisCertifiedAt: null,
+    legalIdentityCarriedByParent: false,
     ...over,
   };
 }
@@ -101,6 +102,20 @@ describe("les avertissements d'un dossier", () => {
       "activation_bloquee",
       "attente_prolongee",
       "kbis_a_verifier",
+    ]);
+  });
+  it("ne dit pas bloqué un sous-compte facturé au nom de son principal actif", () => {
+    // Plan-sous-comptes §2.1 bis : la même règle que la porte d'activation.
+    const chalet = company({
+      status: "pending",
+      hasLegalIdentity: false,
+      hasHolder: false,
+      hasBillingAddress: false,
+    });
+
+    expect(companyWarnings({ ...chalet, legalIdentityCarriedByParent: true }, NOW)).toEqual([]);
+    expect(companyWarnings(chalet, NOW).map((warning) => warning.kind)).toEqual([
+      "activation_bloquee",
     ]);
   });
 });

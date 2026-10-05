@@ -46,9 +46,13 @@ export function activationGate(company: AdminCompanyDetailView): ActivationGate 
   }));
 
   const blocking: ActivationBlocker[] = [];
+  // Un sous-compte qui suit `billing` d'un principal ACTIF est facturé au nom
+  // du principal : ni identité légale ni détenteur propres (plan-sous-comptes
+  // §2.1 bis). `Company.activate` tient la même règle.
+  const carried = isLegallyCarried(company);
   // L'identité légale n'est pas une pièce parmi d'autres : sans SIRET, il n'y a
   // rien à facturer.
-  if (!hasLegalIdentity(company)) {
+  if (!hasLegalIdentity(company) && !carried) {
     blocking.push("identite_legale");
   }
   // Un compte s'OUVRE sans détenteur — le commercial n'a parfois que l'enseigne,
@@ -56,7 +60,7 @@ export function activationGate(company: AdminCompanyDetailView): ActivationGate 
   // sans personne à qui ouvrir l'espace fabriquerait un compte actif où nul ne
   // peut se connecter, et le client découvrirait au premier besoin qu'on lui a
   // ouvert une porte sans lui donner la clé.
-  if (!hasHolder(company)) {
+  if (!hasHolder(company) && !carried) {
     blocking.push("detenteur");
   }
   // Un livreur qui cherche une porte doit pouvoir appeler quelqu'un — n'importe
@@ -66,7 +70,10 @@ export function activationGate(company: AdminCompanyDetailView): ActivationGate 
   }
   for (const check of checklist) {
     const blocker = PIECE_BLOCKERS[check.piece];
-    if (check.blocking && !check.done && blocker !== undefined) {
+    // TVA et facturation sont celles du PAYEUR quand le sous-compte suit
+    // `billing` : c'est le principal, actif, qui les a fournies à sa propre
+    // activation (plan-sous-comptes §2.1 bis, précisé le 2026-10-05).
+    if (check.blocking && !check.done && blocker !== undefined && !carried) {
       blocking.push(blocker);
     }
   }
@@ -98,6 +105,16 @@ function isDone(company: AdminCompanyDetailView, piece: ActivationPiece): boolea
       // la vérité le jour où la livraison ouvrira.
       return company.addresses.deliveries.length > 0;
   }
+}
+
+/** Suit-il `billing` d'un principal actif, à l'instant de la lecture de la fiche ? */
+function isLegallyCarried(company: AdminCompanyDetailView): boolean {
+  const { parent, follows } = company.hierarchy;
+  return (
+    parent !== null &&
+    parent.status === "active" &&
+    follows.some((follow) => follow.aspect === "billing")
+  );
 }
 
 /** Raison sociale + forme juridique + SIRET : de quoi facturer. */

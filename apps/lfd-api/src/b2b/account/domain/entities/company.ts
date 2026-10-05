@@ -23,6 +23,8 @@ import {
   type KbisFile,
 } from "../value-objects/kbis-deposit.js";
 import { DirectDebitBlock } from "../value-objects/direct-debit-block.js";
+import { HierarchyPlace } from "../value-objects/hierarchy-place.js";
+import { UnsavedParentCompanyError } from "../errors/hierarchy-errors.js";
 import {
   DirectDebitAlreadyBlockedError,
   DirectDebitNotBlockedError,
@@ -109,6 +111,8 @@ export interface ReconstituteCompanyInput {
   readonly kbis?: KbisDeposit | null;
   /** Le blocage du prélèvement, **facultatif** : absent = non bloqué. */
   readonly directDebitBlock?: DirectDebitBlock | null;
+  /** Sa place dans la hiérarchie des comptes, **facultative** : absente = société seule. */
+  readonly hierarchy?: HierarchyPlace;
 }
 
 /**
@@ -157,6 +161,19 @@ export interface CompanySoftState {
   readonly kbis: KbisDeposit | null;
   /** Le blocage du prélèvement, ou `null` — les trois colonnes ensemble. */
   readonly directDebitBlock: DirectDebitBlock | null;
+  /**
+   * La place dans la hiérarchie **si elle a changé** depuis le chargement,
+   * sinon `null` — et l'adaptateur n'écrit alors pas ces colonnes.
+   *
+   * Pas un détail : `save()` réécrit toute la ligne. Une correction d'identité
+   * chargée AVANT un rattachement concurrent, puis enregistrée APRÈS, remettrait
+   * `parent_company_id` à `null` sans que personne l'ait décidé. Les gestes de
+   * la hiérarchie, eux, chargent sous le verrou (plan-sous-comptes §5).
+   */
+  readonly hierarchyChange: {
+    readonly parentCompanyId: string | null;
+    readonly groupWithoutDelivery: boolean;
+  } | null;
 }
 
 /**
@@ -202,7 +219,22 @@ export class Company {
     private kbisValue: KbisDeposit | null,
     /** Le prélèvement bloqué (crédit conservé), ou `null`. */
     private directDebitBlockValue: DirectDebitBlock | null,
-  ) {}
+    /** Principal, sous-comptes, compte de groupe (plan-sous-comptes §2). */
+    private hierarchyValue: HierarchyPlace,
+  ) {
+    this.loadedHierarchy = hierarchyValue;
+  }
+
+  /** La place telle que chargée : `toPersistence` n'écrit la hiérarchie que si elle a bougé. */
+  private readonly loadedHierarchy: HierarchyPlace;
+
+  private hierarchyChanged(): boolean {
+    return (
+      this.identityId === null ||
+      this.hierarchyValue.parentCompanyId !== this.loadedHierarchy.parentCompanyId ||
+      this.hierarchyValue.groupWithoutDelivery !== this.loadedHierarchy.groupWithoutDelivery
+    );
+  }
 
   static declare(identity: CompanyIdentityInput, contact: CompanyContact | null): Company {
     return new Company(
@@ -235,6 +267,8 @@ export class Company {
       null,
       // Aucun crédit, donc rien à bloquer.
       null,
+      // Seule : un sous-compte naît par `attachTo`, sous le verrou de la hiérarchie.
+      HierarchyPlace.standalone(),
     );
   }
 
@@ -258,6 +292,7 @@ export class Company {
       input.nafCode,
       input.kbis ?? null,
       input.directDebitBlock ?? null,
+      input.hierarchy ?? HierarchyPlace.standalone(),
     );
   }
 
@@ -595,7 +630,12 @@ export class Company {
    * amont par le cas d'usage — elle croise plusieurs tables, hors de cet agrégat.
    * Refuse toute société qui n'est pas `pending` (déjà active, suspendue, close).
    */
-  activate(activatedAt: Date, reachable: boolean, by: StaffTrace): void {
+  activate(
+    activatedAt: Date,
+    reachable: boolean,
+    by: StaffTrace,
+    billingCarrier: Company | null = null,
+  ): void {
     // **Un numéro pour la livraison.** Le livreur qui cherche une porte a besoin
     // d'appeler quelqu'un ; un compte actif sans aucun numéro joignable, c'est
     // une commande qui repart au dépôt. « Au moins un interlocuteur », et pas
@@ -612,7 +652,12 @@ export class Company {
     // Sans détenteur, l'espace n'a personne à qui s'ouvrir : le compte serait
     // actif et sa porte murée. S'ouvrir sans est légitime (l'adresse arrive
     // ensuite) ; le rester au moment de devenir client ne l'est pas.
-    if (this.contactValue === null) {
+    // Un sous-compte qui suit `billing` d'un principal ACTIF n'a ni identité
+    // légale ni détenteur propres à fournir : il est facturé au nom du
+    // principal (plan-sous-comptes §2.1 bis). Le principal est lu par le
+    // handler sous le verrou de la hiérarchie.
+    const carried = this.isLegallyCarriedBy(billingCarrier);
+    if (this.contactValue === null && !carried) {
       throw new CompanyActivationBlockedError(
         this.identityId ?? "",
         ["detenteur"],
@@ -621,11 +666,13 @@ export class Company {
     }
     // L'identité légale, elle, EST de cet agrégat — et sans elle on ne peut pas
     // facturer. Un compte s'ouvre sans papiers ; il ne devient pas client sans.
-    if (!this.hasLegalIdentity) {
+    if (!this.hasLegalIdentity && !carried) {
       throw new CompanyActivationBlockedError(
         this.identityId ?? "",
         ["identite_legale"],
-        "Raison sociale, forme juridique et SIRET sont nécessaires pour activer un compte.",
+        billingCarrier === null
+          ? "Raison sociale, forme juridique et SIRET sont nécessaires pour activer un compte."
+          : "Ce sous-compte est facturé au nom de son compte principal, qui n'est pas actif : activez d'abord le compte principal, ou renseignez son propre SIRET.",
       );
     }
     if (this.statusValue !== "pending") {
@@ -638,6 +685,58 @@ export class Company {
     this.statusValue = "active";
     this.activatedAtValue = activatedAt;
     this.activatedByValue = by;
+  }
+
+  /**
+   * Le principal porte-t-il l'identité légale de ce compte ? Oui seulement si
+   * c'est SON principal, et qu'il est actif.
+   */
+  private isLegallyCarriedBy(carrier: Company | null): boolean {
+    return (
+      carrier !== null &&
+      carrier.identityId !== null &&
+      carrier.identityId === this.parentCompanyId &&
+      carrier.statusValue === "active"
+    );
+  }
+
+  /** Le compte principal dont celui-ci est un sous-compte, ou `null`. */
+  get parentCompanyId(): string | null {
+    return this.hierarchyValue.parentCompanyId;
+  }
+
+  /** Principal, sous-comptes, compte de groupe. */
+  get hierarchy(): HierarchyPlace {
+    return this.hierarchyValue;
+  }
+
+  /**
+   * Fait de ce compte un sous-compte de `parent`. Les deux sont lus sous le
+   * verrou consultatif de la hiérarchie ; les règles de profondeur sont
+   * celles de {@link HierarchyPlace.attachTo}.
+   */
+  attachTo(parent: Company): void {
+    if (parent.identityId === null) {
+      throw new UnsavedParentCompanyError();
+    }
+    this.hierarchyValue = this.hierarchyValue.attachTo(
+      this.identityId,
+      parent.identityId,
+      parent.hierarchyValue,
+    );
+  }
+
+  /**
+   * Détache du principal. Les périodes de suivi se ferment à côté, dans
+   * `SubAccountFollows` : elles sont un autre agrégat.
+   */
+  detachFromParent(): void {
+    this.hierarchyValue = this.hierarchyValue.detach(this.identityId);
+  }
+
+  /** Coche ou décoche « Compte de groupe, sans livraison » (§4). */
+  markGroupWithoutDelivery(enabled: boolean): void {
+    this.hierarchyValue = this.hierarchyValue.markGroupWithoutDelivery(this.identityId, enabled);
   }
 
   /**
@@ -711,6 +810,12 @@ export class Company {
       nafCode: this.nafCodeValue,
       kbis: this.kbisValue,
       directDebitBlock: this.directDebitBlockValue,
+      hierarchyChange: this.hierarchyChanged()
+        ? {
+            parentCompanyId: this.hierarchyValue.parentCompanyId,
+            groupWithoutDelivery: this.hierarchyValue.groupWithoutDelivery,
+          }
+        : null,
     };
   }
 }

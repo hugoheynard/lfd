@@ -35,12 +35,14 @@ function company(over: Partial<AdminCompanyDetail> = {}): AdminCompanyDetail {
     kbis: null,
     owner: null,
     hasOpenSupportRequest: false,
+    parent: null,
     createdAt: '2026-07-30T10:00:00.000Z',
     activatedAt: null,
     warnings: [],
     // Le DÉTAIL : c'est lui que la fiche projette, et lui seul qui sait si la
     // forme juridique impose un numéro de TVA.
     vatNumberRequired: true,
+    hierarchy: { parent: null, subAccounts: [], follows: [], groupWithoutDelivery: false },
     addresses: { billing: null, deliveries: [] },
     contacts: [],
     fulfillmentPreference: {
@@ -102,6 +104,7 @@ describe('admin-company-view', () => {
     return {
       ...company(),
       vatNumberRequired: false,
+      hierarchy: { parent: null, subAccounts: [], follows: [], groupWithoutDelivery: false },
       addresses: { billing: null, deliveries: [] },
       contacts: [HOLDER, ...book],
       fulfillmentPreference: {

@@ -30,6 +30,7 @@ function company(overrides: Partial<AdminCompany> = {}): AdminCompany {
     owner: { firstName: 'Julien', lastName: 'Deschamps', email: 'julien@fournil.fr' },
     kbis: null,
     hasOpenSupportRequest: false,
+    parent: null,
     createdAt: '2026-08-01T09:00:00.000Z',
     activatedAt: null,
     warnings: [],

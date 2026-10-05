@@ -17,6 +17,7 @@ import type { DeferredTerm } from "./company.js";
 import type { CompanyStatus } from "./customer-sheet.js";
 import type { FulfillmentPreferenceView } from "./fulfillment-preference.js";
 import type { ActivationPiece } from "./platform-settings.js";
+import type { CompanyHierarchyView, CompanyRefView } from "./sub-accounts.js";
 
 /**
  * Le **propriétaire de l'espace** : la personne qui administre la société sur la
@@ -96,6 +97,11 @@ export interface AdminCompanyView {
    * classement, donc l'ordre n'est pas une affaire d'écran.
    */
   readonly warnings: readonly CompanyWarning[];
+  /**
+   * Le compte principal dont celui-ci est un sous-compte, ou `null` — le badge
+   * « Sous-compte de _Principal_ » de la liste (plan-sous-comptes §4).
+   */
+  readonly parent: CompanyRefView | null;
 }
 
 /**
@@ -146,6 +152,14 @@ export interface AdminCompanyDetailView extends AdminCompanyView {
    * n'est pas « retrait » : c'est l'état de tout le portefeuille existant.
    */
   readonly fulfillmentPreference: FulfillmentPreferenceView;
+
+  /**
+   * Sa place dans la hiérarchie des comptes : principal, sous-comptes, aspects
+   * suivis en ce moment et depuis quand (plan-sous-comptes §4). Le verdict
+   * d'activation la lit : un sous-compte qui suit `billing` d'un principal
+   * actif n'a pas d'identité légale propre à fournir (§2.1 bis).
+   */
+  readonly hierarchy: CompanyHierarchyView;
 }
 
 /**

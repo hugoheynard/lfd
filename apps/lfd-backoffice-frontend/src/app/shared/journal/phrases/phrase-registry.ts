@@ -23,6 +23,7 @@ import { REFERENTIAL_PHRASES } from './referential-phrases';
 import { REFERENTIAL_SETTINGS_PHRASES } from './referential-settings-phrases';
 import { SETTINGS_PHRASES } from './settings-phrases';
 import { STOREFRONT_PHRASES } from './storefront-phrases';
+import { SUB_ACCOUNT_PHRASES } from './sub-account-phrases';
 import { TEAM_PHRASES } from './team-phrases';
 
 /**
@@ -166,6 +167,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...PRODUCTION_QUALITY_PHRASES,
   ...PRICING_PHRASES,
   ...ACCOUNTS_PHRASES,
+  ...SUB_ACCOUNT_PHRASES,
   ...ACCOUNTING_PHRASES,
   ...LOYALTY_PHRASES,
   ...TEAM_PHRASES,

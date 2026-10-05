@@ -29,6 +29,8 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
     },
     kbis: null,
     hasOpenSupportRequest: false,
+    parent: null,
+    hierarchy: { parent: null, subAccounts: [], follows: [], groupWithoutDelivery: false },
     // `pending` : le dossier est déposé, il n'a jamais été activé. `null` n'est
     // donc pas un remplissage — c'est ce que la fiche DIT, et la distinction avec
     // `createdAt` est celle qui date le chiffre d'affaires.
@@ -238,5 +240,68 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
     const actif = activationGate(detail({ ...COMPLETE, status: "active" }));
     expect(actif.blocking).toEqual([]);
     expect(actif.canActivate).toBe(false);
+  });
+  describe("un sous-compte qui suit la facturation (plan-sous-comptes §2.1 bis)", () => {
+    /** Un chalet : ni SIRET, ni forme, ni détenteur — tout le reste en règle. */
+    const CHALET: Partial<AdminCompanyDetailView> = {
+      ...COMPLETE,
+      raisonSociale: "",
+      formeJuridique: "",
+      siret: "",
+      primaryContact: { ...detail().primaryContact, email: "" },
+    };
+    const followingBilling = (status: "active" | "pending") => ({
+      parent: { id: "groupe", enseigne: "Alpes Chalets", status },
+      subAccounts: [],
+      follows: [{ aspect: "billing" as const, since: "2026-08-01T10:00:00.000Z" }],
+      groupWithoutDelivery: false,
+    });
+
+    it("n'exige ni identité légale ni détenteur quand le principal est actif", () => {
+      const gate = activationGate(detail({ ...CHALET, hierarchy: followingBilling("active") }));
+
+      expect(gate.blocking).toEqual([]);
+      expect(gate.canActivate).toBe(true);
+    });
+
+    it("ne demande ni TVA ni adresse de facturation propres : ce sont celles du payeur", () => {
+      const bare = { ...CHALET, vatNumber: "", addresses: { billing: null, deliveries: [] } };
+
+      expect(
+        activationGate(detail({ ...bare, hierarchy: followingBilling("active") })).blocking,
+      ).toEqual([]);
+      // Sans suivi actif, elles redeviennent les siennes.
+      expect(
+        activationGate(detail({ ...bare, hierarchy: followingBilling("pending") })).blocking,
+      ).toEqual(["identite_legale", "detenteur", "vat", "facturation"]);
+    });
+
+    it("le principal, lui, ne s'active pas sans TVA ni facturation : c'est là qu'elles sont exigées", () => {
+      const principal = detail({
+        ...COMPLETE,
+        vatNumber: "",
+        addresses: { billing: null, deliveries: [] },
+      });
+
+      expect(activationGate(principal).blocking).toEqual(["vat", "facturation"]);
+    });
+
+    it("les exige si le principal n'est pas actif", () => {
+      const gate = activationGate(detail({ ...CHALET, hierarchy: followingBilling("pending") }));
+
+      expect(gate.blocking).toEqual(["identite_legale", "detenteur"]);
+    });
+
+    it("les exige quand il suit le principal pour autre chose que la facturation", () => {
+      const pricingOnly = {
+        ...followingBilling("active"),
+        follows: [{ aspect: "pricing" as const, since: "2026-08-01T10:00:00.000Z" }],
+      };
+
+      expect(activationGate(detail({ ...CHALET, hierarchy: pricingOnly })).blocking).toEqual([
+        "identite_legale",
+        "detenteur",
+      ]);
+    });
   });
 });

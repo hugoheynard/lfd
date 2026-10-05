@@ -161,8 +161,14 @@ une permission :
   traite comme « identité légale portée par le principal » : pas de SIRET,
   pas de KBIS, pas de détenteur propre exigés. Le **principal**, lui, doit
   être actif. Même règle dans `activation-gate` et dans les avertissements.
-- **Cesser de suivre `billing`** remet le sous-compte devant sa propre
-  checklist. S'il n'a ni SIRET ni RIB, il passe `pending`, et il le dit.
+- **Ce qui est levé** pour un sous-compte qui suit `billing` : SIRET, KBIS,
+  détenteur propre, n° de TVA et adresse de facturation. Ce sont ceux du
+  payeur.
+- **Cesser de suivre `billing`** ne change pas le statut : il n'existe
+  aucune transition `active → pending`, et en inventer une serait un
+  second chantier. La fiche remontre alors les pièces manquantes
+  (`identite_legale`, `detenteur`), et c'est au staff de les compléter
+  (S1, 2026-10-05).
 - **Le KBIS** est celui du principal, tant que `billing` est suivi.
 
 - **Le statut** reste propre. Seul le **payeur** suspendu bloque (§2.4).
@@ -501,7 +507,9 @@ après le retour du cabinet sur Q3.
   2026-10-05). Le geste « suivre / cesser de suivre `pricing` » est donc
   derrière le droit de tarification (`@AdminSurface("b2b_pricing")`, celui
   de `admin-company-pricing.controller.ts`), et non derrière le droit de la
-  fiche client. Il est journalisé comme les autres décisions de prix. Le
+  fiche client. Il est journalisé au journal général
+  (`company.parent_followed`, aspect `pricing`). Le journal des prix a un
+  vocabulaire fermé (T21) : l'y ajouter se décide en S3. Le
   client ne le voit pas et ne peut pas le changer. À la création d'un
   sous-compte, `pricing` n'est **pas** coché d'office : la case n'apparaît
   qu'à qui a le droit de tarification.

@@ -143,6 +143,19 @@ export const LOGIN_PROVIDER = domain('méthode de connexion', {
   facebook: 'Facebook',
 });
 
+/** L'aspect qu'un sous-compte suit de son principal (`company.parent_followed`, plan-sous-comptes §2.1). */
+export const FOLLOW_ASPECT = domain('aspect suivi du compte principal', {
+  billing: 'Facturation',
+  pricing: 'Tarif',
+  contacts: 'Contacts',
+});
+
+/** Comment un sous-compte a été lié à son principal (`company.parent_attached`). */
+export const PARENT_LINK_VIA = domain('lien vers le compte principal', {
+  created: 'Créé comme sous-compte',
+  attached: 'Rattaché',
+});
+
 /** Les mots de quelques valeurs d'un ensemble déjà nommé. */
 function pick(
   set: { readonly labels: Readonly<Record<string, string>> },
@@ -166,6 +179,8 @@ export const ACCOUNTS_VALUES: ValueFamily = {
     PROFILE_FIELD,
     COMPANY_ROLE,
     SUPPORT_CHANNEL,
+    FOLLOW_ASPECT,
+    PARENT_LINK_VIA,
   ],
   strings: {
     fields: CHANGED_FIELD,

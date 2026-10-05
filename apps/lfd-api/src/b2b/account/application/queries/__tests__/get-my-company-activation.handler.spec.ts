@@ -37,6 +37,8 @@ const detail: AdminCompanyDetailView = {
   },
   kbis: null,
   hasOpenSupportRequest: false,
+  parent: null,
+  hierarchy: { parent: null, subAccounts: [], follows: [], groupWithoutDelivery: false },
   activatedAt: null,
   createdAt: "2026-07-30T10:00:00.000Z",
   vatNumberRequired: true,

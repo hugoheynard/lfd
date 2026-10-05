@@ -225,6 +225,24 @@ model Company {
   activatedByName    String? @map("activated_by_name")
   activatedByRole    String? @map("activated_by_role")
 
+  /// Le compte PRINCIPAL dont celui-ci est un sous-compte, ou `null`
+  /// (`documentation/b2b/plan-sous-comptes.md`, §1–§2). La STRUCTURE actuelle,
+  /// pour la fiche — qui suivait qui à une date se lit dans `company_follows`.
+  /// Profondeur 1 : tenue par l'agrégat sous le verrou consultatif de la
+  /// hiérarchie, et en seconde ligne par un déclencheur (§5).
+  parentCompanyId String?   @map("parent_company_id")
+  parentCompany   Company?  @relation("CompanyHierarchy", fields: [parentCompanyId], references: [id], onDelete: Restrict)
+  subAccounts     Company[] @relation("CompanyHierarchy")
+
+  /// « Compte de groupe, sans livraison » (§4) : une holding qui négocie et ne
+  /// commande jamais en son nom propre.
+  groupWithoutDelivery Boolean @default(false) @map("group_without_delivery")
+
+  /// Les périodes de suivi de ce sous-compte (côté suiveur) et celles où il est
+  /// suivi (côté principal).
+  follows   CompanyFollow[] @relation("CompanyFollowFollower")
+  followers CompanyFollow[] @relation("CompanyFollowParent")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -262,7 +280,38 @@ model Company {
   // pas des doublons.
   @@index([siret])
   @@index([siren])
+  @@index([parentCompanyId])
   @@map("companies")
+  @@schema("public")
+}
+
+/// Ce qu'un sous-compte peut suivre de son principal (plan-sous-comptes §2.1).
+enum CompanyFollowAspect {
+  billing
+  pricing
+  contacts
+
+  @@schema("public")
+}
+
+/// Une **période** pendant laquelle un sous-compte suit un aspect de son
+/// principal (plan-sous-comptes §2.1). Datée, et non un booléen : le prix et le
+/// payeur se relisent à date. Suivre ouvre une période, cesser la ferme ; rien
+/// ne s'efface. Deux périodes d'un même aspect ne se chevauchent pas
+/// (contrainte d'exclusion `company_follows_no_overlap`, en migration).
+model CompanyFollow {
+  companyId String              @map("company_id")
+  company   Company             @relation("CompanyFollowFollower", fields: [companyId], references: [id])
+  parentId  String              @map("parent_id")
+  parent    Company             @relation("CompanyFollowParent", fields: [parentId], references: [id])
+  aspect    CompanyFollowAspect
+  validFrom DateTime            @map("valid_from") @db.Timestamptz(3)
+  /// `null` = en cours.
+  validTo   DateTime?           @map("valid_to") @db.Timestamptz(3)
+
+  @@id([companyId, aspect, validFrom])
+  @@index([parentId])
+  @@map("company_follows")
   @@schema("public")
 }
 

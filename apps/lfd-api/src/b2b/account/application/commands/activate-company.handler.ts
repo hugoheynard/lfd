@@ -15,6 +15,9 @@ import {
 } from "../../domain/ports/admin-company.reader.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { StaffDirectory } from "../../domain/ports/staff-directory.js";
+import { AccountHierarchyLock } from "../../domain/ports/account-hierarchy.lock.js";
+import { CompanyFollowsReader } from "../../domain/ports/company-follows.reader.js";
+import type { Company } from "../../domain/entities/company.js";
 import { activationGate } from "../../domain/services/activation-gate.js";
 import { ActivateCompanyByStaffCommand } from "./activate-company.command.js";
 
@@ -30,6 +33,13 @@ import { ActivateCompanyByStaffCommand } from "./activate-company.command.js";
  *    `pending → active` et **refuse** toute société qui n'est pas `pending`.
  *
  * Aucun mur membership : l'auth staff garde la route en amont.
+ *
+ * **Sous-comptes** (plan-sous-comptes §2.1 bis) : un sous-compte qui suit
+ * `billing` d'un principal actif s'active sans SIRET, sans KBIS ni détenteur
+ * propres. Le suivi et le statut du principal sont relus sous le verrou de
+ * la hiérarchie, dans la transaction de la transition, et c'est l'agrégat qui
+ * tranche : un « cesser de suivre » ou un « détacher » concurrent passe avant
+ * ou après, jamais au milieu.
  */
 @CommandHandler(ActivateCompanyByStaffCommand)
 export class ActivateCompanyByStaffHandler implements ICommandHandler<
@@ -43,11 +53,24 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly staff: StaffDirectory,
+    private readonly lock: AccountHierarchyLock,
+    private readonly follows: CompanyFollowsReader,
   ) {}
 
   async execute(command: ActivateCompanyByStaffCommand): Promise<void> {
-    // 1) Policy : la fiche assemble les pièces (plusieurs tables) ; on bloque si
-    //    une pièce requise manque.
+    // La trace suit le même patron que la certification du KBIS : l'id de
+    // fiche toujours, le nom et le titre quand l'annuaire les connaît, figés ici.
+    const agent = await this.staff.identify(command.staffUserId);
+    const by = {
+      staffUserId: command.staffUserId,
+      name: agent?.name ?? "",
+      role: agent?.role ?? "",
+    };
+    // 1) Policy : la fiche assemble les pièces (plusieurs tables) ; on bloque
+    //    si une pièce requise manque. Lue HORS transaction : elle fait ses
+    //    lectures en parallèle, ce qu'une connexion de transaction ne sait pas
+    //    faire. Ce qu'elle dit du suivi `billing` est donc un premier filtre —
+    //    la règle elle-même est retenue par l'agrégat, sous le verrou, plus bas.
     const view = await this.reader.byId(command.companyId);
     if (view === null) {
       throw new CompanyNotFoundError(command.companyId);
@@ -60,35 +83,31 @@ export class ActivateCompanyByStaffHandler implements ICommandHandler<
         `Activation impossible : ${gate.blocking.join(", ")}.`,
       );
     }
-
-    // 2) Transition via l'agrégat, qui garde l'invariant « pending ». L'instant
-    //    d'activation vient du `Clock` (temps métier de la requête) — l'agrégat
-    //    reste pur, l'horloge est injectée.
-    const company = await this.companies.load(command.companyId);
-    if (company === null) {
-      throw new CompanyNotFoundError(command.companyId);
-    }
-    const activatedAt = this.clock.now();
-    // Joignabilité : le détenteur, ou n'importe lequel de ses interlocuteurs.
-    // C'est souvent le responsable réception qui a le numéro utile — exiger
-    // celui du gérant bloquerait un dossier complet par ailleurs.
-    // La trace suit le même patron que la certification du KBIS : l'id de
-    // fiche toujours, le nom et le titre quand l'annuaire les connaît, figés ici.
-    const agent = await this.staff.identify(command.staffUserId);
-    company.activate(activatedAt, isReachable(view), {
-      staffUserId: command.staffUserId,
-      name: agent?.name ?? "",
-      role: agent?.role ?? "",
-    });
-    // Jalon de conversion — et acte d'un agent sur le compte d'un tiers : la
-    // trace part dans la transaction de la transition. Un compte actif dont
-    // personne ne sait qui l'a ouvert n'est pas un état acceptable.
     await this.uow.run(async () => {
+      await this.lock.acquire();
+      // 2) Transition via l'agrégat, qui garde l'invariant « pending » — et
+      //    relit lui-même ce que porte le principal suivi en `billing`.
+      const company = await this.companies.load(command.companyId);
+      if (company === null) {
+        throw new CompanyNotFoundError(command.companyId);
+      }
+      const activatedAt = this.clock.now();
+      const carrier = await this.billingCarrier(command.companyId, activatedAt);
+      // Joignabilité : le détenteur, ou n'importe lequel de ses interlocuteurs.
+      company.activate(activatedAt, isReachable(view), by, carrier);
+      // Jalon de conversion — et acte d'un agent sur le compte d'un tiers : la
+      // trace part dans la transaction de la transition.
       await this.companies.save(company);
       await this.events.publishTraced(
         new CompanyActivatedEvent(companyNamed(command.companyId, company), activatedAt),
       );
     });
+  }
+
+  /** Le principal dont ce compte suit `billing` à cet instant, ou `null`. */
+  private async billingCarrier(companyId: string, at: Date): Promise<Company | null> {
+    const period = await this.follows.followsAt(companyId, "billing", at);
+    return period === null ? null : this.companies.load(period.parentId);
   }
 }
 

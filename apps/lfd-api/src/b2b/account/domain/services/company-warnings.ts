@@ -20,6 +20,13 @@ export interface WarningInput {
   /** Déposé le… `null` si aucun extrait. */
   readonly kbisUploadedAt: Date | null;
   readonly kbisCertifiedAt: Date | null;
+  /**
+   * Sous-compte qui suit `billing` d'un principal ACTIF : son identité légale
+   * et son détenteur sont ceux du principal (plan-sous-comptes §2.1 bis). La
+   * même règle que `activationGate` — il ne doit pas afficher bloqué ce que la
+   * porte laisserait passer.
+   */
+  readonly legalIdentityCarriedByParent: boolean;
 }
 
 /**
@@ -68,7 +75,9 @@ export function companyWarnings(company: WarningInput, now: Date): readonly Comp
   }
 
   if (company.status === "pending") {
-    const incomplet = !company.hasLegalIdentity || !company.hasHolder || !company.hasBillingAddress;
+    const ownIdentityMissing = !company.hasLegalIdentity || !company.hasHolder;
+    const incomplet =
+      (ownIdentityMissing || !company.hasBillingAddress) && !company.legalIdentityCarriedByParent;
     if (incomplet) {
       found.push({ kind: "activation_bloquee", since: iso(company.createdAt) });
     }

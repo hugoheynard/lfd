@@ -147,6 +147,20 @@ import { PrismaUserProfileRepository } from "./infrastructure/prisma-user-profil
 import { PrismaSupportRequestRepository } from "./infrastructure/prisma-support-request.repository.js";
 import { SupportRequestRepository } from "./domain/ports/support-request.repository.js";
 import { AdminCompaniesController } from "./http/admin-companies.controller.js";
+import { AdminCompanyHierarchyController } from "./http/admin-company-hierarchy.controller.js";
+import { AdminCompanyPricingFollowController } from "./http/admin-company-pricing-follow.controller.js";
+import { CreateSubAccountHandler } from "./application/commands/create-sub-account.handler.js";
+import { AttachToParentHandler } from "./application/commands/attach-to-parent.handler.js";
+import { DetachFromParentHandler } from "./application/commands/detach-from-parent.handler.js";
+import { FollowParentHandler } from "./application/commands/follow-parent.handler.js";
+import { StopFollowingParentHandler } from "./application/commands/stop-following-parent.handler.js";
+import { SetGroupWithoutDeliveryHandler } from "./application/commands/set-group-without-delivery.handler.js";
+import { AccountHierarchyLock } from "./domain/ports/account-hierarchy.lock.js";
+import { CompanyFollowsReader } from "./domain/ports/company-follows.reader.js";
+import { CompanyFollowsRepository } from "./domain/ports/company-follows.repository.js";
+import { PrismaAccountHierarchyLock } from "./infrastructure/prisma-account-hierarchy.lock.js";
+import { PrismaCompanyFollowsReader } from "./infrastructure/prisma-company-follows.reader.js";
+import { PrismaCompanyFollowsRepository } from "./infrastructure/prisma-company-follows.repository.js";
 import { AdminCompanyMembersController } from "./http/admin-company-members.controller.js";
 import { AdminCompanyContactsController } from "./http/admin-company-contacts.controller.js";
 import { AdminCompanyPiecesController } from "./http/admin-company-pieces.controller.js";
@@ -196,6 +210,10 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     AdminCompanyPiecesController,
     CompanyDeliveryProcedureController,
     AdminCompanyDeliveryProcedureController,
+    // Les sous-comptes (plan `plan-sous-comptes.md`, S1) : la fiche, et le
+    // suivi du tarif derrière le droit de tarification (Q9).
+    AdminCompanyHierarchyController,
+    AdminCompanyPricingFollowController,
   ],
   providers: [
     UpdateMyProfileHandler,
@@ -258,6 +276,16 @@ import { CustomerPrincipalResolver } from "./infrastructure/customer-principal.r
     RequestPaymentTermHandler,
     PreferFulfillmentHandler,
     ActivateCompanyByStaffHandler,
+    // Les sous-comptes (S1) : six gestes sous UN verrou consultatif.
+    CreateSubAccountHandler,
+    AttachToParentHandler,
+    DetachFromParentHandler,
+    FollowParentHandler,
+    StopFollowingParentHandler,
+    SetGroupWithoutDeliveryHandler,
+    { provide: AccountHierarchyLock, useClass: PrismaAccountHierarchyLock },
+    { provide: CompanyFollowsReader, useClass: PrismaCompanyFollowsReader },
+    { provide: CompanyFollowsRepository, useClass: PrismaCompanyFollowsRepository },
     ChangeCompanyStatusHandler,
     GetCustomerSheetHandler,
     UploadKbisByStaffHandler,

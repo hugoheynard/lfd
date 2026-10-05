@@ -10,6 +10,7 @@ import { CompanyRepository, type KbisLocation } from "../domain/ports/company.re
 import { KbisDeposit } from "../domain/value-objects/kbis-deposit.js";
 import { DirectDebitBlock } from "../domain/value-objects/direct-debit-block.js";
 import { ContactDetails } from "../domain/value-objects/contact-details.js";
+import { HierarchyPlace } from "../domain/value-objects/hierarchy-place.js";
 
 /** Préfixe de la référence société — ce que le `P-` du produit est à un article. */
 const COMPANY_PREFIX = "C";
@@ -152,6 +153,9 @@ export class PrismaCompanyRepository extends CompanyRepository {
           siren: company.sirenDigits,
           vatNumber: company.vatNumber,
           ...contactColumns(company.toPersistence().contact),
+          // Un sous-compte naît rattaché (plan-sous-comptes §4) ; le verrou de
+          // la hiérarchie est pris par le handler.
+          parentCompanyId: company.parentCompanyId,
           // Déclarée, pas cliente : l'activation reste commerciale.
           status: CompanyStatus.pending,
         },
@@ -164,7 +168,11 @@ export class PrismaCompanyRepository extends CompanyRepository {
   }
 
   async load(companyId: string): Promise<Company | null> {
-    const row = await this.prisma.company.findUnique({ where: { id: companyId } });
+    const row = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      // Une EXISTENCE : la profondeur se juge sur « a-t-il des sous-comptes ».
+      include: { subAccounts: { select: { id: true }, take: 1 } },
+    });
     if (row === null) {
       return null;
     }
@@ -208,6 +216,11 @@ export class PrismaCompanyRepository extends CompanyRepository {
       nafCode: row.nafCode,
       kbis: kbisOf(row),
       directDebitBlock: directDebitBlockOf(row),
+      hierarchy: HierarchyPlace.reconstitute({
+        parentCompanyId: row.parentCompanyId,
+        hasSubAccounts: row.subAccounts.length > 0,
+        groupWithoutDelivery: row.groupWithoutDelivery,
+      }),
       fulfillmentPreference: {
         method: row.preferredFulfillmentMethod,
         pickupAddressId: row.preferredPickupAddressId,
@@ -250,6 +263,9 @@ export class PrismaCompanyRepository extends CompanyRepository {
         deliverySignatureRequired: state.fulfillmentPreference.signatureRequired,
         ...kbisColumns(state.kbis),
         ...directDebitBlockColumns(state.directDebitBlock),
+        // La hiérarchie seulement si elle a bougé (cf. `hierarchyChange`) : une
+        // écriture d'identité ne réécrit pas un rattachement fait entre-temps.
+        ...(state.hierarchyChange ?? {}),
       },
     });
   }

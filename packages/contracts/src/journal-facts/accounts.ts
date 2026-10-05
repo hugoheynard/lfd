@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { deferredTermSchema } from "../company.js";
+import { companyFollowAspectSchema } from "../sub-accounts.js";
 import { DOORSTEP_RULES } from "../delivery-doorstep-rule.js";
 import { companyMemberRoleSchema } from "../company-member.js";
 import { fulfillmentMethodSchema } from "../order.js";
@@ -12,6 +13,7 @@ import {
   empty,
   fact,
   instant,
+  named,
   payload,
   ref,
   retired,
@@ -197,6 +199,51 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
     payload({ subjectLabel: subjectLabel(), reason: z.string().min(1) }),
   ),
   "company.direct_debit_unblocked": fact(payload({ subjectLabel: subjectLabel() })),
+  /**
+   * LES SOUS-COMPTES (plan `documentation/b2b/plan-sous-comptes.md`, lot S1,
+   * 2026-10-05). Le sujet est toujours le SOUS-COMPTE ; le principal est cité
+   * nommé, sous son nom du moment. Nés ce jour-là : aucune forme d'avant.
+   *
+   * `via` dit comment le lien est né : à la création du sous-compte, ou par le
+   * rattachement d'un client existant.
+   */
+  "company.parent_attached": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      parent: named("company"),
+      via: z.enum(["created", "attached"]),
+    }),
+  ),
+  /** Détaché : les périodes de suivi en cours sont closes du même geste. */
+  "company.parent_detached": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      parent: named("company"),
+      closedAspects: z.array(companyFollowAspectSchema),
+    }),
+  ),
+  /** Un aspect du principal est suivi à partir de `since`. */
+  "company.parent_followed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      parent: named("company"),
+      aspect: companyFollowAspectSchema,
+      since: instant(),
+    }),
+  ),
+  /** Le suivi d'un aspect cesse à `until` : le sous-compte reprend ses valeurs propres. */
+  "company.parent_unfollowed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      parent: named("company"),
+      aspect: companyFollowAspectSchema,
+      until: instant(),
+    }),
+  ),
+  /** La case « Compte de groupe, sans livraison » (§4), cochée ou décochée. */
+  "company.group_without_delivery_set": fact(
+    payload({ subjectLabel: subjectLabel(), enabled: z.boolean() }),
+  ),
   "company.billing_address_saved": labelled(place),
   "company.delivery_address_added": addressCited(place),
   "company.delivery_address_updated": addressCited(place),

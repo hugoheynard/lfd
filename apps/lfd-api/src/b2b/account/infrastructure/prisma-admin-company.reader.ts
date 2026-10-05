@@ -13,6 +13,7 @@ import {
 import { companyWarnings } from "../domain/services/company-warnings.js";
 import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
 import { projectContacts } from "./company-contacts.projection.js";
+import { billingCarriedAt, readHierarchy } from "./company-hierarchy.projection.js";
 
 /** Colonnes lues pour une vue admin — partagées par la liste et la fiche. */
 const COMPANY_SELECT = {
@@ -79,6 +80,15 @@ const COMPANY_SELECT = {
     select: { id: true },
     take: 1,
   },
+  // Les sous-comptes (plan-sous-comptes §4) : le principal pour le badge et la
+  // fiche, le suivi `billing` en cours pour les avertissements (§2.1 bis).
+  groupWithoutDelivery: true,
+  parentCompany: { select: { id: true, enseigne: true, status: true } },
+  follows: {
+    where: { aspect: "billing", validTo: null },
+    select: { validFrom: true },
+    take: 1,
+  },
 } satisfies Prisma.CompanySelect;
 
 type CompanyRow = Prisma.CompanyGetPayload<{ select: typeof COMPANY_SELECT }>;
@@ -124,7 +134,8 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
     // Les accès sont lus À PART puis rapprochés par l'adresse : un contact du
     // carnet n'a pas de lien de base vers un compte, et c'est l'e-mail qui les
     // relie — la même clé humaine que le commercial a sous les yeux.
-    const [addresses, book, access] = await Promise.all([
+    const now = this.clock.now();
+    const [addresses, book, access, hierarchy] = await Promise.all([
       this.addresses.read(companyId),
       this.prisma.companyContact.findMany({
         where: { companyId },
@@ -149,6 +160,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
           user: { select: { email: true, status: true, emailVerified: true } },
         },
       }),
+      readHierarchy(this.prisma, row, now),
     ]);
     return {
       ...toView(row, this.clock.now()),
@@ -180,6 +192,7 @@ export class PrismaAdminCompanyReader extends AdminCompanyReader {
         deliveryAddressId: row.preferredDeliveryAddressId,
         signatureRequired: row.deliverySignatureRequired,
       },
+      hierarchy,
     };
   }
 }
@@ -244,8 +257,13 @@ function toView(company: CompanyRow, now: Date): AdminCompanyView {
         hasActiveMandate: company.mandates.length > 0,
         kbisUploadedAt: company.kbisUploadedAt,
         kbisCertifiedAt: company.kbisCertifiedAt,
+        legalIdentityCarriedByParent: billingCarriedAt(company.parentCompany, company.follows, now),
       },
       now,
     ),
+    parent:
+      company.parentCompany === null
+        ? null
+        : { id: company.parentCompany.id, enseigne: company.parentCompany.enseigne },
   };
 }

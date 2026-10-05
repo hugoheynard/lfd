@@ -37,6 +37,7 @@ function company(over: Partial<AdminCompanyView>): AdminCompanyView {
     owner: null,
     kbis: null,
     hasOpenSupportRequest: false,
+    parent: null,
     createdAt: daysAgo(200),
     activatedAt: null,
     warnings: [],

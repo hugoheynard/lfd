@@ -37,10 +37,12 @@ const COMPANY: AdminCompanyDetail = {
   kbis: null,
   owner: null,
   hasOpenSupportRequest: false,
+  parent: null,
   createdAt: '2026-07-30T10:00:00.000Z',
   activatedAt: null,
   warnings: [],
   vatNumberRequired: true,
+  hierarchy: { parent: null, subAccounts: [], follows: [], groupWithoutDelivery: false },
   addresses: { billing: null, deliveries: [] },
   contacts: [],
   fulfillmentPreference: {

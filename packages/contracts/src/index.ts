@@ -1645,3 +1645,24 @@ export type {
 } from "./day-supervision.js";
 export { dayVersionQuerySchema, dayVersionViewSchema } from "./day-version.js";
 export type { DayVersionQuery, DayVersionView } from "./day-version.js";
+export {
+  COMPANY_FOLLOW_ASPECTS,
+  companyFollowAspectSchema,
+  companyFicheFollowAspectSchema,
+  createSubAccountPayloadSchema,
+  attachToParentPayloadSchema,
+  followAspectPayloadSchema,
+  groupWithoutDeliveryPayloadSchema,
+} from "./sub-accounts.js";
+export type {
+  CompanyFollowAspect,
+  CompanyRefView,
+  ParentCompanyView,
+  FollowedAspectView,
+  SubAccountView,
+  CompanyHierarchyView,
+  CreateSubAccountPayload,
+  AttachToParentPayload,
+  FollowAspectPayload,
+  GroupWithoutDeliveryPayload,
+} from "./sub-accounts.js";
