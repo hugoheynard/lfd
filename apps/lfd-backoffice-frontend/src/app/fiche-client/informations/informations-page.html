@@ -25,6 +25,20 @@
     }
     @case ('ready') {
       <fold-aside-layout class="fiche" asideRightLabel="Activation">
+        <!-- Un sous-compte le dit EN TÊTE, avant tout le reste : ce qu'il suit
+             de son principal change ce que veulent dire ses pièces et sa
+             facturation (plan-sous-comptes §4). -->
+        @if (fiche.company(); as c) {
+          @if (c.hierarchy.parent; as parent) {
+            <app-parent-banner
+              [companyId]="c.id"
+              [parent]="parent"
+              [follows]="c.hierarchy.follows"
+              (detached)="fiche.reload()"
+            />
+          }
+        }
+
         <!-- La synthèse ne réclame que ce qui bloque À CE MOMENT : deux champs
              pour ouvrir, les pièces d'activation ensuite. Montrer le dossier
              complet devant un formulaire vide faisait passer pour bloquant ce
@@ -179,6 +193,19 @@
           <!-- UNE carte : les interlocuteurs, détenteur compris, chacun portant
                l'état de son accès. Éditable comme côté client — le commercial
                complète le dossier à la place du client, c'est la Porte B. -->
+          @if (fiche.company(); as c) {
+            @if (c.hierarchy.parent; as parent) {
+              <fold-card>
+                <app-follow-parent-toggle
+                  aspect="contacts"
+                  [companyId]="c.id"
+                  [parent]="parent"
+                  [follows]="c.hierarchy.follows"
+                  (changed)="fiche.reload()"
+                />
+              </fold-card>
+            }
+          }
           <lfd-company-contacts-card
             [contacts]="fiche.contacts()"
             [canManage]="true"
@@ -229,6 +256,31 @@
               noDeliveryHint="Cette société n'a pas encore d'adresse de livraison. Ajoutez-en une pour pouvoir en choisir une par défaut."
               (preferenceChange)="fiche.preferFulfillment($event)"
             />
+          }
+
+          @if (fiche.company(); as c) {
+            @if (c.hierarchy.parent; as parent) {
+              <!-- La FACTURATION suivie : facturé et prélevé au nom du
+                   principal (§2.1). La case précède le règlement qu'elle
+                   remplace. -->
+              <fold-card>
+                <app-follow-parent-toggle
+                  aspect="billing"
+                  [companyId]="c.id"
+                  [parent]="parent"
+                  [follows]="c.hierarchy.follows"
+                  (changed)="fiche.reload()"
+                />
+              </fold-card>
+            } @else {
+              <!-- Un compte sans principal peut en devenir un : ses
+                   sous-comptes, et la case « Compte de groupe ». -->
+              <app-sub-accounts-card
+                [company]="c"
+                [globalWindowMode]="fiche.windowMode()"
+                (changed)="fiche.reload()"
+              />
+            }
           }
 
           <!-- En bas de fiche : c'est ce qu'on regarde en dernier, une fois le

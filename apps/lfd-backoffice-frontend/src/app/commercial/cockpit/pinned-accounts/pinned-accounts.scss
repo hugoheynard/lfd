@@ -11,6 +11,12 @@
   list-style: none;
 }
 
+.pa-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
 .pa-card {
   display: flex;
   flex-direction: column;

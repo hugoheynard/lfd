@@ -1,0 +1,20 @@
+<div class="follow">
+  <fold-checkbox
+    label="Suivre le compte principal"
+    [hint]="hint()"
+    [checked]="checked()"
+    [disabled]="!canEdit() || saving()"
+    (checkedChange)="toggle($event)"
+    data-follow-parent
+  />
+  @if (current() !== null) {
+    <fold-callout variant="info" data-follow-since>
+      Hérité de
+      <a [routerLink]="['/comptes-clients', parent().id]">{{ parent().enseigne }}</a>
+      depuis le {{ since() }}.
+    </fold-callout>
+  }
+  @if (refusal(); as refusal) {
+    <fold-callout variant="alert" data-follow-refusal>{{ refusal }}</fold-callout>
+  }
+</div>

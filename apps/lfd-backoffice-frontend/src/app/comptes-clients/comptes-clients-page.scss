@@ -216,6 +216,11 @@ fold-element-title[foldToolbar] {
 
 /* La pastille d'alertes vit HORS du lien de fiche (pas de lien imbriqué) : elle
    reprend donc sa propre marge, sous la carte. */
+.rc-parent {
+  display: block;
+  padding: 0 var(--fold-space-md) var(--fold-space-sm);
+}
+
 .rc-alerts {
   display: block;
   padding: 0 var(--fold-space-md) var(--fold-space-md);

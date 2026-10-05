@@ -37,6 +37,7 @@ import { formatEuros } from '@lfd/catalog-ui';
 import { MILLICENTS_PER_CENT } from '@lfd/money';
 
 import { NotifyService } from '../../notify.service';
+import { PricingFollow } from '../pricing-follow/pricing-follow';
 import { nativeValue } from '../../shared/native-input';
 import { VolumeEffort } from '../../b2b/tarification/volume-effort/volume-effort';
 import { PriceTemplatesService } from '../../commercial/tarification/templates.service';
@@ -150,6 +151,7 @@ const STATUS_TONE: Readonly<Record<PosedMercurialeStatus, 'success' | 'neutral' 
     FoldPopoverTriggerDirective,
     FoldElementTitleComponent,
     VolumeEffort,
+    PricingFollow,
   ],
   templateUrl: './tarifs-page.html',
   styleUrl: './tarifs-page.scss',

@@ -1,0 +1,8 @@
+<a
+  class="parent-link"
+  [routerLink]="['/comptes-clients', parent().id]"
+  [title]="'Ouvrir la fiche de ' + parent().enseigne"
+  (click)="$event.stopPropagation()"
+>
+  <fold-badge variant="info" [content]="'Sous-compte de ' + parent().enseigne" />
+</a>

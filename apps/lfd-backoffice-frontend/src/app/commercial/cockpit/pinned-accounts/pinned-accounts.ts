@@ -18,6 +18,7 @@ import {
 } from '../../../comptes-clients/admin-company';
 import type { PinnedAccount } from '../pinned-store';
 import { availableMetrics, metricByKey, type MetricDefinition } from './metric-catalog';
+import { SubAccountBadge } from '../../../comptes-clients/sub-account-badge/sub-account-badge';
 
 /** Ton du statut — la carte se lit à la couleur avant de se lire au texte. */
 type BadgeVariant = 'neutral' | 'accent' | 'info' | 'warning' | 'alert' | 'success';
@@ -74,6 +75,7 @@ export type SheetsById = ReadonlyMap<string, CustomerSheetView>;
     FoldIconComponent,
     FoldPopoverTriggerDirective,
     RouterLink,
+    SubAccountBadge,
   ],
   templateUrl: './pinned-accounts.html',
   styleUrl: './pinned-accounts.scss',

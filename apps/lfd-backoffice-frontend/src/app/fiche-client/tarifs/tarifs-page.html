@@ -1,3 +1,8 @@
+<!-- Un sous-compte peut suivre le tarif de son principal : c'est la décision
+     du commercial (plan-sous-comptes, Q9), et elle se prend ici, à côté des
+     prix qu'elle concerne. Rien pour un compte sans principal. -->
+<app-pricing-follow [companyId]="id()" />
+
 @switch (state()) {
   @case ('loading') {
     <fold-loading message="Lecture des tarifs du compte…" />

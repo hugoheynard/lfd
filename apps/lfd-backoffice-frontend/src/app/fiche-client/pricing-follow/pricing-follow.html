@@ -1,0 +1,15 @@
+@if (failed()) {
+  <fold-callout variant="alert" data-pricing-follow-error>
+    Impossible de savoir si ce compte suit le tarif d’un compte principal — les prix ci-dessous,
+    eux, sont lus.
+    <button actions foldButton size="sm" emphasis="outline" (click)="load()">Réessayer</button>
+  </fold-callout>
+} @else if (hierarchy()?.parent; as parent) {
+  <app-follow-parent-toggle
+    aspect="pricing"
+    [companyId]="companyId()"
+    [parent]="parent"
+    [follows]="hierarchy()?.follows ?? []"
+    (changed)="load()"
+  />
+}

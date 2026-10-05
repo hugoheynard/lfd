@@ -1,0 +1,56 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="company"
+    title="Sous-comptes"
+    subtitle="Ses établissements : chacun commande, est livré et s’active comme un client à part entière."
+  >
+    <span titleAction class="actions">
+      <button foldButton size="sm" emphasis="outline" (click)="attach()" data-attach>
+        Rattacher un client existant
+      </button>
+      <button foldButton size="sm" icon="plus" (click)="create()" data-create>
+        Créer un sous-compte
+      </button>
+    </span>
+  </fold-element-title>
+
+  <div class="body">
+    @if (subAccounts().length === 0) {
+      <fold-empty-state
+        title="Aucun sous-compte"
+        subtitle="Créez-en un pour un établissement de ce client, ou rattachez un client déjà ouvert."
+      >
+        <fold-icon empty-icon name="company" />
+      </fold-empty-state>
+    } @else {
+      <ul class="children">
+        @for (child of subAccounts(); track child.id) {
+          <li class="child" data-sub-account>
+            <a class="child-name" [routerLink]="['/comptes-clients', child.id]">
+              {{ child.enseigne }}
+            </a>
+            <span class="child-city">{{ child.city ?? 'Sans adresse de livraison' }}</span>
+            <fold-status-badge [status]="child.status" [label]="statusLabels[child.status]" />
+            @if (child.followedAspects.length > 0) {
+              <fold-badge variant="neutral" [content]="'Suit : ' + aspectsOf(child)" />
+            }
+          </li>
+        }
+      </ul>
+    }
+
+    <fold-checkbox
+      label="Compte de groupe, sans livraison"
+      hint="Une holding qui négocie et ne commande jamais : ni adresse de livraison ni préférence d’acheminement exigées pour l’activer, et aucune commande acceptée à son propre nom."
+      [checked]="groupChecked()"
+      [disabled]="savingGroup()"
+      (checkedChange)="setGroup($event)"
+      data-group-without-delivery
+    />
+    @if (refusal(); as refusal) {
+      <fold-callout variant="alert" data-group-refusal>{{ refusal }}</fold-callout>
+    }
+  </div>
+</fold-card>

@@ -7,7 +7,7 @@
 } @else {
   <ul class="pa-grid">
     @for (card of cards(); track card.company.id) {
-      <li>
+      <li class="pa-item">
         <a class="pa-card" [routerLink]="['/comptes-clients', card.company.id]">
           <span class="pa-top">
             <fold-badge [variant]="card.variant" [content]="card.status" size="sm" />
@@ -76,6 +76,12 @@
             }
           </span>
         </a>
+        <!-- Hors de la carte : elle est elle-même un lien, et deux destinations
+             dans une ancre feraient un lien imbriqué. Chaque sous-compte reste
+             un client à part entière ici, sans total de groupe (R9). -->
+        @if (card.company.parent; as parent) {
+          <app-sub-account-badge [parent]="parent" />
+        }
       </li>
     }
   </ul>

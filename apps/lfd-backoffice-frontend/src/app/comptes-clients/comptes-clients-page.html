@@ -124,6 +124,11 @@
               <fold-badge variant="warning" [content]="pending + ' à voir'" />
             </a>
           }
+          <!-- Le principal, s'il y en a un : un sous-compte reste une ligne à
+               part entière (R9), et ce badge mène à la fiche de son principal. -->
+          @if (row.parent; as parent) {
+            <app-sub-account-badge [parent]="parent" />
+          }
         </span>
         <!-- En second : la dénomination du greffe, quand elle diffère du nom
              d'usage. Elle sert à retrouver un dossier, pas à reconnaître un
@@ -211,6 +216,14 @@
             </span>
           }
         </a>
+
+        <!-- Hors du lien, comme les alertes : le principal est une AUTRE
+             destination que la fiche de la carte. -->
+        @if (row.parent; as parent) {
+          <span class="rc-parent">
+            <app-sub-account-badge [parent]="parent" />
+          </span>
+        }
 
         <!-- Hors du lien : deux destinations dans une même ancre feraient un
              lien imbriqué, que le HTML interdit et que le clavier ne sait pas

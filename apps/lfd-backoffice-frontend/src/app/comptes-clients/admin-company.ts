@@ -37,7 +37,7 @@ export type {
   DeferredTerm,
 } from '@lfd/contracts';
 
-import type { CompanyStatus } from '@lfd/contracts';
+import type { CompanyFollowAspect, CompanyStatus } from '@lfd/contracts';
 
 /**
  * Libellé FR d'un statut de société.
@@ -51,4 +51,15 @@ export const STATUS_LABELS: Readonly<Record<CompanyStatus, string>> = {
   active: 'Actif',
   suspended: 'Suspendu',
   terminated: 'Résilié',
+};
+
+/**
+ * Libellé FR d'un aspect qu'un sous-compte suit de son principal
+ * (`plan-sous-comptes.md` §2.1). Même raison que {@link STATUS_LABELS} : le
+ * contrat dit quels aspects existent, l'écran dit comment on les nomme.
+ */
+export const FOLLOW_ASPECT_LABELS: Readonly<Record<CompanyFollowAspect, string>> = {
+  billing: 'Facturation',
+  pricing: 'Tarif',
+  contacts: 'Contacts',
 };

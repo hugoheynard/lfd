@@ -1,0 +1,94 @@
+<fold-panel-header
+  title="Créer un sous-compte"
+  [subtitle]="'Sous ' + data().parentName + ' — il naît en attente, et s’active comme tout compte.'"
+/>
+
+<fold-panel-body>
+  <!-- Le choix d'abord : il décide s'il y a une identité légale à saisir. -->
+  <fold-fieldset legend="Ce sous-compte est…">
+    <fold-view-toggle
+      ariaLabel="Nature du sous-compte"
+      [options]="kindOptions"
+      [value]="kind() ?? ''"
+      (valueChange)="chooseKind($event)"
+      data-kind
+    />
+  </fold-fieldset>
+
+  @switch (kind()) {
+    @case ('site') {
+      <fold-callout variant="info" data-billed-as>
+        Un lieu de la même société, comme un chalet : pas de SIRET ni de raison sociale propres.
+        {{ billedAs() }}.
+      </fold-callout>
+      <fold-input
+        label="Nom du site"
+        [value]="siteName()"
+        (valueChange)="siteName.set($event)"
+        data-site-name
+      />
+    }
+    @case ('entity') {
+      <fold-callout variant="info">
+        Une société à part, comme un établissement Club Med : elle est facturée et prélevée en son
+        nom.
+      </fold-callout>
+      <fold-fieldset legend="Identité légale">
+        <lfd-company-identity-fields [value]="identity()" (valueChange)="setIdentity($event)" />
+      </fold-fieldset>
+    }
+  }
+
+  @if (kind() !== null) {
+    <fold-fieldset legend="Première adresse de livraison">
+      <lfd-delivery-address-form
+        [(value)]="delivery"
+        [signatureFloor]="false"
+        [knownContacts]="[]"
+        [showStopMinutes]="true"
+        [globalWindowMode]="data().globalWindowMode"
+      />
+    </fold-fieldset>
+
+    <fold-fieldset
+      legend="Partagé avec le compte principal"
+      hint="Chaque aspect se règle ensuite depuis la fiche du sous-compte."
+    >
+      <fold-checkbox
+        label="Partager les contacts du principal"
+        [hint]="'Les contacts de ' + data().parentName + ' sont partagés avec lui.'"
+        [checked]="sharesContacts()"
+        (checkedChange)="sharesContacts.set($event)"
+        data-follow="contacts"
+      />
+      @if (canDecidePricing()) {
+        <fold-checkbox
+          label="Appliquer la mercuriale du principal"
+          [hint]="'La mercuriale et les engagements de ' + data().parentName + '.'"
+          [checked]="appliesPricing()"
+          (checkedChange)="appliesPricing.set($event)"
+          data-follow="pricing"
+        />
+      }
+    </fold-fieldset>
+  }
+
+  @if (refusal(); as refusal) {
+    <fold-callout variant="alert" data-refusal>{{ refusal }}</fold-callout>
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  @if (issue(); as issue) {
+    <span class="issue" data-issue>{{ issue }}</span>
+  }
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button
+    foldButton
+    intent="primary"
+    [disabled]="issue() !== '' || submitting()"
+    (click)="submit()"
+  >
+    Créer le sous-compte
+  </button>
+</fold-panel-footer>

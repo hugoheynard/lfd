@@ -30,6 +30,7 @@ import { providePageHeader } from '../commercial/page-header.store';
 import { PendingAlertsService } from '../shared/alerts/pending-alerts.service';
 import { PortfolioBar } from './portfolio-bar/portfolio-bar';
 import { WarningsGallery } from './warnings-gallery/warnings-gallery';
+import { SubAccountBadge } from './sub-account-badge/sub-account-badge';
 import { PortfolioMetricsService } from './portfolio-metrics.service';
 import { AdminCompaniesService } from './admin-companies.service';
 import { STATUS_LABELS, type AdminCompany, type CompanyStatus } from './admin-company';
@@ -100,6 +101,7 @@ function isFilterValue(value: string): value is FilterValue {
     FoldPaginatorComponent,
     PortfolioBar,
     WarningsGallery,
+    SubAccountBadge,
     RouterLink,
     FoldEmptyStateComponent,
   ],

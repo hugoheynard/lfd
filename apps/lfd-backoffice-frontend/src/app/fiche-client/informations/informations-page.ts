@@ -27,6 +27,9 @@ import { AdminCompaniesService } from '../../comptes-clients/admin-companies.ser
 import { ActivationAside } from '../activation-aside/activation-aside';
 import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
 import { PaiementSection } from '../paiement-section/paiement-section';
+import { ParentBanner } from '../parent-banner/parent-banner';
+import { FollowParentToggle } from '../follow-parent-toggle/follow-parent-toggle';
+import { SubAccountsCard } from '../sub-accounts-card/sub-accounts-card';
 import { FicheClientActions } from './fiche-client.actions';
 import { FicheClientFacade } from './fiche-client.facade';
 import { FicheClientPanels } from './fiche-client.panels';
@@ -76,6 +79,9 @@ import { openingSteps } from './activation-steps';
     CompanyActivationChecklist,
     ActivationAside,
     PaiementSection,
+    ParentBanner,
+    FollowParentToggle,
+    SubAccountsCard,
   ],
   templateUrl: './informations-page.html',
   styleUrl: './informations-page.scss',
