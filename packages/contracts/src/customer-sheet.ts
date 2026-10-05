@@ -11,6 +11,7 @@
 import { z } from "zod";
 
 import type { OrderStatus } from "./order.js";
+import type { SubAccountParentView } from "./sub-accounts.js";
 
 /**
  * État commercial d'un compte. Déclaré ici parce que c'est la fiche qui le fait
@@ -172,6 +173,11 @@ export interface CustomerSheetView {
   readonly contactName: string;
   readonly contactEmail: string;
   readonly contactPhone: string;
+  /**
+   * Son principal, s'il est un sous-compte — `null` sinon. Porté par la fiche
+   * plutôt que relu à part : l'en-tête n'a qu'une lecture (T28).
+   */
+  readonly parent: SubAccountParentView | null;
   readonly stats: CustomerStats;
   readonly recentOrders: readonly CustomerOrderLine[];
   /** L'historique d'interaction, du plus récent au plus ancien. */

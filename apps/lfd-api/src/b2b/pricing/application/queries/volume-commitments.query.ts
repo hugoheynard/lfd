@@ -64,7 +64,7 @@ export class VolumeCommitmentsQuery {
     if (sku === null) {
       return null;
     }
-    const measured = await this.volumes.volumesFor(state.companyId, [sku], {
+    const measured = await this.volumes.committedVolumesFor(state.companyId, [sku], {
       from: state.validFrom,
       to: state.validTo,
     });

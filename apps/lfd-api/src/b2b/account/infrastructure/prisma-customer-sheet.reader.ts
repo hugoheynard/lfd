@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { COMMERCIAL_TIMELINE_TYPES } from "@lfd/contracts";
-import type { CustomerOrderLine, CustomerSheetView } from "@lfd/contracts";
+import type { CustomerOrderLine, CustomerSheetView, SubAccountParentView } from "@lfd/contracts";
 
-import { OrderStatus } from "../../../platform/database/client/client.js";
+import { CompanyFollowAspect, OrderStatus } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { CustomerSheetReader } from "../domain/ports/customer-sheet.reader.js";
 import { commercialTimeline } from "../domain/services/commercial-timeline.js";
@@ -51,7 +51,22 @@ export class PrismaCustomerSheetReader extends CustomerSheetReader {
   }
 
   async read(companyId: string, now: Date): Promise<CustomerSheetView | null> {
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      include: {
+        parentCompany: { select: { id: true, enseigne: true, raisonSociale: true } },
+        // Le suivi `billing` qui agit à `now` fait du sous-compte un SITE (T29).
+        follows: {
+          where: {
+            aspect: CompanyFollowAspect.billing,
+            validFrom: { lte: now },
+            OR: [{ validTo: null }, { validTo: { gt: now } }],
+          },
+          select: { validFrom: true },
+          take: 1,
+        },
+      },
+    });
     if (company === null) {
       return null;
     }
@@ -103,6 +118,7 @@ export class PrismaCustomerSheetReader extends CustomerSheetReader {
       contactName: `${company.contactPrenom} ${company.contactNom}`.trim(),
       contactEmail: company.contactEmail,
       contactPhone: company.contactTelephone,
+      parent: sheetParentOf(company.parentCompany, company.follows.length > 0),
       stats: {
         totalSpentCents,
         ordersCount: all._count,
@@ -162,5 +178,24 @@ function toOrderLine(row: {
     placedAt: row.createdAt.toISOString(),
     status: row.status,
     totalCents: row.totalCents,
+  };
+}
+
+/**
+ * Le principal pour l'en-tête de la fiche (T28) : son nom d'usage, et ce
+ * qu'est ce sous-compte pour lui — un site s'il est facturé à son nom, une
+ * entité sinon (T29).
+ */
+function sheetParentOf(
+  parent: { id: string; enseigne: string; raisonSociale: string } | null,
+  billingFollowed: boolean,
+): SubAccountParentView | null {
+  if (parent === null) {
+    return null;
+  }
+  return {
+    id: parent.id,
+    enseigne: parent.enseigne === "" ? parent.raisonSociale : parent.enseigne,
+    kind: billingFollowed ? "site" : "entity",
   };
 }

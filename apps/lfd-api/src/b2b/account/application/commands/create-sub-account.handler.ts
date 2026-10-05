@@ -18,6 +18,7 @@ import { AccountHierarchyLock } from "../../domain/ports/account-hierarchy.lock.
 import { CompanyAddressRepository } from "../../domain/ports/company-address.repository.js";
 import { CompanyFollowsRepository } from "../../domain/ports/company-follows.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
+import { PricingFollowJournal } from "../../domain/ports/pricing-follow.journal.js";
 import { loadCompany, named } from "../services/account-hierarchy-support.js";
 import { CreateSubAccountCommand } from "./create-sub-account.command.js";
 
@@ -40,6 +41,7 @@ export class CreateSubAccountHandler implements ICommandHandler<CreateSubAccount
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly pricingJournal: PricingFollowJournal,
   ) {}
 
   async execute(command: CreateSubAccountCommand): Promise<string> {
@@ -73,7 +75,10 @@ export class CreateSubAccountHandler implements ICommandHandler<CreateSubAccount
       const child = companyNamed(id, company);
       await this.events.publishTraced(new ParentAttachedEvent(child, named(parent), "created"));
       for (const aspect of aspects) {
-        await this.events.publishTraced(new ParentFollowedEvent(child, named(parent), aspect, now));
+        // `pricing` va au journal des prix (S3) ; les autres au journal général.
+        await (aspect === "pricing"
+          ? this.pricingJournal.followStarted({ child, parent: named(parent), validFrom: now })
+          : this.events.publishTraced(new ParentFollowedEvent(child, named(parent), aspect, now)));
       }
       return id;
     });

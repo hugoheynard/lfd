@@ -7,6 +7,7 @@ import { ParentUnfollowedEvent } from "../../domain/events/hierarchy-acts.event.
 import { AccountHierarchyLock } from "../../domain/ports/account-hierarchy.lock.js";
 import { CompanyFollowsRepository } from "../../domain/ports/company-follows.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
+import { PricingFollowJournal } from "../../domain/ports/pricing-follow.journal.js";
 import { loadCompany, named } from "../services/account-hierarchy-support.js";
 import { StopFollowingParentCommand } from "./stop-following-parent.command.js";
 
@@ -31,6 +32,7 @@ export class StopFollowingParentHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly pricingJournal: PricingFollowJournal,
   ) {}
 
   async execute(command: StopFollowingParentCommand): Promise<void> {
@@ -46,6 +48,15 @@ export class StopFollowingParentHandler implements ICommandHandler<
       await this.follows.save(follows);
       // Le principal d'ALORS, figé dans la période — pas forcément l'actuel.
       const parent = await loadCompany(this.companies, closed.parentId);
+      if (command.aspect === "pricing") {
+        await this.pricingJournal.followEnded({
+          child: named(child),
+          parent: named(parent),
+          validFrom: closed.validFrom,
+          validTo: now,
+        });
+        return;
+      }
       await this.events.publishTraced(
         new ParentUnfollowedEvent(named(child), named(parent), command.aspect, now),
       );

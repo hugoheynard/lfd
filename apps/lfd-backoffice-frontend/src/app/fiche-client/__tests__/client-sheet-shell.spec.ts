@@ -31,6 +31,7 @@ const SHEET: CustomerSheetView = {
   contactName: 'Hugo',
   contactEmail: 'hugo@tommeuses.test',
   contactPhone: '',
+  parent: null,
   stats: {
     totalSpentCents: 182_500,
     ordersCount: 9,
@@ -43,7 +44,7 @@ const SHEET: CustomerSheetView = {
 };
 
 /** Compte les lectures : c'est la seule façon de voir un appel de trop. */
-function sheetServiceSpy(): {
+function sheetServiceSpy(sheet: CustomerSheetView = SHEET): {
   readonly service: Pick<CustomerSheetService, 'sheet'>;
   calls: number;
 } {
@@ -55,7 +56,7 @@ function sheetServiceSpy(): {
     service: {
       sheet: (): Promise<CustomerSheetView> => {
         state.calls += 1;
-        return Promise.resolve(SHEET);
+        return Promise.resolve(sheet);
       },
     },
   };
@@ -107,6 +108,41 @@ describe('la coquille d’un compte client', () => {
     await fixture.whenStable();
 
     expect(spy.calls).toBe(1);
+  });
+
+  /** L'en-tête de la coquille, monté sur cette fiche. */
+  async function mastheadOf(sheet: CustomerSheetView): Promise<HTMLElement> {
+    const spy = sheetServiceSpy(sheet);
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        provideRouter([]),
+        { provide: CustomerSheetService, useValue: spy.service },
+      ],
+    });
+    const fixture = TestBed.createComponent(FicheClientShell);
+    fixture.componentRef.setInput('id', 'co_1');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('nomme le principal d’un sous-compte dans l’en-tête, lien vers sa fiche (T28)', async () => {
+    const host = await mastheadOf({
+      ...SHEET,
+      parent: { id: 'co_group', enseigne: 'Club Med', kind: 'entity' },
+    });
+
+    const badge = host.querySelector('.masthead app-sub-account-badge a');
+    expect(badge?.textContent).toContain('Sous-compte de Club Med');
+    expect(badge?.getAttribute('href')).toBe('/comptes-clients/co_group');
+  });
+
+  it('ne pose aucun badge sur un compte sans principal', async () => {
+    const host = await mastheadOf(SHEET);
+
+    expect(host.querySelector('app-sub-account-badge')).toBeNull();
   });
 });
 

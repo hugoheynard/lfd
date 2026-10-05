@@ -9,6 +9,7 @@ import { CanonicalPriceHistoryReader } from "../../catalog/domain/ports/canonica
 import type { PriceLens } from "../domain/price-lens.js";
 import { EmptyLotError, PricedLot } from "./priced-lot.js";
 import { PricingMaterialsLoader } from "./pricing-materials.loader.js";
+import { PricingPartiesResolver } from "./pricing-parties.resolver.js";
 
 export type { PricedArticle } from "../domain/loaded-pricer.js";
 
@@ -79,6 +80,7 @@ export class Pricer {
     private readonly materials: PricingMaterialsLoader,
     private readonly clock: Clock,
     private readonly history: CanonicalPriceHistoryReader,
+    private readonly parties: PricingPartiesResolver,
   ) {}
 
   async load(request: LotRequest): Promise<PricedLot> {
@@ -105,10 +107,16 @@ export class Pricer {
     // encodages d'une seule décision — l'éparpillement par lequel R15 s'est
     // glissé. Cf. `price-epoch.ts`.
     const epoch = epochOf(at, now);
-    const items = await this.sealedAt(request.articles, at, epoch);
+    // Le compte de tarif est résolu à `at`, comme les décisions : une relecture
+    // d'une commande passée avant l'alignement d'un sous-compte lit SA
+    // mercuriale d'alors, pas celle du principal (`plan-sous-comptes.md`, §2.2).
+    const [items, parties] = await Promise.all([
+      this.sealedAt(request.articles, at, epoch),
+      this.parties.partiesAt(request.companyId, at),
+    ]);
     const pricer = await this.materials.pricerFor(
       items,
-      { companyId: request.companyId },
+      parties,
       at,
       request.lens ?? "measured",
       epoch,

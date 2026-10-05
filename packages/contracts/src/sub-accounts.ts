@@ -42,6 +42,21 @@ export interface ParentCompanyView extends CompanyRefView {
   readonly status: CompanyStatus;
 }
 
+/**
+ * Ce qu'est un sous-compte pour son principal, déduit du suivi `billing` en
+ * cours (T29) : un **site** de la société (facturé à son nom, le chalet) ou
+ * une **entité** distincte qui règle seule (l'établissement Club Med).
+ */
+export type SubAccountKind = "site" | "entity";
+
+/**
+ * Le principal d'un sous-compte tel que l'en-tête de la fiche client le
+ * montre (badge « Site de / Entité rattachée à », T28).
+ */
+export interface SubAccountParentView extends CompanyRefView {
+  readonly kind: SubAccountKind;
+}
+
 /** Un aspect suivi EN COURS, et depuis quand (ISO). */
 export interface FollowedAspectView {
   readonly aspect: CompanyFollowAspect;

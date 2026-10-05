@@ -184,7 +184,7 @@ function pricerOver(
     commitments: parts.commitments ?? [],
     mercuriale: parts.mercuriale ?? null,
   });
-  return LoadedPricer.over(materials, evidence, { companyId }, AT);
+  return LoadedPricer.over(materials, evidence, { companyId, pricingCompanyId: companyId }, AT);
 }
 
 describe("price — la question ordinaire", () => {

@@ -253,3 +253,61 @@ describe("l'état du compte", () => {
       .expect(401);
   });
 });
+
+/**
+ * L'en-tête de la fiche porte le principal d'un sous-compte (T28) — et ce
+ * qu'il est pour lui, déduit du suivi `billing` en cours (T29).
+ */
+describe("le principal d'un sous-compte, dans l'en-tête", () => {
+  const DELIVERY = {
+    label: "Chalet",
+    ligne1: "12 route des Praz",
+    ligne2: "",
+    codePostal: "74400",
+    ville: "Chamonix",
+    pays: "France",
+    isDefault: true,
+    specs: {
+      signatureRequired: false,
+      note: "",
+      slots: { mode: "everyday", slot: null },
+      deliveryContact: null,
+      gps: null,
+    },
+  };
+
+  async function subAccountOf(parentId: string, follows: readonly string[]): Promise<string> {
+    const response = await staff()
+      .post(`/admin/companies/${parentId}/sub-accounts`)
+      .send({ enseigne: "Chalet Edelweiss", deliveryAddress: DELIVERY, follows })
+      .expect(201);
+    return jsonBody<{ id: string }>(response).id;
+  }
+
+  it("un compte sans principal n'en porte pas", async () => {
+    const { companyId } = await seed();
+    expect((await sheet(companyId)).parent).toBeNull();
+  });
+
+  it("un sous-compte facturé au nom du principal est un SITE", async () => {
+    const group = await createCompany(ctx.prisma, { enseigne: "Alpes Chalets", status: "active" });
+    const chalet = await subAccountOf(group.id, ["billing"]);
+
+    expect((await sheet(chalet)).parent).toEqual({
+      id: group.id,
+      enseigne: "Alpes Chalets",
+      kind: "site",
+    });
+  });
+
+  it("un sous-compte qui règle seul est une ENTITÉ", async () => {
+    const group = await createCompany(ctx.prisma, { enseigne: "Club Med", status: "active" });
+    const entity = await subAccountOf(group.id, []);
+
+    expect((await sheet(entity)).parent).toEqual({
+      id: group.id,
+      enseigne: "Club Med",
+      kind: "entity",
+    });
+  });
+});

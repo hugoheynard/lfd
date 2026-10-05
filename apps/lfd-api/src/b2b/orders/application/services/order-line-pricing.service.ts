@@ -2,6 +2,9 @@ import { Injectable } from "@nestjs/common";
 import type { OrderLineInput as OrderLineRequest } from "@lfd/contracts";
 
 import type { PricingParties } from "../../../pricing/domain/loaded-pricer.js";
+
+/** La société servie, seule clé que l'appelant connaît. */
+type ServedCompany = Pick<PricingParties, "companyId">;
 import { Pricer } from "../../../pricing/application/pricer.js";
 import { UnknownSkuError } from "../../../catalog/domain/errors/unknown-sku.error.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
@@ -58,11 +61,14 @@ export class OrderLinePricing {
    * puisse l'appeler — il n'a pas de saisisseur à nommer, et lui en inventer un
    * aurait mis une fausse identité sur le chemin qui tarife.
    *
+   * Seule la société servie : le compte de tarif (un principal suivi) est
+   * résolu par la porte du prix, à l'instant de la résolution.
+   *
    * @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas.
    */
   async resolve(
     input: readonly OrderLineRequest[],
-    parties: PricingParties,
+    parties: ServedCompany,
     at?: Date,
   ): Promise<ResolvedOrderLine[]> {
     return this.priceAll(input, parties, false, at);
@@ -79,7 +85,7 @@ export class OrderLinePricing {
    */
   async explain(
     input: readonly OrderLineRequest[],
-    parties: PricingParties,
+    parties: ServedCompany,
     at?: Date,
   ): Promise<ResolvedOrderLine[]> {
     return this.priceAll(input, parties, true, at);
@@ -87,7 +93,7 @@ export class OrderLinePricing {
 
   private async priceAll(
     input: readonly OrderLineRequest[],
-    parties: PricingParties,
+    parties: ServedCompany,
     withTiers: boolean,
     /**
      * L'instant de résolution, **quand l'appelant en a un**.

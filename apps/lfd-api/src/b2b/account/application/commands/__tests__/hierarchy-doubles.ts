@@ -6,6 +6,10 @@ import { SubAccountFollows } from "../../../domain/entities/sub-account-follows.
 import { AccountHierarchyLock } from "../../../domain/ports/account-hierarchy.lock.js";
 import { CompanyAddressRepository } from "../../../domain/ports/company-address.repository.js";
 import { CompanyFollowsReader } from "../../../domain/ports/company-follows.reader.js";
+import {
+  PricingFollowJournal,
+  type PricingFollowEntry,
+} from "../../../domain/ports/pricing-follow.journal.js";
 import { CompanyFollowsRepository } from "../../../domain/ports/company-follows.repository.js";
 import { CompanyRepository, type KbisLocation } from "../../../domain/ports/company.repository.js";
 import type { FollowPeriod } from "../../../domain/value-objects/follow-period.js";
@@ -111,5 +115,20 @@ export class FollowsReaderOver extends CompanyFollowsReader {
     at: Date,
   ): Promise<FollowPeriod | null> {
     return (await this.follows.load(companyId)).followsAt(aspect, at);
+  }
+}
+
+/** Le journal des prix tel que les gestes le voient : il note ce qu'on lui inscrit. */
+export class RecordingPricingJournal extends PricingFollowJournal {
+  readonly started: PricingFollowEntry[] = [];
+  readonly ended: (PricingFollowEntry & { readonly validTo: Date })[] = [];
+
+  followStarted(entry: PricingFollowEntry): Promise<void> {
+    this.started.push(entry);
+    return Promise.resolve();
+  }
+  followEnded(entry: PricingFollowEntry & { readonly validTo: Date }): Promise<void> {
+    this.ended.push(entry);
+    return Promise.resolve();
   }
 }

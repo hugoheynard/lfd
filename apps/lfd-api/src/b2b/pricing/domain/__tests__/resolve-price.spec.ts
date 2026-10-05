@@ -23,6 +23,7 @@ function context(over: Partial<PricingContext> = {}): PricingContext {
     productSku: "VIE-001",
     categoryPath: ["fam-vien"],
     companyId: "cmp_dupont",
+    pricingCompanyId: over.companyId === undefined ? "cmp_dupont" : over.companyId,
     segmentId: "seg_boulangerie",
     cumulativeQuantity: null,
     ...over,
@@ -462,6 +463,7 @@ describe("le plancher naturel du système", () => {
     productSku: "VIE-001",
     categoryPath: ["fam-vien"],
     companyId: null,
+    pricingCompanyId: null,
     segmentId: null,
   };
 

@@ -34,6 +34,7 @@ import {
   InMemoryCompanies,
   InMemoryFollows,
   RecordingHierarchyLock,
+  RecordingPricingJournal,
 } from "./hierarchy-doubles.js";
 
 /** L'horloge de la requête : les périodes s'ouvrent à SON instant, jamais à une date du calendrier. */
@@ -46,6 +47,7 @@ interface World {
   readonly addresses: InMemoryAddresses;
   readonly lock: RecordingHierarchyLock;
   readonly events: RecordingPublisher;
+  readonly pricing: RecordingPricingJournal;
 }
 
 function world(companies: readonly Company[], follows: readonly SubAccountFollows[] = []): World {
@@ -57,6 +59,7 @@ function world(companies: readonly Company[], follows: readonly SubAccountFollow
     addresses: new InMemoryAddresses(),
     lock: new RecordingHierarchyLock(log),
     events: new RecordingPublisher(),
+    pricing: new RecordingPricingJournal(),
   };
 }
 
@@ -84,6 +87,7 @@ function createHandler(w: World): CreateSubAccountHandler {
     new FixedIdGenerator("addr"),
     clock,
     new DirectUnitOfWork(),
+    w.pricing,
   );
 }
 
@@ -191,6 +195,7 @@ describe("Rattacher et détacher", () => {
       w.events,
       clock,
       new DirectUnitOfWork(),
+      w.pricing,
     ).execute(new DetachFromParentCommand("chalet"));
 
     const order = w.log.calls.filter((call) => call.startsWith("save"));
@@ -212,6 +217,7 @@ describe("Suivre et cesser de suivre", () => {
       w.events,
       clock,
       new DirectUnitOfWork(),
+      w.pricing,
     );
   }
   function stopHandler(w: World): StopFollowingParentHandler {
@@ -222,6 +228,7 @@ describe("Suivre et cesser de suivre", () => {
       w.events,
       clock,
       new DirectUnitOfWork(),
+      w.pricing,
     );
   }
 

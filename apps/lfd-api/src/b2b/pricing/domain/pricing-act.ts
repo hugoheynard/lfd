@@ -8,6 +8,7 @@ import type { PriceRule, PriceStage } from "./price-rule.js";
 export {
   describeArticleCount,
   describeFloor,
+  describeFollow,
   describeFloorPolicy,
   describeLadder,
   describeRule,
@@ -47,10 +48,33 @@ export const PRICING_ACTS = [
    * comprendre une facture.
    */
   "renamed",
+  /**
+   * **Le suivi d'une mercuriale** entre comptes (`plan-sous-comptes.md`, S3),
+   * sur le sujet `company` seulement : le sous-compte commence / cesse de
+   * suivre (`started` / `ended`), le principal gagne / perd un sous-compte qui
+   * le suit (`joined` / `left`).
+   */
+  "started",
+  "ended",
+  "joined",
+  "left",
 ] as const;
 export type PricingActKind = (typeof PRICING_ACTS)[number];
 
-export type PricingSubjectType = "rule" | "floor" | "ladder" | "mercuriale";
+/** `company` : le compte tarifaire d'un client, `subjectId` = son identifiant. */
+export type PricingSubjectType = "rule" | "floor" | "ladder" | "mercuriale" | "company";
+
+/**
+ * Ce qu'un acte de suivi cite : l'AUTRE compte, nommé au moment de l'acte, et
+ * la période. `parent` sur le sujet du sous-compte, `child` sur celui du
+ * principal.
+ */
+export interface PricingFollowCitation {
+  readonly role: "parent" | "child";
+  readonly counterpart: { readonly id: string; readonly name: string };
+  readonly validFrom: Date;
+  readonly validTo: Date | null;
+}
 
 export interface PricingAct {
   readonly subjectType: PricingSubjectType;
@@ -94,6 +118,8 @@ export interface PricingAct {
    * le découper (TODO des phrases du journal, 2026-09-19).
    */
   readonly stage?: PriceStage | undefined;
+  /** Sur un acte de suivi (sujet `company`), et seulement là. */
+  readonly follow?: PricingFollowCitation | undefined;
 }
 
 /**
@@ -153,6 +179,10 @@ const FACT_TYPES: {
     confirmed: null,
     replaced: null,
     renamed: "price_rule.renamed",
+    started: null,
+    ended: null,
+    joined: null,
+    left: null,
   },
   floor: {
     posed: "price_floor.posed",
@@ -162,6 +192,10 @@ const FACT_TYPES: {
     confirmed: "price_floor.confirmed",
     replaced: "price_floor.replaced",
     renamed: null,
+    started: null,
+    ended: null,
+    joined: null,
+    left: null,
   },
   ladder: {
     posed: "volume_ladder.posed",
@@ -171,6 +205,10 @@ const FACT_TYPES: {
     confirmed: null,
     replaced: null,
     renamed: null,
+    started: null,
+    ended: null,
+    joined: null,
+    left: null,
   },
   // Un sujet à part, et non `price_rule` : une mercuriale n'est plus une
   // collection de règles. Relire « pourquoi ce prix » six mois plus tard doit
@@ -184,6 +222,26 @@ const FACT_TYPES: {
     confirmed: null,
     replaced: null,
     renamed: "company_mercuriale.renamed",
+    started: null,
+    ended: null,
+    joined: null,
+    left: null,
+  },
+  // Le compte tarifaire d'un client : seuls les suivis de mercuriale s'y
+  // écrivent. Le miroir général TIENT LIEU de `company.parent_followed` pour
+  // l'aspect `pricing` — un écrivain, deux destinations.
+  company: {
+    posed: null,
+    paused: null,
+    resumed: null,
+    archived: null,
+    confirmed: null,
+    replaced: null,
+    renamed: null,
+    started: "pricing_follow.started",
+    ended: "pricing_follow.ended",
+    joined: "pricing_follower.joined",
+    left: "pricing_follower.left",
   },
 };
 
@@ -193,6 +251,7 @@ const FACT_SUBJECT: Readonly<Record<PricingSubjectType, string>> = {
   floor: "price_floor",
   ladder: "volume_ladder",
   mercuriale: "company_mercuriale",
+  company: "company",
 };
 
 /**
@@ -223,7 +282,16 @@ export function pricingFactOf(act: PricingAct): {
       reason: act.reason,
       ...(act.audience === undefined ? {} : { audience: { ...act.audience } }),
       ...(act.stage === undefined ? {} : { stage: act.stage }),
+      ...(act.follow === undefined ? {} : followPayload(act.follow)),
     },
     occurredAt: act.at,
+  };
+}
+
+function followPayload(follow: PricingFollowCitation): Record<string, unknown> {
+  return {
+    [follow.role]: { ...follow.counterpart },
+    validFrom: follow.validFrom.toISOString(),
+    ...(follow.validTo === null ? {} : { validTo: follow.validTo.toISOString() }),
   };
 }

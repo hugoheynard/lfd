@@ -7,6 +7,7 @@ import { ParentFollowedEvent } from "../../domain/events/hierarchy-acts.event.js
 import { AccountHierarchyLock } from "../../domain/ports/account-hierarchy.lock.js";
 import { CompanyFollowsRepository } from "../../domain/ports/company-follows.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
+import { PricingFollowJournal } from "../../domain/ports/pricing-follow.journal.js";
 import { loadCompany, loadParentOf, named } from "../services/account-hierarchy-support.js";
 import { FollowParentCommand } from "./follow-parent.command.js";
 
@@ -26,6 +27,7 @@ export class FollowParentHandler implements ICommandHandler<FollowParentCommand,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly pricingJournal: PricingFollowJournal,
   ) {}
 
   async execute(command: FollowParentCommand): Promise<void> {
@@ -39,6 +41,16 @@ export class FollowParentHandler implements ICommandHandler<FollowParentCommand,
         return;
       }
       await this.follows.save(follows);
+      // `pricing` s'inscrit au journal des prix, dont la copie générale tient
+      // lieu de `company.parent_followed` (`plan-sous-comptes.md`, S3).
+      if (command.aspect === "pricing") {
+        await this.pricingJournal.followStarted({
+          child: named(child),
+          parent: named(parent),
+          validFrom: now,
+        });
+        return;
+      }
       await this.events.publishTraced(
         new ParentFollowedEvent(named(child), named(parent), command.aspect, now),
       );

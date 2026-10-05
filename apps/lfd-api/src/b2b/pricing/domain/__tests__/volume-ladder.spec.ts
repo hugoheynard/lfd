@@ -49,6 +49,7 @@ function context(quantity: number): PricingContext {
     productSku: "VIE-001",
     categoryPath: ["fam-vien"],
     companyId: null,
+    pricingCompanyId: null,
     segmentId: null,
     cumulativeQuantity: null,
   };

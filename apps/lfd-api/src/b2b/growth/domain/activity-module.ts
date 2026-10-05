@@ -65,6 +65,10 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // La mercuriale d'un client est une tarification négociée comme les autres :
     // posée, renommée, archivée par le même commercial (2026-09-19).
     "company_mercuriale.",
+    // Le suivi de la mercuriale d'un principal par un sous-compte : une
+    // décision du commercial (Q9, `plan-sous-comptes.md`, S3).
+    "pricing_follow.",
+    "pricing_follower.",
     // Le catalogue B2B — prix négocié, vitrine, arrivée validée — décide ce
     // qu'on vend et à quel prix : le même métier que la tarification
     // (2026-09-19).

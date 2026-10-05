@@ -209,6 +209,13 @@ export interface PricingContext {
   readonly categoryPath: readonly string[];
   /** `null` pour une commande sans entreprise (parcours zéro friction). */
   readonly companyId: string | null;
+  /**
+   * Le compte dont la **mercuriale** s'applique à cet instant : le principal
+   * suivi par un sous-compte, la société elle-même sinon (`plan-sous-comptes.md`,
+   * §2.2). Seule la mercuriale le lit ; les règles d'audience `company` restent
+   * jugées sur `companyId`.
+   */
+  readonly pricingCompanyId: string | null;
   readonly segmentId: string | null;
   /**
    * **Le volume cumulé sur la période d'engagement**, cette commande comprise.

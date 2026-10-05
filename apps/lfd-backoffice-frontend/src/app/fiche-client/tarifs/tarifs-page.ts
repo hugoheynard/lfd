@@ -39,6 +39,7 @@ import { MILLICENTS_PER_CENT } from '@lfd/money';
 import { NotifyService } from '../../notify.service';
 import { PricingFollow } from '../pricing-follow/pricing-follow';
 import { nativeValue } from '../../shared/native-input';
+import { TariffJournalCard } from './tariff-journal-card/tariff-journal-card';
 import { VolumeEffort } from '../../b2b/tarification/volume-effort/volume-effort';
 import { PriceTemplatesService } from '../../commercial/tarification/templates.service';
 /** 10⁵ — d'un millicentime à l'euro. Dérivé une fois, jamais réécrit en dur. */
@@ -137,6 +138,7 @@ const STATUS_TONE: Readonly<Record<PosedMercurialeStatus, 'success' | 'neutral' 
   selector: 'app-client-tarifs-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    TariffJournalCard,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,

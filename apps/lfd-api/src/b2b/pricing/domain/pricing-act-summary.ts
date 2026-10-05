@@ -204,6 +204,24 @@ export function describeWindowOf(validFrom: Date, validTo: Date | null): string 
 }
 
 /**
+ * **Les phrases figées d'un suivi de mercuriale** (`plan-sous-comptes.md`,
+ * S3), une par côté et par geste. Le nom de l'autre compte est celui du
+ * moment de l'acte.
+ */
+export type FollowActKind = "started" | "ended" | "joined" | "left";
+
+const FOLLOW_PHRASES: Readonly<Record<FollowActKind, (name: string, on: string) => string>> = {
+  started: (name, on) => `Suit la mercuriale de ${name} depuis le ${on}`,
+  ended: (name, on) => `Ne suit plus la mercuriale de ${name} (le ${on})`,
+  joined: (name, on) => `${name} suit votre mercuriale depuis le ${on}`,
+  left: (name, on) => `${name} ne suit plus votre mercuriale (le ${on})`,
+};
+
+export function describeFollow(kind: FollowActKind, counterpart: string, at: Date): string {
+  return FOLLOW_PHRASES[kind](counterpart, day(at));
+}
+
+/**
  * **Un nombre d'articles, accordé** : « 1 article », « 12 articles ».
  * La phrase figée écrivait « article(s) », que personne ne dit.
  */

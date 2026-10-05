@@ -64,7 +64,7 @@ function lotOf(articles = [CROISSANT, PAIN], rules: readonly PriceRule[] = []): 
     LoadedPricer.over(
       materialsOf({ rules, floors: [], ladders: [], commitments: [], mercuriale: null }),
       NO_EVIDENCE,
-      { companyId: null },
+      { companyId: null, pricingCompanyId: null },
       AT,
     ),
     articles,

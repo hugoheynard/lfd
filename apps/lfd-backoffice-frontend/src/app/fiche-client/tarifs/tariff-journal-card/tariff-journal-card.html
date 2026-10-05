@@ -1,0 +1,13 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="clock"
+    title="Journal du tarif"
+    subtitle="Les mercuriales suivies entre ce compte et son principal ou ses sous-comptes. Rien ne s’y modifie ni ne s’y efface."
+  />
+  <app-journal-acts
+    [subject]="subject()"
+    emptySubtitle="Ce compte n’a jamais suivi de mercuriale, et aucun sous-compte n’a suivi la sienne."
+  />
+</fold-card>

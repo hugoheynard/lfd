@@ -21,6 +21,7 @@ import { familyView } from "../../../catalog/domain/catalog-family.js";
 import { posedMercurialeView } from "../posed-mercuriale-view.js";
 import { pricingContextFor } from "../../domain/pricing-context.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
+import { PricingPartiesResolver } from "../pricing-parties.resolver.js";
 
 /**
  * **Ce que paie UN client**, article par article — la lecture de l'onglet
@@ -68,6 +69,7 @@ export class CompanyPricingQuery {
     private readonly customerVolumes: CustomerVolumeReader,
     private readonly clock: Clock,
     private readonly staffAuthors: StaffAuthorDirectory,
+    private readonly parties: PricingPartiesResolver,
   ) {}
 
   /** @throws {PricedCompanyNotFoundError} l'identifiant ne désigne aucune société. */
@@ -76,6 +78,9 @@ export class CompanyPricingQuery {
     // d'une mercuriale et la résolution des prix doivent parler du même.
     const at = this.clock.now();
     await this.assertCompanyExists(companyId);
+    // Le compte de tarif À CET INSTANT : un sous-compte qui suit son principal
+    // paie la mercuriale du principal (`plan-sous-comptes.md`, §2.2).
+    const parties = await this.parties.partiesAt(companyId, at);
 
     const [ladders, articles, mercuriales, live] = await Promise.all([
       this.ladders.listAll(at),
@@ -83,8 +88,9 @@ export class CompanyPricingQuery {
       // Ce qu'on a DÉCIDÉ chez ce client — en cours, à venir, terminées.
       this.mercuriales.listFor(companyId),
       // Ce qui AGIT maintenant : c'est elle, et elle seule, qui entre dans le
-      // prix. Deux questions, deux lectures — cf. le port.
-      this.mercuriales.liveFor(companyId, at),
+      // prix. Deux questions, deux lectures — cf. le port. Lue sur le compte
+      // de tarif : celle du principal tant que le sous-compte le suit.
+      this.mercuriales.liveFor(parties.pricingCompanyId, at),
     ]);
     // 🔴 **Après le catalogue, et non avec lui** : une vue de plancher porte
     // l'écart au tarif de référence, donc a besoin des articles. C'est une
@@ -97,7 +103,7 @@ export class CompanyPricingQuery {
     const { rules, floors } = await this.decisions.decisionsAt(at, { companyId }, articles);
 
     const names = new Map(articles.map((article) => [article.sku, article.name]));
-    const materials = await boardMaterials(rules, floors, at, live, ladders, companyId);
+    const materials = await boardMaterials(rules, floors, at, live, ladders, parties);
     // Les familles qui portent au moins un article, dans l'ordre du référentiel.
     const categories: CompanyPricingCategoryView[] = groupByFamily(articles).map((shelf) => ({
       id: shelf.family.id,
@@ -106,7 +112,7 @@ export class CompanyPricingQuery {
       items: shelf.articles.map((article) =>
         itemView(
           article.article,
-          pricingContextFor(article.sku, article.article.categoryPath, 1, { companyId }, at),
+          pricingContextFor(article.sku, article.article.categoryPath, 1, parties, at),
           materials,
           { rules, floors },
         ),

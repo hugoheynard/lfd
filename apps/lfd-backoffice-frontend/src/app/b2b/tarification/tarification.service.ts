@@ -11,6 +11,7 @@ import type {
   PricingBoardView,
   PricingComparisonView,
   PricingJournalPageView,
+  PricingSubjectType,
   SetVolumeLadderPayload,
 } from '@lfd/contracts';
 
@@ -129,7 +130,7 @@ export class TarificationService {
    * renvoyer pour les pages suivantes les fait lire le même instantané.
    */
   journalPage(
-    subjectType: 'rule' | 'floor',
+    subjectType: PricingSubjectType,
     subjectId: string,
     request: { readonly page: number; readonly pageSize: number; readonly asOf?: string },
   ): Promise<PricingJournalPageView> {

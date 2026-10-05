@@ -29,6 +29,11 @@
           <!-- La référence est ce qu'on se dicte au téléphone : elle vit à côté
                du nom, pas dans un onglet qu'il faudrait aller ouvrir. -->
           <span class="masthead-reference">{{ view.reference }}</span>
+          <!-- Un sous-compte nomme son principal dès l'en-tête, depuis les huit
+               onglets : c'est la lecture de la fiche qui le porte (T28). -->
+          @if (view.parent; as parent) {
+            <app-sub-account-badge [parent]="parent" />
+          }
         }
       </div>
 

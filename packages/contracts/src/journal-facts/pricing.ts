@@ -73,6 +73,23 @@ const commitmentTermsV1 = {
   validTo: instant(),
 };
 
+/**
+ * Un suivi de mercuriale entre un sous-compte et son principal
+ * (`plan-sous-comptes.md`, S3) : écrit deux fois par geste, une fois sur le
+ * compte tarifaire de chacun. `counterpart` est l'autre compte, nommé au
+ * moment de l'acte. La table datée `company_follows` reste la source de la
+ * relecture des prix ; ces faits ne servent qu'à la lecture humaine.
+ */
+const followAct = (counterpart: "parent" | "child", ended: boolean) =>
+  fact(
+    actV1.extend({
+      subjectLabel: subjectLabel(),
+      [counterpart]: named("company"),
+      validFrom: instant(),
+      ...(ended ? { validTo: instant() } : {}),
+    }),
+  );
+
 export const PRICING_FACTS = {
   "price_rule.posed": ruleAct(),
   "price_rule.paused": ruleAct(),
@@ -94,6 +111,13 @@ export const PRICING_FACTS = {
   "company_mercuriale.posed": act(),
   "company_mercuriale.archived": act(),
   "company_mercuriale.renamed": act(),
+
+  /** Le sujet est le SOUS-COMPTE : il suit la mercuriale de `parent`. */
+  "pricing_follow.started": followAct("parent", false),
+  "pricing_follow.ended": followAct("parent", true),
+  /** Le sujet est le PRINCIPAL : `child` suit (ou ne suit plus) sa mercuriale. */
+  "pricing_follower.joined": followAct("child", false),
+  "pricing_follower.left": followAct("child", true),
 
   /**
    * Les termes entiers de l'engagement. Le sujet est l'engagement ; son nom

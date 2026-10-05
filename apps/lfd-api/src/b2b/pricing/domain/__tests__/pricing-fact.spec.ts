@@ -95,3 +95,71 @@ describe("pricingFactOf", () => {
     expect(fact.subjectId).toBe("ladder_2");
   });
 });
+
+/**
+ * Le suivi d'une mercuriale (`plan-sous-comptes.md`, S3) : sujet `company`,
+ * quatre gestes, et la période citée avec l'autre compte nommé.
+ */
+describe("pricingFactOf — le compte tarifaire d'un client", () => {
+  const FROM = new Date("2026-09-01T08:00:00Z");
+  const TO = new Date("2026-10-01T08:00:00Z");
+
+  it("écrit les quatre gestes du suivi sous le sujet général `company`", () => {
+    const kinds = ["started", "ended", "joined", "left"] as const;
+    expect(kinds.map((kind) => pricingFactOf(act({ subjectType: "company", kind })).type)).toEqual([
+      "pricing_follow.started",
+      "pricing_follow.ended",
+      "pricing_follower.joined",
+      "pricing_follower.left",
+    ]);
+    expect(pricingFactOf(act({ subjectType: "company", kind: "started" })).subjectType).toBe(
+      "company",
+    );
+  });
+
+  it("cite le principal et la période sur le sous-compte", () => {
+    const fact = pricingFactOf(
+      act({
+        subjectType: "company",
+        subjectId: "co_site",
+        kind: "ended",
+        follow: {
+          role: "parent",
+          counterpart: { id: "co_group", name: "Club Med" },
+          validFrom: FROM,
+          validTo: TO,
+        },
+      }),
+    );
+
+    expect(fact.payload).toMatchObject({
+      parent: { id: "co_group", name: "Club Med" },
+      validFrom: FROM.toISOString(),
+      validTo: TO.toISOString(),
+    });
+  });
+
+  it("cite le sous-compte, sans fin, sur le principal qui le gagne", () => {
+    const payload = pricingFactOf(
+      act({
+        subjectType: "company",
+        kind: "joined",
+        follow: {
+          role: "child",
+          counterpart: { id: "co_site", name: "Club Med Chamonix" },
+          validFrom: FROM,
+          validTo: null,
+        },
+      }),
+    ).payload;
+
+    expect(payload["child"]).toEqual({ id: "co_site", name: "Club Med Chamonix" });
+    expect(payload).not.toHaveProperty("validTo");
+  });
+
+  it("refuse un geste de règle sur le compte tarifaire", () => {
+    expect(() => pricingFactOf(act({ subjectType: "company", kind: "posed" }))).toThrow(
+      PricingActNotJournaledError,
+    );
+  });
+});

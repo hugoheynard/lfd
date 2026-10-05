@@ -20,4 +20,19 @@ export abstract class CustomerVolumeReader {
     skus: readonly string[],
     window: VolumeWindow,
   ): Promise<ReadonlyMap<string, number>>;
+
+  /**
+   * Le volume qui compte pour **l'engagement** de ce compte : le sien, plus
+   * les commandes des sous-comptes qui suivaient son tarif à la date de
+   * chaque commande (Q6, R5 — `plan-sous-comptes.md`).
+   *
+   * Séparé de {@link volumesFor} parce que seul le palier agrège : côté
+   * commercial, chaque sous-compte est vu seul (R9), et l'effort de vente
+   * d'une fiche ne compte que la société.
+   */
+  abstract committedVolumesFor(
+    companyId: string,
+    skus: readonly string[],
+    window: VolumeWindow,
+  ): Promise<ReadonlyMap<string, number>>;
 }

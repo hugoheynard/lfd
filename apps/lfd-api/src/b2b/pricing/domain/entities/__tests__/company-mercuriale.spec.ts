@@ -175,6 +175,7 @@ describe("vue comme une règle", () => {
     productSku: "VIE-012",
     categoryPath: ["fam-vien"],
     companyId: "co_folie",
+    pricingCompanyId: "co_folie",
     segmentId: null,
   };
 
@@ -206,6 +207,22 @@ describe("vue comme une règle", () => {
       scope: { type: "product", id: "VIE-012" },
       audience: { type: "company", id: "co_folie" },
     });
+  });
+
+  it("sert un sous-compte qui suit son tarif, et vise la société servie", () => {
+    // `plan-sous-comptes.md`, §2.2 : la mercuriale du principal s'applique au
+    // sous-compte ; c'est à la société servie que l'audience est confrontée.
+    expect(pose().asRuleFor({ ...CONTEXT, companyId: "co_site" })).toMatchObject({
+      audience: { type: "company", id: "co_site" },
+      amountMillicents: 173_270,
+    });
+  });
+
+  it("ne dit rien d'un autre compte de tarif — pas même « palier non atteint »", () => {
+    const elsewhere = { ...CONTEXT, pricingCompanyId: "co_other", quantity: 0 };
+
+    expect(ladder().asRuleFor(elsewhere)).toBeNull();
+    expect(ladder().missesTierFor(elsewhere)).toBe(false);
   });
 
   it("est transparente sur un article qu'elle ne porte pas", () => {

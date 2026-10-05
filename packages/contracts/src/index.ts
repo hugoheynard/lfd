@@ -1658,6 +1658,8 @@ export type {
   CompanyFollowAspect,
   CompanyRefView,
   ParentCompanyView,
+  SubAccountKind,
+  SubAccountParentView,
   FollowedAspectView,
   SubAccountView,
   CompanyHierarchyView,

@@ -113,6 +113,7 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CanonicalPriceHistoryReader } from "../../../../catalog/domain/ports/canonical-price-history.reader.js";
 import type { CatalogPricing, FulfillmentWindow } from "@lfd/contracts";
 import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js";
+import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 
 /**
  * L'historique du tarif canonique — **jamais consulté ici** : ces cas ne posent
@@ -198,6 +199,7 @@ const noCommitments: VolumeCommitmentReader = {
 
 const noCustomerVolumes: CustomerVolumeReader = {
   volumesFor: () => Promise.resolve(new Map<string, number>()),
+  committedVolumesFor: () => Promise.resolve(new Map<string, number>()),
 };
 
 /**
@@ -420,6 +422,7 @@ function drafting(
         ),
         new FixedClock(PRICED_AT),
         noPriceHistory,
+        ownPricingParties(),
       ),
       new FixedClock(PRICED_AT),
     ),

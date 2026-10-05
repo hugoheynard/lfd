@@ -6,6 +6,7 @@ import {
 
 import { lineageSegments } from "../domain/lineage-overlaps.js";
 import { pricingContextFor } from "../domain/pricing-context.js";
+import { NO_PARTIES } from "../domain/loaded-pricer.js";
 import { itemView, type BoardMaterials } from "./board-item.js";
 import type { LoadedFloor, LoadedRule } from "./ports/pricing-decisions.reader.js";
 import type { CatalogItem } from "../../catalog/domain/ports/product-catalog.reader.js";
@@ -84,7 +85,7 @@ export function categoryView(
       itemView(
         // L'article scellé par le catalogue — plus de traduction ici.
         item.article,
-        pricingContextFor(item.sku, item.article.categoryPath, 1, { companyId: null }, at),
+        pricingContextFor(item.sku, item.article.categoryPath, 1, NO_PARTIES, at),
         materials,
         loaded,
       ),

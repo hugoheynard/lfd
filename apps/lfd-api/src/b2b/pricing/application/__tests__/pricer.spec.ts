@@ -51,6 +51,7 @@ import type { VolumeLadder } from "../../domain/volume-ladder.js";
 import { EmptyLotError, type PricedLot } from "../priced-lot.js";
 import { NoCanonicalPriceAtError, Pricer } from "../pricer.js";
 import { VIENNOISERIES } from "../../../catalog/domain/__tests__/families.fixture.js";
+import { ownPricingParties } from "./pricing-parties.doubles.js";
 
 // ── L'instant, et les fenêtres ────────────────────────────────────────────
 //
@@ -302,6 +303,14 @@ class StubCustomerVolumes extends CustomerVolumeReader {
     this.windows.push({ from: window.from, to: window.to });
     return Promise.resolve(this.volumes);
   }
+  /** Le chargeur mesure l'engagement par cette méthode : même relevé. */
+  committedVolumesFor(
+    companyId: string,
+    skus: readonly string[],
+    window: { readonly from: Date; readonly to: Date },
+  ): Promise<ReadonlyMap<string, number>> {
+    return this.volumesFor(companyId, skus, window);
+  }
 }
 
 /**
@@ -378,6 +387,7 @@ function pricerWith(
       loader,
       new FrozenClock(NOW),
       new StubPriceHistory(parts.pastPrices ?? null),
+      ownPricingParties(),
     ),
     doubles: { rules, mercuriales, commitments, volumes },
   };

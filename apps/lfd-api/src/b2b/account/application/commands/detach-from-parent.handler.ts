@@ -7,6 +7,7 @@ import { ParentDetachedEvent } from "../../domain/events/hierarchy-acts.event.js
 import { AccountHierarchyLock } from "../../domain/ports/account-hierarchy.lock.js";
 import { CompanyFollowsRepository } from "../../domain/ports/company-follows.repository.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
+import { PricingFollowJournal } from "../../domain/ports/pricing-follow.journal.js";
 import { loadCompany, loadParentOf, named } from "../services/account-hierarchy-support.js";
 import { DetachFromParentCommand } from "./detach-from-parent.command.js";
 
@@ -24,6 +25,7 @@ export class DetachFromParentHandler implements ICommandHandler<DetachFromParent
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly pricingJournal: PricingFollowJournal,
   ) {}
 
   async execute(command: DetachFromParentCommand): Promise<void> {
@@ -32,11 +34,22 @@ export class DetachFromParentHandler implements ICommandHandler<DetachFromParent
       const child = await loadCompany(this.companies, command.companyId);
       const parent = await loadParentOf(this.companies, child);
       const follows = await this.follows.load(child.id);
-      const closed = follows.closeAll(this.clock.now());
+      const now = this.clock.now();
+      // Lue AVANT de fermer : l'acte de fin cite le début de la période.
+      const pricing = follows.followsAt("pricing", now);
+      const closed = follows.closeAll(now);
       await this.follows.save(follows);
       child.company.detachFromParent();
       await this.companies.save(child.company);
       await this.events.publishTraced(new ParentDetachedEvent(named(child), named(parent), closed));
+      if (pricing !== null && closed.includes("pricing")) {
+        await this.pricingJournal.followEnded({
+          child: named(child),
+          parent: named(parent),
+          validFrom: pricing.validFrom,
+          validTo: now,
+        });
+      }
     });
   }
 }

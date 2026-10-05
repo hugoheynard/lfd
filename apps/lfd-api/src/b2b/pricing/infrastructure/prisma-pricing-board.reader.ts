@@ -1,6 +1,7 @@
 import type { PriceRuleView, PricingBoardView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
+import { NO_PARTIES } from "../domain/loaded-pricer.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { BoardElasticityService } from "../application/board-elasticity.service.js";
@@ -173,7 +174,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       at,
       null,
       loaded.ladders,
-      null,
+      NO_PARTIES,
     );
     // Groupé UNE fois : filtrer le catalogue entier par famille rendait le coût
     // proportionnel au produit familles × articles, pour un découpage qui ne

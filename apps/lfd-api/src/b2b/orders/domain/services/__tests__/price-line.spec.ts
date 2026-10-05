@@ -75,7 +75,10 @@ function line(
   const built = input(over);
   return priceLine(
     built,
-    new PricedLot(LoadedPricer.over(materials, evidence, { companyId }, AT), [built.item.article]),
+    new PricedLot(
+      LoadedPricer.over(materials, evidence, { companyId, pricingCompanyId: companyId }, AT),
+      [built.item.article],
+    ),
   );
 }
 

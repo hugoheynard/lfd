@@ -436,6 +436,15 @@ export const pricingActSchema = z.enum([
   "replaced",
   /** Le libellé a changé, **et rien d'autre** — aucun prix n'a bougé. */
   "renamed",
+  /**
+   * Sur le compte tarifaire d'un sous-compte (sujet `company`) : il commence /
+   * cesse de suivre la mercuriale de son principal (`plan-sous-comptes.md`, S3).
+   */
+  "started",
+  "ended",
+  /** Sur le compte tarifaire du principal : un sous-compte rejoint / quitte sa mercuriale. */
+  "joined",
+  "left",
 ]);
 export type PricingActKind = z.infer<typeof pricingActSchema>;
 
@@ -447,8 +456,12 @@ export type PricingActKind = z.infer<typeof pricingActSchema>;
  * d'être N règles. Un sujet à part, et non `rule` : relire « pourquoi ce prix »
  * doit rendre UN acte — « posée le 8 septembre, 92 articles » — et non les N que
  * la pose écrivait, dont aucun ne disait à quelle grille il appartenait.
+ *
+ * `company` (2026-10-05, `plan-sous-comptes.md`, S3) : le **compte tarifaire**
+ * d'un client, `subjectId` = son identifiant. Il porte les suivis de
+ * mercuriale entre un sous-compte et son principal, des deux côtés.
  */
-export const pricingSubjectSchema = z.enum(["rule", "floor", "ladder", "mercuriale"]);
+export const pricingSubjectSchema = z.enum(["rule", "floor", "ladder", "mercuriale", "company"]);
 export type PricingSubjectType = z.infer<typeof pricingSubjectSchema>;
 
 export const PRICING_ACT_LABELS: Readonly<Record<PricingActKind, string>> = {
@@ -459,6 +472,10 @@ export const PRICING_ACT_LABELS: Readonly<Record<PricingActKind, string>> = {
   confirmed: "Confirmée",
   replaced: "Remplacée",
   renamed: "Renommée",
+  started: "Alignement",
+  ended: "Fin d'alignement",
+  joined: "Sous-compte aligné",
+  left: "Sous-compte désaligné",
 };
 
 /**

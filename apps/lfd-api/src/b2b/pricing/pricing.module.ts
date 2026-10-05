@@ -16,6 +16,11 @@ import { PrismaCompanyMercurialeReader } from "./infrastructure/prisma-company-m
 import { PrismaVolumeLadderReader } from "./infrastructure/prisma-volume-ladder.reader.js";
 import { PrismaVolumeCommitmentReader } from "./infrastructure/prisma-volume-commitment.reader.js";
 import { PrismaCustomerVolumeReader } from "./infrastructure/prisma-customer-volume.reader.js";
+import { PricingAccountReader } from "./domain/ports/pricing-account.reader.js";
+import { FollowedPricingAccountReader } from "./infrastructure/followed-pricing-account.reader.js";
+import { PricingPartiesResolver } from "./application/pricing-parties.resolver.js";
+import { CompanyFollowsReader } from "../account/domain/ports/company-follows.reader.js";
+import { PrismaCompanyFollowsReader } from "../account/infrastructure/prisma-company-follows.reader.js";
 
 /**
  * Contexte **prix** : les règles tarifaires, leurs planchers, et leur résolution.
@@ -43,6 +48,12 @@ import { PrismaCustomerVolumeReader } from "./infrastructure/prisma-customer-vol
     { provide: VolumeLadderReader, useClass: PrismaVolumeLadderReader },
     { provide: VolumeCommitmentReader, useClass: PrismaVolumeCommitmentReader },
     { provide: CustomerVolumeReader, useClass: PrismaCustomerVolumeReader },
+    // 🔴 La seule fabrique des parties d'un prix (`plan-sous-comptes.md`,
+    // §2.2). Le lecteur des suivis est celui de `account/`, sans état : le
+    // lier ici évite d'importer tout `AccountModule` dans la tarification.
+    PricingPartiesResolver,
+    { provide: PricingAccountReader, useClass: FollowedPricingAccountReader },
+    { provide: CompanyFollowsReader, useClass: PrismaCompanyFollowsReader },
   ],
   exports: [
     PricingMaterialsLoader,
@@ -58,6 +69,7 @@ import { PrismaCustomerVolumeReader } from "./infrastructure/prisma-customer-vol
     VolumeLadderReader,
     VolumeCommitmentReader,
     CustomerVolumeReader,
+    PricingPartiesResolver,
   ],
 })
 export class PricingModule {}

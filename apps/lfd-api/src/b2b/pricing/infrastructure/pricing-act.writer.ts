@@ -84,6 +84,22 @@ export class PricingActWriter {
     return changed;
   }
 
+  /**
+   * Inscrit des actes **sans écriture d'état propre** : celle-ci appartient à
+   * l'appelant, qui tient déjà la transaction (le suivi d'une mercuriale, écrit
+   * par `account`). Rejoint la sienne s'il y en a une.
+   *
+   * Le cache des matériaux n'est pas vidé : un suivi ne change aucune décision
+   * qu'il retient — le compte de tarif se relit à chaque lot, à date.
+   */
+  async inscribeAll(acts: readonly PricingAct[]): Promise<void> {
+    await this.uow.run(async () => {
+      for (const act of acts) {
+        await this.inscribe(act);
+      }
+    });
+  }
+
   /** L'acte du domaine, puis son miroir général. */
   private async inscribe(act: PricingAct): Promise<void> {
     await this.prisma.pricingEvent.create({ data: eventRow(this.ids.next(), act) });

@@ -17,10 +17,26 @@ import type { CompanyMercuriale } from "./entities/company-mercuriale.js";
 import { pricingContextFor } from "./pricing-context.js";
 import { volumeTierPrices } from "./volume-tier-prices.js";
 
-/** Ce que l'appelant sait du client au moment de tarifer. */
+/**
+ * Ce que l'appelant sait du client au moment de tarifer — **deux clés**
+ * (`plan-sous-comptes.md`, §2.2).
+ *
+ * `companyId` est la société servie : c'est elle que visent les règles
+ * d'audience `company`. `pricingCompanyId` est le compte dont la mercuriale et
+ * les engagements s'appliquent **à l'instant de la lecture** : le principal
+ * quand un sous-compte suit son tarif, la société elle-même sinon. Les deux
+ * sont `null` ensemble, pour une commande sans entreprise.
+ *
+ * Ne se construit que par `PricingPartiesResolver` (ou {@link NO_PARTIES}) :
+ * une seconde fabrique ferait revenir le suivi d'aujourd'hui sur une relecture.
+ */
 export interface PricingParties {
   readonly companyId: string | null;
+  readonly pricingCompanyId: string | null;
 }
+
+/** Aucune société : le tableau général, le parcours sans compte. */
+export const NO_PARTIES: PricingParties = { companyId: null, pricingCompanyId: null };
 
 /**
  * **Ce qu'il faut savoir d'un article pour le tarifer**, et rien de plus.
@@ -293,6 +309,9 @@ export class LoadedPricer {
       // nommément.
       categoryPath: [],
       companyId,
+      // Le comparatif lit chaque mercuriale chez SON client : la société servie
+      // est celle qui la porte.
+      pricingCompanyId: mercuriale.companyId,
       segmentId: null,
     };
     const rule = mercuriale.asRuleFor(context);

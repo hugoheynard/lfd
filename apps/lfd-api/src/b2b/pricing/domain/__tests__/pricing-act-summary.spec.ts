@@ -1,6 +1,7 @@
 import {
   describeArticleCount,
   describeFloor,
+  describeFollow,
   describeLadder,
   describeRule,
   describeScope,
@@ -219,5 +220,24 @@ describe("la phrase d'une limite nomme sa clientèle", () => {
 
   it("dit « Limite publique » devant la politique", () => {
     expect(describeFloor("public", wall)).toBe("Limite publique · mur à 1,50 €");
+  });
+});
+
+describe("describeFollow — les phrases du suivi d'une mercuriale", () => {
+  const ON = new Date("2026-10-05T10:00:00Z");
+
+  it("dit les quatre côtés, avec le jour civil à Paris", () => {
+    expect(describeFollow("started", "Club Med", ON)).toBe(
+      "Suit la mercuriale de Club Med depuis le 5 octobre 2026",
+    );
+    expect(describeFollow("ended", "Club Med", ON)).toBe(
+      "Ne suit plus la mercuriale de Club Med (le 5 octobre 2026)",
+    );
+    expect(describeFollow("joined", "Club Med Tignes", ON)).toBe(
+      "Club Med Tignes suit votre mercuriale depuis le 5 octobre 2026",
+    );
+    expect(describeFollow("left", "Club Med Tignes", ON)).toBe(
+      "Club Med Tignes ne suit plus votre mercuriale (le 5 octobre 2026)",
+    );
   });
 });

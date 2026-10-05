@@ -201,6 +201,6 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
    * Le module qui les consomme est {@link OrderPricingModule}, une **jointure**
    * : ni `orders` ni `pricing` ne s'importent l'un l'autre pour ça.
    */
-  exports: [PricingBoardReader, PricingJournalReader],
+  exports: [PricingBoardReader, PricingJournalReader, PricingActWriter],
 })
 export class PricingAdminModule {}

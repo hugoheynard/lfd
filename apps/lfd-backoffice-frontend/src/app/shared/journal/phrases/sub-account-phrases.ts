@@ -90,6 +90,52 @@ function alignment(verb: string, moment: 'since' | 'until'): Phrase {
     );
 }
 
+const OF_PARENT: Noun = { the: 'du compte principal', a: 'd’un compte principal' };
+const A_SUB_ACCOUNT: Noun = { the: 'le sous-compte', a: 'un sous-compte' };
+
+/**
+ * **Le suivi d'une mercuriale**, au journal des prix (S3, T21) — écrit deux
+ * fois par geste. Sur le sous-compte : « a aligné le tarif du client « X » sur
+ * la mercuriale du compte principal « P » ». Sur le principal : « a aligné le
+ * sous-compte « X » sur la mercuriale du client « P » ». La phrase figée
+ * (`summary`) et les dates restent au détail.
+ */
+/** « du client « X » », lié à sa fiche — « d’un client » sans nom. */
+function ofClient(fact: PhraseFact): Segment[] {
+  const label = subjectLabelOf(fact);
+  return label === null
+    ? [text('d’un client')]
+    : [text('du client « '), subject(fact, label), text(' »')];
+}
+
+function followOnChild(verb: string, preposition: string, moments: readonly string[]): Phrase {
+  return (fact) =>
+    byActor(
+      fact,
+      [
+        text(`${verb} le tarif `),
+        ...ofClient(fact),
+        text(` ${preposition} la mercuriale `),
+        ...cite(OF_PARENT, fact.payload['parent']),
+      ],
+      ['subjectLabel', 'parent', 'summary', 'reason', ...moments],
+    );
+}
+
+function followOnParent(verb: string, preposition: string, moments: readonly string[]): Phrase {
+  return (fact) =>
+    byActor(
+      fact,
+      [
+        text(`${verb} `),
+        ...cite(A_SUB_ACCOUNT, fact.payload['child']),
+        text(` ${preposition} la mercuriale `),
+        ...ofClient(fact),
+      ],
+      ['subjectLabel', 'child', 'summary', 'reason', ...moments],
+    );
+}
+
 const groupWithoutDeliverySet: Phrase = (fact) =>
   byActor(
     fact,
@@ -110,4 +156,8 @@ export const SUB_ACCOUNT_PHRASES = {
   'company.parent_followed': alignment('a aligné', 'since'),
   'company.parent_unfollowed': alignment('a désaligné', 'until'),
   'company.group_without_delivery_set': groupWithoutDeliverySet,
+  'pricing_follow.started': followOnChild('a aligné', 'sur', ['validFrom']),
+  'pricing_follow.ended': followOnChild('a désaligné', 'de', ['validFrom', 'validTo']),
+  'pricing_follower.joined': followOnParent('a aligné', 'sur', ['validFrom']),
+  'pricing_follower.left': followOnParent('a désaligné', 'de', ['validFrom', 'validTo']),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

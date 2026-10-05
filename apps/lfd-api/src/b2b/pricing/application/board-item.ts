@@ -2,7 +2,7 @@ import type { NegotiationRoom, PricingItemView } from "@lfd/contracts";
 
 import type { CatalogArticle } from "../../catalog/domain/catalogue-article.js";
 import type { LoadedFloor, LoadedRule } from "./ports/pricing-decisions.reader.js";
-import { LoadedPricer } from "../domain/loaded-pricer.js";
+import { LoadedPricer, NO_PARTIES, type PricingParties } from "../domain/loaded-pricer.js";
 import { pricerOver } from "./pricer-over.js";
 import { resolveScopedFloor } from "../domain/resolve-floor.js";
 import { applies, winnerOf } from "../domain/specificity.js";
@@ -69,10 +69,11 @@ export async function boardMaterials(
   mercuriale: CompanyMercuriale | null = null,
   ladders: readonly VolumeLadder[] = [],
   /**
-   * Le client dont on lit le tableau. `null` = le tableau général, qui montre
-   * ce que voit un compte sans tarif négocié.
+   * Le client dont on lit le tableau, résolu par `PricingPartiesResolver`.
+   * {@link NO_PARTIES} = le tableau général, qui montre ce que voit un compte
+   * sans tarif négocié.
    */
-  companyId: string | null = null,
+  parties: PricingParties = NO_PARTIES,
 ): Promise<BoardMaterials> {
   const rules = loadedRules.map((entry) => entry.rule);
   const floors = loadedFloors.map((entry) => entry.floor);
@@ -92,11 +93,7 @@ export async function boardMaterials(
     //
     // Le sens est inchangé : le tableau montre un prix de vitrine, et un
     // engagement ouvrirait un palier que la vitrine ne promet pas.
-    pricer: await pricerOver(
-      { rules, floors, ladders, mercuriale, lens: "unproven" },
-      { companyId },
-      at,
-    ),
+    pricer: await pricerOver({ rules, floors, ladders, mercuriale, lens: "unproven" }, parties, at),
   };
 }
 

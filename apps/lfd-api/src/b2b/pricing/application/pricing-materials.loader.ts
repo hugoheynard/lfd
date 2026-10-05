@@ -135,14 +135,18 @@ export class PricingMaterialsLoader {
       // interroger la base.
       admitsEvidence(lens)
         ? replay
-          ? this.commitments.liveAsOf(parties.companyId, at)
-          : this.commitments.liveFor(parties.companyId)
+          ? this.commitments.liveAsOf(parties.pricingCompanyId, at)
+          : this.commitments.liveFor(parties.pricingCompanyId)
         : [],
       // La mercuriale arrive en OBJET : on ne connaît pas encore la quantité de
       // chaque ligne, donc pas le palier. Cf. `asRuleFor`.
+      //
+      // 🔴 Mercuriale et engagements se lisent sur le COMPTE DE TARIF — le
+      // principal qu'un sous-compte suit à `at` —, les règles d'audience
+      // `company` restent sur la société servie (`plan-sous-comptes.md`, §2.2).
       replay
-        ? this.mercuriales.liveAsOf(parties.companyId, at)
-        : this.mercuriales.liveFor(parties.companyId, at),
+        ? this.mercuriales.liveAsOf(parties.pricingCompanyId, at)
+        : this.mercuriales.liveFor(parties.pricingCompanyId, at),
     ]);
     // 🔴 **La fabrique est commune à ce chargeur et aux écrans.** Elle l'est
     // depuis R21 : `LoadedPricer.over` avait deux appelants, et le second — le
@@ -220,7 +224,7 @@ export class PricingMaterialsLoader {
     }
     const reads = await Promise.all(
       [...bySkus.values()].map(({ commitment, skus }) =>
-        this.customerVolumes.volumesFor(commitment.companyId, skus, {
+        this.customerVolumes.committedVolumesFor(commitment.companyId, skus, {
           from: commitment.validFrom,
           // 🔴 **Borné à l'instant demandé**, et non à la fin de l'engagement.
           //

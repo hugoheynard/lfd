@@ -55,6 +55,7 @@ export function pricingContextFor(
     productSku: sku,
     categoryPath,
     companyId: parties.companyId,
+    pricingCompanyId: parties.pricingCompanyId,
     segmentId: null,
     cumulativeQuantity,
   };

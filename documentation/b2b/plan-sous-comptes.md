@@ -440,6 +440,15 @@ Calqués sur la barre de déclinaisons de la fiche produit.
   - Le sous-compte naît en `pending`, comme toute création staff. Le bandeau
     dit lequel des deux il est : « Site de _Principal_ » ou « Entité
     rattachée à _Principal_ ».
+- 🔴 **Rattacher et détacher sont des gestes du personnel, jamais du
+  client** (Hugo, 2026-10-05). Rattacher un client existant engage une
+  autre société : côté client, il faudrait son consentement, donc un
+  circuit de validation qui n'existe pas. Les routes sont sous
+  `@AdminSurface("b2b_companies")` (`admin-company-hierarchy.controller.ts:38`,
+  vérifié le 2026-10-05). Côté personnel, il reste à **l'admin et au
+  commercial**, qui tiennent ce droit (Hugo, 2026-10-05) : pas de droit à
+  part. En S6, le rôle `admin` hérité du principal ne donne **pas** ce
+  geste.
 - **Rattacher** un client existant comme sous-compte, et le **détacher**.
   Détacher ferme toutes ses périodes de suivi : le sous-compte reprend ses
   valeurs propres, qui dormaient.
@@ -545,8 +554,15 @@ après le retour du cabinet sur Q3.
   derrière le droit de tarification (`@AdminSurface("b2b_pricing")`, celui
   de `admin-company-pricing.controller.ts`), et non derrière le droit de la
   fiche client. Il est journalisé au journal général
-  (`company.parent_followed`, aspect `pricing`). Le journal des prix a un
-  vocabulaire fermé (T21) : l'y ajouter se décide en S3. Le
+  (`company.parent_followed`, aspect `pricing`) **et** au journal des prix
+  (Hugo, 2026-10-05 : « je le veux »), sous un sujet de prix neuf,
+  `company` (le compte tarifaire d'un client). Une carte « Journal du
+  tarif », dans l'onglet Tarifs, montre « suit la mercuriale de _Principal_
+  depuis le… » chez le sous-compte, et « _Sous-compte_ suit votre
+  mercuriale » chez le principal. L'acte est écrit par un port que `account`
+  déclare et que `pricing` implémente, dans la transaction du geste. Sa copie
+  au journal général remplace `company.parent_followed` pour cet aspect.
+  Le journal est un affichage : la relecture du prix lit la table datée. Le
   client ne le voit pas et ne peut pas le changer. À la création d'un
   sous-compte, `pricing` n'est **pas** coché d'office : la case n'apparaît
   qu'à qui a le droit de tarification.

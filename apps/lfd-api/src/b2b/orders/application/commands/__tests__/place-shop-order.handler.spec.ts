@@ -72,6 +72,7 @@ import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { PlaceShopOrderCommand } from "../place-shop-order.command.js";
 import { PlaceShopOrderHandler } from "../place-shop-order.handler.js";
 import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js";
+import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 
 /**
  * **La commande sans compte**, éprouvée là où elle décide — plan
@@ -153,6 +154,7 @@ const noCommitments: VolumeCommitmentReader = {
 
 const noCustomerVolumes: CustomerVolumeReader = {
   volumesFor: () => Promise.resolve(new Map<string, number>()),
+  committedVolumesFor: () => Promise.resolve(new Map<string, number>()),
 };
 
 const noDeliveryDefaults: DeliveryDefaultsReader = {
@@ -244,6 +246,7 @@ function drafting(): OrderDrafting {
         ),
         new FixedClock(PRICED_AT),
         noPriceHistory,
+        ownPricingParties(),
       ),
       new FixedClock(PRICED_AT),
     ),

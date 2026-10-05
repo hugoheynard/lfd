@@ -38,6 +38,7 @@ function sheetWith(orders: readonly CustomerOrderLine[]): CustomerSheetView {
     contactName: 'Hugo',
     contactEmail: '',
     contactPhone: '',
+    parent: null,
     stats: {
       totalSpentCents: 182_500,
       ordersCount: 9,

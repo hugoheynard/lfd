@@ -246,8 +246,19 @@ export class CompanyMercuriale {
    * `applies` mesure pour cet étage. Un client sous engagement obtient donc le
    * palier qu'il a négocié dès sa première commande — c'est tout l'objet de
    * l'engagement.
+   *
+   * ## Le compte de tarif, pas la société servie
+   *
+   * Un sous-compte qui suit le tarif de son principal paie la mercuriale du
+   * principal (`plan-sous-comptes.md`, §2.2). Elle ne vaut donc que pour le
+   * compte de tarif du contexte (`pricingCompanyId`), et la règle rendue vise
+   * la société servie : c'est à elle que la résolution confronte l'audience.
+   * Une mercuriale d'un autre compte ne rend rien.
    */
   asRuleFor(context: PricingContext): PriceRule | null {
+    if (context.pricingCompanyId !== this.state.companyId || context.companyId === null) {
+      return null;
+    }
     // La portée d'une mercuriale est l'ARTICLE, comme `templateToRules` l'écrit.
     // `pricingContextFor` renseigne `productSku` et `variantSku` avec le même
     // sku ; lire l'un des deux suffit et dit lequel fait foi.
@@ -271,7 +282,7 @@ export class CompanyMercuriale {
       id: this.state.id,
       stage: "mercuriale",
       scope: { type: "product", id: line.sku },
-      audience: { type: "company", id: this.state.companyId },
+      audience: { type: "company", id: context.companyId },
       minQuantity: tier.minQuantity,
       validFrom: this.state.validFrom,
       validTo: this.state.validTo,
@@ -298,6 +309,11 @@ export class CompanyMercuriale {
    * rien à en dire.
    */
   missesTierFor(context: PricingContext): boolean {
+    // Une mercuriale d'un autre compte n'a rien à dire, même pas « palier non
+    // atteint » (cf. `asRuleFor`).
+    if (context.pricingCompanyId !== this.state.companyId) {
+      return false;
+    }
     const line = this.state.lines.find((candidate) => candidate.sku === context.productSku);
     if (line === undefined) {
       return false;
