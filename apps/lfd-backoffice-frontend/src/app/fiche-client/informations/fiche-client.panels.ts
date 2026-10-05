@@ -34,6 +34,16 @@ import type { HolderChoice } from '../holder-picker/holder-picker';
  * faire (recharger, en général). Le service n'appelle pas le rechargement
  * lui-même — il ne connaît pas l'état de la page, et n'a pas à le connaître.
  */
+/**
+ * **Un panneau de saisie ne se ferme pas tout seul.** fold ferme un panneau au
+ * clic sur le fond et à Échap. Or sélectionner le texte d'un champ et relâcher
+ * la souris hors du panneau envoie le clic au fond, et Échap sert aussi à
+ * refermer une liste déroulante : le panneau partait avec la saisie (signalé
+ * par Hugo le 2026-10-05, en corrigeant plusieurs champs de l'identité
+ * légale). Le bouton de fermeture et « Annuler » restent les deux sorties.
+ */
+export const FORM_PANEL = { disableClose: true } as const;
+
 @Injectable()
 export class FicheClientPanels {
   private readonly panels = inject(FoldPanelHostService);
@@ -49,6 +59,7 @@ export class FicheClientPanels {
   ): Promise<unknown> | null {
     if (key === 'vat' || key === 'legal') {
       return this.panels.open(AdminIdentitePanel, {
+        ...FORM_PANEL,
         data: {
           companyId: company.id,
           enseigne: company.enseigne,
@@ -62,6 +73,7 @@ export class FicheClientPanels {
     }
     if (key === 'billing') {
       return this.panels.open(BillingAddressPanel, {
+        ...FORM_PANEL,
         // La même entrée sert à poser l'adresse et à la corriger : sans ce
         // préremplissage, « Modifier » s'ouvrait vide et faisait retaper six
         // champs pour en changer un.
@@ -86,6 +98,7 @@ export class FicheClientPanels {
    */
   async openHolder(company: AdminCompanyDetail): Promise<HolderChoice | null> {
     const closed: unknown = await this.panels.open(AdminDetenteurPanel, {
+      ...FORM_PANEL,
       data: { companyId: company.id },
     }).closed;
     return isHolderChoice(closed) ? closed : null;
@@ -97,6 +110,7 @@ export class FicheClientPanels {
    */
   openNewDelivery(company: AdminCompanyDetail, globalWindowMode: WindowMode): Promise<unknown> {
     return this.panels.open(DeliveryAddressPanel, {
+      ...FORM_PANEL,
       data: deliveryData(company, null, globalWindowMode),
     }).closed;
   }
@@ -108,6 +122,7 @@ export class FicheClientPanels {
     globalWindowMode: WindowMode,
   ): Promise<unknown> {
     return this.panels.open(DeliveryAddressPanel, {
+      ...FORM_PANEL,
       data: deliveryData(company, address, globalWindowMode),
     }).closed;
   }
@@ -123,6 +138,7 @@ export class FicheClientPanels {
   async openProcedure(company: AdminCompanyDetail, address: DeliveryAddressView): Promise<boolean> {
     let changed = false;
     await this.panels.open(AdminDeliveryProcedurePanel, {
+      ...FORM_PANEL,
       data: {
         companyId: company.id,
         address,
@@ -147,6 +163,7 @@ export class FicheClientPanels {
     isNew: boolean,
   ): Promise<unknown> {
     return this.panels.open(AdminContactPanel, {
+      ...FORM_PANEL,
       data: { companyId: company.id, ...contactTargetOf(company, contactId, isNew) },
     }).closed;
   }
