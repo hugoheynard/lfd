@@ -294,7 +294,7 @@ describe("D2 — une ligne par journée et par instruction", () => {
   });
 });
 
-describe("le colisage a SON journal (K2, `colisage/plan-domaine-colisage.md`, §10.3)", () => {
+describe("le colisage a SON journal (K2, `colisage/colisage.md`, §10.3)", () => {
   const DAY = serviceDay();
   const packingTraces = () => ctx.prisma.packingDayChange.count({ where: { serviceDay: DAY } });
   const productionTraces = () =>

@@ -28,7 +28,7 @@ import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
  * bouton absorbe.
  *
  * Il publie, en revanche, AU COLISAGE (2026-10-04, plan
- * `colisage/plan-domaine-colisage.md`, §11, B2) : un `production.packing_list_drawn`
+ * `colisage/colisage.md`, §11, B2) : un `production.packing_list_drawn`
  * par commande ABSORBÉE, dans la même unité de travail — sans quoi elles
  * n'arriveraient jamais à la liste à coliser.
  *

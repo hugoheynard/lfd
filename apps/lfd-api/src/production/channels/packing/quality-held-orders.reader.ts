@@ -1,7 +1,7 @@
 /**
  * **Lesquelles de ces commandes le contrôle qualité retient** — port que le
  * fournil PUBLIE et implémente, que le colisage lit pour composer son poste
- * (plan `colisage/plan-domaine-colisage.md`, §17.1, K3a).
+ * (plan `colisage/colisage.md`, §17.1, K3a).
  *
  * Le contrôle est un fait du fournil (`plan-controle-qualite.md`, D1) : le
  * colisage ne le copie pas, il pose la question, par lot, pour les commandes

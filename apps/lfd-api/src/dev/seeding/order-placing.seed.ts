@@ -316,7 +316,7 @@ export const ONE_BAG: readonly OpenPackingContainer[] = [{ nature: "bag" }];
  * dedans, la commande déclarée prête. Lu dans la liste à coliser : ce sont SES
  * lignes qu'on pose, pas celles du panier.
  *
- * Depuis K3c (`plan-domaine-colisage.md` §17.3), plus d'ancien poste : une
+ * Depuis K3c (`colisage.md` §17.3), plus d'ancien poste : une
  * livraison ouvre ses bacs au colisage (`containers`), qui les fait naître
  * chez la livraison ; un retrait, un sac. Une commande `counted` n'est plus
  * colisable — le semis n'en produit pas.

@@ -20,7 +20,7 @@ import { UnmarkWorksheetLineCommand } from "../unmark-worksheet-line.command.js"
 import { UnmarkWorksheetLineHandler } from "../unmark-worksheet-line.handler.js";
 
 /**
- * **La remise au colisage** (plan `colisage/plan-domaine-colisage.md`, K1 :
+ * **La remise au colisage** (plan `colisage/colisage.md`, K1 :
  * §11.2 la remise EST la sortie du four ; §13, B2–B3), orchestrée par les
  * quatre gestes de fournée sur des ports doublés.
  *

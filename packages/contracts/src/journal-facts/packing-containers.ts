@@ -4,7 +4,7 @@ import { count, fact, named, payload, subjectLabel } from "./fact.js";
 
 /**
  * **Les contenants du colisage** (K2b, 2026-10-04,
- * `documentation/colisage/plan-les-bacs-au-colisage.md` §5–§5.1) — la colonne
+ * `documentation/colisage/colisage.md` §5–§5.1) — la colonne
  * Contenants du poste : un bac (déclaré par la livraison, qui journalise aussi
  * sa naissance sous `delivery_bin.declared`) ou un sac à emporter, et ce qu'on
  * y glisse.

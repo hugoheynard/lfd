@@ -13,7 +13,7 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
 import { PackingHandoffs } from "../services/packing-handoffs.service.js";
 
 /**
- * Les doublés de la remise au colisage (plan `colisage/plan-domaine-colisage.md`,
+ * Les doublés de la remise au colisage (plan `colisage/colisage.md`,
  * K1) — chacun ÉTEND son port, donc aucun cast.
  */
 

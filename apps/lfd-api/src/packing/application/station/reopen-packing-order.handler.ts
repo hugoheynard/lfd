@@ -8,7 +8,7 @@ import { ReopenPackingOrderCommand } from "./reopen-packing-order.command.js";
 
 /**
  * **Rouvrir le rangement** d'une commande fermée (plan
- * `colisage/plan-domaine-colisage.md`, §17.2 — option b de Hugo).
+ * `colisage/colisage.md`, §17.2 — option b de Hugo).
  *
  * Le bac verrouillé ; la livraison vérifie d'abord, dans la même unité de
  * travail, qu'aucun de ses bacs vivants n'est chargé et que sa tournée n'est

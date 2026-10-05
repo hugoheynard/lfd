@@ -5,7 +5,7 @@ import type { ContainerNature, PackingContainerState } from "../entities/order-c
 
 /**
  * **Les faits de la colonne Contenants** (K2b,
- * `colisage/plan-les-bacs-au-colisage.md`). Sujet : la commande, nommée par
+ * `colisage/colisage.md`). Sujet : la commande, nommée par
  * son numéro ; le contenant est cité par son libellé du moment. L'acteur n'est
  * pas ici : l'adaptateur du journal le lit dans le contexte de requête.
  */

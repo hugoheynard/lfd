@@ -178,7 +178,7 @@ export async function markLine(ctx: E2eContext, sku = CROISSANT): Promise<number
 /**
  * **Le poste de colisage**, tel que le colisage le sert (`GET
  * admin/packing/:date/board`, K3a) — l'ancien poste du fournil est retiré
- * (K3c, `colisage/plan-domaine-colisage.md` §17.3).
+ * (K3c, `colisage/colisage.md` §17.3).
  */
 export async function packing(ctx: E2eContext, day = SERVICE_DAY): Promise<ProductionPackingView> {
   return jsonBody<ProductionPackingView>(

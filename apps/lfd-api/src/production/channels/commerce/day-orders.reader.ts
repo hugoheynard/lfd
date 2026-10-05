@@ -39,7 +39,7 @@ export interface ProducibleOrder {
    * (`deadline-thresholds.ts`, tranchée par Hugo le 2026-10-04). `null` =
    * aucune échéance convenue ; le colisage la place alors en dernier.
    *
-   * Ajoutée pour le colisage (plan `colisage/plan-domaine-colisage.md`, §13) :
+   * Ajoutée pour le colisage (plan `colisage/colisage.md`, §13) :
    * la liste à coliser attribue ce qui sort du four par échéance croissante.
    */
   readonly dueAt: string | null;

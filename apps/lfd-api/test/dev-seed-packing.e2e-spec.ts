@@ -1,6 +1,6 @@
 /**
  * E2E du **rechargement de dev sur le colisage** — plan
- * `documentation/colisage/plan-domaine-colisage.md`, lot K2 (§13 : « la
+ * `documentation/colisage/colisage.md`, lot K2 (§13 : « la
  * répétition de K2 se fait aussi en dev, avec le semis »).
  *
  * Le bouton « Recharger » rejoue la journée du jour par les vrais handlers :

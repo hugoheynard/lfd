@@ -12,7 +12,7 @@ const NO_CONTENT = 204;
 
 /**
  * **Fermer et rouvrir une commande au colisage** (plan
- * `colisage/plan-domaine-colisage.md`, §17.2, K3a).
+ * `colisage/colisage.md`, §17.2, K3a).
  *
  * - `POST …/close` — « Déclarer prête » : le bac fermé, `packing.order_packed`
  *   publié dans la même transaction ;

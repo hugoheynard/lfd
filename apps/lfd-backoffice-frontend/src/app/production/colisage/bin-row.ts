@@ -1,7 +1,7 @@
 import type { BinTypeView, DeliveryPackingProposalView } from '@lfd/contracts';
 
 /**
- * **La rangée « + format »** (`plan-le-plus-choisit-un-bac.md`, D2, D3 ; lot
+ * **La rangée « + format »** (`colisage.md`, D2, D3 ; lot
  * PC1 de `decisions-par-defaut-2026-10-02.md`) — en fonctions pures.
  *
  * Un bouton par type EN SERVICE, plus « ½ » pour un type cloisonnable. Le

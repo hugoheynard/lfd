@@ -147,7 +147,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     PruneProductionDayChangesHandler,
     { provide: ProductionDayVersionReader, useClass: PrismaProductionDayVersionReader },
     { provide: ProductionDayChangePruner, useClass: PrismaProductionDayChangePruner },
-    // La remise au colisage (plan `colisage/plan-domaine-colisage.md`, K1).
+    // La remise au colisage (plan `colisage/colisage.md`, K1).
     PackingHandoffs,
     { provide: ProductionHandoffLedger, useClass: PrismaProductionHandoffLedger },
     { provide: ProductionHandoffReader, useClass: PrismaProductionHandoffReader },

@@ -13,7 +13,7 @@ import { B2B_API_BASE } from '../api/api-config';
 
 /**
  * **La colonne Contenants du poste de colisage** (K2b,
- * `colisage/plan-les-bacs-au-colisage.md` §5–§5.1) : créer un bac ou un sac,
+ * `colisage/colisage.md` §5–§5.1) : créer un bac ou un sac,
  * y répartir des pièces, les en retirer, annuler un contenant, proposer, partager une moitié.
  *
  * Séparé de `PackingService` parce que les routes vivent sous une autre

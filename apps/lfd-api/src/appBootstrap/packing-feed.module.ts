@@ -14,7 +14,7 @@ import { DayPlannedDestinationsReader } from "../production/application/services
 import { ProductionModule } from "../production/production.module.js";
 
 /**
- * **Le fil du colisage, relié** (plan `colisage/plan-domaine-colisage.md`, K1, K2,
+ * **Le fil du colisage, relié** (plan `colisage/colisage.md`, K1, K2,
  * K3a ; l'ancien poste et l'ombre retirés en K3c).
  *
  * Quatre ports, deux sens :

@@ -21,7 +21,7 @@ export const ON_PACKING_RETURNED = "production.take-back-returned";
 
 /**
  * **Le fournil reprend ce que le colisage lui a rendu** (plan
- * `colisage/plan-domaine-colisage.md`, §10.2, §13 B2, K2).
+ * `colisage/colisage.md`, §10.2, §13 B2, K2).
  *
  * La SEULE porte par laquelle « sorti » baisse sur une journée `packing` :
  *

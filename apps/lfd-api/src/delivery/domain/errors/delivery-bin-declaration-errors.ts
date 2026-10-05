@@ -118,7 +118,7 @@ export class SharedBinToRedoError extends BusinessError {
 
 /**
  * Les bacs de cette commande se gèrent au **poste de colisage** (K2b,
- * `colisage/plan-les-bacs-au-colisage.md` §5.1, B1) : ses contenants s'y
+ * `colisage/colisage.md` §5.1, B1) : ses contenants s'y
  * listent, et un bac déclaré, partagé ou annulé ici n'aurait pas de contenant
  * — ou laisserait un contenant pointer un bac mort. Le geste de sortie est le
  * même pour les trois routes : le refaire depuis la colonne Contenants.

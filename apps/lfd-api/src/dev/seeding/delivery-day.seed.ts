@@ -355,7 +355,7 @@ export async function placeDeliveryDay(
  * Sème la flotte et le départ, compose la tournée de Val d'Isère, colise ce
  * qui doit être prêt, puis charge. À appeler APRÈS le plan du soir.
  *
- * 🔴 **La tournée AVANT le colisage** depuis K3c (`plan-domaine-colisage.md`
+ * 🔴 **La tournée AVANT le colisage** depuis K3c (`colisage.md`
  * §17.3) : un bac de livraison naît au colisage, et partager une moitié exige
  * deux arrêts consécutifs de la même tournée. Une commande non prête entre
  * dans la tournée — la feuille de route le dit — mais n'a pas de bac.

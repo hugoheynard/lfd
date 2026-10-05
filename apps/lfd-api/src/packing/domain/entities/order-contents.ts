@@ -58,7 +58,7 @@ export function piecesToMove(quantity: number): number {
 
 /**
  * **Les contenants d'une commande et leur contenu** (K2b,
- * `colisage/plan-les-bacs-au-colisage.md` §5–§5.1) — la partie de l'agrégat
+ * `colisage/colisage.md` §5–§5.1) — la partie de l'agrégat
  * `PackingSheet` qui tient la colonne Contenants.
  *
  * Elle ne sait que des sommes : ce qu'un contenant porte, ce que les

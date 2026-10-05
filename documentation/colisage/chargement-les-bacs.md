@@ -9,6 +9,14 @@
 > [`../livraisons/decisions-par-defaut-2026-10-02.md`](../livraisons/decisions-par-defaut-2026-10-02.md)
 > (la rangée « + format », le poste rangé par tournée, l'étiquette qui porte
 > la tournée). Ces décisions sont **par défaut, à revoir avec Hugo**.
+>
+> ⚠️ **§ 5 périmé par K2b et K3 (2026-10-05).** Le poste ne déclare plus les
+> bacs par la livraison : il ouvre des **contenants** au colisage (bacs en
+> livraison, sacs en retrait), y répartit les lignes, applique « Proposer »
+> d'un coup, partage une moitié, puis ferme. La rangée « + format », le panneau
+> « Bacs » après « prête » et le compte anonyme de containers sont retirés.
+> L'état du poste est dans [`colisage.md`](colisage.md). Les §§ 4, 5.3 (étiquettes),
+> 5.5 (« à refaire »), 6 et suivants restent justes.
 
 ## 1. En deux phrases
 
@@ -139,6 +147,9 @@ commerce (§ 10.2).
 
 ## 5. Coliser, au poste de colisage
 
+> ⚠️ Périmé depuis K3 (2026-10-05) — voir [`colisage.md`](colisage.md) §4 et §6.
+> Le texte ci-dessous décrit le poste du 2026-10-02.
+
 Le poste de colisage du fournil (`/production/colisage`, ou
 `/colisage/:reference` ouvert par le QR de la feuille) porte, pour une
 commande **en livraison**, deux gestes sur les bacs, tous deux réservés à qui
@@ -153,7 +164,7 @@ lisent « Les bacs se déclarent au comptoir. ») :
 Une commande inconnue, annulée ou en retrait au comptoir est refusée (409
 `delivery.bins_not_declarable`). Une commande **en retrait** garde son compte
 anonyme de containers (`+ / −`), inchangé
-([`plan-le-plus-choisit-un-bac.md`](plan-le-plus-choisit-un-bac.md), D4).
+(décision D4 du plan du « + » qui choisit un bac, retiré le 2026-10-05).
 
 ### 5.0 La rangée « + format » (lot PC1)
 
@@ -484,10 +495,9 @@ contenances), `delivery-packing.ts` (proposition, moitiés libres),
 
 **Front — `apps/lfd-backoffice-frontend/src/app/`** :
 `livraison/bins-page/` et `livraison/bin-type-dialog/` (types),
-`livraison/bin-capacities-page/` (grille), `production/colisage/packing-bins/`
-(panneau « Bacs » du poste), `production/colisage/packing-bin-row/` et
-`production/colisage/bin-row.ts` (la rangée « + format »),
-`production/colisage/packing-rounds.ts` (le rangement par tournée), `livraison/bin-labels-page/` et
+`livraison/bin-capacities-page/` (grille), `production/colisage/packing-rounds.ts`
+(le rangement par tournée) — le poste lui-même est décrit dans
+[`colisage.md`](colisage.md) §6, `livraison/bin-labels-page/` et
 `livraison/bin-label/` (étiquettes), `livraison/bin-page/` (le QR ouvert),
 `livraison/loading-page/` et `livraison/loading-round-page/` (chargement,
 scan, Partir), `livraison/loading-plan/` (plan).
@@ -509,8 +519,7 @@ front.
 flowchart LR
     PIM["pim : fiche produit (requires_cold)"] -->|"canal b2b-platform (fil catalogue)"| B2B["b2b : catalog_items.requires_cold"]
     B2B -->|"implémente delivery/channels/commerce"| DEL["delivery : bacs, colisage, chargement"]
-    FRONT["poste de colisage (front)"] --> DEL
-    FRONT --> B2B
+    PACK["packing : contenants"] -->|"BinDesk (packing/channels/delivery)"| DEL
 ```
 
 - Le froid est un fait du **produit**, écrit au référentiel, publié par le
@@ -521,9 +530,9 @@ flowchart LR
   aucun montant), `DeliveryOrdersReader` — et le commerce l'implémente ;
   `appBootstrap` les relie. `delivery` ne lit jamais une table du commerce ni
   du référentiel ; le SKU est un identifiant opaque.
-- Le poste de colisage est un écran du fournil qui appelle les routes de
-  `delivery` : c'est **l'écran** qui compose les deux blocs, aucun serveur ne
-  lit l'autre.
+- Depuis K2b, le poste de colisage n'appelle plus les routes de `delivery`
+  pour déclarer ses bacs : le bloc `packing` les déclare par `BinDesk`, que la
+  livraison implémente ([`colisage.md`](colisage.md) §2).
 
 ### 10.3 Les faits du journal
 

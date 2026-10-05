@@ -22,7 +22,7 @@ import { UnmarkWorksheetLineHandler } from "../unmark-worksheet-line.handler.js"
 
 /**
  * **L'annulation sur une journée `packing`** (plan
- * `colisage/plan-domaine-colisage.md`, K2, §13 B2) : une DEMANDE au colisage,
+ * `colisage/colisage.md`, K2, §13 B2) : une DEMANDE au colisage,
  * qui ne baisse pas « sorti » ; seule la réponse le fait.
  *
  * Aucune comparaison à l'horloge : ces instants ne sont que recopiés.

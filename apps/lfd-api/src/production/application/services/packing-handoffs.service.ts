@@ -14,7 +14,7 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
 
 /**
  * **Remettre au colisage, et reprendre** — le registre et le fait durable,
- * ensemble (plan `documentation/colisage/plan-domaine-colisage.md`, §11.2, §13).
+ * ensemble (plan `documentation/colisage/colisage.md`, §11.2, §13).
  *
  * Partagé par les quatre gestes de fournée (déclarer, cocher, annuler,
  * décocher) : la règle « une remise = une ligne + un fait » s'écrit une fois.

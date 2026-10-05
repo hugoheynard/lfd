@@ -8,7 +8,7 @@ import type { PackingSheet } from '@lfd/contracts';
  * superposition des coches locales et le **recalcul de la balance** : l'écran
  * refaisait `allocated` et `remaining` à chaque coche, et deux calculs du même
  * chiffre divergent à la première règle modifiée d'un seul côté. Tout chiffre
- * vient désormais du serveur (`documentation/colisage/plan-poste-de-colisage.md`,
+ * vient désormais du serveur (`documentation/colisage/colisage.md`,
  * « L'écran n'additionne rien ») ; il ne reste ici qu'un type de pile et un
  * libellé. Le filtre de texte de la recherche vit dans
  * `colisage/packing-search.ts` depuis le 2026-09-14.

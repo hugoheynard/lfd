@@ -27,7 +27,7 @@ const NO_CONTENT = 204;
 
 /**
  * **La colonne Contenants du poste de colisage** (K2b,
- * `colisage/plan-les-bacs-au-colisage.md` §5–§5.1) : créer un bac ou un sac,
+ * `colisage/colisage.md` §5–§5.1) : créer un bac ou un sac,
  * y glisser une quantité d'une ligne, l'en ressortir, annuler un contenant,
  * proposer un colisage et l'appliquer, lister les moitiés partageables.
  *

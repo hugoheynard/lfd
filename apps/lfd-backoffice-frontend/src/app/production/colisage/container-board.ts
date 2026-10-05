@@ -8,7 +8,7 @@ import type {
 import { halfLabel } from '../../livraison/delivery-loading';
 
 /**
- * **La colonne Contenants** (K2b, `colisage/plan-les-bacs-au-colisage.md`
+ * **La colonne Contenants** (K2b, `colisage/colisage.md`
  * §2, §5, §5.1) — en fonctions pures. Types seulement de `@lfd/contracts` :
  * une valeur tirerait zod dans le paquet du poste.
  *

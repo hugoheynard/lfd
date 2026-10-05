@@ -4,7 +4,7 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
 
 /**
  * **La liste à coliser, en faits** — un par commande (plan
- * `colisage/plan-domaine-colisage.md`, §11, B1–B2). Partagée par la clôture,
+ * `colisage/colisage.md`, §11, B1–B2). Partagée par la clôture,
  * sa réannonce et le retirage, qui ne diffèrent que par les commandes qu'ils
  * passent.
  *

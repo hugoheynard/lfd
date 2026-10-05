@@ -6,7 +6,7 @@
 > sache quoi défaire. Le critère de choix : le geste le plus réversible, qui
 > n'engage ni argent ni donnée irrécupérable.
 
-## 1. Le « + » choisit un bac ([`../colisage/plan-le-plus-choisit-un-bac.md`](../colisage/plan-le-plus-choisit-un-bac.md) §5)
+## 1. Le « + » choisit un bac ([`../colisage/colisage.md`](../colisage/colisage.md) §5)
 
 | #   | Question                               | Décision par défaut                                                                           | Bâti                                     |
 | --- | -------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------- |

@@ -18,7 +18,7 @@ import { PackingDayReader } from '../packing-day.reader';
 import { PackingContainerBoard } from './packing-container-board';
 
 /**
- * Ce que ces cas tiennent (K2b, `plan-les-bacs-au-colisage.md` §2, §5.1) : un
+ * Ce que ces cas tiennent (K2b, `colisage.md` §2, §5.1) : un
  * bac pour une livraison, un sac pour un retrait ; un dépôt demande combien,
  * « tout » par défaut, au dépôt comme au retrait ; un refus du serveur se dit
  * tel quel ; « Proposer » n'écrit que sur un clic, d'un seul appel ; une

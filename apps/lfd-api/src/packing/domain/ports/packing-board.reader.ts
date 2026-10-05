@@ -45,7 +45,7 @@ export interface PackingBoardDay {
 
 /**
  * **Le poste de colisage d'une journée, en lecture** (plan
- * `colisage/plan-domaine-colisage.md`, §17, K3a) — ses tables seulement.
+ * `colisage/colisage.md`, §17, K3a) — ses tables seulement.
  *
  * Port de LECTURE, séparé de `PackingSheetRepository` (ISP) : le poste lit
  * toute une journée sans verrou ; un geste charge un bac sous verrou.

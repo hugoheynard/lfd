@@ -6,7 +6,7 @@ import { GetShareableHalvesQuery } from "./get-shareable-halves.query.js";
 
 /**
  * **Les moitiés libres partageables, depuis le colisage** (suite de K2b,
- * `colisage/plan-les-bacs-au-colisage.md` §7) — une LECTURE, servie par la
+ * `colisage/colisage.md` §7) — une LECTURE, servie par la
  * livraison derrière `BinDesk` : la règle d'adjacence (arrêts consécutifs d'une
  * tournée non partie) reste la sienne. Partager ensuite, c'est créer un
  * contenant `{ nature: "bin", partnerBinId }`.

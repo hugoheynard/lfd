@@ -34,7 +34,7 @@ function deskBinOf(bin: DeliveryBin): DeskBin {
 
 /**
  * **Le guichet des bacs, tenu par la livraison pour le colisage** (K2b,
- * `colisage/plan-les-bacs-au-colisage.md` §5–§5.1) — implémente `BinDesk`,
+ * `colisage/colisage.md` §5–§5.1) — implémente `BinDesk`,
  * que le colisage déclare.
  *
  * Il ne refait aucune règle : il passe par `DeliveryBinOffice`, celui-là même

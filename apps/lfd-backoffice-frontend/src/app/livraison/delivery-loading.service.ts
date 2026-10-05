@@ -26,7 +26,7 @@ function id(value: string): string {
  * lot 4, v4 ; lot 4 bis, tranche B), sous `delivery_loading`.
  *
  * Plus de déclaration ni de partage de bac d'ici depuis K3c
- * (`plan-domaine-colisage.md` §17.3) : les bacs naissent au colisage, par ses
+ * (`colisage.md` §17.3) : les bacs naissent au colisage, par ses
  * contenants. L'écran ne déclarait que pour une commande `counted`, désormais
  * en lecture seule.
  *

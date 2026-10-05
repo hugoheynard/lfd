@@ -49,7 +49,7 @@ model ProductionDay {
   /// **Qui colise cette journée** — `legacy` (le poste du fournil, ses colonnes
   /// `packed_*`) ou `packing` (le bloc du colisage). Écrite dans la transaction
   /// de la clôture, et une journée garde le propriétaire qu'elle a eu à sa
-  /// clôture (`documentation/colisage/plan-domaine-colisage.md`, §13, B1).
+  /// clôture (`documentation/colisage/colisage.md`, §13, B1).
   ///
   /// Le binaire de K1 n'écrit QUE `legacy` : l'ombre du colisage calcule à
   /// côté, personne ne la lit. Le CHECK de la migration tient les deux valeurs.
@@ -318,7 +318,7 @@ model ProductionBatch {
 }
 
 /// **Une remise au colisage** — ce que le fournil a transféré au colisage, ou
-/// repris (`documentation/colisage/plan-domaine-colisage.md`, §10.3, §11.2,
+/// repris (`documentation/colisage/colisage.md`, §10.3, §11.2,
 /// §13). La remise EST la sortie du four : une fournée déclarée en écrit une,
 /// d'`id` = l'`id` de la fournée. Une fournée implicite (coche héritée) n'en
 /// écrit JAMAIS.
@@ -355,7 +355,7 @@ model ProductionHandoff {
 }
 
 /// **Une demande de retour au colisage**, sur une journée `packing` (plan
-/// `documentation/colisage/plan-domaine-colisage.md`, K2, §13 B2). L'annulation
+/// `documentation/colisage/colisage.md`, K2, §13 B2). L'annulation
 /// ou la décoche d'une fournée remise ne baisse pas « sorti » : elle écrit ici,
 /// et publie `production.return_requested`. Seule la réponse (`packing.returned`)
 /// la clôt — `answered_at` et `returned` ensemble (CHECK) — et fait baisser

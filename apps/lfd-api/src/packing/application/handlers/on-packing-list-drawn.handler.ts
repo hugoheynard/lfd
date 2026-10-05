@@ -17,7 +17,7 @@ export const ON_PACKING_LIST_DRAWN = "packing.shadow.draw-list";
 
 /**
  * **Une commande entre dans la liste à coliser de l'ombre** (plan
- * `colisage/plan-domaine-colisage.md`, K1, §11 B1–B2).
+ * `colisage/colisage.md`, K1, §11 B1–B2).
  *
  * Inscrite si elle n'y est pas, jamais réécrite : la réannonce et le rejeu
  * republient le même instantané, et une commande déjà là ne bouge pas. Une

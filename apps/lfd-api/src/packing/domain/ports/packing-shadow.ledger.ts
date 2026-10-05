@@ -10,7 +10,7 @@ export interface ShadowOrderToDraw {
   readonly dueAt: string | null;
   readonly drawnAt: Date;
   /**
-   * `listed` depuis K2b (`plan-les-bacs-au-colisage.md` §5.1) : toute commande
+   * `listed` depuis K2b (`colisage.md` §5.1) : toute commande
    * inscrite par ce binaire liste ses contenants. Une commande déjà inscrite
    * garde le sien — l'inscription ne réécrit rien.
    */
@@ -36,7 +36,7 @@ export interface ShadowReceipt {
 }
 
 /**
- * **L'ombre du colisage, en écriture** (plan `colisage/plan-domaine-colisage.md`,
+ * **L'ombre du colisage, en écriture** (plan `colisage/colisage.md`,
  * K1, §12.2) — trois projections des faits du fournil.
  *
  * ⚠️ Des écritures ciblées, et c'est le cas que le §3.1 autorise : ce sont des

@@ -18,7 +18,7 @@ import { OnPackingListDrawn } from "../on-packing-list-drawn.handler.js";
 import { OnReturnRequested } from "../on-return-requested.handler.js";
 
 /**
- * Les trois abonnés de l'ombre (plan `colisage/plan-domaine-colisage.md`, K1),
+ * Les trois abonnés de l'ombre (plan `colisage/colisage.md`, K1),
  * sur l'ombre en mémoire. Instants recopiés, jamais comparés à l'horloge.
  */
 const AT = new Date("2026-09-13T05:10:00.000Z");

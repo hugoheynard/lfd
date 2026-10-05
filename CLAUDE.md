@@ -276,7 +276,7 @@ src/
 │                   Ouvert le 2026-10-04 (plan colisage, lot K1) : son schéma
 │                   `packing`, tenu EN OMBRE par les faits que le fournil
 │                   publie (`production/channels/packing/`). Personne ne
-│                   l'importe. Cf. colisage/plan-domaine-colisage.md
+│                   l'importe. Cf. colisage/colisage.md
 ├── ops/          ▸ LA CARTE DE SANTÉ — health, sondes, journal, trafic, vitals
 │                   il OBSERVE et ne possède rien
 ├── platform/     ▸ TECHNIQUE PURE — zéro connaissance métier
@@ -350,18 +350,16 @@ des commandes au commerce comme avant. `production → delivery` reste interdit 
 le fournil publie, il ne sait pas qui écoute. Le commerce ne relaie pas les
 faits des autres — il n'est pas un hub.
 
-🔴 **`packing` ne lit le fournil que par son canal** (2026-10-04, plan
-[`documentation/colisage/plan-domaine-colisage.md`](documentation/colisage/plan-domaine-colisage.md),
-§12–§13). Le fournil DÉCLARE et publie `production/channels/packing/` — les
+🔴 **`packing` ne lit le fournil que par son canal** (2026-10-04 ; référence
+[`documentation/colisage/colisage.md`](documentation/colisage/colisage.md) §2). Le fournil DÉCLARE et publie `production/channels/packing/` — les
 faits de la liste à coliser, de la remise et du retour. `production →
 packing` reste interdit : le fournil publie, il ne sait pas qui écoute. Depuis
 K3c (2026-10-05), l'ancien poste du fournil, l'ombre et sa route de contrôle
 sont retirés : le colisage est le seul poste. `production_day.packing_owner`
 reste en base et nomme encore `legacy` les journées colisées avant la bascule.
 
-🔴 **`delivery` implémente ce que le colisage déclare** (2026-10-04, K2b,
-[`documentation/colisage/plan-les-bacs-au-colisage.md`](documentation/colisage/plan-les-bacs-au-colisage.md),
-§5–§5.1). Le colisage tient le CONTENU des contenants ; la livraison garde le
+🔴 **`delivery` implémente ce que le colisage déclare** (2026-10-04, K2b ; référence
+[`documentation/colisage/colisage.md`](documentation/colisage/colisage.md) §2, §4.2). Le colisage tient le CONTENU des contenants ; la livraison garde le
 BAC (code court, QR, chargement, « Partir »). Le colisage déclare
 `packing/channels/delivery/` — `BinDesk` (déclarer, annuler, partager un bac,
 proposer, « ces bacs sont-ils vivants ? »), que la livraison implémente dans la

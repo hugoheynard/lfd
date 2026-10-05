@@ -6,7 +6,7 @@ import type {
 
 /**
  * **Une remise au colisage**, ou un retour (plan
- * `documentation/colisage/plan-domaine-colisage.md`, §10.3, §11.2, §13).
+ * `documentation/colisage/colisage.md`, §10.3, §11.2, §13).
  *
  * La remise EST la sortie du four : une fournée déclarée en fait une, sous
  * l'`id` de la fournée. Un retour est une ligne de plus, de quantité négative,

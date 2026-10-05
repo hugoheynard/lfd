@@ -8,7 +8,7 @@ import { packingDayOf } from "./packing-day-path.js";
 
 /**
  * **Le poste de colisage, servi par le colisage** (plan
- * `colisage/plan-domaine-colisage.md`, §17, K3a).
+ * `colisage/colisage.md`, §17, K3a).
  *
  * `GET admin/packing/:date/board` rend `ProductionPackingView`, la forme que
  * servait le poste du fournil (retiré en K3c).

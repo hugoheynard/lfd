@@ -2,11 +2,10 @@
 // PACKING — le colisage, son propre domaine
 // ─────────────────────────────────────────────────────────────────────────────
 //
-// Plan `documentation/colisage/plan-domaine-colisage.md`, §12 (v4) corrigé par
-// §13 (v4.1). Lot K1 : ces tables se remplissent EN OMBRE, par les faits que le
-// fournil publie dans la boîte d'envoi (`production/channels/packing/`).
-// Personne ne les lit pour décider ; seule la route de contrôle les compare au
-// colisage réel.
+// Référence `documentation/colisage/colisage.md` (§7). Ces tables se
+// remplissent par les faits que le fournil publie dans la boîte d'envoi
+// (`production/channels/packing/`), et le poste de colisage les lit et les
+// écrit depuis K2 (l'ombre de K1 et sa route de contrôle sont retirées en K3c).
 //
 // ⚠️ Aucune clé étrangère vers `production` ni vers `public` : une commande est
 // un identifiant OPAQUE + un instantané, comme partout ailleurs. Les faits
@@ -145,7 +144,7 @@ model PackingDayChange {
   @@schema("packing")
 }
 
-/// **Un contenant d'une commande** (K2b, `plan-les-bacs-au-colisage.md` §5–§5.1)
+/// **Un contenant d'une commande** (K2b, `colisage.md` §5–§5.1)
 /// : un bac — déclaré par la livraison, qui en garde le code, le QR et le
 /// chargement — ou un sac à emporter, qui naît et vit ici. Jamais supprimé :
 /// un contenant annulé porte `voided_at`, ses lignes restent, ignorées.

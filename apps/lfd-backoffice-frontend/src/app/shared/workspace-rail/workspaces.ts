@@ -113,7 +113,7 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
  *
  * ⚠️ **Ce commentaire disait « trois vues » jusqu'au 2026-10-04.** Le colisage
  * en est sorti : c'est un poste à part, avec son entrée de premier niveau
- * (`/colisage`, `documentation/colisage/plan-domaine-colisage.md`, P0). Ses
+ * (`/colisage`, `documentation/colisage/colisage.md`, P0). Ses
  * données restent au fournil ; son geste n'est pas une vue de la production.
  *
  * ⚠️ **Ce commentaire disait « deux vues » jusqu'au 2026-09-13**, et il était

@@ -10,7 +10,7 @@ import { B2B_API_BASE } from '../api/api-config';
  * **Le poste de colisage** d'une journée : les bacs, la ressource, et les gestes
  * qui ferment ou rouvrent une commande.
  *
- * Servi par le bloc colisage depuis K3b (`colisage/plan-domaine-colisage.md`
+ * Servi par le bloc colisage depuis K3b (`colisage/colisage.md`
  * §17) : `admin/packing/:date/…`. Les routes du fournil
  * (`admin/production/packing/…`) sont retirées du serveur (K3c) — coche de
  * ligne et compte « + / − » avec elles.

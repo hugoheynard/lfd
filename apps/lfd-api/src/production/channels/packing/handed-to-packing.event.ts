@@ -7,7 +7,7 @@ export const PRODUCTION_HANDED_TO_PACKING = "production.handed_to_packing";
 
 /**
  * **Le fournil remet des pièces au colisage** — la sortie d'une fournée (plan
- * `documentation/colisage/plan-domaine-colisage.md`, §11.2 : la remise EST la
+ * `documentation/colisage/colisage.md`, §11.2 : la remise EST la
  * sortie du four ; §13, B3).
  *
  * ## Le contrat

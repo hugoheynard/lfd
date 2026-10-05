@@ -8,7 +8,7 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
 
 /**
  * **La journée, avec ses bacs fermés — où qu'ils soient tenus** (plan
- * `colisage/plan-domaine-colisage.md`, §17.2, K3a).
+ * `colisage/colisage.md`, §17.2, K3a).
  *
  * Il ne demande au colisage que « cette commande est-elle colisée ? »
  * (`PackedOrdersReader`), ce que l'état de la journée et le contrôle qualité

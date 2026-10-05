@@ -35,7 +35,7 @@ import { PrismaPackingBoardReader } from "./infrastructure/prisma-packing-board.
 
 /**
  * **Le colisage** — son propre bloc depuis le 2026-10-04 (plan
- * `documentation/colisage/plan-domaine-colisage.md`, §12–§15).
+ * `documentation/colisage/colisage.md`, §12–§15).
  *
  * K1 : trois abonnés durables remplissent le schéma `packing` à partir des
  * faits du fournil (`PackingShadowLedger` garde ce nom : les noms d'abonnés

@@ -6,13 +6,13 @@ import {
 
 /**
  * **Les refus de la colonne Contenants** (K2b,
- * `documentation/colisage/plan-les-bacs-au-colisage.md` §5–§5.1). Lus au
+ * `documentation/colisage/colisage.md` §5–§5.1). Lus au
  * poste, les doigts farinés : chacun nomme le cas réel et le geste de sortie.
  */
 
 /**
  * La commande a été colisée avec l'ANCIEN poste (`counted`) : elle est née
- * avant la colonne Contenants. Depuis K3c (`plan-domaine-colisage.md` §17.6),
+ * avant la colonne Contenants. Depuis K3c (`colisage.md` §17.6),
  * elle est en lecture seule — ni remplie, ni fermée, ni rouverte ici.
  */
 export class ContainersCountedError extends BusinessError {

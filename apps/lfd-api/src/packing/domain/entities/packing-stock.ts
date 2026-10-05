@@ -15,7 +15,7 @@ export interface PackingStockSnapshot {
 /**
  * **La réserve d'un article pour une journée** — l'agrégat qui porte
  * l'invariant du colisage : `au bac ≤ reçu − rendu` (plan
- * `documentation/colisage/plan-domaine-colisage.md`, §10.1, §11 SÉRIEUX).
+ * `documentation/colisage/colisage.md`, §10.1, §11 SÉRIEUX).
  *
  * Elle est LA ligne verrouillée : la mise au bac et le retour passent tous les
  * deux par elle, sous `SELECT … FOR UPDATE`, et c'est ce qui ferme la course du

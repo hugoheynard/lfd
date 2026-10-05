@@ -7,7 +7,7 @@ export const PACKING_RETURNED = "packing.returned";
 
 /**
  * **Le colisage répond à une demande de retour** (plan
- * `documentation/colisage/plan-domaine-colisage.md`, §12.1, §13 B2, K2).
+ * `documentation/colisage/colisage.md`, §12.1, §13 B2, K2).
  *
  * `returned` = ce qu'il rend : `min(demandé, reçu − rendu − au bac)`, décidé
  * chez lui, sous le verrou de sa réserve. `0` est un refus — tout est au bac —,

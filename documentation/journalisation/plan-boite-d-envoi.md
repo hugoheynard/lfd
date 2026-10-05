@@ -78,7 +78,7 @@ Trois garanties, chacune tenue par un morceau :
 ## 4. Ce que ça ne règle PAS
 
 - Un **invariant** coupé en deux reste coupé (cf.
-  `colisage/plan-domaine-colisage.md` §9) : la boîte d'envoi rend la
+  `colisage/colisage.md` §9) : la boîte d'envoi rend la
   publication sûre, pas la cohérence immédiate.
 - L'**ordre** n'est garanti que par émetteur et par sujet si on le demande
   (`ORDER BY occurred_at` par clé) — à préciser par fait.

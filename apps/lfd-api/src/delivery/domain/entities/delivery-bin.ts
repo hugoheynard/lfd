@@ -198,7 +198,7 @@ export class DeliveryBin {
   /**
    * Le bac est-il encore à portée de main — au dépôt, pas chargé ? La règle de
    * {@link void}, servie aussi au colisage qui rouvre une commande (plan
-   * `colisage/plan-domaine-colisage.md`, §17.2) : on ne défait pas le
+   * `colisage/colisage.md`, §17.2) : on ne défait pas le
    * rangement d'un bac déjà dans le véhicule.
    *
    * @throws {BinLoadedError} chargé : décharger d'abord.

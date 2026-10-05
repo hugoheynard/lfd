@@ -6,7 +6,7 @@ export interface PackedOrderSeal {
 
 /**
  * **« Cette commande est-elle colisée ? »** — port étroit que le fournil
- * DÉCLARE et que le colisage IMPLÉMENTE (plan `colisage/plan-domaine-colisage.md`,
+ * DÉCLARE et que le colisage IMPLÉMENTE (plan `colisage/colisage.md`,
  * §17.2, K3a).
  *
  * Un port étroit, au seul besoin des lecteurs qui restent chez le fournil — l'état de la journée et le contrôle qualité : ils

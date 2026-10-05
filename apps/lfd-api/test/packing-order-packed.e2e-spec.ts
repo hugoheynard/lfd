@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 /**
  * Le colisage passe par la boîte d'envoi (plan
  * `documentation/journalisation/plan-evenements-durables.md`, lot E1) — au
- * COLISAGE depuis K3c (`colisage/plan-domaine-colisage.md` §17.3) : le fait est
+ * COLISAGE depuis K3c (`colisage/colisage.md` §17.3) : le fait est
  * `packing.order_packed`, l'ancien `production.order_packed` est retiré.
  *
  * Ce que seul le vrai Postgres prouve : que le fait tombe avec la fermeture,

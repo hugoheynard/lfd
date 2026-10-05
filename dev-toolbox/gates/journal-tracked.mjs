@@ -263,7 +263,7 @@ const DELIVERY_ZONE = "delivery";
 /**
  * Les services de la livraison qui journalisent eux-mêmes, et le fichier où la
  * porte le VÉRIFIE — même geste que `MONEY_DELEGATES`. `DeliveryBinOffice`
- * (K2b, 2026-10-04, `colisage/plan-les-bacs-au-colisage.md`) porte la
+ * (K2b, 2026-10-04, `colisage/colisage.md`) porte la
  * déclaration, l'annulation et le partage d'un bac pour DEUX portes : les
  * routes de la livraison et `BinDesk`, que le colisage appelle. Ses trois
  * handlers y délèguent.

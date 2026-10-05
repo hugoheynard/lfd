@@ -3,7 +3,7 @@ import type { ServiceDay } from "../value-objects/service-day.value-object.js";
 
 /**
  * **Le registre des remises au colisage** — port d'ÉCRITURE, en ajout seul
- * (plan `colisage/plan-domaine-colisage.md`, §10.3).
+ * (plan `colisage/colisage.md`, §10.3).
  *
  * Une écriture nue, et c'est le cas que le §3.1 autorise : une ligne par geste,
  * jamais modifiée, sans règle qui puisse la refuser en K1 — la remise suit la

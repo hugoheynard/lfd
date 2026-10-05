@@ -1,6 +1,6 @@
 /**
  * E2E du **poste servi par le colisage** — plan
- * `documentation/colisage/plan-domaine-colisage.md`, §17, K3a.
+ * `documentation/colisage/colisage.md`, §17, K3a.
  *
  * Ce qui ne se voit qu'ici : `GET admin/packing/:date/board` rend, sur une
  * vraie journée, les piles et le « pas encore sorti du four » que la fiche

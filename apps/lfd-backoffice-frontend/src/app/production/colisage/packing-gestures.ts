@@ -12,7 +12,7 @@ import { PackingDayReader } from './packing-day.reader';
  *
  * Fourni par l'écran (`providers` de `Colisage`), comme {@link PackingDayReader}
  * qu'il injecte. Sorti de `Colisage` le 2026-09-14. Depuis K3b
- * (`colisage/plan-domaine-colisage.md` §17), les deux gestes vont au colisage ;
+ * (`colisage/colisage.md` §17), les deux gestes vont au colisage ;
  * la coche de ligne et le compte « + / − » du fournil ont disparu. Répartir dans
  * les contenants est à `PackingContainerGestures`.
  *

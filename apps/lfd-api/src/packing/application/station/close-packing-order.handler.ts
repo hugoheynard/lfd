@@ -10,7 +10,7 @@ import { ClosePackingOrderCommand } from "./close-packing-order.command.js";
 
 /**
  * **Fermer le bac** — « Déclarer prête », servi par le colisage lui-même (plan
- * `colisage/plan-domaine-colisage.md`, §17.2, K3a), sans détour par le fournil.
+ * `colisage/colisage.md`, §17.2, K3a), sans détour par le fournil.
  *
  * Le bac verrouillé, fermé par l'agrégat (toutes les lignes réparties sur une
  * commande `listed`), et `packing.order_packed` écrit dans la même transaction.

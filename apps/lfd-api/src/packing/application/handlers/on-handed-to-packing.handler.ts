@@ -18,7 +18,7 @@ export const ON_HANDED_TO_PACKING = "packing.shadow.receive-handoff";
 
 /**
  * **L'ombre reçoit une remise** — une fournée sortie (plan
- * `colisage/plan-domaine-colisage.md`, K1, §11.2).
+ * `colisage/colisage.md`, K1, §11.2).
  *
  * La réserve `(jour, SKU)` gagne la quantité, une fois par `handoffId` — une
  * fournée déclarée deux fois n'est reçue qu'une fois. Elle ne dépend pas des

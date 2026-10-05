@@ -287,7 +287,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
 
 /**
  * Le **colisage** : « Déclarer prête », AU COLISAGE depuis K3c
- * (`colisage/plan-domaine-colisage.md` §17.3 — la route du fournil
+ * (`colisage/colisage.md` §17.3 — la route du fournil
  * `batch/:date/sheets/:reference/packed` est retirée).
  *
  * Deux choses ne se prouvent qu'ici. La **course** — deux postes qui ferment la

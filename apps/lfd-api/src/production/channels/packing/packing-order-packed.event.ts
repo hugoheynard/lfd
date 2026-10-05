@@ -6,7 +6,7 @@ export const PACKING_ORDER_PACKED = "packing.order_packed";
 
 /**
  * **Le bac d'une commande est fait — au colisage** (plan
- * `documentation/colisage/plan-domaine-colisage.md`, §12.1, K2).
+ * `documentation/colisage/colisage.md`, §12.1, K2).
  *
  * Le SEUL fait « bac fait » depuis K3c : `production.order_packed`, que
  * publiait l'ancien poste du fournil, est retiré avec lui (§17.3). Le commerce

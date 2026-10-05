@@ -80,7 +80,7 @@ import { CloseProductionDayCommand } from "./close-production-day.command.js";
  * ## La liste à coliser (colisage, K1 — 2026-10-04)
  *
  * Dans la même unité de travail, un `production.packing_list_drawn` par
- * commande de l'instantané (plan `colisage/plan-domaine-colisage.md`, §11, B1).
+ * commande de l'instantané (plan `colisage/colisage.md`, §11, B1).
  * La réannonce les republie : même clé par commande, la boîte d'envoi absorbe
  * (§13, MINEURS).
  *

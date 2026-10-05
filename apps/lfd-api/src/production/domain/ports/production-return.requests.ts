@@ -23,7 +23,7 @@ export interface AnsweredReturn {
 
 /**
  * **Les demandes de retour du fournil au colisage** — journée `packing`
- * (plan `colisage/plan-domaine-colisage.md`, K2, §13 B2).
+ * (plan `colisage/colisage.md`, K2, §13 B2).
  *
  * ⚠️ Des écritures ciblées, et c'est le cas que le §3.1 autorise : la demande
  * suit une annulation que la journée vient de laisser passer

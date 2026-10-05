@@ -81,7 +81,7 @@ interface PendingDrop {
 
 /**
  * **Les produits et les contenants d'une commande `listed`** (K2b,
- * `colisage/plan-les-bacs-au-colisage.md` §2, §5, §5.1) — les deux premières
+ * `colisage/colisage.md` §2, §5, §5.1) — les deux premières
  * des trois colonnes ; « À répartir » reste celle du poste.
  *
  * On crée un bac (livraison) ou un sac (retrait), on y **glisse** une ligne,

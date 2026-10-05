@@ -27,7 +27,7 @@ export interface PackingListOrder {
 /**
  * **Une commande entre dans la liste à coliser** — publiée par la clôture, la
  * réannonce et le retirage (commandes absorbées seulement), dans leur
- * transaction (plan `documentation/colisage/plan-domaine-colisage.md`, §11,
+ * transaction (plan `documentation/colisage/colisage.md`, §11,
  * B1–B2 ; §13).
  *
  * ## Un fait PAR COMMANDE, et pourquoi

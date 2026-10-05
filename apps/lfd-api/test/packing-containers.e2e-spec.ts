@@ -1,6 +1,6 @@
 /**
  * E2E de **la colonne Contenants** — plan
- * `documentation/colisage/plan-les-bacs-au-colisage.md`, K2b (§5 corrigé par
+ * `documentation/colisage/colisage.md`, K2b (§5 corrigé par
  * §5.1).
  *
  * Le colisage tient le contenu, la livraison garde le bac. Ce qui ne se voit

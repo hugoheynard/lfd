@@ -25,7 +25,7 @@ import { citedOrderOf, lockedSheet } from "./container-support.js";
 
 /**
  * **« Proposer », appliqué par le serveur d'un seul coup** (suite de K2b,
- * `colisage/plan-les-bacs-au-colisage.md` §7).
+ * `colisage/colisage.md` §7).
  *
  * UNE unité de travail : la commande sous verrou, puis chaque bac proposé
  * déclaré par la livraison (`BinDesk`, qui rejoint la transaction), puis la

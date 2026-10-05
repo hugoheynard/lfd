@@ -12,7 +12,7 @@ import { PackingStockRepository } from "../../domain/ports/packing-stock.reposit
 
 /**
  * **Le guichet des retours** — le colisage tranche ce que le fournil lui
- * redemande (plan `colisage/plan-domaine-colisage.md`, §10.2, §13 B2, K2).
+ * redemande (plan `colisage/colisage.md`, §10.2, §13 B2, K2).
  *
  * Partagé par deux abonnés : la demande qui arrive (`OnReturnRequested`), et la
  * remise qui arrive après elle (`OnHandedToPacking`) — l'ordre des faits n'est

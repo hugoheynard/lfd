@@ -17,7 +17,7 @@ import { OpenPackingContainerCommand } from "./open-packing-container.command.js
 
 /**
  * **Crée un contenant** dans la colonne Contenants (K2b,
- * `colisage/plan-les-bacs-au-colisage.md` §5–§5.1).
+ * `colisage/colisage.md` §5–§5.1).
  *
  * Un SAC naît ici. Un BAC naît chez la livraison, par `BinDesk` — déclaré, ou
  * l'autre moitié d'un bac partagé —, avec son code et son QR : ses refus

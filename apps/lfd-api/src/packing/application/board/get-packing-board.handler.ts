@@ -13,7 +13,7 @@ import { GetPackingBoardQuery } from "./get-packing-board.query.js";
 
 /**
  * **Le poste de colisage, servi par le colisage** (plan
- * `colisage/plan-domaine-colisage.md`, §17, K3a) — `GET admin/packing/:date/board`.
+ * `colisage/colisage.md`, §17, K3a) — `GET admin/packing/:date/board`.
  *
  * Le contrat est `ProductionPackingView`, celui du poste du fournil retiré en
  * K3c : l'écran a changé d'adresse, pas de forme. Le calcul est `packingBoardOf` ; ici,

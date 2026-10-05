@@ -1,6 +1,6 @@
 /**
  * **La version d'une journée au colisage** — port que le fournil DÉCLARE et que
- * le colisage IMPLÉMENTE (plan `colisage/plan-domaine-colisage.md`, K2, §10.3).
+ * le colisage IMPLÉMENTE (plan `colisage/colisage.md`, K2, §10.3).
  *
  * Le poste du fournil relit sa journée quand `GET admin/production/version`
  * change. Sur une journée `packing`, les gestes du poste écrivent au colisage,

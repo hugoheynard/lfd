@@ -2,7 +2,7 @@ import { BusinessError, ResourceNotFoundError } from "../../../platform/shared/e
 
 /**
  * **Les refus du poste de colisage**, déménagés du fournil avec la bascule
- * (plan `documentation/colisage/plan-domaine-colisage.md`, K2, §12.2).
+ * (plan `documentation/colisage/colisage.md`, K2, §12.2).
  *
  * 🔴 Les CODES et les messages sont ceux du poste d'avant
  * (`production/domain/errors/production-errors.ts`) : le contrat des routes ne

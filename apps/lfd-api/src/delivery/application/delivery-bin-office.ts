@@ -29,7 +29,7 @@ import {
 /**
  * **Le guichet des bacs de la livraison** — déclarer, annuler, partager, avec
  * leurs refus et leur fait au journal. Sorti des trois handlers le 2026-10-04
- * (K2b, `colisage/plan-les-bacs-au-colisage.md` §5–§5.1) pour être servi à
+ * (K2b, `colisage/colisage.md` §5–§5.1) pour être servi à
  * DEUX portes sans dupliquer une règle : les anciennes routes de la livraison
  * (qui refusent d'abord une commande gérée au colisage) et `BinDesk`, que le
  * colisage appelle dans sa propre transaction.
@@ -176,7 +176,7 @@ export class DeliveryBinOffice {
   /**
    * Les bacs vivants de cette commande sont-ils encore à portée de main ? Une
    * vérification sans écriture, pour le colisage qui rouvre une commande
-   * (`colisage/plan-domaine-colisage.md`, §17.2, option b). La tournée est
+   * (`colisage/colisage.md`, §17.2, option b). La tournée est
    * verrouillée en partage jusqu'à la fin de l'unité de travail de l'appelant :
    * un « Partir » concurrent attend.
    *

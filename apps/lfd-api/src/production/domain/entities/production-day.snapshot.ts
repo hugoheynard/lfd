@@ -13,7 +13,7 @@ import type { PackingOwner } from "../value-objects/packing-owner.js";
 /**
  * Une ligne de commande, figée du côté de la production.
  *
- * Plus de `packed` depuis K3c (`colisage/plan-domaine-colisage.md` §17.3) : ce
+ * Plus de `packed` depuis K3c (`colisage/colisage.md` §17.3) : ce
  * qui est au bac, c'est le colisage qui le tient. Les colonnes
  * `production_order_line.packed_*` restent en base, ni lues ni écrites.
  */
@@ -41,7 +41,7 @@ export interface PackedMark {
 export interface ProductionOrderSnapshot {
   /**
    * La fermeture du bac **au colisage**, ou `null`. Le dépôt ne la lit ni ne
-   * l'écrit depuis K3c (`colisage/plan-domaine-colisage.md` §17.3) : elle vaut
+   * l'écrit depuis K3c (`colisage/colisage.md` §17.3) : elle vaut
    * `null` au chargement, et seule `SealedDayReading` la pose, en lecture, à
    * partir de `PackedOrdersReader`. Les colonnes `production_order.packed_*` et
    * `container_count` restent en base, mortes.

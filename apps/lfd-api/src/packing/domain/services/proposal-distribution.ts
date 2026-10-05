@@ -1,6 +1,6 @@
 /**
  * **« Proposer », bac par bac** (suite de K2b,
- * `documentation/colisage/plan-les-bacs-au-colisage.md` §7) — PUR : ni
+ * `documentation/colisage/colisage.md` §7) — PUR : ni
  * horloge, ni base, ni aléa. Mêmes entrées, mêmes bacs, même contenu.
  *
  * La livraison propose un contenu PAR TYPE × N bacs (`whole` entiers, plus une

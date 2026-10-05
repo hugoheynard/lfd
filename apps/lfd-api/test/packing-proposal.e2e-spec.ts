@@ -1,5 +1,5 @@
 /**
- * E2E de **la suite de K2b** — `documentation/colisage/plan-les-bacs-au-colisage.md`
+ * E2E de **la suite de K2b** — `documentation/colisage/colisage.md`
  * §7 : « Proposer » appliqué par le serveur d'un seul coup, bac par bac ; une
  * moitié de bac partagée depuis le poste ; le retrait partiel d'une
  * répartition.

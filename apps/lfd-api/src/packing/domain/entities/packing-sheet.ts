@@ -36,13 +36,13 @@ export {
 
 /**
  * **Le bac d'une commande** — l'agrégat du poste de colisage (plan
- * `documentation/colisage/plan-domaine-colisage.md`, K2, §12.2).
+ * `documentation/colisage/colisage.md`, K2, §12.2).
  *
  * Une ligne est réversible tant que le bac est ouvert ; un bac fermé ne bouge
  * plus parce que le commerce a annoncé « prête » ; les contenants sont bornés.
  *
  * 🔴 **Une commande `counted` est en lecture seule** depuis K3c
- * (`plan-domaine-colisage.md` §17.3, §17.6) : colisée avec l'ancien poste,
+ * (`colisage.md` §17.3, §17.6) : colisée avec l'ancien poste,
  * elle ne se ferme, ne se rouvre ni ne se remplit plus ici
  * (`ContainersCountedError`). La coche, le compte « + / − » et le total de
  * containers sont partis avec l'ancien poste.
@@ -135,7 +135,7 @@ export class PackingSheet {
 
   /**
    * **Rouvrir le rangement** d'un bac fermé (plan
-   * `colisage/plan-domaine-colisage.md`, §17.2, option b de Hugo).
+   * `colisage/colisage.md`, §17.2, option b de Hugo).
    *
    * Seul le rangement rouvre : les lignes restent au bac, les contenants
    * restent pleins, la réserve ne bouge pas. Le commerce garde la commande

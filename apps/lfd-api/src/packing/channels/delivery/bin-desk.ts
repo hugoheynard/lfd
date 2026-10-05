@@ -34,7 +34,7 @@ export interface DeskCapacity {
 
 /**
  * **Le guichet des bacs** — port que le colisage DÉCLARE et que la livraison
- * IMPLÉMENTE (plan `documentation/colisage/plan-les-bacs-au-colisage.md`, K2b,
+ * IMPLÉMENTE (plan `documentation/colisage/colisage.md`, K2b,
  * §5–§5.1).
  *
  * La livraison garde le BAC : son code court unique « sur tous les bacs,
@@ -84,7 +84,7 @@ export abstract class BinDesk {
   /**
    * Ces bacs de la commande sont-ils encore à portée de main — aucun chargé,
    * tournée pas partie ? Une vérification sans écriture, demandée avant de
-   * rouvrir une commande fermée (plan `colisage/plan-domaine-colisage.md`,
+   * rouvrir une commande fermée (plan `colisage/colisage.md`,
    * §17.2, option b). Mêmes refus que l'annulation d'un bac.
    */
   abstract assertAtHand(orderId: string, binIds: readonly string[]): Promise<void>;

@@ -18,7 +18,7 @@ export const ON_RETURN_REQUESTED = "packing.shadow.apply-return";
 
 /**
  * **Le colisage reçoit un retour du fournil** (plan
- * `colisage/plan-domaine-colisage.md`, §13 B2 ; K1 puis K2).
+ * `colisage/colisage.md`, §13 B2 ; K1 puis K2).
  *
  * - `legacy: true` — une journée de l'ancien poste : le fournil a DÉJÀ annulé,
  *   synchrone. Le colisage applique le retour à sa réserve, une fois par

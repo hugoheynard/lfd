@@ -8,7 +8,7 @@ const MISTAKEN_PIECES = 2;
 /**
  * **Une fournée sortie par erreur, et reprise au colisage** — la seule pièce de
  * la journée de démonstration que le colisage tranche (plan
- * `documentation/colisage/plan-domaine-colisage.md`, K2, §13 B2).
+ * `documentation/colisage/colisage.md`, K2, §13 B2).
  *
  * Sur une journée `packing`, annuler une fournée remise est une DEMANDE : elle
  * part au colisage, qui rend ce qui n'est pas au bac, et seule sa réponse

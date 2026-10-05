@@ -126,7 +126,7 @@ export interface LoadedRound {
 /**
  * **Les contenants qu'un arrêt ouvre au colisage** — un par bac entier, plus
  * la moitié s'il y en a une, et l'autre moitié d'un bac voisin s'il la
- * partage. Depuis K3c (`plan-domaine-colisage.md` §17.3), un bac de livraison
+ * partage. Depuis K3c (`colisage.md` §17.3), un bac de livraison
  * naît au colisage ; la déclaration après « prête » n'est plus jouée ici.
  * Les sacs intérieurs d'un groupe vont à son premier bac.
  */

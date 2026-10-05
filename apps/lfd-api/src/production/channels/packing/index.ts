@@ -1,6 +1,6 @@
 /**
  * **Le canal que la production publie POUR le colisage** (plan
- * `documentation/colisage/plan-domaine-colisage.md`, §11–§13).
+ * `documentation/colisage/colisage.md`, §11–§13).
  *
  * | Pièce                   | Nature           | Ce qu'elle porte                              |
  * | ----------------------- | ---------------- | --------------------------------------------- |

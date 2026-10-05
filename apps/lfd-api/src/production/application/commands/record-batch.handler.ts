@@ -30,7 +30,7 @@ import { RecordBatchCommand } from "./record-batch.command.js";
  * ## La remise au colisage, dans la même unité de travail (2026-10-04)
  *
  * Sortir une fournée, c'est la remettre au colisage (plan
- * `colisage/plan-domaine-colisage.md`, §11.2 ; §13, B3) : matérialiser,
+ * `colisage/colisage.md`, §11.2 ; §13, B3) : matérialiser,
  * déclarer, écrire la remise et publier `production.handed_to_packing` partent
  * ensemble. `handoffId` = l'`id` de la fournée — un rejeu est absorbé. Une
  * fournée rejouée APRÈS son annulation ne se remet pas : elle ne compte plus.

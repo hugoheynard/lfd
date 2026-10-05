@@ -305,7 +305,7 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./livraison/my-round-page/my-round-page').then((m) => m.MyRoundPage),
   },
-  // LE COLISAGE (2026-10-04, `documentation/colisage/plan-domaine-colisage.md`,
+  // LE COLISAGE (2026-10-04, `documentation/colisage/colisage.md`,
   // P0) : un poste de PREMIER niveau, comme le Coursier — ses données restent
   // au fournil, mais le geste n'en est pas une vue. Le même composant que
   // `colisage/:reference` : le poste ouvert sur la liste plutôt que sur une
@@ -603,7 +603,7 @@ export const routes: Routes = [
           import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
       },
       // Le colisage est un poste à part depuis le 2026-10-04
-      // (`documentation/colisage/plan-domaine-colisage.md`, P0) : l'ancienne
+      // (`documentation/colisage/colisage.md`, P0) : l'ancienne
       // adresse reste valide — c'est le favori des postes de labo.
       { path: 'colisage', pathMatch: 'full', redirectTo: '/colisage' },
     ],

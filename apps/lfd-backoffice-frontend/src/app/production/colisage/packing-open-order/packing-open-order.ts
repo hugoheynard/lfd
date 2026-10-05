@@ -25,7 +25,7 @@ import { PackingLine } from '../packing-line/packing-line';
  * est en vol. Le composant émet deux gestes, et c'est `Colisage` qui les écrit
  * puis relit. Découpé du poste le 2026-09-14.
  *
- * 🔴 **Une commande `counted` est en lecture seule** (`plan-domaine-colisage.md`
+ * 🔴 **Une commande `counted` est en lecture seule** (`colisage.md`
  * §17.6) : colisée avec l'ancien poste, elle ne se modifie plus ici — ni coche,
  * ni compte, ni bac, ni « Prête », ni « Rouvrir ». Un court message le dit. Les
  * commandes `listed` tiennent leurs contenants dans la colonne (K2b).

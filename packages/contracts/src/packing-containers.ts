@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **La colonne Contenants du poste de colisage** (K2b, 2026-10-04,
- * `documentation/colisage/plan-les-bacs-au-colisage.md` §5–§5.1).
+ * `documentation/colisage/colisage.md` §5–§5.1).
  *
  * Routes, sous `admin/packing/:date/orders/:orderId` (droit
  * `production_packing` — `write` sauf la proposition, `read`) :

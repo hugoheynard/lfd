@@ -149,7 +149,7 @@ import { FeatureAccessGuard } from "../b2b/feature-access/http/feature-access.gu
     ProductionFeedModule,
     HandoverModule,
     HandoverFeedModule,
-    // Le colisage, en ombre (plan `colisage/plan-domaine-colisage.md`, K1).
+    // Le colisage, en ombre (plan `colisage/colisage.md`, K1).
     PackingModule,
     PackingFeedModule,
     PackingDeliveryFeedModule,

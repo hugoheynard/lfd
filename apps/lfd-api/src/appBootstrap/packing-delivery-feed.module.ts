@@ -7,7 +7,7 @@ import { PrismaContainerManagedOrders } from "../packing/infrastructure/prisma-c
 import { PackingModule } from "../packing/packing.module.js";
 
 /**
- * **Le fil des bacs, relié** (K2b, `colisage/plan-les-bacs-au-colisage.md`
+ * **Le fil des bacs, relié** (K2b, `colisage/colisage.md`
  * §5–§5.1) — le colisage déclare `packing/channels/delivery/` :
  *
  * - `BinDesk` — la livraison l'implémente (`DeliveryBinDesk`) : déclarer,

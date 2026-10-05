@@ -15,7 +15,7 @@ import {
 
 /**
  * **Les contenants du colisage** (K2b, 2026-10-04,
- * `colisage/plan-les-bacs-au-colisage.md`) — le miroir de
+ * `colisage/colisage.md`) — le miroir de
  * `PACKING_CONTAINER_FACTS` dans `@lfd/contracts`.
  *
  * Le sujet est la commande ; le contenant est cité par son code de bac, ou

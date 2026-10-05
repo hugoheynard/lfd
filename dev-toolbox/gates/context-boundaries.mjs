@@ -71,7 +71,7 @@ const BLOCK_OF = {
   delivery: "delivery",
 
   // ▸ LE COLISAGE — le poste qui met les commandes au bac (2026-10-04,
-  //   `documentation/colisage/plan-domaine-colisage.md`, §12–§13, lot K1). Sa
+  //   `documentation/colisage/colisage.md`, §12–§13, lot K1). Sa
   //   clé est la commande et le bac, pas la journée. Il reçoit les faits du
   //   fournil par la boîte d'envoi, dans la forme que le fournil DÉCLARE
   //   (`production/channels/packing/`), et n'atteint rien d'autre que le socle
@@ -152,7 +152,7 @@ const ALLOWED = {
   // Et le fournil par son canal SEULEMENT depuis le 2026-10-04 (option B) : la
   // livraison écoute la clôture ; `production → delivery` reste interdit.
   // Et le colisage par son canal SEULEMENT depuis le 2026-10-04 (K2b,
-  // `colisage/plan-les-bacs-au-colisage.md` §5) : la livraison implémente
+  // `colisage/colisage.md` §5) : la livraison implémente
   // `BinDesk` et lit `ContainerManagedOrders` ; `packing → delivery` reste
   // interdit.
   delivery: new Set(["staff", "platform", "production", "packing"]),
@@ -234,7 +234,7 @@ const PORT_SURFACE = {
   // et ne sait pas qui la branche.
   "handover→delivery": "delivery/channels/handover/",
   // Le COLISAGE lit les faits que le fournil publie pour lui (2026-10-04,
-  // `plan-domaine-colisage.md`, §11 et §13) : la liste à coliser, la remise
+  // `colisage.md`, §11 et §13) : la liste à coliser, la remise
   // d'une fournée, la demande de retour. Contrats et faits, rien de l'agrégat.
   "packing→production": "production/channels/packing/",
   // La LIVRAISON écoute la clôture du fournil (2026-10-04, Hugo, option B,
@@ -242,7 +242,7 @@ const PORT_SURFACE = {
   // Le détail des commandes, elle le lit au commerce.
   "delivery→production": "production/channels/delivery/",
   // La LIVRAISON implémente ce que le COLISAGE déclare (2026-10-04, K2b,
-  // `colisage/plan-les-bacs-au-colisage.md` §5–§5.1) : `BinDesk` — déclarer,
+  // `colisage/colisage.md` §5–§5.1) : `BinDesk` — déclarer,
   // annuler, partager un bac, proposer un colisage, « ces bacs sont-ils
   // vivants ? » — et lit `ContainerManagedOrders` pour refuser ses anciennes
   // routes. Même figure que `b2b → delivery`.

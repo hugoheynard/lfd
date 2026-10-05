@@ -10,7 +10,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
  * ne réutilise aucun de ses noms pour que la confusion n'ait pas d'endroit où
  * naître.
  *
- * 🔴 **Lecture seule depuis K3c** (`plan-domaine-colisage.md` §17.3) : le
+ * 🔴 **Lecture seule depuis K3c** (`colisage.md` §17.3) : le
  * compte « + / − » n'est plus servi. Il ne reste que pour montrer le compte
  * d'une commande `counted`, colisée avec l'ancien poste ; une commande `listed`
  * tient ses contenants dans `PackingContainerBoard`.

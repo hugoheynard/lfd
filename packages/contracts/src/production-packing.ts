@@ -163,10 +163,10 @@ export interface PackingSheet {
   readonly qualityHeld?: boolean;
   /**
    * **Comment la commande tient ses contenants** (K2b, ajouté le 2026-10-04,
-   * `colisage/plan-les-bacs-au-colisage.md` §5.1) :
+   * `colisage/colisage.md` §5.1) :
    *
    * - `counted` — colisée avec l'ancien poste : **en lecture seule** depuis
-   *   K3c (`plan-domaine-colisage.md` §17.6) — ni remplie, ni fermée, ni
+   *   K3c (`colisage.md` §17.6) — ni remplie, ni fermée, ni
    *   rouverte ; `canDeclareReady` y vaut toujours `false` ;
    * - `listed` — la colonne Contenants : on y crée des bacs et des sacs, on y
    *   glisse les lignes ; `containers` est le nombre de contenants.

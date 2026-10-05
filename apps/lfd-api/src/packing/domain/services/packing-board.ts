@@ -6,7 +6,7 @@ import { relativeDayOf } from "./relative-day.js";
 
 /**
  * **Le poste de colisage, servi par le colisage** (plan
- * `colisage/plan-domaine-colisage.md`, §17, K3a) — fonction pure.
+ * `colisage/colisage.md`, §17, K3a) — fonction pure.
  *
  * Même FORME que celle du fournil (`ProductionPackingView`, `packingBoardOf`
  * de `production/domain/services/production-packing.ts`) : l'écran change

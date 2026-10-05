@@ -1,5 +1,12 @@
 # Le parcours du coliseur — du four au bac posé dans la pièce
 
+> ⚠️ **Périmé pour les étapes 3 à 7 depuis K3 (2026-10-05).** Le poste ne coche
+> plus de lignes, n'a plus de compte « + / − » de containers, et ne déclare plus
+> les bacs après « prête » : on ouvre des contenants (bacs en livraison, sacs en
+> retrait), on y répartit les lignes, puis on ferme. L'état du poste est dans
+> [`colisage.md`](colisage.md) ; ce document reste comme trace du parcours et de
+> ses questions, tranchées depuis.
+
 > 🗒️ **Document de travail** (2026-10-01), jumeau de
 > [`../livraisons/parcours-du-livreur.md`](../livraisons/parcours-du-livreur.md), pour réfléchir ensemble
 > aux étapes du coliseur. Il s'arrête là où le livreur commence : **les bacs
@@ -8,8 +15,9 @@
 > Comme pour le livreur, chaque étape dit **ce qui existe déjà** (✅), **ce
 > qui est en cours ou écrit sans être bâti** (🟡) et **ce qui n'existe pas**
 > (❌), puis les **questions** (❓). Relu dans le code et les plans le
-> 2026-10-01 : `plan-poste-de-colisage.md`, `chargement-les-bacs.md`,
-> `plan-le-plus-choisit-un-bac.md`, `plan-controle-qualite.md`.
+> 2026-10-01 : le plan du poste de colisage et celui du « + » qui choisit un
+> bac (tous deux retirés le 2026-10-05), `chargement-les-bacs.md`,
+> `plan-controle-qualite.md`.
 
 ## Où on en est (relu le 2026-10-02)
 
@@ -85,7 +93,7 @@ flowchart TD
   fermeture.
 - 🟡 **Livraison** : le « + » doit **choisir un bac d'un format** au lieu d'un
   compte anonyme, pour qu'un même objet ne se compte plus deux fois
-  (`plan-le-plus-choisit-un-bac.md`, écrit, pas bâti).
+  (plan du « + » qui choisit un bac, écrit, pas bâti).
 
 ### 4 · Les bacs (livraison)
 

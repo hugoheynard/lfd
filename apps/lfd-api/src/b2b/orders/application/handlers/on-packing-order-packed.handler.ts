@@ -17,7 +17,7 @@ export const ON_PACKING_ORDER_PACKED = "b2b.orders.mark-ready-from-packing";
 
 /**
  * **Le commerce apprend qu'un bac est fait — au colisage** (plan
- * `documentation/colisage/plan-domaine-colisage.md`, §11, §12.1, K2).
+ * `documentation/colisage/colisage.md`, §11, §12.1, K2).
  *
  * Le seul abonné « bac fait » depuis K3c (§17.3) : `OnOrderPacked`, qui
  * écoutait `production.order_packed` de l'ancien poste du fournil, est retiré
