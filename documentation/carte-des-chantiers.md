@@ -42,12 +42,13 @@ clôture ──► colisage (K1/K2 ✅) ──► bacs (K2b ✅, K3 ✅) ──�
 
 ## 4. Écrit ou décidé, en attente (pas avant la fin du §3)
 
-| Sujet                                                            | Lots                                                            | Bloqué par                            |
-| ---------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------- |
-| Messages restants                                                | E4 (règlements), E5 (courriels, image), E6 (croissance)         | E3                                    |
-| Écran des messages morts (carte de santé)                        | —                                                               | —                                     |
-| Composition : capacité, banc à 200, prévisionnel, place suggérée | CA4, banc, CA5, CA7                                             | CA6                                   |
-| Production par vagues                                            | V1 (compte par échéance, migration), V2, V3, V4 (marge mesurée) | relecture `vitruve` de la v2 avant V1 |
-| Imprimantes thermiques                                           | IM0 (essai), IM1–IM4                                            | achat d'une Zebra                     |
-| Tests intermittents des e2e                                      | —                                                               | `todos/todo-flake-des-e2e.md`         |
-| Vitesse de la proposition de tournées (marge faible en CI)       | —                                                               | banc à 200                            |
+| Sujet                                                            | Lots                                                                                                             | Bloqué par                            |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Messages restants                                                | E4 (règlements), E5 (courriels, image), E6 (croissance)                                                          | E3                                    |
+| Écran des messages morts (carte de santé)                        | —                                                                                                                | —                                     |
+| Composition : capacité, banc à 200, prévisionnel, place suggérée | CA4, banc, CA5, CA7                                                                                              | CA6                                   |
+| Production par vagues                                            | V1 (compte par échéance, migration), V2, V3, V4 (marge mesurée)                                                  | relecture `vitruve` de la v2 avant V1 |
+| Sous-comptes d'un compte pro (`b2b/plan-sous-comptes.md`)        | S1 (lien, suivi daté, verrou), S2 (écrans), S3 (tarif), S4 (facturation), S5 (contacts), S6 (accès du principal) | Hugo : ordre par rapport au §3        |
+| Imprimantes thermiques                                           | IM0 (essai), IM1–IM4                                                                                             | achat d'une Zebra                     |
+| Tests intermittents des e2e                                      | —                                                                                                                | `todos/todo-flake-des-e2e.md`         |
+| Vitesse de la proposition de tournées (marge faible en CI)       | —                                                                                                                | banc à 200                            |
