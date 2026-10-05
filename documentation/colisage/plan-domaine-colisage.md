@@ -687,3 +687,35 @@ pour une commande du colisage ; les fixtures `asLegacyPacking` /
 Un déploiement pour les trois. Pas de `vitruve` : aucune frontière neuve,
 aucune migration de données ; les affirmations ci-dessus ont été rouvertes dans
 le code.
+
+### 17.5 K3a bâti (2026-10-05) — ce qui a été tranché en bâtissant
+
+- **Routes ajoutées** (sous `production_packing`, aucun droit neuf) :
+  `GET admin/packing/:date/board` (`ProductionPackingView`, même forme que
+  `GET admin/production/packing?date=`), `POST admin/packing/:date/orders/:orderId/close`
+  et `…/reopen` (`204`, l'écran relit le poste). L'ancien chemin reste servi
+  jusqu'à K3c.
+- **Ce que le colisage compose lui-même** : bacs, lignes, contenants, réserve
+  (ses tables) ; le compte à produire = la somme des quantités dues de la liste
+  à coliser (la règle `countOf` du fournil) ; l'heure de clôture = le premier
+  `drawnAt` reçu (la clôture publie la liste avec son instant). Une journée dont
+  la liste n'est pas encore arrivée se lit « plan non arrêté ».
+- **⚠️ La destination n'est PAS dans la liste à coliser**, contrairement au
+  tableau du §17.1 (vérifié le 2026-10-05 : ni `PackingListDrawnEvent`, ni
+  `packing_order`). Elle est lue au fournil par un port qu'il publie,
+  `PlannedDestinationsReader`, à côté de `QualityHeldOrdersReader`. L'autre voie
+  — étendre le fait et la table (migration additive) — reste à trancher par Hugo.
+- **`PackedOrdersReader`** (déclaré par le fournil, implémenté par le
+  colisage) sert l'état du jour et le contrôle qualité, par `SealedDayReading`.
+  `PackedDayReading` ne sert plus que l'ancien poste (retiré en K3c).
+- **La Supervision n'a pas basculé** : sa colonne « colisage »
+  (`GET admin/supervision/packing`) sert le poste ENTIER, que
+  `PackedOrdersReader` ne peut pas rendre. Elle lit l'ancien handler jusqu'à
+  K3c ; la route à lui donner (le `board` du colisage sous `b2b_supervision`)
+  est à trancher.
+- **Rouvrir** : `PackingSheet.reopen()` ; la livraison vérifie d'abord, dans la
+  même unité de travail, qu'aucun bac vivant n'est chargé ni sa tournée partie
+  (`BinDesk.assertAtHand`, qui réutilise la règle de l'annulation d'un bac).
+  Refermer publie la même clé `packing.order_packed:<orderId>`, absorbée. Fermer
+  un bac déjà fermé réannonce, comme l'ancien rescan. Rouvrir n'est pas
+  journalisé : aucun type de fait n'existe pour lui.

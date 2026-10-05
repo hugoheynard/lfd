@@ -321,3 +321,35 @@ describe("DeliveryBin.void — L4-C19", () => {
     );
   });
 });
+
+describe("DeliveryBin.ensureAtHand — le colisage rouvre une commande (K3a)", () => {
+  it("laisse passer un bac au dépôt, non chargé, ou hors de toute tournée", () => {
+    expect(() => bin().ensureAtHand(null)).not.toThrow();
+    expect(() => bin().ensureAtHand(loadingOf())).not.toThrow();
+  });
+
+  it("refuse un bac chargé, sans rien écrire", () => {
+    const subject = bin();
+    const loaded = loadingOf({
+      loads: [
+        {
+          id: "l_1",
+          binId: "b_1",
+          loadedAt: AT,
+          loadedBy: "staff_1",
+          loadedVia: "scan",
+          createdAt: AT,
+        },
+      ],
+    });
+
+    expect(() => subject.ensureAtHand(loaded)).toThrow(BinLoadedError);
+    expect(subject.voidedAt).toBeNull();
+  });
+
+  it("refuse après le départ de sa tournée", () => {
+    expect(() => bin().ensureAtHand(loadingOf({ departedAt: AT }))).toThrow(
+      DeliveryRoundDepartedError,
+    );
+  });
+});

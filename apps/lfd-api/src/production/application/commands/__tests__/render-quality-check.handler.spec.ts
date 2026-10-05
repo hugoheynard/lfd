@@ -1,5 +1,5 @@
-import { PackedDayReading } from "../../services/packed-day-reading.service.js";
-import { FixedStationReader } from "../../__tests__/station-doubles.js";
+import { SealedDayReading } from "../../services/sealed-day-reading.service.js";
+import { FixedPackedOrders } from "../../__tests__/station-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
@@ -56,7 +56,7 @@ function subject(packed: readonly string[] = ["ord_2"]) {
   const handler = new RenderQualityCheckHandler(
     checks,
     new InMemoryCheckReader(table),
-    new PackedDayReading(days, new FixedStationReader()),
+    new SealedDayReading(days, new FixedPackedOrders()),
     attachment,
     new FixedOrderCustody(),
     events,

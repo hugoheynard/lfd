@@ -85,6 +85,13 @@ export class OrderContents {
     return this.containersValue.filter((container) => container.voided === null).length;
   }
 
+  /** Les bacs de livraison des contenants vivants. */
+  get liveBinIds(): readonly string[] {
+    return this.containersValue.flatMap((container) =>
+      container.voided === null && container.bin !== null ? [container.bin.binId] : [],
+    );
+  }
+
   /** Ce que les contenants vivants portent de cet article. */
   allocatedOf(sku: string): number {
     return this.containersValue

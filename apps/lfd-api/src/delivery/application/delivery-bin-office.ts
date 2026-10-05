@@ -173,6 +173,28 @@ export class DeliveryBinOffice {
     });
   }
 
+  /**
+   * Les bacs vivants de cette commande sont-ils encore à portée de main ? Une
+   * vérification sans écriture, pour le colisage qui rouvre une commande
+   * (`colisage/plan-domaine-colisage.md`, §17.2, option b). La tournée est
+   * verrouillée en partage jusqu'à la fin de l'unité de travail de l'appelant :
+   * un « Partir » concurrent attend.
+   *
+   * @throws {BinLoadedError} @throws {DeliveryRoundDepartedError}
+   * @throws {DeliveryLoadingStaleError}
+   */
+  async assertAtHand(orderId: string, binIds: readonly string[]): Promise<void> {
+    await this.uow.run(async () => {
+      const loading = await this.loadings.forOrder(orderId);
+      for (const binId of new Set(binIds)) {
+        const bin = await this.bins.load(binId);
+        if (bin !== null && bin.voidedAt === null) {
+          bin.ensureAtHand(loading);
+        }
+      }
+    });
+  }
+
   /** La commande de ce bac, ou `null` s'il n'existe pas. */
   async orderOf(binId: string): Promise<string | null> {
     return (await this.bins.load(binId))?.orderId ?? null;

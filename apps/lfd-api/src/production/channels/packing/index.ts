@@ -12,6 +12,9 @@
  * | `PackingStationReader`  | port (K2)        | le même, en lecture                           |
  * | `PackingReturnedEvent`  | fait durable     | la réponse du colisage à un retour            |
  * | `PackingOrderPackedEvent` | fait durable   | un bac fermé au colisage — lu par le commerce |
+ * | `QualityHeldOrdersReader` | port publié (K3a) | les commandes retenues au contrôle, pour le poste |
+ * | `PlannedDestinationsReader` | port publié (K3a) | la destination figée au plan, pour le poste |
+ * | `PackedOrdersReader`    | port (K3a)       | « cette commande est-elle colisée ? »         |
  *
  * `lint:context-boundaries` n'autorise `packing → production` que par ce
  * dossier, et `production → packing` jamais : le fournil publie, il ne sait
@@ -59,3 +62,6 @@ export {
   type StationSealAck,
   type StationStock,
 } from "./packing-station.js";
+export { PackedOrdersReader, type PackedOrderSeal } from "./packed-orders.reader.js";
+export { PlannedDestinationsReader } from "./planned-destinations.reader.js";
+export { QualityHeldOrdersReader } from "./quality-held-orders.reader.js";

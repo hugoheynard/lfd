@@ -82,6 +82,14 @@ export abstract class BinDesk {
   abstract freeHalves(orderId: string): Promise<DeliveryBinFreeHalvesView>;
 
   /**
+   * Ces bacs de la commande sont-ils encore à portée de main — aucun chargé,
+   * tournée pas partie ? Une vérification sans écriture, demandée avant de
+   * rouvrir une commande fermée (plan `colisage/plan-domaine-colisage.md`,
+   * §17.2, option b). Mêmes refus que l'annulation d'un bac.
+   */
+  abstract assertAtHand(orderId: string, binIds: readonly string[]): Promise<void>;
+
+  /**
    * Ceux de ces bacs qui existent et ne sont pas annulés. Défense en
    * profondeur (§5.1, B1) : le colisage ne compte jamais un contenant dont le
    * bac est annulé, même si l'annulation lui avait échappé.

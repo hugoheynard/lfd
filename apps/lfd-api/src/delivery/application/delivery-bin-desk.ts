@@ -98,6 +98,10 @@ export class DeliveryBinDesk extends BinDesk {
     return this.freeHalvesQuery.execute(new GetDeliveryBinFreeHalvesQuery(orderId));
   }
 
+  async assertAtHand(orderId: string, binIds: readonly string[]): Promise<void> {
+    await this.office.assertAtHand(orderId, binIds);
+  }
+
   async liveBins(binIds: readonly string[]): Promise<ReadonlySet<string>> {
     return this.office.liveAmong(binIds);
   }

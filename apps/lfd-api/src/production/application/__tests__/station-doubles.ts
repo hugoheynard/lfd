@@ -1,4 +1,8 @@
 import {
+  PackedOrdersReader,
+  type PackedOrderSeal,
+} from "../../channels/packing/packed-orders.reader.js";
+import {
   PackingStation,
   PackingStationReader,
   type StationDay,
@@ -66,4 +70,18 @@ export class FixedStationReader extends PackingStationReader {
  */
 export function legacyOf(day: ProductionDay): ProductionDay {
   return ProductionDay.fromSnapshot({ ...day.toSnapshot(), packingOwner: "legacy" });
+}
+
+/** « Lesquelles sont colisées ? » (K3a) : des bacs fermés fixés d'avance, aucun par défaut. */
+export class FixedPackedOrders extends PackedOrdersReader {
+  readonly asked: string[] = [];
+
+  constructor(private readonly sealed: ReadonlyMap<string, PackedOrderSeal> = new Map()) {
+    super();
+  }
+
+  packedOn(serviceDay: string): Promise<ReadonlyMap<string, PackedOrderSeal>> {
+    this.asked.push(serviceDay);
+    return Promise.resolve(this.sealed);
+  }
 }

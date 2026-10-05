@@ -30,6 +30,14 @@ import {
 import { PrismaPackingSheetRepository } from "./infrastructure/prisma-packing-sheet.repository.js";
 import { PrismaPackingStationReader } from "./infrastructure/prisma-packing-station.reader.js";
 import { PrismaPackingStockRepository } from "./infrastructure/prisma-packing-stock.repository.js";
+import { GetPackingBoardHandler } from "./application/board/get-packing-board.handler.js";
+import { ClosePackingOrderHandler } from "./application/station/close-packing-order.handler.js";
+import { ReopenPackingOrderHandler } from "./application/station/reopen-packing-order.handler.js";
+import { PackingBoardReader } from "./domain/ports/packing-board.reader.js";
+import { PackingBoardController } from "./http/packing-board.controller.js";
+import { PackingOrdersController } from "./http/packing-orders.controller.js";
+import { PrismaPackedOrdersReader } from "./infrastructure/prisma-packed-orders.reader.js";
+import { PrismaPackingBoardReader } from "./infrastructure/prisma-packing-board.reader.js";
 
 /**
  * **Le colisage** — son propre bloc depuis le 2026-10-04 (plan
@@ -49,12 +57,24 @@ import { PrismaPackingStockRepository } from "./infrastructure/prisma-packing-st
  * `ContainerManagedOrders` par ce module), reliés par
  * `PackingDeliveryFeedModule`.
  *
+ * K3a : le poste est SERVI ici — `GET admin/packing/:date/board`, fermer et
+ * rouvrir une commande. Il lit ses tables, et demande au fournil, par deux
+ * ports que celui-ci publie (`QualityHeldOrdersReader`,
+ * `PlannedDestinationsReader`), la retenue au contrôle et la destination. Il
+ * implémente `PackedOrdersReader`, que le fournil lit pour l'état du jour et
+ * le contrôle qualité. Tous reliés par `PackingFeedModule`.
+ *
  * `LegacyPackingReader` n'est pas déclaré ici : c'est un port que la
  * production publie et implémente, relié par `PackingFeedModule` — le
  * colisage n'importe pas le module du fournil.
  */
 @Module({
-  controllers: [PackingShadowController, PackingContainersController],
+  controllers: [
+    PackingShadowController,
+    PackingContainersController,
+    PackingBoardController,
+    PackingOrdersController,
+  ],
   providers: [
     OnPackingListDrawn,
     OnHandedToPacking,
@@ -80,7 +100,18 @@ import { PrismaPackingStockRepository } from "./infrastructure/prisma-packing-st
     ApplyPackingProposalHandler,
     GetShareableHalvesHandler,
     PrismaContainerManagedOrders,
+    // Le poste servi par le colisage (K3a).
+    GetPackingBoardHandler,
+    ClosePackingOrderHandler,
+    ReopenPackingOrderHandler,
+    { provide: PackingBoardReader, useClass: PrismaPackingBoardReader },
+    PrismaPackedOrdersReader,
   ],
-  exports: [PackingStationService, PrismaPackingStationReader, PrismaContainerManagedOrders],
+  exports: [
+    PackingStationService,
+    PrismaPackingStationReader,
+    PrismaContainerManagedOrders,
+    PrismaPackedOrdersReader,
+  ],
 })
 export class PackingModule {}

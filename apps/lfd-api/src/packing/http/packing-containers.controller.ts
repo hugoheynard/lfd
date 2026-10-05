@@ -6,7 +6,6 @@ import {
   type OpenPackingContainer,
   movePackingPiecesSchema,
   openPackingContainerSchema,
-  productionPackingQuerySchema,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
@@ -21,6 +20,7 @@ import { GetPackingProposalQuery } from "../application/containers/get-packing-p
 import { OpenPackingContainerCommand } from "../application/containers/open-packing-container.command.js";
 import { VoidPackingContainerCommand } from "../application/containers/void-packing-container.command.js";
 import { WithdrawFromContainerCommand } from "../application/containers/withdraw-from-container.command.js";
+import { packingDayOf as dayOf } from "./packing-day-path.js";
 
 /** Le code de retour d'un geste qui n'a rien à rendre — le client relit le poste. */
 const NO_CONTENT = 204;
@@ -34,9 +34,9 @@ const NO_CONTENT = 204;
  * Sous `production_packing` : le droit de qui tient le poste — `write` pour
  * les gestes, `read` pour la proposition. Aucun droit neuf, aucun rôle touché.
  *
- * Le poste se RELIT par `GET admin/production/packing?date=` (le fournil le
- * sert, à l'adresse des QR imprimés) : ces routes ne rendent rien d'autre
- * qu'un identifiant de contenant.
+ * Le poste se RELIT par `GET admin/packing/:date/board` (K3a — le fournil
+ * sert encore `GET admin/production/packing?date=` jusqu'à K3c) : ces routes
+ * ne rendent rien d'autre qu'un identifiant de contenant.
  *
  * Il n'injecte que des bus — `lint:controller-buses`.
  */
@@ -157,9 +157,4 @@ export class PackingContainersController {
       new GetShareableHalvesQuery(orderId),
     );
   }
-}
-
-/** Le jour du chemin, validé dans sa FORME — le message nomme le paramètre. */
-function dayOf(date: string): string {
-  return productionPackingQuerySchema.parse({ date }).date;
 }

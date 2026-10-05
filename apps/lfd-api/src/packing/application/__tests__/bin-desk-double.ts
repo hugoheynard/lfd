@@ -71,6 +71,17 @@ export class ScriptedBinDesk extends BinDesk {
     });
   }
 
+  /** Les bacs vus par « rouvrir » ; `refusal` les refuse tous. */
+  readonly checkedAtHand: { readonly orderId: string; readonly binIds: readonly string[] }[] = [];
+
+  assertAtHand(orderId: string, binIds: readonly string[]): Promise<void> {
+    if (this.refusal !== null) {
+      return Promise.reject(this.refusal);
+    }
+    this.checkedAtHand.push({ orderId, binIds });
+    return Promise.resolve();
+  }
+
   liveBins(binIds: readonly string[]): Promise<ReadonlySet<string>> {
     return Promise.resolve(new Set(binIds.filter((binId) => !this.dead.has(binId))));
   }

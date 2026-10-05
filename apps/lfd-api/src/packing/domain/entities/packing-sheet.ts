@@ -154,6 +154,33 @@ export class PackingSheet {
   }
 
   /**
+   * **Rouvrir le rangement** d'un bac fermé (plan
+   * `colisage/plan-domaine-colisage.md`, §17.2, option b de Hugo).
+   *
+   * Seul le rangement rouvre : les lignes restent au bac, les contenants
+   * restent pleins, la réserve ne bouge pas. Le commerce garde la commande
+   * « prête » — aucun fait n'en part —, et la refermer ne republie rien de
+   * neuf (même clé de fait, absorbée par la boîte d'envoi).
+   *
+   * Ce que l'agrégat ne sait pas — un bac chargé, une tournée partie — est
+   * refusé AVANT par la livraison (`BinDesk`), dans la même unité de travail.
+   *
+   * @returns `false` si le bac était déjà ouvert : rien à rouvrir, rien à écrire.
+   */
+  reopen(): boolean {
+    if (this.packedValue === null) {
+      return false;
+    }
+    this.packedValue = null;
+    return true;
+  }
+
+  /** Les bacs de livraison vivants de la commande — ceux que la livraison doit libérer. */
+  get liveBinIds(): readonly string[] {
+    return this.contents.liveBinIds;
+  }
+
+  /**
    * Un container de plus ou de moins. Un retrait à zéro est sans effet.
    *
    * @throws {PackedOrderSealedError} le bac est fermé.

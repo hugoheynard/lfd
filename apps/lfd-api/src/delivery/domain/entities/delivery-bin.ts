@@ -190,12 +190,25 @@ export class DeliveryBin {
     if (this.currentVoidedAt !== null) {
       return false;
     }
+    this.ensureAtHand(loading);
+    this.currentVoidedAt = at;
+    return true;
+  }
+
+  /**
+   * Le bac est-il encore à portée de main — au dépôt, pas chargé ? La règle de
+   * {@link void}, servie aussi au colisage qui rouvre une commande (plan
+   * `colisage/plan-domaine-colisage.md`, §17.2) : on ne défait pas le
+   * rangement d'un bac déjà dans le véhicule.
+   *
+   * @throws {BinLoadedError} chargé : décharger d'abord.
+   * @throws {DeliveryRoundDepartedError} sa tournée est partie.
+   */
+  ensureAtHand(loading: StopLoading | null): void {
     ensureAtDepot(loading);
     if (loading?.isLoaded(this.state.id) === true) {
       throw new BinLoadedError(this.state.code);
     }
-    this.currentVoidedAt = at;
-    return true;
   }
 
   toSnapshot(): DeliveryBinState {

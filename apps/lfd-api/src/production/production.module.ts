@@ -73,6 +73,9 @@ import { ProductionHandoffReader } from "./domain/ports/production-handoff.reade
 import { PrismaProductionHandoffLedger } from "./infrastructure/prisma-production-handoff.ledger.js";
 import { PrismaProductionHandoffReader } from "./infrastructure/prisma-production-handoff.reader.js";
 import { PackedDayReading } from "./application/services/packed-day-reading.service.js";
+import { SealedDayReading } from "./application/services/sealed-day-reading.service.js";
+import { ChannelQualityHeldOrdersReader } from "./application/services/channel-quality-held-orders.reader.js";
+import { DayPlannedDestinationsReader } from "./application/services/day-planned-destinations.reader.js";
 import { OnPackingReturned } from "./application/handlers/on-packing-returned.handler.js";
 import { ProductionReturnRequests } from "./domain/ports/production-return.requests.js";
 import { PrismaProductionReturnRequests } from "./infrastructure/prisma-production-return.requests.js";
@@ -169,12 +172,23 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     OnPackingReturned,
     // La journée telle que le poste la voit, bacs compris (K2) — une lecture.
     PackedDayReading,
+    // Les bacs fermés seulement — l'état du jour et le contrôle qualité (K3a).
+    SealedDayReading,
+    // Publiés pour le poste servi par le colisage (K3a) ; reliés par
+    // `PackingFeedModule`.
+    ChannelQualityHeldOrdersReader,
+    DayPlannedDestinationsReader,
     // Publié pour la route de contrôle de l'ombre ; relié par `PackingFeedModule`.
     DayLegacyPackingReader,
   ],
   // La lecture des contrôles sert aussi la retenue que la production PUBLIE au
   // retrait (`channels/handover/`, QC3) — son adaptateur est relié par la
   // racine de composition, qui a besoin de ce port pour le construire.
-  exports: [QualityCheckReader, DayLegacyPackingReader],
+  exports: [
+    QualityCheckReader,
+    DayLegacyPackingReader,
+    ChannelQualityHeldOrdersReader,
+    DayPlannedDestinationsReader,
+  ],
 })
 export class ProductionModule {}
