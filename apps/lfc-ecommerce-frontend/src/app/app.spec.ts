@@ -44,22 +44,32 @@ describe('Le chrome de l’app', () => {
     router = TestBed.inject(Router);
   });
 
-  it('reconnaît TOUS les écrans clients, pas seulement ceux d’une liste', async () => {
-    for (const url of [
-      '/',
-      // `/bienvenue` porte l'ACCUEIL PUBLIC depuis le 2026-09-16 ;
-      // `/inscription` porte les trois champs qui y vivaient.
-      '/bienvenue',
-      '/inscription',
-      '/connexion',
-      '/nouvelle-commande',
-      '/boutique',
-      '/commande/panier',
-      '/confirmation-de-commande',
-    ]) {
-      expect(await at(url), url).toBe(true);
-    }
-  });
+  // Huit navigations vers des écrans chargés à la demande, dans un seul cas :
+  // ~1 s seul, mais 5,24 s puis 5,27 s sous la charge de `pnpm test` à la
+  // racine, le 2026-10-05 — deux échecs au délai par défaut de 5 s, sans
+  // rien de cassé. Le délai est donc dit ici, pour ce cas seulement.
+  const EVERY_SCREEN_TIMEOUT_MS = 20_000;
+
+  it(
+    'reconnaît TOUS les écrans clients, pas seulement ceux d’une liste',
+    async () => {
+      for (const url of [
+        '/',
+        // `/bienvenue` porte l'ACCUEIL PUBLIC depuis le 2026-09-16 ;
+        // `/inscription` porte les trois champs qui y vivaient.
+        '/bienvenue',
+        '/inscription',
+        '/connexion',
+        '/nouvelle-commande',
+        '/boutique',
+        '/commande/panier',
+        '/confirmation-de-commande',
+      ]) {
+        expect(await at(url), url).toBe(true);
+      }
+    },
+    EVERY_SCREEN_TIMEOUT_MS,
+  );
 
   /**
    * 🔴 UNE ADRESSE SERVIE UNE FOIS EST SERVIE POUR TOUJOURS. La boutique a
