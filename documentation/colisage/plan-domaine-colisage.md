@@ -719,3 +719,13 @@ le code.
   Refermer publie la même clé `packing.order_packed:<orderId>`, absorbée. Fermer
   un bac déjà fermé réannonce, comme l'ancien rescan. Rouvrir n'est pas
   journalisé : aucun type de fait n'existe pour lui.
+
+### 17.6 Tranché par Hugo pour K3c (2026-10-05)
+
+- **La colonne colisage de la Supervision** lit le board du colisage
+  (`GET /admin/packing/:date/board`), ouvert aussi au droit
+  `b2b_supervision:read` ; la route `GET admin/supervision/packing` et son
+  handler du fournil disparaissent avec l'ancien chemin.
+- **Une commande encore `counted`** s'affiche en lecture seule avec un court
+  message : « Commande colisée avec l'ancien poste : elle ne se modifie plus
+  ici. »
