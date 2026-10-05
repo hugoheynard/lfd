@@ -32,6 +32,7 @@ export const legalFormSchema = z.enum([
   "ei",
   "micro",
   "auto_entrepreneur",
+  "foreign",
 ]);
 export type LegalForm = z.infer<typeof legalFormSchema>;
 
@@ -49,6 +50,7 @@ export const LEGAL_FORM_LABELS: Readonly<Record<LegalForm, string>> = {
   ei: "Entreprise individuelle",
   micro: "Micro-entreprise",
   auto_entrepreneur: "Auto-entrepreneur",
+  foreign: "Société de droit étranger",
 };
 
 /**
@@ -65,6 +67,10 @@ const NOT_VAT_LIABLE: ReadonlySet<LegalForm> = new Set<LegalForm>([
   "micro",
   "auto_entrepreneur",
   "association",
+  // Une société de droit étranger (Hugo, 2026-10-05) : hors de l'Union, elle
+  // n'a pas de numéro de TVA intracommunautaire ; dans l'Union, elle en a un,
+  // qu'on renseigne quand même — le champ reste ouvert, il n'est pas exigé.
+  "foreign",
 ]);
 
 /** Cette forme impose-t-elle un numéro de TVA intracommunautaire ? */
