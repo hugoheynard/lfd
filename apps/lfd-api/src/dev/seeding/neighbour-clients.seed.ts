@@ -2,6 +2,7 @@ import { ActivateCompanyByStaffCommand } from "../../b2b/account/application/com
 import {
   AddDeliveryAddressCommand,
   SaveBillingAddressCommand,
+  UpdateDeliveryAddressCommand,
 } from "../../b2b/account/application/commands/address-commands.js";
 import { AddDeliveryStepCommand } from "../../b2b/account/application/commands/delivery-procedure-commands.js";
 import { CreateCompanyCommand } from "../../b2b/account/application/commands/create-company.command.js";
@@ -201,10 +202,13 @@ export async function seedFictiveClients(
     });
     if (existing === null) {
       await seedNeighbour(context, client);
-    } else if (existing.status === CompanyStatus.pending) {
+      continue;
+    }
+    if (existing.status === CompanyStatus.pending) {
       await activate(context, existing.id);
       console.log(`✓ Client voisin « ${client.enseigne} » resté en attente — activé.`);
     }
+    await refreshSite(context, existing.id, client);
   }
 }
 
@@ -254,15 +258,7 @@ async function seedNeighbour(context: ClientContext, neighbour: NeighbourClient)
         label: neighbour.enseigne,
         ...postal,
         isDefault: true,
-        specs: {
-          note: site.note,
-          slots: { mode: "everyday", slot: null },
-          deadlines:
-            site.deadlines === null ? null : { mode: "everyday", times: [...site.deadlines] },
-          deliveryContact: site.contact,
-          gps: neighbour.gps,
-          signatureRequired: site.signatureRequired,
-        },
+        specs: siteSpecs(neighbour),
       }),
     );
     // La procédure par la commande du gestionnaire, étape par étape, sans
@@ -275,6 +271,59 @@ async function seedNeighbour(context: ClientContext, neighbour: NeighbourClient)
 
   await activate(context, companyId);
   console.log(`✓ Client voisin « ${neighbour.enseigne} » semé et activé.`);
+}
+
+/** Les réglages de livraison de l'adresse du client, tels que le semis les décrit. */
+function siteSpecs(neighbour: NeighbourClient) {
+  const site = neighbour.site ?? DEFAULT_SITE;
+  return {
+    note: site.note,
+    slots: { mode: "everyday" as const, slot: null },
+    deadlines:
+      site.deadlines === null ? null : { mode: "everyday" as const, times: [...site.deadlines] },
+    deliveryContact: site.contact,
+    gps: neighbour.gps,
+    signatureRequired: site.signatureRequired,
+  };
+}
+
+/**
+ * Réaligne l'adresse par défaut d'un client DÉJÀ semé sur sa description.
+ *
+ * Un client existant n'était jamais resemé : une base semée avant les
+ * échéances gardait des adresses sans échéance, et la passation refusait
+ * ensuite chaque livraison sans heure (constaté le 2026-10-05). Par la
+ * commande du client, comme à la création : le carnet garde ses invariants.
+ */
+async function refreshSite(
+  { prisma, commands, now }: ClientContext,
+  companyId: string,
+  neighbour: NeighbourClient,
+): Promise<void> {
+  const address = await prisma.address.findFirst({
+    where: { companyId, kind: "delivery", isDefault: true },
+  });
+  const user = await prisma.user.findUnique({
+    where: { auth0Sub: neighbour.person.auth0Sub },
+    select: { id: true },
+  });
+  if (address === null || user === null) {
+    return;
+  }
+  await asCustomer(now, user.id, () =>
+    commands.execute(
+      new UpdateDeliveryAddressCommand(user.id, companyId, address.id, {
+        label: address.label,
+        ligne1: address.ligne1,
+        ligne2: address.ligne2,
+        codePostal: address.codePostal,
+        ville: address.ville,
+        pays: address.pays,
+        isDefault: true,
+        specs: siteSpecs(neighbour),
+      }),
+    ),
+  );
 }
 
 /** Le terme mensuel, puis la porte d'activation — les gestes du staff. */
