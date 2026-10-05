@@ -108,7 +108,7 @@ function isMovingShare(data: unknown): data is MovingShare {
  * On crée un bac (livraison) ou un sac (retrait), on y **glisse** une ligne,
  * et l'écran demande combien (« tout » par défaut) : une ligne se coupe entre
  * deux contenants. Une répartition se glisse aussi d'un contenant à l'autre
- * (ou « Déplacer vers… », au clavier) : un seul geste serveur, `transfer`. On retire tout ou partie d'une répartition, on annule un
+ * : un seul geste serveur, `transfer`. On retire tout ou partie d'une répartition, on annule un
  * contenant ; « Proposer » est appliqué par le serveur sur un clic, jamais
  * d'office, et une livraison peut prendre la moitié libre d'un arrêt voisin
  * (plan §7).
@@ -217,8 +217,6 @@ export class PackingContainerBoard {
   protected readonly acceptsProducts = (drag: CdkDrag<unknown>): boolean =>
     typeof drag.data === 'string' || isMovingShare(drag.data);
 
-  /** La répartition dont on choisit la destination (« Déplacer vers… »), s'il y en a une. */
-  protected readonly moving = signal<MovingShare | null>(null);
   /** La colonne des produits ne reçoit rien : on retire par le bouton. */
   protected readonly acceptsNothing = (): boolean => false;
 
@@ -235,7 +233,6 @@ export class PackingContainerBoard {
         this.halves.set({ status: 'idle' });
         this.pendingDrop.set(null);
         this.pendingWithdrawal.set(null);
-        this.moving.set(null);
       });
     });
   }
@@ -315,25 +312,8 @@ export class PackingContainerBoard {
     }
   }
 
-  /** Les autres contenants de la commande — les destinations d'un déplacement. */
-  protected targetsOf(containerId: string): readonly PackingContainerView[] {
-    return this.containers().filter((candidate) => candidate.id !== containerId);
-  }
-
-  /** « Déplacer vers… » : déplie (ou replie) les destinations de cette répartition. */
-  protected toggleMoving(containerId: string, sku: string): void {
-    const current = this.moving();
-    const same = current?.containerId === containerId && current.sku === sku;
-    this.moving.set(same ? null : { containerId, sku });
-  }
-
-  protected isMoving(containerId: string, sku: string): boolean {
-    const current = this.moving();
-    return current?.containerId === containerId && current.sku === sku;
-  }
-
   /**
-   * Un déplacement, sans le glisser : on demande combien, « tout » par défaut —
+   * Un déplacement, au lâcher : on demande combien, « tout » par défaut —
    * toute la quantité de la ligne dans le contenant de départ.
    */
   askTransfer(share: MovingShare, toContainerId: string): void {
@@ -342,7 +322,6 @@ export class PackingContainerBoard {
     if (portion === undefined || !this.editable() || share.containerId === toContainerId) {
       return;
     }
-    this.moving.set(null);
     this.pendingDrop.set({
       orderId: this.sheet().orderId,
       containerId: toContainerId,

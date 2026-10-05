@@ -240,7 +240,7 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     expect(el.querySelector('[data-pending-drop]')).toBeNull();
   });
 
-  it('« Déplacer vers… » porte toute la répartition vers l’autre contenant, d’un appel, et relit', async () => {
+  it('un article glissé vers l’autre contenant y part tout entier, d’un appel, et relit', async () => {
     const { fixture, el } = await render(
       sheet({
         containerList: [
@@ -249,11 +249,7 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
         ],
       }),
     );
-    click(el, '[data-move]');
-    await settle(fixture);
-    const targets = el.querySelectorAll('[data-move-to]');
-    expect(targets).toHaveLength(1);
-    click(el, '[data-move-to="c-2"]');
+    fixture.componentInstance.askTransfer({ containerId: 'c-1', sku: 'CRO' }, 'c-2');
     await settle(fixture);
     const ask = el.querySelector('[data-container="c-2"] [data-pending-drop]');
     expect(said(ask)).toContain('Tout : 10');
@@ -273,7 +269,7 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
         ],
       }),
     );
-    expect(el.querySelector('[data-move]')).toBeNull();
+    expect(el.querySelector('[data-share="CRO"].is-draggable')).toBeNull();
     fixture.componentInstance.askTransfer({ containerId: 'c-1', sku: 'CRO' }, 'c-1');
     await settle(fixture);
     expect(el.querySelector('[data-pending-drop]')).toBeNull();

@@ -1,6 +1,6 @@
 <!--
   **PRODUITS | CONTENANTS** — une ligne se glisse dans un contenant, une
-  répartition d'un contenant à l'autre (ou « Déplacer vers… ») ; « À
+  répartition d'un contenant à l'autre ; « À
   répartir », la troisième colonne, reste celle du poste. Le groupe relie la
   liste des produits à chaque contenant.
 -->
@@ -290,56 +290,21 @@
                     }
                     <span class="cb-qty">{{ share.quantity }}</span>
                     <span class="cb-name">{{ share.productName }}</span>
-                    @if (editable() && containers().length > 1) {
-                      <button
-                        foldButton
-                        size="sm"
-                        emphasis="soft"
-                        [disabled]="gestures.busy()"
-                        [attr.aria-expanded]="isMoving(container.id, share.sku)"
-                        (click)="toggleMoving(container.id, share.sku)"
-                        [attr.aria-label]="
-                          'Déplacer ' + share.productName + ' de ' + title(container) + ' vers…'
-                        "
-                        data-move
-                      >
-                        Déplacer vers…
-                      </button>
-                    }
                     @if (editable()) {
                       <button
                         foldButton
                         size="sm"
-                        emphasis="outline"
+                        emphasis="soft"
+                        icon="close"
                         [disabled]="gestures.busy()"
                         (click)="askWithdrawal(container, share.sku)"
                         [attr.aria-label]="
                           'Retirer ' + share.productName + ' de ' + title(container)
                         "
                         data-withdraw
-                      >
-                        Retirer
-                      </button>
+                      ></button>
                     }
                   </li>
-                  @if (isMoving(container.id, share.sku)) {
-                    <li class="cb-targets" data-move-targets>
-                      @for (target of targetsOf(container.id); track target.id) {
-                        <button
-                          foldButton
-                          size="sm"
-                          emphasis="outline"
-                          [disabled]="gestures.busy()"
-                          (click)="
-                            askTransfer({ containerId: container.id, sku: share.sku }, target.id)
-                          "
-                          [attr.data-move-to]="target.id"
-                        >
-                          {{ title(target) }}
-                        </button>
-                      }
-                    </li>
-                  }
                   @if (withdrawing(); as pending) {
                     @if (pending.containerId === container.id && pending.sku === share.sku) {
                       <li class="cb-ask" data-pending-withdrawal>
