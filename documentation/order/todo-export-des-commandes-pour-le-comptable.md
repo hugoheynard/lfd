@@ -1,5 +1,14 @@
 # TODO — l'export des commandes pour le comptable
 
+> 🔴 **Périmé en partie le 2026-10-05.** Hugo : « c'est nous qui allons
+> produire le document facture » (avant l'échéance de 2027), et d'abord des
+> vues d'agrégation des commandes. La phrase « nous n'émettons pas de
+> factures » ci-dessous ne vaut plus comme intention ; elle reste vraie de
+> l'état du code. La suite est dans
+> [`plan-agregation-des-commandes.md`](plan-agregation-des-commandes.md). Ce
+> qui reste juste ici, et que le plan reprend : la maille « commande », et
+> l'interdiction de resommer la TVA.
+
 **Ouvert le 2026-09-10**, en livrant le brouillon de `pain.008`.
 
 ## Le fait

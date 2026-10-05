@@ -142,10 +142,25 @@ forment donc **un seul** aspect :
 | **`contacts`** | un contact du principal partagé avec le sous-compte                                                                                                                                                             | au choix | au choix |
 
 **Toujours propres au sous-compte** : ses adresses de livraison, ses
-contacts de livraison, ses commandes, et donc **ses factures**. Une facture
-est déjà émise par commande, et une commande appartient au sous-compte : la
-séparation des factures du chalet est donc acquise. Il reste à y faire
-figurer le nom du sous-compte (S4).
+contacts de livraison et ses commandes.
+
+⚠️ **Corrigé le 2026-10-05.** Cette phrase disait « une facture est déjà
+émise par commande ». C'était faux : la plateforme n'émet **aucune**
+facture (T31). Hugo a décidé le même jour que **nous produirons la facture**,
+plus tard, et qu'il faut d'abord des **vues d'agrégation des commandes**
+([`../order/plan-agregation-des-commandes.md`](../order/plan-agregation-des-commandes.md)).
+
+**Facturation groupée ou séparée — une case sur un site** (Hugo,
+2026-10-05). Un site reste facturé au nom du principal. La case ne change
+pas qui paie, elle change **comment c'est regroupé** :
+
+|                                | Groupée (défaut)                      | **Séparée**                                                                            |
+| ------------------------------ | ------------------------------------- | -------------------------------------------------------------------------------------- |
+| Relevé du cycle (puis facture) | un pour la société, détaillé par site | **un par site**, au nom du principal, avec le nom et l'adresse du site                 |
+| Prélèvement                    | une ligne pour la société             | **une ligne par site** : mandat du site, sur le RIB du principal ou le sien (§2.1 ter) |
+
+La case est une décision **datée**, comme les suivis. Elle ne s'affiche
+qu'une fois S4 bâti : une case qui ne fait rien encore ne doit pas promettre.
 
 ### 2.1 bis Un sous-compte qui suit `billing` n'a pas d'identité propre
 
@@ -469,12 +484,22 @@ seconde ligne, contre une écriture faite hors du geste.
 | **S1**   | migration §5 ; `Company` porte son parent ; table et port `company_follows` ; gestes staff `CreateSubAccount`, `AttachToParent`, `DetachFromParent`, `FollowParent(aspect)`, `StopFollowing(aspect)` sous le verrou ; fiche staff : parent et enfants ; e2e, dont les deux courses                                                                                                                                                                                                                                                         | —         |
 | **S2**   | écrans admin §4                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | S1        |
 | **S3**   | `pricing` : `pricingCompanyId` dans `parties`, résolu à la date ; Q6 tranchée et bâtie ; e2e : aligné, désaligné, puis **relecture d'une commande d'avant l'alignement** au tarif d'alors                                                                                                                                                                                                                                                                                                                                                  | S1        |
+| **A1**   | prérequis, **son propre plan** ([`../order/plan-agregation-des-commandes.md`](../order/plan-agregation-des-commandes.md)) : le relevé de cycle (commandes une par une, groupes, TVA par taux sommée des `vat_shares`), export CSV                                                                                                                                                                                                                                                                                                          | —         |
 | **S4-0** | prérequis, **son propre plan** : lot de prélèvement figé, état d'encaissement par commande (§2.1 quater)                                                                                                                                                                                                                                                                                                                                                                                                                                   | —         |
 | **S4**   | `billing` : les trois formes de prélèvement (§2.1 ter), frappe sur l'identité résolue, choix du mandat à date ; impayés d'un sous-compte détaché (§2.1 quater) ; checklist d'activation du §2.1 bis ; copie de `billed_company_id` aux trois entrées de passation (il nomme aussi l'**acheteur** sur la facture : une facture relue après un « détacher » garde l'acheteur d'alors) ; export comptable lu par le payeur ; garde « payeur suspendu » ; bascule des lecteurs du §2.3 ; routes client du §3 ; e2e jusqu'au fichier `pain.008` | S1        |
 | **S5**   | `contacts` : lecture combinée                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | S1        |
 | **S6**   | côté client (plateforme) : la voie d'accès du §3 dans le résolveur du mur ; le sélecteur de société liste les sous-comptes ; e2e : le principal agit dans un sous-compte, un sous-compte ne voit ni le principal ni ses frères, détacher coupe                                                                                                                                                                                                                                                                                             | S1–S4     |
 
-**Ordre** : S1, S2, S3, puis S4. Entre S3 et S4, un sous-compte peut suivre
+**Ordre** : S1, S2, S3, puis A1 (agrégation des commandes), S4-0, S4.
+
+🔴 **Condition de mise en service.** Aucun vrai site ne s'ouvre avant que
+S4 soit en ligne. D'ici là, un chalet sans SIRET qui commande au compte n'a
+pas de mandat à son nom, et bloque tout le fichier de prélèvement du cycle
+(Q2 du lot figé : l'interdiction est gardée).
+
+**Rôles dans un site** (Hugo, 2026-10-05) : la gouvernante est `admin` de
+son chalet, et peut donc inviter ses collègues. C'est le mécanisme
+d'invitation actuel. Entre S3 et S4, un sous-compte peut suivre
 le tarif du principal tout en payant pour lui-même. C'est **voulu** : un
 établissement qui a négocié au niveau du groupe et paie localement est un
 cas réel, et il reste possible après S4.

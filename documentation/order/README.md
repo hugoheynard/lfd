@@ -124,6 +124,7 @@ flowchart TD
 | Où en est l'annulation d'une commande    | [`todo-annulation-de-commande.md`](todo-annulation-de-commande.md)                                                                                                                               |
 | Combien de temps on garde les bons en R2 | [`todo-conservation-des-bons-en-r2.md`](todo-conservation-des-bons-en-r2.md)                                                                                                                     |
 | L'export des commandes pour le comptable | [`todo-export-des-commandes-pour-le-comptable.md`](todo-export-des-commandes-pour-le-comptable.md)                                                                                               |
+| Le relevé de cycle, avant la facture     | [`plan-agregation-des-commandes.md`](plan-agregation-des-commandes.md)                                                                                                                           |
 | Ce que la plateforme laisse sans réponse | [`../b2b/audit-flux-plateforme-admin.md`](../b2b/audit-flux-plateforme-admin.md)                                                                                                                 |
 
 ---

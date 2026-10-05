@@ -173,6 +173,13 @@ commande.
 P1 contient l'annulation : sans elle, un lot constitué serait définitif dès
 le premier essai.
 
+## 6 bis. Une contrainte héritée de l'agrégation des commandes
+
+La **première** clôture enregistrée tombe sur un 1er du mois. Le relevé de
+cycle (`../order/plan-agregation-des-commandes.md`) affiche des mois civils
+avant S4-0 : une première clôture ailleurs ferait changer de relevé des
+commandes déjà montrées.
+
 ## 7. Questions pour Hugo
 
 - **Q1 — Constitution manuelle ou automatique à la clôture ?** _Défaut :
