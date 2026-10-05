@@ -275,6 +275,11 @@ back-office avec son texte (P1), puis l'URL donnée à Meta.
 - ~~**Q2** — Le domaine public~~ : la boutique est servie à la racine de
   `lafoliecoffee.info` depuis le 2026-09-15 — URL Meta :
   `https://lafoliecoffee.info/confidentialite`.
+- **URL d'instructions de suppression donnée à Meta** :
+  `https://lafoliecoffee.info/suppression-des-donnees` (2026-10-05). Meta a
+  refusé l'adresse à fragment `…/confidentialite#suppression-des-donnees`
+  (« should represent a valid URL ») ; la Function
+  `functions/suppression-des-donnees.ts` sert la même page, en 200.
 - **Q3** — Aucun outil de mesure d'audience sur la boutique ? (§5.1, cookies)
 - **Q4** — Le texte en anglais et en italien : traduit par nous, ou la page
   Meta ne sert que le français ?
