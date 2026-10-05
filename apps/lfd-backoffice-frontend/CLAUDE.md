@@ -55,6 +55,35 @@ Balayage fait le 2026-08-14 : les onze écrans qui bricolaient encore le leur on
 été alignés, et le CSS correspondant supprimé. Toute réapparition est une
 régression.
 
+## L'état côté front : promesses, stores à signaux, et le vide qui ment
+
+Repris le 2026-10-05 de l'ancien document « architecture de l'état front »
+(retiré ce jour-là ; il reste dans l'historique git), dont seules les règles
+valaient encore.
+
+- **Transport en `Promise` (`firstValueFrom`), état dans un store à `signal`,
+  écran qui lit le signal.** Un appel HTTP émet une fois puis complète : un
+  `subscribe()` y demanderait une désinscription pour rien. La réactivité vit
+  dans le store — une mutation fait `await this.reload()`, et tout écran qui lit
+  le signal se recompose. Aucun composant ne fait `subscribe()`. `toSignal` est
+  réservé aux **vrais** flux, qui émettent plusieurs fois (l'état Auth0).
+- **Le vide qui ment.** Une liste vide parce que le serveur n'a pas répondu ne
+  doit jamais afficher « Aucun élément — créez-en un » : on inviterait à
+  recréer ce qui existe. `ListLoadState` retient la raison ; l'état vide la lit
+  (`loadError() !== null` → `fold-empty-state` `tone="alert"`, cf. section
+  précédente).
+- **L'échec est relancé, pas absorbé.** Une mutation qui recharge derrière elle
+  doit voir le refus ; seul le chargement automatique du démarrage l'absorbe,
+  sciemment.
+- **Rien n'est appliqué en cas d'échec** : la liste garde ce qu'elle avait.
+- **Une liste tenue par un store n'a pas d'état « chargement »** : elle part
+  vide et se remplit, et une bannière sur un appel de 40 ms clignoterait pour
+  rien. Seul l'échec change le sens de la page. (`fold-loading` reste la règle
+  pour un écran qui attend sa donnée avant de pouvoir s'afficher.)
+- **`httpResource`** n'est utilisé nulle part (vérifié le 2026-10-05). Il vaut
+  pour un écran de détail piloté par un paramètre de route ; il ne remplace pas
+  les stores, qui doivent se rejouer après une mutation faite ailleurs.
+
 ## Zéro `<select>` natif, zéro carte maison
 
 Deux autres règles du fichier ci-dessus, rappelées parce qu'elles viennent
